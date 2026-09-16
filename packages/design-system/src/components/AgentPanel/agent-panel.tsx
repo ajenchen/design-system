@@ -45,7 +45,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useOverlayCoexistence } from '@/design-system/lib/overlay-coexistence'
+import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
 
 /**
  * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。
@@ -142,7 +142,7 @@ function resolvePanelWidthMax(containerPx: number) {
   return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(containerPx * 3 / 8), PANEL_WIDTH_MIN))
 }
 
-/** 容器窄到並排放不下(面板 360 之後舞台會不足面板兩倍)→ 翻成蓋板,蓋滿舞台。 */
+/** 容器窄到並排放不下(面板 360 之後舞台會不足面板兩倍)→ 翻成蓋板:覆蓋宿主、左留視窗內距、底下鋪遮罩。 */
 function resolveIsOverlay(containerPx: number) {
   if (!containerPx || containerPx <= 0) return false
   return containerPx < AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER
@@ -154,7 +154,7 @@ function resolveIsOverlay(containerPx: number) {
  */
 export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = Math.ceil(PANEL_WIDTH_MIN * 8 / 3)
 
-/** 面板形態:並排(flex 兄弟)或蓋板(absolute 蓋滿宿主);同時標在根節點 `data-agent-panel-mode`。 */
+/** 面板形態:並排(flex 兄弟)或蓋板(absolute 覆蓋宿主、左留 `--layout-space-viewport-inset`);同時標在根節點 `data-agent-panel-mode`。 */
 export type AgentPanelMode = 'side-by-side' | 'overlay'
 
 function clampPanelWidth(width: number, containerPx: number) {
@@ -175,7 +175,7 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 可拖拉(左緣把手);預設 true。Sheet 承載時同樣可拖。 */
   resizable?: boolean
   /**
-   * 蓋板態(容器 < 960,面板蓋滿宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
+   * 蓋板態(容器 < 960,面板覆蓋宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
    * 同一支 primitive(`lib/overlay-coexistence.ts`)。v14 條 B 說的「宿主暫不可操作」只講**宿主**;
    * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,蓋板時不得被抑制
    * (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」)。
@@ -271,8 +271,8 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       if (measured) onModeChangeRef.current?.(mode)
     }, [mode, measured])
 
-    // v14 條 B:「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」。
-    // 「蓋滿」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
+    // v14 條 B:「窄螢幕以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩;遮罩只提示、點了不關),**宿主暫不可操作**」。
+    // 「覆蓋 + 遮罩」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
     // 實測(2026-09-08 跨模型審查)蓋板態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
     //
     // 用共用的並存 primitive 而不是「對兄弟節點設 inert」:兄弟迴圈只涵蓋宿主 DOM 裡的節點,
@@ -280,8 +280,12 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
     // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
     // 保留集合 = 面板自己 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
+    // 蓋板態的遮罩也在保留集合裡:它必須**接住**留白處的指標(不被 suppressOthers 設成 inert),否則點擊會穿過去
+    // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「點擊露出的遮罩會關閉 agent panel 底下的 modal」)。
+    // 它在算洞時不會把自己或別的遮罩當洞(overlay-coexistence.ts boxes():遮罩不是洞)。
+    const scrimRef = React.useRef<HTMLDivElement | null>(null)
     const keepPanel = React.useCallback(
-      () => [rootRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
+      () => [rootRef.current as Element | null, scrimRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
       [persistentElements],
     )
     // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
@@ -338,62 +342,88 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     )
 
     if (!open) return null
+    // 蓋板態的遮罩(2026-09-16 user:「底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應…單純只是用來讓使用者知道 agent panel 底下還有東西」):
+    // 重用 Dialog 並存時的同一支 `CoexistenceMask`(z-30、`--overlay`、替 persistentElements 挖洞),不手刻第二份遮罩(M17 / M23)。
+    // - `absolute`:遮罩跟面板一樣覆蓋**容器**,不是視窗(spec「量的是容器不是視窗」;tailwind-merge 讓它覆掉預設的 `fixed`);
+    // - 遮罩**接住**指標但沒有任何行為:點留白處 = 點到遮罩本身,什麼都不發生。第一版寫成 `pointer-events-none`,點擊穿過去
+    //   打到底下並存 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user 第二次回報);所以它要在保留集合裡(不被設 inert)
+    //   而且 Dialog 的並存遮罩算洞時把它當「遮罩不是洞」跳過(overlay-coexistence.ts `boxes()`),否則常駐殼裡多了一張全舞台的盒子,
+    //   Dialog 的遮罩會被整張挖空(2026-09-09 入口鈕裁切圖層的同款根因)。modal 的外部點擊守衛(createPersistentGuard)看到
+    //   目標在保留區子樹裡就不關 —— 遮罩是常駐殼的子節點,自然在裡面。
+    // - 只在量到容器且真的是蓋板時渲染(與 useOverlayCoexistence 的啟用條件同一組);
+    // - 是面板根節點的**兄弟**不是子節點:根節點 z-[45] 自成堆疊脈絡,放進去遮罩就會壓過並存 modal(z-40),違反 dialog.spec 層級梯。
+    // 幾何與「點了不關」由 `scripts/agent-panel-breakpoint.mjs` 機械守住。
+    const showScrim = containerPx > 0 && isOverlay && selfVisible
     return (
-      <div
-        ref={(node) => {
-          rootRef.current = node
-          if (typeof ref === 'function') ref(node)
-          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-        }}
-        role="complementary"
-        aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
-        // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
-        data-agent-panel-mode={mode}
-        className={cn(
-          'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
-          // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就蓋滿舞台。
-          // 「蓋滿」是 B 條的原文,不是我挑的 —— 窄螢幕以抽屜蓋滿宿主。
-          // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
-          // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。
-          // z-[60] 而不是 z-20:v14 條 B 的推導第 4 題「窄螢幕,agent 點有 URL 的 Modal →
-          // 宿主開啟 Modal;agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」——
-          // modal 必須在 agent **後方**。Dialog 是 body portal 且 `z-50`(dialog.tsx:46/113),
-          // 而這個面板的祖先是 `position:relative; z-index:auto`(不建立堆疊脈絡),
-          // 所以它直接跟 z-50 比大小 —— 用 z-20 會反過來被 modal 蓋住(2026-09-08 實測)。
-          // 兩者的大小關係由 `scripts/agent-panel-breakpoint.mjs` 機械守住,不靠這行註解。
-          // z-[45]:高於**並存面**(Dialog/FileViewer 有 persistentElements 時 z-40 —— v14 推導第 4 題
-          // 「窄螢幕,URL Modal 在被蓋住的宿主區」),低於**一般確認框**(z-50 —— 條 A「沒有 URL 的
-          // Modal 阻擋其餘介面,包含 agent」)。第一版寫 z-[60] 把所有 Dialog 都壓在下面,
-          // 連確認框也被面板蓋住(R3 實測),那是把「URL Modal 在後方」錯推成「所有 Dialog 在後方」。
-          isOverlay && 'absolute inset-0 z-[45] w-full shadow-[var(--elevation-300)]',
-          // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
-          // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
-          !resizable && !isOverlay && 'border-l border-divider',
-          'animate-in fade-in-0 slide-in-from-right-4 duration-[var(--motion-duration-surface)] motion-reduce:animate-none',
-          className,
-        )}
-        // 蓋板態寬度由 `w-full` 決定,不吃拖曳出來的值(拖曳把手在蓋板態也不渲染)
-        style={{ ...(isOverlay ? null : { width: resolvedWidth }), ...style }}
-        {...props}
-      >
-        {resizable && !isOverlay && (
-          // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);
-          // 面板寬 clamp(360–640 且 ≤50vw)由 applyWidth 負責。
-          <ResizeHandle
-            direction="horizontal"
-            position="start"
-            value={resolvedWidth}
-            min={PANEL_WIDTH_MIN}
-            max={widthMax}
-            step={PANEL_RESIZE_KEY_STEP}
-            ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
-            className="z-10"
-            onValueChange={(next) => applyWidth(next, false)}
-            onValueCommit={(next) => applyWidth(next, true)}
+      <>
+        {showScrim && (
+          <CoexistenceMask
+            ref={scrimRef}
+            keep={keepPanel}
+            data-agent-panel-scrim=""
+            className="absolute animate-in fade-in-0 duration-[var(--motion-duration-surface)] motion-reduce:animate-none"
           />
         )}
-        {children}
-      </div>
+        <div
+          ref={(node) => {
+            rootRef.current = node
+            if (typeof ref === 'function') ref(node)
+            else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+          }}
+          role="complementary"
+          aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
+          // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
+          data-agent-panel-mode={mode}
+          className={cn(
+            'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
+            // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就翻成蓋板。
+            // 2026-09-16 user 裁示:蓋板不再蓋滿 —— 上下右貼齊容器、左邊留 Dialog 同一顆 `--layout-space-viewport-inset`(48px),
+            // 底下鋪遮罩讓人知道面板下面還有東西(遮罩見上方 showScrim)。「蓋滿」原是 v14 條 B 的字,同日改字(v14 來源總帳 2026-09-16)。
+            // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
+            // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。
+            // z-[60] 而不是 z-20:v14 條 B 的推導第 4 題「窄螢幕,agent 點有 URL 的 Modal →
+            // 宿主開啟 Modal;agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」——
+            // modal 必須在 agent **後方**。Dialog 是 body portal 且 `z-50`(dialog.tsx:46/113),
+            // 而這個面板的祖先是 `position:relative; z-index:auto`(不建立堆疊脈絡),
+            // 所以它直接跟 z-50 比大小 —— 用 z-20 會反過來被 modal 蓋住(2026-09-08 實測)。
+            // 兩者的大小關係由 `scripts/agent-panel-breakpoint.mjs` 機械守住,不靠這行註解。
+            // z-[45]:高於**並存面**(Dialog/FileViewer 有 persistentElements 時 z-40 —— v14 推導第 4 題
+            // 「窄螢幕,URL Modal 在被蓋住的宿主區」),低於**一般確認框**(z-50 —— 條 A「沒有 URL 的
+            // Modal 阻擋其餘介面,包含 agent」)。第一版寫 z-[60] 把所有 Dialog 都壓在下面,
+            // 連確認框也被面板蓋住(R3 實測),那是把「URL Modal 在後方」錯推成「所有 Dialog 在後方」。
+            // 蓋板 = 遮蓋型浮層:底色與陰影跟 Sheet 同一組(sheet.tsx `bg-surface-raised shadow-[var(--elevation-200)]`)——
+            // `--surface` 在深色模式是半透明(semantic.css「非遮蓋型容器」),蓋在宿主上會讓底下文字透出來;
+            // `--elevation-300` 不存在(最高階 200),舊寫法等於沒有陰影、留白處看到的是硬切線(2026-09-16 驗證抓到)。
+            isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45] bg-surface-raised shadow-[var(--elevation-200)]',
+            // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
+            // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
+            !resizable && !isOverlay && 'border-l border-divider',
+            'animate-in fade-in-0 slide-in-from-right-4 duration-[var(--motion-duration-surface)] motion-reduce:animate-none',
+            className,
+          )}
+          // 蓋板態寬度 = 容器 − 左內距(由上面的 inset-y-0 / right-0 / left-[inset] 決定),不吃拖曳出來的值(拖曳把手在蓋板態也不渲染)
+          style={{ ...(isOverlay ? null : { width: resolvedWidth }), ...style }}
+          {...props}
+        >
+          {resizable && !isOverlay && (
+            // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);
+            // 面板寬 clamp(360–640 且 ≤50vw)由 applyWidth 負責。
+            <ResizeHandle
+              direction="horizontal"
+              position="start"
+              value={resolvedWidth}
+              min={PANEL_WIDTH_MIN}
+              max={widthMax}
+              step={PANEL_RESIZE_KEY_STEP}
+              ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
+              className="z-10"
+              onValueChange={(next) => applyWidth(next, false)}
+              onValueCommit={(next) => applyWidth(next, true)}
+            />
+          )}
+          {children}
+        </div>
+      </>
     )
   },
 )

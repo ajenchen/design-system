@@ -9,7 +9,8 @@
 //     面板 ≥ 360(PANEL_WIDTH_MIN)
 //     面板 ≤ 舞台的 3/5(user 2026-09-07 裁示 #5「50% 基準由視窗改舞台」定了「一半」;2026-09-09 user 拍板 960 → 放寬到 3/5)
 //     並排時 舞台 = 容器 − 面板
-// ⇒ 面板 ≤ 容器 × 3/8 ⇒ **並排只在容器 ≥ 960 時成立**,更窄就蓋滿舞台(2026-09-09 user 拍板 960:「一半」放寬到 3/5)。
+// ⇒ 面板 ≤ 容器 × 3/8 ⇒ **並排只在容器 ≥ 960 時成立**,更窄就翻成蓋板(2026-09-09 user 拍板 960:「一半」放寬到 3/5;
+//    2026-09-16 user 裁示蓋板不再蓋滿:左留 --layout-space-viewport-inset、右貼齊容器、底下鋪純提示遮罩,點了不關)。
 // 960 不是挑的數字,是這三條逼出來的唯一解;所以這支閘直接驗那三條,
 // 而不是驗「有沒有等於 960」——數字若哪天因為 MIN 或比例改變而變,閘會自動跟著對。
 //
@@ -44,10 +45,15 @@ catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromiu
 const pg=await br.newPage({viewport:{width:1600,height:800}})
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
+// 對照組(M32「儀器要先有對照組」):--selftest 把蓋板的左內距硬設 0、把遮罩藏起來(= 2026-09-16 之前的樣子),
+// 「蓋板左留內距」「蓋板底下有遮罩」兩條在每個蓋板寬度都必須紅,否則量具無效。
+const SELFTEST = process.argv.includes('--selftest')
+const SABOTAGE = '[role="complementary"][data-agent-panel-mode="overlay"]{left:0!important} [data-agent-panel-scrim]{display:none!important}'
 for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
   await pg.setViewportSize({width:W,height:800})
   await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--task-assistant&viewMode=story`,{waitUntil:'networkidle'})
   await pg.waitForTimeout(500)
+  if (SELFTEST) { await pg.addStyleTag({ content: SABOTAGE }); await pg.waitForTimeout(100) }
   const r = await pg.evaluate(()=>{
     const p=document.querySelector('[role="complementary"]')
     if(!p) return {err:'找不到面板'}
@@ -55,12 +61,27 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     while(host && getComputedStyle(host).display==='contents') host=host.parentElement
     const cs=getComputedStyle(p)
     const handle=p.querySelector('[role="separator"][aria-orientation="vertical"]')
+    const H=host.getBoundingClientRect(), P=p.getBoundingClientRect()
+    // 2026-09-16 蓋板態:左留 --layout-space-viewport-inset(讀 CSS 變數的實際值,不寫死 48)、右貼齊容器、底下鋪純提示遮罩
+    const inset=parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
+    const scrim=document.querySelector('[data-agent-panel-scrim]')
+    const S=scrim?scrim.getBoundingClientRect():null, scs=scrim?getComputedStyle(scrim):null
+    const probe=document.createElement('div'); probe.className='bg-overlay'; document.body.appendChild(probe)
+    const overlayBg=getComputedStyle(probe).backgroundColor; probe.remove()
+    const near=(a,b)=>Math.abs(a-b)<=1
     return { mode:p.dataset.agentPanelMode, container:host.clientWidth,
-      panelW:Math.round(p.getBoundingClientRect().width),
+      panelW:Math.round(P.width),
       pos:cs.position, valuemax:handle?+handle.getAttribute('aria-valuemax'):null,
       hasHandle:!!handle,
       // 舞台 = 容器 − 面板(並排時);蓋板時舞台就是整個容器
-      stage: host.clientWidth - (cs.position==='absolute'?0:Math.round(p.getBoundingClientRect().width)) }
+      stage: host.clientWidth - (cs.position==='absolute'?0:Math.round(P.width)),
+      inset, gapLeft: Math.round((P.left-H.left)*10)/10, gapRight: Math.round((H.right-P.right)*10)/10,
+      scrim: !!scrim, scrimCoversHost: !!S && near(S.left,H.left) && near(S.right,H.right) && near(S.top,H.top) && near(S.bottom,H.bottom),
+      scrimBg: scs?.backgroundColor ?? null, overlayBg, scrimZ: scs?.zIndex ?? null,
+      // 留白處命中的必須是遮罩本身(它接住指標、沒有行為);穿透到底下 = 會打到並存 modal 的外部點擊偵測(2026-09-16 user 第二次回報)
+      stripHitsScrim: !!scrim && Number.isFinite(inset) && document.elementFromPoint(H.left + inset/2, H.top + H.height/2) === scrim,
+      // 留白正中一點:點下去什麼都不該發生
+      strip: Number.isFinite(inset) ? { x: H.left + inset/2, y: H.top + H.height/2 } : null }
   })
   if(r.err){ ck(`G3 @${W}`, false, r.err); continue }
   const expectOverlay = r.container < 960
@@ -70,10 +91,29 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     const expMax = Math.min(640, Math.max(Math.floor(r.container*3/8), 360))
     ck(`G3 @${W} 寬上限 = min(640, 容器 × 3/8) = ${expMax}`, r.valuemax === expMax, `aria-valuemax=${r.valuemax}`)
     ck(`G3 @${W} 面板不超過舞台的 3/5(面板 ${r.panelW} ≤ 舞台 ${r.stage} × 3/5)`, r.panelW <= r.stage*3/5 + 1, `舞台 ${r.stage}`)
+    ck(`G3 @${W} 並排態不畫蓋板遮罩`, !r.scrim, `scrim=${r.scrim}`)
   } else {
-    ck(`G3 @${W} 蓋板蓋滿舞台`, r.panelW >= r.container - 1, `面板 ${r.panelW} / 容器 ${r.container}`)
+    // 2026-09-16 user 裁示(v14 來源總帳):蓋板不再蓋滿 —— 左留 Dialog 同一顆 --layout-space-viewport-inset、右貼齊容器、
+    // 底下鋪 CoexistenceMask(z-30、--overlay、接住指標但無行為),點遮罩不關面板、也不穿到底下的 modal。
+    ck(`G3 @${W} 蓋板左留 --layout-space-viewport-inset(token 實值 ${r.inset}px)`, Number.isFinite(r.inset) && r.inset > 0 && Math.abs(r.gapLeft - r.inset) <= 1, `面板左 − 容器左 = ${r.gapLeft}`)
+    ck(`G3 @${W} 蓋板右緣貼齊容器`, Math.abs(r.gapRight) <= 1, `容器右 − 面板右 = ${r.gapRight}`)
+    ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、留白處命中的是遮罩本身)`,
+       r.scrim && r.scrimCoversHost && r.scrimBg === r.overlayBg && r.scrimZ === '30' && r.stripHitsScrim,
+       JSON.stringify({ scrim: r.scrim, covers: r.scrimCoversHost, bg: r.scrimBg, overlay: r.overlayBg, z: r.scrimZ, stripHitsScrim: r.stripHitsScrim }))
+    if (r.strip) {
+      await pg.mouse.click(r.strip.x, r.strip.y); await pg.waitForTimeout(400)
+      const after = await pg.evaluate(()=>{ const p=document.querySelector('[role="complementary"]'); return { open: !!p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0, mode: p?.dataset.agentPanelMode } })
+      ck(`G3 @${W} 點遮罩(留白處)不關面板(遮罩純提示)`, after.open && after.mode === 'overlay', JSON.stringify(after))
+    }
     ck(`G3 @${W} 蓋板態不渲染拖曳把手(寬度不再是可選的)`, !r.hasHandle, `hasHandle=${r.hasHandle}`)
   }
+}
+if (SELFTEST) {
+  const sab = out.filter((l) => /蓋板左留|蓋板底下有遮罩/.test(l))
+  const ok = sab.length === 4 && sab.every((l) => l.startsWith('✗'))
+  console.log(sab.map((l) => '  ' + l).join('\n'))
+  console.log(ok ? `✓ selftest:對照組(左內距設 0 + 藏遮罩)讓 ${sab.length} 條蓋板斷言全紅,量具會紅` : `✗ selftest:對照組沒讓每一條蓋板斷言紅(${sab.filter((l) => l.startsWith('✗')).length}/${sab.length})—— 量具無效`)
+  await br.close(); sv.close(); process.exit(ok ? 0 : 1)
 }
 
 // ── 初始關閉 → 打開:量測必須跟著重綁(2026-09-08,跨模型審查抓到)────────────
@@ -101,7 +141,7 @@ for (const W of [800, 1600]) {
              valuemax: handle ? +handle.getAttribute('aria-valuemax') : null }
   })
   if (opened.err) { ck(`G3 初始關閉 @${W}`, false, opened.err); continue }
-  const expectOverlay = opened.container < 1080
+  const expectOverlay = opened.container < 960
   ck(`G3 初始關閉後打開 @視窗${W}(容器${opened.container}) 形態應為 ${expectOverlay?'蓋板':'並排'}`,
      opened.mode === (expectOverlay ? 'overlay' : 'side-by-side'),
      `實得 ${opened.mode} / 面板寬 ${opened.panelW} / aria-valuemax=${opened.valuemax}`)
@@ -113,7 +153,7 @@ for (const W of [800, 1600]) {
 
 
 // ── 蓋板態:宿主必須真的不可操作(v14 條 B)────────────────────────────────
-// 「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」——「蓋滿」是視覺,「不可操作」是行為,
+// 「窄螢幕以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩),**宿主暫不可操作**」——「覆蓋 + 遮罩」是視覺,「不可操作」是行為,
 // 兩件事。實測(2026-09-08 跨模型審查)真 Tab 走得進被蓋住的宿主按鈕並且 Enter 會執行。
 // 視覺上蓋住不等於鍵盤到不了 —— 這正是 M32「宣稱 ≠ 真實」的同一種病。
 await pg.setViewportSize({width:800,height:800})

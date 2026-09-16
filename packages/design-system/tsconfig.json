@@ -22,6 +22,7 @@
     "**/*.anatomy.stories.tsx",
     "**/*.principles.stories.tsx",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "**/stories-helpers/**"
   ]
 }

@@ -3,7 +3,7 @@
 // machine-readable design-edit authorization evidence. Denial and uncertainty always win.
 
 import { createHash } from 'node:crypto'
-import { readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve as resolvePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -775,7 +775,7 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
+  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
 const RESOLVED_UI_CHOICE_PATTERNS = [
   /(?:顏色|色彩|樣式|版型|間距|尺寸|大小|文案|標籤|圖示|互動|行為).{0,24}(?:改成|改為|換成|設為|採用|選擇|決定|統一)/u,
@@ -923,8 +923,12 @@ function remediationDecision(message, target) {
         ? 'global-engineering-remediation-scope'
         : null)
     if (!binding || !matchesAny(REMEDIATION_ACTION_PATTERNS, clause)) continue
+    // 全域修復授權(「確保所有相關問題都有一併被修正」)常與「該 SSOT 的部分都有確保 SSOT / 符合設計語言」分在不同句:
+    // binding 是全域範圍時,UI / 既有需求的語彙看整則訊息(2026-09-16 錨:最終驗證抓到蓋板底色 token 錯,修正被擋)。
     const scopeIsUiOrExistingRequirement = matchesAny(UI_DECISION_MARKERS, clause)
       || matchesAny(EXISTING_REQUIREMENT_PATTERNS, clause)
+      || (binding === 'global-engineering-remediation-scope'
+        && (matchesAny(UI_DECISION_MARKERS, normalized) || matchesAny(EXISTING_REQUIREMENT_PATTERNS, normalized)))
     if (!scopeIsUiOrExistingRequirement) continue
     if (matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, clause)) continue
     latest = { binding, message: normalized, clause }
@@ -1083,6 +1087,14 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
     ?? null
 }
 
+// bug 回報語彙(2026-09-16):user 說「壞掉 / 改壞 / 一不小心就 / 本來好好的 / root cause」是在報缺陷、要求修回既有行為,
+// 依 AGENTS.md「Bug fix → AUTO」屬工程 remediation,不是 UI/UX 取捨。root cause 容錯常見誤拼(cuase / casue)。
+const BUG_REPORT_PATTERNS = [
+  // 「不要改壞 / 別弄壞」是 user 的常態叮嚀,不是回報 → 否定詞後的「改壞 / 弄壞」不算
+  /(?:壞掉|壞了|(?<!不要|不能|不可|不會|不得|別|禁止|避免)改壞|(?<!不要|不能|不可|不會|不得|別|禁止|避免)弄壞|失效|誤觸|誤開|一不小心就|明明(?:就)?只是|本來好好的|原本好好的|退化|報錯|閃退|崩潰|卡死|卡住)/u,
+  /\b(?:broke|broken|regress(?:ed|ion)?|root\s*c[aus]{3}e|misfir(?:e|es|ing)|accidental(?:ly)?)\b/iu,
+]
+
 function engineeringScopeDecision(message, target) {
   const normalized = normalizeText(message)
   let latest = null
@@ -1091,7 +1103,83 @@ function engineeringScopeDecision(message, target) {
     if (!binding || !matchesAny(ENGINEERING_INTENT_PATTERNS, clause)) continue
     latest = { binding, message: normalized, clause }
   }
-  return latest
+  if (latest) return latest
+  // bug 回報的 target 與「壞了」常分在不同句(2026-09-16 錨:「為何現在拖拉 agent panel 的 fab / 很容易一不小心就開啟 panel /
+  // 所以感覺就是你改壞了他啊 / 請你仔細查證看看到底 root cuase 是甚麼」),同句配對抓不到 → 整則訊息有 bug 回報語彙、
+  // 沒有任何 UI 取捨語彙與未決選擇時,該 target 的修復是工程 remediation。有 UI 取捨字眼就不走這條(fail closed 照舊)。
+  if (!matchesAny(BUG_REPORT_PATTERNS, normalized)) return null
+  // bug 回報常以問句出現(「為何點擊遮罩會關掉 modal??」「root cause 是甚麼??」)—— 那是在問**原因**,不是在問許可;
+  // 真正要擋的是把選擇丟回來的句子(要不要 / 是否 / 該不該 / 選哪個)與任何 UI 取捨字眼 → 那些照舊 fail closed。
+  if (matchesAny(CHOICE_ASK_PATTERNS, normalized)
+    || matchesAny(UI_DECISION_MARKERS, normalized)
+    || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, normalized)
+    // 「fab 壞掉了嗎?」是在問存在與否、不是報缺陷;「把 fab 做大一點 / 改成方形」是改設計的要求、不是報缺陷 → 都不走這條
+    || messageClauses(normalized).some((clause) => /(?:嗎|吗)\s*[?？]*\s*$/u.test(clause) || /^\s*(?:is|are|does|did|has|have|was|were)\b.*\?\s*$/iu.test(clause))
+    || matchesAny(CHANGE_REQUEST_PATTERNS, normalized)) return null
+  for (const clause of messageClauses(normalized)) {
+    const binding = actionableTargetBinding(clause, target)
+    if (binding) latest = { binding, message: normalized, clause, bugReport: true }
+  }
+  if (latest) return latest
+  // 修 X 的 bug 可以動 X 直接依賴的共用模組(src/lib/*):target 沒被點名,但被點名的元件 import 了它 → 綁到那個元件。
+  // 2026-09-16 錨:代理蓋板遮罩讓點擊穿到 modal,修法一半在 agent-panel.tsx、一半在它 import 的 lib/overlay-coexistence.ts。
+  const viaDependent = dependentComponentBinding(normalized, target)
+  return viaDependent ? { ...viaDependent, bugReport: true } : null
+}
+
+// 「要不要 / 是否 / 選哪個」= 把選擇丟回來;單純問號結尾不算(bug 回報的「為何…??」是問原因)。
+// 改設計的要求(不是報缺陷):bug 回報路徑一律不放行,回到一般 UI 取捨判定
+const CHANGE_REQUEST_PATTERNS = [
+  /(?:改成|改為|換成|設為|移到|搬到|做大|做小|放大|縮小|加大|調成|調整成|改個|換個)/u,
+  /\b(?:make\s+it|change\s+(?:it\s+)?to|move\s+(?:it\s+)?to|resize|enlarge|shrink)\b/iu,
+]
+const CHOICE_ASK_PATTERNS = [
+  /(?:是否|要不要|該不該|能不能|可不可以|怎麼想|先討論|先評估|提案|比稿|選哪|哪(?:個|一個|種).{0,12}(?:比較好|較好|更好))/u,
+  /\b(?:should\s+we|can\s+we|could\s+we|proposal|discuss|evaluate|which\s+one)\b/iu,
+]
+
+// authorizationEvidence 把 hook 傳進來的絕對路徑記在這裡,讓依賴掃描找得到 src 根(測試用假路徑時掃不到 → 自然不放行)。
+let lastAbsoluteTargetPath = ''
+function srcRootFor() {
+  const marker = 'packages/design-system/src/'
+  const abs = String(lastAbsoluteTargetPath || '').replaceAll('\\', '/')
+  const at = abs.indexOf(marker)
+  if (at >= 0) {
+    const root = abs.slice(0, at + marker.length)
+    return existsSync(root) ? root : null
+  }
+  const fallback = `${resolvePath(process.cwd(), marker)}/`
+  return existsSync(fallback) ? fallback : null
+}
+function dependentComponentBinding(normalized, target) {
+  const lib = /packages\/design-system\/src\/lib\/([^/]+)\.(?:ts|tsx)$/u.exec(target)
+  if (!lib) return null
+  const root = srcRootFor()
+  if (!root) return null
+  const needles = [`lib/${lib[1]}'`, `lib/${lib[1]}"`] // 單、雙引號的 import 都算(dialog.tsx 用雙引號)
+  const files = []
+  const walk = (dir, depth) => {
+    if (depth > 4) return
+    let entries
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    for (const entry of entries) {
+      const path = `${dir}/${entry.name}`
+      if (entry.isDirectory()) walk(path, depth + 1)
+      else if (/\.tsx?$/u.test(entry.name) && !/\.(?:stories|test|spec)\./u.test(entry.name)) files.push(path)
+    }
+  }
+  for (const sub of ['components', 'patterns']) walk(`${root}${sub}`, 0)
+  for (const file of files) {
+    let text
+    try { text = readFileSync(file, 'utf8') } catch { continue }
+    if (!needles.some((needle) => text.includes(needle))) continue
+    const dependent = normalizeTarget(file)
+    for (const clause of messageClauses(normalized)) {
+      const binding = actionableTargetBinding(clause, dependent)
+      if (binding) return { binding: `${binding} (${dependent.split('/').pop()} imports lib/${lib[1]})`, message: normalized, clause }
+    }
+  }
+  return null
 }
 
 function classifyLatestAuthorizationUnscoped(message, {
@@ -1177,7 +1265,9 @@ function classifyLatestAuthorizationUnscoped(message, {
       reasonCode: 'TARGET_BOUND_DENIAL_OR_REVOCATION',
     }
   }
-  if (activeTargetDecision?.kind === 'discussion') {
+  // bug 回報的「為何…??」是問原因不是問許可(engineeringScopeDecision 已排除「要不要 / 是否」與 UI 取捨字眼),
+  // 不走這條「問句 = 討論」短路;其他問句照舊 fail closed。
+  if (activeTargetDecision?.kind === 'discussion' && !activeEngineeringScope?.bugReport) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',
@@ -1266,6 +1356,18 @@ function classifyLatestAuthorizationUnscoped(message, {
       decisionMessageSha256: activeDecisionMessageSha256,
       decision: 'approved',
       reasonCode: 'ENGINEERING_REMEDIATION_NO_HUMAN_APPROVAL',
+    }
+  }
+  // bug 回報綁定的 target(或其直接依賴的 lib):修 UI bug 的程式本來就會碰到 width / z-index / pointer 這類字眼,
+  // 不能拿「操作看起來像 UI」再擋一次 —— 訊息層已排除 UI 取捨字眼與選擇問句,這裡只剩工程 remediation。
+  if (hasOperationEvidence && activeEngineeringScope?.bugReport) {
+    return {
+      ...base,
+      decisionDomain: 'engineering-remediation',
+      targetBinding: activeEngineeringScope.binding,
+      decisionMessageSha256: activeDecisionMessageSha256,
+      decision: 'approved',
+      reasonCode: 'ENGINEERING_BUG_REPORT_REMEDIATION',
     }
   }
   if (hasOperationEvidence
@@ -1414,16 +1516,22 @@ const BLANKET_DELEGATION_PATTERNS = [
 // AGENTS.md Decision Authority「最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的
 // exact 提案」. Recognized ONLY when the message opens with the approval token AND contains no
 // denial, no question/discussion marker, and no tentative/conditional hedge (fail-closed on all).
-const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做)(?:$|[\s,，。!！])/u
+// 2026-09-16:「照你建議開工」「照你的建議做」也是對 pending 提案的直答 —— 接受建議 ≠ 還在建議。比對前先以
+// withoutAcceptancePhrases 把「照 / 依 / 按 / 就(你的)建議」換成中性詞「照辦」,後面可接「做 / 開工 / 進行 / 執行 / 處理 / 改」。
+// 錨:user 對兩個已提案、已逐題回答的 UI 改動說「照你建議開工，確保上述所有更動都有追根究柢的修…不要改壞任何原本好的地方…」,
+// 卻被 EXACT_UI_UX_TARGET_BINDING_MISSING 擋下:舊版「建議」二字命中 tentative、「開工」不在直答清單。
+// 不是放寬:問句、「是否 / 要不要」、「如果…就」等討論與猶豫語仍然照樣擋;泛用完成語(全部做完)也仍不在清單裡(Test 7d / 17 契約)。
+const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做|照辦(?:做|開工|進行|執行|處理|改)?)(?:$|[\s,，。!！、;;])/u
 // 2026-08-12 勘誤:曾短暫加入「完成祈使句」型(把所有任務全部做完…),旋即被測試庫
 // Test 7d / Test 17 打回 —— 該測試契約是刻意防線:泛用完成語**不得**回溯授權任意 UI 修改
 //(無 pending 提案時它就是空白支票)。維持嚴格:UI 授權要嘛 exact target 綁定,要嘛
 // 「可以」型直答 pending 提案;完成祈使句只授權「續跑已授權的事」。
 
 function isLeadingBareApprovalDelegation(latestNormalized) {
-  return LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)
-    && !matchesAny(TARGET_DISCUSSION_PATTERNS, latestNormalized)
-    && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, latestNormalized)
+  const accepted = withoutAcceptancePhrases(latestNormalized)
+  return LEADING_BARE_APPROVAL_PATTERN.test(accepted)
+    && !matchesAny(TARGET_DISCUSSION_PATTERNS, accepted)
+    && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, accepted)
 }
 
 export function authorizationEvidence(transcriptPath, {
@@ -1431,6 +1539,7 @@ export function authorizationEvidence(transcriptPath, {
   hookInput = null,
 } = {}) {
   const state = transcriptState(transcriptPath)
+  lastAbsoluteTargetPath = String(hookInput?.tool_input?.file_path || hookInput?.tool_input?.path || target || '')
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
   // 純註解操作不看訊息:它沒有任何執行差異,沒有東西可以拍板(定義與兩道檢查見 commentOnlyOperation)。

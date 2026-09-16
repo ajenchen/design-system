@@ -356,13 +356,18 @@ function useSnapDrag(opts: {
   const cleanupRef = React.useRef<() => void>(() => {})
   React.useEffect(() => () => cleanupRef.current(), [])
   const swallowNextClick = () => {
-    // 拖曳放開後瀏覽器可能緊接著發 click(同元素)→ 吞掉;元素若已換態不會有 click → 下一 tick 清旗標。
+    // 拖曳放開後瀏覽器會對同一顆鈕補發一個 click(pointer capture 讓它一定落在鈕上)→ 必須吞掉,否則「移動」變成「開面板」。
+    // 2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,但我明明就只是要移動它而已」。
+    // 舊版(2026-09-02 第一版起)用 setTimeout(0) 清旗標 —— 假設 click 與 pointerup 落在同一個 task;本機 Chromium 確實如此
+    // (實測 pointerup → click 0ms),但遠端隔離 / 輸入代理(user 的 Windows 機器把 *.netlify.app 送進 thin client,
+    // 見 governance/memory/reference_perf_validation_same_host.md)或任何讓 click 晚一個 task 送達的環境,旗標已清、click 漏過去。
+    // 改成**不看時間**:旗標由下一次 pointerdown(新手勢開始)才清;鍵盤合成的 click(detail === 0)永遠放行。
+    // 機械閘:scripts/agent-fab-drag-click-invariant.mjs(晚到的 click 必被吞;對照組把旗標清掉必紅)。
     suppressClickRef.current = true
-    window.setTimeout(() => {
-      suppressClickRef.current = false
-    }, 0)
   }
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // 新手勢開始:上一段拖曳留下的「吞下一個 click」旗標到此為止(不靠計時器;右鍵 / 第二指也算新手勢)。
+    suppressClickRef.current = false
     if (e.button !== 0) return
     // 已在拖曳中就忽略:第二次 pointerdown 會覆寫 `dragRef` 與 `cleanupRef`,第一組
     // pointermove/pointerup/pointercancel/keydown 就再也沒人移除(第一顆指標的 `onUp` 會因
@@ -437,6 +442,11 @@ function useSnapDrag(opts: {
     const onUp = (ev: PointerEvent) => {
       const d = dragRef.current
       if (!d || ev.pointerId !== d.pointerId) return
+      // 拖曳 vs 點擊的判準是「放開點離按下點多遠」,不是「中途收到幾個 pointermove」:輸入代理 / 遠端隔離會把 pointermove
+      // 丟掉或合併,只剩 down / up;少了這一步,放開在 80px 外仍被當成點擊,而 pointer capture 又把補發的 click 指回鈕上 →
+      // 「移動」變「開面板」(2026-09-16 user 回報;探針:0 個 move、放開在 80px 外 → 舊版開面板)。把放開點走一次同一套
+      // 位置計算(門檻 / 磁吸帶 / 預覽落點),讓 moved / last 與有 pointermove 時完全一致。
+      if (!d.moved && !d.cancelled) onMove(ev)
       const { moved, cancelled, last } = d
       cleanup()
       if (!moved) return
@@ -468,7 +478,8 @@ function useSnapDrag(opts: {
     window.addEventListener('keydown', onKey)
   }
   const onClickCapture = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!suppressClickRef.current) return
+    // 鍵盤 Enter / Space 合成的 click 是 detail 0:拖完面板仍要能用鍵盤打開,永遠放行。
+    if (!suppressClickRef.current || e.detail === 0) return
     suppressClickRef.current = false
     e.preventDefault()
     e.stopPropagation()

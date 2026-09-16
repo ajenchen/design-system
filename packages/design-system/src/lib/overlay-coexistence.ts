@@ -67,7 +67,9 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
  * 不用 z-index 把保留節點抬上來:保留節點常是 `display:contents` 的殼或 flex 子節點,改它們的定位會破版。
  * 洞的位置跟著 ResizeObserver / 視窗 resize / 捲動更新。
  */
-export function CoexistenceMask({ keep, className, ...rest }: { keep: CoexistenceTargets } & React.HTMLAttributes<HTMLDivElement>) {
+// forwardRef(2026-09-16):代理蓋板要把自家遮罩放進保留集合(讓它接住指標、不被設 inert),需要拿到節點;React 18 的函式元件不會把 ref 當 prop 傳。
+export const CoexistenceMask = React.forwardRef<HTMLDivElement, { keep: CoexistenceTargets } & React.HTMLAttributes<HTMLDivElement>>(
+function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
   const [clipPath, setClipPath] = React.useState<string>('none')
   const selfRef = React.useRef<HTMLDivElement | null>(null)
   React.useEffect(() => {
@@ -98,6 +100,10 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
         return parseFloat(v) || 0
       }
       const boxes = (el: Element): Hole[] => {
+        // 遮罩不是洞(2026-09-16):另一層的並存遮罩(代理蓋板態自家的遮罩住在常駐殼裡、與面板同級)雖然有盒子、
+        // 也接住指標(它要把點擊擋在自己身上,不讓點擊穿到底下的 modal / 宿主),但它是「遮住」不是「保留」——
+        // 把它當洞會讓本遮罩整張被挖空;它自己算洞時更不能把自己挖掉。
+        if (el.hasAttribute('data-coexistence-mask')) return []
         const r = el.getBoundingClientRect()
         if (r.width <= 0 || r.height <= 0) return [...el.children].flatMap(boxes)
         const cs = getComputedStyle(el)
@@ -164,14 +170,19 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
   }, [keep])
   // 本檔是 .ts(不是 .tsx),用 createElement 而不是 JSX
   return React.createElement('div', {
-    ref: selfRef,
+    ref: (node: HTMLDivElement | null): void => {
+      selfRef.current = node
+      if (typeof forwardedRef === 'function') forwardedRef(node)
+      else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+    },
     'aria-hidden': true,
     'data-coexistence-mask': '',
     className: cn('fixed inset-0 z-30 bg-overlay', className),
     style: { clipPath },
     ...rest,
   })
-}
+})
+CoexistenceMask.displayName = 'CoexistenceMask'
 
 /**
  * 並存守衛 —— 判定一個「框外事件」(Radix `onPointerDownOutside` / `onFocusOutside` / `onInteractOutside`)的目標

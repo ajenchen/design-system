@@ -191,6 +191,10 @@ expect_pass_silent "3. non-DS production path → skip"
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.stories.tsx" "$TX_NEUTRAL"
 expect_pass_silent "4. .stories.tsx in DS → skip (allowlist)"
 
+# 4b. stories-helpers/ 示範零件(只被 stories import)與 stories 同類 → silent(2026-09-16 data-toolbar 錨)
+run_hook "Edit" "/foo/my-project/packages/design-system/src/stories-helpers/scene/data-toolbar.tsx" "$TX_NEUTRAL" "className='gap-[var(--layout-space-loose)]'"
+expect_pass_silent "4b. stories-helpers/*.tsx in DS → skip (allowlist,story 專用零件)"
+
 # 5. A supplied transcript path that cannot be read is an infrastructure failure, not a denial.
 run_hook "Edit" "$PROD_TSX" "/nonexistent/path.jsonl"
 expect_integrity "5. supplied transcript file missing → integrity failure" "supplied approval transcript"
@@ -1036,6 +1040,100 @@ else
   echo "  FAIL  15i. evidence 契約 (exit=$EVIDENCE_EXIT evidence=$EVIDENCE_JSON)"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15i. comment-only evidence contract"
 fi
+
+# 15k. 「照你建議開工」= 對 pending 提案的直答(2026-09-16):接受建議 ≠ 還在建議;後接完成 / 驗證要求(確保…不要改壞…)也不影響。
+#      錨:user 對已逐題回答的兩個 UI 提案說「照你建議開工，確保上述所有更動…不要改壞任何原本好的地方…」,
+#      舊版把「建議」當猶豫、「開工」不在直答清單 → EXACT_UI_UX_TARGET_BINDING_MISSING 擋下已授權的改動。
+TX_ACCEPT_START="$TMP_DIR/tx_accept_start.jsonl"
+build_transcript "$TX_ACCEPT_START" \
+  "Agent panel 在視窗小於 break point 之後會變成滿版的設計,我在想此時是否可以讓 agent panel 最左邊與視窗左邊維持一定的邊距,且此時該 agent panel 底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應" \
+  "照你建議開工，
+
+確保上述所有更動都有追根究柢的修，該SSOT的部分都要確保SSOT,整個ds不要有漂移,然後確保不要改壞任何原本好的地方，並透過可驗證的方式自行驗證到完整完美，包括視覺稽查"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_START" "isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45]'"
+expect_pass_silent "15k. 「照你建議開工」+ 完成 / 驗證要求 → 直答 pending 提案,approved"
+
+# 15l. 同一句尾巴是問號 → 仍是討論,不是同意(問句 ≠ 同意)
+TX_ACCEPT_Q="$TMP_DIR/tx_accept_q.jsonl"
+build_transcript "$TX_ACCEPT_Q" "照你建議開工?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_Q" "isOverlay && 'absolute inset-y-0 right-0 z-[45]'"
+expect_block "15l. 「照你建議開工?」問句 ≠ 同意 → fail closed" "BLOCKER"
+
+# 15m. 接受建議但同句仍在猶豫(要不要 / 還在考慮)→ fail closed
+TX_ACCEPT_TENTATIVE="$TMP_DIR/tx_accept_tentative.jsonl"
+build_transcript "$TX_ACCEPT_TENTATIVE" "照你建議開工,但遮罩要不要關我還在考慮"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_TENTATIVE" "isOverlay && 'absolute inset-y-0 right-0 z-[45]'"
+expect_block "15m. 「照你建議開工,但…要不要…還在考慮」→ 猶豫語 fail closed" "BLOCKER"
+
+# 15n. bug 回報(2026-09-16 user 原話;target「fab」與「改壞 / root cuase」分在不同句,root cause 還拼錯)→ 該 target 的修復 = 工程 remediation,approved
+TX_BUG_REPORT="$TMP_DIR/tx_bug_report.jsonl"
+build_transcript "$TX_BUG_REPORT" \
+  "然後為何現在拖拉 agent panel 的 fab
+很容易一不小心就開啟panel,但我明明就只是要移動它而已
+之前這個功能剛做完明明就沒有這問題,
+github 歷史上一定有正確的版本
+所以感覺就是你改壞了他啊
+請你仔細查證看看到底root cuase 是甚麼,
+為何它本來好好的結果壞掉了"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_REPORT" "suppressClickRef.current = false"
+expect_pass_silent "15n. bug 回報(壞掉 / 改壞 / root cuase 誤拼)+ target 在別句 → engineering remediation approved"
+
+# 15o. 同樣提到 fab,但在問 UI 取捨(門檻要不要改)→ 問句 / 討論 fail closed
+TX_BUG_Q="$TMP_DIR/tx_bug_q.jsonl"
+build_transcript "$TX_BUG_Q" "fab 拖曳好像壞掉了,門檻要不要改成 12px?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_Q" "const DRAG_THRESHOLD = 12"
+expect_block "15o. bug 回報夾帶「要不要」UI 取捨問句 → fail closed" "BLOCKER"
+
+# 15p. bug 回報但夾帶 UI 決策字眼(顏色)→ 不走 bug 回報捷徑,照舊 fail closed
+TX_BUG_UI="$TMP_DIR/tx_bug_ui.jsonl"
+build_transcript "$TX_BUG_UI" "fab 壞掉了,順便把它的顏色改成紅色"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_UI" "className='bg-red-500'"
+expect_block "15p. bug 回報 + UI 取捨字眼(顏色)→ 不走捷徑,BLOCK" "BLOCKER"
+
+# 15q. 問句形 bug 回報(「為何…??」「root cause 是甚麼??」= 問原因不是問許可)→ 綁到點名的元件,approved(2026-09-16 遮罩穿透錨)
+TX_BUG_WHY="$TMP_DIR/tx_bug_why.jsonl"
+build_transcript "$TX_BUG_WHY" "agent panel 變為近乎滿版時
+若其底下有開啟的 modal,
+為何點擊露出的遮罩會關閉agent panel底下的modal??
+照理說點擊該遮罩不應該發生任何事情吧??
+root cause 是甚麼??"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_BUG_WHY" "const scrimRef = React.useRef(null)"
+expect_pass_silent "15q. 問句形 bug 回報 → 綁 agent panel,engineering remediation approved"
+
+# 15r. 同一則回報:修 agent panel 的 bug 可以動它直接 import 的共用模組(lib/overlay-coexistence.ts);用真實 repo 路徑讓 import 掃描找得到
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+run_hook "Edit" "$REPO_ROOT/packages/design-system/src/lib/overlay-coexistence.ts" "$TX_BUG_WHY" "if (el.hasAttribute('data-coexistence-mask')) return []"
+expect_pass_silent "15r. 同一則 bug 回報 → 被點名元件直接依賴的 lib 也在 remediation 範圍"
+
+# 15s. 同一則回報 → 動沒被點名、也沒被依賴的元件(Button)仍擋(內容中性,擋的是綁定不是 UI 字眼)
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.tsx" "$TX_BUG_WHY" "const noop = 1"
+expect_block "15s. bug 回報只授權被點名的元件與其依賴,不相關元件仍 BLOCK" "BLOCKER"
+
+# 15t. 「不要改壞」是叮嚀不是回報;「做大一點」是改設計 → 不走 bug 回報捷徑,BLOCK
+TX_NOT_BUG="$TMP_DIR/tx_not_bug.jsonl"
+build_transcript "$TX_NOT_BUG" "把 fab 做大一點,不要改壞它"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_NOT_BUG" "const FAB_PX = 56"
+expect_block "15t. 「做大一點,不要改壞它」→ 改設計要求 + 否定叮嚀,不是 bug 回報 → BLOCK" "BLOCKER"
+
+# 15u. 「壞掉了嗎?」是問存在與否 → 不是回報,BLOCK
+TX_BUG_EXISTS_Q="$TMP_DIR/tx_bug_exists_q.jsonl"
+build_transcript "$TX_BUG_EXISTS_Q" "fab 壞掉了嗎?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_EXISTS_Q" "const noop = 1"
+expect_block "15u. 「fab 壞掉了嗎?」存在性問句 → BLOCK" "BLOCKER"
+
+# 15v. 依賴掃描認雙引號 import:dialog.tsx 用 \"@/design-system/lib/overlay-coexistence\" → 「dialog 壞掉了」可動該 lib
+TX_DIALOG_BUG="$TMP_DIR/tx_dialog_bug.jsonl"
+build_transcript "$TX_DIALOG_BUG" "並存的 dialog 壞掉了,遮罩整張被挖空"
+run_hook "Edit" "$REPO_ROOT/packages/design-system/src/lib/overlay-coexistence.ts" "$TX_DIALOG_BUG" "if (el.hasAttribute('data-coexistence-mask')) return []"
+expect_pass_silent "15v. 雙引號 import 的依賴(dialog.tsx → lib/overlay-coexistence)也算 remediation 範圍"
+
+# 15w. user 的全域修復授權(2026-09-16 原話;target 未點名、修正看起來像 UI)→ 全域 remediation scope,approved
+TX_GLOBAL_FIX="$TMP_DIR/tx_global_fix.jsonl"
+build_transcript "$TX_GLOBAL_FIX" "「確保所有更動都有追根究柢的修，該SSOT的部分都有確保SSOT,所有內容都有符合我們一致的設計語言且不違背世界級的設計，整個ds沒有漂移,確保所有相關問題都有一併被修正，然後確保沒有改壞任何原本好的地方，都有透過可驗證的方式自行驗證到完整完美，包括視覺稽查，確保所有都合乎我的要求」
+
+我猜上述可能你都已經確認好了，總之確保確認好之後就發版"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_GLOBAL_FIX" "isOverlay && 'absolute inset-y-0 right-0 z-[45] bg-surface-raised shadow-[var(--elevation-200)]'"
+expect_pass_silent "15w. 「確保所有相關問題都有一併被修正 / 該 SSOT 的部分都有確保 SSOT」→ 全域工程 remediation approved"
 
 echo ""
 echo "=== Summary ==="

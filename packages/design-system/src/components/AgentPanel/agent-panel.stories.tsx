@@ -39,6 +39,7 @@ import { Select, type SelectOption } from '@/design-system/components/Select/sel
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
+import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 const meta: Meta<typeof AgentPanel> = {
@@ -696,14 +697,10 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
   }
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div data-demo-toolbar className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-        <div className="max-w-sm flex-1">
-          <Input size="sm" placeholder="搜尋任務" aria-label="搜尋任務" startIcon={Search} value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button id="demo-new-task" variant="primary" size="sm" startIcon={Plus} onClick={onCreate}>新增任務</Button>
-        </div>
-      </div>
+      {/* 左搜尋 / 右操作的幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框是唯一可壓縮項、下限 160px;2026-09-16) */}
+      <DataToolbar data-demo-toolbar search={<Input size="sm" placeholder="搜尋任務" aria-label="搜尋任務" startIcon={Search} value={search} onChange={(e) => setSearch(e.target.value)} />}>
+        <Button id="demo-new-task" variant="primary" size="sm" startIcon={Plus} onClick={onCreate}>新增任務</Button>
+      </DataToolbar>
       <div className="mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)] min-h-0 flex-1" onClickCapture={interceptInternalLink}>
         <DataTable columns={columns} data={rows} height="100%" getRowId={(t) => t.id} aria-label={tab.label} />
       </div>
@@ -1101,7 +1098,7 @@ export const UrlRegistryDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板:網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
+        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板(左邊留 48px 內距、底下鋪遮罩;遮罩只提示、點了不關):網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
       },
     },
   },

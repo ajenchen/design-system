@@ -11,7 +11,7 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 | `--layout-space-loose` | 16px | 24px | 主間距:容器水平 padding、parallel 元素 gap、bounded region 呼吸空間 |
 | `--layout-space-tight` | 12px | 16px | 緊湊間距:Header → element、functional 交互的元素之間 |
 | `--layout-space-bottom` | 48px | 48px | 結論留白:內容到 action buttons(commitment 前視覺暫停)|
-| `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它)|
+| `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AgentPanel 蓋板態的左內距也吃它,2026-09-16)|
 
 **Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
 

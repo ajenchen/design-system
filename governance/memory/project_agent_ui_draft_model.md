@@ -1,11 +1,11 @@
 ---
 name: project_agent_ui_draft_model
-description: "AI agent 面板規格已定稿並歸檔 BACKLOG(2026-08-11);SSOT = repo governance/planning/2026-08-11-agent-ui-panel-spec.md 的 §〇;實作前禁寫入 DS canonical"
+description: "AI agent 面板規格:唯一權威 = governance/planning/2026-09-06-agent-principles-v14.md(2026-09-08 起);2026-08-11 規格已過時;實作已落地(2026-09-07),隔離令解除,後續改動走 spec / v14 propose 流程"
 metadata:
   node_type: memory
   type: project
   originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
-  modified: 2026-08-11T10:54:13.451Z
+  modified: 2026-09-16T00:00:00.000Z
 ---
 
 # AI agent 面板規格 — 已定稿,BACKLOG(2026-08-11)
@@ -23,7 +23,7 @@ v14 定稿後一度只存在於 scratchpad,repo 無副本,直接造成 2026-09-0
 **Why**:規格歷經雙方對抗稽核(我方 43 項 + codex 7 組)修畢、未決項 0;但未排實作。最大風險是(a)細節散失回 scratchpad/對話,(b)條款提早滲入 DS spec/token/hook。
 
 **How to apply**:
-1. 任何 agent 面板相關工作**先讀該 planning 檔 §〇**;它與其他來源衝突時以它為準。
-2. **隔離令**:user 排定實作前,不得把該規格條款寫進 `packages/design-system/src/**`、token、hook、M-rule。
-3. 禁把 §〇 條款降級成「未決」;引 user 原話一律逐字(M36(a))。
-4. 實作啟動時走正常 propose 流程,§〇 為需求輸入。
+1. 任何 agent 面板相關工作**先讀 v14**(`2026-09-06-agent-principles-v14.md`,含來源總帳);它與其他來源衝突時以它為準。2026-08-11 的 §〇 只是歷史,不再當需求輸入。
+2. **隔離令(已解除)**:2026-09-07 起 user 排定並落地實作(v14 + `agent-panel.spec.md`),後續改動走 spec / v14 的正常 propose 流程;未落地前那條「不得寫進 `packages/design-system/src/**`」只剩歷史意義。
+3. 禁把 v14 已答題重列為「未決」;引 user 原話一律逐字(M36(a)),新裁示逐字登進 v14 來源總帳。
+4. 改動走正常 propose 流程(產品／UI／UX 真取捨才 ASK),落地必同步 spec / code / story / 閘。

@@ -90,13 +90,28 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | 容器寬 | 形態 | 面板 |
   |---|---|---|
   | ≥ 960 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器 × 3/8⌋)` |
-  | < 960 | **蓋板** —— `absolute inset-0` 蓋滿舞台 | 全寬,**不渲染拖曳把手**(寬度不再是可選的)|
+  | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組),底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**純提示、點了不關**) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
 
   蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
   (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」—— 模擬瀏覽器的工具列不是宿主)。並排態不抑制任何東西。
 
-  「蓋滿」是 B 條原文(窄螢幕以抽屜蓋滿宿主),不是另外挑的做法。
+  「留一道邊 + 遮罩」是 2026-09-16 user 裁示(逐字見 v14「來源總帳(2026-09-16)」):「讓 agent panel 最左邊與視窗左邊維持一定的邊距(該邊距應該同滿版
+  modal 距離視窗的最小邊距,應該是 48px?),且此時該 agent panel 底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應故點擊遮罩不會關閉 agent panel,
+  其單純只是用來讓使用者知道 agent panel 底下還有東西」。三個值全部借既有 SSOT、不新造:
+  - **內距** = Dialog 的 `--layout-space-viewport-inset`(`../Dialog/dialog.spec.md`「Viewport Inset」是 owner;本元件是第二個消費者),量的是**容器**左緣(容器 = 視窗時相同);
+  - **遮罩** = `lib/overlay-coexistence.ts` 的 `CoexistenceMask`,與並存 Dialog 同一層 `z-30`、同一顆 `--overlay`、同樣替 `persistentElements` 挖洞
+    (層級句見 `../Dialog/dialog.spec.md`「並存」段:遮罩 z-30 < 並存 modal z-40 < 代理蓋板 z-[45] < 一般 modal z-50);它是面板根節點的**兄弟**,
+    **接住**留白處的指標但沒有任何行為 —— 點了什麼都不會發生:不關面板、也不會穿到底下去關掉並存的 modal 或碰到宿主
+    (2026-09-16 user 第二次回報:第一版遮罩 `pointer-events:none`,點擊穿過去打到 modal 的外部點擊偵測、把 modal 關掉;修法 = 遮罩在面板的保留集合裡、
+    modal 的外部點擊守衛把常駐殼子樹裡的目標視為不關,Dialog 遮罩算洞時「遮罩不是洞」);面板的關閉仍只有 × 與入口鈕兩條路(見「Esc 與關閉語意」);
+  - **淡入** = 與面板同相的 `--motion-duration-surface`(見「動畫總表」),偏好減少動態時不淡入。
+  「像 Sheet」只到外觀:面板**不是** Sheet、也不用 `SheetOverlay`(Sheet 遮罩是 z-50,會壓過並存 modal;且面板永不進 Radix 的 DismissableLayer 疊,見負向鐵律)。
+  世界級對照(遮罩皆可設為「點了不關」):Material Components Web dialog 的 `scrimClickAction` 設空字串即不關
+  (<https://github.com/material-components/material-components-web/blob/master/packages/mdc-dialog/README.md>)、
+  Ant Design Drawer 的 `maskClosable`(<https://github.com/ant-design/ant-design/blob/master/components/drawer/index.en-US.md>)、
+  Radix Dialog 的 `onPointerDownOutside` 可 `preventDefault`(<https://github.com/radix-ui/website/blob/main/data/primitives/docs/components/dialog.mdx>);
+  各家**預設**多為點遮罩即關,本元件刻意不關是 user 決定(面板是常駐 app UI,不是暫時性浮層)。
   蓋板用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,回到寬螢幕時
   宿主也不必重新排版(避免來回切換內容跳動)。形態以 `data-agent-panel-mode` 標在根節點,並由 `onModeChange` 回報給消費端。
 
@@ -465,6 +480,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;
     招喚態同款蓄勢、光圈省略),只有 y 可變、夾在右緣帶內。沒有第三種位置,使用者不可能把鈕拖到難用的地方。
     **兩種形態點一下都直接開面板**(一段);< 8px 位移視為點擊。
+    **拖曳(≥ 8px)放開不得開面板,且不得依賴事件時序**(2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,
+    但我明明就只是要移動它而已」):瀏覽器對同一顆鈕補發的 click 由旗標吞掉,旗標只在**下一次 pointerdown** 才清、不用計時器
+    (舊版 `setTimeout(0)` 在 click 晚一個 task 送達的環境 —— 遠端隔離 / 輸入代理 —— 會漏);鍵盤合成的 click(detail 0)不吞。
+    **拖曳的判準不是「中途收到幾個 pointermove」**:放開時若尚未判成拖曳,再以放開點走一次同一套位置計算(門檻 / 磁吸帶 / 落點),
+    pointermove 被代理丟掉 / 合併(只剩按下與放開)時仍判成拖曳、仍落到同一個磁吸位置(舊版只在 pointermove 裡設 moved,0 個 move 放開在 80px 外會被當成點擊);
+    已判成拖曳的手勢維持原判、落點取最後一次移動。
+    機械閘 `scripts/agent-fab-drag-click-invariant.mjs`(晚到 100ms 的 click 必被吞;0 個 move 放開在 80px 外不開面板;對照組先發 pointerdown 把旗標清掉必紅)。
   - **右緣帶**(磁吸區;2026-09-03 user 留言拍板幾何):寬 36(= `--field-height-md`;游標離右緣 ≤ 36 即進帶,已在帶內時
     再多 16px 才算離開,遲滯防抖);上緣 = 貼邊鈕圓心落在視窗中線(鈕頂 = 舞台高 ÷ 2 − 14);下緣 = 貼邊鈕底離家頂一個
     loose(鈕頂 = 舞台高 − 2·loose − 68)。貼邊鈕只能從中線往下拖到家上方,永不與家重疊、不壓分頁列;矮視窗放不下時整帶
@@ -520,6 +542,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 場景 | 動畫 | 級距 |
 |---|---|---|
 | 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
+| 蓋板遮罩(容器 < 960)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
 | 訊息/決策卡/工具列/送出↔停止 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
 | 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
@@ -568,7 +591,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 焦點在面板內,面板內沒有任何浮層 | **什麼都不關** | 沒有暫時性 UI 可關;關掉面板等於關 app UI |
 | 焦點在面板外(側邊欄 / 主內容 / Dialog)且那裡開著浮層 | **關該區自己的浮層,不跨區碰面板** | 作用域封閉在焦點所在區,跨區關會讓使用者失去他沒在看的東西 |
 
-**推論(不必另外訂)**:面板的關閉只有兩條路 —— header 的 `×`、以及 FAB 的切換。沒有第三條。
+**推論(不必另外訂)**:面板的關閉只有兩條路 —— header 的 `×`、以及 FAB 的切換。沒有第三條;**蓋板態底下的遮罩點了也不關**
+(遮罩純提示:接住指標但沒有任何行為,2026-09-16 user 裁示,見「與 app 的推擠與斷點」)。
 
 ### 負向鐵律:AgentPanel 永不進入 Radix 的 DismissableLayer 疊
 
@@ -576,6 +600,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 
 - `dismissable-layer.tsx:59-61` 把 Esc 只送給疊最上層 → 面板一旦入疊,就會在「它剛好是最上層」時被 Esc 關掉,和上表第二列直接相反;
 - 入疊還連帶吃到 `disableOutsidePointerEvents`(外點關閉)與焦點 trap,面板會從常駐 app UI 變成暫時性浮層。
+- 蓋板態的遮罩是面板自家渲染的 `CoexistenceMask`(無點擊行為),**不是** Radix Overlay;「像 Sheet」只到外觀,不得改用 Sheet / SheetContent 承載面板。
 
 因為靜默,所以配一支機械閘:`scripts/agent-panel-dismissable-layer-invariant.mjs`。
 
@@ -591,6 +616,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 - ❌ 讓 AgentPanel 進入 Radix 的 DismissableLayer 疊(見上節負向鐵律;機械閘
   `scripts/agent-panel-dismissable-layer-invariant.mjs`)。
 - ❌ 用 Esc 關閉面板本身(面板是常駐 app UI,不是暫時性 UI)。
+- ❌ 用 Sheet / SheetContent 承載蓋板態(進 DismissableLayer 疊、遮罩 z-50 壓過並存 modal)。
+- ❌ 手刻 `bg-overlay` 遮罩,或讓蓋板遮罩點擊關閉面板(遮罩 = `CoexistenceMask`,純提示;機械閘 `scripts/agent-panel-breakpoint.mjs`)。
 
 ## 邊界案例 scope
 

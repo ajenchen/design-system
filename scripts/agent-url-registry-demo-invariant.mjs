@@ -148,8 +148,8 @@ await new Promise((r) => server.listen(0, r))
 
 // 幾何:對話框不與常駐區相交、遮罩 = 舞台矩形、常駐區中心可點、對話框置中於舞台
 const GEO = `(() => {
-  const mask = document.querySelector('[data-coexistence-mask]')
-  const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]')) || document.querySelector('[role="dialog"]')
+  const mask = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')
+  const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')) || document.querySelector('[role="dialog"]')
   const panel = document.querySelector('[role="complementary"]')
   if (!mask || !dialog || !panel) return { missing: { mask: !mask, dialog: !dialog, panel: !panel } }
   const stage = mask.parentElement
@@ -233,7 +233,7 @@ function bind(page) {
   const panelTitle = () => page.evaluate(() => document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim() ?? '')
   const inert = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? (!!el.closest('[inert]') || !!el.closest('[aria-hidden="true"]')) : null }, sel)
   const bg = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null }, sel)
-  const mask = () => page.evaluate(() => { const m = document.querySelector('[data-coexistence-mask]'); return m ? { clip: m.style.clipPath, bg: getComputedStyle(m).backgroundColor } : null })
+  const mask = () => page.evaluate(() => { const m = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])'); return m ? { clip: m.style.clipPath, bg: getComputedStyle(m).backgroundColor } : null })
   const alpha = (color) => { const m = /\/\s*([\d.]+)\)$/.exec(color ?? ''); return m ? Number(m[1]) : (/^rgba?\(/.test(color ?? '') ? (color.match(/[\d.]+/g)?.[3] ?? 1) : 0) }
   const shape = () => page.evaluate(SHAPE)
   /** 歷史浮層:開 → 讀列與當前標記 → 關(Esc)。 */
@@ -422,7 +422,7 @@ for (const width of [1440, 1180]) {
   // 2026-09-09 user:「dialog 遮罩不能在視覺上沿著 fab 的形狀?而是切出一個正方形放 fab?」—— 洞要 = 入口鈕的可視形狀(圓),
   // 不是外接方形。斷言用命中測試(clip-path 也裁命中區):方框四角命中的是遮罩(不是鈕)、圓心命中的是鈕;clip 路徑含弧線。
   const hole = await page.evaluate(() => {
-    const btn = document.querySelector('button[aria-label="開啟智慧代理"]'); const mask = document.querySelector('[data-coexistence-mask]')
+    const btn = document.querySelector('button[aria-label="開啟智慧代理"]'); const mask = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')
     if (!btn || !mask) return { missing: true }
     const r = btn.getBoundingClientRect(); const inBtn = (x, y) => { const el = document.elementFromPoint(x, y); return !!el && (btn === el || btn.contains(el)) }
     const corners = [[r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]]
@@ -434,7 +434,7 @@ for (const width of [1440, 1180]) {
   if (width === 1440) await h.shot('1440-fab-hole.png')
 
   // ── S10 拖去貼邊再拖回家 → 洞跟著回家(AD59:洞是飛回家的過渡途中算的,過渡結束要重算)──
-  const fabCenter = () => page.evaluate(() => { const b = document.querySelector('button[aria-label="開啟智慧代理"]'); const m = document.querySelector('[data-coexistence-mask]'); if (!b || !m) return null; const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, rx: r.left + r.width / 2 - mr.left, ry: r.top + r.height / 2 - mr.top } })
+  const fabCenter = () => page.evaluate(() => { const b = document.querySelector('button[aria-label="開啟智慧代理"]'); const m = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])'); if (!b || !m) return null; const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, rx: r.left + r.width / 2 - mr.left, ry: r.top + r.height / 2 - mr.top } })
   const canvas = await page.evaluate(() => document.querySelector('[data-simulated-canvas]')?.getBoundingClientRect().toJSON() ?? null)
   const home = await fabCenter()
   const dragTo = async (from, to) => { await page.mouse.move(from.x, from.y); await page.mouse.down(); for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + (to.x - from.x) * i / 12, from.y + (to.y - from.y) * i / 12, { steps: 2 }); await page.waitForTimeout(16) } await page.mouse.up(); await page.waitForTimeout(700) }
@@ -456,7 +456,7 @@ for (const width of [1440, 1180]) {
   let s11 = null
   if (fabNow) {
     await page.mouse.click(fabNow.x, fabNow.y, { button: 'right' }); await page.waitForTimeout(600)
-    s11 = await page.evaluate(() => { const m = document.querySelector('[role="menu"]'); return { menu: !!m && getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect().width > 0, items: m ? m.querySelectorAll('[role="menuitem"]').length : 0, dialogs: document.querySelectorAll('[role="dialog"]').length, mask: !!document.querySelector('[data-coexistence-mask]') } })
+    s11 = await page.evaluate(() => { const m = document.querySelector('[role="menu"]'); return { menu: !!m && getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect().width > 0, items: m ? m.querySelectorAll('[role="menuitem"]').length : 0, dialogs: document.querySelectorAll('[role="dialog"]').length, mask: !!document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])') } })
     await page.keyboard.press('Escape'); await page.waitForTimeout(300)
   }
   check(`${W} S11 遮罩在時右鍵入口鈕:選單留著(600ms 後)、並存對話框仍開、遮罩仍在(舊 bug:選單一聚焦就被當成點到框外,對話框與選單一起消失)`, menuSurvives(s11) && (await h.dialogs()) === 1, JSON.stringify(s11))
@@ -539,6 +539,25 @@ for (const width of [1440, 1180]) {
   check(`${W} S9 面板是蓋板態(data-agent-panel-mode=overlay)`, mode === 'overlay', String(mode))
   check(`${W} S9 蓋板時瀏覽器工具列不被抑制(上一頁 / 網址列)`, (await h.inert('button[aria-label="上一頁"]')) === false && (await h.inert('#demo-location')) === false)
   check(`${W} S9 蓋板時宿主被抑制(新增任務鈕 inert)`, (await h.inert('#demo-new-task')) === true)
+  // 2026-09-16 user 裁示:蓋板左留 --layout-space-viewport-inset、右貼齊容器、底下鋪純提示遮罩;點遮罩不關(關閉仍只有 × 與入口鈕)。
+  const scrimGeo = await page.evaluate(() => {
+    const p = document.querySelector('[role="complementary"]'); const s = document.querySelector('[data-agent-panel-scrim]')
+    if (!p || !s) return { p: !!p, s: !!s }
+    let host = p.parentElement
+    while (host && ['contents', 'none'].includes(getComputedStyle(host).display)) host = host.parentElement
+    const H = host.getBoundingClientRect(), P = p.getBoundingClientRect(), S = s.getBoundingClientRect()
+    const inset = parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
+    const near = (a, b) => Math.abs(a - b) <= 1
+    return { p: true, s: true, inset, gapLeft: Math.round(P.left - H.left), gapRight: Math.round(H.right - P.right),
+      scrimCoversHost: near(S.left, H.left) && near(S.right, H.right) && near(S.top, H.top) && near(S.bottom, H.bottom),
+      pointer: getComputedStyle(s).pointerEvents, strip: { x: H.left + inset / 2, y: H.top + H.height / 2 } }
+  })
+  // 遮罩要**接住**指標(不是 pointer-events:none):第一版讓點擊穿透,打到底下 modal 的外部點擊偵測、把 modal 關掉(user 2026-09-16 第二次回報)
+  check(`${W} S9 蓋板左留 --layout-space-viewport-inset(${scrimGeo.inset}px)、右貼齊容器、底下鋪接住指標的遮罩(2026-09-16)`,
+    scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.gapLeft - scrimGeo.inset) <= 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer !== 'none',
+    JSON.stringify(scrimGeo))
+  if (scrimGeo.strip) { await page.mouse.click(scrimGeo.strip.x, scrimGeo.strip.y); await page.waitForTimeout(400) }
+  check(`${W} S9 點遮罩(留白處)不關面板、網址列仍可點(遮罩純提示)`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false)
   await h.typeIntoPanel('draft')
   await h.shot('900-overlay-before.png')
   // 瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」:宿主依歷史導航、agent 維持開啟(v14 推導表「同分頁在宿主內按上一頁 / 下一頁」)
@@ -567,6 +586,18 @@ for (const width of [1440, 1180]) {
     return { d: true, p: true, inert: !!d.closest('[inert]'), hitInPanel: !!hit && p.contains(hit), panelZ: getComputedStyle(p).zIndex, dialogZ: getComputedStyle(d).zIndex, panelOpen: getComputedStyle(p).display !== 'none' }
   })
   check(`${W} S9 入口鈕重開 → 抽屜蓋回舞台,modal 在後方(命中面板、z 面板 > modal)且被抑制;草稿還在(v14 推導表「接上題,點入口鈕重開 agent」)`, reopened.d && reopened.p && reopened.panelOpen && reopened.hitInPanel && reopened.inert && Number(reopened.panelZ) > Number(reopened.dialogZ) && (await h.panelInput())?.value === 'draft', JSON.stringify(reopened))
+  // 2026-09-16 user 第二次回報:「點擊露出的遮罩會關閉 agent panel 底下的 modal」—— 留白處點一下,面板仍開、底下 modal 仍開
+  //(遮罩接住指標、不穿透;modal 的外部點擊守衛把常駐殼子樹裡的遮罩視為不關)。
+  const stripPt = await page.evaluate(() => {
+    const p = document.querySelector('[role="complementary"]'); let host = p?.parentElement ?? null
+    while (host && ['contents', 'none'].includes(getComputedStyle(host).display)) host = host.parentElement
+    if (!p || !host) return null
+    const H = host.getBoundingClientRect(); const inset = parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
+    return { x: H.left + inset / 2, y: H.top + H.height / 2 }
+  })
+  if (stripPt) { await page.mouse.click(stripPt.x, stripPt.y); await page.waitForTimeout(400) }
+  const afterStrip = { panelOpen: await h.panelOpen(), dialogs: await h.dialogs() }
+  check(`${W} S9 蓋板留白處點一下 → 面板仍開、底下的 modal 仍開(遮罩接住指標、不穿透)`, afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
   await h.click('[role="complementary"] button[aria-label="關閉面板"]')
   const revealed = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]'); if (!d) return { d: false }

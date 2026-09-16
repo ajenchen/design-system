@@ -227,8 +227,8 @@ if (!SELFTEST) {
           defaultPath.stillUsable === 0, `框外仍可用 ${defaultPath.stillUsable}/${defaultPath.total}`)
 
   const GEO = `(() => {
-    const mask = document.querySelector('[data-coexistence-mask]')
-    const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]')) || document.querySelector('[role="dialog"]')
+    const mask = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')
+    const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')) || document.querySelector('[role="dialog"]')
     const panel = document.querySelector('[role="complementary"]') || document.querySelector('aside#coexist-aside, aside#fv-aside')
     if (!mask || !dialog || !panel) return { missing: { mask: !mask, dialog: !dialog, panel: !panel } }
     const stage = mask.parentElement
@@ -245,7 +245,7 @@ if (!SELFTEST) {
   // 幾何(2026-09-08 user:「modal 整個蓋住了 agent 是要怎樣用」):對話框不與常駐區相交、遮罩 = 舞台、常駐區中心可點
   {
     await page.goto(story('design-system-components-dialog-展示--coexistence-poc'), { waitUntil: 'load' }).catch(() => {})
-    await page.waitForSelector('[data-coexistence-mask]', { timeout: 15000 }).catch(() => {})
+    await page.waitForSelector('[data-coexistence-mask]:not([data-agent-panel-scrim])', { timeout: 15000 }).catch(() => {})
     await page.waitForTimeout(500)
     const g = await page.evaluate(GEO)
     ck('G 對話框不與常駐側欄相交(v14 條 B 並列可操作)', !g.missing && !g.intersects, JSON.stringify(g.missing ?? { D: g.D, P: g.P }))
