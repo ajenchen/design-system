@@ -2262,6 +2262,7 @@ function DataTableInner<TData>(
    * 捲動中本來就每幀都在 render,例外在下一幀就會生效;停捲後的補齊 render 同理。
    */
   const hoveredRowIdRef = React.useRef<string | null>(null)
+  const markedRef = React.useRef<HTMLElement[]>([])
   const rowsRef = React.useRef(rows)
   rowsRef.current = rows
 
@@ -2283,11 +2284,14 @@ function DataTableInner<TData>(
   const setHoveredRow = React.useCallback((idx: string | null) => {
     const table = tableRef.current
     if (!table) return
-    table.querySelectorAll<HTMLElement>('[data-hovered]').forEach((n) => {
-      if (idx == null || n.dataset.rowIndex !== idx) delete n.dataset.hovered
-    })
+    for (const n of markedRef.current) delete n.dataset.hovered
+    markedRef.current = []
     hoveredRowIdRef.current = idx != null ? rowsRef.current[Number(idx)]?.id ?? null : null
-    if (idx != null) table.querySelectorAll<HTMLElement>(`[data-row-index="${idx}"]`).forEach((n) => (n.dataset.hovered = ''))
+    if (idx != null) {
+      const next = [...table.querySelectorAll<HTMLElement>(`[data-row-index="${idx}"]`)]
+      for (const n of next) n.dataset.hovered = ''
+      markedRef.current = next
+    }
   }, [])
 
   /**
@@ -2320,8 +2324,8 @@ function DataTableInner<TData>(
     // 略過條件必須含**互斥**:只比「指標底下那列有沒有被標」會在髒狀態下判定一切正常 —— 孤兒列亮在別處,
     // 這個條件看不到它,於是每次 commit 都被略過,兩列同時亮的狀態永遠不會被清掉(2026-09-16 實測:等 10 秒、
     // 滑到別列、把指標移出表格都不會好,只有那列被虛擬捲動回收才消失)。改成「被標記的**全部**都是這一列」。
-    const marked = table.querySelectorAll<HTMLElement>('[data-hovered]')
-    const exclusive = marked.length > 0 && Array.from(marked).every((n) => n.dataset.rowIndex === idx)
+    const marked = markedRef.current
+    const exclusive = marked.length > 0 && marked.every((n) => n.isConnected && n.dataset.rowIndex === idx)
     if (id === hoveredRowIdRef.current && (rowEl == null || exclusive)) return
     setHoveredRow(idx)
   }, [enableHover, setHoveredRow])
@@ -4895,17 +4899,14 @@ function DataTableInner<TData>(
     const type = e.active.data?.current?.type ?? 'row'
     // v15.3:drag 啟動清掉非 source row 的 data-hovered(避免其他 row 殘留 hover bg + drag button)。
     // **保留 source row 的 hover** — 對齊 Linear / Jira「source 維持 active 視覺」world-class canonical。
-    if (type === 'row') {
-      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => {
-        const rowId = el.dataset.sortableRowId
-        if (rowId !== id) delete el.dataset.hovered
-      })
-    } else {
-      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => delete el.dataset.hovered)
-    }
+    const keep = type === 'row'
+      ? markedRef.current.filter((el) => el.isConnected && el.dataset.sortableRowId === id)
+      : []
+    for (const el of markedRef.current) if (!keep.includes(el)) delete el.dataset.hovered
+    markedRef.current = keep
     // 清完讓 ref 與 DOM 一致:「ref 說 A、DOM 標著 B」正是兩列同時亮的病根(2026-09-16),
     // 所以每個會動標記的地方都要收尾。以實際還留著標記的那一列為準(拖曳列可能本來就沒被 hover)。
-    const stillMarked = tableRef.current?.querySelector<HTMLElement>('[data-hovered]')?.dataset.rowIndex
+    const stillMarked = keep[0]?.dataset.rowIndex
     hoveredRowIdRef.current = stillMarked != null ? rowsRef.current[Number(stillMarked)]?.id ?? null : null
     if (type === 'column') {
       // Column drag:snapshot header cell visual,strip transform/inline-styles

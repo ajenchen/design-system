@@ -646,6 +646,10 @@ jobs:
           # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
           # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
           npm run test:overlay-detached-anchor
+          # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
+          # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
+          # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
+          npm run test:avatar-anchor-box
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:

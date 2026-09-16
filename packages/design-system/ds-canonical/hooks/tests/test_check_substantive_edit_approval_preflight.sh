@@ -1135,6 +1135,71 @@ build_transcript "$TX_GLOBAL_FIX" "「確保所有更動都有追根究柢的修
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_GLOBAL_FIX" "isOverlay && 'absolute inset-y-0 right-0 z-[45] bg-surface-raised shadow-[var(--elevation-200)]'"
 expect_pass_silent "15w. 「確保所有相關問題都有一併被修正 / 該 SSOT 的部分都有確保 SSOT」→ 全域工程 remediation approved"
 
+# 15x-15z. 全域工程指示的**對稱性**:純工程版不得比混了 UI 字眼的版本更嚴(2026-09-16 量到的反向缺口)。
+#   修補前:「確保效能有最佳化過,不要改壞原本好的東西」被擋,同句加上「hover 底色維持原樣」反而放行。
+#   AGENTS.md:129 明列 perf → AUTO,純工程版風險更低,擋它等於方向相反。
+TX_PERF_PURE="$TMP_DIR/tx_perf_pure.jsonl"
+build_transcript "$TX_PERF_PURE" "1. 要確保效能有最佳化過吧？但不要改壞原本好的東西"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_PERF_PURE" "const markedRef = React.useRef([])"
+expect_pass_silent "15x. 純工程的全域指示(效能最佳化,無 UI 字眼)→ 全域工程 remediation approved"
+
+TX_PERF_UI="$TMP_DIR/tx_perf_ui.jsonl"
+build_transcript "$TX_PERF_UI" "要確保效能有最佳化過，但不要改壞原本好的東西。hover 底色維持原樣"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_PERF_UI" "const markedRef = React.useRef([])"
+expect_pass_silent "15y. 對照組:同一句混入 UI 字眼 → 仍 approved(對稱,非放寬)"
+
+# 反向對照組:同樣點名 target 但把話講成問句 → 仍必須 fail closed(證明這條不是萬用放行)
+TX_PERF_ASK="$TMP_DIR/tx_perf_ask.jsonl"
+build_transcript "$TX_PERF_ASK" "data table 的 hover 底色要不要改成更深的灰?你覺得哪個比較好?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_PERF_ASK" "const markedRef = React.useRef([])"
+expect_block "15z. 反向對照組:點名 target 的 UI 取捨問句 → 仍 BLOCK" "TARGET_BOUND_DISCUSSION_OR_QUESTION"
+
+# 16a-16b. 單向棘輪(2026-09-16):本回合對同一檔案的操作會串接成 operation evidence。
+#   若「這筆操作算不算 UI 改動」看的是整串,那麼同回合裡**任何一次帶 UI 字眼的嘗試(含被閘拒絕的)**
+#   都會永久把該檔案染色 —— 之後再乾淨的工程改動也過不了,而且回合內無法自解(自鎖)。
+#   判定必須只看**待授權的那一筆**;串接仍保留給 digest / binding 用。
+TX_RATCHET="$TMP_DIR/tx_ratchet.jsonl"
+build_transcript "$TX_RATCHET" "要確保效能有最佳化過，但不要改壞原本好的東西"
+# 先寫入一筆「同檔案、帶 UI 字眼」的歷史操作(模擬先前被拒絕的嘗試)
+jq -n --arg fp "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" \
+  '{message:{role:"assistant",content:[{type:"tool_use",name:"Edit",input:{file_path:$fp,new_string:"className=\"bg-neutral-hover\" // hover 底色"}}]}}' >> "$TX_RATCHET"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RATCHET" "const markedRef = React.useRef([])"
+expect_pass_silent "16a. 同檔案先前帶 UI 字眼的操作不得染色後續乾淨工程改動(解單向棘輪)"
+
+# 反向對照組:待授權的**這一筆**自己帶 UI 字眼 → 仍必須 BLOCK(證明沒把 UI 判定整個拆掉)
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RATCHET" "className=\"bg-neutral-hover\" style={{ padding: 8 }}"
+expect_block "16b. 反向對照組:這一筆操作自己是 UI 改動 → 仍 BLOCK" "TARGET_BOUND_UI_UX_CHOICE_MISSING"
+
+# 17a-17b. 解析視窗(2026-09-16 根因):transcript 只解析尾端 4MiB。長 session 的紀錄會長到數百 MB,
+#   user 那則指示被擠出視窗 → NO_USER_MESSAGE → 之後任何改動都永久擋住,且怎麼做都救不回來。
+#   同一筆操作在訊息還在視窗內時 approved、檔案長大後就 blocked = 判定隨時間漂移。
+#   必須逐級放大視窗直到讀到真人訊息;放大不放寬判準,只是把判準該讀到的輸入還原。
+TX_WINDOW="$TMP_DIR/tx_window.jsonl"
+build_transcript "$TX_WINDOW" "要確保效能有最佳化過，但不要改壞原本好的東西"
+# 在真人訊息之後塞 >4MiB 的 assistant / 工具紀錄,把它推出尾端 4MiB 視窗
+python3 - "$TX_WINDOW" <<'PY'
+import json, sys
+pad = "x" * 200000
+with open(sys.argv[1], "a", encoding="utf-8") as f:
+    for _ in range(25):
+        f.write(json.dumps({"message": {"role": "assistant", "content": [{"type": "text", "text": pad}]}}) + "\n")
+PY
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_WINDOW" "const markedRef = React.useRef([])"
+expect_pass_silent "17a. 真人訊息被推出 4MiB 尾端視窗時仍讀得到(解 fail-closed-forever)"
+
+# 反向對照組:同樣超出視窗,但那則真人訊息是 UI 取捨問句 → 仍必須 BLOCK(證明放大視窗不等於放行)
+TX_WINDOW_UI="$TMP_DIR/tx_window_ui.jsonl"
+build_transcript "$TX_WINDOW_UI" "data table 的 hover 底色要不要改成更深的灰?你覺得哪個比較好?"
+python3 - "$TX_WINDOW_UI" <<'PY'
+import json, sys
+pad = "x" * 200000
+with open(sys.argv[1], "a", encoding="utf-8") as f:
+    for _ in range(25):
+        f.write(json.dumps({"message": {"role": "assistant", "content": [{"type": "text", "text": pad}]}}) + "\n")
+PY
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_WINDOW_UI" "const markedRef = React.useRef([])"
+expect_block "17b. 反向對照組:視窗外的訊息是 UI 取捨問句 → 仍 BLOCK" "TARGET_BOUND_DISCUSSION_OR_QUESTION"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

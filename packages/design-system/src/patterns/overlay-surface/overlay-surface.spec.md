@@ -72,6 +72,8 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 
 當 overlay body(Dialog / Sheet / Popover)**內容是一個 unbounded list**(contact picker / settings menu / command palette / nav)時 — body 不該有 chrome padding,讓 list 自管視覺節奏。
 
+**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
+
 ### 為什麼**不**做成 body variant(`flush`)
 
 2026-05-01 移除 `<DialogBody flush>` / `<SheetBody flush>` / `<PopoverBody flush>` variant。原因:
@@ -94,9 +96,9 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 ```
 
 **3 條 invariant**(unique 解):
-1. **Hover bg 貼邊 chrome**:item `px-loose` 讓 hover bg 鋪滿 chrome 內邊(Linear / Cmd+K idiom)
+1. **Item 自帶 `px-loose`**:item 水平 padding 由 item 自己承擔,body 的 chrome padding 撤為 0
 2. **Content 對齊 header title**:item content 左 = chrome `px-loose` 起點 = header title 左 X 軸對齊
-3. **Content 在 hover bg 內有 breathing**:item `px-loose rounded-md` → content 離 bg 邊緣 loose 距離
+3. **若 item 有 hover / selected 底色**:該底色必鋪滿 chrome 內邊,且 content 離底色邊緣 ≥ loose(item `px-loose rounded-md` 即同時滿足)。**底色有無不是 List-as-region 的判定條件** —— 見上方「判定條件(唯一)」
 
 幾何:
 ```
@@ -160,11 +162,13 @@ list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了�
 - 單擊即生效 → `DropdownMenu` / `SelectMenu`(浮層),**不用 Dialog**
 - 暫存選擇 + Save CTA 才 commit → `Dialog + MenuItem`(本 pattern)
 
-### M11 state walk hover 檢查(三 invariant 必同時 ✓)
+### M11 state walk hover 檢查(**僅當 item 有 hover / selected 底色時適用**;三題必同時 ✓)
 
 1. hover bg 左右邊 = chrome 邊?
 2. content 左邊 = header title 左邊?
 3. content 離 hover bg 邊 ≥ loose?
+
+item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**不構成** List-as-region 的失格條件。
 
 ### ❌ 禁止
 
