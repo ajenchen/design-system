@@ -1,6 +1,6 @@
 ---
 name: project_agent_ui_draft_model
-description: "AI agent 面板規格已定稿並歸檔 BACKLOG(2026-08-11);SSOT = repo governance/planning/2026-08-11-agent-ui-panel-spec.md 的 §〇;實作前禁寫入 DS canonical"
+description: "AI agent 面板規格:唯一權威 = governance/planning/2026-09-06-agent-principles-v14.md(2026-09-08 起);2026-08-11 規格已過時;實作已落地(2026-09-07),隔離令解除,後續改動走 spec / v14 propose 流程"
 metadata:
   node_type: memory
   type: project
