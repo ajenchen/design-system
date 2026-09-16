@@ -430,6 +430,16 @@ jobs:
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --assert=on --latency-assert=off --out=tmp/datatable-content-bursts-2
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=off --out=tmp/datatable-content-wheel-2
 
+      - name: Avatar 錨點外框 DS-wide sweep (browser)
+        # 放在這個 job 是**時間預算**的安排,不是主題歸類:它要掃全部 1034 支 story(約 6 分鐘,不抽樣),
+        # 而本 job 上限 25 分、實測只用 4.2 分,是唯一裝得下的地方。原本放在 agent demo job(上限 15 分、
+        # 已用 9 分)會把它撐爆 —— 2026-09-16 實測 cancelled at 15.3 分。照本檔既有先例,
+        # 調高別的 job 上限會撞 ci-workflow-scope 契約,所以改放位置而不是改上限。
+        # 不變式:Avatar 當 hover card 觸發點時,最外層框必須等於看得見的圓;同一個假框也會讓狀態圓點
+        # 飛走、焦點框變膠囊(2026-09-16 user:「為何 avatar 觸發的 profile card 距離 avatar 這麼遠」)。
+        # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4);selftest 注入被拉寬的外框驗偵測力(只需一支 story)。
+        run: npm run test:avatar-anchor-box
+
       - name: Preserve DataTable dpr2 perception evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -646,10 +656,6 @@ jobs:
           # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
           # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
           npm run test:overlay-detached-anchor
-          # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
-          # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
-          # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
-          npm run test:avatar-anchor-box
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:
