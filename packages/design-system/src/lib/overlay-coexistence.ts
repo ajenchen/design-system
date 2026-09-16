@@ -170,7 +170,7 @@ function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
   }, [keep])
   // 本檔是 .ts(不是 .tsx),用 createElement 而不是 JSX
   return React.createElement('div', {
-    ref: (node: HTMLDivElement | null) => {
+    ref: (node: HTMLDivElement | null): void => {
       selfRef.current = node
       if (typeof forwardedRef === 'function') forwardedRef(node)
       else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node
