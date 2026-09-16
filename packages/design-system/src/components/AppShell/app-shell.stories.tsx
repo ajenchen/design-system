@@ -16,6 +16,7 @@ import { DataTableFilterPanel, createEmptyFilterTree, isFilterTreeActive, type F
 import { DataTableSortManager } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import type { SortingState } from '@tanstack/react-table'
@@ -96,62 +97,62 @@ function IssuesView({ selectedId, asideOpen, onSelectIssue }: { selectedId?: str
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-canvas">
-      {/* Toolbar:對齊 data-table.stories.tsx#WithBulkActions「左 search / 右 ops」idiom + action-bar canonical */}
-      <div className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-        <div className="flex-1 max-w-sm">
+      {/* Toolbar:對齊 data-table.stories.tsx#WithBulkActions「左 search / 右 ops」idiom + action-bar canonical;
+          幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px;提示字縮短到下限內放得下,2026-09-16)*/}
+      <DataToolbar
+        search={
           <Input
             size="sm"
-            placeholder="搜尋 issue id / title…"
+            placeholder="搜尋 issue"
             startIcon={Search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Filter:tertiary iconOnly + Popover wrap real DataTableFilterPanel + pressed prop active state */}
-          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="text"
-                size="sm"
-                iconOnly
-                startIcon={Filter}
-                aria-label="篩選"
-                pressed={isFilterTreeActive(filterTree)}
-              />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
-              <DataTableFilterPanel
-                columns={ISSUE_COLUMNS as any}
-                value={filterTree}
-                onChange={setFilterTree}
-                onClose={() => setFilterOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-          {/* Sort:tertiary iconOnly + Popover wrap real DataTableSortManager + pressed active state */}
-          <Popover open={sortOpen} onOpenChange={setSortOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="text"
-                size="sm"
-                iconOnly
-                startIcon={ArrowUpDown}
-                aria-label="排序"
-                pressed={sorting.length > 0}
-              />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
-              <DataTableSortManager
-                columns={ISSUE_COLUMNS as any}
-                sorting={sorting}
-                onSortingChange={setSorting}
-                onClose={() => setSortOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
+        }
+      >
+        {/* Filter:tertiary iconOnly + Popover wrap real DataTableFilterPanel + pressed prop active state */}
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="text"
+              size="sm"
+              iconOnly
+              startIcon={Filter}
+              aria-label="篩選"
+              pressed={isFilterTreeActive(filterTree)}
+            />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-auto p-0">
+            <DataTableFilterPanel
+              columns={ISSUE_COLUMNS as any}
+              value={filterTree}
+              onChange={setFilterTree}
+              onClose={() => setFilterOpen(false)}
+            />
+          </PopoverContent>
+        </Popover>
+        {/* Sort:tertiary iconOnly + Popover wrap real DataTableSortManager + pressed active state */}
+        <Popover open={sortOpen} onOpenChange={setSortOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="text"
+              size="sm"
+              iconOnly
+              startIcon={ArrowUpDown}
+              aria-label="排序"
+              pressed={sorting.length > 0}
+            />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-auto p-0">
+            <DataTableSortManager
+              columns={ISSUE_COLUMNS as any}
+              sorting={sorting}
+              onSortingChange={setSorting}
+              onClose={() => setSortOpen(false)}
+            />
+          </PopoverContent>
+        </Popover>
+      </DataToolbar>
       {/* DataTable:naked structure,layoutSpace 規則 1B 父層 mx 對齊 chrome 內容左右邊界。
           rowActions:per data-table.spec L153 rowActions canonical(Button text xs iconOnly,固定 24px)+
           pressed={row.id === selectedId} 顯示當前選中(per codex D3 active visual)。 */}

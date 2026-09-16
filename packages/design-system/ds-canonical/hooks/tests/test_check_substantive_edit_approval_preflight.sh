@@ -1037,6 +1037,30 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15i. comment-only evidence contract"
 fi
 
+# 15k. 「照你建議開工」= 對 pending 提案的直答(2026-09-16):接受建議 ≠ 還在建議;後接完成 / 驗證要求(確保…不要改壞…)也不影響。
+#      錨:user 對已逐題回答的兩個 UI 提案說「照你建議開工，確保上述所有更動…不要改壞任何原本好的地方…」,
+#      舊版把「建議」當猶豫、「開工」不在直答清單 → EXACT_UI_UX_TARGET_BINDING_MISSING 擋下已授權的改動。
+TX_ACCEPT_START="$TMP_DIR/tx_accept_start.jsonl"
+build_transcript "$TX_ACCEPT_START" \
+  "Agent panel 在視窗小於 break point 之後會變成滿版的設計,我在想此時是否可以讓 agent panel 最左邊與視窗左邊維持一定的邊距,且此時該 agent panel 底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應" \
+  "照你建議開工，
+
+確保上述所有更動都有追根究柢的修，該SSOT的部分都要確保SSOT,整個ds不要有漂移,然後確保不要改壞任何原本好的地方，並透過可驗證的方式自行驗證到完整完美，包括視覺稽查"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_START" "isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45]'"
+expect_pass_silent "15k. 「照你建議開工」+ 完成 / 驗證要求 → 直答 pending 提案,approved"
+
+# 15l. 同一句尾巴是問號 → 仍是討論,不是同意(問句 ≠ 同意)
+TX_ACCEPT_Q="$TMP_DIR/tx_accept_q.jsonl"
+build_transcript "$TX_ACCEPT_Q" "照你建議開工?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_Q" "isOverlay && 'absolute inset-y-0 right-0 z-[45]'"
+expect_block "15l. 「照你建議開工?」問句 ≠ 同意 → fail closed" "BLOCKER"
+
+# 15m. 接受建議但同句仍在猶豫(要不要 / 還在考慮)→ fail closed
+TX_ACCEPT_TENTATIVE="$TMP_DIR/tx_accept_tentative.jsonl"
+build_transcript "$TX_ACCEPT_TENTATIVE" "照你建議開工,但遮罩要不要關我還在考慮"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_TENTATIVE" "isOverlay && 'absolute inset-y-0 right-0 z-[45]'"
+expect_block "15m. 「照你建議開工,但…要不要…還在考慮」→ 猶豫語 fail closed" "BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

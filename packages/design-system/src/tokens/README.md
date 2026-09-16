@@ -49,6 +49,8 @@
 ## 新增 token 的 criteria
 
 1. 找不到現有 family 可鏡射 → **先質疑是否真需要**(見 CLAUDE.md 「對齊既有 family」)
+   - **消費者只算 DS 元件與產品端程式**(上表 public / internal 兩層)。只有 stories / 範例重複用到的值 → 抽成 `stories-helpers/` 共用零件在那裡定一次,
+     **不建 token**;世界級同樣不為版面組合值發 token(2026-09-16 錨:工具列搜尋框下限 160px,四支示範消費、零元件消費 → `stories-helpers/scene/data-toolbar.tsx`)。
 2. 命名過三重 test(既有語言 / 世界級 idiom / 跨元件不衝突)
 3. Primitive / semantic 分層清楚
 4. 若是語意色相 → 走 `color/color.spec.md`「新增語意色相的標準流程」4 步

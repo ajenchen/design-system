@@ -634,6 +634,9 @@ jobs:
           # selftest = 對照組:洞 = 外框 / 洞停在過渡途中 / 兩個洞 / 選單消失 / 對話框關 / 浮層留在 (0,8) 都必須判紅。
           node scripts/agent-url-registry-demo-invariant.mjs --selftest
           npm run test:agent-url-registry-demo
+          # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
+          # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
+          npm run test:action-bar-toolbar
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:

@@ -363,6 +363,21 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 3. 單一按鈕的群組不需要溢出，空間極端不足時整個隱藏
 ```
 
+### 搜尋框(業務層裡唯一可壓縮的項目;2026-09-16)
+
+「左搜尋 / 右操作」的資料工具列(DataTable / AppShell / AgentPanel 整頁示範皆此型)空間不足時**先讓搜尋框讓路**,操作群不縮、列永不溢出:
+
+| 規則 | 值 / 機制 | 為什麼 |
+|---|---|---|
+| 搜尋框是列裡唯一可壓縮的項目 | 外層 `flex-1`、上限 `max-w-sm`(384px)、**明確下限**(示範用 160px)| 瀏覽器排版預設「格子不得比自己的內容窄」(CSS Flexbox §4.5 automatic minimum size,<https://www.w3.org/TR/css-flexbox-1/#min-size-auto>),原生 `<input>` 內建約 20 字元寬 → 沒寫下限時整顆搜尋框卡在 204px 縮不下去,列往右溢出、主按鈕跑出容器(2026-09-16 user 抓到)|
+| 下限 = 放大鏡 + 內距 + 能完整顯示提示字 | sm 欄位 chrome 50px + 提示字寬;示範最長提示字「搜尋商品 / SKU」整顆需 146px → 取 Tailwind 刻度 160px(`min-w-40`)| 提示字比下限長就縮短提示字,不放大下限 |
+| 操作群不可壓縮 | `shrink-0` | 操作鈕的收合走上方「降級」規則(icon-only / 溢出),不靠被擠 |
+| 列永不溢出;最後一顆操作鈕右緣 = 內容右緣 | 列 `min-w-0` | 機械閘 `scripts/action-bar-toolbar-invariant.mjs`:五個寬度 × 四支示範量像素 |
+| 空間連下限都放不下 | 本輪**不**收合搜尋框(user 2026-09-16:「目前先做到縮到下限即可」)| 世界級的下一步是「收成放大鏡、點了展開」:Carbon 表格工具列搜尋預設收合、聚焦展開、展開後 `inline-size: 100%`(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/data-table/action/_data-table-action.scss>);Polaris IndexFilters 小螢幕以搜尋鈕切到 Filtering 模式、查詢欄佔整列(<https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/IndexFilters/IndexFilters.tsx>);MUI Data Grid 快速篩選有觸發鈕展開 / 收合(<https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/quickFilter/QuickFilter.tsx>)—— 另立提案再做 |
+
+**值住哪裡**:下限是版面組合值,**不建 token** —— `tokens/README.md`「新增 token 的 criteria」:消費者只算 DS 元件與產品端程式,stories / 範例重複不算;世界級同樣沒有「工具列搜尋最小寬」token(Carbon 用通用版面尺寸、Polaris 用通用寬度刻度)。DS 示範的四份工具列共用 `stories-helpers/scene/data-toolbar.tsx`,值在那裡定一次;產品端自己的工具列依本表自訂。
+**與 Field 寬度軸的關係**:`field-controls.spec.md`「寬度軸」的 `hug`(toolbar 內 field 依內容收縮)是給狀態篩選這類**依內容定寬**的控件;搜尋框要**填滿到上限**(Gmail / Linear / Notion 派),兩者不衝突。
+
 ---
 
 ## 八、常見錯誤

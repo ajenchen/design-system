@@ -1414,16 +1414,22 @@ const BLANKET_DELEGATION_PATTERNS = [
 // AGENTS.md Decision Authority「最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的
 // exact 提案」. Recognized ONLY when the message opens with the approval token AND contains no
 // denial, no question/discussion marker, and no tentative/conditional hedge (fail-closed on all).
-const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做)(?:$|[\s,，。!！])/u
+// 2026-09-16:「照你建議開工」「照你的建議做」也是對 pending 提案的直答 —— 接受建議 ≠ 還在建議。比對前先以
+// withoutAcceptancePhrases 把「照 / 依 / 按 / 就(你的)建議」換成中性詞「照辦」,後面可接「做 / 開工 / 進行 / 執行 / 處理 / 改」。
+// 錨:user 對兩個已提案、已逐題回答的 UI 改動說「照你建議開工，確保上述所有更動都有追根究柢的修…不要改壞任何原本好的地方…」,
+// 卻被 EXACT_UI_UX_TARGET_BINDING_MISSING 擋下:舊版「建議」二字命中 tentative、「開工」不在直答清單。
+// 不是放寬:問句、「是否 / 要不要」、「如果…就」等討論與猶豫語仍然照樣擋;泛用完成語(全部做完)也仍不在清單裡(Test 7d / 17 契約)。
+const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做|照辦(?:做|開工|進行|執行|處理|改)?)(?:$|[\s,，。!！、;;])/u
 // 2026-08-12 勘誤:曾短暫加入「完成祈使句」型(把所有任務全部做完…),旋即被測試庫
 // Test 7d / Test 17 打回 —— 該測試契約是刻意防線:泛用完成語**不得**回溯授權任意 UI 修改
 //(無 pending 提案時它就是空白支票)。維持嚴格:UI 授權要嘛 exact target 綁定,要嘛
 // 「可以」型直答 pending 提案;完成祈使句只授權「續跑已授權的事」。
 
 function isLeadingBareApprovalDelegation(latestNormalized) {
-  return LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)
-    && !matchesAny(TARGET_DISCUSSION_PATTERNS, latestNormalized)
-    && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, latestNormalized)
+  const accepted = withoutAcceptancePhrases(latestNormalized)
+  return LEADING_BARE_APPROVAL_PATTERN.test(accepted)
+    && !matchesAny(TARGET_DISCUSSION_PATTERNS, accepted)
+    && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, accepted)
 }
 
 export function authorizationEvidence(transcriptPath, {

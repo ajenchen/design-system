@@ -24,6 +24,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { BulkActionBar } from '@/design-system/components/BulkActionBar/bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 // Issue 3 cleanup(2026-05-10):ScrollArea / ButtonDivider / ItemPrefix / ItemLabel /
 // ItemInlineActionButton / ROW_PADDING_BY_SIZE / cn / DnD / dragSourceStyle imports retired —
 // 全 column visibility row state machine 移到 <DataTableColumnVisibilityPanel> primitive。
@@ -1085,9 +1086,9 @@ export const WithBulkActions: Story = {
       // 撐滿 parent(layout=fullscreen);
       // toolbar 自帶 py = toolbar→table 間距(無父 gap);table→底部 chrome group = loose(footer 呼吸 canonical)
       <div className="flex flex-col w-full h-screen bg-canvas">
-        {/* Toolbar — 左 search / 右 ops(Gmail / Linear / Notion idiom)*/}
-        <div className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-          <div className="flex-1 max-w-sm">
+        {/* Toolbar — 左 search / 右 ops(Gmail / Linear / Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px;2026-09-16)*/}
+        <DataToolbar
+          search={
             <Input
               size="sm"
               placeholder="搜尋商品 / SKU"
@@ -1095,71 +1096,70 @@ export const WithBulkActions: Story = {
               onChange={(e) => setSearch(e.target.value)}
               startIcon={Search}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            {/* L3 Filter:global panel(ClickUp / Airtable / Notion 派 — flat conditions MVP)
-                pressed prop:套用條件後 trigger 維持 active 視覺(toggle pressed,Button 設計準則) */}
-            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0">
-                <DataTableFilterPanel
-                  columns={baseColumns}
-                  value={filterTree}
-                  onChange={setFilterTree}
-                  prefilledColumnId={filterPrefilledId}
-                  onPrefillConsumed={() => setFilterPrefilledId(undefined)}
-                  onClose={() => setFilterOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-            {/* L3 Sort:global panel(Notion-style 多欄條件)
-                pressed prop:套用條件後 trigger 維持 active 視覺 */}
-            <Popover open={sortOpen} onOpenChange={setSortOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0">
-                <DataTableSortManager
-                  columns={baseColumns}
-                  sorting={sorting}
-                  onSortingChange={setSorting}
-                  onReset={() => setSorting([])}
-                  onClose={() => setSortOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-            {/* L3 column visibility:Popover panel(對齊 Notion / Airtable column-settings panel)
-                標題 / search input / column list with Checkbox / Show all
-                drag-reorder 留 A.4(跟 column reorder 一起做)*/}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-72 p-0">
-                {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
-                    `<DataTableColumnVisibilityPanel>`(全 feature flag opt-in:search +
-                    reset + DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
-                <DataTableColumnVisibilityPanel
-                  columns={baseColumns.map((c) => ({
-                    id: ((c as any).accessorKey ?? (c as any).id) as string,
-                    label: typeof (c as any).header === 'string' ? (c as any).header : ((c as any).accessorKey ?? (c as any).id),
-                  }))}
-                  visibility={columnVisibility}
-                  onVisibilityChange={setColumnVisibility}
-                  columnOrder={columnOrder}
-                  onColumnOrderChange={setColumnOrder}
-                  lockedIds={['sku']}
-                  searchable
-                  resettable
-                />
-              </PopoverContent>
-            </Popover>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增商品</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-          </div>
-        </div>
+          }
+        >
+          {/* L3 Filter:global panel(ClickUp / Airtable / Notion 派 — flat conditions MVP)
+              pressed prop:套用條件後 trigger 維持 active 視覺(toggle pressed,Button 設計準則) */}
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0">
+              <DataTableFilterPanel
+                columns={baseColumns}
+                value={filterTree}
+                onChange={setFilterTree}
+                prefilledColumnId={filterPrefilledId}
+                onPrefillConsumed={() => setFilterPrefilledId(undefined)}
+                onClose={() => setFilterOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+          {/* L3 Sort:global panel(Notion-style 多欄條件)
+              pressed prop:套用條件後 trigger 維持 active 視覺 */}
+          <Popover open={sortOpen} onOpenChange={setSortOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0">
+              <DataTableSortManager
+                columns={baseColumns}
+                sorting={sorting}
+                onSortingChange={setSorting}
+                onReset={() => setSorting([])}
+                onClose={() => setSortOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+          {/* L3 column visibility:Popover panel(對齊 Notion / Airtable column-settings panel)
+              標題 / search input / column list with Checkbox / Show all
+              drag-reorder 留 A.4(跟 column reorder 一起做)*/}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
+                  `<DataTableColumnVisibilityPanel>`(全 feature flag opt-in:search +
+                  reset + DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
+              <DataTableColumnVisibilityPanel
+                columns={baseColumns.map((c) => ({
+                  id: ((c as any).accessorKey ?? (c as any).id) as string,
+                  label: typeof (c as any).header === 'string' ? (c as any).header : ((c as any).accessorKey ?? (c as any).id),
+                }))}
+                visibility={columnVisibility}
+                onVisibilityChange={setColumnVisibility}
+                columnOrder={columnOrder}
+                onColumnOrderChange={setColumnOrder}
+                lockedIds={['sku']}
+                searchable
+                resettable
+              />
+            </PopoverContent>
+          </Popover>
+          <Button variant="primary" size="sm" startIcon={Plus}>新增商品</Button>
+          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+        </DataToolbar>
 
         {/* DataTable — bordered=true(height 約束 = 垂直滾動 trigger,per spec line 150)
             mx-loose:水平 padding(規則 1)
@@ -1207,6 +1207,7 @@ export const WithBulkActions: Story = {
                   isAll ? (
                     <>
                       已選取全部 {TOTAL} 個項目{selection.excluded.length > 0 ? `(排除 ${selection.excluded.length} 個)` : ''}。{' '}
+                      {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 2026-09-16 標記,另案評估 */}
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'include', ids: [] })}
@@ -1218,6 +1219,7 @@ export const WithBulkActions: Story = {
                   ) : (
                     <>
                       已選取本頁全部 {selectedCount} 個。{' '}
+                      {/* @anatomy-exempt-next: 同上,Gmail 式句中文字連結;2026-09-16 標記,另案評估 */}
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'all', excluded: [] })}
@@ -2101,9 +2103,9 @@ export const RoadmapAllInOne: Story = {
       <div className="flex flex-col w-full h-screen bg-canvas">
         {/* 效能診斷面板:只有網址帶 `?perfdebug` 才出現(見 perf-debug-overlay.tsx 檔頭的來由)。 */}
         <PerfDebugOverlay />
-        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions canonical L922+ Gmail/Linear/Notion idiom)*/}
-        <div className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-          <div className="flex-1 max-w-sm">
+        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions canonical L922+ Gmail/Linear/Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(2026-09-16)*/}
+        <DataToolbar
+          search={
             <Input
               size="sm"
               placeholder="搜尋 ID / 標題"
@@ -2111,64 +2113,63 @@ export const RoadmapAllInOne: Story = {
               onChange={(e) => setSearch(e.target.value)}
               startIcon={Search}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0">
-                <DataTableFilterPanel
-                  columns={columns}
-                  value={filterTree}
-                  onChange={setFilterTree}
-                  onClose={() => setFilterOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-            <Popover open={sortOpen} onOpenChange={setSortOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0">
-                <DataTableSortManager
-                  columns={columns}
-                  sorting={sorting}
-                  onSortingChange={setSorting}
-                  onReset={() => setSorting([])}
-                  onClose={() => setSortOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-72 p-0">
-                {/* Issue 3(2026-05-10)+ F1 fix(2026-05-10):primitive
-                    `<DataTableColumnVisibilityPanel>` + columnOrder/onColumnOrderChange wired
-                    →  panel 內啟 drag handle(per user 抓「為什麼還會有偏移?為什麼沒 drag?」)。
-                    Roadmap 跟 WithBulkActions(L1050+ 設計準則)現在對齊 — panel 內 drag 是
-                    primary reorder UX,DataTable header drag handle 是 secondary parallel
-                    affordance。 */}
-                <DataTableColumnVisibilityPanel
-                  columns={columns.map((c) => ({
-                    id: ((c as any).accessorKey ?? (c as any).id) as string,
-                    label: typeof (c as any).header === 'string' ? (c as any).header : ((c as any).accessorKey ?? (c as any).id),
-                  }))}
-                  visibility={columnVisibility}
-                  onVisibilityChange={setColumnVisibility}
-                  columnOrder={columnOrder.length > 0 ? columnOrder : columns.map((c) => ((c as any).accessorKey ?? (c as any).id) as string)}
-                  onColumnOrderChange={setColumnOrder}
-                  searchable
-                  resettable
-                />
-              </PopoverContent>
-            </Popover>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-          </div>
-        </div>
+          }
+        >
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0">
+              <DataTableFilterPanel
+                columns={columns}
+                value={filterTree}
+                onChange={setFilterTree}
+                onClose={() => setFilterOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover open={sortOpen} onOpenChange={setSortOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0">
+              <DataTableSortManager
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={setSorting}
+                onReset={() => setSorting([])}
+                onClose={() => setSortOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              {/* Issue 3(2026-05-10)+ F1 fix(2026-05-10):primitive
+                  `<DataTableColumnVisibilityPanel>` + columnOrder/onColumnOrderChange wired
+                  →  panel 內啟 drag handle(per user 抓「為什麼還會有偏移?為什麼沒 drag?」)。
+                  Roadmap 跟 WithBulkActions(L1050+ 設計準則)現在對齊 — panel 內 drag 是
+                  primary reorder UX,DataTable header drag handle 是 secondary parallel
+                  affordance。 */}
+              <DataTableColumnVisibilityPanel
+                columns={columns.map((c) => ({
+                  id: ((c as any).accessorKey ?? (c as any).id) as string,
+                  label: typeof (c as any).header === 'string' ? (c as any).header : ((c as any).accessorKey ?? (c as any).id),
+                }))}
+                visibility={columnVisibility}
+                onVisibilityChange={setColumnVisibility}
+                columnOrder={columnOrder.length > 0 ? columnOrder : columns.map((c) => ((c as any).accessorKey ?? (c as any).id) as string)}
+                onColumnOrderChange={setColumnOrder}
+                searchable
+                resettable
+              />
+            </PopoverContent>
+          </Popover>
+          <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
+          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+        </DataToolbar>
 
         {/* DataTable container — flex-1 min-h-0(撐滿 toolbar 跟 footer 之間 space) */}
         <div className="flex-1 min-h-0 mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)] flex flex-col">

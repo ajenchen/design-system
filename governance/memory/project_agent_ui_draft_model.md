@@ -24,6 +24,6 @@ v14 定稿後一度只存在於 scratchpad,repo 無副本,直接造成 2026-09-0
 
 **How to apply**:
 1. 任何 agent 面板相關工作**先讀該 planning 檔 §〇**;它與其他來源衝突時以它為準。
-2. **隔離令**:user 排定實作前,不得把該規格條款寫進 `packages/design-system/src/**`、token、hook、M-rule。
+2. **隔離令(已解除)**:2026-09-07 起 user 排定並落地實作(v14 + `agent-panel.spec.md`),後續改動走 spec / v14 的正常 propose 流程;未落地前那條「不得寫進 `packages/design-system/src/**`」只剩歷史意義。
 3. 禁把 §〇 條款降級成「未決」;引 user 原話一律逐字(M36(a))。
 4. 實作啟動時走正常 propose 流程,§〇 為需求輸入。
