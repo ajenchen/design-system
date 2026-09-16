@@ -90,7 +90,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | 容器寬 | 形態 | 面板 |
   |---|---|---|
   | ≥ 960 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器 × 3/8⌋)` |
-  | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**純提示、點了不關**) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
+  | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組),底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**純提示、點了不關**) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
 
   蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
@@ -483,8 +483,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     **拖曳(≥ 8px)放開不得開面板,且不得依賴事件時序**(2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,
     但我明明就只是要移動它而已」):瀏覽器對同一顆鈕補發的 click 由旗標吞掉,旗標只在**下一次 pointerdown** 才清、不用計時器
     (舊版 `setTimeout(0)` 在 click 晚一個 task 送達的環境 —— 遠端隔離 / 輸入代理 —— 會漏);鍵盤合成的 click(detail 0)不吞。
-    **拖曳的判準是放開點離按下點的距離,不是中途收到幾個 pointermove**:放開時把放開點再走一次同一套位置計算,pointermove 被代理
-    丟掉 / 合併(只剩按下與放開)時仍判成拖曳、仍落到同一個磁吸位置(舊版只在 pointermove 裡設 moved,0 個 move 放開在 80px 外會被當成點擊)。
+    **拖曳的判準不是「中途收到幾個 pointermove」**:放開時若尚未判成拖曳,再以放開點走一次同一套位置計算(門檻 / 磁吸帶 / 落點),
+    pointermove 被代理丟掉 / 合併(只剩按下與放開)時仍判成拖曳、仍落到同一個磁吸位置(舊版只在 pointermove 裡設 moved,0 個 move 放開在 80px 外會被當成點擊);
+    已判成拖曳的手勢維持原判、落點取最後一次移動。
     機械閘 `scripts/agent-fab-drag-click-invariant.mjs`(晚到 100ms 的 click 必被吞;0 個 move 放開在 80px 外不開面板;對照組先發 pointerdown 把旗標清掉必紅)。
   - **右緣帶**(磁吸區;2026-09-03 user 留言拍板幾何):寬 36(= `--field-height-md`;游標離右緣 ≤ 36 即進帶,已在帶內時
     再多 16px 才算離開,遲滯防抖);上緣 = 貼邊鈕圓心落在視窗中線(鈕頂 = 舞台高 ÷ 2 − 14);下緣 = 貼邊鈕底離家頂一個
@@ -591,7 +592,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 焦點在面板外(側邊欄 / 主內容 / Dialog)且那裡開著浮層 | **關該區自己的浮層,不跨區碰面板** | 作用域封閉在焦點所在區,跨區關會讓使用者失去他沒在看的東西 |
 
 **推論(不必另外訂)**:面板的關閉只有兩條路 —— header 的 `×`、以及 FAB 的切換。沒有第三條;**蓋板態底下的遮罩點了也不關**
-(遮罩純提示、自身不吃指標,2026-09-16 user 裁示,見「與 app 的推擠與斷點」)。
+(遮罩純提示:接住指標但沒有任何行為,2026-09-16 user 裁示,見「與 app 的推擠與斷點」)。
 
 ### 負向鐵律:AgentPanel 永不進入 Radix 的 DismissableLayer 疊
 

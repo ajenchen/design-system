@@ -108,7 +108,9 @@
 | 左留一道邊、邊距 = 滿版 modal 離視窗的最小邊距、底下鋪滿版遮罩、遮罩點了不關 | user 2026-09-16 原話:「Agent panel 在視窗小於 break point 之後會變成滿版的設計，我在想此時是否可以讓 agent panel 最左邊與視窗左邊維持一定的邊距（該邊距應該同滿版modal距離視窗的最小邊距，應該是48px?)，且此時該agent panel底下會有滿版的遮罩，若點擊到該遮罩不會有任何反應故點擊遮罩不會關閉agent panel,其單純只是用來讓使用者知道agent panel底下還有東西」;同則:「我把我的提案調整如上，你先忘掉我之前的提案以及你之前的對於提案的解法」 | 現行 SSOT。落到條 B、推導表、`agent-panel.spec.md`「與 app 的推擠與斷點」 |
 | 開工 | user 2026-09-16 原話:「照你建議開工」(建議 = 同日 AI 提案:一行樣式 + 重用並存遮罩、不新增 prop、不動 Esc / 關閉路徑 / 入口鈕 / 並排態) | 依原話採納 |
 | 邊距吃 Dialog 的 `--layout-space-viewport-inset`(48px),不新造 token | user 原話已指「同滿版 modal 距離視窗的最小邊距,應該是 48px?」;**AI 確認**該值的既有主人是 `dialog.spec.md`「Viewport Inset」與 `layoutSpace.spec.md` | 依原話落地 |
-| 遮罩重用 `lib/overlay-coexistence.ts` 的 `CoexistenceMask`(z-30、`--overlay`、替 `persistentElements` 挖洞),自身 `pointer-events:none`、無點擊行為 | **AI 建議**(理由:不手刻第二份遮罩;z-30 才不會壓過並存 modal z-40;無點擊行為 = user 要的「不會有任何反應」),user 以「照你建議開工」採納 | AI 建議、user 採納 |
+| 遮罩重用 `lib/overlay-coexistence.ts` 的 `CoexistenceMask`(z-30、`--overlay`、替 `persistentElements` 挖洞),**接住指標但無任何行為**(第一版寫成 `pointer-events:none`,同日第二次回報後撤回) | **AI 建議**(理由:不手刻第二份遮罩;z-30 才不會壓過並存 modal z-40;無行為 = user 要的「不會有任何反應」),user 以「照你建議開工」採納 | AI 建議、user 採納 |
+| 點留白處**不得**穿到底下的 modal | user 2026-09-16 第二次原話:「agent panel 變為近乎滿版時 若其底下有開啟的 modal, 為何點擊露出的遮罩會關閉agent panel底下的modal?? 照理說點擊該遮罩不應該發生任何事情吧?? root cause 是甚麼??」;根因 = 第一版遮罩 `pointer-events:none`,點擊穿到被抑制的宿主,並存 modal 的框外點擊偵測把它當框外 → 關;修法 = 遮罩加進面板保留集合、拿掉 pointer-events:none、共用遮罩算洞時「遮罩不是洞」、框外守衛把常駐殼子樹視為不關(閘:url-registry S9「留白處點一下 → 面板仍開、modal 仍開」) | 現行 SSOT |
+| 蓋板底色 `--surface-raised` + 陰影 `--elevation-200`(與 Sheet 同一組) | **AI 依既有 token 語意對齊**(semantic.css:遮蓋型浮層必不透明;`--elevation-300` 不存在,舊寫法等於無陰影;2026-09-16 最終驗證抓到) | 機械對齊,非新決策 |
 | 遮罩量的是**容器**不是視窗(容器 = 視窗時相同) | **AI 推導**(面板本來就以 absolute 住在容器裡,`agent-panel.spec.md`「量的是容器不是視窗」既有) | 沿用既有 |
 | 世界級 modal 抽屜的**預設**多為「點遮罩即關」(Material side sheet / Ant Drawer `maskClosable` 預設 true);本案刻意不關 | user 決定(上列原話「若點擊到該遮罩不會有任何反應」);各家皆提供「不關」的正式選項(MDC dialog `scrimClickAction` 設空、Ant `maskClosable=false`、Radix `onPointerDownOutside` preventDefault) | 刻意偏離預設,已記錄 |
 | Esc 不關面板、關閉仍只有 × 與入口鈕兩條路、入口鈕行為不變、斷點 960 與並排態不變 | **AI 建議**「其餘不動」,user 以「照你建議開工」採納 | AI 建議、user 採納 |

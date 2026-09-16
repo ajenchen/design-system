@@ -94,7 +94,7 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     ck(`G3 @${W} 並排態不畫蓋板遮罩`, !r.scrim, `scrim=${r.scrim}`)
   } else {
     // 2026-09-16 user 裁示(v14 來源總帳):蓋板不再蓋滿 —— 左留 Dialog 同一顆 --layout-space-viewport-inset、右貼齊容器、
-    // 底下鋪 CoexistenceMask(z-30、--overlay、不吃指標),點遮罩不關面板。
+    // 底下鋪 CoexistenceMask(z-30、--overlay、接住指標但無行為),點遮罩不關面板、也不穿到底下的 modal。
     ck(`G3 @${W} 蓋板左留 --layout-space-viewport-inset(token 實值 ${r.inset}px)`, Number.isFinite(r.inset) && r.inset > 0 && Math.abs(r.gapLeft - r.inset) <= 1, `面板左 − 容器左 = ${r.gapLeft}`)
     ck(`G3 @${W} 蓋板右緣貼齊容器`, Math.abs(r.gapRight) <= 1, `容器右 − 面板右 = ${r.gapRight}`)
     ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、留白處命中的是遮罩本身)`,

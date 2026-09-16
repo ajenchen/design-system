@@ -1109,6 +1109,32 @@ expect_pass_silent "15r. 同一則 bug 回報 → 被點名元件直接依賴的
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.tsx" "$TX_BUG_WHY" "const noop = 1"
 expect_block "15s. bug 回報只授權被點名的元件與其依賴,不相關元件仍 BLOCK" "BLOCKER"
 
+# 15t. 「不要改壞」是叮嚀不是回報;「做大一點」是改設計 → 不走 bug 回報捷徑,BLOCK
+TX_NOT_BUG="$TMP_DIR/tx_not_bug.jsonl"
+build_transcript "$TX_NOT_BUG" "把 fab 做大一點,不要改壞它"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_NOT_BUG" "const FAB_PX = 56"
+expect_block "15t. 「做大一點,不要改壞它」→ 改設計要求 + 否定叮嚀,不是 bug 回報 → BLOCK" "BLOCKER"
+
+# 15u. 「壞掉了嗎?」是問存在與否 → 不是回報,BLOCK
+TX_BUG_EXISTS_Q="$TMP_DIR/tx_bug_exists_q.jsonl"
+build_transcript "$TX_BUG_EXISTS_Q" "fab 壞掉了嗎?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_EXISTS_Q" "const noop = 1"
+expect_block "15u. 「fab 壞掉了嗎?」存在性問句 → BLOCK" "BLOCKER"
+
+# 15v. 依賴掃描認雙引號 import:dialog.tsx 用 \"@/design-system/lib/overlay-coexistence\" → 「dialog 壞掉了」可動該 lib
+TX_DIALOG_BUG="$TMP_DIR/tx_dialog_bug.jsonl"
+build_transcript "$TX_DIALOG_BUG" "並存的 dialog 壞掉了,遮罩整張被挖空"
+run_hook "Edit" "$REPO_ROOT/packages/design-system/src/lib/overlay-coexistence.ts" "$TX_DIALOG_BUG" "if (el.hasAttribute('data-coexistence-mask')) return []"
+expect_pass_silent "15v. 雙引號 import 的依賴(dialog.tsx → lib/overlay-coexistence)也算 remediation 範圍"
+
+# 15w. user 的全域修復授權(2026-09-16 原話;target 未點名、修正看起來像 UI)→ 全域 remediation scope,approved
+TX_GLOBAL_FIX="$TMP_DIR/tx_global_fix.jsonl"
+build_transcript "$TX_GLOBAL_FIX" "「確保所有更動都有追根究柢的修，該SSOT的部分都有確保SSOT,所有內容都有符合我們一致的設計語言且不違背世界級的設計，整個ds沒有漂移,確保所有相關問題都有一併被修正，然後確保沒有改壞任何原本好的地方，都有透過可驗證的方式自行驗證到完整完美，包括視覺稽查，確保所有都合乎我的要求」
+
+我猜上述可能你都已經確認好了，總之確保確認好之後就發版"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_GLOBAL_FIX" "isOverlay && 'absolute inset-y-0 right-0 z-[45] bg-surface-raised shadow-[var(--elevation-200)]'"
+expect_pass_silent "15w. 「確保所有相關問題都有一併被修正 / 該 SSOT 的部分都有確保 SSOT」→ 全域工程 remediation approved"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

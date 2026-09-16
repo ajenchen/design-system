@@ -391,7 +391,10 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             // 「窄螢幕,URL Modal 在被蓋住的宿主區」),低於**一般確認框**(z-50 —— 條 A「沒有 URL 的
             // Modal 阻擋其餘介面,包含 agent」)。第一版寫 z-[60] 把所有 Dialog 都壓在下面,
             // 連確認框也被面板蓋住(R3 實測),那是把「URL Modal 在後方」錯推成「所有 Dialog 在後方」。
-            isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45] shadow-[var(--elevation-300)]',
+            // 蓋板 = 遮蓋型浮層:底色與陰影跟 Sheet 同一組(sheet.tsx `bg-surface-raised shadow-[var(--elevation-200)]`)——
+            // `--surface` 在深色模式是半透明(semantic.css「非遮蓋型容器」),蓋在宿主上會讓底下文字透出來;
+            // `--elevation-300` 不存在(最高階 200),舊寫法等於沒有陰影、留白處看到的是硬切線(2026-09-16 驗證抓到)。
+            isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45] bg-surface-raised shadow-[var(--elevation-200)]',
             // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
             // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
             !resizable && !isOverlay && 'border-l border-divider',

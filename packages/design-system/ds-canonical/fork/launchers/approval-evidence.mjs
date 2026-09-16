@@ -775,7 +775,7 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
+  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
 const RESOLVED_UI_CHOICE_PATTERNS = [
   /(?:顏色|色彩|樣式|版型|間距|尺寸|大小|文案|標籤|圖示|互動|行為).{0,24}(?:改成|改為|換成|設為|採用|選擇|決定|統一)/u,
@@ -923,8 +923,12 @@ function remediationDecision(message, target) {
         ? 'global-engineering-remediation-scope'
         : null)
     if (!binding || !matchesAny(REMEDIATION_ACTION_PATTERNS, clause)) continue
+    // 全域修復授權(「確保所有相關問題都有一併被修正」)常與「該 SSOT 的部分都有確保 SSOT / 符合設計語言」分在不同句:
+    // binding 是全域範圍時,UI / 既有需求的語彙看整則訊息(2026-09-16 錨:最終驗證抓到蓋板底色 token 錯,修正被擋)。
     const scopeIsUiOrExistingRequirement = matchesAny(UI_DECISION_MARKERS, clause)
       || matchesAny(EXISTING_REQUIREMENT_PATTERNS, clause)
+      || (binding === 'global-engineering-remediation-scope'
+        && (matchesAny(UI_DECISION_MARKERS, normalized) || matchesAny(EXISTING_REQUIREMENT_PATTERNS, normalized)))
     if (!scopeIsUiOrExistingRequirement) continue
     if (matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, clause)) continue
     latest = { binding, message: normalized, clause }
@@ -1086,7 +1090,8 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
 // bug 回報語彙(2026-09-16):user 說「壞掉 / 改壞 / 一不小心就 / 本來好好的 / root cause」是在報缺陷、要求修回既有行為,
 // 依 AGENTS.md「Bug fix → AUTO」屬工程 remediation,不是 UI/UX 取捨。root cause 容錯常見誤拼(cuase / casue)。
 const BUG_REPORT_PATTERNS = [
-  /(?:壞掉|壞了|改壞|弄壞|失效|誤觸|誤開|一不小心就|明明(?:就)?只是|本來好好的|原本好好的|退化|報錯|閃退|崩潰|卡死|卡住)/u,
+  // 「不要改壞 / 別弄壞」是 user 的常態叮嚀,不是回報 → 否定詞後的「改壞 / 弄壞」不算
+  /(?:壞掉|壞了|(?<!不要|不能|不可|不會|不得|別|禁止|避免)改壞|(?<!不要|不能|不可|不會|不得|別|禁止|避免)弄壞|失效|誤觸|誤開|一不小心就|明明(?:就)?只是|本來好好的|原本好好的|退化|報錯|閃退|崩潰|卡死|卡住)/u,
   /\b(?:broke|broken|regress(?:ed|ion)?|root\s*c[aus]{3}e|misfir(?:e|es|ing)|accidental(?:ly)?)\b/iu,
 ]
 
@@ -1107,7 +1112,10 @@ function engineeringScopeDecision(message, target) {
   // 真正要擋的是把選擇丟回來的句子(要不要 / 是否 / 該不該 / 選哪個)與任何 UI 取捨字眼 → 那些照舊 fail closed。
   if (matchesAny(CHOICE_ASK_PATTERNS, normalized)
     || matchesAny(UI_DECISION_MARKERS, normalized)
-    || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, normalized)) return null
+    || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, normalized)
+    // 「fab 壞掉了嗎?」是在問存在與否、不是報缺陷;「把 fab 做大一點 / 改成方形」是改設計的要求、不是報缺陷 → 都不走這條
+    || messageClauses(normalized).some((clause) => /(?:嗎|吗)\s*[?？]*\s*$/u.test(clause) || /^\s*(?:is|are|does|did|has|have|was|were)\b.*\?\s*$/iu.test(clause))
+    || matchesAny(CHANGE_REQUEST_PATTERNS, normalized)) return null
   for (const clause of messageClauses(normalized)) {
     const binding = actionableTargetBinding(clause, target)
     if (binding) latest = { binding, message: normalized, clause, bugReport: true }
@@ -1120,6 +1128,11 @@ function engineeringScopeDecision(message, target) {
 }
 
 // 「要不要 / 是否 / 選哪個」= 把選擇丟回來;單純問號結尾不算(bug 回報的「為何…??」是問原因)。
+// 改設計的要求(不是報缺陷):bug 回報路徑一律不放行,回到一般 UI 取捨判定
+const CHANGE_REQUEST_PATTERNS = [
+  /(?:改成|改為|換成|設為|移到|搬到|做大|做小|放大|縮小|加大|調成|調整成|改個|換個)/u,
+  /\b(?:make\s+it|change\s+(?:it\s+)?to|move\s+(?:it\s+)?to|resize|enlarge|shrink)\b/iu,
+]
 const CHOICE_ASK_PATTERNS = [
   /(?:是否|要不要|該不該|能不能|可不可以|怎麼想|先討論|先評估|提案|比稿|選哪|哪(?:個|一個|種).{0,12}(?:比較好|較好|更好))/u,
   /\b(?:should\s+we|can\s+we|could\s+we|proposal|discuss|evaluate|which\s+one)\b/iu,
@@ -1143,7 +1156,7 @@ function dependentComponentBinding(normalized, target) {
   if (!lib) return null
   const root = srcRootFor()
   if (!root) return null
-  const needle = `lib/${lib[1]}'`
+  const needles = [`lib/${lib[1]}'`, `lib/${lib[1]}"`] // 單、雙引號的 import 都算(dialog.tsx 用雙引號)
   const files = []
   const walk = (dir, depth) => {
     if (depth > 4) return
@@ -1159,7 +1172,7 @@ function dependentComponentBinding(normalized, target) {
   for (const file of files) {
     let text
     try { text = readFileSync(file, 'utf8') } catch { continue }
-    if (!text.includes(needle)) continue
+    if (!needles.some((needle) => text.includes(needle))) continue
     const dependent = normalizeTarget(file)
     for (const clause of messageClauses(normalized)) {
       const binding = actionableTargetBinding(clause, dependent)
