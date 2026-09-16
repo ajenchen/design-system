@@ -372,6 +372,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 | 搜尋框是列裡唯一可壓縮的項目 | 外層 `flex-1`、上限 `max-w-sm`(384px)、**明確下限**(示範用 160px)| 瀏覽器排版預設「格子不得比自己的內容窄」(CSS Flexbox §4.5 automatic minimum size,<https://www.w3.org/TR/css-flexbox-1/#min-size-auto>),原生 `<input>` 內建約 20 字元寬 → 沒寫下限時整顆搜尋框卡在 204px 縮不下去,列往右溢出、主按鈕跑出容器(2026-09-16 user 抓到)|
 | 下限 = 放大鏡 + 內距 + 能完整顯示提示字 | sm 欄位 chrome 50px + 提示字寬;示範最長提示字「搜尋商品 / SKU」整顆需 146px → 取 Tailwind 刻度 160px(`min-w-40`)| 提示字比下限長就縮短提示字,不放大下限 |
 | 操作群不可壓縮 | `shrink-0` | 操作鈕的收合走上方「降級」規則(icon-only / 溢出),不靠被擠 |
+| 搜尋框 ↔ 操作群間距 | `--layout-space-loose`(16px) | 兩者是並列的元素,吃 `layoutSpace.spec.md` 的主間距;user 2026-09-16:「新增任務按鈕和搜尋框至少要間隔 loose space token」。操作群**內部**鈕與鈕仍是 `gap-2`(第五節「水平間距」)|
 | 列永不溢出;最後一顆操作鈕右緣 = 內容右緣 | 列 `min-w-0` | 機械閘 `scripts/action-bar-toolbar-invariant.mjs`:五個寬度 × 四支示範量像素 |
 | 空間連下限都放不下 | 本輪**不**收合搜尋框(user 2026-09-16:「目前先做到縮到下限即可」)| 世界級的下一步是「收成放大鏡、點了展開」:Carbon 表格工具列搜尋預設收合、聚焦展開、展開後 `inline-size: 100%`(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/data-table/action/_data-table-action.scss>);Polaris IndexFilters 小螢幕以搜尋鈕切到 Filtering 模式、查詢欄佔整列(<https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/IndexFilters/IndexFilters.tsx>);MUI Data Grid 快速篩選有觸發鈕展開 / 收合(<https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/quickFilter/QuickFilter.tsx>)—— 另立提案再做 |
 

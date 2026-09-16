@@ -191,6 +191,10 @@ expect_pass_silent "3. non-DS production path → skip"
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.stories.tsx" "$TX_NEUTRAL"
 expect_pass_silent "4. .stories.tsx in DS → skip (allowlist)"
 
+# 4b. stories-helpers/ 示範零件(只被 stories import)與 stories 同類 → silent(2026-09-16 data-toolbar 錨)
+run_hook "Edit" "/foo/my-project/packages/design-system/src/stories-helpers/scene/data-toolbar.tsx" "$TX_NEUTRAL" "className='gap-[var(--layout-space-loose)]'"
+expect_pass_silent "4b. stories-helpers/*.tsx in DS → skip (allowlist,story 專用零件)"
+
 # 5. A supplied transcript path that cannot be read is an infrastructure failure, not a denial.
 run_hook "Edit" "$PROD_TSX" "/nonexistent/path.jsonl"
 expect_integrity "5. supplied transcript file missing → integrity failure" "supplied approval transcript"

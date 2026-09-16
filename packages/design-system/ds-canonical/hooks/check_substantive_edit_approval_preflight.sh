@@ -53,8 +53,11 @@ while IFS= read -r candidate; do
   [ -z "$candidate" ] && continue
   case "$candidate" in
     packages/design-system/src/*.tsx|packages/design-system/src/*.ts|packages/design-system/src/*.css|*/packages/design-system/src/*.tsx|*/packages/design-system/src/*.ts|*/packages/design-system/src/*.css|apps/*.tsx|apps/*.ts|apps/*.css|*/apps/*.tsx|*/apps/*.ts|*/apps/*.css|node_modules/@qijenchen/design-system/*|*/node_modules/@qijenchen/design-system/*)
+      # stories-helpers/ 是 story 專用的示範零件(只被 *.stories.tsx import、不進 barrel、不進產品 API),
+      # 與 stories 同一類;2026-09-16 user 對示範工具列說「新增任務按鈕和搜尋框至少要間隔 loose space token」,
+      # 落地在 stories-helpers/scene/data-toolbar.tsx 卻被當成產品 SSOT 改動擋下 —— 分類錯位,不是授權缺口。
       case "$candidate" in
-        *.stories.tsx|*.test.*|*.spec.ts|*/scripts/*) ;;
+        *.stories.tsx|*.test.*|*.spec.ts|*/scripts/*|*/stories-helpers/*) ;;
         *) GOVERNED_PATHS="${GOVERNED_PATHS}${GOVERNED_PATHS:+
 }${candidate}" ;;
       esac
