@@ -121,4 +121,13 @@ for (const s of stretched) {
 if (stretched.length) {
   console.log('\n修法見 avatar.spec.md「外框 = 可見圓」:固定尺寸模式的最外層要鎖寬,不能只靠 shrink-0。')
 }
+// `--selftest` 的退出碼**是反過來的**(對齊本 repo 其他閘的 selftest 慣例,例如 overlay-detached-anchor):
+// 它問的是「偵測器會不會紅」,所以抓到注入的對照組 = 0(量具有效),沒抓到 = 1(量具失效)。
+// 2026-09-16 錨:一開始沿用正常判定的退出碼,`gate && gate --selftest` 於是在對照組被抓到時整條判失敗。
+if (SELFTEST) {
+  console.log(stretched.length
+    ? '✓ selftest:注入被拉寬的外框後偵測器判紅,量具有效'
+    : '✗ selftest:注入被拉寬的外框卻沒被抓到 —— 偵測失效')
+  process.exit(stretched.length ? 0 : 1)
+}
 process.exit(stretched.length ? 1 : 0)

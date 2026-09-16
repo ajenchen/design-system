@@ -12,5 +12,5 @@ let ok = true
 if (base.status !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL\n' + base.stdout + base.stderr); ok = false } else console.log('✓ baseline PASS(gate exit 0)')
 const sab = run(['--selftest', '--limit=1'])
 // 注:對照組只需要一支 story —— 注入點在第一支掃到的頁面上。
-if (sab.status !== 1) { console.error('✗ 對照組(被拉寬的外框)沒讓閘紅(detection 失效)\n' + sab.stdout + sab.stderr); ok = false } else console.log('✓ 對照組被抓(閘 exit 1)')
+if (sab.status !== 0) { console.error('✗ 對照組(被拉寬的外框)沒讓閘紅(detection 失效)\n' + sab.stdout + sab.stderr); ok = false } else console.log('✓ 對照組被抓(selftest exit 0)')
 process.exit(ok ? 0 : 1)
