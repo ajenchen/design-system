@@ -463,7 +463,7 @@ export const WithTabsInHeader = {
   render: () => (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="secondary">專案設定</Button>
+        <Button variant="tertiary">專案設定</Button>
       </DialogTrigger>
       <DialogContent>
         <Tabs defaultValue="general">
@@ -572,14 +572,14 @@ export const FocusTrapWithConcurrentOverlay: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <Button variant="tertiary" id="poc-outside-before">背景鈕(前)</Button>
       <Dialog defaultOpen>
         <DialogContent>
           <DialogHeader><DialogTitle>並存浮層測試</DialogTitle></DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-2">
-              <Button variant="secondary" id="poc-inside-1">Dialog 內鈕 1</Button>
-              <Button variant="secondary" id="poc-inside-2">Dialog 內鈕 2</Button>
+              <Button variant="tertiary" id="poc-inside-1">Dialog 內鈕 1</Button>
+              <Button variant="tertiary" id="poc-inside-2">Dialog 內鈕 2</Button>
             </div>
           </DialogBody>
           <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>
@@ -591,13 +591,13 @@ export const FocusTrapWithConcurrentOverlay: Story = {
           對照組因此建立不起來(2026-09-07 兩次都踩到)。 */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+          <Button variant="tertiary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+      <Button variant="tertiary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }
@@ -609,16 +609,16 @@ export const FocusTrapControlNoDialog: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <Button variant="tertiary" id="poc-outside-before">背景鈕(前)</Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+          <Button variant="tertiary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+      <Button variant="tertiary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }

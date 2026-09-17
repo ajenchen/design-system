@@ -236,7 +236,7 @@ function IssueDetail({ issue }: { issue: Issue | null }) {
       </DescriptionList>
       <div className="flex gap-2">
         <Button size="sm" variant="primary" startIcon={UserCheck}>分派給我</Button>
-        <Button size="sm" variant="secondary" startIcon={CheckCircle2}>標記完成</Button>
+        <Button size="sm" variant="tertiary" startIcon={CheckCircle2}>標記完成</Button>
       </div>
     </div>
   )

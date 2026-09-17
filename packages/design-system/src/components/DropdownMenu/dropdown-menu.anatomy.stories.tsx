@@ -862,7 +862,7 @@ const StateBehaviorInner = () => {
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm" endIcon={ChevronDown}>分享檔案</Button>
+                <Button variant="tertiary" size="sm" endIcon={ChevronDown}>分享檔案</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem startIcon={Copy}>複製連結</DropdownMenuItem>
@@ -901,7 +901,7 @@ const StateBehaviorInner = () => {
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm" endIcon={ChevronDown}>
+                <Button variant="tertiary" size="sm" endIcon={ChevronDown}>
                   欄位({[showMarketing, showAnalytics, showBilling].filter(Boolean).length})
                 </Button>
               </DropdownMenuTrigger>

@@ -101,7 +101,7 @@ export const UsageInButton: Story = {
         </Desc>
         <div className="flex items-center gap-3">
           <Button variant="primary" loading>儲存中</Button>
-          <Button variant="secondary" loading>處理中</Button>
+          <Button variant="tertiary" loading>處理中</Button>
           <Button variant="tertiary" loading>載入中</Button>
         </div>
       </div>

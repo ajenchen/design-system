@@ -143,7 +143,7 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">Live 範例</span>
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
-                <Button variant="secondary" startIcon={Info} size="sm">付款狀態</Button>
+                <Button variant="tertiary" startIcon={Info} size="sm">付款狀態</Button>
               </TooltipTrigger>
               <TooltipContent side="top">款項已於 2024/12/01 撥款至銀行帳戶</TooltipContent>
             </Tooltip>
@@ -245,7 +245,7 @@ const InspectorInner = () => {
           <div className="px-16 py-16 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
-                <Button variant="secondary" startIcon={Settings} size="sm">欄位設定</Button>
+                <Button variant="tertiary" startIcon={Settings} size="sm">欄位設定</Button>
               </TooltipTrigger>
               <TooltipContent side={side}>調整資料表的欄位顯示與排序</TooltipContent>
             </Tooltip>

@@ -86,7 +86,7 @@ export const UsageGuidance: Story = {
               icon={WifiOff}
               title="沒有資料"
               description="無法載入"
-              action={<Button variant="secondary">重新載入</Button>}
+              action={<Button variant="tertiary">重新載入</Button>}
             />
           </Frame>
           <Label warn>↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error</Label>

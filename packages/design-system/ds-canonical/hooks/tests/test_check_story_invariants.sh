@@ -554,6 +554,31 @@ export const A = () => {
 '
 expect_pass_silent "28f. R11 非 stories 檔 → 不檢查"
 
+# 28g. R12 secondary_variant_pair:單獨的 secondary 觸發鈕 → P0 BLOCK
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" onClick={fire}>複製檔案</Button>
+'
+expect_block "28g. R12 單獨的 secondary → P0 block" "R12 secondary_variant_pair"
+
+# 28h. R12 改成 tertiary(= cva 預設)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="tertiary" onClick={fire}>複製檔案</Button>
+'
+expect_pass_silent "28h. R12 tertiary → silent"
+
+# 28i. R12 真的正負並存(寫出負面選項)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '// @secondary-pair: 放棄變更(danger)
+<Button variant="secondary">儲存草稿</Button>
+<Button variant="secondary" danger>放棄變更</Button>
+'
+expect_pass_silent "28i. R12 @secondary-pair 豁免 → silent"
+
+# 28j. R12 Button 自家 stories 是 variant 展示場 → 不檢查
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.stories.tsx" '
+<Button variant="secondary">儲存草稿</Button>
+'
+expect_pass_silent "28j. R12 Button 自家展示場 → 不檢查"
+
 # 29. Multiple PostToolUse warnings from independent rules must become one exact envelope.
 STORIES_MULTI="$TMP_DIR/multi-warning.stories.tsx"
 cat > "$STORIES_MULTI" <<'EOF'

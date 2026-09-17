@@ -112,16 +112,30 @@ const SHIFT_FOOTER = () => {
 }
 
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
-const browser = await launchBrowser()
 const bad = []
 let scanned = 0
 let footersChecked = 0
 let liveFlips = 0
 let loadErrors = 0
+// 2026-09-18:CI 上這支跑滿 25 分鐘被取消(本機 6.6 分,runner 慢 ~2.5 倍)。
+// **不縮掃描範圍**(1034 支一支不少)—— 改成幾條車道平行跑,每條各自認領下一支 story。
+// **每條車道各開一個瀏覽器**,不是同一個瀏覽器開多個分頁 —— `lib/launch-browser.mjs` 檔頭寫得很清楚:
+// 本 repo 沙箱必須帶 `--single-process`,而那個參數下同一個 context 開多個 page「不穩」、
+// 第二個 context 會當場崩。照它寫的走多瀏覽器(它自己給的解),第一次寫成多分頁當場就爆了。
+const LANES = Number(arg('lanes', '4'))
+let cursor = 0
+const browsers = []
 try {
+  const lane = async () => {
+  const browser = await launchBrowser()
+  browsers.push(browser)
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   page.on('pageerror', () => {})
-  for (const s of stories) {
+  for (;;) {
+    if (SELFTEST && bad.length > 0) break
+    const idx = cursor++
+    if (idx >= stories.length) break
+    const s = stories[idx]
     scanned += 1
     try {
       await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
@@ -180,8 +194,12 @@ try {
     // (2026-09-17:原本 selftest 也走完整 1034 支,等於 CI 每次為同一個證明多付一輪掃描)。
     if (SELFTEST && bad.length > 0) { console.error(`… 對照組在第 ${scanned} 支就抓到了,提早收工`); break }
   }
-} finally {
+  await page.close()
   await browser.close()
+  }
+  await Promise.all(Array.from({ length: Math.max(1, LANES) }, () => lane()))
+} finally {
+  for (const b of browsers) await b.close().catch(() => null)
   await server.close?.()
 }
 

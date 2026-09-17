@@ -33,7 +33,7 @@ export const Default: Story = {
   render: () => (
     <Tooltip defaultOpen>
       <TooltipTrigger asChild>
-        <Button variant="secondary" startIcon={Info}>
+        <Button variant="tertiary" startIcon={Info}>
           自動套用品牌
         </Button>
       </TooltipTrigger>
@@ -70,7 +70,7 @@ export const LongText: Story = {
   render: () => (
     <Tooltip defaultOpen>
       <TooltipTrigger asChild>
-        <Button variant="secondary" startIcon={Info}>
+        <Button variant="tertiary" startIcon={Info}>
           API 金鑰安全說明
         </Button>
       </TooltipTrigger>

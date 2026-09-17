@@ -101,6 +101,13 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 - **哪種形狀不算**:`const X = () => { ...useState... }` 且**外層 render 沒有 state**、只渲染一次(Rating / DateGrid / Dialog 共 7 處)。外層不會重跑就不會重掛。判準是「外層 render 有沒有 state」,不是「有沒有寫在裡面」。
 - 對齊 React 官方文件「Do not define a component during rendering」(<https://react.dev/reference/rules/components-and-hooks-must-be-pure#do-not-define-a-component-during-rendering>)。
 
+## 按鈕 variant:單獨的按鈕一律 tertiary(2026-09-18)
+
+- **規則的主人是 `components/Button/button.spec.md`「Variant 控制視覺強調等級」表**,本節只是 story 層的落地與閘:
+  `secondary` **只用在正面與負面選項並存時代表正面那個**(儲存草稿 vs 放棄變更);單獨的觸發鈕 / 取消 / 一般輔助動作一律 `tertiary`——那也是 cva 預設(`button.tsx:217`,2026-06-06 從 primary 改過來)。
+- **錨**:2026-09-18 user 問「按鈕預設不是應該用 tertiary 嗎?我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」——查證後 **原則寫得很清楚,缺的是閘**:當天全 DS story 內 54 處 `variant="secondary"`,扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過 ±4 行內無 `danger` 兄弟),全是單獨觸發鈕或輔助動作。同日一次全改成 `tertiary`。
+- **閘**:`check_story_invariants.sh` R12 `secondary_variant_pair`(P0 BLOCKER)。Button 自家 stories 是 variant 展示場,天然豁免;真的成對時檔內寫 `// @secondary-pair: <並存的負面選項是什麼>`。
+
 ## 禁止
 
 - **展示層 story 禁原生 `<button>` / `<input>` / `<textarea>` / `<select>`**(hook `check_story_invariants.sh` R1 A.5,2026-09-08):raw 控件會吃到全域 `:focus-visible` 框、樣式跟 DS 元件不一致(user 抓到 agent 並存範例用滑鼠開 modal 就出鍵盤框)。例外只有 Radix `asChild` 觸發殼、`sr-only` 測試輔助、`@anatomy-exempt-next`。

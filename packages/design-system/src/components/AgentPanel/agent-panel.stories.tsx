@@ -556,7 +556,7 @@ export const LogoThinkStop: Story = {
     return (
       <div className="flex items-center gap-12 p-12">
         <AgentLogo state={state} size={72} label={state} />
-        <Button variant="secondary" size="sm" onClick={start}>思考 3 秒</Button>
+        <Button variant="tertiary" size="sm" onClick={start}>思考 3 秒</Button>
         <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
       </div>
     )

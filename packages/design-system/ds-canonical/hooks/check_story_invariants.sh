@@ -1141,6 +1141,44 @@ rule_component_in_render() {
   fi
 }
 
+# R12 — secondary_variant_pair(2026-09-18 codify per user:「按鈕預設不是應該用 tertiary 嗎?
+# 我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」)
+# 原則本身寫得很清楚(`button.spec.md`「Variant 控制視覺強調等級」表):
+#   secondary = **正面與負面選項並存**時代表正面那個(儲存草稿 vs 放棄);
+#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:217)。
+# 不清楚的不是規則,是**沒有任何東西在守**:當天全 DS 掃出 story 內 54 處 `variant="secondary"`,
+# 扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過無 danger 兄弟),
+# 全是單獨的觸發鈕 / 輔助動作,照表都該是 tertiary。同日一次改完。
+# 豁免:同檔 `// @secondary-pair: <並存的負面選項>` —— 真的成對時寫出那個負面選項是什麼。
+# Button 自家 stories 是 variant 展示場,天然豁免。
+# ─────────────────────────────────────────────────────────────────────────────
+rule_secondary_variant_pair() {
+  [ "$EVENT" = "PostToolUse" ] && return 0
+  case "$FILE_PATH" in
+    *.stories.tsx) ;;
+    *) return 0 ;;
+  esac
+  case "$FILE_PATH" in
+    */components/Button/*) return 0 ;;
+  esac
+  grep -q '@secondary-pair:' <<< "$NEW_CONTENT" && return 0
+  local hits
+  hits=$(grep -nE 'variant="secondary"' <<< "$NEW_CONTENT" || true)
+  if [ -n "$hits" ]; then
+    {
+      echo ""
+      echo "╔═══ R12 secondary_variant_pair — secondary 用在沒有負面選項並存的地方 ═══"
+      echo "[P0 BLOCKER] ${FILE_PATH}"
+      echo "$hits" | sed 's/^/  /'
+      echo "  button.spec.md 的 variant 表:secondary 只用在「正面與負面選項並存」時代表正面那個"
+      echo "  (儲存草稿 vs 放棄);單獨的觸發鈕 / 取消 / 輔助動作一律 tertiary —— 那也是 cva 預設。"
+      echo "  修:variant=\"secondary\" → variant=\"tertiary\"(或整個拿掉,預設就是 tertiary)。"
+      echo "  真的成對 → 檔內寫 // @secondary-pair: <並存的負面選項是什麼>"
+    } >&2
+    WORST=2
+  fi
+}
+
 # ─── Run rules ───
 rule_anatomy
 rule_slot_split
@@ -1153,5 +1191,6 @@ rule_story_archetype_registry
 rule_handcraft_overlay_header
 rule_link_canonical
 rule_component_in_render
+rule_secondary_variant_pair
 
 exit $WORST
