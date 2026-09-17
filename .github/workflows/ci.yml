@@ -650,11 +650,12 @@ jobs:
   verify-browser-sweeps:
     # 2026-09-17 拆出來的第七個 job。這兩支是「全 1034 支 story 掃一遍」等級的閘(各約 5–6 分鐘),
     # 先前掛在 dpr2 job(上限 25 分)上,兩支疊上原有的 DataTable 工作後在 04:43 撞上限被取消。
-    # 照本檔既有先例(overlay job 註解:「調高上限是錯的解,我試過,撞測試」)拆成平行 job:
-    # 兩支合計約 11 分鐘,在 15 分鐘內。
+    # 15 → 25(2026-09-17 同日修正):本機估 11 分鐘是錯的,CI runner 慢得多 ——
+    # 實測 Avatar 掃描 7.3 分、選項列前緣掃描 ≥ 9 分,加上安裝與兩次 build 後 15 分鐘被取消。
+    # 25 是掃描型 job 的既有檔位(datatable / dpr2 都是),也是 ci-workflow-scope 允許的上限。
     name: Verify browser(DS-wide story sweeps)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

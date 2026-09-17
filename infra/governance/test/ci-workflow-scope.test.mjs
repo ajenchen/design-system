@@ -34,14 +34,16 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // (砍掉的那次每一項判定其實都是綠的),原因是同一天把快速捲動閘 `--runs` 2→3、感知閘重跑上限 3→5 ——
   // 自己加的工作量,不是機器變慢。逾時本身不是品質訊號,但**上限仍是契約**:只有 DataTable 的三個瀏覽器 job
   //(像素 / 感知 / dpr2,2026-09-15 起)可以到 25,其餘一律 15,而且沒有任何 job 可以超過 25(否則就不再是「快速 deterministic 範圍」了)。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2'])
+  // verify-browser-sweeps 一併列入(2026-09-17):它跑兩支「全 1034 支 story 掃一遍」的閘,
+  // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps'])
   for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
     assert.equal(workflow.jobs[upstream].needs, null)
   }
-  assert.match(source, /\[ "\$STATIC" = success \] && \[ "\$BROWSER_DT" = success \] && \[ "\$BROWSER_DT3" = success \] && \[ "\$BROWSER_DT2" = success \] && \[ "\$BROWSER_UI" = success \] && \[ "\$BROWSER_OVERLAY" = success \] && \[ "\$BROWSER_AGENT" = success \]/)
+  assert.match(source, /\[ "\$STATIC" = success \] && \[ "\$BROWSER_DT" = success \] && \[ "\$BROWSER_DT3" = success \] && \[ "\$BROWSER_DT2" = success \] && \[ "\$BROWSER_UI" = success \] && \[ "\$BROWSER_OVERLAY" = success \] && \[ "\$BROWSER_AGENT" = success \] && \[ "\$BROWSER_SWEEPS" = success \]/)
   // The shell hooks only ever ran on macOS, which is how BSD-only `stat -c` / `date -d` fallbacks
   // shipped to Linux cloud sessions. This job is their Linux regression gate; it stays inside the
   // fast PR scope and stays out of `verify` so a hook failure reads as a hook failure.

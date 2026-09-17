@@ -75,7 +75,7 @@ const PROBE = ({ sabotage, tolerance }) => {
       }
     }
   }
-  return out
+  return { findings: out, sawOptions: document.querySelectorAll('[role="option"]').length > 0 }
 }
 
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
@@ -97,12 +97,10 @@ try {
         { timeout: 15_000 },
       ).catch(() => {})
       await page.waitForTimeout(140)
+      // 一支 story 只呼叫瀏覽器一次(2026-09-17:原本 PROBE 之後又跑一次 evaluate 數面板,1034 支就多 1034 次往返)
       const found = await page.evaluate(PROBE, { sabotage: SELFTEST, tolerance: EDGE_TOLERANCE_PX })
-      if (Array.isArray(found)) {
-        const hadPanel = await page.evaluate(() => [...document.querySelectorAll('[role="option"]')].length > 0)
-        if (hadPanel) panelsChecked += 1
-        for (const f of found) bad.push({ ...f, story: s.id, name: s.name })
-      }
+      if (found?.sawOptions) panelsChecked += 1
+      for (const f of found?.findings ?? []) bad.push({ ...f, story: s.id, name: s.name })
     } catch (error) {
       loadErrors += 1
       console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
