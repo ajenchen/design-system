@@ -430,24 +430,6 @@ jobs:
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --assert=on --latency-assert=off --out=tmp/datatable-content-bursts-2
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=off --out=tmp/datatable-content-wheel-2
 
-      - name: Avatar 錨點外框 DS-wide sweep (browser)
-        # 放在這個 job 是**時間預算**的安排,不是主題歸類:它要掃全部 1034 支 story(約 6 分鐘,不抽樣),
-        # 而本 job 上限 25 分、實測只用 4.2 分,是唯一裝得下的地方。原本放在 agent demo job(上限 15 分、
-        # 已用 9 分)會把它撐爆 —— 2026-09-16 實測 cancelled at 15.3 分。照本檔既有先例,
-        # 調高別的 job 上限會撞 ci-workflow-scope 契約,所以改放位置而不是改上限。
-        # 不變式:Avatar 當 hover card 觸發點時,最外層框必須等於看得見的圓;同一個假框也會讓狀態圓點
-        # 飛走、焦點框變膠囊(2026-09-16 user:「為何 avatar 觸發的 profile card 距離 avatar 這麼遠」)。
-        # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4);selftest 注入被拉寬的外框驗偵測力(只需一支 story)。
-        run: npm run test:avatar-anchor-box
-
-      - name: 浮層選項清單列前緣對齊 header 標題 (browser)
-        # 同樣放這個 job 是時間預算的安排(全 story 掃約 5 分鐘,本 job 上限 25 分)。
-        # 不變式:List-as-region 面板裡每一列的最前緣 = header 標題左緣(overlay-surface.spec.md 第 2 條)。
-        # 2026-09-17 錨:CommandItem 是兩層,px-loose 寫在 className 會落外層與內層 px-3 相加(16+12=28),
-        # 標題 17px / 勾選框 29px,而當時 `grep -rl "List-as-region" scripts/` 回 0 —— 完全沒有閘。
-        # selftest 把列多推 12px,簽名與當初的真實 bug 完全一致(607 vs 595,差 12px)。
-        run: npm run test:overlay-list-as-region
-
       - name: Preserve DataTable dpr2 perception evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -665,6 +647,50 @@ jobs:
           # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
           npm run test:overlay-detached-anchor
 
+  verify-browser-sweeps:
+    # 2026-09-17 拆出來的第七個 job。這兩支是「全 1034 支 story 掃一遍」等級的閘(各約 5–6 分鐘),
+    # 先前掛在 dpr2 job(上限 25 分)上,兩支疊上原有的 DataTable 工作後在 04:43 撞上限被取消。
+    # 照本檔既有先例(overlay job 註解:「調高上限是錯的解,我試過,撞測試」)拆成平行 job:
+    # 兩支合計約 11 分鐘,在 15 分鐘內。
+    name: Verify browser(DS-wide story sweeps)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: DS-wide story sweeps (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
+          # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
+          # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
+          npm run test:avatar-anchor-box
+          # 浮層選項清單每一列的最前緣必須對齊 header 標題(overlay-surface.spec.md 第 2 條 invariant)。
+          # 2026-09-17 錨:CommandItem 是兩層,px-loose 寫在 className 會落外層與內層 px-3 相加(16+12=28),
+          # 標題 17px / 勾選框 29px,而當時全 repo 沒有任何閘掃這條。
+          # selftest 把列多推 12px,簽名與當初真實 bug 完全一致(607 vs 595,差 12px)。
+          npm run test:overlay-list-as-region
+
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:
     # 五個真正跑東西的 job 平行跑(2026-09-08 單一 job 連兩次 15 分鐘逾時被取消:瀏覽器閘 586 秒 +
@@ -674,7 +700,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -686,9 +712,10 @@ jobs:
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
+          BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
