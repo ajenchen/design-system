@@ -97,7 +97,14 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 
 **3 條 invariant**(unique 解):
 1. **Item 自帶 `px-loose`**:item 水平 padding 由 item 自己承擔,body 的 chrome padding 撤為 0
-2. **Content 對齊 header title**:item content 左 = chrome `px-loose` 起點 = header title 左 X 軸對齊
+2. **列的最前緣對齊 header title**:item 的 padding-box 左緣 = chrome `px-loose` 起點 = header title 左緣 X 軸對齊。
+   **對齊的是列的前緣,不是文字** —— 列有前綴(勾選框 / icon / 頭像)時,文字自然被前綴推開,那是對的。
+   依據:`../element-anatomy/item-anatomy.spec.md:423`(content 槽佔剩餘空間,沒有自己的 x 錨點)、
+   `:665`(label x 受前綴尺寸影響,對齊只在同 group 內成立)、`:671`(跨 group 永不強求)、
+   `:677`(為了讓文字齊左而改前綴尺寸 = 錯誤示範)。同一條線的 footer 版本見下方「Footer px」段,
+   對齊的同樣是按鈕左緣而非按鈕文字。
+   **唯一要客製的就是列的水平內距**:選單脈絡預設 `px-3`(12px,= `tokens/uiSize/uiSize.css` 的 `--field-px`)
+   → 浮層裡換成 `px-loose`(16px)。除此之外不改列的任何幾何。
 3. **若 item 有 hover / selected 底色**:該底色必鋪滿 chrome 內邊,且 content 離底色邊緣 ≥ loose(item `px-loose rounded-md` 即同時滿足)。**底色有無不是 List-as-region 的判定條件** —— 見上方「判定條件(唯一)」
 
 幾何:

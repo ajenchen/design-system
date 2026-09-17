@@ -360,7 +360,7 @@ export const ListBody = {
               <CommandList>
                 <CommandGroup>
                   {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                    <CommandItem key={t} value={t} className="px-[var(--layout-space-loose)]">
+                    <CommandItem key={t} value={t} className="px-[var(--layout-space-loose)] [&>*]:px-0">
                       {t}
                     </CommandItem>
                   ))}

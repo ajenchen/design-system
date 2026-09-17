@@ -440,6 +440,14 @@ jobs:
         # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4);selftest 注入被拉寬的外框驗偵測力(只需一支 story)。
         run: npm run test:avatar-anchor-box
 
+      - name: 浮層選項清單列前緣對齊 header 標題 (browser)
+        # 同樣放這個 job 是時間預算的安排(全 story 掃約 5 分鐘,本 job 上限 25 分)。
+        # 不變式:List-as-region 面板裡每一列的最前緣 = header 標題左緣(overlay-surface.spec.md 第 2 條)。
+        # 2026-09-17 錨:CommandItem 是兩層,px-loose 寫在 className 會落外層與內層 px-3 相加(16+12=28),
+        # 標題 17px / 勾選框 29px,而當時 `grep -rl "List-as-region" scripts/` 回 0 —— 完全沒有閘。
+        # selftest 把列多推 12px,簽名與當初的真實 bug 完全一致(607 vs 595,差 12px)。
+        run: npm run test:overlay-list-as-region
+
       - name: Preserve DataTable dpr2 perception evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

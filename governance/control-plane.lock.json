@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:049403aa093acf7e8e565c747ee33238b01e433a8092505e9d63a191105b7bb0",
+      "hash": "sha256:74fd39dbff97b29aa2b35fee7eef2927a27929f3e8c71e998fb20deefecfaf6c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:545bbdc9aa7bb01f369e8098d8c0bd41d66cacb86c2d604fdaa221ea2d06d8d4",
+      "hash": "sha256:bf778000e5dd7500b34e9caeb66ae4b592e23a736ef0c9a16d05a86971185cdd",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:5c7a1d15f561a58b9ba69024fb5b4c0637b0dad8d9ab981ee3cbcd8a9cf9b320",
+  "inputDigest": "sha256:1bf0d854c1fa0bf68850ae5b0798e4c0278b3b0e05068c121282b9a5e8cbe9b4",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:786352e8ce724116dcd309887ad466cf3ed240ba28d9c2db6bd3b4c3e591e710",
+  "snapshotDigest": "sha256:b7497917dc715f6ba4d0f5861bda3e39e098ae89fe7cf6427d6080fa9bf3b48f",
   "sources": [
     {
       "hash": "sha256:956adc21a2ec2f8f2b7c0070cf3f03f74584d658bae39d1c4cc79c6d73e62f46",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:332f0a943da28f4d757cdd6ff1f4ef9774083d6f917c438676efd5d9d34959a3",
+      "hash": "sha256:cffd586be6d1d5dd8cf362140ffce60934a9718d1c0799c6988d4e28dc32e10e",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2568,12 +2568,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6a5738068f4c36a098e0de922efece6f308e11b8381d011597d7914e25e71a4b",
+      "hash": "sha256:e62ae12b316aca3a2ce3c437a8c5d7a1fa2a047fd5089dac72a5cce46bec7eca",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 21720,
+      "size": 21872,
       "type": "file"
     },
     {
@@ -3586,8 +3586,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 457,
-      "hash": "sha256:c2fb430b3d7b1c0def961a9fc2b5df2a3938efc6999f04b2c1ae2e942a143e3a",
+      "files": 458,
+      "hash": "sha256:4c2c6b01424e042280c2edf59d222dd0cfd0bdeffe5614daee21862fe060ee5d",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

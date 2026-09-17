@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:332f0a943da28f4d757cdd6ff1f4ef9774083d6f917c438676efd5d9d34959a3",
+      "hash": "sha256:cffd586be6d1d5dd8cf362140ffce60934a9718d1c0799c6988d4e28dc32e10e",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6a5738068f4c36a098e0de922efece6f308e11b8381d011597d7914e25e71a4b",
+      "hash": "sha256:e62ae12b316aca3a2ce3c437a8c5d7a1fa2a047fd5089dac72a5cce46bec7eca",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 21720,
+      "size": 21872,
       "type": "file"
     },
     {
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 457,
-      "hash": "sha256:c2fb430b3d7b1c0def961a9fc2b5df2a3938efc6999f04b2c1ae2e942a143e3a",
+      "files": 458,
+      "hash": "sha256:4c2c6b01424e042280c2edf59d222dd0cfd0bdeffe5614daee21862fe060ee5d",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
