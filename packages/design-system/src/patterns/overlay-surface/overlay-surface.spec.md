@@ -162,6 +162,24 @@ list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了�
 - 單擊即生效 → `DropdownMenu` / `SelectMenu`(浮層),**不用 Dialog**
 - 暫存選擇 + Save CTA 才 commit → `Dialog + MenuItem`(本 pattern)
 
+### 預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)
+
+**判準**:Dialog / Sheet / Popover 的 body **主體就是一份可以選的清單**時,**預設**走 List-as-region + 選單列,
+不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
+
+- **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:370`),DataTable 的欄位顯示面板也已經是
+  (`data-table-column-visibility-panel.tsx:196`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
+- **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
+  跟列用什麼元件是兩個獨立的軸。
+- **容器必須提供鍵盤與 listbox 結構**:裸用 `MenuItem` 是 `components/Menu/menu-item.spec.md`
+  「直接在 JSX 中用 `<MenuItem>` ❌ 禁止」明文禁止的。用 `Command`(cmdk)包起來 ——
+  它自帶方向鍵導覽與 `role="listbox"`,`SelectMenu` 內部走的就是這條路;
+  `CommandGroup` 自帶的 `py-2` 正好就是本 pattern 要的上下呼吸。
+  canonical 實作見 `components/Popover/popover.stories.tsx` 的 `StatusFilterPanel`。
+- **不適用**:那些列**根本不能被選**時(例如成員名單、通知設定這種展示列)—— 那不是選單,
+  走上面「何時該用 MenuItem vs hand-craft」表。**能被選的列不存在「reading mode」的情況**。
+
 ### M11 state walk hover 檢查(**僅當 item 有 hover / selected 底色時適用**;三題必同時 ✓)
 
 1. hover bg 左右邊 = chrome 邊?

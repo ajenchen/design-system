@@ -9,9 +9,9 @@ import {
   PopoverFooter,
   PopoverTitle,
 } from './popover'
+import * as React from 'react'
 import { Button } from '@/design-system/components/Button/button'
-import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
-import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/展示',
@@ -24,10 +24,25 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-export const FilterPanel: Story = {
-  name: '篩選面板',
-  render: () => (
-    <Popover>
+const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as const
+
+/**
+ * 狀態篩選面板 —— 兩支 story(互動版 / 截圖版)共用同一份內容,避免只改一邊造成漂移。
+ *
+ * body 主體就是一份可選清單 → 走 `overlay-surface.spec.md`「List-as-region in overlay body」:
+ * body 撤掉 chrome padding、`CommandGroup` 自帶 `py-2` 給上下呼吸、item 自帶 `px-loose`。
+ * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md:246` 要求選單項目待在提供鍵盤
+ * 導覽與 listbox 結構的容器內,`Command` 自帶方向鍵與 `role="listbox"`(`SelectMenu` 內部走同一條路)。
+ * item 的 `px-loose` 覆寫 `MenuItem` 預設的 `px-3`,讓文字左緣對齊 header 標題
+ * (`overlay-surface.spec.md:100` 第 2 條 invariant)。
+ */
+function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  // 暫存選擇:勾選只改這裡,按「套用」才 commit(對照 DropdownMenu 的 click 即觸發)。
+  const [staged, setStaged] = React.useState<string[]>(['待處理', '進行中'])
+  const toggle = (value: string) =>
+    setStaged((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]))
+  return (
+    <Popover defaultOpen={defaultOpen}>
       <PopoverTrigger asChild>
         <Button variant="tertiary" startIcon={Filter}>依狀態篩選</Button>
       </PopoverTrigger>
@@ -35,25 +50,38 @@ export const FilterPanel: Story = {
         <PopoverHeader>
           <PopoverTitle>依狀態篩選</PopoverTitle>
         </PopoverHeader>
-        <PopoverBody>
-          {/* 此 Popover 是「多選 + footer save CTA」模式 — 勾多項按「套用」才 commit。
-              區別於 DropdownMenu「click 即觸發」。CheckboxGroup 設計準則 自帶 zero-gap
-              + Context 隔離,取代既有手刻 grid div(2026-04-29 migration)。 */}
-          {/* CheckboxGroup zero-gap canonical(checkbox.spec.md L225)— 取代既有手刻 grid div */}
-          <CheckboxGroup>
-            <Checkbox defaultChecked label="待處理" />
-            <Checkbox defaultChecked label="進行中" />
-            <Checkbox label="已完成" />
-            <Checkbox label="已封存" />
-          </CheckboxGroup>
+        <PopoverBody className="!px-0 !pt-0 !pb-0">
+          <Command label="狀態選項">
+            <CommandList>
+              <CommandGroup>
+                {STATUS_OPTIONS.map((status) => (
+                  <CommandItem
+                    key={status}
+                    value={status}
+                    checkbox
+                    checked={staged.includes(status)}
+                    onSelect={() => toggle(status)}
+                    className="px-[var(--layout-space-loose)]"
+                  >
+                    {status}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </PopoverBody>
         <PopoverFooter>
-          <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
+          <Button variant="tertiary" size="sm" className="flex-1" onClick={() => setStaged([])}>清除</Button>
           <Button variant="primary" size="sm" className="flex-1">套用</Button>
         </PopoverFooter>
       </PopoverContent>
     </Popover>
-  ),
+  )
+}
+
+export const FilterPanel: Story = {
+  name: '篩選面板',
+  render: () => <StatusFilterPanel />,
 }
 
 /**
@@ -71,31 +99,7 @@ export const FilterPanel: Story = {
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
   tags: ['test-only'],
-  render: () => (
-    <Popover defaultOpen>
-      <PopoverTrigger asChild>
-        <Button variant="tertiary" startIcon={Filter}>依狀態篩選</Button>
-      </PopoverTrigger>
-      <PopoverContent align="start">
-        <PopoverHeader>
-          <PopoverTitle>依狀態篩選</PopoverTitle>
-        </PopoverHeader>
-        <PopoverBody>
-          {/* CheckboxGroup zero-gap canonical(checkbox.spec.md L225)— 取代既有手刻 grid div */}
-          <CheckboxGroup>
-            <Checkbox defaultChecked label="待處理" />
-            <Checkbox defaultChecked label="進行中" />
-            <Checkbox label="已完成" />
-            <Checkbox label="已封存" />
-          </CheckboxGroup>
-        </PopoverBody>
-        <PopoverFooter>
-          <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
-          <Button variant="primary" size="sm" className="flex-1">套用</Button>
-        </PopoverFooter>
-      </PopoverContent>
-    </Popover>
-  ),
+  render: () => <StatusFilterPanel defaultOpen />,
 }
 
 // SettingsPanel story 於 2026-04-20 移除:
@@ -112,7 +116,7 @@ export const OpenSnapshot: Story = {
 //   FilterPanel(多選 checkbox + footer save CTA — Popover canonical)即可。
 
 // BareBody 範例於 2026-04-20 移除:
-//   原 demo 是「選擇優先度」(5 個選項選一個)、手刻 `<Popover>` 內放 raw `<button>`
+//   原 demo 是「選擇優先度」(5 個選項選一個)、在浮層內手刻原生按鈕當作
 //   item 列表 — 這是 `<Select>` / `<DropdownMenu>` 的標準情境,不該走 Popover。
 //
 //   B1 決策(user):menu / select / combobox 早已定義過那種「格式化的選單範例」,

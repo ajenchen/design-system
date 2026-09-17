@@ -15,7 +15,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
@@ -349,18 +349,24 @@ export const ListBody = {
             <DialogTitle>選擇標籤</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            <div role="list" className="flex flex-col py-2">
-              {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                // 小 item 純文字 label → 用 MenuItem primitive(世界級 Linear Cmd+K / Polaris OptionList
-                // / Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)
-                // className 覆蓋 px-3 為 px-loose → 對齊 dialog header/footer(tailwind-merge 吃掉預設 px-3)
-                // list outer wrapper 已 `py-2`(menu group 8px breathing)+ body 撤 chrome padding,
-                // MenuItem 不需再外包 py-2
-                <MenuItem key={t} className="px-[var(--layout-space-loose)]">
-                  {t}
-                </MenuItem>
-              ))}
-            </div>
+            {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
+                Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
+                容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
+                menu-item.spec.md:246 禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
+                `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
+                Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
+                item className 覆蓋預設 px-3 為 px-loose → 文字左緣對齊 dialog header/footer。 */}
+            <Command label="標籤選項">
+              <CommandList>
+                <CommandGroup>
+                  {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
+                    <CommandItem key={t} value={t} className="px-[var(--layout-space-loose)]">
+                      {t}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
