@@ -59,7 +59,7 @@ type SelectionMode = 'single' | 'multiple' | 'none'
 /**
  * TreeView 的使用脈絡,決定 item 的水平 padding:
  * - `'sidebar'`:頁面側邊欄,用 `--layout-space-loose` token(md=16px / lg=24px,跟 density 連動)
- * - `'menu'`:浮層選單 / dropdown,px-3(12px),對齊 MenuItem / DropdownMenu
+ * - `'menu'`:浮層選單 / dropdown,取 `--item-px`(預設 12px),**對齊 MenuItem / DropdownMenu**
  */
 type TreeContext = 'sidebar' | 'menu'
 
@@ -67,7 +67,9 @@ type TreeContext = 'sidebar' | 'menu'
 // TreeItem 用 calc(var(--tree-px) + indent) 算出最終 paddingLeft。
 const CONTEXT_PX_VAR: Record<TreeContext, string> = {
   sidebar: 'var(--layout-space-loose)',  // md=16px, lg=24px(density 連動)
-  menu: '12px',                          // px-3,對齊 MenuItem / DropdownMenu
+  // 2026-09-17:原本是字面值 `'12px'` + 一句「對齊 MenuItem」的註解 —— 那是第二份,
+  // 註解自己就是「它遲早會漂」的自白。改讀同一顆 token(預設 var(--field-px) = 12px,零視覺改動)。
+  menu: 'var(--item-px, var(--field-px))', // 對齊 MenuItem / DropdownMenu(owner: item-anatomy.spec.md「Token: --item-px」)
 }
 
 /** Drag drop position — 拖放目標的三種位置 */

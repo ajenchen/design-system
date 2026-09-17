@@ -355,12 +355,15 @@ export const ListBody = {
                 menu-item.spec.md:246 禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
                 `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
                 Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
-                item className 覆蓋預設 px-3 為 px-loose → 文字左緣對齊 dialog header/footer。 */}
-            <Command label="標籤選項">
+                列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
+                整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
+                CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
+                token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
+            <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
               <CommandList>
                 <CommandGroup>
                   {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                    <CommandItem key={t} value={t} className="px-[var(--layout-space-loose)] [&>*]:px-0">
+                    <CommandItem key={t} value={t}>
                       {t}
                     </CommandItem>
                   ))}

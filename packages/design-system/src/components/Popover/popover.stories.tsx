@@ -33,18 +33,18 @@ const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as c
  * body 撤掉 chrome padding、`CommandGroup` 自帶 `py-2` 給上下呼吸、item 自帶 `px-loose`。
  * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md:246` 要求選單項目待在提供鍵盤
  * 導覽與 listbox 結構的容器內,`Command` 自帶方向鍵與 `role="listbox"`(`SelectMenu` 內部走同一條路)。
- * **列的水平內距是唯一要客製的東西**:選單脈絡預設 `px-3`(12px,= `--field-px`),浮層裡要換成
- * `px-loose`(16px),好讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
- * (`overlay-surface.spec.md:100` 第 2 條 + `:202` footer 同一條對齊線;對齊的是前緣不是文字 ——
- * `item-anatomy.spec.md:423` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
- * `:677` 把「為了讓文字齊左而改前綴尺寸」列為錯誤示範)。
+ * **列的水平內距是唯一要客製的東西**,而且**設在清單容器上、不是設在每一列**:
+ * 列的內距讀 `--item-px`(owner = `item-anatomy.spec.md`「Token: `--item-px`」,預設 `var(--field-px)` 12px);
+ * 這裡在 `Command` 根設一次 `var(--layout-space-loose)`(16px),整份清單(含空狀態 / 載入中訊息列)一起換。
  *
- * **為什麼寫成 `px-loose [&>*]:px-0` 而不是單一個 `px-loose`**:`CommandItem` 是兩層 ——
- * 外層 cmdk Item 負責「反白底色鋪滿整列」所以本來是 `p-0`,內層 `MenuItem` 才帶 `px-3`
- * (`command.tsx:326` / `:352-366`)。只寫 `px-loose` 會落在外層變成 16+12=28px:
- * 2026-09-17 實測標題在 17px、勾選框跑到 29px,整份清單比標題多縮排 12px。
- * 所以外層給 loose、內層歸零,底色仍鋪滿整列(背景會畫到 padding 底下)。
- * 機械閘:`scripts/overlay-list-as-region-invariant.mjs`。
+ * 目的是讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
+ * (`overlay-surface.spec.md:100` 第 2 條 + `:202` footer 同一條對齊線)。**對齊的是前緣不是文字** ——
+ * `item-anatomy.spec.md:423` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
+ * `:677` 把「為了讓文字齊左而改前綴尺寸」列為錯誤示範。
+ *
+ * **禁止寫在單列的 `className`**:`CommandItem` 是兩層,外層 cmdk Item 負責「反白底色鋪滿整列」恆為
+ * `p-0`(`command.tsx:326`),內層 `MenuItem` 才帶內距(`:352-366`)。寫在 className 會落在外層與內層相加 ——
+ * 2026-09-17 實測 16+12=28px,標題在 17px、勾選框跑到 29px。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
  */
 function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
   // 暫存選擇:勾選只改這裡,按「套用」才 commit(對照 DropdownMenu 的 click 即觸發)。
@@ -61,7 +61,7 @@ function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
           <PopoverTitle>依狀態篩選</PopoverTitle>
         </PopoverHeader>
         <PopoverBody className="!px-0 !pt-0 !pb-0">
-          <Command label="狀態選項">
+          <Command label="狀態選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
             <CommandList>
               <CommandGroup>
                 {STATUS_OPTIONS.map((status) => (
@@ -71,7 +71,6 @@ function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
                     checkbox
                     checked={staged.includes(status)}
                     onSelect={() => toggle(status)}
-                    className="px-[var(--layout-space-loose)] [&>*]:px-0"
                   >
                     {status}
                   </CommandItem>

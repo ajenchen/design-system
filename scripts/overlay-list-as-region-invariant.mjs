@@ -120,8 +120,10 @@ for (const b of bad) {
 }
 if (bad.length && !SELFTEST) {
   console.log('\n修法見 overlay-surface.spec.md「List-as-region in overlay body」第 2 條:')
-  console.log('列的水平內距換成 px-loose。注意 CommandItem 是兩層 —— className 落在外層,')
-  console.log('內層 MenuItem 的 px-3 要一起歸零(`px-[var(--layout-space-loose)] [&>*]:px-0`),否則會相加。')
+  console.log('在**清單容器**設一次 `--item-px: var(--layout-space-loose)`(整棵子樹的 row 一起換)。')
+  console.log('禁止寫在單列的 className:CommandItem 是兩層,className 落在外層 wrapper,')
+  console.log('會跟內層 MenuItem 的內距相加(2026-09-17:16+12=28px)。')
+  console.log('token owner:patterns/element-anatomy/item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。')
 }
 if (SELFTEST) {
   console.log(bad.length

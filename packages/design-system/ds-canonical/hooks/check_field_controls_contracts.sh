@@ -115,7 +115,7 @@ esac
 #   - 已 tokenize 的 `px-[var(--field-px)]`
 case "$FILE_PATH" in
   *.stories.tsx) ;;
-  */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx|*/packages/design-system/src/components/Field/*.tsx)
+  */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx|*/packages/design-system/src/components/Field/*.tsx|*/packages/design-system/src/components/Menu/*.tsx)
     if ! grep -qE '//[[:space:]]*@field-px-escape-allow:' <<<"$FILE_HEAD3"; then
       FIELDPX_HITS=$(grep -nE "0\.75rem|(^|[^a-zA-Z0-9-])!?(px|pr)-3([^0-9.]|$)" "$FILE_PATH" 2>/dev/null \
         | grep -vE '^[0-9]+:[[:space:]]*(//|\*|/\*)' \

@@ -115,7 +115,25 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 
 **與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
 
-**Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁。對齊 Ant Table(橫向 padding 不隨 density 變、縱橫分離)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:散落的 `px-3` / inline `0.75rem` 全收斂進此 token。
+**Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁。對齊 Ant Table(橫向 padding 不隨 density 變、縱橫分離)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:**form-context field 控件**散落的 `px-3` / inline `0.75rem` 收斂進此 token。
+
+**收斂範圍(2026-09-17 修正,原句寫「全收斂」是過度宣稱)**:此 token 是 **content gutter** 概念的源頭,
+由三個脈絡各自以 named token 取用,彼此可獨立 override:
+
+| 脈絡 | Token | 定義處 |
+|---|---|---|
+| form field | `--field-px`(本 token) | 本檔 |
+| DataTable cell | `--table-cell-px: var(--field-px)` | `components/DataTable/data-table.css` |
+| row / menu item | `--item-px: var(--field-px)` | `patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」 |
+
+選單列吃同一條 gutter 的理由:欄位的值與其選單的選項落在同一條線上(欄位值 = trigger 左緣 + 1px 邊框 + 12px;
+選單列 = popover 左緣 + 1px 邊框 + 12px,而 popover 預設貼齊 trigger 左緣)。2026-09-17 之前那是**兩個各自
+獨立的字面值**(`--field-px` vs `menu-item.tsx` 裸 `px-3`),建本 token 的 commit 只 migrate 了
+field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
+
+**不在此 gutter 概念內**:Button / Chip / SegmentedControl 的水平內距**跟著 role 走**
+(`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
+(「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
 ## Table Row
 
