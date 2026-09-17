@@ -200,7 +200,14 @@ try {
   await Promise.all(Array.from({ length: Math.max(1, LANES) }, () => lane()))
 } finally {
   for (const b of browsers) await b.close().catch(() => null)
-  await server.close?.()
+  // 2026-09-18:`server.close()` 會等既有連線排乾。單瀏覽器時排得掉,四個瀏覽器在 CI 上有 keep-alive
+  // socket 沒收乾 → 這裡永遠等下去。症狀極容易誤讀:主閘 16:59:37 印完「✓ 通過」,接著**19 分鐘零輸出**
+  // 直到 job 撞 25 分上限被砍,看起來像對照組跑很久,其實對照組一次都沒開始跑(npm 的 && 還沒輪到)。
+  // 給它一個上限,排不乾就不排了 —— 結論已經印完,連線怎麼收不影響判定。
+  await Promise.race([
+    Promise.resolve(server.close?.()),
+    new Promise((resolve) => setTimeout(resolve, 3_000).unref?.()),
+  ]).catch(() => null)
 }
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
@@ -229,3 +236,5 @@ if (liveFlips === 0) {
 }
 if (bad.length > 0) process.exit(1)
 console.log('\n✓ 全選按鈕的字跟勾選狀態一致、左緣貼齊列前緣,且是可 Tab 的真按鈕')
+// 明確結束:不靠事件迴圈自己排空(上面那個 race 只是保險,真正決定退出的是這一行)。
+process.exit(0)
