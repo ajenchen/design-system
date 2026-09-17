@@ -118,7 +118,7 @@ export const TaskAssistant: Story = {
     return (
       <PanelFrame logoState="think">
         {({ close, logoState }) => (
-        <AgentPanel>
+        <AgentPanel onClose={close}>
           <AgentPanelHeader title="衝刺待辦整理" logoState={logoState} activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage role="user">把這份待辦按優先級重排,衝突的排程幫我標出來。</AgentMessage>
@@ -169,7 +169,7 @@ export const Attachments: Story = {
     return (
       <PanelFrame>
         {({ close }) => (
-        <AgentPanel>
+        <AgentPanel onClose={close}>
           <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage
@@ -212,7 +212,7 @@ export const MultipleReplies: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="user">把 Q3 的客訴按原因分類,各給我前三名。</AgentMessage>
@@ -245,7 +245,7 @@ export const HistoryOpen: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">從標題或箭頭點開歷史;懸停或 Tab 到某一列會浮出改名與刪除。</AgentMessage>
@@ -263,7 +263,7 @@ export const NewConversation: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} onClose={close} />
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <Empty
@@ -315,7 +315,7 @@ export const DecisionCardOpen: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。</AgentMessage>
@@ -336,7 +336,7 @@ export const TitleTruncated: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。</AgentMessage>
@@ -354,7 +354,7 @@ export const DecisionCardSingle: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">只剩語氣沒定,選一個就能繼續。</AgentMessage>
@@ -375,7 +375,7 @@ export const DecisionSummaryInFlow: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">
@@ -489,7 +489,7 @@ export const Fab: Story = {
         </div>
         <AgentPanelDock defaultOpen={false} logoState={agentState}>
           {({ close, logoState }) => (
-            <AgentPanel>
+            <AgentPanel onClose={close}>
               <AgentPanelHeader
                 title="訂單異常排查"
                 activeConversationId="c1"

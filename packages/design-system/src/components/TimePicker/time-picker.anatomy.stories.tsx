@@ -26,6 +26,14 @@ export default meta
 
 type Story = StoryObj<typeof TimePicker>
 
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
+// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+const Swatch = ({ value }: { value: string }) => (
+  <span className="inline-block w-3 h-3 rounded-sm border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
+)
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => <TimePicker value="09:00" onChange={() => {}} aria-label="時間選擇器總覽" />,
@@ -38,9 +46,6 @@ export const Overview: Story = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
-    const Swatch = ({ value }: { value: string }) => (
-      <span className="inline-block w-3 h-3 rounded-sm border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
-    )
     return (
       <div className="flex flex-col gap-10">
         <div>

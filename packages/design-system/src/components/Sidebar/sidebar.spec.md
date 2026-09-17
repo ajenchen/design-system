@@ -128,6 +128,11 @@ SidebarProvider              ← 全域 context（open 狀態、cookie、快捷�
 
 **Chrome header 不跟 size 變**：`SidebarHeader` 固定用 `var(--chrome-header-height)`,只跟 **density** 連動,不跟 `size` prop 變——因為 header 是結構槽位,不是 row。**SidebarFooter 修正(2026-06-12 doc-to-code)**:footer 實作自 2026-04-14 起為 content-based(`flex flex-col py-2`,sidebar.tsx SidebarFooter,行為同 SidebarGroup),**非** fixed-h——單行高度由下方內容紀律保證,非結構鎖。
 
+**SidebarFooter 屬「列式 footer」(2026-09-17 codify)**:配方(`border-t` + `py-2` + **左右內距 0**)與判準的 owner 在
+`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」—— 底部內容需要**鋪滿容器兩側**時用這個配方,
+左右 gutter 由列自己帶;底部放**按鈕**則用 `SurfaceFooter`。同配方的另一個住所是 `components/Menu/menu-item.tsx` 的 `MenuFooter`。
+**本元件實作正確、不需更動**,此段只是把它掛進共同的判準 owner,避免兩處各自演化。
+
 **SidebarFooter user 區必單行(2026-06-12 明文,fork drift 防線;2026-07-30 帳號選單修正)**:名字單行(`text-body-lg` truncate)。footer user 行 = **帳號入口**,點開**帳號選單(`DropdownMenu`)**;職稱/email/工號等身份資訊歸帳號選單頂部 `DropdownMenuLabel` 第二行(`text-caption`)。**自己的 avatar 不掛 ProfileCard hoverCard**(ProfileCard 是看「別人」的人員卡;rule owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」的「入口開什麼」段,本處不重述)。(UserFooter canonical,sidebar.stories.tsx)。shadcn nav-user 的「name + email `text-xs` 兩行」是 demo 慣例非本 DS canonical(`text-xs` 同時違反下方 chrome typography 一律 `text-body-lg` 條);registry antiPattern `sidebar-footer-two-line` 機械攔。
 
 **SidebarHeader brand 必單行(2026-06-12 明文,fork drift anchor)**:Avatar 24 + 名稱單行,**無副標 slot**——Fixed-h chrome 結構上不可成長;plan/org 等第二行資訊歸 workspace switcher dropdown row,對齊 Slack/Notion/Linear 現行版單行。shadcn TeamSwitcher demo 的「Acme Inc + Enterprise」兩行是 demo 慣例非本 DS canonical(fork repo AI 曾以訓練先驗在 spec 沉默處回填此副標)。Registry antiPattern `sidebar-header-subtitle-second-line` 機械攔(flex-col 直接子層簽名)。

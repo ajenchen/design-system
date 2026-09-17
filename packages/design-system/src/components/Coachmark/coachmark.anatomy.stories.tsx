@@ -15,6 +15,17 @@ type Story = StoryObj
 
 // ── 1. Overview ──────────────────────────────────────────────────────────────
 
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
+// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
+  <label className="flex items-center gap-2 text-caption">
+    <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+    <span className="font-mono">{label}</span>
+  </label>
+)
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
@@ -105,12 +116,6 @@ export const Inspector: Story = {
     const [hasPrev, setHasPrev] = React.useState(true)
     const [hasSkip, setHasSkip] = React.useState(true)
 
-    const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
-      <label className="flex items-center gap-2 text-caption">
-        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-        <span className="font-mono">{label}</span>
-      </label>
-    )
 
     return (
       <div className="grid grid-cols-2 gap-8">

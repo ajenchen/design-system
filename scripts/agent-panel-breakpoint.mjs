@@ -78,9 +78,9 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
       inset, gapLeft: Math.round((P.left-H.left)*10)/10, gapRight: Math.round((H.right-P.right)*10)/10,
       scrim: !!scrim, scrimCoversHost: !!S && near(S.left,H.left) && near(S.right,H.right) && near(S.top,H.top) && near(S.bottom,H.bottom),
       scrimBg: scs?.backgroundColor ?? null, overlayBg, scrimZ: scs?.zIndex ?? null,
-      // 留白處命中的必須是遮罩本身(它接住指標、沒有行為);穿透到底下 = 會打到並存 modal 的外部點擊偵測(2026-09-16 user 第二次回報)
+      // 留白處命中的必須是遮罩本身(它接住指標);穿透到底下 = 會打到並存 modal 的外部點擊偵測(2026-09-16 user 第二次回報)
       stripHitsScrim: !!scrim && Number.isFinite(inset) && document.elementFromPoint(H.left + inset/2, H.top + H.height/2) === scrim,
-      // 留白正中一點:點下去什麼都不該發生
+      // 留白正中一點:點下去要關閉面板(2026-09-17)
       strip: Number.isFinite(inset) ? { x: H.left + inset/2, y: H.top + H.height/2 } : null }
   })
   if(r.err){ ck(`G3 @${W}`, false, r.err); continue }
@@ -103,7 +103,7 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     if (r.strip) {
       await pg.mouse.click(r.strip.x, r.strip.y); await pg.waitForTimeout(400)
       const after = await pg.evaluate(()=>{ const p=document.querySelector('[role="complementary"]'); return { open: !!p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0, mode: p?.dataset.agentPanelMode } })
-      ck(`G3 @${W} 點遮罩(留白處)不關面板(遮罩純提示)`, after.open && after.mode === 'overlay', JSON.stringify(after))
+      ck(`G3 @${W} 點遮罩(留白處)關閉面板`, !after.open, JSON.stringify(after))
     }
     ck(`G3 @${W} 蓋板態不渲染拖曳把手(寬度不再是可選的)`, !r.hasHandle, `hasHandle=${r.hasHandle}`)
   }

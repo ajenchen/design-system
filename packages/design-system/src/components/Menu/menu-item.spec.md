@@ -215,11 +215,19 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 ---
 
-## Footer（多選）
+## Footer（列式）
 
-`MenuFooter` 提供固定底部區域（`border-t` + `py-2`）。
+`MenuFooter` 提供固定底部區域（`border-t` + `py-2`，**左右內距 0**）。
 
-典型用途：「全選」checkbox item，使用 `checked="indeterminate"` 在部分選中時顯示 minus 圖示。
+**它屬於「列式 footer」**——判準與配方的 owner 在 `../../patterns/overlay-surface/overlay-surface.spec.md`
+「底部區域:按鈕列 vs 列式」：底部內容**需要鋪滿容器兩側**（整條可點、整條有滑過底色）時用它，左右 gutter 由列自己帶
+（`--item-px`）；底部放的是**按鈕**時改用 `SurfaceFooter`。同配方的另一個住所是 `components/Sidebar/sidebar.tsx`
+的 `SidebarFooter`（放帳號入口那一列），兩者都正確，要改配方兩邊要一起改。
+
+**2026-09-17 起不再用於「全選」**：SelectMenu 的多選全選已依 user 拍板改成 `SurfaceFooter` + 兩態按鈕
+（底部放的是按鈕不是列），見 `../SelectMenu/select-menu.spec.md`。
+
+典型用途：需要永遠置底、且**整條要鋪滿**的常駐列（Sidebar 帳號入口是同配方的代表）。
 
 ---
 

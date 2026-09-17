@@ -24,12 +24,28 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 
 ## 規則
 
+### 三個部位的機械把手(`data-slot`,2026-09-17 補)
+
+`SurfaceHeader` / `SurfaceBody` / `SurfaceFooter` 的根節點各帶一個固定 attribute:
+`data-slot="surface-header"` / `"surface-body"` / `"surface-footer"`。它是**給機械閘與稽核腳本用的定位點**,
+不是樣式 hook,也不是 consumer 該依賴的 API;`{...props}` 在它後面,consumer 真要覆寫仍覆寫得掉。
+
+**為什麼需要**:本檔的 invariant 幾乎都是「某個部位相對另一個部位」的幾何關係(列前緣 vs header 標題、
+footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位。2026-09-17 錨:
+`scripts/overlay-list-as-region-invariant.mjs` 原本寫 `[data-slot="popover-title"]` 等三個選擇器,
+全 DS grep 起來**一個都不存在**(當時整包只有 `tabs-list` 一個 `data-slot`),等於三個死選擇器
+靠最後的 `h2` 兜著才沒變成空綠。同一天補上這三個真 handle,並給該閘加了「一個面板都沒量到就算紅」的地板。
+
+對齊 shadcn/ui 的 `data-slot` 慣例(每個 sub-part 一個穩定 attribute)與 Radix 的 `data-*` part 契約。
+
 ### SurfaceHeader
+- 根節點帶 `data-slot="surface-header"`(column mode 與單列 mode 兩個分支都帶)
 - `border-b border-divider`(上下分隔;**例外**:`withTabs` / `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,`tabsSlot` 並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center gap-2 shrink-0`(不被 flex-grow 壓縮)
 
 ### SurfaceBody
+- 根節點帶 `data-slot="surface-body"`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:183 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScroll` story 的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
@@ -202,7 +218,45 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 - list outer 重複 `py-4` + item 各自 `py-2`(過鬆)
 - 不對稱 padding 無 rationale
 
+### 底部區域:按鈕列 vs 列式(2026-09-17 codify,判準 owner)
+
+浮層 / 面板的底部固定區有**兩種**,選哪一種只看一題:
+
+> **底部內容需要鋪滿容器兩側嗎**(整條可點、整條有滑過底色)?
+> **要 → 列式 footer**(左右內距 0,內容自己帶 gutter,沿用 MenuGroup 的 `py-2` 節奏)
+> **不要 → `SurfaceFooter`**(左右內距 `loose`,內容左緣對齊 header 標題)
+
+判準是「**誰負責左右 gutter**」—— 跟 `../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」是同一條線:
+列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。
+
+| | `SurfaceFooter` | 列式 footer |
+|---|---|---|
+| 典型內容 | 有邊界的按鈕(取消 / 儲存 / 今天 / 確定 / **全選 / 重設 / 套用**) | 一整列(Sidebar 的帳號入口、選單的常駐列) |
+| 左右內距 | `px-[var(--layout-space-loose)]`;**裝在沒有 header 的選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`**(見下方) | **0** |
+| 上下內距 | `py-[var(--layout-space-tight)]` | `py-2`(= `MenuGroup` 節奏) |
+| 排版 | `flex items-center justify-end gap-2`(單側時用 `justify-between`,先例 `components/Coachmark/coachmark.tsx`)| 直排全寬 |
+| 實作 | 本檔 `SurfaceFooter`(Dialog / Sheet / Popover footer 全是純轉發)| `components/Sidebar/sidebar.tsx` 的 `SidebarFooter`、`components/Menu/menu-item.tsx` 的 `MenuFooter` |
+
+**選取類浮層的 footer 內容順序**(2026-09-17 user 拍板):左側依序放**操作選取**的按鈕(全選 / 取消全選、重設),
+右側放**提交**類(套用);有哪個功能才渲哪顆,沒有就不渲。canonical 實作見
+`components/SelectMenu/select-menu.tsx` 的多選 footer。
+
+**`SurfaceFooter` 的左右內距要對齊誰:看那個浮層有沒有 header**(2026-09-17 補,同日錨):
+`loose` 這個預設值的用意是「對齊 header 標題」,前提是**真的有 header**。裝在**沒有 header 的選單**裡
+(`SelectMenu` 整份檔案不渲染任何 header),footer 唯一能對齊的是**它上面那些列**,這時要覆寫成列在用的
+同一個 token:`px-[var(--item-px,var(--field-px))]`。裸選單解出 12px、放進有 chrome 的浮層時容器已在
+Command 根把 `--item-px` 設成 `var(--layout-space-loose)` 解出 16px —— 同一個 token 兩種情境都對,
+不會多出第二個要同步的數字(M17)。錯誤示範(當天實測):沿用 `px-loose`,一般下拉選單裡按鈕左緣 33px、
+列前緣 29px,差 4px 肉眼看得出來。判準一句話:**footer 對齊的是同一個浮層裡「內容的左邊界」,
+有 header 時那是標題,沒 header 時那是列的前緣**。
+
+**為什麼列式 footer 不併進 `SurfaceFooter`**:它們的幾何差異是**內容驅動**的,不是兩份同樣東西 ——
+把一整列放進 `px-loose` 的容器會讓列的滑過底色縮在兩側各 16px 內,違反本檔「List-as-region」第 3 條
+(底色必鋪滿 chrome 內邊)。`SidebarFooter` 與 `MenuFooter` 是同一個配方的兩個住所,**兩者都正確**,
+本段是它們共同的判準 owner;要改配方(內距 / 邊線)兩邊要一起改。
+
 ### SurfaceFooter
+- 根節點帶 `data-slot="surface-footer"`(見上方「三個部位的機械把手」)
 - `border-t border-divider`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center justify-end gap-2 shrink-0`(右對齊按鈕列,不被壓縮)

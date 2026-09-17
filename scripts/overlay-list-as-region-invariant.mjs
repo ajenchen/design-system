@@ -50,7 +50,10 @@ const PROBE = ({ sabotage, tolerance }) => {
   for (const panel of panels) {
     const pr = panel.getBoundingClientRect()
     if (pr.width < 120 || pr.height < 60) continue
-    const title = panel.querySelector('[data-slot="popover-title"], [data-slot="dialog-title"], [data-slot="sheet-title"], h2')
+    // 2026-09-17:原本這裡寫 `[data-slot="popover-title"], [data-slot="dialog-title"], [data-slot="sheet-title"]`,
+    // 全 DS grep 起來一個都不存在(當時只有 tabs-list),等於三個死選擇器靠最後的 `h2` 兜著。
+    // 同日給 SurfaceHeader/Body/Footer 補上真的 data-slot 之後改成量得到的那個。
+    const title = panel.querySelector('[data-slot="surface-header"] h2, h2')
     if (!title) continue
     const options = [...panel.querySelectorAll('[role="option"]')]
       .filter((o) => { const r = o.getBoundingClientRect(); return r.width > 40 && r.height > 8 })
@@ -106,6 +109,9 @@ try {
       console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
     }
     if (scanned % 250 === 0) console.error(`… ${scanned}/${stories.length} 支掃完`)
+    // 對照組只要證明「弄壞了它會紅」,抓到第一筆就可以停 —— 沒必要再把剩下的 story 掃完
+    // (2026-09-17:原本 selftest 也走完整 1034 支,等於 CI 每次為同一個證明多付一輪掃描)。
+    if (SELFTEST && bad.length > 0) { console.error(`… 對照組在第 ${scanned} 支就抓到了,提早收工`); break }
   }
 } finally {
   await browser.close()
@@ -115,6 +121,10 @@ try {
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
 console.log(`含浮層選項清單的 story:${panelsChecked} 支`)
 console.log(`列前緣沒對齊標題:${bad.length} 筆`)
+if (!SELFTEST && panelsChecked === 0) {
+  console.log('\n✗ 一個帶選項清單的浮層都沒量到 —— 這支等於沒跑,不能當綠燈')
+  process.exit(1)
+}
 for (const b of bad) {
   console.log(`  ✗ ${b.story} :: ${b.name} — 列前緣 ${b.列前緣} vs 標題 ${b.標題左緣}(差 ${b.delta}px);「${b.文字}」`)
 }

@@ -133,9 +133,9 @@ export const Overview: Story = {
                   <Td mono>Menu primitive</Td>
                 </tr>
                 <tr>
-                  <Td mono>MenuFooter</Td>
-                  <Td>多選時的全選列(footer)</Td>
-                  <Td mono>Menu primitive</Td>
+                  <Td mono>SurfaceFooter</Td>
+                  <Td>多選時的全選按鈕(未全選「全選」/ 已全選「取消全選」;左側操作選取、右側留給提交類)</Td>
+                  <Td mono>overlay-surface primitive</Td>
                 </tr>
               </tbody>
             </table>
@@ -330,7 +330,7 @@ function SelectMenuInspector() {
                       </li>
                       {multiple && (
                         <li>
-                          <span className="font-medium text-foreground">MenuFooter</span> — border-t · 全選列(全部)
+                          <span className="font-medium text-foreground">SurfaceFooter</span> — border-t · 全選／取消全選 按鈕
                         </li>
                       )}
                     </ul>

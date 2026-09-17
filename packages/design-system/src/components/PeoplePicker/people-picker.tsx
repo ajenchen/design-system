@@ -93,6 +93,10 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
+  /** 多選 footer 全選按鈕文字 —— 還沒全選時。轉發 Combobox → SelectMenu(SSOT 住 SelectMenu);default「全選」 */
+  selectAllLabel?: string
+  /** 多選 footer 全選按鈕文字 —— 已全選時,點下去清空;default「取消全選」 */
+  deselectAllLabel?: string
   /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,field-controls.spec.md「Loading state」;2026-09-09 user 拍板
    *  收窄語意):機械轉發 wrapped Select / Combobox —— 觸發點右側、箭頭左邊的轉圈 + `aria-busy`。**不是**名錄載入;名錄載入用
    *  `optionsLoading`。 */
@@ -169,6 +173,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   searchPlaceholder = '搜尋人員…', // i18n-allow: DS default
   searchAriaLabel = '搜尋人員', // i18n-allow: DS default
   emptyText = '沒有人員', // i18n-allow: DS default(2026-09-08 一句到底,對應 No options)— only for SelectMenu noResultsText
+  selectAllLabel,
+  deselectAllLabel,
   loading = false,
   optionsLoading = false,
   filterOption = true,
@@ -390,6 +396,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
+        selectAllLabel={selectAllLabel}
+        deselectAllLabel={deselectAllLabel}
         loading={loading}
         optionsLoading={optionsLoading}
         filterOption={filterOption}

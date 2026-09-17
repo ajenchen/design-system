@@ -1495,16 +1495,21 @@ export const FilterPanelEmpty: Story = {
  * 不同的東西,所以這是「合併入口」不是「刪內容」:五種情境原封不動搬進同一支,各自帶標題。
  * 「空狀態」與「標籤與條件上限」維持獨立(前者是唯一的無條件態;後者帶互動測試,不動它最安全)。
  */
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
+// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
+  <section className="w-full max-w-[680px]">
+    <h3 className="text-body font-medium mb-1">{title}</h3>
+    {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
+    {children}
+  </section>
+)
+
 export const FilterPanelStates: Story = {
   name: '進階篩選 — 各種狀態',
   render: () => {
-    const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
-      <section className="w-full max-w-[680px]">
-        <h3 className="text-body font-medium mb-1">{title}</h3>
-        {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
-        {children}
-      </section>
-    )
 
     const [flat, setFlat] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',

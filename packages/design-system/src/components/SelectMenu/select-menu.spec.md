@@ -74,7 +74,7 @@ Popover（浮動容器，handle 展開 / 定位）
        │    ├─ CommandGroup（分組標題;0 筆選項的群組不畫;遠端搜尋關鍵字空時的建議清單必有標題「建議」,見「Suggestions」）
        │    │    └─ MenuItem（選項 row，消費 item-layout）
        ├─ CommandEmpty（在 CommandList 外、listbox 的兄弟 —— axe 不允許 listbox 內有非 option 子元素,MUI 同構;清單裡沒有任何可顯示的選項時才出現:MenuGroup 包一列 `MenuItem message` —「沒有選項」/ 載入列 `CommandLoading` /「輸入關鍵字搜尋」提示列,見「Empty state」「Loading」「Suggestions」）
-       └─ Footer（多選全選 checkbox，選填）
+       └─ SurfaceFooter（多選：全選／取消全選 按鈕，選填）
 ```
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
@@ -90,7 +90,7 @@ Popover（浮動容器，handle 展開 / 定位）
 透過 `multiple` prop 決定（`value` 型別只被 normalize 成內部 `selectedValues`，不參與模式判斷）：
 
 - **單選**（`multiple={false}`，預設）：`value: string | null`，選中後立即關閉浮層
-- **多選**（`multiple={true}`）：`value: string[]`，選中不關閉，可繼續選（footer 可顯示全選 checkbox）
+- **多選**（`multiple={true}`）：`value: string[]`，選中不關閉，可繼續選（footer 可顯示全選／取消全選按鈕）
 
 ---
 
@@ -140,7 +140,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **為什麼抓資料中清掉舊選項**(2026-09-09 user 原話「遠端搜尋時清掉舊選項,我覺得可以」;改 2026-07-04 Q3「不清空 stale options」的決定 —— Q3 對本機過濾仍成立):遠端結果跟舊關鍵字綁在一起,新關鍵字下舊清單是假結果。世界級第一手:Ant Design 官方示範每次抓都先清空(`setOptions([]); setFetching(true)`,轉圈放 `notFoundContent={fetching ? <Spin size="small" /> : 'No results found'}`,沒用 `loading` prop,`filterOption: false`,[select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx));Polaris Autocomplete 抓資料時藏掉選項只留載入列(`{optionsMarkup && (!loading || willLoadMoreResults) ? optionsMarkup : null}{loadingMarkup}`,[Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));react-select 非同步第一次搜尋同樣清空(`setPassEmptyOptions(!loadedInputValue)`,只有第一次載入後才留舊結果,[useAsync.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/useAsync.ts))。由 DS 在 SelectMenu 內做,consumer 不必自己 `setOptions([])`。
 
-**遠端搜尋沒有全選**:多選 footer 的「全部」在遠端模式不渲(清單永遠是部分選項,「全部」語意不成立)。
+**遠端搜尋沒有全選**:多選 footer 的全選按鈕在遠端模式不渲(清單永遠是部分選項,「全部」語意不成立)。
 
 機械閘:`scripts/menu-message-row-invariant.mjs` M8(建議群組 → 打字 → 舊清單不見、載入列在轉、觸發點 / 搜尋列不轉圈 → 後端回來換結果 → 打不存在的字「沒有選項」→ 清掉關鍵字回到建議)+ M10(建議群組標題)+ M11(提示列)。
 
@@ -238,7 +238,7 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 - **Empty**:已 codify(見「Empty state」段),真的沒有任何可選 + 非 creatable 時渲一列 `MenuItem message` 的 emptyText(與 1 筆結果等高,無最小高度);creatable 時保留 create row(可鍵盤選取)。
 - **遠端搜尋、關鍵字空**:有 `suggestions` → 建議群組(必有標題;此時即使 `optionsLoading` 也照列建議,不顯示載入列 —— 建議是明確的部分清單);沒有 `suggestions` 但有 `options` 且沒在抓 → 列 options 並加「建議」標題(也是部分清單;在抓時只剩載入列,不列舊 options);兩者都沒有且沒在抓 → 提示列「輸入關鍵字搜尋」,不是「沒有選項」;都沒有且在抓 → 載入列(見「Suggestions」與「遠端搜尋」狀態表)。
 - **遠端搜尋、抓資料中、creatable**:不顯示建立列 —— 結果還沒回來,不能判斷要不要建立;同名防重複連 `suggestions` 一起查(建議也是真實選項)。
-- **遠端搜尋、多選**:footer 全選不渲(部分清單)。
+- **遠端搜尋、多選**:footer 全選按鈕不渲(部分清單)。
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
@@ -294,7 +294,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 
 **Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 非搜尋模式開啟時 DOM 焦點落在 cmdk 殼(`handleNonSearchableAutoFocus`),殼與 `[cmdk-list]` 都寫了 `outline-none`(@focus-suppress A,承擔者 = CommandItem 的 `data-[selected=true]:focus-ring-inset`)。
 
-**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態經 visually-hidden `role="status"` + `aria-live="polite"` live region(`CommandEmptyStatus`)對 SR 播報(文字跟可見訊息列同步:「沒有選項」或「輸入關鍵字搜尋」),loading 由可見的 `CommandLoading` 訊息列 `role="status"` 播報(cmdk CommandEmpty 與訊息列都是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4,2026-09-08 搬進 Command)。建議群組的標題「建議」走同一套 cmdk `CommandGroup heading`(`role="group"` + `aria-labelledby`,2026-09-09),AT 讀到的是「建議,群組」而不是一份匿名清單。
+**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 的全選是**普通命令按鈕**(`<Button>`),**標籤隨狀態變**(未全選「全選」/ 已全選「取消全選」)、**不加 `aria-pressed`** —— W3C 按鈕規範(<https://www.w3.org/WAI/ARIA/apg/patterns/button/>)逐字「it is critical the label on a toggle does not change when its state changes」,標籤會變與 `aria-pressed` 兩條路互斥,本 DS 選前者(2026-09-17 user 拍板)。2026-07-05 D4 那版的 `role="checkbox"` + `aria-checked="mixed"` 隨之退場:它當初是為了讓一個 `<div>` 列可聚焦且不留孤兒 `role="option"`,換成真的 `<button>` 後兩個問題都不存在。「部分選取」不另設狀態槽也不補計數(user 2026-09-17:選了幾個在欄位本體一目了然,溢出還有數字提示)。空狀態經 visually-hidden `role="status"` + `aria-live="polite"` live region(`CommandEmptyStatus`)對 SR 播報(文字跟可見訊息列同步:「沒有選項」或「輸入關鍵字搜尋」),loading 由可見的 `CommandLoading` 訊息列 `role="status"` 播報(cmdk CommandEmpty 與訊息列都是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4,2026-09-08 搬進 Command)。建議群組的標題「建議」走同一套 cmdk `CommandGroup heading`(`role="group"` + `aria-labelledby`,2026-09-09),AT 讀到的是「建議,群組」而不是一份匿名清單。
 
 **Keyboard 行為**:
 
@@ -303,8 +303,8 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - ↑/↓ — 導覽 options(menu 開啟後)
 - Enter — 選擇
 - 字母鍵 — type-ahead 過濾(search 模式)
-- Tab(menu 開啟 + multi 模式)— DOM focus 移到 footer 全選列(`tabIndex=0`;全選列在 CommandList 之外、非 cmdk-item,cmdk 方向鍵導覽不涵蓋,故走 DOM focus。2026-07-05 D4 鍵盤可達修)
-- Enter / Space(focus 在全選列)— 切換全選 / 全清(handler `preventDefault`,cmdk root onKeyDown 檢查 defaultPrevented 故不會重複觸發 active option)
+- Tab(menu 開啟 + multi 模式)— DOM focus 移到 footer 的全選按鈕(真的 `<button>`,天生在 Tab 序裡;它在 CommandList 之外、非 cmdk-item,cmdk 方向鍵導覽不涵蓋)
+- Enter / Space(focus 在全選按鈕)— 切換全選 / 全清。瀏覽器原生按鈕行為,不需自寫 handler;cmdk root 的 Enter 只對 `[cmdk-item]` 的反白項派送,不會重複觸發
 - Esc — 關閉
 
 **Focus**:menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(`aria-activedescendant` 高亮,非 DOM focus;cmdk listbox 模式);searchable 時 DOM focus 給搜尋 input,非 searchable 時 DOM focus 移到 cmdk 的 `[cmdk-root]`(`Command` 元素,見 `handleNonSearchableAutoFocus`),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。option 為 `role="option"` 無 tabIndex,DOM focus 不落在 option 上。關閉時 focus 回 trigger。

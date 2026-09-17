@@ -58,6 +58,7 @@
     "test:data-table-hover-exclusivity": "node scripts/data-table-hover-exclusivity-invariant.mjs && node scripts/data-table-hover-exclusivity-invariant.mjs --selftest",
     "test:avatar-anchor-box": "node scripts/avatar-anchor-box-invariant.mjs && node scripts/avatar-anchor-box-invariant.mjs --selftest --limit=1",
     "test:overlay-list-as-region": "node scripts/overlay-list-as-region-invariant.mjs && node scripts/overlay-list-as-region-invariant.mjs --selftest",
+    "test:select-all-footer": "node scripts/select-all-footer-invariant.mjs && node scripts/select-all-footer-invariant.mjs --selftest",
     "measure:data-table-hover-scroll-cost": "node scripts/data-table-hover-scroll-cost.mjs",
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",

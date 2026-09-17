@@ -23,11 +23,13 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 所以照 2026-09-08 的先例再拆一個平行 job。
   // 2026-09-15:第七個跑東西的 job `verify-browser-datatable-perception`。DataTable 像素 job 跑到 24 分鐘貼著
   // 25 分鐘上限(8b1137c7 被砍),CI 逐支計時顯示感知 / 把手 / 釘選 resize 那段佔 10 分鐘,照 2026-09-10 拆 dpr2 的先例再拆。
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-sweeps', 'verify-static'])
+  // 2026-09-17:第八個跑東西的 job `verify-browser-select-all`。它跟 sweeps 一樣全 story 掃,但**還要開面板**
+  //(逐一點開觸發點、按一下全選、再量一次),本機 6.6 分,疊進 sweeps 必撞 25 分上限,所以自己一個 job。
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -36,8 +38,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   //(像素 / 感知 / dpr2,2026-09-15 起)可以到 25,其餘一律 15,而且沒有任何 job 可以超過 25(否則就不再是「快速 deterministic 範圍」了)。
   // verify-browser-sweeps 一併列入(2026-09-17):它跑兩支「全 1034 支 story 掃一遍」的閘,
   // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps']) {
+  // verify-browser-select-all 同列(2026-09-17):同樣是全 story 掃,而且每支還要開面板互動,本機 6.6 分。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -69,8 +72,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 6 → 7 / 4 → 5(2026-09-12):新增 verify-browser-overlay,它同樣自己 build storybook 與裝 chromium。
   // 7 → 8 / 5 → 6(2026-09-15):新增 verify-browser-datatable-perception,同樣自己 build storybook 與裝 chromium。
   // 8 → 9 / 6 → 7(2026-09-17):新增 verify-browser-sweeps(兩支全 story 掃描),同樣自己 build storybook 與裝 chromium。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 9)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 7)
+  // 9 → 10 / 7 → 8(2026-09-17):新增 verify-browser-select-all(多選 footer 標籤 / 狀態),同上。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 10)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 8)
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',

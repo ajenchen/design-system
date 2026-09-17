@@ -457,6 +457,11 @@ export interface ComboboxProps {
   emptyPlaceholder?: string
   /** 搜尋無結果提示(2026-07-04 Q4 拍板接線)— forward SelectMenu primitive SSOT(default「沒有符合的選項」) */
   emptyText?: string
+  /** 多選 footer 全選按鈕文字 —— 還沒全選時(2026-09-17 補轉發:原本 SelectMenu 有這個 prop 但沒有任何 wrapper 傳下去,
+   *  等於 Combobox / PeoplePicker / DataTable 的使用者永遠改不了文案);default「全選」 */
+  selectAllLabel?: string
+  /** 多選 footer 全選按鈕文字 —— 已全選時,點下去清空;default「取消全選」 */
+  deselectAllLabel?: string
   /** 可建立新選項(creatable tag,2026-07-18 user 拍板 forward)—— 搜尋非空且無完全同名既有選項時,
    *  dropdown 顯 create row(Plus + `createLabel`);forward 給底層 SelectMenu(邏輯/顯示/互動 SSOT 住在 SelectMenu)。
    *  僅 searchable 桌機路徑生效(需打字);native mobile 路徑不支援。對齊 Ant tags / react-select Creatable。 */
@@ -816,6 +821,8 @@ function CustomCombobox({
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
   emptyText,
+  selectAllLabel,
+  deselectAllLabel,
   creatable = false,
   onCreate,
   createLabel,
@@ -1041,6 +1048,8 @@ function CustomCombobox({
       suggestionsLabel={suggestionsLabel}
       searchHintText={searchHintText}
       emptyText={emptyText}
+      selectAllLabel={selectAllLabel}
+      deselectAllLabel={deselectAllLabel}
       options={menuOptions}
       value={value}
       onValueChange={onChange as (value: string | string[]) => void}

@@ -11,7 +11,8 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { Button } from '@/design-system/components/Button/button'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
@@ -21,7 +22,7 @@ import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select
  *
  * ── 功能 ──
  *   單選 / 多選、搜尋過濾、分組、可建立新選項（creatable）
- *   多選有 footer「全部」checkbox
+ *   多選有 footer 全選按鈕(兩態:全選 / 取消全選)
  *
  * ── 架構 ──
  *   Popover（浮動容器）
@@ -29,7 +30,7 @@ import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select
  *           ├── CommandInput（搜尋列,DS 單一實作,與 CommandDialog 共用）
  *           ├── CommandList（選項列表）
  *           │     └── CommandGroup → MenuItem
- *           └── Footer（多選全選）
+ *           └── SurfaceFooter（多選:全選 / 取消全選 按鈕)
  */
 
 // ── Types ──
@@ -110,8 +111,17 @@ export interface SelectMenuProps {
    * 2026-09-09 user 原則:「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態」→ 還沒搜尋不是「沒有選項」。
    */
   searchHintText?: string
-  /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
+  /**
+   * 多選 footer 的全選按鈕文字 —— **還沒全選時**顯示這個(2026-09-17 user 拍板兩段式)。
+   *
+   * 為什麼兩個 prop 而不是一個:W3C 的按鈕規範(https://www.w3.org/WAI/ARIA/apg/patterns/button/)
+   * 逐字寫「**it is critical the label on a toggle does not change when its state changes**」——
+   * 標籤會變就是普通命令按鈕、**不得加 `aria-pressed`**;要用 `aria-pressed` 則標籤必須固定。
+   * 兩條路互斥,本 DS 選「標籤會變」那條,所以兩個狀態各需一段文字。
+   */
   selectAllLabel?: string
+  /** 多選 footer 的全選按鈕文字 —— **已全選時**顯示這個,點下去清空(見 `selectAllLabel` 的規範依據)。 */
+  deselectAllLabel?: string
   /**
    * **選項清單**載入中(2026-09-09 user 拍板改名,原 `loading`;理由:DS 內 `loading` 已被 Field 家族佔走 =
    * 「這個值」在讀取 / 驗證 / 儲存(field-controls.spec.md「Loading state」),同字兩義是 2026-09-08 兩顆轉圈的病根)。
@@ -196,7 +206,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   emptyText = '沒有選項', // i18n-allow: DS default(2026-09-08 user 拍板:一句到底,對應 No options;打開就沒選項與搜尋無結果共用);consumer override via emptyText prop
   loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
   searchHintText = '輸入關鍵字搜尋', // i18n-allow: DS default(2026-09-09:遠端搜尋還沒打字、也沒建議時的提示);consumer override via searchHintText prop
-  selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
+  selectAllLabel = '全選', // i18n-allow: DS default; consumer override via selectAllLabel prop
+  deselectAllLabel = '取消全選', // i18n-allow: DS default; consumer override via deselectAllLabel prop
   optionsLoading = false,
   suggestions,
   suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
@@ -525,38 +536,44 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
 
           {/* SR 播報 0 筆(2026-09-09):由 Command 根自動渲(文字 = 上面 CommandEmpty 的字串 children),這裡不再另放,放了會播兩次 */}
 
-          {/* Multi-select footer: Select All
-              - 沒有選項時不顯示(selectableOptions.length === 0)
+          {/* Multi-select footer(2026-09-17 user 拍板 A 案:列式 footer + 三態勾選列 → SurfaceFooter + 兩態按鈕)
+              顯示條件**完全沿用原本的邏輯**,一條沒動:
+              - 沒有可選項時不顯示(selectableOptions.length === 0)
               - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義)
-              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立 */}
+              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立
+
+              **為什麼是 SurfaceFooter 而不是原本的 MenuFooter**:底部放的是**按鈕**不是整列 ——
+              判準見 `patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」。
+              `justify-between` 讓左側放操作選取的按鈕(全選 / 未來的重設)、右側留給提交類(未來的套用);
+              先例:`components/Coachmark/coachmark.tsx` 已用同一手法。
+
+              **左右內距覆寫成 `--item-px`,不用 SurfaceFooter 預設的 loose**:SelectMenu **從來不渲染
+              header**(整份檔案沒有 SurfaceHeader / PopoverHeader),所以這顆按鈕唯一能對齊的東西是**它上面那些列**。
+              而列的內距就是 `--item-px`:裸選單是預設 12px,放進有 chrome 的浮層時由容器在 Command 根設成
+              `var(--layout-space-loose)`(16px,見 `Popover/popover.stories.tsx` 與 `Dialog/dialog.stories.tsx`)。
+              兩種情境都讀同一個 token,按鈕左緣就永遠貼齊列的前緣,不會有第二個數字要同步(M17)。
+              2026-09-17 錨:一開始沿用 `SurfaceFooter` 預設的 `px-loose`,在**沒有 header 的一般下拉選單**裡
+              按鈕左緣 33px、列前緣 29px,差 4px 肉眼看得出來 —— 「對齊 header 標題」那句話在這個元件不成立,
+              因為它沒有 header。
+
+              **a11y:普通命令按鈕,標籤會變,不加 `aria-pressed`** —— W3C 按鈕規範
+              (https://www.w3.org/WAI/ARIA/apg/patterns/button/)逐字:「it is critical the label on a toggle
+              does not change when its state changes」;標籤會變與 `aria-pressed` 兩條路互斥,本 DS 選前者。
+              原本那一列的三態(`aria-checked="mixed"`)隨之消失 —— user 2026-09-17 拍板不補計數,
+              理由:選了幾個在欄位本體一目了然,溢出還有數字提示。
+              2026-07-05 D4 修的兩個問題(WCAG 2.1.1 鍵盤可達、孤兒 `role="option"`)由 `<Button>` 天然解決:
+              它是真的 `<button>`,本來就在 Tab 序裡、本來就不是 option。cmdk root 的 Enter 攔截只對
+              `[cmdk-item]` 的反白項派送,按鈕的 Enter 由瀏覽器原生處理,不需要再 preventDefault。 */}
           {multiple && !isRemote && selectableOptions.length > 0 && !search && (
-            <MenuFooter>
-              {/* 2026-07-05 D4:全選列鍵盤可達修 — 原裸 MenuItem(div 預設 role="option" 無 tabIndex)
-                  位於 CommandList 之外:cmdk 方向鍵只導覽 [cmdk-item]、Tab 也到不了 div → 鍵盤使用者
-                  完全無法操作全選(WCAG 2.1.1),且該 role="option" 無 listbox 祖先(orphan,axe
-                  aria-required-parent)。改真實 focusable checkbox 語意:tabIndex=0 + role="checkbox" +
-                  aria-checked(indeterminate → "mixed")+ Enter / Space 觸發;preventDefault 讓 cmdk root
-                  onKeyDown(源碼檢查 e.defaultPrevented)不會再對 active option 重複觸發 Enter。
-                  aria-selected 顯式蓋回 undefined(MenuItem 內建 aria-selected 對 role="checkbox" 無效)。 */}
-              <MenuItem
-                size={size}
-                checkbox
-                checked={allState}
+            <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+              <Button
+                variant="tertiary"
+                size="sm"
                 onClick={handleSelectAll}
-                role="checkbox"
-                aria-checked={allState === 'indeterminate' ? 'mixed' : allState}
-                aria-selected={undefined}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleSelectAll()
-                  }
-                }}
               >
-                {selectAllLabel}
-              </MenuItem>
-            </MenuFooter>
+                {allState === true ? deselectAllLabel : selectAllLabel}
+              </Button>
+            </SurfaceFooter>
           )}
         </Command>
       </PopoverContent>

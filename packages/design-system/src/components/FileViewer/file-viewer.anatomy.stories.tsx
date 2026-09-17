@@ -76,6 +76,25 @@ const OpenViewer: React.FC<{
 
 // ─── 1. Overview ─────────────────────────────────────────────────────────────
 
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 這支的實際後果:每按一次 checkbox,input 就重掛一次,焦點跟著掉。
+// 抓到這類寫法的是 `scripts/select-all-footer-invariant.mjs` 那天的全 DS 掃描,同一天五處一起搬出來。
+const Toggle = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: boolean
+  onChange: (v: boolean) => void
+}) => (
+  <label className="flex items-center gap-2 text-caption">
+    <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+    <span className="font-mono">{label}</span>
+  </label>
+)
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
@@ -296,21 +315,6 @@ export const Inspector: Story = {
     const [open, setOpen] = React.useState(false)
 
     const files = sampleFiles.slice(0, filesCount)
-
-    const Toggle = ({
-      label,
-      value,
-      onChange,
-    }: {
-      label: string
-      value: boolean
-      onChange: (v: boolean) => void
-    }) => (
-      <label className="flex items-center gap-2 text-caption">
-        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-        <span className="font-mono">{label}</span>
-      </label>
-    )
 
     return (
       <div className="grid grid-cols-1 gap-8 max-w-[1080px]">

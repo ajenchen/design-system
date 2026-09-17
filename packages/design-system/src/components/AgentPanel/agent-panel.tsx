@@ -190,12 +190,24 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
    * 詳 spec「與 app 的推擠與斷點」蓋板小節。
    */
   onModeChange?: (mode: AgentPanelMode) => void
+  /**
+   * 蓋板態下**點擊面板外的遮罩**時通知消費端關閉面板(2026-09-17 user 裁示,取代 2026-09-16 的「點了不關」)。
+   *
+   * 命名依據 `ds-canonical/references/props-naming.md`:`onClose` = 「關閉 overlay session —— 浮層關閉回背景」,
+   * 與 Dialog / Sheet / Popover / FileViewer 同一個名字同一個語意(不是 `onDismiss`,那是「暫時訊息被忽略」)。
+   *
+   * **面板不自己關**:`open` 一直是消費端控的(同 `onModeChange` 那段的分工),所以這裡只發通知。
+   * 沒傳 = 遮罩維持純提示、點了不關(向後相容,既有 consumer 一行都不用改)。
+   * 並排態沒有遮罩,此 prop 無作用。
+   */
+  onClose?: () => void
 }
 
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   (
     {
       open = true,
+      onClose,
       width,
       defaultWidth = PANEL_WIDTH_DEFAULT,
       onWidthChange,
@@ -361,6 +373,13 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             ref={scrimRef}
             keep={keepPanel}
             data-agent-panel-scrim=""
+            // 點遮罩關面板(2026-09-17 user 裁示,取代 2026-09-16 的「點了不關」;兩條裁示逐字都在 spec 的來源總帳)。
+            // 這一改讓它**回到** DS 既有的浮層語言:`../Dialog/dialog.spec.md`「Overlay click:點擊 overlay 關閉」、
+            // 「洞外點下去是外部點擊 → 關閉(modal 語意)」—— 先前的「點了不關」才是那條線上的例外。
+            // 並存 modal 時只關面板、modal 留著(2026-09-17 user 選 a 案):遮罩在面板的保留集合裡,
+            // 並存 modal 的外部點擊守衛看到目標落在保留區子樹內就不關,所以並存邏輯一行都不用動;
+            // 面板收掉後 modal 自然完整露出。鍵盤路徑不受影響(Esc 照舊)。
+            onClick={onClose}
             className="absolute animate-in fade-in-0 duration-[var(--motion-duration-surface)] motion-reduce:animate-none"
           />
         )}

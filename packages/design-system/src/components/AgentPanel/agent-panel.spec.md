@@ -90,7 +90,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | 容器寬 | 形態 | 面板 |
   |---|---|---|
   | ≥ 960 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器 × 3/8⌋)` |
-  | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組),底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**純提示、點了不關**) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
+  | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組),底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**點擊關閉面板**;2026-09-17 裁示,取代 2026-09-16 的「點了不關」) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
 
   蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
@@ -100,6 +100,15 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   modal 距離視窗的最小邊距,應該是 48px?),且此時該 agent panel 底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應故點擊遮罩不會關閉 agent panel,
   其單純只是用來讓使用者知道 agent panel 底下還有東西」。三個值全部借既有 SSOT、不新造:
   - **內距** = Dialog 的 `--layout-space-viewport-inset`(`../Dialog/dialog.spec.md`「Viewport Inset」是 owner;本元件是第二個消費者),量的是**容器**左緣(容器 = 視窗時相同);
+  - **遮罩點擊行為改動(2026-09-17 user 裁示)**:原裁示(2026-09-16,逐字保留在上方)是「若點擊到該遮罩不會有任何反應故點擊遮罩
+    不會關閉 agent panel」;2026-09-17 user 改裁示為**點擊遮罩關閉面板**。**後者取代前者**,舊句不刪(M36:兩條裁示都是 user 的,
+    保留才看得出演變)。改動理由與 DS 既有語言一致 —— `../Dialog/dialog.spec.md`「Overlay click:點擊 overlay 關閉」、
+    「洞外點下去是外部點擊 → 關閉(modal 語意)」,先前的「點了不關」反而是那條線上的例外。
+    **並存 modal 時只關面板、modal 留著**(2026-09-17 user 在 a / b 兩案中選 a):遮罩在面板的保留集合裡,並存 modal 的
+    外部點擊守衛看到目標落在保留區子樹內就不關,所以並存邏輯一行未動;面板收掉後 modal 自然完整露出。
+    **API**:`AgentPanel` 新增 `onClose`(命名依據 `ds-canonical/references/props-naming.md`「關閉 overlay session」,
+    與 Dialog / Sheet / Popover 同名同義);面板不自己關 `open`,只發通知(同 `onModeChange` 的分工)。
+    沒傳 `onClose` = 遮罩維持純提示、點了不關 → **既有 consumer 零改動**。鍵盤路徑不變(Esc 照舊)。
   - **遮罩** = `lib/overlay-coexistence.ts` 的 `CoexistenceMask`,與並存 Dialog 同一層 `z-30`、同一顆 `--overlay`、同樣替 `persistentElements` 挖洞
     (層級句見 `../Dialog/dialog.spec.md`「並存」段:遮罩 z-30 < 並存 modal z-40 < 代理蓋板 z-[45] < 一般 modal z-50);它是面板根節點的**兄弟**,
     **接住**留白處的指標但沒有任何行為 —— 點了什麼都不會發生:不關面板、也不會穿到底下去關掉並存的 modal 或碰到宿主

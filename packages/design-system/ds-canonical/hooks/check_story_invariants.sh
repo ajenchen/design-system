@@ -1110,6 +1110,37 @@ rule_link_canonical() {
   fi
 }
 
+# R11 — component_in_render(2026-09-17 codify;DataTable「進階篩選 — 各種狀態」篩選面板點一下就消失)
+# React 用「元件函式的身分」判斷是不是同一棵樹。元件寫在 story 的 `render()` 裡,外層每次 setState
+# 都會建立新函式 → React 視為換了元件 → **底下整棵樹卸載重掛**:輕則焦點掉,重則開著的浮層整個消失。
+# 簽名收到零誤判:只抓 4 空格縮排(= render 內)+ 大寫開頭 + **解構 props**(`= ({`)——
+# 那是「接 props 的元件」的確定形狀。零 props 的 `= () => {`(外層 render 無 state、只渲染一次,
+# Rating / DateGrid / Dialog 共 7 處)不在簽名內,不開罰。
+# P0 BLOCKER:規則有 SSOT(rules/story-rules.md)且可機械判定 → 依 feedback_ssot_mechanical 一律 block。
+# 豁免:檔首 `// @component-in-render-allow: <理由>`。
+# ─────────────────────────────────────────────────────────────────────────────
+rule_component_in_render() {
+  [ "$EVENT" = "PostToolUse" ] && return 0
+  case "$FILE_PATH" in *.stories.tsx) ;; *) return 0 ;; esac
+  grep -q '@component-in-render-allow:' <<< "$NEW_CONTENT" && return 0
+  local hits
+  hits=$(grep -nE '^    const [A-Z][A-Za-z0-9]* = \(\{' <<< "$NEW_CONTENT" || true)
+  if [ -n "$hits" ]; then
+    {
+      echo ""
+      echo "╔═══ R11 component_in_render — 元件定義在 render() 裡 ═══"
+      echo "[P0 BLOCKER] ${FILE_PATH}"
+      echo "$hits" | sed 's/^/  /'
+      echo "  React 用元件函式的身分判斷是不是同一棵樹:寫在 render() 裡,外層每次 setState"
+      echo "  都會換一個新函式 → 底下整棵樹卸載重掛。錨:DataTable「進階篩選 — 各種狀態」的 Section"
+      echo "  包住 DataTable,篩選面板開著時點任何一個選項整個面板就消失(2026-09-17 對照實測)。"
+      echo "  修:把元件搬到檔案 module 層(props 照舊傳)。SSOT:ds-canonical/rules/story-rules.md"
+      echo "  「元件一律定義在 module 層」。豁免:檔首 // @component-in-render-allow: <理由>"
+    } >&2
+    WORST=2
+  fi
+}
+
 # ─── Run rules ───
 rule_anatomy
 rule_slot_split
@@ -1121,5 +1152,6 @@ rule_story_baseline_reference
 rule_story_archetype_registry
 rule_handcraft_overlay_header
 rule_link_canonical
+rule_component_in_render
 
 exit $WORST
