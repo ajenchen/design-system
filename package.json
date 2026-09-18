@@ -62,6 +62,7 @@
     "test:unrestricted-option": "node scripts/unrestricted-option-invariant.mjs && node scripts/unrestricted-option-invariant.mjs --selftest",
     "test:field-text-left-edge": "node scripts/field-text-left-edge-invariant.mjs && node scripts/field-text-left-edge-invariant.mjs --selftest",
     "test:combobox-single-path": "node scripts/combobox-single-path-invariant.mjs && node scripts/combobox-single-path-invariant.mjs --selftest",
+    "test:rsync-checksum": "node scripts/rsync-checksum-invariant.mjs && node scripts/rsync-checksum-invariant.mjs --selftest",
     "test:overlay-footer-gutter": "node scripts/overlay-footer-gutter-invariant.mjs && node scripts/overlay-footer-gutter-invariant.mjs --selftest && node scripts/overlay-footer-gutter-invariant.mjs --selftest-crash --limit=3",
     "measure:data-table-hover-scroll-cost": "node scripts/data-table-hover-scroll-cost.mjs",
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",

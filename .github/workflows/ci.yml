@@ -111,6 +111,11 @@ jobs:
       - name: Registered test scripts nothing was running
         run: |
           npm run test:release-consent
+          # rsync -a 的預設判斷是「大小 + mtime 秒」,等長同秒會整個跳過且零訊息。
+          # 2026-09-18 beta.134 實證:consumer mirror 的 package-lock.json 換版號後與舊版
+          # 完全等長(292873 bytes 不變)、clone 又與生成同一秒 → lock 沒被複製過去、沒進 commit,
+          # 直到 consumer 的 npm ci 才炸。規則早就有,只是靠紀律守、漏了一處。
+          npm run test:rsync-checksum
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization

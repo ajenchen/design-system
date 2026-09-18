@@ -156,7 +156,13 @@ jobs:
           set -euo pipefail
           target="$RUNNER_TEMP/ds-product-template"
           git clone --depth=1 https://github.com/ajenchen/ds-product-template.git "$target"
-          rsync -a --delete --exclude=.git/ "$MIRROR/" "$target/"
+          # `--checksum` 不可省(失敗記憶索引 2026-07-28 + 2026-09-18 beta.134 實證):`rsync -a` 用
+          # 「大小 + mtime」快速判斷,而換版號的 package-lock.json **與舊版完全等長**
+          #(版本字串 / resolved URL / integrity base64 三者都是固定長度;實測 292873 bytes 不變),
+          # clone 與生成又落在同一秒 → lock 被靜默跳過、沒進 commit,consumer 的 `npm ci` 才炸
+          #(lock 釘 beta.133、package.json 要 beta.134)。前一步的 `✓ lock pins` 是綠的,
+          # 因為它驗的是 $MIRROR 裡那份,不是真的被複製過去的那份。
+          rsync -a --checksum --delete --exclude=.git/ "$MIRROR/" "$target/"
           /usr/bin/git -C "$target" add --all
           if /usr/bin/git -C "$target" diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
