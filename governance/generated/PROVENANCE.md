@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:956adc21a2ec2f8f2b7c0070cf3f03f74584d658bae39d1c4cc79c6d73e62f46` |
+| agent-bootstrap | `AGENTS.md` | `sha256:db92ae150d1d8ed2e44a48113b20bb42eeaf700d435d6f56ce593bf2237233c3` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:895d4090e5092caa15af04a3133541b90c4fd33ee3f394b4b14aa8aaaf12892d` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:4e69f665eeccd39315e82d0bd4fec1f7761be7b7bf2080854f921c161c0b1850` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
@@ -28,7 +28,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:e7cdeb61a4d185949f50e323001c9171b3888447a9f52ba1826eb7427556a334` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:1b02a04ff2af5c73862eaefdbcfde24805b1937c83f3fa5df7470749a5ea1ca9` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:297a37a0629bd7fbcf26a70888a4d0668f790c3c81a7e3cc5f2b148dfda16dbf` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:4af82c914215402c04b51922cd1a4ebb7aa36cd0f93852db3732028d21dba40a` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:a3cfb4d7c7d73cf7bb5caea01f6491e6082719b9559252fdccc4006f4e145694` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |

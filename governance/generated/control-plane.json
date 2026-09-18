@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:956adc21a2ec2f8f2b7c0070cf3f03f74584d658bae39d1c4cc79c6d73e62f46",
+      "hash": "sha256:db92ae150d1d8ed2e44a48113b20bb42eeaf700d435d6f56ce593bf2237233c3",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 25472,
+      "size": 26030,
       "type": "file"
     },
     {
@@ -166,7 +166,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:297a37a0629bd7fbcf26a70888a4d0668f790c3c81a7e3cc5f2b148dfda16dbf",
+      "hash": "sha256:4af82c914215402c04b51922cd1a4ebb7aa36cd0f93852db3732028d21dba40a",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
