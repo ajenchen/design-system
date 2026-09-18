@@ -205,7 +205,7 @@ try {
   // 直到 job 撞 25 分上限被砍,看起來像對照組跑很久,其實對照組一次都沒開始跑(npm 的 && 還沒輪到)。
   // 給它一個上限,排不乾就不排了 —— 結論已經印完,連線怎麼收不影響判定。
   await Promise.race([
-    Promise.resolve(server.close?.()),
+    server.stop(), // 先前是 `server.close?.()` —— 這個 helper 沒有 close,可選鏈讓它變成 no-op(2026-09-18)
     new Promise((resolve) => setTimeout(resolve, 3_000).unref?.()),
   ]).catch(() => null)
 }

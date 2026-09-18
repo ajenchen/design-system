@@ -109,7 +109,7 @@ try {
   }
 } finally {
   await browser.close()
-  await server.close?.()
+  await server.stop() // `close` 不存在於這個 helper,寫成 close?.() 會靜靜地不關(2026-09-18)
 }
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)

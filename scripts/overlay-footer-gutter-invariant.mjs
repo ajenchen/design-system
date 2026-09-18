@@ -212,7 +212,9 @@ try {
   await Promise.all(Array.from({ length: Math.max(1, LANES) }, () => lane()))
 } finally {
   for (const b of browsers) await b.close().catch(() => null)
-  await Promise.race([Promise.resolve(server.close?.()), new Promise((r) => setTimeout(r, 3_000).unref?.())]).catch(() => null)
+  // `stop()` 才是這個 helper 的 API —— 先前寫 `server.close?.()`,那個名字不存在,可選鏈讓它靜靜地什麼都沒做,
+  // 監聽中的 server 就一直把事件迴圈撐著:CI 上印完「✓ 通過」之後空轉 13 分鐘,直到 job 撞 25 分上限被砍(2026-09-18)。
+  await Promise.race([server.stop(), new Promise((r) => setTimeout(r, 3_000).unref?.())]).catch(() => null)
 }
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
@@ -257,3 +259,5 @@ if (bad.length) {
   process.exit(1)
 }
 console.log('✓ 全部 footer 的左緣都對齊它上方那疊東西')
+// 明確結束:不靠事件迴圈自己排空(同 select-all-footer-invariant.mjs 結尾)。
+process.exit(0)

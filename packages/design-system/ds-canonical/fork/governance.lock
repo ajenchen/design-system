@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
-      "sha256": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
+      "sha256": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",
       "source": "scripts/lib/a11y-static-server.mjs",
       "classification": null,
       "destination": "scripts/lib/a11y-static-server.mjs"
