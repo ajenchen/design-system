@@ -18,6 +18,9 @@
  *   E 關著時惰性   —— `unrestrictedValue` 有預設值(`__unrestricted__`),關著時若消費端剛好
  *                     有個選項叫這個名字,選別的選項 / 按全選都不可以把它吃掉。
  *                     這條沒有畫面,只會讓某個值無聲消失。
+ *   F 搜尋         —— 打它的字找得到,打別的字它消失;遠端要等結果回傳才出現。
+ *                     壞掉的樣子是「看得到的東西打了說沒有」——2026-09-18 修正前打「不限」
+ *                     會得到「沒有選項」,而那一列上一秒還在第一行。
  *
  * 量的都是幾何與 DOM 狀態(座標、`data-state`、`data-tag-text` 的有無),不是 class 字串(M32)。
  *
@@ -40,6 +43,7 @@ const STORY_MAIN = 'design-system-components-combobox-展示--unrestricted-optio
 const STORY_CONTRACT = 'design-system-components-combobox-展示--unrestricted-contract'
 const STORY_MSG = 'design-system-components-combobox-展示--unrestricted-message-states'
 const STORY_OFF = 'design-system-components-combobox-展示--unrestricted-off-inert'
+const STORY_SEARCH = 'design-system-components-combobox-展示--unrestricted-search'
 
 if (!existsSync(join(BUILD, 'index.json'))) {
   console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
@@ -162,6 +166,18 @@ const BREAK = {
     setInterval(() => { for (const m of marks()) m.setAttribute('data-state', 'unchecked') }, 10)
     return true
   },
+  // F:搜尋框一有字就把「不限」那列拔掉(等同 2026-09-18 之前 `isIdle` 那版的行為)
+  搜尋: () => {
+    const root = document.querySelector('[data-radix-popper-content-wrapper] [cmdk-root]')
+    if (!root) return false
+    const input = root.querySelector('input')
+    if (!input) return false
+    setInterval(() => {
+      if (!input.value) return
+      for (const row of root.querySelectorAll('[role="option"][data-unrestricted]')) row.remove()
+    }, 10)
+    return true
+  },
   // D:在訊息列狀態下硬塞一列「不限」進去
   訊息: () => {
     const root = document.querySelector('[data-radix-popper-content-wrapper] [cmdk-root]')
@@ -277,6 +293,60 @@ try {
   await page.waitForTimeout(400)
   const e2 = await 撞名還在()
   ck('E', '按全選之後,撞名的那個沒被吃掉', e2.勾, JSON.stringify(e2.列))
+  // ── F. 搜尋 ───────────────────────────────────────────────
+  // user 2026-09-18 原話:「如果要可以搜得到,不是應該遠端和非遠端都搜得到嗎?但前提是關鍵字要有
+  // 配對到吧?然後遠端搜尋的話,應該要等結果都回傳回來了才一起跟其他一般選項同時秀出?」
+  await goto(STORY_SEARCH)
+  const 清單 = async () => {
+    const p = await page.evaluate(PANEL)
+    return { 開著: p.開著, 字: (p.列 || []).map((r) => r.字), 不限在: (p.列 || []).some((r) => r.不限), 空訊息: p.空訊息 }
+  }
+  // 找不到搜尋框就記成失敗,不要丟例外 —— 對照組把列拔掉之後面板狀態可能不同,
+  // 一崩潰就看不到其他條有沒有被抓到(2026-09-18 第一版在這裡整支掛掉)。
+  const 打字 = async (q, waitMs) => {
+    const box = page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first()
+    const ok = await box.waitFor({ state: 'visible', timeout: 4_000 }).then(() => true).catch(() => false)
+    if (!ok) return { 開著: false, 字: [], 不限在: false, 空訊息: null, 沒有搜尋框: true }
+    await box.fill(q, { timeout: 4_000 }).catch(() => null)
+    await page.waitForTimeout(waitMs)
+    return 清單()
+  }
+  // 每格都重新載入 story:對照組會把面板弄成奇怪的狀態,殘留的浮層會擋住下一個觸發點的點擊
+  //(2026-09-18 實測:第一版在這裡 timeout 整支崩掉,其他條有沒有被抓到就看不到了)。
+  for (const [索引, 模式, 等待, 別的字] of [[0, '本機', 450, 'Elec'], [1, '遠端', 900, '客戶']]) {
+    await goto(STORY_SEARCH)
+    const 開得了 = await page.locator('[role="combobox"]').nth(索引).click({ timeout: 5_000 })
+      .then(() => true).catch(() => false)
+    ck('F', `${模式}:觸發點點得開(防假綠)`, 開得了)
+    if (!開得了) continue
+    await page.waitForTimeout(600)
+    if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
+    const 閒置 = await 清單()
+    ck('F', `${模式}:沒打字時「不限」在最上面`, 閒置.開著 && 閒置.不限在, JSON.stringify(閒置.字))
+    const 打它 = await 打字('不限', 等待)
+    ck('F', `${模式}:打「不限」找得到`, 打它.不限在, `列=${JSON.stringify(打它.字)} 訊息=${打它.空訊息}`)
+    const 打別的 = await 打字(別的字, 等待)
+    ck('F', `${模式}:打「${別的字}」時「不限」消失`, !打別的.不限在 && 打別的.字.length > 0, JSON.stringify(打別的.字))
+    const 打沒有 = await 打字('zzz', 等待)
+    ck('F', `${模式}:打無結果的字 → 空清單 + 訊息`, !打沒有.不限在 && !!打沒有.空訊息, `列=${JSON.stringify(打沒有.字)} 訊息=${打沒有.空訊息}`)
+    await page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first().fill('').catch(() => null)
+    await page.keyboard.press('Escape').catch(() => null)
+    await page.waitForTimeout(300)
+  }
+  // 遠端:載入中不得出現(user「等結果都回傳回來了才一起秀出」)
+  await goto(STORY_SEARCH)
+  await page.locator('[role="combobox"]').nth(1).click({ timeout: 5_000 }).catch(() => null)
+  await page.waitForTimeout(600)
+  if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
+  const box = page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first()
+  const 有框 = await box.waitFor({ state: 'visible', timeout: 4_000 }).then(() => true).catch(() => false)
+  if (有框) await box.fill('不限', { timeout: 4_000 }).catch(() => null)
+  await page.waitForTimeout(120)
+  const 載入中 = await 清單()
+  await page.waitForTimeout(700)
+  const 回傳後 = await 清單()
+  ck('F', '遠端:載入中「不限」不出現', !載入中.不限在, JSON.stringify(載入中.字))
+  ck('F', '遠端:結果回傳後「不限」才出現', 回傳後.不限在, JSON.stringify(回傳後.字))
 } finally {
   await page.close().catch(() => null)
   await browser.close().catch(() => null)
@@ -288,7 +358,7 @@ const 失敗 = results.filter((r) => !r.通過)
 
 if (SELFTEST) {
   // 四條各自要被抓到 —— 只看「有沒有紅」會讓一條紅掩護其他三條假綠
-  const 組別 = ['A', 'B', 'C', 'D', 'E']
+  const 組別 = ['A', 'B', 'C', 'D', 'E', 'F']
   const 缺 = 組別.filter((g) => !失敗.some((r) => r.組 === g))
   console.log(`\nselftest:被弄壞的 ${組別.length} 件事,抓到 ${組別.length - 缺.length}/${組別.length} 件`)
   if (缺.length === 0) { console.log('✓ selftest:每一條都各自紅了,這把量具會紅'); process.exit(0) }
@@ -296,5 +366,5 @@ if (SELFTEST) {
   process.exit(1)
 }
 if (失敗.length > 0) { console.log(`\n✗ ${失敗.length} 條不符`); process.exit(1) }
-console.log('\n✓「不限」列:自成一組排最上、互斥三條成立、欄位是純文字、三態訊息列不受影響、關著時完全惰性')
+console.log('\n✓「不限」列:自成一組排最上、互斥三條成立、欄位是純文字、三態訊息列不受影響、關著時完全惰性、搜尋得到')
 process.exit(0)

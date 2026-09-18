@@ -11,6 +11,9 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+// cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
+// 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
+import { defaultFilter } from 'cmdk'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
@@ -289,22 +292,34 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
   const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
 
-  // ── 不限(2026-09-18 user 拍板)──────────────────────────────────────────────
+  // ── 不限:什麼時候出現(2026-09-18 user 拍板)────────────────────────────────
   //
-  // **出現條件只有一句**:沒在搜尋、而且畫面上真的有選項可以顯示時才出現。
-  // 反過來說,那三種訊息列(載入中 / 沒有選項 / 輸入關鍵字搜尋)會出現的情境,「不限」一律不出現 ——
-  // user 原話:「這三種狀態有需要出現不限的選項嗎?應該不用出現吧」。
+  // 兩條各自獨立的規則:
+  //
+  // **(a) 三種訊息列的情境一律不出現**(user 原話:「這三種狀態有需要出現不限的選項嗎?應該不用
+  // 出現吧」)——載入中 / 清單真的沒東西 / 遠端還沒打字。這一條由 `!optionsLoading` 與閒置時的
+  // `visibleOptions.length > 0` 兩個條件落地。
+  //
+  // **(b) 搜尋時,跟一般選項一樣照關鍵字配對**(user 原話:「如果要可以搜得到,不是應該遠端和
+  // 非遠端都搜得到嗎?但前提是關鍵字要有配對到吧?然後遠端搜尋的話,應該要等結果都回傳回來了
+  // 才一起跟其他一般選項同時秀出?」)。
+  //   本機(cmdk 自己過濾):照渲染出來,cmdk 用 `value` + `keywords` 比,跟其他選項同一套規則。
+  //   遠端(`shouldFilter={false}`,cmdk 不過濾):cmdk 幫不上忙,自己用**同一支** `defaultFilter`
+  //     比一次;「等結果回傳」由 `!optionsLoading` 保證(載入中不出現)。
+  //
+  // 2026-09-18 之前這裡寫的是 `isIdle`(搜尋框一有字就整列不渲染)。那不是 user 說的,是我自己
+  // 放寬的 —— 後果是打「不限」兩個字會得到「沒有選項」,而那一列上一秒還在第一行(實測),
+  // 同時我傳的 `keywords` 變成永遠到不了的死碼。
   //
   // 這個條件同時解掉一個**不做就會無聲壞掉**的問題:cmdk 的訊息列只在「筆數 = 0」時渲
-  //(`node_modules/cmdk`:`P(u => u.filtered.count === 0) ? <div cmdk-empty> : null`),
-  // 而沒搜尋 / 關閉過濾時 `count = 已註冊列數`。所以只要「不限」是一顆會被註冊的列,它一旦存在,
-  // 那三句話就**永遠不再出現**(畫面只是少一行字,很難發現)。
-  // 照上面的條件寫,「不限」只在已經有選項(筆數 > 0、本來就不該出訊息)時才存在 —— 兩邊自動相容,
-  // 不需要 `forceMount` 或任何繞過 cmdk 筆數的機制。
-  //
-  // `visibleOptions` 已經把四種情境算好了(:258-262):非遠端 = options;遠端+閒置+有建議 = suggestions;
-  // 遠端載入中 = [];遠端搜尋後 = options。所以這裡只要再擋掉「正在搜尋」與「正在載入」。
-  const showUnrestricted = multiple && unrestricted && isIdle && !optionsLoading && visibleOptions.length > 0
+  //(`node_modules/cmdk`:`P(u => u.filtered.count === 0) ? <div cmdk-empty> : null`)。
+  // 本機模式「不限」是一顆會被註冊、也會被過濾的普通列,筆數自然正確;遠端模式不過濾,
+  // 但它只在配對到時才渲染,所以「沒有選項」該出現的時候仍然出得來。兩邊都不需要 `forceMount`
+  //(那會讓它不被計入筆數,反而造成「不限 + 沒有選項」同時出現)。
+  const unrestrictedMatchesSearch = isIdle
+    ? visibleOptions.length > 0
+    : !isRemote || defaultFilter(unrestrictedValue, search, [unrestrictedLabel]) > 0
+  const showUnrestricted = multiple && unrestricted && !optionsLoading && unrestrictedMatchesSearch
 
   // 開發模式警告:保留值跟真實選項撞名 → cmdk 以 value 當 identity,撞名會雙亮 + 選錯(同 `__create__` 的病)
   if (process.env.NODE_ENV !== 'production' && unrestricted && options.some((o) => o.value === unrestrictedValue)) {

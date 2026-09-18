@@ -327,6 +327,64 @@ export const UnrestrictedContract: Story = {
   ),
 }
 
+// 契約 probe:「不限」跟搜尋的關係(2026-09-18 user 拍板:遠端與本機都要搜得到,前提是關鍵字
+// 配對到;遠端要等結果回傳才跟一般選項一起出現)。閘 `unrestricted-option-invariant.mjs` F 段量它。
+// 兩格都要能打字,所以這裡的 Combobox 是 `searchable`;對外的範例不需要示範這件事,故 test-only。
+function UnrestrictedRemoteSearchProbe() {
+  const directory = [
+    { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },
+    { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap 路線' },
+  ]
+  const [options, setOptions] = React.useState<typeof directory>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [value, setValue] = React.useState<string[]>([])
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) clearTimeout(timer.current)
+    const needle = q.trim().toLowerCase()
+    if (!needle) { setOptions([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    timer.current = setTimeout(() => {
+      setOptions(directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
+    }, 300)
+  }
+  return (
+    <Combobox
+      unrestricted
+      options={options}
+      suggestions={directory}
+      value={value}
+      onChange={setValue}
+      searchable
+      filterOption={false}
+      optionsLoading={optionsLoading}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="搜尋資料庫…"
+      aria-label="遠端搜尋(不限開啟)"
+    />
+  )
+}
+export const UnrestrictedSearch: Story = {
+  name: '不限:搜尋得到',
+  tags: ['test-only'],
+  render: function UnrestrictedSearchStory() {
+    const [local, setLocal] = React.useState<string[]>([])
+    return (
+      <div className="flex flex-col gap-6 max-w-sm">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">本機過濾 —— 打「不限」找得到,打別的字它消失</h3>
+          <Combobox unrestricted searchable options={categoryOptions} value={local} onChange={setLocal} aria-label="類別(本機搜尋,不限開啟)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">遠端搜尋 —— 等結果回傳才跟一般選項一起出現</h3>
+          <UnrestrictedRemoteSearchProbe />
+        </div>
+      </div>
+    )
+  },
+}
+
 // 契約 probe:三種訊息列(載入中 / 沒有選項 / 遠端還沒打字)出現時,「不限」不得把它們擠掉。
 // 畫面上就是「訊息列照常出現」,沒有東西可看,所以 test-only;閘 D 段量它。
 export const UnrestrictedMessageStates: Story = {
