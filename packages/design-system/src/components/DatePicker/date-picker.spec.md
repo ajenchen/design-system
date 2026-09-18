@@ -240,7 +240,17 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(canonical 2026-05-03 v9)
 - TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant / Material time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
 - TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
-- 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + canonical px-loose py-tight padding,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)
+- 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
+  **左右內距不覆寫**(用 `SurfaceFooter` 預設的 `loose` 16px):判準 owner 是
+  `../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」——
+  footer 對齊的是**這個浮層的內容左邊界**,在本元件那是**第一個日期格的左緣**
+  (`DateGrid` 的 `p-3` 12px + `border-spacing-1` 4px = 16px),兩邊實測相等(2026-09-18 量到差 0)。
+  **不是**「canonical 所以 px-loose」—— 那句話會讓人照抄到沒有 header 的下拉選單裡,
+  2026-09-17 就這樣差出 4px(33 vs 29)。
+  ⚠️ **這裡的相等是兩個不相干的字面值剛好相等**:footer 的 16 來自 `--layout-space-loose`,
+  日期格的 16 來自 `p-3 + border-spacing-1`,中間沒有任何 token 綁著。
+  改 `DateGrid` 的 `p-3` 時 footer **不會自動跟上** —— 唯一會攔住的是
+  `scripts/overlay-footer-gutter-invariant.mjs`(量像素、不看寫法),那支閘不得退役
 - Footer 排版(對齊 Ant `marginInlineStart: auto` on OK):左「此刻」(`mr-auto` push)、右「確定」(needConfirm)或「關閉」
 - Range showTime footer **無「此刻」**(對齊 Ant `showNow={multiple ? false : showNow}`)— 只「確定」走 SurfaceFooter justify-end
 - value 格式:`'YYYY-MM-DDTHH:MM:SS'`(local-time 語意,不帶 timezone)

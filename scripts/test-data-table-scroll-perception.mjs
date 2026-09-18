@@ -253,10 +253,24 @@ if (process.argv.includes("--unit-only")) {
       join(out, `runtime-${mode}.log`),
       result.stdout + result.stderr
     );
+    // 先把「子行程根本沒跑完」跟「跑完但沒紅」分開報 —— 兩者的修法完全不同。
+    // 2026-09-18 錨:CI 上這裡回 `status: null`,訊息卻是「Deliberate delay must make the normal gate exit 1」,
+    // 看起來像偵測器壞了;其實是 spawnSync 的 120s timeout 到期把子行程 SIGTERM 掉(同一支子行程本機只跑 7 秒)。
+    // 追了好一陣子才發現是逾時不是邏輯。訊息要自己講清楚。
+    if (result.error || result.signal || result.status === null) {
+      const why = result.signal
+        ? `子行程被訊號 ${result.signal} 終止(spawnSync timeout=120s 到期,或 runner 把它殺了)`
+        : `子行程沒有正常結束:${result.error?.message ?? "沒有 exit code"}`;
+      assert.fail(
+        `對照組(--sabotage=${mode})沒跑完,拿不到判定:${why}。` +
+          `本機同一支約 7 秒即 exit 1;真的變慢就查 runner 負載,不要直接調大 timeout 掩蓋掛住。` +
+          `完整輸出在 ${join(out, `runtime-${mode}.log`)}`
+      );
+    }
     assert.equal(
       result.status,
       1,
-      "Deliberate delay must make the normal gate exit 1"
+      `對照組(--sabotage=${mode})跑完了卻沒紅 —— 偵測器失效(exit ${result.status},期望 1)`
     );
     const data = JSON.parse(readFileSync(join(caseOut, "summary.json")));
     assert.ok(

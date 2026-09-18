@@ -761,7 +761,10 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               />
             </ScrollArea>
             {(showTime || needConfirm) && (
-              // Footer:消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight padding,
+              // Footer:消費 SurfaceFooter SSOT(border-t + py-tight;左右內距不覆寫 = 預設 loose 16px,
+              // 對齊的是第一個日期格左緣(DateGrid p-3 12 + border-spacing-1 4 = 16),實測差 0。
+              // 判準 owner:patterns/overlay-surface/overlay-surface.spec.md「要對齊誰」;
+              // ⚠️ 兩個 16 是不相干的字面值剛好相等,改 DateGrid p-3 時 footer 不會跟著動,
               // 不再 hand-coded p-2 / Separator / ml-auto wrapper 三層垃圾)。
               // 「此刻」加 mr-auto 把後面 button 推右(對齊 Ant `marginInlineStart: auto` on OK)。
               // 2026-07-05 D4:gate 由 `showTime` 改 `(showTime || needConfirm)` 對齊 Range(:1068)—
@@ -1276,7 +1279,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             />
             </ScrollArea>
             {(showTime || needConfirm) && (
-            // Footer 消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight)。
+            // Footer 消費 SurfaceFooter SSOT(border-t + py-tight;左右內距不覆寫,理由見上方 764 行同款註解
+            // 與 patterns/overlay-surface/overlay-surface.spec.md「要對齊誰」)。
             // showTime Range 無「此刻」(對齊 Ant `showNow={multiple ? false : showNow}`)→ 只有 確定 走 justify-end。
             // date-only Range needConfirm:左 此刻(mr-auto)+ 右 確定。
             <SurfaceFooter>

@@ -268,6 +268,17 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 `--item-px` 回退的 `--field-px` 本來就不隨密度變。Dialog / Sheet 不鎖,但 body 與 footer 吃同一顆 `loose`,一起變、仍然對齊。
 **沒有任何一個 footer 會在 lg 密度下跟它上面的東西脫隊**(2026-09-18 兩個密度各量一次)。
 
+**世界級對照(2026-09-18 逐家抓原始碼驗過,不是憑印象)**:這條規則的骨架是「**水平內距的主人是列,不是殼**」,三家、四份原始碼一致 ——
+
+| 家 | 抓到的原始碼 | 說了什麼 |
+|---|---|---|
+| Material 3 | `@material/web@2.4.0` 編譯後的 `menu/internal/menu-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css> | 選單外殼 `.menu{padding:0px}` —— **水平內距是 0**,只有上下用 `--md-menu-top-space` / `--md-menu-bottom-space`。殼一分水平內距都不給,所以放在底部的東西只能去拿列的 gutter |
+| Material 3(對照組:有 chrome 的浮層)| `dialog/internal/dialog-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/dialog/internal/dialog-styles.css> | 內文 `padding:24px`、動作列 `padding:16px 24px 24px` —— **左右兩者相同(24),只有上下不同**。footer 從來不會拿到跟 body 不同的左右內距 |
+| GitHub Primer | `ActionList.module.css` <https://github.com/primer/react/blob/main/packages/react/src/ActionList/ActionList.module.css> | 容器只宣告 `padding:0` 與 `padding-block`,**沒有任何水平內距**;水平內距住在列的 `.ActionListContent { padding-inline: var(--control-medium-paddingInline-condensed) }` |
+| IBM Carbon | `_list-box.scss` <https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/list-box/_list-box.scss> | 選項自己帶水平內縮(`.cds--list-box__menu-item__option { margin: 0 $spacing-05 }`),殼不定義內容左緣 |
+
+三家結論一致:**選單的內容左緣由「列」擁有**,所以底部那一條要去對列;而有 chrome 的浮層裡 footer 與 body 的左右內距**相同**。我們這條規則把兩種情形寫成同一句話(對齊內容左邊界),數字由情境決定。
+
 **「還能更 SSOT 嗎?」—— 能,但還不到時候**(2026-09-18 記錄,免得日後被當成漏做)。
 更徹底的做法是讓三個部位都讀同一顆殼層變數:`SurfaceHeader/Body/Footer` 一律 `px-[var(--surface-gutter,var(--layout-space-loose))]`,
 選單殼在 Command 根設一次 `--surface-gutter: var(--item-px,var(--field-px))` —— 那樣「一個浮層只有一條內容內距」
