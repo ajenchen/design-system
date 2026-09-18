@@ -37,6 +37,7 @@ const SELFTEST = process.argv.includes('--selftest')
 const EDGE_TOLERANCE_PX = 1
 
 const STORY_MAIN = 'design-system-components-combobox-展示--unrestricted-option'
+const STORY_CONTRACT = 'design-system-components-combobox-展示--unrestricted-contract'
 const STORY_MSG = 'design-system-components-combobox-展示--unrestricted-message-states'
 const STORY_OFF = 'design-system-components-combobox-展示--unrestricted-off-inert'
 
@@ -187,7 +188,7 @@ const goto = async (id) => {
   await page.waitForFunction(() => document.querySelector('#storybook-root')?.children.length > 0, null, { timeout: 15_000 }).catch(() => {})
   await page.waitForTimeout(400)
 }
-const 第幾個觸發點 = 1 // 「開啟」那一格
+const 第幾個觸發點 = 0 // 重組後第一格就是開著 unrestricted 的那個(2026-09-18 story 精簡)
 
 try {
   // ── A. 位置與分隔線 ────────────────────────────────────────
@@ -218,6 +219,9 @@ try {
   await page.waitForTimeout(200)
 
   // ── C. 欄位顯示 ───────────────────────────────────────────
+  // 量的是 `UnrestrictedContract`(test-only 契約 probe):給人看的範例只留兩格,
+  // 唯讀 / 檢視 / 對照組那幾格是機械驗證用的,不該擠在側邊欄裡(2026-09-18 user 抓「雜七雜八」)。
+  await goto(STORY_CONTRACT)
   if (SELFTEST) { await page.evaluate(BREAK.欄位); await page.waitForTimeout(60) }
   const f = await page.evaluate(FIELDS)
   ck('C', '一般選項用 Tag 呈現(對照:關著那格)', (f.關著?.Tag數 ?? 0) > 0, `Tag=${f.關著?.Tag數}`)
