@@ -116,6 +116,10 @@ jobs:
           # 完全等長(292873 bytes 不變)、clone 又與生成同一秒 → lock 沒被複製過去、沒進 commit,
           # 直到 consumer 的 npm ci 才炸。規則早就有,只是靠紀律守、漏了一處。
           npm run test:rsync-checksum
+          # 合併前置判定:「看不到」不等於「通過」。2026-09-18 beta.134 錨例 —— 原本
+          # `bad = runs.filter(未綠); if (bad.length) 退出`,清單為空時 bad 也是空的,
+          # 零筆 check 被當成全綠(某些 repo/token 組合下 check-runs 就是回空陣列)。
+          npm run test:consumer-pr-merge-evidence
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
