@@ -90,7 +90,16 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // 改成 token 之後,日曆的邊與 DatePicker footer 的邊**吃同一個來源**,不再是兩個剛好都等於 12 的字面值。
       className={cn('p-[var(--item-px,var(--field-px))]', className)}
       classNames={{
-        months: 'flex flex-col sm:flex-row gap-4',
+        // 兩張月曆之間的距離:讀 `--layout-space-loose`,不是寫死的 `gap-4`(2026-09-18)。
+        // 依 `../../tokens/layoutSpace/layoutSpace.spec.md` 的 Token 表逐字:loose =「主間距:容器水平 padding、
+        // **parallel 元素 gap**、bounded region 呼吸空間」—— 兩張並排、彼此獨立的月曆正是「parallel 元素」。
+        // 值不變(md 仍 16),但從此會跟著密度走(lg 24),而且不再是一個沒有出處的字面值。
+        // **不要寫成 `calc(--item-px × 2)`**:那會是「面板內距的兩倍」,但我們的結構是**一個**有內距的根
+        // 包著兩張格線(不是兩張各自有內距的月曆),2× 在這個 DOM 裡推不出來;
+        // 而且全 DS 沒有任何「把間距 token 乘倍數」的先例(只有字級 × 行高那種 typography 衍生)。
+        // 上游 `react-day-picker` 也把它當**自己的具名常數**(`--rdp-months-gap: 2rem`,style.css:21),
+        // 而不是從容器內距推導 —— 它根本不給容器內距(全份 CSS 的 padding 只有 weekday 那一條)。
+        months: 'flex flex-col sm:flex-row gap-[var(--layout-space-loose)]',
         // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")
         month: 'flex flex-col relative',
         // Month caption:單行置中 h-field-xs,prev/next 按鈕 absolute 從兩側貼齊
