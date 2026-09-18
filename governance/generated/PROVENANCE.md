@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:db92ae150d1d8ed2e44a48113b20bb42eeaf700d435d6f56ce593bf2237233c3` |
+| agent-bootstrap | `AGENTS.md` | `sha256:f740947563df5dc46c05c2404aeb051efe1f0fbdc5a1123be80f93d0cc056604` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:895d4090e5092caa15af04a3133541b90c4fd33ee3f394b4b14aa8aaaf12892d` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:4e69f665eeccd39315e82d0bd4fec1f7761be7b7bf2080854f921c161c0b1850` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
@@ -138,7 +138,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-mirror-evidence-verifier | `scripts/verify-mirror-evidence.mjs` | `sha256:a9f8eae01039eba0746d1b7d2a8478c1a4a4dd1ed732dca2f94cd33f39c3aaf6` |
 | exact-mirror-release-verifier | `scripts/verify-mirror-release.mjs` | `sha256:f27171749a78c1c1a9fc6a18bc0eda40d4ca5bf7e05fa5b4baaaa58b5da8f87e` |
 | exact-mirror-run-artifact-identity | `scripts/mirror-run-artifact-identity.mjs` | `sha256:f7f8ea089c5ab766f45415c8138f3a3809d238f8e1118035d5afa8f7dc34cc8b` |
-| exact-mirror-workflow | `.github/workflows/mirror-to-published-template.yml` | `sha256:6748cc1c192f1e3e0c75c67cfdf6d04503fbecf2d303ff3b33d274b9c535c848` |
+| exact-mirror-workflow | `.github/workflows/mirror-to-published-template.yml` | `sha256:b7265ec5cb9dcfe20f1014aee904f0f765502ae392d578b166c6ca0d8a38f8ba` |
 | exact-model-validation-library | `infra/governance/lib/model-validation.mjs` | `sha256:f9a8986b9c7fa8267c05f6ce6b91f20f519efa4eefbb4b4faad7fce88590bee8` |
 | exact-planning-registry-validator | `scripts/validate-planning-registry.mjs` | `sha256:d4d154f9b95be663ab724ac4f468d0229804c4ea6ef1a3073f54b245cfa364af` |
 | exact-product-template-scaffold-lock | `scripts/product-template-scaffold-lock.mjs` | `sha256:7fc069b6ba5f62907eed574d9ae53c5202463fd79b55aa41101b3e2587e99072` |
@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:c5210e0fc1c48b35c6b2f310ceadfd1f49b202dac917610c3e0f872cdf3f1c5f` |
+| github-repository-governance | `.github/` | `sha256:79059ee39d42ca5eec55663ea5c550d966a8d962b1ea8d1751b5f21147f31d8a` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:203f9c6346446d727be5925af12b425ee35e33c6d55ecf934e21aa7b0555d3ca` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -235,7 +235,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
 | governance-precommit-entrypoint | `.husky/pre-commit` | `sha256:1f30cc0a2adbe919ed785e2fcb0f5c2adbf4d86fdffbde081ea67a3978b579cc` |
-| governance-root-script-registry | `package.json` | `sha256:c8edc0ed6df6035766f36929ee064f2d28bd01d189ce89705ee93b0389e0d4f9` |
+| governance-root-script-registry | `package.json` | `sha256:2870a7717757c663e998da6e4f0f87b831937bf97d71ed9dc45acf9716d98cc7` |
 | governance-runtime-dependency-closure-library | `scripts/lib/runtime-dependency-closure.mjs` | `sha256:7b62005925db6916b43bfb7238e1cec3721848332e641ff0614f75176f621ca6` |
 | governance-runtime-ignore-policy | `infra/governance/runtime/.gitignore` | `sha256:240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d` |
 | governance-trust-registry-corpus | `infra/governance/trust/` | `sha256:7ca35caafa680838f9aac85754f08d5ac6f87192cb84157cbbfe9040e3b5ad0c` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:908c6c172c6e3e84e8c6c4c15fd233ff1b0c242fac543dc500f793a6fe26e8e7` |
+| repository-automation-corpus | `scripts` | `sha256:85ff446c653f2c77de972593eafb728fd4dec6dbe72f75ed93207158c6a0f57e` |
 | repository-ignore-boundary | `.gitignore` | `sha256:11a3f8c9fcfe530eb04ab55c2800ceaabdaab6d88252b07567109fffd8fb25a7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

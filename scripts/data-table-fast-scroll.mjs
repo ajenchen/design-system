@@ -683,7 +683,7 @@ if (!SELFTEST) {
     console.log(`   ${build.label}/${mode} 預估paint ${spark(w.paint)}\n   ${build.label}/${mode} DOM     ${spark(w.dom)}\n   ${build.label}/${mode} 幀間隔ms ${w.frames.slice(1).map((f) => Math.round(f.dt)).join(' ')}`)
   }
   console.log('\n對照表(每格 = 中位數 / 最大值,跨 runs)')
-  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? NaN, (v) => v.toFixed(0)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
+  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? NaN, (v) => v.toFixed(0)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
   const cols = [['預估paint空白 max', (r) => r.paintMax, pct], ['paint 連續幀', (r) => r.paintStreak.frames, String], ['paint 連續 ms', (r) => r.paintStreak.ms, (v) => v.toFixed(0)], ['DOM空白 max', (r) => r.domMax, pct], ['主幀間隔 max ms', (r) => r.dtMax, (v) => v.toFixed(0)], ['long task 數', (r) => r.longCount, String], ['long task 最長 ms', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計 ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)], ['commits', (r) => r.commits, String]]
   for (const build of BUILDS) for (const mode of MODES) {
     const rs = results.filter((r) => r.build === build.label && r.mode === mode); if (!rs.length) continue
@@ -859,7 +859,21 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
   relGate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   if (REF_LABEL) {
-    relGate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms)`)
+    // 2026-09-18 修:比值判定改用**長工合計**(= 總阻塞時間),不再用「單一最長」。
+    //
+    // 「單一最長」是尾端統計量,n=3 取中位數仍被 runner 排程雜訊主導 —— 而比值門檻是 1.25×,
+    // 低於它自己的雜訊地板。**同一個 job、同一份程式碼的兩份建置**實測(main d6ffefdc 那跑,
+    // 該分支上 branch 與 main 內容完全相同):
+    //     long task max : main 56ms vs branch 78ms → 1.39×(紅,但兩邊是同一份程式碼)
+    //     script ms(聚合量): main 638ms vs branch 648ms → 1.016×
+    // 尾端飄 39%、聚合只差 1.6%。同一條斷言在本 session 另外三跑分別是 3.3× / 2.5×(分支 diff
+    // 零個執行期檔案)與一次改紅在別條,等於它在「兩邊相同」時就會紅 —— 那不是保護,是噪音,
+    // 而且當時連 main 自己都卡在這支 required check。
+    //
+    // 合計長工時間才是「卡頓」的體感對應(等同 web-vitals 的 Total Blocking Time),而且是聚合量。
+    // **沒有放寬門檻**:1.25× 不變、天花板不變、frameGap 那條不變;換的是被比較的統計量。
+    // 單一最長仍然照印在 extra 裡當診斷線索。
+    relGate(ASSERT_LONG_TASK_MS, '主執行緒長工合計', CEILING_FACTOR.longTask, (r) => r.longSum, (r) => `(${r.longCount} 個長工、單一最長 ${r.longMax.toFixed(0)}ms)`)
     relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
   } else if (ASSERT_LONG_TASK_MS !== '') {
     // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)

@@ -156,7 +156,7 @@
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
 | `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼** | 不只是「不 emit declaration」——2026-09-06 實證:`data-table.tsx` 少傳一個必填 prop(TS2741),`npx tsc -b --force` 回 **0**,`npm run build:lib` 才報錯。**「tsc -b 通過」不構成型別正確的證據**,任何 .tsx 改動的型別驗證一律以 `npm run build:lib` 為準 |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""` 原地 → trap 刪掉 cwd | 必 `--checksum`、flag 分開寫;mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28) |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""` 原地 → trap 刪掉 cwd | 必 `--checksum`、flag 分開寫;mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28)。**2026-09-18 beta.134 再犯**:consumer mirror 的 `package-lock.json` 換版號後與舊版**完全等長**(版本字串／resolved URL／integrity base64 三者都是固定長度,實測 292873 bytes 不變),clone 又與生成落在同一秒 → rsync 靜默跳過、lock 沒進 commit,直到 consumer 的 `npm ci` 才炸。**上游那句 `✓ lock pins the exact released version` 還是綠的,因為它驗的是來源那份、不是真的被複製過去的那份 —— 綠燈驗錯對象比沒有綠燈更騙人**。規則早就寫了、三處也遵守了,第四處漏掉 → 機械化 `scripts/rsync-checksum-invariant.mjs`(CI required,對照組用合成檔且必須只紅在合成檔上)|
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
 | hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh(自帶隔離),清 debris 用 `find -type f` 對照 `git ls-files`(2026-08-05) |

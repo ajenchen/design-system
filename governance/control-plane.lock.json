@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:58dfb70b979a79708440d7076b7658252c7773eee8517d139a5f5b828d19e87f",
+      "hash": "sha256:f98cae74449c49d3ae9233ce21fd24a43c88446c9bfad176528d61277b33de65",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1c19e3e009d8cc6c8d8be872c75f5e04f7caedce74a0c794de1961e1e00f6119",
+      "hash": "sha256:0946a335c1b9acff226a3714174f97a253703168a6b17116e812c8b7d4d57bea",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:f035b68305aed8bdbe4354b4d9e320b5a9616069e863c4c54c423f22bc409a4d",
+  "inputDigest": "sha256:9837e4bc97fb060b31d790b45a95d0d1264a23059f6bb026f5d2e95b5a929317",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,15 +518,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:6ee17e61f9c74eb01c43ad4ea52ac7381b808dba22d20764237b8bb347e5f9e9",
+  "snapshotDigest": "sha256:86afb636a58c71173ac7084028f961ffd235d5b3a5375701e7493d8fcb6a5e44",
   "sources": [
     {
-      "hash": "sha256:db92ae150d1d8ed2e44a48113b20bb42eeaf700d435d6f56ce593bf2237233c3",
+      "hash": "sha256:f740947563df5dc46c05c2404aeb051efe1f0fbdc5a1123be80f93d0cc056604",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 26030,
+      "size": 26725,
       "type": "file"
     },
     {
@@ -1673,12 +1673,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6748cc1c192f1e3e0c75c67cfdf6d04503fbecf2d303ff3b33d274b9c535c848",
+      "hash": "sha256:b7265ec5cb9dcfe20f1014aee904f0f765502ae392d578b166c6ca0d8a38f8ba",
       "id": "exact-mirror-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/mirror-to-published-template.yml",
-      "size": 9232,
+      "size": 9877,
       "type": "file"
     },
     {
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:c5210e0fc1c48b35c6b2f310ceadfd1f49b202dac917610c3e0f872cdf3f1c5f",
+      "hash": "sha256:79059ee39d42ca5eec55663ea5c550d966a8d962b1ea8d1751b5f21147f31d8a",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2568,12 +2568,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c8edc0ed6df6035766f36929ee064f2d28bd01d189ce89705ee93b0389e0d4f9",
+      "hash": "sha256:2870a7717757c663e998da6e4f0f87b831937bf97d71ed9dc45acf9716d98cc7",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 22744,
+      "size": 22872,
       "type": "file"
     },
     {
@@ -3586,8 +3586,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 463,
-      "hash": "sha256:908c6c172c6e3e84e8c6c4c15fd233ff1b0c242fac543dc500f793a6fe26e8e7",
+      "files": 464,
+      "hash": "sha256:85ff446c653f2c77de972593eafb728fd4dec6dbe72f75ed93207158c6a0f57e",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
