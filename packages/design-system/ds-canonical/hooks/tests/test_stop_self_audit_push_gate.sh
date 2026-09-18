@@ -79,4 +79,33 @@ check_no_env() { local got; got=$(run_case_no_env "$1"); if [ "$got" = "$2" ]; t
 echo "▶ M6 能力判定:環境變數不存在時,用「這份 transcript 真的呼叫過」當證據"
 check_no_env e 1 "沒有環境變數、但稍早真的呼叫過 → 能力已證明,本 turn 沒叫就要擋(舊寫法全程靜音)"
 check_no_env f 0 "沒有環境變數、整份 transcript 從沒呼叫過 → 不假設有這個 tool,維持安靜"
-[ "$FAIL" -eq 0 ] && echo "✅ test_stop_self_audit_push_gate: 6/6" || { echo "❌ test_stop_self_audit_push_gate: $FAIL 項未過"; exit 1; }
+# ── 端到端:走真實的 provider hook 入口,不是直接跑 hook 檔 ──────────────────
+#
+# **上面六個情境全綠,生產環境卻整整一個月零推播。** 原因是它們都直接 `bash "$HOOK"`,
+# 自己把 GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE=1 塞進去 —— 而真實路徑是
+# Claude Code → hooks.json → scripts/run-provider-hook.mjs → hook。那條路上有兩道關卡,
+# 兩道都把這個閘關掉了,測試卻永遠看不到:
+#   (1) registrations.json 給這支 hook 標了 `requires: ["peer-cli"]`,沒有 peer CLI 的
+#       session 整支 hook 直接被判不適用、靜默跳過(2026-09-18 拆除);
+#   (2) scripts/lib/provider-hook-output-transport.mjs 的子程序環境白名單漏了
+#       GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE,wrapper 算好之後又被消毒器丟掉,
+#       hook 裡永遠讀到 <unset>(2026-09-18 補上)。
+# 教訓:**單元層的綠燈不能代替端到端**。這一段就是那條對照組。
+echo "▶ M6 端到端:真實 provider hook 入口(hooks.json 走的那條)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+RUNNER="$REPO_ROOT/scripts/run-provider-hook.mjs"
+if [ ! -f "$RUNNER" ]; then
+  echo "  ✗ 找不到 $RUNNER —— 端到端無法驗證"; FAIL=$((FAIL+1))
+else
+  run_e2e() {  # $1 = case 名;不自己塞能力變數,一切交給真實入口決定
+    ( cd "$REPO_ROOT" && CLAUDE_PLUGIN_ROOT="$REPO_ROOT" node "$RUNNER" \
+        --provider claude --event Stop --group 0 --target-role ds-author \
+        <<< "{\"transcript_path\":\"$WORK/$1.jsonl\",\"hook_event_name\":\"Stop\"}" 2>&1 ) \
+      | grep -c "PUSH-NOTIFICATION BLOCKER"
+  }
+  check_e2e() { local got; got=$(run_e2e "$1"); if [ "$got" = "$2" ]; then echo "  ✓ $3(BLOCKER $got)"; else echo "  ✗ $3:期望 $2、實得 $got"; FAIL=$((FAIL+1)); fi; }
+  check_e2e b 1 "沒呼叫過 → 真實入口必須擋(這一條紅過整整一個月沒人知道)"
+  check_e2e a 0 "本 turn 真的呼叫過 → 真實入口安靜"
+fi
+
+[ "$FAIL" -eq 0 ] && echo "✅ test_stop_self_audit_push_gate: 8/8" || { echo "❌ test_stop_self_audit_push_gate: $FAIL 項未過"; exit 1; }

@@ -903,7 +903,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "197e73eb41da0b4e8c953621538eae02f53cbda1090d443859998878789fb6ce",
+      "sha256": "37272ecc81a195fec0f167675c65dad8471b5fc8d5d4d992971ca2c1a9d59922",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null

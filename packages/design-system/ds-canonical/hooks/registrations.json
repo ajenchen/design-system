@@ -410,11 +410,7 @@
             "hook": "stop_self_audit.sh",
             "runtime": "bash",
             "outputMode": "governance-decision",
-            "transcript": "optional",
-            "reviewSkill": "codex-collab",
-            "requires": [
-              "peer-cli"
-            ]
+            "transcript": "optional"
           },
           {
             "kind": "hook",
