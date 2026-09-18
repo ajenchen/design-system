@@ -197,10 +197,15 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
    * 與 Dialog / Sheet / Popover / FileViewer 同一個名字同一個語意(不是 `onDismiss`,那是「暫時訊息被忽略」)。
    *
    * **面板不自己關**:`open` 一直是消費端控的(同 `onModeChange` 那段的分工),所以這裡只發通知。
-   * 沒傳 = 遮罩維持純提示、點了不關(向後相容,既有 consumer 一行都不用改)。
    * 並排態沒有遮罩,此 prop 無作用。
+   *
+   * **必填,不是可選**(2026-09-18 修正):第一版寫成 `onClose?:`,理由是「向後相容,既有 consumer 一行都不用改」——
+   * 結果就是**沒傳的那些照舊點了不關**,而全庫最像產品的那則範例(`agent-panel.stories.tsx` 的 URL 註冊表示意)剛好沒傳,
+   * 於是使用者在預覽站上點遮罩「根本沒有任何反應」(2026-09-18 user 回報)。這正是本家族已經立過的規矩:
+   * spec §2「固定 anatomy 恆渲染」與 M23(f)「可省略 callback ≠ 可省略行為 —— 無內建行為的 callback 一律必填 prop(型別層擋)」。
+   * 面板自己關不了(`open` 住在 `AgentPanelDock`),所以它沒有內建 fallback → 必填。機械閘:`scripts/agent-panel-fixed-anatomy-invariant.mjs`。
    */
-  onClose?: () => void
+  onClose: () => void
 }
 
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
@@ -283,7 +288,8 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       if (measured) onModeChangeRef.current?.(mode)
     }, [mode, measured])
 
-    // v14 條 B:「窄螢幕以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩;遮罩只提示、點了不關),**宿主暫不可操作**」。
+    // v14 條 B:「窄螢幕以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩),**宿主暫不可操作**」
+    //(遮罩的點擊行為 2026-09-17 改為關閉面板,見下方 showScrim 與 `onClose`)。
     // 「覆蓋 + 遮罩」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
     // 實測(2026-09-08 跨模型審查)蓋板態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
     //
@@ -357,14 +363,15 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 蓋板態的遮罩(2026-09-16 user:「底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應…單純只是用來讓使用者知道 agent panel 底下還有東西」):
     // 重用 Dialog 並存時的同一支 `CoexistenceMask`(z-30、`--overlay`、替 persistentElements 挖洞),不手刻第二份遮罩(M17 / M23)。
     // - `absolute`:遮罩跟面板一樣覆蓋**容器**,不是視窗(spec「量的是容器不是視窗」;tailwind-merge 讓它覆掉預設的 `fixed`);
-    // - 遮罩**接住**指標但沒有任何行為:點留白處 = 點到遮罩本身,什麼都不發生。第一版寫成 `pointer-events-none`,點擊穿過去
+    // - 遮罩**接住**指標:點留白處 = 點到遮罩本身(→ `onClose`,見下)。第一版寫成 `pointer-events-none`,點擊穿過去
     //   打到底下並存 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user 第二次回報);所以它要在保留集合裡(不被設 inert)
     //   而且 Dialog 的並存遮罩算洞時把它當「遮罩不是洞」跳過(overlay-coexistence.ts `boxes()`),否則常駐殼裡多了一張全舞台的盒子,
     //   Dialog 的遮罩會被整張挖空(2026-09-09 入口鈕裁切圖層的同款根因)。modal 的外部點擊守衛(createPersistentGuard)看到
     //   目標在保留區子樹裡就不關 —— 遮罩是常駐殼的子節點,自然在裡面。
     // - 只在量到容器且真的是蓋板時渲染(與 useOverlayCoexistence 的啟用條件同一組);
     // - 是面板根節點的**兄弟**不是子節點:根節點 z-[45] 自成堆疊脈絡,放進去遮罩就會壓過並存 modal(z-40),違反 dialog.spec 層級梯。
-    // 幾何與「點了不關」由 `scripts/agent-panel-breakpoint.mjs` 機械守住。
+    // 幾何與「點遮罩關閉面板」由 `scripts/agent-panel-breakpoint.mjs` 機械守住;
+    // 「`onClose` 必填、不得以 callback 有無當行為閘」由 `scripts/agent-panel-fixed-anatomy-invariant.mjs` 守住。
     const showScrim = containerPx > 0 && isOverlay && selfVisible
     return (
       <>

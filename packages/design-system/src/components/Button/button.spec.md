@@ -13,7 +13,9 @@ variants:
     world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]
   secondary:
     when: "陪襯 primary 的次要 action"
-    world-class: ["Polaris Button default", "Material Tonal Button"]
+    # 2026-09-18 更正:本 variant 是**透明底 + 主色框 + 主色字**,不是填色鈕。
+    # 舊寫的 Material Tonal(有底色、無框)與 Polaris default(中性框)都對不上,詳下方「世界級對照(per-variant)」。
+    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]
   tertiary:    # ★ labeled cva default(2026-06-06 從 primary 改 — 對齊世界級「預設低 emphasis、按重要程度升」)
     when: "**labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary"
     world-class: ["Material Outlined Button", "Ant Button default", "Polaris tertiary"]
@@ -187,7 +189,26 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
 
 **世界級對照(per-variant)**:
 - `primary` ≈ Material `Filled` / Polaris `Primary` / Ant `type="primary"` / Carbon `Primary`
-- `secondary` ≈ Material `Tonal/Filled Tonal` / Polaris `Default` / Carbon `Secondary`
+- `secondary` ≈ Carbon `Tertiary` / Ant `ghost`(`color="primary" variant="outlined"`)/ Bootstrap `.btn-outline-primary`
+  —— **透明底 + 主色框 + 主色字**(本元件實作:`bg-surface text-primary border-primary`,`button.tsx`)。
+  <details><summary>為什麼不是 Material Tonal / Polaris Default / Carbon Secondary(2026-09-18 更正)</summary>
+
+  這三個對照是錯的,**已更正的只有這行文字,視覺與程式一行未動**:
+  - Material `Filled Tonal` 是**填色**鈕:它的 token 清單只有 `container-color`(底色)**沒有任何 outline token**
+    (<https://github.com/material-components/material-web/blob/main/tokens/_md-comp-filled-tonal-button.scss>),
+    而本元件是透明底 + 有框,兩者剛好相反。
+  - Carbon `Secondary` 也是填色:`@include button-theme($button-secondary, transparent, $text-on-color, …)` —— 底色實心、邊框透明;
+    真正對得上的是 Carbon `Tertiary`:`@include button-theme(transparent, $button-tertiary, $button-tertiary, …)` ——
+    **透明底、框與字同一顆主色**,逐項與本元件相同
+    (<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/button/_button.scss>)。
+  - Ant 的對應是 `ghost`:底 `token.ghostBg`(透明)、字 `token.colorPrimary`;Ant 的 `default` 才是中性框中性字
+    (`token.defaultColor` / `token.defaultBorderColor` / `token.defaultBg`,
+    <https://github.com/ant-design/ant-design/blob/master/components/button/style/variant.ts>)—— 中性那組是本元件的 `tertiary`,不是 `secondary`。
+  - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一顆主題色、底維持透明
+    (<https://github.com/twbs/bootstrap/blob/main/scss/mixins/_buttons.scss>),是最直白的同款。
+
+  **注意**:同一段的 `tertiary` 那行提到 Polaris,本次未動 —— 沒有實際抓到 Polaris 原始碼可引,依 M22「引不出來就不要寫成已驗證」不改也不擴寫。
+  </details>
 - `tertiary` ≈ Material `Outlined` / Ant `type="default"` / Polaris `tertiary`
 - `text` ≈ Material `Text` / Polaris `Plain` / Ant `type="text"` / Atlassian `Subtle-Link`
 - `link` ≈ Polaris `Plain+removeUnderline=false` / Ant `type="link"` / Apple HIG Borderless

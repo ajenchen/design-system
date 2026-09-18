@@ -10,7 +10,8 @@
 //     面板 ≤ 舞台的 3/5(user 2026-09-07 裁示 #5「50% 基準由視窗改舞台」定了「一半」;2026-09-09 user 拍板 960 → 放寬到 3/5)
 //     並排時 舞台 = 容器 − 面板
 // ⇒ 面板 ≤ 容器 × 3/8 ⇒ **並排只在容器 ≥ 960 時成立**,更窄就翻成蓋板(2026-09-09 user 拍板 960:「一半」放寬到 3/5;
-//    2026-09-16 user 裁示蓋板不再蓋滿:左留 --layout-space-viewport-inset、右貼齊容器、底下鋪純提示遮罩,點了不關)。
+//    2026-09-16 user 裁示蓋板不再蓋滿:左留 --layout-space-viewport-inset、右貼齊容器、底下鋪遮罩;
+//    遮罩點擊行為 2026-09-17 改為「點了關閉面板」,取代 09-16 的「點了不關」)。
 // 960 不是挑的數字,是這三條逼出來的唯一解;所以這支閘直接驗那三條,
 // 而不是驗「有沒有等於 960」——數字若哪天因為 MIN 或比例改變而變,閘會自動跟著對。
 //
@@ -62,7 +63,7 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     const cs=getComputedStyle(p)
     const handle=p.querySelector('[role="separator"][aria-orientation="vertical"]')
     const H=host.getBoundingClientRect(), P=p.getBoundingClientRect()
-    // 2026-09-16 蓋板態:左留 --layout-space-viewport-inset(讀 CSS 變數的實際值,不寫死 48)、右貼齊容器、底下鋪純提示遮罩
+    // 蓋板態:左留 --layout-space-viewport-inset(讀 CSS 變數的實際值,不寫死 48)、右貼齊容器、底下鋪遮罩(點了關閉面板,2026-09-17)
     const inset=parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
     const scrim=document.querySelector('[data-agent-panel-scrim]')
     const S=scrim?scrim.getBoundingClientRect():null, scs=scrim?getComputedStyle(scrim):null
@@ -94,7 +95,7 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     ck(`G3 @${W} 並排態不畫蓋板遮罩`, !r.scrim, `scrim=${r.scrim}`)
   } else {
     // 2026-09-16 user 裁示(v14 來源總帳):蓋板不再蓋滿 —— 左留 Dialog 同一顆 --layout-space-viewport-inset、右貼齊容器、
-    // 底下鋪 CoexistenceMask(z-30、--overlay、接住指標但無行為),點遮罩不關面板、也不穿到底下的 modal。
+    // 底下鋪 CoexistenceMask(z-30、--overlay、接住指標)。2026-09-17 user 改裁示:點遮罩**關閉面板**(並存 modal 留著)。
     ck(`G3 @${W} 蓋板左留 --layout-space-viewport-inset(token 實值 ${r.inset}px)`, Number.isFinite(r.inset) && r.inset > 0 && Math.abs(r.gapLeft - r.inset) <= 1, `面板左 − 容器左 = ${r.gapLeft}`)
     ck(`G3 @${W} 蓋板右緣貼齊容器`, Math.abs(r.gapRight) <= 1, `容器右 − 面板右 = ${r.gapRight}`)
     ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、留白處命中的是遮罩本身)`,

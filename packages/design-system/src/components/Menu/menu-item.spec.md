@@ -221,7 +221,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 **它屬於「列式 footer」**——判準與配方的 owner 在 `../../patterns/overlay-surface/overlay-surface.spec.md`
 「底部區域:按鈕列 vs 列式」：底部內容**需要鋪滿容器兩側**（整條可點、整條有滑過底色）時用它，左右 gutter 由列自己帶
-（`--item-px`）；底部放的是**按鈕**時改用 `SurfaceFooter`。同配方的另一個住所是 `components/Sidebar/sidebar.tsx`
+（`--item-px`）；底部放的是**按鈕**時改用 `SurfaceFooter`,而且那顆 `SurfaceFooter` 要覆寫成同一行 `px-[var(--item-px,var(--field-px))]` —— 選單沒有 header,footer 的左緣要對齊的是列(判準 owner:`../../patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」)。同配方的另一個住所是 `components/Sidebar/sidebar.tsx`
 的 `SidebarFooter`（放帳號入口那一列），兩者都正確，要改配方兩邊要一起改。
 
 **2026-09-17 起不再用於「全選」**：SelectMenu 的多選全選已依 user 拍板改成 `SurfaceFooter` + 兩態按鈕

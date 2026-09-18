@@ -696,7 +696,7 @@ jobs:
     # 2026-09-17 拆出來的第八個 job。它跟 sweeps 一樣是「全 1034 支 story 掃一遍」,但**還要開面板**
     # (每支 story 逐一點開 [role=combobox] 觸發點、按一下全選、再量一次),本機實測 6.6 分鐘 ——
     # 疊進 sweeps(那邊本機已經是 7.3 + 9 分)一定撞 25 分上限,所以自己一個 job 平行跑。
-    name: Verify browser(multi-select footer)
+    name: Verify browser(multi-select footer)   # 同 job 另跑 overlay footer gutter(共用同一份 storybook build)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -730,6 +730,14 @@ jobs:
           # 選了前者,標籤就是唯一的狀態出口,一脫鉤使用者沒有別的線索可以察覺。
           # 驗的是對應關係不是字串(標籤是 prop,可換語言);對照組把標籤釘死,這支必須紅。
           npm run test:select-all-footer
+
+      - name: Overlay footer gutter (browser)
+        run: |
+          # 浮層底部那條 footer 的左右內距必須對齊「這個浮層的內容左邊界」
+          #(選單→列、一般浮層→body/標題、日曆→第一格;欄位置中的挑選面板沒有可對齊對象,
+          # 只檢查內距是既有 token)。量的是像素不是 class 字串;對照組把每個 footer 推 7px,這支必須紅。
+          # 跟上面那支共用同一份 storybook build,所以放同一個 job,不另開第九個。
+          npm run test:overlay-footer-gutter
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:

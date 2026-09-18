@@ -539,7 +539,8 @@ for (const width of [1440, 1180]) {
   check(`${W} S9 面板是蓋板態(data-agent-panel-mode=overlay)`, mode === 'overlay', String(mode))
   check(`${W} S9 蓋板時瀏覽器工具列不被抑制(上一頁 / 網址列)`, (await h.inert('button[aria-label="上一頁"]')) === false && (await h.inert('#demo-location')) === false)
   check(`${W} S9 蓋板時宿主被抑制(新增任務鈕 inert)`, (await h.inert('#demo-new-task')) === true)
-  // 2026-09-16 user 裁示:蓋板左留 --layout-space-viewport-inset、右貼齊容器、底下鋪純提示遮罩;點遮罩不關(關閉仍只有 × 與入口鈕)。
+  // 蓋板左留 --layout-space-viewport-inset、右貼齊容器、底下鋪遮罩(2026-09-16 裁示);
+  // 點遮罩**關閉面板**(2026-09-17 user 改裁示,取代 09-16 的「點了不關」)。
   const scrimGeo = await page.evaluate(() => {
     const p = document.querySelector('[role="complementary"]'); const s = document.querySelector('[data-agent-panel-scrim]')
     if (!p || !s) return { p: !!p, s: !!s }
@@ -557,7 +558,13 @@ for (const width of [1440, 1180]) {
     scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.gapLeft - scrimGeo.inset) <= 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer !== 'none',
     JSON.stringify(scrimGeo))
   if (scrimGeo.strip) { await page.mouse.click(scrimGeo.strip.x, scrimGeo.strip.y); await page.waitForTimeout(400) }
-  check(`${W} S9 點遮罩(留白處)不關面板、網址列仍可點(遮罩純提示)`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false)
+  check(`${W} S9 點遮罩(留白處)關閉面板 → 入口鈕接手(2026-09-17 裁示,取代 09-16 的「點了不關」)`,
+    (await h.panelOpen()) === false && (await h.$('button[aria-label="開啟智慧代理"]')) === true,
+    JSON.stringify({ open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]') }))
+  // 點入口鈕開回來,接著跑原本的流程(面板收起不是卸載,草稿等狀態都在)
+  await h.click('button[aria-label="開啟智慧代理"]')
+  check(`${W} S9 入口鈕開回蓋板、網址列仍可點`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false,
+    JSON.stringify({ open: await h.panelOpen(), locInert: await h.inert('#demo-location') }))
   await h.typeIntoPanel('draft')
   await h.shot('900-overlay-before.png')
   // 瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」:宿主依歷史導航、agent 維持開啟(v14 推導表「同分頁在宿主內按上一頁 / 下一頁」)
@@ -597,7 +604,13 @@ for (const width of [1440, 1180]) {
   })
   if (stripPt) { await page.mouse.click(stripPt.x, stripPt.y); await page.waitForTimeout(400) }
   const afterStrip = { panelOpen: await h.panelOpen(), dialogs: await h.dialogs() }
-  check(`${W} S9 蓋板留白處點一下 → 面板仍開、底下的 modal 仍開(遮罩接住指標、不穿透)`, afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
+  // 2026-09-17 user 在 a / b 兩案中選 a:「只關代理面板,modal 留著」。遮罩仍然接住指標、不穿透 ——
+  // 所以 modal 的外部點擊守衛不會被觸發,dialogs 必須還是 1。
+  check(`${W} S9 蓋板留白處點一下 → 只關面板、底下的 modal 留著(2026-09-17 a 案)`, !afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
+  // × 那條關閉路徑也要覆蓋:先用入口鈕把面板開回來
+  await h.click('button[aria-label="開啟智慧代理"]')
+  check(`${W} S9 入口鈕開回蓋板,並存 modal 仍在後方`, (await h.panelOpen()) && (await h.dialogs()) === 1,
+    JSON.stringify({ open: await h.panelOpen(), dialogs: await h.dialogs() }))
   await h.click('[role="complementary"] button[aria-label="關閉面板"]')
   const revealed = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]'); if (!d) return { d: false }

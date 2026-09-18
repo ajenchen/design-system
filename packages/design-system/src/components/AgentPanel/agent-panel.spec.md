@@ -108,7 +108,10 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     外部點擊守衛看到目標落在保留區子樹內就不關,所以並存邏輯一行未動;面板收掉後 modal 自然完整露出。
     **API**:`AgentPanel` 新增 `onClose`(命名依據 `ds-canonical/references/props-naming.md`「關閉 overlay session」,
     與 Dialog / Sheet / Popover 同名同義);面板不自己關 `open`,只發通知(同 `onModeChange` 的分工)。
-    沒傳 `onClose` = 遮罩維持純提示、點了不關 → **既有 consumer 零改動**。鍵盤路徑不變(Esc 照舊)。
+    `onClose` **必填**(2026-09-18 修正):第一版寫成可選、理由是「向後相容」,結果沒傳的那些照舊點了不關,
+    而全庫最像產品的那則範例(URL 註冊表示意)剛好沒傳 —— user 在預覽站上點遮罩「根本沒有任何反應」。
+    面板自己關不了(`open` 住在 `AgentPanelDock`)= 沒有內建 fallback,依 §2「固定 anatomy 恆渲染」與
+    M23(f)「無內建行為的 callback 一律必填 prop(型別層擋)」必為必填。鍵盤路徑不變(Esc 照舊)。
   - **遮罩** = `lib/overlay-coexistence.ts` 的 `CoexistenceMask`,與並存 Dialog 同一層 `z-30`、同一顆 `--overlay`、同樣替 `persistentElements` 挖洞
     (層級句見 `../Dialog/dialog.spec.md`「並存」段:遮罩 z-30 < 並存 modal z-40 < 代理蓋板 z-[45] < 一般 modal z-50);它是面板根節點的**兄弟**,
     **接住**留白處的指標但沒有任何行為 —— 點了什麼都不會發生:不關面板、也不會穿到底下去關掉並存的 modal 或碰到宿主
@@ -116,11 +119,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     modal 的外部點擊守衛把常駐殼子樹裡的目標視為不關,Dialog 遮罩算洞時「遮罩不是洞」);面板的關閉仍只有 × 與入口鈕兩條路(見「Esc 與關閉語意」);
   - **淡入** = 與面板同相的 `--motion-duration-surface`(見「動畫總表」),偏好減少動態時不淡入。
   「像 Sheet」只到外觀:面板**不是** Sheet、也不用 `SheetOverlay`(Sheet 遮罩是 z-50,會壓過並存 modal;且面板永不進 Radix 的 DismissableLayer 疊,見負向鐵律)。
-  世界級對照(遮罩皆可設為「點了不關」):Material Components Web dialog 的 `scrimClickAction` 設空字串即不關
+  世界級對照:各家**預設**都是點遮罩即關 —— Material Components Web dialog 的 `scrimClickAction` 預設 `close`
   (<https://github.com/material-components/material-components-web/blob/master/packages/mdc-dialog/README.md>)、
-  Ant Design Drawer 的 `maskClosable`(<https://github.com/ant-design/ant-design/blob/master/components/drawer/index.en-US.md>)、
-  Radix Dialog 的 `onPointerDownOutside` 可 `preventDefault`(<https://github.com/radix-ui/website/blob/main/data/primitives/docs/components/dialog.mdx>);
-  各家**預設**多為點遮罩即關,本元件刻意不關是 user 決定(面板是常駐 app UI,不是暫時性浮層)。
+  Ant Design Drawer 的 `maskClosable` 預設 `true`(<https://github.com/ant-design/ant-design/blob/master/components/drawer/index.en-US.md>)、
+  Radix Dialog 外點即關(要不關才寫 `onPointerDownOutside` + `preventDefault`,
+  <https://github.com/radix-ui/website/blob/main/data/primitives/docs/components/dialog.mdx>)。
+  **2026-09-17 之後本元件與各家預設一致**;2026-09-16 到 09-17 之間的「點了不關」才是那條線上的例外(三家都提供關掉此行為的開關,所以那一版也不是憑空發明)。
   蓋板用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,回到寬螢幕時
   宿主也不必重新排版(避免來回切換內容跳動)。形態以 `data-agent-panel-mode` 標在根節點,並由 `onModeChange` 回報給消費端。
 
@@ -600,8 +604,10 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 焦點在面板內,面板內沒有任何浮層 | **什麼都不關** | 沒有暫時性 UI 可關;關掉面板等於關 app UI |
 | 焦點在面板外(側邊欄 / 主內容 / Dialog)且那裡開著浮層 | **關該區自己的浮層,不跨區碰面板** | 作用域封閉在焦點所在區,跨區關會讓使用者失去他沒在看的東西 |
 
-**推論(不必另外訂)**:面板的關閉只有兩條路 —— header 的 `×`、以及 FAB 的切換。沒有第三條;**蓋板態底下的遮罩點了也不關**
-(遮罩純提示:接住指標但沒有任何行為,2026-09-16 user 裁示,見「與 app 的推擠與斷點」)。
+**推論(不必另外訂)**:面板的關閉有三條路 —— header 的 `×`、FAB 的切換、以及**蓋板態下點面板外的遮罩**
+(2026-09-17 user 裁示,見「與 app 的推擠與斷點」;2026-09-16 到 09-17 之間是「點了不關」,已被取代)。
+**Esc 不在其中**:上表三條不變 —— 遮罩點擊是指標的「外部點擊」語意(與 Dialog 同一條線),
+Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所以 Esc 仍然不關面板。
 
 ### 負向鐵律:AgentPanel 永不進入 Radix 的 DismissableLayer 疊
 
@@ -626,7 +632,9 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
   `scripts/agent-panel-dismissable-layer-invariant.mjs`)。
 - ❌ 用 Esc 關閉面板本身(面板是常駐 app UI,不是暫時性 UI)。
 - ❌ 用 Sheet / SheetContent 承載蓋板態(進 DismissableLayer 疊、遮罩 z-50 壓過並存 modal)。
-- ❌ 手刻 `bg-overlay` 遮罩,或讓蓋板遮罩點擊關閉面板(遮罩 = `CoexistenceMask`,純提示;機械閘 `scripts/agent-panel-breakpoint.mjs`)。
+- ❌ 手刻 `bg-overlay` 遮罩(蓋板遮罩 = 與並存 Dialog 同一支 `CoexistenceMask`;機械閘 `scripts/agent-panel-breakpoint.mjs`)。
+- ❌ 把 `onClose` 寫成可選、或以「有沒有傳 `onClose`」決定遮罩點了關不關(2026-09-18:這樣寫過一次,沒傳的範例就靜靜地點了不關;
+  機械閘 `scripts/agent-panel-fixed-anatomy-invariant.mjs`)。
 
 ## 邊界案例 scope
 

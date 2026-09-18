@@ -90,7 +90,7 @@ Popover（浮動容器，handle 展開 / 定位）
 透過 `multiple` prop 決定（`value` 型別只被 normalize 成內部 `selectedValues`，不參與模式判斷）：
 
 - **單選**（`multiple={false}`，預設）：`value: string | null`，選中後立即關閉浮層
-- **多選**（`multiple={true}`）：`value: string[]`，選中不關閉，可繼續選（footer 可顯示全選／取消全選按鈕）
+- **多選**（`multiple={true}`）：`value: string[]`，選中不關閉，可繼續選（footer 可顯示全選／取消全選按鈕;footer 的左右內距寫成列在用的同一行 `px-[var(--item-px,var(--field-px))]` —— 本元件不渲染 header,內容左邊界是列,判準 owner `../../patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」,機械閘 `scripts/overlay-footer-gutter-invariant.mjs`）
 
 ---
 

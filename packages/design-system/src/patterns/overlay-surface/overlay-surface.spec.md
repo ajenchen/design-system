@@ -224,7 +224,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 
 > **底部內容需要鋪滿容器兩側嗎**(整條可點、整條有滑過底色)?
 > **要 → 列式 footer**(左右內距 0,內容自己帶 gutter,沿用 MenuGroup 的 `py-2` 節奏)
-> **不要 → `SurfaceFooter`**(左右內距 `loose`,內容左緣對齊 header 標題)
+> **不要 → `SurfaceFooter`**(內容左緣對齊**這個浮層的內容左邊界**,見下方「要對齊誰」)
 
 判準是「**誰負責左右 gutter**」—— 跟 `../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」是同一條線:
 列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。
@@ -232,7 +232,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 | | `SurfaceFooter` | 列式 footer |
 |---|---|---|
 | 典型內容 | 有邊界的按鈕(取消 / 儲存 / 今天 / 確定 / **全選 / 重設 / 套用**) | 一整列(Sidebar 的帳號入口、選單的常駐列) |
-| 左右內距 | `px-[var(--layout-space-loose)]`;**裝在沒有 header 的選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`**(見下方) | **0** |
+| 左右內距 | 對齊內容左邊界:預設 `px-[var(--layout-space-loose)]`;**裝在選單裡(內容左邊界由列定義)覆寫成 `px-[var(--item-px,var(--field-px))]`**(見下方) | **0** |
 | 上下內距 | `py-[var(--layout-space-tight)]` | `py-2`(= `MenuGroup` 節奏) |
 | 排版 | `flex items-center justify-end gap-2`(單側時用 `justify-between`,先例 `components/Coachmark/coachmark.tsx`)| 直排全寬 |
 | 實作 | 本檔 `SurfaceFooter`(Dialog / Sheet / Popover footer 全是純轉發)| `components/Sidebar/sidebar.tsx` 的 `SidebarFooter`、`components/Menu/menu-item.tsx` 的 `MenuFooter` |
@@ -241,14 +241,47 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 右側放**提交**類(套用);有哪個功能才渲哪顆,沒有就不渲。canonical 實作見
 `components/SelectMenu/select-menu.tsx` 的多選 footer。
 
-**`SurfaceFooter` 的左右內距要對齊誰:看那個浮層有沒有 header**(2026-09-17 補,同日錨):
-`loose` 這個預設值的用意是「對齊 header 標題」,前提是**真的有 header**。裝在**沒有 header 的選單**裡
-(`SelectMenu` 整份檔案不渲染任何 header),footer 唯一能對齊的是**它上面那些列**,這時要覆寫成列在用的
-同一個 token:`px-[var(--item-px,var(--field-px))]`。裸選單解出 12px、放進有 chrome 的浮層時容器已在
-Command 根把 `--item-px` 設成 `var(--layout-space-loose)` 解出 16px —— 同一個 token 兩種情境都對,
-不會多出第二個要同步的數字(M17)。錯誤示範(當天實測):沿用 `px-loose`,一般下拉選單裡按鈕左緣 33px、
-列前緣 29px,差 4px 肉眼看得出來。判準一句話:**footer 對齊的是同一個浮層裡「內容的左邊界」,
-有 header 時那是標題,沒 header 時那是列的前緣**。
+**`SurfaceFooter` 的左右內距要對齊誰:對齊「這個浮層的內容左邊界」**(2026-09-17 立、2026-09-18 依全庫實測收斂)。
+
+規則只有一條句子:**footer 的內容左緣 = 同一個浮層裡內容的左邊界**。誰定義那條左邊界,依這個順序看 ——
+
+| 浮層裡最上面那疊是什麼 | 左邊界由誰定義 | footer 寫法 | 實測 |
+|---|---|---|---|
+| 一整排列(選單 / list-as-region) | **列**(列自己帶 `--item-px`) | `px-[var(--item-px,var(--field-px))]` | SelectMenu / Combobox / PeoplePicker / DataTable 篩選選單,共 41 個面板,差 0 |
+| `SurfaceBody`(一般內文) | **body** 的內容左緣 | 不覆寫(預設 `loose`) | Coachmark / Popover / overlay-surface 樣張,共 12 個,差 0 |
+| 日曆格線 | **第一格**的左緣 | 不覆寫(預設 `loose`) | DatePicker 6 個,差 0 |
+| 只有 `SurfaceHeader` | **標題**的左緣 | 不覆寫(預設 `loose`) | Dialog / Sheet / AgentPanel 決策卡,共 10 個,差 0 |
+| 以上皆無(欄位數字**置中**、欄本身零內距) | **沒有左邊界可對齊** | 由面板自訂,但**必須是既有 layout token**,不得寫死數字 | TimePicker 27 個(見下方例外) |
+
+**所以「12px」不是規則,「對齊列」才是。** 選單的列內距現在解出 12px,footer 就跟著 12px;
+同一顆 `SurfaceFooter` 放進有 chrome 的浮層時,容器已在 Command 根把 `--item-px` 設成 `var(--layout-space-loose)`,
+於是同一行寫法自動解出 16px(`components/Dialog/dialog.stories.tsx`、`components/Popover/popover.stories.tsx` 都是這樣用)。
+**同一個 token 兩種情境都對,不會多出第二個要同步的數字**(M17)。哪天列的內距改了,footer 自己會跟上,不需要有人記得同步。
+
+**唯一的例外:TimePicker**(2026-09-18 全庫掃描確認只有這一個)。它的時 / 分 / 秒是**置中的數字欄、欄本身零內距**
+(實測:面板寬 162,欄寬 79.5、貼齊面板邊),沒有任何「內容左邊界」可以對齊;
+它的 footer 因此走 `px-[var(--layout-space-tight)]`,與同一顆 footer 的 `py-tight` 成對,是**面板自己的內距**而不是對齊誰。
+DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 `loose` 實測就對在第一格上(差 0)。
+
+**密度**:所有浮層(Popover 家族 = SelectMenu / Combobox / DatePicker / TimePicker / 篩選面板)都帶
+`data-layout-space="md"` 鎖(`components/Popover/popover.tsx`),所以 `loose` 恆 16、`tight` 恆 12;
+`--item-px` 回退的 `--field-px` 本來就不隨密度變。Dialog / Sheet 不鎖,但 body 與 footer 吃同一顆 `loose`,一起變、仍然對齊。
+**沒有任何一個 footer 會在 lg 密度下跟它上面的東西脫隊**(2026-09-18 兩個密度各量一次)。
+
+**「還能更 SSOT 嗎?」—— 能,但還不到時候**(2026-09-18 記錄,免得日後被當成漏做)。
+更徹底的做法是讓三個部位都讀同一顆殼層變數:`SurfaceHeader/Body/Footer` 一律 `px-[var(--surface-gutter,var(--layout-space-loose))]`,
+選單殼在 Command 根設一次 `--surface-gutter: var(--item-px,var(--field-px))` —— 那樣「一個浮層只有一條內容內距」
+就是**結構上成立**,不再是一條要人記得的規則。**現在不做的理由**:全庫只有**一個** consumer 需要覆寫
+(`components/SelectMenu/select-menu.tsx` 那一行,其餘 41 個選單面板都是它渲的),
+`ds-canonical` 的 Rule-of-3 是「同概念 ≥ 3 處才抽 SSOT」,為一行改三個 primitive 的預設值,
+弄壞既有 12 個正確 footer 的風險大於收益。**觸發條件**:當第二個元件需要自己的選單 footer(不是透過 SelectMenu)時,
+就地做上面那個收斂,不要再複製第二行覆寫。在那之前,漂移由下面這支閘擋住 —— 它擋的是**結果**(像素),
+不是寫法,所以就算有人用別的寫法也照樣抓得到。
+
+**機械閘**:`scripts/overlay-footer-gutter-invariant.mjs` —— 掃全部 story,量的是**像素**(content-box 左緣)不是 class 字串;
+有可對齊對象就比幾何(容差 1px),沒有就檢查內距是不是既有 token。對照組把每個 footer 推 7px,必須紅。
+
+錯誤示範(2026-09-17 當天實測):選單 footer 沿用 `px-loose`,按鈕左緣 33px、列前緣 29px,差 4px,肉眼看得出來。
 
 **為什麼列式 footer 不併進 `SurfaceFooter`**:它們的幾何差異是**內容驅動**的,不是兩份同樣東西 ——
 把一整列放進 `px-loose` 的容器會讓列的滑過底色縮在兩側各 16px 內,違反本檔「List-as-region」第 3 條
@@ -260,7 +293,9 @@ Command 根把 `--item-px` 設成 `var(--layout-space-loose)` 解出 16px ——
 - `border-t border-divider`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center justify-end gap-2 shrink-0`(右對齊按鈕列,不被壓縮)
-- **Footer px = body 內容內縮原則**:預設 `layout-space-loose` 讓 footer 按鈕左緣對齊 SurfaceHeader title / SurfaceBody 內容左緣(整面板內容垂直對齊一條線,同 Body alignment rationale)。**例外**:body 為 full-bleed(滿欄 column selector / 無 chrome padding 的 unbounded list)、無內容左緣可對齊時,可經 `className` override 較緊 px(eg. TimePicker footer override `px-[var(--layout-space-tight)]` 對齊滿欄置中 columns、保窄面板平衡)。**注**:`--field-px` 是 form-field gutter 概念(uiSize),**不**用於 overlay footer——footer 屬 overlay chrome,padding 走 layoutSpace 家族。
+- **Footer px = 浮層內容左邊界**(判準與完整對照表在上方「要對齊誰」,本處不重述):預設 `layout-space-loose` 對齊 SurfaceHeader title / SurfaceBody 內容左緣;內容左邊界由**列**定義時(選單 / list-as-region)覆寫成列在用的同一行 `px-[var(--item-px,var(--field-px))]`;兩者皆無時(欄位置中的挑選面板)才由面板自訂,必須用既有 layout token。
+  **注**:**不要直接寫 `--field-px`** —— 那是 form-field 的 gutter(uiSize 家族),overlay chrome 不該伸手進去拿。要寫就寫 `--item-px`(owner:`../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」),它**是列的 gutter token**,只是預設值回退到 `var(--field-px)`;照抄 `components/Menu/menu-item.tsx` 那一行,footer 與列從此吃同一個來源。
+  *(2026-09-18 更正:本條原本寫成「`--field-px` **不**用於 overlay footer」,與上方 2026-09-17 立的「選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`」在同一份檔案裡互相矛盾 —— user 問「這是其 SSOT 嗎」時抓到的正是這一點。真正的界線不是「哪個 token 家族」,是「footer 要不要跟列吃同一個來源」。)*
 
 ---
 

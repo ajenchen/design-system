@@ -547,14 +547,15 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
               `justify-between` 讓左側放操作選取的按鈕(全選 / 未來的重設)、右側留給提交類(未來的套用);
               先例:`components/Coachmark/coachmark.tsx` 已用同一手法。
 
-              **左右內距覆寫成 `--item-px`,不用 SurfaceFooter 預設的 loose**:SelectMenu **從來不渲染
-              header**(整份檔案沒有 SurfaceHeader / PopoverHeader),所以這顆按鈕唯一能對齊的東西是**它上面那些列**。
+              **左右內距覆寫成 `--item-px`,不用 SurfaceFooter 預設的 loose**:規則是「footer 對齊**這個浮層的內容左邊界**」
+              (判準與全庫實測對照表在 `patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」)。
+              在這個元件裡定義那條左邊界的是**列** —— SelectMenu 整份檔案沒有 SurfaceHeader / PopoverHeader,列就是內容的最左緣。
               而列的內距就是 `--item-px`:裸選單是預設 12px,放進有 chrome 的浮層時由容器在 Command 根設成
               `var(--layout-space-loose)`(16px,見 `Popover/popover.stories.tsx` 與 `Dialog/dialog.stories.tsx`)。
               兩種情境都讀同一個 token,按鈕左緣就永遠貼齊列的前緣,不會有第二個數字要同步(M17)。
               2026-09-17 錨:一開始沿用 `SurfaceFooter` 預設的 `px-loose`,在**沒有 header 的一般下拉選單**裡
               按鈕左緣 33px、列前緣 29px,差 4px 肉眼看得出來 —— 「對齊 header 標題」那句話在這個元件不成立,
-              因為它沒有 header。
+              因為它沒有 header。機械閘:`scripts/overlay-footer-gutter-invariant.mjs`(量像素,全 story 掃)。
 
               **a11y:普通命令按鈕,標籤會變,不加 `aria-pressed`** —— W3C 按鈕規範
               (https://www.w3.org/WAI/ARIA/apg/patterns/button/)逐字:「it is critical the label on a toggle

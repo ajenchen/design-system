@@ -628,7 +628,7 @@ List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surfac
 
 | Token | 預設 | 消費者 |
 |---|---|---|
-| `--item-px` | `var(--field-px)`(12px) | `menuItemVariants`(`components/Menu/menu-item.tsx`)、`treeItemVariants` 的 `menu` indent 檔位(`components/TreeView/tree-view.tsx`) |
+| `--item-px` | `var(--field-px)`(12px) | `menuItemVariants`(`components/Menu/menu-item.tsx`)、`treeItemVariants` 的 `menu` indent 檔位(`components/TreeView/tree-view.tsx`)、**選單底部的 `SurfaceFooter`**(`components/SelectMenu/select-menu.tsx`;為了讓 footer 的按鈕左緣跟列前緣同一條線 —— 判準在 `../overlay-surface/overlay-surface.spec.md`「要對齊誰」,機械閘 `scripts/overlay-footer-gutter-invariant.mjs`)|
 
 **不在此範圍**:Button / Chip / SegmentedControl 的水平內距跟著 **role** 走
 (`components/Button/button.spec.md`「padding 跟著 role」),與 content gutter 是不同概念,維持各自的值。

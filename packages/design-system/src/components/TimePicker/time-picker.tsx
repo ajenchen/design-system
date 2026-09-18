@@ -444,10 +444,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               className="flex-1 min-h-0"
             />
             {/* Footer:消費 SurfaceFooter SSOT(border-t + py-tight + gap-2 + shrink-0 + justify-end)。
-                px override 回 layout-space-tight,因 TimePicker 滿欄 column 面板無 chrome-padded body
-                內縮邊可對齊(footer px = body 內縮 原則;column-selector 數字置中、零內距,
-                見 time-picker.spec.md)。此刻 mr-auto 把確定推右,視覺等同原 justify-between
-                —— 純結構消費 overlay-surface canonical(overlay-surface.spec.md:17「不自寫 padding token」),零視覺變化。 */}
+                **本元件是「footer 對齊內容左邊界」那條規則的唯一例外**(2026-09-18 全庫掃描確認只有這一個):
+                時 / 分 / 秒是**置中的數字欄、欄本身零內距**(實測面板寬 162、欄寬 79.5 且貼齊面板邊),
+                沒有任何內容左邊界可以對齊。所以 footer 的 px 不是「對齊誰」,是**面板自己的內距** ——
+                取 `layout-space-tight`,與同一顆 footer 的 `py-tight` 成對(12/12 方正內距)。
+                判準與對照表:`patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」;
+                機械閘 `scripts/overlay-footer-gutter-invariant.mjs` 對這種面板只檢查「內距必須是既有 layout token」。
+                此刻 mr-auto 把確定推右,視覺等同原 justify-between。 */}
             <SurfaceFooter className="px-[var(--layout-space-tight)]">
               <Button variant="text" size="sm" onClick={handleNow} className="mr-auto">
                 此刻
