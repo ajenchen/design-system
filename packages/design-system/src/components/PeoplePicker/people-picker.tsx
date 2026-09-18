@@ -212,7 +212,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // consumer 顯式傳 'pill' 時本行為 no-op(同值)。hook 必在任何 early return 前呼叫(React #310)。
   // **只在 form surface 降階**(2026-08-05):table-cell / inline-edit / toolbar 維持 stack —
   // cell 的 view↔edit 像素對齊與固定列高契約不得被 pill 的 wrap 破壞(user:「尤其是 table
-  // 的部分」)。cell 觸控編輯本就走原生 picker,移除成員在 picker 內完成。
+  // 的部分」)。**2026-09-18 更正**:原本這裡寫「cell 觸控編輯本就走原生 picker,移除成員在
+  // picker 內完成」—— Combobox 的觸控原生路徑已整個移除(user 拍板手機與桌機同一套),
+  // 現在觸控編輯開的是同一套自訂浮層,已選成員在浮層裡打勾、可再點取消。pill 降階本身不變
+  // (它解的是欄位上「多人只剩 +N」的顯示問題,跟選單走哪條路無關)。
   const isTouch = useIsTouchDevice()
   const effectiveMultiDisplay = isTouch && isMulti && surface === 'form' ? 'pill' : multiDisplay
   // 已選值回查名錄 = people + suggestions(2026-09-09:從建議群組選的人不在 people 裡;hook 必在 early return 前)

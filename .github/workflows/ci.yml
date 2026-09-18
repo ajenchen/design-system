@@ -751,6 +751,16 @@ jobs:
           # 對照組把每個受管欄位的左內距推 6px,這支必須紅。
           npm run test:field-text-left-edge
 
+      - name: Combobox single path on touch (browser)
+        run: |
+          # Combobox 只有一條路徑:觸控裝置看到的跟桌機完全一樣(user 2026-09-18 拍板
+          # 「我完全不想要為了手機客製化元件,我希望就是 SSOT,直接用桌機版的」)。
+          # 在此之前它依 (pointer: coarse) 分流到隱藏原生 <select>,而**全 repo 沒有任何閘會開
+          # 觸控模式** —— 結果 20 個 prop 在觸控上被靜默丟棄、「不限」互斥完全沒有、DataTable
+          # 儲存格的 defaultOpen/onOpenChange 失效,零訊號。靜態字串比對做不到,必須真的用
+          # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
+          npm run test:combobox-single-path
+
       - name: Overlay footer gutter (browser)
         run: |
           # 浮層底部那條 footer 的左右內距必須對齊「這個浮層的內容左邊界」

@@ -197,7 +197,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 `MultiPersonCell` / `PersonCell`(`cell-registry.tsx` cell-as-input,DataTable)+ form context PeoplePicker **包同一個元件**,所以 §B/§C/§D 規則對兩 surface 都成立。差別只在 padding 機制(共 §E)— 兩 surface 都產出 12px inset,**禁分歧**。
 
-**唯一例外(2026-08-05)**:觸控多選的 pill 降階只在 form surface 生效,table-cell 維持 stack —— 理由是 cell 的固定列高與 view↔edit 像素對齊契約優先於「觸控可移除成員」;cell 觸控編輯本就走原生 picker,移除在 picker 內完成。見「觸控裝置(native 分支)」段。
+**唯一例外(2026-08-05)**:觸控多選的 pill 降階只在 form surface 生效,table-cell 維持 stack —— 理由是 cell 的固定列高與 view↔edit 像素對齊契約優先於「觸控可移除成員」。**2026-09-18 更正**:原文接著寫「cell 觸控編輯本就走原生 picker,移除在 picker 內完成」,該前提已不成立 —— Combobox 的觸控原生路徑整個移除(見 `combobox.spec.md`「單一路徑(不分裝置)」),現在觸控編輯開的是同一套自訂浮層,已選成員在浮層裡打勾、可再點取消。降階規則本身不變。
 
 **改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `check_peoplepicker_ssot_drift.sh` 機械強制。
 
@@ -218,7 +218,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
 - **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:184` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx:533` `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
-- **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套(NativeCombobox 消費同一組 display props,見 `combobox.spec.md`「Display 層雙分支同 SSOT」)— pill 本體 tap 穿透喚起原生 picker(新增成員),pill 上的 X 照常可點(移除成員)
+- **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套 — pill 上的 X 照常可點(移除成員)。**2026-09-18 更正**:原文說 pill 本體 tap 會「穿透喚起原生 picker」,那是舊觸控路徑的機制;Combobox 已無原生路徑(見 `combobox.spec.md`「單一路徑(不分裝置)」),新增成員改為點欄位開同一套自訂浮層
 - **選單**:觸控走原生 `<select>` picker(Combobox 觸控 SSOT,平台 a11y 最佳);原生選項無法渲 avatar 屬平台限制,桌機選單維持 PeoplePicker avatar + description 選項不變
 - 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
 
