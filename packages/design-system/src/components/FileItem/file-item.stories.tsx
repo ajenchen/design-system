@@ -230,6 +230,19 @@ export const CompactMixed = {
   ),
 }
 
+/**
+ * 上傳管理器這個 archetype 的**狀態 → 行動**配對,兩個密度樣張共用同一份。
+ *
+ * 為什麼抽出來(2026-09-18 user 回報):先前只有「豐富」那則的 completed 列傳了 `onDownload`,
+ * 「緊湊」那則沒傳 —— 於是同一個面板在兩個密度下,滑過已完成的檔案一個會把綠 ✓ 換成下載鈕、另一個不會,
+ * 看起來像「能力由密度決定」。實際上 `file-item.spec.md`「可下載狀態 canonical」的狀態表寫得很清楚:
+ * `completed` 配 `Download ↓` 配 `onDownload`、`error` 配 `⟲` 配 `onRetry`;
+ * 沒傳就退回 passive 是給既有 consumer 的相容行為,不是這裡要示範的東西。
+ * 寫成共用常數而不是「兩邊都記得傳」:**能力集合從此不可能只在其中一則出現**。
+ */
+const UPLOAD_MANAGER_COMPLETED = { status: 'completed', onDownload: noop } as const
+const UPLOAD_MANAGER_ERROR = { status: 'error', onRetry: noop } as const
+
 // surface="upload-manager":Google Drive / Dropbox 上傳管理面板。面板組合 canonical(2026-06-03 圖五/圖一 user 校準):
 //   - 左右一律 loose(16px,對齊 header);上下目標「邊緣→item ink」= tight(12px),通則 container 該側 = 12 − item 該側留白
 //   - rich item 上下留白 0 → py-tight(12/12 對稱);compact 上留 8(item py)→ pt-1(4),下進度條貼底留 0 → pb-tight(12)
@@ -250,10 +263,10 @@ export const UploadManagerSurface = {
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         <FileItem mode="rich" surface="upload-manager" name="Alan Profile.png" status="uploading" progress={40}
           description="5.7 MB of 7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
-        <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" status="completed"
-          description="2.4 MB" thumbnailSrc="https://i.pravatar.cc/80?u=xls" onDownload={noop} actions={deleteBtn} />
-        <FileItem mode="rich" surface="upload-manager" name="合約草案 v3.pdf" status="error"
-          description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=pdf" onRetry={noop} actions={deleteBtn} />
+        <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" {...UPLOAD_MANAGER_COMPLETED}
+          description="2.4 MB" thumbnailSrc="https://i.pravatar.cc/80?u=xls" actions={deleteBtn} />
+        <FileItem mode="rich" surface="upload-manager" name="合約草案 v3.pdf" {...UPLOAD_MANAGER_ERROR}
+          description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=pdf" actions={deleteBtn} />
       </SurfaceBody>
     </div>
   ),
@@ -279,10 +292,10 @@ export const UploadManagerCompactSurface = {
       <SurfaceBody className="flex flex-col gap-1 !pt-1">
         <FileItem mode="compact" surface="upload-manager" name="季度報告.docx" status="uploading" progress={60}
           onClick={noop} actions={deleteBtn} />
-        <FileItem mode="compact" surface="upload-manager" name="客戶名單.csv" status="completed"
+        <FileItem mode="compact" surface="upload-manager" name="客戶名單.csv" {...UPLOAD_MANAGER_COMPLETED}
           onClick={noop} actions={deleteBtn} />
-        <FileItem mode="compact" surface="upload-manager" name="封面.png" status="error"
-          description={errorDescWithLog} onRetry={noop} actions={deleteBtn} />
+        <FileItem mode="compact" surface="upload-manager" name="封面.png" {...UPLOAD_MANAGER_ERROR}
+          description={errorDescWithLog} actions={deleteBtn} />
       </SurfaceBody>
     </div>
   ),
