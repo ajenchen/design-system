@@ -128,18 +128,27 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
   `border-spacing` 的語意是「格與格之間 4px」,但 CSS **連最外圈也各給 4px** ——
   不抵銷的話日期格會落在 12 + 4 = 16,而同一個面板的上下月 chevron 貼著 12,四邊對稱就破了。
   這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」,程式端註解只解釋「為何用 table 不用 grid」,
-  一個字都沒提最外圈),是 `border-separate` 的副作用。2026-09-18 user 拍板:以原規格的 12px 為準。
+  一個字都沒提最外圈),是 `border-separate` 的副作用。2026-09-18 user 拍板,原話:「我認為就是以原本規格說的12px為主吧?」
   - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
   - **上游也不外溢**:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,它 457 行的 `style.css` 裡
     `border-spacing` 出現 **0 次**;IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
     外溢是我們自己加的,不是慣例。
+  - ⚠️ **世界級不是一面倒**(2026-09-18 逐家抓原始碼後誠實標註,不要把這條寫成共識):
+    `react-day-picker`(外溢 0)與 Carbon(根本沒有格間距)站「貼齊」這邊;
+    但 **Angular Material**(Google 自家、M3 主題)的間距做在**每格內部**(40px 格內縮 5%),
+    外圈因此是 2px(= 格間 4px 的一半)且**沒有抵銷**,它的上下月按鈕也**不對齊**日期格的盒。
+    所以支撐本決定的是**我們自己的規格原文(兩者都 12)+ 我們自己的盒對盒慣例**,不是世界級共識。
   - 實測(裸 DateGrid 四邊):chevron 盒 12 / 日期格盒 12 / 最後一排到底 12;
     `DatePicker` 面板裡 chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12。
-- **對齊基準是盒,不是圖示**:chevron 是 `data-unbounded` 的 24px 按鈕、內含 16px 圖示置中,
-  所以它的**圖示**在 16、**盒**在 12。本 DS 一律盒對盒
-  (`../../patterns/overlay-surface/overlay-surface.spec.md:116-117`「item 的 padding-box 左緣 = header title 左緣」
-  「**對齊的是列的前緣,不是文字**」),**不得**用「圖示落在哪」當對齊證據 ——
-  hover 時 chevron 畫的是整個 24px 盒,那才是看得見的邊。
+  - **連帶後果(雙月範圍面板)**:抵銷外圈後,兩張月曆之間「最後一格 → 第一格」的**可見**距離
+    從 24px(宣告 16 + 兩邊各外溢 4)變成 **16px** —— 也就是宣告值終於等於看到的值。
+    面板寬同步從 490 收到 482。若日後想要更寬的月間距,請**改宣告值**,不要靠外溢湊。
+- **對齊基準是盒,不是圖示**:chevron 是 24px 按鈕、內含 16px 圖示置中,所以它的**圖示**在 16、**盒**在 12。
+  本 DS 一律盒對盒 —— 明文在 `../../patterns/overlay-surface/overlay-surface.spec.md:116-117`
+  「item 的 **padding-box 左緣** = header title 左緣」「**對齊的是列的前緣,不是文字**」、:121「對齊的同樣是**按鈕左緣**而非按鈕文字」。
+  所以**不得**用「圖示落在哪」當對齊證據。
+  ⚠️ **不要拿 `data-unbounded` 當水平對齊的前例**(2026-09-18 查證後撤回):它的負 margin 全庫**只有垂直的 `my-`**
+  (`overlay-surface.tsx:68` `CHROME_UNBOUNDED_SLOT`),用途是把按鈕的版面高度縮到工具列列高,**水平方向零先例**。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)
