@@ -770,7 +770,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               // 2026-07-05 D4:gate 由 `showTime` 改 `(showTime || needConfirm)` 對齊 Range(:1068)—
               // date-only `needConfirm` 時 onSelect 只寫 draft 且不關 popover,footer「確定」是唯一
               // commit 路徑,原 gate 漏渲 footer = draft 永遠無法 commit 的死路。
-              <SurfaceFooter>
+              <SurfaceFooter className="px-[var(--item-px,var(--field-px))]">
                 <Button variant="tertiary" size="sm" onClick={handleNow} className="mr-auto">此刻</Button>
                 {needConfirm ? (
                   <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
@@ -1283,7 +1283,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             // 與 patterns/overlay-surface/overlay-surface.spec.md「要對齊誰」)。
             // showTime Range 無「此刻」(對齊 Ant `showNow={multiple ? false : showNow}`)→ 只有 確定 走 justify-end。
             // date-only Range needConfirm:左 此刻(mr-auto)+ 右 確定。
-            <SurfaceFooter>
+            <SurfaceFooter className="px-[var(--item-px,var(--field-px))]">
               {!showTime && (
                 <Button variant="tertiary" size="sm" onClick={handleNow} className="mr-auto">此刻</Button>
               )}

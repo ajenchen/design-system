@@ -120,26 +120,26 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## Spacing canonical(2026-05-03 v8)
 
-- 容器 padding `p-3`(12px,對齊 `--layout-space-tight` @ md density)
-- ⚠️ **外緣目前有 4px 落差,尚未定案**(2026-09-18 實測,user 提問後重驗)。本段**只陳述量到的數字,不下「哪個才對」的結論**:
-
-  | 量到的東西 | 左 | 右 | 上 | 下 |
-  |---|---|---|---|---|
-  | chevron 按鈕的**盒子** | 12 | 12 | 12 | — |
-  | 日期格的**盒子** | **16** | **16** | — | **16** |
-
-  - 日期格的 16 = 容器 12 + `border-spacing-1` **在最外圈也各留 4**。
-    **這 4px 沒有任何人決定過** —— 全 repo 唯一提到它的句子是 2026-09-18 才補上的本段;
-    它是 `border-separate` 的副作用(格與格之間要 4px,CSS 連最外圈一起給)。
-  - chevron 是 `variant="text"` 的 Button(`data-unbounded`),盒 24px、內含 16px 圖示置中。
-    **不可以用「圖示落在 16 所以算對齊」來解釋**:實測 hover 時 chevron 在它**整個 24px 盒子**上畫底色
-    (自 x=12 起、圓角 4px),日期格 hover 則是自 x=16 起的 28px 圓 —— 看得見的表面並沒有對齊。
-    本 DS 的對齊慣例是**盒對盒**(`../Button/button.spec.md`「`data-unbounded`」那條正是用負 margin
-    把 layout 佔位縮回去讓**邊**對齊,不是靠圖示位置)。
-  - 本段原文(2026-05-03 v8)寫的是「四邊對稱:chevron 按鈕到邊距 = 最左最右日期 cell 到邊距(12px)」
-    —— **規格說兩者都該是 12,程式做出來是 12 與 16**。要把日期格拉回 12、還是把 chevron 推到 16,
-    會連動 `DatePicker` footer(現用 `px-loose` 16)與 `TimePickerSidePanel`(caption 對齊綁在 `p-3`),
-    屬視覺 SSOT 決定,**待拍板**;拍板前不片面改任一邊。
+- 容器內距 **12px 四邊對稱**,讀 `p-[var(--item-px,var(--field-px))]`(不是字面 `p-3`)。
+  為什麼是 `--item-px`:這個浮層掛在欄位上,內容要跟 trigger 的文字落在同一條線 ——
+  那正是 `--item-px` 預設取自 `--field-px` 的理由(`../../patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」)。
+  `DatePicker` 的 footer 讀**同一個**運算式,所以日曆的邊與 footer 的邊是**同一個來源**,不是兩個剛好都等於 12 的字面值。
+- **最外圈的 border-spacing 必須抵銷**(`month_grid` 帶 `-m-1`)。
+  `border-spacing` 的語意是「格與格之間 4px」,但 CSS **連最外圈也各給 4px** ——
+  不抵銷的話日期格會落在 12 + 4 = 16,而同一個面板的上下月 chevron 貼著 12,四邊對稱就破了。
+  這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」,程式端註解只解釋「為何用 table 不用 grid」,
+  一個字都沒提最外圈),是 `border-separate` 的副作用。2026-09-18 user 拍板:以原規格的 12px 為準。
+  - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
+  - **上游也不外溢**:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,它 457 行的 `style.css` 裡
+    `border-spacing` 出現 **0 次**;IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
+    外溢是我們自己加的,不是慣例。
+  - 實測(裸 DateGrid 四邊):chevron 盒 12 / 日期格盒 12 / 最後一排到底 12;
+    `DatePicker` 面板裡 chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12。
+- **對齊基準是盒,不是圖示**:chevron 是 `data-unbounded` 的 24px 按鈕、內含 16px 圖示置中,
+  所以它的**圖示**在 16、**盒**在 12。本 DS 一律盒對盒
+  (`../../patterns/overlay-surface/overlay-surface.spec.md:116-117`「item 的 padding-box 左緣 = header title 左緣」
+  「**對齊的是列的前緣,不是文字**」),**不得**用「圖示落在哪」當對齊證據 ——
+  hover 時 chevron 畫的是整個 24px 盒,那才是看得見的邊。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)

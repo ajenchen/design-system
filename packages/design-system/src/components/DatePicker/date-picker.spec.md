@@ -243,11 +243,11 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
   **左右內距不覆寫**(用 `SurfaceFooter` 預設的 `loose` 16px):判準 owner 是
   `../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」——
-  footer 對齊的是**這個浮層的內容左邊界**。在本元件,那條邊**目前本身就有 4px 的落差未定案**:
-  日期格的盒在 16(`p-3` 12 + `border-spacing-1` 最外圈 4),上下月 chevron 的盒在 12。
-  footer 的 `px-loose`(16)對得上日期格、對不上 chevron。
-  逐邊實測與「該把哪一邊拉齊」的待決事項在 `../DateGrid/date-grid.spec.md`「Spacing canonical」
-  (**那裡是 owner,本處不重述**);那一題拍板後,本元件的 footer 內距要一起確認。
+  footer 對齊的是**這個浮層的內容左邊界** = **12px**(2026-09-18 user 拍板以原規格的 12 為準)。
+  寫法是 `px-[var(--item-px,var(--field-px))]` —— 跟 `DateGrid` 容器**同一個運算式、同一個來源**,
+  不是兩個剛好都等於 12 的字面值。實測:chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12。
+  完整脈絡(最外圈 4px 怎麼來的、為何抵銷、上游與同 repo 先例)在
+  `../DateGrid/date-grid.spec.md`「Spacing canonical」(**那裡是 owner,本處不重述**)。
   **不是**「canonical 所以 px-loose」—— 那句話會讓人照抄到沒有 header 的下拉選單裡,
   2026-09-17 就這樣差出 4px(33 vs 29)。
   ⚠️ **這裡的相等是兩個不相干的字面值剛好相等**:footer 的 16 來自 `--layout-space-loose`,

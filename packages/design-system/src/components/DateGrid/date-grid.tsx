@@ -83,8 +83,12 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
-      // p-3 = 12px 四邊對稱(canonical 不可動)
-      className={cn('p-3', className)}
+      // 四邊 12px 對稱。2026-09-18 從字面 `p-3` 改成讀 `--item-px`(預設 `--field-px` = 12):
+      // 這個浮層是掛在欄位上的,內容要跟 trigger 的文字落在同一條線 ——
+      // 那正是 `--item-px` 預設取自 `--field-px` 的理由(`../../patterns/element-anatomy/item-anatomy.spec.md`
+      //「Token: `--item-px`」:欄位值在 trigger 左緣 +1+12、選單列在 popover 左緣 +1+12)。
+      // 改成 token 之後,日曆的邊與 DatePicker footer 的邊**吃同一個來源**,不再是兩個剛好都等於 12 的字面值。
+      className={cn('p-[var(--item-px,var(--field-px))]', className)}
       classNames={{
         months: 'flex flex-col sm:flex-row gap-4',
         // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")
@@ -101,7 +105,18 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // RDP v9 month_grid = <table>。v6 試 grid 在 tr 上但 break border-spacing(grid 蓋掉
         // table-row layout)。乾淨修:**純 table layout** + `border-spacing-1`(4px H+V,table-native)。
         // 所有 cells 自動同寬同高(td 的 w/h-field-sm),無 grid hack。
-        month_grid: 'border-separate border-spacing-1',
+        //
+        // `-m-1` 抵銷**最外圈**的 border-spacing(2026-09-18 user 拍板)。
+        // 為什麼需要它:`border-spacing` 是「格與格之間 4px」,但 CSS 連**最外圈也各給 4px** ——
+        // 於是日期格的盒子落在 容器 12 + 4 = 16,而同一個面板的上下月 chevron 貼著容器的 12。
+        // 規格(本檔 spec「Spacing canonical」原文,2026-05-03 v8)寫的是
+        //「四邊對稱:chevron 按鈕到邊距 = 最左最右日期 cell 到邊距(12px)」—— 兩者都該是 12。
+        // 那 4px 外圈**從來沒有人決定過**(全 repo 只有 2026-09-18 的 spec 段落提到它),是 `border-separate` 的副作用。
+        // 負 margin 把 table 的盒子往外拉 4px:**格與格之間仍然是 4px,但最外圈歸零**,第一格因此落在 12。
+        // 對照上游:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,
+        // 它 457 行的 style.css 裡 `border-spacing` 出現 **0 次**(2026-09-18 讀 node_modules 原始碼);
+        // IBM Carbon 的日曆同樣是第一格貼齊容器內距(實測外溢 0)。外溢是我們自己加的,不是慣例。
+        month_grid: 'border-separate border-spacing-1 -m-1',
         weekdays: '',  // thead default
         weekday: cn(
           // text-foreground + font-medium 對齊 DS 一致設計語言(2026-05-03 user audit):
