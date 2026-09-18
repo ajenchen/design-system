@@ -743,6 +743,11 @@ function NativeCombobox({
   const unselected = options.filter(o => !value.includes(o.value))
   const tagHeight = TAG_HEIGHT_PX[size]
   const tagAreaGap = tagAreaGapPx ?? GAP
+  // 與 CustomCombobox 同一條規則(見那邊的長註解):有沒有 Tag 只准有一個判斷式,
+  // 欄位內距與渲染都吃它。原生路徑選不到「不限」(那一列住在 SelectMenu),但**值可能是共用的**
+  // ——同一份 state 在手機斷點走這條路徑,不處理的話會渲出一顆寫著保留值原字串的 Tag。
+  const isUnrestrictedOnly = unrestricted && value.length === 1 && value[0] === unrestrictedValue
+  const hasTags = value.length > 0 && !isUnrestrictedOnly
 
   const selectDropdown = unselected.length > 0 ? (
     <select ref={selectRef} value="" onChange={(e) => handleAdd(e.target.value)}
@@ -764,7 +769,7 @@ function NativeCombobox({
   ) : null
 
   return (
-    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative',
+    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), hasTags && tagPadding[size], 'relative',
       wrap && cn('items-start', tagPaddingY[size]), className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
@@ -778,6 +783,9 @@ function NativeCombobox({
           桌機同視覺;未傳 → 原 <Tag> 文字 pill 預設不變。 */}
       <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
+        {isUnrestrictedOnly ? (
+          <span className={cn('flex-1 min-w-0 truncate', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
+        ) : (
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
           tagWrapperClassName={tagWrapperClassName}
           // Review fix(2026-08-05 F2):+N 抬到 overlay 上(可見不被壓)且 pointer 穿透 —
@@ -803,6 +811,7 @@ function NativeCombobox({
           )}
           renderHiddenTag={renderHiddenTag}
           onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
+        )}
       </div>
       {value.length > 0 && selectDropdown}
       <ItemSuffix className={cn('relative z-10 pointer-events-none', wrap && 'self-start')}
@@ -903,6 +912,14 @@ function CustomCombobox({
   // 只選了「不限」時,欄位不渲 Tag,改走一般已填值的純文字路徑(2026-09-18 user 拍板)。
   // 互斥保證它只會單獨存在;文字用 `unrestrictedLabel`,與選單那一列**同一個來源**。
   const isUnrestrictedOnly = unrestricted && value.length === 1 && value[0] === unrestrictedValue
+  // **「有沒有 Tag」只准有這一個判斷式**(2026-09-18 user 抓到的漂移根因)。
+  // 欄位的左內距被縮成 `tagPadding`(= `(欄高 − 2px 邊框 − Tag 高) / 2`,field-wrapper.tsx
+  // `fieldTagInsetX`)**唯一的理由**,就是讓 Tag 自己的內距把字推回 `--field-px`——
+  // 也就是全 Field 家族共同的那條線:文字左緣 = 1px 邊框 + `--field-px`。
+  // 所以不渲 Tag 的時候就**不能**套那個縮小的內距,否則字會少 9px(md)。
+  // 原本這裡的內距判斷寫的是 `value.length > 0`,渲染判斷寫的是別條,兩邊各說各話;
+  // 我新增「值非空但不渲 Tag」這第三種狀態時只改到渲染側 → 只選「不限」的欄位字跑到 4px。
+  const hasTags = value.length > 0 && !isUnrestrictedOnly
   // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的項補上
   const optionsForDisplay = React.useMemo(() => {
     const missing = value.map(v => (options.some(o => o.value === v) ? undefined : (suggestions?.find(o => o.value === v) ?? findKnown(v)))).filter((o): o is ComboboxOption => !!o)
@@ -971,7 +988,7 @@ function CustomCombobox({
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
       // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:57)
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         wrap && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
@@ -1008,10 +1025,9 @@ function CustomCombobox({
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
       <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
-        {/* 只選「不限」→ 純文字(同 placeholder 的盒與字級,只是不套灰;見 ReadonlyMultiSelect 同款註解)*/}
-        {isUnrestrictedOnly ? (
-          <span className={cn('flex-1 min-w-0 truncate', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
-        ) : value.length > 0 ? (
+        {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
+            三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
+        {hasTags ? (
           <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
             tagWrapperClassName={tagWrapperClassName}
             overflowWrapperClassName={overflowWrapperClassName}
@@ -1041,6 +1057,11 @@ function CustomCombobox({
                 // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 邊框
                 className="flex-1 min-w-[60px] bg-transparent outline-none text-body leading-compact relative z-10" />
             ) : undefined} />
+        ) : isUnrestrictedOnly ? (
+          /* 只選「不限」→ 一般已填值的純文字:與下面 placeholder **同一顆 span 的盒**,
+             唯一差別是不套那層灰(對齊單選欄位 select.tsx:352-353)。
+             左緣靠上面 `hasTags` 讓欄位退回 `--field-px`,不是在這裡另外補位移。 */
+          <span className={cn('flex-1 min-w-0 truncate', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
         ) : (
           /* 2026-05-12 Stream C Issue 3 fix(codex Q3 Cluster C):placeholder span 必 flex-1 min-w-0
              truncate,narrow container 時單行省略(對齊 Combobox text-tag truncate canonical)。

@@ -78,16 +78,29 @@ const FIELDS = () => {
   }
   const read = (wrap) => {
     if (!wrap) return null
-    // view 模式的欄位**整個就是一個 <span>**,沒有子 span 也沒有 role=combobox
-    //(combobox.tsx 的 view 分支直接渲一顆文字)。所以候選要把 wrap 自己算進去,
-    // 量框也要能退回 wrap 自己 —— 2026-09-18:原本只往下找,view 那格永遠讀到 null 而誤判成紅。
-    const box = (wrap.querySelector('[role="combobox"]') || wrap.firstElementChild || wrap).getBoundingClientRect()
+    // **參照盒一定要是欄位本身的 border box**。2026-09-18 錯誤紀錄:原本寫
+    // `wrap.querySelector('[role="combobox"]') || wrap.firstElementChild`,而 story 裡 wrap 自己
+    // 就是那顆 combobox(querySelector 只找後代 → null)→ 退到 firstElementChild = 內層的
+    // tag area / span,於是「字相對它自己的爸爸」恆等於 0,兩格都量到 0 而判成一致 ——
+    // 實際上「不限」比一般填值少 9px,user 一眼看出來。假相等比沒量還糟。
+    // view 模式的欄位**整個就是一個 <span>**,沒有子 span 也沒有 role=combobox,所以退回 wrap 自己。
+    const field = (wrap.getAttribute && wrap.getAttribute('role') === 'combobox')
+      ? wrap
+      : (wrap.querySelector('[role="combobox"]') || wrap)
+    const box = field.getBoundingClientRect()
     const el = [wrap, ...wrap.querySelectorAll('span')]
       .find((s) => s.tagName === 'SPAN' && s.childElementCount === 0 && (s.textContent || '').trim())
     if (!box || !el) return null
+    const cs = getComputedStyle(field)
+    const ruler = document.createElement('div')
+    ruler.style.cssText = 'position:absolute;visibility:hidden;height:0;width:var(--field-px)'
+    field.appendChild(ruler)
+    const fieldPx = parseFloat(getComputedStyle(ruler).width) // token 原文是 rem,要解析成 px
+    ruler.remove()
     return {
       字: (el.textContent || '').trim(),
       左偏移: Math.round((el.getBoundingClientRect().left - box.left) * 100) / 100,
+      應為: Math.round((parseFloat(cs.borderLeftWidth || '0') + fieldPx) * 100) / 100,
       顏色: getComputedStyle(el).color,
       Tag數: wrap.querySelectorAll('[data-tag-text]').length,
     }
@@ -130,7 +143,10 @@ const BREAK = {
     const el = wrap && [...wrap.querySelectorAll('span')].find((s) => s.childElementCount === 0 && (s.textContent || '').trim())
     if (!el) return false
     el.setAttribute('data-tag-text', '')
-    el.style.marginLeft = '8px'
+    // 推欄位的左內距 —— 這才會讓「站在那條線上」那條紅(加 margin 只動元素與它爸爸的相對位置,
+    // 正是舊版量錯參照盒時唯一抓得到的那種破壞,對照組太弱)。
+    const field = el.closest('[role="combobox"]')
+    if (field) field.style.paddingLeft = `${parseFloat(getComputedStyle(field).paddingLeft || '0') + 8}px`
     return true
   },
   // E:把那個剛好叫 `__unrestricted__` 的選項的勾拔掉(等同關著時還去濾它)
@@ -208,8 +224,13 @@ try {
   for (const [名, v] of [['編輯', f.只選不限], ['唯讀', f.只選不限唯讀], ['檢視', f.只選不限檢視]]) {
     ck('C', `只選「不限」(${名})不渲 Tag`, v?.Tag數 === 0 && (v?.字 || '').includes('不限'), `Tag=${v?.Tag數} 字=${v?.字}`)
   }
-  const dx = Math.abs((f.只選不限?.左偏移 ?? 0) - (f.佔位?.左偏移 ?? 99))
-  ck('C', '只選「不限」的字與一般填值同左緣', dx <= EDGE_TOLERANCE_PX, `Δ=${dx}px`)
+  // 跟「佔位字」互相比較是不夠的(兩邊都錯就會一起錯過);直接對那條線:邊框 + `--field-px`。
+  // 全 DS 的同一條線另有 `scripts/field-text-left-edge-invariant.mjs` 在守,這裡是就近再釘一次。
+  const line = f.只選不限?.應為
+  const dx = Math.abs((f.只選不限?.左偏移 ?? -99) - (line ?? 99))
+  ck('C', '只選「不限」的字站在「邊框 + --field-px」那條線上', dx <= EDGE_TOLERANCE_PX, `量到 ${f.只選不限?.左偏移}px / 應為 ${line}px`)
+  const dp = Math.abs((f.佔位?.左偏移 ?? -99) - (f.佔位?.應為 ?? 99))
+  ck('C', '對照:一般填值的佔位字也在同一條線上', dp <= EDGE_TOLERANCE_PX, `量到 ${f.佔位?.左偏移}px / 應為 ${f.佔位?.應為}px`)
   ck('C', '只選「不限」不是佔位灰', f.只選不限?.顏色 !== f.佔位?.顏色, `不限=${f.只選不限?.顏色} 佔位=${f.佔位?.顏色}`)
 
   // ── D. 三態訊息列 ─────────────────────────────────────────
