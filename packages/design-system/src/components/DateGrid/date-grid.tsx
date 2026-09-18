@@ -83,33 +83,33 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
-      // 四邊 12px 對稱。2026-09-18 從字面 `p-3` 改成讀 `--item-px`(預設 `--field-px` = 12):
-      // 這個浮層是掛在欄位上的,內容要跟 trigger 的文字落在同一條線 ——
-      // 那正是 `--item-px` 預設取自 `--field-px` 的理由(`../../patterns/element-anatomy/item-anatomy.spec.md`
-      //「Token: `--item-px`」:欄位值在 trigger 左緣 +1+12、選單列在 popover 左緣 +1+12)。
-      // 改成 token 之後,日曆的邊與 DatePicker footer 的邊**吃同一個來源**,不再是兩個剛好都等於 12 的字面值。
-      className={cn('p-[var(--item-px,var(--field-px))]', className)}
+      // 根**不帶內距**:內距搬到每一張月曆自己身上(見下方 `month`)。
+      // 2026-09-18 user 裁示,原話:「我覺得真的要做的話,邏輯就是這樣,而不是另外加一個 token,
+      // 反而造成漂移,因為視覺就是要在各種情況營造對稱感吧?」
+      className={cn(className)}
       classNames={{
-        // 兩張月曆之間的距離:讀 `--layout-space-loose`,不是寫死的 `gap-4`(2026-09-18)。
-        // 依 `../../tokens/layoutSpace/layoutSpace.spec.md` 的 Token 表逐字:loose =「主間距:容器水平 padding、
-        // **parallel 元素 gap**、bounded region 呼吸空間」—— 兩張並排、彼此獨立的月曆正是「parallel 元素」。
-        // 值不變(md 仍 16),但從此會跟著密度走(lg 24),而且不再是一個沒有出處的字面值。
-        // **不要寫成 `calc(--item-px × 2)`**:那會是「面板內距的兩倍」,但我們的結構是**一個**有內距的根
-        // 包著兩張格線(不是兩張各自有內距的月曆),2× 在這個 DOM 裡推不出來;
-        // 而且全 DS 沒有任何「把間距 token 乘倍數」的先例(只有字級 × 行高那種 typography 衍生)。
-        // 上游 `react-day-picker` 也把它當**自己的具名常數**(`--rdp-months-gap: 2rem`,style.css:21),
-        // 而不是從容器內距推導 —— 它根本不給容器內距(全份 CSS 的 padding 只有 weekday 那一條)。
-        months: 'flex flex-col sm:flex-row gap-[var(--layout-space-loose)]',
-        // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")
-        month: 'flex flex-col relative',
+        // **兩張月曆之間不設 gap**(2026-09-18 user 裁示)。
+        // 每張月曆自己四周留 `--item-px`,所以彼此之間自然就是**兩份內距**(md 12+12 = 24),
+        // 而且「單張」與「並排」看起來完全一樣 —— 對稱是結構保證的,不是靠一個要人維護的數字。
+        // 這也是為什麼**不需要**月間距 token:少一個可以漂的東西。
+        // 世界級同款:Ant Design 就是這個作法(兩張各自帶左右內距、中間不設 gap),
+        // 且 v4(內距 12 → 間距 24)與 v5(18 → 36)跨大版本維持 1:2,是刻意的比例。
+        months: 'flex flex-col sm:flex-row',
+        // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")。
+        // **內距住在這裡**(2026-09-18 搬家):每張月曆自己四周留 `--item-px`,
+        // 於是「面板邊 → 第一格」與「月曆 → 月曆」用的是同一顆東西,後者自然是前者的兩份。
+        month: 'flex flex-col relative p-[var(--item-px,var(--field-px))]',
         // Month caption:單行置中 h-field-xs,prev/next 按鈕 absolute 從兩側貼齊
         month_caption: 'flex items-center justify-center h-field-xs mb-3',
         caption_label: 'text-body font-medium',
         // ── Prev/Next button(canonical 2026-05-03 v6,user audit fix)──
         // RDP 把這 className apply 到 <Button> 本身(不是 wrapper),所以用 className 直接套
         // 定位類(absolute top/left/right-0)。muted 色透過 Button override 內部加,不用 [&>button] 黑魔法。
-        button_previous: 'absolute top-0 left-0 z-[1]',
-        button_next: 'absolute top-0 right-0 z-[1]',
+        // nav 的 absolute 定位是相對 month 的 **padding box**(= 盒子最外緣),
+        // 內距搬到 month 之後不補這個偏移,chevron 會貼到月曆盒最外緣、比日期格往外 12px(2026-09-18 實測確認)。
+        // 讀同一顆 `--item-px`,所以它跟日期格永遠在同一條線上。
+        button_previous: 'absolute top-[var(--item-px,var(--field-px))] left-[var(--item-px,var(--field-px))] z-[1]',
+        button_next: 'absolute top-[var(--item-px,var(--field-px))] right-[var(--item-px,var(--field-px))] z-[1]',
         // ── Grid layout(canonical 2026-05-03 v7,純 table-native)──
         // RDP v9 month_grid = <table>。v6 試 grid 在 tr 上但 break border-spacing(grid 蓋掉
         // table-row layout)。乾淨修:**純 table layout** + `border-spacing-1`(4px H+V,table-native)。

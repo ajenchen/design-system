@@ -120,48 +120,39 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## Spacing canonical(2026-05-03 v8)
 
-- 容器內距 **12px 四邊對稱**,讀 `p-[var(--item-px,var(--field-px))]`(不是字面 `p-3`)。
+- **內距住在每一張月曆身上,不在根**(2026-09-18 user 裁示,原話:「我覺得真的要做的話,邏輯就是這樣,
+  而不是另外加一個 token,反而造成漂移,因為視覺就是要在各種情況營造對稱感吧?」)。
+  `month` 帶 `p-[var(--item-px,var(--field-px))]`(md 12),**根不帶內距**。
   為什麼是 `--item-px`:這個浮層掛在欄位上,內容要跟 trigger 的文字落在同一條線 ——
   那正是 `--item-px` 預設取自 `--field-px` 的理由(`../../patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」)。
-  `DatePicker` 的 footer 讀**同一個**運算式,所以日曆的邊與 footer 的邊是**同一個來源**,不是兩個剛好都等於 12 的字面值。
+  `DatePicker` 的 footer 與右側時間欄的上內距讀**同一個運算式**,所以整個面板的邊是同一個來源。
+- **兩張月曆之間不設 gap**,距離由「各自的內距相加」自然形成(md 12 + 12 = **24**)。
+  - **所以沒有、也不需要月間距 token** —— 少一個可以漂的東西。
+    同日稍早一度改成 `gap-[var(--layout-space-loose)]`,那是「再加一顆要維護的數字」,已撤回。
+  - **對稱是結構保證的**:單張與並排長得完全一樣,不靠任何人記得維護某個值。
+  - 世界級同款:**Ant Design 就是這個作法**(兩張各自帶左右內距、中間不設 gap),
+    且 v4(內距 12 → 間距 24)與 v5(18 → 36)跨大版本維持 1:2,是刻意的比例。
+  - ⚠️ **nav 必須跟著內距走**:`button_previous/next` 相對 `month` 的 **padding box** 做 absolute 定位
+    (= 盒子最外緣)。內距搬到 `month` 之後不補偏移,chevron 會比日期格往外 12px(2026-09-18 實測確認)。
+    兩顆 nav 因此讀同一顆 `--item-px`。
 - **最外圈的 border-spacing 必須抵銷**(`month_grid` 帶 `-m-1`)。
   `border-spacing` 的語意是「格與格之間 4px」,但 CSS **連最外圈也各給 4px** ——
-  不抵銷的話日期格會落在 12 + 4 = 16,而同一個面板的上下月 chevron 貼著 12,四邊對稱就破了。
-  這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」,程式端註解只解釋「為何用 table 不用 grid」,
-  一個字都沒提最外圈),是 `border-separate` 的副作用。2026-09-18 user 拍板,原話:「我認為就是以原本規格說的12px為主吧?」
+  不抵銷的話日期格會落在 12 + 4 = 16,而 chevron 貼著 12,四邊對稱就破了。
+  這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」),是 `border-separate` 的副作用。
   - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
-  - **上游也不外溢**:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,它 457 行的 `style.css` 裡
-    `border-spacing` 出現 **0 次**;IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
-    外溢是我們自己加的,不是慣例。
-  - ⚠️ **世界級不是一面倒**(2026-09-18 逐家抓原始碼後誠實標註,不要把這條寫成共識):
-    `react-day-picker`(外溢 0)與 Carbon(根本沒有格間距)站「貼齊」這邊;
-    但 **Angular Material**(Google 自家、M3 主題)的間距做在**每格內部**(40px 格內縮 5%),
-    外圈因此是 2px(= 格間 4px 的一半)且**沒有抵銷**,它的上下月按鈕也**不對齊**日期格的盒。
-    所以支撐本決定的是**我們自己的規格原文(兩者都 12)+ 我們自己的盒對盒慣例**,不是世界級共識。
-  - 實測(裸 DateGrid 四邊):chevron 盒 12 / 日期格盒 12 / 最後一排到底 12;
-    `DatePicker` 面板裡 chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12。
-  - **連帶後果(雙月範圍面板)**:抵銷外圈後,兩張月曆之間「最後一格 → 第一格」的**可見**距離
-    從 24px(宣告 16 + 兩邊各外溢 4)變成 **16px** —— 也就是宣告值終於等於看到的值。
-    面板寬同步從 490 收到 482。若日後想要更寬的月間距,請**改宣告值**,不要靠外溢湊。
-- **對齊基準是盒,不是圖示**:chevron 是 24px 按鈕、內含 16px 圖示置中,所以它的**圖示**在 16、**盒**在 12。
-  本 DS 一律盒對盒 —— 明文在 `../../patterns/overlay-surface/overlay-surface.spec.md:116-117`
-  「item 的 **padding-box 左緣** = header title 左緣」「**對齊的是列的前緣,不是文字**」、:121「對齊的同樣是**按鈕左緣**而非按鈕文字」。
-  所以**不得**用「圖示落在哪」當對齊證據。
-  ⚠️ **不要拿 `data-unbounded` 當水平對齊的前例**(2026-09-18 查證後撤回):它的負 margin 全庫**只有垂直的 `my-`**
-  (`overlay-surface.tsx:68` `CHROME_UNBOUNDED_SLOT`),用途是把按鈕的版面高度縮到工具列列高,**水平方向零先例**。
-- **兩張月曆之間(多月檢視)= `--layout-space-loose`**(md 16 / lg 24),不是字面值。
-  依 `../../tokens/layoutSpace/layoutSpace.spec.md` Token 表逐字:loose =「主間距:容器水平 padding、
-  **parallel 元素 gap**、bounded region 呼吸空間」——兩張並排、彼此獨立、各顯示一個月的格線正是 parallel 元素。
-  - **不要寫成 `calc(--item-px × 2)`**:我們的結構是**一個**有內距的根包**兩張沒有自己內距的格線**,
-    「左右各一份內距相加」在這棵 DOM 上推不出來;而且全 DS 的間距乘法先例**清一色是同一個盒子的盒模型算術**
-    (算寬、算高、置中),沒有一處在表達「兩個同儕之間的距離」。
-  - **同值不同義時的既有解法是「命名」不是「相乘」**:2026-09-11 `--layout-space-bottom` 與 Dialog 視窗 inset
-    都是 48px,處置是拆出 `--layout-space-viewport-inset`(理由逐字寫在 layoutSpace.spec.md,引 M17)。
-  - 上游 `react-day-picker` 同樣把它當**自己的具名常數**(`--rdp-months-gap: 2rem`),不從容器內距推導。
-  - ⚠️ **世界級有反例,不要寫成共識**:**Ant Design 就是「兩倍」那一派** —— 它兩張月曆各自帶左右內距、中間不設 gap,
-    所以中間距離自然是內距的兩倍,且 v4(12→24)與 v5(18→36)跨大版本維持 1:2,是刻意的。
-    我們選 `loose` 是因為**本 DS 自己的 token 語意與結構**,不是因為世界級只有一種做法。
-  - 要改成別的值:**改宣告值 / 另立具名 token**,不要靠外溢或相乘湊。
+  - **上游也不外溢**:`react-day-picker` 自己是 `border-collapse: collapse`,其 457 行 `style.css` 裡 `border-spacing` 出現 **0 次**;
+    IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
+  - **範圍軌道在列的頭尾要夾住**:range 的 `-2px` bridge 是用來跨過格間 4px 縫接鄰格,
+    但列的第一格左邊、最後一格右邊沒有鄰格,不夾就會溢出內距(實測 2px)。
+    夾在 `month_grid`(`[&_tr>td:first-child]:before:!left-0` / `last-child`)—— 實測 react-day-picker
+    **不會**把加在 `classNames.range_*` 的 class 帶到 `<td>`,掛在那裡不會生效。
+- **對齊基準是盒,不是圖示**:chevron 是 24px 按鈕、內含 16px 圖示置中,所以**圖示**在 16、**盒**在 12。
+  本 DS 一律盒對盒 —— `../../patterns/overlay-surface/overlay-surface.spec.md:116-117`
+  「item 的 **padding-box 左緣** = header title 左緣」「**對齊的是列的前緣,不是文字**」、:121「對齊的同樣是**按鈕左緣**」。
+  ⚠️ 不要拿 `data-unbounded` 當水平對齊前例:它的負 margin 全庫**只有垂直的 `my-`**(`overlay-surface.tsx:68`)。
+- 實測(2026-09-18 修後):裸 DateGrid 四邊 chevron 盒 12 / 日期格 12 / 最後一排到底 12;
+  `DatePicker` 面板 chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12;
+  雙月面板 面板邊→第一格 12、最後一格→下一張第一格 **24**、面板寬 490。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)
@@ -205,7 +196,7 @@ Range 起訖使用 stadium 端點，讓連續區間有清楚的開始、延伸�
 - ❌ **不用 `.rdp-*` 原生 class 直接樣式化**(繞過本元件 classNames prop 會跨版本斷掉)
 - ❌ **不自包 Popover**(DateGrid 是 inline primitive;需要浮層由 consumer 包 Popover,見 DatePicker)
 - ❌ **不混用其他 calendar library**(若 DateRange / DateTime 需求出現,擴充本元件 `mode="range"` 或新 prop,不引第二套)
-- ❌ **Consumer 不可外加 padding wrapper**(canonical 2026-05-02)— DateGrid root 自帶 `p-3`;`<div className="p-2"><DateGrid /></div>` 會造成 popover edge → 第一個 day cell 雙重 padding(8 + 12 = 20px),違反 mindset #2「優先消費既有 SSOT」。直接放 `<DateGrid />` 在 Popover/parent 內即可。Hook `check_pattern_invariants.sh` C.3(P0 BLOCK,PRIMITIVES_REGEX 含 DateGrid)機械攔截
+- ❌ **Consumer 不可外加 padding wrapper**(canonical 2026-05-02)— DateGrid 的內距自帶在**每一張月曆**上(2026-09-18 從根搬過去,見上方 Spacing canonical);`<div className="p-2"><DateGrid /></div>` 會造成 popover edge → 第一個 day cell 雙重 padding(8 + 12 = 20px),違反 mindset #2「優先消費既有 SSOT」。直接放 `<DateGrid />` 在 Popover/parent 內即可。Hook `check_pattern_invariants.sh` C.3(P0 BLOCK,PRIMITIVES_REGEX 含 DateGrid)機械攔截
 
 ---
 
