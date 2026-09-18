@@ -130,4 +130,16 @@ if (SELFTEST) {
     : '✗ selftest:注入被拉寬的外框卻沒被抓到 —— 偵測失效')
   process.exit(stretched.length ? 0 : 1)
 }
+// 空綠地板(2026-09-18 加):一個觸發點都沒量到 = 這支什麼都沒驗,那個綠燈是零證據(M32)。
+// **只擋「完整掃描」那一種跑法**:
+//   - `--selftest` 不擋(它跑 `--limit=1`,本來就只要注入的那一支);
+//   - `--limit=N` 不擋 —— meta-test `scripts/test-avatar-anchor-box-invariant.mjs` 的 baseline 刻意只跑 60 支
+//     來驗「偵測力」,前 60 支裡本來就沒有 hover card 觸發點。第一版沒排除它,當場把那支 meta-test 弄紅了。
+// 實測基準:全庫不抽樣掃 1035 支 story 會量到 **418 個** hover card 觸發點,離 0 很遠;
+// 真的掉到 0 就是探針或 build 壞了,不是「DS 裡沒有這種 Avatar 了」。
+// 這條分支確實會紅:加上 `!LIMIT` 之前跑 `--limit=40`(那個範圍內剛好 0 個觸發點)實測 exit 1。
+if (!LIMIT && triggers === 0) {
+  console.log('\n✗ 一個 hover card 觸發點的 Avatar 都沒量到 —— 探針或 build 壞了,這支等於沒跑,不能當綠燈')
+  process.exit(1)
+}
 process.exit(stretched.length ? 1 : 0)
