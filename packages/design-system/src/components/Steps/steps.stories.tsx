@@ -77,7 +77,7 @@ export const Default: Story = {
             我們會盡快處理,結果將寄送至您的電子信箱。
           </p>
           <div>
-            <Button variant="secondary" onClick={reset}>
+            <Button variant="tertiary" onClick={reset}>
               再填一份申請
             </Button>
           </div>
@@ -117,7 +117,7 @@ export const Default: Story = {
                 </p>
                 <div className="flex gap-2">
                   <Button variant="primary" onClick={advance}>下一步</Button>
-                  <Button variant="secondary" onClick={back}>
+                  <Button variant="tertiary" onClick={back}>
                     上一步
                   </Button>
                 </div>
@@ -135,7 +135,7 @@ export const Default: Story = {
                 </p>
                 <div className="flex gap-2">
                   <Button variant="primary" onClick={submit}>送出</Button>
-                  <Button variant="secondary" onClick={back}>
+                  <Button variant="tertiary" onClick={back}>
                     上一步
                   </Button>
                 </div>

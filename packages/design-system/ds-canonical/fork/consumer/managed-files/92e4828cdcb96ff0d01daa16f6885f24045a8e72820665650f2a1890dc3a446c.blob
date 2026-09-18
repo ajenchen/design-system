@@ -99,6 +99,12 @@ export async function startA11yStaticServer({ rootDirectory, defaultFile = 'inde
       resolveListening()
     })
   })
+  // 伺服器本身不再把事件迴圈釘住(2026-09-18)。
+  // 根因錨:`overlay-footer-gutter-invariant.mjs` 在 CI 上印完「✓ 通過」之後**空轉 13 分鐘**直到 job 撞 25 分上限被砍;
+  // 同一天查出四支全 story 掃描的閘寫的是 `await server.close?.()` —— 這個物件根本**沒有 `close`**(只有 `stop`),
+  // 可選鏈讓它靜靜地變成 no-op,於是監聽中的 server 一直把 Node 的事件迴圈撐著。
+  // `unref()` 之後,「忘了關」不再等於「永遠不結束」;正常路徑仍然該呼叫 `stop()`(它會連同連線一起收掉)。
+  server.unref()
   const address = server.address()
   if (!address || typeof address === 'string' || address.address !== LOOPBACK_HOST || !Number.isInteger(address.port)) {
     await new Promise(resolveClosed => server.close(resolveClosed))
@@ -106,16 +112,23 @@ export async function startA11yStaticServer({ rootDirectory, defaultFile = 'inde
   }
 
   let stopped = false
+  const stop = async () => {
+    if (stopped) return
+    stopped = true
+    // 先把還開著的連線砍掉再關:`server.close()` 預設**等既有連線排空**,
+    // 瀏覽器留下的 keep-alive socket 會讓它一直等下去(上面那個 13 分鐘就是這樣來的)。
+    server.closeAllConnections?.()
+    await new Promise((resolveClosed, rejectClosed) => {
+      server.close(error => error ? rejectClosed(error) : resolveClosed())
+    })
+  }
   return Object.freeze({
     host: LOOPBACK_HOST,
     port: address.port,
     origin: `http://${LOOPBACK_HOST}:${address.port}`,
-    async stop() {
-      if (stopped) return
-      stopped = true
-      await new Promise((resolveClosed, rejectClosed) => {
-        server.close(error => error ? rejectClosed(error) : resolveClosed())
-      })
-    },
+    stop,
+    // `close` 是 Node server 的習慣名字,呼叫端很自然會伸手去拿;沒有它的時候
+    // `server.close?.()` 會靜靜地什麼都不做(2026-09-18 實測四支閘都是這樣寫的)。給同一個實作,別再有人踩。
+    close: stop,
   })
 }

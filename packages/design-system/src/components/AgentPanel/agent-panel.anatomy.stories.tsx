@@ -28,7 +28,9 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="flex h-dvh justify-end bg-canvas">
-      <AgentPanel>
+      {/* 解剖圖是並排態(容器滿版),不會出現蓋板遮罩 —— `onClose` 在這裡恆不觸發,
+          但它是必填的(M23(f):沒有內建行為的固定行為不得靠 callback 有無決定),同標題列的 × 寫法。 */}
+      <AgentPanel onClose={() => {}}>
         <AgentPanelHeader title="智慧代理" onNewConversation={() => {}} onClose={() => {}} />
         <AgentConversation>
           <AgentMessage role="user">我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。</AgentMessage>
@@ -76,7 +78,7 @@ const InspectorView = () => {
             </Desc>
             <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
               <div className="flex h-full justify-end bg-canvas">
-                <AgentPanel width={clamped} resizable={false}>
+                <AgentPanel width={clamped} resizable={false} onClose={() => {}}>
                   <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onNewConversation={() => {}} onClose={() => {}} />
                   <AgentConversation>
                     <AgentMessage role="user">這週有哪幾筆待辦被重複指派?</AgentMessage>

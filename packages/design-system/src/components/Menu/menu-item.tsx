@@ -42,7 +42,18 @@ const INERT_SPREAD = (Number.parseInt(React.version, 10) >= 19 ? { inert: true }
 // ── Item variants ──
 const menuItemVariants = cva(
   [
-    'flex items-start gap-2 px-3 w-full',
+    // 水平內距 = `--item-px`(local pattern token,`--item-*` 家族,登記在 item-anatomy.spec.md)。
+    // 預設取自 `--field-px`(12px):選單的選項與欄位裡的值本來就落在同一條 content gutter 上 ——
+    // 實測欄位值在 trigger 左緣 +1px 邊框 +12px = 13px,選單列在 popover 左緣 +1px 邊框 +12px = 13px,
+    // 而 popover 預設貼齊 trigger 左緣。收斂前這是兩個各自獨立的字面值(`--field-px` vs 裸 `px-3`),
+    // 沒有任何東西綁著;建 `--field-px` 的 commit(7062c61d)只 migrate 了 field-wrapper / Textarea /
+    // Select+Combobox 四處,Menu 是漏掉的(Chip 是明文排除,Menu 沒被提到)。
+    // 為什麼不直接吃 `--field-px`:同一個面板可能同時有欄位控件與列(DataTable 欄位顯示面板:
+    // 搜尋框 12px + 列 16px 並存),直接吃會導致調列就把欄位一起拉走。這顆獨立 named token
+    // 的角色與 `--table-cell-px: var(--field-px)` 完全相同(同一個 commit 建的先例)。
+    // 客製方式:在**清單容器**設一次(例如 List-as-region 設 `var(--layout-space-loose)`),
+    // 禁止寫在單列的 className —— 那會落在外層 wrapper 與本層相加(2026-09-17:16+12=28px)。
+    'flex items-start gap-2 px-[var(--item-px,var(--field-px))] w-full',
     'cursor-pointer select-none',
     // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板)。

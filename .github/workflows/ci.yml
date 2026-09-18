@@ -330,6 +330,9 @@ jobs:
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
           node scripts/data-table-row-under-pointer-invariant.mjs
+          # 同一時間最多一列 hover(2026-09-16 user:「捲動之後很容易會出現一個畫面同時有兩筆 row 呈現 hover」);
+          # 手勢用 CDP 合成捲動(滾輪製造不出那段落差 = 假綠),修前的 build 跑這支會紅。
+          npm run test:data-table-hover-exclusivity
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
@@ -640,6 +643,131 @@ jobs:
           # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
           # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
           npm run test:action-bar-toolbar
+          # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
+          # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
+          npm run test:overlay-detached-anchor
+
+  verify-browser-sweeps:
+    # 2026-09-17 拆出來的第七個 job。這兩支是「全 1034 支 story 掃一遍」等級的閘(各約 5–6 分鐘),
+    # 先前掛在 dpr2 job(上限 25 分)上,兩支疊上原有的 DataTable 工作後在 04:43 撞上限被取消。
+    # 15 → 25(2026-09-17 同日修正):本機估 11 分鐘是錯的,CI runner 慢得多 ——
+    # 實測 Avatar 掃描 7.3 分、選項列前緣掃描 ≥ 9 分,加上安裝與兩次 build 後 15 分鐘被取消。
+    # 25 是掃描型 job 的既有檔位(datatable / dpr2 都是),也是 ci-workflow-scope 允許的上限。
+    name: Verify browser(DS-wide story sweeps)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: DS-wide story sweeps (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
+          # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
+          # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
+          npm run test:avatar-anchor-box
+          # 浮層選項清單每一列的最前緣必須對齊 header 標題(overlay-surface.spec.md 第 2 條 invariant)。
+          # 2026-09-17 錨:CommandItem 是兩層,px-loose 寫在 className 會落外層與內層 px-3 相加(16+12=28),
+          # 標題 17px / 勾選框 29px,而當時全 repo 沒有任何閘掃這條。
+          # selftest 把列多推 12px,簽名與當初真實 bug 完全一致(607 vs 595,差 12px)。
+          npm run test:overlay-list-as-region
+
+  verify-browser-select-all:
+    # 2026-09-17 拆出來的第八個 job。它跟 sweeps 一樣是「全 1034 支 story 掃一遍」,但**還要開面板**
+    # (每支 story 逐一點開 [role=combobox] 觸發點、按一下全選、再量一次),本機實測 6.6 分鐘 ——
+    # 疊進 sweeps(那邊本機已經是 7.3 + 9 分)一定撞 25 分上限,所以自己一個 job 平行跑。
+    name: Verify browser(multi-select footer)   # 同 job 另跑 overlay footer gutter(共用同一份 storybook build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Multi-select footer label/state (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 多選選單底部那顆全選按鈕的字必須跟「是不是已經全選」綁死(user 2026-09-17 拍板 A 案:
+          # 三態勾選列 → SurfaceFooter + 兩態按鈕)。W3C 按鈕規範裡「標籤會變」與 aria-pressed 互斥,
+          # 選了前者,標籤就是唯一的狀態出口,一脫鉤使用者沒有別的線索可以察覺。
+          # 驗的是對應關係不是字串(標籤是 prop,可換語言);對照組把標籤釘死,這支必須紅。
+          npm run test:select-all-footer
+
+      - name: Unrestricted option row (browser)
+        run: |
+          # 多選選單可由消費端打開一列「不限」(user 2026-09-18 拍板:預設關閉,因為只有消費端知道
+          # 自己的選單內容適不適合出現這一列)。它長得像選項但語意相反,四件事都會靜默壞掉:
+          # 自成一組排最上(位置/分隔線)、互斥三條、欄位顯示純文字不是 Tag、三態訊息列不受影響。
+          # 對照組把四件事各弄壞一次,**每一條都要各自被抓到**(只看「有沒有紅」會讓一條掩護其他三條)。
+          # 跟上面那支共用同一份 storybook build,放同一個 job。
+          npm run test:unrestricted-option
+
+      - name: Field text left edge (browser)
+        run: |
+          # Field control 的水平內距是標準 --field-px,除非欄位裡真的有 Tag ——
+          # 依據逐字在 field-controls.spec.md:298「tagPadding 只在有 Tag 時才套用。Placeholder/
+          # 空值狀態使用 fieldWrapper 的標準 --field-px padding」。2026-09-18 user 抓到只選「不限」
+          # 時字掉到 4px:那一格不渲 Tag、渲純文字,按 :298 就該用標準內距,但當時「縮不縮內距」與
+          # 「渲不渲 Tag」是兩個各自寫的判斷式,只改到渲染那一側。
+          # Tag 自己的幾何歸四邊等距公式管(tag-field-vertical-inset.mjs I4),這支不碰 Tag 裡的字。
+          # 對照組把每個受管欄位的左內距推 6px,這支必須紅。
+          npm run test:field-text-left-edge
+
+      - name: Combobox single path on touch (browser)
+        run: |
+          # Combobox 只有一條路徑:觸控裝置看到的跟桌機完全一樣(user 2026-09-18 拍板
+          # 「我完全不想要為了手機客製化元件,我希望就是 SSOT,直接用桌機版的」)。
+          # 在此之前它依 (pointer: coarse) 分流到隱藏原生 <select>,而**全 repo 沒有任何閘會開
+          # 觸控模式** —— 結果 20 個 prop 在觸控上被靜默丟棄、「不限」互斥完全沒有、DataTable
+          # 儲存格的 defaultOpen/onOpenChange 失效,零訊號。靜態字串比對做不到,必須真的用
+          # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
+          npm run test:combobox-single-path
+
+      - name: Overlay footer gutter (browser)
+        run: |
+          # 浮層底部那條 footer 的左右內距必須對齊「這個浮層的內容左邊界」
+          #(選單→列、一般浮層→body/標題、日曆→第一格;欄位置中的挑選面板沒有可對齊對象,
+          # 只檢查內距是既有 token)。量的是像素不是 class 字串;對照組把每個 footer 推 7px,這支必須紅。
+          # 跟上面那支共用同一份 storybook build,所以放同一個 job,不另開第九個。
+          npm run test:overlay-footer-gutter
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:
@@ -650,7 +778,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -662,9 +790,11 @@ jobs:
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
+          BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
+          BROWSER_SELECT_ALL: ${{ needs.verify-browser-select-all.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

@@ -1110,6 +1110,75 @@ rule_link_canonical() {
   fi
 }
 
+# R11 — component_in_render(2026-09-17 codify;DataTable「進階篩選 — 各種狀態」篩選面板點一下就消失)
+# React 用「元件函式的身分」判斷是不是同一棵樹。元件寫在 story 的 `render()` 裡,外層每次 setState
+# 都會建立新函式 → React 視為換了元件 → **底下整棵樹卸載重掛**:輕則焦點掉,重則開著的浮層整個消失。
+# 簽名收到零誤判:只抓 4 空格縮排(= render 內)+ 大寫開頭 + **解構 props**(`= ({`)——
+# 那是「接 props 的元件」的確定形狀。零 props 的 `= () => {`(外層 render 無 state、只渲染一次,
+# Rating / DateGrid / Dialog 共 7 處)不在簽名內,不開罰。
+# P0 BLOCKER:規則有 SSOT(rules/story-rules.md)且可機械判定 → 依 feedback_ssot_mechanical 一律 block。
+# 豁免:檔首 `// @component-in-render-allow: <理由>`。
+# ─────────────────────────────────────────────────────────────────────────────
+rule_component_in_render() {
+  [ "$EVENT" = "PostToolUse" ] && return 0
+  case "$FILE_PATH" in *.stories.tsx) ;; *) return 0 ;; esac
+  grep -q '@component-in-render-allow:' <<< "$NEW_CONTENT" && return 0
+  local hits
+  hits=$(grep -nE '^    const [A-Z][A-Za-z0-9]* = \(\{' <<< "$NEW_CONTENT" || true)
+  if [ -n "$hits" ]; then
+    {
+      echo ""
+      echo "╔═══ R11 component_in_render — 元件定義在 render() 裡 ═══"
+      echo "[P0 BLOCKER] ${FILE_PATH}"
+      echo "$hits" | sed 's/^/  /'
+      echo "  React 用元件函式的身分判斷是不是同一棵樹:寫在 render() 裡,外層每次 setState"
+      echo "  都會換一個新函式 → 底下整棵樹卸載重掛。錨:DataTable「進階篩選 — 各種狀態」的 Section"
+      echo "  包住 DataTable,篩選面板開著時點任何一個選項整個面板就消失(2026-09-17 對照實測)。"
+      echo "  修:把元件搬到檔案 module 層(props 照舊傳)。SSOT:ds-canonical/rules/story-rules.md"
+      echo "  「元件一律定義在 module 層」。豁免:檔首 // @component-in-render-allow: <理由>"
+    } >&2
+    WORST=2
+  fi
+}
+
+# R12 — secondary_variant_pair(2026-09-18 codify per user:「按鈕預設不是應該用 tertiary 嗎?
+# 我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」)
+# 原則本身寫得很清楚(`button.spec.md`「Variant 控制視覺強調等級」表):
+#   secondary = **正面與負面選項並存**時代表正面那個(儲存草稿 vs 放棄);
+#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:217)。
+# 不清楚的不是規則,是**沒有任何東西在守**:當天全 DS 掃出 story 內 54 處 `variant="secondary"`,
+# 扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過無 danger 兄弟),
+# 全是單獨的觸發鈕 / 輔助動作,照表都該是 tertiary。同日一次改完。
+# 豁免:同檔 `// @secondary-pair: <並存的負面選項>` —— 真的成對時寫出那個負面選項是什麼。
+# Button 自家 stories 是 variant 展示場,天然豁免。
+# ─────────────────────────────────────────────────────────────────────────────
+rule_secondary_variant_pair() {
+  [ "$EVENT" = "PostToolUse" ] && return 0
+  case "$FILE_PATH" in
+    *.stories.tsx) ;;
+    *) return 0 ;;
+  esac
+  case "$FILE_PATH" in
+    */components/Button/*) return 0 ;;
+  esac
+  grep -q '@secondary-pair:' <<< "$NEW_CONTENT" && return 0
+  local hits
+  hits=$(grep -nE 'variant="secondary"' <<< "$NEW_CONTENT" || true)
+  if [ -n "$hits" ]; then
+    {
+      echo ""
+      echo "╔═══ R12 secondary_variant_pair — secondary 用在沒有負面選項並存的地方 ═══"
+      echo "[P0 BLOCKER] ${FILE_PATH}"
+      echo "$hits" | sed 's/^/  /'
+      echo "  button.spec.md 的 variant 表:secondary 只用在「正面與負面選項並存」時代表正面那個"
+      echo "  (儲存草稿 vs 放棄);單獨的觸發鈕 / 取消 / 輔助動作一律 tertiary —— 那也是 cva 預設。"
+      echo "  修:variant=\"secondary\" → variant=\"tertiary\"(或整個拿掉,預設就是 tertiary)。"
+      echo "  真的成對 → 檔內寫 // @secondary-pair: <並存的負面選項是什麼>"
+    } >&2
+    WORST=2
+  fi
+}
+
 # ─── Run rules ───
 rule_anatomy
 rule_slot_split
@@ -1121,5 +1190,7 @@ rule_story_baseline_reference
 rule_story_archetype_registry
 rule_handcraft_overlay_header
 rule_link_canonical
+rule_component_in_render
+rule_secondary_variant_pair
 
 exit $WORST

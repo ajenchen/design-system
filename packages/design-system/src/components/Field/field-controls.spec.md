@@ -18,7 +18,7 @@ traits:
 > - **Field Controls**（本文件）：具體的資料型別輸入元件，內部含 edit/readonly/disabled 三態 + 格式化 + DataTable Display 共用
 > - **Field**（`Field/field.spec.md`）：shadcn 風格的表單 Layout 容器（label + description + error），wrap 上述 Field Controls 元件
 
-**Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本 spec 是 **Family 4（Field Control Layout）的 SSOT**。結構 `fieldWrapperStyles + [startIcon?] [<editable content>] [endAction?]`，**視覺對齊 Family 1（Menu item layout）**——Select trigger 的高度 / 字體 / icon size 必須跟其 SelectMenu options 連續一致。Consumers: Input（canonical）, NumberInput, DatePicker, Select, Combobox, LinkInput, PeoplePicker。
+**Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本 spec 是 **Family 4（Field Control Layout）的 SSOT**。結構 `fieldWrapperStyles + [startIcon?] [<editable content>] [endAction?]`，**視覺對齊 Family 1（Menu item layout）**——Select trigger 的高度 / 字體 / icon size / **水平內距** 必須跟其 SelectMenu options 連續一致。水平內距那一軸 2026-09-17 補進本清單:畫面上它一直成立(兩邊都是 12px content gutter),但在此之前沒有被寫進規則、也沒有共同的 token 主人 —— 現在 field 走 `--field-px`、row 走 `--item-px: var(--field-px)`(owner `patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」)。Consumers: Input（canonical）, NumberInput, DatePicker, Select, Combobox, LinkInput, PeoplePicker。
 
 ## 定位
 

@@ -93,6 +93,10 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
+  /** 多選 footer 全選按鈕文字 —— 還沒全選時。轉發 Combobox → SelectMenu(SSOT 住 SelectMenu);default「全選」 */
+  selectAllLabel?: string
+  /** 多選 footer 全選按鈕文字 —— 已全選時,點下去清空;default「取消全選」 */
+  deselectAllLabel?: string
   /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,field-controls.spec.md「Loading state」;2026-09-09 user 拍板
    *  收窄語意):機械轉發 wrapped Select / Combobox —— 觸發點右側、箭頭左邊的轉圈 + `aria-busy`。**不是**名錄載入;名錄載入用
    *  `optionsLoading`。 */
@@ -169,6 +173,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   searchPlaceholder = '搜尋人員…', // i18n-allow: DS default
   searchAriaLabel = '搜尋人員', // i18n-allow: DS default
   emptyText = '沒有人員', // i18n-allow: DS default(2026-09-08 一句到底,對應 No options)— only for SelectMenu noResultsText
+  selectAllLabel,
+  deselectAllLabel,
   loading = false,
   optionsLoading = false,
   filterOption = true,
@@ -206,7 +212,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // consumer 顯式傳 'pill' 時本行為 no-op(同值)。hook 必在任何 early return 前呼叫(React #310)。
   // **只在 form surface 降階**(2026-08-05):table-cell / inline-edit / toolbar 維持 stack —
   // cell 的 view↔edit 像素對齊與固定列高契約不得被 pill 的 wrap 破壞(user:「尤其是 table
-  // 的部分」)。cell 觸控編輯本就走原生 picker,移除成員在 picker 內完成。
+  // 的部分」)。**2026-09-18 更正**:原本這裡寫「cell 觸控編輯本就走原生 picker,移除成員在
+  // picker 內完成」—— Combobox 的觸控原生路徑已整個移除(user 拍板手機與桌機同一套),
+  // 現在觸控編輯開的是同一套自訂浮層,已選成員在浮層裡打勾、可再點取消。pill 降階本身不變
+  // (它解的是欄位上「多人只剩 +N」的顯示問題,跟選單走哪條路無關)。
   const isTouch = useIsTouchDevice()
   const effectiveMultiDisplay = isTouch && isMulti && surface === 'form' ? 'pill' : multiDisplay
   // 已選值回查名錄 = people + suggestions(2026-09-09:從建議群組選的人不在 people 裡;hook 必在 early return 前)
@@ -390,6 +399,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
+        selectAllLabel={selectAllLabel}
+        deselectAllLabel={deselectAllLabel}
         loading={loading}
         optionsLoading={optionsLoading}
         filterOption={filterOption}

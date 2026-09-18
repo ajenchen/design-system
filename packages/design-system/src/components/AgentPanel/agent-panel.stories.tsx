@@ -68,15 +68,31 @@ const noop = () => {}
 function PanelFrame({
   logoState = 'still',
   aside,
+  stage,
+  stageWidth,
   children,
 }: {
   logoState?: AgentLogoState
   /** 左側空白區的旁註(例如即時寬度讀數)。有需要旁註的範例照樣共用這個外殼,不另起一套版面。 */
   aside?: React.ReactNode
+  /** 舞台內容(宿主畫面)。與 `aside` 的差別:這個不置中、吃滿剩餘空間,用來讓遮罩底下真的有東西。 */
+  stage?: React.ReactNode
+  /**
+   * 把容器固定成這個寬度(容器 < 960 就翻成蓋板,見 spec「與 app 的推擠與斷點」)。
+   * 省略 = 吃滿畫布(絕大多數範例都是並排態)。
+   */
+  stageWidth?: number
   children: (props: { close: () => void; logoState: AgentLogoState }) => React.ReactNode
 }) {
   return (
-    <div className="relative flex h-dvh justify-end bg-canvas">
+    <div
+      // `overflow-hidden` **只在釘寬度時**加:那一則要讓蓋板與遮罩貼齊這個假容器的邊。
+      // 不釘寬度的既有範例一律維持原樣 —— 入口鈕拖到右緣時本來就會半露在容器外,
+      // 加了裁切會把它切掉(2026-09-18 差點順手全加上去)。
+      className={`relative flex h-dvh justify-end bg-canvas${stageWidth ? ' overflow-hidden' : ''}`}
+      style={stageWidth ? { width: stageWidth } : undefined}
+    >
+      {stage && <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{stage}</div>}
       {aside && (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">{aside}</div>
       )}
@@ -118,7 +134,7 @@ export const TaskAssistant: Story = {
     return (
       <PanelFrame logoState="think">
         {({ close, logoState }) => (
-        <AgentPanel>
+        <AgentPanel onClose={close}>
           <AgentPanelHeader title="衝刺待辦整理" logoState={logoState} activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage role="user">把這份待辦按優先級重排,衝突的排程幫我標出來。</AgentMessage>
@@ -169,7 +185,7 @@ export const Attachments: Story = {
     return (
       <PanelFrame>
         {({ close }) => (
-        <AgentPanel>
+        <AgentPanel onClose={close}>
           <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage
@@ -212,7 +228,7 @@ export const MultipleReplies: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="user">把 Q3 的客訴按原因分類,各給我前三名。</AgentMessage>
@@ -245,7 +261,7 @@ export const HistoryOpen: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">從標題或箭頭點開歷史;懸停或 Tab 到某一列會浮出改名與刪除。</AgentMessage>
@@ -263,7 +279,7 @@ export const NewConversation: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} onClose={close} />
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <Empty
@@ -315,7 +331,7 @@ export const DecisionCardOpen: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。</AgentMessage>
@@ -336,7 +352,7 @@ export const TitleTruncated: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。</AgentMessage>
@@ -354,7 +370,7 @@ export const DecisionCardSingle: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">只剩語氣沒定,選一個就能繼續。</AgentMessage>
@@ -375,7 +391,7 @@ export const DecisionSummaryInFlow: Story = {
   render: () => (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel>
+      <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">
@@ -418,7 +434,7 @@ export const ResizableWidth: Story = {
         }
       >
         {({ close }) => (
-          <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted}>
+          <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted} onClose={close}>
             <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={close} {...headerWiring} />
             <AgentConversation>
               <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
@@ -434,6 +450,52 @@ export const ResizableWidth: Story = {
               ]}
               {...promptWiring}
             />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
+}
+
+/**
+ * 容器窄到並排放不下(< 960)時面板翻成蓋板:上下右貼齊容器、**左邊留 48px**,底下鋪遮罩,
+ * 而且**點遮罩就關閉面板**(2026-09-17 裁示)—— 關掉之後入口鈕接手,點它開回來,對話與草稿都還在。
+ *
+ * 為什麼要有這一則:蓋板只在容器 < 960 時出現,而其他每一則都吃滿畫布 ——
+ * 等於一般桌機視窗永遠看不到蓋板與遮罩,這個狀態一張可稽核的畫面都沒有(M15)。
+ * 這裡把容器釘在 880,不用縮視窗就看得到。幾何與「點遮罩關面板」另有機械閘
+ * `scripts/agent-panel-breakpoint.mjs`,整頁情境見「示意(假資料)— URL 註冊表」。
+ */
+export const OverlayOnNarrowStage: Story = {
+  name: '窄畫布:蓋板與遮罩',
+  render: function OverlayOnNarrowStageStory() {
+    return (
+      <PanelFrame
+        stageWidth={880}
+        stage={
+          // 舞台只是「遮罩底下確實有東西」的背景,所以用最單純的標題 + 清單。
+          // 不用 `PageHeader`:那顆 demo helper 需要 SidebarProvider,單獨放進來會整則 story 渲不出來
+          //(2026-09-18 實測:`useSidebar must be used within a SidebarProvider`,tsc 不會擋)。
+          <div className="flex min-h-0 flex-1 flex-col gap-[var(--layout-space-tight)] p-[var(--layout-space-loose)]">
+            <h2 className="text-h4 font-medium text-foreground">Sprint 42 待辦</h2>
+            <ul className="flex flex-col gap-[var(--layout-space-tight)] text-body text-fg-secondary">
+              <li>TASK-4821 匯出報表逾時 —— 指派給 Betty Wu,週四到期</li>
+              <li>TASK-4835 登入頁 Safari 版面跑掉 —— 指派給 Alan Chen,週五到期</li>
+              <li>TASK-4842 訂單金額四捨五入不一致 —— 未指派</li>
+            </ul>
+          </div>
+        }
+      >
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
+            <AgentConversation>
+              <AgentMessage role="user">這個衝刺有哪幾筆還沒指派?</AgentMessage>
+              <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
+                只有 TASK-4842「訂單金額四捨五入不一致」還沒指派,其餘兩筆都有負責人且在本週到期。
+              </AgentMessage>
+            </AgentConversation>
+            <AgentPromptInput value="" onValueChange={noop} {...promptWiring} attachments={[]} placeholder="問我或指派工作…" />
           </AgentPanel>
         )}
       </PanelFrame>
@@ -489,7 +551,7 @@ export const Fab: Story = {
         </div>
         <AgentPanelDock defaultOpen={false} logoState={agentState}>
           {({ close, logoState }) => (
-            <AgentPanel>
+            <AgentPanel onClose={close}>
               <AgentPanelHeader
                 title="訂單異常排查"
                 activeConversationId="c1"
@@ -556,7 +618,7 @@ export const LogoThinkStop: Story = {
     return (
       <div className="flex items-center gap-12 p-12">
         <AgentLogo state={state} size={72} label={state} />
-        <Button variant="secondary" size="sm" onClick={start}>思考 3 秒</Button>
+        <Button variant="tertiary" size="sm" onClick={start}>思考 3 秒</Button>
         <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
       </div>
     )
@@ -864,7 +926,7 @@ function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, pers
     <div ref={hostRef} className="contents">
       <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
-          <AgentPanel persistentElements={persistentElements} onModeChange={onModeChange}>
+          <AgentPanel persistentElements={persistentElements} onModeChange={onModeChange} onClose={close}>
             <AgentPanelHeader
               title={empty ? '新對話' : active.title}
               conversations={sessions.history}
@@ -1098,7 +1160,7 @@ export const UrlRegistryDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板(左邊留 48px 內距、底下鋪遮罩;遮罩只提示、點了不關):網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
+        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板(左邊留 48px 內距、底下鋪遮罩,點遮罩關閉代理、底下的對話框留著):網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
       },
     },
   },

@@ -270,10 +270,17 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const focusableClass = hoverCard
       ? cn('', shape === 'circle' ? 'rounded-full' : 'rounded-md')
       : ''
+    // 外框 = 可見圓(avatar.spec.md「外框 = 可見圓」):固定尺寸模式下最外層寬高必須等於 size,
+    // 不得被父容器沿交叉軸拉伸。尺寸寫在內層(下方 numSize),root 只有 inline-flex shrink-0 ——
+    // 而 shrink-0 只擋主軸收縮,擋不住交叉軸拉伸(直向 flex 拉寬;grid 由 justify-self 管,align-self 也碰不到),
+    // 所以要鎖寬只能用 w-fit。root 一被撐寬會同時壞三處:狀態圓點 / badgeCount(相對 root 絕對定位)、
+    // :focus-visible 焦點框(畫在 root 的 border box,帶 rounded-full → 變膠囊)、hoverCard 的 Radix 錨點(浮層橫向偏移)。
+    // fill 模式的語意就是填滿父容器,必須排除。機械閘:scripts/avatar-anchor-box-invariant.mjs。
+    const boxClass = isFill ? '' : 'w-fit'
     const baseEl = !hasOverlay
-      ? <div ref={ref} className={cn('inline-flex shrink-0', focusableClass, className)} style={style} {...focusableProps} {...props}>{avatarEl}</div>
+      ? <div ref={ref} className={cn('inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...focusableProps} {...props}>{avatarEl}</div>
       : (
-        <div ref={ref} className={cn('relative inline-flex shrink-0', focusableClass, className)} style={style} {...focusableProps} {...props}>
+        <div ref={ref} className={cn('relative inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...focusableProps} {...props}>
           {avatarEl}
           {/* Status dot:bottom-right(presence — 世界級對照 Slack / Teams / Discord),
               落在 circle avatar 圓周 45° 位置 / square avatar 右下直角;

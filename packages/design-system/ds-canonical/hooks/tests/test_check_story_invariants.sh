@@ -486,6 +486,99 @@ run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/compone
 '
 expect_pass_silent "28. R10 描述 label(· 分隔)→ 不誤判"
 
+# 28b. R11 component_in_render:元件定義在 render() 裡(接 props 的形狀)→ P0 BLOCK
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '
+export const A = {
+  render: () => {
+    const [n, setN] = React.useState(0)
+    const Section = ({ title }: { title: string }) => (
+      <div>{title}</div>
+    )
+    return <Section title="x" />
+  },
+}
+'
+expect_block "28b. R11 元件寫在 render() 裡 → P0 block" "R11 component_in_render"
+
+# 28c. R11 搬到 module 層 → silent(同一份內容,只差位置)
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '
+const Section = ({ title }: { title: string }) => (
+  <div>{title}</div>
+)
+
+export const A = {
+  render: () => {
+    const [n, setN] = React.useState(0)
+    return <Section title="x" />
+  },
+}
+'
+expect_pass_silent "28c. R11 搬到 module 層 → silent"
+
+# 28d. R11 不誤判零 props 的形狀(外層 render 無 state、只渲染一次;Rating / DateGrid / Dialog 共 7 處)
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '
+export const A = {
+  render: () => {
+    const Interactive = () => {
+      const [v, setV] = React.useState(0)
+      return <div onClick={() => setV(v + 1)}>{v}</div>
+    }
+    return <Interactive />
+  },
+}
+'
+expect_pass_silent "28d. R11 零 props 形狀 → 不誤判"
+
+# 28e. R11 豁免 marker → silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '// @component-in-render-allow: 示範重掛行為本身
+export const A = {
+  render: () => {
+    const Section = ({ title }: { title: string }) => (
+      <div>{title}</div>
+    )
+    return <Section title="x" />
+  },
+}
+'
+expect_pass_silent "28e. R11 @component-in-render-allow 豁免 → silent"
+
+# 28f. R11 只管 *.stories.tsx,元件原始碼不在範圍(那裡的同寫法由 review 判斷)
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.tsx" '
+export const A = () => {
+  const [n, setN] = React.useState(0)
+    const Section = ({ title }: { title: string }) => (
+      <div>{title}</div>
+    )
+  return <Section title="x" />
+}
+'
+expect_pass_silent "28f. R11 非 stories 檔 → 不檢查"
+
+# 28g. R12 secondary_variant_pair:單獨的 secondary 觸發鈕 → P0 BLOCK
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" onClick={fire}>複製檔案</Button>
+'
+expect_block "28g. R12 單獨的 secondary → P0 block" "R12 secondary_variant_pair"
+
+# 28h. R12 改成 tertiary(= cva 預設)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="tertiary" onClick={fire}>複製檔案</Button>
+'
+expect_pass_silent "28h. R12 tertiary → silent"
+
+# 28i. R12 真的正負並存(寫出負面選項)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.stories.tsx" '// @secondary-pair: 放棄變更(danger)
+<Button variant="secondary">儲存草稿</Button>
+<Button variant="secondary" danger>放棄變更</Button>
+'
+expect_pass_silent "28i. R12 @secondary-pair 豁免 → silent"
+
+# 28j. R12 Button 自家 stories 是 variant 展示場 → 不檢查
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.stories.tsx" '
+<Button variant="secondary">儲存草稿</Button>
+'
+expect_pass_silent "28j. R12 Button 自家展示場 → 不檢查"
+
 # 29. Multiple PostToolUse warnings from independent rules must become one exact envelope.
 STORIES_MULTI="$TMP_DIR/multi-warning.stories.tsx"
 cat > "$STORIES_MULTI" <<'EOF'

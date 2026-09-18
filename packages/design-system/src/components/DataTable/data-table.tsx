@@ -2262,8 +2262,37 @@ function DataTableInner<TData>(
    * 捲動中本來就每幀都在 render,例外在下一幀就會生效;停捲後的補齊 render 同理。
    */
   const hoveredRowIdRef = React.useRef<string | null>(null)
+  const markedRef = React.useRef<HTMLElement[]>([])
   const rowsRef = React.useRef(rows)
   rowsRef.current = rows
+
+  /**
+   * hover 標記的**唯一寫入者**(2026-09-16 user:「捲動之後很容易會出現一個畫面同時有兩筆 row 呈現 hover 的狀態」)。
+   *
+   * 不變式:**同一時間最多一列被標記,而且是指標底下那一列**。後半句本來就有人守,前半句以前沒有任何一行程式負責 ——
+   * 它只是「mouseover 加 / mouseout 減成對出現」的副作用,而捲動會把這一對拆散:
+   *   捲動中瀏覽器不會每幀重算指標在哪一列(它的命中點落後畫面 1–4 列),於是 `syncHoverUnderPointer` 先把標記移到新列;
+   *   瀏覽器遲來的 mouseout 帶著**舊**索引,去刪一個早就被清掉的索引(空轉),剛才那一列的標記就成了孤兒;
+   *   接著遲來的 mouseover 只加不清 —— 畫面上兩列同時亮。
+   * 而且不會自己好:sync 的快速略過條件只看「指標底下那列有沒有被標」,孤兒出現後它永遠成立(見下方 sync)。
+   *
+   * 所以清除**不能用瀏覽器記得的舊索引定址**,只能用「接下來該亮哪一列」反推:標記新列的同一個動作把其餘所有列清掉。
+   * 列的底色只吃這個標記(`data-[hovered]:bg-neutral-hover`),瀏覽器原生 `:hover` 不參與上色,
+   * 所以標記留在舊列上時,不管重算幾次都救不回來 —— 必須由寫入端保證互斥。
+   * 機械閘:`scripts/data-table-hover-exclusivity-invariant.mjs`(任一幀最多一列亮;對照組拿掉互斥必紅)。
+   */
+  const setHoveredRow = React.useCallback((idx: string | null) => {
+    const table = tableRef.current
+    if (!table) return
+    for (const n of markedRef.current) delete n.dataset.hovered
+    markedRef.current = []
+    hoveredRowIdRef.current = idx != null ? rowsRef.current[Number(idx)]?.id ?? null : null
+    if (idx != null) {
+      const next = [...table.querySelectorAll<HTMLElement>(`[data-row-index="${idx}"]`)]
+      for (const n of next) n.dataset.hovered = ''
+      markedRef.current = next
+    }
+  }, [])
 
   /**
    * 捲動造成的「指標底下換了一列」瀏覽器不會告訴我們,所以每次捲動 commit 之後自己對一次(2026-09-11)。
@@ -2292,11 +2321,14 @@ function DataTableInner<TData>(
     const id = idx != null ? rowsRef.current[Number(idx)]?.id ?? null : null
     // 不能只比 id:殼列升級成真列時**換了一個 DOM 節點**,新節點身上沒有 `data-hovered`,
     // 而 id 沒變 —— 只比 id 會在那一幀直接 return,留下「真列在指標底下卻沒底色」的空窗(實測 1 幀)。
-    if (id === hoveredRowIdRef.current && (rowEl == null || rowEl.hasAttribute('data-hovered'))) return
-    table.querySelectorAll<HTMLElement>('[data-hovered]').forEach((n) => delete n.dataset.hovered)
-    hoveredRowIdRef.current = id
-    if (idx != null) table.querySelectorAll<HTMLElement>(`[data-row-index="${idx}"]`).forEach((n) => (n.dataset.hovered = ''))
-  }, [enableHover])
+    // 略過條件必須含**互斥**:只比「指標底下那列有沒有被標」會在髒狀態下判定一切正常 —— 孤兒列亮在別處,
+    // 這個條件看不到它,於是每次 commit 都被略過,兩列同時亮的狀態永遠不會被清掉(2026-09-16 實測:等 10 秒、
+    // 滑到別列、把指標移出表格都不會好,只有那列被虛擬捲動回收才消失)。改成「被標記的**全部**都是這一列」。
+    const marked = markedRef.current
+    const exclusive = marked.length > 0 && marked.every((n) => n.isConnected && n.dataset.rowIndex === idx)
+    if (id === hoveredRowIdRef.current && (rowEl == null || exclusive)) return
+    setHoveredRow(idx)
+  }, [enableHover, setHoveredRow])
 
   // 依可見優先 → 索引順序排隊,前 budgetRows 列畫真列、其餘先殼;三區共用同一份決定。
   {
@@ -2903,17 +2935,17 @@ function DataTableInner<TData>(
         }
         const idx = findRowIndex(e.target)
         if (idx == null) return
-        hoveredRowIdRef.current = rowsRef.current[Number(idx)]?.id ?? null
-        tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => ((el as HTMLElement).dataset.hovered = ''))
+        // 標新列 = 清其餘所有列(互斥由 setHoveredRow 保證,不靠 mouseout 成對出現)
+        setHoveredRow(idx)
       },
       onMouseOut: (e: React.MouseEvent) => {
         const idx = findRowIndex(e.target)
-        if (idx == null) return
         // 仍在同一 row 的子元素間 bubble(e.g. cell → text node)則 relatedTarget 還在 row 內
         const related = e.relatedTarget instanceof Element ? e.relatedTarget.closest<HTMLElement>('[data-row-index]') : null
-        if (related?.dataset.rowIndex === idx) return
-        hoveredRowIdRef.current = related?.dataset.rowIndex != null ? (rowsRef.current[Number(related.dataset.rowIndex)]?.id ?? null) : null
-        tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => delete (el as HTMLElement).dataset.hovered)
+        if (idx != null && related?.dataset.rowIndex === idx) return
+        // **依「接下來該亮哪一列」清**,不依瀏覽器記得的舊索引:捲動時那個索引早就過期,拿它定址會空轉、留下孤兒。
+        // 同時修掉「指標從列上移進浮層(下拉選單 / tooltip)時什麼都不清」—— 舊版的 `if (idx == null) return` 讓它漏掉。
+        setHoveredRow(related?.dataset.rowIndex ?? null)
       },
     }
   }, [enableHover])
@@ -4867,14 +4899,15 @@ function DataTableInner<TData>(
     const type = e.active.data?.current?.type ?? 'row'
     // v15.3:drag 啟動清掉非 source row 的 data-hovered(避免其他 row 殘留 hover bg + drag button)。
     // **保留 source row 的 hover** — 對齊 Linear / Jira「source 維持 active 視覺」world-class canonical。
-    if (type === 'row') {
-      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => {
-        const rowId = el.dataset.sortableRowId
-        if (rowId !== id) delete el.dataset.hovered
-      })
-    } else {
-      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => delete el.dataset.hovered)
-    }
+    const keep = type === 'row'
+      ? markedRef.current.filter((el) => el.isConnected && el.dataset.sortableRowId === id)
+      : []
+    for (const el of markedRef.current) if (!keep.includes(el)) delete el.dataset.hovered
+    markedRef.current = keep
+    // 清完讓 ref 與 DOM 一致:「ref 說 A、DOM 標著 B」正是兩列同時亮的病根(2026-09-16),
+    // 所以每個會動標記的地方都要收尾。以實際還留著標記的那一列為準(拖曳列可能本來就沒被 hover)。
+    const stillMarked = keep[0]?.dataset.rowIndex
+    hoveredRowIdRef.current = stillMarked != null ? rowsRef.current[Number(stillMarked)]?.id ?? null : null
     if (type === 'column') {
       // Column drag:snapshot header cell visual,strip transform/inline-styles
       const colId = e.active.data?.current?.columnId ?? id

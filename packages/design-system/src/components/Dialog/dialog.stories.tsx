@@ -15,7 +15,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
@@ -349,18 +349,27 @@ export const ListBody = {
             <DialogTitle>選擇標籤</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            <div role="list" className="flex flex-col py-2">
-              {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                // 小 item 純文字 label → 用 MenuItem primitive(世界級 Linear Cmd+K / Polaris OptionList
-                // / Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)
-                // className 覆蓋 px-3 為 px-loose → 對齊 dialog header/footer(tailwind-merge 吃掉預設 px-3)
-                // list outer wrapper 已 `py-2`(menu group 8px breathing)+ body 撤 chrome padding,
-                // MenuItem 不需再外包 py-2
-                <MenuItem key={t} className="px-[var(--layout-space-loose)]">
-                  {t}
-                </MenuItem>
-              ))}
-            </div>
+            {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
+                Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
+                容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
+                menu-item.spec.md:246 禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
+                `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
+                Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
+                列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
+                整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
+                CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
+                token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
+            <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+              <CommandList>
+                <CommandGroup>
+                  {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
+                    <CommandItem key={t} value={t}>
+                      {t}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
@@ -454,7 +463,7 @@ export const WithTabsInHeader = {
   render: () => (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="secondary">專案設定</Button>
+        <Button variant="tertiary">專案設定</Button>
       </DialogTrigger>
       <DialogContent>
         <Tabs defaultValue="general">
@@ -563,14 +572,14 @@ export const FocusTrapWithConcurrentOverlay: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <Button variant="tertiary" id="poc-outside-before">背景鈕(前)</Button>
       <Dialog defaultOpen>
         <DialogContent>
           <DialogHeader><DialogTitle>並存浮層測試</DialogTitle></DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-2">
-              <Button variant="secondary" id="poc-inside-1">Dialog 內鈕 1</Button>
-              <Button variant="secondary" id="poc-inside-2">Dialog 內鈕 2</Button>
+              <Button variant="tertiary" id="poc-inside-1">Dialog 內鈕 1</Button>
+              <Button variant="tertiary" id="poc-inside-2">Dialog 內鈕 2</Button>
             </div>
           </DialogBody>
           <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>
@@ -582,13 +591,13 @@ export const FocusTrapWithConcurrentOverlay: Story = {
           對照組因此建立不起來(2026-09-07 兩次都踩到)。 */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+          <Button variant="tertiary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+      <Button variant="tertiary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }
@@ -600,16 +609,16 @@ export const FocusTrapControlNoDialog: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <Button variant="tertiary" id="poc-outside-before">背景鈕(前)</Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+          <Button variant="tertiary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+      <Button variant="tertiary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }

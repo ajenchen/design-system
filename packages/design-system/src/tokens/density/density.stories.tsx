@@ -83,6 +83,43 @@ function TokenRow({
 
 // ── 1. Overview ──────────────────────────────────────────────────────────────
 
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
+// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
+  <div data-density={mode} className="flex-1 border-r border-border last:border-0">
+    <div
+      className="border-b border-border bg-surface flex items-center"
+      style={{ paddingLeft: 'var(--layout-space-loose)', paddingRight: 'var(--layout-space-loose)', paddingTop: 'var(--layout-space-tight)', paddingBottom: 'var(--layout-space-tight)' }}
+    >
+      <span className="text-caption font-medium text-fg-secondary">
+        {mode.toUpperCase()} density
+      </span>
+    </div>
+    <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
+      <div className="space-y-2">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-8 rounded-md bg-neutral-hover" />
+        ))}
+      </div>
+    </div>
+    {/* 2026-07-14 audit Dim 68:bottom 是「內容 → action buttons」結論留白(layoutSpace.spec.md
+        規則 4 line 1)— 原 demo 把它畫成無 action 的通用頁尾 band = 教錯用法。補 action row
+        讓 48px 留白真的落在 content 與 commitment 之間。 */}
+    <div style={{ height: 'var(--layout-space-bottom)', borderTop: '1px dashed var(--border)' }}
+      className="flex items-center justify-center">
+      <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
+    </div>
+    <div
+      className="flex justify-end"
+      style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
+    >
+      <Button variant="primary">儲存變更</Button>
+    </div>
+  </div>
+)
+
 export const Overview: Story = {
   name: '總覽',
   parameters: {
@@ -211,38 +248,6 @@ export const PageLayout: Story = {
     },
   },
   render: () => {
-    const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
-      <div data-density={mode} className="flex-1 border-r border-border last:border-0">
-        <div
-          className="border-b border-border bg-surface flex items-center"
-          style={{ paddingLeft: 'var(--layout-space-loose)', paddingRight: 'var(--layout-space-loose)', paddingTop: 'var(--layout-space-tight)', paddingBottom: 'var(--layout-space-tight)' }}
-        >
-          <span className="text-caption font-medium text-fg-secondary">
-            {mode.toUpperCase()} density
-          </span>
-        </div>
-        <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-8 rounded-md bg-neutral-hover" />
-            ))}
-          </div>
-        </div>
-        {/* 2026-07-14 audit Dim 68:bottom 是「內容 → action buttons」結論留白(layoutSpace.spec.md
-            規則 4 line 1)— 原 demo 把它畫成無 action 的通用頁尾 band = 教錯用法。補 action row
-            讓 48px 留白真的落在 content 與 commitment 之間。 */}
-        <div style={{ height: 'var(--layout-space-bottom)', borderTop: '1px dashed var(--border)' }}
-          className="flex items-center justify-center">
-          <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
-        </div>
-        <div
-          className="flex justify-end"
-          style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
-        >
-          <Button variant="primary">儲存變更</Button>
-        </div>
-      </div>
-    )
 
     return (
       <div className="flex min-h-64">

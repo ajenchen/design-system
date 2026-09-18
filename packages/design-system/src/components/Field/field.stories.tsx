@@ -472,7 +472,7 @@ export const ButtonAsControl: Story = {
           </Field>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>合約附件</FieldLabel>
-            <Button startIcon={Upload} variant="secondary">上傳檔案</Button>
+            <Button startIcon={Upload} variant="tertiary">上傳檔案</Button>
             <FieldDescription>PDF / DOCX,最大 10 MB</FieldDescription>
           </Field>
           <Field orientation="horizontal" labelWidth="120px">

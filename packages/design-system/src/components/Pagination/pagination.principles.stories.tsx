@@ -50,7 +50,7 @@ export const UsageGuidance: Story = {
           title="何時不用:無盡瀏覽 feed → load-more / 虛擬滾動"
           note="activity stream、通知列表這類「往下讀」的流,頁碼是錯的心智模型 —— 使用者不在乎第幾頁,只在乎更多內容。與虛擬滾動互斥:兩者是互斥的大資料策略(TanStack 官方定位),同一份資料不可同時用。"
         >
-          <Button variant="secondary">載入更多通知</Button>
+          <Button variant="tertiary">載入更多通知</Button>
           <Label>✓ feed 尾端用 load-more;超大資料集在 DataTable 內建虛擬滾動</Label>
           <Label warn>✗ 給 activity feed 加頁碼 —— 讀流被切斷,回頭找內容也記不住頁碼</Label>
         </Rule>

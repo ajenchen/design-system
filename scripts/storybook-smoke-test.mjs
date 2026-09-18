@@ -13,7 +13,12 @@
 //   5. assert 0 console error AND 0 pageerror
 //   6. 任一 fail → exit 1 with details
 //
-// Hook 進 ci.yml verify job → fail = block main merge / 防 Storybook runtime regression。
+// ⚠️ **這支目前不在 CI 裡**(2026-09-18 實測 `grep -rn storybook-smoke .github/workflows package.json` = 0 筆)。
+// 上面那句「Hook 進 ci.yml verify job」是當初的意圖,不是現況 —— 留著會讓人以為有閘在守(M32「量具要先證明會紅」的變形:
+// 沒有被呼叫的閘等於不存在)。**現在真正在 CI 擋「story 整則渲不出來」的是**
+// `scripts/overlay-footer-gutter-invariant.mjs` —— 它本來就要逐一開啟全部 story,順手檢查有沒有掉進
+// Storybook 的錯誤畫面,不必為此再跑一次全庫掃描。本檔保留作為手動 / 本機工具(它另外還驗 console error,涵蓋面更廣);
+// 要把它排進 CI 時,請連同「跑多久、放哪個 job」一起決定,不要只加一行 npm script。
 
 import { spawn } from 'node:child_process'
 import { existsSync, statSync } from 'node:fs'

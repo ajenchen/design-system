@@ -90,6 +90,7 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地
 - **Loading**:Tooltip API 無 loading prop 或內建 async state；content 的資料生命週期由 consumer own。
+- **錨點失去版面**(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」):觸發點被藏起來(`display:none` 祖先 / keep-mounted 收起 / 隱藏的 docs 分頁 / 虛擬捲動回收)或卸載時,**浮層不得被畫出來**。內容 portal 到 body,不會跟著被藏;錨點量出來是 0×0,Radix 仍會拿它算位置 → `(0, sideOffset)` 視窗左上角,關閉動畫還會在那裡播完。DS 預設開 `hideWhenDetached`(SSOT:`tokens/elevation/overlay-geometry.ts` `OVERLAY_HIDE_WHEN_DETACHED`;Popover / HoverCard / DropdownMenu 同一顆常數),位置與 `visibility:hidden` 由同一次定位計算寫進同一個 style 物件,所以錯位的那一幀不可能被畫出來。機械閘:`scripts/overlay-detached-anchor-invariant.mjs`(修前的 build 跑它會紅在 `translate(0px, 8px)`)。
 
 ## 受控開關(open / defaultOpen / onOpenChange)
 

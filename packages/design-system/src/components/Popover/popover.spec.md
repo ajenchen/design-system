@@ -130,10 +130,12 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 ### 合法但少見:Popover 內含可選 item 列 + footer save CTA
 
-Popover 可以在 body 放 checkbox / radio 列表 / 可選 chip / 可選 menu-item-like elements,**但必在 footer 有 CTA 按鈕(套用 / 儲存 / 完成)觸發狀態提交**。這個 pattern 跟 DropdownMenu 的差別是:**DropdownMenu 一 click 即觸發動作,Popover 這類是「暫存選擇 → 按 CTA 才 commit」**。典型情境:
+Popover 可以在 body 放可選 item 列,**但必在 footer 有 CTA 按鈕(套用 / 儲存 / 完成)觸發狀態提交**。這個 pattern 跟 DropdownMenu 的差別是:**DropdownMenu 一 click 即觸發動作,Popover 這類是「暫存選擇 → 按 CTA 才 commit」**。
 
-- **多選 filter panel**:checkbox 列表 + 底部 `清除 / 套用`(見 `FilterPanel` story)
-- **Bulk edit**:選多個 menu-item-like options + 底部 `儲存變更`
+**body 是一份可選清單時,列走選單列**(`patterns/overlay-surface/overlay-surface.spec.md`「預設:浮層的 body 是一份可選清單 → 走選單列」):body 撤 chrome padding、`Command`(cmdk)包住提供鍵盤與 listbox 結構、item 自帶 `px-loose` 對齊 header 標題。**不要用 `CheckboxGroup` + 裸 `Checkbox` 自組** —— 那是表單欄位的組合方式,不是選項清單。典型情境:
+
+- **多選 filter panel**:勾選列 + 底部 `清除 / 套用`(canonical = `FilterPanel` story 的 `StatusFilterPanel`)
+- **Bulk edit**:選多個 options + 底部 `儲存變更`
 - **Custom toolbar 設定**:可選 toggle 列 + 底部 `套用偏好`
 
 canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 → DropdownMenu;否(要按 footer CTA 才 commit)→ Popover。

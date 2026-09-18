@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "e1e528dad4fbc4c5733f028224a94d05adb178f0be0683f54a98022ada556cc9",
+    "forkCorpusLockSha256": "f6d3d050b06de49093daefa5a03d7fa2f24a3bcd95a90e8a55bf546aa49b92d3",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "be072ba2142f904757668d504385feea5173a8c418bccf7d313a4465abf17db5",
@@ -104,7 +104,7 @@
       "scripts/audit-consumer-a11y.mjs": "f3ed24be76d87ffbcaed08f39491d385a14f0e870a5b952e3407ba0ef0cd4e08",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
       "scripts/consumer-source-harness.mjs": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
-      "scripts/lib/a11y-static-server.mjs": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
+      "scripts/lib/a11y-static-server.mjs": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
       "scripts/lib/closed-tool-execution.mjs": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",

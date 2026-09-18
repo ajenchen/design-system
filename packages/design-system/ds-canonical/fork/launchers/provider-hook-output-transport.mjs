@@ -84,6 +84,12 @@ const ALLOWED_PROVIDER_HOOK_ENVIRONMENT_NAMES = Object.freeze([
   'GOVERNANCE_PROVIDER',
   'GOVERNANCE_PROVIDER_ADAPTER_JSON',
   'GOVERNANCE_PROVIDER_REGISTRY',
+  // 2026-09-18:這一條漏在白名單外,所以 Stop hook 的推播閘從 2026-09-06 接上那天起就沒活過 ——
+  // run-provider-hook.mjs 依 registry 算出 `pushNotification` 並寫進 environment,消毒器再把它
+  // 整個丟掉,hook 裡永遠讀到 <unset> → NOTIFICATION_AVAILABLE=0 → 整個 mechanism 靜音。
+  // 症狀是 user 反覆問「為何又沒有推播」,而程式碼與 commit message 看起來都已經修好了。
+  // 教訓:改了「產生端」不等於接通,要有一條端到端的對照組(見 tests/test_stop_self_audit_push_gate.sh)。
+  'GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE',
   'GOVERNANCE_READ_ONLY',
   'GOVERNANCE_REGISTERED_HOOK_COUNT',
   'GOVERNANCE_RELEASE_REPOSITORY',

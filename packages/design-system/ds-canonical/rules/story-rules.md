@@ -93,6 +93,21 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 - **錨點錄**(Dialog docs 頁,1280×800):修前 4 個可見 `[role=dialog]` + 7 個 fixed 開啟節點疊在同一份文件;修後 0 個(各自進 iframe)。
 - **閘**:`scripts/dialog-coexistence-invariant.mjs`「docs 隔離」段 —— 靜態掃全部 `*.stories.tsx`(模態浮層 + 預設開啟 + 非 test-only 卻缺 `openOverlayDocsStory(` / `openOverlayParameters(` / `inline: false` → 紅)+ 瀏覽器量 Dialog docs 頁 `[role=dialog]` 可見數必 0、每個隔離 iframe ≥ 600px 寬、canvas OpenSnapshot 仍開著。
 
+## 元件一律定義在 module 層,禁寫在 `render()` 裡(2026-09-17)
+
+- **規則**:story 需要小元件(`Section` / `Toggle` / `Swatch` / `Page` 這種),**定義在檔案 module 層**,不要寫在 `render()` 內。
+- **為什麼**:React 用「元件函式的身分」判斷是不是同一棵樹。寫在 `render()` 裡的話,外層每次 `setState` 都會建立一個新的函式 → React 視為換了元件 → **底下整棵樹卸載重掛**。輕則焦點掉,重則整個開著的浮層消失。
+- **錨**:`data-table.stories.tsx`「進階篩選 — 各種狀態」的 `Section` 包住 DataTable,篩選面板一開著,**點任何一個選項**(不是只有新加的全選按鈕)整個面板就不見。對照實測:點 `Electronics` 跟點全選,`[data-radix-popper-content-wrapper]` 都是 1 → 0,兩者一模一樣 —— 證明跟按鈕無關,是重掛。同日全 DS 掃出同一寫法五處(DataTable / Coachmark / FileViewer / TimePicker / density),一起搬出 `render()`。
+- **哪種形狀不算**:`const X = () => { ...useState... }` 且**外層 render 沒有 state**、只渲染一次(Rating / DateGrid / Dialog 共 7 處)。外層不會重跑就不會重掛。判準是「外層 render 有沒有 state」,不是「有沒有寫在裡面」。
+- 對齊 React 官方文件「Do not define a component during rendering」(<https://react.dev/reference/rules/components-and-hooks-must-be-pure#do-not-define-a-component-during-rendering>)。
+
+## 按鈕 variant:單獨的按鈕一律 tertiary(2026-09-18)
+
+- **規則的主人是 `components/Button/button.spec.md`「Variant 控制視覺強調等級」表**,本節只是 story 層的落地與閘:
+  `secondary` **只用在正面與負面選項並存時代表正面那個**(儲存草稿 vs 放棄變更);單獨的觸發鈕 / 取消 / 一般輔助動作一律 `tertiary`——那也是 cva 預設(`button.tsx:217`,2026-06-06 從 primary 改過來)。
+- **錨**:2026-09-18 user 問「按鈕預設不是應該用 tertiary 嗎?我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」——查證後 **原則寫得很清楚,缺的是閘**:當天全 DS story 內 54 處 `variant="secondary"`,扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過 ±4 行內無 `danger` 兄弟),全是單獨觸發鈕或輔助動作。同日一次全改成 `tertiary`。
+- **閘**:`check_story_invariants.sh` R12 `secondary_variant_pair`(P0 BLOCKER)。Button 自家 stories 是 variant 展示場,天然豁免;真的成對時檔內寫 `// @secondary-pair: <並存的負面選項是什麼>`。
+
 ## 禁止
 
 - **展示層 story 禁原生 `<button>` / `<input>` / `<textarea>` / `<select>`**(hook `check_story_invariants.sh` R1 A.5,2026-09-08):raw 控件會吃到全域 `:focus-visible` 框、樣式跟 DS 元件不一致(user 抓到 agent 並存範例用滑鼠開 modal 就出鍵盤框)。例外只有 Radix `asChild` 觸發殼、`sr-only` 測試輔助、`@anatomy-exempt-next`。

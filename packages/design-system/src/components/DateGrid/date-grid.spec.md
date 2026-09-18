@@ -120,9 +120,39 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## Spacing canonical(2026-05-03 v8)
 
-- 整個 popover padding `p-3`(12px,對齊 `--layout-space-tight` @ md density)
-- 四邊對稱:左右 chevron 按鈕到邊距 = 最左最右日期 cell 到邊距(12px)
-- 上下對稱:caption 到頂 = 最後一排日期到底(均 12px,從 `p-3` 繼承)
+- **內距住在每一張月曆身上,不在根**(2026-09-18 user 裁示,原話:「我覺得真的要做的話,邏輯就是這樣,
+  而不是另外加一個 token,反而造成漂移,因為視覺就是要在各種情況營造對稱感吧?」)。
+  `month` 帶 `p-[var(--item-px,var(--field-px))]`(md 12),**根不帶內距**。
+  為什麼是 `--item-px`:這個浮層掛在欄位上,內容要跟 trigger 的文字落在同一條線 ——
+  那正是 `--item-px` 預設取自 `--field-px` 的理由(`../../patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」)。
+  `DatePicker` 的 footer 與右側時間欄的上內距讀**同一個運算式**,所以整個面板的邊是同一個來源。
+- **兩張月曆之間不設 gap**,距離由「各自的內距相加」自然形成(md 12 + 12 = **24**)。
+  - **所以沒有、也不需要月間距 token** —— 少一個可以漂的東西。
+    同日稍早一度改成 `gap-[var(--layout-space-loose)]`,那是「再加一顆要維護的數字」,已撤回。
+  - **對稱是結構保證的**:單張與並排長得完全一樣,不靠任何人記得維護某個值。
+  - 世界級同款:**Ant Design 就是這個作法**(兩張各自帶左右內距、中間不設 gap),
+    且 v4(內距 12 → 間距 24)與 v5(18 → 36)跨大版本維持 1:2,是刻意的比例。
+  - ⚠️ **nav 必須跟著內距走**:`button_previous/next` 相對 `month` 的 **padding box** 做 absolute 定位
+    (= 盒子最外緣)。內距搬到 `month` 之後不補偏移,chevron 會比日期格往外 12px(2026-09-18 實測確認)。
+    兩顆 nav 因此讀同一顆 `--item-px`。
+- **最外圈的 border-spacing 必須抵銷**(`month_grid` 帶 `-m-1`)。
+  `border-spacing` 的語意是「格與格之間 4px」,但 CSS **連最外圈也各給 4px** ——
+  不抵銷的話日期格會落在 12 + 4 = 16,而 chevron 貼著 12,四邊對稱就破了。
+  這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」),是 `border-separate` 的副作用。
+  - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
+  - **上游也不外溢**:`react-day-picker` 自己是 `border-collapse: collapse`,其 457 行 `style.css` 裡 `border-spacing` 出現 **0 次**;
+    IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
+  - **範圍軌道在列的頭尾要夾住**:range 的 `-2px` bridge 是用來跨過格間 4px 縫接鄰格,
+    但列的第一格左邊、最後一格右邊沒有鄰格,不夾就會溢出內距(實測 2px)。
+    夾在 `month_grid`(`[&_tr>td:first-child]:before:!left-0` / `last-child`)—— 實測 react-day-picker
+    **不會**把加在 `classNames.range_*` 的 class 帶到 `<td>`,掛在那裡不會生效。
+- **對齊基準是盒,不是圖示**:chevron 是 24px 按鈕、內含 16px 圖示置中,所以**圖示**在 16、**盒**在 12。
+  本 DS 一律盒對盒 —— `../../patterns/overlay-surface/overlay-surface.spec.md:116-117`
+  「item 的 **padding-box 左緣** = header title 左緣」「**對齊的是列的前緣,不是文字**」、:121「對齊的同樣是**按鈕左緣**」。
+  ⚠️ 不要拿 `data-unbounded` 當水平對齊前例:它的負 margin 全庫**只有垂直的 `my-`**(`overlay-surface.tsx:68`)。
+- 實測(2026-09-18 修後):裸 DateGrid 四邊 chevron 盒 12 / 日期格 12 / 最後一排到底 12;
+  `DatePicker` 面板 chevron 12 = 星期標頭 12 = 日期格 12 = footer 按鈕 12;
+  雙月面板 面板邊→第一格 12、最後一格→下一張第一格 **24**、面板寬 490。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)
@@ -166,7 +196,7 @@ Range 起訖使用 stadium 端點，讓連續區間有清楚的開始、延伸�
 - ❌ **不用 `.rdp-*` 原生 class 直接樣式化**(繞過本元件 classNames prop 會跨版本斷掉)
 - ❌ **不自包 Popover**(DateGrid 是 inline primitive;需要浮層由 consumer 包 Popover,見 DatePicker)
 - ❌ **不混用其他 calendar library**(若 DateRange / DateTime 需求出現,擴充本元件 `mode="range"` 或新 prop,不引第二套)
-- ❌ **Consumer 不可外加 padding wrapper**(canonical 2026-05-02)— DateGrid root 自帶 `p-3`;`<div className="p-2"><DateGrid /></div>` 會造成 popover edge → 第一個 day cell 雙重 padding(8 + 12 = 20px),違反 mindset #2「優先消費既有 SSOT」。直接放 `<DateGrid />` 在 Popover/parent 內即可。Hook `check_pattern_invariants.sh` C.3(P0 BLOCK,PRIMITIVES_REGEX 含 DateGrid)機械攔截
+- ❌ **Consumer 不可外加 padding wrapper**(canonical 2026-05-02)— DateGrid 的內距自帶在**每一張月曆**上(2026-09-18 從根搬過去,見上方 Spacing canonical);`<div className="p-2"><DateGrid /></div>` 會造成 popover edge → 第一個 day cell 雙重 padding(8 + 12 = 20px),違反 mindset #2「優先消費既有 SSOT」。直接放 `<DateGrid />` 在 Popover/parent 內即可。Hook `check_pattern_invariants.sh` C.3(P0 BLOCK,PRIMITIVES_REGEX 含 DateGrid)機械攔截
 
 ---
 

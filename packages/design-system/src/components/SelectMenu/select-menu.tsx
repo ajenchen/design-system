@@ -11,7 +11,11 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
+// cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
+// 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
+import { defaultFilter } from 'cmdk'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { Button } from '@/design-system/components/Button/button'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
@@ -21,7 +25,7 @@ import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select
  *
  * ── 功能 ──
  *   單選 / 多選、搜尋過濾、分組、可建立新選項（creatable）
- *   多選有 footer「全部」checkbox
+ *   多選有 footer 全選按鈕(兩態:全選 / 取消全選)
  *
  * ── 架構 ──
  *   Popover（浮動容器）
@@ -29,7 +33,7 @@ import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select
  *           ├── CommandInput（搜尋列,DS 單一實作,與 CommandDialog 共用）
  *           ├── CommandList（選項列表）
  *           │     └── CommandGroup → MenuItem
- *           └── Footer（多選全選）
+ *           └── SurfaceFooter（多選:全選 / 取消全選 按鈕)
  */
 
 // ── Types ──
@@ -110,8 +114,40 @@ export interface SelectMenuProps {
    * 2026-09-09 user 原則:「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態」→ 還沒搜尋不是「沒有選項」。
    */
   searchHintText?: string
-  /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
+  /**
+   * 多選 footer 的全選按鈕文字 —— **還沒全選時**顯示這個(2026-09-17 user 拍板兩段式)。
+   *
+   * 為什麼兩個 prop 而不是一個:W3C 的按鈕規範(https://www.w3.org/WAI/ARIA/apg/patterns/button/)
+   * 逐字寫「**it is critical the label on a toggle does not change when its state changes**」——
+   * 標籤會變就是普通命令按鈕、**不得加 `aria-pressed`**;要用 `aria-pressed` 則標籤必須固定。
+   * 兩條路互斥,本 DS 選「標籤會變」那條,所以兩個狀態各需一段文字。
+   */
   selectAllLabel?: string
+  /** 多選 footer 的全選按鈕文字 —— **已全選時**顯示這個,點下去清空(見 `selectAllLabel` 的規範依據)。 */
+  deselectAllLabel?: string
+  /**
+   * 多選:在清單最上面加一列「不限」(2026-09-18 user 拍板)。**預設關**,由消費端自行開啟 ——
+   * 形狀比照同檔的 `creatable` / `searchable`(都是 opt-in boolean + 另一個 label prop)。
+   *
+   * **為什麼預設關**(user 原話):「消費端要自行判斷到底選單的內容是否要出現不限這個選項啊,
+   * 我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」—— 這是**語意判斷**,DS 判斷不了。
+   * 何時該開 / 不該開見 `select-menu.spec.md`「何時用 / 何時不用」。
+   *
+   * **「不限」不是「全選」**:全選是「現在清單上這些」,不限是「不設限,含以後新增的選項」。
+   * 所以它是一個**獨立的值**,不會被展開成具體選項,也不會因為使用者手動勾滿就自動變成它。
+   *
+   * 只在 `multiple` 時有作用。
+   */
+  unrestricted?: boolean
+  /** 「不限」那一列的文字。預設「不限」。欄位上顯示的字與這裡**同一個來源**,不會兩邊各寫各的。 */
+  unrestrictedLabel?: string
+  /**
+   * 「不限」在 value 陣列裡的保留值。預設 `__unrestricted__`。
+   *
+   * 前綴形式比照同檔可建立列的 `__create__`(見該處註解:防與真實 option.value 撞名)。
+   * 消費端的選項如果真的用了這個字串,改這個 prop 換一個;開發模式會在撞名時警告。
+   */
+  unrestrictedValue?: string
   /**
    * **選項清單**載入中(2026-09-09 user 拍板改名,原 `loading`;理由:DS 內 `loading` 已被 Field 家族佔走 =
    * 「這個值」在讀取 / 驗證 / 儲存(field-controls.spec.md「Loading state」),同字兩義是 2026-09-08 兩顆轉圈的病根)。
@@ -196,7 +232,11 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   emptyText = '沒有選項', // i18n-allow: DS default(2026-09-08 user 拍板:一句到底,對應 No options;打開就沒選項與搜尋無結果共用);consumer override via emptyText prop
   loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
   searchHintText = '輸入關鍵字搜尋', // i18n-allow: DS default(2026-09-09:遠端搜尋還沒打字、也沒建議時的提示);consumer override via searchHintText prop
-  selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
+  selectAllLabel = '全選', // i18n-allow: DS default; consumer override via selectAllLabel prop
+  deselectAllLabel = '取消全選', // i18n-allow: DS default; consumer override via deselectAllLabel prop
+  unrestricted = false,
+  unrestrictedLabel = '不限', // i18n-allow: DS default; consumer override via unrestrictedLabel prop
+  unrestrictedValue = '__unrestricted__',
   optionsLoading = false,
   suggestions,
   suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
@@ -252,6 +292,45 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
   const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
 
+  // ── 不限:什麼時候出現(2026-09-18 user 拍板)────────────────────────────────
+  //
+  // 兩條各自獨立的規則:
+  //
+  // **(a) 三種訊息列的情境一律不出現**(user 原話:「這三種狀態有需要出現不限的選項嗎?應該不用
+  // 出現吧」)——載入中 / 清單真的沒東西 / 遠端還沒打字。這一條由 `!optionsLoading` 與閒置時的
+  // `visibleOptions.length > 0` 兩個條件落地。
+  //
+  // **(b) 搜尋時,跟一般選項一樣照關鍵字配對**(user 原話:「如果要可以搜得到,不是應該遠端和
+  // 非遠端都搜得到嗎?但前提是關鍵字要有配對到吧?然後遠端搜尋的話,應該要等結果都回傳回來了
+  // 才一起跟其他一般選項同時秀出?」)。
+  //   本機(cmdk 自己過濾):照渲染出來,cmdk 用 `value` + `keywords` 比,跟其他選項同一套規則。
+  //   遠端(`shouldFilter={false}`,cmdk 不過濾):cmdk 幫不上忙,自己用**同一支** `defaultFilter`
+  //     比一次;「等結果回傳」由 `!optionsLoading` 保證(載入中不出現)。
+  //
+  // 2026-09-18 之前這裡寫的是 `isIdle`(搜尋框一有字就整列不渲染)。那不是 user 說的,是我自己
+  // 放寬的 —— 後果是打「不限」兩個字會得到「沒有選項」,而那一列上一秒還在第一行(實測),
+  // 同時我傳的 `keywords` 變成永遠到不了的死碼。
+  //
+  // 這個條件同時解掉一個**不做就會無聲壞掉**的問題:cmdk 的訊息列只在「筆數 = 0」時渲
+  //(`node_modules/cmdk`:`P(u => u.filtered.count === 0) ? <div cmdk-empty> : null`)。
+  // 本機模式「不限」是一顆會被註冊、也會被過濾的普通列,筆數自然正確;遠端模式不過濾,
+  // 但它只在配對到時才渲染,所以「沒有選項」該出現的時候仍然出得來。兩邊都不需要 `forceMount`
+  //(那會讓它不被計入筆數,反而造成「不限 + 沒有選項」同時出現)。
+  const unrestrictedMatchesSearch = isIdle
+    ? visibleOptions.length > 0
+    : !isRemote || defaultFilter(unrestrictedValue, search, [unrestrictedLabel]) > 0
+  const showUnrestricted = multiple && unrestricted && !optionsLoading && unrestrictedMatchesSearch
+
+  // 開發模式警告:保留值跟真實選項撞名 → cmdk 以 value 當 identity,撞名會雙亮 + 選錯(同 `__create__` 的病)
+  if (process.env.NODE_ENV !== 'production' && unrestricted && options.some((o) => o.value === unrestrictedValue)) {
+    console.warn(`[SelectMenu] unrestrictedValue「${unrestrictedValue}」跟某個選項的 value 撞名了,改傳一個不會撞的 unrestrictedValue。`)
+  }
+  // 開發模式警告:開了「不限」卻一個可選選項都沒有 = 這個選單根本不給選,設定本身沒有意義
+  //(user 原話:「那就表示這個東西根本不給選啊,怪設計」)
+  if (process.env.NODE_ENV !== 'production' && unrestricted && multiple && !isRemote && options.length === 0) {
+    console.warn('[SelectMenu] 開了 unrestricted 但一個選項都沒有 —— 只有「不限」可選的選單沒有意義,請確認選項來源。')
+  }
+
   // ── Value helpers ──
   const selectedValues = React.useMemo<string[]>(() => {
     if (value == null) return []
@@ -271,19 +350,40 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [multiple, visibleOptions, selectedValues]
   )
 
+  // 「不限」目前是不是被選著 —— 放在 `selectedValues` 之後(它依賴那個值)。
+  const isUnrestrictedSelected = multiple && unrestricted && selectedValues.includes(unrestrictedValue)
+
   const handleSelect = React.useCallback(
     (optionValue: string) => {
       if (multiple) {
-        const next = isSelected(optionValue)
-          ? selectedValues.filter((v) => v !== optionValue)
-          : [...selectedValues, optionValue]
+        // 互斥(2026-09-18 user 拍板三條):
+        //   勾「不限」→ 清掉所有一般選項(值就只剩「不限」自己)
+        //   勾任一一般選項 → 取消「不限」
+        //   取消「不限」→ 回到**未選**(不還原上一批,user 原話「回到未選狀態」)
+        // 寫在同一個 handler 裡而不是另抽一層:欄位上的 Tag × 與一鍵清空都碰不到「不限」
+        //(「不限」不渲成 Tag,所以沒有它的 ×;清空是整個清成空陣列,把它一起清掉本來就對),
+        // 所以唯一會改到「不限」的入口就是這裡。
+        // `unrestricted` 關著時這整段必須是**結構上惰性**,不能只是「實務上碰不到」:
+        // `unrestrictedValue` 有預設值,關著時若消費端剛好有個選項的值就叫 `__unrestricted__`,
+        // 沒包這層 guard 的話選別的選項會把它靜默吃掉(2026-09-18 自查補)。
+        const withoutUnrestricted = (values: string[]) =>
+          unrestricted ? values.filter((v) => v !== unrestrictedValue) : values
+        const isUnrestrictedRow = unrestricted && optionValue === unrestrictedValue
+        let next: string[]
+        if (isUnrestrictedRow) {
+          next = isSelected(optionValue) ? [] : [unrestrictedValue]
+        } else if (isSelected(optionValue)) {
+          next = selectedValues.filter((v) => v !== optionValue)
+        } else {
+          next = [...withoutUnrestricted(selectedValues), optionValue]
+        }
         onValueChange?.(next)
       } else {
         onValueChange?.(optionValue)
         setOpen(false)
       }
     },
-    [multiple, selectedValues, isSelected, onValueChange, setOpen]
+    [multiple, selectedValues, isSelected, onValueChange, setOpen, unrestricted, unrestrictedValue]
   )
 
   // ── Multi-select: select all ──
@@ -317,9 +417,18 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     if (allState === true) {
       onValueChange?.(clearSelection())
     } else {
-      onValueChange?.(applySelectAll(selectedValues, selectableOptions.map((o) => o.value)))
+      // 先把「不限」濾掉再交給 `applySelectAll`(2026-09-18):那支共用工具的語意是
+      // 「保留既有 + 追加未選」(`multi-select-ordering.ts:48-52`,回傳 `[...existing, ...unselected]`),
+      // 不濾的話「不限」會跟全部一般選項並存 —— 同時違反互斥與「全選只看一般選項」兩條。
+      // **不改那支工具**:它是通用排序規則(對齊 Ant Transfer 的既有決議),別的使用者也在吃。
+      // 同上:關著時不過濾,這條路徑對既有行為完全零影響。
+      // (2026-09-18 實測:這一條單獨拿掉不會被閘抓到 —— `applySelectAll` 的語意是「保留既有 +
+      //  追加未選」,撞名的那個本來就在 options 裡,濾掉後又被追加回來。留 guard 是為了語意一致,
+      //  真正會靜默吃掉值的是上面 handleSelect 那條。)
+      const existing = unrestricted ? selectedValues.filter((v) => v !== unrestrictedValue) : selectedValues
+      onValueChange?.(applySelectAll(existing, selectableOptions.map((o) => o.value)))
     }
-  }, [multiple, allState, selectableOptions, selectedValues, onValueChange])
+  }, [multiple, allState, selectableOptions, selectedValues, onValueChange, unrestricted, unrestrictedValue])
 
   // ── Creatable ──
   const showCreate = React.useMemo(() => {
@@ -464,6 +573,37 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           >
             {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
 
+            {/* 「不限」(2026-09-18 user 拍板)——**清單的第一組**。
+                一組只有一列,靠 `CommandGroup` 自己的 `py-2`(上下 8px)與「跟在另一個可見群組後面就畫上邊線」
+                的規則,自動跟下面那組一般選項用分隔線隔開 —— 分隔線畫在**後面那組的頂端**
+                (`Command/command.tsx:263-268`,判準 owner `patterns/element-anatomy/item-anatomy.spec.md`
+                「Group auto-separation」),所以這裡不插 Separator、不寫新 CSS。
+                結構先例是同一支檔案下方的可建立列:同樣是無標題、單獨一列、自成一組,只是它在最下面。
+
+                **為什麼用 `CommandGroup` 不是 `MenuGroup`**:這一列**是選項**,要點得到、鍵盤上下鍵走得到。
+                `MenuGroup` 的列不經 cmdk 註冊(那正是訊息列選它的理由,見 `command.tsx:187-189`),
+                放這裡會變成鍵盤走不到的孤兒,而且它的相鄰線用 `[&+&]`(同 class 相鄰)也對不上 `CommandGroup`。
+
+                出現條件見上方 `showUnrestricted`。 */}
+            {showUnrestricted && (
+              <CommandGroup>
+                <CommandItem
+                  value={unrestrictedValue}
+                  keywords={[unrestrictedLabel]}
+                  onSelect={() => handleSelect(unrestrictedValue)}
+                  checkbox
+                  checked={isUnrestrictedSelected}
+                  // 這列不是「一個選項」而是「不設限」,所以任何「算有幾個選項 / 是不是全選了」的東西
+                  // 都必須把它排除掉。給它一個**結構性**記號,不要去比對 `unrestrictedValue` ——
+                  // 那是消費端可以改的字串(prop),拿字串當判準等於把判準交給呼叫端。
+                  // 消費者:scripts/select-all-footer-invariant.mjs 的分母。
+                  data-unrestricted=""
+                >
+                  {unrestrictedLabel}
+                </CommandItem>
+              </CommandGroup>
+            )}
+
             {/* 選項為 0 的群組不畫(2026-09-08):cmdk 在 shouldFilter=false(搜尋在觸發點)時不會藏空群組,
                 會留下 py-2 的 16px 空白疊在「沒有選項」下面(實測 128 vs 應為 112)。 */}
             {groupedOptions.filter((group) => group.options.length > 0).map((group) => (
@@ -525,38 +665,45 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
 
           {/* SR 播報 0 筆(2026-09-09):由 Command 根自動渲(文字 = 上面 CommandEmpty 的字串 children),這裡不再另放,放了會播兩次 */}
 
-          {/* Multi-select footer: Select All
-              - 沒有選項時不顯示(selectableOptions.length === 0)
+          {/* Multi-select footer(2026-09-17 user 拍板 A 案:列式 footer + 三態勾選列 → SurfaceFooter + 兩態按鈕)
+              顯示條件**完全沿用原本的邏輯**,一條沒動:
+              - 沒有可選項時不顯示(selectableOptions.length === 0)
               - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義)
-              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立 */}
+              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立
+
+              **為什麼是 SurfaceFooter 而不是原本的 MenuFooter**:底部放的是**按鈕**不是整列 ——
+              判準見 `patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」。
+              `justify-between` 讓左側放操作選取的按鈕(全選 / 未來的重設)、右側留給提交類(未來的套用);
+              先例:`components/Coachmark/coachmark.tsx` 已用同一手法。
+
+              **左右內距覆寫成 `--item-px`,不用 SurfaceFooter 預設的 loose**:規則是「footer 對齊**這個浮層的內容左邊界**」
+              (判準與全庫實測對照表在 `patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」)。
+              在這個元件裡定義那條左邊界的是**列** —— SelectMenu 整份檔案沒有 SurfaceHeader / PopoverHeader,列就是內容的最左緣。
+              而列的內距就是 `--item-px`:裸選單是預設 12px,放進有 chrome 的浮層時由容器在 Command 根設成
+              `var(--layout-space-loose)`(16px,見 `Popover/popover.stories.tsx` 與 `Dialog/dialog.stories.tsx`)。
+              兩種情境都讀同一個 token,按鈕左緣就永遠貼齊列的前緣,不會有第二個數字要同步(M17)。
+              2026-09-17 錨:一開始沿用 `SurfaceFooter` 預設的 `px-loose`,在**沒有 header 的一般下拉選單**裡
+              按鈕左緣 33px、列前緣 29px,差 4px 肉眼看得出來 —— 「對齊 header 標題」那句話在這個元件不成立,
+              因為它沒有 header。機械閘:`scripts/overlay-footer-gutter-invariant.mjs`(量像素,全 story 掃)。
+
+              **a11y:普通命令按鈕,標籤會變,不加 `aria-pressed`** —— W3C 按鈕規範
+              (https://www.w3.org/WAI/ARIA/apg/patterns/button/)逐字:「it is critical the label on a toggle
+              does not change when its state changes」;標籤會變與 `aria-pressed` 兩條路互斥,本 DS 選前者。
+              原本那一列的三態(`aria-checked="mixed"`)隨之消失 —— user 2026-09-17 拍板不補計數,
+              理由:選了幾個在欄位本體一目了然,溢出還有數字提示。
+              2026-07-05 D4 修的兩個問題(WCAG 2.1.1 鍵盤可達、孤兒 `role="option"`)由 `<Button>` 天然解決:
+              它是真的 `<button>`,本來就在 Tab 序裡、本來就不是 option。cmdk root 的 Enter 攔截只對
+              `[cmdk-item]` 的反白項派送,按鈕的 Enter 由瀏覽器原生處理,不需要再 preventDefault。 */}
           {multiple && !isRemote && selectableOptions.length > 0 && !search && (
-            <MenuFooter>
-              {/* 2026-07-05 D4:全選列鍵盤可達修 — 原裸 MenuItem(div 預設 role="option" 無 tabIndex)
-                  位於 CommandList 之外:cmdk 方向鍵只導覽 [cmdk-item]、Tab 也到不了 div → 鍵盤使用者
-                  完全無法操作全選(WCAG 2.1.1),且該 role="option" 無 listbox 祖先(orphan,axe
-                  aria-required-parent)。改真實 focusable checkbox 語意:tabIndex=0 + role="checkbox" +
-                  aria-checked(indeterminate → "mixed")+ Enter / Space 觸發;preventDefault 讓 cmdk root
-                  onKeyDown(源碼檢查 e.defaultPrevented)不會再對 active option 重複觸發 Enter。
-                  aria-selected 顯式蓋回 undefined(MenuItem 內建 aria-selected 對 role="checkbox" 無效)。 */}
-              <MenuItem
-                size={size}
-                checkbox
-                checked={allState}
+            <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+              <Button
+                variant="tertiary"
+                size="sm"
                 onClick={handleSelectAll}
-                role="checkbox"
-                aria-checked={allState === 'indeterminate' ? 'mixed' : allState}
-                aria-selected={undefined}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleSelectAll()
-                  }
-                }}
               >
-                {selectAllLabel}
-              </MenuItem>
-            </MenuFooter>
+                {allState === true ? deselectAllLabel : selectAllLabel}
+              </Button>
+            </SurfaceFooter>
           )}
         </Command>
       </PopoverContent>

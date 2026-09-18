@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
-      "sha256": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
+      "sha256": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",
       "source": "scripts/lib/a11y-static-server.mjs",
       "classification": null,
       "destination": "scripts/lib/a11y-static-server.mjs"
@@ -823,7 +823,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "521ecd6bc8f95fcb85f6dd40ac338c971f824db927d4fd3dd358c8c4536ddb48",
+      "sha256": "254205258ab66cca758801d875fa0528b5ec9f5ecd25b9997308663db734199f",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -903,7 +903,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "197e73eb41da0b4e8c953621538eae02f53cbda1090d443859998878789fb6ce",
+      "sha256": "37272ecc81a195fec0f167675c65dad8471b5fc8d5d4d992971ca2c1a9d59922",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null

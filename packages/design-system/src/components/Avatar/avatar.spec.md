@@ -128,6 +128,8 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 | `number`（預設 32） | Avatar 寫死為固定 px 尺寸 | 獨立使用、需要明確尺寸時 |
 | `'fill'` | Avatar 填滿父容器（`width:100% height:100%`），icon 用 60% 寬高、文字用 `50cqi`（container query inline-size） | 父容器（如 MenuItem 的 prefix slot）已決定尺寸時 |
 
+**外框 = 可見圓（`size` 為 `number` 時的硬契約）**：Avatar 最外層節點的寬高必須等於 `size` 指定的可見尺寸，不得被父容器沿交叉軸拉伸（`size='fill'` 是唯一例外，它的語意就是填滿父容器）。三件事全部以這個外框為基準，所以外框一被撐大就同時壞三處：狀態圓點與 `badgeCount`（相對外框絕對定位）、`:focus-visible` 焦點框（畫在外框的 border box 上，外框帶 `rounded-full`，被撐寬會變成膠囊）、以及 `hoverCard` 的浮層錨點（Radix 以外框量位置，外框變寬浮層就橫向偏移）。**只寫 `shrink-0` 不足**：它只擋主軸收縮，擋不住交叉軸拉伸（直向 flex 會拉寬，grid 格子由 `justify-self` 管、`align-self` 也碰不到），所以固定尺寸模式必須另外鎖寬。機械閘 `scripts/avatar-anchor-box-invariant.mjs`：每個 hover-card trigger 的 Avatar，外框 box 與內層 `[data-avatar-size]` box 的差需 ≤ 0.5px。
+
 **為什麼有 `'fill'` 模式**：當 Avatar 放在 item-layout 的 prefix slot，prefix 的尺寸由消費元件（MenuItem、ListItem 等）依照 size variant 決定。Avatar 不該知道也不該寫死自己的尺寸——應該被動填滿父容器。`'fill'` 模式透過 CSS container query 讓內部 icon/text 自動隨父容器縮放。
 
 ### 內部元素比例

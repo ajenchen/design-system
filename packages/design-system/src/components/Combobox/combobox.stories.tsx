@@ -266,6 +266,170 @@ export const RemoteSearch: Story = {
   render: () => <RemoteSearchDemo />,
 }
 
+/* ── 「不限」(opt-in)── */
+/**
+ * 多選清單最上面可以多一列「不限」,由產品端自行開啟(`unrestricted`,預設關)——
+ * 因為「這個選單適不適合有不限」是語意判斷,DS 判斷不了。
+ *
+ * 它跟「全選」不同:全選是「現在清單上這幾個」,不限是「不設限,**含以後新增的**」。
+ * 所以它是一個獨立的值,不會被展開成具體選項;選了它就不能再選別的(互斥)。
+ * 只選「不限」時欄位不渲 tag,跟一般填值的單選欄位長得一樣。
+ */
+export const UnrestrictedOption: Story = {
+  name: '不限',
+  render: function UnrestrictedStory() {
+    const [region, setRegion] = React.useState<string[]>(['electronics'])
+    const [any, setAny] = React.useState<string[]>(['__unrestricted__'])
+    return (
+      <div className="flex flex-col gap-6 max-w-sm">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">清單最上面多一列,下面自動有分隔線</h3>
+          <Combobox unrestricted options={categoryOptions} value={region} onChange={setRegion} aria-label="銷售地區" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">只選「不限」時,欄位是純文字不是 tag</h3>
+          <Combobox unrestricted options={categoryOptions} value={any} onChange={setAny} aria-label="銷售地區(不限)" />
+        </div>
+      </div>
+    )
+  },
+}
+
+// 契約 probe(不是給人看的範例):閘 `scripts/unrestricted-option-invariant.mjs` C 段量這幾格 ——
+// 一般選項渲 tag(對照組)/ 只選「不限」的三條唯讀路徑都是純文字 / 佔位字的左緣基準。
+// 這些都是「什麼都沒發生」的畫面,放進側邊欄只會讓真正的範例變難讀,所以標 test-only。
+export const UnrestrictedContract: Story = {
+  name: '不限:欄位顯示契約',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-6 max-w-sm">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">關著(對照:一般選項渲 tag)</h3>
+        <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="類別(不限關閉)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」—— 欄位不渲 Tag</h3>
+        <Combobox unrestricted options={categoryOptions} value={['__unrestricted__']} onChange={() => {}} aria-label="銷售地區(只選不限)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 唯讀</h3>
+        <Combobox unrestricted mode="readonly" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(唯讀)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 檢視</h3>
+        <Combobox unrestricted mode="view" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(檢視)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">自訂文字(對照:佔位字左緣)</h3>
+        <Combobox unrestricted unrestrictedLabel="全部地區" options={categoryOptions} value={[]} onChange={() => {}} aria-label="銷售地區(自訂不限文字)" />
+      </div>
+    </div>
+  ),
+}
+
+// 契約 probe:「不限」跟搜尋的關係(2026-09-18 user 拍板:遠端與本機都要搜得到,前提是關鍵字
+// 配對到;遠端要等結果回傳才跟一般選項一起出現)。閘 `unrestricted-option-invariant.mjs` F 段量它。
+// 兩格都要能打字,所以這裡的 Combobox 是 `searchable`;對外的範例不需要示範這件事,故 test-only。
+function UnrestrictedRemoteSearchProbe() {
+  const directory = [
+    { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },
+    { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap 路線' },
+  ]
+  const [options, setOptions] = React.useState<typeof directory>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [value, setValue] = React.useState<string[]>([])
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) clearTimeout(timer.current)
+    const needle = q.trim().toLowerCase()
+    if (!needle) { setOptions([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    timer.current = setTimeout(() => {
+      setOptions(directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
+    }, 300)
+  }
+  return (
+    <Combobox
+      unrestricted
+      options={options}
+      suggestions={directory}
+      value={value}
+      onChange={setValue}
+      searchable
+      filterOption={false}
+      optionsLoading={optionsLoading}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="搜尋資料庫…"
+      aria-label="遠端搜尋(不限開啟)"
+    />
+  )
+}
+export const UnrestrictedSearch: Story = {
+  name: '不限:搜尋得到',
+  tags: ['test-only'],
+  render: function UnrestrictedSearchStory() {
+    const [local, setLocal] = React.useState<string[]>([])
+    return (
+      <div className="flex flex-col gap-6 max-w-sm">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">本機過濾 —— 打「不限」找得到,打別的字它消失</h3>
+          <Combobox unrestricted searchable options={categoryOptions} value={local} onChange={setLocal} aria-label="類別(本機搜尋,不限開啟)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">遠端搜尋 —— 等結果回傳才跟一般選項一起出現</h3>
+          <UnrestrictedRemoteSearchProbe />
+        </div>
+      </div>
+    )
+  },
+}
+
+// 契約 probe:三種訊息列(載入中 / 沒有選項 / 遠端還沒打字)出現時,「不限」不得把它們擠掉。
+// 畫面上就是「訊息列照常出現」,沒有東西可看,所以 test-only;閘 D 段量它。
+export const UnrestrictedMessageStates: Story = {
+  name: '不限:訊息列三態不受影響',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-6 max-w-sm">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">0 筆選項 —— 顯示「沒有選項」,不出現不限</h3>
+        <Combobox unrestricted options={[]} value={[]} onChange={() => {}} defaultOpen aria-label="空清單(不限開啟)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">載入中 —— 顯示載入列,不出現不限</h3>
+        <Combobox unrestricted optionsLoading options={[]} value={[]} onChange={() => {}} aria-label="載入中(不限開啟)" />
+      </div>
+    </div>
+  ),
+}
+
+// 契約 probe:「不限」關著時必須**結構上惰性**。`unrestrictedValue` 有預設值(`__unrestricted__`),
+// 萬一消費端剛好有個選項的值就叫這個名字,關著的情況下選別的選項 / 按全選都不可以把它吃掉。
+// **斷言不寫在 play 裡** —— 本 repo 沒有跑 storybook test-runner(2026-09-18 查證:package.json
+// 與 .github/workflows 都沒有 test-storybook),寫在 play 等於沒人執行的假綠;
+// 真正的斷言在 `scripts/unrestricted-option-invariant.mjs` 的 E 段,那支 CI 有呼叫。
+const UnrestrictedOffInertProbe = () => {
+  const [value, setValue] = React.useState(['__unrestricted__'])
+  return (
+    <div className="max-w-sm">
+      <Combobox
+        options={[{ value: '__unrestricted__', label: 'Unassigned' }, ...categoryOptions]}
+        value={value}
+        onChange={setValue}
+        defaultOpen
+        aria-label="關著時的惰性驗證"
+      />
+    </div>
+  )
+}
+export const UnrestrictedOffInert: Story = {
+  name: '不限:關著時完全惰性',
+  tags: ['test-only'],
+  render: () => <UnrestrictedOffInertProbe />,
+}
+
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

@@ -17,7 +17,7 @@ benchmark:
 
 ## 定位
 
-Combobox 是**多選下拉**的輸入與顯示元件。選中值以 Tag 陣列呈現，支援單行溢出與多行換行兩種版面。底層依裝置走兩條實作（觸控偵測自動切換）：**桌機（預設，非觸控）走自建浮層選單**（SelectMenu → Popover + Command（cmdk）），**手機 / 觸控裝置走隱藏的原生 `<select>`**（配合 Tag 疊層 overlay）。詳見「A11y 預設」段的雙路徑設計。
+Combobox 是**多選下拉**的輸入與顯示元件。選中值以 Tag 陣列呈現，支援單行溢出與多行換行兩種版面。**只有一條實作,不分裝置**：自建浮層選單（SelectMenu → Popover + Command（cmdk））。詳見「單一路徑（不分裝置）」段。
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 Combobox 特有的原則。
 
@@ -113,7 +113,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 ### 新增選擇
 
-原生 `<select>` 只顯示**未選中**的選項——已選中的不重複出現在下拉。
+(2026-09-18 移除)此段原本描述觸控裝置的原生 `<select>` 只列未選中選項;該路徑已整個移除,見「單一路徑（不分裝置）」。
 
 ### Search input 最小寬度 `min-w-[60px]`（documented constant）
 
@@ -147,7 +147,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
 - **Loading**:已 codify(見「Loading」段):`loading` = 值處理中(觸發點轉圈)/ `optionsLoading` = 選項在抓(只在選單內)。
-- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。(2026-09-18 起不分裝置皆生效;原本只在桌機路徑生效的限制隨原生路徑一起移除。)對齊 Ant tags / react-select Creatable。
 - **Empty(no value selected)**:multi mode `value=[]` 時 trigger 顯 placeholder(如「請選擇」);empty state 不渲 tag 區。
 - **Dark mode / density**:走 Field + SelectMenu SSOT 自動 adapt。
 
@@ -170,7 +170,7 @@ Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染
 
 - ❌ 不在已選中的選項上再顯示 dismiss 以外的互動——Tag 只能被移除，不能被編輯或重新排序
 - ❌ 溢出指示器 `+N` 不可省略——使用者需要知道有多少被隱藏的項目
-- ❌ 不破壞「單一鍵盤聚焦點 + 多滑鼠點擊區」雙路徑無障礙——桌機浮層選單（`role="combobox"` 容器 + 選單鍵盤導覽）與手機原生 `<select>` 各自提供完整鍵盤可達性，欄位內 `onClick` 點擊區不可加 `tabIndex` 搶 focus（見「A11y 預設」段）
+- ❌ 不破壞「單一鍵盤聚焦點 + 多滑鼠點擊區」無障礙——浮層選單（`role="combobox"` 容器 + 選單鍵盤導覽）提供完整鍵盤可達性，欄位內 `onClick` 點擊區不可加 `tabIndex` 搶 focus（見「A11y 預設」段）
 - ❌ 單選場景用 Combobox——使用者每次需手動清除再選新的，改用 `Select`
 - ❌ 法律 / 權限類多選用 Combobox——完整閱讀優先，改用 Checkbox stack（見 Checkbox spec「Clamp 政策」）
 - ❌ 「多選就一律用 Combobox」——2-5 個選項且全可見時 Checkbox stack 更有效（掃視快 + 支援描述文字），Combobox 從 6+ 選項才開始划算（見「與 Checkbox stack 的分界」）
@@ -185,19 +185,43 @@ Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染
 
 ## A11y 預設
 
-**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 桌機路徑的觸發區(`role="combobox"` 容器)與行動路徑的隱藏原生 `<select>` 各自吃自己的規則:前者邊框轉色,後者是 OS 的系統框。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 觸發區(`role="combobox"` 容器)不分裝置都吃同一條規則:邊框轉色(2026-09-18 起單一路徑,原本行動路徑那顆原生 `<select>` 的 OS 系統框已不存在)。
 
-### 鍵盤可達性的雙路徑設計
+### 單一路徑（不分裝置）
 
-Combobox 依裝置走兩條不同實作（觸控偵測自動切換）：
+**2026-09-18 user 拍板逐字**:「我完全不想要為了手機客製化元件,我希望就是 SSOT,直接用桌機版的,
+什麼都完全不動,就只是讓手機跟桌機同步而已」。
 
-**桌機（預設，非觸控裝置）**:觸發區是一個 `role="combobox"` 的容器（`aria-expanded` / `aria-controls` 指向選單 / `tabIndex={0}` 可 tab 聚焦），開啟後是一個浮層選單（內含搜尋 + 選項清單）。鍵盤路徑：Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉——由選單元件的鍵盤導覽負責，**不是**原生 `<select>`。
+Combobox **只有一條實作**:觸發區是一個 `role="combobox"` 的容器（`aria-expanded` / `aria-controls`
+指向選單 / `tabIndex={0}` 可 tab 聚焦），開啟後是自建浮層選單（內含搜尋 + 選項清單）。鍵盤路徑：
+Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。**觸控裝置看到的跟桌機完全一樣。**
 
-**手機 / 觸控裝置**:改用隱藏的原生 `<select>`（tab-focusable，方向鍵導覽，原生 picker），以保留行動裝置 screen reader / 語音輸入 / OS-level 整合。有值時這個 `<select>` 以全幅透明 overlay 蓋住整個欄位，點擊任何位置都會喚起原生 picker。
+#### 為什麼移除原本的觸控分支
 
-**Display 層雙分支同 SSOT(2026-08-05 修)**:NativeCombobox 的 OverflowTagList 消費與 CustomCombobox **同一組** renderer / overflow props(`tagRenderer` / `renderHiddenTag` / `tagWrapperClassName` / `overflowWrapperClassName` / `overflowShape` / `visibleCountOverride` / `tagAreaGapPx` / `tagAreaPaddingLeftPx`)——`tagRenderer` 存在(如 PeoplePicker avatar stack)時手機 edit 與桌機同視覺;未傳維持原 `<Tag>` 文字 pill 預設。先前 native 硬編碼 `<Tag>`,PeoplePicker 手機 edit 掉回文字 pill = touch 分支漏接 display 層(canonical 違反)。**Root invariant:新增 renderer-affecting prop 必同步 NativeCombobox destructure。** 疊層契約:renderer 輸出經「relative z-10(抬到透明 `<select>` overlay 之上)+ pointer-events-none(非互動區 tap 穿透喚起原生 picker)+ `[&_button]`:pointer-events-auto(remove 鈕回收點擊)」三件套包裝;+N wrapper 同抬升且 pointer 穿透(touch 的 overflow 檢視/增刪走原生 picker 本身)。
+在此之前 Combobox 依 `(pointer: coarse)` 分流到一個隱藏原生 `<select>` 的實作。移除的依據是證據:
 
-兩條路徑共通點：欄位內多個 `<div>` / `<Tag>` 上的 `onClick` 是 mouse 優化的點擊區，**不是鍵盤介面**——鍵盤使用者不經過它們，但兩條路徑都已各自提供完整鍵盤可達性。
+| 證據 | 內容 |
+|---|---|
+| 技術前提不成立 | 原生 `<select multiple>` 在任何裝置上都**不是下拉** —— 加了 `multiple` 瀏覽器改渲染成常駐捲動清單、沒有展開收合。所以那條路徑只能用**單選** `<select>`「一次加一個」繞,先天做不到多選選單 |
+| 靜默失效 | `ComboboxProps` 46 個 prop,**20 個**在觸控路徑完全沒被讀取(沒有 rest-spread、TypeScript 不報錯、零 warning),而 36 個呼叫點正在傳。搜尋 / 全選 / 分組 / 遠端搜尋 / 可建立 /「不限」在觸控上全部無效 |
+| a11y 好處沒兌現 | 該 `<select>` 的 `value` 恆為空字串、也沒有 `multiple`,輔助科技從被命名的控件上讀不到已選了什麼;已選值只活在 `<select>` 之外的 Tag 區 |
+| 世界級無人這樣做 | [Base UI](https://base-ui.com/) 明文「同一元件 + `multiple`,觸控只調定位與 modal 行為」/ [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons) pop-up button「iOS 無額外考量」/ Polaris、Atlassian、Radix、react-select 文件對裝置零分支。[W3C APG](https://www.w3.org/WAI/ARIA/apg/) 另把「需按住 modifier 才能多選」列為不推薦,而原生 multiple 正是該模型、觸控又沒有 Ctrl/Shift |
+
+**刻意不為觸控加大尺寸**:390px 寬下浮層實測 356px、不溢出、高度放得下;列高 32px 過 WCAG 2.2 AA
+(24×24)與 DS 自己的 24+ 門檻(`patterns/overlay-surface/overlay-surface.spec.md`)。為手機另訂一套
+尺寸會製造第二套規格,正是這次要消滅的東西。
+
+**連帶影響**:`PeoplePicker` 內部就是包 `<Combobox>`(自己沒有原生 picker),所以它的觸控選單一併
+變成同一套浮層;`DataTable` 的多選儲存格靠 `defaultOpen` / `onOpenChange` 進出編輯,這兩個 prop
+在舊的觸控路徑不被消費,現在恢復作用。`Select` 有自己的 `NativeSelect`(單選退原生 picker),
+**不在本次範圍**,維持不變。
+
+**閘**:`scripts/combobox-single-path-invariant.mjs` —— 在 `hasTouch + isMobile`(`(pointer: coarse)`
+為真)的瀏覽器 context 下確認欄位裡沒有原生 `<select>`、點下去開的是 cmdk 浮層、且搜尋 / 全選 footer /
+「不限」列 / 分組分隔線都在、浮層不溢出。對照組把浮層拔掉並塞回原生 `<select>`,必須紅。
+**這是全 repo 第一支會開觸控模擬的斷言型閘**(在此之前唯一會帶 `--touch` 的腳本只截圖、不做斷言,
+且其 workflow 自述非 required check)。
+
 
 **為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（桌機的 combobox 容器 / 手機的原生 select）的 tab focus，反而破壞鍵盤體驗。「單一鍵盤聚焦點 + 多個滑鼠點擊區」是混合型控制項的世界級 canonical pattern（Material / Atlassian / GitHub issue filter 共識）。
 

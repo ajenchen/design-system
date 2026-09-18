@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-15T13:53:14.352Z"
+    "generatedAt": "2026-09-18T11:00:42.354Z"
   },
   "components": {
     "accordion": {
@@ -73,6 +73,7 @@
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
+          "design-system-components-agentpanel-展示--overlay-on-narrow-stage",
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
@@ -488,6 +489,11 @@
           "design-system-components-combobox-展示--value-loading",
           "design-system-components-combobox-展示--remote-search-hint",
           "design-system-components-combobox-展示--remote-search",
+          "design-system-components-combobox-展示--unrestricted-option",
+          "design-system-components-combobox-展示--unrestricted-contract",
+          "design-system-components-combobox-展示--unrestricted-search",
+          "design-system-components-combobox-展示--unrestricted-message-states",
+          "design-system-components-combobox-展示--unrestricted-off-inert",
           "design-system-components-combobox-展示--in-data-table"
         ],
         "設計規格": [
@@ -1818,5 +1824,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 986
+  "totalStories": 992
 }

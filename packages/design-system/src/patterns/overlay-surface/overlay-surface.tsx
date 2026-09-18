@@ -115,6 +115,7 @@ export const SurfaceHeader = React.forwardRef<
     return (
       <div
         ref={ref}
+        data-slot="surface-header"
         className={cn('flex flex-col shrink-0', className)}
         {...props}
       >
@@ -157,6 +158,7 @@ export const SurfaceHeader = React.forwardRef<
   return (
     <div
       ref={ref}
+      data-slot="surface-header"
       className={cn(
         'flex items-center gap-2 shrink-0',
         !hasTabs && 'border-b border-divider',
@@ -182,6 +184,7 @@ export const SurfaceBody = React.forwardRef<
   //   非 flex-col parent 內 flex-1/min-h-0 no-op,backward compat
   <div
     ref={ref}
+    data-slot="surface-body"
     className={cn(
       'flex-1 min-h-0 overflow-y-auto',
       'focus-visible:focus-ring-inset',
@@ -199,6 +202,7 @@ export const SurfaceFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    data-slot="surface-footer"
     className={cn(
       'flex items-center justify-end gap-2 shrink-0 border-t border-divider',
       'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',

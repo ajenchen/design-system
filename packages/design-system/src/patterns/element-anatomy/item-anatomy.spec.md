@@ -605,6 +605,34 @@ Canonical 對齊模式判斷:`MenuItem` 的 `isBlockAlign = avatarPx > 24 && !!d
 
 **這條規則跟 `ICON_SIZE` 的程式化邏輯一致**——icon / avatar / inline action hover bg 都從 `item-layout` module 單一來源 import,row primitive 的任何尺寸常數永遠不在 consumer 側重新定義。
 
+### Token: `--item-px`(2026-09-17 codify)
+
+**Local token family(`--item-*` prefix)**,row primitive 的**水平內距**。**預設 `var(--field-px)`(12px)**。
+
+**為什麼預設取自 `--field-px`**:選單的選項與欄位裡的值落在同一條 content gutter 上 —— 欄位值在
+`trigger 左緣 + 1px 邊框 + 12px` = 13px,選單列在 `popover 左緣 + 1px 邊框 + 12px` = 13px,
+而 popover 預設貼齊 trigger 左緣(`components/Popover/popover.spec.md`「Align 對齊 canonical」)。
+收斂前這是兩個各自獨立的字面值(`--field-px` vs `menu-item.tsx` 裸 `px-3`),沒有任何東西綁著;
+建 `--field-px` 的 commit 只 migrate 了 field-wrapper / Textarea / Select+Combobox,Menu 是漏掉的
+(Chip 是明文排除「pill 內距 ≠ field 內距」,Menu 沒被提到)。角色與 `--table-cell-px: var(--field-px)`
+完全相同(同一個 commit 建的先例,註解原文「form / cell 同 12px content gutter SSOT」)。
+
+**為什麼不讓 row 直接吃 `--field-px`**:同一個浮層可能同時有欄位控件與列 ——
+`components/DataTable/data-table-column-visibility-panel.tsx:186` 的搜尋框(12px)與 `:266` 的列(16px)
+就是並存的。直接吃會變成「調列就把欄位一起拉走」。獨立 named token 才表達得出來。
+
+**客製方式**:在**清單容器**設一次(inline style),整棵子樹的 row 一起換 ——
+List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surface/overlay-surface.spec.md`)。
+**禁止寫在單列的 `className`**:`CommandItem` 等兩層結構會讓它落在外層 wrapper 與本層相加
+(2026-09-17 實測 16+12=28px,標題 17px / 勾選框 29px)。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
+
+| Token | 預設 | 消費者 |
+|---|---|---|
+| `--item-px` | `var(--field-px)`(12px) | `menuItemVariants`(`components/Menu/menu-item.tsx`)、`treeItemVariants` 的 `menu` indent 檔位(`components/TreeView/tree-view.tsx`)、**選單底部的 `SurfaceFooter`**(`components/SelectMenu/select-menu.tsx`;為了讓 footer 的按鈕左緣跟列前緣同一條線 —— 判準在 `../overlay-surface/overlay-surface.spec.md`「要對齊誰」,機械閘 `scripts/overlay-footer-gutter-invariant.mjs`)|
+
+**不在此範圍**:Button / Chip / SegmentedControl 的水平內距跟著 **role** 走
+(`components/Button/button.spec.md`「padding 跟著 role」),與 content gutter 是不同概念,維持各自的值。
+
 ### Token: `--item-icon-size` / `--item-avatar-size`(2026-05-22 codify)
 
 **Local token family(per `--item-*` prefix 既有 family,e.g., `--item-prefix-slot` / `--item-gap-label-desc-<mode>[-lg]`)**。

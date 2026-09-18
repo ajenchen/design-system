@@ -83,25 +83,59 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
-      // p-3 = 12px 四邊對稱(canonical 不可動)
-      className={cn('p-3', className)}
+      // 根**不帶內距**:內距搬到每一張月曆自己身上(見下方 `month`)。
+      // 2026-09-18 user 裁示,原話:「我覺得真的要做的話,邏輯就是這樣,而不是另外加一個 token,
+      // 反而造成漂移,因為視覺就是要在各種情況營造對稱感吧?」
+      className={cn(className)}
       classNames={{
-        months: 'flex flex-col sm:flex-row gap-4',
-        // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")
-        month: 'flex flex-col relative',
+        // **兩張月曆之間不設 gap**(2026-09-18 user 裁示)。
+        // 每張月曆自己四周留 `--item-px`,所以彼此之間自然就是**兩份內距**(md 12+12 = 24),
+        // 而且「單張」與「並排」看起來完全一樣 —— 對稱是結構保證的,不是靠一個要人維護的數字。
+        // 這也是為什麼**不需要**月間距 token:少一個可以漂的東西。
+        // 世界級同款:Ant Design 就是這個作法(兩張各自帶左右內距、中間不設 gap),
+        // 且 v4(內距 12 → 間距 24)與 v5(18 → 36)跨大版本維持 1:2,是刻意的比例。
+        months: 'flex flex-col sm:flex-row',
+        // Month:relative 讓 prev/next 按鈕 absolute 定位到 month 右上/左上(navLayout="around")。
+        // **內距住在這裡**(2026-09-18 搬家):每張月曆自己四周留 `--item-px`,
+        // 於是「面板邊 → 第一格」與「月曆 → 月曆」用的是同一顆東西,後者自然是前者的兩份。
+        month: 'flex flex-col relative p-[var(--item-px,var(--field-px))]',
         // Month caption:單行置中 h-field-xs,prev/next 按鈕 absolute 從兩側貼齊
         month_caption: 'flex items-center justify-center h-field-xs mb-3',
         caption_label: 'text-body font-medium',
         // ── Prev/Next button(canonical 2026-05-03 v6,user audit fix)──
         // RDP 把這 className apply 到 <Button> 本身(不是 wrapper),所以用 className 直接套
         // 定位類(absolute top/left/right-0)。muted 色透過 Button override 內部加,不用 [&>button] 黑魔法。
-        button_previous: 'absolute top-0 left-0 z-[1]',
-        button_next: 'absolute top-0 right-0 z-[1]',
+        // nav 的 absolute 定位是相對 month 的 **padding box**(= 盒子最外緣),
+        // 內距搬到 month 之後不補這個偏移,chevron 會貼到月曆盒最外緣、比日期格往外 12px(2026-09-18 實測確認)。
+        // 讀同一顆 `--item-px`,所以它跟日期格永遠在同一條線上。
+        button_previous: 'absolute top-[var(--item-px,var(--field-px))] left-[var(--item-px,var(--field-px))] z-[1]',
+        button_next: 'absolute top-[var(--item-px,var(--field-px))] right-[var(--item-px,var(--field-px))] z-[1]',
         // ── Grid layout(canonical 2026-05-03 v7,純 table-native)──
         // RDP v9 month_grid = <table>。v6 試 grid 在 tr 上但 break border-spacing(grid 蓋掉
         // table-row layout)。乾淨修:**純 table layout** + `border-spacing-1`(4px H+V,table-native)。
         // 所有 cells 自動同寬同高(td 的 w/h-field-sm),無 grid hack。
-        month_grid: 'border-separate border-spacing-1',
+        //
+        // `-m-1` 抵銷**最外圈**的 border-spacing(2026-09-18 user 拍板)。
+        // 為什麼需要它:`border-spacing` 是「格與格之間 4px」,但 CSS 連**最外圈也各給 4px** ——
+        // 於是日期格的盒子落在 容器 12 + 4 = 16,而同一個面板的上下月 chevron 貼著容器的 12。
+        // 規格(本檔 spec「Spacing canonical」原文,2026-05-03 v8)寫的是
+        //「四邊對稱:chevron 按鈕到邊距 = 最左最右日期 cell 到邊距(12px)」—— 兩者都該是 12。
+        // 那 4px 外圈**從來沒有人決定過**(全 repo 只有 2026-09-18 的 spec 段落提到它),是 `border-separate` 的副作用。
+        // 負 margin 把 table 的盒子往外拉 4px:**格與格之間仍然是 4px,但最外圈歸零**,第一格因此落在 12。
+        // 對照上游:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,
+        // 它 457 行的 style.css 裡 `border-spacing` 出現 **0 次**(2026-09-18 讀 node_modules 原始碼);
+        // IBM Carbon 的日曆同樣是第一格貼齊容器內距(實測外溢 0)。外溢是我們自己加的,不是慣例。
+        // 列頭尾的 bridge 夾住:`-2px` 是用來跨過格與格之間的 4px 縫去接鄰格,
+        // 但**列的第一格左邊、最後一格右邊沒有鄰格**,再往外就越過容器內距 —— 抵銷最外圈之後會直接溢出面板留白(實測 2px)。
+        // 掛在 month_grid 而不是三個 range 狀態各寫一次:2026-09-18 實測 react-day-picker **不會**把
+        // 我們加在 `classNames.range_*` 裡的這兩個 class 帶到 `<td>` 上(bundle 有、`cn()` 不吃、chunk 也載對了,
+        // 但 DOM 完全查不到),而 `month_grid` 的 class 確定會落地(同一行的 `-m-1` 就是證據)。
+        // 一處宣告、三種 range 狀態一起管,也少兩個要同步的地方。
+        month_grid: cn(
+          'border-separate border-spacing-1 -m-1',
+          '[&_tr>td:first-child]:before:!left-0',
+          '[&_tr>td:last-child]:before:!right-0',
+        ),
         weekdays: '',  // thead default
         weekday: cn(
           // text-foreground + font-medium 對齊 DS 一致設計語言(2026-05-03 user audit):

@@ -196,7 +196,7 @@ export const ConsumptionScenarioRule: Story = {
         note="表單送出、API 呼叫、執行動作中,Button 的 loading prop 內部自動渲染 CircularProgress。是最常見的消費場景"
       >
         <Button variant="primary" loading>送出訂單</Button>
-        <Button variant="secondary" loading>儲存變更</Button>
+        <Button variant="tertiary" loading>儲存變更</Button>
         <Label>按鈕按下後的即時回饋,告訴使用者「已收到,在處理」</Label>
       </Rule>
 

@@ -62,13 +62,39 @@ function toolResultText(content) {
     .join('\n')
 }
 
+// 解析視窗:先只看尾端 4MiB(絕大多數 session 夠用),找不到任何真人訊息才逐級放大到整份。
+// 2026-09-16 錨(fail-closed-forever):長 session 的 transcript 會長到數百 MB,user 那則指示會被
+// 4MiB 硬截斷擠出視窗 → 閘回報 NO_USER_MESSAGE,之後**任何**改動都永久擋住,而且怎麼做都救不回來
+// (同一筆操作在訊息還在視窗內時 approved、幾分鐘後就 blocked,判定隨檔案長大而漂移)。
+// 放大視窗不放寬任何判準,只是把判準本來就該讀到的輸入還原;檔案本來就整份讀進記憶體,額外成本只有解析。
+const TRANSCRIPT_PARSE_WINDOWS = [4, 16, 64, 256].map((mib) => mib * 1024 * 1024)
+
+// 視窗夠不夠,要看的是「有沒有**真人**訊息」,不是「有沒有 role=user 的 record」——
+// harness 的背景通知、工具結果、壓縮摘要都是 role=user 卻不是使用者說的話(判準與下方主迴圈同一組)。
+function hasGenuineUserRecord(records) {
+  return records.some((record) => {
+    const message = record?.message || record
+    if (message?.role !== 'user') return false
+    if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') return false
+    const text = textContent(message.content).trim()
+    if (!text) return false
+    if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) return false
+    return !/^This session is being continued from a previous conversation/u.test(text)
+  })
+}
+
 function transcriptState(transcriptPath) {
   const stat = statSync(transcriptPath)
   if (!stat.isFile()) throw new Error('transcript is not a regular file')
-  // Bound parsing cost while retaining the latest records. A partial first line is discarded.
+  // A partial first line is discarded by jsonValues.
   const body = readFileSync(transcriptPath)
-  const bounded = body.length > 4 * 1024 * 1024 ? body.subarray(body.length - 4 * 1024 * 1024) : body
-  const records = jsonValues(bounded.toString('utf8'))
+  let records = []
+  for (const window of [...TRANSCRIPT_PARSE_WINDOWS, Number.POSITIVE_INFINITY]) {
+    const bounded = body.length > window ? body.subarray(body.length - window) : body
+    records = jsonValues(bounded.toString('utf8'))
+    if (hasGenuineUserRecord(records)) break
+    if (bounded.length === body.length) break
+  }
   const userMessages = []
   let lastUserRecordIndex = -1
   // AskUserQuestion selections are genuine user decisions delivered as harness-authored
@@ -539,6 +565,10 @@ const DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS = [
 
 const ENGINEERING_INTENT_PATTERNS = [
   /\b(?:bug|bugfix|fix|repair|correct|refactor|test|testing|governance|infra|infrastructure|remediation|regression|root\s+cause|type\s+error|typescript|compile|build|ci|hook|parser|schema|drift|ssot|source-level|a11y|accessibility|wcag|conformance|alignment|mechanical|synchroni[sz]e|restore|parity)\b/iu,
+  // 效能是 AGENTS.md:129「Bug fix / clean / refactor / 命名一致 / **perf** / a11y / test / audit / verify | **AUTO**」
+  // 明列的自主類別,但詞彙表漏了它(2026-09-16 錨:user「要確保效能有最佳化過吧?但不要改壞原本好的東西」被判 UI 取捨擋下)。
+  /(?:效能|最佳化|優化|加速|變慢|卡頓|延遲|記憶體|洩漏)/u,
+  /\b(?:perf(?:ormance)?|optimi[sz](?:e|ation)|latency|throughput|memory\s+leak)\b/iu,
   /(?:修 bug|修復|修正|除錯|重構|測試|治理|基礎設施|修補|回歸|根因|型別錯誤|編譯|建置|鉤子|解析器|結構描述|漂移|單一來源|原始碼修正|無障礙|可及性|符合|遵循|對齊|同步|機械|還原|恢復|一致性)/u,
 ]
 
@@ -548,7 +578,7 @@ const ENGINEERING_INTENT_PATTERNS = [
 // delegation must never authorize an otherwise-unresolved product/UI/UX choice.
 const REMEDIATION_ACTION_PATTERNS = [
   /\b(?:bugfix|fix|repair|correct|refactor|remediat(?:e|ion)|regression|align|alignment|conform|conformance|synchroni[sz]e|restore|mechanical|implement)\b/iu,
-  /(?:修 bug|修復|修正|除錯|重構|修補|回歸|對齊|同步|機械|還原|恢復|符合|遵循|實作|落地)/u,
+  /(?:修 bug|修復|修正|除錯|重構|修補|回歸|對齊|同步|機械|還原|恢復|符合|遵循|實作|落地|最佳化|優化)/u,
 ]
 
 const EXISTING_REQUIREMENT_PATTERNS = [
@@ -775,7 +805,9 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
+  // 「確保效能有最佳化過」這種沒點名 target 的工程指示 = 全域 remediation scope(AGENTS.md:129 perf = AUTO);
+  // 2026-09-16 錨:它原本連 scope 都綁不到,被判 EXACT_UI_UX_TARGET_BINDING_MISSING。
+  /(?:(?:效能|perf(?:ormance)?)\s*(?:有|要|已)?\s*(?:被)?\s*(?:最佳化|優化|optimi[sz]ed?)|(?:最佳化|優化)\s*(?:一下)?\s*(?:效能|perf(?:ormance)?)|(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
 const RESOLVED_UI_CHOICE_PATTERNS = [
   /(?:顏色|色彩|樣式|版型|間距|尺寸|大小|文案|標籤|圖示|互動|行為).{0,24}(?:改成|改為|換成|設為|採用|選擇|決定|統一)/u,
@@ -1104,6 +1136,24 @@ function engineeringScopeDecision(message, target) {
     latest = { binding, message: normalized, clause }
   }
   if (latest) return latest
+  // 2026-09-16 對稱性修補(量到的閘反向缺口):`remediationDecision` 已接受「沒點名 target 的全域修復範圍」,
+  // 但只在該訊息同時帶 UI / 既有需求語彙時成立。結果是——
+  //   「要確保效能有最佳化過,但不要改壞原本好的東西」            → 擋(UNKNOWN)
+  //   「要確保效能有最佳化過,但不要改壞原本好的東西。hover 底色維持原樣」 → 放行
+  // 加上 UI 字眼反而變鬆,方向與 fail-closed 相反。純工程的全域指示風險**低於**混了 UI 的版本,
+  // 依 AGENTS.md:129(Bug fix / refactor / perf / a11y / test → AUTO)本來就該是 AUTO。
+  // 這裡只補上缺的那一半:子句本身要有工程語彙、要落在全域修復範圍,且**該子句不得帶任何 UI 取捨語彙或選擇問句**
+  // (帶了就走既有的 UI 路徑照舊 fail closed),不放寬 (d)(e) 既有行為。
+  for (const clause of messageClauses(normalized)) {
+    if (!GLOBAL_REMEDIATION_SCOPE_PATTERN.test(clause)) continue
+    if (!matchesAny(ENGINEERING_INTENT_PATTERNS, clause)) continue
+    if (matchesAny(UI_DECISION_MARKERS, clause)
+      || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, clause)
+      || matchesAny(CHOICE_ASK_PATTERNS, clause)
+      || matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(clause))) continue
+    latest = { binding: 'global-engineering-remediation-scope', message: normalized, clause }
+  }
+  if (latest) return latest
   // bug 回報的 target 與「壞了」常分在不同句(2026-09-16 錨:「為何現在拖拉 agent panel 的 fab / 很容易一不小心就開啟 panel /
   // 所以感覺就是你改壞了他啊 / 請你仔細查證看看到底 root cuase 是甚麼」),同句配對抓不到 → 整則訊息有 bug 回報語彙、
   // 沒有任何 UI 取捨語彙與未決選擇時,該 target 的修復是工程 remediation。有 UI 取捨字眼就不走這條(fail closed 照舊)。
@@ -1185,6 +1235,12 @@ function dependentComponentBinding(normalized, target) {
 function classifyLatestAuthorizationUnscoped(message, {
   target = '',
   operationText = '',
+  // 待授權的那一筆操作(hook input)。`operationText` 是「本回合對同一檔案的所有操作」的串接,
+  // 供 digest 佐證與 binding 用;判「這筆操作是不是 UI 改動」只能看這一筆。
+  // 2026-09-16 錨(單向棘輪):同一回合裡只要有過一次**被閘拒絕**的嘗試帶了 UI 字眼,
+  // 那個字眼就永久留在串接裡,之後同一檔案**任何**乾淨的工程改動都再也過不了,而且無法自解 ——
+  // 被拒絕的嘗試不是已發生的事實,更不該成為加嚴後續判定的證據。預設回落 `operationText`,舊呼叫端行為不變。
+  pendingOperationText = null,
   userMessages = [message],
 } = {}) {
   const rawMessage = String(message || '')
@@ -1285,7 +1341,10 @@ function classifyLatestAuthorizationUnscoped(message, {
   }
   const targetIsEngineering = matchesAny(ENGINEERING_TARGET_PATTERNS, normalizedTarget)
   const hasOperationEvidence = normalizeText(operationText).length > 0
-  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, stripCodeComments(operationText))
+  const operationHasUiIntent = matchesAny(
+    UI_OPERATION_MARKERS,
+    stripCodeComments(pendingOperationText ?? operationText),
+  )
   const operationRequiresHumanAction = matchesAny(HUMAN_ONLY_OPERATION_MARKERS, operationText)
   const operationIsDestructiveOrBypass = matchesAny(
     DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS,
@@ -1603,6 +1662,11 @@ export function authorizationEvidence(transcriptPath, {
     ...classifyLatestAuthorization(state.latestUserMessage, {
       target,
       operationText,
+      // 只有這一筆待授權的操作才決定「是不是 UI 改動」(見 classifyLatestAuthorizationUnscoped 的 pendingOperationText)。
+      // `|| null` 不可省:沒有 hook input(例如 Stop hook 的事後判定)或這一筆不是打在本 target 時,
+      // 它會是空字串 —— 空字串代表「這裡沒有待授權的操作可看」,必須回落到整體證據,
+      // 否則等於把 UI 判定整段跳過(2026-09-16 CI 對照:Test 18「常設工程授權 + UI 操作必須擋」因此漏接)。
+      pendingOperationText: toolOperations([], hookInput, target) || null,
       userMessages: state.userMessages,
     }),
   }

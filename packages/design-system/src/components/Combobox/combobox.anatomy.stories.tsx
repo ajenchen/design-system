@@ -207,7 +207,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）— edit 單行</H3>
-          <Desc>桌機（預設）：觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder。手機 / 觸控裝置另走隱藏的原生 select 結構（下方「新增選擇」段說明），桌機不使用原生 select。</Desc>
+          <Desc>觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder。不分裝置只有這一條路徑 —— 觸控裝置看到的跟桌機完全一樣（2026-09-18 user 拍板，原本的隱藏原生 select 路徑已移除）。</Desc>
         </div>
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
@@ -318,7 +318,7 @@ export const Overview = {
                 ['loading', 'boolean', 'false', '這個值在讀取 / 驗證 / 儲存(Field 家族 SSOT):觸發點右側、箭頭左邊轉圈 + aria-busy;與選項有沒有載入無關'],
                 ['optionsLoading', 'boolean', 'false', '選項清單載入中(2026-09-09 改名自 loading):指示只在選單內的「載入選項中」訊息列;觸發點 / 搜尋列不轉圈'],
                 ['suggestions', 'ComboboxOption[]', '—', '遠端搜尋(filterOption=false)、關鍵字空時的建議清單;DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫);沒建議時提示列 searchHintText'],
-                ['placeholder', 'string', '—', '無值時的提示文字；未傳時桌機 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號），手機原生 select fallback「選擇...」'],
+                ['placeholder', 'string', '—', '無值時的提示文字；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
                 ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -876,7 +876,7 @@ export const StateBehavior = {
         {/* Tag dismiss */}
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">個別移除（Tag dismiss）</span>
-          <Desc>每個 Tag 自帶 dismiss 按鈕（X），點擊移除該選項。手機 / 觸控裝置走原生 select 時下拉只顯示未選中的選項；桌機（預設）走自建浮層選單則已選項仍留在清單中並以打勾標示。</Desc>
+          <Desc>每個 Tag 自帶 dismiss 按鈕（X），點擊移除該選項。已選項仍留在浮層清單中並以打勾標示，再點一次即取消（不分裝置）。</Desc>
           <div className="flex items-center gap-4">
             <Combobox
               options={categoryOptions}
@@ -903,14 +903,11 @@ export const StateBehavior = {
         {/* Select behavior */}
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">新增選擇</span>
-          <Desc>新增選擇的機制依裝置分兩條路徑。桌機（預設，非觸控）走自建浮層選單（SelectMenu）：點擊欄位開啟 popover，已選項仍留在清單中並以打勾標示，再點一次即取消。手機 / 觸控裝置改走隱藏的原生 select：只顯示未選中的選項，有值時 select 以 absolute inset-0 overlay 覆蓋整個 field、opacity:0 不可見，點擊欄位任何位置都會觸發原生 picker（showPicker）。</Desc>
+          <Desc>新增選擇只有一條機制，不分裝置：點擊欄位開啟自建浮層選單（SelectMenu），已選項仍留在清單中並以打勾標示，再點一次即取消。2026-09-18 user 拍板「手機跟桌機同步」後，原本觸控裝置的隱藏原生 select overlay 已整個移除。</Desc>
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>桌機（預設）: 點擊欄位 → 開 SelectMenu popover，已選項打勾保留，toggle 取消</span>
-            <span>手機 / 觸控 — select overlay: absolute inset-0 · w-full h-full · opacity-0 · z-0</span>
-            <span>手機 / 觸控 — Tags 區域: relative z-10（蓋在 select 上方）</span>
+            <span>不分裝置: 點擊欄位 → 開 SelectMenu popover，已選項打勾保留，toggle 取消</span>
             <span>chevron / clear: relative z-10 · pointer-events-auto</span>
-            <span>手機 / 觸控 — Tag 本體: onClick → selectRef.showPicker()（穿透到原生 select）</span>
-            <span>手機 / 觸控 — 全部選完 → selectDropdown = null（沒有未選中的選項）</span>
+            <span>閘: scripts/combobox-single-path-invariant.mjs（觸控模擬下確認沒有原生 select、浮層與其內容都在）</span>
           </div>
         </div>
       </div>
@@ -925,7 +922,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性依裝置走兩條路徑（觸控偵測自動切換）：\n\n桌機（預設）：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責，不是原生 select。\n\n手機 / 觸控裝置：改用隱藏的原生 select（可 Tab 聚焦、方向鍵導覽、喚起原生 picker），以保留行動裝置的 screen reader、語音輸入與系統層整合。\n\n兩條路徑共通：欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們，但兩條路徑都各自提供完整鍵盤可達性。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
     </div>
   ),
 }

@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:78169670a99f4bc9a991a45738bed0f5965fc10f4a68426ebbe80ce0962baded",
+      "hookRegistrations": "sha256:b2c1dd63449c5716823253037b771264f1ddffa5aa7a3eaf016e0cf24be814f2",
       "providerRegistry": "sha256:c8c96ab26ea34a73d6223c57cad875bbc57fbb00407850f6537b8f71c5016508",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -823,9 +823,7 @@
           "outputMode": "governance-decision",
           "inputContract": "event-v1",
           "transcriptRequirement": "optional",
-          "requirements": [
-            "peer-cli"
-          ],
+          "requirements": [],
           "nativeEvent": "Stop",
           "projectedMatcher": "",
           "nativeCoverage": "projected",
@@ -1744,9 +1742,7 @@
           "outputMode": "governance-decision",
           "inputContract": "event-v1",
           "transcriptRequirement": "optional",
-          "requirements": [
-            "peer-cli"
-          ],
+          "requirements": [],
           "nativeEvent": "Stop",
           "projectedMatcher": "",
           "nativeCoverage": "projected",
@@ -2916,9 +2912,7 @@
           "outputMode": "governance-decision",
           "inputContract": "event-v1",
           "transcriptRequirement": "optional",
-          "requirements": [
-            "peer-cli"
-          ],
+          "requirements": [],
           "nativeCoverage": "gap",
           "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
           "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
