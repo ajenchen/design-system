@@ -150,7 +150,7 @@ Panel 展開後的 column picker 結構:
 
 ### Spacing + 結構(2026-04-21 canonical,2026-04-21 window width 修正)
 
-- Footer 內 padding = `--layout-space-tight`(12px @ md density);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight——因滿欄 column 面板無 chrome-padded body 內縮邊可對齊(見 `overlay-surface.spec.md` SurfaceFooter「footer px = body 內縮原則」例外);此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
+- Footer 內 padding = `--layout-space-tight`(12px;浮層鎖 `data-layout-space="md"`,不隨頁面密度變);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight。**本元件是「footer 對齊浮層內容左邊界」那條規則的唯一例外**(判準 owner:`../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」;2026-09-18 全庫掃描確認只有這一個):時 / 分 / 秒是**置中的數字欄、欄本身零內距**(實測面板寬 162、欄寬 79.5 且貼齊面板邊),沒有任何內容左邊界可以對齊,所以這裡的 px 是**面板自己的內距**、與同一顆 footer 的 `py-tight` 成對,不是在對齊誰。此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
 - **Panel 容器固定寬:2 欄(時 / 分)`w-40`(160px)/ 3 欄(時 / 分 / 秒)`w-60`(240px)**;**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical，以 column 間距表達欄位分界)
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
 - **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(讓選取移動保持可追蹤)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect

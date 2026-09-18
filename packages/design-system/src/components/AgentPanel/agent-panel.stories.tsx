@@ -86,7 +86,10 @@ function PanelFrame({
 }) {
   return (
     <div
-      className="relative flex h-dvh justify-end overflow-hidden bg-canvas"
+      // `overflow-hidden` **只在釘寬度時**加:那一則要讓蓋板與遮罩貼齊這個假容器的邊。
+      // 不釘寬度的既有範例一律維持原樣 —— 入口鈕拖到右緣時本來就會半露在容器外,
+      // 加了裁切會把它切掉(2026-09-18 差點順手全加上去)。
+      className={`relative flex h-dvh justify-end bg-canvas${stageWidth ? ' overflow-hidden' : ''}`}
       style={stageWidth ? { width: stageWidth } : undefined}
     >
       {stage && <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{stage}</div>}
