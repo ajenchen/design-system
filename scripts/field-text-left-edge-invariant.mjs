@@ -1,31 +1,35 @@
 #!/usr/bin/env node
 /**
- * 不變式:**欄位裡的文字,左緣恆等於「邊框 + `--field-px`」**。
+ * 不變式:**Field control 的水平內距是標準 `--field-px`,除非欄位裡真的有 Tag**。
  *
- * owner:`packages/design-system/src/components/Field/field-controls.spec.md`(Field 家族水平內距)
- * + `Field/field-wrapper.tsx` 的 `--field-px`。這是整個 Field 家族共同的那條直線:
- * Select 的已填值、Input 的字、佔位字、唯讀的值、SelectMenu 的「不限」——全部站在同一條線上。
+ * 依據(逐字):
+ *   `components/Field/field-controls.spec.md:298`
+ *     「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準
+ *       `--field-px`(`px-[var(--field-px)]`)padding,確保文字與邊框有足夠間距。」
+ *   同檔 `:21` —— field 的水平內距走 `--field-px`,與選單列的 `--item-px: var(--field-px)` 連續一致
+ *     (Consumers:Input / NumberInput / DatePicker / Select / Combobox / LinkInput / PeoplePicker)。
+ *   同檔 `:279` —— tag 模式特例:左側內距改用四邊等距公式,理由是**讓 Tag 四邊等距**
+ *     (`components/Tag/tag.spec.md`「圓角與間距」,2026-09-15 df463144)。
  *
- * **為什麼需要一支閘**(2026-09-18 user 抓到):Combobox 多選為了讓 Tag 四邊等距,把欄位左內距
- * 縮成 `fieldTagInsetX`(`(欄高 − 2px − Tag高) / 2`)。那個縮小**唯一的理由**是「Tag 自己的內距
- * 會把字推回這條線」。所以一旦欄位裡放的不是 Tag 而是純文字,就必須把內距還原成 `--field-px`,
- * 否則字會少一截。當時 Combobox 的「要不要縮內距」與「要不要渲 Tag」是**兩個各自寫的判斷式**
- *(readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`),新增「值非空但不渲 Tag」這第三種
- * 狀態時只改到渲染那一側,只選「不限」的欄位字就從 13px 掉到 4px。眼睛看得出來,但沒有任何閘在守。
+ * 量法:因為沒辦法直接量「內距」是不是被別的規則覆寫掉,改量**結果** —— 欄位裡第一段文字的左緣
+ * 應該落在 `邊框 + --field-px`。只在「這段文字前面沒有別的東西」時才成立,所以下面三種一律跳過。
  *
- * **只管「欄位自己那行字」**:三種東西不算,因為它們各有自己的幾何,不在這條線上 ——
- *   (a) Tag 裡的字(見下)、(b) 頭像裡的縮寫字母(`[data-avatar-size]`)、
- *   (c) 前面還有別的東西的字(國碼 addon、起始圖示…)。(c) 的判準是通則不是白名單:
- *       欄位裡只要有任何**看得見、且不是這段文字祖先**的元素左緣比它更左,就代表這段字前面
- *       還站著東西,這條線管的不是它。
+ * **為什麼需要一支閘**(2026-09-18 user 抓到):只選「不限」時欄位不渲 Tag、渲純文字,
+ * 按 :298 就該用標準 `--field-px`,但當時「要不要縮內距」與「要不要渲 Tag」是**兩個各自寫的
+ * 判斷式**(readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`),新增「值非空但不渲 Tag」
+ * 這第三種狀態時只改到渲染那一側 → 字從 13px 掉到 4px。眼睛看得出來,但沒有任何閘在守。
  *
- * **不管 Tag**:Tag 在欄位裡的幾何由 `tag.spec.md`「圓角與間距」段管(四邊等距,lg 刻意是 5),
- * 已有 `scripts/tag-field-vertical-inset.mjs` I4 在守。兩條規範在 lg 目前互相衝突(四邊等距 →
- * Tag 內文字落在 15px,而這條線是 13px),那是**產品決策**不是 bug,所以這支閘明確只量
- * **不在 Tag 裡的文字**,不去碰那個未決的衝突。
+ * **只量「欄位自己那段字」**,三種東西不算,各有自己的幾何、不歸這條規則管:
+ *   (a) **Tag 裡的字** —— Tag 的幾何歸「四邊等距」那條公式管(`tag-field-vertical-inset.mjs` I4)。
+ *       注意:四邊等距管的是 **Tag 這個盒子**,不是它裡面的字;lg 的 Tag 內文字因此落在 15px 而不是
+ *       13px,那是公式的正常結果,**不是 bug**(2026-09-18 我一度誤判成「兩條規範打架」,查證後撤回)。
+ *   (b) **頭像裡的縮寫字母**(`[data-avatar-size]`)—— 有自己的圓。
+ *   (c) **前面還站著別的東西的字**(國碼 addon、起始圖示…)。判準是通則不是白名單:欄位裡只要有
+ *       任何看得見、且不是這段文字祖先的元素左緣比它更左,就跳過。
  *
- * **不管表格 cell 裡的 naked 欄位**:那種欄位刻意把內距歸零、外框拿掉,靠 cell 自己的內距對齊,
- * 不在這條線上。判準是「它住在 `[role=cell]` / `<td>` 裡」這個語意邊界。
+ * **不管表格 cell 裡的 naked 欄位**:`field-controls.spec.md:66`「`view×naked` = bare(host TD 給
+ * padding)」—— 那種欄位 `!px-0 !py-0`、邊框透明,內距由 cell 自己給(實測 AgentPanel FAB 的表格:
+ * 欄位內距 0、cell 內距 12)。判準是「它住在 `[role=cell]` / `<td>` 裡」這個語意邊界。
  * ⚠️ **不可以用「邊框透明」當判準**:readonly / disabled / view 三個模式的邊框本來就是透明的,
  * 但它們照樣吃 `--field-px`(2026-09-18 第一版這樣寫,250 支 story 只量到 2 個欄位 = 幾乎空綠)。
  *
@@ -81,7 +85,7 @@ const PROBE = () => {
       first = n; break
     }
     if (!first) continue
-    // Tag 裡的字歸 tag.spec.md「圓角與間距」管(四邊等距);頭像裡的縮寫字母有自己的圓
+    // Tag 裡的字歸「四邊等距」公式管(那條管的是 Tag 盒子,不是盒裡的字);頭像縮寫有自己的圓
     if (first.parentElement.closest('[data-tag-root],[data-tag-text],[data-avatar-size]')) continue
     const range = document.createRange(); range.selectNodeContents(first)
     const tb = range.getBoundingClientRect()
@@ -188,5 +192,5 @@ if (!ONLY && !LIMIT && fieldsChecked < MIN_FIELDS) {
   process.exit(1)
 }
 if (bad.length > 0) process.exit(1)
-console.log('\n✓ 欄位裡不在 Tag 裡的文字,左緣都站在「邊框 + --field-px」那條線上')
+console.log('\n✓ 每個欄位的水平內距都是標準 --field-px(量的是沒有 Tag / 頭像 / 前置元素時的第一段文字)')
 process.exit(0)

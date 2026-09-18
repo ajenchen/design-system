@@ -742,11 +742,12 @@ jobs:
 
       - name: Field text left edge (browser)
         run: |
-          # 欄位裡的文字左緣恆等於「邊框 + --field-px」——Select 的已填值、Input 的字、佔位字、
-          # 唯讀的值、SelectMenu 的「不限」全站在同一條線上。2026-09-18 user 抓到「不限」掉到 4px:
-          # Combobox 為了讓 Tag 四邊等距把左內距縮小,那個縮小唯一的理由就是「Tag 自己的內距會把字
-          # 推回這條線」,所以不渲 Tag 時必須還原,而當時「縮不縮內距」與「渲不渲 Tag」是兩個各自
-          # 寫的判斷式。Tag 自己的幾何歸 tag-field-vertical-inset.mjs 管,這支只量不在 Tag 裡的字。
+          # Field control 的水平內距是標準 --field-px,除非欄位裡真的有 Tag ——
+          # 依據逐字在 field-controls.spec.md:298「tagPadding 只在有 Tag 時才套用。Placeholder/
+          # 空值狀態使用 fieldWrapper 的標準 --field-px padding」。2026-09-18 user 抓到只選「不限」
+          # 時字掉到 4px:那一格不渲 Tag、渲純文字,按 :298 就該用標準內距,但當時「縮不縮內距」與
+          # 「渲不渲 Tag」是兩個各自寫的判斷式,只改到渲染那一側。
+          # Tag 自己的幾何歸四邊等距公式管(tag-field-vertical-inset.mjs I4),這支不碰 Tag 裡的字。
           # 對照組把每個受管欄位的左內距推 6px,這支必須紅。
           npm run test:field-text-left-edge
 

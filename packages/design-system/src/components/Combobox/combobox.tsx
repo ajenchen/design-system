@@ -913,12 +913,17 @@ function CustomCombobox({
   // 互斥保證它只會單獨存在;文字用 `unrestrictedLabel`,與選單那一列**同一個來源**。
   const isUnrestrictedOnly = unrestricted && value.length === 1 && value[0] === unrestrictedValue
   // **「有沒有 Tag」只准有這一個判斷式**(2026-09-18 user 抓到的漂移根因)。
-  // 欄位的左內距被縮成 `tagPadding`(= `(欄高 − 2px 邊框 − Tag 高) / 2`,field-wrapper.tsx
-  // `fieldTagInsetX`)**唯一的理由**,就是讓 Tag 自己的內距把字推回 `--field-px`——
-  // 也就是全 Field 家族共同的那條線:文字左緣 = 1px 邊框 + `--field-px`。
-  // 所以不渲 Tag 的時候就**不能**套那個縮小的內距,否則字會少 9px(md)。
-  // 原本這裡的內距判斷寫的是 `value.length > 0`,渲染判斷寫的是別條,兩邊各說各話;
-  // 我新增「值非空但不渲 Tag」這第三種狀態時只改到渲染側 → 只選「不限」的欄位字跑到 4px。
+  //
+  // 依據逐字在 `../Field/field-controls.spec.md:298`:
+  //   「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準
+  //     `--field-px`(`px-[var(--field-px)]`)padding,確保文字與邊框有足夠間距。」
+  // `tagPadding`(= `fieldTagInsetX`,`(欄高 − 2px 邊框 − Tag 高) / 2`)的理由是**讓 Tag 四邊等距**
+  //(`../Tag/tag.spec.md`「圓角與間距」+ 本 spec :279,2026-09-15 df463144),跟文字沒有關係——
+  // 所以欄位裡**沒有 Tag** 的時候,它本來就不該套。
+  //
+  // 「只選『不限』」是第三種狀態:值非空、但不渲 Tag。上面那條規則按字面就涵蓋它(沒有 Tag)。
+  // 出事的原因是這件事當時有**兩個判斷式**:唯讀路徑的內距看 `hasTags`、可編輯路徑看
+  // `value.length > 0`;我新增第三種狀態時只改到渲染那一側 → 可編輯的「不限」字跑到 4px(少 9px)。
   const hasTags = value.length > 0 && !isUnrestrictedOnly
   // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的項補上
   const optionsForDisplay = React.useMemo(() => {

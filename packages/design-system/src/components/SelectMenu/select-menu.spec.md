@@ -173,15 +173,18 @@ Popover（浮動容器，handle 展開 / 定位）
 - **只選「不限」時不渲 Tag**,走**一般已填值**那條純文字路徑:與 placeholder 同一顆 span、
   同一個字級(`fieldDisplayTextClass`)、同一個位置,**唯一差別是不套 `fieldEmptyColorClass` 那層灰**
   —— 與單選欄位的寫法完全相同(`../Select/select.tsx:352-353`)
-- **左緣必須落在 Field 家族共同的那條線:邊框 + `--field-px`**(md = 13px)。
-  多選欄位為了讓 Tag 四邊等距,把左內距縮成 `fieldTagInsetX`(`tag.spec.md`「圓角與間距」);
-  那個縮小**唯一的理由**就是「Tag 自己的內距會把字推回這條線」。所以**不渲 Tag 時必須還原成
-  `--field-px`**。做法:「要不要縮內距」與「要不要渲 Tag」**只准有一個判斷式**(`hasTags`),
-  四條路徑各自只寫一次,內距與渲染都吃它。
-  ❌ **不得讓兩者各寫各的**:2026-09-18 user 抓到「不限」的字掉到 4px(少 9px),根因就是
-  readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`,新增「值非空但不渲 Tag」這第三種
-  狀態時只改到渲染那一側。閘 `scripts/field-text-left-edge-invariant.mjs` 全庫機械強制(把判斷式
-  改回舊寫法,它會指名這一格說「量到 4px,應為 13px」)。
+- **欄位的左內距必須是標準的 `--field-px`,不是 tagPadding**。依據逐字在
+  `../Field/field-controls.spec.md:298`:「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態
+  使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding」。
+  tagPadding(`fieldTagInsetX`)的理由是**讓 Tag 四邊等距**(`../Tag/tag.spec.md`「圓角與間距」
+  + `field-controls.spec.md:279`),跟文字無關 —— 欄位裡沒有 Tag 時本來就不該套。
+  「只選『不限』」正是這條規則涵蓋的情形:值非空、但不渲 Tag。
+  做法:「要不要縮內距」與「要不要渲 Tag」**每條路徑只准有一個判斷式**(`hasTags`),
+  內距與渲染都吃它。
+  ❌ **不得讓兩者各寫各的**:2026-09-18 user 抓到「不限」的字掉到 4px(md 標準值是 13px,少 9px),
+  根因就是 readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`,新增「值非空但不渲 Tag」
+  這第三種狀態時只改到渲染那一側。閘 `scripts/field-text-left-edge-invariant.mjs` 全庫機械強制
+  (把判斷式改回舊寫法,它會指名這一格說「量到 4px,應為 13px」)。
 - 四條路徑都要一致:可編輯 / 原生 / 唯讀 / 檢視
 - 欄位上的文字與選單那一列**同一個來源**(`unrestrictedLabel`),不會兩邊各寫各的
 - 有一鍵清空的欄位,只選「不限」時照常有
@@ -204,7 +207,7 @@ Popover（浮動容器，handle 展開 / 定位）
 |---|---|---|
 | `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位四條路徑都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
 | `scripts/select-all-footer-invariant.mjs` | 全選按鈕的字與勾選狀態綁死時,分母已排除「不限」列 | `--selftest-unrestricted` 拔掉 `data-unrestricted` 記號,必須紅 |
-| `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位裡不在 Tag 裡的文字,左緣 = 邊框 + `--field-px` | 把每個受管欄位的左內距推 6px,必須紅 |
+| `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
 
 兩支都在 CI 的 `Multi-select footer label/state` job 裡跑(共用同一份 storybook build)。
 
