@@ -202,13 +202,15 @@ function addDays(date: Date, n: number): Date {
 // 結構必須符合 DateGrid month_caption 同樣的 pt-3 + h-field-xs + mb-3 規格,讓 title
 // 跟 calendar 「April 2026」字 baseline 在同一 Y 座標(垂直對齊)。
 // Y 座標推導:
-//   - panel root pt-3 = 12px top 對齊 DateGrid p-3 top
+//   - panel root 的上內距**讀跟 DateGrid 根一樣的運算式**,所以「對齊」是綁定的、不是靠人記得同步
 //   - h-field-xs = 24px header,title 純 flex items-center justify-center → 真正水平+垂直置中
 //   - mb-3 = 12px gap 對齊 DateGrid month_caption mb-3
 //   → title text center Y = 12 + 12 = 24px(from CalendarTimeContainer top)
 //   → calendar caption text center Y = 12(p-3 top)+ 12(caption row half)= 24px ✓ 同一 Y
-// ⚠️ 若改 DateGrid p-3(例如 p-2)→ 必同步改 TimePicker pt-3,否則 caption 行錯位。
-// 兩處共識在 spec.md「Spacing canonical」段 + 本 comment 雙鎖。
+// 2026-09-18:原本兩邊各寫死 `p-3` / `pt-3`(都是字面 12),靠這行 ⚠️ 註解提醒人「改一邊要記得改另一邊」。
+// DateGrid 的根已改讀 `var(--item-px,var(--field-px))`,這裡跟著讀同一個運算式 ——
+// **任何容器覆寫 `--item-px`,兩邊會一起動**,不再有「其中一邊忘了跟」的空間(先前那種靠註解的雙鎖是紙老虎)。
+// 下方 `mb-3`(caption → 星期列的 12px)兩邊仍是字面值,但它不受根內距影響,維持原樣。
 //
 // ── Header divider canonical(無 border-b)──
 // Header 下方無 divider,對齊 DateGrid month_caption(無 border-b,只 mb-3 gap)。
@@ -244,7 +246,7 @@ function TimePickerSidePanel({
     : (showSeconds ? '--:--:--' : '--:--')
 
   return (
-    <div className={cn('flex flex-col h-full pt-3', className)}>
+    <div className={cn('flex flex-col h-full pt-[var(--item-px,var(--field-px))]', className)}>
       {/* Header 純結構:h-field-xs (24px) + flex 水平+垂直置中 + mb-3 (12px gap) */}
       <div className="h-field-xs flex items-center justify-center mb-3">
         <span className="text-body font-medium tabular-nums">{headerText}</span>

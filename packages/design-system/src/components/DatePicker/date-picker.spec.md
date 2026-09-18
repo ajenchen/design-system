@@ -241,7 +241,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant / Material time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
 - TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
 - 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
-  **左右內距不覆寫**(用 `SurfaceFooter` 預設的 `loose` 16px):判準 owner 是
+  **左右內距覆寫成 12px**(`px-[var(--item-px,var(--field-px))]`,與 `DateGrid` 根同一個運算式):判準 owner 是
   `../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」——
   footer 對齊的是**這個浮層的內容左邊界** = **12px**(2026-09-18 user 拍板以原規格的 12 為準)。
   寫法是 `px-[var(--item-px,var(--field-px))]` —— 跟 `DateGrid` 容器**同一個運算式、同一個來源**,
@@ -250,10 +250,10 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   `../DateGrid/date-grid.spec.md`「Spacing canonical」(**那裡是 owner,本處不重述**)。
   **不是**「canonical 所以 px-loose」—— 那句話會讓人照抄到沒有 header 的下拉選單裡,
   2026-09-17 就這樣差出 4px(33 vs 29)。
-  ⚠️ **這裡的相等是兩個不相干的字面值剛好相等**:footer 的 16 來自 `--layout-space-loose`,
-  日期格的 16 來自 `p-3 + border-spacing-1`,中間沒有任何 token 綁著。
-  改 `DateGrid` 的 `p-3` 時 footer **不會自動跟上** —— 唯一會攔住的是
-  `scripts/overlay-footer-gutter-invariant.mjs`(量像素、不看寫法),那支閘不得退役
+  ✅ **2026-09-18 起兩邊是綁定的,不再是巧合**:footer、`DateGrid` 根、右側時間欄的上內距
+  三處讀**同一個運算式** `var(--item-px,var(--field-px))`;任何容器覆寫 `--item-px`,三者一起動。
+  (原文寫「兩個不相干的字面值剛好相等、改一邊另一邊不會跟」,那是 `p-3` 還是字面值時的狀況,已過期。)
+  機械防線仍在:`scripts/overlay-footer-gutter-invariant.mjs` 量像素、不看寫法,那支閘不得退役
 - Footer 排版(對齊 Ant `marginInlineStart: auto` on OK):左「此刻」(`mr-auto` push)、右「確定」(needConfirm)或「關閉」
 - Range showTime footer **無「此刻」**(對齊 Ant `showNow={multiple ? false : showNow}`)— 只「確定」走 SurfaceFooter justify-end
 - value 格式:`'YYYY-MM-DDTHH:MM:SS'`(local-time 語意,不帶 timezone)

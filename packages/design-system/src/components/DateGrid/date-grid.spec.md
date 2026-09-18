@@ -149,6 +149,19 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
   所以**不得**用「圖示落在哪」當對齊證據。
   ⚠️ **不要拿 `data-unbounded` 當水平對齊的前例**(2026-09-18 查證後撤回):它的負 margin 全庫**只有垂直的 `my-`**
   (`overlay-surface.tsx:68` `CHROME_UNBOUNDED_SLOT`),用途是把按鈕的版面高度縮到工具列列高,**水平方向零先例**。
+- **兩張月曆之間(多月檢視)= `--layout-space-loose`**(md 16 / lg 24),不是字面值。
+  依 `../../tokens/layoutSpace/layoutSpace.spec.md` Token 表逐字:loose =「主間距:容器水平 padding、
+  **parallel 元素 gap**、bounded region 呼吸空間」——兩張並排、彼此獨立、各顯示一個月的格線正是 parallel 元素。
+  - **不要寫成 `calc(--item-px × 2)`**:我們的結構是**一個**有內距的根包**兩張沒有自己內距的格線**,
+    「左右各一份內距相加」在這棵 DOM 上推不出來;而且全 DS 的間距乘法先例**清一色是同一個盒子的盒模型算術**
+    (算寬、算高、置中),沒有一處在表達「兩個同儕之間的距離」。
+  - **同值不同義時的既有解法是「命名」不是「相乘」**:2026-09-11 `--layout-space-bottom` 與 Dialog 視窗 inset
+    都是 48px,處置是拆出 `--layout-space-viewport-inset`(理由逐字寫在 layoutSpace.spec.md,引 M17)。
+  - 上游 `react-day-picker` 同樣把它當**自己的具名常數**(`--rdp-months-gap: 2rem`),不從容器內距推導。
+  - ⚠️ **世界級有反例,不要寫成共識**:**Ant Design 就是「兩倍」那一派** —— 它兩張月曆各自帶左右內距、中間不設 gap,
+    所以中間距離自然是內距的兩倍,且 v4(12→24)與 v5(18→36)跨大版本維持 1:2,是刻意的。
+    我們選 `loose` 是因為**本 DS 自己的 token 語意與結構**,不是因為世界級只有一種做法。
+  - 要改成別的值:**改宣告值 / 另立具名 token**,不要靠外溢或相乘湊。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)

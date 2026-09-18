@@ -125,7 +125,17 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 對照上游:我們包的 `react-day-picker` 自己是 `border-collapse: collapse`,
         // 它 457 行的 style.css 裡 `border-spacing` 出現 **0 次**(2026-09-18 讀 node_modules 原始碼);
         // IBM Carbon 的日曆同樣是第一格貼齊容器內距(實測外溢 0)。外溢是我們自己加的,不是慣例。
-        month_grid: 'border-separate border-spacing-1 -m-1',
+        // 列頭尾的 bridge 夾住:`-2px` 是用來跨過格與格之間的 4px 縫去接鄰格,
+        // 但**列的第一格左邊、最後一格右邊沒有鄰格**,再往外就越過容器內距 —— 抵銷最外圈之後會直接溢出面板留白(實測 2px)。
+        // 掛在 month_grid 而不是三個 range 狀態各寫一次:2026-09-18 實測 react-day-picker **不會**把
+        // 我們加在 `classNames.range_*` 裡的這兩個 class 帶到 `<td>` 上(bundle 有、`cn()` 不吃、chunk 也載對了,
+        // 但 DOM 完全查不到),而 `month_grid` 的 class 確定會落地(同一行的 `-m-1` 就是證據)。
+        // 一處宣告、三種 range 狀態一起管,也少兩個要同步的地方。
+        month_grid: cn(
+          'border-separate border-spacing-1 -m-1',
+          '[&_tr>td:first-child]:before:!left-0',
+          '[&_tr>td:last-child]:before:!right-0',
+        ),
         weekdays: '',  // thead default
         weekday: cn(
           // text-foreground + font-medium 對齊 DS 一致設計語言(2026-05-03 user audit):
