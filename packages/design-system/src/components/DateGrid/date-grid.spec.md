@@ -120,26 +120,26 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## Spacing canonical(2026-05-03 v8)
 
-- 容器 padding `p-3`(12px,對齊 `--layout-space-tight` @ md density)—— 這是**容器的內距**,不是視覺邊
-- **視覺邊是 16px,四邊對稱**(2026-09-18 逐邊實測修正;原文寫「chevron 到邊 = 日期格到邊 = 12px」,量出來日期格是 16 不是 12)。
-  12 與 16 的關係要講清楚,否則會被誤讀成「這個面板是 12px 內距」:
+- 容器 padding `p-3`(12px,對齊 `--layout-space-tight` @ md density)
+- ⚠️ **外緣目前有 4px 落差,尚未定案**(2026-09-18 實測,user 提問後重驗)。本段**只陳述量到的數字,不下「哪個才對」的結論**:
 
   | 量到的東西 | 左 | 右 | 上 | 下 |
   |---|---|---|---|---|
-  | chevron 按鈕的**盒子**(命中區) | 12 | 12 | 12 | — |
-  | chevron 的**圖示**(看得見的那個) | **16** | **16** | **16** | — |
-  | 日期格的盒子 | **16** | **16** | — | **16** |
+  | chevron 按鈕的**盒子** | 12 | 12 | 12 | — |
+  | 日期格的**盒子** | **16** | **16** | — | **16** |
 
-  兩條各自成立的機制剛好把視覺邊都推到 16:
-  - **日期格**:容器 12 +「`border-spacing-1` 在最外圈也各留 4」= 16;
-  - **chevron**:它是 `data-unbounded` 控件(無底無框),盒子貼著容器的 12,但 **16px 圖示置中於 24px 盒** → 圖示落在 12 + (24−16)/2 = **16**。
-    盒子外擴的那 4px 是**命中區**,不是視覺內距 —— 這正是 `../Button/button.spec.md` unbounded 控件的既有語言。
-
-  所以「為什麼上下月份切換鈕看起來離邊 12px?」的答案是:**量到的是它的命中區**;它的圖示跟日期格一樣落在 16。
-- ⚠️ **16 是兩個不相干的字面值算出來的,不是一顆 token**:`p-3`(12)+ `border-spacing-1`(4)。
-  它剛好等於 `--layout-space-loose`(16)—— 而 `DatePicker` 的 footer 正是用 `px-loose`,所以整個面板看起來是同一條 16px 的邊。
-  **中間沒有任何東西綁著**:改 `p-3` 或 `border-spacing-1`,日曆會動、footer 不會。唯一攔得住的是
-  `scripts/overlay-footer-gutter-invariant.mjs`(量像素、不看寫法),那支閘不得退役。
+  - 日期格的 16 = 容器 12 + `border-spacing-1` **在最外圈也各留 4**。
+    **這 4px 沒有任何人決定過** —— 全 repo 唯一提到它的句子是 2026-09-18 才補上的本段;
+    它是 `border-separate` 的副作用(格與格之間要 4px,CSS 連最外圈一起給)。
+  - chevron 是 `variant="text"` 的 Button(`data-unbounded`),盒 24px、內含 16px 圖示置中。
+    **不可以用「圖示落在 16 所以算對齊」來解釋**:實測 hover 時 chevron 在它**整個 24px 盒子**上畫底色
+    (自 x=12 起、圓角 4px),日期格 hover 則是自 x=16 起的 28px 圓 —— 看得見的表面並沒有對齊。
+    本 DS 的對齊慣例是**盒對盒**(`../Button/button.spec.md`「`data-unbounded`」那條正是用負 margin
+    把 layout 佔位縮回去讓**邊**對齊,不是靠圖示位置)。
+  - 本段原文(2026-05-03 v8)寫的是「四邊對稱:chevron 按鈕到邊距 = 最左最右日期 cell 到邊距(12px)」
+    —— **規格說兩者都該是 12,程式做出來是 12 與 16**。要把日期格拉回 12、還是把 chevron 推到 16,
+    會連動 `DatePicker` footer(現用 `px-loose` 16)與 `TimePickerSidePanel`(caption 對齊綁在 `p-3`),
+    屬視覺 SSOT 決定,**待拍板**;拍板前不片面改任一邊。
 - day cell 固定 `h-field-sm w-[var(--field-height-sm)]`(28px @ md / 32px @ lg)
 - week header 同寬,`h-field-sm`
 - **Cell 之間 gap = 4px(H + V)**:走 table-native `border-separate border-spacing-1`,不用 grid layout(grid 會 break border-spacing)
