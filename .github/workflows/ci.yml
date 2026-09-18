@@ -731,6 +731,15 @@ jobs:
           # 驗的是對應關係不是字串(標籤是 prop,可換語言);對照組把標籤釘死,這支必須紅。
           npm run test:select-all-footer
 
+      - name: Unrestricted option row (browser)
+        run: |
+          # 多選選單可由消費端打開一列「不限」(user 2026-09-18 拍板:預設關閉,因為只有消費端知道
+          # 自己的選單內容適不適合出現這一列)。它長得像選項但語意相反,四件事都會靜默壞掉:
+          # 自成一組排最上(位置/分隔線)、互斥三條、欄位顯示純文字不是 Tag、三態訊息列不受影響。
+          # 對照組把四件事各弄壞一次,**每一條都要各自被抓到**(只看「有沒有紅」會讓一條掩護其他三條)。
+          # 跟上面那支共用同一份 storybook build,放同一個 job。
+          npm run test:unrestricted-option
+
       - name: Overlay footer gutter (browser)
         run: |
           # 浮層底部那條 footer 的左右內距必須對齊「這個浮層的內容左邊界」

@@ -35,6 +35,100 @@ type Story = StoryObj<typeof Combobox>
 // 破壞性互動(逐一移除到清空)屬測試,住下方 test-only 的 ModesRemoveFocusContract
 //(anchor:2026-08-05 user「不要給錯誤的範例」抓 PeoplePicker 同款「重設協作者」;Combobox 這顆
 // ccf83b24 加、ce0fc613 拆掉但留著 play() 的清空步驟、83c9533c 我為了讓畫面不空又補回,2026-09-15 user 再抓)。
+/**
+ * 「不限」(2026-09-18 user 拍板)。**預設關**,由產品端自行開啟 —— 因為「這個選單適不適合有不限」
+ * 是語意判斷,DS 判斷不了(user 原話:「消費端要自行判斷到底選單的內容是否要出現不限這個選項啊,
+ * 我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」)。
+ *
+ * 真實情境:報表的「地區」篩選 —— 「不限」= 不設限,**含以後新增的地區**;
+ * 這正是它跟「全選」的分野(全選是「現在清單上這幾個」)。
+ *
+ * 這一則把「關著」與「開著」並排,證明開關關著時**畫面與行為與原本完全相同**。
+ */
+export const UnrestrictedOption: Story = {
+  name: '不限:預設關 / 開啟後',
+  render: function UnrestrictedStory() {
+    const [off, setOff] = React.useState<string[]>(['electronics'])
+    const [on, setOn] = React.useState<string[]>(['electronics'])
+    const [anyOnly, setAnyOnly] = React.useState<string[]>(['__unrestricted__'])
+    return (
+      <div className="flex flex-col gap-6 max-w-sm">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">關著(預設)—— 與原本完全相同</h3>
+          <Combobox options={categoryOptions} value={off} onChange={setOff} aria-label="類別(不限關閉)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">開啟 —— 清單最上面多一列「不限」,下面自動有分隔線</h3>
+          <Combobox unrestricted options={categoryOptions} value={on} onChange={setOn} aria-label="銷售地區(不限開啟)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">只選「不限」—— 欄位不渲 Tag,走一般已填值的純文字</h3>
+          <Combobox unrestricted options={categoryOptions} value={anyOnly} onChange={setAnyOnly} aria-label="銷售地區(只選不限)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 唯讀</h3>
+          <Combobox unrestricted mode="readonly" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(唯讀)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 檢視</h3>
+          <Combobox unrestricted mode="view" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(檢視)" />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">自訂文字(unrestrictedLabel)</h3>
+          <Combobox unrestricted unrestrictedLabel="全部地區(含日後新增)" options={categoryOptions} value={[]} onChange={() => {}} aria-label="銷售地區(自訂不限文字)" />
+        </div>
+      </div>
+    )
+  },
+}
+
+/**
+ * 「不限」的出現條件:**沒在搜尋、而且畫面上真的有選項可以顯示**時才出現。
+ * 反過來說,那三種訊息列(載入中 / 沒有選項 / 輸入關鍵字搜尋)會出現的情境,「不限」一律不出現。
+ * 這一則把「0 筆選項」與「載入中」並排,證明訊息列沒有被「不限」擠掉。
+ */
+export const UnrestrictedMessageStates: Story = {
+  name: '不限:訊息列三態不受影響',
+  render: () => (
+    <div className="flex flex-col gap-6 max-w-sm">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">0 筆選項 —— 顯示「沒有選項」,不出現不限</h3>
+        <Combobox unrestricted options={[]} value={[]} onChange={() => {}} defaultOpen aria-label="空清單(不限開啟)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">載入中 —— 顯示載入列,不出現不限</h3>
+        <Combobox unrestricted optionsLoading options={[]} value={[]} onChange={() => {}} aria-label="載入中(不限開啟)" />
+      </div>
+    </div>
+  ),
+}
+
+// 「不限」關著時必須**結構上惰性**:`unrestrictedValue` 有預設值(`__unrestricted__`),
+// 萬一消費端剛好有個選項的值就叫這個名字,關著的情況下選別的選項 / 按全選都不可以把它吃掉。
+// 標 test-only:這是契約 probe 不是給人看的範例(同 ModesRemoveFocusContract 的做法)。
+// **斷言不寫在 play 裡** —— 本 repo 沒有跑 storybook test-runner(2026-09-18 查證:package.json
+// 與 .github/workflows 都沒有 test-storybook),寫在 play 等於沒人執行的假綠;
+// 真正的斷言在 `scripts/unrestricted-option-invariant.mjs` 的 E 段,那支 CI 有呼叫。
+const UnrestrictedOffInertProbe = () => {
+  const [value, setValue] = React.useState(['__unrestricted__'])
+  return (
+    <div className="max-w-sm">
+      <Combobox
+        options={[{ value: '__unrestricted__', label: 'Unassigned' }, ...categoryOptions]}
+        value={value}
+        onChange={setValue}
+        defaultOpen
+        aria-label="關著時的惰性驗證"
+      />
+    </div>
+  )
+}
+export const UnrestrictedOffInert: Story = {
+  name: '不限:關著時完全惰性',
+  tags: ['test-only'],
+  render: () => <UnrestrictedOffInertProbe />,
+}
+
 export const Modes: Story = {
   name: '四模式',
   render: () => {

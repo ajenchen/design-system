@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-18T01:27:20.070Z"
+    "generatedAt": "2026-09-18T08:17:05.179Z"
   },
   "components": {
     "accordion": {
@@ -480,6 +480,9 @@
     "combobox": {
       "tiers": {
         "展示": [
+          "design-system-components-combobox-展示--unrestricted-option",
+          "design-system-components-combobox-展示--unrestricted-message-states",
+          "design-system-components-combobox-展示--unrestricted-off-inert",
           "design-system-components-combobox-展示--modes",
           "design-system-components-combobox-展示--modes-remove-focus-contract",
           "design-system-components-combobox-展示--with-error",
@@ -1819,5 +1822,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 987
+  "totalStories": 990
 }

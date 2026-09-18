@@ -123,6 +123,29 @@ export interface SelectMenuProps {
   /** 多選 footer 的全選按鈕文字 —— **已全選時**顯示這個,點下去清空(見 `selectAllLabel` 的規範依據)。 */
   deselectAllLabel?: string
   /**
+   * 多選:在清單最上面加一列「不限」(2026-09-18 user 拍板)。**預設關**,由消費端自行開啟 ——
+   * 形狀比照同檔的 `creatable` / `searchable`(都是 opt-in boolean + 另一個 label prop)。
+   *
+   * **為什麼預設關**(user 原話):「消費端要自行判斷到底選單的內容是否要出現不限這個選項啊,
+   * 我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」—— 這是**語意判斷**,DS 判斷不了。
+   * 何時該開 / 不該開見 `select-menu.spec.md`「何時用 / 何時不用」。
+   *
+   * **「不限」不是「全選」**:全選是「現在清單上這些」,不限是「不設限,含以後新增的選項」。
+   * 所以它是一個**獨立的值**,不會被展開成具體選項,也不會因為使用者手動勾滿就自動變成它。
+   *
+   * 只在 `multiple` 時有作用。
+   */
+  unrestricted?: boolean
+  /** 「不限」那一列的文字。預設「不限」。欄位上顯示的字與這裡**同一個來源**,不會兩邊各寫各的。 */
+  unrestrictedLabel?: string
+  /**
+   * 「不限」在 value 陣列裡的保留值。預設 `__unrestricted__`。
+   *
+   * 前綴形式比照同檔可建立列的 `__create__`(見該處註解:防與真實 option.value 撞名)。
+   * 消費端的選項如果真的用了這個字串,改這個 prop 換一個;開發模式會在撞名時警告。
+   */
+  unrestrictedValue?: string
+  /**
    * **選項清單**載入中(2026-09-09 user 拍板改名,原 `loading`;理由:DS 內 `loading` 已被 Field 家族佔走 =
    * 「這個值」在讀取 / 驗證 / 儲存(field-controls.spec.md「Loading state」),同字兩義是 2026-09-08 兩顆轉圈的病根)。
    * 指示**只在選單內**:清單裡沒有任何可顯示的選項時,Empty 槽渲載入訊息列(`CommandLoading`:同「沒有結果」的
@@ -208,6 +231,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   searchHintText = '輸入關鍵字搜尋', // i18n-allow: DS default(2026-09-09:遠端搜尋還沒打字、也沒建議時的提示);consumer override via searchHintText prop
   selectAllLabel = '全選', // i18n-allow: DS default; consumer override via selectAllLabel prop
   deselectAllLabel = '取消全選', // i18n-allow: DS default; consumer override via deselectAllLabel prop
+  unrestricted = false,
+  unrestrictedLabel = '不限', // i18n-allow: DS default; consumer override via unrestrictedLabel prop
+  unrestrictedValue = '__unrestricted__',
   optionsLoading = false,
   suggestions,
   suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
@@ -263,6 +289,33 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
   const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
 
+  // ── 不限(2026-09-18 user 拍板)──────────────────────────────────────────────
+  //
+  // **出現條件只有一句**:沒在搜尋、而且畫面上真的有選項可以顯示時才出現。
+  // 反過來說,那三種訊息列(載入中 / 沒有選項 / 輸入關鍵字搜尋)會出現的情境,「不限」一律不出現 ——
+  // user 原話:「這三種狀態有需要出現不限的選項嗎?應該不用出現吧」。
+  //
+  // 這個條件同時解掉一個**不做就會無聲壞掉**的問題:cmdk 的訊息列只在「筆數 = 0」時渲
+  //(`node_modules/cmdk`:`P(u => u.filtered.count === 0) ? <div cmdk-empty> : null`),
+  // 而沒搜尋 / 關閉過濾時 `count = 已註冊列數`。所以只要「不限」是一顆會被註冊的列,它一旦存在,
+  // 那三句話就**永遠不再出現**(畫面只是少一行字,很難發現)。
+  // 照上面的條件寫,「不限」只在已經有選項(筆數 > 0、本來就不該出訊息)時才存在 —— 兩邊自動相容,
+  // 不需要 `forceMount` 或任何繞過 cmdk 筆數的機制。
+  //
+  // `visibleOptions` 已經把四種情境算好了(:258-262):非遠端 = options;遠端+閒置+有建議 = suggestions;
+  // 遠端載入中 = [];遠端搜尋後 = options。所以這裡只要再擋掉「正在搜尋」與「正在載入」。
+  const showUnrestricted = multiple && unrestricted && isIdle && !optionsLoading && visibleOptions.length > 0
+
+  // 開發模式警告:保留值跟真實選項撞名 → cmdk 以 value 當 identity,撞名會雙亮 + 選錯(同 `__create__` 的病)
+  if (process.env.NODE_ENV !== 'production' && unrestricted && options.some((o) => o.value === unrestrictedValue)) {
+    console.warn(`[SelectMenu] unrestrictedValue「${unrestrictedValue}」跟某個選項的 value 撞名了,改傳一個不會撞的 unrestrictedValue。`)
+  }
+  // 開發模式警告:開了「不限」卻一個可選選項都沒有 = 這個選單根本不給選,設定本身沒有意義
+  //(user 原話:「那就表示這個東西根本不給選啊,怪設計」)
+  if (process.env.NODE_ENV !== 'production' && unrestricted && multiple && !isRemote && options.length === 0) {
+    console.warn('[SelectMenu] 開了 unrestricted 但一個選項都沒有 —— 只有「不限」可選的選單沒有意義,請確認選項來源。')
+  }
+
   // ── Value helpers ──
   const selectedValues = React.useMemo<string[]>(() => {
     if (value == null) return []
@@ -282,19 +335,40 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [multiple, visibleOptions, selectedValues]
   )
 
+  // 「不限」目前是不是被選著 —— 放在 `selectedValues` 之後(它依賴那個值)。
+  const isUnrestrictedSelected = multiple && unrestricted && selectedValues.includes(unrestrictedValue)
+
   const handleSelect = React.useCallback(
     (optionValue: string) => {
       if (multiple) {
-        const next = isSelected(optionValue)
-          ? selectedValues.filter((v) => v !== optionValue)
-          : [...selectedValues, optionValue]
+        // 互斥(2026-09-18 user 拍板三條):
+        //   勾「不限」→ 清掉所有一般選項(值就只剩「不限」自己)
+        //   勾任一一般選項 → 取消「不限」
+        //   取消「不限」→ 回到**未選**(不還原上一批,user 原話「回到未選狀態」)
+        // 寫在同一個 handler 裡而不是另抽一層:欄位上的 Tag × 與一鍵清空都碰不到「不限」
+        //(「不限」不渲成 Tag,所以沒有它的 ×;清空是整個清成空陣列,把它一起清掉本來就對),
+        // 所以唯一會改到「不限」的入口就是這裡。
+        // `unrestricted` 關著時這整段必須是**結構上惰性**,不能只是「實務上碰不到」:
+        // `unrestrictedValue` 有預設值,關著時若消費端剛好有個選項的值就叫 `__unrestricted__`,
+        // 沒包這層 guard 的話選別的選項會把它靜默吃掉(2026-09-18 自查補)。
+        const withoutUnrestricted = (values: string[]) =>
+          unrestricted ? values.filter((v) => v !== unrestrictedValue) : values
+        const isUnrestrictedRow = unrestricted && optionValue === unrestrictedValue
+        let next: string[]
+        if (isUnrestrictedRow) {
+          next = isSelected(optionValue) ? [] : [unrestrictedValue]
+        } else if (isSelected(optionValue)) {
+          next = selectedValues.filter((v) => v !== optionValue)
+        } else {
+          next = [...withoutUnrestricted(selectedValues), optionValue]
+        }
         onValueChange?.(next)
       } else {
         onValueChange?.(optionValue)
         setOpen(false)
       }
     },
-    [multiple, selectedValues, isSelected, onValueChange, setOpen]
+    [multiple, selectedValues, isSelected, onValueChange, setOpen, unrestricted, unrestrictedValue]
   )
 
   // ── Multi-select: select all ──
@@ -328,9 +402,18 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     if (allState === true) {
       onValueChange?.(clearSelection())
     } else {
-      onValueChange?.(applySelectAll(selectedValues, selectableOptions.map((o) => o.value)))
+      // 先把「不限」濾掉再交給 `applySelectAll`(2026-09-18):那支共用工具的語意是
+      // 「保留既有 + 追加未選」(`multi-select-ordering.ts:48-52`,回傳 `[...existing, ...unselected]`),
+      // 不濾的話「不限」會跟全部一般選項並存 —— 同時違反互斥與「全選只看一般選項」兩條。
+      // **不改那支工具**:它是通用排序規則(對齊 Ant Transfer 的既有決議),別的使用者也在吃。
+      // 同上:關著時不過濾,這條路徑對既有行為完全零影響。
+      // (2026-09-18 實測:這一條單獨拿掉不會被閘抓到 —— `applySelectAll` 的語意是「保留既有 +
+      //  追加未選」,撞名的那個本來就在 options 裡,濾掉後又被追加回來。留 guard 是為了語意一致,
+      //  真正會靜默吃掉值的是上面 handleSelect 那條。)
+      const existing = unrestricted ? selectedValues.filter((v) => v !== unrestrictedValue) : selectedValues
+      onValueChange?.(applySelectAll(existing, selectableOptions.map((o) => o.value)))
     }
-  }, [multiple, allState, selectableOptions, selectedValues, onValueChange])
+  }, [multiple, allState, selectableOptions, selectedValues, onValueChange, unrestricted, unrestrictedValue])
 
   // ── Creatable ──
   const showCreate = React.useMemo(() => {
@@ -474,6 +557,37 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             label="選項" // i18n-allow: DS default; listbox accessible name
           >
             {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
+
+            {/* 「不限」(2026-09-18 user 拍板)——**清單的第一組**。
+                一組只有一列,靠 `CommandGroup` 自己的 `py-2`(上下 8px)與「跟在另一個可見群組後面就畫上邊線」
+                的規則,自動跟下面那組一般選項用分隔線隔開 —— 分隔線畫在**後面那組的頂端**
+                (`Command/command.tsx:263-268`,判準 owner `patterns/element-anatomy/item-anatomy.spec.md`
+                「Group auto-separation」),所以這裡不插 Separator、不寫新 CSS。
+                結構先例是同一支檔案下方的可建立列:同樣是無標題、單獨一列、自成一組,只是它在最下面。
+
+                **為什麼用 `CommandGroup` 不是 `MenuGroup`**:這一列**是選項**,要點得到、鍵盤上下鍵走得到。
+                `MenuGroup` 的列不經 cmdk 註冊(那正是訊息列選它的理由,見 `command.tsx:187-189`),
+                放這裡會變成鍵盤走不到的孤兒,而且它的相鄰線用 `[&+&]`(同 class 相鄰)也對不上 `CommandGroup`。
+
+                出現條件見上方 `showUnrestricted`。 */}
+            {showUnrestricted && (
+              <CommandGroup>
+                <CommandItem
+                  value={unrestrictedValue}
+                  keywords={[unrestrictedLabel]}
+                  onSelect={() => handleSelect(unrestrictedValue)}
+                  checkbox
+                  checked={isUnrestrictedSelected}
+                  // 這列不是「一個選項」而是「不設限」,所以任何「算有幾個選項 / 是不是全選了」的東西
+                  // 都必須把它排除掉。給它一個**結構性**記號,不要去比對 `unrestrictedValue` ——
+                  // 那是消費端可以改的字串(prop),拿字串當判準等於把判準交給呼叫端。
+                  // 消費者:scripts/select-all-footer-invariant.mjs 的分母。
+                  data-unrestricted=""
+                >
+                  {unrestrictedLabel}
+                </CommandItem>
+              </CommandGroup>
+            )}
 
             {/* 選項為 0 的群組不畫(2026-09-08):cmdk 在 shouldFilter=false(搜尋在觸發點)時不會藏空群組,
                 會留下 py-2 的 16px 空白疊在「沒有選項」下面(實測 128 vs 應為 112)。 */}

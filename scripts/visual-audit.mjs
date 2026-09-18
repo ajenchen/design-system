@@ -810,7 +810,18 @@ async function main() {
   console.log(`  Contrast violations: ${totalContrastViolations}`)
   console.log(`  Geometry violations: ${totalGeometryViolations}`)
   if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}  [advisory — 權威 a11y gate = a11y-and-size.yml(baseline-diff)]`)
-  if (!NO_DIFF) console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
+  if (!NO_DIFF) {
+    console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
+    // 基線是 **Ubuntu 渲染**後 commit 進 curated authority 的(:545 與 visual-regression.yml 跑
+    // ubuntu-24.04)。在別的作業系統上跑,字體度量不同會讓整排文字位移,幾十支 scenario 一起
+    // 破預算 —— 那是**跨主機比對**的產物,不是退步。2026-09-18 實證:button-color-matrix 破 3.7%,
+    // 並排看兩張圖版面/顏色/結構完全相同,只有中文字寬高不同。
+    // 同一種病的近親:`governance/memory/reference_perf_validation_same_host.md`(跨網域比效能)。
+    if (totalDiffBudgetBreached > 0 && process.platform !== 'linux') {
+      console.log(`  ↑ 注意:基線是 Ubuntu 渲染的,你在 ${process.platform} 上跑 —— 字體度量不同會造成大量假破預算。`)
+      console.log('    要判斷是不是真的退步,看 Visual Regression workflow(ubuntu-24.04)的結果,或並排比對圖片。')
+    }
+  }
   console.log(`  Render errors(story 404 / error display): ${totalRenderErrors}`)
   if (!NO_DIFF) console.log(`  Diff errors(baseline missing / dimension mismatch): ${totalDiffErrors}`)
   console.log(`  Report: ${reportPath}`)

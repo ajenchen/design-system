@@ -462,6 +462,16 @@ export interface ComboboxProps {
   selectAllLabel?: string
   /** 多選 footer 全選按鈕文字 —— 已全選時,點下去清空;default「取消全選」 */
   deselectAllLabel?: string
+  /**
+   * 多選:在清單最上面加一列「不限」。**預設關**,由消費端自行開啟(轉發給 `SelectMenu`,
+   * 完整語意與「何時該開」見 `../SelectMenu/select-menu.spec.md`)。
+   * 只選「不限」時,欄位不渲 Tag,改走**一般已填值**的純文字路徑(與單選欄位同一種樣式)。
+   */
+  unrestricted?: boolean
+  /** 「不限」那一列與欄位上顯示的文字(同一個來源)。預設「不限」。 */
+  unrestrictedLabel?: string
+  /** 「不限」在 value 陣列裡的保留值。預設 `__unrestricted__`。 */
+  unrestrictedValue?: string
   /** 可建立新選項(creatable tag,2026-07-18 user 拍板 forward)—— 搜尋非空且無完全同名既有選項時,
    *  dropdown 顯 create row(Plus + `createLabel`);forward 給底層 SelectMenu(邏輯/顯示/互動 SSOT 住在 SelectMenu)。
    *  僅 searchable 桌機路徑生效(需打字);native mobile 路徑不支援。對齊 Ant tags / react-select Creatable。 */
@@ -564,7 +574,8 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
 function ReadonlyMultiSelect({
   mode, variant: variantProp, width, size, options, value, wrap, className, showDisplayEndIcon = false,
-}: Pick<ComboboxProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'wrap' | 'className' | 'showDisplayEndIcon'> & {
+  unrestricted = false, unrestrictedLabel = '不限', unrestrictedValue = '__unrestricted__', // i18n-allow: DS default(與 SelectMenu 同源)
+}: Pick<ComboboxProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'wrap' | 'className' | 'showDisplayEndIcon' | 'unrestricted' | 'unrestrictedLabel' | 'unrestrictedValue'> & {
   /** @internal 2026-07-14 API 策展 E:內部 render helper 吃 FieldVariantInternal(naked 由 cell-registry 通道傳入)*/
   variant?: FieldVariantInternal
 }) {
@@ -575,7 +586,10 @@ function ReadonlyMultiSelect({
   const iconSize = sz === 'lg' ? 20 : 16
   const tagHeight = TAG_HEIGHT_PX[sz]
   const containerRef = React.useRef<HTMLDivElement>(null)
-  const hasTags = (value?.length ?? 0) > 0
+  // 只選了「不限」時不渲 Tag —— 走**一般已填值**那條純文字路徑(2026-09-18 user 拍板)。
+  // 互斥保證它只會單獨存在,所以判斷就是「陣列裡只有它」。
+  const isUnrestrictedOnly = unrestricted && (value?.length ?? 0) === 1 && value?.[0] === unrestrictedValue
+  const hasTags = (value?.length ?? 0) > 0 && !isUnrestrictedOnly
 
   // mode='view'(Phase B2 2026-05-05):純內容輸出 — tag stack 不包 Field wrapper / 不 reserve 高度。
   //   對齊原 ComboboxDisplay sub-component(retired)。
@@ -585,6 +599,9 @@ function ReadonlyMultiSelect({
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) view typography canonical):empty bare span 套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field family 統一。
+      // 「不限」與 placeholder 共用同一顆 span、同一個字級與位置,**唯一差別是不套那層灰**
+      // (`Select` 單選欄位就是這樣寫的,select.tsx:352-353;字級 SSOT `field-wrapper.tsx:387`)。
+      if (isUnrestrictedOnly) return <span className={cn(fieldDisplayTextClass(sz), className)}>{unrestrictedLabel}</span>
       if (!hasTags) return <span className={cn(fieldDisplayTextClass(sz), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap} />
@@ -602,7 +619,9 @@ function ReadonlyMultiSelect({
         {hasTags ? (
           <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap} />
         ) : (
-          <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
+          isUnrestrictedOnly
+            ? <span className={cn('flex-1 min-w-0', fieldDisplayTextClass(sz))}>{unrestrictedLabel}</span>
+            : <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
         {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md:280) */}
         <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
@@ -627,7 +646,9 @@ function ReadonlyMultiSelect({
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
           containerRef={containerRef} disabled={resolvedMode === 'disabled'} />
       ) : (
-        <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
+        isUnrestrictedOnly
+          ? <span className={fieldDisplayTextClass(sz)}>{unrestrictedLabel}</span>
+          : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
       )}
       {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開下拉) / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
       {(variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled') && (
@@ -682,6 +703,7 @@ function focusAfterTagRemoval(container: HTMLElement | null, owner: HTMLElement 
 
 function NativeCombobox({
   mode, variant: variantProp, width, error = false, size = 'md', options, value = [], onChange, placeholder,
+  unrestricted = false, unrestrictedLabel = '不限', unrestrictedValue = '__unrestricted__', // i18n-allow: DS default(與 SelectMenu 同源)
   className, disabled: disabledProp, wrap = false, clearable = false, showDisplayEndIcon = false,
   // Display-layer parity(2026-08-05 user 拍板):renderer / overflow props 必雙分支(custom/native)
   // 同消費 — 原 native 硬編碼 <Tag> 令 PeoplePicker 手機 edit 掉回文字 pill、avatar stack 全滅
@@ -714,7 +736,7 @@ function NativeCombobox({
   }
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} unrestricted={unrestricted} unrestrictedLabel={unrestrictedLabel} unrestrictedValue={unrestrictedValue} />
   }
 
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
@@ -823,6 +845,9 @@ function CustomCombobox({
   emptyText,
   selectAllLabel,
   deselectAllLabel,
+  unrestricted = false,
+  unrestrictedLabel = '不限', // i18n-allow: DS default; consumer override via unrestrictedLabel prop
+  unrestrictedValue = '__unrestricted__',
   creatable = false,
   onCreate,
   createLabel,
@@ -875,6 +900,9 @@ function CustomCombobox({
     () => value.map(v => ({ value: v, label: (options.find(o => o.value === v) ?? suggestions?.find(o => o.value === v) ?? findKnown(v))?.label ?? v })),
     [value, options, suggestions, findKnown]
   )
+  // 只選了「不限」時,欄位不渲 Tag,改走一般已填值的純文字路徑(2026-09-18 user 拍板)。
+  // 互斥保證它只會單獨存在;文字用 `unrestrictedLabel`,與選單那一列**同一個來源**。
+  const isUnrestrictedOnly = unrestricted && value.length === 1 && value[0] === unrestrictedValue
   // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的項補上
   const optionsForDisplay = React.useMemo(() => {
     const missing = value.map(v => (options.some(o => o.value === v) ? undefined : (suggestions?.find(o => o.value === v) ?? findKnown(v)))).filter((o): o is ComboboxOption => !!o)
@@ -909,7 +937,7 @@ function CustomCombobox({
   )
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} unrestricted={unrestricted} unrestrictedLabel={unrestrictedLabel} unrestrictedValue={unrestrictedValue} />
   }
 
   // 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):觸發點右側、箭頭左邊(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭),
@@ -980,7 +1008,10 @@ function CustomCombobox({
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
       <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
-        {value.length > 0 ? (
+        {/* 只選「不限」→ 純文字(同 placeholder 的盒與字級,只是不套灰;見 ReadonlyMultiSelect 同款註解)*/}
+        {isUnrestrictedOnly ? (
+          <span className={cn('flex-1 min-w-0 truncate', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
+        ) : value.length > 0 ? (
           <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
             tagWrapperClassName={tagWrapperClassName}
             overflowWrapperClassName={overflowWrapperClassName}
@@ -1050,6 +1081,10 @@ function CustomCombobox({
       emptyText={emptyText}
       selectAllLabel={selectAllLabel}
       deselectAllLabel={deselectAllLabel}
+      // 「不限」轉發(2026-09-18):Combobox 是恆多選的消費者,開關與文字都由產品端決定。
+      unrestricted={unrestricted}
+      unrestrictedLabel={unrestrictedLabel}
+      unrestrictedValue={unrestrictedValue}
       options={menuOptions}
       value={value}
       onValueChange={onChange as (value: string | string[]) => void}
