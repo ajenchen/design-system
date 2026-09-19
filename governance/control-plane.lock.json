@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:d0004bad02a88decb066239cd2632e96a45c273454d6baab32e40cc2aaeb7b37",
+      "hash": "sha256:c0c75cd2f9dde0ccd6458fff211291f001e985ef1245d983d1f705de4c52a36b",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:27ce97039930575ae35dabc50bbee866789288d4279c16903f36ff538a44633a",
+      "hash": "sha256:64886fa1421dd7a2b0b6083710d1bc9f1e1e6a9e46793fa82a3e778fa7eec6d1",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:d6b0460bc5d8cb0079209f3ddc758ca3414ac02803eaaaeda32e360b8ece17c0",
+  "inputDigest": "sha256:a54218613a006445362512dfde47b0521d3333d91dde0dbfb4485a9a19bc5e08",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:0cbbed53e94966e778e7fdf4b3eba761aca0c58fb856cd1f34756039fa3dee78",
+  "snapshotDigest": "sha256:b399d6d2f63e632b26a33617c6854d8df42aa300e313dbe88d7e55ee8aa19167",
   "sources": [
     {
       "hash": "sha256:6684787e195a973bfdb624c023ae9b81fc1dd32e0d39d7c99dff1ee23c21f030",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:6a799c8a1089cb5c37eda3ff905e1997a3830611f2d55c2c3c3a208277ba0081",
+      "hash": "sha256:e79865babc195194b2c528024861643dedbd4ccb235020bcc9920eaf43ee28cb",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 468,
-      "hash": "sha256:225dabf9f4f6f531dc9cc46d264bb5b324591388d5ef2a40c050ff77aafbc762",
+      "hash": "sha256:6c10349014c9167d2ffa65883a1293d72b50ea717b24028bac9af203a2cd532c",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
