@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:c0c75cd2f9dde0ccd6458fff211291f001e985ef1245d983d1f705de4c52a36b",
+      "hash": "sha256:f48061570e41369d0b0c01fe8192d52da8a242081617bd4145ecc82b0e686d26",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:64886fa1421dd7a2b0b6083710d1bc9f1e1e6a9e46793fa82a3e778fa7eec6d1",
+      "hash": "sha256:0eaa07c66fbb3e1547bd3ef1d6a01d94a20c6271d0f19a017d43e3935e36bd09",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:a54218613a006445362512dfde47b0521d3333d91dde0dbfb4485a9a19bc5e08",
+  "inputDigest": "sha256:3a84d4afd077b7a23dc7535dd49ff8b59ddd6e5a8f694dc10f8386ab2f979b6d",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:b399d6d2f63e632b26a33617c6854d8df42aa300e313dbe88d7e55ee8aa19167",
+  "snapshotDigest": "sha256:5b7cd0389a79edf0b1385a22089e70c998528023bad3faae84d15a4ada997593",
   "sources": [
     {
       "hash": "sha256:6684787e195a973bfdb624c023ae9b81fc1dd32e0d39d7c99dff1ee23c21f030",
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:57d8addb65441f4df3b4875068dd9c26761f8f75b5df75f1fae6af11aee1529f",
+      "hash": "sha256:1eb749e90bb8ec05ce5087936742f00328dbb99ad7dc65503a8998b696513bd9",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:e79865babc195194b2c528024861643dedbd4ccb235020bcc9920eaf43ee28cb",
+      "hash": "sha256:2eecae819690b8fc76e35d890e4213b995b7c5ab1ed0c00e31d4f0ae80e22080",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",

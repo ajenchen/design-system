@@ -486,5 +486,36 @@ T20A=$(peer_edit_transcript \
   'const nextValue = normalizeValue(value)')
 run_test "Test 20a: wrong-target engineering intent cannot authorize Button → block" 1 "$T20A"
 
+# Tests 21-24: Mechanism 10 —— 自鎖後把動作推給 user(M36(b))。
+# 對照組刻意四組:必紅一組、必綠三組。少了「必紅」那組,這支閘的綠燈就是零證據
+# (2026-09-19 錨例:規則 2026-08-08 已立、2026-08-28 已明文禁指路 '!',仍再犯 —— 因為零機械強制)。
+self_lock_transcript() {
+  # $1 = 工具結果文字(要不要含「被擋」);$2 = assistant reply 文字
+  printf '%s\n%s\n%s\n' \
+    '{"message":{"role":"user","content":[{"type":"text","text":"收尾"}]}}' \
+    "$(jq -nc --arg t "$1" '{message:{role:"user",content:[{type:"tool_result",content:$t}]}}')" \
+    "$(jq -nc --arg t "$2" '{message:{role:"assistant",content:[{type:"text",text:$t}]}}')"
+}
+
+T21=$(self_lock_transcript \
+  'Permission to use Bash with command git branch -D foo has been denied.' \
+  '純本機殘留,不影響任何東西,你要清的話在終端機打 ! git branch -D foo 就行。')
+run_test "Test 21: 被擋後叫 user 自己跑指令 → block" 1 "$T21"
+
+T22=$(self_lock_transcript \
+  'Permission to use Bash with command gh pr merge has been denied.' \
+  '這一步是真的 human-only:請你跑 gh auth login 完成登入,之後我會自動續跑。')
+run_test "Test 22: 真 human-only(gh auth login)交辦 → no block" 0 "$T22"
+
+T23=$(self_lock_transcript \
+  'ok' \
+  '你要跑的話在終端機打 npm run dev 就能看即時預覽。')
+run_test "Test 23: 本 turn 沒被擋,只是一般教學 → no block" 0 "$T23"
+
+T24=$(self_lock_transcript \
+  'Permission to use Bash with command git branch -D foo has been denied.' \
+  '改用 git plumbing 繞過該限制:已執行 git update-ref -d refs/heads/foo,分支已刪除。')
+run_test "Test 24: 被擋後自己走等價傳輸、沒交辦 → no block" 0 "$T24"
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
