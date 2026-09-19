@@ -67,6 +67,21 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { spawnSync } from 'node:child_process'
+
+/**
+ * 相對 `ref`,本 HEAD 有沒有任何**會進 runtime**的原始碼差異。
+ *
+ * 只認 `packages/` 與 `src/` 底下的 `.ts/.tsx/.js/.jsx/.css` —— 那些才會被打包進 bundle。
+ * 版號 bump(`.json`)、`scripts/`、`.github/`、治理文件都不進 bundle。
+ *
+ * 讀不到 git 或 ref 不存在 → 回 true(**保守**:寧可照跑比值閘,也不要因為看不到而靜默跳過)。
+ */
+function runtimeSourceDiffers(ref) {
+  const run = spawnSync('git', ['diff', '--name-only', `${ref}...HEAD`], { encoding: 'utf8' })
+  if (run.status !== 0 || typeof run.stdout !== 'string') return true
+  return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
+}
 import { median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -858,7 +873,22 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
   }
   relGate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
-  if (REF_LABEL) {
+  if (REF_LABEL && !runtimeSourceDiffers(REF_LABEL)) {
+    // 2026-09-19:兩邊沒有任何會進 runtime 的原始碼差異 → 這個比較測到的只有機器,不是程式碼。
+    //
+    // 為什麼必須明確跳過而不是「照跑、紅了再說」:比值門檻是 1.25×,但這些量的**同一份建置內部**
+    // 散布就遠大於它。同一天實測兩次:
+    //   幀距(單趟最大):同一份建置量到 215 與 311 → ±45%
+    //   長工合計:main 自己 3 趟是 849 / …… / 1552(1.83×),而 branch 是 1178 / …… / 1387 ——
+    //             **main 的最大值比 branch 的最大值還高**,兩個分布根本重疊
+    // 在零 runtime 改動的 commit 上,這條閘紅或綠純粹是抽籤;綠也不是證據,紅更是誤報。
+    // 已經因此擋掉兩次 release,每次都要人去確認「這不是真的回歸」。
+    //
+    // 這不是放寬門檻:有任何 runtime 原始碼差異時,門檻與統計量原封不動照跑。
+    // 判準只問一件事 —— 兩邊的 `.ts/.tsx/.js/.jsx/.css`(packages/ 與 src/ 底下)是否完全相同。
+    // 版號 bump、腳本、CI、治理文件都不進 bundle,不構成執行期差異。
+    console.log(`↷ 跳過「對 ${REF_LABEL} 的比值」判定:兩邊沒有任何會進 runtime 的原始碼差異,此比較只會量到 runner 的排程雜訊(同一份建置內部散布已達 1.8×,遠大於 1.25× 門檻)。絕對門檻與目的地判定照常執行。`)
+  } else if (REF_LABEL) {
     // 2026-09-18 修:比值判定改用**長工合計**(= 總阻塞時間),不再用「單一最長」。
     //
     // 「單一最長」是尾端統計量,n=3 取中位數仍被 runner 排程雜訊主導 —— 而比值門檻是 1.25×,
