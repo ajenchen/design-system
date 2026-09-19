@@ -105,7 +105,7 @@ for (const id of STORIES) {
   const hasHook = await page.evaluate(() => window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0)
   if (!hasHook) { console.log(`✗ ${id}:React 沒接上 DevTools hook 樁,commit 計數器無效`); failed++; continue }
   const m0 = await metrics()
-  const r = await page.evaluate(async () => {
+  const r = await page.evaluate(async (FINE_BUDGET) => {
     const el = document.querySelector('[data-datatable-hscroll]')
     if (!el) return { crashed: true }
     if (el.scrollHeight <= el.clientHeight + 1) return null
@@ -122,8 +122,20 @@ for (const id of STORIES) {
     // 1px 步進:每次 render 的成本(不換列)
     window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = window.__gbcrTraceOn
     for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
-    const gbcrFine = window.__gbcr / 30
+    let gbcrFine = window.__gbcr / 30
     window.__gbcrTrace = false
+    // **超標就自動把呼叫點量出來**(2026-09-18):這條是絕對計數,本機實測 0.1–0.3、預算 12,
+    // 但 CI 上出現過一次 154.1,而**同一份程式碼的前一跑是 0.1** —— 只給一個數字沒人能查。
+    // 超標時原地再走一次 1px 步進、這次開追蹤,把最兇的呼叫點一起印出來。
+    // **不是放寬**:預算與判定值都不動,只是在紅燈旁邊附上線索(下面 gbcrCallers 進報表)。
+    let gbcrCallers = null
+    if (gbcrFine > FINE_BUDGET) {
+      window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = true
+      for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
+      window.__gbcrTrace = false
+      gbcrFine = Math.max(gbcrFine, window.__gbcr / 30)
+      gbcrCallers = Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    }
     if (window.__gbcrTraceOn) console.log('GBCR-CALLERS ' + JSON.stringify(Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 8)))
     // 換列步進
     await frame(); attrs = 0; nodes = 0; window.__commits = 0; window.__rendered = {}; window.__touched = {}; window.__dtRowRenderStats.fresh = 0;
@@ -152,8 +164,8 @@ for (const id of STORIES) {
     }
     await frame()
     mo.disconnect()
-    return { gbcrFine, attrsPerStep: attrs / steps, nodesPerStep: nodes / steps, changedPerStep: changed / steps, commitsPerStep: window.__commits / steps, renderedOldPerStep: (window.__rendered.rowOld || 0) / steps, renderedHeaderPerStep: (window.__rendered.header || 0) / steps, touchedOldPerStep: (window.__touched.rowOld || 0) / steps, renderedOldMax: Math.max(0, ...perStep.renderedOld), touchedOldMax: Math.max(0, ...perStep.touchedOld), headerMax: Math.max(0, ...perStep.header), renderedNewPerStep: (window.__rendered.rowNew || 0) / steps, renderedOtherPerStep: (window.__rendered.other || 0) / steps, renderedErr: window.__renderedErr || null, visible: visibleRows(), freshPerStep: window.__dtRowRenderStats.fresh / steps, missIdx: window.__dtRowRenderStats.missIdx, epochIdx: window.__dtRowRenderStats.epochIdx ?? {}, attrNames }
-  })
+    return { gbcrFine, gbcrCallers, attrsPerStep: attrs / steps, nodesPerStep: nodes / steps, changedPerStep: changed / steps, commitsPerStep: window.__commits / steps, renderedOldPerStep: (window.__rendered.rowOld || 0) / steps, renderedHeaderPerStep: (window.__rendered.header || 0) / steps, touchedOldPerStep: (window.__touched.rowOld || 0) / steps, renderedOldMax: Math.max(0, ...perStep.renderedOld), touchedOldMax: Math.max(0, ...perStep.touchedOld), headerMax: Math.max(0, ...perStep.header), renderedNewPerStep: (window.__rendered.rowNew || 0) / steps, renderedOtherPerStep: (window.__rendered.other || 0) / steps, renderedErr: window.__renderedErr || null, visible: visibleRows(), freshPerStep: window.__dtRowRenderStats.fresh / steps, missIdx: window.__dtRowRenderStats.missIdx, epochIdx: window.__dtRowRenderStats.epochIdx ?? {}, attrNames }
+  }, BUDGET.gbcrFine)
   if (SELFTEST && r && !r.crashed) {
     // 對照組(Codex R7 Q6):預算 0 對「本來就是 0」的 R5 永遠不會紅,所以另外證明計數器活著——點表頭全選
     //(selection 進 epoch → 全部列重算、headerCheckedState 進 headerEpoch → 表頭重算),表頭與步前既有列都必須量到 render。
@@ -187,7 +199,8 @@ for (const id of STORIES) {
     // 逐步最大值而不是平均(Codex R7:平均 10 可容許單一步 200);touched 含 bailout(PerformedWork 會漏算)。
     ['R4 舊列零重繪:單步內步前既有列裡被碰到的元件 fiber 數(最大值)', r.touchedOldMax, BUDGET.touchedOld, `max ${r.touchedOldMax} ≤ ${BUDGET.touchedOld}(render 最大 ${r.renderedOldMax},平均 render ${r.renderedOldPerStep.toFixed(1)} / touched ${r.touchedOldPerStep.toFixed(1)})`],
     ['R5 表頭零重繪:單步內表頭裡被碰到 + render 的元件數(最大值)', r.headerMax, BUDGET.renderedHeader, `max ${r.headerMax} ≤ ${BUDGET.renderedHeader}`],
-    ['1px 步進 getBoundingClientRect/步', r.gbcrFine, BUDGET.gbcrFine, `${r.gbcrFine.toFixed(1)} ≤ ${BUDGET.gbcrFine}`],
+    ['1px 步進 getBoundingClientRect/步', r.gbcrFine, BUDGET.gbcrFine, `${r.gbcrFine.toFixed(1)} ≤ ${BUDGET.gbcrFine}`
+      + (r.gbcrCallers?.length ? `;最兇呼叫點 ${JSON.stringify(r.gbcrCallers)}` : '')],
   ]
   if (r.changedPerStep === 0 && !SELFTEST) { console.log(`✗ ${short}:60px 步進沒有換列,量到的不是換列路徑(儀器對照失敗)`); failed++ }
   if (r.renderedErr) { console.log(`✗ ${short}:fiber 歸因計數器丟例外(${r.renderedErr}),R4/R5 無效`); failed++ }
