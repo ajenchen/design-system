@@ -69,12 +69,16 @@
 - **判斷法**:這條規則能「機械化在 tool 執行前後自動跑」嗎? 是 → canonical hook + `registrations.json`;否 → canonical rule 或 spec
 - **當前 inventory**:以 `packages/design-system/ds-canonical/hooks/registrations.json`、canonical hook tree 與 `scripts/sync-governance-counters.mjs --check` 動態結果為準；本文件不硬寫數量或複製 hook 清單。
 
-### Level 8 — Command workflow (`packages/design-system/ds-canonical/commands/*.md`)
+### Level 8 — Command workflow (`packages/design-system/ds-canonical/commands/*.md`)— **相容層,不是新居民的去處**
 
-- **輕量 user-invokable shortcut**(單步 action,無 workflow / checkpoints)
-- 跟 Skill 的差別:Skill 是多步驟 workflow + user 決策點;Command 是一次性 scaffold / 單步觸發
-- **判斷法**:這是「一次性 scaffold 或單步 action」嗎? 是且**重複使用 ≥ 3 次** → Command;否 → 需要 workflow → Skill
-- **當前狀態**:以 canonical commands inventory 為準；provider command view 只能由 adapter 產生，不能成為 semantic owner
+- **現狀**:居民 0。各家 agent runtime 已把單步 command 併進 skills 面,新的 `/<name>` 一律由同名 skill 提供。
+  此判準與該 home 自己的 charter(`ds-canonical/commands/README.md`)一致 —— 兩邊曾分歧:本表原本把
+  Level 8 寫成「重複使用 ≥ 3 次就放這」的活躍去處,charter 卻寫「只保留舊 consumer 的相容 pointer」。
+  以 charter + 空 inventory 為準。
+- **唯一還可以留在這裡的東西**:外部 consumer 仍固定呼叫舊路徑時的 thin pointer,且必須只是同名 skill 的
+  指標,不得持有第二份 substantive workflow。
+- **新增單步 action 的正確去處** → Level 7 Skill(單步就是只有一個 step 的 skill,不需要另一個 home)
+- **inventory**:以 canonical commands 目錄實況為準,本文件不硬寫數量
 
 ### Level 9 — Planning (`governance/planning/`)
 

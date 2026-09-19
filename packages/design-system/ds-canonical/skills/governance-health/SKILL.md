@@ -67,7 +67,9 @@ Output: 「`check_sideoffset_canonical.sh`(retired;已移入 hooks/retired/,此�
 
 #### 2c. Pending corrections → codify 候選
 
-`user-corrections.jsonl` > 10 條未 codify = user 反覆糾正類似錯誤,該升級到 canonical。
+`user-corrections.jsonl` 未 codify 數超過門檻 = user 反覆糾正類似錯誤,該升級到 canonical。
+**門檻不在本檔硬寫**(同檔 Phase 2 表格曾寫 20、此處曾寫 10,兩個都會漂):唯一 SSOT 是
+`session_start_governance_check.sh` Check 3 的 `-gt` 判斷(現行 soft 20 / hard 40)。
 
 Output: 「過去 4 週 user 糾正 15 條,sample: ..., 提議:升級 M19「XX pattern」或擴充 `# Meta-Pattern 預警`」
 

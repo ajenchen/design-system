@@ -217,12 +217,12 @@ elif [ -d "$HOOKS_DIR" ]; then
     2>/dev/null | wc -l | tr -d ' ')
   HOOK_COUNT=${HOOK_COUNT:-0}
 fi
-# 2026-08-05 canonical inventory:同一個 find predicate 算得現值 59(2026-08-04 退役潮
-# 收回 1 支,headroom=1)。60 維持為邊界,不是新基準的自動調升理由；下一支 first-class hook 必先由
-# /knowledge-prune retire / consolidate 既有 hook。降 cap 仍屬治理 substantive
-# (soft 26 已在 27+ 提供 advisory),留 /knowledge-prune 評估。
+# 現值**不在此硬寫**:本檔曾同時留下「59、headroom=1」(2026-08-05 註解)與「已為 60、零 headroom」
+# (2026-07-31 訊息字串)兩個互相矛盾的庫存數,兩個都會過期。真值一律由下方 find predicate 當場算,
+# 或 `npm run sync:counters` 跑出;60 是邊界不是基準,下一支 first-class hook 必先由
+# /knowledge-prune retire / consolidate 既有 hook 騰出空間。
 if [ "$HOOK_COUNT" -gt 60 ]; then
-  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/；2026-07-31 canonical inventory 已為 60、零 headroom)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
+  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/ 與 _* helper)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
 elif [ "$HOOK_COUNT" -gt 26 ]; then
   # 2026-05-15 raised soft cap 25→26 per /knowledge-prune D2 audit:
   # 26 wired hooks reflects M30 wrapper-schema-drift 新增 dedicated hook(justified evolution

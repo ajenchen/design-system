@@ -52,7 +52,8 @@ const dimensions = [];
 
 // === D1: provider instruction bootstrap size ===
 // The registry owns every instruction entry; a new provider changes data, not this scorer.
-//   ≤ 200 → 100,201-400 → 70(transition acceptable),401-800 → 40(approaching hard cap),> 800 → 10
+//   ≤ 250 → 100,251-400 → 70(transition acceptable),401-800 → 40(approaching hard cap),> 800 → 10
+//   (門檻對齊 AGENTS.md「行數預算」的 target ≤ 250;此註解 2026-09-19 前寫 200,與下一行的 code 相反)
 {
   const entries = [...new Set(registry.canonical.reservedDiscovery.instructionNames)]
   const lines = entries.reduce((sum, entry) => sum + safeWc(entry), 0)

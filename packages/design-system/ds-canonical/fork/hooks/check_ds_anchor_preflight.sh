@@ -21,7 +21,7 @@
 # Detection:scan transcript 過去 ~30 turns:
 #   (a) 有 Grep / Read tool call hit `node_modules/@qijenchen/design-system/src/**/*.spec.md` OR
 #       `**/*.stories.tsx`(canonical baseline) → PASS
-#   (b) 無 → soft BLOCKER inject context 提醒 grep canonical 出 3-column owner table。
+#   (b) 無 → P0 BLOCKER(exit 2),並在 stderr 印出「grep canonical → 3-column owner table」的修法。
 #
 # 對齊 meta-patterns.md M29 「視覺/結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)— 出 3-column 表」+
 # `packages/design-system/ds-canonical/rules/self-verify.md` Pre-edit phase
@@ -185,7 +185,7 @@ fi
 
 REL_PATH=${FILE_PATH#"$GOVERNANCE_PROJECT_DIR"/}
 
-# Soft BLOCKER(對齊 check_substantive_edit_approval_preflight.sh hybrid pattern)
+# BLOCKER 訊息本體(hybrid:先印修法、再 exit 2;對齊 check_substantive_edit_approval_preflight.sh)
 cat >&2 <<EOF
 🚨 M29 DS Anchor Preflight — visual/structural edit 偵測
 

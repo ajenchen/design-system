@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "0a6113d30c63901459b0776fda167d5ee1aeba4beb2a711028ae058f5190d5c1",
+      "sha256": "b2dee125fc51d840a6b18e8dcdfd61b0b3e52e30b2d3e8bf8f9d190d96cdc12b",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "28f215f121e99e7704f5c74cff4378de2f7988491b43678cb4e9fa4e1e32bc0f",
+      "sha256": "26cea7e1ce9d053f9b45472a2c221383bf04a7796db149bb995b67b4fc8d3da3",
       "source": null,
       "classification": null,
       "destination": null

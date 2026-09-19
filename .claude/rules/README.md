@@ -27,7 +27,7 @@ paths:
 
 | | Canonical/provider bootstrap | Canonical rules |
 |---|---|---|
-| 載入時機 | 每 session start 載入(行數預算 ≤ 200)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取 |
+| 載入時機 | 每 session start 載入(行數預算見 `AGENTS.md`「行數預算」,本檔不硬寫數值)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取 |
 | 內容 | 6 mindset + 治理 / 稽核 / SSOT canonical / 任務導航 / fundamental rules | 該 file family 細節規則(spec 撰寫 / UI 開發 / story / self-verify)|
 
 ## 新增 rule 流程

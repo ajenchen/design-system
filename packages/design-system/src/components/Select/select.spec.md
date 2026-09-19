@@ -13,7 +13,7 @@ benchmark:
   - Polaris Select: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Select
 ---
 
-<!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 RadioGroup 的分界」(~40 行)+ 3 筆拍板記錄(2026-07-13 D2 hidden-input mirror / 2026-05-21 D3 dual-mode / 2026-06-12 R2 open-pair 例外);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(.claude/logs/prune-p2-candidates.md)。 -->
+<!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 RadioGroup 的分界」(~40 行)+ 3 筆拍板記錄(2026-07-13 D2 hidden-input mirror / 2026-05-21 D3 dual-mode / 2026-06-12 R2 open-pair 例外);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(該次掃描明細留在 provider home 的 log,屬歷史 provenance,不是本例外的 authority —— 例外成立與否只看本句陳述的理由)。 -->
 
 # Select 設計原則
 

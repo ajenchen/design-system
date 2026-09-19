@@ -683,7 +683,7 @@ if (!SELFTEST) {
     console.log(`   ${build.label}/${mode} 預估paint ${spark(w.paint)}\n   ${build.label}/${mode} DOM     ${spark(w.dom)}\n   ${build.label}/${mode} 幀間隔ms ${w.frames.slice(1).map((f) => Math.round(f.dt)).join(' ')}`)
   }
   console.log('\n對照表(每格 = 中位數 / 最大值,跨 runs)')
-  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? NaN, (v) => v.toFixed(0)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
+  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? NaN, (v) => v.toFixed(0)], ['呈現幀距平均', (r) => r.g?.presentedGapMean ?? NaN, (v) => v.toFixed(1)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
   const cols = [['預估paint空白 max', (r) => r.paintMax, pct], ['paint 連續幀', (r) => r.paintStreak.frames, String], ['paint 連續 ms', (r) => r.paintStreak.ms, (v) => v.toFixed(0)], ['DOM空白 max', (r) => r.domMax, pct], ['主幀間隔 max ms', (r) => r.dtMax, (v) => v.toFixed(0)], ['long task 數', (r) => r.longCount, String], ['long task 最長 ms', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計 ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)], ['commits', (r) => r.commits, String]]
   for (const build of BUILDS) for (const mode of MODES) {
     const rs = results.filter((r) => r.build === build.label && r.mode === mode); if (!rs.length) continue
@@ -871,10 +871,23 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
     // 而且當時連 main 自己都卡在這支 required check。
     //
     // 合計長工時間才是「卡頓」的體感對應(等同 web-vitals 的 Total Blocking Time),而且是聚合量。
-    // **沒有放寬門檻**:1.25× 不變、天花板不變、frameGap 那條不變;換的是被比較的統計量。
+    // **沒有放寬門檻**:1.25× 不變、天花板不變;換的是被比較的統計量。
     // 單一最長仍然照印在 extra 裡當診斷線索。
     relGate(ASSERT_LONG_TASK_MS, '主執行緒長工合計', CEILING_FACTOR.longTask, (r) => r.longSum, (r) => `(${r.longCount} 個長工、單一最長 ${r.longMax.toFixed(0)}ms)`)
-    relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
+    // 2026-09-19 修:幀距的比值判定改用**平均**,不再用「單趟最大」。
+    //
+    // 上面那段 2026-09-18 的修正只換了長工那條,還明文寫「frameGap 那條不變」—— 隔天就被同一種
+    // 方式咬回來。**同一份 runtime 程式碼**(b87d5db3 相對 583a8199 只改版本字串,零個執行期檔案)
+    // 連續兩跑的 gesture 單趟最大幀距:
+    //     583a8199(綠) main 中位 303;branch 212 / 215 … 中位 215 → 0.71×
+    //     b87d5db3(紅) main 237 / 280 / 232 中位 237;branch 227 / 311 / 351 中位 311 → 1.31×
+    // 同一份建置量出 215 與 311,尾端散布 ±45%,而比值門檻是 ±25% —— **噪音比門檻寬,綠是運氣**。
+    // 同兩跑的平均幀距:main 29.3 / 36.4 / 28.9,branch 32.3 / 33.7 / 34.9 → 1.15×,散布只有 ±5%。
+    //
+    // 偵測力沒掉:這支閘要擋的是「捲動時畫面停住」,那種壞掉會讓呈現幀數塌下來 —— 同一跑的
+    // 正對照(強制隱藏列內容)只呈現 14 幀、正常 51-56 幀,同樣手勢長度下平均幀距漲 3-4 倍,
+    // 遠超過 1.25×。單趟最大仍印在 extra 與比較表當診斷線索,絕對門檻路徑(無 --ref)也照舊用 max。
+    relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距平均', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMean ?? NaN, (r) => `(單趟最大 ${(r.g?.presentedGapMax ?? NaN).toFixed(0)}ms、呈現 ${r.g?.presented ?? 0} 幀)`)
   } else if (ASSERT_LONG_TASK_MS !== '') {
     // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
     const costs = results.map((r) => r.shellCost?.cost).filter((v) => Number.isFinite(v))
