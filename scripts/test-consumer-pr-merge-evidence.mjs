@@ -45,6 +45,16 @@ const cases = [
     { checkRuns: [green('Audit'), red('x')], requiredContexts: null }, false],
   ['必過清單存在但完全沒證據 → 拒絕(空綠防線仍在)',
     { checkRuns: [], workflowRuns: [], requiredContexts: ['Verify consumer'] }, false],
+
+  // 2026-09-19 第二輪:上一版自己種下的類別錯置 —— workflow run 的 name 是 **workflow 名**,
+  // 不是 check context 名。真實 WM:必過 context 是 `Verify consumer`,Actions API 看到的
+  // run 叫 `Audit`。拿必過清單去比 workflow 名,永遠判「沒有任何結果」。
+  ['讀不到 check-runs、只有 workflow runs + 有必過清單 → 拒絕,且理由必須是「不得以名字比對代替出處判定」',
+    { checkRuns: [], workflowRuns: [green('Audit')], requiredContexts: ['Verify consumer'] }, false],
+  ['同上但 workflow run 是紅的 → 一樣拒絕(不因紅綠而改變判準)',
+    { checkRuns: [], workflowRuns: [red('Audit')], requiredContexts: ['Verify consumer'] }, false],
+  ['讀不到 check-runs、沒有必過清單 → 仍走舊的全綠判定(這條路徑沒有類別錯置問題)',
+    { checkRuns: [], workflowRuns: [green('Audit')], requiredContexts: null }, true],
 ]
 
 let failed = 0
