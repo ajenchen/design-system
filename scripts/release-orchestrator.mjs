@@ -634,9 +634,20 @@ function consumerCheckReadback(target, pullRequest, desired) {
     if (workflowRun.event !== expected.producerEvent) continue
     if (workflowRun.head_sha !== pullRequest.headRefOid) continue
     if (workflowRun.status !== 'completed' || workflowRun.conclusion !== 'success') continue
+    // 2026-09-19:出處以「**哪個 run** 產生了它」為準,不再要求 job 名稱等於 check 名稱。
+    //
+    // 原本這裡找的是「一個名字剛好等於 required context 的 job」。那是個代理條件,成立只因為
+    // consumer 的 audit job 當時直接以必過 check 之名現身 —— 而那正是 WM 那邊的 bug:
+    // 同一個名字有兩個生產者(audit job 本體,以及 sync workflow 用 API 補發的同名 check-run),
+    // bot 開的 PR 上 audit 被 GitHub 擋住(自家 GITHUB_TOKEN 開的 PR 不給跑 workflow),
+    // **卡住的那筆就是必過項本身**。WM 於 #85 把 job 改名為 `Audit`、跑完才補發必過 check,
+    // 這裡的 job-name 代理就再也對不上 —— 代理條件斷了,真正的出處鏈其實沒斷。
+    //
+    // 出處強度不變:workflow 檔路徑、觸發事件、**exact PR head**、run 成功,四條一條沒少,
+    // 全部仍 fail-closed。少掉的只有「job 要叫什麼名字」這個與出處無關的巧合。
+    // (能讀 check-runs 時仍走上面的主路徑,那裡連 check-run 的 name / app / 結論都驗。)
     const jobs = ghJson(['api', `repos/${target.repository}/actions/runs/${workflowRun.id}/jobs?per_page=100`], { allowFailure: true })
-    const job = (jobs?.jobs || []).find(item =>
-      item.name === expected.context && item.status === 'completed' && item.conclusion === 'success')
+    const job = (jobs?.jobs || []).find(item => item.status === 'completed' && item.conclusion === 'success')
     if (job) return { trusted: true, checkRunId: job.id, workflowRunId: workflowRun.id }
   }
   return { trusted: false, reason: `${expected.context} is not bound to ${expected.producerWorkflow} ${expected.producerEvent}` }

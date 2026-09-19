@@ -37,6 +37,21 @@ const isGreen = (r) => r.status === 'completed' && ALLOWED_CONCLUSIONS.includes(
 const label = (r) => `${r.name}:${r.conclusion || r.status}`
 
 export function mergeEvidenceVerdict({ checkRuns = [], workflowRuns = [], requiredContexts = null } = {}) {
+  // 2026-09-19 修:**workflow run 的 name 是 workflow 名,不是 check context 名**。
+  // 前一版(beta.137)把必過清單拿去比對退路的 workflow runs,是類別錯置:WM 的必過 context
+  // 是 `Verify consumer`,而 Actions API 看到的 run 叫 `Audit`(workflow 的 `name:`),
+  // 於是永遠判「必過 check 沒有任何結果」而拒絕 —— fail closed 沒放行,但理由是錯的。
+  // 正解:必過清單只適用於 check-runs;讀不到 check-runs 時,該用**出處**判定(誰產生了它),
+  // 那條鏈的 owner 是 release-orchestrator 的 consumerCheckReadback
+  // (producerWorkflow + producerEvent + exact PR head + run success)。本腳本在該情況下
+  // 明確說明自己無法評斷並拒絕,不拿名字硬湊一個看起來像結論的判定。
+  if (!checkRuns.length && workflowRuns.length && requiredContexts) {
+    const wfNames = [...new Set(workflowRuns.map((r) => r.name))].join(',')
+    return {
+      ok: false,
+      reason: `讀不到 check-runs,只有 ${workflowRuns.length} 筆 workflow runs —— workflow 名(${wfNames})與必過 check 名(${requiredContexts.join(',')})不是同一種東西,不得以名字比對代替出處判定;請改由 release-orchestrator 的出處讀回決定`,
+    }
+  }
   const runs = checkRuns.length ? checkRuns : workflowRuns
   const source = checkRuns.length ? `${checkRuns.length} 筆 check-runs` : `${workflowRuns.length} 筆 workflow runs(check-runs 讀不到)`
 

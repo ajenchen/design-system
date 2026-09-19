@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:b375ee5d710522f4a0880d20b4b6018c9a42aa3faae08709422c563aa826a4b0",
+      "hash": "sha256:7cdd015718328b22c27917ea2193c57ae994191ab5915c6ff09b92c230830048",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:addd6b5f43ab6871d426d843ca219a26c751eec979038c9647b315e0825cb040",
+      "hash": "sha256:a0fb1d1816a9b141816f68a753bafd59178e48f8893f8b989a9c33de797cbe52",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:962c18e3cdedf2d08aad605cf906d80b4cc236e3505d03bd96607433be7ad3a9",
+  "inputDigest": "sha256:b972950af2af14f9558454e7b4b03791e9fc41cc772552ad483a358acf2ade13",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:e7388da8141e2923e35edb992a09a03ac02952f7c60bccf9b7c8dfcb152c5f45",
+  "snapshotDigest": "sha256:136e349a2172b9260851e0dab9cc8f2865b89e0f9e63f0284022743c1776cbec",
   "sources": [
     {
       "hash": "sha256:6684787e195a973bfdb624c023ae9b81fc1dd32e0d39d7c99dff1ee23c21f030",
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 468,
-      "hash": "sha256:0bf121da1c071b01ccc1e9b79f673b16e3ec65b4cb3a727bbd47f59d475343e1",
+      "hash": "sha256:404cb9f436cbb935bb872887cd68ec25f79b97e80af99f89d42d9815ab0905bb",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3668,12 +3668,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3181948b03181c186c5c3ba35908d342e888e96db2b95981fba5c3b77012612f",
+      "hash": "sha256:8a2aa296d11d4460742ac82e67474d88852f582ce772499cfd9cb5b2886c8d5f",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 54581,
+      "size": 55674,
       "type": "file"
     },
     {
