@@ -489,6 +489,30 @@ if [ -n "$LAST_ASSISTANT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PA
   fi
 fi
 
+# ── Mechanism 10: 自鎖後把動作推給 user(M36(b),2026-09-19)────────────────
+# SSOT = meta-patterns M36(b)/(b') + governance/memory/feedback_anti_self_lock_release_transport.md。
+#
+# 為什麼要機械化:這條規則 2026-08-08 就立了、2026-08-11 連環五鎖逐層拆完、2026-08-28 還特別
+# 寫下「**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機」—— 然後 2026-09-19 又犯:
+# `git branch -D` 被 classifier 擋下,沒走等價的 `git update-ref -d`(plumbing,只寫 .git 可寫區),
+# 直接寫「你要清的話在終端機打 `! git branch -D ...` 就行」,而且是 user 反問才發現。
+# M36(a) 有 Mechanism 8 把關,M36(b) 一直是**零機械強制** —— 所以它才會重犯。
+#
+# 判準:本 turn 有工具被擋(denied / EPERM / not permitted),且 reply 把一個**具體指令**交給
+# user 去跑 → CRITICAL。真正的 human-only 邊界(login / MFA / OAuth / 帳單 / 缺 credential
+# reference)明文豁免,那些本來就該交給 user。
+if [ -n "$LAST_ASSISTANT" ]; then
+  BLOCKED_RE='(has been denied|Permission to use|Operation not permitted|EPERM|not accessible by personal access token|Blocked by classifier)'
+  HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你要?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行)|`![[:space:]])'
+  HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
+  if printf '%s' "${THIS_TURN_TOOLS:-}" | grep -qE "$BLOCKED_RE" \
+    && printf '%s' "$LAST_ASSISTANT" | grep -qE "$HANDOFF_RE" \
+    && ! printf '%s' "$LAST_ASSISTANT" | grep -qE "$HUMAN_ONLY_RE"; then
+    CRITICAL_SELF_LOCK_HANDOFF=1
+    WARNINGS="${WARNINGS}\n  • M36(b) 自鎖後把動作推給 user:本 turn 有工具被擋,而你請 user 自己跑指令。"
+  fi
+fi
+
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
@@ -729,6 +753,22 @@ if [ "${CRITICAL_CLAIM_VERIFY:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
     REASON=$(printf '%s' \
       "🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified / done / 完成」但本 turn 沒跑 tsc / test / audit / visual 真驗證。立刻 (a) 跑 npx tsc -b + 對應驗證指令,OR (b) 在本 turn 明確撤回 claim(打「撤回 claim」/「未驗證」)。否則 turn 不結束。" \
       "本機制 = M20 100+ 次 failure mode 升 BLOCKER(原 silent inject → block)。")
+    emit_governance_block "$REASON"
+  fi
+fi
+
+# ── BLOCKER for Mechanism 10 自鎖後把動作推給 user(M36(b),2026-09-19)──
+# 升級邏輯同 M1/M4:第一次 block 阻 turn,同 hash 降 warn 防 loop。
+if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  LOCK_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+  LAST_BLOCKED_LOCK_FILE="$STATE_DIR/.last-blocked-self-lock.txt"
+  LAST_BLOCKED_LOCK=""
+  [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_LOCK_FILE" ] && LAST_BLOCKED_LOCK=$(cat "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || echo "")
+  if [ "$LOCK_HASH" != "$LAST_BLOCKED_LOCK" ]; then
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$LOCK_HASH" > "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || true; }
+    REASON=$(printf '%s' \
+      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。禁指路 '!':它與 Bash 同沙箱,同一道牆必再擋,等於把死路交給 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
+      "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
   fi
 fi
