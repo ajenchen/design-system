@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "0a6113d30c63901459b0776fda167d5ee1aeba4beb2a711028ae058f5190d5c1",
+      "sha256": "b2dee125fc51d840a6b18e8dcdfd61b0b3e52e30b2d3e8bf8f9d190d96cdc12b",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null

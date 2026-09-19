@@ -120,6 +120,10 @@ jobs:
           # `bad = runs.filter(未綠); if (bad.length) 退出`,清單為空時 bad 也是空的,
           # 零筆 check 被當成全綠(某些 repo/token 組合下 check-runs 就是回空陣列)。
           npm run test:consumer-pr-merge-evidence
+          # 寫了閘就要有人跑它。本 repo 反覆踩同一個病:spec 寫「由 xxx.mjs 機械強制」、腳本存在、
+          # 甚至有包裝測試,但沒有任何 CI / npm script / hook 會呼叫它 —— 那條保護是假的且零訊號。
+          # 2026-09-18 盤點:94 支閘/測試腳本沒有任何執行面。棘輪鎖 baseline,新增孤兒立刻紅。
+          npm run test:gate-reachability
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization

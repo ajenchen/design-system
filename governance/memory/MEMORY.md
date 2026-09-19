@@ -10,7 +10,7 @@
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
-- [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 task = 1 branch + 1 PR；protected main/required checks/conversations + canonical five-step readback；依 Standing Authorization 自動 merge/release(M28)，preview/canary 非 blocking
+- [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 task = 1 branch + 1 PR；protected main/required checks/conversations + canonical five-step readback；合併前需 user 對當前 PR head 說「發版」的 receipt,其餘依 Standing Authorization 自動(M28)，preview/canary 非 blocking
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — 產品／UI／UX SSOT 真取捨需 exact target-bound decision；工程 remediation AUTO；unknown fail closed(2026-05-15／2026-07-26)
 - [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
 - [feedback_codex_full_access_standing_auth.md](feedback_codex_full_access_standing_auth.md) — Codex collab canonical(2026-08-12 三檔合併):常設授權全存取沙箱(user 2026-08-08)+ 地端 transport 4-test/守衛入口/最強禁降檔/小 focused brief + M31 dual-track 三層禁 pass-through/brief 三 invariant/Phase-A-first/auto-mode 禁問
