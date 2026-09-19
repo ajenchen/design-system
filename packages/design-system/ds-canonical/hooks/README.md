@@ -56,15 +56,17 @@
 |------|--------|
 | `stop_passive_logging.sh` | **Dispatcher**(2026-05-13 prune):一次跑 5 rule(tsc sanity / harvest corrections / capture metrics / governance drift / infra best-practice score)— stop hook count 3 → 2 |
 | `stop_self_audit.sh` | turn 行為 audit(claim 沒 verify / prune trigger / topic 重複 ≥ 3 次 → BLOCKER inject,M20 100+ failure mode 升級 2026-05-13) |
-| `stop_meta_self_audit.sh` | turn infra-score audit(8 維 score 跌 ≥ 5 / 任何 dim < 80 → silent log,不 inject — 詳 known issue 段) |
-| `stop_harvest_corrections.sh` | 掃 session 的 user 糾正信號寫 `$GOVERNANCE_STATE_DIR/user-corrections.jsonl` |
-| `stop_capture_metrics.sh` | session 結束 metric snapshot |
+
+Stop 只有上面兩支**檔案**。2026-05-13 prune 把 `stop_harvest_corrections.sh`(user 糾正信號)、
+`stop_capture_metrics.sh`(session metric snapshot)、`stop_meta_self_audit.sh`(infra-score,
+8 維 score 跌 ≥ 5 / 任何 dim < 80 → silent log)折進 `stop_passive_logging.sh` 的 R2 / R3 / R5,
+**舊檔名已不存在**;要看那三條邏輯去 dispatcher 內對應的 rule function。
 
 ### SessionStart
 
 | Hook | 做什麼 |
 |------|--------|
-| `session_start_governance_check.sh` | 4 check(行數 / prune / corrections / benchmarks 過期 auto-fetch) |
+| `session_start_governance_check.sh` | 多個 check(行數 / prune 逾期 / corrections / benchmark 新鮮度 / fire-weighted test gap / scan-similar-bugs / hook 數 / memory 數 / branch sprawl / counter drift / cross-repo smoke)。**數量與門檻不在本檔硬寫** — 以該腳本的 `^# Check N` 段落與 AGENTS.md `# 治理 canonical` 為準 |
 
 ### UserPromptSubmit
 

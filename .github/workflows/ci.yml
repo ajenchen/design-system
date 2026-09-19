@@ -124,6 +124,10 @@ jobs:
           # 甚至有包裝測試,但沒有任何 CI / npm script / hook 會呼叫它 —— 那條保護是假的且零訊號。
           # 2026-09-18 盤點:94 支閘/測試腳本沒有任何執行面。棘輪鎖 baseline,新增孤兒立刻紅。
           npm run test:gate-reachability
+          # 同一個病的另一面:上面那支查「閘會不會被呼叫」,這支查「文件講的那道防線,檔案在不在」。
+          # 2026-09-19 錨例 —— hook home 自己的 README 在 Stop 區列 5 支 hook,其中 3 支早在 2026-05-13
+          # 就折進 stop_passive_logging.sh、檔名已不存在,而「折進去」這件事就寫在同一張表的上一列。
+          npm run test:hook-citation-liveness
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
