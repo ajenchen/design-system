@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:4b8bf95ea4eceaab1a098f4332cb68c36c08277497ec2a9be745fb2814060a99",
+      "hash": "sha256:756ab38780fba7f602b23c874bdb122ee14c48fecc60c17fc1be914658c929be",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 28493,
+      "size": 28698,
       "type": "file"
     },
     {
@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:dc73d24760843ada7cbb8240d9712bc9260dfdc2c1c2beea5d7287db8a33da20",
+      "hash": "sha256:4623bdbb3a4eb8aa7c3c44883e002fac79f597eb458c64c834e47aa718412a99",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 470,
-      "hash": "sha256:856d4347023fcecd30df28aa2101241de9c7abb8c700b4e3f4c2c6bed2552aed",
+      "hash": "sha256:1f0cec35ccca7d44d422d42df1e3425231b8eb02096238e77fe1db6a0a02882a",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
