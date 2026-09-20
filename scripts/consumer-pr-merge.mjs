@@ -27,6 +27,11 @@ import { fileURLToPath } from 'node:url'
 //     typecheck/lint:imports/build/governance:check 之後(該檔 :316-331),用 API 補發同名 check-run。
 // 於是每次發版都有一個永遠停在 `action_required` 的 Audit run。它不是必過項,卻讓這支腳本拒絕合併,
 // beta.135 / beta.136 各因此空等 45 分鐘 + 人工清一次。
+// **2026-09-20 起上游那一段已不再成立**:同步 PR 改由上游 orchestrator 以 canonical credential
+// 開(`release-orchestrator.mjs` 的 buildConsumerPullRequestCreateArgs),不是 bot 自己的
+// GITHUB_TOKEN,所以 `audit.yml` 真的會跑 —— WM #89 / #90 的 Audit 都是 success。
+// 下面這段放寬**仍然保留**(它本來就該以 ruleset 為準),但「每次發版都會有一個卡住的 run」
+// 這個現象已經消失,別再把它當成現況讀。
 //
 // 改法:**以 repo 自己宣告的必過清單為準**,非必過的 run 照印但不阻擋。這不是放寬 ——
 // ruleset 才是「什麼必須過」的 authority,而 GitHub 自己也會在必過項未綠時拒絕合併。

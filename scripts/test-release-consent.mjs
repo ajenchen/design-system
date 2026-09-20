@@ -36,7 +36,7 @@ mkdirSync(process.env.GOVERNANCE_RELEASE_CONSENT_DIR, { recursive: true })
 const {
   buildFiveStepStatus, consentCoversHead, loadReleaseWorkflow, previewUrls,
   productContentDigest, productVisibleFilesChanged, readReleaseConsent,
-  withdrawReleaseConsent, writeReleaseConsent,
+  consentReleaseLedger, recordConsentRelease, withdrawReleaseConsent, writeReleaseConsent,
 } = await import('./release-orchestrator.mjs')
 const { classifyConsentPrompt } = await import('./lib/release-consent-language.mjs')
 
@@ -59,7 +59,10 @@ try {
   // 1. 沒有 receipt → 擋住(2026-09-02 事故那一格)
   assert.equal(mergeStatus({ releaseConsent: readReleaseConsent({ branch: 'claude/x', headSha: sha }) }), 'awaiting-consent')
 
-  const branch = execFileSync('git', ['branch', '--show-current'], { cwd: ROOT, encoding: 'utf8' }).trim() || 'claude/x'
+  // 固定值,不取真實 repo 的當前分支 —— 那會讓測試的成敗取決於 checkout 狀態
+  //(2026-09-20:收尾時切到 main,測試就撞上「不在 main 記錄同意」而紅)。
+  // branch 在 v3 只是出處紀錄,測試要的只是「一個不是 main 的分支名」。
+  const branch = 'claude/test-fixture-branch'
   const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: ROOT, encoding: 'utf8' }).trim()
 
   // 2. 手動落地必須套用與 hook 相同的判準 —— 問句與否定一律拒絕。
@@ -97,6 +100,22 @@ try {
   // 5. 預覽內容變了 → 必須重新確認(安全面)
   assert.equal(consentCoversHead({ receipt, branch, headSha: head, currentProductDigest: '0'.repeat(64) }).ok, false)
   assert.equal(consentCoversHead({ receipt, branch, headSha: head, currentProductDigest: null }).ok, false, '算不出指紋要保守')
+
+  // 5b. 「一份授權一次發布」的帳本,綁的是**授權本身**(user 的逐字原話),不是產品指紋。
+  //     第一版我綁 productDigest —— 那是代理,而且方向反了:治理工作本來就不動產品內容,
+  //     於是 user **重新說一次發版**時帳本照樣帶著舊帳,他會被自己請來的閘擋住(2026-09-20 實測)。
+  //     兩面都要成立,少一面就不是這條規則:
+  //     先把當下收據固定成一句已知的原話,再測兩面(不能假設前面留下的是哪一句)。
+  const SAME = '發版'
+  writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
+  recordConsentRelease('0.1.0-beta.999')
+  assert.deepEqual(consentReleaseLedger(), ['0.1.0-beta.999'])
+  writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
+  assert.deepEqual(consentReleaseLedger(), ['0.1.0-beta.999'],
+    '同一句原話再落地一次 → 帳本必須延續,否則 agent 可以靠重寫收據把計數清零')
+  writeReleaseConsent({ headSha: head, branch, quote: '可以發版了,這批治理改動', source: 'test' })
+  assert.deepEqual(consentReleaseLedger(), [],
+    'user 給了新的一句「發版」= 新的授權 → 帳本必須歸零,不能拿舊帳去擋他')
 
   // 6. 撤回必須讓**讀取端**真的不認。只刪 current.json、讀取端仍 fallback 到
   //    branch__<分支>.json 的話,印了「已撤回」其實沒撤回(2026-09-20 實際破口)。

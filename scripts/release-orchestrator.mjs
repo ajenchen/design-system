@@ -188,14 +188,22 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
   mkdirSync(CONSENT_DIR, { recursive: true })
   const productDigest = productContentDigest(headSha)
   invariant(Boolean(productDigest), '算不出「預覽看得見」的產品內容指紋 —— 沒有它就無法把同意綁在使用者真正看過的東西上')
-  // 帳本不得被「再講一次發版」清零:同一份產品內容 = 同一份工作,已發的版本要延續計數。
-  // 產品內容變了才是新的一份工作,帳本歸零。缺這一段,閘永遠停在「第一次」而不會擋住第六次發版。
+  // 帳本延續與否,綁的是「**這是不是同一份授權**」——用 user 的逐字原話判斷,不是用產品指紋。
+  //
+  // 我第一版綁 productDigest,那是代理,而且方向反了:治理工作本來就不會動到產品內容,
+  // 於是 user **重新說一次「發版」**時帳本照樣帶著舊帳,他會被自己請來的閘擋住,
+  // 還得去湊 incident 證據 —— 正是他在罵的那件事(2026-09-20 實測驗出來)。
+  //
+  // 正確的兩面:
+  //   · 同一句原話再落地一次(例如 agent 還原收據)→ 帳本**延續**,agent 無法用重寫來清零
+  //   · user 給了**新的一句**「發版」→ 那是新的授權 → 帳本**歸零**,可以再發一次
+  const quoteSha256 = createHash('sha256').update(quote.trim()).digest('hex')
   const previous = (() => {
     const file = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
     if (!existsSync(file)) return null
     try { return JSON.parse(readFileSync(file, 'utf8')) } catch { return null }
   })()
-  const carriedReleases = previous?.productDigest === productDigest ? (previous.releases || []) : []
+  const carriedReleases = previous?.quoteSha256 === quoteSha256 ? (previous.releases || []) : []
   const receipt = {
     schemaVersion: 3,
     // 綁定對象:使用者看過並認可的**產品內容**。branch / consentedHeadSha 只是出處紀錄,不參與判定。
@@ -205,7 +213,7 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
     branch: branch && String(branch).trim() ? branch : null,
     consentedHeadSha: headSha,
     quote: quote.trim(),
-    quoteSha256: createHash('sha256').update(quote.trim()).digest('hex'),
+    quoteSha256,
     source: source || 'manual',
     recordedAt: new Date().toISOString(),
   }
@@ -1101,6 +1109,22 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   }
 }
 
+/**
+ * 這一版跟上一個已發布版本比,**使用者看得見的東西有沒有變**。
+ *
+ * 2026-09-20 實測:beta.136 / 137 / 138 / 139 / 140 五個版本的預覽內容指紋**完全相同** ——
+ * 五版零 UI 變動,全是治理與腳本。user 原話:「你他媽真的確認過是有必要發那麼多次?」
+ * 擋下來是錯的(套件裡的治理語料確實有變、consumer 真的會收到),但**不講出來也是錯的**:
+ * 發版時就該明說這一版不會改變任何畫面,讓人自己判斷還要不要發。
+ */
+export function productChangeSincePreviousRelease(previousReleaseCommit, headSha) {
+  if (!previousReleaseCommit || !headSha) return null
+  const before = productContentDigest(previousReleaseCommit)
+  const after = productContentDigest(headSha)
+  if (!before || !after) return null
+  return before === after ? 'none' : 'changed'
+}
+
 function printReport(workflow, observation, json) {
   const report = {
     schemaVersion: 1,
@@ -1109,10 +1133,16 @@ function printReport(workflow, observation, json) {
     steps: buildFiveStepStatus(workflow, observation),
     legacyMechanisms: workflow.legacyMechanisms,
   }
+  // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
+  const previousReleaseCommit = observation.release?.targetCommitish || observation.previousReleaseCommit || null
+  report.productChange = productChangeSincePreviousRelease(previousReleaseCommit, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
     for (const step of report.steps) console.log(`${step.id.padEnd(10)} ${step.status} (${step.authority})`)
+    if (report.productChange === 'none') {
+      console.log('   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與上一個已發布版本完全相同);變的是治理與腳本。')
+    }
   }
   return report
 }
