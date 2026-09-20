@@ -3,70 +3,70 @@
     "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
     "generated": true,
     "generator": "@qijenchen/governance",
-    "generatorVersion": "0.1.0-beta.139",
+    "generatorVersion": "0.1.0-beta.140",
     "manifestId": "qijenchen-provider-neutral-governance",
     "role": "ds-author"
   },
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:e78053b8f2f26bc5233a79864d0202c7fe6cbd6e01bad66e119e9de96a72ab80",
+      "hash": "sha256:57e0a2d731ff0f13dcefc396a6e932b580debbc462a8c0346a685efc5abf1cd4",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
       "type": "file"
     },
     {
-      "hash": "sha256:f2d4eaf2aedf63fbd16db1860bc6a9332adef134cac3253cbb6a7fe4c38b9c59",
+      "hash": "sha256:dffc7cee9a7c504bde0901ae045bb6e2334909edce09e3718e79be9bd247a13e",
       "mode": "0755",
       "path": "adapters/claude-hook.mjs",
       "size": 303,
       "type": "file"
     },
     {
-      "hash": "sha256:c5ce074d2c7dae4fad746e28c3c22b695be66ef2fa2a581cbe6f3872e7e80606",
+      "hash": "sha256:1bf75e103539cc604345be9699fb830265883ad6dfb24a2086fe4c9c0fa2a5dd",
       "mode": "0755",
       "path": "adapters/codex-hook.mjs",
       "size": 302,
       "type": "file"
     },
     {
-      "hash": "sha256:292d0b5a451320d89ae7649405131194c8a23d8adaf6b507754a68a6530bcee3",
+      "hash": "sha256:2afe48cca958c8ef4184eae913a6b70676d37acf377567418912bc360bb0e636",
       "mode": "0755",
       "path": "adapters/generic-hook.mjs",
       "size": 304,
       "type": "file"
     },
     {
-      "hash": "sha256:b100d355be9c4fd5923361d56e24fdf4d330fd490e8bfca0d01311f4e0e7a7f5",
+      "hash": "sha256:7d59d56d4cc6bb990fd865caef1abe8d3d68c5d2660903c9a5ad42d8247c0df1",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
       "type": "file"
     },
     {
-      "hash": "sha256:444fdbc4f6a5311e1b063c23baf87273df06135568bcf2586f956ed06e09423d",
+      "hash": "sha256:a02a336ad86b1872cabd7816a2e56e0c1cae6b12ad2b946ef3dad4fa282bacc7",
       "mode": "0644",
       "path": "providers/claude.json",
       "size": 9286,
       "type": "file"
     },
     {
-      "hash": "sha256:1939cdce02617bda41e893b227edb11553473c6ed352d87c6b721f97af789954",
+      "hash": "sha256:74fa69ee3896f5b35cb06f35aba3de730fcf63e50874c405183491d04e543a83",
       "mode": "0644",
       "path": "providers/codex.json",
       "size": 7383,
       "type": "file"
     },
     {
-      "hash": "sha256:14eac1f7485ba30fa07337f04e3c58e36b58446c4b122a26ad23914bff84c923",
+      "hash": "sha256:adaee402f84e6a907dd1264302ef3022a325409b747833bfd0308308b8c985b6",
       "mode": "0644",
       "path": "providers/generic.json",
       "size": 4049,
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c7018268727b0e8db93964f012340b15fe9dba1d462d1f91a6d3492cf215a5ce",
+  "inputDigest": "sha256:4f1d36bf6526f1044d757c3a032744f63010b2f54465f968ce8745f7f847fc44",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:96a48251c084acbdc9a54525ae8836000d1d4dd90e725dbc1f5d539054a01df6",
+  "snapshotDigest": "sha256:106e08eaadd20523f3eb2dcd43e9fe0dd386117006e0e2cb533f0b71617114eb",
   "sources": [
     {
       "hash": "sha256:e2e48f9869c03ca14ab8366413fdb97d38b9d25d1c7423176288eb36ace786bb",
@@ -715,7 +715,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:95e3459d5bc2c419c6e738a16e121d959f59e956e0890d861d74ac72d4062eed",
+      "hash": "sha256:b7dcac809522a139eff0e83fbef56e92b7a02fa725bf5e493cdc8428251bce6c",
       "id": "claude-managed-plugin-manifest",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -724,7 +724,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:06529975756e981333155e938e1f676be07ed3bec770f81b6946826de4b2946a",
+      "hash": "sha256:9f8ddc25ab692a7a04c2ef4e83be9a4d4961829ac31d5806abb9fc8c9fa88da9",
       "id": "claude-managed-plugin-marketplace",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1221,7 +1221,7 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:a1c33b42b3711804e3a7a8f1166dc4ef651f094e2c5f49c8031eba8df54ee4d6",
+      "hash": "sha256:28fab864710a37a8ee77f30895c68dac8a630b722963bf88fbb6d0e840548584",
       "id": "design-system-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:4623bdbb3a4eb8aa7c3c44883e002fac79f597eb458c64c834e47aa718412a99",
+      "hash": "sha256:04f7d8f3732c3c76b4e6ac8c61c51fa0a67b0b34cadfc11a3e7731f8de59aa22",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2271,7 +2271,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:9af76eadef9716ab32aafdc3eadaf00d6c6104fc53fe3bbf477f6305709a1b6d",
+      "hash": "sha256:6d90970ce0a742fcc7c6063e1910d38908bf7f87f7edcb111b62d5290f316855",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2492,7 +2492,7 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:6ea3ccf757d8a81572f5e6dbff0f49b10c54c1b506b30ea0199b36ee26673aeb",
+      "hash": "sha256:a2a5de85d2a106c7f22aebe2d3093c60471d229ee73087003208514c5da34782",
       "id": "governance-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2981,7 +2981,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4011e85165d6ea4c58f039a579332c5a0eec8df13e53edc3161ebc3041fb02e6",
+      "hash": "sha256:b6edec155174ee0ff57469867a3b549f8fd50f5648d8802e42b1831d86802601",
       "id": "product-template-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3170,12 +3170,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9a6d9a1d8a435cb116bf2ba620b60bfd39003c6dd303c351bed12bd73505b25c",
+      "hash": "sha256:75c95b5e804c72be0a6c19e197c2fe2f078f56d28998b8c9f161c12b92936b4f",
       "id": "provider-lifecycle-ledger",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/governance/canonical/provider-lifecycle.json",
-      "size": 87719,
+      "size": 89661,
       "type": "file"
     },
     {
@@ -3704,7 +3704,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:f1f41a39038d81c3a1bce219db80a5ef453b8f8ac9e983a696b5b920f38f0bb7",
+      "hash": "sha256:78738fe9740656f9e40e957fcf5d3dff266ab501b5640ef174a4e407ad16c885",
       "id": "storybook-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3767,7 +3767,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:67622a900b32972020bdb6f04eff2c1999eb2fb4ef439d2b12394f569593e98a",
+      "hash": "sha256:2fa8605045472a58c2545e02600dc3c151c16eb9684a5048e76af4a5bb32ba13",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",

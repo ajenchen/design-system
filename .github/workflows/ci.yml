@@ -763,6 +763,41 @@ jobs:
           # 跟上面那支共用同一份 storybook build,放同一個 job。
           npm run test:unrestricted-option
 
+  verify-browser-field-edges:
+    # 2026-09-20 從 select-all job 拆出來的第九個 job。理由是**牆鐘**,不是逾時:
+    # select-all 一個 job 序列跑五支全 story 掃描,實測 1076 秒(17.9 分),是 CI 關鍵路徑第二長的。
+    # 五支彼此獨立、只共用同一份 storybook build,拆成兩個平行 job 之後各自約 9-10 分鐘。
+    # user 2026-09-20 原話:「你他媽發版到底是要發多久?」—— 一次 CI 20 分鐘裡,
+    # 有一半是同一個 job 裡互不相關的掃描在排隊等前一支跑完。
+    name: Verify browser(field edges + combobox + footer gutter)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Install Chromium
+        run: npx --no-install playwright install chromium
+
       - name: Field text left edge (browser)
         run: |
           # Field control 的水平內距是標準 --field-px,除非欄位裡真的有 Tag ——
@@ -801,7 +836,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -815,9 +850,10 @@ jobs:
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
           BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
           BROWSER_SELECT_ALL: ${{ needs.verify-browser-select-all.result }}
+          BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
