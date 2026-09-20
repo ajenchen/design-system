@@ -98,6 +98,12 @@ for (const failClosedRule of [
   'Bash(git credential *)',
   'Bash(npm token *)',
   'Bash(git reset *)',
+  // 2026-09-20:`git switch --force|-f|--discard-changes` 與 `git checkout` / `git restore`
+  // 是同一種「丟掉未提交改動」的能力,只是現代指令名。認可清單原本只寫舊名,漏掉它 ——
+  // 等於想擋也擋不進來(驗證器會拒絕該 deny 規則)。
+  'Bash(git switch --force*)',
+  'Bash(git switch -f *)',
+  'Bash(git switch --discard-changes*)',
   'Bash(npm unpublish *)',
   'Bash(rm *)',
   'Bash(*--dangerously-skip-permissions*)',
@@ -198,6 +204,12 @@ try {
   )
   assertSemanticPoison(
     value => value.permissions.deny.push('Bash(npm install *)'),
+    /deny may contain only raw destructive/,
+  )
+  // 負對照:裸 `git switch <branch>` 是無損切換(git 自己會在會覆蓋改動時拒絕),
+  // 不得被認可清單當成破壞性 —— 否則等於把一個日常指令變成可以寫進 deny 的東西。
+  assertSemanticPoison(
+    value => value.permissions.deny.push('Bash(git switch *)'),
     /deny may contain only raw destructive/,
   )
   assertSemanticPoison(

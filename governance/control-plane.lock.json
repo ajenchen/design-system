@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:51e46cd64240b084e2c427fd5dc5ddbde00697919e256ebda849103c2a060080",
+      "hash": "sha256:471c63c6631fbd1bdbc72eec49ab88958f1b879cd0b98c43e88fdd58e464b72e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:09f051aea7a38e81470eef66eb7e9d608c3a8386c7d09cb5a15a0de24002c16c",
+      "hash": "sha256:ece6706671bef191ab36e18a97e87658b92d93dfd28f086c5125e447bfb3700a",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:5c5f9a34657e90a36cd3cff158034d4773808670841ed7410d2368af59868a97",
+  "inputDigest": "sha256:7589fb00f7a7a3f4387a232734c7d532f6da329a57d361be6a140c23397e6e1a",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:3a898783195c1c6bd9940a3480c831253871bd01c4801480008632f9310a0535",
+  "snapshotDigest": "sha256:67f8e60fd4dc9d46ab5c5258b72e8286bdfdefc9d973fbc9ce4713e8d627f946",
   "sources": [
     {
       "hash": "sha256:4b8bf95ea4eceaab1a098f4332cb68c36c08277497ec2a9be745fb2814060a99",
@@ -578,7 +578,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 4,
-      "hash": "sha256:c83f9c7276355e005301fe57d8e191e912525dcd7811b7c1827c11e004f031a1",
+      "hash": "sha256:5b0e5f64ebbb8899e896b3d0a889525bfaf05c0fd05747bb85899fded03480a4",
       "id": "canonical-adapter-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 468,
-      "hash": "sha256:5222088ccf495437eb9c0cec474fef616bbd355340fea4feed6438f722b05325",
+      "hash": "sha256:58818350ff4ed25403cc96a86daeb185f4b3c60202a0eb4e9f267467b2e5c537",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
