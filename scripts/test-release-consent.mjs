@@ -59,7 +59,10 @@ try {
   // 1. 沒有 receipt → 擋住(2026-09-02 事故那一格)
   assert.equal(mergeStatus({ releaseConsent: readReleaseConsent({ branch: 'claude/x', headSha: sha }) }), 'awaiting-consent')
 
-  const branch = execFileSync('git', ['branch', '--show-current'], { cwd: ROOT, encoding: 'utf8' }).trim() || 'claude/x'
+  // 固定值,不取真實 repo 的當前分支 —— 那會讓測試的成敗取決於 checkout 狀態
+  //(2026-09-20:收尾時切到 main,測試就撞上「不在 main 記錄同意」而紅)。
+  // branch 在 v3 只是出處紀錄,測試要的只是「一個不是 main 的分支名」。
+  const branch = 'claude/test-fixture-branch'
   const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: ROOT, encoding: 'utf8' }).trim()
 
   // 2. 手動落地必須套用與 hook 相同的判準 —— 問句與否定一律拒絕。

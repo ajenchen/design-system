@@ -21,6 +21,7 @@ import {
   consentCoversHead,
   consumerStepAction,
   productContentDigest,
+  productChangeSincePreviousRelease,
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
@@ -519,4 +520,19 @@ test('一份授權只發一次 final release —— 而且執行面真的呼叫�
   assert.match(publishBlock, /authorizeDeepAuditPublish\(/, 'publish 步驟必須呼叫 authorizeDeepAuditPublish,否則「一份授權一次發布」只是紙上的字')
   assert.match(publishBlock, /consentReleaseLedger\(\)/, 'publish 前必須讀同一份授權底下已發的版本帳本')
   assert.match(src, /recordConsentRelease\(observation\.version\)/, 'publish 之後必須記帳,否則帳本永遠是空的 = 閘永遠不會紅')
+})
+
+test('發版時必須講出「這一版不會改變畫面」—— 而且執行面真的用到它', () => {
+  // 2026-09-20 實測:beta.136/137/138/139/140 五版的預覽內容指紋完全相同,零 UI 變動。
+  // 擋下來是錯的(治理語料確實有變),但不講出來也是錯的。
+  assert.equal(productChangeSincePreviousRelease('99c38394a2', '54da256e81'), 'none', '兩個沒動產品的 commit → none')
+  assert.equal(productChangeSincePreviousRelease('68d9dfdc^', '68d9dfdc'), 'changed', '動過產品的 commit → changed')
+  assert.equal(productChangeSincePreviousRelease(null, 'HEAD'), null, '缺前一版就不猜')
+  assert.equal(productChangeSincePreviousRelease('HEAD', null), null)
+
+  // 寫了卻沒人呼叫 = 等於沒寫(今天抓了一整天的那條)
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
+  assert.match(reportBlock, /productChangeSincePreviousRelease\(/, 'printReport 必須呼叫它')
+  assert.match(reportBlock, /不會改變任何畫面/, '而且必須真的印出來給人看')
 })

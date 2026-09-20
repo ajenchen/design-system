@@ -1101,6 +1101,22 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   }
 }
 
+/**
+ * 這一版跟上一個已發布版本比,**使用者看得見的東西有沒有變**。
+ *
+ * 2026-09-20 實測:beta.136 / 137 / 138 / 139 / 140 五個版本的預覽內容指紋**完全相同** ——
+ * 五版零 UI 變動,全是治理與腳本。user 原話:「你他媽真的確認過是有必要發那麼多次?」
+ * 擋下來是錯的(套件裡的治理語料確實有變、consumer 真的會收到),但**不講出來也是錯的**:
+ * 發版時就該明說這一版不會改變任何畫面,讓人自己判斷還要不要發。
+ */
+export function productChangeSincePreviousRelease(previousReleaseCommit, headSha) {
+  if (!previousReleaseCommit || !headSha) return null
+  const before = productContentDigest(previousReleaseCommit)
+  const after = productContentDigest(headSha)
+  if (!before || !after) return null
+  return before === after ? 'none' : 'changed'
+}
+
 function printReport(workflow, observation, json) {
   const report = {
     schemaVersion: 1,
@@ -1109,10 +1125,16 @@ function printReport(workflow, observation, json) {
     steps: buildFiveStepStatus(workflow, observation),
     legacyMechanisms: workflow.legacyMechanisms,
   }
+  // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
+  const previousReleaseCommit = observation.release?.targetCommitish || observation.previousReleaseCommit || null
+  report.productChange = productChangeSincePreviousRelease(previousReleaseCommit, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
     for (const step of report.steps) console.log(`${step.id.padEnd(10)} ${step.status} (${step.authority})`)
+    if (report.productChange === 'none') {
+      console.log('   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與上一個已發布版本完全相同);變的是治理與腳本。')
+    }
   }
   return report
 }
