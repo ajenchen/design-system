@@ -77,3 +77,34 @@ export const refRatioVerdict = (buildMedian, refMedian, limit = BLANK_RATIO_LIMI
   if (!Number.isFinite(refMedian) || refMedian <= 0) return 'skip'
   return buildMedian <= refMedian * limit ? 'pass' : 'fail'
 }
+
+/**
+ * 一趟量測「能不能當證據」。**量不到 ≠ 量到壞東西** —— 兩者的修法完全相反。
+ *
+ * 2026-09-21 CI 實證:共享 runner 的 CDP screencast 會間歇停擺,某一趟只送出 9 張呈現幀。
+ * 閘印的那句「screencast 沒在工作,不能當證據」完全正確,但它跟 `pageerror` 記在同一個
+ * 失敗桶子裡,於是**基礎設施抖動直接變成「這個 build 有問題」**。今天 12 輪 CI 有 4 輪
+ * 因此紅,散在三支不同的閘,而被指控的程式碼一行都沒改。
+ *
+ * 政策:儀器失效的那一趟**作廢、不進判定**;產品失效照舊立刻紅;
+ * 某個 build/mode 一趟可用的都不剩 → 以**儀器失效**的名義紅(絕不默默放行)。
+ * 這跟 `data-table-scroll-perception.mjs` 既有的 MAX_ATTEMPTS 是同一套處理。
+ *
+ * @returns {{usable:boolean, why:string}}
+ */
+export const MIN_PRESENTED_FRAMES = 10
+export const MIN_SCROLL_COVERAGE = 0.8
+
+export function classifyRun({ g, frames = [], scrolled = 0, gesturePx = 0 } = {}) {
+  if (!g) return { usable: true, why: '' } // 沒有截圖幾何的模式(wheel)由其他指標判,不在此作廢
+  if (!(g.presented >= MIN_PRESENTED_FRAMES)) {
+    return { usable: false, why: `只收到 ${g.presented} 張呈現幀,screencast 沒在工作` }
+  }
+  if (!g.bandsPerFrame || !frames.length) {
+    return { usable: false, why: `缺資料(每幀帶數 ${g.bandsPerFrame}、DOM 取樣 ${frames.length})` }
+  }
+  if (scrolled < gesturePx * MIN_SCROLL_COVERAGE) {
+    return { usable: false, why: `只捲了 ${scrolled}px(手勢 ${gesturePx}px),覆蓋不足` }
+  }
+  return { usable: true, why: '' }
+}

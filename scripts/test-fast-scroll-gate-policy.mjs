@@ -8,7 +8,8 @@
  *
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
-import { gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
+import { readFileSync } from 'node:fs'
+import { classifyRun, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT, MIN_PRESENTED_FRAMES } from './lib/fast-scroll-gate-policy.mjs'
 
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
 const CASES = [
@@ -91,5 +92,41 @@ for (const [name, [mine, ref], want] of REF_CASES) {
   if (!ok) fail++
   console.log(`${ok ? '✓' : '✗'} 參考比值|${name} | → ${got}(期望 ${want})`)
 }
+// ── 「量不到」與「量到壞東西」的分流(2026-09-21 CI 實證)──────────────────
+// 數字取自真實 CI:f5b43e91 那輪某一趟只送出 9 張呈現幀,閘因此把整個 build 判紅,
+// 而被指控的程式碼一行都沒改。分流之後那一趟作廢、不進判定;產品面照舊立刻紅。
+const RUN_CASES = [
+  ['f5b43e91 CI 實例:只收到 9 張呈現幀(screencast 停擺)', { g: { presented: 9, bandsPerFrame: 17 }, frames: [{}], scrolled: 6000, gesturePx: 6000 }, false],
+  ['剛好 10 張(邊界,不得作廢)', { g: { presented: 10, bandsPerFrame: 17 }, frames: [{}], scrolled: 6000, gesturePx: 6000 }, true],
+  ['正常一趟(63 張)', { g: { presented: 63, bandsPerFrame: 17 }, frames: [{}], scrolled: 6000, gesturePx: 6000 }, true],
+  ['每幀帶數 0 = 缺資料', { g: { presented: 63, bandsPerFrame: 0 }, frames: [{}], scrolled: 6000, gesturePx: 6000 }, false],
+  ['DOM 取樣 0 = 缺資料', { g: { presented: 63, bandsPerFrame: 17 }, frames: [], scrolled: 6000, gesturePx: 6000 }, false],
+  ['只捲了 70%(覆蓋不足)', { g: { presented: 63, bandsPerFrame: 17 }, frames: [{}], scrolled: 4200, gesturePx: 6000 }, false],
+  ['剛好 80%(邊界,不得作廢)', { g: { presented: 63, bandsPerFrame: 17 }, frames: [{}], scrolled: 4800, gesturePx: 6000 }, true],
+  ['wheel 模式沒有截圖幾何 → 不在此作廢(由其他指標判)', { g: null, frames: [], scrolled: 0, gesturePx: 6000 }, true],
+]
+for (const [name, input, wantUsable] of RUN_CASES) {
+  const r = classifyRun(input)
+  const ok = r.usable === wantUsable
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} ${wantUsable ? '可用  ' : '作廢  '} 實得 ${r.usable ? '可用  ' : '作廢  '} ${name}${r.why ? ` — ${r.why}` : ''}`)
+}
+// 對照:把門檻拿掉(等於退回「只要沒量到就算產品壞」)→ 第一格必須不再作廢
+const regressed = { ...RUN_CASES[0][1], g: { ...RUN_CASES[0][1].g, presented: MIN_PRESENTED_FRAMES } }
+const proves = classifyRun(regressed).usable === true
+console.log(`${proves ? '✓' : '✗'} 對照組:把呈現幀數補到門檻(${MIN_PRESENTED_FRAMES})→ 同一趟不再作廢(得 ${classifyRun(regressed).usable ? '可用' : '作廢'})`)
+if (!proves) fail++
+
+// 閘必須真的消費它,否則測得再漂亮也沒用
+// 可達性要看**呼叫點**,不是看 import 那一行 —— `classifyRun(` 在 import 裡也會命中,
+// 第一版就是這樣寫的,把呼叫點拿掉照樣綠(2026-09-21 當場被對照組抓到)。
+const gateSrc = readFileSync(new URL('./data-table-fast-scroll.mjs', import.meta.url), 'utf8')
+const callSites = gateSrc.split('\n')
+  .filter((line) => !/^\s*import\b/.test(line))   // import 那行會命中
+  .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line)) // 註解也會命中(第二版就漏了這個)
+  .filter((line) => /classifyRun\s*\(/.test(line)).length
+if (callSites < 1) { console.log('✗ 可達性:data-table-fast-scroll.mjs 的 import 之外沒有任何 classifyRun 呼叫點'); fail++ }
+else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼叫點,不含 import)`)
+
 console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠')
 process.exit(fail ? 1 : 0)

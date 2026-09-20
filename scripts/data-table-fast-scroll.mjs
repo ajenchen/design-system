@@ -102,7 +102,7 @@ function runtimeSourceDiffers(ref) {
   if (run.status !== 0 || typeof run.stdout !== 'string') return true
   return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
-import { median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
+import { classifyRun, median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -804,12 +804,39 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
   // 收**所有模式**,不只 gesture。wheel 沒有截圖幾何(`r.g`,只有 gesture 走 screencast,見 mode === 'gesture' 分支),
   // 但它有 long task 指標 —— 而 wheel 正是 user 真實的捲動路徑(滾輪),不該因為少了截圖就整個不判。
   // 取不到值的指標由下方 gate / relGate 各自跳過並說明,不會靜默當成通過。
-  for (const r of results) { const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
+  // **「量不到」與「量到壞東西」要分開**(2026-09-21,CI 實證):
+  // `只收到 9 張呈現幀,screencast 沒在工作` 這句本身完全正確 —— 資料不足就不該給綠燈。
+  // 但它先前跟 `pageerror` / `靜止後仍缺列` 記在同一個 `failed++` 桶子裡,於是
+  // **CDP screencast 在共享 runner 上間歇停擺**會直接變成「這個 build 有問題」。
+  // 今天 12 輪 CI 有 4 輪因此紅,散在三支不同的閘,而被指控的程式碼一行都沒改。
+  //
+  // 正確做法跟 `data-table-scroll-perception.mjs` 既有的 MAX_ATTEMPTS 同一套:
+  // **儀器失效的那一趟作廢,不進判定**;產品失效照舊立刻紅。
+  // 只有當某個 build/mode **一趟可用的都不剩**,才以「儀器失效」的名義紅 —— 不會默默放行。
+  const unusable = new Map() // key → 作廢原因清單
+  const discard = (r, why) => {
+    const k = `${r.build}/${r.mode}`
+    if (!unusable.has(k)) unusable.set(k, [])
+    unusable.get(k).push(why)
+    console.log(`·  ${k}:這一趟作廢(${why})—— 量不到不等於量到壞東西,不計入判定`)
+  }
+  // 判準走 lib/fast-scroll-gate-policy.mjs 的 classifyRun(純函式,有判定表 + 對照組)。
+  const usableResults = []
   for (const r of results) {
+    const v = classifyRun({ g: r.g, frames: r.frames, scrolled: r.scrolled, gesturePx: GESTURE_PX })
+    if (v.usable) usableResults.push(r)
+    else discard(r, v.why)
+  }
+  for (const r of usableResults) { const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
+  // 一趟可用的都不剩 → 儀器失效(訊息要講清楚不是產品變慢,否則下一個人又去查錯方向)
+  for (const [k, whys] of unusable) {
+    if (groups.has(k) && groups.get(k).length) continue
+    console.log(`✗ ${k}:${whys.length} 趟全部作廢,一趟可用的都不剩 —— 這是**儀器失效**(${whys[0]}),不是這個 build 變慢。`)
+    failed++
+  }
+  // 產品面的失敗照舊立刻紅,只看可用的那些趟
+  for (const r of usableResults) {
     if (!r.g) continue
-    if (r.g.presented < 10) { console.log(`✗ ${r.build}/${r.mode}:只收到 ${r.g.presented} 張呈現幀,screencast 沒在工作,不能當證據`); failed++ }
-    if (!r.g.bandsPerFrame || !r.frames.length) { console.log(`✗ ${r.build}/${r.mode}:缺資料(每幀帶數 ${r.g.bandsPerFrame}、DOM 取樣 ${r.frames.length}),不能當證據`); failed++ }
-    if (r.scrolled < GESTURE_PX * 0.8) { console.log(`✗ ${r.build}/${r.mode}:只捲了 ${r.scrolled}px(手勢 ${GESTURE_PX}px),覆蓋不足不能當證據`); failed++ }
     if (r.errors.length) { console.log(`✗ ${r.build}/${r.mode}:pageerror ${r.errors.length}(${r.errors[0].slice(0, 100)})`); failed++ }
     const last = r.frames[r.frames.length - 1]
     if (last && (last.missing > 0 || last.empty > 0)) { console.log(`✗ ${r.build}/${r.mode}:靜止後 DOM 仍缺列 ${last.missing} / 格空 ${last.empty}`); failed++ }
