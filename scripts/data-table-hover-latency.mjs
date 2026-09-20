@@ -32,7 +32,7 @@ import { PNG } from 'pngjs'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const arg = (n, d) => process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const has = (n) => process.argv.includes(`--${n}`)
@@ -256,11 +256,11 @@ function pixelAt(b64, x, y) {
 
 let fail = 0
 const report = (label, mode, s) => {
-  const ok = s.filter((x) => Number.isFinite(x))
-  // `lost` = **有幀可看、但整整 1.5 秒都沒變色** → 真訊號,判定照舊。
-  // `blind` = hover 之後串流一張幀都沒送 → 儀器看不到,不得當成產品沒變色。
-  const blind = s.filter((x, i) => !Number.isFinite(x) && s.blindness?.[i]).length
-  const lost = s.length - ok.length - blind
+  // 分類走 lib/hover-latency-policy.mjs 的同一支 —— 印出的數字與判定用的數字必須是同一份,
+  // 各自數一遍就是兩份實作(2026-09-20 我自己在修這個 bug 的時候順手造出來的)。
+  //   `lost`  = 有幀可看、但整整 1.5 秒都沒變色 → 真訊號
+  //   `blind` = hover 之後串流一張幀都沒送 → 儀器看不到,不得當成產品沒變色
+  const { ok, lost, blind } = classifySamples({ samples: Array.from(s), blindness: Array.from(s.blindness || []) })
   const line = ok.length
     ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${blind ? ` (${blind} 次串流全盲:hover 後零幀,看不到不等於沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`

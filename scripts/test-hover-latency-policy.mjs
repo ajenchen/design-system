@@ -10,7 +10,8 @@
  *
  *   node scripts/test-hover-latency-policy.mjs
  */
-import { hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { readFileSync } from 'node:fs'
+import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const MED = 60
 const MAX = 600
@@ -55,6 +56,23 @@ const regressed = hoverVerdict({
 const proves = regressed.verdict === 'lost'
 console.log(`${proves ? '✓' : '✗'} 對照組:拿掉「全盲」資訊 → 第一格回到舊判定的誤紅(得 ${regressed.verdict})`)
 if (!proves) fail++
+
+// 印出的數字與判定用的數字必須同源:閘的 report() 與 hoverVerdict() 都走 classifySamples,
+// 各自數一遍就是兩份實作(M17)。這一格就是防它再被拆回去。
+for (const [name, samples, blindFlags] of CASES) {
+  const c = classifySamples({ samples, blindness: blindFlags.map(Boolean) })
+  const v = hoverVerdict({ samples, blindness: blindFlags.map(Boolean), assertMedian: MED, assertMax: MAX })
+  const same = c.ok.length === v.usable && c.lost === v.lost && c.blind === v.blind
+  if (!same) { console.log(`✗ 同源檢查:${name} 的分類與判定不一致`); fail++ }
+}
+console.log('✓ 分類與判定同源(report 與 verdict 都走 classifySamples)')
+
+// 閘的執行面必須真的消費這兩支,否則測得再漂亮也沒用(今天抓了一整天的那條)
+const gate = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
+for (const [sym, why] of [['classifySamples(', 'report() 必須用共用分類'], ['hoverVerdict(', '判定必須走政策模組']]) {
+  if (!gate.includes(sym)) { console.log(`✗ 可達性:data-table-hover-latency.mjs 沒有用到 ${sym} —— ${why}`); fail++ }
+}
+console.log('✓ 可達性:閘真的消費 classifySamples 與 hoverVerdict')
 
 console.log(`\nMIN_USABLE_SAMPLES = ${MIN_USABLE_SAMPLES}`)
 console.log(fail ? `✗ ${fail} 項不符` : '✅ hover 判定政策 PASS(真實 CI 數字判定表 + 對照組)')

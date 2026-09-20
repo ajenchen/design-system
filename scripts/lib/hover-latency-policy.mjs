@@ -22,6 +22,16 @@
 export const MIN_USABLE_SAMPLES = 5
 
 /**
+ * 把逐次樣本分成三類。**判定與印出都必須用這一支** —— 各自數一遍就是兩份實作,必然漂移(M17)。
+ * @returns {{ok:number[], lost:number, blind:number}}
+ */
+export function classifySamples({ samples = [], blindness = [] } = {}) {
+  const ok = samples.filter((x) => Number.isFinite(x))
+  const blind = samples.filter((x, i) => !Number.isFinite(x) && blindness[i] === true).length
+  return { ok, blind, lost: samples.length - ok.length - blind }
+}
+
+/**
  * @param {object} input
  * @param {number[]} input.samples    每次取樣量到的毫秒數;沒量到 = NaN
  * @param {boolean[]} input.blindness 與 samples 同序:該次 hover 之後串流是否「一張幀都沒到」
@@ -30,9 +40,7 @@ export const MIN_USABLE_SAMPLES = 5
  * @returns {{verdict:'pass'|'lost'|'median'|'max'|'starved', usable:number, lost:number, blind:number, median:number, max:number}}
  */
 export function hoverVerdict({ samples = [], blindness = [], assertMedian, assertMax } = {}) {
-  const ok = samples.filter((x) => Number.isFinite(x))
-  const blind = samples.filter((x, i) => !Number.isFinite(x) && blindness[i] === true).length
-  const lost = samples.length - ok.length - blind
+  const { ok, blind, lost } = classifySamples({ samples, blindness })
   const sorted = ok.slice().sort((a, b) => a - b)
   const median = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.5))] : NaN
   const max = sorted.length ? sorted[sorted.length - 1] : NaN
