@@ -18,6 +18,7 @@ import {
   selectPublishRun,
   validateConsumerCheckProvenance,
   consentCoversHead,
+  consumerStepAction,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
 import { loadGovernanceBuildGraph } from '../../../scripts/governance-build-graph.mjs'
@@ -409,4 +410,52 @@ test('consumer sync PRs are opened by the orchestrator, and every one it opens i
   // 壞輸入仍 fail closed
   assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version, commit: 'nope' }), /release commit/)
   assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version: 'nope', commit }), /version/)
+})
+
+test('consumer 沒有 PR 時的下一步:「已派工」與「已開 PR」是兩件事', () => {
+  // ── 真正的回歸:beta.139 那條**序列** ───────────────────────────────────
+  // 靜態幾格全對也可能漏掉這個 bug —— 它只在「派工之後分支才出現」這個順序上發作。
+  const wm = { delivery: 'repository-dispatch-pr' }
+  let dispatched = false
+  let opened = false
+
+  // 第 1 圈:sync workflow 還沒把分支推上來 → 派工
+  let a = consumerStepAction({ ...wm, branchExists: false, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'dispatch')
+  dispatched = true
+
+  // 第 2 圈:分支還在路上 → 等,但**不可以**重派(重派會重跑一次 sync workflow)
+  a = consumerStepAction({ ...wm, branchExists: false, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'wait')
+
+  // 第 3 圈:分支出現了 → **必須開 PR**。
+  // 這一格就是 2026-09-20 的 bug:舊版用同一個旗標擋,這裡會回 'wait' 而永遠開不出 PR,
+  // 空轉到 45 分鐘逾時,work-management 停在前一版。
+  a = consumerStepAction({ ...wm, branchExists: true, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'create-pr', '派工之後分支才出現 —— 這一圈必須開 PR,不能被「已派工」擋住')
+  opened = true
+
+  // 第 4 圈:已經開過了 → 不重複開
+  a = consumerStepAction({ ...wm, branchExists: true, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'wait')
+
+  // ── template:分支由上游 release 事件推上來,這裡只等不派工 ──
+  const tpl = { delivery: 'release-published-pr' }
+  assert.equal(consumerStepAction({ ...tpl, branchExists: false }), 'wait')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: false, dispatched: true }), 'wait', 'template 永遠不派工')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: true }), 'create-pr')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: true, pullRequestOpened: true }), 'wait')
+})
+
+test('呼叫端真的用 consumerStepAction,而且兩個旗標沒有被合回一個', () => {
+  // 純函式測得再漂亮,呼叫端沒用到就是兩份平行實作 —— 這正是 2026-09-20 學到的那條
+  //(判定表全綠、餵它的值卻是另一段程式算的)。
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  assert.match(src, /const action = consumerStepAction\(/, 'executeAutomaticRelease 必須用這支純函式決定下一步')
+  assert.match(src, /const dispatchedConsumers = new Set\(\)/)
+  assert.match(src, /const openedConsumerPullRequests = new Set\(\)/, '兩件事要兩個集合')
+  // 開 PR 之後只能加進 openedConsumerPullRequests;把 repo 加進 dispatchedConsumers 就是舊 bug 復活
+  const block = src.slice(src.indexOf('const action = consumerStepAction('))
+  const createBranch = block.slice(block.indexOf("if (action === 'create-pr')"), block.indexOf("else if (action === 'dispatch')"))
+  assert.doesNotMatch(createBranch, /dispatchedConsumers\.add/, '開 PR 不得標記成「已派工」')
 })

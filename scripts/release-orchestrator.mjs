@@ -622,6 +622,26 @@ function withRequiredChecks(repository, pullRequest) {
   return { ...pullRequest, requiredChecks: requiredPullRequestChecks(repository, pullRequest.number) }
 }
 
+/**
+ * 沒有 PR 的 consumer,這一圈該做什麼。抽成純函式,讓「已派工 / 已開 PR」這組狀態機可以用判定表驗。
+ *
+ * **為什麼抽出來**(2026-09-20,beta.139 實測):原本只有一個 `dispatchedConsumers` 集合,
+ * 而 WM 那一支在**派工之後也把自己加進去**。於是:
+ *   第 1 圈 分支還沒被 sync workflow 推上來 → 派工 → 標記「已處理」
+ *   第 2 圈起 `!dispatchedConsumers.has(...)` = false → 整段跳過
+ *   → 分支後來出現了也**永遠不會開 PR**,空轉到 45 分鐘逾時,WM 停在前一版
+ * 根因是**一個旗標同時代表兩件事**:「已派工」被當成「已處理完」。但派工的目的正是讓分支
+ * 稍後出現,所以「該開 PR」必然發生在「已派工」之後 —— 用同一個旗標擋,等於把正確路徑鎖死。
+ *
+ * 兩件事各自一個旗標:`dispatched` 只擋重複派工(重派會重跑 sync workflow),
+ * `pullRequestOpened` 只擋重複開 PR。
+ */
+export function consumerStepAction({ delivery, branchExists, dispatched = false, pullRequestOpened = false } = {}) {
+  if (branchExists) return pullRequestOpened ? 'wait' : 'create-pr'
+  if (delivery === 'repository-dispatch-pr') return dispatched ? 'wait' : 'dispatch'
+  return 'wait' // release-published-pr:分支由上游 release 事件推上來,這裡只能等
+}
+
 function expectedConsumerBranch(target, version) {
   if (target.delivery === 'release-published-pr') return `automation/release-v${version}`
   if (target.delivery === 'repository-dispatch-pr') return `automation/design-system-${version}`
@@ -988,7 +1008,8 @@ export function buildPublishMutationPlan(workflow, { tag, protectedMainSha, exis
 export function executeAutomaticRelease({ json = false, noWait = false, maxWaitMs = 45 * 60 * 1000 } = {}) {
   const workflow = loadReleaseWorkflow()
   const deadline = Date.now() + maxWaitMs
-  const dispatchedConsumers = new Set()
+  const dispatchedConsumers = new Set()        // 只擋重複派工
+  const openedConsumerPullRequests = new Set() // 只擋重複開 PR —— 與上面是**兩件事**
   for (;;) {
     invariant(noWait || Date.now() <= deadline, 'release:auto did not converge within 45 minutes; live state is preserved and the command is safe to rerun')
     const observation = collectLiveObservation(workflow)
@@ -1096,31 +1117,31 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
           'pr', 'merge', `${target.pullRequest.number}`, '--repo', target.repository,
           '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,
         ])
-      } else if (target.delivery === 'repository-dispatch-pr' && !dispatchedConsumers.has(target.repository)) {
+      } else {
         // 分支還沒被 sync workflow 推上來 → 先派工;已經推上來但還沒有 PR → 由本地 canonical
         // credential 開 PR(見 buildConsumerPullRequestCreateArgs 的註解:consumer workflow 用
         // 自家 GITHUB_TOKEN 開的 PR,GitHub 不讓它的 workflow 跑,出處鏈結構上湊不齊)。
-        if (consumerAutomationBranchExists(target, observation.version)) {
+        // 判斷本身在 consumerStepAction(純函式,判定表驗得到);這裡只負責執行。
+        const action = consumerStepAction({
+          delivery: target.delivery,
+          branchExists: consumerAutomationBranchExists(target, observation.version),
+          dispatched: dispatchedConsumers.has(target.repository),
+          pullRequestOpened: openedConsumerPullRequests.has(target.repository),
+        })
+        if (action === 'create-pr') {
           gh(buildConsumerPullRequestCreateArgs(target, {
             version: observation.version,
             commit: observation.releaseCommitSha,
           }).args)
-        } else {
+          openedConsumerPullRequests.add(target.repository)
+        } else if (action === 'dispatch') {
           dispatchConsumer(target, {
             version: observation.version,
             tag: observation.tag,
             commit: observation.releaseCommitSha,
           })
+          dispatchedConsumers.add(target.repository)
         }
-        dispatchedConsumers.add(target.repository)
-      } else if (target.delivery === 'release-published-pr'
-        && !dispatchedConsumers.has(target.repository)
-        && consumerAutomationBranchExists(target, observation.version)) {
-        gh(buildConsumerPullRequestCreateArgs(target, {
-          version: observation.version,
-          commit: observation.releaseCommitSha,
-        }).args)
-        dispatchedConsumers.add(target.repository)
       }
     }
     if (noWait) return report
