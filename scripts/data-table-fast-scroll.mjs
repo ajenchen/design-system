@@ -78,7 +78,7 @@ import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, mkdtempSy
 import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 import { spawnSync } from 'node:child_process'
 
 /**
@@ -473,7 +473,10 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
     await page.addInitScript(INIT)
-    await page.goto(build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
+    // 等捲動區本身出現:沒等到才是真的紅。先前只睡 1500ms,慢的 runner 上 START_SAMPLER 會拿不到
+    // `[data-datatable-hscroll]` 而印「story 崩潰或 build 壞了」—— 指控一個不存在的問題。
+    await gotoStory(page, build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`,
+      { waitFor: '[data-datatable-hscroll]', settle: 0 })
     if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
     await page.waitForTimeout(1500)
     const cdp = await page.context().newCDPSession(page)

@@ -15,7 +15,7 @@
  */
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -55,8 +55,11 @@ for (const [i, id] of STORIES.entries()) {
   const name = id.replace(/^design-system-components-/u, '')
   for (const w of WIDTHS) {
     await page.setViewportSize({ width: w, height: 900 })
-    await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 })
-    await page.waitForTimeout(900)
+    // 等**搜尋框本身**出現,不用固定睡眠當「已渲染」的代理(2026-09-20 CI 真的因此假紅一次:
+    // 每支示範的第一個寬度是冷啟動,900ms 在慢的 runner 上不夠 → 閘指控「示範沒有消費 DataToolbar」)。
+    // 等不到才走下面原本的缺元素路徑判紅 —— 真的沒消費時訊息一樣會紅,而且那時才是真的。
+    await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`,
+      { waitFor: '[data-toolbar-search]', settle: 900 })
     let r = await page.evaluate(PROBE)
     if (r.missing) { rec(false, `${name} @${w}:找不到 ${r.missing}(示範沒有消費 DataToolbar?)`); continue }
     if (SELFTEST) {
@@ -82,10 +85,34 @@ for (const [i, id] of STORIES.entries()) {
     }
   }
 }
-await browser.close(); server.close()
+// selftest 的晚到對照組需要瀏覽器還活著(--single-process 開不了第二個 browser,所以沿用同一個)
+if (!SELFTEST) { await browser.close() }
+server.close()
 if (SELFTEST) {
-  const ok = sabotageReds >= 1
-  console.log(ok ? `✓ selftest:對照組(拿掉搜尋框下限)讓 ${sabotageReds} 格溢出 / 錯位,量具會紅` : '✗ selftest:對照組沒有任何一格紅 —— 量具無效')
+  // ── 對照組 B:證明「等元素」真的在等,而不是換個寫法的固定睡眠 ──────────────
+  // 本機夠快,所以真跑在本機**兩種寫法都會綠** —— 那不構成證據。這一組讓元素故意晚到 2.5 秒
+  // (模擬 CI 慢 runner 的冷啟動),與機器速度無關:
+  //   · 固定睡眠 300ms、不等元素 → 必須抓不到(= 2026-09-20 CI 假紅的那一格)
+  //   · 等元素、settle 只有 100ms → 必須抓得到
+  // 兩邊都成立,才證明修正是「等到東西出現」而不是「睡久一點」。
+  const late = 'data:text/html,' + encodeURIComponent(
+    '<body><script>setTimeout(function(){var d=document.createElement("div");'
+    + 'd.setAttribute("data-toolbar-search","");document.body.appendChild(d)},2500)<\/script></body>')
+  const probe = () => Boolean(document.querySelector('[data-toolbar-search]'))
+  // 沿用同一個 page:`--single-process` 下 `browser.newPage()` 會開第二個 context 而當場崩,
+  // 這在 lib/launch-browser.mjs 檔頭已有警告(2026-09-20 我自己又踩一次)。
+  await gotoStory(page, late, { settle: 300 })
+  const withSleepOnly = await page.evaluate(probe)
+  await gotoStory(page, late, { waitFor: '[data-toolbar-search]', settle: 100 })
+  const withWait = await page.evaluate(probe)
+  const waitProven = withSleepOnly === false && withWait === true
+  console.log(waitProven
+    ? '✓ selftest:晚到 2.5 秒的元素 —— 固定睡眠 300ms 抓不到、等元素抓得到(修正確實在等,不是睡久一點)'
+    : `✗ selftest:等待對照組失效(固定睡眠抓到=${withSleepOnly} / 等元素抓到=${withWait})—— 這組不成立就無法證明修的是競態`)
+
+  const ok = sabotageReds >= 1 && waitProven
+  console.log(sabotageReds >= 1 ? `✓ selftest:對照組(拿掉搜尋框下限)讓 ${sabotageReds} 格溢出 / 錯位,量具會紅` : '✗ selftest:對照組沒有任何一格紅 —— 量具無效')
+  await browser.close()
   process.exit(ok ? 0 : 1)
 }
 rec(measured === STORIES.length * WIDTHS.length, `取樣:${measured} 格(需 ${STORIES.length} 支示範 × ${WIDTHS.length} 個寬度)`)

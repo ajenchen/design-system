@@ -17,7 +17,7 @@
  */
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -57,7 +57,8 @@ const topLeftHits = (frames) => frames.flatMap((f) => f.seen.filter((s) => s.vis
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 let failed = 0
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
-const fresh = async () => { await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 }); await page.waitForTimeout(900) }
+// 等關閉鈕本身出現再量(理由同 agent-fab:固定睡眠會讓 hoverClose() 丟「找不到關閉鈕」)。
+const fresh = async () => { await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: CLOSE, settle: 900 }) }
 const hoverClose = async () => {
   const b = await page.locator(CLOSE).first().boundingBox()
   if (!b) throw new Error('找不到關閉鈕')
