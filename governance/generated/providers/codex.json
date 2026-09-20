@@ -3,7 +3,7 @@
     "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
     "generated": true,
     "generator": "@qijenchen/governance",
-    "generatorVersion": "0.1.0-beta.138",
+    "generatorVersion": "0.1.0-beta.139",
     "manifestId": "qijenchen-provider-neutral-governance",
     "role": "ds-author"
   },
