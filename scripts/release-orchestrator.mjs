@@ -12,32 +12,99 @@ const GITHUB_DESIRED_PATH = resolve(ROOT, 'infra/governance/desired/github.json'
 /** user 發版同意 receipt(2026-09-02 user directive:預覽 → user 確認說「發版」→ 才合併/發布)。 */
 const CONSENT_DIR = resolve(ROOT, '.git/governance-runtime/release-consent')
 
-export function readReleaseConsent(headSha) {
-  if (!/^[a-f0-9]{40}$/.test(headSha || '')) return null
-  const file = resolve(CONSENT_DIR, `${headSha}.json`)
-  if (!existsSync(file)) return null
-  try {
-    const receipt = JSON.parse(readFileSync(file, 'utf8'))
-    return receipt?.headSha === headSha && typeof receipt?.quote === 'string' && receipt.quote.trim() ? receipt : null
-  } catch {
-    return null
+/**
+ * 2026-09-20:同意改綁**分支**(= 該 PR),不再綁單一 commit。
+ *
+ * 為什麼改:receipt 原本以 `<headSha>.json` 命名、按當前 commit 查,於是**任何新 commit 都讓它失效**——
+ * 而發版流程必然會產生新 commit(版號 bump 是必要步驟,CI 紅了修一次又一版)。結果 2026-09-19 那次
+ * user 為同一份工作說了六次「發版」,每次都照做,每次又被我自己的機制作廢。user 原話:
+ * 「我他媽已經說發版一百次了,你他媽到底是要我說幾次?」——**那不是 user 沒授權,是機制設計錯了**。
+ *
+ * 綁分支才對得上 user 實際看的東西:預覽連結是 `deploy-preview-<PR>--…`,**本來就是每個 PR 一條**,
+ * 而 canonical 是 1 chat = 1 branch = 1 PR(M28)。user 看的是那條預覽、同意的是那份工作。
+ *
+ * 2026-09-02 那道防線**完整保留**,而且多了一層:
+ *   - 換分支(= 換一份工作)→ 沒有 receipt → 照樣停在 `AWAITING_USER_RELEASE_CONSENT`。那次事故就是這格。
+ *   - 同意之後**預覽看得見的東西又變了**(`packages/<pkg>/src/**` 的 ts/tsx/js/jsx/css)→ 視為失效,要重新同意。
+ *     user 同意的是他看過的那個畫面;畫面變了就不算他看過。
+ *   - 只有版號、腳本、CI、治理文件變動 → 不重問(那些不進 bundle,預覽長得一模一樣)。
+ *   - 合併前仍然必須 required CI 全綠(pr-checks 步驟),所以「後來推壞」由 CI 擋,不是靠再問 user 一次。
+ *   - 否定詞(不要發版/先不要)仍然刪 receipt;main 上永不落地;仍然要 user 逐字原話。
+ */
+const consentFileName = (branch) => `branch__${String(branch).replace(/[^A-Za-z0-9._-]/g, '_')}.json`
+
+/** 純函式:這份 receipt 能不能覆蓋當前 head。抽出來讓判定表可以驗,不必碰檔案系統。 */
+export function consentCoversHead({ receipt, branch, headSha, productFilesChanged = false } = {}) {
+  if (!receipt) return { ok: false, reason: '沒有發版同意 receipt' }
+  if (typeof receipt.quote !== 'string' || !receipt.quote.trim()) return { ok: false, reason: 'receipt 缺 user 逐字原話' }
+  // 舊格式(綁 commit)仍然認,但只認它自己那一個 commit。
+  if (receipt.schemaVersion === 1 && !receipt.consentedHeadSha) {
+    return receipt.headSha === headSha
+      ? { ok: true, reason: '舊格式 receipt(綁 commit)且 head 未變' }
+      : { ok: false, reason: '舊格式 receipt(綁 commit),head 已變' }
   }
+  if (!branch || receipt.branch !== branch) return { ok: false, reason: `receipt 屬於分支「${receipt.branch}」,當前是「${branch}」` }
+  if (receipt.consentedHeadSha === headSha) return { ok: true, reason: 'head 與同意當下相同' }
+  if (productFilesChanged) {
+    return { ok: false, reason: '同意之後預覽看得見的內容又變了(packages/<pkg>/src 的 ts/tsx/js/jsx/css),需要重新確認' }
+  }
+  return { ok: true, reason: '同分支;同意之後只動了不進 bundle 的東西(版號 / 腳本 / 治理),預覽未變' }
+}
+
+/** 兩個 commit 之間有沒有動到「預覽看得見」的檔。讀不到 git → true(保守:當成變了,要求重新同意)。 */
+export function productVisibleFilesChanged(fromSha, toSha) {
+  if (!fromSha || !toSha || fromSha === toSha) return false
+  // `run()` 回的是 { ok, stdout, stderr },**沒有 `status`** —— 先前寫成 `diff.status !== 0`,
+  // `undefined !== 0` 恆為真,於是這支從第一天起永遠回「變了」,整個「同分支不必重講」形同虛設。
+  // 2026-09-20 實測:同意落地後只 bump 版號(零個 packages/<pkg>/src 檔),仍被判要重新同意。
+  const diff = run('git', ['diff', '--name-only', `${fromSha}...${toSha}`], { allowFailure: true })
+  if (!diff.ok || typeof diff.stdout !== 'string') return true
+  return diff.stdout.split('\n').some((f) => /^packages\/[^/]+\/src\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
+}
+
+export function readReleaseConsent({ branch, headSha } = {}) {
+  const verdicts = []
+  if (branch) {
+    const file = resolve(CONSENT_DIR, consentFileName(branch))
+    if (existsSync(file)) {
+      try {
+        const receipt = JSON.parse(readFileSync(file, 'utf8'))
+        const changed = productVisibleFilesChanged(receipt?.consentedHeadSha, headSha)
+        const verdict = consentCoversHead({ receipt, branch, headSha, productFilesChanged: changed })
+        if (verdict.ok) return { ...receipt, coverage: verdict.reason }
+        verdicts.push(verdict.reason)
+      } catch { /* 壞檔視同沒有 */ }
+    }
+  }
+  // 舊格式相容:`<headSha>.json`
+  if (/^[a-f0-9]{40}$/.test(headSha || '')) {
+    const legacy = resolve(CONSENT_DIR, `${headSha}.json`)
+    if (existsSync(legacy)) {
+      try {
+        const receipt = JSON.parse(readFileSync(legacy, 'utf8'))
+        if (consentCoversHead({ receipt, branch, headSha }).ok) return { ...receipt, coverage: '舊格式 receipt' }
+      } catch { /* 同上 */ }
+    }
+  }
+  if (verdicts.length) console.log(`   (發版同意不適用:${verdicts.join(';')})`)
+  return null
 }
 
 export function writeReleaseConsent({ headSha, branch, quote, source }) {
   invariant(/^[a-f0-9]{40}$/.test(headSha || ''), 'release consent needs the exact 40-char head sha')
   invariant(typeof quote === 'string' && quote.trim().length > 0, 'release consent needs the user\'s verbatim quote')
+  invariant(typeof branch === 'string' && branch.trim() && branch !== 'main', 'release consent is recorded per working branch, never on main')
   mkdirSync(CONSENT_DIR, { recursive: true })
   const receipt = {
-    schemaVersion: 1,
-    headSha,
-    branch: branch || null,
+    schemaVersion: 2,
+    branch,
+    consentedHeadSha: headSha,
     quote: quote.trim(),
     quoteSha256: createHash('sha256').update(quote.trim()).digest('hex'),
     source: source || 'manual',
     recordedAt: new Date().toISOString(),
   }
-  writeFileSync(resolve(CONSENT_DIR, `${headSha}.json`), `${JSON.stringify(receipt, null, 2)}\n`)
+  writeFileSync(resolve(CONSENT_DIR, consentFileName(branch)), `${JSON.stringify(receipt, null, 2)}\n`)
   return receipt
 }
 
@@ -663,25 +730,49 @@ function ensureImmutableReleases(repository) {
   invariant(state?.enabled === true, `repository ${repository} immutable releases could not be enabled`)
 }
 
-export function buildPublishedTemplatePullRequestCreateArgs(target, { version, commit }) {
-  invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
-  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version), `invalid published-template version: ${version}`)
-  invariant(/^[a-f0-9]{40}$/.test(commit), `invalid published-template release commit: ${commit}`)
+/**
+ * 2026-09-20:consumer PR 一律由 orchestrator 用 canonical credential 開,不再由 consumer 的
+ * workflow 自己開。
+ *
+ * 為什麼:GitHub 不讓自家 `GITHUB_TOKEN` 開出來的 PR 觸發 workflow(防遞迴),所以
+ * `repository-dispatch-pr` 這條路上,consumer 的 `audit.yml` 永遠停在 `action_required`,
+ * 而出處判定要求必過 check 綁在 **PR head** 上產生(`requiredCheck.producerHead`)——
+ * 結構上永遠湊不齊,每次發版都要人工把 PR 關掉再開一次才過得去(beta.135/136/137/138 各一次)。
+ *
+ * 旁邊的 `release-published-pr`(template)三次都沒卡過,差別只有一個:**PR 是 orchestrator
+ * 用 canonical token 開的**,所以 author 是真人身分,workflow 正常跑。把 WM 併到同一條路。
+ *
+ * 冪等:已有相符 PR 就不再開(consumer workflow 若尚未移除自己的開 PR 步驟也不會衝突),
+ * 所以兩個 repo 的改動誰先上線都安全。
+ */
+export function buildConsumerPullRequestCreateArgs(target, { version, commit }) {
+  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version), `invalid consumer sync version: ${version}`)
+  invariant(/^[a-f0-9]{40}$/.test(commit), `invalid consumer sync release commit: ${commit}`)
   const tag = `v${version}`
-  const branch = `automation/release-${tag}`
+  const branch = expectedConsumerBranch(target, version)
+  // title + body 必須同時含 version 與 release commit —— `matchesConsumerPullRequest` 以此綁定身分。
+  const [title, body] = target.delivery === 'release-published-pr'
+    ? [`chore: mirror design system ${tag}`, `Generated from published design-system release ${tag} at ${commit}.`]
+    : [`chore(ds): sync ${tag}`, `Automated exact design-system release sync.\n\n- Version: \`${version}\`\n- Tag: \`${tag}\`\n- Commit: \`${commit}\``]
   return {
     branch,
     args: [
       'pr', 'create', '--repo', target.repository,
       '--head', branch, '--base', target.defaultBranch,
-      '--title', `chore: mirror design system ${tag}`,
-      '--body', `Generated from published design-system release ${tag} at ${commit}.`,
+      '--title', title,
+      '--body', body,
     ],
   }
 }
 
-function publishedTemplateBranchExists(target, version) {
-  const branch = `automation/release-v${version}`
+/** 既有外部契約(測試與 invariant 都引它);語意 = 只給 published-template 這條路的薄包裝。 */
+export function buildPublishedTemplatePullRequestCreateArgs(target, options) {
+  invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
+  return buildConsumerPullRequestCreateArgs(target, options)
+}
+
+function consumerAutomationBranchExists(target, version) {
+  const branch = expectedConsumerBranch(target, version)
   return Boolean(ghJson([
     'api', `repos/${target.repository}/branches/${encodeURIComponent(branch)}`,
   ], { allowFailure: true }))
@@ -806,7 +897,7 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     version,
     tag,
     pullRequest,
-    releaseConsent: readReleaseConsent(pullRequest?.headRefOid || headSha),
+    releaseConsent: readReleaseConsent({ branch, headSha: pullRequest?.headRefOid || headSha }),
     tagCommitSha,
     releaseCommitSha,
     release,
@@ -1006,20 +1097,29 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
           '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,
         ])
       } else if (target.delivery === 'repository-dispatch-pr' && !dispatchedConsumers.has(target.repository)) {
-        dispatchConsumer(target, {
-          version: observation.version,
-          tag: observation.tag,
-          commit: observation.releaseCommitSha,
-        })
+        // 分支還沒被 sync workflow 推上來 → 先派工;已經推上來但還沒有 PR → 由本地 canonical
+        // credential 開 PR(見 buildConsumerPullRequestCreateArgs 的註解:consumer workflow 用
+        // 自家 GITHUB_TOKEN 開的 PR,GitHub 不讓它的 workflow 跑,出處鏈結構上湊不齊)。
+        if (consumerAutomationBranchExists(target, observation.version)) {
+          gh(buildConsumerPullRequestCreateArgs(target, {
+            version: observation.version,
+            commit: observation.releaseCommitSha,
+          }).args)
+        } else {
+          dispatchConsumer(target, {
+            version: observation.version,
+            tag: observation.tag,
+            commit: observation.releaseCommitSha,
+          })
+        }
         dispatchedConsumers.add(target.repository)
       } else if (target.delivery === 'release-published-pr'
         && !dispatchedConsumers.has(target.repository)
-        && publishedTemplateBranchExists(target, observation.version)) {
-        const operation = buildPublishedTemplatePullRequestCreateArgs(target, {
+        && consumerAutomationBranchExists(target, observation.version)) {
+        gh(buildConsumerPullRequestCreateArgs(target, {
           version: observation.version,
           commit: observation.releaseCommitSha,
-        })
-        gh(operation.args)
+        }).args)
         dispatchedConsumers.add(target.repository)
       }
     }

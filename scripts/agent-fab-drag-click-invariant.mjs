@@ -18,7 +18,7 @@
  */
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -38,7 +38,9 @@ const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok)
 const FAB = 'button[aria-label*="開啟智慧代理"]'
 const open = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); return !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 })
 const fabBox = async () => { const b = await page.locator(FAB).first().boundingBox(); if (!b) throw new Error('找不到入口鈕'); return b }
-const fresh = async () => { await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 }); await page.waitForTimeout(700) }
+// 等入口鈕本身出現再量:固定睡眠只是「已渲染」的代理,慢的 runner 上會變成 fabBox() 丟「找不到入口鈕」
+// —— 指控一個不存在的問題(2026-09-20 action-bar 閘在 CI 真的這樣假紅過)。
+const fresh = async () => { await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: FAB, settle: 700 }) }
 const center = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 })
 const dragMoves = async (from, dx, dy, steps = 10) => { for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + dx * i / steps, from.y + dy * i / steps) }
 

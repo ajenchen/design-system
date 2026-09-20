@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: 快速捲動時使用者看得到的畫面不會塌(中央區不出現空白帶、列殼會補齊),
+ *         以及相對 main 沒有真實的效能回歸
+ *   紅: 把列內容強制隱藏(selftest 正對照)→ 呈現幀數塌下來、空白偵測器必須紅並指名該趟
+ *   綠: 沒弄壞時必須綠,而且**不是抽籤** —— 這是本閘 2026-09-19/20 連紅三次學到的:
+ *        (a) 比值判定只比**聚合量**(長工合計、平均幀距),不比尾端統計(單趟最大)。
+ *            同一份建置實測:單趟最大幀距 215 vs 311(±45%)、長工合計 main 自己 849–1552(1.83×),
+ *            而門檻是 1.25× —— 噪音比門檻寬時紅綠都不帶資訊。
+ *        (b) 兩邊沒有任何會進 bundle 的原始碼差異時,**明確跳過比值判定**並印出理由
+ *            (那種情況下它量到的只有 runner 的排程雜訊)。絕對門檻與目的地判定不受影響,照跑。
+ */
+/**
  * DataTable 快速捲動「中間區空白」儀器 —— 2026-09-09
  *
  * 背景:user 在真實 Chrome(Netlify 分支預覽)快速滾輪捲「專案排程全功能整合」時,左釘選 ID 欄與右側動作欄有畫、
@@ -66,7 +78,7 @@ import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, mkdtempSy
 import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 import { spawnSync } from 'node:child_process'
 
 /**
@@ -78,7 +90,15 @@ import { spawnSync } from 'node:child_process'
  * 讀不到 git 或 ref 不存在 → 回 true(**保守**:寧可照跑比值閘,也不要因為看不到而靜默跳過)。
  */
 function runtimeSourceDiffers(ref) {
-  const run = spawnSync('git', ['diff', '--name-only', `${ref}...HEAD`], { encoding: 'utf8' })
+  // ref 要先解析得到才有意義。**CI 上沒有本機 `main` 分支**(PR checkout 只拿 head/merge ref),
+  // 只有 `origin/main` —— 這一行寫死 `main` 的話,git 會失敗、走保守 fallback,於是「零改動就跳過」
+  // 在**唯一需要它的環境裡一次都不會生效**。2026-09-20 實測:本機跳過、CI 照跑照紅。
+  // CI 自己準備參考建置時用的也是 `git rev-parse origin/main`(ci.yml:215),對齊它。
+  const resolved = [`origin/${ref}`, ref].find((candidate) => (
+    spawnSync('git', ['rev-parse', '--verify', '--quiet', `${candidate}^{commit}`], { encoding: 'utf8' }).status === 0
+  ))
+  if (!resolved) return true
+  const run = spawnSync('git', ['diff', '--name-only', `${resolved}...HEAD`], { encoding: 'utf8' })
   if (run.status !== 0 || typeof run.stdout !== 'string') return true
   return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
@@ -453,7 +473,10 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
     await page.addInitScript(INIT)
-    await page.goto(build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
+    // 等捲動區本身出現:沒等到才是真的紅。先前只睡 1500ms,慢的 runner 上 START_SAMPLER 會拿不到
+    // `[data-datatable-hscroll]` 而印「story 崩潰或 build 壞了」—— 指控一個不存在的問題。
+    await gotoStory(page, build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`,
+      { waitFor: '[data-datatable-hscroll]', settle: 0 })
     if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
     await page.waitForTimeout(1500)
     const cdp = await page.context().newCDPSession(page)

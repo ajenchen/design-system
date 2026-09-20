@@ -2,7 +2,7 @@
   "_generated": "build-fork-governance.mjs",
   "kind": "provider-hook-merge-policies",
   "schemaVersion": 1,
-  "sourceDigest": "bff182bfe686cd75296b3e38a24c304c7b3a3be95794040bf164a18a5ca231ec",
+  "sourceDigest": "d676e191ac6dcfe2a9d076e7e2ebbf5225fc8624275421a404d423e63b7a1033",
   "surfaces": {
     "claude": {
       "schemaVersion": 1,
@@ -13,7 +13,7 @@
       "baseTemplateContract": "claude-permission-policy-v1",
       "permissionPolicy": {
         "source": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
-        "sha256": "dbf62361668ebb4dce4871c2fe1df51313e4ae962f0fe058baa2469caca2a3a3",
+        "sha256": "2abd572ab3d063ba3b0beb06df614bcdb6904488636d178591f994931f03ac5f",
         "retiredPermissionAllow": [
           "Bash(npm install)",
           "Bash(npm ci)",

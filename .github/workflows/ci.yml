@@ -122,12 +122,18 @@ jobs:
           npm run test:consumer-pr-merge-evidence
           # 寫了閘就要有人跑它。本 repo 反覆踩同一個病:spec 寫「由 xxx.mjs 機械強制」、腳本存在、
           # 甚至有包裝測試,但沒有任何 CI / npm script / hook 會呼叫它 —— 那條保護是假的且零訊號。
-          # 2026-09-18 盤點:94 支閘/測試腳本沒有任何執行面。棘輪鎖 baseline,新增孤兒立刻紅。
+          # 2026-09-18 盤點:大量閘/測試腳本沒有任何執行面。棘輪鎖 baseline,新增孤兒立刻紅。
+          # 數字以 scripts/gate-reachability-baseline.json 為準,不在註解硬寫(會隨棘輪往下走)。
           npm run test:gate-reachability
           # 同一個病的另一面:上面那支查「閘會不會被呼叫」,這支查「文件講的那道防線,檔案在不在」。
           # 2026-09-19 錨例 —— hook home 自己的 README 在 Stop 區列 5 支 hook,其中 3 支早在 2026-05-13
           # 就折進 stop_passive_logging.sh、檔名已不存在,而「折進去」這件事就寫在同一張表的上一列。
           npm run test:hook-citation-liveness
+          # 同族第三面,也是最根本的一面:閘**宣告不出自己保證什麼**,就不會發現自己用的是代理。
+          # 2026-09-20 盤點:進 required CI 的閘裡只有個位數有雙向對照組,其餘不是只有「壞了會紅」
+          # 就是兩邊都沒有 —— 而「沒壞要綠」那一半正是同一天三次效能誤報的所在(同一份建置
+          # 量到 215 vs 311、長工合計 main 自己 1.83×,門檻卻是 1.25×)。棘輪:新增的閘必須宣告。
+          npm run test:gate-control-group
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization

@@ -21,7 +21,11 @@ const FAIL_CLOSED_DENY_COMMANDS = Object.freeze([
   /^git credential(?:\s|\*|$)/,
   /^npm token(?:\s|\*|$)/,
   /^ssh-add(?:\s|\*|$)/,
-  /^git (?:reset|clean|branch -D|tag -d|commit --amend|checkout|restore)(?:\s|\*|$)/,
+  // 2026-09-20:補 `git switch` 的破壞性用法。原本這串只寫了舊指令名 `checkout` / `restore`,
+  // 而 `git switch --force|-f|--discard-changes` 是同一種「丟掉未提交改動」的能力的現代寫法 ——
+  // 認可清單漏掉它,等於 deny 想擋也擋不進來(本驗證器會拒絕該規則)。只認破壞性旗標,
+  // 不含裸 `git switch`(那是無損的分支切換,git 本身會在會覆蓋改動時拒絕)。
+  /^git (?:reset|clean|branch -D|tag -d|commit --amend|checkout|restore|switch (?:--force|-f|--discard-changes))(?:\s|\*|$)/,
   /^git push (?:.*--force|-f)(?:\s|\*|$)/,
   /^gh (?:issue delete|release delete|repo delete|run delete)(?:\s|\*|$)/,
   /^gh api .*(?:--method DELETE|-X DELETE)/,

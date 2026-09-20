@@ -51,3 +51,38 @@ export async function launchBrowserOrSkip(options = {}) {
     process.exit(0)
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 開一則 story 並等到**真的要量的東西出現**
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼有這個**(2026-09-20,CI 真的紅過一次):
+// `action-bar-toolbar-invariant.mjs` 用 `waitUntil:'load'` + 固定睡 900ms 當「已經渲染好」的代理。
+// 本機四支示範 × 五個寬度 = 20 格全過,CI 上掉了 `url-registry-demo @320` 那一格 ——
+// **每支示範的第一個寬度是冷啟動**,慢的 runner 上 900ms 不夠,於是閘印出
+// 「找不到 data-toolbar-search(示範沒有消費 DataToolbar?)」,指控一個根本不存在的問題。
+// 同一份 `.tsx` 在前兩個 commit 都是綠的,那個 commit 連一個 `.tsx` 都沒動。
+//
+// 這是「拿一個當時剛好成立的觀察量,去代替真正要保證的性質」:
+// 要保證的是「元素已經在畫面上」,量的卻是「過了 900 毫秒」。
+// 固定睡眠**永遠**只是代理 —— 它在快的機器上剛好成立,所以寫的當下看起來是對的。
+//
+// 正解:等那個元素本身。等不到才是真的紅(示範真的沒消費該元件),而且訊息就會是對的。
+// `settle` 是元素出現**之後**才開始的版面穩定時間(量幾何需要,量的是穩態不是過渡中的值)。
+//
+// 用法:
+//   await gotoStory(page, url, { waitFor: '[data-toolbar-search]', settle: 900 })
+//   await gotoStory(page, url, { settle: 400 })   // 沒有特定元素可等時,退化成原本的固定睡眠
+//
+// 回傳 `true` = 等到了(或沒有指定 waitFor);`false` = 逾時沒出現,呼叫端照原本的缺元素路徑判紅。
+export async function gotoStory(page, url, { waitFor = null, settle = 900, timeout = 90000, appearTimeout = 20000 } = {}) {
+  await page.goto(url, { waitUntil: 'load', timeout })
+  let appeared = true
+  if (waitFor) {
+    appeared = await page.waitForSelector(waitFor, { timeout: appearTimeout, state: 'attached' })
+      .then(() => true)
+      .catch(() => false)
+  }
+  if (settle > 0) await page.waitForTimeout(settle)
+  return appeared
+}

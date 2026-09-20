@@ -19,6 +19,11 @@
  * 因此鎖 baseline(`scripts/gate-reachability-baseline.json`):**新增孤兒 = 紅**,既有孤兒清掉會提醒更新
  * baseline。數字只准往下,不准往上。要合法新增一支閘,就得同時把它接進某個執行面。
  *
+ * @gate-contract
+ *   保證: 名字像閘/測試的腳本,真的有執行面(CI / npm script / hook / skill)會呼叫它
+ *   紅: 新增一支沒有任何人呼叫的閘(或把某支從 CI 拿掉)→ 本閘必須指名它並紅
+ *   綠: 沒有新增孤兒時必須綠;selftest 每次都注入合成孤兒驗它會紅,所以綠燈不是因為量具壞了
+ *
  * 用法:
  *   node scripts/gate-reachability-invariant.mjs              判定
  *   node scripts/gate-reachability-invariant.mjs --update-baseline   接好線之後重記
