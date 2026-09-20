@@ -357,6 +357,9 @@ jobs:
           # 手勢用 CDP 合成捲動(滾輪製造不出那段落差 = 假綠),修前的 build 跑這支會紅。
           npm run test:data-table-hover-exclusivity
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
+          # 判定政策本身用真實 CI 數字的判定表驗(含 2026-09-20 那次誤紅的那一格,
+          # 以及「拿掉全盲資訊就會重現誤紅」的對照組)。不進瀏覽器,幾毫秒。
+          npm run test:hover-latency-policy
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
           # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
