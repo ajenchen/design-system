@@ -265,10 +265,13 @@
         "gateBefore",
         "receiptDir",
         "binding",
+        "bindingRationale",
         "userVerbatim",
         "consentPhrases",
         "questionMarkers",
-        "denialMarkers"
+        "denialMarkers",
+        "priorConsentAssertions",
+        "aNotAQuestions"
       ],
       "properties": {
         "required": {
@@ -281,7 +284,7 @@
           "const": ".git/governance-runtime/release-consent"
         },
         "binding": {
-          "const": "pull-request-head-sha"
+          "const": "approved-preview-content-digest"
         },
         "userVerbatim": {
           "type": "string",
@@ -306,6 +309,28 @@
           "uniqueItems": true
         },
         "denialMarkers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "bindingRationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "priorConsentAssertions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "aNotAQuestions": {
           "type": "array",
           "items": {
             "type": "string",

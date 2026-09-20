@@ -1,10 +1,10 @@
-# Meta-Pattern 預警(32 active M-rules)
+# Meta-Pattern 預警(33 active M-rules)
 
 **mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過全部 M-rules(M1-M32 + M36,M27 retired 2026-05-15 → M23(c) child / M33-M35 retired 2026-05-22 → folded into M20/M7/M23(d) per `/knowledge-prune` deep audit Lens 1+2)。
 
 ## 2026-05-10 cluster cross-link(per codex Q-13 deep prune audit + 2026-05-22 fold update)
 
-32 M-rules(M1-M32 + M36,M27/M33/M34/M35 retired)分 6 cluster(舉一反三 grouping):
+33 M-rules(M1-M32 + M36 + M37,M27/M33/M34/M35 retired)分 6 cluster(舉一反三 grouping):
 
 | Cluster | M-rules | 共同主軸 |
 |---|---|---|
@@ -13,7 +13,7 @@
 | **C. Auto-integrate pipeline** | M14 / M19 / M31 | 對話結論 5-layer / trigger phrase auto-pipeline / claude-codex 5-step |
 | **D. Verify / similar-bug / visual coverage** | M10 / M13 / M15 | proactive scan / user 第 2 次截圖 / visual-audit-coverable |
 | **E. Propose-time discipline** | M18 / M21@watch | 4-Q 自檢 / 新元件抽象前 prop variant test |
-| **F. Sharp invariants(各自獨立)** | M2 / M3 / M4 / M5 / M6 / M7(含 M34 子規則)/ M9 / M11 / M12 / M16@watch / M17 / M20(含 M33 子規則)/ M24 / M25@watch / M28 / M32 / M36 | sharp invariant(M30 歸 cluster A,曾誤雙列) |
+| **F. Sharp invariants(各自獨立)** | M2 / M3 / M4 / M5 / M6 / M7(含 M34 子規則)/ M9 / M11 / M12 / M16@watch / M17 / M20(含 M33 子規則)/ M24 / M25@watch / M28 / M32 / M36 / M37 | sharp invariant(M30 歸 cluster A,曾誤雙列) |
 
 `@watch` 標記(2026-05-15)= 該 M-rule 目前 absorbs 1-2 bugs(charter 要 ≥3)。1 quarter 觀察:無新 bug → demote 為既有 M-rule 子規則;有新 bug → 升 sharp keep。**2026-05-22 fold prune**:M33/M34/M35 各 absorb 1 bug → folded into parent cluster home(M33→M20 / M34→M7 / M35→M23(d)),減 3 條 M-rule 同時保留全部 invariants。Velocity 修正:本季 net add 12 rules(15 new − 3 fold)= 18 → 12 趨近 charter ≤3/quarter target,持續觀察。
 
@@ -76,6 +76,8 @@
 <!-- M34 retired 2026-05-22(per /knowledge-prune deep audit Lens 1+2):folded into M7 as sub-rule「Hook detection regex 必對齊 spec wording 廣度」。Original Triple test + 錨例(story-rules.md name field detection)retained at M7 entry。Single-bug rule + same-class「rule-authoring hygiene」與 M7 合併。 -->
 
 <!-- M35 retired 2026-05-22(per /knowledge-prune deep audit Lens 1+2):folded into M23(d) as sub-rule「Nearest same-purpose canonical wins」。Original verdict(codex 2026-05-20「Cite 存在 ≠ consume 落實」)+ Triple test + registry SSOT + hook R8 retained at M23(d)。Single-bug rule + same-class「優先消費既有」與 M23 合併。 -->
+
+| **M37** | **禁以「當下剛好成立的觀察量」代替要保證的性質(identity substitution)**(2026-09-20 立,一天內同根因發作 7 次)。任何旗標／欄位／名稱／時間,若它**不是**那個性質本身、只是當時剛好跟它一起成立,就是代理;代理會在**寫的當下看起來完全正確**,然後在條件變了以後靜默失效 —— 而且通常**零報錯**。**三問**(寫任何判斷式、閘、契約前):(1) 我要保證的性質**逐字**是什麼?(2) 我實際拿來判斷的是**哪個值**?(3) 兩者何時會分開?想得出任何一種情境,就是代理,換成直接量那個性質。**七個同日錨例**:①「user 同意發這份工作」寫成綁 commit SHA → 發版必然產生新 commit,user 被迫為同一份工作講六次「發版」;②「必過 check」綁 check 名字;③「出處可信」綁 job 名;④「這道閘存在」= 檔案存在(沒有任何執行面呼叫它);⑤ 自家 helper 回 `{ok,…}` 卻讀 `.status`(`undefined !== 0` 恆真);⑥「畫面已渲染」= 過了 900 毫秒(慢的 runner 上假紅,還指控一個不存在的問題);⑦「已派工」被當成「已處理完」—— 而派工的目的正是讓分支**稍後**出現,於是正確路徑被自己鎖死,空轉到逾時。**⑦ 的特徵值得單獨記**:兩件事的**時間順序相反**時,共用旗標必然鎖死後發生的那件。**驗法**:判斷式抽成純函式 + 判定表,但**必須連「那個值是誰算的」一起測**(M32 的參數邊界盲點),而且測**序列**不只測靜態幾格 —— ⑦ 只在「派工之後分支才出現」這個順序上發作。呼叫端必須真的消費那支純函式,否則是兩份平行實作。 | 2026-09-20 一日七犯:consent↔commit / required check↔名字 / provenance↔job 名 / 閘存在↔檔案存在 / 回傳形狀假設 / 已渲染↔900ms / 已派工↔已處理(全部有 commit + 兩面對照組 receipt) |
 
 ## 判斷 meta-principle 是否漏寫的 test
 

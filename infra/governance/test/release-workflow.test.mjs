@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
@@ -18,6 +19,9 @@ import {
   selectPublishRun,
   validateConsumerCheckProvenance,
   consentCoversHead,
+  consumerStepAction,
+  productContentDigest,
+  releaseIncidentFromEnv,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
 import { loadGovernanceBuildGraph } from '../../../scripts/governance-build-graph.mjs'
@@ -39,10 +43,17 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
   // 2026-09-02 user directive:合併前必有 user 對當前 PR head 的發版同意 receipt(預覽 → user 說「發版」→ 才合併)。
   assert.equal(workflow.steps[1].gate, 'user-release-consent')
   assert.equal(workflow.steps.filter(step => 'gate' in step).length, 1, 'only the merge step carries the human consent gate')
-  assert.deepEqual(
-    { required: workflow.releaseConsent.required, gateBefore: workflow.releaseConsent.gateBefore, binding: workflow.releaseConsent.binding },
-    { required: true, gateBefore: 'merge', binding: 'pull-request-head-sha' },
-  )
+  assert.equal(workflow.releaseConsent.required, true)
+  assert.equal(workflow.releaseConsent.gateBefore, 'merge')
+  // 宣告值不做同義反覆斷言 —— 那只是把 JSON 抄一遍,SSOT 與實作漂移時照樣全綠
+  //(2026-09-20 稽核實證:宣告 pull-request-head-sha、實作已換成內容指紋,三個互斥斷言同時綠)。
+  // 改成:**宣告的語意必須與實作的行為一致**,漂移就紅。
+  assert.equal(workflow.releaseConsent.binding, 'approved-preview-content-digest')
+  const probe = { schemaVersion: 3, quote: '發版', productDigest: 'a'.repeat(64), branch: 'claude/當初那條' }
+  assert.equal(consentCoversHead({ receipt: probe, branch: 'claude/另一條', headSha: 'f'.repeat(40), currentProductDigest: 'a'.repeat(64) }).ok,
+    true, '宣告綁內容 → 實作就不得看分支')
+  assert.equal(consentCoversHead({ receipt: probe, branch: 'claude/當初那條', headSha: 'f'.repeat(40), currentProductDigest: 'b'.repeat(64) }).ok,
+    false, '宣告綁內容 → 內容變了就必須失效')
   assert.ok(workflow.releaseConsent.consentPhrases.includes('發版'))
 })
 
@@ -409,4 +420,103 @@ test('consumer sync PRs are opened by the orchestrator, and every one it opens i
   // 壞輸入仍 fail closed
   assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version, commit: 'nope' }), /release commit/)
   assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version: 'nope', commit }), /version/)
+})
+
+test('consumer 沒有 PR 時的下一步:「已派工」與「已開 PR」是兩件事', () => {
+  // ── 真正的回歸:beta.139 那條**序列** ───────────────────────────────────
+  // 靜態幾格全對也可能漏掉這個 bug —— 它只在「派工之後分支才出現」這個順序上發作。
+  const wm = { delivery: 'repository-dispatch-pr' }
+  let dispatched = false
+  let opened = false
+
+  // 第 1 圈:sync workflow 還沒把分支推上來 → 派工
+  let a = consumerStepAction({ ...wm, branchExists: false, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'dispatch')
+  dispatched = true
+
+  // 第 2 圈:分支還在路上 → 等,但**不可以**重派(重派會重跑一次 sync workflow)
+  a = consumerStepAction({ ...wm, branchExists: false, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'wait')
+
+  // 第 3 圈:分支出現了 → **必須開 PR**。
+  // 這一格就是 2026-09-20 的 bug:舊版用同一個旗標擋,這裡會回 'wait' 而永遠開不出 PR,
+  // 空轉到 45 分鐘逾時,work-management 停在前一版。
+  a = consumerStepAction({ ...wm, branchExists: true, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'create-pr', '派工之後分支才出現 —— 這一圈必須開 PR,不能被「已派工」擋住')
+  opened = true
+
+  // 第 4 圈:已經開過了 → 不重複開
+  a = consumerStepAction({ ...wm, branchExists: true, dispatched, pullRequestOpened: opened })
+  assert.equal(a, 'wait')
+
+  // ── template:分支由上游 release 事件推上來,這裡只等不派工 ──
+  const tpl = { delivery: 'release-published-pr' }
+  assert.equal(consumerStepAction({ ...tpl, branchExists: false }), 'wait')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: false, dispatched: true }), 'wait', 'template 永遠不派工')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: true }), 'create-pr')
+  assert.equal(consumerStepAction({ ...tpl, branchExists: true, pullRequestOpened: true }), 'wait')
+})
+
+test('呼叫端真的用 consumerStepAction,而且兩個旗標沒有被合回一個', () => {
+  // 純函式測得再漂亮,呼叫端沒用到就是兩份平行實作 —— 這正是 2026-09-20 學到的那條
+  //(判定表全綠、餵它的值卻是另一段程式算的)。
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  assert.match(src, /const action = consumerStepAction\(/, 'executeAutomaticRelease 必須用這支純函式決定下一步')
+  assert.match(src, /const dispatchedConsumers = new Set\(\)/)
+  assert.match(src, /const openedConsumerPullRequests = new Set\(\)/, '兩件事要兩個集合')
+  // 開 PR 之後只能加進 openedConsumerPullRequests;把 repo 加進 dispatchedConsumers 就是舊 bug 復活
+  const block = src.slice(src.indexOf('const action = consumerStepAction('))
+  const createBranch = block.slice(block.indexOf("if (action === 'create-pr')"), block.indexOf("else if (action === 'dispatch')"))
+  assert.doesNotMatch(createBranch, /dispatchedConsumers\.add/, '開 PR 不得標記成「已派工」')
+})
+
+test('發版同意綁「使用者看過的產品內容」,不綁 commit 也不綁分支', () => {
+  const digest = productContentDigest('HEAD')
+  assert.match(digest || '', /^[0-9a-f]{64}$/, '產品內容指紋必須算得出來')
+  assert.notEqual(digest, createHash('sha256').update('').digest('hex'),
+    '空集合的指紋在任何兩次比較都會「相符」= 假性通過,不得當成有效指紋')
+
+  // receipt **必須帶 branch**(真實 receipt 一定有,它是出處紀錄):少了它,
+  // 「改回分支要相符」這種回歸就碰不到判定式,測試會假綠。2026-09-20 第一版就漏了這個。
+  const receipt = { schemaVersion: 3, quote: '發版', productDigest: digest, branch: 'claude/同意當下那條分支' }
+  // 這一格就是 2026-09-20 第二次修正的重點:換了分支、換了 commit,同意仍然成立。
+  for (const branch of ['claude/a', 'claude/完全不同的分支', 'main', undefined]) {
+    assert.equal(
+      consentCoversHead({ receipt, branch, headSha: 'f'.repeat(40), currentProductDigest: digest }).ok,
+      true,
+      `分支「${branch}」不該影響同意是否成立 —— 分支是我切工作的單位,不是 user 授權的單位`,
+    )
+  }
+  // 安全面(2026-09-02 事故那一格)完全保留:user 看過的東西變了就必須重新確認
+  assert.equal(consentCoversHead({ receipt, branch: 'claude/a', headSha: 'f'.repeat(40), currentProductDigest: '0'.repeat(64) }).ok, false)
+  assert.equal(consentCoversHead({ receipt, branch: 'claude/a', headSha: 'f'.repeat(40), currentProductDigest: null }).ok, false, '算不出指紋要保守視為不覆蓋')
+  assert.equal(consentCoversHead({ receipt: { ...receipt, productDigest: null }, currentProductDigest: digest }).ok, false)
+  assert.equal(consentCoversHead({ receipt: { ...receipt, quote: '   ' }, currentProductDigest: digest }).ok, false, '仍然需要 user 逐字原話')
+})
+
+test('一份授權只發一次 final release —— 而且執行面真的呼叫那支閘', () => {
+  // 第一次:放行
+  assert.equal(authorizeDeepAuditPublish(workflow, { completedFinalReleases: 0 }).authorization, 'final-release')
+  // 第二次沒有 incident 證據:擋住(2026-09-19/20 同一份工作連發五版的那個缺口)
+  assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1 }), /additional/i)
+  // 第二次有完整 incident 證據:放行
+  const ok = authorizeDeepAuditPublish(workflow, {
+    completedFinalReleases: 1,
+    incident: { incidentId: 'INC-1', failureClass: 'post-publish-blocker', publishedVersion: '0.1.0-beta.139', evidenceRef: 'ref-1' },
+    priorAdditionalReleaseIncidentIds: [],
+  })
+  assert.equal(ok.authorization, 'incident-release')
+
+  // incident 只認明確傳入的環境變數,絕不推測
+  assert.equal(releaseIncidentFromEnv({}), null)
+  assert.equal(releaseIncidentFromEnv({ RELEASE_ADDITIONAL_INCIDENT: 'not json' }), null)
+  assert.deepEqual(releaseIncidentFromEnv({ RELEASE_ADDITIONAL_INCIDENT: '{"incidentId":"X"}' }), { incidentId: 'X' })
+
+  // **執行面必須真的呼叫它** —— 這條閘在 2026-09-20 之前定義好、測試好,卻從沒被發版流程呼叫過,
+  // 所以 canonical 的「最多一次」等於不存在。這個斷言就是防它再變回孤兒。
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /authorizeDeepAuditPublish\(/, 'publish 步驟必須呼叫 authorizeDeepAuditPublish,否則「一份授權一次發布」只是紙上的字')
+  assert.match(publishBlock, /consentReleaseLedger\(\)/, 'publish 前必須讀同一份授權底下已發的版本帳本')
+  assert.match(src, /recordConsentRelease\(observation\.version\)/, 'publish 之後必須記帳,否則帳本永遠是空的 = 閘永遠不會紅')
 })

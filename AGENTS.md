@@ -14,13 +14,13 @@
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants`／variant／token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
 5. **先證據、再分權**——無前例的產品／UI／UX SSOT 決策:grep 既有 → 讀近親 spec → 仍有真實取捨才停下問。純工程不確定性由最高 certified model 依 canonical、tests、Harness 與 security gates 收斂;只有 task／deliverable 明確要求時才加 independent review,**不得用問 user 代替工程判斷**;禁憑直覺造新 pattern。
-6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住,見 `packages/design-system/ds-canonical/rules/meta-patterns.md`(32 active M-rules;M27/M33/M34/M35 已折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 M12 benchmark + invariant test;user 第 2 次問 → 必截圖 verify(M13);對話結論 → AUTO 5-layer pipeline(M14);visual/behavior decision 前必先 WebFetch ≥ 3 source(M26);solo-work git ops 必先 grep canonical(M28);**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
+6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住,見 `packages/design-system/ds-canonical/rules/meta-patterns.md`(33 active M-rules;M27/M33/M34/M35 已折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 M12 benchmark + invariant test;user 第 2 次問 → 必截圖 verify(M13);對話結論 → AUTO 5-layer pipeline(M14);visual/behavior decision 前必先 WebFetch ≥ 3 source(M26);solo-work git ops 必先 grep canonical(M28);**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
 # Rule Index(progressive disclosure — 編對應檔案前必先讀)
 
 | 檔案 | 何時必讀 |
 |---|---|
-| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(32 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(33 條 M-rules,fundamental)|
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|
 | `packages/design-system/ds-canonical/rules/story-rules.md` | 編任何 `*.stories.tsx`(三層定位 / Title / 範例準則)|
@@ -99,7 +99,7 @@
 | 步驟 | AUTO 動作與完成條件 |
 |---|---|
 | 1 `pr-checks` | 編輯、生成、測試、commit、push、建立／更新唯一 PR(**draft**);自行修到 required CI green 且 conversations resolved;**回報 Netlify deploy preview 連結**(`deploy-preview-<PR>--<site>.netlify.app`)給 user 檢視 |
-| 1.5 **發版同意(ASK)** | **user 看過預覽後在對話說「發版」**(exact target = **當前工作分支 = 該 PR**)→ hook `record_release_consent.sh` 自動落地 receipt(`.git/governance-runtime/release-consent/branch__<分支>.json`);缺 receipt → `release:auto` **停在預覽階段**印 `AWAITING_USER_RELEASE_CONSENT`,不合併、不發布;問句／否定不算同意。**同意綁分支不綁 commit**(2026-09-20):發版必然產生新 commit(版號 bump、CI 修正),綁 commit 會讓 user 為同一份工作一再重講;而預覽連結 `deploy-preview-<PR>` 本來就是每個 PR 一條。防線不減:換分支要重新同意;同意後若**預覽看得見的內容**(`packages/<pkg>/src` 的 ts/tsx/js/jsx/css)又變了,判定失效要重新確認 |
+| 1.5 **發版同意(ASK)** | **user 看過預覽後在對話說「發版」**(exact target = **user 看過的那份產品內容**)→ hook `record_release_consent.sh` 自動落地 receipt(`.git/governance-runtime/release-consent/current.json`,schemaVersion 3);缺 receipt → `release:auto` **停在預覽階段**印 `AWAITING_USER_RELEASE_CONSENT`,不合併、不發布;問句／否定不算同意。**同意綁「user 看過的產品內容」,不綁 commit、不綁分支**(2026-09-20 兩次修正的結論):commit 與分支都是 **agent 切工作的單位**,不是 user 授權的單位 —— 綁 commit 讓版號 bump 就失效,改綁分支之後開一條新分支又失效,**問題只是換地方發作**(user 原話:「你他媽我從頭到尾就這樣要求,也沒有新增任何設計需求?你他媽到底是要我說發版說到何時?」)。現在綁預覽看得見的檔(`packages/<pkg>/src` 的 ts/tsx/js/jsx/css)內容指紋:**內容沒變 → 換幾個 commit、幾條分支都算數**;**內容變了 → 必須重新確認**(2026-09-02 事故要保護的正是這一格);明確否定 → 撤回。**一份同意 = 一次 final release**:帳本記在 receipt 的 `releases`,第二次發布必須有 incident 證據(`RELEASE_ADDITIONAL_INCIDENT`),否則 fail closed —— 這條 canonical 早就寫了、`authorizeDeepAuditPublish()` 也寫好了,但 2026-09-20 之前**執行面零呼叫**,才會出現同一份工作連發 beta.135–139 五版、user 被迫重講五次 |
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |

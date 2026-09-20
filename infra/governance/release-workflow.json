@@ -165,7 +165,7 @@
     "required": true,
     "gateBefore": "merge",
     "receiptDir": ".git/governance-runtime/release-consent",
-    "binding": "pull-request-head-sha",
+    "binding": "approved-preview-content-digest",
     "userVerbatim": "按照我們規定的工作流程應該是你要先把我們討論的東西部署到 netlify,等我確認後認為都沒問題,主動說要發版,你才會 push 到 GitHub main 同時更新 GitHub 上的 storybook 並發版到 NPM(2026-09-02)",
     "consentPhrases": [
       "發版",
@@ -189,13 +189,35 @@
     ],
     "denialMarkers": [
       "不要發版",
-      "先不要",
-      "不要發",
-      "還不要",
+      "不要發布",
+      "不要發佈",
+      "先不要發",
+      "先別發",
+      "不用發版",
       "暫停發版",
+      "還不要發",
       "don't release",
       "do not release",
-      "hold"
+      "hold the release"
+    ],
+    "bindingRationale": "同意綁「user 看過並認可的預覽內容」。commit 與分支都是 agent 切工作的單位,不是 user 授權的單位:綁 commit → 版號 bump 就失效;綁分支 → 開新分支就失效。兩者都讓 user 為同一份工作被迫一再重講(2026-09-19/20 實證:6 份工作 11 次同意;beta.135-139 五版)。內容沒變 → 同意跨 commit、跨分支成立;內容變了 → 必須重新確認(2026-09-02 事故要保護的正是這一格)。",
+    "priorConsentAssertions": [
+      "到底要說幾次",
+      "到底要講幾次",
+      "要我說幾次",
+      "已經說.{0,6}一百次",
+      "說發版說到",
+      "不是.{0,12}就發版了嗎",
+      "老早就說.{0,12}發版",
+      "說到何時"
+    ],
+    "aNotAQuestions": [
+      "要不要",
+      "可不可以",
+      "能不能",
+      "該不該",
+      "是不是",
+      "要不要緊"
     ]
   }
 }
