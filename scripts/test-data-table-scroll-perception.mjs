@@ -228,6 +228,21 @@ if (process.argv.includes("--unit-only")) {
     "PASS: content/shell/missing/unresolved/full-row ink/partial padding/PNG coverage controls"
   );
 } else {
+  // 逾時預算由**子行程自己宣告的重試次數**推導,不是一個魔術數字。
+  //
+  // 2026-09-21 根因(有證據,不是猜):main 上這支被 SIGTERM,而 artifact 裡的 runtime-ink.log 顯示
+  // 子行程在**依設計重試**——「第 1 次作廢,重跑」/「第 2/5 次」/「第 3/5 次」,每次約 38 秒
+  // (attempt 的 timeOrigin 相差 1789923748→786→824)。子行程的 MAX_ATTEMPTS 預設 5,
+  // 最壞約 190 秒,而父行程寫死 120 秒 —— **父的預算比子宣告的預算還短**,
+  // 於是只要 runner 吵到需要第 4 次重試就必然被殺,訊息還去怪 runner 負載。
+  // 重試存在的理由就是容忍吵雜的共享 runner;砍掉它會換來一堆誤紅。
+  //
+  // 這**不是**「調大 timeout 掩蓋掛住」:真的掛住時子行程不會有 attempt 進度,
+  // 下面的失敗訊息會讀回它的日誌,把「重試預算用完」與「卡死」分開講。
+  const CONTROL_MAX_ATTEMPTS = Number(process.env.DT_PERCEPTION_MAX_ATTEMPTS ?? 5);
+  const CONTROL_PER_ATTEMPT_MS = 60000; // CI 實測每次約 38s,留 1.5× 餘裕
+  const CONTROL_TIMEOUT_MS = CONTROL_MAX_ATTEMPTS * CONTROL_PER_ATTEMPT_MS + 30000;
+
   for (const mode of ["on", "ink"]) {
     const caseOut = join(out, mode === "on" ? "delayed" : "hidden-content");
     const result = spawnSync(
@@ -247,7 +262,7 @@ if (process.argv.includes("--unit-only")) {
         `--sabotage=${mode}`,
         "--assert=on",
       ],
-      { encoding: "utf8", timeout: 120000 }
+      { encoding: "utf8", timeout: CONTROL_TIMEOUT_MS }
     );
     writeFileSync(
       join(out, `runtime-${mode}.log`),
@@ -258,13 +273,22 @@ if (process.argv.includes("--unit-only")) {
     // 看起來像偵測器壞了;其實是 spawnSync 的 120s timeout 到期把子行程 SIGTERM 掉(同一支子行程本機只跑 7 秒)。
     // 追了好一陣子才發現是逾時不是邏輯。訊息要自己講清楚。
     if (result.error || result.signal || result.status === null) {
+      // 逾時時把子行程的日誌讀回來,**分辨「重試預算用完」與「真的卡死」** ——
+      // 兩者的修法完全相反,而先前的訊息把兩者混成一句「查 runner 負載」。
+      const partial = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      const attemptsSeen = (partial.match(/次作廢,重跑/gu) ?? []).length;
+      const progressed = attemptsSeen > 0;
       const why = result.signal
-        ? `子行程被訊號 ${result.signal} 終止(spawnSync timeout=120s 到期,或 runner 把它殺了)`
+        ? `子行程被訊號 ${result.signal} 終止(spawnSync timeout=${CONTROL_TIMEOUT_MS}ms 到期,或 runner 把它殺了)`
         : `子行程沒有正常結束:${result.error?.message ?? "沒有 exit code"}`;
+      const diagnosis = progressed
+        ? `它**有在前進**:日誌裡看得到 ${attemptsSeen} 次「作廢,重跑」(子行程設計如此,MAX_ATTEMPTS=${CONTROL_MAX_ATTEMPTS})。` +
+          `這代表 runner 吵到重試預算被吃完,不是卡死 —— 要嘛降低同 job 的競爭,要嘛檢討重試次數,` +
+          `不要只把 timeout 再往上加。`
+        : `它**完全沒有前進**:日誌裡一次「作廢,重跑」都沒有。這才是真的卡死,查子行程本身。`;
       assert.fail(
-        `對照組(--sabotage=${mode})沒跑完,拿不到判定:${why}。` +
-          `本機同一支約 7 秒即 exit 1;真的變慢就查 runner 負載,不要直接調大 timeout 掩蓋掛住。` +
-          `完整輸出在 ${join(out, `runtime-${mode}.log`)}`
+        `對照組(--sabotage=${mode})沒跑完,拿不到判定:${why}。${diagnosis}` +
+          `本機同一支約 7-8 秒即 exit 1。完整輸出在 ${join(out, `runtime-${mode}.log`)}`
       );
     }
     assert.equal(
