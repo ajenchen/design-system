@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:e129df4e3a228d276e82c035ff44be61f843ccd4c27aa8eea7f5b5da476fab08",
+      "hash": "sha256:7d49e8dadc69ed144039a14e088dcbd6588f60257adfba56ea37b899f1fa06f8",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:27f9373bf00c2546c37f0f636a7ada6d7410487c60d3109bbecb3f89f1ab44b2",
+      "hash": "sha256:f66bfb93a94038d0d9495489234b2cb6246da2be0bf612d63cb18004679b6ab1",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:a62edffc257cf6ea408a85abfa8abc7b622b777847bab5d0bddbc2ce36ad5730",
+  "inputDigest": "sha256:b3d7369c4c3e0966e065a628ae367363806bfa2ad2bc50084b0f46efb15f75c1",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,15 +518,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:a516a6e2d908d1ceb9508be956b1de089b0da68682460ea6e560cf7580fe7f3f",
+  "snapshotDigest": "sha256:d0ed21ef95f7f29f2381c2ed0cd20af23cbaf18310aebf251085a221855cfa36",
   "sources": [
     {
-      "hash": "sha256:756ab38780fba7f602b23c874bdb122ee14c48fecc60c17fc1be914658c929be",
+      "hash": "sha256:6d1b84bcf6f31305950968e7ffa2a8afb724a58d95a4bb4068423cbff72f5e4d",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 28698,
+      "size": 29607,
       "type": "file"
     },
     {
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 470,
-      "hash": "sha256:79a705bce8b73ce89d7dc4c05d2ac7409357aae977948e15ec5dbbe265ff02c2",
+      "hash": "sha256:12f28a91528a6af2652b300b8898b87fbcc74d186ef9922b06d6930565270b61",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3668,12 +3668,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:af3166530174b41d5435548458ba5eb3fc604983452dc10f290291b167c96a35",
+      "hash": "sha256:71659c0c8c8a1e036ca03980508fe01f28e77153a9f175c567dab3e20a248d33",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 62267,
+      "size": 62609,
       "type": "file"
     },
     {

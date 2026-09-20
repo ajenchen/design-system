@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:756ab38780fba7f602b23c874bdb122ee14c48fecc60c17fc1be914658c929be",
+      "hash": "sha256:6d1b84bcf6f31305950968e7ffa2a8afb724a58d95a4bb4068423cbff72f5e4d",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 28698,
+      "size": 29607,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 470,
-      "hash": "sha256:79a705bce8b73ce89d7dc4c05d2ac7409357aae977948e15ec5dbbe265ff02c2",
+      "hash": "sha256:12f28a91528a6af2652b300b8898b87fbcc74d186ef9922b06d6930565270b61",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:af3166530174b41d5435548458ba5eb3fc604983452dc10f290291b167c96a35",
+      "hash": "sha256:71659c0c8c8a1e036ca03980508fe01f28e77153a9f175c567dab3e20a248d33",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 62267,
+      "size": 62609,
       "type": "file"
     },
     {

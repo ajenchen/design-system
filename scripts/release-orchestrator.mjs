@@ -54,8 +54,11 @@ export function consentCoversHead({ receipt, branch, headSha, productFilesChange
 /** 兩個 commit 之間有沒有動到「預覽看得見」的檔。讀不到 git → true(保守:當成變了,要求重新同意)。 */
 export function productVisibleFilesChanged(fromSha, toSha) {
   if (!fromSha || !toSha || fromSha === toSha) return false
+  // `run()` 回的是 { ok, stdout, stderr },**沒有 `status`** —— 先前寫成 `diff.status !== 0`,
+  // `undefined !== 0` 恆為真,於是這支從第一天起永遠回「變了」,整個「同分支不必重講」形同虛設。
+  // 2026-09-20 實測:同意落地後只 bump 版號(零個 packages/<pkg>/src 檔),仍被判要重新同意。
   const diff = run('git', ['diff', '--name-only', `${fromSha}...${toSha}`], { allowFailure: true })
-  if (diff.status !== 0 || typeof diff.stdout !== 'string') return true
+  if (!diff.ok || typeof diff.stdout !== 'string') return true
   return diff.stdout.split('\n').some((f) => /^packages\/[^/]+\/src\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
 
