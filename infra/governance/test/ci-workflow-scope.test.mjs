@@ -28,11 +28,11 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-09-20:第九個跑東西的 job `verify-browser-field-edges`。select-all 一個 job 序列跑五支
   // 全 story 掃描,實測 1076 秒(17.9 分)—— 是關鍵路徑第二長的,而那五支彼此獨立、只共用同一份
   // storybook build。拆一半出來平行跑,各自約 9-10 分。user 原話:「你他媽發版到底是要發多久?」
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -42,8 +42,8 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-sweeps 一併列入(2026-09-17):它跑兩支「全 1034 支 story 掃一遍」的閘,
   // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
   // verify-browser-select-all 同列(2026-09-17):同樣是全 story 掃,而且每支還要開面板互動,本機 6.6 分。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges']) {
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -93,8 +93,11 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 10 → 11 / 8 → 9(2026-09-20):新增 verify-browser-field-edges。它是從 select-all 拆出來的,
   // 不是新工作量 —— 那五支掃描原本在同一個 job 裡排隊(實測 1076 秒),拆成兩個平行 job 之後
   // 牆鐘減半。代價是多一份 storybook build 與一次 chromium 安裝(算力),換掉的是使用者等待時間。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 11)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 9)
+  // 11 → 12 / 9 → 10(2026-09-20,同日第二次):再把 sweeps 拆成兩個。**誠實記錄**:第一次拆的是
+  // 第二長的 select-all(1076→508 秒),關鍵路徑 sweeps 1183 秒原封不動 —— 我當時在 commit 裡
+  // 寫「關鍵路徑砍掉三分之一」是錯的。這次才動到第一名,瓶頸讓位給 perception(1055 秒)。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 12)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 10)
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',

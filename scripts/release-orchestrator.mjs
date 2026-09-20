@@ -178,7 +178,13 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
   const verdict = classifyConsentPrompt(quote)
   invariant(verdict.verdict === 'consent',
     `這段原話不構成發版同意(判為 ${verdict.verdict}:${verdict.reason})—— 判準 SSOT 在 infra/governance/release-workflow.json,hook 與手動落地共用同一份`)
-  invariant(typeof branch === 'string' && branch.trim() && branch !== 'main', 'release consent is recorded per working branch, never on main')
+  // branch 在 v3 只是**出處紀錄**,不參與判定 —— 硬性要求它非空是 v2 的殘留,
+  // 而 CI 是 detached HEAD(`git branch --show-current` 回空字串),於是落地當場 throw、
+  // 收據寫不出來。本機永遠在一條有名字的分支上,所以這個壞法在本機永遠測不到
+  //(2026-09-20:hooks-linux 六格紅,本機 12/12 綠)。
+  // 「不在 main 上記錄同意」這條防線保留:知道分支時才檢查,不知道就不假裝知道。
+  invariant(branch === null || branch === undefined || typeof branch === 'string', 'release consent branch must be a string when known')
+  invariant(branch !== 'main', 'release consent is never recorded on main')
   mkdirSync(CONSENT_DIR, { recursive: true })
   const productDigest = productContentDigest(headSha)
   invariant(Boolean(productDigest), '算不出「預覽看得見」的產品內容指紋 —— 沒有它就無法把同意綁在使用者真正看過的東西上')
@@ -195,7 +201,8 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
     // 綁定對象:使用者看過並認可的**產品內容**。branch / consentedHeadSha 只是出處紀錄,不參與判定。
     productDigest,
     releases: carriedReleases,
-    branch,
+    detachedHead: !branch || !String(branch).trim() || undefined,
+    branch: branch && String(branch).trim() ? branch : null,
     consentedHeadSha: headSha,
     quote: quote.trim(),
     quoteSha256: createHash('sha256').update(quote.trim()).digest('hex'),
@@ -1336,7 +1343,8 @@ function parseCli(argv) {
   if (command === 'consent') {
     const index = flags.indexOf('--quote')
     invariant(index >= 0 && flags[index + 1], 'consent needs --quote "<user verbatim>"')
-    return { command, quote: flags[index + 1] }
+    const branchIndex = flags.indexOf('--branch')
+    return { command, quote: flags[index + 1], branch: branchIndex >= 0 ? flags[branchIndex + 1] : undefined }
   }
   if (command === 'withdraw') return { command }
   invariant(flags.every(flag => flag === '--json' || flag === '--no-wait'), 'unsupported release orchestrator option')
@@ -1357,7 +1365,9 @@ function main() {
       })
       console.log(JSON.stringify({ status: removed ? 'RELEASE_CONSENT_WITHDRAWN' : 'NO_RELEASE_CONSENT' }, null, 2))
     } else if (options.command === 'consent') {
-      const branch = run('git', ['branch', '--show-current']).stdout
+      // 呼叫端(hook)知道目標 repo 的分支就傳進來;沒傳才從本 repo 推,推不出來就是 detached,
+      // 那不是錯誤 —— v3 的判定不看分支。
+      const branch = options.branch ?? run('git', ['branch', '--show-current'], { allowFailure: true }).stdout
       const headSha = run('git', ['rev-parse', 'HEAD^{commit}']).stdout
       const receipt = writeReleaseConsent({ headSha, branch, quote: options.quote, source: 'manual' })
       console.log(JSON.stringify({ status: 'RELEASE_CONSENT_RECORDED', ...receipt }, null, 2))

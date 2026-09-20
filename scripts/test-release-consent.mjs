@@ -75,6 +75,19 @@ try {
   assert.match(receipt.productDigest, /^[0-9a-f]{64}$/)
   assert.deepEqual(receipt.releases, [])
 
+  // 3b. **detached HEAD**(CI 的常態)必須仍能落地 —— branch 在 v3 只是出處紀錄。
+  //     2026-09-20:硬性要求 branch 非空是 v2 殘留,CI 上 `git branch --show-current` 回空字串,
+  //     於是收據寫不出來、hooks-linux 六格紅,而本機永遠在一條有名字的分支上所以全綠。
+  //     這一格就是「本機測不到的那一面」。
+  for (const detached of ['', undefined, null]) {
+    const r = writeReleaseConsent({ headSha: head, branch: detached, quote: '發版', source: 'test' })
+    assert.equal(r.branch, null, 'detached 時 branch 記成 null,不假裝知道')
+    assert.match(r.productDigest, /^[0-9a-f]{64}$/)
+    assert.ok(readReleaseConsent({ branch: undefined, headSha: head }), 'detached 落地的同意必須讀得回來')
+  }
+  // 「不在 main 上記錄同意」這條防線仍在
+  assert.throws(() => writeReleaseConsent({ headSha: head, branch: 'main', quote: '發版', source: 'test' }), /never recorded on main/)
+
   // 4. 同一份預覽內容:**換分支、換 commit 都仍然成立**(本次修正的重點)
   for (const b of ['claude/完全不同的分支', 'main', undefined]) {
     assert.ok(readReleaseConsent({ branch: b, headSha: head }), `分支「${b}」不該讓同意失效`)

@@ -702,13 +702,49 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
-      - name: DS-wide story sweeps (browser)
+      - name: Avatar anchor box sweep (browser)
         run: |
           npx --no-install playwright install chromium
           # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
           # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
           # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
           npm run test:avatar-anchor-box
+
+  verify-browser-overlay-rows:
+    # 2026-09-20 拆出來的第十個 job。sweeps 一個 job 序列跑兩支全 1034 支 story 的掃描,
+    # 實測 1183 秒 —— 是 CI 關鍵路徑最長的那一個。兩支互不相關,只共用同一份 storybook build。
+    # 拆開後各自約 12-14 分,瓶頸讓位給 DataTable perception(1055 秒)。
+    # **誠實記錄**:前一個 commit 我說「關鍵路徑砍掉三分之一」是錯的 —— 那次拆的是第二長的
+    # select-all(1076→508 秒),關鍵路徑 sweeps 1183 秒原封不動。這次才是動到第一名。
+    name: Verify browser(overlay list rows)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Overlay option rows leading edge (browser)
+        run: |
+          npx --no-install playwright install chromium
           # 浮層選項清單每一列的最前緣必須對齊 header 標題(overlay-surface.spec.md 第 2 條 invariant)。
           # 2026-09-17 錨:CommandItem 是兩層,px-loose 寫在 className 會落外層與內層 px-3 相加(16+12=28),
           # 標題 17px / 勾選框 29px,而當時全 repo 沒有任何閘掃這條。
@@ -836,7 +872,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -851,9 +887,10 @@ jobs:
           BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
           BROWSER_SELECT_ALL: ${{ needs.verify-browser-select-all.result }}
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
+          BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

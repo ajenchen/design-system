@@ -62,6 +62,13 @@ run "隨便講點別的" >/dev/null; check "8. 換分支後同意仍在(綁內�
 # 9. 主張早就同意過(帶問號)→ 仍算同意
 rm -f "$FILE"
 run "我他媽到底要講幾次發版?" >/dev/null; check "9. 「到底要講幾次發版?」→ 算同意" yes "$FILE"
+# 9b. **detached HEAD**(GitHub Actions 的常態)—— 本機永遠在有名字的分支上,所以這一面
+#     在本機永遠測不到。2026-09-20 就是這樣:本機 12/12 綠,hooks-linux 六格紅。
+rm -f "$FILE"
+git switch -q --detach HEAD
+run "發版" >/dev/null; check "9b. detached HEAD 仍能落地(branch 只是出處紀錄)" yes "$FILE"
+git switch -q claude/another-branch
+
 # 10. 判準來自 SSOT,不是 hook 自己寫的 regex
 grep -q "release-consent-language.mjs" "$HOOK"; assert "10. hook 消費共用判準(不自己寫 regex)" $?
 grep -qE "grep -qE '\(發版\|" "$HOOK"; [ $? -ne 0 ]; assert "11. hook 內不得殘留自己的同意詞 regex" $?

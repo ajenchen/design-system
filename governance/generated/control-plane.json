@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:6122ca13120aa353161c65e01287b40853963529477ca7694f9a1091edba739a",
+      "hash": "sha256:1c39bc94e06798206eedc421764a5116c42240819bfa115eedd63c0da133d4e8",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:04f7d8f3732c3c76b4e6ac8c61c51fa0a67b0b34cadfc11a3e7731f8de59aa22",
+      "hash": "sha256:13dad43003fa20feba97f528bb095d34a677078c90c9c94f688312559aba6a36",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:6d90970ce0a742fcc7c6063e1910d38908bf7f87f7edcb111b62d5290f316855",
+      "hash": "sha256:95f41038f565e6b28684c446918bc9675fa8cf5fbd88f690ff5eecc659a21f4e",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 471,
-      "hash": "sha256:f7957a6e0087ed72e4467df6b0b3c0816e0c59e92a9d50ec2aad10402c8178ce",
+      "hash": "sha256:5c4921f5d673d3e8a966049b469b7c60b5f9664783dbad7b22e038fead902771",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1cd938bcf656b3efffb41cecb93e533596ecc4bab42f9d03f902cc74b3d967ac",
+      "hash": "sha256:0a1a4149900a5c7b51990549bb16c4d04cc671a5b2d7ae1ea11666a0f8374833",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 75719,
+      "size": 76725,
       "type": "file"
     },
     {
