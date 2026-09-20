@@ -90,7 +90,15 @@ import { spawnSync } from 'node:child_process'
  * 讀不到 git 或 ref 不存在 → 回 true(**保守**:寧可照跑比值閘,也不要因為看不到而靜默跳過)。
  */
 function runtimeSourceDiffers(ref) {
-  const run = spawnSync('git', ['diff', '--name-only', `${ref}...HEAD`], { encoding: 'utf8' })
+  // ref 要先解析得到才有意義。**CI 上沒有本機 `main` 分支**(PR checkout 只拿 head/merge ref),
+  // 只有 `origin/main` —— 這一行寫死 `main` 的話,git 會失敗、走保守 fallback,於是「零改動就跳過」
+  // 在**唯一需要它的環境裡一次都不會生效**。2026-09-20 實測:本機跳過、CI 照跑照紅。
+  // CI 自己準備參考建置時用的也是 `git rev-parse origin/main`(ci.yml:215),對齊它。
+  const resolved = [`origin/${ref}`, ref].find((candidate) => (
+    spawnSync('git', ['rev-parse', '--verify', '--quiet', `${candidate}^{commit}`], { encoding: 'utf8' }).status === 0
+  ))
+  if (!resolved) return true
+  const run = spawnSync('git', ['diff', '--name-only', `${resolved}...HEAD`], { encoding: 'utf8' })
   if (run.status !== 0 || typeof run.stdout !== 'string') return true
   return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
