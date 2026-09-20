@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:fe632ef3d11c0aea77aaf2109ca53f35d6d5eae98c6cfe0913eb78a914db11a9",
+      "hash": "sha256:dc73d24760843ada7cbb8240d9712bc9260dfdc2c1c2beea5d7287db8a33da20",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:9f9e20c2ba000a61644d3cf4ab6e7b33b9f98d9028cdba45654770f40397b260",
+      "hash": "sha256:b0241dd8ec82609ae3b459ddd713aa560f5c2372b89b0ac24e83dcf0c8d0b528",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:89b3a5567468460a7d76ecbd6ab5a2fc86744f192fb7b47ff2c38506cb769e47",
+      "hash": "sha256:86b9d37416ea484c7b10ec860431887f7b0ca607b507eacf07f7c692ce93b2f6",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 23252,
+      "size": 23392,
       "type": "file"
     },
     {
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 468,
-      "hash": "sha256:58818350ff4ed25403cc96a86daeb185f4b3c60202a0eb4e9f267467b2e5c537",
+      "files": 470,
+      "hash": "sha256:856d4347023fcecd30df28aa2101241de9c7abb8c700b4e3f4c2c6bed2552aed",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a28f009a9b7ef78889a80c9fe76868cef83e2e43e347ba0394fd95d287044dce",
+      "hash": "sha256:af3166530174b41d5435548458ba5eb3fc604983452dc10f290291b167c96a35",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 60134,
+      "size": 62267,
       "type": "file"
     },
     {
@@ -3183,12 +3183,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6141349c29e6c636d44b8cb4d60e5ec6bd49ca08bfa157ad35d3c7a23578d023",
+      "hash": "sha256:f9888894275140ce8221ce21d3525467eb6df392e7a2bc0222bbbea3a187bd10",
       "id": "standard-release-workflow-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/release-workflow.test.mjs",
-      "size": 20647,
+      "size": 22927,
       "type": "file"
     },
     {

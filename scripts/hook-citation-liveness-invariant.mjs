@@ -15,6 +15,11 @@
  * 判準:live 治理文件裡每一個 hook 檔名 token,要嘛該檔存在於 canonical hook 樹(含 retired/、lib/、
  * tests/),要嘛它所在的那幾行明講了它是舊名/已折/已退役/未實作。兩者皆非 = 紅。
  *
+ * @gate-contract
+ *   保證: 治理文件裡提到的 hook 檔名,真的存在於 canonical hook 樹(不是已折走的舊名)
+ *   紅: 在任一份 live 文件寫上一個不存在的 hook 名且不標舊名 → 本閘必須指名該行並紅
+ *   綠: 全部存在或已標舊名時必須綠;5 格對照組每次都跑,含「同名但已標舊名要放行」的反面
+ *
  * 用法:node scripts/hook-citation-liveness-invariant.mjs [--selftest]
  */
 import { readFileSync, readdirSync, lstatSync, statSync } from 'node:fs'

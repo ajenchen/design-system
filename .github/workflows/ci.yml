@@ -128,6 +128,11 @@ jobs:
           # 2026-09-19 錨例 —— hook home 自己的 README 在 Stop 區列 5 支 hook,其中 3 支早在 2026-05-13
           # 就折進 stop_passive_logging.sh、檔名已不存在,而「折進去」這件事就寫在同一張表的上一列。
           npm run test:hook-citation-liveness
+          # 同族第三面,也是最根本的一面:閘**宣告不出自己保證什麼**,就不會發現自己用的是代理。
+          # 2026-09-20 盤點:進 required CI 的閘裡只有 1 支有雙向對照組,18 支只有「壞了會紅」,
+          # 25 支兩邊都沒有 —— 而「沒壞要綠」那一半正是同一天三次效能誤報的所在(同一份建置
+          # 量到 215 vs 311、長工合計 main 自己 1.83×,門檻卻是 1.25×)。棘輪:新增的閘必須宣告。
+          npm run test:gate-control-group
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization

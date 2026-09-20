@@ -10,6 +10,7 @@ import {
   buildConsumerDispatch,
   buildBranchPushArgs,
   buildPublishedTemplatePullRequestCreateArgs,
+  buildConsumerPullRequestCreateArgs,
   buildPublishMutationPlan,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
@@ -379,4 +380,33 @@ test('release consent is bound to the working branch, not to a single commit', (
   const legacy = { schemaVersion: 1, headSha: 'a'.repeat(40), branch: 'claude/x', quote: '發版' }
   assert.equal(consentCoversHead({ receipt: legacy, branch: 'claude/x', headSha: 'a'.repeat(40) }).ok, true)
   assert.equal(consentCoversHead({ receipt: legacy, branch: 'claude/x', headSha: other }).ok, false)
+})
+
+test('consumer sync PRs are opened by the orchestrator, and every one it opens is recognizable', () => {
+  // 2026-09-20:GitHub 不讓自家 GITHUB_TOKEN 開出來的 PR 觸發 workflow,所以
+  // repository-dispatch consumer 的 audit.yml 永遠停在 action_required,而出處判定要求必過
+  // check 綁在 PR head 上產生 —— 結構上湊不齊,beta.135/136/137/138 每次都要人工把 PR 關掉再開。
+  // 旁邊的 published-template 三次都沒卡,差別只有「PR 由 orchestrator 用 canonical token 開」。
+  const commit = 'e'.repeat(40)
+  const version = '9.9.9-beta.1'
+  for (const target of workflow.automation.consumers) {
+    const op = buildConsumerPullRequestCreateArgs(target, { version, commit })
+    const title = op.args[op.args.indexOf('--title') + 1]
+    const body = op.args[op.args.indexOf('--body') + 1]
+    const row = { state: 'OPEN', headRefName: op.branch, baseRefName: target.defaultBranch, title, body }
+    // 開了卻認不出來 = 等於沒開(下一輪會再開一個,或永遠等不到)
+    assert.equal(matchesConsumerPullRequest(target, row, version, commit), true, `${target.repository}: 自己開的 PR 認不出來`)
+    // 身分綁定仍然嚴格:版號、commit、關閉狀態任一不符都不得誤認
+    assert.equal(matchesConsumerPullRequest(target, row, '0.0.0', commit), false)
+    assert.equal(matchesConsumerPullRequest(target, row, version, 'f'.repeat(40)), false)
+    assert.equal(matchesConsumerPullRequest(target, { ...row, state: 'CLOSED' }, version, commit), false)
+    assert.equal(matchesConsumerPullRequest(target, { ...row, baseRefName: 'other' }, version, commit), false)
+  }
+  // 既有薄包裝的語意不變:只接 published-template
+  const dispatchTarget = workflow.automation.consumers.find(c => c.delivery === 'repository-dispatch-pr')
+  assert.throws(() => buildPublishedTemplatePullRequestCreateArgs(dispatchTarget, { version, commit }),
+    /not published-template driven/)
+  // 壞輸入仍 fail closed
+  assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version, commit: 'nope' }), /release commit/)
+  assert.throws(() => buildConsumerPullRequestCreateArgs(dispatchTarget, { version: 'nope', commit }), /version/)
 })

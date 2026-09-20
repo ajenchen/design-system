@@ -727,25 +727,49 @@ function ensureImmutableReleases(repository) {
   invariant(state?.enabled === true, `repository ${repository} immutable releases could not be enabled`)
 }
 
-export function buildPublishedTemplatePullRequestCreateArgs(target, { version, commit }) {
-  invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
-  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version), `invalid published-template version: ${version}`)
-  invariant(/^[a-f0-9]{40}$/.test(commit), `invalid published-template release commit: ${commit}`)
+/**
+ * 2026-09-20:consumer PR 一律由 orchestrator 用 canonical credential 開,不再由 consumer 的
+ * workflow 自己開。
+ *
+ * 為什麼:GitHub 不讓自家 `GITHUB_TOKEN` 開出來的 PR 觸發 workflow(防遞迴),所以
+ * `repository-dispatch-pr` 這條路上,consumer 的 `audit.yml` 永遠停在 `action_required`,
+ * 而出處判定要求必過 check 綁在 **PR head** 上產生(`requiredCheck.producerHead`)——
+ * 結構上永遠湊不齊,每次發版都要人工把 PR 關掉再開一次才過得去(beta.135/136/137/138 各一次)。
+ *
+ * 旁邊的 `release-published-pr`(template)三次都沒卡過,差別只有一個:**PR 是 orchestrator
+ * 用 canonical token 開的**,所以 author 是真人身分,workflow 正常跑。把 WM 併到同一條路。
+ *
+ * 冪等:已有相符 PR 就不再開(consumer workflow 若尚未移除自己的開 PR 步驟也不會衝突),
+ * 所以兩個 repo 的改動誰先上線都安全。
+ */
+export function buildConsumerPullRequestCreateArgs(target, { version, commit }) {
+  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version), `invalid consumer sync version: ${version}`)
+  invariant(/^[a-f0-9]{40}$/.test(commit), `invalid consumer sync release commit: ${commit}`)
   const tag = `v${version}`
-  const branch = `automation/release-${tag}`
+  const branch = expectedConsumerBranch(target, version)
+  // title + body 必須同時含 version 與 release commit —— `matchesConsumerPullRequest` 以此綁定身分。
+  const [title, body] = target.delivery === 'release-published-pr'
+    ? [`chore: mirror design system ${tag}`, `Generated from published design-system release ${tag} at ${commit}.`]
+    : [`chore(ds): sync ${tag}`, `Automated exact design-system release sync.\n\n- Version: \`${version}\`\n- Tag: \`${tag}\`\n- Commit: \`${commit}\``]
   return {
     branch,
     args: [
       'pr', 'create', '--repo', target.repository,
       '--head', branch, '--base', target.defaultBranch,
-      '--title', `chore: mirror design system ${tag}`,
-      '--body', `Generated from published design-system release ${tag} at ${commit}.`,
+      '--title', title,
+      '--body', body,
     ],
   }
 }
 
-function publishedTemplateBranchExists(target, version) {
-  const branch = `automation/release-v${version}`
+/** 既有外部契約(測試與 invariant 都引它);語意 = 只給 published-template 這條路的薄包裝。 */
+export function buildPublishedTemplatePullRequestCreateArgs(target, options) {
+  invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
+  return buildConsumerPullRequestCreateArgs(target, options)
+}
+
+function consumerAutomationBranchExists(target, version) {
+  const branch = expectedConsumerBranch(target, version)
   return Boolean(ghJson([
     'api', `repos/${target.repository}/branches/${encodeURIComponent(branch)}`,
   ], { allowFailure: true }))
@@ -1070,20 +1094,29 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
           '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,
         ])
       } else if (target.delivery === 'repository-dispatch-pr' && !dispatchedConsumers.has(target.repository)) {
-        dispatchConsumer(target, {
-          version: observation.version,
-          tag: observation.tag,
-          commit: observation.releaseCommitSha,
-        })
+        // 分支還沒被 sync workflow 推上來 → 先派工;已經推上來但還沒有 PR → 由本地 canonical
+        // credential 開 PR(見 buildConsumerPullRequestCreateArgs 的註解:consumer workflow 用
+        // 自家 GITHUB_TOKEN 開的 PR,GitHub 不讓它的 workflow 跑,出處鏈結構上湊不齊)。
+        if (consumerAutomationBranchExists(target, observation.version)) {
+          gh(buildConsumerPullRequestCreateArgs(target, {
+            version: observation.version,
+            commit: observation.releaseCommitSha,
+          }).args)
+        } else {
+          dispatchConsumer(target, {
+            version: observation.version,
+            tag: observation.tag,
+            commit: observation.releaseCommitSha,
+          })
+        }
         dispatchedConsumers.add(target.repository)
       } else if (target.delivery === 'release-published-pr'
         && !dispatchedConsumers.has(target.repository)
-        && publishedTemplateBranchExists(target, observation.version)) {
-        const operation = buildPublishedTemplatePullRequestCreateArgs(target, {
+        && consumerAutomationBranchExists(target, observation.version)) {
+        gh(buildConsumerPullRequestCreateArgs(target, {
           version: observation.version,
           commit: observation.releaseCommitSha,
-        })
-        gh(operation.args)
+        }).args)
         dispatchedConsumers.add(target.repository)
       }
     }
