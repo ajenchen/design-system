@@ -32,6 +32,7 @@ import { PNG } from 'pngjs'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const arg = (n, d) => process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const has = (n) => process.argv.includes(`--${n}`)
@@ -83,7 +84,12 @@ const q = (a, p) => (a.length ? a.slice().sort((x, y) => x - y)[Math.min(a.lengt
  * 週期性(32 取樣只出現一次)。
  *
  * 所以這支儀器的正確用法:
- *   - **`lost`(1.5 秒內完全沒變色)是真訊號**,與串流間隔無關 —— CI 2026-09-12 抓到的 3 次是真 bug(已修)。
+ *   - **`lost`(有幀可看、卻整整 1.5 秒沒變色)是真訊號** —— CI 2026-09-12 抓到的 3 次是真 bug(已修)。
+ *     ⚠️ **2026-09-20 更正**:這一行原本寫「與串流間隔無關」,而那是**註解裡的斷言,程式沒有任何地方在執行它**。
+ *     實際的 `lost` 是 `樣本數 − 量到數字的樣本數`,所以串流停送幀 ≥ 1.5 秒時會被算成「產品沒變色」。
+ *     2026-09-20 main 就是這樣誤紅(送幀間隔最大 1461ms,門檻 1500ms),而同一份內容在分支上剛跑綠。
+ *     現在判定走 `lib/hover-latency-policy.mjs`:hover 後**零幀**的樣本記為 `blind`,不得指控產品;
+ *     有幀可看卻沒變色才是 `lost`。可用樣本不足則以 `starved`(儀器失效)紅,不會默默放行。
  *   - 中位數只能當**上界**。注入干擾時它仍然有效(忙等會同時卡住主執行緒與送幀,所以上界跟著升),
  *     但**不要拿它宣稱「延遲 9ms」** —— 真值低於本儀器解析度。要更細得換工具(EventTiming / trace)。
  *   - 每行附上串流自己的靜置期間隔,用來判斷某個大數字是不是串流停頓造成的。
@@ -138,6 +144,8 @@ async function measure(build, { afterScroll, sabotage }) {
 
   const samples = []
   const idleGaps = []
+  // 逐樣本:這一次取樣在 hover 之後有沒有拿到任何一張幀(false = 看得到,true = 全盲)
+  const blindness = []
   let resolutionBound = 0
   for (let k = 0; k < ROWS; k++) {
     const target0 = await scope.evaluate(({ k }) => {
@@ -203,6 +211,11 @@ async function measure(build, { afterScroll, sabotage }) {
     }
     void t0
     const took = hit ? hit.ts - sentAt : NaN
+    // **「沒觀察到」不等於「沒發生」**(2026-09-20,main 因此紅一次):
+    // `took = NaN` 只代表「1.5 秒內沒抓到變色的幀」。若這段時間截圖串流**一張幀都沒送**,
+    // 那是看不到,不是沒變色 —— 而那次 CI 的送幀間隔最大 1461ms,門檻正好是 1500ms。
+    // 下面的 `after` 本來就算好了,只是先前只拿去印 debug、沒有參與判定。
+    // 有幀可看卻沒變色 → 仍然是真訊號(2026-09-12 抓到的真 bug 屬於這一類,判定不變)。
     // **分辨「列真的慢」vs「截圖串流沒送幀」**:若 `sentAt` 之後的第一張幀本身就晚了 N 毫秒,
     // 那 N 毫秒是串流的空窗,不是列的反應時間 —— 這是 M32「儀器要先有對照組」的同一類問題。
     const after = frames.filter((f) => f.ts > sentAt)
@@ -213,6 +226,7 @@ async function measure(build, { afterScroll, sabotage }) {
     if (hit && after.length && hit === after[0]) resolutionBound += 1
     if (DEBUG_SAMPLES) console.log(`   k=${String(k).padStart(2)} ${String(Math.round(took)).padStart(5)}ms  首幀延遲=${String(firstGap).padStart(4)}ms 幀距=[${gaps.slice(0, 6).join(',')}] 幀數=${after.length}  面板=${dbg?.panel} 列=${dbg?.rowIndex}`)
     samples.push(took)
+    blindness.push(!hit && after.length === 0)
     // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
     // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。
     // 一個取樣用完就整個清掉:跨取樣沒有任何重用價值(每次都是新的一批幀)。
@@ -223,6 +237,7 @@ async function measure(build, { afterScroll, sabotage }) {
   await browser.close(); await server.stop()
   samples.resolutionBound = resolutionBound
   samples.idleGaps = idleGaps
+  samples.blindness = blindness
   return samples
 }
 
@@ -241,16 +256,19 @@ function pixelAt(b64, x, y) {
 
 let fail = 0
 const report = (label, mode, s) => {
-  const ok = s.filter((x) => Number.isFinite(x))
-  const lost = s.length - ok.length
+  // 分類走 lib/hover-latency-policy.mjs 的同一支 —— 印出的數字與判定用的數字必須是同一份,
+  // 各自數一遍就是兩份實作(2026-09-20 我自己在修這個 bug 的時候順手造出來的)。
+  //   `lost`  = 有幀可看、但整整 1.5 秒都沒變色 → 真訊號
+  //   `blind` = hover 之後串流一張幀都沒送 → 儀器看不到,不得當成產品沒變色
+  const { ok, lost, blind } = classifySamples({ samples: Array.from(s), blindness: Array.from(s.blindness || []) })
   const line = ok.length
-    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
+    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${blind ? ` (${blind} 次串流全盲:hover 後零幀,看不到不等於沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`
   console.log('  ' + line)
   // **把「沒變色」的次數一起回傳**(2026-09-12)。舊版只回 `ok`,於是 1.5 秒內沒變色的樣本
   // 從中位數與最大值裡一起被剔除、只在括號裡印個註記 —— 也就是**最糟的那種卡死對這支閘完全隱形**,
   // 而那正是 user 抱怨的「游標到了卻要等好一陣子」。獨立覆核 2026-09-12 指出這個洞。
-  return { ok, lost }
+  return { ok, lost, blind, samples: s }
 }
 
 for (const b of BUILDS) {
@@ -282,10 +300,23 @@ for (const b of BUILDS) {
       const s = r.ok
       const med = s.length ? q(s, 0.5) : NaN
       const mx = s.length ? Math.max(...s) : NaN
-      // `r.lost` = 1.5 秒內完全沒變色的次數。那是比任何毫秒數都嚴重的失敗態,
-      // 不能只在中位數/最大值之外靜靜消失 —— 它一出現就該紅。
-      const bad = !s.length || r.lost > 0 || med > ASSERT_MEDIAN || mx > ASSERT_MAX
-      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${s.length ? med.toFixed(0) : 'n/a'} / 最大 ${s.length ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}）`)
+      // `r.lost` = **有幀可看**卻整整 1.5 秒沒變色。那是比任何毫秒數都嚴重的失敗態,一出現就該紅。
+      // `r.blind` = hover 之後串流一張幀都沒送 → 儀器看不到。**看不到不等於沒變色**,
+      // 不得拿它指控產品(2026-09-20:main 因此紅一次,當時送幀間隔最大 1461ms、門檻 1500ms)。
+      // 但也不能默默放行:樣本被吃掉太多時這一輪就證明不了任何事,要以**儀器失效**的名義紅。
+      // 判定一律走 lib/hover-latency-policy.mjs(純函式,有真實 CI 數字的判定表 +
+      // 對照組把關)。這裡只負責印,不再自己寫一份判斷式 —— 兩份實作必然漂移。
+      const v = hoverVerdict({
+        samples: Array.from(r.samples),
+        blindness: Array.from(r.samples.blindness || []),
+        assertMedian: ASSERT_MEDIAN,
+        assertMax: ASSERT_MAX,
+      })
+      const usable = v.usable
+      const starved = v.verdict === 'starved'
+      const bad = v.verdict !== 'pass'
+      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${usable ? med.toFixed(0) : 'n/a'} / 最大 ${usable ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}${r.blind ? ` / 串流全盲 ${r.blind}` : ''}）`)
+      if (starved) console.log(`   ↳ 可用樣本只有 ${usable} 個(需 ≥ ${MIN_USABLE_SAMPLES})—— 這是**儀器失效**,不是產品變慢;串流全盲 ${r.blind} 次。`)
       if (bad) fail++
     }
   }
