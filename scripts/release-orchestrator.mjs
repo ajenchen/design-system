@@ -133,7 +133,13 @@ export function productVisibleFilesChanged(fromSha, toSha) {
 /** v3 同意只有一份「當前有效」,因為使用者一次授權一份工作。撤回 = 刪掉它。 */
 const CURRENT_CONSENT_FILE = 'current.json'
 
-export function readReleaseConsent({ branch, headSha } = {}) {
+export function readReleaseConsent({ branch, headSha, releaseLookup = null } = {}) {
+  // 「這份授權已經完成過一次發布嗎」是要保證的性質,而它只能由**線上有沒有那個 release**
+  // 回答。把那個查詢做成可注入的相依:預設走線上,測試才餵得出兩面對照組
+  //(有 release → 授權用掉了;明確沒有 release → 那次被中斷,同一份授權還能續)。
+  // 不可注入的相依 = 那一格永遠只測得到一個方向,正是 M32 的參數邊界盲點。
+  const countsAsPublished = releaseLookup
+    || (version => releaseCountsAsPublished(releaseRepository(), `v${version}`))
   const verdicts = []
   // v3 優先:綁產品內容,跨分支成立
   const currentFile = resolve(consentDir(), CURRENT_CONSENT_FILE)
@@ -156,7 +162,7 @@ export function readReleaseConsent({ branch, headSha } = {}) {
       const spent = (receipt.authorizationId
         ? consentReleaseLedger(receipt.authorizationId)
         : (Array.isArray(receipt.releases) ? receipt.releases : []))
-        .filter(version => releaseCountsAsPublished(releaseRepository(), `v${version}`))
+        .filter(version => countsAsPublished(version))
       if (verdict.ok && spent.length) {
         verdicts.push(`這份同意已經用在 ${spent.join(' / ')} 上了;要再發一次請重新看過預覽後說「發版」`)
       } else if (verdict.ok) {

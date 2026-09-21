@@ -672,8 +672,14 @@ test('「讀不到 release」不得當成「那一版沒發出去」—— 一�
   assert.match(src, /releasePublishedState\(observation\.repository, tag\) === true/,
     '基準必須是確定發布過的那一版,讀不到不得充當基準')
   // 兩個消費點都必須真的接上,否則上面整張表是紙上的
-  assert.match(src, /consentReleaseLedger\(receipt\.authorizationId\)[\s\S]{0,400}releaseCountsAsPublished\(/,
-    '同意閘的帳本必須對線上實況')
+  // 同意閘那一側:相依必須**可注入**(否則那一格永遠只測得到一個方向 = M32 參數邊界盲點),
+  // 而且**預設要走線上**(否則預設值就是另一個代理)。
+  assert.match(src, /readReleaseConsent\(\{ branch, headSha, releaseLookup = null \}/,
+    '同意閘必須把「那一版發出去了嗎」做成可注入的相依')
+  assert.match(src, /const countsAsPublished = releaseLookup\s*\n\s*\|\| \(version => releaseCountsAsPublished\(releaseRepository\(\), `v\$\{version\}`\)\)/,
+    '預設必須走線上實況,不得只在測試裡才對帳')
+  assert.match(src, /const spent = \(receipt\.authorizationId[\s\S]{0,300}\.filter\(version => countsAsPublished\(version\)\)/,
+    '帳本的每一筆都要經過那支判定,不得直接用帳本')
   assert.match(src, /const alreadyReleased = consentReleaseLedger\(\)[\s\S]{0,300}releaseCountsAsPublished\(/,
     'publish 的帳本也必須對線上實況')
 })
