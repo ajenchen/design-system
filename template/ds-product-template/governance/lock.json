@@ -42,13 +42,13 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "2bcf666c8e9b9b831ad7f4707006534c7551cfa1f396107755d67db7f497cc53",
+    "forkCorpusLockSha256": "16e7f11ce9d33bab7ecfd325c838d76d4d71dbf9fbde26f074902c090bf6e7f2",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "d02bd09c2415b9e4a17a7a921afc250f6b300a7cea77b89ef2a0a6c939043ed9",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
-    "commonInstructionSha256": "425479c66416b354cfc856d14de8818c72c8d68ec45d96627c9c3ccd74089506",
+    "commonInstructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
@@ -57,7 +57,7 @@
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "425479c66416b354cfc856d14de8818c72c8d68ec45d96627c9c3ccd74089506",
+        "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
         "hookSha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
         "skillsSha256": "611ee0bf8e283c622458009dfd0b9f3bfba64de10d76d1d7817e1c8cdb524a1f",
         "treeDigests": {}
