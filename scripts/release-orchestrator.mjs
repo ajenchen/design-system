@@ -1193,6 +1193,16 @@ export function buildFiveStepStatus(workflow, observation) {
         // PR 存在但講的是別份內容:OPEN 就推分支更新 head,已關閉／已合併就得另開一個 PR。
         ? 'stale-head'
         : 'blocked'
+  // 2026-09-21 M37 第七個位置(就在修前六個的那次跑裡發作):**「必過項還在跑」被當成
+  // 「CI 真的會跑」**。PR 與 main 衝突時(`mergeable === 'CONFLICTING'`,GitHub 的
+  // `mergeable_state: dirty`)GitHub **建不出合併 ref**,`pull_request` 的 workflow
+  // 一次都不會觸發 —— 於是必過項永遠是空清單,`checkRollupStatus([])` 回 'pending'
+  //(那個方向是對的:零筆不得當全綠),runner 就在 `requiredChecks.length === 0` 那格
+  // 每兩秒重試,**永遠不會收斂**。實測空轉了十幾分鐘才發現 CI 從來沒跑過。
+  // 資料一直都在 observation 裡(第 540 行就在算 mergeable),只是沒有人看它。
+  // 「還沒有結果」與「結構上不會有結果」必須是兩種狀態。
+  const conflicting = observation.pullRequest?.mergeable === 'CONFLICTING'
+  const prChecksResolved = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
   const consentOk = !consentRequired || Boolean(observation.releaseConsent)
@@ -1257,7 +1267,7 @@ export function buildFiveStepStatus(workflow, observation) {
     ? observation.consumers.every(item => item.exactVersion && item.checkReadback?.trusted === true) ? 'complete' : 'pending'
     : 'blocked'
   return [
-    { id: 'pr-checks', authority: 'AUTO', status: prChecks },
+    { id: 'pr-checks', authority: 'AUTO', status: prChecksResolved },
     { id: 'merge', authority: 'AUTO', status: merge },
     { id: 'publish', authority: 'AUTO', status: publish },
     { id: 'readback', authority: 'AUTO', status: readback },
@@ -1495,6 +1505,13 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         gh(buildPullRequestCreateArgs(workflow, observation.branch))
         continue
       }
+      invariant(incomplete.status !== 'conflicting',
+        `PR #${observation.pullRequest.number} 與 ${workflow.automation.defaultBranch} 衝突(mergeable_state: dirty)—— ` +
+        `GitHub 建不出合併 ref,pull_request 的 CI **一次都不會觸發**,必過項會永遠是空的。` +
+        `這不是「還在跑」,是結構上不會有結果。常見成因:前一個 PR 是 squash 合併,` +
+        `同一條分支上的原始 commit 與 main 的 squash commit 內容相同但歷史分岔。` +
+        `解法(不需要 force,不會改寫遠端歷史):把 ${workflow.automation.defaultBranch} 併進這條分支 —— ` +
+        `git fetch origin && git merge origin/${workflow.automation.defaultBranch}(衝突處取分支這側),然後 push。`)
       if (observation.pullRequest.headRefOid !== observation.headSha) {
         run('git', buildBranchPushArgs(workflow, observation.branch))
         // 推完 head 還是對不上,而那個 PR 已經關閉／已合併 → 它講的是別份內容,

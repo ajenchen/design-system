@@ -218,6 +218,35 @@ test('live readbacks alone support safe resume without local candidate receipts'
   })
   assert.equal(properlyMerged[1].status, 'complete', 'PR head 等於現在的 head → merge 真的完成了')
 
+  // 對照組(2026-09-21 第七個位置,就在修前六個的那次跑裡發作):PR 與 main 衝突時
+  // GitHub 建不出合併 ref,pull_request 的 CI 一次都不會觸發 → 必過項永遠是空清單 →
+  // `checkRollupStatus([])` 回 'pending' → runner 每兩秒重試、永不收斂。實測空轉十幾分鐘。
+  // 「還沒有結果」與「結構上不會有結果」必須分成兩種狀態。
+  const conflicting = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    pullRequest: { ...beforeMergeObservation.pullRequest, requiredChecks: [], mergeable: 'CONFLICTING' },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+  })
+  assert.equal(conflicting[0].status, 'conflicting', '衝突時必須是自己的狀態,不得混進「還在跑」')
+  // 另一面 1:同樣零筆必過項,但**沒有**衝突 → 那才是真的「還在跑」,不可誤報衝突
+  const genuinelyPending = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    pullRequest: { ...beforeMergeObservation.pullRequest, requiredChecks: [], mergeable: 'MERGEABLE' },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+  })
+  assert.equal(genuinelyPending[0].status, 'pending', '零筆但沒衝突 = 真的還在跑')
+  // 另一面 2:衝突但必過項**已經紅** → 要報 failed(真警報優先,不得被衝突狀態蓋掉)
+  const conflictingAndRed = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    pullRequest: {
+      ...beforeMergeObservation.pullRequest,
+      requiredChecks: [{ bucket: 'fail', state: 'FAILURE' }],
+      mergeable: 'CONFLICTING',
+    },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+  })
+  assert.equal(conflictingAndRed[0].status, 'failed', '真的紅燈不得被衝突狀態蓋掉')
+
   const retryAfterFailure = buildFiveStepStatus(workflow, {
     onProtectedMain: true,
     pullRequest: null,
@@ -742,6 +771,11 @@ test('發布這一步看的是「守護 main 的 CI」,不含發布流程自己�
   assert.deepEqual(ciRed.map(run => run.name), ['CI'], '真正的 CI 紅燈不得被濾掉')
 
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  // runner 必須真的在衝突時丟錯,否則狀態表多一格而空轉照舊
+  const prBlock = src.slice(src.indexOf("if (incomplete.id === 'pr-checks')"), src.indexOf("if (incomplete.id === 'merge')"))
+  assert.match(prBlock, /incomplete\.status !== 'conflicting'/, 'runner 必須在衝突時 fail closed,不得繼續每兩秒重試')
+  assert.match(prBlock, /git merge origin\//, '訊息必須給出不需要 force 的解法')
+
   const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
   assert.match(publishBlock, /protectedMainCiRows\(workflow, observation\.repository, observation\.protectedMainSha\)/,
     'publish 必須用排除過發布流程的那份 row,不得直接用該 commit 上所有 check-run')
