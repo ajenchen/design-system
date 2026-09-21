@@ -51,6 +51,11 @@ case "$KIND" in
       echo "🛑 偵測到「不要發版」但本來就沒有有效同意,無需撤回。"
     fi
     ;;
+  deferred)
+    # 條件/延後的說法(等我看完再發版 / 確認完才發)。不記錄也不撤回,但一定要出聲 ——
+    # 這道閘存在的理由就是「user 看過預覽、確認過,才發」,把條件句當成現在就發等於自廢。
+    echo "⏸ 偵測到發版字眼,但判為**條件或延後**的說法(${REASON}),**未記錄為同意**。等你確認完再說一次「發版」即可。"
+    ;;
   question)
     # 保守側:不記錄也不撤回。但一定要說出來,否則 user 會以為自己已經授權了。
     echo "❓ 偵測到發版相關字眼,但判為問句(${REASON}),**未記錄為同意**。若這是要我發版,直接說「發版」即可。"
@@ -60,7 +65,9 @@ case "$KIND" in
       echo "⚠️ 目前在 main,發版同意只在工作分支上記錄;請先切到工作分支。"
       exit 0
     fi
-    OUT=$(cd "$REPO_ROOT" && node "$ORCH" consent --quote "$PROMPT" --branch "$BRANCH" 2>&1 || echo "")
+    # --source hook-user-prompt:這一句是 user 當場打進對話的,不是 agent 事後宣稱的。
+    # 兩條路的判準相同,但可信度不同,收據要記得下這個差別(2026-09-21)。
+    OUT=$(cd "$REPO_ROOT" && node "$ORCH" consent --quote "$PROMPT" --branch "$BRANCH" --source hook-user-prompt 2>&1 || echo "")
     if printf '%s' "$OUT" | grep -q RELEASE_CONSENT_RECORDED; then
       echo "✅ 已記錄發版同意(綁「你看過的預覽內容」,不綁 commit 也不綁分支)。版號 bump、CI 修正、換分支都不需要再講一次;只有預覽看得見的內容變了才需要重新確認。"
     else

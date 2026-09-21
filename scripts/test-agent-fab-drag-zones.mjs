@@ -15,8 +15,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { build } from 'esbuild'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -34,9 +33,11 @@ const { outputFiles } = await build({
   logLevel: 'silent',
   loader: { '.css': 'empty' },
 })
-const outfile = join(mkdtempSync(join(tmpdir(), 'fab-drag-')), 'agent-panel-fab.mjs')
-writeFileSync(outfile, outputFiles[0].text)
-const { AGENT_FAB_DRAG_INTERNALS: I } = await import(outfile)
+// 固定檔名而非 mktemp 亂數路徑:治理 harness 只允許字面字串的 import(),亂數路徑會被判成
+// 動態模組載入、擋掉整個 runner(這支閘因此從沒被 runner 跑過)。每次執行先覆寫,不會測到舊的。
+mkdirSync(join(ROOT, 'scripts/.gate-bundles'), { recursive: true })
+writeFileSync(join(ROOT, 'scripts/.gate-bundles/agent-panel-fab.mjs'), outputFiles[0].text)
+const { AGENT_FAB_DRAG_INTERNALS: I } = await import('./.gate-bundles/agent-panel-fab.mjs')
 assert.ok(I && typeof I.dragPoint === 'function' && typeof I.findZone === 'function', '取不到 AGENT_FAB_DRAG_INTERNALS(export 名稱改了?)')
 
 // 與 f0464cff 的手動紀錄同一個舞台:視窗寬 1207,拖到 clientX=1267(超出 60px)。

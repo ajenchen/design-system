@@ -458,9 +458,9 @@ export const CoexistenceContract: Story = {
             <ul className="flex flex-col gap-1">
               {comments.map((c, i) => <li key={i} className="text-body">{c}</li>)}
             </ul>
-            <Field>
+            <Field id="fv-aside-input">
               <FieldLabel>新增評論</FieldLabel>
-              <Input id="fv-aside-input" placeholder="可以打字" value={aside} onChange={(e) => setAside(e.target.value)} />
+              <Input placeholder="可以打字" value={aside} onChange={(e) => setAside(e.target.value)} />
             </Field>
             <div>
               <Button id="fv-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => { const t = aside.trim(); if (t) { setComments((c) => [...c, `你:${t}`]); setAside('') } }}>送出</Button>

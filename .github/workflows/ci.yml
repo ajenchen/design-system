@@ -144,6 +144,27 @@ jobs:
           # 凡註冊成 test:* 的,CI 就必須觸達得到,否則紅。
           node scripts/ci-gate-coverage.mjs
           node scripts/ci-gate-coverage.mjs --selftest
+          # 每一支 checker gate 都必須有一支 meta-test 證明它「在該紅的時候會紅」。
+          # 這支稽核 2026-09-21 之前**沒有任何執行面呼叫它**(CI / npm script / hook 全 0),
+          # 所以 87 支閘裡有 41 支從沒被證明過會紅,而且沒有人看得見 —— 跟它自己要守的病同一種。
+          node scripts/audit-gate-meta-test-coverage.mjs --check
+          # 這兩支同樣只註冊成 npm script、沒有任何 workflow 呼叫過(2026-09-21 盤點):
+          #   check:bundle-size —— 上次設基準是 2026-07-14,之後兩個月的成長全沒被擋,
+          #                        重設當天 total 超出舊 budget 19%、DataTable 超出 36%。
+          #   check:naming-structure —— 從 2026-08-05 起就因為一個空的編輯器暫存目錄假紅,沒人看見。
+          npm run --silent check:bundle-size
+          npm run --silent check:naming-structure
+          # Field 內的控件自帶 id → FieldLabel 的 htmlFor 指向不存在的元素,標籤關聯沉默斷掉。
+          # 2026-09-21 全庫抓到 4 處,其中 2 處被 a11y 閘報成 critical 的 label violation。
+          node scripts/field-label-binding-invariant.mjs
+          # 「閘要有對照組」的共用跑法本身也要有對照組:gate-meta lane 在**沒有 storybook-static
+          # 的拋棄式快照**裡跑,缺它時各閘退出碼不一致(實測 1 與 2 都有)。只認 2 的話,
+          # 退出碼 1 的會被誤報成「產品壞掉」。七種局面的判定表在這支。
+          node scripts/test-gate-selftest-meta.mjs
+          # story 命名紀律(標題 canonical / 禁 jargon / 禁中英夾雜 / 禁驗證備註當名字)。
+          # 2026-09-21 之前也沒有任何 workflow 呼叫它,而它是紅的:4 個 story 名混英文
+          # (hug / POC / Dialog / agent),最早一筆自 beta.132 起就在。
+          npm run --silent story-quality:check
 
       - name: Cloud portability gates (provider config survivability)
         run: |
@@ -922,7 +943,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -939,9 +960,11 @@ jobs:
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
           BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
           BROWSER_DT_HANDLES: ${{ needs.verify-browser-datatable-handles.result }}
+          HOOKS_LINUX: ${{ needs.hooks-linux.result }}
+          GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
@@ -973,3 +996,36 @@ jobs:
 
       - name: Run the canonical hook test suite
         run: npm run hooks:test
+
+  governance-control-plane:
+    name: Governance control plane(套件測試 + provider-neutral 殘留)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 這四支從 2026-09-08 起就明列在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE 裡,理由是
+    # 「目前是紅的」——而正因為沒人跑,紅了就一直沒人修。2026-09-21 逐一定位並修好:
+    #   test:waived-self-review / test:governance-evidence-control-plane —— harness 來源清單未閉合(同源)
+    #   test:provider-neutral-residue —— 8 筆 provider 專屬措辭缺 adapter/provenance 揭露
+    #   test:governance-control-plane —— hook 語料總數寫死 61(實際 62)+ 全庫散落的空 .claude/.cc-writes 殘留
+    # 開獨立 job 而不是塞進 verify-static:四支合計約 2.7 分鐘,平行跑不影響整體 wall-clock。
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Governance control-plane suites
+        run: |
+          npm run --silent test:provider-neutral-residue
+          npm run --silent test:waived-self-review
+          npm run --silent test:governance-evidence-control-plane
+          npm run --silent test:governance-control-plane

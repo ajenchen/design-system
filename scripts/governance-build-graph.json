@@ -285,6 +285,7 @@
         "provider-contract"
       ],
       "sourceExcludes": [
+        "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
       "outputs": [
@@ -368,8 +369,8 @@
       "sourceExcludes": [
         "packages/design-system/coverage/",
         "packages/design-system/dist/",
-        "packages/design-system/node_modules/",
         "packages/design-system/ds-canonical/.claude/",
+        "packages/design-system/node_modules/",
         "packages/eslint-plugin/coverage/",
         "packages/eslint-plugin/dist/",
         "packages/eslint-plugin/node_modules/",
@@ -379,6 +380,7 @@
         "packages/storybook-config/coverage/",
         "packages/storybook-config/dist/",
         "packages/storybook-config/node_modules/",
+        "scripts/.gate-bundles/",
         "scripts/generated/",
         "template/ds-product-template/.cache/",
         "template/ds-product-template/.git/",
@@ -581,7 +583,8 @@
         "root-provider-views"
       ],
       "sourceExcludes": [
-        "packages/design-system/ds-canonical/fork/preamble.md"
+        "packages/design-system/ds-canonical/fork/preamble.md",
+        "scripts/.gate-bundles/"
       ],
       "outputs": [
         "governance/generated/",

@@ -22,7 +22,8 @@
 // 同一個 context 內開多個 page 也不穩,長流程建議一個 page 走完。
 //
 // 用法:
-//   import { launchBrowser } from './lib/launch-browser.mjs'
+//   用法:從 scripts 底下的閘 import 本檔的 launchBrowser(相對路徑 lib/launch-browser.mjs)。
+//   (這行刻意不寫成 import 語句:相依閉包掃描器連註解裡的 import 也會算,寫成語句會讓本檔看起來 import 自己。)
 //   const browser = await launchBrowser()                       // 起不來會丟例外
 //   const browser = await launchBrowser({ headless: false })     // 覆寫任何選項
 //   const browser = await launchBrowserOrSkip()                  // 起不來 → 印 SKIPPED-ENV 並 exit 0

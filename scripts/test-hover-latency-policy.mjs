@@ -11,7 +11,8 @@
  *   node scripts/test-hover-latency-policy.mjs
  */
 import { readFileSync } from 'node:fs'
-import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { countCallSites } from './lib/gate-reachability.mjs'
+import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const MED = 60
 const MAX = 600
@@ -67,12 +68,73 @@ for (const [name, samples, blindFlags] of CASES) {
 }
 console.log('✓ 分類與判定同源(report 與 verdict 都走 classifySamples)')
 
-// 閘的執行面必須真的消費這兩支,否則測得再漂亮也沒用(今天抓了一整天的那條)
-const gate = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
-for (const [sym, why] of [['classifySamples(', 'report() 必須用共用分類'], ['hoverVerdict(', '判定必須走政策模組']]) {
-  if (!gate.includes(sym)) { console.log(`✗ 可達性:data-table-hover-latency.mjs 沒有用到 ${sym} —— ${why}`); fail++ }
+// ── 旗標本身怎麼算出來的(2026-09-21 補)──────────────────────────────────────
+// 先前 blindness 只是判定表的**輸入**,所以「算它的那一行」永遠測不到 ——
+// 把它硬寫成 true,2026-09-12 抓到的真 bug 會從紅變綠而所有測試照樣全過。
+for (const [name, input, want, why] of [
+  ['命中就不是全盲', { hit: {}, framesAfter: 0 }, false, '抓到變色的幀 = 有看到,不可能是全盲'],
+  ['沒命中但有幀可看 = 真訊號', { hit: null, framesAfter: 7 }, false, '2026-09-12 的真 bug 屬於這一類,必須照樣紅'],
+  ['沒命中且零幀 = 儀器看不到', { hit: null, framesAfter: 0 }, true, '2026-09-20 main 誤紅那次'],
+]) {
+  const got = isStreamBlind(input)
+  if (got !== want) { console.log(`✗ isStreamBlind:${name} 應為 ${want} 實得 ${got}(${why})`); fail++ }
+  else console.log(`✓ isStreamBlind:${name}`)
 }
-console.log('✓ 可達性:閘真的消費 classifySamples 與 hoverVerdict')
+
+for (const [name, input, want, why] of [
+  ['沒命中就談不上上界', { hit: null, firstFrameIsHit: false, firstGap: 3000, assertMax: MAX }, false, 'NaN 樣本走 blind/lost 那條路'],
+  ['命中的不是第一張幀 → 量到的是真的反應時間', { hit: {}, firstFrameIsHit: false, firstGap: 1461, assertMax: MAX }, false, '中間有幀可看,數字有意義'],
+  ['命中第一張幀但它沒遲到 → 數字有意義', { hit: {}, firstFrameIsHit: true, firstGap: 40, assertMax: MAX }, false, '40ms 的空窗不足以解釋超標'],
+  ['命中第一張幀且它本身就超標 → 只是上界', { hit: {}, firstFrameIsHit: true, firstGap: 1461, assertMax: MAX }, true, '2026-09-20 CI 實測的送幀間隔'],
+  ['沒有首幀延遲數字時不得亂猜', { hit: {}, firstFrameIsHit: true, firstGap: NaN, assertMax: MAX }, false, 'NaN 不可比大小'],
+]) {
+  const got = isResolutionBound(input)
+  if (got !== want) { console.log(`✗ isResolutionBound:${name} 應為 ${want} 實得 ${got}(${why})`); fail++ }
+  else console.log(`✓ isResolutionBound:${name}`)
+}
+
+// 解析度受限的樣本必須被排除在「產品快慢」之外,但不得因此默默放行
+{
+  // 五個正常樣本(中位 40ms < 門檻 60、最大 55ms < 天花板 600)+ 一個串流空窗造成的 1461ms
+  const samples = [30, 35, 40, 1461, 55, 45]
+  const unresolved = [false, false, false, true, false, false]
+  const kept = hoverVerdict({ samples, unresolved, assertMedian: MED, assertMax: MAX })
+  if (kept.verdict !== 'pass' || kept.bounded !== 1 || kept.usable !== 5) {
+    console.log(`✗ 解析度受限樣本應被排除且其餘判 pass,實得 ${JSON.stringify(kept)}`); fail++
+  } else console.log('✓ 串流空窗的 1461ms 不再被當成列變慢(排除後其餘 5 個樣本判 pass)')
+
+  // 對照組:同一批數字若**不**標成受限,就會以 max 超標紅 —— 證明這條真的在改變結果
+  const naive = hoverVerdict({ samples, assertMedian: MED, assertMax: MAX })
+  if (naive.verdict !== 'max') { console.log(`✗ 對照組:不標受限時應以 max 紅,實得 ${naive.verdict}`); fail++ }
+  else console.log('✓ 對照組:不標受限時同一批數字會紅(這條旗標真的在改變判定,不是裝飾)')
+
+  // 受限樣本太多 → 可用樣本不足 → 以**儀器失效**紅,不得默默放行
+  const starved = hoverVerdict({ samples, unresolved: samples.map(() => true), assertMedian: MED, assertMax: MAX })
+  if (starved.verdict !== 'starved') { console.log(`✗ 全部受限時應判 starved,實得 ${starved.verdict}`); fail++ }
+  else console.log('✓ 全部受限 = 這一輪證明不了任何事,以儀器失效紅(不是靜默放行)')
+}
+
+// 執行面:閘必須真的用這兩支算旗標,不得在閘裡留第二份寫法
+{
+  const gateSrc = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
+  for (const sym of ['isStreamBlind', 'isResolutionBound']) {
+    const n = countCallSites(gateSrc, sym)
+    if (n < 1) { console.log(`✗ 可達性:閘沒有呼叫 ${sym}`); fail++ }
+    else console.log(`✓ 可達性:${sym} 有 ${n} 個呼叫點`)
+  }
+  if (/blindness\.push\(!hit/.test(gateSrc)) { console.log('✗ 閘裡還留著第二份 blindness 寫法'); fail++ }
+  else console.log('✓ 閘裡沒有第二份 blindness 寫法(單一住所)')
+}
+
+// 閘的執行面必須真的消費這兩支,否則測得再漂亮也沒用(今天抓了一整天的那條)
+// 可達性只數**呼叫點**:`includes('hoverVerdict(')` 會被 import 與註解命中,
+// 把整段判定換掉照樣綠(2026-09-21 對抗稽核實測抓到)。共用 lib/gate-reachability.mjs。
+const gate = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
+for (const [sym, why] of [['classifySamples', 'report() 必須用共用分類'], ['hoverVerdict', '判定必須走政策模組']]) {
+  const n = countCallSites(gate, sym)
+  if (n < 1) { console.log(`✗ 可達性:data-table-hover-latency.mjs 的 import/註解之外沒有 ${sym} 呼叫點 —— ${why}`); fail++ }
+  else console.log(`✓ 可達性:${sym} 有 ${n} 個呼叫點(不含 import 與註解)`)
+}
 
 console.log(`\nMIN_USABLE_SAMPLES = ${MIN_USABLE_SAMPLES}`)
 console.log(fail ? `✗ ${fail} 項不符` : '✅ hover 判定政策 PASS(真實 CI 數字判定表 + 對照組)')

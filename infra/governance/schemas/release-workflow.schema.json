@@ -271,7 +271,8 @@
         "questionMarkers",
         "denialMarkers",
         "priorConsentAssertions",
-        "aNotAQuestions"
+        "aNotAQuestions",
+        "conditionalMarkers"
       ],
       "properties": {
         "required": {
@@ -331,6 +332,15 @@
           "uniqueItems": true
         },
         "aNotAQuestions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "conditionalMarkers": {
           "type": "array",
           "items": {
             "type": "string",

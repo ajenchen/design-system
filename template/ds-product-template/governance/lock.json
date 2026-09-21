@@ -42,13 +42,13 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "d247561ebd02cbdfb8fce6e9d8135efe01723c6f69393ffe837e5fe9666db284",
+    "forkCorpusLockSha256": "16e7f11ce9d33bab7ecfd325c838d76d4d71dbf9fbde26f074902c090bf6e7f2",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "d02bd09c2415b9e4a17a7a921afc250f6b300a7cea77b89ef2a0a6c939043ed9",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
-    "commonInstructionSha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
+    "commonInstructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
@@ -57,7 +57,7 @@
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
+        "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
         "hookSha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
         "skillsSha256": "611ee0bf8e283c622458009dfd0b9f3bfba64de10d76d1d7817e1c8cdb524a1f",
         "treeDigests": {}
@@ -101,7 +101,7 @@
       "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
       "governance/visual-baseline-review-policy.json": "339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334",
       "schemas/provider-cli-toolchain.schema.json": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
-      "scripts/audit-consumer-a11y.mjs": "f3ed24be76d87ffbcaed08f39491d385a14f0e870a5b952e3407ba0ef0cd4e08",
+      "scripts/audit-consumer-a11y.mjs": "b4305068d9a403726c2370b7678566484f21a84fd6478e58491ab0ffe79bdaef",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
       "scripts/consumer-source-harness.mjs": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
       "scripts/lib/a11y-static-server.mjs": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",

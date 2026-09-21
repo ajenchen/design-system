@@ -15,7 +15,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
@@ -36,6 +37,9 @@ import {
   relativeRuntimeImports,
 } from './lib/runtime-dependency-closure.mjs'
 import { publishedCompatibilitySourcePaths } from './lib/published-template-provider-surfaces.mjs'
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const NESTED_QUANTIFIER_CONTROL = 'scripts/test-fixtures/transitive-execution/nested-quantifier-control.mjs'
 
 const version = '1.2.3-beta.4'
 const sri = value => `sha512-${createHash('sha512').update(value).digest('base64')}`
@@ -304,37 +308,38 @@ test('runtime dependency closure cannot hide literal imports behind legal commen
 })
 
 test('runtime dependency closure terminates on prose from followed by indented comment chains', () => {
-  // The live policy source triggered approximately 2^40 whitespace partitions before the
-  // import quote failed. Isolate the deliberate broken control so its timeout cannot hang CI.
+  // 這一段曾觸發約 2^40 種空白切法,掃描器實質不會結束。
+  //
+  // **2026-09-21 改寫**:原本的對照組用 `new Function` 把掃描器原始碼改壞、再用 `node --eval` 跑。
+  // 治理 harness 的來源政策明文禁止動態程式碼(`shell-dynamic-node-code-forbidden`),
+  // 於是整個 harness runner **從 2026-08-11 起被擋住、一次都沒真的跑過** ——
+  // 這支測試自己就是把 runner 鎖死的那把鎖。現在兩半都不需要動態程式碼:
+  //   正面:直接在行程內呼叫現行掃描器,它必須立刻回正確答案。
+  //   對照:`scripts/fixtures/nested-quantifier-control.mjs` 裡是**字面**的危險 regex,
+  //         以 `node <檔案>` 啟動,必須逾時 —— 證明這段輸入真的有毒。
+  //   接縫:再斷言現行掃描器的原始碼**不含**那個巢狀量詞 —— 對照組才咬得到正確的東西。
   const source = '// surface materialized from\n'
     + Array.from({ length: 9 }, () => '    // explanatory policy prose\n').join('')
     + "    || policy.disabled\nimport './leaf.mjs'\n"
-  const scannerUrl = new URL('./lib/runtime-dependency-closure.mjs', import.meta.url).href
-  const orderingUrl = new URL('./lib/provider-lifecycle.mjs', import.meta.url).href
-  const program = `
-    import assert from 'node:assert/strict'
-    import { relativeRuntimeImports } from ${JSON.stringify(scannerUrl)}
-    import { compareUtf8Bytes } from ${JSON.stringify(orderingUrl)}
-    let scan = relativeRuntimeImports
-    if (process.argv[1] === 'broken-control') {
-      const original = scan.toString()
-      const broken = original.replace(String.raw\`(?:\\s|\`, String.raw\`(?:\\s+|\`)
-      assert.notEqual(broken, original, 'control must restore the nested whitespace quantifier')
-      scan = new Function('invariant', 'compareUtf8Bytes', 'return (' + broken + ')')(
-        (condition, message) => assert.ok(condition, message), compareUtf8Bytes)
-    }
-    assert.deepEqual(scan(${JSON.stringify(source)}), [{ kind: 'esm', specifier: './leaf.mjs' }])
-    console.log('SCANNER_COMPLETED')
-  `
-  const healthy = spawnSync(process.execPath, ['--input-type=module', '--eval', program, 'healthy'], {
-    encoding: 'utf8', timeout: 30_000,
-  })
-  assert.equal(healthy.status, 0, `${healthy.error || ''}\n${healthy.stderr}`)
-  assert.match(healthy.stdout, /SCANNER_COMPLETED/)
-  const broken = spawnSync(process.execPath, ['--input-type=module', '--eval', program, 'broken-control'], {
-    encoding: 'utf8', timeout: 1_000,
-  })
-  assert.equal(broken.error?.code, 'ETIMEDOUT', `deliberate nested quantifier must time out: ${broken.stderr}`)
+
+  const started = process.hrtime.bigint()
+  assert.deepEqual(relativeRuntimeImports(source), [{ kind: 'esm', specifier: './leaf.mjs' }])
+  const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6
+  assert.ok(elapsedMs < 1_000, `現行掃描器必須立刻結束,實測 ${elapsedMs.toFixed(1)}ms`)
+
+  const liveSource = readFileSync(new URL('./lib/runtime-dependency-closure.mjs', import.meta.url), 'utf8')
+  assert.doesNotMatch(liveSource, /\(\?:\\s\+\|/,
+    '現行掃描器不得含巢狀空白量詞 `(?:\\s+|` —— 那正是對照組證明會爆炸的樣式')
+
+  const controlSource = readFileSync(resolve(REPO_ROOT, NESTED_QUANTIFIER_CONTROL), 'utf8')
+  assert.match(controlSource, /\(\?:\\s\+\|/, '對照組必須真的帶著那個巢狀量詞,否則它證明不了任何事')
+  const broken = spawnSync(
+    process.execPath,
+    ['--', 'scripts/test-fixtures/transitive-execution/nested-quantifier-control.mjs'],
+    { cwd: REPO_ROOT, encoding: 'utf8', timeout: 2_000 },
+  )
+  assert.equal(broken.error?.code, 'ETIMEDOUT',
+    `對照組必須跑不完才算有效,實際 code=${broken.error?.code} status=${broken.status} stderr=${broken.stderr}`)
   assert.doesNotMatch(broken.stdout, /SCANNER_COMPLETED/)
 })
 

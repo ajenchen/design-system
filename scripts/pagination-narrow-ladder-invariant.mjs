@@ -26,6 +26,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+const SELFTEST = process.argv.includes('--selftest')
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const STATIC = join(ROOT, 'storybook-static')
@@ -79,6 +80,13 @@ const snap = () => page.evaluate(() => {
   })
 })
 
+if (SELFTEST) {
+  // 對照組:把資訊文字的寬度壓到必然換行。P1 量的是 rect.height / lineHeight,
+  // 所以這一注入正是它該抓到的形狀 —— 抓不到就代表這支閘的綠燈是零證據。
+  await page.addStyleTag({ content: 'nav[aria-label="Pagination"] > span { display:inline-block; width:24px; white-space:normal !important; }' })
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+}
+
 const first = await snap()
 await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
 const second = await snap()
@@ -115,5 +123,15 @@ record('P5', '收斂不抖(隔一個 rAF 再量結果相同)', unstable.length =
 await browser.close()
 server.close()
 const failed = findings.filter((f) => !f.pass)
+
+if (SELFTEST) {
+  // 合成違規只該打到 P1;其餘條目仍應維持原判,否則注入的形狀不對。
+  const caught = failed.some((f) => f.id === 'P1')
+  console.log(caught
+    ? '\n✓ selftest:強制換行的資訊文字被 P1 抓到,量具會紅'
+    : `\n✗ selftest:P1 沒抓到強制換行 —— 這支閘是假綠(實際失敗:${failed.map((f) => f.id).join(',') || '無'})`)
+  process.exit(caught ? 0 : 1)
+}
+
 console.log(failed.length ? `\n✗ pagination-narrow-ladder ${failed.length} 條失敗` : `\n✅ pagination-narrow-ladder-invariant PASS`)
 process.exit(failed.length ? 1 : 0)

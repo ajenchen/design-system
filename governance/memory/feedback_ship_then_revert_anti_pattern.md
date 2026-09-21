@@ -47,3 +47,10 @@ Cycle waste:edit → ship → BLOCKER → revert → re-propose。每多一次 =
 - AGENTS.md `# 稽核 canonical` Audit-vs-execute 分權
 - M33(下個 session defer 反 pattern)
 - M19(trigger phrase auto-pipeline,只在 ensure / always 等 keyword 起)
+
+## AGENTS.md「Decision／Engineering Authority」原文(2026-09-21 搬家)
+
+root AGENTS.md 的 project-doc 鏈超過 Codex 預設 32KiB 會**靜默截斷**,故把細則搬來,bootstrap 只留判準。逐字保留:
+
+**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更（behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules）；核准 = user 在對話中對 exact target + choice 說可（**「我說可以就是可以，就是授權」— user 2026-08-04 verbatim**；最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的 exact 提案）。operation digest 為可選佐證——有引且相符可加強、有引但不符 fail-closed、未引不阻擋（強制引 digest 屬已拆除的 per-PR 簽章同族儀式，835b519e 先例）。引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO，含已核准 UI／UX 實作/機械 generation/sync 與 source→commit/PR/merge→canonical `infra/governance/release-workflow.json` 的 `pr-checks → merge → publish → readback → consumer`；依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂，不逐 milestone 重問。Deep Audit 必須在單一 branch／PR 完成 remediation 與 local/CI candidate validation，禁止把 immutable publish 當 iteration/test loop，每次 audit 最多一次 final release；只有另有 evidence ref 綁定 incident ID、failure class、published version 的 post-publish blocker 或 security incident 才可額外 release。Certification、rollout、staged rollout、preview/canary 與 independent review 是明確要求時的附加 assurance，不得進入標準 five-step release blocking graph；peer 不可用只阻擋明確要求的 independent-review claim。
+

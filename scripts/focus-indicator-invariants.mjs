@@ -43,6 +43,7 @@ import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, extname } from 'node:path'
 
+const SELFTEST = process.argv.includes('--selftest')
 const STATIC = join(process.cwd(),'storybook-static')
 // stale-build 守衛:build 產物必須比任何被驗證的原始碼新,否則驗到的是舊 CSS/JS(假綠)
 const SRCS = ['packages/design-system/src/components/FileViewer/file-viewer.tsx','packages/design-system/src/components/FileItem/file-item.tsx','packages/design-system/src/components/TreeView/tree-view.tsx','packages/design-system/src/components/RadioGroup/radio-group.tsx','packages/design-system/src/components/AgentPanel/agent-panel.tsx']
@@ -58,6 +59,22 @@ const B=`http://localhost:${server.address().port}`
 let br; try{br=await chromium.launch({headless:true,args:['--single-process','--no-sandbox']})}
 catch(e){server.close();console.error('SKIPPED-ENV',String(e.message).split('\n')[0]);process.exit(0)}
 const pg=await br.newPage({viewport:{width:1280,height:800}})
+if (SELFTEST) {
+  // 對照組:把焦點指示器整個抹掉 —— 這正是 DS 被咬過三次的那個形狀
+  // (steps.tsx 的 outline-none 吃掉自己的 outline、chart.tsx 抑制掉可 Tab 的圖表、
+  //  FileViewer 選中與聚焦同色)。addInitScript 才會跟著每一次 go() 重新套用。
+  await pg.addInitScript(() => {
+    const apply = () => {
+      if (document.getElementById('__selftest_kill_focus')) return
+      const style = document.createElement('style')
+      style.id = '__selftest_kill_focus'
+      style.textContent = '*:focus,*:focus-visible{outline:none !important;box-shadow:none !important;}'
+      ;(document.head || document.documentElement).appendChild(style)
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply)
+    else apply()
+  })
+}
 const go=async id=>{await pg.goto(`${B}/iframe.html?id=${id}&viewMode=story`,{waitUntil:'networkidle'});await pg.waitForTimeout(500)}
 const out=[];let fails=0
 const check=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`);if(!p)fails++}
@@ -225,5 +242,20 @@ for (const story of ['design-system-components-switch-展示--modes',
         `${rows.length} 個控件,違規 ${violations.length} 個${violations.length?' → '+JSON.stringify(violations.slice(0,3)):''}`)
 }
 
-console.log(out.join('\n')); console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
+console.log(out.join('\n'))
+
+if (SELFTEST) {
+  // 抹掉焦點框之後,守「焦點畫得出來」的那幾條必須紅;只有「紅了幾條」不夠 ——
+  // 要紅在對的地方,否則注入的形狀不對,對照組就沒證明到東西。
+  const focusFails = out.filter((line) => line.startsWith('✗') && /J2d|F2|F3|F5/.test(line))
+  await br.close(); server.close()
+  if (focusFails.length) {
+    console.log(`\n✓ selftest:抹掉焦點指示器後 ${focusFails.length} 條焦點條目變紅,量具會紅\n${focusFails.join('\n')}`)
+    process.exit(0)
+  }
+  console.log(`\n✗ selftest:焦點框被抹掉卻沒有任何焦點條目變紅 —— 這支閘是假綠(總失敗 ${fails})`)
+  process.exit(1)
+}
+
+console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
 await br.close(); server.close(); process.exit(fails?1:0)

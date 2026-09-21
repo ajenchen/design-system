@@ -523,6 +523,7 @@
       "match": "tree",
       "classification": "canonical-source",
       "excludes": [
+        "scripts/.gate-bundles",
         "scripts/generated"
       ],
       "allowAbsent": false,
@@ -536,6 +537,15 @@
       "excludes": [],
       "allowAbsent": true,
       "reason": "Derived artifacts must live under the declared generated governance root."
+    },
+    {
+      "id": "scripts-gate-bundles",
+      "path": "scripts/.gate-bundles",
+      "match": "tree",
+      "classification": "non-authority-exclusion",
+      "excludes": [],
+      "allowAbsent": true,
+      "reason": "Gate-local esbuild output. Two gates bundle a .tsx/.ts before importing it; the import specifier must be a literal string or the governance harness source review rejects the whole runner, so the bundle lands on a fixed gitignored path instead of a mktemp one."
     },
     {
       "id": "template-authority",

@@ -631,7 +631,27 @@ const line = (r, i) => {
 // ── 主流程 ──
 const results = []
 let failed = 0
-for (const build of BUILDS) {
+
+// **行為對照用的注入口**(2026-09-21)。
+//
+// 這支閘最關鍵的判斷不在 `classifyRun`(那支是純函式、已有判定表),而在**呼叫端怎麼用它**:
+//   · 儀器失效的那一趟作廢,不計入效能判定;
+//   · 但「產品炸了」(pageerror / 靜止後仍缺列)必須看**全部**的趟,不能只看可用的那些。
+// 第二條我自己在 2026-09-21 寫壞過一次(把它縮到 usableResults),而當時所有測試照樣全綠 ——
+// 因為 meta-test 只驗了純函式與可達性,沒有任何東西驗**呼叫端的行為**。
+//
+// `--inject-runs=<檔>` 直接餵一批合成的 run 進判定段,完全不開瀏覽器,
+// 讓 meta-test 可以造出「全部作廢」「作廢但頁面炸了」「乾淨」三種局面並檢查退出碼與訊息。
+// 只在明確給這個旗標時生效,正常跑一律走真瀏覽器。
+const INJECT_RUNS = arg('inject-runs', '')
+if (INJECT_RUNS) {
+  for (const r of JSON.parse(readFileSync(INJECT_RUNS, 'utf8'))) {
+    results.push({ build: r.build ?? 'inject', mode: r.mode ?? 'gesture', errors: r.errors ?? [], frames: r.frames ?? [], scrolled: r.scrolled ?? 0, g: r.g ?? null, paintMax: r.paintMax ?? 0, domMax: r.domMax ?? 0 })
+  }
+  console.log(`⚑ 注入模式:${results.length} 趟合成資料,不開瀏覽器(僅供 meta-test 驗判定段的行為)`)
+}
+
+for (const build of INJECT_RUNS ? [] : BUILDS) {
   const { server, base } = await serve(build.dir)
   try {
     for (const mode of MODES) {
@@ -834,8 +854,11 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
     console.log(`✗ ${k}:${whys.length} 趟全部作廢,一趟可用的都不剩 —— 這是**儀器失效**(${whys[0]}),不是這個 build 變慢。`)
     failed++
   }
-  // 產品面的失敗照舊立刻紅,只看可用的那些趟
-  for (const r of usableResults) {
+  // 產品面的失敗看**全部**的趟,不只可用的那些。
+  // 2026-09-21 我第一版把這段縮到 usableResults —— 那是回歸:頁面真的炸掉時
+  // 呈現幀本來就會塌下來(presented < 10)而被判成「儀器失效」作廢,pageerror 就永遠不會被檢查,
+  // 歸因整個反過來。**儀器失效只該讓「效能指標」那半作廢,不該讓「產品炸了」也一起消音。**
+  for (const r of results) {
     if (!r.g) continue
     if (r.errors.length) { console.log(`✗ ${r.build}/${r.mode}:pageerror ${r.errors.length}(${r.errors[0].slice(0, 100)})`); failed++ }
     const last = r.frames[r.frames.length - 1]

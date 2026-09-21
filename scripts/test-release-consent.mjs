@@ -76,7 +76,10 @@ try {
   const receipt = writeReleaseConsent({ headSha: head, branch, quote: '我他媽到底要講幾次發版?', source: 'test' })
   assert.equal(receipt.schemaVersion, 3)
   assert.match(receipt.productDigest, /^[0-9a-f]{64}$/)
-  assert.deepEqual(receipt.releases, [])
+  // 帳本不再存在收據裡(2026-09-21 搬到收據外的 append-only 檔,以 authorizationId 對照),
+  // 改驗「這份新授權底下還沒發過任何版本」。
+  assert.match(receipt.authorizationId, /^[0-9a-f-]{36}$/)
+  assert.deepEqual(consentReleaseLedger(receipt.authorizationId), [])
 
   // 3b. **detached HEAD**(CI 的常態)必須仍能落地 —— branch 在 v3 只是出處紀錄。
   //     2026-09-20:硬性要求 branch 非空是 v2 殘留,CI 上 `git branch --show-current` 回空字串,
@@ -101,21 +104,39 @@ try {
   assert.equal(consentCoversHead({ receipt, branch, headSha: head, currentProductDigest: '0'.repeat(64) }).ok, false)
   assert.equal(consentCoversHead({ receipt, branch, headSha: head, currentProductDigest: null }).ok, false, '算不出指紋要保守')
 
-  // 5b. 「一份授權一次發布」的帳本,綁的是**授權本身**(user 的逐字原話),不是產品指紋。
-  //     第一版我綁 productDigest —— 那是代理,而且方向反了:治理工作本來就不動產品內容,
-  //     於是 user **重新說一次發版**時帳本照樣帶著舊帳,他會被自己請來的閘擋住(2026-09-20 實測)。
-  //     兩面都要成立,少一面就不是這條規則:
-  //     先把當下收據固定成一句已知的原話,再測兩面(不能假設前面留下的是哪一句)。
+  // 5b. 「一份授權一次發布」的帳本,綁的是**落地當下鑄造的 authorizationId**,
+  //     不是原話、也不是產品指紋。我前兩版都用代理,而且第二版**已經上膛**:
+  //     user 說的就是 canonical 規定的那兩個字「發版」,磁碟上已有 5 份同雜湊的收據,
+  //     他下一次說「發版」帳本不會歸零 → publish 被自己請來的閘擋死。
+  //     fixture 就用那兩個字,兩面都要成立:
   const SAME = '發版'
-  writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
-  recordConsentRelease('0.1.0-beta.999')
-  assert.deepEqual(consentReleaseLedger(), ['0.1.0-beta.999'])
-  writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
-  assert.deepEqual(consentReleaseLedger(), ['0.1.0-beta.999'],
-    '同一句原話再落地一次 → 帳本必須延續,否則 agent 可以靠重寫收據把計數清零')
-  writeReleaseConsent({ headSha: head, branch, quote: '可以發版了,這批治理改動', source: 'test' })
-  assert.deepEqual(consentReleaseLedger(), [],
-    'user 給了新的一句「發版」= 新的授權 → 帳本必須歸零,不能拿舊帳去擋他')
+  const first = writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
+  assert.match(first.authorizationId, /^[0-9a-f-]{36}$/, '每次落地都要鑄一個與文字無關的授權 id')
+  recordConsentRelease('0.1.0-beta.998')
+  assert.deepEqual(consentReleaseLedger(first.authorizationId), ['0.1.0-beta.998'])
+  const second = writeReleaseConsent({ headSha: head, branch, quote: SAME, source: 'test' })
+  assert.notEqual(second.authorizationId, first.authorizationId, '再說一次就是新的一次授權')
+  assert.deepEqual(consentReleaseLedger(second.authorizationId), [],
+    '**同樣的兩個字「發版」,第二次必須歸零** —— 否則 user 會被自己請來的閘擋死')
+  assert.deepEqual(consentReleaseLedger(first.authorizationId), ['0.1.0-beta.998'],
+    '重寫收據不得清掉別人那份授權的帳')
+
+  // 5c. 用過的授權不能再覆蓋新工作(先前只擋 publish、不擋 merge)
+  recordConsentRelease('0.1.0-beta.997', second.authorizationId)
+  assert.equal(readReleaseConsent({ branch, headSha: head }), null,
+    '這份同意已經用掉了,不該再讓後續完全不同的工作直接合併')
+
+  // 5d. 條件 / 延後的說法不是「現在就發」。最硬的一格:**SSOT 自己存的那句 user 原話**
+  //     (2026-09-02 定義這道閘的句子)先前會被判成 consent 並寫出有效收據。
+  for (const bad of ['等我看完預覽再發版', '等我確認過沒問題再發版', '如果 CI 全綠就發版', '明天再發版']) {
+    assert.equal(classifyConsentPrompt(bad).verdict, 'deferred', `「${bad}」是條件句,不是現在就發`)
+    assert.throws(() => writeReleaseConsent({ headSha: head, branch, quote: bad, source: 'test' }), /不構成發版同意/)
+  }
+  assert.equal(classifyConsentPrompt(workflow.releaseConsent.userVerbatim).verdict, 'deferred',
+    'SSOT 自己的 userVerbatim 被判成 consent = 這道閘在自廢')
+
+  // 重新落地一份乾淨的同意,讓後面的格子有東西可用
+  writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'test' })
 
   // 6. 撤回必須讓**讀取端**真的不認。只刪 current.json、讀取端仍 fallback 到
   //    branch__<分支>.json 的話,印了「已撤回」其實沒撤回(2026-09-20 實際破口)。
@@ -159,6 +180,28 @@ try {
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
   for (const m of orch.matchAll(/(?:const|let)\s+(\w+)\s*=\s*run\(/g)) {
     assert.doesNotMatch(orch, new RegExp(`\\b${m[1]}\\.status\\b`), `run() 沒有 status,但 ${m[1]}.status 被讀`)
+  }
+
+  // ── 出處:hook 落地 vs agent 落地必須分得出來(2026-09-21)──────────────────────
+  // 兩條路以前都寫死 'manual',收據上看不出哪一條。前者是 user 當場打進對話的字,
+  // 後者是 agent **宣稱** user 說過 —— 可信度天差地遠,而磁碟上 14 筆有 10 筆是後者。
+  {
+    const fromHook = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'hook-user-prompt' })
+    assert.equal(fromHook.source, 'hook-user-prompt', 'hook 落地要記成 hook 落地')
+    const fromAgent = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'manual-agent' })
+    assert.equal(fromAgent.source, 'manual-agent', 'agent 落地要記成 agent 落地')
+    // 不指明、亂指明,一律降級成可信度較低的那一種 —— 不得冒充成 user 親手打的
+    for (const bogus of [undefined, null, '', 'manual', 'test', 'hook', '我自己掰的']) {
+      const r = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: bogus })
+      assert.equal(r.source, 'manual-agent', `來源 ${JSON.stringify(bogus)} 不得被當成 hook 落地`)
+    }
+    // 執行面對照:hook 真的有把出處傳下去,否則上面全是空談
+    const hookSource = readFileSync(resolve(ROOT, 'packages/design-system/ds-canonical/hooks/record_release_consent.sh'), 'utf8')
+    assert.match(hookSource, /consent --quote "\$PROMPT" --branch "\$BRANCH" --source hook-user-prompt/,
+      'hook 必須自報出處,否則它落地的收據會被降級成 agent 落地')
+    const orchSource = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+    assert.match(orchSource, /source: options\.source/, 'CLI 必須把 --source 傳給 writeReleaseConsent')
+    assert.doesNotMatch(orchSource, /source: 'manual'/, "不得再寫死 'manual' —— 那正是兩條路分不出來的原因")
   }
 
   const urls = previewUrls(workflow, base)

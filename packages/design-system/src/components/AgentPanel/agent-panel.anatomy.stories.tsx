@@ -144,8 +144,8 @@ const InspectorView = () => {
               <p className="font-mono text-fg-muted mb-2">WIDTH</p>
               <ul className="flex flex-col gap-1">
                 <li><span className="font-mono">--agent-panel-width</span> · 400(預設)</li>
-                <li><span className="font-mono">--agent-panel-width-min</span> · 360</li>
-                <li><span className="font-mono">--agent-panel-width-max</span> · 640</li>
+                <li><span className="font-mono">PANEL_WIDTH_MIN</span> · 360(TS 常數,非 token)</li>
+                <li><span className="font-mono">PANEL_WIDTH_MAX</span> · 640(TS 常數,非 token)</li>
                 <li><span className="font-mono">視窗上限</span> · 50vw(與 max 取較小者)</li>
                 <li><span className="font-mono">鍵盤步進</span> · ←/→ 16 · Home 最窄 · End 最寬</li>
               </ul>

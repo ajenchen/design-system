@@ -26,6 +26,7 @@ const sv = http.createServer((q, s) => {
 })
 await new Promise((r) => sv.listen(0, r))
 
+const SELFTEST = process.argv.includes('--selftest')
 const out = []; let fail = 0
 const ck = (t, p, d = '') => { out.push(`${p ? '✓' : '✗'} ${t}${d ? ' | ' + d : ''}`); if (!p) fail++ }
 
@@ -46,6 +47,21 @@ await page.waitForFunction(() => {
   const dialog = document.querySelector('[role="dialog"]')
   return !!dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim()
 }, null, { timeout: 30_000 }).catch(() => {})
+
+if (SELFTEST) {
+  // 對照組:把 2026-09-08 的舊 bug 原樣種回去 —— 一個掛在 window 上、不看焦點在哪裡的
+  // 方向鍵處理器。它走的是使用者看得見的同一條路(標題會換檔),所以 (A) 若抓不到,
+  // 就代表這支閘的綠燈是零證據,而不是「作用域真的守住了」。
+  await page.evaluate(() => {
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowRight') return
+      const dialog = document.querySelector('[role="dialog"]')
+      const next = dialog && [...dialog.querySelectorAll('button')]
+        .find((button) => (button.getAttribute('aria-label') || '').includes('下一個檔案'))
+      next?.click()
+    }, true)
+  })
+}
 
 const before = await title()
 ck('前提:檢視器已開且讀得到目前檔名', !!before, `目前=${before}`)
@@ -88,5 +104,15 @@ if (before) {
 
 await browser.close(); sv.close()
 console.log(out.join('\n'))
+
+if (SELFTEST) {
+  // 紅在對的地方才算數:必須是 (A)「焦點在外不得切檔」那一條被打到。
+  const caught = out.some((line) => line.startsWith('✗') && line.includes('A 焦點在檢視器外'))
+  console.log(caught
+    ? '\n✓ selftest:不看焦點的 window 快捷鍵被 (A) 抓到,量具會紅'
+    : `\n✗ selftest:種回舊 bug 卻沒被 (A) 抓到 —— 這支閘是假綠(總失敗 ${fail})`)
+  process.exit(caught ? 0 : 1)
+}
+
 console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 全部通過')
 process.exit(fail ? 1 : 0)

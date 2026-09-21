@@ -93,6 +93,7 @@
       "ownerRepo": "design-system",
       "path": "scripts",
       "excludes": [
+        "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
       "required": true

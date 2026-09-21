@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import Ajv2020 from 'ajv/dist/2020.js'
@@ -22,6 +24,12 @@ import {
   consumerStepAction,
   productContentDigest,
   productChangeSincePreviousRelease,
+  previousReleaseRef,
+  listReleaseTags,
+  PRODUCT_VISIBLE,
+  consentReleaseLedger,
+  recordConsentRelease,
+  writeReleaseConsent,
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
@@ -535,4 +543,88 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
   assert.match(reportBlock, /productChangeSincePreviousRelease\(/, 'printReport 必須呼叫它')
   assert.match(reportBlock, /不會改變任何畫面/, '而且必須真的印出來給人看')
+
+  // 2026-09-21:餵給它的「上一版」是誰算的?——之前答案是 `observation.release?.targetCommitish`,
+  // 而那支 `gh release view` 的 --json 欄位清單裡根本沒有 targetCommitish,所以它恆為 undefined、
+  // productChange 恆為 null、那句話從寫下來到今天一次都沒印出來過。純函式的參數邊界又一次是盲點。
+  assert.doesNotMatch(reportBlock, /targetCommitish/,
+    '不得再從 gh release view 的 targetCommitish 取上一版 —— 那個欄位根本沒被要求回傳')
+  assert.match(reportBlock, /previousReleaseRef\(observation\.tag\)/, '必須實際解析出上一版的 ref')
+  assert.match(reportBlock, /無法判斷這一版會不會改變畫面/,
+    '「量不到」必須印成跟「量到沒變」不一樣的話,否則沉默無法區分')
+
+  const releaseViewFields = src.match(/'release', 'view'[^\]]*\]/u)?.[0] ?? ''
+  assert.ok(releaseViewFields, '找不到 gh release view 的欄位清單')
+  assert.doesNotMatch(releaseViewFields, /targetCommitish/,
+    '若哪天真的要用 targetCommitish,必須先把它加進 --json 欄位 —— 這條就是在鎖那個接縫')
+})
+
+test('上一版 ref 的解析:tag 已建 / 尚未建 / 沒有任何 tag,三種都要對', () => {
+  const tags = ['v0.1.0-beta.140', 'v0.1.0-beta.139', 'v0.1.0-beta.138']
+  // 發版後:當前 tag 已存在 → 上一版是它的下一個
+  assert.equal(previousReleaseRef('v0.1.0-beta.140', tags), 'v0.1.0-beta.139')
+  assert.equal(previousReleaseRef('v0.1.0-beta.139', tags), 'v0.1.0-beta.138')
+  // 發版前:當前 tag 還沒建 → 上一版就是最新的那個(這是 release:status 平常走的路)
+  assert.equal(previousReleaseRef('v0.1.0-beta.141', tags), 'v0.1.0-beta.140')
+  // 最舊的一版沒有上一版;完全沒有 tag 時不得亂猜
+  assert.equal(previousReleaseRef('v0.1.0-beta.138', tags), null)
+  assert.equal(previousReleaseRef('v0.1.0-beta.1', []), null)
+
+  // 真實資料的兩面對照:這個 repo 的真 tag 必須排得出來,且解析結果落在真 tag 集合內
+  const real = listReleaseTags()
+  assert.ok(real.length >= 2, `本地至少要有兩個版本 tag 才驗得了(實際 ${real.length})`)
+  assert.equal(previousReleaseRef(real[0], real), real[1])
+  // 真實的「該 none 的一筆」:beta.139 → beta.140 五版零 UI 變動那件事
+  assert.equal(productChangeSincePreviousRelease(real[1], real[0]), 'none',
+    `${real[1]} → ${real[0]} 應為零畫面變動(2026-09-20 實測)`)
+})
+
+test('發布授權與記帳是**行為**,不是字串比對 —— 一行 false 就關掉而測試全綠是不行的', () => {
+  // 2026-09-21 對抗稽核:先前只有 assert.match(src, /authorizeDeepAuditPublish\(/),
+  // 把呼叫包成 `false && authorizeDeepAuditPublish(...)` 照樣綠;recordConsentRelease
+  // 包成 `if (false)` 也照樣綠 —— 帳本永遠空,上一條閘就永遠沒機會紅。改成在沙箱真的讀寫。
+  //
+  // **不使用動態 import**:治理 harness runner 禁止動態載入,而收據目錄已改成每次讀環境變數
+  //(consentDir()),所以設好 env 直接呼叫既有匯出即可。
+  const sandbox = mkdtempSync(join(tmpdir(), 'publish-authz-'))
+  const previous = process.env.GOVERNANCE_RELEASE_CONSENT_DIR
+  process.env.GOVERNANCE_RELEASE_CONSENT_DIR = resolve(sandbox, 'consent')
+  mkdirSync(process.env.GOVERNANCE_RELEASE_CONSENT_DIR, { recursive: true })
+  try {
+    const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: ROOT, encoding: 'utf8' }).trim()
+    const receipt = writeReleaseConsent({ headSha: head, branch: 'claude/authz', quote: '發版', source: 'test' })
+    assert.deepEqual(consentReleaseLedger(receipt.authorizationId), [])
+    assert.equal(authorizeDeepAuditPublish(workflow, { completedFinalReleases: 0 }).authorization, 'final-release')
+
+    recordConsentRelease('0.1.0-beta.996', receipt.authorizationId)
+    assert.deepEqual(consentReleaseLedger(receipt.authorizationId), ['0.1.0-beta.996'],
+      'recordConsentRelease 必須真的留下紀錄,否則「一份授權一次發布」永遠沒機會紅')
+
+    assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1 }), /incident/i)
+  } finally {
+    if (previous === undefined) delete process.env.GOVERNANCE_RELEASE_CONSENT_DIR
+    else process.env.GOVERNANCE_RELEASE_CONSENT_DIR = previous
+    rmSync(sandbox, { recursive: true, force: true })
+  }
+})
+
+test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
+  // 那次的破口:集合只算 packages/<pkg>/src,漏掉 .storybook/ 與 apps/**/*.stories.tsx,
+  // 於是改了畫面卻不重新確認。**驗行為不驗字串** —— 我第一版比對原始碼裡的 `.storybook`,
+  // 而程式寫的是跳脫過的 `\.storybook`,當場自己紅(2026-09-21)。
+  const hit = (path) => PRODUCT_VISIBLE.some((re) => re.test(path))
+  for (const p of [
+    'packages/design-system/src/components/Button/button.tsx',
+    'packages/design-system/src/tokens/semantic.css',
+    'packages/design-system/src/components/Button/button.stories.mdx',
+    '.storybook/preview.ts',
+    '.storybook/theme.css',
+    'apps/work/src/pages/work-items/work-items.stories.tsx',
+  ]) assert.ok(hit(p), `${p} 是預覽看得見的,漏掉就是 2026-09-20 那個破口`)
+  for (const p of [
+    'packages/design-system/package.json',
+    'scripts/release-orchestrator.mjs',
+    'AGENTS.md',
+    '.github/workflows/ci.yml',
+  ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })

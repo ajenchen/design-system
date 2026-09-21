@@ -262,3 +262,48 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-08-11 一日連環五鎖:build graph journal 死鎖(復原全刪全蓋碰禁寫目標)/ authority fingerprint 把自家 index-publish 誤判竄改 / blanket 授權辨識漏「開頭裸可以」/ `gh auth status` 帳號級體檢擋 repo-scoped token / gh Go TLS 拒 sandbox 代理——五層全是自家機制,user 原話「不要再說有人擋你了,完全沒有」;逐層拆除後 release 全自動走通,零 user 指令。
 - 2026-08-28 hooks/scripts symlink 本地殘影(8/1 舊版 generator 合法生成、8/2 佈局改版後無人能寫回):我先誤稱「我們自己沙箱設的保護」(實查自家 settings `denyWrite=[]`,鎖是 Claude Code 對 hook 設定目錄的**平台內建**防注入保護),再指 `! git restore` 給 user(對話內 `!` 與 Bash **同一個沙箱**,必再被擋 = 指死路),user 原話「你不要再作繭自縛了,我說要做就做」;正解一行 `git update-index --skip-worktree`(只寫 `.git` 可寫區,不碰被鎖路徑)→ codify M36(b') 第 4 問(鎖的主人是誰 + 交 user 的指令必先驗證不在同牆內)。
 - 四路同 provider 對抗審查查不到 (a) 類(reviewer 無對話紀錄),故必須以 M36 rule + 來源總帳格式機械化。
+
+## 失敗記憶索引搬家(2026-09-21)
+
+repo 根的治理 bootstrap 檔,其 root→cwd 合併鏈超過預設 32KiB 上限(41252 bytes),超過就**靜默截斷**——
+整份治理內容會被砍掉一段而沒有任何訊號。這條規則 bootstrap 自己就寫著,
+而抓它的 `check-agents-bootstrap.mjs` 從來沒有任何執行面呼叫它。
+
+依 canonical(「新 bug → 歸 Meta-Pattern OR 索引表 1 行」+ meta-patterns「具體 bug 歷史詳解移到本檔」),
+把下列幾列的 narrative 逐字搬來,bootstrap 只留**判準一行 + 指標**。一個 invariant 都沒有刪。
+
+### 工具靜默陷阱(rsync 等長同秒 / rg 黏寫 flag / mktemp 失敗回空)
+
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""` 原地 → trap 刪掉 cwd | 必 `--checksum`、flag 分開寫;mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28)。**2026-09-18 beta.134 再犯**:consumer mirror 的 `package-lock.json` 換版號後與舊版**完全等長**(版本字串／resolved URL／integrity base64 三者都是固定長度,實測 292873 bytes 不變),clone 又與生成落在同一秒 → rsync 靜默跳過、lock 沒進 commit,直到 consumer 的 `npm ci` 才炸。**上游那句 `✓ lock pins the exact released version` 還是綠的,因為它驗的是來源那份、不是真的被複製過去的那份 —— 綠燈驗錯對象比沒有綠燈更騙人**。規則早就寫了、三處也遵守了,第四處漏掉 → 機械化 `scripts/rsync-checksum-invariant.mjs`(CI required,對照組用合成檔且必須只紅在合成檔上)。**2026-09-20 同一條的第二種形狀:驗了「怎麼判」,沒驗「判的那個值怎麼來」**——發版同意改綁分支後,判定表 8 格全綠、`npm run test:release-consent` 全綠,但餵給它的 `productVisibleFilesChanged` **恆回 true**(自家 helper `run()` 回 `{ok,stdout,stderr}` 沒有 `status`,寫成 `diff.status !== 0` 就是 `undefined !== 0`,恆真且零報錯),整個修正從第一天起是死的,是我刻意去驗它才抓到。**吃參數的純函式,參數邊界就是測試的天然盲點**:判定表把值當輸入,於是永遠測不到算那個值的程式。判準:純函式測試通過後,必再問「這個參數在正式流程裡是誰算的,那支有沒有被測」,並用**真實資料**(真 git commit、真 API 回應)跑兩面對照 —— 該 true 的一筆、該 false 的一筆,兩邊都找得到才算數,找不到對照組要 fail 而不是空跑當綠|
+
+### 量 focus 顏色不等 transition
+
+| 量 focus 顏色不等 transition = 量到過渡中間值 | `transition-colors` 的 transition-property **含 `outline-color`**;聚焦後立刻 `getComputedStyle().outlineColor` 會抓到中間值(量到 currentColor,看起來像「焦點框顏色壞了」)。2026-09-08 差點據此寫成「全 DS 焦點框失效」,等 600ms 後三個元件都回主色。**凡量 focus 顏色先等過渡**;另 `document.body.focus()` 不重設 Tab 起點(body 不可聚焦),Tab 會從上一個聚焦元素繼續往後走,要重設只能 reload |
+
+### 拖曳 vs 點擊的判準(輸入代理會丟 move、延後 click)
+
+| 拖曳 vs 點擊只靠「收到幾個 pointermove」或「setTimeout(0) 內吞 click」= 輸入代理 / 遠端隔離環境靜默失效 | 代理會丟掉 / 合併 pointermove、讓 click 晚一個 task 送達;本機 Chromium 兩者都成立所以永遠重現不了(2026-09-16 FAB「拖一下就開面板」,程式碼自 9/8 起零改動)。判準必是**放開點離按下點的距離**,吞 click 的旗標由**下一次 pointerdown** 才清,鍵盤合成 click(detail 0)放行;閘 `scripts/agent-fab-drag-click-invariant.mjs` 用合成事件造「晚到的 click」與「0 個 move 放開在 80px 外」 |
+
+### git commit 指定路徑的部分提交會鎖住 index
+
+| `git commit -- <路徑>`(指定路徑的部分提交)會讓治理 pre-commit 掛掉 | 錯誤訊息是 `authority generation index publish could not stage:hooks/scripts`,看起來像沙箱權限問題,其實是**部分提交模式下 git 自己鎖著 index**,hook 裡的 `git update-index --cacheinfo` 拿不到鎖。同一個 `update-index` 手動跑 rc=0。正解:把要的東西 `git add` 進暫存區,然後跑**不帶路徑**的 `git commit`;要排除某個檔就用 `git update-index --cacheinfo <HEAD 的 blob>` 把它還原成 HEAD 版(2026-09-18) (以下逐字引用的歷史紀錄提到 provider view,**那是 generated delivery view,不是 canonical authority、不得當 SSOT**) |
+
+### 寫了閘卻沒有任何執行面呼叫它
+
+| **寫了閘卻沒有任何執行面呼叫它** | spec 寫「由 `xxx.mjs` 機械強制」、腳本存在、甚至有包裝測試 —— 但 CI / npm script / hook 都沒提到它,那條保護是假的而且**零訊號**。2026-09-18 機械盤點:`scripts/*.mjs` 有**大量**名字像閘/測試卻不可達(把 CI + package.json + hooks + skills + infra/test 全算進來之後)。**確切數字不在本檔硬寫** —— 它會隨棘輪往下走,SSOT 是 `scripts/gate-reachability-baseline.json`(2026-09-20 prune 抓到本檔與 ci.yml 都還停在舊值 94,而 baseline 已是 93;2026-09-21 再降到 4)。**2026-09-21 補的第三種形狀**:量具把「被字面提到」當成「會被跑」的替身 —— 動態探索出來的執行路徑(`run-gate-meta-tests.mjs` 掃 pair、`run-harnesses.mjs` 讀 harness inventory)沒有任何地方會寫出被跑者的檔名,於是 63 支每晚真的在跑的測試被誤判成孤兒。閘要模出真正的執行路徑,不是只 grep 字串。同族錨例:推播閘(hook 在、6 個情境測試全綠,但真實入口被 `requires: peer-cli` 擋掉,從沒跑過)、native/custom parity 閘(只掛非 required 的 nightly)。**判準**:寫完任一支閘立刻問「誰呼叫它」,grep 執行面拿不到答案就等於沒寫。棘輪閘 `scripts/gate-reachability-invariant.mjs`(CI required)鎖 baseline,新增孤兒立刻紅。**同族第二種形狀(2026-09-19)**:文件講的那道防線**檔案根本不在**——hook home 自己的 README 在 Stop 區列 5 支 hook,其中 3 支(`stop_harvest_corrections` / `stop_capture_metrics` / `stop_meta_self_audit`)早在 2026-05-13 就折進 `stop_passive_logging.sh`、檔名已不存在,而「折進去」這件事就寫在同一張表的**上一列**。閘 `scripts/hook-citation-liveness-invariant.mjs`(CI required):文件提到的 hook 名必須存在於 canonical hook 樹,否則該行前後 3 行要明講它是舊名/已折/未實作 |
+### `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼**
+
+| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼** | 不只是「不 emit declaration」——2026-09-06 實證:`data-table.tsx` 少傳一個必填 prop(TS2741),`npx tsc -b --force` 回 **0**,`npm run build:lib` 才報錯。**「tsc -b 通過」不構成型別正確的證據**,任何 .tsx 改動的型別驗證一律以 `npm run build:lib` 為準 |
+
+### hook 測試直跑留 fixture `.git/` 進 corpus
+
+| hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh(自帶隔離),清 debris 用 `find -type f` 對照 `git ls-files`(2026-08-05) |
+
+### SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默)
+
+| SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默、base 值定格) | begin-once 守衛的觸發 key 必含每個會新掛動畫的狀態段(think→exit 同 key 漏掉 7 個 animate);驗證看 `getStartTime()` 是否丟例外,CI C6(2026-09-03) |
+
+### `file://` 開 storybook = story 整個不渲染而且不報錯
+
+| `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入,`#storybook-root` 子節點 0、畫面空白,探針卻拿得到 Storybook 自己的 UI(「Set string」按鈕)而誤以為有渲染。瀏覽器閘一律起本機靜態站。同場:CSSOM 對含 `var()` 的簡寫回**空字串**,用 `r.style.outline` 掃規則會全空,要用 `r.cssText`(2026-09-08)|
+

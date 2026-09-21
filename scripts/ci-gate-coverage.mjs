@@ -31,13 +31,13 @@ const ci = readdirSync(wfDir).filter((f) => /\.ya?ml$/.test(f))
 // 這些不是 PR 閘,原因寫在旁邊。改動這份清單等於改動「什麼算閘」,要有理由。
 const NOT_A_PR_GATE = new Map([
   ['test:governance-harnesses', '十分鐘等級的治理 harness 套件,ci.yml 明文說刻意排除在 PR 閘之外,另有 governance-harnesses.yml'],
-  // 下面四支**目前是紅的**,而且正因為沒人跑所以一直沒被發現(2026-09-08 盤點,總帳 AD13)。
-  // 這裡明列不是放行,是把「已知紅燈」寫在看得到的地方 —— 原本的狀態是沒有人知道。
-  // 修好任一支就把它從這裡刪掉,這條閘會立刻要求它進 CI。
-  ['test:waived-self-review', '紅:Harness source inventory is not source-closed —— scripts/ 底下有 6 支 test-*.mjs 沒被分類(其中 5 支是既有漂移,1 支是本輪新增、已補分類)'],
-  ['test:provider-neutral-residue', '紅:provider-neutral 殘留掃描回報 1 筆(assert 1 !== 0),尚未定位是哪一筆'],
-  ['test:governance-evidence-control-plane', '紅:deep-audit evidence blocked —— Harness source inventory digest drifted,與上面 waived-self-review 同源'],
-  ['test:governance-control-plane', '紅:@qijenchen/governance 套件測試 70 個斷言失敗,尚未定位'],
+  // 2026-09-21 全部修好並接進 CI 的 governance-control-plane job,因此**不再列為例外**:
+  //   test:waived-self-review / test:governance-evidence-control-plane —— 同源:harness 來源清單未閉合
+  //     (7 支 test-*.mjs 沒分類 + 一支測試自己用 new Function/--eval 違反來源政策,把整個 runner 擋住)
+  //   test:provider-neutral-residue —— 8 筆 provider 專屬措辭缺 adapter/provenance 揭露
+  //   test:governance-control-plane —— hook 語料總數寫死 61(實際 62)+ 全庫散落的空 .claude/.cc-writes 殘留
+  // 留下這段註解是要記住:它們當初被列成例外的理由是「目前是紅的」,而那正是最不該放行的理由 ——
+  // 紅燈沒有觀眾,就永遠不會有人修。
 ])
 
 // All-Harness registry 也是一條真實執行路徑(governance-harnesses.yml → run-harnesses.mjs
@@ -65,11 +65,15 @@ for (let pass = 0; pass < 20; pass++) {
   if (!grew) break
 }
 
-const tests = Object.keys(pkg).filter((k) => k.startsWith('test:'))
+// 母體 = `test:*` **與** `check:*`。
+// 2026-09-21 補 `check:*` 的理由:`check:bundle-size` 與 `check:naming-structure` 兩支都是
+// 會 exit(1) 的閘,都只註冊成 npm script、沒有任何 workflow 呼叫,於是一個從 2026-07-14、
+// 一個從 2026-08-05 起就是紅的而沒有人看見。`check:` 跟 `test:` 一樣是「宣告這要被跑」的前綴。
+const tests = Object.keys(pkg).filter((k) => k.startsWith('test:') || k.startsWith('check:'))
 const missing = tests.filter((k) => !reachable.has(k) && !NOT_A_PR_GATE.has(k))
 const excused = tests.filter((k) => NOT_A_PR_GATE.has(k))
 
-console.log(`test:* 共 ${tests.length} 支;CI 觸達 ${tests.length - missing.length - excused.length},明列例外 ${excused.length},未觸達 ${missing.length}`)
+console.log(`test:* / check:* 共 ${tests.length} 支;CI 觸達 ${tests.length - missing.length - excused.length},明列例外 ${excused.length},未觸達 ${missing.length}`)
 for (const k of excused) console.log(`  ⏭  ${k} —— ${NOT_A_PR_GATE.get(k)}`)
 
 if (process.argv.includes('--selftest')) {
@@ -82,9 +86,9 @@ if (process.argv.includes('--selftest')) {
 }
 
 if (missing.length) {
-  console.error(`\n✗ 下列 test:* 沒有任何 CI workflow 觸達得到 —— 註冊成 test 就是宣告「這要被跑」:`)
+  console.error(`\n✗ 下列 test:* / check:* 沒有任何 CI workflow 觸達得到 —— 註冊成 test 就是宣告「這要被跑」:`)
   missing.forEach((k) => console.error(`  ${k}  →  ${pkg[k].slice(0, 100)}`))
   console.error('\n  修法二擇一:接進 .github/workflows,或寫進本檔 NOT_A_PR_GATE 並說明原因。')
   process.exit(1)
 }
-console.log('✓ 每一支 test:* 都有 CI 觸達得到')
+console.log('✓ 每一支 test:* / check:* 都有 CI 觸達得到')
