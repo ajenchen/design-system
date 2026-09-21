@@ -28,7 +28,21 @@ const SKIP_PATTERN = /SKIPPED-ENV|Failed to launch|browserType\.launch|Executabl
 // 只認退出碼 2 的話,退出碼 1 的那些會被我這支共用跑法誤報成「baseline 應該綠卻紅」——
 // **把「缺前置」當成「產品壞了」**,正是這一整批在修的同一種病。
 // 認訊息而不是只認退出碼:訊息是閘自己印的、語意明確,退出碼在各閘之間不一致。
-const MISSING_PREREQUISITE = /storybook-static missing|STALE-BUILD|Run `npm run build-storybook`/u
+const MISSING_PREREQUISITE_MESSAGE = /storybook-static missing|STALE-BUILD|Run `npm run build-storybook`/u
+
+// **第三種形狀(2026-09-21 夜間 lane 實測抓到)**:有些閘**根本沒有守衛**,缺 storybook-static
+// 時是直接 ENOENT 崩掉(例:`color-scheme-invariant` 的
+// `lstat '.../governance-repository-snapshot-XXXX/repo/storybook-static'`),
+// 輸出裡只有 Node 的堆疊,沒有任何人話訊息。
+// 全庫盤點:用到 storybook-static 的腳本有 50+ 支沒有存在性守衛,逐支補守衛不是這裡該做的事
+//(那是各閘自己的功課),但**「缺前置 ≠ 產品壞了」這個判斷本來就是這支共用跑法的職責**。
+// 判準刻意用「兩個條件同時成立」而不是單一寬鬆字串:必須是檔案不存在類的錯誤,
+// **而且**出錯的路徑指向 storybook-static —— 這樣不會把真正的失敗吃掉。
+const isMissingStorybookCrash = (text) => (
+  /ENOENT|no such file or directory/u.test(text) && /storybook-static/u.test(text)
+)
+
+const missingPrerequisite = (text) => MISSING_PREREQUISITE_MESSAGE.test(text) || isMissingStorybookCrash(text)
 
 /**
  * @param {string} gate 閘的檔名(相對 repo 根,例如 `scripts/button-variant-invariant.mjs`)
@@ -39,7 +53,7 @@ export function runGateSelftestMeta(gate) {
 
   const base = run([])
   const baseText = `${base.stdout ?? ''}${base.stderr ?? ''}`
-  if (MISSING_PREREQUISITE.test(baseText)) {
+  if (missingPrerequisite(baseText)) {
     console.log(`· 略過:${gate} 缺 storybook-static(exit ${base.status})—— 這是缺前置,不是產品壞掉;`)
     console.log('  真正的紅綠由 CI 的瀏覽器 job 裁決(那裡會先 build-storybook)。')
     process.exit(0)
@@ -59,7 +73,7 @@ export function runGateSelftestMeta(gate) {
 
   const control = run(['--selftest'])
   const controlText = `${control.stdout ?? ''}${control.stderr ?? ''}`
-  if (MISSING_PREREQUISITE.test(controlText) || SKIP_PATTERN.test(controlText)) {
+  if (missingPrerequisite(controlText) || SKIP_PATTERN.test(controlText)) {
     console.log('· 略過:對照組起不了環境')
     process.exit(ok ? 0 : 1)
   }
