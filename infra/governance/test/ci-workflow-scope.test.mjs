@@ -32,7 +32,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
+  // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
+  // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['hooks-linux', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -43,7 +46,7 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
   // verify-browser-select-all 同列(2026-09-17):同樣是全 story 掃,而且每支還要開面板互動,本機 6.6 分。
   const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles']) {
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)

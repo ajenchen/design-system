@@ -922,7 +922,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -939,9 +939,10 @@ jobs:
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
           BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
           BROWSER_DT_HANDLES: ${{ needs.verify-browser-datatable-handles.result }}
+          HOOKS_LINUX: ${{ needs.hooks-linux.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

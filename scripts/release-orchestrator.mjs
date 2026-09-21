@@ -73,7 +73,7 @@ export function consentCoversHead({ receipt, branch, headSha, productFilesChange
  * `stories: [...sharedStoryGlobs, '../apps/**\/*.stories.@(tsx|mdx)']` 明確把它們納入)。
  * 漏掉就會出現「畫面明明變了卻不重問」—— 那是 2026-09-02 事故那一格的破口。
  */
-const PRODUCT_VISIBLE = [
+export const PRODUCT_VISIBLE = [
   /^packages\/[^/]+\/src\/.*\.(tsx?|jsx?|css|mdx)$/,
   /^\.storybook\/.*\.(tsx?|jsx?|css|mdx)$/,
   /^apps\/.*\.stories\.(tsx?|mdx)$/,
@@ -1294,6 +1294,24 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     if (incomplete.id === 'publish') {
       invariant(incomplete.status !== 'failed', `published GitHub Release ${observation.tag} is not immutable`)
+      // **合併之後、發布之前,要看 protected main 那一輪 CI**(2026-09-21 對抗稽核 blocker)。
+      // 先前整條五步從來不看它:PR 綠 → 合併 → 直接發布,而 main 上那一輪可能紅。
+      // beta.140 就是這樣發出去的(main CI 當時是 failure),等於「protected main + required CI」
+      // 這道保護在**發布這一步**形同不存在 —— 合併之後才是真正出貨的那份程式碼。
+      const mainRows = shimCheckRows(observation.repository, observation.protectedMainSha)
+      if (mainRows === null) {
+        throw new Error(`讀不到 protected main(${String(observation.protectedMainSha).slice(0, 12)})的 check 證據 —— 沒有通過的證據不等於通過,不發布`)
+      }
+      const mainRollup = checkRollupStatus(mainRows)
+      invariant(mainRollup !== 'failed',
+        `protected main(${String(observation.protectedMainSha).slice(0, 12)})的 CI 是紅的,不得發布 —— ` +
+        `合併之後那一輪才是真正要出貨的那份程式碼。先修 main 再發。`)
+      if (mainRollup === 'pending') {
+        if (noWait) return report
+        console.log(`   等 protected main 的 CI 跑完(${String(observation.protectedMainSha).slice(0, 12)})`)
+        gh(['pr', 'checks', '--repo', observation.repository, '--watch', '--interval', '15'], { allowFailure: true })
+        continue
+      }
       // 一份授權 = 一次 final release。第二次必須有 incident 證據,否則停下來要求批次做完再發。
       // 這一行就是先前缺的「執行面呼叫」—— 沒有它,canonical 的「最多一次」只是紙上的字。
       const alreadyReleased = consentReleaseLedger().filter(v => v !== observation.version)

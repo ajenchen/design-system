@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Sample actual PNG content availability during native inertial scroll inputs.
 import { launchBrowser } from "./lib/launch-browser.mjs";
+import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
@@ -29,7 +30,7 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   const { spawnSync } = await import("node:child_process");
   let code = 1;
   const attempts = [];
-  const MAX_ATTEMPTS = Number(process.env.DT_PERCEPTION_MAX_ATTEMPTS ?? 5);
+  const MAX_ATTEMPTS = SHARED_MAX_ATTEMPTS; // 共用 lib/scroll-perception-budget.mjs,不再各寫一份
   // 送幀缺口門檻同樣要跟機器走(2026-09-11):50ee1d3b 那一跑五次的最長缺口是 114/110/116/103/109ms,
   // 全部只差門檻 100ms 一點點,而同一個 job 裡固定工作量的對照組顯示那台 runner 比校準點慢 ~40%。
   // `DT_PERCEPTION_GAP_MS` 讓 CI 在 dpr2(每張 PNG 四倍畫素)放寬到 130ms;預設仍是 100ms。

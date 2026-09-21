@@ -1,6 +1,6 @@
 # Meta-Pattern 預警(33 active M-rules)
 
-**mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過全部 M-rules(M1-M32 + M36,M27 retired 2026-05-15 → M23(c) child / M33-M35 retired 2026-05-22 → folded into M20/M7/M23(d) per `/knowledge-prune` deep audit Lens 1+2)。
+**mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過全部 M-rules(**權威清單見下方 cluster 表,本行不重述** —— 同一份列舉出現三處必然漂移;2026-09-21 新增 M37 時這裡就沒跟上,而 counter 只比數字不比清單所以零訊號)。
 
 ## 2026-05-10 cluster cross-link(per codex Q-13 deep prune audit + 2026-05-22 fold update)
 

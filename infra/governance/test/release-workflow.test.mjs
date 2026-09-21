@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { readFileSync, rmSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import Ajv2020 from 'ajv/dist/2020.js'
@@ -22,6 +23,10 @@ import {
   consumerStepAction,
   productContentDigest,
   productChangeSincePreviousRelease,
+  PRODUCT_VISIBLE,
+  consentReleaseLedger,
+  recordConsentRelease,
+  writeReleaseConsent,
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
@@ -535,4 +540,59 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
   assert.match(reportBlock, /productChangeSincePreviousRelease\(/, 'printReport 必須呼叫它')
   assert.match(reportBlock, /不會改變任何畫面/, '而且必須真的印出來給人看')
+})
+
+test('發布授權與記帳是**行為**,不是字串比對 —— 一行 false 就關掉而測試全綠是不行的', async () => {
+  // 2026-09-21 對抗稽核:先前只有 assert.match(src, /authorizeDeepAuditPublish\(/),
+  // 把呼叫包成 `false && authorizeDeepAuditPublish(...)` 照樣綠;recordConsentRelease
+  // 包成 `if (false)` 也照樣綠 —— 帳本永遠空,上一條閘就永遠沒機會紅。
+  // 改成在沙箱裡跑真的讀寫。
+  const { mkdtempSync, mkdirSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const sandbox = mkdtempSync(join(tmpdir(), 'publish-authz-'))
+  const previous = process.env.GOVERNANCE_RELEASE_CONSENT_DIR
+  process.env.GOVERNANCE_RELEASE_CONSENT_DIR = resolve(sandbox, 'consent')
+  mkdirSync(process.env.GOVERNANCE_RELEASE_CONSENT_DIR, { recursive: true })
+  try {
+    const mod = await import(`../../../scripts/release-orchestrator.mjs?authz=${Date.now()}`)
+    const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: ROOT, encoding: 'utf8' }).trim()
+    const receipt = mod.writeReleaseConsent({ headSha: head, branch: 'claude/authz', quote: '發版', source: 'test' })
+
+    // 還沒發過 → 第一次放行
+    assert.deepEqual(mod.consentReleaseLedger(receipt.authorizationId), [])
+    assert.equal(authorizeDeepAuditPublish(workflow, { completedFinalReleases: 0 }).authorization, 'final-release')
+
+    // 記帳是真的寫進去(不是被 if(false) 吞掉)
+    mod.recordConsentRelease('0.1.0-beta.996', receipt.authorizationId)
+    assert.deepEqual(mod.consentReleaseLedger(receipt.authorizationId), ['0.1.0-beta.996'],
+      'recordConsentRelease 必須真的留下紀錄,否則「一份授權一次發布」永遠沒機會紅')
+
+    // 有帳之後,沒有 incident 證據就必須被擋
+    assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1 }), /incident/i)
+  } finally {
+    if (previous === undefined) delete process.env.GOVERNANCE_RELEASE_CONSENT_DIR
+    else process.env.GOVERNANCE_RELEASE_CONSENT_DIR = previous
+    rmSync(sandbox, { recursive: true, force: true })
+  }
+})
+
+test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
+  // 那次的破口:集合只算 packages/<pkg>/src,漏掉 .storybook/ 與 apps/**/*.stories.tsx,
+  // 於是改了畫面卻不重新確認。**驗行為不驗字串** —— 我第一版比對原始碼裡的 `.storybook`,
+  // 而程式寫的是跳脫過的 `\.storybook`,當場自己紅(2026-09-21)。
+  const hit = (path) => PRODUCT_VISIBLE.some((re) => re.test(path))
+  for (const p of [
+    'packages/design-system/src/components/Button/button.tsx',
+    'packages/design-system/src/tokens/semantic.css',
+    'packages/design-system/src/components/Button/button.stories.mdx',
+    '.storybook/preview.ts',
+    '.storybook/theme.css',
+    'apps/work/src/pages/work-items/work-items.stories.tsx',
+  ]) assert.ok(hit(p), `${p} 是預覽看得見的,漏掉就是 2026-09-20 那個破口`)
+  for (const p of [
+    'packages/design-system/package.json',
+    'scripts/release-orchestrator.mjs',
+    'AGENTS.md',
+    '.github/workflows/ci.yml',
+  ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })

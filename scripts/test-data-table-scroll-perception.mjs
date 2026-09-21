@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { MAX_ATTEMPTS, controlTimeoutMs } from "./lib/scroll-perception-budget.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -239,9 +240,10 @@ if (process.argv.includes("--unit-only")) {
   //
   // 這**不是**「調大 timeout 掩蓋掛住」:真的掛住時子行程不會有 attempt 進度,
   // 下面的失敗訊息會讀回它的日誌,把「重試預算用完」與「卡死」分開講。
-  const CONTROL_MAX_ATTEMPTS = Number(process.env.DT_PERCEPTION_MAX_ATTEMPTS ?? 5);
-  const CONTROL_PER_ATTEMPT_MS = 60000; // CI 實測每次約 38s,留 1.5× 餘裕
-  const CONTROL_TIMEOUT_MS = CONTROL_MAX_ATTEMPTS * CONTROL_PER_ATTEMPT_MS + 30000;
+  // 常數只有一份:scripts/lib/scroll-perception-budget.mjs,父子共用。
+  // 先前兩邊各寫一個 `?? 5`,「由子行程的重試次數推導」只存在於註解裡(2026-09-21 稽核抓到)。
+  const CONTROL_MAX_ATTEMPTS = MAX_ATTEMPTS;
+  const CONTROL_TIMEOUT_MS = controlTimeoutMs();
 
   for (const mode of ["on", "ink"]) {
     const caseOut = join(out, mode === "on" ? "delayed" : "hidden-content");
