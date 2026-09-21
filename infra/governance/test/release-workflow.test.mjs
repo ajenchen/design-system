@@ -17,6 +17,7 @@ import {
   buildPublishMutationPlan,
   filterOutPublishWorkflowRuns,
   rollupRowIsRed,
+  lifecycleChainMatchesLastPublished,
   rollupRowIsAborted,
   classifyReleaseLookup,
   buildPullRequestLookupArgs,
@@ -759,6 +760,38 @@ test('tag 名稱不得與它指向的內容不符 —— 而且那個版號是�
   const atCommit = src.slice(src.indexOf('function packageVersionAtCommit('), src.indexOf('function checkRollupStatus('))
   assert.match(atCommit, /repos\/\$\{repository\}\/contents\//, '必須向 GitHub 讀那個 ref 的 manifest')
   assert.doesNotMatch(atCommit, /readJson\(resolve\(ROOT/, '不得退回讀本地工作區的 package.json')
+})
+
+test('發布前必須確認「這一版的鏈接得上線上最新已發布那一版」—— 否則發出去也沒人裝得上', () => {
+  // 2026-09-21 真實事故:beta.141 bump 了卻沒發成(tag 打在錯 commit 上報廢),
+  // beta.142 的鏈因此宣告「前一版是 beta.141」。WM 裝的是 beta.140,升級交易比對
+  // incoming.immutableHeadSnapshot 與 installed.currentSnapshot → 不等 → GOV-UPGRADE-007。
+  // 結果:beta.142 發出去了(immutable,收不回),卻沒有任何 consumer 裝得上,
+  // 而這件事要等到發布完、第 5 步 consumer 同步失敗才看得見。發布前就量得到,所以就在發布前量。
+  assert.deepEqual(
+    lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: '0.1.0-beta.140' }),
+    { ok: true, declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: '0.1.0-beta.140' },
+  )
+  // 事故當時的那一格:宣告 141、線上最新是 140 → 必須紅
+  assert.equal(
+    lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.141', lastPublishedVersion: '0.1.0-beta.140' }).ok,
+    false,
+    '宣告的前一版不是線上最新已發布版 → 必須擋下',
+  )
+  // 讀不到不得當成相符(M37 第八種形狀)
+  assert.equal(lifecycleChainMatchesLastPublished({ declaredPreviousVersion: null, lastPublishedVersion: '0.1.0-beta.140' }).ok, null)
+  assert.equal(lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: null }).ok, null)
+
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /lifecycleChainMatchesLastPublished\(/, '發布步驟必須真的呼叫它,否則這張表是紙上的')
+  assert.match(publishBlock, /chain\.ok !== false/, '接不上必須擋')
+  assert.match(publishBlock, /chain\.ok !== null/, '讀不到也必須擋(沒有相符的證據不等於相符)')
+  assert.match(publishBlock, /--last-published/, '訊息必須給出可執行的修法')
+  // 宣告值必須從 consumer 升級交易真正比對的那個欄位來,不得換成別的來源
+  const declared = src.slice(src.indexOf('function declaredPreviousReleaseVersion('), src.indexOf('function releaseRepository('))
+  assert.match(declared, /ds-canonical\/fork\/manifest\.json/, '必須讀 fork corpus manifest')
+  assert.match(declared, /providerLifecycle\?\.immutableHead\?\.releaseVersion/, '必須讀 immutableHead.releaseVersion')
 })
 
 test('「被取消 / 逾時」不是「失敗」—— 兩者都擋發布,但講錯原因會把人送去修不存在的問題', () => {
