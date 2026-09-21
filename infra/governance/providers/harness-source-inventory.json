@@ -350,6 +350,7 @@
         "scripts/test-fast-scroll-gate-policy.mjs",
         "scripts/test-future-provider-fork-surface.mjs",
         "scripts/test-gate-meta-test-exclusion-inventory.mjs",
+        "scripts/test-gate-selftest-meta.mjs",
         "scripts/test-governance-baseline-mirrors.mjs",
         "scripts/test-governance-build-graph-transaction.mjs",
         "scripts/test-governance-protected-roots.mjs",

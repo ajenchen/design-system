@@ -15,7 +15,20 @@
 
 import { spawnSync } from 'node:child_process'
 
+// 「環境起不來」——瀏覽器根本開不了。
 const SKIP_PATTERN = /SKIPPED-ENV|Failed to launch|browserType\.launch|Executable doesn't exist/u
+
+// 「缺前置條件」——storybook-static 不存在或過時。
+//
+// **2026-09-21 必須單獨認這一條的理由**:gate-meta lane 是在 repo 的**拋棄式快照**裡跑的
+// (`scripts/run-gate-meta-tests.mjs` 的 snapshotRoot),而 `storybook-static` 是 gitignore 的建置產物,
+// 快照裡**不存在**。缺它的時候各閘的退出碼並不一致 —— 實測 `focus-indicator-invariants` 是 2、
+// 而 `pagination-narrow-ladder-invariant` 與 `agent-fab-hit-area-invariant` 是 **1**
+// (原文:`✗ storybook-static missing. Run \`npm run build-storybook\` first.`)。
+// 只認退出碼 2 的話,退出碼 1 的那些會被我這支共用跑法誤報成「baseline 應該綠卻紅」——
+// **把「缺前置」當成「產品壞了」**,正是這一整批在修的同一種病。
+// 認訊息而不是只認退出碼:訊息是閘自己印的、語意明確,退出碼在各閘之間不一致。
+const MISSING_PREREQUISITE = /storybook-static missing|STALE-BUILD|Run `npm run build-storybook`/u
 
 /**
  * @param {string} gate 閘的檔名(相對 repo 根,例如 `scripts/button-variant-invariant.mjs`)
@@ -26,8 +39,13 @@ export function runGateSelftestMeta(gate) {
 
   const base = run([])
   const baseText = `${base.stdout ?? ''}${base.stderr ?? ''}`
+  if (MISSING_PREREQUISITE.test(baseText)) {
+    console.log(`· 略過:${gate} 缺 storybook-static(exit ${base.status})—— 這是缺前置,不是產品壞掉;`)
+    console.log('  真正的紅綠由 CI 的瀏覽器 job 裁決(那裡會先 build-storybook)。')
+    process.exit(0)
+  }
   if (base.status === 2 || SKIP_PATTERN.test(baseText)) {
-    console.log(`· 略過:${gate} 缺前置條件(exit ${base.status})`)
+    console.log(`· 略過:${gate} 起不了環境(exit ${base.status})`)
     process.exit(0)
   }
 
@@ -41,7 +59,7 @@ export function runGateSelftestMeta(gate) {
 
   const control = run(['--selftest'])
   const controlText = `${control.stdout ?? ''}${control.stderr ?? ''}`
-  if (SKIP_PATTERN.test(controlText)) {
+  if (MISSING_PREREQUISITE.test(controlText) || SKIP_PATTERN.test(controlText)) {
     console.log('· 略過:對照組起不了環境')
     process.exit(ok ? 0 : 1)
   }

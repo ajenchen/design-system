@@ -157,6 +157,10 @@ jobs:
           # Field 內的控件自帶 id → FieldLabel 的 htmlFor 指向不存在的元素,標籤關聯沉默斷掉。
           # 2026-09-21 全庫抓到 4 處,其中 2 處被 a11y 閘報成 critical 的 label violation。
           node scripts/field-label-binding-invariant.mjs
+          # 「閘要有對照組」的共用跑法本身也要有對照組:gate-meta lane 在**沒有 storybook-static
+          # 的拋棄式快照**裡跑,缺它時各閘退出碼不一致(實測 1 與 2 都有)。只認 2 的話,
+          # 退出碼 1 的會被誤報成「產品壞掉」。七種局面的判定表在這支。
+          node scripts/test-gate-selftest-meta.mjs
           # story 命名紀律(標題 canonical / 禁 jargon / 禁中英夾雜 / 禁驗證備註當名字)。
           # 2026-09-21 之前也沒有任何 workflow 呼叫它,而它是紅的:4 個 story 名混英文
           # (hug / POC / Dialog / agent),最早一筆自 beta.132 起就在。
