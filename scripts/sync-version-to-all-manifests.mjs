@@ -45,8 +45,17 @@ const manifests = new Map(manifestPaths.map((path) => [path, readManifest(path)]
 function manifest(path) { return manifests.get(path).value }
 const RELEASE_VERSION = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:beta|next|rc)\.(?:0|[1-9]\d*))?$/
 const CHECK_ONLY = process.argv.includes('--check')
-const unknownArguments = process.argv.slice(2).filter((value) => value !== '--check')
-if (unknownArguments.length) throw new Error(`usage: sync-version-to-all-manifests.mjs [--check]`)
+// `--last-published <exact version>`:呼叫端把「線上最新已發布是哪一版」這個事實傳進來。
+// 允許清單維持白名單制(未知旗標一律拒絕),只多放這一對。
+const LAST_PUBLISHED_FLAG = '--last-published'
+const rawArguments = process.argv.slice(2)
+const unknownArguments = rawArguments.filter((value, index) => {
+  if (value === '--check' || value === LAST_PUBLISHED_FLAG) return false
+  return rawArguments[index - 1] !== LAST_PUBLISHED_FLAG
+})
+if (unknownArguments.length) {
+  throw new Error(`usage: sync-version-to-all-manifests.mjs [--check] [${LAST_PUBLISHED_FLAG} <exact version>]`)
+}
 
 function assertRecord(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`)
@@ -76,6 +85,45 @@ const providerLifecyclePath = 'packages/governance/canonical/provider-lifecycle.
 const providerLifecycle = manifest(providerLifecyclePath)
 if (!Array.isArray(providerLifecycle.snapshots) || !providerLifecycle.snapshots.length) {
   throw new Error(`${providerLifecyclePath} must contain at least one snapshot`)
+}
+// **「帳本最後一筆」不等於「上一個已發布的版本」**(2026-09-21,M37 同族,而且付了真實代價)。
+//
+// 鏈的用途是讓 consumer 從**它裝著的那一版**驗到要裝的這一版:incoming 宣告的 immutableHead
+// 必須正好是 consumer 手上那一版。而這支腳本原本無條件把「帳本最後一筆」當成上一版 ——
+// 那一筆是上次 bump 寫的,**不管有沒有發成**。
+//
+// 實際發生的事:beta.141 bump 了、鏈前進了,然後那個版號因為 tag 打在錯的 commit 上而報廢,
+// 從來沒有發布。接著 beta.142 的鏈就宣告「前一版是 beta.141」。WM 裝的是 beta.140,
+// 於是 beta.142 對它而言**永遠裝不上**(GOV-UPGRADE-007),而這件事要等到發布完、
+// consumer 同步失敗才看得見。
+//
+// `--last-published <version>` 讓呼叫端(release orchestrator 知道線上最新是哪一版)把
+// 「已發布」這個事實傳進來:尾端任何**在它之後**的快照都是沒發成的殘留,取代掉而不是疊上去。
+// 沒傳就維持原行為(本機手動 bump),但發布路徑上有閘會擋(見 release-orchestrator 的
+// publish 步驟:要發的版本,其 immutableHead 必須等於線上最新已發布版)。
+const lastPublishedFlagIndex = process.argv.indexOf(LAST_PUBLISHED_FLAG)
+const lastPublished = lastPublishedFlagIndex >= 0 ? process.argv[lastPublishedFlagIndex + 1] : null
+if (lastPublishedFlagIndex >= 0) {
+  assertVersion(lastPublished, '--last-published')
+  const keepUntil = providerLifecycle.snapshots.findIndex((item) => item.releaseVersion === lastPublished)
+  if (keepUntil < 0) {
+    throw new Error(`--last-published ${lastPublished} is not a retained lifecycle snapshot; use an explicit migration`)
+  }
+  const dropped = providerLifecycle.snapshots.slice(keepUntil + 1).map((item) => item.releaseVersion)
+  if (dropped.length) {
+    // 只丟「發布過的最新版之後」的殘留。它們描述的是**沒有任何 consumer 到達過**的狀態,
+    // 留著只會讓 immutableHead(硬性等於倒數第二筆)指向一個沒人裝得到的版本。
+    providerLifecycle.snapshots = providerLifecycle.snapshots.slice(0, keepUntil + 1)
+    // immutableHead 硬性等於倒數第二筆,截斷之後必須一起還原成「那一版當時」的樣子,
+    // 否則它會指向一筆已經不在帳本裡的快照(下面的 pre-validation 會先擋下來)。
+    const restoredHead = providerLifecycle.snapshots.at(-2) ?? providerLifecycle.snapshots.at(-1)
+    providerLifecycle.immutableHead = {
+      providerInventorySha256: providerInventorySha256(restoredHead.providers),
+      releaseVersion: restoredHead.releaseVersion,
+      snapshotSha256: lifecycleSnapshotSha256(restoredHead),
+    }
+    console.log(`↺ 丟棄未發布的尾端快照:${dropped.join(' / ')}(線上最新已發布 = ${lastPublished});immutableHead 還原為 ${restoredHead.releaseVersion}`)
+  }
 }
 const currentProviderSnapshot = providerLifecycle.snapshots.at(-1)
 assertRecord(currentProviderSnapshot, `${providerLifecyclePath} current snapshot`)

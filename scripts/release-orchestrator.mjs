@@ -194,7 +194,11 @@ export function readReleaseConsent({ branch, headSha, releaseLookup = null } = {
       } catch { /* 同上 */ }
     }
   }
-  if (verdicts.length) console.log(`   (發版同意不適用:${verdicts.join(';')})`)
+  // 走 stderr,不是 stdout:`release:status --json` 的 stdout 是**機器介面**,
+  // 混一行人話進去整份 JSON 就不可解析了。2026-09-21 實測代價:我掛的第 5 步監看
+  // 因此 30 分鐘零事件 —— 而「零事件」看起來跟「沒有變化」一模一樣,正是本輪一直在修的
+  // 那件事(沒觀察到 ≠ 沒發生)。人看得到的診斷照樣印,只是換條管線。
+  if (verdicts.length) console.error(`   (發版同意不適用:${verdicts.join(';')})`)
   return null
 }
 
@@ -858,6 +862,31 @@ function releaseCountsAsPublished(repository, tag) {
   return !releaseDefinitelyMissing(repository, tag)
 }
 
+/**
+ * 要發布的這一版,其 provider lifecycle 宣告的前一版是不是**線上最新已發布**的那一版。
+ *
+ * 2026-09-21 事故:beta.141 bump 了卻沒發成(tag 打在錯 commit 上而報廢),beta.142 的鏈
+ * 因此宣告「前一版是 beta.141」。consumer(WM)裝的是 beta.140,升級交易比對
+ * `incoming.immutableHeadSnapshot` 與 `installed.currentSnapshot`,不相等 → GOV-UPGRADE-007
+ * → **beta.142 發出去了,卻沒有任何 consumer 裝得上**。而這件事要等到發布完、
+ * 第 5 步 consumer 同步失敗才看得見 —— 那時版本已經是 immutable 的。
+ *
+ * 要保證的性質:「這一版的鏈接得上 consumer 手上那一版」。發布前就量得到,所以就在發布前量。
+ * 回 `{ ok }`,以及看到的兩個值;讀不到宣告或讀不到線上最新版 → `ok: null`(讀不到 ≠ 相符)。
+ */
+export function lifecycleChainMatchesLastPublished({ declaredPreviousVersion, lastPublishedVersion }) {
+  if (!declaredPreviousVersion || !lastPublishedVersion) return { ok: null, declaredPreviousVersion, lastPublishedVersion }
+  return { ok: declaredPreviousVersion === lastPublishedVersion, declaredPreviousVersion, lastPublishedVersion }
+}
+
+/** fork corpus manifest 宣告的前一版(consumer 升級交易實際比對的那個欄位的版號)。 */
+function declaredPreviousReleaseVersion() {
+  try {
+    const manifest = readJson(resolve(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'))
+    return manifest?.providerLifecycle?.immutableHead?.releaseVersion || null
+  } catch { return null }
+}
+
 /** canonical 宣告的目標 repo;讀不到就回 null,呼叫端一律 fail closed。 */
 function releaseRepository() {
   try { return loadReleaseWorkflow().automation.repository } catch { return null }
@@ -1220,7 +1249,21 @@ export function buildFiveStepStatus(workflow, observation) {
   const prChecksResolved = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
-  const consentOk = !consentRequired || Boolean(observation.releaseConsent)
+  // **incident release 也要能合併進去**(2026-09-21 缺口):canonical 允許「綁定已發布版本的
+  // post-publish blocker / security incident」在同一份同意下再發一次,而那條授權原本只接在
+  // publish(authorizeDeepAuditPublish)。結果就是:beta.142 發出去卻沒有 consumer 裝得上,
+  // 修好的 beta.143 **合併不進 main** —— 閘說「這份同意已經用在 beta.142 上了」,
+  // 於是要救火反而得再去要一次同意。授權存在卻接不上執行面 = 那條授權等於不存在。
+  // 這裡不是放寬:incident 走的是與 publish **同一支**驗證(欄位精確、failureClass 在白名單、
+  // publishedVersion 是 exact semver、evidenceRef 必須是另一個非空引用),驗不過就當沒有。
+  const incidentAuthorization = (() => {
+    const incident = releaseIncidentFromEnv()
+    if (!incident) return null
+    try {
+      return authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident, priorAdditionalReleaseIncidentIds: [] })
+    } catch { return null }
+  })()
+  const consentOk = !consentRequired || Boolean(observation.releaseConsent) || Boolean(incidentAuthorization)
   // merge 同理:MERGED 只有在那個 PR 帶的正是現在這個 head 時才代表「這份內容在 main 上」。
   const mergedThisHead = observation.pullRequest?.state === 'MERGED' && pullRequestCoversHead
   const merge = observation.onProtectedMain || mergedThisHead
@@ -1644,6 +1687,24 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         watchRun(observation.repository, observation.publishRun)
         continue
       }
+      // 發布前最後一道:這一版的 provider lifecycle 鏈,必須接得上**線上最新已發布**的那一版。
+      // 接不上就等於發一個沒有 consumer 裝得上的版本(2026-09-21 beta.142 的實況),
+      // 而版本一旦發出去就是 immutable —— 只能再發一版來救,代價是一個永久燒掉的版號。
+      const chain = lifecycleChainMatchesLastPublished({
+        declaredPreviousVersion: declaredPreviousReleaseVersion(),
+        lastPublishedVersion: (publishedBaselineRef(observation.tag, listReleaseTags(),
+          tag => releasePublishedState(observation.repository, tag) === true) || '').replace(/^v/, '') || null,
+      })
+      invariant(chain.ok !== false,
+        `要發的 ${observation.version} 宣告它的前一版是 ${chain.declaredPreviousVersion},` +
+        `但線上最新已發布的是 ${chain.lastPublishedVersion} —— 鏈接不上,consumer 會裝不上去` +
+        `(升級交易比對 immutableHeadSnapshot 與它手上那一版的 currentSnapshot)。` +
+        `修法:重跑版號同步並把事實傳進去 —— ` +
+        `node scripts/sync-version-to-all-manifests.mjs --last-published ${chain.lastPublishedVersion},` +
+        `它會丟掉沒發成的尾端快照;然後把改動併進 main 再發。`)
+      invariant(chain.ok !== null,
+        `讀不到「這一版宣告的前一版」或「線上最新已發布版」(宣告=${chain.declaredPreviousVersion}、` +
+        `線上=${chain.lastPublishedVersion})—— 沒有相符的證據不等於相符,不發布。`)
       ensureImmutableReleases(observation.repository)
       const previousRunId = observation.publishRun?.databaseId || null
       const releaseCommitSha = observation.tagCommitSha || observation.protectedMainSha
