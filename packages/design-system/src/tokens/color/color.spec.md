@@ -96,7 +96,7 @@ Tailwind utility 透過 `@theme inline` 橋接 semantic token，元件寫 `bg-pr
 文字色一律使用 neutral alpha token，疊加在任何背景都能維持對比。
 弱化 icon hover 後變 `text-fg-secondary`。
 
-### 已知取捨:`--fg-muted` 在淺色主題未達 WCAG AA(2026-09-21 user 拍板維持現狀)
+### 已定案(禁再問):`--fg-muted` 在淺色主題未達 WCAG AA —— 維持現狀
 
 | 主題 | 實際值 | 白/深底上的對比 | AA(4.5:1)|
 |---|---|---|---|
@@ -106,11 +106,21 @@ Tailwind utility 透過 `@theme inline` 橋接 semantic token，元件寫 `bg-pr
 **這不是疏漏,是明示的已知取捨。** 2026-09-21 全庫 axe 掃描 1040 個 story:critical = 0、
 serious = 5051,其中 **color-contrast 佔 5046**,壓倒性來自這一個 token(placeholder、caption、
 弱化說明文字)。當時量過的選項:`--_na7` 調到 55% → `#737373` = 4.74:1(剛過 AA)、
-60% → `#666666` = 5.74:1(對照 Atlassian `color.text.subtlest` `#6B6E76` = 5.10:1;
-白底上最淺可過 AA 的灰是 `#767676` = 4.54:1)。
+60% → `#666666` = 5.74:1。
 
-**user 選擇維持現狀**,理由是不願為此改變全 DS 弱化文字與主文字之間的層次感。
-代價講明:螢幕閱讀器使用者不受影響,但**低視力使用者讀 placeholder / caption 會吃力**。
+> **外部對照的信心等級**:Atlassian `color.text.subtlest` = `#6B6E76`(算出來 5.10:1)
+> 與「白底最淺可過 AA 的灰 `#767676` = 4.54:1」兩筆,**只有搜尋摘要來源,沒有一手官方檔案佐證**
+> —— Atlassian / Polaris / Material 3 的 token 頁都是 JS 渲染,WebFetch 取不到內容(2026-09-21 實測)。
+> 依 M26 標記為 **search-only confidence**;要當硬依據前須實地確認。
+> 本表 `3.36 / 4.74 / 5.74 / 8.42` 四個數字則是用 WCAG 公式對**本 repo 實際 token 值**算出來的,可重算驗證。
+
+**user 已經拍板兩次「維持現狀」,這是 standing decision,不得再主動提案或再問一次。**
+user 2026-09-21 verbatim:「這個問題你很早之前就問過我了,而且上次我就說維持現狀。
+這次也是,等我要改再等我主動」。**只有 user 主動提起才重啟這題**;
+agent 不得因為 a11y 閘、稽核報告或新一輪掃描又把它列成待決事項。
+
+代價已講明並被接受:螢幕閱讀器使用者不受影響,但**低視力使用者讀 placeholder / caption 會吃力**。
+(第一次提案的理由與數據保留在上表,供 user 未來主動翻案時直接取用,不需重新研究。)
 
 落地方式:a11y 閘(`scripts/audit-a11y.mjs`,夜間 `a11y-and-size.yml`)改為**只擋新增的回歸**,
 這 5046 筆寫進 `infra/governance/baseline/a11y-baseline.json` 當已知帳。

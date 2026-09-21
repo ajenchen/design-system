@@ -184,6 +184,18 @@ if (results.summary.totalViolations > 0) {
   console.log('▶ Top rules violated:')
   const topRules = Object.entries(results.summary.byRule).sort((a, b) => b[1] - a[1]).slice(0, 10)
   for (const [rule, count] of topRules) console.log(`   • ${rule}: ${count}`)
+  // 這份報告最大宗的那一項是**已定案的取捨**,不是待辦。不在這裡講一句,
+  // 下一個讀報告的人(或下一輪稽核)就會又把它當成新發現而重新提案 ——
+  // user 2026-09-21 已經是第二次說「上次我就說維持現狀,這次也是,等我要改再等我主動」。
+  // 決策 owner SSOT:packages/design-system/src/tokens/color/color.spec.md
+  //                「已定案(禁再問):--fg-muted 在淺色主題未達 WCAG AA」
+  if (results.summary.byRule['color-contrast']) {
+    console.log('')
+    console.log('   ⓘ color-contrast 的絕大多數來自 `--fg-muted`(淺色主題 #8C8C8C,對比 3.36:1)。')
+    console.log('     這是 **user 已拍板兩次的已定案取捨**,不是待辦、不得再提案 ——')
+    console.log('     依據見 packages/design-system/src/tokens/color/color.spec.md「已定案(禁再問)」。')
+    console.log('     本閘只擋**新增的回歸**;既有的已入 baseline。')
+  }
 }
 
 // ── Baseline fingerprint(storyId|ruleId → nodeCount;排除 flaky audit-error)──
