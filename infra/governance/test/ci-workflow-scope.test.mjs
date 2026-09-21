@@ -45,7 +45,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-sweeps 一併列入(2026-09-17):它跑兩支「全 1034 支 story 掃一遍」的閘,
   // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
   // verify-browser-select-all 同列(2026-09-17):同樣是全 story 掃,而且每支還要開面板互動,本機 6.6 分。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles'])
+  // verify-browser-interaction 同列(2026-09-21):12 筆 CI 實測 10.8–13.0 分全成功,一次 15.2 分
+  // 撞到 15 分預算被取消 —— 而 job 逾時在 GitHub 上是 `cancelled`,那一輪因此沒有裁決,
+  // 發布閘只能 fail closed,一次機器變異就把已合併的版本卡住。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction'])
   for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux', 'governance-control-plane']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)

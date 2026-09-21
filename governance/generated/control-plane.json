@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:925945ec9a090e54dd6914fe10ff09c1c2ee3845872741d02fd9810a1a774cc6",
+      "hash": "sha256:0460c1a4d7609e1bd6928ba8936b2fa68bc21a700dac854d048678d78d7891aa",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:fc0b6bcc7ab5cb5df8c2b81ddf0b83a5d7e96e60a12a43947384405e197b2bb2",
+      "hash": "sha256:903522c1436348ca80aec6d7b7223973253e5cfc4d3cbdc519ff8e2359e20565",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 521,
-      "hash": "sha256:8151bba4785c8c60fcbb50b1f6283824319c17952d732f481f5264e97041287b",
+      "hash": "sha256:7c0c848ce3d691cc8a6dbbc4bb53ef23196d7fdd4dc0103c5899cf61fe6af355",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3157,12 +3157,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2e461aff74b746b15e4c29e83da148c70f8a3dff2da1b92c96c60c8408e00583",
+      "hash": "sha256:a7ce5c1b3a91c2ad1eb3d50092f10d9b61c8c0b28296fdf171aa895e751f42c9",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 102419,
+      "size": 104221,
       "type": "file"
     },
     {
@@ -3184,12 +3184,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4a345f73a9a31d6fdeb5b8248f5d5fd4c3308c113df323b3acc342e4b92d29cb",
+      "hash": "sha256:f8c0ea8c2489e7833cebbe1b51e15c462eab29d47fc6a60e35924c7a377577ed",
       "id": "standard-release-workflow-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/release-workflow.test.mjs",
-      "size": 55913,
+      "size": 59344,
       "type": "file"
     },
     {
