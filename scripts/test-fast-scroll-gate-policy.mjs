@@ -9,6 +9,7 @@
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
 import { readFileSync } from 'node:fs'
+import { countCallSites } from './lib/gate-reachability.mjs'
 import { classifyRun, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT, MIN_PRESENTED_FRAMES } from './lib/fast-scroll-gate-policy.mjs'
 
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
@@ -121,10 +122,7 @@ if (!proves) fail++
 // 可達性要看**呼叫點**,不是看 import 那一行 —— `classifyRun(` 在 import 裡也會命中,
 // 第一版就是這樣寫的,把呼叫點拿掉照樣綠(2026-09-21 當場被對照組抓到)。
 const gateSrc = readFileSync(new URL('./data-table-fast-scroll.mjs', import.meta.url), 'utf8')
-const callSites = gateSrc.split('\n')
-  .filter((line) => !/^\s*import\b/.test(line))   // import 那行會命中
-  .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line)) // 註解也會命中(第二版就漏了這個)
-  .filter((line) => /classifyRun\s*\(/.test(line)).length
+const callSites = countCallSites(gateSrc, 'classifyRun')
 if (callSites < 1) { console.log('✗ 可達性:data-table-fast-scroll.mjs 的 import 之外沒有任何 classifyRun 呼叫點'); fail++ }
 else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼叫點,不含 import)`)
 

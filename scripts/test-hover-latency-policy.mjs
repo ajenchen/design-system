@@ -11,6 +11,7 @@
  *   node scripts/test-hover-latency-policy.mjs
  */
 import { readFileSync } from 'node:fs'
+import { countCallSites } from './lib/gate-reachability.mjs'
 import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const MED = 60
@@ -68,11 +69,14 @@ for (const [name, samples, blindFlags] of CASES) {
 console.log('✓ 分類與判定同源(report 與 verdict 都走 classifySamples)')
 
 // 閘的執行面必須真的消費這兩支,否則測得再漂亮也沒用(今天抓了一整天的那條)
+// 可達性只數**呼叫點**:`includes('hoverVerdict(')` 會被 import 與註解命中,
+// 把整段判定換掉照樣綠(2026-09-21 對抗稽核實測抓到)。共用 lib/gate-reachability.mjs。
 const gate = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
-for (const [sym, why] of [['classifySamples(', 'report() 必須用共用分類'], ['hoverVerdict(', '判定必須走政策模組']]) {
-  if (!gate.includes(sym)) { console.log(`✗ 可達性:data-table-hover-latency.mjs 沒有用到 ${sym} —— ${why}`); fail++ }
+for (const [sym, why] of [['classifySamples', 'report() 必須用共用分類'], ['hoverVerdict', '判定必須走政策模組']]) {
+  const n = countCallSites(gate, sym)
+  if (n < 1) { console.log(`✗ 可達性:data-table-hover-latency.mjs 的 import/註解之外沒有 ${sym} 呼叫點 —— ${why}`); fail++ }
+  else console.log(`✓ 可達性:${sym} 有 ${n} 個呼叫點(不含 import 與註解)`)
 }
-console.log('✓ 可達性:閘真的消費 classifySamples 與 hoverVerdict')
 
 console.log(`\nMIN_USABLE_SAMPLES = ${MIN_USABLE_SAMPLES}`)
 console.log(fail ? `✗ ${fail} 項不符` : '✅ hover 判定政策 PASS(真實 CI 數字判定表 + 對照組)')

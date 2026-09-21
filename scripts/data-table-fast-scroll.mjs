@@ -834,8 +834,11 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
     console.log(`✗ ${k}:${whys.length} 趟全部作廢,一趟可用的都不剩 —— 這是**儀器失效**(${whys[0]}),不是這個 build 變慢。`)
     failed++
   }
-  // 產品面的失敗照舊立刻紅,只看可用的那些趟
-  for (const r of usableResults) {
+  // 產品面的失敗看**全部**的趟,不只可用的那些。
+  // 2026-09-21 我第一版把這段縮到 usableResults —— 那是回歸:頁面真的炸掉時
+  // 呈現幀本來就會塌下來(presented < 10)而被判成「儀器失效」作廢,pageerror 就永遠不會被檢查,
+  // 歸因整個反過來。**儀器失效只該讓「效能指標」那半作廢,不該讓「產品炸了」也一起消音。**
+  for (const r of results) {
     if (!r.g) continue
     if (r.errors.length) { console.log(`✗ ${r.build}/${r.mode}:pageerror ${r.errors.length}(${r.errors[0].slice(0, 100)})`); failed++ }
     const last = r.frames[r.frames.length - 1]

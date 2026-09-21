@@ -69,6 +69,15 @@ git switch -q --detach HEAD
 run "發版" >/dev/null; check "9b. detached HEAD 仍能落地(branch 只是出處紀錄)" yes "$FILE"
 git switch -q claude/another-branch
 
+# 9c. **條件 / 延後**的說法不得落地,而且必須出聲(2026-09-21 對抗稽核:
+#     先前這類會被判成「現在就發版」並寫出有效收據 —— 連 SSOT 自己存的 userVerbatim 都會)
+rm -f "$FILE"
+run "等我看完預覽再發版" >/dev/null; check "9c. 「等我看完預覽再發版」→ 不落地" no "$FILE"
+run "等我看完預覽再發版" 2>/dev/null | grep -q "條件或延後"; assert "9d. 條件句必須印出「條件或延後」" $?
+# 9e. 純問句那條路(先前沒覆蓋,把 SSOT 的問句判準停用它照樣全綠)
+run "現在可以發版嗎?" >/dev/null; check "9e. 「現在可以發版嗎?」→ 不落地" no "$FILE"
+run "發版" >/dev/null; check "9f. 「發版」→ 落地" yes "$FILE"
+
 # 10. 判準來自 SSOT,不是 hook 自己寫的 regex
 grep -q "release-consent-language.mjs" "$HOOK"; assert "10. hook 消費共用判準(不自己寫 regex)" $?
 grep -qE "grep -qE '\(發版\|" "$HOOK"; [ $? -ne 0 ]; assert "11. hook 內不得殘留自己的同意詞 regex" $?

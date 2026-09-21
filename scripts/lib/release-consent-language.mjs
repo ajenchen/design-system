@@ -43,7 +43,7 @@ const WORKFLOW_PATH = resolve(ROOT, 'infra/governance/release-workflow.json')
 export function loadConsentPolicy(path = WORKFLOW_PATH) {
   const policy = JSON.parse(readFileSync(path, 'utf8')).releaseConsent
   if (!policy) throw new Error('release-workflow.json 缺 releaseConsent 判準')
-  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions']) {
+  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions', 'conditionalMarkers']) {
     if (!Array.isArray(policy[key]) || policy[key].length === 0) {
       throw new Error(`releaseConsent.${key} 必須是非空陣列 —— 判準缺一項就等於那一面沒有防線`)
     }
@@ -55,10 +55,11 @@ const hasAny = (text, list) => list.some((item) => new RegExp(item, 'iu').test(t
 const hasLiteral = (text, list) => list.some((item) => text.includes(item))
 
 /**
- * @returns {{verdict: 'consent'|'withdraw'|'question'|'none', reason: string}}
+ * @returns {{verdict: 'consent'|'withdraw'|'question'|'deferred'|'none', reason: string}}
  *   consent  = 記錄同意
  *   withdraw = 撤回既有同意
  *   question = 偵測到同意詞但判為問句;**不記錄也不撤回**,呼叫端必須把這件事說出來
+ *   deferred = 條件/延後的說法(等我看完再發版);同樣不記錄也不撤回,必須出聲
  *   none     = 與發版無關
  */
 export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
@@ -75,15 +76,25 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   if (hasLiteral(value, policy.aNotAQuestions) && hasLiteral(value, policy.consentPhrases)) {
     return { verdict: 'question', reason: 'A-不-A 問句(在問我,不是在指示我)' }
   }
-  // 3. 否定(一律要帶發版受詞)
+  // 3. 否定(一律要帶發版受詞)—— 明確說不要,勝過任何條件句
   if (hasAny(value, policy.denialMarkers)) {
     return { verdict: 'withdraw', reason: 'user 明確說不要發' }
   }
-  // 4. 沒有同意詞
+  // 4. **條件 / 延後**:「等我看完預覽再發版」「確認沒問題才發」—— 那是在描述條件,不是現在就發。
+  //    2026-09-21 對抗稽核抓到:先前這類一律落到最後的 catch-all 判成 consent,
+  //    **連 release-workflow.json 自己存的 userVerbatim(2026-09-02 user 定義這道閘的那句話)
+  //    餵回判準都會被判成「現在就發版」並寫出有效收據** —— 那正是這道閘要防的事。
+  //    **必須排在否定之後**:「先不要發版,我再看看」同時命中「先…再」與「不要發版」,
+//    明確的否定要贏(2026-09-21 當場被 hook 測試抓到)。
+//    與 question 同樣:不記錄、也不撤回,但一定要出聲。
+  if (hasAny(value, policy.conditionalMarkers) && hasLiteral(value, policy.consentPhrases)) {
+    return { verdict: 'deferred', reason: '這是條件或延後的說法(等/確認後/才/如果…),不是現在就發' }
+  }
+  // 5. 沒有同意詞
   if (!hasLiteral(value, policy.consentPhrases)) {
     return { verdict: 'none', reason: '沒有同意詞' }
   }
-  // 5. 問句 ≠ 同意(M36)
+  // 6. 問句 ≠ 同意(M36)
   if (hasAny(value, policy.questionMarkers.map((m) => m.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')))) {
     return { verdict: 'question', reason: '有同意詞但判為問句(保守側:不記錄也不撤回)' }
   }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash, randomUUID } from 'node:crypto'
 import { classifyConsentPrompt } from './lib/release-consent-language.mjs'
 import { homedir } from 'node:os'
 import { dirname, resolve, join } from 'node:path'
@@ -139,8 +139,20 @@ export function readReleaseConsent({ branch, headSha } = {}) {
       // 不該在這裡用「本機沒這顆 commit」誤判成「user 的同意失效」而叫他再講一次。
       const digest = productContentDigest(headSha) || productContentDigest('HEAD')
       const verdict = consentCoversHead({ receipt, branch, headSha, currentProductDigest: digest })
-      if (verdict.ok) return { ...receipt, coverage: verdict.reason }
-      verdicts.push(verdict.reason)
+      // **用過的授權不能再覆蓋新工作**(2026-09-21 稽核:磁碟上那份同意已經用於 beta.140,
+      // 卻仍讓後續完全不同的工作直接合併,等於「一份同意一次發布」只擋 publish、不擋 merge)。
+      // 舊收據(2026-09-21 之前)沒有 authorizationId,帳本存在收據自己的 `releases` 欄位。
+      // 遷移:那些版本仍算已消耗,不能因為換了記帳方式就憑空復活一份用過的同意。
+      const spent = receipt.authorizationId
+        ? consentReleaseLedger(receipt.authorizationId)
+        : (Array.isArray(receipt.releases) ? receipt.releases : [])
+      if (verdict.ok && spent.length) {
+        verdicts.push(`這份同意已經用在 ${spent.join(' / ')} 上了;要再發一次請重新看過預覽後說「發版」`)
+      } else if (verdict.ok) {
+        return { ...receipt, coverage: verdict.reason }
+      } else {
+        verdicts.push(verdict.reason)
+      }
     } catch { /* 壞檔視同沒有 */ }
   }
   if (branch) {
@@ -188,27 +200,15 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
   mkdirSync(CONSENT_DIR, { recursive: true })
   const productDigest = productContentDigest(headSha)
   invariant(Boolean(productDigest), '算不出「預覽看得見」的產品內容指紋 —— 沒有它就無法把同意綁在使用者真正看過的東西上')
-  // 帳本延續與否,綁的是「**這是不是同一份授權**」——用 user 的逐字原話判斷,不是用產品指紋。
-  //
-  // 我第一版綁 productDigest,那是代理,而且方向反了:治理工作本來就不會動到產品內容,
-  // 於是 user **重新說一次「發版」**時帳本照樣帶著舊帳,他會被自己請來的閘擋住,
-  // 還得去湊 incident 證據 —— 正是他在罵的那件事(2026-09-20 實測驗出來)。
-  //
-  // 正確的兩面:
-  //   · 同一句原話再落地一次(例如 agent 還原收據)→ 帳本**延續**,agent 無法用重寫來清零
-  //   · user 給了**新的一句**「發版」→ 那是新的授權 → 帳本**歸零**,可以再發一次
+  // 每一次落地 = 一次新的授權行為 → 鑄新的 authorizationId,帳本從空開始。
+  // 不從原話、不從產品內容推導(那兩版都錯過,見 consentReleaseLedger 的說明)。
   const quoteSha256 = createHash('sha256').update(quote.trim()).digest('hex')
-  const previous = (() => {
-    const file = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
-    if (!existsSync(file)) return null
-    try { return JSON.parse(readFileSync(file, 'utf8')) } catch { return null }
-  })()
-  const carriedReleases = previous?.quoteSha256 === quoteSha256 ? (previous.releases || []) : []
+  const authorizationId = randomUUID()
   const receipt = {
     schemaVersion: 3,
     // 綁定對象:使用者看過並認可的**產品內容**。branch / consentedHeadSha 只是出處紀錄,不參與判定。
     productDigest,
-    releases: carriedReleases,
+    authorizationId,
     detachedHead: !branch || !String(branch).trim() || undefined,
     branch: branch && String(branch).trim() ? branch : null,
     consentedHeadSha: headSha,
@@ -233,20 +233,48 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
  * 現在接上:帳本記在同意 receipt 裡(同意 = 一份授權 = 一次 final release)。
  * 第二次要發必須有 incident 證據,否則 fail closed 並要求把修正**批次做完再發一次**。
  */
-export function consentReleaseLedger() {
-  const file = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
+export const RELEASED_LOG = 'released.jsonl'
+
+/**
+ * 這一份授權底下已經發出去的版本。
+ *
+ * **授權身分不能從內容推導**(2026-09-21,對抗稽核抓到,而且已經上膛):
+ * 我第一版綁 productDigest(治理工作不動產品內容 → 永遠不歸零),
+ * 第二版改綁**原話的 sha256** —— 而 user 說的就是 canonical 規定的那兩個字「發版」,
+ * 磁碟上已經有 **5 份**原話是「發版」的收據,雜湊完全相同。
+ * 也就是說他下一次說「發版」,帳本不會歸零,publish 會被我自己請來的閘擋死 ——
+ * **正是他連兩天在罵的那件事,而且是我修這個 bug 時自己造出來的第三個代理。**
+ *
+ * 現在:授權身分是**落地當下鑄造的 `authorizationId`**(randomUUID),跟文字、跟產品內容都無關。
+ * 帳本存在收據**之外**的 append-only 檔,以 authorizationId 對照 —— 重寫收據不會清掉別人的帳。
+ */
+export function consentReleaseLedger(authorizationId = currentAuthorizationId()) {
+  if (!authorizationId) return []
+  const file = resolve(CONSENT_DIR, RELEASED_LOG)
   if (!existsSync(file)) return []
-  try { return JSON.parse(readFileSync(file, 'utf8')).releases || [] } catch { return [] }
+  const out = []
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    if (!line.trim()) continue
+    try {
+      const row = JSON.parse(line)
+      if (row.authorizationId === authorizationId && row.version) out.push(row.version)
+    } catch { /* 壞行跳過;append-only 檔不因一行壞掉就整份作廢 */ }
+  }
+  return [...new Set(out)]
 }
 
-export function recordConsentRelease(version) {
+/** 當前收據的授權 id(沒有收據就沒有授權)。 */
+export function currentAuthorizationId() {
   const file = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
-  if (!existsSync(file)) return
-  try {
-    const receipt = JSON.parse(readFileSync(file, 'utf8'))
-    receipt.releases = [...new Set([...(receipt.releases || []), version])]
-    writeFileSync(file, `${JSON.stringify(receipt, null, 2)}\n`)
-  } catch { /* 帳本壞掉不阻斷發版,但下一次計數會偏保守(讀到 [] = 允許一次) */ }
+  if (!existsSync(file)) return null
+  try { return JSON.parse(readFileSync(file, 'utf8')).authorizationId || null } catch { return null }
+}
+
+export function recordConsentRelease(version, authorizationId = currentAuthorizationId()) {
+  if (!authorizationId || !version) return
+  mkdirSync(CONSENT_DIR, { recursive: true })
+  appendFileSync(resolve(CONSENT_DIR, RELEASED_LOG),
+    `${JSON.stringify({ authorizationId, version, at: new Date().toISOString() })}\n`)
 }
 
 /** 撤回:使用者說「不要發版 / 先不要」。刪掉當前那份就好,不必知道分支。 */
