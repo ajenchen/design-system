@@ -149,9 +149,14 @@ export function readReleaseConsent({ branch, headSha } = {}) {
       // 卻仍讓後續完全不同的工作直接合併,等於「一份同意一次發布」只擋 publish、不擋 merge)。
       // 舊收據(2026-09-21 之前)沒有 authorizationId,帳本存在收據自己的 `releases` 欄位。
       // 遷移:那些版本仍算已消耗,不能因為換了記帳方式就憑空復活一份用過的同意。
-      const spent = receipt.authorizationId
+      // 「記了帳」不等於「真的發出去了」(2026-09-21 實測:帳本寫著 beta.141,而線上
+      // 既沒有 release、npm 上也沒有東西 —— 那次發布被中斷了)。若照帳本算,一次失敗的
+      // 嘗試就燒掉一份發版授權、使用者得再說一次「發版」,正是 2026-09-20 要修掉的那件事。
+      // 所以每一筆都拿去對線上實況,只有真的存在 release 的才算消耗掉一次。
+      const spent = (receipt.authorizationId
         ? consentReleaseLedger(receipt.authorizationId)
-        : (Array.isArray(receipt.releases) ? receipt.releases : [])
+        : (Array.isArray(receipt.releases) ? receipt.releases : []))
+        .filter(version => releaseCountsAsPublished(releaseRepository(), `v${version}`))
       if (verdict.ok && spent.length) {
         verdicts.push(`這份同意已經用在 ${spent.join(' / ')} 上了;要再發一次請重新看過預覽後說「發版」`)
       } else if (verdict.ok) {
@@ -815,14 +820,41 @@ function protectedMainCiRows(workflow, repository, sha) {
  * 兩者在「bump 還沒併進 main」時分開,而那正是 2026-09-21 建出錯 tag 的直接原因。
  * 三個包必須一致,不然 readback 的 exact version 語意本身就不成立。
  */
-/** 這個 tag 在線上是否真的有一個已發布(非 draft)的 release。讀不到 → false(不冒充已發布)。 */
-function releaseExists(repository, tag) {
-  const response = curlGitHub('GET', `repos/${repository}/releases/tags/${encodeURIComponent(tag)}`)
-  if (!response.ok) return false
+/**
+ * 這個 tag 在線上是否真的有一個已發布(非 draft)的 release。
+ *
+ * 三值:`true` 有、`false` 明確沒有(404)、`null` **讀不到**。
+ * 「讀不到」必須與「沒有」分開(M37 第八種形狀):這支的用途是判斷一份發版授權
+ * 有沒有被消耗掉,讀不到就當成「沒消耗」會讓同一份授權發第二次;所以呼叫端一律
+ * 把 `null` 當成已消耗(fail closed),只有明確的 404 才算那次嘗試沒發出去。
+ */
+export function classifyReleaseLookup({ ok, code, text }) {
+  if (!ok) return code === 404 ? false : null
   try {
-    const payload = JSON.parse(response.text)
-    return payload.draft === false && Boolean(payload.published_at)
-  } catch { return false }
+    const payload = JSON.parse(text)
+    if (payload.draft === true) return false
+    return Boolean(payload.published_at) ? true : null
+  } catch { return null }
+}
+
+function releasePublishedState(repository, tag) {
+  if (!repository) return null
+  return classifyReleaseLookup(curlGitHub('GET', `repos/${repository}/releases/tags/${encodeURIComponent(tag)}`))
+}
+
+/** 這一版**確定沒有**發出去嗎(只有明確 404 才是 true)。讀不到一律回 false = 保守當已發。 */
+function releaseDefinitelyMissing(repository, tag) {
+  return releasePublishedState(repository, tag) === false
+}
+
+/** 這一版算不算消耗掉一次發布(有 release,或讀不到 → 都算)。 */
+function releaseCountsAsPublished(repository, tag) {
+  return !releaseDefinitelyMissing(repository, tag)
+}
+
+/** canonical 宣告的目標 repo;讀不到就回 null,呼叫端一律 fail closed。 */
+function releaseRepository() {
+  try { return loadReleaseWorkflow().automation.repository } catch { return null }
 }
 
 function packageVersionAtCommit(repository, sha) {
@@ -1342,7 +1374,7 @@ function printReport(workflow, observation, json) {
   }
   // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
   const previousRef = publishedBaselineRef(observation.tag, listReleaseTags(),
-    tag => releaseExists(observation.repository, tag))
+    tag => releasePublishedState(observation.repository, tag) === true)
   report.previousReleaseRef = previousRef
   report.productChange = productChangeSincePreviousRelease(previousRef, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
@@ -1552,7 +1584,7 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       // 所以這裡把帳本的每一筆拿去**對線上實況**,只有真的存在 release 的才算一次發布。
       const alreadyReleased = consentReleaseLedger()
         .filter(v => v !== observation.version)
-        .filter(v => releaseExists(observation.repository, `v${v}`))
+        .filter(v => releaseCountsAsPublished(observation.repository, `v${v}`))
       if (alreadyReleased.length) {
         authorizeDeepAuditPublish(workflow, {
           completedFinalReleases: alreadyReleased.length,

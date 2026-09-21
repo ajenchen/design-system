@@ -16,6 +16,7 @@ import {
   buildConsumerPullRequestCreateArgs,
   buildPublishMutationPlan,
   filterOutPublishWorkflowRuns,
+  classifyReleaseLookup,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
   matchesConsumerPullRequest,
@@ -600,7 +601,7 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   assert.doesNotMatch(reportBlock, /targetCommitish/,
     '不得再從 gh release view 的 targetCommitish 取上一版 —— 那個欄位根本沒被要求回傳')
   assert.match(reportBlock, /publishedBaselineRef\(observation\.tag, listReleaseTags\(\),/, '必須實際解析出要比較的基準 ref')
-  assert.match(reportBlock, /releaseExists\(observation\.repository, tag\)/,
+  assert.match(reportBlock, /releasePublishedState\(observation\.repository, tag\) === true/,
     '基準必須是真的發布過的那一版 —— 建了 tag 但發布失敗的不算')
   assert.match(reportBlock, /無法判斷這一版會不會改變畫面/,
     '「量不到」必須印成跟「量到沒變」不一樣的話,否則沉默無法區分')
@@ -645,6 +646,36 @@ test('要比的基準是「線上目前那一份」,不是「上一個 tag」—
   assert.equal(publishedBaselineRef(real[0], real), real[0], '最新 tag 已存在 → 基準是它自己')
   assert.equal(productChangeSincePreviousRelease(real[1], real[0]), 'none',
     `${real[1]} → ${real[0]} 應為零畫面變動(2026-09-20 實測)`)
+})
+
+test('「讀不到 release」不得當成「那一版沒發出去」—— 一份發版授權不能被讀取失敗弄丟或憑空復活', () => {
+  // 2026-09-21 實測:帳本寫著 beta.141,而線上既沒有 release、npm 上也沒有東西(發布被中斷)。
+  // 照帳本算 → 一次失敗的嘗試燒掉一份授權,使用者得再說一次「發版」(2026-09-20 要修的那件事);
+  // 但「查不到」就當成沒發 → 同一份授權可以發第二次。所以必須三值,而且讀不到要 fail closed。
+  assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: JSON.stringify({ draft: false, published_at: '2026-09-21T00:00:00Z' }) }), true)
+  assert.equal(classifyReleaseLookup({ ok: false, code: 404, text: '{}' }), false, '明確 404 = 那次真的沒發出去')
+  assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: JSON.stringify({ draft: true }) }), false, 'draft 不算發布')
+  // 以下每一種都是「讀不到」,一律 null,呼叫端當成已消耗
+  assert.equal(classifyReleaseLookup({ ok: false, code: 0, text: '' }), null, '連線層失敗')
+  assert.equal(classifyReleaseLookup({ ok: false, code: 403, text: '{}' }), null, '權限不足')
+  assert.equal(classifyReleaseLookup({ ok: false, code: 500, text: '{}' }), null, '伺服器錯誤')
+  assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: '不是 JSON' }), null, '回應壞掉')
+  assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: JSON.stringify({ draft: false }) }), null, '沒有 published_at')
+
+  // 呼叫端的方向必須是 fail closed:算「消耗掉一次」時 null 要算進去(不是排除)
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  assert.match(src, /function releaseCountsAsPublished\([\s\S]{0,160}return !releaseDefinitelyMissing\(/,
+    '「算不算消耗」必須以「確定沒發」的反面定義,讀不到就算消耗')
+  assert.match(src, /function releaseDefinitelyMissing\([\s\S]{0,160}=== false/,
+    '只有明確的 false 才算「確定沒發」')
+  // 而「要比的基準」方向相反:那裡只有**確定有** release 才能當基準
+  assert.match(src, /releasePublishedState\(observation\.repository, tag\) === true/,
+    '基準必須是確定發布過的那一版,讀不到不得充當基準')
+  // 兩個消費點都必須真的接上,否則上面整張表是紙上的
+  assert.match(src, /consentReleaseLedger\(receipt\.authorizationId\)[\s\S]{0,400}releaseCountsAsPublished\(/,
+    '同意閘的帳本必須對線上實況')
+  assert.match(src, /const alreadyReleased = consentReleaseLedger\(\)[\s\S]{0,300}releaseCountsAsPublished\(/,
+    'publish 的帳本也必須對線上實況')
 })
 
 test('tag 名稱不得與它指向的內容不符 —— 而且那個版號是向 GitHub 讀來的,不是本地工作區', () => {
@@ -712,7 +743,7 @@ test('發布這一步看的是「守護 main 的 CI」,不含發布流程自己�
 
   // 帳本只能算**真的發出去**的版本:一次被中斷或失敗的嘗試不得燒掉一份發版同意
   //(2026-09-21 實測:帳本寫了 beta.141,而線上既沒有 release、npm 也沒有)。
-  assert.match(publishBlock, /\.filter\(v => releaseExists\(observation\.repository, `v\$\{v\}`\)\)/,
+  assert.match(publishBlock, /\.filter\(v => releaseCountsAsPublished\(observation\.repository, `v\$\{v\}`\)\)/,
     '帳本的每一筆必須對線上實況,否則失敗的嘗試會讓使用者被迫再說一次「發版」')
 })
 
