@@ -307,3 +307,33 @@ repo 根的治理 bootstrap 檔,其 root→cwd 合併鏈超過預設 32KiB 上�
 
 | `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入,`#storybook-root` 子節點 0、畫面空白,探針卻拿得到 Storybook 自己的 UI(「Set string」按鈕)而誤以為有渲染。瀏覽器閘一律起本機靜態站。同場:CSSOM 對含 `var()` 的簡寫回**空字串**,用 `r.style.outline` 掃規則會全空,要用 `r.cssText`(2026-09-08)|
 
+
+## M37 第十種形狀:發布鏈上「這個名字／這筆記錄存在」被當成「那件事真的發生了」(2026-09-21,一次跑裡六個位置)
+
+同一天、同一次 `release:auto` 裡連續發作六次,而且**第 2 到第 6 個是在修第 1 個的那次跑裡才現形的**。
+六個位置的共同形狀:拿一個**名字或一筆記錄**當成它所指的那件事。
+
+| # | 要保證的性質 | 實際量到的值 | 何時分開 | 後果 |
+|---|---|---|---|---|
+| 1 | protected main 上這份內容已發布 | 這個版號字串有對應的 GitHub Release | 版號沒 bump | 五步全報 complete、exit 0,**一個位元都沒發出去** |
+| 2 | 這個 head 通過 CI / 已在 main 上 | 這條分支有一個 PR / 那個 PR 是 MERGED | PR 合併後在同分支續推 commit | pr-checks + merge 讀**別份內容**的綠燈全綠 |
+| 3 | tag 指的那個 commit 帶著這個版號 | tag 的名字 | bump 還沒併進 main | 在版號為 beta.140 的 commit 上建了 `v0.1.0-beta.141` |
+| 4 | 守護 main 的 CI 通過了 | 那個 commit 上**所有** check-run | 發布流程自己失敗過一次 | main 看起來永久紅 → 自鎖;且指控「main CI 紅了」而 main CI 其實是 success |
+| 5 | 這份發版授權被消耗掉了 | 帳本裡有一行 | 發布被中斷／失敗 | 一次失敗的嘗試燒掉授權,使用者被迫再說一次「發版」 |
+| 6 | 要比的基準是線上目前那一份 | 最新的 tag | 建了 tag 但沒發成 | 拿從來沒出貨的東西當基準,印出與事實相反的「會不會改變畫面」 |
+
+**不可逆的代價**:#3 建出來的 `v0.1.0-beta.141` tag 受 GitHub ruleset 保護
+(`DELETE` 回 HTTP 422「Cannot delete this tag」),不能刪也**不該繞**(繞 ruleset 是 canonical 明文禁止),
+於是它永久指向錯的 commit,該版號報廢,改發 beta.142。**沒有任何東西被發布出去**
+(無 release、npm 無該版),但一個版號永久損失 —— 這就是把「名字」當「內容」的真實帳單。
+
+**三個遞移教訓**:
+1. **修一條同族缺陷時,同族全部要當場列出來逐一判定**(M10 sub-rule)。第 1 個修完就發布,
+   第 2–6 個當場現形 —— 它們本來就在同一條鏈上,只是沒去看。
+2. **fixture 缺欄位 = 判定表測不到要測的事**。這輪四支測試失敗全是因為 fixture 沒給
+   `headSha` / `tagCommitSha` / `protectedMainSha` / `versionAtReleaseCommit` —— 缺欄位讓
+   fixture 同時也代表了假綠狀態,於是那一格永遠是綠的。
+3. **「讀不到」的方向要看用途,不是統一選一個**。同一支 `classifyReleaseLookup` 三值判定,
+   在「這份授權消耗掉了嗎」要把 `null` 算成**已消耗**(不讓一份授權發兩次),
+   在「基準是哪一版」只有 `true` 能用(讀不到不得充當已發布)。同一個 unknown、兩個相反方向,
+   兩邊都得寫下來並各有對照組。

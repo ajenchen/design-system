@@ -121,10 +121,28 @@ try {
   assert.deepEqual(consentReleaseLedger(first.authorizationId), ['0.1.0-beta.998'],
     '重寫收據不得清掉別人那份授權的帳')
 
-  // 5c. 用過的授權不能再覆蓋新工作(先前只擋 publish、不擋 merge)
+  // 5c. 用過的授權不能再覆蓋新工作(先前只擋 publish、不擋 merge)。
+  //
+  //     **2026-09-21 修正語意**:「帳本有一行」不等於「那一版真的發出去了」。
+  //     實測那天:帳本寫著 beta.141,而線上既沒有 release、npm 上也沒有東西 —— 發布被中斷。
+  //     照帳本算 → 一次失敗的嘗試就燒掉一份授權,使用者得為同一份沒出貨的工作再說一次
+  //     「發版」,正是 2026-09-20 要修掉的那件事。所以帳本的每一筆都要對線上實況。
+  //     「不同的工作」那一面不靠帳本擋,靠產品指紋擋(上面 5. 已驗)。
   recordConsentRelease('0.1.0-beta.997', second.authorizationId)
-  assert.equal(readReleaseConsent({ branch, headSha: head }), null,
-    '這份同意已經用掉了,不該再讓後續完全不同的工作直接合併')
+  assert.equal(
+    readReleaseConsent({ branch, headSha: head, releaseLookup: () => true }),
+    null,
+    '那一版真的發出去了 → 這份授權用掉了,不得再覆蓋後續工作',
+  )
+  const resumable = readReleaseConsent({ branch, headSha: head, releaseLookup: () => false })
+  assert.ok(resumable, '那一版明確沒發出去(被中斷)→ 同一份授權必須還能續,不得逼使用者再說一次')
+  assert.equal(resumable.authorizationId, second.authorizationId)
+  // 「讀不到」不得當成「沒發出去」:方向必須 fail closed,否則同一份授權可以發第二次。
+  assert.equal(
+    readReleaseConsent({ branch, headSha: head, releaseLookup: version => !/^0\.0\.0/.test(version) }),
+    null,
+    '查不到就當成已發(保守)—— 這一面錯了會讓一份授權發兩次',
+  )
 
   // 5d. 條件 / 延後的說法不是「現在就發」。最硬的一格:**SSOT 自己存的那句 user 原話**
   //     (2026-09-02 定義這道閘的句子)先前會被判成 consent 並寫出有效收據。
