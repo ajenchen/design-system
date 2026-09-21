@@ -762,6 +762,49 @@ test('tag 名稱不得與它指向的內容不符 —— 而且那個版號是�
   assert.doesNotMatch(atCommit, /readJson\(resolve\(ROOT/, '不得退回讀本地工作區的 package.json')
 })
 
+test('incident release 也要合併得進去 —— 授權存在卻接不上執行面等於沒有', () => {
+  // 2026-09-21 缺口:canonical 允許「綁定已發布版本的 post-publish blocker」在同一份同意下
+  // 再發一次,而那條授權原本只接在 publish。結果 beta.142 發出去卻沒有 consumer 裝得上,
+  // 修好的 beta.143 **合併不進 main** —— 要救火反而得再去要一次同意。
+  const base = {
+    onProtectedMain: false,
+    headSha: 'a'.repeat(40),
+    pullRequest: { state: 'OPEN', headRefOid: 'a'.repeat(40), requiredChecks: [{ bucket: 'pass', state: 'SUCCESS' }] },
+    release: null, publishRun: null, releaseConsent: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: false })),
+    consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: false })),
+  }
+  const incident = {
+    incidentId: 'DS-2026-0921-consumer-upgrade-blocked',
+    failureClass: 'post-publish-blocker',
+    publishedVersion: '0.1.0-beta.142',
+    evidenceRef: 'github://ajenchen/work-management/actions/runs/35614784123',
+  }
+  const withIncident = { ...process.env, RELEASE_ADDITIONAL_INCIDENT: JSON.stringify(incident) }
+  // 這支測試不改 process.env(會污染其他測試),改直接驗 authorizeDeepAuditPublish 的判定 +
+  // 來源斷言鎖住「merge 這一步真的接上了同一支驗證」。
+  assert.deepEqual(
+    authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident }),
+    { authorization: 'incident-release', incidentId: incident.incidentId },
+  )
+  // 另一面:欄位不全 / failureClass 不在白名單 / evidenceRef 等於 incidentId,都不得取得授權
+  for (const bad of [
+    { ...incident, failureClass: 'ordinary-remediation' },
+    { ...incident, evidenceRef: incident.incidentId },
+    { incidentId: incident.incidentId, failureClass: 'post-publish-blocker', publishedVersion: '0.1.0-beta.142' },
+  ]) {
+    assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident: bad }))
+  }
+  assert.ok(withIncident.RELEASE_ADDITIONAL_INCIDENT, 'incident 由 RELEASE_ADDITIONAL_INCIDENT 這個 JSON 傳入')
+
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
+  assert.match(statusBlock, /const incidentAuthorization = /, 'merge 的同意判定必須看得到 incident 授權')
+  assert.match(statusBlock, /authorizeDeepAuditPublish\(workflow, \{ completedFinalReleases: 1, incident/,
+    '而且必須走與 publish **同一支**驗證,不得另寫一份較寬的')
+  assert.match(statusBlock, /\|\| Boolean\(incidentAuthorization\)/, 'consentOk 必須真的消費它')
+})
+
 test('發布前必須確認「這一版的鏈接得上線上最新已發布那一版」—— 否則發出去也沒人裝得上', () => {
   // 2026-09-21 真實事故:beta.141 bump 了卻沒發成(tag 打在錯 commit 上報廢),
   // beta.142 的鏈因此宣告「前一版是 beta.141」。WM 裝的是 beta.140,升級交易比對

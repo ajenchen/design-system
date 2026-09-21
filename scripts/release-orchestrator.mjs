@@ -1249,7 +1249,21 @@ export function buildFiveStepStatus(workflow, observation) {
   const prChecksResolved = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
-  const consentOk = !consentRequired || Boolean(observation.releaseConsent)
+  // **incident release 也要能合併進去**(2026-09-21 缺口):canonical 允許「綁定已發布版本的
+  // post-publish blocker / security incident」在同一份同意下再發一次,而那條授權原本只接在
+  // publish(authorizeDeepAuditPublish)。結果就是:beta.142 發出去卻沒有 consumer 裝得上,
+  // 修好的 beta.143 **合併不進 main** —— 閘說「這份同意已經用在 beta.142 上了」,
+  // 於是要救火反而得再去要一次同意。授權存在卻接不上執行面 = 那條授權等於不存在。
+  // 這裡不是放寬:incident 走的是與 publish **同一支**驗證(欄位精確、failureClass 在白名單、
+  // publishedVersion 是 exact semver、evidenceRef 必須是另一個非空引用),驗不過就當沒有。
+  const incidentAuthorization = (() => {
+    const incident = releaseIncidentFromEnv()
+    if (!incident) return null
+    try {
+      return authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident, priorAdditionalReleaseIncidentIds: [] })
+    } catch { return null }
+  })()
+  const consentOk = !consentRequired || Boolean(observation.releaseConsent) || Boolean(incidentAuthorization)
   // merge 同理:MERGED 只有在那個 PR 帶的正是現在這個 head 時才代表「這份內容在 main 上」。
   const mergedThisHead = observation.pullRequest?.state === 'MERGED' && pullRequestCoversHead
   const merge = observation.onProtectedMain || mergedThisHead
