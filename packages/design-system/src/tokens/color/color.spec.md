@@ -96,6 +96,26 @@ Tailwind utility 透過 `@theme inline` 橋接 semantic token，元件寫 `bg-pr
 文字色一律使用 neutral alpha token，疊加在任何背景都能維持對比。
 弱化 icon hover 後變 `text-fg-secondary`。
 
+### 已知取捨:`--fg-muted` 在淺色主題未達 WCAG AA(2026-09-21 user 拍板維持現狀)
+
+| 主題 | 實際值 | 白/深底上的對比 | AA(4.5:1)|
+|---|---|---|---|
+| 淺色 | `#8C8C8C`(黑 `--_na7: 45%` 疊白)| **3.36:1** | ✗ 未達 |
+| 深色 | 白 `--_na7: 65%` 疊 `#0a0a0a` | 8.42:1 | ✓ |
+
+**這不是疏漏,是明示的已知取捨。** 2026-09-21 全庫 axe 掃描 1040 個 story:critical = 0、
+serious = 5051,其中 **color-contrast 佔 5046**,壓倒性來自這一個 token(placeholder、caption、
+弱化說明文字)。當時量過的選項:`--_na7` 調到 55% → `#737373` = 4.74:1(剛過 AA)、
+60% → `#666666` = 5.74:1(對照 Atlassian `color.text.subtlest` `#6B6E76` = 5.10:1;
+白底上最淺可過 AA 的灰是 `#767676` = 4.54:1)。
+
+**user 選擇維持現狀**,理由是不願為此改變全 DS 弱化文字與主文字之間的層次感。
+代價講明:螢幕閱讀器使用者不受影響,但**低視力使用者讀 placeholder / caption 會吃力**。
+
+落地方式:a11y 閘(`scripts/audit-a11y.mjs`,夜間 `a11y-and-size.yml`)改為**只擋新增的回歸**,
+這 5046 筆寫進 `infra/governance/baseline/a11y-baseline.json` 當已知帳。
+要翻案只要把 `primitives.css` 的淺色 `--_na7` 從 45% 調到 55%,再跑一次 `--baseline-write`。
+
 ## Disabled 狀態
 
 disabled 元件內的所有子元素必須呈現 disabled 狀態:
