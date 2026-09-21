@@ -15,6 +15,7 @@ import {
   buildPublishedTemplatePullRequestCreateArgs,
   buildConsumerPullRequestCreateArgs,
   buildPublishMutationPlan,
+  filterOutPublishWorkflowRuns,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
   matchesConsumerPullRequest,
@@ -164,6 +165,9 @@ test('live readbacks alone support safe resume without local candidate receipts'
 
   const beforeMergeObservation = {
     onProtectedMain: false,
+    // headSha 是必要欄位,不是裝飾:pr-checks / merge 都要求「PR 帶的正是現在這個 head」。
+    // 原本 fixture 沒給,於是它同時也代表「PR 講的是別份內容」那個假綠狀態。
+    headSha: 'a'.repeat(40),
     pullRequest: {
       state: 'OPEN',
       headRefOid: 'a'.repeat(40),
@@ -190,6 +194,28 @@ test('live readbacks alone support safe resume without local candidate receipts'
     ['complete', 'pending', 'pending', 'blocked', 'blocked'],
     'only required checks gate the five-step release; optional statuses cannot block it',
   )
+
+  // 對照組(2026-09-21 錨,M37 第十一種形狀):PR 已合併,然後在**同一條分支**上又疊了一個
+  // commit。修之前 pr-checks 讀那個已合併 PR 的綠燈報 complete、merge 讀 state==='MERGED'
+  // 也報 complete —— 於是 publish 在 main 的舊 head 上建了錯 tag。
+  const mergedThenMoreCommits = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    headSha: 'c'.repeat(40),
+    pullRequest: { ...beforeMergeObservation.pullRequest, state: 'MERGED' },
+    releaseConsent: { headSha: 'c'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+  })
+  assert.deepEqual(
+    mergedThenMoreCommits.map(step => step.status),
+    ['stale-head', 'pending', 'pending', 'blocked', 'blocked'],
+    '已合併的 PR 帶的是別份內容 → pr-checks 必須 stale-head,merge 不得報 complete',
+  )
+  // 另一面:同一個已合併的 PR,head 就是現在這個 head → 這份內容確實在 main 上,merge 該 complete。
+  const properlyMerged = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    pullRequest: { ...beforeMergeObservation.pullRequest, state: 'MERGED' },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+  })
+  assert.equal(properlyMerged[1].status, 'complete', 'PR head 等於現在的 head → merge 真的完成了')
 
   const retryAfterFailure = buildFiveStepStatus(workflow, {
     onProtectedMain: true,
@@ -254,7 +280,7 @@ test('consumer PR matching rejects a release identity copied onto the wrong bran
 
 test('orchestrator builds protected-main tag and repository-dispatch commands without workflow_dispatch', () => {
   const protectedMainSha = 'a'.repeat(40)
-  const plan = buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha })
+  const plan = buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, versionAtReleaseCommit: '1.2.3' })
   const { operations } = plan
   assert.equal(plan.releaseCommitSha, protectedMainSha)
   assert.deepEqual(operations.map(operation => operation.args), [
@@ -268,10 +294,10 @@ test('orchestrator builds protected-main tag and repository-dispatch commands wi
   })
   assert.equal(operations.flatMap(operation => operation.args).includes('workflow'), false)
 
-  const resumed = buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, existingTagSha: protectedMainSha })
+  const resumed = buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, existingTagSha: protectedMainSha, versionAtReleaseCommit: '1.2.3' })
   assert.equal(resumed.operations.length, 1, 'an exact existing tag must be reused rather than recreated')
   const advancedMain = buildPublishMutationPlan(workflow, {
-    tag: 'v1.2.3', protectedMainSha: 'b'.repeat(40), existingTagSha: protectedMainSha,
+    tag: 'v1.2.3', protectedMainSha: 'b'.repeat(40), existingTagSha: protectedMainSha, versionAtReleaseCommit: '1.2.3',
   })
   assert.equal(advancedMain.releaseCommitSha, protectedMainSha, 'a later main advance must not replace the immutable tag commit')
 })
@@ -573,7 +599,9 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   // productChange 恆為 null、那句話從寫下來到今天一次都沒印出來過。純函式的參數邊界又一次是盲點。
   assert.doesNotMatch(reportBlock, /targetCommitish/,
     '不得再從 gh release view 的 targetCommitish 取上一版 —— 那個欄位根本沒被要求回傳')
-  assert.match(reportBlock, /publishedBaselineRef\(observation\.tag\)/, '必須實際解析出要比較的基準 ref')
+  assert.match(reportBlock, /publishedBaselineRef\(observation\.tag, listReleaseTags\(\),/, '必須實際解析出要比較的基準 ref')
+  assert.match(reportBlock, /releaseExists\(observation\.repository, tag\)/,
+    '基準必須是真的發布過的那一版 —— 建了 tag 但發布失敗的不算')
   assert.match(reportBlock, /無法判斷這一版會不會改變畫面/,
     '「量不到」必須印成跟「量到沒變」不一樣的話,否則沉默無法區分')
 
@@ -595,12 +623,97 @@ test('要比的基準是「線上目前那一份」,不是「上一個 tag」—
   // 完全沒有 tag 時不得亂猜
   assert.equal(publishedBaselineRef('v0.1.0-beta.1', []), null)
 
+  // 「tag 存在」≠「那一版發布過」(2026-09-21 真的留下一個這樣的 tag:建了、發布失敗、
+  // 沒有 release、npm 上沒有東西)。拿它當基準就是拿從來沒出貨的東西當「線上目前那一份」。
+  const released = new Set(['v0.1.0-beta.139', 'v0.1.0-beta.138'])
+  assert.equal(
+    publishedBaselineRef('v0.1.0-beta.142', tags, tag => released.has(tag)),
+    'v0.1.0-beta.139',
+    '最新的 tag 沒有 release → 要往下找到第一個真的發布過的',
+  )
+  // 另一面:最新的 tag 真的發布過,就必須用它,不可無故往下跳
+  assert.equal(
+    publishedBaselineRef('v0.1.0-beta.142', tags, tag => tag === 'v0.1.0-beta.140' || released.has(tag)),
+    'v0.1.0-beta.140',
+  )
+  // 一個都沒發布過 → 不猜
+  assert.equal(publishedBaselineRef('v0.1.0-beta.142', tags, () => false), null)
+
   // 真實資料的兩面對照:一筆該 none、一筆該 changed,兩邊都要找得到才算數
   const real = listReleaseTags()
   assert.ok(real.length >= 2, `本地至少要有兩個版本 tag 才驗得了(實際 ${real.length})`)
   assert.equal(publishedBaselineRef(real[0], real), real[0], '最新 tag 已存在 → 基準是它自己')
   assert.equal(productChangeSincePreviousRelease(real[1], real[0]), 'none',
     `${real[1]} → ${real[0]} 應為零畫面變動(2026-09-20 實測)`)
+})
+
+test('tag 名稱不得與它指向的內容不符 —— 而且那個版號是向 GitHub 讀來的,不是本地工作區', () => {
+  // 2026-09-21 實測的直接災因:上游兩步誤判成已合併之後,這裡在 main 的舊 head 上建了
+  // `v0.1.0-beta.141` 的 tag,而那個 commit 的 package.json 寫的是 `0.1.0-beta.140`。
+  // GitHub 不會幫你檢查 tag 名稱與內容的關係,Release workflow 要跑到一半才炸。
+  const protectedMainSha = 'a'.repeat(40)
+  assert.throws(
+    () => buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, versionAtReleaseCommit: '1.2.2' }),
+    /tag 名稱與它指向的內容不符/,
+    '版號不符必須擋在建 tag 之前',
+  )
+  // 「讀不到」不得當成「相符」(M37 第八種形狀)
+  assert.throws(
+    () => buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha }),
+    /requires the version actually present/,
+  )
+  assert.throws(
+    () => buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, versionAtReleaseCommit: null }),
+    /requires the version actually present/,
+  )
+  // 相符的一面必須通得過,否則上面三條只是把閘焊死
+  assert.equal(
+    buildPublishMutationPlan(workflow, { tag: 'v1.2.3', protectedMainSha, versionAtReleaseCommit: '1.2.3' }).releaseCommitSha,
+    protectedMainSha,
+  )
+
+  // 參數邊界(M37 的盲點):那個版號是誰算的?必須是向 GitHub 讀該 commit 的 manifest,
+  // 不能改回讀本地 package.json —— 本地講的是「我想發哪一版」,不是「那個 commit 裡是哪一版」。
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /packageVersionAtCommit\(observation\.repository, releaseCommitSha\)/,
+    'publish 必須讀「要打 tag 的那個 commit」上的版號')
+  assert.match(publishBlock, /versionAtReleaseCommit,/, '而且必須把它餵進 buildPublishMutationPlan')
+  const atCommit = src.slice(src.indexOf('function packageVersionAtCommit('), src.indexOf('function checkRollupStatus('))
+  assert.match(atCommit, /repos\/\$\{repository\}\/contents\//, '必須向 GitHub 讀那個 ref 的 manifest')
+  assert.doesNotMatch(atCommit, /readJson\(resolve\(ROOT/, '不得退回讀本地工作區的 package.json')
+})
+
+test('發布這一步看的是「守護 main 的 CI」,不含發布流程自己派出的那一輪', () => {
+  // 2026-09-21 實測:一次失敗的發布,它的 check-run 就掛在同一個 main commit 上,
+  // 於是這道閘讀到 failed 並印出「protected main 的 CI 是紅的」——而 main 的 CI 其實是
+  // success,紅的是發布流程自己。後果有兩層:(1) 一次失敗就讓 main 永久紅、之後再也
+  // 發不出去(自鎖);(2) 它指控了一個不存在的問題,比沉默更貴。
+  const runs = [
+    { name: 'CI', path: '.github/workflows/ci.yml', status: 'completed', conclusion: 'success' },
+    { name: 'Release', path: '.github/workflows/release.yml', status: 'completed', conclusion: 'failure' },
+    { name: 'Deploy Storybook', path: '.github/workflows/deploy-storybook.yml', status: 'completed', conclusion: 'success' },
+  ]
+  const guarding = filterOutPublishWorkflowRuns(runs, workflow.automation.publishWorkflow.file)
+  assert.deepEqual(guarding.map(run => run.name), ['CI', 'Deploy Storybook'],
+    '發布流程自己的 run 必須被排除,否則失敗一次就自鎖')
+  // 另一面:守護 main 的 CI 真的紅時,必須留在集合裡讓閘紅 —— 不可連真警報一起濾掉
+  const ciRed = filterOutPublishWorkflowRuns(
+    [{ name: 'CI', path: '.github/workflows/ci.yml', status: 'completed', conclusion: 'failure' }],
+    workflow.automation.publishWorkflow.file,
+  )
+  assert.deepEqual(ciRed.map(run => run.name), ['CI'], '真正的 CI 紅燈不得被濾掉')
+
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /protectedMainCiRows\(workflow, observation\.repository, observation\.protectedMainSha\)/,
+    'publish 必須用排除過發布流程的那份 row,不得直接用該 commit 上所有 check-run')
+  assert.match(publishBlock, /紅的項目/, '閘紅的時候必須講出是哪一項紅,否則又是指控不存在的問題')
+
+  // 帳本只能算**真的發出去**的版本:一次被中斷或失敗的嘗試不得燒掉一份發版同意
+  //(2026-09-21 實測:帳本寫了 beta.141,而線上既沒有 release、npm 也沒有)。
+  assert.match(publishBlock, /\.filter\(v => releaseExists\(observation\.repository, `v\$\{v\}`\)\)/,
+    '帳本的每一筆必須對線上實況,否則失敗的嘗試會讓使用者被迫再說一次「發版」')
 })
 
 test('版號沒 bump 不得報五步完成 —— 而且那兩個 sha 真的是 collectLiveObservation 算出來的', () => {

@@ -779,6 +779,67 @@ function packageVersion(workflow) {
   return versions[0]
 }
 
+/**
+ * 保護 protected main 的那一輪 check,**排除發布流程自己派出的 run**。
+ *
+ * 判定所需的性質是「合併之後那份程式碼通過了守護 main 的 CI」。若直接拿該 commit 上
+ * 所有 check-run,發布流程自己的 run 也在裡面:一次失敗的發布就讓 main 永久紅、
+ * 之後再也發不出去,而且錯誤訊息會指向「main 的 CI」這個不存在的問題。
+ *
+ * 以 workflow 的檔名(canonical 宣告的 `publishWorkflow.file`)識別自己,不用名稱猜。
+ * 讀不到 Actions 就回 null —— 「讀不到」不得當成「通過」(M37 第八種形狀)。
+ */
+export function filterOutPublishWorkflowRuns(runs, publishWorkflowFile) {
+  return runs.filter((run) => {
+    const path = `${run.path || ''}`
+    if (path && (path === publishWorkflowFile || path.endsWith(`/${publishWorkflowFile}`))) return false
+    return true
+  })
+}
+
+function protectedMainCiRows(workflow, repository, sha) {
+  const publishWorkflowFile = workflow.automation.publishWorkflow.file
+  const response = curlGitHub('GET', `repos/${repository}/actions/runs?head_sha=${sha}&per_page=50`)
+  if (!response.ok) return null
+  let runs
+  try { runs = JSON.parse(response.text).workflow_runs || [] } catch { return null }
+  const guarding = filterOutPublishWorkflowRuns(runs, publishWorkflowFile)
+  if (guarding.length === 0) return null
+  return guarding.map(run => shimRowFromStatus(run.status, run.conclusion, run.name || run.path || '(unnamed)', run.path || ''))
+}
+
+/**
+ * 某個 commit 上**實際**的發布版號(向 GitHub 讀那個 commit 的 manifest,不看本地工作區)。
+ *
+ * 本地的 package.json 是「我想發哪一版」;這支讀的是「那個 commit 裡寫的是哪一版」。
+ * 兩者在「bump 還沒併進 main」時分開,而那正是 2026-09-21 建出錯 tag 的直接原因。
+ * 三個包必須一致,不然 readback 的 exact version 語意本身就不成立。
+ */
+/** 這個 tag 在線上是否真的有一個已發布(非 draft)的 release。讀不到 → false(不冒充已發布)。 */
+function releaseExists(repository, tag) {
+  const response = curlGitHub('GET', `repos/${repository}/releases/tags/${encodeURIComponent(tag)}`)
+  if (!response.ok) return false
+  try {
+    const payload = JSON.parse(response.text)
+    return payload.draft === false && Boolean(payload.published_at)
+  } catch { return false }
+}
+
+function packageVersionAtCommit(repository, sha) {
+  const versions = []
+  for (const path of Object.values(PACKAGE_PATHS)) {
+    const response = curlGitHub('GET', `repos/${repository}/contents/${path}?ref=${sha}`)
+    if (!response.ok) return null
+    try {
+      const payload = JSON.parse(response.text)
+      if (payload.encoding !== 'base64' || typeof payload.content !== 'string') return null
+      versions.push(JSON.parse(Buffer.from(payload.content, 'base64').toString('utf8')).version)
+    } catch { return null }
+  }
+  if (!versions.length || versions.some(version => version !== versions[0])) return null
+  return typeof versions[0] === 'string' ? versions[0] : null
+}
+
 function checkRollupStatus(rollup = []) {
   if (rollup.length === 0) return 'pending'
   if (rollup.some(item => {
@@ -1069,15 +1130,37 @@ function npmPackageReadback(name, version) {
 
 export function buildFiveStepStatus(workflow, observation) {
   validateReleaseWorkflow(workflow)
+  // 2026-09-21 M37 第十一種形狀:**「這條分支的工作已經在 main 上」被當成「這條分支有一個
+  // MERGED 的 PR」**;同一根的另一半是「這個 head 的 CI 綠了」被當成「這條分支的 PR 綠了」。
+  //
+  // 錨(同日實測,而且是在修上一種形狀的同一次跑裡發作的):PR #144 合併之後,我在**同一條
+  // 分支**上再推一個版號 bump commit(d06b09e4)。`currentPullRequest` 找到的還是 #144
+  //(headRefOid=d7569f3f、state=MERGED),於是 pr-checks 讀**別份內容**的綠燈報 complete、
+  // merge 讀「有一個 MERGED 的 PR」報 complete —— 兩步全綠,而 d06b09e4 從來沒進 main。
+  // 接著 publish 就在 main 的舊 head 上建了 v0.1.0-beta.141 的 tag(那個 commit 的
+  // package.json 還寫著 beta.140),Release workflow 當然失敗。
+  //
+  // 要保證的性質:**現在這個 head 的內容,已經通過 CI / 已經在 protected main 上**。
+  // 實際量到的值:「這條分支存在一個 PR」/「那個 PR 的狀態是 MERGED」。
+  // 兩者何時分開:**PR 合併後又在同一條分支上疊 commit 的時候**。
+  // 改成直接量那個性質:PR 的 head 必須等於現在的 head,否則那個 PR 講的是別份內容。
+  const pullRequestCoversHead = Boolean(
+    observation.pullRequest && observation.pullRequest.headRefOid === observation.headSha,
+  )
   const prChecks = observation.onProtectedMain
     ? 'complete'
-    : observation.pullRequest
+    : pullRequestCoversHead
       ? checkRollupStatus(observation.pullRequest.requiredChecks)
-      : 'blocked'
+      : observation.pullRequest
+        // PR 存在但講的是別份內容:OPEN 就推分支更新 head,已關閉／已合併就得另開一個 PR。
+        ? 'stale-head'
+        : 'blocked'
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
   const consentOk = !consentRequired || Boolean(observation.releaseConsent)
-  const merge = observation.onProtectedMain || observation.pullRequest?.state === 'MERGED'
+  // merge 同理:MERGED 只有在那個 PR 帶的正是現在這個 head 時才代表「這份內容在 main 上」。
+  const mergedThisHead = observation.pullRequest?.state === 'MERGED' && pullRequestCoversHead
+  const merge = observation.onProtectedMain || mergedThisHead
     ? 'complete'
     : consentOk ? 'pending' : 'awaiting-consent'
   const publishedRelease = Boolean(
@@ -1233,12 +1316,20 @@ export function listReleaseTags() {
  * 於是印出與事實相反的結論 —— 實測那次明明零 UI 變動,卻印「這一版會改變畫面」。
  *
  * 要比的基準永遠是**線上目前已發布的最新那一份**:
- *   - currentTag 不在 tag 清單 → 還沒發布(版號已 bump 的正常情況)→ 基準 = 最新的 tag。
+ *   - currentTag 不在 tag 清單 → 還沒發布(版號已 bump 的正常情況)→ 基準 = 最新的**已發布**版。
  *   - currentTag 已在 tag 清單 → 它自己就是線上最新那一份 → 基準 = 它自己。
+ *
+ * **2026-09-21 第三次修(同一條 M37,第三個位置)**:「tag 存在」被當成「那一版發布過」。
+ * 這兩件事在「建了 tag 但發布失敗／被中斷」時分開 —— 當天就真的留下一個
+ * `v0.1.0-beta.141` 的 tag(指向的 commit 版號還是 beta.140、沒有 release、npm 上沒有東西),
+ * 拿它當基準就是拿一份從來沒出貨的東西當「線上目前那一份」。
+ * `hasRelease` 由呼叫端注入(預設向 GitHub 讀),從新到舊找到第一個真的有 release 的為止。
  */
-export function publishedBaselineRef(currentTag, tags = listReleaseTags()) {
+export function publishedBaselineRef(currentTag, tags = listReleaseTags(), hasRelease = null) {
   if (!tags.length) return null
-  return tags.includes(currentTag) ? currentTag : tags[0]
+  if (tags.includes(currentTag)) return currentTag
+  if (!hasRelease) return tags[0]
+  return tags.find(tag => hasRelease(tag)) ?? null
 }
 
 function printReport(workflow, observation, json) {
@@ -1250,7 +1341,8 @@ function printReport(workflow, observation, json) {
     legacyMechanisms: workflow.legacyMechanisms,
   }
   // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
-  const previousRef = publishedBaselineRef(observation.tag)
+  const previousRef = publishedBaselineRef(observation.tag, listReleaseTags(),
+    tag => releaseExists(observation.repository, tag))
   report.previousReleaseRef = previousRef
   report.productChange = productChangeSincePreviousRelease(previousRef, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
@@ -1311,12 +1403,27 @@ export function buildBranchPushArgs(workflow, branch) {
   return ['push', '--set-upstream', 'origin', `HEAD:refs/heads/${branch}`]
 }
 
-export function buildPublishMutationPlan(workflow, { tag, protectedMainSha, existingTagSha = null }) {
+export function buildPublishMutationPlan(workflow, {
+  tag,
+  protectedMainSha,
+  existingTagSha = null,
+  versionAtReleaseCommit,
+}) {
   validateReleaseWorkflow(workflow)
   invariant(/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag), `invalid exact release tag: ${tag}`)
   invariant(/^[a-f0-9]{40}$/.test(protectedMainSha), `invalid protected main SHA: ${protectedMainSha}`)
   invariant(!existingTagSha || /^[a-f0-9]{40}$/.test(existingTagSha), `existing ${tag} has an invalid commit SHA`)
   const releaseCommitSha = existingTagSha || protectedMainSha
+  // 2026-09-21 M37,同一根的第三個位置:**版號字串被當成「那個 commit 裡的東西」**。
+  // 錨:上游兩步誤判成已合併之後,這裡在 main 的舊 head 上建了 `v0.1.0-beta.141` 的 tag ——
+  // 而那個 commit 的 `packages/design-system/package.json` 寫的是 `0.1.0-beta.140`。
+  // tag 名稱與它指向的內容無關,GitHub 不會幫你檢查,Release workflow 要跑到一半才炸。
+  // 要保證的性質:這個 tag 指的那個 commit,**真的**帶著這個版號。直接量它:
+  invariant(typeof versionAtReleaseCommit === 'string' && versionAtReleaseCommit,
+    `publish plan requires the version actually present at ${releaseCommitSha.slice(0, 12)}`)
+  invariant(`v${versionAtReleaseCommit}` === tag,
+    `要打的 tag 是 ${tag},但 ${releaseCommitSha.slice(0, 12)} 上的版號是 ${versionAtReleaseCommit} —— ` +
+    `tag 名稱與它指向的內容不符,不建 tag。版號 bump 必須先併進 protected main。`)
   const operations = []
   if (!existingTagSha) {
     operations.push({
@@ -1352,6 +1459,13 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       }
       if (observation.pullRequest.headRefOid !== observation.headSha) {
         run('git', buildBranchPushArgs(workflow, observation.branch))
+        // 推完 head 還是對不上,而那個 PR 已經關閉／已合併 → 它講的是別份內容,
+        // 再推也不會把它的 head 換過來,必須另開一個 PR 給現在這份內容。
+        // (1 session = 1 working branch 管的是分支,不是「一輩子只能有一個 PR」;
+        //  同一條分支在前一個 PR 合併之後繼續推,本來就需要新的 PR 才進得了 protected main。)
+        if (observation.pullRequest.state !== 'OPEN') {
+          gh(buildPullRequestCreateArgs(workflow, observation.branch))
+        }
         continue
       }
       invariant(incomplete.status !== 'failed', `PR #${observation.pullRequest.number} has failed checks; remediate the same PR and rerun release:auto`)
@@ -1406,14 +1520,23 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       // 先前整條五步從來不看它:PR 綠 → 合併 → 直接發布,而 main 上那一輪可能紅。
       // beta.140 就是這樣發出去的(main CI 當時是 failure),等於「protected main + required CI」
       // 這道保護在**發布這一步**形同不存在 —— 合併之後才是真正出貨的那份程式碼。
-      const mainRows = shimCheckRows(observation.repository, observation.protectedMainSha)
+      // 這道閘要看的是「保護 main 的那輪 CI」,**不含發布流程自己**。
+      // 2026-09-21 實測:上面那次誤判在 main 舊 head 上建了錯 tag、派了 Release workflow,
+      // 那一輪當然 failure —— 而它的 check-run 就掛在同一個 main commit 上,於是這道閘
+      // 讀到 failed,印出「protected main 的 CI 是紅的」。**main 的 CI 其實是 success**,
+      // 紅的是發布流程自己。一次失敗的發布會讓 main 永久「紅」、之後再也發不出去(自鎖),
+      // 而且它指控的是一個不存在的問題 —— 比沉默更貴(M32 第四問同族)。
+      const mainRows = protectedMainCiRows(workflow, observation.repository, observation.protectedMainSha)
       if (mainRows === null) {
         throw new Error(`讀不到 protected main(${String(observation.protectedMainSha).slice(0, 12)})的 check 證據 —— 沒有通過的證據不等於通過,不發布`)
       }
       const mainRollup = checkRollupStatus(mainRows)
       invariant(mainRollup !== 'failed',
         `protected main(${String(observation.protectedMainSha).slice(0, 12)})的 CI 是紅的,不得發布 —— ` +
-        `合併之後那一輪才是真正要出貨的那份程式碼。先修 main 再發。`)
+        `合併之後那一輪才是真正要出貨的那份程式碼。先修 main 再發。` +
+        `(紅的項目:${mainRows.filter(row => `${row.bucket}`.toLowerCase() === 'fail'
+          || ['error', 'failure'].includes(`${row.state}`.toLowerCase()))
+          .map(row => row.name).join(' / ') || '(讀不出名稱)'})`)
       if (mainRollup === 'pending') {
         if (noWait) return report
         console.log(`   等 protected main 的 CI 跑完(${String(observation.protectedMainSha).slice(0, 12)})`)
@@ -1422,7 +1545,14 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       }
       // 一份授權 = 一次 final release。第二次必須有 incident 證據,否則停下來要求批次做完再發。
       // 這一行就是先前缺的「執行面呼叫」—— 沒有它,canonical 的「最多一次」只是紙上的字。
-      const alreadyReleased = consentReleaseLedger().filter(v => v !== observation.version)
+      // 帳本記的是「送出了 mutation」,不是「真的發出去了」——這兩件事在被中斷、
+      // 或 Release workflow 失敗時分開(2026-09-21 實測:帳本寫了 beta.141,
+      // 而 GitHub 上沒有那個 release、npm 上也沒有)。若照帳本算,一次失敗的嘗試就
+      // 燒掉一份授權,使用者得再說一次「發版」—— 正是 2026-09-20 要修掉的那件事。
+      // 所以這裡把帳本的每一筆拿去**對線上實況**,只有真的存在 release 的才算一次發布。
+      const alreadyReleased = consentReleaseLedger()
+        .filter(v => v !== observation.version)
+        .filter(v => releaseExists(observation.repository, `v${v}`))
       if (alreadyReleased.length) {
         authorizeDeepAuditPublish(workflow, {
           completedFinalReleases: alreadyReleased.length,
@@ -1437,10 +1567,17 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       }
       ensureImmutableReleases(observation.repository)
       const previousRunId = observation.publishRun?.databaseId || null
+      const releaseCommitSha = observation.tagCommitSha || observation.protectedMainSha
+      const versionAtReleaseCommit = packageVersionAtCommit(observation.repository, releaseCommitSha)
+      if (versionAtReleaseCommit === null) {
+        // 讀不到 ≠ 相符(M37 第八種形狀:「沒觀察到」不得當成「沒發生」)。
+        throw new Error(`讀不到 ${releaseCommitSha.slice(0, 12)} 上的發布版號 —— 沒有相符的證據不等於相符,不建 tag、不發布`)
+      }
       const publishPlan = buildPublishMutationPlan(workflow, {
         tag: observation.tag,
         protectedMainSha: observation.protectedMainSha,
         existingTagSha: observation.tagCommitSha,
+        versionAtReleaseCommit,
       })
       for (const operation of publishPlan.operations) gh(operation.args, { input: operation.input })
       // mutation 一送出就記帳:帶 --no-wait 時下面的 watchRun 不會執行,若等到那之後才記,
