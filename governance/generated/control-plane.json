@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
+    "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.140",
@@ -2012,7 +2012,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:9d958546d839bfb5b0546dc0df15e2ccf594ccce31c611b52ac5d49a46a87ea2",
+      "hash": "sha256:1f71312ae859f968888d279cf720e4ef57e53d5f7d857e0c5278ffe9a63f0116",
       "id": "governance-package-test-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3072,10 +3072,11 @@
     {
       "carrierProjections": [],
       "excludes": [
+        "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 525,
-      "hash": "sha256:61f9b293e5110f3d195dd2126831988a6b566f1506a820ff50b3255a8b287ce9",
+      "files": 520,
+      "hash": "sha256:182d97438ef02a4960cff12044e68d985199bd08673f9e6f8954b8c3cc4f1a59",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
