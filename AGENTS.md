@@ -63,13 +63,12 @@
 # Independent second opinion(跨 provider 對抗審查)
 
 **只有 task／deliverable 明確要求時才啟動**(optional review 缺席不阻擋一般工程、deep audit 或 standard release)。
-判準 = 同一份 rubric(`audit-prompts.md`);author provider ≠ reviewer provider;雙方 provider/model/version 入 receipt;
-waiver 必寫進 receipt 且該 run 不得冒充已做 review。**Binding 不可用 → 只把該 claim 標 `REVIEW-BLOCKED`,不阻擋其他事**;
+判準 = 同一份 rubric(`audit-prompts.md`);author ≠ reviewer;雙方 provider/model/version 與 waiver 都入 receipt,waived 的 run 不得冒充已做 review。**Binding 不可用 → 只把該 claim 標 `REVIEW-BLOCKED`,不阻擋其他事**;
 禁同一 agent 假扮另一 provider。
-**完整條文(路由 authority / workflow selection / fail-closed 細則)不在本檔重述**,owner 是
+**完整條文不在本檔重述**,owner 是
 `packages/governance/canonical/providers.json`(selection policy)+ `packages/governance/src/provider-review-binding.mjs`
-的 `resolveProviderReviewBinding`(排除 author、選最高 certified capability、凍結 exact digests)+
-`skills/independent-review/SKILL.md`(產品第二意見)與 `skills/deep-audit-cross-codex/SKILL.md`(重大 governance/release);
+的 `resolveProviderReviewBinding` +
+`packages/design-system/ds-canonical/skills/independent-review/SKILL.md`(產品第二意見)與 `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md`(重大 governance/release);
 散文版見 meta-patterns M31。禁從 skill 名稱推斷 peer。
 
 # SSOT 消費 canonical
@@ -92,7 +91,7 @@ waiver 必寫進 receipt 且該 run 不得冒充已做 review。**Binding 不可
 | **Tailwind 出怪事** | `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出／稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(只有明確要求時才啟動;peer 由 canonical binding resolution 選) |
+| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 只有明確要求時才啟動;peer 由 `packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選。產品第二意見 → `/independent-review`;重大 governance/release → `/deep-audit-cross-codex` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
 
 **找不到** → `# 遇不確定時的協議`;產品／UI／UX SSOT 真取捨不自決,純工程由最高 certified capability 依證據自決並驗證。
@@ -139,7 +138,7 @@ waiver 必寫進 receipt 且該 run 不得冒充已做 review。**Binding 不可
 **SSOT auto-sync invariant**:跨 file 數字禁 hardcode 多處;以 `scripts/sync-governance-counters.mjs` 機械對齊。
 
 <!-- canonical-decision-authority:start -->
-**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更(behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules);核准 = user 在對話中對 **exact target + choice** 說可(**「我說可以就是可以,就是授權」— user 2026-08-04 verbatim**;最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的 exact 提案)。引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO,含已核准 UI／UX 實作、機械 generation/sync,與 `infra/governance/release-workflow.json` 的五步;依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂,不逐 milestone 重問。**每次 audit 最多一次 final release**(禁把 immutable publish 當 iteration loop;額外 release 需 incident evidence ref)。Certification/rollout/preview-canary/independent review 都是**明確要求時**的附加 assurance,不得進入標準五步的 blocking graph。(digest 佐證規則、deep-audit 單分支 remediation 等細則見 `governance/memory/feedback_ship_then_revert_anti_pattern.md`。)
+**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更(behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules);核准 = user 在對話中對 **exact target + choice** 說可(**「我說可以就是可以,就是授權」— user 2026-08-04 verbatim**;最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的 exact 提案)。引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO,含已核准 UI／UX 實作、機械 generation/sync,與 `infra/governance/release-workflow.json` 的五步;依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂,不逐 milestone 重問。**Deep Audit 必須在單一 branch／PR 完成 remediation 與 local/CI candidate validation**,禁把 immutable publish 當 iteration/test loop,**每次 audit 最多一次 final release**;額外 release 需 incident evidence ref。Certification/rollout/preview-canary/independent review 都是**明確要求時**的附加 assurance,不得進入標準五步的 blocking graph。(digest 佐證等細則見 `governance/memory/feedback_ship_then_revert_anti_pattern.md`。)
 
 **Visual baseline**:user 對 exact image set／UI／UX 語意說「可以改」即拍板;Agent 自動 apply/generate/test/commit/PR/CI/merge,禁再核准或簽章。只有 user 明確要求 independent cryptographic review 才啟用該 policy。
 

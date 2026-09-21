@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:26fa5f4be12ab539859acf869c90c75bf170f7ba1205150708bb69eefd779c08",
+      "hash": "sha256:93dc437816768317380db1334572fdc22e12c4895d04c4c84cddb4a8ba64b66e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cf7cb73a17073c048ffb06974e3eb80f401fcbbe1e99d78faa7ee0551c10170b",
+      "hash": "sha256:3b87066ecd16379499b25a403a60e9c3d465939b30fc5f2443929d6ca0ba3e16",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139523,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:58f77379d33365548fbbfe530415da72314f84c401668f23811306f7131ec79e",
+  "inputDigest": "sha256:3c9261abcff904fe5b5f10622a485f96ae85e4d4fbee461e933b6a65734169cf",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,15 +518,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:5b6db28c9d93866b24a49c43ab1a86e6d3c253a6aa92dfdd71311dcaa0e740cb",
+  "snapshotDigest": "sha256:e5cbf057ff430197f9dfa9ab009bfc24852c0093d9ca0248739c740dcabe3cd0",
   "sources": [
     {
-      "hash": "sha256:eda7989ecba3c80372a9d428629ecfd204bcb7c3be2af531d555d1557a90a66c",
+      "hash": "sha256:d93b19eb3e15f437cdd2b91c5b20fd41d0842c9f4acd241b35dc6ced96deef8e",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22386,
+      "size": 22542,
       "type": "file"
     },
     {
@@ -3239,12 +3239,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cea943b6508ab8c5d11fbf020e6758874f0d6f42256c8ab5c9a3020bcf09eeab",
+      "hash": "sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f",
       "id": "provider-neutral-residue-guard-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-check-provider-neutral-ssot-residue.mjs",
-      "size": 17648,
+      "size": 18070,
       "type": "file"
     },
     {
@@ -3588,7 +3588,7 @@
         "scripts/generated/"
       ],
       "files": 521,
-      "hash": "sha256:3082d9f048e6dcced5711a646a4e164ffdeb405e39a0a766e30b2d0264328705",
+      "hash": "sha256:19b39d8fb853a036d763c931660d22a9a42c865db51036c924e81e4346ce98f7",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

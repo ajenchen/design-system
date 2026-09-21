@@ -129,9 +129,13 @@ try {
   }
   install(fixture)
 
+  // 注入錨點用**節標題**而不是某一個 bullet(2026-09-21):原本錨在
+  // `- **路由 authority**:` 那一行,而 bootstrap 一做 anti-bloat 搬家,那行就不見了 ——
+  // 對照組於是「注入不進去」而整支測試紅,卻不是因為被驗的性質壞掉。
+  // 錨點必須是這一節存在就一定在的東西;`mutateText` 本身會在沒改到時 fail-closed。
   mutateText(fixture, AGENTS, value => value.replace(
-    /^- \*\*路由 authority\*\*:.*$/m,
-    '- Claude authored → Codex review (transport = scripts/codex-run-guarded.mjs)\n- Codex authored → Claude review',
+    /^# Independent second opinion.*$/m,
+    match => `${match}\n\n- Claude authored → Codex review (transport = scripts/codex-run-guarded.mjs)\n- Codex authored → Claude review`,
   ))
   const fixedPair = run(fixture)
   assert.notEqual(fixedPair.status, 0, 'fixed Claude/Codex author-to-reviewer routing was accepted in AGENTS.md')

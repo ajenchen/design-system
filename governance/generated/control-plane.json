@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:eda7989ecba3c80372a9d428629ecfd204bcb7c3be2af531d555d1557a90a66c",
+      "hash": "sha256:d93b19eb3e15f437cdd2b91c5b20fd41d0842c9f4acd241b35dc6ced96deef8e",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22386,
+      "size": 22542,
       "type": "file"
     },
     {
@@ -2727,12 +2727,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cea943b6508ab8c5d11fbf020e6758874f0d6f42256c8ab5c9a3020bcf09eeab",
+      "hash": "sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f",
       "id": "provider-neutral-residue-guard-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-check-provider-neutral-ssot-residue.mjs",
-      "size": 17648,
+      "size": 18070,
       "type": "file"
     },
     {
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 521,
-      "hash": "sha256:3082d9f048e6dcced5711a646a4e164ffdeb405e39a0a766e30b2d0264328705",
+      "hash": "sha256:19b39d8fb853a036d763c931660d22a9a42c865db51036c924e81e4346ce98f7",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
