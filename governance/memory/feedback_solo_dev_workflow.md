@@ -47,3 +47,14 @@ The standard release gate is the machine-readable five-step graph in `infra/gove
 ## Why the old flow was retired
 
 The 2026-05 no-PR rule solved branch/PR sprawl but permitted direct-main writes and made remote hard gates impossible. The preserved lesson is one task/one branch plus non-bypassable PR gates. **2026-09-02 correction**:the 2026-07-20 migration also dropped the user's preview-then-consent step by mistake(the user's 2026-05-15 / 2026-05-29 words「部署出來讓人驗證,驗證完成之後再推去 main」were never revoked);beta.131 / #122 shipped while the user was still reviewing drafts. The consent receipt gate restores it mechanically(orchestrator + hook),without reviving local attestation, soak, or fleet ceremonies.
+
+## AGENTS.md 發版同意那一格的原文(2026-09-21 搬家)
+
+root AGENTS.md 的 project-doc 鏈超過 Codex 預設 32KiB 會**靜默截斷**,故把來龍去脈搬來,bootstrap 只留判準。逐字保留:
+
+| 1.5 **發版同意(ASK)** | **user 看過預覽後在對話說「發版」**(exact target = **user 看過的那份產品內容**)→ hook `record_release_consent.sh` 自動落地 receipt(`.git/governance-runtime/release-consent/current.json`,schemaVersion 3);缺 receipt → `release:auto` **停在預覽階段**印 `AWAITING_USER_RELEASE_CONSENT`,不合併、不發布;問句／否定不算同意。**同意綁「user 看過的產品內容」,不綁 commit、不綁分支**(2026-09-20 兩次修正的結論):commit 與分支都是 **agent 切工作的單位**,不是 user 授權的單位 —— 綁 commit 讓版號 bump 就失效,改綁分支之後開一條新分支又失效,**問題只是換地方發作**(user 原話:「你他媽我從頭到尾就這樣要求,也沒有新增任何設計需求?你他媽到底是要我說發版說到何時?」)。現在綁預覽看得見的檔(集合以 `scripts/release-orchestrator.mjs` 的 `PRODUCT_VISIBLE` 為準:`packages/<pkg>/src`、`.storybook/`、`apps/**` 的 stories;散文不維護第二份清單)內容指紋:**內容沒變 → 換幾個 commit、幾條分支都算數**;**內容變了 → 必須重新確認**(2026-09-02 事故要保護的正是這一格);明確否定 → 撤回。**一份同意 = 一次 final release**:帳本記在 receipt 的 `releases`,第二次發布必須有 incident 證據(`RELEASE_ADDITIONAL_INCIDENT`),否則 fail closed —— 這條 canonical 早就寫了、`authorizeDeepAuditPublish()` 也寫好了,但 2026-09-20 之前**執行面零呼叫**,才會出現同一份工作連發 beta.135–139 五版、user 被迫重講五次 |
+
+### AGENTS.md「公開入口」段原文(2026-09-21 搬家)
+
+公開入口只有 `npm run release:auto`(安全續跑未完成步驟;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀狀態)與 `npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需 user 原話)。ASK 只有兩種:未解決的產品／UI／UX SSOT 真取捨、以及**發版同意**(每條工作分支／每個 PR 一次,不是每個 commit 一次;預覽 → user 說「發版」);login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。`candidate-freeze`、broad external activation、model certification、offline signatures、72h soak、fleet promotion 對 standard small-team release 一律 non-blocking 或已退役,不得另建 approval/promotion 流程。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
+

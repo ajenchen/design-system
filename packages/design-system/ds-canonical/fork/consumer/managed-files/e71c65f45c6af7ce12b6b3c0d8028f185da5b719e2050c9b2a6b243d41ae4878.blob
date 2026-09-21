@@ -12,6 +12,14 @@
 import { existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
+
+// 受限沙箱起 Chromium 需要的兩個參數。**刻意就地寫,不 import 共用 helper**:
+// 這支腳本會被交付到 consumer repo,而 import `lib/launch-browser.mjs` 會讓那支也必須進
+// 四個交付／白名單清單(2026-09-21 實測:fork delivery / 檔案所有權 / published-template 鏡像 /
+// 鏡像路徑白名單),為兩個旗標擴張消費端交付面不值得 —— M17 的門檻是同值 **3+** 個消費者才抽共用,
+// 這裡是第 2 個。DS 內部閘的單一住所仍是 `scripts/lib/launch-browser.mjs` 的 `SANDBOX_ARGS`,
+// 兩邊若要改必須一起改(值相同:單行程 + 關沙箱)。
+const SANDBOX_ARGS = ['--single-process', '--no-sandbox']
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { resolveA11yStaticFile, startA11yStaticServer } from './lib/a11y-static-server.mjs'
@@ -89,7 +97,10 @@ export async function auditUrlWithAxe({
 } = {}) {
   let browser
   try {
-    browser = await browserType.launch()
+    // 用 repo 共用的沙箱參數(`lib/launch-browser.mjs` 的單一住所),不要自己起一套 ——
+    // 2026-09-21 夜間 harness 實測:裸 launch 在受限沙箱起不來,而全 repo 其他瀏覽器閘都能跑,
+    // 差別就只在這組參數。同一份程式在不同環境給不同答案,本身就是量具問題。
+    browser = await browserType.launch({ headless: true, args: [...SANDBOX_ARGS] })
     const page = await (await browser.newContext()).newPage()
     const response = await page.goto(url, { waitUntil: 'networkidle' })
     if (!response || !response.ok()) throw new Error(`owned app server returned ${response?.status() ?? 'no response'}`)
@@ -163,7 +174,18 @@ export async function runConsumerA11yAudit({
 
   logger.log('')
   if (errors.length > 0) {
-    logger.error(`❌ ${errors.length} app(s) have a11y issues`)
+    // **「儀器失效」與「產品有問題」要分開報**(2026-09-21)。
+    // 原本兩者共用 errors 陣列、共用同一句「N app(s) have a11y issues」——
+    // 於是瀏覽器起不來會被報成「這個 app 有無障礙問題」,指控一個不存在的問題。
+    // 兩邊都照樣紅(缺證據不得放行),但**訊息必須指向正確的方向**,
+    // 否則下一個人會拿著錯的線索去查錯的地方。
+    const infrastructure = errors.filter((item) => item.auditError)
+    const product = errors.filter((item) => !item.auditError)
+    if (product.length > 0) logger.error(`❌ ${product.length} app(s) have a11y issues`)
+    if (infrastructure.length > 0) {
+      logger.error(`❌ ${infrastructure.length} app(s) 量不到(儀器失效,不是產品有問題):`)
+      for (const item of infrastructure) logger.error(`   - ${item.app}:${String(item.auditError).split('\n')[0]}`)
+    }
     return 1
   }
   logger.log('✅ All apps pass WCAG 2 A + AA')

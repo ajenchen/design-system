@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:1c7f2d0db31175f09fb32d579d00f8e1ac730a565c7c20e44a1e3e76fc1390f2",
+      "hash": "sha256:26fa5f4be12ab539859acf869c90c75bf170f7ba1205150708bb69eefd779c08",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5eba0eff17af2e50fd7f066c18d170c79be37bb4451a35beed515a1f3968d660",
+      "hash": "sha256:cf7cb73a17073c048ffb06974e3eb80f401fcbbe1e99d78faa7ee0551c10170b",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139523,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:591549a93b4614282fdfb5627e0f3a32c874e9ccca76551b08f894b9835f0eab",
+  "inputDigest": "sha256:58f77379d33365548fbbfe530415da72314f84c401668f23811306f7131ec79e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:aa1165ff75def958f1ca74921c804b1daedb6ab613d6aa85c4791810da5914d6",
+          "expectedTargetDigest": "sha256:669fb5d101e3e0fcde788463da291f45abcab8ff61969dfbfecbb67934b14f92",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:420ee1d0568bbe3a638e16782ffbf6a75bc8ab4af10ce263dec749fabd4e9664",
-          "targetDigest": "sha256:aa1165ff75def958f1ca74921c804b1daedb6ab613d6aa85c4791810da5914d6"
+          "sourceDigest": "sha256:4495d332abc6ffbf8a1bb80bc26e1e8905587409b0b00f1d12dafee22f586640",
+          "targetDigest": "sha256:669fb5d101e3e0fcde788463da291f45abcab8ff61969dfbfecbb67934b14f92"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:22f3f81af0b8aec0f14e3bfe4c449a529f0d15658d9dbb8a97562e1628a9a097",
+          "expectedTargetDigest": "sha256:9ee573c714740fdb418b4112048af88442085865513bf2951795ce902583a815",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:420ee1d0568bbe3a638e16782ffbf6a75bc8ab4af10ce263dec749fabd4e9664",
-          "targetDigest": "sha256:22f3f81af0b8aec0f14e3bfe4c449a529f0d15658d9dbb8a97562e1628a9a097"
+          "sourceDigest": "sha256:4495d332abc6ffbf8a1bb80bc26e1e8905587409b0b00f1d12dafee22f586640",
+          "targetDigest": "sha256:9ee573c714740fdb418b4112048af88442085865513bf2951795ce902583a815"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",
@@ -518,15 +518,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:aed6a521f363c3c2a5f11b46e9c49ad2e6fc24733a69ed87f1fed05999fcd1cc",
+  "snapshotDigest": "sha256:5b6db28c9d93866b24a49c43ab1a86e6d3c253a6aa92dfdd71311dcaa0e740cb",
   "sources": [
     {
-      "hash": "sha256:47a019844e742423fc66932e53aba928c8dd4c7ea014f6170f6b681e27c5ecb1",
+      "hash": "sha256:eda7989ecba3c80372a9d428629ecfd204bcb7c3be2af531d555d1557a90a66c",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 30877,
+      "size": 22386,
       "type": "file"
     },
     {
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:7a813ef102ce36428e629228a12844a69e7e822216f10db120b91826be21062b",
+      "hash": "sha256:e4a27a34948b9d78860cde9efcc0639fe41aa9e35386aec737d95f3886a7968c",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3211,7 +3211,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:daa44a075303be2018848ce8b3a1990c31352dbcf18c36f86d36ab6345a4a42b",
+      "hash": "sha256:1f63f9932566a633e8d3320cde85c19be002cd62a1f3daf75656a1a466616e56",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3588,7 +3588,7 @@
         "scripts/generated/"
       ],
       "files": 521,
-      "hash": "sha256:89ae3237898a08db20fddbe85977457daf1028d7096de7734db30cfd79798964",
+      "hash": "sha256:3082d9f048e6dcced5711a646a4e164ffdeb405e39a0a766e30b2d0264328705",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

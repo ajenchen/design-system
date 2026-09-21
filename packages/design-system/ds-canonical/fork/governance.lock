@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
+      "sha256": "a44313935637362ae72e889e34e3925a7e6bd98d889ebb42d37b2c5235e2a107",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
+      "sha256": "a44313935637362ae72e889e34e3925a7e6bd98d889ebb42d37b2c5235e2a107",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -591,7 +591,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "f3ed24be76d87ffbcaed08f39491d385a14f0e870a5b952e3407ba0ef0cd4e08",
+      "sha256": "b4305068d9a403726c2370b7678566484f21a84fd6478e58491ab0ffe79bdaef",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"
