@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:2c0129fa1a9e39486237f0d7f3881dc22ccc8d0e7990021061275515cad891c2",
+      "hash": "sha256:fc0b6bcc7ab5cb5df8c2b81ddf0b83a5d7e96e60a12a43947384405e197b2bb2",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 521,
-      "hash": "sha256:1fad13eafc8519db008567d59c3b52a4e7b51fe815f0f5b505ac179b7c2cb096",
+      "hash": "sha256:8151bba4785c8c60fcbb50b1f6283824319c17952d732f481f5264e97041287b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3184,12 +3184,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0b89be45268a76c6a286fe305ffc311493ec38042f613016449234c872465229",
+      "hash": "sha256:4a345f73a9a31d6fdeb5b8248f5d5fd4c3308c113df323b3acc342e4b92d29cb",
       "id": "standard-release-workflow-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/release-workflow.test.mjs",
-      "size": 54941,
+      "size": 55913,
       "type": "file"
     },
     {

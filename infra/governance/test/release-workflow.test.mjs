@@ -669,12 +669,21 @@ test('要比的基準是「線上目前那一份」,不是「上一個 tag」—
   // 一個都沒發布過 → 不猜
   assert.equal(publishedBaselineRef('v0.1.0-beta.142', tags, () => false), null)
 
-  // 真實資料的兩面對照:一筆該 none、一筆該 changed,兩邊都要找得到才算數
+  // 真實資料:用**指名的那一對** tag,不是「最新兩個」——
+  // 2026-09-21 CI 實證:原本寫 `real[1] → real[0]` 並斷言 none,而那句話講的是 2026-09-20
+  // 量過的 beta.139 → beta.140。之後多了一個 beta.141 的 tag,`real[0]/real[1]` 就換成了
+  // 別的一對(而那一對確實有畫面變動)→ 測試在**零程式改動**下變紅。這正是 M37 第九種形狀
+  // 的同族:「最新兩個 tag」是代理,「當初量過的那一對」才是要斷言的事。
+  // 本機當時還沒 fetch 到那個新 tag 所以綠、CI 抓 tag 所以紅 —— 環境依賴的另一種形狀。
   const real = listReleaseTags()
   assert.ok(real.length >= 2, `本地至少要有兩個版本 tag 才驗得了(實際 ${real.length})`)
   assert.equal(publishedBaselineRef(real[0], real), real[0], '最新 tag 已存在 → 基準是它自己')
-  assert.equal(productChangeSincePreviousRelease(real[1], real[0]), 'none',
-    `${real[1]} → ${real[0]} 應為零畫面變動(2026-09-20 實測)`)
+  const MEASURED_PAIR = ['v0.1.0-beta.139', 'v0.1.0-beta.140']
+  const missing = MEASURED_PAIR.filter((tag) => !real.includes(tag))
+  // 找不到那兩個 tag = 量具拿不到資料,必須以儀器失效的名義紅,不得默默跳過(M32:回 0 筆先證明拿得到資料)
+  assert.deepEqual(missing, [], `驗不了零畫面變動:本地缺 tag ${missing.join(' / ')}(先 git fetch --tags)`)
+  assert.equal(productChangeSincePreviousRelease(...MEASURED_PAIR), 'none',
+    `${MEASURED_PAIR[0]} → ${MEASURED_PAIR[1]} 應為零畫面變動(2026-09-20 實測的就是這一對)`)
 })
 
 test('「讀不到 release」不得當成「那一版沒發出去」—— 一份發版授權不能被讀取失敗弄丟或憑空復活', () => {

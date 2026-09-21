@@ -18,8 +18,13 @@
  *      (修前每步 ~全部列都被重繪;修後只有新列 + translateY 更新)
  *   R2 節點增減/步 ≤ NODES_PER_ROW × 換列數 + 8 —— 只允許新進 / 移出視窗的列建與拆
  *   R3 commits/步 ≤ COMMITS —— 換列本身一次(virtualizer)+ 最多一次收斂
- *   1px 步進(不換列)沿用:getBoundingClientRect ≤ 12/步(把手 / dnd / 列高的每次 render 成本)
- * 對照組:`--selftest` 把預算全設 0 必紅(證明三個計數器都在數)。
+ *   1px 步進(不換列):getBoundingClientRect ≤ 12/步(把手 / dnd / 列高的每次 render 成本)。
+ *     **2026-09-21 改成機器無關**:判定值 = 捲動窗口每幀平均 − 同長度不捲動窗口每幀平均,
+ *     量測前先等「每幀增量連續 3 幀相同」代表掛載暫態結束。舊法(固定 2 幀 + 窗口總數)在
+ *     2026-09-18 與 09-21 各假紅一次,兩次都是同一個 154.1、前一跑 0.1、零產品改動。
+ * 對照組:`--selftest` 把預算全設 0 必紅(證明三個計數器都在數);**每一趟**另跑 1px 儀器三面對照
+ *   (A 掛載暫態:舊法假紅 / 新法 0 · B 捲動引發的真回歸:仍紅且呼叫點指名 · C 與捲動無關的背景噪音:不誤報),
+ *   跑在同一個 page 的合成頁上(single-process sandbox 開第二個 page 會 SIGTRAP)。
  */
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -39,8 +44,12 @@ const BUDGET = SELFTEST
   : { attrPerRow: 2, nodesPerRow: 400, nodesBase: 8, commits: 8, gbcrFine: 12, touchedOld: 12, renderedHeader: 4 }
 const STORIES = ['design-system-components-datatable-展示--roadmap-all-in-one', 'design-system-components-datatable-展示--virtual-scroll']
 
+// 1px 段儀器對照組用的合成頁(見檔尾對照組區塊):由同一個伺服器提供,
+// 才能走跟正式量測一樣的 goto 路徑(setContent 在這個瀏覽器包裝上不支援)。
+const PROBE_HTML = '<!doctype html><meta charset="utf-8"><div id="t" style="height:200px;overflow:auto"><div style="height:4000px"></div></div>'
 const server = http.createServer((q, s) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
+  if (p === '/__gbcr-probe.html') { s.writeHead(200, { 'content-type': 'text/html' }); s.end(PROBE_HTML); return }
   const f = join(STATIC, p)
   if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
   s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
@@ -118,25 +127,47 @@ for (const id of STORIES) {
     const root = el.closest('[data-data-table-outer]') || el
     mo.observe(root, { subtree: true, childList: true, attributes: true })
     // 暖機到中段
-    el.scrollTop = Math.floor((el.scrollHeight - el.clientHeight) / 3); await frame(); await frame()
-    // 1px 步進:每次 render 的成本(不換列)
-    window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = window.__gbcrTraceOn
-    for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
-    let gbcrFine = window.__gbcr / 30
-    window.__gbcrTrace = false
-    // **超標就自動把呼叫點量出來**(2026-09-18):這條是絕對計數,本機實測 0.1–0.3、預算 12,
-    // 但 CI 上出現過一次 154.1,而**同一份程式碼的前一跑是 0.1** —— 只給一個數字沒人能查。
-    // 超標時原地再走一次 1px 步進、這次開追蹤,把最兇的呼叫點一起印出來。
-    // **不是放寬**:預算與判定值都不動,只是在紅燈旁邊附上線索(下面 gbcrCallers 進報表)。
-    let gbcrCallers = null
-    if (gbcrFine > FINE_BUDGET) {
-      window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = true
-      for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
-      window.__gbcrTrace = false
-      gbcrFine = Math.max(gbcrFine, window.__gbcr / 30)
-      gbcrCallers = Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    el.scrollTop = Math.floor((el.scrollHeight - el.clientHeight) / 3)
+    // **等到掛載副作用鏈的暫態結束,再用「捲動引發的額外呼叫」判定**
+    //(2026-09-21,M37 同族:「過了 2 個 rAF」被當成「已達穩態」、「窗口總數」被當成「捲動成本」)。
+    //
+    // 暖機那一跳會掛載整個視窗的新列,新列的副作用鏈(Radix ref-state → 格內量測 → 雙 rAF 標籤摺疊 →
+    // 圖片載入後的 state 更新)會跨好幾幀。這些 getBoundingClientRect 是**新列掛載**的成本,
+    // 不是「1px 步進」的成本。原本固定等 2 個 rAF:本機夠、慢的機器不夠,於是那些呼叫全被算進來。
+    // 實證:同一份程式碼(相對 main **零個產品可見檔改動**)本機 0.1、CI 154.1;而 2026-09-18
+    // 出現過**同一個 154.1**、前一跑 0.1 —— 它從來不是產品回歸,是儀器沒等穩。
+    // 60px 段早就有對應的防線(__recentNewRows 排除最近 2 步掛載的列),1px 段沒有。
+    //
+    // 兩層都改成直接量那個性質:
+    //  (1) 暫態結束 = 每幀增量**連續 3 幀相同**(不是「等到 0」—— 若頁面有與捲動無關的固定背景
+    //      速率,等 0 會永遠等不到,於是真回歸被錯誤歸類成「儀器失效」)。
+    //  (2) 這條閘要保證的是「捲動 1px 引發的 render 有沒有在強制版面讀取」,所以判定值 =
+    //      **捲動窗口的每幀平均 − 同長度不捲動窗口的每幀平均**。與捲動無關的背景噪音兩邊等量、
+    //      相減歸零(它本來就不是捲動成本);捲動引發的讀取只出現在前者,差值原樣留下。
+    const perFrameRate = async () => { const m = window.__gbcr; await frame(); return window.__gbcr - m }
+    let settleFrames = 0
+    let last = -1, same = 0
+    for (; settleFrames < 120; settleFrames++) {
+      const rate = await perFrameRate()
+      if (rate === last) { if (++same >= 3) break } else { same = 1; last = rate }
     }
-    if (window.__gbcrTraceOn) console.log('GBCR-CALLERS ' + JSON.stringify(Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 8)))
+    const settled = settleFrames < 120
+    // 基線:不捲動的同長度窗口(背景速率)。追蹤此時就開著,呼叫點兩邊都收得到。
+    window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = true
+    for (let i = 0; i < 30; i++) await frame()
+    const idlePerStep = window.__gbcr / 30
+    // 量測:同樣 30 幀,但每幀捲 1px。
+    // **追蹤在量的那一次就開著**(2026-09-21):原本是「超標之後再跑一次、那次才開追蹤」——
+    // 但這條超標的成因是**暫態**,等到再跑一次時它早就過去了,於是 __gbcrBy 是空的、報表印不出
+    // 任何呼叫點。9/18 加的那個診斷從加進來到今天一次都沒產出過線索,因為「重跑一次開追蹤」
+    // 不等於「追蹤到出事那一次」。成本是每次呼叫抓一次 stack,健康時整段只有幾次呼叫,可忽略。
+    window.__gbcr = 0; window.__gbcrBy = {}
+    for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
+    window.__gbcrTrace = false
+    const scrollPerStep = window.__gbcr / 30
+    const gbcrFine = Math.max(0, scrollPerStep - idlePerStep)
+    const gbcrCallers = Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    if (window.__gbcrTraceOn) console.log('GBCR-CALLERS ' + JSON.stringify(gbcrCallers))
     // 換列步進
     await frame(); attrs = 0; nodes = 0; window.__commits = 0; window.__rendered = {}; window.__touched = {}; window.__dtRowRenderStats.fresh = 0;
     window.__dtRowRenderStats.missIdx = {};
@@ -164,7 +195,7 @@ for (const id of STORIES) {
     }
     await frame()
     mo.disconnect()
-    return { gbcrFine, gbcrCallers, attrsPerStep: attrs / steps, nodesPerStep: nodes / steps, changedPerStep: changed / steps, commitsPerStep: window.__commits / steps, renderedOldPerStep: (window.__rendered.rowOld || 0) / steps, renderedHeaderPerStep: (window.__rendered.header || 0) / steps, touchedOldPerStep: (window.__touched.rowOld || 0) / steps, renderedOldMax: Math.max(0, ...perStep.renderedOld), touchedOldMax: Math.max(0, ...perStep.touchedOld), headerMax: Math.max(0, ...perStep.header), renderedNewPerStep: (window.__rendered.rowNew || 0) / steps, renderedOtherPerStep: (window.__rendered.other || 0) / steps, renderedErr: window.__renderedErr || null, visible: visibleRows(), freshPerStep: window.__dtRowRenderStats.fresh / steps, missIdx: window.__dtRowRenderStats.missIdx, epochIdx: window.__dtRowRenderStats.epochIdx ?? {}, attrNames }
+    return { gbcrFine, gbcrCallers, settled, settleFrames, idlePerStep, scrollPerStep, attrsPerStep: attrs / steps, nodesPerStep: nodes / steps, changedPerStep: changed / steps, commitsPerStep: window.__commits / steps, renderedOldPerStep: (window.__rendered.rowOld || 0) / steps, renderedHeaderPerStep: (window.__rendered.header || 0) / steps, touchedOldPerStep: (window.__touched.rowOld || 0) / steps, renderedOldMax: Math.max(0, ...perStep.renderedOld), touchedOldMax: Math.max(0, ...perStep.touchedOld), headerMax: Math.max(0, ...perStep.header), renderedNewPerStep: (window.__rendered.rowNew || 0) / steps, renderedOtherPerStep: (window.__rendered.other || 0) / steps, renderedErr: window.__renderedErr || null, visible: visibleRows(), freshPerStep: window.__dtRowRenderStats.fresh / steps, missIdx: window.__dtRowRenderStats.missIdx, epochIdx: window.__dtRowRenderStats.epochIdx ?? {}, attrNames }
   }, BUDGET.gbcrFine)
   if (SELFTEST && r && !r.crashed) {
     // 對照組(Codex R7 Q6):預算 0 對「本來就是 0」的 R5 永遠不會紅,所以另外證明計數器活著——點表頭全選
@@ -200,9 +231,15 @@ for (const id of STORIES) {
     ['R4 舊列零重繪:單步內步前既有列裡被碰到的元件 fiber 數(最大值)', r.touchedOldMax, BUDGET.touchedOld, `max ${r.touchedOldMax} ≤ ${BUDGET.touchedOld}(render 最大 ${r.renderedOldMax},平均 render ${r.renderedOldPerStep.toFixed(1)} / touched ${r.touchedOldPerStep.toFixed(1)})`],
     ['R5 表頭零重繪:單步內表頭裡被碰到 + render 的元件數(最大值)', r.headerMax, BUDGET.renderedHeader, `max ${r.headerMax} ≤ ${BUDGET.renderedHeader}`],
     ['1px 步進 getBoundingClientRect/步', r.gbcrFine, BUDGET.gbcrFine, `${r.gbcrFine.toFixed(1)} ≤ ${BUDGET.gbcrFine}`
-      + (r.gbcrCallers?.length ? `;最兇呼叫點 ${JSON.stringify(r.gbcrCallers)}` : '')],
+      + `(捲動 ${r.scrollPerStep.toFixed(1)} − 不捲動 ${r.idlePerStep.toFixed(1)};等穩態用了 ${r.settleFrames} 幀)`
+      // 追蹤是全程開著的,所以超標時這裡一定有東西;空的代表計數器或 stack 抓取壞了,而不是「沒有呼叫點」。
+      + (r.gbcrCallers?.length ? `;最兇呼叫點 ${JSON.stringify(r.gbcrCallers)}`
+        : (r.gbcrFine > 0 ? ';⚠️ 有呼叫卻抓不到呼叫點 —— 追蹤本身壞了' : ''))],
   ]
   if (r.changedPerStep === 0 && !SELFTEST) { console.log(`✗ ${short}:60px 步進沒有換列,量到的不是換列路徑(儀器對照失敗)`); failed++ }
+  // 等不到穩態 = **儀器失效**,不是產品壞了。不得默默放行(那就是「沒量到當成沒發生」),
+  // 也不得把它算成 1px 超標去指控產品 —— 指控一個不存在的問題比沉默更貴。
+  if (!r.settled) { console.log(`✗ ${short}:1px 段開始前等不到穩態(120 幀內 getBoundingClientRect 一直有新呼叫)—— 儀器失效,這一趟的 1px 數字無效,不據此判定產品`); failed++ }
   if (r.renderedErr) { console.log(`✗ ${short}:fiber 歸因計數器丟例外(${r.renderedErr}),R4/R5 無效`); failed++ }
   for (const [name, v, budget, detail] of checks) {
     const ok = v <= budget
@@ -210,6 +247,76 @@ for (const id of STORIES) {
     console.log(`${ok ? '✓' : '✗'} ${short} ${name}:${detail}`)
   }
   console.log(`   ${short} 資訊:${info};每步換列 ${r.changedPerStep.toFixed(1)} 列、可見 ${r.visible} 列;屬性變動名稱 ${JSON.stringify(r.attrNames)};快取 miss 的依賴索引 ${JSON.stringify(r.missIdx)}(0 row 1 idx 2 start 3 isLast 4 virtual 5 cols 6 regionWidth 7 sharedH 8 drop 9 dragging 10 anyDrag 11 epoch);epoch 被換掉的依賴索引 ${JSON.stringify(r.epochIdx)}`)
+}
+// ── 1px 段儀器的三面對照組(2026-09-21,同一趟、同一個 page 跑完)──
+// 修的是兩件事,兩件都要證明:
+//  (A) 等穩態真的能吸收「暫態」,而固定 2 幀不能 —— 否則這次的假紅只是換個門檻再發作一次。
+//  (B) 追蹤全程開著,真的抓得到呼叫點 —— 9/18 那個診斷加了卻一次都沒產出過線索。
+// 重用同一個 page(sandbox 是 single-process,開第二個 page 會讓瀏覽器 SIGTRAP),
+// 因此驗的是 addInitScript 注入的**那一套真正的儀器**,不是複製品。
+// 用合成頁而不是 DataTable:合成頁能精準造出「先吵一陣然後安靜」與「一直吵」兩種訊號,
+// DataTable 造不出可控的暫態,拿它當對照組等於沒有對照組。
+{
+  await page.goto(`${BASE}/__gbcr-probe.html`, { waitUntil: 'load' })
+  const control = await page.evaluate(async () => {
+    const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.getElementById('t')
+    const perFrameRate = async () => { const m = window.__gbcr; await frame(); return window.__gbcr - m }
+    // 與正式量測同一套邏輯(settle → idle 基線 → 捲動窗口 → 相減),settle=false 用來重現舊前提
+    // mode 'legacy' = 2026-09-21 之前的量法:等固定 2 幀,直接把 30 步捲動窗口的**總數**當判定值。
+    // mode 'current' = 現在的量法:等穩態 → 量不捲動基線 → 量捲動窗口 → **相減**。
+    // 兩種都要跑得出來,A 那一格才證明得了「舊法會假紅、新法不會」,而不是只證明新法今天是綠的。
+    const measure = async (mode) => {
+      let frames = 0
+      if (mode === 'current') {
+        let last = -1, same = 0
+        for (; frames < 120; frames++) { const rate = await perFrameRate(); if (rate === last) { if (++same >= 3) break } else { same = 1; last = rate } }
+        if (frames >= 120) return { unsettled: true }
+      } else { await frame(); await frame() }
+      let idle = 0
+      window.__gbcrTrace = true
+      if (mode === 'current') {
+        window.__gbcr = 0; window.__gbcrBy = {}
+        for (let i = 0; i < 30; i++) await frame()
+        idle = window.__gbcr / 30
+      }
+      window.__gbcr = 0; window.__gbcrBy = {}
+      for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
+      window.__gbcrTrace = false
+      const scrolled = window.__gbcr / 30
+      return { perStep: Math.max(0, scrolled - idle), idle, scrolled, callers: Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 3), frames }
+    }
+    // (A) 暫態:接下來 20 幀每幀吵 30 次,然後徹底安靜 —— 模擬暖機那一跳的掛載副作用鏈
+    const noisyTransient = () => { let n = 0; const tick = () => { if (n++ >= 20) return; for (let i = 0; i < 30; i++) document.body.getBoundingClientRect(); requestAnimationFrame(tick) }; requestAnimationFrame(tick) }
+    noisyTransient(); const oldPremise = await measure('legacy')
+    noisyTransient(); const withSettle = await measure('current')
+    // (B) 真回歸:**捲動引發**的強制版面讀取(scroll 事件處理裡讀)—— 這才是這條閘要抓的東西
+    window.syntheticScrollCaller = () => document.body.getBoundingClientRect()
+    const onScroll = () => { for (let i = 0; i < 30; i++) window.syntheticScrollCaller() }
+    el.addEventListener('scroll', onScroll)
+    const regression = await measure('current')
+    el.removeEventListener('scroll', onScroll)
+    // (C) 與捲動無關的固定背景噪音:兩邊等量,相減歸零 → 不得誤報(否則閘會指控不存在的問題)
+    let bg = true
+    const bgTick = () => { if (!bg) return; for (let i = 0; i < 30; i++) document.body.getBoundingClientRect(); requestAnimationFrame(bgTick) }
+    requestAnimationFrame(bgTick)
+    const background = await measure('current')
+    bg = false
+    return { oldPremise, withSettle, regression, background }
+  })
+  const num = (x) => (typeof x === 'number' ? x : -1)
+  const aOld = num(control.oldPremise?.perStep)
+  const aNew = num(control.withSettle?.perStep)
+  const bVal = num(control.regression?.perStep)
+  const bNamed = (control.regression?.callers || []).some(([k]) => /syntheticScrollCaller/.test(k))
+  const cVal = num(control.background?.perStep)
+  const aOk = aOld > BUDGET.gbcrFine && aNew <= BUDGET.gbcrFine && !control.withSettle?.unsettled
+  const bOk = bVal > BUDGET.gbcrFine && bNamed && !control.regression?.unsettled
+  const cOk = cVal <= BUDGET.gbcrFine && !control.background?.unsettled
+  console.log(`${aOk ? '✓' : '✗'} 1px 儀器對照組 A(掛載暫態):舊法「固定 2 幀 + 不相減」量到 ${aOld.toFixed(1)}/步(> ${BUDGET.gbcrFine} 就是假紅),等穩態量到 ${aNew.toFixed(1)}/步(用了 ${control.withSettle?.frames ?? '?'} 幀)`)
+  console.log(`${bOk ? '✓' : '✗'} 1px 儀器對照組 B(捲動引發的真回歸):量到 ${bVal.toFixed(1)}/步(捲動 ${num(control.regression?.scrolled).toFixed(1)} − 不捲動 ${num(control.regression?.idle).toFixed(1)}),呼叫點指名 syntheticScrollCaller=${bNamed}`)
+  console.log(`${cOk ? '✓' : '✗'} 1px 儀器對照組 C(與捲動無關的背景噪音):量到 ${cVal.toFixed(1)}/步(捲動 ${num(control.background?.scrolled).toFixed(1)} − 不捲動 ${num(control.background?.idle).toFixed(1)}),不得誤報`)
+  if (!aOk || !bOk || !cOk) { console.log('✗ 1px 段的儀器沒有通過三面對照 —— 它的綠燈不構成證據'); failed++ }
 }
 await browser.close(); server.close()
 if (SELFTEST) { const ok = failed > 0 && controlBad === 0 && controlSeen > 0; console.log(ok ? '✓ selftest:預算 0 時計數器讓閘變紅,且正向對照組(全選)有量到表頭與舊列 render' : `✗ selftest:${failed ? '' : '預算 0 仍綠;'}${controlBad ? '對照組沒量到;' : ''}${controlSeen ? '' : '沒有任何 story 跑到對照組'}`); process.exit(ok ? 0 : 1) }
