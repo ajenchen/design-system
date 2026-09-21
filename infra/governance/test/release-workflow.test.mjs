@@ -16,6 +16,8 @@ import {
   buildConsumerPullRequestCreateArgs,
   buildPublishMutationPlan,
   filterOutPublishWorkflowRuns,
+  rollupRowIsRed,
+  rollupRowIsAborted,
   classifyReleaseLookup,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
@@ -757,6 +759,45 @@ test('tag 名稱不得與它指向的內容不符 —— 而且那個版號是�
   const atCommit = src.slice(src.indexOf('function packageVersionAtCommit('), src.indexOf('function checkRollupStatus('))
   assert.match(atCommit, /repos\/\$\{repository\}\/contents\//, '必須向 GitHub 讀那個 ref 的 manifest')
   assert.doesNotMatch(atCommit, /readJson\(resolve\(ROOT/, '不得退回讀本地工作區的 package.json')
+})
+
+test('「被取消 / 逾時」不是「失敗」—— 兩者都擋發布,但講錯原因會把人送去修不存在的問題', () => {
+  // 2026-09-21 實測:main 的 CI 有一個瀏覽器 job 跑 15.2 分撞到 15 分的 timeout-minutes,
+  // GitHub 回 `cancelled`;13 個 job 全綠。閘印的卻是「CI 是紅的…先修 main 再發」,
+  // 而且「紅的項目」一個都篩不出來 —— 因為報告端自己寫了一份比判定端更窄的條件。
+  // 兩份平行實作必然漂移,而漂移的那一次正是最需要線索的那一次。
+  const red = [
+    { bucket: 'fail' }, { state: 'FAILURE' }, { state: 'error' },
+    { conclusion: 'failure' }, { conclusion: 'cancelled' }, { conclusion: 'timed_out' },
+    { conclusion: 'action_required' }, { conclusion: 'startup_failure' }, { bucket: 'cancel' },
+  ]
+  for (const row of red) assert.equal(rollupRowIsRed(row), true, `應判為紅:${JSON.stringify(row)}`)
+  // 另一面:綠的、跳過的、還在跑的都不是紅 —— 否則閘會指控不存在的問題
+  for (const row of [{ bucket: 'pass' }, { bucket: 'skipping' }, { state: 'SUCCESS' }, { conclusion: 'success' }, { conclusion: 'neutral' }, { conclusion: 'skipped' }, { bucket: 'pending' }, {}]) {
+    assert.equal(rollupRowIsRed(row), false, `不該判為紅:${JSON.stringify(row)}`)
+  }
+  // 「沒有裁決」的子集:被取消 / 逾時
+  for (const row of [{ bucket: 'cancel' }, { conclusion: 'cancelled' }, { conclusion: 'timed_out' }]) {
+    assert.equal(rollupRowIsAborted(row), true, `應判為沒有裁決:${JSON.stringify(row)}`)
+  }
+  for (const row of [{ bucket: 'fail' }, { conclusion: 'failure' }, { state: 'error' }, { conclusion: 'startup_failure' }]) {
+    assert.equal(rollupRowIsAborted(row), false, `真失敗不得被當成沒有裁決:${JSON.stringify(row)}`)
+  }
+
+  // 報告端與判定端必須用**同一個**述詞,不得再各寫一份
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /mainRows\.filter\(rollupRowIsRed\)/, '報告端必須用判定端同一個述詞篩紅的項目')
+  assert.match(publishBlock, /redRows\.every\(rollupRowIsAborted\)/, '必須分辨「全部都是被取消/逾時」= 沒有裁決')
+  assert.match(publishBlock, /沒有裁決/, '訊息必須講出是「沒有裁決」而不是「壞了」')
+  assert.match(publishBlock, /重跑那一輪 CI/, '而且要講出正解是重新取得裁決,不是去修 main')
+  const rollupStart = src.indexOf('function checkRollupStatus(')
+  const rollupFn = src.slice(rollupStart, src.indexOf('export function selectPublishRun(', rollupStart))
+  // 切片非空本身要先成立 —— 邊界寫錯會切出空字串,而空字串配 assert.match 只會給一句
+  // 看不出原因的失敗(這一格本身在 2026-09-21 就這樣自摔過一次:packageVersion 在檔案裡
+  // 出現在 checkRollupStatus **之前**,indexOf 回的位置比起點小,切出空的)。
+  assert.ok(rollupFn.length > 100, `切不出 checkRollupStatus 的本體(長度 ${rollupFn.length})—— 斷言的邊界寫錯了,不是程式壞了`)
+  assert.match(rollupFn, /rollup\.some\(rollupRowIsRed\)/, 'checkRollupStatus 也必須用同一支,不得留下第二份實作')
 })
 
 test('發布這一步看的是「守護 main 的 CI」,不含發布流程自己派出的那一輪', () => {

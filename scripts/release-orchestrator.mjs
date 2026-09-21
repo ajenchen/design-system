@@ -878,16 +878,31 @@ function packageVersionAtCommit(repository, sha) {
   return typeof versions[0] === 'string' ? versions[0] : null
 }
 
+/**
+ * 這一列算不算「紅」。**判定與報告必須用同一個述詞**:2026-09-21 實測,報告端自己寫了一份
+ * 較窄的條件(只看 bucket==='fail' 與 state 是 error/failure),於是 main 上那個 `cancelled`
+ * 的 job 讓 rollup 判 failed、報告端卻一個都篩不出來,印成「紅的項目:(讀不出名稱)」——
+ * 兩份平行實作必然漂移,而漂移的那一次就是最需要線索的那一次。
+ */
+export function rollupRowIsRed(item = {}) {
+  const bucket = `${item.bucket || ''}`.toLowerCase()
+  const state = `${item.state || ''}`.toLowerCase()
+  const conclusion = `${item.conclusion || ''}`.toLowerCase()
+  return bucket === 'fail' || bucket === 'cancel'
+    || ['error', 'failure'].includes(state)
+    || ['failure', 'cancelled', 'timed_out', 'action_required', 'startup_failure'].includes(conclusion)
+}
+
+/** 這一列是「被取消 / 逾時」而不是「真的失敗」—— 前者代表**沒有裁決**,不是被測物壞了。 */
+export function rollupRowIsAborted(item = {}) {
+  const bucket = `${item.bucket || ''}`.toLowerCase()
+  const conclusion = `${item.conclusion || ''}`.toLowerCase()
+  return bucket === 'cancel' || ['cancelled', 'timed_out'].includes(conclusion)
+}
+
 function checkRollupStatus(rollup = []) {
   if (rollup.length === 0) return 'pending'
-  if (rollup.some(item => {
-    const bucket = `${item.bucket || ''}`.toLowerCase()
-    const state = `${item.state || ''}`.toLowerCase()
-    const conclusion = `${item.conclusion || ''}`.toLowerCase()
-    return bucket === 'fail' || bucket === 'cancel'
-      || ['error', 'failure'].includes(state)
-      || ['failure', 'cancelled', 'timed_out', 'action_required', 'startup_failure'].includes(conclusion)
-  })) return 'failed'
+  if (rollup.some(rollupRowIsRed)) return 'failed'
   if (rollup.some(item => {
     const bucket = `${item.bucket || ''}`.toLowerCase()
     const state = `${item.state || ''}`.toLowerCase()
@@ -1586,12 +1601,21 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         throw new Error(`讀不到 protected main(${String(observation.protectedMainSha).slice(0, 12)})的 check 證據 —— 沒有通過的證據不等於通過,不發布`)
       }
       const mainRollup = checkRollupStatus(mainRows)
+      // 「被取消 / 逾時」與「真的失敗」是兩件事:前者代表**那一輪沒有裁決**(job 撞到
+      // timeout-minutes 時 GitHub 就是回 cancelled),被測物並沒有壞。兩者都必須擋住發布
+      //(沒有通過的證據不等於通過),但**講錯原因會把人送去修一個不存在的問題** ——
+      // 2026-09-21 實測:main 的 CI 有一個瀏覽器 job 跑 15.2 分撞到 15 分預算被取消,
+      // 13 個 job 全綠,而閘印的是「CI 是紅的…先修 main 再發」。
+      const redRows = mainRows.filter(rollupRowIsRed)
+      const allAborted = redRows.length > 0 && redRows.every(rollupRowIsAborted)
+      const names = redRows.map(row => row.name).filter(Boolean).join(' / ') || '(讀不出名稱)'
+      invariant(mainRollup !== 'failed' || !allAborted,
+        `protected main(${String(observation.protectedMainSha).slice(0, 12)})那一輪 CI **沒有裁決**` +
+        `(被取消或逾時,不是失敗):${names}。main 並沒有壞 —— 要的是讓它重新取得裁決:` +
+        `重跑那一輪 CI(需要 actions:write),或讓 main 前進一個 commit 觸發新的一輪。`)
       invariant(mainRollup !== 'failed',
         `protected main(${String(observation.protectedMainSha).slice(0, 12)})的 CI 是紅的,不得發布 —— ` +
-        `合併之後那一輪才是真正要出貨的那份程式碼。先修 main 再發。` +
-        `(紅的項目:${mainRows.filter(row => `${row.bucket}`.toLowerCase() === 'fail'
-          || ['error', 'failure'].includes(`${row.state}`.toLowerCase()))
-          .map(row => row.name).join(' / ') || '(讀不出名稱)'})`)
+        `合併之後那一輪才是真正要出貨的那份程式碼。先修 main 再發。(紅的項目:${names})`)
       if (mainRollup === 'pending') {
         if (noWait) return report
         console.log(`   等 protected main 的 CI 跑完(${String(observation.protectedMainSha).slice(0, 12)})`)

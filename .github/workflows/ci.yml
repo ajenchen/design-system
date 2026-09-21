@@ -609,7 +609,13 @@ jobs:
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 2026-09-21:15 分對這個 job 只留約 20% 餘裕。12 筆 CI 實測 10.8 / 11.0 / 11.3 / 11.3 / 11.6 /
+    # 11.8 / 12.2 / 12.2 / 12.4 / 13.0 分全部成功,然後一次 15.2 分**撞到預算被取消**。
+    # 而 job 逾時在 GitHub 上是 `cancelled` —— 那一輪因此**沒有裁決**,發布閘只能 fail closed,
+    # 等於一次機器變異就把已經合併好的版本卡住,還讓人去修一個不存在的問題。
+    # timeout 不是正確性門檻,是執行時間預算;撞到它唯一的效果是毀掉裁決。依同檔既有的
+    # SLOW_BROWSER_JOBS 慣例改 25(仍在硬上限內,真的卡死照樣抓得到)。
+    timeout-minutes: 25
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
