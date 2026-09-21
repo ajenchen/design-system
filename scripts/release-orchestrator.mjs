@@ -1093,14 +1093,45 @@ export function buildFiveStepStatus(workflow, observation) {
       && observation.release.publishedAt
       && observation.release.isImmutable !== true,
   )
+  // 2026-09-21 M37 第十種形狀:**「這個版號發布過」被當成「protected main 上這份內容已發布」**。
+  //
+  // 錨(同日、本機實證):merge 這一步把 4 個新 commit 併進 protected main,但版號沒 bump,
+  // 於是 `observation.tag` 指向的是**這次工作之前**就發布好的 v0.1.0-beta.140 ——
+  // release 存在、不是 draft、immutable、有 40 碼 sha,`publishedRelease` 為真,
+  // publish / readback / consumer 三步全報 complete,`npm run release:auto` exit 0
+  // 印出五步完成,而實際上**一個位元都沒有發出去**:npm 上還是 9/20 發的 beta.140,
+  // GitHub 最新 release 也還是它。假綠的代價正是這輪一直在修的那件事。
+  //
+  // 要保證的性質:「protected main 上這份內容,已經以這個版號發布出去了」。
+  // 實際量到的值:「這個版號字串有一個對應的 GitHub Release」。
+  // 兩者何時分開:**版號沒 bump 的時候** —— 那個 release 是別份內容的。
+  // 改成直接量那個性質:已發布的 tag 必須**指向 protected main 的 head**。
+  //
+  // 這裡不能退回 'ready',否則 runner 會去重發一個 immutable 版號、撞供應鏈閘;
+  // 也不能沿用 'awaiting-consent' 那種 exit 0 的等待狀態 —— 那是「等人」,
+  // 這是「工程上做錯了,要先 bump」,必須 fail closed(runner 丟錯 → exit 1)。
+  const releaseIsOfProtectedMain = Boolean(
+    observation.tagCommitSha
+      && observation.protectedMainSha
+      && observation.tagCommitSha === observation.protectedMainSha,
+  )
+  const staleVersion = publishedRelease && !releaseIsOfProtectedMain
   const publish = mutablePublishedRelease
     ? 'failed'
+    : staleVersion
+    ? 'stale-version'
     : publishedRelease
     ? 'complete'
     : observation.publishRun && PENDING_STATUSES.has(`${observation.publishRun.status}`.toLowerCase())
       ? 'running'
       : merge === 'complete' ? 'ready' : 'pending'
-  const readback = publishedRelease && observation.npmPackages.every(item => item.exactVersion) ? 'complete' : publish === 'complete' ? 'pending' : 'blocked'
+  // readback 以 `publish === 'complete'` 為前提,不可回頭讀 `publishedRelease`:
+  // stale-version 時 publishedRelease 仍為真、npm 上那個舊版號也確實讀得回來,
+  // 於是 readback 會跟著報 complete —— 假綠在步驟之間傳染,正是 beta.140 那次
+  // 三步同時變綠的機制。下游一律只看上游的**結論**,不重算上游的原始觀察量。
+  const readback = publish === 'complete' && observation.npmPackages.every(item => item.exactVersion)
+    ? 'complete'
+    : publish === 'complete' ? 'pending' : 'blocked'
   const consumer = readback === 'complete'
     ? observation.consumers.every(item => item.exactVersion && item.checkReadback?.trusted === true) ? 'complete' : 'pending'
     : 'blocked'
@@ -1194,13 +1225,20 @@ export function listReleaseTags() {
  * 而它要講的正是 beta.136–140 五版零 UI 變動那件事。
  * 另一半錯誤是**比錯對象**:`release view <當前 tag>` 拿到的是這一版自己,不是上一版。
  *
- * 現在改讀本地 tag:當前 tag 若已存在就取它的下一個,還沒建 tag(發版前)就取最新的那個。
+ * 現在改讀本地 tag。
+ *
+ * **2026-09-21 第二次修(同一天,同一條 M37)**:「上一個 tag」被當成「線上目前是哪一份」。
+ * 這兩件事在 `currentTag` **已經發布過**的時候分開:版號沒 bump 時 currentTag 就是
+ * 線上最新那一版,取它的下一個(beta.139)會把 **beta.140 自己的改動**也算進差異裡,
+ * 於是印出與事實相反的結論 —— 實測那次明明零 UI 變動,卻印「這一版會改變畫面」。
+ *
+ * 要比的基準永遠是**線上目前已發布的最新那一份**:
+ *   - currentTag 不在 tag 清單 → 還沒發布(版號已 bump 的正常情況)→ 基準 = 最新的 tag。
+ *   - currentTag 已在 tag 清單 → 它自己就是線上最新那一份 → 基準 = 它自己。
  */
-export function previousReleaseRef(currentTag, tags = listReleaseTags()) {
+export function publishedBaselineRef(currentTag, tags = listReleaseTags()) {
   if (!tags.length) return null
-  const index = tags.indexOf(currentTag)
-  if (index < 0) return tags[0]
-  return tags[index + 1] ?? null
+  return tags.includes(currentTag) ? currentTag : tags[0]
 }
 
 function printReport(workflow, observation, json) {
@@ -1212,7 +1250,7 @@ function printReport(workflow, observation, json) {
     legacyMechanisms: workflow.legacyMechanisms,
   }
   // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
-  const previousRef = previousReleaseRef(observation.tag)
+  const previousRef = publishedBaselineRef(observation.tag)
   report.previousReleaseRef = previousRef
   report.productChange = productChangeSincePreviousRelease(previousRef, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
@@ -1355,6 +1393,15 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     if (incomplete.id === 'publish') {
       invariant(incomplete.status !== 'failed', `published GitHub Release ${observation.tag} is not immutable`)
+      // 版號沒 bump:這個版號早就發布過,而 protected main 上有它不包含的內容。
+      // 不是「等人」也不是「等 CI」,是工程上少做了一步,所以丟錯 fail closed(exit 1),
+      // 不進 publish、不重發 immutable 版號。
+      invariant(incomplete.status !== 'stale-version',
+        `${observation.tag} 早就發布過(tag 指向 ${String(observation.tagCommitSha).slice(0, 12)}),` +
+        `而 protected main 已經走到 ${String(observation.protectedMainSha).slice(0, 12)} —— ` +
+        `版號沒 bump,沒有東西可發。先在內容 PR 裡 bump 版號` +
+        `(改 packages/design-system/package.json 後跑 node scripts/sync-version-to-all-manifests.mjs),` +
+        `合併進 main,再跑 npm run release:auto。`)
       // **合併之後、發布之前,要看 protected main 那一輪 CI**(2026-09-21 對抗稽核 blocker)。
       // 先前整條五步從來不看它:PR 綠 → 合併 → 直接發布,而 main 上那一輪可能紅。
       // beta.140 就是這樣發出去的(main CI 當時是 failure),等於「protected main + required CI」

@@ -24,7 +24,7 @@ import {
   consumerStepAction,
   productContentDigest,
   productChangeSincePreviousRelease,
-  previousReleaseRef,
+  publishedBaselineRef,
   listReleaseTags,
   PRODUCT_VISIBLE,
   consentReleaseLedger,
@@ -127,16 +127,40 @@ test('legacy ceremonies cannot enter the standard release blocking graph', () =>
 })
 
 test('live readbacks alone support safe resume without local candidate receipts', () => {
-  const complete = buildFiveStepStatus(workflow, {
+  // 「發布完成」的真實形狀:tag 指向 protected main 的 head。原本這個 fixture 兩個欄位
+  // 都沒給,於是它也能代表「版號沒 bump、tag 是別份內容的」那個假綠狀態 —— fixture
+  // 不真實,判定表就測不到要測的事。
+  const published = {
     onProtectedMain: true,
     pullRequest: null,
     releaseCommitSha: 'a'.repeat(40),
+    tagCommitSha: 'a'.repeat(40),
+    protectedMainSha: 'a'.repeat(40),
     release: { tagName: 'v1.2.3', isDraft: false, isImmutable: true, publishedAt: '2026-08-01T00:00:00Z' },
     publishRun: null,
     npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
     consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true, checkReadback: { trusted: true } })),
-  })
+  }
+  const complete = buildFiveStepStatus(workflow, published)
   assert.deepEqual(complete.map(step => step.status), ['complete', 'complete', 'complete', 'complete', 'complete'])
+
+  // 對照組(2026-09-21 beta.140 錨,M37 第十種形狀):同一份 observation,只把 protected main
+  // 往前挪一個 commit —— 也就是「這個版號早就發布過,而 main 上有它不包含的內容」。
+  // 修之前這裡五步全綠、release:auto exit 0,實際一個位元都沒發出去。
+  const staleVersion = buildFiveStepStatus(workflow, { ...published, protectedMainSha: 'b'.repeat(40) })
+  assert.deepEqual(
+    staleVersion.map(step => step.status),
+    ['complete', 'complete', 'stale-version', 'blocked', 'blocked'],
+    '版號沒 bump 時 publish 必須紅,且不得讓 readback 因為「舊版號在 npm 上讀得到」跟著變綠',
+  )
+  // 另一面:tag 還沒建(版號剛 bump、還沒發)→ 不是 stale,是還沒做,要 ready 讓 runner 去發。
+  const notYetPublished = buildFiveStepStatus(workflow, {
+    ...published,
+    tagCommitSha: null,
+    release: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: false })),
+  })
+  assert.equal(notYetPublished[2].status, 'ready', '版號已 bump 但還沒發 → ready,不可誤判成 stale-version')
 
   const beforeMergeObservation = {
     onProtectedMain: false,
@@ -549,7 +573,7 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   // productChange 恆為 null、那句話從寫下來到今天一次都沒印出來過。純函式的參數邊界又一次是盲點。
   assert.doesNotMatch(reportBlock, /targetCommitish/,
     '不得再從 gh release view 的 targetCommitish 取上一版 —— 那個欄位根本沒被要求回傳')
-  assert.match(reportBlock, /previousReleaseRef\(observation\.tag\)/, '必須實際解析出上一版的 ref')
+  assert.match(reportBlock, /publishedBaselineRef\(observation\.tag\)/, '必須實際解析出要比較的基準 ref')
   assert.match(reportBlock, /無法判斷這一版會不會改變畫面/,
     '「量不到」必須印成跟「量到沒變」不一樣的話,否則沉默無法區分')
 
@@ -559,24 +583,45 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
     '若哪天真的要用 targetCommitish,必須先把它加進 --json 欄位 —— 這條就是在鎖那個接縫')
 })
 
-test('上一版 ref 的解析:tag 已建 / 尚未建 / 沒有任何 tag,三種都要對', () => {
+test('要比的基準是「線上目前那一份」,不是「上一個 tag」——版號沒 bump 時這兩件事會分開', () => {
   const tags = ['v0.1.0-beta.140', 'v0.1.0-beta.139', 'v0.1.0-beta.138']
-  // 發版後:當前 tag 已存在 → 上一版是它的下一個
-  assert.equal(previousReleaseRef('v0.1.0-beta.140', tags), 'v0.1.0-beta.139')
-  assert.equal(previousReleaseRef('v0.1.0-beta.139', tags), 'v0.1.0-beta.138')
-  // 發版前:當前 tag 還沒建 → 上一版就是最新的那個(這是 release:status 平常走的路)
-  assert.equal(previousReleaseRef('v0.1.0-beta.141', tags), 'v0.1.0-beta.140')
-  // 最舊的一版沒有上一版;完全沒有 tag 時不得亂猜
-  assert.equal(previousReleaseRef('v0.1.0-beta.138', tags), null)
-  assert.equal(previousReleaseRef('v0.1.0-beta.1', []), null)
+  // 版號已 bump、tag 還沒建(release:status 平常走的路)→ 基準 = 線上最新那個
+  assert.equal(publishedBaselineRef('v0.1.0-beta.141', tags), 'v0.1.0-beta.140')
+  // 版號沒 bump:currentTag 自己就是線上最新那一份,基準必須是它自己。
+  // 2026-09-21 錨:原本回 tags[index + 1] = beta.139,於是把 beta.140 自己的改動
+  // 也算進差異裡,對一份零 UI 變動的工作印出「這一版會改變畫面」——與事實相反。
+  assert.equal(publishedBaselineRef('v0.1.0-beta.140', tags), 'v0.1.0-beta.140')
+  assert.equal(publishedBaselineRef('v0.1.0-beta.139', tags), 'v0.1.0-beta.139')
+  // 完全沒有 tag 時不得亂猜
+  assert.equal(publishedBaselineRef('v0.1.0-beta.1', []), null)
 
-  // 真實資料的兩面對照:這個 repo 的真 tag 必須排得出來,且解析結果落在真 tag 集合內
+  // 真實資料的兩面對照:一筆該 none、一筆該 changed,兩邊都要找得到才算數
   const real = listReleaseTags()
   assert.ok(real.length >= 2, `本地至少要有兩個版本 tag 才驗得了(實際 ${real.length})`)
-  assert.equal(previousReleaseRef(real[0], real), real[1])
-  // 真實的「該 none 的一筆」:beta.139 → beta.140 五版零 UI 變動那件事
+  assert.equal(publishedBaselineRef(real[0], real), real[0], '最新 tag 已存在 → 基準是它自己')
   assert.equal(productChangeSincePreviousRelease(real[1], real[0]), 'none',
     `${real[1]} → ${real[0]} 應為零畫面變動(2026-09-20 實測)`)
+})
+
+test('版號沒 bump 不得報五步完成 —— 而且那兩個 sha 真的是 collectLiveObservation 算出來的', () => {
+  // 2026-09-21 實測(M37 第十種形狀):merge 把 4 個 commit 併進 protected main,版號沒 bump,
+  // 於是 observation.tag 指向這次工作之前就發布好的 v0.1.0-beta.140 —— publish/readback/consumer
+  // 三步全報 complete、release:auto exit 0,npm 上卻還是 9/20 那一版。判定表在上面那支測試,
+  // 這裡鎖的是**參數邊界**:判定所需的兩個值,在正式流程裡確實有人算、也確實被消費。
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const observeBlock = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('export function publishedBaselineRef('))
+  assert.match(observeBlock, /tagCommitSha,/, 'observation 必須帶 tagCommitSha,否則判定式永遠拿到 undefined = 恆判 stale')
+  assert.match(observeBlock, /protectedMainSha: main\?\.sha \|\| null/, 'observation 必須帶 protected main 的 head')
+
+  const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
+  assert.match(statusBlock, /observation\.tagCommitSha === observation\.protectedMainSha/,
+    'publish 必須直接比「tag 指向的 commit」與「protected main 的 head」,不得只看版號字串有沒有對應的 release')
+  assert.doesNotMatch(statusBlock, /const readback = publishedRelease/,
+    'readback 不得回頭讀 publishedRelease —— 那會讓假綠在步驟之間傳染')
+
+  const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
+  assert.match(publishBlock, /incomplete\.status !== 'stale-version'/,
+    'runner 必須在 stale-version 丟錯 fail closed,不能只是狀態表上紅一格然後照樣往下跑')
 })
 
 test('發布授權與記帳是**行為**,不是字串比對 —— 一行 false 就關掉而測試全綠是不行的', () => {
