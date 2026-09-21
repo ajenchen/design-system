@@ -863,20 +863,29 @@ function releaseCountsAsPublished(repository, tag) {
 }
 
 /**
- * 要發布的這一版,其 provider lifecycle 宣告的前一版是不是**線上最新已發布**的那一版。
+ * 要發布的這一版,其 provider lifecycle 宣告的前一版,**是不是某個 consumer 手上真的那一版**。
  *
- * 2026-09-21 事故:beta.141 bump 了卻沒發成(tag 打在錯 commit 上而報廢),beta.142 的鏈
- * 因此宣告「前一版是 beta.141」。consumer(WM)裝的是 beta.140,升級交易比對
- * `incoming.immutableHeadSnapshot` 與 `installed.currentSnapshot`,不相等 → GOV-UPGRADE-007
- * → **beta.142 發出去了,卻沒有任何 consumer 裝得上**。而這件事要等到發布完、
- * 第 5 步 consumer 同步失敗才看得見 —— 那時版本已經是 immutable 的。
+ * 2026-09-21 事故:beta.141 bump 了卻沒發成,beta.142 的鏈因此宣告「前一版是 beta.141」。
+ * WM 裝的是 beta.140,升級交易比對 `incoming.immutableHeadSnapshot` 與
+ * `installed.currentSnapshot`,不相等 → GOV-UPGRADE-007 → **beta.142 發出去了,
+ * 卻沒有任何 consumer 裝得上**,而且要等到發布完、第 5 步失敗才看得見。
  *
- * 要保證的性質:「這一版的鏈接得上 consumer 手上那一版」。發布前就量得到,所以就在發布前量。
- * 回 `{ ok }`,以及看到的兩個值;讀不到宣告或讀不到線上最新版 → `ok: null`(讀不到 ≠ 相符)。
+ * **這支的第一版自己也踩了同一條**(同日,當天就被自己擋下來):它拿「線上最新已發布版」
+ * 當成「consumer 手上那一版」。兩者在「發布了卻沒人裝得上」時分開 —— 正是這次事故本身,
+ * 於是修好的 beta.143(宣告前一版 = beta.140 = WM 真的裝著的那一版)反而被擋住。
+ * 現在直接量那個性質:宣告的前一版必須**存在於 consumer 實際安裝的版本集合**裡。
+ *
+ * 三值:`true` 至少有一個 consumer 接得上;`false` 一個都接不上;`null` 讀不到
+ *(讀不到 ≠ 相符)。
  */
-export function lifecycleChainMatchesLastPublished({ declaredPreviousVersion, lastPublishedVersion }) {
-  if (!declaredPreviousVersion || !lastPublishedVersion) return { ok: null, declaredPreviousVersion, lastPublishedVersion }
-  return { ok: declaredPreviousVersion === lastPublishedVersion, declaredPreviousVersion, lastPublishedVersion }
+export function lifecycleChainReachesAConsumer({ declaredPreviousVersion, installedVersions }) {
+  const known = (Array.isArray(installedVersions) ? installedVersions : [])
+    .filter((item) => item && typeof item.version === 'string' && item.version)
+  if (!declaredPreviousVersion || !known.length) {
+    return { ok: null, declaredPreviousVersion: declaredPreviousVersion || null, installed: known }
+  }
+  const reachable = known.filter((item) => item.version === declaredPreviousVersion)
+  return { ok: reachable.length > 0, declaredPreviousVersion, installed: known, reachable }
 }
 
 /** fork corpus manifest 宣告的前一版(consumer 升級交易實際比對的那個欄位的版號)。 */
@@ -1187,6 +1196,13 @@ function readConsumerLock(target) {
   } catch {
     return null
   }
+}
+
+/** consumer 目前實際安裝的 DS 版本(讀它 main 上的 lock,不是猜、也不是拿線上最新版代替)。 */
+function installedConsumerVersion(target) {
+  const lock = readConsumerLock(target)
+  const entry = lock?.packages?.['node_modules/@qijenchen/design-system']
+  return typeof entry?.version === 'string' ? entry.version : null
 }
 
 function consumerPackageReadback(target, version) {
@@ -1690,21 +1706,25 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       // 發布前最後一道:這一版的 provider lifecycle 鏈,必須接得上**線上最新已發布**的那一版。
       // 接不上就等於發一個沒有 consumer 裝得上的版本(2026-09-21 beta.142 的實況),
       // 而版本一旦發出去就是 immutable —— 只能再發一版來救,代價是一個永久燒掉的版號。
-      const chain = lifecycleChainMatchesLastPublished({
+      const chain = lifecycleChainReachesAConsumer({
         declaredPreviousVersion: declaredPreviousReleaseVersion(),
-        lastPublishedVersion: (publishedBaselineRef(observation.tag, listReleaseTags(),
-          tag => releasePublishedState(observation.repository, tag) === true) || '').replace(/^v/, '') || null,
+        installedVersions: observation.consumers.map(target => ({
+          repository: target.repository,
+          version: installedConsumerVersion(target),
+        })),
       })
+      const installedText = (chain.installed || []).map(item => `${item.repository}=${item.version}`).join(' / ') || '(讀不到)'
       invariant(chain.ok !== false,
         `要發的 ${observation.version} 宣告它的前一版是 ${chain.declaredPreviousVersion},` +
-        `但線上最新已發布的是 ${chain.lastPublishedVersion} —— 鏈接不上,consumer 會裝不上去` +
-        `(升級交易比對 immutableHeadSnapshot 與它手上那一版的 currentSnapshot)。` +
-        `修法:重跑版號同步並把事實傳進去 —— ` +
-        `node scripts/sync-version-to-all-manifests.mjs --last-published ${chain.lastPublishedVersion},` +
+        `但沒有任何 consumer 裝著那一版(實際安裝:${installedText})—— 鏈接不上,` +
+        `升級交易會比對 immutableHeadSnapshot 與它手上那一版的 currentSnapshot 而失敗。` +
+        `修法:重跑版號同步並把「consumer 真正裝著的那一版」傳進去 —— ` +
+        `node scripts/sync-version-to-all-manifests.mjs --last-published <那個版本>,` +
         `它會丟掉沒發成的尾端快照;然後把改動併進 main 再發。`)
       invariant(chain.ok !== null,
-        `讀不到「這一版宣告的前一版」或「線上最新已發布版」(宣告=${chain.declaredPreviousVersion}、` +
-        `線上=${chain.lastPublishedVersion})—— 沒有相符的證據不等於相符,不發布。`)
+        `讀不到「這一版宣告的前一版」或「consumer 實際安裝的版本」` +
+        `(宣告=${chain.declaredPreviousVersion}、安裝=${installedText})—— ` +
+        `沒有相符的證據不等於相符,不發布。`)
       ensureImmutableReleases(observation.repository)
       const previousRunId = observation.publishRun?.databaseId || null
       const releaseCommitSha = observation.tagCommitSha || observation.protectedMainSha

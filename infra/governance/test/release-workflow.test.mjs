@@ -17,7 +17,7 @@ import {
   buildPublishMutationPlan,
   filterOutPublishWorkflowRuns,
   rollupRowIsRed,
-  lifecycleChainMatchesLastPublished,
+  lifecycleChainReachesAConsumer,
   rollupRowIsAborted,
   classifyReleaseLookup,
   buildPullRequestLookupArgs,
@@ -805,36 +805,47 @@ test('incident release 也要合併得進去 —— 授權存在卻接不上執�
   assert.match(statusBlock, /\|\| Boolean\(incidentAuthorization\)/, 'consentOk 必須真的消費它')
 })
 
-test('發布前必須確認「這一版的鏈接得上線上最新已發布那一版」—— 否則發出去也沒人裝得上', () => {
-  // 2026-09-21 真實事故:beta.141 bump 了卻沒發成(tag 打在錯 commit 上報廢),
-  // beta.142 的鏈因此宣告「前一版是 beta.141」。WM 裝的是 beta.140,升級交易比對
-  // incoming.immutableHeadSnapshot 與 installed.currentSnapshot → 不等 → GOV-UPGRADE-007。
-  // 結果:beta.142 發出去了(immutable,收不回),卻沒有任何 consumer 裝得上,
-  // 而這件事要等到發布完、第 5 步 consumer 同步失敗才看得見。發布前就量得到,所以就在發布前量。
-  assert.deepEqual(
-    lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: '0.1.0-beta.140' }),
-    { ok: true, declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: '0.1.0-beta.140' },
-  )
-  // 事故當時的那一格:宣告 141、線上最新是 140 → 必須紅
-  assert.equal(
-    lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.141', lastPublishedVersion: '0.1.0-beta.140' }).ok,
-    false,
-    '宣告的前一版不是線上最新已發布版 → 必須擋下',
-  )
+test('發布前必須確認「宣告的前一版是某個 consumer 手上真的那一版」', () => {
+  // 2026-09-21 真實事故:beta.141 bump 了卻沒發成,beta.142 的鏈宣告「前一版是 beta.141」。
+  // WM 裝的是 beta.140 → GOV-UPGRADE-007 → beta.142 發出去了卻沒有 consumer 裝得上,
+  // 而且要等到發布完、第 5 步失敗才看得見。發布前就量得到,所以就在發布前量。
+  const wm = (v) => ({ repository: 'ajenchen/work-management', version: v })
+  const tpl = (v) => ({ repository: 'ajenchen/ds-product-template', version: v })
+
+  // 事故當時那一格:宣告 141,兩個 consumer 都在 140 → 必須紅
+  assert.equal(lifecycleChainReachesAConsumer({
+    declaredPreviousVersion: '0.1.0-beta.141', installedVersions: [wm('0.1.0-beta.140'), tpl('0.1.0-beta.140')],
+  }).ok, false, '沒有任何 consumer 裝著宣告的那一版 → 擋')
+
+  // 復原那一格:宣告 140,WM 在 140、template 在 142 → 必須綠
+  //(**這一格是第一版的閘會誤擋的**:它拿「線上最新已發布 = 142」當基準,
+  //  而 142 正是那個沒人裝得上的版本 —— 同一條 M37 又一次。)
+  assert.equal(lifecycleChainReachesAConsumer({
+    declaredPreviousVersion: '0.1.0-beta.140', installedVersions: [wm('0.1.0-beta.140'), tpl('0.1.0-beta.142')],
+  }).ok, true, '有 consumer 裝著宣告的那一版 → 放行')
+
+  // 正常情況:大家都在同一版
+  assert.equal(lifecycleChainReachesAConsumer({
+    declaredPreviousVersion: '0.1.0-beta.142', installedVersions: [wm('0.1.0-beta.142'), tpl('0.1.0-beta.142')],
+  }).ok, true)
+
   // 讀不到不得當成相符(M37 第八種形狀)
-  assert.equal(lifecycleChainMatchesLastPublished({ declaredPreviousVersion: null, lastPublishedVersion: '0.1.0-beta.140' }).ok, null)
-  assert.equal(lifecycleChainMatchesLastPublished({ declaredPreviousVersion: '0.1.0-beta.140', lastPublishedVersion: null }).ok, null)
+  assert.equal(lifecycleChainReachesAConsumer({ declaredPreviousVersion: null, installedVersions: [wm('0.1.0-beta.140')] }).ok, null)
+  assert.equal(lifecycleChainReachesAConsumer({ declaredPreviousVersion: '0.1.0-beta.140', installedVersions: [] }).ok, null)
+  assert.equal(lifecycleChainReachesAConsumer({ declaredPreviousVersion: '0.1.0-beta.140', installedVersions: [wm(null)] }).ok, null)
 
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   const publishBlock = src.slice(src.indexOf("if (incomplete.id === 'publish')"), src.indexOf("if (incomplete.id === 'readback')"))
-  assert.match(publishBlock, /lifecycleChainMatchesLastPublished\(/, '發布步驟必須真的呼叫它,否則這張表是紙上的')
+  assert.match(publishBlock, /lifecycleChainReachesAConsumer\(/, '發布步驟必須真的呼叫它')
+  assert.match(publishBlock, /installedConsumerVersion\(target\)/, '而且量的必須是 consumer 實際安裝的版本')
   assert.match(publishBlock, /chain\.ok !== false/, '接不上必須擋')
-  assert.match(publishBlock, /chain\.ok !== null/, '讀不到也必須擋(沒有相符的證據不等於相符)')
-  assert.match(publishBlock, /--last-published/, '訊息必須給出可執行的修法')
-  // 宣告值必須從 consumer 升級交易真正比對的那個欄位來,不得換成別的來源
-  const declared = src.slice(src.indexOf('function declaredPreviousReleaseVersion('), src.indexOf('function releaseRepository('))
-  assert.match(declared, /ds-canonical\/fork\/manifest\.json/, '必須讀 fork corpus manifest')
-  assert.match(declared, /providerLifecycle\?\.immutableHead\?\.releaseVersion/, '必須讀 immutableHead.releaseVersion')
+  assert.match(publishBlock, /chain\.ok !== null/, '讀不到也必須擋')
+  assert.doesNotMatch(publishBlock, /lastPublishedVersion/,
+    '不得退回拿「線上最新已發布版」當 consumer 手上那一版 —— 發布了卻沒人裝得上時兩者會分開')
+  // 安裝版本必須從 consumer 的 lock 讀,不是猜
+  const installed = src.slice(src.indexOf('function installedConsumerVersion('), src.indexOf('function consumerPackageReadback('))
+  assert.match(installed, /readConsumerLock\(target\)/, '必須讀 consumer 的 lock')
+  assert.match(installed, /node_modules\/@qijenchen\/design-system/, '讀的必須是實際安裝的那個條目')
 })
 
 test('「被取消 / 逾時」不是「失敗」—— 兩者都擋發布,但講錯原因會把人送去修不存在的問題', () => {
