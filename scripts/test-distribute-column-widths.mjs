@@ -12,17 +12,18 @@
 // 載入方式:被測目標是**零依賴的純模組**(`column-widths.ts`),所以只需要 esbuild 的單檔 transform
 // —— 不 bundle、不 stub、不需要 react。這樣測到的就是 source 本身,不會因為忘了 build:lib 而測到舊的。
 import { transform } from 'esbuild'
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { tmpdir } from 'node:os'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SRC = join(__dirname, '..', 'packages/design-system/src/components/DataTable/column-widths.ts')
 const { code } = await transform(readFileSync(SRC, 'utf8'), { loader: 'ts', format: 'esm' })
-const outfile = join(mkdtempSync(join(tmpdir(), 'dtw-')), 'column-widths.mjs')
-writeFileSync(outfile, code)
-const { distributeColumnWidths } = await import(outfile)
+// 固定檔名而非 mktemp 亂數路徑,理由同 test-agent-fab-drag-zones.mjs:
+// 治理 harness 只允許字面字串的 import(),亂數路徑會讓整個 runner 被擋下。
+mkdirSync(join(__dirname, '.gate-bundles'), { recursive: true })
+writeFileSync(join(__dirname, '.gate-bundles/column-widths.mjs'), code)
+const { distributeColumnWidths } = await import('./.gate-bundles/column-widths.mjs')
 if (typeof distributeColumnWidths !== 'function') {
   console.error('✗ 取不到 distributeColumnWidths(export 名稱改了?)')
   process.exit(1)

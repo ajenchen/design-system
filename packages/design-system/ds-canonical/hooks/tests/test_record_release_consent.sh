@@ -82,6 +82,10 @@ run "發版" >/dev/null; check "9f. 「發版」→ 落地" yes "$FILE"
 grep -q "release-consent-language.mjs" "$HOOK"; assert "10. hook 消費共用判準(不自己寫 regex)" $?
 grep -qE "grep -qE '\(發版\|" "$HOOK"; [ $? -ne 0 ]; assert "11. hook 內不得殘留自己的同意詞 regex" $?
 
+# 11b. hook 落地的收據必須自報出處 —— 不得跟 agent 手動落地混為一談(2026-09-21)。
+# 兩條路的判準相同,但可信度不同:前者是 user 當場打進對話的字,後者是 agent **宣稱** user 說過。
+grep -q -- "--source hook-user-prompt" "$HOOK"; assert "11b. hook 落地自報出處(--source hook-user-prompt)" $?
+
 # 12. **隔離對照**:整支測試跑完,真 repo 的同意收據必須完全沒被動過
 REAL_AFTER=$(real_fingerprint)
 [ "$REAL_BEFORE" = "$REAL_AFTER" ]; assert "12. 測試全程沒有動到真 repo 的同意收據" $?

@@ -568,7 +568,7 @@ export const OpenSnapshot = {
    若焦點跑到 Dialog 外(例如背景那顆按鈕),就證實焦點鎖被廢掉了。
    量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
 export const FocusTrapWithConcurrentOverlay: Story = {
-  name: '焦點鎖 × 並存浮層(POC)',
+  name: '焦點鎖 × 並存浮層',
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
@@ -605,7 +605,7 @@ export const FocusTrapWithConcurrentOverlay: Story = {
 /* 上面那個 POC 的**對照組**:同樣的浮層,但沒有 Dialog。
    沒有這一組的話,「Tab 沒跑出 Dialog」也可能只是因為那顆鈕本來就走不到 —— 那樣就什麼都沒證明。 */
 export const FocusTrapControlNoDialog: Story = {
-  name: '焦點鎖 POC 對照組(無 Dialog)',
+  name: '同一版面沒有對話框時的焦點順序',
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
@@ -659,9 +659,9 @@ export const CoexistencePoc: Story = {
                     <DialogDescription>並存契約夾具</DialogDescription>
                   </DialogHeader>
                   <DialogBody>
-                    <Field>
+                    <Field id="coexist-inside-input">
                       <FieldLabel>留言</FieldLabel>
-                      <Input id="coexist-inside-input" value={inside} onChange={(e) => setInside(e.target.value)} />
+                      <Input value={inside} onChange={(e) => setInside(e.target.value)} />
                     </Field>
                   </DialogBody>
                   <DialogFooter>
@@ -672,9 +672,9 @@ export const CoexistencePoc: Story = {
             )}
           </div>
           <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-2 border-l border-divider bg-surface p-4">
-            <Field>
+            <Field id="coexist-aside-input">
               <FieldLabel>新增評論</FieldLabel>
-              <Input id="coexist-aside-input" value={aside} onChange={(e) => setAside(e.target.value)} />
+              <Input value={aside} onChange={(e) => setAside(e.target.value)} />
             </Field>
             <div><Button id="coexist-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => setAside('')}>送出</Button></div>
           </aside>

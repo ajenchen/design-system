@@ -65,7 +65,9 @@ case "$KIND" in
       echo "⚠️ 目前在 main,發版同意只在工作分支上記錄;請先切到工作分支。"
       exit 0
     fi
-    OUT=$(cd "$REPO_ROOT" && node "$ORCH" consent --quote "$PROMPT" --branch "$BRANCH" 2>&1 || echo "")
+    # --source hook-user-prompt:這一句是 user 當場打進對話的,不是 agent 事後宣稱的。
+    # 兩條路的判準相同,但可信度不同,收據要記得下這個差別(2026-09-21)。
+    OUT=$(cd "$REPO_ROOT" && node "$ORCH" consent --quote "$PROMPT" --branch "$BRANCH" --source hook-user-prompt 2>&1 || echo "")
     if printf '%s' "$OUT" | grep -q RELEASE_CONSENT_RECORDED; then
       echo "✅ 已記錄發版同意(綁「你看過的預覽內容」,不綁 commit 也不綁分支)。版號 bump、CI 修正、換分支都不需要再講一次;只有預覽看得見的內容變了才需要重新確認。"
     else

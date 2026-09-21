@@ -144,7 +144,7 @@ export const Multi: Story = {
 
    讀法:容器 720px 寬、六個人。hug 欄位應該長到放得下的長度,而不是縮成「1 顆 + +5」。 */
 export const HugWidthMultiStack: Story = {
-  name: 'hug 寬度 × 多人',
+  name: '寬度貼合內容 × 多人',
   render: () => (
     <div className="flex flex-col gap-4" style={{ width: 720 }}>
       <p className="text-caption text-fg-muted">

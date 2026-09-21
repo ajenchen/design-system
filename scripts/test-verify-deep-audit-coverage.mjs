@@ -51,6 +51,30 @@ import {
 } from './lib/deep-audit-deterministic-plan.mjs'
 import { loadHookEvidencePlan } from './lib/hook-evidence-plan.mjs'
 
+// ═══════════════════════════════════════════════════════════════════════════
+// fixture 的能力憑證有效窗必須跟著「現在」走,不得寫死日期
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **2026-09-21 抓到的時間炸彈**:fixture 原本寫死一張 2026-07-20 簽發、**2026-08-20 到期**的
+// 能力憑證,而呼叫端用的是真實時間。2026-08-20 那天一過,憑證過期 → 選不出 peer →
+// `selectedCapability` 變 false →「peer runtime surface must be explicit」那道閘
+// **結構上不可能觸發** → 測試紅。
+//
+// 它紅在 8/20;而治理 harness runner 從 8/11 起就被另一件事擋住、夜間 lane 連續 41 晚全紅,
+// 所以**沒有人看見**。測試的顏色取決於日曆而不是被驗的性質 —— 正是本 session 反覆踩到的那條。
+//
+// 為什麼是「窗跟著現在走」而不是「把時鐘釘成某個日期」:驗證那一端
+//(`verifyDeepAuditCoverage` → `validateDeepAuditRunProviderBindings`)本來就用真實時間重解一次綁定,
+// 釘住呼叫端的時鐘只會讓兩端對不上。讓有效窗永遠包住現在,這支測試就與日期完全無關。
+const FIXTURE_CLOCK = new Date()
+const FIXTURE_CERTIFIED_AT = new Date(FIXTURE_CLOCK.getTime() - 24 * 60 * 60 * 1000).toISOString()
+const FIXTURE_CERTIFICATION_EXPIRES_AT = new Date(FIXTURE_CLOCK.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+assert.ok(
+  Date.parse(FIXTURE_CERTIFIED_AT) <= FIXTURE_CLOCK.getTime()
+    && FIXTURE_CLOCK.getTime() < Date.parse(FIXTURE_CERTIFICATION_EXPIRES_AT),
+  'fixture 憑證有效窗必須包住現在,否則整支測試的顏色又會變成看日曆',
+)
+
 const fixture = mkdtempSync(join(tmpdir(), 'deep-audit-contract-'))
 const ambientToolFixture = mkdtempSync(join(realpathSync(tmpdir()), 'deep-audit-ambient-tool-'))
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -269,8 +293,8 @@ try {
       assuranceTier: 'maximum',
       reasoningTier: 'maximum',
       computeTier: 'maximum',
-      certifiedAt: '2026-07-20T00:00:00.000Z',
-      expiresAt: '2026-08-20T00:00:00.000Z',
+      certifiedAt: FIXTURE_CERTIFIED_AT,
+      expiresAt: FIXTURE_CERTIFICATION_EXPIRES_AT,
       evidence: {
         reference: 'fixture/codex-sol-capability.json',
         sha256: sha256('fixture codex sol capability evidence'),

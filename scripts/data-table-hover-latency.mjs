@@ -32,7 +32,7 @@ import { PNG } from 'pngjs'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { classifySamples, hoverVerdict, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const arg = (n, d) => process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const has = (n) => process.argv.includes(`--${n}`)
@@ -146,6 +146,7 @@ async function measure(build, { afterScroll, sabotage }) {
   const idleGaps = []
   // 逐樣本:這一次取樣在 hover 之後有沒有拿到任何一張幀(false = 看得到,true = 全盲)
   const blindness = []
+  const unresolved = []
   let resolutionBound = 0
   for (let k = 0; k < ROWS; k++) {
     const target0 = await scope.evaluate(({ k }) => {
@@ -223,10 +224,14 @@ async function measure(build, { afterScroll, sabotage }) {
     const gaps = after.slice(1).map((f, i) => Math.round(f.ts - after[i].ts))
     // **解析度受限**:命中的就是 `sentAt` 之後的第一張幀 → 變色在那張幀之前就完成了,
     // 真值只知道「≤ 這個數字」,量到的其實是**截圖串流的送幀間隔**。
-    if (hit && after.length && hit === after[0]) resolutionBound += 1
+    const firstFrameIsHit = Boolean(hit) && after.length > 0 && hit === after[0]
+    if (firstFrameIsHit) resolutionBound += 1
     if (DEBUG_SAMPLES) console.log(`   k=${String(k).padStart(2)} ${String(Math.round(took)).padStart(5)}ms  首幀延遲=${String(firstGap).padStart(4)}ms 幀距=[${gaps.slice(0, 6).join(',')}] 幀數=${after.length}  面板=${dbg?.panel} 列=${dbg?.rowIndex}`)
     samples.push(took)
-    blindness.push(!hit && after.length === 0)
+    // 判定用的兩個旗標都由政策檔的純函式算 —— 先前 `!hit && after.length === 0` 直接寫在這裡,
+    // 判定表只吃它的結果,所以「這個值怎麼算出來的」從來沒被測過(2026-09-21 對抗稽核)。
+    blindness.push(isStreamBlind({ hit, framesAfter: after.length }))
+    unresolved.push(isResolutionBound({ hit, firstFrameIsHit, firstGap, assertMax: ASSERT_MAX }))
     // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
     // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。
     // 一個取樣用完就整個清掉:跨取樣沒有任何重用價值(每次都是新的一批幀)。
@@ -238,6 +243,7 @@ async function measure(build, { afterScroll, sabotage }) {
   samples.resolutionBound = resolutionBound
   samples.idleGaps = idleGaps
   samples.blindness = blindness
+  samples.unresolved = unresolved
   return samples
 }
 
@@ -260,7 +266,7 @@ const report = (label, mode, s) => {
   // 各自數一遍就是兩份實作(2026-09-20 我自己在修這個 bug 的時候順手造出來的)。
   //   `lost`  = 有幀可看、但整整 1.5 秒都沒變色 → 真訊號
   //   `blind` = hover 之後串流一張幀都沒送 → 儀器看不到,不得當成產品沒變色
-  const { ok, lost, blind } = classifySamples({ samples: Array.from(s), blindness: Array.from(s.blindness || []) })
+  const { ok, lost, blind } = classifySamples({ samples: Array.from(s), blindness: Array.from(s.blindness || []), unresolved: Array.from(s.unresolved || []) })
   const line = ok.length
     ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${blind ? ` (${blind} 次串流全盲:hover 後零幀,看不到不等於沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`
@@ -309,6 +315,7 @@ for (const b of BUILDS) {
       const v = hoverVerdict({
         samples: Array.from(r.samples),
         blindness: Array.from(r.samples.blindness || []),
+        unresolved: Array.from(r.samples.unresolved || []),
         assertMedian: ASSERT_MEDIAN,
         assertMax: ASSERT_MAX,
       })
@@ -316,7 +323,8 @@ for (const b of BUILDS) {
       const starved = v.verdict === 'starved'
       const bad = v.verdict !== 'pass'
       console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${usable ? med.toFixed(0) : 'n/a'} / 最大 ${usable ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}${r.blind ? ` / 串流全盲 ${r.blind}` : ''}）`)
-      if (starved) console.log(`   ↳ 可用樣本只有 ${usable} 個(需 ≥ ${MIN_USABLE_SAMPLES})—— 這是**儀器失效**,不是產品變慢;串流全盲 ${r.blind} 次。`)
+      if (v.bounded) console.log(`   ↳ ${v.bounded} 次的數字只是**串流空窗的上界**(命中的就是 hover 後第一張幀,而那張幀本身就晚於 ${ASSERT_MAX}ms)—— 變色在它之前就完成了,不拿來判列的快慢。`)
+      if (starved) console.log(`   ↳ 可用樣本只有 ${usable} 個(需 ≥ ${MIN_USABLE_SAMPLES})—— 這是**儀器失效**,不是產品變慢;串流全盲 ${r.blind} 次、解析度受限 ${v.bounded} 次。`)
       if (bad) fail++
     }
   }

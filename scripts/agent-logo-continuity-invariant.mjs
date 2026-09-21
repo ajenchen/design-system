@@ -38,7 +38,19 @@ const ROOT = join(__dirname, '..')
 /* ── C7 / C8:純原始碼靜態檢查(先跑,任何環境都不跳過)────────────────────────────── */
 const findings = []
 const record = (id, desc, pass, detail) => { findings.push({ id, desc, pass, detail }); console.log(`${pass ? '✅' : '❌'} ${id} ${desc}${detail ? ` — ${detail}` : ''}`) }
-const LOGO_TSX = readFileSync(join(ROOT, 'packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx'), 'utf8')
+const SELFTEST = process.argv.includes('--selftest')
+let LOGO_TSX = readFileSync(join(ROOT, 'packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx'), 'utf8')
+if (SELFTEST) {
+  // 對照組(只動記憶體裡的副本,不碰磁碟):把 C7/C8 各自要守的三件事同時弄壞 ——
+  //   1. 轉心偏掉 → 外緣每圈進出一圈偏心量(看起來像動畫沒對正)
+  //   2. 把 viewBox 中心 627 當旋轉中心的殘留寫法長回來
+  //   3. SPIN_OMEGA 被寫死成字面值 → 改一息轉速不會跟著動
+  // C1–C6 要開瀏覽器逐影格取樣,不在這個對照組的範圍內;這裡證明的是**在任何環境都會跑**的靜態半邊。
+  LOGO_TSX = LOGO_TSX
+    .replace(/const\s+LOGO_CX\s*=\s*([\d.]+)/u, (_, value) => `const LOGO_CX = ${(Number(value) + 5).toFixed(3)}`)
+    .replace(/const\s+LOGO_CY\s*=\s*([\d.]+)/u, (match) => `${match}\nconst SELFTEST_STRAY = 'rotate(0 627 627)'`)
+    + '\nconst SPIN_OMEGA = 720\n'
+}
 const num = (re, what) => {
   const m = LOGO_TSX.match(re)
   if (!m) { console.error(`❌ 讀不到 agent-panel-logo.tsx 的 ${what} —— 不以預設值蒙混。`); process.exit(1) }
@@ -79,6 +91,17 @@ const SPIN_OMEGA = 360 / (breathS / turns)
 record('C8', `轉速單一住所(一息 ${breathS}s ÷ ${turns} 圈 → ${SPIN_OMEGA}°/s = ${(breathS / turns).toFixed(3)}s/圈)`, !omegaHardcoded && Number.isInteger(turns) && turns > 0, omegaHardcoded ? 'SPIN_OMEGA 被寫死成字面值 —— 改一息轉速不會跟著動' : '由 BREATH_S / SPIN_TURNS_PER_BREATH 推出')
 
 const staticFailed = findings.filter((f) => !f.pass)
+
+if (SELFTEST) {
+  // 兩條都必須紅:只紅一條代表另一條的判定沒有真的在執行。
+  const ids = new Set(staticFailed.map((f) => f.id))
+  const caught = ids.has('C7') && ids.has('C8')
+  console.log(caught
+    ? '\n✓ selftest:轉心偏移 / 627 殘留 / 寫死轉速三者都被 C7+C8 抓到,量具會紅'
+    : `\n✗ selftest:C7/C8 沒有同時變紅 —— 靜態半邊是假綠(實際紅:${[...ids].join(',') || '無'})`)
+  process.exit(caught ? 0 : 1)
+}
+
 if (staticFailed.length) { console.log(`✗ agent-logo-continuity 靜態檢查 ${staticFailed.length} 條失敗`); process.exit(1) }
 
 const STATIC = join(ROOT, 'storybook-static')

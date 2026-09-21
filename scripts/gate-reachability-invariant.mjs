@@ -32,6 +32,7 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { discoverGateMetaTestPairs } from './lib/gate-meta-test-inventory.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
@@ -61,6 +62,10 @@ const executionSurfaces = [
   ...walk(join(ROOT, 'packages/design-system/ds-canonical/skills')),
   ...walk(join(ROOT, 'infra/governance/test')),
   ...walk(join(ROOT, 'infra/governance/lib')),
+  // harness 套件的成員清單:governance-harnesses.yml(夜間)→ run-harnesses.mjs → 這份 inventory,
+  // 逐一把成員跑起來。它是真的執行面,只是入口在 providers/ 而不是 workflows/ ——
+  // 漏掉它會讓 22 支真的每晚都在跑的測試被誤判成「沒人呼叫的孤兒」(2026-09-21)。
+  join(ROOT, 'infra/governance/providers/harness-source-inventory.json'),
 ].filter((p) => /\.(ya?ml|json|sh|mjs|md)$/.test(p))
 const corpus = executionSurfaces.map(read).join('\n')
 
@@ -74,6 +79,19 @@ if (SELFTEST) { scripts.push(SYNTHETIC); source[SYNTHETIC] = '// 合成孤兒:�
 
 // 執行面直接提到的算可達(量具自己被 CI 呼叫,所以它本身是可達的)
 const reachable = new Set(scripts.filter((f) => corpus.includes(f)))
+
+// gate-meta pair 是**動態探索**出來的:run-gate-meta-tests.mjs 掃 `scripts/test-<stem>.mjs`
+// 且 `scripts/<stem>.mjs` 存在者全跑,沒有任何地方會字面提到它們的檔名。
+// 只看「有沒有被字面提到」會把這些全判成孤兒 —— 那是拿「被提到」當「會被跑」的替身,
+// 跟這支閘自己要守的病同一種(2026-09-21:41 支新 meta-test 全被誤判成孤兒)。
+// 前提是探索器自己得先可達:它若沒人跑,它探索出來的東西也不會被跑。
+const GATE_META_RUNNER = 'run-gate-meta-tests.mjs'
+if (reachable.has(GATE_META_RUNNER)) {
+  // 用同一支探索實作,不另寫一份規則(M17:同公式不得有第二個住所)。
+  for (const { file } of discoverGateMetaTestPairs(ROOT)) reachable.add(file)
+} else {
+  console.log(`⚠️  ${GATE_META_RUNNER} 自己不可達 —— 它探索出來的 meta-test 一律照孤兒計`)
+}
 for (let changed = true; changed;) {
   changed = false
   for (const f of scripts) {

@@ -182,6 +182,28 @@ try {
     assert.doesNotMatch(orch, new RegExp(`\\b${m[1]}\\.status\\b`), `run() 沒有 status,但 ${m[1]}.status 被讀`)
   }
 
+  // ── 出處:hook 落地 vs agent 落地必須分得出來(2026-09-21)──────────────────────
+  // 兩條路以前都寫死 'manual',收據上看不出哪一條。前者是 user 當場打進對話的字,
+  // 後者是 agent **宣稱** user 說過 —— 可信度天差地遠,而磁碟上 14 筆有 10 筆是後者。
+  {
+    const fromHook = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'hook-user-prompt' })
+    assert.equal(fromHook.source, 'hook-user-prompt', 'hook 落地要記成 hook 落地')
+    const fromAgent = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'manual-agent' })
+    assert.equal(fromAgent.source, 'manual-agent', 'agent 落地要記成 agent 落地')
+    // 不指明、亂指明,一律降級成可信度較低的那一種 —— 不得冒充成 user 親手打的
+    for (const bogus of [undefined, null, '', 'manual', 'test', 'hook', '我自己掰的']) {
+      const r = writeReleaseConsent({ headSha: head, branch, quote: '發版', source: bogus })
+      assert.equal(r.source, 'manual-agent', `來源 ${JSON.stringify(bogus)} 不得被當成 hook 落地`)
+    }
+    // 執行面對照:hook 真的有把出處傳下去,否則上面全是空談
+    const hookSource = readFileSync(resolve(ROOT, 'packages/design-system/ds-canonical/hooks/record_release_consent.sh'), 'utf8')
+    assert.match(hookSource, /consent --quote "\$PROMPT" --branch "\$BRANCH" --source hook-user-prompt/,
+      'hook 必須自報出處,否則它落地的收據會被降級成 agent 落地')
+    const orchSource = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+    assert.match(orchSource, /source: options\.source/, 'CLI 必須把 --source 傳給 writeReleaseConsent')
+    assert.doesNotMatch(orchSource, /source: 'manual'/, "不得再寫死 'manual' —— 那正是兩條路分不出來的原因")
+  }
+
   const urls = previewUrls(workflow, base)
   assert.ok(urls[0].includes('deploy-preview-999--ajenchen-design-system.netlify.app'))
   assert.ok(urls[1].includes('claude-x--ajenchen-design-system.netlify.app'))

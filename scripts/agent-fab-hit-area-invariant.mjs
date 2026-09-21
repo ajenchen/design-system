@@ -79,12 +79,26 @@ const record = (id, label, pass, detail = '') =>
   pass ? passes.push(`✓ ${id} | ${label}`) : failures.push(`✗ ${id} | ${label} | ${detail}`)
 
 /** 掃描窗外擴量(px):可視外接矩形四周各多掃這麼多,H4 才量得到外接矩形之外的隱形帶(H1/H4/H2 共用同一次掃描)。 */
+const SELFTEST = process.argv.includes('--selftest')
 const SCAN_PAD = 24
 /** 形狀外仍可點的容差(px):瀏覽器對圓角的命中測試有抗鋸齒,次像素溢出不算違規。 */
 const EDGE_TOLERANCE = 1.5
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
 await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-設計規格--fab-placements&viewMode=story`, { waitUntil: 'networkidle' })
+if (SELFTEST) {
+  // 對照組:在每顆入口鈕外面長一圈看不見、但吃得到指標的殼 —— 這正是 2026-09-03 那版
+  // 「命中區比可視大」的形狀(tooltip 被推遠、底下的內容被搶走點擊)。
+  // H4 掃的是可視外接矩形再外擴 24px 的範圍,所以這一圈 10px 正落在它該抓到的地方。
+  await page.addStyleTag({ content: `
+    [data-placement] button { position: relative; }
+    [data-placement] button::after {
+      content: ''; position: absolute; inset: -10px; border-radius: 9999px;
+      background: transparent; pointer-events: auto;
+    }
+  ` })
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+}
 await page.waitForSelector('[data-placement]')
 // 形態過渡(width/height/right/top)跑完再量,否則量到動畫中途的尺寸。
 await page.waitForTimeout(600)
@@ -259,6 +273,17 @@ for (const btn of await page.locator('[data-placement] button').all()) {
 
 await browser.close()
 server.close()
+
+if (SELFTEST) {
+  // 紅在對的地方才算數:必須是 H4「可視形狀外不得點得到」被打到。
+  const caught = failures.some((line) => line.includes('H4'))
+  console.log(passes.join('\n'))
+  if (failures.length) console.error('\n' + failures.join('\n'))
+  console.log(caught
+    ? '\n✓ selftest:外擴 10px 的隱形命中殼被 H4 抓到,量具會紅'
+    : `\n✗ selftest:隱形命中殼沒被 H4 抓到 —— 這支閘是假綠(失敗 ${failures.length} 條)`)
+  process.exit(caught ? 0 : 1)
+}
 
 console.log(passes.join('\n'))
 if (failures.length) {

@@ -161,3 +161,6 @@ story-screenshots/
 /.*.tmp.html
 /*-probe.mjs
 /.ringprobe.tmp.mjs
+
+# 閘用暫存打包輸出(見 scripts/.gate-bundles/README.md)
+scripts/.gate-bundles/*.mjs

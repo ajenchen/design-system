@@ -118,10 +118,16 @@ test('instruction materializers own imports while shared views remain common-aut
 test('Claude and Codex mechanically project the complete compatible hook corpus', () => {
   const claude = buildProviderHookView({ providerId: 'claude' })
   const codex = buildProviderHookView({ providerId: 'codex' })
+  // 這裡原本把 canonical hook 的**總數**寫死成 61。2026-09-21 實際是 62 —— 有人加了一支 hook,
+  // 而總數不是這支測試要保證的性質(「投影是否完整、排除是否恰好那三支」才是)。
+  // 更糟的是這支測試從 2026-08-11 起就沒被跑過(治理 harness runner 被另一件事擋住),
+  // 所以它紅了一個多月沒有人看見。改成由 canonical 登記數推導(M37:別拿當下剛好成立的數字當性質)。
+  const canonicalHookCount = claude.projected.length + claude.excluded.length
+  assert.ok(canonicalHookCount > 0, 'canonical hook 登記數必須非零,否則下面全是空斷言')
   assert.equal(claude.excluded.length, 0)
-  assert.equal(claude.projected.length, 61)
-  assert.equal(codex.projected.length, 58)
-  assert.equal(codex.projected.length + codex.excluded.length, 61)
+  assert.equal(claude.projected.length, canonicalHookCount)
+  assert.equal(codex.projected.length + codex.excluded.length, canonicalHookCount)
+  assert.equal(codex.excluded.length, 3)
   assert.equal(nativeHandlerCount(claude), 16)
   assert.equal(nativeHandlerCount(codex), 16)
   assert.equal(codex.excluded.every((item) => item.reasonCode === 'STABLE_TRANSCRIPT_CONTRACT_UNAVAILABLE'), true)
@@ -230,12 +236,15 @@ test('generated provider hook coverage is closed, exhaustive, and declares only 
     ciEquivalenceRequiresHookSpecificEvidence: true,
     absenceOfProvenFallbackOutcome: 'not-certified',
   })
-  assert.equal(claude.projectedCount, 61)
+  // 同上:總數由 canonical 登記數推導,不寫死(2026-09-21 從 61 漂到 62 而無人察覺)。
+  const canonicalHookCount = claude.canonicalRegistrationCount
+  assert.ok(canonicalHookCount > 0, 'canonical hook 登記數必須非零')
+  assert.equal(claude.projectedCount, canonicalHookCount)
   assert.equal(claude.excludedCount, 0)
-  assert.equal(codex.projectedCount, 58)
+  assert.equal(codex.projectedCount, canonicalHookCount - 3)
   assert.equal(codex.excludedCount, 3)
   assert.equal(generic.projectedCount, 0)
-  assert.equal(generic.excludedCount, 61)
+  assert.equal(generic.excludedCount, canonicalHookCount)
   for (const provider of coverage.providers) {
     assert.equal(provider.projectedCount + provider.excludedCount, provider.canonicalRegistrationCount)
     assert.equal(provider.certificationClaim, 'projection-only-not-runtime-certified')
@@ -296,8 +305,12 @@ test('synthetic Alpha and Beta providers project the same semantics in both dire
   registry.providers = [alpha, beta, registry.providers.find((item) => item.id === 'generic')]
   const alphaView = buildProviderHookView({ providerId: 'alpha', registry })
   const betaView = buildProviderHookView({ providerId: 'beta', registry })
-  assert.equal(alphaView.projected.length, 61)
-  assert.equal(betaView.projected.length, 61)
+  // 兩個合成 provider 必須投影出**同一份完整 canonical 語料**,數量由 canonical 推導而非寫死
+  //(2026-09-21:寫死的 61 在加了一支 hook 之後成為假紅,而沒人看見)。
+  const canonicalHookCount = buildProviderHookView({ providerId: 'claude' }).projected.length
+  assert.ok(canonicalHookCount > 0, 'canonical hook 登記數必須非零')
+  assert.equal(alphaView.projected.length, canonicalHookCount)
+  assert.equal(betaView.projected.length, canonicalHookCount)
   assert.equal(nativeHandlerCount(alphaView), 16)
   assert.equal(nativeHandlerCount(betaView), 16)
   assert.deepEqual(alphaView.excluded, [])

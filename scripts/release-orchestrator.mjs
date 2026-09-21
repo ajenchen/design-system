@@ -14,9 +14,15 @@ const GITHUB_DESIRED_PATH = resolve(ROOT, 'infra/governance/desired/github.json'
 // 收據目錄可由環境變數導向:測試必須寫到自己的沙箱,不得碰到真實工作區的同意收據。
 // 2026-09-20 實證:hook 測試的 `mktemp -d` 在沙箱失敗回空 → `cd ""` 留在真 repo →
 // 測試把 user 真正的同意收據覆寫/刪除了三次。守衛加在測試端,這個 override 是第二道。
-const CONSENT_DIR = process.env.GOVERNANCE_RELEASE_CONSENT_DIR
+/**
+ * 收據目錄**每次讀環境變數**,不在模組載入時定案。
+ * 先前用 `const` 在載入時定案,於是測試要換沙箱就得動態 `import()` —— 而治理 harness runner
+ * 明文禁止動態載入(2026-09-21:我自己的測試因此把整個 harness runner 擋住)。
+ * 讀取端本來就該尊重當下的環境,這也比較正確。
+ */
+const consentDir = () => (process.env.GOVERNANCE_RELEASE_CONSENT_DIR
   ? resolve(process.env.GOVERNANCE_RELEASE_CONSENT_DIR)
-  : resolve(ROOT, '.git/governance-runtime/release-consent')
+  : resolve(ROOT, '.git/governance-runtime/release-consent'))
 
 /**
  * 2026-09-20:同意改綁**分支**(= 該 PR),不再綁單一 commit。
@@ -130,7 +136,7 @@ const CURRENT_CONSENT_FILE = 'current.json'
 export function readReleaseConsent({ branch, headSha } = {}) {
   const verdicts = []
   // v3 優先:綁產品內容,跨分支成立
-  const currentFile = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
+  const currentFile = resolve(consentDir(), CURRENT_CONSENT_FILE)
   if (existsSync(currentFile)) {
     try {
       const receipt = JSON.parse(readFileSync(currentFile, 'utf8'))
@@ -156,7 +162,7 @@ export function readReleaseConsent({ branch, headSha } = {}) {
     } catch { /* 壞檔視同沒有 */ }
   }
   if (branch) {
-    const file = resolve(CONSENT_DIR, consentFileName(branch))
+    const file = resolve(consentDir(), consentFileName(branch))
     if (existsSync(file)) {
       try {
         const receipt = JSON.parse(readFileSync(file, 'utf8'))
@@ -169,7 +175,7 @@ export function readReleaseConsent({ branch, headSha } = {}) {
   }
   // 舊格式相容:`<headSha>.json`
   if (/^[a-f0-9]{40}$/.test(headSha || '')) {
-    const legacy = resolve(CONSENT_DIR, `${headSha}.json`)
+    const legacy = resolve(consentDir(), `${headSha}.json`)
     if (existsSync(legacy)) {
       try {
         const receipt = JSON.parse(readFileSync(legacy, 'utf8'))
@@ -179,6 +185,25 @@ export function readReleaseConsent({ branch, headSha } = {}) {
   }
   if (verdicts.length) console.log(`   (發版同意不適用:${verdicts.join(';')})`)
   return null
+}
+
+/**
+ * 同意收據的**出處**。
+ *
+ * `hook-user-prompt` = UserPromptSubmit hook 攔到的、user 當場打進對話的那一句;
+ * `manual-agent`     = agent 自己跑 `npm run release:consent -- --quote "<user 原話>"` 落地的。
+ *
+ * **2026-09-21 分開的理由**:兩條路以前都寫死 `manual`,收據上看不出是哪一條 ——
+ * 而這兩條的可信度天差地遠:前者是 user 真的打了那些字,後者是 agent **宣稱** user 說過。
+ * M36(a) 管的正是這件事(「禁把自己的推論寫成 user 的決定」),但收據本身沒有記下這個差別,
+ * 於是 14 筆收據裡有 10 筆是 agent 寫的,而磁碟上看起來跟 user 親手打的一模一樣。
+ * 判準兩條路共用(同一支 classifyConsentPrompt),分開的只是**出處紀錄**。
+ */
+export const CONSENT_SOURCES = Object.freeze(['hook-user-prompt', 'manual-agent'])
+
+/** 未指明一律降級成可信度較低的那一種 —— 不得把 agent 落地冒充成 user 親手打的。 */
+export function consentSource(source) {
+  return CONSENT_SOURCES.includes(source) ? source : 'manual-agent'
 }
 
 export function writeReleaseConsent({ headSha, branch, quote, source }) {
@@ -197,7 +222,7 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
   // 「不在 main 上記錄同意」這條防線保留:知道分支時才檢查,不知道就不假裝知道。
   invariant(branch === null || branch === undefined || typeof branch === 'string', 'release consent branch must be a string when known')
   invariant(branch !== 'main', 'release consent is never recorded on main')
-  mkdirSync(CONSENT_DIR, { recursive: true })
+  mkdirSync(consentDir(), { recursive: true })
   const productDigest = productContentDigest(headSha)
   invariant(Boolean(productDigest), '算不出「預覽看得見」的產品內容指紋 —— 沒有它就無法把同意綁在使用者真正看過的東西上')
   // 每一次落地 = 一次新的授權行為 → 鑄新的 authorizationId,帳本從空開始。
@@ -214,10 +239,10 @@ export function writeReleaseConsent({ headSha, branch, quote, source }) {
     consentedHeadSha: headSha,
     quote: quote.trim(),
     quoteSha256,
-    source: source || 'manual',
+    source: consentSource(source),
     recordedAt: new Date().toISOString(),
   }
-  writeFileSync(resolve(CONSENT_DIR, CURRENT_CONSENT_FILE), `${JSON.stringify(receipt, null, 2)}\n`)
+  writeFileSync(resolve(consentDir(), CURRENT_CONSENT_FILE), `${JSON.stringify(receipt, null, 2)}\n`)
   return receipt
 }
 
@@ -250,7 +275,7 @@ export const RELEASED_LOG = 'released.jsonl'
  */
 export function consentReleaseLedger(authorizationId = currentAuthorizationId()) {
   if (!authorizationId) return []
-  const file = resolve(CONSENT_DIR, RELEASED_LOG)
+  const file = resolve(consentDir(), RELEASED_LOG)
   if (!existsSync(file)) return []
   const out = []
   for (const line of readFileSync(file, 'utf8').split('\n')) {
@@ -265,15 +290,15 @@ export function consentReleaseLedger(authorizationId = currentAuthorizationId())
 
 /** 當前收據的授權 id(沒有收據就沒有授權)。 */
 export function currentAuthorizationId() {
-  const file = resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)
+  const file = resolve(consentDir(), CURRENT_CONSENT_FILE)
   if (!existsSync(file)) return null
   try { return JSON.parse(readFileSync(file, 'utf8')).authorizationId || null } catch { return null }
 }
 
 export function recordConsentRelease(version, authorizationId = currentAuthorizationId()) {
   if (!authorizationId || !version) return
-  mkdirSync(CONSENT_DIR, { recursive: true })
-  appendFileSync(resolve(CONSENT_DIR, RELEASED_LOG),
+  mkdirSync(consentDir(), { recursive: true })
+  appendFileSync(resolve(consentDir(), RELEASED_LOG),
     `${JSON.stringify({ authorizationId, version, at: new Date().toISOString() })}\n`)
 }
 
@@ -285,9 +310,9 @@ export function recordConsentRelease(version, authorizationId = currentAuthoriza
  * user 說「不要發版」等於沒說。這是**我當天自己改出來的破口**。
  */
 export function withdrawReleaseConsent({ branch, headSha } = {}) {
-  const targets = [resolve(CONSENT_DIR, CURRENT_CONSENT_FILE)]
-  if (branch) targets.push(resolve(CONSENT_DIR, consentFileName(branch)))
-  if (/^[a-f0-9]{40}$/.test(headSha || '')) targets.push(resolve(CONSENT_DIR, `${headSha}.json`))
+  const targets = [resolve(consentDir(), CURRENT_CONSENT_FILE)]
+  if (branch) targets.push(resolve(consentDir(), consentFileName(branch)))
+  if (/^[a-f0-9]{40}$/.test(headSha || '')) targets.push(resolve(consentDir(), `${headSha}.json`))
   let removed = 0
   for (const file of targets) {
     if (!existsSync(file)) continue
@@ -1153,6 +1178,31 @@ export function productChangeSincePreviousRelease(previousReleaseCommit, headSha
   return before === after ? 'none' : 'changed'
 }
 
+/** 版本 tag 由新到舊(`v0.1.0-beta.140`、`v0.1.0-beta.139`…)。 */
+export function listReleaseTags() {
+  const listed = run('git', ['tag', '--list', 'v*', '--sort=-version:refname'], { allowFailure: true })
+  if (!listed.ok || typeof listed.stdout !== 'string') return []
+  return listed.stdout.split('\n').map((line) => line.trim()).filter(Boolean)
+}
+
+/**
+ * 上一個已發布版本的 ref。
+ *
+ * **2026-09-21 修**:原本讀 `observation.release.targetCommitish` —— 但 `gh release view` 的
+ * `--json` 欄位清單裡**根本沒有 targetCommitish**,所以它恆為 undefined,
+ * `productChange` 恆為 null,那句「這一版不會改變任何畫面」從寫下來到現在**一次都沒印出來過**。
+ * 而它要講的正是 beta.136–140 五版零 UI 變動那件事。
+ * 另一半錯誤是**比錯對象**:`release view <當前 tag>` 拿到的是這一版自己,不是上一版。
+ *
+ * 現在改讀本地 tag:當前 tag 若已存在就取它的下一個,還沒建 tag(發版前)就取最新的那個。
+ */
+export function previousReleaseRef(currentTag, tags = listReleaseTags()) {
+  if (!tags.length) return null
+  const index = tags.indexOf(currentTag)
+  if (index < 0) return tags[0]
+  return tags[index + 1] ?? null
+}
+
 function printReport(workflow, observation, json) {
   const report = {
     schemaVersion: 1,
@@ -1162,14 +1212,20 @@ function printReport(workflow, observation, json) {
     legacyMechanisms: workflow.legacyMechanisms,
   }
   // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
-  const previousReleaseCommit = observation.release?.targetCommitish || observation.previousReleaseCommit || null
-  report.productChange = productChangeSincePreviousRelease(previousReleaseCommit, observation.headSha)
+  const previousRef = previousReleaseRef(observation.tag)
+  report.previousReleaseRef = previousRef
+  report.productChange = productChangeSincePreviousRelease(previousRef, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
     for (const step of report.steps) console.log(`${step.id.padEnd(10)} ${step.status} (${step.authority})`)
     if (report.productChange === 'none') {
-      console.log('   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與上一個已發布版本完全相同);變的是治理與腳本。')
+      console.log(`   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與 ${previousRef} 完全相同);變的是治理與腳本。`)
+    } else if (report.productChange === 'changed') {
+      console.log(`   ⓘ 這一版**會改變畫面**(預覽看得見的檔案與 ${previousRef} 不同)。`)
+    } else {
+      // 「量不到」不得看起來像「量到沒變」——講清楚是哪一種,否則這行的沉默無法與「沒差異」區分。
+      console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(上一版 ref=${previousRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
     }
   }
   return report
@@ -1282,6 +1338,11 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
           headSha: observation.pullRequest.headRefOid,
           preview: urls,
           resume: 'user 在對話說「發版」→ receipt 自動落地 → npm run release:auto',
+          // hook 是 write-time 加速器,不是信任邊界:它若因為環境問題整組跳過(stderr 會有一行
+          // `GOVERNANCE_WARNING: hooks skipped (fail-open)`),user 明明說了「發版」卻不會有 receipt。
+          // 那個方向是安全的(沒 receipt = 不合併不發布),但**沉默會讓人以為自己沒說**。
+          // 這裡把兩件事接起來,免得下一個人從「我說了啊」查到「原來 hook 沒跑」要繞一大圈。
+          ifYouAlreadySaidIt: '若你剛剛確實說了「發版」卻還是停在這裡,看上一則 stderr 有沒有 `GOVERNANCE_WARNING: hooks skipped (fail-open)` —— 那代表 hook 整組被跳過、同意沒落地;再說一次「發版」即可,或請 agent 跑 npm run release:consent -- --quote "<你的原話>"。',
         }, null, 2))
         return report
       }
@@ -1420,7 +1481,13 @@ function parseCli(argv) {
     const index = flags.indexOf('--quote')
     invariant(index >= 0 && flags[index + 1], 'consent needs --quote "<user verbatim>"')
     const branchIndex = flags.indexOf('--branch')
-    return { command, quote: flags[index + 1], branch: branchIndex >= 0 ? flags[branchIndex + 1] : undefined }
+    const sourceIndex = flags.indexOf('--source')
+    return {
+      command,
+      quote: flags[index + 1],
+      branch: branchIndex >= 0 ? flags[branchIndex + 1] : undefined,
+      source: sourceIndex >= 0 ? flags[sourceIndex + 1] : undefined,
+    }
   }
   if (command === 'withdraw') return { command }
   invariant(flags.every(flag => flag === '--json' || flag === '--no-wait'), 'unsupported release orchestrator option')
@@ -1445,7 +1512,7 @@ function main() {
       // 那不是錯誤 —— v3 的判定不看分支。
       const branch = options.branch ?? run('git', ['branch', '--show-current'], { allowFailure: true }).stdout
       const headSha = run('git', ['rev-parse', 'HEAD^{commit}']).stdout
-      const receipt = writeReleaseConsent({ headSha, branch, quote: options.quote, source: 'manual' })
+      const receipt = writeReleaseConsent({ headSha, branch, quote: options.quote, source: options.source })
       console.log(JSON.stringify({ status: 'RELEASE_CONSENT_RECORDED', ...receipt }, null, 2))
     } else {
       executeAutomaticRelease(options)

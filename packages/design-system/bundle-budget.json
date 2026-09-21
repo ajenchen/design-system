@@ -1,17 +1,17 @@
 {
   "_meta": {
-    "generatedAt": "2026-07-14",
-    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明"
+    "generatedAt": "2026-09-21",
+    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明。2026-09-21 重設基準:上一次設定是 2026-07-14(beta.84),而這支閘**沒有任何 CI workflow 呼叫過它**(只註冊成 npm script),所以從那天起到 beta.140 的兩個月成長全部沒被擋 —— 重設當天實測 total 1189.5KB(舊 budget 1000.3KB)、DataTable 149.2KB(舊 109.7KB)。成長來源是這兩個月的真實功能(新元件 AgentPanel 48.5KB、DataTable 的編輯/虛擬化/篩選擴充),已檢查沒有 lucide 全庫或重複依賴那類誤用。同一個 PR 把 check:bundle-size 接進 CI,棘輪從此不會再暗。"
   },
-  "totalKB": 1000.3,
+  "totalKB": 1308.4,
   "entriesKB": {
-    "components/DataTable/data-table.js": 109.7,
-    "components/DatePicker/date-picker.js": 41.9,
-    "components/Sidebar/sidebar.js": 38.1,
-    "components/TreeView/tree-view.js": 38.1,
-    "components/FileViewer/file-viewer.js": 32.1,
-    "components/Combobox/combobox.js": 29.1,
-    "components/Select/select.js": 28.3,
-    "components/DataTable/data-table-filter-panel.js": 23.5
+    "components/DataTable/data-table.js": 164.1,
+    "components/AgentPanel/agent-panel.js": 53.3,
+    "components/DatePicker/date-picker.js": 48.9,
+    "components/TreeView/tree-view.js": 45.5,
+    "components/Sidebar/sidebar.js": 40.2,
+    "components/FileViewer/file-viewer.js": 35.7,
+    "components/Select/select.js": 33.1,
+    "components/Combobox/combobox.js": 28.7
   }
 }

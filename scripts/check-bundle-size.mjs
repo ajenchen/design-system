@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: DS 發布產物的原始體積不會在沒人注意時長大(總量與最大 8 支各自有 budget)。
+ *   紅: 任一項超出 budget → 列出「現值 > budget」並 exit 1(已由 test-check-bundle-size.mjs 的
+ *        合成 dist 對照組驗過會紅)。
+ *   綠: 全部在 budget 內時綠。不是抽籤 —— 量的是 dist 檔案的實際 byte 數,同一份 build 恆等;
+ *        蓄意增大要跑 --init 重設並在 commit 說明,棘輪因此只會被有意識地放寬。
+ *   註: 2026-09-21 之前只註冊成 npm script、沒有任何 workflow 呼叫,上次設基準是 2026-07-14,
+ *        兩個月的成長全沒被擋(重設當天 total 超出舊 budget 19%、DataTable 36%)。
+ */
 // check-bundle-size.mjs — DS library raw artifact-size deterministic gate.
 // This budget is intentionally distinct from size-limit's gzip/import-cost and
 // production-app chunk budgets; neither gate is evidence that the other ran.

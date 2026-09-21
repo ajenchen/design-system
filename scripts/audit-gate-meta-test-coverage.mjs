@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: 每一支 checker gate 都有一支 `scripts/test-<閘名>.mjs`,證明它「在該紅的時候會紅」。
+ *   紅: 新增一支 checker gate 而沒有配對的 meta-test → 列在「新 checker gate 無 meta-test」並 exit 1(--check)。
+ *   綠: 87/87 配對齊全時綠。不是抽籤 —— 母體與配對都由檔名機械探索(discoverCheckerGates /
+ *        discoverGateMetaTestPairs),沒有取樣、沒有時間相依,同一份 worktree 重複跑結果恆等。
+ *   註: 2026-09-21 之前這支**沒有任何執行面呼叫它**,於是 87 支閘裡 41 支沒有 meta-test 而沒人看見。
+ */
 // Gate meta-test coverage(2026-07-11 user「把能機械化的都收掉」— governance 弱軸 #1)。
 //
 // 為何存在:governance-audit-coverage.md 弱軸 #1 =「多數 .mjs gate 無 meta-test(注入違規→確認 exit 1)」。

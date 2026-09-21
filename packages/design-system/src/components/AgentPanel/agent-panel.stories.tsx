@@ -801,9 +801,9 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
         </DialogHeader>
         <DialogBody>
           <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            <Field required>
+            <Field required id="demo-task-title">
               <FieldLabel>標題</FieldLabel>
-              <Input id="demo-task-title" value={draft.title} onChange={(e) => set('title', e.target.value)} placeholder="例:修正登入逾時" />
+              <Input value={draft.title} onChange={(e) => set('title', e.target.value)} placeholder="例:修正登入逾時" />
             </Field>
             <Field>
               <FieldLabel>指派人</FieldLabel>
@@ -1156,7 +1156,7 @@ function UrlRegistryScene() {
  * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
  */
 export const UrlRegistryDemo: Story = {
-  name: '示意(假資料)— URL 註冊表:誰能與 agent 並存',
+  name: '示意(假資料)— 網址註冊表:誰能與代理並存',
   parameters: {
     docs: {
       description: {

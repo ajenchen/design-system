@@ -8,7 +8,11 @@
  *
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { countCallSites } from './lib/gate-reachability.mjs'
 import { classifyRun, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT, MIN_PRESENTED_FRAMES } from './lib/fast-scroll-gate-policy.mjs'
 
@@ -126,5 +130,54 @@ const callSites = countCallSites(gateSrc, 'classifyRun')
 if (callSites < 1) { console.log('✗ 可達性:data-table-fast-scroll.mjs 的 import 之外沒有任何 classifyRun 呼叫點'); fail++ }
 else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼叫點,不含 import)`)
 
-console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠')
+// ── 呼叫端的**行為**(2026-09-21)────────────────────────────────────────────
+// 純函式對了不代表用它的人用對了。2026-09-21 我把「產品炸了」的檢查從 results 縮到
+// usableResults,所有測試照樣全綠 —— 因為那時只驗了純函式與可達性。
+// `--inject-runs` 直接餵合成的 run 進判定段(不開瀏覽器),把三種局面的**退出碼與訊息**鎖住。
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'fast-scroll-inject-'))
+  const GESTURE_PX = 6000 // 閘的預設手勢距離;覆蓋率門檻是它的 MIN_SCROLL_COVERAGE 倍
+  // 字面路徑 + cwd:治理 harness 的來源審查只接受**字面字串**的 script 運算元
+  // (非字面的一律判成 unreviewable,會擋掉整個 runner —— 2026-09-21 我自己剛踩過一次)。
+  const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
+  const usableFrames = Array.from({ length: 12 }, () => ({ missing: 0, empty: 0 }))
+  const usableG = { presented: 20, bandsPerFrame: 24, blankFrames: 0, blankMs: 0, fillMs: 10, longTaskMs: 40, frameGapMs: 20, shellFrames: 0 }
+  // 幀數不足 = 儀器失效(classifyRun 會判作廢)
+  const starvedG = { ...usableG, presented: 3 }
+
+  const runGate = (runs, args = []) => {
+    const file = join(tmp, `runs-${Math.abs(JSON.stringify(runs).length)}-${args.join('')}.json`)
+    writeFileSync(file, JSON.stringify(runs))
+    const r = spawnSync(
+      process.execPath,
+      ['--', 'scripts/data-table-fast-scroll.mjs', `--inject-runs=${file}`, ...args],
+      { cwd: REPO_ROOT, encoding: 'utf8' },
+    )
+    return { status: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` }
+  }
+  const LIMITS = ['--assert-max-long-task-ms=200']
+
+  const cases = [
+    ['乾淨的可用趟 → 綠',
+      [{ build: 'b', mode: 'gesture', g: usableG, frames: usableFrames, scrolled: GESTURE_PX, errors: [] }],
+      (r) => r.status === 0, '沒有任何失敗訊號時不得紅'],
+    ['全部趟都量不到 → 以「儀器失效」紅,而且要明說不是產品變慢',
+      [{ build: 'b', mode: 'gesture', g: starvedG, frames: usableFrames, scrolled: GESTURE_PX, errors: [] }],
+      (r) => r.status === 1 && /儀器失效/.test(r.out) && /不是這個 build 變慢/.test(r.out), '訊息要指向儀器,不是指控 build'],
+    ['作廢的那一趟頁面炸了 → 仍然必須報 pageerror(2026-09-21 我寫壞過的那條)',
+      [{ build: 'b', mode: 'gesture', g: starvedG, frames: usableFrames, scrolled: GESTURE_PX, errors: ['TypeError: x is not a function'] }],
+      (r) => r.status === 1 && /pageerror/.test(r.out), '儀器失效只該讓效能那半作廢,不該讓「產品炸了」一起消音'],
+    ['可用的趟靜止後仍缺列 → 紅',
+      [{ build: 'b', mode: 'gesture', g: usableG, frames: [...usableFrames.slice(0, 11), { missing: 4, empty: 0 }], scrolled: GESTURE_PX, errors: [] }],
+      (r) => r.status === 1 && /靜止後 DOM 仍缺列/.test(r.out), '真正的產品失效必須紅'],
+  ]
+  for (const [name, runs, want, why] of cases) {
+    const r = runGate(runs, LIMITS)
+    if (want(r)) console.log(`✓ 行為:${name}`)
+    else { console.log(`✗ 行為:${name} —— ${why}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-6).map((l) => '   ' + l).join('\n')}`); fail++ }
+  }
+  rmSync(tmp, { recursive: true, force: true })
+}
+
+console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠(含呼叫端行為)')
 process.exit(fail ? 1 : 0)

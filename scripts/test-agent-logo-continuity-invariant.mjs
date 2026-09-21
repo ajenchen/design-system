@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+// meta-test for agent-logo-continuity-invariant —— 現況必綠 + 對照組(--selftest 注入合成違規)必紅。
+//
+// 2026-09-21 補:這支閘先前連 --selftest 都沒有,也就是從沒有人證明過它「在該紅的時候會紅」;
+// 而唯一會講出這件事的 audit-gate-meta-test-coverage 自己也沒被任何執行面呼叫過。
+// 跑法與判準的單一實作住在 scripts/lib/gate-selftest-meta.mjs。
+import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
+
+runGateSelftestMeta('scripts/agent-logo-continuity-invariant.mjs')
