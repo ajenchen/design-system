@@ -66,11 +66,22 @@ try {
   /** 開啟指定 story 的 dialog,回傳幾何。story 以 trigger 開啟;openArgs 用 Storybook args 覆寫 DialogContent 的 prop 做不到,
    *  所以 H1/H4 改用「在頁面內直接改 inline style 的對照」——不動元件、只驗上限有沒有效。 */
   const open = async (id) => {
-    await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'networkidle', timeout: 120_000 })
-    await page.waitForTimeout(600)
+    // **等元素,不等 networkidle**(2026-09-22,M32 第四問同族,本輪已修過 action-bar-toolbar /
+    // agent-fab-drag-click / overlay-detached-anchor / data-table-fast-scroll 四支)。
+    // 這兩支 story 的頭像來自 i.pravatar.cc;CI 上該主機慢或不通時「網路安靜」永遠等不到,
+    // 正式車道在第一個 open() 就 120 秒 TimeoutError 崩掉 —— 而 H5 那段早就改成 `load` + 等根節點。
+    // 「網路安靜」是「畫面就緒」的代理;直接等要用的元素:先等可見的觸發鈕,點了再等 dialog 出現。
+    await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'load', timeout: 60_000 })
+    await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 15_000 }).catch(() => {})
     // `button` 的第一個可能是 Storybook 注入的隱藏元素(實測「element is not visible」),要挑可見的那個
-    const trigger = page.locator('button:visible').first()
-    if (await trigger.count()) { await trigger.click({ timeout: 10_000 }).catch(() => {}); await page.waitForTimeout(800) }
+    const trigger = page.locator('#storybook-root button:visible').first()
+    await trigger.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
+    if (await trigger.count()) {
+      await trigger.click({ timeout: 10_000 }).catch(() => {})
+      await page.locator('[role="dialog"]').first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {})
+    }
+    // 固定睡眠只留給「元素出現後的版面穩定」(Radix 開啟動畫 + 上限 calc),不是拿來等頁面
+    await page.waitForTimeout(300)
     return page.evaluate(() => {
       const d = document.querySelector('[role="dialog"]')
       if (!d) return null
