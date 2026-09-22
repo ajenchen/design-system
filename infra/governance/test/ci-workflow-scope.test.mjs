@@ -181,6 +181,9 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.match(source, /baseline-diff\/\s*\n\s*if-no-files-found: error/, 'artifact 必須帶歸因報告')
   assert.doesNotMatch(source, /git (commit|push)/, '這個 job 不得自己 commit / push baseline')
   assert.match(source, /permissions:\s*\n\s*contents: read/, '維持 contents: read')
+  // 2026-09-22 run #288:容器裡沒有 git-lfs,checkout 的 LFS 旗標讓 job 在 36 秒內死在簽出階段。LFS 從沒啟用 ——
+  // 為不存在的未來預留的旗標,環境一換就是硬失敗。真要用 LFS 時,同一個 PR 必須同時裝 git-lfs 並改這條斷言。
+  assert.doesNotMatch(source, /^\s*lfs:\s*true\b/m, '容器內的 checkout 不得要求 git-lfs(映像沒有它;LFS 也沒在用)')
 })
 
 test('Pages deployment binds and reads back the exact Storybook source', () => {

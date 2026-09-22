@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:814836988e37474ca9ef51bb22ce98b6713cfa242c1b227d994ed7fb660188f4",
+      "hash": "sha256:93f364d2a7c3d658f5572e81c48f28a01d91d801e542731df7df38442c070949",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4e1aefee6970a9f5bb019850d2caded0c10676b8635f32ee92118a250ed9e5d4",
+      "hash": "sha256:d09ced31a83497d813665e2d5e4d48e20a170a9be091ca5ec0e08570078c9fd5",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139524,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:b1bc6b4c812cfc27b3514d20226503ae09825d2b3666cc24e5dc455cbef90854",
+  "inputDigest": "sha256:4c99d41f634e6aae13dd44ad62cce7fa4241f5c0a862b99840adf0982a2ce619",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:d60ebd73a9bba90b3efca67dd0eca025a87a9620db42245523055e27083cb31b",
+  "snapshotDigest": "sha256:d025911b0d92297b97fdb157ad522a26573c34a129dac21b38a3a68556ad9be7",
   "sources": [
     {
       "hash": "sha256:d870aa492e47b6f885e03ab5cbc21cd927884a4fbf23ee7445b5dd8c56fa0e42",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:34ced7710b13337fd527118a01f4806c785d1eb20f20199796eb0f681c9685a7",
+      "hash": "sha256:65b56200db7cdb7ff95fbbab7bb356be442ceed74cf45e258f038dde12552d74",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2271,7 +2271,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:c61e1c2bc13bf255a483ffcdc30855407b08fab44073ea06408102a6d620f48a",
+      "hash": "sha256:cd1afcf8817b84550ef00d7ad26ec3edb28857dc70a0811c495e4e75a65111e5",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",

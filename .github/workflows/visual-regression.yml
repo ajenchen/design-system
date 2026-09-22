@@ -45,7 +45,9 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          lfs: true  # neutral visual baseline authority 可能未來改 LFS — 提前 enable
+          # 2026-09-22:原本開著 checkout 的 LFS 旗標(「未來可能改 LFS — 提前 enable」)。LFS 從沒啟用(無 .gitattributes 規則,
+          # baseline 是真 PNG),而這個旗標在 Playwright 容器裡沒有 git-lfs 執行檔 → checkout 直接死,run #288 在 36 秒
+          # 就紅在簽出階段。為不存在的未來預留的旗標,環境一換就變成硬失敗;真要改 LFS 時再一併裝 git-lfs。
           persist-credentials: false
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
