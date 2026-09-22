@@ -815,13 +815,28 @@ export function filterOutPublishWorkflowRuns(runs, publishWorkflowFile) {
   })
 }
 
+/**
+ * 只留下**守護 main 的那一支** workflow(canonical 宣告的 `automation.ciWorkflow.file`)。
+ *
+ * 2026-09-22 第二次修:前一版只排除「發布流程自己」,於是 main 那個 sha 上的每一支 workflow
+ * 都被當成要等的 CI —— 下游的 Deploy Storybook / packaging canary 是 `workflow_run` 觸發、
+ * 在 CI 綠**之後**才開始跑,閘因此在 CI 早已綠的情況下多等了二十幾分鐘,若下游卡住就永遠等。
+ * 「該 sha 上所有 run 都完成」是「守護 main 的 CI 通過」的代理;直接指名那一支。
+ */
+export function guardingCiRuns(runs, ciWorkflowFile) {
+  return runs.filter((run) => {
+    const path = `${run.path || ''}`
+    return path === ciWorkflowFile || path.endsWith(`/${ciWorkflowFile}`)
+  })
+}
+
 function protectedMainCiRows(workflow, repository, sha) {
-  const publishWorkflowFile = workflow.automation.publishWorkflow.file
+  const ciWorkflowFile = workflow.automation.ciWorkflow.file
   const response = curlGitHub('GET', `repos/${repository}/actions/runs?head_sha=${sha}&per_page=50`)
   if (!response.ok) return null
   let runs
   try { runs = JSON.parse(response.text).workflow_runs || [] } catch { return null }
-  const guarding = filterOutPublishWorkflowRuns(runs, publishWorkflowFile)
+  const guarding = guardingCiRuns(runs, ciWorkflowFile)
   if (guarding.length === 0) return null
   return guarding.map(run => shimRowFromStatus(run.status, run.conclusion, run.name || run.path || '(unnamed)', run.path || ''))
 }

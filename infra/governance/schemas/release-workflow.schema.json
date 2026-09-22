@@ -184,7 +184,8 @@
         "publishWorkflow",
         "packages",
         "consumers",
-        "preview"
+        "preview",
+        "ciWorkflow"
       ],
       "properties": {
         "repository": {
@@ -252,6 +253,19 @@
             "branchPattern": {
               "type": "string",
               "pattern": "^https://.*\\{branchSlug\\}.*\\{site\\}.*$"
+            }
+          }
+        },
+        "ciWorkflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+\\.ya?ml$"
             }
           }
         }

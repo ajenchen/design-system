@@ -112,6 +112,9 @@
       "file": "release.yml",
       "dispatchEvent": "stage-protected-release"
     },
+    "ciWorkflow": {
+      "file": "ci.yml"
+    },
     "packages": [
       "@qijenchen/design-system",
       "@qijenchen/governance",
