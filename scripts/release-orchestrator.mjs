@@ -904,6 +904,31 @@ function declaredPreviousReleaseVersion() {
   } catch { return null }
 }
 
+/**
+ * 排程型監看(每週視覺回歸等)最新一次跑的結論,三值:'green' / 'red' / 'unknown'。
+ * 只講、不擋:preview / canary / 排程監看依 canonical 一律 non-blocking。它存在的理由是
+ * 2026-09-22 抓到視覺回歸週跑**連紅六週沒人看見**(只排程、不進 PR)—— 紅燈沒有觀眾等於沒有燈。
+ * 「讀不到」與「紅」分開講(M37 第八種形狀)。
+ */
+export function classifyScheduledMonitorRun(run) {
+  if (!run || typeof run !== 'object') return { verdict: 'unknown', detail: '讀不到任何一次跑' }
+  const status = `${run.status || ''}`.toLowerCase()
+  const conclusion = `${run.conclusion || ''}`.toLowerCase()
+  const when = typeof run.created_at === 'string' ? run.created_at.slice(0, 10) : '?'
+  if (status !== 'completed') return { verdict: 'unknown', detail: `${when} 還在跑(${status || '?'})` }
+  if (conclusion === 'success') return { verdict: 'green', detail: `${when} 綠` }
+  if (['failure', 'timed_out', 'cancelled', 'startup_failure', 'action_required'].includes(conclusion)) {
+    return { verdict: 'red', detail: `${when} ${conclusion}` }
+  }
+  return { verdict: 'unknown', detail: `${when} ${conclusion || '?'}` }
+}
+
+function latestScheduledMonitorRun(repository, workflowFile) {
+  const response = curlGitHub('GET', `repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?per_page=1`)
+  if (!response.ok) return null
+  try { return JSON.parse(response.text).workflow_runs?.[0] || null } catch { return null }
+}
+
 /** canonical 宣告的目標 repo;讀不到就回 null,呼叫端一律 fail closed。 */
 function releaseRepository() {
   try { return loadReleaseWorkflow().automation.repository } catch { return null }
@@ -1484,6 +1509,10 @@ function printReport(workflow, observation, json) {
   // 這一版,若沿用舊名(previous…)會讓機器可讀輸出的欄位名與實際語意相反。全 repo 零讀取端。
   report.publishedBaselineRef = baselineRef
   report.productChange = productChangeSinceBaseline(baselineRef, observation.headSha)
+  // 排程監看的最新結論:**只講不擋**。視覺回歸週跑 2026-08-12 起連紅六週(runner 映像換了、
+  // 字型漂移、baseline 沒重拍),沒人看見 —— 因為它只排程、不進 PR。現在每次 status / auto 都印。
+  const visualMonitor = classifyScheduledMonitorRun(latestScheduledMonitorRun(observation.repository, 'visual-regression.yml'))
+  report.scheduledMonitors = { 'visual-regression.yml': visualMonitor }
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
@@ -1496,6 +1525,9 @@ function printReport(workflow, observation, json) {
       // 「量不到」不得看起來像「量到沒變」——講清楚是哪一種,否則這行的沉默無法與「沒差異」區分。
       console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(基準 ref=${baselineRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
     }
+    const mark = visualMonitor.verdict === 'green' ? 'ⓘ' : visualMonitor.verdict === 'red' ? '🔴' : '⚠️'
+    console.log(`   ${mark} 每週視覺回歸監看(visual-regression.yml,不擋發布):${visualMonitor.detail}` +
+      (visualMonitor.verdict === 'red' ? ' —— 紅燈要有人看:去讀那次 artifact 的 report.json 分類是產品漂移、baseline 過期還是渲染器漂移' : ''))
   }
   return report
 }

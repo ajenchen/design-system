@@ -21,6 +21,7 @@ import {
   rollupRowIsAborted,
   classifyReleaseLookup,
   countsAsPublishedFromState,
+  classifyScheduledMonitorRun,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
   matchesConsumerPullRequest,
@@ -863,6 +864,30 @@ test('發布前必須確認「宣告的前一版是某個 consumer 手上真的�
   const installed = src.slice(src.indexOf('function installedConsumerVersion('), src.indexOf('function consumerPackageReadback('))
   assert.match(installed, /readConsumerLock\(target\)/, '必須讀 consumer 的 lock')
   assert.match(installed, /node_modules\/@qijenchen\/design-system/, '讀的必須是實際安裝的那個條目')
+})
+
+test('排程監看的紅燈要有觀眾 —— 發布報告必須印出最新一次視覺回歸週跑的結論,但不得擋發布', () => {
+  // 2026-09-22 實證:visual-regression.yml 從 8/12 起連紅六週(runner 映像 20260720 → 20260810 → 20260907,
+  // 字型漂移、baseline 停在 7/28),沒有任何人看見 —— 它只排程、不進 PR。紅燈沒有觀眾等於沒有燈。
+  assert.deepEqual(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'success', created_at: '2026-08-05T03:23:00Z' }),
+    { verdict: 'green', detail: '2026-08-05 綠' })
+  assert.equal(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'failure', created_at: '2026-09-16T03:23:00Z' }).verdict, 'red')
+  assert.equal(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'timed_out', created_at: '2026-09-16T03:23:00Z' }).verdict, 'red')
+  // 讀不到 / 還在跑 → unknown,不得講成綠也不得講成紅(M37 第八種形狀)
+  assert.equal(classifyScheduledMonitorRun(null).verdict, 'unknown')
+  assert.equal(classifyScheduledMonitorRun({ status: 'in_progress', conclusion: null, created_at: '2026-09-22T03:23:00Z' }).verdict, 'unknown')
+  assert.equal(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'neutral' }).verdict, 'unknown')
+
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
+  assert.match(reportBlock, /classifyScheduledMonitorRun\(latestScheduledMonitorRun\(observation\.repository, 'visual-regression\.yml'\)\)/,
+    'printReport 必須真的去讀最新一次週跑')
+  assert.match(reportBlock, /每週視覺回歸監看/, '而且必須印給人看')
+  // 只講不擋:五步 status 表不得含它,runner 也不得因它 invariant
+  const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
+  assert.doesNotMatch(statusBlock, /visual-regression|ScheduledMonitor/, '排程監看不得進五步判定(canonical:preview/canary/監看一律 non-blocking)')
+  const runnerBlock = src.slice(src.indexOf('export function executeAutomaticRelease('), src.indexOf('function main('))
+  assert.doesNotMatch(runnerBlock, /invariant\([^\n]*(visualMonitor|ScheduledMonitor)/, 'runner 不得因監看結論丟錯')
 })
 
 test('「被取消 / 逾時」不是「失敗」—— 兩者都擋發布,但講錯原因會把人送去修不存在的問題', () => {

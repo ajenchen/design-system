@@ -146,6 +146,26 @@ for (const name of [
   })
 }
 
+test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright 容器,而且重拍 baseline 不會直接寫進 repo', () => {
+  // 2026-09-22:baseline 是 7/28 在 runner 映像 20260720.247.2 拍的;8/12 起 runner 映像每週更新
+  //(20260810.271.1 → 20260907.300.1),字型／反鋸齒跟著變,25 張「超標」全是字緣差異、零區塊變動,
+  // 週跑連紅六週沒人看見。渲染器一浮動,「截圖等於 baseline」就不再代表「產品沒變」。
+  // 容器 tag 的版本必須等於 package-lock 鎖定的 playwright 版本 —— lock 是 SSOT,yml 不是第二份。
+  const source = readWorkflow('visual-regression.yml')
+  const lock = JSON.parse(readFileSync(resolve(ROOT, 'package-lock.json'), 'utf8'))
+  const locked = lock.packages['node_modules/playwright']?.version
+  assert.match(locked || '', /^\d+\.\d+\.\d+$/, 'package-lock 必須鎖定 playwright 的精確版本')
+  const tag = source.match(/container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright:v(\d+\.\d+\.\d+)-noble/)
+  assert.ok(tag, 'visual-regression job 必須跑在 mcr.microsoft.com/playwright 官方容器裡(渲染器釘死)')
+  assert.equal(tag[1], locked, `容器映像 v${tag[1]} 必須等於 lock 的 playwright ${locked} —— 兩者分開時瀏覽器與字型都會跟著分開`)
+  // 重拍 baseline 只能是手動輸入,且產物走 artifact,不得直接寫 repo(接受新圖 = 產品語意決策,要走 PR + 拍板)
+  assert.match(source, /update_baseline:\s*\n\s*description:/, '必須提供 update_baseline 手動輸入')
+  assert.match(source, /if: \$\{\{ inputs\.update_baseline \}\}[\s\S]{0,200}--update-baseline/, '重拍步驟必須由該輸入閘住')
+  assert.match(source, /name: visual-baselines-recaptured/, '重拍結果必須以 artifact 上傳')
+  assert.doesNotMatch(source, /git (commit|push)/, '這個 job 不得自己 commit / push baseline')
+  assert.match(source, /permissions:\s*\n\s*contents: read/, '維持 contents: read')
+})
+
 test('Pages deployment binds and reads back the exact Storybook source', () => {
   const source = readWorkflow('deploy-storybook.yml')
   const workflow = parseWorkflowSemantics(source)

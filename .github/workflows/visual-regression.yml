@@ -6,6 +6,11 @@ name: Visual Regression
 
 on:
   workflow_dispatch:
+    inputs:
+      update_baseline:
+        description: '重拍 curated baseline 並以 artifact 上傳(在釘死的容器渲染器裡);不會自動 commit'
+        type: boolean
+        default: false
   schedule:
     - cron: '23 3 * * 3'
 
@@ -20,6 +25,15 @@ jobs:
   visual-regression:
     name: Monitor visual regression drift(curated scenarios)
     runs-on: ubuntu-24.04
+    # 2026-09-22:渲染器必須釘死,否則 baseline 比的是「runner 今天裝哪個字型版本」而不是產品。
+    # 實證:8/5 最後一次綠(runner 映像 20260720.247.2)→ 8/12 起連續六週紅(映像 20260810.271.1 →
+    # 20260907.300.1),Playwright 鎖定版本 1.59.1 兩邊相同,25 張超標的差異圖全是字緣、零區塊變動。
+    # 「截圖等於 baseline」被當成「產品沒變」,而渲染器一浮動兩者就分開(M37 同族);紅了六週沒人看,
+    # 因為只排程、不進 PR —— 現在 release:status / release:auto 會印出上一次週跑的結論(不擋發布)。
+    # 容器映像 tag 的版本由 infra/governance/test/ci-workflow-scope.test.mjs 對 package-lock 的
+    # playwright 版本做斷言(SSOT 是 lock,這裡不是第二份)。
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 45  # ~124 curated scenarios × screenshot + diff(headroom 給 scenario 增長)
@@ -54,9 +68,25 @@ jobs:
         run: node scripts/measure-action-dividers.mjs --dir storybook-static
 
       - name: Visual regression diff(scope=all)
+        if: ${{ !inputs.update_baseline }}
         run: |
           # Auto-start storybook static server inside visual-audit.mjs
           npm run visual-audit -- --scope=all 2>&1 | tail -40
+
+      # 手動重拍 baseline:只在釘死的容器渲染器裡拍,上傳成 artifact,由人／agent 開 PR 帶進 repo
+      #(本 job 只有 contents:read,不直接寫 baseline —— 接受新圖是產品語意決策,要走 PR + 使用者拍板)。
+      - name: Recapture curated baselines(update_baseline)
+        if: ${{ inputs.update_baseline }}
+        run: |
+          npm run visual-audit -- --scope=all --update-baseline 2>&1 | tail -20
+      - name: Upload recaptured baselines
+        if: ${{ inputs.update_baseline }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: visual-baselines-recaptured
+          path: infra/governance/baseline/visual/curated/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload diff artifacts(on failure)
         if: failure()
