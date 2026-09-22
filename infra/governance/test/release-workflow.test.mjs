@@ -16,6 +16,7 @@ import {
   buildConsumerPullRequestCreateArgs,
   buildPublishMutationPlan,
   filterOutPublishWorkflowRuns,
+  guardingCiRuns,
   rollupRowIsRed,
   lifecycleChainReachesAConsumer,
   rollupRowIsAborted,
@@ -948,6 +949,27 @@ test('發布這一步看的是「守護 main 的 CI」,不含發布流程自己�
     workflow.automation.publishWorkflow.file,
   )
   assert.deepEqual(ciRed.map(run => run.name), ['CI'], '真正的 CI 紅燈不得被濾掉')
+
+  // 2026-09-22 第二次修:只排除發布流程自己還不夠 —— 下游 Deploy Storybook / canary 是 workflow_run
+  // 觸發、在 CI 綠之後才跑,閘在 CI 早已綠時仍多等二十幾分鐘;下游若卡住就永遠等。
+  // 「該 sha 上所有 run 都完成」是「守護 main 的 CI 通過」的代理;改成指名 canonical 宣告的那一支。
+  assert.equal(workflow.automation.ciWorkflow.file, 'ci.yml', 'canonical 必須宣告守護 main 的那一支 workflow')
+  const mixed = [
+    { name: 'CI', path: '.github/workflows/ci.yml', status: 'completed', conclusion: 'success' },
+    { name: 'Deploy Storybook', path: '.github/workflows/deploy-storybook.yml', status: 'in_progress', conclusion: null },
+    { name: 'Release', path: '.github/workflows/release.yml', status: 'completed', conclusion: 'failure' },
+  ]
+  assert.deepEqual(guardingCiRuns(mixed, workflow.automation.ciWorkflow.file).map(run => run.name), ['CI'],
+    '只看守護 main 的那一支;下游還在跑、發布流程自己失敗,都不得影響')
+  assert.deepEqual(guardingCiRuns(mixed, 'nope.yml'), [], '找不到守護 workflow 時回空,呼叫端當「讀不到」fail closed')
+  {
+    const src2 = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+    const start = src2.indexOf('function protectedMainCiRows(')
+    const rowsFn = src2.slice(start, src2.indexOf('\n}\n', start) + 3)
+    assert.ok(rowsFn.length > 100, '切不出 protectedMainCiRows 本體 —— 斷言邊界錯,不是程式壞')
+    assert.match(rowsFn, /guardingCiRuns\(runs, ciWorkflowFile\)/, 'protectedMainCiRows 必須用指名的守護 workflow')
+    assert.match(rowsFn, /workflow\.automation\.ciWorkflow\.file/, '而且檔名來自 canonical 宣告,不寫死')
+  }
 
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   // runner 必須真的在衝突時丟錯,否則狀態表多一格而空轉照舊
