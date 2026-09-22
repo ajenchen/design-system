@@ -17,7 +17,12 @@ function runGit(root, args, runner = spawnSync) {
     runner,
   })
   if (result?.error) throw result.error
-  invariant(result?.status === 0 && Buffer.isBuffer(result.stdout), `worktree fingerprint git ${args[0]} failed with exit ${String(result?.status)}`)
+  // 2026-09-23:只印 exit 碼會把根因藏起來(run #289 的 128 是容器裡的「dubious ownership」,當時得從執行身分反推)。
+  const reason = Buffer.isBuffer(result?.stderr) ? result.stderr.toString('utf8').trim().split('\n')[0] : ''
+  invariant(
+    result?.status === 0 && Buffer.isBuffer(result.stdout),
+    `worktree fingerprint git ${args[0]} failed with exit ${String(result?.status)}${reason ? `:${reason}` : ''}`,
+  )
   return result.stdout
 }
 

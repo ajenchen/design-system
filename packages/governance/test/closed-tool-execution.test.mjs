@@ -20,6 +20,7 @@ import { resolve } from 'node:path'
 import test from 'node:test'
 import {
   assertClosedGitLocalConfiguration,
+  closedGitSafeDirectories,
   materializeClosedHookToolProfile,
   runClosedGit,
 } from '../src/closed-tool-execution.mjs'
@@ -182,4 +183,46 @@ test('closed Git rejects caller config injection and never executes the reposito
   })
   assert.equal(result.status, 0)
   assert.equal(existsSync(marker), false)
+})
+
+// 2026-09-23:closed git 遮掉 HOME / global config,連 actions/checkout 寫進 global 的 safe.directory 也遮掉,
+// 容器裡 root 對 uid 1001 的簽出目錄 → exit 128(Visual Regression run #289)。修法:呼叫端指名的 cwd 與
+// 同擁有者的祖先以 command scope 進到 git;擁有者不同的祖先不進清單(不是 safe.directory=*)。
+test('closed Git trusts only the caller-named cwd and its same-owner ancestors as safe.directory', t => {
+  const fx = fixture(t)
+  // 判定表(假 stat):擁有者一換就停 —— CVE-2022-24765 要擋的「別人塞在上層的 .git」不進清單
+  const uidOf = {
+    '/w/repo/sub': 1001, '/w/repo': 1001, '/w': 1001, '/': 0,
+    '/shared/victim': 501, '/shared': 1002,
+    '/tmp/root-owned': 0, '/tmp': 0,
+  }
+  const stat = path => {
+    if (!(path in uidOf)) throw new Error(`unexpected stat ${path}`)
+    return { uid: uidOf[path] }
+  }
+  assert.deepEqual(closedGitSafeDirectories('/w/repo/sub', { stat }), ['/w/repo/sub', '/w/repo', '/w'])
+  assert.deepEqual(closedGitSafeDirectories('/shared/victim', { stat }), ['/shared/victim'])
+  assert.deepEqual(closedGitSafeDirectories('/tmp/root-owned', { stat }), ['/tmp/root-owned', '/tmp', '/'])
+  assert.deepEqual(closedGitSafeDirectories('/', { stat }), ['/'])
+
+  // 真 git:safe.directory 必須以 command scope 進到 git 裡(`--show-scope` 印 `command`),順序 = cwd 起往上
+  const shown = runClosedGit(['config', '--show-scope', '--get-all', 'safe.directory'], { cwd: fx.root })
+  assert.equal(shown.status, 0, shown.stderr)
+  const rows = shown.stdout.trim().split('\n').map(line => line.split('\t'))
+  assert.ok(rows.length >= 1)
+  assert.deepEqual(rows.map(([scope]) => scope), rows.map(() => 'command'))
+  assert.deepEqual(rows.map(([, value]) => value), closedGitSafeDirectories(fx.root))
+
+  // 假 runner:env 的形狀 —— 只多了 safe.directory 那幾個變數,hermetic 的其餘遮罩不動;-c 注入仍由上一個測試守著
+  let captured
+  runClosedGit(['status'], {
+    cwd: fx.root,
+    runner: (file, args, options) => { captured = { file, args, options }; return { status: 0, stdout: '', stderr: '', signal: null } },
+  })
+  assert.equal(captured.options.env.GIT_CONFIG_COUNT, String(closedGitSafeDirectories(fx.root).length))
+  assert.equal(captured.options.env.GIT_CONFIG_KEY_0, 'safe.directory')
+  assert.equal(captured.options.env.GIT_CONFIG_VALUE_0, fx.root)
+  assert.equal(captured.options.env.GIT_CONFIG_GLOBAL, '/dev/null')
+  assert.equal(captured.options.env.HOME, '/dev/null')
+  assert.ok(!captured.args.some(value => value.includes('safe.directory')), 'safe.directory 走 env 的 command scope,不走 argv 的 -c')
 })

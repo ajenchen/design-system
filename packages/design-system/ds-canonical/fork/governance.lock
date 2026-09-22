@@ -263,7 +263,7 @@
     {
       "schemaVersion": 1,
       "file": "common/closed-tool-execution.mjs",
-      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
+      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/lib/closed-tool-execution.mjs",
-      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
+      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -327,7 +327,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
-      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
+      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": "scripts/lib/closed-tool-execution.mjs"
@@ -383,7 +383,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/61c6aca6d7f04bedbf556eaa9d3043681fe48cbe0e93a8ccb1d69a7c5e23fdcf.blob",
-      "sha256": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
+      "sha256": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
       "source": "scripts/lib/worktree-fingerprint.mjs",
       "classification": null,
       "destination": "scripts/lib/worktree-fingerprint.mjs"
