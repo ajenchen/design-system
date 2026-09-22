@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證:closed git(packages/governance/src/closed-tool-execution.mjs)在「執行者 ≠ repo 擁有者」的環境仍讀得到
+ *   保證: closed git(packages/governance/src/closed-tool-execution.mjs)在「執行者 ≠ repo 擁有者」的環境仍讀得到
  *        呼叫端指名的 repo,而且**只**信任那個 repo —— 不是 safe.directory=*。
- *   紅:A 裸 git 在同樣遮掉 HOME/global config 的環境下對他人擁有的 repo 沒有拒絕(對照組失效:條件根本沒重現);
+ *   紅: A 裸 git 在同樣遮掉 HOME/global config 的環境下對他人擁有的 repo 沒有拒絕(對照組失效:條件根本沒重現);
  *       B closed git 對同一個 repo 仍 exit 128(修法失效 —— 就是 Visual Regression run #289 的死法);
  *       C cwd 是自己的子目錄、上層 .git 屬於別人,closed git 卻通了(信任放太寬,CVE-2022-24765 的門開了);
  *       D --workspace 指定的簽出目錄(CI 的 $GITHUB_WORKSPACE)跑 fingerprint 用的 `ls-files --stage -z` 不是 0。
+ *   綠: 四面同時成立時綠。不是抽籤 —— 每一面量的都是 git 對「擁有者 uid 是否等於執行者」的確定性判定
+ *       (fixture 的 uid 是本腳本 chown 出來的,不隨機器變),重複跑結果恆同;非 root 時不猜:印 SKIPPED-ENV,
+ *       --require 下略過算紅(meta-test 兩面驗過)。
  *   前提:要有 root 才造得出「他人擁有的 repo」(chown)。非 root:印 SKIPPED-ENV 並 exit 0;
  *        帶 --require 時 SKIPPED-ENV 就是 exit 1(CI 的容器 job 一律帶 --require,略過不准算綠)。
  *   誰呼叫:.github/workflows/ci.yml `container-closed-git`(與 Visual Regression 同一個 Playwright 映像)。

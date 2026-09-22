@@ -95,6 +95,16 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.match(source, /node scripts\/closed-git-foreign-owner-invariant\.mjs --require --workspace="\$GITHUB_WORKSPACE"/)
   assert.match(source, /node scripts\/visual-baseline-diff-report\.mjs --selftest/)
   assert.doesNotMatch(source, /^\s*lfs:\s*true\b/m, '容器裡沒有 git-lfs(#288)')
+  // 同日第二次:映像沒有 jq,治理的依賴安裝走 closed 工具組缺一就停(PR #152 第一次跑就死在這裡)。
+  // 補直譯器那一步兩支 workflow 必須逐字相同、而且都排在安裝依賴之前 —— 否則 PR 閘測的又是另一個環境。
+  const interpreterStep = src => src.match(/- name: Provide the closed tool profile interpreters the image lacks\n\s+run: \|\n((?: {10}.*\n)+)/)?.[1]
+  const visualSource = readWorkflow('visual-regression.yml')
+  const containerSource = source.slice(source.indexOf('\n  container-closed-git:\n'))
+  assert.ok(interpreterStep(containerSource) && interpreterStep(visualSource), '兩支容器 job 都要補齊映像缺的 closed 工具組直譯器')
+  assert.equal(interpreterStep(containerSource), interpreterStep(visualSource), '補直譯器那一步必須逐字相同')
+  for (const [label, src] of [['ci.yml container-closed-git', containerSource], ['visual-regression.yml', visualSource]]) {
+    assert.ok(src.indexOf('Provide the closed tool profile interpreters') < src.indexOf('npm run --silent setup:dependencies'), `${label}:補直譯器必須排在安裝依賴之前`)
+  }
   // 沒有任何 job 可以超過 25 分鐘(上面兩個 DataTable job 是唯一的例外值)。
   for (const [id, job] of Object.entries(workflow.jobs)) assert.ok((job.timeoutMinutes ?? 0) <= 25, `${id} timeout-minutes ${job.timeoutMinutes} > 25`)
   // Each job that runs code installs once; the fan-in job checks out nothing and installs nothing.

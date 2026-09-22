@@ -1,5 +1,15 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: 重拍後的每一張 curated baseline 與參考 commit 在**同一個渲染器**下的差異都有名字(identical / within-budget /
+ *        approved-change-candidate + commit / suspicious / unmapped / new-scenario / missing-new),沒有一張可以默默被接受。
+ *   紅: --selftest 在 200×200 的合成圖上驗門檻兩面:201 個差異像素(> 0.5%)必判 content-change、199 個必判 within-budget;
+ *       尺寸不同必判 dimension-mismatch;story title → 元件目錄的對應五格(精確 / 最長前綴 / 對不到回 null)任一格錯即 throw。
+ *       正式跑時 suspicious / unmapped / missing-new 出現即 exit 1。(真實資料的對照組 2026-09-22 手動跑過:複製 curated
+ *       一份 = 124 張 identical、塗黑一張 = 只指名那一張;那不在 selftest 裡,以免 PR 閘扛 124 張 PNG 的比對。)
+ *   綠: 分類比的是 pixelmatch 的差異像素數 —— 同一份 old/new 逐張恆同,不是抽籤;selftest 的相同圖必判 identical,
+ *       門檻邊界兩側各驗一次,重複跑結果相同。
+ *
  * 視覺 baseline 重拍的歸因報告 —— 「新拍的圖」不等於「對的圖」。
  *
  * 2026-09-22 立。背景:curated baseline 停在 7/28(beta.93 時代),之後 51 個版本都沒重拍;週跑從 8/12 起

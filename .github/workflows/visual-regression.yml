@@ -55,6 +55,18 @@ jobs:
           node-version: '24.14.0'
           cache: npm
 
+      # 這個映像(Playwright noble)沒有 jq;治理的依賴安裝走 closed 工具組,bash / git / jq / node / perl / python3
+      # 缺一就停(PR #152 第一次跑就死在這裡:「No authenticated jq executable」)。從 Ubuntu 簽章過的套件庫補齊,
+      # 再逐一斷言存在 —— 跟 hooks-linux 一樣「斷言而不是假設」。兩支 workflow 這一步必須逐字相同
+      #(infra/governance/test/ci-workflow-scope.test.mjs 斷言),否則 PR 閘測的又是另一個環境。
+      - name: Provide the closed tool profile interpreters the image lacks
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends jq perl python3
+          for tool in bash git jq node perl python3; do
+            command -v "$tool" >/dev/null || { echo "missing closed-profile interpreter: $tool" >&2; exit 1; }
+          done
+
       - name: Install and audit with the lock-verified npm runtime
         run: npm run --silent setup:dependencies
 
