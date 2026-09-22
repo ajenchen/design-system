@@ -129,6 +129,9 @@ try {
   //     「發版」,正是 2026-09-20 要修掉的那件事。所以帳本的每一筆都要對線上實況。
   //     「不同的工作」那一面不靠帳本擋,靠產品指紋擋(上面 5. 已驗)。
   recordConsentRelease('0.1.0-beta.997', second.authorizationId)
+  //     注入點回的是**三值狀態**(true / false / null),不是布林 —— 2026-09-22 稽核抓到前一版
+  //     的第三面注入 `version => !/^0\.0\.0/.test(version)` 對 beta.997 回 true,跟第一面同一格,
+  //     「讀不到」那一面根本沒被表達過。
   assert.equal(
     readReleaseConsent({ branch, headSha: head, releaseLookup: () => true }),
     null,
@@ -139,9 +142,9 @@ try {
   assert.equal(resumable.authorizationId, second.authorizationId)
   // 「讀不到」不得當成「沒發出去」:方向必須 fail closed,否則同一份授權可以發第二次。
   assert.equal(
-    readReleaseConsent({ branch, headSha: head, releaseLookup: version => !/^0\.0\.0/.test(version) }),
+    readReleaseConsent({ branch, headSha: head, releaseLookup: () => null }),
     null,
-    '查不到就當成已發(保守)—— 這一面錯了會讓一份授權發兩次',
+    '查不到(null)就當成已發(保守)—— 這一面錯了會讓一份授權發兩次',
   )
 
   // 5d. 條件 / 延後的說法不是「現在就發」。最硬的一格:**SSOT 自己存的那句 user 原話**

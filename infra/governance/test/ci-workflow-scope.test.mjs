@@ -40,8 +40,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
   // (砍掉的那次每一項判定其實都是綠的),原因是同一天把快速捲動閘 `--runs` 2→3、感知閘重跑上限 3→5 ——
-  // 自己加的工作量,不是機器變慢。逾時本身不是品質訊號,但**上限仍是契約**:只有 DataTable 的三個瀏覽器 job
-  //(像素 / 感知 / dpr2,2026-09-15 起)可以到 25,其餘一律 15,而且沒有任何 job 可以超過 25(否則就不再是「快速 deterministic 範圍」了)。
+  // 自己加的工作量,不是機器變慢。逾時本身不是品質訊號,但**上限仍是契約**:只有 SLOW_BROWSER_JOBS
+  // 這個集合裡的 job 可以到 25(每一筆的理由與實測數字寫在集合旁),其餘一律 15,而且沒有任何 job 可以超過 25
+  //(否則就不再是「快速 deterministic 範圍」了)。2026-09-22 稽核:這段原本寫「只有 DataTable 的三個」,
+  // 與下方集合早已不符 —— 註解要指向集合,不要重抄集合。
   // verify-browser-sweeps 一併列入(2026-09-17):它跑兩支「全 1034 支 story 掃一遍」的閘,
   // CI 實測 Avatar 7.3 分 + 選項列前緣 ≥ 9 分,15 分鐘會被取消。
   // verify-browser-select-all 同列(2026-09-17):同樣是全 story 掃,而且每支還要開面板互動,本機 6.6 分。
@@ -71,8 +73,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal(Object.keys(fanInStep.env).length, workflow.jobs.verify.needs.length,
     'fan-in 的 env 數必須等於 needs 數:少一個就有 job 不被檢查')
   // The shell hooks only ever ran on macOS, which is how BSD-only `stat -c` / `date -d` fallbacks
-  // shipped to Linux cloud sessions. This job is their Linux regression gate; it stays inside the
-  // fast PR scope and stays out of `verify` so a hook failure reads as a hook failure.
+  // shipped to Linux cloud sessions. This job is their Linux regression gate inside the fast PR scope.
+  // (2026-09-22 稽核:它**已經**在 `verify` 的 fan-in 裡 —— 上方迴圈就在斷言 `needs.hooks-linux.result`;
+  // 先前這段寫「stays out of verify」與同檔斷言矛盾。hook 失敗仍以自己的 job 名稱呈現,可讀性不變。)
   assert.equal(workflow.jobs['hooks-linux'].name, 'Governance hooks(Linux portability)')
   assert.equal(workflow.jobs['hooks-linux'].timeoutMinutes, 15)
   // 2026-09-21:governance-control-plane 進 fan-in。這四支治理套件從 2026-09-08 起就被

@@ -20,6 +20,7 @@ import {
   lifecycleChainReachesAConsumer,
   rollupRowIsAborted,
   classifyReleaseLookup,
+  countsAsPublishedFromState,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
   matchesConsumerPullRequest,
@@ -28,7 +29,7 @@ import {
   consentCoversHead,
   consumerStepAction,
   productContentDigest,
-  productChangeSincePreviousRelease,
+  productChangeSinceBaseline,
   publishedBaselineRef,
   listReleaseTags,
   PRODUCT_VISIBLE,
@@ -616,15 +617,15 @@ test('一份授權只發一次 final release —— 而且執行面真的呼叫�
 test('發版時必須講出「這一版不會改變畫面」—— 而且執行面真的用到它', () => {
   // 2026-09-20 實測:beta.136/137/138/139/140 五版的預覽內容指紋完全相同,零 UI 變動。
   // 擋下來是錯的(治理語料確實有變),但不講出來也是錯的。
-  assert.equal(productChangeSincePreviousRelease('99c38394a2', '54da256e81'), 'none', '兩個沒動產品的 commit → none')
-  assert.equal(productChangeSincePreviousRelease('68d9dfdc^', '68d9dfdc'), 'changed', '動過產品的 commit → changed')
-  assert.equal(productChangeSincePreviousRelease(null, 'HEAD'), null, '缺前一版就不猜')
-  assert.equal(productChangeSincePreviousRelease('HEAD', null), null)
+  assert.equal(productChangeSinceBaseline('99c38394a2', '54da256e81'), 'none', '兩個沒動產品的 commit → none')
+  assert.equal(productChangeSinceBaseline('68d9dfdc^', '68d9dfdc'), 'changed', '動過產品的 commit → changed')
+  assert.equal(productChangeSinceBaseline(null, 'HEAD'), null, '缺前一版就不猜')
+  assert.equal(productChangeSinceBaseline('HEAD', null), null)
 
   // 寫了卻沒人呼叫 = 等於沒寫(今天抓了一整天的那條)
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
-  assert.match(reportBlock, /productChangeSincePreviousRelease\(/, 'printReport 必須呼叫它')
+  assert.match(reportBlock, /productChangeSinceBaseline\(/, 'printReport 必須呼叫它')
   assert.match(reportBlock, /不會改變任何畫面/, '而且必須真的印出來給人看')
 
   // 2026-09-21:餵給它的「上一版」是誰算的?——之前答案是 `observation.release?.targetCommitish`,
@@ -633,6 +634,10 @@ test('發版時必須講出「這一版不會改變畫面」—— 而且執行�
   assert.doesNotMatch(reportBlock, /targetCommitish/,
     '不得再從 gh release view 的 targetCommitish 取上一版 —— 那個欄位根本沒被要求回傳')
   assert.match(reportBlock, /publishedBaselineRef\(observation\.tag, listReleaseTags\(\),/, '必須實際解析出要比較的基準 ref')
+  // JSON key 必須跟著語意走(2026-09-22 稽核):函式改名 publishedBaselineRef 之後,機器可讀輸出的欄位
+  // 若還叫 previousReleaseRef,版號沒 bump 時它裝的其實是當前這一版,名稱與語意相反。
+  assert.match(reportBlock, /report\.publishedBaselineRef = baselineRef/, 'JSON 欄位名必須是 publishedBaselineRef')
+  assert.doesNotMatch(src, /previousReleaseRef/, '舊欄位名不得殘留(全 repo 零讀取端,改名零風險)')
   assert.match(reportBlock, /releasePublishedState\(observation\.repository, tag\) === true/,
     '基準必須是真的發布過的那一版 —— 建了 tag 但發布失敗的不算')
   assert.match(reportBlock, /無法判斷這一版會不會改變畫面/,
@@ -685,7 +690,7 @@ test('要比的基準是「線上目前那一份」,不是「上一個 tag」—
   const missing = MEASURED_PAIR.filter((tag) => !real.includes(tag))
   // 找不到那兩個 tag = 量具拿不到資料,必須以儀器失效的名義紅,不得默默跳過(M32:回 0 筆先證明拿得到資料)
   assert.deepEqual(missing, [], `驗不了零畫面變動:本地缺 tag ${missing.join(' / ')}(先 git fetch --tags)`)
-  assert.equal(productChangeSincePreviousRelease(...MEASURED_PAIR), 'none',
+  assert.equal(productChangeSinceBaseline(...MEASURED_PAIR), 'none',
     `${MEASURED_PAIR[0]} → ${MEASURED_PAIR[1]} 應為零畫面變動(2026-09-20 實測的就是這一對)`)
 })
 
@@ -703,12 +708,15 @@ test('「讀不到 release」不得當成「那一版沒發出去」—— 一�
   assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: '不是 JSON' }), null, '回應壞掉')
   assert.equal(classifyReleaseLookup({ ok: true, code: 200, text: JSON.stringify({ draft: false }) }), null, '沒有 published_at')
 
-  // 呼叫端的方向必須是 fail closed:算「消耗掉一次」時 null 要算進去(不是排除)
+  // 呼叫端的方向必須是 fail closed:算「消耗掉一次」時 null 要算進去(不是排除)。
+  // 2026-09-22 稽核:這一段先前只有原始碼 regex,沒有行為測試真的餵過 null。改成純函式判定表。
+  assert.equal(countsAsPublishedFromState(true), true, '真的發出去了 → 算')
+  assert.equal(countsAsPublishedFromState(false), false, '明確 404 → 不算(那次沒發成,授權還能續)')
+  assert.equal(countsAsPublishedFromState(null), true, '讀不到 → **算**(保守,不讓同一份授權發第二次)')
+  assert.equal(countsAsPublishedFromState(undefined), true, '沒有狀態也當讀不到')
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
-  assert.match(src, /function releaseCountsAsPublished\([\s\S]{0,160}return !releaseDefinitelyMissing\(/,
-    '「算不算消耗」必須以「確定沒發」的反面定義,讀不到就算消耗')
-  assert.match(src, /function releaseDefinitelyMissing\([\s\S]{0,160}=== false/,
-    '只有明確的 false 才算「確定沒發」')
+  assert.match(src, /function releaseCountsAsPublished\([\s\S]{0,200}countsAsPublishedFromState\(releasePublishedState\(/,
+    '線上版本必須經由同一支純函式,不得另寫一份方向')
   // 而「要比的基準」方向相反:那裡只有**確定有** release 才能當基準
   assert.match(src, /releasePublishedState\(observation\.repository, tag\) === true/,
     '基準必須是確定發布過的那一版,讀不到不得充當基準')
@@ -717,8 +725,11 @@ test('「讀不到 release」不得當成「那一版沒發出去」—— 一�
   // 而且**預設要走線上**(否則預設值就是另一個代理)。
   assert.match(src, /readReleaseConsent\(\{ branch, headSha, releaseLookup = null \}/,
     '同意閘必須把「那一版發出去了嗎」做成可注入的相依')
-  assert.match(src, /const countsAsPublished = releaseLookup\s*\n\s*\|\| \(version => releaseCountsAsPublished\(releaseRepository\(\), `v\$\{version\}`\)\)/,
+  // 注入點回三值狀態;預設走線上;fail-closed 的組合在函式內部經同一支純函式(2026-09-22 稽核後的形狀)
+  assert.match(src, /const lookupState = releaseLookup\s*\n\s*\|\| \(version => releasePublishedState\(releaseRepository\(\), `v\$\{version\}`\)\)/,
     '預設必須走線上實況,不得只在測試裡才對帳')
+  assert.match(src, /const countsAsPublished = \(version\) => countsAsPublishedFromState\(lookupState\(version\)\)/,
+    '「讀不到 → 算已消耗」的方向必須經由同一支純函式,注入點不得自己決定方向')
   assert.match(src, /const spent = \(receipt\.authorizationId[\s\S]{0,300}\.filter\(version => countsAsPublished\(version\)\)/,
     '帳本的每一筆都要經過那支判定,不得直接用帳本')
   assert.match(src, /const alreadyReleased = consentReleaseLedger\(\)[\s\S]{0,300}releaseCountsAsPublished\(/,
@@ -788,12 +799,13 @@ test('incident release 也要合併得進去 —— 授權存在卻接不上執�
     { authorization: 'incident-release', incidentId: incident.incidentId },
   )
   // 另一面:欄位不全 / failureClass 不在白名單 / evidenceRef 等於 incidentId,都不得取得授權
-  for (const bad of [
-    { ...incident, failureClass: 'ordinary-remediation' },
-    { ...incident, evidenceRef: incident.incidentId },
-    { incidentId: incident.incidentId, failureClass: 'post-publish-blocker', publishedVersion: '0.1.0-beta.142' },
+  // 每一格都鎖住**為什麼**不成立,否則任何原因的 throw 都算過(2026-09-22 稽核)
+  for (const [bad, why] of [
+    [{ ...incident, failureClass: 'ordinary-remediation' }, /failureClass is not eligible/],
+    [{ ...incident, evidenceRef: incident.incidentId }, /evidenceRef must be a separate/],
+    [{ incidentId: incident.incidentId, failureClass: 'post-publish-blocker', publishedVersion: '0.1.0-beta.142' }, /exact required fields/],
   ]) {
-    assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident: bad }))
+    assert.throws(() => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident: bad }), why)
   }
   assert.ok(withIncident.RELEASE_ADDITIONAL_INCIDENT, 'incident 由 RELEASE_ADDITIONAL_INCIDENT 這個 JSON 傳入')
 
@@ -840,6 +852,11 @@ test('發布前必須確認「宣告的前一版是某個 consumer 手上真的�
   assert.match(publishBlock, /installedConsumerVersion\(target\)/, '而且量的必須是 consumer 實際安裝的版本')
   assert.match(publishBlock, /chain\.ok !== false/, '接不上必須擋')
   assert.match(publishBlock, /chain\.ok !== null/, '讀不到也必須擋')
+  assert.match(publishBlock, /--last-published/, '訊息必須給出可執行的修法')
+  // 宣告值必須從 consumer 升級交易真正比對的那個欄位來(#147 有、#148 改寫時漏掉,2026-09-22 稽核抓回)
+  const declared = src.slice(src.indexOf('function declaredPreviousReleaseVersion('), src.indexOf('function releaseRepository('))
+  assert.match(declared, /ds-canonical\/fork\/manifest\.json/, '必須讀 fork corpus manifest')
+  assert.match(declared, /providerLifecycle\?\.immutableHead\?\.releaseVersion/, '必須讀 immutableHead.releaseVersion')
   assert.doesNotMatch(publishBlock, /lastPublishedVersion/,
     '不得退回拿「線上最新已發布版」當 consumer 手上那一版 —— 發布了卻沒人裝得上時兩者會分開')
   // 安裝版本必須從 consumer 的 lock 讀,不是猜

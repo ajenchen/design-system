@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: DataTable 捲動時只建拆換進換出的列;舊列與表頭零重繪;1px 步進不做強制版面讀取
+ *         (捲動引發的 getBoundingClientRect 每步 ≤ 12,已扣掉與捲動無關的背景速率)。
+ *   紅: 任一結構斷言 R0–R5 超預算、1px 段超 12、或 1px 段開始前等不到穩態(儀器失效,不指控產品)
+ *        → 印出該項與最兇呼叫點並 exit 1;--selftest 把預算全設 0 必紅。
+ *   綠: 上述全在預算內。**每一趟**另跑 1px 儀器三面對照組(掛載暫態:舊法假紅、新法 0 /
+ *        捲動引發的真回歸:仍紅且呼叫點指名 / 與捲動無關的背景噪音:不誤報);三面任一不成立即紅,
+ *        且 --selftest 車道也會紅(對照組失敗不得被「預算 0 必紅」的判定吸收)。
+ *
  * DataTable 捲動成本閘 v3 —— 2026-09-08(Codex R6 校正後)
  *
  * 背景:user「專案排程全功能整合的捲動還是很卡頓」。CPU 剖析(agent 四路稽核第 4 路)+ Codex R6 對辯的結論:
@@ -316,7 +325,9 @@ for (const id of STORIES) {
   console.log(`${aOk ? '✓' : '✗'} 1px 儀器對照組 A(掛載暫態):舊法「固定 2 幀 + 不相減」量到 ${aOld.toFixed(1)}/步(> ${BUDGET.gbcrFine} 就是假紅),等穩態量到 ${aNew.toFixed(1)}/步(用了 ${control.withSettle?.frames ?? '?'} 幀)`)
   console.log(`${bOk ? '✓' : '✗'} 1px 儀器對照組 B(捲動引發的真回歸):量到 ${bVal.toFixed(1)}/步(捲動 ${num(control.regression?.scrolled).toFixed(1)} − 不捲動 ${num(control.regression?.idle).toFixed(1)}),呼叫點指名 syntheticScrollCaller=${bNamed}`)
   console.log(`${cOk ? '✓' : '✗'} 1px 儀器對照組 C(與捲動無關的背景噪音):量到 ${cVal.toFixed(1)}/步(捲動 ${num(control.background?.scrolled).toFixed(1)} − 不捲動 ${num(control.background?.idle).toFixed(1)}),不得誤報`)
-  if (!aOk || !bOk || !cOk) { console.log('✗ 1px 段的儀器沒有通過三面對照 —— 它的綠燈不構成證據'); failed++ }
+  // 對照組失敗同時計入 controlBad:--selftest 的判定是「預算 0 必紅 && 對照組沒壞」,
+  // 若只加 failed,對照組壞掉反而讓 selftest 因 failed>0 而「通過」(2026-09-22 稽核抓到)。
+  if (!aOk || !bOk || !cOk) { console.log('✗ 1px 段的儀器沒有通過三面對照 —— 它的綠燈不構成證據'); failed++; controlBad++ }
 }
 await browser.close(); server.close()
 if (SELFTEST) { const ok = failed > 0 && controlBad === 0 && controlSeen > 0; console.log(ok ? '✓ selftest:預算 0 時計數器讓閘變紅,且正向對照組(全選)有量到表頭與舊列 render' : `✗ selftest:${failed ? '' : '預算 0 仍綠;'}${controlBad ? '對照組沒量到;' : ''}${controlSeen ? '' : '沒有任何 story 跑到對照組'}`); process.exit(ok ? 0 : 1) }

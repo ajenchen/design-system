@@ -97,10 +97,12 @@ if (!Array.isArray(providerLifecycle.snapshots) || !providerLifecycle.snapshots.
 // 於是 beta.142 對它而言**永遠裝不上**(GOV-UPGRADE-007),而這件事要等到發布完、
 // consumer 同步失敗才看得見。
 //
-// `--last-published <version>` 讓呼叫端(release orchestrator 知道線上最新是哪一版)把
-// 「已發布」這個事實傳進來:尾端任何**在它之後**的快照都是沒發成的殘留,取代掉而不是疊上去。
-// 沒傳就維持原行為(本機手動 bump),但發布路徑上有閘會擋(見 release-orchestrator 的
-// publish 步驟:要發的版本,其 immutableHead 必須等於線上最新已發布版)。
+// `--last-published <version>` 讓**操作者**(bump 版號的人或 agent,在內容 PR 裡)把
+// 「consumer 真正裝著的是哪一版」這個事實傳進來:尾端任何**在它之後**的快照都是沒發成的殘留,
+// 取代掉而不是疊上去。沒傳就維持原行為(一般 bump)。
+// **這支腳本不是由 release orchestrator 呼叫的**(2026-09-22 稽核抓到前一版註解這樣寫,不實):
+// orchestrator 只在發布前的閘(lifecycleChainReachesAConsumer)擋下時,把這條指令印在訊息裡。
+// 行為測試在 scripts/test-sync-version-safety.mjs(該截斷會截斷 / 不該截斷不動 / 未保留版本會擋)。
 const lastPublishedFlagIndex = process.argv.indexOf(LAST_PUBLISHED_FLAG)
 const lastPublished = lastPublishedFlagIndex >= 0 ? process.argv[lastPublishedFlagIndex + 1] : null
 if (lastPublishedFlagIndex >= 0) {

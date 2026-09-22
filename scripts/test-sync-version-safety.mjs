@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { cpSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import {
+  cpSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -9,6 +10,7 @@ import {
   deriveProviderProductManagedInventory,
   lifecycleSnapshotSha256,
   providerInventorySha256,
+  validateProviderLifecycleLedger,
 } from './lib/provider-lifecycle.mjs'
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..')
@@ -237,4 +239,54 @@ for (const corrupt of [
   assert.equal(readFileSync(sentinel, 'utf8'), '{"name":"@qijenchen/design-system","version":"0.1.0-beta.95"}\n')
 }
 
-console.log('✓ version SSOT sync atomically advances an unchanged provider lifecycle, is idempotent, checks without writes, blocks topology drift/symlinks, preserves mode, and rolls back mid-transaction')
+// ── --last-published:救火路徑(2026-09-21 beta.143)先前零測試、零執行面(2026-09-22 稽核)──
+// 三面:該截斷會截斷並還原 immutableHead / 沒有殘留就不動 / 指到不在帳本的版本會擋。
+{
+  const root = fixture()
+  const lifecyclePath = join(root, 'packages/governance/canonical/provider-lifecycle.json')
+  const seed = JSON.parse(readFileSync(lifecyclePath))
+  const genesis = seed.snapshots[0]
+  // 造出「bump 了兩次卻沒發成」的殘留:94(已發布)→ 95 → 96,immutableHead 指 95
+  const s95 = { releaseVersion: '0.1.0-beta.95', previousSnapshotSha256: lifecycleSnapshotSha256(genesis), providers: genesis.providers, retiredProviders: [] }
+  const s96 = { releaseVersion: '0.1.0-beta.96', previousSnapshotSha256: lifecycleSnapshotSha256(s95), providers: genesis.providers, retiredProviders: [] }
+  writeJson(root, 'packages/governance/canonical/provider-lifecycle.json', {
+    ...seed,
+    immutableHead: { providerInventorySha256: providerInventorySha256(s95.providers), releaseVersion: '0.1.0-beta.95', snapshotSha256: lifecycleSnapshotSha256(s95) },
+    snapshots: [genesis, s95, s96],
+  })
+  writeJson(root, 'packages/design-system/package.json', { name: '@qijenchen/design-system', version: '0.1.0-beta.97' })
+
+  // 面 1:告訴它「consumer 裝著 94」→ 95/96 是殘留,丟掉;97 接在 94 後面;immutableHead = 94
+  const truncated = run(root, '--last-published', '0.1.0-beta.94')
+  assert.equal(truncated.status, 0, truncated.stderr)
+  assert.match(truncated.stdout, /丟棄未發布的尾端快照:0\.1\.0-beta\.95 \/ 0\.1\.0-beta\.96/)
+  const after = JSON.parse(readFileSync(lifecyclePath))
+  assert.deepEqual(after.snapshots.map((item) => item.releaseVersion), ['0.1.0-beta.94', '0.1.0-beta.97'])
+  assert.equal(after.immutableHead.releaseVersion, '0.1.0-beta.94')
+  assert.equal(after.immutableHead.snapshotSha256, lifecycleSnapshotSha256(after.snapshots[0]))
+  assert.equal(after.snapshots[1].previousSnapshotSha256, after.immutableHead.snapshotSha256)
+  // 產物必須過帳本驗證(截斷 + 還原不是隨便剪)
+  validateProviderLifecycleLedger({ ledger: after, registry: JSON.parse(readFileSync(join(root, 'packages/governance/canonical/providers.json'))), releaseVersion: '0.1.0-beta.97' })
+
+  // 面 2:沒有殘留時,帶旗標與不帶旗標結果必須完全相同(不得多剪)
+  const rootB = fixture()
+  const plain = run(rootB); assert.equal(plain.status, 0, plain.stderr)
+  const plainLifecycle = readFileSync(join(rootB, 'packages/governance/canonical/provider-lifecycle.json'), 'utf8')
+  const rootC = fixture()
+  const flagged = run(rootC, '--last-published', '0.1.0-beta.94'); assert.equal(flagged.status, 0, flagged.stderr)
+  assert.doesNotMatch(flagged.stdout, /丟棄/)
+  assert.equal(readFileSync(join(rootC, 'packages/governance/canonical/provider-lifecycle.json'), 'utf8'), plainLifecycle)
+
+  // 面 3:指到不在帳本裡的版本 → 擋,而且不得動到任何檔
+  const rootD = fixture()
+  const before = snapshot(rootD)
+  const rejected = run(rootD, '--last-published', '0.1.0-beta.1')
+  assert.notEqual(rejected.status, 0)
+  assert.match(rejected.stderr, /is not a retained lifecycle snapshot/)
+  assertSnapshot(rootD, before)
+  // 旗標缺值 / 非 semver 也擋
+  assert.notEqual(run(fixture(), '--last-published').status, 0)
+  assert.notEqual(run(fixture(), '--last-published', 'latest').status, 0)
+}
+
+console.log('✓ version SSOT sync atomically advances an unchanged provider lifecycle, is idempotent, checks without writes, blocks topology drift/symlinks, preserves mode, rolls back mid-transaction, and --last-published truncates only unreleased tail snapshots')

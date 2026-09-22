@@ -135,11 +135,14 @@ const CURRENT_CONSENT_FILE = 'current.json'
 
 export function readReleaseConsent({ branch, headSha, releaseLookup = null } = {}) {
   // 「這份授權已經完成過一次發布嗎」是要保證的性質,而它只能由**線上有沒有那個 release**
-  // 回答。把那個查詢做成可注入的相依:預設走線上,測試才餵得出兩面對照組
-  //(有 release → 授權用掉了;明確沒有 release → 那次被中斷,同一份授權還能續)。
-  // 不可注入的相依 = 那一格永遠只測得到一個方向,正是 M32 的參數邊界盲點。
-  const countsAsPublished = releaseLookup
-    || (version => releaseCountsAsPublished(releaseRepository(), `v${version}`))
+  // 回答。把那個查詢做成可注入的相依:預設走線上,測試才餵得出三面對照組
+  //(有 release → 授權用掉了;明確沒有 → 那次被中斷,同一份授權還能續;**讀不到 → 保守當用掉**)。
+  // 注入點回的是**三值狀態**(true / false / null),fail-closed 的組合留在這裡
+  //(countsAsPublishedFromState)—— 2026-09-22 稽核抓到前一版的注入點回 boolean,
+  // 「讀不到」那一面在測試裡根本表達不出來,第三面與第一面是同一格。
+  const lookupState = releaseLookup
+    || (version => releasePublishedState(releaseRepository(), `v${version}`))
+  const countsAsPublished = (version) => countsAsPublishedFromState(lookupState(version))
   const verdicts = []
   // v3 優先:綁產品內容,跨分支成立
   const currentFile = resolve(consentDir(), CURRENT_CONSENT_FILE)
@@ -824,13 +827,6 @@ function protectedMainCiRows(workflow, repository, sha) {
 }
 
 /**
- * 某個 commit 上**實際**的發布版號(向 GitHub 讀那個 commit 的 manifest,不看本地工作區)。
- *
- * 本地的 package.json 是「我想發哪一版」;這支讀的是「那個 commit 裡寫的是哪一版」。
- * 兩者在「bump 還沒併進 main」時分開,而那正是 2026-09-21 建出錯 tag 的直接原因。
- * 三個包必須一致,不然 readback 的 exact version 語意本身就不成立。
- */
-/**
  * 這個 tag 在線上是否真的有一個已發布(非 draft)的 release。
  *
  * 三值:`true` 有、`false` 明確沒有(404)、`null` **讀不到**。
@@ -847,19 +843,31 @@ export function classifyReleaseLookup({ ok, code, text }) {
   } catch { return null }
 }
 
-function releasePublishedState(repository, tag) {
+export function releasePublishedState(repository, tag) {
   if (!repository) return null
   return classifyReleaseLookup(curlGitHub('GET', `repos/${repository}/releases/tags/${encodeURIComponent(tag)}`))
 }
 
+/**
+ * 三值 → 「這一版算不算消耗掉一次發布」。純函式,方向是 fail closed:
+ *   true  → 算(真的發出去了)
+ *   false → 不算(明確 404,那次嘗試沒發成,同一份授權還能續)
+ *   null  → **算**(讀不到 ≠ 沒發;讀不到就當沒發會讓同一份授權發第二次)
+ * 抽成純函式是因為 2026-09-22 稽核抓到:這個 null→算 的方向先前只有原始碼 regex 在看,
+ * 沒有任何行為測試真的餵過 null(所有注入的 lookup 都只回 boolean)。
+ */
+export function countsAsPublishedFromState(state) {
+  return state !== false
+}
+
 /** 這一版**確定沒有**發出去嗎(只有明確 404 才是 true)。讀不到一律回 false = 保守當已發。 */
-function releaseDefinitelyMissing(repository, tag) {
+export function releaseDefinitelyMissing(repository, tag) {
   return releasePublishedState(repository, tag) === false
 }
 
 /** 這一版算不算消耗掉一次發布(有 release,或讀不到 → 都算)。 */
-function releaseCountsAsPublished(repository, tag) {
-  return !releaseDefinitelyMissing(repository, tag)
+export function releaseCountsAsPublished(repository, tag) {
+  return countsAsPublishedFromState(releasePublishedState(repository, tag))
 }
 
 /**
@@ -901,6 +909,13 @@ function releaseRepository() {
   try { return loadReleaseWorkflow().automation.repository } catch { return null }
 }
 
+/**
+ * 某個 commit 上**實際**的發布版號(向 GitHub 讀那個 commit 的 manifest,不看本地工作區)。
+ *
+ * 本地的 package.json 是「我想發哪一版」;這支讀的是「那個 commit 裡寫的是哪一版」。
+ * 兩者在「bump 還沒併進 main」時分開,而那正是 2026-09-21 建出錯 tag 的直接原因。
+ * 三個包必須一致,不然 readback 的 exact version 語意本身就不成立。
+ */
 function packageVersionAtCommit(repository, sha) {
   const versions = []
   for (const path of Object.values(PACKAGE_PATHS)) {
@@ -1228,10 +1243,10 @@ function npmPackageReadback(name, version) {
 
 export function buildFiveStepStatus(workflow, observation) {
   validateReleaseWorkflow(workflow)
-  // 2026-09-21 M37 第十一種形狀:**「這條分支的工作已經在 main 上」被當成「這條分支有一個
+  // 2026-09-21 M37 第十種形狀・位置 #2:**「這條分支的工作已經在 main 上」被當成「這條分支有一個
   // MERGED 的 PR」**;同一根的另一半是「這個 head 的 CI 綠了」被當成「這條分支的 PR 綠了」。
   //
-  // 錨(同日實測,而且是在修上一種形狀的同一次跑裡發作的):PR #144 合併之後,我在**同一條
+  // 錨(同日實測,而且是在修位置 #1 的同一次跑裡發作的):PR #144 合併之後,我在**同一條
   // 分支**上再推一個版號 bump commit(d06b09e4)。`currentPullRequest` 找到的還是 #144
   //(headRefOid=d7569f3f、state=MERGED),於是 pr-checks 讀**別份內容**的綠燈報 complete、
   // merge 讀「有一個 MERGED 的 PR」報 complete —— 兩步全綠,而 d06b09e4 從來沒進 main。
@@ -1298,7 +1313,7 @@ export function buildFiveStepStatus(workflow, observation) {
       && observation.release.publishedAt
       && observation.release.isImmutable !== true,
   )
-  // 2026-09-21 M37 第十種形狀:**「這個版號發布過」被當成「protected main 上這份內容已發布」**。
+  // 2026-09-21 M37 第十種形狀・位置 #1:**「這個版號發布過」被當成「protected main 上這份內容已發布」**。
   //
   // 錨(同日、本機實證):merge 這一步把 4 個新 commit 併進 protected main,但版號沒 bump,
   // 於是 `observation.tag` 指向的是**這次工作之前**就發布好的 v0.1.0-beta.140 ——
@@ -1406,9 +1421,9 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
  * 擋下來是錯的(套件裡的治理語料確實有變、consumer 真的會收到),但**不講出來也是錯的**:
  * 發版時就該明說這一版不會改變任何畫面,讓人自己判斷還要不要發。
  */
-export function productChangeSincePreviousRelease(previousReleaseCommit, headSha) {
-  if (!previousReleaseCommit || !headSha) return null
-  const before = productContentDigest(previousReleaseCommit)
+export function productChangeSinceBaseline(baselineCommit, headSha) {
+  if (!baselineCommit || !headSha) return null
+  const before = productContentDigest(baselineCommit)
   const after = productContentDigest(headSha)
   if (!before || !after) return null
   return before === after ? 'none' : 'changed'
@@ -1422,7 +1437,7 @@ export function listReleaseTags() {
 }
 
 /**
- * 上一個已發布版本的 ref。
+ * 要比的基準:線上目前已發布的那一份的 ref。
  *
  * **2026-09-21 修**:原本讀 `observation.release.targetCommitish` —— 但 `gh release view` 的
  * `--json` 欄位清單裡**根本沒有 targetCommitish**,所以它恆為 undefined,
@@ -1462,22 +1477,24 @@ function printReport(workflow, observation, json) {
     steps: buildFiveStepStatus(workflow, observation),
     legacyMechanisms: workflow.legacyMechanisms,
   }
-  // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSincePreviousRelease 的理由)。
-  const previousRef = publishedBaselineRef(observation.tag, listReleaseTags(),
+  // 這一版會不會改變畫面 —— 講出來,不替 user 決定(見 productChangeSinceBaseline 的理由)。
+  const baselineRef = publishedBaselineRef(observation.tag, listReleaseTags(),
     tag => releasePublishedState(observation.repository, tag) === true)
-  report.previousReleaseRef = previousRef
-  report.productChange = productChangeSincePreviousRelease(previousRef, observation.headSha)
+  // JSON key 跟著函式改名(2026-09-22 稽核):它裝的是「線上目前那一份」,版號沒 bump 時就是當前
+  // 這一版,若沿用舊名(previous…)會讓機器可讀輸出的欄位名與實際語意相反。全 repo 零讀取端。
+  report.publishedBaselineRef = baselineRef
+  report.productChange = productChangeSinceBaseline(baselineRef, observation.headSha)
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
     for (const step of report.steps) console.log(`${step.id.padEnd(10)} ${step.status} (${step.authority})`)
     if (report.productChange === 'none') {
-      console.log(`   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與 ${previousRef} 完全相同);變的是治理與腳本。`)
+      console.log(`   ⓘ 這一版**不會改變任何畫面**(預覽看得見的檔案與 ${baselineRef} 完全相同);變的是治理與腳本。`)
     } else if (report.productChange === 'changed') {
-      console.log(`   ⓘ 這一版**會改變畫面**(預覽看得見的檔案與 ${previousRef} 不同)。`)
+      console.log(`   ⓘ 這一版**會改變畫面**(預覽看得見的檔案與 ${baselineRef} 不同)。`)
     } else {
       // 「量不到」不得看起來像「量到沒變」——講清楚是哪一種,否則這行的沉默無法與「沒差異」區分。
-      console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(上一版 ref=${previousRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
+      console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(基準 ref=${baselineRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
     }
   }
   return report
@@ -1703,7 +1720,8 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         watchRun(observation.repository, observation.publishRun)
         continue
       }
-      // 發布前最後一道:這一版的 provider lifecycle 鏈,必須接得上**線上最新已發布**的那一版。
+      // 發布前最後一道:這一版的 provider lifecycle 鏈,必須接得上**某個 consumer 實際裝著**的那一版
+      //(不是「線上最新已發布」—— 那個版本可能正是沒人裝得上的那個,見 lifecycleChainReachesAConsumer)。
       // 接不上就等於發一個沒有 consumer 裝得上的版本(2026-09-21 beta.142 的實況),
       // 而版本一旦發出去就是 immutable —— 只能再發一版來救,代價是一個永久燒掉的版號。
       const chain = lifecycleChainReachesAConsumer({
