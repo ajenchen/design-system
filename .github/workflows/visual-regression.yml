@@ -11,6 +11,10 @@ on:
         description: '重拍 curated baseline 並以 artifact 上傳(在釘死的容器渲染器裡);不會自動 commit'
         type: boolean
         default: false
+      reference_ref:
+        description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;預設 = 最後一次週跑綠(2026-08-05)的 commit'
+        type: string
+        default: '2ec2f3fedd94aa30e9b091eac4d713374484bd05'
   schedule:
     - cron: '23 3 * * 3'
 
@@ -36,7 +40,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 45  # ~124 curated scenarios × screenshot + diff(headroom 給 scenario 增長)
+    timeout-minutes: 60  # ~124 curated scenarios × screenshot + diff;update_baseline 時多一次參考 commit 的建置與重拍
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -73,19 +77,59 @@ jobs:
           # Auto-start storybook static server inside visual-audit.mjs
           npm run visual-audit -- --scope=all 2>&1 | tail -40
 
-      # 手動重拍 baseline:只在釘死的容器渲染器裡拍,上傳成 artifact,由人／agent 開 PR 帶進 repo
-      #(本 job 只有 contents:read,不直接寫 baseline —— 接受新圖是產品語意決策,要走 PR + 使用者拍板)。
+      # ── 手動重拍 baseline(update_baseline)──────────────────────────────────────────────
+      # 「新拍的圖」不等於「對的圖」,重拍要證三件事(2026-09-22):
+      #  1. 儀器穩:重拍完立刻再比一次,任何一張不是 0% 就整個 job 紅、不上傳 —— 儀器不穩時不該產生 baseline。
+      #  2. 差異可歸因:像素形態學分不開「同一段字、不同光柵器」與「內容真的變了」(兩版實測都失敗),
+      #     唯一可靠的辦法是把參考 commit 也放到同一個容器重拍,同渲染器下逐張比,差異全是真的內容變動,
+      #     再以 reference_ref..HEAD 的 commit 歸因(scripts/visual-baseline-diff-report.mjs)。
+      #  3. 接受與否是人的事:本 job 只有 contents:read,產物走 artifact → PR → 使用者看圖拍板。
+      - name: Checkout reference commit for same-renderer attribution
+        if: ${{ inputs.update_baseline }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.reference_ref }}
+          path: reference
+          persist-credentials: false
+      - name: Recapture the reference commit in the same container
+        if: ${{ inputs.update_baseline }}
+        working-directory: reference
+        run: |
+          npm run --silent setup:dependencies
+          npm run build:lib 2>&1 | tail -3
+          npm run build-storybook 2>&1 | tail -3
+          node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -5
+          mkdir -p "$RUNNER_TEMP/reference-baseline"
+          cp infra/governance/baseline/visual/curated/*.png "$RUNNER_TEMP/reference-baseline/"
+          echo "reference baseline: $(ls "$RUNNER_TEMP/reference-baseline" | wc -l) files"
       - name: Recapture curated baselines(update_baseline)
         if: ${{ inputs.update_baseline }}
         run: |
           npm run visual-audit -- --scope=all --update-baseline 2>&1 | tail -20
-      - name: Upload recaptured baselines
+      - name: Instrument stability —— re-diff right after recapture must be clean
+        if: ${{ inputs.update_baseline }}
+        run: |
+          # 剛寫入的 baseline vs 立刻再拍一次:必須 0 張超標,否則渲染器仍在浮動,這批 baseline 不可信
+          npm run visual-audit -- --scope=all 2>&1 | tail -12
+      - name: Attribute recaptured baselines against the reference(same renderer)
+        if: ${{ inputs.update_baseline }}
+        run: |
+          node scripts/visual-baseline-diff-report.mjs --selftest
+          node scripts/visual-baseline-diff-report.mjs \
+            --old-dir "$RUNNER_TEMP/reference-baseline" \
+            --since-ref "${{ inputs.reference_ref }}" \
+            --out .git/governance-runtime/evidence/visual/baseline-diff
+          cat .git/governance-runtime/evidence/visual/baseline-diff/summary.md | head -60
+      - name: Upload recaptured baselines + attribution report
         if: ${{ inputs.update_baseline }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: visual-baselines-recaptured
-          path: infra/governance/baseline/visual/curated/
+          path: |
+            infra/governance/baseline/visual/curated/
+            .git/governance-runtime/evidence/visual/baseline-diff/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
 
       - name: Upload diff artifacts(on failure)
