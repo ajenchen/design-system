@@ -949,7 +949,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -968,9 +968,10 @@ jobs:
           BROWSER_DT_HANDLES: ${{ needs.verify-browser-datatable-handles.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
+          CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
@@ -1035,3 +1036,49 @@ jobs:
           npm run --silent test:waived-self-review
           npm run --silent test:governance-evidence-control-plane
           npm run --silent test:governance-control-plane
+
+  container-closed-git:
+    name: Closed git inside the pinned Playwright container(Visual Regression 的執行環境)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 2026-09-23:Visual Regression run #289 在容器裡第一步安裝依賴就死 —— closed git 把 HOME 與 global config 全遮掉
+    #(hermetic),actions/checkout 寫進 global 的 safe.directory 跟著被遮,而容器裡執行者是 root、簽出目錄屬於
+    # uid 1001 → `git ls-files` exit 128「dubious ownership」。那條 workflow 只有排程與手動觸發,PR 階段沒有任何
+    # job 用同一個容器跑同一段命令,所以錯的容器設定要等 user 親手按下去才會紅(前一天 #288 缺 git-lfs 也是同一種病)。
+    # 這個 job 在每支 PR 用**同一個映像**跑那條 workflow 開頭的幾步,外加三面對照組(裸 git 該拒必拒 /
+    # closed git 該通必通 / 上層 .git 是別人的仍拒)。映像 tag 與 visual-regression.yml 必須相同,兩者都由
+    # infra/governance/test/ci-workflow-scope.test.mjs 對 package-lock 的 playwright 版本斷言(SSOT 是 lock)。
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      # 這個映像(Playwright noble)沒有 jq;治理的依賴安裝走 closed 工具組,bash / git / jq / node / perl / python3
+      # 缺一就停(PR #152 第一次跑就死在這裡:「No authenticated jq executable」)。從 Ubuntu 簽章過的套件庫補齊,
+      # 再逐一斷言存在 —— 跟 hooks-linux 一樣「斷言而不是假設」。兩支 workflow 這一步必須逐字相同
+      #(infra/governance/test/ci-workflow-scope.test.mjs 斷言),否則 PR 閘測的又是另一個環境。
+      - name: Provide the closed tool profile interpreters the image lacks
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends jq perl python3
+          for tool in bash git jq node perl python3; do
+            command -v "$tool" >/dev/null || { echo "missing closed-profile interpreter: $tool" >&2; exit 1; }
+          done
+
+      - name: Closed git ownership —— 三面對照組(root 對他人擁有的 repo)+ 真實簽出目錄
+        run: node scripts/closed-git-foreign-owner-invariant.mjs --require --workspace="$GITHUB_WORKSPACE"
+
+      - name: Install and audit with the lock-verified npm runtime(run #289 死在這一步)
+        run: npm run --silent setup:dependencies
+
+      - name: Baseline diff report selftest in the same renderer image
+        run: node scripts/visual-baseline-diff-report.mjs --selftest

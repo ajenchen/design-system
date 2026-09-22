@@ -53,6 +53,36 @@ const CLOSED_GIT_ENVIRONMENT = Object.freeze({
   PATH: '/usr/bin:/bin',
   XDG_CONFIG_HOME: '/dev/null',
 })
+
+// 2026-09-23:上面那張表把 HOME 與 global/system config 全遮掉(hermetic),於是 actions/checkout 為 runner 寫進 global 的
+// safe.directory 也一起被遮 —— 在 Playwright 容器裡(執行者是 root,簽出目錄屬於 uid 1001)`git ls-files` 直接
+// exit 128「dubious ownership」,Visual Regression run #289 死在第一步安裝依賴。修法不是放寬成 `safe.directory=*`:
+// 呼叫端指名 cwd 本身就是「在這個 repo 跑」的信任決定,所以只把 cwd、以及跟 cwd **同一個擁有者**的祖先目錄列為
+// safe.directory(git 會往上找 .git;擁有者一換就停,CVE-2022-24765 要擋的「別人塞在上層的 .git」仍然擋得住)。
+// 走 GIT_CONFIG_{COUNT,KEY,VALUE}(command scope 屬 protected config,safe.directory 只認 system / global / command
+// 三層),不走 -c —— 呼叫端注入 -c 仍照舊被拒。兩面對照組:scripts/closed-git-foreign-owner-invariant.mjs
+//(ci.yml `container-closed-git` job 用與 Visual Regression 相同的容器映像,每支 PR 跑)。
+export function closedGitSafeDirectories(cwd, { stat = statSync } = {}) {
+  const owner = stat(cwd).uid
+  const directories = [cwd]
+  for (let current = cwd; ;) {
+    const parent = dirname(current)
+    if (parent === current || stat(parent).uid !== owner) break
+    directories.push(parent)
+    current = parent
+  }
+  return directories
+}
+
+function closedGitSafeDirectoryEnvironment(cwd) {
+  const directories = closedGitSafeDirectories(cwd)
+  const environment = { GIT_CONFIG_COUNT: String(directories.length) }
+  directories.forEach((directory, index) => {
+    environment[`GIT_CONFIG_KEY_${index}`] = 'safe.directory'
+    environment[`GIT_CONFIG_VALUE_${index}`] = directory
+  })
+  return environment
+}
 const CLOSED_GH_CANDIDATES = Object.freeze({
   darwin: ['/opt/homebrew/bin/gh', '/usr/local/bin/gh', '/usr/bin/gh'],
   linux: ['/usr/bin/gh', '/usr/local/bin/gh', '/home/linuxbrew/.linuxbrew/bin/gh'],
@@ -487,6 +517,7 @@ export function runClosedGit(args, {
       encoding: output === 'capture' ? 'utf8' : (output === 'buffer' ? null : undefined),
       env: {
         ...CLOSED_GIT_ENVIRONMENT,
+        ...closedGitSafeDirectoryEnvironment(cwd),
         ...closedGitIdentityEnvironment(gitIdentity),
       },
       input,
