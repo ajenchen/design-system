@@ -313,15 +313,15 @@ const RangePreviewCanvas = () => {
 }
 
 export const RangePreviewExtend: Story = {
-  name: '範圍預覽:往後延長',
-  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在 5/20:藍色細框從 5/4 框到 5/20,框的右端就是停留日的半圓(缺口朝區間),灰色軌道照舊顯示現在的 5/4–5/12。' } } },
+  name: '範圍預覽:往後延長(框長過灰色軌道)',
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在 5/20:藍色細框從 5/4 框到 5/20,**長過灰色軌道、跨列畫到白底格上**,框的右端就是停留日的半圓(缺口朝區間);灰色軌道照舊顯示現在的 5/4–5/12。與下一則「往前縮短」成對:這則看框在軌道外,下一則看框在軌道內。' } } },
   render: () => <RangePreviewCanvas />,
   play: rangePreviewPlay('end', '2026-05-20'),
 }
 
 export const RangePreviewShrink: Story = {
-  name: '範圍預覽:往前縮短',
-  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在中段的 5/7:框只到 5/7,落在灰色軌道裡面,一眼看出點下去區間會縮小;停留日不再畫單獨的一圈。' } } },
+  name: '範圍預覽:往前縮短(框縮在軌道內,尾段只剩灰底)',
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在中段的 5/7:框只到 5/7,**縮在灰色軌道裡面,5/8–5/12 只剩灰底、沒有框**——「現在是 5/4–5/12」與「點下去會變 5/4–5/7」同時看得到,這是灰色軌道留著的理由(Q4);停留日不再畫單獨的一圈。與上一則「往後延長」成對:上一則看框在軌道外,這則看框在軌道內。' } } },
   render: () => <RangePreviewCanvas />,
   play: rangePreviewPlay('end', '2026-05-07'),
 }
