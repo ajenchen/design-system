@@ -115,6 +115,12 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length + 1)
   const commandLines = source.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
   assert.equal((commandLines.match(/\bnpm ci\b/g) ?? []).length, 0, 'ci.yml 不得出現裸 npm ci(參考建置也走 setup:dependencies;註解不算)')
+  // 2026-09-23:參考建置(main)的 lock 與候選相同時共用候選已驗證的 node_modules,不再第二次安裝 ——
+  // 否則「比 main」綁死在「main 裝得起來」,main 上的供應鏈閘一紅,連修它的 PR 都過不了(#153 第一輪)。
+  // lock 不同才重裝;symlink 必須在移除 worktree 前先解開。
+  const referenceBuild = source.slice(source.indexOf('git worktree add tmp/ref-src'), source.indexOf('git worktree remove --force tmp/ref-src'))
+  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n\s+echo[^\n]*\n\s+\(cd tmp\/ref-src && npm run --silent setup:dependencies\)\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才重裝')
+  assert.match(referenceBuild, /\[ -L tmp\/ref-src\/node_modules \] && rm tmp\/ref-src\/node_modules\n\s*$/, '移除 worktree 前必須先解開 symlink')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
   // build-storybook 出現 3 次(static 的 manifest 驗證 + 兩個瀏覽器 job),playwright install 2 次。
@@ -161,7 +167,11 @@ for (const name of [
   test(`${name} is scheduled/manual, outside the PR gate, and reports failures truthfully`, () => {
     const source = readWorkflow(name)
     const workflow = parseWorkflowSemantics(source)
-    assert.deepEqual(Object.keys(workflow.on).sort(), ['schedule', 'workflow_dispatch'])
+    // 2026-09-23:visual-regression 多聽一個 repository_dispatch —— 治理 token 沒有 Actions 寫入權限(按鈕 403)
+    // 但能發 repository_dispatch(204);只監聽按鈕 = 把重拍綁在「user 親手登入按下去」這個代理上。事件型別封閉為一個。
+    const expectedTriggers = name === 'visual-regression.yml' ? ['repository_dispatch', 'schedule', 'workflow_dispatch'] : ['schedule', 'workflow_dispatch']
+    assert.deepEqual(Object.keys(workflow.on).sort(), expectedTriggers)
+    if (name === 'visual-regression.yml') assert.match(source, /repository_dispatch:\n\s+types: \[visual-regression-run\]/)
     assert.ok(Object.values(workflow.jobs).every(job => job.continueOnError !== true))
     assert.doesNotMatch(source, /^\s{2}(?:push|pull_request):/m)
     assert.doesNotMatch(source, /name:\s*(?:Verify\(|a11y\(|Bundle size budget|Visual Regression Diff|Composition Fidelity Diff|Packaging integrity\()/)
@@ -182,11 +192,18 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.equal(tag[1], locked, `容器映像 v${tag[1]} 必須等於 lock 的 playwright ${locked} —— 兩者分開時瀏覽器與字型都會跟著分開`)
   // 重拍 baseline 只能是手動輸入,且產物走 artifact,不得直接寫 repo(接受新圖 = 產品語意決策,要走 PR + 拍板)
   assert.match(source, /update_baseline:\s*\n\s*description:/, '必須提供 update_baseline 手動輸入')
-  assert.match(source, /if: \$\{\{ inputs\.update_baseline \}\}[\s\S]{0,200}--update-baseline/, '重拍步驟必須由該輸入閘住')
+  // 三種觸發(按鈕 / repository_dispatch / 排程)的輸入收斂到 job env 的兩個變數,步驟只讀 env(SSOT);
+  // 參考 commit 的預設值只能寫一次(env 的 fallback),手動輸入的 default 留空。
+  assert.match(source, /UPDATE_BASELINE: \$\{\{ \(inputs\.update_baseline == true \|\| github\.event\.client_payload\.update_baseline == true/, 'UPDATE_BASELINE 必須同時接按鈕與 repository_dispatch')
+  assert.match(source, /REFERENCE_REF: \$\{\{ inputs\.reference_ref \|\| github\.event\.client_payload\.reference_ref \|\| '[0-9a-f]{40}' \}\}/, 'REFERENCE_REF 的 fallback 必須是完整 40 碼 SHA')
+  assert.equal((source.match(/2ec2f3fedd94aa30e9b091eac4d713374484bd05/g) ?? []).length, 1, '參考 commit 的預設值只能有一個住所(env 的 fallback)')
+  assert.doesNotMatch(source.slice(source.indexOf('\njobs:\n')).replace(/inputs\.(update_baseline|reference_ref)/g, ''), /\$\{\{[^}]*inputs\./, 'jobs 區的步驟不得直接讀 inputs,一律經 env')
+  assert.match(source, /if: \$\{\{ env\.UPDATE_BASELINE == 'true' \}\}[\s\S]{0,200}--update-baseline/, '重拍步驟必須由 UPDATE_BASELINE 閘住')
+  assert.match(source, /if: \$\{\{ env\.UPDATE_BASELINE != 'true' \}\}[\s\S]{0,200}visual-audit -- --scope=all/, '一般比對步驟必須在不重拍時跑')
   assert.match(source, /name: visual-baselines-recaptured/, '重拍結果必須以 artifact 上傳')
   // 「新拍的圖」不等於「對的圖」:重拍 job 必須自證三件事(2026-09-22)
   assert.match(source, /reference_ref:\s*\n\s*description:/, '必須提供 reference_ref 輸入(同渲染器歸因的參考 commit)')
-  assert.match(source, /ref: \$\{\{ inputs\.reference_ref \}\}\s*\n\s*path: reference/, '參考 commit 必須簽出到子目錄,在同一個容器重拍')
+  assert.match(source, /ref: \$\{\{ env\.REFERENCE_REF \}\}\s*\n\s*path: reference/, '參考 commit 必須簽出到子目錄,在同一個容器重拍')
   assert.match(source, /working-directory: reference[\s\S]{0,400}--update-baseline/, '參考 commit 必須真的重拍')
   const recaptureIdx = source.indexOf('name: Recapture curated baselines(update_baseline)')
   const stabilityIdx = source.indexOf('name: Instrument stability')
@@ -199,7 +216,7 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   const attribute = source.slice(attributeIdx, source.indexOf('name: Upload recaptured baselines'))
   assert.match(attribute, /visual-baseline-diff-report\.mjs --selftest/, '歸因腳本要先跑自己的對照組')
   assert.match(attribute, /--old-dir "\$RUNNER_TEMP\/reference-baseline"/, '歸因必須比對「參考 commit 在同一個容器重拍」的圖')
-  assert.match(attribute, /--since-ref "\$\{\{ inputs\.reference_ref \}\}"/, '歸因區間必須是 reference_ref..HEAD')
+  assert.match(attribute, /--since-ref "\$REFERENCE_REF"/, '歸因區間必須是 REFERENCE_REF..HEAD(引號包住的 shell 變數,不直接內插)')
   assert.match(source, /baseline-diff\/\s*\n\s*if-no-files-found: error/, 'artifact 必須帶歸因報告')
   assert.doesNotMatch(source, /git (commit|push)/, '這個 job 不得自己 commit / push baseline')
   assert.match(source, /permissions:\s*\n\s*contents: read/, '維持 contents: read')
