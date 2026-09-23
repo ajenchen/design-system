@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:b7972d4fce4e697e7d47be8b2096ebaaaddbd0db1bdf3c98cdd206f48899f4f3` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:33ef98de57936dbd763007f1e87389a589a131b388527190acbbc231dd2d9833` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:58a50a9adac72e00c30eb6e513a90e36f192d7e55949f4cc708b18d492f14efb` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:0e94ca144f8e8acb6f91443ee0ccca98f403d87297091456cb999237411e10d5` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:98fde908ac8e70d1b9807cdc03592f37b6f3062bc152e24057db0218f07cbfc5` |
@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:246fe2fc228064b145748d7fb9f2ebd880ae95f561e00d20e69adb3de8c8a3b3` |
+| github-repository-governance | `.github/` | `sha256:0af67b50907f7fd5fee96ba1fe1a801132f80fb60d6e35bc18f7888223acecda` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:203f9c6346446d727be5925af12b425ee35e33c6d55ecf934e21aa7b0555d3ca` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -203,7 +203,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:90ea8b648deef6df59ba46f48069a551112cb41982cf9a771edeb2ad355db6ce` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:2a68dccfe4cd4294688608263b7ccb6834e1b0675fe38ff751c335440bf40399` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:544f032ab84b76dec45148defb6e59ac5bfa1aff958bb5e5ac77c6c70d6d880b` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:828867381f67f4178d841f6be8dcd4fc4ae95f5a596c13a6f4faf1d4b921c1d8` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:906747cec87d2ec1b9b63c125ca2fc03bb68e3c6a7abd14147698671528bfb0d` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:78da16ea5ac91be3d8ba1fd1df198aa251dfd4de5b2abbe2d9036b041b2341c4` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
