@@ -1700,16 +1700,11 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     if (incomplete.id === 'publish') {
       invariant(incomplete.status !== 'failed', `published GitHub Release ${observation.tag} is not immutable`)
-      // 版號沒 bump:這個版號早就發布過,而 protected main 上有它不包含的內容。
-      // 不是「等人」也不是「等 CI」,是工程上少做了一步,所以丟錯 fail closed(exit 1),
-      // 不進 publish、不重發 immutable 版號。
-      invariant(incomplete.status !== 'stale-version',
-        `${observation.tag} 早就發布過(tag 指向 ${String(observation.tagCommitSha).slice(0, 12)}),` +
-        `而 protected main 已經走到 ${String(observation.protectedMainSha).slice(0, 12)} —— ` +
-        `版號沒 bump,沒有東西可發。先在內容 PR 裡 bump 版號` +
-        `(改 packages/design-system/package.json 後跑 node scripts/sync-version-to-all-manifests.mjs),` +
-        `合併進 main,再跑 npm run release:auto。`)
       // **合併之後、發布之前,要看 protected main 那一輪 CI**(2026-09-21 對抗稽核 blocker)。
+      // 2026-09-23:這段原本排在「版號沒 bump」那道之後 —— 只合併不發版的 PR(#152)走到這裡先被
+      // 「沒有東西可發」擋掉 exit 1,main 那一輪 CI 紅了(上游 npm 發版讓供應鏈閘的字串釘死失效,
+      // 17:16Z 起每一條 CI 全紅)整整六個多小時沒人讀到,直到下一件事撞上去。讀回 main 的 CI 不依賴
+      // 有沒有版本要發,所以搬到前面:合併完就先把 main 那一輪看完,紅了就先講紅。
       // 先前整條五步從來不看它:PR 綠 → 合併 → 直接發布,而 main 上那一輪可能紅。
       // beta.140 就是這樣發出去的(main CI 當時是 failure),等於「protected main + required CI」
       // 這道保護在**發布這一步**形同不存在 —— 合併之後才是真正出貨的那份程式碼。
@@ -1745,6 +1740,15 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         gh(['pr', 'checks', '--repo', observation.repository, '--watch', '--interval', '15'], { allowFailure: true })
         continue
       }
+      // 版號沒 bump:這個版號早就發布過,而 protected main 上有它不包含的內容。
+      // 不是「等人」也不是「等 CI」,是工程上少做了一步,所以丟錯 fail closed(exit 1),
+      // 不進 publish、不重發 immutable 版號。(排在 main CI 讀回之後 —— 見上方 2026-09-23 註)
+      invariant(incomplete.status !== 'stale-version',
+        `${observation.tag} 早就發布過(tag 指向 ${String(observation.tagCommitSha).slice(0, 12)}),` +
+        `而 protected main 已經走到 ${String(observation.protectedMainSha).slice(0, 12)} —— ` +
+        `版號沒 bump,沒有東西可發(main 那一輪 CI 已讀回:綠)。先在內容 PR 裡 bump 版號` +
+        `(改 packages/design-system/package.json 後跑 node scripts/sync-version-to-all-manifests.mjs),` +
+        `合併進 main,再跑 npm run release:auto。`)
       // 一份授權 = 一次 final release。第二次必須有 incident 證據,否則停下來要求批次做完再發。
       // 這一行就是先前缺的「執行面呼叫」—— 沒有它,canonical 的「最多一次」只是紙上的字。
       // 帳本記的是「送出了 mutation」,不是「真的發出去了」——這兩件事在被中斷、

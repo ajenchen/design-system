@@ -40,7 +40,10 @@ import {
   PROTECTED_CONTROL_PLANE_PATH_PREFIXES,
 } from './lib/consumer-control-plane-policy.mjs'
 import {
+  compareGovernedVersions,
   evaluateVerifiedHighVulnerabilityAudit,
+  metavulnerabilityRangeCovers,
+  nextPatchVersion,
   runClosedBootstrapStep,
 } from './lib/governance-dependency-bootstrap.mjs'
 import {
@@ -880,6 +883,29 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   extraHigh.metadata.vulnerabilities.total = 4
   assert.throws(() => evaluate(extraHigh), /unremediated high\/moderate finding:unknown/)
 
+  // 2026-09-23:npm 那筆的 range 是 registry 依 npm 版本清單算的,上游一發版就變(12.1.0 讓尾巴從
+  // `>=12.0.0-pre.0.0` 收成 `12.0.0-pre.0.0 - 12.0.2`),釘整條字串 = 每次 npm 發版 CI 全紅。
+  // 現在驗的是三件性質:治理版 11.19.0 仍受影響 / 11.19.1 不在範圍(修好的 npm 存在)/ 只經 tar。
+  const registryAfterNpm1210 = structuredClone(report)
+  registryAfterNpm1210.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2'
+  assert.deepEqual(evaluate(registryAfterNpm1210).remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'], '上游發版只動 12.x 尾巴 → 必須放行')
+
+  const fixedNpmAlsoListed = structuredClone(report)
+  fixedNpmAlsoListed.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.1'
+  assert.throws(() => evaluate(fixedNpmAlsoListed), /npm metavulnerability differs.*range=<=10\.9\.8 \|\| 11\.0\.0-pre\.0 - 11\.19\.1/, '11.19.1 被列為受影響 = 修好的 npm 消失了 → 必紅,而且要印出形狀')
+
+  const governedNotListed = structuredClone(report)
+  governedNotListed.vulnerabilities.npm.range = '<=10.9.8 || 12.0.0-pre.0.0 - 12.0.2'
+  assert.throws(() => evaluate(governedNotListed), /npm metavulnerability differs/, '治理版 11.19.0 不在範圍 = overlay 的前提變了 → 必紅')
+
+  const viaNotOnlyTar = structuredClone(registryAfterNpm1210)
+  viaNotOnlyTar.vulnerabilities.npm.via = ['tar', 'minimatch']
+  assert.throws(() => evaluate(viaNotOnlyTar), /npm metavulnerability differs/, '多一條 via = 新的曝險路徑 → 必紅')
+
+  const unsupportedClause = structuredClone(report)
+  unsupportedClause.vulnerabilities.npm.range = '<=10.9.8 || ^11.0.0'
+  assert.throws(() => evaluate(unsupportedClause), /unsupported comparator in npm audit range:\^11\.0\.0/, '不認得的子句形狀一律 fail closed,且指名那個子句')
+
   assert.throws(() => evaluate('not-json'), /did not produce closed JSON/)
   assert.throws(() => evaluate(report, { exitStatus: 0 }), /exit status differs/)
   assert.throws(
@@ -888,6 +914,43 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     }),
     /matching runtime and installed-tree receipts/,
   )
+})
+
+test('metavulnerability range evaluator:最小子句求值器的判定表(兩面:該涵蓋必涵蓋、該排除必排除)', () => {
+  const table = [
+    // [range, version, 期望]
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0', '11.19.0', true],   // 2026-08-28 起的舊字串
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0', '11.19.1', false],
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '11.19.0', true],  // 2026-09-22 17:11Z 起的新字串
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '11.19.1', false],
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '12.0.2', true],
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '12.1.0', false],
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '10.9.8', true],
+    ['<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2', '10.9.9', false],
+    ['11.0.0-pre.0 - 11.19.0', '11.0.0', true],       // hyphen 範圍下界是 prerelease:正式版 11.0.0 在範圍內
+    ['11.0.0-pre.0 - 11.19.0', '11.0.0-pre.0', true],
+    ['11.0.0-pre.1 - 11.19.0', '11.0.0-pre.0', false], // prerelease 識別字逐段比
+    ['>=11.0.0 <11.19.1', '11.19.0', true],            // 子句內空白 = AND
+    ['>=11.0.0 <11.19.1', '11.19.1', false],
+    ['*', '0.0.1', true],
+    ['=11.19.0', '11.19.0', true],
+    ['11.19.0', '11.19.1', false],
+  ]
+  for (const [range, version, expected] of table) {
+    assert.equal(metavulnerabilityRangeCovers(range, version), expected, `${JSON.stringify(range)} covers ${version}`)
+  }
+  assert.throws(() => metavulnerabilityRangeCovers('^11.0.0', '11.19.0'), /unsupported comparator/)
+  assert.throws(() => metavulnerabilityRangeCovers('~11.19', '11.19.0'), /unsupported comparator/)
+  assert.throws(() => metavulnerabilityRangeCovers('', '11.19.0'), /non-empty string/)
+  assert.throws(() => metavulnerabilityRangeCovers('<=11.x', '11.19.0'), /unsupported comparator/)
+  assert.equal(compareGovernedVersions('11.19.0', '11.19.0'), 0)
+  assert.equal(compareGovernedVersions('11.19.0-pre.0', '11.19.0'), -1)
+  assert.equal(compareGovernedVersions('11.19.0', '11.19.0-pre.0'), 1)
+  assert.equal(compareGovernedVersions('12.0.0-pre.0.0', '12.0.0-pre.0'), 1)
+  assert.equal(compareGovernedVersions('11.19.0-alpha', '11.19.0-1'), 1) // 數字識別字 < 字串識別字(semver §11)
+  assert.equal(nextPatchVersion('11.19.0'), '11.19.1')
+  assert.equal(nextPatchVersion('11.19.0-pre.3'), '11.19.1')
+  assert.throws(() => nextPatchVersion('11.19'), /unsupported version/)
 })
 
 test('runtime prerequisites fail before any verified-runtime acquisition or repository mutation', async () => {

@@ -12,9 +12,16 @@ on:
         type: boolean
         default: false
       reference_ref:
-        description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;預設 = 最後一次週跑綠(2026-08-05)的 commit'
+        description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;留空 = 預設(job env REFERENCE_REF 的 fallback:最後一次週跑綠 2026-08-05 的 commit)'
         type: string
-        default: '2ec2f3fedd94aa30e9b091eac4d713374484bd05'
+        default: ''
+  # 2026-09-23:治理 token 沒有 Actions 寫入權限(workflow_dispatch → 403),但有 contents 寫入,能發
+  # repository_dispatch(→ 204)。只監聽按鈕事件,等於把「重拍 baseline」綁在「user 親手登入 GitHub 按下去」
+  # 這個代理上(M36 自鎖)。payload 只有兩個欄位,與手動輸入同名同義;能發這個事件的人本來就有 contents 寫入權,
+  # 沒有比按鈕更寬的信任。觸發:POST /repos/<owner>/<repo>/dispatches
+  #   {"event_type":"visual-regression-run","client_payload":{"update_baseline":true,"reference_ref":"<sha 或省略>"}}
+  repository_dispatch:
+    types: [visual-regression-run]
   schedule:
     - cron: '23 3 * * 3'
 
@@ -40,6 +47,10 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
+      # 三種觸發的輸入收斂到這兩個變數,步驟只讀這裡(SSOT):按鈕 → inputs;API → client_payload;排程 → 兩邊都空
+      # = 只比對、不重拍。布林用 == true 比(payload 必須送 JSON 布林,字串 'true' 另外接住),不用 truthy 猜。
+      UPDATE_BASELINE: ${{ (inputs.update_baseline == true || github.event.client_payload.update_baseline == true || github.event.client_payload.update_baseline == 'true') && 'true' || 'false' }}
+      REFERENCE_REF: ${{ inputs.reference_ref || github.event.client_payload.reference_ref || '2ec2f3fedd94aa30e9b091eac4d713374484bd05' }}
     timeout-minutes: 60  # ~124 curated scenarios × screenshot + diff;update_baseline 時多一次參考 commit 的建置與重拍
 
     steps:
@@ -86,7 +97,7 @@ jobs:
         run: node scripts/measure-action-dividers.mjs --dir storybook-static
 
       - name: Visual regression diff(scope=all)
-        if: ${{ !inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE != 'true' }}
         run: |
           # Auto-start storybook static server inside visual-audit.mjs
           npm run visual-audit -- --scope=all 2>&1 | tail -40
@@ -99,14 +110,14 @@ jobs:
       #     再以 reference_ref..HEAD 的 commit 歸因(scripts/visual-baseline-diff-report.mjs)。
       #  3. 接受與否是人的事:本 job 只有 contents:read,產物走 artifact → PR → 使用者看圖拍板。
       - name: Checkout reference commit for same-renderer attribution
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ inputs.reference_ref }}
+          ref: ${{ env.REFERENCE_REF }}
           path: reference
           persist-credentials: false
       - name: Recapture the reference commit in the same container
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         working-directory: reference
         run: |
           npm run --silent setup:dependencies
@@ -117,25 +128,25 @@ jobs:
           cp infra/governance/baseline/visual/curated/*.png "$RUNNER_TEMP/reference-baseline/"
           echo "reference baseline: $(ls "$RUNNER_TEMP/reference-baseline" | wc -l) files"
       - name: Recapture curated baselines(update_baseline)
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         run: |
           npm run visual-audit -- --scope=all --update-baseline 2>&1 | tail -20
       - name: Instrument stability —— re-diff right after recapture must be clean
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         run: |
           # 剛寫入的 baseline vs 立刻再拍一次:必須 0 張超標,否則渲染器仍在浮動,這批 baseline 不可信
           npm run visual-audit -- --scope=all 2>&1 | tail -12
       - name: Attribute recaptured baselines against the reference(same renderer)
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         run: |
           node scripts/visual-baseline-diff-report.mjs --selftest
           node scripts/visual-baseline-diff-report.mjs \
             --old-dir "$RUNNER_TEMP/reference-baseline" \
-            --since-ref "${{ inputs.reference_ref }}" \
+            --since-ref "$REFERENCE_REF" \
             --out .git/governance-runtime/evidence/visual/baseline-diff
           cat .git/governance-runtime/evidence/visual/baseline-diff/summary.md | head -60
       - name: Upload recaptured baselines + attribution report
-        if: ${{ inputs.update_baseline }}
+        if: ${{ env.UPDATE_BASELINE == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: visual-baselines-recaptured
