@@ -150,6 +150,10 @@ jobs:
           cp "$GITHUB_WORKSPACE/scripts/visual-audit.mjs" scripts/visual-audit.mjs
           cp "$GITHUB_WORKSPACE/scripts/visual-assertions.json" scripts/visual-assertions.json
           cp -R "$GITHUB_WORKSPACE/scripts/lib/." scripts/lib/
+          # run #297:HEAD 新增的場景(區間預覽三則)參考樹根本沒有那則 story,拍到 404 → render error → 重拍模式唯一會紅的
+          # 條件成立,整條紅。「HEAD 有、參考沒有」是正常的產品演進不是儀器壞掉:參考樹只拍它自己有的場景(用它建好的
+          # storybook-static/index.json 過濾今天的清單),差集由歸因報告標 new-scenario。index 空或過濾後一則不剩會拒絕。
+          node "$GITHUB_WORKSPACE/scripts/visual-manifest-intersect.mjs" --index storybook-static/index.json --manifest scripts/visual-assertions.json --out scripts/visual-assertions.json
           node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -40
           mkdir -p "$RUNNER_TEMP/reference-baseline"
           cp infra/governance/baseline/visual/curated/*.png "$RUNNER_TEMP/reference-baseline/"

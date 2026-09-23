@@ -230,7 +230,9 @@ async function measure(build, { afterScroll, sabotage }) {
     samples.push(took)
     // 判定用的兩個旗標都由政策檔的純函式算 —— 先前 `!hit && after.length === 0` 直接寫在這裡,
     // 判定表只吃它的結果,所以「這個值怎麼算出來的」從來沒被測過(2026-09-21 對抗稽核)。
-    blindness.push(isStreamBlind({ hit, framesAfter: after.length }))
+    // 2026-09-23:有幀但串流在視窗內停頓(首幀晚到 / 幀距)超過 STREAM_STALL_MS 也算看不到 —— 停頓期間主執行緒同在停,
+    // hover 事件沒被處理不是產品沒變色。首幀延遲與幀距本來就算好了(上方 firstGap / gaps),只是先前沒進判定。
+    blindness.push(isStreamBlind({ hit, framesAfter: after.length, firstGap, maxGap: gaps.length ? Math.max(...gaps) : NaN }))
     unresolved.push(isResolutionBound({ hit, firstFrameIsHit, firstGap, assertMax: ASSERT_MAX }))
     // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
     // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。

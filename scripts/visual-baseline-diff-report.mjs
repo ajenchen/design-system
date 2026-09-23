@@ -181,9 +181,13 @@ function main() {
       `| ${r.verdict} | ${r.file} | ${r.pct ?? '-'} | ${r.componentDir || '(對不到)'} | ${(r.componentCommits || []).length ? r.componentCommits.map((c) => `\`${c.slice(0, 8)}\``).join(' ') : '(無)'} | ${(r.sharedLayerCommits || []).length ? r.sharedLayerCommits.map((c) => `\`${c.slice(0, 8)}\``).join(' ') : '(無)'} |`)]
   writeFileSync(join(OUT, 'summary.md'), md.join('\n') + '\n')
   console.log(`✓ 歸因報告:${JSON.stringify(counts)} → ${OUT}/summary.md`)
-  if (counts.suspicious || counts.unmapped || counts['dimension-mismatch'] || counts['missing-new'] || counts['new-scenario']) {
-    console.log('⚠️ 有 suspicious / unmapped / mismatch / missing —— 這些不得直接接受,先查出原因')
+  // 檔頭寫「正式跑時 suspicious / unmapped / missing-new 出現即 exit 1」,但 2026-09-23 之前這裡只印警告、結束碼永遠 0 ——
+  // 註解裡的斷言程式沒執行(M37)。現在真的紅;new-scenario(參考樹沒有這則 story = HEAD 新增的場景)是正常演進,只提示。
+  if (counts.suspicious || counts.unmapped || counts['dimension-mismatch'] || counts['missing-new']) {
+    console.log('✗ 有 suspicious / unmapped / dimension-mismatch / missing-new —— 這些不得直接接受,先查出原因(exit 1)')
+    process.exitCode = 1
   }
+  if (counts['new-scenario']) console.log(`ⓘ ${counts['new-scenario']} 張是 HEAD 新增、參考樹沒有的場景(new-scenario):沒有同渲染器對照,接受前用 story 本身判斷`)
 }
 
 main()

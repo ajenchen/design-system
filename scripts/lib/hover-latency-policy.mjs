@@ -29,9 +29,18 @@ export const MIN_USABLE_SAMPLES = 5
  * 會從紅變綠而所有測試照樣全過 —— 這正是本 session 反覆踩到的同一條
  *(「吃參數的純函式,參數邊界就是測試的天然盲點」)。
  */
-export function isStreamBlind({ hit, framesAfter }) {
-  return !hit && framesAfter === 0
+export function isStreamBlind({ hit, framesAfter, firstGap = NaN, maxGap = NaN }) {
+  if (hit) return false
+  if (framesAfter === 0) return true
+  // 2026-09-23(同一天在兩個純治理 PR 上各紅一次):有幀,但串流在那 1.5 秒裡停頓超過門檻 —— 停頓期間瀏覽器同一顆
+  // 主執行緒也在停(靜置期送幀間隔 1231 / 1490ms;門檻 1500ms),hover 事件根本沒被處理,那不是「列沒變色」,是「這段
+  // 時間沒人在看」。綠燈輪的靜置期抖動實測 ≤ 355ms,誤紅輪 ≥ 1231ms,門檻取在中間偏嚴的 500ms。
+  // 真 bug(2026-09-12)那一輪幀距正常、只是顏色沒變 —— 這條分不掉它,照樣 lost。
+  return firstGap > STREAM_STALL_MS || maxGap > STREAM_STALL_MS
 }
+
+/** 幀距超過這個數字 = 串流(與同一顆主執行緒)在停頓;綠燈輪的抖動最大 355ms、誤紅輪最小 1231ms(2026-09-20 / 09-23 實測) */
+export const STREAM_STALL_MS = 500
 
 /**
  * 這一次取樣的數字是不是**解析度受限**——命中的就是 hover 之後的第一張幀,
