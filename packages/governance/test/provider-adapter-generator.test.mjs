@@ -1711,7 +1711,16 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
       }],
     },
   })}\n`
-  await writeFile(optionalAppendTranscript, `${record.repeat(2600)}${canonicalReadEvidence}`, { mode: 0o600 })
+  // 2026-09-23 CI 紅一次(0 !== 2,前十次全綠):原本把 canonical Read 放在檔尾,期待「寫入器持續追加 →
+  // runner 三次都抓不到靜止切面 → 不給 transcript → 靜態路徑 exit 2」。但 runner 的擷取窗只有一次讀取加
+  // 兩次 stat(遠小於 1ms),寫入器每 1–2ms 追加一筆,只要它被事件迴圈延遲一下,runner 就會拿到一個
+  // **合法的**靜止切面,而那個切面的最後 600 行含 Read → hook 依規則放行(0)。「寫入器還活著 ⇒ 永遠不靜止」
+  // 是時序代理,不是 runner 的契約(M37)。runner 的契約只有「不得交出過期切面」——靜止切面與不給
+  // transcript 都合法。改法:Read 之後再墊 700 筆完整記錄,任何靜止切面的尾 600 行都不含它,兩條合法
+  // 路徑都必然 exit 2(靜態路徑 / 掃描路徑都印「M29 DS Anchor Preflight」);寫入器照舊持續追加,
+  // 仍然在驗「成長中的 transcript 不會讓 runner 崩潰或退化成 70」。
+  const postReadFiller = `${JSON.stringify({ type: 'system', sequence: -1 })}\n`.repeat(700)
+  await writeFile(optionalAppendTranscript, `${record.repeat(2600)}${canonicalReadEvidence}${postReadFiller}`, { mode: 0o600 })
   const optionalAppendHandle = await open(optionalAppendTranscript, 'a')
   let optionalAppendActive = true
   let optionalAppendCount = 0
