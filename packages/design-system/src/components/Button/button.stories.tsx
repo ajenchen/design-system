@@ -330,6 +330,8 @@ export const DismissHoverState: Story = {
 
 export const HoverFocusState: Story = {
   name: '滑鼠移過 / 鍵盤聚焦',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
     <div className="flex gap-4">
@@ -350,6 +352,8 @@ export const HoverFocusState: Story = {
 
 export const TooltipVisible: Story = {
   name: '純圖示加 Tooltip',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
     <div className="p-12">

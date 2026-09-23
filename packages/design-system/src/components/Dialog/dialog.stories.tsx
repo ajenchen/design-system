@@ -569,6 +569,8 @@ export const OpenSnapshot = {
    量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
 export const FocusTrapWithConcurrentOverlay: Story = {
   name: '焦點鎖 × 並存浮層',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
@@ -606,6 +608,8 @@ export const FocusTrapWithConcurrentOverlay: Story = {
    沒有這一組的話,「Tab 沒跑出 Dialog」也可能只是因為那顆鈕本來就走不到 —— 那樣就什麼都沒證明。 */
 export const FocusTrapControlNoDialog: Story = {
   name: '同一版面沒有對話框時的焦點順序',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">

@@ -62,7 +62,7 @@
         "action": "hover",
         "selector": "[data-visual-hover-target]"
       },
-      "rationale": "區間預覽:正在選開始日、停留在 4/28,框從 4/28 到 5/12,停留日是左端半圓(缺口朝右)。"
+      "rationale": "區間預覽:正在選開始日、停留在 5/1,框從 5/1 到 5/12,停留日是左端半圓(缺口朝右);兩月視圖不渲染鄰月日子,停留點取本月的 5/1。"
     },
     {
       "id": "design-system-components-calendar-展示--team-calendar",

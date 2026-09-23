@@ -494,6 +494,7 @@
       "scripts/test-setup-provider-cli-toolchain.mjs",
       "scripts/test-setup-workspace.mjs",
       "scripts/test-status-color-invariant.mjs",
+      "scripts/test-story-demo-focus-invariant.mjs",
       "scripts/test-storybook-docs-race-invariant.mjs",
       "scripts/test-switch-thumb-ring-invariant.mjs",
       "scripts/test-sync-memory.mjs",

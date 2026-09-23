@@ -59,6 +59,7 @@
     "test:overlay-detached-anchor": "node scripts/overlay-detached-anchor-invariant.mjs && node scripts/overlay-detached-anchor-invariant.mjs --selftest",
     "test:data-table-hover-exclusivity": "node scripts/data-table-hover-exclusivity-invariant.mjs && node scripts/data-table-hover-exclusivity-invariant.mjs --selftest",
     "test:avatar-anchor-box": "node scripts/avatar-anchor-box-invariant.mjs && node scripts/avatar-anchor-box-invariant.mjs --selftest --limit=1",
+    "test:story-demo-focus": "node scripts/story-demo-focus-invariant.mjs && node scripts/story-demo-focus-invariant.mjs --selftest",
     "test:overlay-list-as-region": "node scripts/overlay-list-as-region-invariant.mjs && node scripts/overlay-list-as-region-invariant.mjs --selftest",
     "test:select-all-footer": "node scripts/select-all-footer-invariant.mjs && node scripts/select-all-footer-invariant.mjs --selftest && node scripts/select-all-footer-invariant.mjs --selftest-unrestricted",
     "test:unrestricted-option": "node scripts/unrestricted-option-invariant.mjs && node scripts/unrestricted-option-invariant.mjs --selftest",

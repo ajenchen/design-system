@@ -803,6 +803,9 @@ jobs:
           # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
           # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
           npm run test:avatar-anchor-box
+      - name: Demo focus sweep —— 示範 = 滑鼠使用者,沒用鍵盤就不該留著鍵盤焦點框(browser,全 story)
+        run: |
+          npm run test:story-demo-focus
 
   verify-browser-overlay-rows:
     # 2026-09-20 拆出來的第十個 job。sweeps 一個 job 序列跑兩支全 1034 支 story 的掃描,

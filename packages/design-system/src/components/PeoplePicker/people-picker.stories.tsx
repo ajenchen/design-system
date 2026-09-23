@@ -174,6 +174,8 @@ export const HugWidthMultiStack: Story = {
 // visibility」canonical:標 test-only,自 sidebar/Autodocs 排除,test runner 照跑。
 export const MultiRemoveFocusContract: Story = {
   name: '移除焦點接力驗證',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <MultiPicker />,
   play: async ({ canvasElement }) => {
@@ -195,6 +197,8 @@ export const MultiRemoveFocusContract: Story = {
 // 無 hover 能力,以 keyboard focus 觸發 group-focus-within 顯示 overlay。
 export const StackRemoveOverlayProbe: Story = {
   name: '移除鈕完整性驗證',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <MultiPicker />,
   play: async ({ canvasElement }) => {

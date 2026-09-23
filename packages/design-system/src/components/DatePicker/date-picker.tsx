@@ -1283,7 +1283,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     ),
                     rangeMiddle: cn(
                       RANGE_TRACK_CLASSNAMES.middle,
-                      '[&>button]:!bg-transparent [&>button]:!text-foreground',
+                      // 2026-09-23 拿掉 `!text-foreground`:它是 2026-04-21 為了壓過 RDP range 模式中段自帶的 selected 白字而加,
+                      // 2026-05-03 改成 mode="single" 自管區間時原封抄來 —— 這條路徑的中段不掛 selected,!important 沒有任務,
+                      // 卻讓鄰月淡字永遠輸給它(全 repo 從沒定義過 outside × range;兩月時鄰月現已不渲染)。字色回到 day_button 預設。
+                      '[&>button]:!bg-transparent',
                     ),
                     // ── 停留預覽框(2026-09-23 user 拍板)── 四種格由 range-preview.ts 算出,畫法住在 DateGrid
                     previewArmed: RANGE_PREVIEW_ARMED_CLASSNAME,

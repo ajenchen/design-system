@@ -328,9 +328,9 @@ export const RangePreviewShrink: Story = {
 
 export const RangePreviewStart: Story = {
   name: '範圍預覽:重選開始日',
-  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選開始日,滑鼠停在 4/28:框從 4/28 到 5/12,停留日成為框的左端半圓(缺口朝右);結束日之後的日子不可點也不預覽。' } } },
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選開始日,滑鼠停在 5/1:框從 5/1 到 5/12,停留日成為框的左端半圓(缺口朝右);結束日之後的日子不可點也不預覽。(兩月視圖不渲染鄰月日子,所以停留點取本月的 5/1,不取四月底)' } } },
   render: () => <RangePreviewCanvas />,
-  play: rangePreviewPlay('start', '2026-04-28'),
+  play: rangePreviewPlay('start', '2026-05-01'),
 }
 
 /* ── showTime + Range:活動時段 ── */

@@ -192,7 +192,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Popover 行為
 
-- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`：date-only Range 兩月並列以便同時看起訖範圍，showTime Range 保留一月讓時間 controls 有穩定空間
+- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`：date-only Range 兩月並列以便同時看起訖範圍，showTime Range 保留一月讓時間 controls 有穩定空間。**兩月時鄰月日子不渲染**(DateGrid 規則,`../DateGrid/date-grid.spec.md`「outside」列;2026-09-23 user 拍板:同一天不再出現兩次,藍圓與框只畫一次);單月(showTime)鄰月日子照舊顯示淡字
 - 點 date → 依 `activeEnd` 更新對應端點(start | end);auto-advance 至 end 等選
 - showTime=false:兩端點都填好 → Popover **自動關閉**
 - showTime=true:`needConfirm=true`(default),user 按「確定」才 commit + close
@@ -212,7 +212,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 | 狀態 | 停留在 d | 預覽區間 | 例(已選 5/4–5/12) |
 |---|---|---|---|
 | 正在選結束日,開始日已選 | d ≥ 開始日 | [開始日, d] | 停 5/20 → 框 5/4→5/20;停 5/7 → 框 5/4→5/7(縮小也看得見) |
-| 正在選開始日,結束日已選 | d ≤ 結束日 | [d, 結束日] | 停 4/28 → 框 4/28→5/12 |
+| 正在選開始日,結束日已選 | d ≤ 結束日 | [d, 結束日] | 停 5/1 → 框 5/1→5/12 |
 | 只選了開始日(第一次點完) | d ≥ 開始日 | [開始日, d] | 選完起點掃過去就看得到長度 |
 | 兩端都還空 | 任一天 | 不預覽,只有單格 hover 圈 | 沒有另一端可以框 |
 | 順序不合(不可點的日子) | — | 不預覽 | 選結束日時停在 5/3 |
@@ -221,14 +221,15 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - **灰色 track 留著**,框疊在上面(現在是這樣 / 準備變成這樣同時看得到)。
 - **停留日 = 框的那一端**:不畫單格 hover 圈,只有框的半圓端點,缺口朝區間內側;正在選結束日時停留日在右端(半圓朝右)、選開始日時鏡射。
 - **鍵盤同權**:方向鍵移動焦點時同樣預覽(焦點日 = 停留日);只算看得見的焦點(`:focus-visible`),浮層開啟時程式搬過去的焦點不算,滑鼠使用者不會先看到整段框。
-- **滑鼠與鍵盤,最後一個輸入贏**:滑鼠移進某格 → 框到那格;鍵盤把看得見的焦點移到某格 → 框到那格,即使滑鼠還停在別格;滑鼠離開日曆格時,框退回仍帶著鍵盤焦點的那一天(不是消失)。清除只由同一種來源做(滑鼠離開只清滑鼠設的、失焦只清鍵盤設的),點日期時前一格的 blur 不會把滑鼠剛設的停留日清掉。
+- **滑鼠與鍵盤,最後一個輸入贏**:滑鼠移進某格 → 框到那格;鍵盤把看得見的焦點移到某格 → 框到那格,即使滑鼠還停在別格;滑鼠離開**日曆**時,框退回仍帶著鍵盤焦點的那一天(不是消失);「離開日曆」不是「離開單格」—— 格與格之間 4px 的縫隙屬於較近的那一格(day button 命中區外擴 2px,`../DateGrid/date-grid.spec.md` cell state 表「range 預覽框」列),指標跨格時框不會先消失再出現。清除只由同一種來源做(滑鼠離開只清滑鼠設的、失焦只清鍵盤設的),點日期時前一格的 blur 不會把滑鼠剛設的停留日清掉。
 - **停留日的單格圈是靜態壓掉的**:對面那端已有值時,每一個「停留會有框」的格(順序合法的日子)在停留**之前**就不畫單格 hover 圈 —— 單格圈是 CSS 即時的、框是 React 狀態慢一幀,壓制若掛在框上,每次停留都先閃一圈整圓再變成半圓。順序不合的日子與兩端都空時不壓,單格圈照畫。
 - **鍵盤焦點框往內畫**:日期格的焦點框一律往內 2px(格與格只隔 4px,track 與預覽框就在縫裡);藍底格(選中日 / 端點)1px 白線退 3px。幾何 owner `ds-canonical/references/focus-canonical.md`「填色元素上的內描邊」,畫法 owner `../DateGrid/date-grid.spec.md` cell state 表「focus-visible」列。
 - **showTime 單月同一套規則**(track 是否顯示另管,見「Popover 行為」)。
 - 比較只看日,端點帶時間也一樣。
 
 **來源總帳**(user 2026-09-23 原話,逐字):「我反而認為這種日期區間選擇器hover 到日期應該要讓使用者可以看出到底選下去之後實際的區間會變成怎樣,所以我反而認為是可以用現在藍色邊框的視覺語言去預框出選中後的區間」;Q1–Q4、Q6、Q7 「照你建議」(做 / 實線藍框 / 兩端都預覽 / track 留著 / 鍵盤同權 / showTime 同一套);Q5:「若有藍框區間的話,所 hover 到的日期不會是完整的一個圓圈,應該要與藍框區間在視覺上一氣呵成,所以所hover的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」。**先前三句被當成「規則」的文字**(本檔舊句「無 hover 預覽」、`date-grid.spec.md` 舊句「中段 hover ring 一併壓制」、story 舊說明「不出現第二層 hover ring」)都是 AI 在 2026-06-05 / 07-05 / 08-02 稽核時把程式行為抄成文件,沒有任何 user 原話;2026-09-23 差點據此反著修,user 提問後撤回。
-同日看過預覽站後(逐字):「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 Carbon 提出)。
+同日看過預覽站後(逐字):「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 [Carbon `_date-picker.scss`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_date-picker.scss) 的選中日 `outline: 1px solid $layer-02; outline-offset: -3px` 提出)。
+同日晚間看預覽站(逐字):「圖一為何五月的區塊非五月沒有變成該有非當月的樣式?以前是這樣?我怎麼印象中我們有討論甚至修正過類似的東西?」(查證:從未定義過 outside × range,2026-09-07 只修 outside × disabled)+ 結構化選擇「兩月時不顯示鄰月日子」(user 拍板;兩個候選與各家原始碼出處見 `../DateGrid/date-grid.spec.md`「outside」列);「為何選區間,從某日「水平」移動到其隔日,藍色的區間框線都會閃動一下?」(bug 回報,根因 4px 縫隙,解法由 AI 定);「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」(示範層規則,owner `ds-canonical/rules/story-rules.md`「示範 = 滑鼠使用者」)。
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 

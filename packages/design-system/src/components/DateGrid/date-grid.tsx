@@ -135,6 +135,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     classNames,
     labels,
     showOutsideDays = true,
+    numberOfMonths,
     ...props
   },
   _ref,
@@ -143,7 +144,12 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
   // 故 ref 簽名保留但不附著(符合 DS 統一 forwardRef 慣例;真要取 DOM 用 wrapper 包)。
   return (
     <DayPicker
-      showOutsideDays={showOutsideDays}
+      // 兩月以上**不渲染鄰月日子**(2026-09-23 user 拍板):同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 /
+      // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
+      // 原註解「otherwise the same day would be rendered in two calendars」)/ Polaris(空格)/ flatpickr(hidden)與
+      // react-day-picker 自家預設都不顯示;consumer 傳 showOutsideDays 也不放行(MUI 同樣忽略)。單月照舊(預設顯示、淡字)。
+      showOutsideDays={(numberOfMonths ?? 1) > 1 ? false : showOutsideDays}
+      numberOfMonths={numberOfMonths}
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
@@ -233,6 +239,12 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 就跑在那 4px 縫裡 —— 往外畫的 2px 框正好壓在框線上(user 2026-09-23:「date 的鍵盤焦點感覺要改成
           // 往內畫的那種,否則會跟區間藍框有視覺衝突」)。藍底格另走 EMPHASIS_FOCUS_RING_CLASSNAME(白線退 3px)。
           'focus-visible:focus-ring-inset',
+          // 命中區外擴 2px 補滿格間 4px 縫隙(user 2026-09-23:「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」):
+          // 停留日掛在 button 的 mouseenter / mouseleave(react-day-picker 只給這一層),指標跨格時只要有一次 mousemove 落在
+          // border-spacing 的縫裡就先 leave 再 enter,整條框先卸掉一幀再補回。框的畫法早就用 −2px 跨過縫隙把線接起來,
+          // 命中幾何卻沒跟上 —— 這一條讓 hit 與 paint 同一個數字。不畫任何東西(基準圖不動);Ant 整個 td 可命中、
+          // MUI 只在離開整個日曆才清,都沒有「縫隙裡沒有任何一天」這個狀態。閘:datepicker-range-preview.mjs「跨格不閃」。
+          "before:content-[''] before:absolute before:-inset-[2px]",
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(
@@ -252,7 +264,10 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 依 M24「State 顯著性 precedence:disabled > muted > emphasis」與本元件 spec.md:106
         //(「outside…比 disabled 弱:outside 仍可 hover / 可點」)、:201(disabled → text-fg-disabled(M24)),
         // outside 的淡化**只適用於還能點的日子**,故加 :not() 前提而非用 !important 硬壓。
-        outside: '[&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted',
+        // 2026-09-23 再加 `:not([data-selected])`:淡字是裝飾、選中是 state(M24 state 勝裝飾)—— 單月裡選中日落在鄰月位置時
+        // 仍是藍底白字圓,不能被淡字選擇器(特異性 (0,3,1))壓成灰字。RDP `mode="range"` 單月的鄰月中段日也掛 selected,
+        // 字色因此跟當月中段一樣深(不淡化);兩月時鄰月日子根本不渲染,這條只在單月 range 出現。
+        outside: '[&:not([data-selected])>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted',
         // Selected(single 或 range 端點):button 藍底白字圓
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',

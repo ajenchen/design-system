@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-09-23T10:57:54.902Z",
+    "generatedAt": "2026-09-23T15:46:54.965Z",
     "stories": 1042,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1048,7 +1048,7 @@
       "design-system-tokens-uisize--overview"
     ],
     "storyIdsSha256": "5786d6fc4a8ec46c5fc055f92fe3ed685cd62ebf5af8e258f262472aa0531317",
-    "fingerprints": 744
+    "fingerprints": 740
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1283,10 +1283,6 @@
     "design-system-components-datepicker-展示--default|color-contrast": 1,
     "design-system-components-datepicker-展示--need-confirm-date-only-open|color-contrast": 8,
     "design-system-components-datepicker-展示--range-picker|color-contrast": 5,
-    "design-system-components-datepicker-展示--range-popover-open|color-contrast": 5,
-    "design-system-components-datepicker-展示--range-preview-extend|color-contrast": 1,
-    "design-system-components-datepicker-展示--range-preview-shrink|color-contrast": 1,
-    "design-system-components-datepicker-展示--range-preview-start|color-contrast": 5,
     "design-system-components-datepicker-展示--show-time-popover-open|color-contrast": 3,
     "design-system-components-datepicker-展示--show-time-range-popover-open|color-contrast": 3,
     "design-system-components-datepicker-展示--show-time-range|color-contrast": 2,
@@ -1694,7 +1690,7 @@
     "design-system-internal-command-設計規格--overview|color-contrast": 7,
     "design-system-internal-dategrid-展示--inline|color-contrast": 3,
     "design-system-internal-dategrid-展示--multiple|color-contrast": 3,
-    "design-system-internal-dategrid-展示--range|color-contrast": 8,
+    "design-system-internal-dategrid-展示--range|color-contrast": 1,
     "design-system-internal-dategrid-展示--single|color-contrast": 4,
     "design-system-internal-dategrid-設計原則--locale-rule|color-contrast": 9,
     "design-system-internal-dategrid-設計原則--mode-rule|color-contrast": 10,
@@ -1703,7 +1699,7 @@
     "design-system-internal-dategrid-設計規格--color-matrix|color-contrast": 6,
     "design-system-internal-dategrid-設計規格--inspector|color-contrast": 31,
     "design-system-internal-dategrid-設計規格--overview|color-contrast": 5,
-    "design-system-internal-dategrid-設計規格--size-matrix|color-contrast": 10,
+    "design-system-internal-dategrid-設計規格--size-matrix|color-contrast": 3,
     "design-system-internal-dategrid-設計規格--state-behavior|color-contrast": 10,
     "design-system-internal-hovercard-展示--link-preview|color-contrast": 1,
     "design-system-internal-hovercard-展示--overflow-list|color-contrast": 1,

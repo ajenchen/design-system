@@ -320,6 +320,8 @@ export const IntegrateRouterLink: Story = {
 export const IntegrateRouterLinkAutoCollapse: Story = {
   name: '整合 Router Link — 自動摺疊保留導航',
   parameters: {
+    // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉鍵盤斷言留下的焦點
+    demoFocus: 'keep',
     docs: {
       description: {
         story: '6 層路徑超過 maxItems(預設 4)自動摺疊中段;中段用 asChild 套 router Link。摺疊進 ⋯ 下拉後 link 必完整保留(SPA 導航不退化成整頁重載)。點 ⋯ 可見每個摺疊項目仍是可點連結。',

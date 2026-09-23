@@ -235,6 +235,8 @@ export const Horizontal: Story = {
 
 export const MultipleExpansion: Story = {
   name: '多重展開模式',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="w-[480px]">
       <p className="text-caption text-fg-secondary mb-4">

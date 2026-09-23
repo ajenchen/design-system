@@ -29,7 +29,7 @@ const ok = (cond, msg) => { if (cond) console.log(`✓ ${msg}`); else { console.
 
 /** 一格的框:td ::after 的陰影字串、兩側圓角、clip-path;button 的 ring 展開量(box-shadow 最大 spread)。
  *  兩月並列時月首月尾的日子會出現兩次(鄰月的 outside 格也掛同一個 data-day),一律量本月那一格。 */
-//  只出現在鄰月 outside 列的日子(例:兩月視圖裡的 4/28)沒有本月格,退回唯一那一格。
+//  兩月視圖自 2026-09-23 起不渲染鄰月日子;單月(showTime)仍有 outside 格,退回唯一那一格。
 const inView = (d) => `[data-day="${d}"]:not([data-outside])`
 const anyCell = (d) => `[data-day="${d}"]`
 const cell = (day) => page.evaluate(([sel, fallback]) => {
@@ -104,8 +104,12 @@ const days = (from, to) => { const out = []; const d = new Date(from + 'T00:00:0
 async function runSuite() {
   // ── 正在選結束日(已選 5/4–5/12)──
   await gotoStory(page, story('range-preview-extend'), { waitFor: '[data-visual-hover-target]', settle: 300 })
-  // 對照組把框與焦點線都弄壞:框歸零、焦點框改回往外畫 → 框的斷言與焦點的斷言都必須紅
-  if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important} td>button:focus-visible{outline-offset:2px!important}' })
+  // 對照組把框、焦點線、跨縫命中區、鄰月隱藏都弄壞:框歸零、焦點框改回往外畫、button ::before 縮回 0(縫隙重現)、
+  // 往一個鄰月格塞一顆 button → 框 / 焦點 / 跨格 / 鄰月 四類斷言都必須紅
+  if (SELFTEST) {
+    await page.addStyleTag({ content: 'td::after{box-shadow:none!important} td>button:focus-visible{outline-offset:2px!important} td[data-day]>button::before{inset:0!important}' })
+    await page.evaluate(() => { const td = document.querySelector('td[data-outside]'); if (td) td.appendChild(document.createElement('button')) })
+  }
   await blurFocus()
   await hover('2026-05-20')
   await expectFrame('延長 5/4→5/20', days('2026-05-04', '2026-05-20'))
@@ -157,6 +161,34 @@ async function runSuite() {
   await expectFrame('互搶:滑鼠離開格子 → 回到鍵盤焦點 5/5', days('2026-05-04', '2026-05-05'))
   await expectNoFrame('互搶:滑鼠離開後 5/6、5/7 沒有框', ['2026-05-06', '2026-05-07'])
 
+  // ── 跨格不閃(user 2026-09-23:「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」)──
+  // 停留日掛在 button 的 enter / leave,格與格之間 4px 縫隙屬於 table:指標經過縫隙先 leave(整條框卸掉)再 enter(補回)。
+  // 修法是 button ::before 命中區外擴 2px 補滿縫隙(與框跨縫的 −2px 同數字)。單步 hover 永遠看不到(React 把同一個
+  // mouseout 的 leave+enter 批成一次 commit),所以這裡走 30 小步、每一步量「還有幾格有框」,最少一格都不能掉到 0。
+  // 對照組:selftest 把 ::before 縮回 0 → 縫隙重現 → 最少幾格掉到 0。
+  const framedCount = () => page.evaluate(() => [...document.querySelectorAll('td[data-day]')].filter((td) => getComputedStyle(td, '::after').boxShadow !== 'none').length)
+  const crossing = async (fromDay, toDay, label) => {
+    const a = await page.locator(`${inView(fromDay)} > button`).boundingBox()
+    const b = await page.locator(`${inView(toDay)} > button`).boundingBox()
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.waitForTimeout(80)
+    let min = Infinity
+    for (let i = 1; i <= 30; i++) {
+      await page.mouse.move(a.x + a.width / 2 + (b.x - a.x) * (i / 30), a.y + a.height / 2 + (b.y - a.y) * (i / 30))
+      await page.waitForTimeout(20)
+      min = Math.min(min, await framedCount())
+    }
+    ok(min > 0, `${label}:30 小步跨格,框最少仍有 ${min} 格(0 = 縫隙裡整條框消失)`)
+  }
+  await crossing('2026-05-20', '2026-05-21', '水平跨格 5/20→5/21')
+  await crossing('2026-05-20', '2026-05-27', '垂直跨列 5/20→5/27')
+
+  // ── 兩月時鄰月日子不渲染(user 2026-09-23 拍板;MUI / Polaris / flatpickr / RDP 預設同款)──
+  const outside = await page.evaluate(() => {
+    const tds = [...document.querySelectorAll('td[data-outside]')]
+    return { cells: tds.length, buttons: tds.filter((td) => td.querySelector('button')).length, visible: tds.filter((td) => getComputedStyle(td).visibility !== 'hidden').length }
+  })
+  ok(outside.cells > 0 && outside.buttons === 0 && outside.visible === 0, `兩月:鄰月格 ${outside.cells} 個全部不渲染日子(有 button ${outside.buttons};可見 ${outside.visible})`)
+
   // ── 上膛(對面那端已有值):單格 hover 圈的壓制是**靜態**的 —— 停留之前就掛在每一個「停留會有框」的格上,不等 React 慢一幀
   //(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓」)。
   // 看 class 只為了驗「靜態」(停留前就在);圈有沒有真的消失由 expectNoRing 量 box-shadow。
@@ -174,10 +206,10 @@ async function runSuite() {
   await gotoStory(page, story('range-preview-start'), { waitFor: '[data-visual-hover-target]', settle: 300 })
   if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
   await blurFocus()
-  await hover('2026-04-28')
-  await expectFrame('重選開始日 4/28→5/12', days('2026-04-28', '2026-05-12'))
+  await hover('2026-05-01')
+  await expectFrame('重選開始日 5/1→5/12', days('2026-05-01', '2026-05-12'))
   await expectNoFrame('重選開始日:5/13 沒有框', ['2026-05-13'])
-  await expectNoRing('重選開始日', '2026-04-28')
+  await expectNoRing('重選開始日', '2026-05-01')
   await hover('2026-05-13')
   await expectNoFrame('順序不合(5/13 在結束日之後)不預覽', ['2026-05-12', '2026-05-13'])
 
@@ -188,11 +220,16 @@ async function runSuite() {
   await hover('2026-04-18')
   await expectFrame('showTime 重選開始日 4/18→4/20', days('2026-04-18', '2026-04-20'))
   await expectNoRing('showTime', '2026-04-18')
+  // 單月:鄰月日子照舊顯示、淡字(spec「outside」列);selftest 把它染紅
+  if (SELFTEST) await page.addStyleTag({ content: 'td[data-outside]>button{color:red!important}' })
+  const single = await page.evaluate(() => { const b = document.querySelector('td[data-outside]:not([data-disabled]):not([data-selected]) > button:not(:disabled)'); return b ? getComputedStyle(b).color : null })
+  ok(single !== null && single === (await tokenColor('--fg-muted')), `單月:鄰月日子顯示且淡字(${single};token ${await tokenColor('--fg-muted')})`)
 
   // ── 對照組:沒上膛(兩端都空)→ 停留沒有框,單格 hover 圈照畫(壓制不是無條件的)──
   await gotoStory(page, story('range-picker'), { waitFor: 'button[aria-haspopup="dialog"]', settle: 300 })
   await page.locator('button[aria-haspopup="dialog"]').nth(2).click() // 第二個 Range(「Empty 初始狀態」)的開始欄
-  await page.waitForSelector('td[data-day]', { timeout: 5000 }); await page.waitForTimeout(200)
+  // 兩月視圖的第一個 td 是不渲染的鄰月格(data-hidden,visibility hidden),waitForSelector 等「第一個可見」會逾時 → 明確等可見格
+  await page.waitForSelector('td[data-day]:not([data-hidden])', { timeout: 5000 }); await page.waitForTimeout(200)
   await blurFocus()
   const bareDay = await page.evaluate(() => document.querySelector('td[data-day]:not([data-outside]) > button:not(:disabled)')?.closest('td')?.getAttribute('data-day'))
   await hover(bareDay)
