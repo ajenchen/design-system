@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import {
   GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
   GOVERNANCE_DEPENDENCY_MINIMUM_NODE_VERSION,
+  GOVERNANCE_VULNERABILITY_POLICIES,
   runClosedBootstrapStep,
   runVerifiedGovernanceDependencyBootstrap,
   sanitizeGovernanceBootstrapEnvironment,
@@ -140,6 +141,7 @@ export async function runAuthorityDependencySetup({
   baseEnvironment = process.env,
   runner = spawnSync,
   runtimeFactory,
+  vulnerabilityPolicy = 'enforce',
 } = {}) {
   const root = realpathSync(resolve(requestedRoot))
   const callerWorktree = captureGitVisibleWorktree(root)
@@ -149,6 +151,7 @@ export async function runAuthorityDependencySetup({
     nodeVersion,
     baseEnvironment,
     runner,
+    vulnerabilityPolicy,
     ...(runtimeFactory ? { runtimeFactory } : {}),
     authorityPaths: DEPENDENCY_AUTHORITY_PATHS,
     expectedNpmrcLines: GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
@@ -211,22 +214,50 @@ export async function runAuthorityGovernanceSetup(options = {}) {
   }
 }
 
+// 2026-09-23:`--dependencies-only` 多兩個只在視覺回歸重拍用的旗標 —— `--root=<dir>` 讓 HEAD 的治理程式對另一棵
+// 簽出的參考樹安裝(它自己的歷史版 bootstrap 不可能知道之後才登記的弱點),`--vulnerability-policy=` 選
+// report-render-only-reference 讓弱點稽核只報告不擋(完整性照舊擋)。兩個旗標只接在 --dependencies-only 後面,
+// 各只能出現一次;其他形狀一律拒絕。
+export const AUTHORITY_SETUP_USAGE = 'usage: setup-authority-governance.mjs [--dependencies-only [--root=<dir>] [--vulnerability-policy=<enforce|report-render-only-reference>]|--verify-runtime]'
+
+export function parseAuthoritySetupArguments(args) {
+  invariant(Array.isArray(args) && args.every((value) => typeof value === 'string'), AUTHORITY_SETUP_USAGE)
+  if (args.length === 0) return Object.freeze({ mode: 'governance-setup' })
+  if (args[0] === '--verify-runtime') {
+    invariant(args.length === 1, AUTHORITY_SETUP_USAGE)
+    return Object.freeze({ mode: 'verify-runtime' })
+  }
+  invariant(args[0] === '--dependencies-only', AUTHORITY_SETUP_USAGE)
+  const parsed = { mode: 'dependencies-only' }
+  for (const argument of args.slice(1)) {
+    const root = /^--root=(.+)$/.exec(argument)
+    const policy = /^--vulnerability-policy=(.+)$/.exec(argument)
+    if (root && parsed.root === undefined) {
+      parsed.root = root[1]
+    } else if (policy && parsed.vulnerabilityPolicy === undefined) {
+      invariant(GOVERNANCE_VULNERABILITY_POLICIES.includes(policy[1]), `unsupported vulnerability policy:${policy[1]}`)
+      parsed.vulnerabilityPolicy = policy[1]
+    } else {
+      invariant(false, AUTHORITY_SETUP_USAGE)
+    }
+  }
+  return Object.freeze(parsed)
+}
+
 if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   try {
-    const args = process.argv.slice(2)
-    invariant(
-      args.length === 0
-        || (args.length === 1 && (args[0] === '--dependencies-only' || args[0] === '--verify-runtime')),
-      'usage: setup-authority-governance.mjs [--dependencies-only|--verify-runtime]',
-    )
-    const result = args[0] === '--dependencies-only'
-      ? await runAuthorityDependencySetup()
-      : args[0] === '--verify-runtime'
+    const parsed = parseAuthoritySetupArguments(process.argv.slice(2))
+    const result = parsed.mode === 'dependencies-only'
+      ? await runAuthorityDependencySetup({
+        ...(parsed.root === undefined ? {} : { root: resolve(parsed.root) }),
+        ...(parsed.vulnerabilityPolicy === undefined ? {} : { vulnerabilityPolicy: parsed.vulnerabilityPolicy }),
+      })
+      : parsed.mode === 'verify-runtime'
         ? verifyAuthorityRuntime()
         : await runAuthorityGovernanceSetup()
-    const label = args[0] === '--dependencies-only'
-      ? 'dependency setup'
-      : args[0] === '--verify-runtime'
+    const label = parsed.mode === 'dependencies-only'
+      ? `dependency setup${parsed.vulnerabilityPolicy && parsed.vulnerabilityPolicy !== 'enforce' ? `(vulnerability policy:${parsed.vulnerabilityPolicy};${result.vulnerabilityAudit?.status ?? 'no audit receipt'})` : ''}`
+      : parsed.mode === 'verify-runtime'
         ? 'runtime'
         : 'governance setup'
     console.log(`✅ DS-author ${label} verified:${result.root}`)

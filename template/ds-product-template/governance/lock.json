@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "2db3e3fabb1f50a5376d172835cbea8f2202f0ea62fb2e9e689849a0238cee91",
+    "forkCorpusLockSha256": "7413c59891ce74b3a7cb7a48dbd9fb8db5028d8bffeee6789d7399a6c57e35ec",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "f5a23ab9661904222635b2ab9f1c73e66b273ac571a83d771a4821b4cb6673b1",
@@ -109,7 +109,7 @@
       "scripts/lib/closed-tool-execution.mjs": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "e3d4061efe2ee04a0de9c7f0536f1f738bc6bcf2d6ae755168f6442538a5f2a7",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "15de5e6b9f9733be26d0cd69d7bc26bc377e11288c0a57d48961e447d6b505ae",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/verified-exact-npm-runtime.mjs": "811ed3390a4ff6b4e818a5ce8b5c0ce34e10f48fb443b6177d6e4c8e14fa9670",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
