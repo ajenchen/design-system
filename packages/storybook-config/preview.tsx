@@ -114,20 +114,26 @@ const releaseIfPaintedKeyboardFocus = (el: Element | null) => {
 // 「使用者還沒碰過鍵盤」這段時間裡,任何被判成鍵盤焦點又畫得出線的聚焦都只能是程式搬的 → 一律放掉;
 // 第一次真正的按鍵或指標按下就停止(之後的焦點是使用者自己的)。每支 story 重新掛一次,前一支的監聽先拆。
 let stopWatching: (() => void) | null = null
+// 鍵盤使用者從 Storybook 管理介面按 Tab 進畫布:keydown 發生在**父文件**,iframe 只收到 focusin(2026-09-24 審查實測:
+// 沒聽父文件的話第一顆元素會被放掉、第二次 Tab 跳到第二顆,只有一顆時直接跳出畫布)。同源就一起聽,跨源 try/catch 吃掉。
+const parentDocument = (): Document | null => { try { return window.parent !== window ? window.parent.document : null } catch { return null } }
 const watchScriptFocusUntilUserInput = () => {
   stopWatching?.()
   const onFocusIn = (event: FocusEvent) => releaseIfPaintedKeyboardFocus(event.target as Element | null)
+  const parent = parentDocument()
   const stop = () => {
     document.removeEventListener('focusin', onFocusIn, true)
     document.removeEventListener('keydown', stop, true)
     document.removeEventListener('pointerdown', stop, true)
     document.removeEventListener('mousedown', stop, true)
+    try { parent?.removeEventListener('keydown', stop, true) } catch { /* 跨源 */ }
     if (stopWatching === stop) stopWatching = null
   }
   document.addEventListener('focusin', onFocusIn, true)
   document.addEventListener('keydown', stop, true)
   document.addEventListener('pointerdown', stop, true)
   document.addEventListener('mousedown', stop, true)
+  try { parent?.addEventListener('keydown', stop, true) } catch { /* 跨源 */ }
   stopWatching = stop
 }
 // 示範收尾只給「人在 Storybook 介面裡看」的情境:直接開 iframe.html 的是儀器(閘用 page.focus() 量焦點框、

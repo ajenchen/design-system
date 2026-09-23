@@ -97,7 +97,8 @@
  *   往內 2px 的藍線畫在藍底上同色、看不見;白線又不能貼在最外圈 —— 那只是把藍圓削小一圈,選中狀態
  *   看起來像「比較小的藍底」(user 原話)。所以白線要退進藍圓裡、外圈留藍:1px 白線退 3px,線外保留 3px 藍。
  *   1px 而不是 2px:2px 退 4px 的版本內圈只剩 16px,兩位數的數字直接貼到線(user:「c 的白線幾乎要切到文字了」)。
- *   對照 IBM Carbon 選中日 `.flatpickr-day.today.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`。
+ *   對照 IBM Carbon 選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`
+ *  (packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571;`.today.selected` 走 focus-outline mixin,不是這條)。
  * 顏色走 `--on-emphasis`(主色底上的前景,兩個主題都是白),不寫死 white。
  * 用法:`[&>button]:focus-visible:focus-ring-inset-emphasis` 掛在填色格的 modifier 上,
  *   特異性高過 button 自己的 `focus-visible:focus-ring-inset`,填色格由這條勝出;非填色格照舊 2px 藍線。

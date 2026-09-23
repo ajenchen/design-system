@@ -105,7 +105,7 @@ user 原話(問句):「滑鼠會搶反白的元件,搶完之後,那鍵盤是否�
 **兩類怎麼分**:滑鼠移過去反白會不會跟過來(規則一的例外)。會 → 反白是唯一游標,適用本節;不會 → 常駐清單,hover 與框獨立。
 DS 內屬於前者的:`CommandItem`(Select / SelectMenu / Combobox / PeoplePicker / Command inline+dialog / AgentPanel 歷史清單都經它)與
 DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘全是後者。
-**分類看項目的函式庫行為(pointermove 會不會搬焦點 / 反白),不看它住不住在 Popover 裡**(2026-09-24 補,user 問「出現鍵盤焦點之後再用滑鼠 hover 日期,按照我們其他元件搶焦點的邏輯,鍵盤焦點不是應該要消失嗎?」):DatePicker 浮層裡的 DateGrid 日期格是 react-day-picker 的 roving tabindex 真焦點(`node_modules/react-day-picker/dist/esm/DayPicker.js` 的 mouseenter 只轉呼叫 callback、不 `setFocused`)、TimeColumns 走 `:focus-visible`,都是後者;有格層級鍵盤游標的世界級日曆(MUI X `DayCalendar.tsx` `focusedDay` 只由 keydown / focus 改、react-day-picker、flatpickr、Polaris `focusDate` 與 `hoverDate` 兩個 state、W3C APG date picker dialog 的 cell 只綁 click / keydown / focus)沒有一家在 hover 時搬或抹焦點;一手對照 [React Aria `useCalendarCell.ts`](https://cdn.jsdelivr.net/npm/@react-aria/calendar/src/useCalendarCell.ts):「Highlight the date on hover or drag over a date when selecting a range.」→ `state.highlightDate(date)`,`setFocusedDate` 只在 `onFocus` / `onPressStart`。
+**分類看項目的函式庫行為(pointermove 會不會搬焦點 / 反白),不看它住不住在 Popover 裡**(2026-09-24 補,user 問「出現鍵盤焦點之後再用滑鼠 hover 日期,按照我們其他元件搶焦點的邏輯,鍵盤焦點不是應該要消失嗎?」):DatePicker 浮層裡的 DateGrid 日期格是 react-day-picker 的 roving tabindex 真焦點(`node_modules/react-day-picker/dist/esm/DayPicker.js` 的 mouseenter 只轉呼叫 callback、不 `setFocused`)、TimeColumns 走 `:focus-visible`,都是後者;有格層級鍵盤游標的世界級日曆([MUI X `DayCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DayCalendar.tsx) `focusedDay` 只由 keydown / focus 改、[react-day-picker `DayPicker.tsx`](https://github.com/gpbl/react-day-picker/blob/main/src/DayPicker.tsx) mouseenter 只轉呼叫 callback、[flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` 只增刪 class、[Polaris `DatePicker.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/DatePicker.tsx) `focusDate` 與 `hoverDate` 兩個 state、[W3C APG datepicker-dialog.js](https://www.w3.org/WAI/content-assets/wai-aria-practices/patterns/dialog-modal/examples/js/datepicker-dialog.js) 的 cell 只綁 click / keydown / focus)沒有一家在 hover 時搬或抹焦點;一手對照 [React Aria `useCalendarCell.ts`](https://cdn.jsdelivr.net/npm/@react-aria/calendar/src/useCalendarCell.ts):「Highlight the date on hover or drag over a date when selecting a range.」→ `state.highlightDate(date)`,`setFocusedDate` 只在 `onFocus` / `onPressStart`。
 
 **所以修改範疇只有會搶反白的元件**(user 問「這個更改範疇應該只有會搶反白的元件吧?」——對):把它們項目上的 `hover:` 樣式全部拿掉、
 畫法改由「反白來歷」決定(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`),常駐清單一行都不用改。
@@ -568,7 +568,7 @@ DateGrid 的日期格是第一個案例:格與格只隔 4px,而區間 track(`::b
 |---|---|---|
 | 線外保留的藍圈 | 4px | 3px |
 | 線內的淨空直徑 | 16px → 兩位數**貼到線** | 20px → 每邊 2px |
-| 對照 | — | IBM Carbon 選中日 `.flatpickr-day.today.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`([carbon `_date-picker.scss`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_date-picker.scss)) |
+| 對照 | — | IBM Carbon 選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`([carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571);`.flatpickr-day.today.selected` 走 `focus-outline` mixin,2026-09-24 對原始碼改正檔名與選擇器) |
 
 user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要切到文字了」)。1px 比全 DS 其他焦點框的 2px 細,
 是唯一的讓步:在填色的圓上 1px 已足夠分辨,Carbon 也是這樣做。
@@ -618,7 +618,7 @@ user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要�
 | v1 | 祖先 `overflow` 不是 `visible` 就往裡 | **看寫法不看設計**。永遠不捲、四周又空的容器,框根本不會被切,硬判往裡會造成「明明有空間卻縮在裡面」 |
 | v2 | 可捲動容器該軸淨空視為 0,配 `scroll-margin` | **過度設計**。元素四周的空間會跟著元素一起捲,框畫在那個空間裡就不會被裁 |
 | **v3(現行)** | **只量被聚焦元素四周最小淨空,`≥ 4px` 往外、`< 4px` 往裡** | — |
-| v3 結論表重跑(2026-09-24) | 判準不變;**結論表沒跟著 09-23 的重判更新** —— 「套回實測值」表與「每個元件只有一個答案」句仍寫 DateGrid 日期格往外 +2px,與 `date-grid.tsx` / `date-grid.spec.md` / 本檔「填色元素上的內描邊」的往內矛盾 | 判準改了、結論表沒重跑 = 文件自我矛盾(下方遷移紀錄的鐵律);M10 兩維度自檢的第二維(結論兩兩相容)漏跑 —— 09-23 只改了寫新結論的那幾行,沒把舊結論列成清單逐對問「還能同時為真嗎」 |
+| v3 結論表重跑(2026-09-24) | 判準不變;**結論表沒跟著 09-23 的重判更新** —— 「套回實測值」表與「每個元件只有一個答案」句仍寫 DateGrid 日期格往外 +2px,與 `date-grid.tsx` / `date-grid.spec.md` / 本檔「填色元素上的內描邊」的往內矛盾(2026-09-24 已改正兩處) | 判準改了、結論表沒重跑 = 文件自我矛盾(下方遷移紀錄的鐵律);M10 兩維度自檢的第二維(結論兩兩相容)漏跑 —— 09-23 只改了寫新結論的那幾行,沒把舊結論列成清單逐對問「還能同時為真嗎」 |
 
 v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在元素貼著它時才成為障礙**,
 而那種情況「淨空 < 4px」本來就涵蓋了。一條尺量到底。

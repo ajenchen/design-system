@@ -25,7 +25,10 @@ await attachStaticRoute(page, served)
 const story = (id) => `${served.origin}/iframe.html?id=${encodeURIComponent(`design-system-components-datepicker-展示--${id}`)}&viewMode=story`
 
 let fail = 0
-const ok = (cond, msg) => { if (cond) console.log(`✓ ${msg}`); else { console.log(`✗ ${msg}`); fail++ } }
+// 每條斷言標一個「家族」:frame(區間框)/ focus(焦點框幾何)/ crossing(跨縫不閃)/ outside(兩月不渲染鄰月)/ single(單月鄰月淡字)。
+// selftest 的對照組分別弄壞這五樣,必須**每一家都至少紅一條**;只看總數 fail > 0 會讓「框那家紅了、焦點那家其實量不到」混過去
+const failedFamilies = new Set()
+const ok = (cond, msg, family = 'frame') => { if (cond) console.log(`✓ ${msg}`); else { console.log(`✗ ${msg}`); fail++; failedFamilies.add(family) } }
 
 /** 一格的框:td ::after 的陰影字串、兩側圓角、clip-path;button 的 ring 展開量(box-shadow 最大 spread)。
  *  兩月並列時月首月尾的日子會出現兩次(鄰月的 outside 格也掛同一個 data-day),一律量本月那一格。 */
@@ -139,12 +142,12 @@ async function runSuite() {
   await page.waitForTimeout(250)
   const plain = await focusRing('2026-05-07')
   ok(plain?.visible && plain.width === '2px' && plain.offset === '-2px' && plain.color === (await tokenColor('--ring')),
-    `焦點:非藍底(中段)5/7 = 往內 2px 藍線(${JSON.stringify(plain)})`)
+    `焦點:非藍底(中段)5/7 = 往內 2px 藍線(${JSON.stringify(plain)})`, 'focus')
   await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft')
   await page.waitForTimeout(250)
   const filled = await focusRing('2026-05-04')
   ok(filled?.visible && filled.width === '1px' && filled.offset === '-3px' && filled.color === (await tokenColor('--on-emphasis')),
-    `焦點:藍底端點 5/4 = 1px 白線退 3px(${JSON.stringify(filled)})`)
+    `焦點:藍底端點 5/4 = 1px 白線退 3px(${JSON.stringify(filled)})`, 'focus')
 
   // ── 滑鼠與鍵盤互搶:最後一個輸入贏(user 2026-09-23:「滑鼠和鍵盤沒有搶走彼此的焦點」)──
   // 滑鼠停在 5/20 不動、鍵盤把焦點移到 5/5 → 框跟鍵盤;滑鼠再動到 5/7 → 框跟滑鼠;滑鼠離開格子 → 回到鍵盤焦點 5/5(不是消失)。
@@ -161,7 +164,7 @@ async function runSuite() {
   // user 2026-09-24 問「鍵盤焦點不是應該要消失嗎?」—— 只有 cmdk / Radix Menu 那類反白 = 唯一游標的選單才搶)。
   // 對照組:selftest 把焦點框改回往外 → offset 斷言紅;真要抹掉焦點(blur)則 visible 變 false,也紅。
   const stay = await focusRing('2026-05-05')
-  ok(stay?.visible && stay.width === '2px' && stay.offset === '-2px', `互搶:滑鼠停 5/7 時 5/5 的鍵盤焦點框仍在、不被 hover 抹掉(${JSON.stringify(stay)})`)
+  ok(stay?.visible && stay.width === '2px' && stay.offset === '-2px', `互搶:滑鼠停 5/7 時 5/5 的鍵盤焦點框仍在、不被 hover 抹掉(${JSON.stringify(stay)})`, 'focus')
   await page.mouse.move(2, 2); await page.waitForTimeout(120)
   await expectFrame('互搶:滑鼠離開格子 → 回到鍵盤焦點 5/5', days('2026-05-04', '2026-05-05'))
   await expectNoFrame('互搶:滑鼠離開後 5/6、5/7 沒有框', ['2026-05-06', '2026-05-07'])
@@ -182,8 +185,12 @@ async function runSuite() {
       await page.waitForTimeout(20)
       min = Math.min(min, await framedCount())
     }
-    ok(min > 0, `${label}:30 小步跨格,框最少仍有 ${min} 格(0 = 縫隙裡整條框消失)`)
+    ok(min > 0, `${label}:30 小步跨格,框最少仍有 ${min} 格(0 = 縫隙裡整條框消失)`, 'crossing')
   }
+  // 先把鍵盤焦點放掉、指標移出格區:上一段留著鍵盤焦點 5/5,指標一離開格子框就退回 5/4→5/5(兩格),「最少幾格」永遠 ≥ 2,
+  // 縫隙裡整條框消失的那一幀根本量不到(2026-09-24 審查抓到:對照組把 ::before 縮回 0 也不會紅)。沒有鍵盤焦點時 leave → null → 0 格
+  await blurFocus(); await page.mouse.move(2, 2); await page.waitForTimeout(80)
+  await expectNoFrame('跨格前:焦點放掉、指標移開後沒有任何框', ['2026-05-04', '2026-05-05'])
   await crossing('2026-05-20', '2026-05-21', '水平跨格 5/20→5/21')
   await crossing('2026-05-20', '2026-05-27', '垂直跨列 5/20→5/27')
 
@@ -192,7 +199,7 @@ async function runSuite() {
     const tds = [...document.querySelectorAll('td[data-outside]')]
     return { cells: tds.length, buttons: tds.filter((td) => td.querySelector('button')).length, visible: tds.filter((td) => getComputedStyle(td).visibility !== 'hidden').length }
   })
-  ok(outside.cells > 0 && outside.buttons === 0 && outside.visible === 0, `兩月:鄰月格 ${outside.cells} 個全部不渲染日子(有 button ${outside.buttons};可見 ${outside.visible})`)
+  ok(outside.cells > 0 && outside.buttons === 0 && outside.visible === 0, `兩月:鄰月格 ${outside.cells} 個全部不渲染日子(有 button ${outside.buttons};可見 ${outside.visible})`, 'outside')
 
   // ── 上膛(對面那端已有值):單格 hover 圈的壓制是**靜態**的 —— 停留之前就掛在每一個「停留會有框」的格上,不等 React 慢一幀
   //(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓」)。
@@ -228,7 +235,7 @@ async function runSuite() {
   // 單月:鄰月日子照舊顯示、淡字(spec「outside」列);selftest 把它染紅
   if (SELFTEST) await page.addStyleTag({ content: 'td[data-outside]>button{color:red!important}' })
   const single = await page.evaluate(() => { const b = document.querySelector('td[data-outside]:not([data-disabled]):not([data-selected]) > button:not(:disabled)'); return b ? getComputedStyle(b).color : null })
-  ok(single !== null && single === (await tokenColor('--fg-muted')), `單月:鄰月日子顯示且淡字(${single};token ${await tokenColor('--fg-muted')})`)
+  ok(single !== null && single === (await tokenColor('--fg-muted')), `單月:鄰月日子顯示且淡字(${single};token ${await tokenColor('--fg-muted')})`, 'single')
 
   // ── 對照組:沒上膛(兩端都空)→ 停留沒有框,單格 hover 圈照畫(壓制不是無條件的)──
   await gotoStory(page, story('range-picker'), { waitFor: 'button[aria-haspopup="dialog"]', settle: 300 })
@@ -248,11 +255,11 @@ async function runSuite() {
   await page.focus(`[data-day="${gridStart}"]:not([data-outside]) > button`); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(250)
   const gridMid = await focusRing(gridMiddle)
   ok(gridMid?.visible && gridMid.width === '2px' && gridMid.offset === '-2px' && gridMid.color === (await tokenColor('--ring')),
-    `DateGrid range:中段 ${gridMiddle}(RDP 也標 selected)焦點壓回往內 2px 藍線(${JSON.stringify(gridMid)})`)
+    `DateGrid range:中段 ${gridMiddle}(RDP 也標 selected)焦點壓回往內 2px 藍線(${JSON.stringify(gridMid)})`, 'focus')
   await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(250)
   const gridEnd = await focusRing(gridStart)
   ok(gridEnd?.visible && gridEnd.width === '1px' && gridEnd.offset === '-3px' && gridEnd.color === (await tokenColor('--on-emphasis')),
-    `DateGrid range:端點 ${gridStart} 焦點 = 1px 白線退 3px(${JSON.stringify(gridEnd)})`)
+    `DateGrid range:端點 ${gridStart} 焦點 = 1px 白線退 3px(${JSON.stringify(gridEnd)})`, 'focus')
 }
 
 try {
@@ -264,7 +271,12 @@ try {
 if (SELFTEST) {
   // 對照組:注入「陰影歸零」後,上面的斷言必須大量紅 —— 綠就代表這支閘量不到框
   if (fail === 0) { console.log('✗ 對照組:td::after 陰影歸零後閘仍全綠 —— 這支閘量不到框'); process.exit(1) }
-  console.log(`✓ 對照組:陰影歸零後 ${fail} 項紅(閘會紅)`)
+  // 五個家族各自被弄壞、各自必須紅:哪一家綠,就是那一家的量具是假的
+  const families = ['frame', 'focus', 'crossing', 'outside', 'single']
+  const silent = families.filter((f) => !failedFamilies.has(f))
+  for (const f of families) console.log(`${failedFamilies.has(f) ? '✓' : '✗'} 對照組 ${f}:弄壞後${failedFamilies.has(f) ? '有紅' : '仍全綠 —— 量不到'}`)
+  if (silent.length) { console.log(`✗ 對照組:${silent.join(' / ')} 弄壞後沒有任何一條紅`); process.exit(1) }
+  console.log(`✓ 對照組:五個家族全部會紅(共 ${fail} 項)`)
   process.exit(0)
 }
 console.log(fail ? `✗ ${fail} 項未通過` : '✅ DatePicker.Range 區間預覽框 PASS')

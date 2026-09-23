@@ -33,7 +33,7 @@ import { Button } from '@/design-system/components/Button/button'
  * |-------|------|-------|
  * | today | 數字下方藍色短桿 | `::after` pseudo bar(bg-primary,w-40% h-1.5px rounded-full,貼近數字底)|
  * | disabled | 灰底圓圈 + disabled 字色(跟 Button disabled 一致) | [&>button]:bg-disabled [&>button]:text-fg-disabled rounded-full |
- * | outside(非本月) | text-fg-muted(neutral-7)—— **僅在該日仍可點時**;不可點時讓位給 disabled(M24) | [&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted |
+ * | outside(非本月) | 單月:text-fg-muted(neutral-7)—— **僅在該日仍可點、且未被選中時**(不可點讓位 disabled、選中讓位藍底白字,M24);**兩月以上不渲染**(numberOfMonths > 1 強制 showOutsideDays=false) | [&:not([data-selected])>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted |
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
  * | range middle | 灰底矩形 track(bg-neutral-selected = neutral-2),**高度 = cell 高度**(28×28 @ md) | before pseudo: `inset-y-0 -inset-x-[2px]` |
  * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` + start `left-0 -right-[2px]` / end `-left-[2px] right-0`(向 middle 外擴 2px bridge gap)|

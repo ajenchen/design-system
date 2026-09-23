@@ -1266,9 +1266,9 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     // popover white 顯露(乾淨 breathing)
                     rangeStart: cn(
                       // 2026-08-11 修偏移:!bg-primary 連 hover 也壓死 → 端點 hover 零回饋,違反
-                      // date-grid.spec.md:119「選中日 hover 升階 primary→primary-hover」(端點可再點
+                      // date-grid.spec.md:121「選中日 hover 升階 primary→primary-hover」(端點可再點
                       // 重選範圍 = 可取消家族,依 user 原則該有回饋)。補顯式 hover 升階(同 !important,
-                      // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:118)。
+                      // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:120)。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       // 藍底上的鍵盤焦點 = 1px 白線退 3px(同 DateGrid selected;端點不掛 RDP selected,要自己帶)
                       EMPHASIS_FOCUS_RING_CLASSNAME,
@@ -1276,7 +1276,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                       RANGE_TRACK_CLASSNAMES.start,
                     ),
                     rangeEnd: cn(
-                      // 2026-08-11:同 rangeStart — 補 hover 升階(spec:119),鏡像。
+                      // 2026-08-11:同 rangeStart — 補 hover 升階(spec:121),鏡像。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       EMPHASIS_FOCUS_RING_CLASSNAME,
                       RANGE_TRACK_CLASSNAMES.end,

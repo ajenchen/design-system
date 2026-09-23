@@ -13,7 +13,7 @@
  *
  * Run: `node scripts/story-demo-focus-invariant.mjs [--limit=N] [--concurrency=4] [--selftest]`(需先 build-storybook)
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { launchBrowserOrSkip, gotoStory } from './lib/launch-browser.mjs'
 import { serveStaticDir, attachStaticRoute } from './lib/sandboxed-verify-browser.mjs'
@@ -48,6 +48,12 @@ const measure = (page) => page.evaluate(() => {
   }
 })
 
+// 缺前置守衛:訊息形狀對齊 scripts/lib/gate-selftest-meta.mjs 認得的「storybook-static missing」,夜間 gate-meta lane 的拋棄式快照
+// 沒有建置產物,會以「略過」而不是「baseline 應該綠卻紅」收(2026-09-24 審查抓到:沒守衛 → serveStaticDir 丟別的訊息 → 每晚紅沒人看)
+if (!existsSync(resolve(ROOT, 'storybook-static/index.json'))) {
+  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
+  process.exit(1)
+}
 const served = await serveStaticDir(resolve(ROOT, 'storybook-static'), { port: 6191 })
 const browser = await launchBrowserOrSkip()
 // 直接開 iframe.html 時預覽層把自己當儀器關掉(見 preview.tsx demoFocusEnabled);本閘要看的正是 user 在管理介面看到的畫面 → 帶 on
@@ -85,6 +91,8 @@ try {
     const index = JSON.parse(readFileSync(resolve(ROOT, 'storybook-static/index.json'), 'utf8'))
     let ids = Object.values(index.entries).filter((e) => e.type === 'story').map((e) => e.id)
     if (LIMIT) ids = ids.slice(0, LIMIT)
+    // 0 支 story = index 壞了,不是「沒有違規」(M37:沒觀察到 ≠ 沒發生)
+    if (ids.length === 0) { console.log('✗ storybook-static/index.json 裡沒有任何 story —— 儀器失效,不當綠燈'); process.exitCode = 1; await browser.close(); await served.close(); process.exit(1) }
     const violations = []; const missing = []; const errors = []; let kept = 0; let done = 0
     const queue = ids.slice()
     // 沙箱下 Chromium 以 --single-process 啟動(launch-browser.mjs SANDBOX_ARGS):每個 newPage 各開一個 context 會撞
