@@ -196,14 +196,35 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 點 date → 依 `activeEnd` 更新對應端點(start | end);auto-advance 至 end 等選
 - showTime=false:兩端點都填好 → Popover **自動關閉**
 - showTime=true:`needConfirm=true`(default),user 按「確定」才 commit + close
-- range track 視覺由已選端點靜態算出(`rangeModifiers` 讀 committed start/end,見 date-picker.tsx `rangeModifiers` 註解);**無** hover 未選端點的預覽(RDP hover-preview 只在內建 `mode="range"` 才有,本元件刻意不用)
+- range track 視覺由已選端點靜態算出(`rangeModifiers` 讀 committed start/end,見 date-picker.tsx `rangeModifiers` 註解);**停留預覽**:滑鼠停在／看得見的鍵盤焦點落在某一天時,依 `activeEnd` 算出「點下去會變成」的區間交給 DateGrid 畫成藍色細框 —— 規則表見下方「區間預覽」(2026-09-23 user 拍板;此前此處寫「無 hover 預覽」,那是 2026-06-05 把當時的程式行為抄成文件,不是決定)
 - Clear 按鈕清空兩端點 `onChange([null, null])`
 
 ### Range 視覺規則
 
 - **range_start / range_end**:沿用 single selected 的視覺(藍底白字圓)
-- **range middle**:灰底矩形橫條(實作層級詳 `date-grid.tsx`)
+- **range middle**:灰底矩形橫條(實作層級詳 `date-grid.tsx`);停留時不畫單格 hover 圈,由「區間預覽」的框接手(見下段)
 - **端點 ↔ 中間的接縫**:端點朝區間外側保留完整圓弧、朝區間內側與矩形無縫銜接,形成連續底色帶；實作 class 對照由 anatomy 管理
+
+### 區間預覽(2026-09-23 user 拍板)
+
+停留(滑鼠 / 看得見的鍵盤焦點)在某一天 d 時,依正在選的那一端算出「點下去會變成」的區間,交給 DateGrid 以藍色細框畫出(畫法 owner:`../DateGrid/date-grid.spec.md`「區間預覽框」;判定純函式 `range-preview.ts`,判定表 `scripts/test-range-preview.mjs`,幾何閘 `scripts/datepicker-range-preview.mjs`):
+
+| 狀態 | 停留在 d | 預覽區間 | 例(已選 5/4–5/12) |
+|---|---|---|---|
+| 正在選結束日,開始日已選 | d ≥ 開始日 | [開始日, d] | 停 5/20 → 框 5/4→5/20;停 5/7 → 框 5/4→5/7(縮小也看得見) |
+| 正在選開始日,結束日已選 | d ≤ 結束日 | [d, 結束日] | 停 4/28 → 框 4/28→5/12 |
+| 只選了開始日(第一次點完) | d ≥ 開始日 | [開始日, d] | 選完起點掃過去就看得到長度 |
+| 兩端都還空 | 任一天 | 不預覽,只有單格 hover 圈 | 沒有另一端可以框 |
+| 順序不合(不可點的日子) | — | 不預覽 | 選結束日時停在 5/3 |
+| d 與既有端點同一天 | — | 單格(完整一圈) | 停在 5/4 |
+
+- **灰色 track 留著**,框疊在上面(現在是這樣 / 準備變成這樣同時看得到)。
+- **停留日 = 框的那一端**:不畫單格 hover 圈,只有框的半圓端點,缺口朝區間內側;正在選結束日時停留日在右端(半圓朝右)、選開始日時鏡射。
+- **鍵盤同權**:方向鍵移動焦點時同樣預覽(焦點日 = 停留日);只算看得見的焦點(`:focus-visible`),浮層開啟時程式搬過去的焦點不算,滑鼠使用者不會先看到整段框。
+- **showTime 單月同一套規則**(track 是否顯示另管,見「Popover 行為」)。
+- 比較只看日,端點帶時間也一樣。
+
+**來源總帳**(user 2026-09-23 原話,逐字):「我反而認為這種日期區間選擇器hover 到日期應該要讓使用者可以看出到底選下去之後實際的區間會變成怎樣,所以我反而認為是可以用現在藍色邊框的視覺語言去預框出選中後的區間」;Q1–Q4、Q6、Q7 「照你建議」(做 / 實線藍框 / 兩端都預覽 / track 留著 / 鍵盤同權 / showTime 同一套);Q5:「若有藍框區間的話,所 hover 到的日期不會是完整的一個圓圈,應該要與藍框區間在視覺上一氣呵成,所以所hover的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」。**先前三句被當成「規則」的文字**(本檔舊句「無 hover 預覽」、`date-grid.spec.md` 舊句「中段 hover ring 一併壓制」、story 舊說明「不出現第二層 hover ring」)都是 AI 在 2026-06-05 / 07-05 / 08-02 稽核時把程式行為抄成文件,沒有任何 user 原話;2026-09-23 差點據此反著修,user 提問後撤回。
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 
@@ -325,7 +346,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx:650,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`
-- DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建)
+- DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建);Range 模式下焦點移到哪一天就預覽哪一天(見「區間預覽」),鍵盤與滑鼠看到同一件事
 - Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由**自建 `onCloseAutoFocus`** 手動回焦 active 端 button(date-picker.tsx:1020-1026,守 WCAG 2.4.3)
 - Range 雙 trigger:`activeEnd` state 指向當前編輯端,`aria-expanded` 對應只當該 trigger active 時 true
 

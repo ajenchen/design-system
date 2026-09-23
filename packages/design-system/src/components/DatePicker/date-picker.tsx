@@ -11,7 +11,8 @@ import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
+import { DateGrid, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
+import { computeRangePreview, rangePreviewModifiers } from './range-preview'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -960,6 +961,23 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       return mods
     }, [startDate, endDate])
 
+    // ── 區間預覽(2026-09-23 user 拍板;規則表與原話見 date-picker.spec.md「區間預覽」)──
+    // 停留日有兩個來源、各自清除:滑鼠(enter / leave)與鍵盤焦點(focus / blur)。分開存的理由:
+    // 點某一天時 mousedown 會把焦點搬過去,**前一個**焦點格的 blur 先到 —— 若共用一個變數,blur 會把
+    // 滑鼠剛設好的停留日清掉,框在指標還停在格子上時就消失。
+    // 焦點只在「看得見的焦點」時算(:focus-visible):浮層開啟時 autoFocus 是程式搬焦點,滑鼠使用者
+    // 還沒停留就會先看到整段框;鍵盤使用者用方向鍵移動時 :focus-visible 為真,框跟著焦點走(Q6)。
+    // 判定本身是純函式(range-preview.ts),這裡只接線;showTime 一樣預覽(Q7),track 是否顯示另管。
+    const [hoverDay, setHoverDay] = React.useState<Date | null>(null)
+    const [focusDay, setFocusDay] = React.useState<Date | null>(null)
+    React.useEffect(() => {
+      if (!open) { setHoverDay(null); setFocusDay(null) }
+    }, [open])
+    const previewModifiers = React.useMemo(
+      () => rangePreviewModifiers(computeRangePreview({ activeEnd, start: startDate, end: endDate, anchor: hoverDay ?? focusDay })),
+      [activeEnd, startDate, endDate, hoverDay, focusDay],
+    )
+
     const commitRange = (next: [string | null, string | null]) => {
       if (needConfirm) setDraft(next)
       else { onChange?.(next); setDraft(next) }
@@ -1220,9 +1238,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     // showTime Range:不 auto-advance,讓 user 編 time 後手動按確定 commit
                     // (對齊 Ant 序列流程 — 確定 button 切 activeEnd)
                   }}
-                  // showTime Range:不渲 range visualization(對齊 Ant — 整個 popup 等同 single
-                  // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示
-                  modifiers={showTime ? {} : rangeModifiers}
+                  // showTime Range:不渲 range track(對齊 Ant — 整個 popup 等同 single
+                  // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示。
+                  // 停留預覽框不分 showTime(user 2026-09-23 Q7:「同一套規則」)。
+                  modifiers={{ ...(showTime ? {} : rangeModifiers), ...previewModifiers }}
                   modifiersClassNames={{
                     // ── Range visual canonical(2026-05-03 v8 stadium pattern)──
                     // v5 修「白色破圖」用 pseudo 蓋全 cell 矩形,但新副作用:button 圓比矩形小,
@@ -1239,25 +1258,31 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                       // 重選範圍 = 可取消家族,依 user 原則該有回饋)。補顯式 hover 升階(同 !important,
                       // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:118)。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
-                      "before:content-[''] before:absolute before:inset-y-0",
-                      'before:left-0 before:-right-[2px]',
-                      'before:bg-neutral-selected before:pointer-events-none',
-                      'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
+                      // track 的 stadium class 只住在 DateGrid(2026-09-23 收斂;先前這裡各抄一份 = 假 SSOT)
+                      RANGE_TRACK_CLASSNAMES.start,
                     ),
                     rangeEnd: cn(
                       // 2026-08-11:同 rangeStart — 補 hover 升階(spec:119),鏡像。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
-                      "before:content-[''] before:absolute before:inset-y-0",
-                      'before:-left-[2px] before:right-0',
-                      'before:bg-neutral-selected before:pointer-events-none',
-                      'before:rounded-r-full',  // ← 鏡像
+                      RANGE_TRACK_CLASSNAMES.end,
                     ),
                     rangeMiddle: cn(
-                      "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
-                      'before:bg-neutral-selected before:pointer-events-none',
+                      RANGE_TRACK_CLASSNAMES.middle,
                       '[&>button]:!bg-transparent [&>button]:!text-foreground',
                     ),
+                    // ── 停留預覽框(2026-09-23 user 拍板)── 四種格由 range-preview.ts 算出,畫法住在 DateGrid
+                    previewSingle: RANGE_PREVIEW_CLASSNAMES.single,
+                    previewStart: RANGE_PREVIEW_CLASSNAMES.start,
+                    previewMiddle: RANGE_PREVIEW_CLASSNAMES.middle,
+                    previewEnd: RANGE_PREVIEW_CLASSNAMES.end,
                   }}
+                  // 停留來源:滑鼠與看得見的鍵盤焦點(理由見上方 hoverDay / focusDay 註解)
+                  onDayMouseEnter={(day) => setHoverDay(day)}
+                  onDayMouseLeave={() => setHoverDay(null)}
+                  onDayFocus={(day, _modifiers, event) => {
+                    if (event.currentTarget.matches(':focus-visible')) setFocusDay(day)
+                  }}
+                  onDayBlur={() => setFocusDay(null)}
                   // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)
                   disabled={isOutOfRangeOrder}
                   // showTime → 1 cal(對齊 Ant `multiplePanel=false`);date-only → 2 cal(`multiplePanel=true`)

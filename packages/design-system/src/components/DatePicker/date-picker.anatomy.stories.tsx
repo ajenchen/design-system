@@ -844,8 +844,14 @@ export const CalendarTokens = {
                   <tr>
                     <Td>hover(未選中)</Td>
                     <Td>藍圈 outline 無 fill</Td>
-                    <Td mono>hover:ring-[1.5px] · hover:ring-primary · hover:bg-transparent</Td>
-                    <Td>非 filled 避免跟 selected 混淆</Td>
+                    <Td mono>hover:ring-[1.5px] · hover:ring-primary-hover · hover:bg-transparent</Td>
+                    <Td>非 filled 避免跟 selected 混淆(2026-07-07 起 ring 色為 hover 階)</Td>
+                  </tr>
+                  <tr>
+                    <Td>range 預覽框(停留 / 焦點,只在 DatePicker.Range)</Td>
+                    <Td>藍色細框框出「點下去會變成」的區間,停留日是框的半圓端點</Td>
+                    <Td mono>端點 / 單格 after:ring-inset · after:ring-[1.5px] · after:ring-primary-hover + rounded-l/r-full(端點朝區間那側用 clip-path 裁掉直邊);中段 after:shadow-[inset 上下各 1.5px](day 容器層 after 偽元素;class 住 DateGrid RANGE_PREVIEW_CLASSNAMES;不用 border,1.5px 會被取整)</Td>
+                    <Td>與單日 hover 圈同色同粗;停留日不再畫單格圈(2026-09-23 user 拍板)</Td>
                   </tr>
                   <tr>
                     <Td>outside month</Td>

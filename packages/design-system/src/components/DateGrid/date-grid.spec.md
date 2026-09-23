@@ -108,6 +108,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」 |
 
 ## 組合狀態(state stacking order)
 
@@ -115,8 +116,26 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 - range-start / range-end → selected 規則(cell 半圓 track + button 圓)
 - range-middle → track 規則(cell 灰底矩形 + button 透明)
 - today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬「藍底白字圓」的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
-- hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);range-middle 因同樣掛 selected modifier,button hover ring **一併被 selected 的 ring-0 壓制**(與 selected 一致的 hover 抑制;button 透明僅顯露 track — 2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)
+- hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);RDP `mode="range"` 的 range-middle 因同樣掛 selected modifier,button hover ring 一併被壓制(2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)。**`DatePicker.Range` 的中段不掛 selected,停留時由「區間預覽框」接手:停留日不畫單格圈,改畫框的半圓端點**(2026-09-23 user 拍板;此前這一句被當成「中段 hover 不該有圈」的規則,其實它只是描述套件行為,從未有人拍板 —— 來源總帳見 `../DatePicker/date-picker.spec.md`「區間預覽」)
 - **選中日 hover 底色升階**:ring 壓制之外,選中日 hover 時 `bg-primary → bg-primary-hover`(2026-07-06 補明文——「選中之上 hover = 同色相升 hover 階」家族,Checkbox / Switch checked hover 同款;code 已有此行為,本句消 spec-code 落差)
+
+## 區間預覽框(2026-09-23 user 拍板)
+
+**是什麼**:`DatePicker.Range` 停留(滑鼠 / 看得見的鍵盤焦點)在某一天時,用**單日 hover 圈同一條藍色細框**(1.5px `primary-hover`)把「現在點下去,區間會變成從哪到哪」框起來。已選區間的灰色 track 照舊顯示,框疊在上面:縮小時框在 track 裡面、放大時框超出 track。**哪幾天要框由 DatePicker.Range 決定**(它才知道正在選哪一端,規則表在 `../DatePicker/date-picker.spec.md`「區間預覽」);本節只擁有**畫法**。
+
+| 格 | 畫法 |
+|---|---|
+| 起點 | 上下邊 + 左側邊 + 左半圓(`rounded-l-full`,圓半徑 = button 半徑,與藍圓同弧);右側向鄰格外擴 2px 接縫 |
+| 中段 | 只有上下邊;左右各外擴 2px 接縫,不畫側邊 |
+| 終點 | 鏡射起點 |
+| 單格(起訖同一天) | 完整一圈(左右側邊 + 全圓角),位置與大小 = 單日 hover 圈 |
+| 列首 / 列尾(換列處) | 不畫側邊,框是開口的;外擴歸零不溢出面板留白 —— 與 track 在換列處的處理同款 |
+| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所 hover 的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
+| 已選端點落在框裡 | 藍圓在 button 層(z 在框之上),框的線從圓的上下切點進出,視覺連續;不另外處理 |
+
+**層次**:track = td `::before`、預覽框 = td `::after`、today bar = button 的 `::after`,三者互不衝突;button 在最上層。
+
+**世界級對照**(讀原始碼,2026-09-23):五家有區間選擇的元件庫都在停留時預覽區間,差別只在畫法 —— Ant Design v4 用虛線上下邊 + 兩端側邊([panel.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/date-picker/style/panel.less) `-range-hover*`,`border-top/bottom: dashed @picker-date-hover-range-border-color`)、MUI X 用 1.2px 虛線([DateRangePickerDay.tsx](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangePickerDay/DateRangePickerDay.tsx) `previewStyles`)、Ant v5 現行與 Polaris 用與已選區間同色的淺色填([rc-picker PanelBody.tsx](https://github.com/react-component/picker/blob/master/src/PickerPanel/PanelBody.tsx) 把 `hoverRangeValue` 算成 `-in-range`;[Polaris Day.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx) `(inRange || inHoveringRange) && styles['Day-inRange']`)、Carbon(flatpickr)用填色([index.ts](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` → `startRange / inRange / endRange`)。**本 DS 選實線**:沿用單日 hover 圈的顏色與粗細,不新增第二種「暫定」表達(M23 DS 既有語言優先;user 2026-09-23 Q2 拍板)。我們包的 react-day-picker 本身沒有預覽([range-mode 文件](https://daypicker.dev/selections/range-mode)只有 `range_start / range_middle / range_end`),所以由 DatePicker.Range 自算。
 
 ## Spacing canonical(2026-05-03 v8)
 

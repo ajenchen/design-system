@@ -35,7 +35,7 @@ export const Default: Story = {
 }
 
 /**
- * typeable(2026-05-10 Issue 10):trigger 內渲 `<input>` 接使用者自由輸入,
+ * typeable(2026-05-10 Issue 10):trigger 內渲染真正的文字輸入框接使用者自由輸入,
  * Enter / Blur 解析 commit、Esc reset;不合法輸入標 aria-invalid。Calendar icon 仍開 popover。
  */
 export const TypedInput: Story = {
@@ -276,37 +276,54 @@ export const ShowTimeRangePopoverOpen: Story = {
   play: openPopoverPlay('button[aria-haspopup="dialog"]'),  // 第一個 match = start input
 }
 
-/* ── HoverState:Range middle 沿用 selected hover-ring suppression(M11 真實截圖)── */
-export const RangeMiddleHoverState: Story = {
-  name: '範圍中段:滑鼠移過抑制',
-  parameters: { docs: { description: { story: 'Visual-audit — play 開 range popover並定位 range_middle date；最終 CSS :hover 由 visual-audit 的 Playwright locator.hover() 在截圖前重套，驗證已選取中段維持 grey track 且不出現第二層 hover ring。' } } },
-  render: () => {
-    const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
-    return (
-      <div style={{ paddingBottom: 480 }}>
-        <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
-      </div>
-    )
-  },
-  play: async ({ canvasElement }) => {
-    const { userEvent, waitFor } = await import('@storybook/test')
-    const trigger = canvasElement.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
-    if (!trigger) throw new Error('日期區間 trigger 不存在')
-    await userEvent.click(trigger)
+/* ── 區間預覽(2026-09-23 user 拍板):滑鼠停在哪一天,就框出「點下去會變成」的區間 ──
+   規則表與原話:date-picker.spec.md「區間預覽」;畫法:DateGrid RANGE_PREVIEW_CLASSNAMES。
+   三則各教一個狀態(延長 / 縮小 / 重選開始日);play 只開對應那一端並標記停留目標,真實 CSS :hover 由
+   visual-audit 的 Playwright 在截圖前建立;幾何由 scripts/datepicker-range-preview.mjs 逐格量。 */
+const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const { userEvent, waitFor } = await import('@storybook/test')
+  const triggers = canvasElement.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
+  const trigger = triggers[which === 'start' ? 0 : 1]
+  if (!trigger) throw new Error(`日期區間 ${which} trigger 不存在`)
+  await userEvent.click(trigger)
+  // Popover 在 Portal；等待固定 ISO 日期出現,避免用可變 locale 文字與固定 sleep 判定。
+  let target: HTMLButtonElement | null = null
+  await waitFor(() => {
+    target = document.querySelector<HTMLButtonElement>(`[data-day="${hoverDay}"] > button`)
+    if (!target) throw new Error('預覽目標日期不存在')
+  })
+  // 只標記 deterministic target；真實 CSS :hover 由 visual-audit 建立。
+  target!.setAttribute('data-visual-hover-target', '')
+}
 
-    // Popover 在 Portal；等待固定 ISO 日期出現，避免用可變 locale 文字與固定 sleep 判定。
-    // 2026-05-07 介於 range 5/4–5/12 之間，依 DatePicker rangeModifiers 必為 rangeMiddle。
-    let target: HTMLButtonElement | null = null
-    await waitFor(() => {
-      target = document.querySelector<HTMLButtonElement>(
-        '[data-day="2026-05-07"] > button',
-      )
-      if (!target) throw new Error('範圍中段日期不存在')
-    })
+const RangePreviewCanvas = () => {
+  const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
+  return (
+    <div style={{ paddingBottom: 480 }}>
+      <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
+    </div>
+  )
+}
 
-    // 只標記 deterministic target；真實 CSS :hover 由 visual-audit 建立。
-    target!.setAttribute('data-visual-hover-target', '')
-  },
+export const RangePreviewExtend: Story = {
+  name: '範圍預覽:往後延長',
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在 5/20:藍色細框從 5/4 框到 5/20,框的右端就是停留日的半圓(缺口朝區間),灰色軌道照舊顯示現在的 5/4–5/12。' } } },
+  render: () => <RangePreviewCanvas />,
+  play: rangePreviewPlay('end', '2026-05-20'),
+}
+
+export const RangePreviewShrink: Story = {
+  name: '範圍預覽:往前縮短',
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選結束日,滑鼠停在中段的 5/7:框只到 5/7,落在灰色軌道裡面,一眼看出點下去區間會縮小;停留日不再畫單獨的一圈。' } } },
+  render: () => <RangePreviewCanvas />,
+  play: rangePreviewPlay('end', '2026-05-07'),
+}
+
+export const RangePreviewStart: Story = {
+  name: '範圍預覽:重選開始日',
+  parameters: { docs: { description: { story: '已選 5/4–5/12、正在選開始日,滑鼠停在 4/28:框從 4/28 到 5/12,停留日成為框的左端半圓(缺口朝右);結束日之後的日子不可點也不預覽。' } } },
+  render: () => <RangePreviewCanvas />,
+  play: rangePreviewPlay('start', '2026-04-28'),
 }
 
 /* ── showTime + Range:活動時段 ── */

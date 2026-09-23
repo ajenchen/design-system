@@ -47,6 +47,8 @@
     "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs",
     "test:interaction-ladder": "node scripts/interaction-ladder-invariant.mjs && node scripts/interaction-ladder-invariant.mjs --selftest",
     "test:datepicker-typeable-open": "node scripts/datepicker-typeable-open.mjs",
+    "test:datepicker-range-preview": "node scripts/datepicker-range-preview.mjs && node scripts/datepicker-range-preview.mjs --selftest",
+    "test:range-preview": "node scripts/test-range-preview.mjs",
     "test:authority-reaper": "node scripts/test-authority-generation-reaper.mjs",
     "test:virtual-scroll-stress": "node scripts/virtual-scroll-stress.mjs && node scripts/virtual-scroll-stress.mjs --selftest",
     "test:overflow-indicator": "node scripts/overflow-indicator-containment.mjs && node scripts/overflow-indicator-containment.mjs --selftest",

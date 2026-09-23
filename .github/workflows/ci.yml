@@ -393,6 +393,8 @@ jobs:
           # 判定政策本身用真實 CI 數字的判定表驗(含 2026-09-20 那次誤紅的那一格,
           # 以及「拿掉全盲資訊就會重現誤紅」的對照組)。不進瀏覽器,幾毫秒。
           npm run test:hover-latency-policy
+          # DatePicker.Range 區間預覽的判定表(純函式,15 格 + modifier 形狀 + 對照組)
+          npm run test:range-preview
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
           # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
@@ -674,6 +676,9 @@ jobs:
           npm run test:focus-indicator-invariants
           npm run test:drag-runtime
           npm run test:datepicker-typeable-open
+          # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
+          # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
+          npm run test:datepicker-range-preview
           npm run test:shared-carrier-focus
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
