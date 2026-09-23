@@ -27,6 +27,8 @@ const CASES = [
     [17, 18, 25, 27, 20, 15, 26, 17], [0,0,0,0,0,0,0,0], 'pass'],
   ['2026-09-12 真 bug:有幀可看卻整整 1.5s 沒變色(必須仍然紅)',
     [19, 20, nan, 18, nan, 21, nan, 17, 19, 20], [0,0,0,0,0,0,0,0,0,0], 'lost'],
+  ['381c7ec4 PR #161 第三輪 捲動後 hover(靜置期送幀間隔最大 1490ms;三次沒變色全在停頓裡 → 全盲,其餘 7 個 pass)',
+    [23, 20, 24, nan, 21, 21, nan, 19, 16, nan], [0,0,0,1,0,0,1,0,0,1], 'pass'],
   ['混合:一格真沒變色 + 兩格全盲 → 真訊號優先',
     [19, nan, 20, nan, 18, 21, 17, 19], [0,1,0,0,0,0,0,0], 'lost'],
   ['串流幾乎全盲:可用樣本不足 → 儀器失效,不得默默放行',
@@ -75,6 +77,12 @@ for (const [name, input, want, why] of [
   ['命中就不是全盲', { hit: {}, framesAfter: 0 }, false, '抓到變色的幀 = 有看到,不可能是全盲'],
   ['沒命中但有幀可看 = 真訊號', { hit: null, framesAfter: 7 }, false, '2026-09-12 的真 bug 屬於這一類,必須照樣紅'],
   ['沒命中且零幀 = 儀器看不到', { hit: null, framesAfter: 0 }, true, '2026-09-20 main 誤紅那次'],
+  // 2026-09-23:有幀,但串流在視窗裡停頓 —— 停頓期間主執行緒同在停,hover 沒被處理不是列沒變色
+  ['沒命中、首幀晚到 1490ms = 串流停頓,看不到', { hit: null, framesAfter: 5, firstGap: 1490, maxGap: 20 }, true, 'PR #161 第三輪:靜置期送幀間隔最大 1490ms(門檻 1500)'],
+  ['沒命中、幀距中途停頓 1231ms = 看不到', { hit: null, framesAfter: 12, firstGap: 17, maxGap: 1231 }, true, 'PR #159 第一輪:1231ms'],
+  ['沒命中、幀距最大 355ms(綠燈輪的正常抖動)= 真訊號', { hit: null, framesAfter: 40, firstGap: 17, maxGap: 355 }, false, '綠燈輪靜置期抖動實測 341 / 355ms,不得被當成停頓'],
+  ['命中即使有停頓也不是全盲', { hit: {}, framesAfter: 3, firstGap: 900, maxGap: 900 }, false, '有看到變色就是有看到'],
+  ['沒命中、沒有幀距資訊(舊呼叫端)= 真訊號', { hit: null, framesAfter: 7 }, false, '缺資訊時不得放寬:預設仍是 lost'],
 ]) {
   const got = isStreamBlind(input)
   if (got !== want) { console.log(`✗ isStreamBlind:${name} 應為 ${want} 實得 ${got}(${why})`); fail++ }
