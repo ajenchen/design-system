@@ -359,3 +359,5 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
 2. **fixture 缺欄位 = 判定表測不到要測的事**。四支測試失敗全是 fixture 沒給 `headSha` / `tagCommitSha` / `protectedMainSha` / `versionAtReleaseCommit` —— 缺欄位讓 fixture 同時也代表假綠狀態,那一格於是永遠綠。
 3. **同一個 unknown 在不同用途要走相反方向**。同一支三值判定 `classifyReleaseLookup`,在「授權消耗掉了嗎」要把 `null` 算成**已消耗**(不讓一份授權發兩次),在「基準是哪一版」只有 `true` 能用(讀不到不得充當已發布)。兩邊都要寫下來,各有對照組。
 4. **為了防某條而加的閘,自己會用同一條犯錯**(#11)。閘寫完立刻用它自己的三問再問一次:「我拿來判斷的這個值,在**它要防的那種事故裡**還成立嗎?」#11 用「線上最新已發布版」當基準,而它要防的事故正是「發布了卻沒人裝得上」——基準本身就是壞的。
+
+- **2026-09-23 同一格再犯(儀器版)**:#161 併進 main 後 PR #160 與 main 衝突,GitHub 對有衝突的 PR **不啟動 pull_request workflow**,兩個 commit 只剩 Netlify 與 pull_request_target 的 4 個 check;我的 PR 監看腳本印「4/4 completed, red=[]」十輪,我照著回報「CI 都在跑」。「沒有紅」不是「有跑」:必過項**不存在**要以儀器失效紅,不是當綠燈等 —— 監看器改成「全部完成而必過項不存在 → MONITOR-BROKEN」。同根第二個:重拍 workflow 檔永遠來自 main、程式碼來自 target_ref,main 的 yml 呼叫 #161 才加的腳本,分支上沒有 → run #298 MODULE_NOT_FOUND;分支併 main 後才拍得成。判準:凡「拿 main 的流程跑分支的碼」,先問「流程引用的檔案在分支上有沒有」。
