@@ -15,11 +15,18 @@ on:
         description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;留空 = 預設(job env REFERENCE_REF 的 fallback:最後一次週跑綠 2026-08-05 的 commit)'
         type: string
         default: ''
+      target_ref:
+        description: '要拍的樹(分支名或 commit);留空 = 觸發當下的預設分支。元件修完、baseline 要跟著換時,拍即將合併的那條 PR 分支,而不是還沒修的 main'
+        type: string
+        default: ''
   # 2026-09-23:治理 token 沒有 Actions 寫入權限(workflow_dispatch → 403),但有 contents 寫入,能發
   # repository_dispatch(→ 204)。只監聽按鈕事件,等於把「重拍 baseline」綁在「user 親手登入 GitHub 按下去」
-  # 這個代理上(M36 自鎖)。payload 只有兩個欄位,與手動輸入同名同義;能發這個事件的人本來就有 contents 寫入權,
+  # 這個代理上(M36 自鎖)。payload 三個欄位與手動輸入同名同義;能發這個事件的人本來就有 contents 寫入權,
   # 沒有比按鈕更寬的信任。觸發:POST /repos/<owner>/<repo>/dispatches
-  #   {"event_type":"visual-regression-run","client_payload":{"update_baseline":true,"reference_ref":"<sha 或省略>"}}
+  #   {"event_type":"visual-regression-run","client_payload":{"update_baseline":true,"reference_ref":"<sha 或省略>","target_ref":"<分支或 sha 或省略>"}}
+  # target_ref(同日稍晚加):repository_dispatch 永遠拿預設分支的 workflow 檔跑,checkout 不指定 ref 就只會拍 main ——
+  # 於是「修了元件、要連 baseline 一起換」的 PR 分支永遠拍不到,只能先合併再補一個 baseline PR(合併時 baseline 明知是舊的)。
+  # 拍哪棵樹是輸入,不是「觸發當下 main 是哪一版」這個代理(M37)。
   repository_dispatch:
     types: [visual-regression-run]
   schedule:
@@ -51,6 +58,8 @@ jobs:
       # = 只比對、不重拍。布林用 == true 比(payload 必須送 JSON 布林,字串 'true' 另外接住),不用 truthy 猜。
       UPDATE_BASELINE: ${{ (inputs.update_baseline == true || github.event.client_payload.update_baseline == true || github.event.client_payload.update_baseline == 'true') && 'true' || 'false' }}
       REFERENCE_REF: ${{ inputs.reference_ref || github.event.client_payload.reference_ref || '2ec2f3fedd94aa30e9b091eac4d713374484bd05' }}
+      # 要拍的樹:按鈕 / API 沒給就是觸發當下的 commit(github.sha;排程與空 payload 都落到這裡 = 拍預設分支)
+      TARGET_REF: ${{ inputs.target_ref || github.event.client_payload.target_ref || github.sha }}
     timeout-minutes: 60  # ~124 curated scenarios × screenshot + diff;update_baseline 時多一次參考 commit 的建置與重拍
 
     steps:
@@ -62,6 +71,8 @@ jobs:
           persist-credentials: false
           # 2026-09-23 run #294:歸因要跑 `git log <reference>..HEAD -- <元件目錄>`,淺層簽出(預設 depth 1)沒有那段歷史。
           fetch-depth: 0
+          # 拍 TARGET_REF 那棵樹(分支或 commit;預設 = 觸發當下的 commit)。歸因區間仍是 REFERENCE_REF..HEAD,HEAD 就是它。
+          ref: ${{ env.TARGET_REF }}
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
