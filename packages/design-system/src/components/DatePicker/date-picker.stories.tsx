@@ -292,8 +292,15 @@ const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ 
     target = document.querySelector<HTMLButtonElement>(`[data-day="${hoverDay}"] > button`)
     if (!target) throw new Error('預覽目標日期不存在')
   })
-  // 只標記 deterministic target；真實 CSS :hover 由 visual-audit 建立。
+  // 放掉浮層開啟時程式搬過去的焦點:合成點擊不是瀏覽器眼中的真指標,之後的 autoFocus 會被判成 :focus-visible,
+  // 示範一開就帶著鍵盤焦點框(user 2026-09-23:「為何範例要直接呈現鍵盤焦點?」)。真人用滑鼠點開不會這樣。
+  ;(document.activeElement as HTMLElement | null)?.blur?.()
+  // 只標記 deterministic target；真實 CSS :hover(button 的圈)由 visual-audit 的 Playwright 在截圖前建立。
   target!.setAttribute('data-visual-hover-target', '')
+  // 讓示範自己就看得到框:userEvent.hover 派發 mouseover → React onMouseEnter → 停留日狀態 → 框。
+  // 沒有這一行,三則故事在瀏覽器裡長得一模一樣,差別只存在於截圖儀器的 hover 裡
+  //(user 2026-09-23:「為何往前縮短和往後延長的範例看起來是一樣的?」)。
+  await userEvent.hover(target!)
 }
 
 const RangePreviewCanvas = () => {
