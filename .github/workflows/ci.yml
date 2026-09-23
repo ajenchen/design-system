@@ -236,11 +236,23 @@ jobs:
           REF_SHA="$(git rev-parse origin/main)"
           echo "reference = $REF_SHA"
           git worktree add tmp/ref-src "$REF_SHA"
-          # 參考樹的相依也走受管的 bootstrap(其他 job 同款),不用裸 `npm ci`:
-          # scripts/audit-workflow-security.mjs 對裸 npm ci 判 WF-LIFECYCLE / WF-SIGNATURE-AUDIT / WF-VULNERABILITY-AUDIT,
-          # 這一行曾讓「Verify authority candidate without credentials」在每支 PR 都紅(#126 / #127,2026-09-16 抓到)。
-          (cd tmp/ref-src && npm run --silent setup:dependencies && npm run build:lib && npm run build-storybook)
+          # 2026-09-23:同一份 lock ⇒ 同一棵樹。參考樹的 lock 與候選相同時,直接共用候選已驗證安裝的 node_modules
+          #(symlink),不再第二次安裝與稽核 —— 否則「比 main」這個 job 就綁死在「main 裝得起來」上:供應鏈閘在
+          # main 上紅(上游 npm 發版讓釘死的字串失效)時,連修它的 PR 都因為這一步過不了(#153 第一輪),
+          # 而 main 只能經 PR 修 —— 結構性自鎖。lock 不同(候選改了相依)才照舊走受管的 bootstrap 重裝參考樹,
+          # 不用裸 `npm ci`:scripts/audit-workflow-security.mjs 對裸 npm ci 判 WF-LIFECYCLE / WF-SIGNATURE-AUDIT /
+          # WF-VULNERABILITY-AUDIT,那一行曾讓「Verify authority candidate without credentials」在每支 PR 都紅(#126 / #127)。
+          if cmp -s package-lock.json tmp/ref-src/package-lock.json; then
+            echo "reference lock == candidate lock → 共用已驗證的 node_modules"
+            ln -s "$PWD/node_modules" tmp/ref-src/node_modules
+          else
+            echo "reference lock != candidate lock → 參考樹走受管 bootstrap 重裝"
+            (cd tmp/ref-src && npm run --silent setup:dependencies)
+          fi
+          (cd tmp/ref-src && npm run build:lib && npm run build-storybook)
           mv tmp/ref-src/storybook-static tmp/ref-storybook
+          # 先解開 symlink 再移除 worktree:不讓任何遞迴刪除有機會跟著連結走到候選的 node_modules
+          [ -L tmp/ref-src/node_modules ] && rm tmp/ref-src/node_modules
           git worktree remove --force tmp/ref-src
 
       - name: DataTable pixel invariants (browser)

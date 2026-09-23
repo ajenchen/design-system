@@ -115,6 +115,12 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length + 1)
   const commandLines = source.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
   assert.equal((commandLines.match(/\bnpm ci\b/g) ?? []).length, 0, 'ci.yml 不得出現裸 npm ci(參考建置也走 setup:dependencies;註解不算)')
+  // 2026-09-23:參考建置(main)的 lock 與候選相同時共用候選已驗證的 node_modules,不再第二次安裝 ——
+  // 否則「比 main」綁死在「main 裝得起來」,main 上的供應鏈閘一紅,連修它的 PR 都過不了(#153 第一輪)。
+  // lock 不同才重裝;symlink 必須在移除 worktree 前先解開。
+  const referenceBuild = source.slice(source.indexOf('git worktree add tmp/ref-src'), source.indexOf('git worktree remove --force tmp/ref-src'))
+  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n\s+echo[^\n]*\n\s+\(cd tmp\/ref-src && npm run --silent setup:dependencies\)\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才重裝')
+  assert.match(referenceBuild, /\[ -L tmp\/ref-src\/node_modules \] && rm tmp\/ref-src\/node_modules\n\s*$/, '移除 worktree 前必須先解開 symlink')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
   // build-storybook 出現 3 次(static 的 manifest 驗證 + 兩個瀏覽器 job),playwright install 2 次。
