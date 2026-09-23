@@ -35,13 +35,13 @@
  *      [--new-dir <dir>] [--selftest]
  *   沒給 --old-dir 時退回 git <old-ref>(預設 HEAD)的 curated 圖 —— 只適合「同渲染器」的情況(例如重拍後驗證穩定性)。
  */
-import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
+import { runClosedGit } from '../packages/governance/src/closed-tool-execution.mjs'
 
 // 用 fileURLToPath,不用 URL.pathname:本 repo 路徑含中文,pathname 會留著百分號編碼(2026-09-22 實測 ENOENT)
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -57,8 +57,17 @@ const SINCE_REF = arg('--since-ref', null)
 const PIXEL_DIFF_PCT_BUDGET = 0.5 // 與 scripts/visual-audit.mjs 同一個門檻,不另訂
 const PIXELMATCH_THRESHOLD = 0.1
 
-const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-const gitBuffer = (args) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 })
+// 2026-09-23 run #294:裸 git 在 Playwright 容器裡撞「dubious ownership」—— actions/checkout 把 safe.directory 寫進
+// **暫時的** HOME,後面的步驟看不到;closed git 已把「呼叫端指名的 cwd」列成 safe.directory(closed-tool-execution.mjs),
+// 走同一條路就不必在 workflow 裡補 git config。
+const closedGit = (args, output) => {
+  const result = runClosedGit(args, { cwd: ROOT, output, maxOutputBytes: 64 * 1024 * 1024, timeoutMs: 30_000 })
+  if (result.error) throw result.error
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed(exit ${String(result.status)}):${String(result.stderr || '').trim().split('\n')[0]}`)
+  return result.stdout
+}
+const git = (args) => closedGit(args, 'capture')
+const gitBuffer = (args) => closedGit(args, 'buffer')
 
 /** 純函式:兩張同尺寸 PNG 的差異比例與分類(不含 git,好測)。同渲染器前提下,> 門檻 = 內容變了。 */
 export function classifyDiff(oldPng, newPng, budget = PIXEL_DIFF_PCT_BUDGET) {
