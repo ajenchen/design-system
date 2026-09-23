@@ -204,13 +204,17 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   // 「新拍的圖」不等於「對的圖」:重拍 job 必須自證三件事(2026-09-22)
   assert.match(source, /reference_ref:\s*\n\s*description:/, '必須提供 reference_ref 輸入(同渲染器歸因的參考 commit)')
   assert.match(source, /ref: \$\{\{ env\.REFERENCE_REF \}\}\s*\n\s*path: reference/, '參考 commit 必須簽出到子目錄,在同一個容器重拍')
-  assert.match(source, /working-directory: reference[\s\S]{0,900}--update-baseline/, '參考 commit 必須真的重拍')
+  assert.match(source, /working-directory: reference[\s\S]{0,1400}--update-baseline/, '參考 commit 必須真的重拍')
   // 2026-09-23 run #291:參考樹(8/5)用它自己的治理程式裝依賴,撞到之後才登記的弱點而 fail closed —— 歷史樹永遠
   // 無法滿足今天的弱點資料庫。參考樹必須用 HEAD 的治理程式安裝(--root=.),弱點稽核走 report-render-only-reference
   //(只報告不擋;完整性照舊擋),而且不得再呼叫參考樹自己的 setup:dependencies。
   const referenceRecapture = source.slice(source.indexOf('name: Recapture the reference commit'), source.indexOf('name: Recapture curated baselines'))
   assert.match(referenceRecapture, /node "\$GITHUB_WORKSPACE\/scripts\/setup-authority-governance\.mjs" --dependencies-only --root=\. --vulnerability-policy=report-render-only-reference/, '參考樹必須用 HEAD 的治理程式、以 render-only 政策安裝')
   assert.doesNotMatch(referenceRecapture, /npm run --silent setup:dependencies/, '參考樹不得再用它自己(歷史版)的 bootstrap')
+  // run #292:PLAYWRIGHT_BROWSERS_PATH=0 下瀏覽器裝在各自的 node_modules,參考樹要自己裝 Chromium,而且要在重拍之前
+  const refInstall = referenceRecapture.indexOf('npx --no-install playwright install chromium --with-deps')
+  const refRecapture = referenceRecapture.indexOf('--update-baseline')
+  assert.ok(refInstall > 0 && refInstall < refRecapture, '參考樹必須在重拍前自己裝 Chromium(各自的 node_modules)')
   const recaptureIdx = source.indexOf('name: Recapture curated baselines(update_baseline)')
   const stabilityIdx = source.indexOf('name: Instrument stability')
   const attributeIdx = source.indexOf('name: Attribute recaptured baselines')

@@ -125,6 +125,10 @@ jobs:
           #(--root=.):完整性(lock 精確安裝 / 簽章 / attestation)照舊擋,弱點稽核在 report-render-only-reference
           # 政策下只報告不擋 —— 這棵樹只用來渲染截圖,無憑證、容器用完即丟。
           node "$GITHUB_WORKSPACE/scripts/setup-authority-governance.mjs" --dependencies-only --root=. --vulnerability-policy=report-render-only-reference
+          # run #292:PLAYWRIGHT_BROWSERS_PATH=0 時瀏覽器裝在**各自的** node_modules 裡;參考樹是另一棵樹,
+          # HEAD 那次安裝的 Chromium 它看不到 → visual-audit 起不了瀏覽器。兩棵樹的 playwright 版本相同
+          #(lock 都是 1.59.1),同一個 Chromium build,渲染器仍然是同一個。
+          npx --no-install playwright install chromium --with-deps
           npm run build:lib 2>&1 | tail -3
           npm run build-storybook 2>&1 | tail -3
           node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -5
