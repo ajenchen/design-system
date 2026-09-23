@@ -157,6 +157,11 @@ async function runSuite() {
   await hover('2026-05-07')
   await expectFrame('互搶:滑鼠再動到 5/7 → 框跟滑鼠', days('2026-05-04', '2026-05-07'))
   await expectNoFrame('互搶:5/8 沒有框', ['2026-05-08'])
+  // 框不是游標:滑鼠停在 5/7 時,鍵盤焦點框仍留在 5/5(focus-canonical 規則一:日期格是常駐清單,hover 不搬、不抹鍵盤焦點;
+  // user 2026-09-24 問「鍵盤焦點不是應該要消失嗎?」—— 只有 cmdk / Radix Menu 那類反白 = 唯一游標的選單才搶)。
+  // 對照組:selftest 把焦點框改回往外 → offset 斷言紅;真要抹掉焦點(blur)則 visible 變 false,也紅。
+  const stay = await focusRing('2026-05-05')
+  ok(stay?.visible && stay.width === '2px' && stay.offset === '-2px', `互搶:滑鼠停 5/7 時 5/5 的鍵盤焦點框仍在、不被 hover 抹掉(${JSON.stringify(stay)})`)
   await page.mouse.move(2, 2); await page.waitForTimeout(120)
   await expectFrame('互搶:滑鼠離開格子 → 回到鍵盤焦點 5/5', days('2026-05-04', '2026-05-05'))
   await expectNoFrame('互搶:滑鼠離開後 5/6、5/7 沒有框', ['2026-05-06', '2026-05-07'])

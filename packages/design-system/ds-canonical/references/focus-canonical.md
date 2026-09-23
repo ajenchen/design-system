@@ -17,7 +17,7 @@
 唯一不畫框的例外是**插入點控件**(文字輸入框那類,閃動的 caret 就是指示)—— **user 2026-09-09 拍板**,原話見來源總帳。幾何走「框怎麼畫」。
 **會搶反白的浮層選單(cmdk / Radix Menu)裡,反白就是唯一的游標:滑鼠與鍵盤搶的是同一個東西,誰最後搬動它就用誰的畫法
 (滑鼠移過 → 底色;鍵盤 → 框),兩種畫法永遠不同時出現;滑鼠停著不算搶,只有移動才算。常駐清單(TreeView / Sidebar / Tabs /
-DataTable / TimePicker 欄)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可以同時出現。**(2026-09-09 下午 user 三問;
+DataTable / TimePicker 欄 / DateGrid 日期格)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可以同時出現。**(2026-09-09 下午 user 三問;
 結論由 AI 依一手來源證實,見規則一「兩類元件」、規則二疊加表與來源總帳)
 
 ## 為什麼要拆成兩個問題
@@ -105,6 +105,7 @@ user 原話(問句):「滑鼠會搶反白的元件,搶完之後,那鍵盤是否�
 **兩類怎麼分**:滑鼠移過去反白會不會跟過來(規則一的例外)。會 → 反白是唯一游標,適用本節;不會 → 常駐清單,hover 與框獨立。
 DS 內屬於前者的:`CommandItem`(Select / SelectMenu / Combobox / PeoplePicker / Command inline+dialog / AgentPanel 歷史清單都經它)與
 DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘全是後者。
+**分類看項目的函式庫行為(pointermove 會不會搬焦點 / 反白),不看它住不住在 Popover 裡**(2026-09-24 補,user 問「出現鍵盤焦點之後再用滑鼠 hover 日期,按照我們其他元件搶焦點的邏輯,鍵盤焦點不是應該要消失嗎?」):DatePicker 浮層裡的 DateGrid 日期格是 react-day-picker 的 roving tabindex 真焦點(`node_modules/react-day-picker/dist/esm/DayPicker.js` 的 mouseenter 只轉呼叫 callback、不 `setFocused`)、TimeColumns 走 `:focus-visible`,都是後者;有格層級鍵盤游標的世界級日曆(MUI X `DayCalendar.tsx` `focusedDay` 只由 keydown / focus 改、react-day-picker、flatpickr、Polaris `focusDate` 與 `hoverDate` 兩個 state、W3C APG date picker dialog 的 cell 只綁 click / keydown / focus)沒有一家在 hover 時搬或抹焦點;一手對照 [React Aria `useCalendarCell.ts`](https://cdn.jsdelivr.net/npm/@react-aria/calendar/src/useCalendarCell.ts):「Highlight the date on hover or drag over a date when selecting a range.」→ `state.highlightDate(date)`,`setFocusedDate` 只在 `onFocus` / `onPressStart`。
 
 **所以修改範疇只有會搶反白的元件**(user 問「這個更改範疇應該只有會搶反白的元件吧?」——對):把它們項目上的 `hover:` 樣式全部拿掉、
 畫法改由「反白來歷」決定(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`),常駐清單一行都不用改。
@@ -131,7 +132,8 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 | 疊加 | 長相 | 說明 |
 |---|---|---|
 | **選中 × 游標** | **框疊在選中底色上**(`bg-neutral-selected` + 框) | 底色說「這是選中的」,框說「游標在這裡」,兩個通道互不取消 |
-| **hover × 游標 —— 不搶反白的常駐清單**(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄;滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現,兩個獨立狀態(瀏覽器 `:hover` / `:focus-visible` 本來就獨立;規則一「兩類元件」第二表) |
+| **預覽框 × 游標**(DateGrid 區間預覽) | 框跟最後一個輸入走、鍵盤框留在焦點日;可分離、可同時存在 | 框不是游標,只回答「現在點下去會變成什麼」;hover 不搬、不抹鍵盤焦點(規則一)。owner `components/DatePicker/date-picker.spec.md`「區間預覽」,閘 `scripts/datepicker-range-preview.mjs` 互搶段 |
+| **hover × 游標 —— 不搶反白的常駐清單**(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄 / DateGrid 日期格;滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現,兩個獨立狀態(瀏覽器 `:hover` / `:focus-visible` 本來就獨立;規則一「兩類元件」第二表) |
 | **hover × 游標 —— 會搶反白的浮層選單**(cmdk / Radix Menu) | **沒有這一格**:反白只有一個主人,只會是「滑鼠搬的 → 底色」或「鍵盤搬的 → 框」其中一種 | 滑鼠移過就把反白搶走(那就是 hover 的樣子);鍵盤搬走反白後,滑鼠停留列**不再有底色**(項目上沒有任何 `hover:` 樣式;滑鼠停著不算搶,只有 pointer move 才算);滑鼠再動就連框一起搶回來。規則一「兩類元件」第一表逐家對驗 |
 | 選中 × hover | 選中底色釘住不變 | owner = `item-anatomy.spec.md`「選中 × 互動疊加」,本檔不重述 |
 
@@ -299,6 +301,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | `--neutral-selected-focus` 退役 | 2026-09-06 我曾放大 user 原話(user 說的是刪「沒用到的」)並撤回;2026-09-07 user 拍板「A5畫框」後補完框、token 沒人用 → 已於 2026-09-07 退役(`semantic.css` 註解 / `color.spec.md:704`)。順序沒有顛倒 |
 | 內描邊/外描邊「不統一但寫下規則」 | **AI 轉述 user 2026-09-06 裁示**,未逐字留存;規則內容(預設外描邊、祖先裁切改內描邊)為 AI 依現況歸納 |
 | 規則一及其唯一例外、不外擴的理由 | **AI 依上列一手來源歸納**,非 user 決定 |
+| 「日期格 hover 不搬、不抹鍵盤焦點;預覽框與鍵盤框可分離並存」 | **user 2026-09-24 原話是問句**:「為何出現鍵盤焦點之後,再用滑鼠hover在日期上,按照我們其他元件搶焦點的邏輯的話,鍵盤焦點不是應該要消失嗎?你仔細研究我說的是否正確,並確保我們整個設計有一致的設計語言,並確保有追根究底」—— 問句 ≠ 拍板(M36(a));**AI 依規則一「兩類怎麼分」與六家一手來源裁定**(MUI X / react-day-picker / flatpickr / Polaris / W3C APG / React Aria 的日曆格 hover 路徑零 `.focus()` / `.blur()`;Ant v5 沒有格層級鍵盤游標),行為不改,補本檔四處與 `datepicker-range-preview.mjs` 互搶段斷言 |
 | A / B / C / E 四類的切法、六步判斷程序、B 類的機械判別(標籤名 + `contenteditable`) | **AI 歸納**(2026-09-07 逐站分類、2026-09-09 依 user 拍板改寫),user 拍板的只有「都畫框、例外是插入點控件、要可具體判別」 |
 
 ---
@@ -533,7 +536,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 **一個元件一種畫法。** 判準量的是「這個元素在它**設計上的位置**四周有多少正當淨空」,不是拿最極端的情況、
 也不是執行期逐個實例去量。所以:
 
-- 每個元件(元素種類)在規格裡只有一個答案:按鈕、DateGrid 日期格、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)往外;選單項、tab、Calendar 事件 tile(tile 之間 gap 2px)往內。
+- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)往外;選單項、tab、Calendar 事件 tile(tile 之間 gap 2px)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
   答案寫在該元件的 class 上(往外 = 什麼都不寫;往內 = `focus-ring-inset`),閘 `scripts/focus-suppression-registry.mjs` 對著 class 查。
 - 同一個底層元件被**另一個元件**放進貼邊的位置(例:Calendar 把事件 tile 排成 gap 2px 的格子),往內的決定由**那個外層元件**的規格與 class 承擔,
   底層元件本身維持預設往外 —— 不是底層元件自己長兩套。驗算表裡的「Calendar 事件 tile」(gap 2px → 內)與「SidebarMenuAction」(四周有餘 → 外)
@@ -583,7 +586,7 @@ user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要�
 |---|---|---|---|
 | PeoplePicker 移除 × | 左右鄰居 1.64px / −0.02px,**但都是疊在一起的頭像** | 疊層不算鄰居 → 無限制;無裁切祖先 | **外 +2px** |
 | AgentPanel 思考過程 | 下方鄰距 **0.00px**(正常流內容) | A(0 < 4) | **內 −2px** |
-| DateGrid 日期格 | 上右下三面各 **4.00px** | 都不命中(4 ≥ 4、無裁切祖先) | **外 +2px** |
+| DateGrid 日期格 | 上右下三面各 **4.00px**,**但那 4px 縫裡跑著區間 track(td `::before`)與預覽框(td `::after`)** | A:縫隙被正當障礙佔用(2026-09-23 重跑;09-16 的這一列只量了淨空、沒看縫裡有什麼) | **內 −2px**;藍底格白線退 3px(「填色元素上的內描邊」)|
 | Calendar 事件 tile | 上方 4.00px,但 **tile 之間 `gap-0.5` = 2px** | A(取最小 2 < 4) | **內 −2px** |
 | Field 唯讀三兄弟 | 上方 FieldLabel **4.00px** | 都不命中(但 2026-09-10 起唯讀不畫外框,改邊框轉主色 —— 見規則二「唯讀的 Field 控件」列,這一列只留幾何結論)| **外 +2px**(若哪天要畫框)|
 | SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |
@@ -615,6 +618,7 @@ user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要�
 | v1 | 祖先 `overflow` 不是 `visible` 就往裡 | **看寫法不看設計**。永遠不捲、四周又空的容器,框根本不會被切,硬判往裡會造成「明明有空間卻縮在裡面」 |
 | v2 | 可捲動容器該軸淨空視為 0,配 `scroll-margin` | **過度設計**。元素四周的空間會跟著元素一起捲,框畫在那個空間裡就不會被裁 |
 | **v3(現行)** | **只量被聚焦元素四周最小淨空,`≥ 4px` 往外、`< 4px` 往裡** | — |
+| v3 結論表重跑(2026-09-24) | 判準不變;**結論表沒跟著 09-23 的重判更新** —— 「套回實測值」表與「每個元件只有一個答案」句仍寫 DateGrid 日期格往外 +2px,與 `date-grid.tsx` / `date-grid.spec.md` / 本檔「填色元素上的內描邊」的往內矛盾 | 判準改了、結論表沒重跑 = 文件自我矛盾(下方遷移紀錄的鐵律);M10 兩維度自檢的第二維(結論兩兩相容)漏跑 —— 09-23 只改了寫新結論的那幾行,沒把舊結論列成清單逐對問「還能同時為真嗎」 |
 
 v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在元素貼著它時才成為障礙**,
 而那種情況「淨空 < 4px」本來就涵蓋了。一條尺量到底。
