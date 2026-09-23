@@ -17,7 +17,7 @@
 唯一不畫框的例外是**插入點控件**(文字輸入框那類,閃動的 caret 就是指示)—— **user 2026-09-09 拍板**,原話見來源總帳。幾何走「框怎麼畫」。
 **會搶反白的浮層選單(cmdk / Radix Menu)裡,反白就是唯一的游標:滑鼠與鍵盤搶的是同一個東西,誰最後搬動它就用誰的畫法
 (滑鼠移過 → 底色;鍵盤 → 框),兩種畫法永遠不同時出現;滑鼠停著不算搶,只有移動才算。常駐清單(TreeView / Sidebar / Tabs /
-DataTable / TimePicker 欄)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可以同時出現。**(2026-09-09 下午 user 三問;
+DataTable / TimePicker 欄 / DateGrid 日期格)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可以同時出現。**(2026-09-09 下午 user 三問;
 結論由 AI 依一手來源證實,見規則一「兩類元件」、規則二疊加表與來源總帳)
 
 ## 為什麼要拆成兩個問題
@@ -105,6 +105,7 @@ user 原話(問句):「滑鼠會搶反白的元件,搶完之後,那鍵盤是否�
 **兩類怎麼分**:滑鼠移過去反白會不會跟過來(規則一的例外)。會 → 反白是唯一游標,適用本節;不會 → 常駐清單,hover 與框獨立。
 DS 內屬於前者的:`CommandItem`(Select / SelectMenu / Combobox / PeoplePicker / Command inline+dialog / AgentPanel 歷史清單都經它)與
 DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘全是後者。
+**分類看項目的函式庫行為(pointermove 會不會搬焦點 / 反白),不看它住不住在 Popover 裡**(2026-09-24 補,user 問「出現鍵盤焦點之後再用滑鼠 hover 日期,按照我們其他元件搶焦點的邏輯,鍵盤焦點不是應該要消失嗎?」):DatePicker 浮層裡的 DateGrid 日期格是 react-day-picker 的 roving tabindex 真焦點(`node_modules/react-day-picker/dist/esm/DayPicker.js` 的 mouseenter 只轉呼叫 callback、不 `setFocused`)、TimeColumns 走 `:focus-visible`,都是後者;有格層級鍵盤游標的世界級日曆([MUI X `DayCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DayCalendar.tsx) `focusedDay` 只由 keydown / focus 改、[react-day-picker `DayPicker.tsx`](https://github.com/gpbl/react-day-picker/blob/main/packages/react-day-picker/src/DayPicker.tsx) mouseenter 只轉呼叫 callback、[flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` 只增刪 class、[Polaris `DatePicker.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/DatePicker.tsx) `focusDate` 與 `hoverDate` 兩個 state、[W3C APG datepicker-dialog.js](https://www.w3.org/WAI/content-assets/wai-aria-practices/patterns/dialog-modal/examples/js/datepicker-dialog.js) 的 cell 只綁 click / keydown / focus)沒有一家在 hover 時搬或抹焦點;一手對照 [React Aria `useCalendarCell.ts`](https://cdn.jsdelivr.net/npm/@react-aria/calendar/src/useCalendarCell.ts):「Highlight the date on hover or drag over a date when selecting a range.」→ `state.highlightDate(date)`,`setFocusedDate` 只在 `onFocus` / `onPressStart`。
 
 **所以修改範疇只有會搶反白的元件**(user 問「這個更改範疇應該只有會搶反白的元件吧?」——對):把它們項目上的 `hover:` 樣式全部拿掉、
 畫法改由「反白來歷」決定(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`),常駐清單一行都不用改。
@@ -131,7 +132,8 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 | 疊加 | 長相 | 說明 |
 |---|---|---|
 | **選中 × 游標** | **框疊在選中底色上**(`bg-neutral-selected` + 框) | 底色說「這是選中的」,框說「游標在這裡」,兩個通道互不取消 |
-| **hover × 游標 —— 不搶反白的常駐清單**(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄;滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現,兩個獨立狀態(瀏覽器 `:hover` / `:focus-visible` 本來就獨立;規則一「兩類元件」第二表) |
+| **預覽框 × 游標**(DateGrid 區間預覽) | 框跟最後一個輸入走、鍵盤框留在焦點日;可分離、可同時存在 | 框不是游標,只回答「現在點下去會變成什麼」;hover 不搬、不抹鍵盤焦點(規則一)。owner `components/DatePicker/date-picker.spec.md`「區間預覽」,閘 `scripts/datepicker-range-preview.mjs` 互搶段 |
+| **hover × 游標 —— 不搶反白的常駐清單**(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄 / DateGrid 日期格;滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現,兩個獨立狀態(瀏覽器 `:hover` / `:focus-visible` 本來就獨立;規則一「兩類元件」第二表) |
 | **hover × 游標 —— 會搶反白的浮層選單**(cmdk / Radix Menu) | **沒有這一格**:反白只有一個主人,只會是「滑鼠搬的 → 底色」或「鍵盤搬的 → 框」其中一種 | 滑鼠移過就把反白搶走(那就是 hover 的樣子);鍵盤搬走反白後,滑鼠停留列**不再有底色**(項目上沒有任何 `hover:` 樣式;滑鼠停著不算搶,只有 pointer move 才算);滑鼠再動就連框一起搶回來。規則一「兩類元件」第一表逐家對驗 |
 | 選中 × hover | 選中底色釘住不變 | owner = `item-anatomy.spec.md`「選中 × 互動疊加」,本檔不重述 |
 
@@ -198,12 +200,13 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 | 項目 | 值 | 住在哪 / 依據 |
 |---|---|---|
-| 線 | `outline: 2px solid var(--ring)` | `styles/base.css` `:focus-visible` 全域規則(外描邊)與 `@utility focus-ring-inset`(內描邊),值只寫這兩處 |
-| 顏色 | `--ring`(= primary) | token owner `tokens/color/color.spec.md`;本檔不定值 |
+| 線 | `outline: 2px solid var(--ring)`;填色元素上 `outline: 1px solid var(--on-emphasis)` | `styles/base.css` `:focus-visible` 全域規則(外描邊)、`@utility focus-ring-inset`(內描邊)與 `@utility focus-ring-inset-emphasis`(填色元素內描邊),值只寫這三處 |
+| 顏色 | `--ring`(= primary);填色元素上 `--on-emphasis`(主色底上的前景,兩個主題都是白) | token owner `tokens/color/color.spec.md`;本檔不定值 |
 | 位置(預設) | **往外** `outline-offset: 2px`;元件**什麼都不用寫** | 「問題二」:預設就是往外長(user 2026-09-07 逐字) |
 | 位置(被裁切／貼鄰居) | **往內** `outline-offset: -2px`,寫 `focus-visible:focus-ring-inset`(真焦點)或 `focus-ring-inset`(虛擬游標,由元件 state 掛上) | 「問題二」:被聚焦元素四周最小淨空 < 4px 才往內;撐滿容器寬度的列(選單項 / 側欄鈕 / tab)都屬此類 |
+| 位置(往內,而且**元素自己的底色就是主色**) | **1px `--on-emphasis` 白線,退 3px**(`outline-offset: -3px`),寫 `[&>button]:focus-visible:focus-ring-inset-emphasis` 掛在填色格的 modifier 上;目前只有 DateGrid 的選中日 / 區間端點 | 「問題二」→「填色元素上的內描邊」:藍線畫在藍底上同色看不見;白線貼最外圈只是把藍圓削小;退進去、外圈留藍(user 2026-09-23 拍板 D) |
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
-| 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
+| 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
 | 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
@@ -225,7 +228,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 會搶反白的項目上的 `hover:` 樣式(CommandItem / DropdownMenu 四種項目)| **0**(2026-09-09 下午清完;之前鍵盤分支各帶 `hover:bg-neutral-hover`、選中列另帶 `hover:bg-neutral-selected`,共 5 條)|
 | `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
 | `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
-| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
+| `focus-ring-inset-emphasis`(填色元素內描邊,2026-09-23 加)| 1 支 utility;掛在 3 個 modifier(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`);DateGrid `range_middle` 因同掛 selected,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般內描邊 |
+| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -297,6 +301,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | `--neutral-selected-focus` 退役 | 2026-09-06 我曾放大 user 原話(user 說的是刪「沒用到的」)並撤回;2026-09-07 user 拍板「A5畫框」後補完框、token 沒人用 → 已於 2026-09-07 退役(`semantic.css` 註解 / `color.spec.md:704`)。順序沒有顛倒 |
 | 內描邊/外描邊「不統一但寫下規則」 | **AI 轉述 user 2026-09-06 裁示**,未逐字留存;規則內容(預設外描邊、祖先裁切改內描邊)為 AI 依現況歸納 |
 | 規則一及其唯一例外、不外擴的理由 | **AI 依上列一手來源歸納**,非 user 決定 |
+| 「日期格 hover 不搬、不抹鍵盤焦點;預覽框與鍵盤框可分離並存」 | **user 2026-09-24 原話是問句**:「為何出現鍵盤焦點之後,再用滑鼠hover在日期上,按照我們其他元件搶焦點的邏輯的話,鍵盤焦點不是應該要消失嗎?你仔細研究我說的是否正確,並確保我們整個設計有一致的設計語言,並確保有追根究底」—— 問句 ≠ 拍板(M36(a));**AI 依規則一「兩類怎麼分」與六家一手來源裁定**(MUI X / react-day-picker / flatpickr / Polaris / W3C APG / React Aria 的日曆格 hover 路徑零 `.focus()` / `.blur()`;Ant v5 沒有格層級鍵盤游標),行為不改,補本檔四處與 `datepicker-range-preview.mjs` 互搶段斷言 |
 | A / B / C / E 四類的切法、六步判斷程序、B 類的機械判別(標籤名 + `contenteditable`) | **AI 歸納**(2026-09-07 逐站分類、2026-09-09 依 user 拍板改寫),user 拍板的只有「都畫框、例外是插入點控件、要可具體判別」 |
 
 ---
@@ -531,7 +536,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 **一個元件一種畫法。** 判準量的是「這個元素在它**設計上的位置**四周有多少正當淨空」,不是拿最極端的情況、
 也不是執行期逐個實例去量。所以:
 
-- 每個元件(元素種類)在規格裡只有一個答案:按鈕、DateGrid 日期格、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)往外;選單項、tab、Calendar 事件 tile(tile 之間 gap 2px)往內。
+- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)往外;選單項、tab、Calendar 事件 tile(tile 之間 gap 2px)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
   答案寫在該元件的 class 上(往外 = 什麼都不寫;往內 = `focus-ring-inset`),閘 `scripts/focus-suppression-registry.mjs` 對著 class 查。
 - 同一個底層元件被**另一個元件**放進貼邊的位置(例:Calendar 把事件 tile 排成 gap 2px 的格子),往內的決定由**那個外層元件**的規格與 class 承擔,
   底層元件本身維持預設往外 —— 不是底層元件自己長兩套。驗算表裡的「Calendar 事件 tile」(gap 2px → 內)與「SidebarMenuAction」(四周有餘 → 外)
@@ -549,13 +554,39 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 把不必要的 `overflow` 拿掉,常常同時解掉焦點框、陰影被切、浮層被裁三件事。
 掃修時發現這類容器,列進 root-cause 清單,不要只改焦點框。
 
+### 填色元素上的內描邊(2026-09-23 user 拍板)
+
+位置判準照舊(淨空 < 4px 才往內);這一節只講**往內畫、而且元素自己的底色就是主色**時,線要換成什麼。
+DateGrid 的日期格是第一個案例:格與格只隔 4px,而區間 track(`::before`)與區間預覽框(`::after`)就跑在那 4px 縫裡,
+往外畫的 2px 框正好壓在框線上(user:「否則會跟區間藍框有視覺衝突」)→ 全部日期格往內畫。但選中日 / 區間端點的底色是
+`--primary`,往內 2px 的 `--ring` 線與底同色,**看不見**;換成白線又不能貼在最外圈 —— 那只是把藍圓削小一圈,
+選中狀態看起來像「比較小的藍底」(user:「否則整個選中狀態只會看起來是比較小的藍底?」)。
+
+所以白線要**退進藍圓裡、外圈留藍**。兩個候選都量過(28px 藍圓,兩位數的數字約 16px 寬):
+
+| | C:2px 白線,退 4px | **D:1px 白線,退 3px(定案)** |
+|---|---|---|
+| 線外保留的藍圈 | 4px | 3px |
+| 線內的淨空直徑 | 16px → 兩位數**貼到線** | 20px → 每邊 2px |
+| 對照 | — | IBM Carbon 選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`([carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571);`.flatpickr-day.today.selected` 走 `focus-outline` mixin,2026-09-24 對原始碼改正檔名與選擇器) |
+
+user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要切到文字了」)。1px 比全 DS 其他焦點框的 2px 細,
+是唯一的讓步:在填色的圓上 1px 已足夠分辨,Carbon 也是這樣做。
+
+- 幾何住在 `styles/base.css` `@utility focus-ring-inset-emphasis`(1px `--on-emphasis`,`outline-offset: -3px`),元件只掛 class 不寫值。
+- 掛法:`[&>button]:focus-visible:focus-ring-inset-emphasis` 放在**填色格的 modifier** 上(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`),
+  特異性高過 button 自己的 `focus-visible:focus-ring-inset`;非填色格照舊 2px 藍線。
+- **不外擴**:它不是第四種選擇題,只是「往內」在填色底上的變體。往外畫的填色元件(primary Button)框在元素外面的頁面底上,不適用;
+  DS 內目前只有 DateGrid 的選中日 / 區間端點符合「往內 + 填色」,再有新案例要先過同一張量表。
+- 閘:`scripts/focus-geometry-invariant.mjs` R6(禁手寫其他退距)+ `scripts/datepicker-range-preview.mjs`(量 DateGrid 兩種格的 outline 三件組)。
+
 ## 套回實測值驗證(六組各自只得到一個答案)
 
 | 元件 | 實測 | 判準命中 | 結論 |
 |---|---|---|---|
 | PeoplePicker 移除 × | 左右鄰居 1.64px / −0.02px,**但都是疊在一起的頭像** | 疊層不算鄰居 → 無限制;無裁切祖先 | **外 +2px** |
 | AgentPanel 思考過程 | 下方鄰距 **0.00px**(正常流內容) | A(0 < 4) | **內 −2px** |
-| DateGrid 日期格 | 上右下三面各 **4.00px** | 都不命中(4 ≥ 4、無裁切祖先) | **外 +2px** |
+| DateGrid 日期格 | 上右下三面各 **4.00px**,**但那 4px 縫裡跑著區間 track(td `::before`)與預覽框(td `::after`)** | A:縫隙被正當障礙佔用(2026-09-23 重跑;09-16 的這一列只量了淨空、沒看縫裡有什麼) | **內 −2px**;藍底格白線退 3px(「填色元素上的內描邊」)|
 | Calendar 事件 tile | 上方 4.00px,但 **tile 之間 `gap-0.5` = 2px** | A(取最小 2 < 4) | **內 −2px** |
 | Field 唯讀三兄弟 | 上方 FieldLabel **4.00px** | 都不命中(但 2026-09-10 起唯讀不畫外框,改邊框轉主色 —— 見規則二「唯讀的 Field 控件」列,這一列只留幾何結論)| **外 +2px**(若哪天要畫框)|
 | SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |
@@ -587,6 +618,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 | v1 | 祖先 `overflow` 不是 `visible` 就往裡 | **看寫法不看設計**。永遠不捲、四周又空的容器,框根本不會被切,硬判往裡會造成「明明有空間卻縮在裡面」 |
 | v2 | 可捲動容器該軸淨空視為 0,配 `scroll-margin` | **過度設計**。元素四周的空間會跟著元素一起捲,框畫在那個空間裡就不會被裁 |
 | **v3(現行)** | **只量被聚焦元素四周最小淨空,`≥ 4px` 往外、`< 4px` 往裡** | — |
+| v3 結論表重跑(2026-09-24) | 判準不變;**結論表沒跟著 09-23 的重判更新** —— 「套回實測值」表與「每個元件只有一個答案」句仍寫 DateGrid 日期格往外 +2px,與 `date-grid.tsx` / `date-grid.spec.md` / 本檔「填色元素上的內描邊」的往內矛盾(2026-09-24 已改正兩處) | 判準改了、結論表沒重跑 = 文件自我矛盾(下方遷移紀錄的鐵律);M10 兩維度自檢的第二維(結論兩兩相容)漏跑 —— 09-23 只改了寫新結論的那幾行,沒把舊結論列成清單逐對問「還能同時為真嗎」 |
 
 v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在元素貼著它時才成為障礙**,
 而那種情況「淨空 < 4px」本來就涵蓋了。一條尺量到底。
@@ -613,6 +645,10 @@ v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在�
 | 疊層/徽章不算鄰居 | **user 2026-09-07 逐字**:「這種堆疊起來的不算是有被堆疊的相關元素限制吧?換言之 avatar 的 x 應該是往外畫框吧?」 |
 | 「取四周最小值、不逐邊混搭」 | **AI 推導**,為了讓判準有唯一解;user 未逐字裁示 |
 | 「元素 < 8px 不開分支」 | **AI 依實測**:DS 內不存在該尺寸的可聚焦元素 |
+| 「日期格的焦點框往內畫」 | **user 2026-09-23 逐字**:「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」(是委託研究;往內的量法依既有判準,4px 縫裡有 track / 框線 = 正當障礙,AI 套算) |
+| 「填色格不能只是往內畫,要保住藍底」 | **user 2026-09-23 逐字**:「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」(問句,但指出了「白線貼邊只是削小藍圓」這個事實;C / D 兩個候選與數值是 AI 依 Carbon 配方提出) |
+| 「1px 白線退 3px(D),不是 2px 退 4px(C)」 | **user 2026-09-23 拍板**,逐字:「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(AI 同意 D 並列出兩者的淨空數字,user 在兩者間定案) |
+| 「第三種幾何只給往內畫的填色元素,不外擴」 | **AI 推導**:DS 內目前只有 DateGrid 選中日 / 端點同時是「往內 + 填色」;往外畫的填色元件框在頁面底上不受影響 |
 
 ---
 
@@ -627,6 +663,7 @@ user 2026-09-07 拍板「A9用甲啊」(全域 `outline`),附條件是「確保�
 |---|---|---|
 | **外描邊**(預設) | **什麼都不寫** | `styles/base.css` 的 `:focus-visible` |
 | **內描邊** | `focus-visible:focus-ring-inset`(真焦點)/ `focus-ring-inset`(虛擬游標) | `styles/base.css` 的 `@utility` |
+| **填色元素內描邊**(2026-09-23 加,只給往內畫且底色就是主色的元素) | `[&>button]:focus-visible:focus-ring-inset-emphasis`(掛在填色格的 modifier) | `styles/base.css` 的 `@utility`;規則見「問題二」→「填色元素上的內描邊」 |
 
 遷移前是:全域 outline + `ring-offset-1`(17 處)+ `ring-offset-2`(6 處)+ `ring-2` 無 offset(15 處)
 + `ring-inset`(2 處)。**絕大多數元件的改法是「刪掉那串 class」**,不是新增樣式。

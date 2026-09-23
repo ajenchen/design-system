@@ -113,7 +113,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 **State stacking(組合狀態處理)**:
 - today + selected → **selected 勝出**(藍底白字圓)
 - today + range-middle → track 灰底 + underline 仍可見
-- outside month → 弱化字色(不套 disabled 灰底圓,outside 只是「非當月」不是「禁選」)
+- outside month(鄰月日子)→ **一條原則:只在同一天不會被畫兩次時顯示** —— 一張月曆淡字(不套 disabled 灰底圓,outside 只是「非當月」不是「禁選」)、兩張以上並排不渲染;原則、八家對照與實作 SSOT 見 `../DateGrid/date-grid.spec.md`「鄰月日子:一條原則」
 
 其他區塊(月份 caption / Nav 按鈕 / 星期標頭)視覺層級:月份 caption 與 SelectMenu 標題同等、Nav 按鈕消費 `Button variant="text" size="xs" iconOnly`(色彩走 Button 預設 text-foreground)、星期標頭與 caption 同視覺權重(不弱化,2026-05-03 撤銷 fg-secondary)。
 
@@ -192,18 +192,45 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Popover 行為
 
-- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`：date-only Range 兩月並列以便同時看起訖範圍，showTime Range 保留一月讓時間 controls 有穩定空間
+- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`：date-only Range 兩月並列以便同時看起訖範圍，showTime Range 保留一月讓時間 controls 有穩定空間。**兩月時鄰月日子不渲染**(DateGrid 規則,`../DateGrid/date-grid.spec.md`「outside」列;2026-09-23 user 拍板:同一天不再出現兩次,藍圓與框只畫一次);單月(showTime)鄰月日子照舊顯示淡字
 - 點 date → 依 `activeEnd` 更新對應端點(start | end);auto-advance 至 end 等選
 - showTime=false:兩端點都填好 → Popover **自動關閉**
 - showTime=true:`needConfirm=true`(default),user 按「確定」才 commit + close
-- range track 視覺由已選端點靜態算出(`rangeModifiers` 讀 committed start/end,見 date-picker.tsx `rangeModifiers` 註解);**無** hover 未選端點的預覽(RDP hover-preview 只在內建 `mode="range"` 才有,本元件刻意不用)
+- range track 視覺由已選端點靜態算出(`rangeModifiers` 讀 committed start/end,見 date-picker.tsx `rangeModifiers` 註解);**停留預覽**:滑鼠停在／看得見的鍵盤焦點落在某一天時,依 `activeEnd` 算出「點下去會變成」的區間交給 DateGrid 畫成藍色細框 —— 規則表見下方「區間預覽」(2026-09-23 user 拍板;此前此處寫「無 hover 預覽」,那是 2026-06-05 把當時的程式行為抄成文件,不是決定)
 - Clear 按鈕清空兩端點 `onChange([null, null])`
 
 ### Range 視覺規則
 
 - **range_start / range_end**:沿用 single selected 的視覺(藍底白字圓)
-- **range middle**:灰底矩形橫條(實作層級詳 `date-grid.tsx`)
+- **range middle**:灰底矩形橫條(實作層級詳 `date-grid.tsx`);停留時不畫單格 hover 圈,由「區間預覽」的框接手(見下段)
 - **端點 ↔ 中間的接縫**:端點朝區間外側保留完整圓弧、朝區間內側與矩形無縫銜接,形成連續底色帶；實作 class 對照由 anatomy 管理
+
+### 區間預覽(2026-09-23 user 拍板)
+
+停留(滑鼠 / 看得見的鍵盤焦點)在某一天 d 時,依正在選的那一端算出「點下去會變成」的區間,交給 DateGrid 以藍色細框畫出(畫法 owner:`../DateGrid/date-grid.spec.md`「區間預覽框」;判定純函式 `range-preview.ts`,判定表 `scripts/test-range-preview.mjs`,幾何閘 `scripts/datepicker-range-preview.mjs`):
+
+| 狀態 | 停留在 d | 預覽區間 | 例(已選 5/4–5/12) |
+|---|---|---|---|
+| 正在選結束日,開始日已選 | d ≥ 開始日 | [開始日, d] | 停 5/20 → 框 5/4→5/20;停 5/7 → 框 5/4→5/7(縮小也看得見) |
+| 正在選開始日,結束日已選 | d ≤ 結束日 | [d, 結束日] | 停 5/1 → 框 5/1→5/12 |
+| 只選了開始日(第一次點完) | d ≥ 開始日 | [開始日, d] | 選完起點掃過去就看得到長度 |
+| 正在選的那一端,對面還空(兩端都空;或正在選開始日而只有開始日) | 任一天 | 不預覽,只有單格 hover 圈 | 沒有另一端可以框 |
+| 順序不合(不可點的日子) | — | 不預覽 | 選結束日時停在 5/3 |
+| d 與對面那一端同一天 | — | 單格(完整一圈) | 選結束日時停在開始日 5/4(停在既有結束日則仍是 [開始日, 結束日]) |
+
+- **灰色 track 留著**,框疊在上面(現在是這樣 / 準備變成這樣同時看得到)。
+- **停留日 = 框的那一端**:不畫單格 hover 圈,只有框的半圓端點,缺口朝區間內側;正在選結束日時停留日在右端(半圓朝右)、選開始日時鏡射。
+- **鍵盤同權**:方向鍵移動焦點時同樣預覽(焦點日 = 停留日);只算看得見的焦點(`:focus-visible`),浮層開啟時程式搬過去的焦點不算,滑鼠使用者不會先看到整段框。
+- **滑鼠與鍵盤,最後一個輸入贏**:滑鼠移進某格 → 框到那格;鍵盤把看得見的焦點移到某格 → 框到那格,即使滑鼠還停在別格;滑鼠離開**日期格區**(格與格間的縫都算在內;移到月份標題、星期列或 footer 就算離開)時,框退回仍帶著鍵盤焦點的那一天(不是消失);「離開日期格區」不是「離開單格」—— 格與格之間 4px 的縫隙屬於較近的那一格(day button 命中區外擴 2px,`../DateGrid/date-grid.spec.md` cell state 表「range 預覽框」列),指標跨格時框不會先消失再出現。清除只由同一種來源做(滑鼠離開只清滑鼠設的、失焦只清鍵盤設的),點日期時前一格的 blur 不會把滑鼠剛設的停留日清掉。
+- **框不是游標,鍵盤焦點框留在原地**:預覽框只回答「現在點下去會變成什麼」;鍵盤焦點框照 `ds-canonical/references/focus-canonical.md` 規則一留在焦點日,滑鼠 hover 不搬、不抹它(日期格是「不搶反白的常駐清單」:真 DOM 焦點 + roving tabindex,hover 只有 CSS)。所以焦點在 5/5、滑鼠停在 5/20 時,5/5 的往內 2px 藍線與 5/4→5/20 的預覽框同時存在、可以分離 —— 這是預期,不是不一致(user 2026-09-24 問「按照我們其他元件搶焦點的邏輯,鍵盤焦點不是應該要消失嗎?」;搶焦點只屬於 cmdk / Radix Menu 那類「反白 = 唯一游標」的浮層選單;日曆格 hover 與焦點各走獨立通道是五家一手來源一致的做法:[MUI X `DayCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DayCalendar.tsx)(`focusedDay` 只由 keydown / focus 改)、[react-day-picker `DayPicker.tsx`](https://github.com/gpbl/react-day-picker/blob/main/packages/react-day-picker/src/DayPicker.tsx)(mouseenter 只轉呼叫 callback)、[flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts)(`onMouseOver` 只增刪 class)、[Polaris `DatePicker.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/DatePicker.tsx)(`hoverDate` 與 `focusDate` 兩個 state)、[W3C APG datepicker-dialog.js](https://www.w3.org/WAI/content-assets/wai-aria-practices/patterns/dialog-modal/examples/js/datepicker-dialog.js)(cell 只綁 click / keydown / focus)、[React Aria `useCalendarCell.ts`](https://cdn.jsdelivr.net/npm/@react-aria/calendar/src/useCalendarCell.ts)(hover 只 `highlightDate`))。閘:`scripts/datepicker-range-preview.mjs` 互搶段。
+- **停留日的單格圈是靜態壓掉的**:對面那端已有值時,每一個「停留會有框」的格(順序合法的日子)在停留**之前**就不畫單格 hover 圈 —— 單格圈是 CSS 即時的、框是 React 狀態慢一幀,壓制若掛在框上,每次停留都先閃一圈整圓再變成半圓。順序不合的日子與兩端都空時不壓,單格圈照畫。
+- **鍵盤焦點框往內畫**:日期格的焦點框一律往內 2px(格與格只隔 4px,track 與預覽框就在縫裡);藍底格(選中日 / 端點)1px 白線退 3px。幾何 owner `ds-canonical/references/focus-canonical.md`「填色元素上的內描邊」,畫法 owner `../DateGrid/date-grid.spec.md` cell state 表「focus-visible」列。
+- **showTime 單月同一套規則**(track 是否顯示另管,見「Popover 行為」)。
+- 比較只看日,端點帶時間也一樣。
+
+**來源總帳**(user 2026-09-23 原話,逐字):「我反而認為這種日期區間選擇器hover 到日期應該要讓使用者可以看出到底選下去之後實際的區間會變成怎樣,所以我反而認為是可以用現在藍色邊框的視覺語言去預框出選中後的區間」;Q1–Q4、Q6、Q7 「照你建議」(做 / 實線藍框 / 兩端都預覽 / track 留著 / 鍵盤同權 / showTime 同一套);Q5:「若有藍框區間的話,所 hover 到的日期不會是完整的一個圓圈,應該要與藍框區間在視覺上一氣呵成,所以所hover的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」。**先前三句被當成「規則」的文字**(本檔舊句「無 hover 預覽」、`date-grid.spec.md` 舊句「中段 hover ring 一併壓制」、story 舊說明「不出現第二層 hover ring」)都是 AI 在 2026-06-05 / 07-05 / 08-02 稽核時把程式行為抄成文件,沒有任何 user 原話;2026-09-23 差點據此反著修,user 提問後撤回。
+同日看過預覽站後(逐字):「為何往前縮短和往後延長的範例看起來是一樣的? 以及為何範例要直接呈現鍵盤焦點?」(示範層兩題,修在 story 的 play:hover 由示範自己建立、開好浮層後放掉程式搬的焦點);「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 [Carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571) 的選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }` 提出)。
+同日晚間看預覽站(逐字):「圖一為何五月的區塊非五月沒有變成該有非當月的樣式?以前是這樣?我怎麼印象中我們有討論甚至修正過類似的東西?」(查證:從未定義過 outside × range,2026-09-07 只修 outside × disabled)+ 結構化選擇「兩月時不顯示鄰月日子」(user 拍板;兩個候選與各家原始碼出處見 `../DateGrid/date-grid.spec.md`「outside」列)。2026-09-24 user 追問(逐字):「我的意思是兩月不渲染的世界級設計，其一個月預設會怎樣？到底要渲染還是不渲染？是否要一致？世界級的設計是怎樣？」→ 逐家讀原始碼列八家對照後,結構化選擇「維持現況,改寫成一條原則」(user 拍板;原則與對照表見 `../DateGrid/date-grid.spec.md`「鄰月日子:一條原則」);「為何選區間,從某日「水平」移動到其隔日,藍色的區間框線都會閃動一下?」(bug 回報,根因 4px 縫隙,解法由 AI 定);「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」(示範層規則,owner `ds-canonical/rules/story-rules.md`「示範 = 滑鼠使用者」)。
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 
@@ -325,8 +352,8 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx:650,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`
-- DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建)
-- Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由**自建 `onCloseAutoFocus`** 手動回焦 active 端 button(date-picker.tsx:1020-1026,守 WCAG 2.4.3)
+- DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建);Range 模式下焦點移到哪一天就預覽哪一天(見「區間預覽」),鍵盤與滑鼠看到同一件事
+- Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由**自建 `onCloseAutoFocus`** 手動回焦 active 端 button(date-picker.tsx:1205,守 WCAG 2.4.3)
 - Range 雙 trigger:`activeEnd` state 指向當前編輯端,`aria-expanded` 對應只當該 trigger active 時 true
 
 ---

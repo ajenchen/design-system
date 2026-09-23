@@ -49,7 +49,7 @@ Output:
 
 ## Layer A interactive state coverage canonical
 
-**核心事實**:當前 `visual-audit.mjs` 只抓「頁面 render 完 + blur activeElement + 800ms wait」後的**靜態 snapshot**——**hover / focus-visible / active / pressed / tooltip-visible / menu-open / dropdown-open 等 post-interaction state 預設不被抓到**。
+**核心事實**:當前 `visual-audit.mjs` 只抓「頁面 render 完 + 800ms wait」後的**靜態 snapshot**(2026-09-23 起截圖帶 `?demoFocus=on`,「放掉程式搬來的鍵盤焦點」由 Storybook 預覽層 `settleDemoFocus` 做、不再由儀器 blur,基準 = user 在 Storybook 看到的畫面)——**hover / focus-visible / active / pressed / tooltip-visible / menu-open / dropdown-open 等 post-interaction state 預設不被抓到**。
 
 ### 當前覆蓋 vs Gap
 

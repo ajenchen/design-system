@@ -844,14 +844,26 @@ export const CalendarTokens = {
                   <tr>
                     <Td>hover(未選中)</Td>
                     <Td>藍圈 outline 無 fill</Td>
-                    <Td mono>hover:ring-[1.5px] · hover:ring-primary · hover:bg-transparent</Td>
-                    <Td>非 filled 避免跟 selected 混淆</Td>
+                    <Td mono>hover:ring-[1.5px] · hover:ring-primary-hover · hover:bg-transparent</Td>
+                    <Td>非 filled 避免跟 selected 混淆(2026-07-07 起 ring 色為 hover 階)</Td>
+                  </tr>
+                  <tr>
+                    <Td>range 預覽框(停留 / 焦點,只在 DatePicker.Range)</Td>
+                    <Td>藍色細框框出「點下去會變成」的區間,停留日是框的半圓端點</Td>
+                    <Td mono>端點 / 單格 after:ring-inset · after:ring-[1.5px] · after:ring-primary-hover + rounded-l/r-full(端點朝區間那側用 clip-path 裁掉直邊);中段 after:shadow-[inset 上下各 1.5px](day 容器層 after 偽元素;class 住 DateGrid RANGE_PREVIEW_CLASSNAMES;不用 border,1.5px 會被取整)</Td>
+                    <Td>與單日 hover 圈同色同粗;停留日不再畫單格圈(2026-09-23 user 拍板)</Td>
+                  </tr>
+                  <tr>
+                    <Td>focus-visible(鍵盤焦點)</Td>
+                    <Td>非藍底格:往內 2px 藍線;藍底格(選中日 / 端點):1px 白線退 3px,外圈留藍</Td>
+                    <Td mono>day button focus-visible:focus-ring-inset;藍底 modifier 另掛 [&gt;button]:focus-visible:focus-ring-inset-emphasis(幾何住 styles/base.css;DateGrid EMPHASIS_FOCUS_RING_CLASSNAME)</Td>
+                    <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,對照 Carbon 選中日)</Td>
                   </tr>
                   <tr>
                     <Td>outside month</Td>
                     <Td>弱化字色</Td>
                     <Td mono>text-fg-muted</Td>
-                    <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)</Td>
+                    <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)。一條原則:只在同一天不會被畫兩次時顯示 —— 一張月曆淡字(選中日落在鄰月位置仍是藍底白字)、兩張以上並排不渲染(DateGrid numberOfMonths &gt; 1 強制;2026-09-23 / 09-24 user 拍板,八家對照見 date-grid.spec.md「鄰月日子:一條原則」)</Td>
                   </tr>
                 </tbody>
               </table>

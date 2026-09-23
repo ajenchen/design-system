@@ -38,13 +38,31 @@
       "file": "datepicker-show-time-range-popover-open.png"
     },
     {
-      "id": "design-system-components-datepicker-展示--range-middle-hover-state",
-      "file": "datepicker-range-middle-hover-state.png",
+      "id": "design-system-components-datepicker-展示--range-preview-extend",
+      "file": "datepicker-range-preview-extend.png",
       "interaction": {
         "action": "hover",
         "selector": "[data-visual-hover-target]"
       },
-      "rationale": "Hover suppression capture — play() 負責開啟 Portal 並標記 range_middle date；截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover，驗證已選取中段維持 grey track 且不出現第二層 hover ring。"
+      "rationale": "區間預覽(2026-09-23 user 拍板):play() 開結束日那一端並標記 5/20,截圖前由 visual-audit 的 Playwright locator.hover() 建立真實 :hover;預期 5/4→5/20 有藍色細框、右端半圓、灰色軌道仍在。幾何由 scripts/datepicker-range-preview.mjs 逐格量,這裡只留影像。"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--range-preview-shrink",
+      "file": "datepicker-range-preview-shrink.png",
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
+      "rationale": "區間預覽:停留在中段 5/7,框只到 5/7、落在軌道裡;停留日不畫單格圈(原「範圍中段:滑鼠移過抑制」場景由此取代)。"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--range-preview-start",
+      "file": "datepicker-range-preview-start.png",
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
+      "rationale": "區間預覽:正在選開始日、停留在 5/1,框從 5/1 到 5/12,停留日是左端半圓(缺口朝右);兩月視圖不渲染鄰月日子,停留點取本月的 5/1。"
     },
     {
       "id": "design-system-components-calendar-展示--team-calendar",

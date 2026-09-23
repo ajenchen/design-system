@@ -65,6 +65,8 @@ export const TeamCalendar: Story = {
  */
 export const ContentPublishingSchedule: Story = {
   name: '內容發佈月曆',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   render: () => {
     const events: CalendarEvent[] = [
       { id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },

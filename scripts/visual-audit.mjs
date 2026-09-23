@@ -410,7 +410,9 @@ async function auditScenario(browser, scenario, opts = {}) {
     : ''
   const url = scenario.url
     ? scenario.url
-    : `${storybookUrl}/iframe.html?id=${scenario.id}&viewMode=story${globalsParam}`
+    // demoFocus=on:基準圖要拍 user 在 Storybook 介面看到的畫面(預覽層的示範收尾只在管理介面 iframe 或帶此參數時才開;
+    // 直接開 iframe.html 的儀器預設不收尾,見 storybook-config preview.tsx demoFocusEnabled)
+    : `${storybookUrl}/iframe.html?id=${scenario.id}&viewMode=story&demoFocus=on${globalsParam}`
 
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45_000 })
@@ -428,15 +430,10 @@ async function auditScenario(browser, scenario, opts = {}) {
     }
     await page.waitForTimeout(isInteractive ? 1200 : 600) // interactive stories 需更長等 play() + animations 結束
 
-    if (!isInteractive) {
-      // Blur active element — overlays with autoFocus (Radix Dialog / Popover) focus on close button,
-      // and icon-only Button's focus-triggered tooltip would appear in the snapshot
-      await page.evaluate(() => {
-        const el = document.activeElement
-        if (el && 'blur' in el && typeof el.blur === 'function') el.blur()
-      })
-      await page.waitForTimeout(200) // let tooltip dismiss
-    }
+    // 2026-09-23 前這裡會把非 interactive story 的焦點 blur 掉(浮層 autoFocus 的關閉鈕框、圖示鈕的焦點 tooltip)。
+    // 現在「示範 = 滑鼠使用者」由 Storybook 預覽層做(storybook-config preview.tsx `settleDemoFocus`:每支 story 渲染完
+    // 就放掉被判成鍵盤焦點又畫得出線的焦點,要留的 story 自己宣告 parameters.demoFocus='keep'),截圖儀器不再另有一份
+    // 用 id regex 決定的規則 —— 那份規則把 user 在 Storybook 看得到的框擦掉才拍(M17 單一來源;story-rules.md 為 owner)。
 
     // A failed JS/CSS load can leave #storybook-root empty with HTTP 200. Treat that as an
     // infrastructure/render failure before contrast/axe can vacuously pass an empty canvas.

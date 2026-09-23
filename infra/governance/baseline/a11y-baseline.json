@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-09-21T03:54:37.494Z",
-    "stories": 1040,
+    "generatedAt": "2026-09-23T15:46:54.965Z",
+    "stories": 1042,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -325,9 +325,11 @@
       "design-system-components-datepicker-展示--default",
       "design-system-components-datepicker-展示--modes",
       "design-system-components-datepicker-展示--need-confirm-date-only-open",
-      "design-system-components-datepicker-展示--range-middle-hover-state",
       "design-system-components-datepicker-展示--range-picker",
       "design-system-components-datepicker-展示--range-popover-open",
+      "design-system-components-datepicker-展示--range-preview-extend",
+      "design-system-components-datepicker-展示--range-preview-shrink",
+      "design-system-components-datepicker-展示--range-preview-start",
       "design-system-components-datepicker-展示--show-time",
       "design-system-components-datepicker-展示--show-time-popover-open",
       "design-system-components-datepicker-展示--show-time-range",
@@ -1045,10 +1047,8 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "4ad9fd03934190f443276b8ed08f93d17f876510b1ebcc66abcb15ff4f140d6b",
-    "fingerprints": 742,
-    "rewrittenAt": "2026-09-21",
-    "rewriteReason": "2026-09-21 重寫。這支 a11y 監看 workflow(非 required check,夜間跑)近 20 次**全紅、零成功**,而沒有人處理。清乾淨之後的真實狀況:critical = 0、serious = 5051,其中 **color-contrast 佔 5046**,壓倒性來自單一 token —— 淺色主題的 `--fg-muted`(= neutral-7 = 黑 45% 疊白 = #8C8C8C),對比 3.36:1,低於 WCAG AA 的 4.5:1。本次真正修掉的是 2 筆 critical 的 `label`(Dialog 並存契約 story:Field 內的控件自帶 id,FieldLabel 的 htmlFor 因此指向不存在的元素;已改由 <Field id> 承載,並加 scripts/field-label-binding-invariant.mjs 機械防線)。其餘 7 筆「新增」全是**新 story 呈現同一個既有 token 問題**,不是新缺陷類別;把 `--fg-muted` 調暗是會改變整個 DS 外觀的產品決策,已另外整理數據交由 user 拍板,不在此 PR 自行決定。同時修掉 baseline 的語料漂移(新增 8 個 story、移除 1 個),否則這支閘連『有沒有回歸』都答不出來。"
+    "storyIdsSha256": "5786d6fc4a8ec46c5fc055f92fe3ed685cd62ebf5af8e258f262472aa0531317",
+    "fingerprints": 740
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1282,9 +1282,7 @@
     "design-system-components-datepicker-展示--clearable|color-contrast": 1,
     "design-system-components-datepicker-展示--default|color-contrast": 1,
     "design-system-components-datepicker-展示--need-confirm-date-only-open|color-contrast": 8,
-    "design-system-components-datepicker-展示--range-middle-hover-state|color-contrast": 5,
     "design-system-components-datepicker-展示--range-picker|color-contrast": 5,
-    "design-system-components-datepicker-展示--range-popover-open|color-contrast": 5,
     "design-system-components-datepicker-展示--show-time-popover-open|color-contrast": 3,
     "design-system-components-datepicker-展示--show-time-range-popover-open|color-contrast": 3,
     "design-system-components-datepicker-展示--show-time-range|color-contrast": 2,
@@ -1296,7 +1294,7 @@
     "design-system-components-datepicker-設計原則--clearable-rule|color-contrast": 4,
     "design-system-components-datepicker-設計原則--formatting-rule|color-contrast": 5,
     "design-system-components-datepicker-設計原則--usage-guidance|color-contrast": 9,
-    "design-system-components-datepicker-設計規格--calendar-tokens|color-contrast": 18,
+    "design-system-components-datepicker-設計規格--calendar-tokens|color-contrast": 17,
     "design-system-components-datepicker-設計規格--color-matrix|color-contrast": 42,
     "design-system-components-datepicker-設計規格--inspector|color-contrast": 44,
     "design-system-components-datepicker-設計規格--overview|color-contrast": 16,
@@ -1692,7 +1690,7 @@
     "design-system-internal-command-設計規格--overview|color-contrast": 7,
     "design-system-internal-dategrid-展示--inline|color-contrast": 3,
     "design-system-internal-dategrid-展示--multiple|color-contrast": 3,
-    "design-system-internal-dategrid-展示--range|color-contrast": 8,
+    "design-system-internal-dategrid-展示--range|color-contrast": 1,
     "design-system-internal-dategrid-展示--single|color-contrast": 4,
     "design-system-internal-dategrid-設計原則--locale-rule|color-contrast": 9,
     "design-system-internal-dategrid-設計原則--mode-rule|color-contrast": 10,
@@ -1701,7 +1699,7 @@
     "design-system-internal-dategrid-設計規格--color-matrix|color-contrast": 6,
     "design-system-internal-dategrid-設計規格--inspector|color-contrast": 31,
     "design-system-internal-dategrid-設計規格--overview|color-contrast": 5,
-    "design-system-internal-dategrid-設計規格--size-matrix|color-contrast": 10,
+    "design-system-internal-dategrid-設計規格--size-matrix|color-contrast": 3,
     "design-system-internal-dategrid-設計規格--state-behavior|color-contrast": 10,
     "design-system-internal-hovercard-展示--link-preview|color-contrast": 1,
     "design-system-internal-hovercard-展示--overflow-list|color-contrast": 1,

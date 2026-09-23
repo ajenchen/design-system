@@ -12,8 +12,11 @@
 // 收斂後只剩兩種,而且**兩種都不需要元件自己寫值**:
 //   外描邊 = 全域 `styles/base.css` 的 `:focus-visible`(元件什麼都不用寫)
 //   內描邊 = `focus-ring-inset` utility(同一份幾何 SSOT)
+// 2026-09-23 user 拍板加第三種,只給**底色就是主色**的元素(DateGrid 選中日 / 區間端點):
+//   填色元素上的內描邊 = `focus-ring-inset-emphasis` utility(1px `--on-emphasis` 白線退 3px;藍線畫在藍底上看不見,
+//   白線貼最外圈又只是把藍圓削小 —— 對照 Carbon 選中日)。一樣住在 base.css,元件只掛 class,不寫值。
 //
-// 四條:
+// 六條:
 //   (R1) 禁 `ring-offset-*` —— 它的間隙寫死白色(`--tw-ring-offset-color` 預設 #fff,
 //        `inherits:false` 導致寫進 :root 完全不生效且靜默無錯),深色主題會露一圈白。
 //   (R2) 禁 `focus-visible:ring-*` 當焦點框 —— 那是第二套機制。
@@ -21,6 +24,8 @@
 //        兩者特異性同階,誰贏取決於 Tailwind 內部排序 = 靜默失效的溫床。
 //   (R4) 禁重寫全域外描邊 —— 同一份值抄第二遍(H1c 那類贅碼),改全域時會漏掉。
 //   (R5) 禁手寫內描邊三件組 —— 改用 `focus-ring-inset`,否則寬度/顏色要改就得改二十處(M17)。
+//   (R6) 禁手寫其他退距的內描邊(`outline-offset-[-3px]` 之類)—— 填色元素改用 `focus-ring-inset-emphasis`,
+//        其餘沒有第四種幾何。
 //
 // Run: `node scripts/focus-geometry-invariant.mjs`(`--selftest` 跑正反例)
 
@@ -35,6 +40,8 @@ const RULES = [
   { id: 'R2', re: /focus-visible:ring-(?:2|\[)/, why: '第二套焦點機制;外描邊什麼都不用寫,內描邊用 focus-ring-inset' },
   { id: 'R4', re: /focus-visible:outline-2(?!.*offset-\[-)/, why: '把全域外描邊抄了一遍;刪掉即可,行為不變' },
   { id: 'R5', re: /outline-offset-\[-2px\]/, why: '手寫內描邊三件組;改用 focus-ring-inset(同一份幾何 SSOT,改寬度顏色只需一處)' },
+  // hover 的內描邊(DataTable 儲存格 `hover:outline-offset-[-1px]`)是 hover 回饋不是焦點框,不在本閘範疇
+  { id: 'R6', re: /(?<!hover:)outline-offset-\[-(?!2px\])\d+(?:\.\d+)?px\]/, why: '手寫填色內描邊;填色元素改用 focus-ring-inset-emphasis(1px 白線退 3px,同一份幾何 SSOT),其餘沒有第四種幾何' },
 ]
 
 export function scan(files) {
@@ -72,7 +79,11 @@ if (process.argv.includes('--selftest')) {
     { n: '抄全域外描邊', src: "cn('focus-visible:outline-2 focus-visible:outline-ring')", bad: true },
     { n: '手寫內描邊三件組', src: "cn('focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring')", bad: true },
     { n: 'outline-none 打架', src: "cn('outline-none focus-ring-inset')", bad: true },
+    { n: '手寫填色內描邊', src: "cn('focus-visible:outline-1 focus-visible:outline-offset-[-3px] focus-visible:outline-on-emphasis')", bad: true },
     { n: '正確內描邊', src: "cn('focus-visible:focus-ring-inset rounded-md')", bad: false },
+    { n: '正確填色內描邊', src: "cn('[&>button]:bg-primary [&>button]:focus-visible:focus-ring-inset-emphasis')", bad: false },
+    { n: '填色 modifier 下的中段壓回一般內描邊', src: "cn('[&>button]:focus-visible:!focus-ring-inset')", bad: false },
+    { n: 'hover 的內描邊不是焦點框', src: "'hover:outline hover:outline-1 hover:outline-offset-[-1px]'", bad: false },
     { n: '正確外描邊(什麼都不寫)', src: "cn('rounded-md bg-surface')", bad: false },
     { n: '註解裡提到不算', src: "// 舊寫法是 focus-visible:ring-2 focus-visible:ring-offset-1", bad: false },
     { n: '虛擬游標', src: "showRing && 'focus-ring-inset'", bad: false },
@@ -88,9 +99,9 @@ if (process.argv.includes('--selftest')) {
 
 const hits = scan(load(ROOT))
 if (hits.length) {
-  console.error('✗ 焦點框幾何回流(全 DS 只准兩種:全域外描邊 / focus-ring-inset):')
+  console.error('✗ 焦點框幾何回流(全 DS 只准三種:全域外描邊 / focus-ring-inset / 填色元素專用的 focus-ring-inset-emphasis):')
   console.error('  SSOT:packages/design-system/ds-canonical/references/focus-canonical.md「問題二」')
   for (const h of hits) console.error(`    [${h.id}] ${h.path}:${h.line}\n         ${h.text}\n         → ${h.why}`)
   process.exit(1)
 }
-console.log('✓ 焦點框只有兩種幾何,無回流')
+console.log('✓ 焦點框只有三種幾何(外描邊 / 內描邊 / 填色元素內描邊),無回流')

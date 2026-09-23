@@ -33,11 +33,12 @@ import { Button } from '@/design-system/components/Button/button'
  * |-------|------|-------|
  * | today | 數字下方藍色短桿 | `::after` pseudo bar(bg-primary,w-40% h-1.5px rounded-full,貼近數字底)|
  * | disabled | 灰底圓圈 + disabled 字色(跟 Button disabled 一致) | [&>button]:bg-disabled [&>button]:text-fg-disabled rounded-full |
- * | outside(非本月) | text-fg-muted(neutral-7)—— **僅在該日仍可點時**;不可點時讓位給 disabled(M24) | [&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted |
+ * | outside(非本月) | 單月:text-fg-muted(neutral-7)—— **僅在該日仍可點、且未被選中時**(不可點讓位 disabled、選中讓位藍底白字,M24);**兩月以上不渲染**(numberOfMonths > 1 強制 showOutsideDays=false) | [&:not([data-selected])>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted |
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
  * | range middle | 灰底矩形 track(bg-neutral-selected = neutral-2),**高度 = cell 高度**(28×28 @ md) | before pseudo: `inset-y-0 -inset-x-[2px]` |
  * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` + start `left-0 -right-[2px]` / end `-left-[2px] right-0`(向 middle 外擴 2px bridge gap)|
  * | hover(未選中) | 藍圈 outline | hover:ring-[1.5px] hover:ring-primary-hover(2026-07-07 統一:瞬時 hover = hover 階)|
+ * | range 預覽框(停留 / 焦點,只有 DatePicker.Range 會算出) | 同色同粗的藍色細框,把「點下去會變成」的區間框起來;兩端半圓、與 track 同高;停留日就是框的那一端(不再畫單格圈) | td `::after`(track 用 `::before`):`RANGE_PREVIEW_CLASSNAMES`,ring / inset 陰影 1.5px primary-hover(不用 border:1.5px 會被取整成 1px);user 2026-09-23 拍板 |
  *
  * ── Range track 高度 canonical(2026-05-03 v6,M8 4 家對照)──
  * Ant Design([picker source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts))/ Material X DateRangePicker([mui-x source](https://github.com/mui/mui-x/tree/master/packages/x-date-pickers-pro/src/DateRangeCalendar))/ Apple Calendar `@benchmark-unverified`(closed-source)/ Google Calendar `@benchmark-unverified`(closed-source)共識:
@@ -57,6 +58,69 @@ import { Button } from '@/design-system/components/Button/button'
 
 export type DateGridProps = React.ComponentProps<typeof DayPicker>
 
+// ── Range 視覺的唯一住所(2026-09-23)──
+// 已選區間的灰色 track(td `::before`)與停留預覽的藍色框(td `::after`)兩組 class 只宣告在這裡。
+// DateGrid 自己的 RDP range 模式(下方 classNames.range_*)和 DatePicker.Range 自管的 modifiers
+//(modifiersClassNames)都從這裡拿 —— 先前 track 的 stadium class 在兩個檔各抄一份,是假 SSOT(M17)。
+//
+// 幾何(spec「Range track canonical」+「區間預覽框」):
+//   - inset-y-0 = 滿 cell 高(= button 高,28 @ md);左右各外擴 2px 接鄰格的 border-spacing 縫
+//   - 起點 / 終點只在朝外那一側畫側邊與半圓(rounded-l/r-full,圓半徑 = button 半徑,和藍圓同弧)
+//   - 列首 / 列尾不畫側邊(換列處框是開口的,與 track 同款;month_grid 的 first/last-child 規則把外擴歸零)
+//   - 單格(起訖同一天)= 完整一圈
+//   - 停留日不再畫 button 的 hover 圈:框的半圓端點就是它(user 2026-09-23:「所 hover 的日期的藍框不會是完整的
+//     圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」)
+export const RANGE_TRACK_CLASSNAMES = Object.freeze({
+  start: cn(
+    "before:content-[''] before:absolute before:inset-y-0",
+    'before:left-0 before:-right-[2px]',
+    'before:bg-neutral-selected before:pointer-events-none',
+    'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
+  ),
+  middle: cn(
+    "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
+    'before:bg-neutral-selected before:pointer-events-none',
+  ),
+  end: cn(
+    "before:content-[''] before:absolute before:inset-y-0",
+    'before:-left-[2px] before:right-0',
+    'before:bg-neutral-selected before:pointer-events-none',
+    'before:rounded-r-full',  // ← 鏡像
+  ),
+})
+
+// 框的顏色與粗細逐字沿用單日 hover 圈(day_button 的 hover:ring-[1.5px] hover:ring-primary-hover):同一套語言,
+// 不新增第二種「暫定」表達(user 2026-09-23 Q2 拍板選實線,不用 Ant v4 / MUI 的虛線)。
+// **用 ring(box-shadow)畫、不用 border**:瀏覽器把 border-width 1.5px 在 DPR 1 取整成 1px(閘實測 computed 1px),
+// box-shadow 不取整 —— 只有這樣才跟 hover 圈同一種筆觸(同色、同粗、同反鋸齒),不是「看起來差不多」。
+const PREVIEW_FRAME = cn(
+  "after:content-[''] after:absolute after:inset-y-0 after:pointer-events-none",
+  // 停留日的單格圈讓位給框的端點(preview 的四種格都可能是停留日)
+  '[&>button]:hover:!ring-0',
+)
+// 端點與單格:整圈內描邊(沿弧線等粗)。端點再把朝區間內側那 2px(外擴接縫區)裁到只剩上下兩條 1.5px 帶,
+// 直邊消失、半圓的缺口就朝向區間(user Q5)。clip-path 裡的 2px = 外擴量,1.5px = 筆觸寬 —— 兩個數字都不是獨立的。
+const PREVIEW_STROKE = 'after:ring-inset after:ring-[1.5px] after:ring-primary-hover'
+const CLIP_INNER_RIGHT = 'after:[clip-path:polygon(0_0,100%_0,100%_1.5px,calc(100%_-_2px)_1.5px,calc(100%_-_2px)_calc(100%_-_1.5px),100%_calc(100%_-_1.5px),100%_100%,0_100%)]'
+const CLIP_INNER_LEFT = 'after:[clip-path:polygon(0_0,100%_0,100%_100%,0_100%,0_calc(100%_-_1.5px),2px_calc(100%_-_1.5px),2px_1.5px,0_1.5px)]'
+export const RANGE_PREVIEW_CLASSNAMES = Object.freeze({
+  start: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:left-0 after:-right-[2px] after:rounded-l-full', CLIP_INNER_RIGHT),
+  // 中段只有上下兩條線:兩個各 1.5px 的 inset 陰影(ring 畫不了單邊)
+  middle: cn(PREVIEW_FRAME, 'after:-inset-x-[2px] after:shadow-[inset_0_1.5px_0_0_var(--primary-hover),inset_0_-1.5px_0_0_var(--primary-hover)]'),
+  end: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:-left-[2px] after:right-0 after:rounded-r-full', CLIP_INNER_LEFT),
+  single: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:inset-x-0 after:rounded-full'),
+})
+// 預覽「上膛」的格(停留會有框的那些天)**靜態**壓掉 button 的單格 hover 圈。
+// 單格圈是 CSS :hover,指標一到就畫;框是 React 狀態,慢一幀。只靠上面 PREVIEW_FRAME 裡的壓制(掛在停留後才出現的
+// preview modifier 上),每次停留都會先閃一圈整圓、再變成半圓(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,
+// 閃了一下,才會變成半圓」)。壓制不能依賴慢的那一邊 —— 由 consumer 用「這一天停留會不會有框」當 modifier,停留前就掛好;
+// 順序不合的日子(不會有框)與對面那端還空時(沒東西可接)不掛,單格圈照畫。
+export const RANGE_PREVIEW_ARMED_CLASSNAME = '[&>button]:hover:!ring-0'
+// 藍底格(選中日 / 區間端點)上的鍵盤焦點:1px 白線退 3px(styles/base.css `focus-ring-inset-emphasis`;
+// focus-canonical「填色元素上的內描邊」,2026-09-23 user 拍板 D)。`[&>button]:focus-visible:` 的特異性高過
+// day_button 自己的 `focus-visible:focus-ring-inset`,藍底格由這條勝出。
+export const EMPHASIS_FOCUS_RING_CLASSNAME = '[&>button]:focus-visible:focus-ring-inset-emphasis'
+
 // ── SR label 中文 formatter(2026-07-05)──
 // 走 Intl.DateTimeFormat(對齊 TimePicker / Calendar 既有 canonical,不引第二套 date lib);
 // module-level 建一次 — label fn 每個 day cell 都會呼叫,避免 per-call new formatter。
@@ -71,6 +135,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     classNames,
     labels,
     showOutsideDays = true,
+    numberOfMonths,
     ...props
   },
   _ref,
@@ -79,7 +144,13 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
   // 故 ref 簽名保留但不附著(符合 DS 統一 forwardRef 慣例;真要取 DOM 用 wrapper 包)。
   return (
     <DayPicker
-      showOutsideDays={showOutsideDays}
+      // 兩月以上**不渲染鄰月日子**(2026-09-23 user 拍板):同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 /
+      // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
+      // 原註解「otherwise the same day would be rendered in two calendars」)/ Polaris(空格)/ flatpickr(hidden)與
+      // react-day-picker 自家預設都不顯示;consumer 傳 showOutsideDays 也不放行(MUI 同樣忽略)。單月照舊(預設顯示、淡字)。
+      // 一條原則(2026-09-24 user 拍板):鄰月日子只在「同一天不會被畫兩次」時顯示;八家對照 → date-grid.spec.md「鄰月日子:一條原則」。
+      showOutsideDays={(numberOfMonths ?? 1) > 1 ? false : showOutsideDays}
+      numberOfMonths={numberOfMonths}
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
@@ -135,6 +206,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           'border-separate border-spacing-1 -m-1',
           '[&_tr>td:first-child]:before:!left-0',
           '[&_tr>td:last-child]:before:!right-0',
+          // 預覽框(td ::after)在列首 / 列尾同樣不得溢出面板留白;換列處框是開口的,與 track 同款
+          '[&_tr>td:first-child]:after:!left-0',
+          '[&_tr>td:last-child]:after:!right-0',
         ),
         weekdays: '',  // thead default
         weekday: cn(
@@ -162,6 +236,16 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
           // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover
           'hover:ring-[1.5px] hover:ring-primary-hover hover:bg-transparent',
+          // 鍵盤焦點框往內畫(focus-canonical「問題二」):格與格只隔 4px,而區間 track(::before)與預覽框(::after)
+          // 就跑在那 4px 縫裡 —— 往外畫的 2px 框正好壓在框線上(user 2026-09-23:「date 的鍵盤焦點感覺要改成
+          // 往內畫的那種,否則會跟區間藍框有視覺衝突」)。藍底格另走 EMPHASIS_FOCUS_RING_CLASSNAME(白線退 3px)。
+          'focus-visible:focus-ring-inset',
+          // 命中區外擴 2px 補滿格間 4px 縫隙(user 2026-09-23:「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」):
+          // 停留日掛在 button 的 mouseenter / mouseleave(react-day-picker 只給這一層),指標跨格時只要有一次 mousemove 落在
+          // border-spacing 的縫裡就先 leave 再 enter,整條框先卸掉一幀再補回。框的畫法早就用 −2px 跨過縫隙把線接起來,
+          // 命中幾何卻沒跟上 —— 這一條讓 hit 與 paint 同一個數字。不畫任何東西(基準圖不動);Ant 整個 td 可命中、
+          // MUI 只在離開整個日曆才清,都沒有「縫隙裡沒有任何一天」這個狀態。閘:datepicker-range-preview.mjs「跨格不閃」。
+          "before:content-[''] before:absolute before:-inset-[2px]",
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(
@@ -181,11 +265,15 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 依 M24「State 顯著性 precedence:disabled > muted > emphasis」與本元件 spec.md:106
         //(「outside…比 disabled 弱:outside 仍可 hover / 可點」)、:201(disabled → text-fg-disabled(M24)),
         // outside 的淡化**只適用於還能點的日子**,故加 :not() 前提而非用 !important 硬壓。
-        outside: '[&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted',
+        // 2026-09-23 再加 `:not([data-selected])`:淡字是裝飾、選中是 state(M24 state 勝裝飾)—— 單月裡選中日落在鄰月位置時
+        // 仍是藍底白字圓,不能被淡字選擇器(特異性 (0,3,1))壓成灰字。RDP `mode="range"` 單月的鄰月中段日也掛 selected,
+        // 字色因此跟當月中段一樣深(不淡化);兩月時鄰月日子根本不渲染,這條只在單月 range 出現。
+        outside: '[&:not([data-selected])>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted',
         // Selected(single 或 range 端點):button 藍底白字圓
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',
           '[&>button]:hover:bg-primary-hover [&>button]:hover:!ring-0',
+          EMPHASIS_FOCUS_RING_CLASSNAME,
         ),
         disabled: cn(
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
@@ -200,21 +288,11 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 右側矩形 bridge 2px to middle → 跟 middle pseudo 連續
         // Cell 的 top-left + bottom-left corner triangle:pseudo 不蓋 + button 不蓋 →
         // popover white 顯露(乾淨 breathing,跟 outside-of-range cells 一致視覺)
-        range_start: cn(
-          "before:content-[''] before:absolute before:inset-y-0",
-          'before:left-0 before:-right-[2px]',
-          'before:bg-neutral-selected before:pointer-events-none',
-          'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
-        ),
-        range_end: cn(
-          "before:content-[''] before:absolute before:inset-y-0",
-          'before:-left-[2px] before:right-0',
-          'before:bg-neutral-selected before:pointer-events-none',
-          'before:rounded-r-full',  // ← 鏡像
-        ),
+        // class 本體住在檔頭 RANGE_TRACK_CLASSNAMES(DatePicker.Range 消費同一份)
+        range_start: RANGE_TRACK_CLASSNAMES.start,
+        range_end: RANGE_TRACK_CLASSNAMES.end,
         range_middle: cn(
-          "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
-          'before:bg-neutral-selected before:pointer-events-none',
+          RANGE_TRACK_CLASSNAMES.middle,
           // 2026-07-07 user 拍板:range 中段的 today bar 維持藍(切白只屬藍底選中日;白條在
           // neutral-selected 淺灰底上近乎隱形 = today 標記消失)。!important 確定性壓過 today 的
           // data-selected 切白規則(同權重靠 stylesheet 順序不可靠)。Ant 源碼實錘:cell-today
@@ -227,6 +305,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 的 hover 抑制),非原註解宣稱的「hover ring 仍顯示」;today bar 亦被 data-selected
           // selector 切 on-emphasis(見 spec「組合狀態」段)。
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
+          // 中段日同樣掛 selected(見上),會一併吃到 selected 的白線焦點 —— 但中段底是淺灰、白線看不見,
+          // 焦點要回到一般的往內 2px 藍線;同權重靠順序不可靠,用 ! 壓過。
+          '[&>button]:focus-visible:!focus-ring-inset',
         ),
         hidden: 'invisible',
         ...classNames,
@@ -237,8 +318,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // 禁在 components override 內 spread 後 hardcode aria-label — 會蓋死此覆寫通道
       // (2026-07-05 修正 07-04 的錯誤修法:中文要走 labels 正門,不是蓋 RDP 算好的值)。
       labels={{
-        labelPrevious: () => '上一個月',
-        labelNext: () => '下一個月',
+        labelPrevious: () => '上一個月', // i18n-allow: DS default; consumer override via labels prop
+        labelNext: () => '下一個月', // i18n-allow: DS default; consumer override via labels prop
         // 鏡射 RDP default 結構(labels/labelDayButton.js:today 前綴 / selected 後綴),文案中文化
         labelDayButton: (date, modifiers) => {
           let label = ZH_FULL_DATE.format(date)
@@ -256,8 +337,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         labelWeekday: (date) => ZH_WEEKDAY.format(date),
         // 以下非 default 渲染面(captionLayout dropdown / showWeekNumber 由 consumer 經
         // {...props} 開啟)— 一併補齊,避免開啟後 SR 中英夾雜
-        labelMonthDropdown: () => '選擇月份',
-        labelYearDropdown: () => '選擇年份',
+        labelMonthDropdown: () => '選擇月份', // i18n-allow: DS default; consumer override via labels prop
+        labelYearDropdown: () => '選擇年份', // i18n-allow: DS default; consumer override via labels prop
         labelWeekNumber: (weekNumber) => `第 ${weekNumber} 週`,
         labelWeekNumberHeader: () => '週數',
         ...labels,

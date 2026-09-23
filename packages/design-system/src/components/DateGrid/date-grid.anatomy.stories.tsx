@@ -139,7 +139,7 @@ export const Overview = {
                 ['selected', 'Date | Date[] | { from; to? }', '—', '受控值,型別依 mode 決定'],
                 ['onSelect', '(value) => void', '—', '值變動回呼,參數型別依 mode'],
                 ['defaultMonth', 'Date', 'new Date()', '初始可見月份'],
-                ['showOutsideDays', 'boolean', 'true', '顯示前後月的灰色日期補滿格'],
+                ['showOutsideDays', 'boolean', 'true', '單月:顯示前後月的淡字日期補滿格;numberOfMonths ≥ 2 時強制不顯示(同一天不在兩張月曆各出現一次,2026-09-23 user 拍板)'],
                 ['numberOfMonths', 'number', '1', '同時顯示幾個月(range 建議 2)'],
                 ['disabled', 'Matcher | Matcher[]', '—', '禁用日期(支援 before/after/Date[]/函式)'],
                 ['locale', 'Locale', "'en-US'", "date-fns locale,控制週首日與星期標頭語言"],
@@ -566,7 +566,7 @@ export const Accessibility = {
           <li><code>role="gridcell"</code> + <code>aria-selected</code> on each day cell（<code>&lt;td&gt;</code>，非內層 button）</li>
           <li>Today cell：<code>data-today</code>（lib 不設 <code>aria-current</code>；今日靠 data-attr + 視覺底線標示）</li>
           <li>Disabled cell：button 帶 native <code>disabled</code>（focused 時改 <code>aria-disabled="true"</code>）+ cell <code>data-disabled</code></li>
-          <li>Outside-month cell：<code>data-outside</code>（showOutsideDays 時仍 render 可互動 button，非 aria-hidden 隱藏）</li>
+          <li>Outside-month cell：<code>data-outside</code>（單月 showOutsideDays 時仍 render 可互動 button，非 aria-hidden 隱藏；兩月以上不渲染 button，格帶 <code>data-hidden</code> 留空）</li>
         </ul>
       </section>
       <section>

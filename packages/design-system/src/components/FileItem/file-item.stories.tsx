@@ -47,6 +47,8 @@ const deleteBtnXs = deleteBtn
 
 export const Rich = {
   name: '豐富樣式',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   render: () => (
     // rich(預設 form surface)各 status 展示:uploading / completed(保留 100% 完成條)/ error
     // 也可傳 onClick/onDownload 讓整 row 點開(預設 FileViewer,consumer 決定)

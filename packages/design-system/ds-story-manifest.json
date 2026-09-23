@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-18T11:00:42.354Z"
+    "generatedAt": "2026-09-23T10:22:11.769Z"
   },
   "components": {
     "accordion": {
@@ -635,7 +635,9 @@
           "design-system-components-datepicker-展示--show-time-popover-open",
           "design-system-components-datepicker-展示--need-confirm-date-only-open",
           "design-system-components-datepicker-展示--show-time-range-popover-open",
-          "design-system-components-datepicker-展示--range-middle-hover-state",
+          "design-system-components-datepicker-展示--range-preview-extend",
+          "design-system-components-datepicker-展示--range-preview-shrink",
+          "design-system-components-datepicker-展示--range-preview-start",
           "design-system-components-datepicker-展示--show-time-range",
           "design-system-components-datepicker-展示--view"
         ],
@@ -1824,5 +1826,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 992
+  "totalStories": 994
 }

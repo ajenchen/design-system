@@ -196,6 +196,8 @@ const CheckboxTree = () => {
 
 export const WithCheckbox: Story = {
   name: '多選',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   render: () => <CheckboxTree />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

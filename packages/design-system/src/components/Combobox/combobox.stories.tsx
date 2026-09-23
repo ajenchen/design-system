@@ -79,6 +79,8 @@ const EditModeProbe = () => {
 }
 export const ModesRemoveFocusContract: Story = {
   name: '移除焦點接力驗證',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <EditModeProbe />,
   play: async ({ canvasElement }) => {

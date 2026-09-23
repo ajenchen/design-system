@@ -85,6 +85,8 @@ export const ThreePartStructure: Story = {
  *  Shell 需 flex flex-col(viewport-aware scroll chain:中間 wrapper 斷鏈 = body 不捲,spec K11 invariant)。 */
 export const BodyScroll: Story = {
   name: '內文捲動',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="flex flex-col gap-3">
       <Shell className="flex h-[280px] w-[420px] flex-col">

@@ -103,11 +103,32 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **today**(未選) | today indicator | 消費 `primary` semantic role；確切結構與尺寸由 `date-grid.tsx` 擁有 | 與 selected background 保持不同狀態語言，兩者疊加時仍可辨識 |
 | **today + selected** | 數字下方短圓桿(白) | bar 色切 `on-emphasis` | 選中藍底上藍 bar 隱形,必切白;以 state 疊加 selector 覆寫 |
 | **disabled** | 灰底 + 淡字 | `bg-disabled` + `fg-disabled` + `cursor-not-allowed` | 跟 Button disabled token 一致,不自創 palette |
-| **outside(非本月)**| 淡字(只文字) | `fg-muted` —— **僅在該日仍可點時** | 比 disabled 弱:outside 的前提就是「仍可 hover / 可點」,純是「非焦點月份」的標示。**該日若同時被 disable,一律讓位給 `fg-disabled`**(M24「disabled > muted」)—— 兩者都套會讓「非本月又不可選」比「本月不可選」更深,恰好相反。實作以 `[&>button:not(:disabled):not([aria-disabled="true"])]` 表達此前提,不用 `!important` 硬壓(2026-09-07 user 抓圖修正)|
+| **outside(非本月)**| 單月:淡字(只文字);**兩月以上:不渲染**(格留空) | `fg-muted` —— **僅在該日仍可點、且未被選中時**;`numberOfMonths > 1` 時 `showOutsideDays` 強制 false(consumer 傳 true 也不放行) | 比 disabled 弱:outside 的前提就是「仍可 hover / 可點」,純是「非焦點月份」的標示。**該日若同時被 disable,一律讓位給 `fg-disabled`**(M24「disabled > muted」)—— 兩者都套會讓「非本月又不可選」比「本月不可選」更深,恰好相反。實作以 `[&:not([data-selected])>button:not(:disabled):not([aria-disabled="true"])]` 表達此前提,不用 `!important` 硬壓(2026-09-07 user 抓圖修正;2026-09-23 加 `:not([data-selected])`,選中是 state、淡字是裝飾)。**兩月並排時同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 / 預覽框就被畫兩次**(user 2026-09-23 圖一:4/26 在四月與五月面板各一顆藍圓)—— [MUI X `DateRangeCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx)(`calendars > 1` 時補位格 `opacity: 0`、不吃任何選取樣式,原註解「otherwise the same day would be rendered in two calendars」)/ [Polaris `Day.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx)(`Month.tsx` 把非當月位置當 `null` 交給 `Day`,`Day.tsx` 渲染空的 `EmptyDayCell`)/ [flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts)(`showMonths > 1` 時 `prevMonthDay hidden`)/ [react-day-picker 文件](https://daypicker.dev/docs/grid-and-months)(「By default, DayPicker hides the days falling into other months」)都不顯示,只有 [Ant `panel.ts`](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) 顯示淡字但所有 in-range / range-start / range-end 樣式鎖在 `&-in-view`;user 2026-09-23 拍板「兩月時不顯示鄰月日子」 |
 | **selected / range 端點** | 藍底白字圓 | button `primary` 底 + `on-emphasis` 字 | range_start / range_end 共用此視覺 |
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀 —— day button 的 `::before` 命中區外擴 2px 補滿縫隙(與框跨縫用的 −2px 是同一個數字,hit = paint;user 2026-09-23 抓到「水平移動到隔日框會閃一下」) |
+| **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
+
+### 鄰月日子:一條原則(2026-09-24 user 拍板)
+
+**鄰月日子只在「同一天不會在畫面上出現兩次」時顯示**:一張月曆 → 淡字顯示(月界脈絡,前後幾天可直接點);兩張以上並排 → 不渲染(同一天會在相鄰兩張各出現一次,區間 track / 端點藍圓 / 預覽框就被畫兩次)。這是一條原則,不是兩條特例:`DatePicker` 單月與 `DatePicker.Range showTime`(一張月曆)淡字、`DatePicker.Range` 日期(兩張)不渲染,差別只在月數,和 [MUI X `DateRangeCalendar`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx) 開一張或兩張月曆一樣。實作:`date-grid.tsx` 對 `numberOfMonths > 1` 強制 `showOutsideDays=false`(consumer 傳 true 也不放行)。
+
+世界級不是「兩種視圖像素一致」,而是兩題各自有答案,一致的是原則(2026-09-24 逐家讀原始碼 / 文件):
+
+| 家 | 一張月曆的預設 | 兩張並排 |
+|---|---|---|
+| [flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) | 淡字(`prevMonthDay`) | 不渲染:`isMultiMonth ? "prevMonthDay hidden" : "prevMonthDay"` |
+| [Carbon `_flatpickr.scss`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss)(底層 flatpickr) | 淡字(`.prevMonthDay { color: $text-helper }`) | 範圍模式仍一張月曆(rangePlugin,無 showMonths) |
+| [MUI X `DateCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DateCalendar.tsx) / [`DateRangeCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx) | 預設不渲染(`showDaysOutsideCurrentMonth` @default false,可開成淡字) | 強制不渲染:`calendars === 1 && showDaysOutsideCurrentMonth`,註解「otherwise the same day would be rendered in two calendars」 |
+| [Polaris `Month.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Month/Month.tsx) | 空格 | 空格 |
+| [react-day-picker 文件](https://daypicker.dev/docs/grid-and-months) | 預設不渲染(`showOutsideDays` 可開) | 同一個開關,與月數無關 |
+| [shadcn `calendar.tsx`](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/calendar.tsx) | 淡字(`showOutsideDays = true`) | 淡字,選中時仍淡字(`aria-selected:text-muted-foreground`) |
+| [Ant `panel.ts`](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) | 淡字 | 兩面板都淡字,in-range / range-start / range-end 鎖 `&-in-view` |
+| [Atlassian Calendar](https://atlassian.design/components/calendar/examples) | 淡字(範例可見 29、30 與 1–9) | 無兩月 |
+
+一張月曆:淡字 5 家、預設不渲染 3 家;兩張並排:不渲染 4 家、淡字 2 家;依月數切換只有 flatpickr 明寫,MUI X 的開關語意相同(只在單一月曆時生效)。本 DS 現況正是兩題各自的多數組合。
 
 ## 組合狀態(state stacking order)
 
@@ -115,8 +136,29 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 - range-start / range-end → selected 規則(cell 半圓 track + button 圓)
 - range-middle → track 規則(cell 灰底矩形 + button 透明)
 - today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬「藍底白字圓」的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
-- hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);range-middle 因同樣掛 selected modifier,button hover ring **一併被 selected 的 ring-0 壓制**(與 selected 一致的 hover 抑制;button 透明僅顯露 track — 2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)
+- hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);RDP `mode="range"` 的 range-middle 因同樣掛 selected modifier,button hover ring 一併被壓制(2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)。**`DatePicker.Range` 的中段不掛 selected,停留時由「區間預覽框」接手:停留日不畫單格圈,改畫框的半圓端點**(2026-09-23 user 拍板;此前這一句被當成「中段 hover 不該有圈」的規則,其實它只是描述套件行為,從未有人拍板 —— 來源總帳見 `../DatePicker/date-picker.spec.md`「區間預覽」)
 - **選中日 hover 底色升階**:ring 壓制之外,選中日 hover 時 `bg-primary → bg-primary-hover`(2026-07-06 補明文——「選中之上 hover = 同色相升 hover 階」家族,Checkbox / Switch checked hover 同款;code 已有此行為,本句消 spec-code 落差)
+- focus-visible + range-middle(RDP `mode="range"`)→ 中段同掛 selected 會吃到填色格的白線,但中段底是淺灰、白線看不見,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般往內 2px 藍線(同權重靠順序不可靠);`DatePicker.Range` 的中段不掛 selected,直接走 day button 的內描邊
+- outside + selected(單月,選中日落在鄰月位置)→ 藍底白字圓照畫、不淡化(state 勝裝飾,M24);淡字選擇器以 `:not([data-selected])` 讓位。RDP `mode="range"` 單月的鄰月中段日同掛 selected,字色跟當月中段一樣深(不淡化;只在單月 range 出現)
+- outside + range / 預覽框(兩月)→ **不存在**:兩月以上鄰月日子不渲染(見 outside 列)。2026-09-23 前這一組從未寫進本清單(M5 缺口),code 憑 range 中段的 `!text-foreground` 決定結果:鄰月日子一進區間就全深、起點藍圓在兩個面板各畫一次;2026-09-07 只修了 outside × disabled 這一對,沒掃同族的 outside × range(M10)
+
+## 區間預覽框(2026-09-23 user 拍板)
+
+**是什麼**:`DatePicker.Range` 停留(滑鼠 / 看得見的鍵盤焦點)在某一天時,用**單日 hover 圈同一條藍色細框**(1.5px `primary-hover`)把「現在點下去,區間會變成從哪到哪」框起來。已選區間的灰色 track 照舊顯示,框疊在上面:縮小時框在 track 裡面、放大時框超出 track。**哪幾天要框由 DatePicker.Range 決定**(它才知道正在選哪一端,規則表在 `../DatePicker/date-picker.spec.md`「區間預覽」);本節只擁有**畫法**。
+
+| 格 | 畫法 |
+|---|---|
+| 起點 | 上下邊 + 左側邊 + 左半圓(`rounded-l-full`,圓半徑 = button 半徑,與藍圓同弧);右側向鄰格外擴 2px 接縫 |
+| 中段 | 只有上下邊;左右各外擴 2px 接縫,不畫側邊 |
+| 終點 | 鏡射起點 |
+| 單格(起訖同一天) | 完整一圈(左右側邊 + 全圓角),位置與大小 = 單日 hover 圈 |
+| 列首 / 列尾(換列處) | 不畫側邊,框是開口的;外擴歸零不溢出面板留白 —— 與 track 在換列處的處理同款 |
+| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所 hover 的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
+| 已選端點落在框裡 | 藍圓在 button 層(z 在框之上),框的線從圓的上下切點進出,視覺連續;不另外處理 |
+
+**層次**:track = td `::before`、預覽框 = td `::after`、today bar = button 的 `::after`,三者互不衝突;button 在最上層。
+
+**世界級對照**(讀原始碼,2026-09-23):五家有區間選擇的元件庫都在停留時預覽區間,差別只在畫法 —— Ant Design v4 用虛線上下邊 + 兩端側邊([panel.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/date-picker/style/panel.less) `-range-hover*`,`border-top/bottom: dashed @picker-date-hover-range-border-color`)、MUI X 用 1.2px 虛線([DateRangePickerDay.tsx](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangePickerDay/DateRangePickerDay.tsx) `previewStyles`)、Ant v5 現行與 Polaris 用與已選區間同色的淺色填([rc-picker PanelBody.tsx](https://github.com/react-component/picker/blob/master/src/PickerPanel/PanelBody.tsx) 把 `hoverRangeValue` 算成 `-in-range`;[Polaris Day.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx) `(inRange || inHoveringRange) && styles['Day-inRange']`)、Carbon(flatpickr)用填色([index.ts](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` → `startRange / inRange / endRange`)。**本 DS 選實線**:沿用單日 hover 圈的顏色與粗細,不新增第二種「暫定」表達(M23 DS 既有語言優先;user 2026-09-23 Q2 拍板)。我們包的 react-day-picker 本身沒有預覽([range-mode 文件](https://daypicker.dev/selections/range-mode)只有 `range_start / range_middle / range_end`),所以由 DatePicker.Range 自算。
 
 ## Spacing canonical(2026-05-03 v8)
 
@@ -208,7 +250,7 @@ react-day-picker v9 自動處理:
 - **Focus**：`autoFocus` prop 自動 focus 到選中日(或今天)
 - **Locale**：`locale` prop 控制週首日、星期標頭語言
 
-**DS 自訂部分**:day button 的 focus ring 由本元件 classNames 覆寫為 DS canonical(`focus-visible:ring-2 ring-ring`,非 RDP 預設樣式);SR 文案經 RDP `labels` API 提供中文 default(nav「上一個月 / 下一個月」、day / weekday / grid 等全繁中,對齊 2026-07-04 全庫 SR label 中文 canonical),consumer 傳 `labels` 可逐鍵覆寫(i18n),不在 components override 內 hardcode `aria-label`(會蓋死覆寫通道)。其餘 consumer 無需額外處理,保留 react-day-picker API 即可。
+**DS 自訂部分**:day button 的焦點框由本元件 classNames 覆寫為 DS 焦點幾何(`focus-visible:focus-ring-inset`,填色格 `focus-ring-inset-emphasis`,見上方 cell state 表「focus-visible」列;非 RDP 預設樣式。2026-09-23 前本句寫的 `focus-visible:ring-2 ring-ring` 是 2026-09-07 焦點幾何收斂前的舊寫法);SR 文案經 RDP `labels` API 提供中文 default(nav「上一個月 / 下一個月」、day / weekday / grid 等全繁中,對齊 2026-07-04 全庫 SR label 中文 canonical),consumer 傳 `labels` 可逐鍵覆寫(i18n),不在 components override 內 hardcode `aria-label`(會蓋死覆寫通道)。其餘 consumer 無需額外處理,保留 react-day-picker API 即可。
 
 ---
 
