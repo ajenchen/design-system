@@ -1094,3 +1094,7 @@ jobs:
 
       - name: Baseline diff report selftest in the same renderer image
         run: node scripts/visual-baseline-diff-report.mjs --selftest
+
+      # run #297:參考樹重拍前用它自己的 index.json 過濾今天的場景清單(HEAD 新增的 story 在參考樹是 404);對照組在這裡跑
+      - name: Reference-tree scenario filter selftest
+        run: node scripts/visual-manifest-intersect.mjs --selftest

@@ -94,6 +94,8 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal(containerJob.container?.image, visualImage, 'PR 階段的容器 job 必須跟 Visual Regression 用同一個映像,否則測的是另一個環境')
   assert.match(source, /node scripts\/closed-git-foreign-owner-invariant\.mjs --require --workspace="\$GITHUB_WORKSPACE"/)
   assert.match(source, /node scripts\/visual-baseline-diff-report\.mjs --selftest/)
+  // run #297:參考樹場景過濾腳本的對照組也在同一個容器 job 跑(它在 Visual Regression 裡是重拍前的必經一步)
+  assert.match(source, /node scripts\/visual-manifest-intersect\.mjs --selftest/, '過濾腳本的對照組必須在 PR 階段的容器 job 跑')
   assert.doesNotMatch(source, /^\s*lfs:\s*true\b/m, '容器裡沒有 git-lfs(#288)')
   // 同日第二次:映像沒有 jq,治理的依賴安裝走 closed 工具組缺一就停(PR #152 第一次跑就死在這裡)。
   // 補直譯器那一步兩支 workflow 必須逐字相同、而且都排在安裝依賴之前 —— 否則 PR 閘測的又是另一個環境。
@@ -221,6 +223,12 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.ok(refInstall > 0 && refInstall < refRecapture, '參考樹必須在重拍前自己裝 Chromium(各自的 node_modules)')
   // run #293:儀器用今天的、內容用參考樹的 —— 重拍前把今天的截圖腳本 / 場景清單 / scripts/lib 蓋進參考樹,而且在建置之後
   const refBuild = referenceRecapture.indexOf('npm run build-storybook')
+  // run #297:參考樹只拍它自己有的場景 —— 清單蓋進去之後、重拍之前,用參考樹的 index.json 過濾(HEAD 新增的 story 在
+  // 參考樹是 404 → render error → 整條重拍紅);新增場景由歸因報告標 new-scenario。
+  const intersect = 'node "$GITHUB_WORKSPACE/scripts/visual-manifest-intersect.mjs" --index storybook-static/index.json --manifest scripts/visual-assertions.json --out scripts/visual-assertions.json'
+  const intersectAt = referenceRecapture.indexOf(intersect)
+  const manifestOverlayAt = referenceRecapture.indexOf('cp "$GITHUB_WORKSPACE/scripts/visual-assertions.json" scripts/visual-assertions.json')
+  assert.ok(intersectAt > manifestOverlayAt && manifestOverlayAt > 0 && intersectAt < refRecapture, '參考樹重拍前必須用它自己的 index.json 過濾今天的場景清單(在蓋入清單之後、重拍之前)')
   for (const overlay of ['cp "$GITHUB_WORKSPACE/scripts/visual-audit.mjs" scripts/visual-audit.mjs', 'cp "$GITHUB_WORKSPACE/scripts/visual-assertions.json" scripts/visual-assertions.json', 'cp -R "$GITHUB_WORKSPACE/scripts/lib/." scripts/lib/']) {
     const at = referenceRecapture.indexOf(overlay)
     assert.ok(at > refBuild && at < refRecapture, `參考樹重拍前必須蓋上今天的儀器:${overlay}`)
