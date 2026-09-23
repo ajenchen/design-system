@@ -197,7 +197,11 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.match(source, /UPDATE_BASELINE: \$\{\{ \(inputs\.update_baseline == true \|\| github\.event\.client_payload\.update_baseline == true/, 'UPDATE_BASELINE 必須同時接按鈕與 repository_dispatch')
   assert.match(source, /REFERENCE_REF: \$\{\{ inputs\.reference_ref \|\| github\.event\.client_payload\.reference_ref \|\| '[0-9a-f]{40}' \}\}/, 'REFERENCE_REF 的 fallback 必須是完整 40 碼 SHA')
   assert.equal((source.match(/2ec2f3fedd94aa30e9b091eac4d713374484bd05/g) ?? []).length, 1, '參考 commit 的預設值只能有一個住所(env 的 fallback)')
-  assert.doesNotMatch(source.slice(source.indexOf('\njobs:\n')).replace(/inputs\.(update_baseline|reference_ref)/g, ''), /\$\{\{[^}]*inputs\./, 'jobs 區的步驟不得直接讀 inputs,一律經 env')
+  assert.doesNotMatch(source.slice(source.indexOf('\njobs:\n')).replace(/inputs\.(update_baseline|reference_ref|target_ref)/g, ''), /\$\{\{[^}]*inputs\./, 'jobs 區的步驟不得直接讀 inputs,一律經 env')
+  // 2026-09-23:repository_dispatch 永遠用預設分支的 workflow 檔,checkout 不指定 ref 就只拍 main ——「修了元件、baseline 要
+  // 跟著換」的 PR 分支永遠拍不到。要拍哪棵樹是輸入(target_ref),不是「觸發當下 main 是哪一版」這個代理(M37)。
+  assert.match(source, /target_ref:\s*\n\s*description:/, '必須提供 target_ref 輸入(要拍的分支或 commit)')
+  assert.match(source, /TARGET_REF: \$\{\{ inputs\.target_ref \|\| github\.event\.client_payload\.target_ref \|\| github\.sha \}\}/, 'TARGET_REF 必須同時接按鈕與 repository_dispatch,fallback = 觸發當下的 commit')
   assert.match(source, /if: \$\{\{ env\.UPDATE_BASELINE == 'true' \}\}[\s\S]{0,200}--update-baseline/, '重拍步驟必須由 UPDATE_BASELINE 閘住')
   assert.match(source, /if: \$\{\{ env\.UPDATE_BASELINE != 'true' \}\}[\s\S]{0,200}visual-audit -- --scope=all/, '一般比對步驟必須在不重拍時跑')
   assert.match(source, /name: visual-baselines-recaptured/, '重拍結果必須以 artifact 上傳')
@@ -242,6 +246,8 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   // 2026-09-23 run #294:歸因報告跑 `git log <reference>..HEAD`,HEAD 的簽出必須帶完整歷史(第一個 checkout 的 fetch-depth: 0)
   const firstCheckout = source.slice(source.indexOf('- uses: actions/checkout@'), source.indexOf('- uses: actions/setup-node@'))
   assert.match(firstCheckout, /fetch-depth: 0/, 'HEAD 的簽出必須 fetch-depth: 0,否則 reference..HEAD 的歸因區間拿不到歷史')
+  assert.match(firstCheckout, /ref: \$\{\{ env\.TARGET_REF \}\}/, 'HEAD 的簽出必須拍 TARGET_REF 那棵樹(否則 PR 分支永遠拍不到)')
+  assert.equal((source.match(/\bTARGET_REF\b/g) ?? []).length, 3, 'TARGET_REF 只有三處:env 宣告、註解裡的說明、第一個 checkout 的 ref(不得散到別的步驟)')
 })
 
 test('Pages deployment binds and reads back the exact Storybook source', () => {

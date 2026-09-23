@@ -27,9 +27,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:8e5a8c3798be5e7d14f16651d36ad67a7b5a4d23542dc071e34cce6e3e0d9b1e` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:b7972d4fce4e697e7d47be8b2096ebaaaddbd0db1bdf3c98cdd206f48899f4f3` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:d366b63c6b2933fb79c4677e66b0d311c600731000c1c0d817ff0626b4e1bb38` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:33ef98de57936dbd763007f1e87389a589a131b388527190acbbc231dd2d9833` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:0e94ca144f8e8acb6f91443ee0ccca98f403d87297091456cb999237411e10d5` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:3a546bc5980d1f3fb91facf5b69f596e8ba06bf8dd32ba51548b2f4dca79de75` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:98fde908ac8e70d1b9807cdc03592f37b6f3062bc152e24057db0218f07cbfc5` |
@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:baef0deb6a6db656889859f66f34459eb05de8b9c594754ee7c89e54882cc911` |
+| github-repository-governance | `.github/` | `sha256:9bbb19577ff30cde6337cf33c3844aad0abadc3a3aa1cf2356a26cf5d690d033` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:203f9c6346446d727be5925af12b425ee35e33c6d55ecf934e21aa7b0555d3ca` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -203,7 +203,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:90ea8b648deef6df59ba46f48069a551112cb41982cf9a771edeb2ad355db6ce` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:2a68dccfe4cd4294688608263b7ccb6834e1b0675fe38ff751c335440bf40399` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:8d13a4b979691831401d4f36467aa836a2a430b89fda20c7930a18d47d38e250` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:2664832f30a742bc43fe60522e9ce4bbdd501a22792a415e1ec1add13586a20b` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:906747cec87d2ec1b9b63c125ca2fc03bb68e3c6a7abd14147698671528bfb0d` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:78da16ea5ac91be3d8ba1fd1df198aa251dfd4de5b2abbe2d9036b041b2341c4` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
