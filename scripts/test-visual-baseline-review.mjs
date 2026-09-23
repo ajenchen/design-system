@@ -401,5 +401,7 @@ test('visual-audit exit policy:一般模式五計數任一即紅,重拍模式只
   assert.equal(visualAuditExitCode({ ...zero, updateBaseline: 'true', diffBudgetBreached: 1 }), 1, '字串 "true" 不是重拍模式 → 一般模式必紅')
   assert.throws(() => visualAuditExitCode({ ...zero, renderErrors: -1 }), /must be a non-negative integer/)
   assert.throws(() => visualAuditExitCode({ ...zero, diffErrors: 1.5 }), /must be a non-negative integer/)
-  assert.throws(() => visualAuditExitCode({ ...zero, contrastViolations: undefined }), /must be a non-negative integer/)
+  assert.equal(visualAuditExitCode({ ...zero, contrastViolations: undefined }), 0, '省略的計數走預設 0(解構預設值),不是錯誤')
+  assert.throws(() => visualAuditExitCode({ ...zero, contrastViolations: '3' }), /must be a non-negative integer/, '字串數字不算整數')
+  assert.throws(() => visualAuditExitCode({ ...zero, geometryViolations: null }), /must be a non-negative integer/, 'null 不走預設值,必須拒絕')
 })
