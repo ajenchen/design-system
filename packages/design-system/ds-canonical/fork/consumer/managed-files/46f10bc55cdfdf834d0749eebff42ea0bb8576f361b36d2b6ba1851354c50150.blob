@@ -26,6 +26,34 @@ export const GOVERNANCE_DEPENDENCY_NPM_STEPS = Object.freeze([
   Object.freeze(['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),
 ])
 
+// 2026-09-23:歷史參考樹(視覺回歸重拍把 8/5 的 commit 放到同一個容器重拍,run #291)永遠無法滿足「今天」的弱點
+// 資料庫 —— 那棵樹的相依是八月鎖定的,之後才登記的 advisory(baseline-browser-mapping 2.10.43)它不可能修。
+// 完整性(lock 精確安裝 / 簽章 / attestation)照舊 fail closed;只有弱點稽核在 `report-render-only-reference` 政策
+// 下改為「跑、印、記進 receipt、不擋」。這個政策只准用在無憑證、用完即丟的渲染容器(workflow 明文指定),預設仍是 enforce。
+export const GOVERNANCE_VULNERABILITY_POLICIES = Object.freeze(['enforce', 'report-render-only-reference'])
+
+export function runVulnerabilityAuditUnderPolicy(policy, run, {
+  errorPrefix = 'GOV-DEPENDENCY-BOOTSTRAP-001',
+  report = (line) => console.error(line),
+} = {}) {
+  invariant(GOVERNANCE_VULNERABILITY_POLICIES.includes(policy), `unsupported vulnerability policy:${String(policy)}`, errorPrefix)
+  invariant(typeof run === 'function', 'vulnerability audit runner must be callable', errorPrefix)
+  if (policy === 'enforce') return run()
+  try {
+    return run()
+  } catch (error) {
+    const reason = String(error?.message || error).slice(0, 600)
+    report(`⚠️  GOV-RENDER-ONLY-REFERENCE:弱點稽核只報告、不擋(歷史參考樹,無憑證、用完即丟的渲染容器):${reason}`)
+    return Object.freeze({
+      schemaVersion: 1,
+      kind: 'render-only-reference-vulnerability-audit-receipt',
+      status: 'reported-not-enforced',
+      policy,
+      reason,
+    })
+  }
+}
+
 const CREDENTIAL_NAME = /(?:^|_)(?:TOKEN|SECRET|PASSWORD|PRIVATE_KEY|CLIENT_SECRET|API_KEY|ACCESS_KEY(?:_ID)?|AUTH_TOKEN)$/i
 const HOSTILE_NAME = /^(?:ALL_PROXY|BASH_ENV|CURL_HOME|DYLD_|ENV$|GIT_|GH_|HTTPS?_PROXY|LD_|NETRC$|NODE_AUTH_TOKEN$|NODE_EXTRA_CA_CERTS$|NODE_OPTIONS$|NODE_PATH$|NODE_TLS_REJECT_UNAUTHORIZED$|NO_PROXY$|NPM_CONFIG_|npm_config_|NPM_TOKEN$|OPENAI_API_KEY$|ANTHROPIC_API_KEY$|PERL5OPT$|PLAYWRIGHT_|PYTHONHOME$|PYTHONPATH$|RUBYOPT$|SSH_|SSL_CERT_DIR$|SSL_CERT_FILE$|all_proxy$|https?_proxy$|no_proxy$)/
 
@@ -602,7 +630,9 @@ export async function runVerifiedGovernanceDependencyBootstrap({
   validateRoleRepository = () => {},
   afterStage = () => {},
   errorPrefix = 'GOV-DEPENDENCY-BOOTSTRAP-001',
+  vulnerabilityPolicy = 'enforce',
 } = {}) {
+  invariant(GOVERNANCE_VULNERABILITY_POLICIES.includes(vulnerabilityPolicy), `unsupported vulnerability policy:${String(vulnerabilityPolicy)}`, errorPrefix)
   const root = realpathSync(resolve(rootPath))
   assertNoRootNpmShrinkwrap(root, { errorPrefix })
   const bootstrapRuntime = assertGovernanceBootstrapRuntime({
@@ -633,14 +663,14 @@ export async function runVerifiedGovernanceDependencyBootstrap({
     for (let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS.length; index += 1) {
       const args = GOVERNANCE_DEPENDENCY_NPM_STEPS[index]
       if (index === 2) {
-        auditReceipt = runVerifiedHighVulnerabilityAudit(process.execPath, [npmRuntime.cli, ...args], {
+        auditReceipt = runVulnerabilityAuditUnderPolicy(vulnerabilityPolicy, () => runVerifiedHighVulnerabilityAudit(process.execPath, [npmRuntime.cli, ...args], {
           root,
           environment: isolated.env,
           runner,
           npmRuntime,
           installedOverlayReceipt,
           errorPrefix,
-        })
+        }), { errorPrefix })
       } else {
         runClosedBootstrapStep(process.execPath, [npmRuntime.cli, ...args], { root, environment: isolated.env, runner, errorPrefix })
         if (index === 0) installedOverlayReceipt = npmRuntime.applyInstalledSecurityOverlay(root)

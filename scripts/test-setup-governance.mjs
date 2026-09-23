@@ -45,7 +45,9 @@ import {
   metavulnerabilityRangeCovers,
   nextPatchVersion,
   runClosedBootstrapStep,
+  runVulnerabilityAuditUnderPolicy,
 } from './lib/governance-dependency-bootstrap.mjs'
+import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
 import {
   discoverPackageManifestPaths,
   discoverReceiverDependencyPaths,
@@ -1526,4 +1528,53 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
     assert.match(generatedRole, /npm run setup:all/, `generated ${path}`)
     assert.doesNotMatch(generatedRole, /npm ci --legacy-peer-deps|npm audit signatures/, `generated ${path}: divergent fresh-setup command`)
   }
+})
+
+// 2026-09-23 run #291:歷史參考樹(8/5)撞到之後才登記的弱點。弱點政策只有兩種:enforce(預設,照舊 fail closed)
+// 與 report-render-only-reference(只報告不擋,受理由記進 receipt)。四面:enforce 必把錯往上丟 / render-only 把錯
+// 變成 receipt 並印一行 / render-only 下稽核本來就過時回真 receipt / 不認得的政策名一律拒絕。
+test('vulnerability policy:enforce 照舊丟錯,render-only 只報告並留 receipt,不認得的政策拒絕', () => {
+  const lines = []
+  const report = (line) => lines.push(line)
+  const failing = () => { throw new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:baseline-browser-mapping') }
+  const passing = () => Object.freeze({ kind: 'verified-high-vulnerability-audit-receipt', status: 'passed' })
+  assert.throws(() => runVulnerabilityAuditUnderPolicy('enforce', failing, { report }), /unremediated high\/moderate finding:baseline-browser-mapping/)
+  assert.equal(lines.length, 0, 'enforce 不該印 render-only 的警語')
+  const receipt = runVulnerabilityAuditUnderPolicy('report-render-only-reference', failing, { report })
+  assert.deepEqual({ ...receipt }, {
+    schemaVersion: 1,
+    kind: 'render-only-reference-vulnerability-audit-receipt',
+    status: 'reported-not-enforced',
+    policy: 'report-render-only-reference',
+    reason: 'GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:baseline-browser-mapping',
+  })
+  assert.equal(lines.length, 1)
+  assert.match(lines[0], /GOV-RENDER-ONLY-REFERENCE.*baseline-browser-mapping/)
+  assert.equal(runVulnerabilityAuditUnderPolicy('report-render-only-reference', passing, { report }).status, 'passed', '稽核本來就過時,render-only 回真 receipt')
+  assert.throws(() => runVulnerabilityAuditUnderPolicy('ignore', passing, { report }), /unsupported vulnerability policy:ignore/)
+  assert.throws(() => runVulnerabilityAuditUnderPolicy(undefined, passing, { report }), /unsupported vulnerability policy:undefined/)
+  assert.throws(() => runVulnerabilityAuditUnderPolicy('enforce', 'not-a-function', { report }), /must be callable/)
+})
+
+test('authority setup CLI:--root 與 --vulnerability-policy 只接在 --dependencies-only 後面,各一次,其他形狀拒絕', () => {
+  assert.deepEqual({ ...parseAuthoritySetupArguments([]) }, { mode: 'governance-setup' })
+  assert.deepEqual({ ...parseAuthoritySetupArguments(['--verify-runtime']) }, { mode: 'verify-runtime' })
+  assert.deepEqual({ ...parseAuthoritySetupArguments(['--dependencies-only']) }, { mode: 'dependencies-only' })
+  assert.deepEqual(
+    { ...parseAuthoritySetupArguments(['--dependencies-only', '--root=.', '--vulnerability-policy=report-render-only-reference']) },
+    { mode: 'dependencies-only', root: '.', vulnerabilityPolicy: 'report-render-only-reference' },
+  )
+  assert.deepEqual(
+    { ...parseAuthoritySetupArguments(['--dependencies-only', '--vulnerability-policy=enforce', '--root=reference']) },
+    { mode: 'dependencies-only', root: 'reference', vulnerabilityPolicy: 'enforce' },
+  )
+  for (const bad of [
+    ['--root=.'],
+    ['--verify-runtime', '--root=.'],
+    ['--dependencies-only', '--root=.', '--root=.'],
+    ['--dependencies-only', '--vulnerability-policy=ignore'],
+    ['--dependencies-only', '--vulnerability-policy='],
+    ['--dependencies-only', '--frozen'],
+    ['--governance'],
+  ]) assert.throws(() => parseAuthoritySetupArguments(bad), /usage:|unsupported vulnerability policy/, JSON.stringify(bad))
 })

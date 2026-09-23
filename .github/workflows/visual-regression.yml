@@ -120,7 +120,11 @@ jobs:
         if: ${{ env.UPDATE_BASELINE == 'true' }}
         working-directory: reference
         run: |
-          npm run --silent setup:dependencies
+          # 2026-09-23 run #291:參考樹用它自己八月的治理程式裝依賴,撞到之後才登記的弱點(baseline-browser-mapping
+          # 2.10.43)照設計 fail closed —— 歷史樹永遠無法滿足今天的弱點資料庫。改用 HEAD 的治理程式對參考樹安裝
+          #(--root=.):完整性(lock 精確安裝 / 簽章 / attestation)照舊擋,弱點稽核在 report-render-only-reference
+          # 政策下只報告不擋 —— 這棵樹只用來渲染截圖,無憑證、容器用完即丟。
+          node "$GITHUB_WORKSPACE/scripts/setup-authority-governance.mjs" --dependencies-only --root=. --vulnerability-policy=report-render-only-reference
           npm run build:lib 2>&1 | tail -3
           npm run build-storybook 2>&1 | tail -3
           node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -5
