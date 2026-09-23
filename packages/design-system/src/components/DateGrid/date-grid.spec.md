@@ -111,6 +111,25 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀 —— day button 的 `::before` 命中區外擴 2px 補滿縫隙(與框跨縫用的 −2px 是同一個數字,hit = paint;user 2026-09-23 抓到「水平移動到隔日框會閃一下」) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
+### 鄰月日子:一條原則(2026-09-24 user 拍板)
+
+**鄰月日子只在「同一天不會在畫面上出現兩次」時顯示**:一張月曆 → 淡字顯示(月界脈絡,前後幾天可直接點);兩張以上並排 → 不渲染(同一天會在相鄰兩張各出現一次,區間 track / 端點藍圓 / 預覽框就被畫兩次)。這是一條原則,不是兩條特例:`DatePicker` 單月與 `DatePicker.Range showTime`(一張月曆)淡字、`DatePicker.Range` 日期(兩張)不渲染,差別只在月數,和 [MUI X `DateRangeCalendar`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx) 開一張或兩張月曆一樣。實作:`date-grid.tsx` 對 `numberOfMonths > 1` 強制 `showOutsideDays=false`(consumer 傳 true 也不放行)。
+
+世界級不是「兩種視圖像素一致」,而是兩題各自有答案,一致的是原則(2026-09-24 逐家讀原始碼 / 文件):
+
+| 家 | 一張月曆的預設 | 兩張並排 |
+|---|---|---|
+| [flatpickr `index.ts`](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) | 淡字(`prevMonthDay`) | 不渲染:`isMultiMonth ? "prevMonthDay hidden" : "prevMonthDay"` |
+| [Carbon `_flatpickr.scss`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss)(底層 flatpickr) | 淡字(`.prevMonthDay { color: $text-helper }`) | 範圍模式仍一張月曆(rangePlugin,無 showMonths) |
+| [MUI X `DateCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DateCalendar.tsx) / [`DateRangeCalendar.tsx`](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx) | 預設不渲染(`showDaysOutsideCurrentMonth` @default false,可開成淡字) | 強制不渲染:`calendars === 1 && showDaysOutsideCurrentMonth`,註解「otherwise the same day would be rendered in two calendars」 |
+| [Polaris `Month.tsx`](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Month/Month.tsx) | 空格 | 空格 |
+| [react-day-picker 文件](https://daypicker.dev/docs/grid-and-months) | 預設不渲染(`showOutsideDays` 可開) | 同一個開關,與月數無關 |
+| [shadcn `calendar.tsx`](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/calendar.tsx) | 淡字(`showOutsideDays = true`) | 淡字,選中時仍淡字(`aria-selected:text-muted-foreground`) |
+| [Ant `panel.ts`](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) | 淡字 | 兩面板都淡字,in-range / range-start / range-end 鎖 `&-in-view` |
+| [Atlassian Calendar](https://atlassian.design/components/calendar/examples) | 淡字(範例可見 29、30 與 1–9) | 無兩月 |
+
+一張月曆:淡字 5 家、預設不渲染 3 家;兩張並排:不渲染 4 家、淡字 2 家;依月數切換只有 flatpickr 明寫,MUI X 的開關語意相同(只在單一月曆時生效)。本 DS 現況正是兩題各自的多數組合。
+
 ## 組合狀態(state stacking order)
 
 - today + selected → selected 勝出的**底色**(藍底白字圓);bar 跟著切 on-emphasis(白)保持可見

@@ -148,6 +148,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
       // 原註解「otherwise the same day would be rendered in two calendars」)/ Polaris(空格)/ flatpickr(hidden)與
       // react-day-picker 自家預設都不顯示;consumer 傳 showOutsideDays 也不放行(MUI 同樣忽略)。單月照舊(預設顯示、淡字)。
+      // 一條原則(2026-09-24 user 拍板):鄰月日子只在「同一天不會被畫兩次」時顯示;八家對照 → date-grid.spec.md「鄰月日子:一條原則」。
       showOutsideDays={(numberOfMonths ?? 1) > 1 ? false : showOutsideDays}
       numberOfMonths={numberOfMonths}
       // navLayout="around" = prev 渲染在首月(displayIndex===0)caption 左、next 渲染在末月(displayIndex===numberOfMonths-1)caption 右;單月時兩鍵同 caption 兩側

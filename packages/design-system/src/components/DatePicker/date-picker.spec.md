@@ -113,7 +113,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 **State stacking(組合狀態處理)**:
 - today + selected → **selected 勝出**(藍底白字圓)
 - today + range-middle → track 灰底 + underline 仍可見
-- outside month → 弱化字色(不套 disabled 灰底圓,outside 只是「非當月」不是「禁選」)
+- outside month(鄰月日子)→ **一條原則:只在同一天不會被畫兩次時顯示** —— 一張月曆淡字(不套 disabled 灰底圓,outside 只是「非當月」不是「禁選」)、兩張以上並排不渲染;原則、八家對照與實作 SSOT 見 `../DateGrid/date-grid.spec.md`「鄰月日子:一條原則」
 
 其他區塊(月份 caption / Nav 按鈕 / 星期標頭)視覺層級:月份 caption 與 SelectMenu 標題同等、Nav 按鈕消費 `Button variant="text" size="xs" iconOnly`(色彩走 Button 預設 text-foreground)、星期標頭與 caption 同視覺權重(不弱化,2026-05-03 撤銷 fg-secondary)。
 
@@ -230,7 +230,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 **來源總帳**(user 2026-09-23 原話,逐字):「我反而認為這種日期區間選擇器hover 到日期應該要讓使用者可以看出到底選下去之後實際的區間會變成怎樣,所以我反而認為是可以用現在藍色邊框的視覺語言去預框出選中後的區間」;Q1–Q4、Q6、Q7 「照你建議」(做 / 實線藍框 / 兩端都預覽 / track 留著 / 鍵盤同權 / showTime 同一套);Q5:「若有藍框區間的話,所 hover 到的日期不會是完整的一個圓圈,應該要與藍框區間在視覺上一氣呵成,所以所hover的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」。**先前三句被當成「規則」的文字**(本檔舊句「無 hover 預覽」、`date-grid.spec.md` 舊句「中段 hover ring 一併壓制」、story 舊說明「不出現第二層 hover ring」)都是 AI 在 2026-06-05 / 07-05 / 08-02 稽核時把程式行為抄成文件,沒有任何 user 原話;2026-09-23 差點據此反著修,user 提問後撤回。
 同日看過預覽站後(逐字):「為何往前縮短和往後延長的範例看起來是一樣的? 以及為何範例要直接呈現鍵盤焦點?」(示範層兩題,修在 story 的 play:hover 由示範自己建立、開好浮層後放掉程式搬的焦點);「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 [Carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571) 的選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }` 提出)。
-同日晚間看預覽站(逐字):「圖一為何五月的區塊非五月沒有變成該有非當月的樣式?以前是這樣?我怎麼印象中我們有討論甚至修正過類似的東西?」(查證:從未定義過 outside × range,2026-09-07 只修 outside × disabled)+ 結構化選擇「兩月時不顯示鄰月日子」(user 拍板;兩個候選與各家原始碼出處見 `../DateGrid/date-grid.spec.md`「outside」列);「為何選區間,從某日「水平」移動到其隔日,藍色的區間框線都會閃動一下?」(bug 回報,根因 4px 縫隙,解法由 AI 定);「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」(示範層規則,owner `ds-canonical/rules/story-rules.md`「示範 = 滑鼠使用者」)。
+同日晚間看預覽站(逐字):「圖一為何五月的區塊非五月沒有變成該有非當月的樣式?以前是這樣?我怎麼印象中我們有討論甚至修正過類似的東西?」(查證:從未定義過 outside × range,2026-09-07 只修 outside × disabled)+ 結構化選擇「兩月時不顯示鄰月日子」(user 拍板;兩個候選與各家原始碼出處見 `../DateGrid/date-grid.spec.md`「outside」列)。2026-09-24 user 追問(逐字):「我的意思是兩月不渲染的世界級設計，其一個月預設會怎樣？到底要渲染還是不渲染？是否要一致？世界級的設計是怎樣？」→ 逐家讀原始碼列八家對照後,結構化選擇「維持現況,改寫成一條原則」(user 拍板;原則與對照表見 `../DateGrid/date-grid.spec.md`「鄰月日子:一條原則」);「為何選區間,從某日「水平」移動到其隔日,藍色的區間框線都會閃動一下?」(bug 回報,根因 4px 縫隙,解法由 AI 定);「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」(示範層規則,owner `ds-canonical/rules/story-rules.md`「示範 = 滑鼠使用者」)。
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 

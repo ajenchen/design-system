@@ -863,7 +863,7 @@ export const CalendarTokens = {
                     <Td>outside month</Td>
                     <Td>弱化字色</Td>
                     <Td mono>text-fg-muted</Td>
-                    <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)。單月才顯示且只在未選中時淡化(選中日落在鄰月位置仍是藍底白字);date-only Range 兩月時鄰月日子不渲染(2026-09-23 user 拍板,DateGrid numberOfMonths &gt; 1 強制)</Td>
+                    <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)。一條原則:只在同一天不會被畫兩次時顯示 —— 一張月曆淡字(選中日落在鄰月位置仍是藍底白字)、兩張以上並排不渲染(DateGrid numberOfMonths &gt; 1 強制;2026-09-23 / 09-24 user 拍板,八家對照見 date-grid.spec.md「鄰月日子:一條原則」)</Td>
                   </tr>
                 </tbody>
               </table>
