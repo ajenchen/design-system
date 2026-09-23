@@ -198,12 +198,13 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 | 項目 | 值 | 住在哪 / 依據 |
 |---|---|---|
-| 線 | `outline: 2px solid var(--ring)` | `styles/base.css` `:focus-visible` 全域規則(外描邊)與 `@utility focus-ring-inset`(內描邊),值只寫這兩處 |
-| 顏色 | `--ring`(= primary) | token owner `tokens/color/color.spec.md`;本檔不定值 |
+| 線 | `outline: 2px solid var(--ring)`;填色元素上 `outline: 1px solid var(--on-emphasis)` | `styles/base.css` `:focus-visible` 全域規則(外描邊)、`@utility focus-ring-inset`(內描邊)與 `@utility focus-ring-inset-emphasis`(填色元素內描邊),值只寫這三處 |
+| 顏色 | `--ring`(= primary);填色元素上 `--on-emphasis`(主色底上的前景,兩個主題都是白) | token owner `tokens/color/color.spec.md`;本檔不定值 |
 | 位置(預設) | **往外** `outline-offset: 2px`;元件**什麼都不用寫** | 「問題二」:預設就是往外長(user 2026-09-07 逐字) |
 | 位置(被裁切／貼鄰居) | **往內** `outline-offset: -2px`,寫 `focus-visible:focus-ring-inset`(真焦點)或 `focus-ring-inset`(虛擬游標,由元件 state 掛上) | 「問題二」:被聚焦元素四周最小淨空 < 4px 才往內;撐滿容器寬度的列(選單項 / 側欄鈕 / tab)都屬此類 |
+| 位置(往內,而且**元素自己的底色就是主色**) | **1px `--on-emphasis` 白線,退 3px**(`outline-offset: -3px`),寫 `[&>button]:focus-visible:focus-ring-inset-emphasis` 掛在填色格的 modifier 上;目前只有 DateGrid 的選中日 / 區間端點 | 「問題二」→「填色元素上的內描邊」:藍線畫在藍底上同色看不見;白線貼最外圈只是把藍圓削小;退進去、外圈留藍(user 2026-09-23 拍板 D) |
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
-| 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
+| 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
 | 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
@@ -225,7 +226,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 會搶反白的項目上的 `hover:` 樣式(CommandItem / DropdownMenu 四種項目)| **0**(2026-09-09 下午清完;之前鍵盤分支各帶 `hover:bg-neutral-hover`、選中列另帶 `hover:bg-neutral-selected`,共 5 條)|
 | `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
 | `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
-| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
+| `focus-ring-inset-emphasis`(填色元素內描邊,2026-09-23 加)| 1 支 utility;掛在 3 個 modifier(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`);DateGrid `range_middle` 因同掛 selected,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般內描邊 |
+| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -549,6 +551,32 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 把不必要的 `overflow` 拿掉,常常同時解掉焦點框、陰影被切、浮層被裁三件事。
 掃修時發現這類容器,列進 root-cause 清單,不要只改焦點框。
 
+### 填色元素上的內描邊(2026-09-23 user 拍板)
+
+位置判準照舊(淨空 < 4px 才往內);這一節只講**往內畫、而且元素自己的底色就是主色**時,線要換成什麼。
+DateGrid 的日期格是第一個案例:格與格只隔 4px,而區間 track(`::before`)與區間預覽框(`::after`)就跑在那 4px 縫裡,
+往外畫的 2px 框正好壓在框線上(user:「否則會跟區間藍框有視覺衝突」)→ 全部日期格往內畫。但選中日 / 區間端點的底色是
+`--primary`,往內 2px 的 `--ring` 線與底同色,**看不見**;換成白線又不能貼在最外圈 —— 那只是把藍圓削小一圈,
+選中狀態看起來像「比較小的藍底」(user:「否則整個選中狀態只會看起來是比較小的藍底?」)。
+
+所以白線要**退進藍圓裡、外圈留藍**。兩個候選都量過(28px 藍圓,兩位數的數字約 16px 寬):
+
+| | C:2px 白線,退 4px | **D:1px 白線,退 3px(定案)** |
+|---|---|---|
+| 線外保留的藍圈 | 4px | 3px |
+| 線內的淨空直徑 | 16px → 兩位數**貼到線** | 20px → 每邊 2px |
+| 對照 | — | IBM Carbon 選中日 `.flatpickr-day.today.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`([carbon `_date-picker.scss`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_date-picker.scss)) |
+
+user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要切到文字了」)。1px 比全 DS 其他焦點框的 2px 細,
+是唯一的讓步:在填色的圓上 1px 已足夠分辨,Carbon 也是這樣做。
+
+- 幾何住在 `styles/base.css` `@utility focus-ring-inset-emphasis`(1px `--on-emphasis`,`outline-offset: -3px`),元件只掛 class 不寫值。
+- 掛法:`[&>button]:focus-visible:focus-ring-inset-emphasis` 放在**填色格的 modifier** 上(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`),
+  特異性高過 button 自己的 `focus-visible:focus-ring-inset`;非填色格照舊 2px 藍線。
+- **不外擴**:它不是第四種選擇題,只是「往內」在填色底上的變體。往外畫的填色元件(primary Button)框在元素外面的頁面底上,不適用;
+  DS 內目前只有 DateGrid 的選中日 / 區間端點符合「往內 + 填色」,再有新案例要先過同一張量表。
+- 閘:`scripts/focus-geometry-invariant.mjs` R6(禁手寫其他退距)+ `scripts/datepicker-range-preview.mjs`(量 DateGrid 兩種格的 outline 三件組)。
+
 ## 套回實測值驗證(六組各自只得到一個答案)
 
 | 元件 | 實測 | 判準命中 | 結論 |
@@ -613,6 +641,10 @@ v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在�
 | 疊層/徽章不算鄰居 | **user 2026-09-07 逐字**:「這種堆疊起來的不算是有被堆疊的相關元素限制吧?換言之 avatar 的 x 應該是往外畫框吧?」 |
 | 「取四周最小值、不逐邊混搭」 | **AI 推導**,為了讓判準有唯一解;user 未逐字裁示 |
 | 「元素 < 8px 不開分支」 | **AI 依實測**:DS 內不存在該尺寸的可聚焦元素 |
+| 「日期格的焦點框往內畫」 | **user 2026-09-23 逐字**:「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」(是委託研究;往內的量法依既有判準,4px 縫裡有 track / 框線 = 正當障礙,AI 套算) |
+| 「填色格不能只是往內畫,要保住藍底」 | **user 2026-09-23 逐字**:「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」(問句,但指出了「白線貼邊只是削小藍圓」這個事實;C / D 兩個候選與數值是 AI 依 Carbon 配方提出) |
+| 「1px 白線退 3px(D),不是 2px 退 4px(C)」 | **user 2026-09-23 拍板**,逐字:「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(AI 同意 D 並列出兩者的淨空數字,user 在兩者間定案) |
+| 「第三種幾何只給往內畫的填色元素,不外擴」 | **AI 推導**:DS 內目前只有 DateGrid 選中日 / 端點同時是「往內 + 填色」;往外畫的填色元件框在頁面底上不受影響 |
 
 ---
 
@@ -627,6 +659,7 @@ user 2026-09-07 拍板「A9用甲啊」(全域 `outline`),附條件是「確保�
 |---|---|---|
 | **外描邊**(預設) | **什麼都不寫** | `styles/base.css` 的 `:focus-visible` |
 | **內描邊** | `focus-visible:focus-ring-inset`(真焦點)/ `focus-ring-inset`(虛擬游標) | `styles/base.css` 的 `@utility` |
+| **填色元素內描邊**(2026-09-23 加,只給往內畫且底色就是主色的元素) | `[&>button]:focus-visible:focus-ring-inset-emphasis`(掛在填色格的 modifier) | `styles/base.css` 的 `@utility`;規則見「問題二」→「填色元素上的內描邊」 |
 
 遷移前是:全域 outline + `ring-offset-1`(17 處)+ `ring-offset-2`(6 處)+ `ring-2` 無 offset(15 處)
 + `ring-inset`(2 處)。**絕大多數元件的改法是「刪掉那串 class」**,不是新增樣式。

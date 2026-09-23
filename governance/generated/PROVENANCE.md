@@ -27,9 +27,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:8e5a8c3798be5e7d14f16651d36ad67a7b5a4d23542dc071e34cce6e3e0d9b1e` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:d366b63c6b2933fb79c4677e66b0d311c600731000c1c0d817ff0626b4e1bb38` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:ee761ba4a6053593bd5af4fff1f1ba4c0943cd50a2dabdc29c8cabc0d80f1459` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:33ef98de57936dbd763007f1e87389a589a131b388527190acbbc231dd2d9833` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:2136d796e3e4f302984534c60edfa04089dd065a95df36ae5ed824fef2e775f2` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:98a4e7fafc83e16feae57bb08b30303a4a8b237c755d242ff61219da91ed59d5` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:98fde908ac8e70d1b9807cdc03592f37b6f3062bc152e24057db0218f07cbfc5` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:ef0cb0de49554d32e8c020b682ce6a7220fbfcd1f44dc3c06361a7fe2931a675` |
+| repository-automation-corpus | `scripts` | `sha256:3d5ad1482b88ff60e295248c6102e97773a79f49b441f4691a98f1c9dcdec199` |
 | repository-ignore-boundary | `.gitignore` | `sha256:e2a464cc20ac39651e8ca7015832761d0f8f6f34829c025aeb5bbfcb58e7d3a7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

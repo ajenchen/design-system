@@ -854,6 +854,12 @@ export const CalendarTokens = {
                     <Td>與單日 hover 圈同色同粗;停留日不再畫單格圈(2026-09-23 user 拍板)</Td>
                   </tr>
                   <tr>
+                    <Td>focus-visible(鍵盤焦點)</Td>
+                    <Td>非藍底格:往內 2px 藍線;藍底格(選中日 / 端點):1px 白線退 3px,外圈留藍</Td>
+                    <Td mono>day button focus-visible:focus-ring-inset;藍底 modifier 另掛 [&gt;button]:focus-visible:focus-ring-inset-emphasis(幾何住 styles/base.css;DateGrid EMPHASIS_FOCUS_RING_CLASSNAME)</Td>
+                    <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,對照 Carbon 選中日)</Td>
+                  </tr>
+                  <tr>
                     <Td>outside month</Td>
                     <Td>弱化字色</Td>
                     <Td mono>text-fg-muted</Td>

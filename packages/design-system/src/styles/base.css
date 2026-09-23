@@ -91,6 +91,22 @@
   outline-offset: -2px;
 }
 
+/* 焦點框(填色元素上的內描邊)—— 第三種幾何,只給**底色就是主色**的元素(DateGrid 的選中日 / 區間端點)。
+ *
+ * SSOT:`ds-canonical/references/focus-canonical.md`「問題二」→「填色元素上的內描邊」(2026-09-23 user 拍板)。
+ *   往內 2px 的藍線畫在藍底上同色、看不見;白線又不能貼在最外圈 —— 那只是把藍圓削小一圈,選中狀態
+ *   看起來像「比較小的藍底」(user 原話)。所以白線要退進藍圓裡、外圈留藍:1px 白線退 3px,線外保留 3px 藍。
+ *   1px 而不是 2px:2px 退 4px 的版本內圈只剩 16px,兩位數的數字直接貼到線(user:「c 的白線幾乎要切到文字了」)。
+ *   對照 IBM Carbon 選中日 `.flatpickr-day.today.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`。
+ * 顏色走 `--on-emphasis`(主色底上的前景,兩個主題都是白),不寫死 white。
+ * 用法:`[&>button]:focus-visible:focus-ring-inset-emphasis` 掛在填色格的 modifier 上,
+ *   特異性高過 button 自己的 `focus-visible:focus-ring-inset`,填色格由這條勝出;非填色格照舊 2px 藍線。
+ */
+@utility focus-ring-inset-emphasis {
+  outline: 1px solid var(--on-emphasis);
+  outline-offset: -3px;
+}
+
 /* (2026-09-10 撤回 `focus-ring-outer`:當天上午為了補回「唯讀欄位零焦點指示」而加的具名外描邊,
     同日 user 指出唯讀應該跟可編輯的欄位一樣用 1px 邊框轉主色 —— 改用既有的 `focus-within:!border-primary`
     之後這條 utility 沒有消費者,留著就是第三種幾何的入口,刪掉。歷史見 field-wrapper.tsx 頂端 JSDoc。) */

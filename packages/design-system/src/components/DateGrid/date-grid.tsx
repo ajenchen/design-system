@@ -110,6 +110,16 @@ export const RANGE_PREVIEW_CLASSNAMES = Object.freeze({
   end: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:-left-[2px] after:right-0 after:rounded-r-full', CLIP_INNER_LEFT),
   single: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:inset-x-0 after:rounded-full'),
 })
+// 預覽「上膛」的格(停留會有框的那些天)**靜態**壓掉 button 的單格 hover 圈。
+// 單格圈是 CSS :hover,指標一到就畫;框是 React 狀態,慢一幀。只靠上面 PREVIEW_FRAME 裡的壓制(掛在停留後才出現的
+// preview modifier 上),每次停留都會先閃一圈整圓、再變成半圓(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,
+// 閃了一下,才會變成半圓」)。壓制不能依賴慢的那一邊 —— 由 consumer 用「這一天停留會不會有框」當 modifier,停留前就掛好;
+// 順序不合的日子(不會有框)與對面那端還空時(沒東西可接)不掛,單格圈照畫。
+export const RANGE_PREVIEW_ARMED_CLASSNAME = '[&>button]:hover:!ring-0'
+// 藍底格(選中日 / 區間端點)上的鍵盤焦點:1px 白線退 3px(styles/base.css `focus-ring-inset-emphasis`;
+// focus-canonical「填色元素上的內描邊」,2026-09-23 user 拍板 D)。`[&>button]:focus-visible:` 的特異性高過
+// day_button 自己的 `focus-visible:focus-ring-inset`,藍底格由這條勝出。
+export const EMPHASIS_FOCUS_RING_CLASSNAME = '[&>button]:focus-visible:focus-ring-inset-emphasis'
 
 // ── SR label 中文 formatter(2026-07-05)──
 // 走 Intl.DateTimeFormat(對齊 TimePicker / Calendar 既有 canonical,不引第二套 date lib);
@@ -219,6 +229,10 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
           // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover
           'hover:ring-[1.5px] hover:ring-primary-hover hover:bg-transparent',
+          // 鍵盤焦點框往內畫(focus-canonical「問題二」):格與格只隔 4px,而區間 track(::before)與預覽框(::after)
+          // 就跑在那 4px 縫裡 —— 往外畫的 2px 框正好壓在框線上(user 2026-09-23:「date 的鍵盤焦點感覺要改成
+          // 往內畫的那種,否則會跟區間藍框有視覺衝突」)。藍底格另走 EMPHASIS_FOCUS_RING_CLASSNAME(白線退 3px)。
+          'focus-visible:focus-ring-inset',
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(
@@ -243,6 +257,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',
           '[&>button]:hover:bg-primary-hover [&>button]:hover:!ring-0',
+          EMPHASIS_FOCUS_RING_CLASSNAME,
         ),
         disabled: cn(
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
@@ -274,6 +289,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 的 hover 抑制),非原註解宣稱的「hover ring 仍顯示」;today bar 亦被 data-selected
           // selector 切 on-emphasis(見 spec「組合狀態」段)。
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
+          // 中段日同樣掛 selected(見上),會一併吃到 selected 的白線焦點 —— 但中段底是淺灰、白線看不見,
+          // 焦點要回到一般的往內 2px 藍線;同權重靠順序不可靠,用 ! 壓過。
+          '[&>button]:focus-visible:!focus-ring-inset',
         ),
         hidden: 'invisible',
         ...classNames,

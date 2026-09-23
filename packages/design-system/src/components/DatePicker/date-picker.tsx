@@ -11,7 +11,7 @@ import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { DateGrid, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
+import { DateGrid, EMPHASIS_FOCUS_RING_CLASSNAME, RANGE_PREVIEW_ARMED_CLASSNAME, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
 import { computeRangePreview, rangePreviewModifiers } from './range-preview'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -962,20 +962,32 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     }, [startDate, endDate])
 
     // ── 區間預覽(2026-09-23 user 拍板;規則表與原話見 date-picker.spec.md「區間預覽」)──
-    // 停留日有兩個來源、各自清除:滑鼠(enter / leave)與鍵盤焦點(focus / blur)。分開存的理由:
-    // 點某一天時 mousedown 會把焦點搬過去,**前一個**焦點格的 blur 先到 —— 若共用一個變數,blur 會把
-    // 滑鼠剛設好的停留日清掉,框在指標還停在格子上時就消失。
-    // 焦點只在「看得見的焦點」時算(:focus-visible):浮層開啟時 autoFocus 是程式搬焦點,滑鼠使用者
-    // 還沒停留就會先看到整段框;鍵盤使用者用方向鍵移動時 :focus-visible 為真,框跟著焦點走(Q6)。
+    // 停留日只有一個,**最後一個輸入贏**:滑鼠移進某格 → 它;鍵盤把看得見的焦點移到某格 → 它。
+    // 清除只由同一種來源做(滑鼠離開只清滑鼠設的、blur 只清鍵盤設的):點某一天時 mousedown 會先把前一個焦點格 blur 掉,
+    // 若 blur 也能清掉滑鼠剛設的停留日,框會在指標還停在格子上時消失。滑鼠離開格子時不是消失、而是退回仍帶著鍵盤焦點的那一天。
+    // 第一版是「滑鼠恆優先」的兩個變數 —— 滑鼠停著不動、用方向鍵移焦點時框不跟著走(user 2026-09-23:
+    // 「滑鼠和鍵盤沒有搶走彼此的焦點」)。
+    // 焦點只在「看得見的焦點」時算(:focus-visible):浮層開啟時 autoFocus 是程式搬焦點,滑鼠使用者不會先看到整段框;
+    // 鍵盤使用者用方向鍵移動時 :focus-visible 為真,框跟著焦點走(Q6)。
     // 判定本身是純函式(range-preview.ts),這裡只接線;showTime 一樣預覽(Q7),track 是否顯示另管。
-    const [hoverDay, setHoverDay] = React.useState<Date | null>(null)
-    const [focusDay, setFocusDay] = React.useState<Date | null>(null)
+    type PreviewAnchor = { day: Date; source: 'pointer' | 'keyboard' }
+    const [previewAnchor, setPreviewAnchor] = React.useState<PreviewAnchor | null>(null)
+    // 目前帶著看得見的鍵盤焦點的那一天:滑鼠離開格子時框退回這裡
+    const keyboardDayRef = React.useRef<Date | null>(null)
     React.useEffect(() => {
-      if (!open) { setHoverDay(null); setFocusDay(null) }
+      if (!open) { setPreviewAnchor(null); keyboardDayRef.current = null }
     }, [open])
+    const previewFor = React.useCallback(
+      (anchor: Date | null) => computeRangePreview({ activeEnd, start: startDate, end: endDate, anchor }),
+      [activeEnd, startDate, endDate],
+    )
     const previewModifiers = React.useMemo(
-      () => rangePreviewModifiers(computeRangePreview({ activeEnd, start: startDate, end: endDate, anchor: hoverDay ?? focusDay })),
-      [activeEnd, startDate, endDate, hoverDay, focusDay],
+      () => ({
+        // 上膛:這一天停留會有框 → 停留前就靜態壓掉它的單格 hover 圈(理由見 DateGrid RANGE_PREVIEW_ARMED_CLASSNAME)
+        previewArmed: (day: Date) => previewFor(day) !== null,
+        ...rangePreviewModifiers(previewFor(previewAnchor?.day ?? null)),
+      }),
+      [previewFor, previewAnchor],
     )
 
     const commitRange = (next: [string | null, string | null]) => {
@@ -1258,12 +1270,15 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                       // 重選範圍 = 可取消家族,依 user 原則該有回饋)。補顯式 hover 升階(同 !important,
                       // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:118)。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      // 藍底上的鍵盤焦點 = 1px 白線退 3px(同 DateGrid selected;端點不掛 RDP selected,要自己帶)
+                      EMPHASIS_FOCUS_RING_CLASSNAME,
                       // track 的 stadium class 只住在 DateGrid(2026-09-23 收斂;先前這裡各抄一份 = 假 SSOT)
                       RANGE_TRACK_CLASSNAMES.start,
                     ),
                     rangeEnd: cn(
                       // 2026-08-11:同 rangeStart — 補 hover 升階(spec:119),鏡像。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      EMPHASIS_FOCUS_RING_CLASSNAME,
                       RANGE_TRACK_CLASSNAMES.end,
                     ),
                     rangeMiddle: cn(
@@ -1271,18 +1286,27 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                       '[&>button]:!bg-transparent [&>button]:!text-foreground',
                     ),
                     // ── 停留預覽框(2026-09-23 user 拍板)── 四種格由 range-preview.ts 算出,畫法住在 DateGrid
+                    previewArmed: RANGE_PREVIEW_ARMED_CLASSNAME,
                     previewSingle: RANGE_PREVIEW_CLASSNAMES.single,
                     previewStart: RANGE_PREVIEW_CLASSNAMES.start,
                     previewMiddle: RANGE_PREVIEW_CLASSNAMES.middle,
                     previewEnd: RANGE_PREVIEW_CLASSNAMES.end,
                   }}
-                  // 停留來源:滑鼠與看得見的鍵盤焦點(理由見上方 hoverDay / focusDay 註解)
-                  onDayMouseEnter={(day) => setHoverDay(day)}
-                  onDayMouseLeave={() => setHoverDay(null)}
+                  // 停留來源:滑鼠與看得見的鍵盤焦點,最後一個輸入贏;各自只清自己設的(理由見上方 previewAnchor 註解)
+                  onDayMouseEnter={(day) => setPreviewAnchor({ day, source: 'pointer' })}
+                  onDayMouseLeave={() => setPreviewAnchor((prev) => {
+                    if (prev?.source !== 'pointer') return prev
+                    return keyboardDayRef.current ? { day: keyboardDayRef.current, source: 'keyboard' } : null
+                  })}
                   onDayFocus={(day, _modifiers, event) => {
-                    if (event.currentTarget.matches(':focus-visible')) setFocusDay(day)
+                    if (!event.currentTarget.matches(':focus-visible')) return
+                    keyboardDayRef.current = day
+                    setPreviewAnchor({ day, source: 'keyboard' })
                   }}
-                  onDayBlur={() => setFocusDay(null)}
+                  onDayBlur={() => {
+                    keyboardDayRef.current = null
+                    setPreviewAnchor((prev) => (prev?.source === 'keyboard' ? null : prev))
+                  }}
                   // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)
                   disabled={isOutOfRangeOrder}
                   // showTime → 1 cal(對齊 Ant `multiplePanel=false`);date-only → 2 cal(`multiplePanel=true`)

@@ -109,6 +109,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
 | **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」 |
+| **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ## 組合狀態(state stacking order)
 
@@ -118,6 +119,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 - today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬「藍底白字圓」的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
 - hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);RDP `mode="range"` 的 range-middle 因同樣掛 selected modifier,button hover ring 一併被壓制(2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)。**`DatePicker.Range` 的中段不掛 selected,停留時由「區間預覽框」接手:停留日不畫單格圈,改畫框的半圓端點**(2026-09-23 user 拍板;此前這一句被當成「中段 hover 不該有圈」的規則,其實它只是描述套件行為,從未有人拍板 —— 來源總帳見 `../DatePicker/date-picker.spec.md`「區間預覽」)
 - **選中日 hover 底色升階**:ring 壓制之外,選中日 hover 時 `bg-primary → bg-primary-hover`(2026-07-06 補明文——「選中之上 hover = 同色相升 hover 階」家族,Checkbox / Switch checked hover 同款;code 已有此行為,本句消 spec-code 落差)
+- focus-visible + range-middle(RDP `mode="range"`)→ 中段同掛 selected 會吃到填色格的白線,但中段底是淺灰、白線看不見,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般往內 2px 藍線(同權重靠順序不可靠);`DatePicker.Range` 的中段不掛 selected,直接走 day button 的內描邊
 
 ## 區間預覽框(2026-09-23 user 拍板)
 
@@ -227,7 +229,7 @@ react-day-picker v9 自動處理:
 - **Focus**：`autoFocus` prop 自動 focus 到選中日(或今天)
 - **Locale**：`locale` prop 控制週首日、星期標頭語言
 
-**DS 自訂部分**:day button 的 focus ring 由本元件 classNames 覆寫為 DS canonical(`focus-visible:ring-2 ring-ring`,非 RDP 預設樣式);SR 文案經 RDP `labels` API 提供中文 default(nav「上一個月 / 下一個月」、day / weekday / grid 等全繁中,對齊 2026-07-04 全庫 SR label 中文 canonical),consumer 傳 `labels` 可逐鍵覆寫(i18n),不在 components override 內 hardcode `aria-label`(會蓋死覆寫通道)。其餘 consumer 無需額外處理,保留 react-day-picker API 即可。
+**DS 自訂部分**:day button 的焦點框由本元件 classNames 覆寫為 DS 焦點幾何(`focus-visible:focus-ring-inset`,填色格 `focus-ring-inset-emphasis`,見上方 cell state 表「focus-visible」列;非 RDP 預設樣式。2026-09-23 前本句寫的 `focus-visible:ring-2 ring-ring` 是 2026-09-07 焦點幾何收斂前的舊寫法);SR 文案經 RDP `labels` API 提供中文 default(nav「上一個月 / 下一個月」、day / weekday / grid 等全繁中,對齊 2026-07-04 全庫 SR label 中文 canonical),consumer 傳 `labels` 可逐鍵覆寫(i18n),不在 components override 內 hardcode `aria-label`(會蓋死覆寫通道)。其餘 consumer 無需額外處理,保留 react-day-picker API 即可。
 
 ---
 

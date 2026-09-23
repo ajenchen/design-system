@@ -52,6 +52,16 @@ const hover = async (day) => {
 }
 // 開好浮層後把程式搬過去的焦點放掉,只驗滑鼠這條路(鍵盤那條在下面另驗);焦點不落到別處,浮層不會關
 const blurFocus = async () => { await page.evaluate(() => document.activeElement?.blur?.()); await page.waitForTimeout(50) }
+// 某一格 button 的焦點框(outline 三件組 + 瀏覽器是否判成看得見的焦點)
+const focusRing = (day) => page.evaluate((sel) => {
+  const b = document.querySelector(sel)?.querySelector('button'); if (!b) return null
+  const s = getComputedStyle(b)
+  return { visible: b.matches(':focus-visible'), width: s.outlineWidth, offset: s.outlineOffset, color: s.outlineColor, style: s.outlineStyle }
+}, `[data-day="${day}"]:not([data-outside])`)
+const tokenColor = (token) => page.evaluate((t) => {
+  const probe = document.createElement('div'); probe.style.color = `var(${t})`; document.body.appendChild(probe)
+  const c = getComputedStyle(probe).color; probe.remove(); return c
+}, token)
 
 // 陰影字串判讀(Chrome 序列化:「<color> x y blur spread inset」)
 const hasUniformInset = (c, color) => c.shadow.includes(`${color} 0px 0px 0px 1.5px inset`)
@@ -94,7 +104,8 @@ const days = (from, to) => { const out = []; const d = new Date(from + 'T00:00:0
 async function runSuite() {
   // ── 正在選結束日(已選 5/4–5/12)──
   await gotoStory(page, story('range-preview-extend'), { waitFor: '[data-visual-hover-target]', settle: 300 })
-  if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
+  // 對照組把框與焦點線都弄壞:框歸零、焦點框改回往外畫 → 框的斷言與焦點的斷言都必須紅
+  if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important} td>button:focus-visible{outline-offset:2px!important}' })
   await blurFocus()
   await hover('2026-05-20')
   await expectFrame('延長 5/4→5/20', days('2026-05-04', '2026-05-20'))
@@ -119,6 +130,46 @@ async function runSuite() {
   await expectFrame('鍵盤焦點 5/4→5/7', days('2026-05-04', '2026-05-07'))
   await expectNoFrame('鍵盤:5/8 沒有框', ['2026-05-08'])
 
+  // ── 鍵盤焦點框(user 2026-09-23:「date 的鍵盤焦點感覺要改成往內畫的那種」;藍底格 = 1px 白線退 3px,user 拍板 D)──
+  // 量 outline 顏色前先等過渡:transition-colors 的 transition-property 含 outline-color,聚焦後立刻量會量到過渡中間值
+  await page.waitForTimeout(250)
+  const plain = await focusRing('2026-05-07')
+  ok(plain?.visible && plain.width === '2px' && plain.offset === '-2px' && plain.color === (await tokenColor('--ring')),
+    `焦點:非藍底(中段)5/7 = 往內 2px 藍線(${JSON.stringify(plain)})`)
+  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft')
+  await page.waitForTimeout(250)
+  const filled = await focusRing('2026-05-04')
+  ok(filled?.visible && filled.width === '1px' && filled.offset === '-3px' && filled.color === (await tokenColor('--on-emphasis')),
+    `焦點:藍底端點 5/4 = 1px 白線退 3px(${JSON.stringify(filled)})`)
+
+  // ── 滑鼠與鍵盤互搶:最後一個輸入贏(user 2026-09-23:「滑鼠和鍵盤沒有搶走彼此的焦點」)──
+  // 滑鼠停在 5/20 不動、鍵盤把焦點移到 5/5 → 框跟鍵盤;滑鼠再動到 5/7 → 框跟滑鼠;滑鼠離開格子 → 回到鍵盤焦點 5/5(不是消失)。
+  // 第一版是「滑鼠恆優先」:滑鼠停著時方向鍵怎麼按框都不動 —— 第二段斷言在那版會紅(對照)。
+  await hover('2026-05-20')
+  await expectFrame('互搶:滑鼠停 5/20', days('2026-05-04', '2026-05-20'))
+  await page.focus('[data-day="2026-05-04"] > button'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(120)
+  await expectFrame('互搶:滑鼠不動、鍵盤移到 5/5 → 框跟鍵盤', days('2026-05-04', '2026-05-05'))
+  await expectNoFrame('互搶:5/6 與滑鼠所在的 5/20 都沒有框', ['2026-05-06', '2026-05-20'])
+  await hover('2026-05-07')
+  await expectFrame('互搶:滑鼠再動到 5/7 → 框跟滑鼠', days('2026-05-04', '2026-05-07'))
+  await expectNoFrame('互搶:5/8 沒有框', ['2026-05-08'])
+  await page.mouse.move(2, 2); await page.waitForTimeout(120)
+  await expectFrame('互搶:滑鼠離開格子 → 回到鍵盤焦點 5/5', days('2026-05-04', '2026-05-05'))
+  await expectNoFrame('互搶:滑鼠離開後 5/6、5/7 沒有框', ['2026-05-06', '2026-05-07'])
+
+  // ── 上膛(對面那端已有值):單格 hover 圈的壓制是**靜態**的 —— 停留之前就掛在每一個「停留會有框」的格上,不等 React 慢一幀
+  //(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓」)。
+  // 看 class 只為了驗「靜態」(停留前就在);圈有沒有真的消失由 expectNoRing 量 box-shadow。
+  // DatePicker.Range 選結束日時,開始日之前的日子是 disabled(不可點,自己就不畫圈、也帶同一串壓制 class)——
+  // 所以「停留會有框」= 每一個可點的格;disabled 格不算進來,「不是無條件壓制」由下面「沒上膛」對照組證明。
+  await blurFocus(); await page.mouse.move(2, 2); await page.waitForTimeout(80)
+  const armed = await page.evaluate(() => [...document.querySelectorAll('td[data-day]:not([data-outside]):not([data-disabled])')]
+    .map((td) => ({ day: td.getAttribute('data-day'), armed: td.className.includes('hover:!ring-0') })))
+  const notArmed = armed.filter(({ armed: a }) => !a).map(({ day }) => day)
+  ok(armed.length > 0 && notArmed.length === 0, `上膛:每一個可點的格(${armed.length} 格)在任何停留之前就已壓制單格圈(漏掉:${notArmed.join(',') || '無'})`)
+  const before = await page.evaluate(() => document.querySelector('[data-day="2026-05-03"]:not([data-outside])')?.hasAttribute('data-disabled'))
+  ok(before === true, '上膛:順序不合的 5/3 在選結束日時是 disabled(不可點),沒有框也沒有圈')
+
   // ── 正在選開始日 ──
   await gotoStory(page, story('range-preview-start'), { waitFor: '[data-visual-hover-target]', settle: 300 })
   if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
@@ -137,6 +188,29 @@ async function runSuite() {
   await hover('2026-04-18')
   await expectFrame('showTime 重選開始日 4/18→4/20', days('2026-04-18', '2026-04-20'))
   await expectNoRing('showTime', '2026-04-18')
+
+  // ── 對照組:沒上膛(兩端都空)→ 停留沒有框,單格 hover 圈照畫(壓制不是無條件的)──
+  await gotoStory(page, story('range-picker'), { waitFor: 'button[aria-haspopup="dialog"]', settle: 300 })
+  await page.locator('button[aria-haspopup="dialog"]').nth(2).click() // 第二個 Range(「Empty 初始狀態」)的開始欄
+  await page.waitForSelector('td[data-day]', { timeout: 5000 }); await page.waitForTimeout(200)
+  await blurFocus()
+  const bareDay = await page.evaluate(() => document.querySelector('td[data-day]:not([data-outside]) > button:not(:disabled)')?.closest('td')?.getAttribute('data-day'))
+  await hover(bareDay)
+  const bare = await cell(bareDay)
+  ok(bare && bare.ringMax === 1.5 && noShadow(bare), `沒上膛:${bareDay} 停留只有單格圈、沒有框(ring ${bare ? bare.ringMax : '?'};陰影 ${bare ? bare.shadow : '?'})`)
+
+  // ── DateGrid 自己的 mode="range"(RDP 把中段也標成 selected):端點 = 白線退 3px、中段要壓回一般 2px 藍線 ──
+  await gotoStory(page, `${served.origin}/iframe.html?id=${encodeURIComponent('design-system-internal-dategrid-展示--range')}&viewMode=story`, { waitFor: 'td[data-day][data-selected]', settle: 300 })
+  if (SELFTEST) await page.addStyleTag({ content: 'td>button:focus-visible{outline-offset:2px!important}' })
+  const [gridStart, gridMiddle] = await page.evaluate(() => [...document.querySelectorAll('td[data-day][data-selected]:not([data-outside])')].map((td) => td.getAttribute('data-day')))
+  await page.focus(`[data-day="${gridStart}"]:not([data-outside]) > button`); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(250)
+  const gridMid = await focusRing(gridMiddle)
+  ok(gridMid?.visible && gridMid.width === '2px' && gridMid.offset === '-2px' && gridMid.color === (await tokenColor('--ring')),
+    `DateGrid range:中段 ${gridMiddle}(RDP 也標 selected)焦點壓回往內 2px 藍線(${JSON.stringify(gridMid)})`)
+  await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(250)
+  const gridEnd = await focusRing(gridStart)
+  ok(gridEnd?.visible && gridEnd.width === '1px' && gridEnd.offset === '-3px' && gridEnd.color === (await tokenColor('--on-emphasis')),
+    `DateGrid range:端點 ${gridStart} 焦點 = 1px 白線退 3px(${JSON.stringify(gridEnd)})`)
 }
 
 try {
