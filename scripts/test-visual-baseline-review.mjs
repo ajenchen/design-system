@@ -21,6 +21,7 @@ import {
   sha256,
   stableStringify,
 } from '../packages/design-system/tools/shared/safe-filesystem.mjs'
+import { visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -380,4 +381,25 @@ test('digest-only pseudo activation cannot enable managed model review', () => {
     baselineRoot: 'baseline',
     statements: { 'image.png': 'Digest strings cannot activate managed visual review.' },
   }), /reserved but not activated.*canonical signed model-broker receipt validators/)
+})
+
+// 2026-09-23 run #293:重拍模式下 pixel diff 是對「正要被取代的 baseline」算的,破預算是必然不是訊號;
+// 舊版把它算成失敗,參考 commit 的重拍寫完 baseline 卻 exit 1。判定表:一般模式五個計數任一 > 0 → 1;
+// 重拍模式只有 render error → 1;負數 / 非整數 → 拒絕。
+test('visual-audit exit policy:一般模式五計數任一即紅,重拍模式只有 render error 才紅', () => {
+  const zero = { contrastViolations: 0, geometryViolations: 0, diffBudgetBreached: 0, renderErrors: 0, diffErrors: 0 }
+  assert.equal(visualAuditExitCode({ ...zero }), 0)
+  assert.equal(visualAuditExitCode({ ...zero, updateBaseline: true }), 0)
+  for (const key of ['contrastViolations', 'geometryViolations', 'diffBudgetBreached', 'renderErrors', 'diffErrors']) {
+    assert.equal(visualAuditExitCode({ ...zero, [key]: 1 }), 1, `一般模式 ${key}=1 必紅`)
+    assert.equal(visualAuditExitCode({ ...zero, [key]: 1, updateBaseline: true }), key === 'renderErrors' ? 1 : 0, `重拍模式 ${key}=1`)
+  }
+  // 重拍時 124 張全破預算(換了渲染器)+ 少數 contrast 違規:寫 baseline 仍要放行;但只要一個 story 404 就不准
+  assert.equal(visualAuditExitCode({ ...zero, updateBaseline: true, diffBudgetBreached: 124, contrastViolations: 3, diffErrors: 2 }), 0)
+  assert.equal(visualAuditExitCode({ ...zero, updateBaseline: true, diffBudgetBreached: 124, renderErrors: 1 }), 1)
+  assert.equal(visualAuditExitCode({ ...zero, updateBaseline: 'true' }), 0, 'updateBaseline 只認布林 true(字串不算),其餘走一般模式 —— 零計數仍是 0')
+  assert.equal(visualAuditExitCode({ ...zero, updateBaseline: 'true', diffBudgetBreached: 1 }), 1, '字串 "true" 不是重拍模式 → 一般模式必紅')
+  assert.throws(() => visualAuditExitCode({ ...zero, renderErrors: -1 }), /must be a non-negative integer/)
+  assert.throws(() => visualAuditExitCode({ ...zero, diffErrors: 1.5 }), /must be a non-negative integer/)
+  assert.throws(() => visualAuditExitCode({ ...zero, contrastViolations: undefined }), /must be a non-negative integer/)
 })

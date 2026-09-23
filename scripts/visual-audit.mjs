@@ -61,6 +61,7 @@ import {
 } from './lib/visual-audit-interaction.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { createRenderHealthMonitor } from './lib/storybook-render-health.mjs'
+import { visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
@@ -834,13 +835,20 @@ async function main() {
   //   aria-required-children 等既有債)。visual-audit 無 a11y baseline → 對「開著的 overlay demo / Radix
   //   role=grid 巢狀」等 accepted 違規硬 gate = 與 a11y-and-size 不一致的重複 fail。本 workflow 聚焦 pixel
   //   diff;a11y 仍計數輸出供參,但不再重複把關(避免兩 gate 哲學打架)。
-  process.exitCode = totalContrastViolations > 0 ||
-    totalGeometryViolations > 0 ||
-    totalDiffBudgetBreached > 0 ||
-    totalRenderErrors > 0 ||
-    totalDiffErrors > 0
-    ? 1
-    : 0
+  // 2026-09-23(run #293):--update-baseline 時 pixel diff 是對「正要被取代的 baseline」算的,破預算是必然不是訊號;
+  //   contrast / geometry 是內容稽核,週跑(一般模式)會再量。重拍唯一不能吞的是 render error —— 壞掉的畫面不能
+  //   被寫成 baseline。政策抽成 lib/visual-audit-exit-policy.mjs,判定表在 test-visual-baseline-review.mjs。
+  if (UPDATE_BASELINE) {
+    console.log(`  [update-baseline] 結束碼只看 render error(${totalRenderErrors});diff 破預算 ${totalDiffBudgetBreached} / diff error ${totalDiffErrors} / contrast ${totalContrastViolations} / geometry ${totalGeometryViolations} 供參,週跑會再量`)
+  }
+  process.exitCode = visualAuditExitCode({
+    updateBaseline: UPDATE_BASELINE,
+    contrastViolations: totalContrastViolations,
+    geometryViolations: totalGeometryViolations,
+    diffBudgetBreached: totalDiffBudgetBreached,
+    renderErrors: totalRenderErrors,
+    diffErrors: totalDiffErrors,
+  })
 }
 
 main().catch(async (err) => {

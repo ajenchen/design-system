@@ -204,7 +204,7 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   // 「新拍的圖」不等於「對的圖」:重拍 job 必須自證三件事(2026-09-22)
   assert.match(source, /reference_ref:\s*\n\s*description:/, '必須提供 reference_ref 輸入(同渲染器歸因的參考 commit)')
   assert.match(source, /ref: \$\{\{ env\.REFERENCE_REF \}\}\s*\n\s*path: reference/, '參考 commit 必須簽出到子目錄,在同一個容器重拍')
-  assert.match(source, /working-directory: reference[\s\S]{0,1400}--update-baseline/, '參考 commit 必須真的重拍')
+  assert.match(source, /working-directory: reference[\s\S]{0,2600}--update-baseline/, '參考 commit 必須真的重拍')
   // 2026-09-23 run #291:參考樹(8/5)用它自己的治理程式裝依賴,撞到之後才登記的弱點而 fail closed —— 歷史樹永遠
   // 無法滿足今天的弱點資料庫。參考樹必須用 HEAD 的治理程式安裝(--root=.),弱點稽核走 report-render-only-reference
   //(只報告不擋;完整性照舊擋),而且不得再呼叫參考樹自己的 setup:dependencies。
@@ -215,6 +215,12 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   const refInstall = referenceRecapture.indexOf('npx --no-install playwright install chromium --with-deps')
   const refRecapture = referenceRecapture.indexOf('--update-baseline')
   assert.ok(refInstall > 0 && refInstall < refRecapture, '參考樹必須在重拍前自己裝 Chromium(各自的 node_modules)')
+  // run #293:儀器用今天的、內容用參考樹的 —— 重拍前把今天的截圖腳本 / 場景清單 / scripts/lib 蓋進參考樹,而且在建置之後
+  const refBuild = referenceRecapture.indexOf('npm run build-storybook')
+  for (const overlay of ['cp "$GITHUB_WORKSPACE/scripts/visual-audit.mjs" scripts/visual-audit.mjs', 'cp "$GITHUB_WORKSPACE/scripts/visual-assertions.json" scripts/visual-assertions.json', 'cp -R "$GITHUB_WORKSPACE/scripts/lib/." scripts/lib/']) {
+    const at = referenceRecapture.indexOf(overlay)
+    assert.ok(at > refBuild && at < refRecapture, `參考樹重拍前必須蓋上今天的儀器:${overlay}`)
+  }
   const recaptureIdx = source.indexOf('name: Recapture curated baselines(update_baseline)')
   const stabilityIdx = source.indexOf('name: Instrument stability')
   const attributeIdx = source.indexOf('name: Attribute recaptured baselines')

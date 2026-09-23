@@ -131,7 +131,13 @@ jobs:
           npx --no-install playwright install chromium --with-deps
           npm run build:lib 2>&1 | tail -3
           npm run build-storybook 2>&1 | tail -3
-          node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -5
+          # run #293:儀器用今天的、內容用參考樹的。參考樹自己那版 visual-audit 的結束碼把「對舊 baseline 破預算」
+          # 也算失敗(重拍模式下那是必然),場景清單與今天不同、也缺 lib/launch-browser.mjs。建置完成後把今天的截圖
+          # 腳本、場景清單與 scripts/lib 蓋進參考樹(不動已建好的 storybook-static),兩次重拍才是同一支儀器。
+          cp "$GITHUB_WORKSPACE/scripts/visual-audit.mjs" scripts/visual-audit.mjs
+          cp "$GITHUB_WORKSPACE/scripts/visual-assertions.json" scripts/visual-assertions.json
+          cp -R "$GITHUB_WORKSPACE/scripts/lib/." scripts/lib/
+          node scripts/visual-audit.mjs --static --scope=all --update-baseline 2>&1 | tail -40
           mkdir -p "$RUNNER_TEMP/reference-baseline"
           cp infra/governance/baseline/visual/curated/*.png "$RUNNER_TEMP/reference-baseline/"
           echo "reference baseline: $(ls "$RUNNER_TEMP/reference-baseline" | wc -l) files"
