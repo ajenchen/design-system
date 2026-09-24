@@ -648,11 +648,11 @@ preserveSelectionOnFilter?: boolean   // default false
 - click checkbox → toggle 該 row
 - **shift-click checkbox** → 從 anchor row 到當前 row 區間選(內部 track anchor)
 - header checkbox click → toggle 全可見
-- **選取格的留白不可點**(canonical,2026-09-24 改判):命中區 = checkbox / radio **本體那塊可見方框**(懸停時變邊框色 → 回饋形狀 ≡ 命中區)。表頭全選格同規則。
-  - 舊規則是「整 cell 區可點擊,擴大 hit target 且不要求精準瞄準」—— **那個理由已撤回**:user 2026-09-24 裁示本 DS 不拿觸控裝置的尺寸原則當依據(滑鼠指標比手指精細很多)。
-  - 真正的理由在列層:列的懸停底色是**掃視輔助**,不蘊含這一列可點(IBM Carbon 逐字:row hover "should always be enabled ... even if the row is not interactive")。本表沒有整列點擊(全檔查無 `onRowClick`),所以讓格內留白可點會讓使用者收到的唯一訊號(整列亮起來)跟事實(只有一格可點)不相等。
-  - 五家一手對照(MUI 對選取欄 early-return / Carbon `<td>` 無 onClick / Ant `inline-flex` 收縮貼合 / AG Grid `enableClickSelection` 預設 false / Polaris 屬於整列可點那一派)與兩層規則全文 → `ds-canonical/references/hit-area-canonical.md`「兩層:控件層(嚴格)與列層(另立)」。
-  - Disabled row 不觸發。實作:`data-table.tsx` 列身選取格與表頭選取格的容器 div **都不再掛 `onClick` / `cursor-pointer`**,選取由 checkbox 自己的 handler 承接(single mode 由包住整表的 RadioGroup `onValueChange`)
+- **整 cell 區可點擊**(canonical):選取格的 padding 任何位置(不只視覺 checkbox 本體)點擊都觸發 toggle / select,表頭全選格同理。Disabled row 不觸發。實作:select cell 容器 div 的 `onClick` 委派到 `toggleRow` / `setSelection`,內部 checkbox / radio 用 `stopPropagation` 避免重複觸發。
+  - **理由已於 2026-09-24 換掉。** 舊理由寫的是「擴大 hit target 且不要求精準瞄準」—— 那是觸控論述,而 user 2026-09-24 裁示本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據。同日我一度依據另一條規則把 `onClick` 拿掉,**也是錯的,當天改回來**。
+  - **現行理由是世界級一手對照**:AG Grid / MUI X Data Grid / react-data-grid / Glide Data Grid 四家的 cell 都是點擊目標,而且**四家沒有任何一家讓選取格的空白處變成死區** —— AG Grid 聚焦該 cell(原始碼註解逐字 "we need to make sure the cell wrapping that checkbox is focused")、MUI X 該 cell 出現 focus outline、react-data-grid 該 cell 變 active cell、Glide 直接選列(整格無命中測試)。
+  - **「命中區 = 懸停回饋形狀」那條規則不適用於表格的格**:三家是「hover 畫在列、點擊目標卻是格」,形狀本來就不一致。那條規則的成立範圍是**控件層**(按鈕、行內動作),owner 與撤回紀錄見 `ds-canonical/references/hit-area-canonical.md`「適用範圍」節。
+  - **也不依「有沒有畫垂直格線」分流**:查無一手依據。真正切的那一刀是 `cellSelection` 這類 feature flag —— AG Grid 的 `columnBorder` 預設是透明色,同一份 DOM、同一份 JS,只差上不上色。
 
 ### 五、Disabled rows
 

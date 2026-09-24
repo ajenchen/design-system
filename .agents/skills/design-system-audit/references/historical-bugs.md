@@ -384,3 +384,14 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
 - **2026-09-24 同一格再犯(產生檢視版,而且這次是 P0 批准閘整場消失)**:`check_substantive_edit_approval_preflight.sh` 從 PreToolUse 第 7 群搬到新的第 8 群,`registrations.json` 改對了、`git index` 裡的 claude 的產生 hook 設定檢視 也改對了,**但工作樹那份還停在 7 群** —— 而 Claude Code 在 session 開場就把工作樹那份讀進去凍住。結果:那道閘在舊群組已被移走、新群組沒有任何入口,**整場零覆蓋、零訊號**;事後還有 11 個受治理檔案被寫成「都過了 P0 閘」,實際上是「沒有任何東西攔它」。既有的兩支閘都看不到這裡 —— `gate-reachability-invariant.mjs` 查的是「腳本有沒有被執行面呼叫」(它有,registrations 有寫),`ci-gate-coverage.mjs` 查的是「npm script 有沒有接進 CI」(不相關)。斷的是**產生檢視**那一層。**拿 runtime 當儀器是全盲**:派工器是被那份過期檢視叫起來的,缺掉的那一群結構上不可能被觀察到。新閘 `scripts/provider-view-group-reachability-invariant.mjs`(required CI)離線比對兩份文件,另在 `session_start_governance_check.sh` Check 12 補一層「你**現在這個 session** 手上的檢視有沒有缺群組」—— CI 那支擋的是「送出去的東西」,SessionStart 那支擋的是「你手上的東西」,兩者不可互相代替。
 
   **而新閘的第一版自己就犯了它要防的那條(M37)**:它拿「`registrations.json` 裡有幾群」當「這個 provider 該派工哪幾群」,於是對 codex 報假紅 —— codex 的 `runtime.transcript.stability` 是 `unstable-opaque`,而該群唯一的 hook 宣告 `transcript: "stable-required"`,依 `resolveProviderHookEligibility` 它對 codex **本來就不適用**,那一群在 codex 檢視裡不存在是正確的。修法是**逐 provider 呼叫產生器用的同一支適用性函式**,不自己重寫規則;selftest 為此加了第四格對照組(同一份過期檢視:對 claude 必紅、對 codex 必綠)。判準再記一次:**寫完閘立刻問「我拿來判斷的這個值,在它要防的那種事故裡還成立嗎」,而且要用一個不是拿來建構它的 provider / 元件去試打。**
+
+- **2026-09-24 同日再犯,這次是「把一層的規則外推到另一層,而且沒做 benchmark」**:user 對**行內動作按鈕**裁示「可點擊範圍跟 hover 底色一樣,都是 18*18」,我把它升成全 DS 的「懸停回饋的形狀 ≡ 命中區」,然後**拿它去拆 DataTable 選取格的 `onClick`** —— 理由寫「那一格自己沒有懸停回饋(變色的是整列)」。user 當場反問:「如果表格是每一欄的垂直格線都畫出來的那種,其 checkbox 所在的 cell 一整個就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」
+
+  查四家一手原始碼後,**我那條前提在四家裡 0/4 成立**:AG Grid / MUI X / react-data-grid 全都是「hover 回饋畫在**列**、點擊目標卻是**格**」,命中區跟懸停回饋形狀不一致是**常態**;react-data-grid 更是每個 cell 四邊都有格線、hover 仍在列、選取欄 checkbox 仍只有 20px。而且**四家沒有任何一家讓選取格的空白處變成死區**(聚焦該 cell / focus outline / active cell / 直接選列)。當天改回來。
+
+  **三個各自獨立的錯,要分開記**:
+  1. **跨層外推沒做 benchmark(M8 / M26)**。裁示的成立範圍是「控件」,我沒問「這條在表格的格上還成立嗎」就套過去。判準:**任何規則要從 A 類物件套到 B 類物件,那一步本身就是一個新的設計主張,要重新 benchmark**,不能靠「它是同一條規則」搭便車。
+  2. **引文讀反(M22 的反面)**。我引 MUI 的 "click on checkbox should not trigger row selection" 當「整格不可點」的依據 —— 那句住在 `handleRowClick` 裡,跟 detail panel、actions 欄的 early-return 並列,擋的是「這一欄已經有自己的控制項,別讓列點擊再觸發一次」;同檔仍照常發 cell 事件與 cell focus。**有 cite 不等於 cite 支持我的結論**:引一句原文之前,要先讀它**住在哪個函式、跟誰並列**。
+  3. **user 給的反駁理由也不是對的那個,但結論是對的**。他說的是「有格線 → 整格是視覺範圍」,而「有格線 → 整格可點」這條因果**查無一手依據**:AG Grid 的 `columnBorder` 預設就是 `color: 'transparent'`,同一份 DOM、同一份 JS,只差上不上色。真正切的那一刀是 `cellSelection` 這類 feature flag。**結論對、理由不對的時候,不能拿對的結論回頭背書那個理由** —— 那又是一次導果為因。
+
+  同日另外兩條錯判準(鍵盤模型的「有沒有選到哪一個」與「能不能開新分頁」)是同一種病的不同臉:**都是先有結論、再回頭找一個聽起來乾淨的判準**。三次都是 user 戳破的,三次我都拿不出一手依據。判準:**propose 任何「A 類東西該怎樣」的通則之前,先找一個不是拿來建構它的實例去打它**;打不破再說。

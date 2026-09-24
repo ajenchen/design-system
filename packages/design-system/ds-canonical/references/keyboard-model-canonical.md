@@ -35,54 +35,112 @@ VS Code 的側邊區在同一個畫面裡就有三種模型並存 ——
 GitHub 同一個 repo 頁面上也是並存:左邊檔案樹是 `role="tree"` 的 roving tabindex 單一停靠點,
 同一頁的 repo 導覽(Code / Issues / PRs)是純連結、帶 `aria-current="page"`、每個各自一個停靠點。
 
-## 判準(兩題,都要過)
+## 判準
 
-### 第 1 題(語意):這一串的每一項,是獨立的控件,還是同一個控件的值?
+### ⚠️ 先講規範**沒有**給的東西(這一段比判準本身重要)
 
-- **是獨立控件**(每一項各自能被啟動、啟動後帶你去別的地方 —— 連結、按鈕)
-  → **每一項各一個 Tab 停靠點**,不用方向鍵。
-- **是同一個控件的值**(那個控件自己有選取狀態,還有展開收合 / 多選 / 型別前導搜尋 / 鍵盤搬移這些內部操作)
-  → 它是 **composite widget**,整組**一個 Tab 停靠點 + 方向鍵**。
+WAI-ARIA 只給了**後件**:一旦你宣告 `role="tree"` / `listbox` / `menu` …,
+§4.3.1 就是 "Authors MUST manage focus on the following container roles"、
+`composite` 就是 "SHOULD ensure that a composite widget exists as a single navigation stop"。
 
-規範依據,WAI-ARIA 1.2 `composite` 角色逐字(<https://www.w3.org/TR/wai-aria-1.2/#composite>):
+**前件 —— 什麼時候該宣告成 tree —— 規範完全沒有寫公式。**
+所以任何「規範規定這種東西要用方向鍵」的說法都是假的。規範規定的是:
+**你說它是 tree,它就必須是單一停靠點。**
 
-> "A widget that may contain navigable descendants or owned children. Authors SHOULD ensure that a composite widget exists as a single navigation stop within the larger navigation system of the web page. Once the composite widget has focus, authors SHOULD provide a separate navigation mechanism for users to navigate to elements that are descendants or owned children of the composite element."
+下面三問是**本檔從三家原文歸納出來的**(APG 的 Caution + GitHub 的量級論證 + Primer 的三前提),
+三家沒有任何一家把它們並列寫成一張表。引文都是真的,**組裝成判準是本檔的動作**,
+不得寫成「規範規定」。
 
-`composite` 的子角色只有 `grid` / `select` / `spinbutton` / `tablist`;`tree` 的 superclass 是 `select`、`select` 的 superclass 是 `composite`,
-所以樹是 composite。反過來 `navigation` 是 landmark、`link` 是 widget 但**不是** composite、`list` 是 structure —— 三者都不套單一停靠點規則。
+### ⛔ 「是不是連結」與焦點模型**完全無關**(2026-09-24 撤回錯判準)
 
-W3C APG「Developing a Keyboard Interface」列出需要 managing focus 的 pattern 清單是:
-Combobox、Grid、Listbox、Menu and Menubar、Radio Group、Tabs、Toolbar、Treegrid、Tree View。
-**清單裡沒有導覽,也沒有連結清單。**
+我先前寫過兩版判準,兩版都錯,而且都是倒推的:
 
-### 第 2 題(必要性):就算它長得像樹,你真的需要樹那套鍵盤功能嗎?
+1. 「有沒有『目前選到哪一個』的狀態」—— 側欄純連結本來就有(`aria-current`),照這條判會把所有導覽誤判成方向鍵。
+2. 「右鍵能不能『在新分頁開啟』」—— **這條錯得更徹底。**
 
-W3C APG 在 Navigation Treeview 範例頁的警告框裡逐字:
+user 逐字戳破第 2 條:「你他媽每個節點也有可能有自己的連結啊,你他媽不要再導果為因」。
 
-> "Correct implementation of the tree role requires implementation of complex functionality that is not needed for typical site navigation that is styled to look like a tree with expandable sections."
+**一手反證就在 W3C APG 自己的範例裡**(<https://www.w3.org/WAI/ARIA/apg/patterns/treeview/examples/treeview-navigation/>):
 
+```html
+<ul class="treeview-navigation" role="tree" aria-label="Mythical University">
+  <li role="none">
+    <a role="treeitem" href="#home" aria-current="page"><span class="label">Home</span></a>
+```
+
+`role="treeitem"` 直接**覆寫在 `<a>` 上**,`<li>` 反而被 `role="none"` 抹掉 ——
+也就是說,**連結本身就是 treeitem**。而同一頁的屬性表逐字:
+
+> "The tree element is not focusable because it implements the practice described in Managing Focus Within Components Using a Roving tabindex."
+> "Only one `treeitem` in the `tree` has `tabindex="0"`." / "In this implementation `tabindex="0"` is always on the `treeitem` with `aria-current="page"`."
+
+**一串貨真價實的連結,照樣是單一 Tab 停靠點 + 方向鍵。**
+連結性決定的是「按下去會發生什麼」與「瀏覽器附送什麼」(複製網址、開新分頁、右鍵選單),
+跟「焦點怎麼移動」是兩條正交的軸。
+
+Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/TreeView.tsx` 的 polymorphic 分支
++ `TreeView.features.stories.tsx` 的 `AsProp` story),焦點仍走 `useRovingTabIndex`。
+
+### 三問(都要過才算 composite)
+
+**問 1 — 操作模型是「選取並施加動作」,還是「前往」?**
+
+ARIA 的角色譜系就是答案:`tree` 的 superclass 是 `select`,而 `select` 逐字是
+"A **form widget** that allows the user to make **selections from a set of choices**";
+`treeitem` 逐字是 "An **option item** of a tree"。對照 `link` 逐字是
+"causes the user agent to **navigate to that resource**"。
+Primer 講同一件事:tree 是 "allow a user to navigate through, **select, and take action on** one or more items"。
+
+**問 2 — 使用者真的需要 tree 那一整套鍵盤功能嗎?**
+
+APG Navigation Treeview 的 Caution 框逐字:
+> "Correct implementation of the `tree` role requires implementation of complex functionality that is **not needed for typical site navigation**."
 > "A pattern more suited for typical site navigation with expandable groups of links is the disclosure pattern."
 
-不需要 →/← 展開收合、多選、型別前導搜尋、鍵盤搬移節點 → **不要用 tree**,
-改成「disclosure 按鈕 + 一串連結」,每個連結照樣是 Tab 停靠點。
+同頁內文:"**few sites need the additional keyboard functionality required to support the ARIA `tree` role**"。
 
-GitHub 自家設計系統 Primer 的 NavList 文件把這件事寫成禁令,逐字:
+那一整套是:Home / End、任意深度的 ArrowLeft 回父節點、**打字前導跳節點**、
+ArrowRight 展開但不移動焦點。用不到就不要宣告成 tree。
 
-> "Do not replace your NavList with a TreeView to support a deeply nested navigation structure. A TreeView is never an accessible replacement for navigation, as it serves a different purpose and is not recognized as navigation by assistive technologies."
+**問 3 — 量級會不會讓逐項 Tab 變成負擔?**
 
-同一份文件的無障礙頁另寫:"Each navigation item must receive focus when navigating with the Tab key"。
+GitHub 官方文章逐字(這是**量級論證,不是語意論證**):
+> "Consider a file tree for a repository that contains 500+ files in 20+ directories. Without a composite widget treatment, someone may have to press Tab far too many times to bypass the file tree component and get what they need."
 
-## ⚠️ 被推翻的錯判準:「有沒有目前選到哪一個的狀態」
+對偶:Primer NavList 的上限是 4 層巢狀,超過就叫你重新設計導覽,而不是換成 tree。
 
-**2026-09-24 我先前的判準是:「有沒有一個『目前選到哪一個』的整體狀態 → 有就整組一個 Tab 停靠點 + 方向鍵」。這條是錯的,已撤回。**
+### 三問跑四個案例
 
-錯在哪:**側欄導覽本來就有「目前在哪一頁」**,照這條判會把所有導覽誤判成方向鍵。
-user 當場就指出了這個洞:「我們的 treeview 不是有可以用在 sidebar 嗎?那不就也是會有目前選到哪一個的狀態?」
+| | 側欄固定導覽 | GitHub repo 檔案樹 | APG Disclosure Navigation | 下拉選單 / 選項清單 |
+|---|---|---|---|---|
+| 問 1 操作模型 | 只有「前往」,無選取狀態、不對項目施加其他動作 | 有 `aria-selected`,且對選取節點施加動作 | 只有「前往」 | 選取 |
+| 問 2 鍵盤需求 | 不需要打字前導 / Home / End / 任意深度 | 需要,直接對標 Windows 檔案總管 | 不需要 | 需要 |
+| 問 3 量級 | 固定、有限、作者窮舉得完 | 500+ 檔、20+ 目錄、動態載入 | 有限 | 有限但需快速定位 |
+| **是不是連結** | 是 | APG 版是 | 是 | 通常不是 |
+| **結論** | **每項一個 Tab 停靠點** | **整棵樹一個停靠點 + 方向鍵** | **Tab 為主,方向鍵是 APG 明標的 Optional** | **整組一個停靠點 + 方向鍵** |
 
-一手反證:W3C APG 的 Disclosure Navigation 範例,連結上明明帶著 `aria-current="page"`,
-但它的 Keyboard Support 表寫的是
-"Tab / Shift + Tab: Move keyboard focus among top-level buttons, and if a dropdown is open, into and through links in the dropdown",
-方向鍵在該範例裡標示為 **Optional** 的加值,不是主要模型。**有 current 狀態 ≠ 要用方向鍵。**
+**「是不是連結」那一列是唯一四格幾乎都相同、卻對結論零貢獻的一列** —— 這就是它不能當判準的證明。
+
+### Primer 對我們側欄這個 case 有明文
+
+`tree-view.mdx` 把 "**global sidebar navigation**" 逐字列在 tree view **不適合**的清單裡;
+`nav-list.mdx` 逐字:"Do not replace your NavList with a tree view to support a deeply nested navigation structure.
+A tree view is **never** an accessible replacement for navigation."
+
+### 一個必須講出來的張力(不要粉飾)
+
+Primer 說「tree 永遠不能取代導覽」,但 W3C APG 有一個官方範例就叫 **Navigation** Treeview,
+而 GitHub 把自己的檔案樹包進 `nav` landmark。三者並不矛盾,但要分開兩個問句:
+
+1. **這東西在「功能上」是不是導覽?** → 決定要不要包 `nav` landmark。GitHub 的檔案樹是,所以包了。
+2. **這東西在「操作上」是不是一個 select widget?** → 決定焦點模型。是,所以 roving tabindex。
+
+GitHub 自己的話:"This does not mean every tree view component should be a landmark, however!
+We made this decision for the file tree because it is frequently interacted with as a way to navigate."
+
+Primer 那句 "never" 的精確範圍是**反對「為了支援更深的巢狀而拿 tree 當技術解法」**
+(原文 L142 談巢狀上限、L144 緊接著講 never),不是「導覽內容永遠不能是 tree」。
+**這句範圍界定是本檔的解讀,不是 Primer 原文** —— 字面上的 "never" 讀起來更絕對。
 
 ### `aria-current` 與 `aria-selected` 是兩件事,而且可以同時出現
 
@@ -107,12 +165,15 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 
 ## 套到本 DS
 
-| 元件 | 第 1 題 | 第 2 題 | 模型 |
-|---|---|---|---|
-| `SidebarMenu` / `SidebarMenuButton` | 每條通往不同頁面 = **獨立控件** | 不需要樹功能 | **每項一個 Tab 停靠點**,無方向鍵 |
-| `TreeView` | 承載 user data,有展開收合 / 多選 / 拖曳重排 = **同一個控件的值** | 需要 | **容器單一 Tab 停靠點 + 方向鍵**(`components/TreeView/tree-view.tsx`,DOM focus 永遠停在 `role="tree"` 容器) |
-| `SelectMenu` / `DropdownMenu` / `TimePicker` 的欄 | 選單項是該選單的值 | 需要(型別前導、迴圈) | **容器單一停靠點 + 方向鍵 / `aria-activedescendant`** |
-| `DataTable`(`role="grid"`) | 格是表格的值 | 需要 | **容器單一停靠點 + 方向鍵** |
+| 元件 | 問 1 操作模型 | 問 2 鍵盤需求 | 問 3 量級 | 模型 |
+|---|---|---|---|---|
+| `SidebarMenu` / `SidebarMenuButton` | 只有「前往」,無選取狀態、不對項目施加其他動作 | 不需要打字前導 / Home / End / 任意深度 | designer 定義、有限、窮舉得完 | **每項一個 Tab 停靠點**,無方向鍵。Primer 把 "global sidebar navigation" 逐字列在 tree 不適合的清單裡 |
+| `TreeView` | 承載 user data,有選取狀態 + 展開收合 / 多選 / 拖曳重排 | 需要 | 使用者自己新增,任意深度 | **容器單一 Tab 停靠點 + 方向鍵**(`components/TreeView/tree-view.tsx`,DOM focus 永遠停在 `role="tree"` 容器) |
+| `SelectMenu` / `DropdownMenu` / `TimePicker` 的欄 | 選單項是該選單的值 | 需要(打字前導、迴圈) | 需快速定位 | **容器單一停靠點 + 方向鍵 / `aria-activedescendant`** |
+| `DataTable`(`role="grid"`) | 格是表格的值 | 需要 | 列數不可窮舉 | **容器單一停靠點 + 方向鍵** |
+
+**注意這張表沒有「是不是連結」那一列** —— 因為它對結論零貢獻(見上方 ⛔ 段)。
+側欄導覽項是連結,APG Navigation Treeview 的 treeitem 也是連結,兩者模型卻相反。
 
 **兩者在同一個側欄並存完全合規**,`sidebar.spec.md` 的決策樹「兩者都有 → SidebarMenu + TreeView 分區」對齊 VS Code 的三模型並存。
 
@@ -143,7 +204,10 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 | 追問「兩種鍵盤操作是否不一致 / 世界級會這樣嗎」 | user 2026-09-24 逐字(見本檔開頭) | **user 提出的問題**,不是裁示 |
 | 指出「treeview 用在 sidebar 也會有目前選到哪一個的狀態」 | user 2026-09-24 逐字:「我他媽看不懂你講什麼,我們的 treeview 不是有可以用在 sidebar嗎?那不就也是會有目前選到哪一個的狀態?仔細全盤研究查查」 | **user 的反證**,直接推翻了下一列那條 AI 判準 |
 | 「有沒有目前選到哪一個的狀態」當分界 | AI 2026-09-24 推導 | **已撤回**,一手反證見上方 ⚠️ 段 |
-| 兩題判準(語意題 + 必要性題) | 依 WAI-ARIA 1.2 `composite` 定義 + W3C APG pattern 清單 + APG Navigation Treeview 警告框推導 | **AI 依一手規範推導**,每句都附得出原文;非 user 拍板 |
+| 「能不能右鍵『在新分頁開啟』」當分界 | AI 2026-09-24 推導 | **已撤回** —— user 逐字戳破:「你他媽每個節點也有可能有自己的連結啊,你他媽不要再導果為因,仔細研究世界級的設計看到底要怎麼設計」。一手反證:APG Navigation Treeview 的 treeitem 就是 `<a href>` |
+| 三問判準(操作模型 / 鍵盤需求 / 量級) | 從 APG Caution、GitHub 量級論證、Primer 三前提**歸納** | **AI 的組裝動作** —— 引文都是真的,但三家沒有任何一家把這三問並列寫成一張表。**不得寫成「規範規定」** |
+| 「Primer 那句 never 的精確範圍」 | 讀 `nav-list.mdx` 緊接兩行的上下文 | **AI 的解讀** —— 原文字面的 never 讀起來更絕對 |
+| 「GitHub 的檔案樹節點就是 `<a href>`」 | AI 2026-09-24 對話中的斷言 | **已撤回,無法證實** —— GitHub 2025-01 官方文章逐字寫「Nodes on tree view constructs are tree items, not links」,且把「Supporting links inside a node」列為未來工作。本檔的反證改用 APG 官方範例(那個確實是 `<a href>`) |
 | 「兩種模型並存是常態」 | VS Code 原始碼 + 官方 accessibility 文件 + GitHub/Primer 原始碼與文件 | **一手實證** |
 
 本檔的規範引文皆為逐字;行號會隨上游 main 漂移,故只記檔案路徑不記行號。

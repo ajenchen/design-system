@@ -16,8 +16,11 @@
 
 ## 一句話
 
-**懸停回饋的形狀 ≡ 命中區。** 會亮起來告訴你「指標在目標上」的那一塊,必須**剛好**就是那個目標。
+**控件的懸停回饋形狀 ≡ 它的命中區。** 會亮起來告訴你「指標在目標上」的那一塊,必須**剛好**就是那個目標。
+
 圖示與文字是裝在裡面的**內容**,內容可以比命中區小,**不得比它大**。
+
+⚠️ **主詞是「控件」,不是「任何可點的東西」。** 這一句的出處是 user 對**行內動作按鈕**的裁示;2026-09-24 我把它外推到資料表格的 cell 上,四家一手原始碼 0/4 支持,當天撤回。邊界見下方「適用範圍」節。
 
 唯一例外:**先天無法當目標的線與點**(1px 分隔線、6px 指示點這一類 —— 它們連懸停回饋都畫不出可用的形狀)。
 例外必須逐案在該元件 `spec.md` 寫明外擴量與世界級對照,而且外擴不得越出宿主、不得蓋住別的可點目標。
@@ -38,27 +41,49 @@
 **沒有懸停回饋的目標怎麼辦**:那它的可視形狀本身就是唯一的訊號(例如 AgentPanel 入口鈕、一般 `Button`),
 此時「懸停回饋」退化成「可視形狀」,結論不變。這也是 2026-09-04 那次裁示成立的情境。
 
-### 兩層:控件層(嚴格)與列層(另立)(2026-09-24 補,依世界級一手對照)
 
-原本這條規則只有一層,套到**列的懸停底色**上會誤判 —— 因為列 hover 在世界級的定義根本不是「你在目標上」的訊號。
-IBM Carbon 的 Data Table 使用準則逐字(<https://carbondesignsystem.com/components/data-table/usage/>):
+### 適用範圍:這條規則管**控件**,不管**表格的格**(2026-09-24 撤回一次過度外推)
 
-> "The data table's row hover state should always be enabled as it can help the user visually scan the columns of data in a row **even if the row is not interactive**."
+本條的出處是 user 對**行內動作按鈕**的裁示(「都是 18*18」)。它在控件層成立:
+一顆按鈕的懸停底色會亮起來告訴你「指標在目標上」,那塊就必須剛好是命中區。
 
-同一頁另一句把命中區定義在控件層:
+**它不適用於資料表格的 cell,而我曾經把它外推過去,那是錯的。** 2026-09-24 我用這條規則
+把 DataTable 選取格的 `onClick` 拿掉,理由寫「那一格自己沒有懸停回饋」。user 當場反問
+「checkbox 所在的 cell 一整個就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」,
+去查四家一手原始碼後,**我那條前提在四家裡 0/4 成立**:
 
-> "Mouse — Users can trigger an action or function in the table by clicking the associated button or component. **Each action or function has its own distinct click target.**"
+| | cell 是點擊目標? | hover 回饋畫在哪? | 垂直格線 |
+|---|---|---|---|
+| **AG Grid** | 是(cell DOM 掛 click / mousedown,點了就 `focusCell`) | **列**(`.ag-row-hover`)+ 選配的欄;**零條 `.ag-cell:hover`** | `columnBorder` 預設 `color: 'transparent'` |
+| **MUI X Data Grid** | 是(cell 掛 6 種事件,`:focus` 有 outline) | **列**(`.row:hover`);cell 只有 `:focus` | `showCellVerticalBorder` 預設 false,純 class → 純 border,零行為 |
+| **react-data-grid** | 是(mousedown → active cell) | **列**;cell 唯一的 `:hover` 是拖曳把手 | **永遠四邊都有**,無開關 |
+| **Glide Data Grid** | 是(canvas 命中測試) | **格**(per col/row) | canvas 自繪 |
 
-所以規則分兩層,兩層都由同一批一手證據支持:
+**「hover 畫在列、點擊目標卻是格」是常態,不是 bug。** react-data-grid 是最乾淨的反例:
+每個 cell 四邊都有格線、hover 在列、選取欄 checkbox 只有 20px —— 三者形狀全不一致,而那是它的正式設計。
 
-| 層 | 規則 | 正例 / 反例(皆一手原始碼) |
-|---|---|---|
-| **控件層(嚴格)** | 控件的**可見回饋形狀 ≡ 該控件的命中區**。禁止可見形狀之外、**沒有任何回饋**的隱形帶 | **正例**:MUI 的 Checkbox 命中 = 可見方框 + 每邊 9px 的**圓**,而那個圓 hover 時會上色(`mui-material/src/internal/SwitchBase.js` 的 `padding: 9` + `borderRadius: '50%'`;`Checkbox/Checkbox.js` 的 `'&:hover'` 背景),而 MUI X DataGrid 的選取格渲染的就是這一顆。Material Web 分得更乾淨:18px 可見框 → **40px 可見 state layer** → 48px 隱形帶,而那 48px 官方註解逐字叫 `// <input> is also the touch target`,並提供 `touch-target="none"` 直接關掉(`material-web/checkbox/internal/_checkbox.scss`)—— 正好對應本 DS 不採納觸控尺寸建議的裁示:關掉之後剩下的仍是看得見的 40px 圓。**反例**:AG Grid 的 `:where(.ag-selection-checkbox) .ag-checkbox-input-wrapper::before { inset: -8px }` 是 8px 隱形帶且**零 hover 回饋**(`ag-grid-community/src/selection/rowSelection.css`);官方唯一理由是 PR 標題 "Increase hitbox for selection checkboxes",body 只有私有 Jira 連結 |
-| **列層(不套上面那條)** | 列的懸停底色是**掃視輔助**,**不蘊含**這一列可點。推論:**列不可點時,列內任何 cell 的留白都不得掛 `onClick`** —— 否則使用者收到的唯一訊號(整列亮起來)與事實(只有某一格可點)不相等 | **整列可點的那一派**把兩者綁在一起:Polaris IndexTable 把 `onClick` 掛在 `<tr>`,hover class 同時上到 `&` / `.TableCell-first` / 相鄰格,而且不可點時連 `cursor: pointer` 都拿掉(`polaris-react-archive` 的 `IndexTable/components/Row/Row.tsx` 與 `IndexTable.module.css`)。**整列不可點的那一派**則讓格內留白是死的:MUI 的 `handleRowClick` 對選取欄明文 early-return(`useGridRowSelection.ts`,註解逐字 "click on checkbox should not trigger row selection")、Carbon 的 `<td className="cds--table-column-checkbox">` 完全沒有 `onClick`、Ant Design 的 `.ant-checkbox-wrapper` 是 `inline-flex` 收縮貼合、AG Grid 的 `enableClickSelection` 預設 `false` |
+而且**四家沒有任何一家讓選取格的空白處變成死區**:AG Grid 聚焦該 cell(原始碼註解逐字
+"we need to make sure the cell wrapping that checkbox is focused")、MUI X 該 cell 出現 focus outline、
+rdg 該 cell 變 active、Glide 直接選列。
 
-**五家對照的結論**:世界級只有上面兩種自洽形狀。
-「**格可點 + 列不可點 + 只有列有 hover**」是第三種,**MUI / Polaris / AG Grid / Carbon / Ant Design 五家沒有任何一家這樣做**。
-(Primer 與 Atlassian 的表格沒有列選取欄,不能當作任何一方的佐證。)
+**⛔ 一併撤回我讀錯的那句 cite。** 我先前引 MUI 的
+「click on checkbox should not trigger row selection」當作「整格不可點」的依據 —— 讀反了。
+那句住在 `handleRowClick` 裡,跟 detail panel、actions 欄的 early-return 並列,
+擋的是「這一欄已經有自己的控制項,別讓列點擊再觸發一次」。同一個檔案仍照常發 cell 事件。
+
+**⛔ 也撤回「有格線 → 整格可點」這條因果。** 查無一手依據。真正切的那一刀是 `cellSelection`
+這個 feature flag,不是格線畫不畫 —— AG Grid 的 `columnBorder` 預設就是透明色,**同一份 DOM、
+同一份 JS,只差上不上色**。所以本 DS 也不依「有沒有畫格線」分流。
+
+### 所以這條規則的邊界寫死如下
+
+| 適用 | 不適用 |
+|---|---|
+| **控件**(按鈕、行內動作、指示點、把手):可見回饋形狀 ≡ 命中區,禁止可見形狀之外**沒有任何回饋**的隱形帶 | **資料表格的 cell**:格本來就是互動單位(聚焦 / range / active / 選列),它的回饋畫在列上是世界級常態 |
+
+**列的懸停底色是掃視輔助**(IBM Carbon 逐字:row hover "should always be enabled ... even if the row
+is not interactive"),它既不宣告「這一列可點」,也不用來推導「格內留白不可點」。
+我先前從它推出「列不可點時,格內留白不得掛 onClick」—— **那一步是我自己加的,四家全否證,已撤回。**
 
 ## user 的兩次原話(逐字,標明哪句是哪次)
 
@@ -152,8 +177,8 @@ IBM Carbon 的 Data Table 使用準則逐字(<https://carbondesignsystem.com/com
 | 10 | `SidebarGroupAction` / `SidebarMenuAction` | 懸停底色 **18×18**(實測) | 同一塊 18×18 | 相等 | ✅ **2026-09-24 兩次修正**:(1) 拿掉 `after:-inset-2 after:md:hidden` 那圈只在 `<md` 生效、每邊 8px 的隱形帶 —— 實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕(兩列間距實測 0.00px);(2) 發現它們本來就是 **shadcn 原樣帶進來的手刻品**(`b7b34721`),寫死 `w-5` = **16 圖示裝在 20 盒裡**,而 `inline-action.spec.md` 的尺寸表只有 16/18 與 20/22 兩種組合,**20 兩種都不是** —— 同一個檔案 `:814` 的收合箭頭早就在消費 `ItemInlineActionButton`。依 M23 / M30 改為委派 primitive,API 隨之從 children 改成 `icon` prop(breaking,刻意不留 children 後備:M23(f))。全文 → `sidebar.spec.md`「行內動作的命中區 = 可視形狀」
 | 11 | `Steps` sm 指示點 | 8×8 圓點(`steps.tsx:19-23` `INDICATOR_SIZE.sm`)| **它不是命中目標** —— 24 的盒掛在 `aria-hidden` 的 `<span>` 上(`steps.tsx:718-722`),真正可點的是整列 header(`steps.tsx:486`,`role="button"`);實測打在點正中心,收到事件的就是那一列 | 無外擴可言 | ✅ **2026-09-24 正名 + 逐案裁定**:`SM_HIT_AREA` → `SM_INDICATOR_BOX`(`steps.tsx:40`),它是排版欄寬(`INDICATOR_BOX_WIDTH`,`steps.tsx:42-46`)不是命中區。header 無懸停底色 → 依契約退化條款,判準回到可視形狀:命中 = header 自己的盒,一個 `-inset` 都沒有。全文 → `steps.spec.md`「指示點不是命中目標」 |
 | 12 | `Rating` 整星 / 半星 | 每顆星自己的 24×24(md)盒;星形 glyph 是裝在裡面的**內容** | 同一個盒(整星 `rating.tsx:245-259`);半星是同一個盒左右各半(`rating.tsx:279`、`:286`)| 相等,**零外擴** | ✅ **2026-09-24 逐案裁定**:實測命中盒 = icon 盒 24×24,兩個半星區 12+12 相切零重疊、逐點擁有者地圖無一點漏接,星與星之間的 4px `gap-1` 沒有人宣稱(對照組:點下去值不變)。glyph 比盒小是契約明文允許的「內容」;若改成貼星形輪廓,星角凹口會變成點不到的死區 = 踩到契約的另一邊。MUI / rc-rate 的半星判定同樣是**盒寬的 x 比例**。全文 → `rating.spec.md`「命中區 = 每顆星自己的盒」 |
-| 13 | `DataTable` 選取欄(列身格 + 表頭全選格) | checkbox 本體 16×16,懸停時變邊框色(`checkbox.tsx:28` `hover:border-border-hover`,尺寸 `:43-44` `h-4 w-4`)| 同一塊 16×16 —— **2026-09-24 把容器 div 的 `onClick` / `cursor-pointer` 拿掉**(`data-table.tsx` 列身與表頭兩處同時改)| 相等 | ✅ **2026-09-24 改判,依五家一手對照**:舊狀態是「格可點(約 40px)+ 列不可點 + 只有列有 hover」,MUI / Polaris / AG Grid / Carbon / Ant Design **五家沒有任何一家這樣做**。舊規則的理由「擴大 hit target」是被 user 裁示排除的觸控論述。改判依據是本檔新增的**列層**那一條(列 hover = 掃視輔助,不蘊含可點)。全文 → `data-table.spec.md:651` |
-| 14 | `DataTable` 排序表頭左區 | 整個左區(label + 排序指示器),懸停回饋是 `hover:text-foreground`(**文字變色**)| 同一個左區 —— `role="button"` + `tabIndex` 就掛在它身上(`data-table.tsx:3676-3680`)| 相等 | ✅ **不同族,不跟第 13 列一起改**:這裡的控件**就是**那個左區本身(有 role 、有 tabIndex、有焦點框),回饋與命中落在同一個盒上,**控件外面沒有任何隱形帶**。第 13 列的問題是「控件在格裡、但 onClick 掛在格上」,這一列沒有那個落差 |
+| 13 | `DataTable` 選取欄(列身格 + 表頭全選格)| checkbox 本體 16×16;懸停回饋在**整列** | **整格**(約 40px),容器 div 掛 `onClick` + `cursor-pointer` | 命中 ≠ 懸停回饋形狀 | ✅ **不適用本規則**。2026-09-24 我曾拿本規則把這格的 `onClick` 拿掉,**當天改回來** —— 四家一手原始碼顯示「hover 畫在列、點擊目標卻是格」是常態(0/4 支持我的前提),且**沒有任何一家讓選取格的留白變成死區**。完整經過寫在 `data-table.tsx` 該段長註解與上方「適用範圍」節 |
+| 14 | `DataTable` 排序表頭左區 | 整個左區,懸停回饋是 `hover:text-foreground` | 同一個左區(`role="button"` + `tabIndex` 就掛在它身上) | 相等 | ✅ 同上，表格不適用本規則;這一列本來就沒有隱形帶 |
 
 **第 4 輪掃描的完整結果(16 處非互動元素上的 onClick,逐處判定)**:合規 13 處 —— `FileUpload:278`(`role="button"` 的投放區,整區就是可視邊框內)、`FileViewer:1107`(lightbox 暗底點擊關閉,暗底本身可見)、`MenuItem:286`(整列懸停底色 = 整列命中)、`AgentPanel:1496` `:1539`(選項卡 `bg-secondary` 常駐可見,整張卡即命中;內含真 `Checkbox` + `label` 故鍵盤可達)、`Rating` ×3 / `Calendar` ×3 / `Steps` / `FileItem` 皆已在上表逐案結案。待判 3 處即本列。
 
@@ -184,8 +209,9 @@ IBM Carbon 的 Data Table 使用準則逐字(<https://carbondesignsystem.com/com
 | 上表的**初次盤點**(當時 12 列) | 2026-09-24 grep + Read(三輪字串簽名) | **AI 盤點,且不完整** —— 第 13 列證明三輪掃不到「父層掛 onClick」這種形狀,已補第 4 輪 |
 | 第 7 / 8 / 10 / 11 / 12 列的**逐案裁定與修正** | 2026-09-24 逐列實測(真 `page.mouse.click` + `elementFromPoint` 逐點掃描,每一條都附「該紅會紅」的對照組),依上方三條 user 裁示機械落地 | **AI 依既有裁示執行**;判定理由與實測數字住在各元件自己的 `spec.md`,本檔只記結論 |
 | 第 9 列(`Calendar`) | 2026-09-24 逐案裁定 + 實測,結論在 `calendar.spec.md:145` | **AI 依既有裁示執行**;已結案改判 ✅ |
-| 第 13 / 14 列(`DataTable`) | 2026-09-24 第 4 輪掃描新發現,五家一手對照後收斂 | **AI 依一手證據執行**;結論是 (b) 收回控件本體,(a) 零前例 |
-| 兩層規則(控件層 / 列層)的分層 | IBM Carbon Data Table 使用準則逐字 + 五家原始碼 | **AI 依一手規範推導**;修正了原本只有一層、套到列 hover 會誤判的問題 |
+| 第 13 / 14 列(`DataTable`) | 2026-09-24 先改錯、當天依四家一手原始碼改回 | **AI 錯誤外推後撤回** —— 原因是拿控件層的規則套到表格的格,沒做 M8/M26 benchmark |
+| 「列不可點時,格內留白不得掛 onClick」 | AI 2026-09-24 從 Carbon 的 row hover 句子推導 | **已撤回** —— 四家一手原始碼全否證;那一步是我自己加的 |
+| 「有格線 → 整格可點」這條因果 | 推導 | **查無一手依據,不採納** —— AG Grid 的 `columnBorder` 預設就是透明色,同一份 DOM、同一份 JS,只差上不上色 |
 
 2026-09-24 的兩段 user 原話目前**沒有 repo 內的檔案出處**(本檔是首次落地),所以逐字轉錄在上表;
 日後若有人要引用,引本檔這一節,不要再改寫。

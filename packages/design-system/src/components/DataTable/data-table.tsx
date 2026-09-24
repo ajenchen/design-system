@@ -3081,21 +3081,44 @@ function DataTableInner<TData>(
       const isDisabled = isRowSelectable ? !isRowSelectable(rowOriginal) : false
       const ariaLabel = getRowAriaLabel?.(rowOriginal) ?? '選取此列'
       const checkboxSize = size === 'lg' ? 'lg' : 'md'
-      // ⭕ 2026-09-24:這格的留白**不再可點**。它原本把 `onClick` 掛在整個 cell 容器上,
-      // 理由寫的是「擴大 hit target 且不要求精準矄準」—— 而那正是 user 2026-09-24 裁示不採納的觸控論述。
-      // 拿掉的真正理由在「列層」那一條(`ds-canonical/references/hit-area-canonical.md`):
-      // 列的懸停底色是**掃視輔助**,不蘊含這一列可點(IBM Carbon 逐字:row hover
-      // "should always be enabled ... even if the row is not interactive")。本表沒有整列點擊(全檔查無 onRowClick),
-      // 於是使用者收到的唯一訊號(整列亮起來)跟事實(只有這一格可點)不相等。
+      // Cell 整格可點:click cell padding 也觸發 toggle/select。
+      // 內部 checkbox/radio 用 stopPropagation 避免 double-fire。
       //
-      // 五家一手對照(2026-09-24):MUI 的 `handleRowClick` 對選取欄明文 early-return
-      // (註解逐字 "click on checkbox should not trigger row selection")、Carbon 的
-      // `<td className="cds--table-column-checkbox">` 完全沒有 onClick、Ant Design 的
-      // `.ant-checkbox-wrapper` 是 `inline-flex` 收縮貼合、AG Grid 的 `enableClickSelection` 預設 false。
-      // 唯一讓格內留白可點的 Polaris，是因為它**整列都可點**且整列 hover 跟可點綁在同一個條件。
-      // 「格可點 + 列不可點 + 只有列有 hover」是第三種,五家沒有任何一家這樣做。
+      // ⚠️ 2026-09-24 我把這段拿掉過一次,是錯的,當天就改回來。留下完整經過,不要再犯:
       //
-      // 現在命中區 = checkbox / radio 自己那塊可見方框(懸停時變邊框色,回饋形狀 ≡ 命中區)。
+      // 拿掉的理由我寫的是「命中區要等於懸停回饋的形狀,而這一格自己沒有懸停回饋(變色的是整列)」。
+      // user 當場反問:「如果表格是每一欄的垂直格線都畫出來的那種,其 checkbox 所在的 cell 一整個
+      // 就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」
+      //
+      // 去查四家一手原始碼之後,結論是:
+      //
+      // (1) **我那條前提在四家裡 0/4 成立。** AG Grid / MUI X / react-data-grid 全都是
+      //     **hover 回饋畫在列、點擊目標卻是格** —— 命中區跟懸停回饋形狀不一致是常態,不是 bug。
+      //     rdg 更是每個 cell 四邊都有格線、hover 仍在列、選取欄 checkbox 仍只有 20px。
+      //     那條規則是本 DS 針對**行內動作按鈕**的裁示(user 2026-09-24「都是 18*18」),
+      //     成立範圍是控件層;我把它外推到表格 cell,沒有做 M8/M26 benchmark,這是根因。
+      //
+      // (2) **四家沒有任何一家讓選取格的空白處變成死區。** AG Grid 聚焦該 cell(原始碼註解逐字
+      //     「we need to make sure the cell wrapping that checkbox is focused」)、MUI X 該 cell
+      //     出現 focus outline、rdg 該 cell 變 active、Glide 直接選列(整格無命中測試)。
+      //
+      // (3) **我把 MUI 那句註解讀反了。** `useGridRowSelection.ts` 的
+      //     「click on checkbox should not trigger row selection」住在 `handleRowClick` 裡,
+      //     跟 detail panel、actions 欄的 early-return 並列 —— 它擋的是「欄位已經有自己的控制項,
+      //     別讓列點擊再觸發一次」,不是「整個選取格不可點」。同檔仍照常發 cellMouseDown/cellKeyDown。
+      //
+      // (4) **「有格線 → 整格可點」這條因果查無一手依據。** 真正切的那一刀是 cellSelection 這個
+      //     feature flag。反證:AG Grid 的 columnBorder 預設是 `color: 'transparent'` ——
+      //     同一份 DOM、同一份 JS,只差上不上色。所以本檔不依「有沒有畫格線」分流。
+      //
+      // 世界級在 DOM 上的做法還有第二種:把 checkbox **自己的**命中區撐大到接近整格
+      //(AG Grid `rowSelection.css` 的 `::before { inset: -8px }`,16→32;MUI Checkbox 自帶 padding)。
+      // 那是後續可以評估的選項,但**不能拿它當拿掉整格可點的理由** —— 兩者不是替代關係。
+      const onCellClick = isDisabled ? undefined : (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (mode === 'single') setSelection({ mode: 'include', ids: [rowId] })
+        else toggleRow(rowId, rowOriginal, { shiftKey: e.shiftKey })
+      }
       return (
         <div
           key={cell.id}
@@ -3106,8 +3129,9 @@ function DataTableInner<TData>(
           // / Linear idiom)。**只有 inlineEdit + selectable 模式且 select 不在 leftBody 邊界時** style
           // 才生效(避免雙線)— CSS 用 `:not(:last-child)` selector 處理。
           data-column-id={SELECT_COL_ID}
-          className={cn('flex items-center justify-center shrink-0')}
+          className={cn('flex items-center justify-center shrink-0', !isDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
+          onClick={onCellClick}
         >
           {mode === 'single' ? (
             <RadioGroupItem
@@ -3614,10 +3638,11 @@ function DataTableInner<TData>(
         <div
           key={header.id}
           role="columnheader"
-          // 同上(見列身選取格的說明):表頭選取格的留白同樣不再可點,命中區 = 全選 checkbox 本體。
-          // 同族兩處必須一起改(M10):只改列身、留表頭不動,就是「另一條不變」那種沒掃完的訊號。
-          className={cn('flex items-center justify-center shrink-0 select-none')}
+          // 整格可點，同列身選取格（理由與 2026-09-24 那次錯誤拿掉的完整經過見列身那段長註解）。
+          // 同族兩處永遠一起改（M10）：只改一邊就是「另一條不變」那種沒掃完的訊號。
+          className={cn('flex items-center justify-center shrink-0 select-none', !isHeaderDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
+          onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >
           {mode === 'multi' && (
             <Checkbox
