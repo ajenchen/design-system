@@ -27,9 +27,9 @@
  */
 import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -109,14 +109,10 @@ if (!existsSync(STATIC)) {
   console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
   process.exit(1)
 }
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-  res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
-})
-await new Promise((r) => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
 
 let browser
 try {
@@ -124,7 +120,7 @@ try {
 } catch (error) {
   console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
   console.error('   此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。')
-  server.close(); process.exit(0)
+  await server.stop(); process.exit(0)
 }
 const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
 await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-展示--logo-think-stop&viewMode=story`, { waitUntil: 'networkidle' })
@@ -173,7 +169,7 @@ const result = await page.evaluate(async () => {
   })
   return { rest: { body: rest.body, grad: rest.grad, overlay: rest.overlay, enter: rest.enter }, frames }
 })
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 
 const norm360 = (a) => ((a % 360) + 360) % 360
 const wrapDelta = (a, b) => { let d = norm360(a) - norm360(b); if (d > 180) d -= 360; if (d < -180) d += 360; return Math.abs(d) }

@@ -11,98 +11,99 @@
  *   (A) 焦點在檢視器**外**的可聚焦元素 → 快捷鍵**不得**生效
  *   (B) 焦點在檢視器**內** → 快捷鍵**仍然**要生效(否則就是把功能弄壞來換綠燈)
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join } from 'node:path'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const STATIC = join(process.cwd(), 'storybook-static')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
 
 const SELFTEST = process.argv.includes('--selftest')
 const out = []; let fail = 0
 const ck = (t, p, d = '') => { out.push(`${p ? '✓' : '✗'} ${t}${d ? ' | ' + d : ''}`); if (!p) fail++ }
 
-const browser = await launchBrowser()
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=`
-  + encodeURIComponent('design-system-components-fileviewer-展示--coexistence-contract') + '&viewMode=story', { waitUntil: 'load' })
-// 檢視器目前顯示哪一個檔案 —— 用標題文字當指紋
-const title = () => page.evaluate(() => {
-  const dialog = document.querySelector('[role="dialog"]')
-  return dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim().slice(0, 40) ?? null
-})
-
-// 等到檢視器真的掛出來再量,不用固定睡 1 秒 —— 共享 runner 上 1 秒不夠,story 還沒 mount 就讀到 null,
-// 這支閘會以「前提不成立」翻紅(2026-09-11 c34e035c 的 component + interaction gates 就是這樣紅的)。
-// 這不是放寬判定:等不到就照樣紅,只是把「機器慢」跟「檢視器沒開」分開。
-await page.waitForFunction(() => {
-  const dialog = document.querySelector('[role="dialog"]')
-  return !!dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim()
-}, null, { timeout: 30_000 }).catch(() => {})
-
-if (SELFTEST) {
-  // 對照組:把 2026-09-08 的舊 bug 原樣種回去 —— 一個掛在 window 上、不看焦點在哪裡的
-  // 方向鍵處理器。它走的是使用者看得見的同一條路(標題會換檔),所以 (A) 若抓不到,
-  // 就代表這支閘的綠燈是零證據,而不是「作用域真的守住了」。
-  await page.evaluate(() => {
-    window.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowRight') return
-      const dialog = document.querySelector('[role="dialog"]')
-      const next = dialog && [...dialog.querySelectorAll('button')]
-        .find((button) => (button.getAttribute('aria-label') || '').includes('下一個檔案'))
-      next?.click()
-    }, true)
-  })
-}
-
-const before = await title()
-ck('前提:檢視器已開且讀得到目前檔名', !!before, `目前=${before}`)
-
-if (before) {
-  // ── (A) 焦點在檢視器外 ────────────────────────────────────────────────
-  // 造一個檢視器外、非輸入框的可聚焦元素(這正是舊版判準漏掉的形狀)
-  // 用 story 裡真的常駐區按鈕,不自己 append 一個 —— 自己 append 的節點不在保留集合裡,
-  // 會被 `suppressOthers` inert 掉而聚焦不了,那樣測到的是「探針壞了」不是「作用域對了」。
-  // 送出鈕在輸入空白時停用(story 依規格),先打字讓它可聚焦
-  await page.focus('#fv-aside-input').catch(() => {}); await page.keyboard.type('x')
-  await page.evaluate(() => {
-    (document.querySelector('#fv-aside-btn'))?.focus()
-  })
-  const focusedOutside = await page.evaluate(() => document.activeElement?.id === 'fv-aside-btn')
-  ck('前提:焦點真的在檢視器外的按鈕上', focusedOutside)
-  if (focusedOutside) {
-    await page.keyboard.press('ArrowRight')
-    await page.waitForTimeout(350)
-    const after = await title()
-    ck('A 焦點在檢視器外時,方向鍵**不得**切換檔案', after === before, `前=${before} 後=${after}`)
-  }
-
-  // ── (B) 對照組:焦點在檢視器內時仍然要能切 ──────────────────────────
-  const focusedInside = await page.evaluate(() => {
+try {
+  const browser = await launchBrowser()
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await page.goto(`${server.origin}/iframe.html?id=`
+    + encodeURIComponent('design-system-components-fileviewer-展示--coexistence-contract') + '&viewMode=story', { waitUntil: 'load' })
+  // 檢視器目前顯示哪一個檔案 —— 用標題文字當指紋
+  const title = () => page.evaluate(() => {
     const dialog = document.querySelector('[role="dialog"]')
-    const btn = dialog?.querySelector('button:not([disabled])')
-    btn?.focus()
-    return !!btn && dialog?.contains(document.activeElement)
+    return dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim().slice(0, 40) ?? null
   })
-  ck('前提:焦點真的進到檢視器內', !!focusedInside)
-  if (focusedInside) {
-    await page.keyboard.press('ArrowRight')
-    await page.waitForTimeout(350)
-    const after = await title()
-    ck('B 對照組:焦點在檢視器內時,方向鍵**仍然**要切換檔案(沒把功能弄壞換綠燈)',
-       after !== before, `前=${before} 後=${after}`)
-  }
-}
 
-await browser.close(); sv.close()
+  // 等到檢視器真的掛出來再量,不用固定睡 1 秒 —— 共享 runner 上 1 秒不夠,story 還沒 mount 就讀到 null,
+  // 這支閘會以「前提不成立」翻紅(2026-09-11 c34e035c 的 component + interaction gates 就是這樣紅的)。
+  // 這不是放寬判定:等不到就照樣紅,只是把「機器慢」跟「檢視器沒開」分開。
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"]')
+    return !!dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim()
+  }, null, { timeout: 30_000 }).catch(() => {})
+
+  if (SELFTEST) {
+    // 對照組:把 2026-09-08 的舊 bug 原樣種回去 —— 一個掛在 window 上、不看焦點在哪裡的
+    // 方向鍵處理器。它走的是使用者看得見的同一條路(標題會換檔),所以 (A) 若抓不到,
+    // 就代表這支閘的綠燈是零證據,而不是「作用域真的守住了」。
+    await page.evaluate(() => {
+      window.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowRight') return
+        const dialog = document.querySelector('[role="dialog"]')
+        const next = dialog && [...dialog.querySelectorAll('button')]
+          .find((button) => (button.getAttribute('aria-label') || '').includes('下一個檔案'))
+        next?.click()
+      }, true)
+    })
+  }
+
+  const before = await title()
+  ck('前提:檢視器已開且讀得到目前檔名', !!before, `目前=${before}`)
+
+  if (before) {
+    // ── (A) 焦點在檢視器外 ────────────────────────────────────────────────
+    // 造一個檢視器外、非輸入框的可聚焦元素(這正是舊版判準漏掉的形狀)
+    // 用 story 裡真的常駐區按鈕,不自己 append 一個 —— 自己 append 的節點不在保留集合裡,
+    // 會被 `suppressOthers` inert 掉而聚焦不了,那樣測到的是「探針壞了」不是「作用域對了」。
+    // 送出鈕在輸入空白時停用(story 依規格),先打字讓它可聚焦
+    await page.focus('#fv-aside-input').catch(() => {}); await page.keyboard.type('x')
+    await page.evaluate(() => {
+      (document.querySelector('#fv-aside-btn'))?.focus()
+    })
+    const focusedOutside = await page.evaluate(() => document.activeElement?.id === 'fv-aside-btn')
+    ck('前提:焦點真的在檢視器外的按鈕上', focusedOutside)
+    if (focusedOutside) {
+      await page.keyboard.press('ArrowRight')
+      await page.waitForTimeout(350)
+      const after = await title()
+      ck('A 焦點在檢視器外時,方向鍵**不得**切換檔案', after === before, `前=${before} 後=${after}`)
+    }
+
+    // ── (B) 對照組:焦點在檢視器內時仍然要能切 ──────────────────────────
+    const focusedInside = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"]')
+      const btn = dialog?.querySelector('button:not([disabled])')
+      btn?.focus()
+      return !!btn && dialog?.contains(document.activeElement)
+    })
+    ck('前提:焦點真的進到檢視器內', !!focusedInside)
+    if (focusedInside) {
+      await page.keyboard.press('ArrowRight')
+      await page.waitForTimeout(350)
+      const after = await title()
+      ck('B 對照組:焦點在檢視器內時,方向鍵**仍然**要切換檔案(沒把功能弄壞換綠燈)',
+         after !== before, `前=${before} 後=${after}`)
+    }
+  }
+
+  await browser.close()
+} catch (error) {
+  report404()
+  throw error
+} finally {
+  await server.stop()
+}
 console.log(out.join('\n'))
 
 if (SELFTEST) {
@@ -111,8 +112,10 @@ if (SELFTEST) {
   console.log(caught
     ? '\n✓ selftest:不看焦點的 window 快捷鍵被 (A) 抓到,量具會紅'
     : `\n✗ selftest:種回舊 bug 卻沒被 (A) 抓到 —— 這支閘是假綠(總失敗 ${fail})`)
+  if (!caught) report404()
   process.exit(caught ? 0 : 1)
 }
 
 console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 全部通過')
+if (fail) report404()
 process.exit(fail ? 1 : 0)

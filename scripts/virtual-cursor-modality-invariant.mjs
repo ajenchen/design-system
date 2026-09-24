@@ -39,9 +39,9 @@
  *
  * `--static=<dir>`:不讀 repo 根的 storybook-static,改讀指定目錄(給不想覆蓋主 build 的旁支驗證用)。
  */
-import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
@@ -61,15 +61,13 @@ if (!existsSync(join(STATIC, 'index.html'))) { console.error(`✗ 找不到 ${ST
 const buildMtime = statSync(join(STATIC, 'index.html')).mtimeMs
 for (const f of SRCS) { if (existsSync(f) && statSync(f).mtimeMs > buildMtime) { console.error(`✗ STALE-BUILD:${f} 比 ${STATIC} 新 —— 先重新 build storybook`); process.exit(2) } }
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
-const story = (id) => `http://localhost:${sv.address().port}/iframe.html?id=` + encodeURIComponent(id) + '&viewMode=story'
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「游標沒畫框」
+process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
+// story 清單(TreeView 段用)也從同一份快照讀,不回頭讀活目錄 —— 否則供檔與清單可能來自兩份建置
+const SERVED = sv.snapshot?.dir ?? STATIC
+const story = (id) => `${sv.origin}/iframe.html?id=` + encodeURIComponent(id) + '&viewMode=story'
 
 const out = []; let fail = 0; let controlled = 0; let controlledTotal = 0
 /** tag='new' 的斷言是對照組要弄壞的那幾條(鍵盤游標的長相 / 反白唯一主人 / 常駐清單框不被 hover 抹掉);其餘(前提、指標模態)對照組不動。 */
@@ -359,7 +357,7 @@ for (const t of GRAB_TARGETS) {
 
 // ── TreeView:常駐清單,三態都在同一頁驗 + (E) hover 與框可同時存在 ─────────
 {
-  const idx = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+  const idx = JSON.parse(readFileSync(join(SERVED, 'index.json'), 'utf8'))
   const tid = Object.keys(idx.entries).find((i) => /treeview-展示--/.test(i))
   if (!tid) ck('TreeView 前提:找得到 story', false, '找不到 treeview-展示 story —— 沒東西可驗不能算綠')
   if (tid) {
@@ -597,7 +595,7 @@ for (const p of PERSISTENT) {
   }
 }
 
-await browser.close(); sv.close()
+await browser.close(); await sv.stop()
 console.log(out.join('\n'))
 if (SELFTEST) {
   // 對照組要求:每一條「鍵盤模態游標長相 / 反白唯一主人 / 常駐清單框不被 hover 抹掉」斷言都變紅,

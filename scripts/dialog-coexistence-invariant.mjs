@@ -34,11 +34,11 @@
  * 用法:node scripts/dialog-coexistence-invariant.mjs [--static <storybook-static dir>] [--selftest]
  *   --selftest 只跑對照組(靜態 fixture 必紅 + 瀏覽器注入 slide 必紅),不跑正式斷言。
  */
-import http from 'node:http'
 import { existsSync, readFileSync, statSync, readdirSync } from 'node:fs'
-import { join, extname, dirname, relative } from 'node:path'
+import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const argValue = (flag) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : undefined }
@@ -147,15 +147,10 @@ if (!existsSync(join(STATIC, 'iframe.html'))) {
   console.error(`\n✗ 找不到 storybook build:${STATIC}(先 npm run build-storybook,或 --static <dir>)`)
   process.exit(1)
 }
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
-const story = (id, mode = 'story') => `http://localhost:${sv.address().port}/iframe.html?id=` + encodeURIComponent(id) + `&viewMode=${mode}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
+const story = (id, mode = 'story') => `${sv.origin}/iframe.html?id=` + encodeURIComponent(id) + `&viewMode=${mode}`
 
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
@@ -322,7 +317,7 @@ if (!SELFTEST) {
   ck('對照組 M:偏移方向 = 左上(dx<0 且 dy<0,即「從左上角飛入」)', !c.missing && c.first.dx < -1 && c.first.dy < -1)
 }
 
-await browser.close(); sv.close()
+await browser.close(); await sv.stop()
 console.log(out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組全紅(儀器有效)' : '並存 / 進場第一幀 / docs 隔離 全通過'}`)
 process.exit(fail ? 1 : 0)

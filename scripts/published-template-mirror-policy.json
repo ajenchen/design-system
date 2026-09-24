@@ -16,6 +16,7 @@
     "scripts/lint-ds-internal-imports.mjs",
     "scripts/lib/a11y-static-server.mjs",
     "scripts/lib/canonical-path-containment.mjs",
+    "scripts/lib/storybook-static-snapshot.mjs",
     "scripts/lib/closed-tool-execution.mjs",
     "scripts/lib/consumer-control-plane-policy.mjs",
     "scripts/lib/exact-workspace-dependencies.mjs",

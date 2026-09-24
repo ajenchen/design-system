@@ -43,17 +43,16 @@
  * 瀏覽器:同一個 page 逐 story `goto`(--single-process 沙箱下不開第二個 context;參 scripts/lib/launch-browser.mjs)。
  * 靜態站:預設 storybook-static;`--static=<dir>` 或環境變數 MENU_STATIC 指到別的 build(平行工作時不碰主 build)。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const STATIC = staticArg ? resolve(staticArg) : (process.env.MENU_STATIC || join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
 // ── 期望值(出處見檔頭)──
 const ROW_H = { sm: 28, md: 32, lg: 36 }
@@ -105,14 +104,11 @@ for (const [key, id] of Object.entries(ID)) if (!index[id]) bad(`story 存在:${
 if (broken) { console.log('✗ 靜態站缺 story,先 build storybook'); process.exit(1) }
 
 // ── 靜態站 + 瀏覽器 ──
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
-const story = (id) => `http://localhost:${server.address().port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「story 沒渲染出訊息列」
+process.on('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const story = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
@@ -528,7 +524,7 @@ await page.clock.pauseAt(T0 + 1000)
   else await remoteFlow(L, { inputSel: TRIGGER_INPUT, hit: 'bob', hitLabel: 'Bob Lin', emptyText: TEXT.peopleEmpty, suggestionCount: 2, plainRow: false })
 }
 
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 const alive = measured.length > 0 && measured.every((v) => typeof v === 'number' && v > 0)
 console.log(`\nM1 量測值(儀器活著檢查,${measured.length} 筆):${measured.map(fmt).join(', ')} → ${alive ? '全部 > 0' : '有 0 / 缺值'}`)
 if (SELFTEST) {

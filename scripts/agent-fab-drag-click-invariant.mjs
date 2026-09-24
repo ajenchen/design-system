@@ -16,8 +16,9 @@
  * 對照組(--selftest):情境 L 在晚到的 click 之前先合成一個 pointerdown(新手勢 = 旗標清掉)→ 面板必開 → 儀器判紅。
  * 用法:node scripts/agent-fab-drag-click-invariant.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -27,10 +28,9 @@ if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${
 if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
   console.error(`✗ STALE-BUILD:agent-panel-fab.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
 }
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const STORY = 'design-system-components-agentpanel-展示--fab'
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1600, height: 800 } })
 let failed = 0
@@ -40,7 +40,7 @@ const open = () => page.evaluate(() => { const p = document.querySelector('[role
 const fabBox = async () => { const b = await page.locator(FAB).first().boundingBox(); if (!b) throw new Error('找不到入口鈕'); return b }
 // 等入口鈕本身出現再量:固定睡眠只是「已渲染」的代理,慢的 runner 上會變成 fabBox() 丟「找不到入口鈕」
 // —— 指控一個不存在的問題(2026-09-20 action-bar 閘在 CI 真的這樣假紅過)。
-const fresh = async () => { await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: FAB, settle: 700 }) }
+const fresh = async () => { await gotoStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: FAB, settle: 700 }) }
 const center = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 })
 const dragMoves = async (from, dx, dy, steps = 10) => { for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + dx * i / steps, from.y + dy * i / steps) }
 
@@ -90,6 +90,6 @@ if (!SELFTEST) { await fresh(); {
 if (!SELFTEST) { await fresh(); { const c = center(await fabBox()); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20); await page.mouse.up(); await page.waitForTimeout(400)
   await page.locator(FAB).first().focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(600)
   rec(await open(), 'K 拖完立刻鍵盤 Enter → 面板開(鍵盤合成 click detail 0 不吞)') } }
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 console.log(failed ? `✗ agent-fab-drag-click ${failed} 條失敗` : (SELFTEST ? '✓ selftest:對照組讓儀器紅,量具有效' : '✅ agent-fab-drag-click PASS(拖曳 ≠ 點擊,且不依賴事件時序)'))
 process.exit(failed ? 1 : 0)

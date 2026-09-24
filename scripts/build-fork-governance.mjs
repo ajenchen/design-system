@@ -374,6 +374,8 @@ const MANAGED_FILE_SOURCES = {
   'scripts/lint-ds-internal-imports.mjs': join(ROOT, 'scripts/lint-ds-internal-imports.mjs'),
   'scripts/lib/a11y-static-server.mjs': join(ROOT, 'scripts/lib/a11y-static-server.mjs'),
   'scripts/lib/canonical-path-containment.mjs': join(ROOT, 'scripts/lib/canonical-path-containment.mjs'),
+  // a11y-static-server.mjs 2026-09-24 起 import 它(Storybook 建置先凍結成快照再供檔)。
+  'scripts/lib/storybook-static-snapshot.mjs': join(ROOT, 'scripts/lib/storybook-static-snapshot.mjs'),
   // The product receives the complete implementation, not the monorepo-only re-export adapter.
   'scripts/lib/closed-tool-execution.mjs': join(ROOT, 'packages/governance/src/closed-tool-execution.mjs'),
   'scripts/lib/exact-workspace-dependencies.mjs': join(ROOT, 'scripts/lib/exact-workspace-dependencies.mjs'),

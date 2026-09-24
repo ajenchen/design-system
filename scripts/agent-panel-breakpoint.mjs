@@ -27,22 +27,20 @@
 
 // G3:並排 ↔ 蓋板的斷點與寬度上限
 import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const S = staticArg ? (staticArg.startsWith('/') ? staticArg : join(process.cwd(), staticArg)) : join(process.cwd(),'storybook-static')
 if (statSync('packages/design-system/src/components/AgentPanel/agent-panel.tsx').mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
   console.error(`✗ STALE-BUILD:agent-panel.tsx 比 ${S} 新 —— 先重建該 storybook build`); process.exit(2) }
-const M={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(S,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':M[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
-const B=`http://localhost:${sv.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
+const B=sv.origin
 let br
 try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
 const pg=await br.newPage({viewport:{width:1600,height:800}})
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
@@ -114,7 +112,7 @@ if (SELFTEST) {
   const ok = sab.length === 4 && sab.every((l) => l.startsWith('✗'))
   console.log(sab.map((l) => '  ' + l).join('\n'))
   console.log(ok ? `✓ selftest:對照組(左內距設 0 + 藏遮罩)讓 ${sab.length} 條蓋板斷言全紅,量具會紅` : `✗ selftest:對照組沒讓每一條蓋板斷言紅(${sab.filter((l) => l.startsWith('✗')).length}/${sab.length})—— 量具無效`)
-  await br.close(); sv.close(); process.exit(ok ? 0 : 1)
+  await br.close(); await sv.stop(); process.exit(ok ? 0 : 1)
 }
 
 // ── 初始關閉 → 打開:量測必須跟著重綁(2026-09-08,跨模型審查抓到)────────────
@@ -204,4 +202,4 @@ else ck('B 蓋板態:被蓋住的宿主不得留下可聚焦控件(v14 條 B「�
 }
 
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
-await br.close(); sv.close(); process.exit(fail?1:0)
+await br.close(); await sv.stop(); process.exit(fail?1:0)

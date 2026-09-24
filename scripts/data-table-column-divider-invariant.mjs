@@ -26,7 +26,7 @@
  *
  * 用法: node scripts/data-table-column-divider-invariant.mjs [--selftest]
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -118,24 +118,9 @@ function selftest() {
   console.log('\nselftest 全過(綠側、三種紅側、兩種誤紅對照組都驗到)')
 }
 
-async function measure(story) {
+async function measure(server, story) {
   const { launchBrowser, gotoStory } = await import('./lib/launch-browser.mjs')
-  const { createServer } = await import('node:http')
-  const { stat } = await import('node:fs/promises')
-  const { extname } = await import('node:path')
-  const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.map': 'application/json' }
-  const server = createServer(async (req, res) => {
-    try {
-      let rel = decodeURIComponent(req.url.split('?')[0])
-      if (rel.endsWith('/')) rel += 'index.html'
-      const f = join(STATIC, rel)
-      if ((await stat(f)).isDirectory()) throw new Error('dir')
-      res.writeHead(200, { 'content-type': TYPES[extname(f)] || 'application/octet-stream' })
-      res.end(readFileSync(f))
-    } catch { res.writeHead(404); res.end('nf') }
-  })
-  await new Promise((r) => server.listen(0, '127.0.0.1', r))
-  const base = `http://127.0.0.1:${server.address().port}`
+  const base = server.origin
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
   await gotoStory(page, `${base}/iframe.html?id=${story}&viewMode=story`, { waitFor: '[data-column-id="__select__"]', settle: 900 })
@@ -181,7 +166,6 @@ async function measure(story) {
     return out
   })
   await browser.close()
-  server.close()
   return lines
 }
 
@@ -194,22 +178,31 @@ if (process.argv.includes('--selftest')) {
     console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
     process.exit(2)
   }
+  // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+  // 五則故事共用同一台伺服器 = 同一份快照(原本每則各起一台、各讀活目錄,五則可能量到不同的建置)。
+  const { startA11yStaticServer } = await import('./lib/a11y-static-server.mjs')
+  const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+  process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
   let total = 0
   let failed = 0
-  for (const story of STORIES) {
-    const lines = await measure(story)
-    const problems = findDividerDrift(lines)
-    const label = story.split('--').pop()
-    if (!problems.length) {
-      const present = lines.filter((l) => l.height > 0)
-      console.log(`  \u2713 ${label}: ${present.length} \u689d\u7dda\u5168\u90e8\u540c\u9ad8\u540c\u4f4d`)
-      total += present.length
-      continue
+  try {
+    for (const story of STORIES) {
+      const lines = await measure(server, story)
+      const problems = findDividerDrift(lines)
+      const label = story.split('--').pop()
+      if (!problems.length) {
+        const present = lines.filter((l) => l.height > 0)
+        console.log(`  \u2713 ${label}: ${present.length} \u689d\u7dda\u5168\u90e8\u540c\u9ad8\u540c\u4f4d`)
+        total += present.length
+        continue
+      }
+      failed += 1
+      console.error(`  \u2717 ${label}:`)
+      for (const p of problems) console.error(`      [${p.kind}] ${p.col ?? ''} ${p.detail}`)
+      console.error(`      \u91cf\u5230\u7684\u5168\u90e8: ${JSON.stringify(lines)}`)
     }
-    failed += 1
-    console.error(`  \u2717 ${label}:`)
-    for (const p of problems) console.error(`      [${p.kind}] ${p.col ?? ''} ${p.detail}`)
-    console.error(`      \u91cf\u5230\u7684\u5168\u90e8: ${JSON.stringify(lines)}`)
+  } finally {
+    await server.stop()
   }
   if (!failed) {
     console.log(`\n\u8868\u982d\u6b04\u9593\u7dda\u4e00\u81f4\u6027: ${STORIES.length} \u5247\u6545\u4e8b\u3001\u5171 ${total} \u689d\u7dda\u5168\u90e8\u5408\u898f`)

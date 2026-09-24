@@ -406,6 +406,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/68bfcddff9c4a16388c248cd34fb66163e9e64b3d809a48ef3984f6ae4ff6d12.blob",
+      "sha256": "ed07aa3e882ea16ca586a218f9835375218b1e14a7dfe9e3c55bfc6bbe00c981",
+      "source": "scripts/lib/storybook-static-snapshot.mjs",
+      "classification": null,
+      "destination": "scripts/lib/storybook-static-snapshot.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/6b746628ac11fcccbe277ef6fea94cc2a7b90ea2822e83536eae80d5ee4b3fa5.blob",
       "sha256": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
       "source": "infra/governance/schemas/provider-cli-toolchain.schema.json",
@@ -487,7 +495,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
-      "sha256": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",
+      "sha256": "0b164ae8023c4851795529411bd3e012f274429db97c1bd25b458416366b4593",
       "source": "scripts/lib/a11y-static-server.mjs",
       "classification": null,
       "destination": "scripts/lib/a11y-static-server.mjs"
@@ -919,7 +927,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "a2272940b851e0b220867a8b084d7924a8fb4976e63fcedbfadbed814ac52c9d",
+      "sha256": "05eb1c4b446bfe2cc7d07a1d21992f72a613ead9a548cd9187d675f9f20369b7",
       "source": null,
       "classification": null,
       "destination": null

@@ -12,9 +12,8 @@
 
 import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
 import {
@@ -22,6 +21,7 @@ import {
   ensureRuntimeEvidenceRoot,
   prepareRuntimeEvidenceFile,
 } from './lib/governance-runtime-evidence.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const arg = (k, d) => { const m = process.argv.find(a => a.startsWith(`--${k}=`)); return m ? m.split('=')[1] : d }
 const BASELINE = arg('baseline', 'storybook-static-baseline')
@@ -36,18 +36,15 @@ const PCT_BUDGET = parseFloat(arg('budget', '0.02'))  // % 像素差預算(吸�
 for (const d of [BASELINE, AFTER]) if (!existsSync(join(d, 'index.json'))) { console.error(`✗ ${d}/index.json 不存在(先 build-storybook)`); process.exit(2) }
 const evidenceFile = (relativePath) => prepareRuntimeEvidenceFile({ repoRoot: ROOT, explicitRoot: OUT, relativePath })
 
-const MIME = { '.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf' }
-function serve(dir, port) {
-  const srv = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-    const fp = join(dir, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-    res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
-  })
-  return new Promise(r => srv.listen(port, () => r(srv)))
-}
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+// (沒有 build-info.json 的根目錄 —— 例如凍結的 baseline —— 照舊直接供檔;兩邊都改用臨時埠,不再寫死 8821/8822。)
+const srvB = await startA11yStaticServer({ rootDirectory: BASELINE, defaultFile: 'iframe.html' })
+const srvA = await startA11yStaticServer({ rootDirectory: AFTER, defaultFile: 'iframe.html' })
+// 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「畫面變了」
+const report404 = () => { for (const [label, srv] of [['baseline', srvB], ['after', srvA]]) if (srv.notFound.length) console.error(`同源 404(${label}):`, [...new Set(srv.notFound)].join(', ')) }
 
-// ── story id 動態抓(不寫死 CJK tier 名)──
-const idx = JSON.parse(readFileSync(join(AFTER, 'index.json'), 'utf8'))
+// ── story id 動態抓(不寫死 CJK tier 名)── 從實際供檔的同一份快照讀
+const idx = JSON.parse(readFileSync(join(srvA.snapshot?.dir ?? AFTER, 'index.json'), 'utf8'))
 const entries = Object.values(idx.entries || idx.stories || {})
 const CONTROLS = ['input','numberinput','textarea','select','combobox','datepicker','timepicker','peoplepicker','linkinput','segmentedcontrol','rating','button','checkbox','switch','radiogroup','slider','avatar']
 const TYPES = ['overview','size-matrix','state-behavior','mode-matrix','inspector','column-types']
@@ -60,20 +57,18 @@ const STORY_IDS = entries
   ))
   .map(e => e.id).sort()
 // baseline 也要有同 id(rename 防漏)
-const baseIdx = JSON.parse(readFileSync(join(BASELINE, 'index.json'), 'utf8'))
+const baseIdx = JSON.parse(readFileSync(join(srvB.snapshot?.dir ?? BASELINE, 'index.json'), 'utf8'))
 const baseIds = new Set(Object.values(baseIdx.entries || baseIdx.stories || {}).map(e => e.id))
 const onlyAfter = STORY_IDS.filter(id => !baseIds.has(id))
 if (onlyAfter.length) console.warn(`⚠️  ${onlyAfter.length} story 只在 after 有(新增,跳過 diff):`, onlyAfter.join(', '))
 const DIFF_IDS = STORY_IDS.filter(id => baseIds.has(id))
 
-const srvB = await serve(BASELINE, 8821)
-const srvA = await serve(AFTER, 8822)
-const browser = await launchBrowser()
+let browser
 
-async function shot(port, id) {
+async function shot(origin, id) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })
   const interactive = /inspector|state-behavior/.test(id)
-  await page.goto(`http://localhost:${port}/iframe.html?id=${id}&viewMode=story&globals=theme:light;density:md`, { waitUntil: 'networkidle' })
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light;density:md`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(interactive ? 1200 : 500)
   if (!interactive) { try { await page.evaluate(() => (document.activeElement)?.blur?.()) } catch {} }
   const buf = await page.screenshot({ fullPage: true })
@@ -83,32 +78,34 @@ async function shot(port, id) {
 
 const fails = []
 const results = []
-for (const id of DIFF_IDS) {
-  let b, a
-  try { b = await shot(8821, id); a = await shot(8822, id) } catch (e) { fails.push(`${id}: shot 失敗 ${e.message.split('\n')[0]}`); continue }
-  if (b.width !== a.width || b.height !== a.height) {
-    fails.push(`${id}: 尺寸不同 baseline ${b.width}x${b.height} vs after ${a.width}x${a.height}`)
-    results.push({ id, verdict: 'DIM-MISMATCH', baseline: `${b.width}x${b.height}`, after: `${a.width}x${a.height}` })
-    continue
+try {
+  browser = await launchBrowser()
+  for (const id of DIFF_IDS) {
+    let b, a
+    try { b = await shot(srvB.origin, id); a = await shot(srvA.origin, id) } catch (e) { fails.push(`${id}: shot 失敗 ${e.message.split('\n')[0]}`); continue }
+    if (b.width !== a.width || b.height !== a.height) {
+      fails.push(`${id}: 尺寸不同 baseline ${b.width}x${b.height} vs after ${a.width}x${a.height}`)
+      results.push({ id, verdict: 'DIM-MISMATCH', baseline: `${b.width}x${b.height}`, after: `${a.width}x${a.height}` })
+      continue
+    }
+    const diff = new PNG({ width: b.width, height: b.height })
+    const diffPx = pixelmatch(b.data, a.data, diff.data, b.width, b.height, { threshold: 0.1, includeAA: false })
+    const total = b.width * b.height
+    const pct = (diffPx / total) * 100
+    const ok = pct <= PCT_BUDGET
+    results.push({ id, diffPx, pct: +pct.toFixed(4), verdict: ok ? 'OK' : 'CHANGED' })
+    if (!ok) {
+      fails.push(`${id}: diff ${diffPx}px (${pct.toFixed(4)}%) > 預算 ${PCT_BUDGET}%`)
+      writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.diff.png'), PNG.sync.write(diff))
+      writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.after.png'), PNG.sync.write(a))
+    }
   }
-  const diff = new PNG({ width: b.width, height: b.height })
-  const diffPx = pixelmatch(b.data, a.data, diff.data, b.width, b.height, { threshold: 0.1, includeAA: false })
-  const total = b.width * b.height
-  const pct = (diffPx / total) * 100
-  const ok = pct <= PCT_BUDGET
-  results.push({ id, diffPx, pct: +pct.toFixed(4), verdict: ok ? 'OK' : 'CHANGED' })
-  if (!ok) {
-    fails.push(`${id}: diff ${diffPx}px (${pct.toFixed(4)}%) > 預算 ${PCT_BUDGET}%`)
-    writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.diff.png'), PNG.sync.write(diff))
-    writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.after.png'), PNG.sync.write(a))
-  }
-}
-
-await browser.close(); srvB.close(); srvA.close()
+} catch (e) { report404(); throw e }
+finally { await browser?.close(); await srvB.stop(); await srvA.stop() }
 writeFileSync(evidenceFile('report.json'), JSON.stringify({ baseline: BASELINE, after: AFTER, budget: PCT_BUDGET, results }, null, 2) + '\n')
 
 console.log(`\n=== Q2 field-size 視覺回歸(${DIFF_IDS.length} stories,預算 ${PCT_BUDGET}%)===`)
 for (const r of results) console.log(`  ${r.verdict === 'OK' ? '✓' : '✗'} ${r.id}  ${r.verdict}${r.diffPx != null ? ` (${r.diffPx}px / ${r.pct}%)` : ''}`)
-if (fails.length) { console.error(`\n✗ ${fails.length} story 有非預期視覺差異(diff PNG 在 ${OUT}):\n  ${fails.join('\n  ')}`); process.exit(1) }
+if (fails.length) { console.error(`\n✗ ${fails.length} story 有非預期視覺差異(diff PNG 在 ${OUT}):\n  ${fails.join('\n  ')}`); report404(); process.exit(1) }
 console.log(`\n✓ 全 ${DIFF_IDS.length} stories Δ≈0(≤ ${PCT_BUDGET}% AA noise budget)— Q2 架構改動視覺零回歸。`)
 process.exit(0)

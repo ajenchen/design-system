@@ -73,12 +73,12 @@
  *       正對照 = DataTable 每個 scroll 事件主執行緒忙等 120ms,呈現幀必須量到 ≥ 3 幀空白(該紅會紅)。
  *   任一沒紅 / 該綠沒綠 = 儀器壞了,exit 1。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, extname, dirname, basename, resolve } from 'node:path'
+import { join, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { spawnSync } from 'node:child_process'
 
 /**
@@ -197,18 +197,22 @@ const BUILDS = arg('builds', '')
   : [{ label: arg('label', 'build'), dir: resolve(arg('static', process.env.DT_STATIC || join(REPO, 'storybook-static'))) }]
 for (const m of MODES) if (!['wheel', 'pinned', 'mouse', 'gesture'].includes(m)) { console.error(`✗ 不認識的 --mode ${m}(wheel / pinned / mouse / gesture)`); process.exit(1) }
 if (!SELFTEST && !(RUNS >= 1)) { console.error('✗ --runs 必須 ≥ 1(0 次會沒有任何結果卻 exit 0)'); process.exit(1) }
-for (const b of BUILDS) if (!existsSync(join(b.dir, 'iframe.html'))) { console.error(`✗ ${b.label}:${b.dir} 沒有 iframe.html(build 不完整或路徑錯)`); process.exit(1) }
+// 注入模式(`--inject-runs`,見下方)完全不開瀏覽器、不讀任何 build,所以不檢查 build 在不在。
+// 2026-09-20 起夜間 harness(沒有先建 Storybook)每晚都紅在這一行:meta-test 的四題行為對照組
+// 全部因為「沒有 iframe.html」在判定段之前就退出 —— 量的是環境,不是判定段的行為(M37)。
+if (!arg('inject-runs', '')) for (const b of BUILDS) if (!existsSync(join(b.dir, 'iframe.html'))) { console.error(`✗ ${b.label}:${b.dir} 沒有 iframe.html(build 不完整或路徑錯)`); process.exit(1) }
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+// (--builds 的每一份建置各自凍結;負對照頁的暫存目錄沒有 build-info.json,照舊直接服務。)
+const SERVED = []
+process.once('exit', (code) => {
+  if (!code) return
+  for (const { dir, server } of SERVED) if (server.notFound.length) console.error(`同源 404(${dir}):`, [...new Set(server.notFound)].join(', '))
+})
 const serve = async (dir) => {
-  const server = http.createServer((q, s) => {
-    let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-    const f = join(dir, p)
-    if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-    s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-  })
-  await new Promise((r) => server.listen(0, r))
-  return { server, base: `http://localhost:${server.address().port}` }
+  const server = await startA11yStaticServer({ rootDirectory: dir, defaultFile: 'iframe.html' })
+  SERVED.push({ dir, server })
+  return { server, base: server.origin }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -665,7 +669,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
         try {
           const rc = await runOnce({ build: { label: `${build.label}/負對照(靜態 500 列)`, dir: ctrlDir, url: '/control.html' }, mode, base: ctrl.base, sabotage: false, profile: false })
           if (rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
-        } finally { ctrl.server.close() }
+        } finally { await ctrl.server.stop() }
       }
       for (let i = 1; i <= n; i++) {
         // 崩潰 / 沒溢出 = **儀器沒跑起來**(這次什麼都沒量到),不是量到壞結果 —— 重試一次再判失敗。
@@ -719,7 +723,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
         mkdirSync(PROFILE_DIR, { recursive: true })
         const r = await runOnce({ build, mode, base, sabotage: false, profile: true })
         if (r.profile) {
-          const sum = summarizeProfile(r.profile, build.dir)
+          const sum = summarizeProfile(r.profile, server.snapshot?.dir ?? build.dir)
           writeFileSync(join(PROFILE_DIR, `${build.label}-${mode}.cpuprofile`), JSON.stringify(r.profile))
           writeFileSync(join(PROFILE_DIR, `${build.label}-${mode}.json`), JSON.stringify({ ...sum, run: { ...r, profile: undefined, frames: undefined } }, null, 1))
           console.log(`   [${build.label}/${mode} profile] 取樣 ${sum.sampledMs}ms:${JSON.stringify(sum.cats)};本 run ${line(r, 'p')}`)
@@ -728,7 +732,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
         }
       }
     }
-  } finally { server.close() }
+  } finally { await server.stop() }
 }
 
 // ── 時間序列摘要:每個 build×mode 取 paint 空白最嚴重的 run 印一條(0–9 = 空白率九分位,· = 0)──

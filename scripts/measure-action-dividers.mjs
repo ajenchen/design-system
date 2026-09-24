@@ -14,10 +14,8 @@
  * --dir 會用 node 內建 http 起靜態服務(不依賴 npx / 外部套件)。需要 Playwright;
  * 本機 sandbox 起不了瀏覽器時走 visual-regression CI lane。
  */
-import { createReadStream, statSync } from 'node:fs'
-import { createServer } from 'node:http'
-import { extname, join, normalize, resolve as resolvePath } from 'node:path'
 import { chromium } from 'playwright'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
 const arg = (name, fallback = null) => {
@@ -27,36 +25,14 @@ const arg = (name, fallback = null) => {
 
 // 靜態服務用 node 內建起,不透過 npx 抓外部套件(供應鏈規則:npx 必須 --no-install,
 // 見 scripts/audit-workflow-security.mjs WF-NPX)。
-const MIME = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.woff': 'font/woff',
-}
-async function serveStatic(root) {
-  const base = resolvePath(root)
-  const server = createServer((request, response) => {
-    const requested = decodeURIComponent((request.url || '/').split('?')[0])
-    const relative = normalize(requested).replace(/^(\.\.[/\\])+/, '')
-    let file = join(base, relative)
-    try { if (statSync(file).isDirectory()) file = join(file, 'index.html') } catch { /* 404 below */ }
-    try {
-      statSync(file)
-    } catch {
-      response.statusCode = 404
-      response.end('not found')
-      return
-    }
-    response.setHeader('content-type', MIME[extname(file)] || 'application/octet-stream')
-    createReadStream(file).pipe(response)
-  })
-  await new Promise(done => server.listen(0, '127.0.0.1', done))
-  return { url: `http://127.0.0.1:${server.address().port}`, close: () => server.close() }
-}
-
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const DIR = arg('--dir')
-const served = DIR ? await serveStatic(DIR) : null
-const BASE = served?.url || arg('--base') || process.env.STORYBOOK_BASE
+const served = DIR ? await startA11yStaticServer({ rootDirectory: DIR, defaultFile: 'iframe.html' }) : null
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「沒有分隔線 / 幾何錯」
+process.on('exit', code => {
+  if (code && served?.notFound.length) console.error('同源 404:', [...new Set(served.notFound)].join(', '))
+})
+const BASE = served?.origin || arg('--base') || process.env.STORYBOOK_BASE
 if (!BASE) {
   console.error('usage: node scripts/measure-action-dividers.mjs (--dir <storybook-static> | --base <url>)')
   process.exit(2)
@@ -127,7 +103,7 @@ for (const testCase of CASES) {
   results.push({ ...testCase, lines: await page.evaluate(MEASURE) })
 }
 await browser.close()
-served?.close()
+await served?.stop()
 
 const failures = []
 for (const result of results) {

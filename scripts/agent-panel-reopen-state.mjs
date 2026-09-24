@@ -26,29 +26,27 @@
 
 // G2:關閉面板後再打開,閱讀位置與草稿必須還在
 import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const S=join(process.cwd(),'storybook-static')
 for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
                  'packages/design-system/src/components/AgentPanel/agent-panel.tsx']) {
   if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
     console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) }
 }
-const M={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(S,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':M[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
-const B=`http://localhost:${sv.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv=await startA11yStaticServer({rootDirectory:S,defaultFile:'iframe.html'})
+process.once('exit',(code)=>{ if(code&&sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
+const B=sv.origin
 let br
 try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
 // 視窗壓矮,讓對話一定超出可視高度 —— 否則「閱讀位置保存」這條會空轉
 // 視窗壓到很矮,對話才會有足夠的捲動範圍 —— 範圍太小的話「捲到中間」與「自動捲到底」
 // 會落在同一個值,測試就分不出有沒有回歸(2026-09-07 踩過:max=60 時兩者都是 60)
 const pg=await br.newPage({viewport:{width:1600,height:300}})
-const idx=JSON.parse(readFileSync(join(S,'index.json'),'utf8'))
+const idx=JSON.parse(readFileSync(join(sv.snapshot?.dir??S,'index.json'),'utf8'))
 const st={id:'design-system-components-agentpanel-展示--task-assistant'}
 console.log('story:', st.id)
 await pg.goto(`${B}/iframe.html?id=${st.id}&viewMode=story`,{waitUntil:'networkidle'}); await pg.waitForTimeout(800)
@@ -105,4 +103,4 @@ else {
   ck('G2 附帶:受控草稿當然還在(這條不構成 G2 的證據)', after.draft === before.draft, `「${before.draft}」→「${after.draft}」`)
 }
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
-await br.close(); sv.close(); process.exit(fail?1:0)
+await br.close(); await sv.stop(); process.exit(fail?1:0)

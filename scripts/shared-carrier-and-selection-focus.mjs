@@ -13,23 +13,17 @@
  *
  * 判準一律量 pixel / computed style,不看 class 字串(M32)。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join } from 'node:path'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 // file:// 會被 CORS 擋掉模組載入(story 整個不渲染,而且不報錯只留空 root),
 // 所以跟其他瀏覽器閘一樣起一個本機靜態站。
 const STATIC = join(process.cwd(), 'storybook-static')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
-const BASE = `http://localhost:${sv.address().port}/iframe.html?id=`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
+const BASE = `${server.origin}/iframe.html?id=`
 const story = (id) => BASE + encodeURIComponent(id)
 const fail = []
 const ok = (m) => console.log('  ✓ ' + m)
@@ -40,8 +34,9 @@ const underlineOf = (el) => {
   return { line: cs.textDecorationLine, color: cs.textDecorationColor, thick: cs.textDecorationThickness }
 }
 
-const browser = await launchBrowser()
+let browser
 try {
+  browser = await launchBrowser()
   const page = await browser.newPage()
 
   // ── H2c ──────────────────────────────────────────────────────────────
@@ -173,11 +168,14 @@ try {
       else bad(`核取方塊取得焦點但沒有框:${JSON.stringify(o)}`)
     }
   }
+} catch (error) {
+  report404()
+  throw error
 } finally {
-  await browser.close()
-  sv.close()
+  await browser?.close()
+  await server.stop()
 }
 
 console.log('')
-if (fail.length) { console.log(`✗ ${fail.length} 項未通過`); process.exit(1) }
+if (fail.length) { console.log(`✗ ${fail.length} 項未通過`); report404(); process.exit(1) }
 console.log('✓ 全部通過')

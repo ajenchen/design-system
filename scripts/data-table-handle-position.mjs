@@ -11,9 +11,9 @@
 // an intentional 20 px position error and proves this gate rejects it. PNG/trace
 // artifacts use --capture=true --trace=true; the probe and gesture input are identical.
 import { launchBrowser } from "./lib/launch-browser.mjs";
+import { startA11yStaticServer } from "./lib/a11y-static-server.mjs";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
-import http from "node:http";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 const arg = (n, d) =>
@@ -40,28 +40,15 @@ const cfg = {
 };
 if (!cfg.build || !cfg.out) throw Error("--static and --out are required");
 fs.mkdirSync(cfg.out, { recursive: true });
-const mime = {
-  ".html": "text/html",
-  ".js": "application/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".svg": "image/svg+xml",
-  ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-  try {
-    const f = path.join(cfg.build, decodeURIComponent(req.url.split("?")[0]));
-    res.setHeader(
-      "Content-Type",
-      mime[path.extname(f)] ?? "application/octet-stream"
-    );
-    res.end(fs.readFileSync(f));
-  } catch {
-    res.writeHead(404);
-    res.end();
-  }
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({
+  rootDirectory: cfg.build,
+  defaultFile: "iframe.html",
 });
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
+const printNotFound = () => {
+  if (server.notFound.length)
+    console.error("同源 404:", [...new Set(server.notFound)].join(", "));
+};
 let browser;
 try {
   browser = await launchBrowser({ ignoreDefaultArgs: ["--hide-scrollbars"] });
@@ -73,9 +60,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(
-    `http://127.0.0.1:${
-      server.address().port
-    }/iframe.html?id=design-system-components-datatable-%E5%B1%95%E7%A4%BA--roadmap-all-in-one&viewMode=story`,
+    `${server.origin}/iframe.html?id=design-system-components-datatable-%E5%B1%95%E7%A4%BA--roadmap-all-in-one&viewMode=story`,
     { waitUntil: "load" }
   );
   await page.waitForSelector("[data-datatable-hscroll]");
@@ -623,7 +608,11 @@ try {
         ? `PASS: no drag handle painted after scroll start with a stationary pointer (${framesAfterScroll} frames)`
         : "PASS: visible drag handles follow owning rows within " + maxDy + " px"
     );
+} catch (error) {
+  printNotFound();
+  throw error;
 } finally {
   await browser?.close();
-  server.close();
+  await server.stop();
 }
+if (process.exitCode) printNotFound();

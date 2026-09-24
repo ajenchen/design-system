@@ -33,11 +33,11 @@
  *       (AD68 產品側變體:portal 浮層對 0×0 錨點只會定位到 (0,8) 還搶焦點;修法 = 觸發鈕失去版面就關)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
  */
-import http from 'node:http'
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname, isAbsolute } from 'node:path'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
@@ -45,7 +45,6 @@ const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const SHOTS = arg('shots')
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
 const TASKS_URL = '/projects/8821/tasks'
 const MINE_URL = '/projects/8821/tasks/mine'
@@ -134,17 +133,13 @@ if (process.argv.includes('--selftest')) {
   console.log('✓ 靜態:示範沒有對 <DialogContent> 傳 inline 位置樣式(置中由 DS Dialog 決定)')
 }
 if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+// index.json 也讀同一份快照,讓「找到的 story id」與「實際服務的建置」是同一份
+const index = JSON.parse(readFileSync(join(server.snapshot?.dir ?? STATIC, 'index.json'), 'utf8'))
 const id = Object.values(index.entries).find((e) => e.type === 'story' && /agentpanel/i.test(e.id) && /url-registry-demo/.test(e.id))?.id
-if (!id) { console.error('找不到 UrlRegistryDemo story'); process.exit(2) }
-
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
+if (!id) { console.error('找不到 UrlRegistryDemo story'); await server.stop(); process.exit(2) }
 
 // 幾何:對話框不與常駐區相交、遮罩 = 舞台矩形、常駐區中心可點、對話框置中於舞台
 const GEO = `(() => {
@@ -259,7 +254,7 @@ async function openStory(width, height = 900) {
   // `--single-process` 沙箱:一個 browser 只能開一個 context → 每個寬度重開(launch-browser.mjs 註解)
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width, height } })
-  await page.goto(`http://localhost:${server.address().port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' })
+  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' })
   await page.waitForSelector('[role="complementary"]', { timeout: 15000 }).catch(() => {})
   await page.waitForTimeout(500)
   return { browser, page }
@@ -622,7 +617,7 @@ for (const width of [1440, 1180]) {
   await browser.close()
 }
 
-server.close()
+await server.stop()
 const failed = results.filter((r) => !r.ok).length
 console.log(failed ? `✗ ${failed} 條失敗` : `✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 蓋板)`)
 process.exit(failed ? 1 : 0)

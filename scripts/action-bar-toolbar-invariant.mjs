@@ -13,8 +13,9 @@
  * 對照組(--selftest):注入 `[data-toolbar-search]{min-width:auto!important}`(拿掉下限 = 修前狀態)→ 空間夠的格子裡至少一格 (1) 或 (2) 必紅。
  * 用法:node scripts/action-bar-toolbar-invariant.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -23,11 +24,11 @@ const root = path.resolve(REPO, arg('static', 'storybook-static'))
 if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${root}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
 const helperMtime = fs.statSync(path.join(REPO, 'packages/design-system/src/stories-helpers/scene/data-toolbar.tsx')).mtimeMs
 if (helperMtime > fs.statSync(path.join(root, 'index.html')).mtimeMs) { console.error(`✗ STALE-BUILD:data-toolbar.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2) }
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.map': 'application/json' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
-const index = JSON.parse(fs.readFileSync(path.join(root, 'index.json'), 'utf8'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+// story 清單也讀同一份快照,不讀活目錄(否則清單與實際供檔可能來自兩份建置)
+const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root, 'index.json'), 'utf8'))
 // 四支消費 DataToolbar 的整頁示範(少一支 = 有人把示範改回手抄,閘要紅)
 const WANT = [/agentpanel-展示--url-registry-demo$/u, /datatable-展示--with-bulk-actions$/u, /datatable-展示--roadmap-all-in-one$/u, /appshell-展示--primary-sidebar-with-tabs$/u]
 const STORIES = WANT.map((re) => Object.values(index.entries).find((e) => e.type === 'story' && re.test(e.id))?.id)
@@ -58,7 +59,7 @@ for (const [i, id] of STORIES.entries()) {
     // 等**搜尋框本身**出現,不用固定睡眠當「已渲染」的代理(2026-09-20 CI 真的因此假紅一次:
     // 每支示範的第一個寬度是冷啟動,900ms 在慢的 runner 上不夠 → 閘指控「示範沒有消費 DataToolbar」)。
     // 等不到才走下面原本的缺元素路徑判紅 —— 真的沒消費時訊息一樣會紅,而且那時才是真的。
-    await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`,
+    await gotoStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`,
       { waitFor: '[data-toolbar-search]', settle: 900 })
     let r = await page.evaluate(PROBE)
     if (r.missing) { rec(false, `${name} @${w}:找不到 ${r.missing}(示範沒有消費 DataToolbar?)`); continue }
@@ -87,7 +88,7 @@ for (const [i, id] of STORIES.entries()) {
 }
 // selftest 的晚到對照組需要瀏覽器還活著(--single-process 開不了第二個 browser,所以沿用同一個)
 if (!SELFTEST) { await browser.close() }
-server.close()
+await server.stop()
 if (SELFTEST) {
   // ── 對照組 B:證明「等元素」真的在等,而不是換個寫法的固定睡眠 ──────────────
   // 本機夠快,所以真跑在本機**兩種寫法都會綠** —— 那不構成證據。這一組讓元素故意晚到 2.5 秒

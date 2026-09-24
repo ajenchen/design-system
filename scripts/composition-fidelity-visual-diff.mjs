@@ -28,7 +28,6 @@ import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
-import http from 'node:http'
 import { existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname, extname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,6 +36,7 @@ import {
   ensureRuntimeEvidenceRoot,
   prepareRuntimeEvidenceFile,
 } from './lib/governance-runtime-evidence.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -224,39 +224,37 @@ console.log(`Found ${identityMappings.length} identity-verify mapping(s)(標 @co
 identityMappings.forEach((m) => console.log(`  - ${m.consumerStoryId} → ${m.baselineStoryId} [${m.mode}]`))
 
 // ── 2. Spin up static file servers if needed ──
-function staticServer(dir, port) {
-  const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.mjs': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf' }
-  const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split('?')[0])
-    if (p === '/') p = '/index.html'
-    const fp = join(dir, p)
-    if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-    res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' })
-    res.end(readFileSync(fp))
-  })
-  return new Promise(resolve => server.listen(port, () => resolve(server)))
-}
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+// (原本寫死 8801 / 8802 埠;改為各自取空埠,兩邊仍是不同 origin)
+const staticServer = (dir) => startA11yStaticServer({ rootDirectory: dir, defaultFile: 'iframe.html' })
 
 let dsUrl = args['ds-url']
 let consumerUrl = args['consumer-url']
 let dsServer, consumerServer
+process.once('exit', (code) => {
+  if (!code) return
+  for (const [side, server] of [['DS', dsServer], ['consumer', consumerServer]]) {
+    if (server?.notFound.length) console.error(`同源 404(${side}):`, [...new Set(server.notFound)].join(', '))
+  }
+})
 if (!dsUrl) {
   const dsStatic = args['ds-static'] || join(ROOT, 'storybook-static')
   if (!existsSync(dsStatic)) {
     console.error(`❌ DS static dir not found: ${dsStatic}`)
     process.exit(2)
   }
-  dsServer = await staticServer(dsStatic, 8801)
-  dsUrl = 'http://localhost:8801'
+  dsServer = await staticServer(dsStatic)
+  dsUrl = dsServer.origin
 }
 if (!consumerUrl) {
   const consumerStatic = args['consumer-static']
   if (!consumerStatic || !existsSync(consumerStatic)) {
     console.error(`❌ Consumer static dir not found: ${consumerStatic}`)
+    await dsServer?.stop()
     process.exit(2)
   }
-  consumerServer = await staticServer(consumerStatic, 8802)
-  consumerUrl = 'http://localhost:8802'
+  consumerServer = await staticServer(consumerStatic)
+  consumerUrl = consumerServer.origin
 }
 
 // ── 3. Screenshot + diff per mapping ──
@@ -475,8 +473,8 @@ for (const m of identityMappings) {
 }
 
 await browser.close()
-dsServer?.close()
-consumerServer?.close()
+await dsServer?.stop()
+await consumerServer?.stop()
 
 const report = { generatedAt: new Date().toISOString(), threshold: THRESHOLD_PCT, mapping: identityMappings, conformanceOnly, results, summary: { total: results.length, fail: failCount, pass: results.length - failCount } }
 const reportPath = evidenceFile('report.json')

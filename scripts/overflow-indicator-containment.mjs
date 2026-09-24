@@ -11,24 +11,21 @@
  * 量的是「有沒有超出可見範圍」,不是「有沒有 overflow:hidden 幫忙藏起來」——
  * 被藏起來的溢出對使用者一樣是壞的(數字看不到)。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
 const STATIC = join(process.cwd(), 'storybook-static')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「沒有 +N / +N 溢出」
+process.on('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 
 const SELFTEST = process.argv.includes('--selftest')
 const WIDTHS = [1440, 1100, 900, 720, 560, 420]
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+// story 清單也讀**正在供檔的那份建置**(快照),不讀活目錄 —— 清單與頁面必須出自同一次建置
+const index = JSON.parse(readFileSync(join(sv.snapshot?.dir ?? STATIC, 'index.json'), 'utf8'))
 // 自動推導:凡是可能出現「+N」的元件全掃,不挑幾個代表(NO-SAMPLE)
 const IDS = Object.keys(index.entries).filter((i) => /avatar|peoplepicker|tag|chip|overflow|datatable/i.test(i) && /展示|設計規格/.test(i))
 
@@ -46,7 +43,7 @@ let scanned = 0, withPlus = 0
 const PROBE_WIDTHS = [WIDTHS[0], WIDTHS[WIDTHS.length - 1]]
 const hasPlus = async (id, w) => {
   await page.setViewportSize({ width: w, height: 900 })
-  try { await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=` + encodeURIComponent(id), { waitUntil: 'load', timeout: 15000 }) }
+  try { await page.goto(`${sv.origin}/iframe.html?id=` + encodeURIComponent(id), { waitUntil: 'load', timeout: 15000 }) }
   catch { return false }
   await page.waitForTimeout(320)
   return page.evaluate(() => {
@@ -70,7 +67,7 @@ for (const id of CANDIDATES) {
   for (const w of WIDTHS) {
     await page.setViewportSize({ width: w, height: 900 })
     try {
-      await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=` + encodeURIComponent(id), { waitUntil: 'load', timeout: 15000 })
+      await page.goto(`${sv.origin}/iframe.html?id=` + encodeURIComponent(id), { waitUntil: 'load', timeout: 15000 })
     } catch { continue }
     await page.waitForTimeout(320)
     const hits = await page.evaluate((selftest) => {
@@ -111,7 +108,7 @@ for (const id of CANDIDATES) {
   if (sawPlus) withPlus++
 }
 
-await browser.close(); sv.close()
+await browser.close(); await sv.stop()
 
 console.log(`第二段:${CANDIDATES.length} 個候選 × ${WIDTHS.length} 個寬度;合計載入 ${scanned} 次,${withPlus} 個 story 確認有「+N」`)
 if (SELFTEST) {

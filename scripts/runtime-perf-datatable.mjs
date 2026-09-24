@@ -17,18 +17,17 @@ import { launchBrowser } from './lib/launch-browser.mjs'
 // 2026-09-08:沒給 STORYBOOK_URL 就直接服務 storybook-static(跟 data-table-scroll-cost.mjs 同款),不再依賴
 // 開著的 dev server —— 這支閘在沙箱裡從沒跑起來過(dev server 不在、而且 `--single-process` 沙箱一個 browser 只能開
 // 一個 context,第二次 `browser.newPage` 就炸 "browser has been closed")。每 run 重開 browser。
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname } from 'node:path'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const STATIC_DIR = process.env.DT_STATIC || join(dirname(fileURLToPath(import.meta.url)), '..', 'storybook-static')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
-let staticServer = null
+let server = null
 if (!process.env.STORYBOOK_URL) {
-  staticServer = http.createServer((q, s) => { let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'; const f = join(STATIC_DIR, p); if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return } s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f)) })
-  await new Promise((r) => staticServer.listen(0, r))
+  // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+  server = await startA11yStaticServer({ rootDirectory: STATIC_DIR, defaultFile: 'iframe.html' })
 }
-const STORYBOOK_URL = process.env.STORYBOOK_URL || `http://localhost:${staticServer.address().port}`
+const report404 = () => { if (server?.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
+const STORYBOOK_URL = process.env.STORYBOOK_URL || server.origin
 const targets = [
   { id: 'design-system-components-datatable-展示--virtual-scroll', label: 'VirtualScroll(10000 rows × 7 cols rich)' },
   { id: 'design-system-components-datatable-展示--roadmap-all-in-one', label: 'RoadmapAllInOne(500 × 13 rich + 全 features)' },
@@ -60,140 +59,146 @@ function stats(arr) {
   return { median, mean, stddev: Math.sqrt(variance) }
 }
 
-for (const t of targets) {
-  const runResults = []
-  for (let run = 0; run < RUNS_PER_STORY; run++) {
-  const browser = await launchBrowser()
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+try {
+  for (const t of targets) {
+    const runResults = []
+    for (let run = 0; run < RUNS_PER_STORY; run++) {
+    const browser = await launchBrowser()
+    const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
 
-  // CPU throttle via CDP(必在 page mount 後 newCDPSession)
-  const client = await page.context().newCDPSession(page)
-  await client.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE_RATE })
+    // CPU throttle via CDP(必在 page mount 後 newCDPSession)
+    const client = await page.context().newCDPSession(page)
+    await client.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE_RATE })
 
-  await page.coverage.startJSCoverage()
+    await page.coverage.startJSCoverage()
 
-  const mountStart = Date.now()
-  await page.goto(`${STORYBOOK_URL}/iframe.html?id=${t.id}&viewMode=story`, { waitUntil: 'networkidle' })
+    const mountStart = Date.now()
+    await page.goto(`${STORYBOOK_URL}/iframe.html?id=${t.id}&viewMode=story`, { waitUntil: 'networkidle' })
 
-  // Wait until first row appears(2026-05-14 bump 10s → 25s — storybook dev mode 偶爾慢 mount)
-  try {
-    await page.waitForSelector('[role="row"][data-row-index="0"]', { timeout: 25000 })
-  } catch {
-    console.log(`\n## ${t.label}: FAIL — no row[data-row-index=0] in 25s`)
-    await page.close()
-    await browser.close()
-    continue
-  }
-  const mountMs = Date.now() - mountStart
+    // Wait until first row appears(2026-05-14 bump 10s → 25s — storybook dev mode 偶爾慢 mount)
+    try {
+      await page.waitForSelector('[role="row"][data-row-index="0"]', { timeout: 25000 })
+    } catch {
+      console.log(`\n## ${t.label}: FAIL — no row[data-row-index=0] in 25s`)
+      report404()
+      await page.close()
+      await browser.close()
+      continue
+    }
+    const mountMs = Date.now() - mountStart
 
-  // Wait for table to stabilize
-  await page.waitForTimeout(800)
+    // Wait for table to stabilize
+    await page.waitForTimeout(800)
 
-  // Initial DOM stats
-  const initStats = await page.evaluate(() => {
-    const rows = document.querySelectorAll('[role="row"][data-row-index]')
-    return {
-      totalRowsRendered: rows.length,
+    // Initial DOM stats
+    const initStats = await page.evaluate(() => {
+      const rows = document.querySelectorAll('[role="row"][data-row-index]')
+      return {
+        totalRowsRendered: rows.length,
+        domNodeCount: document.querySelectorAll('*').length,
+        heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : null,
+      }
+    })
+
+    // Inject long-task observer + frame timer
+    await page.evaluate(() => {
+      window.__perf = { longTasks: [], frames: [], scrollEnd: 0 }
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          window.__perf.longTasks.push({ ts: entry.startTime, duration: entry.duration })
+        }
+      }).observe({ entryTypes: ['longtask'] })
+
+      let lastTs = performance.now()
+      function tick(ts) {
+        const delta = ts - lastTs
+        window.__perf.frames.push(delta)
+        lastTs = ts
+        if (ts < window.__perf.scrollEnd) requestAnimationFrame(tick)
+      }
+      window.__startFrameTimer = (durationMs) => {
+        window.__perf.frames = []
+        window.__perf.scrollEnd = performance.now() + durationMs
+        requestAnimationFrame(tick)
+      }
+    })
+
+    // Scroll the scroll container
+    const scrollResult = await page.evaluate(async () => {
+      // Find scrolling element (center body)
+      const scroller = document.querySelector('[role="grid"] [class*="overflow"]') ||
+        document.querySelector('.overflow-auto, [class*="overflow-y-auto"], [class*="overflow-auto"]')
+      if (!scroller) return { error: 'no scroller found' }
+      const scrollerEl = (scroller.closest('[class*="overflow-y-auto"]') || scroller)
+      window.__startFrameTimer(2000)
+      const startScroll = performance.now()
+      // Simulate 2s of scrolling: 50px per 16ms
+      let pos = 0
+      while (performance.now() - startScroll < 2000) {
+        pos += 50
+        scrollerEl.scrollTop = pos
+        await new Promise(r => requestAnimationFrame(r))
+      }
+      return { ok: true, finalScrollTop: scrollerEl.scrollTop, scrollDuration: performance.now() - startScroll }
+    })
+
+    await page.waitForTimeout(300)
+
+    // Read perf
+    const perfData = await page.evaluate(() => {
+      const frames = window.__perf.frames
+      const longTasks = window.__perf.longTasks
+      // 16.67ms = 60fps budget
+      const overBudget = frames.filter(f => f > 16.67).length
+      const overBudgetPct = frames.length > 0 ? Math.round((overBudget / frames.length) * 100) : 0
+      const avgFrame = frames.length > 0 ? frames.reduce((a, b) => a + b, 0) / frames.length : 0
+      const p95Frame = frames.length > 0 ? [...frames].sort((a, b) => a - b)[Math.floor(frames.length * 0.95)] : 0
+      return {
+        frameCount: frames.length,
+        avgFrameMs: Number(avgFrame.toFixed(2)),
+        p95FrameMs: Number((p95Frame || 0).toFixed(2)),
+        framesOverBudget: overBudget,
+        framesOverBudgetPct: overBudgetPct,
+        longTaskCount: longTasks.length,
+        longestTaskMs: longTasks.length > 0 ? Math.max(...longTasks.map(t => t.duration)).toFixed(0) : 0,
+      }
+    })
+
+    // After-scroll DOM stats
+    const afterStats = await page.evaluate(() => ({
+      rowCount: document.querySelectorAll('[role="row"][data-row-index]').length,
       domNodeCount: document.querySelectorAll('*').length,
       heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : null,
-    }
-  })
+    }))
 
-  // Inject long-task observer + frame timer
-  await page.evaluate(() => {
-    window.__perf = { longTasks: [], frames: [], scrollEnd: 0 }
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        window.__perf.longTasks.push({ ts: entry.startTime, duration: entry.duration })
-      }
-    }).observe({ entryTypes: ['longtask'] })
+    runResults.push({ run, mountMs, avgFrame: perfData.avgFrameMs, p95Frame: perfData.p95FrameMs,
+      longTaskCount: perfData.longTaskCount, longestTaskMs: Number(perfData.longestTaskMs),
+      initStats, afterStats, scrollResult })
 
-    let lastTs = performance.now()
-    function tick(ts) {
-      const delta = ts - lastTs
-      window.__perf.frames.push(delta)
-      lastTs = ts
-      if (ts < window.__perf.scrollEnd) requestAnimationFrame(tick)
-    }
-    window.__startFrameTimer = (durationMs) => {
-      window.__perf.frames = []
-      window.__perf.scrollEnd = performance.now() + durationMs
-      requestAnimationFrame(tick)
-    }
-  })
+    await page.close()
+    await browser.close()
+    } // end runs
 
-  // Scroll the scroll container
-  const scrollResult = await page.evaluate(async () => {
-    // Find scrolling element (center body)
-    const scroller = document.querySelector('[role="grid"] [class*="overflow"]') ||
-      document.querySelector('.overflow-auto, [class*="overflow-y-auto"], [class*="overflow-auto"]')
-    if (!scroller) return { error: 'no scroller found' }
-    const scrollerEl = (scroller.closest('[class*="overflow-y-auto"]') || scroller)
-    window.__startFrameTimer(2000)
-    const startScroll = performance.now()
-    // Simulate 2s of scrolling: 50px per 16ms
-    let pos = 0
-    while (performance.now() - startScroll < 2000) {
-      pos += 50
-      scrollerEl.scrollTop = pos
-      await new Promise(r => requestAnimationFrame(r))
-    }
-    return { ok: true, finalScrollTop: scrollerEl.scrollTop, scrollDuration: performance.now() - startScroll }
-  })
+    // Statistical summary across runs
+    const avgFrames = runResults.map(r => r.avgFrame)
+    const p95Frames = runResults.map(r => r.p95Frame)
+    const longestTasks = runResults.map(r => r.longestTaskMs)
+    const avgStats = stats(avgFrames)
+    const p95Stats = stats(p95Frames)
+    const longestStats = stats(longestTasks)
+    const last = runResults[runResults.length - 1]
 
-  await page.waitForTimeout(300)
-
-  // Read perf
-  const perfData = await page.evaluate(() => {
-    const frames = window.__perf.frames
-    const longTasks = window.__perf.longTasks
-    // 16.67ms = 60fps budget
-    const overBudget = frames.filter(f => f > 16.67).length
-    const overBudgetPct = frames.length > 0 ? Math.round((overBudget / frames.length) * 100) : 0
-    const avgFrame = frames.length > 0 ? frames.reduce((a, b) => a + b, 0) / frames.length : 0
-    const p95Frame = frames.length > 0 ? [...frames].sort((a, b) => a - b)[Math.floor(frames.length * 0.95)] : 0
-    return {
-      frameCount: frames.length,
-      avgFrameMs: Number(avgFrame.toFixed(2)),
-      p95FrameMs: Number((p95Frame || 0).toFixed(2)),
-      framesOverBudget: overBudget,
-      framesOverBudgetPct: overBudgetPct,
-      longTaskCount: longTasks.length,
-      longestTaskMs: longTasks.length > 0 ? Math.max(...longTasks.map(t => t.duration)).toFixed(0) : 0,
-    }
-  })
-
-  // After-scroll DOM stats
-  const afterStats = await page.evaluate(() => ({
-    rowCount: document.querySelectorAll('[role="row"][data-row-index]').length,
-    domNodeCount: document.querySelectorAll('*').length,
-    heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : null,
-  }))
-
-  runResults.push({ run, mountMs, avgFrame: perfData.avgFrameMs, p95Frame: perfData.p95FrameMs,
-    longTaskCount: perfData.longTaskCount, longestTaskMs: Number(perfData.longestTaskMs),
-    initStats, afterStats, scrollResult })
-
-  await page.close()
-  await browser.close()
-  } // end runs
-
-  // Statistical summary across runs
-  const avgFrames = runResults.map(r => r.avgFrame)
-  const p95Frames = runResults.map(r => r.p95Frame)
-  const longestTasks = runResults.map(r => r.longestTaskMs)
-  const avgStats = stats(avgFrames)
-  const p95Stats = stats(p95Frames)
-  const longestStats = stats(longestTasks)
-  const last = runResults[runResults.length - 1]
-
-  console.log(`\n## ${t.label} [CPU ${CPU_THROTTLE_RATE}x throttled, ${RUNS_PER_STORY} runs]`)
-  console.log(`  Mount-to-first-row(last):  ${last.mountMs}ms`)
-  console.log(`  Initial DOM rows:           ${last.initStats.totalRowsRendered}`)
-  console.log(`  Avg frame median: ${avgStats.median}ms  mean: ${avgStats.mean.toFixed(2)}ms  ±stddev: ${avgStats.stddev.toFixed(2)}ms`)
-  console.log(`  p95 frame median: ${p95Stats.median}ms  mean: ${p95Stats.mean.toFixed(2)}ms`)
-  console.log(`  Longest task median: ${longestStats.median}ms`)
-  console.log(`  All runs avg: [${avgFrames.join(', ')}] ms`)
+    console.log(`\n## ${t.label} [CPU ${CPU_THROTTLE_RATE}x throttled, ${RUNS_PER_STORY} runs]`)
+    console.log(`  Mount-to-first-row(last):  ${last.mountMs}ms`)
+    console.log(`  Initial DOM rows:           ${last.initStats.totalRowsRendered}`)
+    console.log(`  Avg frame median: ${avgStats.median}ms  mean: ${avgStats.mean.toFixed(2)}ms  ±stddev: ${avgStats.stddev.toFixed(2)}ms`)
+    console.log(`  p95 frame median: ${p95Stats.median}ms  mean: ${p95Stats.mean.toFixed(2)}ms`)
+    console.log(`  Longest task median: ${longestStats.median}ms`)
+    console.log(`  All runs avg: [${avgFrames.join(', ')}] ms`)
+  }
+} catch (error) {
+  report404()
+  throw error
+} finally {
+  await server?.stop()
 }
-
-if (staticServer) staticServer.close()

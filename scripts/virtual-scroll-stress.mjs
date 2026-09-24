@@ -12,12 +12,14 @@
  *   - **畫面不能空掉**:user 說的「出錯」也可能是空白而不是例外,所以量可見列數,
  *     而不是只聽 console。
  */
-import http from 'node:http'; import { existsSync, readFileSync, statSync } from 'node:fs'; import { join, extname } from 'node:path'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const { launchBrowser } = await import(new URL('./scripts/lib/launch-browser.mjs', 'file://' + process.cwd() + '/').href)
 const STATIC=join(process.cwd(),'storybook-static')
-const MIME={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html';const f=join(STATIC,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}s.writeHead(200,{'content-type':MIME[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:下面的 console 過濾會吞掉「Failed to load resource」,缺檔只看得到這裡
+process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const b=await launchBrowser(); const p=await b.newPage()
 const errs=[]
 let blankSeen = 0
@@ -29,7 +31,7 @@ p.on('console', m=>{ if(m.type()==='error' && !/ERR_NAME_NOT_RESOLVED|Failed to 
 
 for (const id of ['design-system-components-datatable-展示--virtual-scroll','design-system-components-datatable-展示--row-drag-with-virtualization']) {
   console.log('\n▶ ' + id.replace('design-system-components-',''))
-  await p.goto(`http://localhost:${sv.address().port}/iframe.html?id=`+encodeURIComponent(id),{waitUntil:'load'}); await p.waitForTimeout(1800)
+  await p.goto(`${sv.origin}/iframe.html?id=`+encodeURIComponent(id),{waitUntil:'load'}); await p.waitForTimeout(1800)
   if (SELFTEST) await p.evaluate(() => { setTimeout(() => { throw new Error('selftest 故意丟的例外') }, 10) })
   const before = errs.length
 
@@ -75,7 +77,7 @@ for (const id of ['design-system-components-datatable-展示--virtual-scroll','d
   }
   console.log(`  視窗高度 400→900→300→1000 捲動中改變 → 累計錯誤 ${errs.length - before}`)
 }
-await b.close(); sv.close()
+await b.close(); await sv.stop()
 
 if (SELFTEST) {
   const caught = errs.some((e) => /selftest 故意丟的例外/.test(e))

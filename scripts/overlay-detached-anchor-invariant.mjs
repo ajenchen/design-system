@@ -15,8 +15,9 @@
  * 對照組(--selftest)：注入一個 `[data-radix-popper-content-wrapper]` 假浮層在 (0,8) 並可見,偵測器必須判紅。
  * 用法：node scripts/overlay-detached-anchor-invariant.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -26,10 +27,10 @@ if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${
 if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/Tooltip/tooltip.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
   console.error(`✗ STALE-BUILD：tooltip.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
 }
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「浮層畫錯位置」
+process.on('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const STORY = 'design-system-components-agentpanel-展示--task-assistant'
 const CLOSE = 'button[aria-label="關閉面板"]'
 
@@ -58,7 +59,7 @@ const browser = await launchBrowser(); const page = await browser.newPage({ view
 let failed = 0
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
 // 等關閉鈕本身出現再量(理由同 agent-fab:固定睡眠會讓 hoverClose() 丟「找不到關閉鈕」)。
-const fresh = async () => { await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: CLOSE, settle: 900 }) }
+const fresh = async () => { await gotoStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: CLOSE, settle: 900 }) }
 const hoverClose = async () => {
   const b = await page.locator(CLOSE).first().boundingBox()
   if (!b) throw new Error('找不到關閉鈕')
@@ -83,7 +84,7 @@ if (SELFTEST) {
   const sampled = await page.evaluate(SAMPLER, 400)
   const hits = topLeftHits(sampled)
   rec(hits.length > 0, `對照組：注入一個可見的 (0,8) 假浮層 → 偵測器必須判紅 | 命中 ${hits.length} 幀,首見 ${JSON.stringify(hits[0] ?? null)}`)
-  await browser.close(); server.close()
+  await browser.close(); await server.stop()
   const ok = failed === 0
   console.log(ok ? '✓ selftest：偵測器會紅,量具有效' : '✗ selftest：注入了左上角浮層卻沒判紅 —— 量具無效')
   process.exit(ok ? 0 : 1)
@@ -125,6 +126,6 @@ rec(!!opened && opened.x > 40, `前提：指標停在關閉鈕上時 tooltip 開
   rec(!last.some((s) => s.visible && s.x < 40 && s.y < 40), `B 1.5 秒後也沒有殭屍浮層停在左上角 | 末幀 ${JSON.stringify(last)}`)
 }
 
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 console.log(failed ? `✗ overlay-detached-anchor ${failed} 條失敗(SSOT：tokens/elevation/overlay-geometry.ts OVERLAY_HIDE_WHEN_DETACHED)` : '✅ overlay-detached-anchor PASS(錨點被藏起來時浮層不畫在左上角)')
 process.exit(failed ? 1 : 0)

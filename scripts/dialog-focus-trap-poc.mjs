@@ -34,23 +34,19 @@
 // Run: `node scripts/dialog-focus-trap-poc.mjs`
 
 import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const S = join(process.cwd(), 'storybook-static')
-const MIME = { '.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2' }
-const sv = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(S, p); if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => sv.listen(0, r))
-const B = `http://localhost:${sv.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
+const B = server.origin
+// 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「元件沒渲染」
+const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
 
 let br
 try { br = await chromium.launch({ headless: true, args: ['--single-process', '--no-sandbox'] }) }
-catch (e) { sv.close(); console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(e.message).split('\n')[0]})`); process.exit(0) }
+catch (e) { await server.stop(); console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(e.message).split('\n')[0]})`); process.exit(0) }
 
 const pg = await br.newPage({ viewport: { width: 1280, height: 900 } })
 const probe = async (id) => {
@@ -75,8 +71,11 @@ const probe = async (id) => {
   return { ...before, 選單開得起來: opened }
 }
 
-const withDialog = await probe('design-system-components-dialog-展示--focus-trap-with-concurrent-overlay')
-const control = await probe('design-system-components-dialog-展示--focus-trap-control-no-dialog')
+let withDialog, control
+try {
+  withDialog = await probe('design-system-components-dialog-展示--focus-trap-with-concurrent-overlay')
+  control = await probe('design-system-components-dialog-展示--focus-trap-control-no-dialog')
+} catch (e) { report404(); await br.close(); await server.stop(); throw e }
 
 console.log('【Modal Dialog 開著】', JSON.stringify(withDialog, null, 1))
 console.log('【對照組:沒有 Dialog】', JSON.stringify(control, null, 1))
@@ -98,5 +97,6 @@ ck('G4:舞台元素是 aria-hidden 但**沒有 inert**(仍在 Tab 順序裡 = ax
 console.log('\n' + out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項與預期不符 —— 代表行為變了,結論要重寫` : '\n✓ 三項皆如實測所述')
 console.log('\n【結論】G1 的硬約束**仍未驗證**,而且要等隔離範圍縮到舞台之後才驗得到。')
-await br.close(); sv.close()
+await br.close(); await server.stop()
+if (fail) report404()
 process.exit(fail ? 1 : 0)

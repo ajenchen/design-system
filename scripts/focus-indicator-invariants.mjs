@@ -39,9 +39,9 @@
 // Run: `node scripts/focus-indicator-invariants.mjs`
 
 import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { statSync } from 'node:fs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const STATIC = join(process.cwd(),'storybook-static')
@@ -50,14 +50,13 @@ const SRCS = ['packages/design-system/src/components/FileViewer/file-viewer.tsx'
 const buildMtime = statSync(join(STATIC,'index.html')).mtimeMs
 for (const f of SRCS) { const m = statSync(f).mtimeMs; if (m > buildMtime) { console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) } }
 
-const MIME={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.woff':'font/woff','.woff2':'font/woff2'}
-const server=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(STATIC,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':MIME[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>server.listen(0,r))
-const B=`http://localhost:${server.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「元件沒畫框」
+process.on('exit',code=>{if(code&&server.notFound.length)console.error('同源 404:',[...new Set(server.notFound)].join(', '))})
+const B=server.origin
 let br; try{br=await chromium.launch({headless:true,args:['--single-process','--no-sandbox']})}
-catch(e){server.close();console.error('SKIPPED-ENV',String(e.message).split('\n')[0]);process.exit(0)}
+catch(e){await server.stop();console.error('SKIPPED-ENV',String(e.message).split('\n')[0]);process.exit(0)}
 const pg=await br.newPage({viewport:{width:1280,height:800}})
 if (SELFTEST) {
   // 對照組:把焦點指示器整個抹掉 —— 這正是 DS 被咬過三次的那個形狀
@@ -248,7 +247,7 @@ if (SELFTEST) {
   // 抹掉焦點框之後,守「焦點畫得出來」的那幾條必須紅;只有「紅了幾條」不夠 ——
   // 要紅在對的地方,否則注入的形狀不對,對照組就沒證明到東西。
   const focusFails = out.filter((line) => line.startsWith('✗') && /J2d|F2|F3|F5/.test(line))
-  await br.close(); server.close()
+  await br.close(); await server.stop()
   if (focusFails.length) {
     console.log(`\n✓ selftest:抹掉焦點指示器後 ${focusFails.length} 條焦點條目變紅,量具會紅\n${focusFails.join('\n')}`)
     process.exit(0)
@@ -258,4 +257,4 @@ if (SELFTEST) {
 }
 
 console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
-await br.close(); server.close(); process.exit(fails?1:0)
+await br.close(); await server.stop(); process.exit(fails?1:0)

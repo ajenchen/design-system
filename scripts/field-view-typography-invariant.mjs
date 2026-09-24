@@ -10,18 +10,19 @@
  * 對照組(--selftest):把每個 view 段第一個文字節點硬改 16px,量具必須紅(RadioGroup 修前就是這個樣子:16px/24px vs 14px/21px)。
  * 用法:node scripts/field-view-typography-invariant.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.map': 'application/json' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
-const index = JSON.parse(fs.readFileSync(path.join(root, 'index.json'), 'utf8'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
+// story 清單也從同一份快照讀(沒有 build-info.json 的根目錄沒有快照,照舊讀根目錄)
+const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root, 'index.json'), 'utf8'))
 const STORIES = Object.values(index.entries).filter((e) => e.type === 'story' && /^design-system-components-[a-z]+-展示--modes$/u.test(e.id)).map((e) => e.id).sort()
 // 段落 = <h3>edit|view|…</h3> 之後、下一個 <h3> 之前的節點;取段裡第一個「自己直接含文字」的元素量字級。
 const PROBE = (sabotage) => {
@@ -37,17 +38,20 @@ const PROBE = (sabotage) => {
 const browser = await launchBrowser(); const ctx = await browser.newContext({ viewport: { width: 1200, height: 1400 }, deviceScaleFactor: 1 }); const page = await ctx.newPage()
 let failed = 0, sampled = 0
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
-for (const id of STORIES) {
-  await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 })
-  await page.waitForTimeout(600)
-  const r = await page.evaluate(PROBE, SELFTEST)
-  const name = id.replace(/^design-system-components-|-展示--modes$/gu, '')
-  if (r.skip) { console.log(`  · ${name}:略過(${r.skip})`); continue }
-  sampled++
-  rec(r.view.font === r.edit.font, `${name}:view 字級 ${r.view.font}px(「${r.view.text}」)= edit 字級 ${r.edit.font}px(「${r.edit.text}」)`)
-}
-await browser.close(); server.close()
+try {
+  for (const id of STORIES) {
+    await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 })
+    await page.waitForTimeout(600)
+    const r = await page.evaluate(PROBE, SELFTEST)
+    const name = id.replace(/^design-system-components-|-展示--modes$/gu, '')
+    if (r.skip) { console.log(`  · ${name}:略過(${r.skip})`); continue }
+    sampled++
+    rec(r.view.font === r.edit.font, `${name}:view 字級 ${r.view.font}px(「${r.view.text}」)= edit 字級 ${r.edit.font}px(「${r.edit.text}」)`)
+  }
+} catch (e) { report404(); throw e }
+finally { await browser.close(); await server.stop() }
 rec(sampled >= 4, `取樣:${sampled} 個有文字 view 的四模式 story(需 ≥ 4)`)
-if (SELFTEST) { const ok = failed >= sampled && sampled > 0; console.log(ok ? `✓ selftest:對照組(view 硬改 16px)讓 ${failed} 條紅,量具會紅` : '✗ selftest:對照組沒讓每一條紅 —— 量具無效'); process.exit(ok ? 0 : 1) }
+if (SELFTEST) { const ok = failed >= sampled && sampled > 0; console.log(ok ? `✓ selftest:對照組(view 硬改 16px)讓 ${failed} 條紅,量具會紅` : '✗ selftest:對照組沒讓每一條紅 —— 量具無效'); if (!ok) report404(); process.exit(ok ? 0 : 1) }
 console.log(failed ? `✗ field-view-typography ${failed} 條失敗(SSOT:field-controls.spec.md (e) View typography canonical)` : `✅ field-view-typography PASS(${sampled} 個 story)`)
+if (failed) report404()
 process.exit(failed ? 1 : 0)

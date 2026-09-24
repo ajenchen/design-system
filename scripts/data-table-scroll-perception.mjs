@@ -4,8 +4,8 @@ import { launchBrowser } from "./lib/launch-browser.mjs";
 import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
-import http from "node:http";
 import { PNG } from "pngjs";
+import { startA11yStaticServer } from "./lib/a11y-static-server.mjs";
 import {
   analyzeContent,
   quantileSummary as quant,
@@ -83,27 +83,11 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   }
   process.exit(code);
 }
-const server = http.createServer((req, res) => {
-  try {
-    const p = path.join(dir, decodeURIComponent(req.url.split("?")[0]));
-    res.setHeader(
-      "Content-Type",
-      {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".css": "text/css",
-        ".svg": "image/svg+xml",
-        ".json": "application/json",
-        ".woff2": "font/woff2",
-      }[path.extname(p)] ?? "application/octet-stream"
-    );
-    res.end(fs.readFileSync(p));
-  } catch {
-    res.statusCode = 404;
-    res.end();
-  }
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: dir, defaultFile: "iframe.html" });
+process.once("exit", (code) => {
+  if (code && server.notFound.length) console.error("同源 404:", [...new Set(server.notFound)].join(", "));
 });
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
 let browser;
 try {
   browser = await launchBrowser({ ignoreDefaultArgs: ["--hide-scrollbars"] });
@@ -148,8 +132,8 @@ try {
   // --cpu-throttle=<rate>:本機重現慢機器(與 fast-scroll / scroll-cost 同一機制);不當 CI 閘(節流不可跨機器校準,AD62)
   if (arg("cpu-throttle")) await cdp.send("Emulation.setCPUThrottlingRate", { rate: +arg("cpu-throttle") });
   await page.goto(
-    `http://127.0.0.1:${
-      server.address().port
+    `${
+      server.origin
     }/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story&${arg(
       "query",
       ""
@@ -597,5 +581,5 @@ try {
     process.exitCode = 1;
 } finally {
   await browser?.close();
-  server.close();
+  await server.stop();
 }

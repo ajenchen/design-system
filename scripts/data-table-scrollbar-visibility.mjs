@@ -23,13 +23,13 @@
  * 對照組(M32「儀器要先有對照組」,`--selftest`):(i) 捲動區加高 2px → B 必紅;(ii) 用 `pointer-events:none`
  * 的遮蓋物蓋住垂直捲軸外側一半 → C 仍綠、D 必紅。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, extname, dirname } from 'node:path'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const { PNG } = createRequire(join(REPO, 'package.json'))('pngjs')
@@ -37,11 +37,15 @@ const STATIC = join(REPO, 'storybook-static')
 const SELFTEST = process.argv.includes('--selftest')
 const QUICK = process.argv.includes('--quick') // PR 閘:6 支代表 story、Windows 預設幾何、中段位置;全矩陣(43 story × 5 幾何 × 3 位置)在排程閘 focus-deep-gates.yml
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7)
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 const TRACK = 0xee, THUMB = 0x99
 
 if (!existsSync(join(STATIC, 'index.json'))) { console.error('storybook-static/index.json 不存在,先 npm run build-storybook'); process.exit(2) }
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+// story 清單也從同一份快照讀,受測的 story 與供檔的建置是同一份(M37)。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
+const index = JSON.parse(readFileSync(join(server.snapshot?.dir ?? STATIC, 'index.json'), 'utf8'))
 let ids = Object.values(index.entries).filter((e) => e.type === 'story' && /datatable/i.test(e.id)).map((e) => e.id)
 if (ONLY) ids = ids.filter((i) => i.includes(ONLY))
 // PR 閘只跑 6 支代表性 story(填滿高度雙軸 / 虛擬捲動 / 釘選欄雙表 / 容器高度 / 自動列高 / 基本);
@@ -49,15 +53,6 @@ if (ONLY) ids = ids.filter((i) => i.includes(ONLY))
 const QUICK_STORIES = ['roadmap-all-in-one', 'virtual-scroll', 'pinned-columns', 'container-height', 'row-auto-height', '--basic']
 if (QUICK && !ONLY) ids = ids.filter((i) => QUICK_STORIES.some((q) => i.endsWith(q) || i.includes(q + '-') || i.includes(q)))
 if (SELFTEST) ids = [ids.find((i) => i.includes('roadmap-all-in-one')) ?? ids[0]]
-
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
 
 const FULL = [{ sb: 17, dpr: 1 }, { sb: 11, dpr: 1 }, { sb: 17, dpr: 1.25 }, { sb: 17, dpr: 1.5 }, { native: true, dpr: 1 }]
 const MATRIX = SELFTEST || QUICK ? [{ sb: 17, dpr: 1 }] : FULL // PR 閘只跑 Windows 預設幾何、只在中段位置驗(≈25s);原生組與頂/底位置在排程閘
@@ -224,7 +219,7 @@ for (const geo of MATRIX) {
   }
   await b.close()
 }
-server.close()
+await server.stop()
 
 if (SELFTEST) {
   const ok = selftest.clipRed && selftest.coverStillGreen && selftest.pixelRed

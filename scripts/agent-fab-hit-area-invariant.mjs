@@ -40,9 +40,9 @@
 
 import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -54,21 +54,17 @@ if (!existsSync(STATIC)) {
   process.exit(1)
 }
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-  res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
-})
-await new Promise(r => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
 
 let browser
 try {
   browser = await launchBrowser()
 } catch (error) {
   // 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例)。
-  server.close()
+  await server.stop()
   console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
   process.exit(0)
 }
@@ -272,7 +268,7 @@ for (const btn of await page.locator('[data-placement] button').all()) {
 }
 
 await browser.close()
-server.close()
+await server.stop()
 
 if (SELFTEST) {
   // 紅在對的地方才算數:必須是 H4「可視形狀外不得點得到」被打到。

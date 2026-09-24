@@ -20,36 +20,27 @@
  *
  *   node scripts/data-table-scrollbar-color.mjs [--build=<dir>] [--selftest]
  */
-import http from 'node:http'
-import { join, extname, resolve, dirname } from 'node:path'
+import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync, statSync, readFileSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { PNG } from 'pngjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const BUILD = resolve(arg('build', join(REPO, 'storybook-static')))
 const SELFTEST = process.argv.includes('--selftest')
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
-const serve = async (dir) => {
-  const s = http.createServer((q, r) => {
-    let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-    const f = join(dir, p)
-    if (!existsSync(f) || statSync(f).isDirectory()) { r.writeHead(404); r.end(); return }
-    r.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); r.end(readFileSync(f))
-  })
-  await new Promise((r) => s.listen(0, r))
-  return { server: s, base: `http://localhost:${s.address().port}` }
-}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const px = (png, x, y) => { const i = (png.width * y + x) << 2; return [png.data[i], png.data[i + 1], png.data[i + 2]] }
 const same = (a, b, tol = 6) => a.every((v, i) => Math.abs(v - b[i]) <= tol)
 const show = (c) => `rgb(${c.join(',')})`
 
-const { server, base } = await serve(BUILD)
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const base = server.origin
 let fail = 0
 const ck = (n, ok, d = '') => { console.log(`${ok ? '✓' : '✗'} ${n}${d ? ' | ' + d : ''}`); if (!ok) fail++ }
 const seen = {}
@@ -95,7 +86,7 @@ try {
     ck('S1 暗色的軌道顏色 ≠ 亮色的軌道顏色(color-scheme 真的生效)',
       !same(seen.light.vTrack, seen.dark.vTrack, 10), `亮 ${show(seen.light.vTrack)} / 暗 ${show(seen.dark.vTrack)}`)
   } else { ck('S1 兩個主題都有量到', false, '缺其中一個') }
-} finally { server.close() }
+} finally { await server.stop() }
 
 if (SELFTEST) {
   if (fail === 0) { console.log('\n✗ 對照組:強制 color-scheme:light 之後斷言全過 —— 量具該紅沒紅'); process.exit(1) }
