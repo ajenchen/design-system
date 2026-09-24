@@ -434,7 +434,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Chrome-unbounded marker(2026-04-22 v5 canonical):button 若無視覺邊界(text variant 或 dismiss),
     // 標記 data-unbounded="true"。SurfaceHeader 透過 [&_[data-unbounded]]:my-[...] 套負 margin
-    // 讓 layout 佔位縮到 24(chrome-header-height 幾何)— button native size 與 touch target 不變。
+    // 讓 layout 佔位縮到 24(chrome-header-height 幾何)— button native size 與命中區不變
+    // (命中 ≡ 可視,見 ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的
+    //  「touch target」正名為命中區 —— 本 DS 以滑鼠精度為前提,尺寸不以觸控門檻推導)。
     // 詳 overlay-surface.spec.md「Chrome dismiss size canonical」
     const unboundedAttr =
       resolvedVariant === 'text' || dismiss ? { 'data-unbounded': 'true' } : {}

@@ -140,6 +140,42 @@ Field 高度由 Rating container(`h-field-md`)自然對齊其他 field control,�
 
 一顆星 Rating 同時給自己評和看別人評的常見錯誤是都用 interactive——使用者會誤以為可以改別人的分數。
 
+### 命中區 = 每顆星自己的盒,零外擴(2026-09-24 逐案裁定)
+
+跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`)要禁的是「在元素之外長出一圈吃指標的東西」。
+**本元件沒有這種東西**:整星的命中目標就是包住 icon 的那個 `<span>`(`rating.tsx:245-259`),
+它的盒**等於 icon 自己的盒**(md 24×24);半星是同一個盒切左右各半
+(`rating.tsx:277-291`,`absolute inset-y-0 left-0 w-1/2` / `right-0 w-1/2`),兩半相加剛好還原那顆星。
+沒有 `-inset`、沒有透明 border、沒有 `hitSlop`。
+
+**星形 glyph 比盒小是對的,不是漏洞。** 契約明文:「圖示與文字是裝在裡面的**內容**,內容可以比命中區小,不得比它大」。
+星形是凹多邊形,若把命中改成貼著 glyph 的輪廓,星角之間的凹口會變成點不到的死區 ——
+那正好踩到契約要防的**另一邊**(看得到卻點不到)。所以這裡**任何改動都只會製造違規,不會消除違規**。
+
+**星與星之間的 4px(`gap-1`,`rating.tsx:180`)不屬於任何一顆星**,沒有人去搶它;實測點下去值不變。
+
+**世界級同款**(2026-09-24 讀原始碼核對 —— 兩家的半星判定都是**方盒的 x 比例**,沒有人貼 glyph 輪廓):
+
+| 來源 | 命中載體 | 半星怎麼判 |
+|---|---|---|
+| **Material MUI** `Rating.js:127`(`RatingLabel = styled('label')`)、`:316-330`(`<label>` 內含 `visuallyHidden` 的 `<input type="radio">`)([Rating.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Rating/Rating.js)) | 覆蓋整顆 icon 的 `<label>` | `Rating.js:429-440`:`percent = (event.clientX - left) / containerWidth`(`left`/`containerWidth` 取自 **root 的 `getBoundingClientRect()`**),再 `roundValueToPrecision` |
+| **Ant Design Rate**(`rc-rate`)`Star.tsx:82-94`([Star.tsx](https://github.com/react-component/rate/blob/master/src/Star.tsx))、`Rate.tsx:98-110`([Rate.tsx](https://github.com/react-component/rate/blob/master/src/Rate.tsx)) | 包住 `-first` / `-second` 兩層的那個 `<div onClick>` | `getStarValue(index, x)`:`x - leftDis < width / 2` 就算半星 —— 同樣是**盒寬的一半**,不是星形 |
+
+**實測(2026-09-24,真 `page.mouse.click` + `elementFromPoint` 逐點擁有者地圖,storybook 設計規格--元件檢閱器,precision=half、值 2.5)**:
+
+| 量的東西 | 結果 |
+|---|---|
+| 整星命中盒 vs icon 盒 | `24×24` vs `24×24` —— **完全重合,零外擴** |
+| 半星兩個 zone | 左 `154–166`、右 `166–178`,**相切零重疊**,聯集 = 那顆星的 24 寬 |
+| 逐點擁有者地圖(2px 網格,12×12) | 左半 6 欄全 `L`、右半 6 欄全 `R`,**沒有任何一點漏給別人** |
+| 點左半中心 / 左上角 / 左下角(角落在星形之外、盒之內) | 三處都 → `2.5`(盒內每一點都是同一個目標) |
+| 點右半中心 | → `3` |
+| 對照組:點盒外左側 2px | `elementFromPoint` = 容器 `div`,值維持 `2.5` —— 證明這支探針量得出「沒人擁有」 |
+
+⚠️ 量測時踩過一次坑,記在這裡:第一版測試沒有先把指標移出元件,殘留的 `hoverValue` 讓那顆星從半星變回整星、
+兩個 zone 當場消失,於是「點左上角」量到 `3` 而被誤讀成「角落漏接」。**量 hover 驅動的元件前必須先讓它回到靜止態**
+(移出元件觸發 root 的 `onMouseLeave`),否則量到的是上一次互動的殘影。
+
 ### Loading canonical(composite 元件 opacity pattern)
 
 Rating 是**複合 element**(多顆星共同組成評分值),loading 走 **composite 整塊 dim** 策略(對齊 FileUpload / Sidebar menu row),**不**套 skeleton 替換星星:

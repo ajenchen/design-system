@@ -164,8 +164,19 @@ const RadioGroup = React.forwardRef<
       <div
         {...restDomProps}
         ref={setRef}
-        role="radiogroup"
-        aria-readonly="true"
+        // ⛔ 2026-09-24:這裡原本是 role="radiogroup" + aria-readonly="true",是**空頭承諾**。
+        // 這個分支只渲一個 <span> 顯示選中值,**一個 role="radio" 子元素都沒有**,也沒有任何方向鍵
+        // —— 螢幕閱讀器會宣告「單選群組」並提供方向鍵,按下去什麼都沒有;而且 radiogroup 的
+        // aria-required-children 就是 radio,這棵樹在結構上本來就是壞的。
+        //
+        // 改成 role="group" 是**對齊本 DS 既有先例**(M23):Select 的 ReadonlyDisplay
+        //(select.tsx:374 起)就是純 <span> / <div>,**不掛任何 role**。
+        // aria-readonly 同時拿掉 —— WAI-ARIA 1.2 沒把它列進 group 的支援屬性
+        //(axe 的 aria-allowed-attr 會抓;rating.tsx:174 記過同一個坑)。
+        // 唯讀語意已由「裡面根本沒有可互動控件」表達,與 Select 一致。
+        // 規則 → ds-canonical/references/keyboard-model-canonical.md「宣告了 composite 角色,
+        // 就必須真的實作那套鍵盤」;機械閘 scripts/composite-role-keyboard-invariant.mjs。
+        role="group"
         aria-labelledby={fieldCtx?.labelId}
         aria-invalid={fieldCtx?.invalid || undefined}
         data-readonly="true"

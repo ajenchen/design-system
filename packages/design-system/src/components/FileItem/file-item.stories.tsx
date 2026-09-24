@@ -38,7 +38,8 @@ const keyboardOpen = fn()
 // **Row action 絕對值 cap = ≤ 24px,不隨 row tier 放大**。rich + compact 統一用
 // Button size="xs" iconOnly variant="text"(24 固定,≤ cap):
 // compact row 透過 FileItem 內部 suffix wrapper `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]`
-// trick 讓 Button(24)layout footprint 收斂到 1lh(~18px)不撐高 row,觸控範圍仍 24。
+// trick 讓 Button(24)layout footprint 收斂到 1lh(~18px)不撐高 row,視覺與命中區仍 24
+// (命中 ≡ 可視,見 ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的「觸控範圍」正名為命中區)。
 // Trash/Delete 非 dismiss 語意(dismiss 嚴格 = X close overlay),不套 `dismiss` prop——
 // Button variant="text" 本來就 fg-muted,視覺已弱化(兩 mode 同)。
 // 詳 item-anatomy.spec.md「Predicate」+「Row action 絕對值 cap」
@@ -69,6 +70,15 @@ export const Rich = {
     const action = await within(canvasElement).findByRole('button', { name: '開啟 Alan Profile.png' })
     action.focus()
     await userEvent.keyboard('{Enter}')
+    await expect(keyboardOpen).toHaveBeenCalledTimes(1)
+
+    // 點同一列 trailing action 的刪除鈕:只該觸發刪除,**不得**連帶觸發整列 onClick。
+    // 2026-09-24 補。先前這支 play 只驗了鍵盤 Enter 那一條,於是「點刪除連帶把檔案開起來」
+    // 在我們自己的示範裡一路沒人看見 —— 那個洞不是沒人踩到,是**沒有人在量**。
+    // `action` 是覆蓋整列的隱形鈕,它的 parentElement 就是列本身;用它把搜尋範圍縮到同一列,
+    // 才不會抓到別列的刪除鈕(三列都有一顆)。
+    const row = action.parentElement as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: '刪除' }))
     await expect(keyboardOpen).toHaveBeenCalledTimes(1)
   },
 }

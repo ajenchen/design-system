@@ -395,7 +395,7 @@ async function auditScenario(browser, scenario, opts = {}) {
     ? { status: 'not-run', action: scenario.interaction.action, selector: scenario.interaction.selector }
     : null
   // 凍結系統「日期」(2026-07-07 根治 VR 換日假 breach):日期元件內部 new Date()(Calendar today
-  // 圈 calendar.tsx:191 / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
+  // 圈 calendar.tsx 的 resolvedToday / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
   // (anchor:calendar-event-publishing 0.503%,diff 量 = today 標記移格固定像素)。
   // ⚠️ 不用 page.clock.setFixedTime:它底層連 requestAnimationFrame 一起假化 → FileViewer
   // fit-to-page 排在 rAF 的邏輯永不執行,卡 100% 未 fit(vr4 run 28843769570 40.3% breach 實錘)。

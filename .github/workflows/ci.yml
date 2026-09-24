@@ -134,6 +134,17 @@ jobs:
           # 就是兩邊都沒有 —— 而「沒壞要綠」那一半正是同一天三次效能誤報的所在(同一份建置
           # 量到 215 vs 311、長工合計 main 自己 1.83×,門檻卻是 1.25×)。棘輪:新增的閘必須宣告。
           npm run test:gate-control-group
+          # 同族第四面,而且是前三面結構上看不到的那一面:hook 明明登記在 registrations.json,
+          # 斷掉的是**產生檢視**那一層。2026-09-24 錨例 —— P0 批准前置閘從 PreToolUse 第 7 群搬到
+          # 第 8 群,registrations 與 git index 都對了,工作樹的 .claude/settings.json 還停在 7 群,
+          # 而 Claude Code 讀的正是工作樹那份 → 整個 session 零覆蓋零訊號,11 個受治理檔被編輯後
+          # 還被寫成「都過了 P0 閘」。拿 runtime 當儀器是全盲(缺掉的那群本來就不會被叫起來)。
+          npm run test:provider-view-group-reachability
+          # 規則重犯代表缺的是強制面,不是再寫一遍散文(M36(b''))。2026-09-24:Calendar 宣告
+          # role="grid" 卻整檔零 keydown、每顆日期鈕都 tabIndex=0 —— 螢幕閱讀器宣告「可用方向鍵瀏覽」,
+          # 按下去沒反應;同輪還有 story 容器寫 role="listbox" 當裝飾,而示範是消費者會照抄的。
+          # 規則住在 ds-canonical/references/keyboard-model-canonical.md,這支負責讓它有訊號。
+          npm run test:composite-role-keyboard
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization

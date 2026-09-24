@@ -3081,13 +3081,21 @@ function DataTableInner<TData>(
       const isDisabled = isRowSelectable ? !isRowSelectable(rowOriginal) : false
       const ariaLabel = getRowAriaLabel?.(rowOriginal) ?? '選取此列'
       const checkboxSize = size === 'lg' ? 'lg' : 'md'
-      // Cell 整格可點:click cell padding 也觸發 toggle/select(對齊 Linear / Apple Mail / Material DataGrid)
-      // 內部 checkbox/radio 用 stopPropagation 避免 double-fire
-      const onCellClick = isDisabled ? undefined : (e: React.MouseEvent) => {
-        e.stopPropagation()
-        if (mode === 'single') setSelection({ mode: 'include', ids: [rowId] })
-        else toggleRow(rowId, rowOriginal, { shiftKey: e.shiftKey })
-      }
+      // ⭕ 2026-09-24:這格的留白**不再可點**。它原本把 `onClick` 掛在整個 cell 容器上,
+      // 理由寫的是「擴大 hit target 且不要求精準矄準」—— 而那正是 user 2026-09-24 裁示不採納的觸控論述。
+      // 拿掉的真正理由在「列層」那一條(`ds-canonical/references/hit-area-canonical.md`):
+      // 列的懸停底色是**掃視輔助**,不蘊含這一列可點(IBM Carbon 逐字:row hover
+      // "should always be enabled ... even if the row is not interactive")。本表沒有整列點擊(全檔查無 onRowClick),
+      // 於是使用者收到的唯一訊號(整列亮起來)跟事實(只有這一格可點)不相等。
+      //
+      // 五家一手對照(2026-09-24):MUI 的 `handleRowClick` 對選取欄明文 early-return
+      // (註解逐字 "click on checkbox should not trigger row selection")、Carbon 的
+      // `<td className="cds--table-column-checkbox">` 完全沒有 onClick、Ant Design 的
+      // `.ant-checkbox-wrapper` 是 `inline-flex` 收縮貼合、AG Grid 的 `enableClickSelection` 預設 false。
+      // 唯一讓格內留白可點的 Polaris，是因為它**整列都可點**且整列 hover 跟可點綁在同一個條件。
+      // 「格可點 + 列不可點 + 只有列有 hover」是第三種,五家沒有任何一家這樣做。
+      //
+      // 現在命中區 = checkbox / radio 自己那塊可見方框(懸停時變邊框色,回饋形狀 ≡ 命中區)。
       return (
         <div
           key={cell.id}
@@ -3098,9 +3106,8 @@ function DataTableInner<TData>(
           // / Linear idiom)。**只有 inlineEdit + selectable 模式且 select 不在 leftBody 邊界時** style
           // 才生效(避免雙線)— CSS 用 `:not(:last-child)` selector 處理。
           data-column-id={SELECT_COL_ID}
-          className={cn('flex items-center justify-center shrink-0', !isDisabled && 'cursor-pointer')}
+          className={cn('flex items-center justify-center shrink-0')}
           style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
-          onClick={onCellClick}
         >
           {mode === 'single' ? (
             <RadioGroupItem
@@ -3607,9 +3614,10 @@ function DataTableInner<TData>(
         <div
           key={header.id}
           role="columnheader"
-          className={cn('flex items-center justify-center shrink-0 select-none', !isHeaderDisabled && 'cursor-pointer')}
+          // 同上(見列身選取格的說明):表頭選取格的留白同樣不再可點,命中區 = 全選 checkbox 本體。
+          // 同族兩處必須一起改(M10):只改列身、留表頭不動,就是「另一條不變」那種沒掃完的訊號。
+          className={cn('flex items-center justify-center shrink-0 select-none')}
           style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
-          onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >
           {mode === 'multi' && (
             <Checkbox
@@ -3618,7 +3626,7 @@ function DataTableInner<TData>(
               onClick={(e) => e.stopPropagation()}
               onCheckedChange={() => toggleHeaderCheckbox()}
               aria-label="全選可見列"
-              disabled={selectableVisibleIds.length === 0}
+              disabled={isHeaderDisabled}
             />
           )}
         </div>

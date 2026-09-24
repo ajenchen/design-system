@@ -331,6 +331,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 - FileItem 提供 `onClick` prop,consumer 傳入即進 clickable 模式：滑鼠保留整列 hit area；鍵盤透過同層透明 native button 以 Tab / Enter / Space 觸發，並以 `actionAriaLabel`（預設「開啟 {name}」）命名。row 本身不加互動 role，避免包住 trailing actions 形成 nested-interactive。
 - 兩種 surface 都可以用 `onClick`(upload-manager 可跟 `onDownload` hover-swap 並存)
 - consumer 決定具體行為(download / FileViewer),元件只提供 row 可點擊能力
+- **為什麼是「列不互動 + 覆蓋控件」而不是「列自己是 button」**:因為本元件的列裡裝了必須被輔助科技讀到的結構——`ProgressBar`(自帶 `role="progressbar"`)、`Avatar`、以及 hover-swap 的 `<Button>`;依 `../../patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」表,這是**第二類**。Sidebar 的列只有文字與圖示,走**第一類**(列自己就是 `<button>`)。判準與規範逐字出處在該表,本檔不重述。
 
 ## ProgressBar
 
@@ -354,7 +355,7 @@ Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Pr
 | Mode | 實作 | 尺寸 |
 |------|------|------|
 | `rich` | **Button iconOnly `size="xs"`**(24 固定,不隨 row 放大) | 24 |
-| `compact` | **Button iconOnly `size="xs"`**(同 rich;靠 suffix wrapper `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]` trick 把 24 footprint 收斂到 1lh,不撐高 row,視覺 / touch target 仍 24) | 24 |
+| `compact` | **Button iconOnly `size="xs"`**(同 rich;靠 suffix wrapper `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]` trick 把 24 footprint 收斂到 1lh,不撐高 row,視覺與命中區仍 24) | 24 |
 
 ```tsx
 // Rich + Compact 統一 → Button xs iconOnly 固定 24(≤ 24 cap)
@@ -381,7 +382,7 @@ Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Pr
 
 **幾何一致性(2026-04-23 統一 canonical · row action ≤ 24 cap)**:status slot 容器大小 **= consumer 的 delete action 尺寸**,兩 mode 統一:
 - `mode="rich"` → `var(--field-height-xs)`(24 固定,與 Button xs iconOnly 同)
-- `mode="compact"` → `var(--field-height-xs)`(24,同 rich;compact 靠 status slot wrapper 的 `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]` 把 24 footprint 收斂到 1lh,不撐高 row,視覺 / touch target 仍 24)
+- `mode="compact"` → `var(--field-height-xs)`(24,同 rich;compact 靠 status slot wrapper 的 `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]` 把 24 footprint 收斂到 1lh,不撐高 row,視覺與命中區仍 24 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把本檔兩處原文的「touch target」正名為命中區,本 DS 以滑鼠指標的精度為前提,尺寸不以觸控門檻推導)
 
 Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿同一容器。這讓 flex gap token 測量的是**兩個同尺寸 action slot 之間的真實 gap**,不被 hover bg overflow 吃掉——status slot 尺寸 = 同 size delete slot,gap token 才能如實呈現;歷史 bug 細節見 `.claude/skills/design-system-audit/references/historical-bugs.md`。
 

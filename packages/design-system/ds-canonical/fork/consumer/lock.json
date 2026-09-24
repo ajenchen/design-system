@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "992bbf8761767fadaab9af3c49eacb8091243b32471d1603fa2a630d74bbd1bd",
+    "forkCorpusLockSha256": "fbf061db6073fbe51fc626383c9e39f4dd5c9c0f2963494aa1e724c2df1107fe",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "b8167162d63414c71a4cdcdfa8461113a3c195bd5ce5f077eea3ae4528d97e07",
@@ -58,7 +58,7 @@
       },
       "codex": {
         "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
-        "hookSha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
+        "hookSha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
         "skillsSha256": "5f8c2acd654e1fd22ed596c84032074f1bb844522fa1bc29db1c1462e77764d7",
         "treeDigests": {}
       },

@@ -578,6 +578,69 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | Icon 模式 | 整個 suffix 隱藏 |
 | Host disabled 時 | 不渲染(遵守宿主 disabled 規則) |
 
+**為什麼動作鈕是絕對定位的同層兄弟、而不是放在列裡面**:因為 `SidebarMenuButton` 的列本體就是原生 `<button>`,列內只有文字與圖示;依 `../../patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」表,這是**第一類**(預設),而 `<button>` 的 content model 明文不准有 interactive content 後代,動作鈕只能出到列外面、列再用 `paddingRight` 讓開。FileItem 的列裡有進度條與狀態鈕,走**第二類**(列不互動 + 透明覆蓋控件)。判準與規範逐字出處在該表,本檔不重述。
+
+### 行內動作的命中區 = 可視形狀(2026-09-24 兩次修正)
+
+`SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),
+所以它們的幾何由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是
+`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是
+`ds-canonical/references/hit-area-canonical.md`。
+
+實測(1280×900,`展示 — 側邊欄動作懸停狀態`):按鈕盒 **16×16**、懸停底色 **18×18**、圖示 **16×16**;
+懸停底色邊緣**內** 1px 的四面探針全部打到 `menu-action` 自己,邊緣**外** 2px 的四面分別打到
+`menu-button` / `menu-label`(列鈕與列文字)。**命中區 = 懸停底色,外面沒有任何隱形帶。**
+
+#### 修正一:拿掉只在窄視窗生效的隱形外擴帶
+
+先前這裡有一圈 `after:absolute after:-inset-2 after:md:hidden`,只在 `<md` 視窗生效、每邊 8px。
+2026-09-24 拿掉,理由是**量出來的**。對照組的作法是把那圈帶**原樣用 CSS 打回去**
+(`@media (max-width:767.98px)` + `::after{content:"";position:absolute;inset:-8px}`):
+
+實測環境:viewport **400px**(行動斷點,帶若還在就會生效),在頁面裡複製一份 `<li>` 造出相鄰第二列 ——
+實測兩列間距 **0.00px**(`SidebarMenu` 的 `<ul>` 沒有 `gap`),正是最擠的情況。
+
+| 量的東西 | 現況(帶已拿掉) | 對照組(帶原樣打回去) |
+|---|---|---|
+| `::after` 的 `content` | `none`(根本沒有這一層) | `""` |
+| 命中區 | 等於懸停底色 | **`36.5×32`** |
+| 鈕外緣 +4px,**上** | `menu-button`(自己這一列的列鈕) | **`menu-action` 自己的帶** |
+| 鈕外緣 +4px,**下** | `menu-button` | **第二列 `menu-action` 的帶** |
+| 鈕外緣 +4px,**左** | `menu-label`(列的文字) | **`menu-action` 自己的帶** |
+| 鈕外緣 +4px,**右** | `menu-button` | **`menu-action` 自己的帶** |
+| 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
+| 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
+
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,
+以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md:449` 記過。
+拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+
+#### 修正二:它們本來就不該是手刻的
+
+查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),
+之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,
+也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、
+20 圖示配 22 底色兩種組合,**20 兩種都不是**。
+更直接的證據是:**同一個檔案 `sidebar.tsx:814` 的收合箭頭早就在消費 `ItemInlineActionButton`**,
+`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+
+依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
+
+**API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop
+(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `:813` 的作法從外面包 `Trigger asChild`)。
+**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。
+消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
+
+**依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示逐字:
+「我們在做的是 web component,不要一直拿觸控裝置的設計原則來規範,滑鼠的指標是可以比手指頭精細很多的」)。
+觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
+
+**為什麼可以小於 24**:`../../tokens/uiSize/uiSize.spec.md:169`「元件高度地板」的 24px 只管**可獨立存在**的
+互動元件,同一段明文把「元件內部的 Inline Action」交給宿主元件的 spec 定義 —— 現在那份定義是
+`patterns/element-anatomy/inline-action.spec.md`的尺寸表。
+
+**之後要改這裡的判準**:想放大命中區,就把**可視形狀**一起放大(讓底色真的變大),不要再長一圈看不見的帶。
+
 **Canonical 實作**:`ItemInlineAction` + `ItemSuffix`(`item-anatomy.tsx`)。未來 DropdownMenuItem / TreeItem / Field / Tag 都應逐步遷移到這個共用元件,消除「每個 host 各自複製 18 行 JSX」的技術債——見 `inline-action.spec.md`(Inline Action SSOT)。
 
 **何時用**:

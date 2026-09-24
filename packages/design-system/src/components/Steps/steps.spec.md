@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     px: 8
-    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(hit area 24px),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:18-28)"
+    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:18-28)"
     world-class: ["Ant Design Steps small", "MUI Stepper compact"]
   md:
     px: 24
@@ -137,7 +137,7 @@ indicator 圓形 flex items-center 居中
 
 | Size | Indicator 直徑 | 內部 icon | 內部數字字體 | Label 字體 | Description 字體 |
 |---|---|---|---|---|---|
-| `sm` | 8px dot(hit area 24px)| 純圓點,不放數字/icon | — | `text-body` (14px) | `text-caption` (12px) |
+| `sm` | 8px dot(排版盒 24px)| 純圓點,不放數字/icon | — | `text-body` (14px) | `text-caption` (12px) |
 | `md` | 24px circle | 16px | `text-body` (14px) | `text-body` (14px) | `text-caption` (12px) |
 | `lg` | 32px circle | 20px | `text-body-lg` (16px) | `text-body-lg` (16px) | `text-body` (14px) |
 
@@ -150,7 +150,7 @@ indicator 圓形 flex items-center 居中
 **`sm`(小點)**
 - ✅ 用在 sidebar 內 nested 流程、緊湊空間、次要進度指示
 - ❌ 步驟需要 icon 或要使用者明確數到「第幾步」時不用(sm 沒有數字/icon,辨識度不足)
-- sm 的 indicator 視覺只有 8px,但 hit area 撐到 24px(`field-height-xs` 地板),可點擊時不違反互動元件最小尺寸規則
+- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(讓三個尺寸的 indicator 欄同寬),`steps.tsx:42` 常數名即 `INDICATOR_BOX_WIDTH`。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
 
 **`md`(預設)**
 - ✅ 絕大多數場景:checkout、註冊、設定精靈
@@ -183,6 +183,32 @@ sm 沒有 icon 空間,用色塊表達:
 - `current`(linear)→ 藍色**空心**環(`border: 2px solid var(--info-hover)`);non-linear current 走灰實心點(`bg-fg-disabled`)。`reachable` 也是空心環
 - `completed` → 藍實心點(`bg-info`)
 - `error` → 紅實心點(`bg-error`)
+
+### 指示點不是命中目標 —— 命中區 = 整列 header(2026-09-24 逐案裁定)
+
+**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:718-722`),
+真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:484-488`)。
+指標落在圓點上時,收到事件的一樣是那一列 —— 圓點只是列裡的一個子元素。
+
+**所以這裡沒有任何外擴**,跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
+「懸停回饋的形狀 ≡ 命中區」)要禁的是「在元素之外長出一圈吃指標的東西」,本元件不存在這種東西:
+命中區就是 header 自己的盒,一個 `-inset` / `hitSlop` / 透明 border 都沒有。
+header 沒有懸停底色,所以依同一份契約的退化條款,判準回到**可視形狀本身**(那一列的內容),兩者同一個盒。
+
+**sm 的 8px 圓點外面那個 24×24 的盒是排版欄寬,不是命中區。** 它讓 sm / md / lg 三個尺寸的 indicator 欄同寬、
+label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:42-46`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
+已正名為 `SM_INDICATOR_BOX` —— 舊名字會讓人以為「視覺 8 / 命中 24」是一條刻意的外擴,於是跑去
+hit-area-canonical 找例外理由,但根本沒有外擴這回事。
+
+**實測(2026-09-24,`elementFromPoint` 逐點掃描,storybook 設計規格--尺寸對照表)**:
+
+| 量的東西 | 結果 |
+|---|---|
+| 24×24 裝飾盒的 `aria-hidden` | `true`;內含 8×8 的點 |
+| 指標打在點的正中心,收到的是誰 | **`role="button"` 的整列 header**(不是那顆點) |
+| 整列 header 的盒 | 1214×18.2 @ (33,121.1) —— 命中就是這個盒 |
+| header 的懸停底色 | `rgba(0,0,0,0)`(hover 前後都是)→ 無懸停回饋,判準回到可視形狀 |
+| 對照組 | 沒有 `role="button"` 祖先的那些 step(不可點的列),同一個點打下去收到的是裝飾 `span` 自己、沒有任何處理器 —— 證明這支探針分得出「可點」與「不可點」 |
 
 ### 自動推導(順序即優先級,對齊 `computeState`)
 
@@ -219,7 +245,7 @@ Per-item `state="error"` prop 存在但是 **escape hatch**,僅用在 inline JSX
 
 ### Outer ring 的關鍵設計
 
-- **Bounding box 固定**:focus 外環以 box-shadow 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px hit area)
+- **Bounding box 固定**:focus 外環以 box-shadow 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px 排版盒)
 - **Surface gap + ring 兩層外環**:內圈先用 surface 色拉開一段 gap,外圈再疊 ring 色,形成「indicator 外有一圈帶間隙的環」——精確 gap / ring 寬度與 box-shadow 值見 steps.tsx `getOuterRingShadow`。兩層 shadow 不改變 bounding box，因此不會推動連接線或文字。
 - **Ring 色由 state 決定**:`error` → `--error-hover`;non-linear `current` → `--border-hover`;其餘(含 linear current / completed / upcoming / reachable)→ `--info-hover`
 
@@ -244,7 +270,7 @@ filled 底色與內容色**完全由 content state 決定,不因 focused 改變*
 
 ### Sm 尺寸的 focus 處理
 
-sm 的 8px dot 用同一套 `getOuterRingShadow` box-shadow halo 在 dot 外圍繞圈——**但仍在 24px hit area 內**,所以 bounding 不變。
+sm 的 8px dot 用同一套 `getOuterRingShadow` box-shadow halo 在 dot 外圍繞圈——**但仍在 24px 的 indicator 排版盒內**,所以 bounding 不變。(那個盒是欄寬,不是命中區;見上方「指示點不是命中目標」。)
 
 ### 為什麼 bounding 不變這麼重要
 
@@ -444,7 +470,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 ## 相關
 
-- `../../patterns/element-anatomy/item-anatomy.spec.md` — Row primitive 繼承規則（字體 / icon tier / hit area 地板）
+- `../../patterns/element-anatomy/item-anatomy.spec.md` — Row primitive 繼承規則（字體 / icon tier / 列高）
 - `../Tabs/tabs.spec.md` — 平行視圖切換（非進度場景）
 - `../Breadcrumb/breadcrumb.spec.md` — 位置路徑（非進度場景）
 - `../RadioGroup/radio-group.spec.md` — 選值（非進度場景）

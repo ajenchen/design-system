@@ -133,7 +133,7 @@ const CONSUMERS: Record<ConsumerKey, ConsumerPreset> = {
     desc: '頁面列表（未來元件）',
     mode: 'reading',
     py: 'py-3 (12px)',
-    pyDesc: '觸控友好的列表行高',
+    pyDesc: '頁面級列表的寬鬆行高(配閱讀模式與較大 avatar)',
     px: 'px-4 (16px)',
     pxDesc: '頁面標準水平間距',
     gap: 'gap-3 (12px)',
@@ -243,10 +243,20 @@ const Z = {
   },
 }
 
-/** Menu container — role=listbox 滿足內部 MenuItem role=option 的 parent(axe aria-required-parent)。 */
+/**
+ * Menu container — **靜態視覺預覽,不是真的 listbox**。
+ *
+ * 2026-09-24:原本是 `role="listbox"`,理由是「滿足內部 MenuItem role=option 的 parent
+ *(axe aria-required-parent)」。那是拿一個 ARIA 角色去消 lint,而不是描述這東西真的是什麼 ——
+ * 這個容器沒有選取狀態、沒有方向鍵、沒有焦點管理,`listbox` 是對輔助科技的空頭承諾
+ *(SSOT:`ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。
+ * 正解是**兩邊一起拿掉**:容器改 `role="group"`(結構角色,不承諾鍵盤),
+ * 裡面的 MenuItem 傳 `role="presentation"`(元件本就支援,見 menu-item.tsx 的「ARIA 單一 owner gate」),
+ * 於是既沒有孤兒 option,也沒有假的 composite。
+ */
 const MenuFrame = ({ children, width = 320 }: { children: React.ReactNode; width?: number }) => (
   <div
-    role="listbox"
+    role="group"
     aria-label="Anatomy inspector menu preview"
     className="rounded-lg bg-surface-raised border border-border overflow-hidden py-2"
     style={{ width, boxShadow: 'var(--elevation-200)' }}
@@ -541,7 +551,7 @@ const InspectorInner = () => {
           <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             {consumer === 'MenuItem' && (
               <MenuFrame width={360}>
-                <MenuItem
+                <MenuItem role="presentation"
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
                   avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
@@ -986,10 +996,10 @@ export const AlignmentThreshold = {
 
           {/* Live example */}
           <MenuFrame width={360}>
-            <MenuItem size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
+            <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
               電子郵件通知
             </MenuItem>
-            <MenuItem size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
+            <MenuItem role="presentation" size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
               推送通知
             </MenuItem>
           </MenuFrame>
@@ -1040,10 +1050,10 @@ export const AlignmentThreshold = {
 
           {/* Live example */}
           <MenuFrame width={360}>
-            <MenuItem size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
+            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
               Alice Chen
             </MenuItem>
-            <MenuItem size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
+            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
               Bob Wang
             </MenuItem>
           </MenuFrame>
@@ -1123,7 +1133,7 @@ export const ReadingModes = {
             <div key={sz} className="flex items-start gap-3">
               <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
               <MenuFrame width={300}>
-                <MenuItem size={sz} startIcon={Mail} description="每日寄送摘要信件">
+                <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日寄送摘要信件">
                   電子郵件通知
                 </MenuItem>
               </MenuFrame>
@@ -1287,9 +1297,9 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">Prefix icon = foreground（代表內容）</span>
             <MenuFrame width={260}>
-              <MenuItem size="md" startIcon={Mail}>電子郵件</MenuItem>
-              <MenuItem size="md" startIcon={Settings}>設定</MenuItem>
-              <MenuItem size="md" startIcon={Star}>收藏</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Mail}>電子郵件</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Settings}>設定</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Star}>收藏</MenuItem>
             </MenuFrame>
           </div>
 
@@ -1297,7 +1307,7 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">Suffix indicator = fg-muted（指示方向）</span>
             <MenuFrame width={280}>
-              <MenuItem
+              <MenuItem role="presentation"
                 size="md"
                 startIcon={Globe}
                 endContent={
@@ -1309,7 +1319,7 @@ export const IconColorsAndPresets = {
               >
                 語言
               </MenuItem>
-              <MenuItem
+              <MenuItem role="presentation"
                 size="md"
                 startIcon={Lock}
                 endContent={
@@ -1327,7 +1337,7 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">危險操作 = 與 label 同色（text-error）</span>
             <MenuFrame width={260}>
-              <MenuItem size="md" startIcon={Trash2} className="text-error">
+              <MenuItem role="presentation" size="md" startIcon={Trash2} className="text-error">
                 刪除專案
               </MenuItem>
             </MenuFrame>
@@ -1380,10 +1390,10 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">MenuItem</span>
             <MenuFrame width={280}>
-              <MenuItem size="md" startIcon={Mail} description="每日寄送摘要信件">
+              <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件">
                 電子郵件通知
               </MenuItem>
-              <MenuItem size="md" startIcon={Bell}>
+              <MenuItem role="presentation" size="md" startIcon={Bell}>
                 推送通知
               </MenuItem>
             </MenuFrame>

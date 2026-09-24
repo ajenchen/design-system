@@ -28,10 +28,19 @@ const INDICATOR_ICON_SIZE: Record<StepsSize, number> = {
   lg: 20,
 }
 
-const SM_HIT_AREA = 24
+// sm 的 8px 圓點放在一個 24×24 的**排版盒**裡,讓三個尺寸的 indicator 欄同寬、label 起點對齊
+//(md 24 / lg 32 的圓本身就是那個盒,只有 sm 的圓比盒小)。
+//
+// ⚠️ 這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,那個名字是錯的,而且錯得會誤導:
+// 這個盒掛在 `aria-hidden` 的裝飾 `<span>` 上,**它不是任何東西的命中區** —— Steps 可點的是整列
+// header(本檔 `StepItemHeader` 的 `role="button"`),圓點只是那一列裡的一個裝飾。叫它 HIT_AREA
+// 會讓後來的人以為「視覺 8、命中 24」是一條刻意的外擴,於是去 hit-area-canonical 找例外理由,
+// 但根本沒有外擴這回事(M37:別拿一個當時剛好成立的觀察量當那個性質本身)。
+// 命中區與可視形狀的關係見 `steps.spec.md`「指示點不是命中目標」。
+const SM_INDICATOR_BOX = 24
 
 const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
-  sm: SM_HIT_AREA,
+  sm: SM_INDICATOR_BOX,
   md: INDICATOR_SIZE.md,
   lg: INDICATOR_SIZE.lg,
 }
@@ -709,7 +718,7 @@ function SmIndicator({
     <span
       aria-hidden
       className="relative inline-flex items-center justify-center shrink-0"
-      style={{ width: SM_HIT_AREA, height: SM_HIT_AREA }}
+      style={{ width: SM_INDICATOR_BOX, height: SM_INDICATOR_BOX }}
     >
       <span
         className={cn('block rounded-full', disabled && 'opacity-disabled')}

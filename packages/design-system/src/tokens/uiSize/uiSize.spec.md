@@ -347,7 +347,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 - **Fixed-height 套到能 grow 的 chrome**(e.g. 把 Dialog 改 fixed-h 48):DialogDescription 被剪切 → 違反 modal 作為完整決策 context 的職責
 - **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):高度會變成內容驅動，違反 sidebar 的固定 chrome contract
-- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:touch target 變 24 違反 a11y,且 dismiss 按鈕尺寸與 overlay chrome 比例不協調 — v5 trick 同時保視覺 + a11y + 幾何
+- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:按鈕本身被縮到 24,**與 overlay chrome 的比例不協調**(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於本檔「元件高度地板」段(:169)訂的最小值,沒有低於任何我們採用的門檻。先前這裡寫的「touch target 變 24 違反 a11y」既與 :169 自相矛盾、也查無出處,2026-09-24 更正;我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示),不以觸控尺寸建議作依據。v5 trick 同時保視覺 + 幾何:layout 只佔 24,視覺與命中仍是 `sm` 的 28
 
 ---
 

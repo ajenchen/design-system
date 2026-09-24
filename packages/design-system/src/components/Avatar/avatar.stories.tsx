@@ -108,17 +108,17 @@ export const InContext = {
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
           <div
-            role="listbox"
+            role="group"
             aria-label="無說明文字的成員選單"
             className="w-[280px] border border-divider rounded-lg py-1 bg-surface"
           >
-            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
+            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
               Alice Chen
             </MenuItem>
-            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "blue" }}>
+            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "blue" }}>
               Bob Wang
             </MenuItem>
-            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: "Carol", color: "purple" }}>
+            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: "Carol", color: "purple" }}>
               Carol Lee
             </MenuItem>
           </div>
@@ -126,23 +126,23 @@ export const InContext = {
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
           <div
-            role="listbox"
+            role="group"
             aria-label="含職稱說明的成員選單"
             className="w-[320px] border border-divider rounded-lg py-1 bg-surface"
           >
-            <MenuItem
+            <MenuItem role="presentation"
               avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: "Alice" }}
               description="前端工程師"
             >
               Alice Chen
             </MenuItem>
-            <MenuItem
+            <MenuItem role="presentation"
               avatar={{ src: "https://i.pravatar.cc/64?u=carol-lee", alt: "Carol", color: "magenta" }}
               description="產品設計師"
             >
               Carol Lee
             </MenuItem>
-            <MenuItem
+            <MenuItem role="presentation"
               avatar={{ src: "https://i.pravatar.cc/64?u=dave-lin", alt: "Dave", color: "turquoise" }}
               description="跨部門協作專案"
             >

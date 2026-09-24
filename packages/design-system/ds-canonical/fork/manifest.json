@@ -1331,7 +1331,7 @@
         "file": "hooks/check_fork_product_quality.sh",
         "sourceHook": "check_substantive_edit_approval_preflight.sh",
         "bucket": "REPLACE",
-        "matcher": "Edit|Write|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit|Bash",
         "runtime": "bash",
         "outputMode": "governance-context",
         "inputContract": "event-v1",

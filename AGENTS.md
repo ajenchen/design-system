@@ -168,7 +168,7 @@
 | 量 focus 顏色不等 transition = 量到過渡中間值 | `transition-colors` 的 transition-property 含 `outline-color`;**凡量 focus 顏色先等過渡**。詳 historical-bugs.md |
 | 拖曳 vs 點擊只靠「收到幾個 pointermove」或「吞 click」= 輸入代理下靜默失效 | 判準必是**放開點離按下點的距離**;吞 click 的旗標由下一次 pointerdown 才清。詳 historical-bugs.md |
 | `git commit -- <路徑>`(部分提交)會讓治理 pre-commit 掛掉 | 看起來像沙箱權限問題,其實是**部分提交模式下 git 自己鎖著 index**。正解:`git add` 後跑**不帶路徑**的 commit。詳 historical-bugs.md |
-| **寫了閘卻沒有任何執行面呼叫它** | 那條保護是假的而且**零訊號**。**判準**:寫完任一支閘立刻問「誰呼叫它」,grep 執行面拿不到答案就等於沒寫;動態探索出來的執行路徑(gate-meta pair、harness inventory)也要模進去,只 grep 字串會誤判。棘輪 SSOT `scripts/gate-reachability-baseline.json`,閘 `scripts/gate-reachability-invariant.mjs`(CI required)。詳 historical-bugs.md |
+| **寫了閘卻沒有任何執行面呼叫它** | 那條保護是假的而且**零訊號**。**判準**:寫完任一支閘立刻問「誰呼叫它」,grep 執行面拿不到答案就等於沒寫;動態探索出來的執行路徑(gate-meta pair、harness inventory)也要模進去,只 grep 字串會誤判。棘輪 SSOT `scripts/gate-reachability-baseline.json`,閘 `scripts/gate-reachability-invariant.mjs`(CI required)。**第二種形狀(2026-09-24)**:閘有被 registrations 呼叫,斷的是**產生檢視**那一層 —— hook 搜到新群組、工作樹的 claude 的產生 hook 設定檢視 沒跟上,而 Claude Code 開場就把它讀進去凍住 → P0 批准閘整場零覆蓋零訊號。閘 `scripts/provider-view-group-reachability-invariant.mjs`(CI required,逐 provider 試算適用性)+ `session_start_governance_check.sh` Check 12(管「你這個 session 手上那份」)。詳 historical-bugs.md |
 | `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入;瀏覽器閘一律起本機靜態站。另:CSSOM 對含 `var()` 的簡寫回空字串,要用 `r.cssText`。詳 historical-bugs.md |
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。

@@ -69,15 +69,19 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 
 ### 尺寸對照
 
-| 宿主 | Icon 視覺 | Hover 背景 | 圓角 | 排版佔位 |
-|---|---|---|---|---|
-| Tag sm (20px) | 16px | 18px | rounded-md | 16px |
-| Tag md/lg (24px) | 16px | 18px | rounded-md | 16px |
-| Field sm/md | 16px | 18px | rounded-md | 16px |
-| Field lg | 20px | 22px | rounded-md | 20px |
-| TreeItem sm/md | 16px | 18px | rounded-md | 16px |
-| TreeItem lg | 20px | 22px | rounded-md | 20px |
-| Panel list row(visibility / sort / filter panels)| 16px | 18px | rounded-md | 16px |
+| 宿主 | Icon 視覺 | Hover 背景 | 圓角 | 可點範圍 | 排版佔位 |
+|---|---|---|---|---|---|
+| Tag sm (20px) | 16px | 18px | rounded-md | 18px | 16px |
+| Tag md/lg (24px) | 16px | 18px | rounded-md | 18px | 16px |
+| Field sm/md | 16px | 18px | rounded-md | 18px | 16px |
+| Field lg | 20px | 22px | rounded-md | 22px | 20px |
+| TreeItem sm/md | 16px | 18px | rounded-md | 18px | 16px |
+| TreeItem lg | 20px | 22px | rounded-md | 22px | 20px |
+| Panel list row(visibility / sort / filter panels)| 16px | 18px | rounded-md | 18px | 16px |
+
+**「可點範圍」欄恆等於「Hover 背景」欄**(user 2026-09-24 逐字:「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧?都是 18*18」)——
+那塊底色就是使用者看得到的形狀,看得到的每一點都要點得到。跨元件規則與唯一例外的 owner = `ds-canonical/references/hit-area-canonical.md`;
+本表只放本元件的值,不重述規則。**排版佔位不變,仍是 icon 尺寸**(16 / 20):多出來的 2px 靠溢出(absolute / negative margin)承擔,不吃版位 —— 見上方「視覺規則」3 與下方 Consumer wrapping rule。
 
 **Consumer wrapping rule**:當 consumer 包 `ItemInlineActionButton` 在 reserve slot(如 hover-reveal opacity wrapper),**reserve 寬度 = 排版佔位**(sm/md=16,lg=20),**禁止自訂為 24 / 28**(過大會在 cell 留 phantom space)。歷史:DataTable header reserve 24 → 16 修正(2026-04-29)。
 

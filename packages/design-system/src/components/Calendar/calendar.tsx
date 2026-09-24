@@ -10,8 +10,10 @@ import {
   format,
   isSameMonth,
   isSameDay,
+  addDays,
   addMonths,
   subMonths,
+  startOfDay,
 } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { CAT_EVENT, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
@@ -131,6 +133,11 @@ function coerceDate(value: string | Date): Date {
 
 const MAX_TILES_PER_CELL = 3
 
+// 「同一天」的唯一鍵。eventsByDate 分桶與 grid 焦點都用它,兩邊不得各寫一式。
+function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
 // 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
 // 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
 // (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
@@ -151,7 +158,12 @@ function MonthEventTile({
       <TooltipTrigger asChild>
         <div
           role="button"
-          tabIndex={0}
+          // 2026-09-24:tile 從 tabIndex=0 改 -1。role="grid" 要求整個格陣只有一個 Tab 停靠點
+          //(W3C APG Grid Pattern「only one element in the entire grid is included in the tab sequence」),
+          // 原本一個月 35 格 × (1 日期鈕 + 3 tile) 是幾十個停靠點 = 與 grid 語意相反。
+          // tile 改由格內導覽抵達(日期鈕按 F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
+          tabIndex={-1}
+          data-calendar-tile=""
           onClick={(e) => {
             e.stopPropagation()
             onEventClick?.(event)
@@ -271,6 +283,150 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return map
   }, [events, days])
 
+  // ── Grid 鍵盤(APG Data Grid;2026-09-24 補實作)───────────────────────────
+  // 本元件宣告 role="grid" 就必須真的實作那套鍵盤 —— 只寫角色不接方向鍵 = 對輔助科技的空頭承諾
+  //(SSOT:`ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。按鍵表的逐字出處與
+  // 每一條的取捨理由寫在 `calendar.spec.md`「A11y 預設」,此處不重述第二份。
+  //
+  // 模型 = roving tabindex(不是 aria-activedescendant):格內那顆日期 <button> 是真焦點,
+  // SR 因此會報「按鈕」。APG 逐字:「A cell contains one widget whose operation does not require
+  // arrow keys and grid navigation keys set focus on that widget. Examples of such widgets include
+  // link, button, ...」;參考實作 APG Date Picker Dialog 的 setFocusDay() 也是 dayNode.tabIndex = -1 /
+  // 命中日 = 0。
+  const gridRef = React.useRef<HTMLDivElement | null>(null)
+  const pendingFocusIso = React.useRef<string | null>(null)
+  const [focusedDateState, setFocusedDateState] = React.useState<Date | null>(null)
+
+  // Tab 進來時停在哪一天:今天在這個月就是今天,否則這個月 1 號
+  //(APG Date Picker Dialog 範例:「If no date has been selected, places focus on the current date.」)。
+  const anchorDate = React.useMemo(
+    () => (isSameMonth(resolvedToday, refDate) ? startOfDay(resolvedToday) : startOfMonth(refDate)),
+    [resolvedToday, refDate],
+  )
+  // 已畫出來的日期範圍(含上/下月 outside day —— 本元件的 outside day 是有事件、可點的真格,
+  // 與 APG 範例把 outside day 清空 disable 的做法不同,所以「跨月」的界線是格陣邊界而非月份邊界)。
+  const gridFirstMs = days.length > 0 ? startOfDay(days[0]).getTime() : 0
+  const gridLastMs = days.length > 0 ? startOfDay(days[days.length - 1]).getTime() : 0
+  const isRendered = React.useCallback(
+    (date: Date) => {
+      const ms = startOfDay(date).getTime()
+      return ms >= gridFirstMs && ms <= gridLastMs
+    },
+    [gridFirstMs, gridLastMs],
+  )
+  // 停靠點恆為「畫得出來的那一天」:換月後掉出格陣的舊值自動回落 anchor,
+  // 保證任何一刻**剛好一顆**日期鈕 tabIndex=0(不會 0 顆,也不會 2 顆)。
+  const focusedDate = focusedDateState !== null && isRendered(focusedDateState) ? focusedDateState : anchorDate
+
+  // 換月那一步的目標鈕是下一次 render 才存在,所以焦點在 render 後、paint 前補上。
+  React.useLayoutEffect(() => {
+    const iso = pendingFocusIso.current
+    if (iso === null) return
+    pendingFocusIso.current = null
+    gridRef.current?.querySelector<HTMLElement>(`[data-calendar-day="${iso}"]`)?.focus()
+  })
+
+  const moveFocusToDay = React.useCallback(
+    (next: Date) => {
+      const target = startOfDay(next)
+      setFocusedDateState(target)
+      // 落在已畫出來的格(含 outside day)→ 月份不動;掉出格陣才換月,
+      // 換完月它必定被畫出來 → 「跨月移動時焦點落到正確的那一天」恆成立。
+      if (!isRendered(target)) setRefDate(target)
+      pendingFocusIso.current = format(target, 'yyyy-MM-dd')
+    },
+    [isRendered, setRefDate],
+  )
+
+  const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    const cell = target?.closest<HTMLElement>('[role="gridcell"]')
+    if (!target || !cell) return
+    const tile = target.closest<HTMLElement>('[data-calendar-tile]')
+
+    // ── 格內模式:grid navigation 已停用,方向鍵改在格內的 widget 之間走 ──
+    // APG「Editing and Navigating Inside a Cell」逐字:「Right Arrow or Down Arrow: If the cell
+    // contains multiple widgets, moves focus to the next widget inside the cell」/「Escape: restores
+    // grid navigation.」
+    if (tile) {
+      const tiles = Array.from(cell.querySelectorAll<HTMLElement>('[data-calendar-tile]'))
+      const index = tiles.indexOf(tile)
+      let nextNode: HTMLElement | null | undefined
+      switch (event.key) {
+        case 'Escape':
+        case 'F2':
+          nextNode = cell.querySelector<HTMLElement>('[data-calendar-day]')
+          break
+        case 'ArrowDown':
+        case 'ArrowRight':
+          nextNode = tiles[Math.min(index + 1, tiles.length - 1)]
+          break
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          nextNode = tiles[Math.max(index - 1, 0)]
+          break
+        default:
+          return
+      }
+      event.preventDefault()
+      event.stopPropagation()
+      nextNode?.focus()
+      return
+    }
+
+    const dayValue = target.getAttribute('data-calendar-day')
+    if (dayValue === null) return
+
+    // F2 = 進格(APG:「F2: ... If the cell contains one or more widgets, places focus on the first
+    // widget.」)。不用 Enter 當進格鍵,因為在月曆格陣裡 Enter 已經是「啟用這一天」——
+    // APG Date Picker Dialog 的 Date Grid 把 Space/Enter 指派給選日期。兩者都是 APG 明文列的
+    // 慣例,這裡取不會互相蓋掉的那一組。
+    if (event.key === 'F2') {
+      const firstTile = cell.querySelector<HTMLElement>('[data-calendar-tile]')
+      if (firstTile === null) return
+      event.preventDefault()
+      event.stopPropagation()
+      firstTile.focus()
+      return
+    }
+
+    const current = coerceDate(dayValue)
+    let next: Date
+    switch (event.key) {
+      case 'ArrowRight':
+        next = addDays(current, 1)
+        break
+      case 'ArrowLeft':
+        next = addDays(current, -1)
+        break
+      case 'ArrowDown':
+        next = addDays(current, 7)
+        break
+      case 'ArrowUp':
+        next = addDays(current, -7)
+        break
+      case 'Home':
+        next = startOfWeek(current, { weekStartsOn })
+        break
+      case 'End':
+        next = endOfWeek(current, { weekStartsOn })
+        break
+      case 'PageUp':
+        // date-fns addMonths 溢位自動夾到當月最後一天,正好等於 APG 的
+        //「If that day does not exist, moves focus to the last day of the month.」
+        next = addMonths(current, event.shiftKey ? -12 : -1)
+        break
+      case 'PageDown':
+        next = addMonths(current, event.shiftKey ? 12 : 1)
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    moveFocusToDay(next)
+  }
+
   const handleToday = () => setRefDate(new Date(resolvedToday.getTime()))
   const handlePrev = () => setRefDate(subMonths(refDate, 1))
   const handleNext = () => setRefDate(addMonths(refDate, 1))
@@ -352,9 +508,13 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       {/* Month grid:7 cols, ~5-6 rows。a11y(2026-04-25):WAI-ARIA grid 要求 row > gridcell
           階層,chunk days 7 一組,wrap 成 role='row'(display:contents 保 CSS grid 佈局)。 */}
       <div
+        ref={gridRef}
         className="grid grid-cols-7 flex-1 min-h-0"
         role="grid"
         aria-label={`月行事曆,${monthTitle}`}
+        // grid navigation 掛在格陣上(事件委派):日期鈕與事件方塊都在這棵子樹裡,
+        // 焦點在哪一層由 handler 自己判,不必每顆鈕各掛一份 handler。
+        onKeyDown={handleGridKeyDown}
       >
         {Array.from({ length: Math.ceil(days.length / 7) }, (_, rowIdx) => (
           <div key={rowIdx} role="row" style={{ display: 'contents' }}>
@@ -363,7 +523,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
               const isToday = isSameDay(date, resolvedToday)
               // 2026-06-01 allDay:全天事件排 cell 頂端(對齊 Google Calendar 全天列在上)——
               // 排序已在 eventsByDate bucketing memo 內完成(D3 perf),cell 內 O(1) 查表
-              const dayEvents = eventsByDate.get(`${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`) ?? []
+              const dayEvents = eventsByDate.get(dayKey(date)) ?? []
               const visibleEvents = dayEvents.slice(0, MAX_TILES_PER_CELL)
               const overflowCount = dayEvents.length - visibleEvents.length
 
@@ -385,12 +545,30 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 !inMonth && 'bg-muted',
               )}
             >
-              {/* Date number = keyboard 入口;今天/平日統一 24px 圓形 hit-area(WCAG 2.5.8 ≥24,
-                  今天 pill 本就 24px,平日跟齊 → 跨 cell 數字光學對齊) */}
+              {/* Date number = keyboard 入口。24px 圓盒的來源是**今天 pill 本身就是 24 高**,平日跟齊
+                  → 跨 cell 數字落在同一條光學基線。**不是**因為某條最小點擊尺寸 —— 先前這裡寫的
+                  「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回:本 DS 以滑鼠精度為前提,不拿觸控尺寸建議當依據
+                  (owner = `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。
+                  命中與懸停的相等關係成立在 **cell** 這一層:懸停回饋是整格的 `hover:bg-neutral-hover`
+                  (上方 :384),而整格 div 的 onClick 就是同一個 onDateClick → 懸停形狀 ≡ 命中區。
+                  這顆鈕本身沒有任何 hover 樣式(實測掃全部 stylesheet:0 條 :hover 規則命中它),
+                  平日底色恆為透明,所以它不是另一個獨立目標,而是同一個目標的鍵盤入口 + 焦點框幾何;
+                  它完全落在宿主格內、動作與宿主相同,不會生出隱形帶也搶不走別人的點擊。
+                  實測(1280×900,md,團隊行事曆 story):平日鈕盒 24.00×24.00、背景 rgba(0,0,0,0)、
+                  數字字面 6.58×17;今天鈕 31.30×24.00(px-2)、bg-info;格 178×155.80,
+                  hover 前後格底色 rgba(0,0,0,0) → oklch(0 0 0 / 0.02),鈕底色兩次都是透明。
+                  規格 → `calendar.spec.md`「Cell 規則」的「命中區」條 */}
               <div className="flex items-start justify-end">
                 <button
                   type="button"
                   aria-label={`${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`}
+                  // roving tabindex:整個格陣只有這一顆(= 目前焦點日)進 Tab 序列,其餘 -1。
+                  // APG Date Picker Dialog 逐字:「only one button in the calendar grid is in the Tab sequence」。
+                  data-calendar-day={format(date, 'yyyy-MM-dd')}
+                  tabIndex={isSameDay(date, focusedDate) ? 0 : -1}
+                  // 焦點用任何方式落到某一天(Tab 進來 / 滑鼠點 / 程式化)都把停靠點同步過去,
+                  // 免得下次 Tab 回來停在別天。
+                  onFocus={() => setFocusedDateState(date)}
                   onClick={(e) => {
                     e.stopPropagation()
                     onDateClick?.(date)
@@ -422,7 +600,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                       <div
                         key={event.id}
                         role="button"
-                        tabIndex={0}
+                        // 與內建 tile 同一條:grid 單一 Tab 停靠點,自訂 tile 也不得自己是停靠點
+                        tabIndex={-1}
+                        data-calendar-tile=""
                         aria-label={`事件:${event.title}`}
                         onClick={(e) => {
                           e.stopPropagation()

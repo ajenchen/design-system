@@ -166,6 +166,52 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 - 點擊:`scrollTo(i)` 直接跳該張
 - 鍵盤:每個 dot 是 `<button>`,`Tab` 可進入
 
+### 指示點的命中區(「點」的例外,2026-09-24 逐案裁定)
+
+本 DS 的預設是**命中區恆等於懸停回饋的形狀**,唯一的例外是「可視形狀先天當不了目標的線與點」——
+跨元件契約與那條例外的四個條件在 `../../ds-canonical/references/hit-area-canonical.md`,本節不重述條文,只逐案交代這一顆點。
+
+**為什麼吃得到例外**:指示點的可視形狀是 **6×6 的圓**(`carousel.tsx:404` `h-1.5` + 未選中 `w-1.5`)。
+6px 不是「有點難點」,是幾乎不可能瞄準;堅持相等等於宣告它不可用。這正是例外要接的那一類。
+(現張的點加寬成 24×6,`w-6` —— 寬的那一軸已經夠瞄,所以水平外擴量兩種狀態相同,見下表。)
+
+**外擴量**(`carousel.tsx:408-410`,`before:-inset-y-[9px] -inset-x-[3px]`):
+
+| 軸 | 可視 | 外擴 | 命中 |
+|---|---|---|---|
+| 垂直 | 6 | 上下各 **9** | **24** |
+| 水平 | 6(現張 24) | 左右各 **3** | **12**(現張 **30**) |
+
+**水平為什麼剛好是 3**:點 6 + `gap-1.5`(6)→ 相鄰兩點中心距 12,各外擴 3 就**相切、零重疊**;再寬必互搶點擊。
+這是 hit-area-canonical「外擴不得蓋住別的可點目標」那條的上限算法,不是隨手取的數。
+
+**垂直為什麼是 9(命中 24)**:垂直方向沒有鄰居可搶,上限只剩「不得越出宿主」。
+dots 條貼在 `bottom-3`(12px)`carousel.tsx:377`,所以往下 9 仍在 carousel 根之內(實測留 3px),往上是媒體本身、沒有任何可點目標。
+24 這個數字**不是**從觸控尺寸建議推出來的 —— 本 DS 明確不以「手指要多大才點得到」當命中區的依據
+(hit-area-canonical「本 DS 不採納觸控尺寸建議」);這裡它只是「上下各補滿一個點的高度、又不越界」之後剩下的值。
+
+**世界級對照**(2026-09-24 逐條抓原始碼核對,不是憑印象):
+
+| 來源 | 視覺 | 命中 | 作法 |
+|---|---|---|---|
+| **Bootstrap 5** `_carousel.scss:162-177` + `_variables.scss:1657-1659`([carousel](https://github.com/twbs/bootstrap/blob/main/scss/_carousel.scss)、[variables](https://github.com/twbs/bootstrap/blob/main/scss/_variables.scss)) | `30×3`(`$carousel-indicator-width/height`) | 高 **23**(3 + 上下各 10) | 上下加 `10px` 透明 border;原始碼註解逐字:「Use transparent borders to increase the hit area by 10px on top and bottom.」**只加高、不加寬**,寬度靠 `$carousel-indicator-spacer: 3px` 的 margin 分隔 |
+| **slick**(Ant Design Carousel 所用 `react-slick` 的上游)`slick-theme.css:104-125`([slick-theme.css](https://github.com/kenwheeler/slick/blob/master/slick/slick-theme.css)) | `button:before` 的 `•` 字元 | `li` 與 `button` 都是 **20×20** | 直接把**容器與按鈕**做成 20×20,視覺點是裡面的內容 |
+| **Swiper** `pagination.css:11-18, 73-76`([pagination.css](https://github.com/nolimits4web/swiper/blob/master/src/modules/pagination/pagination.css)) | `8×8`(`--swiper-pagination-bullet-size`) | 同樣 **8×8**,**零外擴** | 不外擴,改成把點本身做大(8 而非 6),並用 `--swiper-pagination-bullet-horizontal-gap: 4px` 的 margin 分隔 |
+
+三家都同意「6px 級的點不能只靠自己的形狀當目標」,但分兩派:Bootstrap 走**單軸外擴**(正是本元件的作法),
+slick 走**把盒做大**,Swiper 走**把點做大**。本元件選 Bootstrap 那派的理由是視覺:dots 疊在照片上,
+把點或盒做大會壓到畫面(本檔「視覺規格」段的 photo overlay 慣例);外擴則完全不動基準圖。
+
+**實測(2026-09-24,`page.mouse.click` 真點擊 + `elementFromPoint` 逐點掃描,storybook 展示--首頁主視覺輪播 / 商品圖庫)**:
+
+| 量的東西 | 結果 |
+|---|---|
+| 可視 / 命中 | 未選中 6×6 → **12×24**;現張 24×6 → **30×24** |
+| 相鄰兩點命中盒的水平間隙 | **0.00px**(相切零重疊);點在兩點正中線 → 只有右邊那顆收到 click |
+| 命中盒下緣 vs carousel 根下緣 | 根之內 **3px**(未越出宿主) |
+| 帶所覆蓋的區域底下原本是誰 | `div.relative.h-[360px]`(carousel 視窗,**不是可點目標**);上/下一張箭頭在 y≈208、x=28/932,與帶(x 462–529、y 376–401)不相交 |
+| 對照組 | 用 CSS 關掉 `::before` 後命中收回 **6×6**,證明這組數字量得到「有沒有帶」的差別 |
+
 ### 視覺規格(photo overlay convention)
 
 Carousel 常疊在圖片上,沿用 Instagram / Airbnb / Ant Carousel 的「白點於照片上」慣例——inactive 白點半透明、hover 不透明度提升、active **加寬**(非變色)。

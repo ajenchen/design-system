@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
+      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "cecb7818723bf5852f974d17f077ed78c426edc21c593bca71379c597457da8b",
+      "sha256": "6ef1611f18493fc0312c24f943c16962de8deec83484a8f8d8fda7e608e52dc3",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "b2af149d8ddc024efacf216eabf359879fb9f2f643c998e6c7135b9a1b95eb38",
+      "sha256": "a2272940b851e0b220867a8b084d7924a8fb4976e63fcedbfadbed814ac52c9d",
       "source": null,
       "classification": null,
       "destination": null
@@ -1175,7 +1175,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
+      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

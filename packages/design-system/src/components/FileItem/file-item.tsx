@@ -143,7 +143,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     // Status slot 幾何(2026-04-23 user 統一):rich + compact 都用 `var(--field-height-xs)`(24)
     // 容器,裡面 Button xs iconOnly variant="text"(auto data-unbounded)。
     // Compact 不影響 row 高度 = suffix wrapper 的 data-unbounded CSS 讓 Button layout
-    // 收斂到 1lh(同 compact row 內容高),視覺/touch target 仍 24。
+    // 收斂到 1lh(同 compact row 內容高),視覺與命中區仍 24(命中 ≡ 可視,見
+    // ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的「touch target」正名為命中區)。
     const slotHw = 'var(--field-height-xs)'
 
     const hoverAction =
@@ -205,7 +206,29 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           <span className="text-fg-secondary tabular-nums">{progress}%</span>
         )}
         {statusSlot}
-        {actions}
+        {/* **動作鈕不搶整列 click,由元件自己吃掉,不要求 consumer 每次記得**(2026-09-24)。
+            Canonical 早就寫了:`patterns/element-anatomy/item-anatomy.spec.md:432`
+            「明確點擊靶子 ≤ 24px,`stopPropagation` 避免搶 row click」。
+            但先前只有 FileItem **自家**的 hover-swap 鈕做到(本檔 :179),consumer 從 `actions`
+            傳進來的鈕沒有任何人做 —— 於是「點刪除 → 整列 onClick 也跟著跑 → 檔案被開起來」
+            在我們自己的示範裡活到今天(實測:`已上傳` 這則點刪除鈕,FileViewer 就開)。
+            同一列同時有整列 onClick 和 trailing action 時,這是**必然**會犯的錯,所以答案不是
+            在文件裡要 consumer 記得,而是元件內部把邊界劃好(同 `AgentPanel`:1441 / `DataTable`:3111)。
+            **只包 `actions`、不包整個 suffix**:suffix 裡的 `{progress}%` 與被動狀態圖示是唯讀
+            metadata,item-anatomy「suffix 可以塞什麼」表明寫唯讀 metadata「不搶 row click target」
+            = 點它仍該開整列,所以那兩個不進這層。
+            `data-unbounded` 掛在**這一層**:上面那條 `[&>[data-unbounded]]` 只認 ItemSuffix 的
+            **直接**子元素;包一層之後負 margin 的承接者換成本層,否則 24 高的鈕會把 compact 列撐高。
+            實測 compact / rich / upload-manager 三則的列高、suffix 高、鈕的座標與尺寸改前改後逐項相同。 */}
+        {actions && (
+          <span
+            data-unbounded="true"
+            className="inline-flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {actions}
+          </span>
+        )}
       </ItemSuffix>
     )
 

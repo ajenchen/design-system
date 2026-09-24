@@ -107,11 +107,20 @@ const days = (from, to) => { const out = []; const d = new Date(from + 'T00:00:0
 async function runSuite() {
   // ── 正在選結束日(已選 5/4–5/12)──
   await gotoStory(page, story('range-preview-extend'), { waitFor: '[data-visual-hover-target]', settle: 300 })
-  // 對照組把框、焦點線、跨縫命中區、鄰月隱藏都弄壞:框歸零、焦點框改回往外畫、button ::before 縮回 0(縫隙重現)、
-  // 往一個鄰月格塞一顆 button → 框 / 焦點 / 跨格 / 鄰月 四類斷言都必須紅
+  // 對照組把框、焦點線、跨縫機制、鄰月隱藏都弄壞:框歸零、焦點框改回往外畫、
+  // 拔掉 `data-day-grid` 錨點(DateGrid 判斷「指標還在不在格陣裡」就是靠它;拔掉 = 縫隙裡照舊清掉停留日 → 框閃)、
+  // 往一個鄰月格塞一顆 button → 框 / 焦點 / 跨格 / 鄰月 四類斷言都必須紅。
+  //
+  // 2026-09-24 換過一次機制:先前跨縫是靠 `td[data-day]>button::before{inset:-2px}` 的隱形命中帶,
+  // 對照組因此是「把 ::before 縮回 0」。那條帶讓命中區(32 方)大於可視形狀(28 圓),違反
+  // hit-area-canonical,已改成「只在指標真的離開整張格陣時才清停留日」(MUI 同款)。
+  // **對照組必須跟著換** —— 舊那行 CSS 現在打在一個不存在的 ::before 上,會變成一個永遠不紅的假對照組。
   if (SELFTEST) {
-    await page.addStyleTag({ content: 'td::after{box-shadow:none!important} td>button:focus-visible{outline-offset:2px!important} td[data-day]>button::before{inset:0!important}' })
-    await page.evaluate(() => { const td = document.querySelector('td[data-outside]'); if (td) td.appendChild(document.createElement('button')) })
+    await page.addStyleTag({ content: 'td::after{box-shadow:none!important} td>button:focus-visible{outline-offset:2px!important}' })
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-day-grid]').forEach((el) => el.removeAttribute('data-day-grid'))
+      const td = document.querySelector('td[data-outside]'); if (td) td.appendChild(document.createElement('button'))
+    })
   }
   await blurFocus()
   await hover('2026-05-20')
@@ -171,9 +180,12 @@ async function runSuite() {
 
   // ── 跨格不閃(user 2026-09-23:「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」)──
   // 停留日掛在 button 的 enter / leave,格與格之間 4px 縫隙屬於 table:指標經過縫隙先 leave(整條框卸掉)再 enter(補回)。
-  // 修法是 button ::before 命中區外擴 2px 補滿縫隙(與框跨縫的 −2px 同數字)。單步 hover 永遠看不到(React 把同一個
-  // mouseout 的 leave+enter 批成一次 commit),所以這裡走 30 小步、每一步量「還有幾格有框」,最少一格都不能掉到 0。
-  // 對照組:selftest 把 ::before 縮回 0 → 縫隙重現 → 最少幾格掉到 0。
+  // 修法(2026-09-24 改版):DateGrid 只在**指標真的離開整張格陣**時才把 leave 轉發給消費端
+  //(`date-grid.tsx` 的 handleDayMouseLeave + `[data-day-grid]` 錨點;MUI DateRangeCalendar 同款)。
+  // 先前是靠 button ::before 外擴 2px 的隱形命中帶,已撤 —— 那讓命中區大於可視形狀,違反 hit-area-canonical。
+  // 單步 hover 永遠看不到(React 把同一個 mouseout 的 leave+enter 批成一次 commit),所以這裡走 30 小步、
+  // 每一步量「還有幾格有框」,最少一格都不能掉到 0。
+  // 對照組:selftest 拔掉 `data-day-grid` 錨點 → 縫隙重現 → 最少幾格掉到 0(2026-09-24 實測兩條跨法都真的掉到 0)。
   const framedCount = () => page.evaluate(() => [...document.querySelectorAll('td[data-day]')].filter((td) => getComputedStyle(td, '::after').boxShadow !== 'none').length)
   const crossing = async (fromDay, toDay, label) => {
     const a = await page.locator(`${inView(fromDay)} > button`).boundingBox()

@@ -186,8 +186,11 @@ const BpZoneV = ({ h, color, label, sub }: { h: number; color: { bg: string; bor
   </div>
 )
 
+// 靜態視覺預覽容器(不是真的 listbox)。2026-09-24 從 `role="listbox"` 改 `role="group"`、
+// 內部 MenuItem 一律傳 `role="presentation"`:預覽沒有選取狀態也沒有方向鍵,
+// 掛 composite 角色 = 空頭承諾(`ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。
 const MenuContainer = ({ children, width = 320 }: { children: React.ReactNode; width?: number }) => (
-  <div role="listbox" aria-label="MenuItem 設計預覽" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
+  <div role="group" aria-label="MenuItem 設計預覽" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
     style={{ boxShadow: 'var(--elevation-200)', width }}>
     {children}
   </div>
@@ -390,7 +393,7 @@ const InspectorInner = () => {
           <div className="px-4 py-6 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             <MenuContainer width={340}>
               <MenuGroup>
-                <MenuItem
+                <MenuItem role="presentation"
                   size={size}
                   startIcon={hasIcon ? Mail : undefined}
                   avatar={hasAvatar ? { alt: "Alice", color: "indigo" as const } : undefined}
@@ -567,7 +570,7 @@ export const ColorMatrix = {
                   <td className="p-3 border-b border-divider align-top min-w-[280px]">
                     <MenuContainer width={260}>
                       <MenuGroup>
-                        <MenuItem
+                        <MenuItem role="presentation"
                           size="md"
                           startIcon={Mail}
                           selected={st === 'selected'}
@@ -602,7 +605,7 @@ export const ColorMatrix = {
                   <td className="p-3 border-b border-divider align-top min-w-[280px]">
                     <MenuContainer width={260}>
                       <MenuGroup>
-                        <MenuItem
+                        <MenuItem role="presentation"
                           size="md"
                           startIcon={Mail}
                           checkbox
@@ -631,8 +634,8 @@ export const ColorMatrix = {
         <div className="flex items-start gap-4">
           <MenuContainer width={260}>
             <MenuGroup>
-              <MenuItem size="md" header>群組標題</MenuItem>
-              <MenuItem size="md" startIcon={FileText}>一般選項</MenuItem>
+              <MenuItem role="presentation" size="md" header>群組標題</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={FileText}>一般選項</MenuItem>
             </MenuGroup>
           </MenuContainer>
           <div className="flex flex-col gap-0.5">
@@ -742,19 +745,19 @@ export const SizeMatrix = {
               <span className="text-caption text-fg-muted font-mono">{sz}{sz === 'md' ? '（預設）' : ''}</span>
               <MenuContainer width={380}>
                 <MenuGroup>
-                  <MenuItem size={sz} startIcon={Mail} description="每日摘要信件">
+                  <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日摘要信件">
                     電子郵件通知
                   </MenuItem>
-                  <MenuItem size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const }}>
+                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const }}>
                     Alice Chen
                   </MenuItem>
-                  <MenuItem size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const }} description="工程部門">
+                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const }} description="工程部門">
                     Bob Wang
                   </MenuItem>
-                  <MenuItem size={sz} checkbox checked={true} startIcon={Bell}>
+                  <MenuItem role="presentation" size={sz} checkbox checked={true} startIcon={Bell}>
                     推播通知
                   </MenuItem>
-                  <MenuItem size={sz} tag={<Tag size={sz} color="neutral">Admin</Tag>}>
+                  <MenuItem role="presentation" size={sz} tag={<Tag size={sz} color="neutral">Admin</Tag>}>
                     權限標記
                   </MenuItem>
                 </MenuGroup>
@@ -774,7 +777,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。\n\n  語意 role  :直接使用時(如本元件 stories 的 listbox demo)MenuItem 預設渲染為 role=\"option\" 並帶 aria-selected / aria-disabled;巢狀在外層互動節點內時(SelectMenu / Combobox 的 cmdk option、DropdownMenu 的 Radix menuitem)外層會傳 role=\"presentation\",MenuItem 同步抑制 aria-selected / aria-disabled——ARIA 語意由外層節點單一持有,內層僅保留 data-* 樣式屬性。哪一項目前被聚焦與選取由外層選單決定。\n\n  焦點外觀  :聚焦時以 bg-neutral-hover 背景高亮標示被聚焦的選項(cva base 為 outline-none + focus-visible:bg-neutral-hover),對齊 menu/listbox option 的 active-highlight 慣例,而非畫 outline ring。\n\n  驗證  :Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。\n\n  語意 role  :直接使用時 MenuItem 預設渲染為 role=\"option\" 並帶 aria-selected / aria-disabled——但那要求外層真的是一個有方向鍵、有焦點管理的 listbox;本元件 stories 的預覽容器並不是(2026-09-24 起容器為 role=\"group\"、每個 MenuItem 傳 role=\"presentation\",不假裝是選單);巢狀在外層互動節點內時(SelectMenu / Combobox 的 cmdk option、DropdownMenu 的 Radix menuitem)外層會傳 role=\"presentation\",MenuItem 同步抑制 aria-selected / aria-disabled——ARIA 語意由外層節點單一持有,內層僅保留 data-* 樣式屬性。哪一項目前被聚焦與選取由外層選單決定。\n\n  焦點外觀  :聚焦時以 bg-neutral-hover 背景高亮標示被聚焦的選項(cva base 為 outline-none + focus-visible:bg-neutral-hover),對齊 menu/listbox option 的 active-highlight 慣例,而非畫 outline ring。\n\n  驗證  :Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

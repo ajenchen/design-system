@@ -207,9 +207,11 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 | a11y 好處沒兌現 | 該 `<select>` 的 `value` 恆為空字串、也沒有 `multiple`,輔助科技從被命名的控件上讀不到已選了什麼;已選值只活在 `<select>` 之外的 Tag 區 |
 | 世界級無人這樣做 | [Base UI](https://base-ui.com/) 明文「同一元件 + `multiple`,觸控只調定位與 modal 行為」/ [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons) pop-up button「iOS 無額外考量」/ Polaris、Atlassian、Radix、react-select 文件對裝置零分支。[W3C APG](https://www.w3.org/WAI/ARIA/apg/) 另把「需按住 modifier 才能多選」列為不推薦,而原生 multiple 正是該模型、觸控又沒有 Ctrl/Shift |
 
-**刻意不為觸控加大尺寸**:390px 寬下浮層實測 356px、不溢出、高度放得下;列高 32px 過 WCAG 2.2 AA
-(24×24)與 DS 自己的 24+ 門檻(`patterns/overlay-surface/overlay-surface.spec.md`)。為手機另訂一套
-尺寸會製造第二套規格,正是這次要消滅的東西。
+**刻意不為觸控加大尺寸**:390px 寬下浮層實測 356px、不溢出、高度放得下;列高 32px 高於 DS 自己的
+24px 地板(owner = `tokens/uiSize/uiSize.spec.md`「元件高度地板」:169;`patterns/overlay-surface/overlay-surface.spec.md` 只是在括號裡順帶提到這個數字,不是它的 owner —— 2026-09-24 改指真正的 owner)。為手機另訂一套
+尺寸會製造第二套規格,正是這次要消滅的東西。**依據不是觸控尺寸建議**:先前這裡寫的「過 WCAG 2.2 AA
+(24×24)」已於 2026-09-24 撤回 —— 本 DS 以滑鼠指標的精度為前提,不拿觸控門檻當尺寸依據
+(owner = `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。
 
 **連帶影響**:`PeoplePicker` 內部就是包 `<Combobox>`(自己沒有原生 picker),所以它的觸控選單一併
 變成同一套浮層;`DataTable` 的多選儲存格靠 `defaultOpen` / `onOpenChange` 進出編輯,這兩個 prop

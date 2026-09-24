@@ -391,7 +391,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td mono>Dot inactive</Td>
                 <Td mono>6 × 6 px</Td>
-                <Td>小到不搶主視覺,大到仍可點擊(符合 minimum touch target 配合 hit-area)</Td>
+                <Td>小到不搶主視覺。6px 的點先天無法用指標瞄準,屬命中區規則的「線與點」例外:垂直擴到 24、水平各 ±3(dot 6 + gap 6 = 中心距 12,±3 恰相切零重疊,再寬必互搶點擊;carousel.tsx:408-410)。依據不是觸控最小尺寸——原文「符合 minimum touch target」已於 2026-09-24 撤回,本 DS 以滑鼠指標的精度為前提(ds-canonical/references/hit-area-canonical.md)</Td>
               </tr>
               <tr>
                 <Td mono>Dot active</Td>

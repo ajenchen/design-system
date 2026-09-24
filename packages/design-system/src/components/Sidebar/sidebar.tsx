@@ -36,6 +36,7 @@ import {
   ItemLabel,
   ItemInlineAction,
   ItemInlineActionButton,
+  type ItemInlineActionButtonProps,
   RowSizeProvider,
   getUniformPrefixSlotStyle,
   ROW_PADDING_BY_SIZE,
@@ -838,25 +839,34 @@ const SidebarGroupLabel = React.forwardRef<
 })
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
+// ⚠️ 2026-09-24:這兩顆先前是 shadcn 原樣帶進來的**手刻品**(`b7b34721` 把 DS 搬進 npm workspace
+// 時一起進來,之後從未跟著本 DS 的行內動作 canonical 遷移)。它們自己寫死
+// `aspect-square w-5 ... [&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而
+// `patterns/element-anatomy/inline-action.spec.md` 的尺寸表只有兩種組合(16 圖示配 18 底色、
+// 20 圖示配 22 底色),**20 兩種都不是**。同一個檔案 :814 的收合箭頭早就在消費
+// `ItemInlineActionButton`,於是同一個元件裡兩套幾何並存。
+// 依 M23(DS 既有 canonical 優先)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
+// API 隨之從 children 改成 `icon` prop —— 這是 breaking change,刻意不留 children 後備:
+// M23(f)「『向後相容』不是把新裁示變成可選的理由」。
+//
+// 命中區 ≡ 可視形狀由 primitive 自己保證(`item-anatomy.tsx:730` 那塊**刻意沒有**
+// `pointer-events-none` 的懸停底色 span)。先前這裡另有一圈 `after:-inset-2 after:md:hidden`,
+// 只在 <md 生效、每邊多 8px,實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕,已於同日移除。
 const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button"> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
-  return (
-    <Comp
-      ref={ref}
-      data-sidebar="group-action"
-      className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
-        "after:absolute after:-inset-2 after:md:hidden",
-        "group-data-[collapsible=icon]:hidden",
-        className
-      )}
-      {...props}
-    />
-  )
-})
+  Omit<ItemInlineActionButtonProps, "size">
+>(({ className, ...props }, ref) => (
+  <ItemInlineActionButton
+    ref={ref}
+    data-sidebar="group-action"
+    className={cn(
+      "absolute right-[var(--layout-space-loose)] top-2",
+      "group-data-[collapsible=icon]:hidden",
+      className
+    )}
+    {...props}
+  />
+))
 SidebarGroupAction.displayName = "SidebarGroupAction"
 
 // ── Menu ───────────────────────────────────────────────────────────────────
@@ -1206,31 +1216,24 @@ const SidebarMenuButton = React.forwardRef<
 )
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
+// 同上(見 SidebarGroupAction 上方的遷移說明)。
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    asChild?: boolean
-    showOnHover?: boolean
-  }
->(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
-
-  return (
-    <Comp
-      ref={ref}
-      data-sidebar="menu-action"
-      className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
-        "after:absolute after:-inset-2 after:md:hidden",
-        "group-data-[collapsible=icon]:hidden",
-        showOnHover &&
-          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-foreground md:opacity-0",
-        className
-      )}
-      {...props}
-    />
-  )
-})
+  Omit<ItemInlineActionButtonProps, "size"> & { showOnHover?: boolean }
+>(({ className, showOnHover = false, ...props }, ref) => (
+  <ItemInlineActionButton
+    ref={ref}
+    data-sidebar="menu-action"
+    className={cn(
+      "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2",
+      "group-data-[collapsible=icon]:hidden",
+      showOnHover &&
+        "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-foreground md:opacity-0",
+      className
+    )}
+    {...props}
+  />
+))
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
 // SidebarMenuBadge — 重用專案的 Badge 元件,絕對定位在 menu item 右側

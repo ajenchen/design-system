@@ -394,7 +394,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 ```
 → slot 高度由 `--chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
 → default(md): my=-2px / lg: my=-4px
-→ 效果:Button native size 不變(sm 28/32,touch target 亦同),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
+→ 效果:Button native size 不變(sm 28/32,命中區亦同 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 
 **詳**:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
 

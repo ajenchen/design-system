@@ -190,6 +190,35 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row(訊息列)」
 - **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
 
+### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
+
+**來源標記**:觸發是 user 原話「所以你到底合理的定義何時該用 sidebar 那種結構何時該用 file item 這種結構了沒?我知道兩者都是世界級的設計,但沒有評判依據嗎?」;**判準本身是依下面兩條規範推導的,不是 user 拍板**。決定因素只有一個:**這一列裡裝了什麼**——不是哪個寫起來順手。兩條規範各管一半,合起來把選項砍到只剩一個:
+- `<button>` 的 content model 逐字是 **"Phrasing content, but there must be no interactive content descendant and no descendant with the `tabindex` attribute specified."**(WHATWG HTML,<https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element>)——管的是「**放不放得進去**」。
+- `role="button"` 的 Children Presentational 為 True,逐字是 **"The DOM descendants are presentational. User agents SHOULD NOT expose descendants of this element through the platform accessibility API."**(WAI-ARIA 1.2,<https://www.w3.org/TR/wai-aria-1.2/#button> / <https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational>)——管的是「**放進去之後還讀不讀得到**」。
+
+**問法要精確(2026-09-24 user 指出)**:問的**不是**「這一列裡裝了什麼」—— 列裡幾乎一定有動作鈕,那是互動元素,照字面問的話每一列都會被判進第二類。
+正確的問法是:**把動作鈕排到外面之後,剩下的內容能不能整包住進一顆 `<button>`?** 動作鈕永遠是兄弟、永遠不進那顆按鈕(content model 明文不准),所以它不參與這個判斷。
+實例:`SidebarMenuButton` 的列**有** inline actions(`components/Sidebar/sidebar.tsx:1032` `inlineActions` / `:1044` `inlineActionsSlot`),但它們渲染成 suffix、由 `:1130` 的 `suffixContentWidth` 算寬度再用 `paddingRight` 讓開,**不在那顆 `<button>` 裡** —— 所以它仍是第一類。
+
+| 動作鈕排到外面後,剩下的內容是什麼 | 結構 | 規範依據(對上面哪一句) |
+|---|---|---|
+| **只有文字性內容**(文字 + 圖示)——**這是預設** | 列自己就是原生 `<button>` / `<a>`;動作鈕做成**絕對定位的同層兄弟**,列用 `paddingRight` 讓開 | `<span>` / `<svg>` 都是 phrasing content,放得進 `<button>`;動作鈕是 interactive content descendant,content model 明文不准,所以只能放到列外面當兄弟 |
+| **含有必須被輔助科技讀到的結構**(進度條、狀態區、多段說明、可聚焦子元素) | 列維持**非互動容器**;鍵盤由一顆覆蓋整列的透明控件承接,焦點框畫在列上 | 這些後代包進 `<button>` / `role="button"` 會被 Children Presentational 判為 presentational 而讀不到(進度百分比唸不出來);其中**可聚焦**的那些更是直接踩 content model 的 `tabindex` 那一句 |
+| **本來就有一個看得見的主控件**(例如檔名本身就是連結) | 列的 click **委派**給它,不另造控件 | 合格控件已經在列裡了,再造一顆等於同一件事兩個 tab stop;而且新控件要嘛把既有控件變成自己的後代(違反 content model),要嘛跟它並排互搶 |
+
+**消費者**:第一類 = `SidebarMenuButton`(`components/Sidebar/sidebar.tsx:1072` 列本體 `Comp = asChild ? Slot : "button"`;`:1111-1112` 列內只有 `ItemIcon`→`ItemPrefix` 的 `<span>` 包 `<svg>` 與 `ItemLabel` 的 `<span>`,兩者皆無 `tabIndex`,見 `item-anatomy.tsx:177-180` / `:279-307` / `:560-573`;`:1133-1135` 算 `paddingRight` 讓位;`:1152-1157` 動作鈕是絕對定位 sibling,原註解寫明「避免巢狀 button」)。第二類 = `FileItem`(`components/FileItem/file-item.tsx:231` `rowA11y = {}` 列本體不加互動 role;`:244-257` 透明整列 button 承接鍵盤;列內裝了 `:130-131` 的 `ProgressBar`(內部 Radix Progress primitive 自帶 `role="progressbar"`,`node_modules/@radix-ui/react-progress/dist/index.mjs:37`)、`:301` 的 `Avatar`、`:175-183` hover-swap 的 `<Button>`)。第三類 = **DS 內目前無實例**(2026-09-24 掃法:`packages/design-system/src` 內 `<a ` / `href=` 全部 9 個出現處、加上所有 `.click()` 委派呼叫點,逐一看過沒有一個是「列內已有可見主控件、列把 click 委派過去」的形狀),條文先立著給產品端用。
+
+**第二類還要再分一刀(2026-09-24 補;判準用 TreeView 這個沒被拿來建構它的元件做預測測試時測出來的缺口)**:第二類裡有**兩種**機制,由**列有沒有被宣告成複合小工具的項目**決定,不是選擇題。
+
+| 列的 ARIA 角色 | 鍵盤機制 | 為什麼 | 實例 |
+|---|---|---|---|
+| 是複合小工具的項目(`treeitem` / `option` / `gridcell`) | **容器擁有鍵盤**:容器單一 tab stop,列 `tabIndex={-1}`,用 `aria-activedescendant` 或方向鍵指目前項 | 這類角色的列不得自己當鍵盤停靠點,鍵盤所有權必須上移到容器 | `components/TreeView/tree-view.tsx:374`(DOM focus 永遠停在 `role=tree` 容器)、`components/TimePicker/time-columns.tsx:155,159`(`role="listbox"` + `aria-activedescendant`) |
+| **沒有**這類角色(就是一個普通容器) | **覆蓋控件承接鍵盤**:列內鋪一顆覆蓋整列的原生控件,焦點框畫在列上 | 沒有容器可以接管鍵盤,只能在列內放一個真控件;它不可見,所以焦點框改畫在列上(`ds-canonical/references/focus-canonical.md`「指示器畫在別的元素上,必須指得出承擔者」) | `components/FileItem/file-item.tsx:264`(註解逐字「不把整列設成 role=button」)、`:273`(`data-row-focus-target`) |
+
+**預測測試留檔(這張表不是倒推的證據)**:判準建立時只用了 `SidebarMenuButton` 與 `FileItem` 兩個實例。事後拿 **TreeView**(未參與建構)檢驗:它的列有 chevron 與勾選框兩個可聚焦子元素 → 判準預測第二類 → 實際就是第二類(列 `tabIndex={-1}`、非 `<button>`),預測成立。同一次檢驗才暴露上面那一刀原本沒寫。日後新增列元件時照樣要跑這個測試:**先用判準預測,再讀程式對答案**;預測錯了就是判準有缺口,不是那個元件是例外。
+
+**邊界**:(a) `asChild` 時列的宿主由 consumer 決定,這三條的責任跟著轉給 consumer;(b) 本節只管**列**——Family 4 的 field trigger(DatePicker / TimePicker / Combobox / Select 改用 `div role="combobox"` 而非 `<button>`,理由同樣是 trigger 內含 `ItemInlineAction` 這顆 `<button>`;見 `components/DatePicker/date-picker.spec.md:27` 與 `components/TimePicker/time-picker.spec.md:23`,兩處都寫明「對齊 Select / Combobox 同 pattern」)是同兩條規範推出的同一個結論,但 owner 留在各自 spec,本節不接管也不重述。
+
 ### Prefix 垂直對齊:`items-start` + `h-[1lh]` wrapper(**永遠這樣**,不要做例外)
 
 所有 row primitives 的 outer flex 用 **`items-start`** + prefix(icon / avatar / checkbox / indicator)包在 **`h-[1lh] shrink-0 flex items-center`** 容器。這是**底層規則,不可跳過**。
@@ -936,7 +965,7 @@ World-class benchmark(6 家 DS):
 
 | 屬性 | 值 | 原因 |
 |---|---|---|
-| padding-y | 12px (`py-3`) | 舒適的列表行高，觸控友好 |
+| padding-y | 12px (`py-3`) | 頁面級列表的寬鬆行高——同表的閱讀模式（頁面內停留閱讀）與較大的 avatar / thumbnail 要對應的呼吸量（2026-09-24 撤回原文的「觸控友好」：本 DS 以滑鼠指標的精度為前提，尺寸不以觸控門檻推導，見 `ds-canonical/references/hit-area-canonical.md`）|
 | padding-x | 16px (`px-4`) | 頁面內容的標準水平間距 |
 | prefix ↔ content gap | 12px (`gap-3`) | 較寬鬆，適合較大的 avatar / thumbnail |
 | 閱讀模式 | 閱讀模式 | 頁面內停留閱讀 |

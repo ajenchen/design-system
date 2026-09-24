@@ -108,7 +108,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
-| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀 —— day button 的 `::before` 命中區外擴 2px 補滿縫隙(與框跨縫用的 −2px 是同一個數字,hit = paint;user 2026-09-23 抓到「水平移動到隔日框會閃一下」) |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,見下方「日期格的命中區 = 可視形狀」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ### 鄰月日子:一條原則(2026-09-24 user 拍板)
@@ -159,6 +159,69 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 **層次**:track = td `::before`、預覽框 = td `::after`、today bar = button 的 `::after`,三者互不衝突;button 在最上層。
 
 **世界級對照**(讀原始碼,2026-09-23):五家有區間選擇的元件庫都在停留時預覽區間,差別只在畫法 —— Ant Design v4 用虛線上下邊 + 兩端側邊([panel.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/date-picker/style/panel.less) `-range-hover*`,`border-top/bottom: dashed @picker-date-hover-range-border-color`)、MUI X 用 1.2px 虛線([DateRangePickerDay.tsx](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangePickerDay/DateRangePickerDay.tsx) `previewStyles`)、Ant v5 現行與 Polaris 用與已選區間同色的淺色填([rc-picker PanelBody.tsx](https://github.com/react-component/picker/blob/master/src/PickerPanel/PanelBody.tsx) 把 `hoverRangeValue` 算成 `-in-range`;[Polaris Day.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx) `(inRange || inHoveringRange) && styles['Day-inRange']`)、Carbon(flatpickr)用填色([index.ts](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` → `startRange / inRange / endRange`)。**本 DS 選實線**:沿用單日 hover 圈的顏色與粗細,不新增第二種「暫定」表達(M23 DS 既有語言優先;user 2026-09-23 Q2 拍板)。我們包的 react-day-picker 本身沒有預覽([range-mode 文件](https://daypicker.dev/selections/range-mode)只有 `range_start / range_middle / range_end`),所以由 DatePicker.Range 自算。
+
+## 日期格的命中區 = 可視形狀(2026-09-24 逐案裁定)
+
+**日期格的可視形狀是那個 28×28(lg 32)的圓**(`day_button` 的 `rounded-full`,懸停時 1.5px 藍圈就畫在它身上),
+**命中區就是同一個圓,不外擴**。跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
+「懸停回饋的形狀 ≡ 命中區」)的唯一例外是「可視形狀先天當不了目標的線與點」;28px 的圓不屬於那一類,吃不到例外。
+
+### 先前這裡有一條隱形帶,而且比看起來大得多
+
+2026-09-23 這裡曾有 `before:content-[''] before:absolute before:-inset-[2px]`,
+名義上是「四邊各 2px」,**實測是最遠外推 9.3px** —— 因為 `::before` 是**方的**、沒有圓角,
+它不只補了格間 4px 的縫,還把圓**四個角外面**的區域一起收進命中區(方角到圓心 √2×16 ≈ 22.6,圓半徑 14)。
+
+| 量的東西(`elementFromPoint` 逐 0.5px 掃,storybook 展示--單選) | 移除前 | 移除後 |
+|---|---|---|
+| 圓內取樣點命中 / 漏掉 | 2188 / **0** | 2188 / **0** |
+| 圓外取樣點「仍然命中」 | **1763** | **40** |
+| 圓外最遠仍命中的距離 | **9.33px** | **1.10px**(瀏覽器對圓角命中測試的抗鋸齒,同 `agent-fab-hit-area-invariant.mjs` 的 `EDGE_TOLERANCE = 1.5`) |
+| 格間縫隙中點的擁有者 | 相鄰日期的 button | `<table>`(沒有人宣稱它) |
+
+### 那條帶原本在解什麼 —— 以及為什麼那是表層解
+
+它解的是 user 2026-09-23 抓到的「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」:
+停留日掛在 button 的 `mouseenter` / `mouseleave`(react-day-picker 只給這一層),
+而格與格之間的 4px(`border-spacing-1`)屬於 `<table>`、不屬於任何一天 ——
+指標經過縫時先 leave(整條框卸掉)再 enter(補回)。
+
+**閃動的根因是「停留日在縫裡被清掉」,不是「縫裡沒有人收 enter」。** 幾何外擴改的是後者,是表層。
+根因層的解法就在當時那條註解自己引到的 MUI:**只在指標真的離開整張格陣時才清停留日**
+([DateRangeCalendar.tsx:479-486](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx) ——
+`rangePreviewDay` 的清除逐字掛在 `CalendarTransitionProps` 的 `onMouseLeave`,也就是**整個日曆容器**,不是每一天)。
+
+### 現行機制(`date-grid.tsx`)
+
+1. 月曆格陣掛 `data-day-grid` 錨點(`AnchoredMonthGrid`,覆寫 RDP 的 `MonthGrid`)。
+2. `handleDayMouseLeave`:leave 事件的 `relatedTarget` 若落在**同一張格陣裡、而且既不在 `<td>` 也不在 `<th>` 上**
+   (= border-spacing 的縫),就**不轉發**給消費端;其餘一律照常轉發。
+3. `handleGridMouseOver`:補掉「穿過縫之後停在**不可點**的日子」那條路徑 ——
+   disabled 的 button 收不到滑鼠事件、不會再有任何 day enter/leave,沒有這一段的話上一天的預覽框會留著
+   (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。
+
+錨點刻意用顯式屬性而不是 `closest('table')`:標籤名是「剛好成立的觀察量」,不是要保證的性質(M37);
+而且顯式屬性讓閘的對照組可以只用一行 `removeAttribute` 精準弄壞這個機制。
+
+⚠️ `AnchoredMonthGrid` **必須定義在 module 層**。第一版寫成 render 內的 inline 箭頭函式,
+每次 render 都是新的 component type → React 把整個格陣 unmount 再 mount → RDP 內部 effect 重設 state →
+`Maximum update depth exceeded`(React #185),storybook 整個 DatePicker range 故事白畫面。
+
+### 實測(2026-09-24)
+
+| 斷言 | 結果 |
+|---|---|
+| 命中 ≡ 可視(圓) | 圓內 2188 點全命中、0 漏;圓外最遠 1.10px(抗鋸齒容差內) |
+| 水平跨格 5/20→5/21(30 小步) | 框最少仍有 **17** 格(0 = 縫裡整條框消失) |
+| 垂直跨列 5/20→5/27(30 小步) | 框最少仍有 **17** 格 |
+| **對照組**:拔掉 `data-day-grid` 錨點 | 兩條跨法都掉到 **0** —— 證明這組數字量得到機制在不在 |
+| `scripts/datepicker-range-preview.mjs` | 109 條全過(exit 0);`--selftest` 五個家族全部會紅,含 `crossing` |
+
+**不越出宿主**:第一格的命中左緣 42.5 落在 `month` 的 padding box(左緣 33)之內 9.5px,連 `<table>` 盒都沒出去。
+**不蓋鄰居**:相鄰兩格的命中盒水平間隙實測 **0.00px**(相切零重疊)。
+
+**依據不是觸控尺寸建議** —— 本 DS 明確不以「手指要多大才點得到」當命中區的依據
+(hit-area-canonical「本 DS 不採納觸控尺寸建議」)。
 
 ## Spacing canonical(2026-05-03 v8)
 

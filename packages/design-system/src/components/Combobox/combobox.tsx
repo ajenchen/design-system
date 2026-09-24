@@ -1029,9 +1029,12 @@ const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
     //   (d) 世界級沒有一家為手機換一套多選 UI(Base UI 明文「同一元件 + multiple,觸控只調定位」/
     //       Apple HIG pop-up button「iOS 無額外考量」/ Polaris / Atlassian / Radix / react-select
     //       文件對裝置零分支)。
-    // 量過:390px 寬下浮層 356px、不溢出、高度放得下;列高 32px 過 WCAG 2.2 AA(24×24)與
-    // DS 自己的 24+ 門檻(overlay-surface.spec.md:431)。**刻意不為觸控加大尺寸** —— 那會變成
-    // 第二套規格,正是這次要消滅的東西。
+    // 量過:390px 寬下浮層 356px、不溢出、高度放得下;列高 32px 高於 DS 自己的 24px 地板
+    // (owner = tokens/uiSize/uiSize.spec.md「元件高度地板」:169)。**刻意不為觸控加大尺寸** ——
+    // 那會變成第二套規格,正是這次要消滅的東西。**不拿觸控尺寸建議當依據**:先前這裡寫的
+    // 「過 WCAG 2.2 AA(24×24)」已於 2026-09-24 撤回(本 DS 以滑鼠精度為前提,見
+    // ds-canonical/references/hit-area-canonical.md「本 DS 不採納觸控尺寸建議」);
+    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431 改指真正的 owner(上一行)。
     return <CustomCombobox {...props} size={size} __triggerRef={ref} />
   }
 )

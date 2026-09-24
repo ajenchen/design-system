@@ -648,7 +648,11 @@ preserveSelectionOnFilter?: boolean   // default false
 - click checkbox → toggle 該 row
 - **shift-click checkbox** → 從 anchor row 到當前 row 區間選(內部 track anchor)
 - header checkbox click → toggle 全可見
-- **整 cell 區可點擊**(canonical):cell padding 任何位置(不只視覺 checkbox/radio 本體)點擊都觸發 toggle / select，擴大 hit target 且不要求精準瞄準。Disabled row 不觸發。實作:select cell 容器 div onClick 委派到 toggleRow / setSelection
+- **選取格的留白不可點**(canonical,2026-09-24 改判):命中區 = checkbox / radio **本體那塊可見方框**(懸停時變邊框色 → 回饋形狀 ≡ 命中區)。表頭全選格同規則。
+  - 舊規則是「整 cell 區可點擊,擴大 hit target 且不要求精準瞄準」—— **那個理由已撤回**:user 2026-09-24 裁示本 DS 不拿觸控裝置的尺寸原則當依據(滑鼠指標比手指精細很多)。
+  - 真正的理由在列層:列的懸停底色是**掃視輔助**,不蘊含這一列可點(IBM Carbon 逐字:row hover "should always be enabled ... even if the row is not interactive")。本表沒有整列點擊(全檔查無 `onRowClick`),所以讓格內留白可點會讓使用者收到的唯一訊號(整列亮起來)跟事實(只有一格可點)不相等。
+  - 五家一手對照(MUI 對選取欄 early-return / Carbon `<td>` 無 onClick / Ant `inline-flex` 收縮貼合 / AG Grid `enableClickSelection` 預設 false / Polaris 屬於整列可點那一派)與兩層規則全文 → `ds-canonical/references/hit-area-canonical.md`「兩層:控件層(嚴格)與列層(另立)」。
+  - Disabled row 不觸發。實作:`data-table.tsx` 列身選取格與表頭選取格的容器 div **都不再掛 `onClick` / `cursor-pointer`**,選取由 checkbox 自己的 handler 承接(single mode 由包住整表的 RadioGroup `onValueChange`)
 
 ### 五、Disabled rows
 

@@ -727,7 +727,17 @@ export const ItemInlineActionButton = React.forwardRef<
       <span
         aria-hidden
         className={cn(
-          "absolute pointer-events-none",
+          // ⚠️ 這裡**刻意沒有** `pointer-events-none`,日後不得以「它只是裝飾層」為由加回去。
+          // 這塊底色比按鈕盒每邊大 1px(16→18,lg 20→22)。它是 <button> 的子節點,只要不擋指標,
+          // 溢出的那 1px 會自己接住點擊並冒泡到 button —— 命中區於是恰好等於使用者看得到的那塊底色。
+          // 依據:user 2026-09-24 裁示「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧?
+          // 都是 18*18」,並於同日對本檔本行確認「對,就這樣改」。跨元件 owner =
+          // ds-canonical/references/hit-area-canonical.md(規則:懸停回饋的形狀 ≡ 命中區;圖示是內容,可比命中區小)。
+          // 本 DS 以滑鼠精度為前提,不以觸控尺寸建議當依據把命中區撐大到超過懸停回饋(同日 user 裁示)。
+          // 歷史:原本那行 `pointer-events-none` 沒有任何理由 —— 2026-04-01 7dd65fbf 隨首版誕生、
+          // 2026-04-14 4e53ff99 逐字搬進本檔,兩次 commit message 與註解都沒出現 hit / pointer / 點擊 任何一個字。
+          // 實測(改前):命中 16.75×16.75,右緣與下緣各短約 1.25px;側欄點在看得見的底色下緣會穿過去觸發整列導覽。
+          "absolute",
           "rounded-md",
           "bg-transparent",
           hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
