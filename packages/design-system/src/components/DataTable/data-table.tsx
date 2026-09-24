@@ -3137,7 +3137,7 @@ function DataTableInner<TData>(
           // 於是勾選框跟第一個資料欄在視覺上併成同一個盒。這是「規則說由某某接手,
           // 而某某根本碰不到它」那一族(M37)。
           data-dt-last-col={isLastInRegionCell ? '' : undefined}
-          className={cn('flex items-center justify-center shrink-0', inlineEdit && 'dtCellGrid', !isDisabled && 'cursor-pointer')}
+          className={cn('flex items-center justify-center shrink-0 self-stretch', inlineEdit && 'dtCellGrid', !isDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
           onClick={onCellClick}
         >
@@ -3651,7 +3651,11 @@ function DataTableInner<TData>(
           // 欄間線:與列身選取格同步(見那邊的長註解)。表頭的通用分隔線機制在泛用分支裡,
           // 這個分支 early-return 碰不到,所以跟列身一樣直接套 `dtCellGrid`,線畫在同一個像素位置。
           data-dt-last-col={showDivider ? undefined : ''}
-          className={cn('flex items-center justify-center shrink-0 select-none', inlineEdit && 'dtCellGrid', !isHeaderDisabled && 'cursor-pointer')}
+          // 不加 self-stretch:其他表頭格是內容高、由列的 align-items:center 置中(實測 38 in 40),
+          // 加了會變 39、跟隔壁差 1px。**必須帶 fieldDisplayTextClass(size)**:表頭欄間線的內縮量
+          // 由 `--table-cell-py` 給,而那個 calc 含 `1lh` —— 不帶字級 class 會繼承到根字級(16/24),
+          // 算出 7 而不是隔壁的 8.5,線就跟隔壁不等長(2026-09-24 實測翻案)。
+          className={cn('flex items-center justify-center shrink-0 select-none', fieldDisplayTextClass(size), 'dtHeaderColDivider', !isHeaderDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
           onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >

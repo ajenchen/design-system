@@ -130,6 +130,40 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 一般 column 只在 header 有短線——body 的欄位邊界由 header 引導，不需額外視覺噪音。但 frozen column 的邊界是結構性的分隔（固定區域 vs 捲動區域），需要全高度的線來明確標示。Row actions 欄本質上是 frozen right column，左邊界也使用 full-height 分隔線。
 
+#### 三種垂直分隔線的**畫法歸屬**,以及選取欄為何會漏掉(2026-09-24 root cause)
+
+上表原本只列兩種。**實際有三種**,而且三種各由**不同元件**負責畫 —— 這就是選取欄漏線的根因:
+
+| 種類 | 幾何 | 誰畫的 | 什麼情況下不會被畫 |
+|---|---|---|---|
+| **表頭欄間短線** | 一個行高(`1lh`),垂直置中 | **`ResizeHandle`** 附帶畫(`showLine` + `lineInsetStart/End="var(--table-cell-py)"`) | **系統欄(選取 / 拖曳 / 列動作)不可調寬 → 根本不渲染 `ResizeHandle` → 永遠沒有線** |
+| **凍結邊界線** | 整欄高度,貫穿水平捲軸帶 | `dtPanelBoundaryLeft/Right` 畫在面板上 | 非面板邊界的欄 |
+| **列身欄間線**(僅 inline edit / spreadsheet 模式)| 整格高度 | cell 自己的 `.dtCellGrid` | 選取欄的 render 分支在套上這個 class **之前就 early-return** |
+
+**Root cause 一句話:規範用「這是哪一種邊界」定義線,程式碼卻用「這裡剛好渲染了哪個元件」畫線。**
+兩者在多數欄位上碰巧一致,所以看起來沒事;**一旦某一欄不渲染那個元件,線就靜默消失,而且沒有任何訊號**。
+這是 M37「用一個當時剛好成立的觀察量代替要保證的性質」的標準形狀:
+要保證的是「這是一個欄邊界」,實際判的是「這裡有沒有 `ResizeHandle`」。
+
+**歷史怎麼走到這一步**:選取欄原本有自己的 ad-hoc 規則
+(`[data-column-id="__select__"]:not(:last-child)` 加 border-right),2026-05-12 退役,
+註解寫的理由是「走 inlineEdit canonical」—— 但那句話從來沒有被驗證過:
+`dtCellGrid` 碰不到選取欄的 render 分支,`ResizeHandle` 也不會在系統欄渲染。
+**退役一條規則時說「改由某某接手」,卻沒有當場驗證某某真的作用得到那個對象** —— 同一族的判準見
+`ds-canonical/skills/design-system-audit/references/historical-bugs.md`。
+
+**2026-09-24 補線時我自己又踩了同一族三次**(全部由 user 抓到,留檔警惕):
+1. 直接把列身的 `.dtCellGrid`(整格高)套到表頭 → 表頭出現 30px 全高線、隔壁是 21px 短線。
+   **一般非 frozen 欄的線不是整高,整高只屬於 frozen 邊界** —— 上表第一行就寫著,我沒讀就照抄隔壁。
+2. 給表頭加 `self-stretch` → 表頭格變 39、隔壁 38。**其他表頭格是內容高 + 列的 `align-items:center` 置中**,
+   把一般欄撐滿等於把它當成 frozen 在畫。
+3. 線的內縮寫成 `top/bottom: var(--table-cell-py)` → 得到 16px,隔壁 21px。
+   因為那個 calc 含 `1lh`,而選取欄沒帶表頭字級 class,繼承到根字級(16/24)算出 7,隔壁是 14/21 算出 8.5。
+   **正解是直接寫 `height: 1lh` + 垂直置中**,不依賴格子自己的高度與字級推導。
+
+**判準(寫任何一條線之前)**:先答「這是哪一種邊界」,再去看**那一種**的幾何與畫法,
+**不要看隔壁那一格怎麼寫就照抄** —— 隔壁可能是另一種邊界,或是靠某個這一欄不會渲染的元件在畫。
+
 **Header 文字弱化。** Header 是結構標籤，不是資訊本體。字體與 body 相同但使用次要文字色，搭配 muted 背景拉出層級，讓視覺重心留在 body 的資料上。
 
 ### 六、外框規則

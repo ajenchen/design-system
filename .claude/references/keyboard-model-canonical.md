@@ -81,66 +81,73 @@ user 逐字戳破第 2 條:「你他媽每個節點也有可能有自己的連�
 Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/TreeView.tsx` 的 polymorphic 分支
 + `TreeView.features.stories.tsx` 的 `AsProp` story),焦點仍走 `useRovingTabIndex`。
 
-### 三問(都要過才算 composite)
+### ⛔ 「在不在側邊欄」不是分界(2026-09-24 撤回一次誤讀)
 
-**問 1 — 操作模型是「選取並施加動作」,還是「前往」?**
+**側邊欄是一塊版面,不是一種語意。** 同一塊側邊欄裡可以有數種語意不同的區段,各取各的角色。
 
-ARIA 的角色譜系就是答案:`tree` 的 superclass 是 `select`,而 `select` 逐字是
-"A **form widget** that allows the user to make **selections from a set of choices**";
-`treeitem` 逐字是 "An **option item** of a tree"。對照 `link` 逐字是
-"causes the user agent to **navigate to that resource**"。
-Primer 講同一件事:tree 是 "allow a user to navigate through, **select, and take action on** one or more items"。
+我先前引 Primer 的兩句話,寫得像「側邊欄不能有樹」。**那是誤讀,而且是兩層誤讀:**
 
-**問 2 — 使用者真的需要 tree 那一整套鍵盤功能嗎?**
+1. 原文是 "global sidebar navigation"(**全站主導覽**),我只記住了 "sidebar navigation"。
+2. 原文是 "Do not replace your NavList with a tree view **to support a deeply nested navigation
+   structure**"(禁的是「為了突破 4 層上限而換成樹」),我只記住了後半句。
 
-APG Navigation Treeview 的 Caution 框逐字:
-> "Correct implementation of the `tree` role requires implementation of complex functionality that is **not needed for typical site navigation**."
-> "A pattern more suited for typical site navigation with expandable groups of links is the disclosure pattern."
+**Primer 同一個 repo 的另一份文件正面寫著相反的話** —— `content/ui-patterns/navigation.mdx`
+把 Tree view 與 Nav list 並列在同一章,兩者的句子**一模一樣**:
 
-同頁內文:"**few sites need the additional keyboard functionality required to support the ARIA `tree` role**"。
+> Tree view:"it's often used to implement a parent-detail navigation pattern.
+> **It's often used in the sidebar of a split page layout.**"
+> Nav list:"A vertical list of links... **It's often used in the sidebar of a split page layout.**"
 
-那一整套是:Home / End、任意深度的 ArrowLeft 回父節點、**打字前導跳節點**、
-ArrowRight 展開但不移動焦點。用不到就不要宣告成 tree。
+`tree-view.mdx` 的 Composition 章再講一次:"A common pattern is to render a tree view in a
+**split page layout where the tree view is in the left pane**";它列的「好的使用情境」第一條就是
+"navigating the file structure of a repo" —— 那正是 GitHub code view 的左側 pane。
 
-**問 3 — 量級會不會讓逐項 Tab 變成負擔?**
+### 真正的軸:landmark 與 widget 是兩條不互斥的軸
 
-GitHub 官方文章逐字(這是**量級論證,不是語意論證**):
-> "Consider a file tree for a repository that contains 500+ files in 20+ directories. Without a composite widget treatment, someone may have to press Tab far too many times to bypass the file tree component and get what they need."
+WAI-ARIA 逐字:
 
-對偶:Primer NavList 的上限是 4 層巢狀,超過就叫你重新設計導覽,而不是換成 tree。
+> `navigation` — "**A landmark** containing a collection of navigational elements (usually links)…" (Superclass: `landmark`)
+> `tree` — "A widget that allows the user to **select** one or more items from a hierarchically organized collection." (Superclass: **`select`** → `composite`)
 
-### 三問跑四個案例
+**一個是 landmark、一個是 widget,所以可以嵌套。** GitHub 就是這樣做的:
+`<nav aria-label="File Tree Navigation">` 裡面包 `<ul role="tree" aria-label="Files">`。
+「側邊欄能不能有樹」是錯的問法;正確問法是 **「這一段是不是一個階層式的選取小工具」**。
 
-| | 側欄固定導覽 | GitHub repo 檔案樹 | APG Disclosure Navigation | 下拉選單 / 選項清單 |
-|---|---|---|---|---|
-| 問 1 操作模型 | 只有「前往」,無選取狀態、不對項目施加其他動作 | 有 `aria-selected`,且對選取節點施加動作 | 只有「前往」 | 選取 |
-| 問 2 鍵盤需求 | 不需要打字前導 / Home / End / 任意深度 | 需要,直接對標 Windows 檔案總管 | 不需要 | 需要 |
-| 問 3 量級 | 固定、有限、作者窮舉得完 | 500+ 檔、20+ 目錄、動態載入 | 有限 | 有限但需快速定位 |
-| **是不是連結** | 是 | APG 版是 | 是 | 通常不是 |
-| **結論** | **每項一個 Tab 停靠點** | **整棵樹一個停靠點 + 方向鍵** | **Tab 為主,方向鍵是 APG 明標的 Optional** | **整組一個停靠點 + 方向鍵** |
+### 五條判準(同時滿足才是樹)
 
-**「是不是連結」那一列是唯一四格幾乎都相同、卻對結論零貢獻的一列** —— 這就是它不能當判準的證明。
+| # | 判準 | 一手依據 |
+|---|---|---|
+| 1 | **節點是被選取並被施加動作的對象**,不只是目的地(改名 / 搬移 / 刪除 / 多選批次)| ARIA `tree` 的 superclass 就是 `select`;W3C APG 逐字 "select any number of files **for an action, such as copy or move**";Primer "navigate through, **select, and take action on** one or more items" |
+| 2 | **確實需要 tree 那一整套鍵盤模型**(打字前導、Home/End、任意深度 ArrowLeft 回父節點、多選)| APG Navigation Treeview 的 Caution 逐字:"**few sites need the additional keyboard functionality required to support the ARIA `tree` role**";不需要 → 用 **disclosure pattern** |
+| 3 | **深度說不出上界** | Primer NavList "**Up to 4 levels of nesting are supported**";Apple HIG "**no more than two levels of hierarchy in a sidebar**";Carbon「只有一層 → 用 accordion」。對照:Notion "nest pages inside other pages **with no limit**" |
+| 4 | **內容由使用者產生,且可以就地被改動**(改名 / 拖曳重排 / 新增 / 刪除)| Apple HIG Outline views "**let people reorder, add, and remove rows**";VS Code Explorer 開了 `dnd` 與 `isEditable`;Notion 拖曳巢狀 + hover `+` 建子頁 + `•••` 刪除 |
+| 5 | **啟動節點不保證換 URL** | Primer 逐字:NavList "Activating a nav list item **should change the URL**" vs TreeView "**may or may not** change the URL" |
 
-### Primer 對我們側欄這個 case 有明文
+**反過來,某一段該是導覽清單**:項目是產品自己定義的**固定目的地**、啟動一定換 URL、
+深度有界(2–4 層,用 disclosure 收合)、使用者只能前往不能改動項目本身。
 
-`tree-view.mdx` 把 "**global sidebar navigation**" 逐字列在 tree view **不適合**的清單裡;
-`nav-list.mdx` 逐字:"Do not replace your NavList with a tree view to support a deeply nested navigation structure.
-A tree view is **never** an accessible replacement for navigation."
+**量級不是判準**(這是本檔先前的第三問,已降級)。查無任何一手來源拿項目數當 tree/nav 的分界;
+APG 的 ">7 root nodes" 是「樹**要不要**加打字前導」的門檻,不是「該不該用樹」的門檻。
+量級只決定後續設計要求:樹要加打字前導與搜尋,清單要加分組與分隔線。
 
-### 一個必須講出來的張力(不要粉飾)
+### 三個實例
 
-Primer 說「tree 永遠不能取代導覽」,但 W3C APG 有一個官方範例就叫 **Navigation** Treeview,
-而 GitHub 把自己的檔案樹包進 `nav` landmark。三者並不矛盾,但要分開兩個問句:
+| | 導覽清單那一段 | 樹那一段 |
+|---|---|---|
+| **Notion** | Search / Home / Inbox / Meetings / Library —— 官方稱 "top-level tabs","Each tab has its own icon, contents, and purpose",動詞一律 "Click to …" | Teamspaces / Shared / Private 的頁面階層 —— 無限層、拖曳重排、hover `+` 建子頁、`•••` 刪除 |
+| **VS Code** | 活動列 `role="tablist"`;區段標題 `role="button"` + `aria-expanded` | Explorer `role="tree"` + `aria-level`,且開了多選、打字前導、拖曳、就地改名 |
+| **GitHub** | repo 導覽 `<nav aria-label="Repository">` 的 UnderlineNav(Code / Issues / PRs)| code view 檔案樹 `<nav aria-label="File Tree Navigation">` 內含 `<ul role="tree">` |
 
-1. **這東西在「功能上」是不是導覽?** → 決定要不要包 `nav` landmark。GitHub 的檔案樹是,所以包了。
-2. **這東西在「操作上」是不是一個 select widget?** → 決定焦點模型。是,所以 roving tabindex。
+**三個實例都成立同一件事**:上半段是「產品定義的固定目的地」→ 導覽語意;
+下半段是「使用者自己長出來、自己能改的階層」→ 樹語意。
+**中間那道線是「誰產生這些項目、使用者能不能改動它們」,不是「離側邊欄頂端多遠」。**
 
-GitHub 自己的話:"This does not mean every tree view component should be a landmark, however!
-We made this decision for the file tree because it is frequently interacted with as a way to navigate."
+### 套到本 DS 的側欄
 
-Primer 那句 "never" 的精確範圍是**反對「為了支援更深的巢狀而拿 tree 當技術解法」**
-(原文 L142 談巢狀上限、L144 緊接著講 never),不是「導覽內容永遠不能是 tree」。
-**這句範圍界定是本檔的解讀,不是 Primer 原文** —— 字面上的 "never" 讀起來更絕對。
+我們的 `sidebar.spec.md` 決策樹本來就寫對了:
+「designer 1 層固定導覽 → SidebarMenu」「user data / 階層 / 可新增 → TreeView」
+「兩者都有 → SidebarMenu + TreeView 分區」。**那正是上面五條的機械版本**,
+只是先前沒有寫出依據。本節補上依據,決策樹不變。
 
 ### `aria-current` 與 `aria-selected` 是兩件事,而且可以同時出現
 
@@ -165,50 +172,74 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 
 ## 套到本 DS
 
-| 元件 | 問 1 操作模型 | 問 2 鍵盤需求 | 問 3 量級 | 模型 |
-|---|---|---|---|---|
-| `SidebarMenu` / `SidebarMenuButton` | 只有「前往」,無選取狀態、不對項目施加其他動作 | 不需要打字前導 / Home / End / 任意深度 | designer 定義、有限、窮舉得完 | **每項一個 Tab 停靠點**,無方向鍵。Primer 把 "global sidebar navigation" 逐字列在 tree 不適合的清單裡 |
-| `TreeView` | 承載 user data,有選取狀態 + 展開收合 / 多選 / 拖曳重排 | 需要 | 使用者自己新增,任意深度 | **容器單一 Tab 停靠點 + 方向鍵**(`components/TreeView/tree-view.tsx`,DOM focus 永遠停在 `role="tree"` 容器) |
-| `SelectMenu` / `DropdownMenu` / `TimePicker` 的欄 | 選單項是該選單的值 | 需要(打字前導、迴圈) | 需快速定位 | **容器單一停靠點 + 方向鍵 / `aria-activedescendant`** |
-| `DataTable`(`role="grid"`) | 格是表格的值 | 需要 | 列數不可窮舉 | **容器單一停靠點 + 方向鍵** |
+| 元件 | 五條裡命中哪幾條 | 模型 |
+|---|---|---|
+| `SidebarMenu` / `SidebarMenuButton` | **一條都不命中** —— designer 定義的固定目的地、啟動一定換頁、層數有界、使用者不能改動項目本身 | **每項一個 Tab 停靠點**,無方向鍵 |
+| `TreeView` | **五條全中** —— 節點可選取並施加動作、需要打字前導與任意深度回父節點、深度無上界、使用者自己新增與拖曳重排、啟動不保證換 URL | **容器單一 Tab 停靠點 + 方向鍵**(`components/TreeView/tree-view.tsx`,DOM focus 永遠停在 `role="tree"` 容器)|
+| `SelectMenu` / `DropdownMenu` / `TimePicker` 的欄 | 命中 1、2、5 —— 選單項是該選單的值 | **容器單一停靠點 + 方向鍵 / `aria-activedescendant`** |
+| `DataTable`(`role="grid"`)| 命中 1、2 —— 格是表格的值 | **容器單一停靠點 + 方向鍵** |
 
-**注意這張表沒有「是不是連結」那一列** —— 因為它對結論零貢獻(見上方 ⛔ 段)。
-側欄導覽項是連結,APG Navigation Treeview 的 treeitem 也是連結,兩者模型卻相反。
+**注意這張表沒有「是不是連結」也沒有「在不在側邊欄」那兩列** —— 兩者對結論都零貢獻(見上方兩個 ⛔ 段)。
+側欄導覽項是連結,W3C APG Navigation Treeview 的 treeitem 也是連結;側欄可以同時裝這兩種,Notion / VS Code / GitHub 都是。
 
 **兩者在同一個側欄並存完全合規**,`sidebar.spec.md` 的決策樹「兩者都有 → SidebarMenu + TreeView 分區」對齊 VS Code 的三模型並存。
 
 
-## 進格用什麼鍵(跨元件規則,2026-09-24 訂)
+## 焦點放在格上還是格裡的控件上,以及進格用什麼鍵(跨元件規則,2026-09-24 訂)
 
-composite 容器裡,格子本身可能還裝著別的控件(表格的編輯器、月曆格裡的事件方塊)。
-**從「在格之間移動」切換成「操作格內的東西」要按哪個鍵**,規範給了兩個並列的慣例,
-所以這是必須自己訂、而且必須全 DS 一致的一格。
+### 先講:`Enter` 其實是一致的
 
-W3C APG Grid Pattern 的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2`
-**並列**為慣例,逐字:"Following are common keyboard conventions for disabling and restoring
-grid navigation functions."(其下同時列出 Enter 與 F2)。`F2` 那條逐字:
-"If the cell contains one or more widgets, places focus on the first widget."
-出格逐字:"Escape: restores grid navigation." / "F2: ... A subsequent press of F2 restores grid navigation functions."
+`Enter` 永遠是「**啟動目前焦點上的那個東西**」,這條沒有例外。
+看起來不一致的其實是**上一層**:焦點放在**格**上,還是放在**格裡那個控件**上。
+
+**W3C APG Grid Pattern 有一整節在講這件事**,小標題逐字是
+"Whether to Focus on a Cell Or an Element Inside It",它列出兩種**最優設計**:
+
+> "A cell contains **one widget whose operation does not require arrow keys** and grid navigation keys set focus on **that widget**."
+>
+> "A cell contains **text or a single graphic** and grid navigation keys set focus on **the cell**."
+
+**我們的兩個元件剛好各落一邊,而且理由就是規範寫的那個理由:**
+
+| 元件 | 格裡裝什麼 | 依 APG 焦點放哪 | `Enter` 於是等於 |
+|---|---|---|---|
+| `DataTable` 檢視態儲存格 | **文字**(資料) | **格** | 「進去」—— 因為格被啟動就是進編輯 |
+| `Calendar` 月檢視格 | **一個不需要方向鍵操作的控件**(日期鈕) | **那個控件** | 「選這一天」—— 因為被啟動的是那顆鈕 |
+
+所以 `Enter` 沒有兩套語意,它兩邊都是「啟動焦點上的東西」。
+
+### `F2` 為什麼一定要有
+
+APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2` 的進格敘述寫成**同一句**:
+
+> `Enter`:"If the cell contains one or more widgets, places focus on the first widget."
+> `F2`:"If the cell contains one or more widgets, places focus on the first widget.
+> **A subsequent press of F2 restores grid navigation functions.**"
+
+差別只在 `F2` 多了「再按一次回到格導覽」。
+
+**但焦點在控件上時,`Enter` 已經被那個控件的動作佔走**(月曆的「選這一天」),
+於是要抵達格裡**其他**的東西(事件方塊)就只剩 `F2`。這不是我們挑的,是 APG 兩條慣例裡剩下的那條。
 
 ### 規則
 
-> **`F2` 恆為「進格」。`Enter` 在該格的主要動作沒有佔走它時,也是「進格」。
-> 出格一律 `Escape`,`F2` 亦可。**
-
-**為什麼不是「一律用 Enter」或「一律用 F2」**:因為有些格的 `Enter` 已經有主要動作
-(月曆的日期鈕 `Enter` = 選這一天,而 W3C APG 的 Date Picker Dialog 範例就是這樣指派),
-硬要 `Enter` 進格會把那個動作蓋掉;而有些格沒有主要動作(表格的檢視態儲存格),
-少一個入口只是讓使用者更難用。**一條規則同時解釋兩種情況,不需要例外清單。**
+> **焦點放哪**:格裡是文字/圖形 → 焦點放格;格裡是一個不需要方向鍵的控件 → 焦點放那個控件(APG 兩種最優設計)。
+>
+> **`F2` 恆為「進到格裡的控件」,再按一次回到格導覽。**
+> **`Enter` 恆為「啟動焦點上的東西」** —— 焦點在格上時那就等於進格,焦點在控件上時那就是控件自己的動作。
+>
+> 出格一律 `Escape`(APG 逐字:"Escape: restores grid navigation."),`F2` 亦可。
 
 ### 本 DS 的兩個消費者
 
-| 元件 | 格的主要動作 | `Enter` | `F2` | 出格 |
+| 元件 | 焦點在 | `Enter` | `F2` | 出格 |
 |---|---|---|---|---|
-| `DataTable`(inline edit / spreadsheet)| 檢視態儲存格**沒有**主要動作 | 進編輯(`data-table.tsx` 的 `e.key === 'Enter' \|\| e.key === 'F2'`)| 進編輯 | `Escape` |
-| `Calendar` 月檢視 | 日期鈕 `Enter` = `onDateClick` 選這一天 | **不進格**(留給選日期)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
+| `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape` |
+| `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 選這一天(`onDateClick`)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
 
-**新元件照這條判,不要再逐案挑鍵。** 問一句就好:**這一格的 `Enter` 有沒有被主要動作佔走?**
-沒有 → `Enter` 與 `F2` 都給;有 → 只給 `F2`。
+**新元件照這條判,不要再逐案挑鍵。** 兩句話:
+**(1) 這一格裡裝的是文字還是一個控件?** 決定焦點放哪。
+**(2) 焦點上那個東西被 `Enter` 啟動時做什麼?** 那就是 `Enter` 的意思。`F2` 永遠是進去。
 
 ## 鐵律:宣告了 composite 角色,就必須真的實作那套鍵盤
 
@@ -238,7 +269,9 @@ grid navigation functions."(其下同時列出 Enter 與 F2)。`F2` 那條逐字
 | 指出「treeview 用在 sidebar 也會有目前選到哪一個的狀態」 | user 2026-09-24 逐字:「我他媽看不懂你講什麼,我們的 treeview 不是有可以用在 sidebar嗎?那不就也是會有目前選到哪一個的狀態?仔細全盤研究查查」 | **user 的反證**,直接推翻了下一列那條 AI 判準 |
 | 「有沒有目前選到哪一個的狀態」當分界 | AI 2026-09-24 推導 | **已撤回**,一手反證見上方 ⚠️ 段 |
 | 「能不能右鍵『在新分頁開啟』」當分界 | AI 2026-09-24 推導 | **已撤回** —— user 逐字戳破:「你他媽每個節點也有可能有自己的連結啊,你他媽不要再導果為因,仔細研究世界級的設計看到底要怎麼設計」。一手反證:APG Navigation Treeview 的 treeitem 就是 `<a href>` |
-| 三問判準(操作模型 / 鍵盤需求 / 量級) | 從 APG Caution、GitHub 量級論證、Primer 三前提**歸納** | **AI 的組裝動作** —— 引文都是真的,但三家沒有任何一家把這三問並列寫成一張表。**不得寫成「規範規定」** |
+| 「Primer 把 global sidebar navigation 列在 tree 不適合的清單裡」被寫成像禁令 | AI 2026-09-24 **誤讀** | **已撤回** —— user 逐字:「Sidebar 就是有可能會用到 treeview 啊,你自己看 notion 不也是嗎?憑什麼禁止?應該基於此去研究到底該怎麼定義吧?」兩層誤讀:(1) 原文是 **global** sidebar navigation(全站主導覽),我只記住 sidebar navigation;(2) 原文是「不要**為了突破四層上限**而把 NavList 換成 tree」,我只記住後半句。**Primer 同一個 repo 的 `ui-patterns/navigation.mdx` 正面寫著 TreeView "It's often used in the sidebar of a split page layout"**,跟 NavList 同一句。這是 M36 那一類:把自己讀出來的範圍當成原文寫的範圍 |
+| 五條判準(選取並施加動作 / 鍵盤需求 / 深度無上界 / 使用者產生且可改動 / 不保證換 URL) | 從 ARIA 角色譜系、APG Caution、Primer、Apple HIG、Carbon、Ant 歸納 | **AI 的組裝動作** —— 每一條都有一手引文,但**沒有任何一家把五條寫成一張判定表**。第 4 條的方向性(能改動 → 該用樹)是 AI 加的,Apple 只說「outline view 可以讓人編輯/重排/增刪」 |
+| 「量級」當判準 | AI 2026-09-24 推導 | **已降級** —— 查無任何一手來源拿項目數當 tree/nav 分界;APG 的 ">7 root nodes" 是「樹要不要加打字前導」的門檻,不是「該不該用樹」 |
 | 「Primer 那句 never 的精確範圍」 | 讀 `nav-list.mdx` 緊接兩行的上下文 | **AI 的解讀** —— 原文字面的 never 讀起來更絕對 |
 | 「GitHub 的檔案樹節點就是 `<a href>`」 | AI 2026-09-24 對話中的斷言 | **已撤回,無法證實** —— GitHub 2025-01 官方文章逐字寫「Nodes on tree view constructs are tree items, not links」,且把「Supporting links inside a node」列為未來工作。本檔的反證改用 APG 官方範例(那個確實是 `<a href>`) |
 | 「兩種模型並存是常態」 | VS Code 原始碼 + 官方 accessibility 文件 + GitHub/Primer 原始碼與文件 | **一手實證** |

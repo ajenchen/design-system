@@ -145,6 +145,11 @@ jobs:
           # 按下去沒反應;同輪還有 story 容器寫 role="listbox" 當裝飾,而示範是消費者會照抄的。
           # 規則住在 ds-canonical/references/keyboard-model-canonical.md,這支負責讓它有訊號。
           npm run test:composite-role-keyboard
+          # 同族第五面:規格用「這是哪一種邊界」定義線,程式卻用「這裡剛好渲染了哪個元件」畫線。
+          # 2026-09-24:表頭短線由 ResizeHandle 附帶畫,而系統欄(選取/拖曳/列動作)不可調寬、
+          # 不渲染它 → 選取欄整條欄間線靜默消失,勾選框與第一個資料欄在視覺上併成同一個盒。
+          # 本閘不驗 class 有沒有寫(那又是代理),直接量渲染出來的線:一般欄邊界必須同高同位。
+          npm run test:datatable-column-divider
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
