@@ -23,6 +23,7 @@ import { inflateSync as zlibInflate } from 'node:zlib'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { snapshotStorybookStatic, StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -53,10 +54,32 @@ if (!existsSync(STATIC)) {
   }
 }
 
+// **凍結受測建置**(2026-09-24):上面的守衛驗的是「此刻」的 storybook-static,之後每次導覽卻讀活目錄 ——
+// 同一份工作樹裡任何人跑 `npm run build-storybook`(第一步就清空輸出目錄),後續導覽就全部 404,
+// 在 :156 被判成「表格沒有列」(本機實紅過一次,重跑才綠;CI 每個 job 自己建一次,所以從沒遇過)。
+// 改成從本次執行獨佔的快照供檔,讓守衛與量測指向同一份建置。理由見 lib/storybook-static-snapshot.mjs。
+let SNAPSHOT
+try {
+  SNAPSHOT = snapshotStorybookStatic(STATIC)
+} catch (error) {
+  if (!(error instanceof StorybookBuildNotStableError)) throw error
+  console.error(`✗ ${error.message}`)
+  process.exit(1)
+}
+process.on('exit', () => SNAPSHOT.dispose())
+// 同源 404 帳本:快照不會再變,任何 404 都是「建置缺檔」或「story 要了不存在的檔」。
+// 任何未攔截的失敗(例如 waitForSelector 逾時)一併印出,不讓「儀器沒拿到檔」被讀成「元件沒渲染」(M37)。
+const notFound = []
+process.on('uncaughtException', (error) => {
+  console.error(error)
+  if (notFound.length) console.error(`\n⚠️  本次執行有 ${notFound.length} 個同源請求 404(快照 ${SNAPSHOT.dir}):\n   ${[...new Set(notFound)].join('\n   ')}`)
+  process.exit(1)
+})
+
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
+  const fp = join(SNAPSHOT.dir, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { notFound.push(p); res.writeHead(404); res.end(); return }
   res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
 })
 // 動態取空埠:固定 7500 會被其他 session 的靜態伺服器佔住(EADDRINUSE)而在 pre-commit 誤阻 commit(2026-09-02)。
@@ -2102,6 +2125,9 @@ for (const storyId of ['design-system-components-datatable-展示--selection-key
   record('I30', 'Shift+點擊後也不得畫(2026-05-12 user 抓過的那個)', !afterShiftClick.drawn || !afterShiftClick.focused, JSON.stringify(afterShiftClick))
   // (a) 再驗鍵盤 —— Tab 進來必須畫
   await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+  // 先等表格本身出現再開始按 Tab(M37):只睡固定時間的話,story 沒渲染時下面會紅成
+  // 「Tab 走不到表格根節點」—— 指控鍵盤行為,而真正的事實是「沒東西可走」。
+  await page.waitForSelector('[data-data-table-outer]')
   await page.waitForTimeout(400)
   let landed = false
   for (let i = 0; i < 25; i++) {
