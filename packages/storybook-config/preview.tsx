@@ -155,10 +155,15 @@ export function settleDemoFocus(mode: DemoFocus) {
 }
 // 掛載時的 autoFocus 走 effect(Radix FocusScope / DayButton),等一幀再多一個 tick 才量,否則量到還沒聚焦的狀態
 const afterNextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+// afterEach 跑完才蓋章 `<html data-demo-focus-settled="<story id>">`:Storybook 的 afterEach 排在 play 之後、每支 story 都跑
+//(preview-api StoryRender:playing → played → completed → afterEach;play 丟錯的 errored 不跑)。儀器要量「示範收尾之後」的畫面,
+// 就等這個章,不能用固定睡眠當「play 跑完」的代理 —— 2026-09-24 main 09d2eaa2 那一輪 runner 慢,Toast 朗讀區域 story 的
+// play 還在點按鈕(合成點擊 → 瀏覽器判成鍵盤焦點)時閘就量了,假紅;本機與快的 runner 900ms 內 play 早跑完,綠(M32 第四題)。
 export const sharedAfterEach: Preview['experimental_afterEach'] = [
-  async ({ parameters }) => {
+  async ({ parameters, id }) => {
     await afterNextFrame()
     settleDemoFocus(demoFocusOf(parameters as Record<string, unknown>))
+    document.documentElement.dataset.demoFocusSettled = id
   },
 ]
 

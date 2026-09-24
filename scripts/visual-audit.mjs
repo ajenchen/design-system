@@ -428,7 +428,13 @@ async function auditScenario(browser, scenario, opts = {}) {
     if (!isInteractive) {
       await page.mouse.move(0, 0) // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
     }
-    await page.waitForTimeout(isInteractive ? 1200 : 600) // interactive stories 需更長等 play() + animations 結束
+    // 先等「play 與示範收尾都跑完」這件事本身:預覽層 afterEach 蓋 `<html data-demo-focus-settled=<story id>>`
+    //(storybook-config preview.tsx;帶了 demoFocus=on 才有)。固定睡眠只留給收尾之後的動畫 —— 2026-09-24 同族的
+    // story-demo-focus 閘在慢 runner 上就是靠 900ms 當代理而假紅(M32 第四題);play 丟錯或舊建置沒有章就照舊只睡固定時間。
+    if (storyId) {
+      await page.waitForFunction((id) => document.documentElement.dataset.demoFocusSettled === id, storyId, { timeout: 30_000 }).catch(() => {})
+    }
+    await page.waitForTimeout(isInteractive ? 1200 : 600) // 收尾之後的 animations
 
     // 2026-09-23 前這裡會把非 interactive story 的焦點 blur 掉(浮層 autoFocus 的關閉鈕框、圖示鈕的焦點 tooltip)。
     // 現在「示範 = 滑鼠使用者」由 Storybook 預覽層做(storybook-config preview.tsx `settleDemoFocus`:每支 story 渲染完

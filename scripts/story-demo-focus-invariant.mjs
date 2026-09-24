@@ -59,8 +59,15 @@ const browser = await launchBrowserOrSkip()
 // 直接開 iframe.html 時預覽層把自己當儀器關掉(見 preview.tsx demoFocusEnabled);本閘要看的正是 user 在管理介面看到的畫面 → 帶 on
 const storyUrl = (id) => `${served.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&demoFocus=on`
 
+// 等的是「示範收尾跑完」這件事本身(preview.tsx afterEach 蓋的 `data-demo-focus-settled=<story id>`),不是固定睡眠:
+// 2026-09-24 main 09d2eaa2 在慢的 runner 上,Toast 朗讀區域 story 的 play 還沒跑完(合成點擊留下鍵盤框)閘就在 900ms 量了 → 假紅,
+// 而同一份建置在 PR 上剛綠過(M32 第四題「機器慢的時候還會綠嗎」)。play 丟錯的 story 沒有這個章 → 以載入錯誤紅(不放行)。
+// 章之後再留 300ms 給 Radix 還焦點 / Dialog 聚焦捲動區那類收尾後的程式聚焦(監聽器會放掉它們,量的是放掉之後)。
+const SETTLED_TIMEOUT_MS = 60_000
 async function openStory(page, id) {
-  await gotoStory(page, storyUrl(id), { waitFor: '#storybook-root > *', settle: 900 })
+  await gotoStory(page, storyUrl(id), { waitFor: '#storybook-root > *', settle: 0 })
+  await page.waitForFunction((storyId) => document.documentElement.dataset.demoFocusSettled === storyId, id, { timeout: SETTLED_TIMEOUT_MS })
+  await page.waitForTimeout(300)
   return measure(page)
 }
 
@@ -85,7 +92,24 @@ try {
     // 對照組 4:沒有 data-demo-focus = 儀器失效
     const missing = classifyDemoFocus({ mode: null, focusVisible: false, painted: false })
     console.log(`${missing === 'instrument-missing' ? '✓' : '✗'} 對照組 缺屬性:判成儀器失效(得 ${missing})`)
-    exitCode = seesRing && verdict === 'violation' && tabVerdict === 'violation' && missing === 'instrument-missing' ? 0 : 1
+    // 對照組 5(與機器速度無關的證明,2026-09-24):把 CPU 節流 30 倍再開 Toast 朗讀區域 story —— 它的 play 會點好幾顆按鈕。
+    // (a) 舊代理「根節點出現 + 900ms」量到的時候,收尾章還沒蓋(play 還在跑);(b) 等章再量 → 乾淨。兩面都成立才算儀器有效。
+    const toastId = 'design-system-components-toast-展示--live-region-contract'
+    let throttled = false
+    try { const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 30 }); throttled = true } catch { /* 無 CDP 就跳過這組,但要講出來 */ }
+    let earlyOk = false; let lateOk = false
+    if (throttled) {
+      await gotoStory(page, storyUrl(toastId), { waitFor: '#storybook-root > *', settle: 900 })
+      const early = await page.evaluate(() => document.documentElement.dataset.demoFocusSettled ?? null)
+      earlyOk = early === null
+      console.log(`${earlyOk ? '✓' : '✗'} 對照組 節流:根節點出現 + 900ms 時收尾章還沒蓋(章=${early})—— 固定睡眠量不到 play 跑完`)
+      const late = await openStory(page, toastId)
+      lateOk = classifyDemoFocus(late) === 'ok'
+      console.log(`${lateOk ? '✓' : '✗'} 對照組 節流:等到收尾章再量 → 乾淨(${JSON.stringify(late)})`)
+    } else {
+      console.log('✗ 對照組 節流:這個瀏覽器沒有 CDP 節流,無法證明「等章」與機器速度無關')
+    }
+    exitCode = seesRing && verdict === 'violation' && tabVerdict === 'violation' && missing === 'instrument-missing' && earlyOk && lateOk ? 0 : 1
     await page.close()
   } else {
     const index = JSON.parse(readFileSync(resolve(ROOT, 'storybook-static/index.json'), 'utf8'))
