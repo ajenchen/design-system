@@ -1149,6 +1149,18 @@ const SidebarMenuButton = React.forwardRef<
         ref={ref}
         data-sidebar="menu-button"
         data-active={isActive}
+        // 2026-09-24:先前這裡**只有** data-active 這個純樣式 attribute,螢幕閱讀器讀不到
+        // 「你現在人在這一頁」—— 當前項在視覺上有底色,對 SR 卻跟其他項完全一樣。
+        // aria-current="page" 是這個狀態的世界級標準寫法,三份一手來源一致:
+        //   W3C APG Disclosure Navigation 範例(連結上帶 aria-current="page")、
+        //   GitHub repo 導覽(Code / Issues / PRs 那排)、
+        //   Primer TreeView(aria-current={isCurrentItem ? 'true' : undefined})。
+        // 它與 aria-selected 是兩件事,WAI-ARIA 1.2 aria-current 的 Note 明文說兩者可以並存:
+        //   current = 你現在人在這一頁(已發生的事實);selected = 這個控件裡被挑中的那一項。
+        // 側欄導覽是「N 個各自獨立的連結」,不是 composite widget,所以用 current 不用 selected
+        //(判準 → ds-canonical/references/keyboard-model-canonical.md)。
+        // 純 SR 語意,**零視覺變化**。
+        aria-current={isActive ? 'page' : undefined}
         className={cn(sidebarMenuButtonVariants({ size, variant }), className)}
         style={hasActions ? { paddingRight: buttonPaddingRight } : undefined}
         onClick={handleClick}
