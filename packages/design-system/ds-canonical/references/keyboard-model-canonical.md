@@ -241,6 +241,120 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 **(1) 這一格裡裝的是文字還是一個控件?** 決定焦點放哪。
 **(2) 焦點上那個東西被 `Enter` 啟動時做什麼?** 那就是 `Enter` 的意思。`F2` 永遠是進去。
 
+
+## 「鍵盤操作可以不一致嗎」—— 可以,但不是免費的(2026-09-24,user 追問到底才查出來的一層)
+
+user 逐字:「所以這代表鍵盤操作可以不一致?世界級的設計也是如此?你為何都要我追問問題的根本?」
+
+先前本檔只答到「世界級也這樣做」(VS Code 三種模型並存、GitHub nav + tree)。
+**那是現象,不是回答。** 下面是根。
+
+### 分工本身是跨平台慣例,四家正面論證
+
+W3C APG 逐字:「**A primary keyboard navigation convention common across all platforms** is that
+the tab and shift + tab keys move focus from one UI component to another while other keys,
+primarily the arrow keys, move focus inside of components that include multiple focusable elements.」
+同頁另一句講設計意圖:ARIA design patterns「**borrow user expectations and keyboard conventions
+from those platforms** … with the aim of facilitating easy learning and efficient operation」。
+
+Microsoft WinUI:「**Users expect** support for arrow key navigation when there is a group of
+similar, related controls in a UI region.」
+Apple(WWDC21 Session 10260):「**The tab key navigates between significant areas in an app.
+The arrow keys navigate within an area.**」而且 UIKit **自動從階層推導 focus group**,
+使用者只要學一次 —— **網頁沒有這個東西**,每個元件作者各自決定。
+MDN 把它寫成通則。
+
+**所以「按鍵不同」不是「規則不同」,是那兩段東西在結構上一個是 N 個元件、一個是 1 個元件。**
+
+### 但可預期性有兩個明文前提,少一個就不成立
+
+**前提一:那個群組必須是使用者**已經認得**的 pattern。**
+Microsoft WinUI 逐字:「Assign single tab stop to **familiar UI patterns** …
+In cases where your layout follows a **well-known UI pattern** for control groups,
+assigning a single tab stop to the group can improve navigation efficiency for users.」
+它列的例子是 RadioButtons、看起來像單一 ListView 的多個 ListView、磚塊格陣。
+**反過來說:你自己發明的群組,不該收成單一停靠點。**
+
+**前提二:你必須**完整**實作那個 pattern。**
+APG 逐字:「**All this is only possible if** the tree implements the GUI keyboard conventions
+as described in the Tree View Pattern.」
+**做半套的 tree 會讓 role 這個訊號說謊,成本比不用 tree 更高** ——
+這正是本檔「鐵律:宣告了 composite 角色,就必須真的實作那套鍵盤」那一節的理由來源。
+
+### 三個族群拿到的訊號強度不對稱,而且第三格規範層是空的
+
+APG 有一句同時點名了兩條 discovery 管道(逐字):
+
+> 「**Just as familiar visual styling helps users discover how to expand a tree branch with a mouse**,
+> ARIA attributes give the tree the sound and feel of a tree in a desktop application. …
+> **Because the screen reader knows the element is a tree, it also has the ability to instruct
+> a novice user how to operate it.**」
+
+| 族群 | 訊號 | 依據 |
+|---|---|---|
+| 螢幕閱讀器使用者 | **role 本身**,而且 AT 能主動教新手怎麼操作 | 上引 APG |
+| 滑鼠使用者 | **視覺樣式** | 上引 APG 同一句 |
+| **看得見畫面、但只用鍵盤** | **規範層沒有給** | 見下 |
+
+**第三格是真的空的,而且 W3C 自己知道。** APG 有一節就叫
+〈Discernible and Predictable Keyboard Focus〉—— 標題就是這個問題 —— 而它的第一行逐字是:
+
+> 「**Work to complete this section is tracked by issue 217.**」
+
+`w3c/aria-practices` issue #217 標題「Finish drafting section "Discernable and Predictable
+Keyboard Focus"」,**2016-12-13 開,至今 open**。body 逐字:「The section … is **incomplete**.」
+**九年多沒寫完。**
+
+WCAG 也沒補上:SC 3.2.3 Consistent Navigation 的範圍逐字是
+「within a **set of web pages**」—— **跨頁,不是同頁**。
+**WCAG 沒有任何一條要求同一頁內鍵盤模型一致。**
+
+**注意**:「第三個族群沒有訊號」這句話 APG **沒有說**,是本檔從那一句的句子結構指出它沒被涵蓋
+(它同時點名 mouse↔visual、AT↔ARIA,唯獨漏掉中間那一格)。這是本檔的推論,不是原文。
+
+### 明文承認困惑成本的是 DS,不是 W3C
+
+APG 那兩個常被引用的警告框,講的都**不是**「並存讓人搞混」:
+Navigation Treeview 的 Caution 講的是 **實作複雜度**(「requires implementation of complex
+functionality」),Disclosure Navigation 的 Important 講的是 **AT 期待落空**。
+唯一明文講 confusion 的是 Primer:「may cause **confusion or an unusable experience**,
+especially if the user cannot see the screen」—— 但它歸因於**誤用**,不是並存。
+
+APG 另有一段雖然字面在講 keyboard shortcuts,論證結構卻直接打到「靠文件去學按鍵」這件事:
+
+> 「**The primary means of making functions and their shortcuts discoverable is by making the
+> target elements focusable and revealing key assignments on the element itself.**
+> If people who rely on the keyboard have to read documentation to learn which keys are required
+> to use an interface, the interface **may technically meet some accessibility standards but in
+> practice is only accessible to the small subset of them** who have the knowledge that such
+> documentation exists, have the extra time available, and the ability to retain the necessary information.」
+
+**把這段套到方向鍵模型上是本檔做的類比,不是 APG 說的** —— 但它直接否定了「按 `?` 看快捷鍵就夠了」這類緩解。
+
+### 緩解手段(各有一手出處)
+
+| 緩解 | 出處 |
+|---|---|
+| **模稜兩可時兩種都支援**(既是 tab stop、也吃方向鍵) | Microsoft WinUI 逐字:「Accessibility users rely on well-established keyboard navigation rules, which do not typically use arrow keys… However, users without visual impairments might feel that the behavior is natural.」其 `ContentDialog`「**While arrow keys can be used to navigate between buttons, each button is also a tab stop.**」 |
+| 只在 **well-known pattern** 上收單一停靠點 | Microsoft WinUI(前提一) |
+| 區段層級導覽鍵(F6 / Focus Next Part) | Microsoft WinUI:「The **F6** key lets a user cycle between panes or important sections」;VS Code docs 同款 |
+| 把按鍵**寫在元素本身**而非文件 | APG 上引原則;Primer 的 `KeybindingHint` 元件把快捷鍵寫進 `aria-label`;ARIA 的 `aria-keyshortcuts` |
+| 情境式 accessibility help | VS Code 的 Open Accessibility Help —— **但官方清單只含編輯器 / 終端機 / 筆記本 / 聊天,不含側邊欄與檔案樹** |
+| 平台層統一 focus group | Apple UIKit 自動推導 —— **網頁無對應物** |
+
+### 套到本 DS 的結論
+
+**我們每一個收成單一停靠點的東西,都是 Microsoft 所說的 well-known pattern**:
+`TreeView`(樹)、`SelectMenu` / `DropdownMenu`(選單)、`TimePicker` 的欄(選項清單)、
+`DataTable`(表格)、`Calendar` 月檢視(表格)、`RadioGroup`(單選組)。
+**沒有一個是自己發明的群組** —— 前提一成立。
+
+前提二由本檔的鐵律與 `scripts/composite-role-keyboard-invariant.mjs` 強制:
+宣告了 composite 角色就必須真的實作那套鍵盤,否則 CI 紅。
+
+**還沒做、而且證據支持它值得做的一項**:區段層級導覽鍵(F6 那一類)。
+Microsoft 與 VS Code 都有,我們沒有。這會是產品層決策,不在本檔自行決定。
+
 ## 鐵律:宣告了 composite 角色,就必須真的實作那套鍵盤
 
 `role="grid"` / `role="listbox"` / `role="tree"` / `role="tablist"` 一旦寫上去,
@@ -272,6 +386,9 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 | 「Primer 把 global sidebar navigation 列在 tree 不適合的清單裡」被寫成像禁令 | AI 2026-09-24 **誤讀** | **已撤回** —— user 逐字:「Sidebar 就是有可能會用到 treeview 啊,你自己看 notion 不也是嗎?憑什麼禁止?應該基於此去研究到底該怎麼定義吧?」兩層誤讀:(1) 原文是 **global** sidebar navigation(全站主導覽),我只記住 sidebar navigation;(2) 原文是「不要**為了突破四層上限**而把 NavList 換成 tree」,我只記住後半句。**Primer 同一個 repo 的 `ui-patterns/navigation.mdx` 正面寫著 TreeView "It's often used in the sidebar of a split page layout"**,跟 NavList 同一句。這是 M36 那一類:把自己讀出來的範圍當成原文寫的範圍 |
 | 五條判準(選取並施加動作 / 鍵盤需求 / 深度無上界 / 使用者產生且可改動 / 不保證換 URL) | 從 ARIA 角色譜系、APG Caution、Primer、Apple HIG、Carbon、Ant 歸納 | **AI 的組裝動作** —— 每一條都有一手引文,但**沒有任何一家把五條寫成一張判定表**。第 4 條的方向性(能改動 → 該用樹)是 AI 加的,Apple 只說「outline view 可以讓人編輯/重排/增刪」 |
 | 「量級」當判準 | AI 2026-09-24 推導 | **已降級** —— 查無任何一手來源拿項目數當 tree/nav 分界;APG 的 ">7 root nodes" 是「樹要不要加打字前導」的門檻,不是「該不該用樹」 |
+| 「三個族群訊號不對稱」 | 從 APG 那一句的**句子結構**指出(它同時點名 mouse↔visual、AT↔ARIA,唯獨漏掉中間那一格) | **AI 的推論** —— APG 沒有說「所以第三個族群沒有訊號」 |
+| 把 APG 講 keyboard shortcuts 的 discoverability 論證套到方向鍵模型上 | 類比 | **AI 的類比** —— 那段的字面主題是 shortcuts。兩者都是「非預設鍵、要先知道才會用」,我認為類比成立,但它是類比不是原文 |
+| 「兩個前提」(已認得的 pattern + 完整實作) | 從 Microsoft 的 "familiar UI patterns" 與 APG 的 "only possible if" 歸納 | **AI 的組裝** —— 沒有任何一家把它寫成這兩條 |
 | 「Primer 那句 never 的精確範圍」 | 讀 `nav-list.mdx` 緊接兩行的上下文 | **AI 的解讀** —— 原文字面的 never 讀起來更絕對 |
 | 「GitHub 的檔案樹節點就是 `<a href>`」 | AI 2026-09-24 對話中的斷言 | **已撤回,無法證實** —— GitHub 2025-01 官方文章逐字寫「Nodes on tree view constructs are tree items, not links」,且把「Supporting links inside a node」列為未來工作。本檔的反證改用 APG 官方範例(那個確實是 `<a href>`) |
 | 「兩種模型並存是常態」 | VS Code 原始碼 + 官方 accessibility 文件 + GitHub/Primer 原始碼與文件 | **一手實證** |
