@@ -46,6 +46,8 @@ import {
   nextPatchVersion,
   runClosedBootstrapStep,
   runVulnerabilityAuditUnderPolicy,
+  isTransientAdvisoryEndpointFailure,
+  runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
 import {
@@ -1577,4 +1579,66 @@ test('authority setup CLI:--root 與 --vulnerability-policy 只接在 --dependen
     ['--dependencies-only', '--frozen'],
     ['--governance'],
   ]) assert.throws(() => parseAuthoritySetupArguments(bad), /usage:|unsupported vulnerability policy/, JSON.stringify(bad))
+})
+
+// 2026-09-24 main d93284c1:dpr2 job 在任何閘之前死在 `npm audit` 的 advisory 端點 `read ECONNRESET`(共享 runner 網路),
+// PAT 沒 actions:write 不能重跑。暫時性網路錯誤重試上限 3 次、退避 2s/4s;兩面對照:該重試的(ECONNRESET / 503)重試後成功、
+// 不該重試的(真漏洞 / 401 / 格式錯 / spawn 錯)只跑一次;用盡仍 fail closed 且訊息帶 attempts;sleep 與 report 可注入,測試不真的等。
+test('npm audit 對 advisory 端點的暫時性網路錯誤重試 3 次後仍 fail closed;真漏洞與非暫時錯誤不重試', () => {
+  const identityDigest = 'a'.repeat(64)
+  const treeDigest = 'b'.repeat(64)
+  const npmRuntime = { securityOverlay: { status: 'applied', identityDigest, treeDigest } }
+  const installedOverlayReceipt = { status: 'verified', identityDigest, treeDigest, auditClosureDigest: 'c'.repeat(64), auditClosure: [] }
+  const args = ['/npm/cli.js', 'audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/']
+  const clean = JSON.stringify({
+    auditReportVersion: 2,
+    vulnerabilities: {},
+    metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 }, dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 } },
+  })
+  const reset = JSON.stringify({ message: 'request to https://registry.npmjs.org/-/npm/v1/security/advisories/bulk failed, reason: read ECONNRESET', method: 'POST', uri: 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk' })
+  const unavailable = JSON.stringify({ message: '503 Service Unavailable - POST https://registry.npmjs.org/-/npm/v1/security/advisories/bulk - Service Unavailable', method: 'POST', uri: 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk' })
+  const unauthorized = JSON.stringify({ message: '401 Unauthorized - POST https://registry.npmjs.org/-/npm/v1/security/advisories/bulk', method: 'POST', uri: 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk' })
+  const finding = JSON.stringify({
+    auditReportVersion: 2,
+    vulnerabilities: { leftpad: { name: 'leftpad', severity: 'high', isDirect: true, via: [{ source: 1, name: 'leftpad', dependency: 'leftpad', url: 'https://github.com/advisories/GHSA-xxxx', severity: 'high', range: '<1' }], effects: [], range: '<1', nodes: ['node_modules/leftpad'] } },
+    metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 1, critical: 0, total: 1 }, dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 } },
+  })
+  const scripted = (outputs) => {
+    const calls = []; const sleeps = []; const lines = []
+    const runner = () => { const stdout = outputs[Math.min(calls.length, outputs.length - 1)]; calls.push(stdout); return { status: stdout === clean ? 0 : 1, stdout, stderr: '' } }
+    const run = () => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner, npmRuntime, installedOverlayReceipt, sleep: (ms) => sleeps.push(ms), report: (line) => lines.push(line) })
+    return { run, calls, sleeps, lines }
+  }
+  // 純判定兩面
+  assert.equal(isTransientAdvisoryEndpointFailure(new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit advisory endpoint failed:request to https://registry.npmjs.org/-/npm/v1/security/advisories/bulk failed, reason: read ECONNRESET')), true)
+  assert.equal(isTransientAdvisoryEndpointFailure(new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit advisory endpoint failed:503 Service Unavailable - POST x')), true)
+  assert.equal(isTransientAdvisoryEndpointFailure(new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit advisory endpoint failed:401 Unauthorized - POST x')), false)
+  assert.equal(isTransientAdvisoryEndpointFailure(new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:leftpad(ECONNRESET in name)')), false, '不是 advisory 端點的訊息,含關鍵字也不算')
+  assert.equal(isTransientAdvisoryEndpointFailure(new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit did not produce closed JSON')), false)
+  // 該重試:ECONNRESET、503 各一次後成功 → receipt passed、跑了 3 次、退避 2s 再 4s、警語 2 行
+  const flaky = scripted([reset, unavailable, clean])
+  assert.equal(flaky.run().status, 'passed')
+  assert.equal(flaky.calls.length, 3)
+  assert.deepEqual(flaky.sleeps, [2_000, 4_000])
+  assert.equal(flaky.lines.length, 2)
+  assert.match(flaky.lines[0], /transient failure\(attempt 1\/3\),retrying in 2000ms:.*ECONNRESET/)
+  // 用盡:三次都 ECONNRESET → 仍 fail closed,訊息帶 after 3 attempts,不多跑第四次
+  const dead = scripted([reset, reset, reset, reset])
+  assert.throws(() => dead.run(), /advisory endpoint failed:.*ECONNRESET.*\(after 3 attempts\)/)
+  assert.equal(dead.calls.length, 3)
+  assert.deepEqual(dead.sleeps, [2_000, 4_000])
+  // 不該重試:真漏洞只跑一次、不睡
+  const real = scripted([finding, clean])
+  assert.throws(() => real.run(), /unremediated high\/moderate finding:leftpad/)
+  assert.equal(real.calls.length, 1)
+  assert.deepEqual(real.sleeps, [])
+  // 不該重試:401 不是暫時性,只跑一次
+  const denied = scripted([unauthorized, clean])
+  assert.throws(() => denied.run(), /advisory endpoint failed:401 Unauthorized/)
+  assert.equal(denied.calls.length, 1)
+  // 不該重試:spawn 錯誤原樣往上丟
+  const spawnError = () => ({ error: new Error('spawn ENOENT'), status: null, stdout: '', stderr: '' })
+  assert.throws(() => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner: spawnError, npmRuntime, installedOverlayReceipt, sleep: () => {}, report: () => {} }), /spawn ENOENT/)
+  // 上限必須是正整數
+  assert.throws(() => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner: () => ({ status: 0, stdout: clean, stderr: '' }), npmRuntime, installedOverlayReceipt, retryLimit: 0 }), /retry limit must be a positive integer/)
 })

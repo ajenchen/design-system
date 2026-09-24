@@ -583,6 +583,20 @@ export function evaluateVerifiedHighVulnerabilityAudit({
   })
 }
 
+// 2026-09-24:`npm audit` 對 registry 的 advisory 端點是一次網路呼叫,共享 runner 上偶發 `read ECONNRESET` / 503
+//(main d93284c1 那一輪的 dpr2 job 在任何閘跑之前就死在這一步;PAT 沒有 actions:write,不能重跑,只能再開一個 PR 合併
+// 才有新的一輪)。只對「advisory 端點的暫時性網路錯誤」重試,上限 3 次、退避 2s/4s;真正的漏洞發現、格式錯誤、
+// spawn 錯誤一律不重試;用盡仍 fail closed,訊息帶 attempts。判定抽成純函式 `isTransientAdvisoryEndpointFailure`,
+// 測試兩面對照(該重試的一筆、不該重試的一筆)。
+export const GOVERNANCE_AUDIT_TRANSIENT_RETRY_LIMIT = 3
+export const GOVERNANCE_AUDIT_TRANSIENT_BACKOFF_MS = 2_000
+const TRANSIENT_ADVISORY_REASON = /ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|EPIPE|socket hang up|network timeout|\b50[234]\b/i
+export function isTransientAdvisoryEndpointFailure(error) {
+  const text = String(error?.message || '')
+  return text.includes('npm audit advisory endpoint failed:') && TRANSIENT_ADVISORY_REASON.test(text)
+}
+const sleepSync = (ms) => { if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms) }
+
 export function runVerifiedHighVulnerabilityAudit(command, args, {
   root,
   environment,
@@ -591,6 +605,10 @@ export function runVerifiedHighVulnerabilityAudit(command, args, {
   installedOverlayReceipt,
   errorPrefix = 'GOV-DEPENDENCY-BOOTSTRAP-001',
   timeoutMs = 15 * 60 * 1_000,
+  retryLimit = GOVERNANCE_AUDIT_TRANSIENT_RETRY_LIMIT,
+  backoffMs = GOVERNANCE_AUDIT_TRANSIENT_BACKOFF_MS,
+  sleep = sleepSync,
+  report = (line) => console.error(line),
 } = {}) {
   invariant(
     Array.isArray(args)
@@ -599,23 +617,36 @@ export function runVerifiedHighVulnerabilityAudit(command, args, {
     'npm high-vulnerability audit argv differs from the closed overlay-aware contract',
     errorPrefix,
   )
-  const result = runner(command, args, {
-    cwd: root,
-    env: environment,
-    encoding: 'utf8',
-    shell: false,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: timeoutMs,
-    windowsHide: true,
-  })
-  if (result?.error) throw result.error
-  invariant(Number.isInteger(result?.status), `${command} did not return an exit status`, errorPrefix)
-  return evaluateVerifiedHighVulnerabilityAudit({
-    stdout: result.stdout,
-    exitStatus: result.status,
-    npmRuntime,
-    installedOverlayReceipt,
-  })
+  invariant(Number.isInteger(retryLimit) && retryLimit >= 1, 'npm audit retry limit must be a positive integer', errorPrefix)
+  for (let attempt = 1; ; attempt += 1) {
+    const result = runner(command, args, {
+      cwd: root,
+      env: environment,
+      encoding: 'utf8',
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: timeoutMs,
+      windowsHide: true,
+    })
+    if (result?.error) throw result.error
+    invariant(Number.isInteger(result?.status), `${command} did not return an exit status`, errorPrefix)
+    try {
+      return evaluateVerifiedHighVulnerabilityAudit({
+        stdout: result.stdout,
+        exitStatus: result.status,
+        npmRuntime,
+        installedOverlayReceipt,
+      })
+    } catch (error) {
+      if (!isTransientAdvisoryEndpointFailure(error)) throw error
+      if (attempt >= retryLimit) {
+        throw new Error(`${String(error.message)}(after ${attempt} attempts)`)
+      }
+      const wait = backoffMs * attempt
+      report(`⚠️  ${errorPrefix}:npm audit advisory endpoint transient failure(attempt ${attempt}/${retryLimit}),retrying in ${wait}ms:${String(error.message).slice(0, 240)}`)
+      sleep(wait)
+    }
+  }
 }
 
 export async function runVerifiedGovernanceDependencyBootstrap({
