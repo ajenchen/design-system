@@ -192,22 +192,73 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
 
-### 四題判定程序(新列元件照這個順序走,不要跳)
 
-這一節與 `ds-canonical/references/keyboard-model-canonical.md` 合起來是**一條完整的鏈**。
-先前兩份文件各自正確但**沒有接起來**:下方第二張表是拿「這一列有沒有複合角色」當**既成事實**在判,
-而「誰決定它該不該有那個角色」住在另一個檔 —— 於是新元件照樣可能落錯地方。
-2026-09-24 user 追問「整個 SSOT 是否能有合理原則涵蓋所有情境」時補上這條有序程序。
+### 這一節在回答什麼(先講目的)
 
-| 順序 | 問題 | 判準的 owner | 答案決定什麼 |
-|---|---|---|---|
-| **1** | **這一整串,是 N 個各自獨立的東西,還是 1 個控件的內部?** | `keyboard-model-canonical.md`「五條判準」(節點可選取並施加動作 / 需要樹那套鍵盤 / 深度無上界 / 使用者產生且可改動 / 不保證換 URL)| 是 1 個控件 → 整串**一個 Tab 停靠點 + 方向鍵**,列拿 `treeitem` / `option` / `gridcell`;是 N 個 → **每一列各一個 Tab 停靠點**,列**不拿**那些角色 |
-| **2** | **把動作鈕排到外面之後,剩下的內容能不能整包住進一顆 `<button>`?** | 本節下方第一張表(HTML content model + ARIA children-presentational)| 能 → 列自己就是 `<button>` / `<a>`;不能 → 列維持非互動容器 |
-| **3** | **那誰承接鍵盤?** | 本節下方第二張表 —— **但它的輸入是第 1 題的答案,不是自己判的** | 第 1 題答「1 個控件」→ 容器擁有鍵盤,列 `tabIndex={-1}`;答「N 個」且第 2 題答「不能當 button」→ 列內鋪一顆覆蓋整列的透明控件,焦點框畫在列上 |
-| **4** | **按哪些鍵?** | `keyboard-model-canonical.md`「進格用什麼鍵」(焦點在格上還是格裡的控件上、`Enter` / `F2` / `Escape`)| 只在第 1 題答「1 個控件」且格內還裝著別的控件時才需要問 |
+**目的只有一個:拿到一份「列」的設計需求時,不必看任何既有元件,就能推出它該長什麼樣、怎麼操作。**
 
-**第 1 題必須先問。** 它決定第 3 題的輸入;跳過它就會變成「看隔壁那個元件怎麼寫就照抄」,
-而那正是本 DS 反覆漂移的形狀。
+它要防的失敗是具體的:DS 裡已經有 `SidebarMenuButton`(列自己是一顆按鈕)與 `FileItem`
+(列不是按鈕、鍵盤由一顆隱形控件承接)兩種做法。沒有這一節,下一個人建新列元件時
+**只能挑一個看起來像的來抄**,而抄錯的那一半會在無障礙與鍵盤上靜默壞掉。
+
+### ⛔ 2026-09-24 重寫:先前這一節是從實作切入的
+
+原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——
+**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因。」
+把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
+
+---
+
+### 第一層(設計):這一串是**一組去處**,還是**一組東西**?
+
+這是最根本的一刀,而且**不是本檔歸納的,是世界級各家自己的分類**:
+
+| 出處 | 逐字 |
+|---|---|
+| **Ant Design** 原始碼 frontmatter | `components/menu/index.en-US.md`:`group: Navigation`,描述 "A versatile menu for **navigation**"<br>`components/tree/index.en-US.md`:`group: **Data Display**",描述 "Multiple-level structure list" |
+| **Primer** `content/ui-patterns/navigation.mdx` | "A tree view **isn't semantically a form of navigation**: it's for **activating an option from a hierarchical list**." |
+| **Carbon** tree-view usage「When not to use」 | "**As the primary navigation in a product's UI.** Instead, use the UI Shell left panel for product navigation."<br>⚠️ **這句的範圍是「主導覽」,不是「側邊欄」** —— 跟 Primer 那句 "global sidebar navigation" 同一層級。它支持的是「樹不是導覽」這個分類,**不是「側邊欄不能有樹」**。Notion 的側邊欄下半就是樹。2026-09-24 我先前就是把 Primer 同類的句子裸引而讀成禁令,user 逐字戳破;這裡同樣不得裸引。 |
+
+**兩類東西,不是同一類的兩種做法:**
+
+- **一組去處(導覽)**:使用者對它做的唯一的事是**去那裡**。項目本身沒有被操作的價值,只有被抵達的價值。它由產品定義,使用者不能改動它。
+- **一組東西(資料)**:項目本身就是**被操作的對象**。使用者會挑它、對它做事、看它的狀態。它通常由使用者產生,而且能被改動。
+
+**判斷句**:問「使用者對這一項**做**什麼?」——
+答「去某個地方」= 去處;答「挑它、然後對它做某件事」= 東西。
+
+### 第二層(只對「一組東西」問):使用者會不會把這一整串當成**一個東西**來操作?
+
+- **會** —— 會一次挑好幾個一起處理、會在裡面搬移、項目多到需要快速跳。
+  → 它在使用者心中就是**一個東西**,所以鍵盤上也該是一個東西:整串一個停靠點,進去之後用方向鍵。
+- **不會** —— 每一筆各自處理,彼此沒有「一起」的概念。
+  → 每一筆各自獨立,各自一個停靠點。
+
+**這一層的完整判準(五條)與一手依據住在 `ds-canonical/references/keyboard-model-canonical.md`**,
+本節不重述。那五條講的是同一件事的可操作版本:節點會不會被選取並施加動作、
+需不需要那一整套鍵盤、深度有沒有上界、內容是不是使用者產生且可改動、啟動會不會換 URL。
+
+### 第三層(對每一列問):這一列除了主要動作,還有沒有別的動作?
+
+- **沒有** —— 整列就是一個目標。
+- **有** —— 那些動作**各自是獨立的目標**,不能被主要動作吞掉。
+  這就是為什麼「按刪除不該連帶把檔案打開」不是體貼,是必須。
+
+---
+
+### 實作是**後果**,不是判準
+
+上面三層一旦答完,markup 只剩一種寫法 —— 因為 HTML 與 ARIA 把其餘的路堵死了。
+**這一段列的是後果,不要拿它來做設計決定。**
+
+| 設計面的事實 | 被規範堵死的後果 | 規範依據 |
+|---|---|---|
+| 這一列裡有**必須被唸出來的狀態**(進度、頭像、多段說明) | 列**不能**是一顆按鈕 —— 按鈕裡的東西會被輔助科技當成裝飾唸掉,進度百分比會消失 | ARIA `button` 的 Children Presentational:"The DOM descendants are presentational. User agents SHOULD NOT expose descendants of this element through the platform accessibility API." |
+| 這一列裡有**可以聚焦的子元素** | 列**不能**是一顆按鈕 —— 直接踩 content model 明文 | WHATWG HTML `<button>`:"Phrasing content, but there must be no interactive content descendant and **no descendant with the `tabindex` attribute specified**." |
+| 這一列是「一個東西的一部分」(第二層答「會」) | 列拿 `treeitem` / `option` / `gridcell`,而且**不自己當鍵盤停靠點**;鍵盤所有權上移到容器 | WAI-ARIA §4.3.1:"Authors MUST manage focus on the following container roles";`composite`:"SHOULD ensure that a composite widget exists as a single navigation stop" |
+| 列不是按鈕、又必須可鍵盤操作 | 列內鋪一顆**覆蓋整列的原生控件**;它不可見,所以焦點框改畫在列上 | 焦點框畫在別的元素上的規則 → `ds-canonical/references/focus-canonical.md` |
+
+**先前那一版把上表第一、二列寫成「第 2 題」,等於用 HTML 的限制當設計判準。** 已撤回。
 
 ### 走一遍:當初引發這一連串問題的兩個元件
 
@@ -217,10 +268,10 @@ list item 元件都是要用類似的處理方式?」
 
 | | `SidebarMenuButton` | `FileItem` | `TreeItem` |
 |---|---|---|---|
-| **1. N 個還是 1 個?** | **N 個** —— 每條通往不同頁面,不對項目施加動作、深度有界、啟動一定換頁 | **N 個** —— 每個檔案各自獨立,沒有「選取一批再施加動作」的模型 | **1 個** —— 節點可選取並施加動作、深度無上界、使用者自己新增與拖曳重排 |
-| **2. 剩下的內容裝得進 `<button>` 嗎?** | **裝得進** —— 只有圖示與文字 | **裝不進** —— 有進度條(自帶 `role="progressbar"`)、頭像、可聚焦的 hover 按鈕 | 不適用(第 1 題已決定角色) |
-| **3. 誰承接鍵盤?** | **列本身**(它就是那顆 `<button>`)| **列內一顆覆蓋整列的透明控件**,焦點框畫在列上 | **容器**,列 `tabIndex={-1}` |
-| **4. 按哪些鍵?** | 每列一個 Tab 停靠點 | 每列一個 Tab 停靠點 | 容器一個停靠點 + 方向鍵 |
+| **第一層:去處還是東西?** | **一組去處** —— 每條通往不同頁面,使用者對它做的唯一的事是「去那裡」 | **一組東西**,但不是一個整體 —— 每個檔案是被操作的對象(有狀態、有動作),但使用者不會把它們當成一個東西一起處理 | **一組東西,而且是一個整體** —— 使用者會一次挑好幾個、在裡面搬移、項目多到需要快速跳 |
+| **列裡有沒有必須被念出來的狀態 / 可聚焦子元素?**(實作後果) | **沒有** —— 只有圖示與文字,所以列可以是一顆按鈕 | **有** —— 進度條(自帶 `role="progressbar"`)、頭像、可聚焦的 hover 按鈕,所以列**不能**是按鈕 | 不適用 —— 第一層已經決定它是一個整體,列拿 `treeitem` |
+| **誰承接鍵盤?**(實作後果) | **列本身**(它就是那顆 `<button>`)| **列內一顆覆蓋整列的透明控件**,焦點框畫在列上 | **容器**,列 `tabIndex={-1}` |
+| **按哪些鍵?** | 每列一個 Tab 停靠點 | 每列一個 Tab 停靠點 | 容器一個停靠點 + 方向鍵 |
 
 **所以對原始問題的答案是:`SidebarMenuButton` 與 `FileItem` 的鍵盤操作其實是一樣的**
 —— 兩者都是「每一列一個 Tab 停靠點」。**不同的只有「焦點停在哪個元素上」,而那不是選擇,
@@ -241,42 +292,18 @@ list item 元件都是要用類似的處理方式?」
 
 ### 這條程序涵蓋所有情況嗎(逐枝窮舉)
 
-| 第 1 題 | 第 2 題 | 結果 | 本 DS 實例 |
-|---|---|---|---|
-| N 個 | 裝得進 `<button>` | 列 = `<button>` / `<a>`,每列一個 Tab 停靠點,動作鈕是絕對定位的同層兄弟 | `SidebarMenuButton`、`MenuItem` |
-| N 個 | 裝不進 | 列 = 非互動容器 + 覆蓋整列的透明控件,焦點框畫在列上,每列一個 Tab 停靠點 | `FileItem` |
-| N 個 | 列裡本來就有一個看得見的主控件 | 列的 click 委派給它,不另造控件 | DS 內目前無實例,條文先立著 |
-| 1 個控件 | (不適用)| 列拿 `treeitem` / `option` / `gridcell` 且 `tabIndex={-1}`,容器單一停靠點 + 方向鍵;格內還有控件時走第 4 題 | `TreeItem`、`TimePicker` 的欄、`DataTable` 的格、`Calendar` 的格 |
+| 第一層 | 第二層 | 列裡有沒有必須被念出來的狀態 / 可聚焦子元素 | 結果 | 本 DS 實例 |
+|---|---|---|---|---|
+| **一組去處** | 不適用 | 沒有 | 列 = `<button>` / `<a>`,每列一個停靠點,動作鈕是絕對定位的同層兄弟 | `SidebarMenuButton`、`MenuItem` |
+| **一組去處** | 不適用 | 有 | 列 = 非互動容器 + 覆蓋整列的透明控件,焦點框畫在列上 | DS 內目前無實例(去處很少帶狀態) |
+| **一組東西**,不是整體 | — | 沒有 | 列 = `<button>`,每列一個停靠點 | `MenuItem`(當它裝的是選項而非去處)|
+| **一組東西**,不是整體 | — | 有 | 列 = 非互動容器 + 覆蓋控件,焦點框畫在列上,每列一個停靠點 | **`FileItem`** |
+| **一組東西,而且是整體** | — | — | 列拿 `treeitem` / `option` / `gridcell` 且 `tabIndex={-1}`,容器單一停靠點 + 方向鍵 | `TreeItem`、`TimePicker` 的欄、`DataTable` 的格、`Calendar` 的格 |
 
-**四枝窮盡**:第 1 題二分、第 2 題三分(而第 1 題答「1 個」時第 2 題不適用)。沒有第五種。
-新元件若覺得自己不屬於任何一枝,那是第 1 題沒答清楚,不是需要新增分枝。
-
-**來源標記**:觸發是 user 原話「所以你到底合理的定義何時該用 sidebar 那種結構何時該用 file item 這種結構了沒?我知道兩者都是世界級的設計,但沒有評判依據嗎?」;**判準本身是依下面兩條規範推導的,不是 user 拍板**。決定因素只有一個:**這一列裡裝了什麼**——不是哪個寫起來順手。兩條規範各管一半,合起來把選項砍到只剩一個:
-- `<button>` 的 content model 逐字是 **"Phrasing content, but there must be no interactive content descendant and no descendant with the `tabindex` attribute specified."**(WHATWG HTML,<https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element>)——管的是「**放不放得進去**」。
-- `role="button"` 的 Children Presentational 為 True,逐字是 **"The DOM descendants are presentational. User agents SHOULD NOT expose descendants of this element through the platform accessibility API."**(WAI-ARIA 1.2,<https://www.w3.org/TR/wai-aria-1.2/#button> / <https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational>)——管的是「**放進去之後還讀不讀得到**」。
-
-**問法要精確(2026-09-24 user 指出)**:問的**不是**「這一列裡裝了什麼」—— 列裡幾乎一定有動作鈕,那是互動元素,照字面問的話每一列都會被判進第二類。
-正確的問法是:**把動作鈕排到外面之後,剩下的內容能不能整包住進一顆 `<button>`?** 動作鈕永遠是兄弟、永遠不進那顆按鈕(content model 明文不准),所以它不參與這個判斷。
-實例:`SidebarMenuButton` 的列**有** inline actions(`components/Sidebar/sidebar.tsx:1032` `inlineActions` / `:1044` `inlineActionsSlot`),但它們渲染成 suffix、由 `:1130` 的 `suffixContentWidth` 算寬度再用 `paddingRight` 讓開,**不在那顆 `<button>` 裡** —— 所以它仍是第一類。
-
-| 動作鈕排到外面後,剩下的內容是什麼 | 結構 | 規範依據(對上面哪一句) |
-|---|---|---|
-| **只有文字性內容**(文字 + 圖示)——**這是預設** | 列自己就是原生 `<button>` / `<a>`;動作鈕做成**絕對定位的同層兄弟**,列用 `paddingRight` 讓開 | `<span>` / `<svg>` 都是 phrasing content,放得進 `<button>`;動作鈕是 interactive content descendant,content model 明文不准,所以只能放到列外面當兄弟 |
-| **含有必須被輔助科技讀到的結構**(進度條、狀態區、多段說明、可聚焦子元素) | 列維持**非互動容器**;鍵盤由一顆覆蓋整列的透明控件承接,焦點框畫在列上 | 這些後代包進 `<button>` / `role="button"` 會被 Children Presentational 判為 presentational 而讀不到(進度百分比唸不出來);其中**可聚焦**的那些更是直接踩 content model 的 `tabindex` 那一句 |
-| **本來就有一個看得見的主控件**(例如檔名本身就是連結) | 列的 click **委派**給它,不另造控件 | 合格控件已經在列裡了,再造一顆等於同一件事兩個 tab stop;而且新控件要嘛把既有控件變成自己的後代(違反 content model),要嘛跟它並排互搶 |
-
-**消費者**:第一類 = `SidebarMenuButton`(`components/Sidebar/sidebar.tsx:1072` 列本體 `Comp = asChild ? Slot : "button"`;`:1111-1112` 列內只有 `ItemIcon`→`ItemPrefix` 的 `<span>` 包 `<svg>` 與 `ItemLabel` 的 `<span>`,兩者皆無 `tabIndex`,見 `item-anatomy.tsx:177-180` / `:279-307` / `:560-573`;`:1133-1135` 算 `paddingRight` 讓位;`:1152-1157` 動作鈕是絕對定位 sibling,原註解寫明「避免巢狀 button」)。第二類 = `FileItem`(`components/FileItem/file-item.tsx:231` `rowA11y = {}` 列本體不加互動 role;`:244-257` 透明整列 button 承接鍵盤;列內裝了 `:130-131` 的 `ProgressBar`(內部 Radix Progress primitive 自帶 `role="progressbar"`,`node_modules/@radix-ui/react-progress/dist/index.mjs:37`)、`:301` 的 `Avatar`、`:175-183` hover-swap 的 `<Button>`)。第三類 = **DS 內目前無實例**(2026-09-24 掃法:`packages/design-system/src` 內 `<a ` / `href=` 全部 9 個出現處、加上所有 `.click()` 委派呼叫點,逐一看過沒有一個是「列內已有可見主控件、列把 click 委派過去」的形狀),條文先立著給產品端用。
-
-**第二類還要再分一刀(2026-09-24 補;判準用 TreeView 這個沒被拿來建構它的元件做預測測試時測出來的缺口)**:第二類裡有**兩種**機制,由**列有沒有被宣告成複合小工具的項目**決定,不是選擇題。
-
-| 列的 ARIA 角色 | 鍵盤機制 | 為什麼 | 實例 |
-|---|---|---|---|
-| 是複合小工具的項目(`treeitem` / `option` / `gridcell`) | **容器擁有鍵盤**:容器單一 tab stop,列 `tabIndex={-1}`,用 `aria-activedescendant` 或方向鍵指目前項 | 這類角色的列不得自己當鍵盤停靠點,鍵盤所有權必須上移到容器 | `components/TreeView/tree-view.tsx:374`(DOM focus 永遠停在 `role=tree` 容器)、`components/TimePicker/time-columns.tsx:155,159`(`role="listbox"` + `aria-activedescendant`) |
-| **沒有**這類角色(就是一個普通容器) | **覆蓋控件承接鍵盤**:列內鋪一顆覆蓋整列的原生控件,焦點框畫在列上 | 沒有容器可以接管鍵盤,只能在列內放一個真控件;它不可見,所以焦點框改畫在列上(`ds-canonical/references/focus-canonical.md`「指示器畫在別的元素上,必須指得出承擔者」) | `components/FileItem/file-item.tsx:264`(註解逐字「不把整列設成 role=button」)、`:273`(`data-row-focus-target`) |
-
-**預測測試留檔(這張表不是倒推的證據)**:判準建立時只用了 `SidebarMenuButton` 與 `FileItem` 兩個實例。事後拿 **TreeView**(未參與建構)檢驗:它的列有 chevron 與勾選框兩個可聚焦子元素 → 判準預測第二類 → 實際就是第二類(列 `tabIndex={-1}`、非 `<button>`),預測成立。同一次檢驗才暴露上面那一刀原本沒寫。日後新增列元件時照樣要跑這個測試:**先用判準預測,再讀程式對答案**;預測錯了就是判準有缺口,不是那個元件是例外。
-
-**邊界**:(a) `asChild` 時列的宿主由 consumer 決定,這三條的責任跟著轉給 consumer;(b) 本節只管**列**——Family 4 的 field trigger(DatePicker / TimePicker / Combobox / Select 改用 `div role="combobox"` 而非 `<button>`,理由同樣是 trigger 內含 `ItemInlineAction` 這顆 `<button>`;見 `components/DatePicker/date-picker.spec.md:27` 與 `components/TimePicker/time-picker.spec.md:23`,兩處都寫明「對齊 Select / Combobox 同 pattern」)是同兩條規範推出的同一個結論,但 owner 留在各自 spec,本節不接管也不重述。
+**窮盡**:第一層三分(去處 / 東西不成整體 / 東西成整體)× 列內容二分,
+而「成整體」那一枝的列內容不影響結論(角色已由第一層決定)。
+**新元件若覺得自己不屬於任何一枝,那是第一層沒答清楚,不是需要新增分枝。**
+第一層答不出來時的正解是回去問「使用者對這一項**做**什麼」,不是去看別的元件怎麼寫。
 
 ### Prefix 垂直對齊:`items-start` + `h-[1lh]` wrapper(**永遠這樣**,不要做例外)
 
