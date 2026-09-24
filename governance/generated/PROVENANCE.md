@@ -230,7 +230,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-package-contract | `packages/governance/package.json` | `sha256:68379a4234d7968f5a90442e895032e32cfd9b35002bb825d65902f78c3e624d` |
 | governance-package-readme | `packages/governance/README.md` | `sha256:b641280efb0522ac75abb902cd60ab4dec509488295e056079fc97eaad598500` |
 | governance-package-runtime-corpus | `packages/governance/src/` | `sha256:ef4c7ad7280a6b2ea1b8db9f187f6f15d537520ecb2f8c0c57b2a6c396285273` |
-| governance-package-test-corpus | `packages/governance/test/` | `sha256:b0b6bd96cb76bb73203b38990b4d4c9d25919e7c7b82a6e5db1f12e78ff94720` |
+| governance-package-test-corpus | `packages/governance/test/` | `sha256:d6570f6b251570010a388be90add42c6876711eba0f6a24a78a1c09294f88708` |
 | governance-playwright-runtime-library | `infra/governance/lib/playwright-runtime.mjs` | `sha256:62df0bd1c94d1859b9348eb488357a4eae136340d5f016bbeba0c7e87559843a` |
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
