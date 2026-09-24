@@ -5,6 +5,11 @@
 //
 // SSOT:`packages/design-system/ds-canonical/references/focus-canonical.md`「問題二」
 //
+// @gate-contract
+//   保證: 每個元件的代表 story 在淺色 / 深色主題下**確實渲染完成後**,焦點框不被裁、不撞鄰居;無框站點有看得見的承擔者;宣告內描邊的站點確實需要往內。沒量到的 story 一律以「儀器失效」紅,不讀成通過
+//   紅: 焦點框被裁 / 撞鄰居超過基準線、承擔者零差異、內描邊其實放得下 → 指名該站;story 載不起來(id 不存在、chunk 404、render 出錯)或零量測 → 以儀器失效紅並點名 story。--selftest / --selftest-inset 分別把焦點視覺釘死 / 釘成內描邊,必須紅;每次執行另跑對照組 (a) 不存在的 story id 必判失敗、(b) 刪掉 chunk 的建置副本必判失敗
+//   綠: 現況全 DS 兩主題全部載入且量到焦點站、產品清單都在基準線內時綠;對照組 (b) 的綠面是同一則 story 在完整建置必須載得起來 —— 判「載入成功」的那一側也有證據
+//
 // `focus-geometry-invariant.mjs` 是靜態的(守「只准兩種幾何」),這一支是動態的
 // (守「每一站選對了那一種」)。兩支合起來才完整:靜態掃不出「這個元素四周有沒有空間」。
 //
@@ -27,27 +32,182 @@
 //
 // 起不了 Chromium 的受限環境回報 SKIPPED-ENV(同 data-table-invariants 先例)。
 //
-// Run: `node scripts/focus-geometry-browser-audit.mjs`
+// **載入失敗 = 儀器失效,不是通過**(2026-09-25):
+// 原本一則 story 載不起來時只在報告印一行 ✗、不計入失敗 —— 而更常見的情形連那一行都沒有:
+// Storybook 對「找不到這個 story id」「story 的 chunk 404」**不丟例外**,`goto` 照樣成功,
+// 畫面換成 Storybook 自己的錯誤頁。Tab 走訪接著就在錯誤頁上量到 4 個說明連結,
+// 當成元件的焦點站算進「正常外描邊」。實測(舊版,2026-09-25):一份刪掉 Button / Checkbox
+// stories chunk 的建置 → 「合計:正常外描邊 8」+「✓ 焦點框幾何全部正確」、exit 0;
+// 只剩一則不存在 story 的索引 → 「正常外描邊 4」、exit 0。全部 58 則都載不起來也一樣是綠的。
+// 這是 M37「沒觀察到 ≠ 沒發生」—— 還更糟,量到的是錯誤頁,不是元件。
+//
+// 現在:
+//   (1) 每則 story 先證明「真的渲染完成」才量:Storybook 回報 render phase = finished
+//       (含 play 函式)、根節點有內容、沒有關鍵資源 404 / 頁面例外(lib/storybook-render-health.mjs)。
+//       任一不成立 → 記成**儀器失效**,訊息點名 story 與原因,並聲明那不是產品裁決。
+//   (2) 地板:清單是空的、或某個主題全程量到 0 個焦點站 → 儀器失效。
+//       渲染成功但 Tab 走訪一站都沒抵達:畫面上其實有可聚焦元素 → 儀器失效;真的沒有 → 列為「無裁決」。
+//   (3) 每次執行(三種模式都一樣)先跑兩面對照組,證明偵測器**此刻**會紅(見 instrumentSelfCheck);
+//       自檢沒過就不掃 —— 偵測器不可信時量到的東西也不能當證據。
+//   「已渲染」不再用固定睡眠代理(原本 networkidle + 400ms):FileItem 的 play 函式在根節點出現後
+//   還要約 450ms 才把焦點移到刪除鈕,固定睡眠在慢機器上會讓 Tab 走訪跟 play 搶焦點。
+//
+// Run: `node scripts/focus-geometry-browser-audit.mjs [--selftest | --selftest-inset]`
+//   除錯 / 對照組用(CI 不用):
+//   `--story <id>`          只量指定的 story(可重複)
+//   `--static-dir <目錄>`   改量另一份 Storybook 建置(預設 ./storybook-static)
 
 // 焦點框「會不會被裁 / 會不會撞到鄰居」偵測器
 // 決定每一站該用外描邊(全域)還是內描邊(focus-ring-inset)。判準 SSOT:focus-canonical 問題二。
-import { chromium } from 'playwright'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
+import { createStorybookRenderHealthMonitor } from './lib/storybook-render-health.mjs'
 
-const STATIC=join(process.cwd(),'storybook-static')
+const ARGV = process.argv.slice(2)
+const SELFTEST = ARGV.includes('--selftest')
+const SELFTEST_INSET = ARGV.includes('--selftest-inset')
+const optionValues = (name) => ARGV.flatMap((arg, i) => {
+  if (arg.startsWith(`${name}=`)) return [arg.slice(name.length + 1)]
+  return arg === name && ARGV[i + 1] && !ARGV[i + 1].startsWith('--') ? [ARGV[i + 1]] : []
+})
+for (const name of ['--story', '--static-dir']) {
+  if (ARGV.some((a) => a === name || a.startsWith(`${name}=`)) && !optionValues(name).length) {
+    console.error(`✗ ${name} 後面要接值`); process.exit(1)
+  }
+}
+const ONLY_STORIES = optionValues('--story')
+const STATIC = resolve(optionValues('--static-dir').at(-1) ?? join(process.cwd(), 'storybook-static'))
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const B=server.origin
 // story 索引也從同一份快照讀(元件清單與實際供檔的建置必須是同一份)
-const INDEX=join(server.snapshot?.dir ?? STATIC,'index.json')
+const SERVED_ROOT = server.snapshot?.dir ?? STATIC
+const INDEX=join(SERVED_ROOT,'index.json')
 // 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「元件沒渲染」
 const report404=()=>{ if(server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
 let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
+try { br = await launchBrowser() }
 catch (e) { await server.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+
+// ── 「這則 story 真的渲染完成了嗎」────────────────────────────────────────
+// 要保證的性質是「量的是這則 story 渲染完成後的畫面」,所以直接等那個性質(M37):
+//   先等根節點(或 Storybook 的錯誤頁 / 無預覽頁)出現 —— 元素本身,不是睡幾毫秒(lib/launch-browser.mjs gotoStory);
+//   再等 Storybook 回報這次渲染走完(render phase = finished,含 play 函式;errored / aborted 也是終點);
+//   最後由 render-health 判:錯誤頁文字、根節點是否有內容、關鍵資源 404、頁面例外。
+// 等不到「走完」也算失敗(訊息會說是等不到),**不退回固定睡眠** —— Storybook 升級改了這個訊號時,
+// 這裡會紅而且說得出原因,而不是悄悄回到「睡夠久應該好了」。
+const STORY_SHELL = '#storybook-root > *, body > [data-radix-portal] > *, body.sb-show-errordisplay, body.sb-show-nopreview'
+const oneLine = (s) => String(s).split('\n')[0].slice(0, 240)
+async function loadStory(pg, origin, storyId, ledger) {
+  const from = ledger.length
+  const health = createStorybookRenderHealthMonitor(pg)
+  try {
+    await gotoStory(pg, `${origin}/iframe.html?id=${storyId}&viewMode=story`, { waitFor: STORY_SHELL, settle: 0, timeout: 30000, appearTimeout: 20000 })
+    const phase = await pg.waitForFunction(() => {
+      const cls = document.body.classList
+      if (cls.contains('sb-show-errordisplay')) return 'error-display'
+      if (cls.contains('sb-show-nopreview')) return 'no-preview'
+      const p = window.__STORYBOOK_PREVIEW__?.currentRender?.phase
+      return p === 'finished' || p === 'errored' || p === 'aborted' ? p : false
+    }, null, { timeout: 20000 }).then((handle) => handle.jsonValue(), () => 'timeout')
+    // 錯誤頁的原文(例:Couldn't find story matching …)由 render-health 讀出來,比 phase 名稱更有用,所以先判它
+    await health.assertHealthy({ label: storyId, timeoutMs: 5000 })
+    if (phase === 'timeout') throw new Error('20 秒內等不到 Storybook 回報渲染完成(render phase 沒走到 finished)')
+    if (phase !== 'finished') throw new Error(`Storybook 回報渲染結果 = ${phase}`)
+    // 字型載完才量:字寬會改幾何(原本由 networkidle 順帶涵蓋)
+    await pg.evaluate(() => document.fonts.ready.then(() => true))
+    return { ok: true }
+  } catch (error) {
+    const missing = [...new Set(ledger.slice(from))]
+    // render-health 的訊息前綴是「render health:<story id>:」—— 呼叫端本來就會點名 story,去掉重複的那段
+    const message = oneLine(error?.message ?? error).replace(`render health:${storyId}:`, '')
+    return { ok: false, reason: message + (missing.length ? `(同源 404:${missing.join(', ')})` : '') }
+  } finally {
+    health.dispose()
+  }
+}
+
+// 畫面上「Tab 應該走得到」的元素數。只在 Tab 走訪一站都沒抵達時用來分辨兩種情形:
+// 真的沒有可聚焦元素(本閘對這則 story 無裁決)vs. 有元素卻沒走到(儀器沒在量 → 失效)。
+const countTabbable = () => [...document.querySelectorAll('a[href],area[href],button,input,select,textarea,iframe,summary,[tabindex],[contenteditable]')]
+  .filter((e) => e.tabIndex >= 0 && !e.disabled && e.type !== 'hidden' && !e.closest('[inert]') &&
+    e.getClientRects().length > 0 && getComputedStyle(e).visibility === 'visible').length
+
+// ── 儀器判定(純函式;判定表在 instrumentSelfCheck 每次執行都跑)──────────────
+// 儀器失效優先於任何產品裁決:沒量到的東西不能被讀成「沒問題」,也不能被讀成「元件壞了」。
+function instrumentVerdict({ planned, failures, stations }) {
+  const problems = []
+  if (planned === 0) problems.push('要量的 story 清單是空的 —— 一則都沒量,不能說「全部正確」')
+  for (const f of failures) problems.push(`${f.label} [${f.theme}] story=${f.storyId}:${f.reason}`)
+  if (planned > 0) {
+    for (const [theme, n] of Object.entries(stations)) {
+      if (n === 0) problems.push(`${theme} 主題全程量到 0 個焦點站 —— 儀器沒有量到任何東西`)
+    }
+  }
+  return problems
+}
+
+// ── 兩面對照組:偵測器此刻真的會紅嗎 ─────────────────────────────────────
+// 每次執行都跑(一般 / --selftest / --selftest-inset 三種模式都一樣),不靠 CI 另外記得呼叫:
+//   判定表:全部載入失敗 / 一則失敗 / 零量測 / 清單為空 → 必紅;正常 → 必綠
+//   (a) 一個不存在的 story id → 必須被判成載入失敗
+//   (b) 同一則真 story:從受測建置載得起來(綠的那一面),從「刪掉它的 chunk」的副本載 → 必須被判失敗,
+//       而且 404 帳本要記到那個 chunk(紅的那一面)。兩面都成立,「載入成功」這個判斷才算證據。
+const PROBE_MISSING_ID = 'focus-geometry-instrument-probe--story-that-does-not-exist'
+async function instrumentSelfCheck(pg, probeStory) {
+  const problems = [], lines = []
+  const fake = (n) => Array.from({ length: n }, (_, i) => ({ label: `假${i}`, theme: 'light', storyId: `fake-${i}`, reason: '對照' }))
+  const table = [
+    ['全部 story 載入失敗', { planned: 2, failures: fake(4), stations: { light: 0, dark: 0 } }, true],
+    ['一則 story 載入失敗', { planned: 2, failures: fake(1), stations: { light: 5, dark: 5 } }, true],
+    ['全部載入但零量測', { planned: 2, failures: [], stations: { light: 0, dark: 0 } }, true],
+    ['清單為空', { planned: 0, failures: [], stations: { light: 0, dark: 0 } }, true],
+    ['正常', { planned: 2, failures: [], stations: { light: 5, dark: 5 } }, false],
+  ]
+  const wrong = table.filter(([, input, red]) => (instrumentVerdict(input).length > 0) !== red).map(([name]) => name)
+  if (wrong.length) problems.push(`判定表不成立:${wrong.join('、')}`)
+  else lines.push(`✓ 判定表 ${table.length}/${table.length}(載入失敗 / 零量測 / 空清單必紅,正常必綠)`)
+
+  const a = await loadStory(pg, B, PROBE_MISSING_ID, server.notFound)
+  if (a.ok) problems.push(`(a) 不存在的 story「${PROBE_MISSING_ID}」被判成載入成功 —— 載入失敗偵測器沒有作用`)
+  else lines.push(`✓ (a) 不存在的 story → 判成載入失敗:${a.reason}`)
+
+  // 綠的那一面先做:受測建置本身載不起來時,原因(錯誤頁原文 + 404)直接就是答案
+  const intact = probeStory?.importPath ? await loadStory(pg, B, probeStory.id, server.notFound) : null
+  if (!probeStory?.importPath) {
+    problems.push('(b) 對照組建不起來:索引裡找不到任何元件 story')
+  } else if (!intact.ok) {
+    problems.push(`(b) 對照組建不起來:${probeStory.id} 在受測建置本身就載不起來 —— ${intact.reason}`)
+  } else {
+    // Vite 的 chunk 檔名 = 模組檔名(去副檔名)+ '-' + 8 碼雜湊 + '.js'
+    const base = basename(probeStory.importPath).replace(/\.(tsx|ts|jsx|js|mdx)$/, '')
+    const escaped = base.replace(/[.*+?^$|()[\]{}\\]/g, '\\$&')
+    const chunkPattern = new RegExp('^' + escaped + '-[A-Za-z0-9_-]{8}\\.js$')
+    const chunks = readdirSync(join(SERVED_ROOT, 'assets')).filter((f) => chunkPattern.test(f))
+    if (chunks.length !== 1) {
+      problems.push(`(b) 對照組建不起來:${probeStory.id} 的 chunk 在 assets/ 對到 ${chunks.length} 個檔(要剛好 1 個)`)
+    } else {
+      const copyDir = mkdtempSync(join(tmpdir(), 'focus-geometry-control-'))
+      let broken = { ok: true, reason: '', missing: [] }
+      try {
+        cpSync(SERVED_ROOT, copyDir, { recursive: true })
+        rmSync(join(copyDir, 'assets', chunks[0]))
+        // 副本已經是本次獨佔的,不用再凍結一次
+        const control = await startA11yStaticServer({ rootDirectory: copyDir, defaultFile: 'iframe.html', snapshot: false })
+        try {
+          broken = { ...(await loadStory(pg, control.origin, probeStory.id, control.notFound)), missing: [...new Set(control.notFound)] }
+        } finally { await control.stop() }
+      } finally { rmSync(copyDir, { recursive: true, force: true }) }
+      if (broken.ok) problems.push(`(b) 刪掉 ${chunks[0]} 之後 ${probeStory.id} 仍被判成載入成功 —— 缺檔偵測器沒有作用`)
+      else if (!broken.missing.some((p) => p.endsWith(`/${chunks[0]}`))) problems.push(`(b) 刪掉 ${chunks[0]} 後判成失敗,但 404 帳本沒記到它(記到:${broken.missing.join(', ') || '無'})`)
+      else lines.push(`✓ (b) ${probeStory.id}:受測建置載得起來;刪掉 ${chunks[0]} 的副本 → 判成載入失敗`)
+    }
+  }
+  return { problems, lines }
+}
 
 const DETECT = `(() => {
   const el = document.activeElement
@@ -160,35 +320,64 @@ const idx = JSON.parse(readFileSync(INDEX,'utf8'))
 // 2026-09-07:原本是一份手寫的 39 個名字,而 DS 有 67 個元件 —— 漏了 Input / Select /
 // Textarea / Dialog / Sheet / Pagination 等 29 個,卻在報告裡宣稱「全 DS」。
 // 寫死的清單還有個更糟的性質:**新元件不會自動進來**,漏了也不會有人發現。
-const COMPS = [...new Set(
-  Object.values(JSON.parse(readFileSync(INDEX, 'utf8')).entries)
-    .map((e) => e.title.replace(/\s/g, '').match(/Components\/([^/]+)/)?.[1])
-    .filter(Boolean),
-)]
+const compOf = (entry) => entry?.title?.replace(/\s/g, '').match(/Components\/([^/]+)/)?.[1]
+const COMPS = [...new Set(Object.values(idx.entries).map(compOf).filter(Boolean))]
+const pickStory = (comp) => {
+  const cands = Object.values(idx.entries).filter(e=>e.title.replace(/\s/g,'').includes(`/${comp}/`) && !/--docs$/.test(e.id) && !/usage-guidance|inspector|-rule$/.test(e.id))
+  return cands.find(e=>/展示/.test(e.title)) || cands.find(e=>/state-behavior|overview|accessibility/.test(e.id)) || cands[0]
+}
 // 對照組只需要證明「儀器該紅時會紅」,不需要全掃 —— 全掃要 5 分鐘,
 // 為了證明儀器讓 CI 多花 5 分鐘不划算。取前 4 個元件足夠(實測仍會紅十幾處)。
-const SWEEP = process.argv.includes('--selftest') ? COMPS.slice(0, 4) : COMPS
-console.log(`涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
+const SWEEP = SELFTEST ? COMPS.slice(0, 4) : COMPS
+// 要量的每一則 story。`--story` 只給除錯與對照組用:指定的 id 不在索引裡也照樣去載 —— 由載入判定點名它。
+const TARGETS = ONLY_STORIES.length
+  ? ONLY_STORIES.map((id) => ({ label: compOf(idx.entries[id]) ?? id, storyId: id, inIndex: Boolean(idx.entries[id]) }))
+  : SWEEP.map((comp) => ({ label: comp, storyId: pickStory(comp)?.id ?? null, inIndex: true }))
+{ const seenLabels = new Set(); for (const t of TARGETS) { t.key = seenLabels.has(t.label) ? `${t.label}#${t.storyId}` : t.label; seenLabels.add(t.label) } }
+console.log(ONLY_STORIES.length
+  ? `只量指定的 ${TARGETS.length} 則 story(--story)\n`
+  : `涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
 const report = {}
+const failures = []            // 儀器失效:這則 story 沒有被量到(不是產品裁決)
+const noStations = []          // 渲染成功、但畫面上沒有任何可聚焦元素 → 本閘對它無裁決(也不是通過)
+const stations = { light: 0, dark: 0 }
+let selfCheck = { problems: [], lines: [] }
 try {
   const pg = await br.newPage({ viewport:{width:1440,height:900} })
-  for (const theme of ['light','dark']) {
-    for (const comp of SWEEP) {
-      const cands = Object.values(idx.entries).filter(e=>e.title.replace(/\s/g,'').includes(`/${comp}/`) && !/--docs$/.test(e.id) && !/usage-guidance|inspector|-rule$/.test(e.id))
-      const story = cands.find(e=>/展示/.test(e.title)) || cands.find(e=>/state-behavior|overview|accessibility/.test(e.id)) || cands[0]
-      if (!story) { if(theme==='light') report[comp]={err:'無 story'}; continue }
+  selfCheck = await instrumentSelfCheck(pg, COMPS.length ? pickStory(COMPS[0]) : null)
+  console.log('儀器自檢(兩面對照組,每次執行都跑):')
+  selfCheck.lines.forEach((l) => console.log('  ' + l))
+  selfCheck.problems.forEach((p) => console.log('  ✗ ' + p))
+  console.log('')
+  // 自檢沒過 = 偵測器此刻不可信,量了也不能當證據 —— 不掃。也順帶擋住「整批 story 各等 20 秒逾時」
+  // 把 job 撐爆(例:Storybook 升級改了 render phase 訊號,58 × 2 則會各自逾時)。
+  const themes = selfCheck.problems.length ? [] : ['light', 'dark']
+  if (!themes.length) console.log('儀器自檢沒過 → 不掃(偵測器此刻不可信,量到的東西也不能當證據)\n')
+  for (const theme of themes) {
+    for (const target of TARGETS) {
+      const { key, label, storyId } = target
+      if (!storyId) {
+        if (theme === 'light') failures.push({ label, theme: '兩個主題', storyId: '(無)', reason: '索引裡這個元件沒有可量測的 story(全是 docs / usage-guidance / inspector / rule)' })
+        continue
+      }
+      const loaded = await loadStory(pg, B, storyId, server.notFound)
+      if (!loaded.ok) {
+        failures.push({ label, theme, storyId, reason: (target.inIndex ? '' : '索引裡沒有這個 id;') + loaded.reason })
+        continue
+      }
       try {
-        await pg.goto(`${B}/iframe.html?id=${story.id}&viewMode=story`,{waitUntil:'networkidle',timeout:20000})
         // DS 的主題是 <html data-theme>,不是 prefers-color-scheme(semantic.css:424 / primitives.css:259)
         await pg.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
         // 對照組(--selftest):把所有焦點視覺全部釘死,承擔者證明就該全部變「零差異」。
         // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。
-        if (process.argv.includes('--selftest')) {
+        if (SELFTEST) {
           await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible{outline:none!important}` })
         }
-        if (process.argv.includes('--selftest-inset')) {
+        if (SELFTEST_INSET) {
           await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
         }
+        // 這 400ms **不再是**「已渲染」的代理(渲染完成已由 loadStory 直接等到);留下的用途只剩
+        // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值;gotoStory 的 settle 同一個用途)。
         await pg.waitForTimeout(400)
         const seen=new Set(), rows=[]
         for (let i=0;i<45;i++) {
@@ -246,9 +435,21 @@ try {
         }
         for (const r of rows) if (r.carrier === 'pending') r.carrier = []
 
-        report[comp] = report[comp] || { story: story.id }
-        report[comp][theme] = rows
-      } catch(e) { report[comp] = { err: String(e.message).split('\n')[0].slice(0,60) } }
+        // 一站都沒走到:先問「畫面上有沒有 Tab 該走得到的東西」,不直接當成「沒有問題」
+        if (!rows.length) {
+          const tabbable = await pg.evaluate(countTabbable)
+          if (tabbable > 0) {
+            failures.push({ label, theme, storyId, reason: `Tab 走訪 45 次沒抵達任何元素,但畫面上有 ${tabbable} 個可聚焦元素 —— 儀器沒在量` })
+            continue
+          }
+          if (theme === 'light') noStations.push(`${label}(${storyId})`)
+        }
+        stations[theme] += rows.length
+        report[key] = report[key] || { story: storyId }
+        report[key][theme] = rows
+      } catch (e) {
+        failures.push({ label, theme, storyId, reason: '量測途中出錯:' + oneLine(e?.message ?? e) })
+      }
     }
   }
   await pg.close()
@@ -256,13 +457,12 @@ try {
 // Linux runner 沒有 TMPDIR 這個環境變數(只有 macOS 一定有),
 // 直接串接會寫到字面上的 `undefined/clipdetect.json` 而整支掛掉 ——
 // 這支被接進 CI 的第一次執行就是這樣紅的(2026-09-08)。用 os.tmpdir() 才可攜。
-writeFileSync(join(tmpdir(), 'clipdetect.json'), JSON.stringify(report,null,1))
+writeFileSync(join(tmpdir(), 'clipdetect.json'), JSON.stringify({ report, failures, noStations, stations }, null, 1))
 
 let noFrame=0, clipped=0, ok=0
 const noCarrier=[]
 console.log('══ 沒有畫框的(可能是 WCAG 違規,也可能指示器在別的元素上)══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) { console.log(`  ${c}: ✗ ${v.err}`); continue }
   for (const r of (v.light||[])) if (!r.drawn && !r.boxShadow) {
     const who = Array.isArray(r.carrier) ? r.carrier : []
     const okCarrier = who.length > 0
@@ -273,7 +473,6 @@ for (const [c,v] of Object.entries(report)) {
 }
 console.log('\n══ 框會被裁 / 會撞到鄰居 → 應改內描邊 ══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.light||[])) if (r.drawn && !r.insetSite && r.problems.length) {
     console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,44).padEnd(44)} ${r.style.padEnd(20)} ${r.problems.map(p=>p.kind+'('+p.detail+')←'+p.by.slice(0,26)).join(' ')}`); clipped++ }
 }
@@ -290,7 +489,6 @@ const JUSTIFIED_INSET = [
 console.log('\n══ 宣告內描邊、但往外也放得下 → 應改回外描邊(判準:淨空 ≥ 4px)══')
 const insetUnjustified = []
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.light||[])) if (r.insetSite && !r.problems.length) {
     const waiver = JUSTIFIED_INSET.find((w) => w.comp === c && w.match.test(r.desc))
     if (waiver) { console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,46)} ${r.size}  ← 已登記:${waiver.why.slice(0,60)}…`); continue }
@@ -300,15 +498,29 @@ for (const [c,v] of Object.entries(report)) {
 }
 console.log('\n══ 深色主題下有無殘留白間隙(box-shadow 通道)══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.dark||[])) if (r.boxShadow) console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,44)} boxShadow=${r.boxShadow}`)
 }
-for (const v of Object.values(report)) if(!v.err) for (const r of (v.light||[])) if (r.drawn && !r.problems.length) ok++
+for (const v of Object.values(report)) for (const r of (v.light||[])) if (r.drawn && !r.problems.length) ok++
 console.log(`\n合計:正常外描邊 ${ok} / 需改內描邊 ${clipped} / 無框 ${noFrame}`)
 await br.close(); await server.stop()
+// ── 儀器判定優先:沒量到的不准被讀成通過(三種模式一律)────────────────────
+// 「量到」= 兩個主題都真的載入並走訪完(有結果才算),不是「沒有失敗紀錄」—— 沒掃也不會有失敗紀錄
+const measured = TARGETS.filter((t) => Array.isArray(report[t.key]?.light) && Array.isArray(report[t.key]?.dark)).length
+console.log(`量測涵蓋:${measured}/${TARGETS.length} 則 story 兩個主題都載入並走訪完;焦點站 light ${stations.light} / dark ${stations.dark}`)
+if (noStations.length) console.log(`  渲染成功但畫面上沒有任何可聚焦元素(本閘對它們無裁決,不是通過):${noStations.join('、')}`)
+const instrumentProblems = selfCheck.problems.length
+  ? [...selfCheck.problems.map((p) => `儀器自檢 ${p}`), `全部 ${TARGETS.length} 則 story 未量(自檢沒過就不掃)`]
+  : instrumentVerdict({ planned: TARGETS.length, failures, stations })
+if (instrumentProblems.length) {
+  console.error(`\n✗ 儀器失效 —— 以下 ${instrumentProblems.length} 項本閘沒有量到該量的東西。這不是產品裁決(元件不一定有問題),`)
+  console.error('  但「沒量到」不等於「沒問題」,所以這次不能算通過(上面的清單與合計只涵蓋量到的部分):')
+  instrumentProblems.forEach((p) => console.error('  ' + p))
+  report404()
+  process.exit(1)
+}
 // 基準線:1 站 —— Combobox story 裡那顆與欄位相鄰的 <Button>。它是共用 primitive,
 // 外描邊壓到鄰接控件外緣 2px 是各家(Material / Atlassian)都接受的,不是元件缺陷。
-if (process.argv.includes('--selftest')) {
+if (SELFTEST) {
   console.log(noCarrier.length
     ? `\n✓ selftest:把焦點視覺全部釘死時,${noCarrier.length} 處承擔者證明確實變紅`
     : '\n✗ selftest:焦點視覺都釘死了卻還說找得到承擔者 —— 這一段的綠燈不算證據')
@@ -316,7 +528,7 @@ if (process.argv.includes('--selftest')) {
   process.exit(noCarrier.length ? 0 : 1)
 }
 // 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些就該被指名(否則這段的綠燈不算證據)
-if (process.argv.includes('--selftest-inset')) {
+if (SELFTEST_INSET) {
   console.log(insetUnjustified.length
     ? `\n✓ selftest-inset:把所有焦點框釘成內描邊時,${insetUnjustified.length} 處被指名「其實放得下」`
     : '\n✗ selftest-inset:全部釘成內描邊了卻一處都沒指名 —— 反向檢查沒有在跑')

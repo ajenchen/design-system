@@ -373,6 +373,7 @@
         "scripts/test-review-capability-selection.mjs",
         "scripts/test-run-gate-meta-tests-isolation.mjs",
         "scripts/test-standard-five-step-ci-evidence.mjs",
+        "scripts/test-storybook-static-snapshot.mjs",
         "scripts/test-storybook-test-only-semantics.mjs",
         "scripts/test-sync-all-transaction.mjs",
         "scripts/test-sync-atomicity.mjs",
