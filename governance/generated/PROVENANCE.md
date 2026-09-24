@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:6980f168cba6fe781d0da8224f2bfae11444daee4d737b70fb7b2892d6ea8735` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:2c43a8803e03aef5a3897a7ade44109b42631d76183d7ea3259765a60f695d1a` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:9a0d1205ebe2aea2be3bf80860b5cd3a887db838a7bb0cb8ee6cc372014e17de` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:9f0317a6551bd890372a57db6eec557d853432f54f3ba24d41559a4cac4b7723` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:1f90a04edb860de90f8328f533b430c13ff5287220922a0cad8dd9ad9a58629c` |
@@ -251,7 +251,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | managed-host-codex-bundle-schema | `infra/governance/schemas/codex-managed-hook-bundle.schema.json` | `sha256:02c08c3397a2f2b173b21dd1da6e11118f26dcb739cb6202aa234b526095bcc4` |
 | managed-host-deployment-contracts | `infra/governance/managed-host/` | `sha256:ab1c6673779a8ecb37b7a11b670327cedfd2583bb654f58972a69c34093cc0ac` |
 | managed-host-effective-readback-schema | `infra/governance/schemas/managed-host-effective-readback.schema.json` | `sha256:d59aadf0f897538614c5e6d5d4748cf32cfededbe0778729a70c8a54e2e40826` |
-| managed-host-release-binding | `infra/governance/release-rings.json` | `sha256:12a3566d5840ca3e8422ce44267b08decf19ea79e6b76686cf04ac0ca8feb312` |
+| managed-host-release-binding | `infra/governance/release-rings.json` | `sha256:3a4eab787b2671a446d6d9a983a307a7d6923d96447bae3aaa73bdcdb02afa92` |
 | managed-host-verifier-cli | `infra/governance/bin/verify-managed-host-assurance.mjs` | `sha256:9ee202296df720791cf1095f504ce8e9f04d0f790a81ca86d962d586858d2d97` |
 | managed-host-verifier-library | `infra/governance/lib/managed-host-assurance.mjs` | `sha256:c70e02db8b855abbde85c5a2327a0dbfd4d8cb7d040838f9b599d38773746afe` |
 | model-invocation-profiles | `infra/governance/providers/model-invocation-profiles.json` | `sha256:c93c5bba9b165213eb94ad7d77fc4b216d60f70a6a0d7e8e6dfe0bd913f73431` |
