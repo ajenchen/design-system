@@ -1,58 +1,78 @@
 {
   "$schema": "schemas/release-rings.schema.json",
-  "schemaVersion": 3,
+  "assignments": {
+    "design-system": {
+      "applyAuthorization": null,
+      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "completionAttestation": null,
+      "enteredAt": "2026-09-24T02:10:16Z",
+      "manualBlockers": [],
+      "ring": "ring-0-authority",
+      "wave": "canary"
+    },
+    "ds-product-template": {
+      "applyAuthorization": null,
+      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "completionAttestation": null,
+      "enteredAt": "2026-09-24T02:10:16Z",
+      "manualBlockers": [],
+      "ring": "ring-1-template-canary",
+      "wave": "canary"
+    },
+    "work-management": {
+      "applyAuthorization": null,
+      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "completionAttestation": null,
+      "enteredAt": "2026-09-24T02:10:16Z",
+      "manualBlockers": [],
+      "ring": "ring-2-product-canary",
+      "wave": "canary"
+    }
+  },
   "attestationPolicy": {
-    "schemaVersion": 1,
     "algorithm": "ed25519",
-    "maxAuthorizationTtlMinutes": 60,
-    "maxCompletionTtlMinutes": 10080,
-    "clockSkewSeconds": 120,
-    "issuerRegistryDigest": "278cb1935e3b85376fd841b9180d20d47f57fb7dbfc76971e908736e76f0d305",
     "allowedKeyIds": [
       "owner-governance-2026-464784a3db60"
     ],
     "applyAuthorizationQuorum": 1,
-    "completionAttestationQuorum": 1
+    "clockSkewSeconds": 120,
+    "completionAttestationQuorum": 1,
+    "issuerRegistryDigest": "278cb1935e3b85376fd841b9180d20d47f57fb7dbfc76971e908736e76f0d305",
+    "maxAuthorizationTtlMinutes": 60,
+    "maxCompletionTtlMinutes": 10080,
+    "schemaVersion": 1
   },
   "candidateRelease": {
-    "id": "ajenchen/design-system@v0.1.0-beta.119",
-    "version": "0.1.0-beta.119",
-    "sourceCommit": "4cafe156e4f452293b2c2343b9149587e356a4f6",
-    "sourceTree": "a091cf68f1def4c088a07eb35ec1a7dca75920ba",
-    "bomSha256": "76dc4a4300462abe85eae3077bad7daaf384a3dad76393e6458a38c0a59c3752",
+    "bomSha256": "b350c573356fc5d100de50ff09e22d00fd51b0e5c7df15556b4e485b7ebdf0d2",
+    "id": "ajenchen/design-system@v0.1.0-beta.145",
+    "observedAt": "2026-09-24T02:10:16Z",
     "packages": [
       {
+        "integrity": "sha512-EhZeWJzovHkpxkXxoRjRnhLdKSfcJTgT0vGB3vXWzbTfiWaEFMPrMXJRxAxVa+6I8RRbYvsjWExtW8CU8hNNww==",
         "name": "@qijenchen/design-system",
-        "version": "0.1.0-beta.119",
-        "integrity": "sha512-qiO6EMsoBU4igr3K/M05AJzrpQ+L9nX0VigiV4jRQ6ejmj6c8kBmnRKn4siEMrQbF/GczE+L5oRCzTVpaas2Tg=="
+        "version": "0.1.0-beta.145"
       },
       {
+        "integrity": "sha512-CveghNBK+Xh4yjr3wd5EhRy9fL/7FrrBRFQ0yWp69BbqxYA1F3fC23suKgf+vk4+5YzG+gjhy7xLzFest456ew==",
         "name": "@qijenchen/governance",
-        "version": "0.1.0-beta.119",
-        "integrity": "sha512-4CMyuhMx96CSWNSP1HPLorWCYxLq+hGQIqn9sfWLpYW/J0QvdA126N9BvzQmeHlFnO0xZ9z5LzXAhroo3J+n0Q=="
+        "version": "0.1.0-beta.145"
       },
       {
+        "integrity": "sha512-4eQ0B3zslKhS27q1MP7ylX8LucCjw9v5sEpkKeJVatXZVXO8u9Q0r61AyNArI57pahbAXsVRCrahHPKU7062dA==",
         "name": "@qijenchen/storybook-config",
-        "version": "0.1.0-beta.119",
-        "integrity": "sha512-anW+deFveYeC5YDVpgWvARmalqJGPjSeGKHV1fjXx9bvRecMzqHLePzRhzD4N78e+K8l3Pis/DjBcwgLh2KnPA=="
+        "version": "0.1.0-beta.145"
       }
     ],
-    "observedAt": "2026-08-07T05:12:09Z"
+    "sourceCommit": "e6db2bbace16847cfa14af0f764d168e84f1d244",
+    "sourceTree": "ab660a8221f00a0001a9816c62ed1746e352ba76",
+    "version": "0.1.0-beta.145"
   },
   "evidence": [],
   "rings": [
     {
       "id": "ring-0-authority",
-      "order": 0,
-      "purpose": "Validate the governance authority and generated adapters before consumer rollout.",
       "maxParallel": 1,
-      "waves": [
-        {
-          "id": "canary",
-          "order": 0,
-          "maxParallel": 1
-        }
-      ],
+      "order": 0,
       "promotionPredicates": [
         {
           "id": "manual-blockers-clear",
@@ -64,7 +84,6 @@
         },
         {
           "id": "required-provider-surfaces-certified",
-          "type": "provider-surfaces-certified",
           "surfaces": [
             "codex/codex-cli/local",
             "codex/codex-desktop/local",
@@ -74,31 +93,32 @@
             "claude-code/claude-code-cli/remote-control",
             "claude-code/claude-code-cloud/cloud",
             "ci/github-actions/github-actions"
-          ]
+          ],
+          "type": "provider-surfaces-certified"
         },
         {
           "id": "no-open-critical-waiver",
-          "type": "no-active-waiver-at-or-above",
-          "risk": "critical"
+          "risk": "critical",
+          "type": "no-active-waiver-at-or-above"
         },
         {
           "id": "reconcile-plan-conflict-free",
           "type": "plan-conflict-free"
         }
+      ],
+      "purpose": "Validate the governance authority and generated adapters before consumer rollout.",
+      "waves": [
+        {
+          "id": "canary",
+          "maxParallel": 1,
+          "order": 0
+        }
       ]
     },
     {
       "id": "ring-1-template-canary",
-      "order": 1,
-      "purpose": "Prove the published template mirror and clean-clone/cloud path.",
       "maxParallel": 1,
-      "waves": [
-        {
-          "id": "canary",
-          "order": 0,
-          "maxParallel": 1
-        }
-      ],
+      "order": 1,
       "promotionPredicates": [
         {
           "id": "upstream-promoted",
@@ -114,38 +134,38 @@
         },
         {
           "id": "required-provider-surfaces-certified",
-          "type": "provider-surfaces-certified",
           "surfaces": [
             "codex/codex-desktop/remote-control",
             "codex/codex-cloud/cloud",
             "claude-code/claude-code-cli/remote-control",
             "claude-code/claude-code-cloud/cloud",
             "ci/github-actions/github-actions"
-          ]
+          ],
+          "type": "provider-surfaces-certified"
         },
         {
           "id": "no-open-high-waiver",
-          "type": "no-active-waiver-at-or-above",
-          "risk": "high"
+          "risk": "high",
+          "type": "no-active-waiver-at-or-above"
         },
         {
           "id": "upgrade-plan-conflict-free",
           "type": "plan-conflict-free"
         }
+      ],
+      "purpose": "Prove the published template mirror and clean-clone/cloud path.",
+      "waves": [
+        {
+          "id": "canary",
+          "maxParallel": 1,
+          "order": 0
+        }
       ]
     },
     {
       "id": "ring-2-product-canary",
-      "order": 2,
-      "purpose": "Use work-management as the real-product canary and root-cause feedback loop.",
       "maxParallel": 1,
-      "waves": [
-        {
-          "id": "canary",
-          "order": 0,
-          "maxParallel": 1
-        }
-      ],
+      "order": 2,
       "promotionPredicates": [
         {
           "id": "upstream-promoted",
@@ -161,7 +181,6 @@
         },
         {
           "id": "required-provider-surfaces-certified",
-          "type": "provider-surfaces-certified",
           "surfaces": [
             "codex/codex-cli/local",
             "codex/codex-desktop/local",
@@ -171,47 +190,28 @@
             "claude-code/claude-code-cli/remote-control",
             "claude-code/claude-code-cloud/cloud",
             "ci/github-actions/github-actions"
-          ]
+          ],
+          "type": "provider-surfaces-certified"
         },
         {
           "id": "no-open-high-waiver",
-          "type": "no-active-waiver-at-or-above",
-          "risk": "high"
+          "risk": "high",
+          "type": "no-active-waiver-at-or-above"
         },
         {
           "id": "upgrade-plan-conflict-free",
           "type": "plan-conflict-free"
         }
+      ],
+      "purpose": "Use work-management as the real-product canary and root-cause feedback loop.",
+      "waves": [
+        {
+          "id": "canary",
+          "maxParallel": 1,
+          "order": 0
+        }
       ]
     }
   ],
-  "assignments": {
-    "design-system": {
-      "ring": "ring-0-authority",
-      "wave": "canary",
-      "enteredAt": "2026-08-07T05:12:09Z",
-      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
-      "applyAuthorization": null,
-      "completionAttestation": null,
-      "manualBlockers": []
-    },
-    "ds-product-template": {
-      "ring": "ring-1-template-canary",
-      "wave": "canary",
-      "enteredAt": "2026-08-07T05:12:09Z",
-      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
-      "applyAuthorization": null,
-      "completionAttestation": null,
-      "manualBlockers": []
-    },
-    "work-management": {
-      "ring": "ring-2-product-canary",
-      "wave": "canary",
-      "enteredAt": "2026-08-07T05:12:09Z",
-      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
-      "applyAuthorization": null,
-      "completionAttestation": null,
-      "manualBlockers": []
-    }
-  }
+  "schemaVersion": 3
 }
