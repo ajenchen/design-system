@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:37ef4491d870b3e4e3c4d1fca02170c3704c7ba8e9ef6f71d91780ff6d11ff49",
+      "hash": "sha256:51f7d119051c8d8889fba5708ddba8df5493f1cd6b6154b743ae9ac9ae45d3fc",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1da045c923fbb5ce13f587989aa7d44067d52c191bde34ca7ce947892c4a551c",
+      "hash": "sha256:7cb80cf471f8f1e32a94b294e58e0867693d545f143aa8304bcb8c178f551b66",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139524,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:ce64d9b5b7fc74ee1d2aeb15aea87900de8331ff1c283176f5220cd677e9b1d6",
+  "inputDigest": "sha256:cb7e1b98fbe3cf9f63428632f3cf3d6b44ec8df1ee4760056802add46ae5c423",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:aeaef1095df721b637812e06cb5eb937f21fb04fef14d7e312e7d638be75c2ff",
+  "snapshotDigest": "sha256:c4bff7f930a60a381607b039c58dddc638877d432ee17ff1a6f78f2c1ddf9bfa",
   "sources": [
     {
       "hash": "sha256:e367eabca1029cf80036952e674873cf4c30ec639924924e86ff3aa2255d5e81",
@@ -667,7 +667,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:83c019d2770ffb3dfaec4c5b417f66c46c52e60d560f52d53db9b0fbc67ee158",
+      "hash": "sha256:63f760eb3539db8380dc4d5d77fff3cae32691237841f5d21a93dc2403504b0e",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:2c43a8803e03aef5a3897a7ade44109b42631d76183d7ea3259765a60f695d1a",
+      "hash": "sha256:6bb3ade70ee11857e804737702203d916b5fa90ff187635d0756c7cd55a893a2",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",

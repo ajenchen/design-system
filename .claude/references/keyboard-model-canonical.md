@@ -95,7 +95,7 @@ Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/Tre
 2. 原文是 "Do not replace your NavList with a tree view **to support a deeply nested navigation
    structure**"(禁的是「為了突破 4 層上限而換成樹」),我只記住了後半句。
 
-⚠️ **這個形狀 2026-09-24 一天內差點發生三次**(Primer 兩句 + 差點裸引 Carbon 的「As the primary navigation」)。固定規則:**引用任何一家的「不要拿 X 當 Y」時,必須把 Y 的範圍逐字寫出來**。「primary navigation」、「global sidebar navigation」這種修飾語就是範圍本身,拿掉它就變成另一句話。裸引一次,下一個人就會把它當禁令。
+⚠️ **這個形狀 2026-09-24 一天內差點發生三次**(Primer 兩句 + 差點裸引 Carbon 的「As the primary navigation」)。這不是鍵盤專屬的毛病,**通則住在 meta-patterns M22 的「引用『不要拿 X 當 Y』必須帶 Y 的範圍」子款**,本檔不重述判準,只留這三筆實例。
 
 **Primer 同一個 repo 的另一份文件正面寫著相反的話** —— `content/ui-patterns/navigation.mdx`
 把 Tree view 與 Nav list 並列在同一章,兩者的句子**一模一樣**:
