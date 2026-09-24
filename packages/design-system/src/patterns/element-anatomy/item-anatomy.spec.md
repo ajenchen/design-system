@@ -192,6 +192,65 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
 
+### 四題判定程序(新列元件照這個順序走,不要跳)
+
+這一節與 `ds-canonical/references/keyboard-model-canonical.md` 合起來是**一條完整的鏈**。
+先前兩份文件各自正確但**沒有接起來**:下方第二張表是拿「這一列有沒有複合角色」當**既成事實**在判,
+而「誰決定它該不該有那個角色」住在另一個檔 —— 於是新元件照樣可能落錯地方。
+2026-09-24 user 追問「整個 SSOT 是否能有合理原則涵蓋所有情境」時補上這條有序程序。
+
+| 順序 | 問題 | 判準的 owner | 答案決定什麼 |
+|---|---|---|---|
+| **1** | **這一整串,是 N 個各自獨立的東西,還是 1 個控件的內部?** | `keyboard-model-canonical.md`「五條判準」(節點可選取並施加動作 / 需要樹那套鍵盤 / 深度無上界 / 使用者產生且可改動 / 不保證換 URL)| 是 1 個控件 → 整串**一個 Tab 停靠點 + 方向鍵**,列拿 `treeitem` / `option` / `gridcell`;是 N 個 → **每一列各一個 Tab 停靠點**,列**不拿**那些角色 |
+| **2** | **把動作鈕排到外面之後,剩下的內容能不能整包住進一顆 `<button>`?** | 本節下方第一張表(HTML content model + ARIA children-presentational)| 能 → 列自己就是 `<button>` / `<a>`;不能 → 列維持非互動容器 |
+| **3** | **那誰承接鍵盤?** | 本節下方第二張表 —— **但它的輸入是第 1 題的答案,不是自己判的** | 第 1 題答「1 個控件」→ 容器擁有鍵盤,列 `tabIndex={-1}`;答「N 個」且第 2 題答「不能當 button」→ 列內鋪一顆覆蓋整列的透明控件,焦點框畫在列上 |
+| **4** | **按哪些鍵?** | `keyboard-model-canonical.md`「進格用什麼鍵」(焦點在格上還是格裡的控件上、`Enter` / `F2` / `Escape`)| 只在第 1 題答「1 個控件」且格內還裝著別的控件時才需要問 |
+
+**第 1 題必須先問。** 它決定第 3 題的輸入;跳過它就會變成「看隔壁那個元件怎麼寫就照抄」,
+而那正是本 DS 反覆漂移的形狀。
+
+### 走一遍:當初引發這一連串問題的兩個元件
+
+user 2026-09-24 原始提問:「所有可以被點擊且其中提供按鈕的 list item 都會有一樣問題?」
+「就結果是一樣的,但為何設計方式是不一樣的?是否是合理的?未來遇到這種有多 action 且自身可以點擊的
+list item 元件都是要用類似的處理方式?」
+
+| | `SidebarMenuButton` | `FileItem` | `TreeItem` |
+|---|---|---|---|
+| **1. N 個還是 1 個?** | **N 個** —— 每條通往不同頁面,不對項目施加動作、深度有界、啟動一定換頁 | **N 個** —— 每個檔案各自獨立,沒有「選取一批再施加動作」的模型 | **1 個** —— 節點可選取並施加動作、深度無上界、使用者自己新增與拖曳重排 |
+| **2. 剩下的內容裝得進 `<button>` 嗎?** | **裝得進** —— 只有圖示與文字 | **裝不進** —— 有進度條(自帶 `role="progressbar"`)、頭像、可聚焦的 hover 按鈕 | 不適用(第 1 題已決定角色) |
+| **3. 誰承接鍵盤?** | **列本身**(它就是那顆 `<button>`)| **列內一顆覆蓋整列的透明控件**,焦點框畫在列上 | **容器**,列 `tabIndex={-1}` |
+| **4. 按哪些鍵?** | 每列一個 Tab 停靠點 | 每列一個 Tab 停靠點 | 容器一個停靠點 + 方向鍵 |
+
+**所以對原始問題的答案是:`SidebarMenuButton` 與 `FileItem` 的鍵盤操作其實是一樣的**
+—— 兩者都是「每一列一個 Tab 停靠點」。**不同的只有「焦點停在哪個元素上」,而那不是選擇,
+是 HTML content model 逼出來的**:FileItem 的列裡有進度條與可聚焦按鈕,包進 `<button>` 會讓
+輔助科技讀不到(children-presentational),還直接踩 content model 明文禁止的 `tabindex` 那一句。
+
+**上面那句是量出來的,不是推的**(2026-09-24,1280×900,從頁首連按 Tab 記錄停靠點):
+
+| 元件 | 實測的停靠點序列 | 結論 |
+|---|---|---|
+| `FileItem`(展示—已上傳)| 開啟 報告.pdf → 刪除 → 開啟 合約附件.docx → 刪除 → 開啟 data.csv → 刪除 … | **每列一個停靠點 + 每顆動作鈕各一個** |
+| `SidebarMenuButton`(展示—側邊欄動作懸停狀態)| 產品路線圖 → 更多產品路線圖操作 → 離開 | **一模一樣** |
+| `TreeView`(展示—檔案瀏覽)| 檔案瀏覽(`role="tree"` 容器本身)→ 直接離開整棵樹 | **整棵樹只有一個停靠點** |
+
+前兩列的停靠點序列**逐項相同**;第三列才是真的不同。這正是四題程序預測的結果。
+
+**與 `TreeItem` 的差別才是真的鍵盤模型不同**,而那由第 1 題決定,不是由「列裡裝了什麼」決定。
+
+### 這條程序涵蓋所有情況嗎(逐枝窮舉)
+
+| 第 1 題 | 第 2 題 | 結果 | 本 DS 實例 |
+|---|---|---|---|
+| N 個 | 裝得進 `<button>` | 列 = `<button>` / `<a>`,每列一個 Tab 停靠點,動作鈕是絕對定位的同層兄弟 | `SidebarMenuButton`、`MenuItem` |
+| N 個 | 裝不進 | 列 = 非互動容器 + 覆蓋整列的透明控件,焦點框畫在列上,每列一個 Tab 停靠點 | `FileItem` |
+| N 個 | 列裡本來就有一個看得見的主控件 | 列的 click 委派給它,不另造控件 | DS 內目前無實例,條文先立著 |
+| 1 個控件 | (不適用)| 列拿 `treeitem` / `option` / `gridcell` 且 `tabIndex={-1}`,容器單一停靠點 + 方向鍵;格內還有控件時走第 4 題 | `TreeItem`、`TimePicker` 的欄、`DataTable` 的格、`Calendar` 的格 |
+
+**四枝窮盡**:第 1 題二分、第 2 題三分(而第 1 題答「1 個」時第 2 題不適用)。沒有第五種。
+新元件若覺得自己不屬於任何一枝,那是第 1 題沒答清楚,不是需要新增分枝。
+
 **來源標記**:觸發是 user 原話「所以你到底合理的定義何時該用 sidebar 那種結構何時該用 file item 這種結構了沒?我知道兩者都是世界級的設計,但沒有評判依據嗎?」;**判準本身是依下面兩條規範推導的,不是 user 拍板**。決定因素只有一個:**這一列裡裝了什麼**——不是哪個寫起來順手。兩條規範各管一半,合起來把選項砍到只剩一個:
 - `<button>` 的 content model 逐字是 **"Phrasing content, but there must be no interactive content descendant and no descendant with the `tabindex` attribute specified."**(WHATWG HTML,<https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element>)——管的是「**放不放得進去**」。
 - `role="button"` 的 Children Presentational 為 True,逐字是 **"The DOM descendants are presentational. User agents SHOULD NOT expose descendants of this element through the platform accessibility API."**(WAI-ARIA 1.2,<https://www.w3.org/TR/wai-aria-1.2/#button> / <https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational>)——管的是「**放進去之後還讀不讀得到**」。

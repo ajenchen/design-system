@@ -11,6 +11,10 @@
 它不擁有:焦點框長什麼樣、畫在哪(owner = `focus-canonical.md`)、命中區多大(owner = `hit-area-canonical.md`)、
 各元件的實際按鍵表(owner = 各元件 `spec.md` 的「A11y 預設」段)、
 列裡誰當那顆控件(owner = `patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」)。
+
+**兩份文件合起來是一條完整的鎖**:建新列元件時走該節的**四題判定程序**,
+而那個程序的**第 1 題就是本檔的五條判準**(這一串是 N 個獨立的東西,還是 1 個控件的內部)。
+先前兩份文件各自正確卻沒接起來,2026-09-24 補上。
 與 `focus-canonical.md` / `hit-area-canonical.md` / `drag-canonical.md` 同層級、同形狀(一個能力、一份跨元件契約)。
 
 ## 先講結論:兩種模型並存是世界級的常態,不是不一致
