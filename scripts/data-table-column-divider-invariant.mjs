@@ -13,7 +13,9 @@
  * **Root cause 不是漏寫一行 class,是畫線的責任掛錯地方**:
  * 規格用「這是哪一種邊界」定義線(`data-table.spec.md`「Header vs Body 的視覺區隔」),
  * 程式卻用「這裡剛好渲染了哪個元件」畫線 —— 表頭短線是 `ResizeHandle` 附帶畫的,
- * 而系統欄(選取 / 拖曳 / 列動作)不可調寬、根本不渲染它;凍結線由面板畫;
+ * 而**選取欄是 `headerCellEl` 裡唯一有自己 early-return 分支的欄**,到不了畫線那一段
+ * —— 與可不可調寬無關(進入條件是 `if (!showDivider && !isResizable) return null`,
+ * 實測 `with-bulk-actions` 全部欄位不可調寬卻有 5 條線);凍結線由面板畫;
  * 列身線由 cell 自己的 class 畫,而選取欄的 render 分支在套上那個 class 之前就 early-return。
  * **三種線三個主人,選取欄三個都碰不到,於是靜默沒有線。**
  * 這是 M37:要保證的是「這是一個欄邊界」,實際判的是「這裡有沒有 ResizeHandle」。
@@ -30,7 +32,17 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const STATIC = join(ROOT, 'storybook-static')
-const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
+// 掃多則—— 只掃一則的覆蓋是假的。這五則涵蓋:選取欄 + 格線 + 釘選、選取欄無格線、
+// 有格線無選取欄、列動作欄(合法無線的那一欄)、一則兩張表。
+const STORIES = process.env.DT_DIVIDER_STORY
+  ? [process.env.DT_DIVIDER_STORY]
+  : [
+    'design-system-components-datatable-展示--roadmap-all-in-one',
+    'design-system-components-datatable-展示--with-bulk-actions',
+    'design-system-components-datatable-展示--row-actions',
+    'design-system-components-datatable-展示--pinned-columns',
+    'design-system-components-datatable-展示--inline-edit',
+  ]
 
 /**
  * 純判定。輸入是每個「一般欄邊界」量到的線 {col, height, top}(top 相對表頭列頂)。
@@ -38,77 +50,75 @@ const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
  * 子像素捨入可能差半格;超過半個像素就是真的不一樣。
  */
 export function findDividerDrift(lines, tolerance = 0.51) {
-  if (lines.length < 2) return [{ kind: 'too-few', detail: `只量到 ${lines.length} 條線,無從比較` }]
   const problems = []
-  const missing = lines.filter((l) => !(l.height > 0))
-  for (const m of missing) problems.push({ kind: 'missing', col: m.col, detail: '這個欄邊界沒有線(高度 0)' })
-  const present = lines.filter((l) => l.height > 0)
-  if (present.length < 2) return problems
-  // 以出現最多次的高度為基準,任何偏離都報出來
-  const counts = new Map()
-  for (const l of present) {
-    const key = l.height.toFixed(2)
-    counts.set(key, (counts.get(key) || 0) + 1)
+  // 按表頭列分組:一則故事可能有多張表,不同表的列頂 y 當然不同。
+  const rows = new Map()
+  for (const l of lines) {
+    if (!rows.has(l.row)) rows.set(l.row, [])
+    rows.get(l.row).push(l)
   }
-  const baseH = Number([...counts.entries()].sort((a, b) => b[1] - a[1])[0][0])
-  // 基準位置同樣取**多數**,不能取「第一個符合高度的」—— 那樣少數派會把多數派判成偏離
-  // (selftest 第四格就是這樣抓到的:偏移的那一條剛好排第一,結果另外兩條被報成問題)。
-  const topCounts = new Map()
-  for (const l of present) {
-    if (Math.abs(l.height - baseH) > tolerance) continue
-    const key = l.top.toFixed(2)
-    topCounts.set(key, (topCounts.get(key) || 0) + 1)
-  }
-  const baseTop = Number([...topCounts.entries()].sort((a, b) => b[1] - a[1])[0][0])
-  for (const l of present) {
-    if (Math.abs(l.height - baseH) > tolerance) {
-      problems.push({ kind: 'height', col: l.col, detail: `線高 ${l.height.toFixed(2)},基準 ${baseH.toFixed(2)}` })
-    } else if (Math.abs(l.top - baseTop) > tolerance) {
-      problems.push({ kind: 'position', col: l.col, detail: `線頂 ${l.top.toFixed(2)},基準 ${baseTop.toFixed(2)}` })
+  for (const [rowKey, group] of rows) {
+    const present = group.filter((l) => l.height > 0)
+    // 選取欄是這支閘的原點:它後面還有欄位,就一定要有線。
+    for (const l of group) {
+      if (l.col === '__select__' && !l.isLastInRow && !(l.height > 0)) {
+        problems.push({ kind: 'missing', col: l.col, row: rowKey, detail: '選取欄後面還有欄位卻沒有欄間線' })
+      }
+    }
+    if (present.length < 2) continue
+    const counts = new Map()
+    for (const l of present) counts.set(l.height.toFixed(2), (counts.get(l.height.toFixed(2)) || 0) + 1)
+    const baseH = Number([...counts.entries()].sort((a, b) => b[1] - a[1])[0][0])
+    const topCounts = new Map()
+    for (const l of present) {
+      if (Math.abs(l.height - baseH) > tolerance) continue
+      topCounts.set(l.top.toFixed(2), (topCounts.get(l.top.toFixed(2)) || 0) + 1)
+    }
+    const baseTop = Number([...topCounts.entries()].sort((a, b) => b[1] - a[1])[0][0])
+    for (const l of present) {
+      if (Math.abs(l.height - baseH) > tolerance) {
+        problems.push({ kind: 'height', col: l.col, row: rowKey, detail: `線高 ${l.height.toFixed(2)},同列基準 ${baseH.toFixed(2)}` })
+      } else if (Math.abs(l.top - baseTop) > tolerance) {
+        problems.push({ kind: 'position', col: l.col, row: rowKey, detail: `線頂 ${l.top.toFixed(2)},同列基準 ${baseTop.toFixed(2)}` })
+      }
     }
   }
   return problems
 }
 
 function selftest() {
-  const ok = [
-    { col: '__select__', height: 21, top: 9.5 },
-    { col: 'id', height: 21, top: 9.5 },
-    { col: 'title', height: 21, top: 9.5 },
+  const L = (col, height, top, row = 0, isLastInRow = false) => ({ col, height, top, row, isLastInRow })
+  const ok = [L('__select__', 21, 9.5), L('id', 21, 9.5), L('title', 21, 9.5)]
+  const missing = [L('__select__', 0, 0), L('id', 21, 9.5), L('title', 21, 9.5)]
+  const tooTall = [L('__select__', 30, 5), L('id', 21, 9.5), L('title', 21, 9.5)]
+  const offset = [L('__select__', 21, 6), L('id', 21, 9.5), L('title', 21, 9.5)]
+  // 誤紅對照組一:同一則故事兩張表,第二張的列頂當然不同—— 不得報錯。
+  const twoTables = [
+    L('sku', 21, 9, 0), L('name', 21, 9, 0),
+    L('sku', 21, 379.6, 1), L('name', 21, 379.6, 1),
   ]
-  const missing = [
-    { col: '__select__', height: 0, top: 0 },
-    { col: 'id', height: 21, top: 9.5 },
-    { col: 'title', height: 21, top: 9.5 },
-  ]
-  const tooTall = [
-    { col: '__select__', height: 30, top: 5 },
-    { col: 'id', height: 21, top: 9.5 },
-    { col: 'title', height: 21, top: 9.5 },
-  ]
-  const offset = [
-    { col: '__select__', height: 21, top: 6 },
-    { col: 'id', height: 21, top: 9.5 },
-    { col: 'title', height: 21, top: 9.5 },
-  ]
+  // 誤紅對照組二:列動作欄前面那一欄合法沒有線—— 不得報錯。
+  const legitNoLine = [L('sku', 21, 9), L('name', 21, 9), L('updatedAt', 0, 0)]
   const cases = [
     ['所有一般欄邊界同高同位 → 必須綠', ok, 0, null],
     ['選取欄整條線缺席(2026-09-24 實況)→ 必須指名它並紅', missing, 1, '__select__'],
     ['選取欄畫成整格高(我第一次修錯的樣子)→ 必須紅', tooTall, 1, '__select__'],
     ['高度對但垂直位置差(撐滿造成的偏移)→ 必須紅', offset, 1, '__select__'],
+    ['一則故事兩張表,列頂不同 → **不得誤紅**(第一版就是這樣紅的)', twoTables, 0, null],
+    ['列動作欄前一欄合法無線 → **不得誤紅**(第一版就是這樣紅的)', legitNoLine, 0, null],
   ]
   let failed = 0
   for (const [name, input, expected, mustName] of cases) {
     const got = findDividerDrift(input)
     const pass = got.length === expected && (!mustName || got.some((g) => g.col === mustName))
-    if (pass) console.log(`  ✓ ${name}`)
-    else { failed += 1; console.error(`  ✗ ${name} — 實得 ${got.length} 筆: ${JSON.stringify(got)}`) }
+    if (pass) console.log(`  \u2713 ${name}`)
+    else { failed += 1; console.error(`  \u2717 ${name} — 實得 ${got.length} 筆: ${JSON.stringify(got)}`) }
   }
   if (failed) { console.error(`\nselftest 失敗 ${failed} 格`); process.exit(1) }
-  console.log('\nselftest 全過(綠側與三種紅側都驗到)')
+  console.log('\nselftest 全過(綠側、三種紅側、兩種誤紅對照組都驗到)')
 }
 
-async function measure() {
+async function measure(story) {
   const { launchBrowser, gotoStory } = await import('./lib/launch-browser.mjs')
   const { createServer } = await import('node:http')
   const { stat } = await import('node:fs/promises')
@@ -128,34 +138,45 @@ async function measure() {
   const base = `http://127.0.0.1:${server.address().port}`
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
-  await gotoStory(page, `${base}/iframe.html?id=${STORY}&viewMode=story`, { waitFor: '[data-column-id="__select__"]', settle: 900 })
+  await gotoStory(page, `${base}/iframe.html?id=${story}&viewMode=story`, { waitFor: '[data-column-id="__select__"]', settle: 900 })
   const lines = await page.evaluate(() => {
     const headers = [...document.querySelectorAll('[role="columnheader"]')]
-    if (!headers.length) return []
-    const rowTop = headers[0].parentElement.getBoundingClientRect().top
-    const out = []
+    const rows = new Map()
     for (const h of headers) {
-      // 本區最後一欄由凍結邊界線 / 外框接管,不在本閘範圍
-      if (h.hasAttribute('data-dt-last-col')) continue
-      const col = h.getAttribute('data-column-id') || '?'
-      const hr = h.getBoundingClientRect()
-      // 來源一:cell 自己的 ::after(系統欄走這條)
-      const a = getComputedStyle(h, '::after')
-      if (a.content && a.content !== 'none') {
-        const hgt = parseFloat(a.height)
-        if (hgt > 0) { out.push({ col, height: hgt, top: hr.top - rowTop + (hr.height - hgt) / 2 }); continue }
-      }
-      // 來源二:ResizeHandle 畫的 1px 線(一般欄走這條)
-      const span = [...h.querySelectorAll('span,div')].find((e) => {
-        const r = e.getBoundingClientRect()
-        return r.width > 0 && r.width <= 2 && r.height > 4
+      const parent = h.parentElement
+      if (!rows.has(parent)) rows.set(parent, [])
+      rows.get(parent).push(h)
+    }
+    const out = []
+    let rowIndex = 0
+    for (const [parent, cells] of rows) {
+      // 每一列自己的頂 —— 一則故事可能有多張表,拿第一張的頂當全場基準會讓第二張整排誤紅。
+      const rowTop = parent.getBoundingClientRect().top
+      cells.forEach((h, i) => {
+        if (h.hasAttribute('data-dt-last-col')) return
+        const col = h.getAttribute('data-column-id') || '?'
+        const isLastInRow = i === cells.length - 1
+        const hr = h.getBoundingClientRect()
+        const a = getComputedStyle(h, '::after')
+        if (a.content && a.content !== 'none') {
+          const hgt = parseFloat(a.height)
+          if (hgt > 0) {
+            out.push({ col, row: rowIndex, isLastInRow, height: hgt, top: hr.top - rowTop + (hr.height - hgt) / 2 })
+            return
+          }
+        }
+        const span = [...h.querySelectorAll('span,div')].find((e) => {
+          const r = e.getBoundingClientRect()
+          return r.width > 0 && r.width <= 2 && r.height > 4
+        })
+        if (span) {
+          const r = span.getBoundingClientRect()
+          out.push({ col, row: rowIndex, isLastInRow, height: r.height, top: r.top - rowTop })
+        } else {
+          out.push({ col, row: rowIndex, isLastInRow, height: 0, top: 0 })
+        }
       })
-      if (span) {
-        const r = span.getBoundingClientRect()
-        out.push({ col, height: r.height, top: r.top - rowTop })
-      } else {
-        out.push({ col, height: 0, top: 0 })
-      }
+      rowIndex += 1
     }
     return out
   })
@@ -167,16 +188,29 @@ async function measure() {
 if (process.argv.includes('--selftest')) {
   selftest()
 } else {
-  const lines = await measure()
-  const problems = findDividerDrift(lines)
-  if (!problems.length) {
-    console.log(`表頭欄間線一致性: ${lines.length} 條一般欄邊界全部同高同位 — ${lines.map((l) => `${l.col}=${l.height.toFixed(1)}`).join(' ')}`)
+  let total = 0
+  let failed = 0
+  for (const story of STORIES) {
+    const lines = await measure(story)
+    const problems = findDividerDrift(lines)
+    const label = story.split('--').pop()
+    if (!problems.length) {
+      const present = lines.filter((l) => l.height > 0)
+      console.log(`  \u2713 ${label}: ${present.length} \u689d\u7dda\u5168\u90e8\u540c\u9ad8\u540c\u4f4d`)
+      total += present.length
+      continue
+    }
+    failed += 1
+    console.error(`  \u2717 ${label}:`)
+    for (const p of problems) console.error(`      [${p.kind}] ${p.col ?? ''} ${p.detail}`)
+    console.error(`      \u91cf\u5230\u7684\u5168\u90e8: ${JSON.stringify(lines)}`)
+  }
+  if (!failed) {
+    console.log(`\n\u8868\u982d\u6b04\u9593\u7dda\u4e00\u81f4\u6027: ${STORIES.length} \u5247\u6545\u4e8b\u3001\u5171 ${total} \u689d\u7dda\u5168\u90e8\u5408\u898f`)
     process.exit(0)
   }
-  console.error('🚨 表頭欄間線不一致 —— 規格 `data-table.spec.md`「Header vs Body 的視覺區隔」要求一般非 frozen 欄邊界是同一種短線:\n')
-  for (const p of problems) console.error(`  [${p.kind}] ${p.col ?? ''} ${p.detail}`)
-  console.error('\n量到的全部:', JSON.stringify(lines))
-  console.error('\n注意:表頭短線由 `ResizeHandle` 附帶畫,而系統欄(選取 / 拖曳 / 列動作)不可調寬、不渲染它 ——')
-  console.error('這正是 2026-09-24 選取欄整條線消失的根因。系統欄要自己掛 `dtHeaderColDivider`。')
+  console.error('\n\u898f\u683c `data-table.spec.md`\u300cHeader vs Body \u7684\u8996\u89ba\u5340\u9694\u300d\u8981\u6c42\u4e00\u822c\u975e frozen \u6b04\u908a\u754c\u662f\u540c\u4e00\u7a2e\u77ed\u7dda\u3002')
+  console.error('\u8868\u982d\u77ed\u7dda\u7531 `ResizeHandle` \u9644\u5e36\u756b,\u800c\u7cfb\u7d71\u6b04(\u9078\u53d6 / \u62d6\u62c9 / \u5217\u52d5\u4f5c)\u4e0d\u6e32\u67d3\u5b83 ——')
+  console.error('\u9019\u6b63\u662f 2026-09-24 \u9078\u53d6\u6b04\u6574\u689d\u7dda\u6d88\u5931\u7684\u6839\u56e0\u3002\u7cfb\u7d71\u6b04\u8981\u81ea\u5df1\u639b `dtHeaderColDivider`\u3002')
   process.exit(1)
 }

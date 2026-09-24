@@ -136,9 +136,11 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 | 種類 | 幾何 | 誰畫的 | 什麼情況下不會被畫 |
 |---|---|---|---|
-| **表頭欄間短線** | 一個行高(`1lh`),垂直置中 | **`ResizeHandle`** 附帶畫(`showLine` + `lineInsetStart/End="var(--table-cell-py)"`) | **系統欄(選取 / 拖曳 / 列動作)不可調寬 → 根本不渲染 `ResizeHandle` → 永遠沒有線** |
+| **表頭欄間短線** | 一個行高(`1lh`),垂直置中 | 畫在 **`ResizeHandle` 那個區塊**裡(`showLine` + `lineInsetStart/End="var(--table-cell-py)"`)。進入條件是 `if (!showDivider && !isResizable) return null` —— **只要該畫線就會渲染,與可不可調寬無關** | **選取欄有自己的 early-return 分支,到不了這一段**—— 它是 `headerCellEl` 裡**唯一**這樣的欄。拖拉欄與列動作欄走一般分支,所以有線 |
 | **凍結邊界線** | 整欄高度,貫穿水平捲軸帶 | `dtPanelBoundaryLeft/Right` 畫在面板上 | 非面板邊界的欄 |
 | **列身欄間線**(僅 inline edit / spreadsheet 模式)| 整格高度 | cell 自己的 `.dtCellGrid` | 選取欄的 render 分支在套上這個 class **之前就 early-return** |
+
+⛔ **這一段的第一版寫錯過,同日更正**:原本寫「系統欄不可調寬 → 不渲染 `ResizeHandle` → 永遠沒線」。**不可調寬不是原因** —— 實測 `with-bulk-actions` 那則故事 `enableColumnResize` 預設 `false`、全部欄位都不可調寬,卻有 5 條表頭線。**兩件事同時成立 ≠ 前者導致後者**;真正的因是 early-return。
 
 **Root cause 一句話:規範用「這是哪一種邊界」定義線,程式碼卻用「這裡剛好渲染了哪個元件」畫線。**
 兩者在多數欄位上碰巧一致,所以看起來沒事;**一旦某一欄不渲染那個元件,線就靜默消失,而且沒有任何訊號**。

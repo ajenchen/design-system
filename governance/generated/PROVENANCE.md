@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:b6f487feb1a0166d7126956e66b9c850789e7622c3ff57bea8dd1cf0210a76e2` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:2c43a8803e03aef5a3897a7ade44109b42631d76183d7ea3259765a60f695d1a` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:e39bceb8b8c4a59c476191661fdec13b8e9072bec006a4e5eab11db6eefdb9f8` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:0aff9860af38faa6688c57f9af3b76c4fd5ebfe74d8d5ad2f244cbef622ffddb` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:ecdde95c06e6e26e631559a3e6fdd3272596a835e20f5b67ac1a513792bf80e8` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:e2d4fac532937263e691cd215c9318d5c2a43d78739b5f4bee3c15a58d11b3b7` |
+| repository-automation-corpus | `scripts` | `sha256:fa84b625764e54106588adf8ca95aa651dff19920a6923cbfb8c6ed6c7bb3b0d` |
 | repository-ignore-boundary | `.gitignore` | `sha256:e2a464cc20ac39651e8ca7015832761d0f8f6f34829c025aeb5bbfcb58e7d3a7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

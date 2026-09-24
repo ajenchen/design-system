@@ -398,7 +398,9 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
 
 - **2026-09-24 一條 1px 的欄間線,我在同一天漂了四次(三次是我自己,一次是三年前埋的)**。user 逐字:「幹你他媽,只有 pin 住的才是撐滿的,設計原則沒有寫嗎?仔細全盤研究,幹為什麼連這個也要我講?我們都沒有定義好嗎?到底為何做這條格線會發生那麼多漂移?root cause 到底是什麼?」
 
-  **Root cause(第 0 次,埋在架構裡)**:`data-table.spec.md`「Header vs Body 的視覺區隔」用**「這是哪一種邊界」**定義線(一般非 frozen 欄 = 表頭短線;frozen 邊界 = 整欄高),但程式碼用**「這裡剛好渲染了哪個元件」**畫線 —— 表頭短線是 `ResizeHandle` 附帶畫的(`showLine` + `lineInsetStart/End`),凍結線由 `dtPanelBoundary*` 畫,列身線由 cell 自己的 `.dtCellGrid` 畫。**系統欄(選取 / 拖曳 / 列動作)不可調寬 → 不渲染 `ResizeHandle` → 表頭永遠沒有線**;而選取欄的 render 分支在套上 `.dtCellGrid` 之前就 early-return → 列身也沒有。**三種線三個主人,它三個都碰不到,於是靜默消失。** 實測:全表 325 個格有格線,選取格是唯一沒有的那一個。這是 M37 的標準形狀:要保證「這是一個欄邊界」,實際判的是「這裡有沒有 ResizeHandle」。
+  **Root cause(第 0 次,埋在架構裡)**:`data-table.spec.md`「Header vs Body 的視覺區隔」用**「這是哪一種邊界」**定義線(一般非 frozen 欄 = 表頭短線;frozen 邊界 = 整欄高),但程式碼用**「這裡剛好渲染到哪一段 JSX」**畫線 —— 表頭短線畫在 `ResizeHandle` 那個區塊裡,凍結線由 `dtPanelBoundary*` 畫,列身線由 cell 自己的 `.dtCellGrid` 畫。**選取欄是整個表頭裡唯一有自己 early-return 分支的欄**(`headerCellEl` 的第一個 `if`),它在抵達畫線那個區塊之前就 return 了;而它的列身分支同樣在套上 `.dtCellGrid` 之前 early-return。**三種線三個位置,它三個都到不了,於是靜默消失。** 實測:全表 325 個格有格線,選取格是唯一沒有的那一個。這是 M37 的標準形狀:要保證「這是一個欄邊界」,實際判的是「程式有沒有跑到那一段」。
+
+  **⛔ 我第一版的 root cause 寫錯過一次,當天更正**:原本寫「系統欄不可調寬 → 不渲染 `ResizeHandle` → 永遠沒有線」。**不可調寬不是原因** —— 那個區塊的進入條件是 `if (!showDivider && !isResizable) return null`,**只要該畫線就會渲染,與可不可調寬無關**;實測 `with-bulk-actions` 那則故事 `enableColumnResize` 預設 `false`、全部欄位都不可調寬,卻有 5 條表頭線。是 user 問「checkbox 的欄寬確實是固定不給調整的,對吧」才逼我回去量,一量就翻案。**教訓:寫 root cause 時「這兩件事同時成立」不等於「前者導致後者」** —— 選取欄確實不可調寬,也確實沒有線,但兩者沒有因果;真正的因是 early-return。這跟本檔 M37 那一族是同一個病,只是這次發生在我對自己 bug 的歸因上。
 
   更早的伏筆:選取欄本來有自己的 ad-hoc 規則,2026-05-12 退役時註解寫「走 inlineEdit canonical」—— **那句話從來沒被驗證過**。退役規則時說「改由某某接手」卻不當場驗證某某作用得到那個對象,就是這一族。
 
