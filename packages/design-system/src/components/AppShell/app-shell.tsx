@@ -406,7 +406,7 @@ export const appShellMeta = {
     bg: ['bg-canvas', 'bg-surface'],
     fg: ['text-foreground'],
     border: ['border-divider'],
-    ring: ['ring-primary'],
+    ring: ['focus-ring-inset', '--ring'],
   },
   defaultVariant: undefined,
   defaultSize: undefined,

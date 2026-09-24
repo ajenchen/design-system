@@ -133,7 +133,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - Tab — focus trigger 時顯示
 - Esc — 關閉
 
-**Focus**:non-modal hover/focus surface — focus 開啟 surface,**不 trap**,focus 仍 在 trigger,Esc 關閉。Visible focus ring 由 trigger 元件自身的 focus-visible 樣式提供(各 trigger 元件 canonical;Tooltip 本體不另加 ring)。(2026-05-27 修正 codex M31 finding:Tooltip 非 modal,不該有 focus trap,原 wording 誤導)
+**Focus**:non-modal hover/focus surface — focus 開啟 surface,**不 trap**,focus 仍 在 trigger,Esc 關閉。Visible focus ring 由 trigger 元件自身的 focus-visible 樣式提供(各 trigger 元件 canonical;Tooltip 本體不另加焦點框)。(2026-05-27 修正 codex M31 finding:Tooltip 非 modal,不該有 focus trap,原 wording 誤導)
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

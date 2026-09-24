@@ -208,7 +208,7 @@ const InspectorInner = () => {
             </div>
             <PropRow label="Filled"><TokenCell token="--warning" /></PropRow>
             <PropRow label="Empty"><TokenCell token="--divider" /></PropRow>
-            <PropRow label="Focus ring"><TokenCell token="--ring" display="ring-2 ring-ring ring-offset-2" /></PropRow>
+            <PropRow label="Focus ring"><TokenCell token="--ring" display="outline: 2px solid var(--ring),往外 2px(全域 :focus-visible 規則,無 class)" /></PropRow>
           </div>
 
           <div className="px-4 py-1">
@@ -320,7 +320,7 @@ export const ColorMatrix = {
             <Td><Rating defaultValue={3} size="md" aria-label="focus 範例" /></Td>
             <Td><TokenCell token="--warning" /></Td>
             <Td><TokenCell token="--divider" /></Td>
-            <Td className="text-[11px]">ring-2 ring-ring ring-offset-2</Td>
+            <Td className="text-[11px]">outline: 2px solid var(--ring),往外 2px(全域 :focus-visible 規則,無 class)</Td>
           </tr>
           <tr>
             <Td mono>disabled</Td>

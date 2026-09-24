@@ -262,6 +262,6 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - ↑/↓/←/→ 在日期格間 roving 移動、PageUp/Down 切月、Shift+PageUp/Down 切年。
 - 此為已知 a11y gap:方向鍵 roving 是 APG grid pattern 建議；目前所有互動元素皆 Tab 可達。
 
-**Focus**:focus-visible ring 對齊 DS canonical(`ring-2 ring-ring`,box-shadow 實作 + `outline-none`,同 button.spec A11y 段);日期數字按鈕與事件 tile 皆有 ring。
+**Focus**:鍵盤聚焦時(`focus-visible`)畫 outline 焦點框,幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(同 button.spec A11y 段;2026-09-24 訂正,原 `ring-2 ring-ring` + box-shadow + `outline-none` 是已退役的寫法)。日期數字按鈕與內建事件 tile 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);`renderEventTile` 自訂 tile 的外層 wrapper 寫內描邊 `focus-visible:focus-ring-inset`(往內 2px;事件方塊之間 gap 只有 2px,往外會壓到上下相鄰的方塊)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。

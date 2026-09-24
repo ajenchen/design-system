@@ -698,7 +698,7 @@ export const tabsMeta = {
   tokens: {
     bg: ['bg-primary', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset', '--ring'],
   },
   defaultSize: 'sm',
 } as const

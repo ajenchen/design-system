@@ -120,7 +120,7 @@ export const scrollAreaMeta = {
   tokens: {
     bg: [],
     fg: [],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

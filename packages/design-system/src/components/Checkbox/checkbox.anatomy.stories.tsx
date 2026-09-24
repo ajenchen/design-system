@@ -376,7 +376,7 @@ const InspectorInner = () => {
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
             <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
             <PropRow label="Border"><TkVal token="border" value="1px solid" /></PropRow>
-            <PropRow label="Focus"><TkVal token="ring-2 ring-ring ring-offset-1" /></PropRow>
+            <PropRow label="Focus"><TkVal token=":focus-visible(全域規則,無 class)" value="outline: 2px solid var(--ring) / outline-offset: 2px" /></PropRow>
             <PropRow label="Transition"><TkVal token="duration-150" value="colors" /></PropRow>
           </div>
         </div>

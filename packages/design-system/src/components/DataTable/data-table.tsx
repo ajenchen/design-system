@@ -5234,7 +5234,7 @@ export const dataTableMeta = {
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-surface'],
     fg: ['text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: [],
+    ring: ['focus-ring-inset', '--ring'],
   },
 } as const
 

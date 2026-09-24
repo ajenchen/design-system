@@ -106,7 +106,7 @@ export const accordionMeta = {
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

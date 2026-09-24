@@ -484,7 +484,7 @@ export const calendarMeta = {
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-info', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset', '--ring'],
   },
 } as const
 

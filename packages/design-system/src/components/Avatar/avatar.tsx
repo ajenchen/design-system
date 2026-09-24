@@ -386,7 +386,7 @@ export const avatarMeta = {
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['--foreground', '--on-emphasis'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

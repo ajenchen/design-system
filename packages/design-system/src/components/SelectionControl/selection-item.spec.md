@@ -119,7 +119,7 @@ SelectionItem 是**純 layout primitive**,只處理 3-slot 結構 + padding 公�
 
 ## A11y 預設
 
-SelectionItem 是純佈局元件,本身**不接管**鍵盤、焦點與勾選狀態——只渲染外層 `<div>` 容器加上指向控件的 `<label htmlFor>`(點文字會觸發控件)。鍵盤、焦點環、勾選都由傳入的 `control`(Checkbox / Radio)負責。
+SelectionItem 是純佈局元件,本身**不接管**鍵盤、焦點與勾選狀態——只渲染外層 `<div>` 容器加上指向控件的 `<label htmlFor>`(點文字會觸發控件)。鍵盤、焦點框、勾選都由傳入的 `control`(Checkbox / Radio)負責。
 
 **ARIA / Pattern**:對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 checkbox / radio pattern——由 control 提供。
 
@@ -128,7 +128,7 @@ SelectionItem 是純佈局元件,本身**不接管**鍵盤、焦點與勾選狀�
 - Tab — focus 落在 control 本身
 - Space — 由 control 切換勾選狀態
 
-**Focus**:focus-visible ring 由 control 自己畫——Checkbox / Radio 顯式 `focus-visible:outline-none` + `focus-visible:ring-2 focus-visible:ring-ring`(box-shadow ring,2px、`var(--ring)` 色;checkbox.tsx / radio-group.tsx 控件層 canonical,非全域 `outline` 預設);SelectionItem 不獨立 own focus management。
+**Focus**:焦點框畫在 control 自己身上——Checkbox / Radio 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;checkbox.tsx / radio-group.tsx 不寫任何焦點 class,由 `styles/base.css` 全域規則畫;SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」);SelectionItem 不獨立 own focus management。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

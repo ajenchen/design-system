@@ -136,7 +136,7 @@
    │              bg-neutral-selected-active                              │
    │              bg-muted / bg-secondary                                 │
    │  Border      border-border / border-border-hover / border-divider   │
-   │  Focus       ring-ring                                               │
+   │  Focus       --ring（全域 :focus-visible 外描邊,元件不寫 class）     │
    │  Inverse     bg-inverse-neutral-hover / bg-inverse-neutral-active   │
    │              （solid neutral 上的互動 overlay）                      │
    │                                                                      │

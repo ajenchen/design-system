@@ -385,7 +385,7 @@ export const dateGridMeta = {
   tokens: {
     bg: ['bg-disabled', 'bg-neutral-selected', 'bg-on-emphasis', 'bg-primary', 'bg-primary-hover', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground', 'text-on-emphasis'],
-    ring: ['ring-primary', 'ring-ring'],
+    ring: ['focus-ring-inset', 'focus-ring-inset-emphasis'],
   },
 } as const
 

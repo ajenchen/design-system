@@ -239,7 +239,7 @@ W3C APG carousel pattern 有兩條合法路:**tabbed**(dot `role="tab"` + slide 
 
 - **Arrow**:`<Button variant="tertiary">` 視覺(`bg-surface` + `border-border`,無 elevation shadow),`rounded-full` 圓形(documented 例外),hover-only 顯示,疊於照片 / media 上仍清晰可見
 - **Dots**:photo overlay convention(白點於照片上),active 加寬不變色(對色弱友善)
-- **Focus ring**:鍵盤 focus 走 ring token,滿足 a11y 焦點可見原則
+- **焦點框**:箭頭與指示點都走全域外描邊(`styles/base.css` 的 `:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px }`,元件不寫任何 class);幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(2026-09-24 訂正,原「走 ring token」是已退役的機制)
 
 完整 state × token / class 對照見 anatomy(`ColorMatrix` Arrow + Dots 兩組 + `SizeMatrix`)。
 

@@ -439,7 +439,7 @@ export const carouselMeta = {
   tokens: {
     bg: [],
     fg: [],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

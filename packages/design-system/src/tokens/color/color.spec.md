@@ -215,7 +215,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 |------|------|
 | 主要按鈕 | `bg-primary` |
 | 文字連結 | `text-primary` |
-| Focus ring | `ring-ring` |
+| 焦點框 | `--ring`(全域 `:focus-visible` 外描邊,元件不寫 class) |
 
 ```tsx
 <Button variant="primary">確認</Button>

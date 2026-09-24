@@ -315,7 +315,7 @@ export const segmentedControlMeta = {
   tokens: {
     bg: ['bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'], // selected 態 cva data-[state=on]:text-primary 實際消費(2026-07-06 選中改 base)
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

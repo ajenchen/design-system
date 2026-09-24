@@ -71,7 +71,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **Trigger hover**:文字色 tint 弱化,**不用 underline**
 - **Chevron**:朝下 → data-state=open 旋轉 180° → 朝上,transition 帶平滑
 - **Content 文字**:次要閱讀色—— 主資訊在 trigger,展開內容是補充
-- **焦點環**:鍵盤 focus 用 ring token(非自訂 outline)
+- **焦點框**:鍵盤 focus 畫內描邊(`focus-visible:focus-ring-inset`,往內 2px)—— trigger 撐滿標題列高,往外 +2px 會壓到下方內容區;幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(2026-09-24 訂正,原「用 ring token(非自訂 outline)」方向相反且指已退役的機制)
 
 **為什麼 hover 不用底線**:
 - shadcn 預設 `hover:underline` 是 web 早期 link convention,現代 SaaS(Notion / Linear / Stripe / Vercel)皆不使用

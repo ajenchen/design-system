@@ -415,7 +415,7 @@ export const fileUploadMeta = {
   tokens: {
     bg: ['bg-surface', 'bg-disabled'],
     fg: [],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

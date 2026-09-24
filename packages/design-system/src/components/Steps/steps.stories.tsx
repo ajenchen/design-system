@@ -268,7 +268,7 @@ export const MultipleExpansion: Story = {
               tabIndex={0}
               role="region"
               aria-label="Steps 元件匯入範例程式碼"
-              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:focus-ring-inset"
             >
               <pre className="text-caption p-3 whitespace-pre w-max">
               {"import { Steps } from '@/design-system/components/Steps/steps'"}

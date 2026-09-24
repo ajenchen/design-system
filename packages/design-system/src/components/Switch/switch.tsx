@@ -422,7 +422,7 @@ export const switchMeta = {
     // bg-on-emphasis = Thumb 白圓(Thumb className)— 兩者 code 實際消費,meta 原漏列
     bg: ['bg-border', 'bg-on-emphasis', 'bg-primary'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

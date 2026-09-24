@@ -349,7 +349,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
 **ARIA / Pattern**:繼承 Radix `checkbox` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/checkbox#accessibility)。
 
-**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。鍵盤聚焦時顯示 visible ring(`focus-visible:ring-2 ring-ring ring-offset-1` per design-system focus-visible canonical)。
+**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。焦點指示分兩路,對應兩個真 tab stop:**edit 控件**(Radix `<button role="checkbox">`;`checkbox.tsx` 不寫任何焦點 class)吃 `styles/base.css` 的全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px);**Field 內的 readonly 灰框**(`checkbox.tsx:287-299` 的 `<div role="checkbox" tabIndex={0}>`,消費 `fieldWrapperStyles({ mode: 'readonly' })`)走 Field 家族統一的「欄位邊框轉主色 1px」——靜止的 1px 透明邊框聚焦時轉成主色,同一行的 `focus-visible:outline-none` 把全域外描邊壓掉,長相與可編輯欄位一致(user 2026-09-10 拍板,見 `../Field/field-wrapper.tsx` 檔頭 JSDoc)。standalone 的 readOnly 走 `tabIndex={-1}`(`checkbox.tsx:323`),不是 tab stop。SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

@@ -307,7 +307,7 @@ export const ratingMeta = {
   tokens: {
     bg: ['bg-transparent'],
     fg: [],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

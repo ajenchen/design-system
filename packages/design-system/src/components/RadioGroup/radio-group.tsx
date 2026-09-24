@@ -410,7 +410,7 @@ export const radioGroupMeta = {
   tokens: {
     bg: ['bg-disabled', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

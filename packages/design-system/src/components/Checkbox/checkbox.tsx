@@ -386,7 +386,7 @@ export const checkboxMeta = {
   tokens: {
     bg: ['bg-disabled', 'bg-primary', 'bg-primary-hover', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

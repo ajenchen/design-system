@@ -251,7 +251,7 @@ Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 - Tab — focus
 - Space / Enter — toggle on/off
 
-**Focus**:Switch 本體是原生切換按鈕,本身即可被 Tab 聚焦;聚焦時的 focus-visible ring 由 design-system 的 focus-visible 樣式提供(`focus-visible:ring-2 focus-visible:ring-ring`)。Switch 是單一控件,不涉及 focus trap / restoration(那是 Dialog / Popover 等容器才有的行為)。
+**Focus**:Switch 本體是原生切換按鈕,本身即可被 Tab 聚焦;聚焦時的焦點框由 `styles/base.css` 全域 `:focus-visible` 外描邊提供(`outline: 2px solid var(--ring)`,往外 2px;`switch.tsx` 不寫任何焦點 class;SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」)。Switch 是單一控件,不涉及 focus trap / restoration(那是 Dialog / Popover 等容器才有的行為)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

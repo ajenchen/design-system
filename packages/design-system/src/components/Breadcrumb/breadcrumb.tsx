@@ -558,7 +558,7 @@ export const breadcrumbMeta = {
   tokens: {
     bg: [],
     fg: ['text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

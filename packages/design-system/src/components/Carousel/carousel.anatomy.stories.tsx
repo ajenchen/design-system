@@ -293,7 +293,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>focus-visible</Td>
                 <Td mono><TokenCell token="--surface" /></Td>
-                <Td mono>ring-2 ring-ring ring-offset-1</Td>
+                <Td mono>outline: 2px solid var(--ring),往外 2px(全域 :focus-visible 規則,無 class)</Td>
                 <Td mono>—</Td>
                 <Td mono>1(強制顯示 / a11y)</Td>
               </tr>
@@ -511,7 +511,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible ring(`ring-2 ring-ring ring-offset-1`);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
+      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);dot focus-visible 同走全域外描邊(原生 `<button>`,不寫任何 class)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
     </div>
   ),
 }

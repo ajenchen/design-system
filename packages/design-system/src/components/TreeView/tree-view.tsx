@@ -1530,7 +1530,7 @@ export const treeViewMeta = {
   tokens: {
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset'],
   },
   defaultSize: 'md',
 } as const

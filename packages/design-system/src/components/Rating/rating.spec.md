@@ -157,7 +157,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 | Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨品牌 primary 色變動 |
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的輪廓色;借 `--divider` semantic alias(neutral-4,user 2026-05-09 拍板),與分隔線同級的 muted-fill |
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽，給予 preview 回饋；星星尺寸不變 |
-| Focus ring | `ring-2 ring-ring ring-offset-2` + `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器顯示 focus ring（**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
+| Focus ring | `:focus-visible`(全域規則,無 class)+ `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器顯示全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class,圓角跟著 `rounded-md`;**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
 | Gap between stars | `gap-1` | 4px | 五顆星之間的間距，不隨 size 變化 |
 | Disabled | `opacity-disabled` + `pointer-events-none` | — | 整體降透明度，阻擋所有事件 |
 

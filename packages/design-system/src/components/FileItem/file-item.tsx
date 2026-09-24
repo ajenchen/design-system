@@ -268,10 +268,23 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
             // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
             'group/row relative flex items-start gap-2 w-full text-body leading-compact',
             // 2026-09-07 H1g:限定只接下面那顆隱形整列鈕(keyboardPrimaryAction)。
-            // 原本裸寫 `has-[:focus-visible]` 不分對象,trailing action 的 <Button> 自帶
-            // ring(button.tsx:66)被聚焦時整列也跟著畫 → 一次互動兩個焦點框,
-            // 違反 focus-canonical「一個項目只有一個指示器」。
-            'has-[[data-row-focus-target]:focus-visible]:ring-2 has-[[data-row-focus-target]:focus-visible]:ring-ring',
+            // 原本裸寫 `has-[:focus-visible]` 不分對象,trailing action 的 <Button> 被聚焦時整列也跟著畫 →
+            // 一次互動兩個焦點框,違反 focus-canonical「一個項目只有一個指示器」。當時 <Button> 自帶
+            // ring;2026-09-16 a7b2be94 起它不再自帶焦點 class、改吃全域外描邊,但限定的理由不變。
+            // 幾何(2026-09-24 user 拍板「可以照你建議內描邊」):**內描邊**。原本寫的 `ring-2 ring-ring`
+            // 是 2026-09-07 就退役的第二套機制,只因閘的舊 regex 只認裸寫的 `focus-visible:ring-2`、
+            // 不認這裡的 `has-[…:focus-visible]:` 括號變體才活到今天(該洞同日已補,見
+            // scripts/focus-geometry-invariant.mjs R2)。
+            // **理由是結構性的**:拿到焦點的是下面那顆 `opacity-0` 的隱形整列鈕,它自己畫不出框,
+            // 指示器改畫在列上 —— 這是 focus-canonical「刻意不畫的唯一合法理由是指示器畫在別的元素上,
+            // 而且必須指得出承擔者」認可的形狀,承擔者就是本行所在的這個列 div。全域外描邊只作用在
+            // 「被聚焦的那個元素」身上,套不到非焦點的列;能掛在列上的只有 focus-ring-inset 與填色專用的
+            // focus-ring-inset-emphasis,列不是主色填色 → focus-ring-inset。
+            // **不是** item-anatomy「選中 × 互動疊加」表那句「列撐滿容器寬度,左右沒有 2px 可以往外長」:
+            // 那格的消費者清單沒有 FileItem,且它描述的是無圓角、items 緊貼無間隙的列;FileItem 的列有圓角、
+            // 列間 4–12px、左右 16px,那個前提在本元件為假(2026-09-24 審查抓到,勿寫回)。
+            // 也**不是**因為捲動容器會裁切 —— 捲動與否明文不進判準。
+            'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
             // surface=form → border card(自立輪廓);surface=upload-manager → 無邊框(box 自身是容器,
             // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。
             // 2026-06-03 圖五:upload-manager rich 拿掉 px+py(卡片移除後 py 多餘,列高靠 avatar 48 的 content minHeight;
@@ -319,8 +332,10 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
           'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact rounded-md',
           compactStaticBg,
-          // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接自帶 ring 的 trailing <Button>
-          'has-[[data-row-focus-target]:focus-visible]:ring-2 has-[[data-row-focus-target]:focus-visible]:ring-ring',
+          // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接同樣會畫框的 trailing <Button>;
+          // 幾何同 rich 的內描邊(結構性理由見上方那段)。compact 列若有進度條,它貼著列底,
+          // 會蓋住內描邊底邊那一段;日後要動進度條的貼底位置,這裡的底邊長相會跟著變。
+          'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
           hoverClass,
           className,
         )}
@@ -371,7 +386,7 @@ export const fileItemMeta = {
   tokens: {
     bg: ['bg-secondary', 'bg-surface'],
     fg: ['text-fg-muted', 'text-fg-secondary'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

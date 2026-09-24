@@ -367,7 +367,7 @@ export const paginationMeta = {
     bg: ['bg-surface', 'bg-neutral-hover', 'bg-neutral-active'],
     fg: ['text-foreground', 'text-primary', 'text-primary-hover', 'text-primary-active', 'text-fg-muted', 'text-fg-secondary', 'text-fg-disabled'],
     border: ['border-primary', 'border-primary-hover', 'border-primary-active'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

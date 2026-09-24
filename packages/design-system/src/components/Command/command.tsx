@@ -406,7 +406,7 @@ export const commandMeta = {
   tokens: {
     bg: ['bg-divider', 'bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'], // 2026-07-04 補:CommandSeparator h-px bg-divider 實際消費
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

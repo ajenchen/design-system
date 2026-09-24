@@ -61,8 +61,10 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
-      // 唯讀:邊框保持透明(不轉色),焦點指示 = 全域外描邊。wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器),
-      // 全域規則直接生效;control 宿主(<textarea>)自己寫了 outline-none,在這裡解除(見本檔頂端 JSDoc)。
+      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),聚焦時把它轉成主色 —— 焦點指示與編輯態同一種長相,
+      // 不是全域外描邊(Field 家族「一個家族一種焦點長相」,user 2026-09-10 拍板;見本檔頂端 JSDoc)。
+      // wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器):focus-within:!border-primary 畫框,同一行的
+      // focus-visible:outline-none 把全域外描邊壓掉;control 宿主(<textarea>)焦點就在自己身上,用 focus-visible:!border-primary。
       // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
       //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
       className: wrapper

@@ -1216,7 +1216,7 @@ export const fileViewerMeta = {
   tokens: {
     bg: ['bg-muted', 'bg-neutral-selected', 'bg-overlay', 'bg-surface-raised'],
     fg: ['text-fg-muted', 'text-foreground'],
-    ring: ['ring-primary', 'ring-ring'],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

@@ -1211,7 +1211,7 @@ export const WithBulkActions: Story = {
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'include', ids: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                       >
                         清除選取項目
                       </button>
@@ -1223,7 +1223,7 @@ export const WithBulkActions: Story = {
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'all', excluded: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                       >
                         點此選取全部 {TOTAL} 個項目
                       </button>

@@ -220,7 +220,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 指標 | 數字 |
 |---|---|
 | 用 `focus-visible:` 的元件檔 | 47 |
-| `ring-ring` 出現次數 | 85 |
+| `ring-ring` 出現次數 | 85(2026-09-06 當時)→ **2026-09-24 重數 = 0 個活用法**;現存 2 筆都是記錄遷移的歷史註解(`radio-group.tsx` / `file-item.tsx`)|
 | 用 `focus-within:`(即共用 focus 那類)的元件 | 8 — AgentPanel / Carousel / DataTable / Field / FileViewer / LinkInput / PeoplePicker / Select |
 | `ring-inset` | 2(DataTable、TreeView)|
 | `--neutral-selected-focus` 的用法 | **0**(2026-09-07 退役;2026-09-06 當時是 4 活 + 1 死)|

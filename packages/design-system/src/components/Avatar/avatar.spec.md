@@ -84,7 +84,7 @@ hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的�
 當 Avatar 有 `hoverCard` prop,Avatar wrapper **必 keyboard focusable**,讓 keyboard-only user 也能 reach ProfileCard popover。Avatar 元件內部自動套:
 - `tabIndex=0`(可 Tab 到;focus 時 Radix hover-card 自動開卡)
 - `role="img"` + `aria-label`(取 `alt`)——2026-07-07 CI axe 補修:aria-label 掛在無 role 的 generic `<div>` 是 ARIA 禁用組合(axe `aria-prohibited-attr`,serious);Avatar 語義本質 = 身份圖像,`role="img"` 讓命名合法、子孫自動 presentational、不對 AT 承諾任何互動行為
-- `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1`(keyboard focus 視覺 indicator)
+- 全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 focus class,wrapper 只依 `shape` 帶 `rounded-full` / `rounded-md` 讓外描邊圓角跟隨形狀)(keyboard focus 視覺 indicator)
 - **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 user 拍板拆除):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA)
 - 若無 `hoverCard` → 純展示 `<div>` 不 focusable(避免 tabTrap 噪音)
 
@@ -245,7 +245,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - **無 `alt` 時 fallback**:image 模式自動降級 initials / icon;一律不靜默渲染無 SR 標的元素。
 - **Status dot SR 處理**:status dot 內部 span `aria-hidden`(presence 訊號整合進 parent `alt`),避免 `role="status"` live region 在 member list 造成 SR 洪水(詳「Status dot a11y」段)。
 - **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N unread"` 提供計數語義(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
-- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ `focus-visible:ring-2`,確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
+- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
 - **Image alt 語意**:meaningful image(person photo / brand logo)用實質 `alt`;decorative-only(極少)走 `alt=""`,但 Avatar 本質是身份識別,decorative 用法應改用 Icon 元件。
 
 ---
@@ -254,7 +254,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 
 Avatar 是**身份視覺 primitive**(顯示人 / 組織 / 物件的代表視覺),本身無自有的 hover / active / selected 互動 state。但有兩個由 context 委派 / 自管的視覺 state,故 anatomy 仍有 `StateBehavior` story(內容降級 fallback chain + status presence dot 四態):
 
-- **focus-visible**:Avatar 帶 `hoverCard` prop 時 wrapper 變 focusable,委派 keyboard focus + `focus-visible:ring-2 focus-visible:ring-ring` 給該 wrapper(見「Keyboard 可達 canonical」段);無 `hoverCard` 則純展示不 focusable。
+- **focus-visible**:Avatar 帶 `hoverCard` prop 時 wrapper 變 focusable,委派 keyboard focus 給該 wrapper,焦點框走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;wrapper 不寫任何 focus class)(見「Keyboard 可達 canonical」段);無 `hoverCard` 則純展示不 focusable。
 - **disabled**:Avatar 在 disabled Field wrapper context 內經 `fieldCtx` 自套 `opacity-disabled` self-dim(見「Disabled」段),非互動 state 而是視覺 context state。
 - hover 行為(彈 ProfileCard)由 `hoverCard` prop 委託給 HoverCard primitive,屬 HoverCard 的 state 不屬 Avatar。
 

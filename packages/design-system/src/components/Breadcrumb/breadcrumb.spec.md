@@ -123,7 +123,7 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 - **Default**：`text-fg-secondary`
 - **Hover**：`text-primary-hover`（使用者要求的核心互動）
 - **Active/Click**：瀏覽器原生 `:active` 反饋，不特別覆寫
-- **Focus-visible**：`ring-2 ring-ring ring-offset-1`（對齊全系統 focus 規則）
+- **Focus-visible**：全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`，往外 2px；元件不寫任何 class，對齊全系統 focus 規則）
 - **Disabled**：通常 breadcrumb link 不會 disabled（如果需要，consumer 自己處理為 `BreadcrumbPage` 樣式）
 
 ### `BreadcrumbPage`
@@ -257,7 +257,7 @@ ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節
 - Tab — 逐個 link 導覽
 - Enter — navigate
 
-**Focus**:聚焦時顯示 visible ring;`BreadcrumbLink` 用 `focus-visible:ring-2 ring-ring ring-offset-1`（box-shadow ring，對齊全系統 focus-visible canonical，見上方「互動狀態」段），`BreadcrumbEllipsis` 按鈕（消費 `ItemInlineActionButton`）用 `focus-visible:outline-2 outline-ring`。連結逐個依序成為 tab stop,不攔截焦點(無 focus trap — breadcrumb 是序列式導覽,trap 反而是無障礙 bug)。
+**Focus**:聚焦時顯示焦點框;`BreadcrumbLink` 與 `BreadcrumbEllipsis` 按鈕（消費 `ItemInlineActionButton`）都吃全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`，往外 2px；元件不寫任何 class，對齊全系統 focus-visible canonical，見上方「互動狀態」段）。連結逐個依序成為 tab stop,不攔截焦點(無 focus trap — breadcrumb 是序列式導覽,trap 反而是無障礙 bug)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
