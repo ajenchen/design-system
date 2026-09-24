@@ -151,6 +151,11 @@ jobs:
           # 本閘不驗 class 有沒有寫(那又是代理),直接量渲染出來的線:一般欄邊界必須同高同位。
           # 它要 storybook-static + chromium,所以實際跑在 verify-browser-datatable(本 job 沒有瀏覽器,
           # 2026-09-24 第一次放這裡就是 `Executable doesn't exist` 紅)。
+          # 同族第六面:閘開頭驗的是「那一刻」的建置,之後每次導覽卻從活的 storybook-static 讀檔。
+          # 2026-09-24 本機:別的 agent 同時 build-storybook 清空輸出目錄 → 404 → 被判成「表格沒有列」。
+          # 瀏覽器閘改從本次獨佔的快照供檔(scripts/lib/storybook-static-snapshot.mjs);這支是它的
+          # 兩面對照(缺標記 / 複製期間被重建 → 以儀器失效拒絕;快照建好後原目錄被清空 → 不受影響)。
+          npm run test:storybook-static-snapshot
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
