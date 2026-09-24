@@ -149,7 +149,8 @@ jobs:
           # 2026-09-24:表頭短線由 ResizeHandle 附帶畫,而系統欄(選取/拖曳/列動作)不可調寬、
           # 不渲染它 → 選取欄整條欄間線靜默消失,勾選框與第一個資料欄在視覺上併成同一個盒。
           # 本閘不驗 class 有沒有寫(那又是代理),直接量渲染出來的線:一般欄邊界必須同高同位。
-          npm run test:datatable-column-divider
+          # 它要 storybook-static + chromium,所以實際跑在 verify-browser-datatable(本 job 沒有瀏覽器,
+          # 2026-09-24 第一次放這裡就是 `Executable doesn't exist` 紅)。
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
@@ -281,6 +282,8 @@ jobs:
           node scripts/test-distribute-column-widths.mjs
           node scripts/test-fast-scroll-gate-policy.mjs
           node scripts/data-table-invariants.mjs
+          # 表頭欄間線一致性(2026-09-24,理由寫在 verify-static 的「Registered test scripts」那一段)。
+          npm run test:datatable-column-divider
           node scripts/data-table-scrollbar-visibility.mjs --quick
           node scripts/data-table-scroll-cost.mjs
           # 快速捲動「中央整片白」(2026-09-09):量合成器真正送出的每一幀(CDP screencast + 合成手勢),不是 DOM、不是預估。

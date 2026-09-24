@@ -26,7 +26,7 @@
  *
  * 用法: node scripts/data-table-column-divider-invariant.mjs [--selftest]
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -188,6 +188,12 @@ async function measure(story) {
 if (process.argv.includes('--selftest')) {
   selftest()
 } else {
+  // 缺前置 ≠ 產品壞了:gate-meta lane 的拋棄式快照裡沒有 storybook-static,
+  // 沒有這道守衛時 baseline 會卡在 gotoStory 逾時,被共用跑法誤判成「現況紅」。
+  if (!existsSync(join(STATIC, 'iframe.html'))) {
+    console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
+    process.exit(2)
+  }
   let total = 0
   let failed = 0
   for (const story of STORIES) {
