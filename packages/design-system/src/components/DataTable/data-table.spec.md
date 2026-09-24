@@ -653,6 +653,7 @@ preserveSelectionOnFilter?: boolean   // default false
   - **現行理由是世界級一手對照**:AG Grid / MUI X Data Grid / react-data-grid / Glide Data Grid 四家的 cell 都是點擊目標,而且**四家沒有任何一家讓選取格的空白處變成死區** —— AG Grid 聚焦該 cell(原始碼註解逐字 "we need to make sure the cell wrapping that checkbox is focused")、MUI X 該 cell 出現 focus outline、react-data-grid 該 cell 變 active cell、Glide 直接選列(整格無命中測試)。
   - **「命中區 = 懸停回饋形狀」那條規則不適用於表格的格**:三家是「hover 畫在列、點擊目標卻是格」,形狀本來就不一致。那條規則的成立範圍是**控件層**(按鈕、行內動作),owner 與撤回紀錄見 `ds-canonical/references/hit-area-canonical.md`「適用範圍」節。
   - **也不依「有沒有畫垂直格線」分流**:查無一手依據。真正切的那一刀是 `cellSelection` 這類 feature flag —— AG Grid 的 `columnBorder` 預設是透明色,同一份 DOM、同一份 JS,只差上不上色。
+  - **選取欄在格線模式下有自己的欄間線**(user 2026-09-24 拍板補回來)。它曾有過專用規則,2026-05-12 退役時說好「走 inlineEdit canonical」,但 tsx 的選取欄分支在套上 `dtCellGrid` 之前就 early-return —— 舊線拿掉、新線沒接到,**兩頭落空**。實測全表 325 個格有格線、選取格是唯一沒有的那一個,勾選框與第一個資料欄視覺上併成同一個盒。現在列身與表頭都套 `dtCellGrid`,本區最後一欄仍不畫(`data-dt-last-col`,凍結邊界線 / 外框接管)。**這條跟可點範圍無關** —— 上一條已明記「有格線 → 整格可點」查無一手依據;補線是視覺 bug 修復,兩件事不綁在一起。
 
 ### 五、Disabled rows
 
@@ -939,6 +940,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 **Keyboard 行為**(目前實作 — `tableKeyboardHandler`):
 - ↑↓←→:cell-to-cell navigation **僅 `spreadsheetMode` opt-in 時生效**;selection 尚未建立時按方向鍵自動選取第一個 visible cell(鍵盤可直接進入 spreadsheet 導覽,無需滑鼠 click — 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」,2026-07-05 D4 補);預設模式方向鍵無作用
 - Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url 時);**Enter 確認後維持原格不下移**(2026-07-05 user 拍板;10 家實查:Excel 系 7 家下移、AG Grid 預設維持原格 — 採 AG Grid 派,數據 → `.claude/logs/deep-audit-2026-07-03/enter-commit-navigation-benchmark.json`;未來連續輸入需求可重議 opt-in);**edit 退出(commit / Esc)後 selection 還原至該 cell、焦點還給 table root**(editor unmount 後焦點掉到 body 才收回,不搶 user 點擊的新焦點 — 對齊 spreadsheet RFC Contract 11 + Excel / AG Grid,2026-07-05 D4 補)
+  - **兩個鍵都給的理由是跨元件規則**(owner → `ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵」):**`F2` 恆為進格;`Enter` 在該格的主要動作沒有佔走它時,也是進格**。本元件的檢視態儲存格沒有主要動作,所以兩個都給;`Calendar` 日期鈕的 `Enter` 被「選這一天」佔走,所以只給 `F2`。新元件照這條判,不要再逐案挑鍵。
 - Cmd/Ctrl+A:`mode="multi"` selection 時選全可見列(扣 disabled)
 - Esc:取消 editing(spreadsheet)/ 清 selection(selection mode);**IME 組字中的 Enter / Esc 不觸發 commit / cancel**(cell editor 帶 `isComposing` guard,2026-07-05 D4 補 — 中文選字 Enter 不誤提交半截組字)
 - Tab:進入表格後操作排序與勾選;portal edit(`experimentalActiveEditorController`)中 Tab / Shift+Tab = commit 當前 draft + 移至下一個 editable cell 進 edit(2026-07-05 D4 補 commit — 原本換格丟 draft)

@@ -296,6 +296,8 @@ Toolbar 的 prev / 今天 / next / 新事件 CTA 是格陣外的標準控件,各
 
 **為什麼進格用 `F2` 而不是 `Enter`**:APG 的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2` **並列**為慣例(原文:"Following are common keyboard conventions for disabling and restoring grid navigation functions.",其下同時列 Enter 與 F2);但同一份 APG 的 Date Picker Dialog 範例把 `Space/Enter` 指派給「選這一天」。本元件的日期鈕有 `onDateClick` 這個真實動作,若把 `Enter` 改成進格就會蓋掉它。取 `F2` 是在 APG **明文列出的兩個慣例之間**擇一,不是自創第三種。
 
+這已經收成**跨元件規則**,不再是本元件的逐案選擇:`ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵」—— **`F2` 恆為進格;`Enter` 在該格的主要動作沒有佔走它時,也是進格**。本元件的 `Enter` 被 `onDateClick` 佔走,所以只給 `F2`;`DataTable` 的檢視態儲存格沒有主要動作,所以兩個都給。同一條規則解釋兩者,不需要例外清單。
+
 **為什麼跨月的界線是「格陣邊界」而不是「月份邊界」**:APG Date Picker Dialog 的月曆只畫當月(參考實作 `datepicker-dialog.js` 的 `updateDate()` 對非當月的格 `domNode.textContent = ''` 並加 `disabled`),所以那裡「離開當月」等於「離開畫面」。本元件的 outside day 是**有事件、可點的真格**(見「Cell 規則 > Outside day cell」),因此等價的不變式是「焦點日必須是一個畫得出來的格」:方向鍵走到 outside day 時月份不動(那一格本來就在眼前),只有走出整個格陣才換月,換月後焦點必定落在目標那一天。
 
 **刻意不實作的 APG 選配鍵**:

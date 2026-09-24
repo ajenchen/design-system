@@ -177,6 +177,39 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 
 **兩者在同一個側欄並存完全合規**,`sidebar.spec.md` 的決策樹「兩者都有 → SidebarMenu + TreeView 分區」對齊 VS Code 的三模型並存。
 
+
+## 進格用什麼鍵(跨元件規則,2026-09-24 訂)
+
+composite 容器裡,格子本身可能還裝著別的控件(表格的編輯器、月曆格裡的事件方塊)。
+**從「在格之間移動」切換成「操作格內的東西」要按哪個鍵**,規範給了兩個並列的慣例,
+所以這是必須自己訂、而且必須全 DS 一致的一格。
+
+W3C APG Grid Pattern 的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2`
+**並列**為慣例,逐字:"Following are common keyboard conventions for disabling and restoring
+grid navigation functions."(其下同時列出 Enter 與 F2)。`F2` 那條逐字:
+"If the cell contains one or more widgets, places focus on the first widget."
+出格逐字:"Escape: restores grid navigation." / "F2: ... A subsequent press of F2 restores grid navigation functions."
+
+### 規則
+
+> **`F2` 恆為「進格」。`Enter` 在該格的主要動作沒有佔走它時,也是「進格」。
+> 出格一律 `Escape`,`F2` 亦可。**
+
+**為什麼不是「一律用 Enter」或「一律用 F2」**:因為有些格的 `Enter` 已經有主要動作
+(月曆的日期鈕 `Enter` = 選這一天,而 W3C APG 的 Date Picker Dialog 範例就是這樣指派),
+硬要 `Enter` 進格會把那個動作蓋掉;而有些格沒有主要動作(表格的檢視態儲存格),
+少一個入口只是讓使用者更難用。**一條規則同時解釋兩種情況,不需要例外清單。**
+
+### 本 DS 的兩個消費者
+
+| 元件 | 格的主要動作 | `Enter` | `F2` | 出格 |
+|---|---|---|---|---|
+| `DataTable`(inline edit / spreadsheet)| 檢視態儲存格**沒有**主要動作 | 進編輯(`data-table.tsx` 的 `e.key === 'Enter' \|\| e.key === 'F2'`)| 進編輯 | `Escape` |
+| `Calendar` 月檢視 | 日期鈕 `Enter` = `onDateClick` 選這一天 | **不進格**(留給選日期)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
+
+**新元件照這條判,不要再逐案挑鍵。** 問一句就好:**這一格的 `Enter` 有沒有被主要動作佔走?**
+沒有 → `Enter` 與 `F2` 都給;有 → 只給 `F2`。
+
 ## 鐵律:宣告了 composite 角色,就必須真的實作那套鍵盤
 
 `role="grid"` / `role="listbox"` / `role="tree"` / `role="tablist"` 一旦寫上去,

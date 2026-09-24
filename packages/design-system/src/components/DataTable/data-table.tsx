@@ -3129,7 +3129,15 @@ function DataTableInner<TData>(
           // / Linear idiom)。**只有 inlineEdit + selectable 模式且 select 不在 leftBody 邊界時** style
           // 才生效(避免雙線)— CSS 用 `:not(:last-child)` selector 處理。
           data-column-id={SELECT_COL_ID}
-          className={cn('flex items-center justify-center shrink-0', !isDisabled && 'cursor-pointer')}
+          // 欄間線:選取欄跟其他欄一樣走 `dtCellGrid`(user 2026-09-24 拍板)。
+          // 它曾經有過自己的 ad-hoc 規則(`[data-column-id="__select__"]:not(:last-child)`),
+          // 2026-05-12 退役時註解寫的理由是「走 inlineEdit canonical」—— 但這個分支在套上
+          // `dtCellGrid` 之前就 early-return 了,於是舊線被拿掉、新線沒接到,**兩頭落空**。
+          // 實測(roadmap-all-in-one):全表 325 個格有格線,選取格是唯一沒有的那一個,
+          // 於是勾選框跟第一個資料欄在視覺上併成同一個盒。這是「規則說由某某接手,
+          // 而某某根本碰不到它」那一族(M37)。
+          data-dt-last-col={isLastInRegionCell ? '' : undefined}
+          className={cn('flex items-center justify-center shrink-0', inlineEdit && 'dtCellGrid', !isDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
           onClick={onCellClick}
         >
@@ -3640,7 +3648,10 @@ function DataTableInner<TData>(
           role="columnheader"
           // 整格可點，同列身選取格（理由與 2026-09-24 那次錯誤拿掉的完整經過見列身那段長註解）。
           // 同族兩處永遠一起改（M10）：只改一邊就是「另一條不變」那種沒掃完的訊號。
-          className={cn('flex items-center justify-center shrink-0 select-none', !isHeaderDisabled && 'cursor-pointer')}
+          // 欄間線:與列身選取格同步(見那邊的長註解)。表頭的通用分隔線機制在泛用分支裡,
+          // 這個分支 early-return 碰不到,所以跟列身一樣直接套 `dtCellGrid`,線畫在同一個像素位置。
+          data-dt-last-col={showDivider ? undefined : ''}
+          className={cn('flex items-center justify-center shrink-0 select-none', inlineEdit && 'dtCellGrid', !isHeaderDisabled && 'cursor-pointer')}
           style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
           onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >

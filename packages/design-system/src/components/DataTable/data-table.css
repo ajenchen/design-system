@@ -194,6 +194,12 @@
    Panel boundary divider canonical(Round 5.2 re-apply per user「你們都同意就做」):
    ────────────────────────────────────────────────────────────
    原 `[data-column-id="__select__"]:not(:last-child)` retire — 走 inlineEdit canonical。
+   **2026-09-24 補完這句話**:退役當下說好「走 inlineEdit canonical」,但 tsx 裡選取欄的
+   render 分支在套上 `.dtCellGrid` 之前就 early-return,於是舊線拿掉、新線沒接到,**兩頭落空**。
+   實測(專案排程全功能整合):全表 325 個格有格線,選取格是唯一沒有的那一個,
+   勾選框跟第一個資料欄視覺上併成同一個盒。user 2026-09-24 拍板補回來 ——
+   現在列身與表頭的選取格都真的套了 `dtCellGrid`,那句「走 inlineEdit canonical」才成立。
+   這是「規則說由某某接手,而某某根本碰不到它」那一族(M37)。
 
    Panel boundary mechanism 把 divider 畫在 panel 內側 1px(paint-only,不入 box model),**不用**
    `border-r/l border-divider` outer edge。為何:Windows V scrollbar paint 蓋 outer-edge
