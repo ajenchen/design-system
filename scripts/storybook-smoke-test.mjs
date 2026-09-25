@@ -6,11 +6,11 @@
 //   runtime stories 全 render 過(eg. React.Children.only 是 runtime error)。
 //
 // 流程:
-//   1. assume storybook-static/ 已 build(CI 先跑 npm run build-storybook)
-//   2. serve static via http.server(port 8920)
+//   1. assume storybook-static/ 已 build(或 `--static=<dir>` 指定另一份建置)
+//   2. 以 lib/a11y-static-server.mjs 從本次獨佔的建置快照供檔(有同源 404 帳本)
 //   3. fetch index.json → 拿全部 story id list
-//   4. Playwright visit 每個 iframe.html?id=<story>
-//   5. assert 0 console error AND 0 pageerror
+//   4. 每一則以 lib/launch-browser.mjs 的 openStory 開啟並等到 Storybook 回報渲染完成(含 play)
+//   5. assert 0 console error AND 0 pageerror AND story 沒有渲染拋錯
 //   6. 任一 fail → exit 1 with details
 //
 // ⚠️ **這支目前不在 CI 裡**(2026-09-18 實測 `grep -rn storybook-smoke .github/workflows package.json` = 0 筆)。
@@ -19,21 +19,35 @@
 // `scripts/overlay-footer-gutter-invariant.mjs` —— 它本來就要逐一開啟全部 story,順手檢查有沒有掉進
 // Storybook 的錯誤畫面,不必為此再跑一次全庫掃描。本檔保留作為手動 / 本機工具(它另外還驗 console error,涵蓋面更廣);
 // 要把它排進 CI 時,請連同「跑多久、放哪個 job」一起決定,不要只加一行 npm script。
+//
+// ── 2026-09-25:「開起來了」改由共用的 openStory 判定,建置缺檔不再被讀成「story 壞了」 ──
+// 原本:python http.server 讀活的 storybook-static + `domcontentloaded` + 固定睡 400ms 當「已渲染」,
+// 同一個 context 並行開 6 個 page。實測本機 storybook-static 有 25 個 0 位元組檔時,它印出「388 則全部 Failures」——
+// 那是**建置壞了**(preview.js 讀不到),不是 388 則 story 壞了;固定睡 400ms 也可能在 story 模組還沒載完時就收工(M37)。
+// 現在:
+//   - 每則 story 由 openStory 等 Storybook 回報渲染完成(含 play)+ render-health;渲染完成後再等兩個影格
+//     (React 的被動 effect 在 commit 之後才跑,晚到的 console.error 在那之後才出現)
+//   - **產品裁決**(Failures):story 自己渲染拋錯(Storybook 錯誤頁 / render errored / 頁面例外,且同源沒有缺檔)、
+//     或渲染期間有非雜訊的 console error —— 這正是這支工具要抓的 runtime bug
+//   - **儀器失效**(Unprobed):導覽失敗、等不到渲染完成、同源檔案 404 / 載入失敗、空畫面等 —— 點名 story、附原因與 404,
+//     exit 1,**不是產品裁決**,也不算通過
+//   - 並行改成 N 個瀏覽器、每個瀏覽器只開一個 page 重複使用(lib/launch-browser.mjs:`--single-process` 下
+//     同一個 context 開多個 page 不穩);換下一則之前先導到 about:blank,讓這一則的晚到 console 訊息記在它自己頭上
 
-import { spawn } from 'node:child_process'
-import { existsSync, statSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { existsSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
-const STATIC_DIR = join(REPO_ROOT, 'storybook-static')
-const PORT = 8920
+const STATIC_ARG = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
+const STATIC_DIR = STATIC_ARG ? resolve(STATIC_ARG) : join(REPO_ROOT, 'storybook-static')
 
 if (!existsSync(STATIC_DIR)) {
-  console.error('❌ storybook-static/ not found. Run `npm run build-storybook` first.')
+  console.error(`❌ ${STATIC_DIR} not found. Run \`npm run build-storybook\` first.`)
   process.exit(1)
 }
 
@@ -58,7 +72,7 @@ if (!existsSync(STATIC_DIR)) {
     if (existsSync(root)) walk(root)
   }
   if (stale.length) {
-    console.error('❌ storybook-static/ 比 src 舊(stale build = 假綠燈)。先跑 `npm run build-storybook` 再 smoke。')
+    console.error(`❌ ${STATIC_DIR} 比 src 舊(stale build = 假綠燈)。先跑 \`npm run build-storybook\` 再 smoke。`)
     console.error('   比 build 新的檔案(前 5):')
     for (const p of stale) console.error('   ' + p.replace(REPO_ROOT + '/', ''))
     console.error(`   build mtime: ${new Date(staticMtime).toISOString()}`)
@@ -66,19 +80,16 @@ if (!existsSync(STATIC_DIR)) {
   }
 }
 
-// Spawn http.server
-console.log('=== Spawn http.server ===')
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--directory', STATIC_DIR], {
-  stdio: ['ignore', 'ignore', 'ignore'],
-})
-await new Promise((r) => setTimeout(r, 1500))
+// 從本次獨佔的建置快照供檔(不再讀活目錄:別人同時 build-storybook 會清空它);建置不完整會以 INSTRUMENT 丟出
+console.log('=== Serve build snapshot ===')
+const server = await startA11yStaticServer({ rootDirectory: STATIC_DIR, defaultFile: 'iframe.html' })
 
 let exitCode = 0
 
 try {
   // Fetch story index
   console.log('=== Fetch story index ===')
-  const indexRes = await fetch(`http://localhost:${PORT}/index.json`)
+  const indexRes = await fetch(`${server.origin}/index.json`)
   if (!indexRes.ok) {
     console.error(`❌ Cannot fetch index.json: HTTP ${indexRes.status}`)
     process.exit(1)
@@ -151,14 +162,12 @@ try {
   const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: REPO_ROOT, environment: process.env })
   if (!runtime) throw new Error('[storybook-smoke] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
   process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
-  const { chromium } = await import(join(REPO_ROOT, 'node_modules/playwright/index.mjs'))
-  const browser = await launchBrowser()
-  const ctx = await browser.newContext()
+  await import(join(REPO_ROOT, 'node_modules/playwright/index.mjs'))
 
   // Known noise patterns(non-actionable runtime warnings,not real errors)
   // — recharts: width(-1)/height(-1) info messages when story renders w/o size container
   // — Radix Dialog Description aria warning(Storybook isolated render lacks full app context)
-  // — DOM 404 misc resource(filtered)
+  // — DOM 404 misc resource(filtered;同源 script / stylesheet 404 由 openStory 的 render-health 判成儀器失效,不靠這裡)
   const NOISE_PATTERNS = [
     /Failed to load resource.*404/i,
     /Failed to load resource.*ERR_NAME_NOT_RESOLVED/i,  // external image / URL fetch in sandbox
@@ -173,71 +182,86 @@ try {
 
   const failures = []
   let probedCount = 0
-  const unprobed = []  // GOTO timeout = 未實際驗證，必須 fail-closed 防止假綠燈。
-  const CONCURRENCY = 6  // 6 parallel pages = ~6x speedup
+  const unprobed = []  // 沒量到(儀器失效:導覽失敗 / 等不到渲染完成 / 同源缺檔 / 空畫面)= 未實際驗證,必須 fail-closed 防止假綠燈。
+  const CONCURRENCY = 6  // 6 個瀏覽器並行,每個只開一個 page 重複使用
 
-  // Process in batches of CONCURRENCY
-  for (let i = 0; i < storyIds.length; i += CONCURRENCY) {
-    const batch = storyIds.slice(i, i + CONCURRENCY)
-    await Promise.all(
-      batch.map(async (id) => {
-        const page = await ctx.newPage()
-        const pageErrors = []
-        page.on('pageerror', (e) => pageErrors.push(`PAGE: ${e.message}`))
-        page.on('console', (m) => {
-          if (m.type() === 'error') {
-            const text = m.text()
-            if (isNoise(text)) return
-            pageErrors.push(text)
-          }
-        })
+  // 同源檔案載入失敗(openStory 的失敗請求清單裡,同源的寫成路徑、外部的寫成完整網址)= 建置缺檔,不是 story 壞了
+  const sameOriginFailure = (failedRequests) => failedRequests.some((f) => /^(\d{3} )?\//.test(f))
+  // Storybook 自己回報「這則 story 渲染拋錯」的種類(錯誤頁 / render errored / 頁面例外)
+  const isStoryCrash = (error) => ['storybook-error', 'render-errored'].includes(error.kind)
+    || (error.kind === 'render-health' && /page exceptions=/.test(error.reason) && !/critical resource/.test(error.reason))
 
-        try {
-          let loaded = false
-          try {
-            await page.goto(
-              `http://localhost:${PORT}/iframe.html?id=${encodeURIComponent(id)}`,
-              { waitUntil: 'domcontentloaded', timeout: 10000 },  // domcontentloaded fastest + sufficient for runtime probe
-            )
-            await page.waitForTimeout(400)  // settle React effects + late console.error
-            loaded = true
-          } catch (e) {
-            // pageerrors 已收 = 真 React crash(有效偵測);純 GOTO timeout 才是「載不起」
-            if (pageErrors.length > 0) loaded = true
-          }
-          if (!loaded) {
-            unprobed.push(id)
-            return
-          }
-          probedCount++
-          if (pageErrors.length > 0) {
-            failures.push({ id, errors: pageErrors })
-          }
-        } finally {
-          await page.close()  // 永遠 close(原 skip 路徑漏 close → page 洩漏 → timeout 連鎖)
-        }
+  let nextIndex = 0
+  let settledCount = 0
+  const worker = async () => {
+    const browser = await launchBrowser()
+    try {
+      const page = await browser.newPage()
+      let current = null
+      page.on('pageerror', (e) => current?.errors.push(`PAGE: ${e.message}`))
+      page.on('console', (m) => {
+        if (m.type() !== 'error' || !current) return
+        const text = m.text()
+        if (isNoise(text)) return
+        current.errors.push(text)
       })
-    )
+      for (;;) {
+        const i = nextIndex++
+        if (i >= storyIds.length) return
+        const id = storyIds[i]
+        const record = current = { id, errors: [] }
+        let instrument = null
+        try {
+          // 導覽前不併入伺服器帳本(並行的其他瀏覽器也在記,會混進來);openStory 自己記本頁的失敗請求,伺服器帳本最後整份印出
+          await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+            navigationTimeoutMs: 30_000, timeoutMs: 30_000,
+          })
+          // 渲染完成後再等兩個影格:React 的被動 effect(useEffect)在 commit 之後才跑,晚到的 console.error 在那之後才出現
+          await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+        } catch (error) {
+          if (!(error instanceof StoryRenderInstrumentError)) throw error
+          instrument = error
+        }
+        // 換下一則之前把這一則的文件卸掉:卸載前冒出的 console 訊息仍記在這一則,不會被記到下一則頭上
+        await page.goto('about:blank').catch(() => {})
+        current = null
 
-    if (probedCount % 60 === 0 || i + CONCURRENCY >= storyIds.length) {
-      console.log(`  probed ${probedCount}/${storyIds.length}...`)
+        if (instrument && isStoryCrash(instrument) && !sameOriginFailure(instrument.failedRequests)) {
+          // 產品裁決:story 自己渲染拋錯(React.Children.only 之類)—— 這正是 smoke 要抓的
+          probedCount++
+          failures.push({ id, errors: [`STORY CRASH: ${instrument.storybookError || instrument.reason}`, ...record.errors] })
+        } else if (instrument) {
+          // 儀器失效:沒量到,不是產品裁決
+          unprobed.push({ id, detail: instrument.detail })
+        } else {
+          probedCount++
+          if (record.errors.length > 0) failures.push({ id, errors: record.errors })
+        }
+        settledCount++
+        if (settledCount % 60 === 0 || settledCount === storyIds.length) {
+          console.log(`  probed ${settledCount}/${storyIds.length}...`)
+        }
+      }
+    } finally {
+      await browser.close()
     }
   }
-
-  await browser.close()
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, storyIds.length) }, worker))
 
   // Report
   console.log('')
   console.log(`=== Result ===`)
   console.log(`Total stories probed: ${probedCount}/${storyIds.length}`)
   console.log(`Failures:             ${failures.length}`)
-  console.log(`Unprobed (timeout):   ${unprobed.length}`)
+  console.log(`Unprobed (儀器失效):  ${unprobed.length}`)
 
   if (unprobed.length > 0) {
     console.log('')
-    console.log(`❌ COVERAGE GAP:${unprobed.length} 個 story GOTO timeout 未驗。前 10 個:`)
-    for (const id of unprobed.slice(0, 10)) console.log(`   ◦ ${id}`)
+    console.log(`❌ COVERAGE GAP:${unprobed.length} 個 story 沒量到 —— 這是儀器失效(沒量到),不是產品裁決:元件不一定有問題,但這次不能算通過。前 10 個:`)
+    for (const { id, detail } of unprobed.slice(0, 10)) console.log(`   ◦ ${id}:${detail.slice(0, 300)}`)
     if (unprobed.length > 10) console.log(`   ...(${unprobed.length - 10} more)`)
+    const missing = [...new Set(server.notFound)]
+    if (missing.length) console.log(`   同源 404 帳本(${missing.length}):${missing.slice(0, 10).join(', ')}${missing.length > 10 ? ' …' : ''}`)
     exitCode = 1
   }
 
@@ -260,7 +284,7 @@ try {
     console.log('✅ All stories render with 0 console error')
   }
 } finally {
-  server.kill('SIGTERM')
+  await server.stop()
 }
 
 process.exit(exitCode)

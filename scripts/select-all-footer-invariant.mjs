@@ -37,11 +37,19 @@
  *   `--selftest`              把按鈕的字釘死不讓它跟著狀態變 → 標籤/狀態那條必須紅。
  *   `--selftest-unrestricted` 把「不限」列的記號拔掉(等同回到沒排除的舊版)→ 排除那條必須紅。
  * 兩者都是抓到 = exit 0,沒抓到 = exit 1。
+ *
+ * **沒量到 = 儀器失效(exit 1),不是通過**(2026-09-25,M37):每則 story 經 lib/launch-browser.mjs 的 openStory
+ * (全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報這則渲染完成(含 play)、通過 render-health、版面連續靜止
+ * SETTLE_FRAMES 個影格,才開始找觸發點。取代原本的 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)
+ * + 固定睡 120ms —— 那種寫法在 story 還沒畫完時就數 `[role=combobox]`,數到 0 個 = 這支 story「沒有要量的東西」。
+ * 原本任何一則載入失敗只記進「載入失敗 N 支」、照樣 exit 0;現在逐則點名、附同源 404 帳本,三種跑法都 exit 1
+ * (不用 exit 2:gate-selftest-meta 把 2 讀成「略過」)。點開觸發點之後那幾段固定等待是等浮層開 / 關的轉場,不是等
+ * story 渲染,原樣保留(各自註明等的是什麼)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -54,6 +62,10 @@ const SELFTEST_UNRESTRICTED = process.argv.includes('--selftest-unrestricted')
 const ONLY = arg('only', SELFTEST_UNRESTRICTED ? 'unrestricted' : '')
 const LIMIT = Number(arg('limit', '0'))
 const EDGE_TOLERANCE_PX = 1
+// 開 story 後要求版面連續靜止幾個影格才開始找觸發點(量的是幾何:要等排版與進場動畫跑完)
+const SETTLE_FRAMES = 10
+// 儀器失效累積到這麼多支就停掃:那時建置整體壞了(例如預覽腳本缺檔),每支都要等到逾時,掃完 1000 多支沒有意義
+const MAX_INSTRUMENT_FAILURES = 25
 
 if (!existsSync(join(BUILD, 'index.json'))) {
   console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
@@ -150,8 +162,9 @@ const bad = []
 let scanned = 0
 let footersChecked = 0
 let liveFlips = 0
-let loadErrors = 0
 let unrestrictedSeen = 0
+/** 儀器失效:沒量到的 story(不是產品裁決)。 */
+const instrumentFailures = []
 // 2026-09-18:CI 上這支跑滿 25 分鐘被取消(本機 6.6 分,runner 慢 ~2.5 倍)。
 // **不縮掃描範圍**(1034 支一支不少)—— 改成幾條車道平行跑,每條各自認領下一支 story。
 // **每條車道各開一個瀏覽器**,不是同一個瀏覽器開多個分頁 —— `lib/launch-browser.mjs` 檔頭寫得很清楚:
@@ -165,31 +178,35 @@ try {
   const browser = await launchBrowser()
   browsers.push(browser)
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-  page.on('pageerror', () => {})
   for (;;) {
     if ((SELFTEST || SELFTEST_UNRESTRICTED) && bad.length > 0) break
+    if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) break
     const idx = cursor++
     if (idx >= stories.length) break
     const s = stories[idx]
     scanned += 1
     try {
-      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-      await page.waitForFunction(
-        () => document.querySelector('#storybook-root')?.children.length > 0 || document.querySelector('.sb-show-errordisplay'),
-        null,
-        { timeout: 15_000 },
-      ).catch(() => {})
-      await page.waitForTimeout(120)
+      try {
+        await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, {
+          settleFrames: SETTLE_FRAMES, notFound: server.notFound, navigationTimeoutMs: 30_000, timeoutMs: 30_000,
+        })
+      } catch (error) {
+        if (!(error instanceof StoryRenderInstrumentError)) throw error
+        instrumentFailures.push({ story: s.id, detail: error.detail })
+        console.error(`  ! 儀器失效 ${s.id}(${error.kind})—— 詳情見結尾清單`)
+        continue
+      }
       const triggers = page.locator('[role="combobox"]')
       const count = await triggers.count()
       for (let i = 0; i < count; i += 1) {
         await triggers.nth(i).click({ timeout: 3_000 }).catch(() => null)
-        await page.waitForTimeout(260)
+        await page.waitForTimeout(260) // 點開之後:等下拉浮層的開啟動畫跑完再量(量左緣,不能量到縮放進場的中間值)
         // 對照組要在**量之前**就把東西弄壞(幾何那條量的是 before),不然推了也量不到
+        // 對照組:注入後等 40ms 讓樣式 / 屬性生效(量測本身的 getBoundingClientRect 也會強制同步排版,這步只是保險)
         if (SELFTEST) { await page.evaluate(FREEZE_LABEL); await page.evaluate(SHIFT_FOOTER); await page.waitForTimeout(40) }
         if (SELFTEST_UNRESTRICTED) { await page.evaluate(STRIP_UNRESTRICTED_MARK); await page.waitForTimeout(40) }
         const before = await page.evaluate(PROBE)
-        if (!before) { await page.keyboard.press('Escape').catch(() => null); await page.waitForTimeout(80); continue }
+        if (!before) { await page.keyboard.press('Escape').catch(() => null); await page.waitForTimeout(80) /* 等關閉動畫跑完,不擋下一個觸發點 */; continue }
         footersChecked += 1
         if (before.不限列 > 0) unrestrictedSeen += 1
         const where = { story: s.id, name: s.name, trigger: i }
@@ -203,7 +220,7 @@ try {
         }
 
         await page.locator('[cmdk-root] [data-slot="surface-footer"] button').first().click({ timeout: 3_000 }).catch(() => null)
-        await page.waitForTimeout(260)
+        await page.waitForTimeout(260) // 按下全選之後:等勾選狀態與按鈕標籤重畫完再量第二次
         const after = await page.evaluate(PROBE)
         // 面板消失不算這支的紅燈:story 的 render 裡如果定義了元件,任何 setState 都會讓整棵樹重掛,
         // 連點一般選項列都會關掉(2026-09-17 對照實測:點 `Electronics` 跟點全選,popper 都是 1 → 0)。
@@ -220,11 +237,12 @@ try {
           if (狀態翻面) liveFlips += 1
         }
         await page.keyboard.press('Escape').catch(() => null)
-        await page.waitForTimeout(80)
+        await page.waitForTimeout(80) // 等關閉動畫跑完,不擋下一個觸發點
       }
     } catch (error) {
-      loadErrors += 1
-      console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
+      // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)
+      instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
+      console.error(`  ! ${s.id}: 量測途中丟例外:${String(error?.message || error).split('\n')[0]}`)
     }
     if (scanned % 250 === 0) console.error(`… ${scanned}/${stories.length} 支掃完`)
     // 對照組只要證明「弄壞了它會紅」,抓到第一筆就可以停 —— 沒必要再把剩下的 story 掃完
@@ -247,7 +265,7 @@ try {
   ]).catch(() => null)
 }
 
-console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
+console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`開到帶全選 footer 的面板:${footersChecked} 次`)
 console.log(`按下去真的把全選狀態翻面:${liveFlips} 次`)
 console.log(`開到帶「不限」列的面板(那列已排除在分母外):${unrestrictedSeen} 次`)
@@ -257,6 +275,15 @@ for (const b of bad) {
   console.log(`      ${JSON.stringify(b.細節)}`)
 }
 
+// 儀器失效優先於任何裁決(三種跑法都一樣):沒量到的 story 不得被讀成「全選都對」,也不得被讀成「對照組抓到了」
+if (instrumentFailures.length) {
+  console.error(`\n✗ 儀器失效:${instrumentFailures.length} 支 story 沒量到 —— 這不是產品裁決(元件不一定有問題),但這一趟不能算通過:`)
+  for (const f of instrumentFailures) console.error(`  - ${f.story}:${f.detail}`)
+  if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) console.error(`  已達 ${MAX_INSTRUMENT_FAILURES} 支,停止掃描(還有 ${stories.length - scanned} 支沒掃)—— 建置很可能整體壞了`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  process.exit(1)
+}
 if (SELFTEST || SELFTEST_UNRESTRICTED) {
   const which = SELFTEST_UNRESTRICTED ? '把「不限」列的記號拔掉' : '把標籤釘死'
   if (bad.length > 0) { console.log(`\n✓ selftest:對照組(${which})讓這支紅了,量具會紅`); process.exit(0) }

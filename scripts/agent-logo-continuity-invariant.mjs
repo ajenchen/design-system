@@ -25,8 +25,7 @@
  *
  * 沙箱起不了 Chromium → C1–C6 標 SKIPPED-ENV(exit 0),C7/C8 照常判定;請在可開瀏覽器的環境(CI)補驗其餘。
  */
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -123,8 +122,23 @@ try {
   await server.stop(); process.exit(0)
 }
 const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
-await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-展示--logo-think-stop&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('svg')
+// 靜止樣本(rest)是 C1 的基準,必須取在「這則 story 真的渲染完成、標誌與『思考』鈕都在、版面已靜止」之後。
+// 原本是 networkidle + 等第一個 svg 出現 —— 代理量:story 檔缺檔時只會 30 秒逾時丟一個不點名 story 的 Playwright 例外。
+// 改由 openStory(lib/launch-browser.mjs,全部瀏覽器閘共用):等 Storybook 回報渲染完成 → 被量的 svg(含色場)與鈕出現 →
+// 連續 10 個影格無 DOM 變動、無進行中的有限動畫。等不到 = 儀器失效(exit 1,點名 story、附 404),不是產品裁決。
+try {
+  await openStory(page, `${BASE}/iframe.html?id=design-system-components-agentpanel-展示--logo-think-stop&viewMode=story`, {
+    waitFor: () => Boolean(document.querySelector('svg linearGradient'))
+      && [...document.querySelectorAll('button')].some((b) => b.textContent.includes('思考')),
+    settleFrames: 10,
+    notFound: server.notFound,
+  })
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  console.error(`✗ ${error.message}`)
+  console.error('✗ agent-logo-continuity:C1–C6 這次沒有量到(儀器失效)—— 不算通過,也不是產品裁決;C7/C8 已於上方判定')
+  await browser.close(); await server.stop(); process.exit(1)
+}
 
 const result = await page.evaluate(async () => {
   const svg = () => document.querySelector('svg')

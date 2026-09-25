@@ -24,6 +24,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { snapshotStorybookStatic, StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
+import { openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -122,6 +123,29 @@ function record(invariant, label, pass, detail = '') {
   else failures.push(`✗ ${invariant} | ${label} | ${detail}`)
 }
 
+// ── 開 story:一律經 openStory(2026-09-25)──────────────────────────────────────
+// 原本 30 處都是 `goto(networkidle) + waitForSelector + 固定睡 300–700ms`:networkidle 與固定睡眠都是
+// 「已渲染 / 版面已穩」的代理(M37)—— 缺 story 檔時只會 30 秒後丟一個不點名 story 的 Playwright 逾時。
+// 現在由 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用)證明:Storybook 回報這則 story 渲染完成(含 play)
+// → 畫面健康(非錯誤頁、根節點有內容、無關鍵資源 404、無頁面例外)→ 被量的元素出現 → 連續 10 個影格
+// 無 DOM 變動、無進行中的有限長度動畫(欄寬分配是 ResizeObserver → setState → 重畫,一格一格推進;
+// 以影格計,慢的機器只會等久一點,不會提早量)。
+// 等不到 = 儀器失效:點名 story、附 Storybook 錯誤原文與 404,exit 1 —— 不是產品裁決,已記的結果也不算數。
+const SETTLE_FRAMES = 10
+async function loadStory(url, waitFor) {
+  try {
+    return await openStory(page, url, { waitFor, settleFrames: SETTLE_FRAMES, notFound })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.error(`\n✗ ${error.message}`)
+    console.error(`✗ 儀器失效:這一輪在 story「${error.storyId}」中斷 —— 之前已記的 ${passes.length} 條通過 / ${failures.length} 條失敗不完整,不得當作結果。`)
+    if (failures.length) console.error(failures.join('\n'))
+    await browser.close().catch(() => {})
+    server.close()
+    process.exit(1)
+  }
+}
+
 // ── S1:未掛載區骨架底只准消費 Skeleton 同一顆 token(2026-09-15,user 問「骨架底跟 Skeleton 有 SSOT 嗎」)──
 // SSOT:data-table.spec.md「骨架底」段(bar = `--muted`、列底線 = `--divider`,幾何抄列殼)+ skeleton.spec.md「bg-muted」段。
 // 這層是 CSS 漸層畫的,沒有 DOM 可以量色,所以守「原始碼消費的是 token、不是字面色值」——
@@ -148,9 +172,7 @@ function record(invariant, label, pass, detail = '') {
 }
 
 // ── INVARIANT (5):No-resize column width ≥ meta.width ──
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="row"][data-row-index]')
-await page.waitForTimeout(500)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, '[role="row"][data-row-index]')
 
 // RowAutoHeightInlineEdit story uses meta.width: SKU 100 / Product 240 / Category 160 / Note 360 / Price 100
 // 此 story 沒 selection,沒 __select__ column → idx 從 0 起
@@ -175,9 +197,7 @@ for (const [colIdx, expected] of Object.entries(expectedMinWidths)) {
 // multiSelect / number / tag 的 0-delta **只有推導、沒有斷言過**。`InlineEdit` story 本來就把 13 種
 // 型別全部放進可編輯欄(data-table.stories.tsx:625-637),缺的只是把閘指過去 —— 不必新增 story。
 const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[role="row"][data-row-index]') => {
-  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForSelector(waitSelector)
-  await page.waitForTimeout(500)
+  await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, waitSelector)
   for (const t of cellTypes) {
     if (t.skipEdit) continue
     const display = await page.evaluate(({ row, col }) => {
@@ -193,7 +213,7 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
     }
 
     await page.mouse.click(display.left + display.width / 2, display.top + 20)
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(500) // 等點擊後儲存格切進 edit 態(Field 掛上 + 版面重算)
 
     const edit = await page.evaluate(({ row, col }) => {
       const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
@@ -206,7 +226,7 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
     }, t)
 
     await page.keyboard.press('Escape')
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(300) // 等 Escape 退出 edit 態回到 display
 
     if (!edit) {
       // 沒進 edit mode。**只有 boolean 與 url 是設計上就沒有 in-cell 編輯欄位的**,而且那是
@@ -270,9 +290,7 @@ await checkDisplayEditStability('design-system-components-datatable-展示--inli
 // 此 I6 跨「全 cell-type」守門:任何 display cell 內文字載體 @lg computed font-size ≠ 16px(text-body-lg)
 // → fail。新增 cell 若漏掉 size 繼承 → 字卡 14px → CI 紅,不靠人 review(mechanical = primary defense)。
 // 用 Inspector @size=lg + pinnedLeft=false(全欄在同一 row,涵蓋 string/select/currency/date 多 cell-type)。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:lg;pinnedLeft:false`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="columnheader"]')
-await page.waitForTimeout(500)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:lg;pinnedLeft:false`, '[role="columnheader"]')
 const lgFonts = await page.evaluate(() => {
   const leafFont = (root) => {
     let best = null
@@ -301,9 +319,7 @@ for (const c of lgFonts.cells) {
 // 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token(uiSize.css)。
 const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(uiSize.css:33-35)
 for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
-  await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('[role="row"][data-row-index="0"]')
-  await page.waitForTimeout(400)
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, '[role="row"][data-row-index="0"]')
   const rowH = await page.evaluate(() => {
     const row = document.querySelector('[role="row"][data-row-index="0"]')
     return row ? row.getBoundingClientRect().height : null
@@ -315,9 +331,7 @@ for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
 //    內容都要合規,閘門要夠通用」;錨例:beta.100 da3 批修把多選人員外殼改純 block →
 //    基線行盒把頭像串推頂 6.4px,一個月無人抓 — 因像素閘只掛 DataTable 自家檔)──
 //    量法:每個 body cell 取「可見內容子樹聯集框」中心 vs cell 中心,|Δ| ≤ 1.5px。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="row"]')
-await page.waitForTimeout(400)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, '[role="row"]')
 const centeringReport = await page.evaluate(() => {
   const headers = [...document.querySelectorAll('[role="columnheader"]')].map(h => (h.textContent || '').trim().slice(0, 18))
   const rows = [...document.querySelectorAll('[role="row"]')].slice(1, 4) // 前 3 個 body rows
@@ -350,8 +364,7 @@ for (const c of centeringReport) {
 
 // ── INVARIANT (9):1px 線畫法機制統一(2026-08-20 user 拍板)——凍結邊界必為 1px 偽元素,
 //    禁陰影畫線(非整數縮放下陰影與背景盒柵格化取整不同 → 粗細分家 1 vs 2 實體像素)──
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-header-panel]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-header-panel]')
 const lineReport = await page.evaluate(() => {
   const panels = [...document.querySelectorAll('.dtPanelBoundaryRight, .dtPanelBoundaryLeft')]
   return panels.map(p => {
@@ -373,8 +386,7 @@ for (const p of lineReport) {
 // I9 續:`.dtCellGrid`(inlineEdit 模式的 body 欄間線)。2026-09-04 補 —— 原本 I9 只掃釘選面板,
 // 而且載入的是非 inlineEdit 的 PinnedColumns story,`.dtCellGrid` 根本不在畫面上,所以它用陰影畫線
 // 這件事一直掃不到:表頭欄間線是真元素、正下方 body 是陰影,非整數縮放下粗細會分家。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('.dtCellGrid')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, '.dtCellGrid')
 const cellGridReport = await page.evaluate(() => {
   const cells = [...document.querySelectorAll('.dtCellGrid')]
   const shadowed = cells.filter((c) => getComputedStyle(c).boxShadow !== 'none').length
@@ -398,8 +410,7 @@ record('I9', '.dtCellGrid 每 panel 最右 cell 不重複畫線', cellGridReport
 // 擅自改動,連同它一起撤回。現在拆成兩件各自可量的事實:
 //   (a) 所有欄位的**標題左緣**落在同一條線(彼此差 ≤1.5px)—— 任何人再把 align 傳回表頭就會紅;
 //   (b) 右對齊欄的**儲存格內容右緣**確實貼齊該 cell 的右內緣 —— 內容的對齊不能被順手拿掉。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--with-pagination&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="columnheader"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--with-pagination&viewMode=story`, '[role="columnheader"]')
 const alignReport = await page.evaluate(() => {
   const textRect = (el) => {
     const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
@@ -461,8 +472,7 @@ record('I10', '真的量到欄(否則上面的斷言是空轉)', alignReport.len
 // 新模型照 AG Grid v33:欄寬由 `distributeColumnWidths` 算一次,header cell 與 body cell 寫**同一個整數**,
 // 容器寬差只會變成 header 尾端空白。這條驗的就是那個恆等式,順帶驗兩邊水平捲動範圍相等
 // (header 內容尾端補了 `vScrollbarSpacer`,對應 AG Grid `CenterWidthFeature` 的 addSpacer)。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--virtual-scroll&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-header-panel="center"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--virtual-scroll&viewMode=story`, '[data-datatable-header-panel="center"]')
 const widthReport = await page.evaluate(() => {
   const hp = document.querySelector('[data-datatable-header-panel="center"]')
   const bp = document.querySelector('[data-datatable-panel="center"]')
@@ -527,8 +537,7 @@ if (!widthReport) {
 // left/center/right 一律寫同一個 `getActualWidth()`;釘選欄只是不參與 flex 分配,不是不走「算一次」。
 // 沒有這條斷言時,釘選區可以整區退回舊的 CSS flex 模型而 CI 全綠(那正是 2026-09-03 對照抓到的
 // 真缺陷:我先前只把 center 改成算一次)。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="center"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="center"]')
 const measureRegions = () => {
   const out = []
   for (const region of ['left', 'center', 'right']) {
@@ -615,8 +624,7 @@ const recordRegions = (report, storyLabel) => {
 recordRegions(regionReport, '欄位釘選')
 
 // 右釘選區:`row-drag-interactive`(列拖曳重排(含釘選欄))是全 repo 唯一帶 `pinnedRightColumns` 的 story。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-drag-interactive&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="center"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-drag-interactive&viewMode=story`, '[data-datatable-panel="center"]')
 recordRegions(await page.evaluate(measureRegions), '列拖曳重排')
 
 // 三區都必須真的被斷言過 —— 少一區就是「該區的欄寬可以整區退回舊模型而 CI 全綠」。
@@ -793,9 +801,7 @@ const px = (img, x, y) => {
 }
 const dist = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]))
 
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="center"]')
-await page.waitForTimeout(500)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="center"]')
 
 // 幾何:表頭列群組(底線的宿主)、列區外層(邊界線的宿主)、釘選面板寬。
 const geom = await page.evaluate(() => {
@@ -841,7 +847,7 @@ for (const g of geom) {
   for (const state of ['scrollLeft=0', 'scrollLeft=max']) {
     if (state === 'scrollLeft=max' && g.maxScroll > 0) {
       await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = c.scrollWidth - c.clientWidth }, g.table)
-      await page.waitForTimeout(120)
+      await page.waitForTimeout(120) // 等 scrollLeft 改動後的重繪(sticky / 底線跟著捲動重畫)
     } else if (state === 'scrollLeft=max') continue
     const img = await shot()
     // I13a 表頭底線:底緣那一列像素,從表格內緣左到內緣右(避開圓角 4px)
@@ -856,7 +862,7 @@ for (const g of geom) {
     record('I13c', `表格 ${g.table} 表頭底線與表頭底色可分辨(${state})`, a.contrast >= 4, `最小對比 ${a.contrast}(<4 = 整條都沒畫,取樣點當然彼此一致)`)
   }
   await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = 0 }, g.table)
-  await page.waitForTimeout(120)
+  await page.waitForTimeout(120) // 等捲回 0 的重繪
 
   // I13b 凍結邊界線:從表頭頂掃到列區底(含捲軸讓位帶),整條必須同色
   // **先把讓位帶造出來再掃**(2026-09-05 稽核 1-07 / 2-16):這條「含讓位帶」的宣稱先前只在有 classic 捲軸的
@@ -913,7 +919,7 @@ for (const g of geom) {
       delete p.dataset.i13bPrevBorder
     }
   }, g.table)
-  await page.waitForTimeout(120)
+  await page.waitForTimeout(120) // 等還原邊框後的重繪
 }
 
 // ── I12:水平捲軸只吃掉 center 的高度,pinned 區必須補等高(2026-09-03,同一根因的縱軸孿生)──
@@ -923,8 +929,7 @@ for (const g of geom) {
 // 我們留在 center 內、改用等高 padding-bottom 補平(對照 MUI X 的 scrollbar filler 思路)。
 // 與 I11b 同樣用透明邊框造出「捲軸佔位」:啟動已拿掉 Playwright 的 `--hide-scrollbars`,CI 現在有真 gutter,
 // 這條注入在真 gutter 之上再加 15px,期望值寫成「注入前 + 注入量」(真 gutter 10 → 25),兩種環境都成立。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="left"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="left"]')
 const SIM_H_BORDER = 15
 const pinnedReport = await page.evaluate(async (border) => {
   const bodies = [...document.querySelectorAll('[data-datatable-panel="center"]')]
@@ -995,8 +1000,7 @@ if (passes.length > 0) console.log(passes.join('\n'))
 // 自帶 1px 透明上下框(read↔edit 零跳的幾何佔位),實際內容高是 1lh + 2px。固定行高把它吸收掉
 // (高度被 h-table-row-* 釘死 + overflow-hidden),自動行高沒有可吸收的地方,於是 md 單行量到 42 而非 40。
 // 公式補上 `- 1px` 後,這條把「單行 = token」變成可量的事實,任何人再把它拿掉就會紅。
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector(':is([role="cell"], [role="gridcell"])')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, ':is([role="cell"], [role="gridcell"])')
 for (const size of ['sm', 'md', 'lg']) {
   const r = await page.evaluate((sz) => {
     const t = document.querySelector('[role="table"]')
@@ -1026,8 +1030,7 @@ for (const size of ['sm', 'md', 'lg']) {
  * 撐高的 Note 欄在 center、釘選的 SKU 在 left、Row Actions 在 right —— 這是缺陷唯一會現形的組合。
  * 量的是 `getBoundingClientRect().height`(不是 offsetHeight:後者取整會把 0.5px 的錯位抹成「已對齊」)。
  */
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="left"]')
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height&viewMode=story`, '[data-datatable-panel="left"]')
 const rowHeightReport = await page.evaluate(() => {
   // 掃**每一張**有三個區的表(第 3 個 pane 是非虛擬、第 4 個是虛擬 50 筆),不是只看第一張。
   const tables = [...document.querySelectorAll('[data-datatable-panel="center"]')].map((c) => c.parentElement)
@@ -1091,9 +1094,7 @@ rowHeightReport.forEach((t, i) => {
  * 內層 wrapper 的 `minWidth`(= centerColsWidth + vScrollbarSpacer)不經任何 React 事件(列數不變)就恰好長
  * 20px,還原後回到原值;補償停在過期值就紅。
  */
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-hscroll]')
-await page.waitForTimeout(400)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-hscroll]')
 const SIM_V_BORDER = 20
 const sentinelReport = await page.evaluate(async (simPx) => {
   // rAF 在被隱藏/節流的頁籤裡不會觸發,所以跟計時器賽跑:哪個先到算哪個。
@@ -1175,9 +1176,7 @@ sentinelReport.forEach((r, i) => {
  * 順帶守缺陷 H(I17e):center body 的捲軸必須是 `scrollbar-width: thin`、佔位 < 15px —— 把從未生效的
  * `::-webkit-scrollbar` 客製加回去、或改回 `auto`,這裡就紅(Chromium Aura:預設 15 × 2/3 = 10)。
  */
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-panel="left"]')
-await page.waitForTimeout(400)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="left"]')
 const scrollUxReport = await page.evaluate(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const out = []
@@ -1412,12 +1411,10 @@ const worstDelta = (a, b) => {
   return worst
 }
 const assertPinnedHeaderStable = async (storyName, side, label) => {
-  await page.goto(I20_PLUS_STORY(storyName), { waitUntil: 'networkidle' })
-  await page.waitForSelector(`[data-datatable-header-panel="${side}"]`)
-  await page.waitForTimeout(400)
+  await loadStory(I20_PLUS_STORY(storyName), `[data-datatable-header-panel="${side}"]`)
   // 先把游標停到表格外,確保 baseline 是「沒有 hover」的靜止狀態
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(150)
+  await page.waitForTimeout(150) // 等游標移出後 hover 態(⌄ 顯示)退掉
   const base = await page.evaluate(snapPinnedRegion, side)
   if (!base || !base.firstHead) {
     record('I20', `${label}:${side} 釘選 header 存在`, false, 'header panel / columnheader 找不到(I20 真測路徑未進入)')
@@ -1427,7 +1424,7 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
   // (1) hover 第一個釘選 columnheader → ⌄ 顯出來 → 面板寬與 center 每欄 rect 必須一個像素都不動
   const m = rectMid(base.firstHead)
   await page.mouse.move(m.x, m.y)
-  await page.waitForTimeout(250)
+  await page.waitForTimeout(250) // 等 hover 後 ⌄ 顯示的轉場
   const hovered = await page.evaluate(snapPinnedRegion, side)
   record('I20', `${label}:hover 後 ⌄ 真的顯示出來(否則沒測到 hover 元素)`, hovered.menuW > 0, `⌄ rect 寬 ${hovered.menuW}(0 = 沒顯示 / 選擇器沒命中)`)
   record('I20', `${label}:hover ⌄ 時 ${side} header 面板寬不變`, Math.abs(hovered.panelHeaderW - base.panelHeaderW) <= 0.5, `${base.panelHeaderW} → ${hovered.panelHeaderW}`)
@@ -1439,7 +1436,7 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
   if (base.sortZone) {
     const s = rectMid(base.sortZone)
     await page.mouse.click(s.x, s.y)
-    await page.waitForTimeout(350)
+    await page.waitForTimeout(350) // 等排序後列重排與排序箭頭畫出
     const sorted = await page.evaluate(snapPinnedRegion, side)
     record('I20', `${label}:排序箭頭真的畫出來(否則沒測到排序態)`, sorted.sortIconW > 0 && sorted.ariaSort !== 'none', `箭頭 svg 寬 ${sorted.sortIconW} / aria-sort=${sorted.ariaSort}`)
     record('I20', `${label}:排序後 ${side} header / body 面板寬不變`,
@@ -1449,8 +1446,8 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
       worstDelta(base.heads, sorted.heads) <= 0.5 && Math.abs(base.centerHeadLeft - sorted.centerHeadLeft) <= 0.5,
       `worst head Δ ${worstDelta(base.heads, sorted.heads).toFixed(2)}(列會重排所以不比 cell 的內容,但欄位 rect 仍由 header 決定)`)
     // 還原排序(asc → desc → none 三態,再點兩次),避免殘留狀態影響同 story 的後續量測
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150)
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150)
+    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 等排序三態切換的重畫
+    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 同上
   } else {
     record('I20', `${label}:第一個釘選欄可排序(否則排序那半沒測到)`, false, 'sort zone 找不到')
   }
@@ -1487,9 +1484,7 @@ const measureActionsPlaceholder = () => {
     bodyPanelW: +bp.getBoundingClientRect().width.toFixed(2),
   }
 }
-await page.goto(I20_PLUS_STORY('pinned-columns'), { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-datatable-header-panel="right"]')
-await page.waitForTimeout(300)
+await loadStory(I20_PLUS_STORY('pinned-columns'), '[data-datatable-header-panel="right"]')
 const placeholderReport = await page.evaluate(measureActionsPlaceholder)
 if (!placeholderReport || !placeholderReport.placeholder || !placeholderReport.actionsCell) {
   record('I21', 'rowActions 的 header 佔位與 body 操作格都存在', false, `placeholder ${JSON.stringify(placeholderReport?.placeholder)} / cell ${JSON.stringify(placeholderReport?.actionsCell)}(I21 真測路徑未進入)`)
@@ -1538,9 +1533,7 @@ const measureCenterMinWidth = () => {
   return out
 }
 for (const [storyName, label] of [['virtual-scroll', '大量資料'], ['pinned-columns', '欄位釘選']]) {
-  await page.goto(I20_PLUS_STORY(storyName), { waitUntil: 'networkidle' })
-  await page.waitForSelector('[data-datatable-panel="center"]')
-  await page.waitForTimeout(300)
+  await loadStory(I20_PLUS_STORY(storyName), '[data-datatable-panel="center"]')
   const minWidthReport = await page.evaluate(measureCenterMinWidth)
   record('I22', `${label}:真的量到 center wrapper(否則下面的斷言是空轉)`, minWidthReport.length > 0 && minWidthReport.every((r) => !r.missing), `量到 ${minWidthReport.length} 張表`)
   minWidthReport.forEach((r, i) => {
@@ -1618,17 +1611,15 @@ const measureAutoFitColumn = (colId) => {
 const runAutoFit = async (colId, headLabel) => {
   const headSel = `[data-datatable-header-panel="center"] [role="columnheader"][data-column-id="${colId}"]`
   await page.locator(headSel).first().hover()
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(200) // 等 hover 後 ⌄ 欄位選單鈕顯示的轉場
   await page.locator(`${headSel} [aria-label="${headLabel} 欄位選單"]`).first().click()
   const item = page.getByRole('menuitem', { name: '自動調整寬度' })
   await item.waitFor({ state: 'visible', timeout: 3000 })
   await item.click()
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(400) // 等「自動調整寬度」後欄寬重算與選單關閉的轉場
   await page.mouse.move(5, 5)
 }
-await page.goto(I20_PLUS_STORY('column-resize'), { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="columnheader"][data-column-id="name"]')
-await page.waitForTimeout(300)
+await loadStory(I20_PLUS_STORY('column-resize'), '[role="columnheader"][data-column-id="name"]')
 const AUTO_FIT_COL = 'name' // ColumnResize 第一張表:Product 欄 meta.width 280,長品名被截斷
 const beforeFit = await page.evaluate(measureAutoFitColumn, AUTO_FIT_COL)
 if (!beforeFit) {
@@ -1667,9 +1658,7 @@ if (!beforeFit) {
  * 觸發後 = 一般 field 行為契約,與其他型別零特例」,所以 (2)(3)(4) 三條不變條件對 url 同樣成立、也同樣可量。
  * 這裡走真正的入口(hover cell → click Pencil),量的三個 delta 與 I1–I4 同門檻。
  */
-await page.goto(I20_PLUS_STORY('inline-edit'), { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="row"][data-row-index]')
-await page.waitForTimeout(400)
+await loadStory(I20_PLUS_STORY('inline-edit'), '[role="row"][data-row-index]')
 const URL_CELL = { row: 0, col: 9 } // 欄序見 data-table.stories.tsx InlineEdit editableColumns(col 9 = url)
 const urlDisplay = await page.evaluate(({ row, col }) => {
   const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
@@ -1682,12 +1671,12 @@ if (!urlDisplay) {
 } else {
   const c = rectMid(urlDisplay)
   await page.mouse.move(c.x, c.y)
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(200) // 等 hover 後 Pencil 鈕顯示的轉場
   let urlEdit = null
   try {
     const pencil = page.locator(`[role="row"][data-row-index="${URL_CELL.row}"] :is([role="cell"], [role="gridcell"])`).nth(URL_CELL.col).locator('[aria-label="編輯連結"]')
     await pencil.click({ timeout: 3000 })
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(400) // 等點 Pencil 後儲存格切進 edit 態
     urlEdit = await page.evaluate(({ row, col }) => {
       const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
       const field = cell?.querySelector('[data-field-mode="edit"], textarea')
@@ -1700,7 +1689,7 @@ if (!urlDisplay) {
     record('I24', 'URL(url) hover 後 Pencil 真的能點到', false, String(error?.message || error).split('\n')[0])
   }
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(200) // 等 Escape 退出 edit 態
   await page.mouse.move(5, 5)
   if (!urlEdit) {
     record('I24', 'URL(url) 經 Pencil 進 edit 後 cell 內有 data-field-mode="edit" 的 Field', false, 'no edit field — url 有 in-cell Field(cell-registry UrlCell edit 分支),沒進 = 真的壞了')
@@ -1726,9 +1715,7 @@ if (!urlDisplay) {
  * (render 不吃 args),補上後把 size 對應的期望值(16/16/20、18/18/22、24/24/28)套過去即可。
  */
 const CHEVRON_EXPECT_MD = { box: 16, hoverBg: 18 } // ICON_SIZE.md / INLINE_ACTION_HOVER_BG_SIZE.md
-await page.goto(I20_PLUS_STORY('nested-rows'), { waitUntil: 'networkidle' })
-await page.waitForSelector(':is([role="cell"], [role="gridcell"]) button[aria-expanded]')
-await page.waitForTimeout(400)
+await loadStory(I20_PLUS_STORY('nested-rows'), ':is([role="cell"], [role="gridcell"]) button[aria-expanded]')
 const nestedGeom = await page.evaluate(() => {
   const root = document.querySelector('[role="table"]')
   const t = root.closest('[data-table-size]') || root
@@ -1792,7 +1779,7 @@ if (!nestedGeom.d0?.btn || !nestedGeom.d1?.btn || !nestedGeom.d1leaf || !nestedG
   // 真 hover:overlay span 的 rect 與 computed 底色(不是看 class 有沒有掛)
   const m = rectMid(g.d0.btn)
   await page.mouse.move(m.x, m.y)
-  await page.waitForTimeout(250)
+  await page.waitForTimeout(250) // 等 hover overlay 底色的轉場
   const hov = await page.evaluate(() => {
     const cell = [...document.querySelectorAll(':is([role="cell"], [role="gridcell"])')].find((c) => (c.textContent || '').includes('Q1 行銷活動'))
     const btn = cell?.querySelector('button[aria-expanded]')
@@ -1871,11 +1858,9 @@ for (const [storyName, label, steps] of [
   ['pinned-columns', '欄位釘選', ['center-text', 'actions-svg', 'left-cell']],
   ['nested-rows', '巢狀列', ['center-text', 'chevron-svg']],
 ]) {
-  await page.goto(I20_PLUS_STORY(storyName), { waitUntil: 'networkidle' })
-  await page.waitForSelector(`[data-row-index="${HOVER_ROW}"]`)
-  await page.waitForTimeout(400)
+  await loadStory(I20_PLUS_STORY(storyName), `[data-row-index="${HOVER_ROW}"]`)
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(150)
+  await page.waitForTimeout(150) // 等游標移出後列 hover 態退掉
   const idle = await page.evaluate(measureRowHover, HOVER_ROW)
   record('I26', `${label}:真的量到多區 × 該列(否則下面的斷言是空轉)`, idle.regions >= 2 && idle.rowsFound === idle.regions, `regions ${idle.regions} / 該列 DOM ${idle.rowsFound}`)
   record('I26', `${label}:未 hover 時該列底色不是 --neutral-hover`, idle.hovered === 0 && idle.noneHoverBg, `hovered ${idle.hovered} / bgs ${JSON.stringify(idle.bgs)}`)
@@ -1885,7 +1870,7 @@ for (const [storyName, label, steps] of [
     if (!pt) { record('I26', `${label}:hover 目標 ${kind} 存在`, false, '選擇器找不到'); continue }
     lastPoint = pt
     await page.mouse.move(pt.x, pt.y)
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(200) // 等列 hover 委派(data-hovered)與底色轉場
     const r = await page.evaluate(measureRowHover, HOVER_ROW)
     if (kind.endsWith('-svg')) record('I26', `${label}:${kind} 的目標真的是 <svg>(否則沒測到 SVGElement 路徑)`, pt.tag === 'svg', `tag=${pt.tag}`)
     record('I26', `${label}:指標停在 ${kind} 時該列在 ${r.regions} 區都有 data-hovered`, r.hovered === r.regions, `hovered ${r.hovered} / regions ${r.regions}`)
@@ -1894,7 +1879,7 @@ for (const [storyName, label, steps] of [
   }
   if (lastPoint) {
     await page.mouse.move(lastPoint.outside.x, lastPoint.outside.y)
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(200) // 等移出表格後 hover 態退掉
     const out = await page.evaluate(measureRowHover, HOVER_ROW)
     record('I26', `${label}:移出表格後該列 data-hovered 歸零且底色回透明`, out.hovered === 0 && out.noneHoverBg, `hovered ${out.hovered} / bgs ${JSON.stringify(out.bgs)}`)
   }
@@ -1944,9 +1929,7 @@ for (const [storyName, label, steps] of [
   record('I27a', '寬度 ≤ 0(尚未佈局)時不得拿去算,否則會鎖進收縮態',
     /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(code), '缺少 <=0 早退守衛')
 }
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector(':is([role="cell"], [role="gridcell"])')
-await page.waitForTimeout(400)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, ':is([role="cell"], [role="gridcell"])')
 {
   const st = await page.evaluate(() => {
     const hdrs = [...document.querySelectorAll('[role="columnheader"]')]
@@ -1989,9 +1972,7 @@ await page.waitForTimeout(400)
  * 拆法是用**不隨內容變**的量:可用寬 = 容器內容寬 − 欄位外框開銷,
  * 而外框開銷 = wrapper 現在的寬 − slot 現在的寬(同幀量,內容影響相減抵消)。
  * 這條閘用同一個容器寬下的 hug / fill 對照組:兩者可用空間相同 → 顯示人數必須相同。 */
-await page.goto(`${BASE}/iframe.html?id=design-system-components-peoplepicker-展示--hug-width-multi-stack&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[data-field-mode]')
-await page.waitForTimeout(700)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-peoplepicker-展示--hug-width-multi-stack&viewMode=story`, '[data-field-mode]')
 {
   const st = await page.evaluate(() => {
     const fields = [...document.querySelectorAll('[data-field-mode]')]
@@ -2021,9 +2002,7 @@ await page.waitForTimeout(700)
  * **為什麼要專門為 dark mode 開一條**:本檔其餘所有斷言都跑在預設(亮色)主題,而 light 的
  * `--surface` 是不透明的,疊幾層都看不出來 —— 這一整類缺陷在亮色下**結構上不可見**。
  * 同日兩個視覺回歸(捲軸接縫、表頭表身反轉)都只在 dark mode 顯現,亮色閘全綠。 */
-await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story&globals=theme:dark`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="row"]')
-await page.waitForTimeout(500)
+await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story&globals=theme:dark`, '[role="row"]')
 {
   const tone = await page.evaluate(() => {
     const cb = document.querySelector('[data-datatable-hscroll]')
@@ -2072,9 +2051,7 @@ for (const [storyId, expectRole] of [
   ['design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay', 'grid'],
   ['design-system-components-datatable-展示--inline-edit', 'table'],
 ]) {
-  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('[role="row"]')
-  await page.waitForTimeout(400)
+  await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, '[role="row"]')
   const r = await page.evaluate(() => {
     const t = document.querySelector('[role="table"],[role="grid"]')
     return { root: t ? t.getAttribute('role') : null,
@@ -2100,9 +2077,7 @@ for (const [storyId, expectRole] of [
  * 今天的實測是:點擊會讓焦點落在列的核取方塊上,根節點根本不命中 `:focus-visible`;
  * 只有鍵盤 Tab 會。框用**內**描邊,正好避開原始抱怨的「外圈多一圈」形狀。 */
 for (const storyId of ['design-system-components-datatable-展示--selection-keyboard-and-shift']) {
-  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('[data-data-table-outer]')
-  await page.waitForTimeout(400)
+  await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, '[data-data-table-outer]')
   const drawn = () => page.evaluate(() => {
     const t = document.querySelector('[data-data-table-outer]')
     const cs = getComputedStyle(t)
@@ -2113,25 +2088,23 @@ for (const storyId of ['design-system-components-datatable-展示--selection-key
   // (b) 先驗滑鼠 —— 一般點擊與 Shift+點擊都不得畫
   const rowBox = await (await page.$('[role="row"][data-row-index="1"]')).boundingBox()
   await page.mouse.click(rowBox.x + rowBox.width / 2, rowBox.y + rowBox.height / 2)
-  await page.waitForTimeout(250)
+  await page.waitForTimeout(250) // 等點擊後焦點落定與 :focus-visible 判定(焦點框的顏色轉場)
   const afterClick = await drawn()
   await page.keyboard.down('Shift')
   const rowBox2 = await (await page.$('[role="row"][data-row-index="3"]')).boundingBox()
   await page.mouse.click(rowBox2.x + rowBox2.width / 2, rowBox2.y + rowBox2.height / 2)
   await page.keyboard.up('Shift')
-  await page.waitForTimeout(250)
+  await page.waitForTimeout(250) // 同上(Shift+點擊)
   const afterShiftClick = await drawn()
   record('I30', '滑鼠點擊後表格根節點不得畫焦點框', !afterClick.drawn || !afterClick.focused, JSON.stringify(afterClick))
   record('I30', 'Shift+點擊後也不得畫(2026-05-12 user 抓過的那個)', !afterShiftClick.drawn || !afterShiftClick.focused, JSON.stringify(afterShiftClick))
   // (a) 再驗鍵盤 —— Tab 進來必須畫
-  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
   // 先等表格本身出現再開始按 Tab(M37):只睡固定時間的話,story 沒渲染時下面會紅成
   // 「Tab 走不到表格根節點」—— 指控鍵盤行為,而真正的事實是「沒東西可走」。
-  await page.waitForSelector('[data-data-table-outer]')
-  await page.waitForTimeout(400)
+  await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, '[data-data-table-outer]')
   let landed = false
   for (let i = 0; i < 25; i++) {
-    await page.keyboard.press('Tab'); await page.waitForTimeout(60)
+    await page.keyboard.press('Tab'); await page.waitForTimeout(60) // 等 Tab 後焦點移動
     if ((await drawn()).focused) { landed = true; break }
   }
   const afterTab = await drawn()

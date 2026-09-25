@@ -17,11 +17,18 @@
  *
  * 量的是像素(`getBoundingClientRect`),不是 class 字串(M32)。全 story 掃,不抽樣。
  * 對照組 `--selftest`:把第一個面板的列多推 12px,這支必須紅;抓到 = exit 0,沒抓到 = exit 1。
+ *
+ * **沒量到 = 儀器失效(exit 1),不是通過**(2026-09-25,M37):每則 story 經 lib/launch-browser.mjs 的 openStory
+ * (全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報這則渲染完成(**含 play**:不少面板是 play 點開的)、通過
+ * render-health、版面連續靜止 SETTLE_FRAMES 個影格(浮層的進場動畫也要跑完,量的是左緣),才量列前緣。取代原本的
+ * domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡 140ms —— 那種寫法在 play 還沒把面板點開、
+ * 或縮放進場動畫還在跑時就量,「沒看到面板」被讀成「沒有要量的東西」。原本任何一則載入失敗只記進「載入失敗 N 支」、
+ * 照樣 exit 0;現在逐則點名、附同源 404 帳本,兩種跑法都 exit 1(不用 exit 2:gate-selftest-meta 把 2 讀成「略過」)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -30,6 +37,10 @@ const BUILD = resolve(ROOT, arg('build', 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const LIMIT = Number(arg('limit', '0'))
 const EDGE_TOLERANCE_PX = 1
+// 開 story 後要求版面連續靜止幾個影格才量(量的是幾何:要等排版與浮層進場動畫跑完)
+const SETTLE_FRAMES = 10
+// 儀器失效累積到這麼多支就停掃:那時建置整體壞了(例如預覽腳本缺檔),每支都要等到逾時,掃完 1000 多支沒有意義
+const MAX_INSTRUMENT_FAILURES = 25
 
 if (!existsSync(join(BUILD, 'index.json'))) {
   console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
@@ -86,27 +97,32 @@ const browser = await launchBrowser()
 const bad = []
 let scanned = 0
 let panelsChecked = 0
-let loadErrors = 0
+/** 儀器失效:沒量到的 story(不是產品裁決)。 */
+const instrumentFailures = []
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-  page.on('pageerror', () => {})
   for (const s of stories) {
+    if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) break
     scanned += 1
     try {
-      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-      await page.waitForFunction(
-        () => document.querySelector('#storybook-root')?.children.length > 0 || document.querySelector('.sb-show-errordisplay'),
-        null,
-        { timeout: 15_000 },
-      ).catch(() => {})
-      await page.waitForTimeout(140)
+      try {
+        await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, {
+          settleFrames: SETTLE_FRAMES, notFound: server.notFound, navigationTimeoutMs: 30_000, timeoutMs: 30_000,
+        })
+      } catch (error) {
+        if (!(error instanceof StoryRenderInstrumentError)) throw error
+        instrumentFailures.push({ story: s.id, detail: error.detail })
+        console.error(`  ! 儀器失效 ${s.id}(${error.kind})—— 詳情見結尾清單`)
+        continue
+      }
       // 一支 story 只呼叫瀏覽器一次(2026-09-17:原本 PROBE 之後又跑一次 evaluate 數面板,1034 支就多 1034 次往返)
       const found = await page.evaluate(PROBE, { sabotage: SELFTEST, tolerance: EDGE_TOLERANCE_PX })
       if (found?.sawOptions) panelsChecked += 1
       for (const f of found?.findings ?? []) bad.push({ ...f, story: s.id, name: s.name })
     } catch (error) {
-      loadErrors += 1
-      console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
+      // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)
+      instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
+      console.error(`  ! ${s.id}: 量測途中丟例外:${String(error?.message || error).split('\n')[0]}`)
     }
     if (scanned % 250 === 0) console.error(`… ${scanned}/${stories.length} 支掃完`)
     // 對照組只要證明「弄壞了它會紅」,抓到第一筆就可以停 —— 沒必要再把剩下的 story 掃完
@@ -118,9 +134,18 @@ try {
   await server.stop() // `close` 不存在於這個 helper,寫成 close?.() 會靜靜地不關(2026-09-18)
 }
 
-console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
+console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`含浮層選項清單的 story:${panelsChecked} 支`)
 console.log(`列前緣沒對齊標題:${bad.length} 筆`)
+// 儀器失效優先於任何裁決(兩種跑法都一樣):沒量到的 story 不得被讀成「列都對齊」,也不得被讀成「對照組抓到了」
+if (instrumentFailures.length) {
+  console.error(`\n✗ 儀器失效:${instrumentFailures.length} 支 story 沒量到 —— 這不是產品裁決(元件不一定有問題),但這一趟不能算通過:`)
+  for (const f of instrumentFailures) console.error(`  - ${f.story}:${f.detail}`)
+  if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) console.error(`  已達 ${MAX_INSTRUMENT_FAILURES} 支,停止掃描(還有 ${stories.length - scanned} 支沒掃)—— 建置很可能整體壞了`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  process.exit(1)
+}
 if (!SELFTEST && panelsChecked === 0) {
   console.log('\n✗ 一個帶選項清單的浮層都沒量到 —— 這支等於沒跑,不能當綠燈')
   process.exit(1)

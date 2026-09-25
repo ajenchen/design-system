@@ -15,12 +15,16 @@
  *     外側 3px 不得被自己格的 overflow:hidden 裁掉、也不得被 DOM 順序在後的鄰格蓋住(main 上右半不可點)。
  * `--selftest`:注入 `[data-datatable-header-panel="left"]{width:140px!important}` 讓面板寬凍住 → R1 / R2 必須紅;R3 的兩種破法
  *   (`[role="columnheader"]{overflow:hidden}` / `[role="separator"]{z-index:auto}`)**分開各注入一次**,各自都必須讓右 2px 打不到把手。
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成(含 play)
+ *   + render-health + 表格列本身出現 + 版面連續 10 影格靜止(欄寬量測 → 重畫走完)才開始量,取代「load + 等列 + 固定睡 600ms」(M37)。
+ *   story 開不起來(不存在的 id、story 檔 404、錯誤頁、空畫面、頁面例外、列一直不出現)= 儀器失效:點名 story、附同源 404、
+ *   exit 2 —— 不是產品裁決,`--selftest` 下也絕不算「對照組如預期紅」。
  *   node scripts/data-table-pinned-resize-invariant.mjs [--static=<dir>] [--selftest]
  */
 import { existsSync, statSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -36,13 +40,15 @@ if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const printNotFound = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
 let fail = 0
+let instrumentFail = false
 const check = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 let browser
 try {
   browser = await launchBrowser()
   const page = await (await browser.newContext({ viewport: { width: 1400, height: 800 } })).newPage()
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
-  await page.waitForSelector('[data-datatable-hscroll] [role="row"]', { timeout: 20000 }); await page.waitForTimeout(600)
+  await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+    waitFor: '[data-datatable-hscroll] [role="row"]', settleFrames: 10, notFound: server.notFound,
+  })
   if (SELFTEST) await page.addStyleTag({ content: '[data-datatable-header-panel="left"]{width:140px!important}[data-datatable-panel="left"]{width:140px!important}' })
   // R4 對照組:把把手線的底色凍成透明 → 拖拉中量不到主色,R4 必須紅(儀器要先證明它會紅)
   if (SELFTEST) await page.addStyleTag({ content: '[data-datatable-header-panel="left"] [role="separator"]>span{background-color:transparent!important}' })
@@ -74,6 +80,7 @@ try {
   check('R1 拖拉中每一步:面板寬與中央區左緣即時跟著欄寬變', SELFTEST ? !liveOk : liveOk, JSON.stringify(steps))
   // R4:拖拉中把手線 = primary(`transition-colors` 會過渡,先等 350ms 再量 —— 量到過渡中間值會誤判,M32)
   await page.waitForTimeout(350); const holding = await lineColor()
+  // 放開後等欄寬寫回狀態、面板寬重算那一輪重畫(把手早已在畫面上,等的是放開之後的狀態提交)
   await page.mouse.up(); await page.waitForTimeout(400); const s1 = await snap()
   // 放開後指標仍在把手上 = hover 色;移開再等過渡才是 idle(透明:idle 線由凍結邊界線畫)
   await page.mouse.move(5, 5); await page.waitForTimeout(350); const released = await lineColor()
@@ -102,11 +109,18 @@ try {
   const finalOk = ok(s1) && Math.abs(s1.lastW - (s0.lastW + 80)) <= 2
   check('R2 放開後:欄寬 = 起始 + 80,面板寬與中央區左緣一致', SELFTEST ? !finalOk : finalOk, JSON.stringify({ lastW: s1.lastW, expected: s0.lastW + 80, hpW: s1.hpW, bpW: s1.bpW, sum: s1.sum, centerLeft: s1.centerBodyLeft, hpRight: s1.hpRight }))
 } catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) { printNotFound(); throw error }
+  // 沒量到 ≠ 沒問題:儀器失效(exit 2),點名 story、列同源 404;不是產品裁決,任何模式下都不算通過
+  console.error(`✗ ${error.message}`)
   printNotFound()
-  throw error
+  instrumentFail = true
 } finally {
   await browser?.close()
   await server.stop()
+}
+if (instrumentFail) {
+  console.error(`\n✗ data-table-pinned-resize:儀器失效 —— 這次什麼都沒量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
+  process.exit(2)
 }
 if (fail) printNotFound()
 console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:面板寬凍住 / 把手被裁 / 把手線凍成透明時 R1 / R2 / R3 / R4 如預期變紅(儀器有效)' : '釘選欄拖拉欄寬:面板寬即時跟動、放開後一致;把手兩側可點;邊界欄拖拉中把手線變主色,全通過'}`)

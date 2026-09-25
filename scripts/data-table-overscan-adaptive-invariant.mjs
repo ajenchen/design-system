@@ -42,10 +42,16 @@
  * 也就是說當時那句「✓ 對照組:如預期紅」對 A3/A4 是零證據,正是 M32 要防的那種假對照。
  *
  *   node scripts/data-table-overscan-adaptive-invariant.mjs [--build=<dir>] [--selftest]
+ *
+ * 開 story(2026-09-25 起)走 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):Storybook 回報渲染完成
+ * + render-health + 列出現 → 捲動刺激 → 版面(含 data-shell-state)連續靜止 N 個影格 → 在同一個 task 裡讀出 data-shell-state。
+ * 原本是「列出現後固定睡 2000ms、捲完再固定睡 600ms」—— 兩段都是「已渲染 / 已停」的代理(4× 節流下 commit 動輒數百 ms)。
+ * story 開不起來(chunk 404、渲染拋錯、等不到列、捲完版面不靜止)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與同源 404 帳本,
+ * exit 1;不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
  */
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -66,36 +72,50 @@ const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${nam
 // 每次取樣各自啟動瀏覽器:沙箱參數帶 `--single-process`,關掉一個 page 會把整個瀏覽器帶走。
 const sample = async (cpu, forcedOverscan = null) => {
   const browser = await launchBrowser()
-  const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
-  await page.addInitScript(() => { window.__DT_DEBUG_SHELL = true })
-  // 對照組:持續把元件寫出來的 overscan 欄位竄改成壞值。閘照常走 `data-shell-state` 的讀取路徑,
-  // 所以這驗的是「儀器真的讀得到、而且讀到壞值會紅」,不是「比較運算子會算」。
-  if (forcedOverscan != null) {
-    await page.addInitScript((bad) => {
-      setInterval(() => {
-        for (const el of document.querySelectorAll('[data-shell-state]')) {
-          const v = el.getAttribute('data-shell-state')
-          if (v && !v.includes(`overscan=${bad} `)) el.setAttribute('data-shell-state', v.replace(/overscan=\d+/, `overscan=${bad}`))
-        }
-      }, 50)
-    }, forcedOverscan)
+  let out
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
+    await page.addInitScript(() => { window.__DT_DEBUG_SHELL = true })
+    // 對照組:持續把元件寫出來的 overscan 欄位竄改成壞值。閘照常走 `data-shell-state` 的讀取路徑,
+    // 所以這驗的是「儀器真的讀得到、而且讀到壞值會紅」,不是「比較運算子會算」。
+    if (forcedOverscan != null) {
+      await page.addInitScript((bad) => {
+        setInterval(() => {
+          for (const el of document.querySelectorAll('[data-shell-state]')) {
+            const v = el.getAttribute('data-shell-state')
+            if (v && !v.includes(`overscan=${bad} `)) el.setAttribute('data-shell-state', v.replace(/overscan=\d+/, `overscan=${bad}`))
+          }
+        }, 50)
+      }, forcedOverscan)
+    }
+    const cdp = await page.context().newCDPSession(page)
+    if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu })
+    const opened = await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+      waitFor: () => document.querySelectorAll('[data-index]').length > 5,
+      // 捲動是本閘的刺激,不是等待:要先捲過幾步,costPerRow 才會從初始種子收斂到這台機器的實測值。
+      // 每步之間的 24ms 是刺激的節奏(連續滾輪的速率),不是「已渲染」的代理。
+      beforeSettle: async (p) => {
+        await p.mouse.move(700, 400)
+        for (let i = 0; i < 10; i += 1) { await p.mouse.wheel(0, 500); await p.waitForTimeout(24) }
+      },
+      // 捲完之後等版面(含 data-shell-state)連續靜止,再在同一個 task 裡讀 —— 取代原本固定睡 600ms。
+      // 緩衝與 oc* 輸入是同一次捲動 commit 一起寫的、閒置時凍住(data-table.tsx `if (scrolling || …)`),
+      // 所以 isScrolling 250ms 尾巴之後那次閒置 commit 不改讀到的值。
+      settleFrames: 10,
+      probe: () => {
+        const state = document.querySelector('[data-shell-state]')?.getAttribute('data-shell-state') ?? ''
+        const rows = [...document.querySelectorAll('[data-index]')]
+        const rowHeight = rows[0]?.getBoundingClientRect().height ?? 0
+        return { state, rowHeight, viewportHeight: window.innerHeight }
+      },
+      notFound: server.notFound,
+      // 4× 節流下導覽 / 渲染 / 靜止都慢:上限放寬(只是「等不到」的上限,不是「已渲染」的代理)
+      navigationTimeoutMs: 90_000, timeoutMs: 90_000, settleTimeoutMs: 60_000, healthTimeoutMs: 30_000,
+    })
+    out = opened.probe
+  } finally {
+    await browser.close()
   }
-  const cdp = await page.context().newCDPSession(page)
-  if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu })
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
-  await page.waitForFunction(() => document.querySelectorAll('[data-index]').length > 5, { timeout: 90_000 })
-  await page.waitForTimeout(2000)
-  // 要先捲過幾步,costPerRow 才會從初始種子收斂到這台機器的實測值
-  await page.mouse.move(700, 400)
-  for (let i = 0; i < 10; i += 1) { await page.mouse.wheel(0, 500); await page.waitForTimeout(24) }
-  await page.waitForTimeout(600)
-  const out = await page.evaluate(() => {
-    const state = document.querySelector('[data-shell-state]')?.getAttribute('data-shell-state') ?? ''
-    const rows = [...document.querySelectorAll('[data-index]')]
-    const rowHeight = rows[0]?.getBoundingClientRect().height ?? 0
-    return { state, rowHeight, viewportHeight: window.innerHeight }
-  })
-  await browser.close()
   const kv = Object.fromEntries(out.state.split(' ').filter(Boolean).map((s) => s.split('=')))
   const visibleRowCount = Math.max(1, Math.ceil(out.viewportHeight / Math.max(1, out.rowHeight)))
   // **用「算這個緩衝當下的那組輸入」(oc*),不是現在的 costPerRow / fixed。**
@@ -147,6 +167,14 @@ try {
       console.log(`—  A4 不適用:這台機器的餘裕 ${headroom.toFixed(1)}ms 只算得起 ${affordable} 列(≤ 下限 ${MIN_OVERSCAN}),緩衝留在下限 ${fast.overscan} 才是正確行為`)
     }
   }
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  // 沒量到 ≠ 通過,也 ≠ 產品壞了:點名 story、附 404 帳本,exit 1(對照組模式同樣不得 exit 0 —— 什麼都沒證明)
+  console.error(`\n✗ ${error.message}`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error('同源 404:', missing.join(', '))
+  await server.stop()
+  process.exit(1)
 } finally {
   await server.stop()
 }

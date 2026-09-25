@@ -19,19 +19,22 @@
  *
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SELFTEST = process.argv.includes('--selftest')
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const STATIC = join(ROOT, 'storybook-static')
+// `--static-dir <目錄>`:改量另一份 Storybook 建置(預設 ./storybook-static;對照組用刪掉 story 檔的副本)
+const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.slice('--static-dir='.length)
+  ?? (process.argv.includes('--static-dir') ? process.argv[process.argv.indexOf('--static-dir') + 1] : null)
+const STATIC = resolve(staticDirArg ?? join(ROOT, 'storybook-static'))
+const STORY_ID = 'design-system-components-pagination-展示--narrow-ladder'
 if (!existsSync(STATIC)) {
-  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
+  console.error(`✗ ${STATIC} missing. Run \`npm run build-storybook\` first.`)
   process.exit(1)
 }
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
@@ -53,8 +56,13 @@ const record = (id, desc, pass, detail) => { findings.push({ id, pass }); consol
 
 try {
   const page = await browser.newPage({ viewport: { width: 1000, height: 900 } })
-  await page.goto(`${BASE}/iframe.html?id=design-system-components-pagination-展示--narrow-ladder&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('nav[aria-label="Pagination"]')
+  // 開 story:等 Storybook 回報渲染完成、畫面健康、分頁列出現、字型載完(字寬決定換不換行)才量
+  // (取代舊的 networkidle —— 那只是「已渲染」的代理)。**刻意不等版面靜止(settleFrames)**:
+  // P5 本身就是「收斂不抖」的斷言,先等到靜止才量會讓 P5 恆真,還會把「量測 → setState 來回跳」的產品 bug
+  // 誤標成儀器失效。階梯在掛載時由 layout effect 同步收斂(見檔頭),渲染完成當下就該是終態。
+  await openStory(page, `${BASE}/iframe.html?id=${encodeURIComponent(STORY_ID)}&viewMode=story`, {
+    waitFor: 'nav[aria-label="Pagination"]', notFound: server.notFound,
+  })
 
   const snap = () => page.evaluate(() => {
     const navs = [...document.querySelectorAll('nav[aria-label="Pagination"]')]
@@ -85,10 +93,12 @@ try {
     // 對照組:把資訊文字的寬度壓到必然換行。P1 量的是 rect.height / lineHeight,
     // 所以這一注入正是它該抓到的形狀 —— 抓不到就代表這支閘的綠燈是零證據。
     await page.addStyleTag({ content: 'nav[aria-label="Pagination"] > span { display:inline-block; width:24px; white-space:normal !important; }' })
+    // 元素早已在畫面上;等兩個影格讓注入的樣式套上版面再量
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
   }
 
   const first = await snap()
+  // P5 的量測定義本身:隔兩個影格再量一次,看階梯有沒有來回跳
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
   const second = await snap()
 
@@ -117,12 +127,20 @@ try {
 
   const unstable = first.map((f, i) => JSON.stringify(rank(f)) !== JSON.stringify(rank(second[i])) ? f.container : null).filter(Boolean)
   record('P5', '收斂不抖(隔一個 rAF 再量結果相同)', unstable.length === 0, unstable.length ? `容器 ${unstable.join('/')} 在兩次量測間改變` : 'stable')
-
-  await browser.close()
 } catch (error) {
+  if (error instanceof StoryRenderInstrumentError) {
+    // 沒量到 ≠ 沒問題:story 開不起來是儀器失效(exit 2),點名 story、列同源 404,不是產品裁決,也絕不算通過(selftest 亦同)
+    console.error(`✗ ${error.message}`)
+    report404()
+    console.error('✗ pagination-narrow-ladder:儀器失效 —— 這次什麼都沒量到')
+    await browser.close()
+    await server.stop()
+    process.exit(2)
+  }
   report404()
   throw error
 } finally {
+  await browser.close()
   await server.stop()
 }
 const failed = findings.filter((f) => !f.pass)

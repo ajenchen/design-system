@@ -13,15 +13,20 @@
  *
  * 對照組 `--sabotage`:在每次 commit 後硬塞一段忙迴圈,數字必須明顯變大,否則這支量具不算數(M32)。
  *
+ * **這是量測工具,不是閘**(不在 CI;只印數字、不判紅綠)。
+ * 載入(2026-09-25):每個版本的 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成、
+ * 畫面健康、表格列出現、版面連續靜止 10 個影格才開始量(取代舊的 load + 等列 + 固定睡 1200ms)。
+ * 供檔改用共用的 startA11yStaticServer(有 build-info.json 的建置會先凍結成本次獨佔的快照,並留同源 404 帳本)。
+ * story 開不起來 → 儀器失效:點名版本與 story、列同源 404,exit 2 —— 那個版本**沒有數字**,不是「成本 0」。
+ *
  *   node scripts/data-table-hover-scroll-cost.mjs [--runs=5] [--cpu=4] [--sabotage] <label>=<dir> …
  */
-import http from 'node:http'
-import { join, extname } from 'node:path'
-import { existsSync, statSync, readFileSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const RUNS = Number(arg('runs', '5'))
 const CPU = Number(arg('cpu', '4'))
@@ -29,19 +34,6 @@ const SAB = process.argv.includes('--sabotage')
 
 const targets = process.argv.slice(2).filter((a) => !a.startsWith('--') && a.includes('='))
 if (!targets.length) { console.error('✗ 需要至少一個 <label>=<dir>'); process.exit(1) }
-
-const serve = async (dir) => {
-  const server = http.createServer((q, r) => {
-    let p = decodeURIComponent(q.url.split('?')[0])
-    if (p === '/') p = '/index.html'
-    const f = join(dir, p)
-    if (!existsSync(f) || !statSync(f).isFile()) { r.statusCode = 404; r.end(); return }
-    r.setHeader('content-type', MIME[extname(f)] || 'application/octet-stream')
-    r.end(readFileSync(f))
-  })
-  await new Promise((res) => server.listen(0, '127.0.0.1', res))
-  return { server, port: server.address().port }
-}
 
 const median = (xs) => {
   const s = [...xs].sort((a, b) => a - b)
@@ -51,7 +43,7 @@ const median = (xs) => {
 
 const measure = async (label, dir) => {
   if (!existsSync(join(dir, 'index.html'))) { console.error(`✗ ${label}: ${dir} 沒有 index.html`); process.exit(1) }
-  const { server, port } = await serve(dir)
+  const server = await startA11yStaticServer({ rootDirectory: dir, defaultFile: 'iframe.html' })
   const browser = await launchBrowser()
   const samples = []
   try {
@@ -60,9 +52,20 @@ const measure = async (label, dir) => {
     const cdp = await page.context().newCDPSession(page)
     await cdp.send('Performance.enable')
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU })
-    await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${STORY}&viewMode=story`, { waitUntil: 'load' })
-    await page.waitForSelector('[data-row-index]', { timeout: 30_000 })
-    await page.waitForTimeout(1200)
+    try {
+      // 降速 CPU×N 下渲染較慢:成功只由渲染完成 / 列出現 / 靜止這三個訊號決定,上限放寬到 60 秒(只是等不到的上限)
+      await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+        waitFor: '[data-row-index]', settleFrames: 10, notFound: server.notFound,
+        timeoutMs: 60_000, settleTimeoutMs: 30_000,
+      })
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      console.error(`✗ 版本「${label}」(${dir}):${error.message}`)
+      console.error('✗ 儀器失效 —— 這個版本沒有量到任何數字(exit 2),不是「成本 0」')
+      await browser.close().catch(() => {})
+      await server.stop()
+      process.exit(2)
+    }
     if (SAB) {
       await page.evaluate(() => {
         const burn = () => { const t = performance.now(); while (performance.now() - t < 4) { /* 對照組:每次 scroll 事件燒 4ms */ } }
@@ -72,6 +75,7 @@ const measure = async (label, dir) => {
     // 指標停在表格中間某一列上,整段手勢期間都不動
     const box = await page.locator('[data-row-index]').first().boundingBox()
     await page.mouse.move(box.x + box.width / 2, box.y + 240)
+    // 元素早已在畫面上;給指標進場後的列 hover 同步與背景色過渡落定,再開始量
     await page.waitForTimeout(400)
     const scriptMs = async () => {
       const { metrics } = await cdp.send('Performance.getMetrics')
@@ -79,18 +83,20 @@ const measure = async (label, dir) => {
     }
     for (let i = 0; i < RUNS; i += 1) {
       await page.evaluate(() => { document.querySelectorAll('[data-row-index]')[0]?.closest('[data-testid],div')?.scrollTo?.(0, 0) })
+      // 捲回頂端觸發的虛擬列重畫做完,這段成本才不會算進下一次手勢
       await page.waitForTimeout(500)
       const before = await scriptMs()
       await cdp.send('Input.synthesizeScrollGesture', {
         x: Math.round(box.x + box.width / 2), y: Math.round(box.y + 240),
         yDistance: -2400, speed: 1200, gestureSourceType: 'mouse', repeatCount: 0,
       })
+      // 量測窗的定義:手勢結束後再收 600ms 的尾端腳本工作(捲動結束後的 hover 重新同步等)
       await page.waitForTimeout(600)
       samples.push(await scriptMs() - before)
     }
   } finally {
     await browser.close()
-    server.close()
+    await server.stop()
   }
   return samples
 }

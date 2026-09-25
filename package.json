@@ -74,6 +74,7 @@
     "test:composite-role-keyboard": "node scripts/composite-role-keyboard-invariant.mjs && node scripts/composite-role-keyboard-invariant.mjs --selftest",
     "test:datatable-column-divider": "node scripts/data-table-column-divider-invariant.mjs && node scripts/data-table-column-divider-invariant.mjs --selftest",
     "test:storybook-static-snapshot": "node scripts/test-storybook-static-snapshot.mjs",
+    "test:open-story": "node scripts/test-open-story.mjs --require-storybook-build",
     "test:overlay-footer-gutter": "node scripts/overlay-footer-gutter-invariant.mjs && node scripts/overlay-footer-gutter-invariant.mjs --selftest && node scripts/overlay-footer-gutter-invariant.mjs --selftest-crash --limit=3",
     "measure:data-table-hover-scroll-cost": "node scripts/data-table-hover-scroll-cost.mjs",
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",

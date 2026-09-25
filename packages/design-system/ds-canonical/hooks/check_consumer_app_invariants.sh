@@ -685,13 +685,20 @@ _CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/check-consumer-app-invariants.XXXXXX")
   exit 70
 }
 trap 'rm -rf -- "$_CAPTURE_DIR"' EXIT
+# 輸入先落檔再餵給每條規則,不用 `printf | rule`(2026-09-25):規則若沒讀 stdin 就先退出
+# (例如非 Claude provider 時 r2 直接 exit 0),寫端 printf 會收到 SIGPIPE,pipefail 讓整條管線回 141,
+# 被誤判成「規則回傳未定義 exit code」—— 時序決定紅不紅,CI Linux 偶發紅過(21ca94e2)。
+# 規則一定要跑在子殼層 `( "$_rule" )`:規則裡的 `exit` 只能結束它自己;原本是管線替它開了子殼層,
+# 拿掉管線卻不補子殼層,r1 的 `exit 0` 會直接結束整支 hook,後面的規則全部沒跑(本次改法第一版就犯了)。
+_INPUT_FILE="$_CAPTURE_DIR/input"
+printf '%s' "$INPUT" >"$_INPUT_FILE"
 _RULE_INDEX=0
 
 for _rule in r1_no_ds_catalog r2_story_baseline r3_ds_primitive_misuse r4_app_story_title; do
   _RULE_INDEX=$((_RULE_INDEX + 1))
   _stdout="$_CAPTURE_DIR/$_RULE_INDEX.stdout"
   _stderr="$_CAPTURE_DIR/$_RULE_INDEX.stderr"
-  printf '%s' "$INPUT" | "$_rule" >"$_stdout" 2>"$_stderr"
+  ( "$_rule" ) <"$_INPUT_FILE" >"$_stdout" 2>"$_stderr"
   _rc=$?
   case "$_rc" in
     0)

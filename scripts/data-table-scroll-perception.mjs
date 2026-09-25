@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 // Sample actual PNG content availability during native inertial scroll inputs.
-import { launchBrowser } from "./lib/launch-browser.mjs";
+//
+// 開 story 的等待(2026-09-25,M37):原本是 goto(load) + 等 [data-datatable-hscroll] 出現 + **固定睡 1800ms** 當
+// 「表格已渲染穩定」的代理。現在改用 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):等 Storybook
+// 回報渲染完成、render-health、被量的列本身出現、版面連續靜止 SETTLE_FRAMES 個影格才開始量。等不到 = 儀器失效
+// (點名 story、附同源 404,exit 1)—— 不是表格的裁決。父程序只接受**本次執行、本次嘗試**寫的 summary.json
+// (以 run nonce + attempt 認身分,不以「路徑上剛好有一份」認):子程序沒寫出 summary 就是沒量到,不得拿上一次執行
+// 留在同一個 --out 的舊 summary 去判「停頓 → 重跑」或「慢機器判準 → 綠」。
+import { launchBrowser, openStory, StoryRenderInstrumentError } from "./lib/launch-browser.mjs";
 import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -20,6 +27,8 @@ const dir = arg("static", process.env.DT_STATIC ?? "storybook-static"),
   profile = arg("profile", "inertia"),
   markers = arg("markers", "on") === "on";
 fs.mkdirSync(out, { recursive: true });
+// 開 story 後要求版面連續靜止幾個影格才開始量(以影格計:慢機器 / 節流下只會等久一點,不會提早開始)
+const SETTLE_FRAMES = 10;
 // ── 停頓重跑(2026-09-10,fa4fea16 讀回):共享 runner 偶發 ≥ 100ms 的主執行緒停頓,合成器一次跳過整個視窗(單一 scroll 事件 ≥ 視窗高,
 // 實測 526 / 467px)。那一跑量到的殼與延遲是「整窗跳轉」的設計反應(任何版本含 R17 都會先出殼),不是一般速度的證據。
 // 偵測到整窗跳轉就重跑(每次全新頁面);全部都停頓才紅並指名原因。父程序只負責重跑,量測程式碼本身不變。
@@ -31,6 +40,8 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   let code = 1;
   const attempts = [];
   const MAX_ATTEMPTS = SHARED_MAX_ATTEMPTS; // 共用 lib/scroll-perception-budget.mjs,不再各寫一份
+  // 本次執行的身分:子程序把它寫進 summary.json,父程序只認這一份(同一個 --out 可能留著上一次執行的 summary)
+  const RUN_NONCE = `${process.pid}-${Date.now()}`;
   // 送幀缺口門檻同樣要跟機器走(2026-09-11):50ee1d3b 那一跑五次的最長缺口是 114/110/116/103/109ms,
   // 全部只差門檻 100ms 一點點,而同一個 job 裡固定工作量的對照組顯示那台 runner 比校準點慢 ~40%。
   // `DT_PERCEPTION_GAP_MS` 讓 CI 在 dpr2(每張 PNG 四倍畫素)放寬到 130ms;預設仍是 100ms。
@@ -39,14 +50,21 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const r = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: "inherit",
-      env: { ...process.env, DT_PERCEPTION_ATTEMPT: String(attempt) },
+      env: { ...process.env, DT_PERCEPTION_ATTEMPT: String(attempt), DT_PERCEPTION_RUN: RUN_NONCE },
     });
     code = r.status ?? 1;
     let summary = null;
     try {
       summary = JSON.parse(fs.readFileSync(path.join(out, "summary.json"), "utf8"));
     } catch {}
-    if (summary) attempts.push(summary);
+    if (summary && (summary.run !== RUN_NONCE || summary.attempt !== attempt)) summary = null;
+    if (!summary) {
+      // 沒量到 ≠ 停頓、也 ≠ 通過:子程序沒寫出本次的 summary(story 沒渲染完成 / 中途崩潰),訊息已由子程序印出
+      console.log(`✗ 第 ${attempt} 次沒有產出本次的 summary.json(子程序 exit ${r.status ?? r.signal})—— 儀器失效:沒量到,不是表格的裁決,不重跑`);
+      code = code || 1;
+      break;
+    }
+    attempts.push(summary);
     // 擷取送幀缺口(2026-09-10,6fa90a71 讀回):bursts dpr1 在 runner 上零殼零白零延遲,唯一紅是 captureCoverage
     // 「active PNG gap exceeds 100 ms」(單一缺口 128ms,其餘 155 幀連續)—— CDP screencast 在共享 runner 上偶發漏送幾幀,
     // 那一跑對表格什麼都證明不了,與整窗跳轉同一類「儀器這次量不到」,同樣重跑;三次都缺口才紅並指名原因。
@@ -131,17 +149,23 @@ try {
   const cdp = await page.context().newCDPSession(page);
   // --cpu-throttle=<rate>:本機重現慢機器(與 fast-scroll / scroll-cost 同一機制);不當 CI 閘(節流不可跨機器校準,AD62)
   if (arg("cpu-throttle")) await cdp.send("Emulation.setCPUThrottlingRate", { rate: +arg("cpu-throttle") });
-  await page.goto(
+  await openStory(
+    page,
     `${
       server.origin
     }/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story&${arg(
       "query",
       ""
     )}`,
-    { waitUntil: "load" }
+    {
+      waitFor: "[data-datatable-hscroll] [data-row-index]",
+      settleFrames: SETTLE_FRAMES,
+      notFound: server.notFound,
+      // --cpu-throttle 節流下冷啟動慢數倍:上限放寬,成功與否仍由訊號本身決定
+      timeoutMs: 60_000,
+      settleTimeoutMs: 30_000,
+    }
   );
-  await page.waitForSelector("[data-datatable-hscroll]");
-  await page.waitForTimeout(1800);
   const setup = await page.evaluate(
     ({ markers, sabotage }) => {
       const S = window.__r17,
@@ -281,6 +305,7 @@ try {
     { markers, sabotage: arg("sabotage", "off") }
   );
   await page.mouse.move(setup.x, setup.y);
+  // 游標移進表格後等 300ms:讓 hover 高亮與它引發的重畫在開始錄影之前走完(不算進捲動量測)
   await page.waitForTimeout(300);
   const cast = [];
   cdp.on("Page.screencastFrame", (e) => {
@@ -360,6 +385,7 @@ try {
       inputs.push({ ...s, speed, distance, start, end: Date.now() });
     }
   const inputEnd = Date.now();
+  // 輸入結束後繼續錄 900ms:量「靜止後補齊」與慣性尾段(這段是量測窗本身,不是等渲染)
   await page.waitForTimeout(900);
   await cdp.send("Page.stopScreencast");
   const captureEnd = Date.now();
@@ -530,6 +556,7 @@ try {
     stalled,
     stallFraction,
     attempt: +(process.env.DT_PERCEPTION_ATTEMPT ?? 1),
+    run: process.env.DT_PERCEPTION_RUN ?? null,
     ...content,
     rows: undefined,
     shapeShellFrames: pixels.filter((f) => f.shellScanLines.length >= 4).length,
@@ -579,6 +606,11 @@ try {
       summary.unresolved.length)
   )
     process.exitCode = 1;
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error;
+  // 儀器失效:story 沒渲染完成就沒量(訊息點名 story、附同源 404)。不寫 summary.json —— 父程序據此判「沒量到」
+  console.error(`✗ ${error.message}`);
+  process.exitCode = 1;
 } finally {
   await browser?.close();
   await server.stop();

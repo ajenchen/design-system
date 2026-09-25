@@ -23,13 +23,23 @@
  * 而再跑一次全 1035 支的掃描等於把 CI 時間加倍。錨(同日):新加的蓋板 story 用了需要 SidebarProvider 的
  * demo helper,`tsc -b`、`build:lib`、`build-storybook` 三關全綠,story 卻整則渲不出來(runtime 才炸)。
  *
+ * **沒量到 = 儀器失效(exit 1,訊息標「儀器失效」),不是通過**(2026-09-25,M37):每則 story 經 lib/launch-browser.mjs 的 openStory
+ * (全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報渲染完成(含 play)、通過 render-health、版面連續靜止
+ * SETTLE_FRAMES 個影格,才量 footer。取代原本的 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡
+ * 140ms。原本任何一則載入失敗只印一行「! id」、記進「載入失敗 N 支」,**然後照樣 exit 0** —— 那幾則的 footer 從沒量過,
+ * 卻算在「掃描 1042 支(不抽樣)」裡。現在分兩類:
+ *   - story 自己渲染拋錯(Storybook 錯誤頁、沒有任何同源 404)→ 照舊算「整則渲不出來」(本閘的產品判定,exit 1);
+ *   - 其他一切沒量到(同源 404 / 等不到渲染完成 / 空畫面 / 頁面例外 / 版面不靜止 / 量測本身丟例外)→ 儀器失效,
+ *     逐則點名、附同源 404 帳本,exit 1(三種模式都是;--selftest 不得把它算成「抓到了」)。
+ *     不用 exit 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
+ *
  * Run: `node scripts/overlay-footer-gutter-invariant.mjs [--survey] [--build=dir] [--lanes=4]`
  *      `--survey` 只印清單不判定(盤點用)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -42,6 +52,8 @@ const SURVEY = process.argv.includes('--survey')
 const LANES = Number(arg('lanes', '4'))
 const LIMIT = Number(arg('limit', '0'))
 const TOLERANCE_PX = 1
+// 開 story 後要求版面連續靜止幾個影格才量 footer 左緣(量的是幾何,要等排版與進場動畫跑完)
+const SETTLE_FRAMES = 10
 
 if (!existsSync(join(BUILD, 'index.json'))) {
   console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
@@ -136,8 +148,10 @@ const SHIFT = () => {
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const bad = []
 const survey = []
-let scanned = 0, footersChecked = 0, loadErrors = 0, noRef = 0
+let scanned = 0, footersChecked = 0, noRef = 0
 const crashed = []
+/** 儀器失效:沒量到的 story(不是產品判定)。 */
+const instrumentFailures = []
 let cursor = 0
 const browsers = []
 try {
@@ -145,7 +159,6 @@ try {
     const browser = await launchBrowser()
     browsers.push(browser)
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-    page.on('pageerror', () => {})
     for (;;) {
       if ((SELFTEST && bad.length > 0) || (SELFTEST_CRASH && crashed.length > 0)) break
       const idx = cursor++
@@ -153,9 +166,20 @@ try {
       const s = stories[idx]
       scanned += 1
       try {
-        await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-        await page.waitForFunction(() => document.querySelector('#storybook-root')?.children.length > 0 || document.querySelector('.sb-show-errordisplay'), null, { timeout: 15_000 }).catch(() => {})
-        await page.waitForTimeout(140)
+        try {
+          await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, {
+            settleFrames: SETTLE_FRAMES, notFound: server.notFound, navigationTimeoutMs: 30_000, timeoutMs: 30_000,
+          })
+        } catch (error) {
+          if (!(error instanceof StoryRenderInstrumentError)) throw error
+          // story 自己渲染拋錯(錯誤頁、而且沒有任何**同源**檔案缺檔 / 載入失敗)= 本閘順帶擋的「整則渲不出來」;其餘都是沒量到。
+          // 只看同源:跨網域的遠端頭像圖(i.pravatar.cc)在沙箱裡本來就載不到,不能讓它把真的渲染崩潰改判成儀器失效。
+          const sameOriginFailures = error.failedRequests.filter((request) => /^(?:\d{3} )?\//.test(request))
+          const selfCrash = (error.kind === 'storybook-error' || error.kind === 'render-errored') && sameOriginFailures.length === 0
+          if (selfCrash) crashed.push({ story: s.id, name: s.name, 訊息: error.storybookError || error.reason })
+          else instrumentFailures.push({ story: s.id, detail: error.detail })
+          continue
+        }
         if (SELFTEST_CRASH) {
           await page.evaluate(() => {
             const d = document.createElement('div')
@@ -195,14 +219,14 @@ try {
         const n = Math.min(await triggers.count(), 6)
         for (let i = 0; i < n; i += 1) {
           await triggers.nth(i).click({ timeout: 3_000 }).catch(() => null)
-          await page.waitForTimeout(260)
+          await page.waitForTimeout(260) // 點開之後:等下拉 / 浮層的開啟動畫跑完再量 footer
           await collect(`點開第 ${i + 1} 個下拉`)
           await page.keyboard.press('Escape').catch(() => null)
-          await page.waitForTimeout(80)
+          await page.waitForTimeout(80) // 等關閉動畫跑完,不擋下一個觸發點
         }
       } catch (error) {
-        loadErrors += 1
-        console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
+        // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行、照樣 exit 0)
+        instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
       }
       if (scanned % 250 === 0) console.error(`… ${scanned}/${stories.length} 支掃完`)
       if ((SELFTEST && bad.length > 0) || (SELFTEST_CRASH && crashed.length > 0)) { console.error(`… 對照組在第 ${scanned} 支就抓到了,提早收工`); break }
@@ -217,9 +241,20 @@ try {
   await Promise.race([server.stop(), new Promise((r) => setTimeout(r, 3_000).unref?.())]).catch(() => null)
 }
 
-console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
+console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`量到可見的 footer:${footersChecked} 個(其中 ${noRef} 個上方沒有可對齊的東西,略過)`)
 console.log(`整則渲不出來的 story:${crashed.length} 支`)
+
+// 儀器失效:逐則點名 + 同源 404 帳本。任何模式下都 exit 1 —— 沒量到的 story 不得被讀成「footer 都對齊」或「對照組抓到了」
+const reportInstrumentFailures = () => {
+  if (!instrumentFailures.length) return false
+  console.error(`\n✗ 儀器失效:${instrumentFailures.length} 支 story 沒量到 —— 這不是產品裁決,但這一趟不能算通過:`)
+  for (const f of instrumentFailures.slice(0, 40)) console.error(`  - ${f.story}:${f.detail}`)
+  if (instrumentFailures.length > 40) console.error(`  …另外 ${instrumentFailures.length - 40} 支`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  return true
+}
 
 if (SURVEY) {
   const byKey = new Map()
@@ -229,8 +264,9 @@ if (SURVEY) {
   }
   console.log('\n── 盤點(元件 | 殼 | 參照 | footer 左內距 | 差) ──')
   for (const [k, v] of [...byKey.entries()].sort()) console.log(`  ${v}×  ${k}`)
-  process.exit(0)
+  process.exit(reportInstrumentFailures() ? 1 : 0)
 }
+if (reportInstrumentFailures()) process.exit(1)
 
 if (SELFTEST_CRASH) {
   const ok = crashed.length > 0

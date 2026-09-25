@@ -18,7 +18,9 @@
 // 改 HEADER_TABS_SLOT_WRAPPER_CLASS / TabsList overflow DOM 必跑此 script,fail → exit 1 阻 commit。
 // Run: `npm run test:header-tabs-slot-invariants` 或 `node scripts/header-tabs-slot-invariants.mjs`
 
-import { launchVerifyBrowser, serveStaticDir, attachStaticRoute } from './lib/sandboxed-verify-browser.mjs'
+import { launchVerifyBrowser } from './lib/sandboxed-verify-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
@@ -66,25 +68,47 @@ if (!existsSync(STATIC)) {
   }
 }
 
-// Transport + launch 皆消費 scripts/lib/sandboxed-verify-browser.mjs(M17 單一住所):
-// primary = inline http server + 預設 multiprocess chromium(CI / user machine 路徑);
-// 受限環境自動降級為 route interception / --single-process,並印出實際走的路徑(無靜默降級)。
-const served = await serveStaticDir(STATIC, { port: 7501 })
+// 供檔:從本次獨佔的建置快照(lib/a11y-static-server.mjs,2026-09-25 起;全部瀏覽器閘同一支)。
+// 原本是 sandboxed-verify-browser 的 serveStaticDir:讀**活的** storybook-static、固定 7501 埠 ——
+// 別人同時 build-storybook 清空目錄就全部 404(2026-09-24 data-table 閘踩過),而且沒有 404 帳本可以印。
+// launch 仍消費 sandboxed-verify-browser(primary multiprocess,受限環境降級 --single-process,印出實際路徑)。
+const served = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const { browser, mode: launchMode } = await launchVerifyBrowser(chromium)
-console.log(`ℹ transport=${served.transport} launch=${launchMode}`)
+console.log(`ℹ transport=snapshot-http-server launch=${launchMode}`)
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-await attachStaticRoute(page, served)
 
 const failures = []
 const passes = []
+/** 儀器失效(story 沒渲染完成 / 缺檔 / 等不到 tablist):沒量到,不是產品裁決 —— 但一律 exit 1,不算通過也不准略過 */
+const instrumentFailures = []
 
 function record(invariant, label, pass, detail = '') {
   if (pass) passes.push(`✓ ${invariant} | ${label}`)
   else failures.push(`✗ ${invariant} | ${label} | ${detail}`)
 }
 
+/**
+ * 開一則 story 並證明它真的渲染完成(lib/launch-browser.mjs 的 openStory,全部瀏覽器閘共用)。
+ * 原本是 networkidle + 等 tablist 15 秒 + 固定睡 400/500ms:缺 story 檔時只記一條「tablist 未出現」,
+ * 說不出是哪個檔 404,也分不出是元件壞了還是儀器沒拿到檔。
+ * 現在:Storybook 回報渲染完成 → tablist(量測前提)出現 → beforeSettle → 連續 10 影格靜止才量。
+ * 等不到 → 記成儀器失效(點名 story、附 Storybook 錯誤原文與 404),回 false,該段不量。
+ */
+async function loadStory(id, label, { beforeSettle = null } = {}) {
+  try {
+    await openStory(page, `${served.origin}/iframe.html?id=${id}&viewMode=story`, {
+      waitFor: '[data-slot="tabs-list"]', settleFrames: 10, beforeSettle, notFound: served.notFound,
+    })
+    return true
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    instrumentFailures.push(`✗ ${label} | ${error.message}`)
+    return false
+  }
+}
+
 // 3 個 tabsSlot × overflow story(story ID = export name;改 export 名 = 此處同步改,
-// story 載入失敗 → record fail,禁 silent skip 假綠)
+// story 載入失敗 → 儀器失效(exit 1),禁 silent skip 假綠)
 const STORIES = [
   { id: 'design-system-patterns-header-anatomy--with-tabs', mode: 'none', label: 'tabsSlot×none' },
   { id: 'design-system-patterns-header-anatomy--with-tabs-overflow-scroll', mode: 'scroll', label: 'tabsSlot×scroll' },
@@ -96,14 +120,7 @@ const fmt = (v) => (v == null ? 'null' : typeof v === 'number' ? v.toFixed(2) : 
 const SELFTEST = process.argv.includes('--selftest')
 
 for (const story of STORIES) {
-  await page.goto(`http://localhost:7501/iframe.html?id=${story.id}&viewMode=story`, { waitUntil: 'networkidle' })
-  try {
-    await page.waitForSelector('[data-slot="tabs-list"]', { timeout: 15000 })
-  } catch {
-    record('LOAD', `${story.label} story 載入(${story.id})`, false, 'tablist([data-slot=tabs-list])未出現 — story 缺失/改名/render 失敗,禁 silent skip')
-    continue
-  }
-  await page.waitForTimeout(400)
+  if (!(await loadStory(story.id, story.label))) continue
 
   const d = await page.evaluate(() => {
     const header = document.querySelector('header')
@@ -188,18 +205,15 @@ for (const story of STORIES) {
 // 這一段是 render-level 防線:帶 inlineAction 的 story,overlay 裡就必須有那顆鈕,且位置對齊 tab 右緣。
 {
   const story = { id: 'design-system-components-tabs-展示--with-suffix', label: 'Tabs×inlineAction' }
-  await page.goto(`http://localhost:7501/iframe.html?id=${story.id}&viewMode=story`, { waitUntil: 'networkidle' })
-  let loaded = true
-  try { await page.waitForSelector('[data-slot="tabs-list"]', { timeout: 15000 }) } catch { loaded = false }
-  if (!loaded) record('W3-LOAD', `${story.label} story 載入(${story.id})`, false, 'tablist 未出現 — story 缺失/改名/render 失敗,禁 silent skip')
-  else {
-    // 對照組(`--selftest`):重現這個 bug 當時的可觀測狀態 —— overlay 裡什麼都沒有 ——
-    // W3 必須因此變紅。不跑這一步的話,「W3 綠」不算證據(儀器要先證明它該紅的時候會紅)。
-    if (SELFTEST) await page.evaluate(() => {
-      const strip = () => { const o = document.querySelector('.pointer-events-none.absolute'); if (o) o.replaceChildren() }
-      strip(); new MutationObserver(strip).observe(document.body, { childList: true, subtree: true })
-    })
-    await page.waitForTimeout(500)
+  // 對照組(`--selftest`):重現這個 bug 當時的可觀測狀態 —— overlay 裡什麼都沒有 ——
+  // W3 必須因此變紅。不跑這一步的話,「W3 綠」不算證據(儀器要先證明它該紅的時候會紅)。
+  // 在靜止判定**之前**掛上(beforeSettle),靜止判定就會一併等到「overlay 被清空之後」的畫面。
+  // 注意 waitFor 是 tablist(量測前提)而不是 overlay 的鈕 —— 鈕沒渲染正是 W3 要抓的產品缺陷,等它會把產品紅改寫成儀器紅。
+  const strip = SELFTEST ? (p) => p.evaluate(() => {
+    const clear = () => { const o = document.querySelector('.pointer-events-none.absolute'); if (o) o.replaceChildren() }
+    clear(); new MutationObserver(clear).observe(document.body, { childList: true, subtree: true })
+  }) : null
+  if (await loadStory(story.id, story.label, { beforeSettle: strip })) {
     const a = await page.evaluate(() => {
       const list = document.querySelector('[data-slot="tabs-list"]')
       const scope = list?.parentElement
@@ -225,16 +239,25 @@ for (const story of STORIES) {
 // ── Output ──
 console.log(`\n=== Header tabsSlot W2 Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
-console.log(`FAIL: ${failures.length}\n`)
+console.log(`FAIL: ${failures.length}`)
+console.log(`INSTRUMENT-FAIL: ${instrumentFailures.length}\n`)
 if (passes.length > 0) console.log(passes.join('\n'))
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
 }
+if (instrumentFailures.length > 0) {
+  console.log('\n--- 儀器失效(沒量到,不是產品裁決;但這次不能算通過)---')
+  console.log(instrumentFailures.join('\n'))
+}
 
 await browser.close()
-await served.close()
+await served.stop()
 
+if (instrumentFailures.length > 0) {
+  console.error(`\n✗ ${instrumentFailures.length} 則 story 沒有量到(儀器失效)—— ${SELFTEST ? '對照組不成立' : '不變條件未驗'},exit 1。`)
+  process.exit(1)
+}
 if (SELFTEST) {
   const w3 = failures.filter((f) => f.includes('W3-'))
   console.log(w3.length >= 2

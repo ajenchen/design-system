@@ -36,12 +36,20 @@
 // 為什麼用真瀏覽器:F1 的「差異集合」與 F2 的「有幾個框」都只有 computed style 答得出來。
 // 起不了 Chromium 的受限環境回報 SKIPPED-ENV(同 data-table-invariants 先例),不假綠也不假紅。
 //
-// Run: `node scripts/focus-indicator-invariants.mjs`
+// 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+// Storybook 回報渲染完成(含 play)+ render-health + 被量的元件本身出現 + 版面連續 10 影格靜止,才開始 Tab / 量。
+// 取代原本「networkidle + 固定睡 500ms」:舊寫法在 story 開不起來(chunk 缺檔 / 錯誤頁)時照樣往下量 ——
+// FileViewer 那段逐一試候選 story,第一支開不起來就**靜靜換下一支**,紅燈永遠不會出現(M37:沒量到被當成沒這回事)。
+// 現在任何一支開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決,`--selftest` 下也不算「對照組如預期紅」。
+// 「元件是否畫出某個零件」本身是產品裁決的地方(AgentPanel 並排態的調寬把手)不拿來當 waitFor,只等面板本身 + 版面靜止,
+// 缺把手照舊是那一條紅,不會被改寫成儀器失效。
+//
+// Run: `node scripts/focus-indicator-invariants.mjs`(讀 `<cwd>/storybook-static`)
 
-import { chromium } from 'playwright'
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const STATIC = join(process.cwd(),'storybook-static')
@@ -55,8 +63,8 @@ const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: '
 // 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「元件沒畫框」
 process.on('exit',code=>{if(code&&server.notFound.length)console.error('同源 404:',[...new Set(server.notFound)].join(', '))})
 const B=server.origin
-let br; try{br=await chromium.launch({headless:true,args:['--single-process','--no-sandbox']})}
-catch(e){await server.stop();console.error('SKIPPED-ENV',String(e.message).split('\n')[0]);process.exit(0)}
+// 起不了 Chromium → SKIPPED-ENV exit 0(沙箱參數與這條政策都由 lib/launch-browser.mjs 統一給)
+const br=await launchBrowserOrSkip()
 const pg=await br.newPage({viewport:{width:1280,height:800}})
 if (SELFTEST) {
   // 對照組:把焦點指示器整個抹掉 —— 這正是 DS 被咬過三次的那個形狀
@@ -74,17 +82,29 @@ if (SELFTEST) {
     else apply()
   })
 }
-const go=async id=>{await pg.goto(`${B}/iframe.html?id=${id}&viewMode=story`,{waitUntil:'networkidle'});await pg.waitForTimeout(500)}
 const out=[];let fails=0
+/** 開 story 並證明它真的渲染完成(openStory);開不起來 = 儀器失效:印出已量到的條目、點名 story、exit 2(exit 時附同源 404)。 */
+const go=async(id,{waitFor=null}={})=>{
+  try{await openStory(pg,`${B}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`,{waitFor,settleFrames:10,notFound:server.notFound})}
+  catch(error){
+    if(!(error instanceof StoryRenderInstrumentError))throw error
+    console.log(out.join('\n'))
+    console.error(`✗ ${error.message}`)
+    console.error('✗ focus-indicator-invariants:儀器失效 —— 這不是產品裁決,也不算通過(--selftest 下不算對照組如預期紅)')
+    await br.close();await server.stop();process.exit(2)
+  }
+}
 const check=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`);if(!p)fails++}
 
 // ══ J2d / C14 FileViewer 縮圖 ══
 let opened=false
 for (const sid of ['design-system-components-fileviewer-設計規格--inspector','design-system-components-fileviewer-設計原則--filmstrip-rule','design-system-components-fileviewer-展示--notion-gallery','design-system-components-fileviewer-展示--event-photos-collection']) {
+  // 候選 story 本身開不起來 = 儀器失效(go 內 exit 2);只有「渲染完成、但點不出縮圖列」才換下一支
   await go(sid)
   // story 的觸發鈕位置不固定(Inspector 有 3 顆 control 鈕在前),逐顆試到縮圖出現為止
   const cands = await pg.$$('button')
   for (let i = 0; i < Math.min(cands.length, 8); i++) {
+    // 700ms = 點擊後等檢視器的開啟動畫與縮圖列掛上(點錯鈕時什麼都不會出現,所以不能改成等元素)
     try { await cands[i].click({ timeout: 1200 }); await pg.waitForTimeout(700) } catch {}
     if (await pg.$('[data-thumb-index]')) break
   }
@@ -105,6 +125,7 @@ else {
   // Playwright 的 keyboard.press 是真按鍵 → :focus-visible 會成立
   await pg.evaluate(i=>{const t=[...document.querySelectorAll('[data-thumb-index]')];(t[Math.max(0,i-1)]||t[0]).focus()}, res.idx)
   await pg.keyboard.press('Tab')
+  // 等 Tab 之後 :focus-visible 的樣式套上(量的是 outline 樣式 / 寬度 / offset,不是會過渡的顏色)
   await pg.waitForTimeout(150)
   const after = await pg.evaluate(() => {
     const el=document.activeElement
@@ -124,7 +145,7 @@ else {
 }
 
 // ══ H1g FileItem ══
-await go('design-system-components-fileitem-展示--clickable')
+await go('design-system-components-fileitem-展示--clickable',{waitFor:'[data-row-focus-target]'})
 const fi=await pg.evaluate(()=>{
   // 指示器要**通道無關**地量:DS 兩種幾何都走 outline,但列上的框歷史上是 box-shadow,
   // 而且未來還可能改。寫死通道的測試會在遷移時假紅(2026-09-07 就發生過)。
@@ -145,8 +166,9 @@ else{
   else out.push('… H1g 該 story 無 trailing action')}
 
 // ══ H1f TreeView:Tab 進場 ══
-await go('design-system-components-treeview-展示--file-browser')
+await go('design-system-components-treeview-展示--file-browser',{waitFor:'[role="tree"]'})
 await pg.keyboard.press('Tab')
+// 等 Tab 進場後 aria-activedescendant 與鍵盤模態的游標樣式落定
 await pg.waitForTimeout(250)
 const tv=await pg.evaluate(()=>{
   const root=document.querySelector('[role="tree"]')
@@ -171,7 +193,8 @@ else{
 // 上限本身怎麼算由 `scripts/agent-panel-breakpoint.mjs` 負責。
 for(const vw of [1600,1280,1080]){
   await pg.setViewportSize({width:vw,height:800})
-  await go('design-system-components-agentpanel-展示--task-assistant')
+  // 等面板本身(量的是它的寬度);調寬把手在不在是這一條的產品裁決,不拿來當 waitFor
+  await go('design-system-components-agentpanel-展示--task-assistant',{waitFor:'[role="complementary"]'})
   const h = await pg.$('[role="separator"][aria-orientation="vertical"]')
   if(!h){ check(`J2g @視窗${vw} 有可調寬把手(並排態應該要有)`, false, '找不到 handle'); continue }
   await h.focus()
@@ -185,6 +208,7 @@ for(const vw of [1600,1280,1080]){
     const x = document.querySelector('[role="separator"][aria-orientation="vertical"]')
     return x && x.getAttribute('aria-valuenow') === x.getAttribute('aria-valuemax')
   }, null, { timeout: 3000 }).catch(() => {})
+  // 等寬度過渡走完再量實寬(End 沒套用的話,下面 now===max 那一條會紅,不是被吞掉)
   await pg.waitForTimeout(350)
   const ap = await pg.evaluate(()=>{const x=document.querySelector('[role="separator"][aria-orientation="vertical"]')
     const panel=document.querySelector('[role="complementary"]')
@@ -199,7 +223,7 @@ for(const vw of [1600,1280,1080]){
 // 根因是 `tabIndex={readonly ? -1 : undefined}`:Radix 是 `tabIndex: 0` **之後**才 spread
 // 我們的 props(react-slider/dist/index.mjs:440-441 實查),`undefined` 是把它覆蓋掉。
 // 「傳 undefined = 不干預」是錯的直覺,所以這條要有閘守著。
-await go('design-system-components-slider-設計規格--overview')
+await go('design-system-components-slider-設計規格--overview',{waitFor:'[role="slider"]'})
 {
   const before = await pg.evaluate(()=>({
     total: document.querySelectorAll('[role="slider"]').length,
@@ -208,6 +232,7 @@ await go('design-system-components-slider-設計規格--overview')
   check('F5 每個 slider thumb 都可 Tab(WCAG 2.1.1)', before.total>0 && before.tabbable===before.total,
         `${before.tabbable}/${before.total} 可 Tab`)
   let landed=false
+  // 每次 Tab 後稍等再讀 activeElement(只是節奏,判準是「焦點落在 slider 上」本身)
   for(let i=0;i<20;i++){ await pg.keyboard.press('Tab'); await pg.waitForTimeout(70)
     if(await pg.evaluate(()=>document.activeElement?.getAttribute('role')==='slider')){landed=true;break} }
   check('F5 真的用 Tab 走得到 slider', landed)
@@ -231,7 +256,7 @@ await go('design-system-components-slider-設計規格--overview')
 for (const story of ['design-system-components-switch-展示--modes',
                      'design-system-components-checkbox-展示--modes',
                      'design-system-components-slider-設計規格--overview']) {
-  await go(story)
+  await go(story,{waitFor:'[role="switch"],[role="checkbox"],[role="slider"]'})
   const rows = await pg.evaluate(()=>[...document.querySelectorAll('[role="switch"],[role="checkbox"],[role="slider"]')]
     .map(x=>({ role:x.getAttribute('role'), tab:x.tabIndex,
       excused: x.getAttribute('aria-readonly')==='true' || x.getAttribute('aria-disabled')==='true' || x.hasAttribute('disabled') })))

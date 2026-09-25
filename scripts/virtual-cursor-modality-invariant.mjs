@@ -38,11 +38,18 @@
  * 所有 tag='new' 的斷言就該整批變紅;沒變紅代表這支閘量的不是它宣稱的東西。
  *
  * `--static=<dir>`:不讀 repo 根的 storybook-static,改讀指定目錄(給不想覆蓋主 build 的旁支驗證用)。
+ *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 被量 / 被點的元素本身出現 → 對照組注入(beforeSettle)→ 版面連續 10 影格靜止。
+ * 取代原本「load + 等元素 15 秒(逾時被 `.catch(() => {})` 吞掉)+ 固定睡 300ms」:舊寫法在 story 開不起來時
+ * 各段以「前提」紅(讀起來像產品壞了),而 TreeView 段連前提都沒有 —— 找不到列就**整段靜靜跳過**,全綠(M37:沒量到被當成沒這回事)。
+ * 現在任何一則開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決,`--selftest` 下也不算「對照組如預期紅」。
+ * TreeView 段原本用 id 前綴挑到的是 `…-展示--docs`(docs 項目不是 story,沒有 story 的渲染完成訊號),改挑 type = story 的第一則。
  */
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
@@ -89,7 +96,7 @@ const OLD_BEHAVIOUR_CSS = `
   [data-sidebar="menu-button"]:hover, [role="tab"]:hover, [role="row"]:hover [role="checkbox"], [data-tree-row]:hover { outline: none !important; }
   [role="listbox"].group\\/listbox [role="option"]:hover { background-color: transparent !important; }`
 // TreeView 的游標只從 aria-activedescendant 得知,CSS 釘不到 → 觀察那個屬性,只把游標那一列釘回舊行為
-// F 的對照組:舊行為「打字後自動落點的反白畫框」—— 把游標列釘成永遠有框(蓋過 gotoStory 注入的 A–E 對照 CSS,後加者勝),F 的 'new' 斷言必紅
+// F 的對照組:舊行為「打字後自動落點的反白畫框」—— 把游標列釘成永遠有框(蓋過 openCase 注入的 A–E 對照 CSS,後加者勝),F 的 'new' 斷言必紅
 const OLD_BEHAVIOUR_TYPING_CSS = `${GRAB_CURSOR} { outline: 2px solid var(--ring) !important; outline-offset: -2px !important; background-color: transparent !important; }`
 const OLD_BEHAVIOUR_TREE_JS = `(() => {
   const pin = () => {
@@ -102,11 +109,27 @@ const OLD_BEHAVIOUR_TREE_JS = `(() => {
   new MutationObserver(pin).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['aria-activedescendant', 'class'] })
   pin()
 })()`
-const gotoStory = async (page, id, waitSel) => {
-  await page.goto(story(id), { waitUntil: 'load' })
-  if (waitSel) await page.waitForSelector(waitSel, { timeout: 15000 }).catch(() => {})
-  if (SELFTEST) { await page.addStyleTag({ content: OLD_BEHAVIOUR_CSS }); await page.addScriptTag({ content: OLD_BEHAVIOUR_TREE_JS }) }
-  await page.waitForTimeout(300)
+/**
+ * 開 story:渲染完成 + 健康 + `waitSel`(被量 / 被點的元素本身)出現 → 對照組注入 → 版面連續 10 影格靜止。
+ * 開不起來 = 儀器失效:印出已量到的條目、點名 story、exit 2(exit 時附同源 404)—— 不回來讓呼叫端以「前提」指控產品。
+ */
+const openCase = async (page, id, waitSel) => {
+  try {
+    await openStory(page, story(id), {
+      waitFor: waitSel || null,
+      beforeSettle: SELFTEST ? async (p) => { await p.addStyleTag({ content: OLD_BEHAVIOUR_CSS }); await p.addScriptTag({ content: OLD_BEHAVIOUR_TREE_JS }) } : null,
+      settleFrames: 10,
+      notFound: sv.notFound,
+    })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(out.join('\n'))
+    console.error(`✗ ${error.message}`)
+    console.error('✗ virtual-cursor-modality:儀器失效 —— 這不是產品裁決,也不算通過(--selftest 下不算對照組如預期紅)')
+    await browser.close().catch(() => {})
+    await sv.stop()
+    process.exit(2)
+  }
 }
 
 // 「已選項」= 各元件語意上的選中項;「游標項」= cmdk data-selected / Radix data-highlighted
@@ -196,7 +219,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
 for (const t of TARGETS) {
   // ── (A) 真滑鼠點開 ───────────────────────────────────────────────────
-  await gotoStory(page, t.id, t.trigger)
+  await openCase(page, t.id, t.trigger)
   const box = await centerOf(page, t.trigger)
   if (!box) { ck(`${t.name} 前提:找得到觸發器`, false, t.trigger); continue }
   await page.mouse.click(box.x, box.y); await page.waitForTimeout(700)
@@ -243,7 +266,7 @@ for (const t of TARGETS) {
   }
 
   // ── (C) 純鍵盤開啟 → 立刻有框 ───────────────────────────────────────
-  await gotoStory(page, t.id, t.trigger)
+  await openCase(page, t.id, t.trigger)
   let onTrigger = false
   for (let i = 0; i < 25 && !onTrigger; i++) {
     await page.keyboard.press('Tab')
@@ -291,17 +314,19 @@ const runState = (page, t, start, size) => page.evaluate(({ items, cursorAttr, s
 }, { ...t, start, size })
 const IDLE_BG = 'rgba(0, 0, 0, 0)'
 const openGrabTarget = async (t) => {
-  await gotoStory(page, t.id, t.trigger || t.items)
+  await openCase(page, t.id, t.trigger || t.items)
   if (t.trigger) {
     const box = await centerOf(page, t.trigger)
     if (!box) { ck(`${t.name} D 前提:找得到觸發器`, false, t.trigger); return false }
     await page.mouse.click(box.x, box.y)
+    // 點開後等選項出現、再等浮層開啟動畫走完(選項沒出現時 pickRun 會以「前提」紅,不是被吞掉)
     await page.waitForSelector(t.items, { timeout: 5000 }).catch(() => {})
     await page.waitForTimeout(500)
   }
   if (t.focusFirst) {
     const box = await centerOf(page, t.focusFirst)
     if (!box) { ck(`${t.name} D 前提:找得到搜尋列`, false, t.focusFirst); return false }
+    // 等點擊後焦點與輸入模態落定
     await page.mouse.click(box.x, box.y); await page.waitForTimeout(300)
   }
   return true
@@ -358,10 +383,11 @@ for (const t of GRAB_TARGETS) {
 // ── TreeView:常駐清單,三態都在同一頁驗 + (E) hover 與框可同時存在 ─────────
 {
   const idx = JSON.parse(readFileSync(join(SERVED, 'index.json'), 'utf8'))
-  const tid = Object.keys(idx.entries).find((i) => /treeview-展示--/.test(i))
+  // 只挑 story(type = story):id 前綴會先撞到 `…-展示--docs`,那是 docs 頁,不是 story
+  const tid = Object.entries(idx.entries).find(([i, e]) => e.type === 'story' && /treeview-展示--/.test(i))?.[0]
   if (!tid) ck('TreeView 前提:找得到 story', false, '找不到 treeview-展示 story —— 沒東西可驗不能算綠')
   if (tid) {
-    await gotoStory(page, tid, '[role="treeitem"]')
+    await openCase(page, tid, '[role="treeitem"]')
     const rowBox = await page.evaluate(() => { const el = document.querySelector('[role="treeitem"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + 24, y: r.top + r.height / 2 } })
     if (rowBox) {
       await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)
@@ -424,7 +450,7 @@ for (const t of GRAB_TARGETS) {
           ck('TreeView A2 指標模態 hover:**無框**', !hv.ring, `「${hv.text}」`)
         }
       }
-    }
+    } else ck('TreeView 前提:找得到 treeitem 的位置', false, '渲染完成且 treeitem 已出現,卻量不到它的位置 —— 整段沒驗不能算綠')
   }
 }
 
@@ -492,7 +518,7 @@ for (const t of [
   { name: 'TimePicker', id: 'design-system-components-timepicker-展示--modes' },
   { name: 'Combobox(div 觸發器)', id: 'design-system-components-combobox-展示--modes' },
 ]) {
-  await gotoStory(page, t.id, '#storybook-root [role="combobox"]')
+  await openCase(page, t.id, '#storybook-root [role="combobox"]')
   if (SELFTEST) await page.addStyleTag({ content: OLD_BEHAVIOUR_TRIGGER_CSS })
   await page.mouse.move(2, 2)
   let hit = null
@@ -525,7 +551,7 @@ const PERSISTENT = [
   { name: 'Tabs', id: 'design-system-components-tabs-展示--default', match: '[role="tab"]', hoverChanges: null },
 ]
 for (const p of PERSISTENT) {
-  await gotoStory(page, p.id, p.match.split(':')[0])
+  await openCase(page, p.id, p.match.split(':')[0])
   const hit = await tabTo(p.match)
   if (!hit) { ck(`${p.name} E 前提:Tab 走得到 ${p.match}`, false); continue }
   await page.waitForTimeout(700)
@@ -539,7 +565,7 @@ for (const p of PERSISTENT) {
 // DataTable:Tab 到列的核取方塊(真焦點,框在方塊上),滑鼠移到同一列 → 列有 hover 底色、方塊的框仍在
 {
   const id = 'design-system-components-datatable-展示--selection-keyboard-and-shift'
-  await gotoStory(page, id, '[role="row"]')
+  await openCase(page, id, '[role="row"]')
   // 只認資料列(data-row-index):表頭列的全選框 Tab 順序更前,而表頭沒有 hover 底色(2026-09-09 首跑抓到)
   const hit = await tabTo('[role="row"][data-row-index] [role="checkbox"], [role="row"][data-row-index] input[type="checkbox"]')
   if (!hit) ck('DataTable E 前提:Tab 走得到資料列的核取方塊', false)
@@ -562,7 +588,7 @@ for (const p of PERSISTENT) {
 // TimePicker 欄:不搶反白(游標永遠 = 選中,滑鼠 hover 不搬它)。滑鼠停在別格 → 按 ↓ → 那格 hover 底色仍在、選中格有框
 // (modes 那支的 onChange 是 no-op、值不會動;用 meeting-slot,有 state)
 {
-  await gotoStory(page, 'design-system-components-timepicker-展示--meeting-slot', COMBOBOX_TRIGGER)
+  await openCase(page, 'design-system-components-timepicker-展示--meeting-slot', COMBOBOX_TRIGGER)
   const box = await centerOf(page, COMBOBOX_TRIGGER)
   if (!box) ck('TimePicker E 前提:找得到觸發器', false)
   else {

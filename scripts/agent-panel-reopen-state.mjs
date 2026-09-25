@@ -22,13 +22,19 @@
 // 對抗驗證:把 `AgentPanelDock` 改回 `{open && children}` 後,本檔實測
 // 「關前 63 → 開回 180」而失敗;改回來則 63 → 63 通過。
 //
+// 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+// Storybook 回報渲染完成(含 play)+ render-health + 字型 + 版面連續 10 影格靜止,才開始造狀態。
+// 取代原本的「networkidle + 固定睡 800ms」(那只是「已渲染」的代理,M37)。story 開不起來(不存在的 id、
+// story 檔 404、錯誤頁、空畫面、頁面例外)= 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決;
+// 舊寫法在這種情況下會落到「G2 前提:這個 story 有面板」並 exit 1,把「沒量到」讀成「story 沒有面板」。
+//
 // Run: `node scripts/agent-panel-reopen-state.mjs`
 
 // G2:關閉面板後再打開,閱讀位置與草稿必須還在
-import { chromium } from 'playwright'
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
                  'packages/design-system/src/components/AgentPanel/agent-panel.tsx']) {
@@ -39,9 +45,8 @@ for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-f
 const sv=await startA11yStaticServer({rootDirectory:S,defaultFile:'iframe.html'})
 process.once('exit',(code)=>{ if(code&&sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const B=sv.origin
-let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+// 啟動參數與「起不來 → SKIPPED-ENV」行為沿用共用實作(M17:不再各自寫一份 --single-process --no-sandbox)
+const br = await launchBrowserOrSkip()
 // 視窗壓矮,讓對話一定超出可視高度 —— 否則「閱讀位置保存」這條會空轉
 // 視窗壓到很矮,對話才會有足夠的捲動範圍 —— 範圍太小的話「捲到中間」與「自動捲到底」
 // 會落在同一個值,測試就分不出有沒有回歸(2026-09-07 踩過:max=60 時兩者都是 60)
@@ -49,7 +54,17 @@ const pg=await br.newPage({viewport:{width:1600,height:300}})
 const idx=JSON.parse(readFileSync(join(sv.snapshot?.dir??S,'index.json'),'utf8'))
 const st={id:'design-system-components-agentpanel-展示--task-assistant'}
 console.log('story:', st.id)
-await pg.goto(`${B}/iframe.html?id=${st.id}&viewMode=story`,{waitUntil:'networkidle'}); await pg.waitForTimeout(800)
+try {
+  // 聊天捲動範圍是渲染後量寬 / 自動捲到底一格一格長出來的 → 等版面連續靜止再造狀態(量的是穩態,不是過渡中的值)。
+  // **不 waitFor 面板**:渲染完成且畫面健康之後仍找不到面板,是 story / 元件層的事實,交給下面「G2 前提」判紅(產品面)。
+  await openStory(pg, `${B}/iframe.html?id=${encodeURIComponent(st.id)}&viewMode=story`, { settleFrames: 10, notFound: sv.notFound })
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  // 沒量到 ≠ 沒問題:儀器失效(exit 2),不是產品裁決,也絕不算通過;同源 404 帳本由上方 exit 監聽印出
+  console.error(`✗ ${error.message}`)
+  console.error('✗ agent-panel-reopen-state:儀器失效 —— 這次什麼都沒量到')
+  await br.close(); await sv.stop(); process.exit(2)
+}
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
 const state = () => pg.evaluate(()=>{
@@ -80,14 +95,17 @@ else {
     return { cls:String(e.className).slice(0,40), max, now:Math.round(e.scrollTop) }
   })
   console.log('捲動容器:', JSON.stringify(scrollerBox))
+  // 等 scroll 事件派發、面板的捲動處理器記下「使用者剛剛在哪」(元素早已在畫面上,這段等的是事件 → 狀態,不是渲染)
   await pg.waitForTimeout(250)
   const before = await state()
   // 按關閉
   const closed = await pg.evaluate(()=>{ const b=[...document.querySelectorAll('button')].find(x=>/關閉/.test(x.getAttribute('aria-label')||'')); if(b){b.click();return true} return false })
+  // 等關閉的過渡走完、入口鈕掛上(祖先 display:none 讓捲動歸零 / ResizeObserver 0×0 那一刻也在這段裡)
   await pg.waitForTimeout(500)
   const mid = await state()
   // 再打開
   await pg.evaluate(()=>{ const f=document.querySelector('button[aria-haspopup="menu"]'); f?.click() })
+  // 等重新打開的過渡走完、面板把閱讀位置還原(還原發生在重新顯示之後的版面回呼裡)
   await pg.waitForTimeout(600)
   const after = await state()
   ck('G2 找得到關閉鈕', closed)

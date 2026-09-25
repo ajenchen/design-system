@@ -31,14 +31,21 @@
  *   3. 捲動容器沒有移動 → 量到的是靜止頁面的幀(16.58ms)並 exit 0,被讀成捲動成本。
  * 現在這些一律記為該次的「儀器失效」並寫明原因;某則 story 一次都沒量到就不印任何數字;
  * 只要有任何一次沒量到,整次執行 exit 1,並說明這份輸出不完整、不能拿來比較。
+ * 2026-09-25 起開 story 走 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):等 Storybook 回報渲染完成、
+ * 通過 render-health、第一列出現、版面連續靜止 SETTLE_FRAMES 個影格,才開始量。取代原本的 networkidle + 等第一列 +
+ * 固定睡 800ms(「過了 0.8 秒」只是「表格已穩定」的代理)。story 沒渲染出來(同源 404、錯誤頁、空畫面…)記為
+ * `story-not-rendered:<種類>`,訊息點名 story、附同源 404。
+ * Mount-to-first-row 的定義同時改成它的名字說的那件事:**導覽起點 → 第一列掛上 DOM**(頁面內 MutationObserver 記
+ * performance.now(),量到即停止觀察)。原本是「goto 等到 networkidle(含 500ms 閒置尾巴)+ 等第一列」的牆鐘時間,
+ * 量的其實是網路安靜下來的時間 —— 與舊紀錄不可直接比較(spec 六之三沒有記這個數字)。
  *
  * 用法:
  *   node scripts/runtime-perf-datatable.mjs                  量 storybook-static(本次獨佔快照)
  *   STORYBOOK_URL=http://… node scripts/runtime-perf-datatable.mjs
  *   CPU_THROTTLE_RATE=4 RUNS_PER_STORY=5 node scripts/runtime-perf-datatable.mjs
- *   node scripts/runtime-perf-datatable.mjs --selftest       對照組:四種合成頁,驗「該紅的紅、該綠的綠」
+ *   node scripts/runtime-perf-datatable.mjs --selftest       對照組:五種合成頁,驗「該紅的紅、該綠的綠」
  */
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 // 2026-09-08:沒給 STORYBOOK_URL 就直接服務 storybook-static(跟 data-table-scroll-cost.mjs 同款),不再依賴
 // 開著的 dev server —— 這支工具在沙箱裡從沒跑起來過(dev server 不在、而且 `--single-process` 沙箱一個 browser 只能開
@@ -74,6 +81,8 @@ const RUNS_PER_STORY = Number(process.env.RUNS_PER_STORY || 3)
 // 2026-05-14 bump 10s → 25s — storybook dev mode 偶爾慢 mount。等的是第一列本身,不是固定睡眠。
 const FIRST_ROW_TIMEOUT_MS = 25000
 const FIRST_ROW = '[role="row"][data-row-index="0"]'
+// 第一列出現後,要求版面連續靜止幾個影格才開始量(掛載副作用鏈 —— 格內量測、標籤摺疊 —— 是一格一格推進的)
+const SETTLE_FRAMES = 10
 
 function stats(arr) {
   const sorted = [...arr].sort((a, b) => a - b)
@@ -87,7 +96,7 @@ function stats(arr) {
  * 量一次。回傳 `{ ok: true, … }`,或 `{ ok: false, reason, detail }` —— 後者代表**這次沒量到**,
  * 不是被測物的任何性質;呼叫端不得把它算成 0 或略過不提。
  */
-async function measureRun(origin, storyId, { firstRowTimeoutMs = FIRST_ROW_TIMEOUT_MS } = {}) {
+async function measureRun(origin, storyId, { firstRowTimeoutMs = FIRST_ROW_TIMEOUT_MS, notFound = null } = {}) {
   const browser = await launchBrowser()
   try {
     const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
@@ -99,17 +108,26 @@ async function measureRun(origin, storyId, { firstRowTimeoutMs = FIRST_ROW_TIMEO
     // 量測條件照舊(開著 JS coverage),讓數字能跟 spec 六之三 / 2026-09-08 的歷史紀錄比。
     await page.coverage.startJSCoverage()
 
-    const mountStart = Date.now()
-    await page.goto(`${origin}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+    // 導覽起點 → 第一列掛上 DOM 的那一刻(performance.now() 以導覽起點為 0);量到即停止觀察,不拖累後面的捲動量測
+    await page.addInitScript((selector) => {
+      const mark = () => { if (!document.querySelector(selector)) return false; window.__firstRowAt = performance.now(); return true }
+      const observer = new MutationObserver(() => { if (mark()) observer.disconnect() })
+      observer.observe(document, { childList: true, subtree: true })
+    }, FIRST_ROW)
     try {
-      await page.waitForSelector(FIRST_ROW, { timeout: firstRowTimeoutMs })
-    } catch {
-      return { ok: false, reason: 'no-first-row', detail: `${firstRowTimeoutMs}ms 內沒出現 ${FIRST_ROW}` }
+      await openStory(page, `${origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story`, {
+        waitFor: FIRST_ROW, settleFrames: SETTLE_FRAMES, timeoutMs: firstRowTimeoutMs, notFound,
+      })
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      if (error.kind === 'wait-for-timeout') return { ok: false, reason: 'no-first-row', detail: `story 已渲染完成,但 ${firstRowTimeoutMs}ms 內沒出現 ${FIRST_ROW}${error.failedRequests.length ? `;同源 404 / 載入失敗:${error.failedRequests.join(', ')}` : ''}` }
+      return { ok: false, reason: `story-not-rendered:${error.kind}`, detail: error.message }
     }
-    const mountMs = Date.now() - mountStart
-
-    // Wait for table to stabilize
-    await page.waitForTimeout(800)
+    const firstRowAt = await page.evaluate(() => window.__firstRowAt ?? null)
+    if (typeof firstRowAt !== 'number') {
+      return { ok: false, reason: 'no-mount-mark', detail: '第一列已在畫面上,但頁面內的掛載時間標記沒有記到 —— Mount-to-first-row 沒量到' }
+    }
+    const mountMs = Math.round(firstRowAt)
 
     const initStats = await page.evaluate(() => ({
       totalRowsRendered: document.querySelectorAll('[role="row"][data-row-index]').length,
@@ -172,7 +190,7 @@ async function measureRun(origin, storyId, { firstRowTimeoutMs = FIRST_ROW_TIMEO
       return { ok: false, reason: 'did-not-scroll', detail: `捲動容器沒有移動(scrollTop ${scrollResult.startScrollTop} → ${scrollResult.finalScrollTop})—— 量到的會是靜止頁面的幀` }
     }
 
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(300) // 等最後幾幀的 rAF 與 longtask 觀察結果送達(PerformanceObserver 是非同步回報)
 
     const perfData = await page.evaluate(() => {
       const frames = window.__perf.frames
@@ -259,19 +277,24 @@ function verdict(reports, notFound = []) {
 }
 
 // ── 對照組:合成頁,證明「該紅的紅、該綠的綠」,跟機器快慢無關 ─────────────────────
-// 前三種頁面**永遠**不可能量到(沒有列 / 沒有捲動容器 / 容器內容不夠高),所以不論機器快慢都必須判儀器失效;
-// 第四種是會真的捲的頁面,必須量到。no-row 那頁沒有任何腳本,等 3 秒跟等 25 秒結論相同,故縮短等待。
+// 前四種頁面**永遠**不可能量到(Storybook 錯誤頁 / 沒有列 / 沒有捲動容器 / 容器內容不夠高),所以不論機器快慢都必須判儀器失效;
+// 第五種是會真的捲的頁面,必須量到。合成頁照 Storybook 預覽的外觀造(`__STORYBOOK_PREVIEW__.currentRender` 已走到 finished、
+// body class sb-show-main、內容在 #storybook-root),走跟正式量測同一條 openStory 路徑;頁面沒有會改變的腳本,等 3 秒跟等 25 秒結論相同,故縮短等待。
 async function selftest() {
   const root = mkdtempSync(join(tmpdir(), 'runtime-perf-selftest-'))
   if (!root) throw new Error('mkdtemp 回傳空路徑 —— 無法建立對照組頁面')
   const row = '<div role="row" data-row-index="0">PROJ-1421 付款頁 3DS 驗證逾時</div>'
   // 合成頁沒有 Tailwind:class 只給選擇器找得到,真正讓容器可捲的是 inline overflow。
   // (第一版只寫 class,會捲的那頁被判 did-not-scroll —— 正向對照組當場抓到。)
+  const storybookPage = (id, rootHtml, { bodyClass = 'sb-show-main', errorMessage = '' } = {}) => `<!doctype html><html><body class="${bodyClass}">`
+    + `<div id="storybook-root">${rootHtml}</div><div class="sb-errordisplay"><h1 id="error-message">${errorMessage}</h1><code id="error-stack"></code></div>`
+    + `<script>window.__STORYBOOK_PREVIEW__ = { currentRender: { id: ${JSON.stringify(id)}, phase: 'finished' } }</script></body></html>`
   const fixtures = [
-    { name: 'no-row', expect: 'no-first-row', html: '<div id="storybook-root"></div>' },
-    { name: 'no-scroller', expect: 'no-scroller', html: `<div role="grid">${row}</div>` },
-    { name: 'did-not-scroll', expect: 'did-not-scroll', html: `<div role="grid"><div class="overflow-y-auto" style="height:200px;overflow-y:auto">${row}</div></div>` },
-    { name: 'scrolls', expect: 'ok', html: `<div role="grid"><div class="overflow-y-auto" style="height:200px;overflow-y:auto"><div style="height:100000px">${row}</div></div></div>` },
+    { name: 'error-display', expect: 'story-not-rendered:storybook-error', html: (id) => storybookPage(id, '', { bodyClass: 'sb-show-errordisplay', errorMessage: "Couldn't find story matching 'error-display'." }) },
+    { name: 'no-row', expect: 'no-first-row', html: (id) => storybookPage(id, '<p>尚無待辦工單</p>') },
+    { name: 'no-scroller', expect: 'no-scroller', html: (id) => storybookPage(id, `<div role="grid">${row}</div>`) },
+    { name: 'did-not-scroll', expect: 'did-not-scroll', html: (id) => storybookPage(id, `<div role="grid"><div class="overflow-y-auto" style="height:200px;overflow-y:auto">${row}</div></div>`) },
+    { name: 'scrolls', expect: 'ok', html: (id) => storybookPage(id, `<div role="grid"><div class="overflow-y-auto" style="height:200px;overflow-y:auto"><div style="height:100000px">${row}</div></div></div>`) },
   ]
   const outcomes = []
   let bad = 0
@@ -279,10 +302,10 @@ async function selftest() {
     for (const fx of fixtures) {
       const dir = join(root, fx.name)
       mkdirSync(dir)
-      writeFileSync(join(dir, 'iframe.html'), `<!doctype html><html><body>${fx.html}</body></html>\n`)
+      writeFileSync(join(dir, 'iframe.html'), `${fx.html(fx.name)}\n`)
       const server = await startA11yStaticServer({ rootDirectory: dir, defaultFile: 'iframe.html', snapshot: false })
       try {
-        const report = await measureStory(server.origin, { id: fx.name, label: `fixture:${fx.name}` }, 1, { firstRowTimeoutMs: 3000 })
+        const report = await measureStory(server.origin, { id: fx.name, label: `fixture:${fx.name}` }, 1, { firstRowTimeoutMs: 3000, notFound: server.notFound })
         const got = report.results.length ? 'ok' : report.failures[0].reason
         const pass = got === fx.expect
         if (!pass) bad++
@@ -307,7 +330,7 @@ async function selftest() {
   ]
   for (const [name, pass] of checks) { if (!pass) bad++; console.log(`${pass ? '✓' : '✗'} ${name}`) }
   if (bad) { console.log(`\n✗ selftest:${bad} 項不符 —— 本工具的「量到/沒量到」判定不可信`); process.exit(1) }
-  console.log('\n✓ selftest:三種量不到的頁面都判儀器失效、會捲的頁面量得到,結論層 exit code 正確')
+  console.log('\n✓ selftest:四種量不到的頁面都判儀器失效、會捲的頁面量得到,結論層 exit code 正確')
   process.exit(0)
 }
 
@@ -323,7 +346,7 @@ const STORYBOOK_URL = process.env.STORYBOOK_URL || server.origin
 try {
   const reports = []
   for (const t of targets) {
-    const report = await measureStory(STORYBOOK_URL, t, RUNS_PER_STORY)
+    const report = await measureStory(STORYBOOK_URL, t, RUNS_PER_STORY, { notFound: server?.notFound })
     reports.push(report)
     for (const line of formatStory(report)) console.log(line)
   }

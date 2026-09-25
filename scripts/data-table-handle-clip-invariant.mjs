@@ -17,11 +17,17 @@
  *      把列捲到「列中心在 client 底上方 6px」→ 指標移過去 → 沒有把手(chip 會坐到捲軌上);再捲 10px 讓它放得進 → 有把手且底 ≤ client 底
  * `--selftest`:注入 `opacity:1 / pointer-events:auto !important` 讓所有把手強制顯示 → P1a / P1b / P2 / P3 必須紅(儀器先證明會紅)。
  *   node scripts/data-table-handle-clip-invariant.mjs [--static=<dir>] [--selftest]
+ *
+ * 開 story(2026-09-25 起)走 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):Storybook 回報渲染完成(含 play)
+ * + render-health + 列出現 + 注入 17px 捲軸之後版面連續靜止 N 個影格才開始量。原本是 `load` + 等列 + 固定睡 600ms。
+ * story 開不起來(chunk 404、渲染拋錯、等不到列)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與同源 404 帳本,exit 1;
+ * 不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
+ * 量測中途的固定等待(捲動後 250ms、移動指標後 450ms)不是「已渲染」的代理,是等互動本身的後果(見各處註解),保留。
  */
 import { existsSync, statSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -44,18 +50,24 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${
 const expect = (name, ok, flipInSelftest, detail) => check(name, SELFTEST && flipInSelftest ? !ok : ok, detail)
 
 let browser
+let instrumentFailure = null
 try {
   browser = await launchBrowser({ ignoreDefaultArgs: ['--hide-scrollbars'] })
   const page = await (await browser.newContext({ viewport: { width: 1400, height: 800 } })).newPage()
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
-  await page.waitForSelector('[data-datatable-hscroll] [role="row"]', { timeout: 20000 })
-  // 傳統捲軸幾何(Windows / macOS 接滑鼠):17px;overlay 捲軸下 clientHeight = offsetHeight,P3 量不到差異
-  await page.addStyleTag({ content: '::-webkit-scrollbar{width:17px;height:17px}::-webkit-scrollbar-thumb{background:#999}' })
-  await page.waitForTimeout(600)
-  if (SELFTEST) await page.addStyleTag({ content: 'button[aria-label*="拖"]{opacity:1!important;pointer-events:auto!important}' })
+  await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+    waitFor: '[data-datatable-hscroll] [role="row"]',
+    // 靜止判定之前注入:捲軸幾何改變 → 表格重量 → 重畫,由同一個靜止判定涵蓋(原本注入後固定睡 600ms)
+    beforeSettle: async (p) => {
+      // 傳統捲軸幾何(Windows / macOS 接滑鼠):17px;overlay 捲軸下 clientHeight = offsetHeight,P3 量不到差異
+      await p.addStyleTag({ content: '::-webkit-scrollbar{width:17px;height:17px}::-webkit-scrollbar-thumb{background:#999}' })
+      if (SELFTEST) await p.addStyleTag({ content: 'button[aria-label*="拖"]{opacity:1!important;pointer-events:auto!important}' })
+    },
+    settleFrames: 10, notFound: server.notFound,
+  })
 
   const handleSel = 'button[aria-label*="拖"]'
   const sc = () => page.evaluate(() => { const e = document.querySelector('[data-datatable-hscroll]'); return { top: e.scrollTop, left: e.scrollLeft } })
+  // 捲動後的 250ms 不是「已渲染」的代理:等的是捲動事件把閂鎖閂上、虛擬列重排,以及把手 150ms 的 opacity 過渡走完
   const scrollBy = async (px) => { await page.evaluate((d) => { document.querySelector('[data-datatable-hscroll]').scrollTop += d }, px); await page.waitForTimeout(250) }
   /** 所屬 body 面板(primary = center)的可視帶(client box)與所有列的中心。 */
   const geometry = () => page.evaluate(() => {
@@ -76,6 +88,7 @@ try {
   // ── P0 ──
   let g = await geometry()
   const r0 = fullyVisibleRow(g, 1)
+  // 移動指標後的 450ms(本檔各處同):等 hover 追蹤把把手掛上 / 放開閂鎖,以及把手 150ms 的 opacity 過渡走完 —— 元素早已在畫面上,不是「已渲染」的代理
   await page.mouse.move(r0.x, r0.cy); await page.waitForTimeout(450)
   let hs = await painted()
   check('P0 hover 完整可見的列 → 把手顯示、無 clip-path、中心 = 列中心、整顆在可視帶內', hs.length === 1 && hs[0].opacity === 1 && hs[0].clip === 'none' && Math.abs(hs[0].cy - r0.cy) <= 1 && hs[0].top >= g.bandTop - 0.5 && hs[0].bottom <= g.bandBottom + 0.5 && hs[0].hit, JSON.stringify({ hs, row: r0.cy, band: [g.bandTop, g.bandBottom] }))
@@ -119,11 +132,17 @@ try {
   check('P3b 再捲 10px 讓 chip 放得進 → 有把手且底 ≤ client 底(不越過捲軌)', SELFTEST ? hs.some((h) => Math.abs(h.cy - nearB.cy) <= 1 && h.bottom <= g.bandBottom + 0.5) : hs.length === 1 && hs[0].bottom <= g.bandBottom + 0.5 && Math.abs(hs[0].cy - nearB.cy) <= 1, JSON.stringify({ hs, near: nearB?.cy, bandBottom: g.bandBottom }))
 
 } catch (error) {
-  printNotFound()
-  throw error
+  if (!(error instanceof StoryRenderInstrumentError)) { printNotFound(); throw error }
+  instrumentFailure = error
 } finally {
   await browser?.close()
   await server.stop()
+}
+if (instrumentFailure) {
+  // 沒量到 ≠ 通過,也 ≠ 產品壞了:點名 story、附 404 帳本,exit 1(不是 2 —— 2 會被 meta-test 讀成「缺前置 → 略過」)
+  console.error(`\n✗ ${instrumentFailure.message}`)
+  printNotFound()
+  process.exit(1)
 }
 if (fail) printNotFound()
 console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:把手強制顯示時 P1a / P1b / P2 / P3a 如預期變紅(儀器有效)' : '把手可視帶 + 捲動閂鎖:全通過'}`)

@@ -23,6 +23,11 @@
  * (成因未知,見 `frames.splice` 註解)→ **反對照恆紅**(實測未注入時 p95 = 423ms)。
  * 注入是加在**每一個**取樣上,中位數必然跟著動(實測 128ms vs 未注入 9ms),分離度比 p95 更大。
  *
+ * **開 story(2026-09-25 起)**:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 捲動區 `[data-datatable-hscroll]` 本身出現 + 版面連續 10 影格靜止,才進靜置期。
+ * 開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是「hover 變慢」,也不算通過;`--selftest` 下不算對照組結果。
+ * 之後的 `--warmup-ms` 靜置期**不是**「已渲染」的代理,是刻意的實驗條件(見 WARMUP_MS 說明)。
+ *
  *   node scripts/data-table-hover-latency.mjs [--static=<dir>] [--dpr=1] [--rows=16] [--cpu-throttle=1]
  *     [--assert=on --assert-p95=<ms>] [--selftest] [--label=<名>] [--builds=a=<dir>,b=<dir>]
  */
@@ -30,7 +35,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { PNG } from 'pngjs'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
@@ -110,19 +115,38 @@ async function measure(build, { afterScroll, sabotage }) {
   }
   let scope = page   // 量測用的 frame(manager 模式下是 preview iframe)
   let frameOffset = { x: 0, y: 0 }
-  if (MANAGER) {
-    await page.goto(`${server.origin}/index.html?path=/story/${encodeURIComponent(STORY)}`, { waitUntil: 'load', timeout: 120000 })
-    const handle = await page.waitForSelector('#storybook-preview-iframe', { timeout: 120000 })
-    scope = await handle.contentFrame()
-    await scope.waitForSelector('[data-datatable-hscroll]', { timeout: 120000 })
-    const r = await handle.boundingBox()
-    frameOffset = { x: r.x, y: r.y }
-    // manager 的外掛(a11y 等)會在 story 載入後繼續跑,多等一下讓它們跑完再量
-    await sleep(6000)
-  } else {
-    await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load', timeout: 120000 })
-    await page.waitForSelector('[data-datatable-hscroll]', { timeout: 60000 })
-    await sleep(WARMUP_MS)
+  try {
+    if (MANAGER) {
+      // 管理介面(index.html)本身沒有 iframe 那套 render phase → storybook:false;等的是 preview iframe 裡
+      // **這則 story 渲染完成(含 play)且被量的捲動區本身出現**(同源 iframe,讀得到它的 __STORYBOOK_PREVIEW__)
+      await openStory(page, `${server.origin}/index.html?path=/story/${encodeURIComponent(STORY)}`, {
+        storybook: false, label: `管理介面(${STORY})`,
+        waitFor: (storyId) => {
+          const w = document.querySelector('#storybook-preview-iframe')?.contentWindow
+          const render = w?.__STORYBOOK_PREVIEW__?.currentRender
+          return !!render && render.id === storyId && render.phase === 'finished' && !!w.document.querySelector('[data-datatable-hscroll]')
+        },
+        waitForArg: STORY, waitForPolling: 100,
+        navigationTimeoutMs: 120000, timeoutMs: 120000, notFound: server.notFound,
+      })
+      const handle = await page.$('#storybook-preview-iframe')
+      scope = await handle.contentFrame()
+      const r = await handle.boundingBox()
+      frameOffset = { x: r.x, y: r.y }
+      // 刻意的靜置:story 已渲染完成,等的是 manager 外掛(a11y 等)在 story 載入後的背景工作跑完再量(它們沒有「做完了」的訊號可等)
+      await sleep(6000)
+    } else {
+      await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+        waitFor: '[data-datatable-hscroll]', settleFrames: 10,
+        navigationTimeoutMs: 120000, timeoutMs: 60000, notFound: server.notFound,
+      })
+      // 刻意的靜置期(--warmup-ms):渲染完成已由 openStory 證明,這段是實驗條件(分辨離群值是迭代造成還是載入後固定時間的事件)
+      await sleep(WARMUP_MS)
+    }
+  } catch (error) {
+    // 開不起來:收掉這一輪的瀏覽器與伺服器,把儀器失效交給呼叫端(不回傳任何樣本 —— 空樣本會被讀成「沒變色」)
+    await browser.close(); await server.stop()
+    throw error
   }
 
   const frames = []
@@ -282,16 +306,30 @@ const report = (label, mode, s) => {
 for (const b of BUILDS) {
   if (!b.origin && !fs.existsSync(path.join(b.dir, 'iframe.html'))) { console.error(`✗ ${b.label}:${b.dir} 沒有 iframe.html`); process.exit(1) }
 }
+/** measure() 的呼叫端:表格沒開起來(StoryRenderInstrumentError)= 儀器失效,當場 exit 2 —— 不回傳空樣本(空樣本會被讀成「沒變色」)。 */
+async function measureOrInstrumentFail(build, options) {
+  try {
+    return await measure(build, options)
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    // 沒量到 ≠ 沒問題:這一輪沒有任何 hover 樣本 —— 不是「hover 變慢」,也不算通過;
+    // --selftest 下同樣不算對照組結果(對照組要的是「注入忙等後中位數升高」,不是「什麼都沒量到」)
+    console.error(`✗ ${error.message}`)
+    console.error('✗ data-table-hover-latency:儀器失效 —— 這一輪沒有量到任何 hover 樣本')
+    process.exit(2)
+  }
+}
+
 console.log(`列 hover 反應延遲(dpr${DPR}${THROTTLE > 1 ? ` / ${THROTTLE}× 節流` : ''},每段 ${ROWS} 列)`)
 for (const b of BUILDS) {
-  const stillR = report(b.label, '靜止 hover', await measure(b, { afterScroll: false, sabotage: false }))
-  const afterR = report(b.label, '捲動後 hover', await measure(b, { afterScroll: true, sabotage: false }))
+  const stillR = report(b.label, '靜止 hover', await measureOrInstrumentFail(b, { afterScroll: false, sabotage: false }))
+  const afterR = report(b.label, '捲動後 hover', await measureOrInstrumentFail(b, { afterScroll: true, sabotage: false }))
   const still = stillR.ok
   const after = afterR.ok
   if (SELFTEST) {
     // `report()` 2026-09-12 改成回傳 `{ ok, lost }`(讓「沒變色」的次數不再隱形),這裡要跟著取 `.ok` ——
     // 沒跟著改的那一版在 CI 上把對照組判成 `p95 = NaN` 而紅,等於自己把儀器弄壞。
-    const sab = report(b.label, '對照組(注入 120ms 忙等)', await measure(b, { afterScroll: false, sabotage: true })).ok
+    const sab = report(b.label, '對照組(注入 120ms 忙等)', await measureOrInstrumentFail(b, { afterScroll: false, sabotage: true })).ok
     // **對照組改判中位數,不判 p95**(2026-09-13)。本檔判定本來就用中位數(理由見檔頭),
     // 對照組卻還在用 p95 —— 而每一輪必有一個 157-638ms 的單一離群值(固定在第 10 個取樣,成因未知,
     // 見 `frames.splice` 註解),於是**反對照恆紅**(實測未注入時 p95 = 423ms > 120)。

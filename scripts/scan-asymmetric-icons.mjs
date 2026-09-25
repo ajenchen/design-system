@@ -1,4 +1,3 @@
-import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })

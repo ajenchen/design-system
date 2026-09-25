@@ -24,18 +24,19 @@
 //     共用 page 會讓前一支 story、甚至 baseline 那一張的狀態滲進 after 那一張,兩邊不再對稱。
 //   - 代價是每張多約 0.5 秒啟動;換到的是「每一張都從同樣乾淨的狀態開始」這件事本身。
 // 同時把「已渲染」從代理換成直接訊號(M37):舊寫法是 networkidle + 固定睡 500/1200ms,
-// 慢的機器上會拍到半成品、再把半成品的差異指控成回歸;現在等的是
+// 慢的機器上會拍到半成品、再把半成品的差異指控成回歸;現在等的是(lib/launch-browser.mjs 的 openStory,
+// 全部瀏覽器閘共用的唯一實作 —— 2026-09-25 收斂前本檔有自己的一份四步等待)
 //   (1) Storybook 自己的渲染狀態 `currentRender.phase === 'finished'`(含 play 與 afterEach 都跑完),
 //   (2) 根節點真的有內容、沒有頁面例外、JS/CSS 沒 404(lib/storybook-render-health.mjs,
 //       擋掉「兩邊都空白 → 0 像素差 → 假綠」),
 //   (3) 渲染期間發出的請求全部結束(遠端頭像圖等)、字型載完,
-//   (4) DOM 連續 300ms 沒有任何變動(量的是「畫面不再變」本身,還在變就繼續等),
+//   (4) 連續 DOM_QUIET_FRAMES 個影格沒有任何 DOM 變動、也沒有進行中的有限長度動畫(量的是「畫面不再變」本身,
+//       以影格不以毫秒計 —— 機器慢只會等久一點;收斂前是「連續 300ms」),
 //   並以 `animations: 'disabled'` 截圖:有限的轉場快轉到終點、無限動畫停在起點 —— 兩邊都拍穩態,
 //   不會拍到 blur 之後焦點框褪色的中間值(失敗記憶索引「量 focus 顏色不等 transition」同一件事)。
 // 任何一步等不到 → 該支記為 INSTRUMENT-FAIL(沒量到),不記為 CHANGED,也不記為 OK。
 
-import { launchBrowser } from './lib/launch-browser.mjs'
-import { createStorybookRenderHealthMonitor } from './lib/storybook-render-health.mjs'
+import { launchBrowser, openStory } from './lib/launch-browser.mjs'
 import { existsSync, lstatSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PNG } from 'pngjs'
@@ -59,7 +60,7 @@ const OUT = OUT_ARG
   : ensureRuntimeEvidenceDirectory({ repoRoot: ROOT, relativePath: 'visual/q2-field-size' })
 const PCT_BUDGET = parseFloat(arg('budget', '0.02'))  // % 像素差預算(吸收 rebuild AA noise);真 font 改動遠超此
 const RENDER_TIMEOUT_MS = 30_000  // 等渲染完成 / 請求結束的上限(等不到 = 儀器失效,不是畫面變了)
-const DOM_QUIET_MS = 300          // 「畫面不再變」的判定窗:DOM 連續這麼久沒有任何變動
+const DOM_QUIET_FRAMES = 18       // 「畫面不再變」的判定窗:連續這麼多影格沒有任何 DOM 變動(60fps 下約等於收斂前的 300ms)
 const DOM_QUIET_MAX_MS = 10_000   // 一直在變、等不到穩態 → 這張不可比,記儀器失效
 
 for (const d of [BASELINE, AFTER]) if (!existsSync(join(d, 'index.json'))) { console.error(`✗ ${d}/index.json 不存在(先 build-storybook)`); process.exit(2) }
@@ -104,56 +105,19 @@ const DIFF_IDS = STORY_IDS.filter(id => baseIds.has(id))
 // 一支都沒選到 = 什麼都沒量,不得印「全 0 支 Δ≈0」當綠
 if (!DIFF_IDS.length) { console.error(`✗ 儀器失效:沒有任何 story 可比對${ONLY ? `(--only=${ONLY} 一支都沒選到)` : ''}`); await srvB.stop(); await srvA.stop(); process.exit(2) }
 
-class InstrumentError extends Error {}
-
-async function shot(origin, id) {
+async function shot(origin, id, notFound) {
   // 每張一個全新的瀏覽器(為什麼見檔頭):不呼叫 page.close()、不開第二個 context,用完整個關掉。
   const browser = await launchBrowser()
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })
-    const health = createStorybookRenderHealthMonitor(page)
-    const inflight = new Set()
-    page.on('request', (r) => inflight.add(r))
-    page.on('requestfinished', (r) => inflight.delete(r))
-    page.on('requestfailed', (r) => inflight.delete(r))
     const interactive = /inspector|state-behavior/.test(id)
-
-    await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light;density:md`, { waitUntil: 'load', timeout: 60_000 })
-    // (1) 等「這一支 story 的渲染(含 play / afterEach)跑完」這件事本身
-    const finished = await page.waitForFunction((storyId) => {
-      const r = window.__STORYBOOK_PREVIEW__?.currentRender
-      return r?.id === storyId && r.phase === 'finished'
-    }, id, { timeout: RENDER_TIMEOUT_MS }).then(() => true, () => false)
-    if (!finished) {
-      const seen = await page.evaluate(() => { const r = window.__STORYBOOK_PREVIEW__?.currentRender; return r ? `${r.id} / ${r.phase}` : '沒有 currentRender(預覽沒起來或 story 不存在)' }).catch(() => '讀不到')
-      throw new InstrumentError(`${RENDER_TIMEOUT_MS / 1000} 秒內沒等到渲染完成(最後看到:${seen})`)
-    }
-    // (2) 根節點有內容、無頁面例外、JS/CSS 沒失敗 —— 擋「兩邊都空白 → 0 像素差」的假綠
-    await health.assertHealthy({ label: id })
-    // (3) 渲染期間發出的請求全部結束
-    const deadline = Date.now() + RENDER_TIMEOUT_MS
-    while (inflight.size) {
-      if (Date.now() > deadline) throw new InstrumentError(`請求 ${RENDER_TIMEOUT_MS / 1000} 秒未結束:${[...inflight].slice(0, 3).map(r => r.url()).join(', ')}`)
-      await page.waitForTimeout(50)
-    }
-    if (!interactive) { try { await page.evaluate(() => (document.activeElement)?.blur?.()) } catch {} }
-    await page.evaluate(() => document.fonts.ready)
-    // (4) DOM 連續 DOM_QUIET_MS 沒有變動(還在變就繼續等,不是固定睡)
-    const quiet = await page.evaluate(({ quietMs, maxMs }) => new Promise((resolve) => {
-      const start = performance.now()
-      let last = start
-      const mo = new MutationObserver(() => { last = performance.now() })
-      mo.observe(document, { subtree: true, childList: true, attributes: true, characterData: true })
-      const tick = () => {
-        const now = performance.now()
-        if (now - last >= quietMs) { mo.disconnect(); resolve(true); return }
-        if (now - start >= maxMs) { mo.disconnect(); resolve(false); return }
-        setTimeout(tick, 25)
-      }
-      setTimeout(tick, 25)
-    }), { quietMs: DOM_QUIET_MS, maxMs: DOM_QUIET_MAX_MS })
-    if (!quiet) throw new InstrumentError(`DOM ${DOM_QUIET_MAX_MS / 1000} 秒內沒有連續 ${DOM_QUIET_MS}ms 靜止(畫面一直在變,這張不可比)`)
-    await health.assertHealthy({ label: id })  // 等穩態期間冒出的例外也要算
+    // 等不到或判不健康 → openStory 丟 StoryRenderInstrumentError(儀器失效),由呼叫端記成 INSTRUMENT-FAIL
+    await openStory(page, `${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light;density:md`, {
+      navigationTimeoutMs: 60_000, timeoutMs: RENDER_TIMEOUT_MS, requestsSettled: true, notFound,
+      // 非互動 story 截圖前 blur:放在靜止判定之前,blur 引起的變動也要等它停
+      beforeSettle: interactive ? null : (p) => p.evaluate(() => (document.activeElement)?.blur?.()).catch(() => {}),
+      settleFrames: DOM_QUIET_FRAMES, settleTimeoutMs: DOM_QUIET_MAX_MS,
+    })
     const buf = await page.screenshot({ fullPage: true, animations: 'disabled' })
     return PNG.sync.read(buf)
   } finally {
@@ -169,10 +133,10 @@ try {
   for (const id of DIFF_IDS) {
     let b, a, r
     try {
-      b = await shot(srvB.origin, id)
-      a = await shot(srvA.origin, id)
+      b = await shot(srvB.origin, id, srvB.notFound)
+      a = await shot(srvA.origin, id, srvA.notFound)
     } catch (e) {
-      r = { id, verdict: 'INSTRUMENT-FAIL', detail: `${b ? 'after' : 'baseline'} 沒量到:${String(e?.message || e).split('\n')[0]}` }
+      r = { id, verdict: 'INSTRUMENT-FAIL', detail: `${b ? 'after' : 'baseline'} 沒量到:${e?.detail ?? String(e?.message || e).split('\n')[0]}` }
     }
     if (!r && (b.width !== a.width || b.height !== a.height)) {
       r = { id, verdict: 'DIM-MISMATCH', baseline: `${b.width}x${b.height}`, after: `${a.width}x${a.height}`, detail: `尺寸不同 baseline ${b.width}x${b.height} vs after ${a.width}x${a.height}` }

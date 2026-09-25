@@ -21,7 +21,8 @@
  * 說明 `<p class="text-caption">`(12px = 12px,恆等),值從沒被量過;NumberInput 的 edit 值住在 `<input>` 裡、
  * 不是文字節點,於是每次都「略過」。
  * 現在:
- *  (1) 等被量的元素本身:gotoStory 先等段標題,再等 view / edit 段的值文字本身出現。等不到 = 紅、指名、附同源 404 與
+ *  (1) 等被量的元素本身:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)先等 Storybook 回報這則 story
+ *      渲染完成(含 play)並通過 render-health,再等 view / edit 段的值文字本身出現。等不到 = 紅、指名、附同源 404 與
  *      Storybook 錯誤訊息;story 根本沒渲染 = 「儀器失效」,不是略過。
  *  (2) 值文字 = 控件裡(文件順序)第一個自己直接含字的元素,或可見、有值的 `<input>` / `<textarea>`;段內直接一層的
  *      `<p>` 是 story 的說明文字,不量。
@@ -35,7 +36,7 @@
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, gotoStory } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -85,7 +86,7 @@ const PROBE = ({ kind, wait = false, sabotage = false }) => {
   const view = section('view'), edit = section('edit')
   let out
   if (kind === 'no-field-modes') {
-    out = { ready: heads.length > 0, sections: [view && 'view', edit && 'edit'].filter(Boolean) }
+    out = { ready: heads.length > 0, missing: '段標題', sections: [view && 'view', edit && 'edit'].filter(Boolean) }
   } else if (kind === 'icon-view') {
     const icon = Boolean(view?.some((n) => n.matches('svg') || n.querySelector('svg')))
     out = { ready: icon, missing: view ? 'view 段的圖示' : 'view 段', viewText: view ? valueCarrier(view)?.text ?? null : null }
@@ -112,28 +113,19 @@ async function inspectStory(id, { sabotage = false, appearTimeout = APPEAR_MS } 
   const name = shortName(id)
   const declared = DECLARED.get(name)
   const kind = declared?.kind ?? 'measure'
-  const before404 = server.notFound.length
-  const evidence = async () => {
-    const sbError = await page.evaluate(() => (document.body.classList.contains('sb-show-errordisplay')
-      ? (document.getElementById('error-message')?.textContent || '').trim().slice(0, 160) : '')).catch(() => '')
-    const missing = [...new Set(server.notFound.slice(before404))]
-    return `${sbError ? `;Storybook 錯誤:${sbError}` : ''}${missing.length ? `;同源 404:${missing.join(', ')}` : ''}`
-  }
-  let rendered
   try {
-    // 先等段標題:story 的段標題與控件同一次 commit 掛上;等不到 = story 根本沒渲染。
-    rendered = await gotoStory(page, storyUrl(id), { waitFor: '#storybook-root h3', settle: 0, appearTimeout })
+    // 渲染完成(含 play)+ render-health + 被量的元素本身(值文字 / 圖示 / 段標題)—— 等的與量的是同一支 PROBE。
+    await openStory(page, storyUrl(id), {
+      waitFor: PROBE, waitForArg: { kind, wait: true }, waitForPolling: 100,
+      timeoutMs: appearTimeout, navigationTimeoutMs: 90000, notFound: server.notFound,
+    })
   } catch (error) {
-    return { status: 'not-rendered', name, detail: `導覽失敗:${String(error?.message || error).split('\n')[0]}${await evidence()}` }
-  }
-  if (!rendered) return { status: 'not-rendered', name, detail: `${appearTimeout / 1000} 秒內 story 沒渲染出任何段標題${await evidence()}` }
-  if (kind !== 'no-field-modes') {
-    // 再等被量的元素本身(值文字 / 圖示)—— 與量測同一支 PROBE。
-    const ready = await page.waitForFunction(PROBE, { kind, wait: true }, { timeout: appearTimeout, polling: 100 }).then(() => true, () => false)
-    if (!ready) {
-      const r = await page.evaluate(PROBE, { kind })
-      return { status: 'unmeasurable', name, detail: `story 已渲染,但 ${appearTimeout / 1000} 秒內沒等到 ${r.missing}${await evidence()}` }
-    }
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    if (error.kind !== 'wait-for-timeout') return { status: 'not-rendered', name, detail: error.detail }
+    // story 已渲染完成,但被量的元素沒出現
+    const r = await page.evaluate(PROBE, { kind })
+    const extra = error.failedRequests.length ? `;同源 404 / 載入失敗:${error.failedRequests.join(', ')}` : ''
+    return { status: 'unmeasurable', name, detail: `story 已渲染,但 ${appearTimeout / 1000} 秒內沒等到 ${r.missing}${extra}` }
   }
   const r = await page.evaluate(PROBE, { kind, sabotage })
   if (kind === 'no-field-modes') {

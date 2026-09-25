@@ -362,6 +362,7 @@
         "scripts/test-instruction-mirror-safety.mjs",
         "scripts/test-native-custom-renderer-parity.mjs",
         "scripts/test-neutral-audit-evidence.mjs",
+        "scripts/test-open-story.mjs",
         "scripts/test-plugin-alias-contract.mjs",
         "scripts/test-privileged-change-authorization.mjs",
         "scripts/test-provider-hook-output-transport.mjs",

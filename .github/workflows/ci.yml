@@ -707,6 +707,11 @@ jobs:
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
+          # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
+          # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
+          # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
+          # 晚 3 秒到的 story 檔必須等到。合成頁與機器快慢無關;--require-storybook-build 另在本 job 的真實建置上驗三題。
+          npm run test:open-story
           # Field 家族 view 字級 = edit 字級(2026-09-15,user 抓 RadioGroup view 裸 span 吃到 16px):量每個「四模式」story 的
           # view 段與 edit 段 computed font-size 相等;對照組把 view 硬改 16px 必全紅。SSOT field-controls.spec.md (e)。
           npm run test:field-view-typography

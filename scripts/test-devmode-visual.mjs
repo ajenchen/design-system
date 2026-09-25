@@ -11,7 +11,6 @@
  *   3. Pin a target element via dispatchEvent
  *   4. Screenshot full panel + canvas
  */
-import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
 import fs from 'fs'
 

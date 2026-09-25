@@ -22,11 +22,17 @@
  *
  * 對照組 `--selftest`:把 cmdk 浮層整個移除並塞一顆原生 `<select>` 進欄位(等同舊的原生路徑),
  * 上面 2/3/4 必須紅。抓到 = exit 0,沒抓到 = exit 1。
+ *
+ * 載入(2026-09-25):每則 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成
+ * (含 play)、畫面健康、欄位本身出現才量;取代舊的 domcontentloaded + 「根節點有子元素」(逾時還被吞掉)+ 固定睡 500ms。
+ * story 開不起來 → **儀器失效**(exit 2,點名 story、列同源 404),不是產品裁決;selftest 也不得把「沒開起來所以
+ * 那幾條紅了」當成「對照組抓到了」(舊版正是如此:story 全開不起來時 selftest 會回 exit 0)。
+ * 點開浮層後改等浮層本身出現、且浮層裡沒有進行中的有限長度動畫,取代固定睡 600ms。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -61,14 +67,29 @@ const browser = await launchBrowser()
 // 觸控 context:Chromium 在 hasTouch + isMobile 下 `(pointer: coarse)` 為真
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3 })
 const page = await context.newPage()
-page.on('pageerror', () => {})
 
+let instrumentFailure = null
 const results = []
 const ck = (名, 通過, 細節 = '') => { results.push({ 名, 通過, 細節 }) }
-const goto = async (id) => {
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-  await page.waitForFunction(() => document.querySelector('#storybook-root')?.children.length > 0, null, { timeout: 15_000 }).catch(() => {})
-  await page.waitForTimeout(500)
+// 開 story 並等到被量 / 被點的欄位本身出現;開不起來丟 StoryRenderInstrumentError(由下方 catch 轉成儀器失效)
+const goto = (id) => openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+  waitFor: '[data-field-mode="edit"]', notFound: server.notFound,
+})
+// 點開欄位後:等浮層本身出現(visible)、且浮層裡的開啟動畫跑完(無進行中的有限長度動畫;無限的載入轉圈不算),
+// 浮層的外接矩形才是終態 —— 動畫中途量「溢不溢出」會量到縮放中的小框。等不到浮層 = 產品沒開浮層,
+// 由下面「點下去開的是自訂浮層」那條判紅(不是儀器失效:story 已證明渲染完成)。
+// 動畫 5 秒還沒跑完 → 儀器失效(量到的會是動畫中途的框),不默默照量。
+const 等浮層開好 = async (id) => {
+  const opened = await page.waitForSelector('[data-radix-popper-content-wrapper]', { state: 'visible', timeout: 5_000 }).then(() => true, () => false)
+  if (!opened) return false
+  const settled = await page.waitForFunction(() => {
+    const w = document.querySelector('[data-radix-popper-content-wrapper]')
+    return !w || w.getAnimations({ subtree: true }).every((a) => a.playState !== 'running' || !Number.isFinite(a.effect?.getComputedTiming?.().endTime))
+  }, null, { timeout: 5_000, polling: 'raf' }).then(() => true, () => false)
+  if (!settled) {
+    throw new StoryRenderInstrumentError({ storyId: id, kind: 'dom-not-settled', reason: '點開後 5 秒內浮層的開啟動畫沒有跑完(再量會量到動畫中途的框)' })
+  }
+  return true
 }
 const 欄位狀態 = () => page.evaluate(() => {
   const fields = [...document.querySelectorAll('[data-field-mode="edit"]:not([data-field-orientation])')]
@@ -108,7 +129,8 @@ try {
   // 2/3/4. 桌機的東西在觸控上都要在
   await goto(STORY_UNRESTRICTED)
   await page.locator('[data-field-mode="edit"]').first().click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(600)
+  await 等浮層開好(STORY_UNRESTRICTED)
+  // 對照組注入後讓一個短 task 過去(React 若對被拔掉的節點有反應,量到的是反應之後的樣子)
   if (SELFTEST) { await page.evaluate(BREAK_BACK_TO_NATIVE); await page.waitForTimeout(60) }
   const u = await 浮層狀態()
   // 這一條要在**破壞之後**再量一次,否則它在 selftest 裡永遠綠 = 沒有對照組
@@ -121,15 +143,21 @@ try {
   ck('分組分隔線在觸控上也在', u.下一組上邊線 === '1px', String(u.下一組上邊線))
   ck('浮層不溢出視窗', u.有浮層 && !u.溢出左 && !u.溢出右 && !u.溢出下, `寬 ${u.寬} / 視窗 ${u.視窗寬}`)
   await page.keyboard.press('Escape').catch(() => null)
+  // 等浮層的關閉動畫(下一步就換頁,只為不在動畫中途導覽)
   await page.waitForTimeout(250)
 
   // 搜尋(桌機才有的能力)在觸控上也要在
   await goto(STORY_SEARCH)
   await page.locator('[data-field-mode="edit"]').first().click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(600)
+  await 等浮層開好(STORY_SEARCH)
+  // 同上:對照組注入後讓一個短 task 過去
   if (SELFTEST) { await page.evaluate(BREAK_BACK_TO_NATIVE); await page.waitForTimeout(60) }
   const s = await 浮層狀態()
   ck('搜尋框在觸控上也在', s.有搜尋框 === true)
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  // 沒量到 ≠ 沒問題,也 ≠ 對照組抓到了:儀器失效一律 exit 2(一般與 selftest 皆同)
+  instrumentFailure = error
 } finally {
   await page.close().catch(() => null)
   await context.close().catch(() => null)
@@ -138,6 +166,11 @@ try {
 }
 
 for (const r of results) console.log(`${r.通過 ? '✓' : '✗'} ${r.名}${r.細節 ? ' | ' + r.細節 : ''}`)
+if (instrumentFailure) {
+  console.error(`\n✗ ${instrumentFailure.message}`)
+  console.error(`✗ Combobox 單一路徑${SELFTEST ? '(selftest)' : ''}:儀器失效 —— 這次沒有量完(exit 2,不是產品裁決,也不算通過)`)
+  process.exit(2)
+}
 const 失敗 = results.filter((r) => !r.通過)
 
 if (SELFTEST) {

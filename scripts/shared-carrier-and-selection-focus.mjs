@@ -12,9 +12,17 @@
  *   再確認 Tab 進表格時捲動區真的畫框、Tab 到列的核取方塊時它自己畫框。
  *
  * 判準一律量 pixel / computed style,不看 class 字串(M32)。
+ *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 被量的元件本身出現 + 版面連續 10 影格靜止,才開始 Tab。
+ * 取代原本「load + 固定睡 1200ms + 等元素」與兩次「reload + 固定睡 1200ms」(reload 之後連元素都沒等,
+ * 慢的機器上 Tab 走在還沒掛好的表格上)。A4 需要「重設 Tab 起點」的兩處改成重新 openStory 同一個網址(同樣是新文件)。
+ * 開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決,也不算通過。
+ *
+ * Run: `node scripts/shared-carrier-and-selection-focus.mjs`(讀 `<cwd>/storybook-static`)
  */
 import { join } from 'node:path'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 // file:// 會被 CORS 擋掉模組載入(story 整個不渲染,而且不報錯只留空 root),
@@ -28,6 +36,12 @@ const story = (id) => BASE + encodeURIComponent(id)
 const fail = []
 const ok = (m) => console.log('  ✓ ' + m)
 const bad = (m) => { console.log('  ✗ ' + m); fail.push(m) }
+/** story 開不起來(StoryRenderInstrumentError):儀器失效,結尾 exit 2 */
+let instrumentFailure = null
+/** 開 story、等被量的元素本身與版面靜止;開不起來丟 StoryRenderInstrumentError(由下方 catch 轉成儀器失效) */
+const open = (page, id, waitFor) => openStory(page, story(id), { waitFor, settleFrames: 10, notFound: server.notFound })
+const A4_STORY = 'design-system-components-datatable-展示--selection-keyboard-and-shift'
+const A4_TABLE = '[role="table"], [role="grid"]'
 
 const underlineOf = (el) => {
   const cs = getComputedStyle(el)
@@ -41,9 +55,7 @@ try {
 
   // ── H2c ──────────────────────────────────────────────────────────────
   console.log('\nH2c DatePicker 範圍:起訖兩顆要分得出來')
-  await page.goto(story('design-system-components-datepicker-展示--range-picker'), { waitUntil: 'load' })
-  await page.waitForTimeout(1200)
-  await page.waitForSelector('button[aria-haspopup="dialog"]')
+  await open(page, 'design-system-components-datepicker-展示--range-picker', 'button[aria-haspopup="dialog"]')
 
   const readEnds = () => page.evaluate(() => {
     const btns = [...document.querySelectorAll('button[aria-haspopup="dialog"]')]
@@ -92,9 +104,7 @@ try {
 
   // ── A4 ───────────────────────────────────────────────────────────────
   console.log('\nA4 純選取模式:先問「有沒有游標」,再問「指示夠不夠」')
-  await page.goto(story('design-system-components-datatable-展示--selection-keyboard-and-shift'), { waitUntil: 'load' })
-  await page.waitForTimeout(1200)
-  await page.waitForSelector('[role="table"], [role="grid"]')
+  await open(page, A4_STORY, A4_TABLE)
 
   const roleNow = await page.evaluate(() => document.querySelector('[role="table"],[role="grid"]')?.getAttribute('role'))
   if (roleNow === 'table') ok('此模式的 role 是 table(不是 grid)—— 依 APG,table 是靜態結構,不帶方向鍵游標')
@@ -113,9 +123,8 @@ try {
 
   // 表格根節點是 tab stop(它同時是可橫捲區),取得焦點時要畫框。
   // 坑:`document.body.focus()` **不會**把 tab 起點重設(body 預設不可聚焦),
-  // 於是 Tab 會從「上一步聚焦的表格根節點」繼續往後走,再也回不到它身上。要重設只能重新載入。
-  await page.reload({ waitUntil: 'load' })
-  await page.waitForTimeout(1200)
+  // 於是 Tab 會從「上一步聚焦的表格根節點」繼續往後走,再也回不到它身上。要重設只能重新載入(重新 openStory 同一個網址 = 新文件)。
+  await open(page, A4_STORY, A4_TABLE)
   await page.evaluate(() => document.querySelector('[role="table"],[role="grid"]').setAttribute('data-probe', '1'))
   let g2 = 0, onTable = false
   while (g2++ < 40) {
@@ -125,6 +134,7 @@ try {
   }
   if (!onTable) bad('Tab 40 次沒走到表格根節點')
   else {
+    // 等聚焦後 transition-colors(含 outline-color)走完再量框,別量到過渡中間值(同下方核取方塊那段)
     await page.waitForTimeout(600)
     const o = await page.evaluate(() => {
       const el = document.activeElement, cs = getComputedStyle(el), r = el.getBoundingClientRect()
@@ -135,9 +145,8 @@ try {
     else bad(`表格根節點取得焦點但沒有框:${JSON.stringify(o)}`)
   }
 
-  // 列的核取方塊要是 tab stop 且自己畫框(那才是鍵盤選取的真路徑)
-  await page.reload({ waitUntil: 'load' })
-  await page.waitForTimeout(1200)
+  // 列的核取方塊要是 tab stop 且自己畫框(那才是鍵盤選取的真路徑)—— 同樣要新文件重設 Tab 起點
+  await open(page, A4_STORY, A4_TABLE)
   const marked = await page.evaluate(() => {
     // 全選那顆在 columnheader 列,要挑 body 列裡的
     const boxes = [...document.querySelectorAll('[role="row"] [role="checkbox"], [role="row"] input[type="checkbox"]')]
@@ -169,13 +178,20 @@ try {
     }
   }
 } catch (error) {
-  report404()
-  throw error
+  if (!(error instanceof StoryRenderInstrumentError)) { report404(); throw error }
+  instrumentFailure = error
 } finally {
   await browser?.close()
   await server.stop()
 }
 
 console.log('')
+if (instrumentFailure) {
+  // 沒量到 ≠ 沒問題:story 開不起來是儀器失效(exit 2),不是產品裁決,也絕不算通過
+  console.error(`✗ ${instrumentFailure.message}`)
+  report404()
+  console.error('✗ shared-carrier-and-selection-focus:儀器失效 —— 其後的段落沒有量到')
+  process.exit(2)
+}
 if (fail.length) { console.log(`✗ ${fail.length} 項未通過`); report404(); process.exit(1) }
 console.log('✓ 全部通過')

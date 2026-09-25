@@ -23,13 +23,18 @@
  *
  * 對照組(`--selftest`):把 `color-scheme` 強制回 `normal`,C1/C2 都必須紅。
  *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 字型,才開始切 theme 量。取代原本「networkidle + 固定睡 300ms」:
+ * 舊寫法在 story 開不起來(chunk 缺檔 / 錯誤頁)時照樣量根層 color-scheme 並回綠 —— 量的是 Storybook 錯誤頁,不是 DS 頁面(M37)。
+ * 現在開不起來 = 儀器失效:點名 story、附同源 404、exit 2;不是產品裁決,`--selftest` 下也不算「對照組如預期紅」。
+ *
  *   node scripts/color-scheme-invariant.mjs [--build=<dir>] [--selftest]
  */
 import { join, dirname } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -40,14 +45,17 @@ const SELFTEST = process.argv.includes('--selftest')
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 let fail = 0
+/** 載體 story 開不起來(StoryRenderInstrumentError):儀器失效,結尾 exit 2 */
+let instrumentFailure = null
 const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 
 try {
   const page = await browser.newPage({ viewport: { width: 600, height: 400 }, deviceScaleFactor: 2 })
   const index = JSON.parse(await (await fetch(`${server.origin}/index.json`)).text())
   const anyStory = Object.entries(index.entries).find(([, e]) => e.type === 'story')?.[0]
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(anyStory)}&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(300)
+  if (!anyStory) throw new StoryRenderInstrumentError({ storyId: '(index.json)', kind: 'no-preview', reason: '建置的 index.json 裡沒有任何 story' })
+  // 載體 story 只是讓 DS 樣式載進頁面;要保證的是「這一頁是渲染完成的 DS story」,不是「網路閒了 300ms」
+  await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(anyStory)}&viewMode=story`, { notFound: server.notFound })
   if (SELFTEST) await page.addStyleTag({ content: ':root,[data-theme]{color-scheme:normal !important}' }).catch(() => {})
 
   // 觀測器:`all: revert` 讓它退回瀏覽器原生外觀,完全不吃 DS 樣式
@@ -73,6 +81,7 @@ try {
   const seen = {}
   for (const theme of ['light', 'dark']) {
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+    // 等切 theme 之後觀測框背後 story 內容的 transition-colors 走完再截圖(頁面早已渲染完成,等的是顏色過渡,別截到中間值)
     await page.waitForTimeout(320)
     const cs = await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)
     ck(`C1 ${theme}:根層 color-scheme = ${theme}`, cs === theme, `實際 ${cs}`)
@@ -100,9 +109,19 @@ try {
   ck('C3 捲軸軌道與交會方塊不得一個原生一個吃 token(混合擁有 = 必然不同色)',
      !(nativeTrack && tokenCorner),
      nativeTrack && tokenCorner ? '軌道被 @supports 重設回 auto(原生),但 ::-webkit-scrollbar-corner 仍指定 var(--…)' : `軌道原生=${nativeTrack} / 交會方塊吃 token=${tokenCorner}`)
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  instrumentFailure = error
 } finally {
   await browser.close()
   await server.stop()
+}
+if (instrumentFailure) {
+  // 沒量到 ≠ 沒問題:載體 story 開不起來是儀器失效(exit 2),不是產品裁決,也絕不算通過(selftest 亦同)
+  console.error(`✗ ${instrumentFailure.message}`)
+  if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
+  console.error('✗ color-scheme-invariant:儀器失效 —— 這次什麼都沒量到')
+  process.exit(2)
 }
 
 if (SELFTEST) {

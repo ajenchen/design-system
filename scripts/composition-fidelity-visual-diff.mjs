@@ -22,10 +22,10 @@
  * Exit codes:
  *   0 — all diffs within threshold
  *   1 — at least one diff exceeds threshold
- *   2 — setup error (missing tool / story / baseline marker)
+ *   2 — setup error (missing tool / story / baseline marker);含「story 沒量到」(儀器失效:openStory 等不到渲染完成、
+ *       Storybook 錯誤頁、缺檔 404)—— 那不是產品差異,不得拿錯誤頁的截圖去比 pixel / DOM
  */
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
@@ -261,6 +261,8 @@ if (!consumerUrl) {
 const browser = await launchBrowser()
 const results = []
 let failCount = 0
+/** story 沒量到(儀器失效)的 mapping 數 —— 不是產品差異,但一律非零結束(exit 2) */
+let instrumentFailCount = 0
 
 // G5 fix: viewport / theme / density normalization helper
 async function normalizePage(page) {
@@ -278,9 +280,12 @@ async function normalizePage(page) {
 // Sanitize filename — story ids may contain unsafe chars
 function safeName(s) { return s.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 180) }
 
+// 整個 run 共用一個 page:沙箱的 Chromium 一律 --single-process,同一個 browser 上「關掉 page 再開下一個」會連 browser 一起帶走
+// (lib/launch-browser.mjs 檔頭)。原本每個 mapping 開關一次 page,第二個 mapping 起就會崩。換 story 靠 goto(文件全新)隔離。
+const page = await browser.newPage({ viewport: { width: VIEWPORT_W, height: VIEWPORT_H }, deviceScaleFactor: 1 })
+await normalizePage(page)
+const storyUrl = (base, id) => `${base}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&globals=theme:${FORCE_THEME};density:${FORCE_DENSITY}`
 for (const m of identityMappings) {
-  const page = await browser.newPage({ viewport: { width: VIEWPORT_W, height: VIEWPORT_H }, deviceScaleFactor: 1 })
-  await normalizePage(page)
   const fileSafe = safeName(`${m.consumerStoryId}__vs__${m.baselineStoryId}`)
   let baselineBuf, consumerBuf
   // v3 mode-aware mask helper:overlay solid div over `<main>` (or custom selector) before screenshot
@@ -299,7 +304,7 @@ for (const m of identityMappings) {
           document.body.appendChild(mask)
         })
       }, sel)
-      await p.waitForTimeout(100)
+      await p.waitForTimeout(100) // 等剛插入的遮罩 div 畫上去再截圖
     }
     return await p.screenshot({ fullPage: false })
   }
@@ -386,25 +391,32 @@ for (const m of identityMappings) {
     }
   }
   let baselineDom, consumerDom
+  // 開 story:原本 domcontentloaded + 固定睡 800ms 當「已渲染」的代理 —— story 檔缺檔時截到的是 Storybook 錯誤頁,
+  // 被拿去跟另一邊比成 42.8% 的 pixel 差 + DOM 差(BOTH_FAIL),把「沒量到」寫成「consumer 偏離 DS」。
+  // 現在由共用的 openStory 證明:Storybook 回報渲染完成(含 play)→ 畫面健康 → 字型載完 → 連續 10 影格靜止,才取 DOM 與截圖。
   try {
-    await page.goto(`${dsUrl}/iframe.html?id=${encodeURIComponent(m.baselineStoryId)}&viewMode=story&globals=theme:${FORCE_THEME};density:${FORCE_DENSITY}`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
-    await page.waitForTimeout(800)
+    await openStory(page, storyUrl(dsUrl, m.baselineStoryId), { settleFrames: 10, notFound: dsServer?.notFound })
     baselineDom = await domSignature(page)  // v4 dual-track: capture DOM BEFORE mask injection
     baselineBuf = await snapshot(page)
     writeFileSync(evidenceFile(`baseline/${fileSafe}.png`), baselineBuf)
 
-    await page.goto(`${consumerUrl}/iframe.html?id=${encodeURIComponent(m.consumerStoryId)}&viewMode=story&globals=theme:${FORCE_THEME};density:${FORCE_DENSITY}`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
-    await page.waitForTimeout(800)
+    await openStory(page, storyUrl(consumerUrl, m.consumerStoryId), { settleFrames: 10, notFound: consumerServer?.notFound })
     consumerDom = await domSignature(page)  // v4 dual-track
     consumerBuf = await snapshot(page)
     writeFileSync(evidenceFile(`consumer/${fileSafe}.png`), consumerBuf)
   } catch (e) {
-    results.push({ ...m, status: 'TIMEOUT', error: e.message.slice(0, 200) })
-    failCount++
-    await page.close()
+    if (e instanceof StoryRenderInstrumentError) {
+      // 沒量到 ≠ 有差異:記成儀器失效(點名 story、附 Storybook 錯誤原文與 404),不做 pixel / DOM 比對
+      results.push({ ...m, status: 'INSTRUMENT_FAIL', error: e.message })
+      instrumentFailCount++
+      console.log(`✗ ${m.consumerStoryId} ← ${m.baselineStoryId}  INSTRUMENT_FAIL\n    ${e.message}`)
+    } else {
+      results.push({ ...m, status: 'ERROR', error: e.message.slice(0, 200) })
+      failCount++
+      console.log(`✗ ${m.consumerStoryId} ← ${m.baselineStoryId}  ERROR ${e.message.split('\n')[0].slice(0, 200)}`)
+    }
     continue
   }
-  await page.close()
 
   // Pixel diff
   const png1 = PNG.sync.read(baselineBuf)
@@ -476,7 +488,7 @@ await browser.close()
 await dsServer?.stop()
 await consumerServer?.stop()
 
-const report = { generatedAt: new Date().toISOString(), threshold: THRESHOLD_PCT, mapping: identityMappings, conformanceOnly, results, summary: { total: results.length, fail: failCount, pass: results.length - failCount } }
+const report = { generatedAt: new Date().toISOString(), threshold: THRESHOLD_PCT, mapping: identityMappings, conformanceOnly, results, summary: { total: results.length, fail: failCount, instrumentFail: instrumentFailCount, pass: results.length - failCount - instrumentFailCount } }
 const reportPath = evidenceFile('report.json')
 writeFileSync(reportPath, JSON.stringify(report, null, 2))
 
@@ -484,4 +496,5 @@ console.log('\n=== Composition fidelity report ===')
 console.log(JSON.stringify(report.summary, null, 2))
 console.log(`Full report: ${reportPath}`)
 
-process.exit(failCount === 0 ? 0 : 1)
+if (instrumentFailCount) console.log(`\n✗ ${instrumentFailCount} 個 mapping 沒有量到(儀器失效,不是產品差異)—— 這次不能算通過(exit 2)`)
+process.exit(instrumentFailCount ? 2 : failCount === 0 ? 0 : 1)

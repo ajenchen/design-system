@@ -18,12 +18,18 @@
  *
  * 對照組 `--selftest`:強制 `color-scheme: light` 於暗色主題,S1 必須紅。
  *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 捲動區 `[data-datatable-hscroll]` 本身出現 → 切 theme(beforeSettle)
+ * → 字型 → 版面連續 10 影格無 DOM 變動、也沒有進行中的有限長度動畫(切 theme 引起的 transition 也算在內),才量像素。
+ * 取代原本「load + 等捲動區出現 + 固定睡 1200ms」:1200ms 同時代理「表格量完欄寬」與「顏色過渡走完」兩件事,慢的機器上兩件都不保證。
+ * 開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決,`--selftest` 下也不算「對照組如預期紅」。
+ *
  *   node scripts/data-table-scrollbar-color.mjs [--build=<dir>] [--selftest]
  */
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
 import { PNG } from 'pngjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -32,7 +38,6 @@ const BUILD = resolve(arg('build', join(REPO, 'storybook-static')))
 const SELFTEST = process.argv.includes('--selftest')
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const px = (png, x, y) => { const i = (png.width * y + x) << 2; return [png.data[i], png.data[i + 1], png.data[i + 2]] }
 const same = (a, b, tol = 6) => a.every((v, i) => Math.abs(v - b[i]) <= tol)
 const show = (c) => `rgb(${c.join(',')})`
@@ -44,19 +49,32 @@ const base = server.origin
 let fail = 0
 const ck = (n, ok, d = '') => { console.log(`${ok ? '✓' : '✗'} ${n}${d ? ' | ' + d : ''}`); if (!ok) fail++ }
 const seen = {}
+/** story 開不起來(StoryRenderInstrumentError):儀器失效,結尾 exit 2 */
+let instrumentFailure = null
 try {
   for (const theme of ['light', 'dark']) {
-    // `--single-process` 下一個 browser 只能一個 context,所以每個主題重開一次。
-    const browser = await chromium.launch({
-      headless: true, args: ['--single-process', '--no-sandbox'],
+    // `--single-process` 下一個 browser 只能一個 context,所以每個主題重開一次(沙箱參數由 launchBrowser 統一給)。
+    const browser = await launchBrowser({
       ignoreDefaultArgs: ['--hide-scrollbars'], // ← 沒有這行就永遠是 0px 浮動捲軸,量不到任何顏色
     })
     const page = await browser.newPage({ viewport: { width: 1200, height: 700 }, deviceScaleFactor: 1 })
-    await page.goto(`${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
-    await page.waitForFunction(() => !!document.querySelector('[data-datatable-hscroll]'), null, { timeout: 30000 })
-    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
-    if (SELFTEST) await page.addStyleTag({ content: ':root,[data-theme]{color-scheme:light !important}' })
-    await sleep(1200)
+    try {
+      await openStory(page, `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+        waitFor: '[data-datatable-hscroll]',
+        // 切 theme(與對照組的強制樣式)放在靜止判定之前:它引起的顏色過渡與重排也要等到靜止才量
+        beforeSettle: async (p) => {
+          await p.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+          if (SELFTEST) await p.addStyleTag({ content: ':root,[data-theme]{color-scheme:light !important}' })
+        },
+        settleFrames: 10,
+        notFound: server.notFound,
+      })
+    } catch (error) {
+      await browser.close()
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      instrumentFailure = error
+      break
+    }
 
     const info = await page.evaluate(() => {
       const el = document.querySelector('[data-datatable-hscroll]')
@@ -82,12 +100,21 @@ try {
     void shot
     await browser.close()
   }
-  if (seen.light && seen.dark) {
-    ck('S1 暗色的軌道顏色 ≠ 亮色的軌道顏色(color-scheme 真的生效)',
-      !same(seen.light.vTrack, seen.dark.vTrack, 10), `亮 ${show(seen.light.vTrack)} / 暗 ${show(seen.dark.vTrack)}`)
-  } else { ck('S1 兩個主題都有量到', false, '缺其中一個') }
+  // 儀器失效時不判 S1:少一個主題的量測不能當成「顏色沒翻」(沒量到 ≠ 沒問題,結尾另以 exit 2 紅)
+  if (!instrumentFailure) {
+    if (seen.light && seen.dark) {
+      ck('S1 暗色的軌道顏色 ≠ 亮色的軌道顏色(color-scheme 真的生效)',
+        !same(seen.light.vTrack, seen.dark.vTrack, 10), `亮 ${show(seen.light.vTrack)} / 暗 ${show(seen.dark.vTrack)}`)
+    } else { ck('S1 兩個主題都有量到', false, '缺其中一個') }
+  }
 } finally { await server.stop() }
 
+if (instrumentFailure) {
+  // story 開不起來是儀器失效(exit 2):不是產品裁決,也絕不算通過(selftest 亦同 —— 不得算成「對照組如預期紅」)
+  console.error(`✗ ${instrumentFailure.message}`)
+  console.error('✗ data-table-scrollbar-color:儀器失效 —— 這次沒有量完兩個主題')
+  process.exit(2)
+}
 if (SELFTEST) {
   if (fail === 0) { console.log('\n✗ 對照組:強制 color-scheme:light 之後斷言全過 —— 量具該紅沒紅'); process.exit(1) }
   console.log(`\n✓ 對照組:${fail} 條如預期紅(量具有效)`); process.exit(0)

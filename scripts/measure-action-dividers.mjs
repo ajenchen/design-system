@@ -13,10 +13,17 @@
  *       node scripts/measure-action-dividers.mjs --base <storybook-url> [--json]
  * --dir 會用 node 內建 http 起靜態服務(不依賴 npx / 外部套件)。需要 Playwright;
  * 本機 sandbox 起不了瀏覽器時走 visual-regression CI lane。
+ *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ *   Storybook 回報渲染完成(含 play)+ render-health(+ 有觸發鈕的情境等觸發鈕本身、點下去後等分隔線出現)
+ *   + 版面連續 10 影格靜止(Toast 進場動畫走完)才量。取代原本的「networkidle(失敗還被 `.catch(() => {})` 吞掉)
+ *   + 固定睡 1200ms」與「找不到觸發鈕就靜靜不點」(M37:都是「已渲染」的代理)。
+ *   story 開不起來 / 觸發鈕點不下去 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是產品裁決;
+ *   舊寫法在 story 檔 404 時把它算成「這些情境沒量到任何分隔線(story id 或觸發方式不對)」並 exit 1。
+ *   渲染完成且健康、卻沒有任何 [data-action-divider] → 仍是這支閘的紅(exit 1):那是元件 / 情境層的事實。
  */
-import { chromium } from 'playwright'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const arg = (name, fallback = null) => {
   const index = process.argv.indexOf(name)
@@ -87,18 +94,37 @@ const MEASURE = () => {
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1000, height: 760 } })
 const results = []
+/** 沒量到的情境(儀器失效,不是產品裁決):任何一筆都讓整次 exit 2,絕不算通過 */
+const instrumentFails = []
 for (const testCase of CASES) {
   const url = `${BASE.replace(/\/$/, '')}/iframe.html?id=${encodeURIComponent(testCase.id)}&viewMode=story`
-  await page.goto(url, { waitUntil: 'networkidle' }).catch(() => {})
-  await page.waitForTimeout(1200)
-  if (testCase.click) {
-    const trigger = testCase.clickByLabel
-      ? page.locator(`button[aria-label="${testCase.click}"]`).first()
-      : page.locator(`button:has-text("${testCase.click}")`).first()
-    if (await trigger.count()) {
-      await trigger.click().catch(() => {})
-      await page.waitForTimeout(1200)
-    }
+  const trigger = !testCase.click ? null
+    : testCase.clickByLabel ? `button[aria-label="${testCase.click}"]` : `button:has-text("${testCase.click}")`
+  let clickError = null
+  try {
+    await openStory(page, url, {
+      // 有觸發鈕的情境:等觸發鈕本身;沒有的情境:分隔線在渲染完成時就該在,不另等(沒有 = 下方「沒量到任何分隔線」的紅)
+      waitFor: trigger,
+      // 點下去之後才出現的浮層(Toast):在靜止判定之前點,openStory 再等版面連續靜止(進場動畫走完)才回來量
+      beforeSettle: trigger ? async (p) => {
+        try { await p.locator(trigger).first().click({ timeout: 10_000 }) } catch (error) { clickError = error; return }
+        // 等被量的分隔線本身出現;等不到不在這裡判,交給下方「沒量到任何分隔線」判紅(不吞成通過)
+        await p.waitForSelector('[data-action-divider]', { state: 'attached', timeout: 10_000 }).catch(() => {})
+      } : null,
+      settleFrames: 10,
+      notFound: served?.notFound ?? null,
+    })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.error(`✗ ${error.message}`)
+    instrumentFails.push(`${testCase.label}(${testCase.id}):${error.detail}`)
+    continue
+  }
+  if (clickError) {
+    const reason = `觸發鈕「${testCase.click}」點不下去:${String(clickError.message).split('\n')[0]}`
+    console.error(`✗ INSTRUMENT-FAIL story「${testCase.id}」沒有量到 —— ${reason}。這是儀器失效(沒量到),不是產品裁決`)
+    instrumentFails.push(`${testCase.label}(${testCase.id}):${reason}`)
+    continue
   }
   results.push({ ...testCase, lines: await page.evaluate(MEASURE) })
 }
@@ -120,10 +146,10 @@ for (const result of results) {
 }
 const missing = results.filter(result => !result.lines.length).map(result => result.label)
 const measured = results.length - missing.length
-if (missing.length) failures.push(`這些情境沒量到任何分隔線(story id 或觸發方式不對,不得當成通過):${missing.join('、')}`)
+if (missing.length) failures.push(`這些情境渲染完成卻沒有任何分隔線(元件不再渲染 [data-action-divider],或觸發方式不對;不得當成通過):${missing.join('、')}`)
 
 if (asJson) {
-  console.log(JSON.stringify({ base: BASE, results, failures }, null, 2))
+  console.log(JSON.stringify({ base: BASE, results, failures, instrumentFails }, null, 2))
 } else {
   for (const result of results) {
     console.log(`\n── ${result.label}`)
@@ -134,8 +160,15 @@ if (asJson) {
   }
 }
 
+if (instrumentFails.length) {
+  // 沒量到 ≠ 沒問題:有情境開不起來,這次不能算通過,也不是產品裁決(已量到的情境若另有失敗一併列出)
+  for (const failure of failures) console.error(`   - ${failure}`)
+  console.error(`\n✗ 儀器失效 ${instrumentFails.length} 個情境 —— 這次沒量完,不是產品裁決,也不算通過:`)
+  for (const item of instrumentFails) console.error(`   - ${item}`)
+  process.exit(2)
+}
 if (!measured) {
-  console.error('\n❌ 沒有量到任何分隔線 —— story id 或 base URL 不對,不得視為通過')
+  console.error('\n❌ 沒有量到任何分隔線 —— 情境或 base URL 不對,不得視為通過')
   process.exit(1)
 }
 if (failures.length) {

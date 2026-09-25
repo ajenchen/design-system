@@ -34,12 +34,18 @@
  * 對照組:`--selftest` 把預算全設 0 必紅(證明三個計數器都在數);**每一趟**另跑 1px 儀器三面對照
  *   (A 掛載暫態:舊法假紅 / 新法 0 · B 捲動引發的真回歸:仍紅且呼叫點指名 · C 與捲動無關的背景噪音:不誤報),
  *   跑在同一個 page 的合成頁上(single-process sandbox 開第二個 page 會 SIGTRAP)。
+ * **story 沒量到 = 儀器失效(exit 1,訊息標 INSTRUMENT-FAIL),不是產品裁決,也不是「不適用」**(2026-09-25,M37):
+ *   每則 story 經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報渲染完成、
+ *   通過 render-health、捲動區出現、版面連續靜止 SETTLE_FRAMES 個影格,才開始量。取代原本的 load + 固定睡 1500ms
+ *   (「過了 1.5 秒」只是「掛載副作用跑完」的代理)。等不到 / DevTools hook 樁沒接上 / 捲動區沒出現 / 沒有垂直溢出
+ *   (兩則 story 都是 500+ 列,沒溢出只可能是版面沒排出來)一律記為儀器失效:點名 story、附同源 404,兩種模式都 exit 1(不用 2:gate meta-test 約定 2 = 缺前置 → 略過)——
+ *   原本「沒溢出」印「⏭ 不適用」後放行,而 --selftest 會把 hook 沒接上 / 渲染崩潰算進「預算 0 必紅」的那個紅。
  */
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -52,6 +58,8 @@ const BUDGET = SELFTEST
   // portal / dnd droppable 註冊 + Popper anchor + Tag 摺疊量測 / Avatar 圖片載入),全部只碰新列,不是整表。
   : { attrPerRow: 2, nodesPerRow: 400, nodesBase: 8, commits: 8, gbcrFine: 12, touchedOld: 12, renderedHeader: 4 }
 const STORIES = ['design-system-components-datatable-展示--roadmap-all-in-one', 'design-system-components-datatable-展示--virtual-scroll']
+// 開 story 後要求版面連續靜止幾個影格才開始量(新列的掛載副作用鏈 —— Radix ref-state → 格內量測 → 標籤摺疊 —— 是一格一格推進的)
+const SETTLE_FRAMES = 10
 
 // 1px 段儀器對照組用的合成頁(見檔尾對照組區塊):由本機伺服器提供,
 // 才能走跟正式量測一樣的 goto 路徑(setContent 在這個瀏覽器包裝上不支援)。
@@ -67,6 +75,9 @@ const printNotFound = () => { const nf = [...server.notFound, ...probeServer.not
 let browser
 let failed = 0
 let controlBad = 0, controlSeen = 0
+// 儀器失效(沒量到):與 failed(預算判定)分開計 —— selftest 的「預算 0 必紅」不得吸收它
+const instrumentFailures = []
+const instrument = (id, why) => { instrumentFailures.push(id); console.log(`✗ INSTRUMENT-FAIL story「${id}」${why} —— 這是儀器失效(沒量到),不是產品裁決`) }
 try {
   browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
@@ -119,10 +130,16 @@ try {
   const metrics = async () => { const { metrics } = await cdp.send('Performance.getMetrics'); const m = Object.fromEntries(metrics.map((x) => [x.name, x.value])); return { script: m.ScriptDuration, layout: m.LayoutCount, style: m.RecalcStyleCount } }
 
   for (const id of STORIES) {
-    await page.goto(`${BASE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' })
-    await page.waitForTimeout(1500)
+    try {
+      await openStory(page, `${BASE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+        waitFor: '[data-datatable-hscroll]', settleFrames: SETTLE_FRAMES, notFound: server.notFound,
+      })
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      instrumentFailures.push(id); console.log(`✗ ${error.message}`); continue
+    }
     const hasHook = await page.evaluate(() => window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0)
-    if (!hasHook) { console.log(`✗ ${id}:React 沒接上 DevTools hook 樁,commit 計數器無效`); failed++; continue }
+    if (!hasHook) { instrument(id, ':React 沒接上 DevTools hook 樁,commit 計數器無效'); continue }
     const m0 = await metrics()
     const r = await page.evaluate(async (FINE_BUDGET) => {
       const el = document.querySelector('[data-datatable-hscroll]')
@@ -223,8 +240,8 @@ try {
       else if (ctrl.header > 0 && ctrl.old > 0) { console.log(`✓ selftest 對照組:點全選後表頭 render ${ctrl.header}、舊列 render ${ctrl.old}(計數器活著)`); controlSeen++ }
       else { console.log(`✗ selftest 對照組:點全選後表頭 ${ctrl.header} / 舊列 ${ctrl.old} —— 計數器沒在數`); controlBad++ }
     }
-    if (r && r.crashed) { console.log(`✗ ${id}:story 沒有渲染出捲動區(story 崩潰或 build 壞了),閘不能當「不適用」放行`); failed++; continue }
-    if (!r) { console.log(`⏭  ${id}:沒有垂直溢出,不適用`); continue }
+    if (r && r.crashed) { instrument(id, ':story 沒有渲染出捲動區(story 崩潰或 build 壞了),閘不能當「不適用」放行'); continue }
+    if (!r) { instrument(id, ':捲動區沒有垂直溢出(這兩則都是 500+ 列,沒溢出 = 版面沒排出來),量不到捲動路徑,不是「不適用」'); continue }
     const m1 = await metrics()
     const renderedInfo = `重繪元件/步:舊列 ${r.renderedOldPerStep.toFixed(1)} 表頭 ${r.renderedHeaderPerStep.toFixed(1)} 新列 ${r.renderedNewPerStep.toFixed(1)} 其他 ${r.renderedOtherPerStep.toFixed(1)}${r.renderedErr ? ' ERR ' + r.renderedErr : ''}`
     const info = `${renderedInfo};script ${((m1.script - m0.script) * 1000 / 50).toFixed(1)}ms/步 layout ${((m1.layout - m0.layout) / 50).toFixed(1)}/步 style ${((m1.style - m0.style) / 50).toFixed(1)}/步(含暖機與 1px 段,機器相關,只印)`
@@ -267,6 +284,7 @@ try {
   // 用合成頁而不是 DataTable:合成頁能精準造出「先吵一陣然後安靜」與「一直吵」兩種訊號,
   // DataTable 造不出可控的暫態,拿它當對照組等於沒有對照組。
   {
+    // 合成頁是一份沒有腳本的靜態 HTML(不是 story):load 事件就是它完整可用的訊號
     await page.goto(`${probeServer.origin}/__gbcr-probe.html`, { waitUntil: 'load' })
     const control = await page.evaluate(async () => {
       const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
@@ -338,6 +356,12 @@ try {
   await server.stop()
   await probeServer.stop()
   rmSync(probeDir, { recursive: true, force: true })
+}
+// 儀器失效優先於任何判定(兩種模式都是)
+if (instrumentFailures.length) {
+  console.log(`✗ 儀器失效:${instrumentFailures.length} 則 story 沒量到(${instrumentFailures.join('、')})—— 這一趟的預算判定${SELFTEST ? '與對照組結論' : ''}不成立,不是產品裁決`)
+  printNotFound()
+  process.exit(1)
 }
 if (SELFTEST) { const ok = failed > 0 && controlBad === 0 && controlSeen > 0; console.log(ok ? '✓ selftest:預算 0 時計數器讓閘變紅,且正向對照組(全選)有量到表頭與舊列 render' : `✗ selftest:${failed ? '' : '預算 0 仍綠;'}${controlBad ? '對照組沒量到;' : ''}${controlSeen ? '' : '沒有任何 story 跑到對照組'}`); if (!ok) printNotFound(); process.exit(ok ? 0 : 1) }
 if (failed) printNotFound()

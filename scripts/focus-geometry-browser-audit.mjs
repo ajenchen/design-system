@@ -7,8 +7,8 @@
 //
 // @gate-contract
 //   保證: 每個元件的代表 story 在淺色 / 深色主題下**確實渲染完成後**,焦點框不被裁、不撞鄰居;無框站點有看得見的承擔者;宣告內描邊的站點確實需要往內。沒量到的 story 一律以「儀器失效」紅,不讀成通過
-//   紅: 焦點框被裁 / 撞鄰居超過基準線、承擔者零差異、內描邊其實放得下 → 指名該站;story 載不起來(id 不存在、chunk 404、render 出錯)或零量測 → 以儀器失效紅並點名 story。--selftest / --selftest-inset 分別把焦點視覺釘死 / 釘成內描邊,必須紅;每次執行另跑對照組 (a) 不存在的 story id 必判失敗、(b) 刪掉 chunk 的建置副本必判失敗
-//   綠: 現況全 DS 兩主題全部載入且量到焦點站、產品清單都在基準線內時綠;對照組 (b) 的綠面是同一則 story 在完整建置必須載得起來 —— 判「載入成功」的那一側也有證據
+//   紅: 焦點框被裁 / 撞鄰居超過基準線、承擔者零差異、內描邊其實放得下 → 指名該站;story 載不起來(id 不存在、chunk 404、render 出錯)或零量測 → 以儀器失效紅並點名 story。--selftest / --selftest-inset 分別把焦點視覺釘死 / 釘成內描邊,必須紅;每次執行先跑儀器判定表(載入失敗 / 零量測 / 空清單必紅),不過就不掃
+//   綠: 現況全 DS 兩主題全部載入且量到焦點站、產品清單都在基準線內時綠。「載入成功」的判定是共用的 openStory(lib/launch-browser.mjs),它的兩面對照(不存在的 id / 被擋的 chunk 必判失敗、真實 story 必載得起來)在 scripts/test-open-story.mjs,每個 PR 都跑
 //
 // `focus-geometry-invariant.mjs` 是靜態的(守「只准兩種幾何」),這一支是動態的
 // (守「每一站選對了那一種」)。兩支合起來才完整:靜態掃不出「這個元素四周有沒有空間」。
@@ -42,13 +42,15 @@
 // 這是 M37「沒觀察到 ≠ 沒發生」—— 還更糟,量到的是錯誤頁,不是元件。
 //
 // 現在:
-//   (1) 每則 story 先證明「真的渲染完成」才量:Storybook 回報 render phase = finished
-//       (含 play 函式)、根節點有內容、沒有關鍵資源 404 / 頁面例外(lib/storybook-render-health.mjs)。
+//   (1) 每則 story 先證明「真的渲染完成」才量:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作;
+//       2026-09-25 收斂前本檔有自己的一份 loadStory)—— Storybook 回報 render phase = finished(含 play 函式)、
+//       不是錯誤頁、根節點有內容、沒有關鍵資源 404 / 頁面例外(lib/storybook-render-health.mjs)。
 //       任一不成立 → 記成**儀器失效**,訊息點名 story 與原因,並聲明那不是產品裁決。
 //   (2) 地板:清單是空的、或某個主題全程量到 0 個焦點站 → 儀器失效。
 //       渲染成功但 Tab 走訪一站都沒抵達:畫面上其實有可聚焦元素 → 儀器失效;真的沒有 → 列為「無裁決」。
-//   (3) 每次執行(三種模式都一樣)先跑兩面對照組,證明偵測器**此刻**會紅(見 instrumentSelfCheck);
-//       自檢沒過就不掃 —— 偵測器不可信時量到的東西也不能當證據。
+//   (3) 每次執行(三種模式都一樣)先跑儀器判定表(見 instrumentSelfCheck);自檢沒過就不掃。
+//       「載入失敗偵測器此刻會紅」的兩面對照(不存在的 id、被擋的 chunk、真實 story 必載得起來)跟著共用實作
+//       住在 scripts/test-open-story.mjs(每個 PR 在真實建置上跑),不在各閘各留一份。
 //   「已渲染」不再用固定睡眠代理(原本 networkidle + 400ms):FileItem 的 play 函式在根節點出現後
 //   還要約 450ms 才把焦點移到刪除鈕,固定睡眠在慢機器上會讓 Tab 走訪跟 play 搶焦點。
 //
@@ -59,12 +61,11 @@
 
 // 焦點框「會不會被裁 / 會不會撞到鄰居」偵測器
 // 決定每一站該用外描邊(全域)還是內描邊(focus-ring-inset)。判準 SSOT:focus-canonical 問題二。
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, join, resolve } from 'node:path'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
-import { createStorybookRenderHealthMonitor } from './lib/storybook-render-health.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const ARGV = process.argv.slice(2)
 const SELFTEST = ARGV.includes('--selftest')
@@ -93,40 +94,15 @@ try { br = await launchBrowser() }
 catch (e) { await server.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
 
 // ── 「這則 story 真的渲染完成了嗎」────────────────────────────────────────
-// 要保證的性質是「量的是這則 story 渲染完成後的畫面」,所以直接等那個性質(M37):
-//   先等根節點(或 Storybook 的錯誤頁 / 無預覽頁)出現 —— 元素本身,不是睡幾毫秒(lib/launch-browser.mjs gotoStory);
-//   再等 Storybook 回報這次渲染走完(render phase = finished,含 play 函式;errored / aborted 也是終點);
-//   最後由 render-health 判:錯誤頁文字、根節點是否有內容、關鍵資源 404、頁面例外。
-// 等不到「走完」也算失敗(訊息會說是等不到),**不退回固定睡眠** —— Storybook 升級改了這個訊號時,
-// 這裡會紅而且說得出原因,而不是悄悄回到「睡夠久應該好了」。
-const STORY_SHELL = '#storybook-root > *, body > [data-radix-portal] > *, body.sb-show-errordisplay, body.sb-show-nopreview'
+// 要保證的性質是「量的是這則 story 渲染完成後的畫面」—— 由共用的 openStory 直接等那個性質(M37),
+// 不退回固定睡眠;等不到 / 不健康時它丟 StoryRenderInstrumentError,這裡轉成「儀器失效」的一筆紀錄。
 const oneLine = (s) => String(s).split('\n')[0].slice(0, 240)
-async function loadStory(pg, origin, storyId, ledger) {
-  const from = ledger.length
-  const health = createStorybookRenderHealthMonitor(pg)
+async function loadStory(pg, origin, storyId) {
   try {
-    await gotoStory(pg, `${origin}/iframe.html?id=${storyId}&viewMode=story`, { waitFor: STORY_SHELL, settle: 0, timeout: 30000, appearTimeout: 20000 })
-    const phase = await pg.waitForFunction(() => {
-      const cls = document.body.classList
-      if (cls.contains('sb-show-errordisplay')) return 'error-display'
-      if (cls.contains('sb-show-nopreview')) return 'no-preview'
-      const p = window.__STORYBOOK_PREVIEW__?.currentRender?.phase
-      return p === 'finished' || p === 'errored' || p === 'aborted' ? p : false
-    }, null, { timeout: 20000 }).then((handle) => handle.jsonValue(), () => 'timeout')
-    // 錯誤頁的原文(例:Couldn't find story matching …)由 render-health 讀出來,比 phase 名稱更有用,所以先判它
-    await health.assertHealthy({ label: storyId, timeoutMs: 5000 })
-    if (phase === 'timeout') throw new Error('20 秒內等不到 Storybook 回報渲染完成(render phase 沒走到 finished)')
-    if (phase !== 'finished') throw new Error(`Storybook 回報渲染結果 = ${phase}`)
-    // 字型載完才量:字寬會改幾何(原本由 networkidle 順帶涵蓋)
-    await pg.evaluate(() => document.fonts.ready.then(() => true))
+    await openStory(pg, `${origin}/iframe.html?id=${storyId}&viewMode=story`, { timeoutMs: 20000, navigationTimeoutMs: 30000, notFound: server.notFound })
     return { ok: true }
   } catch (error) {
-    const missing = [...new Set(ledger.slice(from))]
-    // render-health 的訊息前綴是「render health:<story id>:」—— 呼叫端本來就會點名 story,去掉重複的那段
-    const message = oneLine(error?.message ?? error).replace(`render health:${storyId}:`, '')
-    return { ok: false, reason: message + (missing.length ? `(同源 404:${missing.join(', ')})` : '') }
-  } finally {
-    health.dispose()
+    return { ok: false, reason: error instanceof StoryRenderInstrumentError ? error.detail : oneLine(error?.message ?? error) }
   }
 }
 
@@ -150,14 +126,11 @@ function instrumentVerdict({ planned, failures, stations }) {
   return problems
 }
 
-// ── 兩面對照組:偵測器此刻真的會紅嗎 ─────────────────────────────────────
+// ── 儀器判定表:判定式此刻真的會紅嗎 ─────────────────────────────────────
 // 每次執行都跑(一般 / --selftest / --selftest-inset 三種模式都一樣),不靠 CI 另外記得呼叫:
-//   判定表:全部載入失敗 / 一則失敗 / 零量測 / 清單為空 → 必紅;正常 → 必綠
-//   (a) 一個不存在的 story id → 必須被判成載入失敗
-//   (b) 同一則真 story:從受測建置載得起來(綠的那一面),從「刪掉它的 chunk」的副本載 → 必須被判失敗,
-//       而且 404 帳本要記到那個 chunk(紅的那一面)。兩面都成立,「載入成功」這個判斷才算證據。
-const PROBE_MISSING_ID = 'focus-geometry-instrument-probe--story-that-does-not-exist'
-async function instrumentSelfCheck(pg, probeStory) {
+//   全部載入失敗 / 一則失敗 / 零量測 / 清單為空 → 必紅;正常 → 必綠。
+// 「載入失敗偵測器」本身(不存在的 id、被擋的 chunk)的兩面對照在 scripts/test-open-story.mjs(共用實作一份、對照組一份)。
+function instrumentSelfCheck() {
   const problems = [], lines = []
   const fake = (n) => Array.from({ length: n }, (_, i) => ({ label: `假${i}`, theme: 'light', storyId: `fake-${i}`, reason: '對照' }))
   const table = [
@@ -170,42 +143,6 @@ async function instrumentSelfCheck(pg, probeStory) {
   const wrong = table.filter(([, input, red]) => (instrumentVerdict(input).length > 0) !== red).map(([name]) => name)
   if (wrong.length) problems.push(`判定表不成立:${wrong.join('、')}`)
   else lines.push(`✓ 判定表 ${table.length}/${table.length}(載入失敗 / 零量測 / 空清單必紅,正常必綠)`)
-
-  const a = await loadStory(pg, B, PROBE_MISSING_ID, server.notFound)
-  if (a.ok) problems.push(`(a) 不存在的 story「${PROBE_MISSING_ID}」被判成載入成功 —— 載入失敗偵測器沒有作用`)
-  else lines.push(`✓ (a) 不存在的 story → 判成載入失敗:${a.reason}`)
-
-  // 綠的那一面先做:受測建置本身載不起來時,原因(錯誤頁原文 + 404)直接就是答案
-  const intact = probeStory?.importPath ? await loadStory(pg, B, probeStory.id, server.notFound) : null
-  if (!probeStory?.importPath) {
-    problems.push('(b) 對照組建不起來:索引裡找不到任何元件 story')
-  } else if (!intact.ok) {
-    problems.push(`(b) 對照組建不起來:${probeStory.id} 在受測建置本身就載不起來 —— ${intact.reason}`)
-  } else {
-    // Vite 的 chunk 檔名 = 模組檔名(去副檔名)+ '-' + 8 碼雜湊 + '.js'
-    const base = basename(probeStory.importPath).replace(/\.(tsx|ts|jsx|js|mdx)$/, '')
-    const escaped = base.replace(/[.*+?^$|()[\]{}\\]/g, '\\$&')
-    const chunkPattern = new RegExp('^' + escaped + '-[A-Za-z0-9_-]{8}\\.js$')
-    const chunks = readdirSync(join(SERVED_ROOT, 'assets')).filter((f) => chunkPattern.test(f))
-    if (chunks.length !== 1) {
-      problems.push(`(b) 對照組建不起來:${probeStory.id} 的 chunk 在 assets/ 對到 ${chunks.length} 個檔(要剛好 1 個)`)
-    } else {
-      const copyDir = mkdtempSync(join(tmpdir(), 'focus-geometry-control-'))
-      let broken = { ok: true, reason: '', missing: [] }
-      try {
-        cpSync(SERVED_ROOT, copyDir, { recursive: true })
-        rmSync(join(copyDir, 'assets', chunks[0]))
-        // 副本已經是本次獨佔的,不用再凍結一次
-        const control = await startA11yStaticServer({ rootDirectory: copyDir, defaultFile: 'iframe.html', snapshot: false })
-        try {
-          broken = { ...(await loadStory(pg, control.origin, probeStory.id, control.notFound)), missing: [...new Set(control.notFound)] }
-        } finally { await control.stop() }
-      } finally { rmSync(copyDir, { recursive: true, force: true }) }
-      if (broken.ok) problems.push(`(b) 刪掉 ${chunks[0]} 之後 ${probeStory.id} 仍被判成載入成功 —— 缺檔偵測器沒有作用`)
-      else if (!broken.missing.some((p) => p.endsWith(`/${chunks[0]}`))) problems.push(`(b) 刪掉 ${chunks[0]} 後判成失敗,但 404 帳本沒記到它(記到:${broken.missing.join(', ') || '無'})`)
-      else lines.push(`✓ (b) ${probeStory.id}:受測建置載得起來;刪掉 ${chunks[0]} 的副本 → 判成載入失敗`)
-    }
-  }
   return { problems, lines }
 }
 
@@ -344,8 +281,8 @@ const stations = { light: 0, dark: 0 }
 let selfCheck = { problems: [], lines: [] }
 try {
   const pg = await br.newPage({ viewport:{width:1440,height:900} })
-  selfCheck = await instrumentSelfCheck(pg, COMPS.length ? pickStory(COMPS[0]) : null)
-  console.log('儀器自檢(兩面對照組,每次執行都跑):')
+  selfCheck = instrumentSelfCheck()
+  console.log('儀器自檢(判定表,每次執行都跑):')
   selfCheck.lines.forEach((l) => console.log('  ' + l))
   selfCheck.problems.forEach((p) => console.log('  ✗ ' + p))
   console.log('')
@@ -360,7 +297,7 @@ try {
         if (theme === 'light') failures.push({ label, theme: '兩個主題', storyId: '(無)', reason: '索引裡這個元件沒有可量測的 story(全是 docs / usage-guidance / inspector / rule)' })
         continue
       }
-      const loaded = await loadStory(pg, B, storyId, server.notFound)
+      const loaded = await loadStory(pg, B, storyId)
       if (!loaded.ok) {
         failures.push({ label, theme, storyId, reason: (target.inIndex ? '' : '索引裡沒有這個 id;') + loaded.reason })
         continue

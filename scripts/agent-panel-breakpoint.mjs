@@ -24,12 +24,21 @@
 //
 // Run: `node scripts/agent-panel-breakpoint.mjs [--static=<dir>]`(預設讀 `storybook-static`;
 //      並行工作者用 `npx storybook build --output-dir <dir>` 自己的 build 時以 `--static` 指定,不覆蓋主 build)
+//
+// 「story 已經畫好」的判定(2026-09-25 起)一律走 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):
+// Storybook 回報這則 story 渲染完成(含 play)、通過 render-health、被量的元素出現、版面連續靜止 N 個影格
+// (進場的 slide-in / fade-in 與 CSS 過渡都是有限長度動畫,靜止判定會等它們跑完)。原本是 `networkidle` + 固定睡 500 / 400ms,
+// --selftest 注入破壞 CSS 後再睡 100ms —— 那是「已渲染 / 已套用」的代理:實測(2026-09-25)舊版 --selftest 量到
+// 「面板左 − 容器左 = 15.2 / 8 / 2.2」,當下面板上正跑著注入 `left:0` 觸發的 250ms `left` 過渡(量到時才走了 100–183ms),
+// 量到的是過渡中間值不是終值;對照組碰巧仍是紅的,所以沒人發現。新版等過渡走完,量到 0。
+// story 開不起來(id 不存在、chunk 404、渲染拋錯、等不到被量的元素)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與
+// 同源 404 帳本,exit 1 —— 不是產品裁決,也絕不當成通過。(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」。)
 
 // G3:並排 ↔ 蓋板的斷點與寬度上限
-import { chromium } from 'playwright'
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const S = staticArg ? (staticArg.startsWith('/') ? staticArg : join(process.cwd(), staticArg)) : join(process.cwd(),'storybook-static')
 if (statSync('packages/design-system/src/components/AgentPanel/agent-panel.tsx').mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
@@ -39,21 +48,49 @@ const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const B=sv.origin
 let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
+try { br = await launchBrowser() }
 catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
 const pg=await br.newPage({viewport:{width:1600,height:800}})
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
+// 版面連續靜止幾個影格才量(與 overflow-indicator-containment 等閘同值)
+const SETTLE_FRAMES = 10
+/** 開 story 並等到真的畫完(openStory);證明不了 → 儀器失效,點名 story、印 404 帳本,exit 1。 */
+const open = async (url, options) => {
+  try {
+    return await openStory(pg, url, { settleFrames: SETTLE_FRAMES, notFound: sv.notFound, ...options })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    if (out.length) console.log(out.join('\n'))
+    console.error(`\n✗ ${error.message}`)
+    await br.close(); await sv.stop(); process.exit(1)
+  }
+}
+const TASK_ASSISTANT = `${B}/iframe.html?id=design-system-components-agentpanel-展示--task-assistant&viewMode=story`
+const FAB_STORY = `${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`
+// 頁面端:Fab story 的入口鈕(等的與點的是同一顆)
+const hasFab = () => [...document.querySelectorAll('button')].some((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
+/** openStory 的 beforeSettle:點入口鈕,再等面板本身變成可見(原本在頁面裡固定睡 600ms)。
+ *  面板出現之後「量容器 → setState → 重畫」與進場動畫,交給 openStory 的靜止判定;等不到面板 = 下方 probe 回報「沒出現」(產品裁決,紅)。 */
+const openPanelViaFab = async (page) => {
+  const clicked = await page.evaluate(() => {
+    const fab = [...document.querySelectorAll('button')].find((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
+    fab?.click()
+    return Boolean(fab)
+  })
+  if (clicked) await page.waitForSelector('[role="complementary"]', { state: 'visible', timeout: 15000 }).catch(() => {})
+}
 // 對照組(M32「儀器要先有對照組」):--selftest 把蓋板的左內距硬設 0、把遮罩藏起來(= 2026-09-16 之前的樣子),
 // 「蓋板左留內距」「蓋板底下有遮罩」兩條在每個蓋板寬度都必須紅,否則量具無效。
 const SELFTEST = process.argv.includes('--selftest')
 const SABOTAGE = '[role="complementary"][data-agent-panel-mode="overlay"]{left:0!important} [data-agent-panel-scrim]{display:none!important}'
 for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
   await pg.setViewportSize({width:W,height:800})
-  await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--task-assistant&viewMode=story`,{waitUntil:'networkidle'})
-  await pg.waitForTimeout(500)
-  if (SELFTEST) { await pg.addStyleTag({ content: SABOTAGE }); await pg.waitForTimeout(100) }
-  const r = await pg.evaluate(()=>{
+  // 對照組的破壞 CSS 在靜止判定之前注入(原本注入後另睡 100ms):它觸發的 250ms `left` 過渡由同一個靜止判定等完
+  const { probe: r } = await open(TASK_ASSISTANT, {
+    waitFor: '[role="complementary"]',
+    beforeSettle: SELFTEST ? (page) => page.addStyleTag({ content: SABOTAGE }) : null,
+    probe: ()=>{
     const p=document.querySelector('[role="complementary"]')
     if(!p) return {err:'找不到面板'}
     let host=p.parentElement
@@ -81,6 +118,7 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
       stripHitsScrim: !!scrim && Number.isFinite(inset) && document.elementFromPoint(H.left + inset/2, H.top + H.height/2) === scrim,
       // 留白正中一點:點下去要關閉面板(2026-09-17)
       strip: Number.isFinite(inset) ? { x: H.left + inset/2, y: H.top + H.height/2 } : null }
+    },
   })
   if(r.err){ ck(`G3 @${W}`, false, r.err); continue }
   const expectOverlay = r.container < 960
@@ -99,9 +137,13 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、留白處命中的是遮罩本身)`,
        r.scrim && r.scrimCoversHost && r.scrimBg === r.overlayBg && r.scrimZ === '30' && r.stripHitsScrim,
        JSON.stringify({ scrim: r.scrim, covers: r.scrimCoversHost, bg: r.scrimBg, overlay: r.overlayBg, z: r.scrimZ, stripHitsScrim: r.stripHitsScrim }))
-    if (r.strip) {
-      await pg.mouse.click(r.strip.x, r.strip.y); await pg.waitForTimeout(400)
-      const after = await pg.evaluate(()=>{ const p=document.querySelector('[role="complementary"]'); return { open: !!p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0, mode: p?.dataset.agentPanelMode } })
+    // 對照組把遮罩藏起來了,點「留白處」點不到遮罩 —— 這條在 --selftest 沒有意義,也不在對照組的判定裡,略過不點
+    if (r.strip && !SELFTEST) {
+      await pg.mouse.click(r.strip.x, r.strip.y)
+      // 等「面板真的關了」這件事本身(原本固定睡 400ms):關了就立刻往下;15 秒還開著 = 點了沒關(產品裁決,紅)
+      const panelState = ()=>{ const p=document.querySelector('[role="complementary"]'); return { open: !!p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0, mode: p?.dataset.agentPanelMode } }
+      await pg.waitForFunction(()=>{ const p=document.querySelector('[role="complementary"]'); return !(p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0) }, null, { timeout: 15000, polling: 'raf' }).catch(() => {})
+      const after = await pg.evaluate(panelState)
       ck(`G3 @${W} 點遮罩(留白處)關閉面板`, !after.open, JSON.stringify(after))
     }
     ck(`G3 @${W} 蓋板態不渲染拖曳把手(寬度不再是可選的)`, !r.hasHandle, `hasHandle=${r.hasHandle}`)
@@ -123,22 +165,17 @@ if (SELFTEST) {
 // 這是 G2(keep-mounted)與 G3(容器斷點)互相踩到:兩支閘各自都綠,合起來才壞。
 for (const W of [800, 1600]) {
   await pg.setViewportSize({width:W,height:800})
-  await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`,{waitUntil:'networkidle'})
-  await pg.waitForTimeout(400)
-  const opened = await pg.evaluate(async () => {
-    const fab = [...document.querySelectorAll('button')].find((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
-    if (!fab) return { err: '找不到入口鈕' }
-    fab.click()
-    await new Promise((r) => setTimeout(r, 600))
+  // 入口鈕出現才點(waitFor);點完等面板本身出現,再等版面靜止才量(openStory 的 beforeSettle + settleFrames)
+  const { probe: opened } = await open(FAB_STORY, { waitFor: hasFab, beforeSettle: openPanelViaFab, probe: () => {
     const p = document.querySelector('[role="complementary"]')
-    if (!p) return { err: '點了入口鈕但面板沒出現' }
+    if (!p || getComputedStyle(p).display === 'none' || p.getBoundingClientRect().width === 0) return { err: '點了入口鈕但面板沒出現' }
     let host = p.parentElement
     while (host && ['contents', 'none'].includes(getComputedStyle(host).display)) host = host.parentElement
     const handle = p.querySelector('[role="separator"][aria-orientation="vertical"]')
     return { mode: p.dataset.agentPanelMode, container: host.clientWidth,
              panelW: Math.round(p.getBoundingClientRect().width),
              valuemax: handle ? +handle.getAttribute('aria-valuemax') : null }
-  })
+  } })
   if (opened.err) { ck(`G3 初始關閉 @${W}`, false, opened.err); continue }
   const expectOverlay = opened.container < 960
   ck(`G3 初始關閉後打開 @視窗${W}(容器${opened.container}) 形態應為 ${expectOverlay?'蓋板':'並排'}`,
@@ -158,14 +195,7 @@ for (const W of [800, 1600]) {
 await pg.setViewportSize({width:800,height:800})
 // 用 Fab story:宿主是一張 DataTable,有大量可聚焦控件 ——
 // 拿沒有控件的 story 來驗「宿主不可操作」會得到 0/0 的空過(2026-09-08 當場踩到)。
-await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`,{waitUntil:'networkidle'})
-await pg.waitForTimeout(400)
-await pg.evaluate(async () => {
-  const fab = [...document.querySelectorAll('button')].find((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
-  fab?.click()
-  await new Promise((r) => setTimeout(r, 600))
-})
-const reach = await pg.evaluate(() => {
+const { probe: reach } = await open(FAB_STORY, { waitFor: hasFab, beforeSettle: openPanelViaFab, probe: () => {
   const panel = document.querySelector('[role="complementary"]')
   if (!panel) return { skip: '面板沒出現' }
   if (panel.dataset.agentPanelMode !== 'overlay') return { skip: `此視窗不是蓋板態(${panel.dataset.agentPanelMode})` }
@@ -181,7 +211,7 @@ const reach = await pg.evaluate(() => {
   })
   return { total: outside.length, stillFocusable: focusable.length,
            sample: focusable.slice(0, 3).map((e) => e.tagName + '.' + String(e.className).split(' ')[0]) }
-})
+} })
 if (reach.skip) ck('B 蓋板態宿主不可操作', false, reach.skip)
 else ck('B 蓋板態:被蓋住的宿主不得留下可聚焦控件(v14 條 B「宿主暫不可操作」)',
         reach.stillFocusable === 0,
