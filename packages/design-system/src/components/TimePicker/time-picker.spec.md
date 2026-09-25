@@ -142,7 +142,10 @@ Panel 展開後的 column picker 結構:
 | 正常 | 置中文字 | `text-foreground` |
 | hover | 灰底 | `hover:bg-neutral-hover` |
 | **selected** | **灰底**(非藍底,滿欄矩形填色 `w-full`,無圓角) | `bg-neutral-selected text-foreground` |
+| selected × hover | 灰底**釘住不變**(item-anatomy「選中列 × 滑鼠 hover」) | `hover:bg-neutral-selected` |
 | disabled(`disabledTime`) | 灰字 | `text-fg-disabled cursor-not-allowed` |
+| disabled × hover | 不給回饋,維持透明底 | `hover:bg-transparent` |
+| selected × disabled(× hover) | 選中灰底 + 灰字;滑過**維持選中灰底**(停用不給回饋 = 釘在自己的靜止底色,不是變透明) | `bg-neutral-selected text-fg-disabled`,hover 沿用 `hover:bg-neutral-selected` |
 
 **為什麼 selected 走 neutral 非 primary**(2026-04-21 canonical):TimePicker panel 是「**列表選中**」語意 — user 在時 / 分 / 秒選項間切換,跟 `SelectMenu` / `MenuItem` 同流派(單選 list → `bg-neutral-selected`)。**DatePicker date cell selected 用 `bg-primary`** 是因為那是「**最終選定日期**」的強 affordance(確定性)。兩者不同語意,不互調。
 

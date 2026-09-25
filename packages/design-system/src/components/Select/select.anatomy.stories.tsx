@@ -7,6 +7,7 @@ import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { Flag } from 'lucide-react'
 import { Select } from './select'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計規格',
@@ -164,18 +165,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
     ))}
   </div>
 )
-
-const Tab = ({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => {
-  if (disabled) return <span className="px-2.5 py-1 text-[12px] font-mono rounded-md text-fg-disabled bg-neutral-hover cursor-not-allowed">{children}</span>
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-        active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-      }`}>
-      {children}
-    </button>
-  )
-}
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -373,47 +362,49 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
-          <div className="flex flex-wrap gap-1.5">
-            {MODES.map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Display</span>
-          <div className="flex gap-1.5">
-            {DISPLAYS.map((d) => <Tab key={d} active={display === d} onClick={() => setDisplay(d)}>{d}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Display" value={display} onValueChange={(v) => setDisplay(v as DisplayKey)}>
+            {DISPLAYS.map((d) => <SegmentedControlItem key={d} value={d}>{d}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Error</span>
-          <div className="flex gap-1.5">
-            <Tab active={!error} onClick={() => setError(false)}>off</Tab>
-            <Tab active={error} onClick={() => setError(true)} disabled={mode !== 'edit'}>on</Tab>
-          </div>
+          {/* 停用項用元件自身 disabled(segmented-control.spec.md「disabled」);停用項不得是當前值 → value 取實際生效值 */}
+          <SegmentedControl size="sm" aria-label="Error" value={error && mode === 'edit' ? 'on' : 'off'} onValueChange={(v) => setError(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={mode !== 'edit'}>on</SegmentedControlItem>
+          </SegmentedControl>
           {mode !== 'edit' && <span className="text-[11px] text-fg-muted">僅 edit 模式有效</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Clearable</span>
-          <div className="flex gap-1.5">
-            <Tab active={!clearable} onClick={() => setClearable(false)}>off</Tab>
-            <Tab active={clearable} onClick={() => setClearable(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Clearable" value={clearable ? 'on' : 'off'} onValueChange={(v) => setClearable(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">startIcon</span>
-          <div className="flex gap-1.5">
-            <Tab active={!hasStartIcon} onClick={() => setHasStartIcon(false)}>off</Tab>
-            <Tab active={hasStartIcon} onClick={() => setHasStartIcon(true)} disabled={display === 'tag'}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="startIcon" value={hasStartIcon && !isTag ? 'on' : 'off'} onValueChange={(v) => setHasStartIcon(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={isTag}>on</SegmentedControlItem>
+          </SegmentedControl>
           {display === 'tag' && <span className="text-[11px] text-fg-muted">tag 模式不支援 startIcon</span>}
         </div>
       </div>

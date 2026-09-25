@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { Mail, Folder, Users, Settings } from 'lucide-react'
 import { SelectMenu, type SelectMenuOption, type SelectMenuGroupConfig } from './select-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -348,22 +349,10 @@ function SelectMenuInspector() {
       <div className="flex flex-col gap-6">
         <div>
           <H3>Size</H3>
-          <div className="flex gap-2">
-            {SIZES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSize(s)}
-                className={`px-2.5 py-1 text-caption rounded-md font-mono cursor-pointer ${
-                  s === size
-                    ? 'bg-primary text-white'
-                    : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((s) => <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
 
         <div>

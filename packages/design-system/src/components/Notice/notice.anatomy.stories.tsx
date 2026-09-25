@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { Notice, SUBTLE_ICON_COLOR, type NoticeVariant } from './notice'
 import { Button } from '@/design-system/components/Button/button'
+import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -277,22 +278,13 @@ function NoticeInspector() {
       <div className="flex flex-col gap-6">
         <div>
           <H3>Variant</H3>
-          <div className="flex flex-wrap gap-2">
-            {VARIANTS.map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setVariant(v)}
-                className={`px-2.5 py-1 text-caption rounded-md font-mono cursor-pointer ${
-                  v === variant
-                    ? 'bg-primary text-white'
-                    : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          {/* 5 個互斥選項放在 320px 右欄:SegmentedControl 連體不換行、放不下(segmented-control.spec.md「不支援 overflow…
+              若選項可能超出容器寬度,代表選錯元件了」)→ ChipGroup 單選 wrap(chip.spec.md「與 SegmentedControl 的差異」)。
+              取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配)。
+              Radix 單選再點已選項回傳空字串 → 忽略,維持恆有一值 */}
+          <ChipGroup type="single" aria-label="Variant" value={variant} onValueChange={(v) => { if (v) setVariant(v as NoticeVariant) }}>
+            {VARIANTS.map((v) => <Chip key={v} value={v}>{v}</Chip>)}
+          </ChipGroup>
         </div>
 
         <div>

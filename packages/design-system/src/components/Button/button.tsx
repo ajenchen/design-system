@@ -87,6 +87,9 @@ const buttonVariants = cva(
           'bg-primary text-on-emphasis',
           'hover:bg-primary-hover',
           'active:bg-primary-active',
+          // aria-disabled 的 hover / active 釘在靜止(button.spec.md「狀態疊加」表 aria-disabled 列:與 disabled 同樣不給互動回饋;
+          // 原生 disabled 靠 pointer-events-none,aria-disabled 為了 Tooltip 保留指標事件,只能顯式釘住;先例 switch.tsx 的 `disabled:…:hover:` 守衛)
+          'aria-disabled:hover:bg-primary aria-disabled:active:bg-primary',
           'disabled:bg-disabled disabled:text-fg-disabled disabled:border-transparent',
         ],
         secondary: [
@@ -96,6 +99,9 @@ const buttonVariants = cva(
           // Overlay trigger active(asChild Popover/DropdownMenu trigger)— 維持 hover 樣式
           // (canonical 對齊 inline-action.spec.md:trigger 維持 host hover 直到 overlay 關閉)
           'data-[state=open]:text-primary-hover data-[state=open]:border-primary-hover',
+          // aria-disabled 釘住(同 primary 註解);`not-aria-pressed` = 只釘「未按下」的靜止,按下的由 pressed compound 自己釘(避免兩組 (0,3,0) 靠產出順序決勝)
+          'aria-disabled:not-aria-pressed:hover:text-primary aria-disabled:not-aria-pressed:hover:border-primary',
+          'aria-disabled:not-aria-pressed:active:text-primary aria-disabled:not-aria-pressed:active:border-primary',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
           // 2026-05-21 v12:Toggle pressed 視覺移到 compoundVariants(variant × pressedTone),
           // 同時支援 emphasis(藍底)/ neutral(灰底)兩 tone。詳 cva.compoundVariants 段。
@@ -106,6 +112,9 @@ const buttonVariants = cva(
           'active:text-primary-active active:border-primary-active',
           // Overlay trigger active — 維持 hover 樣式(同 secondary 邏輯)
           'data-[state=open]:text-primary-hover data-[state=open]:border-primary-hover',
+          // aria-disabled 釘住(同 secondary 註解)
+          'aria-disabled:not-aria-pressed:hover:text-foreground aria-disabled:not-aria-pressed:hover:border-border',
+          'aria-disabled:not-aria-pressed:active:text-foreground aria-disabled:not-aria-pressed:active:border-border',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
         ],
         text: [
@@ -115,12 +124,16 @@ const buttonVariants = cva(
           // Overlay trigger active — 維持 hover 樣式(canonical 2026-05-02 改:hover token,
           // 不另開 selected 4% — 對齊 shadcn/Radix/Material 狀態極簡派,跨 host 一致)
           'data-[state=open]:bg-neutral-hover',
+          // aria-disabled 釘住(同 secondary 註解)
+          'aria-disabled:not-aria-pressed:hover:bg-transparent aria-disabled:not-aria-pressed:active:bg-transparent',
           'disabled:bg-transparent disabled:text-fg-disabled',
         ],
         link: [
           'bg-transparent text-primary border-transparent',
           'hover:text-primary-hover',
           'active:text-primary-active',
+          // aria-disabled 釘住(同 primary 註解;link 無 pressed 視覺,不需 not-aria-pressed)
+          'aria-disabled:hover:text-primary aria-disabled:active:text-primary',
           'disabled:text-fg-disabled',
         ],
       },
@@ -155,6 +168,8 @@ const buttonVariants = cva(
           'bg-error text-on-emphasis border-transparent',
           'hover:bg-error-hover',
           'active:bg-error-active',
+          // aria-disabled 釘在自己的靜止紅(button.spec.md「狀態疊加」表 aria-disabled 列)
+          'aria-disabled:hover:bg-error aria-disabled:active:bg-error',
         ],
       },
       // secondary + danger → 紅框紅字（有確認步驟的危險操作）
@@ -165,6 +180,11 @@ const buttonVariants = cva(
           'bg-surface text-error border-error',
           'hover:text-error-hover hover:border-error-hover',
           'active:text-error-active active:border-error-active',
+          // 開啟中 = 自己的 hover(error-hover),不是 secondary 的 primary-hover(inline-action.spec.md「overlay 開啟 → 同 host hover」;
+          // button.spec.md「狀態疊加」表開啟中列)。靠 cn()/twMerge 去掉 variant 那組同前綴 class,同本檔 danger 覆寫慣例
+          'data-[state=open]:text-error-hover data-[state=open]:border-error-hover',
+          'aria-disabled:not-aria-pressed:hover:text-error aria-disabled:not-aria-pressed:hover:border-error',
+          'aria-disabled:not-aria-pressed:active:text-error aria-disabled:not-aria-pressed:active:border-error',
         ],
       },
       // text + danger → 紅字，hover 灰底
@@ -175,6 +195,9 @@ const buttonVariants = cva(
           'text-error',
           'hover:bg-neutral-hover hover:text-error-hover',
           'active:bg-neutral-active active:text-error-active',
+          // 開啟中 = 自己的 hover 配對:底色沿用 text 的 data-[state=open]:bg-neutral-hover,字補上 error-hover(同 secondary+danger 註解)
+          'data-[state=open]:text-error-hover',
+          'aria-disabled:not-aria-pressed:hover:text-error aria-disabled:not-aria-pressed:active:text-error',
         ],
       },
       // ── 2026-05-21 v12 Toggle pressed(variant × pressedTone)──────────────────
@@ -186,28 +209,51 @@ const buttonVariants = cva(
         pressedTone: 'emphasis',
         class: [
           'data-[state=on]:bg-primary-subtle data-[state=on]:text-primary data-[state=on]:border-transparent',
-          'data-[state=on]:hover:text-primary-hover',
-          'data-[state=on]:active:text-primary-active',
+          // 按下的 hover / active 只換字(primary-hover / -active),底色與邊框顯式釘住 —— 照 sidebar.tsx
+          // `data-[active=true]:hover:bg-neutral-selected` 寫法,釘住 (0,3,0) > variant 的 hover / active (0,2,0)。
+          // 之前底色只是靠 CSS 產出順序(data-* 排在 hover 之後)才沒被 text 的 neutral-hover 換掉(button.spec.md「狀態疊加」表 pressed × hover / active 列)
+          'data-[state=on]:hover:bg-primary-subtle data-[state=on]:hover:border-transparent data-[state=on]:hover:text-primary-hover',
+          'data-[state=on]:active:bg-primary-subtle data-[state=on]:active:border-transparent data-[state=on]:active:text-primary-active',
           'data-[state=on]:disabled:bg-disabled data-[state=on]:disabled:text-fg-disabled data-[state=on]:disabled:border-transparent',
-          // aria-pressed fallback(Radix overlay trigger override data-state 時仍生效)
+          // aria-pressed fallback(Radix overlay trigger override data-state 時仍生效)—— 逐條鏡像上方 data-[state=on] 分支
           'aria-pressed:bg-primary-subtle aria-pressed:text-primary aria-pressed:border-transparent',
-          'aria-pressed:hover:text-primary-hover',
+          'aria-pressed:hover:bg-primary-subtle aria-pressed:hover:border-transparent aria-pressed:hover:text-primary-hover',
           // 2026-07-07 補齊第三階:fallback 分支與 data-[state=on] 分支同拼寫(選中之上按壓 = active 階)
-          'aria-pressed:active:text-primary-active',
+          'aria-pressed:active:bg-primary-subtle aria-pressed:active:border-transparent aria-pressed:active:text-primary-active',
+          // pressed + disabled:disabled 視覺優先(button.spec.md「狀態 → disabled」pressed + disabled 條);fallback 分支原本缺這條,鏡像 data-[state=on]:disabled
+          'aria-pressed:disabled:bg-disabled aria-pressed:disabled:text-fg-disabled aria-pressed:disabled:border-transparent',
+          // 按下的觸發鈕開啟中 = 按下自己的 hover(底色與邊框不動、字 primary-hover),不是 variant 的開啟樣式
+          //(inline-action.spec.md「overlay 開啟 → 同 host hover」;button.spec.md「狀態疊加」表開啟中列)。
+          // Radix 會把 data-state 改寫成 open,所以只走 aria-pressed;(0,3,0) > variant 的 data-[state=open] (0,2,0)
+          'aria-pressed:data-[state=open]:bg-primary-subtle aria-pressed:data-[state=open]:border-transparent aria-pressed:data-[state=open]:text-primary-hover',
+          // 按下 + aria-disabled:hover / active 釘在按下的靜止字色(底色與邊框已由上方釘住)
+          'data-[state=on]:aria-disabled:hover:text-primary data-[state=on]:aria-disabled:active:text-primary',
+          'aria-pressed:aria-disabled:hover:text-primary aria-pressed:aria-disabled:active:text-primary',
         ],
       },
       // neutral tone:灰底(neutral-selected family)— sidebar/contextual nav pressed
+      // 階梯值(selected → -selected-hover → -selected-active)仍在 DECISIONS #19 研究中;下方開啟中 / aria-disabled
+      // 各條都是「跟著本分支的 hover / 靜止 token 走」,改階梯時同一 compound 內一起改。
       {
         variant: ['secondary', 'tertiary', 'text'],
         pressedTone: 'neutral',
         class: [
           'data-[state=on]:bg-neutral-selected data-[state=on]:text-foreground data-[state=on]:border-transparent',
-          'data-[state=on]:hover:bg-neutral-selected-hover',
-          'data-[state=on]:active:bg-neutral-selected-active',
+          // 字與邊框在 hover / active 顯式釘住(secondary / tertiary 的 hover 會把字與框轉 primary;同 emphasis 分支註解)
+          'data-[state=on]:hover:bg-neutral-selected-hover data-[state=on]:hover:text-foreground data-[state=on]:hover:border-transparent',
+          'data-[state=on]:active:bg-neutral-selected-active data-[state=on]:active:text-foreground data-[state=on]:active:border-transparent',
           'data-[state=on]:disabled:bg-transparent data-[state=on]:disabled:text-fg-disabled',
-          // aria-pressed fallback
+          // aria-pressed fallback —— 逐條鏡像上方 data-[state=on] 分支
           'aria-pressed:bg-neutral-selected aria-pressed:text-foreground aria-pressed:border-transparent',
-          'aria-pressed:hover:bg-neutral-selected-hover',
+          'aria-pressed:hover:bg-neutral-selected-hover aria-pressed:hover:text-foreground aria-pressed:hover:border-transparent',
+          // 補齊第三階(按壓):fallback 原本缺,data-[state=on] 分支與 emphasis 分支都有(同 emphasis 2026-07-07 註解)
+          'aria-pressed:active:bg-neutral-selected-active aria-pressed:active:text-foreground aria-pressed:active:border-transparent',
+          'aria-pressed:disabled:bg-transparent aria-pressed:disabled:text-fg-disabled',
+          // 按下的觸發鈕開啟中 = 按下自己的 hover(neutral-selected-hover),不是 variant 的 neutral-hover / primary-hover(同 emphasis 分支註解)
+          'aria-pressed:data-[state=open]:bg-neutral-selected-hover aria-pressed:data-[state=open]:text-foreground aria-pressed:data-[state=open]:border-transparent',
+          // 按下 + aria-disabled:hover / active 釘在按下的靜止底色
+          'data-[state=on]:aria-disabled:hover:bg-neutral-selected data-[state=on]:aria-disabled:active:bg-neutral-selected',
+          'aria-pressed:aria-disabled:hover:bg-neutral-selected aria-pressed:aria-disabled:active:bg-neutral-selected',
         ],
       },
     ],
@@ -491,6 +537,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
       // 弱化 icon hover 一階(item-anatomy.tsx ItemInlineActionButton 同階梯 SSOT)
       dismiss && 'text-fg-muted hover:text-fg-secondary',
+      // aria-disabled 的 dismiss hover 釘在 fg-muted(button.spec.md「狀態疊加」表 aria-disabled 列)
+      dismiss && 'aria-disabled:hover:text-fg-muted',
       resolvedFullWidth && 'w-full',
     )
 

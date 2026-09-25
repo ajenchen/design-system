@@ -580,6 +580,8 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 
 **為什麼動作鈕是絕對定位的同層兄弟、而不是放在列裡面**:因為 `SidebarMenuButton` 的列本體就是原生 `<button>`,列內只有文字與圖示;依 `../../patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」表,這是**第一類**(預設),而 `<button>` 的 content model 明文不准有 interactive content 後代,動作鈕只能出到列外面、列再用 `paddingRight` 讓開。FileItem 的列裡有進度條與狀態鈕,走**第二類**(列不互動 + 透明覆蓋控件)。判準與規範逐字出處在該表,本檔不重述。
 
+**指標在動作鈕上時(巢狀 hover,2026-09-25)**:列**保留**自己的 hover(`neutral-hover` 底 + `foreground` 字),動作鈕**再亮**自己那一層(懸停底色 + 圖示升一階),`inlineActions` / `inlineActionsSlot` 與 `SidebarMenuAction` 皆同;當前項照舊釘住選中色,兩顆動作鈕之間的空隙也算在內。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」)。套到側欄列是 AI 依此推導,user 沒有逐元件確認。因動作鈕是上段所說的同層兄弟,實作靠「後面兄弟被指著」的選擇器,**`SidebarMenuAction` 必須排在 `SidebarMenuButton` 後面**(內建 suffix 自動如此;`showOnHover` 的選中字色本來就要求這個順序)。`showOnHover` 動作鈕放在當前項旁時靜止是 `foreground`,滑過 / 按下**維持** `foreground` —— 它已在 `fg-muted → fg-secondary → foreground` 階梯頂端,不往回降(`inline-action.spec.md`「Icon 色彩」)。
+
 ### 行內動作的命中區 = 可視形狀(2026-09-24 兩次修正)
 
 `SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),

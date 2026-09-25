@@ -13,6 +13,7 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
@@ -202,15 +203,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   }
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
 }
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -454,29 +446,30 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">情境</span>
-          <div className="flex gap-1.5">
+          <SegmentedControl size="sm" aria-label="情境" value={consumer} onValueChange={(v) => setConsumer(v as ConsumerKey)}>
             {(Object.keys(CONSUMERS) as ConsumerKey[]).map((c) => (
-              <Tab key={c} active={consumer === c} onClick={() => setConsumer(c)}>{CONSUMER_DISPLAY[c].tab}</Tab>
+              <SegmentedControlItem key={c} value={c}>{CONSUMER_DISPLAY[c].tab}</SegmentedControlItem>
             ))}
-          </div>
+          </SegmentedControl>
           <span className="text-[10px] text-fg-muted font-mono">{CONSUMER_DISPLAY[consumer].sub}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasPrefix</span>
-          <div className="flex gap-1.5">
-            <Tab active={hasPrefix} onClick={() => setHasPrefix(true)}>on</Tab>
-            <Tab active={!hasPrefix} onClick={() => setHasPrefix(false)}>off</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="hasPrefix" value={hasPrefix ? 'on' : 'off'} onValueChange={(v) => setHasPrefix(v === 'on')}>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+          </SegmentedControl>
           {consumer === 'SelectionItem' && (
             <span className="text-[11px] text-fg-muted">
               SelectionItem 的 prefix 是<strong>除了 control 之外</strong>的視覺輔助
@@ -486,60 +479,62 @@ const InspectorInner = () => {
         {hasPrefix && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">prefixType</span>
-            <div className="flex gap-1.5">
-              <Tab active={prefixType === 'icon'} onClick={() => setPrefixType('icon')}>icon</Tab>
-              <Tab active={prefixType === 'avatar'} onClick={() => setPrefixType('avatar')}>avatar</Tab>
-            </div>
+            <SegmentedControl size="sm" aria-label="prefixType" value={prefixType} onValueChange={(v) => setPrefixType(v as PrefixType)}>
+              <SegmentedControlItem value="icon">icon</SegmentedControlItem>
+              <SegmentedControlItem value="avatar">avatar</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
         {/* SelectionItem avatar 沒有 block 模式(left checkbox + block avatar = 歪斜) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label 內容長度</span>
-          <div className="flex gap-1.5">
-            <Tab active={labelLength === 'short'} onClick={() => setLabelLength('short')}>short</Tab>
-            <Tab active={labelLength === 'medium'} onClick={() => setLabelLength('medium')}>medium</Tab>
-            <Tab active={labelLength === 'long'} onClick={() => setLabelLength('long')}>long</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="label 內容長度" value={labelLength} onValueChange={(v) => setLabelLength(v as ContentLength)}>
+            <SegmentedControlItem value="short">short</SegmentedControlItem>
+            <SegmentedControlItem value="medium">medium</SegmentedControlItem>
+            <SegmentedControlItem value="long">long</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label clamp</span>
-          <div className="flex gap-1.5">
-            <Tab active={labelClampOverride === 'preset'} onClick={() => setLabelClampOverride('preset')}>
+          {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
+          <SegmentedControl size="sm" aria-label="label clamp" value={String(labelClampOverride)} onValueChange={(v) => setLabelClampOverride(v === '1' ? 1 : v === '2' ? 2 : (v as 'preset' | 'unbounded'))}>
+            <SegmentedControlItem value="preset">
               preset({preset.labelMaxLines ?? '∞'})
-            </Tab>
-            <Tab active={labelClampOverride === 1} onClick={() => setLabelClampOverride(1)}>1</Tab>
-            <Tab active={labelClampOverride === 2} onClick={() => setLabelClampOverride(2)}>2</Tab>
-            <Tab active={labelClampOverride === 'unbounded'} onClick={() => setLabelClampOverride('unbounded')}>∞</Tab>
-          </div>
+            </SegmentedControlItem>
+            <SegmentedControlItem value="1">1</SegmentedControlItem>
+            <SegmentedControlItem value="2">2</SegmentedControlItem>
+            <SegmentedControlItem value="unbounded">∞</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">description</span>
-          <div className="flex gap-1.5">
-            <Tab active={descContent === 'none'} onClick={() => setDescContent('none')}>none</Tab>
-            <Tab active={descContent === 'short'} onClick={() => setDescContent('short')}>short</Tab>
-            <Tab active={descContent === 'medium'} onClick={() => setDescContent('medium')}>medium</Tab>
-            <Tab active={descContent === 'long'} onClick={() => setDescContent('long')}>long</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="description" value={descContent} onValueChange={(v) => setDescContent(v as DescContent)}>
+            <SegmentedControlItem value="none">none</SegmentedControlItem>
+            <SegmentedControlItem value="short">short</SegmentedControlItem>
+            <SegmentedControlItem value="medium">medium</SegmentedControlItem>
+            <SegmentedControlItem value="long">long</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         {hasDescription && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">desc clamp</span>
-            <div className="flex gap-1.5">
-              <Tab active={descClampOverride === 'preset'} onClick={() => setDescClampOverride('preset')}>
+            {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
+            <SegmentedControl size="sm" aria-label="desc clamp" value={String(descClampOverride)} onValueChange={(v) => setDescClampOverride(v === '1' ? 1 : v === '2' ? 2 : (v as 'preset' | 'unbounded'))}>
+              <SegmentedControlItem value="preset">
                 preset({preset.descMaxLines ?? '∞'})
-              </Tab>
-              <Tab active={descClampOverride === 1} onClick={() => setDescClampOverride(1)}>1</Tab>
-              <Tab active={descClampOverride === 2} onClick={() => setDescClampOverride(2)}>2</Tab>
-              <Tab active={descClampOverride === 'unbounded'} onClick={() => setDescClampOverride('unbounded')}>∞</Tab>
-            </div>
+              </SegmentedControlItem>
+              <SegmentedControlItem value="1">1</SegmentedControlItem>
+              <SegmentedControlItem value="2">2</SegmentedControlItem>
+              <SegmentedControlItem value="unbounded">∞</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasSuffix</span>
-          <div className="flex gap-1.5">
-            <Tab active={hasSuffix} onClick={() => setHasSuffix(true)}>on</Tab>
-            <Tab active={!hasSuffix} onClick={() => setHasSuffix(false)}>off</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="hasSuffix" value={hasSuffix ? 'on' : 'off'} onValueChange={(v) => setHasSuffix(v === 'on')}>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 

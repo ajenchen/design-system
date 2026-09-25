@@ -248,7 +248,11 @@ const radioItemVariants = cva(
     'disabled:data-[state=checked]:bg-disabled disabled:data-[state=checked]:border-transparent disabled:data-[state=checked]:text-fg-disabled',
     // readOnly：鎖定互動但維持 checked/unchecked 視覺
     'data-[readonly=true]:pointer-events-none data-[readonly=true]:cursor-default',
-    'data-[readonly=true]:hover:border-border',
+    // readOnly × hover:框與點都釘在自己的靜止值,不升 hover 階(checkbox.spec.md「狀態 › Radio」表 readonly 列)。
+    // 指標停在 SelectionItem 的 <label for> 上時控件照樣進入 :hover(pointer-events-none 擋不住),原本只釘了
+    // 未選中的框 → 已選中的框與點(text-current)仍轉 primary-hover。寫法與 checkbox.tsx 同一組,`enabled:` 理由同該檔。
+    'data-[readonly=true]:enabled:data-[state=unchecked]:hover:border-border',
+    'data-[readonly=true]:enabled:data-[state=checked]:hover:border-primary data-[readonly=true]:enabled:data-[state=checked]:hover:text-primary',
   ],
   {
     variants: {

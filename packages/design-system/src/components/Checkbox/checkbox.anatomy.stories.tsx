@@ -2,6 +2,7 @@ import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計規格',
@@ -102,15 +103,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
       </span>
     ))}
   </div>
-)
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
 )
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
@@ -246,41 +238,42 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Checked</span>
-          <div className="flex gap-1.5">
-            {CHECKED_STATES.map((cs) => <Tab key={cs} active={checkedState === cs} onClick={() => setCheckedState(cs)}>{cs}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Checked" value={checkedState} onValueChange={(v) => setCheckedState(v as CheckedState)}>
+            {CHECKED_STATES.map((cs) => <SegmentedControlItem key={cs} value={cs}>{cs}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">State</span>
-          <div className="flex gap-1.5">
-            {INTERACTION_STATES.map((st) => <Tab key={st} active={interaction === st} onClick={() => setInteraction(st)}>{st}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="State" value={interaction} onValueChange={(v) => setInteraction(v as InteractionState)}>
+            {INTERACTION_STATES.map((st) => <SegmentedControlItem key={st} value={st}>{st}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Label</span>
-          <div className="flex gap-1.5">
-            <Tab active={!withLabel} onClick={() => setWithLabel(false)}>off</Tab>
-            <Tab active={withLabel} onClick={() => setWithLabel(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Label" value={withLabel ? 'on' : 'off'} onValueChange={(v) => setWithLabel(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
           <span className="text-[11px] text-fg-muted">label prop（內部 SelectionItem 組合）</span>
         </div>
         {withLabel && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-16 shrink-0">Description</span>
-            <div className="flex gap-1.5">
-              <Tab active={!withDescription} onClick={() => setWithDescription(false)}>off</Tab>
-              <Tab active={withDescription} onClick={() => setWithDescription(true)}>on</Tab>
-            </div>
+            <SegmentedControl size="sm" aria-label="Description" value={withDescription ? 'on' : 'off'} onValueChange={(v) => setWithDescription(v === 'on')}>
+              <SegmentedControlItem value="off">off</SegmentedControlItem>
+              <SegmentedControlItem value="on">on</SegmentedControlItem>
+            </SegmentedControl>
             <span className="text-[11px] text-fg-muted">label 下方的次要說明</span>
           </div>
         )}

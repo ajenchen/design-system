@@ -165,9 +165,11 @@ export const VerticalIssueList: Story = {
         長 issue 清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,不吃寬度。
       </p>
       <ScrollArea className="h-[320px] border border-border rounded-lg">
+        {/* 列是靜態 div(無 onClick、不能聚焦)→ 不給 hover 底色與 cursor-pointer:hover 回饋要誠實回答「再點會發生什麼」
+            (item-anatomy.spec.md「選中 × 互動疊加」表)。本則示範的是 ScrollArea 捲動,不是可點的議題列 */}
         <div className="p-2">
           {LINEAR_ISSUES.map((issue) => (
-            <div key={issue.id} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-neutral-hover cursor-pointer">
+            <div key={issue.id} className="flex items-center gap-3 px-3 py-2">
               <span className="text-caption font-mono text-fg-muted shrink-0 w-20">{issue.id}</span>
               <span className="text-body flex-1 truncate">{issue.title}</span>
               <span className="inline-flex items-center gap-1.5 text-footnote shrink-0">
@@ -194,8 +196,9 @@ export const SidebarNav: Story = {
           {NOTION_NAV.map((group) => (
             <div key={group.section} className="mb-4">
               <div className="px-2 py-1 text-footnote text-fg-muted font-medium">{group.section}</div>
+              {/* 同上:靜態示意列不給 hover / cursor-pointer。真的側欄導覽請用 Sidebar(SidebarMenuButton;SidebarContent 自帶 ScrollArea) */}
               {group.items.map((item) => (
-                <div key={item} className="px-2 py-1.5 rounded-md text-body hover:bg-neutral-hover cursor-pointer truncate">
+                <div key={item} className="px-2 py-1.5 text-body truncate">
                   {item}
                 </div>
               ))}

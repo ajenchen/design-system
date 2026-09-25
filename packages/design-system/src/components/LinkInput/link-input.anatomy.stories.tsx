@@ -6,6 +6,7 @@
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { LinkInput } from './link-input'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/LinkInput/設計規格',
@@ -146,15 +147,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
       </span>
     ))}
   </div>
-)
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
 )
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
@@ -322,30 +314,33 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {MODES.map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">State</span>
-          <div className="flex gap-1.5">
+          {/* 非 edit 模式只有 link 狀態:原本是「點了沒反應」的靜默 no-op,改用元件自身的個別 item disabled
+              (segmented-control.spec.md「disabled」);當前值恆為 link,不會落在停用項上 */}
+          <SegmentedControl size="sm" aria-label="State" value={editState} onValueChange={(v) => setEditState(v as EditStateKey)}>
             {EDIT_STATES.map((st) => (
-              <Tab key={st} active={editState === st} onClick={() => { if (mode === 'edit') setEditState(st) }}>
+              <SegmentedControlItem key={st} value={st} disabled={mode !== 'edit' && st !== 'link'}>
                 {st}
-              </Tab>
+              </SegmentedControlItem>
             ))}
-          </div>
+          </SegmentedControl>
           {mode !== 'edit' && <span className="text-[11px] text-fg-muted">readonly / disabled 只有 link 狀態</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
       </div>
 

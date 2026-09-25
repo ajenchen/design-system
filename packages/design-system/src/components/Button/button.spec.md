@@ -351,6 +351,17 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 <Button variant="text" pressed={isActive} pressedTone="neutral" startIcon={Inbox}>收件匣</Button> {/* neutral */}
 ```
 
+### 狀態疊加(開啟中 / pressed / aria-disabled)
+
+原則:**開啟中 = 自己的 hover**(`patterns/element-anatomy/inline-action.spec.md`「overlay 開啟 → 同 host hover」);**停用不給互動回饋**(hover / active 釘在靜止)。
+
+| 疊加 | 視覺 |
+|---|---|
+| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;danger 用自己的 `error-hover`(secondary+danger 字與框、text+danger 字)。primary / link 目前無開啟樣式 |
+| pressed × hover / active | emphasis:底色與框**釘住**,只有字換 `primary-hover` / `-active`;neutral:底換 `neutral-selected-hover` / `-active`,字與框釘住 |
+| pressed × 開啟中 | = pressed × hover(Radix 把 `data-state` 改寫成 `open`,由 `aria-pressed` 分支承擔,不套 variant 的開啟樣式) |
+| `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現 |
+
 ### Dismiss 視覺類(X close only)
 
 **Dismiss 語意嚴格 = 「關閉 surface / 忽略訊息」— 只屬 X(close)icon**。Trash / Delete / Remove / Clear **不是 dismiss**(見 inline-action.spec.md「Dismiss canonical — X close only」)。

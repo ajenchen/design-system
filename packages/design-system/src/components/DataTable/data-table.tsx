@@ -1008,7 +1008,10 @@ const rowDragScrollLatch = {
   },
 }
 
-function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDragActive: boolean }) {
+// `hoverRowIndex` = 所屬列的 `data-row-index` 值,寫到把手的專用屬性 `data-hover-row-index` 上,
+// 讓表格層的 hover 代理把「指標在把手上」算成「指標還在這一列」(巢狀 hover;理由見 enterLeaveHandlers 的 findRowIndex 註解)。
+// 由父層直接傳,不在 render 裡讀 `rowEl.dataset.rowIndex`:render 時 DOM 還是上一輪的值,列換索引(排序 / 虛擬捲動)會差一拍。
+function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number }) {
   const ctx = React.useContext(SortableRowCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
@@ -1206,6 +1209,9 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       // 接 Tooltip pointerenter。Button cva 已 handle aria-disabled visual styling。
       onMouseEnter={() => setButtonHovered(true)}
       onMouseLeave={() => setButtonHovered(false)}
+      // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = data-table.spec.md「八、Row 狀態」巢狀 hover 條):
+      // 指標在把手上時,整列保留 data-hovered 底色,把手再照 Button 自己的 hover 走。專用屬性,**不是** data-row-index(理由見 findRowIndex)。
+      data-hover-row-index={hoverRowIndex}
       style={{
         position: 'fixed',
         top: positionRef.current?.top ?? pos.top,
@@ -2263,6 +2269,10 @@ function DataTableInner<TData>(
    */
   const hoveredRowIdRef = React.useRef<string | null>(null)
   const markedRef = React.useRef<HTMLElement[]>([])
+  /** 指標最近一次停上的**本表**列把手(巢狀 hover;寫入端 = enterLeaveHandlers.onMouseOver,讀取端 = syncHoverUnderPointer)。
+   *  把手 portal 在表格外,`table.contains()` 認不出它;而只有本表的把手會經 React portal 把 mouseover 冒泡到本表,
+   *  所以「在這裡記到的」就等於「確認是本表的」,不必另外給把手掛表格身分。 */
+  const hoverHandleRef = React.useRef<HTMLElement | null>(null)
   const rowsRef = React.useRef(rows)
   rowsRef.current = rows
 
@@ -2317,7 +2327,13 @@ function DataTableInner<TData>(
     if (!table || !Number.isFinite(x) || !Number.isFinite(y)) return
     const el = document.elementFromPoint(x, y)
     const rowEl = el instanceof Element ? el.closest<HTMLElement>('[data-row-index]') : null
-    const idx = rowEl && table.contains(rowEl) ? rowEl.dataset.rowIndex ?? null : null
+    let idx = rowEl && table.contains(rowEl) ? rowEl.dataset.rowIndex ?? null : null
+    // 巢狀 hover(2026-09-25,SSOT = data-table.spec.md「八、Row 狀態」巢狀 hover 條):指標停在本表的列把手上 = 還在它那一列。
+    // 一般捲動時把手已被 rowDragScrollLatch 設成 pointer-events:none、這裡打不到它;會走到這支的是「捲動停下後的補齊重畫」
+    // 剛好發生在指標已移到可見把手上的那一刻(依程式時序推得,未實測重現)—— 不補這條,那一刻整列會被清掉、只剩把手亮,
+    // 與 onMouseOut 修掉的是同一個症狀;三個寫入點(mouseover / mouseout / 這裡)對把手的判定因此一致。
+    const handle = hoverHandleRef.current
+    if (idx == null && el && handle?.isConnected && handle.contains(el)) idx = handle.dataset.hoverRowIndex ?? null
     const id = idx != null ? rowsRef.current[Number(idx)]?.id ?? null : null
     // 不能只比 id:殼列升級成真列時**換了一個 DOM 節點**,新節點身上沒有 `data-hovered`,
     // 而 id 沒變 —— 只比 id 會在那一幀直接 return,留下「真列在指標底下卻沒底色」的空窗(實測 1 幀)。
@@ -2918,10 +2934,19 @@ function DataTableInner<TData>(
     // 恆為 false。指標移到 inline action 的圖示上時,`onMouseOut` 的 `relatedTarget` 判不出「還在同一列」
     // 就把 `data-hovered` 刪了,接著 `onMouseOver` 又在這裡提早 return、沒把它補回來 —— 底色因此消失。
     // `closest()` 定義在 `Element` 上,兩種元素都能用。
+    // **列把手歸屬它那一列**(2026-09-25 巢狀 hover,user 選「卡片保留、按鈕再亮一層」;SSOT = data-table.spec.md「八、Row 狀態」巢狀 hover 條):
+    // 把手是 portal 出去的 fixed 浮層(見 RowDragHandle 註解),DOM 上不在任何 `[data-row-index]` 裡 ——
+    // 先前指標從列移到把手時,下面 onMouseOut 判成「離開了列」、整列 data-hovered 被清掉,只剩把手亮。
+    // 把手改帶**專用**的 `data-hover-row-index`(值 = 所屬列的索引),這裡把它當成列的備援。
+    // 刻意不讓把手直接帶 `data-row-index`:那個屬性還有 setHoveredRow 的標記定址、自動列高量測、殼列同步等讀者,
+    // 它們都只該找到**列**本身;只有 hover 歸屬這一處需要認得把手。
+    // 不需判「是不是本表的把手」:mouseover 的 target 經 React portal 只冒泡到自己這張表;mouseout 的 relatedTarget
+    // 若是把手,它必定可見(不可見時 inline `pointerEvents:none`),而可見代表指標原本就在它那一列上。
     const findRowIndex = (target: EventTarget | null): string | null => {
       if (!(target instanceof Element)) return null
       const rowEl = target.closest<HTMLElement>('[data-row-index]')
-      return rowEl?.dataset.rowIndex ?? null
+      if (rowEl) return rowEl.dataset.rowIndex ?? null
+      return target.closest<HTMLElement>('[data-hover-row-index]')?.dataset.hoverRowIndex ?? null
     }
     return {
       onMouseOver: (e: React.MouseEvent) => {
@@ -2935,17 +2960,20 @@ function DataTableInner<TData>(
         }
         const idx = findRowIndex(e.target)
         if (idx == null) return
+        // 指標在本表的列把手上就記下它(target 經 React portal 冒泡到這裡 = 必屬本表);在列上則清掉。讀取端見 syncHoverUnderPointer。
+        hoverHandleRef.current = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-hover-row-index]') : null
         // 標新列 = 清其餘所有列(互斥由 setHoveredRow 保證,不靠 mouseout 成對出現)
         setHoveredRow(idx)
       },
       onMouseOut: (e: React.MouseEvent) => {
         const idx = findRowIndex(e.target)
-        // 仍在同一 row 的子元素間 bubble(e.g. cell → text node)則 relatedTarget 還在 row 內
-        const related = e.relatedTarget instanceof Element ? e.relatedTarget.closest<HTMLElement>('[data-row-index]') : null
-        if (idx != null && related?.dataset.rowIndex === idx) return
+        // 仍在同一 row 的子元素間 bubble(e.g. cell → text node)則 relatedTarget 還在 row 內;
+        // 移到本列的列把手上同樣算「還在這一列」(findRowIndex 認得把手的 data-hover-row-index,見上方)。
+        const relatedIdx = findRowIndex(e.relatedTarget)
+        if (idx != null && relatedIdx === idx) return
         // **依「接下來該亮哪一列」清**,不依瀏覽器記得的舊索引:捲動時那個索引早就過期,拿它定址會空轉、留下孤兒。
         // 同時修掉「指標從列上移進浮層(下拉選單 / tooltip)時什麼都不清」—— 舊版的 `if (idx == null) return` 讓它漏掉。
-        setHoveredRow(related?.dataset.rowIndex ?? null)
+        setHoveredRow(relatedIdx)
       },
     }
   }, [enableHover])
@@ -3733,6 +3761,12 @@ function DataTableInner<TData>(
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
+            // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = data-table.spec.md「八、Row 狀態」巢狀 hover 條):
+            // 指標在本欄 ⌄ 欄位選單上時,排序區保留上一行的 hover 字色(排序箭頭繼承此字色,一起保留),⌄ 再亮自己那層。
+            // ⌄ 是排序區的**同層兄弟**(排序區是 role=button,不能再包按鈕),指標在兄弟上時排序區不算 :hover。
+            // 只認 `[data-col-menu]`,不寫泛用的 `~ *:hover`:欄寬把手也是後面的兄弟,指到它時排序區不該亮(2026-09-25 實測)。
+            // `:where()` 讓特異性維持 (0,1,0);`[@media(hover:hover)]` 對齊上一行 `hover:` 的媒體條件。值與 `hover:` 同一個,改一邊必須同步改另一邊。
+            canSort && '[@media(hover:hover)]:[&:where(:has(~[data-col-menu]:hover))]:text-foreground',
             // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
             // 2026-09-10:焦點框改回往外(= 不寫)。原本的內描邊是 2026-07-14 憑「對齊本檔其他站點」加的,沒有量過。
             // 實測(column-resize / AppShell 兩個 story、五個欄位):上 9 / 下 10 / 左 9–12 / 右 7(右邊那 7px 是排序箭頭),
@@ -3763,7 +3797,8 @@ function DataTableInner<TData>(
             - hover/focus/menu-open → display:inline-flex → 佔位(width 同前;label 自然 truncate 讓位)
             對齊 Notion(hover-row reveal action,inline action 不佔靜態 layout)/ Linear / Airtable。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
-        <div className="shrink-0 hidden group-hover:inline-flex group-focus-within:inline-flex has-[[data-state=open]]:inline-flex">
+        {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。 */}
+        <div data-col-menu className="shrink-0 hidden group-hover:inline-flex group-focus-within:inline-flex has-[[data-state=open]]:inline-flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <ItemInlineActionButton
@@ -4254,7 +4289,7 @@ function DataTableInner<TData>(
           {...(extra?.attributes ?? {})}
           {...(extra?.listeners ?? {})}
         >
-          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} />}
+          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} hoverRowIndex={idx} />}
           {/* 2026-05-06 v14.6 row drop indicator(SSOT 對齊 TreeView):水平 2px primary line at top/bottom edge */}
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />

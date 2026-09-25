@@ -113,14 +113,16 @@ record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
 
 # ── C.6 selected token 狀態語意(P0 BLOCK exit 2;2026-08-11 user 拍板)──────────
 # 教義(semantic.css + color.spec.md「Selected state family」):
-#   -active = 按壓專屬 / -hover = 可取消切換鈕變淺專屬 / 反白·鍵盤焦點深化 = -focus。
+#   -active = 按壓專屬 / -hover = 可取消切換鈕專屬(已按下的下一階:2026-09-07 由「變淺」改為「變深」neutral-3)。
+#   -focus 已於 2026-09-07 退役:鍵盤焦點一律畫框(focus-ring-inset),不改底色(user 2026-09-09 拍板)。
+#   (2026-09-25 更正本段過期說法;SSOT = color.spec.md「Selected state family」+ semantic.css 選中家族註解)
 # 兩年偏移錨:2026-07-05 D4 借 -active 裝反白、滑鼠搭便車,選單 vs sidebar 因此不一致。
 # 本規則攔「-active/-hover 出現在 hover/焦點/反白修飾鏈」的借用寫法(零誤判:合法用途已窮舉排除)。
 if ! grep -q '@token-state-allow' <<<"$NEW_CONTENT"; then
   SUSPECT_C6=$(printf '%s' "$NEW_CONTENT" | grep -oE "[][A-Za-z0-9_=:.-]*bg-neutral-selected-(active|hover)" | while IFS= read -r tok; do
     case "$tok" in
       (*active:*) ;;                                # 修飾鏈含按壓(active:)= 合法按壓用途
-      (*hover:*bg-neutral-selected-hover) ;;        # 切換鈕 pressed 上 hover 變淺 = 誕生語意,合法
+      (*hover:*bg-neutral-selected-hover) ;;        # 切換鈕 pressed 上 hover 深一階(neutral-2 → neutral-3,2026-09-07 起)= 誕生語意,合法
       (*)
         case "$tok" in
           (*hover:*|*focus-visible:*|*focus:*|*data-\[highlighted*|*data-\[selected*)
@@ -148,7 +150,7 @@ $SUSPECT_C6
        正確示範:command.tsx CommandItem 與 dropdown-menu.tsx radixCursorClass(依模態分流)、
        sidebar.tsx focus-visible:focus-ring-inset(真焦點)、tree-view.tsx showRing(state 驅動)。
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
-  bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
+  bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(深一階;2026-09-07 起 neutral-3)
 例外:行尾 \\`// @token-state-allow: <reason>\\`
 
 EOF

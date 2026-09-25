@@ -104,9 +104,14 @@ jobs:
           node scripts/gen-design-system-barrel.mjs
           git diff --exit-code -- packages/design-system/src/index.ts 'packages/design-system/src/**/index.ts' \
             || { echo '✗ 產生器產物與來源不同步:請在本機跑 gen-component-indexes.mjs + gen-design-system-barrel.mjs 並 commit'; exit 1; }
-          # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組六個正反例證明它該紅時會紅。
+          # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組的正反例證明它該紅時會紅;
+          # 2026-09-25 起也掃 .ts,並追「寫在常數裡再經變數傳進來」的 hover 底色(Calendar 事件方塊漏掉的那種)。
           node scripts/hover-instant-invariant.mjs
           node scripts/hover-instant-invariant.mjs --selftest
+          # 滑過換上的底色必須是「元素自己靜止底色」的配對(color.spec.md「Hover 換色配對總則」)。
+          # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
+          # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
+          npm run test:hover-own-pair
 
       - name: Registered test scripts nothing was running
         run: |

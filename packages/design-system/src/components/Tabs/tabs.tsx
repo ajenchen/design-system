@@ -498,6 +498,12 @@ const tabsTriggerVariants = cva(
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',
+    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+    // 指標在這個 tab 的 inlineAction 上時,tab 保留上一行的 hover 字色,action 再亮自己那層。
+    // action 依 ARIA required-children 被 portal 到 tablist 外(見 TabsTrigger 的 portal 註解),指標在它上面時 trigger 不算 :hover,
+    // CSS 也寫不出「哪顆 action 對應哪個 trigger」→ 由 portal 外層 span 的 pointerenter/leave 在 trigger 上標 `data-action-hover`。
+    // 值與上一行 `hover:` 同一個;改那一行必須同步改這一行。
+    'data-[action-hover]:text-foreground',
     // selected
     'data-[state=active]:text-foreground data-[state=active]:font-medium',
     // 2026-07-06 user 拍板:選中底線 hover 階 → primary base(持續選中站 base;
@@ -507,6 +513,8 @@ const tabsTriggerVariants = cva(
     // 不用 pointer-events-none，否則 cursor 不會改變；button[disabled] 本身就擋 click
     'disabled:cursor-not-allowed disabled:text-fg-disabled',
     'disabled:hover:text-fg-disabled',
+    // 停用的 tab 同樣不吃「指標在 inlineAction 上」的字色(與上一行同理;特異性 (0,3,0) 不靠輸出順序)
+    'disabled:data-[action-hover]:text-fg-disabled',
   ],
   {
     variants: {
@@ -587,6 +595,29 @@ const TabsTrigger = React.forwardRef<
   )
   const [actionPos, setActionPos] = React.useState<{ left: number; top: number; height: number } | null>(null)
 
+  // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+  // 指標在 portal 出去的 action 上時,在 trigger 標 `data-action-hover`,cva 的 `data-[action-hover]:text-foreground` 讀它。
+  // - 用**原生** pointerenter/leave,不用 React 的 onPointerEnter/Leave:React 依元件樹算進出,而 inlineAction 裡的
+  //   DropdownMenuContent 是這個 span 的元件樹後代(DOM 卻在 body)—— 指標移進選單時 React 不發 leave,選單關掉時節點卸載
+  //   也不發,標記就殘留在 tab 上。原生事件依 DOM 樹,與 CSS :hover 同一套判定,跟其他宿主(Sidebar 列、表頭)一致。
+  // - 觸控不標:對齊 Tailwind 4 `hover:` 的 `@media (hover:hover)`(觸控點一下會 enter 再 leave,不該閃一下)。
+  // - span 卸載(量測後不相交 / 拿掉 inlineAction)時指標可能還停在上面、收不到 leave → cleanup 一併撤標,免得 tab 殘亮。
+  const [actionWrapEl, setActionWrapEl] = React.useState<HTMLSpanElement | null>(null)
+  React.useEffect(() => {
+    if (!actionWrapEl) return
+    const enter = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') triggerElRef.current?.setAttribute('data-action-hover', '')
+    }
+    const leave = () => triggerElRef.current?.removeAttribute('data-action-hover')
+    actionWrapEl.addEventListener('pointerenter', enter)
+    actionWrapEl.addEventListener('pointerleave', leave)
+    return () => {
+      actionWrapEl.removeEventListener('pointerenter', enter)
+      actionWrapEl.removeEventListener('pointerleave', leave)
+      leave()
+    }
+  }, [actionWrapEl])
+
   React.useLayoutEffect(() => {
     if (!hasAction || !overlayEl) return
     const el = triggerElRef.current
@@ -646,6 +677,7 @@ const TabsTrigger = React.forwardRef<
           // action portal 到 overlay(tablist 外);left=trigger.right + `-translate-x-full` → action
           // 右緣對齊 trigger 右緣;top/height + items-center → 垂直置中(同原 right-0 + top-1/2 幾何)。
           <span
+            ref={setActionWrapEl}
             className="pointer-events-auto absolute inline-flex -translate-x-full items-center"
             style={{ left: actionPos.left, top: actionPos.top, height: actionPos.height }}
           >

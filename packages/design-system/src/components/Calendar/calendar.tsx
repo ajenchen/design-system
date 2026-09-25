@@ -176,9 +176,12 @@ function MonthEventTile({
           }}
           aria-label={`事件:${event.title}`}
           className={cn(
-            'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer transition-colors',
-            // 2026-05-31 #22:事件 tile 是 focusable(tabIndex=0 role=button)但原無 focus ring
-            // → WCAG 2.4.7 不合規。補 focus-visible ring 對齊日期格按鈕。
+            // hover 底色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」,user 2026-09-10 拍板)。
+            // hover 底色在 colorClass 裡(tokens/categorical-color.ts CAT_EVENT 的 hover:bg-…),2026-09-10 全庫落地時
+            // hover-instant 閘看不到 .ts 裡的 class 字串,這格因此漏掉;2026-09-25 補拿掉。
+            'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer',
+            // 焦點:tile 由格內導覽(F2 進格)取得焦點,本行沒有焦點 class,走 styles/base.css 全域 `:focus-visible`。
+            //(2026-05-31 #22 補的 `focus-visible:ring-2` 已於 a7b2be94 移除;舊註解寫的「補 ring」不再成立。)
             colorClass,
           )}
         >

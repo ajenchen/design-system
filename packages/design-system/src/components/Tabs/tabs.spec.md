@@ -100,6 +100,8 @@ TabsContent ← 對應被選中的 trigger
 
   **可視 viewport 契約(2026-08-02 regression fix)**:實際 viewport = overlay 與 trigger 所有 overflow-clipping ancestors 的交集。trigger 完全不相交時不 render action；部分相交時僅在 canonical trailing action slot 完整可見才 render。**禁 clamp** action 到 viewport 內，否則會侵入 label/suffix 並破壞 canonical 8px content→action gap。consumer `style` 可合併其他 key，但不可覆寫該 padding reservation。
 
+  **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
+
   **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
 
 ### 對標對象與故意的偏離

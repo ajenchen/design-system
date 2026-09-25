@@ -1,7 +1,7 @@
 {
   "note": "進 required CI 但尚未宣告 @gate-contract 的閘。棘輪:新增的立刻紅,既有的逐步補,數字只准往下。",
   "generatedBy": "scripts/gate-control-group-invariant.mjs",
-  "count": 77,
+  "count": 75,
   "gates": [
     "scripts/action-bar-toolbar-invariant.mjs",
     "scripts/agent-fab-drag-click-invariant.mjs",
@@ -46,8 +46,6 @@
     "scripts/governance-build-graph.mjs",
     "scripts/header-tabs-slot-invariants.mjs",
     "scripts/hover-color-pair-invariant.mjs",
-    "scripts/hover-instant-invariant.mjs",
-    "scripts/interaction-ladder-invariant.mjs",
     "scripts/menu-message-row-invariant.mjs",
     "scripts/named-constant-drift-invariant.mjs",
     "scripts/overlay-detached-anchor-invariant.mjs",

@@ -8,6 +8,7 @@ import {
   DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/設計規格',
@@ -122,18 +123,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
     ))}
   </div>
 )
-
-const Tab = ({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => {
-  if (disabled) return <span className="px-2.5 py-1 text-[12px] font-mono rounded-md text-fg-disabled bg-neutral-hover cursor-not-allowed">{children}</span>
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-        active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-      }`}>
-      {children}
-    </button>
-  )
-}
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -316,33 +305,35 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {(['sm', 'md', 'lg'] as const).map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {(['sm', 'md', 'lg'] as const).map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Item</span>
-          <div className="flex gap-1.5">
-            {(['item', 'checkbox', 'subTrigger'] as const).map((m) => <Tab key={m} active={itemMode === m} onClick={() => setItemMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Item" value={itemMode} onValueChange={(v) => setItemMode(v as ItemMode)}>
+            {(['item', 'checkbox', 'subTrigger'] as const).map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Danger</span>
-          <div className="flex gap-1.5">
-            <Tab active={!danger} onClick={() => setDanger(false)}>off</Tab>
-            <Tab active={danger && canDanger} onClick={() => setDanger(true)} disabled={!canDanger}>on</Tab>
-          </div>
+          {/* 停用項用元件自身 disabled(segmented-control.spec.md「disabled」);停用項不得是當前值 → value 取 hasDanger */}
+          <SegmentedControl size="sm" aria-label="Danger" value={hasDanger ? 'on' : 'off'} onValueChange={(v) => setDanger(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={!canDanger}>on</SegmentedControlItem>
+          </SegmentedControl>
           {!canDanger && <span className="text-[11px] text-fg-muted">僅限 Item</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">State</span>
-          <div className="flex gap-1.5">
-            {STATES.map((st) => <Tab key={st} active={state === st} onClick={() => setState(st)}>{st}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="State" value={state} onValueChange={(v) => setState(v as StateKey)}>
+            {STATES.map((st) => <SegmentedControlItem key={st} value={st}>{st}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
       </div>
 

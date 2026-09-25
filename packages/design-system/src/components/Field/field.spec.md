@@ -418,8 +418,11 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | hover(無 focus)| `--border-hover` | `hover:border-border-hover` |
 | **focus(無 error)** | `--primary` | **`focus-within:!border-primary`**(error:false compound;`!important` 勝 data-state)|
 | focus + hover | `--primary` | `focus-within:hover:!border-primary`(M11 AND case)|
-| open(無 focus)| `--border-hover` | `data-[state=open]:border-border-hover` |
+| open(無 focus,無 error)| `--border-hover` | `data-[state=open]:border-border-hover`(error:false compound)|
 | **error(edit 全程,含聚焦)** | `--error` | `border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error`(error:true compound)|
+| error × open(無 focus)| `--error-hover` | `data-[state=open]:border-error-hover`(error:true compound)|
+
+**open = 維持自己的 hover 框**(`patterns/element-anatomy/inline-action.spec.md`「overlay 開啟 → 同 host hover」),所以依 error 分流;2026-09-25 前寫在共用 compound,error 欄位開面板時紅框被換成灰框。
 
 **Error × focus 疊加 canonical(2026-07-05 user 拍板「照 Mantine」)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,12 家實查中唯一同款機制的 Mantine(Input.module.css:focus 僅 border 換 primary-filled、outline none)在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 / Ant 暈 / Bootstrap 暈)前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
 

@@ -468,6 +468,7 @@
       "scripts/test-hook-citation-liveness-invariant.mjs",
       "scripts/test-hover-color-pair-invariant.mjs",
       "scripts/test-hover-instant-invariant.mjs",
+      "scripts/test-hover-own-pair-invariant.mjs",
       "scripts/test-import-waived-self-review.mjs",
       "scripts/test-inline-edit-view-geometry-invariant.mjs",
       "scripts/test-install-candidate-dependencies.mjs",

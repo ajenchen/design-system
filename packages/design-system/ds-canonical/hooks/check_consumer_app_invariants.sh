@@ -498,16 +498,21 @@ fi
 # 2026-07-10 WM 戰役收官:手刻 menu-item 可點列簽名(WM TypeSettingsDialog 左 rail 錨例 —
 # 手刻 <button hover:bg-neutral-hover + bg-neutral-selected> nav row,未消費 MenuItem)。
 # 前置:DS API 根因已修(MenuItem startContent slot,beta.84)→ 有合法替代才上機械攔(避免
-# fork 無路可走 brick)。簽名 = hover:bg-neutral-hover 與 bg-neutral-selected 成對出現
+# fork 無路可走 brick)。簽名 = 滑過底色 token(當初只認 hover:bg-neutral-hover,2026-09-25 擴大,見下)與 bg-neutral-selected 成對出現
 # (= menu-item family 狀態語義)+ 可點訊號(<button/<a/onClick),且沒在消費 <MenuItem。
 # 注意:不 tag-anchor className(WM 錨例把 class 抽 const 再 className={cls} 引用,
 # tag-anchored regex 會漏 — test 27 抓到的真實 shape)。
-if grep -q 'hover:bg-neutral-hover' <<<"$CONTENT" && \
+# 2026-09-25:滑過底色認任何 `-hover` 配對 token,不只 `hover:bg-neutral-hover` 這一串字(color.spec.md「Hover 換色配對總則」:
+# 有自己靜止底色的列換成那個底自己的 -hover,例 --secondary-hover)。唯一排除 `--neutral-selected-hover`:
+# 它是可取消切換鈕專屬、列元件禁用(color.spec.md「Selected state family」),出現它代表切換鈕而不是 menu-item 列。
+# 先收進變數再判斷:管線末端若用 `grep -q` 會提早關管線,上游收到 SIGPIPE,pipefail 讓條件整條變假(本檔 :692 同一個坑)。
+ROW_HOVER_TOKENS=$(grep -oE 'hover:!?bg-(\[var\(--)?[a-z0-9-]+-hover' <<<"$CONTENT" | grep -vE 'neutral-selected-hover$' || true)
+if [ -n "$ROW_HOVER_TOKENS" ] && \
    grep -q 'bg-neutral-selected' <<<"$CONTENT" && \
    grep -qE '<button\b|<a\b|onClick=' <<<"$CONTENT" && \
    ! grep -q '<MenuItem' <<<"$CONTENT" && \
    ! grep -q '@nav-row-handcraft-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - 手刻 menu-item 可點列(hover:bg-neutral-hover + bg-neutral-selected 成對)→ 必包 <MenuItem>(subpath @qijenchen/design-system/components/Menu;selected prop + startIcon/avatar/startContent slot;menu-item.spec.md「結構」)。非 menu-item 語義 → 行內 @nav-row-handcraft-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - 手刻 menu-item 可點列(滑過底色 token(如 hover:bg-neutral-hover)+ bg-neutral-selected 成對)→ 必包 <MenuItem>(subpath @qijenchen/design-system/components/Menu;selected prop + startIcon/avatar/startContent slot;menu-item.spec.md「結構」)。非 menu-item 語義 → 行內 @nav-row-handcraft-ok: <rationale>\n"
 fi
 
 # ── 2026-07-10 批次 A(治理覆蓋 matrix 收官;來源 governance/planning/2026-07-10-consumer-coverage-remediation.md)──

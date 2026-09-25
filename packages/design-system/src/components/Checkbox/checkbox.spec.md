@@ -204,11 +204,12 @@ Checkbox / Radio 在 form 內承載的常常是:
 | hover unchecked | border-hover | surface | 無 |
 | hover checked | primary-hover | primary-hover | on-emphasis check |
 | hover indeterminate | primary-hover | primary-hover | on-emphasis minus |
+| readonly × hover(任一勾選狀態,含指標停在 label 上) | 同該狀態靜止值 | 同該狀態靜止值 | 同該狀態靜止值 |
 | disabled unchecked | transparent | bg-disabled | 無 |
 | disabled checked | transparent | bg-disabled | fg-disabled check |
 | disabled indeterminate | transparent | bg-disabled | fg-disabled minus |
 
-(token 名對齊 `checkbox.tsx` cva 真值;表內一律 semantic token,不寫視覺色名)
+(token 名對齊 `checkbox.tsx` cva 真值;表內一律 semantic token,不寫視覺色名。**readonly × hover 列**:`pointer-events-none` 只擋指標直接在框上,指標停在 SelectionItem 的 `<label for>` 時 HTML 讓控件一起進入 `:hover`,所以每個勾選狀態都另以 `data-[readonly=true]:enabled:data-[state=…]:hover:` 釘回自己的靜止值 —— 與 `switch.tsx` 的 disabled hover 守衛同理;`enabled:` 讓 readonly + disabled 同時成立時交給 disabled 列。Radio 同一套。)
 
 ### Indeterminate（半選）
 
@@ -228,6 +229,7 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 | checked | primary | surface | primary dot |
 | hover unchecked | border-hover | surface | 無 |
 | hover checked | primary-hover | surface | primary-hover dot |
+| readonly × hover(含指標停在 label 上) | 同該狀態靜止值 | surface | 同該狀態靜止值 |
 | disabled unchecked | transparent | bg-disabled | 無 |
 | disabled checked | transparent | bg-disabled | fg-disabled dot |
 

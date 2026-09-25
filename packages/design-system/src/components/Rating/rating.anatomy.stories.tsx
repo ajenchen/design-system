@@ -1,6 +1,7 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Rating } from './rating'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -122,18 +123,6 @@ export const Overview = {
    2. 元件檢閱器
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-on-emphasis font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}
-  >
-    {children}
-  </button>
-)
-
 const PropRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
     <span className="text-[11px] text-fg-muted font-medium w-[80px] shrink-0 pt-0.5">{label}</span>
@@ -153,27 +142,26 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">Precision</span>
-          <div className="flex gap-1.5">
-            {(['full', 'half'] as const).map((p) => <Tab key={p} active={precision === p} onClick={() => setPrecision(p)}>{p}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Precision" value={precision} onValueChange={(v) => setPrecision(v as PrecisionKey)}>
+            {(['full', 'half'] as const).map((p) => <SegmentedControlItem key={p} value={p}>{p}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {(['interactive', 'readOnly', 'disabled'] as const).map((m) => (
-              <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>
-            ))}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {(['interactive', 'readOnly', 'disabled'] as const).map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
       </div>
 

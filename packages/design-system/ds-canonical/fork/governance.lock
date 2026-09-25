@@ -687,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "c8e690ec9358e6a37b692b92c1ed51dc82976ccf8844e866795a4b34aef70500",
+      "sha256": "e3c5f3ab5a2c2ea879e7a3336341d77c11c05cad9c402ecd4c4f0bbc5c17768f",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "32b8e4d32426c0915c4afe2ad3d1e9a84a1de59549f4da68743457bebda17bfd",
+      "sha256": "c3aa27661e55c8a2d0598262e596d3bce7e55ff7aabddd0f7e1fba31b9352d39",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -767,7 +767,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "795faed2ac9d3695f43c25f652994e04c3bc631868fe19607b9fc53ee5ba194f",
+      "sha256": "a2b9807b73f96fee0e74766a4b93533ba3ae547306244ce3e7b9c6c6cdafd412",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

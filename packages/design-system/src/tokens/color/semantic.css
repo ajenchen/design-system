@@ -138,7 +138,7 @@
    │  Border      border-border / border-border-hover / border-divider   │
    │  Focus       --ring（全域 :focus-visible 外描邊,元件不寫 class）     │
    │  Inverse     bg-inverse-neutral-hover / bg-inverse-neutral-active   │
-   │              （solid neutral 上的互動 overlay）                      │
+   │              （solid neutral 上透明子元素的滑過/按壓配對,換色非疊層）│
    │                                                                      │
    │  Tag/Avatar 的色相 hover/active 用 var() 直接引用：                  │
    │     hover: var(--blue-hover) / var(--red-hover) / ...                │
@@ -181,7 +181,8 @@
      hover 兩 mode 都走 neutral-7-opaque(step-7 在 dark mode 自動 lighter 公式 →
      對稱「engaged」感:light hover 變深 / dark hover 變亮)。
      **用 -opaque variant**(對齊 `--surface-raised` 既有 opaque convention):surface 是
-     視覺底色 layer,alpha 跟下層 bg compositing 致視覺位移 + colorMix accuracy 不可靠。 */
+     視覺底色 layer,alpha 跟下層 bg compositing 致視覺位移 + colorMix accuracy 不可靠。
+     配對:靜止 --surface-strong → 滑過 --surface-strong-hover(下一階;登記於 color.spec.md「Hover 換色配對總則」)。 */
   --surface-strong:       var(--color-neutral-6-opaque);
   --surface-strong-hover: var(--color-neutral-7-opaque);
   --overlay:              var(--black-a45);
@@ -304,9 +305,10 @@
   --indigo-active:        var(--color-indigo-7);
 
   /* Inverse — solid neutral（neutral-9）背景上的內容
-     neutral 在 dark mode 反轉（近黑 → 近白），上面的文字與互動覆蓋層也要反轉
+     neutral 在 dark mode 反轉（近黑 → 近白），上面的文字與透明子元素的互動配對也要反轉
      - --inverse-fg 對應 --foreground（文字 base）
-     - --inverse-neutral-hover/active 對應 --neutral-hover/active（互動覆蓋層）
+     - --inverse-neutral-hover/active 對應 --neutral-hover/active(inverse 底上**透明子元素**滑過/按下時換上的配對 ——
+       換色,不是疊在 inverse 底色上的遮罩;2026-09-25 更正原「互動覆蓋層」用詞,SSOT = color.spec.md「Hover 換色配對總則」)
      - 未來擴充：--inverse-fg-secondary/muted/disabled 對齊 --fg-* 變體
 
      ┌─ Inverse-neutral-* 數值規則（嚴格對稱）─────────────────────────┐
@@ -401,7 +403,8 @@
   /* Scrollbar — Lane / chrome / thumb(2026-05-09 抽 SSOT,DataTable fake + ScrollArea 共享)
      Track 用 --muted(靜態 lane,非 disabled 元件 bg);Thumb 用 --border(中性低對比 chrome)。
      對齊 shadcn ScrollArea(thumb=bg-border)/ MUI X DataGrid scrollbar slot / AG Grid grid theme tokens。
-     避免直接借 --bg-disabled(color.spec.md:169 語意 drift)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。 */
+     避免直接借 --bg-disabled(color.spec.md:169 語意 drift)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。
+     配對:靜止 --scrollbar-thumb → 滑過 --scrollbar-thumb-hover(= --border → --border-hover 下一階;登記於 color.spec.md「Hover 換色配對總則」)。 */
   --scrollbar-track:       var(--muted);
   --scrollbar-thumb:       var(--border);
   --scrollbar-thumb-hover: var(--border-hover);
@@ -430,7 +433,9 @@
      一組兩個:底色 + 邊框,任何 drag & drop / 磁吸停靠的合法區域都消費同一組,不各自定義。
      底色必半透明(同 Highlight 段的「覆蓋在內容上就不能不透明」鐵律,VS Code theme-color:
      「The color must not be opaque so as not to hide underlying decorations」)——這是它與 --primary-subtle
-     的分工:-subtle 是元件自己的淡底(不透明、底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     的分工:-subtle 是元件自己的淡底(底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     (分工看「底是誰的」,不是透不透明:深色的 step-1 本身就是 alpha 公式,見 primitives.css 深色區塊;
+      2026-09-25 更正原「-subtle 不透明」的說法,SSOT = color.spec.md「Drop target」段)
      15% = **DS 自家 alpha 階梯上的既有階**(light --_na5 / dark --_na4,亦即 --black-a15 / --white-a15 用的那一階;
      不自創新階),且落在世界級區間內(Material 3 dragged state layer 0.16 / VS Code light editorGroup.dropBackground
      0.18 / Atlassian color.background.selected.hovered ≈ 0.20)。一個公式兩個模式(--primary 在 dark 由 primitive
@@ -506,8 +511,8 @@
      --text-selection / --search-match 由 primitive 公式自動反轉,不需覆寫。 */
   --search-match-current: var(--color-amber-4);
 
-  /* Inverse — dark mode 反轉（深字 + 黑色透明 overlay）
-     overlay 值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
+  /* Inverse — dark mode 反轉（深字 + 黑色透明的滑過/按壓配對,換色非疊層）
+     配對值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
      2026-05-20 fix:raw oklch → primitive --black-a85(既有 alpha token,L46)*/
   --inverse-fg:               var(--black-a85);
   --inverse-neutral-hover:    var(--black-a02);

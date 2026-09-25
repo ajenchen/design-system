@@ -1,6 +1,7 @@
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { Combobox } from './combobox'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Tag } from '@/design-system/components/Tag/tag'
 
 const meta: Meta = {
@@ -147,18 +148,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
     ))}
   </div>
 )
-
-const Tab = ({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => {
-  if (disabled) return <span className="px-2.5 py-1 text-[12px] font-mono rounded-md text-fg-disabled bg-neutral-hover cursor-not-allowed">{children}</span>
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-        active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-      }`}>
-      {children}
-    </button>
-  )
-}
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -354,48 +343,51 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {MODES.map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Error</span>
-          <div className="flex gap-1.5">
-            <Tab active={!error} onClick={() => setError(false)}>off</Tab>
-            <Tab active={error} onClick={() => setError(true)} disabled={!isEdit}>on</Tab>
-          </div>
+          {/* 停用項用元件自身 disabled(segmented-control.spec.md「disabled」);停用項不得是當前值 → value 取實際生效值 */}
+          <SegmentedControl size="sm" aria-label="Error" value={error && isEdit ? 'on' : 'off'} onValueChange={(v) => setError(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={!isEdit}>on</SegmentedControlItem>
+          </SegmentedControl>
           {!isEdit && <span className="text-[11px] text-fg-secondary">僅 edit 模式</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Wrap</span>
-          <div className="flex gap-1.5">
-            <Tab active={!wrap} onClick={() => setWrap(false)}>off</Tab>
-            <Tab active={wrap} onClick={() => setWrap(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Wrap" value={wrap ? 'on' : 'off'} onValueChange={(v) => setWrap(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Clearable</span>
-          <div className="flex gap-1.5">
-            <Tab active={!clearable} onClick={() => setClearable(false)}>off</Tab>
-            <Tab active={clearable} onClick={() => setClearable(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Clearable" value={clearable ? 'on' : 'off'} onValueChange={(v) => setClearable(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Value</span>
-          <div className="flex gap-1.5">
-            <Tab active={value.length > 0} onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>有值 (3)</Tab>
-            <Tab active={value.length === 0} onClick={() => setValue([])}>空值</Tab>
-          </div>
+          {/* 「有值 (3)」再點一次 = 還原成 3 筆(預覽裡移除過 tag 時);已選中項再點不會觸發 onValueChange(spec「點擊已選中 item:不取消選取」),故另掛 onClick */}
+          <SegmentedControl size="sm" aria-label="Value" value={value.length > 0 ? 'filled' : 'empty'} onValueChange={(v) => setValue(v === 'filled' ? ['electronics', 'food', 'lifestyle'] : [])}>
+            <SegmentedControlItem value="filled" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>有值 (3)</SegmentedControlItem>
+            <SegmentedControlItem value="empty">空值</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 

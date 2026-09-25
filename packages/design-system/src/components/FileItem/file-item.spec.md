@@ -151,7 +151,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 |------|-------------------|-----------------|
 | rich(`surface=form`) | `border + rounded-md + bg-surface` card | card + hover-bg = 雙層強調,視覺 heavy |
 | rich(`surface=upload-manager`) | Avatar 48 thumbnail 作 item 邊界(無邊框/無 bg,面板自身是容器) | thumbnail 已提供「每筆檔案」節奏,hover-bg 多餘 |
-| compact 無 status(靜態) | `bg-secondary rounded-md` 永遠 pill | pill bg + hover-bg neutral-hover 兩層相近灰,視覺雜 |
+| compact 無 status(靜態) | `bg-secondary rounded-md` 永遠 pill | pill 底本身已是常駐外觀(anchored,理由同下方總結句)。機制註記(2026-09-25 更正):若要給 pill 滑過底色,依 DS 換色機制是把 `bg-secondary` 換成它**自己的**下一階配對(目前尚無 `--secondary-hover`),不是在 pill 上再疊一層 `--neutral-hover`(`color.spec.md`「Hover 換色配對總則」);原句「pill bg + hover-bg neutral-hover 兩層相近灰」建立在疊色前提上,已撤回 |
 | compact 有 status(uploading / error / completed with bar) | 底部 2px progress bar(分隔線型 permanent affordance) | bar + hover-bg 同時並存,affordance 重複 |
 
 三種型態**都已 anchored**,hover-bg 是多餘的視覺層。Cursor + click 本身已是足夠互動 affordance,世界級檔案 card / attachment 皆如此。

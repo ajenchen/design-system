@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { Mail, Bell, FileText } from 'lucide-react'
 import { MenuItem, MenuGroup } from './menu-item'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 // Avatar is now passed as AvatarData (data object), rendered internally by MenuItem
 
 const meta: Meta = {
@@ -131,18 +132,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
     ))}
   </div>
 )
-
-const Tab = ({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => {
-  if (disabled) return <span className="px-2.5 py-1 text-[12px] font-mono rounded-md text-fg-disabled bg-neutral-hover cursor-not-allowed">{children}</span>
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-        active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-      }`}>
-      {children}
-    </button>
-  )
-}
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -327,62 +316,64 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            <Tab active={mode === 'single'} onClick={() => setMode('single')}>single</Tab>
-            <Tab active={mode === 'multi'} onClick={() => setMode('multi')}>multi</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            <SegmentedControlItem value="single">single</SegmentedControlItem>
+            <SegmentedControlItem value="multi">multi</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">selected</span>
-          <div className="flex gap-1.5">
-            <Tab active={!selected} onClick={() => setSelected(false)}>off</Tab>
-            <Tab active={selected} onClick={() => setSelected(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="selected" value={selected ? 'on' : 'off'} onValueChange={(v) => setSelected(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">disabled</span>
-          <div className="flex gap-1.5">
-            <Tab active={!disabled} onClick={() => setDisabled(false)}>off</Tab>
-            <Tab active={disabled} onClick={() => setDisabled(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="disabled" value={disabled ? 'on' : 'off'} onValueChange={(v) => setDisabled(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">startIcon</span>
-          <div className="flex gap-1.5">
-            <Tab active={!hasIcon} onClick={() => setHasIcon(false)}>off</Tab>
-            <Tab active={hasIcon} onClick={() => setHasIcon(true)} disabled={hasAvatar}>on</Tab>
-          </div>
+          {/* 停用項用元件自身 disabled(segmented-control.spec.md「disabled」);icon / avatar 互斥,停用的一側恆為 off,不會是當前值 */}
+          <SegmentedControl size="sm" aria-label="startIcon" value={hasIcon ? 'on' : 'off'} onValueChange={(v) => setHasIcon(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={hasAvatar}>on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">avatar</span>
-          <div className="flex gap-1.5">
-            <Tab active={!hasAvatar} onClick={() => setHasAvatar(false)}>off</Tab>
-            <Tab active={hasAvatar} onClick={() => setHasAvatar(true)} disabled={hasIcon}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="avatar" value={hasAvatar ? 'on' : 'off'} onValueChange={(v) => setHasAvatar(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={hasIcon}>on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">description</span>
-          <div className="flex gap-1.5">
-            <Tab active={!hasDesc} onClick={() => setHasDesc(false)}>off</Tab>
-            <Tab active={hasDesc} onClick={() => setHasDesc(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="description" value={hasDesc ? 'on' : 'off'} onValueChange={(v) => setHasDesc(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-20 shrink-0">tag</span>
-          <div className="flex gap-1.5">
-            <Tab active={!hasTag} onClick={() => setHasTag(false)}>off</Tab>
-            <Tab active={hasTag} onClick={() => setHasTag(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="tag" value={hasTag ? 'on' : 'off'} onValueChange={(v) => setHasTag(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 

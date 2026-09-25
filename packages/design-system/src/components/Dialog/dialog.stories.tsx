@@ -90,7 +90,8 @@ function NotificationSettings() {
  * 成員列 demo 共用 data + row —「長內容」與「主體放清單」大 item 共用同一 anatomy,
  * 避免兩份重複 markup(EXAMPLE_REDUNDANT 收斂,2026-06-11)。
  * - item-anatomy Family 2 reading:[prefix Avatar 40] [content: title + description(--item-gap-label-desc-scanning gap)]
- * - list-as-region canonical:item 自帶 `px-loose rounded-md` → hover bg flush 到 chrome 邊
+ * - list-as-region canonical:item 自帶 `px-loose` → 前緣對齊 header 標題;成員列不可點 → 無 hover 底色
+ *   (overlay-surface.spec.md「底色有無不是 List-as-region 的判定條件」;hover 只給「再點會發生什麼」有答案的列)
  * - Person avatar canonical:hover 必出現 ProfileCard(DS-wide rule,見 avatar.spec.md)
  * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
  */
@@ -131,9 +132,11 @@ const MEMBERS = [
 function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
   const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
   return (
+    // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
+    // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用:成員名單這種展示列」走 Family 2 手組)
     <div
       role="listitem"
-      className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover"
+      className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)]"
     >
       <Avatar
         size={40}
@@ -253,8 +256,9 @@ export const LongContent = {
           <DialogTitle>成員列表</DialogTitle>
         </DialogHeader>
         {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
-            wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose rounded-md`
-            (hover bg flush 到 chrome 邊)。30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
+            wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
+            成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
+            30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
@@ -302,7 +306,7 @@ export const Destructive = {
  * ListBody — body 放 list 的 canonical pattern(Material / Polaris / Atlassian / Linear /
  * GitHub Primer 共識:overlay body 裝 list 時 body 不加 vertical padding,節奏源 = item 自己的 py)。
  * 我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">`(@tabs-content-gap-ok: list-as-region 文件範例,非 tabs !pt-0 hack)+ list wrapper `py-2`
- * + item 自帶 `px-loose rounded-md`。不加 `flush` variant — 加 1 row(search / banner)就破功,
+ * + item 自帶 `px-loose`(可點的列另帶 hover 底色 + `rounded-md`;成員列不可點,不帶)。不加 `flush` variant — 加 1 row(search / banner)就破功,
  * 保留 chrome padding 較穩。以下三個範例對應不同 list-item tier(item-anatomy Family 2 / MenuItem)。
  */
 export const ListBody = {

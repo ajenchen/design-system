@@ -365,8 +365,9 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //
 // **Visual canonical**(對齊 DS new token `--surface-strong`):
 //   - **12×12 圓**(固定,不隨 field size 變)
-//   - **bg `--surface-strong`**(neutral-6),hover → `--surface-strong-hover`
-//     (light=neutral-5 / dark=neutral-7,跨 mode 對稱)
+//   - **bg `--surface-strong`**(neutral-6-opaque),hover → `--surface-strong-hover`(自己的配對 = 下一階,
+//     color.spec.md「Hover 換色配對總則」)。兩個主題都是 neutral-7-opaque:淺 #BFBFBF→#8C8C8C 變深、
+//     深 #737373→#A6A6A6 變亮(semantic.css Surface 段)。2026-09-25 更正:原註解寫「light=neutral-5」與實值不符。
 //   - **X icon size=12 strokeWidth=3**(icon 跟底色一樣大,對齊 checkbox checkmark
 //     sm/md stroke 規格;2026-06-12 同步 checkbox 2026-05-18 簡化 3.5→3,SSOT →
 //     packages/design-system/ds-canonical/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)

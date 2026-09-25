@@ -947,6 +947,16 @@ const sidebarMenuButtonVariants = cva(
     //   對齊 MUI MiniDrawer + shadcn canonical(width morph + overflow clip + row geometry 不變)。
     // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     "hover:bg-neutral-hover hover:text-foreground",
+    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = sidebar.spec.md「Inline actions」段「指標在動作鈕上時(巢狀 hover)」):
+    // 指標移到同一列的動作鈕(inlineActions 的 suffix span / SidebarMenuAction)上,列保留上一行的 hover,動作鈕再亮自己那層。
+    // 需要這兩行是因為動作鈕是列鈕的**同層兄弟**(避免 button 包 button,見下方 suffixNode 註解)—— 指標在兄弟上時列鈕不算 :hover。
+    // - `~` 只往後找:動作必須排在列鈕後面(兩個內建出口都是;SidebarMenuAction 的 peer-data 也早就要求這個順序)。
+    // - 外層包 `:where()` 把特異性壓回 (0,1,0),下方 `data-[active=true]` 選中色 (0,2,0) 照樣釘住;不包會是 (0,3,0),選中列指到動作鈕時選中色被 hover 色蓋掉(2026-09-25 Chromium 實測)。
+    // - 不掛在 li 的 `group-hover/menu-item`:li 收任意子元素,指到 li 裡的子項目時父列會誤亮(同日實測)。
+    // - `[@media(hover:hover)]` 對齊上一行 `hover:` 的媒體條件(Tailwind 4 的 hover: 只在能懸停的裝置生效),觸控裝置不留殘亮。
+    // 值與上一行 `hover:` 是同一對;改那一行必須同步改這兩行。
+    "[@media(hover:hover)]:[&:where(:has(~:is([data-sidebar=menu-inline-actions],[data-sidebar=menu-action]):hover))]:bg-neutral-hover",
+    "[@media(hover:hover)]:[&:where(:has(~:is([data-sidebar=menu-inline-actions],[data-sidebar=menu-action]):hover))]:text-foreground",
     // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板);選單鈕撐滿側欄寬度 → 內描邊。
     // 2026-09-09 之前非當前項的焦點用 hover 同色底(AI 推導,user 撤回);hover 的底色與文字色只屬於滑鼠。
     "focus-visible:focus-ring-inset",
@@ -1241,6 +1251,13 @@ const SidebarMenuAction = React.forwardRef<
       "group-data-[collapsible=icon]:hidden",
       showOnHover &&
         "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-foreground md:opacity-0",
+      // 當前項旁的動作鈕:靜止已是 foreground(上一行),滑過 / 按下**釘住 foreground**,不讓 ItemInlineActionButton 的
+      // `hover:/active:text-fg-secondary` (0,2,0) 把它降回一階(2026-09-25 合成情境量測:淺 #252525→#545454、深 #FFFFFF→#E1E1E1;目前 DS 內無 showOnHover 消費者)。
+      // 依據:inline-action.spec.md「Icon 色彩」的階梯 root invariant `fg-muted → fg-secondary → foreground`,滑過只准往前一階;
+      // 這顆的靜止已站在最高一階 foreground,沒有下一階可升就留在原地,不得往回掉 ——
+      // 同列鈕「選中 × 滑過釘住」的寫法(上方 cva 的 `data-[active=true]:hover:…`)。特異性 (0,3,0) > hover:/active: 的 (0,2,0)。
+      showOnHover &&
+        "peer-data-[active=true]/menu-button:hover:text-foreground peer-data-[active=true]/menu-button:active:text-foreground",
       className
     )}
     {...props}

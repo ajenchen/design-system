@@ -196,7 +196,11 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
                 // listbox 拿到鍵盤焦點時框畫在被指到的這一格、不畫容器整圈(A 類);何時畫交給瀏覽器的 :focus-visible。
                 isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected',
                 'group-focus-visible/listbox:aria-selected:focus-ring-inset',
-                isDisabled && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
+                isDisabled && 'text-fg-disabled cursor-not-allowed',
+                // 停用項滑過不給回饋 = hover 釘在自己的靜止底色:未選中 → 透明;選中 → 維持上方的 hover:bg-neutral-selected
+                //(item-anatomy.spec.md「選中列 × 滑鼠 hover 釘住不變」+ time-picker.spec.md「欄內 item 狀態」表)。
+                // 之前一律 hover:bg-transparent,twMerge 會蓋掉選中那條,選中又停用的格滑過就變成透明。
+                isDisabled && !isSelected && 'hover:bg-transparent',
               )}
             >
               {String(v).padStart(2, '0')}
