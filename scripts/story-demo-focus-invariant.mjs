@@ -74,18 +74,19 @@ const storyUrl = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(i
 //   2. waitFor = 示範收尾章 `<html data-demo-focus-settled="<story id>">`(preview.tsx sharedAfterEach 在 settleDemoFocus 之後蓋):
 //      直接量本閘依賴的那件事 ——「這一則的示範收尾真的跑過」,不是從 phase 推論(M37)。2026-09-24 main 09d2eaa2 慢 runner 上
 //      Toast 朗讀區域 story 的 play 還沒跑完閘就在 900ms 量了 → 假紅;play 丟錯的 story 沒有這個章 → 儀器失效(不放行)。
-//   3. settleFrames:收尾之後連續 SETTLE_FRAMES 個影格無 DOM 變動、無進行中的有限長度動畫 —— 取代原本章之後的固定 300ms
+//   3. settleFrames:收尾之後連續 DEMO_FOCUS_SETTLE_FRAMES 個影格無 DOM 變動、無進行中的有限長度動畫 —— 取代原本章之後的固定 300ms
 //      (給 Radix 還焦點 / Dialog 聚焦捲動區那類收尾後的程式聚焦;監聽器會放掉它們,量的是放掉之後)。用影格不用毫秒:
 //      機器慢只會等久一點,不會提早取樣。20 格在 60fps 下 ≈ 333ms,不短於原本的觀察窗。
 //   4. probe = measureInPage:在最後一個靜止影格的同一個 task 裡量,量完之前頁面不再跑任何東西。
 // 等不到任一項 → StoryRenderInstrumentError(訊息開頭就是 INSTRUMENT-FAIL、點名 story、附 404),呼叫端歸進「儀器失效」。
-const SETTLE_FRAMES = 20
+// 名字刻意跟其他閘的 SETTLE_FRAMES(10)分開:這裡等的是示範收尾「之後」的程式聚焦,窗要比一般靜止判定長(named-constant-drift 閘:同名必同值)。
+const DEMO_FOCUS_SETTLE_FRAMES = 20
 const SETTLED_TIMEOUT_MS = 60_000
 const settledStamp = (storyId) => document.documentElement.dataset.demoFocusSettled === storyId
 async function inspectStory(page, id, extra = {}) {
   const { probe } = await openStory(page, storyUrl(id), {
     waitFor: settledStamp, waitForArg: id,
-    settleFrames: SETTLE_FRAMES, probe: measureInPage,
+    settleFrames: DEMO_FOCUS_SETTLE_FRAMES, probe: measureInPage,
     timeoutMs: SETTLED_TIMEOUT_MS, notFound: server.notFound, ...extra,
   })
   return probe
