@@ -541,8 +541,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
                 // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+                // 非當月格**不加底色**(2026-09-25 user 選「可以，拿掉底色」):它跟當月格一樣可點(onDateClick = 在這天新增),
+                // 底色一律透明,所以滑過與當月格同一個滑過色。先前的 `bg-muted` 是「不可操作」的 token,放在可點的格上
+                // 讓滑過反而變淺(淺 #F5F5F5 → #FAFAFA)。非當月只靠日期數字的淡字區分,見下方日期鈕與 spec「Outside day cell」。
                 'hover:bg-neutral-hover',
-                !inMonth && 'bg-muted',
               )}
             >
               {/* Date number = keyboard 入口。24px 圓盒的來源是**今天 pill 本身就是 24 高**,平日跟齊
@@ -550,7 +552,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回:本 DS 以滑鼠精度為前提,不拿觸控尺寸建議當依據
                   (owner = `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。
                   命中與懸停的相等關係成立在 **cell** 這一層:懸停回饋是整格的 `hover:bg-neutral-hover`
-                  (上方 :384),而整格 div 的 onClick 就是同一個 onDateClick → 懸停形狀 ≡ 命中區。
+                  (上方 gridcell 的 className),而整格 div 的 onClick 就是同一個 onDateClick → 懸停形狀 ≡ 命中區。
                   這顆鈕本身沒有任何 hover 樣式(實測掃全部 stylesheet:0 條 :hover 規則命中它),
                   平日底色恆為透明,所以它不是另一個獨立目標,而是同一個目標的鍵盤入口 + 焦點框幾何;
                   它完全落在宿主格內、動作與宿主相同,不會生出隱形帶也搶不走別人的點擊。
@@ -580,7 +582,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方 :435)。
                     'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
                     isToday && 'px-2 bg-info text-on-emphasis',
-                    !isToday && !inMonth && 'text-fg-disabled',
+                    // 非當月 = 淡字 `fg-muted`,**不是** `fg-disabled`:這天照樣可點,只是不在焦點月份
+                    //(同 DateGrid「鄰月日子」的淡字,date-grid.spec.md outside 列;disabled 字色留給真的不可操作)。
+                    !isToday && !inMonth && 'text-fg-muted',
                   )}
                 >
                   {format(date, 'd')}
@@ -663,7 +667,7 @@ export const calendarMeta = {
   states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-info', 'bg-surface'],
-    fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
+    fg: ['text-fg-muted', 'text-foreground'],
     ring: ['focus-ring-inset', '--ring'],
   },
 } as const

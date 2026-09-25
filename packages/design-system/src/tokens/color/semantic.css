@@ -79,8 +79,8 @@
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ Static Subtle ─────────────────────────────────────────────────────┐
-   │  --muted          弱化底色 Tag neutral（neutral-2）                 │
-   │  --secondary      Badge low 底色（neutral-3，比 muted 深一階）      │
+   │  --muted          不可操作 / placeholder 底色（neutral-2）          │
+   │  --secondary      正常存在、退後一級的底色（neutral-3）             │
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 中性互動背景（兩個獨立 family）─────────────────────────────────────┐
@@ -395,7 +395,7 @@
 
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */
-  --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Calendar 非當月 / Alert neutral / scrollbar track */
+  --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Alert neutral / scrollbar track */
   --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級:Tag neutral / Slider rest / Badge low / FileItem progress / ProgressBar / CircularProgress / Steps fillBg */
 
   /* Scrollbar — Lane / chrome / thumb(2026-05-09 抽 SSOT,DataTable fake + ScrollArea 共享)

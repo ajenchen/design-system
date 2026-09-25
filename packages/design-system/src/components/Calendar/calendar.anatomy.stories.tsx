@@ -139,8 +139,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>Outside day cell</Td>
-                  <Td mono>text-fg-disabled · bg-muted</Td>
-                  <Td>上/下月溢出日期弱化 + 背景略暗</Td>
+                  <Td mono>text-fg-muted · 無底色</Td>
+                  <Td>上/下月溢出日期只用淡字區分;格子跟當月一樣可點、一樣的滑過色(同 DateGrid 鄰月日子)</Td>
                 </tr>
                 <tr>
                   <Td>Hover cell</Td>
@@ -149,7 +149,7 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>Weekend cell(後續增量)</Td>
-                  <Td mono>bg-muted</Td>
+                  <Td mono>待定(可點的格不可用 bg-muted)</Td>
                   <Td>目前不提供 weekend prop / isWeekend 樣式；未實作能力不預佔 API</Td>
                 </tr>
               </tbody>
@@ -206,7 +206,7 @@ export const StateBehavior: Story = {
     <div className="h-screen p-4 bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>today</b> cell:date 數字加 `bg-info text-on-emphasis rounded-full` 圓</div>
-        <div>• <b>outside month</b>:前後月日期數字走 `text-fg-disabled`,cell 底色 `bg-muted`</div>
+        <div>• <b>outside month</b>:前後月日期數字走淡字 `text-fg-muted`,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
         <div>• <b>多事件 cell</b>:超出 3 則的 event 顯示「+N more」</div>
         <div>• <b>event hover</b>:tile 切同色深一階 `hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>

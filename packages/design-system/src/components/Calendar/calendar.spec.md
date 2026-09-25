@@ -142,10 +142,10 @@ interface CalendarEvent {
 - **Cell 尺寸**:MVP 月 view cell 最小高度 `min-h-28`(112px),容納日期 header + 3 個 event tile,並隨容器高度伸縮(root `h-full` + grid `flex-1`);寬度 7 欄等分
 - **日期 header**:右上角數字(對齊 Google Calendar 視覺慣例)
 - **Today cell**:日期數字以 info-filled pill 強調(對齊 Google Calendar today pill)
-- **Outside day cell**:上/下月溢出日期弱化字色 + 背景略暗區分
+- **Outside day cell**:上/下月溢出日期**只用淡字**區分(日期數字 `fg-muted`),**不加底色**(2026-09-25 user 選「可以，拿掉底色」)。理由:非當月格跟當月格一樣可點(`onDateClick` = 在這天新增,見下方「為什麼跨月的界線是格陣邊界」段),所以 (1) 字色用「淡」不用「disabled」—— disabled 字色留給真的不可操作的東西;(2) 底色跟當月格一樣透明,滑過時是同一個滑過色。這跟 DateGrid 的「鄰月日子」是同一條規則(`../DateGrid/date-grid.spec.md` outside 列:淡字、只有文字、比 disabled 弱)。2026-04-21 起的舊寫法「背景略暗」用的是 `bg-muted`,那是「不可操作」的 token(`../../tokens/color/color.spec.md`「Static Subtle Background」段),放在可點的格上造成滑過反而變淺(實測淺色 `#F5F5F5` → `#FAFAFA`、深色 `#2F2F2F` → `#262626`),已撤除
 - **Hover cell**:整 cell 帶 neutral-hover 提示可點擊新增入口
 - **命中區**:懸停回饋是**整格**(`hover:bg-neutral-hover`),而整格就是命中區(cell div 的 onClick = `onDateClick`)—— 懸停形狀 ≡ 命中區,合 `ds-canonical/references/hit-area-canonical.md`。右上角的日期數字鈕**不是第二個目標**,是同一個目標的鍵盤入口:它自己沒有任何 hover 樣式,平日底色恆為透明,動作與宿主格相同,也完全落在格內,所以不會生出隱形帶、搶不走別人的點擊。它的 24px 圓盒是**今天 pill 的高度**(平日跟齊 → 跨 cell 數字落在同一條光學基線)+ 焦點框幾何,**不是**某條最小點擊尺寸;原本 `calendar.tsx` 註解寫的「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回(本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據)。實測(1280×900,md,`展示 — 團隊行事曆`):平日鈕 24.00×24.00 且背景 `rgba(0,0,0,0)`、數字字面 6.58×17;今天鈕 31.30×24.00(`px-2`)帶 `bg-info`;格 178×155.80,hover 前後格底色 `rgba(0,0,0,0)` → `oklch(0 0 0 / 0.02)`,鈕底色兩次皆透明;掃全部 stylesheet 命中該鈕的 `:hover` 規則 = 0 條
-- **Weekend cell**:弱化背景(對齊 Google);MVP 未實作,列後續增量
+- **Weekend cell**:弱化背景(對齊 Google);MVP 未實作,列後續增量。**約束(2026-09-25)**:週末格一樣可點,所以若要加底色**不可用 `bg-muted`**(不可操作的 token,見上方 Outside day cell),而且要同時定好它自己的滑過色,不能沿用透明格的 `neutral-hover`(否則滑過會變淺)
 
 ### Event tile 規則
 
