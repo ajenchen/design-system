@@ -24,7 +24,7 @@
  * 量不到就回空陣列 → `continue` —— 開不起來的 story 被算進「掃了 N 支」、而且沒有任何配對,於是**靜默地綠**(M37:沒量到 ≠ 沒有配對)。
  * 實測:把 Switch 設計規格的 chunk 刪掉,舊版照樣印「掃了 164 支 story … ✓」exit 0。
  * 現在:開不起來 / 量測腳本丟例外 / 配對的 hover 做不下去 → 記為**儀器失效**,掃完後點名每一支 story 並附同源 404 帳本,exit 1
- * (不是產品裁決;不用 exit 2 —— lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
+ * (不是產品裁決;不用 exit 2 —— lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」)。
  *
  *   node scripts/hover-color-pair-invariant.mjs [--build=<dir>] [--selftest] [--limit=<n>]
  */

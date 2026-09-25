@@ -21,10 +21,10 @@
  *   exit 2 —— 不是產品裁決,`--selftest` 下也絕不算「對照組如預期紅」。
  *   node scripts/data-table-pinned-resize-invariant.mjs [--static=<dir>] [--selftest]
  */
-import { existsSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, STALE_BUILD_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -33,9 +33,9 @@ const SELFTEST = process.argv.includes('--selftest')
 const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const STORY = arg('story') ?? 'design-system-components-datatable-展示--roadmap-all-in-one'
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook`); process.exit(2) }
+requireStorybookBuild(join(STATIC, 'index.json'))
 const srcM = statSync(join(REPO, 'packages/design-system/src/components/DataTable/data-table.tsx')).mtimeMs
-if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console.error('✗ storybook-static 比 data-table.tsx 舊,先重建'); process.exit(2) }
+if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console.error(`✗ ${STALE_BUILD_MARKER}:storybook-static 比 data-table.tsx 舊,先重建`); process.exit(2) }
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const printNotFound = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }

@@ -24,7 +24,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { snapshotStorybookStatic, StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
-import { openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, exitOnBrowserLaunchFailure } from './lib/launch-browser.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -108,10 +108,12 @@ try {
   // denied)——這是「環境開不了瀏覽器」,不是「不變條件失敗」,比照 hooks/tests/run-all.sh 的
   // mktemp 環境守衛先例:明確標記 SKIPPED-ENV 後放行(exit 0),請在可開瀏覽器的環境補驗。
   // 只攔啟動階段;瀏覽器成功啟動後的任何量測失敗仍然 fail closed。
-  server.close()
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  console.error('   此環境(受限沙箱)結構上無法跑 browser invariant;請於可開瀏覽器環境執行 npm run test:datatable-invariants 補驗。')
-  process.exit(0)
+  // **CI 的瀏覽器 job 宣告 GOVERNANCE_BROWSER_REQUIRED=1**:那裡起不來 = 紅(exit 1),不准略過 ——
+  // 判斷與訊息由 lib/launch-browser.mjs 的 exitOnBrowserLaunchFailure 單一實作(2026-09-25)。
+  await exitOnBrowserLaunchFailure(error, {
+    cleanup: () => server.close(),
+    hint: '此環境(受限沙箱)結構上無法跑 browser invariant;請於可開瀏覽器環境執行 npm run test:datatable-invariants 補驗。',
+  })
 }
 const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 

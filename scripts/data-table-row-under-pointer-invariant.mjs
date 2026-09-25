@@ -28,7 +28,7 @@
  * **開 story(2026-09-25)**:改用 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
  *   Storybook 回報渲染完成(含 play)+ render-health + 被量的捲動區本身 + 版面連續 10 影格靜止,才開始放指標。
  *   取代原本的 `networkidle` + 固定睡 1500ms(兩者都是「畫面就緒」的代理)。story 開不起來 = 儀器失效:
- *   點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,**--selftest 下也不會被算成「對照組如預期紅了」**。
+ *   點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,**--selftest 下也不會被算成「對照組如預期紅了」**。
  *
  *   node scripts/data-table-row-under-pointer-invariant.mjs [--build=<dir>] [--cpu=4] [--selftest]
  */

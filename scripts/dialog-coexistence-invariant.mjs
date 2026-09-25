@@ -43,12 +43,12 @@
  * #storybook-root 裡 0 個按鈕:story 還沒畫出來,不是 Default story 沒有觸發鈕(M37)。新版同機三跑三綠。
  * docs 頁沒有 story 那套 render phase:改等 docs 容器出現、且每則 inline story 的容器都已渲染進內容,再等版面靜止。
  * story 開不起來 → **儀器失效**:點名 story、附 Storybook 錯誤原文與同源 404 帳本,exit 1 —— 不是產品裁決,也不當成通過
- * (不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
+ * (不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」)。
  */
 import { existsSync, readFileSync, statSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -155,9 +155,10 @@ else { staticMotionScan(); staticDocsScan() }
 // ═══════════════════════════════════════════════════════════════════════════
 if (!existsSync(join(STATIC, 'iframe.html'))) {
   console.log(out.join('\n'))
-  console.error(`\n✗ 找不到 storybook build:${STATIC}(先 npm run build-storybook,或 --static <dir>)`)
-  process.exit(1)
+  // 靜態段已經有紅 → 照樣紅:缺建置只准說明「瀏覽器段沒跑到」,不得把靜態段的失敗一起讀成略過
+  if (fail) { console.error(`\n✗ 靜態段 ${fail} 項未通過(瀏覽器段因缺 storybook build 沒跑)`); process.exit(1) }
 }
+requireStorybookBuild(join(STATIC, 'iframe.html'), '先 npm run build-storybook,或 --static <dir>')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })

@@ -16,12 +16,12 @@
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser, requireStorybookBuild } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${root}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
+requireStorybookBuild(path.join(root, 'index.json'), '先 build storybook(或用 --static=<dir> 指定)')
 const helperMtime = fs.statSync(path.join(REPO, 'packages/design-system/src/stories-helpers/scene/data-toolbar.tsx')).mtimeMs
 if (helperMtime > fs.statSync(path.join(root, 'index.html')).mtimeMs) { console.error(`✗ STALE-BUILD:data-toolbar.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2) }
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。

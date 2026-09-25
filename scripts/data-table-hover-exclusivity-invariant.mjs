@@ -34,13 +34,13 @@
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${root}/index.json —— 先 build storybook`); process.exit(2) }
+requireStorybookBuild(path.join(root, 'index.json'))
 if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/DataTable/data-table.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
   console.error(`✗ STALE-BUILD：data-table.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
 }

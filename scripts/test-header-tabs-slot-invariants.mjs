@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync, readdirSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resignBuildManifest } from './lib/storybook-static-snapshot.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const GATE = join(ROOT, 'scripts/header-tabs-slot-invariants.mjs') // 無 --check(此 gate 忽略 argv,直接跑)
@@ -26,7 +27,7 @@ const runGate = () => {
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
   })
-  return result.status ?? 1
+  return { status: result.status ?? 1, text: `${result.stdout ?? ''}${result.stderr ?? ''}` }
 }
 
 // 前置:canonical runner 不會把 ignored storybook-static 帶入 snapshot。只允許在已標記的
@@ -78,22 +79,28 @@ if (targets.length === 0) {
 let ok = true
 
 // 1) 現況必 PASS
-if (runGate() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.exit(1) }
+if (runGate().status !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.exit(1) }
 
 // 2) 注入違規(--layout-space-loose 全宣告 → 0px → tablist padding/第一 tab rect 對齊全崩)→ 必 FAIL → 還原
+// 注入是**刻意**改建置:build-info.json 的檔案清單跟著重簽(2026-09-25 起快照會逐檔核對大小),
+// 否則閘會先以「建置不完整 / INSTRUMENT-FAIL」拒絕 —— 那個紅不是偵測到違規,算成「被抓」就是假證明(M37)。
 const originals = new Map(targets.map((p) => [p, readFileSync(p, 'utf8')]))
+let originalBuildInfo = null
 try {
   for (const [p, orig] of originals) {
     writeFileSync(p, orig.replace(/(--layout-space-loose:)[^;}]+/g, (_m, p1) => `${p1}0px`))
   }
-  const code = runGate()
+  originalBuildInfo = resignBuildManifest(STATIC)
+  const { status: code, text } = runGate()
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(W2 render 契約 detection 失效)'); ok = false }
+  else if (/INSTRUMENT-FAIL/.test(text)) { console.error('✗ 注入違規後的紅是儀器失效(沒量到),不是偵測到違規 —— 不能算被抓\n' + text.slice(-1500)); ok = false }
   else console.log('✓ 注入違規被抓(--layout-space-loose → 0px,W2 padding/rect 崩,exit ' + code + ')')
 } finally {
   for (const [p, orig] of originals) writeFileSync(p, orig) // 還原原檔 bytes
+  if (originalBuildInfo !== null) writeFileSync(join(STATIC, 'build-info.json'), originalBuildInfo) // 還原原本的清單
 }
 
 // 3) 還原後必 PASS
-if (runGate() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
+if (runGate().status !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

@@ -37,13 +37,13 @@
  *   Storybook 回報這則 story 渲染完成(含 play)+ render-health + 代理面板本身 + 版面連續 10 影格靜止,之後才開始量。
  *   取代原本的「load + 等面板(逾時被 catch 吞掉)+ 固定睡 500ms」:面板沒出現時舊寫法會一路跑下去,
  *   把「story 沒載起來」判成 A0「面板一開始就在」失敗(產品裁決)。現在 story 開不起來 = 儀器失效:
- *   點名 story 與寬度、附同源 404,exit 1(不用 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決、也不會印「全部通過」。
+ *   點名 story 與寬度、附同源 404,exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決、也不會印「全部通過」。
  *   流程中(story 開好之後)的固定等待都是**互動之後**的過渡等待,各 helper 旁註明等的是什麼。
  */
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -139,7 +139,7 @@ if (process.argv.includes('--selftest')) {
   if (bad.length) { console.error(`✗ 示範對 <DialogContent> 傳 inline 位置樣式(置中是 Dialog 的事):${bad.join(' | ')}`); process.exit(1) }
   console.log('✓ 靜態:示範沒有對 <DialogContent> 傳 inline 位置樣式(置中由 DS Dialog 決定)')
 }
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
+requireStorybookBuild(join(STATIC, 'index.json'), '先 build storybook(或用 --static=<dir> 指定)')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })

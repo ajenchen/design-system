@@ -33,12 +33,11 @@
  * 修前是 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡 400ms:story 檔 404 時後面的檢查
  * 全部「選單沒開」而紅 —— 一般模式把儀器問題報成產品問題,**--selftest 更糟:沒渲染的那幾組被算成「弄壞後有抓到」**,
  * 對照組就這樣假綠。現在等不到一律丟 StoryRenderInstrumentError,點名 story、附同源 404,兩種模式都 exit 1。
- * 刻意不用 exit 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
+ * 刻意不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -57,10 +56,7 @@ const STORY_MSG = 'design-system-components-combobox-展示--unrestricted-messag
 const STORY_OFF = 'design-system-components-combobox-展示--unrestricted-off-inert'
 const STORY_SEARCH = 'design-system-components-combobox-展示--unrestricted-search'
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 
 // 面板狀態:群組、列、勾選、訊息列。只認開著的 popper 裡的 cmdk 根。
 const PANEL = () => {

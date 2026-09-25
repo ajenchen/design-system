@@ -25,7 +25,7 @@
  *
  * 沙箱起不了 Chromium → C1–C6 標 SKIPPED-ENV(exit 0),C7/C8 照常判定;請在可開瀏覽器的環境(CI)補驗其餘。
  */
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -113,14 +113,11 @@ const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile:
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const BASE = server.origin
 
-let browser
-try {
-  browser = await launchBrowser()
-} catch (error) {
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  console.error('   此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。')
-  await server.stop(); process.exit(0)
-}
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const browser = await launchBrowserOrSkip({}, {
+  cleanup: () => server.stop(),
+  hint: '此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。',
+})
 const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
 // 靜止樣本(rest)是 C1 的基準,必須取在「這則 story 真的渲染完成、標誌與『思考』鈕都在、版面已靜止」之後。
 // 原本是 networkidle + 等第一個 svg 出現 —— 代理量:story 檔缺檔時只會 30 秒逾時丟一個不點名 story 的 Playwright 例外。

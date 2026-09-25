@@ -18,7 +18,7 @@
  * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成
  * (含 play)+ render-health + 被量的 [data-tag-root] 本身 + 版面連續 10 影格靜止,才開始量像素。取代原本的
  * 「load + 等 Tag + 固定睡 600ms」(固定睡眠是「版面已穩定」的代理)。story 開不起來 = 儀器失效:點名 story、附同源 404、
- * exit 1(不用 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決,也不會在 --selftest 下被算成「對照組讓它紅了」。
+ * exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決,也不會在 --selftest 下被算成「對照組讓它紅了」。
  *
  * 用法:node scripts/tag-field-vertical-inset.mjs [--static=<dir>] [--selftest]
  */

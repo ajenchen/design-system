@@ -23,12 +23,12 @@
  * render-health、版面連續靜止 SETTLE_FRAMES 個影格(浮層的進場動畫也要跑完,量的是左緣),才量列前緣。取代原本的
  * domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡 140ms —— 那種寫法在 play 還沒把面板點開、
  * 或縮放進場動畫還在跑時就量,「沒看到面板」被讀成「沒有要量的東西」。原本任何一則載入失敗只記進「載入失敗 N 支」、
- * 照樣 exit 0;現在逐則點名、附同源 404 帳本,兩種跑法都 exit 1(不用 exit 2:gate-selftest-meta 把 2 讀成「略過」)。
+ * 照樣 exit 0;現在逐則點名、附同源 404 帳本,兩種跑法都 exit 1(不用 exit 2:gate-selftest-meta 在 2026-09-25 修正前把 2 讀成「略過」)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { readFileSync } from 'node:fs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -42,10 +42,7 @@ const SETTLE_FRAMES = 10
 // 儀器失效累積到這麼多支就停掃:那時建置整體壞了(例如預覽腳本缺檔),每支都要等到逾時,掃完 1000 多支沒有意義
 const MAX_INSTRUMENT_FAILURES = 25
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 
 const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
 let stories = Object.values(index.entries || index.stories)

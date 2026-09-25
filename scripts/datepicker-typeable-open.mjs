@@ -22,15 +22,14 @@
 
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv=await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const B=sv.origin
-let br
-try { br = await launchBrowser() }
-catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const br = await launchBrowserOrSkip({}, { cleanup: () => sv.stop() })
 const pg=await br.newPage({viewport:{width:1280,height:900}})
 const ID='design-system-components-datepicker-展示--typed-input'
 const st=()=>pg.evaluate(()=>({日曆:!!document.querySelector('[data-radix-popper-content-wrapper]'),焦點:document.activeElement?.tagName,值:document.querySelector('input')?.value}))

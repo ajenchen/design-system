@@ -47,7 +47,7 @@
  * + render-health + 列出現 → 捲動刺激 → 版面(含 data-shell-state)連續靜止 N 個影格 → 在同一個 task 裡讀出 data-shell-state。
  * 原本是「列出現後固定睡 2000ms、捲完再固定睡 600ms」—— 兩段都是「已渲染 / 已停」的代理(4× 節流下 commit 動輒數百 ms)。
  * story 開不起來(chunk 404、渲染拋錯、等不到列、捲完版面不靜止)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與同源 404 帳本,
- * exit 1;不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
+ * exit 1;不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」)。
  */
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

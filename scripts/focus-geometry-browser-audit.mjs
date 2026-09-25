@@ -65,7 +65,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 
 const ARGV = process.argv.slice(2)
 const SELFTEST = ARGV.includes('--selftest')
@@ -89,9 +89,8 @@ const SERVED_ROOT = server.snapshot?.dir ?? STATIC
 const INDEX=join(SERVED_ROOT,'index.json')
 // 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「元件沒渲染」
 const report404=()=>{ if(server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
-let br
-try { br = await launchBrowser() }
-catch (e) { await server.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const br = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
 
 // ── 「這則 story 真的渲染完成了嗎」────────────────────────────────────────
 // 要保證的性質是「量的是這則 story 渲染完成後的畫面」—— 由共用的 openStory 直接等那個性質(M37),

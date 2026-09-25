@@ -16,10 +16,9 @@
  *   currentRender 是那一則且 finished;延遲的 DocsRenderer chunk 必須真的送達才量。任一等不到 = 儀器失效 exit 1(點名、附 404),不當產品結果。
  *   node scripts/storybook-docs-race-invariant.mjs [--static=<dir>] [--selftest] [--delay=3000]
  */
-import { existsSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -31,7 +30,7 @@ const DELAY = Number(arg('delay') ?? 3000)
 const P = 'design-system-components-agentpanel-展示'
 const DEMO = `${P}--url-registry-demo`
 const TASK = `${P}--task-assistant`
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook`); process.exit(2) }
+requireStorybookBuild(join(STATIC, 'index.json'))
 
 let fail = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }

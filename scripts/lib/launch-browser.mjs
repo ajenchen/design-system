@@ -26,9 +26,12 @@
 //   (這行刻意不寫成 import 語句:相依閉包掃描器連註解裡的 import 也會算,寫成語句會讓本檔看起來 import 自己。)
 //   const browser = await launchBrowser()                       // 起不來會丟例外
 //   const browser = await launchBrowser({ headless: false })     // 覆寫任何選項
-//   const browser = await launchBrowserOrSkip()                  // 起不來 → 印 SKIPPED-ENV 並 exit 0
+//   const browser = await launchBrowserOrSkip()                  // 起不來 → SKIPPED-ENV exit 0;必需瀏覽器的 lane → BROWSER-REQUIRED exit 1
+//   const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop(), hint: '…' })   // 退出前先收尾
+//   requireStorybookBuild(join(STATIC, 'index.json'))            // 沒有建置 → 印 MISSING-BUILD 並 exit 2(缺前置)
 //   await openStory(page, url, { … })                            // 開 story 並證明真的渲染完成(見下方 openStory 區塊)
 
+import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { createRenderHealthMonitor } from './storybook-render-health.mjs'
 
@@ -40,19 +43,89 @@ export async function launchBrowser(options = {}) {
   return chromium.launch({ headless: true, ...rest, args: [...SANDBOX_ARGS, ...args] })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 「這次沒跑 / 沒量到」的機讀標記 —— 閘印、lib/gate-selftest-meta.mjs 認,兩邊都從這裡取(M17)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼要有明確標記**(2026-09-25):gate-selftest-meta 原本把「退出碼 2」一律讀成「起不了環境 → 略過」,
+// 而 openStory 上線後十支瀏覽器閘在 story 開不起來時(儀器失效)也是 exit 2 —— 於是真正的儀器失效
+// 在 meta-test 裡被印成「略過」、exit 0(M37:沒量到被讀成沒發生)。退出碼在各閘之間本來就不一致,
+// 能當判據的只有閘**主動、明確**印出的標記:
+//   SKIPPED-ENV      起不了 Chromium,而且這個 lane 沒宣告必需瀏覽器 → 略過(誠實地說「沒驗」)
+//   BROWSER-REQUIRED 起不了 Chromium,但這個 lane 宣告 GOVERNANCE_BROWSER_REQUIRED=1 → 紅(不准略過)
+//   MISSING-BUILD    沒有 storybook 建置(gate-meta lane 的拋棄式快照裡本來就沒有)→ 缺前置,略過
+//   STALE-BUILD      建置比原始碼舊 → 缺前置,略過
+//   INSTRUMENT-FAIL  儀器失效:開了卻沒量到(StoryRenderInstrumentError / 建置快照不完整)→ 紅,**絕不略過**
+export const SKIPPED_ENV_MARKER = 'SKIPPED-ENV'
+export const BROWSER_REQUIRED_MARKER = 'BROWSER-REQUIRED'
+export const MISSING_BUILD_MARKER = 'MISSING-BUILD'
+export const STALE_BUILD_MARKER = 'STALE-BUILD'
+export const INSTRUMENT_FAIL_MARKER = 'INSTRUMENT-FAIL'
+
+// **必需瀏覽器的 lane**(2026-09-25):CI 的瀏覽器 job 裝好 Chromium 就是為了跑這些閘,在那裡起不了瀏覽器
+// 不是「環境沒有瀏覽器」而是「這個 job 壞了」—— 印 SKIPPED-ENV、exit 0 等於整批閘靜默通過(M37)。
+// 這些 job 在 job 層宣告 `GOVERNANCE_BROWSER_REQUIRED: '1'`(.github/workflows/ci.yml;
+// infra/governance/test/ci-workflow-scope.test.mjs 斷言「裝 Chromium 的 job 必須宣告、沒瀏覽器的 job 不得宣告」)。
+export const BROWSER_REQUIRED_ENV = 'GOVERNANCE_BROWSER_REQUIRED'
 /**
- * 起不了瀏覽器時印 SKIPPED-ENV 並 `exit 0`。
- *
- * **只給真的可能在無瀏覽器環境跑的腳本用。** 用它就要接受「這次什麼都沒驗」也是綠的 ——
- * 所以呼叫端最好在 CI 另外確認它真的有跑到(不然就會重演上面那個 322 條的狀況)。
+ * 目前這個 lane 是否宣告「必需瀏覽器」:'1' = 是;未設 / 空字串 / '0' = 否。
+ * **其他值一律丟例外**(例:'true'、'yes')—— 寫錯值卻被當成「否」,等於 CI 以為自己有把關、實際照舊靜默略過(M37)。
  */
-export async function launchBrowserOrSkip(options = {}) {
+export function isBrowserRequired(env = process.env) {
+  const value = env[BROWSER_REQUIRED_ENV]
+  if (value === '1') return true
+  if (value === undefined || value === '' || value === '0') return false
+  throw new Error(`${BROWSER_REQUIRED_ENV} 只接受 '1'(必需瀏覽器)或 '0' / 未設,實得 ${JSON.stringify(value)} —— 寫錯的值不得被當成「不必需」`)
+}
+
+/**
+ * 起不了 Chromium 之後的**唯一**政策(launchBrowserOrSkip 與各閘自己 try/catch 的地方都走這裡):
+ *   一般環境 → 印 SKIPPED-ENV、exit 0(誠實地說「這次沒驗」);
+ *   GOVERNANCE_BROWSER_REQUIRED=1 → 印 BROWSER-REQUIRED、exit 1(必需瀏覽器的 lane 不准略過)。
+ * 兩條路都先跑 cleanup(例:停掉靜態伺服器)。**不回傳。**
+ * @param {unknown} error launch 丟出的例外
+ * @param {{ cleanup?: () => unknown, hint?: string }} [options]
+ */
+export async function exitOnBrowserLaunchFailure(error, { cleanup = null, hint = '' } = {}) {
+  const reason = String(error?.message || error).split('\n')[0]
+  try { await cleanup?.() } catch { /* 收尾失敗不改變判定 */ }
+  if (isBrowserRequired()) {
+    console.error(`✗ ${BROWSER_REQUIRED_MARKER}:無法啟動 Chromium(${reason})`)
+    console.error(`  這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1(CI 的瀏覽器 job):起不了瀏覽器 = 這次什麼都沒驗 = 紅,不得當成略過。`)
+    process.exit(1)
+  }
+  console.error(`⚠️  ${SKIPPED_ENV_MARKER}: 無法啟動 Chromium(${reason})`)
+  if (hint) console.error(`   ${hint}`)
+  process.exit(0)
+}
+
+/**
+ * 起不了瀏覽器時交給 exitOnBrowserLaunchFailure:一般環境 SKIPPED-ENV exit 0,必需瀏覽器的 lane exit 1。
+ *
+ * **只給真的可能在無瀏覽器環境跑的腳本用。** 在一般環境用它就要接受「這次什麼都沒驗」也是 exit 0 ——
+ * 所以 CI 裡跑它的 job 必須宣告 GOVERNANCE_BROWSER_REQUIRED=1(不然就會重演上面那個 322 條的狀況)。
+ * @param {object} [options] 傳給 launchBrowser(chromium.launch)的選項
+ * @param {{ cleanup?: () => unknown, hint?: string }} [onFailure] 起不來時先收尾、再印的補充說明
+ */
+export async function launchBrowserOrSkip(options = {}, onFailure = {}) {
   try {
     return await launchBrowser(options)
   } catch (error) {
-    console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-    process.exit(0)
+    return exitOnBrowserLaunchFailure(error, onFailure)
   }
+}
+
+/**
+ * 沒有 storybook 建置 → 印 MISSING-BUILD、exit 2(缺前置,不是產品裁決)。有的話什麼都不做。
+ * gate-meta lane 在拋棄式快照裡跑,那裡本來就沒有 storybook-static;meta-test 只在看到這個標記時才准略過
+ *(不再認「退出碼 2」—— 那也是儀器失效的退出碼)。CI 的瀏覽器 job 一定先 build,這條在那裡照樣是紅。
+ * @param {string} path 建置裡必須存在的檔(通常是 index.json / index.html / iframe.html)
+ * @param {string} [hint] 怎麼補(預設:先跑 npm run build-storybook)
+ */
+export function requireStorybookBuild(path, hint = '先跑 `npm run build-storybook`') {
+  if (existsSync(path)) return
+  console.error(`✗ ${MISSING_BUILD_MARKER}:找不到 ${path} —— ${hint}(缺前置,不是產品裁決)`)
+  process.exit(2)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -147,7 +220,7 @@ export class StoryRenderInstrumentError extends Error {
     if (storybookError) parts.push(`Storybook 錯誤:${storybookError}`)
     if (failedRequests.length) parts.push(`同源 404 / 載入失敗:${failedRequests.join(', ')}`)
     const detail = parts.join(';')
-    super(`INSTRUMENT-FAIL story「${storyId}」沒有量到 —— ${detail}。這是儀器失效(沒量到),不是產品裁決:元件不一定有問題,但這次不能算通過`,
+    super(`${INSTRUMENT_FAIL_MARKER} story「${storyId}」沒有量到 —— ${detail}。這是儀器失效(沒量到),不是產品裁決:元件不一定有問題,但這次不能算通過`,
       cause ? { cause } : undefined)
     this.name = 'StoryRenderInstrumentError'
     this.storyId = storyId

@@ -44,15 +44,15 @@
  * 靜態站:預設 storybook-static;`--static=<dir>` 或環境變數 MENU_STATIC 指到別的 build(平行工作時不碰主 build)。
  * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成
  *   (含 play)+ render-health 之後才開始操作;取代原本「load + 等觸發點(15 秒逾時被 catch 吞掉)」。story 開不起來 =
- *   儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,不再混進「前提失敗」,--selftest 下也不算「紅得對」。
+ *   儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,不再混進「前提失敗」,--selftest 下也不算「紅得對」。
  *   假時鐘暫停段:Storybook 的 afterEach(a11y addon 在那一步跑 axe,靠計時器推進)永遠走不到 finished(實測停在 afterEach),
  *   那段改等「這一則的 phase 至少到 afterEach」—— story 渲染與 play 都已完成,同一個性質,只是換成假時鐘下看得到的終點訊號。
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
@@ -103,7 +103,7 @@ const ck = (name, pass, detail = '') => { console.log(`${pass ? '✓' : '✗'} $
 const bad = (name, detail = '') => { console.log(`✗ ${name}${detail ? ':' + detail : ''} —— 前提失敗(story 沒渲染出要量的東西),閘不能當「不適用」放行`); broken++ }
 
 // ── 靜態站(先於一切)──
-if (!existsSync(join(STATIC, 'index.json'))) { console.log(`✗ 找不到 ${join(STATIC, 'index.json')},先 build storybook(或 --static=<dir>)`); process.exit(1) }
+requireStorybookBuild(join(STATIC, 'index.json'), '先 build storybook(或 --static=<dir>)')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 // 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「story 沒渲染出訊息列」

@@ -655,12 +655,16 @@ if (INJECT_RUNS) {
   console.log(`⚑ 注入模式:${results.length} 趟合成資料,不開瀏覽器(僅供 meta-test 驗判定段的行為)`)
 }
 
-for (const build of INJECT_RUNS ? [] : BUILDS) {
-  const { server, base } = await serve(build.dir)
-  try {
+// **交錯執行(ABBA)**(2026-09-25):原本「先跑完第一個 build 的所有趟、再跑下一個」,而這台共享 runner
+// 越後面的趟越慢(見檔頭「後兩趟自己會劣化」)—— 於是排在後面的 build(分支)系統性吃虧,比值閘的誤紅方向
+// 固定對分支不利。69230cef 實例:只改了閘腳本、產品零變動,main 三趟長工合計 701/368/108、branch 947/691/939,
+// 判 939 > 368×1.25 紅。改成每一趟都跑遍所有 build,奇數趟照順序、偶數趟反過來,讓機器漂移平均落在每個 build 上。
+const served = []
+for (const build of INJECT_RUNS ? [] : BUILDS) served.push({ build, ...(await serve(build.dir)) })
+try {
     for (const mode of MODES) {
       const n = SELFTEST ? 1 : RUNS
-      if (SELFTEST && mode === 'gesture') {
+      if (SELFTEST && mode === 'gesture') for (const { build } of served) {
         // 負對照:500 列不虛擬化的靜態頁,同幾何、同手勢 —— 高速位移本身不能被量成空白
         const ctrlDir = mkdtempSync(join(tmpdir(), 'fs-control-'))
         const rowsHtml = Array.from({ length: 500 }, (_, i) => `<div data-row-index="${i}" role="row" style="position:absolute;top:${i * 40}px;left:0;right:0;height:40px;border-bottom:1px solid #d9dde3;display:flex;align-items:center;font:14px system-ui"><span role="cell" style="width:120px;padding-left:12px">#${1000 + i}</span><span role="cell" style="width:320px">第 ${i + 1} 列的內容文字</span><span role="cell" style="width:160px">2026-09-${(i % 28) + 1}</span></div>`).join('')
@@ -671,7 +675,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
           if (rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
         } finally { await ctrl.server.stop() }
       }
-      for (let i = 1; i <= n; i++) {
+      for (let i = 1; i <= n; i++) for (const { build, base } of (i % 2 === 1 ? served : [...served].reverse())) {
         // 崩潰 / 沒溢出 = **儀器沒跑起來**(這次什麼都沒量到),不是量到壞結果 —— 重試一次再判失敗。
         // 2026-09-11 錨例:同一個 job 多 build 一份參考 storybook 之後 runner 更熱,branch 有一趟 story 沒渲染出來。
         // 正對照的干擾要**先輕後重**(2026-09-15)。干擾越重,合成器能送出的幀就越少 ——
@@ -719,7 +723,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
         console.log(`   ${line(r, i)}`)
         results.push(r)
       }
-      if (PROFILE_DIR && !SELFTEST) {
+      if (PROFILE_DIR && !SELFTEST) for (const { build, base, server } of served) {
         mkdirSync(PROFILE_DIR, { recursive: true })
         const r = await runOnce({ build, mode, base, sabotage: false, profile: true })
         if (r.profile) {
@@ -732,8 +736,7 @@ for (const build of INJECT_RUNS ? [] : BUILDS) {
         }
       }
     }
-  } finally { await server.stop() }
-}
+} finally { for (const { server } of served) await server.stop() }
 
 // ── 時間序列摘要:每個 build×mode 取 paint 空白最嚴重的 run 印一條(0–9 = 空白率九分位,· = 0)──
 if (!SELFTEST) {

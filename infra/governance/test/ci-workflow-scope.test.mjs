@@ -145,6 +145,31 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 放寬後最壞情況會把原 job 推到 25 分鐘上限。
   assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 13)
   assert.equal((source.match(/playwright install chromium/g) ?? []).length, 11)
+  // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
+  // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
+  // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
+  // 從「這個 job 會不會裝 Chromium」反推必須宣告(不寫死 job 名單,新拆的瀏覽器 job 漏宣告就紅);
+  // 沒裝 Chromium 的 job(verify-static 等)不得宣告 —— 那裡刻意在無瀏覽器環境跑判定表(test:launch-browser 就在那)。
+  const jobIds = Object.keys(workflow.jobs)
+  const jobBlock = (id) => {
+    const start = source.indexOf(`\n  ${id}:\n`)
+    assert.ok(start >= 0, `找不到 job ${id} 的原始文字`)
+    const rest = source.slice(start + 1)
+    const next = rest.slice(1).search(/\n  [a-z0-9-]+:\n/)
+    return next < 0 ? rest : rest.slice(0, next + 1)
+  }
+  const browserJobs = []
+  for (const id of jobIds) {
+    const commands = jobBlock(id).split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
+    const installsChromium = /playwright install chromium/.test(commands)
+    if (installsChromium) browserJobs.push(id)
+    assert.equal(workflow.jobs[id].env?.GOVERNANCE_BROWSER_REQUIRED ?? null, installsChromium ? '1' : null,
+      installsChromium
+        ? `${id} 裝了 Chromium 跑瀏覽器閘,必須在 job 層宣告 GOVERNANCE_BROWSER_REQUIRED: '1'(否則起不了瀏覽器會被印成 SKIPPED-ENV 當通過)`
+        : `${id} 沒有裝 Chromium,不得宣告 GOVERNANCE_BROWSER_REQUIRED(那裡的判定表刻意在無瀏覽器環境跑)`)
+  }
+  assert.equal(browserJobs.length, 11, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',

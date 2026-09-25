@@ -240,7 +240,9 @@ for (const story of STORIES) {
 console.log(`\n=== Header tabsSlot W2 Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
 console.log(`FAIL: ${failures.length}`)
-console.log(`INSTRUMENT-FAIL: ${instrumentFailures.length}\n`)
+// 計數列不印 INSTRUMENT-FAIL 標記字:那是「真的發生儀器失效」的機讀標記(lib/launch-browser.mjs),
+// 印「INSTRUMENT-FAIL: 0」會讓讀標記的一方(meta-test)把乾淨的一趟誤判成儀器失效;真的失效時每一筆的訊息本身就帶著標記。
+console.log(`儀器失效(沒量到): ${instrumentFailures.length}\n`)
 if (passes.length > 0) console.log(passes.join('\n'))
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')

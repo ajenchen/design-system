@@ -31,15 +31,15 @@
  *   - story 自己渲染拋錯(Storybook 錯誤頁、沒有任何同源 404)→ 照舊算「整則渲不出來」(本閘的產品判定,exit 1);
  *   - 其他一切沒量到(同源 404 / 等不到渲染完成 / 空畫面 / 頁面例外 / 版面不靜止 / 量測本身丟例外)→ 儀器失效,
  *     逐則點名、附同源 404 帳本,exit 1(三種模式都是;--selftest 不得把它算成「抓到了」)。
- *     不用 exit 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
+ *     不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
  *
  * Run: `node scripts/overlay-footer-gutter-invariant.mjs [--survey] [--build=dir] [--lanes=4]`
  *      `--survey` 只印清單不判定(盤點用)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { readFileSync } from 'node:fs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -55,10 +55,7 @@ const TOLERANCE_PX = 1
 // 開 story 後要求版面連續靜止幾個影格才量 footer 左緣(量的是幾何,要等排版與進場動畫跑完)
 const SETTLE_FRAMES = 10
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
 let stories = Object.values(index.entries || index.stories).filter((e) => e.type !== 'docs').map((e) => ({ id: e.id, name: e.name }))
 if (LIMIT) stories = stories.slice(0, LIMIT)

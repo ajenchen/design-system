@@ -26,7 +26,7 @@
  *   Storybook 回報渲染完成(含 play)+ render-health(+ 被點的觸發鈕本身 / H5 另等版面連續 5 影格靜止)才開始操作。
  *   取代原本「load + 等根節點有子元素 + 各步 `.catch(() => {})`」:舊寫法在 story 載不起來時 H1–H4 會變成
  *   「前提失敗」—— 而 `--selftest` 把任何 fail 都讀成「對照組如預期紅了」,H5 則把載不起來的 story 靜靜 `continue` 掉。
- *   現在 story 開不起來 = 儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決,任何模式下都不算對照組成功;
+ *   現在 story 開不起來 = 儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決,任何模式下都不算對照組成功;
  *   dialog 沒開起來的前提失敗在對照組模式下也不算「紅得對」。H5 裡「前兩顆鈕都開不出 dialog」的 story 照舊不適用,
  *   但改成具名列出(沒量到要看得見)。
  *

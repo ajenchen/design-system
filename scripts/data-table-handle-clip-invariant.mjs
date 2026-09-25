@@ -21,13 +21,13 @@
  * 開 story(2026-09-25 起)走 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作):Storybook 回報渲染完成(含 play)
  * + render-health + 列出現 + 注入 17px 捲軸之後版面連續靜止 N 個影格才開始量。原本是 `load` + 等列 + 固定睡 600ms。
  * story 開不起來(chunk 404、渲染拋錯、等不到列)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與同源 404 帳本,exit 1;
- * 不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」)。
+ * 不是產品裁決,也不會被當成通過(不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」)。
  * 量測中途的固定等待(捲動後 250ms、移動指標後 450ms)不是「已渲染」的代理,是等互動本身的後果(見各處註解),保留。
  */
-import { existsSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, STALE_BUILD_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -36,10 +36,10 @@ const SELFTEST = process.argv.includes('--selftest')
 const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const STORY = arg('story') ?? 'design-system-components-datatable-展示--roadmap-all-in-one'
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook`); process.exit(2) }
+requireStorybookBuild(join(STATIC, 'index.json'))
 // stale-build 守衛:預設目錄的 build 必須比 data-table.tsx 新(指定 --static 的並行工作者自己負責)
 const srcM = statSync(join(REPO, 'packages/design-system/src/components/DataTable/data-table.tsx')).mtimeMs
-if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console.error('✗ storybook-static 比 data-table.tsx 舊,先重建'); process.exit(2) }
+if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console.error(`✗ ${STALE_BUILD_MARKER}:storybook-static 比 data-table.tsx 舊,先重建`); process.exit(2) }
 
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })

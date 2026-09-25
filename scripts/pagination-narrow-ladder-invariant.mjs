@@ -19,7 +19,7 @@
  *
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
@@ -42,14 +42,11 @@ const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile:
 const BASE = server.origin
 const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
 
-let browser
-try {
-  browser = await launchBrowser()
-} catch (error) {
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  console.error('   請於可開瀏覽器環境執行 npm run test:pagination-invariants 補驗。')
-  await server.stop(); process.exit(0)
-}
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const browser = await launchBrowserOrSkip({}, {
+  cleanup: () => server.stop(),
+  hint: '請於可開瀏覽器環境執行 npm run test:pagination-invariants 補驗。',
+})
 
 const findings = []
 const record = (id, desc, pass, detail) => { findings.push({ id, pass }); console.log(`${pass ? '✅' : '❌'} ${id} ${desc}${detail ? ` — ${detail}` : ''}`) }

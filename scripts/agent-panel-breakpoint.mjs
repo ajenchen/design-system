@@ -32,13 +32,13 @@
 // 「面板左 − 容器左 = 15.2 / 8 / 2.2」,當下面板上正跑著注入 `left:0` 觸發的 250ms `left` 過渡(量到時才走了 100–183ms),
 // 量到的是過渡中間值不是終值;對照組碰巧仍是紅的,所以沒人發現。新版等過渡走完,量到 0。
 // story 開不起來(id 不存在、chunk 404、渲染拋錯、等不到被量的元素)→ **儀器失效**:點名 story、附 Storybook 錯誤原文與
-// 同源 404 帳本,exit 1 —— 不是產品裁決,也絕不當成通過。(不用 exit 2:lib/gate-selftest-meta.mjs 把 2 讀成「缺前置 → 略過」。)
+// 同源 404 帳本,exit 1 —— 不是產品裁決,也絕不當成通過。(不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」。)
 
 // G3:並排 ↔ 蓋板的斷點與寬度上限
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const S = staticArg ? (staticArg.startsWith('/') ? staticArg : join(process.cwd(), staticArg)) : join(process.cwd(),'storybook-static')
 if (statSync('packages/design-system/src/components/AgentPanel/agent-panel.tsx').mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
@@ -47,9 +47,8 @@ if (statSync('packages/design-system/src/components/AgentPanel/agent-panel.tsx')
 const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const B=sv.origin
-let br
-try { br = await launchBrowser() }
-catch (e) { await sv.stop(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const br = await launchBrowserOrSkip({}, { cleanup: () => sv.stop() })
 const pg=await br.newPage({viewport:{width:1600,height:800}})
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}

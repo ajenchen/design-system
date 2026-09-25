@@ -360,6 +360,7 @@
         "scripts/test-hover-latency-policy.mjs",
         "scripts/test-hover-revealed-affordances.mjs",
         "scripts/test-instruction-mirror-safety.mjs",
+        "scripts/test-launch-browser.mjs",
         "scripts/test-native-custom-renderer-parity.mjs",
         "scripts/test-neutral-audit-evidence.mjs",
         "scripts/test-open-story.mjs",

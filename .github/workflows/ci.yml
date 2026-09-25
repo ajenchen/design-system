@@ -156,6 +156,10 @@ jobs:
           # 瀏覽器閘改從本次獨佔的快照供檔(scripts/lib/storybook-static-snapshot.mjs);這支是它的
           # 兩面對照(缺標記 / 複製期間被重建 → 以儀器失效拒絕;快照建好後原目錄被清空 → 不受影響)。
           npm run test:storybook-static-snapshot
+          # 起不了瀏覽器的唯一政策(lib/launch-browser.mjs)的兩面對照:旗標未設 → SKIPPED-ENV exit 0;
+          # 下面各瀏覽器 job 宣告的 GOVERNANCE_BROWSER_REQUIRED=1 → exit 非 0,永不略過;另掃全 repo 不准有閘自己抄一份略過。
+          # 不需要瀏覽器(故意指向不存在的執行檔),所以放在這個沒有 Chromium 的 job。
+          npm run test:launch-browser
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
@@ -181,7 +185,8 @@ jobs:
           node scripts/field-label-binding-invariant.mjs
           # 「閘要有對照組」的共用跑法本身也要有對照組:gate-meta lane 在**沒有 storybook-static
           # 的拋棄式快照**裡跑,缺它時各閘退出碼不一致(實測 1 與 2 都有)。只認 2 的話,
-          # 退出碼 1 的會被誤報成「產品壞掉」。七種局面的判定表在這支。
+          # 退出碼 1 的會被誤報成「產品壞掉」。反方向(2026-09-25):把 exit 2 一律讀成略過,
+          # 儀器失效(INSTRUMENT-FAIL,也是 exit 2)就被印成「略過」—— 現在略過只認閘明確印出的標記。判定表在這支。
           node scripts/test-gate-selftest-meta.mjs
           # story 命名紀律(標題 canonical / 禁 jargon / 禁中英夾雜 / 禁驗證備註當名字)。
           # 2026-09-21 之前也沒有任何 workflow 呼叫它,而它是紅的:4 個 story 名混英文
@@ -224,6 +229,9 @@ jobs:
     # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
     # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -380,6 +388,9 @@ jobs:
     name: Verify browser(DataTable perception gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -453,6 +464,9 @@ jobs:
     name: Verify browser(DataTable handles + dpr1 perception)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -522,6 +536,9 @@ jobs:
     # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
     # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -582,6 +599,9 @@ jobs:
     # 搬到排程的 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 都跑。
     # 所以照既有做法拆成平行 job:兩邊各約 7-9 分鐘,都在 15 分鐘內。
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -654,6 +674,9 @@ jobs:
     # timeout 不是正確性門檻,是執行時間預算;撞到它唯一的效果是毀掉裁決。依同檔既有的
     # SLOW_BROWSER_JOBS 慣例改 25(仍在硬上限內,真的卡死照樣抓得到)。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -746,6 +769,9 @@ jobs:
     name: Verify browser(agent demo + cursor gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -802,6 +828,9 @@ jobs:
     name: Verify browser(DS-wide story sweeps)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -845,6 +874,9 @@ jobs:
     name: Verify browser(overlay list rows)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -884,6 +916,9 @@ jobs:
     name: Verify browser(multi-select footer)   # 同 job 另跑 overlay footer gutter(共用同一份 storybook build)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -934,6 +969,9 @@ jobs:
     name: Verify browser(field edges + combobox + footer gutter)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

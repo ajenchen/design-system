@@ -31,8 +31,7 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -44,10 +43,7 @@ const STORY_UNRESTRICTED = 'design-system-components-combobox-展示--unrestrict
 const STORY_SEARCH = 'design-system-components-combobox-展示--unrestricted-search'
 const STORY_MODES = 'design-system-components-combobox-展示--modes'
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 
 // 對照組:還原成舊的原生路徑長相 —— 拔掉浮層、在欄位裡塞一顆原生 <select>
 const BREAK_BACK_TO_NATIVE = () => {

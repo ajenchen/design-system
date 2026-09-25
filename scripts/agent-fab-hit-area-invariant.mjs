@@ -44,7 +44,7 @@
 // Run: `node scripts/agent-fab-hit-area-invariant.mjs [--selftest] [--static-dir <Storybook 建置>]`
 //      (併在 `npm run test:agent-panel-invariants`;`--static-dir` 預設 ./storybook-static)
 
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
@@ -67,15 +67,9 @@ const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile:
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const BASE = server.origin
 
-let browser
-try {
-  browser = await launchBrowser()
-} catch (error) {
-  // 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例)。
-  await server.stop()
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  process.exit(0)
-}
+// 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例);
+// 但宣告 GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job 裡起不來就是紅 —— 政策單一來源在 lib/launch-browser.mjs。
+const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
 
 const failures = []
 const passes = []

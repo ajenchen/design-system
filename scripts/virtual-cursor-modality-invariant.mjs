@@ -49,7 +49,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
@@ -64,7 +64,7 @@ const SRCS = [
   'packages/design-system/src/components/Sidebar/sidebar.tsx',
   'packages/design-system/src/components/TimePicker/time-columns.tsx',
 ]
-if (!existsSync(join(STATIC, 'index.html'))) { console.error(`✗ 找不到 ${STATIC}/index.html —— 先 build storybook(或用 --static=<dir>)`); process.exit(2) }
+requireStorybookBuild(join(STATIC, 'index.html'), '先 build storybook(或用 --static=<dir>)')
 const buildMtime = statSync(join(STATIC, 'index.html')).mtimeMs
 for (const f of SRCS) { if (existsSync(f) && statSync(f).mtimeMs > buildMtime) { console.error(`✗ STALE-BUILD:${f} 比 ${STATIC} 新 —— 先重新 build storybook`); process.exit(2) } }
 

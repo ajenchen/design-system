@@ -407,7 +407,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/68bfcddff9c4a16388c248cd34fb66163e9e64b3d809a48ef3984f6ae4ff6d12.blob",
-      "sha256": "ed07aa3e882ea16ca586a218f9835375218b1e14a7dfe9e3c55bfc6bbe00c981",
+      "sha256": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
       "source": "scripts/lib/storybook-static-snapshot.mjs",
       "classification": null,
       "destination": "scripts/lib/storybook-static-snapshot.mjs"
