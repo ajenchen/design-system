@@ -83,6 +83,12 @@ const ALLOWLIST = [
   'scripts/lint-ds-internal-imports.mjs',
   'scripts/lib/a11y-static-server.mjs',
   'scripts/lib/canonical-path-containment.mjs',
+  // a11y-static-server 的依賴(2026-09-24 起)。036904a2 只登記了另外三個清單,這裡漏了 ——
+  // 下一次 release 的 mirror 相依閉包檢查就會擋(2026-09-25 以 --out 到暫存目錄實跑重現)。
+  'scripts/lib/storybook-static-snapshot.mjs',
+  // audit-consumer-a11y 的 openStory(document 模式)與它的 render-health(2026-09-25)
+  'scripts/lib/launch-browser.mjs',
+  'scripts/lib/storybook-render-health.mjs',
   'scripts/lib/consumer-control-plane-policy.mjs',
   'scripts/lib/provider-lifecycle.mjs',
   'scripts/lib/verified-exact-npm-runtime.mjs',

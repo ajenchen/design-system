@@ -46,7 +46,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const STATIC = join(process.cwd(), 'storybook-static')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
@@ -196,7 +196,8 @@ console.log(`第二段:${CANDIDATES.length} 個候選 × ${WIDTHS.length} 個寬
 console.log(`等待實績:${wait.settled} 次載入中 ${wait.withLateChanges} 次在渲染完成後版面還在變,等到停(最多等了 ${wait.maxFramesWaited} 格);`
   + `中途最長靜止 ${wait.longestBrokenQuiet} 格後又再變動(門檻 ${QUIET_FRAMES} 格,逼近門檻就要調高)`)
 if (broken.length) {
-  console.log(`\n✗ 儀器失效 ${broken.length} 次:`)
+  // 標記字讓 lib/gate-selftest-meta.mjs 讀成儀器失效(exit 2 本身不是標記;2026-09-25 前這行沒有標記 → 被讀成一般紅)
+  console.log(`\n✗ ${INSTRUMENT_FAIL_MARKER}:儀器失效 ${broken.length} 次(沒量到,不是產品裁決,也不算通過):`)
   broken.slice(0, 20).forEach((b) => console.log('  ' + b))
 }
 

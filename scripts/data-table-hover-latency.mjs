@@ -25,8 +25,10 @@
  *
  * **開 story(2026-09-25 起)**:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
  * Storybook 回報渲染完成(含 play)+ render-health + 捲動區 `[data-datatable-hscroll]` 本身出現 + 版面連續 10 影格靜止,才進靜置期。
+ * `--manager` 走 openStory 的 previewFrame 模式(同一份判定在 preview iframe 裡做,靜止判定同時看管理介面);原本自己寫的
+ * render 檢查沒有錯誤頁捷徑(壞掉的 story 要等滿 120 秒),之後還固定睡 6 秒當「外掛背景工作跑完」的代理 —— 兩者都已拿掉。
  * 開不起來 = 儀器失效:點名 story、附同源 404、exit 2 —— 不是「hover 變慢」,也不算通過;`--selftest` 下不算對照組結果。
- * 之後的 `--warmup-ms` 靜置期**不是**「已渲染」的代理,是刻意的實驗條件(見 WARMUP_MS 說明)。
+ * 之後的 `--warmup-ms` 靜置期(兩種模式同一個)**不是**「已渲染」的代理,是刻意的實驗條件(見 WARMUP_MS 說明)。
  *
  *   node scripts/data-table-hover-latency.mjs [--static=<dir>] [--dpr=1] [--rows=16] [--cpu-throttle=1]
  *     [--assert=on --assert-p95=<ms>] [--selftest] [--label=<名>] [--builds=a=<dir>,b=<dir>]
@@ -117,32 +119,30 @@ async function measure(build, { afterScroll, sabotage }) {
   let frameOffset = { x: 0, y: 0 }
   try {
     if (MANAGER) {
-      // 管理介面(index.html)本身沒有 iframe 那套 render phase → storybook:false;等的是 preview iframe 裡
-      // **這則 story 渲染完成(含 play)且被量的捲動區本身出現**(同源 iframe,讀得到它的 __STORYBOOK_PREVIEW__)
-      await openStory(page, `${server.origin}/index.html?path=/story/${encodeURIComponent(STORY)}`, {
-        storybook: false, label: `管理介面(${STORY})`,
-        waitFor: (storyId) => {
-          const w = document.querySelector('#storybook-preview-iframe')?.contentWindow
-          const render = w?.__STORYBOOK_PREVIEW__?.currentRender
-          return !!render && render.id === storyId && render.phase === 'finished' && !!w.document.querySelector('[data-datatable-hscroll]')
-        },
-        waitForArg: STORY, waitForPolling: 100,
+      // 管理介面:openStory 的 previewFrame 模式(同一份實作,不再自己寫一份 render 判定)—— 在 preview iframe 裡等**這一則**
+      // 渲染完成(含 play 與 afterEach;錯誤頁 / 無預覽頁當場以儀器失效停,不再等滿 120 秒)、render-health、捲動區本身出現,
+      // 再等 preview 與管理介面**兩份文件同時**連續 10 影格靜止(外掛面板收到結果後的重畫、iframe 位置的位移都算在內)。
+      const opened = await openStory(page, `${server.origin}/index.html?path=/story/${encodeURIComponent(STORY)}`, {
+        previewFrame: '#storybook-preview-iframe', storyId: STORY, label: `管理介面(${STORY})`,
+        waitFor: '[data-datatable-hscroll]', settleFrames: 10,
         navigationTimeoutMs: 120000, timeoutMs: 120000, notFound: server.notFound,
       })
-      const handle = await page.$('#storybook-preview-iframe')
-      scope = await handle.contentFrame()
-      const r = await handle.boundingBox()
+      scope = opened.frame
+      const r = await (await page.$('#storybook-preview-iframe')).boundingBox()
       frameOffset = { x: r.x, y: r.y }
-      // 刻意的靜置:story 已渲染完成,等的是 manager 外掛(a11y 等)在 story 載入後的背景工作跑完再量(它們沒有「做完了」的訊號可等)
-      await sleep(6000)
+      // 原本這裡固定睡 6000ms,理由是「等 manager 外掛(a11y 等)的背景工作跑完,它們沒有『做完了』的訊號可等」。
+      // 2026-09-25 查證那是代理量:a11y addon 8.6 的 axe 在 preview 的 afterEach 裡跑(@storybook/addon-a11y dist/preview.mjs),
+      // 而 phase 要走完 afterEach 才到 finished —— 訊號本來就有;外掛面板之後的重畫由上面「兩份文件同時靜止」接住。
+      // 實測 openStory 回傳後再看 8 秒:管理介面與 preview 兩份文件 0 次 DOM 變動、0 個長任務 —— 那 6 秒裡沒有任何要等的事。
     } else {
       await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
         waitFor: '[data-datatable-hscroll]', settleFrames: 10,
         navigationTimeoutMs: 120000, timeoutMs: 60000, notFound: server.notFound,
       })
-      // 刻意的靜置期(--warmup-ms):渲染完成已由 openStory 證明,這段是實驗條件(分辨離群值是迭代造成還是載入後固定時間的事件)
-      await sleep(WARMUP_MS)
     }
+    // 刻意的靜置期(--warmup-ms,兩種模式同一個):渲染完成與版面靜止已由 openStory 證明,這段**不是**「已渲染」的代理,
+    // 是實驗條件(分辨離群值是迭代造成還是載入後固定時間的事件)
+    await sleep(WARMUP_MS)
   } catch (error) {
     // 開不起來:收掉這一輪的瀏覽器與伺服器,把儀器失效交給呼叫端(不回傳任何樣本 —— 空樣本會被讀成「沒變色」)
     await browser.close(); await server.stop()

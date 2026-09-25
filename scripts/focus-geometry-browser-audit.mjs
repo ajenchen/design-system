@@ -312,8 +312,8 @@ try {
         if (SELFTEST_INSET) {
           await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
         }
-        // 這 400ms **不再是**「已渲染」的代理(渲染完成已由 loadStory 直接等到);留下的用途只剩
-        // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值;gotoStory 的 settle 同一個用途)。
+        // 這 400ms **不再是**「已渲染」的代理(渲染完成已由 loadStory → 共用的 openStory 直接等到);留下的用途只剩
+        // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值)。
         await pg.waitForTimeout(400)
         const seen=new Set(), rows=[]
         for (let i=0;i<45;i++) {

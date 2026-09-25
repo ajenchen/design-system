@@ -351,7 +351,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "sha256": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
+      "sha256": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
       "source": "scripts/consumer-source-harness.mjs",
       "classification": null,
       "destination": "scripts/consumer-source-harness.mjs"
@@ -374,11 +374,27 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/5a0d134a2645114c8caac20458070b00a7f0fd55b3e8805b7325cb4cf52fa15e.blob",
+      "sha256": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
+      "source": "scripts/lib/storybook-render-health.mjs",
+      "classification": null,
+      "destination": "scripts/lib/storybook-render-health.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
       "sha256": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
       "source": "scripts/lib/exact-workspace-dependencies.mjs",
       "classification": null,
       "destination": "scripts/lib/exact-workspace-dependencies.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
+      "sha256": "c5417bccd30f114df91dcd28d0c6df8f76d071962033966714a1f1883aaf860f",
+      "source": "scripts/lib/launch-browser.mjs",
+      "classification": null,
+      "destination": "scripts/lib/launch-browser.mjs"
     },
     {
       "schemaVersion": 1,
@@ -599,7 +615,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "b4305068d9a403726c2370b7678566484f21a84fd6478e58491ab0ffe79bdaef",
+      "sha256": "648b65cedabb5a21538487da857c0398621f2a8ce5da53da7bce534499def467",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"
@@ -927,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "05eb1c4b446bfe2cc7d07a1d21992f72a613ead9a548cd9187d675f9f20369b7",
+      "sha256": "008b0cc5b21e583d2c0394c69f85df3a4a0da941ca6e705978aac715d2dd518f",
       "source": null,
       "classification": null,
       "destination": null

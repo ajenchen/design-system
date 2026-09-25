@@ -25,13 +25,16 @@
  * 實測:把 Switch 設計規格的 chunk 刪掉,舊版照樣印「掃了 164 支 story … ✓」exit 0。
  * 現在:開不起來 / 量測腳本丟例外 / 配對的 hover 做不下去 → 記為**儀器失效**,掃完後點名每一支 story 並附同源 404 帳本,exit 1
  * (不是產品裁決;不用 exit 2 —— lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 2 讀成「缺前置 → 略過」)。
+ * 一支都沒量到(目標清單是空的:story 改名、index 格式變了、--limit 對不到)→ 同樣是 INSTRUMENT-FAIL exit 1。
+ * 修前這條路印「掃了 0 支 story … ✓ DS 內已無…」exit 0(2026-09-25 實測:建置複本的 index.json 拿掉三種設計規格 story 就重現)——
+ * 「0 組配對 = 期望狀態」只在**真的掃過**時成立,掃了 0 支的 0 組是沒觀察到,不是沒發生(M37)。
  *
  *   node scripts/hover-color-pair-invariant.mjs [--build=<dir>] [--selftest] [--limit=<n>]
  */
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -144,6 +147,12 @@ if (broken.length) {
   for (const b of broken) console.log(`  ✗ ${b.story}:${b.detail}`)
   const missing = [...new Set(server.notFound)]
   if (missing.length) console.log(`  同源 404:${missing.join(', ')}`)
+  process.exit(1)
+}
+// 一支都沒量到 → 下面「0 組 = 期望狀態」不成立:那是沒觀察到,不是沒發生(M37)。對照組也一樣 —— 紅的原因是儀器,不是注入沒生效。
+if (scanned === 0) {
+  console.log(`\n✗ ${INSTRUMENT_FAIL_MARKER}:目標 ${targets.length} 支 story、實際量到 0 支 —— 0 組配對不能讀成「DS 內已無反模式」。`
+    + '這是儀器失效(沒量到),不是產品裁決,也不算通過(檢查 index.json 的 story 命名是否還對得上 state-behavior / overview / size-matrix)')
   process.exit(1)
 }
 // 0 組的意義取決於模式:

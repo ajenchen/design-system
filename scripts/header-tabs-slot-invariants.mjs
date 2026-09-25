@@ -16,29 +16,21 @@
 // direct-child selector `[&>[role=tablist]]` 斷鏈 → px-loose 靜默消失(computed 0px),
 // source-level gate(layout-space-utility-invariant)抓不到 render 值 → 本 gate 補 render-level 防線。
 // 改 HEADER_TABS_SLOT_WRAPPER_CLASS / TabsList overflow DOM 必跑此 script,fail → exit 1 阻 commit。
-// Run: `npm run test:header-tabs-slot-invariants` 或 `node scripts/header-tabs-slot-invariants.mjs`
+// Run: `npm run test:header-tabs-slot-invariants` 或 `node scripts/header-tabs-slot-invariants.mjs [--selftest] [--build=<storybook 建置目錄>]`
 
-import { launchVerifyBrowser } from './lib/sandboxed-verify-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
-import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { existsSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const STATIC = join(ROOT, 'storybook-static')
+// `--build=<dir>`(預設 storybook-static):量另一份建置。給對照組用 —— 在建置的複本上注入違規,不必動工作樹的 storybook-static。
+const STATIC = resolve(ROOT, process.argv.find((a) => a.startsWith('--build='))?.slice('--build='.length) ?? 'storybook-static')
 
-const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: ROOT, environment: process.env })
-if (!runtime) throw new Error('[header-tabs-slot] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
-process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
-const { chromium } = await import('playwright')
-
-if (!existsSync(STATIC)) {
-  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD(缺前置,不是產品裁決;lib/launch-browser.mjs 的共用標記與退出碼)
+requireStorybookBuild(join(STATIC, 'iframe.html'))
 
 // ── Stale-build guard(idiom = storybook-smoke-test.mjs 2026-07-05 自抓包 codify)──────────
 // 本 script 驗的是 storybook-static/ 靜態 build — 若 build 早於 src 最新改動,整輪量測 =
@@ -71,10 +63,25 @@ if (!existsSync(STATIC)) {
 // 供檔:從本次獨佔的建置快照(lib/a11y-static-server.mjs,2026-09-25 起;全部瀏覽器閘同一支)。
 // 原本是 sandboxed-verify-browser 的 serveStaticDir:讀**活的** storybook-static、固定 7501 埠 ——
 // 別人同時 build-storybook 清空目錄就全部 404(2026-09-24 data-table 閘踩過),而且沒有 404 帳本可以印。
-// launch 仍消費 sandboxed-verify-browser(primary multiprocess,受限環境降級 --single-process,印出實際路徑)。
+//
+// 啟動:lib/launch-browser.mjs 的 launchBrowserOrSkip(2026-09-25 收斂,M17)。原本這支自己走另一條路 ——
+// `resolveProvisionedPlaywrightRuntime` 把 PLAYWRIGHT_BROWSERS_PATH 釘到 lockfile 對應的瀏覽器,再經 sandboxed-verify-browser
+// 的 launchVerifyBrowser(先試多程序、失敗再退 `--single-process --no-zygote`)。逐項查過,**本閘不需要那條特殊路徑**:
+//   - 量的是 computed padding 字串、token 解析值與 getBoundingClientRect 的 16±0.5px 幾何,不依賴任何 Chromium 版本特有的
+//     字型光柵 / 截圖像素(那才是「必須釘死瀏覽器版本」的理由);
+//   - 版本本來就釘著:playwright-core 只會去找 browsers.json 裡那一個 revision(本機 / CI 都是 chromium-1217),找不到就啟動失敗;
+//     「瀏覽器裝在 repo 的 node_modules(PLAYWRIGHT_BROWSERS_PATH=0)」的 lane(focus-deep-gates 等)在 job 層就設好這個環境變數,
+//     gate-meta 與 harness runner 也各自替子行程設好(disposable-repository-snapshot / harness-runner),不需要閘自己再解析一次;
+//   - 同一個 CI job(ci.yml verify-browser-interaction,`npx playwright install chromium` 裝在預設快取)裡其他瀏覽器閘都是
+//     launchBrowser 啟動,只有這支例外 = 平行實作(M17)。
+// 起不了:一般環境 SKIPPED-ENV exit 0;CI 的瀏覽器 job(GOVERNANCE_BROWSER_REQUIRED=1)BROWSER-REQUIRED exit 1,不准略過。
+// 原本起不了是未攔截例外(exit 1、沒有標記),runtime 解析失敗還是一句與瀏覽器無關的 throw —— 兩者都不在共用政策裡。
 const served = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
-const { browser, mode: launchMode } = await launchVerifyBrowser(chromium)
-console.log(`ℹ transport=snapshot-http-server launch=${launchMode}`)
+const browser = await launchBrowserOrSkip({}, {
+  cleanup: () => served.stop(),
+  hint: '請於可開瀏覽器的環境執行 npm run test:header-tabs-slot-invariants 補驗。',
+})
+console.log('ℹ transport=snapshot-http-server launch=launchBrowser(lib/launch-browser.mjs)')
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 
 const failures = []

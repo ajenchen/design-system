@@ -13,12 +13,17 @@
  *   A 指標停在關閉鈕上 → 點擊關閉(user 的原始操作)
  *   B 指標停在關閉鈕上 → 由程式關閉面板(路由 / 快捷鍵;修前會留下不會消失的殭屍 tooltip)
  * 對照組(--selftest)：注入一個 `[data-radix-popper-content-wrapper]` 假浮層在 (0,8) 並可見,偵測器必須判紅。
+ * 開 story(2026-09-25 起):共用的 openStory(lib/launch-browser.mjs)—— Storybook 回報渲染完成、畫面健康、
+ * **關閉鈕本身**出現、版面連續靜止 10 個影格才操作。取代舊的 gotoStory + 固定睡 900ms:舊版在 story 開不起來時
+ * 丟掉 gotoStory 的回傳值,接著 hoverClose() 等 30 秒後丟出光禿禿的 TimeoutError(實測,story 檔 404 時)。
+ * 現在開不起來 → INSTRUMENT-FAIL 點名情境與 story、列同源 404,不是產品裁決,也絕不算通過。
+ * tooltip 開好了沒也改等訊號本身(浮層掛上且已定位),等不到就判「前提不成立」—— A / B 在 tooltip 沒開時會空轉成綠。
  * 用法：node scripts/overlay-detached-anchor-invariant.mjs [--static=<dir>] [--selftest]
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -57,19 +62,45 @@ const topLeftHits = (frames) => frames.flatMap((f) => f.seen.filter((s) => s.vis
 
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 let failed = 0
+/** story 開不起來的情境:儀器失效(沒量到),不是產品裁決;結尾據此紅 */
+const instrumentFails = []
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
-// 等關閉鈕本身出現再量(理由同 agent-fab:固定睡眠會讓 hoverClose() 丟「找不到關閉鈕」)。
-const fresh = async () => { await gotoStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: CLOSE, settle: 900 }) }
+/**
+ * 開 story:等關閉鈕本身出現、版面靜止(理由同 agent-fab:固定睡眠會讓 hoverClose() 丟「找不到關閉鈕」)。
+ * 回 true = 開好了;false = 開不起來(已記成儀器失效並點名情境),呼叫端跳過該情境的斷言。其他例外照丟。
+ */
+const fresh = async (scenario) => {
+  try {
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: CLOSE, settleFrames: 10, notFound: server.notFound })
+    return true
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(`✗ 情境 ${scenario}:${error.message}`)
+    instrumentFails.push({ scenario, detail: error.detail })
+    return false
+  }
+}
+/** 指標移到關閉鈕上,等 tooltip 真的開好。回 true = 開好了;false = 10 秒內沒開(前提不成立,由呼叫端判紅)。 */
 const hoverClose = async () => {
   const b = await page.locator(CLOSE).first().boundingBox()
   if (!b) throw new Error('找不到關閉鈕')
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
-  await page.waitForTimeout(900) // 等 tooltip 開啟延遲
-  return b
+  // 等訊號本身而不是固定睡 900ms:開啟延遲(motion token 500ms)過後浮層才掛上,Radix 定位完成前外殼停在
+  // `translate(0, -200%)` 暫存位置 —— 離開它 = 已定位。慢的機器只是等久一點。
+  const shown = await page.waitForFunction(() => {
+    const w = document.querySelector('[data-radix-popper-content-wrapper]')
+    return !!w && !String(w.style.transform).includes('-200%')
+  }, null, { timeout: 10_000 }).then(() => true, () => false)
+  if (shown) await page.waitForTimeout(300) // 浮層已定位:讓開啟動畫(淡入 / 縮放)跑完,再開始操作
+  return shown
 }
 
 if (SELFTEST) {
-  await fresh()
+  if (!(await fresh('對照組'))) {
+    await browser.close(); await server.stop()
+    console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:對照組的 story 沒開起來 —— 沒量到不得讀成「偵測器會紅」`)
+    process.exit(1)
+  }
   const frames = await page.evaluate(async (ms) => {
     const wrap = document.createElement('div')
     wrap.setAttribute('data-radix-popper-content-wrapper', '')
@@ -91,29 +122,30 @@ if (SELFTEST) {
 }
 
 // 前提：tooltip 真的會開(否則整支閘空轉)
-await fresh()
-await hoverClose()
-const opened = await page.evaluate(() => {
-  const w = document.querySelector('[data-radix-popper-content-wrapper]')
-  if (!w) return null
-  const r = w.getBoundingClientRect()
-  return { x: Math.round(r.x), y: Math.round(r.y), transform: w.style.transform }
-})
-rec(!!opened && opened.x > 40, `前提：指標停在關閉鈕上時 tooltip 開在鈕旁(非左上角)| ${JSON.stringify(opened)}`)
+if (await fresh('前提 + A')) {
+  const shownA = await hoverClose()
+  const opened = await page.evaluate(() => {
+    const w = document.querySelector('[data-radix-popper-content-wrapper]')
+    if (!w) return null
+    const r = w.getBoundingClientRect()
+    return { x: Math.round(r.x), y: Math.round(r.y), transform: w.style.transform }
+  })
+  rec(shownA && !!opened && opened.x > 40, `前提：指標停在關閉鈕上時 tooltip 開在鈕旁(非左上角)| ${shownA ? JSON.stringify(opened) : '10 秒內 tooltip 沒開(沒掛上或沒定位)'}`)
 
-// A：指標停在鈕上 → 點擊關閉(user 的原始操作)
-{
-  const sampling = page.evaluate(SAMPLER, 1200)
-  await page.mouse.down(); await page.mouse.up()
-  const frames = await sampling
-  const hits = topLeftHits(frames)
-  rec(hits.length === 0, `A 點關閉鈕後 1.2 秒內,沒有任何一幀出現看得見的左上角浮層 | 取樣 ${frames.length} 幀${hits.length ? `,違規首見 t=${hits[0].t}ms ${hits[0].transform}` : ''}`)
+  // A：指標停在鈕上 → 點擊關閉(user 的原始操作)
+  {
+    const sampling = page.evaluate(SAMPLER, 1200)
+    await page.mouse.down(); await page.mouse.up()
+    const frames = await sampling
+    const hits = topLeftHits(frames)
+    rec(hits.length === 0, `A 點關閉鈕後 1.2 秒內,沒有任何一幀出現看得見的左上角浮層 | 取樣 ${frames.length} 幀${hits.length ? `,違規首見 t=${hits[0].t}ms ${hits[0].transform}` : ''}`)
+  }
 }
 
 // B：指標停在鈕上 → 由程式關閉面板(修前會留下不會消失的殭屍 tooltip)
-{
-  await fresh()
-  await hoverClose()
+if (await fresh('B')) {
+  // B 自己的前提:tooltip 沒開就關面板,量不到任何東西卻會是綠的(舊版沒驗這一步)
+  rec(await hoverClose(), 'B 前提：指標停在關閉鈕上 → tooltip 已開(否則 B 是空轉)')
   const sampling = page.evaluate(SAMPLER, 1500)
   await page.evaluate(() => {
     const btn = document.querySelector('button[aria-label="關閉面板"]')
@@ -127,5 +159,10 @@ rec(!!opened && opened.x > 40, `前提：指標停在關閉鈕上時 tooltip 開
 }
 
 await browser.close(); await server.stop()
-console.log(failed ? `✗ overlay-detached-anchor ${failed} 條失敗(SSOT：tokens/elevation/overlay-geometry.ts OVERLAY_HIDE_WHEN_DETACHED)` : '✅ overlay-detached-anchor PASS(錨點被藏起來時浮層不畫在左上角)')
-process.exit(failed ? 1 : 0)
+if (instrumentFails.length) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 個情境沒量到 —— 不是產品裁決,但這次不能宣稱浮層不畫在左上角:`)
+  for (const f of instrumentFails) console.log(`  · 情境 ${f.scenario}:${f.detail}`)
+}
+const red = failed > 0 || instrumentFails.length > 0
+console.log(red ? `✗ overlay-detached-anchor ${failed} 條失敗、${instrumentFails.length} 個情境沒量到(SSOT：tokens/elevation/overlay-geometry.ts OVERLAY_HIDE_WHEN_DETACHED)` : '✅ overlay-detached-anchor PASS(錨點被藏起來時浮層不畫在左上角)')
+process.exit(red ? 1 : 0)

@@ -36,7 +36,7 @@
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -151,7 +151,8 @@ const report = (r) => {
   }
   count[r.status]++
   if (r.status === 'declared-skip') console.log(`  · ${r.name}:略過(具名豁免,已當場確認:${r.detail})`)
-  else if (r.status === 'not-rendered') console.log(`✗ ${r.name}:儀器失效 —— ${r.detail}(不是略過:沒看到不等於沒有)`)
+  // 標記字(INSTRUMENT-FAIL)讓 lib/gate-selftest-meta.mjs 把這一趟讀成儀器失效,而不是「字級不一致」的產品紅(2026-09-25 前沒印)
+  else if (r.status === 'not-rendered') console.log(`✗ ${INSTRUMENT_FAIL_MARKER} ${r.name}:儀器失效 —— ${r.detail}(不是略過:沒看到不等於沒有;也不是產品裁決)`)
   else if (r.status === 'unmeasurable') console.log(`✗ ${r.name}:量不到 —— ${r.detail}`)
   else console.log(`✗ ${r.name}:${r.detail}`)
 }
@@ -224,6 +225,7 @@ if (SELFTEST) {
 const floorOk = count.measured >= 4
 console.log(`${floorOk ? '✓' : '✗'} 取樣:${count.measured} 則有值文字的四模式 story 被量到(需 ≥ 4);具名豁免 ${count['declared-skip']} 則;共 ${STORIES.length} 則`)
 const failed = redCount() + (floorOk ? 0 : 1)
+if (count['not-rendered']) console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${count['not-rendered']} 則 story 沒渲染完成 —— 儀器失效(沒量到),不是產品裁決,也不算通過`)
 console.log(failed ? `✗ field-view-typography ${failed} 條失敗(SSOT:field-controls.spec.md (e) View typography canonical)` : `✅ field-view-typography PASS(${count.measured} 則 story)`)
 if (failed) report404()
 process.exit(failed ? 1 : 0)

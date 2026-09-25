@@ -31,12 +31,12 @@
  *
  *   node scripts/data-table-scrollbar-visibility.mjs [--quick] [--selftest] [--only=<id 片段>] [--static-dir <Storybook 建置>]
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -49,7 +49,9 @@ const QUICK = process.argv.includes('--quick') // PR 閘:6 支代表 story、Win
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7)
 const TRACK = 0xee, THUMB = 0x99
 
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`${join(STATIC, 'index.json')} 不存在,先 npm run build-storybook`); process.exit(2) }
+// 沒有建置 → 共用的 MISSING-BUILD 標記 + exit 2(缺前置,不是產品裁決)。原本自印一句沒有標記的訊息再 exit 2,
+// lib/gate-selftest-meta.mjs 只認標記,不認退出碼 → 會被讀成「現況紅」(2026-09-25 收斂)
+requireStorybookBuild(join(STATIC, 'index.json'))
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 // story 清單也從同一份快照讀,受測的 story 與供檔的建置是同一份(M37)。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -257,6 +259,12 @@ if (SELFTEST) {
   const ok = selftest.clipRed && selftest.coverStillGreen && selftest.pixelRed
   console.log(`${ok ? '✓' : '✗'} selftest:加高 2px → 裁切紅=${selftest.clipRed};pointer-events:none 遮蓋 → hit-test 仍綠=${selftest.coverStillGreen}、像素紅=${selftest.pixelRed}`)
   process.exit(ok ? 0 : 1)
+}
+// 一個捲動區都沒量到 ≠「全部捲動區完整」(M37:沒觀察到 ≠ 沒發生)。story 清單空了(改名 / --only 對不到)、
+// 或捲動區選擇器 / 溢出條件失效時,修前印「檢查 0 個捲動區 ✓」exit 0(2026-09-25 以 --only=<不存在> 實測重現)
+if (checked === 0) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${ids.length} 支 story × ${MATRIX.length} 組幾何,一個有溢出的捲動區都沒量到 —— 這是儀器失效(沒量到),不是產品裁決,也不算通過`)
+  process.exit(1)
 }
 console.log(`DataTable 捲軸可見閘:${ids.length} 支 story × ${MATRIX.length} 組幾何(${MATRIX.map((g) => g.native ? '原生' : `${g.sb}px@${g.dpr}`).join(' / ')}),檢查 ${checked} 個捲動區×位置${uncovered ? `;原生組 ${uncovered} 個為覆蓋式捲軸(厚度 0)未覆蓋` : ''}`)
 for (const f of failures) console.log(`✗ ${f.id} [${f.tag} ${f.pos}] rect=${f.rect.join(',')} → ${f.bad.join(';')}`)

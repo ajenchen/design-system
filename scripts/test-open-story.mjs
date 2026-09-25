@@ -2,8 +2,8 @@
 /**
  * @gate-contract
  *   保證: lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的「story 真的渲染完成」唯一實作)只在 Storybook 回報這則 story 渲染完成(含 play)、畫面健康、被等的元素出現、版面靜止之後才回傳;任何一項等不到或不成立都丟 StoryRenderInstrumentError,訊息點名 story id、附 Storybook 錯誤原文與 404 路徑,並聲明不是產品裁決 —— 絕不回成功、絕不靜默略過
- *   紅: 不存在的 story id、被擋的 story 檔(伺服器 404 / 請求被中斷)、永遠渲染不完、play 還沒跑完、渲染完是空畫面、頁面例外、等的元素不出現、版面永遠不靜止 —— 任一題若被 openStory 判成成功(或錯誤種類 / 點名 / 404 清單不對)即 exit 1。把 helper 的副本逐項弄壞(拿掉 render phase 等待、拿掉錯誤頁判定、拿掉 404 清單、靜止判定不看 DOM 變動、改回固定睡眠、拿掉 render-health、忽略 waitFor)各自至少讓一題紅
- *   綠: 正常 story 必須成功;story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)
+ *   紅: 不存在的 story id、被擋的 story 檔(伺服器 404 / 請求被中斷)、永遠渲染不完、play 還沒跑完、渲染完是空畫面、頁面例外、等的元素不出現、版面永遠不靜止、卡在 afterEach 卻沒允許、允許 afterEach 時卡在 rendering、管理介面 iframe 裡是錯誤頁 / 404 / 找不到 iframe、iframe 裡完成的是別的 story —— 任一題若被 openStory / waitForStoryRender 判成成功(或錯誤種類 / 點名 / 404 清單不對)即 exit 1;寫錯選項(finishedPhases 給 play 之前的 phase、沒有 story id)必須丟 TypeError。把 helper 的副本逐項弄壞(拿掉 render phase 等待、拿掉錯誤頁判定、拿掉 404 清單、靜止判定不看 DOM 變動、改回固定睡眠、拿掉 render-health、忽略 waitFor、忽略 finishedPhases、previewFrame 不換量測對象、previewFrame 的靜止判定不看外層管理介面、不比對 story id)各自至少讓一題紅
+ *   綠: 正常 story 必須成功;story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)
  *
  * 為什麼有這支(2026-09-25):四支閘各自長出一份「等 story 真的畫完」,收斂成 openStory 之後,
  * 原本散在各閘 selftest 裡驗「等待本身」的對照組(focus-geometry 的不存在 id / 刪 chunk、overflow 的晚到 +N /
@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { gotoStory, launchBrowser, openStory, StoryRenderInstrumentError, waitForStoryRender } from './lib/launch-browser.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ARGV = process.argv.slice(2)
@@ -30,8 +30,10 @@ const REQUIRE_BUILD = ARGV.includes('--require-storybook-build')
 // 照 Storybook 8 的外觀造:`window.__STORYBOOK_PREVIEW__.currentRender = { id, phase }`、body class
 // sb-show-preparing-story → sb-show-main / sb-show-errordisplay、#error-message / #error-stack。
 // **load 事件之後**才以動態 import 載入 story 檔(真的 Storybook 也是),所以「load + 固定睡眠」必然早於 story 檔。
-// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root);預覽在兩者都跑完後才標 finished。
-const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty']
+// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走
+// loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render),
+// 而且跟真的一樣,畫出來就是 sb-show-main(renderToCanvas 呼叫 showMain),不等 finished。
+const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once']
 const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic preview</title></head>
 <body class="sb-show-preparing-story">
 <div id="storybook-root"></div>
@@ -55,12 +57,40 @@ window.addEventListener('load', async () => {
   try {
     render.phase = 'rendering'
     await mod.default(root)
+    document.body.className = 'sb-show-main'
     render.phase = 'playing'
-    if (mod.play) await mod.play(root)
+    if (mod.play) { await mod.play(root); render.phase = 'played' }
+    render.phase = 'completed'
+    render.phase = 'afterEach'
+    if (mod.afterEach) await mod.afterEach(root)
   } catch (error) { return fail(render, error) }
   render.phase = 'finished'
-  document.body.className = 'sb-show-main'
 })
+</script></body></html>`
+
+// 合成的管理介面(index.html 的外觀):側欄 + #storybook-preview-iframe,iframe 開 path=/story/<id> 那一則
+const MANAGER_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic manager</title></head>
+<body><nav id="sidebar"><p>Sidebar</p></nav>
+<iframe id="storybook-preview-iframe" title="preview" style="width:800px;height:600px;border:0"></iframe>
+<script>
+const path = new URLSearchParams(location.search).get('path') || ''
+const match = path.match(/^\\/story\\/(.+)$/)
+const frameEl = document.getElementById('storybook-preview-iframe')
+frameEl.src = 'iframe.html?id=' + encodeURIComponent(match ? match[1] : '') + '&viewMode=story'
+// busy=1:preview 回報 finished 之後,管理介面自己還要再重畫 45 個影格(外掛面板收到結果後更新的形狀)才標 data-manager-ready
+if (new URLSearchParams(location.search).get('busy') === '1') {
+  const poll = () => {
+    if (frameEl.contentWindow?.__STORYBOOK_PREVIEW__?.currentRender?.phase !== 'finished') return requestAnimationFrame(poll)
+    let hops = 45
+    const hop = () => requestAnimationFrame(() => {
+      document.getElementById('sidebar').style.width = (200 + hops) + 'px'
+      if (--hops > 0) return hop()
+      document.body.setAttribute('data-manager-ready', '')
+    })
+    hop()
+  }
+  requestAnimationFrame(poll)
+}
 </script></body></html>`
 
 const STORIES = {
@@ -99,12 +129,25 @@ export const play = (root) => new Promise((resolve) => setTimeout(() => { root.q
   })
   hop()
 }`,
+  // afterEach 永遠不結束(假時鐘暫停下 a11y addon 的 afterEach 就是這樣:靠計時器推進)
+  'stuck-after-each': `export default (root) => { root.innerHTML = '<p data-stuck>Audit log</p>' }
+export const afterEach = () => new Promise(() => {})`,
+  // 第一次載入時 preview 自己重新載入一次(管理介面離開渲染完整的 docs 頁時 Storybook 會這樣做),第二次才畫完
+  'reload-once': `export default (root) => {
+  if (!sessionStorage.getItem('open-story-reload-once')) {
+    sessionStorage.setItem('open-story-reload-once', '1')
+    root.innerHTML = '<p>Reconnecting</p>'
+    return new Promise(() => setTimeout(() => location.reload(), 300))
+  }
+  root.innerHTML = '<p data-reloaded>Inbox synced</p>'
+}`,
 }
 
 const work = mkdtempSync(join(tmpdir(), 'open-story-meta-'))
 const fixture = join(work, 'synthetic-preview')
 mkdirSync(join(fixture, 'assets'), { recursive: true })
 writeFileSync(join(fixture, 'iframe.html'), PREVIEW_HTML)
+writeFileSync(join(fixture, 'manager.html'), MANAGER_HTML)
 for (const [id, source] of Object.entries(STORIES)) writeFileSync(join(fixture, 'assets', `${id}.js`), source)
 
 let failures = 0
@@ -121,6 +164,15 @@ const attempt = async (page, url, options) => {
     throw error
   }
 }
+/** 同 attempt,給 waitForStoryRender(不導覽,只等 target 裡這一則渲染完成) */
+const attemptWait = async (target, options) => {
+  try { return { ok: true, value: await waitForStoryRender(target, options) } } catch (error) {
+    if (error instanceof StoryRenderInstrumentError) return { ok: false, error }
+    throw error
+  }
+}
+/** 呼叫端寫錯選項必須當場丟 TypeError(程式錯誤),不得被當成儀器失效、也不得默默退回預設 */
+const throwsTypeError = async (fn) => { try { await fn(); return false } catch (error) { return error instanceof TypeError } }
 const short = (text) => String(text).replace(/\s+/g, ' ').slice(0, 220)
 const isInstrument = (r, kind) => !r.ok && r.error.kind === kind && r.error.message.includes('不是產品裁決')
 
@@ -233,6 +285,94 @@ try {
   check('上一則 story 換頁途中還在發 script 請求 → 被中斷的請求不算到下一則頭上',
     chatty.ok && chattyHeld - heldBefore > 0 && afterChatty.ok,
     `換頁期間舊文件發出 ${chattyHeld - heldBefore} 個請求;下一則=${afterChatty.ok ? '成功' : short(afterChatty.error.message)}`)
+
+  // 13. finishedPhases(給「afterEach 靠計時器推進、假時鐘暫停下走不到 finished」的閘,例 menu-message-row):
+  //     預設只認 finished → 卡在 afterEach 必須儀器失效;允許 afterEach 才成功並回報停在 afterEach。
+  //     允許 afterEach 也**不得提早接受 play 之前的 phase**:卡在 rendering 照樣儀器失效、play 1.5 秒照樣等完;
+  //     寫成更早的 phase(或空陣列)→ 呼叫當下 TypeError(程式錯誤,不是儀器失效)。
+  const lateFocus = () => document.activeElement?.hasAttribute('data-delete') ?? false
+  const stuckDefault = await attempt(page, url('stuck-after-each'), { timeoutMs: 1500, notFound: server.notFound })
+  const stuckAllowed = await attempt(page, url('stuck-after-each'), { finishedPhases: ['afterEach', 'finished'], notFound: server.notFound })
+  const hangAllowed = await attempt(page, url('hang'), { finishedPhases: ['afterEach', 'finished'], timeoutMs: 1500, notFound: server.notFound })
+  const slowAllowed = await attempt(page, url('slow-play'), { finishedPhases: ['afterEach', 'finished'], probe: lateFocus, notFound: server.notFound })
+  const earlyPhase = await throwsTypeError(() => openStory(page, url('ok'), { finishedPhases: ['playing'] }))
+  const noPhase = await throwsTypeError(() => openStory(page, url('ok'), { finishedPhases: [] }))
+  check('finishedPhases:卡在 afterEach → 預設儀器失效、允許 afterEach 才成功;允許了也不提早接受 play 之前的 phase;寫成更早的 phase → TypeError',
+    isInstrument(stuckDefault, 'render-timeout') && stuckDefault.error.reason.includes('stuck-after-each / afterEach')
+      && stuckAllowed.ok && stuckAllowed.value.phase === 'afterEach'
+      && isInstrument(hangAllowed, 'render-timeout') && hangAllowed.error.reason.includes('hang / rendering')
+      && slowAllowed.ok && slowAllowed.value.probe === true
+      && earlyPhase && noPhase,
+    `預設=${stuckDefault.ok ? '成功(錯)' : stuckDefault.error.kind};允許 afterEach=${stuckAllowed.ok ? stuckAllowed.value.phase : short(stuckAllowed.error.message)};`
+    + `卡在 rendering=${hangAllowed.ok ? '成功(錯)' : hangAllowed.error.kind};play 未完=${slowAllowed.ok ? `焦點已移 ${slowAllowed.value.probe}` : slowAllowed.error.kind};['playing'] / [] 丟 TypeError=${earlyPhase}/${noPhase}`)
+
+  // 14. previewFrame(管理介面):導覽 manager.html,3–9 步在 #storybook-preview-iframe 的內容框架裡做
+  const mgr = (id) => `${server.origin}/manager.html?path=${encodeURIComponent(`/story/${id}`)}`
+  const PREVIEW = '#storybook-preview-iframe'
+  const framed = await attempt(page, mgr('ok'), {
+    previewFrame: PREVIEW, waitFor: '#storybook-root button', settleFrames: 5,
+    probe: () => document.querySelector('#storybook-root button')?.textContent ?? null, notFound: server.notFound,
+  })
+  check('previewFrame:管理介面裡的 story → 在 preview iframe 裡等到渲染完成,waitFor / 靜止 / probe 都在 iframe 裡做,回傳的 frame 就是那個 iframe',
+    framed.ok && framed.value.phase === 'finished' && framed.value.storyId === 'ok' && framed.value.probe === 'Save'
+      && framed.value.frame !== page.mainFrame() && framed.value.frame.parentFrame() === page.mainFrame(),
+    framed.ok ? `phase=${framed.value.phase} storyId=${framed.value.storyId} probe=${framed.value.probe}` : short(framed.error.message))
+  // 14b. preview 已 finished 且自己靜止,但**管理介面**還要重畫 45 個影格 → 靜止判定必須連外層一起等(probe 看得到外層的 data-manager-ready,且記到變動)
+  const managerReady = () => window.parent.document.body.hasAttribute('data-manager-ready')
+  const busyManager = await attempt(page, `${mgr('ok')}&busy=1`, { previewFrame: PREVIEW, settleFrames: 10, probe: managerReady, notFound: server.notFound })
+  check('previewFrame:preview 靜止但管理介面還在重畫 → 靜止判定等到兩份文件都停(抓到 data-manager-ready,且記到外層的變動)',
+    busyManager.ok && busyManager.value.probe === true && busyManager.value.settle.lateChanges > 0,
+    busyManager.ok ? `外層就緒=${busyManager.value.probe},等待期間變動 ${busyManager.value.settle.lateChanges} 次、等了 ${busyManager.value.settle.framesWaited} 格` : short(busyManager.error.message))
+
+  // 15. previewFrame 的失敗面:iframe 裡是錯誤頁 → storybook-error(逾時給 60 秒:kind 是錯誤頁而不是 render-timeout / wait-for-timeout,
+  //     就證明它沒有等到逾時 —— 與機器快慢無關);story 檔 404 → 列出 404;iframe 本身不存在 → preview-frame;不知道等哪一則 → TypeError
+  const framedMissing = await attempt(page, mgr('no-such-story'), { previewFrame: PREVIEW, waitFor: '#storybook-root button', timeoutMs: 60_000, notFound: server.notFound })
+  const framedBlocked = await attempt(page, mgr('blocked'), { previewFrame: PREVIEW, timeoutMs: 60_000, notFound: server.notFound })
+  const noFrame = await attempt(page, url('ok'), { previewFrame: '#no-such-iframe', timeoutMs: 1000, notFound: server.notFound })
+  const noStoryId = await throwsTypeError(() => openStory(page, `${server.origin}/manager.html`, { previewFrame: PREVIEW }))
+  check('previewFrame:錯誤頁不等到逾時(storybook-error)、404 列出路徑、找不到 iframe → preview-frame、不知道等哪一則 → TypeError',
+    isInstrument(framedMissing, 'storybook-error') && framedMissing.error.storybookError.includes("Couldn't find story matching 'no-such-story'")
+      && isInstrument(framedBlocked, 'storybook-error') && framedBlocked.error.failedRequests.some((f) => f.startsWith('404 ') && f.endsWith('/assets/blocked.js'))
+      && isInstrument(noFrame, 'preview-frame') && noStoryId,
+    `不存在的 id=${framedMissing.ok ? '成功(錯)' : framedMissing.error.kind};404=${framedBlocked.ok ? '成功(錯)' : framedBlocked.error.failedRequests.join(',') || framedBlocked.error.kind};`
+    + `沒有 iframe=${noFrame.ok ? '成功(錯)' : noFrame.error.kind};沒有 story id 丟 TypeError=${noStoryId}`)
+
+  // 16. waitForStoryRender:**不是導覽觸發的**切換(管理介面點側欄;storybook-docs-race 用)—— 與 openStory 第 3 步同一份判定
+  //   a. preview 在等待中自己重新載入一次(離開渲染完整的 docs 頁時 Storybook 會這樣做)→ 仍在新的執行環境裡等到
+  //   b. iframe 裡渲染完成的是**別的** story → 儀器失效並說出最後看到哪一則(「有某一則渲染完成」≠「這一則」)
+  //   c. 切到 404 的 story 檔 / 不存在的 id → storybook-error,404 取自伺服器帳本(切換前記下的長度起算)
+  //   d. 沒給 storyId / target 不是 Page 或 Frame → TypeError
+  const base = await attempt(page, mgr('ok'), { previewFrame: PREVIEW, notFound: server.notFound })
+  if (!base.ok) {
+    check('waitForStoryRender 的前置:管理介面開得起來', false, short(base.error.message))
+  } else {
+    const frame = base.value.frame
+    const switchTo = (id) => frame.evaluate((target) => { location.href = target }, `iframe.html?id=${encodeURIComponent(id)}&viewMode=story`).catch(() => {})
+    let frameNavigations = 0
+    const countNavigations = (f) => { if (f === frame) frameNavigations++ }
+    page.on('framenavigated', countNavigations)
+    await switchTo('reload-once')
+    const reloaded = await attemptWait(frame, { storyId: 'reload-once', notFound: server.notFound })
+    page.off('framenavigated', countNavigations)
+    const reloadedShown = await frame.evaluate(() => Boolean(document.querySelector('[data-reloaded]'))).catch(() => false)
+    const wrong = await attemptWait(frame, { storyId: 'grow', timeoutMs: 1000, notFound: server.notFound })
+    const ledger = server.notFound.length
+    await switchTo('blocked')
+    const blockedWait = await attemptWait(frame, { storyId: 'blocked', notFound: server.notFound, notFoundFrom: ledger })
+    await switchTo('no-such-story')
+    const missingWait = await attemptWait(frame, { storyId: 'no-such-story', notFound: server.notFound })
+    const noId = await throwsTypeError(() => waitForStoryRender(frame, {}))
+    const noTarget = await throwsTypeError(() => waitForStoryRender(null, { storyId: 'ok' }))
+    check('waitForStoryRender:preview 途中重新載入仍等到、別的 story 完成不算、404 / 不存在的 id → storybook-error、寫錯參數 → TypeError',
+      reloaded.ok && reloaded.value.phase === 'finished' && frameNavigations >= 2 && reloadedShown
+        && isInstrument(wrong, 'render-timeout') && wrong.error.message.includes('「grow」') && wrong.error.reason.includes('reload-once / finished')
+        && isInstrument(blockedWait, 'storybook-error') && blockedWait.error.failedRequests.includes('404 /assets/blocked.js')
+        && isInstrument(missingWait, 'storybook-error') && missingWait.error.storybookError.includes("Couldn't find story matching 'no-such-story'")
+        && noId && noTarget,
+      `重新載入=${reloaded.ok ? `成功(frame 導覽 ${frameNavigations} 次,畫面${reloadedShown ? '是' : '不是'}第二次載入)` : short(reloaded.error.message)};`
+      + `別的 story=${wrong.ok ? '成功(錯)' : wrong.error.kind};404=${blockedWait.ok ? '成功(錯)' : blockedWait.error.failedRequests.join(',') || blockedWait.error.kind};`
+      + `不存在的 id=${missingWait.ok ? '成功(錯)' : missingWait.error.kind};TypeError=${noId}/${noTarget}`)
+  }
 
   // ── 真實 Storybook 建置:openStory 依賴的訊號(currentRender.phase / sb-show-errordisplay / #error-message)真的存在 ──
   const hasBuild = existsSync(join(STORYBOOK_BUILD, 'index.json')) && existsSync(join(STORYBOOK_BUILD, 'iframe.html'))

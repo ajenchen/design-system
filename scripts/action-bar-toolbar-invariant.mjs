@@ -11,12 +11,20 @@
  * 空間夠(內容寬 ≥ 下限 + gap + 操作群寬)時 (1)(2)(3) 全部必成立;空間連下限都放不下時(操作鈕多的列在極窄寬度)
  * 只驗 (3) 下限守住,並把該格印成「已知極窄極限」(不算失敗、也不靜默 —— action-bar.spec.md 七:本輪不收合搜尋框)。
  * 對照組(--selftest):注入 `[data-toolbar-search]{min-width:auto!important}`(拿掉下限 = 修前狀態)→ 空間夠的格子裡至少一格 (1) 或 (2) 必紅。
+ *
+ * 開 story(2026-09-25 起):共用的 openStory(lib/launch-browser.mjs)—— Storybook 回報渲染完成、畫面健康、
+ * **被量的東西**(搜尋框與它同列的操作群最後一顆鈕)出現、版面連續靜止 10 個影格,並在最後一個靜止影格的
+ * 同一個 task 裡量(probe)。取代舊的 gotoStory + 固定睡 900ms(「已渲染」與「版面已穩」的代理)。
+ * 開不起來 / 等不到工具列 → INSTRUMENT-FAIL 點名該格(示範 × 寬度)、列同源 404 —— 舊版把同一件事印成
+ * 「找不到 data-toolbar-search(示範沒有消費 DataToolbar?)」,在 story 檔 404 時指控示範(實測)。
+ * 「等元素而不是睡一段時間」本身的對照組(晚到 3 秒的 story 檔:固定睡眠看不到、openStory 等得到)
+ * 跟著共用實作住在 scripts/test-open-story.mjs(M17:一份實作、一份對照組),不在本閘重抄。
  * 用法:node scripts/action-bar-toolbar-invariant.mjs [--static=<dir>] [--selftest]
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -33,6 +41,9 @@ const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root,
 const WANT = [/agentpanel-展示--url-registry-demo$/u, /datatable-展示--with-bulk-actions$/u, /datatable-展示--roadmap-all-in-one$/u, /appshell-展示--primary-sidebar-with-tabs$/u]
 const STORIES = WANT.map((re) => Object.values(index.entries).find((e) => e.type === 'story' && re.test(e.id))?.id)
 const WIDTHS = [320, 360, 400, 480, 768]
+// 頁面端(openStory 的 waitFor):**被量的東西**都在了 —— 搜尋框,以及它同一列的操作群裡至少一顆鈕(PROBE 量的就是這兩個)
+const TOOLBAR_READY = () => Boolean(document.querySelector('[data-toolbar-search]')?.parentElement?.querySelector('[data-toolbar-actions]')?.lastElementChild)
+// 頁面端(openStory 的 probe:最後一個靜止影格的同一個 task 裡執行;以原始碼序列化傳入,不得引用外部變數)
 const PROBE = () => {
   const search = document.querySelector('[data-toolbar-search]')
   if (!search) return { missing: 'data-toolbar-search' }
@@ -50,26 +61,41 @@ const PROBE = () => {
 }
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 768, height: 900 } })
 let failed = 0, measured = 0, tight = 0, sabotageReds = 0
+/** 沒量到的格子(story 開不起來 / 等不到工具列):儀器失效,不是產品裁決,也絕不算通過 */
+const instrumentFails = []
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
 for (const [i, id] of STORIES.entries()) {
   if (!id) { rec(false, `找不到示範 story:${WANT[i]}`); continue }
   const name = id.replace(/^design-system-components-/u, '')
   for (const w of WIDTHS) {
     await page.setViewportSize({ width: w, height: 900 })
-    // 等**搜尋框本身**出現,不用固定睡眠當「已渲染」的代理(2026-09-20 CI 真的因此假紅一次:
-    // 每支示範的第一個寬度是冷啟動,900ms 在慢的 runner 上不夠 → 閘指控「示範沒有消費 DataToolbar」)。
-    // 等不到才走下面原本的缺元素路徑判紅 —— 真的沒消費時訊息一樣會紅,而且那時才是真的。
-    await gotoStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`,
-      { waitFor: '[data-toolbar-search]', settle: 900 })
-    let r = await page.evaluate(PROBE)
-    if (r.missing) { rec(false, `${name} @${w}:找不到 ${r.missing}(示範沒有消費 DataToolbar?)`); continue }
-    if (SELFTEST) {
-      // 對照組:拿掉下限之後 computed min-width 變回 auto(NaN),「空間夠不夠」要用**拿掉前**讀到的下限算,否則每格都被判成極窄、對照組永遠不紅
-      const floor = r.minW
-      await page.addStyleTag({ content: '[data-toolbar-search]{min-width:auto!important}' }); await page.waitForTimeout(100)
-      r = await page.evaluate(PROBE)
-      r.minW = floor; r.fits = r.contentW >= floor + r.gap + r.opsW
+    let r
+    let floor = NaN
+    try {
+      const opened = await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+        waitFor: TOOLBAR_READY,
+        // 對照組:在靜止判定**之前**拿掉搜尋框下限,量到的是拿掉之後的穩態(取代舊的「注入後固定睡 100ms」)。
+        // 「空間夠不夠」要用**拿掉前**的下限算(拿掉後 computed min-width 變回 auto = NaN,每格都會被判成極窄、對照組永遠不紅);
+        // 下限是樣式表給的值,元素一出現就定了,不隨版面變動,所以在這裡讀。
+        beforeSettle: SELFTEST ? async (p) => {
+          floor = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-toolbar-search]')).minWidth))
+          await p.addStyleTag({ content: '[data-toolbar-search]{min-width:auto!important}' })
+        } : null,
+        settleFrames: 10, probe: PROBE, notFound: server.notFound,
+      })
+      r = opened.probe
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      console.log(`✗ ${name} @${w}:${error.message}`)
+      if (error.kind === 'wait-for-timeout') {
+        console.log('  (Storybook 已回報渲染完成、畫面健康,但等不到搜尋框 + 操作群:示範若真的不再消費 DataToolbar,改示範或改本閘的 WANT 清單;這不是「睡不夠久」)')
+      }
+      instrumentFails.push({ cell: `${name} @${w}`, detail: error.detail })
+      continue
     }
+    // 等到之後、靜止當下又不見 = 工具列在渲染完成後被拿掉(不是還沒畫出來)—— 照實報,不猜原因
+    if (r.missing) { rec(false, `${name} @${w}:等到工具列之後,版面靜止時 ${r.missing} 又不見了`); continue }
+    if (SELFTEST) { r.minW = floor; r.fits = r.contentW >= floor + r.gap + r.opsW }
     measured++
     const noOverflow = r.scrollW <= r.clientW
     const aligned = Math.abs(r.lastRight - r.contentRight) <= 1
@@ -86,37 +112,21 @@ for (const [i, id] of STORIES.entries()) {
     }
   }
 }
-// selftest 的晚到對照組需要瀏覽器還活著(--single-process 開不了第二個 browser,所以沿用同一個)
-if (!SELFTEST) { await browser.close() }
+await browser.close()
 await server.stop()
+if (instrumentFails.length) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 格沒量到 —— 不是產品裁決,但這次不能宣稱工具列合規:`)
+  for (const f of instrumentFails) console.log(`  · ${f.cell}:${f.detail}`)
+}
 if (SELFTEST) {
-  // ── 對照組 B:證明「等元素」真的在等,而不是換個寫法的固定睡眠 ──────────────
-  // 本機夠快,所以真跑在本機**兩種寫法都會綠** —— 那不構成證據。這一組讓元素故意晚到 2.5 秒
-  // (模擬 CI 慢 runner 的冷啟動),與機器速度無關:
-  //   · 固定睡眠 300ms、不等元素 → 必須抓不到(= 2026-09-20 CI 假紅的那一格)
-  //   · 等元素、settle 只有 100ms → 必須抓得到
-  // 兩邊都成立,才證明修正是「等到東西出現」而不是「睡久一點」。
-  const late = 'data:text/html,' + encodeURIComponent(
-    '<body><script>setTimeout(function(){var d=document.createElement("div");'
-    + 'd.setAttribute("data-toolbar-search","");document.body.appendChild(d)},2500)<\/script></body>')
-  const probe = () => Boolean(document.querySelector('[data-toolbar-search]'))
-  // 沿用同一個 page:`--single-process` 下 `browser.newPage()` 會開第二個 context 而當場崩,
-  // 這在 lib/launch-browser.mjs 檔頭已有警告(2026-09-20 我自己又踩一次)。
-  await gotoStory(page, late, { settle: 300 })
-  const withSleepOnly = await page.evaluate(probe)
-  await gotoStory(page, late, { waitFor: '[data-toolbar-search]', settle: 100 })
-  const withWait = await page.evaluate(probe)
-  const waitProven = withSleepOnly === false && withWait === true
-  console.log(waitProven
-    ? '✓ selftest:晚到 2.5 秒的元素 —— 固定睡眠 300ms 抓不到、等元素抓得到(修正確實在等,不是睡久一點)'
-    : `✗ selftest:等待對照組失效(固定睡眠抓到=${withSleepOnly} / 等元素抓到=${withWait})—— 這組不成立就無法證明修的是競態`)
-
-  const ok = sabotageReds >= 1 && waitProven
+  // 有格子沒量到時,對照組「紅了」不全是注入造成的,不能宣稱量具有效
+  const ok = sabotageReds >= 1 && instrumentFails.length === 0
   console.log(sabotageReds >= 1 ? `✓ selftest:對照組(拿掉搜尋框下限)讓 ${sabotageReds} 格溢出 / 錯位,量具會紅` : '✗ selftest:對照組沒有任何一格紅 —— 量具無效')
-  await browser.close()
+  if (instrumentFails.length) console.log(`✗ selftest:${instrumentFails.length} 格沒量到 —— 紅的不全是對照組造成的,不能宣稱「紅得對」`)
   process.exit(ok ? 0 : 1)
 }
-rec(measured === STORIES.length * WIDTHS.length, `取樣:${measured} 格(需 ${STORIES.length} 支示範 × ${WIDTHS.length} 個寬度)`)
+// 每一格都要有下落:量到,或以儀器失效記名(上方已紅)—— 兩者都沒有的格子才是這裡要抓的「靜默消失」
+rec(measured + instrumentFails.length === STORIES.length * WIDTHS.length, `取樣:${measured} 格${instrumentFails.length ? `(另 ${instrumentFails.length} 格沒量到,已記儀器失效)` : ''}(需 ${STORIES.length} 支示範 × ${WIDTHS.length} 個寬度)`)
 if (tight) console.log(`  · ${tight} 格是空間連下限都放不下的極窄組合(只驗下限守住;action-bar.spec.md 七:本輪不收合搜尋框)`)
-console.log(failed ? `✗ action-bar-toolbar ${failed} 條失敗(SSOT:action-bar.spec.md 七「搜尋框」)` : `✅ action-bar-toolbar PASS(${measured} 格)`)
-process.exit(failed ? 1 : 0)
+console.log(failed || instrumentFails.length ? `✗ action-bar-toolbar ${failed} 條失敗、${instrumentFails.length} 格沒量到(SSOT:action-bar.spec.md 七「搜尋框」)` : `✅ action-bar-toolbar PASS(${measured} 格)`)
+process.exit(failed || instrumentFails.length ? 1 : 0)

@@ -77,7 +77,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 
 import { tmpdir } from 'node:os'
 import { join, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { spawnSync } from 'node:child_process'
 
@@ -471,18 +471,31 @@ const summarizeProfile = (profile, staticDir) => {
 }
 
 // ── 一次 run ──
-const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_BUSY_MS, hideContent = false }) => {
+const runOnce = async ({ build, mode, base, server = null, sabotage, profile, busyMs = SCROLL_BUSY_MS, hideContent = false }) => {
   const browser = await launchBrowser({ args: SMOOTH === 'off' ? ['--disable-smooth-scrolling'] : [] })
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
     await page.addInitScript(INIT)
-    // 等捲動區本身出現:沒等到才是真的紅。先前只睡 1500ms,慢的 runner 上 START_SAMPLER 會拿不到
-    // `[data-datatable-hscroll]` 而印「story 崩潰或 build 壞了」—— 指控一個不存在的問題。
-    await gotoStory(page, build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`,
-      { waitFor: '[data-datatable-hscroll]', settle: 0 })
-    if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
-    await page.waitForTimeout(1500)
+    // 開 story 一律走共用的 openStory(lib/launch-browser.mjs,2026-09-25):Storybook 回報渲染完成、畫面健康、
+    // **被量的東西**(捲動區裡的列)出現、渲染期間的請求(遠端頭像)全部結束、版面連續靜止 30 個影格才開始取樣。
+    // 取代舊的 gotoStory(回傳值被丟掉)+ 固定睡 1500ms:那 1500ms 是「頁面已進入穩態」的代理 —— 慢的 runner 上
+    // 手勢會落在還沒載完 / 還在排版的頁面上,快的機器上則白等。story 開不起來 → 回 instrumentFail(呼叫端重試一次,
+    // 仍失敗就以 INSTRUMENT-FAIL 點名並紅),不再印「story 崩潰或 build 壞了」指控一個沒被量到的東西。
+    // 負對照的靜態頁(build.url)不是 Storybook iframe:openStory 自動略過 render phase,只驗文件健康與同樣的等待。
+    try {
+      await openStory(page, build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
+        waitFor: '[data-datatable-hscroll] [data-row-index]',
+        requestsSettled: true,
+        // 消融實驗的 CSS 在靜止判定之前注入:量到的是注入後的穩態
+        beforeSettle: CSS_INJECT ? (p) => p.addStyleTag({ content: CSS_INJECT }) : null,
+        settleFrames: 30,
+        notFound: server?.notFound,
+      })
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      return { instrumentFail: error, errors }
+    }
     const cdp = await page.context().newCDPSession(page)
     if (CPU_THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE })
     await cdp.send('Performance.enable')
@@ -506,7 +519,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
     const cast = []
     cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => { cast.push({ data, ts: metadata.timestamp }); cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {}) })
     await cdp.send('Page.startScreencast', { format: 'png', maxWidth: VW, maxHeight: VH, everyNthFrame: 1 })
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(200) // 截圖串流開始送幀之後才出手(串流是頁面已靜止後才開的,這段只等它起跑)
     // 正對照在所有模式都要把**兩層**防空白機制關掉(理由見 gesture 分支的長註解):
     // 只忙等主執行緒已經不會產生空白,只關一層則變成在量機器快慢。
     if (sabotage) await page.addStyleTag({ content: '[data-row-shell-band],[data-row-shell]{display:none !important}' })
@@ -532,7 +545,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
       await cdp.send('Input.synthesizeScrollGesture', { x: setup.cx, y: setup.cy, yDistance: -GESTURE_PX, speed: GESTURE_SPEED, gestureSourceType: 'mouse', preventFling: true })
       const wallMs = Date.now() - t0
       const gestureEnd = await page.evaluate(() => performance.now())
-      await page.waitForTimeout(SETTLE_EFFECTIVE)
+      await page.waitForTimeout(SETTLE_EFFECTIVE) // 停手後的觀測窗(長過補齊期限):量「多久補齊」本身就要一段固定長度的窗
       ticks = { applied: 1, wallMs }
       gesture = { gestureEnd }
     } else if (mode === 'mouse') {
@@ -553,7 +566,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
       ticks = await page.evaluate(RUN_TICKS, { ticks: TICKS, tickMs: TICK_MS, deltas: DELTAS, target: mode, busyAt: sabotage ? BUSY_AT : null, busyMs: BUSY_MS })
       if (ticks.noTarget) return { noTarget: true }
     }
-    if (mode !== 'gesture') await page.waitForTimeout(SETTLE_MS)
+    if (mode !== 'gesture') await page.waitForTimeout(SETTLE_MS) // 停手後的觀測窗:繼續取樣,看空白要多久才補回
     // screencast 在所有模式都要收(2026-09-12):`gestureEnd` 只有 gesture 分支自己量得到,
     // 其餘模式用「最後一次 wheel 事件時間」當等價點 —— `analyzeGesture` 內部本來就會用
     // DOM 取樣裡最後一次 scrollTop 變動覆寫它,這裡給的是 fallback。
@@ -589,7 +602,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
       const el = document.querySelector('[data-datatable-hscroll]')
       if (el) el.scrollTop += 1
     }).catch(() => {})
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(400) // 推一格之後等那一次 commit 把 data-shell-state 寫回(量測已結束,這段不影響任何判定值)
     const shellCost = await page.evaluate(() => {
       const el = document.querySelector('[data-datatable-hscroll]')
       const st = el?.getAttribute('data-shell-state')
@@ -671,11 +684,11 @@ try {
         writeFileSync(join(ctrlDir, 'control.html'), `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff"><div style="height:93px"></div><div data-datatable-hscroll style="height:690px;overflow:auto;position:relative;width:1300px"><div style="height:20000px;position:relative">${rowsHtml}</div></div></body>`)
         const ctrl = await serve(ctrlDir)
         try {
-          const rc = await runOnce({ build: { label: `${build.label}/負對照(靜態 500 列)`, dir: ctrlDir, url: '/control.html' }, mode, base: ctrl.base, sabotage: false, profile: false })
-          if (rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
+          const rc = await runOnce({ build: { label: `${build.label}/負對照(靜態 500 列)`, dir: ctrlDir, url: '/control.html' }, mode, base: ctrl.base, server: ctrl.server, sabotage: false, profile: false })
+          if (rc.instrumentFail || rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來${rc.instrumentFail ? `:${rc.instrumentFail.message}` : ''}`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
         } finally { await ctrl.server.stop() }
       }
-      for (let i = 1; i <= n; i++) for (const { build, base } of (i % 2 === 1 ? served : [...served].reverse())) {
+      for (let i = 1; i <= n; i++) for (const { build, base, server } of (i % 2 === 1 ? served : [...served].reverse())) {
         // 崩潰 / 沒溢出 = **儀器沒跑起來**(這次什麼都沒量到),不是量到壞結果 —— 重試一次再判失敗。
         // 2026-09-11 錨例:同一個 job 多 build 一份參考 storybook 之後 runner 更熱,branch 有一趟 story 沒渲染出來。
         // 正對照的干擾要**先輕後重**(2026-09-15)。干擾越重,合成器能送出的幀就越少 ——
@@ -684,15 +697,17 @@ try {
         // 所以先跑「只關掉兩層防空白機制、不忙等」:本機實測仍有 66-67 幀、7-8 幀空白,足以判定偵測器會紅。
         // 只有輕量這趟沒發紅,才加上忙等再試 —— 退回去就是上一版的行為,不會比原本弱。
         const firstBusy = SELFTEST ? 0 : SCROLL_BUSY_MS
-        let r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
-        if (r.crashed || r.noOverflow || r.noTarget) {
-          console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${r.crashed ? 'story 沒渲染' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'}),重試一次`)
-          r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
+        let r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
+        if (r.instrumentFail || r.crashed || r.noOverflow || r.noTarget) {
+          // 重試行只印原因、不印 INSTRUMENT-FAIL 標記:重試成功時這一趟是有量到的,標記會讓整次執行被讀成儀器失效
+          const why = r.instrumentFail ? `story 沒開起來(${r.instrumentFail.kind}):${r.instrumentFail.detail}` : r.crashed ? '開始取樣時找不到捲動區' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'
+          console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${why}),重試一次`)
+          r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
         }
         const fired = (x) => x.g && x.g.presented >= 20 && x.g.blankFrames >= 3
         if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !fired(r)) {
           console.log(`   ⟳ 正對照輕量干擾(不忙等)只量到 呈現 ${r.g.presented} 幀 / 空白 ${r.g.blankFrames} 幀 —— 加上每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms 再試一次`)
-          const heavy = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: SCROLL_BUSY_MS })
+          const heavy = await runOnce({ build, mode, base, server, sabotage: true, profile: false, busyMs: SCROLL_BUSY_MS })
           if (heavy.g && !heavy.crashed) r = heavy
         }
         // **第三階:這台機器重現不出真實空白時,改證明「偵測器會紅」**(2026-09-15)。
@@ -706,16 +721,19 @@ try {
         // 報告會明說用的是哪一階,不讓第三階被誤讀成第一階。
         if (SELFTEST && r.g && !fired(r)) {
           console.log(`   ⟳ 這台機器重現不出真實空白(呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀)—— 改用「強制隱藏列內容」驗偵測器本身`)
-          const forced = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: 0, hideContent: true })
+          const forced = await runOnce({ build, mode, base, server, sabotage: true, profile: false, busyMs: 0, hideContent: true })
           if (forced.g && !forced.crashed) r = forced
         }
         // 第三階每次都驗(M32「儀器要先有對照組」):前兩階已經紅了也再跑一趟強制隱藏,證明「偵測器會紅」
         // 這件事本身不靠機器慢。只多一趟 runOnce,結果掛在 r 上讓下方 selftest 報告多印一行(理由見檔頭 SCROLL_BUSY_MS 下方)。
         if (SELFTEST && r.g && !r.crashed && !r.forcedInk) {
-          const forced = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: 0, hideContent: true })
+          const forced = await runOnce({ build, mode, base, server, sabotage: true, profile: false, busyMs: 0, hideContent: true })
           r.tier3 = forced.g && !forced.crashed ? { presented: forced.g.presented, blankFrames: forced.g.blankFrames } : null
+          if (forced.instrumentFail) console.log(`✗ 第三階對照:${forced.instrumentFail.message}`)
         }
-        if (r.crashed) { console.log(`✗ ${build.label}/${mode}:story 沒有渲染出捲動區(story 崩潰或 build 壞了)${r.errors?.length ? ':' + r.errors[0] : ''}`); failed++; continue }
+        if (r.instrumentFail) { console.log(`✗ ${build.label}/${mode}:${r.instrumentFail.message}`); failed++; continue }
+        // openStory 已等到捲動區與列出現,取樣開始時它卻不見了 —— 照實報(附 pageerror),不猜是 story 還是 build
+        if (r.crashed) { console.log(`✗ ${build.label}/${mode}:開始取樣時找不到捲動區(openStory 已等到它和列出現,之後才消失)${r.errors?.length ? ':pageerror ' + r.errors[0] : ''}`); failed++; continue }
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
         if (r.noTarget) { console.log(`✗ ${build.label}/${mode}:找不到 dispatch 目標(pinned 模式需要左釘選面板)`); failed++; continue }
         if (i === 1 && mode === MODES[0]) console.log(`   ${build.label}:${build.dir}\n   story 起點:中間區掛 ${r.setup.rows} 列、視窗高 ${r.setup.H}px、可捲 ${r.setup.scrollHeight}px、左釘選面板 ${r.setup.hasLeft ? '有' : '無(改用中間區自己的列當視窗內集合,列缺恆 0)'}、React hook ${r.setup.hookOk ? '接上' : '沒接上(commits 無效)'}${r.setup.longtaskErr ? '、longtask 觀測失敗 ' + r.setup.longtaskErr : ''}`)
@@ -725,7 +743,8 @@ try {
       }
       if (PROFILE_DIR && !SELFTEST) for (const { build, base, server } of served) {
         mkdirSync(PROFILE_DIR, { recursive: true })
-        const r = await runOnce({ build, mode, base, sabotage: false, profile: true })
+        const r = await runOnce({ build, mode, base, server, sabotage: false, profile: true })
+        if (r.instrumentFail) console.log(`   [${build.label}/${mode} profile] 沒量到(profile 只是診斷,不影響判定):${r.instrumentFail.message}`)
         if (r.profile) {
           const sum = summarizeProfile(r.profile, server.snapshot?.dir ?? build.dir)
           writeFileSync(join(PROFILE_DIR, `${build.label}-${mode}.cpuprofile`), JSON.stringify(r.profile))

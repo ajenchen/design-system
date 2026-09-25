@@ -33,10 +33,26 @@ import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const OUT_DIR = resolve('tmp/scrollbar-probe')
 
-// 4 個有 V+H scroll 的 story（涵蓋 type 多樣 / 多 size / pinned / virtual)
+// 4 則 story(涵蓋 type 多樣 / 多 size / pinned / virtual),每一則在 900×600 下都必須真的長出捲軸(見下方 noScrollbar)。
+// **2026-09-25 更正兩個早已不存在的 id**(原本這兩則每次都以儀器失效「Couldn't find story matching」收場,量到 2/4)。
+// 挑替代品的判準是**捲軸幾何**(這支 probe 唯一在量的東西),不是 story 名字;下列數字是 900×600、注入 17px 捲軸後
+// 第一個 `[data-datatable-hscroll]` 的實測(offsetWidth − clientWidth / offsetHeight − clientHeight、scrollWidth vs clientWidth):
+//   - 原 `展示--column-types`:9 種欄型別排在一張表(160+90+100+110+80+110+180+140+160 = 1130px)、height="auto"
+//    → 水平溢出、只有水平捲軸。它**不是搬家而是被刪了**:2026-04(78199f75)時「展示」與「設計規格」兩則 ColumnTypes 並存,
+//     「展示」那則在 e524dc99(2026-05-17,正是本檔建立的那一批)刪除 —— 本檔從建立那天起這個 id 就不存在。
+//     同名的 `設計規格--column-types` 是另一則(5 欄共 700px):實測 scrollWidth 849 = clientWidth、兩向捲軸都是 0,
+//     **不溢出、沒有捲軸可量**。改用 `展示--inline-edit`:13 種欄型別全在一張表(data-table.stories.tsx InlineEdit,
+//     data-table-invariants.mjs 也以它當「全型別」覆蓋)、height="auto",實測 scrollWidth 1890 > 866、水平捲軸 17 —— 與原本同一種幾何。
+//   - 原 `展示--all-sizes`(AllSizes,78199f75 由 SizeVariants 改名):sm / md / lg 三張 `DataTable columns={baseColumns}
+//     data={sampleData.slice(0, 3)} height="auto"`,baseColumns 合計 880px → 只有水平捲軸。現存的 size 矩陣
+//     `設計規格--row-height-matrix` 只有 3 欄(460px):實測兩向捲軸都是 0,沒有幾何可量;`設計規格--inspector` 三個 size 也都是 0。
+//     改用 `展示--container-height`:第一張表就是 `DataTable columns={baseColumns} data={sampleData} height="auto"`
+//     —— 同一組 baseColumns(scrollWidth 880)、同樣 auto 高,實測水平捲軸 17、垂直 0,與原本同一種幾何。
+//     **代價**:size 軸沒有任何現存 story 同時會溢出,所以這支 probe 不再涵蓋 sm / lg(量的是預設 md)。
+//   probeStory 只量頁面上**第一個** `[data-datatable-hscroll]`(改前改後都一樣)。
 const STORIES = [
-  { id: 'design-system-components-datatable-展示--column-types', label: 'column-types' },
-  { id: 'design-system-components-datatable-展示--all-sizes', label: 'all-sizes' },
+  { id: 'design-system-components-datatable-展示--inline-edit', label: 'inline-edit-all-types' },
+  { id: 'design-system-components-datatable-展示--container-height', label: 'container-height' },
   { id: 'design-system-components-datatable-展示--pinned-columns', label: 'pinned-columns' },
   { id: 'design-system-components-datatable-展示--virtual-scroll', label: 'virtual-scroll' },
 ]
@@ -143,15 +159,24 @@ async function main() {
   const report = []
   const notMeasured = []
   const errored = []
+  // 量到了、但這則在 probe 的 viewport 下**根本沒有捲軸**:沒有東西可以判「溢不溢出圓角」—— 不是「沒溢出」(M37:
+  // 沒觀察到 ≠ 沒發生)。2026-09-25 實測同名的 `設計規格--column-types` 與 size 矩陣 `設計規格--row-height-matrix` 就是這樣:
+  // 開得起來、印得出數字,卻一條捲軸都沒有 —— 換成它們的話原本會印「✓ probe complete」。
+  const noScrollbar = []
   try {
-    // 縮小 viewport(900×600)強迫 column-types(內容寬 ~1400)+ virtual(高 500+) overflow
+    // 縮小 viewport(900×600)強迫全型別表(inline-edit,內容寬 1890)/ baseColumns(880)水平溢出 + virtual(高 500+)垂直溢出
     // 從而真的看到 V+H scrollbar 一起出現的 corner 區
     // 只開一個 context、一個 page 逐 story 導覽(--single-process 沙箱下不開第二個 context;launch-browser.mjs 檔頭)
     const ctx = await browser.newContext({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 2 })
     const page = await ctx.newPage()
     for (const story of STORIES) {
       try {
-        report.push(await probeStory(page, story, base, server?.notFound ?? null))
+        const measured = await probeStory(page, story, base, server?.notFound ?? null)
+        report.push(measured)
+        if (!(measured.scrollbar?.width > 0) && !(measured.scrollbar?.height > 0)) {
+          console.log(`  ✗ ${story.label}:900×600 下沒有任何捲軸(垂直 ${measured.scrollbar?.width ?? '?'} / 水平 ${measured.scrollbar?.height ?? '?'}px)—— 這則沒有捲軸幾何可量`)
+          noScrollbar.push({ story: story.label, id: story.id, scrollbar: measured.scrollbar ?? null })
+        }
       } catch (e) {
         if (e instanceof StoryRenderInstrumentError) {
           console.log(`  ✗ ${e.message}`)
@@ -167,11 +192,11 @@ async function main() {
     await server?.stop()
   }
 
-  await writeFile(resolve(OUT_DIR, 'report.json'), JSON.stringify({ measured: report, notMeasured, errored }, null, 2))
+  await writeFile(resolve(OUT_DIR, 'report.json'), JSON.stringify({ measured: report, notMeasured, errored, noScrollbar }, null, 2))
   console.log(`\noutput: ${OUT_DIR}/`)
-  if (notMeasured.length || errored.length) {
-    // 沒量到 ≠ 沒溢出:列出每一則,不印「complete」
-    console.log(`✗ probe 不完整:量到 ${report.length}/${STORIES.length} 則;沒量到(儀器失效,不是產品裁決)${notMeasured.length} 則${notMeasured.length ? `:${notMeasured.map((n) => n.story).join(', ')}` : ''};量測途中丟例外 ${errored.length} 則`)
+  if (notMeasured.length || errored.length || noScrollbar.length) {
+    // 沒量到 ≠ 沒溢出;沒有捲軸 ≠ 捲軸沒溢出:列出每一則,不印「complete」
+    console.log(`✗ probe 不完整:量到 ${report.length}/${STORIES.length} 則;沒量到(儀器失效,不是產品裁決)${notMeasured.length} 則${notMeasured.length ? `:${notMeasured.map((n) => n.story).join(', ')}` : ''};量測途中丟例外 ${errored.length} 則;沒有捲軸可量 ${noScrollbar.length} 則${noScrollbar.length ? `:${noScrollbar.map((n) => n.story).join(', ')}` : ''}`)
     if (server?.notFound.length) console.log(`同源 404:${[...new Set(server.notFound)].join(', ')}`)
     process.exit(1)
   }

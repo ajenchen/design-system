@@ -12,13 +12,15 @@
  *   等 3.5 秒:body 不得有 `[aria-label="歷史對話"]`(歷史浮層)、`#storybook-docs` 子節點必為 0、`#storybook-root` 已有 story、焦點不在浮層裡。
  *   對照組(`--selftest`):把 served preview chunk 裡守衛的 `hasAttribute("hidden")` 換成永遠 false 的屬性名 → 殭屍與浮層必須重現(儀器先證明會紅);
  *   另跑一次不延遲的正常切換,確認正常路徑 docs 仍會渲染(守衛沒有誤殺)。
- *   「真的渲染完成」一律有訊號(2026-09-25):前置以 openStory 開兩則 story、管理介面以 openStory 等側欄節點、切換後等 preview 的
- *   currentRender 是那一則且 finished;延遲的 DocsRenderer chunk 必須真的送達才量。任一等不到 = 儀器失效 exit 1(點名、附 404),不當產品結果。
+ *   「真的渲染完成」一律有訊號(2026-09-25):前置以 openStory 開兩則 story、管理介面以 openStory 等側欄節點、進站 / 切換後 / 重載後
+ *   都以 lib 的 waitForStoryRender(openStory 第 3 步的同一份實作)在 preview iframe 裡等**那一則** finished;點側欄節點後讀節點自己的
+ *   aria-expanded(不再「點完睡 300ms 再數子節點」);延遲的 DocsRenderer chunk 必須真的送達才量。
+ *   任一等不到 = 儀器失效 exit 1(點名、附 404),不當產品結果。
  *   node scripts/storybook-docs-race-invariant.mjs [--static=<dir>] [--selftest] [--delay=3000]
  */
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, waitForStoryRender } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -50,27 +52,40 @@ const instrumentFail = (what, reason, server, ledgerStart = 0) => {
   return new DocsRaceInstrumentError(`INSTRUMENT-FAIL ${what} —— ${reason}${missing.length ? `;同源 404:${missing.join(', ')}` : ''}。這是儀器失效(沒量到),不是產品裁決,但這次不能算通過`)
 }
 /**
- * 管理介面裡「點側欄切到另一則 story」是 Storybook channel 驅動的,preview iframe 沒有導覽可以交給 openStory(它只能 goto 一個 page)。
- * 這裡用與 openStory 同一組 Storybook 訊號在 preview frame 裡判定:`__STORYBOOK_PREVIEW__.currentRender` 是**這一則**、phase = finished、
- * body 是 sb-show-main;錯誤頁 / 無預覽頁直接停。逾時只是「等不到」的上限。(lib/launch-browser.mjs 若日後輸出 frame 版判定,這裡改用它。)
+ * 管理介面裡「點側欄切到另一則 story」是 Storybook channel 驅動的,preview iframe 沒有導覽可以交給 openStory。
+ * 判定一律走 lib 的 waitForStoryRender(openStory 第 3 步的同一份實作,M17):preview iframe 裡 `__STORYBOOK_PREVIEW__.currentRender`
+ * 是**這一則**、phase = finished、body 是 sb-show-main;錯誤頁 / 無預覽頁當場停;preview 途中整個 reload 也照樣續等。
+ * 逾時只是「等不到」的上限。等不到 = 儀器失效(DocsRaceInstrumentError),附本次切換之後的同源 404。
  */
-const waitPreviewStory = async (page, storyId, timeout) => {
-  const t0 = Date.now()
-  let last = null
-  while (Date.now() - t0 < timeout) {
-    last = await evalIn(page, (id) => {
-      const cls = document.body?.classList
-      const render = window.__STORYBOOK_PREVIEW__?.currentRender
-      const error = [(document.getElementById('error-message')?.textContent || '').trim(), (document.getElementById('error-stack')?.textContent || '').trim().split('\n')[0]].filter(Boolean).join(' | ').slice(0, 300)
-      if (cls?.contains('sb-show-errordisplay')) return { done: true, ok: false, why: `Storybook 顯示錯誤頁:${error || '(無錯誤原文)'}` }
-      if (cls?.contains('sb-show-nopreview')) return { done: true, ok: false, why: 'Storybook 顯示「無預覽」頁' }
-      if (render?.id === id && render.phase === 'finished' && cls?.contains('sb-show-main')) return { done: true, ok: true }
-      return { done: false, why: `currentRender = ${render?.id ?? '(無)'} / ${render?.phase ?? '(無 phase)'};body class = ${document.body?.className || '(無)'}` }
-    }, storyId)
-    if (last.done) return last
-    await sleep(100)
+const previewRendered = async (page, storyId, { what, timeoutMs, ledgerStart }) => {
+  const iframe = await page.waitForSelector('#storybook-preview-iframe', { state: 'attached', timeout: timeoutMs }).catch(() => null)
+  const frame = await iframe?.contentFrame().catch(() => null)
+  if (!frame) throw instrumentFail(`${what}「${storyId}」`, `${timeoutMs / 1000} 秒內等不到 preview iframe`, server, ledgerStart)
+  try {
+    return await waitForStoryRender(frame, { storyId, label: `${storyId}(${what})`, timeoutMs, notFound: server.notFound, notFoundFrom: ledgerStart })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    throw new DocsRaceInstrumentError(error.message)
   }
-  return { ok: false, why: `${timeout / 1000} 秒內等不到渲染完成(最後看到:${last?.why ?? '讀不到 preview'})` }
+}
+/**
+ * 點元件節點直到它展開(展開 = 已開 Docs、子節點在;已展開的節點再點只會收合,收合了就再點一次)。
+ * 判定讀節點**自己的** aria-expanded:點擊的結果就寫在那個屬性上,不再「點完睡 300ms 再數子節點」(慢的機器上 300ms 可能還沒重畫,
+ * 於是少點一次、節點被收合,接下來點 story 會以 Playwright 逾時崩掉 —— 被讀成別的問題)。
+ */
+const expandComponentNode = async (page) => {
+  const node = page.locator(sel(P)).first()
+  for (let clicks = 0; clicks < 2; clicks++) {
+    const before = await node.getAttribute('aria-expanded')
+    await node.click()
+    const flipped = await page.waitForFunction(([id, prev]) => {
+      const value = document.getElementById(id)?.getAttribute('aria-expanded')
+      return value != null && value !== prev
+    }, [P, before], { timeout: 10000 }).then(() => true, () => false)
+    if (!flipped) throw instrumentFail(`側欄節點「${P}」`, `點擊後 10 秒內 aria-expanded 沒有改變(停在 ${before})`, server)
+    if ((await node.getAttribute('aria-expanded')) === 'true') return
+  }
+  throw instrumentFail(`側欄節點「${P}」`, '點兩次仍不是展開狀態', server)
 }
 const MEASURE = () => {
   const docs = document.getElementById('storybook-docs'), root = document.getElementById('storybook-root')
@@ -128,17 +143,14 @@ try {
       })
       await openManager(page)
       // 從 task-assistant 進站:它在 preview 裡真的渲染完成,才開始點(原本靠上面那 800ms 剛好夠)
-      const entered = await waitPreviewStory(page, TASK, 30000)
-      if (!entered.ok) throw instrumentFail(`進站 story「${TASK}」`, entered.why, server)
+      await previewRendered(page, TASK, { what: '進站 story', timeoutMs: 30000, ledgerStart: 0 })
       const ledger = server.notFound.length
-      // 點元件節點 → 開 Docs(已展開的節點再點只會收合,收合了就再點一次)
-      await page.locator(sel(P)).first().click(); await sleep(300) // 等側欄展開 / 收合的重畫,再看子節點在不在
-      if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
+      // 點元件節點 → 開 Docs
+      await expandComponentNode(page)
       await sleep(500) // 情境本身:Docs 載入**進行中**才點進 story(競態的觸發條件),不是等渲染
       await page.locator(sel(DEMO)).first().click()
       // story 先渲染完成(原本只等 #storybook-root 有子節點、而且等不到也照樣往下量 —— 沒量到會被讀成產品結果)
-      const shown = await waitPreviewStory(page, DEMO, 20000)
-      if (!shown.ok) throw instrumentFail(`切換後的 story「${DEMO}」`, shown.why, server, ledger)
+      await previewRendered(page, DEMO, { what: '切換後的 story', timeoutMs: 20000, ledgerStart: ledger })
       // 再等「延遲的 chunk 到達之後」的那段時間(殭屍就是在那之後長出來的):這段是給**不該發生的事**發生的機會,不是等渲染
       await sleep(Math.max(3500, delayMs + 1500))
       if (delayMs > 0 && routed.delivered === 0) {
@@ -151,8 +163,7 @@ try {
       // 不是守衛誤殺正常 docs。同期證據:同一輪 CI 裡 DataTable 的閘量到 main 自己的長工中位就有 372ms。
       // 重試一次仍然空 → 照樣紅。
       const openDocs = async () => {
-        await page.locator(sel(P)).first().click(); await sleep(300) // 等側欄展開 / 收合的重畫,再看子節點在不在
-        if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
+        await expandComponentNode(page)
         return waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
       }
       // 重試 1 次 → 3 次(2026-09-12,第四次誤紅)。這個 docs 頁要渲染 15 支 story、其中 9 支含 DataTable,
@@ -170,8 +181,10 @@ try {
         if ((docsPage?.docsChildren ?? 0) > 0) break
         if (attempt < 3) {
           console.log(`   ⟳ Docs 頁量到 0 個子節點(這一趟儀器沒跑起來),重載後重試 ${attempt}/3`)
+          const retryLedger = server.notFound.length
           await openManager(page)
-          await sleep(1200) // 重載後讓 preview 起來再點(docs 頁本身的渲染由 openDocs 的等待判定)
+          // 重載後等 preview 裡的進站 story 真的渲染完成再點(原本固定睡 1200ms 當「preview 起來了」的代理);docs 頁本身的渲染由 openDocs 的等待判定
+          await previewRendered(page, TASK, { what: `重載後(第 ${attempt} 次重試)的進站 story`, timeoutMs: 30000, ledgerStart: retryLedger })
         }
       }
       return { m, docsPage, routed }

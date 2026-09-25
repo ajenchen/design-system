@@ -47,6 +47,7 @@
  *   儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,不再混進「前提失敗」,--selftest 下也不算「紅得對」。
  *   假時鐘暫停段:Storybook 的 afterEach(a11y addon 在那一步跑 axe,靠計時器推進)永遠走不到 finished(實測停在 afterEach),
  *   那段改等「這一則的 phase 至少到 afterEach」—— story 渲染與 play 都已完成,同一個性質,只是換成假時鐘下看得到的終點訊號。
+ *   這個判定走 openStory 的 finishedPhases 選項(同一份實作:錯誤頁 / 無預覽頁當場停),不再是本檔自己的 phase 檢查。
  */
 import { readFileSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
@@ -199,19 +200,19 @@ async function section(fn) {
 
 // 假時鐘暫停後才為 true(見下方假時鐘段)
 let clockPaused = false
-// 頁面端:這一則 story 的渲染與 play 都已完成(phase 至少到 afterEach)。假時鐘暫停時 afterEach 的 a11y 檢查靠計時器推進、
-// 永遠走不到 finished(實測停在 afterEach),所以那段以此為「渲染完成」的終點訊號。
-const playedUnderPausedClock = (id) => { const r = window.__STORYBOOK_PREVIEW__?.currentRender; return !!r && r.id === id && (r.phase === 'afterEach' || r.phase === 'finished') }
-/** openStory 的選項:平常 = 等 Storybook 回報渲染完成;假時鐘暫停時 = 等 phase 到 afterEach(render-health 上限放寬到 30 秒:
- *  暫停的時鐘下 story 在 load 之後才開始渲染,實測最慢約 4 秒,5 秒的預設上限在忙的機器上會誤判空畫面)。 */
-const openOptions = (id) => (clockPaused
-  ? { requireRenderFinished: false, waitFor: playedUnderPausedClock, waitForArg: id, waitForPolling: 100, healthTimeoutMs: 30_000, notFound: server.notFound }
+/** openStory 的選項:平常 = 等 Storybook 回報渲染完成(finished)。假時鐘暫停時 afterEach 的 a11y 檢查(axe)靠計時器推進、
+ *  永遠走不到 finished(實測停在 afterEach)→ 以 lib 的 finishedPhases 額外接受 'afterEach'(play 跑完之後才會走到的 phase:
+ *  story 渲染與 play 都已完成,同一個性質)。判定仍是 openStory 第 3 步同一份實作 —— 錯誤頁 / 無預覽頁 / 別的 story 當場以儀器失效停;
+ *  原本本檔自己寫的 phase 檢查(requireRenderFinished:false + waitFor 函式)沒有錯誤頁捷徑,壞掉的 story 要等滿 30 秒才以 wait-for-timeout 報出,
+ *  而且為了補那段空窗把 render-health 上限放寬到 30 秒 —— 第 3 步已等到渲染完成,那個放寬不再需要。 */
+const openOptions = () => (clockPaused
+  ? { finishedPhases: ['afterEach', 'finished'], notFound: server.notFound }
   : { notFound: server.notFound })
 
 /** 開 story 並打開選單:回 true / false(false = story 渲染了但選單沒開 → 呼叫端判「前提失敗」);story 本身開不起來丟 StoryRenderInstrumentError(section 接)。 */
 async function open(id, waitSel = '[cmdk-list]') {
   // 渲染完成(含 play)+ render-health —— 取代「load + 等觸發點 15 秒(逾時被吞)」
-  await openStory(page, story(id), openOptions(id))
+  await openStory(page, story(id), openOptions())
   // 訊息列在 listbox 外,0 筆時 [cmdk-list] 高度 0 → Playwright 預設等「可見」會逾時;一律等「掛上 DOM」
   let ok = !!(await page.$(waitSel))
   if (!ok) {
@@ -522,7 +523,7 @@ clockPaused = true // 之後的 openStory 改等 phase 到 afterEach(見 openOpt
 await section(async () => {
   const L = 'PeoplePicker 名錄非同步載入'
   // 渲染與 play 完成 + render-health(假時鐘暫停:終點訊號 = phase 到 afterEach)—— 取代「load + 等觸發點 15 秒(逾時轉成前提失敗)」
-  await openStory(page, story(ID.peopleAsync), openOptions(ID.peopleAsync))
+  await openStory(page, story(ID.peopleAsync), openOptions())
   const ok = !!(await page.$('#storybook-root [role="combobox"]'))
   if (!ok) bad(`${L} 前提:觸發點有渲染`)
   else {

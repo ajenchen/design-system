@@ -9,26 +9,41 @@
  *   紅: 任一格的 ::after 陰影(粗細 / 顏色 / 單邊或整圈)、圓角、clip-path、停留日 button 的 ring、鍵盤 / showTime 路徑
  *        與期望不符即 exit 1,訊息指名哪一格哪一項;--selftest 注入「td::after 陰影歸零」後同一組斷言必須大量紅(對照組)。
  *   綠: 三則預覽 story + showTime story 的全部斷言相符時綠;同一份 storybook-static 重複跑結果恆等(無時鐘、無取樣)。
+ *   儀器失效: 任一則 story 沒渲染完成(不存在的 id / story 檔 404 / play 丟錯 / 等的元素不出現 / 版面不靜止)→ 印 INSTRUMENT-FAIL、
+ *        點名 story 與同源 404 帳本、exit 1 —— 不是產品裁決,也不算通過;--selftest 下同樣紅,不得讀成「對照組被抓到」。
  *
  * Run: `node scripts/datepicker-range-preview.mjs [--selftest]`
  */
-import { resolve } from 'node:path'
-import { launchBrowserOrSkip, gotoStory } from './lib/launch-browser.mjs'
-import { serveStaticDir, attachStaticRoute } from './lib/sandboxed-verify-browser.mjs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
-const ROOT = process.cwd()
-const served = await serveStaticDir(resolve(ROOT, 'storybook-static'), { port: 6188 })
-const browser = await launchBrowserOrSkip()
+const STATIC = join(process.cwd(), 'storybook-static')
+// 沒有建置 → MISSING-BUILD exit 2(缺前置,gate-meta lane 的拋棄式快照裡本來就沒有)
+requireStorybookBuild(join(STATIC, 'iframe.html'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再用 serveStaticDir 讀活的 storybook-static、固定 6188 埠 ——
+// 2026-09-24 別的 agent 同時 build-storybook 清空輸出目錄,讀活目錄的閘就把「儀器沒拿到檔」讀成「元件沒渲染」。
+// 快照不完整 / 複製期間被重建 → 這裡丟 INSTRUMENT-FAIL(不是產品裁決)。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-await attachStaticRoute(page, served)
-const story = (id) => `${served.origin}/iframe.html?id=${encodeURIComponent(`design-system-components-datepicker-展示--${id}`)}&viewMode=story`
+const storyUrl = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
+const story = (id) => storyUrl(`design-system-components-datepicker-展示--${id}`)
+// 開 story:原本是「元素出現 + 固定睡 300ms」—— 固定睡眠是「浮層開好了」的代理(M37),而且 story 檔缺了、
+// play 丟錯時只會在後面某一格「找不到格 / 陰影 none」紅,指控一個不存在的產品問題。改由共用的 openStory(M17):
+// Storybook 回報渲染完成(含 play:開浮層、標記停留目標)→ 被量的元素出現 → 連續 SETTLE_FRAMES 個影格無 DOM 變動、
+// 無進行中的有限長度動畫(浮層開啟動畫跑完才量 ::after 陰影與焦點框)。等不到 = StoryRenderInstrumentError,由最下方統一收。
+const SETTLE_FRAMES = 10
+const open = (url, waitFor) => openStory(page, url, { waitFor, settleFrames: SETTLE_FRAMES, notFound: server.notFound })
 
 let fail = 0
 // 每條斷言標一個「家族」:frame(區間框)/ focus(焦點框幾何)/ crossing(跨縫不閃)/ outside(兩月不渲染鄰月)/ single(單月鄰月淡字)。
 // selftest 的對照組分別弄壞這五樣,必須**每一家都至少紅一條**;只看總數 fail > 0 會讓「框那家紅了、焦點那家其實量不到」混過去
 const failedFamilies = new Set()
-const ok = (cond, msg, family = 'frame') => { if (cond) console.log(`✓ ${msg}`); else { console.log(`✗ ${msg}`); fail++; failedFamilies.add(family) } }
+let checked = 0
+const ok = (cond, msg, family = 'frame') => { checked++; if (cond) console.log(`✓ ${msg}`); else { console.log(`✗ ${msg}`); fail++; failedFamilies.add(family) } }
 
 /** 一格的框:td ::after 的陰影字串、兩側圓角、clip-path;button 的 ring 展開量(box-shadow 最大 spread)。
  *  兩月並列時月首月尾的日子會出現兩次(鄰月的 outside 格也掛同一個 data-day),一律量本月那一格。 */
@@ -106,7 +121,7 @@ const days = (from, to) => { const out = []; const d = new Date(from + 'T00:00:0
 
 async function runSuite() {
   // ── 正在選結束日(已選 5/4–5/12)──
-  await gotoStory(page, story('range-preview-extend'), { waitFor: '[data-visual-hover-target]', settle: 300 })
+  await open(story('range-preview-extend'), '[data-visual-hover-target]')
   // 對照組把框、焦點線、跨縫機制、鄰月隱藏都弄壞:框歸零、焦點框改回往外畫、
   // 拔掉 `data-day-grid` 錨點(DateGrid 判斷「指標還在不在格陣裡」就是靠它;拔掉 = 縫隙裡照舊清掉停留日 → 框閃)、
   // 往一個鄰月格塞一顆 button → 框 / 焦點 / 跨格 / 鄰月 四類斷言都必須紅。
@@ -227,7 +242,7 @@ async function runSuite() {
   ok(before === true, '上膛:順序不合的 5/3 在選結束日時是 disabled(不可點),沒有框也沒有圈')
 
   // ── 正在選開始日 ──
-  await gotoStory(page, story('range-preview-start'), { waitFor: '[data-visual-hover-target]', settle: 300 })
+  await open(story('range-preview-start'), '[data-visual-hover-target]')
   if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
   await blurFocus()
   await hover('2026-05-01')
@@ -238,7 +253,7 @@ async function runSuite() {
   await expectNoFrame('順序不合(5/13 在結束日之後)不預覽', ['2026-05-12', '2026-05-13'])
 
   // ── showTime 單月(已選 4/15 09:00–4/20 18:00,開開始日那一端)──
-  await gotoStory(page, story('show-time-range-popover-open'), { waitFor: '[data-day="2026-04-18"]', settle: 300 })
+  await open(story('show-time-range-popover-open'), '[data-day="2026-04-18"]')
   if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
   await blurFocus()
   await hover('2026-04-18')
@@ -250,7 +265,7 @@ async function runSuite() {
   ok(single !== null && single === (await tokenColor('--fg-muted')), `單月:鄰月日子顯示且淡字(${single};token ${await tokenColor('--fg-muted')})`, 'single')
 
   // ── 對照組:沒上膛(兩端都空)→ 停留沒有框,單格 hover 圈照畫(壓制不是無條件的)──
-  await gotoStory(page, story('range-picker'), { waitFor: 'button[aria-haspopup="dialog"]', settle: 300 })
+  await open(story('range-picker'), 'button[aria-haspopup="dialog"]')
   await page.locator('button[aria-haspopup="dialog"]').nth(2).click() // 第二個 Range(「Empty 初始狀態」)的開始欄
   // 兩月視圖的第一個 td 是不渲染的鄰月格(data-hidden,visibility hidden),waitForSelector 等「第一個可見」會逾時 → 明確等可見格
   await page.waitForSelector('td[data-day]:not([data-hidden])', { timeout: 5000 }); await page.waitForTimeout(200)
@@ -261,7 +276,7 @@ async function runSuite() {
   ok(bare && bare.ringMax === 1.5 && noShadow(bare), `沒上膛:${bareDay} 停留只有單格圈、沒有框(ring ${bare ? bare.ringMax : '?'};陰影 ${bare ? bare.shadow : '?'})`)
 
   // ── DateGrid 自己的 mode="range"(RDP 把中段也標成 selected):端點 = 白線退 3px、中段要壓回一般 2px 藍線 ──
-  await gotoStory(page, `${served.origin}/iframe.html?id=${encodeURIComponent('design-system-internal-dategrid-展示--range')}&viewMode=story`, { waitFor: 'td[data-day][data-selected]', settle: 300 })
+  await open(storyUrl('design-system-internal-dategrid-展示--range'), 'td[data-day][data-selected]')
   if (SELFTEST) await page.addStyleTag({ content: 'td>button:focus-visible{outline-offset:2px!important}' })
   const [gridStart, gridMiddle] = await page.evaluate(() => [...document.querySelectorAll('td[data-day][data-selected]:not([data-outside])')].map((td) => td.getAttribute('data-day')))
   await page.focus(`[data-day="${gridStart}"]:not([data-outside]) > button`); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(250)
@@ -274,11 +289,26 @@ async function runSuite() {
     `DateGrid range:端點 ${gridStart} 焦點 = 1px 白線退 3px(${JSON.stringify(gridEnd)})`, 'focus')
 }
 
+let instrumentError = null
 try {
   await runSuite()
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  instrumentError = error
 } finally {
-  await browser.close(); await served.close()
+  await browser.close(); await server.stop()
 }
+
+// 儀器失效:這次沒量完 —— 不是產品裁決,也不算通過;selftest 下也不得讀成「對照組被抓到」(已紅的那幾條不算數)
+if (instrumentError) {
+  const missing = [...new Set(server.notFound)]
+  console.error(`✗ ${instrumentError.message}`)
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  console.error(`  中斷前已量 ${checked} 項${SELFTEST ? '(對照組)' : ''}:沒量完的閘不給裁決 —— exit 1`)
+  process.exit(1)
+}
+// 一條都沒量到 ≠ 全部相符(M37)
+if (checked === 0) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:一條斷言都沒有執行 —— 沒量到不是通過`); process.exit(1) }
 
 if (SELFTEST) {
   // 對照組:注入「陰影歸零」後,上面的斷言必須大量紅 —— 綠就代表這支閘量不到框

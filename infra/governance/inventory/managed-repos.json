@@ -105,6 +105,8 @@
         {"pattern": "scripts/lib/a11y-static-server.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/canonical-path-containment.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/storybook-static-snapshot.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/launch-browser.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/storybook-render-health.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/closed-tool-execution.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/consumer-control-plane-policy.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/provider-lifecycle.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},

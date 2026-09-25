@@ -7,7 +7,7 @@
 //   (5) No-resize column ≥ meta.width
 //
 // 改 columnSizeStyle / 切 layout 必跑此 script,fail → exit 1 阻 commit。
-// Run: `npm run test:datatable-invariants` 或 `node scripts/data-table-invariants.mjs`
+// Run: `npm run test:datatable-invariants` 或 `node scripts/data-table-invariants.mjs [--build=<storybook 建置目錄>]`
 
 // 2026-09-07:儲存格選擇器一律用 `:is([role="cell"], [role="gridcell"])` ——
 // DataTable 的 role 自即日起是條件式的(spreadsheetMode → grid/gridcell,否則 table/cell,
@@ -17,23 +17,22 @@
 // `[role="row"][data-row-index="0"] [role="cell"], [role="gridcell"]` 的第二段會脫離
 // row 的範圍變成掃全文件 —— 2026-09-07 我自己機械替換時就踩了這個,
 // I23 當場多量到別列的儲存格、Δ 406px。
-import { chromium } from 'playwright'
-import http from 'node:http'
 import { inflateSync as zlibInflate } from 'node:zlib'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { snapshotStorybookStatic, StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
-import { openStory, StoryRenderInstrumentError, exitOnBrowserLaunchFailure } from './lib/launch-browser.mjs'
+import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const STATIC = join(ROOT, 'storybook-static')
+// `--build=<dir>`(預設 storybook-static):量另一份建置。給對照組用 —— 在建置的**複本**上注入違規 / 拔檔,
+// 不必動工作樹裡的 storybook-static(別的閘與 agent 正在讀它)。
+const STATIC = resolve(ROOT, process.argv.find((a) => a.startsWith('--build='))?.slice('--build='.length) ?? 'storybook-static')
 
-if (!existsSync(STATIC)) {
-  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD(缺前置,不是產品裁決;lib/launch-browser.mjs 的共用標記與退出碼)
+requireStorybookBuild(join(STATIC, 'index.json'))
 // **stale-build 守衛**(2026-09-03 補;失敗記憶索引既有條目:「storybook-smoke 驗舊 build = 假綠」):
 // 只檢查目錄存不存在會讓「改了 src 但沒重建」的情況拿到假綠 —— 量到的是上一版的 DOM。
 {
@@ -55,66 +54,51 @@ if (!existsSync(STATIC)) {
   }
 }
 
-// **凍結受測建置**(2026-09-24):上面的守衛驗的是「此刻」的 storybook-static,之後每次導覽卻讀活目錄 ——
-// 同一份工作樹裡任何人跑 `npm run build-storybook`(第一步就清空輸出目錄),後續導覽就全部 404,
-// 在 :156 被判成「表格沒有列」(本機實紅過一次,重跑才綠;CI 每個 job 自己建一次,所以從沒遇過)。
-// 改成從本次執行獨佔的快照供檔,讓守衛與量測指向同一份建置。理由見 lib/storybook-static-snapshot.mjs。
-let SNAPSHOT
+// **供檔與啟動一律走共用實作**(2026-09-25 收斂,M17):
+// 原本本檔自己一份 http.createServer + 自己的快照 + 自己的 404 帳本、自己一份 chromium.launch 參數 ——
+// 三樣都跟全部瀏覽器閘共用的 lib 重複,修一份另一份不會跟著好。現在:
+//   - 供檔 = lib/a11y-static-server.mjs 的 startA11yStaticServer。`snapshot: true` = **一律**先凍結成本次獨佔的快照
+//     (缺 build-info.json、複製期間被重建、建置不完整 → 以 INSTRUMENT-FAIL 拒絕),與本檔 2026-09-24 起的行為相同:
+//     守衛驗的那份建置就是量測讀的那份,別人同時 build-storybook 也不會讓導覽 404
+//     (2026-09-24 本機實紅過一次,在 :156 被判成「表格沒有列」)。另附路徑逃逸 / 符號連結防護,本檔原本沒有。
+//   - 同源 404 帳本 = server.notFound(快照不會再變,任何 404 都是「建置缺檔」或「story 要了不存在的檔」)。
+//   - 啟動 = lib/launch-browser.mjs 的 launchBrowserOrSkip(沙箱必要參數 + 起不來時的唯一政策,見下)。
+let server
 try {
-  SNAPSHOT = snapshotStorybookStatic(STATIC)
+  server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'index.html', snapshot: true })
 } catch (error) {
   if (!(error instanceof StorybookBuildNotStableError)) throw error
   console.error(`✗ ${error.message}`)
   process.exit(1)
 }
-process.on('exit', () => SNAPSHOT.dispose())
-// 同源 404 帳本:快照不會再變,任何 404 都是「建置缺檔」或「story 要了不存在的檔」。
-// 任何未攔截的失敗(例如 waitForSelector 逾時)一併印出,不讓「儀器沒拿到檔」被讀成「元件沒渲染」(M37)。
-const notFound = []
+const BASE = server.origin
+// 任何未攔截的失敗(例如量測途中的例外)一併印出 404 帳本,不讓「儀器沒拿到檔」被讀成「元件沒渲染」(M37)。
 process.on('uncaughtException', (error) => {
   console.error(error)
-  if (notFound.length) console.error(`\n⚠️  本次執行有 ${notFound.length} 個同源請求 404(快照 ${SNAPSHOT.dir}):\n   ${[...new Set(notFound)].join('\n   ')}`)
+  if (server.notFound.length) console.error(`\n⚠️  本次執行有 ${server.notFound.length} 個同源請求 404(快照 ${server.snapshot?.dir}):\n   ${[...new Set(server.notFound)].join('\n   ')}`)
   process.exit(1)
 })
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(SNAPSHOT.dir, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { notFound.push(p); res.writeHead(404); res.end(); return }
-  res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
+// **不要讓 Playwright 藏捲軸**(2026-09-05 稽核 2-17 / 3-03 / 1-07 / 2-16 / 2-08 的共同根因):
+// headless 啟動時 Playwright 預設無條件帶 `--hide-scrollbars`
+// (node_modules/playwright-core/lib/server/chromium/chromium.js:288-291,playwright-core 1.59.1),
+// Blink 因此一條捲軸都不建 → gutter 恆 0 → 本檔所有「捲軸佔版面」分支(裝飾軌道 I17a/b、讓位帶 I13b、
+// thin 捲軸 I17e)在 CI 從沒被走到,把修法整段還原也全綠。拿掉這個預設參數後 Linux headless Chromium
+// 就畫 classic 捲軸:Aura 主題預設 15px,`scrollbar-width: thin` 取 2/3 → 10px
+// (chromium/src `third_party/blink/renderer/core/scroll/scrollbar_theme_aura.cc`
+//  `kThinProportion = 2.f / 3.f`、`ScrollbarThickness()`)。
+// 既有的透明邊框模擬全部保留,但期望值一律改寫成「注入前 + 注入量」的相對式,真 gutter 存在時照樣成立。
+// 2026-09-07:少了 `--single-process --no-sandbox`,本 repo 的沙箱起不了 Chromium,這支就一路回 SKIPPED-ENV(exit 0)
+// —— **這一整套 DataTable 不變條件從來沒真的跑過**。那兩個參數現在由 launchBrowser 的 SANDBOX_ARGS 統一給;
+// 這裡只多傳 `ignoreDefaultArgs: ['--hide-scrollbars']`(本套件要量真實捲軸寬度)。
+// 起不來:受限沙箱(Mach lookup 封閉)→ SKIPPED-ENV exit 0(環境開不了瀏覽器,不是不變條件失敗);
+// CI 的瀏覽器 job 宣告 GOVERNANCE_BROWSER_REQUIRED=1 → BROWSER-REQUIRED exit 1,不准略過。
+// 判斷與訊息是 lib/launch-browser.mjs exitOnBrowserLaunchFailure 的單一實作;只攔啟動階段,
+// 瀏覽器成功啟動後的任何量測失敗仍然 fail closed。
+const browser = await launchBrowserOrSkip({ ignoreDefaultArgs: ['--hide-scrollbars'] }, {
+  cleanup: () => server.stop(),
+  hint: '此環境(受限沙箱)結構上無法跑 browser invariant;請於可開瀏覽器環境執行 npm run test:datatable-invariants 補驗。',
 })
-// 動態取空埠:固定 7500 會被其他 session 的靜態伺服器佔住(EADDRINUSE)而在 pre-commit 誤阻 commit(2026-09-02)。
-await new Promise(r => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
-
-let browser
-try {
-  // **不要讓 Playwright 藏捲軸**(2026-09-05 稽核 2-17 / 3-03 / 1-07 / 2-16 / 2-08 的共同根因):
-  // headless 啟動時 Playwright 預設無條件帶 `--hide-scrollbars`
-  // (node_modules/playwright-core/lib/server/chromium/chromium.js:288-291,playwright-core 1.59.1),
-  // Blink 因此一條捲軸都不建 → gutter 恆 0 → 本檔所有「捲軸佔版面」分支(裝飾軌道 I17a/b、讓位帶 I13b、
-  // thin 捲軸 I17e)在 CI 從沒被走到,把修法整段還原也全綠。拿掉這個預設參數後 Linux headless Chromium
-  // 就畫 classic 捲軸:Aura 主題預設 15px,`scrollbar-width: thin` 取 2/3 → 10px
-  // (chromium/src `third_party/blink/renderer/core/scroll/scrollbar_theme_aura.cc`
-  //  `kThinProportion = 2.f / 3.f`、`ScrollbarThickness()`)。
-  // 既有的透明邊框模擬全部保留,但期望值一律改寫成「注入前 + 注入量」的相對式,真 gutter 存在時照樣成立。
-  // 2026-09-07:補 `--single-process --no-sandbox`。少了這兩個,本 repo 的沙箱起不了 Chromium,
-  // 這支就一路回 SKIPPED-ENV(exit 0)—— 也就是**這一整套 DataTable 不變條件從來沒真的跑過**,
-  // 而且因為它 exit 0,看起來還是綠的。同 repo 的 agent-fab / focus-indicator 早就這樣啟動了。
-  // `ignoreDefaultArgs: ['--hide-scrollbars']` 保留:本套件要量真實捲軸寬度。
-  browser = await chromium.launch({ headless: true, args: ['--single-process', '--no-sandbox'], ignoreDefaultArgs: ['--hide-scrollbars'] })
-} catch (error) {
-  // 受限沙箱(Mach lookup 封閉)裡 Chromium 結構上起不來(bootstrap_check_in Permission
-  // denied)——這是「環境開不了瀏覽器」,不是「不變條件失敗」,比照 hooks/tests/run-all.sh 的
-  // mktemp 環境守衛先例:明確標記 SKIPPED-ENV 後放行(exit 0),請在可開瀏覽器的環境補驗。
-  // 只攔啟動階段;瀏覽器成功啟動後的任何量測失敗仍然 fail closed。
-  // **CI 的瀏覽器 job 宣告 GOVERNANCE_BROWSER_REQUIRED=1**:那裡起不來 = 紅(exit 1),不准略過 ——
-  // 判斷與訊息由 lib/launch-browser.mjs 的 exitOnBrowserLaunchFailure 單一實作(2026-09-25)。
-  await exitOnBrowserLaunchFailure(error, {
-    cleanup: () => server.close(),
-    hint: '此環境(受限沙箱)結構上無法跑 browser invariant;請於可開瀏覽器環境執行 npm run test:datatable-invariants 補驗。',
-  })
-}
 const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 
 const failures = []
@@ -136,14 +120,14 @@ function record(invariant, label, pass, detail = '') {
 const SETTLE_FRAMES = 10
 async function loadStory(url, waitFor) {
   try {
-    return await openStory(page, url, { waitFor, settleFrames: SETTLE_FRAMES, notFound })
+    return await openStory(page, url, { waitFor, settleFrames: SETTLE_FRAMES, notFound: server.notFound })
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     console.error(`\n✗ ${error.message}`)
     console.error(`✗ 儀器失效:這一輪在 story「${error.storyId}」中斷 —— 之前已記的 ${passes.length} 條通過 / ${failures.length} 條失敗不完整,不得當作結果。`)
     if (failures.length) console.error(failures.join('\n'))
     await browser.close().catch(() => {})
-    server.close()
+    await server.stop()
     process.exit(1)
   }
 }
@@ -2120,7 +2104,7 @@ if (failures.length > 0) {
 }
 
 await browser.close()
-server.close()
+await server.stop()
 
 if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invariant(s) failed. Block commit.`)
