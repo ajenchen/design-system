@@ -400,3 +400,4 @@ G 區(09-07 裁示與 960 斷點)、骨架列(依 user 09-09、09-12 的話推�
 | 2026-09-26 | 總帳記錄 CI 全綠與掃描結果 | `27790974` |
 | 2026-09-26 | 欄位說明 ⓘ 游標改一般箭頭(滑過變色保留)+ 新範例 + Tooltip / Popover 指引改用 `<FieldLabel info>` | `43fc622b` |
 | 2026-09-27 | 全面稽核批次:DataTable 游標零指示(M37)+ I32 步驟 4、5、頭像縫挖空(N49)、`--stack-gap` / `--avatar-stack-overlap` + token-twin 閘、閘的時序代理 8 項、hook 零覆蓋測試 +336 行、SSOT 文字漂移 ~60 處、check-agents-bootstrap 接 CI(N14(a))、empty-home 雜物 | `4c38649f` |
+| 2026-09-27 | P3 區間日期外框點了開最近那一段(甲)、OverflowIndicator / 頭像尺寸常數只留一份(M17)、token-twin 夾具改名(修 CI 同名常數閘紅)、P1 D / P2 擱置入帳 | `98f78d70` |
