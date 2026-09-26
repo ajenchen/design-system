@@ -268,9 +268,11 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(field.tsx L391-416)
-- **disabled 時整顆不渲染**(L403)— info 是 action affordance(hover 互動),非類型身份 indicator,non-editable 隱藏
-- 設計定位:inline action pattern(補充工具,視覺退後)— label 的 primary interaction 是 input,info 是輔助
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:434-450`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:443`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:434`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
+- 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
 ---
 

@@ -347,8 +347,9 @@ export interface FieldLabelProps extends React.LabelHTMLAttributes<HTMLLabelElem
    * 在 label 文字後方顯示 info icon (ℹ)，hover 出現 tooltip 說明。
    * 傳 string → tooltip 內容。
    *
-   * Info icon 用 inline action pattern（補充工具，視覺退後），
-   * 因為 label 的 primary interaction 是 input，info 是補充說明。
+   * Info icon 是「給資訊」的觸發處（hit-area-canonical.md 三-1），不是行內動作：
+   * 平常 fg-muted、滑過 fg-secondary，游標一般箭頭（點下去不做事）。
+   * label 的主要互動是 input，info 只是補充說明。
    */
   info?: string
 }
@@ -436,8 +437,10 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
                 <button
                   type="button"
                   aria-label={info}
-                  // 弱化 icon hover 一階(inline-action.spec.md「Icon 色彩」;2026-07-30 前全 DS 唯一合規處)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-pointer"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:44-47 逐字等價,本區塊無 outline-none */
+                  // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1)。
+                  // 游標明寫 cursor-default:ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),
+                  // 不能用手形;base.css 讓所有 <button> 預設手形,只刪 cursor-pointer 蓋不掉(2026-09-26)
+                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:44-47 逐字等價,本區塊無 outline-none */
                 >
                   <InfoIcon size={16} aria-hidden />
                 </button>
