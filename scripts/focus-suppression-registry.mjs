@@ -131,8 +131,12 @@ export function scan(files) {
         B: { ok: () => /<(input|textarea)\b|\.Input\b|<(Input|Textarea)\b/.test(openTag)
                     || (/\bcva\(|const \w+(Styles|Variants)\s*=/.test(openTag) && /<(input|textarea)\b/.test(src)),
              need: '往上 40 行要找得到 `<input>` / `<textarea>`(B 類的判準是標籤名);若寫在共用 style 常數裡,本檔要真的渲染該標籤' },
-        C: { ok: () => /focus-within:|:has\(|has-\[/.test(src) || carrierPointsAt(window, /focus-within:|:has\(|has-\[|focus-visible:border-/),
-             need: '同檔要找得到 `focus-within:` / `:has(…)` 畫框,或承擔者要寫出真的有畫框的那個 `檔名.tsx:行號`' },
+        // 2026-09-26 補第三種承擔者:**自己的 `::before` 框圖層**(FileUpload 清單列:列底貼著 FileItem 的進度條時,框改畫在
+        // 列自己的 ::before、進度條那段挖空 —— focus-canonical「框怎麼畫」框圖層列)。它仍是「自己這圈」,只是畫在 ::before 上,
+        // 所以元素本身要抑制全域外描邊。證據照 carrierPointsAt 的嚴格形狀:承擔者寫成 `檔名.tsx:行號`,那一行(±3)真的掛
+        // `focus-visible:before:focus-ring-inset`;承擔者搬家或被刪就紅。只寫「自己的 ::before」一句話不算(驗不到)。
+        C: { ok: () => /focus-within:|:has\(|has-\[/.test(src) || carrierPointsAt(window, /focus-within:|:has\(|has-\[|focus-visible:border-|focus-visible:before:focus-ring-inset/),
+             need: '同檔要找得到 `focus-within:` / `:has(…)` 畫框,或承擔者要寫出真的有畫框的那個 `檔名.tsx:行號`(自己的 ::before 框圖層 = 那一行掛 `focus-visible:before:focus-ring-inset`)' },
         E: { ok: () => /Primitive\.Content|PopoverPrimitive|DialogPrimitive|HoverCardPrimitive|DropdownMenuPrimitive/.test(src), need: '同檔要找得到 Radix 的 Content 殼(E 類講的就是那個浮層殼)' },
       }[m[1]]
       if (evidence && !evidence.ok()) {
@@ -194,6 +198,8 @@ if (process.argv.includes('--selftest')) {
     { n: 'B 類且在 textarea 上', src: "<textarea\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: false },
     { n: 'C 類但同檔沒有祖先畫框', src: "// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'C 類且同檔有 :has 畫框', src: "const w = '[&:has(button:focus-visible)]:border-primary'\n// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'C 類框圖層:承擔者只寫一句話、沒有檔名:行號(驗不到)', src: "const r = 'focus-visible:before:focus-ring-inset'\n// @focus-suppress C — 自己的 ::before;承擔者:自己的 ::before\ncn('focus-visible:outline-none')", bad: true },
+    { n: 'C 類框圖層:承擔者寫成檔名:行號,但那個檔不存在', src: "// @focus-suppress C — 自己的 ::before;承擔者:no-such-file.tsx:12\ncn('focus-visible:outline-none')", bad: true },
     { n: 'E 類但同檔沒有 Radix Content 殼', src: "// @focus-suppress E — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: '無效類別', src: "// @focus-suppress Z — 亂寫;承擔者:誰\ncn('outline-none')", bad: true },
     { n: '行尾註解裡提到不算', src: "// 原本這裡有 outline-none,已刪", bad: false },

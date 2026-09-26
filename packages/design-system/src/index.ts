@@ -671,6 +671,8 @@ export type {
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
+//   - components/FileItem:FILE_ITEM_RING_LAYER_CLASS
+//   - components/FileItem:fileItemRingCutoutStyle
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton

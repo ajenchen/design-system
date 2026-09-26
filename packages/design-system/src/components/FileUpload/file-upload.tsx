@@ -4,7 +4,7 @@ import { Upload as UploadIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
-import { FileItem } from '@/design-system/components/FileItem/file-item'
+import { FileItem, FILE_ITEM_RING_LAYER_CLASS, fileItemRingCutoutStyle } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / TreeView / Command 共用;見下方檔案清單鍵盤段)
 import {
@@ -320,20 +320,33 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         onKeyDownCapture={handleFileListKeyDownCapture}
         onFocus={handleFileListFocus}
       >
-        {files!.map((f) => (
-          <div
-            key={f.id}
-            role="row"
-            data-file-upload-row={f.id}
-            // 整串只有一列是 0(上次停的那列 / 第一列),其餘 -1
-            tabIndex={f.id === tabStopRowId ? 0 : -1}
-            // 列拿到焦點時的框:內描邊(focus-canonical「框怎麼畫」:撐滿容器寬度的列往內畫;與 FileItem 自己的整列焦點框
-            // 同幾何)。圓角同 FileItem 的 rounded-md,框才貼著列的圓角走。滑鼠點列不畫(:focus-visible 啟發式)。
-            className="rounded-md focus-visible:focus-ring-inset"
-          >
-            {renderFileRow(f)}
-          </div>
-        ))}
+        {files!.map((f) => {
+          // 列底貼著 FileItem 的進度條時(compact 且有 status),框改畫在列自己的框圖層 ::before,進度條那一段挖空
+          // (file-item.spec.md「焦點框 × 貼著列底的進度條」;挖的位置由 FileItem 給,與進度條同源)。其餘列照舊畫在列上。
+          const ringCutout = fileItemRingCutoutStyle({ mode: fileListMode, status: f.status })
+          return (
+            <div
+              key={f.id}
+              role="row"
+              data-file-upload-row={f.id}
+              // 整串只有一列是 0(上次停的那列 / 第一列),其餘 -1
+              tabIndex={f.id === tabStopRowId ? 0 : -1}
+              // 列拿到焦點時的框:內描邊(focus-canonical「框怎麼畫」:撐滿容器寬度的列往內畫;與 FileItem 自己的整列焦點框
+              // 同幾何)。圓角同 FileItem 的 rounded-md,框才貼著列的圓角走。滑鼠點列不畫(:focus-visible 啟發式)。
+              className={cn(
+                'rounded-md',
+                ringCutout
+                  ? ['relative', FILE_ITEM_RING_LAYER_CLASS, 'focus-visible:before:focus-ring-inset']
+                  : 'focus-visible:focus-ring-inset',
+                // @focus-suppress C — 列自己這圈改畫在自己的 ::before 框圖層(上兩行),元素本身不再另畫全域外描邊;承擔者:file-upload.tsx:339
+                ringCutout && 'focus-visible:outline-none',
+              )}
+              style={ringCutout}
+            >
+              {renderFileRow(f)}
+            </div>
+          )
+        })}
       </div>
     ) : (
       <ul className={fileListClassName} aria-label="已上傳的檔案" data-file-upload-list="">

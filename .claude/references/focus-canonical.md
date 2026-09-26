@@ -215,6 +215,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 位置(被裁切／貼鄰居) | **往內** `outline-offset: -2px`,寫 `focus-visible:focus-ring-inset`(真焦點)或 `focus-ring-inset`(虛擬游標,由元件 state 掛上) | 「問題二」:被聚焦元素四周最小淨空 < 4px 才往內;撐滿容器寬度的列(選單項 / 側欄鈕 / tab)都屬此類 |
 | 位置(往內,而且**元素自己的底色就是主色**) | **1px `--on-emphasis` 白線,退 3px**(`outline-offset: -3px`),寫 `[&>button]:focus-visible:focus-ring-inset-emphasis` 掛在填色格的 modifier 上;目前只有 DateGrid 的選中日 / 區間端點 | 「問題二」→「填色元素上的內描邊」:藍線畫在藍底上同色看不見;白線貼最外圈只是把藍圓削小;退進去、外圈留藍(user 2026-09-23 拍板 D) |
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
+| 位置(框的一段被元素**自己**貼邊的內容疊住) | 幾何不變 —— 仍是 `focus-ring-inset`,只是掛在與元素同形同大的 `::before`「框圖層」上,被疊住的那一段(兩端各多 2px 縫)用遮罩挖空、露出真正的底;**不是第四種幾何**(線寬、顏色、退距、圓角都沒變)。框畫在元素本身時,元素是那段內容的祖先,遮罩會連內容一起挖掉,所以要另一層。目前唯一案例:FileItem compact 列底的進度條(FileUpload 清單列共用) | `components/FileItem/file-item.spec.md`「焦點框 × 貼著列底的進度條」;機制 `file-item.tsx` `FILE_ITEM_RING_LAYER_CLASS` / `fileItemRingCutoutStyle`。方向 user 2026-09-26 選、挖空 + 縫 AI 推導(本檔「這條規則的來源總帳」) |
 | 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
 | 什麼時候畫(常駐清單) | 真焦點(規則一「兩類元件」第二表那幾個;TreeView 2026-09-25 起也是,待辦總帳 B9)= 瀏覽器 `:focus-visible`;容器 `aria-activedescendant` 型(TimePicker 欄)= 容器 `:focus-visible` 時畫在被指到的那一格(`time-columns.tsx` `group-focus-visible/listbox:`);常駐虛擬游標若再出現,才照 WICG 模態判準畫(上一節;`useInputModality()` 零消費者實作 2026-09-26 已刪,屆時重建) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
@@ -355,7 +356,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框 | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -658,6 +659,7 @@ v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在�
 | 「填色格不能只是往內畫,要保住藍底」 | **user 2026-09-23 逐字**:「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」(問句,但指出了「白線貼邊只是削小藍圓」這個事實;C / D 兩個候選與數值是 AI 依 Carbon 配方提出) |
 | 「1px 白線退 3px(D),不是 2px 退 4px(C)」 | **user 2026-09-23 拍板**,逐字:「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(AI 同意 D 並列出兩者的淨空數字,user 在兩者間定案) |
 | 「第三種幾何只給往內畫的填色元素,不外擴」 | **AI 推導**:DS 內目前只有 DateGrid 選中日 / 端點同時是「往內 + 填色」;往外畫的填色元件框在頁面底上不受影響 |
+| 「框的一段被元素自己貼邊的內容疊住時,框改畫在 `::before` 框圖層並在那一段挖空、兩端留 2px 縫」(「框怎麼畫」框圖層列) | **方向 = user 2026-09-26 選**,逐字:「我喜歡墊在鍵盤焦點上的方向，依此方向仔細研究怎樣最好」(主 session 轉述其意為「進度條留在框上面、底下墊東西讓框不透出來」;另一句原話「我他媽不想要動到這邊的一般視覺」)。**挖空而不是墊底色、縫寬 2px、框改畫在 `::before`** 為 AI 推導,user 同日回「我覺得方向可以，確保整個設計符合我們一致的設計語言且不違背世界級的設計就照你建議」:實測固定墊 `--canvas` 在深色卡片 / 被滑過的列上錯色,「容器宣告底色」的變數在卡片放進浮層面板時錯色(深色 `--surface` 半透明),挖空在四種底 × 兩主題 × 滑過全部與平常 0 差;2px 同全域外描邊的退距與頭像堆疊的縫。待 user 確認 |
 
 ---
 

@@ -331,6 +331,22 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 
 改動進度條視覺(高度 / 色 / 動畫) → 去 ProgressBar 改,**本元件無本地 bar 實作**。
 
+### 焦點框 × 貼著列底的進度條(2026-09-26)
+
+**適用範圍**:只有 `surface="form"` 的 compact 列、而且有 `status`(進度條貼列底)。這種列拿到鍵盤焦點時(本元件的整列焦點框,或 FileUpload 清單列的焦點框),往內 2px 的焦點框底邊與 2px 的進度條落在同一條線上。`upload-manager` 的進度條離列底 `tight/2`、rich 的進度條在內容區,都碰不到框,不適用本段。
+
+**問題(實測)**:進度條本來就畫在框的**上面**,但它沒有把框蓋住 —— 軌道 `--secondary` 是半透明(淺色 6% 黑、深色 12% 白),框的藍從軌道透出來;填色 `--info` 又與框 `--ring` 同為 blue-6。聚焦時填色對軌道只剩 1.10:1(深色 1.17:1),平常是 4.55:1(深色 4.04:1);填色與框黏成一條,看不出進度從哪裡開始、到哪裡。
+
+**規則**:進度條留在框的上面(user 2026-09-26 選的方向,逐字:「我喜歡墊在鍵盤焦點上的方向，依此方向仔細研究怎樣最好」),框在**進度條那一段挖空**,連同進度條兩端各多挖 2px 的縫(挖空與縫寬是 AI 研究後的建議,user 同日回「我覺得方向可以，確保整個設計符合我們一致的設計語言且不違背世界級的設計就照你建議」)。聚焦時底邊讀起來是「框|縫|進度條|縫|框」。
+
+- **挖空,不是墊底色**:挖掉的地方露出的是真正在後面的東西(列自己的滑過色、卡片、面板、頁面),所以聚焦時進度條的每個像素與平常相同,任何底色上都對。墊一塊固定底色(例如 `--canvas`)只在那一種底上對:深色卡片上軌道會從平常的 `#383838` 變成 `#272727`;列正被滑過時也會少掉滑過色。改用「容器宣告自己底色」的變數也不行 —— 深色的 `--surface` 本身是白 8% 半透明,卡片放在浮層面板裡時真正的底是「面板 + 白 8%」,變數表達不了疊了幾層(實測軌道 `#383838` 對平常 `#4a4a4a`)。與 `../Avatar/avatar.spec.md`「頭像堆疊」選挖空、不畫外圈是同一個理由。
+- **縫 = 2px**:與全域外描邊離元件的 `outline-offset: 2px`、頭像堆疊的縫同寬 —— DS 把「疊在一起的兩樣東西分開」的縫都是 2px。縫讓同色的藍分開:進度的起點(填色左端)與框的底邊之間隔著一道底色,不再黏成一條;進度條右端與框之間同樣留縫,兩端對稱。
+- **世界級對照**(一手原始碼,釘版本):同色的兩樣東西相鄰時,用一道底色的縫分開 —— Material 的線性進度條在填色與軌道之間留 4dp 的縫(MDC-Android 1.14.0 `app:indicatorTrackGapSize`:「size of the gap between the indicator and the track, 4dp by default」,[ProgressIndicator.md#L317-L325](https://github.com/material-components/material-components-android/blob/1.14.0/docs/components/ProgressIndicator.md#L317-L325)),而且那道縫是**不畫**,軌道從填色尾端加上縫之後才開始畫([DeterminateDrawable.java#L373-L391](https://github.com/material-components/material-components-android/blob/1.14.0/lib/java/com/google/android/material/progressindicator/DeterminateDrawable.java#L373-L391))—— 與本段的挖空同一種做法。IBM Carbon 的按鈕焦點框與主色填色同藍時,中間墊一道 `$background` 內線(`inset 0 0 0 $button-border-width $background`,[button/_mixins.scss#L133-L137 @v11.117.0](https://github.com/carbon-design-system/carbon/blob/v11.117.0/packages/styles/scss/components/button/_mixins.scss#L133-L137));那是固定底色 token,本段不採用固定底色的理由見上一條。
+- **怎麼做到**:框改畫在與列同形同大的 `::before`「框圖層」上(`FILE_ITEM_RING_LAYER_CLASS`),遮罩只挖這一層(`fileItemRingCutoutStyle`,位置與進度條同源 —— 都讀 `compactBarInset`)。框若畫在列本身,列是進度條的祖先,遮罩會連進度條一起挖掉。線寬、顏色、往內 2px、圓角全部照舊是 `focus-ring-inset`,不是第四種幾何(`ds-canonical/references/focus-canonical.md`「框怎麼畫」框圖層列)。FileUpload 的清單列用同一個框圖層與同一個遮罩(`../FileUpload/file-upload.spec.md`「A11y 預設 › 檔案清單鍵盤」)。
+- **代價(寫明)**:框的底邊在進度條那一段(含兩端縫)不畫,框在那一段由進度條本身接上;框的上、左、右三邊與底邊兩端(含圓角)完整。這是「進度條留在框上面」這個方向本身的代價,不是實作取捨。
+- **平常的樣子一個像素都不動**:框圖層只在聚焦時有東西可畫,遮罩也只作用在這一層;進度條的位置、顏色、高度都不變(user 2026-09-26:「我他媽不想要動到這邊的一般視覺」)。
+- 不走的其他改法(逐條對應的規則):聚焦時把填色換成別的顏色 → `focus-canonical.md`「一個項目只有一個指示器」且狀態色被改掉;框往內多退 → 同檔「只准三種幾何」禁手寫其他退距;聚焦時把進度條抬離框 → 不是 user 選的方向。
+
 ## Actions（suffix,row dedicated region canonical）
 
 Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Predicate」+「Row action 絕對值 cap」,**row dedicated action 絕對值 cap = ≤ 24px,不隨 row tier 放大**。依 row 高度分兩種實作:
@@ -404,7 +420,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 - **ProgressBar 整合(進度 context 帶檔名)**:消費的 `<ProgressBar>` 自帶 `role="progressbar"` + `aria-valuenow` / `aria-valuemax`(Radix Progress primitive 提供),本元件再傳 `aria-label={檔名 上傳進度}` 作 context;keyboard 不需 focus progress bar(被動指示器,非互動元素)。
 - **Action button labels**:Download / retry / remove 等 inline action 必傳 `aria-label`(中文 / consumer locale)— 「下載 report.pdf」/「重試上傳」/「移除附件」,單純「下載」/「刪除」缺檔名 context SR user 無法區分多 row。
 - **Status icon hover-swap a11y**:hover-swap 不改變 SR 語意 — passive status icon `aria-hidden`,active action button 自帶 `aria-label`,避免 SR user 收到視覺 swap 噪音。
-- **Row primary action 鍵盤可達且不 nested-interactive**:傳 `onClick` 時，row 保持非互動容器並保留整列 pointer hit area；另渲染與 trailing actions 同層的透明 full-row native button（pointer-events none，只承接 Tab / Enter / Space），focus-visible 的框畫在 row 上(往內畫的內描邊)。**為什麼是內描邊,理由是結構性的**:拿到焦點的是那顆 `opacity-0` 的透明整列 button,它自己畫不出框,所以指示器改畫在 row 上 —— 這正是 `ds-canonical/references/focus-canonical.md` 認可的「指示器畫在別的元素上,而且必須指得出承擔者」形狀,承擔者就是 row。而全域外描邊只作用在「被聚焦的那個元素」身上,套不到非焦點的 row;能掛在 row 上的只有 `focus-ring-inset` 與填色專用的 `focus-ring-inset-emphasis`,row 不是主色填色 → `focus-ring-inset`。**不是**因為四周淨空(表單的列間 4–8px;上傳管理器的列 2026-09-25 起鋪滿面板、列間 0 —— 兩種幾何都一樣用內描邊),**也不是**因為捲動容器會裁切(捲動與否明文不進判準)。幾何 SSOT = `ds-canonical/references/focus-canonical.md`「框怎麼畫」。`actionAriaLabel` 預設「開啟 {name}」且可由 consumer 覆寫。Primary button 與下載／重試／移除皆為 sibling，禁止把 row 本身改成 `role="button"` 包住互動後代。
+- **Row primary action 鍵盤可達且不 nested-interactive**:傳 `onClick` 時，row 保持非互動容器並保留整列 pointer hit area；另渲染與 trailing actions 同層的透明 full-row native button（pointer-events none，只承接 Tab / Enter / Space），focus-visible 的框畫在 row 上(往內畫的內描邊;form 的 compact 列有 `status` 時畫在 row 的 `::before` 框圖層、進度條那段挖空,見「焦點框 × 貼著列底的進度條」)。**為什麼是內描邊,理由是結構性的**:拿到焦點的是那顆 `opacity-0` 的透明整列 button,它自己畫不出框,所以指示器改畫在 row 上 —— 這正是 `ds-canonical/references/focus-canonical.md` 認可的「指示器畫在別的元素上,而且必須指得出承擔者」形狀,承擔者就是 row。而全域外描邊只作用在「被聚焦的那個元素」身上,套不到非焦點的 row;能掛在 row 上的只有 `focus-ring-inset` 與填色專用的 `focus-ring-inset-emphasis`,row 不是主色填色 → `focus-ring-inset`。**不是**因為四周淨空(表單的列間 4–8px;上傳管理器的列 2026-09-25 起鋪滿面板、列間 0 —— 兩種幾何都一樣用內描邊),**也不是**因為捲動容器會裁切(捲動與否明文不進判準)。幾何 SSOT = `ds-canonical/references/focus-canonical.md`「框怎麼畫」。`actionAriaLabel` 預設「開啟 {name}」且可由 consumer 覆寫。Primary button 與下載／重試／移除皆為 sibling，禁止把 row 本身改成 `role="button"` 包住互動後代。
 - **status / error 不額外加 row ARIA**:`status="uploading"` / `status="error"` 不在 row 上加 `aria-busy` / `role="status"` / `aria-live`;狀態由 progress bar 的 `role="progressbar"` 與 description 文字本身傳達。若 consumer 需要上傳完成 / 失敗的即時 announce,由外層上傳流程容器(FileUpload)統一管理 live region,避免每列各自宣告造成 SR 噪音。
 
 ---

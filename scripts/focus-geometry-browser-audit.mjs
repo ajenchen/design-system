@@ -307,7 +307,8 @@ try {
         // 對照組(--selftest):把所有焦點視覺全部釘死,承擔者證明就該全部變「零差異」。
         // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。
         if (SELFTEST) {
-          await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible{outline:none!important}` })
+          // `*::before{outline:none}`(2026-09-26):承擔者證明也看 ::before 框圖層了,對照組要連它一起釘死,否則這一段的紅燈是假的
+          await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible,*::before{outline:none!important}` })
         }
         if (SELFTEST_INSET) {
           await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
@@ -343,9 +344,15 @@ try {
             window.__target = e
           }, sel)
           const PROPS = ['outlineStyle','outlineWidth','outlineColor','borderColor','borderWidth','backgroundColor','boxShadow','textDecorationLine','textDecorationColor']
-          const snap = () => pg.evaluate((props) => window.__chain.map((e) => {
-            const c = getComputedStyle(e); return props.map((k) => c[k])
-          }), PROPS)
+          // 2026-09-26:也看 `::before` 的外框 —— 框可以畫在自己的 `::before`「框圖層」上(focus-canonical「框怎麼畫」框圖層列:
+          // FileItem / FileUpload 列底貼著進度條時,框改畫在 ::before 才能在進度條那段挖空)。原本只取元素本身的計算樣式,
+          // 畫在 ::before 上的框對這支儀器是隱形的,會把「真的有畫」誤報成「承擔者零差異」(M37:沒觀察到 ≠ 沒發生)。
+          // 只收外框三項:框圖層只畫外框;其餘屬性照舊看元素本身。
+          const PSEUDO = ['outlineStyle','outlineWidth','outlineColor']
+          const snap = () => pg.evaluate(([props, pseudo]) => window.__chain.map((e) => {
+            const c = getComputedStyle(e), b = getComputedStyle(e, '::before')
+            return [...props.map((k) => c[k]), ...pseudo.map((k) => b[k])]
+          }), [PROPS, PSEUDO])
           await pg.evaluate(() => window.__target.blur()); await pg.waitForTimeout(700)
           const before = await snap()
           await pg.evaluate(() => window.__target.focus()); await pg.waitForTimeout(700)
@@ -360,6 +367,13 @@ try {
               if (before[k][q] === after[k][q]) continue
               if ((PROPS[q] === 'outlineColor' || PROPS[q] === 'outlineWidth') && before[k][0] === 'none' && after[k][0] === 'none') continue
               diff.push(PROPS[q])
+            }
+            // ::before 的外框(同一個「outline-style 為 none 時顏色/寬度變化畫不出來」過濾)
+            const P0 = PROPS.length
+            for (let q = 0; q < PSEUDO.length; q++) {
+              if (before[k][P0 + q] === after[k][P0 + q]) continue
+              if (q > 0 && before[k][P0] === 'none' && after[k][P0] === 'none') continue
+              diff.push('::before ' + PSEUDO[q])
             }
             if (diff.length) changed.push(names[k] + '(' + diff.join(',') + ')')
           }

@@ -87,6 +87,62 @@ export interface FileItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   onRetry?: () => void
 }
 
+// ── compact 進度條的左右位置(單一來源)──
+// 進度條本身(下方 compact 分支)與焦點框的挖空(fileItemRingCutoutStyle)都從這裡取,內距一改兩者一起動
+// (2026-06-03 圖五 bug:bar 的 left / right 寫死、內距一改就對不齊)。
+//   form:左右 12px(= px-3)。upload-manager(2026-09-25 待辦總帳 B12):左右 loose(= 原本面板給的值,文字 x 不變)。
+//   left = 內距 + icon + gap-2(0.5rem)→ 對齊 label 首字;right = 內距 → 收在列內緣。
+function compactBarInset(surface: FileItemProps['surface']) {
+  const padX = surface === 'upload-manager' ? 'var(--layout-space-loose)' : '12px'
+  return { padX, left: `calc(${padX} + ${ICON_PX}px + 0.5rem)`, right: padX }
+}
+
+/**
+ * 焦點框在進度條兩端留的縫(px)。與全域外描邊離元件的 `outline-offset: 2px`、頭像堆疊的縫
+ * (`avatar.tsx` AVATAR_STACK_GAP_PX)同寬 —— DS 把「疊在一起的兩樣東西分開」的縫都是 2px。
+ */
+const BAR_RING_GAP_PX = 2
+
+/**
+ * @internal
+ * 焦點框的「框圖層」:與列同形同大的 `::before`(file-item.spec.md「焦點框 × 貼著列底的進度條」)。
+ * 只在**列底貼著進度條**時用 —— form 的 compact 列有 status 時。upload-manager 的進度條離列底 tight/2、
+ * rich 的進度條在內容區,都碰不到框,照舊把框畫在列上。
+ * 為什麼要另一層:進度條住在列裡。框若畫在列上,列是進度條的祖先,遮罩會連進度條一起挖掉;
+ * 畫在 `::before` 上,遮罩只挖框。層疊不變:`::before` 是第一個定位子層,進度條(absolute)仍畫在它上面;
+ * 而且洞裡根本沒有框,進度條與框誰畫在上面都不影響結果(CSS UI 4 把 outline 的疊放順序留給瀏覽器自己決定,
+ * 「The stacking of the rendering of these outlines is explicitly left up to implementations」)。
+ * 這裡只有位置與遮罩,**不含觸發條件**:FileItem 自己的列由整列隱形鈕觸發、FileUpload 的清單列由列自己的
+ * `:focus-visible` 觸發,各自在使用端寫。線寬、顏色、往內 2px、圓角全部照舊來自 `focus-ring-inset`
+ * (`ds-canonical/references/focus-canonical.md`「框怎麼畫」),不是第四種幾何。
+ */
+export const FILE_ITEM_RING_LAYER_CLASS =
+  'before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none before:[mask:var(--file-item-ring-cutout)]'
+
+/**
+ * @internal
+ * 框圖層的遮罩(`--file-item-ring-cutout`)。列底沒有貼著進度條時回 `undefined` —— 呼叫端據此照舊把框畫在列上。
+ * 遮罩 = 三塊保留區的聯集:上半部整條 + 左段 + 右段。挖掉的是「進度條那一段(兩端各多 BAR_RING_GAP_PX)的下半部」,
+ * 框在那個範圍裡只有底邊,所以挖掉的只有底邊那一段。露出來的是**真正在後面的東西**(列自己的滑過色、卡片、面板、頁面),
+ * 不需要知道底色是什麼(與 `avatar.tsx` 頭像堆疊「挖空,不是外圈」同一個理由:深色的 `--surface` 本身半透明,
+ * 墊任何固定底色都會在某種容器上錯色)。
+ */
+export function fileItemRingCutoutStyle({
+  mode = 'compact',
+  surface = 'form',
+  status,
+}: Pick<FileItemProps, 'mode' | 'surface' | 'status'>): React.CSSProperties | undefined {
+  if (mode !== 'compact' || surface === 'upload-manager' || !status) return undefined
+  const { left, right } = compactBarInset(surface)
+  const keep = 'linear-gradient(#000 0 0)' // 遮罩只看不透明度;顏色無意義
+  return {
+    ['--file-item-ring-cutout' as string]:
+      `${keep} top / 100% 50% no-repeat, ` +
+      `${keep} left / calc(${left} - ${BAR_RING_GAP_PX}px) 100% no-repeat, ` +
+      `${keep} right / calc(${right} - ${BAR_RING_GAP_PX}px) 100% no-repeat`,
+  }
+}
+
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
   (
@@ -359,18 +415,20 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
 
     // ── compact: bar absolute 底部 ──
     // 內距單一來源(SSOT):progress bar 是 absolute 定位,其 left / right / bottom 必須跟列的內距「同源」——
-    // 否則內距一改,bar 就對不齊(2026-06-03 圖五 bug:原本 left/right 寫死 0.75rem 假設 px-3)。
-    //   form:左右 12px(= px-3)、上下 py-2,bar 貼列底。
+    // 左右取自 compactBarInset(與焦點框的挖空共用,見檔案上方),上下見下:
+    //   form:上下 py-2,bar 貼列底。
     //   upload-manager(2026-09-25 待辦總帳 B12,推翻 2026-06-03 的「左右 0、交給面板」):可點的列滑過底色要鋪到面板
     //     左右邊,所以左右改由列自己帶 loose(= 原本面板給的值,文字 x 不變)、面板 body 給 0。
     //     上 tight/2、下 tight/2 + 0.5rem(0.5rem = 原 py-2 下緣那 8:文字↔bar 6 + bar 2),bar 離列底 tight/2;
     //     面板 body 上下也給 tight/2、列間 0 → 邊緣→文字、bar→下一列文字、bar→邊緣仍全是 tight(與 06-03 同值),
     //     滑過底色則上下各留 tight/2,bar 不貼底色邊。
-    const compactPadX = isUploadManager ? 'var(--layout-space-loose)' : '12px'
+    const { padX: compactPadX, left: compactBarLeft, right: compactBarRight } = compactBarInset(surface)
     const compactBarBottom = isUploadManager ? 'calc(var(--layout-space-tight) / 2)' : '0px'
     const compactPadBlock = isUploadManager
       ? { paddingTop: 'calc(var(--layout-space-tight) / 2)', paddingBottom: 'calc(var(--layout-space-tight) / 2 + 0.5rem)' }
       : undefined
+    // 列底貼著進度條(form + 有 status)→ 框改畫在框圖層、進度條那段挖空;否則 undefined,框照舊畫在列上(見下方 className)
+    const ringCutout = fileItemRingCutoutStyle({ mode, surface, status })
     return (
       <div
         ref={ref}
@@ -381,16 +439,23 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           !isUploadManager && 'py-2 rounded-md',
           !hasStatus && 'bg-secondary',
           // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接同樣會畫框的 trailing <Button>;
-          // 幾何同 rich 的內描邊(結構性理由見上方那段)。form 的 compact 列若有進度條,它貼著列底,
-          // 會蓋住內描邊底邊那一段;upload-manager 的 bar 離列底 tight/2,不蓋。日後要動進度條的位置,這裡的底邊長相會跟著變。
-          'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
+          // 幾何同 rich 的內描邊(結構性理由見上方那段)。
+          // **列底貼著進度條時,框畫在框圖層 ::before**(2026-09-26,file-item.spec.md「焦點框 × 貼著列底的進度條」)。
+          // 進度條是 absolute,本來就畫在框的**上面**,正好落在內描邊底邊那 2px 上 —— 但它沒有「蓋住」框:
+          // 軌道 --secondary 是半透明,框的藍從軌道透出來;填色 --info 又與框 --ring 同為 blue-6,與框黏成一條
+          // (實測聚焦時填色對軌道 1.10:1,平常 4.55:1;深色 1.17 / 4.04)。框圖層在進度條那一段(兩端各多 2px 縫)
+          // 挖空,露出真正的底:聚焦時進度條與平常逐像素相同,進度條的頭尾與框之間各隔一道底色的縫。
+          // upload-manager 的 bar 離列底 tight/2、碰不到框 → ringCutout 為 undefined,框照舊畫在列上。
+          ringCutout
+            ? [FILE_ITEM_RING_LAYER_CLASS, 'has-[[data-row-focus-target]:focus-visible]:before:focus-ring-inset']
+            : 'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
           onClick && 'cursor-pointer',
           // 滑過(B12,見上方「滑過底色」段):有進度條的列平常透明 → 換成 neutral-hover;
           // 靜態小膠囊平常是 bg-secondary → 換成它自己的下一階 secondary-hover(不借透明底的配對)
           onClick && (hasStatus ? 'hover:bg-neutral-hover' : 'hover:bg-secondary-hover'),
           className,
         )}
-        style={{ paddingInline: compactPadX, ...compactPadBlock }}
+        style={{ paddingInline: compactPadX, ...compactPadBlock, ...ringCutout }}
         onClick={onClick}
         {...rowA11y}
         {...props}
@@ -406,13 +471,13 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           {contentRow}
         </div>
 
-        {/* ProgressBar: absolute 底部。left / right / bottom 與列內距同源(compactPadX / compactBarBottom):
+        {/* ProgressBar: absolute 底部。left / right 取自 compactBarInset(與焦點框的挖空同源),bottom 與列內距同源:
             left = padX + icon + gap-2(0.5rem)對齊 label 首字;right = padX 收在 row 內緣;
-            bottom = form 0(貼列底)/ upload-manager tight/2(B12,見上方內距段)。 */}
+            bottom = form 0(貼列底,聚焦時框在這一段挖空,見上方 className)/ upload-manager tight/2(B12,見上方內距段)。 */}
         {progressBar && (
           <div
             className="absolute"
-            style={{ left: `calc(${compactPadX} + ${ICON_PX}px + 0.5rem)`, right: compactPadX, bottom: compactBarBottom }}
+            style={{ left: compactBarLeft, right: compactBarRight, bottom: compactBarBottom }}
           >
             {progressBar}
           </div>
