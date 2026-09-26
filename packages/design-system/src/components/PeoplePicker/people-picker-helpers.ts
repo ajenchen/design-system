@@ -47,8 +47,11 @@ export const PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS = `flex-1 min-w-0 inline-flex i
 export function getPeoplePickerTagWrapperClass(selectedCount: number): string {
   return selectedCount === 1
     ? PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS  // SSOT aligned to single picker wrapper(select.tsx:244 selectedItemRenderer wrapper)
-    // length>=2 stack 視覺(spec.md §D row 1):圓形 avatar overlap + group/avatar selector for dismiss overlay
-    : '-ml-0.5 first:ml-0 relative inline-flex group/avatar'
+    // length>=2 stack 視覺(spec.md §D row 1):圓形 avatar overlap + group/avatar selector for dismiss overlay。
+    // 疊的量走 token `--avatar-stack-overlap`(tokens/uiSize/uiSize.css;JS 雙生 avatar.tsx `AVATAR_STACK_OVERLAP_PX`),
+    // 這裡不再寫字面值(2026-09-26 前是 `-ml-0.5`,與常數各寫一份、註解要求「兩處同改」= 假 SSOT)。
+    // 疊放順序與「聚焦時升到最上層」由 Combobox 的 tag wrapper 負責(combobox.tsx `--tag-stack-z`)。
+    : '-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex group/avatar'
 }
 
 // ── Person → SelectOption mapping ───────────────────────────────────────────

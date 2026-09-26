@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { CircleCheck, XCircle, X } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { Button } from '@/design-system/components/Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Th, Td, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -138,18 +139,6 @@ export const Overview = {
    2. 元件檢閱器
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}
-  >
-    {children}
-  </button>
-)
-
 const PropRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
     <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5">{label}</span>
@@ -171,21 +160,22 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Status</span>
-          <div className="flex gap-1.5">
-            {STATUSES.map((s) => <Tab key={s} active={status === s} onClick={() => setStatus(s)}>{s}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Status" value={status} onValueChange={(v) => setStatus(v as StatusKey)}>
+            {STATUSES.map((s) => <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Affix</span>
-          <div className="flex gap-1.5">
-            <Tab active={affix === 'none'} onClick={() => setAffix('none')}>none</Tab>
-            <Tab active={affix === 'value'} onClick={() => setAffix('value')}>value</Tab>
-            <Tab active={affix === 'status-icon'} onClick={() => setAffix('status-icon')}>status-icon</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Affix" value={affix} onValueChange={(v) => setAffix(v as AffixKey)}>
+            <SegmentedControlItem value="none">none</SegmentedControlItem>
+            <SegmentedControlItem value="value">value</SegmentedControlItem>
+            <SegmentedControlItem value="status-icon">status-icon</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Value</span>

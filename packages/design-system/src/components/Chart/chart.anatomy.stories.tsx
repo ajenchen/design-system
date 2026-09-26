@@ -237,11 +237,11 @@ export const CategoryTokens: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Token</Th><Th>Light mode</Th><Th>Dark mode</Th><Th>建議</Th></tr></thead>
             <tbody>
-              <tr><Td><TokenCell token="--chart-1" display="fill-chart-1" /></Td><Td mono>blue-6</Td><Td mono>blue-5</Td><Td>第一類別(主要)</Td></tr>
-              <tr><Td><TokenCell token="--chart-2" display="fill-chart-2" /></Td><Td mono>purple-6</Td><Td mono>purple-5</Td><Td>第二類別</Td></tr>
-              <tr><Td><TokenCell token="--chart-3" display="fill-chart-3" /></Td><Td mono>green-6</Td><Td mono>green-5</Td><Td>第三類別</Td></tr>
-              <tr><Td><TokenCell token="--chart-4" display="fill-chart-4" /></Td><Td mono>yellow-7</Td><Td mono>yellow-5</Td><Td>第四類別(light 用 step-7 提高對比)</Td></tr>
-              <tr><Td><TokenCell token="--chart-5" display="fill-chart-5" /></Td><Td mono>deep-orange-6</Td><Td mono>deep-orange-5</Td><Td>第五類別</Td></tr>
+              <tr><Td><TokenCell token="--chart-1" display="fill-chart-1" /></Td><Td mono>blue-6</Td><Td mono>blue-6</Td><Td>第一類別(主要)</Td></tr>
+              <tr><Td><TokenCell token="--chart-2" display="fill-chart-2" /></Td><Td mono>purple-6</Td><Td mono>purple-6</Td><Td>第二類別</Td></tr>
+              <tr><Td><TokenCell token="--chart-3" display="fill-chart-3" /></Td><Td mono>green-6</Td><Td mono>green-6</Td><Td>第三類別</Td></tr>
+              <tr><Td><TokenCell token="--chart-4" display="fill-chart-4" /></Td><Td mono>yellow-7</Td><Td mono>yellow-6</Td><Td>第四類別(light 用 step-7 提高對比)</Td></tr>
+              <tr><Td><TokenCell token="--chart-5" display="fill-chart-5" /></Td><Td mono>deep-orange-6</Td><Td mono>deep-orange-6</Td><Td>第五類別</Td></tr>
             </tbody>
           </table>
         </div>
@@ -271,6 +271,8 @@ export const ColorMatrix: Story = {
               <tr><Td>Legend 文字</Td><Td><TokenCell token="--fg-secondary" display="text-fg-secondary" /></Td><Td>與 Tooltip 類別同</Td></tr>
               <tr><Td>Grid line</Td><Td><TokenCell token="--divider" display="stroke-divider" /></Td><Td>Cartesian 網格線(比 border 更淡,不搶視覺)</Td></tr>
               <tr><Td>Axis tick</Td><Td><TokenCell token="--fg-muted" display="fill-fg-muted" /></Td><Td>軸刻度標籤色</Td></tr>
+              <tr><Td>滑過指示(長條圖的帶)</Td><Td><TokenCell token="--neutral-hover" display="fill-neutral-hover" /></Td><Td>與資料表格列的滑過同色(chart.spec.md「滑過指示」)</Td></tr>
+              <tr><Td>滑過指示(折線等的線)</Td><Td><TokenCell token="--border" display="stroke-border" /></Td><Td>比網格線高一階,看得出是滑過指示、不是網格</Td></tr>
             </tbody>
           </table>
         </div>

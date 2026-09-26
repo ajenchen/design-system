@@ -1168,11 +1168,31 @@ test('consumer governance guide is canonical, protected, exact-hash managed and 
   assert.ok(mirrorPolicy.pathPrefixes.includes('governance/'))
 })
 
-test('consumer a11y runtime helpers stay aligned across fork, mirror, workflow, and fleet ownership inventories', () => {
-  const helpers = [
+test('consumer a11y runtime helpers stay aligned across fork, mirror, workflow, and fleet ownership inventories', async () => {
+  // 清單由 audit-consumer-a11y.mjs 的**相對 import 閉包**機械推導,不再手列(2026-09-25:手列的兩項沒跟上
+  // a11y-static-server 新增的 storybook-static-snapshot,mirror ALLOWLIST 因此漏列、release 的 mirror 閉包檢查會擋)。
+  const { relativeRuntimeImports, runtimeDependencyCandidates } = await import('./lib/runtime-dependency-closure.mjs')
+  const executor = 'scripts/audit-consumer-a11y.mjs'
+  const seen = new Set([executor])
+  const queue = [executor]
+  while (queue.length > 0) {
+    const importer = queue.shift()
+    for (const dependency of relativeRuntimeImports(readFileSync(importer, 'utf8'))) {
+      const { target } = runtimeDependencyCandidates(importer, dependency)
+      if (seen.has(target)) continue
+      seen.add(target)
+      queue.push(target)
+    }
+  }
+  const helpers = [...seen].filter(path => path !== executor).sort()
+  // 推導不得是空的(0 項 = 什麼都沒比,不是「全部對齊」):已知的依賴必須都在推導結果裡
+  for (const known of [
     'scripts/lib/a11y-static-server.mjs',
     'scripts/lib/canonical-path-containment.mjs',
-  ]
+    'scripts/lib/storybook-static-snapshot.mjs',
+    'scripts/lib/launch-browser.mjs',
+    'scripts/lib/storybook-render-health.mjs',
+  ]) assert.ok(helpers.includes(known), `${known}: missing from the derived consumer a11y import closure ${JSON.stringify(helpers)}`)
   const forkBuilder = readFileSync('scripts/build-fork-governance.mjs', 'utf8')
   const mirrorBuilder = readFileSync('scripts/build-published-template-mirror.mjs', 'utf8')
   const mirrorPolicy = JSON.parse(readFileSync('scripts/published-template-mirror-policy.json', 'utf8'))

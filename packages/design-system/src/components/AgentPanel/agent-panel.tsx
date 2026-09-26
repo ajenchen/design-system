@@ -46,6 +46,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
+import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
  * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。
@@ -500,6 +501,13 @@ export interface AgentPanelHeaderProps
   onClose: () => void
 }
 
+// ── 鍵盤:歷史列上的「改名 / 刪除」(2026-09-25 待辦總帳 B9「路線乙」)──
+// 決策出處 = governance/planning/2026-09-25-interaction-and-hover-remediation.md B9(該列點名「AI 面板對話紀錄列」),
+// user 逐字(附條件同意,條件查證成立記在同列):「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」。
+// 鍵盤路整條由 Command 本身提供(command.tsx routeCommandRowKeys,判定 = lib/roving-list-keyboard.ts:列裡的鈕 -1、→ 進 / ← 回 /
+// ↑↓ Tab 回搜尋框、Enter / Space 屬於那顆鈕),SelectMenu 的人員頭像走同一份;本檔只負責「鍵盤反白這一列時浮出改名 / 刪除」(見 HistoryRow)。
+// 按鍵表住 agent-panel.spec.md「附:歷史浮層」與 command.spec.md「A11y」。2026-09-25 前:每一列的改名 / 刪除都在 Tab 路上(4 列 = 8 站)。
+
 /** 歷史列(select-menu.tsx 原型):外層 CommandItem 單一互動 owner;內層 MenuItem 純視覺。 */
 function HistoryRow({
   conversation,
@@ -514,6 +522,10 @@ function HistoryRow({
   onRename: () => void
   onDelete: () => void
 }) {
+  // 鍵盤反白停在這一列時浮出改名 / 刪除(keyboard-model-canonical「列上有小按鈕的一串」:鍵盤走到的那顆鈕要看得見;
+  // cmdk 清單的「焦點在這一項」就是鍵盤反白,AI 推導,見上方段落)。只在反白是鍵盤搬的時候 —— 滑鼠搬的反白就是滑鼠正停著的列,
+  // group-hover 本來就浮出;滑鼠離開清單後 cmdk 仍留著反白,不額外讓那一列的鈕常駐(滑鼠畫面不變)。
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
   return (
     <CommandItem
       value={conversation.id}
@@ -538,22 +550,19 @@ function HistoryRow({
           )
         }
         endContent={
-          // 行內動作恆在 DOM(鍵盤 Tab 可達);懸停/focus-visible 淡入=ItemSuffix hoverReveal SSOT。
-          /* MenuItem 的 endContent slot 內再包 ItemSuffix 只為 hoverReveal(opacity 淡入);兩層同盒
+          // 行內動作恆在 DOM;鍵盤用 → 進得去、不在 Tab 路上(B9,Command 的 routeCommandRowKeys 提供);
+          // 懸停/focus-visible 瞬間出現(不淡入,待辦總帳 L9)=ItemSuffix hoverReveal SSOT,鍵盤反白這一列時也浮出(cursorByKeyboard)。
+          /* MenuItem 的 endContent slot 內再包 ItemSuffix 只為 hoverReveal(opacity 0→1,瞬間);兩層同盒
              (h-[1lh] items-center ml-auto gap-2),不疊任何位移——非 drift(2026-09-02 覆核實測)。 */
-          <ItemSuffix hoverReveal hoverGroup="menu-item">
-            {/* Enter/Space 在行內動作上 = 啟動該動作(stopPropagation 擋掉 cmdk 的 Enter=選列)。 */}
-            <span
-              className="contents"
-              onKeyDown={(e) => {
-                const target = e.target as HTMLElement
-                if ((e.key === 'Enter' || e.key === ' ') && target.closest('button')) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  target.closest('button')?.click()
-                }
-              }}
-            >
+          <ItemSuffix
+            hoverReveal
+            hoverGroup="menu-item"
+            className={cursorByKeyboard ? 'group-data-[selected=true]/menu-item:opacity-100' : undefined}
+          >
+            {/* Enter/Space 在行內動作上 = 啟動該動作、不選列 —— 由 Command 根的 routeCommandRowKeys 統一處理
+                (2026-09-26 之前這裡另寫了一份 onKeyDown 做同一件事,兩份並存;待辦總帳〇節「按鍵規則合併」收回 command.tsx)。
+                data-history-row-actions = 量測腳本找「這一列自己的鈕」的錨點。 */}
+            <span className="contents" data-history-row-actions="">
             <ItemInlineAction
               action={{
                 icon: Pencil,
@@ -574,7 +583,7 @@ function HistoryRow({
                 },
               }}
             />
-                      </span>
+            </span>
           </ItemSuffix>
         }
       >
@@ -1095,7 +1104,7 @@ AgentThinking.displayName = 'AgentThinking'
 
 export interface AgentToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * 常駐顯示。預設由 AgentConversation 判定:代理**最後一則**常駐,其餘懸停淡入(SSOT,consumer 不需設);
+   * 常駐顯示。預設由 AgentConversation 判定:代理**最後一則**常駐,其餘懸停時瞬間出現(SSOT,consumer 不需設);
    * 只在 AgentConversation 之外單獨使用時才需手動指定。
    */
   pinned?: boolean
@@ -1114,8 +1123,9 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
     <div
       ref={ref}
       className={cn(
+        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」到所有滑過造成的變化;
+        // SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」;待辦總帳 L9)。訊息進場的淡入是另一件事(內容出現),不在此。
         'mt-2 flex h-6 items-center gap-2',
-        'transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
         // 出現/消失完全不推擠版面(輪距 40 ≥ 8+24+8)。
         pinned
@@ -1376,6 +1386,24 @@ function initialAnswer(q: AgentDecisionQuestion) {
 /** 複選值 = 已勾選 value 集合(含 OTHER_VALUE),以 `\n` 連接存於 answers。 */
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
+/**
+ * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-panel.spec.md「8. AgentDecisionCard」選項卡條):
+ * 指標在整張卡的任何位置 → 卡內的圓(複選是方框)照它被自己的 `<label for>` 滑過時的樣子變色;卡片灰底、字色都不變。
+ * 原本的轉發是 HTML 自己做的(指標在 label 上,label 綁定的控件也算 :hover),範圍只到 SelectionItem 那個 label。
+ * 整張卡不能改成 <label> 來借這個轉發:卡內已有 SelectionItem 的 label、<div> 與「其他」輸入格,都違反 label 的內容規定。
+ * 所以用 DS 既有的「外層具名群組帶動內層」寫法(item-anatomy.tsx 的 `hoverGroup`):卡片掛 `group/agent-option`,
+ * 控件把**它自己的** `hover:` 配對原樣接到群組滑過上。下面兩串逐條鏡射 owner,不新增任何顏色:
+ *   Radio    ← radio-group.tsx `radioItemVariants` 的 `hover:border-border-hover` 與 `data-[state=checked]:hover:…` 兩行
+ *   Checkbox ← checkbox.tsx `checkboxVariants` 的 `hover:border-border-hover` 與 `data-[state=checked]:hover:…` 兩行
+ *              (indeterminate 那行不鏡射:選項卡不會半選)
+ * owner 的 hover 配對一改,這裡必須同一次改動跟著改。
+ * 不帶 owner 的停用 / 唯讀守衛:決策卡的選項沒有停用或唯讀(AgentDecisionOption 無此欄);日後要加,守衛必一起鏡射。
+ */
+const OPTION_RADIO_HOVER =
+  'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:border-primary-hover data-[state=checked]:group-hover/agent-option:text-primary-hover'
+const OPTION_CHECKBOX_HOVER =
+  'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:bg-primary-hover data-[state=checked]:group-hover/agent-option:border-primary-hover'
+
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
   ({ questions, onSubmit, onSkip, className, ...props }, ref) => {
     const titleId = React.useId()
@@ -1447,7 +1475,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       window.setTimeout(() => (document.getElementById(otherInputId) as HTMLInputElement | null)?.focus(), 0)
     // 灰底選項卡 = 唯一行距 owner(py 8);SelectionItem 自帶 py((32−1lh)/2=5.5)歸零,避免 double padding
     // (checkbox.spec.md 零外部 gap 鐵律的反向:間距只能有一個 owner)。
-    const cardClass = 'cursor-pointer rounded-md bg-secondary px-3 py-2'
+    // 滑過:卡片 = 具名群組 `group/agent-option`,自己不掛任何滑過樣式,只帶動卡內控件(OPTION_RADIO_HOVER /
+    // OPTION_CHECKBOX_HOVER,理由與鏡射來源見其上方註解)。命中區 = 整卡 onClick = 滑過回饋的範圍。
+    const cardClass = 'group/agent-option cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div
         ref={ref}
@@ -1510,6 +1540,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                           onCheckedChange={(next) => toggle(option.value, next === true)}
                           onClick={(e) => e.stopPropagation()}
                           aria-controls={isOther ? otherInputId : undefined}
+                          className={OPTION_CHECKBOX_HOVER}
                         />
                       }
                       label={optionLabel(option)}
@@ -1551,6 +1582,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                           value={option.value}
                           size="md"
                           aria-controls={isOther ? otherInputId : undefined}
+                          className={OPTION_RADIO_HOVER}
                         />
                       }
                       label={optionLabel(option)}

@@ -46,7 +46,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;icon 走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」段 + 本檔「跨 regime pointer index」carve-out row) |
+| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;可以點的星走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier;唯讀精簡版「★ 數值」的星走 icon tier(同 Button icon + label)— 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」+「唯讀精簡版」段 + 本檔「跨 regime pointer index」carve-out row) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -189,7 +189,7 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star | `components/Rating/rating.spec.md:85` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
+| Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
@@ -347,7 +347,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 - **Fixed-height 套到能 grow 的 chrome**(e.g. 把 Dialog 改 fixed-h 48):DialogDescription 被剪切 → 違反 modal 作為完整決策 context 的職責
 - **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):高度會變成內容驅動，違反 sidebar 的固定 chrome contract
-- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:touch target 變 24 違反 a11y,且 dismiss 按鈕尺寸與 overlay chrome 比例不協調 — v5 trick 同時保視覺 + a11y + 幾何
+- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:按鈕本身被縮到 24,**與 overlay chrome 的比例不協調**(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於本檔「元件高度地板」段(:169)訂的最小值,沒有低於任何我們採用的門檻。先前這裡寫的「touch target 變 24 違反 a11y」既與 :169 自相矛盾、也查無出處,2026-09-24 更正;我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示),不以觸控尺寸建議作依據。v5 trick 同時保視覺 + 幾何:layout 只佔 24,視覺與命中仍是 `sm` 的 28
 
 ---
 

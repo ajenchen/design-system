@@ -93,6 +93,16 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
+          # 色相色票(2026-09-26 接進 PR 檢查;原本只在夜間 harness):名實一致 / 完整性 / token 存在 / 實心字對比,
+          # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
+          # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
+          npm run test:categorical-color
+          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
+          # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
+          npm run test:token-twin
+          # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
+          #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
+          npm run check:agents-bootstrap
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
@@ -104,9 +114,14 @@ jobs:
           node scripts/gen-design-system-barrel.mjs
           git diff --exit-code -- packages/design-system/src/index.ts 'packages/design-system/src/**/index.ts' \
             || { echo '✗ 產生器產物與來源不同步:請在本機跑 gen-component-indexes.mjs + gen-design-system-barrel.mjs 並 commit'; exit 1; }
-          # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組六個正反例證明它該紅時會紅。
+          # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組的正反例證明它該紅時會紅;
+          # 2026-09-25 起也掃 .ts,並追「寫在常數裡再經變數傳進來」的 hover 底色(Calendar 事件方塊漏掉的那種)。
           node scripts/hover-instant-invariant.mjs
           node scripts/hover-instant-invariant.mjs --selftest
+          # 滑過換上的底色必須是「元素自己靜止底色」的配對(color.spec.md「Hover 換色配對總則」)。
+          # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
+          # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
+          npm run test:hover-own-pair
 
       - name: Registered test scripts nothing was running
         run: |
@@ -134,6 +149,32 @@ jobs:
           # 就是兩邊都沒有 —— 而「沒壞要綠」那一半正是同一天三次效能誤報的所在(同一份建置
           # 量到 215 vs 311、長工合計 main 自己 1.83×,門檻卻是 1.25×)。棘輪:新增的閘必須宣告。
           npm run test:gate-control-group
+          # 同族第四面,而且是前三面結構上看不到的那一面:hook 明明登記在 registrations.json,
+          # 斷掉的是**產生檢視**那一層。2026-09-24 錨例 —— P0 批准前置閘從 PreToolUse 第 7 群搬到
+          # 第 8 群,registrations 與 git index 都對了,工作樹的 .claude/settings.json 還停在 7 群,
+          # 而 Claude Code 讀的正是工作樹那份 → 整個 session 零覆蓋零訊號,11 個受治理檔被編輯後
+          # 還被寫成「都過了 P0 閘」。拿 runtime 當儀器是全盲(缺掉的那群本來就不會被叫起來)。
+          npm run test:provider-view-group-reachability
+          # 規則重犯代表缺的是強制面,不是再寫一遍散文(M36(b''))。2026-09-24:Calendar 宣告
+          # role="grid" 卻整檔零 keydown、每顆日期鈕都 tabIndex=0 —— 螢幕閱讀器宣告「可用方向鍵瀏覽」,
+          # 按下去沒反應;同輪還有 story 容器寫 role="listbox" 當裝飾,而示範是消費者會照抄的。
+          # 規則住在 ds-canonical/references/keyboard-model-canonical.md,這支負責讓它有訊號。
+          npm run test:composite-role-keyboard
+          # 同族第五面:規格用「這是哪一種邊界」定義線,程式卻用「這裡剛好渲染了哪個元件」畫線。
+          # 2026-09-24:表頭短線由 ResizeHandle 附帶畫,而系統欄(選取/拖曳/列動作)不可調寬、
+          # 不渲染它 → 選取欄整條欄間線靜默消失,勾選框與第一個資料欄在視覺上併成同一個盒。
+          # 本閘不驗 class 有沒有寫(那又是代理),直接量渲染出來的線:一般欄邊界必須同高同位。
+          # 它要 storybook-static + chromium,所以實際跑在 verify-browser-datatable(本 job 沒有瀏覽器,
+          # 2026-09-24 第一次放這裡就是 `Executable doesn't exist` 紅)。
+          # 同族第六面:閘開頭驗的是「那一刻」的建置,之後每次導覽卻從活的 storybook-static 讀檔。
+          # 2026-09-24 本機:別的 agent 同時 build-storybook 清空輸出目錄 → 404 → 被判成「表格沒有列」。
+          # 瀏覽器閘改從本次獨佔的快照供檔(scripts/lib/storybook-static-snapshot.mjs);這支是它的
+          # 兩面對照(缺標記 / 複製期間被重建 → 以儀器失效拒絕;快照建好後原目錄被清空 → 不受影響)。
+          npm run test:storybook-static-snapshot
+          # 起不了瀏覽器的唯一政策(lib/launch-browser.mjs)的兩面對照:旗標未設 → SKIPPED-ENV exit 0;
+          # 下面各瀏覽器 job 宣告的 GOVERNANCE_BROWSER_REQUIRED=1 → exit 非 0,永不略過;另掃全 repo 不准有閘自己抄一份略過。
+          # 不需要瀏覽器(故意指向不存在的執行檔),所以放在這個沒有 Chromium 的 job。
+          npm run test:launch-browser
           npm run test:audit-coverage-tier-sync
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
@@ -159,7 +200,8 @@ jobs:
           node scripts/field-label-binding-invariant.mjs
           # 「閘要有對照組」的共用跑法本身也要有對照組:gate-meta lane 在**沒有 storybook-static
           # 的拋棄式快照**裡跑,缺它時各閘退出碼不一致(實測 1 與 2 都有)。只認 2 的話,
-          # 退出碼 1 的會被誤報成「產品壞掉」。七種局面的判定表在這支。
+          # 退出碼 1 的會被誤報成「產品壞掉」。反方向(2026-09-25):把 exit 2 一律讀成略過,
+          # 儀器失效(INSTRUMENT-FAIL,也是 exit 2)就被印成「略過」—— 現在略過只認閘明確印出的標記。判定表在這支。
           node scripts/test-gate-selftest-meta.mjs
           # story 命名紀律(標題 canonical / 禁 jargon / 禁中英夾雜 / 禁驗證備註當名字)。
           # 2026-09-21 之前也沒有任何 workflow 呼叫它,而它是紅的:4 個 story 名混英文
@@ -202,6 +244,9 @@ jobs:
     # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
     # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -265,6 +310,8 @@ jobs:
           node scripts/test-distribute-column-widths.mjs
           node scripts/test-fast-scroll-gate-policy.mjs
           node scripts/data-table-invariants.mjs
+          # 表頭欄間線一致性(2026-09-24,理由寫在 verify-static 的「Registered test scripts」那一段)。
+          npm run test:datatable-column-divider
           node scripts/data-table-scrollbar-visibility.mjs --quick
           node scripts/data-table-scroll-cost.mjs
           # 快速捲動「中央整片白」(2026-09-09):量合成器真正送出的每一幀(CDP screencast + 合成手勢),不是 DOM、不是預估。
@@ -356,6 +403,9 @@ jobs:
     name: Verify browser(DataTable perception gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -395,6 +445,15 @@ jobs:
           npm run test:hover-latency-policy
           # DatePicker.Range 區間預覽的判定表(純函式,15 格 + modifier 形狀 + 對照組)
           npm run test:range-preview
+          # TreeView 鍵盤路線的判定表(純函式;2026-09-25 待辦總帳 B9 路線乙):→ 收著先展開、展開後進列上按鈕、Tab 一下離開;
+          # --selftest 以舊路線(→ 跳第一個子項、按鈕不在方向鍵路上)當對照組必須被抓到,並檢查 tree-view.tsx 真的呼叫這支判定。
+          npm run test:tree-keyboard-route
+          # 「列上有小按鈕的一串」共用鍵盤判定(純函式;2026-09-26 側欄 / 檔案清單 / 樹 / Command 四份合一,待辦總帳〇節「按鍵規則合併」):
+          # 判定表 + 落點 / 停靠點 / 執行器 + 四個呼叫端真的呼叫它;--selftest 以合併前三處不一致(X4 / X6 / X7)當對照組必須被抓到。
+          npm run test:roving-list-keyboard
+          # DataTable I31 區間格 × 列滑過的判定表(純函式;待辦總帳 C12⑦ / K16):產品沒釘住 / 儀器看不到 / 真的釘住三種分得開,
+          # 判定表的像素全部來自實測;I31 本身在 data-table-invariants.mjs(同一支 lib,量之前先跑這張表)。
+          npm run test:data-table-range-hover
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
           # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
@@ -429,6 +488,9 @@ jobs:
     name: Verify browser(DataTable handles + dpr1 perception)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -498,6 +560,9 @@ jobs:
     # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
     # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -558,6 +623,9 @@ jobs:
     # 搬到排程的 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 都跑。
     # 所以照既有做法拆成平行 job:兩邊各約 7-9 分鐘,都在 15 分鐘內。
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -630,6 +698,9 @@ jobs:
     # timeout 不是正確性門檻,是執行時間預算;撞到它唯一的效果是毀掉裁決。依同檔既有的
     # SLOW_BROWSER_JOBS 慣例改 25(仍在硬上限內,真的卡死照樣抓得到)。
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -659,6 +730,10 @@ jobs:
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants
+          # 選單鍵盤(2026-09-25 待辦總帳 B10 / B11):子選單 Esc 一次只關一層、焦點回上一層那一項;選單開著按 Tab 收起全部、
+          # 焦點落在「關著時從觸發鈕按 Tab 會到的那一格」;AI 浮鈕選單只有 Esc / 選了項目才把焦點還給浮鈕(點外面不搶)。
+          # 先跑純判定表(量不到必須回 instrument),再真按鍵;--selftest 把 Radix 的舊行為造回來必紅。
+          npm run test:dropdown-menu-keyboard
           # 入口鈕拖曳磁吸的純函式單測(拖過視窗右緣、y 在帶內仍算貼邊):那條路只有 pointer capture 把
           # clientX 推出視窗時才走到,沒有任何 story 或瀏覽器閘會產生這種座標,修好當天唯一的證據是一次
           # 手動合成指標紀錄(2026-09-05 稽核抓到)。
@@ -679,10 +754,21 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
+          # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
+          npm run test:tree-view-keyboard-route
           npm run test:shared-carrier-focus
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
+          # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
+          # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
+          npm run test:sidebar-menu-keyboard
+          # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
+          # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
+          # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
+          # 晚 3 秒到的 story 檔必須等到。合成頁與機器快慢無關;--require-storybook-build 另在本 job 的真實建置上驗三題。
+          npm run test:open-story
           # Field 家族 view 字級 = edit 字級(2026-09-15,user 抓 RadioGroup view 裸 span 吃到 16px):量每個「四模式」story 的
           # view 段與 edit 段 computed font-size 相等;對照組把 view 硬改 16px 必全紅。SSOT field-controls.spec.md (e)。
           npm run test:field-view-typography
@@ -717,6 +803,9 @@ jobs:
     name: Verify browser(agent demo + cursor gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -773,6 +862,9 @@ jobs:
     name: Verify browser(DS-wide story sweeps)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -816,6 +908,9 @@ jobs:
     name: Verify browser(overlay list rows)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -855,6 +950,9 @@ jobs:
     name: Verify browser(multi-select footer)   # 同 job 另跑 overlay footer gutter(共用同一份 storybook build)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -887,6 +985,14 @@ jobs:
           # 驗的是對應關係不是字串(標籤是 prop,可換語言);對照組把標籤釘死,這支必須紅。
           npm run test:select-all-footer
 
+      - name: Single-select Tab leaves the dropdown (browser)
+        run: |
+          # 單選下拉開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11):選定反白那一項、收起、焦點落在觸發欄位的下一格 / 上一格
+          # (= 關著時按同一鍵的落點;在對話框型面板裡只在那一層繞圈)。多選面板(有全選)行為不變、Tab 在面板裡繞圈,
+          # 觸發欄位宣告的彈出型別必須等於實際 Tab 走法(listbox / dialog)。對照組把修正前的走法與宣告注入,S / M / D 三條都必紅。
+          # 跟上面那支共用同一份 storybook build,放同一個 job。
+          npm run test:select-tab-leave
+
       - name: Unrestricted option row (browser)
         run: |
           # 多選選單可由消費端打開一列「不限」(user 2026-09-18 拍板:預設關閉,因為只有消費端知道
@@ -905,6 +1011,9 @@ jobs:
     name: Verify browser(field edges + combobox + footer gutter)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

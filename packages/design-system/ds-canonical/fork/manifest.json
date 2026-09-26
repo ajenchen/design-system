@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.145",
+    "releaseVersion": "0.1.0-beta.146",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.144",
-      "snapshotSha256": "073ca2de0f49bb62353b6549fe5e3a8d3450505fae46cfe8d328c2ff9315726b"
+      "releaseVersion": "0.1.0-beta.145",
+      "snapshotSha256": "fbd0fb8a22296a8646f99ee7edeaba1a76455b8aba591cfb8ec4ccf859f4af9e"
     },
-    "ledgerSha256": "fffe804dd7cda35c5a40d403c1fd85a91e6e6b84afb6a6539c18f8d30ba49309",
-    "previousSnapshotSha256": "073ca2de0f49bb62353b6549fe5e3a8d3450505fae46cfe8d328c2ff9315726b",
-    "currentSnapshotSha256": "fbd0fb8a22296a8646f99ee7edeaba1a76455b8aba591cfb8ec4ccf859f4af9e",
+    "ledgerSha256": "23a06451152f3807a5b748fb36ba275dc6f86a2cbcc0432d180d5fd3127f3021",
+    "previousSnapshotSha256": "fbd0fb8a22296a8646f99ee7edeaba1a76455b8aba591cfb8ec4ccf859f4af9e",
+    "currentSnapshotSha256": "79f23ec182887c28344e6a21fdab6ede75e362f3b88fc5293cb2cf47d0e889ab",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.145",
-      "previousSnapshotSha256": "073ca2de0f49bb62353b6549fe5e3a8d3450505fae46cfe8d328c2ff9315726b",
+      "releaseVersion": "0.1.0-beta.146",
+      "previousSnapshotSha256": "fbd0fb8a22296a8646f99ee7edeaba1a76455b8aba591cfb8ec4ccf859f4af9e",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.144",
-      "previousSnapshotSha256": "308a306e6c2914e54b750cd5c63f3e8bfd647e5655aaebb8446b8ce4ad6c257e",
+      "releaseVersion": "0.1.0-beta.145",
+      "previousSnapshotSha256": "073ca2de0f49bb62353b6549fe5e3a8d3450505fae46cfe8d328c2ff9315726b",
       "providers": [
         {
           "id": "claude",
@@ -1331,7 +1331,7 @@
         "file": "hooks/check_fork_product_quality.sh",
         "sourceHook": "check_substantive_edit_approval_preflight.sh",
         "bucket": "REPLACE",
-        "matcher": "Edit|Write|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit|Bash",
         "runtime": "bash",
         "outputMode": "governance-context",
         "inputContract": "event-v1",
@@ -1867,7 +1867,10 @@
       "scripts/lib/consumer-control-plane-policy.mjs": "consumer/managed-files/145aab4b4fc470fc9ba7679b4a1d87d4f6a6d604940bd40f8d675c8af696498f.blob",
       "scripts/lib/exact-workspace-dependencies.mjs": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
       "scripts/lib/governance-dependency-bootstrap.mjs": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
+      "scripts/lib/launch-browser.mjs": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
       "scripts/lib/provider-lifecycle.mjs": "consumer/managed-files/76d485470d30ff014afacf7ce643763de9f4f956d9fc8128dbc1814774cf2e63.blob",
+      "scripts/lib/storybook-render-health.mjs": "consumer/managed-files/5a0d134a2645114c8caac20458070b00a7f0fd55b3e8805b7325cb4cf52fa15e.blob",
+      "scripts/lib/storybook-static-snapshot.mjs": "consumer/managed-files/68bfcddff9c4a16388c248cd34fb66163e9e64b3d809a48ef3984f6ae4ff6d12.blob",
       "scripts/lib/verified-exact-npm-runtime.mjs": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
       "scripts/lib/workspace-post-create.mjs": "consumer/managed-files/c893e9b734b162f4c631fef871128c16a9ab565f796a0e76d7f320f821f220f5.blob",
       "scripts/lib/worktree-fingerprint.mjs": "consumer/managed-files/61c6aca6d7f04bedbf556eaa9d3043681fe48cbe0e93a8ccb1d69a7c5e23fdcf.blob",
@@ -1934,7 +1937,10 @@
         "scripts/lib/consumer-control-plane-policy.mjs",
         "scripts/lib/exact-workspace-dependencies.mjs",
         "scripts/lib/governance-dependency-bootstrap.mjs",
+        "scripts/lib/launch-browser.mjs",
         "scripts/lib/provider-lifecycle.mjs",
+        "scripts/lib/storybook-render-health.mjs",
+        "scripts/lib/storybook-static-snapshot.mjs",
         "scripts/lib/verified-exact-npm-runtime.mjs",
         "scripts/lib/workspace-post-create.mjs",
         "scripts/lib/worktree-fingerprint.mjs",

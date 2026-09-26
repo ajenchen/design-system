@@ -6,6 +6,7 @@
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { LinkInput } from './link-input'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/LinkInput/設計規格',
@@ -148,15 +149,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
   </div>
 )
 
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
-
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
     <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
@@ -277,7 +269,7 @@ export const Overview = {
       {/* Interaction flow */}
       <div className="flex flex-col gap-3">
         <H3>互動流程</H3>
-        <Desc>edit 模式下的狀態轉換。核心差異：點擊 value 開啟連結，不是進入編輯——編輯由 Pencil 觸發。</Desc>
+        <Desc>edit 模式下的狀態轉換。核心差異：點擊 value（網址文字）開啟連結，不是進入編輯——編輯由 Pencil 或點外框裡文字以外的空白處觸發。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>觸發</Th><Th>效果</Th></tr></thead>
@@ -285,6 +277,8 @@ export const Overview = {
               {[
                 ['點擊 link text', '開啟連結（target="_blank"）'],
                 ['點擊 Pencil', '切換到 input 狀態，自動 focus'],
+                ['點擊外框空白處（網址文字以外）', '同 Pencil：切換到 input 狀態，自動 focus'],
+                ['從空白處拖過網址文字（選字）', '不進入編輯，保留選取'],
                 ['blur（合法 URL）', '切回 link 狀態，觸發 onChange'],
                 ['blur（不合法 URL）', '維持 input 狀態 + error 邊框'],
                 ['blur（空值）', '清除值，顯示 placeholder'],
@@ -322,30 +316,33 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {MODES.map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">State</span>
-          <div className="flex gap-1.5">
+          {/* 非 edit 模式只有 link 狀態:原本是「點了沒反應」的靜默 no-op,改用元件自身的個別 item disabled
+              (segmented-control.spec.md「disabled」);當前值恆為 link,不會落在停用項上 */}
+          <SegmentedControl size="sm" aria-label="State" value={editState} onValueChange={(v) => setEditState(v as EditStateKey)}>
             {EDIT_STATES.map((st) => (
-              <Tab key={st} active={editState === st} onClick={() => { if (mode === 'edit') setEditState(st) }}>
+              <SegmentedControlItem key={st} value={st} disabled={mode !== 'edit' && st !== 'link'}>
                 {st}
-              </Tab>
+              </SegmentedControlItem>
             ))}
-          </div>
+          </SegmentedControl>
           {mode !== 'edit' && <span className="text-[11px] text-fg-muted">readonly / disabled 只有 link 狀態</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
       </div>
 

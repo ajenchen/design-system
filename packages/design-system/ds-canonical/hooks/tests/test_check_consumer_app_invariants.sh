@@ -137,4 +137,29 @@ else
   echo "SUB-FAIL: >256 KiB no-match replay violated output contract (exit $rc)"
   fail=1
 fi
+
+# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+# 上面三格只看 exit 與輸出,證明不了「後面的規則有跑」—— 拿掉管線卻沒補子殼層的那一版,r1 的 exit 0 直接結束整支 hook,
+# r2-r4 根本沒跑,而 exit 0 看起來像修好了。這裡把 r2(第二條)與 r4(最後一條)注入成「不讀 stdin、留標記、exit 0」,
+# 用同一份 >256 KiB 輸入跑,斷言兩個標記都存在:不讀 stdin 就退出不得被判成 rc70,而且鏈條要走到最後一條。
+_R2_MARKER="$FAULT_DIR/r2-reached"
+_R4_MARKER="$FAULT_DIR/r4-reached"
+awk '
+  { print }
+  $0 == "r2_story_baseline() {" { print ": >\"$R2_MARKER\"; exit 0" }
+  $0 == "r4_app_story_title() {" { print ": >\"$R4_MARKER\"; exit 0" }
+' "$DIR/../check_consumer_app_invariants.sh" >"$FAULT_DIR/check_consumer_bigstdin.sh"
+set +e
+R2_MARKER="$_R2_MARKER" R4_MARKER="$_R4_MARKER" \
+  bash "$FAULT_DIR/check_consumer_bigstdin.sh" <"$FAULT_DIR/large-no-match.json" \
+    >"$FAULT_DIR/big.stdout" 2>"$FAULT_DIR/big.stderr"
+rc=$?
+set -e
+if [ "$rc" -eq 0 ] && [ ! -s "$FAULT_DIR/big.stdout" ] && [ ! -s "$FAULT_DIR/big.stderr" ] \
+  && [ -f "$_R2_MARKER" ] && [ -f "$_R4_MARKER" ]; then
+  echo "PASS: >256 KiB input + r2/r4 exit without reading stdin → rc0 and both rules were reached"
+else
+  echo "SUB-FAIL: large stdin + non-reading rules → exit $rc, r2 reached=$([ -f "$_R2_MARKER" ] && echo yes || echo no), r4 reached=$([ -f "$_R4_MARKER" ] && echo yes || echo no) ($(head -c 200 "$FAULT_DIR/big.stderr"))"
+  fail=1
+fi
 exit $fail

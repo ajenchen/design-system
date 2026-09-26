@@ -19,8 +19,19 @@ import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
-import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+// 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / FileUpload / Command 共用;判定表 scripts/test-roving-list-keyboard.mjs
+// + 樹專屬格 scripts/test-tree-keyboard-route.mjs;SSOT tree-view.spec.md「鍵盤導覽」,總帳 B9 + 〇節「按鍵規則合併」)
+import {
+  ROVING_CONTROL_SELECTOR,
+  applyRovingAction,
+  isTextEntryElement,
+  listRovingControls,
+  pickRovingTabStop,
+  removeRovingControlsFromTabOrder,
+  resolveRovingKey,
+  type RovingReorderKey,
+} from '@/design-system/lib/roving-list-keyboard'
 // Row primitive 共用常數——單一 source of truth
 import {
   ICON_SIZE,
@@ -29,6 +40,7 @@ import {
   ItemPrefix,
   ItemSuffix,
   ItemInlineAction,
+  ItemInlineActionButton,
   ROW_PADDING_BY_SIZE,
   type InlineActionConfig,
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -42,7 +54,7 @@ import {
  * TreeView 負責:
  *   1. 遞迴渲染 + indent
  *   2. 展開/收合狀態管理
- *   3. 鍵盤導覽 + ARIA tree
+ *   3. 鍵盤導覽 + ARIA 樹狀表格(treegrid;2026-09-25 由 tree 改,總帳 B9)
  *
  * 它不管 node 裡面長什麼樣——icon、badge、status indicator 等
  * 由 consumer 透過 props / slots 決定。
@@ -120,13 +132,6 @@ export interface TreeReorderAnnouncements {
 // 則走 CSS token 的 Tailwind class(跨元件視覺一致)。結構對齊:子 chevron 對齊父 icon,子 icon 對齊父 label。
 const INDENT_STEP: Record<SizeKey, number> = { sm: 24, md: 24, lg: 28 }
 
-// ── 鍵盤重排(keyboard reorder,2026-07-14 v1)常數 ──
-// 鍵位 = Cmd/Ctrl+Shift+方向鍵,對齊 Notion 移動 block 鍵位(https://www.notion.com/help/keyboard-shortcuts,
-// WebFetch 驗證紀錄 .claude/logs/treeview-keyboard-dnd-design.md#L25);
-// modifier 層與 APG tree 導覽鍵(無 modifier 的 ↑↓→←)完全正交,零衝突。
-const REORDER_ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
-type ReorderArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
-
 // 鍵盤重排 SR 播報預設文案(zh-TW;consumer 經 `reorderAnnouncements` prop per-key 覆寫)。
 // 格式 =「結果 + 序數位置」— 非視覺使用者靠「第 n 項,共 m 項」建立位置模型
 // (世界級 cite 詳 tree-view.spec.md「鍵盤重排」段,M22)。
@@ -151,6 +156,40 @@ const DEFAULT_REORDER_ANNOUNCEMENTS: Required<TreeReorderAnnouncements> = {
   instructions: '按 Cmd(Ctrl)+Shift+方向鍵可重新排列項目',
 }
 
+// ── 樹狀表格的 DOM 查詢(2026-09-25 總帳 B9:由虛擬焦點改為列上的 roving tabindex)──
+// 每個 node = 外層 wrapper(`data-tree-id`,無角色)+ 直屬子節點 `role="row"`(`data-tree-row`)
+// + 子項容器(`data-tree-children`,Radix Collapsible Content)。列不得包住子列(treegrid 的 row 只能擁有格),
+// 所以 aria-level / aria-expanded / aria-selected 都住在 row 上,wrapper 只是結構。
+const ROW_SELECTOR = '[data-tree-row]'
+const cssEscape = (value: string) =>
+  typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&')
+const rowSelector = (id: string) => `[data-tree-row="${cssEscape(id)}"]`
+/** node wrapper 的那一列(直屬子節點) */
+const rowOf = (wrapper: Element | null | undefined) => wrapper?.querySelector<HTMLElement>(':scope > [data-tree-row]') ?? null
+/**
+ * 看得到 = 不在收合中的子樹裡。Radix Collapsible 關閉動畫期間 Content 仍掛著、`data-state="closed"`,
+ * 那段時間裡的列不能再被方向鍵走到(舊查詢 `:not([hidden])` 對列本身永遠成立,擋不到)。
+ */
+const isInOpenBranch = (el: Element) => !el.closest('[data-tree-children][data-state="closed"], [hidden]')
+const isRowEnabled = (row: Element) => row.getAttribute('aria-disabled') !== 'true'
+/**
+ * 動作格裡可以走到的東西 —— 全部 tabIndex=-1,只用 → / ← 走到(總帳 B9;tree-view.spec.md「鍵盤導覽」)。
+ * 候選與過濾 = lib/roving-list-keyboard.ts(四個宿主同一份);動作格裡的輸入框 / 可編輯區保留自己的方向鍵,
+ * 那一格由共用判定的 `controlIsTextEntry` 處理(2026-09-26 前這裡另有一份 isButtonLike)。
+ */
+const getRowActions = (row: Element): HTMLElement[] => {
+  const cell = row.querySelector<HTMLElement>(':scope > [data-tree-actions]')
+  return cell ? listRovingControls(cell) : []
+}
+const hasAccessibleName = (el: Element) =>
+  Boolean(
+    el.getAttribute('aria-label')?.trim() ||
+      el.getAttribute('aria-labelledby')?.trim() ||
+      el.getAttribute('title')?.trim() ||
+      el.textContent?.trim(),
+  )
+const warnedUnnamedAction = new WeakSet<Element>()
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Context
 // ═══════════════════════════════════════════════════════════════════════════
@@ -161,18 +200,12 @@ interface TreeViewContextValue {
   selectionMode: SelectionMode
   expandOnSelect: boolean
   draggable: boolean
-  isKeyboardRef: React.RefObject<boolean>
-  /** 最近一次輸入是鍵盤(布林,隨模態變化觸發列 re-render;ref 身分不變不會) */
-  keyboardModality: boolean
-  /**
-   * Per-tree instance 前綴(React.useId),用來組每個 treeitem 的 DOM `id`
-   * (`${prefix}treeitem-${nodeId}`),讓容器的 `aria-activedescendant` 能指向目前 focused node。
-   * 多棵 TreeView 同頁 / node id 跨樹重複時不會撞 DOM id。
-   */
-  activeDescendantPrefix: string
   expandedIds: Set<string>
   selectedIds: Set<string>
+  /** 焦點最後停在哪一列(真 DOM 焦點,由容器 onFocus 同步) */
   focusedId: string | null
+  /** 整棵樹在 Tab 路上唯一的那一站(roving tabindex;總帳 B9) */
+  tabStopId: string | null
   /** 目前拖曳中的 node id(null = 沒在拖) */
   draggingId: string | null
   /** 目前 drop indicator 的位置 + depth(用於 line indent) */
@@ -180,8 +213,10 @@ interface TreeViewContextValue {
   toggleExpand: (id: string) => void
   select: (id: string) => void
   setFocusedId: (id: string | null) => void
-  /** Pointer activation 後把 DOM focus 還給 virtual-focus tree root。 */
-  focusTree: () => void
+  /** 把 DOM 焦點放到某一列(不捲動;捲動由該列的 isFocused effect 以 block:nearest 處理) */
+  focusRow: (id: string) => void
+  /** 列卸載時通知(它若是 Tab 停靠點或焦點所在,要重新選一站,否則整棵樹 Tab 不到) */
+  onRowUnmount: (id: string) => void
   registerNode: (id: string, parentId: string | null, hasChildren: boolean, label?: React.ReactNode, icon?: LucideIcon) => void
   getNodeInfo: (id: string) => NodeInfo | undefined
   unregisterNode: (id: string) => void
@@ -303,7 +338,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
   ) => {
     // ── Accessible name dev-warn(2026-07-18:兌現 spec「Accessible name 必填契約」段承諾 —
     //    原 spec 宣稱有此 console.warn 但 code 缺,spec-code drift;補上使兩者一致)──
-    //    role="tree" 名稱無法從子節點推導,缺 aria-label / aria-labelledby → SR 只讀「tree」。
+    //    role="treegrid" 名稱無法從子節點推導,缺 aria-label / aria-labelledby → SR 只讀出角色名。
     //    對齊 Button / Tag 的 dev-only 誤用警告 idiom;production 不觸發。
     const ariaLabel = props['aria-label']
     const ariaLabelledby = props['aria-labelledby']
@@ -314,8 +349,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         ariaLabelledby == null
       ) {
         console.warn(
-          '[DS] TreeView:role="tree" 缺 accessible name — 請傳 aria-label(直接字串)或 aria-labelledby(指向可見標題 id)其一。' +
-            '兩者皆缺時螢幕閱讀器只讀出「tree」無法辨識用途(WAI-ARIA APG 要求 role="tree" 具 accessible name)。',
+          '[DS] TreeView:role="treegrid" 缺 accessible name — 請傳 aria-label(直接字串)或 aria-labelledby(指向可見標題 id)其一。' +
+            '兩者皆缺時螢幕閱讀器只讀出角色名、無法辨識用途(WAI-ARIA 要求 treegrid 具 accessible name)。',
         )
       }
     }, [ariaLabel, ariaLabelledby])
@@ -362,19 +397,53 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       [controlledSelected, onSelectedChange]
     )
 
-    // ── Focus state ──
+    // ── Focus state(2026-09-25 總帳 B9:虛擬焦點 → 列上的 roving tabindex)──
+    // 真 DOM 焦點落在列(role="row")或列裡的按鈕上;focusedId 由容器 onFocus 同步。
+    // 為何改:樹狀表格要讓 → 把焦點**真的**交給列裡的按鈕、← 再交回列 —— 這一步本來就是真焦點,
+    // 列若維持虛擬焦點,同一棵樹就有兩種焦點模型。W3C 樹狀表格範例與 Adobe 的樹都是列上真焦點
+    // (來源見 tree-view.spec.md「A11y 預設」)。
     const [focusedId, setFocusedId] = React.useState<string | null>(null)
     const treeRef = React.useRef<HTMLDivElement>(null)
     React.useImperativeHandle(ref, () => treeRef.current!)
-    const focusTree = React.useCallback(() => {
-      treeRef.current?.focus({ preventScroll: true })
+    const focusRow = React.useCallback((id: string) => {
+      treeRef.current?.querySelector<HTMLElement>(rowSelector(id))?.focus({ preventScroll: true })
     }, [])
 
-    // ── Virtual focus id prefix ──
-    // DOM focus 永遠停在 role=tree 容器(單一 tab stop);目前 node 透過 aria-activedescendant
-    // 告知 AT(對齊 DS 既有 cmdk virtual-focus canonical:SelectMenu / Command listbox)。
-    // useId 確保多棵 TreeView 同頁 / node id 跨樹重複時 DOM id 不撞。
-    const activeDescendantPrefix = React.useId()
+    // ── 唯一的 Tab 停靠點(roving tabindex)──
+    // 順序:焦點最後停的那一列(仍看得到)→ 選中的第一列 → 第一個可用列
+    // (W3C keyboard-interface「進入組合元件時落在選中項,沒有就第一項」;來源見 spec)。
+    // 每次 render 後在 layout 階段重算(列的展開 / 選取 / 卸載都會改變答案),相同就不 setState,不會迴圈。
+    const [tabStopId, setTabStopId] = React.useState<string | null>(null)
+    // 只用來觸發一次 re-render(值本身不讀):列卸載後讓下方 layout effect 重算停靠點
+    const [, setRowRepairTick] = React.useState(0)
+    const tabStopRef = React.useRef<string | null>(null)
+    tabStopRef.current = tabStopId
+    const focusedIdRef = React.useRef<string | null>(null)
+    focusedIdRef.current = focusedId
+    React.useLayoutEffect(() => {
+      const tree = treeRef.current
+      if (!tree) return
+      const rows = Array.from(tree.querySelectorAll<HTMLElement>(ROW_SELECTOR)).filter(isInOpenBranch)
+      // 判定與 Sidebar / FileUpload 同一份(X1;lib/roving-list-keyboard.ts `pickRovingTabStop`)。
+      // 焦點停過的列即使停用也還拿得住焦點(← 回上一層可能落在停用列),所以 canHoldFocus 恆真;「選中」「第一列」只算可用列。
+      const stop = pickRovingTabStop(rows, {
+        remembered: focusedId != null ? rows.find((row) => row.dataset.treeRow === focusedId) ?? null : null,
+        canHoldFocus: () => true,
+        isNavigable: isRowEnabled,
+        isCurrent: (row) => row.getAttribute('aria-selected') === 'true',
+      })
+      const next = stop?.dataset.treeRow ?? null
+      if (next !== tabStopId) setTabStopId(next)
+    })
+    // 列被卸載(例:consumer 收合了焦點所在列的上一層,關閉動畫結束後子樹才卸載 —— 那一刻 TreeView 本身不會 re-render)
+    // → 若它是停靠點或焦點所在,觸發一次重算,否則整棵樹會從 Tab 路上消失。
+    const onRowUnmount = React.useCallback((id: string) => {
+      if (id === tabStopRef.current || id === focusedIdRef.current) setRowRepairTick((tick) => tick + 1)
+    }, [])
+
+    // ── DOM id prefix(重排操作說明節點的 id)──
+    // useId 確保多棵 TreeView 同頁時 DOM id 不撞。
+    const idPrefix = React.useId()
 
     // ── 鍵盤重排 SR 播報(2026-07-14 v1;詳 spec「鍵盤重排」)──
     // 單一 polite live region 覆寫式更新(textContent 替換非 append → 快速連按天然只播最新)。
@@ -386,16 +455,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       [reorderAnnouncementsProp]
     )
     // sr-only 操作說明節點 id(tree 容器 aria-describedby 指向;僅 draggable 渲染)
-    const reorderInstructionsId = `${activeDescendantPrefix}tree-reorder-instructions`
-
-    // ── Keyboard vs mouse detection ──
-    // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring。
-    // 2026-09-08:判斷來源改為共用的 useInputModality(SelectMenu / DropdownMenu / AgentPanel 同款,
-    // 原本四處各自實作 = 四份 SSOT)。ref 保留給 context 消費端讀,每次 render 由 hook 餵值;
-    // 模態一變 hook 觸發 root re-render,子項在 render 期讀到的就是新值。
-    const isKeyboardRef = React.useRef(false)
-    const keyboardModality = useInputModality() === 'keyboard'
-    isKeyboardRef.current = keyboardModality
+    const reorderInstructionsId = `${idPrefix}tree-reorder-instructions`
 
     // ── Drag state ──
     const [draggingId, setDraggingId] = React.useState<string | null>(null)
@@ -476,7 +536,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       const ratio = Math.max(0, Math.min(1, offsetY / height))
 
       const hasChildren = targetEl.dataset.treeHasChildren === 'true'
-      const targetDepth = Number(targetEl.getAttribute('aria-level') ?? 1) - 1
+      // 2026-09-25:aria-level 從 wrapper 搬到列(role="row")上(樹狀表格的層級屬性住在列)
+      const targetDepth = Number(rowEl.getAttribute('aria-level') ?? 1) - 1
 
       // ── X 軸:計算指標在哪個 indent level ──
       const treeEl = treeRef.current
@@ -507,12 +568,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           // X 軸:如果指標在比 target 更淺的層級,提升 drop depth
           // 例:Contact(depth 1)的 after,如果滑鼠在 depth 0 → 變成「after Pages」
           if (pointerIndentLevel < targetDepth) {
-            // 找 parent 來放
-            const groupEl = targetEl.closest('[role="group"]')
-            const parentTreeItem = groupEl?.parentElement?.closest('[role="treeitem"]')
-            const parentId = parentTreeItem?.getAttribute('data-tree-id')
+            // 找 parent 來放(2026-09-25:原本沿 role="group" / role="treeitem" 上溯,treegrid 沒有這兩個角色 → 改讀 wrapper 記的 parent id)
+            const parentId = targetEl.dataset.treeParentId || null
+            const parentRow = parentId ? treeEl?.querySelector<HTMLElement>(rowSelector(parentId)) ?? null : null
             if (parentId && parentId !== String(active.id)) {
-              const parentDepth = Number(parentTreeItem?.getAttribute('aria-level') ?? 1) - 1
+              const parentDepth = Number(parentRow?.getAttribute('aria-level') ?? 1) - 1
               finalDepth = parentDepth
               setDropTarget(prev => prev && prev.id === parentId && prev.position === 'after' && prev.depth === parentDepth ? prev : { id: parentId, position: 'after', depth: parentDepth })
               return
@@ -537,7 +597,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       } else {
         if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       }
-    }, [expandedIds, isInSubtree])
+    }, [expandedIds, isInSubtree, size])
 
     const dropTargetRef = React.useRef(dropTarget)
     dropTargetRef.current = dropTarget
@@ -612,42 +672,41 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // onDragEnd prop + registry(consumer API 零改動);每按一下立即 commit(無 grab-mode /
     // 無預覽,對齊 Notion Cmd/Ctrl+Shift+Arrow 移動 block:https://www.notion.com/help/keyboard-shortcuts,
     // WebFetch 驗證紀錄 .claude/logs/treeview-keyboard-dnd-design.md#L25)。
-    // 不用 dnd-kit KeyboardSensor — 其 activator 需可接收 DOM focus
-    // (https://dndkit.com/api-documentation/sensors/keyboard),與 row tabIndex={-1} +
-    // aria-activedescendant 虛擬焦點模型結構性不相容(2026-07-05 D4 拍板不翻案)。
+    // 不用 dnd-kit KeyboardSensor:它是「按住 → 方向鍵搬 → 放開」的抓取模式(https://dndkit.com/api-documentation/sensors/keyboard),
+    // 啟動鍵是 Enter / 空白鍵 —— 本元件那兩個鍵是「選取目前列」;每按即 commit 的語意也與抓取模式不同。
+    // (2026-09-25 更正:舊理由「列不可聚焦、與虛擬焦點結構性不相容」在列改為真焦點後已不成立。)
 
     // 播報用 label 文字:registry label 是 ReactNode — string 直接用,否則退 DOM row textContent。
     const getNodeLabelText = React.useCallback(
       (id: string): string => {
         const info = getNodeInfo(id)
         if (typeof info?.label === 'string') return info.label
-        const rowEl = treeRef.current?.querySelector<HTMLElement>(`[data-tree-row="${id}"]`)
+        const rowEl = treeRef.current?.querySelector<HTMLElement>(rowSelector(id))
         return rowEl?.textContent?.trim() || id
       },
       [getNodeInfo]
     )
 
     // code-quality-allow: long-function — 四鍵語意(同層上下 / 移入 / 移出)+ 邊界播報結構緊密,
-    // 拆 sub-fn 會跨 fn 傳 siblings / announce state 反而複雜(同 handleKeyDown 先例)
+    // 拆 sub-fn 會跨 fn 傳 siblings / announce state 反而複雜(同 handleKeyDownCapture 先例)
     const handleKeyboardReorder = React.useCallback(
-      (key: ReorderArrowKey) => {
+      (key: RovingReorderKey, sourceId: string) => {
         const tree = treeRef.current
-        if (!tree || !focusedId) return
-        const sourceId = focusedId
-        const sourceEl = tree.querySelector<HTMLElement>(`[data-tree-id="${sourceId}"]`)
+        if (!tree) return
+        const sourceEl = tree.querySelector<HTMLElement>(`[data-tree-id="${cssEscape(sourceId)}"]`)
         // disabled node 不可移(鍵盤導覽本就跳過 disabled,此為防禦 guard)
-        if (!sourceEl || sourceEl.getAttribute('aria-disabled') === 'true') return
+        if (!sourceEl || !isRowEnabled(rowOf(sourceEl) ?? sourceEl)) return
 
         const label = getNodeLabelText(sourceId)
         // 同層 siblings(DOM 序)。focused node 可見 ⇒ 其 parent 已展開 ⇒ 全 siblings 已 mount。
         const parentId = sourceEl.dataset.treeParentId || null
         const visibleItems = Array.from(
-          tree.querySelectorAll<HTMLElement>('[role="treeitem"]:not([hidden])')
-        )
+          tree.querySelectorAll<HTMLElement>('[data-tree-id]')
+        ).filter(isInOpenBranch)
         const siblings = visibleItems.filter((el) => (el.dataset.treeParentId || null) === parentId)
         const sourceIndex = siblings.findIndex((el) => el.dataset.treeId === sourceId)
         if (sourceIndex < 0) return
-        const isEnabled = (el: HTMLElement) => el.getAttribute('aria-disabled') !== 'true'
+        const isEnabled = (el: HTMLElement) => isRowEnabled(rowOf(el) ?? el)
 
         // 發出與 pointer 路徑同型的 TreeDragEndEvent,並排定 re-render 後 scrollIntoView
         // (既有 effect 只在 isFocused 變化時跑;同 id 移動不 re-fire,故此處補)。
@@ -657,9 +716,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           if (targetId === sourceId || isInSubtree(targetId, sourceId)) return false
           onDragEndProp?.({ sourceId, targetId, position })
           requestAnimationFrame(() => {
-            treeRef.current
-              ?.querySelector<HTMLElement>(`[data-tree-id="${sourceId}"]`)
-              ?.scrollIntoView({ block: 'nearest' })
+            const movedRow = treeRef.current?.querySelector<HTMLElement>(rowSelector(sourceId))
+            movedRow?.scrollIntoView({ block: 'nearest' })
+            // 2026-09-25(總帳 B9 改真焦點後):React 搬動 / 重掛那一列時,瀏覽器會把焦點丟到 body ——
+            // 鍵盤使用者按完一下就失去位置。焦點還給被移動的那一列(虛擬焦點時代靠 aria-activedescendant 自動跟上)。
+            if (movedRow && document.activeElement !== movedRow) movedRow.focus({ preventScroll: true })
           })
           return true
         }
@@ -755,8 +816,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
               setReorderAnnouncement(announcements.blocked({ reason: 'root', label }))
               return
             }
-            const parentEl = tree.querySelector<HTMLElement>(`[data-tree-id="${parentId}"]`)
-            const level = Number(parentEl?.getAttribute('aria-level') ?? '1')
+            const parentRow = tree.querySelector<HTMLElement>(rowSelector(parentId))
+            const level = Number(parentRow?.getAttribute('aria-level') ?? '1')
             if (commit(parentId, 'after')) {
               setReorderAnnouncement(
                 announcements.movedOut({ label, parentLabel: getNodeLabelText(parentId), level })
@@ -766,7 +827,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           }
         }
       },
-      [focusedId, expandedIds, toggleExpand, onDragEndProp, getNodeLabelText, isInSubtree, announcements]
+      [expandedIds, toggleExpand, onDragEndProp, getNodeLabelText, isInSubtree, announcements]
     )
 
     // ── Context value ──
@@ -777,18 +838,17 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         selectionMode,
         expandOnSelect,
         draggable,
-        isKeyboardRef,
-        keyboardModality,
-        activeDescendantPrefix,
         draggingId,
         dropTarget,
         expandedIds,
         selectedIds,
         focusedId,
+        tabStopId,
         toggleExpand,
         select,
         setFocusedId,
-        focusTree,
+        focusRow,
+        onRowUnmount,
         registerNode,
         unregisterNode,
         getNodeInfo,
@@ -799,157 +859,94 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         selectionMode,
         expandOnSelect,
         draggable,
-        isKeyboardRef,
-        keyboardModality,
-        activeDescendantPrefix,
         draggingId,
         dropTarget,
         expandedIds,
         selectedIds,
         focusedId,
+        tabStopId,
         toggleExpand,
         select,
         setFocusedId,
-        focusTree,
+        focusRow,
+        onRowUnmount,
         registerNode,
         unregisterNode,
         getNodeInfo,
       ]
     )
 
-    // ── Keyboard handler ──
-    // 2026-09-08:mousedown 不再手動改模態 —— 由 useInputModality 的 document 監聽統一處理
-    const handleMouseDown = React.useCallback(() => {}, [])
+    // ── Keyboard handler(2026-09-25 總帳 B9:樹狀表格路線;2026-09-26 判定與執行併入共用零件)──
+    // 判定 = lib/roving-list-keyboard.ts `resolveRovingKey`(與 Sidebar / FileUpload / Command 同一份按鍵表),
+    // 執行 = 同檔 `applyRovingAction`;這裡只讀樹自己的 DOM 狀態(哪一列、展開與否、上一層),以及重排。
+    // 用 capture(同 Sidebar):方向鍵整串歸樹,搶在列上按鈕自己的處理之前 —— 列上的選單鈕按 ↓ 換下一列、
+    // 不開選單(X6「統一成側欄做法」;開選單用 Enter / 空白鍵)。2026-09-26 之前在冒泡階段,選單鈕的 ↓ 讓給 Radix 開選單。
+    // 不包 useCallback:它只掛在一個 DOM 節點上,每次 render 讀最新的 props.onKeyDownCapture / expandedIds(同下方 onFocus)
+    const handleKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      ;(props as React.HTMLAttributes<HTMLDivElement>).onKeyDownCapture?.(e)
+      const tree = treeRef.current
+      if (!tree) return
+      const target = e.target as HTMLElement
+      // React 合成事件會穿過 portal 傳遞(例:列上選單鈕打開的選單),DOM 上不在這棵樹裡的一律不管
+      if (!tree.contains(target)) return
+      const row = target.closest<HTMLElement>(ROW_SELECTOR)
+      const id = row?.dataset.treeRow
+      if (!row || !id) return
+      const onRow = target === row
+      const actions = getRowActions(row)
+      // 列裡不在動作格的東西(展開箭頭、勾選框:都是 tabIndex=-1 的視覺件):交給它自己
+      if (!onRow && !actions.includes(target)) return
 
-    // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
-    const handleKeyDown = React.useCallback(
-      (e: React.KeyboardEvent) => {
-        // 2026-09-08:模態由 useInputModality 判定(document capture 早於此 handler)
-        if (!treeRef.current) return
-
-        // ── 互動 descendant 自理鍵盤(先於導覽 / 重排分支)──
-        // 公開 inlineActions / inlineActionsSlot 經 <ItemInlineAction> 渲染的原生 <button>
-        // (及 consumer slot 內的 link / field / role=button)是各自獨立的 tab stop(spec
-        // A11y「單一 tab stop」段)。其 Enter/Space/方向鍵應由該控件自理——若冒泡到容器
-        // handleKeyDown,下方 Enter/Space 分支的 e.preventDefault()+select() 會吃掉 button
-        // 原生啟動並誤選 tree node。虛擬焦點模型下 tree 導覽/重排只在事件來自容器本身時處理
-        // (DOM focus 停在 tree 容器;treeitem row / chevron / checkbox 皆 tabIndex=-1)。
-        const keyTarget = e.target as HTMLElement | null
-        if (keyTarget && keyTarget !== e.currentTarget) {
-          const interactive = keyTarget.closest<HTMLElement>(
-            'a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
-          )
-          // interactive === e.currentTarget:唯一可聚焦祖先是 tree 容器(tabIndex=0 單一 tab
-          // stop 進出點)→ 屬非互動 descendant,照常走 tree 導覽。
-          if (interactive && interactive !== e.currentTarget) return
-        }
-
-        // ── 鍵盤重排:Cmd/Ctrl+Shift+方向鍵(2026-07-14 v1,詳 spec「鍵盤重排」)──
-        // 必排在下方「無焦點時方向鍵先聚焦第一項」分支之前(該分支不分 modifier 攔 Arrow*);
-        // 非 modifier 導覽路徑(下方 switch)完全不變。
-        if ((e.metaKey || e.ctrlKey) && e.shiftKey && REORDER_ARROW_KEYS.includes(e.key)) {
-          if (!draggable) return // 未啟用拖曳 → 整組 no-op(modifier 組合不落入導覽 switch)
-          e.preventDefault() // 阻止瀏覽器原生行為(捲動 / 文字選取)
-          if (draggingId !== null) return // pointer 拖曳進行中 → 互斥,忽略鍵盤重排
-          handleKeyboardReorder(e.key as ReorderArrowKey)
-          return
-        }
-
-        // 取得所有可見的 treeitem
-        const items = Array.from(
-          // a11y:排除 disabled 節點 → 鍵盤導覽/選取/展開全跳過(APG:disabled 不可鍵盤操作)
-          treeRef.current.querySelectorAll<HTMLElement>('[role="treeitem"]:not([hidden]):not([aria-disabled="true"])')
-        )
-        const currentIndex = items.findIndex(
-          (el) => el.dataset.treeId === focusedId
-        )
-        // a11y:沒焦點時任一方向鍵先聚焦第一個(含 ArrowLeft/Right,原漏 → AT 無 activedescendant 可讀)
-        if (currentIndex < 0 && items.length > 0 && ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
-          // 沒有焦點時,任何方向鍵先聚焦第一個
-          setFocusedId(items[0].dataset.treeId ?? null)
-          e.preventDefault()
-          return
-        }
-
-        const currentEl = items[currentIndex]
-
-        switch (e.key) {
-          case 'ArrowDown': {
-            e.preventDefault()
-            const next = items[currentIndex + 1]
-            if (next) setFocusedId(next.dataset.treeId ?? null)
-            break
-          }
-          case 'ArrowUp': {
-            e.preventDefault()
-            const prev = items[currentIndex - 1]
-            if (prev) setFocusedId(prev.dataset.treeId ?? null)
-            break
-          }
-          case 'ArrowRight': {
-            e.preventDefault()
-            const id = currentEl?.dataset.treeId
-            if (!id) break
-            const isExpanded = expandedIds.has(id)
-            const hasChildren = currentEl?.dataset.treeHasChildren === 'true'
-            if (hasChildren && !isExpanded) {
-              toggleExpand(id)
-            } else if (hasChildren && isExpanded) {
-              // 已展開 → 移到第一個 child
-              const next = items[currentIndex + 1]
-              if (next) setFocusedId(next.dataset.treeId ?? null)
-            }
-            break
-          }
-          case 'ArrowLeft': {
-            e.preventDefault()
-            const id = currentEl?.dataset.treeId
-            if (!id) break
-            const isExpanded = expandedIds.has(id)
-            const hasChildren = currentEl?.dataset.treeHasChildren === 'true'
-            if (hasChildren && isExpanded) {
-              toggleExpand(id)
-            } else {
-              // 收合狀態或 leaf → 移到 parent
-              const parentId = currentEl?.dataset.treeParentId
-              if (parentId) setFocusedId(parentId)
-            }
-            break
-          }
-          case 'Home': {
-            e.preventDefault()
-            if (items[0]) setFocusedId(items[0].dataset.treeId ?? null)
-            break
-          }
-          case 'End': {
-            e.preventDefault()
-            const last = items[items.length - 1]
-            if (last) setFocusedId(last.dataset.treeId ?? null)
-            break
-          }
-          case 'Enter':
-          case ' ': {
-            e.preventDefault()
-            const id = currentEl?.dataset.treeId
-            if (id) select(id)
-            break
-          }
-        }
-      },
-      [focusedId, expandedIds, toggleExpand, select, setFocusedId, draggable, draggingId, handleKeyboardReorder]
-    )
+      const wrapper = row.closest<HTMLElement>('[data-tree-id]')
+      const parentId = wrapper?.dataset.treeParentId || null
+      const action = resolveRovingKey({
+        key: e.key,
+        focus: onRow ? 'item' : 'control',
+        controlCount: actions.length,
+        controlIndex: onRow ? -1 : actions.indexOf(target),
+        controlIsTextEntry: !onRow && isTextEntryElement(target),
+        tree: { hasChildren: wrapper?.dataset.treeHasChildren === 'true', expanded: expandedIds.has(id), hasParent: parentId != null },
+        // 未啟用拖曳 → 重排組合整組 no-op(modifier 組合不落入導覽)
+        reorderable: draggable,
+        defaultPrevented: e.defaultPrevented,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+      })
+      if (action.type === 'reorder') {
+        e.preventDefault() // 阻止瀏覽器原生行為(捲動 / 文字選取)
+        if (draggingId !== null) return // pointer 拖曳進行中 → 互斥,忽略鍵盤重排
+        handleKeyboardReorder(action.key, id)
+        return
+      }
+      // 看得到的列(DOM 序)。停用列不是方向鍵的落點(既有規則),但焦點可能經 ← 停在停用的上一層,
+      // 所以相鄰列以 DOM 序從目前這一列往前 / 往後找第一個可用列(pickRovingTarget)。
+      applyRovingAction(action, {
+        event: e,
+        item: row,
+        controls: actions,
+        items: Array.from(tree.querySelectorAll<HTMLElement>(ROW_SELECTOR)).filter(isInOpenBranch),
+        isNavigable: isRowEnabled,
+        focusOptions: { preventScroll: true },
+        onExpand: () => toggleExpand(id),
+        onCollapse: () => toggleExpand(id),
+        onParent: () => { if (parentId) focusRow(parentId) },
+        onActivateItem: () => select(id),
+      })
+    }
 
     const treeEl = (
       <div
-        // {...props} 在最前:內部 role/style(--tree-px)/onKeyDown/tabIndex 必須勝過 consumer
-        // 誤傳(原 spread 在最後 → consumer style 會整組蓋掉 --tree-px、onKeyDown 蓋掉鍵盤導覽)
+        // {...props} 在最前:內部 role/style(--tree-px)/onKeyDownCapture 必須勝過 consumer
+        // 誤傳(原 spread 在最後 → consumer style 會整組蓋掉 --tree-px、鍵盤 handler 蓋掉鍵盤導覽);
+        // consumer 的 onKeyDownCapture 由 handleKeyDownCapture 先呼叫再接手(同 SidebarMenu)
         {...props}
         ref={treeRef}
-        role="tree"
+        // 2026-09-25 總帳 B9:tree → treegrid。W3C 只在樹狀表格定義了「列上的按鈕」怎麼走
+        // (來源見 tree-view.spec.md「A11y 預設」);容器本身不再可聚焦,唯一的 Tab 停靠點是 tabStopId 那一列。
+        role="treegrid"
         aria-multiselectable={selectionMode === 'multiple' || undefined}
-        // Virtual focus:DOM focus 停在容器(單一 tab stop),aria-activedescendant 指向目前 node
-        // 的 DOM id,讓 AT 朗讀目前焦點 node(對齊 WAI-ARIA TreeView APG aria-activedescendant 模式)。
-        aria-activedescendant={focusedId ? `${activeDescendantPrefix}treeitem-${focusedId}` : undefined}
         // 鍵盤重排操作說明(sr-only,僅 draggable;與 consumer 傳入的 aria-describedby 合併)
         aria-describedby={
           [props['aria-describedby'], draggable ? reorderInstructionsId : undefined]
@@ -962,43 +959,26 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           //   - 在 DropdownMenuContent 內: content py-2 提供
           //   - 獨立使用(story demo): consumer 自己加 py-2
           // 這樣才能跟 DropdownMenu / MenuGroup 的結構一致(group 是容器,row 是內容)。
+          // 2026-09-25:原本這裡的「有 aria-activedescendant 才抑制容器外框」(@focus-suppress A)隨虛擬焦點一起拿掉 ——
+          // 容器已不可聚焦,框由拿到真焦點的那一列自己畫(TreeItem 列的 focus-visible:focus-ring-inset)。
           'flex flex-col',
-          // 2026-09-07 H1f:DOM 焦點永遠停在這個 role=tree 容器(:369),視覺指示器畫在
-          // aria-activedescendant 指到的那一列上。若不抑制,全域 base.css:44-47 會再給容器
-          // 畫一圈 +2px 外框 → 同一次互動兩個焦點指示。
-          // 條件寫成「有 aria-activedescendant 才抑制」:空樹(找不到任何 treeitem → 該屬性不渲染,
-          // 見 :939)時全域框仍會畫,不會變成「聚焦了卻完全沒有指示」。
-          // @focus-suppress A — A 虛擬游標;承擔者:指示器畫在 aria-activedescendant 指到的那一列(showRing → focus-ring-inset,:1381)
-          '[&[aria-activedescendant]:focus-visible]:outline-none',
           className,
         )}
         style={{
           ['--tree-px' as string]: CONTEXT_PX_VAR[context],
           ...props.style,
         } as React.CSSProperties}
-        onKeyDown={handleKeyDown}
-        onMouseDown={handleMouseDown}
-        // a11y APG:Tab 進入時初始化 virtual focus(優先 selected,其次第一個可用節點);
-        // 原本無 onFocus init → focusedId=null → aria-activedescendant undefined,AT 讀不到目前節點
+        onKeyDownCapture={handleKeyDownCapture}
+        // 焦點落在任何一列或列裡的按鈕 → 記下是哪一列(它就是下一次 Tab 進來的落點;總帳 B9)
         onFocus={(e) => {
           ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)
-          // 2026-09-07:Tab 進場時把鍵盤模式打開。
-          // 原本 `isKeyboardRef` 只在**樹內** keydown 才變 true(:814),但 Tab 的 keydown
-          // 發生在上一個元素上、根本不會傳到這裡 → 進場當下 `showRing`(:1174)恆為 false,
-          // 於是 aria-activedescendant 已經指向某一列、那列卻沒有任何可見指示,
-          // 違反 APG aria-activedescendant 模式(作者必須自己畫出目前節點)。
-          // 判準用瀏覽器自己的 `:focus-visible` —— 它就是「這次聚焦該不該給可見指示」的權威答案:
-          // 滑鼠按下進場時它不成立(且 mousedown 已先把 ref 設回 false),鍵盤進場才成立。
-          // 2026-09-08:Tab 進場的鍵盤模態改由 useInputModality 判定(Tab 的 keydown 在 document
-          // capture 就被記成鍵盤,不再依賴 :focus-visible 補位)。
-          if (e.target === e.currentTarget && !focusedId && treeRef.current) {
-            const first =
-              treeRef.current.querySelector<HTMLElement>('[role="treeitem"][aria-selected="true"]:not([hidden]):not([aria-disabled="true"])') ??
-              treeRef.current.querySelector<HTMLElement>('[role="treeitem"]:not([hidden]):not([aria-disabled="true"])')
-            if (first) setFocusedId(first.dataset.treeId ?? null)
-          }
+          const tree = treeRef.current
+          const target = e.target as HTMLElement
+          // React 合成的 focus 事件也會穿過 portal 冒泡;只認 DOM 上在這棵樹裡的
+          if (!tree || !tree.contains(target)) return
+          const id = target.closest<HTMLElement>(ROW_SELECTOR)?.dataset.treeRow
+          if (id && id !== focusedIdRef.current) setFocusedId(id)
         }}
-        tabIndex={0}
       >
         {children}
       </div>
@@ -1023,8 +1003,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           {draggable && (
             <>
               {/* 鍵盤重排 SR 播報 — TreeView 自有 sr-only polite live region(單一節點覆寫式更新;
-                  消費 select-menu.tsx SelectMenuLiveStatus 先例)。渲染在 role="tree" 之外
-                  (tree 的合法 children 只有 treeitem / group);dnd-kit DndContext 內建 live region
+                  消費 select-menu.tsx SelectMenuLiveStatus 先例)。渲染在 role="treegrid" 之外
+                  (treegrid 的合法 children 只有 row / rowgroup);dnd-kit DndContext 內建 live region
                   只播 dnd-kit drag session,自建鍵盤路徑觸不到,故必須自有。 */}
               <div role="status" aria-live="polite" className="sr-only">
                 {reorderAnnouncement}
@@ -1072,9 +1052,8 @@ const treeItemVariants = cva(
     'flex items-start gap-2 w-full',
     'cursor-pointer select-none',
     // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-    // 2026-09-07 刪 `outline-none`:虛擬游標(showRing → focus-ring-inset)也寫 outline,
-    // 兩者特異性同階,留著等於讓「誰贏」取決於 Tailwind 的排序。這一列本來就不可聚焦
-    // (tabIndex 在 li 上且為 -1),不需要防禦性抑制。
+    // 2026-09-07 刪 `outline-none`。2026-09-25 起這一列就是真焦點(roving tabindex,總帳 B9),
+    // 焦點框由下方 TreeItem 的 `focus-visible:focus-ring-inset` 畫,更不能加 outline-none。
     // Label 字重 500(跟 SidebarMenuButton 一致)
     'font-medium',
   ],
@@ -1103,8 +1082,8 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /**
    * Checkbox(多選模式,label 前方)。傳入 ReactNode(Checkbox 元件)。
    * 位置:在 chevron 之後、indicator/icon 之前。
-   * 此 slot 僅是 treeitem selection 的視覺鏡像；有效 React element 會由 TreeItem
-   * 強制正規化為 `aria-hidden` + `tabIndex=-1`，不形成第二個 node tab stop。
+   * 此 slot 僅是列 selection 的視覺鏡像；有效 React element 會由 TreeItem
+   * 強制正規化為 `aria-hidden` + `tabIndex=-1`，不形成第二個 Tab 停靠點。
    * 單選模式通常不需要(用 bg-neutral-selected 表達選中)。
    */
   checkbox?: React.ReactNode
@@ -1117,6 +1096,7 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * - Icon 尺寸 = `ICON_SIZE[treeViewSize]`(自動)
    * - Hover bg、tooltip、aria-label、cursor-pointer 自動處理
    * - **不可以**手刻 button JSX(canonical 實作在 `patterns/element-anatomy/item-anatomy.tsx` `ItemInlineAction`)
+   * - 鍵盤:按鈕不在 Tab 路上;焦點在列上按 → 進第一顆、→ / ← 在按鈕間走、第一顆再 ← 回列(tree-view.spec.md「鍵盤導覽」)
    *
    * ```tsx
    * <TreeItem
@@ -1142,6 +1122,8 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * (如 DropdownMenu trigger / 自訂 popover / 多 tier 動作)。
    *
    * 跟 `inlineActions` 互斥(同時傳 `inlineActionsSlot` 會優先,`inlineActions` 被忽略)。
+   * slot 裡每一個可聚焦的元素都會被設成 `tabIndex=-1`、改由 → / ← 走到,而且**每一個都必須有可讀名稱**
+   * (aria-label / 可見文字;缺的話 dev 模式 console.warn)。
    *
    * 規則對齊 Input.endSlot canonical:90% case 用 `inlineActions` 宣告式 API,
    * 10% config 表達不出時走 slot。視覺一致性由 consumer 負責(可使用 host 內部 helper
@@ -1150,7 +1132,8 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   inlineActionsSlot?: React.ReactNode
   /**
    * Inline actions 的顯示模式:
-   * - `"hover"`(預設):row hover 或鍵盤 focus(focus-visible)時才淡入
+   * - `"hover"`(預設):列被滑過、或鍵盤焦點在這一列(列本身或列裡的按鈕)時才出現,瞬間出現、不淡入
+   *   (待辦總帳 L9;規則住 ItemSuffix `hoverReveal`,見 tree-view.spec.md「Hover-only Inline Actions」)
    * - `false`:常駐顯示
    *
    * 對齊 `SidebarMenuButton.actionsReveal`,同一套規則。
@@ -1180,25 +1163,31 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       expandedIds,
       selectedIds,
       focusedId,
+      tabStopId,
       draggingId,
       dropTarget,
       toggleExpand,
       select,
       setFocusedId,
-      focusTree,
+      focusRow,
+      onRowUnmount,
       registerNode,
       unregisterNode,
-      keyboardModality,
-      activeDescendantPrefix,
     } = ctx
 
     const hasChildren = React.Children.count(children) > 0
     const isExpanded = expandedIds.has(id)
     const isSelected = selectedIds.has(id)
     const isFocused = focusedId === id
-    const showRing = isFocused && keyboardModality
+    // 整棵樹唯一的 Tab 停靠點(roving tabindex;總帳 B9)
+    const isTabStop = tabStopId === id
     const isDragging = draggingId === id
     const isDropTarget = dropTarget?.id === id
+    // 列名只取 label(aria-labelledby 指過來)。用 useId 而非 node id 組:node id 可能含空白,會把 IDREF 清單拆開
+    const labelId = React.useId()
+    // 沿用舊的真值判斷(slot 傳 false / '' 視同沒傳,改走 inlineActions)
+    const hasSlot = Boolean(inlineActionsSlot)
+    const hasActionCell = !disabled && (hasSlot || (inlineActions?.length ?? 0) > 0)
     const visualCheckbox = checkbox && React.isValidElement<Record<string, unknown>>(checkbox)
       ? React.cloneElement(checkbox, { 'aria-hidden': true, tabIndex: -1 })
       : checkbox
@@ -1224,15 +1213,46 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       return () => unregisterNode(id)
     }, [id, parentId, hasChildren, label, Icon, registerNode, unregisterNode])
 
-    // ── Focus scroll into view ──
+    // 卸載時通知 TreeView 重選 Tab 停靠點(總帳 B9;見 TreeView onRowUnmount)
+    React.useEffect(() => () => onRowUnmount(id), [id, onRowUnmount])
+
+    // ── Refs ──
     const itemRef = React.useRef<HTMLDivElement>(null)
     React.useImperativeHandle(ref, () => itemRef.current!)
+    const rowRef = React.useRef<HTMLDivElement | null>(null)
+    const actionsRef = React.useRef<HTMLSpanElement | null>(null)
 
+    // ── Focus scroll into view ──(捲的是列本身;原本捲 wrapper,展開的資料夾 wrapper 含整個子樹)
     React.useEffect(() => {
-      if (isFocused && itemRef.current) {
-        itemRef.current.scrollIntoView({ block: 'nearest' })
+      if (isFocused && rowRef.current) {
+        rowRef.current.scrollIntoView({ block: 'nearest' })
       }
     }, [isFocused])
+
+    // ── 列上的按鈕不在 Tab 路上(總帳 B9;tree-view.spec.md「鍵盤導覽」)──
+    // 動作格裡每一個可聚焦的東西都設 tabIndex=-1,改由 → / ← 走到。用 DOM 設而不是逐一傳 prop:
+    // inlineActionsSlot 是 consumer 的任意 ReactNode(選單觸發鈕、連結…),拿不到它們的 props;
+    // MutationObserver 接住 slot 內容之後才掛上 / 自己改回 tabindex 的情況。
+    React.useLayoutEffect(() => {
+      const cell = actionsRef.current
+      if (!cell) return
+      const enforce = () => {
+        const controls = cell.querySelectorAll<HTMLElement>(ROVING_CONTROL_SELECTOR)
+        removeRovingControlsFromTabOrder(controls)
+        // 每顆列上按鈕都要有可讀名稱(總帳 B9 驗收;inlineActions 由 ItemInlineAction 的 aria-label 保證,這裡管 slot)
+        if (process.env.NODE_ENV === 'production') return
+        controls.forEach((el) => {
+          if (!hasAccessibleName(el) && !warnedUnnamedAction.has(el)) {
+            warnedUnnamedAction.add(el)
+            console.warn(`[DS] TreeItem「${id}」:inlineActionsSlot 裡有一個可聚焦元素沒有可讀名稱 —— 請加 aria-label 或可見文字。`, el)
+          }
+        })
+      }
+      enforce()
+      const observer = new MutationObserver(enforce)
+      observer.observe(cell, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] })
+      return () => observer.disconnect()
+    }, [hasActionCell, id])
 
     // ── Handlers ──
     const handleRowClick = React.useCallback(
@@ -1240,27 +1260,30 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
         onClick?.(e)
         if (e.defaultPrevented || disabled) return
         e.stopPropagation()
-        // Virtual-focus contract:DOM focus 必留在 tree root。先 focus 再設定 clicked id，
-        // 避免 root onFocus 的「初次進入選第一項」初始化覆寫 pointer target。
-        focusTree()
+        // 焦點:點在列上 → 列拿到焦點(roving tabindex 的停靠點跟著搬);
+        // 點在列上的按鈕(或對它按 Enter 合成的 click)→ 焦點留在那顆按鈕上,不搶(總帳 B9)。
+        // 選取行為沿用既有(點到按鈕也會選取該列,本次不改;見 spec「展開/收合」)。
+        const fromActionCell = (e.target as HTMLElement).closest('[data-tree-actions]')
+        if (!fromActionCell) focusRow(id)
         setFocusedId(id)
         select(id)
         if (expandOnSelect && hasChildren) {
           toggleExpand(id)
         }
       },
-      [id, disabled, onClick, focusTree, select, setFocusedId, expandOnSelect, hasChildren, toggleExpand]
+      [id, disabled, onClick, focusRow, select, setFocusedId, expandOnSelect, hasChildren, toggleExpand]
     )
 
     const handleChevronClick = React.useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation()
         if (disabled) return
-        focusTree()
+        // 滑鼠點展開箭頭時瀏覽器會把焦點給這顆(tabIndex=-1)按鈕 —— 還給列,鍵盤接著從這一列走
+        focusRow(id)
         setFocusedId(id)
         toggleExpand(id)
       },
-      [id, disabled, focusTree, setFocusedId, toggleExpand]
+      [id, disabled, focusRow, setFocusedId, toggleExpand]
     )
 
     // dnd-kit PointerSensor listener 與 consumer DOM callback 必安全 compose：consumer 先收到
@@ -1285,27 +1308,25 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
 
     // ── Chevron(永遠存在:expandable = 旋轉箭頭;leaf = placeholder 佔位) ──
     // 消費 `<ItemPrefix>` SSOT — 永遠 h-[1lh] 對齊 label 第一行中線(item-anatomy 對應)。
-    // forced width 透過 style 鎖 chevron 槽寬,讓 sibling label 起點水平對齊(無 chevron leaf 佔位同寬)。
+    // forced width 透過 style 鎖 chevron 槽寬,讓 sibling label 起點水平對齊(無 chevron leaf 佔位同寬;縮排不變)。
+    // 箭頭本身 = 共用行內小按鈕 `ItemInlineActionButton`(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」;
+    // 依據 inline-action.spec.md「尺寸對照」TreeItem 列 + hit-area-canonical.md:滑過底色 18(lg 22)= 點得到的範圍,
+    // 盒與排版佔位仍是圖示尺寸 16 / 20,多出的 1px 靠溢出;按下多一階 neutral-active)。與 DataTable 巢狀列的展開箭頭同一顆
+    //(data-table.tsx nestedPrefix)。2026-09-26 之前這裡手刻一顆 16×16 的 <button>,滑過底色與點擊範圍都只有 16。
+    // 鍵盤用 → / ← 展開收合(列上的 aria-expanded),箭頭本身不在 Tab 路上、對讀屏隱藏。
     const chevronSlot = (
       <ItemPrefix style={{ width: iconPx }}>
         {hasChildren ? (
-          <button
-            type="button"
+          <ItemInlineActionButton
+            icon={ChevronRight}
             tabIndex={-1}
-            onClick={handleChevronClick}
-            className={cn(
-              'flex items-center justify-center rounded-md',
-              'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
-              // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」);只留展開箭頭的旋轉
-              'transition-transform duration-150 motion-reduce:duration-0',
-              isExpanded && 'rotate-90',
-              disabled && 'text-fg-disabled pointer-events-none',
-            )}
-            style={{ width: iconPx, height: iconPx }}
             aria-hidden
-          >
-            <ChevronRight size={iconPx} />
-          </button>
+            onClick={handleChevronClick}
+            // 展開 / 收合的旋轉是狀態切換的動畫,不是滑過回饋 → 保留(motion.spec.md「hover 回饋不做過渡」只管滑過;
+            // 滑過底色與圖示色由 ItemInlineActionButton 瞬間切換)
+            iconClassName={cn('transition-transform duration-150 motion-reduce:duration-0', isExpanded && 'rotate-90')}
+            className={disabled ? 'text-fg-disabled pointer-events-none' : undefined}
+          />
         ) : (
           // Leaf placeholder
           <span style={{ width: iconPx }} aria-hidden />
@@ -1321,21 +1342,11 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             if (typeof ref === 'function') ref(node)
             else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
           }}
-          // DOM id 供容器 aria-activedescendant 指向(virtual focus);與 data-tree-id 並存
-          // (data-tree-id 給內部 querySelector / drag,id 給 AT)。
-          id={`${activeDescendantPrefix}treeitem-${id}`}
-          role="treeitem"
-          aria-expanded={hasChildren ? isExpanded : undefined}
-          aria-selected={selectionMode !== 'none' ? isSelected : undefined}
-          aria-level={depth + 1}
-          aria-disabled={disabled || undefined}
-          // 2026-07-05 D4 修:aria-roledescription 移到 treeitem(有 role 的元素才合法)—
-          // 供 AT 提示此 node 可拖曳;值消費 dnd-kit attributes SSOT(預設 'draggable')。
-          aria-roledescription={draggable && !disabled ? dragAttrs['aria-roledescription'] : undefined}
+          // node wrapper(2026-09-25 總帳 B9):無角色 —— 樹狀表格的列不得包住子列,角色與 aria-* 都搬到下面的 row。
+          // data-tree-* 留在這裡給內部查詢 / 拖曳 / 閘使用。
           data-tree-id={id}
           data-tree-parent-id={parentId ?? ''}
           data-tree-has-children={hasChildren}
-          tabIndex={-1}
           className={cn('w-full min-w-0 relative', isDragging && dragSourceClass)}
         >
           {/* Drop indicator — before:水平 2px primary line(指 SSOT drag-visual.ts);
@@ -1351,10 +1362,25 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           <div
             {...props}
             ref={(node) => {
-              // 合併 drag + drop ref 到同一個 element
+              // 合併 drag + drop + 本地 ref 到同一個 element
+              rowRef.current = node
               if (draggable) setDragRef(node)
               setDropRef(node)
             }}
+            // ── 樹狀表格的列(2026-09-25 總帳 B9)──
+            // role / aria-* / tabIndex 放在 {...props} 之後:內部語意必須勝過 consumer 誤傳。
+            role="row"
+            aria-level={depth + 1}
+            aria-expanded={hasChildren ? isExpanded : undefined}
+            aria-selected={selectionMode !== 'none' ? isSelected : undefined}
+            aria-disabled={disabled || undefined}
+            // 列的名稱只取 label —— 不讓動作按鈕的 aria-label 併進列名(否則念成「Alice 重新命名 刪除」)
+            aria-labelledby={labelId}
+            // 2026-07-05 D4 修:aria-roledescription 放在有角色的元素上(原 treeitem,現 row)—
+            // 供 AT 提示此 node 可拖曳;值消費 dnd-kit attributes SSOT(預設 'draggable')。
+            aria-roledescription={draggable && !disabled ? dragAttrs['aria-roledescription'] : undefined}
+            // roving tabindex:整棵樹只有停靠點那一列是 0,其餘列與所有列上按鈕都是 -1(總帳 B9)
+            tabIndex={isTabStop ? 0 : -1}
             data-tree-row={id}
             className={cn(
               'group/tree-item',
@@ -1373,13 +1399,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
               // 2026-08-11 修偏移(SSOT = item-anatomy「選中 × 互動疊加」):先前 hover:bg-neutral-hover
               //(0,2,0)蓋掉無修飾的 bg-neutral-selected(0,1,0)→ 選中列 hover 反而變淺 = bug。
-              // 釘住 hover 不變(twMerge 同組後者勝)+ 鍵盤焦點深一階 -focus。
-              // 2026-09-06:移除 `focus-visible:bg-neutral-selected-focus`。TreeView 是**虛擬焦點**元件
-              //(tree 根 tabIndex=0 :959 / treeitem tabIndex=-1 :1292 / 本 row div 無 tabIndex,
-              // 全 DS 131 處 <TreeItem> 用法 0 處傳 tabIndex),該列永遠不是 DOM 焦點,
-              // `:focus-visible` 恆不 match —— 那行自 2026-08-11 加入起從未生效。
-              // 而且本元件的鍵盤游標**已經由下一行的 ring 表達**(showRing,:1154),再深一階是多餘的。
-              // 判準見 item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、真焦點用 focus-visible:」。
+              // 釘住 hover 不變(twMerge 同組後者勝)。鍵盤焦點不改底色,只畫框(focus-canonical 規則二)。
               !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected',
               // 落點底色排在所有其他 `bg-*` 之後 —— twMerge 同組後者勝。
               // 2026-09-06 修:原本排在 `hover:bg-neutral-hover` 與 `bg-neutral-selected` **之前**,
@@ -1389,12 +1409,12 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // 游標又必然停在該列上,落點底色一樣看不到。`dropIndicatorInside` 自帶 `hover:` 同色治 (2),
               // 這行的位置治 (1)。
               isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
-              // 2026-09-07 遷到 outline 通道(全 DS 兩種幾何的 SSOT,base.css @utility)。
-              // **不加 `focus-visible:`** —— 這一列永遠不是 DOM 焦點(焦點停在 role=tree 容器,
-              // 見 :369),加了變體會變成永不生效的死用法(TimePicker 就是這樣死的)。
-              // 順帶修掉 box-shadow 通道的既有缺陷:高對比模式下 box-shadow 被強制 none,
-              // 原本的 ring 在那個模式完全看不見;outline 會照畫。
-              showRing && 'focus-ring-inset',
+              // 焦點框(2026-09-25 總帳 B9:虛擬游標 showRing → 真焦點 focus-visible):
+              // 這一列現在是真 DOM 焦點,「這次要不要畫」交給瀏覽器的 :focus-visible(滑鼠點 → 不畫、鍵盤 → 畫),
+              // 與 Sidebar 選單鈕同一種寫法(focus-canonical「真焦點用 focus-visible:」)。
+              // 往內畫(outline 通道,base.css @utility):列撐滿容器寬,往外會被裁。
+              // 只在列**本身**是焦點時畫;焦點在列上的按鈕時由那顆按鈕自己畫框,列不再多畫一個。
+              'focus-visible:focus-ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,
             )}
@@ -1408,70 +1428,78 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             }}
             // 2026-07-05 D4 修:只 spread listeners,不 spread dnd-kit attributes —
             // useDraggable 預設 attributes 注入 role="button" + tabIndex=0 + aria-pressed +
-            // aria-describedby(鍵盤拖曳指示):role=button 污染 treeitem 語意、tabIndex=0
-            // 讓每 row 變 DOM tab stop 破壞單一 tab stop 虛擬焦點模型(DOM focus 在 row 上按
-            // Enter 會 bubble 到容器 handleKeyDown 但 handler 操作 state focusedId → 錯位);
-            // sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力;
-            // 鍵盤重排(2026-07-14 v1)走容器 handleKeyDown 的 Cmd/Ctrl+Shift+Arrow 分支,非 dnd-kit sensor。
-            // aria-roledescription 保留在上方 treeitem 元素(有 role 才合法)。
+            // aria-describedby(鍵盤拖曳指示):role=button 會蓋掉列的語意、tabIndex=0 會讓每一列都變成
+            // Tab 停靠點(破壞整棵樹只佔一站);sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力;
+            // 鍵盤重排(2026-07-14 v1)走容器 handleKeyDownCapture 的 Cmd/Ctrl+Shift+Arrow 分支,非 dnd-kit sensor。
+            // aria-roledescription 保留在上方列元素(有 role 才合法)。
             {...(draggable ? composedDragListeners : {})}
             onClick={handleRowClick}
           >
-            {chevronSlot}
+            {/* 第一格:chevron / checkbox / indicator 或 icon / label(樹狀表格 row 只能擁有格,2026-09-25 總帳 B9) */}
+            <div role="gridcell" className="flex flex-1 min-w-0 items-start gap-2">
+              {chevronSlot}
 
-            {/* Checkbox 在 icon 前——消費 `<ItemPrefix>` 對齊第一行
-              * 2026-05-26 SSOT lock(user explicit「多選的方式應該也是要跟 menu 一樣是出現 checkbox」):
-              *   - selectionMode='multiple' + 無 consumer checkbox prop → auto-render `<Checkbox>` reflect selectedIds
-              *     (對齊 SelectMenu multi pattern;consumer 不用手寫 checkbox)
-              *   - selectionMode='multiple' + consumer 傳 checkbox → 用 consumer 的(parent-child cascade 等 advanced)
-              *   - selectionMode='single' / 'none' → 不 render checkbox(text-foreground + bg 雙信號表 selected)
-              * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx:352-354(SelectMenu multi=checkbox) */}
-            {(checkbox || selectionMode === 'multiple') && (
-              <ItemPrefix className="pointer-events-none">
-                {/* 2026-07-05 D4 修:auto-render Checkbox 補 tabIndex={-1} — Radix Checkbox root
-                  * 是原生 button(預設可聚焦),aria-hidden + 可聚焦 = axe aria-hidden-focus,且
-                  * 破壞 tree 單一 tab stop 虛擬焦點模型(tree-view.spec.md「Focus」段);
-                  * ItemPrefix pointer-events-none 只擋滑鼠不擋鍵盤。選取語意由 treeitem
-                  * aria-selected 承載,checkbox 純視覺反映。 */}
-                {visualCheckbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" tabIndex={-1} />}
-              </ItemPrefix>
-            )}
+              {/* Checkbox 在 icon 前——消費 `<ItemPrefix>` 對齊第一行
+                * 2026-05-26 SSOT lock(user explicit「多選的方式應該也是要跟 menu 一樣是出現 checkbox」):
+                *   - selectionMode='multiple' + 無 consumer checkbox prop → auto-render `<Checkbox>` reflect selectedIds
+                *     (對齊 SelectMenu multi pattern;consumer 不用手寫 checkbox)
+                *   - selectionMode='multiple' + consumer 傳 checkbox → 用 consumer 的(parent-child cascade 等 advanced)
+                *   - selectionMode='single' / 'none' → 不 render checkbox(text-foreground + bg 雙信號表 selected)
+                * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx:352-354(SelectMenu multi=checkbox) */}
+              {(checkbox || selectionMode === 'multiple') && (
+                <ItemPrefix className="pointer-events-none">
+                  {/* 2026-07-05 D4 修:auto-render Checkbox 補 tabIndex={-1} — 勾選框的 root 是原生 button
+                    * (預設可聚焦),aria-hidden + 可聚焦 = axe aria-hidden-focus,且會多出 Tab 停靠點
+                    * (tree-view.spec.md「A11y 預設」Focus 段);ItemPrefix pointer-events-none 只擋滑鼠不擋鍵盤。
+                    * 選取語意由列的 aria-selected 承載,checkbox 純視覺反映。 */}
+                  {visualCheckbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" tabIndex={-1} />}
+                </ItemPrefix>
+              )}
 
-            {/* indicator 取代 icon 的位置;h-[1lh] 對齊第一行
-                indicator 是 escape hatch(stepper status dot 等客製內容),消費 `<ItemPrefix>` 鎖 chevron 槽寬;
-                Icon 走 canonical `<ItemIcon>` helper——自動標 data-prefix-type="icon",
-                讓 SidebarProvider 的全域 :has() prefix-mix 偵測能命中。 */}
-            {indicator ? (
-              <ItemPrefix style={{ width: iconPx }}>
-                {indicator}
-              </ItemPrefix>
-            ) : Icon ? (
-              <ItemIcon icon={Icon} className={disabled ? 'text-fg-disabled' : undefined} />
-            ) : null}
+              {/* indicator 取代 icon 的位置;h-[1lh] 對齊第一行
+                  indicator 是 escape hatch(stepper status dot 等客製內容),消費 `<ItemPrefix>` 鎖 chevron 槽寬;
+                  Icon 走 canonical `<ItemIcon>` helper——自動標 data-prefix-type="icon",
+                  讓 SidebarProvider 的全域 :has() prefix-mix 偵測能命中。 */}
+              {indicator ? (
+                <ItemPrefix style={{ width: iconPx }}>
+                  {indicator}
+                </ItemPrefix>
+              ) : Icon ? (
+                <ItemIcon icon={Icon} className={disabled ? 'text-fg-disabled' : undefined} />
+              ) : null}
 
-            <span className={cn('flex-1 min-w-0 truncate', disabled && 'text-fg-disabled')}>
-              {label}
-            </span>
+              <span id={labelId} className={cn('flex-1 min-w-0 truncate', disabled && 'text-fg-disabled')}>
+                {label}
+              </span>
+            </div>
 
-            {/* Suffix inline actions——宣告式 API,用 `<ItemInlineAction>` 渲染。
+            {/* 第二格:Suffix inline actions——宣告式 API,用 `<ItemInlineAction>` 渲染。
                 消費 `<ItemSuffix hoverReveal hoverGroup="tree-item">` SSOT(2026-05-05 v8 group selector 參數化後)。
-                actionsReveal="hover"(預設):row hover 或 keyboard focus-visible 才顯示;
+                actionsReveal="hover"(預設):列被滑過、或鍵盤焦點在這一列(列本身 / 列裡的按鈕)才顯示;
                 actionsReveal=false:常駐顯示。跟 SidebarMenuButton 共用同一條規則,行為一致。
-                inlineActionsSlot escape hatch 優先(consumer 自控 JSX,reveal 一樣套外層 group)。 */}
-            {/* 2026-06-12 R2(同 sidebar.tsx 修):宿主 disabled 時 render 層擋 inline actions —
+                inlineActionsSlot escape hatch 優先(consumer 自控 JSX,reveal 一樣套外層 group)。
+                2026-06-12 R2(同 sidebar.tsx 修):宿主 disabled 時 render 層擋 inline actions —
                 inline-action.spec.md「宿主 disabled | 不渲染」;row pointer-events 蓋不住
                 actionsReveal=false 常駐顯示的視覺暗示,必須 render 層 guard。 */}
-            {disabled ? null : inlineActionsSlot ? (
-              <ItemSuffix hoverReveal={actionsReveal === 'hover'} hoverGroup="tree-item">
-                {inlineActionsSlot}
+            {/* 動作格的 hover-reveal 另加 `group-focus-visible/tree-item`:ItemSuffix 內建的
+                group-has-[:focus-visible] 只看**子孫**,列自己拿到鍵盤焦點時抓不到(總帳 B9:
+                滑過才出現的按鈕,焦點在這一列裡時必須看得到)。 */}
+            {hasActionCell && (
+              <ItemSuffix
+                ref={actionsRef}
+                role="gridcell"
+                data-tree-actions=""
+                hoverReveal={actionsReveal === 'hover'}
+                hoverGroup="tree-item"
+                className={actionsReveal === 'hover' ? 'group-focus-visible/tree-item:opacity-100' : undefined}
+              >
+                {hasSlot
+                  ? inlineActionsSlot
+                  : inlineActions!.map((action, i) => (
+                      <ItemInlineAction key={action.label + i} action={action} />
+                    ))}
               </ItemSuffix>
-            ) : inlineActions && inlineActions.length > 0 ? (
-              <ItemSuffix hoverReveal={actionsReveal === 'hover'} hoverGroup="tree-item">
-                {inlineActions.map((action, i) => (
-                  <ItemInlineAction key={action.label + i} action={action} />
-                ))}
-              </ItemSuffix>
-            ) : null}
+            )}
           </div>
 
           {/* Drop indicator — after:同 before mirror 到 bottom edge(SSOT drag-visual.ts)*/}
@@ -1482,14 +1510,17 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             />
           )}
 
-          {/* Children: Collapsible 展開/收合 */}
+          {/* Children: Collapsible 展開/收合。
+              2026-09-25:子項容器不再是 role="group"(樹狀表格裡 row 之間不允許 group);
+              data-tree-children 讓鍵盤查詢認得「關閉動畫中(data-state=closed)的子樹」並跳過。 */}
           {hasChildren && (
             <CollapsiblePrimitive.Root open={isExpanded}>
               <CollapsiblePrimitive.Content
+                data-tree-children=""
                 className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none"
               >
                 <DepthContext.Provider value={depth + 1}>
-                  <div role="group" className="flex flex-col w-full">
+                  <div className="flex flex-col w-full">
                     {children}
                   </div>
                 </DepthContext.Provider>
@@ -1530,7 +1561,7 @@ export const treeViewMeta = {
   tokens: {
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset'],
   },
   defaultSize: 'md',
 } as const

@@ -74,6 +74,11 @@ const switchVariants = cva(
     // `disabled:hover:border-transparent`),Ant Switch 也是 `&:hover:not(&-disabled)`。
     'data-[state=unchecked]:hover:bg-border-hover disabled:data-[state=unchecked]:hover:bg-border',
     'data-[state=checked]:hover:bg-primary-hover disabled:data-[state=checked]:hover:bg-primary',
+    // readOnly 同一道守衛(switch.spec.md 狀態表 Readonly 列「hover 不升階」):上面 `data-[readonly=true]:pointer-events-none`
+    // 只擋直接指到 track;指標停在外層 <label htmlFor> 上時,HTML 讓被標記的控件一起進入 :hover,track 照樣升階。
+    // 外圈白邊是透出的 track(見 Thumb 註解),釘住 track 就一起釘住。寫法與 checkbox.tsx / radio-group.tsx 同一組。
+    'data-[readonly=true]:enabled:data-[state=unchecked]:hover:bg-border',
+    'data-[readonly=true]:enabled:data-[state=checked]:hover:bg-primary',
   ],
   {
     variants: {
@@ -422,7 +427,7 @@ export const switchMeta = {
     // bg-on-emphasis = Thumb 白圓(Thumb className)— 兩者 code 實際消費,meta 原漏列
     bg: ['bg-border', 'bg-on-emphasis', 'bg-primary'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

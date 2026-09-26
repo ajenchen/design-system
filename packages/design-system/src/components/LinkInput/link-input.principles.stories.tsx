@@ -69,7 +69,7 @@ export const UsageGuidance: Story = {
       <div>
         <Rule
           title="LinkInput — 有合法 URL 時變藍色連結，點擊開啟新分頁"
-          note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。右側 Pencil 才是編輯入口,點 value 永遠是開連結"
+          note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。點網址文字永遠是開連結;要改就按右側 Pencil,或點欄位裡文字以外的空白處"
         >
           <div>
             <Label>✅ 個人資料：Website（儲存後可直接點擊開啟）</Label>
@@ -105,10 +105,10 @@ export const DisplayStateRule: Story = {
     <div>
       <Rule
         title="有合法 URL 且未編輯 → 藍色連結 + Pencil"
-        note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil。對照 Notion / Linear 的 URL field——value 展示為 link,編輯是次要動作"
+        note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil(或點欄位空白處)。對照 Notion 的 URL 屬性——點網址開啟、不進入編輯,編輯另有按鈕(https://www.notion.com/releases/2021-09-08)"
       >
         <LinkInput value="https://react.dev/reference" onChange={() => {}} aria-label="參考連結" />
-        <Label>↑ 可直接點文字開啟,Pencil 進入編輯</Label>
+        <Label>↑ 點網址文字開啟;Pencil 或欄位裡文字以外的空白處進入編輯</Label>
       </Rule>
 
       <Rule
@@ -125,7 +125,7 @@ export const DisplayStateRule: Story = {
         title="❌ 點 value 進入編輯（而不是開連結）"
         note="LinkInput 跟 Input 的核心互動差異就在這——點 value 永遠是開連結。若使用者預期點 value 進入編輯,那該用 Input 不用 LinkInput"
       >
-        <Label warn>（設計規則）點連結 = 開啟連結,編輯 = 按 Pencil。兩者動作路徑分離</Label>
+        <Label warn>（設計規則）點網址文字 = 開啟連結,編輯 = 按 Pencil 或點欄位空白處。兩者動作路徑分離</Label>
       </Rule>
     </div>
   ),

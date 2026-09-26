@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
  * Legend text: text-fg-secondary / text-caption
  * Grid: stroke-divider
  * Axis tick: text-fg-muted / text-caption
+ * 滑過指示(Recharts tooltip cursor):長條圖的帶 fill-neutral-hover / 折線等的直線 stroke-border
  */
 
 export type ChartConfig = {
@@ -74,6 +75,14 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
             "[&_.recharts-polar-grid_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-reference-line_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-dot[stroke='#fff']]:stroke-transparent",
+            // 滑過指示(Recharts 叫 tooltip cursor):Recharts 3.8.1 把它寫死成 #ccc —— 長條圖的帶是
+            // fill '#ccc'(getCursorRectangle.ts:22),折線 / 面積 / 散佈 / 雷達的線是 stroke '#ccc'(Cursor.tsx:107)。
+            // 深色主題下是一條亮灰直條,不是 DS 的顏色。只換 Recharts 的預設值(看屬性值),consumer 自己傳的 cursor 樣式不蓋。
+            // 帶 = 資料表格列的滑過色 --neutral-hover(半透明,疊在圖表所在的底上,兩個主題方向都對);
+            // 線 = --border,比網格線 --divider 高一階,才看得出「這條是滑過指示、不是網格」。
+            // 為什麼可以有這條帶 → hit-area-canonical.md「滑過原則」三-2 例外清單②;顏色與實測 → chart.spec.md「滑過指示」。
+            "[&_.recharts-tooltip-cursor[fill='#ccc']]:fill-neutral-hover",
+            "[&_.recharts-tooltip-cursor[stroke='#ccc']]:stroke-border",
             // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:SVG 內層 group,不是 tab stop(tab stop 是 .recharts-surface)
             "[&_.recharts-layer]:outline-none",
             "[&_.recharts-sector[stroke='#fff']]:stroke-transparent",

@@ -50,7 +50,7 @@ ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答�
 | 骨架載入(預期內容形狀) | `Skeleton` | Skeleton 保留 layout,ProgressBar 只傳達「執行中量化」 |
 | 步驟導覽(顯示 step 1/2/3 結構) | `Steps` | Steps 強調 step 本身是什麼、ProgressBar 只看整體百分比 |
 | 容量 / 配額靜態顯示(非動態進行中) | 可用 ProgressBar(不傳 status,預設 inProgress 即可) | 可接受——ProgressBar 也能表達靜態 ratio,但若只是裝飾比例、非「進行中」語意,考慮 Chart bar 類元件 |
-| 評分顯示(5 顆星 80%) | `Rating` | Rating 有離散刻度語意 |
+| 評分顯示(例:「★ 4.7」) | `Rating`(唯讀精簡版) | Rating 有離散刻度語意 |
 | 小空間 / inline icon 位置的量化進度 | `CircularProgress`(有 value,determinate) | ProgressBar 在 16–24px 的小空間視覺比例不如 circular arc |
 
 ---

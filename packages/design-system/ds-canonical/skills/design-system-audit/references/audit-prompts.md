@@ -632,7 +632,7 @@ Forbidden in our code (these SHOULD be migrated to direct tokens):
 OK (these are OUR approved tokens, not shadcn aliases):
 - `bg-muted` (semantic.css keeps --muted as real token)
 - `bg-secondary` (promoted to real token)
-- `ring-ring` (our focus color)
+(2026-09-24 移除 `ring-ring`:焦點框 2026-09-07 起只剩三種幾何,`ring-*` 家族全數退役,列在「approved」等於叫稽核者放行回流。焦點框判準 owner = `ds-canonical/references/focus-canonical.md`「框怎麼畫」,機械閘 `scripts/focus-geometry-invariant.mjs` R1–R6。)
 
 Grep `packages/design-system/src/components/**/*.tsx` (exclude .stories/.anatomy/.principles which may legit show token references in demos).
 

@@ -56,7 +56,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 - **含標題**：組合 `<PopoverHeader>` + `<PopoverBody>`（下分隔線由 Header 提供）
 - **含操作按鈕列**：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）
 
-**Dismiss 預設**(與 Dialog 一致):Popover **預設 dismissible** —— 點擊 trigger 外 / 按 Esc / focus 離開 content 樹,三者任一皆關閉。由 Radix 內建 `onPointerDownOutside` / `onEscapeKeyDown` 行為提供,consumer 無需額外 wire。如需強制 modal(必須按 Close 才能關),傳 `modal={true}` 並在 Header 放 Close 按鈕;但這是例外,不是預設——Popover 的本質是「使用者可以忽略、繼續主流程」。
+**Dismiss 預設**(與 Dialog 一致):Popover **預設 dismissible** —— 點擊 trigger 外 / 按 Esc / 焦點被移到 content 樹之外(滑鼠點到別處、程式把焦點移走),三者任一皆關閉。由 Radix 內建 `onPointerDownOutside` / `onFocusOutside` / `onEscapeKeyDown` 行為提供,consumer 無需額外 wire。**鍵盤 Tab 不是離開的路**:面板裡按 Tab / Shift+Tab 在面板內繞圈、走不到 content 樹之外(見「A11y 預設」;2026-09-25 更正,原句「focus 離開 content 樹」被讀成 Tab 可以走出去,與實測不符)。如需強制 modal(必須按 Close 才能關),傳 `modal={true}` 並在 Header 放 Close 按鈕;但這是例外,不是預設——Popover 的本質是「使用者可以忽略、繼續主流程」。
 
 > **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs(tabs 進 PopoverHeader 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
 
@@ -169,8 +169,10 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫底層 primitive 的預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個**表單控件**(`input` / `textarea` / `select` / `button`,排除右上 close X);查無表單控件時退回 footer 按鈕,再無則落在 content 容器(`role="dialog"`)本身。原預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak，selector 與 `dialog.tsx handleOpenAutoFocus` 共用同一套 DS canonical。**注意**:(1) 若移除此 default handler,行為會回退成底層預設 focus close X;(2) selector 只認表單控件——body 若只含 `a[href]` / `[tabindex]` / `contenteditable` 類可聚焦內容,焦點會落在 content 容器而非該內容,consumer 需自傳 `onOpenAutoFocus` 指定要聚焦的元素。
 - **關閉返回(Radix 內建)**：關閉時 focus return to trigger
 - **Esc 關閉(Radix 內建)**：按 Esc 自動關閉並返回焦點
-- **Focus trap(Radix 內建,僅 modal)**：`modal={true}` 時焦點鎖在 content 內
-- **點外 / 焦點離開即關(Radix 內建,non-modal)**：預設 non-modal **不鎖焦點**(無 focus trap),焦點或指標離開 content 樹時由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是** focus trap
+- **Tab 留在面板裡(Radix 內建,modal / non-modal 皆同)**:焦點在面板裡的可 Tab 元素上時,在最後一格按 Tab 回到第一格、在第一格按 Shift+Tab 回到最後一格,鍵盤走不出面板(面板裡沒有可 Tab 的元素、焦點落在 content 容器本身時,Tab 原地不動);要離開面板 = 按 Esc(焦點回 trigger)。機制:Radix Popover 內容的 FocusScope `loop: true`(`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`;non-modal 時 `trapped: false`,見下一條)。這就是 W3C 對話框的規則 ——「Like non-modal dialogs, modal dialogs contain their tab sequence. That is, Tab and Shift + Tab do not move focus outside the dialog.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>),而 Popover content 本身就是 `role="dialog"`。2026-09-25 更正:本條原寫「預設 non-modal **不鎖焦點**」,R15 實測 Tab 出不去,與實作不符(待辦總帳 B11)
+- **Focus trap(Radix 內建,僅 modal)**:`modal={true}` 時連滑鼠點外面 / 程式移焦都出不去(`trapped: true`),焦點鎖在 content 內
+- **點外 / 焦點被移走即關(Radix 內建,non-modal)**:non-modal 不 trap 的意思是**滑鼠點到別處、程式把焦點移走**時焦點可以離開,一離開就由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是**「Tab 可以走出去」
+- **例外:選單類浮層按 Tab = 收起並往下走**:DropdownMenu 選單與單選下拉(Select / PeoplePicker single)不是對話框,開著按 Tab 收起、焦點從觸發鈕往下(Shift+Tab 往上)走;規則在各自 spec(`../SelectMenu/select-menu.spec.md`「A11y 預設」、`../DropdownMenu/dropdown-menu.spec.md`),來源 = 待辦總帳 B11。多選下拉(有全選鈕)面板裡有按鈕 / 搜尋框,是對話框型,照上面「Tab 留在面板裡」
 - **ARIA(Radix 內建)**：trigger 自動 `aria-expanded` / `aria-controls`，content `role="dialog"`
 - **Accessible name(DS 覆寫)**:Radix Popover 沒有 Radix Dialog Title 式的自動接線,content `role="dialog"` 預設**無 accessible name**。DS 以 context 補同機制(見 `popover.tsx` `PopoverTitleContext`):`<PopoverTitle>` 掛載時自動把 id 接上 content 的 `aria-labelledby`;consumer 自傳 `aria-label` / `aria-labelledby` 一律優先
 

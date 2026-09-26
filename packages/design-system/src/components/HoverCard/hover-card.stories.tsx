@@ -44,7 +44,7 @@ export const PersonProfileCard: Story = {
         <span className="text-caption text-fg-muted">Reviewer:</span>
         <HoverCard>
           <HoverCardTrigger asChild>
-            <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-pointer rounded-full">
+            <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-default rounded-full">
               <Avatar src="https://i.pravatar.cc/56?u=ada-chen" alt="Ada Chen" color="indigo" size={28} />
             </button>
           </HoverCardTrigger>
@@ -249,7 +249,7 @@ export const TriggerShowcase: Story = {
           <span className="text-footnote text-fg-muted font-mono">trigger: Avatar</span>
           <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
             <HoverCardTrigger asChild>
-              <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-pointer rounded-full">
+              <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-default rounded-full">
                 <Avatar src="https://i.pravatar.cc/64?u=ada-chen" alt="Ada Chen" color="indigo" size={32} />
               </button>
             </HoverCardTrigger>

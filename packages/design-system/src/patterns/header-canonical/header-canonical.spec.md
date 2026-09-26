@@ -77,7 +77,7 @@ benchmark:
 
 **Canonical**:Chrome header avatar = **24px,density-fixed,row-size-fixed**。涵蓋同一條 chrome header 內**兩種** avatar,皆 24px:**(a) 品牌 mark**(WorkspaceBrand,左)+ **(b) 帳號入口 account entry**(primary-header globalHeader 右側的個人設定 avatar)。同一條 chrome header 內所有 avatar 尺寸一致。
 
-對齊 5 家世界級共識(Linear / Notion / Figma / Slack / Polaris chrome header brand mark 皆固定 24px,不 density-scale 也不 row-size-scale;GitHub 20 / Atlassian small 24 / Linear 右上帳號 avatar 同屬此小尺寸區間)。設計理由:chrome header avatar(品牌或帳號)是身份識別 mark,視覺穩定優於 density 緊鬆 / row size 調整;**帳號入口雖可互動,互動感由 focus ring + hover 提供,不靠把 avatar 放大到 field height**(button 跟 density 走 touch target 邏輯,avatar 不綁同邏輯)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+對齊 5 家世界級共識(Linear / Notion / Figma / Slack / Polaris chrome header brand mark 皆固定 24px,不 density-scale 也不 row-size-scale;GitHub 20 / Atlassian small 24 / Linear 右上帳號 avatar 同屬此小尺寸區間)。設計理由:chrome header avatar(品牌或帳號)是身份識別 mark,視覺穩定優於 density 緊鬆 / row size 調整;**帳號入口雖可互動,互動感由 focus ring + hover 提供,不靠把 avatar 放大到 field height**(button 的尺寸跟著 density 走 `--field-height-*`,avatar 不綁同邏輯;2026-09-24 更正原文的「button 跟 density 走 touch target 邏輯」—— 本 DS 以滑鼠指標的精度為前提,尺寸不以觸控門檻推導,見 `ds-canonical/references/hit-area-canonical.md`)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 **Chrome header 不是 row context**:無 sm/md/lg row size lookup 需求 → chrome header 內 avatar 用 **raw `<Avatar size={24}>`**,**不用 `<ItemAvatar>`**(後者是 row primitive anatomy helper,scope 是 row context — 詳 `item-anatomy.spec.md`「Scope 例外:Chrome header 不是 row context」段)。
 

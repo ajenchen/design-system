@@ -86,7 +86,7 @@ controlled `open` / `onOpenChange`，不靠查找 portal DOM。
 
 ## A11y 預設
 
-- **Trigger**:`<button type="button" aria-label>`(icon-only 觸發必有 aria-label;預設「帳號與設定」,i18n 走 `triggerAriaLabel`);focus ring = `focus-visible:ring-2 ring-ring`(互動感由 ring 提供,無 hover bg — chrome 輕量 entry,不放大 avatar 到 field height)。Radix modal menu 開啟時 trigger 所在 app subtree 會被 `aria-hidden`;由 `DropdownMenu` SSOT 同步把 trigger 設為 `tabIndex={-1}`,關閉時復原,AccountMenu 不另建 open-state 邏輯
+- **Trigger**:`<button type="button" aria-label>`(icon-only 觸發必有 aria-label;預設「帳號與設定」,i18n 走 `triggerAriaLabel`);焦點框 = 全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;trigger 不寫任何 focus class;互動感由焦點框提供,無 hover bg — chrome 輕量 entry,不放大 avatar 到 field height)。Radix modal menu 開啟時 trigger 所在 app subtree 會被 `aria-hidden`;由 `DropdownMenu` SSOT 同步把 trigger 設為 `tabIndex={-1}`,關閉時復原,AccountMenu 不另建 open-state 邏輯
 - **Keyboard**:繼承 Radix DropdownMenu(Enter / Space / ArrowDown 開啟、Arrow 巡覽、Esc 關閉並 focus 還 trigger、typeahead)— owner = `dropdown-menu.spec.md` A11y 段,不重述
 - **選單語義**:Label 為 presentation(不可 focus),item 為 menuitem(Radix 自管 role / aria)
 

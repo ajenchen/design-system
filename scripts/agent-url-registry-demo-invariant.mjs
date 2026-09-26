@@ -32,12 +32,19 @@
  *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
  *       (AD68 產品側變體:portal 浮層對 0×0 錨點只會定位到 (0,8) 還搶焦點;修法 = 觸發鈕失去版面就關)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
+ *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ *   Storybook 回報這則 story 渲染完成(含 play)+ render-health + 代理面板本身 + 版面連續 10 影格靜止,之後才開始量。
+ *   取代原本的「load + 等面板(逾時被 catch 吞掉)+ 固定睡 500ms」:面板沒出現時舊寫法會一路跑下去,
+ *   把「story 沒載起來」判成 A0「面板一開始就在」失敗(產品裁決)。現在 story 開不起來 = 儀器失效:
+ *   點名 story 與寬度、附同源 404,exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決、也不會印「全部通過」。
+ *   流程中(story 開好之後)的固定等待都是**互動之後**的過渡等待,各 helper 旁註明等的是什麼。
  */
-import http from 'node:http'
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname, isAbsolute } from 'node:path'
+import { mkdirSync, readFileSync } from 'node:fs'
+import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
@@ -45,7 +52,6 @@ const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const SHOTS = arg('shots')
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
 const TASKS_URL = '/projects/8821/tasks'
 const MINE_URL = '/projects/8821/tasks/mine'
@@ -133,18 +139,14 @@ if (process.argv.includes('--selftest')) {
   if (bad.length) { console.error(`✗ 示範對 <DialogContent> 傳 inline 位置樣式(置中是 Dialog 的事):${bad.join(' | ')}`); process.exit(1) }
   console.log('✓ 靜態:示範沒有對 <DialogContent> 傳 inline 位置樣式(置中由 DS Dialog 決定)')
 }
-if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+requireStorybookBuild(join(STATIC, 'index.json'), '先 build storybook(或用 --static=<dir> 指定)')
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+// index.json 也讀同一份快照,讓「找到的 story id」與「實際服務的建置」是同一份
+const index = JSON.parse(readFileSync(join(server.snapshot?.dir ?? STATIC, 'index.json'), 'utf8'))
 const id = Object.values(index.entries).find((e) => e.type === 'story' && /agentpanel/i.test(e.id) && /url-registry-demo/.test(e.id))?.id
-if (!id) { console.error('找不到 UrlRegistryDemo story'); process.exit(2) }
-
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
+if (!id) { console.error('找不到 UrlRegistryDemo story'); await server.stop(); process.exit(2) }
 
 // 幾何:對話框不與常駐區相交、遮罩 = 舞台矩形、常駐區中心可點、對話框置中於舞台
 const GEO = `(() => {
@@ -227,7 +229,9 @@ function bind(page) {
   const dialogs = () => page.evaluate(() => document.querySelectorAll('[role="dialog"]').length)
   const panelInput = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); const i = p?.querySelector('textarea, input'); return i ? { value: i.value, inert: !!p.closest('[inert]') || p.getAttribute('aria-hidden') === 'true' } : null })
   const panelOpen = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); return !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 })
+  // 80ms:等打字觸發的受控輸入 state 提交(React commit)後再讀值
   const typeIntoPanel = async (text) => { await page.evaluate(() => { document.querySelector('[role="complementary"]')?.querySelector('textarea, input')?.focus() }); await page.keyboard.type(text); await page.waitForTimeout(80) }
+  // 450ms:等點擊引發的開合過渡走完(面板 / 對話框 --motion-duration-surface 250ms、浮層 --motion-duration-overlay 150ms)與示範路由更新後再量
   const click = async (sel) => { await page.click(sel); await page.waitForTimeout(450) }
   const rows = () => page.evaluate(() => [...document.querySelectorAll('[role="row"] a[href*="/tasks/"]')].map((a) => a.closest('[role="row"]')?.textContent ?? ''))
   const panelTitle = () => page.evaluate(() => document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim() ?? '')
@@ -244,29 +248,50 @@ function bind(page) {
       const items = pop ? [...pop.querySelectorAll('[cmdk-item]')] : []
       return { open: !!pop, rows: items.map((i) => i.textContent?.trim() ?? ''), current: items.filter((i) => i.querySelector('[role="presentation"][data-selected]')).map((i) => i.textContent?.trim() ?? '') }
     })
+    // 300ms:等歷史浮層關閉的 exit 過渡(--motion-duration-overlay 150ms)走完,下一步才不會點到還在淡出的浮層
     await page.keyboard.press('Escape'); await page.waitForTimeout(300)
     return data
   }
   const pickOption = async (comboSel, optionText) => {
     await click(comboSel)
+    // 350ms:等選單關閉過渡與選中值寫回觸發點
     await page.click(`[role="option"]:has-text("${optionText}")`); await page.waitForTimeout(350)
   }
   const shot = async (name) => { if (SHOTS) { const file = join(SHOTS, name); await page.screenshot({ path: file, fullPage: false }); console.log(`  📷 ${file}`) } }
   return { $, location, selectedTab, dialogs, panelInput, panelOpen, typeIntoPanel, click, rows, panelTitle, inert, bg, mask, alpha, shape, history, pickOption, shot }
 }
 
-async function openStory(width, height = 900) {
-  // `--single-process` 沙箱:一個 browser 只能開一個 context → 每個寬度重開(launch-browser.mjs 註解)
+/** story 開不起來的紀錄(儀器失效,不是產品裁決);結尾據此 exit 1。 */
+const instrumentFails = []
+/**
+ * 開示範:回 { browser, page };story 開不起來回 null(已印出並記成儀器失效,呼叫端略過該寬度的量測)。
+ * `--single-process` 沙箱:一個 browser 只能開一個 context → 每個寬度重開(launch-browser.mjs 註解)。
+ */
+async function openDemo(width, height = 900) {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width, height } })
-  await page.goto(`http://localhost:${server.address().port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' })
-  await page.waitForSelector('[role="complementary"]', { timeout: 15000 }).catch(() => {})
-  await page.waitForTimeout(500)
+  try {
+    // 渲染完成(含 play)+ render-health + 代理面板本身 + 版面連續 10 影格靜止:S0 一開場就量幾何,量的是穩態
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+      waitFor: '[role="complementary"]', settleFrames: 10, notFound: server.notFound,
+    })
+  } catch (error) {
+    await browser.close()
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(`✗ [${width}px] ${error.message}`)
+    instrumentFails.push({ width, detail: error.detail })
+    return null
+  }
   return { browser, page }
 }
 
+// 以下流程裡散落的 300 / 400ms 固定等待(按 Esc、點歷史項、關面板、送出訊息之後)都是**互動之後**的過渡等待:
+// 等對話框 / 浮層 / 面板的 exit 或 enter 過渡(--motion-duration-overlay 150ms、--motion-duration-surface 250ms)走完、
+// 示範的 URL 登錄表更新網址列之後再量 —— 被等的元素在互動前就已在畫面上,不是「story 渲染好了沒」的代理。
 for (const width of [1440, 1180]) {
-  const { browser, page } = await openStory(width)
+  const opened = await openDemo(width)
+  if (!opened) continue // 已記成儀器失效(沒量到),結尾 exit 1;不得把後面的斷言跑成產品失敗
+  const { browser, page } = opened
   const W = `[${width}px]`
   const h = bind(page)
 
@@ -437,6 +462,7 @@ for (const width of [1440, 1180]) {
   const fabCenter = () => page.evaluate(() => { const b = document.querySelector('button[aria-label="開啟智慧代理"]'); const m = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])'); if (!b || !m) return null; const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, rx: r.left + r.width / 2 - mr.left, ry: r.top + r.height / 2 - mr.top } })
   const canvas = await page.evaluate(() => document.querySelector('[data-simulated-canvas]')?.getBoundingClientRect().toJSON() ?? null)
   const home = await fabCenter()
+  // 每步 16ms:把拖曳切成約一影格一步(拖曳手勢的節奏,不是等待);放開後 700ms = 等飛回家 / 貼邊的 250ms 過渡結束、遮罩重算洞(S10 量的正是過渡結束後的洞)
   const dragTo = async (from, to) => { await page.mouse.move(from.x, from.y); await page.mouse.down(); for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + (to.x - from.x) * i / 12, from.y + (to.y - from.y) * i / 12, { steps: 2 }); await page.waitForTimeout(16) } await page.mouse.up(); await page.waitForTimeout(700) }
   let s10 = { skipped: 'no fab / mask / canvas' }
   if (home && canvas) {
@@ -455,6 +481,7 @@ for (const width of [1440, 1180]) {
   const fabNow = await fabCenter()
   let s11 = null
   if (fabNow) {
+    // 600ms 是被驗的時間窗(斷言寫明「600ms 後」選單仍在:舊 bug 是選單一聚焦就被並存守衛關掉),不是等渲染
     await page.mouse.click(fabNow.x, fabNow.y, { button: 'right' }); await page.waitForTimeout(600)
     s11 = await page.evaluate(() => { const m = document.querySelector('[role="menu"]'); return { menu: !!m && getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect().width > 0, items: m ? m.querySelectorAll('[role="menuitem"]').length : 0, dialogs: document.querySelectorAll('[role="dialog"]').length, mask: !!document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])') } })
     await page.keyboard.press('Escape'); await page.waitForTimeout(300)
@@ -465,6 +492,7 @@ for (const width of [1440, 1180]) {
   //    選單關閉中 Radix 還一次焦點給選單容器,那次 focus-outside 沒被認出來 → 對話框關掉;鍵盤 Enter 沒有那次還焦點,是對照組)──
   const clickMenuItemByMouse = async () => {
     const at = await fabCenter(); if (!at) return null
+    // 400ms:等右鍵選單的 enter 過渡;80ms:hover 選項(Radix 以 pointermove 標 highlighted);800ms:等選項觸發的貼邊 / 回家過渡(250ms)與選單 exit 過渡都結束
     await page.mouse.click(at.x, at.y, { button: 'right' }); await page.waitForTimeout(400)
     const item = await page.evaluate(() => { const it = document.querySelector('[role="menu"] [role="menuitem"]'); if (!it) return null; const r = it.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, text: it.textContent } })
     if (!item) return { noItem: true }
@@ -517,6 +545,7 @@ for (const width of [1440, 1180]) {
   })
   await h.click('[role="complementary"] button[aria-haspopup="dialog"]'); await page.waitForTimeout(400)
   const s13open = await popoverState()
+  // 500ms:等示範的「重新整理」把代理收回初始關閉(keep-mounted display:none)與浮層的關閉過渡
   await page.evaluate(() => document.querySelector('button[aria-label="重新整理"]').click()); await page.waitForTimeout(500)
   const s13hidden = await popoverState()
   await h.click('button[aria-label="開啟智慧代理"]'); await page.waitForTimeout(400)
@@ -530,9 +559,11 @@ for (const width of [1440, 1180]) {
 }
 
 // ── S9 蓋板態(容器 < 1080):工具列可點、從代理導向舞台 → 收成入口鈕、重開蓋回、× 顯露 ──
-{
+S9: {
   const width = 900
-  const { browser, page } = await openStory(width)
+  const opened = await openDemo(width)
+  if (!opened) break S9 // 已記成儀器失效(沒量到),結尾 exit 1
+  const { browser, page } = opened
   const W = `[${width}px 蓋板]`
   const h = bind(page)
   const mode = await page.evaluate(() => document.querySelector('[role="complementary"]')?.getAttribute('data-agent-panel-mode'))
@@ -622,7 +653,15 @@ for (const width of [1440, 1180]) {
   await browser.close()
 }
 
-server.close()
+await server.stop()
 const failed = results.filter((r) => !r.ok).length
-console.log(failed ? `✗ ${failed} 條失敗` : `✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 蓋板)`)
-process.exit(failed ? 1 : 0)
+if (instrumentFails.length) {
+  // 沒量到 ≠ 通過:story 開不起來的寬度一條斷言都沒跑,不得印「全部通過」,也不得算成產品失敗
+  console.log(`✗ 儀器失效:${instrumentFails.map((f) => `${f.width}px`).join(' / ')} 的示範 story「${id}」沒有量到 —— 這不是產品裁決,但本次不能宣稱這些寬度通過`)
+  for (const f of instrumentFails) console.log(`  · ${f.width}px:${f.detail}`)
+  // 同源 404 帳本由上方 process.once('exit') 在非零結束時印出
+}
+if (failed) { console.log(`✗ ${failed} 條失敗`); process.exit(1) }
+if (instrumentFails.length) process.exit(1)
+console.log(`✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 蓋板)`)
+process.exit(0)

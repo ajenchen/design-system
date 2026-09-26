@@ -230,6 +230,30 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - genuine policy rc2"
 fi
 
+# 12. 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+#     r2 不讀 stdin 就退出時,不得被判成「未定義 exit code」rc70;而且要斷言 r2 **真的跑到** ——
+#     只看 exit 0 會被「r1 的 exit 提早結束整支 hook、r2 根本沒跑」騙過(拿掉管線卻沒補子殼層的那一版正是這樣假綠)。
+#     300KB 輸入超過管線緩衝區(64KiB),舊寫法 `printf | rule` 必定 SIGPIPE,不靠時序。
+_BIG_INPUT="$FAULT_DIR/big-input.json"
+{ printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/r/src/app/large.tsx","content":"'; head -c 300000 /dev/zero | tr '\0' 'x'; printf '%s' '"}}'; } >"$_BIG_INPUT"
+_R2_MARKER="$FAULT_DIR/r2-reached"
+awk '
+  { print }
+  $0 == "r2_size_num_to_meta_width() {" { print ": >\"$R2_MARKER\"; exit 0" }
+' "$HOOK" >"$FAULT_DIR/check_datatable_bigstdin.sh"
+set +e
+R2_MARKER="$_R2_MARKER" bash "$FAULT_DIR/check_datatable_bigstdin.sh" <"$_BIG_INPUT" \
+  >"$FAULT_DIR/big.stdout" 2>"$FAULT_DIR/big.stderr"
+BIG_RC=$?
+set -e
+if [ "$BIG_RC" -eq 0 ] && [ ! -s "$FAULT_DIR/big.stdout" ] && [ ! -s "$FAULT_DIR/big.stderr" ] && [ -f "$_R2_MARKER" ]; then
+  echo "  PASS  large stdin + r2 不讀 stdin → 仍 rc0 silent 且 r2 真的跑到"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  large stdin + r2 不讀 stdin → exit $BIG_RC, r2 reached=$([ -f "$_R2_MARKER" ] && echo yes || echo no) ($(head -c 200 "$FAULT_DIR/big.stderr"))"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - large stdin r2 marker"
+fi
+
 echo ""
 echo "═══ Results: $PASS PASS, $FAIL FAIL ═══"
 [ "$FAIL" -gt 0 ] && { printf "Failed:%b\n" "$FAILED_TESTS"; exit 1; }

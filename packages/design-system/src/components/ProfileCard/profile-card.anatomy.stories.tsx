@@ -360,7 +360,7 @@ export const HoverCardIntegration: Story = {
           ].map(p => (
             <HoverCard key={p.name}>
               <HoverCardTrigger asChild>
-                <span className="inline-block cursor-pointer">
+                <span className="inline-block cursor-default">{/* 滑過只浮出名片、點了不做事 → 一般箭頭(hit-area-canonical.md 三-1;同 hover-card.stories 頭像觸發) */}
                   <Avatar src={p.avatarUrl} alt={p.name} size={40} status={p.status} />
                 </span>
               </HoverCardTrigger>

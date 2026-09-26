@@ -42,18 +42,23 @@
  * 非同步 story(PeoplePicker 名錄 1.5 秒後才到;遠端搜尋 800ms 後端)用 Playwright 假時鐘凍住再 runFor,不靠 wall-clock 搶拍。
  * 瀏覽器:同一個 page 逐 story `goto`(--single-process 沙箱下不開第二個 context;參 scripts/lib/launch-browser.mjs)。
  * 靜態站:預設 storybook-static;`--static=<dir>` 或環境變數 MENU_STATIC 指到別的 build(平行工作時不碰主 build)。
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成
+ *   (含 play)+ render-health 之後才開始操作;取代原本「load + 等觸發點(15 秒逾時被 catch 吞掉)」。story 開不起來 =
+ *   儀器失效:點名 story、附同源 404、exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠)—— 不是產品裁決,不再混進「前提失敗」,--selftest 下也不算「紅得對」。
+ *   假時鐘暫停段:Storybook 的 afterEach(a11y addon 在那一步跑 axe,靠計時器推進)永遠走不到 finished(實測停在 afterEach),
+ *   那段改等「這一則的 phase 至少到 afterEach」—— story 渲染與 play 都已完成,同一個性質,只是換成假時鐘下看得到的終點訊號。
+ *   這個判定走 openStory 的 finishedPhases 選項(同一份實作:錯誤頁 / 無預覽頁當場停),不再是本檔自己的 phase 檢查。
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const STATIC = staticArg ? resolve(staticArg) : (process.env.MENU_STATIC || join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
 // ── 期望值(出處見檔頭)──
 const ROW_H = { sm: 28, md: 32, lg: 36 }
@@ -98,21 +103,18 @@ const measured = []
 const ck = (name, pass, detail = '') => { console.log(`${pass ? '✓' : '✗'} ${name}${detail ? ':' + detail : ''}`); if (!pass) failed++ }
 const bad = (name, detail = '') => { console.log(`✗ ${name}${detail ? ':' + detail : ''} —— 前提失敗(story 沒渲染出要量的東西),閘不能當「不適用」放行`); broken++ }
 
-// ── story 存在性(先於一切)──
-if (!existsSync(join(STATIC, 'index.json'))) { console.log(`✗ 找不到 ${join(STATIC, 'index.json')},先 build storybook(或 --static=<dir>)`); process.exit(1) }
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries
-for (const [key, id] of Object.entries(ID)) if (!index[id]) bad(`story 存在:${key}`, id)
-if (broken) { console.log('✗ 靜態站缺 story,先 build storybook'); process.exit(1) }
+// ── 靜態站(先於一切)──
+requireStorybookBuild(join(STATIC, 'index.json'), '先 build storybook(或 --static=<dir>)')
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「story 沒渲染出訊息列」
+process.on('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 
-// ── 靜態站 + 瀏覽器 ──
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
-const story = (id) => `http://localhost:${server.address().port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
+// ── story 存在性:index.json 讀同一份快照,讓「查到的 story」與「實際服務的建置」是同一份 ──
+const index = JSON.parse(readFileSync(join(server.snapshot?.dir ?? STATIC, 'index.json'), 'utf8')).entries
+for (const [key, id] of Object.entries(ID)) if (!index[id]) bad(`story 存在:${key}`, id)
+if (broken) { console.log('✗ 靜態站缺 story,先 build storybook'); await server.stop(); process.exit(1) }
+const story = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
@@ -185,15 +187,41 @@ await page.addInitScript(() => {
   }
 })
 
+/** story 開不起來(StoryRenderInstrumentError)的紀錄:儀器失效,不是產品裁決;結尾據此 exit 1。 */
+const instrumentFails = []
+/** 一段 story 的量測。story 開不起來 → 記成儀器失效、印出點名與 404,不跑該段斷言(不混進「前提失敗」),換下一段。 */
+async function section(fn) {
+  try { await fn() } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(`✗ ${error.message}`)
+    instrumentFails.push({ story: error.storyId, detail: error.detail })
+  }
+}
+
+// 假時鐘暫停後才為 true(見下方假時鐘段)
+let clockPaused = false
+/** openStory 的選項:平常 = 等 Storybook 回報渲染完成(finished)。假時鐘暫停時 afterEach 的 a11y 檢查(axe)靠計時器推進、
+ *  永遠走不到 finished(實測停在 afterEach)→ 以 lib 的 finishedPhases 額外接受 'afterEach'(play 跑完之後才會走到的 phase:
+ *  story 渲染與 play 都已完成,同一個性質)。判定仍是 openStory 第 3 步同一份實作 —— 錯誤頁 / 無預覽頁 / 別的 story 當場以儀器失效停;
+ *  原本本檔自己寫的 phase 檢查(requireRenderFinished:false + waitFor 函式)沒有錯誤頁捷徑,壞掉的 story 要等滿 30 秒才以 wait-for-timeout 報出,
+ *  而且為了補那段空窗把 render-health 上限放寬到 30 秒 —— 第 3 步已等到渲染完成,那個放寬不再需要。 */
+const openOptions = () => (clockPaused
+  ? { finishedPhases: ['afterEach', 'finished'], notFound: server.notFound }
+  : { notFound: server.notFound })
+
+/** 開 story 並打開選單:回 true / false(false = story 渲染了但選單沒開 → 呼叫端判「前提失敗」);story 本身開不起來丟 StoryRenderInstrumentError(section 接)。 */
 async function open(id, waitSel = '[cmdk-list]') {
-  await page.goto(story(id), { waitUntil: 'load' })
-  await page.waitForSelector('#storybook-root [role="combobox"]', { timeout: 15000, state: 'attached' }).catch(() => {})
-  // 訊息列在 listbox 外,0 筆時 [cmdk-list] 高度 0 → Playwright 預設等「可見」會逾時;改等「掛上 DOM」
-  let ok = await page.waitForSelector(waitSel, { timeout: 1500, state: 'attached' }).then(() => true).catch(() => false)
+  // 渲染完成(含 play)+ render-health —— 取代「load + 等觸發點 15 秒(逾時被吞)」
+  await openStory(page, story(id), openOptions())
+  // 訊息列在 listbox 外,0 筆時 [cmdk-list] 高度 0 → Playwright 預設等「可見」會逾時;一律等「掛上 DOM」
+  let ok = !!(await page.$(waitSel))
   if (!ok) {
     // 2026-09-09 user:「為何遠端搜尋名錄的範例預設要打開選單?」→ 互動示範不再 defaultOpen(只有「載入中 / 沒有選項 /
     // 值讀取中」這種開啟態快照才預設開);閘改成像使用者一樣點觸發器打開,再量。
-    await page.locator('#storybook-root [role="combobox"]').first().click()
+    // 「開著沒」直接讀觸發點的 aria-expanded(渲染已完成,這個值就是答案),不再用「1.5 秒內沒出現 = 沒開」這個代理。
+    const trigger = page.locator('#storybook-root [role="combobox"]').first()
+    const expanded = await trigger.getAttribute('aria-expanded', { timeout: 5000 }).catch(() => null)
+    if (expanded !== 'true' && !(await trigger.click({ timeout: 5000 }).then(() => true, () => false))) return false
     ok = await page.waitForSelector(waitSel, { timeout: 15000, state: 'attached' }).then(() => true).catch(() => false)
   }
   // Popover / Dialog 開啟動畫(zoom-in-95)結束後才量:動畫中量到的 rect 是 0.95 倍(實測 45.6 而非 48)
@@ -262,6 +290,7 @@ async function assertInputNoSpinner(label, { type = true } = {}) {
   ck(`${label} M4 搜尋列沒有 aria-busy`, (w.busy !== 'true') === EXPECT.spinnerAbsent, String(w.busy))
   if (!type) return
   const inp = page.locator('[cmdk-input]')
+  // 150ms:等受控輸入的 state 提交(React commit)後再讀值 / 清空
   await inp.fill('a'); await page.waitForTimeout(150)
   const v = await inp.inputValue()
   ck(`${label} M4 載入中 input 仍可輸入`, v === 'a', `打「a」後 value=「${v}」`)
@@ -287,6 +316,7 @@ async function remoteFlow(label, { inputSel, hit, hitLabel, emptyText, suggestio
   assertSuggestionGroup(label, gs0, suggestionCount)
   const before = await list()
   const inp = page.locator(inputSel)
+  // 200 / 250ms:等打字觸發的 cmdk 過濾與受控 state 提交;runFor(900) 把 800ms 的假後端撥過去,後面的 250ms 等回應寫回清單的那次提交
   await inp.fill(hit); await page.waitForTimeout(200)
   const during = await list(); const rs = await rows()
   ck(`${label} M8 打「${hit}」抓資料中 → 舊清單(建議 ${before?.items} 筆)不顯示`, !!during && during.items === 0 && during.empty, `${during?.items} 筆,empty=${during?.empty}`)
@@ -320,7 +350,7 @@ async function remoteFlow(label, { inputSel, hit, hitLabel, emptyText, suggestio
 let selectEmptyList = null
 
 // ═══ Select ═══
-{
+await section(async () => {
   const L = 'Select 沒有選項'
   if (!(await open(ID.selectNoOptions))) bad(`${L} 前提:選單有打開([cmdk-list])`)
   else {
@@ -330,8 +360,8 @@ let selectEmptyList = null
     const l = await list(); measured.push(l.height); selectEmptyList = l.height
     ck(`${L} M6 整個 [cmdk-list] = ${emptyH('md')}(空群組不畫,不得多 16)`, near(l.height, emptyH('md')), `${fmt(l.height)};選項 ${l.items} 筆`)
   }
-}
-{
+})
+await section(async () => {
   const L = 'Select 選項載入中(首次開啟)'
   if (!(await open(ID.selectLoading))) bad(`${L} 前提:選單有打開`)
   else {
@@ -343,15 +373,15 @@ let selectEmptyList = null
     ck(`${L} M6 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
     ck(`${L} listbox aria-busy`, l.busy === 'true', String(l.busy))
   }
-}
-{
+})
+await section(async () => {
   const L = 'Select 值處理中(選單關著)'
   if (!(await open(ID.selectValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
   else assertTriggerValueLoading(L, await triggerSpin())
-}
+})
 
 // ═══ Combobox ═══
-{
+await section(async () => {
   const L = 'Combobox 選項載入中(首次開啟)'
   if (!(await open(ID.comboboxLoading))) bad(`${L} 前提:選單有打開`)
   else {
@@ -363,13 +393,13 @@ let selectEmptyList = null
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
   }
-}
-{
+})
+await section(async () => {
   const L = 'Combobox 值處理中(選單關著)'
   if (!(await open(ID.comboboxValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
   else assertTriggerValueLoading(L, await triggerSpin())
-}
-{
+})
+await section(async () => {
   const L = 'Combobox 遠端搜尋(還沒打字、沒有建議)'
   if (!(await open(ID.comboboxRemoteHint))) bad(`${L} 前提:選單有打開`)
   else {
@@ -380,10 +410,10 @@ let selectEmptyList = null
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
     await assertInputNoSpinner(L, { type: false })
   }
-}
+})
 
 // ═══ PeoplePicker ═══
-{
+await section(async () => {
   const L = 'PeoplePicker 選項載入中(首次開啟)'
   if (!(await open(ID.peopleLoading))) bad(`${L} 前提:選單有打開`)
   else {
@@ -394,15 +424,15 @@ let selectEmptyList = null
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
   }
-}
-{
+})
+await section(async () => {
   const L = 'PeoplePicker 值處理中(選單關著)'
   if (!(await open(ID.peopleValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
   else assertTriggerValueLoading(L, await triggerSpin())
-}
+})
 
 // ═══ Command(inline / dialog)═══
-{
+await section(async () => {
   const L = 'Command 無結果'
   if (!(await open(ID.commandNoResults))) bad(`${L} 前提:清單有渲染`)
   else {
@@ -415,8 +445,8 @@ let selectEmptyList = null
     const back = await list()
     ck(`${L} 清掉關鍵字 → 結果回來、[cmdk-empty] 不顯示`, back.items > 0 && !back.empty, `${back.items} 筆,empty=${back.empty}`)
   }
-}
-{
+})
+await section(async () => {
   const L = 'Command 載入中(首次開啟)'
   if (!(await open(ID.commandLoading))) bad(`${L} 前提:清單有渲染`)
   else {
@@ -427,27 +457,29 @@ let selectEmptyList = null
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
     await assertInputNoSpinner(L)
   }
-}
-for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['commandAction', 'Command 純動作指令'], ['commandPalette', 'Command 全域指令面板']]) {
-  if (!(await open(ID[key], key === 'commandPalette' ? '#storybook-root button' : '[cmdk-list]'))) { bad(`${L} 前提:story 有渲染`); continue }
+})
+for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['commandAction', 'Command 純動作指令'], ['commandPalette', 'Command 全域指令面板']]) await section(async () => {
+  if (!(await open(ID[key], key === 'commandPalette' ? '#storybook-root button' : '[cmdk-list]'))) { bad(`${L} 前提:story 有渲染`); return }
   if (key === 'commandPalette') {
     await page.locator('#storybook-root button').first().click()
     const ok = await page.waitForSelector('[cmdk-list]', { timeout: 5000 }).then(() => true).catch(() => false)
+    // 600ms:等指令面板(Dialog)開啟動畫走完再量(同 open())
     await page.waitForTimeout(600)
-    if (!ok) { bad(`${L} 前提:點按鈕後指令面板有打開`); continue }
+    if (!ok) { bad(`${L} 前提:點按鈕後指令面板有打開`); return }
   }
   const l0 = await list()
   ck(`${L} 有結果時 [cmdk-empty] 不顯示`, l0.items > 0 && !l0.empty, `${l0.items} 筆,empty=${l0.empty}`)
+  // 250ms:等 cmdk 依關鍵字重新過濾後的提交
   const inp = page.locator('[cmdk-input]'); await inp.fill(NONSENSE); await page.waitForTimeout(250)
   const zero = { list: await list(), rows: await rows() }
-  if (!zero.list || zero.list.items !== 0 || zero.rows.length !== 1) { bad(`${L} 前提:打不存在的字 → 0 筆、1 列訊息列`, `${zero.list?.items} 筆 / ${zero.rows.length} 列`); continue }
+  if (!zero.list || zero.list.items !== 0 || zero.rows.length !== 1) { bad(`${L} 前提:打不存在的字 → 0 筆、1 列訊息列`, `${zero.list?.items} 筆 / ${zero.rows.length} 列`); return }
   assertRow(L, zero.rows[0], { kind: 'empty' }); await hoverCheck(L)
   measured.push(zero.list.height)
   ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(zero.list.height, emptyH('md')), `${fmt(zero.list.height)}`)
-}
+})
 
 // ═══ Menu 訊息列(primitive 本尊:兩列都是手組的 MenuItem message,role 都是 presentation)═══
-{
+await section(async () => {
   const L = 'Menu 訊息列'
   if (!(await open(ID.menuMessages, '[role="group"]'))) bad(`${L} 前提:story 有渲染`)
   else {
@@ -458,10 +490,10 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
       assertRow(`${L}「載入中」`, rs[1], { kind: 'loading', text: TEXT.loading, role: 'presentation' }); await hoverCheck(`${L}「載入中」`, 1)
     }
   }
-}
+})
 
 // ═══ M9 群組自動分隔線(Select 分組 + 搜尋;不吃時鐘,放假時鐘之前)═══
-{
+await section(async () => {
   const L = 'Select 分組搜尋'
   if (!(await open(ID.selectGrouped))) bad(`${L} 前提:選單有打開`)
   else {
@@ -469,6 +501,7 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
     ck(`${L} M9 兩個可見群組`, g0.length === 2, `${g0.length} 組(${g0.map((g) => g.heading).join(' / ')})`)
     ck(`${L} M9 第一個可見群組沒有上邊線、第二個有 1px`, g0.length === 2 && g0[0].bt === 0 && g0[1].bt === 1, g0.map((g) => g.bt).join(','))
     await page.keyboard.type('日圓')
+    // 200ms:等 cmdk 依關鍵字重新過濾、群組分隔線重算後的提交
     await page.waitForTimeout(200)
     const g1 = await groups()
     ck(`${L} M9 搜尋只剩「亞洲」一組 → 沒有線`, g1.length === 1 && g1[0].bt === 0, `${g1.length} 組,線 ${g1.map((g) => g.bt).join(',')}`)
@@ -478,24 +511,27 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
     const g2 = await groups()
     ck(`${L} M9 「元」同時命中兩組 → 恰好一條線在第二組`, g2.length === 2 && g2[0].bt === 0 && g2[1].bt === 1, `${g2.length} 組,線 ${g2.map((g) => g.bt).join(',')}`)
   }
-}
+})
 
 // ═══ 假時鐘段(install 之後的導覽都吃假時鐘;非同步 story 全放這裡)═══
 const T0 = new Date('2026-09-09T00:00:00Z').getTime()
 await page.clock.install({ time: T0 })
 await page.clock.pauseAt(T0 + 1000)
+clockPaused = true // 之後的 openStory 改等 phase 到 afterEach(見 openOptions)
 
 // PeoplePicker 名錄非同步載入(前 1.5 秒 optionsLoading:觸發點不轉圈、選單裡「載入選項中」;名錄到了長出人員列)
-{
+await section(async () => {
   const L = 'PeoplePicker 名錄非同步載入'
-  await page.goto(story(ID.peopleAsync), { waitUntil: 'load' })
-  const ok = await page.waitForSelector('#storybook-root [role="combobox"]', { timeout: 15000 }).then(() => true).catch(() => false)
+  // 渲染與 play 完成 + render-health(假時鐘暫停:終點訊號 = phase 到 afterEach)—— 取代「load + 等觸發點 15 秒(逾時轉成前提失敗)」
+  await openStory(page, story(ID.peopleAsync), openOptions())
+  const ok = !!(await page.$('#storybook-root [role="combobox"]'))
   if (!ok) bad(`${L} 前提:觸發點有渲染`)
   else {
     await assertTriggerNoSpinner(`${L}(名錄未到)`)
     const box = await page.evaluate(() => { const r = document.querySelector('#storybook-root [role="combobox"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
     await page.mouse.click(box.x, box.y)
     const opened = await page.waitForSelector('[cmdk-list]', { timeout: 5000, state: 'attached' }).then(() => true).catch(() => false)
+    // 600ms:等 Popover 開啟動畫(zoom-in-95)走完再量(同 open())
     await page.waitForTimeout(600)
     if (!opened) bad(`${L} 前提:點觸發點後選單有打開`)
     else {
@@ -509,28 +545,34 @@ await page.clock.pauseAt(T0 + 1000)
       ck(`${L}(名錄到了)訊息列消失、人員列長出來`, !!after && !after.empty && after.items > 0, `${after?.items} 筆,empty=${after?.empty}`)
     }
   }
-}
+})
 
 // M8 / M10 遠端搜尋 ×3(Select:搜尋在觸發點 / Combobox:搜尋在浮層 / PeoplePicker single:搜尋在觸發點)
-{
+await section(async () => {
   const L = 'Select 遠端搜尋'
   if (!(await open(ID.selectRemote))) bad(`${L} 前提:選單有打開`)
   else await remoteFlow(L, { inputSel: TRIGGER_INPUT, hit: 'roadmap', hitLabel: '產品路線圖', emptyText: TEXT.selectEmpty, suggestionCount: 3 })
-}
-{
+})
+await section(async () => {
   const L = 'Combobox 遠端搜尋'
   if (!(await open(ID.comboboxRemote))) bad(`${L} 前提:選單有打開`)
   else await remoteFlow(L, { inputSel: '[cmdk-input]', hit: 'customer', hitLabel: 'CRM 客戶名單', emptyText: TEXT.selectEmpty, suggestionCount: 2 })
-}
-{
+})
+await section(async () => {
   const L = 'PeoplePicker 遠端搜尋名錄'
   if (!(await open(ID.peopleRemote))) bad(`${L} 前提:選單有打開`)
   else await remoteFlow(L, { inputSel: TRIGGER_INPUT, hit: 'bob', hitLabel: 'Bob Lin', emptyText: TEXT.peopleEmpty, suggestionCount: 2, plainRow: false })
-}
+})
 
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 const alive = measured.length > 0 && measured.every((v) => typeof v === 'number' && v > 0)
 console.log(`\nM1 量測值(儀器活著檢查,${measured.length} 筆):${measured.map(fmt).join(', ')} → ${alive ? '全部 > 0' : '有 0 / 缺值'}`)
+if (instrumentFails.length) {
+  // 沒量到 ≠ 通過,也 ≠ 對照組紅了:這幾則一條斷言都沒跑(同源 404 帳本由上方 exit 監聽印出)
+  console.log(`✗ 儀器失效:${instrumentFails.length} 則 story 沒量到 —— 這不是產品裁決,但本次不能宣稱它們符合共識:`)
+  for (const f of instrumentFails) console.log(`  · ${f.story}:${f.detail}`)
+  if (SELFTEST) { console.log('✗ selftest:有 story 沒量到 —— 紅的不全是對照組造成的,不能宣稱「紅得對」'); process.exit(1) }
+}
 if (SELFTEST) {
   const ok = failed > 0 && broken === 0 && alive
   console.log(ok
@@ -539,5 +581,7 @@ if (SELFTEST) {
   process.exit(ok ? 0 : 1)
 }
 if (!alive) { console.log('✗ 儀器對照失敗:M1 量測值有 0,綠燈不算數'); process.exit(1) }
-console.log(failed || broken ? `✗ ${failed} 條斷言失敗、${broken} 條前提失敗` : '✓ 選單訊息列:列幾何 / 置中 / 載入指示只在選單內 / 值處理中轉圈 / 遠端清舊清單 / 建議群組標題 / 提示列 / 不可互動 全部符合 2026-09-09 共識')
-process.exit(failed || broken ? 1 : 0)
+if (failed || broken) { console.log(`✗ ${failed} 條斷言失敗、${broken} 條前提失敗`); process.exit(1) }
+if (instrumentFails.length) process.exit(1)
+console.log('✓ 選單訊息列:列幾何 / 置中 / 載入指示只在選單內 / 值處理中轉圈 / 遠端清舊清單 / 建議群組標題 / 提示列 / 不可互動 全部符合 2026-09-09 共識')
+process.exit(0)

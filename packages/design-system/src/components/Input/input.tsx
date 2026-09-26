@@ -4,7 +4,7 @@ import { type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -203,10 +203,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div
         className={cn(
           fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, error: resolvedError }),
+          // 整個外框都是輸入處:文字游標 + 點內距 / 邊框 / 前置圖示就聚焦 input(待辦總帳 N53③;
+          // 規則 owner field-controls.spec.md「點擊與游標原則」;共用實作 field-wrapper.tsx focusFieldInputFromChrome)。
+          // 停用不掛:停用的外框自己是 cursor-not-allowed(field-wrapper disabled compound),而且不接受焦點。
+          resolvedMode !== 'disabled' && FIELD_TEXT_ENTRY_CURSOR,
           // autoWidth:wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
           autoWidth && 'inline-flex w-auto',
           className,
         )}
+        onMouseDown={focusFieldInputFromChrome}
         data-field-mode={resolvedMode}
         data-error={isEditable && resolvedError ? '' : undefined}
         aria-busy={loading || undefined}

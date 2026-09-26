@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: categorical-color-invariants 這支閘在該紅的時候真的會紅(不是恆綠),且現行檔案下是綠的。
+ *   紅: 閘對「色相偷換」或「深色 step-2 退回舊公式」任一種注入沒有紅 → 印出哪一組對照失效並 exit 1。
+ *   綠: 現況綠、兩組注入都紅、還原後綠。不是抽籤 —— 注入是固定字串替換(色相注入寫回原檔並在 finally 還原;
+ *       色階注入寫在暫存目錄、用環境變數指過去,不動 repo 檔),重複跑結果恆等。
+ */
 // meta-test for categorical-color-invariants — 注入已知違規 → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
 // 驗 I1 名實一致(零 offset):map 的 key X 值只能引用 --color-X-*;把 CAT_SUBTLE.blue 的
 // bg token 從 --color-blue-1 偷換成 --color-red-1(categorical-vs-semantic 混淆的真實故障模式)
@@ -32,6 +39,29 @@ try {
 // 3) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS')
+
+// 4) I5 色階順序對照組(2026-09-26):把深色 step-2 換回舊公式(往純黑退 l×0.28)的 primitives 副本
+//    —— 寫在暫存目錄、用環境變數指過去,不動 repo 檔 → I5 必紅;原檔 → I5 必綠(上面第 1 步已含)
+{
+  const { mkdtempSync, rmSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const { tmpdir } = await import('node:os')
+  const prim = readFileSync('packages/design-system/src/tokens/color/primitives.css', 'utf8')
+  const OLD_STEP2 = ') calc(l * 0.28) calc(c * 0.65) h);'
+  const poisoned = prim.replace(/\) l c h \/ calc\(0\.18 \/ l\)\);/g, OLD_STEP2)
+  if (poisoned === prim) { console.error('✗ I5 注入 no-op(深色 step-2 公式未命中)'); process.exit(1) }
+  const dir = mkdtempSync(join(tmpdir(), 'cat-color-'))
+  try {
+    const file = join(dir, 'primitives.css')
+    writeFileSync(file, poisoned)
+    const r = spawnSync(process.execPath, ['--', 'scripts/categorical-color-invariants.mjs'], { stdio: 'pipe', env: { ...process.env, CATEGORICAL_COLOR_PRIMITIVES: file } })
+    const out = String(r.stdout) + String(r.stderr)
+    if ((r.status ?? 1) === 0 || !/✗ I5 \| dark /.test(out)) { console.error('✗ 深色 step-2 退回舊公式後 I5 未紅(色階順序 detection 失效)'); ok = false }
+    else console.log('✓ 深色 step-2 退回舊公式 → I5 紅')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
 
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

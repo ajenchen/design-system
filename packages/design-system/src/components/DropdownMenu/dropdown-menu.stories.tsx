@@ -1,7 +1,7 @@
 // @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText } from 'lucide-react'
+import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText, FolderInput, Link, Share2, UserPlus } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -143,6 +143,63 @@ const SubMenuDemo = () => {
 export const SubMenu: StoryObj = {
   name: '子選單',
   render: () => <SubMenuDemo />,
+}
+
+// ── 多層子選單:Esc 一次只關一層、Tab 收起全部往下走(2026-09-25,待辦總帳 B10 / B11)──
+// 情境:工作項目頁首的工具列「指派給我 / 更多動作 / 分享」,更多動作 → 移動到 → 專案 → 欄位,共三層。
+// 觸發鈕前後各一顆真按鈕,Tab / Shift+Tab 的落點看得見也量得到(dropdown-menu-keyboard-invariant 的量測對象)。
+// @overlay-open-skip: 本則教的是鍵盤開關行為(每按一次 Esc 少一層、Tab 收起往下走),要從「關著」開始操作;
+//   浮層開著的視覺快照由同檔 OpenSnapshot(defaultOpen)負責。
+const MOVE_TARGETS = [
+  { project: '行動 App 改版', columns: ['待辦', '進行中', '完成'] },
+  { project: '官網重構', columns: ['待辦', '設計審查', '完成'] },
+] as const
+
+const NestedSubMenuDemo = () => (
+  <div className="flex items-center gap-2">
+    <Button variant="tertiary" startIcon={UserPlus}>指派給我</Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="tertiary" endIcon={ChevronDown}>更多動作</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem startIcon={Link}>複製連結</DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger startIcon={FolderInput}>移動到</DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {MOVE_TARGETS.map(({ project, columns }) => (
+              <DropdownMenuSub key={project}>
+                <DropdownMenuSubTrigger>{project}</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {columns.map((column) => (
+                    <DropdownMenuItem key={column}>{column}</DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem startIcon={Trash2} className="text-error">刪除</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <Button variant="tertiary" startIcon={Share2}>分享</Button>
+  </div>
+)
+
+export const NestedSubMenu: StoryObj = {
+  name: '多層子選單',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '用鍵盤從「更多動作」一路按 → 開到第三層(移動到 → 專案 → 欄位)。' +
+          '按 Esc 每次只關最內層的那一層,焦點回到上一層打開它的那一項(跟 ← 一樣);三層要按三次才全部關掉、回到「更多動作」。' +
+          '選單開著時按 Tab,不論在第幾層都一次收起全部,焦點落在「分享」;按 Shift+Tab 則落在「指派給我」。',
+      },
+    },
+  },
+  render: () => <NestedSubMenuDemo />,
 }
 
 // ── Checkbox Items ──

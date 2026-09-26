@@ -247,7 +247,9 @@ CarouselItem.displayName = 'CarouselItem'
 
 // ── Arrow buttons(hover 才顯示)────────────────────────────────────────────
 // 使用 DS Button (tertiary + iconOnly size md);hover-only 顯示由 wrapper 的
-// opacity transition 控制(Button 本身不負責)。此 wrapper 存在僅為絕對定位 +
+// opacity 控制(Button 本身不負責),**瞬間出現、不淡入**(滑過造成的變化一律不做過渡,
+// tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 待辦總帳 L9「全部瞬間」延伸,
+// user:「確定這樣才是一致設計語言就做」)。此 wrapper 存在僅為絕對定位 +
 // hover/focus 可見性,不再覆寫 Button 的視覺 token。
 
 // 2026-07-18 決策14(user 授權 B 案:開放完整 Button props + wrapperClassName):
@@ -263,7 +265,6 @@ type ArrowProps = Omit<React.ComponentPropsWithoutRef<typeof Button>, 'iconOnly'
 
 const arrowWrapperClass = cn(
   'absolute z-10',
-  'transition-opacity duration-200 motion-reduce:duration-0',
   'opacity-0 group-hover/carousel:opacity-100',
   'focus-within:opacity-100',
   '[&:has(button:disabled)]:opacity-0 [&:has(button:disabled)]:pointer-events-none',
@@ -439,7 +440,7 @@ export const carouselMeta = {
   tokens: {
     bg: [],
     fg: [],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

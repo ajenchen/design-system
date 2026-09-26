@@ -1200,6 +1200,93 @@ PY
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_WINDOW_UI" "const markedRef = React.useRef([])"
 expect_block "17b. 反向對照組:視窗外的訊息是 UI 取捨問句 → 仍 BLOCK" "TARGET_BOUND_DISCUSSION_OR_QUESTION"
 
+# ── 18. Bash 分支(2026-09-24 加,blocking;在此之前本檔 0 個 Bash 案例)──
+#   閘要保證的是「沒有未授權的 DS 原始碼改動」,不是「沒有未授權的編輯工具呼叫」(M37):
+#   用 shell 寫同一個檔必須跟 Edit 一樣受管。Bash 事件沒有 file_path,路徑從命令字串抽。
+#   本節同時把兩個**已知缺口的現況**釘住(標 N20 / N47),修好後把那幾格的期望翻過來即可。
+run_hook_bash() {
+  local command="$1"; local transcript="$2"
+  local payload
+  payload=$(jq -n --arg c "$command" --arg tp "$transcript" \
+    '{hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$c},transcript_path:$tp}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+BASH_DS_TSX="packages/design-system/src/components/Button/button.tsx"
+
+# 18a-18d. 寫入動詞 × 受管 tsx × 無授權 transcript → 一律 BLOCK(原地改寫 / 重導 / heredoc / 腳本語言寫檔)
+run_hook_bash "sed -i '' 's/bg-primary/bg-secondary/' $BASH_DS_TSX" "$TX_NEUTRAL"
+expect_block "18a. Bash sed -i 寫受管 tsx + 無授權 → BLOCK" "UNKNOWN_POTENTIAL_UI_UX_DECISION"
+
+run_hook_bash "printf 'export const x = 1\n' > $BASH_DS_TSX" "$TX_NEUTRAL"
+expect_block "18b. Bash > 重導寫受管 tsx → BLOCK" "BLOCKER"
+
+run_hook_bash "cat > $BASH_DS_TSX <<'EOF'
+export const x = 1
+EOF" "$TX_NEUTRAL"
+expect_block "18c. Bash heredoc 寫受管 tsx → BLOCK" "BLOCKER"
+
+# (腳本語言寫檔用 python 的 open(...,'w');`node -e` 在本 corpus 被來源政策閘擋,測試檔裡連字串都不能出現)
+run_hook_bash "python3 -c \"open('$BASH_DS_TSX', 'w').write('x')\"" "$TX_NEUTRAL"
+expect_block "18d. Bash python open(...,'w') 寫受管 tsx → BLOCK" "BLOCKER"
+
+# 18e. 純讀取(無寫入動詞)→ 放行
+for read_cmd in \
+  "grep -n 'className' $BASH_DS_TSX" \
+  "cat $BASH_DS_TSX" \
+  "sed -n '1,20p' $BASH_DS_TSX" \
+  "git diff -- $BASH_DS_TSX" \
+  "rg -l 'hover' $BASH_DS_TSX" \
+  "grep -n foo $BASH_DS_TSX | head -5"; do
+  run_hook_bash "$read_cmd" "$TX_NEUTRAL"
+  expect_pass_silent "18e. Bash 純讀取不受管 → 放行: $read_cmd"
+done
+
+# 18f. N20 已知誤擋(釘住現況;修好後把這三格改成 expect_pass_silent):
+#   寫入動詞用子字串比對 —— \`2>/dev/null\` / \`2>&1\` 裡的 \`>\`,以及 \`git add\` 裡的 \`dd \`,都被當成寫入。
+for false_block in \
+  "cat $BASH_DS_TSX 2>/dev/null" \
+  "grep -c foo $BASH_DS_TSX 2>&1" \
+  "git add $BASH_DS_TSX"; do
+  run_hook_bash "$false_block" "$TX_NEUTRAL"
+  expect_block "18f. N20 已知誤擋讀取(現況 BLOCK,修好後改期望): $false_block" "BLOCKER"
+done
+
+# 18g. N47 已知漏擋(釘住現況;修好後改成 expect_block):
+#   先 cd 進去再用相對路徑寫,命令字串裡沒有 packages/design-system/src/ 這串字 → 快速退出放行。heredoc 版同樣漏。
+run_hook_bash "cd packages/design-system && sed -i '' 's/a/b/' src/components/Button/button.tsx" "$TX_NEUTRAL"
+expect_pass_silent "18g. N47 已知漏擋:cd + 相對路徑寫入(現況 PASS,修好後改 expect_block)"
+run_hook_bash "cd packages/design-system && cat > src/components/Button/button.tsx <<'EOF'
+export const x = 1
+EOF" "$TX_NEUTRAL"
+expect_pass_silent "18g2. N47 已知漏擋:cd + 相對路徑 heredoc(現況 PASS,修好後改 expect_block)"
+
+# 18h. 命令不含受管路徑 → 放行(絕大多數 Bash 呼叫走這條)
+run_hook_bash "npm test" "$TX_NEUTRAL"
+expect_pass_silent "18h. Bash 無受管路徑 → 放行"
+run_hook_bash "printf 'x' > README.md" "$TX_NEUTRAL"
+expect_pass_silent "18h2. Bash 寫非受管檔 → 放行"
+
+# 18i. 範圍與 Edit 對稱:stories allowlist / 非 tsx·ts·css 副檔名 → 放行
+run_hook_bash "sed -i '' 's/a/b/' packages/design-system/src/components/Button/button.stories.tsx" "$TX_NEUTRAL"
+expect_pass_silent "18i. Bash 寫 .stories.tsx → allowlist 放行(與 Edit 第 4 題對稱)"
+run_hook_bash "printf 'x' > packages/design-system/src/components/Button/button.spec.md" "$TX_NEUTRAL"
+expect_pass_silent "18i2. Bash 寫 src 內 .spec.md → 不在 tsx/ts/css 範圍,放行"
+
+# 18j. 無 transcript → 沒有任何 operation 證據,fail closed
+run_hook_bash "sed -i '' 's/a/b/' $BASH_DS_TSX" ""
+expect_block "18j. Bash 寫受管 tsx + 無 transcript → BLOCK" "NO_OPERATION_EVIDENCE"
+
+# 18k. 釘住現況(待裁決,見回報):Bash 事件沒有 operation bytes(operationEvidenceSha256 = 空字串的 sha),
+#   分類器判不出工程 vs UI → 工程 standing 授權也擋;同一份 transcript 走 Edit(7b)是放行的。
+run_hook_bash "sed -i '' 's/a/b/' $BASH_DS_TSX" "$TX_STANDING_ENGINEERING"
+expect_block "18k. 現況:Bash 寫 + 工程 standing 授權仍 BLOCK(與 Edit 7b 不對稱,待裁決)" "UNKNOWN_POTENTIAL_UI_UX_DECISION"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

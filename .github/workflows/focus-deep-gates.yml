@@ -29,6 +29,9 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
+      # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;
+      # focus-geometry-browser-audit / menu-message-row 等都走那條共用政策)
+      GOVERNANCE_BROWSER_REQUIRED: '1'
     timeout-minutes: 30
 
     steps:

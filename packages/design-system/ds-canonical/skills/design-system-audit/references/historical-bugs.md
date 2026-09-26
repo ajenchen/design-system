@@ -210,6 +210,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 2026-04-21 `principle-audit-protocol.md` v1 寫完沒套 Phase 0 全掃到 D6b/D6c,被 user 抓到「這也是跟一致性有關」才補。AI 寫新東西時套用既有原則有盲點,寫完必反向檢視。
 
 ### M8 — 訂 cross-component canonical 前必 world-class benchmark
+(2026-09-24 的錨例 —— 把行內動作鈕的裁示外推到表格的格、一條欄間線一天漂四次 —— 記在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落,M8 子規則「跨類別外推本身就是新主張」由此折入;本節不重抄。)
 2026-04-22 item-anatomy Inline Action vs Button predicate 疊代 4 次(position-based → density 分界 → fixed-small → chrome corner exception),每次 user 拉回才補對照。若 M8 存在,第一次就該先 benchmark Material IconButton / Polaris Button plain / Atlassian IconButton / Ant Button type=text 的位置規則再訂 rule。
 
 ### M9 — Predicate 寫完 present 前必 4 題自測
@@ -247,6 +248,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 
 ### M18 — Propose-time 自檢 gate(Q0 起源)
 2026-05-18 Sheet 補 / 5 元件 inline-action migrate / 5 元件 SurfaceBody migrate 三題全錯誤 propose 給 user 拍板,grep 後 0 個真 gap(Sheet 已完整 / 6 元件全消費 inline action / Dialog 走 ScrollArea canonical 不該用 SurfaceBody / HoverCard 是 behavior primitive / DatePicker TimePicker 是專用 layout / Sidebar 是 chrome 不是浮層)。User verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」→ 催生 Q0 Pre-ASK self-verify。
+
+### M22 — Benchmark claim 必附出處;引「不要拿 X 當 Y」必帶 Y 的範圍
+2026-09-24 一天三次裁掉禁令的範圍修飾語(Primer「global sidebar navigation」記成「sidebar navigation」、「為了突破四層上限而換成樹」只記後半句、差點裸引 Carbon「As the primary navigation in a product's UI」),錨例與 user 逐字在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落;子規則折入 `rules/meta-patterns.md` M22。2026-09-26 稽核一度判 4 處行號錯(Ant `form/style/index.ts`、Recharts、React Aria、Polaris),第二個人對 raw 原始碼逐一 curl 核對後**現行引用全部正確**(例:Ant 6.6.5 `cursor: 'help'` 就在 L289)—— 稽核員用的是非 raw 檢視或別的版本;教訓:核對行號一律拿釘版本的 raw 檔,而且**稽核的指控本身也要先過對照組**(M32),否則會照著錯的稽核去改對的東西。
 
 ### M23 — DS 內既有 canonical 優先於外部 benchmark
 - 2026-05-03 chevron color:DS `text-foreground`(icon-only Button neutral-9 85%)vs 憑「Ant 5 家 muted」印象覆蓋 → 自開新 tier 違反一致設計語言。
@@ -346,6 +350,18 @@ Visual Regression 改成在釘死的 Playwright 容器裡跑之後,連續兩次�
 - **把產品選項用散文＋artifact 列出來,再教 user 打通關密語(2026-09-23,M36(b) 的新形狀)**:填色日期格的焦點線我做了 C / D 兩張圖放在 artifact 裡,user 回「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」—— 核准閘擋下所有 tsx 編輯(`EXACT_UI_UX_TARGET_BINDING_MISSING`:答案裡沒有 target 名、而且是問句),而我前一輪已經寫過「你的下一句話裡帶「三、四照修」,閘就放行」= 教 user 打我自己的閘的通關密語,是自鎖的變形。閘自己的註解(`approval-evidence.mjs` 2026-09-12 撤回段)早就寫著:擴充核准語彙讓自己通過是自己批改自己的考卷,**真正的核准通道是 provider 的結構化選擇題工具**(harness 把 assistant 的題目原文與 user 選的選項一起記進 transcript;target 綁定來自 assistant 提案文字 + user 選的那個選項)。正解:先回答問題(同意 D 與理由),再用結構化選擇題把「DatePicker / DateGrid … styles/base.css」寫進題目、D 放第一個選項 —— user 一鍵,三個檔的編輯全部放行。**判準**:凡要 user 在產品選項間拍板,一律結構化選擇題(題目裡寫 target 名),不用散文列選項再等 user 打字;「請你回一句 X」出現在 reply 裡就是自鎖訊號(Mechanism 10 管的是被擋後交指令,這是它的前一步)。
 - **單格 hover 圈先閃一圈再變半圓(2026-09-23,M12 root-layer 修法)**:單格圈是 CSS `:hover`(指標一到就畫),框是 React 狀態(慢一幀),壓制圈的 class 掛在「停留後才出現」的 preview modifier 上,於是每次停留都閃。surface 修法是想辦法讓 React 更快;root 修法是壓制不能依賴慢的那一邊 —— 用「這一天停留會不會有框」當靜態 modifier(直接餵同一支純函式 `computeRangePreview`),停留前就掛好;順序不合與兩端都空時不掛,單格圈照畫。
 - **「離開單格」被當成「離開日曆」(2026-09-23 晚,M37 代理;user:「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」)**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px `border-spacing` 縫隙屬於 table;指標跨格只要有一次 mousemove 落在縫裡,瀏覽器先送 leave(停留日清空 → 17 格的框一次卸掉)、下一幀才 enter(補回)。慢速滑動(≤ 240px/s)幾乎每次都踩進縫隙,直接跳格不閃 —— **這正是既有閘看不到它的原因**:`locator.hover()` 是單步(Playwright `steps=1`),永遠走 React 把同一個 mouseout 的 leave+enter 批成一次 commit 的路徑(M32「儀器要先有對照組」:閘在該紅的時候不會紅)。框的畫法早就用 −2px 跨縫把線接起來,命中幾何卻沒跟上 —— 修法讓 hit = paint:day button `::before` 外擴 2px;閘補「30 小步跨格逐步量框最少幾格」對照組(selftest 把 ::before 縮回 0 就紅)。世界級沒有任何一家在有縫隙的格子上做逐格 leave 清除(Ant td 相連;MUI 只在離開整個日曆才清;flatpickr 只 enter)。
+  **2026-09-24 後續(同一條 bug,修法被換掉)**:那個 `::before` 是**表層**解 —— 閃動的根因是「停留日在縫裡被清掉」,
+  幾何外擴改的是「縫裡有沒有人收 enter」。而且它名義 2px、**實測最遠外推 9.33px**(`::before` 是方的,
+  把 `rounded-full` 圓四角外面也吃進命中區),違反 hit-area-canonical「懸停回饋的形狀 ≡ 命中區」,
+  日期格既非線也非點吃不到例外。改成同一段註解自己就引到的 MUI 作法:**只在指標真的離開整張格陣時才轉發 leave**
+  (`date-grid.tsx` 的 `data-day-grid` + `handleDayMouseLeave` / `handleGridMouseOver`)。
+  閘的對照組也跟著換成「拔掉 `data-day-grid`」—— 舊那行 CSS 打在一個已經不存在的 `::before` 上,
+  會變成永遠不紅的假對照組(這正是本條自己記過的 M32 病)。
+  過程中還踩到兩個坑:(a) `MonthGrid` 覆寫寫成 render 內的 inline 元件 → 每次 render 都是新 component type →
+  整個格陣 unmount/mount → React #185「Maximum update depth exceeded」,storybook 白畫面;
+  (b) 只擋「還在格陣裡」不夠 —— 指標穿過縫之後停在**不可點**的日子時,disabled button 收不到滑鼠事件、
+  不會再有任何 day enter/leave,上一天的預覽框會留著,`datepicker-range-preview.mjs`「順序不合不預覽」兩條因此紅;
+  補 `handleGridMouseOver` 才收斂。**兩個坑都是閘先抓到的,不是自己看出來的。**
 - **outside × range 從未被寫進疊加清單,code 憑 `!important` 決定了結果(2026-09-23 晚,M5 缺口 + M10 同族漏掃)**:user 圖一「五月的區塊非五月沒有變成該有非當月的樣式?…我怎麼印象中我們有討論甚至修正過類似的東西?」—— 全 repo 與 git 全史找不到任何 user 對「鄰月 × 區間」的原話;range 中段的 `[&>button]:!text-foreground` 是 2026-04-21 為了壓過 RDP range 模式中段自帶的 selected 白字加的,2026-05-03 改 mode="single" 自管區間時原封抄過去,任務已消失卻留著,`!important` 不看特異性,所以鄰月的淡字選擇器((0,3,1))照樣輸給它 → 鄰月日子一進區間就全深、起點藍圓在兩個面板各畫一次。user 記得的那次是 2026-09-07 outside × disabled(「明明都是 disabled 的日期,有些日期的文字比較深有些比較淺」),只修一對、沒掃同族。世界級五家兩月並排時沒有任何一家讓鄰月重複格吃到區間樣式(MUI / Polaris / flatpickr 不渲染,Ant 鎖在當月格),user 拍板「兩月時不顯示鄰月日子」(DateGrid 強制,MUI 同樣忽略 consumer 設定)。判準:**任何 `!important` 都要問「它壓的是誰、那個對手還在嗎」**,對手消失就拆,否則它會在別的疊加組合裡靜默勝出。
 - **示範一載入就有鍵盤焦點框,第二次被抓(2026-09-23 晚;第一次 2026-09-08 只收了原生控件)**:user「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」。根因逐字讀 Chromium:只有真正的指標點擊會把上次聚焦來源記成滑鼠(`mouse_event_manager.cc` FocusType::kMouse),script focus 不更新(`document.cc`),合成點擊(userEvent.click 的 mousedown + focus() / element.click())之後元件自己 autoFocus 就落在 `!last_focus_from_mouse` 那一側。同一支 story 對照:真指標點擊 → 無框;`element.click()` → 有框。前 500 支 story 機械盤點:34 支載入即 `:focus-visible`,非刻意且畫得出線的 10 支(DatePicker 4 / Dialog 4 / Calendar 1 / DateGrid 1);截圖儀器 `visual-audit.mjs` 用 id regex 決定誰保留焦點、把不含關鍵字的 story 焦點 blur 掉才拍,所以**基準圖裡沒有框、Storybook 裡有框** —— 儀器把 user 看得到的東西擦掉。修法不逐支:預覽層 `settleDemoFocus`(每支 story 渲染完放掉畫得出線的鍵盤焦點,之後直到使用者第一次按鍵前程式再搬來的也放掉;`parameters.demoFocus='keep'` 宣告例外)+ 全 story 閘 + 儀器那份 regex 規則拆掉(M17)。**同日的兩個反覆**:(a) 第一版只在收尾量一次,全掃抓到 dialog long-content / list-body / tabs state-contract 三支在收尾之後才被 Radix 還焦點 / Dialog 聚焦捲動區 → 改成監聽到第一次按鍵;(b) 第二版全域開啟,結果 12 支用 `page.focus()` 量焦點框的閘會被它放掉焦點(區間閘鍵盤段當場紅:程式聚焦被放掉、方向鍵落在 body)—— **示範收尾是給人看的層,儀器不能吃到它**:只在管理介面的 iframe(`window.parent !== window`)或帶 `?demoFocus=on` 時才開,直接開 iframe.html 的儀器預設關,要拍「user 看到的畫面」的 visual-audit 自己帶 on。2026-09-08 那次把「用滑鼠開 modal 出鍵盤框」收成「禁原生 `<button>`」,是把一個實例當成類別 —— 同一族第二次才找到根因。
 - **「hover ?? focus」把一個沒人決定的優先順序寫進了程式(2026-09-23,同 M37 代理)**:第一版用兩個變數、滑鼠恆優先,結果滑鼠停著時方向鍵怎麼按框都不動。要保證的性質是「框在最後一個輸入的那一天」,拿來判斷的卻是「滑鼠有沒有值」—— 兩者在「滑鼠停著、鍵盤在動」時分開。修成單一 anchor + 來源標記,各自只清自己設的,滑鼠離開退回鍵盤焦點;閘 `datepicker-range-preview.mjs` 的互搶段在舊版必紅(對照組)。
@@ -368,3 +384,54 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
 4. **為了防某條而加的閘,自己會用同一條犯錯**(#11)。閘寫完立刻用它自己的三問再問一次:「我拿來判斷的這個值,在**它要防的那種事故裡**還成立嗎?」#11 用「線上最新已發布版」當基準,而它要防的事故正是「發布了卻沒人裝得上」——基準本身就是壞的。
 
 - **2026-09-23 同一格再犯(儀器版)**:#161 併進 main 後 PR #160 與 main 衝突,GitHub 對有衝突的 PR **不啟動 pull_request workflow**,兩個 commit 只剩 Netlify 與 pull_request_target 的 4 個 check;我的 PR 監看腳本印「4/4 completed, red=[]」十輪,我照著回報「CI 都在跑」。「沒有紅」不是「有跑」:必過項**不存在**要以儀器失效紅,不是當綠燈等 —— 監看器改成「全部完成而必過項不存在 → MONITOR-BROKEN」。同根第二個:重拍 workflow 檔永遠來自 main、程式碼來自 target_ref,main 的 yml 呼叫 #161 才加的腳本,分支上沒有 → run #298 MODULE_NOT_FOUND;分支併 main 後才拍得成。判準:凡「拿 main 的流程跑分支的碼」,先問「流程引用的檔案在分支上有沒有」。
+
+- **2026-09-24 同一格再犯(產生檢視版,而且這次是 P0 批准閘整場消失)**:`check_substantive_edit_approval_preflight.sh` 從 PreToolUse 第 7 群搬到新的第 8 群,`registrations.json` 改對了、`git index` 裡的 claude 的產生 hook 設定檢視 也改對了,**但工作樹那份還停在 7 群** —— 而 Claude Code 在 session 開場就把工作樹那份讀進去凍住。結果:那道閘在舊群組已被移走、新群組沒有任何入口,**整場零覆蓋、零訊號**;事後還有 11 個受治理檔案被寫成「都過了 P0 閘」,實際上是「沒有任何東西攔它」。既有的兩支閘都看不到這裡 —— `gate-reachability-invariant.mjs` 查的是「腳本有沒有被執行面呼叫」(它有,registrations 有寫),`ci-gate-coverage.mjs` 查的是「npm script 有沒有接進 CI」(不相關)。斷的是**產生檢視**那一層。**拿 runtime 當儀器是全盲**:派工器是被那份過期檢視叫起來的,缺掉的那一群結構上不可能被觀察到。新閘 `scripts/provider-view-group-reachability-invariant.mjs`(required CI)離線比對兩份文件,另在 `session_start_governance_check.sh` Check 12 補一層「你**現在這個 session** 手上的檢視有沒有缺群組」—— CI 那支擋的是「送出去的東西」,SessionStart 那支擋的是「你手上的東西」,兩者不可互相代替。
+
+  **而新閘的第一版自己就犯了它要防的那條(M37)**:它拿「`registrations.json` 裡有幾群」當「這個 provider 該派工哪幾群」,於是對 codex 報假紅 —— codex 的 `runtime.transcript.stability` 是 `unstable-opaque`,而該群唯一的 hook 宣告 `transcript: "stable-required"`,依 `resolveProviderHookEligibility` 它對 codex **本來就不適用**,那一群在 codex 檢視裡不存在是正確的。修法是**逐 provider 呼叫產生器用的同一支適用性函式**,不自己重寫規則;selftest 為此加了第四格對照組(同一份過期檢視:對 claude 必紅、對 codex 必綠)。判準再記一次:**寫完閘立刻問「我拿來判斷的這個值,在它要防的那種事故裡還成立嗎」,而且要用一個不是拿來建構它的 provider / 元件去試打。**
+
+- **2026-09-24 同日再犯,這次是「把一層的規則外推到另一層,而且沒做 benchmark」**:user 對**行內動作按鈕**裁示「可點擊範圍跟 hover 底色一樣,都是 18*18」,我把它升成全 DS 的「懸停回饋的形狀 ≡ 命中區」,然後**拿它去拆 DataTable 選取格的 `onClick`** —— 理由寫「那一格自己沒有懸停回饋(變色的是整列)」。user 當場反問:「如果表格是每一欄的垂直格線都畫出來的那種,其 checkbox 所在的 cell 一整個就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」
+
+  查四家一手原始碼後,**我那條前提在四家裡 0/4 成立**:AG Grid / MUI X / react-data-grid 全都是「hover 回饋畫在**列**、點擊目標卻是**格**」,命中區跟懸停回饋形狀不一致是**常態**;react-data-grid 更是每個 cell 四邊都有格線、hover 仍在列、選取欄 checkbox 仍只有 20px。而且**四家沒有任何一家讓選取格的空白處變成死區**(聚焦該 cell / focus outline / active cell / 直接選列)。當天改回來。
+
+  **三個各自獨立的錯,要分開記**:
+  1. **跨層外推沒做 benchmark(M8 / M26)**。裁示的成立範圍是「控件」,我沒問「這條在表格的格上還成立嗎」就套過去。判準:**任何規則要從 A 類物件套到 B 類物件,那一步本身就是一個新的設計主張,要重新 benchmark**,不能靠「它是同一條規則」搭便車。
+  2. **引文讀反(M22 的反面)**。我引 MUI 的 "click on checkbox should not trigger row selection" 當「整格不可點」的依據 —— 那句住在 `handleRowClick` 裡,跟 detail panel、actions 欄的 early-return 並列,擋的是「這一欄已經有自己的控制項,別讓列點擊再觸發一次」;同檔仍照常發 cell 事件與 cell focus。**有 cite 不等於 cite 支持我的結論**:引一句原文之前,要先讀它**住在哪個函式、跟誰並列**。
+  3. **user 給的反駁理由也不是對的那個,但結論是對的**。他說的是「有格線 → 整格是視覺範圍」,而「有格線 → 整格可點」這條因果**查無一手依據**:AG Grid 的 `columnBorder` 預設就是 `color: 'transparent'`,同一份 DOM、同一份 JS,只差上不上色。真正切的那一刀是 `cellSelection` 這類 feature flag。**結論對、理由不對的時候,不能拿對的結論回頭背書那個理由** —— 那又是一次導果為因。
+
+  同日另外兩條錯判準(鍵盤模型的「有沒有選到哪一個」與「能不能開新分頁」)是同一種病的不同臉:**都是先有結論、再回頭找一個聽起來乾淨的判準**。三次都是 user 戳破的,三次我都拿不出一手依據。判準:**propose 任何「A 類東西該怎樣」的通則之前,先找一個不是拿來建構它的實例去打它**;打不破再說。
+
+- **2026-09-24 一條 1px 的欄間線,我在同一天漂了四次(三次是我自己,一次是三年前埋的)**。user 逐字:「幹你他媽,只有 pin 住的才是撐滿的,設計原則沒有寫嗎?仔細全盤研究,幹為什麼連這個也要我講?我們都沒有定義好嗎?到底為何做這條格線會發生那麼多漂移?root cause 到底是什麼?」
+
+  **Root cause(第 0 次,埋在架構裡)**:`data-table.spec.md`「Header vs Body 的視覺區隔」用**「這是哪一種邊界」**定義線(一般非 frozen 欄 = 表頭短線;frozen 邊界 = 整欄高),但程式碼用**「這裡剛好渲染到哪一段 JSX」**畫線 —— 表頭短線畫在 `ResizeHandle` 那個區塊裡,凍結線由 `dtPanelBoundary*` 畫,列身線由 cell 自己的 `.dtCellGrid` 畫。**選取欄是整個表頭裡唯一有自己 early-return 分支的欄**(`headerCellEl` 的第一個 `if`),它在抵達畫線那個區塊之前就 return 了;而它的列身分支同樣在套上 `.dtCellGrid` 之前 early-return。**三種線三個位置,它三個都到不了,於是靜默消失。** 實測:全表 325 個格有格線,選取格是唯一沒有的那一個。這是 M37 的標準形狀:要保證「這是一個欄邊界」,實際判的是「程式有沒有跑到那一段」。
+
+  **⛔ 我第一版的 root cause 寫錯過一次,當天更正**:原本寫「系統欄不可調寬 → 不渲染 `ResizeHandle` → 永遠沒有線」。**不可調寬不是原因** —— 那個區塊的進入條件是 `if (!showDivider && !isResizable) return null`,**只要該畫線就會渲染,與可不可調寬無關**;實測 `with-bulk-actions` 那則故事 `enableColumnResize` 預設 `false`、全部欄位都不可調寬,卻有 5 條表頭線。是 user 問「checkbox 的欄寬確實是固定不給調整的,對吧」才逼我回去量,一量就翻案。**教訓:寫 root cause 時「這兩件事同時成立」不等於「前者導致後者」** —— 選取欄確實不可調寬,也確實沒有線,但兩者沒有因果;真正的因是 early-return。這跟本檔 M37 那一族是同一個病,只是這次發生在我對自己 bug 的歸因上。
+
+  更早的伏筆:選取欄本來有自己的 ad-hoc 規則,2026-05-12 退役時註解寫「走 inlineEdit canonical」—— **那句話從來沒被驗證過**。退役規則時說「改由某某接手」卻不當場驗證某某作用得到那個對象,就是這一族。
+
+  **我自己的三次(全部由 user 抓到)**:
+  1. 直接把列身的 `.dtCellGrid`(整格高)套到表頭 → 表頭 30px 全高線、隔壁 21px 短線。**規格第一行就寫著一般欄不是整高,整高只屬於 frozen 邊界**,我沒讀就照抄隔壁。
+  2. 給表頭加 `self-stretch` → 表頭格 39、隔壁 38。**其他表頭格是內容高 + 列的 `align-items:center` 置中**;把一般欄撐滿 = 把它當 frozen 畫。
+  3. 內縮寫成 `top/bottom: var(--table-cell-py)` → 16px,隔壁 21px。那個 calc 含 `1lh`,而選取欄沒帶表頭字級 class,繼承到根字級(16/24)算出 7,隔壁 14/21 算出 8.5。**正解是直接 `height: 1lh` + 垂直置中**,不依賴格子自己的高度與字級去推。
+
+  **三次同一個病:照抄隔壁那一格怎麼寫,而不是先回去讀「這是哪一種邊界」。** 隔壁可能是另一種邊界,或是靠一個這一欄不會渲染的元件在畫。
+
+  **機械面**:`scripts/data-table-column-divider-invariant.mjs`(required CI)**不驗 class 有沒有寫**(那又是一個代理),直接量渲染出來的線:所有一般欄邊界必須同高同位。缺一條 → 高度 0 → 紅;畫成整高 → 高度不同 → 紅;撐滿造成的位移 → 位置不同 → 紅。四格對照組(含這三種錯法各一格)。真檔實測 14 條邊界全部 21.0px。
+
+  **判準**:畫任何一條線之前先答「**這是哪一種邊界**」,再去看那一種的幾何與畫法。**禁止看隔壁那一格怎麼寫就照抄。** 以及:任何「由某某機制接手」的退役說明,當場要驗證某某真的作用得到。
+
+- **2026-09-24 `git mv ... || mv` 把一支既有的 meta-test 整個蓋掉,而覆蓋閘完全看不到**:要給
+  `audit-hook-quality.mjs` 補測試時,我沒先看目標在不在,寫了 `git mv A B 2>/dev/null || mv A B`。
+  `git mv` 正確地拒絕了(B 已存在且已被追蹤),**然後 `||` 的那個 `mv` 把 B 直接覆蓋**。
+  B 是 HEAD 裡一支 63 行、內容正確的閘對照組(注入「fire log 消失」→ 驗 exit 2)。
+  是後來查 `git ls-files` 發現索引裡早就有這個檔名才抓到,差一步就把它連同新內容一起送出去。
+  **而 `audit-gate-meta-test-coverage.mjs` 從頭到尾都是綠的** —— 它用的是
+  `scripts/lib/gate-meta-test-inventory.mjs` 的 `existsSync`,只問「這個檔名在不在」,
+  不問「那支測試還在不在測那件事」。被我換掉的版本照樣會被 `run-gate-meta-tests.mjs` 跑、照樣全綠,
+  只是原本那三題保護靜默消失。**這是 M37 的第 ④ 種形狀(檔案存在 ≠ 閘還在)長在 meta-test 這一層。**
+  判準兩條:(1) **`||` 後面接的破壞性指令,等於把前一個指令的安全檢查整個拆掉** ——
+  `git mv` 拒絕是有理由的,用 `mv` 蓋過去就是在繞過它;要覆蓋就先看目標。
+  (2) 這個洞**沒有補弱代理閘**:「測試檔裡有沒有提到那支閘的檔名」這種檢查,連我這次的覆蓋版都會過
+  (它的端到端那層真的有 spawn 那支閘),補了只是多一個會說謊的綠燈。真正的性質是
+  「這支測試有沒有真的看過它的閘紅一次」,目前只能靠讀 code,**先記在這裡讓下一個人知道覆蓋閘的邊界在哪**。
+
+- **2026-09-24 同一天第三次:引用「不要拿 X 當 Y」時把 Y 的範圍吃掉**。前兩次是 Primer:`tree-view.mdx` 寫的是 "**global sidebar navigation**"(全站主導覽)我記成 "sidebar navigation";`nav-list.mdx` 寫的是「不要**為了突破四層上限**而把 NavList 換成 tree」我記成後半句。第三次差點再犯:我在新寫的設計判準裡裸引 Carbon 的 "**As the primary navigation in a product's UI**" 當「樹不是導覽」的依據,user 當場攔下:「這題我上面已經回覆過了喔,notion 你還記得吧?你他媽不要又給我鬼打牆喔」。**固定規則:引用任何一家的「不要拿 X 當 Y」時,必須把 Y 的範圍逐字寫出來** —— `primary` / `global` 這種修飾語就是範圍本身,拿掉它就變成另一句話。裸引一次,下一個人就會把它當禁令。三次都是同一個病:**把自己讀出來的範圍當成原文寫的範圍**(M36)。

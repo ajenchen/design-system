@@ -8,6 +8,8 @@ import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Hash } from 'lucide-react'
 import { Tag } from './tag'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import {
   CATEGORICAL_HUES,
   CAT_SUBTLE_TOKENS,
@@ -126,15 +128,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   }
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
 }
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -277,40 +270,43 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Variant</span>
-          <div className="flex flex-wrap gap-1.5">
-            {VARIANTS.map((v) => <Tab key={v} active={variant === v} onClick={() => setVariant(v)}>{v}</Tab>)}
-          </div>
+          {/* > 5 個選項不用 SegmentedControl(segmented-control.spec.md 禁止事項「超過 5 個 item」)→ ChipGroup 單選
+              (chip.spec.md「與 SegmentedControl 的差異」:規模可多、wrap 換行)。Radix 單選再點已選項回傳空字串 → 忽略,維持恆有一值 */}
+          <ChipGroup type="single" aria-label="Variant" value={variant} onValueChange={(v) => { if (v) setVariant(v as VariantKey) }}>
+            {VARIANTS.map((v) => <Chip key={v} value={v}>{v}</Chip>)}
+          </ChipGroup>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Icon</span>
-          <div className="flex gap-1.5">
-            <Tab active={!withIcon} onClick={() => setWithIcon(false)}>off</Tab>
-            <Tab active={withIcon} onClick={() => setWithIcon(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Icon" value={withIcon ? 'on' : 'off'} onValueChange={(v) => setWithIcon(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Dismiss</span>
-          <div className="flex gap-1.5">
-            <Tab active={!withDismiss} onClick={() => setWithDismiss(false)}>off</Tab>
-            <Tab active={withDismiss} onClick={() => setWithDismiss(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Dismiss" value={withDismiss ? 'on' : 'off'} onValueChange={(v) => setWithDismiss(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Solid</span>
-          <div className="flex gap-1.5">
-            <Tab active={!solid} onClick={() => setSolid(false)}>off</Tab>
-            <Tab active={solid} onClick={() => setSolid(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Solid" value={solid ? 'on' : 'off'} onValueChange={(v) => setSolid(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 

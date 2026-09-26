@@ -5,7 +5,8 @@
  * Singleton overlay root inside DataTable(M21 private,不抽 global pattern)。
  * Sub-layer children(2026-07-04 對齊實作;原 RFC 5-layer 清單含未實作元件):
  *   - HoverCellRect(z 1):hover 邊框,「one geometry owner, two paint owners」(Contract 8)
- *   - SelectionRing(z 2):spreadsheet mode selected cell 1px ring(CELL_RING_STYLES.selected)
+ *   - SelectionRing(z 2):spreadsheet mode 格游標 = DS 焦點框 `focus-ring-inset`(CELL_RING_STYLES.selected;
+ *     2026-09-26 起取代原 1px `--primary`,且為試算表模式唯一的焦點指示 —— 有格游標時表格根節點不畫)
  *   - ActiveEditorHost(z 3):portal active edit Field(Slice C wire-up)
  *   -(range 視覺 = CSS [data-range-cell] cell-bg,非 layer 元件;nested popup 走 Radix idiom
  *     見 active-editor-controller.ts — RangeRect / NestedPortalRegistry 元件不存在)
@@ -298,7 +299,7 @@ export function DataTableInteractionLayer({
           <CellRingOverlay rect={toRelRect(hoverGeo.rect, hoverGeo.clipRect)} kind="hover" />
         </ClipMask>
       )}
-      {/* SelectionRing — kind=selected(1px var(--primary)) z 2,SSOT 同 hover wide */}
+      {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask */}
       {selectedGeo && (
         <ClipMask clipRect={selectedGeo.clipRect}>
           <CellRingOverlay
@@ -310,8 +311,8 @@ export function DataTableInteractionLayer({
       )}
       {/* 2026-05-10 retire RangeOuterRing(per user 抓 image 4 + verbatim「range 的 cell 本來就有顏色變化,
           那樣就夠了,不需要再有 2px 藍色的框」)。Range visual now relies purely on cell-bg
-          (`--primary-subtle` via `[data-range-cell]` CSS in `data-table.css`)+ focus cell 1px selected
-          border。Outer 2px primary ring 從 Issue 6 ship 但 visual 太重 — bg-fill 已給「這些 cell 在範圍內」
+          (`--primary-subtle` via `[data-range-cell]` CSS in `data-table.css`)+ 起點格的焦點框
+          (2026-09-26 起 = `focus-ring-inset`)。Outer 2px primary ring 從 Issue 6 ship 但 visual 太重 — bg-fill 已給「這些 cell 在範圍內」
           訊號,outer ring 是 redundant。calc + render 皆已 retire(變數已移除;future 若需 reinstate
           參考 git history 2026-05-10)。 */}
       {/* {rangeOuterRingsByPanel.map((group) => (
@@ -358,16 +359,27 @@ function toRelRect(cellRect: CellRect, clipRect: CellRect): CellRect {
 //
 // Token mapping 集中 `CELL_RING_STYLES`(per codex Q3 verdict 不開 global `--cell-ring-*` token,
 // 在 primitive 內 kind → semantic token mapping)。
+//
+// 兩種 kind 的畫法不同源,刻意分開:
+//   - hover:1px `--border-hover` 提示「點了會進編輯」,不是焦點指示,由本檔寫值。
+//   - selected:**格游標就是焦點指示**,一律消費 DS 焦點框 `focus-ring-inset`(2px `--ring`、往內 2px),
+//     值只住 `styles/base.css` 的 `@utility focus-ring-inset`,這裡只掛 class 不寫值
+//     (`ds-canonical/references/focus-canonical.md`「框怎麼畫」只准三種幾何;R21 第 5 題 (b) 的 AI 建議「格子框用 DS 焦點框」,09-26 user 未另提 → AI 判讀照建議做)。
+//     原本是 1px `--primary` inline outline —— 第四種幾何,而且與表格根節點的 2px 框同時出現(兩個焦點指示)。
 
-const CELL_RING_STYLES = {
+type CellRingKind = 'hover' | 'selected'
+/** 自己寫值的線(width + color),或消費 DS utility 的 class —— 二選一,不准兩者並存(並存就是兩份幾何) */
+type CellRingStyle = { zIndex: number } & (
+  | { width: number; color: string; className?: never }
+  | { className: string; width?: never; color?: never }
+)
+
+const CELL_RING_STYLES: Record<CellRingKind, CellRingStyle> = {
   hover:    { width: 1, color: 'var(--border-hover)', zIndex: 1 },
-  selected: { width: 1, color: 'var(--primary)',      zIndex: 2 },
+  selected: { className: 'focus-ring-inset',          zIndex: 2 },
   // future kinds(per codex Q6 outline,加 entry 即可擴展):
-  // focus:  { width: 2, color: 'var(--primary)',      zIndex: 2 },
   // error:  { width: 1, color: 'var(--error)',        zIndex: 2 },
-} as const
-
-type CellRingKind = keyof typeof CELL_RING_STYLES
+}
 
 function rectStyle(rect: CellRect): React.CSSProperties {
   return {
@@ -380,11 +392,12 @@ function rectStyle(rect: CellRect): React.CSSProperties {
 }
 
 /**
- * CellRingOverlay — paint owner for hover / selected / future focus / error rings。
+ * CellRingOverlay — paint owner for hover / selected(格游標)/ future error rings。
  *
  * 共用 SSOT(per Bug 5 fix + codex Q2 unified primitive):
  *   - Float pass-through rect(getCellRect 不 round)
- *   - outline + outline-offset:`-${width}px` paint 在 cell 既有 border 上 in-place
+ *   - 自己寫值的線(hover):outline + outline-offset:`-${width}px` paint 在 cell 既有 border 上 in-place
+ *   - 消費 utility 的框(selected):只掛 class(`focus-ring-inset` = 2px `--ring` 往內),不寫任何 outline 值
  *   - boxSizing:border-box(避免 outline 影響 layout)
  *   - pointerEvents:none(透視點擊穿透)
  *   - transition:none(避 fade flash)
@@ -399,10 +412,10 @@ function CellRingOverlay({ rect, kind, cellId }: {
   return (
     <div
       aria-hidden
+      className={ring.className}
       style={{
         ...rectStyle(rect),
-        outline: `${ring.width}px solid ${ring.color}`,
-        outlineOffset: `-${ring.width}px`,
+        ...(ring.width != null ? { outline: `${ring.width}px solid ${ring.color}`, outlineOffset: `-${ring.width}px` } : {}),
         boxSizing: 'border-box',
         pointerEvents: 'none',
         transition: 'none',

@@ -13,7 +13,7 @@
 |------|---------|---------------|---------|
 | **Numbered Role Scale** | Radix Colors | 12 step scale，每個 step 號碼本身就是 role（step-9=solid bg、step-10=solid hover），light/dark scale 各自獨立定義值 | 工程量極大——需要重新設計每個色相 × 12 step × 2 mode = 192 個值，且全部 consumer 改 step 號 |
 | **Semantic State Token**（**我們**） | Atlassian DS、GitHub Primer | 互動狀態用 semantic token (`--{hue}-hover` / `--{hue}-active`)，每個 mode 預先計算值 | ✓ 選這個 |
-| **State Layer Overlay** | Material Design 3 | 互動狀態用透明 overlay（state layer），不改變底色 | 跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格 |
+| **State Layer Overlay** | Material Design 3([state layers](https://m3.material.io/foundations/interaction/states/state-layers)) | 互動狀態用透明 overlay（state layer），不改變底色 | 只拒絕**彩色 / 色相色的底**用疊層:改用疊層會跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格。中性色階半透明、低段可相加,疊一層等於往下一階,畫面不分裂;本 DS 只在「底」(`--canvas` / `--surface` / `--surface-raised`)上用疊層(`bg-interaction-hover` / `-active`),其餘中性填色(`--secondary`…)照換色,範圍見下方「Hover 換色配對總則」(2026-09-25 user 選「採用，底色不換、疊一層 (Recommended)」;這一條刻意偏離 Atlassian 的表面換色,[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation)) |
 | **Consumer-side Mode Handling** | Tailwind CSS | 由 consumer 自己處理 dark mode 變體 (`hover:bg-blue-600 dark:hover:bg-blue-400`) | Token 系統的價值就是封裝 mode 知識，把它推給 consumer 等於放棄抽象化 |
 
 ### 為什麼選 Atlassian 流派
@@ -30,7 +30,10 @@
 | 概念 | 是否需要 mode 知識 | 該住哪一層 |
 |------|------------------|----------|
 | **靜態色值**（subtle bg、text、solid bg） | ❌ Primitives 公式翻轉已自動處理 | **Primitive**——直接 `--color-blue-1`、`--color-blue-7`、`--color-blue-6` |
-| **互動狀態**（hover、active） | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
+| **實心色的互動狀態**(step-6 家族的 hover、active) | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
+| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;本檔「Dark mode subtle」) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆事件方塊,`tokens/categorical-color.ts` `CAT_EVENT`) |
+
+> 2026-09-26 範圍更正(user 同意,條件「確保這符合我們一致的設計語言且不違背世界級的設計」):原表把「互動狀態」一律寫成「hover 永遠較亮」,實際只對實心色成立 —— 淡底與中性灰的滑過在淺色本來就是變深(本檔「Hover 換色配對總則」:往上一階)。淡底滑過改成第 1→2 階後,深色第 2–4 階同步改成半透明淡底,兩個主題的第 2 階都是「離底更遠一格」,不需要 mode 知識,依本檔「只有真的需要切換主題的東西才開 semantic token」直接用 primitive,不另開 12 個 `--{hue}-subtle-hover`。
 
 兩個概念**本來就不該綁在同一層**。Tailwind 也這樣分離：`bg-blue-500`（靜態，scale step）vs `hover:bg-blue-600 dark:hover:bg-blue-400`（互動，需要 consumer 處理 mode）。差別只在於 Atlassian 流派把 mode swap 封裝進 token 裡，consumer 不需要寫 dark variant。
 
@@ -167,11 +170,13 @@ disabled 元件內的所有子元素必須呈現 disabled 狀態:
 
 ```
 底層背景 (n-2)  <  中層填充 / 輪廓 (n-5)        <  文字 (n-6)
-bg-muted          bg-border / border-border       text-fg-disabled
+bg-disabled       bg-border / border-border       text-fg-disabled
 ```
 
 每階至少差 1 個 primitive step,使用者掃視時才能分清層次。Slider 的 disabled 就是這個公式:track(底,n-2)< range 填充 = thumb 邊框(n-5,**同色**——「Range 色 = Thumb border 色」invariant,thumb 邊框是 range 的視覺延續,不論 state 永遠同色,詳 slider.tsx 註解)< label 文字(n-6)。
 
+> 2026-09-25 改:底層由 `bg-muted` 改為 `bg-disabled`(同值 neutral-2,畫面零變化)—— 這層只在元件停用時出現,依下方「Static Subtle Background」段邊界句「component disabled bg 不走 muted」;Slider 軌道同日跟著改(待辦總帳 C2)。
+>
 > 2026-06-12 修:本段原寫 4 階公式、輪廓層用 `border-fg-disabled`(n-6)、文字層標 n-7+——三者皆與 code 不符(`border-fg-disabled` 全 code 零使用且違反下方規則 3「border-* 一律從 border family 選」;`--fg-disabled` 實為 n-6;slider.tsx 的 range/thumb 邊框同色是刻意設計,曾踩 thumb 融入 track 的同色融色 bug)。對齊 code 真實。
 
 ### ⚠️ fg token 不可當 bg 用(跨 family 借用是 smell)
@@ -215,7 +220,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 |------|------|
 | 主要按鈕 | `bg-primary` |
 | 文字連結 | `text-primary` |
-| Focus ring | `ring-ring` |
+| 焦點框 | `--ring`(全域 `:focus-visible` 外描邊,元件不寫 class) |
 
 ```tsx
 <Button variant="primary">確認</Button>
@@ -279,7 +284,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 |-------|---------|------|------|
 | `--text-selection` | `bg-text-selection` | blue-5 @ 30% 半透明 | 文字反白(`::selection`)底色;全域樣式住 `styles/base.css`,只動底色不動字色 |
 | `--search-match` | `bg-search-match` | amber-3 | 頁內搜尋(Ctrl+F 類)**所有配對**的行內底色 |
-| `--search-match-current` | `bg-search-match-current` | amber-5(dark:amber-4) | 配對中**目前這一筆**(find 游標所在) |
+| `--search-match-current` | `bg-search-match-current` | amber-5(dark:amber 基準色 45% 半透明,2026-09-26 起) | 配對中**目前這一筆**(find 游標所在) |
 
 設計依據(2026-08-28 拍板):
 
@@ -287,7 +292,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 - **搜尋雙檔制**是編輯器/瀏覽器普世慣例:VS Code `editor.findMatchBackground`(「Color of the current search match」)與 `editor.findMatchHighlightBackground`(「Color of the other search matches」)兩 token 分立;琥珀/黃族底色 = 瀏覽器原生 find 慣例
 - **對階**:amber-3 / -5 對齊 Radix scale 語意 step 3 =「UI element background」/ step 5 =「Active / Selected UI element background」(https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale);行內 highlight 鐵約束 = 文字保持原色可讀 → 底色停留亮階(≤ step 5)
 - **為何字尾是 `-current` 不是 `-active`**:`-active` 在本系統 = 按壓語意且映射第 7 階(`--amber-active` = amber-7,見「互動狀態推導」),同字不同映射會破壞一致性;`current` 取自 VS Code 官方描述原詞
-- **Dark**:`--text-selection` / `--search-match` 由 primitive 階梯公式自動反轉(1–5 變深)免 override;`--search-match-current` **需降一階覆寫 amber-4**——數學驗收(oklch→sRGB→WCAG)dark amber-5 配白字對比 3.03 過不了 4.5,amber-4 = 5.89 ✓ 且與 amber-3 區辨 1.86 優於 light 的 1.31。全組量測:light 反白 11.41 / amber-3 12.21 / amber-5 9.82;dark 反白 13.04 / amber-3 10.97 / amber-4 5.89(皆 ≥ 4.5)
+- **Dark**:`--text-selection` / `--search-match` 由 primitive 階梯公式自動換值免 override(2026-09-26 起深色 amber-3 是半透明淡底,卡片上 `#5F4A28`、白字 8.41);`--search-match-current` **需覆寫**——dark amber-5 配白字對比 3.03 過不了 4.5;原本用 amber-4(5.89),深色 step-2..4 改成淡底後 amber-4 與 amber-3 區辨只剩 1.21 → 改 `color-mix(in oklch, var(--color-amber-6) 45%, transparent)`:卡片上 `#81622D`、白字 5.65 ✓、與全部配對區辨 1.49(light 1.30)。light 量測不變:反白 11.41 / amber-3 12.21 / amber-5 9.82
 
 ```tsx
 <mark className="bg-search-match text-inherit">報表</mark>          // 一般配對
@@ -313,7 +318,9 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 
 設計依據(2026-09-03 拍板):
 
-- **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(不透明,底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
+- **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
+  > 2026-09-25 更正:原句寫「`-subtle` 不透明」,與下方「Dark mode subtle」段矛盾 —— 淺色的 step-1 是不透明色票,**深色的 step-1 是 alpha 公式**(`primitives.css` 深色區塊 `--color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`),本身就半透明。兩者的分工看的是「底是誰的」(元件自己的 vs 蓋在別人內容上),不是透不透明。
+  > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。修法(列被滑過時把區間格釘住)已備妥、**未套用**:屬「試算表模式」那組,user 2026-09-26 仍在提問(待辦總帳〇節「被質疑、先不做」、C12⑦)。
 - **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
   > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
 - **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
@@ -401,12 +408,13 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 | Token | 對應的正常態 token | 用途 |
 |-------|------------------|------|
 | `--inverse-fg` | `--foreground` | inverse surface 上的文字色（Tag/Avatar neutral solid 的 label） |
-| `--inverse-neutral-hover` | `--neutral-hover` | inverse surface 上的 hover overlay（如 dismiss hover） |
-| `--inverse-neutral-active` | `--neutral-active` | inverse surface 上的 active overlay（如 dismiss active） |
+| `--inverse-neutral-hover` | `--neutral-hover` | inverse surface 上**透明子元素**滑過時換上的配對（如 dismiss hover） |
+| `--inverse-neutral-active` | `--neutral-active` | inverse surface 上**透明子元素**按下時換上的配對（如 dismiss active） |
 
 **命名原則**：
 - base 文字 token 命名為 `--inverse-fg`（對齊 `--foreground`），而不是 `--neutral-inverse`。原因是本 token 系統沒有 `--neutral` 這個 semantic base（只有 primitives `--color-neutral-1` ~ `--color-neutral-9`），若命名為 `--neutral-inverse-*` 會讓讀者誤以為存在 `--neutral` base，造成誤導。
-- 互動 overlay token 命名為 `--inverse-neutral-hover` / `--inverse-neutral-active`，明確指出鏡射的是 `--neutral-hover` / `--neutral-active`。`fg` 自帶語意所以單獨用，但 `hover` / `active` 太籠統需要 `neutral-` 限定詞表明角色。
+- 互動 token 命名為 `--inverse-neutral-hover` / `--inverse-neutral-active`，明確指出鏡射的是 `--neutral-hover` / `--neutral-active`。`fg` 自帶語意所以單獨用，但 `hover` / `active` 太籠統需要 `neutral-` 限定詞表明角色。
+- **它們是換色,不是疊層**(2026-09-25 更正用詞;原寫「hover overlay / 互動 overlay」):inverse 底上的透明子元素(例:dismiss 鈕)靜止時是透明,滑過時**把自己的底色換成** inverse 階梯上的配對 —— 跟一般底上的透明元素換成 `--neutral-hover` 是同一套機制(見「Hover 換色配對總則」)。它不是蓋在 inverse 底色上的一層半透明遮罩;本檔開頭「架構流派定位」拒絕的正是那種疊層(State Layer)。
 - 以 `--inverse-*` 為 namespace 則意義清晰：「inverse surface 上的 foreground / neutral-hover / neutral-active」。
 
 **數值規則（嚴格對稱）**：`--inverse-neutral-*` 在某 mode 的值 = `--neutral-*` 在「另一 mode」的值。即 inverse 是 neutral 的 mode 鏡射。
@@ -457,8 +465,8 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 **不該用 `--{hue}-text` 的場景**：
 - ❌ Button label（用 `text-white` on primary bg）
-- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）
-- ❌ 任何 hover/active 互動回饋
+- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「View log」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`
+- ❌ 任何 hover/active 互動回饋(上一條例外的連結因此滑過不換色,不得拿 `--{hue}-hover` 補 —— 那是 step-6 填色的配對)
 
 #### 為什麼 step-7 在兩個 mode 都對
 
@@ -492,14 +500,22 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 #### Dark mode subtle
 
-Light mode 的 step-1 使用不透明色票。Dark mode 的 step-1 在 primitives 中使用 alpha 公式自動計算：
+**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors 深色 1 → 12 由暗到亮(3.0.0 發布檔 `red-dark.css`:`--red-1: #191111` … `--red-12: #ffd1d9`,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark.css);Ant Design 深色色板 1 → 10 由暗到亮(https://ant.design/docs/spec/dark,「Pick your background color #141414」下方色板 color-1 `#111d2c` … color-10 `#b7e3fa`);Primer 中性色階「The light and dark scale directions are inverted, with the light scale starting with white and the dark scale starting with black.」(https://primer.style/foundations/color/base-scales)。另一派:號碼是絕對深淺、深色主題另挑號碼 —— Material 3 參考色調只有一份、0 = 黑 … 100 = 白(https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-ref-palette.scss#L68-L80)、Carbon「The light themes are based on White and Gray 10 backgrounds, and the dark themes use Gray 100 and Gray 90 backgrounds.」(https://carbondesignsystem.com/elements/color/overview/)、Tailwind「with 50 being the lightest, and 950 being the darkest」(https://tailwindcss.com/docs/colors)—— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。Radix / Ant / Primer / Material / Carbon / Tailwind 的一手來源 2026-09-27 逐一抓取核對;Atlassian 色板頁為前端渲染抓不到原文,不點名。)
+
+Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先混好等於在真的底上混)。Dark mode 的 **step-1..4 = 淡底區,同一條 alpha 公式**(step-1 自 2026-07-04 Q10,step-2..4 自 2026-09-26):
 
 ```css
-/* primitives.css dark mode */
---color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l));
+/* primitives.css dark mode:K = 0.06 × (n+1) → step-1..4 = 0.12 / 0.18 / 0.24 / 0.30 */
+--color-{hue}-{n}: oklch(from var(--color-{hue}-6) l c h / calc(K / l));
 ```
 
-`α = 0.12 / l`：亮度越高的色相 alpha 越低，在 dark canvas 上感知亮度自動統一。所有色相用同一套公式，無需在 semantic 層額外覆寫。
+- **為什麼半透明**:深色有頁面 / 卡片 / 浮層 / 滑過中的格四種底,只有半透明能在每一種底上都保持「號碼越大離底越遠」;不透明的淡階放在頁面上比底亮、放在卡片上反而比底暗(2026-09-26 前 step-2..4 往純黑退 `l × 0.28 / 0.44 / 0.62`,12 色的 step-2 全比 step-1 暗、10 色比卡片底還暗 → 月曆事件深色滑過變近黑)。
+- **除以 l**:亮度越高的色相 alpha 越低,感知亮度自動統一;K 的比例 1 : 1.5 : 2 : 2.5 ≈ Radix Colors 3.0.0 深色 alpha **第 3–6 階**(a3 : a4 : a5 : a6,不是 a1–a4)的比例 —— red 45 : 68 : 86 : 104 = 1 : 1.51 : 1.91 : 2.31、blue 58 : 87 : 107 : 127、green 30 : 45 : 60 : 75、amber 34 : 50 : 65 : 81(sRGB 8-bit alpha,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark-alpha.css 等四檔);31 個色相的中位數 1 : 1.48 : 1.89 : 2.37(2026-09-27 依同一版發布檔算;GitHub repo 無 v3.0.0 tag,故引 npm 發布檔)。
+- **新色相門檻**:深色 base-6 的 `l`,掃描下最嚴的色相(紫一帶)約 0.52(2026-09-26 掃 11,880 組假想色相,低於此值紫藍、紅一帶在滑過中的格上會出現 step-4 > step-5);門檻隨色度 / 色相變(現行 `--color-red-6` 深色 l = 0.51 仍過),實際以 `scripts/categorical-color-invariants.mjs` I5「色階順序」為準,不拿單一數字當閘。
+- **step-5..10 不變**:step-5 是深色的按壓色(實心,`l × 0.82`),step-7..10 往白推(文字方向)。
+- **機械防線**:`scripts/categorical-color-invariants.mjs`「色階順序」—— 12 色 × 10 階 × 淺白 / 淺滑過格 / 深頁面 / 卡片 / 浮層 / 滑過格,淺色號碼越大越暗、深色號碼越大越亮,且深色每一階都比底亮。
+  > 已知後果(實測 2026-09-26):第 7 階字在深色滑過中的格(第 2 階淡底疊 `#272727`)上,7 個色相對比 < 4.5(紅 3.07、靛 3.20、紫 3.22、洋紅 3.68、藍 3.75、深橘 3.77、青 4.36),全部 ≥ 3.0;user 2026-09-26 對此說「這個先忽略」→ 擱置,記在待辦總帳,不再提問。
+- 淡底只能當淡底:半透明會透出底下的東西,不能拿來當需要蓋住下層的顏色(本檔「Drop target」段)。
 
 ## 互動狀態推導（Hover / Active）
 
@@ -717,6 +733,49 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 <div className="hover:bg-neutral-hover active:bg-neutral-active">list row</div>
 ```
 
+### Hover 換色配對總則(2026-09-25)
+
+**範圍:同一個型態之內的滑過與按住,用什麼顏色。** 型態切換(例:未按下 → 已按下)是換到另一個型態,各自有自己的平常色與滑過色(下方階梯表分兩列),不在本條。**要不要有滑過回饋**不在本檔:全 DS 唯一住所是 `ds-canonical/references/hit-area-canonical.md`「滑過原則」—— 底色的滑過回饋只給「點了會有反應」的元素(一-5,user 2026-09-25 #33,原話在該檔),例外清單(資料表格列、圖表的滑過指示)在同節三-2;例外用的顏色一樣照本表「透明 → `--neutral-hover`」那一對。
+
+依元素**平常的底色是什麼**分三種,一句話管完:
+
+| 平常底色 | 滑過 / 按住時 | 理由 |
+|---|---|---|
+| 透明(列、選單項、文字鈕) | 把底色換成 `--neutral-hover` / `--neutral-active` | 透明底的配對就是這一對 |
+| **「底」**:`--canvas` / `--surface` / `--surface-raised`(頁面、卡片、浮層容器這類層色) | **底色不換,在上面疊一層**:`hover:bg-interaction-hover` / `active:bg-interaction-active`(= 把 `--neutral-hover` / `--neutral-active` 畫成 background-image,在底色之上、內容之下,範圍與底色相同;開啟中同滑過,`data-[state=open]:bg-interaction-hover`) | 底是「它在哪一層」的顏色,互動不該把它換成別的東西;深色的 `--surface` 本身是白 8% 半透明,換成 `--neutral-hover`(白 4%)會**變暗**(實測 FileItem 卡片 `#1D1D1D`→`#141414`),按住換成 `--neutral-active`(白 8%)則完全沒反應;疊一層兩個主題、任何容器裡方向都對,與透明列滑過同色。預期值(R14 實測):淺 `#FFFFFF`→滑過 `#FAFAFA`→按住 `#F5F5F5`;深(`--surface` 在頁面上)`#1D1D1D`→`#262626`→`#2E2E2E`。user 2026-09-25 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」) |
+| 元件自己的填色:`--secondary`、強調與狀態色、`--surface-strong`、`--neutral-selected`(已按下型態)… | 換成**它自己的配對** —— 同一條色階的下一階(`--secondary` → `--secondary-hover` / `--secondary-active`,2026-09-25 新增;淺 `#F0F0F0`→`#E8E8E8`→`#D9D9D9`,深約 `#272727`→`#2F2F2F`→`#474747`,頁面底上計算值) | 填色是元件本身的顏色,照本檔開頭「架構流派定位」的換色流派 |
+
+**借用別的底色的配對一律禁止**(例:有底色的元素換成透明底專用的 `--neutral-hover`)。疊層 utility 是 background-image,已在 `lib/utils.ts` 登記為 tailwind-merge `bg-image` 群組(不登記的話 `cn('bg-surface', 'bg-interaction-hover')` 會把底色刪掉);背景圖不做過渡,`motion/motion.spec.md`「hover 回饋不做過渡」天然成立。
+
+**巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在「滑到可點卡片內的按鈕上時」一題選「卡片保留、按鈕再亮一層 (Recommended)」(選項由 AI 提供);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
+
+- 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)= 格子改回透明,跟當月格同一對。
+- 錨例 2(2026-09-07,已按下的切換鈕):已按下的靜止底是 neutral-2,滑過值 `--neutral-selected-hover` 卻指到 neutral-1 —— 等於借了透明底 `--neutral-hover` 的值,按下與未按下在滑過時像素完全相同;改成 neutral-3(自己的下一階)才分得出來(下方階梯表)。
+- **能不能當可互動元素的靜止底**:`--secondary` 可以 —— 「Static Subtle Background」段表格 `bg-secondary` 列定義它「存在且微淡可辨 — 元素是正常狀態,但需要退後一級」;`--muted` 不可以 —— 同表 `bg-muted` 列定義它「靜態非互動 surface — 退化 / placeholder / locked 視覺」。(2026-09-25 拿掉原本的行號,本檔一改就漂)
+- 疊層只用在「底」:彩色 / 色相色的底、元件自己的填色都換色,不疊(理由見本檔開頭「架構流派定位」)。底色本身換不掉的圖片 / 媒體,改元素自己的不透明度(例:Carousel 圓點,`carousel.spec.md`「視覺規格(photo overlay convention)」)。
+- 「底」用疊層是**刻意偏離** Atlassian:[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation) 原文 "Elevations use surface color changes to communicate hovered and pressed states"(表面換成 `elevation.surface.hovered` 這類配對 token)。換色派的其他家也沒有「表面疊、其他換」的先例,只有 Material 3 全面疊層([state layers](https://m3.material.io/foundations/interaction/states/state-layers))。畫面效果有前例:Ant 表格列把「表面 + 一層」先算成實心值再換上去([table style](https://github.com/ant-design/ant-design/blob/master/components/table/style/index.ts),`colorFillAlterSolid`)、Adobe Spectrum 2 表格列同理([TableView.tsx](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-spectrum/s2/src/TableView.tsx),`colorMix`)。
+- 填色需要的配對還不存在 → 依命名 `--{底}-hover` / `--{底}-active` 新增,值取同一條色階的下一階(2026-09-25 依此新增 `--secondary-hover` / `--secondary-active`);同值不同名照樣分開建(下方「禁止事項」;例 `--secondary-active` 與 `--border` 同為 neutral-5)。按壓怎麼走由各家族自己定(飽和色見「互動狀態推導」;中性見下方階梯表)。
+
+**現有配對一覽**(值見 `semantic.css`;兩個主題各自成立):
+
+| 靜止底 | hover 配對 | 按壓配對 |
+|---|---|---|
+| 透明(第 0 階) | `--neutral-hover`(neutral-1) | `--neutral-active`(neutral-2) |
+| 「底」`--canvas` / `--surface` / `--surface-raised` | 不換色 —— 疊 `bg-interaction-hover`(畫 `--neutral-hover`);FileItem 大卡片(有 `onClick` 時,B12) | 疊 `bg-interaction-active`(畫 `--neutral-active`)—— 目前無使用者(保留;列 / 卡按下不深一階,待辦總帳 N4(2)) |
+| `--secondary`(neutral-3) | `--secondary-hover`(neutral-4)—— FileItem 小膠囊(有 `onClick` 時,B12) | `--secondary-active`(neutral-5)—— 目前無使用者(保留;同上) |
+| `--neutral-selected`(neutral-2) | `--neutral-selected-hover`(neutral-3) | `--neutral-selected-active`(neutral-4) |
+| `--border`(neutral-5) | `--border-hover`(neutral-6) | 無 |
+| `--scrollbar-thumb`(= `--border`) | `--scrollbar-thumb-hover`(= `--border-hover`) | 無 —— ScrollArea 拇指、DataTable 原生捲軸(Firefox) |
+| `--surface-strong`(neutral-6-opaque) | `--surface-strong-hover`(neutral-7-opaque;淺 `#BFBFBF`→`#8C8C8C` 變深、深 `#737373`→`#A6A6A6` 變亮) | 無 —— PeoplePicker 頭像移除鈕 |
+| inverse 底上的透明子元素 | `--inverse-neutral-hover` | `--inverse-neutral-active`(「`--inverse-*` namespace」段) |
+| `--primary` / `--info` / `--error` / `--success` / `--warning`(step-6) | `--{名}-hover` | `--{名}-active`(「互動狀態推導」段) |
+| 12 色相實心底 `--color-{hue}-6` | `--{hue}-hover` | `--{hue}-active`(「`--{hue}-hover/active`」段) |
+| 12 色相淡底 `--color-{hue}-1` | `--color-{hue}-2`(同色離底更遠一格;淺色變深、深色變亮 —— 「Dark mode subtle」段的色階原則,2026-09-26)—— 月曆事件方塊 | 無 |
+
+**`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-secondary-hover` / `--color-secondary-active`(= 同名 semantic token 的 alias),只為產出 `bg-secondary-hover` / `bg-secondary-active` utility(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改 `--secondary-hover` / `--secondary-active`。
+
+機械防線:`scripts/hover-own-pair-invariant.mjs`(class 層:同一個元素的滑過 / 按住值必須是自己靜止底的配對;「底」只准疊 `bg-interaction-*`、換成 `--neutral-*` 紅,疊層疊在「底」以外也紅;判到 0 組不印 ✓;已知待拍板的命中登記在 `scripts/hover-own-pair-baseline.json`)+ `scripts/interaction-ladder-invariant.mjs`(token 層:每條 `-hover` 階梯兩兩相異,中性階梯的 hover = 下一階)。
+
 ### Selected state family
 
 **互動階梯(2026-09-07 起單調遞增,處處不撞)**:
@@ -734,7 +793,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:原值想表達 Fluent 的「hover 預告釋放」,但 neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。方向改為與 Carbon / Atlassian 一致 |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選「甲：保留，維持 2→3→4 (Recommended)」(選項由 AI 提供)。舊文說原值在表達 Fluent 的「hover 預告釋放」,查無一手依據,撤回;舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
 | ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
 | `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
@@ -765,8 +824,8 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
-| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Calendar 非當月日格(`calendar.tsx:316`)/ Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ Slider rest track(`slider.tsx`)/ FileItem compact-B progress track(`file-item.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
+| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡與訊息氣泡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)
@@ -821,7 +880,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
 | `--tooltip` | tooltip 深色底（不透明）|
-| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；light step-6 / dark step-5 / yellow 用 step-7 提對比）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
+| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：

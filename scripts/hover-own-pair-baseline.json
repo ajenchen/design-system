@@ -1,0 +1,27 @@
+{
+  "note": "hover-own-pair-invariant 的已知命中。只收兩種:(pending) 值要等 user 拍板的;(unreachable) 靜態看得到、執行期不會發生的(附證據)。每次執行都會印出;修好後閘會提示把它移除。新增的命中一律紅,不得往這裡塞。",
+  "generatedBy": "scripts/hover-own-pair-invariant.mjs",
+  "entries": [
+    {
+      "file": "patterns/resize-handle/resize-handle.tsx",
+      "hover": "group-hover/resize:bg-[var(--border-hover)]",
+      "rest": "bg-divider",
+      "kind": "pending",
+      "reason": "分隔線靜止 --divider(neutral-4)滑過借 --border 的配對 --border-hover(neutral-6,跳一階);要保留跳階(補理由)或改成下一階,待 user 拍板;決定後同步改 data-table-pinned-resize-invariant.mjs R4"
+    },
+    {
+      "file": "patterns/resize-handle/resize-handle.tsx",
+      "hover": "group-hover/resize:bg-[var(--border-hover)]",
+      "rest": "bg-transparent",
+      "kind": "pending",
+      "reason": "showLine=false 時靜止線由消費端畫(面板邊界線 / 外框),本元件只在滑過時把 --border-hover 畫在同一個像素上 —— 與上一筆是同一題(分隔線的滑過值),一起拍板"
+    },
+    {
+      "file": "components/Sidebar/sidebar.tsx",
+      "hover": "data-[active=true]:hover:bg-neutral-selected",
+      "rest": "data-[active=true]:bg-transparent",
+      "kind": "unreachable",
+      "reason": "meta 變體的防呆重設(data-[active=true]:bg-transparent)只重設了靜止底、沒有重設滑過值;但 SidebarMenuButton 執行期對 meta 一律 isActive=false(sidebar.tsx `const isActive = isMeta ? false : …`),data-active=true 不會出現在 meta 列上"
+    }
+  ]
+}

@@ -39,6 +39,8 @@
 | Module | 提供什麼 | Consumer | 世界級對齊 |
 |--------|---------|----------|-----------|
 | `i18n/` | `<I18nProvider>` + `useI18n()` hook + `I18nLabels` types(opt-in context-based label catalog,additive 與 prop API 並存)| 全 DS 元件 opt-in consumer | Material `@mui/material/locale` / Ant `<ConfigProvider locale>` / Carbon `<PrefixContext>` 共識:i18n 是 utility/locale module 非 visual pattern |
+| `roving-list-keyboard.ts` | 「列上有小按鈕的一串」鍵盤路線的唯一判定(`resolveRovingKey` 純函式)+ 落點 / Tab 停靠點(`pickRovingTarget` / `pickRovingTabStop`)+ 真焦點宿主的執行器(`applyRovingAction`)+ 列裡可走到的東西(`listRovingControls`)與文字輸入判準(`isTextEntryElement`)。規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」;2026-09-26 由四份平行實作合一 | Sidebar(SidebarMenu)/ FileUpload(檔案清單)/ TreeView / Command;`isTextEntryElement` 另有 `hooks/use-input-modality.ts`、SelectMenu 鍵盤橋接 | W3C APG grid / treegrid「一組一站 + 方向鍵」、Adobe React Aria GridList(→ 進列內、Tab 整串離開)、Fluent List |
+| `focus-after-trigger.ts` | 「彈出框開著按 Tab:收起,焦點從觸發點往下 / 往上走一站」的唯一落點計算(`tabStopFromTrigger` / `focusFromTrigger` / `tabbableOrder`)。規則住 `keyboard-model-canonical.md`「彈出框開著時的 Tab 與 Esc」;2026-09-26 由兩份合一 | DropdownMenu(`dropdown-menu-keyboard.ts`)/ SelectMenu(`select-menu-keyboard.ts`) | W3C menu「close all menus and submenus」、W3C 單選下拉 Tab、Fluent「tab to next element after the root trigger」 |
 
 ---
 

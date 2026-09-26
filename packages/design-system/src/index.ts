@@ -659,10 +659,20 @@ export type {
 //   - components/AgentPanel:SWELL
 //   - components/AgentPanel:useBeginAnimationsOnMount
 //   - components/AgentPanel:usePrefersReducedMotion
+//   - components/Avatar:AVATAR_STACK_CLASS
+//   - components/Avatar:AVATAR_STACK_CUTOUT_CLASS
+//   - components/Avatar:AVATAR_STACK_GAP_PX
+//   - components/Avatar:AVATAR_STACK_ITEM_CLASS
+//   - components/Avatar:AVATAR_STACK_OVERLAP_PX
+//   - components/Avatar:avatarStackCutoutImage
+//   - components/Avatar:avatarStackCutoutStyle
+//   - components/Avatar:avatarStackItemStyle
 //   - components/Button:ButtonGroupContext
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
+//   - components/FileItem:FILE_ITEM_RING_LAYER_CLASS
+//   - components/FileItem:fileItemRingCutoutStyle
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton
@@ -691,6 +701,8 @@ export * from './hooks/use-truncated'
 // ─── Lib utilities ────────────────────────────────────────────────────────
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
+export * from './lib/focus-after-trigger'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
+export * from './lib/roving-list-keyboard'
 export * from './lib/utils'

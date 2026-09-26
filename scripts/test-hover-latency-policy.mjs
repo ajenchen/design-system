@@ -12,7 +12,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { countCallSites } from './lib/gate-reachability.mjs'
-import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { classifySamples, hoverVerdict, isBlindSample, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const MED = 60
 const MAX = 600
@@ -89,6 +89,48 @@ for (const [name, input, want, why] of [
   else console.log(`✓ isStreamBlind:${name}`)
 }
 
+// 取樣點的所有權(2026-09-25,C12①):取樣點被蓋住 = 看不到,不論有沒有命中;有證明屬於列時退回串流判定
+for (const [name, input, want, why] of [
+  ['取樣點被把手蓋住、沒命中 = 看不到', { owned: false, hit: null, framesAfter: 7, firstGap: 20, maxGap: 20 }, true, '2026-09-25 本機:捲動後左面板 4/4 列的舊取樣點被 BUTTON[拖曳重排此列] 蓋住'],
+  ['取樣點被蓋住、卻「命中」= 仍是看不到', { owned: false, hit: {}, framesAfter: 3 }, true, '命中的可能正是把手淡入造成的變化(量到的是把手,不是列)'],
+  ['取樣點屬於列、沒命中、有幀 = 真訊號', { owned: true, hit: null, framesAfter: 7 }, false, '2026-09-12 真 bug 那一類必須照樣紅'],
+  ['取樣點屬於列、零幀 = 串流全盲', { owned: true, hit: null, framesAfter: 0 }, true, '與 isStreamBlind 同一條'],
+  ['取樣點屬於列、命中 = 看得到', { owned: true, hit: {}, framesAfter: 2 }, false, '正常樣本'],
+  // 2026-09-27:hover 前的靜置期串流沒送任何幀 → 沒有基準可比 → 看不到。先前閘在這裡 continue,樣本根本不進判定表
+  ['沒拿到基準幀 = 看不到(不是沒變色,也不准跳過)', { owned: true, baseline: false, hit: null, framesAfter: 0 }, true, '閘 2026-09-27 前對這一格 continue,starved 永遠算不到它'],
+  ['有基準幀時照串流判定(沒命中、有幀 = 真訊號)', { owned: true, baseline: true, hit: null, framesAfter: 7 }, false, 'baseline 旗標只在 false 時介入'],
+]) {
+  const got = isBlindSample(input)
+  if (got !== want) { console.log(`✗ isBlindSample:${name} 應為 ${want} 實得 ${got}(${why})`); fail++ }
+  else console.log(`✓ isBlindSample:${name}`)
+}
+{
+  let threw = false
+  try { isBlindSample({ hit: null, framesAfter: 7 }) } catch { threw = true }
+  if (!threw) { console.log('✗ isBlindSample:沒給 owned 應丟例外(沒量就是沒量,不得當成屬於)'); fail++ }
+  else console.log('✓ isBlindSample:沒給 owned 丟例外(沒量不得當成屬於)')
+  let threwBaseline = false
+  try { isBlindSample({ owned: true, baseline: 'yes', hit: null, framesAfter: 7 }) } catch { threwBaseline = true }
+  if (!threwBaseline) { console.log('✗ isBlindSample:baseline 寫錯型別應丟例外(不得被當成「有基準」)'); fail++ }
+  else console.log('✓ isBlindSample:baseline 寫錯型別丟例外')
+}
+// 沒拿到基準幀的樣本必須進判定表:只剩 4 個可用 + 12 個沒基準 → starved(儀器失效),不得因為它們被跳過而拿 4 個樣本判 pass
+{
+  const samples = [20, 22, 19, 21, ...Array.from({ length: 12 }, () => nan)]
+  const blindness = [false, false, false, false, ...Array.from({ length: 12 }, () => isBlindSample({ owned: true, baseline: false }))]
+  const v = hoverVerdict({ samples, blindness, assertMedian: MED, assertMax: MAX })
+  if (v.verdict !== 'starved' || v.blind !== 12) { console.log(`✗ 沒基準幀的樣本應以 blind 進判定並讓這一輪 starved,實得 ${JSON.stringify(v)}`); fail++ }
+  else console.log('✓ 沒基準幀的 12 次記成看不到 → 可用樣本 4 < 5 → starved(儀器失效,不是靜默放行)')
+  // 對照組:把那 12 次「跳過」(= 2026-09-27 前的閘)→ 4 個樣本判 pass,假綠
+  const skipped = hoverVerdict({ samples: samples.slice(0, 4), blindness: blindness.slice(0, 4), assertMedian: MED, assertMax: MAX })
+  if (skipped.verdict !== 'starved') { console.log(`✗ 對照組:跳過那 12 次也應 starved(4 < ${MIN_USABLE_SAMPLES}),實得 ${skipped.verdict}`); fail++ }
+  else console.log('✓ 對照組:就算只剩 4 個樣本也 starved —— 但 2026-09-27 前 6 個可用 + 10 個跳過會判 pass,見下一格')
+  const sixSkipped = hoverVerdict({ samples: [20, 22, 19, 21, 23, 18], blindness: Array(6).fill(false), assertMedian: MED, assertMax: MAX })
+  const sixRecorded = hoverVerdict({ samples: [20, 22, 19, 21, 23, 18, ...Array(10).fill(nan)], blindness: [...Array(6).fill(false), ...Array(10).fill(true)], assertMedian: MED, assertMax: MAX })
+  if (sixSkipped.verdict !== 'pass' || sixRecorded.verdict !== 'pass' || sixRecorded.blind !== 10) { console.log(`✗ 6 可用 + 10 沒基準:跳過與記成 blind 都判 pass(6 ≥ ${MIN_USABLE_SAMPLES}),但記成 blind 的那份要能印出 blind 10;實得 ${sixSkipped.verdict} / ${JSON.stringify(sixRecorded)}`); fail++ }
+  else console.log('✓ 6 可用 + 10 沒基準:判定同為 pass,但記成 blind 的報表印得出「串流全盲 10 次」—— 跳過的那版連這件事都看不見')
+}
+
 for (const [name, input, want, why] of [
   ['沒命中就談不上上界', { hit: null, firstFrameIsHit: false, firstGap: 3000, assertMax: MAX }, false, 'NaN 樣本走 blind/lost 那條路'],
   ['命中的不是第一張幀 → 量到的是真的反應時間', { hit: {}, firstFrameIsHit: false, firstGap: 1461, assertMax: MAX }, false, '中間有幀可看,數字有意義'],
@@ -125,13 +167,16 @@ for (const [name, input, want, why] of [
 // 執行面:閘必須真的用這兩支算旗標,不得在閘裡留第二份寫法
 {
   const gateSrc = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
-  for (const sym of ['isStreamBlind', 'isResolutionBound']) {
+  for (const sym of ['isBlindSample', 'isResolutionBound']) {
     const n = countCallSites(gateSrc, sym)
     if (n < 1) { console.log(`✗ 可達性:閘沒有呼叫 ${sym}`); fail++ }
     else console.log(`✓ 可達性:${sym} 有 ${n} 個呼叫點`)
   }
-  if (/blindness\.push\(!hit/.test(gateSrc)) { console.log('✗ 閘裡還留著第二份 blindness 寫法'); fail++ }
+  if (/blindness\.push\((?!isBlindSample\()/.test(gateSrc)) { console.log('✗ 閘裡還留著第二份 blindness 寫法(每一筆都必須走 isBlindSample)'); fail++ }
   else console.log('✓ 閘裡沒有第二份 blindness 寫法(單一住所)')
+  // 2026-09-27:沒拿到基準幀的取樣不得跳過(`if (!baseline) continue` 讓那一次不進 samples / blindness),必須以 baseline:false 記成 blind
+  if (/if \(!baseline\) continue/.test(gateSrc) || !/isBlindSample\(\{[^}]*baseline:\s*false/.test(gateSrc)) { console.log('✗ 閘對「沒拿到基準幀」的取樣仍是跳過,沒有以 isBlindSample({ baseline: false }) 記成看不到'); fail++ }
+  else console.log('✓ 閘對「沒拿到基準幀」的取樣記成看不到(isBlindSample baseline:false),不再跳過')
 }
 
 // 閘的執行面必須真的消費這兩支,否則測得再漂亮也沒用(今天抓了一整天的那條)

@@ -36,42 +36,37 @@
 // 不是 class 或 rect 的字面值 —— rect 對了但被 pointer-events-none / overflow-clip / portal 吃掉
 // 的情況只有這樣掃得出來(M32:pixel-quantified verify ≠ attribute existence)。
 //
-// Run: `node scripts/agent-fab-hit-area-invariant.mjs`(併在 `npm run test:agent-panel-invariants`)
+// 載入(2026-09-25):story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成、
+// 畫面健康、`[data-placement]` 出現、版面連續靜止 10 個影格(含 CSS 形態過渡跑完)才量。取代舊的
+// `networkidle` + 固定睡 600ms(兩者都只是「已渲染 / 過渡已結束」的代理,慢的機器上會量到過渡中途)。
+// 開不起來 → 儀器失效(exit 2,點名 story、列同源 404),不是產品裁決,也絕不當成通過。
+//
+// Run: `node scripts/agent-fab-hit-area-invariant.mjs [--selftest] [--static-dir <Storybook 建置>]`
+//      (併在 `npm run test:agent-panel-invariants`;`--static-dir` 預設 ./storybook-static)
 
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const STATIC = join(ROOT, 'storybook-static')
+const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.slice('--static-dir='.length)
+  ?? (process.argv.includes('--static-dir') ? process.argv[process.argv.indexOf('--static-dir') + 1] : null)
+const STATIC = resolve(staticDirArg ?? join(ROOT, 'storybook-static'))
+const STORY_ID = 'design-system-components-agentpanel-設計規格--fab-placements'
 
-if (!existsSync(STATIC)) {
-  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(join(STATIC, 'index.json'))
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-  res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
-})
-await new Promise(r => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
 
-let browser
-try {
-  browser = await launchBrowser()
-} catch (error) {
-  // 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例)。
-  server.close()
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  process.exit(0)
-}
+// 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例);
+// 但宣告 GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job 裡起不來就是紅 —— 政策單一來源在 lib/launch-browser.mjs。
+const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
 
 const failures = []
 const passes = []
@@ -85,23 +80,33 @@ const SCAN_PAD = 24
 const EDGE_TOLERANCE = 1.5
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
-await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-設計規格--fab-placements&viewMode=story`, { waitUntil: 'networkidle' })
-if (SELFTEST) {
-  // 對照組:在每顆入口鈕外面長一圈看不見、但吃得到指標的殼 —— 這正是 2026-09-03 那版
-  // 「命中區比可視大」的形狀(tooltip 被推遠、底下的內容被搶走點擊)。
-  // H4 掃的是可視外接矩形再外擴 24px 的範圍,所以這一圈 10px 正落在它該抓到的地方。
-  await page.addStyleTag({ content: `
-    [data-placement] button { position: relative; }
-    [data-placement] button::after {
-      content: ''; position: absolute; inset: -10px; border-radius: 9999px;
-      background: transparent; pointer-events: auto;
-    }
-  ` })
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+try {
+  await openStory(page, `${BASE}/iframe.html?id=${encodeURIComponent(STORY_ID)}&viewMode=story`, {
+    waitFor: '[data-placement]',
+    // 對照組:在每顆入口鈕外面長一圈看不見、但吃得到指標的殼 —— 這正是 2026-09-03 那版
+    // 「命中區比可視大」的形狀(tooltip 被推遠、底下的內容被搶走點擊)。
+    // H4 掃的是可視外接矩形再外擴 24px 的範圍,所以這一圈 10px 正落在它該抓到的地方。
+    // 在靜止判定之前注入:量到的是注入後的穩態。
+    beforeSettle: SELFTEST ? (p) => p.addStyleTag({ content: `
+      [data-placement] button { position: relative; }
+      [data-placement] button::after {
+        content: ''; position: absolute; inset: -10px; border-radius: 9999px;
+        background: transparent; pointer-events: auto;
+      }
+    ` }) : null,
+    // 形態過渡(width/height/right/top)跑完再量,否則量到動畫中途的尺寸:
+    // 連續 10 個影格沒有 DOM 變動、也沒有進行中的有限長度動畫(CSS transition 也在 getAnimations 裡)。
+    settleFrames: 10,
+    notFound: server.notFound,
+  })
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  console.error(`✗ ${error.message}`)
+  console.error('✗ AgentFab 命中區不變條件:儀器失效 —— 這次什麼都沒量到(exit 2,不是產品裁決,也不算通過)')
+  await browser.close()
+  await server.stop()
+  process.exit(2)
 }
-await page.waitForSelector('[data-placement]')
-// 形態過渡(width/height/right/top)跑完再量,否則量到動畫中途的尺寸。
-await page.waitForTimeout(600)
 
 const measured = await page.evaluate((PAD) => {
   const hits = (btn) => (x, y) => {
@@ -261,6 +266,7 @@ for (const btn of await page.locator('[data-placement] button').all()) {
   )
   const cb = await content.boundingBox()
   await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2, { steps: 8 })
+  // 元素早已在畫面上;這段是給 Radix 的 pointerleave → 關閉(grace area 不成立時)發生的時間,之後才判「仍開著」
   await page.waitForTimeout(250)
   record(
     'H7',
@@ -272,7 +278,7 @@ for (const btn of await page.locator('[data-placement] button').all()) {
 }
 
 await browser.close()
-server.close()
+await server.stop()
 
 if (SELFTEST) {
   // 紅在對的地方才算數:必須是 H4「可視形狀外不得點得到」被打到。

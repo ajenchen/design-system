@@ -264,7 +264,7 @@ export const HistoryOpen: Story = {
       <AgentPanel onClose={close}>
         <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} onClose={close} />
         <AgentConversation>
-          <AgentMessage role="agent">從標題或箭頭點開歷史;懸停或 Tab 到某一列會浮出改名與刪除。</AgentMessage>
+          <AgentMessage role="agent">從標題或箭頭點開歷史;滑鼠停在某一列、或用方向鍵移到某一列,會浮出改名與刪除,鍵盤按 → 進到按鈕。</AgentMessage>
         </AgentConversation>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>

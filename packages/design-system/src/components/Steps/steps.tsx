@@ -5,6 +5,7 @@ import { Check, ChevronDown, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -28,21 +29,44 @@ const INDICATOR_ICON_SIZE: Record<StepsSize, number> = {
   lg: 20,
 }
 
-const SM_HIT_AREA = 24
+// sm 的 8px 圓點放在一個 24×24 的**排版盒**裡,讓 sm 的 indicator 欄與 md 同為 24px(lg 為 32px)、label 起點對齊
+//(md 24 / lg 32 的圓本身就是那個盒,只有 sm 的圓比盒小)。
+//
+// ⚠️ 這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,那個名字是錯的,而且錯得會誤導:
+// 這個盒掛在 `aria-hidden` 的裝飾 `<span>` 上,**它不是任何東西的命中區** —— Steps 可點的是整列
+// header(本檔 `StepItemHeader` 的 `role="button"`),圓點只是那一列裡的一個裝飾。叫它 HIT_AREA
+// 會讓後來的人以為「視覺 8、命中 24」是一條刻意的外擴,於是去 hit-area-canonical 找例外理由,
+// 但根本沒有外擴這回事(M37:別拿一個當時剛好成立的觀察量當那個性質本身)。
+// 命中區與可視形狀的關係見 `steps.spec.md`「指示點不是命中目標」。
+const SM_INDICATOR_BOX = 24
 
 const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
-  sm: SM_HIT_AREA,
+  sm: SM_INDICATOR_BOX,
   md: INDICATOR_SIZE.md,
   lg: INDICATOR_SIZE.lg,
 }
 
-// ── Outer ring (box-shadow, zero layout impact) ───────────────────────────
-
-const RING_GAP_PX = 2
+// ── Outer ring(outline + offset,不佔排版)─────────────────────────────────
+//
+// 2026-09-26 由 box-shadow 改成 outline(待辦總帳 N48 / L14;steps.spec.md「為什麼外環與圓之間要有一圈間隙」)。
+// 舊寫法是兩層陰影:先用一圈 `var(--surface)` 的**實心**陰影假裝間隙,再疊環色。深色主題的 `--surface`
+// 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
+// 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
+// outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:48-50 `:focus-visible` 的
+// outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
+const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
 
-function getOuterRingShadow(ringColor: string): string {
-  return `0 0 0 ${RING_GAP_PX}px var(--surface), 0 0 0 ${RING_GAP_PX + RING_WIDTH_PX}px ${ringColor}`
+function getOuterRingStyle(ringColor: string, focused: boolean): React.CSSProperties {
+  return {
+    // 顏色恆寫、只切 outline-style:若只在 focused 時才給顏色,外環出現的那一刻會從預設的 currentColor
+    // 過渡到環色(MdLgIndicator 的顏色過渡清單不含 outline-color,見該處註解;這裡是第二道保險)。
+    outlineColor: ringColor,
+    outlineStyle: focused ? 'solid' : 'none',
+    outlineWidth: RING_WIDTH_PX,
+    outlineOffset: RING_GAP_PX,
+  }
 }
 
 function resolveRingColor(state: StepContentState, linear: boolean): string {
@@ -81,7 +105,10 @@ interface StepItemContextValue {
   state: StepContentState
   focused: boolean
   disabled: boolean
+  /** 點下去會發生事(跳到這一步 / 切換展開)→ 是按鈕、進 Tab 序、手形游標 */
   clickable: boolean
+  /** 還到不了(linear 未解鎖)或停用 → 禁止游標;「目前那一步」不可點但**不是**鎖住,見 isLocked */
+  locked: boolean
   expanded: boolean
   isLast: boolean
   activate: () => void
@@ -116,14 +143,31 @@ function computeState(
   return 'upcoming'
 }
 
-function isClickable(
+// 鎖住 = 使用者現在還不能去這一步(停用,或 linear 下尚未解鎖的 upcoming)。
+// 規則 owner:steps.spec.md「Linear vs Non-linear」點擊規則表。
+function isLocked(
   state: StepContentState,
   linear: boolean,
   disabled: boolean,
 ): boolean {
-  if (disabled) return false
-  if (!linear) return true
-  return state !== 'upcoming'
+  if (disabled) return true
+  return linear && state === 'upcoming'
+}
+
+// 可點 = 點下去真的會發生事。除了鎖住的,還有一種不會發生事:
+// 預設展開模式(follow-active)下 value 指到的那一步 —— 點它只會 setValue(同一個值),展開又綁在 value 上,
+// 畫面 0 變化(待辦總帳 N44 實測:點了 DOM 0 變化)。它不可點,但也**不是鎖住**:游標是一般箭頭、不是禁止符號。
+// multiple 模式下點它會收合 / 展開自己的內容(activate 裡的 toggleExpanded),照舊可點。
+// 規則 owner:steps.spec.md「Expansion」表下方「目前那一步可不可以點」。
+function isClickable(
+  state: StepContentState,
+  linear: boolean,
+  disabled: boolean,
+  focused: boolean,
+  expansion: StepsExpansion,
+): boolean {
+  if (isLocked(state, linear, disabled)) return false
+  return !(focused && expansion === 'follow-active')
 }
 
 function normalizeExpanded(
@@ -373,7 +417,8 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
       stateOverride,
     )
     const focused = value === steps.value
-    const clickable = isClickable(state, steps.linear, disabled)
+    const locked = isLocked(state, steps.linear, disabled)
+    const clickable = isClickable(state, steps.linear, disabled, focused, steps.expansion)
     const expanded =
       steps.expansion === 'follow-active' ? focused : steps.expandedSet.has(value)
 
@@ -392,10 +437,11 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
       focused,
       disabled,
       clickable,
+      locked,
       expanded,
       isLast: __isLast,
       activate,
-    }), [value, state, focused, disabled, clickable, expanded, __isLast, activate])
+    }), [value, state, focused, disabled, clickable, locked, expanded, __isLast, activate])
 
     const isVertical = steps.orientation === 'vertical'
 
@@ -412,7 +458,9 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
           className={cn(
             stepItemVariants({ orientation: steps.orientation, size: steps.size }),
             isVertical && !__isLast && 'pb-6',
-            !clickable && 'cursor-not-allowed',
+            // 禁止游標只給「鎖住」的步;目前那一步不可點但不是鎖住(isClickable 註解),而且它的展開內容就在這個 li 裡,
+            // 若用 !clickable 判,表單欄位上方會出現禁止符號(待辦總帳 N44)
+            locked && 'cursor-not-allowed',
             className,
           )}
           {...props}
@@ -465,6 +513,8 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
   const item = useStepItemContext()
   const steps = useStepsContext()
   const index = React.useContext(StepIndexContext)
+  // 「你就在這裡」= 不可點但不是鎖住(follow-active 的目前那一步;見 isClickable)
+  const isHere = !item.clickable && !item.locked
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!item.clickable) return
     if (e.key === 'Enter' || e.key === ' ') {
@@ -475,7 +525,11 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
   return (
     <div
       role={item.clickable ? 'button' : undefined}
-      tabIndex={item.clickable ? 0 : undefined}
+      // 目前那一步 tabIndex=-1(不是 undefined):不進 Tab 序,但仍可持有焦點 ——
+      // 鍵盤使用者在某一步按 Enter 跳過去時,焦點所在的這一列正好變成「目前那一步」;若它同時變成不可聚焦,
+      // 瀏覽器依 HTML focus fixup 會把焦點丟回頁首,Tab 得從頭來。-1 讓焦點留在原地、下一個 Tab 照常往下走
+      //(steps.spec.md「目前那一步可不可以點」;待辦總帳 N44)。
+      tabIndex={item.clickable ? 0 : isHere ? -1 : undefined}
       onClick={item.clickable ? item.activate : undefined}
       onKeyDown={item.clickable ? onKeyDown : undefined}
       aria-disabled={item.disabled || undefined}
@@ -494,15 +548,20 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
         // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
         // `focus-visible:outline-2` 只設寬度、樣式吃 `var(--tw-outline-style)` —— 被上面那個
         // outline-none 設成 none 之後,**那三個 focus-visible class 從寫下起就沒畫過任何東西**。
-        // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(:476-479)= 可操作,
+        // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(上方同一個 div 的四個屬性)= 可操作,
         // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
         // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
         // `styles/base.css:44-47` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'
-          // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:不可點的步驟 → 問題一
-          : 'outline-none cursor-not-allowed',
+          : isHere
+            // 目前那一步(follow-active):一般箭頭游標 —— 它不是被禁止,只是「你就在這裡」
+            //(待辦總帳 N44;Carbon 目前那一步同為 `cursor: default`,出處在 steps.spec.md「目前那一步可不可以點」)。
+            // 不抑制焦點框:鍵盤跳過來時焦點停在這一列(見上方 tabIndex 註解),框照全域 :focus-visible 畫、rounded-md 給框圓角。
+            ? 'rounded-md'
+            // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:鎖住的步驟(停用 / linear 未解鎖)不可聚焦 → 問題一
+            : 'outline-none cursor-not-allowed',
         className,
       )}
       style={style}
@@ -614,6 +673,11 @@ function VerticalConnectorLine() {
 //   兩邊都是 12px ✓
 //
 // Description 在 step item 內(connector 下方),wrap 到 item 寬度 = 最長到連結線尾段 ✓
+//
+// **Description 也在可點的 header 裡**(2026-09-26,待辦總帳 N51):先前第二列放在 header 外面,
+// 滑到描述上游標不是手形、點了也不會跳到那一步;垂直版的描述本來就在 header 裡 → 兩種排列不一致。
+// 規格「指示點不是命中目標 —— 命中區 = 整列 header」的「整列」包含描述(steps.spec.md「Orientation」表下方)。
+// 做法:header 改成直向兩列(第一列 indicator + label + connector,第二列 description),不另包一層可點的東西。
 
 function HorizontalLayout({
   label,
@@ -628,9 +692,9 @@ function HorizontalLayout({
   const indicatorBox = INDICATOR_BOX_WIDTH[steps.size]
 
   return (
-    <>
+    <StepItemHeader className="flex flex-col">
       {/* Row 1: indicator + label + connector(在同一個 flex row) */}
-      <StepItemHeader className="flex items-start gap-3">
+      <div className="flex items-start gap-3">
         {/* Row prefix slot — 消費 item-anatomy <ItemPrefix>(h-[1lh] 對齊 label 第一行 SSOT)*/}
         <ItemPrefix>
           <StepIndicator />
@@ -642,14 +706,16 @@ function HorizontalLayout({
             <div className={cn('h-px w-full', isBlue ? 'bg-info' : 'bg-border')} />
           </div>
         )}
-      </StepItemHeader>
-      {/* Row 2: description — 在 item 寬度內 wrap(含 connector 佔的空間) */}
+      </div>
+      {/* Row 2: description — 在 item 寬度內 wrap(含 connector 佔的空間);左緣對齊 label(indicator 欄寬 + gap-3)。
+          `leading-normal`(1.5)= 搬進 header 之前這一列從 li 根(text-body / text-body-lg,皆 1.5)繼承的行高;
+          header 自己是 leading-compact(StepItemHeader),不寫這一行這列會矮一截 —— N51 只改點擊範圍,畫面不變 */}
       {description && (
-        <div className="min-w-0" style={{ paddingLeft: indicatorBox + 12 }}>
+        <div className="min-w-0 leading-normal" style={{ paddingLeft: indicatorBox + 12 }}>
           {description}
         </div>
       )}
-    </>
+    </StepItemHeader>
   )
 }
 
@@ -665,7 +731,7 @@ function StepIndicator() {
   return <MdLgIndicator size={size} state={state} focused={focused} disabled={disabled} linear={linear} />
 }
 
-// ── sm indicator: 8px dot in 24px hit area ───────────────────────────────
+// ── sm indicator: 8px dot in 24px 排版盒(SM_INDICATOR_BOX,不是命中區)──────
 
 function SmIndicator({
   state,
@@ -688,7 +754,7 @@ function SmIndicator({
       height: INDICATOR_SIZE.sm,
       background: 'transparent',
       border: '2px solid var(--info-hover)',
-      boxShadow: focused ? getOuterRingShadow(resolveRingColor(state, linear)) : undefined,
+      ...getOuterRingStyle(resolveRingColor(state, linear), focused),
     }
   } else {
     const dotBg =
@@ -701,7 +767,7 @@ function SmIndicator({
       width: INDICATOR_SIZE.sm,
       height: INDICATOR_SIZE.sm,
       background: dotBg,
-      boxShadow: focused ? getOuterRingShadow(resolveRingColor(state, linear)) : undefined,
+      ...getOuterRingStyle(resolveRingColor(state, linear), focused),
     }
   }
 
@@ -709,7 +775,7 @@ function SmIndicator({
     <span
       aria-hidden
       className="relative inline-flex items-center justify-center shrink-0"
-      style={{ width: SM_HIT_AREA, height: SM_HIT_AREA }}
+      style={{ width: SM_INDICATOR_BOX, height: SM_INDICATOR_BOX }}
     >
       <span
         className={cn('block rounded-full', disabled && 'opacity-disabled')}
@@ -778,7 +844,9 @@ function MdLgIndicator({
       aria-hidden
       className={cn(
         'relative inline-flex items-center justify-center shrink-0 rounded-full',
-        'font-medium leading-none transition-colors',
+        // 狀態切換(upcoming → current → completed)時的填色 / 數字色過渡;**不含 outline-color** ——
+        // `transition-colors` 的清單含 outline-color(失敗記憶索引「量 focus 顏色不等 transition」),外環換色會拖 150ms。
+        'font-medium leading-none transition-[color,background-color]',
         disabled && 'opacity-disabled',
       )}
       style={{
@@ -788,7 +856,7 @@ function MdLgIndicator({
         color: contentColor,
         // 2026-06-11 R2:對齊 spec canonical「indicator 數字與 label 同級」(steps.spec.md 狀態表 md=14/lg=16;spec 明文「之前寫小一號(md=12,lg=14)是錯的」)
         fontSize: size === 'lg' ? 'var(--font-body-lg-size)' : 'var(--font-body-size)',
-        boxShadow: focused ? getOuterRingShadow(resolveRingColor(state, linear)) : undefined,
+        ...getOuterRingStyle(resolveRingColor(state, linear), focused),
       }}
     >
       <IndicatorContent state={state} iconPx={iconPx} />

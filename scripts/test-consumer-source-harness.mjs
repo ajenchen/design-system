@@ -83,6 +83,24 @@ test('consumer a11y executor documentation remains repository-neutral after temp
   assert.doesNotMatch(source, /在 ds-product-template CI 跑/)
 })
 
+test('staged trusted product checks are a closed relative-import set (the staged a11y executor can load)', async () => {
+  // 2026-09-25:a11y-static-server 的依賴漏列兩個月,staged 的 audit-consumer-a11y 在 import 階段就 ERR_MODULE_NOT_FOUND
+  const { assertRuntimeDependencyClosureEntries } = await import('./lib/runtime-dependency-closure.mjs')
+  const entries = (files) => new Map(files.map(path => [path, readFileSync(resolve(path))]))
+  assert.doesNotThrow(() => assertRuntimeDependencyClosureEntries(entries(TRUSTED_PRODUCT_CHECK_FILES), {
+    label: 'trusted product checks',
+  }))
+  // 對照組:拿掉 a11y 執行器的任何一個依賴,閉包檢查必須點名它
+  for (const dependency of ['scripts/lib/launch-browser.mjs', 'scripts/lib/storybook-render-health.mjs', 'scripts/lib/canonical-path-containment.mjs']) {
+    assert.throws(
+      () => assertRuntimeDependencyClosureEntries(entries(TRUSTED_PRODUCT_CHECK_FILES.filter(path => path !== dependency)), {
+        label: 'trusted product checks',
+      }),
+      new RegExp(dependency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    )
+  }
+})
+
 test('candidate-controlled workspace roots cannot hide product source from the trusted harness', () => {
   for (const workspaces of [[], ['fixtures/*'], ['apps/*', 'fixtures/*']]) {
     const value = fixture('export const value: string = "ok"\n')

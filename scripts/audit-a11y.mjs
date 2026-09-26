@@ -26,12 +26,20 @@
  *   - playwright chromium installed(postinstall ensures)
  *
  * 對齊 Carbon AVT(每 PR 跑)/ Atlassian a11y linters(season) / Material UI axe-core integration。
+ *
+ * **axe 跑在「這則 story 渲染完成、版面靜止」之後;沒量到 = 儀器失效,不是 WCAG PASS**(2026-09-25,M37):
+ *   每則 story 經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報渲染完成
+ *   (含 play / afterEach)、通過 render-health、版面連續靜止 SETTLE_FRAMES 個影格(沒有 DOM 變動、沒有進行中的有限長度
+ *   動畫:淡入到一半的元素會讓 color-contrast 量到錯的顏色)。取代原本的 networkidle + 固定睡 300ms。
+ *   等不到 → 該則記為 audit-error(本閘既有的 fail-closed 通道:不進基線指紋、--gate / 預設模式 / --baseline-write 都拒絕放行),
+ *   訊息點名 story、附同源 404,並聲明不是產品裁決;結尾另印一次同源 404 帳本。
+ *   同一個 page 走完全部 story:原本每則 `ctx.newPage()` + `page.close()`,在 `--single-process` 沙箱下開關分頁不穩
+ *   (lib/launch-browser.mjs 檔頭)。
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
   createA11yFingerprintMap,
@@ -43,7 +51,6 @@ import {
 } from './lib/a11y-gate.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { prepareRuntimeEvidenceFile, resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
-import { createStorybookRenderHealthMonitor } from './lib/storybook-render-health.mjs'
 
 const ROOT = process.cwd()
 const STORYBOOK_DIR = path.join(ROOT, 'storybook-static')
@@ -69,11 +76,12 @@ const { limit: LIMIT, tag: TAG, verbose: VERBOSE, gate: GATE, writeBaseline: WRI
 // Keeping it under the privileged infra closure means any relaxation is digest-bound
 // and must pass the governance-anchor authorization path before merge.
 const BASELINE_FILE = path.join(ROOT, 'infra/governance/baseline/a11y-baseline.json')
+// axe 開跑前要求版面連續靜止幾個影格(進場 / 淡入動畫跑完才量顏色與重疊;量寬 → 收合成「+N」這類一格一格推進的
+// 版面也要等完,否則同一則 story 的違規節點數會隨機器快慢變,基線指紋 storyId|ruleId → nodeCount 就不穩)
+const SETTLE_FRAMES = 10
 
-if (!fs.existsSync(INDEX_FILE)) {
-  console.error('❌ storybook-static/index.json not found. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(INDEX_FILE)
 
 const index = JSON.parse(fs.readFileSync(INDEX_FILE, 'utf-8'))
 if (!index.entries || typeof index.entries !== 'object') {
@@ -106,20 +114,21 @@ console.log(`▶ a11y audit:running axe-core against ${stories.length} stories`)
 
 const server = await startA11yStaticServer({ rootDirectory: STORYBOOK_DIR, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
+// 全部 story 共用一個 page(見檔頭):逐則開關分頁在 --single-process 沙箱下不穩。
+// page 必須從 browser.newContext() 開:@axe-core/playwright 對 browser.newPage() 開的 page 直接丟
+// 「Please use browser.newContext()」(2026-09-25 實測:改成 browser.newPage() 後每一則都成了 audit-error)。
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+const page = await ctx.newPage()
 
 const results = { ts: new Date().toISOString(), total: stories.length, violationsByStory: {}, summary: { totalViolations: 0, byRule: {}, bySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 } } }
 const completedStoryIds = []
+let instrumentFailures = 0
 
 for (let i = 0; i < stories.length; i++) {
   const s = stories[i]
   const url = `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`
-  const page = await ctx.newPage()
-  const renderHealth = createStorybookRenderHealthMonitor(page)
   try {
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 })
-    await page.waitForTimeout(300)
-    await renderHealth.assertHealthy({ label: s.id })
+    await openStory(page, url, { settleFrames: SETTLE_FRAMES, notFound: server.notFound })
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze()
@@ -140,11 +149,10 @@ for (let i = 0; i < stories.length; i++) {
       console.log(`  [${i + 1}/${stories.length}] ${s.id} — ${result.violations.length} violation type(s)`)
     }
   } catch (e) {
-    console.error(`  ⚠️  ${s.id} — ${e.message}`)
+    // 儀器失效(openStory 等不到 / 不健康)的訊息本身就點名 story、附 404、聲明不是產品裁決;axe 自己丟的例外照原樣記
+    if (e instanceof StoryRenderInstrumentError) instrumentFailures++
+    console.error(`  ⚠️  ${e instanceof StoryRenderInstrumentError ? e.message : `${s.id} — ${e.message}`}`)
     results.violationsByStory[s.id] = [{ id: 'audit-error', impact: 'serious', help: e.message, nodes: 1 }]
-  } finally {
-    renderHealth.dispose()
-    await page.close()
   }
   completedStoryIds.push(s.id)
 }
@@ -152,6 +160,10 @@ for (let i = 0; i < stories.length; i++) {
 await ctx.close()
 await browser.close()
 await server.stop()
+if (instrumentFailures) {
+  const missing = [...new Set(server.notFound)]
+  console.error(`\n❌ ${instrumentFailures} 則 story 沒渲染完成就沒量(儀器失效,不是 WCAG 裁決;下方以 audit-error 拒絕放行)${missing.length ? `;同源 404 帳本:${missing.join(', ')}` : ''}`)
+}
 
 const scanCorpus = createA11yStoryCorpus(completedStoryIds)
 if (scanCorpus.storyIdsSha256 !== expectedScanCorpus.storyIdsSha256) {

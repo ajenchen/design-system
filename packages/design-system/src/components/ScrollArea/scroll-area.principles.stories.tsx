@@ -130,8 +130,9 @@ export const UsageGuidance: Story = {
         <div className="w-[320px]">
           <ScrollArea className="h-[180px] border border-border rounded-md bg-surface">
             <div className="p-2">
+              {/* 靜態示意列(無 onClick、不能聚焦)不給 hover 底色(item-anatomy.spec.md「選中 × 互動疊加」:hover 要誠實回答「再點會發生什麼」) */}
               {NOTION_PAGES.map((p) => (
-                <div key={p} className="px-3 py-1.5 text-body hover:bg-neutral-hover rounded">{p}</div>
+                <div key={p} className="px-3 py-1.5 text-body">{p}</div>
               ))}
             </div>
           </ScrollArea>
@@ -169,8 +170,9 @@ export const UsageGuidance: Story = {
           <ScrollArea className="h-[220px] border border-success/40 rounded-md bg-surface">
             <div className="p-3">
               <div className="text-body font-medium mb-2">單層 ScrollArea</div>
+              {/* 靜態示意列不給 hover 底色(同上) */}
               {NOTION_PAGES.map((p) => (
-                <div key={p} className="px-2 py-1.5 text-body hover:bg-neutral-hover rounded">{p}</div>
+                <div key={p} className="px-2 py-1.5 text-body">{p}</div>
               ))}
             </div>
           </ScrollArea>
@@ -193,8 +195,9 @@ export const OrientationChoice: Story = {
         <div className="w-[280px]">
           <ScrollArea className="h-[180px] border border-border rounded-md bg-surface">
             <div className="p-2">
+              {/* 靜態示意列(無 onClick、不能聚焦)不給 hover 底色(item-anatomy.spec.md「選中 × 互動疊加」:hover 要誠實回答「再點會發生什麼」) */}
               {NOTION_PAGES.map((p) => (
-                <div key={p} className="px-3 py-1.5 text-body hover:bg-neutral-hover rounded">{p}</div>
+                <div key={p} className="px-3 py-1.5 text-body">{p}</div>
               ))}
             </div>
           </ScrollArea>

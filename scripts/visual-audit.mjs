@@ -35,8 +35,7 @@
  *   1 = 有 contrast / geometry violation(CI 可用此 gate commit)
  */
 
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
@@ -61,7 +60,7 @@ import {
 } from './lib/visual-audit-interaction.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { createRenderHealthMonitor } from './lib/storybook-render-health.mjs'
-import { visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
+import { visualAuditExitCode, emptyScopeVerdict } from './lib/visual-audit-exit-policy.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
@@ -386,16 +385,14 @@ async function auditScenario(browser, scenario, opts = {}) {
     sharedPage = await sharedContext.newPage()
     await installFrozenDate(sharedPage)
   }
-  const context = sharedContext
   const page = sharedPage
-  const renderHealth = createRenderHealthMonitor(page, {
-    mode: scenario.url ? 'document' : 'storybook',
-  })
+  // 互動之後的 render-health 複驗用(openStory 回傳前已驗過一次;這支在 openStory 之後才掛,只看互動期間的例外 / 缺檔)
+  let renderHealth = null
   let interactionResult = scenario.interaction
     ? { status: 'not-run', action: scenario.interaction.action, selector: scenario.interaction.selector }
     : null
   // 凍結系統「日期」(2026-07-07 根治 VR 換日假 breach):日期元件內部 new Date()(Calendar today
-  // 圈 calendar.tsx:191 / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
+  // 圈 calendar.tsx 的 resolvedToday / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
   // (anchor:calendar-event-publishing 0.503%,diff 量 = today 標記移格固定像素)。
   // ⚠️ 不用 page.clock.setFixedTime:它底層連 requestAnimationFrame 一起假化 → FileViewer
   // fit-to-page 排在 rAF 的邏輯永不執行,卡 100% 未 fit(vr4 run 28843769570 40.3% breach 實錘)。
@@ -415,8 +412,6 @@ async function auditScenario(browser, scenario, opts = {}) {
     : `${storybookUrl}/iframe.html?id=${scenario.id}&viewMode=story&demoFocus=on${globalsParam}`
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 45_000 })
-
     // Interactive stories 的非 pointer 狀態由 play() 建立；manifest interaction 的 CSS :hover
     // 稍後由真實 Playwright pointer 建立。兩者都不可被 reset 覆蓋。
     const storyId = scenario.id ?? ''
@@ -425,25 +420,30 @@ async function auditScenario(browser, scenario, opts = {}) {
       Boolean(scenario.interaction)
       || /--[a-z-]*(hover|focus|tooltip|click|interactive|pressed|active|swap|open-snapshot)[a-z-]*$/i.test(storyId)
 
-    if (!isInteractive) {
-      await page.mouse.move(0, 0) // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
-    }
-    // 先等「play 與示範收尾都跑完」這件事本身:預覽層 afterEach 蓋 `<html data-demo-focus-settled=<story id>>`
-    //(storybook-config preview.tsx;帶了 demoFocus=on 才有)。固定睡眠只留給收尾之後的動畫 —— 2026-09-24 同族的
-    // story-demo-focus 閘在慢 runner 上就是靠 900ms 當代理而假紅(M32 第四題);play 丟錯或舊建置沒有章就照舊只睡固定時間。
-    if (storyId) {
-      await page.waitForFunction((id) => document.documentElement.dataset.demoFocusSettled === id, storyId, { timeout: 30_000 }).catch(() => {})
-    }
-    await page.waitForTimeout(isInteractive ? 1200 : 600) // 收尾之後的 animations
+    // 開 story(2026-09-25 起經共用的 openStory,lib/launch-browser.mjs):
+    // 原本是 networkidle → 等 `<html data-demo-focus-settled>` 章(等不到 30 秒後 .catch 吞掉照樣往下)→ 固定睡 600 / 1200ms。
+    // 現在由 openStory 證明:Storybook 回報這則 story 渲染完成 —— phase finished 已含 play 與 afterEach(示範收尾就在 afterEach 裡,
+    // 章也是在那裡蓋的,所以不必再等章,舊建置沒有章也照樣成立)→ 畫面健康 → 字型載完 → 連續 10 影格無 DOM 變動、無進行中的有限動畫。
+    // 等不到 = 儀器失效(點名 story、附 Storybook 錯誤原文與 404),計入 render error、exit 非零;壞掉的畫面不會被拍、也不會被寫成 baseline。
+    await openStory(page, url, {
+      settleFrames: 10,
+      notFound: ownedStaticServer?.notFound,
+      navigationTimeoutMs: 45_000,
+      beforeSettle: isInteractive
+        // 互動類保留 1200ms:play 觸發的延遲顯示(TooltipProvider delayDuration 500ms 等計時器驅動)在計時器到點前
+        // DOM 完全不動,影格靜止判定看不到計時器 —— 這段是等「延遲開啟」本身,之後仍要過影格靜止判定
+        ? (p) => p.waitForTimeout(1200)
+        : (p) => p.mouse.move(0, 0), // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
+    })
+    renderHealth = createRenderHealthMonitor(page, { mode: scenario.url ? 'document' : 'storybook' })
 
     // 2026-09-23 前這裡會把非 interactive story 的焦點 blur 掉(浮層 autoFocus 的關閉鈕框、圖示鈕的焦點 tooltip)。
     // 現在「示範 = 滑鼠使用者」由 Storybook 預覽層做(storybook-config preview.tsx `settleDemoFocus`:每支 story 渲染完
     // 就放掉被判成鍵盤焦點又畫得出線的焦點,要留的 story 自己宣告 parameters.demoFocus='keep'),截圖儀器不再另有一份
     // 用 id regex 決定的規則 —— 那份規則把 user 在 Storybook 看得到的框擦掉才拍(M17 單一來源;story-rules.md 為 owner)。
 
-    // A failed JS/CSS load can leave #storybook-root empty with HTTP 200. Treat that as an
-    // infrastructure/render failure before contrast/axe can vacuously pass an empty canvas.
-    await renderHealth.assertHealthy({ label: scenario.id ?? scenario.url })
+    // A failed JS/CSS load can leave #storybook-root empty with HTTP 200 —— openStory 已在回傳前把它判成儀器失效
+    //(render-health 同一支 lib),contrast/axe 不會在空畫面上空轉通過。
 
     if (scenario.interaction) {
       interactionResult = {
@@ -566,9 +566,11 @@ async function auditScenario(browser, scenario, opts = {}) {
       file: scenario.file,
       interaction: interactionResult,
       error: err.message,
+      // 儀器失效(沒量到,不是產品裁決)的種類:navigation / storybook-error / render-timeout / render-health / dom-not-settled …
+      ...(err instanceof StoryRenderInstrumentError ? { instrumentKind: err.kind } : {}),
     }
   } finally {
-    renderHealth.dispose()
+    renderHealth?.dispose()
     // 共用 context 不在這裡關(理由見 `sharedContext` 宣告);由 closeBrowser 收尾。
   }
 }
@@ -730,7 +732,11 @@ async function main() {
   // Scope resolution
   const scopedScenarios = filterScenarios(ASSERTIONS.scenarios)
   if (scopedScenarios.length === 0) {
-    console.log('[visual-audit] 0 scenario 符合 scope,跳過(exit 0)')
+    // 0 個 scenario:只有 scope=changed 可以合法地不適用,其餘是儀器失效(lib/visual-audit-exit-policy.mjs,2026-09-25 待辦總帳 C5)
+    const empty = emptyScopeVerdict({ scope: SCOPE, urls: URLS })
+    if (empty.exitCode) console.error(`[visual-audit] ✗ ${INSTRUMENT_FAIL_MARKER} ${empty.reason}`)
+    else console.log(`[visual-audit] ${empty.reason}`)
+    process.exitCode = empty.exitCode
     await stopStorybook()
     return
   }

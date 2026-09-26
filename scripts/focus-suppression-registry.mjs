@@ -57,13 +57,21 @@ const SUPPRESS = /\boutline-none\b|\boutline-0\b|\boutline-hidden\b/
 /**
  * 承擔者若寫成 `檔名.tsx:行號`,就真的去那個檔案那一行(前後 3 行)確認畫框存在。
  * 這讓「承擔者」從一句話變成**可驗證的指標** —— 承擔者搬家或被刪,這裡就會紅。
+ *
+ * `window` 必須是**從標記本身起算**的文字(呼叫端傳 `window.slice(m.index)`):傳整個回看視窗會撿到標記上方無關註解裡的
+ * 「檔名:行號」(例:「參考 x.tsx:8 的做法」),讓承擔者只寫一句話的標記憑別人的指標過關(2026-09-27,A 類原本就切、C 類沒切)。
+ * 先在本次掃描的檔案集合裡找(selftest 用合成檔就驗得到綠側),再退到真實原始碼樹。
  */
-function carrierPointsAt(window, re) {
+let realTree = null
+function carrierPointsAt(window, re, files = []) {
   const m = window.match(/([\w.-]+\.tsx?):(\d+)/)
   if (!m) return false
   const n = Number(m[2])
-  return load(ROOT).some((f) => f.path.endsWith('/' + m[1])
-    && f.src.split('\n').slice(Math.max(0, n - 4), n + 3).some((l) => re.test(l)))
+  const isTarget = (f) => f.path === m[1] || f.path.endsWith('/' + m[1])
+  const drawsThere = (f) => f.src.split('\n').slice(Math.max(0, n - 4), n + 3).some((l) => re.test(l))
+  if (files.some((f) => isTarget(f) && drawsThere(f))) return true
+  realTree ??= load(ROOT)
+  return realTree.some((f) => isTarget(f) && drawsThere(f))
 }
 
 /**
@@ -118,15 +126,26 @@ export function scan(files) {
         // A 類 2026-09-09 起含「函式庫管理游標」的項目(cmdk data-selected / Radix data-highlighted):
         // 瀏覽器的 :focus-visible 看不到那個游標,所以框由元件自己畫 —— 同檔**必須**真的有 focus-ring-inset,
         // 否則就是「抑制了瀏覽器的框、自己又沒畫」= 舊 D 類換個字母回流。
-        A: { ok: () => /aria-activedescendant|data-\[highlighted\]|data-\[selected=true\]/.test(src) && /focus-ring-inset/.test(src),
-             need: '同檔要找得到游標來源(`aria-activedescendant` / `data-[highlighted]` / `data-[selected=true]`)**而且**要找得到元件自己畫的 `focus-ring-inset`(A 類 = 框畫在游標項上,不是不畫)' },
+        // 2026-09-26 補第二種證據:**程式游標由別檔畫框**(DataTable 試算表模式:游標是元件 state `selectedCellId`,
+        // 框由 data-table-interaction-layer.tsx 的 SelectionRing 掛 `focus-ring-inset`)。SSOT 的 A 類實例欄本來就列了
+        // 「DataTable 根」,但這裡的證據只認三種游標來源寫法 —— 規格寬、閘窄(M7 子規則 M34)。
+        // 第二種證據一樣不接受「抑制了又沒畫」:承擔者必須寫成 `檔名.tsx:行號`,而那一行(±3)要真的掛 `focus-ring-inset`,
+        // 承擔者搬家或被刪就紅(同 C 類的 carrierPointsAt)。只看這個標記自己之後的文字,不會撿到上方別段註解裡的檔名。
+        A: { ok: () => (/aria-activedescendant|data-\[highlighted\]|data-\[selected=true\]/.test(src) && /focus-ring-inset/.test(src))
+                    || carrierPointsAt(window.slice(m.index), /focus-ring-inset/, files),
+             need: '同檔要找得到游標來源(`aria-activedescendant` / `data-[highlighted]` / `data-[selected=true]`)**而且**要找得到元件自己畫的 `focus-ring-inset`(A 類 = 框畫在游標項上,不是不畫);或承擔者寫成 `檔名.tsx:行號`,而那一行真的掛 `focus-ring-inset`(程式游標由別檔畫框)' },
         // 判準是標籤名。class 若寫在共用 style 常數裡(cva / xxxStyles),標籤不在附近,
         // 這時改看「本檔到底渲染什麼標籤」—— 那個常數只服務那個標籤。
         B: { ok: () => /<(input|textarea)\b|\.Input\b|<(Input|Textarea)\b/.test(openTag)
                     || (/\bcva\(|const \w+(Styles|Variants)\s*=/.test(openTag) && /<(input|textarea)\b/.test(src)),
              need: '往上 40 行要找得到 `<input>` / `<textarea>`(B 類的判準是標籤名);若寫在共用 style 常數裡,本檔要真的渲染該標籤' },
-        C: { ok: () => /focus-within:|:has\(|has-\[/.test(src) || carrierPointsAt(window, /focus-within:|:has\(|has-\[|focus-visible:border-/),
-             need: '同檔要找得到 `focus-within:` / `:has(…)` 畫框,或承擔者要寫出真的有畫框的那個 `檔名.tsx:行號`' },
+        // 2026-09-26 補第三種承擔者:**自己的 `::before` 框圖層**(FileUpload 清單列:列底貼著 FileItem 的進度條時,框改畫在
+        // 列自己的 ::before、進度條那段挖空 —— focus-canonical「框怎麼畫」框圖層列)。它仍是「自己這圈」,只是畫在 ::before 上,
+        // 所以元素本身要抑制全域外描邊。證據照 carrierPointsAt 的嚴格形狀:承擔者寫成 `檔名.tsx:行號`,那一行(±3)真的掛
+        // `focus-visible:before:focus-ring-inset`;承擔者搬家或被刪就紅。只寫「自己的 ::before」一句話不算(驗不到)。
+        // 2026-09-27:與 A 類一樣從標記位置起算(`window.slice(m.index)`)—— 原本吃整個回看視窗,會撿到標記上方無關註解裡的檔名:行號。
+        C: { ok: () => /focus-within:|:has\(|has-\[/.test(src) || carrierPointsAt(window.slice(m.index), /focus-within:|:has\(|has-\[|focus-visible:border-|focus-visible:before:focus-ring-inset/, files),
+             need: '同檔要找得到 `focus-within:` / `:has(…)` 畫框,或承擔者要寫出真的有畫框的那個 `檔名.tsx:行號`(自己的 ::before 框圖層 = 那一行掛 `focus-visible:before:focus-ring-inset`)' },
         E: { ok: () => /Primitive\.Content|PopoverPrimitive|DialogPrimitive|HoverCardPrimitive|DropdownMenuPrimitive/.test(src), need: '同檔要找得到 Radix 的 Content 殼(E 類講的就是那個浮層殼)' },
       }[m[1]]
       if (evidence && !evidence.ok()) {
@@ -171,6 +190,9 @@ function load(dir, out = []) {
 }
 
 if (process.argv.includes('--selftest')) {
+  // 合成的「別檔畫框」承擔者:框在第 8 行(±3 行的窗只蓋 5–11 行;指第 1 行就找不到)
+  const RING = { path: 'ring.tsx', src: "const a = 1\n2\n3\n4\n5\n6\n7\nconst r = showRing && 'focus-ring-inset'\n" }
+  const BEFORE_RING = { path: 'before-ring.tsx', src: "const a = 1\n2\n3\n4\n5\n6\n7\nconst r = 'focus-visible:before:focus-ring-inset'\n" }
   const cases = [
     { n: '有標記有承擔者', src: "<input\n// @focus-suppress B — 文字輸入;承擔者:caret\ncn('outline-none')", bad: false },
     { n: '沒有標記', src: "cn('outline-none')", bad: true },
@@ -180,12 +202,24 @@ if (process.argv.includes('--selftest')) {
     { n: 'A 類且同檔有 aria-activedescendant + 自畫的框', src: "const a = 'aria-activedescendant'\nconst r = showRing && 'focus-ring-inset'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: false },
     { n: 'A 類有 aria-activedescendant 但同檔沒有 focus-ring-inset(抑制了又沒畫)', src: "const a = 'aria-activedescendant'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'A 類 Radix 游標 + 自畫的框', src: "const c = 'data-[highlighted]:focus-ring-inset'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'A 類程式游標:承擔者寫成檔名:行號,但那個檔不存在(抑制了又指不出誰畫)', src: "// @focus-suppress A — x;承擔者:no-such-file.tsx:12\ncn('outline-none')", bad: true },
+    { n: 'A 類程式游標:承擔者只寫一句話、沒有檔名:行號(驗不到)', src: "// @focus-suppress A — x;承擔者:格上的框\ncn('outline-none')", bad: true },
+    // 綠側(2026-09-27 補):新形狀的正確寫法必須過,不然閘只證明了「會紅」、沒證明「該綠時綠」
+    { n: 'A 類程式游標:承擔者寫成 檔名.tsx:行號,那一行真的掛 focus-ring-inset → 綠', src: "// @focus-suppress A — 程式游標由別檔畫框;承擔者:ring.tsx:8\ncn('outline-none')", extra: [RING], bad: false },
+    { n: 'A 類程式游標:承擔者指的那一行(±3)沒有 focus-ring-inset → 紅', src: "// @focus-suppress A — x;承擔者:ring.tsx:1\ncn('outline-none')", extra: [RING], bad: true },
+    { n: 'A 類:標記上方無關註解提到 ring.tsx:8(真的有畫框),標記自己的承擔者只是一句話 → 紅(從標記起算,不撿上方的)', src: "// 參考 ring.tsx:8 的做法\n// @focus-suppress A — x;承擔者:格上的框\ncn('outline-none')", extra: [RING], bad: true },
     { n: 'A 類 Radix 游標但只上底色沒畫框(舊 D 換字母回流)', src: "const c = 'data-[highlighted]:bg-neutral-hover'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'D 類已退役', src: "const c = 'data-[highlighted]:bg-neutral-hover'\n// @focus-suppress D — 選單未選中項;承擔者:hover 同色底\ncn('outline-none')", bad: true },
     { n: 'B 類但不在 input/textarea 上', src: "<div\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: true },
     { n: 'B 類且在 textarea 上', src: "<textarea\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: false },
     { n: 'C 類但同檔沒有祖先畫框', src: "// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'C 類且同檔有 :has 畫框', src: "const w = '[&:has(button:focus-visible)]:border-primary'\n// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'C 類框圖層:承擔者只寫一句話、沒有檔名:行號(驗不到)', src: "const r = 'focus-visible:before:focus-ring-inset'\n// @focus-suppress C — 自己的 ::before;承擔者:自己的 ::before\ncn('focus-visible:outline-none')", bad: true },
+    { n: 'C 類框圖層:承擔者寫成檔名:行號,但那個檔不存在', src: "// @focus-suppress C — 自己的 ::before;承擔者:no-such-file.tsx:12\ncn('focus-visible:outline-none')", bad: true },
+    // 綠側(2026-09-27 補)+ 修正 C 類吃整個回看視窗的對照組
+    { n: 'C 類框圖層:承擔者寫成 檔名.tsx:行號,那一行真的掛 focus-visible:before:focus-ring-inset → 綠', src: "// @focus-suppress C — 自己的 ::before;承擔者:before-ring.tsx:8\ncn('focus-visible:outline-none')", extra: [BEFORE_RING], bad: false },
+    { n: 'C 類框圖層:承擔者指的那一行(±3)沒有畫框 → 紅', src: "// @focus-suppress C — 自己的 ::before;承擔者:before-ring.tsx:1\ncn('focus-visible:outline-none')", extra: [BEFORE_RING], bad: true },
+    { n: 'C 類:標記上方無關註解提到 before-ring.tsx:8(真的有畫框),標記自己的承擔者只是一句話 → 紅(2026-09-27 前吃整個回看視窗會撿到上方那個而綠)', src: "// 參考 before-ring.tsx:8 的做法\n// @focus-suppress C — 自己的 ::before;承擔者:自己的 ::before\ncn('focus-visible:outline-none')", extra: [BEFORE_RING], bad: true },
     { n: 'E 類但同檔沒有 Radix Content 殼', src: "// @focus-suppress E — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: '無效類別', src: "// @focus-suppress Z — 亂寫;承擔者:誰\ncn('outline-none')", bad: true },
     { n: '行尾註解裡提到不算', src: "// 原本這裡有 outline-none,已刪", bad: false },
@@ -207,7 +241,7 @@ if (process.argv.includes('--selftest')) {
   ]
   let ok = true
   for (const c of cases) {
-    const got = scan([{ path: 't.tsx', src: c.src }]).length > 0
+    const got = scan([{ path: 't.tsx', src: c.src }, ...(c.extra ?? [])]).length > 0
     if (got !== c.bad) { console.error(`✗ selftest「${c.n}」預期 ${c.bad} 實得 ${got}`); ok = false }
   }
   console.log(ok ? `✓ selftest ${cases.length}/${cases.length} 通過` : '✗ selftest 失敗')

@@ -121,7 +121,7 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 | ON | `bg-primary` | 白色圓 + 2px 透出 track 的外圈 | primary check |
 | ON · hover | `bg-primary-hover` | 同上 | primary check |
 | Disabled | 套 `opacity-disabled`（整體透明度降級）;**hover 不升階** | 同 ON/OFF | 同 ON/OFF |
-| Readonly(standalone)| 視覺同一般態 | 但 `pointer-events-none` + click guard + `aria-readonly` | — |
+| Readonly(standalone)| 視覺同一般態;**hover 不升階**(指標停在 label 上也一樣:ON 釘 `bg-primary`、OFF 釘 `bg-border`) | 但 `pointer-events-none` + click guard + `aria-readonly` | — |
 | Readonly(Field 內,2026-06-12 user 拍板)| 不渲染 toggle — 改渲染 `fieldWrapperStyles` readonly 灰框(= Input readonly 同源)+ 勾/叉 icon(view 同款值語言) | role="switch" + aria-checked + aria-readonly + 可 focus | — |
 
 ### Disabled 用 `opacity`
@@ -208,7 +208,7 @@ Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 
 ## 邊界案例
 
-- **Readonly 的滑鼠 / 鍵盤**(standalone)：`pointer-events-none` 使直接點擊無反應;`<label htmlFor>` 的 synthetic click 非 pointer event,由 label + Root 兩道 onClick preventDefault guard 攔(2026-07-05 D4 補,點 label 文字不再 toggle);`tabIndex=-1` 不入 tab order，故無鍵盤互動（視覺正常、僅鎖互動）。Field 內 readonly 灰框則 tabIndex=0 可聚焦(對齊 readonly input 可聚焦慣例)
+- **Readonly 的滑鼠 / 鍵盤**(standalone)：`pointer-events-none` 使直接點擊無反應;`<label htmlFor>` 的 synthetic click 非 pointer event,由 label + Root 兩道 onClick preventDefault guard 攔(2026-07-05 D4 補,點 label 文字不再 toggle);`tabIndex=-1` 不入 tab order，故無鍵盤互動（視覺正常、僅鎖互動）。**hover 也要另外擋**:`pointer-events-none` 只擋「指標直接在 track 上」,指標停在外層 `<label htmlFor>` 時,HTML 讓被標記的控件一起進入 `:hover`,track 會照樣升階 —— 所以 `switch.tsx` 以 `data-[readonly=true]:enabled:data-[state=…]:hover:` 把 track 釘回靜止值(與上方 disabled 的 hover 守衛同一種寫法;Checkbox / Radio 同修)。Field 內 readonly 灰框則 tabIndex=0 可聚焦(對齊 readonly input 可聚焦慣例)
 - **Disabled 的鍵盤**：native `disabled`——不可聚焦、無鍵盤行為
 - **Label 過長**：自動換行（label 容器 `flex-1 min-w-0`），Switch 錨定第一行行高置中（`h-[1lh]`）且不被擠壓（`shrink-0`）
 - **無 loading state**：Switch 無 loading prop——async 進度不屬 Switch（見「何時不用」，用 Button loading）
@@ -251,7 +251,7 @@ Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 - Tab — focus
 - Space / Enter — toggle on/off
 
-**Focus**:Switch 本體是原生切換按鈕,本身即可被 Tab 聚焦;聚焦時的 focus-visible ring 由 design-system 的 focus-visible 樣式提供(`focus-visible:ring-2 focus-visible:ring-ring`)。Switch 是單一控件,不涉及 focus trap / restoration(那是 Dialog / Popover 等容器才有的行為)。
+**Focus**:Switch 本體是原生切換按鈕,本身即可被 Tab 聚焦;聚焦時的焦點框由 `styles/base.css` 全域 `:focus-visible` 外描邊提供(`outline: 2px solid var(--ring)`,往外 2px;`switch.tsx` 不寫任何焦點 class;SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」)。Switch 是單一控件,不涉及 focus trap / restoration(那是 Dialog / Popover 等容器才有的行為)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

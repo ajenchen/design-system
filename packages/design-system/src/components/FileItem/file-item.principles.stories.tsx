@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
 import { Button } from '@/design-system/components/Button/button'
+import { SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
 
 const meta: Meta = {
   title: 'Design System/Components/FileItem/設計原則',
@@ -147,13 +148,19 @@ export const StatusProgressRule: Story = {
         title="completed — 成功 icon + 100% 完成條"
         note="完成後保留 100% 綠色完成條(surface=upload-manager narrative —— 上傳狀態是重點,Dropbox / Google Drive 慣例),成功 icon 再加一層明確表達「完成」。檔案變可點擊(下載)"
       >
-        <FileItem
-          name="users-export.csv"
-          description="1.2 MB"
-          status="completed"
-          surface="upload-manager"
-          mode="rich"
-        />
+        {/* surface="upload-manager" 的列只在上傳管理器面板裡成立(列自帶左右 16px,面板 body 左右 0;B12)——
+            單獨放會多出內距、跟同頁其他範例對不齊,所以照 file-item.stories.tsx UploadManagerSurface 的面板組合包起來(M23(d)) */}
+        <div className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]">
+          <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
+            <FileItem
+              name="users-export.csv"
+              description="1.2 MB"
+              status="completed"
+              surface="upload-manager"
+              mode="rich"
+            />
+          </SurfaceBody>
+        </div>
       </Rule>
 
       <Rule

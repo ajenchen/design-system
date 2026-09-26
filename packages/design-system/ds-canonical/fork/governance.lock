@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
+      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -351,7 +351,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "sha256": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
+      "sha256": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
       "source": "scripts/consumer-source-harness.mjs",
       "classification": null,
       "destination": "scripts/consumer-source-harness.mjs"
@@ -374,11 +374,27 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/5a0d134a2645114c8caac20458070b00a7f0fd55b3e8805b7325cb4cf52fa15e.blob",
+      "sha256": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
+      "source": "scripts/lib/storybook-render-health.mjs",
+      "classification": null,
+      "destination": "scripts/lib/storybook-render-health.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
       "sha256": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
       "source": "scripts/lib/exact-workspace-dependencies.mjs",
       "classification": null,
       "destination": "scripts/lib/exact-workspace-dependencies.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
+      "sha256": "95fdb808ae067e5a9b1167c5260c9defb165077f695b1324be8f2f356a6db4c0",
+      "source": "scripts/lib/launch-browser.mjs",
+      "classification": null,
+      "destination": "scripts/lib/launch-browser.mjs"
     },
     {
       "schemaVersion": 1,
@@ -403,6 +419,14 @@
       "source": "scripts/product-template-scaffold-lock.mjs",
       "classification": null,
       "destination": "scripts/product-template-scaffold-lock.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/68bfcddff9c4a16388c248cd34fb66163e9e64b3d809a48ef3984f6ae4ff6d12.blob",
+      "sha256": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
+      "source": "scripts/lib/storybook-static-snapshot.mjs",
+      "classification": null,
+      "destination": "scripts/lib/storybook-static-snapshot.mjs"
     },
     {
       "schemaVersion": 1,
@@ -487,7 +511,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
-      "sha256": "29072309bd7aba9a64c54a77370a9633a6b95bf135bfde39dd7098a97d23b373",
+      "sha256": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "source": "scripts/lib/a11y-static-server.mjs",
       "classification": null,
       "destination": "scripts/lib/a11y-static-server.mjs"
@@ -591,7 +615,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "b4305068d9a403726c2370b7678566484f21a84fd6478e58491ab0ffe79bdaef",
+      "sha256": "648b65cedabb5a21538487da857c0398621f2a8ce5da53da7bce534499def467",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"
@@ -663,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "d004be0fd899f1147fa436fe783d16a7df1172ed4b8d7b44c1d106352880ffe5",
+      "sha256": "e3c5f3ab5a2c2ea879e7a3336341d77c11c05cad9c402ecd4c4f0bbc5c17768f",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -671,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "32b8e4d32426c0915c4afe2ad3d1e9a84a1de59549f4da68743457bebda17bfd",
+      "sha256": "c3aa27661e55c8a2d0598262e596d3bce7e55ff7aabddd0f7e1fba31b9352d39",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -743,7 +767,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "795faed2ac9d3695f43c25f652994e04c3bc631868fe19607b9fc53ee5ba194f",
+      "sha256": "7717cf577bc92ebda5bfbeddfd0ef87dcc4e7b906466b72ac02426f22ab44770",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -911,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "cecb7818723bf5852f974d17f077ed78c426edc21c593bca71379c597457da8b",
+      "sha256": "6ef1611f18493fc0312c24f943c16962de8deec83484a8f8d8fda7e608e52dc3",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -919,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "9d83605a7991427d4524bcffb3fa320beb96d587365f2fa2ac5a4849ed79acea",
+      "sha256": "008b0cc5b21e583d2c0394c69f85df3a4a0da941ca6e705978aac715d2dd518f",
       "source": null,
       "classification": null,
       "destination": null
@@ -1175,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "7c1a887511e6d4e4d06c374084544c8ef77ac684a196d4b7bad2965cb4200226",
+      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

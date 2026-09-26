@@ -101,33 +101,54 @@ for (let changed = true; changed;) {
 }
 const orphans = scripts.filter((f) => !reachable.has(f) && GATE_LIKE.test(f)).sort()
 
+// 「刻意只手動跑」的理由帳(2026-09-27):孤兒不是只有「還沒接線」一種 —— 有的是給人看截圖的探針,CI 沒有斷言可判。
+// 那種要**寫得出原因**(引得出同一件事的 CI 閘是哪一支、這支為什麼只能人看)才准留在 baseline 裡;沒寫的一律算「待接線或退役」。
+// 重記(--update-baseline)時只保留仍是孤兒的條目;已接線的自動掉出。
+const readManualOnly = (json) => {
+  const entries = Object.entries(json.manualOnly ?? {})
+  for (const [file, why] of entries) {
+    if (typeof why !== 'string' || why.trim().length < 20) { console.error(`✗ baseline.manualOnly["${file}"] 的理由必須是一段引得出原因的文字(≥ 20 字),實得 ${JSON.stringify(why)}`); process.exit(2) }
+  }
+  return Object.fromEntries(entries)
+}
+
 if (UPDATE) {
+  const previous = existsSync(BASELINE) ? readManualOnly(JSON.parse(read(BASELINE))) : {}
+  const manualOnly = Object.fromEntries(Object.entries(previous).filter(([f]) => orphans.includes(f)))
   writeFileSync(BASELINE, JSON.stringify({
-    note: '寫了閘就要有人跑它。這裡記的是「目前沒有任何執行面會呼叫」的閘/測試腳本。數字只准往下 —— 新增孤兒會讓 gate-reachability-invariant.mjs 變紅。清掉既有孤兒(接進 CI 或退役)之後跑 --update-baseline 重記。',
+    note: '寫了閘就要有人跑它。這裡記的是「目前沒有任何執行面會呼叫」的閘/測試腳本。數字只准往下 —— 新增孤兒會讓 gate-reachability-invariant.mjs 變紅。清掉既有孤兒(接進 CI 或退役)之後跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。',
     generatedBy: 'scripts/gate-reachability-invariant.mjs --update-baseline',
     count: orphans.length,
     orphans,
+    manualOnly,
   }, null, 2) + '\n')
-  console.log(`baseline 已更新:${orphans.length} 支孤兒 → ${BASELINE.replace(ROOT + '/', '')}`)
+  console.log(`baseline 已更新:${orphans.length} 支孤兒(其中 ${Object.keys(manualOnly).length} 支刻意只手動跑)→ ${BASELINE.replace(ROOT + '/', '')}`)
   process.exit(0)
 }
 
 if (!existsSync(BASELINE)) { console.error(`✗ 找不到 baseline(${BASELINE})—— 先跑 --update-baseline`); process.exit(2) }
 const baseline = JSON.parse(read(BASELINE))
 const known = new Set(baseline.orphans || [])
+const manualOnly = readManualOnly(baseline)
 const added = orphans.filter((f) => !known.has(f))
 const fixed = [...known].filter((f) => !orphans.includes(f))
+// 理由帳裡的檔已經有人呼叫了 → 帳過期(它不再是孤兒,理由也不該再掛著)
+const staleManual = Object.keys(manualOnly).filter((f) => !orphans.includes(f))
+const pending = orphans.filter((f) => !(f in manualOnly))
 
 console.log(`掃描 ${scripts.length} 支 scripts/*.mjs;執行面(CI / package.json / hooks / skills / infra)可達 ${reachable.size} 支`)
-console.log(`名字像閘/測試卻沒人呼叫:${orphans.length} 支(baseline ${baseline.count})`)
+console.log(`名字像閘/測試卻沒人呼叫:${orphans.length} 支(baseline ${baseline.count};其中刻意只手動跑、理由已記 ${Object.keys(manualOnly).length - staleManual.length} 支)`)
+for (const [f, why] of Object.entries(manualOnly)) if (orphans.includes(f)) console.log(`  · 刻意只手動跑:scripts/${f} —— ${why}`)
 if (fixed.length) console.log(`↓ 已接好線或已退役 ${fixed.length} 支:${fixed.slice(0, 8).join(', ')}${fixed.length > 8 ? ' …' : ''}\n   → 跑 --update-baseline 把它們從 baseline 移除,數字才會真的往下`)
+for (const f of staleManual) console.log(`  ✗ manualOnly 記的 scripts/${f} 已有執行面呼叫,理由帳過期 —— 跑 --update-baseline 重記`)
 for (const f of added) console.log(`  ✗ 新增孤兒:scripts/${f} —— 沒有任何 CI workflow / npm script / hook 會呼叫它,它宣稱的保護不存在`)
 
 if (SELFTEST) {
   if (added.includes(SYNTHETIC)) { console.log('\n✓ selftest:合成孤兒被抓到,量具會紅'); process.exit(0) }
   console.log('\n✗ selftest:合成孤兒沒被抓到 —— 這支是假綠,不能當證據'); process.exit(1)
 }
+if (staleManual.length) { console.log(`\n✗ ${staleManual.length} 支 manualOnly 理由帳過期`); process.exit(1) }
 if (orphans.length === 0 && baseline.count === 0) { console.log('\n✓ 每一支閘/測試都有執行面會呼叫'); process.exit(0) }
 if (added.length) { console.log(`\n✗ ${added.length} 支新增孤兒 —— 新寫的閘必須同時接進某個執行面`); process.exit(1) }
-console.log('\n✓ 沒有新增孤兒(既有 ' + orphans.length + ' 支待逐步接線或退役,數字只准往下)')
+console.log(`\n✓ 沒有新增孤兒(既有 ${pending.length} 支待逐步接線或退役、${orphans.length - pending.length} 支刻意只手動跑且理由已記,數字只准往下)`)
 process.exit(0)

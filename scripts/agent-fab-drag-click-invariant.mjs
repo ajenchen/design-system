@@ -14,44 +14,66 @@
  *      之後把滑鼠移離鈕再真放開(避免真 click 落在鈕上)
  *   K  拖完立刻鍵盤 Enter → 面板必開(鍵盤合成 click 不吞)
  * 對照組(--selftest):情境 L 在晚到的 click 之前先合成一個 pointerdown(新手勢 = 旗標清掉)→ 面板必開 → 儀器判紅。
+ * 開 story(2026-09-25 起):每個情境都由共用的 openStory(lib/launch-browser.mjs)重開 —— Storybook 回報渲染完成、
+ * 畫面健康、**入口鈕本身**出現、版面連續靜止 10 個影格(進場動畫也在 getAnimations 裡)才開始操作。
+ * 取代舊的 gotoStory + 固定睡 700ms:舊版在 story 開不起來時丟掉 gotoStory 的回傳值,接著 `fabBox()` 等 30 秒後
+ * 丟出一個光禿禿的 TimeoutError(實測,story 檔 404 時)。現在開不起來 → INSTRUMENT-FAIL 點名情境與 story、
+ * 列同源 404,不是產品裁決,也絕不算通過。
  * 用法:node scripts/agent-fab-drag-click-invariant.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { gotoStory, launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-if (!fs.existsSync(path.join(root, 'index.json'))) { console.error(`找不到 ${root}/index.json —— 先 build storybook`); process.exit(2) }
+requireStorybookBuild(path.join(root, 'index.json'))
 if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
   console.error(`✗ STALE-BUILD:agent-panel-fab.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
 }
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const STORY = 'design-system-components-agentpanel-展示--fab'
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1600, height: 800 } })
 let failed = 0
+/** story 開不起來的情境:儀器失效(沒量到),不是產品裁決;結尾據此紅 */
+const instrumentFails = []
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
 const FAB = 'button[aria-label*="開啟智慧代理"]'
 const open = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); return !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 })
 const fabBox = async () => { const b = await page.locator(FAB).first().boundingBox(); if (!b) throw new Error('找不到入口鈕'); return b }
-// 等入口鈕本身出現再量:固定睡眠只是「已渲染」的代理,慢的 runner 上會變成 fabBox() 丟「找不到入口鈕」
+// 等入口鈕本身出現、版面靜止再量:固定睡眠只是「已渲染」的代理,慢的 runner 上會變成 fabBox() 丟「找不到入口鈕」
 // —— 指控一個不存在的問題(2026-09-20 action-bar 閘在 CI 真的這樣假紅過)。
-const fresh = async () => { await gotoStory(page, `http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: FAB, settle: 700 }) }
+const fresh = () => openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: FAB, settleFrames: 10, notFound: server.notFound })
+/** 一個情境 = 重開 story + 操作 + 斷言。story 開不起來 → 記成儀器失效、點名情境,不跑該情境的斷言;其他例外照丟。 */
+const scenario = async (name, body) => {
+  try {
+    await fresh()
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(`✗ 情境 ${name}:${error.message}`)
+    instrumentFails.push({ scenario: name, detail: error.detail })
+    return
+  }
+  await body()
+}
 const center = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 })
 const dragMoves = async (from, dx, dy, steps = 10) => { for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + dx * i / steps, from.y + dy * i / steps) }
 
 // P 正對照
-await fresh(); { const c = center(await fabBox()); await page.mouse.click(c.x, c.y); await page.waitForTimeout(600); rec(await open(), 'P 正對照:真點一下 → 面板開') }
+await scenario('P', async () => { const c = center(await fabBox()); await page.mouse.click(c.x, c.y)
+  await page.waitForTimeout(600) // 點擊之後:等面板開啟的過渡跑完再判(入口鈕早已在畫面上)
+  rec(await open(), 'P 正對照:真點一下 → 面板開') })
 // D 真拖 20px
-await fresh(); { const b0 = await fabBox(); const c = center(b0); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20); await page.mouse.up(); await page.waitForTimeout(600)
+await scenario('D', async () => { const b0 = await fabBox(); const c = center(b0); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20); await page.mouse.up()
+  await page.waitForTimeout(600) // 放開之後的觀測窗:面板若會被誤開,這段時間內一定已經開了(證明「沒開」只能看一段時間)
   const b1 = await fabBox().catch(() => null); const moved = b1 ? Math.hypot(b1.x - b0.x, b1.y - b0.y) : NaN
-  rec(!(await open()), `D 真拖 20px 放開 → 面板不開(鈕位移 ${Number.isFinite(moved) ? Math.round(moved) : '?'}px;帶外放開會飛回家 = 0 也正常)`) }
+  rec(!(await open()), `D 真拖 20px 放開 → 面板不開(鈕位移 ${Number.isFinite(moved) ? Math.round(moved) : '?'}px;帶外放開會飛回家 = 0 也正常)`) })
 // L 晚到的 click(根因路徑)
-await fresh(); {
+await scenario('L', async () => {
   const c = center(await fabBox()); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20)
   const r = await page.evaluate(async ({ sel, sabotage, x, y }) => {
     const btn = document.querySelector(sel)
@@ -66,12 +88,13 @@ await fresh(); {
     return { opened: !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 }
   }, { sel: FAB, sabotage: SELFTEST, x: c.x - 20, y: c.y - 20 })
   // 收尾:把真滑鼠移離鈕再放開,真 click 不落在鈕上
-  await page.mouse.move(40, 40); await page.mouse.up(); await page.waitForTimeout(300)
+  await page.mouse.move(40, 40); await page.mouse.up()
+  await page.waitForTimeout(300) // 真放開之後讓拖曳收尾(飛回 / 放置動畫)跑完,再換下一個情境
   if (SELFTEST) rec(r.opened, `selftest 對照組:晚到的 click 之前先合成 pointerdown(旗標清掉)→ 面板必開(儀器會紅)| opened=${r.opened}`)
   else rec(!r.opened, `L 拖 20px、pointerup 後 100ms 才到的 click → 被吞、面板不開(舊版 setTimeout(0) 在此漏)| opened=${r.opened}`)
-}
+})
 // Z 0 個 pointermove、放開在 80px 外(輸入代理把中途事件丟掉的形狀;舊版把它當點擊 → 開面板)
-if (!SELFTEST) { await fresh(); {
+if (!SELFTEST) await scenario('Z', async () => {
   const c = center(await fabBox())
   const r = await page.evaluate(async ({ sel, x0, y0 }) => {
     const btn = document.querySelector(sel)
@@ -85,11 +108,18 @@ if (!SELFTEST) { await fresh(); {
     const p = document.querySelector('[role="complementary"]')
     return { opened: !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 }
   }, { sel: FAB, x0: c.x, y0: c.y })
-  rec(!r.opened, `Z 0 個 pointermove、放開在 80px 外 + 補發 click → 判成拖曳、面板不開 | opened=${r.opened}`) } }
+  rec(!r.opened, `Z 0 個 pointermove、放開在 80px 外 + 補發 click → 判成拖曳、面板不開 | opened=${r.opened}`) })
 // K 拖完鍵盤 Enter
-if (!SELFTEST) { await fresh(); { const c = center(await fabBox()); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20); await page.mouse.up(); await page.waitForTimeout(400)
-  await page.locator(FAB).first().focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(600)
-  rec(await open(), 'K 拖完立刻鍵盤 Enter → 面板開(鍵盤合成 click detail 0 不吞)') } }
-await browser.close(); server.close()
-console.log(failed ? `✗ agent-fab-drag-click ${failed} 條失敗` : (SELFTEST ? '✓ selftest:對照組讓儀器紅,量具有效' : '✅ agent-fab-drag-click PASS(拖曳 ≠ 點擊,且不依賴事件時序)'))
-process.exit(failed ? 1 : 0)
+if (!SELFTEST) await scenario('K', async () => { const c = center(await fabBox()); await page.mouse.move(c.x, c.y); await page.mouse.down(); await dragMoves(c, -20, -20); await page.mouse.up()
+  await page.waitForTimeout(400) // 拖曳放開後的收尾動畫跑完,再按 Enter
+  await page.locator(FAB).first().focus(); await page.keyboard.press('Enter')
+  await page.waitForTimeout(600) // 按下之後:等面板開啟的過渡跑完再判
+  rec(await open(), 'K 拖完立刻鍵盤 Enter → 面板開(鍵盤合成 click detail 0 不吞)') })
+await browser.close(); await server.stop()
+if (instrumentFails.length) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 個情境沒量到 —— 不是產品裁決,但這次不能宣稱拖曳 ≠ 點擊${SELFTEST ? ',也不能宣稱對照組紅得對' : ''}:`)
+  for (const f of instrumentFails) console.log(`  · 情境 ${f.scenario}:${f.detail}`)
+}
+const red = failed > 0 || instrumentFails.length > 0
+console.log(red ? `✗ agent-fab-drag-click ${failed} 條失敗、${instrumentFails.length} 個情境沒量到` : (SELFTEST ? '✓ selftest:對照組讓儀器紅,量具有效' : '✅ agent-fab-drag-click PASS(拖曳 ≠ 點擊,且不依賴事件時序)'))
+process.exit(red ? 1 : 0)

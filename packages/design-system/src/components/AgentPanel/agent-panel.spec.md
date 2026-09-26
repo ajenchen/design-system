@@ -188,7 +188,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - **底部內距 = `--layout-space-bottom` 48**:最後內容(常駐工具列)→ 輸入盒的送出動作 = layoutSpace 規則 4
   「內容 → action button = bottom」(`tokens/layoutSpace/layoutSpace.spec.md` L118;2026-09-02 user 抓工具列貼輸入盒)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
-  其餘懸停/鍵盤聚焦淡入(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
+  其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
 - **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(ChatGPT / Claude
   「貼底跟隨、離底不擾」同款);由本元件實作,consumer 不自接。
 - A11y:`role="log"` + `aria-live="polite"`。
@@ -216,7 +216,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 6. AgentToolbar(訊息工具列)
 
-- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點 0.15s 淡入,
+- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」),
   絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
 
@@ -245,7 +245,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
 - Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
-  **整卡可點**;卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
+  **整卡可點**(滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
   + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
@@ -253,6 +253,21 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
   鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
   幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
+- 選項卡滑過(2026-09-26 AI 建議,列在「其餘建議」、user 未另提 → AI 判讀照建議做;user 的問句見上;待辦總帳 B12):指標在整張卡的**任何位置**(內距、圓與字的空隙、說明文字、「其他」卡的輸入格),
+  卡內的圓(複選是方框)照它被自己的 label 滑過時的樣子變色 —— 顏色即 `../Checkbox/checkbox.spec.md`「狀態」Radio / Checkbox 表的 hover 列,
+  不新增顏色;**卡片灰底不換色**、字色不變;卡與卡之間的 8 不屬任何卡,滑過不變、點了也不選。
+  理由:DS 原本的單選/複選項目本身沒有滑過樣式,回應的只有控件(`../SelectionControl/selection-item.spec.md`「為何無 ColorMatrix / StateBehavior」),
+  指到字上圓也會變是 HTML label 的轉發;選項卡的命中區是整卡,同一套語言的回應範圍就是整卡。
+  user 原問句(逐字;問句,不是決定):「我覺得好像不用加上底色變化，若它是 radio 的話，那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」
+  「其他」卡指在輸入格上:圓照樣變,輸入格外框自己的滑過疊在上面 —— 卡片是宿主、輸入格是卡內控件,宿主保留自己的滑過
+  (`../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段;套到「宿主的滑過是控件變色」是 AI 推導);點輸入格即選中「其他」,圓亮起來的承諾成立。
+  作法:卡片掛具名群組 `group/agent-option`,控件把**自己的** `hover:` 配對原樣接到群組滑過(`agent-panel.tsx` `OPTION_RADIO_HOVER` /
+  `OPTION_CHECKBOX_HOVER`,逐條鏡射 `../RadioGroup/radio-group.tsx` / `../Checkbox/checkbox.tsx` 的 hover 行,owner 改色時同步改);
+  不把整卡改成 `<label>`:卡內已有 SelectionItem 的 label、`<div>` 與輸入格,違反 [WHATWG label 內容模型](https://html.spec.whatwg.org/multipage/forms.html#the-label-element)。
+  鍵盤不受影響(焦點框仍在控件本體)。世界級:卡片式單選 [Joy UI Radio `overlay`](https://github.com/mui/material-ui/blob/f2e0dab9d80271310843c57b9bd430e07e267b8d/docs/data/joy/components/radio-button/radio-button.md#L113-L119)
+  同形(整卡可點、滑過只變圓;Joy UI 已於 2026-03-11 自 MUI 主 repo 移除,只作曾經的做法);Carbon RadioTile 改換卡片底色
+  ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
+  本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
 - 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
 - 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
@@ -320,9 +335,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   後綴=MenuItem endContent slot 內 ItemSuffix hoverReveal + ItemInlineAction 16/18、gap 8、距列右緣 12,
   逐項對齊 inline-action.spec.md);組標=CommandGroup `heading`(MenuItem header,
   今天/昨天/更早)+ CommandSeparator;無結果=`<Empty>`(CommandEmpty);搜尋列 `h-8 py-0`(列高 40 守 SelectMenu)。
-- 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,150ms 淡入;
-  鍵盤 Tab 可達、focus-visible 同樣顯示;**Enter / Space 在行內動作上 = 啟動該動作**,不是選列
-  ——cmdk 的 Enter=選列在此以 stopPropagation 擋掉,2026-09-02 實測補);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
+- 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,**瞬間出現、不淡入** —— 2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,規則住 ItemSuffix;2026-09-26 前 150ms 淡入);**鍵盤(2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)**:改名/刪除**不在 Tab 路上**(09-25 前 4 列 = 8 站);搜尋框 ↑↓ 移反白,插入點在字尾時 `→` 進反白列的「改名」、再 `→`「刪除」(停住),`←` 退一顆、第一顆 `←` 回搜尋框;鈕上 ↑↓ / Home / End = 回搜尋框並移反白;鈕上 Tab / Shift+Tab 一下離開這一串(浮層照舊在面板裡繞圈);鍵盤反白的那一列浮出改名/刪除,焦點進到鈕上時反白列的框讓給那顆鈕(一個項目一個指示器)——「插入點在字尾」條件(搜尋框的 `→` 仍要能移插入點)與「鍵盤反白列浮出」是 AI 推導;Esc 不規定(照舊關浮層)。
+  **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
 - 改名=Dialog(`autoHeight` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
   空白 → `invalid` + FieldError「名稱不可空白」,儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);
   刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
@@ -456,7 +470,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
       要求懸停內容可被指標到達(hoverable)。空隙上的點擊落到底下內容是正確的,tooltip 開著不代表那裡屬於鈕。
       定位殼改 `w-fit`(2026-09-04)拿掉的是殼比鈕寬 12px 的**結構鬆弛**(殼一直是 `pointer-events-none`,從未參與命中);
       它對「空隙上 tooltip 仍開著」沒有、也不可能有影響 —— 先前把「殼的帶讓 tooltip 開著」記為此症狀的根因是誤判,撤回。
-      命中區 ≡ 可視形狀仍是唯一契約。
+      命中區 ≡ 可視形狀仍是這顆鈕的唯一契約(它沒有另外的懸停回饋,所以 `ds-canonical/references/hit-area-canonical.md`「一-4 細則」的「懸停回饋形狀 ≡ 命中區」在它身上退化成可視形狀;那條通則只管控件,不延伸成全 DS「點得到的都要看得到」—— 整列、整張卡照該檔滑過原則一-2)。
     - **也不內縮**:先前寫成「按鈕保持矩形、圓角只畫內層,角落才點得到」,那是把**多**當成修正 ——
       使用者要的是相等。(同時撤回一條誤判:2026-09-03 記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中;
       複核幾何後,D 形在該高度的左緣本來就在 x≈6.8 而非 x=0,那幾點原本就在**視覺之外**,不是死區。)
@@ -556,7 +570,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 |---|---|---|
 | 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
 | 蓋板遮罩(容器 < 960)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
-| 訊息/決策卡/工具列/送出↔停止 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
 | 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |

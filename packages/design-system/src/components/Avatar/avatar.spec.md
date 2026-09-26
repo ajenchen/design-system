@@ -84,7 +84,7 @@ hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的�
 當 Avatar 有 `hoverCard` prop,Avatar wrapper **必 keyboard focusable**,讓 keyboard-only user 也能 reach ProfileCard popover。Avatar 元件內部自動套:
 - `tabIndex=0`(可 Tab 到;focus 時 Radix hover-card 自動開卡)
 - `role="img"` + `aria-label`(取 `alt`)——2026-07-07 CI axe 補修:aria-label 掛在無 role 的 generic `<div>` 是 ARIA 禁用組合(axe `aria-prohibited-attr`,serious);Avatar 語義本質 = 身份圖像,`role="img"` 讓命名合法、子孫自動 presentational、不對 AT 承諾任何互動行為
-- `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1`(keyboard focus 視覺 indicator)
+- 全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 focus class,wrapper 只依 `shape` 帶 `rounded-full` / `rounded-md` 讓外描邊圓角跟隨形狀)(keyboard focus 視覺 indicator)
 - **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 user 拍板拆除):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA)
 - 若無 `hoverCard` → 純展示 `<div>` 不 focusable(避免 tabTrap 噪音)
 
@@ -94,7 +94,7 @@ Rationale:Radix `HoverCardTrigger asChild` 不自動加 tabIndex 給 non-focusab
 
 ### 溢出人員列表（+N）
 
-Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列表內 person tag 需要 dismiss 互動、每個 person tag hover 需再出 name card（嵌套 HoverCard），Tooltip 非互動不支援。架構：`+N → HoverCard（人員列表）→ 每個人名 → HoverCard（name card）`
+Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列表內 person tag 需要 dismiss 互動、每個 person tag hover 需再出 name card（嵌套 HoverCard），Tooltip 非互動不支援。架構：`+N → HoverCard（人員列表）→ 每個人名 → HoverCard（name card）`。`+N` 在堆疊裡的位置與畫法見下方「頭像堆疊(疊在一起時)」段。
 
 ### 純文字截斷 vs 人員頭像
 
@@ -216,7 +216,7 @@ Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 c
 - `dotSize = clamp(8, round(avatarSize × 0.28), 16)` — 28% 是 Slack / Teams 世界級平均
 - Floor 8:小 avatar(24-28px)下可辨識但不喧賓奪主(若 floor 10 → 24px avatar 的 dot 占 42% 太大)
 - Ceiling 16:64px+ 的大 avatar 不讓 dot 過度放大,保持「輔助指示器」視覺權重
-- Border ring:2px(dotSize < 12)/ 3px(dotSize ≥ 12)— 在 surface 背景上把 dot 從 avatar 邊緣分離
+- 與頭像之間的縫:**從圓上挖出來**(2026-09-26 起;此前是圓點外畫一圈 `box-shadow`、顏色寫死 `--surface-raised`),寬 = DS 通用縫 `--stack-gap`(2px),dotSize ≥ 12 時多 1px 保持視覺比例。露出的是真正在後面的東西,所以頭像放在深色頁面(#0A0A0A)、半透明卡片、滑過的列上都不會出現一圈錯色的灰邊 —— 舊做法在深色頁面上實測就是一圈 #1F1F1F(待辦總帳 N49;步驟條外圈同一種病、同日改)。挖法與「頭像堆疊」段相同(遮罩挖空,不是外圈);圓點本身不再畫任何圈
 
 ### Status 顏色 token(presence namespace)
 
@@ -224,9 +224,45 @@ Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 c
 
 ### Count badge 實作
 
-Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上 `-top-1 -right-1` 偏移與 surface 色 2px border ring 分離邊界。`badgeCount <= 0` 不渲染(0 或 undefined 皆空)。
+Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上 `-top-1 -right-1` 偏移;與頭像之間的縫(`--stack-gap`,2px)同樣**從圓上挖出來**(膠囊形的洞:徽章寬度隨字數變,由 ResizeObserver 量它的盒子再算遮罩;2026-09-26 起,此前是 surface 色 2px `box-shadow` 外圈,深色會錯色,同上段)。`badgeCount <= 0` 不渲染(0 或 undefined 皆空)。
+
+**編輯態人員標籤的移除 ×**(`PeoplePicker` 堆疊模式,`person-display.tsx` AvatarDismissOverlay)也疊在頭像右上,同樣挖空:Avatar `dismissCutout`(`@internal`)在標籤被滑過 / 焦點在標籤內時(與 × 顯示的條件相同)才打開那個洞,平常頭像完整;× 的位置與大小只有一個住所 `AVATAR_DISMISS_OVERLAY_PX`。
 
 **為什麼預設 `critical`(紅)**:計數 on avatar 在世界級 chat app 的慣例就是「待處理未讀」,紅色是約定俗成的 attention 色;需要其他 variant 的少見情境,consumer 自己 compose `<Avatar>` + `<Badge>` top-right 手刻(不開 prop 避免多選擇認知負擔)。
+
+---
+
+## 頭像堆疊(疊在一起時)
+
+多位人員並排、互相疊一小段的畫法 —— PeoplePicker 多人 stack(檢視 / 唯讀 / 表格格子 / 編輯)、表格多人欄、任何「前幾位 + `+N`」的頭像列。規則住本段;機制住 `avatar.tsx`「頭像堆疊」段(`stacked` prop 與 `AVATAR_STACK_*` 匯出),三處消費者(`MultiPersonDisplay`、`PersonAvatarTag`、OverflowIndicator 的 circle 形狀)都用同一份。
+
+| 項目 | 規則 |
+|---|---|
+| 順序 | 第一顆在最上面,依序往下;`+N`(OverflowIndicator `shape="circle"`)是最後一項,在最下面。每項同尺寸 |
+| 重疊 | 第 2 項起往左疊 2px(`AVATAR_STACK_OVERLAP_PX`) |
+| 分開方式 | **挖空**:後面那顆被前面那顆蓋住的地方,連同外面 2px 的縫(`AVATAR_STACK_GAP_PX`),整片從畫面上拿掉。縫裡露出的是真正在後面的東西(畫布、唯讀欄位、滑過的表格列、深色欄位)。**不畫外圈** |
+| 半透明底色 | 不會疊到別人身上:重疊的地方只剩上面那顆(neutral `--muted` 底、深色主題的彩色淡底、`+N` 的 `--secondary` 底都是半透明,見「背景色」段與 `../OverflowIndicator/overflow-indicator.spec.md`) |
+| 鍵盤焦點 | 某一項裡有東西拿到鍵盤焦點時,整項升到最上層 —— 全域外描邊往外畫,左半圈不被上一顆蓋住(`ds-canonical/references/focus-canonical.md` 判準表「疊層/徽章不算鄰居」→ 往外) |
+| 名片 | 重疊那 2px 屬於上面那顆(滑過開上面那顆的 ProfileCard);挖空不改變任何一顆的觸發範圍 |
+
+**為什麼挖空、不畫外圈**(2026-09-26 採用,紀錄見待辦總帳 L3 與「其餘建議」條):
+
+- 舊做法(2026-04-02 起)每顆加 2px 外圈、圈色寫死 `--surface`。外圈只擋得住「圈」的那一段,擋不住重疊處:上面那顆的半透明底色直接疊在下面那顆上,透出下面那顆(2026-09-26 AI 實測,重疊處與「把下面那顆藏起來」相比:淺色灰疊灰差 9–10、深色差 17(0–255 通道差);示範 story 的 `+N` 疊在受控單色照片上差 170–215)。
+- 圈色寫死 `--surface` 只在白底正確:深色主題 `--surface` 本身是白 8% 半透明,圈變成一道比頭像還亮的月牙;唯讀欄位(`--bg-readonly`)或滑過的表格列上,每顆外面多一圈白邊。
+- 挖空與背景色無關,不需要為每種背景另建不透明 token(`tokens/README.md` 建 token 前先質疑是否真需要)。換成不透明底色的做法,2026-09-26 AI 模擬實測在唯讀欄位上灰頭像與欄位同色、在深色比欄位暗。
+
+**縫寬 2px 是 AI 推導**:與舊外圈同寬(白底上看起來與舊版相同),也與 DS 其他「把疊上去的東西分開」的縫同寬(本檔「Status dot 尺寸與比例」、「Count badge 實作」、上傳列的進度條與焦點框、步驟條外圈、全域焦點框往外畫的間隙)—— 這個值 2026-09-26 抽成 token `--stack-gap`(`tokens/uiSize/uiSize.css`;JS 雙生 `tokens/uiSize/stack-gap.ts`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等),本段是它設計理由的住所。Primer 的縫是 1px。
+
+**世界級對照**:
+
+| DS(釘版本) | 疊在一起時怎麼分開 | 一手出處 |
+|---|---|---|
+| GitHub Primer(@primer/react 38.40.0) | **挖空**:第 2 顆起用遮罩挖掉「前一顆的圓 + 1px」(`mask-composite: exclude` + 圓形 `radial-gradient`);整組 `isolation: isolate` | [AvatarStack.module.css#L168-L194](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L168-L194)、[#L3](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L3)「`--avatar-border-width: 1px`」、[#L12](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L12)「`isolation: isolate`」 |
+| MUI(v9.4.0) | 每顆 2px 實線框,框色寫死頁面底色 `palette.background.default` | [AvatarGroup.js#L42](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/AvatarGroup/AvatarGroup.js#L42) |
+| Fluent 2(@fluentui/react-avatar 9.11.8) | 疊放時每顆加 `box-shadow` 外圈,圈色寫死 `colorNeutralBackground2` | [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61) |
+| Ant Design(6.6.5) | 群組內每顆的框色寫死 `groupBorderColor`,第 2 顆起往左疊 | [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185) |
+
+外圈派(MUI / Fluent / Ant)的圈色都是一個固定的底色 token(出處同列)。**AI 推導**:這與 DS 舊做法同一類,只在那個底色上看起來是縫;本 DS 的欄位有唯讀底、表格有滑過底、深色 `--surface` 半透明,所以選挖空(Primer)。此取捨由 AI 依上述實測整理後提出,採用紀錄同上。
 
 ---
 
@@ -236,6 +272,9 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - ❌ 不要手動指定 icon 尺寸——60% 自動計算
 - ❌ 不要用 square 給人物——人用 circle，東西用 square
 - ❌ 不要省略 `alt`——即使有 `src`，`alt` 是圖片失敗時的 fallback 來源
+- ❌ 不要手刻頭像堆疊(負 margin + 外圈 `ring` / `box-shadow` / `border`)——用「頭像堆疊(疊在一起時)」段的共用做法(`stacked` + `AVATAR_STACK_*`)
+- ❌ 不要把挖空遮罩掛在接焦點的外層——遮罩外的東西不繪製,會把畫在外面的焦點框整圈裁掉;遮罩只掛在圓那一層
+- ❌ 不要在疊在頭像上的東西(狀態圓點 / 計數徽章 / 移除 ×)外面畫一圈底色當縫(`box-shadow` / `ring`)——那一圈只在一種底上是對的,深色頁面上是一道灰邊;縫一律從圓上挖(「Overlay」段與「頭像堆疊」段同一套做法)
 
 ---
 
@@ -245,7 +284,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - **無 `alt` 時 fallback**:image 模式自動降級 initials / icon;一律不靜默渲染無 SR 標的元素。
 - **Status dot SR 處理**:status dot 內部 span `aria-hidden`(presence 訊號整合進 parent `alt`),避免 `role="status"` live region 在 member list 造成 SR 洪水(詳「Status dot a11y」段)。
 - **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N unread"` 提供計數語義(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
-- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ `focus-visible:ring-2`,確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
+- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
 - **Image alt 語意**:meaningful image(person photo / brand logo)用實質 `alt`;decorative-only(極少)走 `alt=""`,但 Avatar 本質是身份識別,decorative 用法應改用 Icon 元件。
 
 ---
@@ -254,7 +293,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 
 Avatar 是**身份視覺 primitive**(顯示人 / 組織 / 物件的代表視覺),本身無自有的 hover / active / selected 互動 state。但有兩個由 context 委派 / 自管的視覺 state,故 anatomy 仍有 `StateBehavior` story(內容降級 fallback chain + status presence dot 四態):
 
-- **focus-visible**:Avatar 帶 `hoverCard` prop 時 wrapper 變 focusable,委派 keyboard focus + `focus-visible:ring-2 focus-visible:ring-ring` 給該 wrapper(見「Keyboard 可達 canonical」段);無 `hoverCard` 則純展示不 focusable。
+- **focus-visible**:Avatar 帶 `hoverCard` prop 時 wrapper 變 focusable,委派 keyboard focus 給該 wrapper,焦點框走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;wrapper 不寫任何 focus class)(見「Keyboard 可達 canonical」段);無 `hoverCard` 則純展示不 focusable。
 - **disabled**:Avatar 在 disabled Field wrapper context 內經 `fieldCtx` 自套 `opacity-disabled` self-dim(見「Disabled」段),非互動 state 而是視覺 context state。
 - hover 行為(彈 ProfileCard)由 `hoverCard` prop 委託給 HoverCard primitive,屬 HoverCard 的 state 不屬 Avatar。
 

@@ -1,5 +1,6 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
@@ -43,26 +44,33 @@ export type FieldChromeHost =
   /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
   | 'control'
 
-/** 依宿主型別產出 default 外框 compounds;字串與 2026-09-02 前各宿主自寫的版本逐字相同(class 等價證明:零增減)。 */
+/**
+ * 依宿主型別產出 default 外框 compounds。字串原與 2026-09-02 前各宿主自寫的版本逐字相同;
+ * 2026-09-25 起「開啟中」那條依 error 分流(見下方 error:false / error:true 兩條),不再逐字相同。
+ */
 export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
   const wrapper = host === 'wrapper'
   return [
     {
       mode: 'edit' as const,
       variant: 'default' as const,
-      className: ['bg-surface border border-border', 'hover:border-border-hover', wrapper ? 'data-[state=open]:border-border-hover' : ''],
+      className: ['bg-surface border border-border', 'hover:border-border-hover'],
     },
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
     // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
-    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「overlay 開啟 → 同 host hover」;field.spec.md「Field state machine」表)。
+    // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
-      // 唯讀:邊框保持透明(不轉色),焦點指示 = 全域外描邊。wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器),
-      // 全域規則直接生效;control 宿主(<textarea>)自己寫了 outline-none,在這裡解除(見本檔頂端 JSDoc)。
+      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),聚焦時把它轉成主色 —— 焦點指示與編輯態同一種長相,
+      // 不是全域外描邊(Field 家族「一個家族一種焦點長相」,user 2026-09-10 拍板;見本檔頂端 JSDoc)。
+      // wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器):focus-within:!border-primary 畫框,同一行的
+      // focus-visible:outline-none 把全域外描邊壓掉;control 宿主(<textarea>)焦點就在自己身上,用 focus-visible:!border-primary。
       // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
       //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
       className: wrapper
@@ -71,7 +79,8 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
-    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+    // error × 開啟中 = error 自己的 hover 框 `data-[state=open]:border-error-hover`(同 error:false 那條的開啟規則;default 與 naked 共用本條)
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[state=open]:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
   ]
 }
 
@@ -79,7 +88,10 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
 export const FIELD_DEFAULT_CHROME_COMPOUNDS = fieldDefaultChromeCompounds('wrapper')
 
 /** 複合欄位宿主(AgentPromptInput 等 wrapper 型)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
-export const fieldChromeStyles = cva('transition-colors duration-150', {
+// base 空字串 = 不寫 transition-colors:hover 外框一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;
+// 2026-09-26 由底色延伸到外框,待辦總帳 L9 / N4(3))。外框規則來自 fieldDefaultChromeCompounds,單行 wrapper(下方
+// fieldWrapperStyles)、多行 Textarea、本常數三宿主共用同一份,三處必須一起不寫過渡。
+export const fieldChromeStyles = cva('', {
   variants: {
     mode: { edit: '', view: '', readonly: '', disabled: '' },
     variant: { default: '', naked: '' },
@@ -108,7 +120,7 @@ export const fieldWrapperStyles = cva(
     // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
     'inline-flex items-center min-w-0 rounded-md',
     'text-foreground font-normal',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:hover 外框(hover:border-border-hover)一律瞬間,理由與出處同上方 fieldChromeStyles(待辦總帳 L9)
   ],
   {
     variants: {
@@ -198,12 +210,13 @@ export const fieldWrapperStyles = cva(
           'hover:border-border-hover',
           // v13.3 SSOT canonical:focus-within !important(同 default + bare;
           // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
-          'data-[state=open]:border-border-hover',
+          // 2026-09-25:開啟中的 border-hover 同樣移到 error:false compound(error 開啟中走共用 error compound 的 error-hover)
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
       // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
-      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
+      // 開啟中 = 自己的 hover 框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
+      { mode: 'edit', variant: 'naked', error: false, className: 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`
@@ -269,6 +282,57 @@ export const bareInputStyles = [
   'group-data-[field-mode=disabled]/field:placeholder:text-fg-disabled',
   'group-data-[field-mode=disabled]/field:text-fg-disabled',
 ].join(' ')
+
+// ── 可打字的欄位:整個外框都是輸入處(2026-09-26,待辦總帳 N53③)────────────────────
+//
+// 規則 owner:`field-controls.spec.md`「點擊與游標原則」——「讓點擊穿透到底層的 input/select,確保使用者點擊
+// Field 內任何位置都能 focus/activate」;游標「input / select → `cursor-text` / `cursor-pointer`」。
+// 缺口:startIcon 這類元素靠 pointer-events-none 穿透,但**外框自己的內距與 1px 邊框**底下沒有 input 可以穿透 ——
+// 指到那裡外框變色(hover:border-border-hover),點下去輸入處卻不聚焦 =「亮著卻點不到」
+//(`ds-canonical/references/hit-area-canonical.md`「它要防的失敗是單向的:看到亮起來卻點不到」)。
+// Select / Combobox / TimePicker / PeoplePicker / Textarea 的外框本身就是點擊目標,沒有這個缺口(待辦總帳 N53 實測:點外框與內距都有反應);
+// 只有「外框包著一個 <input>」的可打字控件有:Input、NumberInput、LinkInput 編輯態 —— 三者一律消費這裡,不各寫一份。
+//
+// 做法 = 外框 onMouseDown:點在外框裡、而且不是外框裡另一個可操作的東西(行內動作鈕 / 連結 / 另一個輸入)→ 聚焦那個 input。
+// 用 mousedown + preventDefault、不用 click:click 之前焦點會先離開 input(blur → focus 閃一下、onBlur 驗證誤觸)。
+// 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
+// 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
+
+/**
+ * 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input。
+ * 另一個消費者:LinkInput 連結狀態的外框(點「不是這些東西」的地方 = 按鉛筆進入編輯,link-input.spec.md「Link 狀態」)。
+ * 兩處共用這一份清單,不各寫一份。
+ */
+export const FIELD_CHROME_OWN_TARGET =
+  'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
+
+/** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */
+export const FIELD_TEXT_ENTRY_CURSOR = 'cursor-text'
+
+/**
+ * 掛在可打字欄位外框的 onMouseDown:點外框內距 / 邊框 / 前置圖示 → 聚焦外框裡的 input。
+ * 不需要 ref:input 從外框自己找(三個宿主的 ref 接法各不同,NumberInput 直接轉發 ref)。
+ */
+export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): void {
+  if (event.button !== 0) return
+  const chrome = event.currentTarget
+  const input = chrome.querySelector<HTMLInputElement>('input:not([type="hidden"])')
+  if (!input || input.disabled) return
+  const target = event.target
+  if (!(target instanceof Element) || target === input) return
+  const own = target.closest(FIELD_CHROME_OWN_TARGET)
+  if (own && own !== chrome && chrome.contains(own)) return
+  event.preventDefault()
+  input.focus()
+  // 插入點落在點的那一側:點在輸入處右邊(右內距 / 右邊框)→ 放最後,左邊 → 放最前,與直接點在文字右側空白的原生行為一致。
+  // 上下內距不動它(focus() 會還原上次的選取)。type=number 沒有 selection API(selectionStart 為 null),跳過。
+  if (typeof input.selectionStart === 'number') {
+    const box = input.getBoundingClientRect()
+    const end = input.value.length
+    if (event.clientX >= box.right) input.setSelectionRange(end, end)
+    else if (event.clientX <= box.left) input.setSelectionRange(0, 0)
+  }
+}
 
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
 // SSOT canonical(M19 / 2026-05-05):cell-as-input naked variant 元件**所有內部

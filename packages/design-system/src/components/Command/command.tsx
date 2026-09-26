@@ -17,6 +17,14 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
+// 「列上有小按鈕的一串」鍵盤路線的唯一判定(與 Sidebar / TreeView / FileUpload 共用;見下方 routeCommandRowKeys)
+import {
+  isTextEntryElement,
+  listRovingControls,
+  removeRovingControlsFromTabOrder,
+  resolveRovingKey,
+  scopeRovingSelector,
+} from "@/design-system/lib/roving-list-keyboard"
 
 type CommandSize = 'sm' | 'md' | 'lg'
 
@@ -28,10 +36,121 @@ type CommandSize = 'sm' | 'md' | 'lg'
 /** CommandEmpty 把它的字串文字登記到根,根的 live region 才有東西可播(見 Command root 註解)。 */
 const EmptyTextContext = React.createContext<((text: string | null) => void) | null>(null)
 
+// ── 鍵盤:列上可聚焦的東西(2026-09-25 待辦總帳 B9「路線乙」)──
+// 決策出處 = governance/planning/2026-09-25-interaction-and-hover-remediation.md B9(該列點名「AI 面板對話紀錄列」與「多選找人頭像」,
+// 兩者都是 cmdk 清單的列),user 逐字(附條件同意,條件查證成立記在同列):「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」。
+// 規則 SSOT = ds-canonical/references/keyboard-model-canonical.md「列上有小按鈕的一串」;按鍵表住 command.spec.md「A11y」;
+// 判定 = lib/roving-list-keyboard.ts `resolveRovingKey`(2026-09-26 與 Sidebar / TreeView / FileUpload 四份合一,同檔〇節「按鍵規則合併」)。
+// 2026-09-25 前:列裡的東西(AgentPanel 歷史列的改名 / 刪除、SelectMenu 人員選項的頭像名片)每一個都各佔一站。
+//
+// cmdk 清單的「目前這一項」= 反白列(虛擬游標),DOM 焦點平常停在搜尋框(沒有搜尋框時停在清單)——這個位置叫 home。
+// 所以路線乙的「焦點在項目上」= 焦點在 home、反白在那一列(AI 推導)。判定與其他三個宿主同一份,只有**執行**不同
+// (反白由 cmdk 自己搬,本檔不代搬):
+//   - home 上只接「→ 進反白列的第一個東西」;其餘鍵(↑↓ / Home / End / Enter / 打字)全部照舊交給 cmdk 與搜尋框。
+//   - 列裡的東西上:換項類(↑↓ / Home / End)與 Tab 都是「回 home、**不擋預設**」—— cmdk 接著照常移反白 /
+//     瀏覽器接著從 home 往下 / 往上走一站 = 一下離開這一串(同 Sidebar 的 Tab)。
+//   - Enter / Space 在列裡的東西上屬於那個東西(按鈕照常啟動),不是「選這一列」—— cmdk 根的 Enter 要看 defaultPrevented 才不選列,
+//     所以這裡擋預設後自己 click 按鈕 / 連結(全 DS 唯一一處;AgentPanel 歷史列原本另寫一份,2026-09-26 收回這裡)。
+//   - Esc 不接(規範「本檔不規定」),照舊由外殼(Popover / Dialog)處理。
+// 只有列裡真的有可聚焦東西的清單才受影響;今天全 DS 只有 AgentPanel 歷史列與 SelectMenu 帶名片頭像的人員選項(PeoplePicker)。
+
+// 不用 `:is()`:舊版 jsdom(單元測試)不認得
+const COMMAND_ROW_CONTROLS_IN_ITEM = scopeRovingSelector('[cmdk-item]')
+
+/** 列裡的東西一律不在 Tab 路上。只在值不同時才寫(同值 setAttribute 也會產生 mutation,會讓 observer 自我觸發)。 */
+function syncCommandRowTabStops(root: HTMLElement) {
+  removeRovingControlsFromTabOrder(root.querySelectorAll<HTMLElement>(COMMAND_ROW_CONTROLS_IN_ITEM))
+}
+
+function routeCommandRowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
+  if (event.nativeEvent.isComposing) return
+  const root = event.currentTarget
+  const target = event.target as HTMLElement
+  const input = root.querySelector<HTMLInputElement>('[cmdk-input]')
+  const home = input ?? root.querySelector<HTMLElement>('[cmdk-list]') ?? root
+  const itemEl = target.closest('[cmdk-item]')
+  const atHome = !itemEl && (target === input || target.hasAttribute('cmdk-list') || target.hasAttribute('cmdk-root'))
+  if (!itemEl && !atHome) return
+  // 「這一項」:焦點在列裡時就是那一列;在 home 時是反白列
+  const current = itemEl ?? root.querySelector('[cmdk-item][data-selected="true"]')
+  const controls = current ? listRovingControls(current) : []
+  if (itemEl && !controls.includes(target)) return
+  const onInput = !itemEl && target === input
+  const action = resolveRovingKey({
+    key: event.key,
+    focus: itemEl ? 'control' : 'item',
+    controlCount: controls.length,
+    controlIndex: itemEl ? controls.indexOf(target) : -1,
+    controlIsTextEntry: !!itemEl && isTextEntryElement(target),
+    itemIsTextEntry: onInput,
+    caretAtEnd: onInput ? input!.selectionStart === input!.value.length && input!.selectionEnd === input!.value.length : true,
+    defaultPrevented: event.defaultPrevented,
+    metaKey: event.metaKey,
+    ctrlKey: event.ctrlKey,
+    altKey: event.altKey,
+    shiftKey: event.shiftKey,
+  })
+  // home 上:反白由 cmdk 管,本檔只接「→ 進反白列的第一個東西」
+  if (!itemEl) {
+    if (action.type === 'control') {
+      event.preventDefault()
+      controls[action.index]?.focus()
+    }
+    return
+  }
+  switch (action.type) {
+    case 'control':
+      event.preventDefault()
+      controls[action.index]?.focus()
+      return
+    case 'item':
+      event.preventDefault()
+      home.focus()
+      return
+    case 'consume':
+      event.preventDefault()
+      return
+    case 'item-prev':
+    case 'item-next':
+    case 'item-first':
+    case 'item-last':
+    case 'leave':
+      // 回 home、不擋預設:cmdk 接著移反白 / 瀏覽器接著從 home 往外走一站
+      home.focus()
+      return
+    case 'activate-control':
+      event.preventDefault()
+      if (target.matches('button, a[href]')) target.click()
+      return
+    default:
+      return
+  }
+}
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive> & { size?: CommandSize }
->(({ className, size, children, ...props }, ref) => {
+>(({ className, size, children, onKeyDown, ...props }, ref) => {
+  // 列上可聚焦東西的鍵盤路(B9,見上方 routeCommandRowKeys 段):根節點要拿來掛 observer
+  const rootRef = React.useRef<HTMLDivElement | null>(null)
+  const setRootRef = React.useCallback(
+    (el: HTMLDivElement | null) => {
+      rootRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
+    },
+    [ref],
+  )
+  // 列會隨搜尋過濾重掛、列裡的東西(如頭像名片)也可能自己重繪 → 用 observer 收,不靠某一次 render
+  React.useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    syncCommandRowTabStops(root)
+    if (typeof MutationObserver === 'undefined') return
+    const observer = new MutationObserver(() => syncCommandRowTabStops(root))
+    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['tabindex'] })
+    return () => observer.disconnect()
+  }, [])
   const inherited = useRowSize('md')
   // 0 筆結果的讀屏播報住在根(2026-09-09 user 核准「第二項如果確保是SSOT且不違背世界級的設計就照你建議做」):
   // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
@@ -43,10 +162,15 @@ const Command = React.forwardRef<
     <RowSizeProvider value={size ?? inherited}>
       <EmptyTextContext.Provider value={setEmptyText}>
         <CommandPrimitive
-          ref={ref}
+          ref={setRootRef}
+          // consumer 的 onKeyDown 先跑(它擋了預設就不接);再跑列上可聚焦東西的鍵盤路(B9);cmdk 自己的方向鍵處理最後跑
+          onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+            onKeyDown?.(event)
+            routeCommandRowKeys(event)
+          }}
           // @focus-suppress A — 程式游標:SelectMenu 非搜尋模式把 DOM 焦點放在 cmdk 殼上
           // (select-menu.tsx handleNonSearchableAutoFocus),cmdk 之後再把焦點搬到 [cmdk-list];
-          // 承擔者:CommandItem 的 data-[selected=true]:focus-ring-inset(command.tsx:331)畫在游標項上。
+          // 承擔者:CommandItem 的 data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)畫在游標項上。
           // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
           // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
           className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
@@ -158,7 +282,7 @@ const CommandList = React.forwardRef<
   <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
-        data-[selected=true]:focus-ring-inset(command.tsx:331)。 */}
+        data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)。 */}
     <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden outline-none", className)} {...props} />
   </ScrollArea>
 ))
@@ -338,6 +462,11 @@ const CommandItem = React.forwardRef<
         cursorByKeyboard
           ? 'data-[selected=true]:focus-ring-inset'
           : 'data-[selected=true]:bg-neutral-hover',
+        // @focus-suppress A — 焦點用 → 進到這一列裡的東西(按鈕 / 名片頭像,B9 路線乙,見上方 routeCommandRowKeys)時,
+        //   上一行畫在反白列上的鍵盤框讓給那個東西:一個項目只有一個指示器(focus-canonical「一個項目只有一個指示器」);
+        //   承擔者:被聚焦的那個東西自己的全域外描邊(styles/base.css `:focus-visible`)。
+        //   特異性 (0,3,0) 高過上一行的 (0,2,0),不靠 Tailwind 排序。
+        'data-[selected=true]:has-[:focus-visible]:outline-none',
         // 選中 × 互動疊加(owner:item-anatomy.spec.md「選中 × 互動疊加」,2026-08-11 user 拍板):
         // 選中底色釘住(指標反白也不變);鍵盤游標的框直接疊在上面。
         // 2026-09-08 之前這段只在 SelectMenu / AgentPanel 各手刻一份,CommandItem 自己的 `selected` 是死的。
@@ -406,7 +535,7 @@ export const commandMeta = {
   tokens: {
     bg: ['bg-divider', 'bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'], // 2026-07-04 補:CommandSeparator h-px bg-divider 實際消費
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

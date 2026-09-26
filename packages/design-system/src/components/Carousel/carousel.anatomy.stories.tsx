@@ -8,6 +8,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -125,22 +126,20 @@ const InspectorInner = () => {
     <div className="flex gap-6 items-start">
       {/* Left: preview + blueprint */}
       <div className="flex flex-col gap-5 min-w-[420px]">
+        {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項),取代手刻 pill
+            (待辦總帳 C12⑥;同 file-upload / aspect-ratio 設計規格的 Inspector 已改的寫法):手刻 pill 把平常的底色寫成
+            透明底專用的 neutral-hover、選中又自創 bg-primary + text-white 的第三種選中樣式,還用了原生 <button> 與 text-[12px] 裸值 */}
         <div className="flex items-center gap-3">
-          <span className="text-caption text-fg-muted">Arrow visibility:</span>
-          <button
-            type="button"
-            onClick={() => setSimulateHover(false)}
-            className={`px-2.5 py-1 text-[12px] font-mono rounded-md ${!simulateHover ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary'}`}
+          <span className="text-caption text-fg-muted">箭頭顯示:</span>
+          <SegmentedControl
+            size="sm"
+            aria-label="箭頭顯示"
+            value={simulateHover ? 'shown' : 'hidden'}
+            onValueChange={(v) => setSimulateHover(v === 'shown')}
           >
-            default(隱藏)
-          </button>
-          <button
-            type="button"
-            onClick={() => setSimulateHover(true)}
-            className={`px-2.5 py-1 text-[12px] font-mono rounded-md ${simulateHover ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary'}`}
-          >
-            hover / focus(顯示)
-          </button>
+            <SegmentedControlItem value="hidden">預設(隱藏)</SegmentedControlItem>
+            <SegmentedControlItem value="shown">滑過 / 聚焦(顯示)</SegmentedControlItem>
+          </SegmentedControl>
         </div>
 
         {/* Preview with forced hover */}
@@ -293,7 +292,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>focus-visible</Td>
                 <Td mono><TokenCell token="--surface" /></Td>
-                <Td mono>ring-2 ring-ring ring-offset-1</Td>
+                <Td mono>outline: 2px solid var(--ring),往外 2px(全域 :focus-visible 規則,無 class)</Td>
                 <Td mono>—</Td>
                 <Td mono>1(強制顯示 / a11y)</Td>
               </tr>
@@ -391,7 +390,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td mono>Dot inactive</Td>
                 <Td mono>6 × 6 px</Td>
-                <Td>小到不搶主視覺,大到仍可點擊(符合 minimum touch target 配合 hit-area)</Td>
+                <Td>小到不搶主視覺。6px 的點先天無法用指標瞄準,屬命中區規則的「線與點」例外:垂直擴到 24、水平各 ±3(dot 6 + gap 6 = 中心距 12,±3 恰相切零重疊,再寬必互搶點擊;carousel.tsx:408-410)。依據不是觸控最小尺寸——原文「符合 minimum touch target」已於 2026-09-24 撤回,本 DS 以滑鼠指標的精度為前提(ds-canonical/references/hit-area-canonical.md)</Td>
               </tr>
               <tr>
                 <Td mono>Dot active</Td>
@@ -511,7 +510,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible ring(`ring-2 ring-ring ring-offset-1`);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
+      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);dot focus-visible 同走全域外描邊(原生 `<button>`,不寫任何 class)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
     </div>
   ),
 }

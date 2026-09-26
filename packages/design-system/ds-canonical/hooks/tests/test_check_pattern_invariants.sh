@@ -215,6 +215,65 @@ const x = <button className="text-fg-muted hover:text-foreground" />
 '
 expect_exit "C.5.4 @hover-ramp-allow 豁免 → silent" 0 ""
 
+echo ""
+echo "=== C.6 selected token 狀態語意(2026-08-11 user 拍板;P0 BLOCK)==="
+
+# 負例:按壓專屬 -active 借到 hover 鏈(2026-07-05 D4 借 -active 裝反白的錨例形狀)→ BLOCK
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <div className="bg-neutral-selected hover:bg-neutral-selected-active" />
+'
+expect_exit "C.6.1 hover: 借用 -active → BLOCK" 2 "selected token 狀態語意"
+
+# 負例:焦點鏈上底色(-focus 已退役,鍵盤焦點只畫框)→ BLOCK
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <li className="focus-visible:bg-neutral-selected-active" />
+'
+expect_exit "C.6.2 focus-visible: 借用 -active → BLOCK" 2 "selected token 狀態語意"
+
+# 負例:虛擬游標反白(Radix data-highlighted)拿切換鈕專屬 -hover → BLOCK
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <div className="data-[highlighted]:bg-neutral-selected-hover" />
+'
+expect_exit "C.6.3 data-[highlighted]: 借用 -hover → BLOCK" 2 "selected token 狀態語意"
+
+# 正例:按壓鏈用 -active = 誕生語意 → silent
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <button className="bg-neutral-selected active:bg-neutral-selected-active" />
+'
+expect_exit "C.6.4 active: 用 -active 合法 → silent" 0 ""
+
+# 正例:切換鈕 pressed 上 hover 深一階 = -hover 唯一合法用途 → silent
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <button aria-pressed className="bg-neutral-selected hover:bg-neutral-selected-hover" />
+'
+expect_exit "C.6.5 hover:bg-neutral-selected-hover(切換鈕 pressed)合法 → silent" 0 ""
+
+# 豁免
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+// @token-state-allow: 第三方虛擬游標無法分流
+const x = <div className="hover:bg-neutral-selected-active" />
+'
+expect_exit "C.6.6 @token-state-allow 豁免 → silent" 0 ""
+
+# 2026-09-26 bug 形狀:輸入是含反引號的 template literal,而 hook 的訊息 heredoc 裡也有反引號。
+# 原本 heredoc 那行寫成兩個反斜線,反引號被當成指令替換 → 訊息在「例外」那行斷掉並印 syntax error。
+# 兩面都要守:仍必須 BLOCK,且 stderr 要有完整的例外提示行(反引號原樣)、不得出現 shell 錯誤字樣。
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const cls = `flex items-center hover:bg-neutral-selected-active ${extra}`
+const x = <div className={cls} />
+'
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+  && printf '%s' "$STDERR_TEXT" | grep -qF 'selected token 狀態語意' \
+  && printf '%s' "$STDERR_TEXT" | grep -qF '例外:行尾 `// @token-state-allow: <reason>`' \
+  && ! printf '%s' "$STDERR_TEXT" | grep -qiE 'syntax error|command not found|unexpected EOF'; then
+  echo "  PASS  C.6.7 反引號輸入 → BLOCK 且訊息完整(例外提示行原樣、無 shell 錯誤)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  C.6.7 反引號輸入 → BLOCK 且訊息完整 (exit $EXIT)"
+  echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - C.6.7 反引號輸入訊息完整"
+fi
+
+echo ""
 echo "=== Output contract ==="
 
 # Multiple independent warnings must be aggregated into one exact envelope.

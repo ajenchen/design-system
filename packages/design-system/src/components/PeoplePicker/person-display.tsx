@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, AVATAR_DISMISS_OVERLAY_PX, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { useTableIsScrolling } from '@/design-system/components/Field/field-context'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -112,6 +112,8 @@ function PersonAvatar({
   className = '',
   style,
   disabled = false,
+  stacked = false,
+  dismissCutout = false,
 }: {
   person: PersonData
   size?: 'sm' | 'md' | 'lg'
@@ -123,6 +125,10 @@ function PersonAvatar({
    *  PeoplePicker disabled 分支無 fieldCtx,Avatar self-dim 搆不到,host 補)。
    *  對齊 people-picker.spec.md「disabled:灰化整個 field,不可互動」。 */
   disabled?: boolean
+  /** 頭像堆疊裡的一項 → 轉給 Avatar `stacked`(挖空;avatar.spec.md「頭像堆疊(疊在一起時)」) */
+  stacked?: boolean
+  /** 右上浮著移除 ×(AvatarDismissOverlay)→ 轉給 Avatar `dismissCutout`(× 顯示時把它底下連縫挖掉) */
+  dismissCutout?: boolean
 }) {
   const isTableScrolling = useTableIsScrolling()
   const nameCard = React.useMemo(
@@ -137,6 +143,8 @@ function PersonAvatar({
       className={cn(className, disabled && 'opacity-disabled')}
       style={style}
       hoverCard={nameCard}
+      stacked={stacked}
+      dismissCutout={dismissCutout}
     />
   )
 }
@@ -174,7 +182,10 @@ PersonDisplay.displayName = 'PersonDisplay'
 
 // ── Multi Person Display ────────────────────────────────────────────────────
 // 多人堆疊:avatar 重疊(-2px),不顯示人名。
-// 第一個 avatar z-index 最高(在最上面),依此類推。
+// 第一個 avatar z-index 最高(在最上面),依此類推;+N 在最下面。
+// 疊在一起的地方用挖空分開(不是外圈):幾何與層次都消費 Avatar 的頭像堆疊 SSOT
+//(`AVATAR_STACK_CLASS` / `AVATAR_STACK_ITEM_CLASS` + `avatarStackItemStyle` + Avatar `stacked` + OverflowIndicator circle;avatar.spec.md「頭像堆疊(疊在一起時)」、
+// people-picker.spec.md §D row 1)。
 // 溢出時顯示 +N 指示器,hover 出 tooltip 列出溢出的人(avatar + 人名)。
 
 function MultiPersonDisplay({
@@ -302,9 +313,11 @@ function MultiPersonDisplay({
 
   // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識):outer items-start + avatar stack
   // 鎖 first-line baseline(整 stack 是 prefix slot,h-[1lh] 對齊 first line)。
+  // 項目總數含 +N(它是最後一項、在最下層)。
+  const stackCount = visible.length + (overflow > 0 ? 1 : 0)
   return (
     <span ref={containerRef} className="inline-flex items-start min-w-0">
-      <ItemPrefix className="!justify-start"><span className="inline-flex items-center min-w-0">
+      <ItemPrefix className="!justify-start"><span className={cn('inline-flex items-center min-w-0', AVATAR_STACK_CLASS)}>
       {visible.map((person, i) => {
         // **2026-05-07 v15.11 Bug D 升級 SSOT**:visible avatar 也支援 inline dismiss
         // (對齊 user directive「avatar = tag」)。Dismiss overlay 走 `AvatarDismissOverlay`
@@ -312,11 +325,11 @@ function MultiPersonDisplay({
         // 都用同一視覺 — 紅圈 X 對齊 avatar 右上,hover/focus-visible 才顯。
         const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
         return (
-          <span key={person.name + i} className={`relative inline-flex group/avatar ${i > 0 ? '-ml-0.5' : ''}`} style={{ zIndex: visible.length - i }}>
+          <span key={person.name + i} className={cn(AVATAR_STACK_ITEM_CLASS, 'group/avatar')} style={avatarStackItemStyle(i, stackCount)}>
             <PersonAvatar
               person={person}
               size={size}
-              className="ring-2 ring-[var(--surface)]"
+              stacked
               disabled={disabled}
             />
             {handleDismiss && <AvatarDismissOverlay onRemove={handleDismiss} label={person.name} />}
@@ -324,10 +337,11 @@ function MultiPersonDisplay({
         )
       })}
       {overflow > 0 && (
+        // +N 也是堆疊的一項:包一層 item,結構與頭像項目相同(item > 觸發點 > 圓),挖空才對得上。
+        <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, stackCount)}>
         <OverflowIndicator
           count={overflow}
           size={size}
-          className="ring-2 ring-[var(--surface)] -ml-0.5"
         >
           {hidden.map((person, i) => (
             <Tag
@@ -353,6 +367,7 @@ function MultiPersonDisplay({
             </Tag>
           ))}
         </OverflowIndicator>
+        </span>
       )}
       </span></ItemPrefix>
     </span>
@@ -365,8 +380,9 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //
 // **Visual canonical**(對齊 DS new token `--surface-strong`):
 //   - **12×12 圓**(固定,不隨 field size 變)
-//   - **bg `--surface-strong`**(neutral-6),hover → `--surface-strong-hover`
-//     (light=neutral-5 / dark=neutral-7,跨 mode 對稱)
+//   - **bg `--surface-strong`**(neutral-6-opaque),hover → `--surface-strong-hover`(自己的配對 = 下一階,
+//     color.spec.md「Hover 換色配對總則」)。兩個主題都是 neutral-7-opaque:淺 #BFBFBF→#8C8C8C 變深、
+//     深 #737373→#A6A6A6 變亮(semantic.css Surface 段)。2026-09-25 更正:原註解寫「light=neutral-5」與實值不符。
 //   - **X icon size=12 strokeWidth=3**(icon 跟底色一樣大,對齊 checkbox checkmark
 //     sm/md stroke 規格;2026-06-12 同步 checkbox 2026-05-18 簡化 3.5→3,SSOT →
 //     packages/design-system/ds-canonical/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)
@@ -387,22 +403,19 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
       onClick={(e) => { e.stopPropagation(); onRemove() }}
       data-collection-remove
       aria-label={`移除 ${label}`}
+      // **Position(2026-05-07 v15.15 user-confirmed)**:asymmetric top -1px / right -4px — field padding-y
+      // (4px sm/md)緊 → top 只 -1px 安全;padding-x 12px 寬鬆 → right 凸 4px 達 badge canonical visual。
+      // 對齊 ClickUp 世界級 idiom(asymmetric offset by avatar/field size constraint)。
+      // 幾何只有一個住所 `AVATAR_DISMISS_OVERLAY_PX`(avatar.tsx):Avatar 用同一組數字在頭像上挖 × 底下的洞。
+      style={{ top: AVATAR_DISMISS_OVERLAY_PX.top, right: AVATAR_DISMISS_OVERLAY_PX.right, width: AVATAR_DISMISS_OVERLAY_PX.size, height: AVATAR_DISMISS_OVERLAY_PX.size }}
       className={[
-        // **Position(2026-05-07 v15.15 user-confirmed)**:asymmetric `-top-px -right-1`
-        // (top -1px / right -4px)— field padding-y(4px sm/md)緊 → top 只 -1px 安全;
-        // padding-x 12px 寬鬆 → right 凸 4px 達 badge canonical visual。對齊 ClickUp
-        // 世界級 idiom(asymmetric offset by avatar/field size constraint)。
-        'absolute -top-px -right-1 z-10',
+        'absolute z-10',
         'inline-flex items-center justify-center',
-        // **12×12 + 2px white ring**(SSOT match stacked avatar,Slack/Material/iOS
-        // notification badge 2px ring canonical)。改用 `[box-shadow:...]` 而非 `ring-2`
-        // 避免跟焦點指示在 tailwind-merge 衝突(同 ring family
-        // override 互殺)。
-        // **2026-09-07 訂正**:原註解寫「也不被 focus-visible ring 蓋掉(不同 layer)」——
-        // 實測相反(當時焦點還走 ring 通道)。兩者最終都寫同一個 CSS `box-shadow` 屬性,而帶偽類的那條
-        // 帶偽類、特異性較高 → 聚焦當下白環**整層被藍環取代**。
-        // 這不是缺陷(聚焦時本來就該讓焦點指示器出線),但註解不能寫成相反的事實。
-        'w-3 h-3 rounded-full [box-shadow:0_0_0_2px_var(--surface)]',
+        // **12×12,與底下頭像之間的縫是從頭像上挖出來的**(Avatar `dismissCutout`,由 PersonAvatarTag 傳;2026-09-26 待辦總帳 N49):
+        // 此前是 `[box-shadow:0 0 0 2px var(--surface)]` 畫一圈當縫,深色 `--surface` 半透明 → 在頁面 / 卡片 / 滑過列上各是一圈錯色;
+        // 挖空露出真正的底,不需要知道底色(同 avatar.tsx 狀態圓點 / 計數徽章 / 頭像堆疊)。
+        // 聚焦時的藍框由全域 `:focus-visible` 外描邊畫,不再與白環搶同一個 box-shadow 屬性。
+        'rounded-full',
         // bg-surface-strong = neutral-6-opaque / hover = neutral-7-opaque(both modes,
         // step-7 dark 公式自動 lighter → engaged 跨 mode 對稱)
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
@@ -416,7 +429,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
         // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
         // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
-        'transition-opacity duration-150 motion-reduce:duration-0',
+        // 瞬間出現,不寫 transition-opacity(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))。
       ].join(' ')}
     >
       <X size={12} strokeWidth={3} aria-hidden />
@@ -429,11 +442,15 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
 // (那是 pill mode),改 render 此元件 — Avatar overlap 視覺 + AvatarDismissOverlay。
 // 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.13)。
 //
-// **架構**(v15.13 重構):本元件**不自包** `group/avatar` / `-ml-0.5` overlap wrapper,
+// **架構**(v15.13 重構):本元件**不自包** `group/avatar` / `-ml-[var(--avatar-stack-overlap)]` overlap wrapper,
 // 因 Combobox `tagRenderer` 結果會被內部 `<div shrink-0>` 包成 measurement wrapper
 // (useOverflowCount 必要)。把 overlap + group 拉到 Combobox 的 `tagWrapperClassName`
 // 上,sibling-level overlap + group selector 才能正確 chain → AvatarDismissOverlay 的
 // `group-hover/avatar:opacity-100` 才會通。
+//
+// **挖空(2026-09-26)**:本元件拿不到自己是第幾顆,但不需要 —— Avatar `stacked` 的挖空由結構決定
+//(所在 wrapper 前面有看得見的堆疊項目才挖;Combobox 量寬時 `hidden` 的 wrapper 不算),
+// 見 avatar.tsx「頭像堆疊」段、people-picker.spec.md §D row 1。
 function PersonAvatarTag({
   person, size = 'md', onRemove,
 }: {
@@ -443,7 +460,7 @@ function PersonAvatarTag({
 }) {
   return (
     <>
-      <PersonAvatar person={person} size={size} className="ring-2 ring-[var(--surface)]" />
+      <PersonAvatar person={person} size={size} stacked dismissCutout={!!onRemove} />
       {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
     </>
   )

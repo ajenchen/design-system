@@ -5,7 +5,7 @@ description: Systematic audit of this design system for world-class quality. Run
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=47; assumptionFingerprint=sha256:776c82f5031b9682bfb321d9d7e2a9736b9a006f6197edb4fff5d3fe9fe67849; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=55; assumptionFingerprint=sha256:d6e5f7ac42c3042c8ef29775bf76cc686dbb6a3e31714b723ba0e0d36f166bad; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 

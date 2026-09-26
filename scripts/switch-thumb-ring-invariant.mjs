@@ -20,11 +20,20 @@
  * 事故二(dark mode 白疊白讓白圓從 15.5 變 19.5px)當時就是靠人眼加臨時探針抓到的,
  * 日後尺寸再經由別的機制走鐘不會有任何閘紅。這裡量**渲染出來的連續純白寬度**,
  * 只在 unchecked + enabled 上量(checked 的勾選圖示會把白色段切斷;disabled 套 opacity 後不是純白)。
+ *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
+ * Storybook 回報渲染完成(含 play)+ render-health + 字型,才數這則 story 有沒有 Switch。
+ * **刻意不等版面靜止(settleFrames)**:這裡渲染完成後只數 Switch,幾何要等切 theme + 過渡之後才量。
+ * 實測(2026-09-25,164 則):「渲染完成當下」與「再等連續 5 影格靜止」數到的 Switch 數逐則相同;渲染完成後還在變的
+ * 只有 agentpanel / chart 的 overview(都沒有 Switch),而等靜止會讓整趟多 25–30 秒(這個 job 釘在 15 分鐘)。
+ * 取代原本「load(失敗被 `.catch(() => {})` 吞掉)+ 等根節點有子元素 5 秒(逾時也吞掉)+ 固定睡 80ms」:
+ * 舊寫法在 story 開不起來時數到 0 個 Switch → 當成「這則沒有 Switch」靜靜跳過,164 則少掃幾則不會有任何訊號(M37)。
+ * 現在任何一則開不起來 = 儀器失效:點名 story、附同源 404、整次 exit 2 —— 不是產品裁決,`--selftest` 下也不算「對照組如預期紅」。
+ * 「渲染完成且健康、確實沒有 Switch」照舊跳過:那是確定的事實(這支閘掃全 DS 就是為了蓋到組合 story),不是沒量到。
  */
 import { PNG } from 'pngjs'
-import { launchBrowser } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { readFileSync } from 'node:fs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { join } from 'node:path'
 
 const args = process.argv.slice(2)
@@ -35,6 +44,8 @@ const TOLERANCE = 8 // 每通道 /255;截圖有子像素抗鋸齒,取樣點又�
 const WHITE_DISC_BY_THUMB = { 20: 16, 24: 20 }
 const DISC_TOLERANCE = 1
 
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼)。原本直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
+requireStorybookBuild(join(root, 'index.json'))
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 4 })
@@ -53,7 +64,9 @@ if (selftest) {
 
 // 掃全 DS 的「設計規格」三支固定 story(跟 hover-color-pair 同一套列舉),
 // 不預先過濾元件名 —— Switch 出現在 form / field / settings 等組合 story 裡也要蓋到。
-const index = JSON.parse(readFileSync(join(root, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const index = readServedStorybookIndex(server)
 const allIds = Object.entries(index.entries)
   .filter(([id, e]) => e.type === 'story' && /--(state-behavior|overview|size-matrix)$/.test(id))
   .map(([id]) => id)
@@ -62,6 +75,8 @@ const allIds = Object.entries(index.entries)
 const ids = selftest ? allIds.filter((id) => /switch|field|form|setting/i.test(id)) : allIds
 const violations = []
 const discViolations = []
+/** 開不起來的 story(儀器失效,不是產品裁決);任何一則都讓整次 exit 2 */
+const instrumentFails = []
 let sampled = 0
 let discSampled = 0
 
@@ -69,16 +84,23 @@ const px = (png, x, y) => { const i = ((y * png.width) + x) << 2; return [png.da
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= TOLERANCE)
 
 for (const id of ids) {
-  // `load` 比 `networkidle` 早很多(164 支從 2分23秒降到 48 秒,取樣數不變 44),但它不保證 story 已渲染。
-  // 所以改成等「story 根節點真的有子節點」——快,而且不會在較慢的機器上量到空頁面而假裝沒有 Switch。
-  await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'load' }).catch(() => {})
-  await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 5000 }).catch(() => {})
-  await page.waitForTimeout(80)
+  // 不用 `networkidle`(164 支 2分23秒)也不用「load + 根節點有子節點」(代理):等 Storybook 自己的渲染完成訊號 ——
+  // 快,而且在較慢的機器上只會等久一點,不會量到空頁面而假裝沒有 Switch。
+  try {
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { notFound: server.notFound })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.error(`✗ ${error.message}`)
+    instrumentFails.push({ id, detail: error.detail })
+    continue
+  }
   // 這支 story 沒有 Switch 就直接跳過:切 theme + 等過渡每支要 ~0.5s,164 支裡只有少數有 Switch,
   // 不跳過的話光等待就多花 ~1.5 分鐘,CI 的 15 分鐘 job 會被撐爆(2026-09-12 實際被 cancel 過一次)。
+  // (此時 story 已確定渲染完成且健康,0 個是事實不是沒量到)
   if (await page.locator('[role="switch"]').count() === 0) continue
   for (const theme of ['light', 'dark']) {
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+    // 等切 theme 之後的 transition-colors 走完(Switch 早已在畫面上,等的是顏色過渡,別量到中間值)
     await page.waitForTimeout(250)
     for (const el of await page.locator('[role="switch"]').all()) {
       const geo = await el.evaluate((n) => {
@@ -130,6 +152,13 @@ await page.mouse.move(2, 2)
 await browser.close(); await server.stop()
 
 console.log(`掃過 ${ids.length} 個 story,取樣 ${sampled} 個 (switch × theme × hover) 組合;其中 ${discSampled} 個量了白色圓直徑`)
+if (instrumentFails.length > 0) {
+  // 沒量到 ≠ 沒問題:有 story 開不起來,這次的綠 / 對照組的紅都不成立 —— 儀器失效(exit 2),不是產品裁決
+  console.error(`✗ 儀器失效:${instrumentFails.length} / ${ids.length} 個 story 開不起來(沒量到,不是產品裁決,也不算通過${selftest ? ';對照組結果不成立' : ''}):`)
+  for (const f of instrumentFails.slice(0, 20)) console.error(`  ${f.id}:${f.detail}`)
+  if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
+  process.exit(2)
+}
 if (sampled === 0) { console.error('✗ 取樣數 0 —— 這支閘什麼都沒驗到,視同紅燈(不是綠燈)'); process.exit(1) }
 if (selftest) {
   // 對照組把外圈塗白 → 顏色不變式必紅,而且白色圓會從 16 脹到 20(外圈也變白)→ 尺寸不變式也必紅。
