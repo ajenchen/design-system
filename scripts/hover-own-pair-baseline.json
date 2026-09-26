@@ -16,18 +16,6 @@
       "kind": "pending",
       "reason": "showLine=false 時靜止線由消費端畫(面板邊界線 / 外框),本元件只在滑過時把 --border-hover 畫在同一個像素上 —— 與上一筆是同一題(分隔線的滑過值),一起拍板"
     },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-blue-2)]", "rest": "bg-[var(--color-blue-1)]", "kind": "pending", "reason": "Calendar 事件方塊:色相 step-1 淡底沒有 semantic 滑過配對,現行直接換 primitive step-2(深色主題變暗)。方向(calendar.spec.md「Hover tile 微暗化」/ 飽和色兩主題變亮 / 中性家族淺深反向)與值待 user 拍板,拍板後新增配對 token" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-green-2)]", "rest": "bg-[var(--color-green-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-deep-orange-2)]", "rest": "bg-[var(--color-deep-orange-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-yellow-2)]", "rest": "bg-[var(--color-yellow-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-red-2)]", "rest": "bg-[var(--color-red-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-orange-2)]", "rest": "bg-[var(--color-orange-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-amber-2)]", "rest": "bg-[var(--color-amber-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-lime-2)]", "rest": "bg-[var(--color-lime-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-turquoise-2)]", "rest": "bg-[var(--color-turquoise-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-indigo-2)]", "rest": "bg-[var(--color-indigo-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-purple-2)]", "rest": "bg-[var(--color-purple-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
-    { "file": "tokens/categorical-color.ts", "hover": "hover:bg-[var(--color-magenta-2)]", "rest": "bg-[var(--color-magenta-1)]", "kind": "pending", "reason": "同 blue(Calendar 事件方塊滑過值待拍板)" },
     {
       "file": "components/Sidebar/sidebar.tsx",
       "hover": "data-[active=true]:hover:bg-neutral-selected",

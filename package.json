@@ -198,6 +198,7 @@
     "peer:evidence-pack": "node scripts/build-peer-evidence-pack.mjs",
     "test:dialog-height": "node scripts/dialog-height-invariant.mjs",
     "test:token-creation": "node scripts/token-creation-invariant.mjs",
+    "test:categorical-color": "node scripts/categorical-color-invariants.mjs && node scripts/test-categorical-color-invariants.mjs",
     "test:hover-color-pair": "node scripts/hover-color-pair-invariant.mjs",
     "test:hover-latency-policy": "node scripts/test-hover-latency-policy.mjs"
   },

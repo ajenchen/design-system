@@ -93,6 +93,10 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
+          # 色相色票(2026-09-26 接進 PR 檢查;原本只在夜間 harness):名實一致 / 完整性 / token 存在 / 實心字對比,
+          # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
+          # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
+          npm run test:categorical-color
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。

@@ -33,5 +33,28 @@ try {
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS')
 
+// 4) I5 色階順序對照組(2026-09-26):把深色 step-2 換回舊公式(往純黑退 l×0.28)的 primitives 副本
+//    —— 寫在暫存目錄、用環境變數指過去,不動 repo 檔 → I5 必紅;原檔 → I5 必綠(上面第 1 步已含)
+{
+  const { mkdtempSync, rmSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const { tmpdir } = await import('node:os')
+  const prim = readFileSync('packages/design-system/src/tokens/color/primitives.css', 'utf8')
+  const OLD_STEP2 = ') calc(l * 0.28) calc(c * 0.65) h);'
+  const poisoned = prim.replace(/\) l c h \/ calc\(0\.18 \/ l\)\);/g, OLD_STEP2)
+  if (poisoned === prim) { console.error('✗ I5 注入 no-op(深色 step-2 公式未命中)'); process.exit(1) }
+  const dir = mkdtempSync(join(tmpdir(), 'cat-color-'))
+  try {
+    const file = join(dir, 'primitives.css')
+    writeFileSync(file, poisoned)
+    const r = spawnSync(process.execPath, ['--', 'scripts/categorical-color-invariants.mjs'], { stdio: 'pipe', env: { ...process.env, CATEGORICAL_COLOR_PRIMITIVES: file } })
+    const out = String(r.stdout) + String(r.stderr)
+    if ((r.status ?? 1) === 0 || !/✗ I5 \| dark /.test(out)) { console.error('✗ 深色 step-2 退回舊公式後 I5 未紅(色階順序 detection 失效)'); ok = false }
+    else console.log('✓ 深色 step-2 退回舊公式 → I5 紅')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

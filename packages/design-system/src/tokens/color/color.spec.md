@@ -30,7 +30,10 @@
 | 概念 | 是否需要 mode 知識 | 該住哪一層 |
 |------|------------------|----------|
 | **靜態色值**（subtle bg、text、solid bg） | ❌ Primitives 公式翻轉已自動處理 | **Primitive**——直接 `--color-blue-1`、`--color-blue-7`、`--color-blue-6` |
-| **互動狀態**（hover、active） | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
+| **實心色的互動狀態**(step-6 家族的 hover、active) | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
+| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;`primitives.css` 檔頭) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆事件方塊,`tokens/categorical-color.ts` `CAT_EVENT`) |
+
+> 2026-09-26 範圍更正(user 同意,條件「確保這符合我們一致的設計語言且不違背世界級的設計」):原表把「互動狀態」一律寫成「hover 永遠較亮」,實際只對實心色成立 —— 淡底與中性灰的滑過在淺色本來就是變深(本檔「Hover 換色配對總則」:往上一階)。淡底滑過改成第 1→2 階後,深色第 2–4 階同步改成半透明淡底,兩個主題的第 2 階都是「離底更遠一格」,不需要 mode 知識,依本檔「只有真的需要切換主題的東西才開 semantic token」直接用 primitive,不另開 12 個 `--{hue}-subtle-hover`。
 
 兩個概念**本來就不該綁在同一層**。Tailwind 也這樣分離：`bg-blue-500`（靜態，scale step）vs `hover:bg-blue-600 dark:hover:bg-blue-400`（互動，需要 consumer 處理 mode）。差別只在於 Atlassian 流派把 mode swap 封裝進 token 裡，consumer 不需要寫 dark variant。
 
@@ -281,7 +284,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 |-------|---------|------|------|
 | `--text-selection` | `bg-text-selection` | blue-5 @ 30% 半透明 | 文字反白(`::selection`)底色;全域樣式住 `styles/base.css`,只動底色不動字色 |
 | `--search-match` | `bg-search-match` | amber-3 | 頁內搜尋(Ctrl+F 類)**所有配對**的行內底色 |
-| `--search-match-current` | `bg-search-match-current` | amber-5(dark:amber-4) | 配對中**目前這一筆**(find 游標所在) |
+| `--search-match-current` | `bg-search-match-current` | amber-5(dark:amber 基準色 45% 半透明,2026-09-26 起) | 配對中**目前這一筆**(find 游標所在) |
 
 設計依據(2026-08-28 拍板):
 
@@ -289,7 +292,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 - **搜尋雙檔制**是編輯器/瀏覽器普世慣例:VS Code `editor.findMatchBackground`(「Color of the current search match」)與 `editor.findMatchHighlightBackground`(「Color of the other search matches」)兩 token 分立;琥珀/黃族底色 = 瀏覽器原生 find 慣例
 - **對階**:amber-3 / -5 對齊 Radix scale 語意 step 3 =「UI element background」/ step 5 =「Active / Selected UI element background」(https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale);行內 highlight 鐵約束 = 文字保持原色可讀 → 底色停留亮階(≤ step 5)
 - **為何字尾是 `-current` 不是 `-active`**:`-active` 在本系統 = 按壓語意且映射第 7 階(`--amber-active` = amber-7,見「互動狀態推導」),同字不同映射會破壞一致性;`current` 取自 VS Code 官方描述原詞
-- **Dark**:`--text-selection` / `--search-match` 由 primitive 階梯公式自動反轉(1–5 變深)免 override;`--search-match-current` **需降一階覆寫 amber-4**——數學驗收(oklch→sRGB→WCAG)dark amber-5 配白字對比 3.03 過不了 4.5,amber-4 = 5.89 ✓ 且與 amber-3 區辨 1.86 優於 light 的 1.31。全組量測:light 反白 11.41 / amber-3 12.21 / amber-5 9.82;dark 反白 13.04 / amber-3 10.97 / amber-4 5.89(皆 ≥ 4.5)
+- **Dark**:`--text-selection` / `--search-match` 由 primitive 階梯公式自動換值免 override(2026-09-26 起深色 amber-3 是半透明淡底,卡片上 `#5F4A28`、白字 8.41);`--search-match-current` **需覆寫**——dark amber-5 配白字對比 3.03 過不了 4.5;原本用 amber-4(5.89),深色 step-2..4 改成淡底後 amber-4 與 amber-3 區辨只剩 1.21 → 改 `color-mix(in oklch, var(--color-amber-6) 45%, transparent)`:卡片上 `#81622D`、白字 5.65 ✓、與全部配對區辨 1.49(light 1.30)。light 量測不變:反白 11.41 / amber-3 12.21 / amber-5 9.82
 
 ```tsx
 <mark className="bg-search-match text-inherit">報表</mark>          // 一般配對
@@ -497,14 +500,21 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 #### Dark mode subtle
 
-Light mode 的 step-1 使用不透明色票。Dark mode 的 step-1 在 primitives 中使用 alpha 公式自動計算：
+**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors(深色 1 → 12 由暗到亮)、Ant Design 深色色板(混進 `#141414`)、Primer display 色階同一派。另一派(Material 色調、Carbon、Tailwind、Atlassian 色板)號碼是絕對深淺、深色主題另挑號碼 —— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。)
+
+Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先混好等於在真的底上混)。Dark mode 的 **step-1..4 = 淡底區,同一條 alpha 公式**:
 
 ```css
-/* primitives.css dark mode */
---color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l));
+/* primitives.css dark mode:K = 0.06 × (n+1) → step-1..4 = 0.12 / 0.18 / 0.24 / 0.30 */
+--color-{hue}-{n}: oklch(from var(--color-{hue}-6) l c h / calc(K / l));
 ```
 
-`α = 0.12 / l`：亮度越高的色相 alpha 越低，在 dark canvas 上感知亮度自動統一。所有色相用同一套公式，無需在 semantic 層額外覆寫。
+- **為什麼半透明**:深色有頁面 / 卡片 / 浮層 / 滑過中的格四種底,只有半透明能在每一種底上都保持「號碼越大離底越遠」;不透明的淡階放在頁面上比底亮、放在卡片上反而比底暗(2026-09-26 前 step-2..4 往純黑退 `l × 0.28 / 0.44 / 0.62`,12 色的 step-2 全比 step-1 暗、10 色比卡片底還暗 → 月曆事件深色滑過變近黑)。
+- **除以 l**:亮度越高的色相 alpha 越低,感知亮度自動統一;比例 1 : 1.5 : 2 : 2.5 ≈ Radix 深色 alpha 中位數 1 : 1.50 : 1.91 : 2.33。
+- **新色相門檻**:深色 base-6 的 `l ≥ 0.52`(低於此值紫藍、紅一帶在滑過中的格上會出現 step-4 > step-5)。
+- **step-5..10 不變**:step-5 是深色的按壓色(實心,`l × 0.82`),step-7..10 往白推(文字方向)。
+- **機械防線**:`scripts/categorical-color-invariants.mjs`「色階順序」—— 12 色 × 10 階 × 淺白 / 淺滑過格 / 深頁面 / 卡片 / 浮層 / 滑過格,淺色號碼越大越暗、深色號碼越大越亮,且深色每一階都比底亮。
+- 淡底只能當淡底:半透明會透出底下的東西,不能拿來當需要蓋住下層的顏色(本檔「Drop target」段)。
 
 ## 互動狀態推導（Hover / Active）
 
@@ -759,6 +769,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | inverse 底上的透明子元素 | `--inverse-neutral-hover` | `--inverse-neutral-active`(「`--inverse-*` namespace」段) |
 | `--primary` / `--info` / `--error` / `--success` / `--warning`(step-6) | `--{名}-hover` | `--{名}-active`(「互動狀態推導」段) |
 | 12 色相實心底 `--color-{hue}-6` | `--{hue}-hover` | `--{hue}-active`(「`--{hue}-hover/active`」段) |
+| 12 色相淡底 `--color-{hue}-1` | `--color-{hue}-2`(同色離底更遠一格;淺色變深、深色變亮 —— 「Dark mode subtle」段的色階原則,2026-09-26)—— 月曆事件方塊 | 無 |
 
 **`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-secondary-hover` / `--color-secondary-active`(= 同名 semantic token 的 alias),只為產出 `bg-secondary-hover` / `bg-secondary-active` utility(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改 `--secondary-hover` / `--secondary-active`。
 

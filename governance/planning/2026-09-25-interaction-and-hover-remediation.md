@@ -117,6 +117,17 @@ user 原話(本 session):「你繼續處理所有任務直到完美收尾，但�
 - 深色色票:user「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？你仔細查查是否是這樣，以及是否要因此調整你的提案？仔細研究」→ 研究中(W5 palette:世界級一手 + 全 12 色 × 10 階 × 3 底對比量測 + 大圖)。
 - 進度條:user「你那張圖稿太大張解析度很差，我根本看不清楚你的提案，仔細研究給我完美提案」→ **AI 錯**:把 7 張圖合成一張長圖,縮小後看不清。研究中(W5 bar:世界級一手 + 規範逐條 + 每案一張大圖與放大圖)。
 
+### 09-26 第四輪研究結果(W5,底稿 session scratch `im/W5/`)
+
+- 寫入清單 user 選「同意，寫入」→ 已提交 `1e0d4545`、推預覽。驗證:build／型別／Storybook 0、governance PASS、靜態閘 59/60(剩 story 清單隨提交)、hook 96/96(滿載逾時一次、單跑通過)、瀏覽器閘 13 支全綠。
+- 深色色票:user 的說法「號碼越大、對比越高、深色越亮」對本 DS 成立(世界級分兩派:甲 號碼 = 與底色的對比、深色反轉 —— Spectrum 原文「As the color token name increases in number … the color value's contrast with the background also increases … lighter in dark themes」、Radix、Ant、Primer display;乙 絕對色板 —— Material、Carbon、Tailwind、Atlassian;本 DS 屬甲)。整條梯只壞在深色第 2 階(與部分第 3 階);提案公式不變(深色第 1–4 階 α = 0.06×(n+1)/l),補:新色相深色基準 l ≥ 0.52、色階順序機器檢查、規格改寫成原則本身。另案:淡底上的字(第 7 階)提案後深色滑過 7 色 < 4.5。待 user 選。
+- 進度條:八家世界級都不會「同色焦點框壓在貼邊細進度條上」;WCAG 沒有「框不可蓋內容」的條文,依據是 DS 自己的規則。甲(上移 2px)填色黏在同色框上、違 DateGrid 先例;乙 遮框、違「零裁切零遮蓋」;丙 開第四種框退距、違 `focus-canonical.md:218`;丁 聚焦換色、違 `:188-196`、`:225`。推薦戊:只有框亮時進度條讓出 4px(框 2 + 縫 2),平常 74 張圖 0 像素差(Primer ActionList 聚焦時收起分隔線為前例)。待 user 選。
+
+### 09-26 第五輪
+
+- 深色色票:user「確保這符合我們一致的設計語言且不違背世界級的設計就照你建議做」→ **已做**:深色 step-2..4 改半透明淡底(`primitives.css` 36 行 + 檔頭寫成原則「號碼 = 離所在底色多遠」)、深色 `--search-match-current` 改 amber 45% 半透明、`color.spec.md` 範圍更正(「hover 永遠較亮」只管實心色)+「Dark mode subtle」段改寫 + 配對一覽加「12 色相淡底」、`calendar.spec.md`「Hover tile」、`categorical-color.ts` 註解;`categorical-color-invariants.mjs` 新增 I5 色階順序(舊色票 48 項紅、新色票全綠,meta-test 含對照組)並接進 PR CI;`hover-own-pair` 認得「淡底 step-1 → step-2」、移除 12 筆待拍板。實測真月曆:淺色滑過變深、深色滑過變亮(6/6)。L2 列舊說法「只改 categorical-color.ts」作廢。
+- 進度條:user「有沒有一種可能是維持現狀但是讓進度條壓在鍵盤焦點之上？仔細研究」→ 即研究中的乙案,待以大圖回答後再問。
+
 ### 真的需要 user 決定的(目前)
 
 | id | 題目 | 狀態 |

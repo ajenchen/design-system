@@ -432,7 +432,7 @@ export const FunctionalHighlight: Story = {
           排定下週產出。
         </p>
         <span className="block text-caption text-fg-muted">
-          全部配對 <code>bg-search-match</code>(amber-3)/ 目前這一筆 <code>bg-search-match-current</code>(amber-5)— 雙檔制對齊 VS Code find 與瀏覽器原生慣例
+          全部配對 <code>bg-search-match</code>(amber-3)/ 目前這一筆 <code>bg-search-match-current</code>(淺色 amber-5;深色 amber 基準色 45% 半透明)— 雙檔制對齊 VS Code find 與瀏覽器原生慣例
         </span>
       </section>
     </div>

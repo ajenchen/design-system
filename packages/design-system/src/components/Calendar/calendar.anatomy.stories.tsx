@@ -197,7 +197,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Hover tile</Td>
                   <Td mono>{HOVER_EVENT_CLASS_GUIDE}</Td>
-                  <Td>同色深一階表示可點擊(事件方塊可點時)</Td>
+                  <Td>同色濃一階(淺色變深、深色變亮)表示可點擊(事件方塊可點時)</Td>
                 </tr>
                 <tr>
                   <Td>唯讀的事件(readOnlyEvents)</Td>
@@ -227,7 +227,7 @@ export const StateBehavior: Story = {
         <div>• <b>today</b> cell:date 數字加 `bg-info text-on-emphasis rounded-full` 圓</div>
         <div>• <b>outside month</b>:前後月日期數字走淡字 `text-fg-muted`,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
         <div>• <b>多事件 cell</b>:超出 3 則的 event 顯示「+N more」</div>
-        <div>• <b>event hover</b>:tile 切同色深一階 `hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
+        <div>• <b>event hover</b>:tile 切同色濃一階(淺色變深、深色變亮)`hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
         <div>• <b>唯讀</b>(`readOnlyDates` / `readOnlyEvents`,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見「設計原則 — 唯讀的日期格與事件」)</div>
       </div>

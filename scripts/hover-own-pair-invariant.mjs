@@ -157,6 +157,14 @@ export function readPairTable(semanticCss, primitivesCss) {
   // 色相:淺色 hover = step-5、按壓 = step-7,底 = step-6(color.spec.md「互動狀態推導」)
   const pairs = pairsFor('hover', 5)
   const pressPairs = pairsFor('active', 7)
+  // 色相淡底(2026-09-26):step-1 的滑過 = 同色 step-2(色階號碼 = 離所在底色多遠,淺色變深、深色變亮,兩主題同向;
+  // color.spec.md 配對一覽「12 色相淡底」、「Dark mode subtle」段)。只給彩色色相;中性灰走 --neutral-* 家族。
+  for (const name of primitive.keys()) {
+    const hm = name.match(/^--color-([a-z-]+)-6$/)
+    if (!hm || hm[1].startsWith('neutral')) continue
+    const hue = hm[1]
+    if (primitive.has(`--color-${hue}-1`) && primitive.has(`--color-${hue}-2`)) pairs.set(`--color-${hue}-2`, `--color-${hue}-1`)
+  }
   const layers = new Map([...readLayers(primitivesCss), ...readLayers(semanticCss)])
   return { defined, bridge, pairs, pressPairs, layers }
 }
@@ -599,6 +607,8 @@ export function selftest(table, log = console.log) {
     ['cva 不同 variant 值互斥', `const v = cva('', { variants: { variant: { primary: ['bg-primary', 'hover:bg-primary-hover'], text: ['bg-transparent', 'hover:bg-neutral-hover'] } } })`, 0],
     ['twMerge 後寫者勝(選中時後面的釘住蓋掉前面的透明配對)', `const a = cn('hover:bg-neutral-hover', isSelected && 'bg-neutral-selected hover:bg-neutral-selected')`, 0],
     ['色相 hover 配 step-6 實心底', `const a = 'bg-[var(--color-blue-6)] hover:bg-[var(--blue-hover)]'`, 0],
+    ['色相淡底 step-1 滑過配同色 step-2(月曆事件方塊,2026-09-26)', `const a = 'bg-[var(--color-blue-1)] hover:bg-[var(--color-blue-2)]'`, 0],
+    ['色相淡底滑過換到別的色相', `const a = 'bg-[var(--color-blue-1)] hover:bg-[var(--color-red-2)]'`, 1, /--color-red-1/],
     ['區域變數不判(Tag dismiss)', `const a = 'bg-transparent group-hover/action:bg-[var(--dismiss-hover)]'`, 0],
     ['帶透明度修飾不判(圖片上的圓點)', `const a = 'bg-on-emphasis/60 hover:bg-on-emphasis/80'`, 0],
     ['--surface-strong 配自己的 -hover(person-display)', `const a = ['bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover'].join(' ')`, 0],

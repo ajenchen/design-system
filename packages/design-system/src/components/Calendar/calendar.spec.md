@@ -168,7 +168,7 @@ interface CalendarEvent {
 
 - **一般 event(timed)**:事件色相 subtle 底 + 對應文字色(消費 categorical-color SSOT,與 Tag / Avatar 共用 12 色相),單行 truncate
 - **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條 + 字重略強,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
-- **Hover tile**:事件方塊可點時 hover 微暗化表示可點擊;`readOnlyEvents` 時不亮(改用不帶滑過的同一組色 `CAT_SUBTLE`)、不是按鈕
+- **Hover tile**:事件方塊可點時滑過換成同色濃一格(淡底 step-1 → step-2;淺色變深、深色變亮 —— 色階號碼 = 離所在底色多遠,`../../tokens/color/color.spec.md`「Dark mode subtle」;2026-09-26 前深色 step-2 往純黑退,滑過變近黑);`readOnlyEvents` 時不亮(改用不帶滑過的同一組色 `CAT_SUBTLE`)、不是按鈕
 - **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字(對齊 Google Calendar),目前不可點擊(點擊展開 popover 列表為後續增量)
 
 完整 cell + event tile 的 class / token 對照見 anatomy `ColorMatrix` story。
