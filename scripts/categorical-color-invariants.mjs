@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: 12 色相的 categorical map 名實一致、無漏色相、引用的 token 都存在、實心底的字對比 ≥ 3:1,
+ *         而且色階號碼 = 離所在底色多遠(淺色號碼越大越深、深色號碼越大越亮,每一種底上都成立,深色每一階都比底亮)。
+ *   紅: 把某色相偷換成別的色相 → I1 指名該 map 與色相並紅;把深色 step-2 退回往純黑退的舊公式 → I5 指名色相、底與哪兩階並紅
+ *       (test-categorical-color-invariants.mjs 兩組對照都跑)。
+ *   綠: 現行色票全綠。不是抽籤 —— 純靜態解析 primitives.css / semantic.css / categorical-color.ts 並用固定公式算色,
+ *       沒有瀏覽器、沒有時間相依,同一份 worktree 重複跑結果恆等。
+ */
 // categorical-color-invariants.mjs — 守 categorical 色相 SSOT 的 4 條不變條件:
 //   (I1) 1:1 名實一致(零 offset):map 的 key X 的值只能引用 X 的色相 token
 //        ——`--color-X-*`(bg/border/text)或 `--X-hover` / `--X-active`(互動)。

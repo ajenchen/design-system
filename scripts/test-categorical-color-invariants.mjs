@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: categorical-color-invariants 這支閘在該紅的時候真的會紅(不是恆綠),且現行檔案下是綠的。
+ *   紅: 閘對「色相偷換」或「深色 step-2 退回舊公式」任一種注入沒有紅 → 印出哪一組對照失效並 exit 1。
+ *   綠: 現況綠、兩組注入都紅、還原後綠。不是抽籤 —— 注入是固定字串替換(色相注入寫回原檔並在 finally 還原;
+ *       色階注入寫在暫存目錄、用環境變數指過去,不動 repo 檔),重複跑結果恆等。
+ */
 // meta-test for categorical-color-invariants — 注入已知違規 → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
 // 驗 I1 名實一致(零 offset):map 的 key X 值只能引用 --color-X-*;把 CAT_SUBTLE.blue 的
 // bg token 從 --color-blue-1 偷換成 --color-red-1(categorical-vs-semantic 混淆的真實故障模式)
