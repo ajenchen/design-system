@@ -135,6 +135,15 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 (`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
 (「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
+## Stack Gap 與 Avatar Stack Overlap(2026-09-27 抽 token,M17)
+
+| Token | 值 | 用法 |
+|-------|-----|------|
+| `--stack-gap` | 2px | 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值:全域焦點框往外畫的間隙(`styles/base.css` `:focus-visible` outline-offset)、頭像堆疊 / 狀態圓點 / 計數徽章 / 移除 × 的挖空縫(`avatar.tsx`)、上傳列進度條與焦點框之間的縫(`file-item.tsx`)、步驟條外圈與圓之間的縫(`steps.tsx`)。抽 token 前是 6 處字面值 |
+| `--avatar-stack-overlap` | 2px | 頭像堆疊第 2 顆起往左疊的量(`avatar.tsx` 遮罩幾何與項目位移、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`)。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份 |
+
+**命名原則**:兩者都是跨元件的幾何值,住 uiSize(與 `--field-px` 同「跨元件共享值才進 token」判準);不帶元件名的 `--stack-gap` 因為它不屬於任何一個元件。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+
 ## Table Row
 
 DataTable 行高。density 切換統一 +0.5rem (+8px)。
@@ -467,17 +476,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## 模式切換
 
-初始狀態在 `index.html` 設定：
-
-```html
-<html data-density="md">
-```
-
-動態切換：
-
-```ts
-document.documentElement.setAttribute('data-density', 'lg')
-```
+初始狀態在 `index.html` 設定 `<html data-density="md">`;動態切換 `document.documentElement.setAttribute('data-density', 'lg')`。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
