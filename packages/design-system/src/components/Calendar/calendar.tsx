@@ -63,7 +63,7 @@ export interface CalendarEvent {
 //   可點(預設)= 必傳回調;長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
 //   唯讀      = 寫 `readOnlyDates` / `readOnlyEvents`、**不可以**傳回調;不是按鈕、滑過不變、游標不變。
 // 先前(2026-09-25 批次)把兩個回調改成無條件必填,等於規定月曆一定可點,與「沒有新增功能的月曆格子不亮」相反(C15),已撤回。
-// 命名:沿用 DS 既有的 `readOnly`(Rating `readOnly`「唯讀(無 hover / click 響應)」、Field 家族 readonly 模式),
+// 命名:沿用 DS 既有的 `readOnly`(Rating `readOnly`「唯讀:…不響應 hover / click / 鍵盤」、Field 家族 readonly 模式),
 // 加上作用對象 —— 日期格與事件方塊是兩個獨立的點擊目標,要能分開宣告(內容排程月曆:事件點得開、日子不能點來新增)。
 
 /** 日期格(整格 + 日期數字)可點與否。不單獨匯出:consumer 一律用 CalendarProps(root barrel 只列 CalendarProps / CalendarEvent)。 */

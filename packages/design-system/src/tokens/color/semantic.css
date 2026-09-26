@@ -448,7 +448,7 @@
      搜尋雙檔制 = VS Code findMatchBackground(current)/ findMatchHighlightBackground(others)普世慣例;
      amber-3 / -5 對階 Radix step 3(UI element bg)/ step 5(Active/Selected bg);行內文字保持原色
      → 底色停亮階,故 -current 不取 -active 映射的第 7 階(--amber-active 已佔且 -active = 按壓語意)。
-     Dark:-selection / -match 由 primitive 公式自動反轉;-current 需降一階覆寫 amber-4
+     Dark:-selection / -match 由 primitive 公式自動換值;-current 需覆寫(amber 基準色 45% 半透明,見 dark 區塊)
      (dark amber-5 白字對比 3.03 < 4.5,詳 dark 區塊註解)。 */
   --text-selection:       color-mix(in oklch, var(--color-blue-5) 30%, transparent);
   --search-match:         var(--color-amber-3);

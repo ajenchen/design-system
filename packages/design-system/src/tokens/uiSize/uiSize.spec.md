@@ -46,7 +46,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;icon 走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」段 + 本檔「跨 regime pointer index」carve-out row) |
+| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;可以點的星走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier;唯讀精簡版「★ 數值」的星走 icon tier(同 Button icon + label)— 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」+「唯讀精簡版」段 + 本檔「跨 regime pointer index」carve-out row) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -189,7 +189,7 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star | `components/Rating/rating.spec.md:85` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
+| Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |

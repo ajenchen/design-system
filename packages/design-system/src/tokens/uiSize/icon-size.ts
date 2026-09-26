@@ -36,7 +36,7 @@
  * 3. Audit Dim「Icon size literal compliance」DS-wide audit-time scan(write-time hook 尚未實作 — 改靠 audit-time + mindset)
  *
  * ── Carve-out(不適用本 SSOT)──
- * - `rating.spec.md` Rating star 20/24/24(identity scale,cite Ant/Material/Airbnb)
+ * - `rating.spec.md` Rating 可以點的星 20/24/24(identity scale,cite Ant/Material/Airbnb;唯讀精簡版「★ 數值」的星走本 tier)
  * - `avatar.spec.md` Avatar 內 icon `round_even(size × 0.6)`(Material/Apple HIG)
  * - `empty.tsx` Empty 用 Avatar 48 wrap → icon 28(Avatar formula derived)
  * - `file-viewer.tsx` thumb 64 → icon 20(thumbnail file-type indicator,hardcode 無公式)
