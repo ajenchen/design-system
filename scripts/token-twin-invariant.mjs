@@ -61,16 +61,18 @@ export function judge(pairs, readText) {
 }
 
 function selftest() {
-  const good = { 'a.css': ':root { --stack-gap: 2px; --avatar-stack-overlap: 2px; }', 'b.ts': 'export const STACK_GAP_PX = 2\n', 'c.tsx': 'export const AVATAR_STACK_OVERLAP_PX = 2\n' }
+  // 夾具用自己的名字(FIXTURE_*),不寫真 token 的名字:同名常數閘(scripts 全掃,連註解都掃)會把
+  // 夾具裡「真名 = 別的值」那一行當成第二份不同值的常數而紅(2026-09-27 CI 抓到)。
+  const good = { 'a.css': ':root { --fixture-gap: 2px; --fixture-overlap: 2px; }', 'b.ts': 'export const FIXTURE_GAP_PX = 2\n', 'c.tsx': 'export const FIXTURE_OVERLAP_PX = 2\n' }
   const pairs = [
-    { css: 'a.css', cssVar: '--stack-gap', ts: 'b.ts', tsConst: 'STACK_GAP_PX' },
-    { css: 'a.css', cssVar: '--avatar-stack-overlap', ts: 'c.tsx', tsConst: 'AVATAR_STACK_OVERLAP_PX' },
+    { css: 'a.css', cssVar: '--fixture-gap', ts: 'b.ts', tsConst: 'FIXTURE_GAP_PX' },
+    { css: 'a.css', cssVar: '--fixture-overlap', ts: 'c.tsx', tsConst: 'FIXTURE_OVERLAP_PX' },
   ]
   const cases = [
     ['現行:兩對都相等 → 綠', good, true],
-    ['注入:JS 改成 3、CSS 仍 2 → 紅', { ...good, 'b.ts': 'export const STACK_GAP_PX = 3\n' }, false],
-    ['注入:CSS 改成 4px、JS 仍 2 → 紅', { ...good, 'a.css': ':root { --stack-gap: 4px; --avatar-stack-overlap: 2px; }' }, false],
-    ['注入:CSS 宣告被改名(讀不到)→ 紅(儀器失效,不是通過)', { ...good, 'a.css': ':root { --stack-gap-px: 2px; --avatar-stack-overlap: 2px; }' }, false],
+    ['注入:JS 改成 3、CSS 仍 2 → 紅', { ...good, 'b.ts': 'export const FIXTURE_GAP_PX = 3\n' }, false],
+    ['注入:CSS 改成 4px、JS 仍 2 → 紅', { ...good, 'a.css': ':root { --fixture-gap: 4px; --fixture-overlap: 2px; }' }, false],
+    ['注入:CSS 宣告被改名(讀不到)→ 紅(儀器失效,不是通過)', { ...good, 'a.css': ':root { --fixture-gap-px: 2px; --fixture-overlap: 2px; }' }, false],
     ['注入:TS 檔不在 → 紅', { 'a.css': good['a.css'], 'c.tsx': good['c.tsx'] }, false],
   ]
   let ok = true

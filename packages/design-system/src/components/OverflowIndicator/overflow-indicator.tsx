@@ -20,14 +20,14 @@ import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/to
  * 改用 tagVariants 直接套樣式。
  */
 
-const triggerSize: Record<string, string> = {
-  sm: 'h-5 min-w-5',
-  md: 'h-6 min-w-6',
-  lg: 'h-6 min-w-6',
-}
-// 與 triggerSize 同值的 px(h-5 = 20 / h-6 = 24)。circle 形狀接在頭像堆疊尾端時,
-// 挖空的幾何 = 左邊那顆頭像的直徑;堆疊契約是「同尺寸」(avatar.spec.md「頭像堆疊」),所以取自己的高。
-const triggerPx: Record<string, number> = { sm: 20, md: 24, lg: 24 }
+/**
+ * @internal
+ * circle 形狀每個尺寸的直徑(px)。高與最小寬直接讀這裡(inline style),不再另寫一份 `h-5 / h-6` class
+ * (2026-09-27 前是 class 與數字各一份,M17)。circle 接在頭像堆疊尾端時,挖空的幾何 = 左邊那顆頭像的直徑;
+ * 堆疊契約是「同尺寸」(avatar.spec.md「頭像堆疊」),所以取自己的直徑。PeoplePicker 量寬用的 +N 寬也從這裡來
+ *(`avatar-stack-overflow.ts` AVATAR_STACK_OVERFLOW_CHIP_PX 直接指向本常數)。
+ */
+export const OVERFLOW_INDICATOR_CIRCLE_PX: Record<'sm' | 'md' | 'lg', number> = { sm: 20, md: 24, lg: 24 }
 
 const triggerText: Record<string, string> = {
   sm: 'text-[10px]',
@@ -95,7 +95,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
 
 const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorProps>(
   function OverflowIndicator(
-    { count, shape = 'circle', size = 'md', children, className, ...props },
+    { count, shape = 'circle', size = 'md', children, className, style, ...props },
     ref,
   ) {
     if (count <= 0) return null
@@ -113,6 +113,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         // 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;
         // hit-area-canonical.md 滑過原則三-1「不能讓人以為點下去會做事」)
         className={cn(tagVariants({ color: 'neutral', size }), 'cursor-default', className)}
+        style={style}
         {...props}
       >
         <span className="px-1">+{count}</span>
@@ -133,16 +134,16 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         className={cn(
           'relative shrink-0 rounded-full inline-grid place-content-center',
           'text-foreground font-medium leading-none cursor-default', // 同上方 tag 形狀:只浮出名單,點了沒作用 → 不用手形
-          triggerSize[size],
           triggerText[size],
           className,
         )}
+        style={{ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size], ...style }}
         {...props}
       >
         <span
           aria-hidden
           className={cn('absolute inset-0 rounded-full bg-secondary', AVATAR_STACK_CUTOUT_CLASS)}
-          style={avatarStackCutoutStyle(triggerPx[size])}
+          style={avatarStackCutoutStyle(OVERFLOW_INDICATOR_CIRCLE_PX[size])}
         />
         <span className="relative">+{count}</span>
       </span>

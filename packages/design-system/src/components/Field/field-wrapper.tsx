@@ -291,6 +291,8 @@ export const bareInputStyles = [
 // 指到那裡外框變色(hover:border-border-hover),點下去輸入處卻不聚焦 =「亮著卻點不到」
 //(`ds-canonical/references/hit-area-canonical.md`「它要防的失敗是單向的:看到亮起來卻點不到」)。
 // Select / Combobox / TimePicker / PeoplePicker / Textarea 的外框本身就是點擊目標,沒有這個缺口(待辦總帳 N53 實測:點外框與內距都有反應);
+// DatePicker.Range 的外框 2026-09-27 起也是(起訖是兩顆鈕、沒有 input 可聚焦,點外框改成開離指標最近那一段,自己寫在 date-picker.tsx;
+// 09-27 全面稽核實測抓到它是這一族漏掉的第 7 處);
 // 只有「外框包著一個 <input>」的可打字控件有:Input、NumberInput、LinkInput 編輯態 —— 三者一律消費這裡,不各寫一份。
 //
 // 做法 = 外框 onMouseDown:點在外框裡、而且不是外框裡另一個可操作的東西(行內動作鈕 / 連結 / 另一個輸入)→ 聚焦那個 input。

@@ -1113,9 +1113,28 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             data-state={open ? 'open' : 'closed'}
             className={cn(
               fieldWrapperStyles({ mode: 'edit', width, size, error }),
-              'cursor-text',
+              // 外框本身就是點擊目標(下方 onMouseDown),點了會開面板 → 手形(hit-area-canonical.md 一-3);
+              // 2026-09-27 前寫 `cursor-text`,但起訖是兩顆按鈕、不能打字,文字游標是錯的
+              'cursor-pointer',
               className,
             )}
+            // 外框的內距與 1px 邊框底下沒有按鈕:指到那裡外框會亮(hover:border-border-hover),2026-09-27 前點下去
+            // 什麼都不發生 = 「亮著卻點不到」(hit-area-canonical.md 一-1)。同家族 Select / Combobox / TimePicker /
+            // PeoplePicker 的外框本身就是點擊目標(field-wrapper.tsx「點外框 = 點輸入處」註解),這裡補齊:
+            // 點在外框裡、不是任何控件上 → 開離指標最近的那一段(起訖兩顆鈕中線為界)。規則與出處住 date-picker.spec.md「結構」段。
+            // 用 mousedown + preventDefault 而非 click:click 之前焦點會先落到外框、再跳到按鈕,閃一下(同 field-wrapper.tsx 的理由)。
+            onMouseDown={(e) => {
+              if (e.button !== 0) return
+              const target = e.target as HTMLElement
+              if (target.closest('button, a, input, [role="button"]')) return
+              const s = startBtnRef.current?.getBoundingClientRect()
+              const en = endBtnRef.current?.getBoundingClientRect()
+              const mid = s && en ? (s.right + en.left) / 2 : Number.POSITIVE_INFINITY
+              const which = e.clientX <= mid ? 'start' : 'end'
+              e.preventDefault()
+              ;(which === 'start' ? startBtnRef : endBtnRef).current?.focus()
+              openWithActive(which)
+            }}
             {...props}
           >
             {/* 兩端截斷 tooltip:恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md

@@ -30,6 +30,7 @@
  */
 
 import { AVATAR_STACK_OVERLAP_PX } from '@/design-system/components/Avatar/avatar'
+import { OVERFLOW_INDICATOR_CIRCLE_PX } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 
 /**
  * Pure deterministic visible-count formula for avatar stack with overlap + overflow chip.
@@ -84,7 +85,8 @@ export function getAvatarStackVisibleCount({
 }
 
 /**
- * Map size token to avatar pixel(對齊 person-display.tsx:80 AVATAR_PX SSOT)。
+ * 人員頭像每個尺寸的直徑(px)—— 與 Tag 高度對齊:sm=20px, md/lg=24px(對齊 item-anatomy AVATAR_SIZE.inline)。
+ * 這裡是唯一住所:person-display.tsx 的 `AVATAR_PX` 直接指向它(2026-09-27 前兩檔各寫一份,M17)。
  */
 export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
   sm: 20,
@@ -93,11 +95,7 @@ export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
 }
 
 /**
- * Default overflow chip width per size(對齊 overflow-indicator.tsx:17 triggerSize SSOT)。
- * shape='circle' → h-{5|6} min-w-{5|6} ≈ 20-24px
+ * +N 圓的直徑 = OverflowIndicator circle 形狀自己的尺寸(唯一住所在 overflow-indicator.tsx),
+ * 不再另抄一份(2026-09-27 前是第三份同值)。堆疊契約「同尺寸」讓它與 AVATAR_STACK_AVATAR_PX 逐尺寸相等。
  */
-export const AVATAR_STACK_OVERFLOW_CHIP_PX: Record<'sm' | 'md' | 'lg', number> = {
-  sm: 20,
-  md: 24,
-  lg: 24,
-}
+export const AVATAR_STACK_OVERFLOW_CHIP_PX = OVERFLOW_INDICATOR_CIRCLE_PX

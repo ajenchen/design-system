@@ -87,9 +87,9 @@ function buildPersonProfileCard(person: PersonData): React.ReactNode {
 }
 
 // ── Avatar Size ─────────────────────────────────────────────────────────────
-// 與 Tag 高度對齊:sm=20px, md/lg=24px(對齊 item-anatomy AVATAR_SIZE.inline)
-
-const AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = { sm: 20, md: 24, lg: 24 }
+// 唯一住所在 avatar-stack-overflow.ts `AVATAR_STACK_AVATAR_PX`(與 Tag 高度對齊:sm=20px, md/lg=24px);
+// 這裡只是別名,不再另寫一份(2026-09-27,M17)。
+const AVATAR_PX = AVATAR_STACK_AVATAR_PX
 
 // ── PersonAvatar ────────────────────────────────────────────────────────────
 // Consume DS `Avatar` primitive(2026-04-22 refactor,M1 SSOT consumption)+ 預設 ProfileCard

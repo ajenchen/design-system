@@ -174,6 +174,8 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input,點任一個都開 Popover **並設定 activeEnd**)、中間 `ArrowRight` icon(`mx-2`,`text-fg-muted`)、右側固定 `CalendarIcon`。Active 端點視覺以 `data-active-end="true"` underline 標示(對齊 Ant RangePicker active input 視覺)。
 
+**外框本身就是點擊目標(2026-09-27)**:外框的內距與 1px 邊框底下沒有按鈕,指到那裡外框會亮(`hover:border-border-hover`),此前點下去什麼都不發生 =「亮著卻點不到」(`ds-canonical/references/hit-area-canonical.md` 一-1;09-27 全面稽核實測抓到,是 N53 那一族漏掉的第 7 處)。規則:點在外框裡、不是任何控件上 → **開離指標最近的那一段**(以起訖兩顆鈕的中線為界:左半開起始日、右半開結束日),焦點落在該鈕;外框游標一般手形(它會開面板,不能打字 —— 此前的 `cursor-text` 是錯的)。同家族 Select / Combobox / TimePicker / PeoplePicker 的外框本身就是點擊目標(`field-wrapper.tsx`「點外框 = 點輸入處」註解),本條只是補齊漏網。世界級同向:Ant RangePicker 整個外框掛 `onClick`(rc-picker `src/PickerInput/Selector/RangeSelector.tsx` 根節點 `onClick={onClick}` → `RangePicker.tsx` `onSelectorClick` → `triggerOpen(true)`;mousedown 時 `preventDefault` 讓焦點留在輸入處)、Carbon DatePicker 走 flatpickr `clickOpens: !readOnly`(`packages/react/src/components/DatePicker/DatePicker.tsx`);React Aria 的 hook 原始碼路徑本次抓不到,未驗證。〔做法由 AI 提出;user 09-27 對「甲 點外框 = 開那一段」答「確保符合我們一致的設計語言且不違背世界級的設計就照你建議」,條件式同意,條件核對如上〕
+
 ### Active-end 機制(canonical 2026-05-02,對齊 Ant Design RangePicker)
 
 對齊 Ant Design 實證(WebFetch react-component/picker source code 2026-05-03):**input-click 切換 activeEnd**,而**非** footer toggle / radio 按鈕。
