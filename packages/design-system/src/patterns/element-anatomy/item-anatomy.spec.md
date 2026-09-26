@@ -192,20 +192,15 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
 
-
 ### 這一節在回答什麼(先講目的)
 
 **目的只有一個:拿到一份「列」的設計需求時,不必看任何既有元件,就能推出它該長什麼樣、怎麼操作。**
 
-它要防的失敗是具體的:DS 裡已經有 `SidebarMenuButton`(列自己是一顆按鈕)與 `FileItem`
-(列不是按鈕、鍵盤由一顆隱形控件承接)兩種做法。沒有這一節,下一個人建新列元件時
-**只能挑一個看起來像的來抄**,而抄錯的那一半會在無障礙與鍵盤上靜默壞掉。
+它要防的失敗是具體的:DS 裡已經有 `SidebarMenuButton`(列自己是一顆按鈕)與 `FileItem`(列不是按鈕、鍵盤由一顆隱形控件承接)兩種做法。沒有這一節,下一個人建新列元件時**只能挑一個看起來像的來抄**,而抄錯的那一半會在無障礙與鍵盤上靜默壞掉。
 
 ### ⛔ 2026-09-24 重寫:先前這一節是從實作切入的
 
-原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——
-**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因。」
-把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
+原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因。」把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
 
 ---
 
@@ -224,19 +219,14 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **一組去處(導覽)**:使用者對它做的唯一的事是**去那裡**。項目本身沒有被操作的價值,只有被抵達的價值。它由產品定義,使用者不能改動它。
 - **一組東西(資料)**:項目本身就是**被操作的對象**。使用者會挑它、對它做事、看它的狀態。它通常由使用者產生,而且能被改動。
 
-**判斷句**:問「使用者對這一項**做**什麼?」——
-答「去某個地方」= 去處;答「挑它、然後對它做某件事」= 東西。
+**判斷句**:問「使用者對這一項**做**什麼?」——答「去某個地方」= 去處;答「挑它、然後對它做某件事」= 東西。
 
 ### 第二層(只對「一組東西」問):使用者會不會把這一整串當成**一個東西**來操作?
 
-- **會** —— 會一次挑好幾個一起處理、會在裡面搬移、項目多到需要快速跳。
-  → 它在使用者心中就是**一個東西**,所以鍵盤上也該是一個東西:整串一個停靠點,進去之後用方向鍵。
-- **不會** —— 每一筆各自處理,彼此沒有「一起」的概念。
-  → 每一筆各自獨立,各自一個停靠點。
+- **會** —— 會一次挑好幾個一起處理、會在裡面搬移、項目多到需要快速跳。→ 它在使用者心中就是**一個東西**,所以鍵盤上也該是一個東西:整串一個停靠點,進去之後用方向鍵。
+- **不會** —— 每一筆各自處理,彼此沒有「一起」的概念。→ 每一筆各自獨立,預設各自一個停靠點;但**列上帶小按鈕的一串**(側欄、FileUpload 內建檔案清單…)因停靠點太多另收成一站 —— 那是第二個理由,規則與適用範圍只住 `keyboard-model-canonical.md`「列上有小按鈕的一串」(2026-09-25 待辦總帳 B9)。
 
-**這一層的完整判準(五條)與一手依據住在 `ds-canonical/references/keyboard-model-canonical.md`**,
-本節不重述。那五條講的是同一件事的可操作版本:節點會不會被選取並施加動作、
-需不需要那一整套鍵盤、深度有沒有上界、內容是不是使用者產生且可改動、啟動會不會換 URL。
+**這一層的完整判準(五條)與一手依據住在 `ds-canonical/references/keyboard-model-canonical.md`**,本節不重述。那五條講的是同一件事的可操作版本:節點會不會被選取並施加動作、需不需要那一整套鍵盤、深度有沒有上界、內容是不是使用者產生且可改動、啟動會不會換 URL。
 
 ### 第三層(對每一列問):這一列除了主要動作,還有沒有別的動作?
 
@@ -255,7 +245,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 |---|---|---|
 | 這一列裡有**必須被唸出來的狀態**(進度、頭像、多段說明) | 列**不能**是一顆按鈕 —— 按鈕裡的東西會被輔助科技當成裝飾唸掉,進度百分比會消失 | ARIA `button` 的 Children Presentational:"The DOM descendants are presentational. User agents SHOULD NOT expose descendants of this element through the platform accessibility API." |
 | 這一列裡有**可以聚焦的子元素** | 列**不能**是一顆按鈕 —— 直接踩 content model 明文 | WHATWG HTML `<button>`:"Phrasing content, but there must be no interactive content descendant and **no descendant with the `tabindex` attribute specified**." |
-| 這一列是「一個東西的一部分」(第二層答「會」) | 列拿 `treeitem` / `option` / `gridcell`,而且**不自己當鍵盤停靠點**;鍵盤所有權上移到容器 | WAI-ARIA §4.3.1:"Authors MUST manage focus on the following container roles";`composite`:"SHOULD ensure that a composite widget exists as a single navigation stop" |
+| 這一列是「一個東西的一部分」(第二層答「會」) | 列拿 `treeitem` / `row` / `option` / `gridcell`,**整組只有一個鍵盤停靠點**,由容器管理焦點(列上 roving tabindex,或容器 `aria-activedescendant`) | WAI-ARIA §4.3.1:"Authors MUST manage focus on the following container roles";`composite`:"SHOULD ensure that a composite widget exists as a single navigation stop" |
 | 列不是按鈕、又必須可鍵盤操作 | 列內鋪一顆**覆蓋整列的原生控件**;它不可見,所以焦點框改畫在列上 | 焦點框畫在別的元素上的規則 → `ds-canonical/references/focus-canonical.md` |
 
 **先前那一版把上表第一、二列寫成「第 2 題」,等於用 HTML 的限制當設計判準。** 已撤回。
@@ -269,41 +259,26 @@ list item 元件都是要用類似的處理方式?」
 | | `SidebarMenuButton` | `FileItem` | `TreeItem` |
 |---|---|---|---|
 | **第一層:去處還是東西?** | **一組去處** —— 每條通往不同頁面,使用者對它做的唯一的事是「去那裡」 | **一組東西**,但不是一個整體 —— 每個檔案是被操作的對象(有狀態、有動作),但使用者不會把它們當成一個東西一起處理 | **一組東西,而且是一個整體** —— 使用者會一次挑好幾個、在裡面搬移、項目多到需要快速跳 |
-| **列裡有沒有必須被念出來的狀態 / 可聚焦子元素?**(實作後果) | **沒有** —— 只有圖示與文字,所以列可以是一顆按鈕 | **有** —— 進度條(自帶 `role="progressbar"`)、頭像、可聚焦的 hover 按鈕,所以列**不能**是按鈕 | 不適用 —— 第一層已經決定它是一個整體,列拿 `treeitem` |
-| **誰承接鍵盤?**(實作後果) | **列本身**(它就是那顆 `<button>`)| **列內一顆覆蓋整列的透明控件**,焦點框畫在列上 | **容器**,列 `tabIndex={-1}` |
-| **按哪些鍵?** | 每列一個 Tab 停靠點 | 每列一個 Tab 停靠點 | 容器一個停靠點 + 方向鍵 |
+| **列裡有沒有必須被念出來的狀態 / 可聚焦子元素?**(實作後果) | **沒有** —— 只有圖示與文字,所以列可以是一顆按鈕 | **有** —— 進度條(自帶 `role="progressbar"`)、頭像、可聚焦的 hover 按鈕,所以列**不能**是按鈕 | 不適用 —— 第一層已經決定它是一個整體,列拿 `row`(樹狀表格;2026-09-25 前是 `treeitem`) |
+| **誰承接鍵盤?**(實作後果) | **列本身**(它就是那顆 `<button>`)| **列內一顆覆蓋整列的透明控件**,焦點框畫在列上 | **列本身**(整棵樹同一時間只有一列 `tabIndex=0`;2026-09-25 前是容器 + `aria-activedescendant`,待辦總帳 B9) |
+| **一串幾個 Tab 停靠點?**(不歸本節,住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」) | 一串一站 + 方向鍵(B9) | 單獨成串:每列一站、每顆動作鈕各一站;在 FileUpload 內建清單(有 `onRemove`):一串一站 + 方向鍵(B9) | 一棵樹一站 + 方向鍵 |
 
-**所以對原始問題的答案是:`SidebarMenuButton` 與 `FileItem` 的鍵盤操作其實是一樣的**
-—— 兩者都是「每一列一個 Tab 停靠點」。**不同的只有「焦點停在哪個元素上」,而那不是選擇,
-是 HTML content model 逼出來的**:FileItem 的列裡有進度條與可聚焦按鈕,包進 `<button>` 會讓
-輔助科技讀不到(children-presentational),還直接踩 content model 明文禁止的 `tabindex` 那一句。
+**所以對原始問題的答案是:`SidebarMenuButton` 與 `FileItem` 設計上不一樣的只有「焦點停在哪個元素上」,而那不是選擇,是 HTML content model 逼出來的**:FileItem 的列裡有進度條與可聚焦按鈕,包進 `<button>` 會讓輔助科技讀不到(children-presentational),還直接踩 content model 明文禁止的 `tabindex` 那一句。與 `TreeItem` 的差別在第一層(樹是一個整體),不是「列裡裝了什麼」。
 
-**上面那句是量出來的,不是推的**(2026-09-24,1280×900,從頁首連按 Tab 記錄停靠點):
-
-| 元件 | 實測的停靠點序列 | 結論 |
-|---|---|---|
-| `FileItem`(展示—已上傳)| 開啟 報告.pdf → 刪除 → 開啟 合約附件.docx → 刪除 → 開啟 data.csv → 刪除 … | **每列一個停靠點 + 每顆動作鈕各一個** |
-| `SidebarMenuButton`(展示—側邊欄動作懸停狀態)| 產品路線圖 → 更多產品路線圖操作 → 離開 | **一模一樣** |
-| `TreeView`(展示—檔案瀏覽)| 檔案瀏覽(`role="tree"` 容器本身)→ 直接離開整棵樹 | **整棵樹只有一個停靠點** |
-
-前兩列的停靠點序列**逐項相同**;第三列才是真的不同。這正是四題程序預測的結果。
-
-**與 `TreeItem` 的差別才是真的鍵盤模型不同**,而那由第 1 題決定,不是由「列裡裝了什麼」決定。
+**一串有幾個 Tab 停靠點是另一件事,不由本節決定**:2026-09-24 從頁首連按 Tab 實測時,FileItem 與側欄都是「每列一站 + 每顆動作鈕各一站」、樹整棵一站(量測原文見本檔 git 歷史 `16c8e2f5` 版);2026-09-25 user 選路線乙之後,側欄與 FileUpload 內建檔案清單改成一串一站 + 方向鍵,規則與適用範圍只住 `keyboard-model-canonical.md`「列上有小按鈕的一串」(待辦總帳 B9)。
 
 ### 這條程序涵蓋所有情況嗎(逐枝窮舉)
 
 | 第一層 | 第二層 | 列裡有沒有必須被念出來的狀態 / 可聚焦子元素 | 結果 | 本 DS 實例 |
 |---|---|---|---|---|
-| **一組去處** | 不適用 | 沒有 | 列 = `<button>` / `<a>`,每列一個停靠點,動作鈕是絕對定位的同層兄弟 | `SidebarMenuButton`、`MenuItem` |
+| **一組去處** | 不適用 | 沒有 | 列 = `<button>` / `<a>`,動作鈕是絕對定位的同層兄弟 | `SidebarMenuButton`、`MenuItem` |
 | **一組去處** | 不適用 | 有 | 列 = 非互動容器 + 覆蓋整列的透明控件,焦點框畫在列上 | DS 內目前無實例(去處很少帶狀態) |
-| **一組東西**,不是整體 | — | 沒有 | 列 = `<button>`,每列一個停靠點 | `MenuItem`(當它裝的是選項而非去處)|
-| **一組東西**,不是整體 | — | 有 | 列 = 非互動容器 + 覆蓋控件,焦點框畫在列上,每列一個停靠點 | **`FileItem`** |
-| **一組東西,而且是整體** | — | — | 列拿 `treeitem` / `option` / `gridcell` 且 `tabIndex={-1}`,容器單一停靠點 + 方向鍵 | `TreeItem`、`TimePicker` 的欄、`DataTable` 的格、`Calendar` 的格 |
+| **一組東西**,不是整體 | — | 沒有 | 列 = `<button>` | `MenuItem`(當它裝的是選項而非去處)|
+| **一組東西**,不是整體 | — | 有 | 列 = 非互動容器 + 覆蓋控件,焦點框畫在列上 | **`FileItem`** |
+| **一組東西,而且是整體** | — | — | 列拿 `treeitem` / `row` / `option` / `gridcell`,整組一個停靠點 + 方向鍵(列上 roving tabindex 或容器 `aria-activedescendant`) | `TreeItem`(`row`,2026-09-25 起)、`TimePicker` 的欄、`DataTable` 的格、`Calendar` 的格 |
 
-**窮盡**:第一層三分(去處 / 東西不成整體 / 東西成整體)× 列內容二分,
-而「成整體」那一枝的列內容不影響結論(角色已由第一層決定)。
-**新元件若覺得自己不屬於任何一枝,那是第一層沒答清楚,不是需要新增分枝。**
-第一層答不出來時的正解是回去問「使用者對這一項**做**什麼」,不是去看別的元件怎麼寫。
+**窮盡**:第一層三分(去處 / 東西不成整體 / 東西成整體)× 列內容二分,而「成整體」那一枝的列內容不影響結論(角色已由第一層決定)。其餘枝「一串幾站」照 `keyboard-model-canonical.md`(預設每列一站;列名在「列上有小按鈕的一串」的清單收成一站,B9)。
+**新元件若覺得自己不屬於任何一枝,那是第一層沒答清楚,不是需要新增分枝。**第一層答不出來時的正解是回去問「使用者對這一項**做**什麼」,不是去看別的元件怎麼寫。
 
 ### Prefix 垂直對齊:`items-start` + `h-[1lh]` wrapper(**永遠這樣**,不要做例外)
 
@@ -488,8 +463,8 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 | **MenuItem / Select / DropdownMenuItem / SidebarMenuButton / TreeItem** | permanent transparent(radius 只在 state 可見) | **0 gap 合法** | state 稀疏不創造永久相連 |
 | **SelectionItem**(Radio / Checkbox row) | permanent transparent(code 驗證 `flex items-start gap-2`,無 bg/border/radius) | **0 gap 合法** | 選中靠 control 視覺非 row bg |
 | **DataTable row** | flush + border-b 分隔線 | **0 gap 合法** | border-b 分隔線型 affordance |
-| **FileItem compact + progress bar**(Type A upload manager) | flush + 底部 progress bar 分隔線 | **0 gap 合法** | 同 DataTable;progress bar 分隔線型 affordance(user 2026-04-22 確認) |
-| **FileItem rich**(永遠 card) | `border + bg-surface + rounded-md + inset` → **standalone card** | **必 gap ≥ 8px** | Card 邊框融合失去 identity |
+| **FileItem `surface=upload-manager`**(rich + compact;Type A upload manager) | flush 透明列(compact 另有底部 progress bar 分隔線);可點的列滑過時整列鋪到面板邊 | **0 gap 合法** | 同 DataTable;progress bar 分隔線型 affordance(user 2026-04-22 確認);列間 ink 距由兩列各自上下 `tight/2` 相加(`components/FileItem/file-item.spec.md`「List wrapper canonical」,2026-09-25 B12) |
+| **FileItem rich `surface=form`**(card) | `border + bg-surface + rounded-md + inset` → **standalone card** | **必 gap ≥ 8px** | Card 邊框融合失去 identity |
 | **FileItem compact + bg-secondary**(Type B form attachment 靜態) | `bg-secondary + rounded-md + inset` → **standalone pill** | **必 gap ≥ 4px** | bg 塊融合消失 item 邊界 |
 | **StepItem / Timeline item** | permanent transparent item + connector line | **0 gap 合法** | connector 提供連接(分隔線型 affordance 的連接版) |
 

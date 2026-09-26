@@ -46,6 +46,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
+import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
  * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。
@@ -500,6 +501,13 @@ export interface AgentPanelHeaderProps
   onClose: () => void
 }
 
+// ── 鍵盤:歷史列上的「改名 / 刪除」(2026-09-25 待辦總帳 B9「路線乙」)──
+// 決策出處 = governance/planning/2026-09-25-interaction-and-hover-remediation.md B9(該列點名「AI 面板對話紀錄列」),
+// user 逐字(附條件同意,條件查證成立記在同列):「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」。
+// 鍵盤路整條由 Command 本身提供(command.tsx routeCommandRowKeys,判定 = lib/roving-list-keyboard.ts:列裡的鈕 -1、→ 進 / ← 回 /
+// ↑↓ Tab 回搜尋框、Enter / Space 屬於那顆鈕),SelectMenu 的人員頭像走同一份;本檔只負責「鍵盤反白這一列時浮出改名 / 刪除」(見 HistoryRow)。
+// 按鍵表住 agent-panel.spec.md「附:歷史浮層」與 command.spec.md「A11y」。2026-09-25 前:每一列的改名 / 刪除都在 Tab 路上(4 列 = 8 站)。
+
 /** 歷史列(select-menu.tsx 原型):外層 CommandItem 單一互動 owner;內層 MenuItem 純視覺。 */
 function HistoryRow({
   conversation,
@@ -514,6 +522,10 @@ function HistoryRow({
   onRename: () => void
   onDelete: () => void
 }) {
+  // 鍵盤反白停在這一列時浮出改名 / 刪除(keyboard-model-canonical「列上有小按鈕的一串」:鍵盤走到的那顆鈕要看得見;
+  // cmdk 清單的「焦點在這一項」就是鍵盤反白,AI 推導,見上方段落)。只在反白是鍵盤搬的時候 —— 滑鼠搬的反白就是滑鼠正停著的列,
+  // group-hover 本來就浮出;滑鼠離開清單後 cmdk 仍留著反白,不額外讓那一列的鈕常駐(滑鼠畫面不變)。
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
   return (
     <CommandItem
       value={conversation.id}
@@ -538,22 +550,19 @@ function HistoryRow({
           )
         }
         endContent={
-          // 行內動作恆在 DOM(鍵盤 Tab 可達);懸停/focus-visible 淡入=ItemSuffix hoverReveal SSOT。
-          /* MenuItem 的 endContent slot 內再包 ItemSuffix 只為 hoverReveal(opacity 淡入);兩層同盒
+          // 行內動作恆在 DOM;鍵盤用 → 進得去、不在 Tab 路上(B9,Command 的 routeCommandRowKeys 提供);
+          // 懸停/focus-visible 瞬間出現(不淡入,待辦總帳 L9)=ItemSuffix hoverReveal SSOT,鍵盤反白這一列時也浮出(cursorByKeyboard)。
+          /* MenuItem 的 endContent slot 內再包 ItemSuffix 只為 hoverReveal(opacity 0→1,瞬間);兩層同盒
              (h-[1lh] items-center ml-auto gap-2),不疊任何位移——非 drift(2026-09-02 覆核實測)。 */
-          <ItemSuffix hoverReveal hoverGroup="menu-item">
-            {/* Enter/Space 在行內動作上 = 啟動該動作(stopPropagation 擋掉 cmdk 的 Enter=選列)。 */}
-            <span
-              className="contents"
-              onKeyDown={(e) => {
-                const target = e.target as HTMLElement
-                if ((e.key === 'Enter' || e.key === ' ') && target.closest('button')) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  target.closest('button')?.click()
-                }
-              }}
-            >
+          <ItemSuffix
+            hoverReveal
+            hoverGroup="menu-item"
+            className={cursorByKeyboard ? 'group-data-[selected=true]/menu-item:opacity-100' : undefined}
+          >
+            {/* Enter/Space 在行內動作上 = 啟動該動作、不選列 —— 由 Command 根的 routeCommandRowKeys 統一處理
+                (2026-09-26 之前這裡另寫了一份 onKeyDown 做同一件事,兩份並存;待辦總帳〇節「按鍵規則合併」收回 command.tsx)。
+                data-history-row-actions = 量測腳本找「這一列自己的鈕」的錨點。 */}
+            <span className="contents" data-history-row-actions="">
             <ItemInlineAction
               action={{
                 icon: Pencil,
@@ -574,7 +583,7 @@ function HistoryRow({
                 },
               }}
             />
-                      </span>
+            </span>
           </ItemSuffix>
         }
       >
@@ -1095,7 +1104,7 @@ AgentThinking.displayName = 'AgentThinking'
 
 export interface AgentToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * 常駐顯示。預設由 AgentConversation 判定:代理**最後一則**常駐,其餘懸停淡入(SSOT,consumer 不需設);
+   * 常駐顯示。預設由 AgentConversation 判定:代理**最後一則**常駐,其餘懸停時瞬間出現(SSOT,consumer 不需設);
    * 只在 AgentConversation 之外單獨使用時才需手動指定。
    */
   pinned?: boolean
@@ -1114,8 +1123,9 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
     <div
       ref={ref}
       className={cn(
+        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(user 2026-09-26 同意「全部瞬間」延伸到所有滑過造成的變化;
+        // SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」;待辦總帳 L9)。訊息進場的淡入是另一件事(內容出現),不在此。
         'mt-2 flex h-6 items-center gap-2',
-        'transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
         // 出現/消失完全不推擠版面(輪距 40 ≥ 8+24+8)。
         pinned
@@ -1447,6 +1457,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       window.setTimeout(() => (document.getElementById(otherInputId) as HTMLInputElement | null)?.focus(), 0)
     // 灰底選項卡 = 唯一行距 owner(py 8);SelectionItem 自帶 py((32−1lh)/2=5.5)歸零,避免 double padding
     // (checkbox.spec.md 零外部 gap 鐵律的反向:間距只能有一個 owner)。
+    // 滑過:暫不加底色變化。user 2026-09-26 對「AI 面板選項卡加滑過」的回覆:「我覺得好像不用加上底色變化，若它是 radio 的話，
+    // 那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」
+    // → 待研究結論(待辦總帳 09-26 同意清單回覆段)再定,這裡維持 HEAD 的樣子。
     const cardClass = 'cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div

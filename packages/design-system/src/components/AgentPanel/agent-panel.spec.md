@@ -188,7 +188,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - **底部內距 = `--layout-space-bottom` 48**:最後內容(常駐工具列)→ 輸入盒的送出動作 = layoutSpace 規則 4
   「內容 → action button = bottom」(`tokens/layoutSpace/layoutSpace.spec.md` L118;2026-09-02 user 抓工具列貼輸入盒)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
-  其餘懸停/鍵盤聚焦淡入(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
+  其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
 - **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(ChatGPT / Claude
   「貼底跟隨、離底不擾」同款);由本元件實作,consumer 不自接。
 - A11y:`role="log"` + `aria-live="polite"`。
@@ -216,7 +216,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 6. AgentToolbar(訊息工具列)
 
-- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點 0.15s 淡入,
+- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;user 2026-09-26 同意「全部瞬間」延伸),
   絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
 
@@ -245,7 +245,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
 - Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
-  **整卡可點**;卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
+  **整卡可點**,滑過時卡片灰底**不換色**(2026-09-26 user 對「AI 面板選項卡加滑過」原話「我覺得好像不用加上底色變化，若它是 radio 的話，那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？」→ 先不加,滑過樣式待 user 決定,待辦總帳 B12);卡內 Radio / Checkbox / 「其他」輸入格自己的滑過照舊;卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
   + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
@@ -320,9 +320,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   後綴=MenuItem endContent slot 內 ItemSuffix hoverReveal + ItemInlineAction 16/18、gap 8、距列右緣 12,
   逐項對齊 inline-action.spec.md);組標=CommandGroup `heading`(MenuItem header,
   今天/昨天/更早)+ CommandSeparator;無結果=`<Empty>`(CommandEmpty);搜尋列 `h-8 py-0`(列高 40 守 SelectMenu)。
-- 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,150ms 淡入;
-  鍵盤 Tab 可達、focus-visible 同樣顯示;**Enter / Space 在行內動作上 = 啟動該動作**,不是選列
-  ——cmdk 的 Enter=選列在此以 stopPropagation 擋掉,2026-09-02 實測補);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
+- 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,**瞬間出現、不淡入** —— 2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,規則住 ItemSuffix;2026-09-26 前 150ms 淡入);**鍵盤(2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)**:改名/刪除**不在 Tab 路上**(09-25 前 4 列 = 8 站);搜尋框 ↑↓ 移反白,插入點在字尾時 `→` 進反白列的「改名」、再 `→`「刪除」(停住),`←` 退一顆、第一顆 `←` 回搜尋框;鈕上 ↑↓ / Home / End = 回搜尋框並移反白;鈕上 Tab / Shift+Tab 一下離開這一串(浮層照舊在面板裡繞圈);鍵盤反白的那一列浮出改名/刪除,焦點進到鈕上時反白列的框讓給那顆鈕(一個項目一個指示器)——「插入點在字尾」條件(搜尋框的 `→` 仍要能移插入點)與「鍵盤反白列浮出」是 AI 推導;Esc 不規定(照舊關浮層)。
+  **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
 - 改名=Dialog(`autoHeight` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
   空白 → `invalid` + FieldError「名稱不可空白」,儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);
   刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
@@ -556,7 +555,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 |---|---|---|
 | 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
 | 蓋板遮罩(容器 < 960)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
-| 訊息/決策卡/工具列/送出↔停止 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
 | 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |

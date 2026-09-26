@@ -48,9 +48,8 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -69,7 +68,10 @@ const MAX_INSTRUMENT_FAILURES = 25
 
 requireStorybookBuild(join(BUILD, 'index.json'))
 
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories)
   .filter((e) => e.type !== 'docs')
   .map((e) => ({ id: e.id, name: e.name }))
@@ -154,7 +156,6 @@ const SHIFT_FOOTER = () => {
   return true
 }
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const bad = []
 let scanned = 0
 let footersChecked = 0
@@ -193,17 +194,27 @@ try {
         console.error(`  ! 儀器失效 ${s.id}(${error.kind})—— 詳情見結尾清單`)
         continue
       }
-      const triggers = page.locator('[role="combobox"]')
-      const count = await triggers.count()
-      for (let i = 0; i < count; i += 1) {
-        await triggers.nth(i).click({ timeout: 3_000 }).catch(() => null)
-        await page.waitForTimeout(260) // 點開之後:等下拉浮層的開啟動畫跑完再量(量左緣,不能量到縮放進場的中間值)
+      // 2026-09-25(待辦總帳 C5,M37「沒觀察到 ≠ 沒發生」):原本「點一下(失敗 .catch 吞掉)→ 固定睡 260ms → 量」——
+      // 慢的機器上 260ms 內還沒開,PROBE 回 null 就 continue,那個下拉等於沒驗而且沒有任何訊號(覆蓋率靜默縮水)。
+      // 現在:觸發點一開始取定;只點看得見、沒停用的;點擊失敗 = 儀器失效;點完等版面連續 SETTLE_FRAMES 個影格靜止
+      // (lib/launch-browser.mjs settleAfterInteraction,與 openStory 同一份判定,用影格不用毫秒)才量;等不到靜止 = 儀器失效。
+      const settleOr = async (what) => {
+        const r = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+        if (!r.ok) throw new Error(`${what}之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`)
+      }
+      const handles = await page.locator('[role="combobox"]:visible').elementHandles()
+      for (let i = 0; i < handles.length; i += 1) {
+        const state = await handles[i].evaluate((el) => (!el.isConnected || el.getClientRects().length === 0 ? 'gone'
+          : el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]') ? 'inert' : 'ok')).catch(() => 'gone')
+        if (state !== 'ok') continue // 停用 / 唯讀不點;被前一個互動收掉(預設開啟的下拉被點關)照常略過
+        await handles[i].click({ timeout: 10_000 })
+        await settleOr(`點開第 ${i + 1} 個下拉`) // 量左緣,不能量到縮放進場的中間值
         // 對照組要在**量之前**就把東西弄壞(幾何那條量的是 before),不然推了也量不到
         // 對照組:注入後等 40ms 讓樣式 / 屬性生效(量測本身的 getBoundingClientRect 也會強制同步排版,這步只是保險)
         if (SELFTEST) { await page.evaluate(FREEZE_LABEL); await page.evaluate(SHIFT_FOOTER); await page.waitForTimeout(40) }
         if (SELFTEST_UNRESTRICTED) { await page.evaluate(STRIP_UNRESTRICTED_MARK); await page.waitForTimeout(40) }
         const before = await page.evaluate(PROBE)
-        if (!before) { await page.keyboard.press('Escape').catch(() => null); await page.waitForTimeout(80) /* 等關閉動畫跑完,不擋下一個觸發點 */; continue }
+        if (!before) { await page.keyboard.press('Escape'); await settleOr(`關閉第 ${i + 1} 個下拉`); continue }
         footersChecked += 1
         if (before.不限列 > 0) unrestrictedSeen += 1
         const where = { story: s.id, name: s.name, trigger: i }
@@ -216,8 +227,8 @@ try {
           bad.push({ ...where, 問題: `全選按鈕左緣沒對齊列前緣(差 ${Math.round((before.按鈕左緣 - before.列前緣) * 10) / 10}px)`, 細節: before })
         }
 
-        await page.locator('[cmdk-root] [data-slot="surface-footer"] button').first().click({ timeout: 3_000 }).catch(() => null)
-        await page.waitForTimeout(260) // 按下全選之後:等勾選狀態與按鈕標籤重畫完再量第二次
+        await page.locator('[cmdk-root] [data-slot="surface-footer"] button').first().click({ timeout: 10_000 })
+        await settleOr('按下全選') // 等勾選狀態與按鈕標籤重畫完再量第二次
         const after = await page.evaluate(PROBE)
         // 面板消失不算這支的紅燈:story 的 render 裡如果定義了元件,任何 setState 都會讓整棵樹重掛,
         // 連點一般選項列都會關掉(2026-09-17 對照實測:點 `Electronics` 跟點全選,popper 都是 1 → 0)。
@@ -233,8 +244,8 @@ try {
           }
           if (狀態翻面) liveFlips += 1
         }
-        await page.keyboard.press('Escape').catch(() => null)
-        await page.waitForTimeout(80) // 等關閉動畫跑完,不擋下一個觸發點
+        await page.keyboard.press('Escape')
+        await settleOr(`關閉第 ${i + 1} 個下拉`) // 等關閉動畫跑完,不擋下一個觸發點
       }
     } catch (error) {
       // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)

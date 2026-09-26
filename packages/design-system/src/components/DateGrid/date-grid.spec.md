@@ -108,7 +108,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
-| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,見下方「日期格的命中區 = 可視形狀」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**(不論移得多快多慢;慢慢從縫裡走出去的那條路 2026-09-26 補上,D1),見下方「日期格的命中區 = 可視形狀」的「現行機制」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ### 鄰月日子:一條原則(2026-09-24 user 拍板)
@@ -199,6 +199,17 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 3. `handleGridMouseOver`:補掉「穿過縫之後停在**不可點**的日子」那條路徑 ——
    disabled 的 button 收不到滑鼠事件、不會再有任何 day enter/leave,沒有這一段的話上一天的預覽框會留著
    (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。
+4. `handleGridMouseLeave`(2026-09-26 補,D1,待辦總帳 N54):補掉「**從縫裡直接離開格陣**」那條路徑 ——
+   指標離開最外圈那一天時落在縫裡,那次 leave 依第 2 條被吞(欠著);接著指標走出 `<table>`,已經沒有任何一天會再收到 leave、
+   也沒有 `td` / `th` 會收到 mouseover,預覽框就卡在上一天。實測(2026-09-26 前):從 6/13 每步 1px 往右,經過縫、月曆內距、浮層邊,
+   走到浮層外 20px,停 2 秒仍是 5/4→6/13;每步 1–4、8px 都卡住,6、12、20px 或一次跳出去才會清 —— 快慢決定了指標有沒有「停」在縫裡。
+   修法:格陣 `<table>` 掛 `onMouseLeave`,**只在有欠著的 leave 時**補送一次(一次跳出去那條路 day button 的 leave 已照常轉發,不重送)。
+   這是上面那句判準「只在指標真的離開整張格陣時才清」本來就要的,缺的只是實作:MUI X 同時掛了「容器 `onMouseLeave` 清除」
+   ([DateRangeCalendar.tsx#L481-L486](https://github.com/mui/mui-x/blob/v9.14.0/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L481-L486)
+   `onMouseLeave: () => setRangePreviewDay(null)`),2026-09-24 照 MUI 做「縫裡不清」時沒一起做這一半。
+   兩張月曆並排時每張各是一張格陣:兩張之間的空白算離開(`../DatePicker/date-picker.spec.md`「滑鼠離開**日期格區**」)。
+   **不在這裡改的**:縫本身(停在縫裡照亮)與「偏離中線橫越時仍會閃」(D2)—— 兩者屬「預覽類元件」規則,user 尚未同意。
+   閘:`scripts/datepicker-range-preview.mjs`「慢慢移出」段(`exit` 家族,含對照組)。
 
 錨點刻意用顯式屬性而不是 `closest('table')`:標籤名是「剛好成立的觀察量」,不是要保證的性質(M37);
 而且顯式屬性讓閘的對照組可以只用一行 `removeAttribute` 精準弄壞這個機制。

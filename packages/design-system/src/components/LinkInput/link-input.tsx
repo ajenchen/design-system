@@ -32,6 +32,7 @@ function formatHostname(url: string): string {
 // 取代 LinkInputDisplay sub-component:純展示 a tag,無 input chrome、無 hover affordance。
 // edit mode 內 link state(showLink branch)也共用此 helper,確保「編輯態的 link 顯示」與
 // view mode 的視覺完全一致(SSOT)。
+// 連結 hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
 function renderLinkAnchor(value: string, label?: string) {
   const displayText = label || formatHostname(value)
   return (
@@ -39,7 +40,7 @@ function renderLinkAnchor(value: string, label?: string) {
       href={value}
       target="_blank"
       rel="noopener noreferrer"
-      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline transition-colors"
+      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。

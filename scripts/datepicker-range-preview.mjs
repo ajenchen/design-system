@@ -5,9 +5,11 @@
  *        不是會被取整的 border)在 td ::after 框出「點下去會變成」的區間:選結束日 → [開始日, 停留日]、選開始日 →
  *        [停留日, 結束日]、同一天 → 單格整圈、順序不合 → 不框;端點 = 整圈內描邊 + 朝外那側圓角 + 朝區間那側用
  *        clip-path 裁掉直邊(半圓,缺口朝區間)、中段只有上下兩條線、停留日的 button 不畫單格圈;鍵盤方向鍵移動
- *        焦點時同樣預覽;showTime 單月也預覽。SSOT date-picker.spec.md「區間預覽」/ date-grid.spec.md「區間預覽框」。
+ *        焦點時同樣預覽;showTime 單月也預覽;指標每步 1px 慢慢走出格陣(先停進最外圈的縫、再從縫出去)後框收掉(D1)。
+ *        SSOT date-picker.spec.md「區間預覽」/ date-grid.spec.md「區間預覽框」+「現行機制」第 4 條。
  *   紅: 任一格的 ::after 陰影(粗細 / 顏色 / 單邊或整圈)、圓角、clip-path、停留日 button 的 ring、鍵盤 / showTime 路徑
- *        與期望不符即 exit 1,訊息指名哪一格哪一項;--selftest 注入「td::after 陰影歸零」後同一組斷言必須大量紅(對照組)。
+ *        與期望不符即 exit 1,訊息指名哪一格哪一項;--selftest 注入「td::after 陰影歸零」後同一組斷言必須大量紅(對照組),
+ *        另攔下「從格陣本身走出去」的 mouseout 後慢慢移出的兩條路必須紅(exit 家族對照組)。
  *   綠: 三則預覽 story + showTime story 的全部斷言相符時綠;同一份 storybook-static 重複跑結果恆等(無時鐘、無取樣)。
  *   儀器失效: 任一則 story 沒渲染完成(不存在的 id / story 檔 404 / play 丟錯 / 等的元素不出現 / 版面不靜止)→ 印 INSTRUMENT-FAIL、
  *        點名 story 與同源 404 帳本、exit 1 —— 不是產品裁決,也不算通過;--selftest 下同樣紅,不得讀成「對照組被抓到」。
@@ -39,8 +41,8 @@ const SETTLE_FRAMES = 10
 const open = (url, waitFor) => openStory(page, url, { waitFor, settleFrames: SETTLE_FRAMES, notFound: server.notFound })
 
 let fail = 0
-// 每條斷言標一個「家族」:frame(區間框)/ focus(焦點框幾何)/ crossing(跨縫不閃)/ outside(兩月不渲染鄰月)/ single(單月鄰月淡字)。
-// selftest 的對照組分別弄壞這五樣,必須**每一家都至少紅一條**;只看總數 fail > 0 會讓「框那家紅了、焦點那家其實量不到」混過去
+// 每條斷言標一個「家族」:frame(區間框)/ focus(焦點框幾何)/ crossing(跨縫不閃)/ outside(兩月不渲染鄰月)/ single(單月鄰月淡字)/
+// exit(慢慢移出格陣框要收,D1)。selftest 的對照組分別弄壞這六樣,必須**每一家都至少紅一條**;只看總數 fail > 0 會讓「框那家紅了、焦點那家其實量不到」混過去
 const failedFamilies = new Set()
 let checked = 0
 const ok = (cond, msg, family = 'frame') => { checked++; if (cond) console.log(`✓ ${msg}`); else { console.log(`✗ ${msg}`); fail++; failedFamilies.add(family) } }
@@ -241,6 +243,56 @@ async function runSuite() {
   const before = await page.evaluate(() => document.querySelector('[data-day="2026-05-03"]:not([data-outside])')?.hasAttribute('data-disabled'))
   ok(before === true, '上膛:順序不合的 5/3 在選結束日時是 disabled(不可點),沒有框也沒有圈')
 
+  // ── 慢慢移出格陣:框要收(D1,2026-09-26,待辦總帳 N54;date-grid.spec.md「現行機制」第 4 條)──
+  // 上面「互搶」段的離開是一次跳到 (2,2):不經過縫,day button 的 leave 直接落在格陣外、照常轉發 → 一定會清,量不到 D1。
+  // D1 只在「指標先停進最外圈那道縫(leave 被吞)、再從縫走出格陣」時發作 —— 所以這裡每步 1px 走
+  //(修之前實測每步 1–4、8px 都卡住,6、12、20px 才會清:快慢決定指標有沒有「停」在縫裡)。
+  // 兩條路:(a) 從六月最右一欄的 6/13 往右走到浮層外 20px;(b) 從五月最右一欄的 5/16 往右走到兩張月曆之間的空白正中。
+  // 兩面對照(M32 / M37):同一條路上,指標還在格陣裡(縫)的最後一步必須**還有框** —— 證明這支量得到框、也證明縫的行為沒被改
+  //(縫裡照亮屬「預覽類元件」規則,user 未同意改);走出格陣之後必須 0 格(沒有鍵盤焦點可退回)。
+  // selftest 對照組:攔下「從格陣本身走出去」的那一個 mouseout(React 靠它合成 table 的 onMouseLeave)→ 欠著的 leave 補送不了 →
+  // 兩條路都必須紅。只攔 target 是格陣本身的那一個:day button 的 leave(target = button)照常,crossing 等其他家族不受影響。
+  await open(story('range-preview-extend'), '[data-visual-hover-target]')
+  if (SELFTEST) {
+    await page.evaluate(() => document.addEventListener('mouseout', (e) => {
+      const t = e.target
+      if (t instanceof Element && t.hasAttribute('data-day-grid') && !(e.relatedTarget instanceof Node && t.contains(e.relatedTarget))) e.stopImmediatePropagation()
+    }, true))
+  }
+  await blurFocus(); await page.mouse.move(2, 2); await page.waitForTimeout(80)
+  const gridBoxOf = (day) => page.evaluate((sel) => {
+    const td = document.querySelector(sel)
+    const grid = td?.closest('[data-day-grid]')?.getBoundingClientRect()
+    const panel = td?.closest('[role="dialog"]')?.getBoundingClientRect()
+    return grid && panel ? { gridLeft: grid.left, gridRight: grid.right, panelRight: panel.right } : null
+  }, inView(day))
+  const slowExit = async (fromDay, endX, label) => {
+    const b = await page.locator(`${inView(fromDay)} > button`).boundingBox()
+    const box = await gridBoxOf(fromDay)
+    if (!b || !box) { ok(false, `${label}:找不到起點 ${fromDay} 或它的格陣 / 浮層`, 'exit'); return }
+    const y = b.y + b.height / 2
+    let x = b.x + b.width / 2
+    await page.mouse.move(x, y); await page.waitForTimeout(80)
+    let lastInside = null
+    while (x < endX) {
+      x += 1
+      await page.mouse.move(x, y)
+      // 格陣盒內的最後一步(縫):量一次,之後再也不在格陣裡
+      if (x < box.gridRight && x + 1 >= box.gridRight) { await page.waitForTimeout(20); lastInside = await framedCount() }
+    }
+    await page.waitForTimeout(150)
+    const after = await framedCount()
+    ok(lastInside !== null && lastInside > 0, `${label}:還在格陣裡的最後一步(縫)框仍在(${lastInside} 格;0 / null = 量不到框,這條路的「離開後 0 格」不算證據)`, 'exit')
+    ok(after === 0, `${label}:每步 1px 慢慢走出格陣後框收掉(剩 ${after} 格;> 0 = 框卡在上一天,D1)`, 'exit')
+  }
+  const june = await gridBoxOf('2026-06-13')
+  if (june) await slowExit('2026-06-13', june.panelRight + 20, '慢慢移出 (a) 6/13 → 浮層外 20px')
+  else ok(false, '慢慢移出 (a):找不到 6/13 的格陣 / 浮層', 'exit')
+  await page.mouse.move(2, 2); await page.waitForTimeout(80)
+  const may = await gridBoxOf('2026-05-16')
+  if (may && june) await slowExit('2026-05-16', (may.gridRight + june.gridLeft) / 2, '慢慢移出 (b) 5/16 → 兩張月曆之間')
+  else ok(false, '慢慢移出 (b):找不到 5/16 或 6/13 的格陣', 'exit')
+
   // ── 正在選開始日 ──
   await open(story('range-preview-start'), '[data-visual-hover-target]')
   if (SELFTEST) await page.addStyleTag({ content: 'td::after{box-shadow:none!important}' })
@@ -313,12 +365,12 @@ if (checked === 0) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:一條斷言�
 if (SELFTEST) {
   // 對照組:注入「陰影歸零」後,上面的斷言必須大量紅 —— 綠就代表這支閘量不到框
   if (fail === 0) { console.log('✗ 對照組:td::after 陰影歸零後閘仍全綠 —— 這支閘量不到框'); process.exit(1) }
-  // 五個家族各自被弄壞、各自必須紅:哪一家綠,就是那一家的量具是假的
-  const families = ['frame', 'focus', 'crossing', 'outside', 'single']
+  // 六個家族各自被弄壞、各自必須紅:哪一家綠,就是那一家的量具是假的
+  const families = ['frame', 'focus', 'crossing', 'outside', 'single', 'exit']
   const silent = families.filter((f) => !failedFamilies.has(f))
   for (const f of families) console.log(`${failedFamilies.has(f) ? '✓' : '✗'} 對照組 ${f}:弄壞後${failedFamilies.has(f) ? '有紅' : '仍全綠 —— 量不到'}`)
   if (silent.length) { console.log(`✗ 對照組:${silent.join(' / ')} 弄壞後沒有任何一條紅`); process.exit(1) }
-  console.log(`✓ 對照組:五個家族全部會紅(共 ${fail} 項)`)
+  console.log(`✓ 對照組:六個家族全部會紅(共 ${fail} 項)`)
   process.exit(0)
 }
 console.log(fail ? `✗ ${fail} 項未通過` : '✅ DatePicker.Range 區間預覽框 PASS')

@@ -17,12 +17,12 @@
 // 衝突副本,build-info.json 卻完好;「標記存在且沒變」被當成「建置完整」。檔案清單那幾題就是這一面。
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, utimesSync, truncateSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync, mkdirSync, utimesSync, truncateSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { snapshotStorybookStatic, StorybookBuildNotStableError, sweepStaleSnapshots } from './lib/storybook-static-snapshot.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -157,8 +157,16 @@ try {
 
   // 共用伺服器(21 支瀏覽器閘經由它)必須真的走快照:原目錄被清空後,同一個 origin 仍拿得到檔。
   fixture()
+  writeFileSync(join(src, 'index.json'), JSON.stringify({ v: 5, entries: { 'combobox--default': { id: 'combobox--default', type: 'story' } } }))
   const server = await startA11yStaticServer({ rootDirectory: src, defaultFile: 'iframe.html' })
   check('共用伺服器:有 build-info.json 的根目錄 → 從快照供檔', () => assert.ok(server.snapshot && server.snapshot.dir !== src))
+  // story 清單必須跟頁面同一份(2026-09-25,C5):活目錄的清單被別人改寫之後,讀到的仍是快照那一份
+  writeFileSync(join(src, 'index.json'), JSON.stringify({ v: 5, entries: { 'rebuilt--other': { id: 'rebuilt--other', type: 'story' } } }))
+  check('共用伺服器:readServedStorybookIndex 讀的是快照的清單,不是活目錄(活目錄被改寫也不受影響)', () => {
+    assert.equal(server.servedRoot, realpathSync(server.snapshot.dir))
+    assert.deepEqual(Object.keys(readServedStorybookIndex(server).entries), ['combobox--default'])
+  })
+  check('共用伺服器:readServedStorybookIndex 沒給伺服器物件 → TypeError', () => assert.throws(() => readServedStorybookIndex({}), TypeError))
   rmSync(src, { recursive: true, force: true })
   const kept = await fetch(`${server.origin}/iframe.html`)
   check('共用伺服器:原目錄被清空後 iframe.html 仍是 200(沒有被活目錄的清空拖垮)', () => assert.equal(kept.status, 200))
@@ -184,6 +192,7 @@ try {
   writeFileSync(join(consumerDist, 'iframe.html'), '<div id="app"></div>')
   const plain = await startA11yStaticServer({ rootDirectory: consumerDist, defaultFile: 'iframe.html' })
   check('共用伺服器:沒有 build-info.json 的根目錄(consumer dist 等)照舊直接服務', () => assert.equal(plain.snapshot, null))
+  check('共用伺服器:沒有快照時 servedRoot 就是原根目錄(清單從服務中的那一份讀)', () => assert.equal(plain.servedRoot, realpathSync(consumerDist)))
   const live = await fetch(`${plain.origin}/iframe.html`)
   check('共用伺服器:直接服務的根目錄照常 200', () => assert.equal(live.status, 200))
   await plain.stop()

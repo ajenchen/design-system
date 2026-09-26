@@ -131,6 +131,7 @@ if ! grep -q '@token-state-allow' <<<"$NEW_CONTENT"; then
     esac
   done | sort -u)
   if [ -n "$SUSPECT_C6" ]; then
+    # 下方 heredoc 沒加引號:反引號要寫成 \` 才是字面值(2026-09-26 修:原本寫成兩個反斜線,反引號變成指令替換,訊息在「例外」那行斷掉並印 syntax error)
     cat >&2 <<EOF
 
 ┄┄┄ C.6 check_pattern_invariants — selected token 狀態語意 BLOCKER ┄┄┄
@@ -143,15 +144,16 @@ $SUSPECT_C6
   滑鼠 hover 選中列 → 釘住 bg-neutral-selected 不變
   鍵盤游標停在任何列 → 畫框(focus-ring-inset)、不上底色;選中列 = 框疊在 bg-neutral-selected 上
     (focus-canonical 規則二,user 2026-09-09 拍板;-focus 深一階 token 已於 2026-09-07 退役)
-    ⚠️ **selector 必須對上該元件的焦點模型**:虛擬游標(cmdk data-selected / Radix data-highlighted /
-       aria-activedescendant)由元件依 hooks/use-input-modality.ts 判鍵盤模態才掛 focus-ring-inset,
+    ⚠️ **selector 必須對上該元件的焦點模型**:會搶反白的虛擬游標(cmdk data-selected / Radix data-highlighted)
+       由元件依 hooks/use-input-modality.ts 的 useCursorMover(反白來歷)才掛 focus-ring-inset;
+       aria-activedescendant 容器(TimePicker 欄)看容器自己的 :focus-visible(group-focus-visible/listbox:);
        真焦點元件用 focus-visible:focus-ring-inset。2026-09-06 實測:寫錯 selector 的樣式**從未生效**
-       (TreeView 列無 tabIndex、MenuItem 根節點非可聚焦,都曾寫 focus-visible: 而永不 match)。
-       正確示範:command.tsx CommandItem 與 dropdown-menu.tsx radixCursorClass(依模態分流)、
-       sidebar.tsx focus-visible:focus-ring-inset(真焦點)、tree-view.tsx showRing(state 驅動)。
+       (當時 TreeView 列無 tabIndex、MenuItem 根節點非可聚焦,都曾寫 focus-visible: 而永不 match)。
+       正確示範:command.tsx CommandItem 與 dropdown-menu.tsx radixCursorClass(依反白來歷分流)、
+       sidebar.tsx / tree-view.tsx 列的 focus-visible:focus-ring-inset(真焦點;TreeView 2026-09-25 起列上 roving tabindex,待辦總帳 B9)。
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
   bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(深一階;2026-09-07 起 neutral-3)
-例外:行尾 \\`// @token-state-allow: <reason>\\`
+例外:行尾 \`// @token-state-allow: <reason>\`
 
 EOF
     record_worst 2

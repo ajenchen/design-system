@@ -7,7 +7,8 @@
 
 ## Authority boundary
 
-本檔擁有**「這一串該用哪一種鍵盤模型」的判準**,以及該判準的一手出處。
+本檔擁有**「這一串該用哪一種鍵盤模型」的判準**,以及該判準的一手出處;
+2026-09-25 起也是**「彈出框開著時按 `Tab` / `Esc` 做什麼、關了之後焦點去哪」的單一住所**(「彈出框開著時的 Tab 與 Esc」一節;`focus-canonical.md` 只放指標)。
 它不擁有:焦點框長什麼樣、畫在哪(owner = `focus-canonical.md`)、命中區多大(owner = `hit-area-canonical.md`)、
 各元件的實際按鍵表(owner = 各元件 `spec.md` 的「A11y 預設」段)、
 列裡誰當那顆控件(owner = `patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」)。
@@ -34,10 +35,19 @@ VS Code 的側邊區在同一個畫面裡就有三種模型並存 ——
 > "All elements in the workbench support tab navigation. To avoid having too many tab stops, workbench toolbars and tab lists each have only one. Once a toolbar or a tab list has focus, you can use the arrow keys to navigate within them."
 
 讀出來就是:**預設每個東西都可以 Tab,只有為了避免停靠點太多才把某些東西收成一個。**
-所以「收成一個」是需要理由的那一邊,「各自一個」才是預設。
+所以「收成一個」是需要理由的那一邊。
+
+**本 DS 收成一個的理由只有兩種**(2026-09-25 改寫;原句「『各自一個』才是預設」是支持「側欄每項一站」的推論,已隨 user 拍板的路線乙撤回):
+
+1. **它是一個 composite 小工具** —— 樹、選單、表格、單選組…(下方「五條判準」與「套到本 DS」表)。
+2. **一串項目的列上帶小按鈕**(側欄、樹、檔案清單的 ⋯ / ＋)—— 每一項、每一顆按鈕都各佔一站時,W3C 的原話是鍵盤使用者「等於被困在清單裡」:
+   "If elements in a list like this were in the tab sequence, keyboard users are effectively trapped in the list. If any elements in the group also have associated elements that appear on hover, the `grid` pattern is also useful for providing keyboard access to those contextual elements"
+   (<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L157-L158>)。
+   規則見下方「列上有小按鈕的一串」(user 2026-09-25 拍板「路線乙」;側欄「混合內容」範例實測今天要按 19 下才出得去)。
 
 GitHub 同一個 repo 頁面上也是並存:左邊檔案樹是 `role="tree"` 的 roving tabindex 單一停靠點,
 同一頁的 repo 導覽(Code / Issues / PRs)是純連結、帶 `aria-current="page"`、每個各自一個停靠點。
+**並存本身仍是常態**:沒有列上按鈕、也不是 composite 的一排東西(頁面導覽連結、工具列外的獨立按鈕)照舊各自一站。
 
 ## 判準
 
@@ -180,8 +190,9 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 
 | 元件 | 五條裡命中哪幾條 | 模型 |
 |---|---|---|
-| `SidebarMenu` / `SidebarMenuButton` | **一條都不命中** —— designer 定義的固定目的地、啟動一定換頁、層數有界、使用者不能改動項目本身 | **每項一個 Tab 停靠點**,無方向鍵 |
-| `TreeView` | **五條全中** —— 節點可選取並施加動作、需要打字前導與任意深度回父節點、深度無上界、使用者自己新增與拖曳重排、啟動不保證換 URL | **容器單一 Tab 停靠點 + 方向鍵**(`components/TreeView/tree-view.tsx`,DOM focus 永遠停在 `role="tree"` 容器)|
+| `SidebarMenu` / `SidebarMenuButton` | **一條都不命中** —— designer 定義的固定目的地、啟動一定換頁、層數有界、使用者不能改動項目本身 → **語意仍是導覽清單,不是樹** | **一串(一個 `SidebarMenu`)一個 Tab 停靠點** + `↑` `↓` 換項 + `→` 進這一項的小按鈕、`←` 回項目,`Tab` 一下離開這一串(2026-09-25 user 拍板路線乙,理由是「列上有小按鈕」而**不是**五條判準,見下方「列上有小按鈕的一串」;2026-09-24 版為「每項一個 Tab 停靠點,無方向鍵」,已撤回)|
+| `TreeView` | **五條全中** —— 節點可選取並施加動作、需要打字前導與任意深度回父節點、深度無上界、使用者自己新增與拖曳重排、啟動不保證換 URL | **樹狀表格(`role="treegrid"`)身分,整棵樹一個 Tab 停靠點(列上的 roving tabindex,容器不可聚焦)+ 方向鍵**;列上的小按鈕用 `→` 進(收著的資料夾先展開)、`Tab` 一下離開(2026-09-25 路線乙,見下方「列上有小按鈕的一串」;2026-09-24 版身分為 `role="tree"`、DOM focus 永遠停在容器(`aria-activedescendant`),別列的隱藏按鈕仍在 Tab 路上 —— 已隨 B9 改掉)|
+| `FileUpload` 內的 FileItem 清單 | 不適用(不是階層,也不是 composite 小工具) | **一串一站** + `↑` `↓` 換項 + `→` 進這一項的按鈕,`Tab` 一下離開(路線乙,同上)|
 | `SelectMenu` / `DropdownMenu` / `TimePicker` 的欄 | 命中 1、2、5 —— 選單項是該選單的值 | **容器單一停靠點 + 方向鍵 / `aria-activedescendant`** |
 | `DataTable`(`role="grid"`)| 命中 1、2 —— 格是表格的值 | **容器單一停靠點 + 方向鍵** |
 
@@ -189,6 +200,139 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 側欄導覽項是連結,W3C APG Navigation Treeview 的 treeitem 也是連結;側欄可以同時裝這兩種,Notion / VS Code / GitHub 都是。
 
 **兩者在同一個側欄並存完全合規**,`sidebar.spec.md` 的決策樹「兩者都有 → SidebarMenu + TreeView 分區」對齊 VS Code 的三模型並存。
+
+## 列上有小按鈕的一串:一串一站 + 方向鍵(2026-09-25 user 拍板「路線乙」)
+
+**user 原話(逐字,附條件同意)**:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」
+(待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` B9)。
+條件(世界級 + DS 一致)的查證是 **AI 研究**,結論記在同一列:乙 = Adobe 正式版樹 / 清單的預設、W3C 對「滑過才出現的按鈕」的建議、
+微軟側欄 Tab 一下離開;**乙不是唯一做法**(GitHub / IBM / Atlassian 的側欄是每項一站),但不違背世界級。
+
+### 規則
+
+| 鍵 | 焦點在項目上 | 焦點在這一項的小按鈕上 |
+|---|---|---|
+| `↑` `↓` | 上一項 / 下一項;到頭尾停住,不繞回 | 回到上一項 / 下一項(焦點落在項目上)—— **AI 推導**,依 Adobe 方向鍵模式與 Fluent List(見下);**會開選單的小按鈕也一樣**,開選單用 `Enter` / 空白鍵(樹與側欄原本不一致,統一成側欄做法 —— 待辦總帳〇節 X6) |
+| `Home` / `End` | 第一項 / 最後一項 | 同左(焦點落在項目上)—— 三處原本不一致,統一成側欄做法(待辦總帳〇節 X4) |
+| `→` | 樹裡收著的資料夾 → 先展開(待辦總帳 B9);否則 → 進這一項的第一顆小按鈕(沒有按鈕就不動) | 下一顆小按鈕 |
+| `←` | 樹:照樹的規則(展開的先收合、否則回父節點);平面清單:不動 | 上一顆;已在第一顆 → 回項目 |
+| `Tab` / `Shift+Tab` | **一下就離開這一串**(往下 / 往上一站) | 同左 —— 一下就離開這一串(焦點先回項目、再由瀏覽器往外走一站;樹的 `Shift+Tab` 原本要兩下,統一成側欄做法 —— 待辦總帳〇節 X7) |
+| `Esc` | 不是離開這一串的鍵(查到的每一家都不是) | **本檔不規定**(未拍板;Fluent List 的做法是回項目:「`Esc` focuses the parent list item」)|
+
+- **別項的小按鈕一律不在 Tab 路上**(`tabIndex=-1` 或不渲染);**鍵盤走到的那顆按鈕必須看得見**(滑過才出現的按鈕,焦點進來時要顯示 —— AI 推導,依 Fluent / VS Code 的樹)。
+- **從外面 Tab 回來,落在上次停的那一項**;沒停過 → 目前這一頁那一項(有 `aria-current` 時;樹是選中的那一列)或第一項
+  (W3C:"The element that had focus the last time the composite contained focus. Or, if the composite has not yet contained the focus, the first element." <https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L270-L277>;
+  導覽樹範例 "when tabbing into the tree, focus always lands on the item representing the current page." <https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treeview/examples/treeview-navigation.html#L344-L345>)。
+- **一鍵跳出整個側欄(F6 那一類)另談**,不在本條(見下方「還沒做」)。
+- **實作只有一份**:按鍵判定 + 落點 + Tab 停靠點 + 真焦點宿主的執行 = `src/lib/roving-list-keyboard.ts`(2026-09-26 由 `SidebarMenu`、`FileUpload` 檔案清單、`TreeView`、`Command` 四份平行實作合一,待辦總帳〇節「按鍵規則合併」);
+  各宿主只讀自己的 DOM(誰是項目、項目裡有哪些東西)。判定表 `scripts/test-roving-list-keyboard.mjs`(含合併前 X4 / X6 / X7 不一致的對照組)。
+  宿主一律在**捕獲階段**接鍵,所以項目裡的選單鈕自己的 `↓` 搶不到(上表 X6);項目裡的輸入框保留自己的方向鍵與打字,`Tab` 仍一下離開。
+
+### 適用範圍 —— 只有這些
+
+- `SidebarMenu`(每個 `SidebarMenu` 是一串)與側欄捲動區多出來的那一站(改傳 `viewportTabIndex={-1}`,`components/ScrollArea/scroll-area.spec.md`「鍵盤捲動」段的 `viewportTabIndex={-1}` opt-out)。
+- `TreeView`(身分改樹狀表格,見下節)與「樹裡別項的隱藏按鈕也在 Tab 路上」這個既有缺陷。
+- `FileUpload` 內的 FileItem 清單。
+- 待辦總帳 B9 點名的:AgentPanel 對話紀錄的每一列(改名 / 刪除)、PeoplePicker 多選清單裡每個人的頭像(今天各佔一站)。
+- **其他元件都不在本條**。把「一串一站 + → 進按鈕」套到別類東西(資料表格的列、分頁、Chip 列、月曆事件、工具列…)
+  是一個新的設計主張(meta-patterns M8「跨類別外推本身就是新主張」),要重新查證、由 user 拍板,不得以「同一條規則」直接搬過去。
+
+### 一手依據
+
+- W3C 通則:"the tab sequence should include only one focusable element of a composite UI component."
+  (<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L264>)
+- W3C grid:整串只佔一站,滑過才出現的按鈕用方向鍵摸到(上方「先講結論」引文,`grid-pattern.html#L157-L158`)。
+- Adobe(正式版樹 / 清單的預設就是乙):"By default, TreeView uses arrow key navigation to move focus into rows. Set `keyboardNavigationBehavior="tab"` to have Tab move focus in and out of a row. Use this when rows contain interactive elements such as text fields…"
+  (<https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/dev/s2-docs/pages/s2/TreeView.mdx#L391-L392>);
+  測試:→ 進列內按鈕、↓ 換列、Tab 整串離開(<https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/GridList.test.js#L1090-L1130>)。
+- Fluent List(微軟):"`Right arrow` enters the first focusable element inside the current list item"、"`Tab` goes to the next focusable item after the List"、"`Esc` focuses the parent list item"
+  (<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-list/stories/src/List/ListDescription.md#L66-L75>)。
+  微軟自己的側欄(Fluent Nav)實測 Tab 一下就離開(官方線上 Storybook「Components/Nav → Split Nav Items」,2026-09-25 實測,未釘版本)。
+- **反例(誠實列出)**:IBM Carbon 側欄 "All items can be reached by Tab"(<https://carbondesignsystem.com/components/UI-shell-left-panel/accessibility/>);GitHub、Atlassian 的側欄也是每項一站。乙不是唯一做法。
+- **跟 DS 一致**:月曆日期格、分頁、單選組早已是「一站 + 方向鍵」;選單的新規則(下方「彈出框開著時的 Tab 與 Esc」)是同一句話 ——
+  **Tab 換到下一區,方向鍵在區裡移動,Esc 往回退一步**(這句話是 AI 的歸納,不是任何一家的原文)。
+
+### `TreeView` 改用樹狀表格(treegrid)身分
+
+- 理由:W3C 只在樹狀表格定義了「列上的按鈕」,一般的「樹」那一頁 Tab 鍵出現 0 次;Adobe 正式版的樹也是這個身分
+  (`gridProps.role = 'treegrid'`,<https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/tree/useTree.ts#L57>)。
+- 樹狀表格的 `→`:"If focus is on a collapsed row, expands the row. If focus is on an expanded row or is on a row that does not have child rows, moves focus to the first cell in the row."
+  (<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treegrid/treegrid-pattern.html#L66-L69>)——
+  也就是**在已展開的資料夾上按 `→`,走進這一列的小按鈕,不再跳到第一個子項**(第一個子項照樣用 `↓` 到得了)。
+  這一點改掉 `components/TreeView/tree-view.spec.md` 現行的「→ 到第一個子節點」,由 TreeView 的 owner 落地。
+- 鐵律照舊(下方「宣告了 composite 角色,就必須真的實作那套鍵盤」):寫上 `treegrid` 就要實作樹狀表格的鍵盤,
+  `scripts/composite-role-keyboard-invariant.mjs` 把關。讀螢幕軟體會念成「樹狀表格」—— 未用讀屏實測。
+
+## 彈出框開著時的 Tab 與 Esc(2026-09-25 user 拍板;跨元件單一住所)
+
+`focus-canonical.md` 只管焦點框怎麼畫;**彈出框開著時按 `Tab` / `Esc` 做什麼、關了之後焦點去哪,住在這一節**,其他文件只放指標。
+
+**user 原話(逐字,附條件同意)**:選單 Tab:「你確定這個符合我們一致的設計語言且不違背世界級的設計就這樣做」;
+子選單 Esc:「你確定這符合我們一致的設計語言且不違背世界級的設計就這樣做」;
+追問:「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」
+(待辦總帳 B10 / B11)。條件的查證是 AI 研究;單選下拉一併收起是 AI 為了滿足「選單類要一致」這個條件而做的延伸,已在回覆明寫,**user 可在預覽否決**(待辦總帳 B11)。
+
+### 彈出框開著時按 `Tab`
+
+先分兩類 —— W3C 就是這樣分的:彈出來的是**一串選項**,`Tab` 收起並離開;彈出來的是**一個有好幾個東西要填、要按的小面板**,`Tab` 在裡面輪流。
+
+| 類 | 本 DS 的例子 | 開著按 `Tab` / `Shift+Tab` | 一手依據 |
+|---|---|---|---|
+| **選單** | `DropdownMenu`(含子選單,以及用它的帳號選單、麵包屑、分頁溢出、Chip 溢出、表格欄位選單、檔案檢視器縮放、AI 浮鈕右鍵選單)| **收起全部層**,焦點從**觸發鈕**往下 / 往上走一站 | W3C:"When focus is on a `menuitem` in a `menu` or `menubar`, move focus out of the `menu` or `menubar`, and close all menus and submenus."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/menubar/menu-and-menubar-pattern.html#L82>);Fluent 測試 "should be able to tab to next element after the root trigger"(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-menu/library/src/components/Menu/Menu.cy.tsx#L579>);Primer "When Tab or Shift+Tab is pressed, the menu should close and the focus should naturally move to the next item"(<https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/hooks/useMenuKeyboardNavigation.ts#L29-L30>)|
+| **不能打字搜尋的單選下拉** | `Select`(不可搜尋)、`SelectMenu` 單選 | **選定反白的那一項**、收起、從觸發欄位往下 / 往上走 | W3C 單選下拉範例:"Tab: Sets the value to the content of the focused option in the listbox. / Closes the listbox. / Performs the default action, moving focus to the next focusable element."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-select-only.html#L188-L199>);Fluent:`case 'Tab': !multiselect && activeOption && selectOption(e, activeOption);`(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-combobox/library/src/utils/useTriggerSlot.ts#L198-L200>)|
+| **可打字搜尋的單選下拉** | `Select`(可搜尋)、`PeoplePicker` 單選 | 今天已會收起、往下走;**補「選定反白的那一項」** | W3C 可打字下拉範例 `case 'Tab': this.close(true); … this.setValue(this.option.textContent)`(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/js/combobox-autocomplete.js#L388-L395>)|
+| **面板** | 多選下拉(底部有「全選」)、`DatePicker`、`TimePicker`、`DataTable` 的篩選 / 欄位 / 排序面板、AgentPanel 對話紀錄浮層 | **在面板裡輪流**(維持現狀);離開面板靠 `Esc` 或點外面 | W3C:"Like non-modal dialogs, modal dialogs contain their tab sequence."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L28-L31>);W3C 選日期範例就是對話框、Tab 在裡面輪流(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/examples/datepicker-dialog.html#L244-L252>)|
+
+- **下一站一律從觸發點算**:彈出內容掛在頁面最末端(Portal),從選單項往下走會掉到頁尾。實作只有一份:`src/lib/focus-after-trigger.ts`(`DropdownMenu` 與 `SelectMenu` 共用;2026-09-26 兩份合一,待辦總帳〇節「按鍵規則合併」)。
+  觸發點在對話框 / 面板裡時,照那個框的規則在框內繞圈;頁面上已經沒有下一站時,焦點留在觸發點。
+- **多選下拉**行為不變,但觸發欄位今天宣告自己是「下拉清單」(`aria-haspopup="listbox"`),實際是面板 —— 宣告要改成跟實際一樣(待辦總帳 B11,由 Select / Combobox 的 owner 落地)。
+- **世界級在這題不一致,誠實列出**:「按了不動 / 焦點鎖在選單裡」那一派有 Radix(本 DS 底層,"menus should not be navigated using tab key so we prevent it",<https://github.com/radix-ui/primitives/blob/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/menu/src/menu.tsx#L570-L572>)、
+  Adobe React Aria(測試 "contains focus within the menu",<https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/Menu.test.tsx#L1842-L1877>)、
+  VS Code("// Stop tab navigation of menus",<https://github.com/microsoft/vscode/blob/2ec783d855253a817b5787fb48bc6c3d8d31c0c5/src/vs/base/browser/ui/menu/menu.ts#L132-L139>)。
+  本 DS 選 W3C 這一派,因為它跟本檔「Tab 換區、方向鍵在區裡走」同一句話(AI 推導)。
+
+### 不能打字的選項清單:`Enter` 與空白鍵都是選這一項(2026-09-26 user 同意)
+
+**不能打字的選項清單,`Enter` 與空白鍵都是選這一項** —— 選定反白的那一項、收起、焦點回觸發欄位;兩個鍵同一個結果。
+
+- 適用:上表「不能打字搜尋的單選下拉」那一類(`Select` 不可搜尋、`SelectMenu` 單選)—— 清單裡沒有可以打字的地方,空白鍵沒有別的用途。
+- 不適用:可打字搜尋的下拉(`Select` 可搜尋、`PeoplePicker`、`Combobox`)—— 空白鍵是打進搜尋框的一個字,選用 `Enter`;多選下拉是面板型(上表),不在本條。
+- 一手依據:W3C 單選下拉範例清單按鍵表的 `Space` 列:"Sets the value to the content of the focused option in the listbox. / Closes the listbox. / Sets visual focus on the combobox."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-select-only.html#L177-L186>,與同表 `Enter` 列 `#L167-L176` 三句逐字相同);
+  Fluent:`code === keys.Enter || (!multiselect && code === keys.Space)` → `'CloseSelect'`(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-combobox/library/src/utils/dropdownKeyActions.ts#L55-L57>);
+  可打字的那一類:W3C 可打字下拉範例的清單按鍵表沒有 `Space` 列,"Printable Characters: … Types the character in the textbox."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-autocomplete-list.html#L295-L300>)。
+- 來源:這句是 AI 的白話(待辦總帳 L7 第 2 條);user 2026-09-26 同意清單回覆逐字「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」。
+  各元件的按鍵表(`SelectMenu` / `Select` spec「A11y 預設」)只寫指標回到本節。同一條 L7 的另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」**不在本條**:表格(試算表模式)那一題 user 09-26 仍在提問,未同意。
+
+### `Esc` 一次只關最內層(全 DS 規則)
+
+**一次 `Esc` 只關焦點所在的那一個暫時性浮層**:子選單 → 只關這一層、焦點回上一層打開它的那一項(與 `←` 同效果);
+浮層疊浮層(檢視器裡的選單、篩選面板裡的下拉、對話框上的確認框)→ 一層一層關。**每按一次少一層。**
+`Esc` 不是用來離開常駐區塊(側欄、樹、清單)的鍵。
+
+- W3C:"Escape: Close the menu that contains focus and return focus to the element or context, e.g., menu button or parent `menuitem`, from which the menu was opened."
+  (<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/menubar/menu-and-menubar-pattern.html#L153>)
+- 同派(有一手的 9 家裡 8 家):Adobe(<https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/menu/useSubmenuTrigger.ts#L161-L171>)、
+  Fluent(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-menu/library/src/components/Menu/Menu.cy.tsx#L952-L964>)、
+  Primer "closes top menu on escape or left arrow key press"(<https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/ActionMenu/ActionMenu.test.tsx#L626-L649>)、
+  VS Code(<https://github.com/microsoft/vscode/blob/2ec783d855253a817b5787fb48bc6c3d8d31c0c5/src/vs/base/browser/ui/menu/menu.ts#L953-L957>)、
+  Windows 桌面選單(<https://github.com/microsoft/microsoft-ui-xaml/blob/258a2e9b0852b69c98162e6daf9906ec8fe5161a/dxaml/xcp/dxaml/lib/MenuFlyoutPresenter_Partial.cpp#L232-L235>)、
+  Chrome(<https://github.com/chromium/chromium/blob/c53fe9e04b2856967d1f2f716b99b0911251e521/ui/views/controls/menu/menu_controller.cc#L2155-L2167>)、
+  Firefox "Pressing Escape hides one level of menus only."(<https://github.com/mozilla-firefox/firefox/blob/0a5c5bffebd796cedba281419efd2f8f3cc7c85d/layout/xul/nsXULPopupManager.cpp#L2642-L2648>)。
+  唯一例外 Radix(子選單 Esc 關整棵,<https://github.com/radix-ui/primitives/blob/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/menu/src/menu.tsx#L1262-L1266>),`DropdownMenu` 已改寫。Mac 與舊式 Windows 程式找不到官方文字。
+- DS 內部早已這樣寫:`components/Dialog/dialog.spec.md`(確認框「Esc 只關最上層」)、`components/Sheet/sheet.spec.md`(「關閉由上而下逐層」)、
+  `components/AgentPanel/agent-panel.spec.md`(「只關焦點所在那一區裡最內層」);機制是 Radix DismissableLayer 只讓最上層處理 Esc。
+
+### 關了之後焦點去哪
+
+| 怎麼關的 | 焦點 |
+|---|---|
+| `Esc` | 回打開它的那一個(按鈕;子選單 → 上一層那一項) |
+| 選了一項(一般動作) | 回打開它的那一個 |
+| 點外面 | **留在點的地方**,不搶回來 |
+| `Tab` / `Shift+Tab` | 打開它的那一個的下一站 / 上一站 |
+
+`Esc` 那一列是 W3C 原文(上引 `#L153`);其餘三列是 **AI 研究的歸納**(待辦總帳 A1 列的研究結論;非 modal 選單點外面不搶焦點 = Radix `hasInteractedOutsideRef` 的既有行為)。
+既有偏差與修法:AI 浮鈕的右鍵選單原本關閉時一律把焦點搶回浮鈕(點外面也搶),改成只有 `Esc` / 選了項目才回(`AgentPanel/agent-panel-fab.tsx`,待辦總帳 B11)。
 
 
 ## 焦點放在格上還是格裡的控件上,以及進格用什麼鍵(跨元件規則,2026-09-24 訂)
@@ -242,6 +386,7 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 |---|---|---|---|---|
 | `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape` |
 | `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 選這一天(`onDateClick`)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
+| `Calendar` 月檢視,日期格唯讀(`readOnlyDates`,2026-09-26)| **格**(日期數字不是按鈕,格裡沒有那一個控件)| 進格(格沒有主要動作)| 進格 | `Escape` / `F2` |
 
 **新元件照這條判,不要再逐案挑鍵。** 兩句話:
 **(1) 這一格裡裝的是文字還是一個控件?** 決定焦點放哪。
@@ -351,8 +496,9 @@ APG 另有一段雖然字面在講 keyboard shortcuts,論證結構卻直接打�
 ### 套到本 DS 的結論
 
 **我們每一個收成單一停靠點的東西,都是 Microsoft 所說的 well-known pattern**:
-`TreeView`(樹)、`SelectMenu` / `DropdownMenu`(選單)、`TimePicker` 的欄(選項清單)、
-`DataTable`(表格)、`Calendar` 月檢視(表格)、`RadioGroup`(單選組)。
+`TreeView`(樹 / 樹狀表格)、`SelectMenu` / `DropdownMenu`(選單)、`TimePicker` 的欄(選項清單)、
+`DataTable`(表格)、`Calendar` 月檢視(表格)、`RadioGroup`(單選組),
+以及 2026-09-25 起的 `SidebarMenu` 與 `FileUpload` 檔案清單(側欄導覽 / 清單:Fluent Nav、Fluent List、Adobe GridList 都是一站 + 方向鍵,見「列上有小按鈕的一串」)。
 **沒有一個是自己發明的群組** —— 前提一成立。
 
 前提二由本檔的鐵律與 `scripts/composite-role-keyboard-invariant.mjs` 強制:
@@ -398,5 +544,14 @@ Microsoft 與 VS Code 都有,我們沒有。這會是產品層決策,不在本�
 | 「Primer 那句 never 的精確範圍」 | 讀 `nav-list.mdx` 緊接兩行的上下文 | **AI 的解讀** —— 原文字面的 never 讀起來更絕對 |
 | 「GitHub 的檔案樹節點就是 `<a href>`」 | AI 2026-09-24 對話中的斷言 | **已撤回,無法證實** —— GitHub 2025-01 官方文章逐字寫「Nodes on tree view constructs are tree items, not links」,且把「Supporting links inside a node」列為未來工作。本檔的反證改用 APG 官方範例(那個確實是 `<a href>`) |
 | 「兩種模型並存是常態」 | VS Code 原始碼 + 官方 accessibility 文件 + GitHub/Primer 原始碼與文件 | **一手實證** |
+| 「『各自一個』才是預設」→ `SidebarMenu`「每項一個 Tab 停靠點,無方向鍵」 | AI 2026-09-24 從 VS Code 那句話推出 | **已撤回(2026-09-25)** —— user 選了路線乙(下一列);VS Code 那句話只支持「收成一個要有理由」,本檔現在寫明理由 |
+| 側欄、樹、FileUpload 檔案清單走路線乙(一串一站、`→` 進列上小按鈕、`Tab` 一下離開) | **user 2026-09-25 附條件同意**,逐字:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;條件查證 = AI 研究(待辦總帳 B9) | user 拍板(附條件,條件已查證成立) |
+| 路線乙表格裡「按鈕上 `↑` `↓` 回到上下一項」「鍵盤走到的按鈕要看得見」「頭尾不繞回」「按鈕上 `Home` / `End`」「會開選單的小按鈕 `↓` 也是換項」 | 依 Adobe / Fluent / VS Code 一手;後兩條是三處實作不一致時統一成側欄做法 | **AI 推導**,user 2026-09-26 以同意清單(35 個細節,含 X4 / X6)整批同意;「按鈕上按 `Esc`」刻意不規定(未拍板) |
+| 不能打字的選項清單 `Enter` 與空白鍵都是選這一項 | 句子是 AI 的白話(待辦總帳 L7 第 2 條);一手 = W3C 單選下拉範例、Fluent Dropdown | user 2026-09-26 同意(附條件,逐字見該節);L7 另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」未同意、不入本檔 |
+| `TreeView` 改用 `treegrid` 身分 | 待辦總帳 B9「樹改用樹狀表格身分」;理由(W3C 只在樹狀表格定義列上按鈕)是 AI 研究 | 隨路線乙拍板 |
+| 選單開著按 `Tab` = 收起全部、從觸發鈕往下走;子選單 `Esc` 只關一層 | **user 2026-09-25 附條件同意**,逐字見「彈出框開著時的 Tab 與 Esc」;條件查證 = AI 研究(待辦總帳 B10 / B11) | user 拍板(附條件,條件已查證成立) |
+| 不能打字的單選下拉同樣收起並選定反白項、可打字的補「選定」 | user 追問:「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」——問句 + 一致性原則;AI 為滿足「選單類一致」而延伸,回覆已明寫 | **AI 延伸,user 可在預覽否決**(待辦總帳 B11) |
+| 「Tab 換區、方向鍵在區裡走、Esc 退一步」這句總結 | 從 W3C 通則、Apple WWDC、本檔各節歸納 | **AI 的歸納**,不是任何一家的原文 |
+| 關閉後焦點去哪(`Esc` 之外的三列) | 待辦總帳 A1 列的研究結論 | **AI 研究的歸納**;`Esc` 那一列是 W3C 原文 |
 
-本檔的規範引文皆為逐字;行號會隨上游 main 漂移,故只記檔案路徑不記行號。
+本檔 2026-09-24 版的規範引文皆為逐字,只記檔案路徑(上游 main 會漂移,不記行號);2026-09-25 新增的各節一律釘 commit + 行號。

@@ -6,6 +6,16 @@ import { Empty } from '@/design-system/components/Empty/empty'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
+// 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / TreeView / Command 共用;見下方檔案清單鍵盤段)
+import {
+  ROVING_CONTROL_SELECTOR,
+  applyRovingAction,
+  isTextEntryElement,
+  listRovingControls,
+  pickRovingTabStop,
+  removeRovingControlsFromTabOrder,
+  resolveRovingKey,
+} from '@/design-system/lib/roving-list-keyboard'
 
 /**
  * FileUpload — 拖放 / 點擊上傳區塊
@@ -105,12 +115,29 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
 }
 
 function focusAfterFileRemoval(current: HTMLButtonElement) {
-  const list = current.closest('ul')
+  // 清單容器兩種元素都可能(唯讀 ul / 可操作 grid div,見下方 fileListNode),用資料屬性找
+  const list = current.closest<HTMLElement>('[data-file-upload-list]')
   const buttons = list ? Array.from(list.querySelectorAll<HTMLButtonElement>('[data-collection-remove]')) : []
   const index = buttons.indexOf(current)
   const next = buttons[index + 1] ?? buttons[index - 1]
   const owner = list?.parentElement?.querySelector<HTMLElement>('[data-file-upload-owner]')
   ;(next ?? owner)?.focus()
+}
+
+// ── 鍵盤:內建檔案清單 = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9「路線乙」)──
+// 決策出處 = governance/planning/2026-09-25-interaction-and-hover-remediation.md B9,user 逐字(附條件同意,條件查證成立記在同列):
+// 「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」。規則 SSOT = ds-canonical/references/keyboard-model-canonical.md
+// 「列上有小按鈕的一串」;本元件的按鍵表只住 file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」;判定與執行 = lib/roving-list-keyboard.ts
+// (2026-09-26 與 Sidebar / TreeView / Command 四份合一,同檔〇節「按鍵規則合併」)。2026-09-25 前:每一列的「移除」鈕各佔一站(3 個檔案 = 3 站),沒有方向鍵。
+//
+// 實作取捨(AI 推導):
+//   - 列(role=row)的 0 / -1 由 React 管(列是本元件自己渲染的);列裡的按鈕一律 -1,但用 DOM 收 ——
+//     列裡除了本元件的移除鈕,還可能有 consumer 經 `description`(ReactNode)放進來的連結,React 管不到。
+//   - 只在有 `onRemove`(= 列上有本元件自己的按鈕)時才變成一站 + 方向鍵;沒有 onRemove 的唯讀清單沒有可操作的東西,
+//     列不該是焦點站(focus-canonical「問題一」:不可操作 → 不可聚焦),維持原本的純清單。
+
+function getFileRows(list: HTMLElement): HTMLElement[] {
+  return Array.from(list.children).filter((el): el is HTMLElement => el instanceof HTMLElement && el.hasAttribute('data-file-upload-row'))
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -183,52 +210,140 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
 
     const hasFiles = Array.isArray(files) && files.length > 0
 
-    const fileListNode = hasFiles ? (
-      <ul
-        className={cn(
-          'flex flex-col w-full',
-          // 2026-06-03 gap SSOT:列間 gap + control→list gap(mt)由「item 有無邊框」單一規則決定,
-          // 同值貫穿整個垂直堆疊 — rich(form surface = border card)→ 8px;compact(borderless/bg-pill)→ 4px。
-          // 消費 FileItem「List wrapper canonical」(file-item.spec.md),取代原硬寫 gap-2 / mt-3(不分 mode)。
-          fileListMode === 'rich' ? 'gap-2 mt-2' : 'gap-1 mt-1',
-        )}
+    // ── 檔案清單鍵盤(B9 路線乙;實作取捨見上方「鍵盤:內建檔案清單 = 一個 Tab 停靠點」段)──
+    // 一站 + 方向鍵只在列上有本元件自己的按鈕(onRemove)時成立;唯讀清單維持純 ul / li。
+    const rowKeyboard = hasFiles && !!onRemove
+    const listRef = React.useRef<HTMLDivElement>(null)
+    // 從外面 Tab 回來落在上次停的那一列;沒停過(或那一列已被移除)→ 第一列
+    // (keyboard-model-canonical.md「列上有小按鈕的一串」引 W3C「the element that had focus the last time」)。
+    const [rememberedRowId, setRememberedRowId] = React.useState<string | null>(null)
+    // 停靠點判定與 Sidebar / TreeView 同一份(X1;lib/roving-list-keyboard.ts `pickRovingTabStop`):上次停的 → 第一列
+    const tabStopRowId = rowKeyboard
+      ? (pickRovingTabStop(files!, { remembered: files!.find((f) => f.id === rememberedRowId) ?? null })?.id ?? null)
+      : null
+
+    // 列裡的按鈕一律不在 Tab 路上(-1;→ 才進得去)。每次 render 後同步一次:列增減、consumer 的 description 換內容都會 re-render。
+    React.useLayoutEffect(() => {
+      const list = listRef.current
+      if (!rowKeyboard || !list) return
+      for (const row of getFileRows(list)) removeRovingControlsFromTabOrder(row.querySelectorAll<HTMLElement>(ROVING_CONTROL_SELECTOR))
+    })
+
+    // 焦點用任何方式進到某一列(Tab / 方向鍵 / 點擊 / 移除後的焦點接力)→ 記住那一列
+    const handleFileListFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+      const id = (event.target as HTMLElement).closest('[data-file-upload-row]')?.getAttribute('data-file-upload-row')
+      if (id && id !== rememberedRowId) setRememberedRowId(id)
+    }
+
+    // 按鍵表 SSOT = file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」(B9);判定與執行 = lib/roving-list-keyboard.ts。
+    // 用 capture:方向鍵整串歸清單,搶在列裡的按鈕 / 連結自己的處理之前(同 Sidebar;X6 全宿主一致:
+    // consumer 從 description 放進來的選單鈕按 ↓ 也是換列,開選單用 Enter / 空白鍵)。
+    const handleFileListKeyDownCapture = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const list = event.currentTarget
+      const target = event.target as HTMLElement
+      const row = target.closest<HTMLElement>('[data-file-upload-row]')
+      if (!row || row.parentElement !== list) return
+      const onRow = target === row
+      const controls = listRovingControls(row)
+      // 焦點在列裡、但不是列上可走到的東西 → 不接管
+      if (!onRow && !controls.includes(target)) return
+      const action = resolveRovingKey({
+        key: event.key,
+        focus: onRow ? 'item' : 'control',
+        controlCount: controls.length,
+        controlIndex: onRow ? -1 : controls.indexOf(target),
+        controlIsTextEntry: !onRow && isTextEntryElement(target),
+        defaultPrevented: event.defaultPrevented,
+        metaKey: event.metaKey,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+      })
+      applyRovingAction(action, { event, item: row, controls, items: getFileRows(list) })
+    }
+
+    // 列的內容兩種清單共用(唯讀清單 ul/li、可操作清單 grid/row)—— FileItem 的 props 只寫一份
+    const renderFileRow = (f: FileUploadStatus) => (
+      <FileItem
+        // grid 的每一列只放一格,列的直接子元素是 gridcell(Fluent List 多動作列與 React Aria GridList 同構,出處見 spec)
+        role={rowKeyboard ? 'gridcell' : undefined}
+        mode={fileListMode}
+        name={f.name}
+        status={f.status}
+        progress={f.progress}
+        description={f.description ?? (f.size != null ? formatBytes(f.size) : undefined)}
+        thumbnailSrc={f.thumbnailSrc}
+        actions={
+          onRemove ? (
+            // Collection remove(per-file)— 不是 dismiss surface,故不套 `dismiss` prop。
+            // 視覺與 dismiss 一致(text variant + fg-muted dim)— 對齊 inline-action.spec.md
+            // 「Dismiss canonical — X close only」+「dismiss prop 觸發條件」段:onRemove callback 不觸發 dismiss prop。
+            <Button
+              iconOnly
+              variant="text"
+              size="xs"
+              startIcon={X}
+              aria-label={removeAriaLabel(f.name)}
+              data-collection-remove
+              onClick={(e) => {
+                e.stopPropagation()
+                focusAfterFileRemoval(e.currentTarget)
+                onRemove(f.id)
+              }}
+              className="text-fg-muted hover:text-fg-secondary"
+            />
+          ) : undefined
+        }
+      />
+    )
+
+    const fileListClassName = cn(
+      'flex flex-col w-full',
+      // 2026-06-03 gap SSOT:列間 gap + control→list gap(mt)由「item 有無邊框」單一規則決定,
+      // 同值貫穿整個垂直堆疊 — rich(form surface = border card)→ 8px;compact(borderless/bg-pill)→ 4px。
+      // 消費 FileItem「List wrapper canonical」(file-item.spec.md),取代原硬寫 gap-2 / mt-3(不分 mode)。
+      fileListMode === 'rich' ? 'gap-2 mt-2' : 'gap-1 mt-1',
+    )
+
+    const fileListNode = !hasFiles ? null : rowKeyboard ? (
+      // 列上有按鈕的清單用 grid / row / gridcell 身分(file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」;W3C:listbox 的選項裡不能互動,
+      // 「To present a list of interactive elements, see the Grid Pattern」)。用 div 不用 ul / li:HTML 的 ul / li
+      // 不允許改成 grid / row 角色(W3C ARIA in HTML 允許角色表;React Aria GridList 同樣渲染 div)。
+      // 宣告了 composite 角色就得真的有方向鍵 —— 處理程式 = 上方 handleFileListKeyDownCapture
+      // (keyboard-model-canonical.md「宣告了 composite 角色,就必須真的實作那套鍵盤」)。
+      <div
+        ref={listRef}
+        role="grid"
         aria-label="已上傳的檔案"
+        data-file-upload-list=""
+        className={fileListClassName}
+        onKeyDownCapture={handleFileListKeyDownCapture}
+        onFocus={handleFileListFocus}
       >
         {files!.map((f) => (
+          <div
+            key={f.id}
+            role="row"
+            data-file-upload-row={f.id}
+            // 整串只有一列是 0(上次停的那列 / 第一列),其餘 -1
+            tabIndex={f.id === tabStopRowId ? 0 : -1}
+            // 列拿到焦點時的框:內描邊(focus-canonical「框怎麼畫」:撐滿容器寬度的列往內畫;與 FileItem 自己的整列焦點框
+            // 同幾何)。圓角同 FileItem 的 rounded-md,框才貼著列的圓角走。滑鼠點列不畫(:focus-visible 啟發式)。
+            className="rounded-md focus-visible:focus-ring-inset"
+          >
+            {renderFileRow(f)}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <ul className={fileListClassName} aria-label="已上傳的檔案" data-file-upload-list="">
+        {files!.map((f) => (
           <li key={f.id} className="list-none">
-            <FileItem
-              mode={fileListMode}
-              name={f.name}
-              status={f.status}
-              progress={f.progress}
-              description={f.description ?? (f.size != null ? formatBytes(f.size) : undefined)}
-              thumbnailSrc={f.thumbnailSrc}
-              actions={
-                onRemove ? (
-                  // Collection remove(per-file)— 不是 dismiss surface,故不套 `dismiss` prop。
-                  // 視覺與 dismiss 一致(text variant + fg-muted dim)— 對齊 inline-action.spec.md
-                  // 「Dismiss canonical — X close only」+「dismiss prop 觸發條件」段:onRemove callback 不觸發 dismiss prop。
-                  <Button
-                    iconOnly
-                    variant="text"
-                    size="xs"
-                    startIcon={X}
-                    aria-label={removeAriaLabel(f.name)}
-                    data-collection-remove
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      focusAfterFileRemoval(e.currentTarget)
-                      onRemove(f.id)
-                    }}
-                    className="text-fg-muted hover:text-fg-secondary"
-                  />
-                ) : undefined
-              }
-            />
+            {renderFileRow(f)}
           </li>
         ))}
       </ul>
-    ) : null
+    )
 
     return (
       <div ref={ref} className={cn('w-full', hasFiles && 'flex flex-col')}>
@@ -318,7 +433,9 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // 對稱 padding p-[var(--layout-space-loose)]:四邊等距,density-aware(md=16px / lg=24px),對齊 DS chrome padding canonical。
           // 不再硬寫 px-6 py-10(不對稱+非 token)。內容物(icon + title + description)垂直堆疊由 gap-2 控制
           'rounded-md border-2 border-dashed p-[var(--layout-space-loose)]',
-          'cursor-pointer transition-colors',
+          // 滑過 / 拖進來的邊框變色瞬間切換,不做過渡(2026-09-26 待辦總帳 L9「全部瞬間」延伸到外框,user:「確定這樣才是一致設計語言就做」;
+          // 同一次滑過底色瞬間、外框卻 0.15 秒 = 兩套手感;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+          'cursor-pointer',
           // idle:--border(元件邊框,非 --divider 分隔線 — 2026-06-03 Q2 token 修正)+ surface 底
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):

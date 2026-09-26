@@ -574,33 +574,46 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | Hover bg 圓角 | `rounded-md`(全尺寸一致) |
 | Icon 顏色 | `fg-muted` → `fg-secondary` on hover/active |
 | 多個 action 間距 | `gap-2`(8px) |
-| 出現時機 | 預設永遠顯示;`actionsReveal="hover"` → row hover/focus 才淡入 |
+| 出現時機 | 預設永遠顯示;`actionsReveal="hover"` → 滑過這一列、或鍵盤焦點在這一列(列或它的動作鈕)時才出現,**瞬間出現、不淡入**(2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,user:「確定這樣才是一致設計語言就做」;SSOT = `../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。容器消費 `ItemSuffix` 的 `hoverReveal`(`../../patterns/element-anatomy/item-anatomy.tsx`),出現規則只住那一份 |
 | Icon 模式 | 整個 suffix 隱藏 |
 | Host disabled 時 | 不渲染(遵守宿主 disabled 規則) |
 
 **為什麼動作鈕是絕對定位的同層兄弟、而不是放在列裡面**:因為 `SidebarMenuButton` 的列本體就是原生 `<button>`,列內只有文字與圖示;依 `../../patterns/element-anatomy/item-anatomy.spec.md`「整列可點時,誰當那顆控件」表,這是**第一類**(預設),而 `<button>` 的 content model 明文不准有 interactive content 後代,動作鈕只能出到列外面、列再用 `paddingRight` 讓開。FileItem 的列裡有進度條與狀態鈕,走**第二類**(列不互動 + 透明覆蓋控件)。判準與規範逐字出處在該表,本檔不重述。
 
-**指標在動作鈕上時(巢狀 hover,2026-09-25)**:列**保留**自己的 hover(`neutral-hover` 底 + `foreground` 字),動作鈕**再亮**自己那一層(懸停底色 + 圖示升一階),`inlineActions` / `inlineActionsSlot` 與 `SidebarMenuAction` 皆同;當前項照舊釘住選中色,兩顆動作鈕之間的空隙也算在內。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」)。套到側欄列是 AI 依此推導,user 沒有逐元件確認。因動作鈕是上段所說的同層兄弟,實作靠「後面兄弟被指著」的選擇器,**`SidebarMenuAction` 必須排在 `SidebarMenuButton` 後面**(內建 suffix 自動如此;`showOnHover` 的選中字色本來就要求這個順序)。`showOnHover` 動作鈕放在當前項旁時靜止是 `foreground`,滑過 / 按下**維持** `foreground` —— 它已在 `fg-muted → fg-secondary → foreground` 階梯頂端,不往回降(`inline-action.spec.md`「Icon 色彩」)。
+**指標在動作鈕上時(巢狀 hover,2026-09-25)**:列**保留**自己的 hover(`neutral-hover` 底 + `foreground` 字),動作鈕**再亮**自己那一層(懸停底色 + 圖示升一階),`inlineActions` / `inlineActionsSlot` 與 `SidebarMenuAction` 皆同;當前項照舊釘住選中色,兩顆動作鈕之間的空隙也算在內 —— **空隙點下去也歸列**(2026-09-26,待辦總帳 N53 ①,user:「這些看起來幾乎都是bug」;修法依 R20「讓亮著的地方點得到」):動作鈕的容器本身不接指標,只有裡面可以按的東西接,空隙與插槽裡不能按的裝飾都穿到底下的列鈕(列鈕的 `paddingRight` 本來就讓出這一段),滑過時亮、點下去導覽、游標是手形。依據 `../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」。閘 = `scripts/sidebar-menu-keyboard-invariant.mjs` S9(空隙命中列、點後成為當前頁;對照點在按鈕懸停底色內命中按鈕)。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」)。套到側欄列是 AI 依此推導,user 沒有逐元件確認。因動作鈕是上段所說的同層兄弟,實作靠「後面兄弟被指著」的選擇器,**`SidebarMenuAction` 必須排在 `SidebarMenuButton` 後面**(內建 suffix 自動如此;`showOnHover` 的選中字色本來就要求這個順序)。`showOnHover` 動作鈕放在當前項旁時靜止是 `foreground`,滑過 / 按下**維持** `foreground` —— 它已在 `fg-muted → fg-secondary → foreground` 階梯頂端,不往回降(`inline-action.spec.md`「Icon 色彩」)。
+
+### 鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點(2026-09-25)
+
+依據:待辦總帳 B9(`governance/planning/2026-09-25-interaction-and-hover-remediation.md`),user 選乙,逐字:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」(附條件;查證成立記在同一列)。取代先前 `ds-canonical/references/keyboard-model-canonical.md` 對 SidebarMenu 的「每項一個 Tab 停靠點,無方向鍵」。本表的判定與執行 = `../../lib/roving-list-keyboard.ts`(2026-09-26 與 TreeView / FileUpload / Command 四份合一,同帳〇節「按鍵規則合併」;判定表 `scripts/test-roving-list-keyboard.mjs`),本元件只提供「誰是列、誰是動作鈕」。
+
+| 焦點在 | 按鍵 | 結果 |
+|---|---|---|
+| 這一串外面 | `Tab` / `Shift+Tab` 進來 | 落在上次離開時那一項;沒停過 → 當前頁(`aria-current="page"`)那一項;都沒有 → 第一個可用項 |
+| 列 | `↑` `↓` / `Home` `End` | 上 / 下一項、第一 / 最後一項;不繞回,跳過 `disabled` 與看不見的列 |
+| 列 | `→` | 進這一列自己的第一顆動作鈕(`inlineActions` / `inlineActionsSlot` / `SidebarMenuAction`);沒有動作鈕就不動 |
+| 動作鈕 | `→` / `←` | 同列下一顆 / 上一顆;最後一顆按 `→` 停住,第一顆按 `←` 回到列 |
+| 動作鈕 | `↑` `↓` / `Home` `End` | 直接換到上 / 下一項(第一 / 最後一項)的列 |
+| 列或動作鈕 | `Tab` / `Shift+Tab` | 一下離開這一串;別項與本項的動作鈕都不在 Tab 路上 |
+
+- **只在滑過時出現的動作鈕**(`actionsReveal="hover"`、`showOnHover`):鍵盤焦點在這一列(列或它的動作鈕)時照樣顯示。滑鼠點擊與滑過的行為不變。
+- **方向鍵整串歸清單**(AI 推導,user 未逐字確認):列本身若也是選單觸發鈕(帳號列 `DropdownMenuTrigger asChild`),或動作鈕是選單觸發鈕(`inlineActionsSlot`),`↓` 照樣是換項、不開選單;開選單用 `Enter` / `Space`。2026-09-26 起這是「列上有小按鈕的一串」全部宿主的做法(批次細節 X6「統一成側欄做法」,同意清單 user 逐字「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」)。
+- **捲動區不是停靠點**:`SidebarContent` 的 ScrollArea 傳 `viewportTabIndex={-1}`(`../ScrollArea/scroll-area.spec.md:103`)。「混合內容」範例離開整個側欄要按的 Tab 由 19 下變 6 下(2026-09-25 scratch 探針實測,verify 階段以正式建置重量)。
+- **沒有「→ 先展開收著的父項」**:SidebarMenu 嚴格 1 層、不 export `SidebarMenuSub`(見「內容形態選擇」),這一步只屬於 `TreeView`。一鍵跳出整個側欄(F6)另談(B9)。
+- **ARIA 角色不變**:維持 `ul` / `li` / `button` + `aria-current`,只加 roving tabindex(不宣告 grid / tree,所以不用 `aria-selected`)。微軟側欄的做法是在 `role="navigation"` 的抽屜 https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-nav/library/src/components/NavDrawer/useNavDrawer.ts#L39 裡掛方向鍵群組 https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-nav/library/src/components/NavDrawerBody/useNavDrawerBody.ts#L22-L27 。
+- 世界級一手(釘版):Adobe 清單預設用方向鍵進列、按 Tab 整串離開 https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/GridList.test.js#L1122-L1129 ;W3C「滑過才出現的元素可用方向鍵摸到」https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L158 ;回來落在上次那一項 https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L270-L277 ;沒停過落在當前頁 https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treeview/examples/treeview-navigation.html#L344 。
+- 誠實附註:GitHub 與 IBM Carbon 的側欄是每項一站(https://primer.style/product/components/nav-list/accessibility/ 、https://carbondesignsystem.com/components/UI-shell-left-panel/accessibility/),乙不是唯一做法,但不違背世界級。閘 = `scripts/sidebar-menu-keyboard-invariant.mjs`(真按鍵;`--selftest` 對照組)。
 
 ### 行內動作的命中區 = 可視形狀(2026-09-24 兩次修正)
 
-`SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),
-所以它們的幾何由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是
-`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是
-`ds-canonical/references/hit-area-canonical.md`。
+`SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),所以它們的幾何由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是`ds-canonical/references/hit-area-canonical.md`。
 
-實測(1280×900,`展示 — 側邊欄動作懸停狀態`):按鈕盒 **16×16**、懸停底色 **18×18**、圖示 **16×16**;
-懸停底色邊緣**內** 1px 的四面探針全部打到 `menu-action` 自己,邊緣**外** 2px 的四面分別打到
-`menu-button` / `menu-label`(列鈕與列文字)。**命中區 = 懸停底色,外面沒有任何隱形帶。**
+實測(1280×900,`展示 — 側邊欄動作懸停狀態`):按鈕盒 **16×16**、懸停底色 **18×18**、圖示 **16×16**;懸停底色邊緣**內** 1px 的四面探針全部打到 `menu-action` 自己,邊緣**外** 2px 的四面分別打到`menu-button` / `menu-label`(列鈕與列文字)。**命中區 = 懸停底色,外面沒有任何隱形帶。**
 
 #### 修正一:拿掉只在窄視窗生效的隱形外擴帶
 
-先前這裡有一圈 `after:absolute after:-inset-2 after:md:hidden`,只在 `<md` 視窗生效、每邊 8px。
-2026-09-24 拿掉,理由是**量出來的**。對照組的作法是把那圈帶**原樣用 CSS 打回去**
-(`@media (max-width:767.98px)` + `::after{content:"";position:absolute;inset:-8px}`):
+先前這裡有一圈 `after:absolute after:-inset-2 after:md:hidden`,只在 `<md` 視窗生效、每邊 8px。2026-09-24 拿掉,理由是**量出來的**。對照組的作法是把那圈帶**原樣用 CSS 打回去**(`@media (max-width:767.98px)` + `::after{content:"";position:absolute;inset:-8px}`):
 
-實測環境:viewport **400px**(行動斷點,帶若還在就會生效),在頁面裡複製一份 `<li>` 造出相鄰第二列 ——
-實測兩列間距 **0.00px**(`SidebarMenu` 的 `<ul>` 沒有 `gap`),正是最擠的情況。
+實測環境:viewport **400px**(行動斷點,帶若還在就會生效),在頁面裡複製一份 `<li>` 造出相鄰第二列 ——實測兩列間距 **0.00px**(`SidebarMenu` 的 `<ul>` 沒有 `gap`),正是最擠的情況。
 
 | 量的東西 | 現況(帶已拿掉) | 對照組(帶原樣打回去) |
 |---|---|---|
@@ -613,38 +626,21 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
 | 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
 
-那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,
-以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md:449` 記過。
-拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md:449` 記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
 
 #### 修正二:它們本來就不該是手刻的
 
-查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),
-之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,
-也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、
-20 圖示配 22 底色兩種組合,**20 兩種都不是**。
-更直接的證據是:**同一個檔案 `sidebar.tsx:814` 的收合箭頭早就在消費 `ItemInlineActionButton`**,
-`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx:814` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
 
 依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 
-**API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop
-(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `:813` 的作法從外面包 `Trigger asChild`)。
-**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。
-消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
+**API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `:813` 的作法從外面包 `Trigger asChild`)。**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
 
-**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。
-核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果
-—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px)、按下時多一層較深的底色
-(`item-anatomy.tsx:743`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
+**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px)、按下時多一層較深的底色(`item-anatomy.tsx:743`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
 
-**依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:
-「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。
-觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
+**依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
 
-**為什麼可以小於 24**:`../../tokens/uiSize/uiSize.spec.md:169`「元件高度地板」的 24px 只管**可獨立存在**的
-互動元件,同一段明文把「元件內部的 Inline Action」交給宿主元件的 spec 定義 —— 現在那份定義是
-`patterns/element-anatomy/inline-action.spec.md`的尺寸表。
+**為什麼可以小於 24**:`../../tokens/uiSize/uiSize.spec.md:169`「元件高度地板」的 24px 只管**可獨立存在**的互動元件,同一段明文把「元件內部的 Inline Action」交給宿主元件的 spec 定義 —— 現在那份定義是`patterns/element-anatomy/inline-action.spec.md`的尺寸表。
 
 **之後要改這裡的判準**:想放大命中區,就把**可視形狀**一起放大(讓底色真的變大),不要再長一圈看不見的帶。
 
@@ -748,20 +744,20 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 ## A11y 預設
 
 - **Landmark**:`<Sidebar>` 目前渲染 `<div>`(三種 collapsible 分支皆然),**不自帶** `<nav>` 元素或 `role="navigation"`、`aria-label`。consumer 若要 page-level navigation landmark,需自行用 `<nav aria-label="Main">` 包住 `<Sidebar>`(或對導覽區塊 `<SidebarGroup>` 加 `role="navigation"`)。
-- **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**選中 × 互動疊加(2026-08-11,owner = `item-anatomy.spec.md` 同名格)**:滑鼠 hover 當前項**釘住不變**(先前無規則、靠編譯順序,現為顯式 class);鍵盤焦點停在任何項目都**畫框**(`focus-visible:focus-ring-inset`,2px 內描邊,選單鈕撐滿側欄寬 → 內描邊;當前項 = 框疊在選中底色上),焦點**不改底色**(底色只屬於 hover 與 `data-active`)—— owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板「都要畫框,不上底色」。歷史:2026-09-07「A5畫框」只補了當前項,未選中項當時仍用 hover 同色底(AI 推導,已撤回);原本的深一階底色 token 已退役。**當前項同時設 `aria-current="page"`**(2026-09-24 補)—— 先前只有純樣式的 `data-active`,螢幕閱讀器讀不到「你現在人在這一頁」。三份一手來源一致這樣寫:W3C APG Disclosure Navigation 範例、GitHub repo 導覽、Primer TreeView。它與 `aria-selected` 是兩件事(WAI-ARIA 1.2 `aria-current` 的 Note 明文說可並存):current = 你現在人在這一頁;selected = 這個控件裡被挑中的那一項。側欄導覽是 N 個各自獨立的連結,不是 composite widget,所以用 current 不用 selected(判準 → `ds-canonical/references/keyboard-model-canonical.md`)。**純 SR 語意,零視覺變化。**`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
+- **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**選中 × 互動疊加(2026-08-11,owner = `item-anatomy.spec.md` 同名格)**:滑鼠 hover 當前項**釘住不變**(先前無規則、靠編譯順序,現為顯式 class);鍵盤焦點停在任何項目都**畫框**(`focus-visible:focus-ring-inset`,2px 內描邊,選單鈕撐滿側欄寬 → 內描邊;當前項 = 框疊在選中底色上),焦點**不改底色**(底色只屬於 hover 與 `data-active`)—— owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板「都要畫框,不上底色」。歷史:2026-09-07「A5畫框」只補了當前項,未選中項當時仍用 hover 同色底(AI 推導,已撤回);原本的深一階底色 token 已退役。**當前項同時設 `aria-current="page"`**(2026-09-24 補)—— 先前只有純樣式的 `data-active`,螢幕閱讀器讀不到「你現在人在這一頁」。三份一手來源一致這樣寫:W3C APG Disclosure Navigation 範例、GitHub repo 導覽、Primer TreeView。它與 `aria-selected` 是兩件事(WAI-ARIA 1.2 `aria-current` 的 Note 明文說可並存):current = 你現在人在這一頁;selected = 這個控件裡被挑中的那一項。側欄導覽要表達的是「你現在在這一頁」,而且 ARIA 角色維持 `ul` / `li` / `button`、沒有宣告 grid / tree 這類 composite 角色,所以用 current 不用 selected —— 2026-09-25 起一串只佔一個 Tab 停靠點、方向鍵在裡面走(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」),這條不變。**純 SR 語意,零視覺變化。**`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
 - **快捷鍵不衝突**:`Cmd+B` / `Ctrl+B` 是 industry-standard(VS Code / Linear / shadcn),DS 內建在 `SidebarProvider` 的 `window` keydown handler,判斷 `key==="b" && (metaKey||ctrlKey)` 後 `preventDefault` + toggle,避免穿透到 browser bookmark bar(`Cmd+B` 在 Safari 是 favorites)。**三道 guard(2026-07-05 D4 修)**:(1) `defaultPrevented`——app 層 editor 已處理同快捷鍵時不 double-fire;(2) `isComposing`——IME 組字中不攔;(3) 可編輯 target——`<input>` / `<textarea>` / `contentEditable` 內按 `Cmd/Ctrl+B` 不 toggle(bold 等編輯語意優先,對齊 VS Code / Linear 快捷鍵讓位可編輯區慣例)。**目前無 opt-out prop**(無 `disableShortcut`)。
 - **Collapsed accessible name(2026-07-05 D4 修)**:icon 模式 label 以 `sr-only` 視覺隱藏(非 display:none),SidebarMenuButton 對 SR 保留 accessible name(WCAG 4.1.2);Tooltip 僅 hover 提示、不供名;badge / inline actions 仍 display:none(補充資訊,供名責任在 label)。
 - **Mobile sheet focus trap**:`md` breakpoint 以下切 Sheet 模式時,Radix Dialog 自帶 focus trap + Esc dismiss(詳 sheet.spec.md)。**關閉焦點還原**:mobile Sheet 無顯式 `<SheetTrigger>`，SidebarTrigger 會直接傳入自身作為 opener；快捷鍵路徑則在 `setOpenMobile(true)` 前記錄當下聚焦元素。Sheet 關閉時透過 `onCloseAutoFocus` 還原仍連線的 opener；若 opener 已卸載則不強搶焦。
 - **Provider cardinality**:每個 document／app shell 只掛一個 SidebarProvider。多 Provider 的 local trigger 仍各自隔離，但 document-level Cmd/Ctrl+B shortcut 沒有 active-provider arbitration，不屬支援拓撲。
 - **Collapsible group**:`<SidebarGroup collapsible>` 的**尾端 chevron button**(`Collapsible.Trigger asChild` 包 `ItemInlineActionButton`)帶 `aria-expanded` + `aria-controls` 指向 GroupContent id,SR 可朗讀展開狀態(label 本身維持 `role="presentation"`,不承載 aria-expanded)。
-- **Sticky header / footer focus order**:Tab 順序按 DOM 順序 — Header → Content → Footer,SidebarTrigger 在 Pattern A/B 都位於 page top-left,Tab 第一站即可達。
-- **不使用 `SidebarMenuSub`**:避免 nested menu aria-tree 複雜度,階層交給 TreeView(`role="tree"` + `aria-level`)。
+- **Sticky header / footer focus order**:Tab 順序按 DOM 順序 — Header → Content → Footer,SidebarTrigger 在 Pattern A/B 都位於 page top-left,Tab 第一站即可達。Content 的捲動區本身不是停靠點;每一串 `SidebarMenu` 各佔一站、串內用方向鍵(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」);群組收合鈕、`SidebarGroupAction`、`TreeView` 各自一站。
+- **不使用 `SidebarMenuSub`**:避免 nested menu aria-tree 複雜度,階層交給 TreeView(`role="treegrid"`,`aria-level` 住在列上;2026-09-25 由 `role="tree"` 改,待辦總帳 B9,見 `../TreeView/tree-view.spec.md`「ARIA」)。
 
 ---
 
 ## 邊界案例
 
-- **Disabled item**:SidebarMenuButton `disabled` prop 走 native button disabled(`text-fg-disabled` + 不觸發 onClick + 不可聚焦,鍵盤導覽自動 skip);**不自動設 `aria-disabled`**——cva 另備 `aria-disabled:` 樣式,consumer 自傳 `aria-disabled`(如 asChild 非 button host)時同樣式生效。
+- **Disabled item**:SidebarMenuButton `disabled` prop 走 native button disabled(`text-fg-disabled` + 不觸發 onClick + 不可聚焦,`↑` `↓` / `Home` `End` 自動跳過、不會成為這一串的 Tab 停靠點);**不自動設 `aria-disabled`**——cva 另備 `aria-disabled:` 樣式,consumer 自傳 `aria-disabled`(如 asChild 非 button host)時同樣式生效。
 - **Loading(nav data-fetch)**:async nav tree fetch 時 consumer 應在對應 group 內渲 `<Skeleton>` line-stack(常見 3-5 條 sidebar nav skeleton 行)而非 Empty + spinner — Sidebar 是持續存在的 chrome 不是 panel，skeleton 能保留導覽列的空間與節奏，不讓內容載入時整個 shell 改形。
 - **Empty(no nav items)**:罕見場景(用戶無權限 / 全空 workspace)。若整個 group 無 item,consumer 應 conditional 不渲該 group(不渲空 group label);若整個 sidebar 無 item,可能該 hide sidebar(走 layout context 不渲)。不渲空白 sidebar。
 - **Dark mode / density**:Sidebar 為 chrome surface,走 chrome-header token 自動 adapt;density 預設 lock 跟隨 app density chrome token,不獨立 own。

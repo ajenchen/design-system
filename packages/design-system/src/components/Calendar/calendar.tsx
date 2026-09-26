@@ -16,7 +16,7 @@ import {
   startOfDay,
 } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { CAT_EVENT, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
+import { CAT_EVENT, CAT_SUBTLE, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -58,7 +58,43 @@ export interface CalendarEvent {
   metadata?: Record<string, unknown>
 }
 
-export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+// ── 日期格 / 事件方塊:可點或唯讀(2026-09-26,待辦總帳 L8 / C15;calendar.spec.md「日期格與事件方塊:可點或唯讀」)──
+// 兩者各自二擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
+//   可點(預設)= 必傳回調;長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
+//   唯讀      = 寫 `readOnlyDates` / `readOnlyEvents`、**不可以**傳回調;不是按鈕、滑過不變、游標不變。
+// 先前(2026-09-25 批次)把兩個回調改成無條件必填,等於規定月曆一定可點,與「沒有新增功能的月曆格子不亮」相反(C15),已撤回。
+// 命名:沿用 DS 既有的 `readOnly`(Rating `readOnly`「唯讀(無 hover / click 響應)」、Field 家族 readonly 模式),
+// 加上作用對象 —— 日期格與事件方塊是兩個獨立的點擊目標,要能分開宣告(內容排程月曆:事件點得開、日子不能點來新增)。
+
+/** 日期格(整格 + 日期數字)可點與否。不單獨匯出:consumer 一律用 CalendarProps(root barrel 只列 CalendarProps / CalendarEvent)。 */
+type CalendarDateCellProps =
+  | {
+      /** 日期格唯讀:不可點、不亮、日期數字不是按鈕;鍵盤仍可在格陣內走動(焦點改停在格子本身)。 */
+      readOnlyDates?: false
+      /** 點月 cell / 日期數字鈕回調(用於在這天新增)。日期格可點時**必填**:元件沒有內建的「新增」行為(spec「禁止事項」:不自動開表單)。 */
+      onDateClick: (date: Date) => void
+    }
+  | {
+      /** 日期格唯讀:不可點、不亮、日期數字不是按鈕;鍵盤仍可在格陣內走動(焦點改停在格子本身)。宣告了就不可以傳 `onDateClick`。 */
+      readOnlyDates: true
+      onDateClick?: never
+    }
+
+/** 事件方塊可點與否。同上,不單獨匯出;MonthEventTile 也吃這一份。 */
+type CalendarEventTileProps =
+  | {
+      /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件,例如公司假日這類沒有詳情可開的標記)。 */
+      readOnlyEvents?: false
+      /** 點 event tile 回調。事件方塊可點時**必填**:元件沒有內建的「打開事件」行為。 */
+      onEventClick: (event: CalendarEvent) => void
+    }
+  | {
+      /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件)。宣告了就不可以傳 `onEventClick`。 */
+      readOnlyEvents: true
+      onEventClick?: never
+    }
+
+interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
   /** 聚焦日期(月 view 的那個月) */
   referenceDate?: Date
   defaultReferenceDate?: Date
@@ -73,10 +109,6 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** 事件資料 */
   events?: CalendarEvent[]
 
-  /** 點 event tile 回調 */
-  onEventClick?: (event: CalendarEvent) => void
-  /** 點月 cell 回調(用於新增) */
-  onDateClick?: (date: Date) => void
   /** 點新事件 CTA 回調 */
   onCreateEvent?: () => void
 
@@ -101,12 +133,18 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   createLabel?: string
 }
 
+export type CalendarProps = CalendarOwnProps & CalendarDateCellProps & CalendarEventTileProps
+
 // ── Event tile color tokens ─────────────────────────────────────────────────
 // **消費 categorical-color SSOT**(CAT_EVENT = subtle 底 + hover step-2;CAT_ACCENT = 左側 step-6
 // 實心條),與 Tag / Avatar 共用 12 色相,key X 一律對 `--color-X-*`(1:1)。
 // 2026-06-01 allDay:全天事件 = 淡底 tile + 左側實心 accent 條 + medium,視覺區分「全天長條」vs
 // 有時間事件;用 accent border 而非 solid fill 保文字對比安全。對齊 Google Calendar / Outlook 慣例。
 const EVENT_COLOR_CLASSES = CAT_EVENT
+// 唯讀事件方塊(readOnlyEvents):同一組靜止色、**不帶滑過** —— CAT_SUBTLE 就是 CAT_EVENT 去掉 `hover:bg-…-2` 那一段
+//(categorical-color.ts CAT_SUBTLE vs CAT_EVENT,同色相同 step-1 底 / step-7 字),也就是 Tag 那種靜態類別標籤。
+// 點了沒反應的東西不給滑過回饋(color.spec.md「Hover 換色配對總則」:只有「點了會有反應」的元素才有底色的滑過回饋;待辦總帳 L8)。
+const EVENT_STATIC_COLOR_CLASSES = CAT_SUBTLE
 const EVENT_ALLDAY_ACCENT = CAT_ACCENT
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -145,48 +183,61 @@ function dayKey(date: Date): string {
 function MonthEventTile({
   event,
   colorClass,
+  readOnlyEvents,
   onEventClick,
 }: {
   event: CalendarEvent
+  /** 已依可點 / 唯讀選好的色(可點 = CAT_EVENT 帶滑過;唯讀 = CAT_SUBTLE 不帶),見 Calendar 本體 */
   colorClass: string
-  onEventClick?: (event: CalendarEvent) => void
-}) {
+} & CalendarEventTileProps) {
+  // 與 Calendar 公開 props 同一份二擇一契約(CalendarEventTileProps):分支看明示的 readOnlyEvents,不看回調在不在(M23(f))
   const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({ deps: [event.title] })
+  const tileBase = 'rounded-md px-1.5 py-0.5 text-caption truncate'
   return (
-    // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)
+    // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
+    // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → tooltip」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
-        <div
-          role="button"
-          // 2026-09-24:tile 從 tabIndex=0 改 -1。role="grid" 要求整個格陣只有一個 Tab 停靠點
-          //(W3C APG Grid Pattern「only one element in the entire grid is included in the tab sequence」),
-          // 原本一個月 35 格 × (1 日期鈕 + 3 tile) 是幾十個停靠點 = 與 grid 語意相反。
-          // tile 改由格內導覽抵達(日期鈕按 F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
-          tabIndex={-1}
-          data-calendar-tile=""
-          onClick={(e) => {
-            e.stopPropagation()
-            onEventClick?.(event)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              onEventClick?.(event)
-            }
-          }}
-          aria-label={`事件:${event.title}`}
-          className={cn(
-            // hover 底色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」,user 2026-09-10 拍板)。
-            // hover 底色在 colorClass 裡(tokens/categorical-color.ts CAT_EVENT 的 hover:bg-…),2026-09-10 全庫落地時
-            // hover-instant 閘看不到 .ts 裡的 class 字串,這格因此漏掉;2026-09-25 補拿掉。
-            'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer',
-            // 焦點:tile 由格內導覽(F2 進格)取得焦點,本行沒有焦點 class,走 styles/base.css 全域 `:focus-visible`。
-            //(2026-05-31 #22 補的 `focus-visible:ring-2` 已於 a7b2be94 移除;舊註解寫的「補 ring」不再成立。)
-            colorClass,
-          )}
-        >
-          <span ref={truncationRef} className="block truncate">{event.title}</span>
-        </div>
+        {!readOnlyEvents ? (
+          <div
+            role="button"
+            // 2026-09-24:tile 從 tabIndex=0 改 -1。role="grid" 要求整個格陣只有一個 Tab 停靠點
+            //(W3C APG Grid Pattern「only one element in the entire grid is included in the tab sequence」),
+            // 原本一個月 35 格 × (1 日期鈕 + 3 tile) 是幾十個停靠點 = 與 grid 語意相反。
+            // tile 改由格內導覽抵達(F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
+            tabIndex={-1}
+            data-calendar-tile=""
+            onClick={(e) => {
+              e.stopPropagation()
+              onEventClick(event)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onEventClick(event)
+              }
+            }}
+            aria-label={`事件:${event.title}`}
+            className={cn(
+              // hover 底色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」,user 2026-09-10 拍板)。
+              // hover 底色在 colorClass 裡(tokens/categorical-color.ts CAT_EVENT 的 hover:bg-…),2026-09-10 全庫落地時
+              // hover-instant 閘看不到 .ts 裡的 class 字串,這格因此漏掉;2026-09-25 補拿掉。
+              tileBase,
+              'cursor-pointer',
+              // 焦點:tile 由格內導覽(F2 進格)取得焦點,本行沒有焦點 class,走 styles/base.css 全域 `:focus-visible`。
+              //(2026-05-31 #22 補的 `focus-visible:ring-2` 已於 a7b2be94 移除;舊註解寫的「補 ring」不再成立。)
+              colorClass,
+            )}
+          >
+            <span ref={truncationRef} className="block truncate">{event.title}</span>
+          </div>
+        ) : (
+          // 唯讀方塊(readOnlyEvents):不是按鈕、不進格內導覽(沒有 data-calendar-tile,F2 找不到它)、游標不變。
+          // 不寫 aria-label:沒有角色的 div 禁止命名(ARIA 1.2 generic 的 name prohibited),事件標題就是它的文字內容。
+          <div className={cn(tileBase, colorClass)}>
+            <span ref={truncationRef} className="block truncate">{event.title}</span>
+          </div>
+        )}
       </TooltipTrigger>
       <TooltipContent>{event.title}</TooltipContent>
     </Tooltip>
@@ -199,7 +250,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   onReferenceDateChange,
   today: todayProp,
   events = [],
+  readOnlyEvents,
   onEventClick,
+  readOnlyDates,
   onDateClick,
   onCreateEvent,
   weekStartsOn = 0,
@@ -213,6 +266,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   createLabel = '新事件', // i18n-allow: DS default; consumer override via createLabel prop
   ...props
 }, ref) {
+  // 可點與否只看明示的 readOnlyDates / readOnlyEvents(M23(f);型別層保證沒宣告唯讀時回調一定在,
+  // 見 CalendarDateCellProps / CalendarEventTileProps)。
+  const datesInteractive = !readOnlyDates
+  // 事件方塊的二擇一契約原樣交給 MonthEventTile(同一份型別,不在這裡另寫一套判斷)
+  const eventTileMode: CalendarEventTileProps = readOnlyEvents ? { readOnlyEvents: true } : { onEventClick }
   const resolvedToday = todayProp ?? new Date()
   // Controlled / uncontrolled refDate
   const [internalRef, setInternalRef] = React.useState<Date>(
@@ -341,6 +399,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     [isRendered, setRefDate],
   )
 
+  // 一格的「日期停靠點」:日期格可點時是格內的日期數字鈕,唯讀時是格子本身(見下方 gridcell 的註解)。
+  // 兩種都掛 `data-calendar-day`;querySelector 不含自己,所以先看格子本身。
+  const dayStopOf = (cell: HTMLElement) =>
+    cell.matches('[data-calendar-day]') ? cell : cell.querySelector<HTMLElement>('[data-calendar-day]')
+
   const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null
     const cell = target?.closest<HTMLElement>('[role="gridcell"]')
@@ -358,7 +421,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       switch (event.key) {
         case 'Escape':
         case 'F2':
-          nextNode = cell.querySelector<HTMLElement>('[data-calendar-day]')
+          nextNode = dayStopOf(cell)
           break
         case 'ArrowDown':
         case 'ArrowRight':
@@ -381,10 +444,13 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     if (dayValue === null) return
 
     // F2 = 進格(APG:「F2: ... If the cell contains one or more widgets, places focus on the first
-    // widget.」)。不用 Enter 當進格鍵,因為在月曆格陣裡 Enter 已經是「啟用這一天」——
+    // widget.」)。日期格可點時不用 Enter 當進格鍵,因為在月曆格陣裡 Enter 已經是「啟用這一天」——
     // APG Date Picker Dialog 的 Date Grid 把 Space/Enter 指派給選日期。兩者都是 APG 明文列的
     // 慣例,這裡取不會互相蓋掉的那一組。
-    if (event.key === 'F2') {
+    // 日期格唯讀時焦點在格子本身、格子沒有主要動作 → Enter 也是進格(跨元件規則
+    // `ds-canonical/references/keyboard-model-canonical.md`「`Enter` 恆為「啟動焦點上的東西」—— 焦點在格上時那就等於進格」,
+    // 與 DataTable 檢視態儲存格同一條;不是另立的例外)。
+    if (event.key === 'F2' || (event.key === 'Enter' && !datesInteractive)) {
       const firstTile = cell.querySelector<HTMLElement>('[data-calendar-tile]')
       if (firstTile === null) return
       event.preventDefault()
@@ -529,25 +595,55 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
               const dayEvents = eventsByDate.get(dayKey(date)) ?? []
               const visibleEvents = dayEvents.slice(0, MAX_TILES_PER_CELL)
               const overflowCount = dayEvents.length - visibleEvents.length
+              // 這一天的鍵盤停靠點屬性(roving tabindex):可點時掛在日期數字鈕上,唯讀時掛在格子本身。
+              // 兩處共用同一組屬性,只換掛的位置 —— handleGridKeyDown / moveFocusToDay 只認 data-calendar-day。
+              const dayStop = {
+                'aria-label': `${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`,
+                // roving tabindex:整個格陣只有這一個(= 目前焦點日)進 Tab 序列,其餘 -1。
+                // APG Date Picker Dialog 逐字:「only one button in the calendar grid is in the Tab sequence」。
+                'data-calendar-day': format(date, 'yyyy-MM-dd'),
+                tabIndex: isSameDay(date, focusedDate) ? 0 : -1,
+                // 焦點用任何方式落到某一天(Tab 進來 / 滑鼠點 / 程式化)都把停靠點同步過去,
+                // 免得下次 Tab 回來停在別天。
+                onFocus: () => setFocusedDateState(date),
+              }
+              const dayNumberClass = cn(
+                // 焦點框往外(= 不寫)。2026-09-10 重量:日期數字鈕(24×24)在格子裡是**置中**的,不是撐滿 ——
+                // 上 6 / 下 4(下方是同格的事件容器)/ 左 128 / 右 7,最小 4.00 = canonical「算放得下」。
+                // 2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊
+                //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方自訂 tile 的 focus-ring-inset)。
+                'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
+                isToday && 'px-2 bg-info text-on-emphasis',
+                // 非當月 = 淡字 `fg-muted`,**不是** `fg-disabled`:這天跟當月格同一種可點性(可點就一樣可點,唯讀就一樣唯讀),
+                // 只是不在焦點月份(同 DateGrid「鄰月日子」的淡字,date-grid.spec.md outside 列;disabled 字色留給真的不可操作)。
+                !isToday && !inMonth && 'text-fg-muted',
+              )
 
               return (
                 // 2026-06-11 a11y(user 拍板 2c 修 code):cell 從 <button role="gridcell"> 改非互動容器 —
                 // W3C button 語義禁止互動後代,cell 內含 role="button" 事件 tile = nested-interactive 違規。
                 // 對齊 Google Calendar:gridcell = 容器,日期數字按鈕 = 日期級 keyboard 入口,tile 各自為 button。
                 // div onClick 保留滑鼠「點 cell 空白處等同點日期」便利(keyboard 走日期數字按鈕,功能等價)。
+                //
+                // **日期格唯讀(readOnlyDates)時**(2026-09-26,待辦總帳 L8 / C15):格子不接點擊、不亮,日期數字只是文字;
+                // 格子裡於是只剩文字(與可點的事件方塊,若有)→ 依 APG Grid「A cell contains text or a single graphic and
+                // grid navigation keys set focus on the cell」,鍵盤停靠點改成**格子本身**(dayStop 掛在這裡),
+                // 方向鍵 / Home / End / PageUp / PageDown 照舊。格與格之間沒有縫,焦點框往內畫(focus-canonical「問題二」)。
                 <div
                   key={date.toISOString()}
                   role="gridcell"
-                  onClick={() => onDateClick?.(date)}
+                  {...(datesInteractive ? { onClick: () => onDateClick(date) } : dayStop)}
               className={cn(
                 'flex flex-col gap-1 min-h-28 p-1.5 text-left',
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
                 // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-                // 非當月格**不加底色**(2026-09-25 user 選「可以，拿掉底色」):它跟當月格一樣可點(onDateClick = 在這天新增),
+                // 非當月格**不加底色**(2026-09-25 user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供):它跟當月格一樣可點(onDateClick = 在這天新增),
                 // 底色一律透明,所以滑過與當月格同一個滑過色。先前的 `bg-muted` 是「不可操作」的 token,放在可點的格上
                 // 讓滑過反而變淺(淺 #F5F5F5 → #FAFAFA)。非當月只靠日期數字的淡字區分,見下方日期鈕與 spec「Outside day cell」。
-                'hover:bg-neutral-hover',
+                // 唯讀的格不亮:點了沒反應就不給滑過回饋(color.spec.md「Hover 換色配對總則」;待辦總帳 L8)。
+                datesInteractive && 'hover:bg-neutral-hover',
+                !datesInteractive && 'focus-visible:focus-ring-inset',
               )}
             >
               {/* Date number = keyboard 入口。24px 圓盒的來源是**今天 pill 本身就是 24 高**,平日跟齊
@@ -562,48 +658,42 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   實測(1280×900,md,團隊行事曆 story):平日鈕盒 24.00×24.00、背景 rgba(0,0,0,0)、
                   數字字面 6.58×17;今天鈕 31.30×24.00(px-2)、bg-info;格 178×155.80,
                   hover 前後格底色 rgba(0,0,0,0) → oklch(0 0 0 / 0.02),鈕底色兩次都是透明。
-                  規格 → `calendar.spec.md`「Cell 規則」的「命中區」條 */}
+                  規格 → `calendar.spec.md`「Cell 規則」的「命中區」條。
+                  唯讀的格:日期數字是同一個盒、同一組字級與今天 pill,只是 <span>(不是按鈕、沒有手形游標) */}
               <div className="flex items-start justify-end">
-                <button
-                  type="button"
-                  aria-label={`${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`}
-                  // roving tabindex:整個格陣只有這一顆(= 目前焦點日)進 Tab 序列,其餘 -1。
-                  // APG Date Picker Dialog 逐字:「only one button in the calendar grid is in the Tab sequence」。
-                  data-calendar-day={format(date, 'yyyy-MM-dd')}
-                  tabIndex={isSameDay(date, focusedDate) ? 0 : -1}
-                  // 焦點用任何方式落到某一天(Tab 進來 / 滑鼠點 / 程式化)都把停靠點同步過去,
-                  // 免得下次 Tab 回來停在別天。
-                  onFocus={() => setFocusedDateState(date)}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDateClick?.(date)
-                  }}
-                  className={cn(
-                    // 焦點框往外(= 不寫)。2026-09-10 重量:日期數字鈕(24×24)在格子裡是**置中**的,不是撐滿 ——
-                    // 上 6 / 下 4(下方是同格的事件容器)/ 左 128 / 右 7,最小 4.00 = canonical「算放得下」。
-                    // 2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊
-                    //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方 :435)。
-                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
-                    isToday && 'px-2 bg-info text-on-emphasis',
-                    // 非當月 = 淡字 `fg-muted`,**不是** `fg-disabled`:這天照樣可點,只是不在焦點月份
-                    //(同 DateGrid「鄰月日子」的淡字,date-grid.spec.md outside 列;disabled 字色留給真的不可操作)。
-                    !isToday && !inMonth && 'text-fg-muted',
-                  )}
-                >
-                  {format(date, 'd')}
-                </button>
+                {datesInteractive ? (
+                  <button
+                    type="button"
+                    {...dayStop}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDateClick(date)
+                    }}
+                    className={dayNumberClass}
+                  >
+                    {format(date, 'd')}
+                  </button>
+                ) : (
+                  <span className={dayNumberClass}>{format(date, 'd')}</span>
+                )}
               </div>
 
               {/* Event tiles */}
               <div className="flex flex-col gap-0.5 min-h-0">
                 {visibleEvents.map((event) => {
                   const ec = event.color ?? 'blue'
+                  // 可點的方塊帶滑過(CAT_EVENT),唯讀的不帶(CAT_SUBTLE);兩者同色相同底同字,見檔頭 EVENT_STATIC_COLOR_CLASSES
+                  const hueClass = readOnlyEvents ? EVENT_STATIC_COLOR_CLASSES[ec] : EVENT_COLOR_CLASSES[ec]
                   // 2026-06-01 allDay:淡底 + 左 accent 條 + medium = 「全天長條」視覺(區分有時間事件)
                   const colorClass = event.allDay
-                    ? cn(EVENT_COLOR_CLASSES[ec], EVENT_ALLDAY_ACCENT[ec], 'font-medium')
-                    : EVENT_COLOR_CLASSES[ec]
+                    ? cn(hueClass, EVENT_ALLDAY_ACCENT[ec], 'font-medium')
+                    : hueClass
                   if (renderEventTile) {
-                    return (
+                    // 自訂視覺也照同一份可點 / 唯讀契約:外層 wrapper 由本元件 own(spec「A11y 預設」renderEventTile 段)
+                    return readOnlyEvents ? (
+                      // 唯讀:只包一層排版用的 div —— 不是按鈕、不進格內導覽(沒有 data-calendar-tile)、沒有焦點框
+                      <div key={event.id}>{renderEventTile(event)}</div>
+                    ) : (
                       <div
                         key={event.id}
                         role="button"
@@ -613,13 +703,13 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         aria-label={`事件:${event.title}`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          onEventClick?.(event)
+                          onEventClick(event)
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault()
                             e.stopPropagation()
-                            onEventClick?.(event)
+                            onEventClick(event)
                           }
                         }}
                         // 內描邊:事件方塊之間 gap-0.5(2px),往外 +2px 會壓到上下相鄰的方塊
@@ -634,7 +724,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                       key={event.id}
                       event={event}
                       colorClass={colorClass}
-                      onEventClick={onEventClick}
+                      {...eventTileMode}
                     />
                   )
                 })}

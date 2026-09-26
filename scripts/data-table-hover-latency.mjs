@@ -10,8 +10,24 @@
  * 只驗屬性等於假綠(M32:DOM-pass ≠ visual-pass)。
  *
  * **怎麼判「變了」**:不需要知道 hover 色票。移動前先存一張基準幀,之後找第一張「該列取樣點的像素與基準不同」的幀。
- * 靜止頁面上除了 hover 沒有別的東西會改那個像素,所以任何變化就是 hover 上色。取樣點取列左緣內縮 6px、
- * 垂直置中(padding 區,不會踩到文字)。
+ * 靜止頁面上除了 hover 沒有別的東西會改那個像素,所以任何變化就是 hover 上色 —— **前提是那個像素真的屬於那一列**。
+ * 取樣點(2026-09-25 改,待辦總帳 C12①):該列第一個離表格外框左緣 ≥ 18px 的格子的左側留白(格子左緣 +4,垂直置中),
+ * 而且 elementFromPoint 證明點到的是那一列、中間沒有任何自己有底色的元素;hover 之後再證一次。證明不了的樣本記成
+ * **看不到**(blind),不拿去判快慢、也不指控產品。`--legacy-sample-point` = 對照組:用舊的「列左緣 +6」,
+ * 證明所有權檢查會點名蓋住它的拖曳把手。
+ *
+ * **取樣點與拖曳把手(2026-09-25,改正本檔先前的「k=9 離群值成因未知」)**—— 兩件事,都跟把手有關,要分開講:
+ *   (1) **取樣點被蓋住(已修)**:舊點「列左緣 +6」在左釘選面板的列上落在拖曳把手底下 —— 把手以表格外框左緣為中心、
+ *       寬 24(實測 x 4–28,外框 x 16),淺色把手底 `bg-surface-raised` = #FFFFFF 與列靜止同色。【實測】捲動後左面板 4/4 列、
+ *       靜止時 k=6 被蓋(`--legacy-sample-point` 對照組現在會點名「被 BUTTON[拖曳重排此列] 蓋住」)。這是 M37 的代理:
+ *       「列左緣 +6 的像素」≠「列的顏色」。捲動後那幾次「1.5 秒沒變色」就是這樣來的(同日把把手隱藏後 0/60)。
+ *   (2) **k=9 離群值(約 160ms,只出現在左面板列)不是被蓋住造成的**。【實測】換成證明屬於列的新取樣點後仍會出現
+ *       (本機 4 輪 8 段中 4 段各有一個 160–167ms,一律是左面板列,每次都是「命中 = hover 後第一張幀」,也就是串流的第一張幀晚到);
+ *       【實測】只把把手的 150ms 透明度過渡關掉(`transition:none`),3 輪 6 段 60 個樣本 0 個離群(最大 54ms);
+ *       把手整個隱藏時同樣消失(E/repair 6 輪)。【推論,未證】新出現的把手在跑 150ms 淡入時,截圖串流的第一張幀
+ *       晚到約「150ms + 一格」,量到的是串流空窗、不是列的反應;為何只在左面板列發生不明。
+ *       處理:不改產品、不在閘裡關掉過渡(那會改掉被量的東西);判定本來就用中位數,單一 160ms 只進最大值(門檻 600ms)。
+ *   證據:scratchpad `im/W2/misc-controls.md`(本次各輪紀錄)、`im/E/repair.md` §1(隱藏把手的消融表)。
  *
  * **兩段情境**(第二段才是 user 回報的):
  *   A 靜止 hover:頁面靜止數秒後逐列 hover。
@@ -20,7 +36,7 @@
  * **對照組(`--selftest`)**:在 hover 路徑注入 120ms 忙等 → 中位數必須 ≥ 120ms(該紅會紅);
  * 同一支在未注入時中位數必須 < 120ms(不會恆紅)。沒有對照組的綠燈是零證據。
  * **2026-09-13 改判中位數**:原本兩邊都判 p95,但每輪必有一個 157-638ms 的單一離群值
- * (成因未知,見 `frames.splice` 註解)→ **反對照恆紅**(實測未注入時 p95 = 423ms)。
+ * (當時寫「成因未知」;2026-09-25 查到與拖曳把手的淡入有關,見上方「取樣點與拖曳把手」段)→ **反對照恆紅**(實測未注入時 p95 = 423ms)。
  * 注入是加在**每一個**取樣上,中位數必然跟著動(實測 128ms vs 未注入 9ms),分離度比 p95 更大。
  *
  * **開 story(2026-09-25 起)**:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)——
@@ -33,13 +49,12 @@
  *   node scripts/data-table-hover-latency.mjs [--static=<dir>] [--dpr=1] [--rows=16] [--cpu-throttle=1]
  *     [--assert=on --assert-p95=<ms>] [--selftest] [--label=<名>] [--builds=a=<dir>,b=<dir>]
  */
-import fs from 'node:fs'
 import path from 'node:path'
 import { PNG } from 'pngjs'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { classifySamples, hoverVerdict, isBlindSample, isResolutionBound, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const arg = (n, d) => process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const has = (n) => process.argv.includes(`--${n}`)
@@ -58,10 +73,11 @@ const WARMUP_MS = Number(arg('warmup-ms', 3000))
 const MANAGER = has('manager')
 if (MANAGER && SELFTEST) { console.error('✗ --selftest 只在裸 iframe 模式有效(忙等的 init script 進不到 Storybook 的 preview iframe);對照組請用不加 --manager 的那一組跑'); process.exit(2) }
 const ASSERT = arg('assert', 'off') === 'on'
-/** 判定用**中位數**不用 p95:每一輪都會出現一個單一離群值(main 與分支都有,實測 157–638ms),
+/** 判定用**中位數**不用 p95:舊取樣點每一輪都會出現一個單一離群值(main 與分支都有,實測 157–638ms),
  *  拿 p95 當閘會恆紅。中位數才是「hover 感覺不感覺得到延遲」的正確統計量;真正的卡死另由 `--assert-max` 抓。
- *  **2026-09-13 更正**:原本這裡寫「量測收尾的最後一次取樣」——**位置記錯了**,實測固定落在
- *  第 10 個取樣(`k=9`),7/7 輪、跨 CPU×1/×4/×6 都一樣。成因未知且已排除三條(詳見下方 `frames.splice` 註解)。 */
+ *  **2026-09-13 更正**:原本這裡寫「量測收尾的最後一次取樣」——**位置記錯了**,實測固定落在第 10 個取樣(`k=9`)。
+ *  **2026-09-25 再更正**:那個離群值與拖曳把手的 150ms 淡入有關(串流第一張幀晚到),不是列變慢,
+ *  見檔頭「取樣點與拖曳把手」段。判定繼續用中位數。 */
 const ASSERT_MEDIAN = Number(arg('assert-median', 50))
 const ASSERT_MAX = Number(arg('assert-max', 600))
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
@@ -83,12 +99,10 @@ const q = (a, p) => (a.length ? a.slice().sort((x, y) => x - y)[Math.min(a.lengt
  * `sentAt` 之後的**第一張**幀(16/16,`延遲` 與 `首幀延遲` 逐位元相等:12=12 / 8=8 / 25=25 / 175=175)。
  * 也就是變色在那張幀之前就完成了 —— 量到的其實是**截圖串流送出下一張幀所花的時間**。
  *
- * 那個「固定在第 10 次的 157-638ms 離群值」因此有解:**串流在那一次停了那麼久沒送幀**。
- * 佐證直接印在輸出裡:`[串流靜置期送幀間隔 中位 17ms 最大 272ms]` —— 主執行緒完全閒著的靜置期,
- * 串流自己就會停到 272ms,比那個離群值還大。
- * 已逐條排除的其他解釋:元件本身(獨立逐點探針同座標 13-18ms、零離群)、特定面板(k=0/3/6/9/12/15
- * 同為左釘選,只有 k=9 慢)、記憶體累積(收斂後仍在)、載入後固定時間(靜置 3s 與 12s 都在 k=9)、
- * 週期性(32 取樣只出現一次)。
+ * ~~那個「固定在第 10 次的 157-638ms 離群值」因此有解:串流在那一次停了那麼久沒送幀~~ —— **2026-09-25 撤回**:
+ * 把拖曳把手隱藏、或只關掉它的淡入過渡,離群值就消失(見檔頭「取樣點與拖曳把手」段 (2))—— 仍是「串流第一張幀晚到」,
+ * 但觸發它的是把手的淡入,不是靜置期的隨機停頓。當時「已逐條排除」的幾條(元件本身、特定面板、記憶體累積、
+ * 載入後固定時間、週期性)都沒有把把手拿掉試過,所以漏掉了它。
  *
  * 所以這支儀器的正確用法:
  *   - **`lost`(有幀可看、卻整整 1.5 秒沒變色)是真訊號** —— CI 2026-09-12 抓到的 3 次是真 bug(已修)。
@@ -168,22 +182,25 @@ async function measure(build, { afterScroll, sabotage }) {
 
   const samples = []
   const idleGaps = []
+  // 取樣點證明不了屬於那一列的樣本(逐筆原因;這些樣本同時記成 blind)
+  const occluded = []
   // 逐樣本:這一次取樣在 hover 之後有沒有拿到任何一張幀(false = 看得到,true = 全盲)
   const blindness = []
   const unresolved = []
   let resolutionBound = 0
   for (let k = 0; k < ROWS; k++) {
-    const target0 = await scope.evaluate(({ k }) => {
-      const rows = [...document.querySelectorAll('[data-row-index]')]
-        .map((el) => ({ el, r: el.getBoundingClientRect() }))
-        .filter((x) => x.r.height > 8 && x.r.top > 120 && x.r.bottom < window.innerHeight - 8)
-        .sort((a, b) => a.r.top - b.r.top)
-      const pick = rows[k % Math.max(1, rows.length)]
-      if (!pick) return null
-      return { x: Math.round(pick.r.left + 6), y: Math.round(pick.r.top + pick.r.height / 2) }
-    }, { k })
-    if (!target0) continue
+    // 取樣點(2026-09-25 改,待辦總帳 C12①):**證明這個像素屬於那一列**才拿來量,不再用「列左緣 +6」這個代理。
+    // 舊點落在左釘選面板列的拖曳把手底下(把手以表格外框左緣為中心 ±12px,淺色把手 #FFFFFF 與列靜止同色),
+    // 把手 150ms 淡入後蓋住取樣點 —— 見檔頭「取樣點與拖曳把手」段 (1)。證明不了(被別的東西蓋住 / 找不到可量的格)的樣本
+    // 記成**看不到**(blind),不得讀成「沒變色」指控產品,也不准默默跳過(可用樣本不足 → starved 紅)。
+    const target0 = await scope.evaluate(pickSamplePoint, { k, legacy: LEGACY_POINT, clearPx: HANDLE_CLEAR_PX })
+    if (!target0?.ok) {
+      samples.push(NaN); blindness.push(isBlindSample({ owned: false })); unresolved.push(false)
+      occluded.push(`k=${k}:${target0?.reason ?? '找不到可量的列'}`)
+      continue
+    }
     const target = { x: target0.x + frameOffset.x, y: target0.y + frameOffset.y }
+    const pointer = { x: target0.pointerX + frameOffset.x, y: target0.pointerY + frameOffset.y }
     // `--debug-samples`:逐取樣印出座標 / 面板 / 命中元素 / 該次延遲,用來追「固定在第 N 次的離群值」。
     const dbg = DEBUG_SAMPLES
       ? await scope.evaluate(({ x, y }) => {
@@ -208,12 +225,9 @@ async function measure(build, { afterScroll, sabotage }) {
     // 解碼後點陣(1400×800×4 ≈ 4.5MB/張 → 約 1.8GB)是明顯過量。兩處都已收斂。
     //
     // **但這沒有修掉離群值,原本的假說被推翻**:靜止 hover 每輪固定在**第 10 個取樣**出現
-    // 157-638ms(CPU×1/×4/×6 都一樣),收斂記憶體之後仍是 157 / 160 / 439ms 出現在同一個位置。
-    // 所以成因不是累積造成的垃圾回收 —— **目前未知**。已排除的:
-    //   (a) 元件本身 —— 用不累積、逐點量的獨立探針跑同一組 16 個座標是 13-18ms、零離群;
-    //   (b) 特定面板 —— k=0/3/6/9/12/15 同為左釘選面板,只有 k=9 慢;
-    //   (c) 記憶體累積 —— 本次收斂後仍在。
-    // 影響:只污染 p95,中位數不受影響(9-10ms),所以判定用中位數(見檔頭說明)是對的。
+    // 157-638ms(CPU×1/×4/×6 都一樣),收斂記憶體之後仍在同一個位置 —— 成因不是累積造成的垃圾回收。
+    // **2026-09-25 查到**:與拖曳把手的 150ms 淡入有關(關掉過渡或隱藏把手就消失),不是記憶體或元件;
+    // 當時的「(b) 特定面板只有左面板慢」其實正是線索(見檔頭「取樣點與拖曳把手」段 (2))。
     // 靜置期(主執行緒閒著)的送幀間隔 —— 這是**串流自己的抖動**。
     // 有了它才分辨得出「某次取樣量到 175ms」是產品慢還是串流本來就會停那麼久。
     for (let i = 1; i < frames.length; i++) idleGaps.push(Math.round(frames[i].ts - frames[i - 1].ts))
@@ -222,7 +236,8 @@ async function measure(build, { afterScroll, sabotage }) {
     if (!baseline) continue
     const t0 = performance.timeOrigin + performance.now()
     const sentAt = await page.evaluate(() => performance.timeOrigin + performance.now())
-    await page.mouse.move(target.x + 40, target.y)
+    // 指標落點:取樣點右側 40px、夾在同一列裡(pickSamplePoint 已確認落點屬於同一列);指標本身不在截圖裡
+    await page.mouse.move(pointer.x, pointer.y)
     const deadline = Date.now() + 1500
     let hit = null
     const basePx = pixelAt(baseline.data, target.x, target.y)
@@ -251,15 +266,19 @@ async function measure(build, { afterScroll, sabotage }) {
     const firstFrameIsHit = Boolean(hit) && after.length > 0 && hit === after[0]
     if (firstFrameIsHit) resolutionBound += 1
     if (DEBUG_SAMPLES) console.log(`   k=${String(k).padStart(2)} ${String(Math.round(took)).padStart(5)}ms  首幀延遲=${String(firstGap).padStart(4)}ms 幀距=[${gaps.slice(0, 6).join(',')}] 幀數=${after.length}  面板=${dbg?.panel} 列=${dbg?.rowIndex}`)
-    samples.push(took)
+    // hover 之後再證一次取樣點仍屬於那一列(2026-09-25,C12①):這時把手已淡入,若取樣點被它(或任何浮層)蓋住,
+    // 這一次量到的是蓋住它的東西,不是列 —— 記成看不到(blind),不拿去判快慢、也不指控產品。
+    const stillOwned = await scope.evaluate(ownsSamplePixel, { x: target0.x, y: target0.y, panel: target0.panel, rowIndex: target0.rowIndex })
+    if (!stillOwned.owned) occluded.push(`k=${k}:hover 後取樣點被 ${stillOwned.hit} 蓋住(面板 ${target0.panel} 列 ${target0.rowIndex})`)
+    samples.push(stillOwned.owned ? took : NaN)
     // 判定用的兩個旗標都由政策檔的純函式算 —— 先前 `!hit && after.length === 0` 直接寫在這裡,
     // 判定表只吃它的結果,所以「這個值怎麼算出來的」從來沒被測過(2026-09-21 對抗稽核)。
     // 2026-09-23:有幀但串流在視窗內停頓(首幀晚到 / 幀距)超過 STREAM_STALL_MS 也算看不到 —— 停頓期間主執行緒同在停,
     // hover 事件沒被處理不是產品沒變色。首幀延遲與幀距本來就算好了(上方 firstGap / gaps),只是先前沒進判定。
-    blindness.push(isStreamBlind({ hit, framesAfter: after.length, firstGap, maxGap: gaps.length ? Math.max(...gaps) : NaN }))
+    blindness.push(isBlindSample({ owned: stillOwned.owned, hit, framesAfter: after.length, firstGap, maxGap: gaps.length ? Math.max(...gaps) : NaN }))
     unresolved.push(isResolutionBound({ hit, firstFrameIsHit, firstGap, assertMax: ASSERT_MAX }))
     // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
-    // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。
+    // 那必然在某個累積量觸發一次大型垃圾回收(當時據此推測是那個固定位置的離群值,已被推翻,見上)。
     // 一個取樣用完就整個清掉:跨取樣沒有任何重用價值(每次都是新的一批幀)。
     pngCache.clear()
     await sleep(120)
@@ -270,7 +289,78 @@ async function measure(build, { afterScroll, sabotage }) {
   samples.idleGaps = idleGaps
   samples.blindness = blindness
   samples.unresolved = unresolved
+  samples.occluded = occluded
   return samples
+}
+
+/** 取樣點離表格外框左緣至少這麼遠:拖曳把手以外框左緣為中心、寬 24(±12),再留 6px 邊(實測把手 x 4–28、外框 x 16)。 */
+const HANDLE_CLEAR_PX = 18
+/** `--legacy-sample-point`:對照組 —— 用舊的「列左緣 +6」取樣點,證明所有權檢查會點名蓋住它的把手(不是給正式量測用的)。 */
+const LEGACY_POINT = has('legacy-sample-point')
+
+/**
+ * 頁面端(以 scope.evaluate 序列化,不得引用外部變數):挑第 k 個取樣列,回傳一個**屬於那一列**的取樣點。
+ * 取樣點 = 該列第一個「左緣 +4 離表格外框左緣 ≥ clearPx」的格子的左側留白(格子內距 12px,+4 不會踩到字)、垂直置中;
+ * 所有權 = elementFromPoint 點到的是那一列的子孫,而且從它到列之間沒有任何元素自己有底色(= 那個像素畫的是列的底)。
+ * 指標落點 = 取樣點右側 40px,夾在列內,並確認落點仍在同一列。
+ */
+function pickSamplePoint({ k, legacy, clearPx }) {
+  const rows = [...document.querySelectorAll('[data-row-index]')]
+    .map((el) => ({ el, r: el.getBoundingClientRect() }))
+    .filter((x) => x.r.height > 8 && x.r.top > 120 && x.r.bottom < window.innerHeight - 8)
+    .sort((a, b) => a.r.top - b.r.top)
+  const pick = rows[k % Math.max(1, rows.length)]
+  if (!pick) return { ok: false, reason: '畫面上沒有可量的列' }
+  const row = pick.el
+  const panel = row.closest('[data-datatable-panel]')?.getAttribute('data-datatable-panel') ?? '?'
+  const rowIndex = row.getAttribute('data-row-index')
+  const y = Math.round(pick.r.top + pick.r.height / 2)
+  const describe = (el) => { const l = el?.closest?.('[aria-label]'); return el ? `${l ? `${l.tagName}[${l.getAttribute('aria-label')}]` : el.tagName}` : '(無)' }
+  const owns = (x) => {
+    const at = document.elementFromPoint(x, y)
+    if (!at || !row.contains(at)) return { owned: false, hit: describe(at) }
+    for (let el = at; el && el !== row; el = el.parentElement) {
+      const cs = getComputedStyle(el)
+      if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none') return { owned: false, hit: `${describe(el)}(自己有底色)` }
+    }
+    return { owned: true }
+  }
+  let x = null
+  if (legacy) {
+    x = Math.round(pick.r.left + 6)
+  } else {
+    const outer = row.closest('[data-data-table-outer]') ?? row.closest('[class*="rounded-md"]')
+    const tableLeft = outer ? outer.getBoundingClientRect().left : pick.r.left
+    const cells = [...row.children].filter((c) => /^(grid)?cell$/.test(c.getAttribute('role') || ''))
+    for (const c of cells) {
+      const b = c.getBoundingClientRect()
+      const cx = Math.round(b.left + 4)
+      if (cx - tableLeft < clearPx || b.width < 12 || cx >= pick.r.right - 2) continue
+      if (owns(cx).owned) { x = cx; break }
+    }
+    if (x == null) return { ok: false, reason: `面板 ${panel} 列 ${rowIndex} 找不到離把手夠遠、又屬於列本身的取樣點` }
+  }
+  const own = owns(x)
+  if (!own.owned) return { ok: false, reason: `靜止時取樣點(${x},${y})被 ${own.hit} 蓋住(面板 ${panel} 列 ${rowIndex})` }
+  let pointerX = Math.min(x + 40, Math.round(pick.r.right) - 2)
+  const pAt = document.elementFromPoint(pointerX, y)
+  if (!pAt || !row.contains(pAt)) pointerX = x
+  return { ok: true, x, y, pointerX, pointerY: y, panel, rowIndex }
+}
+
+/** 頁面端:hover 之後再證一次取樣點屬於那一列(同 pickSamplePoint 的所有權判準)。 */
+function ownsSamplePixel({ x, y, panel, rowIndex }) {
+  const describe = (el) => { const l = el?.closest?.('[aria-label]'); return el ? `${l ? `${l.tagName}[${l.getAttribute('aria-label')}]` : el.tagName}` : '(無)' }
+  const row = [...document.querySelectorAll(`[data-row-index="${rowIndex}"]`)]
+    .find((r) => (r.closest('[data-datatable-panel]')?.getAttribute('data-datatable-panel') ?? '?') === panel)
+  const at = document.elementFromPoint(x, y)
+  if (!row) return { owned: false, hit: '(列已不在畫面上)' }
+  if (!at || !row.contains(at)) return { owned: false, hit: describe(at) }
+  for (let el = at; el && el !== row; el = el.parentElement) {
+    const cs = getComputedStyle(el)
+    if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none') return { owned: false, hit: `${describe(el)}(自己有底色)` }
+  }
+  return { owned: true }
 }
 
 const pngCache = new Map()
@@ -293,18 +383,25 @@ const report = (label, mode, s) => {
   //   `lost`  = 有幀可看、但整整 1.5 秒都沒變色 → 真訊號
   //   `blind` = hover 之後串流一張幀都沒送 → 儀器看不到,不得當成產品沒變色
   const { ok, lost, blind } = classifySamples({ samples: Array.from(s), blindness: Array.from(s.blindness || []), unresolved: Array.from(s.unresolved || []) })
+  // blind 含兩種「看不到」:串流沒送幀,以及取樣點被蓋住(2026-09-25,C12①)。印的時候分開說,判定照舊一起算。
+  const occl = s.occluded?.length || 0
+  const streamBlind = blind - occl
   const line = ok.length
-    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${blind ? ` (${blind} 次串流全盲:hover 後零幀,看不到不等於沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
+    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${streamBlind ? ` (${streamBlind} 次串流全盲:hover 後零幀,看不到不等於沒變色)` : ''}${occl ? ` (${occl} 次取樣點被蓋住)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`
   console.log('  ' + line)
+  // 取樣點證明不了屬於列的樣本逐筆點名(2026-09-25,C12①):它們已計入「看不到」,這裡說清楚是被什麼蓋住
+  if (s.occluded?.length) console.log(`   ↳ ${s.occluded.length} 次取樣點不屬於列(記成看不到,不拿去判快慢):${s.occluded.join(';')}`)
   // **把「沒變色」的次數一起回傳**(2026-09-12)。舊版只回 `ok`,於是 1.5 秒內沒變色的樣本
   // 從中位數與最大值裡一起被剔除、只在括號裡印個註記 —— 也就是**最糟的那種卡死對這支閘完全隱形**,
   // 而那正是 user 抱怨的「游標到了卻要等好一陣子」。獨立覆核 2026-09-12 指出這個洞。
-  return { ok, lost, blind, samples: s }
+  return { ok, lost, blind, streamBlind, occluded: occl, samples: s }
 }
 
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本印自己的「沒有 iframe.html」並 exit 1 ——
+// gate-selftest-meta 認不得那句,會把缺前置讀成一般紅(2026-09-25,待辦總帳 C5)。
 for (const b of BUILDS) {
-  if (!b.origin && !fs.existsSync(path.join(b.dir, 'iframe.html'))) { console.error(`✗ ${b.label}:${b.dir} 沒有 iframe.html`); process.exit(1) }
+  if (!b.origin) requireStorybookBuild(path.join(b.dir, 'iframe.html'), `${b.label}:先跑 \`npm run build-storybook\`(或 --builds / --static 指向完整建置)`)
 }
 /** measure() 的呼叫端:表格沒開起來(StoryRenderInstrumentError)= 儀器失效,當場 exit 2 —— 不回傳空樣本(空樣本會被讀成「沒變色」)。 */
 async function measureOrInstrumentFail(build, options) {
@@ -331,8 +428,8 @@ for (const b of BUILDS) {
     // 沒跟著改的那一版在 CI 上把對照組判成 `p95 = NaN` 而紅,等於自己把儀器弄壞。
     const sab = report(b.label, '對照組(注入 120ms 忙等)', await measureOrInstrumentFail(b, { afterScroll: false, sabotage: true })).ok
     // **對照組改判中位數,不判 p95**(2026-09-13)。本檔判定本來就用中位數(理由見檔頭),
-    // 對照組卻還在用 p95 —— 而每一輪必有一個 157-638ms 的單一離群值(固定在第 10 個取樣,成因未知,
-    // 見 `frames.splice` 註解),於是**反對照恆紅**(實測未注入時 p95 = 423ms > 120)。
+    // 對照組卻還在用 p95 —— 而舊取樣點每一輪必有一個 157-638ms 的單一離群值(固定在第 10 個取樣;2026-09-25 查明是
+    // 與拖曳把手的淡入有關,見檔頭「取樣點與拖曳把手」段),於是**反對照恆紅**(實測未注入時 p95 = 423ms > 120)。
     // 改中位數不會削弱偵測力:注入 120ms 是加在**每一個**取樣的 hover 路徑上,中位數必然跟著 ≥ 120
     //(實測注入後中位數遠超門檻),而未注入時中位數是 9-10ms —— 兩邊的分離度比用 p95 更大。
     const caught = sab.length > 0 && q(sab, 0.5) >= 120
@@ -362,9 +459,9 @@ for (const b of BUILDS) {
       const usable = v.usable
       const starved = v.verdict === 'starved'
       const bad = v.verdict !== 'pass'
-      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${usable ? med.toFixed(0) : 'n/a'} / 最大 ${usable ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}${r.blind ? ` / 串流全盲 ${r.blind}` : ''}）`)
+      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${usable ? med.toFixed(0) : 'n/a'} / 最大 ${usable ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}${r.streamBlind ? ` / 串流全盲 ${r.streamBlind}` : ''}${r.occluded ? ` / 取樣點被蓋住 ${r.occluded}` : ''}）`)
       if (v.bounded) console.log(`   ↳ ${v.bounded} 次的數字只是**串流空窗的上界**(命中的就是 hover 後第一張幀,而那張幀本身就晚於 ${ASSERT_MAX}ms)—— 變色在它之前就完成了,不拿來判列的快慢。`)
-      if (starved) console.log(`   ↳ 可用樣本只有 ${usable} 個(需 ≥ ${MIN_USABLE_SAMPLES})—— 這是**儀器失效**,不是產品變慢;串流全盲 ${r.blind} 次、解析度受限 ${v.bounded} 次。`)
+      if (starved) console.log(`   ↳ 可用樣本只有 ${usable} 個(需 ≥ ${MIN_USABLE_SAMPLES})—— 這是**儀器失效**,不是產品變慢;串流全盲 ${r.streamBlind} 次、取樣點被蓋住 ${r.occluded} 次、解析度受限 ${v.bounded} 次。`)
       if (bad) fail++
     }
   }

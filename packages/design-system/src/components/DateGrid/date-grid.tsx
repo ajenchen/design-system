@@ -129,21 +129,26 @@ const ZH_MONTH_YEAR = new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month:
 const ZH_WEEKDAY = new Intl.DateTimeFormat('zh-TW', { weekday: 'long' })
 
 // 月曆格陣:在 react-day-picker 預設的 `<table {...props} />`
-//(node_modules/react-day-picker/dist/esm/components/MonthGrid.js)上多掛兩樣東西 ——
+//(node_modules/react-day-picker/dist/esm/components/MonthGrid.js)上多掛三樣東西 ——
 //   (1) `data-day-grid` 錨點,給下方 handleDayMouseLeave 判斷「指標現在停在格陣的哪一種地方」;
-//   (2) `onMouseOver`(由 context 遞進來),補掉「指標穿過縫之後停在不可點的日子」這條路徑。
-// 只多兩個屬性,不改結構。
+//   (2) `onMouseOver`(由 context 遞進來),補掉「指標穿過縫之後停在不可點的日子」這條路徑;
+//   (3) `onMouseLeave`(由 context 遞進來),補掉「指標從縫裡直接離開格陣」這條路徑(D1,見 handleGridMouseLeave)。
+// 只多三個屬性,不改結構。
 //
 // ⚠️ **必須定義在 module 層,不能寫成 render 內的 inline 箭頭函式。** 寫成 inline 時每次 render 都是一個
 // 新的 component type,React 會把整個格陣 unmount 再 mount,RDP 內部的焦點/動畫 effect 因此重新設 state,
 // 立刻撞上「Maximum update depth exceeded」(React #185)—— 2026-09-24 第一版就是這樣寫的,storybook
 // 整個 DatePicker range 故事白畫面。同檔的 PreviousMonthButton / NextMonthButton 是葉節點按鈕,沒有這個問題。
 // handler 走 context 而不是 props,正是因為 RDP 只給 MonthGrid 固定的那組 props,塞不進第三個。
-const GridMouseOverContext = React.createContext<((event: React.MouseEvent) => void) | undefined>(undefined)
+interface GridPointerHandlers {
+  onMouseOver?: (event: React.MouseEvent) => void
+  onMouseLeave?: (event: React.MouseEvent) => void
+}
+const GridPointerContext = React.createContext<GridPointerHandlers>({})
 
 function AnchoredMonthGrid(props: React.TableHTMLAttributes<HTMLTableElement>) {
-  const onMouseOver = React.useContext(GridMouseOverContext)
-  return <table {...props} data-day-grid="" onMouseOver={onMouseOver} />
+  const { onMouseOver, onMouseLeave } = React.useContext(GridPointerContext)
+  return <table {...props} data-day-grid="" onMouseOver={onMouseOver} onMouseLeave={onMouseLeave} />
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -186,9 +191,11 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
   const isGridGap = (node: EventTarget | null, grid: Element | null) =>
     node instanceof Element && !!grid && grid.contains(node) && !node.closest('td,th')
 
-  // 記住最後一次停留的日子:下方 handleGridMouseOver 要補送 leave 時用得到
+  // 記住最後一次停留的日子:下方 handleGridMouseOver / handleGridMouseLeave 要補送 leave 時用得到
   //(消費端 DatePicker 的 onDayMouseLeave 兩個參數都沒用到,但契約要求帶,不能亂編)。
   const lastEnterRef = React.useRef<{ day: Date; modifiers: Parameters<NonNullable<typeof onDayMouseEnter>>[1] } | null>(null)
+  // 縫裡被吞掉的那一次 leave 還欠著沒送 = 停留日(預覽框)還掛在上一天身上。只有這種狀態才需要在離開格陣時補送。
+  const owesLeaveRef = React.useRef(false)
 
   const handleDayMouseEnter = (
     day: Date,
@@ -196,6 +203,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     event: React.MouseEvent,
   ) => {
     lastEnterRef.current = { day, modifiers }
+    owesLeaveRef.current = false
     onDayMouseEnter?.(day, modifiers, event)
   }
 
@@ -204,7 +212,11 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     ((day: Date, modifiers: Parameters<NonNullable<typeof onDayMouseLeave>>[1], event: React.MouseEvent) => {
       const from = (event.currentTarget ?? event.target) as Element | null
       const grid = from?.closest?.('[data-day-grid]') ?? null
-      if (isGridGap(event.relatedTarget, grid)) return
+      if (isGridGap(event.relatedTarget, grid)) {
+        owesLeaveRef.current = true
+        return
+      }
+      owesLeaveRef.current = false
       onDayMouseLeave(day, modifiers, event)
     })
 
@@ -221,14 +233,35 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       if (!(target instanceof Element)) return
       if (target.closest('button:not(:disabled):not([aria-disabled="true"])')) return // 停在可點的日子 → 交給 RDP 的 enter
       if (!target.closest('td,th')) return // 停在縫裡 → 視為還在上一天
+      owesLeaveRef.current = false
+      onDayMouseLeave(last.day, last.modifiers, event)
+    })
+
+  // D1 補洞(2026-09-26,待辦總帳 N54「日期 D1」;date-grid.spec.md「現行機制」第 4 條):指標**從縫裡直接離開格陣**。
+  // 上面兩支都不管這條路:離開最外圈那一天時 relatedTarget 落在縫裡 → leave 被吞(欠著);接著指標從縫走出 <table>,
+  // 已經沒有任何一天會再收到 leave、也沒有 td / th 會收到 mouseover —— 預覽框就一直卡在上一天(實測:從 6/13 每步 1px
+  // 往右移到浮層外 20px,停 2 秒仍是 5/4→6/13;一次跳出去則會清,因為 day button 的 leave 直接落在格陣外、照常轉發)。
+  // 本檔「只在指標真的離開整張格陣時才清」的判準(上方 isGridGap 註解「停在不可點的日子、星期列、或格陣之外都要照常清掉」)本來就涵蓋這條,
+  // 缺的是實作:MUI X 在月份容器掛 `onMouseLeave: () => setRangePreviewDay(null)`(DateRangeCalendar.tsx#L483,
+  // v9.14.0),09-24 照 MUI 做「縫裡不清」時沒一起做這一半。
+  // 只在「欠著」時補送:一次跳出去的那條路,day button 的 leave 已經照常轉發過,不重送。
+  // 兩張月曆並排時每張各是一張格陣,兩張之間的空白 = 離開格陣(date-picker.spec.md「滑鼠離開日期格區」)。
+  // 縫本身的行為(停在縫裡照亮)與偏離中線的 D2 都不在這裡改(未經同意)。
+  const handleGridMouseLeave =
+    onDayMouseLeave &&
+    ((event: React.MouseEvent) => {
+      if (!owesLeaveRef.current) return
+      owesLeaveRef.current = false
+      const last = lastEnterRef.current
+      if (!last) return
       onDayMouseLeave(last.day, last.modifiers, event)
     })
   // Note: react-day-picker v9 DayPicker 未對外 forward ref 到單一 DOM 節點(內部有多 div),
   // 故 ref 簽名保留但不附著(符合 DS 統一 forwardRef 慣例;真要取 DOM 用 wrapper 包)。
   return (
-    <GridMouseOverContext.Provider value={handleGridMouseOver}>
+    <GridPointerContext.Provider value={{ onMouseOver: handleGridMouseOver, onMouseLeave: handleGridMouseLeave }}>
     {/* 下方 <DayPicker> 刻意不隨這層 Provider 往內縮排:整塊兩百多行只為了多包一層 context 而全部位移,
-        會讓 diff 看起來像整檔重寫。Provider 本身沒有任何視覺或結構作用,只把 onMouseOver 遞給 AnchoredMonthGrid。 */}
+        會讓 diff 看起來像整檔重寫。Provider 本身沒有任何視覺或結構作用,只把 onMouseOver / onMouseLeave 遞給 AnchoredMonthGrid。 */}
     <DayPicker
       // 兩月以上**不渲染鄰月日子**(2026-09-23 user 拍板):同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 /
       // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
@@ -456,7 +489,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       onDayMouseEnter={handleDayMouseEnter}
       onDayMouseLeave={handleDayMouseLeave}
     />
-    </GridMouseOverContext.Provider>
+    </GridPointerContext.Provider>
   )
 })
 DateGrid.displayName = 'DateGrid'

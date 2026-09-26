@@ -485,7 +485,8 @@ const tabsTriggerVariants = cva(
     'gap-2',
     'whitespace-nowrap',
     'font-medium text-fg-secondary',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:滑過的字色一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,
+    // 待辦總帳 L9 / N4(3))。選中切換的**底線**過渡在下方 `after:transition-colors`,那是「選中移動」不是滑過,保留(L9 範圍明文排除)。
     'cursor-pointer select-none',
     // 焦點框往內:tab 高 = 分頁列高,上下淨空 0(focus-canonical「問題二」驗算表;2026-09-09 Codex R13 抓到規格寫內框、
     // 實作卻是全域外框,在 overflow-scroll 的 TabsList 裡上下各被裁 3–4px)
@@ -676,9 +677,15 @@ const TabsTrigger = React.forwardRef<
         createPortal(
           // action portal 到 overlay(tablist 外);left=trigger.right + `-translate-x-full` → action
           // 右緣對齊 trigger 右緣;top/height + items-center → 垂直置中(同原 right-0 + top-1/2 幾何)。
+          // 外層 span 與 trigger 同高,但 action 本身只有 icon 高 —— span 上下各多出一塊(預設 sm:32px 高的 tab、16px 的 action,實測上下各 8px)。
+          // 那兩塊若接指標:指到時分頁字變深(巢狀滑過的 data-action-hover),點下去卻不切分頁 =「亮著卻點不到」
+          //(待辦總帳 N53②;hit-area-canonical.md「它要防的失敗是單向的:看到亮起來卻點不到」)。
+          // 所以 span 自己不接指標、只有 action 接([&>*]:pointer-events-auto):上下兩塊落回底下的 trigger(那是 trigger
+          // 右緣預留的 paddingRight 區,tabs.spec.md `inlineAction` 條),點了切分頁、滑過由 trigger 自己的 :hover 變色。
+          // 原生 pointerenter/leave 仍在指標進出 action 時送到 span(事件依 DOM 樹傳給祖先,與 pointer-events 無關),巢狀滑過照常。
           <span
             ref={setActionWrapEl}
-            className="pointer-events-auto absolute inline-flex -translate-x-full items-center"
+            className="pointer-events-none [&>*]:pointer-events-auto absolute inline-flex -translate-x-full items-center"
             style={{ left: actionPos.left, top: actionPos.top, height: actionPos.height }}
           >
             {inlineAction}

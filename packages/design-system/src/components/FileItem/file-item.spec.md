@@ -113,7 +113,7 @@ compact 為預設——多數 upload 清單是「快速掃視多檔」場景，�
 item-anatomy「> 24 prefix + 有 desc」規則要求 prefix 對齊 content 塊**中心**(items-center)。
 FileItem rich **刻意不遵守**這條,使用 `items-start`(top-align),原因:
 
-> **當 FileItem rich 被放在「檔案上傳管理 box」等 tight-stack 情境**(`surface=upload-manager` 無邊框、列間 `--layout-space-tight` 12px 緊貼時,見「List wrapper canonical」),avatar 作為**每個 item 的視覺邊界引導**——若 avatar 中心對齊,連續 item 的 avatar 會失去「每筆檔案一個 thumbnail」的視覺節奏。top-align 讓 avatar 明確標示每個 item 的起點。
+> **當 FileItem rich 被放在「檔案上傳管理 box」等 tight-stack 情境**(`surface=upload-manager` 無邊框、縮圖與縮圖相距 `--layout-space-tight` 12px 緊貼時,見「List wrapper canonical」),avatar 作為**每個 item 的視覺邊界引導**——若 avatar 中心對齊,連續 item 的 avatar 會失去「每筆檔案一個 thumbnail」的視覺節奏。top-align 讓 avatar 明確標示每個 item 的起點。
 
 ### Avatar 尺寸(固定 48px)
 
@@ -124,11 +124,11 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 | Mode × surface | 規則 |
 |---|---|
 | compact(`surface=form` 預設) | `px-3 py-2`(FileItem 無 size prop,不走 `ROW_PADDING_BY_SIZE` 公式;`gap-2` 對齊 item-anatomy row) |
-| compact(`surface=upload-manager`) | **`py-2` 保留 + 左右 padding 拿掉**(`px-0`)。py 是**純文字列高來源**(無 avatar 撐高)不可拿;左右拿掉讓列對齊面板 loose L/R |
+| compact(`surface=upload-manager`) | **左右 = 列自帶 `--layout-space-loose`**;上 `tight/2`、下 `tight/2 + 0.5rem`(0.5rem = 原 `py-2` 的下緣:文字↔bar 6 + bar 2),bar 離列底 `tight/2`。**2026-09-25 待辦總帳 B12 推翻 06-03 的「`px-0`、左右交給面板」**:可點的列滑過底色要鋪到面板左右邊,gutter 只能由列自己帶(見下方「item 與容器分工」) |
 | rich(`surface=form` 預設) | `px-3 py-3` border card(py 固定,高度由 avatar 決定不走 row 公式)|
-| rich(`surface=upload-manager`) | **左右 + 上下 padding 全拿掉**(`px-0 py-0`)。**列高靠 avatar 48(content `minHeight`)**,卡片移除後 py 多餘 → 由面板 + gap 控制間距(2026-06-03 user 校準:rich 拿上下、compact 保留上下,因列高來源不同)|
+| rich(`surface=upload-manager`) | **左右 = 列自帶 `--layout-space-loose`、上下各 `tight/2`**(列高 = avatar 48 + tight)。06-03 的 `px-0 py-0` 同樣由 B12 推翻;上下補 `tight/2` 是為了滑過底色不貼縮圖(AI 推導) |
 
-**item 與容器分工**:item 只控「容器不該管的內距」—— compact `py-2`(純文字列高來源,無 avatar 撐高)/ rich `0`(列高靠 avatar 48);左右一律拿掉交給容器。**`surface=upload-manager` 浮層面板(容器)的左右 / 上下 padding / 列間 gap → 見「List wrapper canonical」的「upload-manager 浮層面板 composition」段**(SSOT 不在此重述,避免 drift)。
+**item 與容器分工**:判準是「誰負責左右 gutter」(`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」)—— 列有整列滑過底色、要鋪到容器邊時,gutter 由列自己帶、容器給 0(`surface=upload-manager`);form 的列不鋪到容器邊,內距如上表。**`surface=upload-manager` 浮層面板(容器)的 padding / 列間 gap → 見「List wrapper canonical」的「upload-manager 浮層面板 composition」段**(SSOT 不在此重述,避免 drift)。
 
 ## 邊框 / 背景(AR15-21 canonical,2026-04-21 · 2026-04-22 擴充)
 
@@ -137,36 +137,24 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 | Mode × surface | 容器視覺 | Rationale |
 |------|---------|-----------|
 | **rich + `surface=form`**（預設，表單/訊息附件）| `border border-divider rounded-md bg-surface` | Rich = 「檔案 card」自立輪廓——Slack / Notion / Linear attachment 慣例；邊框讓每 row 視覺獨立 |
-| **rich + `surface=upload-manager`**（Google Drive / Dropbox 背景上傳 box）| **無邊框 + 無 bg**（`rounded-md` 保留供 thumbnail 切角）；avatar 作每筆 item 視覺邊界 | box 自身已是容器 → card border 多餘＝雙層容器；avatar thumbnail 提供「每筆檔案」邊界節奏。2026-06-03 codify（原僅 L116 旁註「consumer 自己移除 border」，現 `surface` prop 機械化）|
+| **rich + `surface=upload-manager`**（Google Drive / Dropbox 背景上傳 box）| **無邊框 + 無 bg + 直角**(2026-09-25 B12 起列鋪滿面板寬,圓角碰到面板直邊會缺角,AI 推導;縮圖切角是 Avatar `shape="square"` 自己的圓角,不靠列);avatar 作每筆 item 視覺邊界 | box 自身已是容器 → card border 多餘＝雙層容器；avatar thumbnail 提供「每筆檔案」邊界節奏。2026-06-03 codify（原僅 L116 旁註「consumer 自己移除 border」，現 `surface` prop 機械化）|
 | **compact + 有 status**（uploading / error / upload-manager completed，有 progress bar）| 無背景、無邊框,只靠 progress bar 提供 affordance | 「正在發生」/「剛發生」的動態 narrative,progress 本身就是視覺焦點 |
 | **compact + 無 progress**(form attachment 靜態態) | `bg-secondary rounded-md`(= neutral-3 色) | 靜態清單(form / 訊息附件)背景色區隔出「檔案 row」邊界,跟純文字內容區分。**為何 `bg-secondary` 不 `bg-neutral-3`**:`--secondary` 是 semantic token 經 `@theme inline` 橋接成合法 Tailwind utility,`--color-neutral-3` 是 primitive token(僅 `:root` CSS var)不生成 utility,寫 `bg-neutral-3` 會 silent 失效。對齊 Badge low / ProgressBar track SSOT(同色) |
 
-### Hover 行為 canonical(2026-04-23)
+### 滑過(2026-09-25,待辦總帳 B12;取代 2026-04-23「FileItem 永不顯示 hover-bg」)
 
-**FileItem 永不顯示 hover-bg**,不論 mode / status / onClick。affordance 只靠 `cursor-pointer`(onClick 存在時)+ actions icon / hover-swap(status slot icon fade → action icon fade)。
+**只有點了會有反應(傳了 `onClick`)的 FileItem 才有滑過底色;沒傳就沒有。** user 原話:「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」換上什麼色依平常底色配對,規則住在 `../../tokens/color/color.spec.md`「Hover 換色配對總則」,本表只列 FileItem 的對應:
 
-**Rationale(permanent visual anchor → 不加 hover-bg double-emphasis)**:
+| 型態 | 平常底色 | 有 `onClick` 時滑過 |
+|---|---|---|
+| rich `surface=form`(卡片) | `bg-surface`(「底」) | 底不換,疊一層 `hover:bg-interaction-hover` |
+| compact 無 status(小膠囊) | `bg-secondary` | 換成自己的下一階 `hover:bg-secondary-hover` |
+| compact 有 status、`surface=upload-manager` 的兩 mode | 透明 | 換成 `hover:bg-neutral-hover`;upload-manager 的列鋪滿面板寬(見「Padding」) |
 
-| Mode | 永久 visual anchor | 加 hover-bg 後果 |
-|------|-------------------|-----------------|
-| rich(`surface=form`) | `border + rounded-md + bg-surface` card | card + hover-bg = 雙層強調,視覺 heavy |
-| rich(`surface=upload-manager`) | Avatar 48 thumbnail 作 item 邊界(無邊框/無 bg,面板自身是容器) | thumbnail 已提供「每筆檔案」節奏,hover-bg 多餘 |
-| compact 無 status(靜態) | `bg-secondary rounded-md` 永遠 pill | pill 底本身已是常駐外觀(anchored,理由同下方總結句)。機制註記(2026-09-25 更正):若要給 pill 滑過底色,依 DS 換色機制是把 `bg-secondary` 換成它**自己的**下一階配對(目前尚無 `--secondary-hover`),不是在 pill 上再疊一層 `--neutral-hover`(`color.spec.md`「Hover 換色配對總則」);原句「pill bg + hover-bg neutral-hover 兩層相近灰」建立在疊色前提上,已撤回 |
-| compact 有 status(uploading / error / completed with bar) | 底部 2px progress bar(分隔線型 permanent affordance) | bar + hover-bg 同時並存,affordance 重複 |
-
-三種型態**都已 anchored**,hover-bg 是多餘的視覺層。Cursor + click 本身已是足夠互動 affordance,世界級檔案 card / attachment 皆如此。
-
-**世界級對照**(M8 / M12 benchmark):
-
-| DS | File card / attachment hover 行為 | 跟本 canonical 對齊? |
-|----|----------------------------------|----------------------|
-| Slack file tile | border highlight,**無 bg 變化** | ✓ |
-| Notion file callout | **無 bg 變化**,action icons fade in | ✓ |
-| Figma file card | shadow lift,**無 bg 變化** | ✓ |
-| Gmail attachment chip | **無 bg 變化**,download icon fade in | ✓ |
-| Dropbox / Google Drive file **row**(flush transparent 無 permanent anchor) | **有** hover-bg | Opposite case(證明 canonical:anchored → 無、flush → 有) |
-
-**跟 MenuItem / DataTable row 對比**(它們用 hover-bg):兩者是 **flush transparent row**(無 permanent bg / border),hover-bg 是唯一 affordance。FileItem 三種型態皆已 anchored → 反向 canonical。
+- **沒有 `onClick` 的不加**:上傳管理器裡只會在滑過時把 ✓ 換成下載鈕、點列本身沒反應的列也不加(待辦總帳 A3 → B12)—— 換位照舊,只有那顆鈕有自己的滑過色。
+- **列內按鈕**(刪除、下載、重試)滑過時換上自己的 `--neutral-hover`(半透明),疊在列的滑過色上,不寫特例;規則在 `color.spec.md`「巢狀滑過」段。
+- **不加按住那一階**:FileItem「按下深一階」是待辦總帳 N4 / F 模型 D3(2),尚未提問(AI 推導:不先替 user 決定)。
+- **撤回的舊理由**(「三型態皆常駐錨點,加底色 = 雙重強調」):有框、有常駐底色的附件卡可點時照樣換底色 —— [shadcn Attachment](https://github.com/shadcn-ui/ui/blob/98a1fe67b439324ddc857f47fbdce056600a4329/apps/v4/registry/bases/radix/ui/attachment.tsx#L9)(`has-[>a,>button]:hover:bg-muted/50`,放了整卡觸發層才換);不可點的清單列不加滑過層 —— [Material Web list item](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/list/internal/listitem/list-item.ts#L161-L169)(`type="text"` 不渲染 ripple)。舊對照表(Slack / Notion / Figma / Gmail)沒有任何來源,一併撤回。不可點也上色的另一派([Ant Design Upload 文字清單](https://github.com/ant-design/ant-design/blob/4f9fe53933922d69f89bcd79de9de87b5124f522/components/upload/style/list.ts#L20-L32))與上面 user 原話不符,不採用。
 
 **❌ 反例**:
 - Rich `surface=form` 無邊框 → 失去 card 自立輪廓,與一般 list item 無法區分,跟 MenuItem 混淆(`surface=upload-manager` 例外:面板自身是容器 + avatar 作邊界,rich 刻意無邊框,見上表)
@@ -188,7 +176,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 | `status` | `uploading` / `error` / `completed`(**completed 持續保留不清除** = 此情境精髓) |
 | Progress bar | 隨 status 顯示;completed = 100% 完成條(不隱藏) |
 | Status icon | uploading 無 / completed 綠 ✓ / error 紅 ✗ |
-| hover 行為 | **status slot hover-swap**:✓ → Download ↓(icon button)觸發 `onDownload` |
+| hover 行為 | **status slot hover-swap**:✓ → Download ↓(icon button)觸發 `onDownload`;有 `onClick` 的列另有整列滑過底色(透明 → `neutral-hover`,鋪到面板左右邊),沒有 `onClick` 的列不上色(見「滑過」段) |
 | Row-click | optional `onClick` 讓整 row 可點 → 預設 FileViewer 開啟;可與 hover-swap 並存 |
 | Rich 容器 | **無邊框 + 無 bg**(面板自身是容器,avatar 作 item 邊界)。**2026-06-03 修正:原寫「border card 永遠」與 surface=upload-manager 無邊框矛盾** |
 | Compact 容器 | 無 bg(progress bar 提供 affordance) |
@@ -214,7 +202,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 | `status` | 上傳中暫時 `uploading` / `error`;**靜態態 `undefined`**(清除) |
 | Progress bar | 上傳中顯示;靜態態無 |
 | Status icon | 同上 |
-| hover 行為 | `cursor-pointer`(永不顯示 hover-bg ——permanent-anchored 元件不加 double-emphasis) |
+| hover 行為 | 有 `onClick` 時 `cursor-pointer` + 滑過底色(卡片疊一層 / 小膠囊 `secondary-hover` / 有進度條的列 `neutral-hover`,見「滑過」段);沒有 `onClick` 不上色 |
 | Row-click | **`onClick` 為主要 affordance** → **預設 FileViewer 開啟**(consumer 決定,也可下載) |
 | Rich 容器 | `border card`(永遠) |
 | Compact 容器 | 靜態態 `bg-secondary`(灰底區隔「這是檔案 row」;= `--color-neutral-3` semantic 橋接名,見邊框 / 背景章節);上傳中有 bar 時無灰底 |
@@ -273,33 +261,30 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 
 ## List wrapper canonical(多 item 間距)
 
-**規則:gap 由「item 視覺密度」決定** —— rich form(有邊框 card)`gap-2`(8px,邊框不相黏);rich `surface=upload-manager`(無邊框)`gap-[var(--layout-space-tight)]`(12px);compact(所有情境)`gap-1`(4px)。
+**規則:gap 由「item 視覺密度」決定** —— rich form(有邊框 card)`gap-2`(8px,邊框不相黏);compact form `gap-1`(4px);`surface=upload-manager`(兩 mode)`gap-0`,列間距改由列自帶的上下 `tight/2` 相加(2026-09-25 B12)。
 
 | Mode × surface | List wrapper gap | Rationale |
 |------|----------------|-----------|
 | **Rich + `surface=form`**(border card)| `gap-2`(8px) | card 邊框不相黏(standalone card invariant) |
-| **Rich + `surface=upload-manager`**(無邊框浮層面板)| `gap-[var(--layout-space-tight)]`(12px)| 卡片 + 48 縮圖列需垂直呼吸。**2026-06-03 圖五 user 校準:rich upload-manager 初版誤設 4px,已校正為 tight(12px)**,因 rich 列比 compact 大 |
-| **Compact**(所有情境)| `gap-1`(4px) | 統一 — 有 status only / 無 status only / mixed 都 gap-1(2026-04-23 user 指示簡化:原條件式「全上傳中 → 0 gap」是 consumer 心智負擔 + state 轉換時 fragile,故捨棄 0-gap)|
+| **`surface=upload-manager`**(rich + compact,無邊框浮層面板)| `gap-0` | 縮圖↔縮圖、bar↔下一列文字仍是 tight(12px):**2026-06-03 圖五 user 校準的 12px**(rich 初版誤設 4px 後校正)不變,只是從「列間 gap」改由兩列各自的上下 `tight/2` 相加得出 —— 可點的列滑過底色上下相接,不在兩列之間留一條沒上色的縫(B12,AI 推導) |
+| **Compact + `surface=form`** | `gap-1`(4px) | 統一 — 有 status only / 無 status only / mixed 都 gap-1(2026-04-23 user 指示簡化:原條件式「全上傳中 → 0 gap」是 consumer 心智負擔 + state 轉換時 fragile,故捨棄 0-gap)|
 
 **control→list gap(FileUpload 內建 list 消費)**:dropzone / button 控制項 ↔ 第一個 FileItem 的間距 = **同上 form gap 同值**(rich card 8px / compact bg-pill 4px),由 `file-upload.tsx` 依 `fileListMode` 套用。**FileUpload 內建 list 一律 `surface=form`**(dropzone 是表單上傳框,非獨立浮層 upload manager),故不套用下方 upload-manager 的 12px / 面板 padding。
 
 ### upload-manager 浮層面板 composition(Google Drive 右下角類獨立面板,**非** FileUpload dropzone)
 
-`surface=upload-manager` 的 FileItem list 裝在獨立浮層面板(header + 列表),item 拿掉的左右 / 上下邊距改由容器負責:
+`surface=upload-manager` 的 FileItem list 裝在獨立浮層面板(header + 列表);左右 gutter 由列自己帶、面板 body 給 0,上下由列與 body 各給一半(2026-09-25 B12):
 
 - **它是 popover-class 浮層 surface,但不是 Radix `<Popover>`**(常駐面板:不靠 trigger 開、不 outside-click 關、用 chevron 收合非 X dismiss)→ **不包 `<Popover>`**,而是直接消費 overlay-surface 三件套 primitive。
 - **殼 + header + body 全消費 overlay-surface SSOT(禁手刻)**:
   - 殼:消費 Popover-class surface contract(border / radius / elevation / raised surface)，但保持 persistent panel 語意；確切 utility 由對應 story / component source 擁有。
   - header:`<SurfaceHeader className={cn("justify-between", COMPACT_HEADER_SLOT)}>` + `<PopoverTitle>`(輕量浮層 header SSOT,slot 走 `COMPACT_HEADER_SLOT`=21 衍生自 text-body title;padding = px-loose py-tight + border-b + unbounded-slot 負 my trick)。
-  - body:**`<SurfaceBody>`(body SSOT,含 px-loose py-tight + flex-1 scroll 鏈)**,FileItem-specific padding 用 className override(見下)。**這不是「List-as-region」**:upload-manager 的 body 保留 `px-loose` chrome padding(List-as-region 的判定條件是 body 撤掉 chrome padding `!px-0`),故直接用 `SurfaceBody` 預設。判定條件的 owner 在 `../../patterns/overlay-surface/overlay-surface.spec.md`「List-as-region in overlay body」,本檔不複述。**scroll(consumer 注意)**:SurfaceBody 的 `flex-1 / overflow-y-auto` 只在 shell 有 `max-h` + `overflow-hidden` 時生效;常駐面板若檔案數可超 viewport,shell 須加 `max-h`(對齊 overlay-surface.spec.md「viewport-aware scroll」),demo 短內容不需。
+  - body:**`<SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">`**(body SSOT 的 flex-1 scroll 鏈照用,padding 用 className override,見下)。左右 0 是「列式」(同 `../../patterns/overlay-surface/overlay-surface.spec.md`「誰負責左右 gutter」);它**仍不是**「List-as-region」—— 那個判定還要求上下也撤掉、清單外層自帶 `py-2`,owner 在同檔「List-as-region in overlay body」,本檔不複述。**scroll(consumer 注意)**:SurfaceBody 的 `flex-1 / overflow-y-auto` 只在 shell 有 `max-h` + `overflow-hidden` 時生效;常駐面板若檔案數可超 viewport,shell 須加 `max-h`(對齊 overlay-surface.spec.md「viewport-aware scroll」),demo 短內容不需。
   - **禁手刻**:header / body 必直接消費 overlay-surface primitives；另建等價 wrapper 會形成第二份 spacing 與 surface authority。Hook `check_story_invariants.sh R9` 機械攔截。
 
-- **左右**:`SurfaceBody` 預設 `px-[var(--layout-space-loose)]`(16px,item 內容左緣對齊 header 標題),不需 override。
-- **上下:目標 = 邊緣到 item「ink」(可見內容)距離 `var(--layout-space-tight)`(12px),兩 mode + 上下都一致**。通則:**容器該側 padding = 12 − item 在該側自己的留白(ink inset)**。
-  - **rich**:item 上下 ink inset 皆 0(avatar 頂、bar/content 底貼齊)→ 用 `SurfaceBody` 預設 `py-[var(--layout-space-tight)]`(12 / 12 對稱,不需 override)。
-  - **compact**:item 上方自帶 `py-2`(8px)→ top 補 `4`(4+8=12);**進度條 `absolute bottom-0` 貼 item 底、下方無留白(inset 0)**→ bottom 留 SurfaceBody 預設 `py-tight`(12,12+0=12)。故 compact 用 **`SurfaceBody className="!pt-1"`** override 成上下不對稱(top=4 / bottom=12)。**為何用 `!`(important)**:twMerge 不 strip SurfaceBody 基底 `py-[tight]`,非 important 的 `pt-1` 跟基底 `py` 競爭 top 看 Tailwind stylesheet 生成順序(非決定性 → 可能 silent 變 12);`!pt-1` 強制決定性勝。對齊 List-as-region `!px-0` SurfaceBody override 慣例。
-- **列間 gap**:套在 SurfaceBody className;值見上方「List wrapper canonical」gap 表(SSOT,不在此重述:rich upload-manager 12px / compact 4px)。
-- **為何 compact container 上下不對稱**(2026-06-03 圖一研究校準):compact 進度條 absolute 貼底,item 的 py-2 那 8px 落在「文字↔bar」之間、bar 下方無 padding;若上下都用同值 → 下邊距(bar→邊緣)只剩容器值、比上邊距(含 item 8px)小。故用「12 − ink inset」逐側補。世界級對照:密集 list / dropdown 容器上下 padding 慣例 4–8px(Atlassian space.050–100 / 8px-base 共識);此處目標 12px 是「邊緣→ink」視覺值(含 item 自身留白),非容器裸值。
+- **左右**:body `!px-0`,列自帶 `--layout-space-loose`(16px)→ item 內容左緣仍對齊 header 標題(x 與 06-03 相同),可點列的滑過底色則鋪到面板左右邊(`overlay-surface.spec.md` M11 state walk 三題:底色邊 = chrome 邊、內容對齊標題、內容離底色邊 ≥ loose)。**推翻 2026-06-03「左右交給面板」**:那時列沒有滑過底色;B12 後可點的列有了,底色若只到內容邊會貼著縮圖與文字(同檔「❌ 禁止:Item `px=0` 讓 content 直接觸 hover bg 邊」)。
+- **上下:目標不變 = 邊緣到 item「ink」(可見內容)、ink 到 ink 都是 `var(--layout-space-tight)`(12px)**,通則仍是「容器該側 padding = 12 − item 在該側自己的留白(ink inset)」。B12 後兩 mode 的列上下各自帶 `tight/2`(compact 的 bar 離列底 `tight/2`,見「Padding」)→ body 上下都給 `tight/2`、列間 gap 0,兩 mode 同一個 body 寫法;06-03 compact 的 `!pt-1` 上下不對稱(因 bar 貼列底)隨之取消。**為何用 `!`(important)**:沿用 List-as-region `!px-0` 與 06-03 `!pt-1` 的寫法 —— 覆寫的勝負不依賴 twMerge 對 arbitrary 值的分組判斷,也不依賴 Tailwind stylesheet 的生成順序。
+- **列間 gap**:套在 SurfaceBody className;值見上方「List wrapper canonical」gap 表(SSOT,不在此重述)。
 - Demo:`file-item.stories.tsx` 的 `UploadManagerSurface`(rich)/ `UploadManagerCompactSurface`(compact)。
 
 **Rich + Compact 不可混用**(見 Invariant 1 上方),故無「混用 gap」決策。
@@ -419,7 +404,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 - **ProgressBar 整合(進度 context 帶檔名)**:消費的 `<ProgressBar>` 自帶 `role="progressbar"` + `aria-valuenow` / `aria-valuemax`(Radix Progress primitive 提供),本元件再傳 `aria-label={檔名 上傳進度}` 作 context;keyboard 不需 focus progress bar(被動指示器,非互動元素)。
 - **Action button labels**:Download / retry / remove 等 inline action 必傳 `aria-label`(中文 / consumer locale)— 「下載 report.pdf」/「重試上傳」/「移除附件」,單純「下載」/「刪除」缺檔名 context SR user 無法區分多 row。
 - **Status icon hover-swap a11y**:hover-swap 不改變 SR 語意 — passive status icon `aria-hidden`,active action button 自帶 `aria-label`,避免 SR user 收到視覺 swap 噪音。
-- **Row primary action 鍵盤可達且不 nested-interactive**:傳 `onClick` 時，row 保持非互動容器並保留整列 pointer hit area；另渲染與 trailing actions 同層的透明 full-row native button（pointer-events none，只承接 Tab / Enter / Space），focus-visible 的框畫在 row 上(往內畫的內描邊)。**為什麼是內描邊,理由是結構性的**:拿到焦點的是那顆 `opacity-0` 的透明整列 button,它自己畫不出框,所以指示器改畫在 row 上 —— 這正是 `ds-canonical/references/focus-canonical.md` 認可的「指示器畫在別的元素上,而且必須指得出承擔者」形狀,承擔者就是 row。而全域外描邊只作用在「被聚焦的那個元素」身上,套不到非焦點的 row;能掛在 row 上的只有 `focus-ring-inset` 與填色專用的 `focus-ring-inset-emphasis`,row 不是主色填色 → `focus-ring-inset`。**不是**因為四周淨空不足(本元件列間 4–12px、左右 16px,都 ≥ 4px),**也不是**因為捲動容器會裁切(捲動與否明文不進判準)。幾何 SSOT = `ds-canonical/references/focus-canonical.md`「框怎麼畫」。`actionAriaLabel` 預設「開啟 {name}」且可由 consumer 覆寫。Primary button 與下載／重試／移除皆為 sibling，禁止把 row 本身改成 `role="button"` 包住互動後代。
+- **Row primary action 鍵盤可達且不 nested-interactive**:傳 `onClick` 時，row 保持非互動容器並保留整列 pointer hit area；另渲染與 trailing actions 同層的透明 full-row native button（pointer-events none，只承接 Tab / Enter / Space），focus-visible 的框畫在 row 上(往內畫的內描邊)。**為什麼是內描邊,理由是結構性的**:拿到焦點的是那顆 `opacity-0` 的透明整列 button,它自己畫不出框,所以指示器改畫在 row 上 —— 這正是 `ds-canonical/references/focus-canonical.md` 認可的「指示器畫在別的元素上,而且必須指得出承擔者」形狀,承擔者就是 row。而全域外描邊只作用在「被聚焦的那個元素」身上,套不到非焦點的 row;能掛在 row 上的只有 `focus-ring-inset` 與填色專用的 `focus-ring-inset-emphasis`,row 不是主色填色 → `focus-ring-inset`。**不是**因為四周淨空(表單的列間 4–8px;上傳管理器的列 2026-09-25 起鋪滿面板、列間 0 —— 兩種幾何都一樣用內描邊),**也不是**因為捲動容器會裁切(捲動與否明文不進判準)。幾何 SSOT = `ds-canonical/references/focus-canonical.md`「框怎麼畫」。`actionAriaLabel` 預設「開啟 {name}」且可由 consumer 覆寫。Primary button 與下載／重試／移除皆為 sibling，禁止把 row 本身改成 `role="button"` 包住互動後代。
 - **status / error 不額外加 row ARIA**:`status="uploading"` / `status="error"` 不在 row 上加 `aria-busy` / `role="status"` / `aria-live`;狀態由 progress bar 的 `role="progressbar"` 與 description 文字本身傳達。若 consumer 需要上傳完成 / 失敗的即時 announce,由外層上傳流程容器(FileUpload)統一管理 live region,避免每列各自宣告造成 SR 噪音。
 
 ---
@@ -450,7 +435,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 - ❌ **不混用 rich + compact 在同一 list**(詳「Invariant 1」)— 高度差破壞 row rhythm,prefix 視覺語言衝突。
 - ❌ **不用 FileItem 做下載進度**(瀏覽器原生下載 UX 已足夠)— FileItem 為 upload narrative 設計,download progress 走自訂元件。
 
-**常見誤解**:FileItem 該有 hover-bg → 永不(三型態 permanent-anchored,見「Hover 行為 canonical」);status 會染整 row 底色 → 只升階 progress bar / status icon / description(見「Inspector 與矩陣的教學分工」);`surface` 影響進度條 → 進度條只看 `status`(見「可下載狀態 canonical」)。
+**常見誤解**:FileItem 一律有 / 一律沒有滑過底色 → 都不對,有 `onClick`(點了會有反應)才有(見「滑過」段);status 會染整 row 底色 → 只升階 progress bar / status icon / description(見「Inspector 與矩陣的教學分工」);`surface` 影響進度條 → 進度條只看 `status`(見「可下載狀態 canonical」)。
 
 ---
 
@@ -468,7 +453,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 
 FileItem 決策維度是 `mode`(compact / rich)× `status`(uploading / completed / error / static)。anatomy 同時提供 `Inspector`(右側 Controls 即時切 `mode` / `status` / `progress` / `description` 試玩單值)與 `ColorMatrix` / `SizeMatrix` / `StateBehavior` 結構矩陣——兩者分工:Inspector 給「單一組合長怎樣」的即時試玩,矩陣給「跨 status 並排比對」的 side-by-side 決策。
 
-ColorMatrix 已建:展示 status × 元素(filename / description / progress bar / status icon)色彩矩陣,明示 status 只驅動 **progress bar + status icon + description** 升階,**不染容器背景**(避免整 row 轉紅蓋過其他 metadata)。容器本身無 hover-bg / selected / disabled state——FileItem 三型態皆 permanent-anchored,反向於 MenuItem / DataTable flush row 的 hover-bg primitive(詳「Hover 行為 canonical」段),且 interface 無 `disabled` prop。
+ColorMatrix 已建:展示 status × 元素(filename / description / progress bar / status icon)色彩矩陣,明示 status 只驅動 **progress bar + status icon + description** 升階,**不染容器背景**(避免整 row 轉紅蓋過其他 metadata)。容器本身沒有 selected / disabled state(interface 無 `disabled` prop);滑過底色只在有 `onClick` 時出現,由 `StateBehavior` 示範(詳「滑過」段)。
 
 ## 與 shadcn Attachment 的分界(2026-07-07 codify,目錄新增元件謂詞 anchor)
 

@@ -103,7 +103,7 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 | 基底字體 | `text-body` (14px) | navigation 尺度的標準 |
 | 間距（items 之間，含 separator）| `gap-1` (4px) | 緊湊節奏，符合 breadcrumb 密集流動感（`breadcrumb.tsx` BreadcrumbList `<ol>`）|
 | **`BreadcrumbLink`（可點擊）預設** | `text-fg-secondary` | neutral-8, 提示「可互動但非焦點」 |
-| **`BreadcrumbLink` hover** | **`text-primary-hover`** | 藍字 + `transition-colors duration-150`，明確回饋「點這個會有動作」 |
+| **`BreadcrumbLink` hover** | **`text-primary-hover`** | 藍字,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,2026-09-26 由底色延伸到字色),明確回饋「點這個會有動作」 |
 | **`BreadcrumbPage`（當前）** | `text-foreground`（不加粗）| neutral-9 深色區分於 fg-secondary 的 links，但**不加粗**——加粗會讓 breadcrumb 最右端視覺過重，破壞「你從哪來 → 你在這」的流動感 |
 | **`BreadcrumbSeparator`** | `text-fg-muted` + `ChevronRight`,尺寸消費 `BREADCRUMB_ICON_SIZE`(`breadcrumb.tsx` SSOT,對齊 `uiSize.spec.md` Icon Size Tier)| 視覺降噪,separator 不搶焦點 |
 | **`BreadcrumbEllipsis`** | `text-fg-muted` + `MoreHorizontal`,消費 `ItemInlineActionButton` 固定 `size="md"`(不隨 BreadcrumbList size 變化)| 尺寸 SSOT 在 `inline-action.spec.md` 尺寸表;固定 md 的理由詳 `breadcrumb.tsx` |

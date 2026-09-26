@@ -196,6 +196,12 @@ Combobox **只有一條實作**:觸發區是一個 `role="combobox"` 的容器�
 指向選單 / `tabIndex={0}` 可 tab 聚焦），開啟後是自建浮層選單（內含搜尋 + 選項清單）。鍵盤路徑：
 Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。**觸控裝置看到的跟桌機完全一樣。**
 
+**開著時按 Tab + 觸發區宣告的彈出型別**(2026-09-25 待辦總帳 B11「多選下拉(有全選)行為不變、只改宣告」):
+`searchIn='menu'`(預設,可搜尋與否皆同)時,開啟後 DOM 焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選鈕),
+觸發區宣告 `aria-haspopup="dialog"`;`searchIn='trigger'` 時焦點留在觸發區(可搜尋時在欄位內的輸入框)、清單靠 `aria-activedescendant`,
+Tab 照頁面順序離開,宣告 `aria-haspopup="listbox"`。宣告與 `onOpenAutoFocus` 用同一個條件(`combobox.tsx`),
+規則與 W3C 出處的單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」。
+
 #### 為什麼移除原本的觸控分支
 
 在此之前 Combobox 依 `(pointer: coarse)` 分流到一個隱藏原生 `<select>` 的實作。移除的依據是證據:

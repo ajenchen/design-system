@@ -31,11 +31,10 @@
  *
  *   node scripts/hover-color-pair-invariant.mjs [--build=<dir>] [--selftest] [--limit=<n>]
  */
-import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -43,7 +42,12 @@ const BUILD = arg('build', join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const LIMIT = Number(arg('limit', '0'))
 
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼)。原本直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
+requireStorybookBuild(join(BUILD, 'index.json'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 // 掃「設計規格」層的 state-behavior / overview / size-matrix —— 互動狀態都在這幾支,
 // 而且是每個元件都有的固定三支(story-rules 的三層定位),不會因為某個元件少寫展示 story 就漏掉。
 const STORIES = Object.entries(index.entries)
@@ -74,7 +78,6 @@ const PROBE = `(() => {
   })
 })()`
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const violations = []
 // 沒量到的 story(儀器失效):開不起來、量測腳本丟例外、配對的 hover 做不下去 —— 掃完一起點名,不當成「沒有配對」

@@ -442,7 +442,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發按鈕\n- Enter / Space — 開啟選擇器\n- 字母鍵 — 邊打字邊搜尋\n- ↑/↓ — 在人員清單上下移動\n- Enter — 選擇 / 取消選擇\n\n  Focus  :聚焦框跟整套設計系統一致(底層 Select/Combobox Field wrapper 的 1px `focus-within:!border-primary` 邊框 var(--primary));焦點管理由元件自行處理。\n\n  驗證  :Storybook 無障礙檢查面板應 0 個嚴重問題;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發按鈕\n- Enter / Space — 開啟選擇器\n- 字母鍵 — 邊打字邊搜尋\n- ↑/↓ — 在人員清單上下移動\n- Enter — 選擇 / 取消選擇\n- Tab / Shift+Tab(選擇器開著)— 單選:選定反白那一位、收起,焦點走到欄位的下一個 / 上一個可 Tab 元素;多選:行為不變,在面板裡繞圈(搜尋框 → 清單 → 全選)(待辦總帳 B11,規則住 select-menu.spec.md「A11y 預設」)\n- →(選單裡的頭像名片)— 頭像不在 Tab 路上;浮層內搜尋時插入點在字尾按 → 進反白那一位的頭像(名片浮出),← 回搜尋框,Enter 不選這一位(待辦總帳 B9,按鍵表住 command.spec.md「A11y 預設」)\n\n  Focus  :聚焦框跟整套設計系統一致(底層 Select/Combobox Field wrapper 的 1px `focus-within:!border-primary` 邊框 var(--primary));焦點管理由元件自行處理。\n\n  驗證  :Storybook 無障礙檢查面板應 0 個嚴重問題;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

@@ -436,7 +436,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載\n- 檔案清單(有 onRemove)= 一個 Tab 停靠點:↑↓ 換列、→ 進該列的移除鈕、← 回列、Tab 一下離開(待辦總帳 B9;按鍵表住 file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」)"}</p>
     </div>
   ),
 }

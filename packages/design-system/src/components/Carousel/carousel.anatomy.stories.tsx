@@ -8,6 +8,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -125,22 +126,20 @@ const InspectorInner = () => {
     <div className="flex gap-6 items-start">
       {/* Left: preview + blueprint */}
       <div className="flex flex-col gap-5 min-w-[420px]">
+        {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項),取代手刻 pill
+            (待辦總帳 C12⑥;同 file-upload / aspect-ratio 設計規格的 Inspector 已改的寫法):手刻 pill 把平常的底色寫成
+            透明底專用的 neutral-hover、選中又自創 bg-primary + text-white 的第三種選中樣式,還用了原生 <button> 與 text-[12px] 裸值 */}
         <div className="flex items-center gap-3">
-          <span className="text-caption text-fg-muted">Arrow visibility:</span>
-          <button
-            type="button"
-            onClick={() => setSimulateHover(false)}
-            className={`px-2.5 py-1 text-[12px] font-mono rounded-md ${!simulateHover ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary'}`}
+          <span className="text-caption text-fg-muted">箭頭顯示:</span>
+          <SegmentedControl
+            size="sm"
+            aria-label="箭頭顯示"
+            value={simulateHover ? 'shown' : 'hidden'}
+            onValueChange={(v) => setSimulateHover(v === 'shown')}
           >
-            default(隱藏)
-          </button>
-          <button
-            type="button"
-            onClick={() => setSimulateHover(true)}
-            className={`px-2.5 py-1 text-[12px] font-mono rounded-md ${simulateHover ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary'}`}
-          >
-            hover / focus(顯示)
-          </button>
+            <SegmentedControlItem value="hidden">預設(隱藏)</SegmentedControlItem>
+            <SegmentedControlItem value="shown">滑過 / 聚焦(顯示)</SegmentedControlItem>
+          </SegmentedControl>
         </div>
 
         {/* Preview with forced hover */}

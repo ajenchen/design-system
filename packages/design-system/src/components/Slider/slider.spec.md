@@ -76,7 +76,7 @@ benchmark:
 |---|---|---|
 | **Track** 厚度 | 4px | — |
 | **Track** 底色 rest | `bg-secondary` | `--secondary`(neutral-3,跟 Tag neutral / Badge low 同級「微淡可辨」)|
-| **Track** 底色 disabled | `bg-muted` | `--muted`(neutral-2,disabled-like 退化)|
+| **Track** 底色 disabled | `bg-disabled` | `--bg-disabled`(neutral-2,元件停用狀態色;2026-09-25 由 `bg-muted` 改,理由見下方「為什麼 Track 底色維持灰色凹槽身分」段)|
 | **Range** 填滿色 rest | `bg-primary` | `--primary` |
 | **Range** 填滿色 disabled | `bg-border`(neutral-5)| `--border` |
 | **Thumb** 直徑 | 16px | — |
@@ -95,7 +95,7 @@ benchmark:
 
 ### 為什麼 Track 底色維持「灰色凹槽」身分,不跟 enabled state 變動
 
-Track 的視覺角色是「可滑動範圍的凹槽底線」,語意不因 enabled / disabled 改變——rest `bg-secondary`(neutral-3)、disabled 退一階 `bg-muted`(neutral-2),都在最淡 subtle bg 層級、凹槽身分不變(disable 時 Range / Thumb border 同步降級 primary → border)。semantic token 優先、不直接引 primitive;**若覺得 track 在 white canvas 上太淡**,那是 `--secondary` / `--muted` 的系統級議題(Badge / Skeleton 一起調),不是在 Slider 裡用 primitive 繞過的理由。
+Track 的視覺角色是「可滑動範圍的凹槽底線」,語意不因 enabled / disabled 改變——rest `bg-secondary`(neutral-3)、disabled 退一階 `bg-disabled`(neutral-2),都在最淡 subtle bg 層級、凹槽身分不變(disable 時 Range / Thumb border 同步降級 primary → border)。**停用底用 `--bg-disabled` 不用 `--muted`(2026-09-25,待辦總帳 C2 / R12 W3)**:這層底只在元件停用時出現,是元件的停用狀態色;owner 取 `../../tokens/color/color.spec.md`「Static Subtle Background」段的邊界句「component disabled bg 不走 muted」(`--muted` 是靜態非互動 surface 的 token,例如 Skeleton)。兩者同值 neutral-2,畫面零變化。semantic token 優先、不直接引 primitive;**若覺得 track 在 white canvas 上太淡**,那是 `--secondary` / `--bg-disabled` 的系統級議題,不是在 Slider 裡用 primitive 繞過的理由。
 
 ### Range 色 ↔ Thumb border 色的綁定規則
 
@@ -176,7 +176,7 @@ Slider 不是 button——它是「當前位置指示器」,底色不該動(動�
 
 ### Disabled 視覺階層(三階,不是四階)
 
-`track(muted, n-2)< range = thumb border(border, n-5)< text(n-7+)`——Range 與 Thumb border 刻意同 token 不拆階(見綁定規則);thumb fill(rest 白 / disabled canvas)與 range fill 對比、位置由 range 長度段決定;text 永遠最上層。
+`track(bg-disabled, n-2)< range = thumb border(border, n-5)< text(n-7+)`——Range 與 Thumb border 刻意同 token 不拆階(見綁定規則);thumb fill(rest 白 / disabled canvas)與 range fill 對比、位置由 range 長度段決定;text 永遠最上層。
 
 ### 為什麼 range disabled 用 `--border` 不用 `--fg-disabled`
 
@@ -207,7 +207,7 @@ Opacity 會同時削弱 track、range、thumb 與邊框，讓元件所有層級�
 
 ### 常見錯誤(避免)
 
-**不要把 thumb 的 disabled bg 改成 `bg-muted`**——`--muted` 和 `--bg-disabled` 在這個系統都等於 `var(--color-neutral-2)`,同一個顏色。Thumb `bg-muted` 會跟 track `bg-muted` 完全融色,只剩 border 可見,失去 thumb 形狀辨識(真實踩過的 bug)。Disabled 用 **`bg-canvas`**(不透明頁面背景色,與 track 的 muted 不同值且隔 n-5 邊框,不融色)。2026-06-12 補:rest 態原為 `bg-surface`,但 `--surface` 深色 = 8% 白半透明 → thumb 在深色變破洞且 track 穿透,故改 `bg-on-emphasis`(固定白不反轉)。
+**不要把 thumb 的 disabled bg 改成 `bg-muted` 或 `bg-disabled`**——`--muted` 和 `--bg-disabled` 在這個系統都等於 `var(--color-neutral-2)`,同一個顏色,也就是 track 停用底的顏色。Thumb 用它會跟 track 完全融色,只剩 border 可見,失去 thumb 形狀辨識(真實踩過的 bug)。Disabled 用 **`bg-canvas`**(不透明頁面背景色,與 track 停用底不同值且隔 n-5 邊框,不融色)。2026-06-12 補:rest 態原為 `bg-surface`,但 `--surface` 深色 = 8% 白半透明 → thumb 在深色變破洞且 track 穿透,故改 `bg-on-emphasis`(固定白不反轉)。
 
 **不要同時套 opacity + 灰階 swap**——兩個策略互斥,同時用會導致「灰階 swap 後再打 opacity 一層」,視覺雙重降級,整個 slider 褪色過度。選一條路走到底。
 
@@ -275,7 +275,7 @@ Inspector 提供 `min` / `max` / `step` / `defaultValue` × `size` 即時調整(
 - `../SegmentedControl/segmented-control.spec.md` — 離散少量選項的對應元件
 - `../../tokens/uiSize/uiSize.spec.md` — `field-height-*` token family
 - `../../tokens/elevation/elevation.spec.md` — Elevation hover / active 語意
-- `../../tokens/color/color.spec.md` — Primary / muted / fg-disabled token
+- `../../tokens/color/color.spec.md` — Primary / bg-disabled / fg-disabled token
 - `../Field/field.spec.md` — Field 容器整合規則
 - Radix Slider primitive API — `@radix-ui/react-slider`
 

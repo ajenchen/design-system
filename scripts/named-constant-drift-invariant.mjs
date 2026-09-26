@@ -19,7 +19,7 @@
  * **合法的同名不同值**寫在 `ALLOWLIST`,每筆都要寫清楚為什麼不是漂移
  * —— 不是為了消滅紅燈,是為了讓「這兩個真的無關」被人審過一次。
  *
- * 對照組(`--selftest`):把允許清單清空 → 那三筆合法案例必須被抓到,證明偵測邏輯有效。
+ * 對照組(`--selftest`):把允許清單清空 → 清單裡每一筆合法案例都必須被抓到,證明偵測邏輯有效。
  *
  *   node scripts/named-constant-drift-invariant.mjs [--selftest]
  */
@@ -35,7 +35,8 @@ const SELFTEST = process.argv.includes('--selftest')
 const ALLOWLIST = {
   AVATAR_SIZE: '不同元件各自的頭像尺寸(FileItem 48 / ProfileCard 64)——兩者沒有共用語意,不是同一個值的兩份',
   LOOKBACK: '兩支不相干腳本各自的回看視窗(focus-suppression 8 / hover-instant 3),語意不同',
-  WINDOW: '兩支不相干腳本各自的取樣視窗(decided-clause 6 / hover-instant 8),語意不同',
+  // WINDOW 條 2026-09-26 移除:hover-instant 改以 AST 宣告單位判定、不再有取樣視窗,WINDOW 只剩 decided-clause 一份,
+  // 已不是同名不同值;留著會讓 --selftest 的對照組因「清空後抓不到 WINDOW」而紅(待辦總帳 L9 / N4(3))。
 }
 
 const files = [

@@ -914,7 +914,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區,Tab 照頁面順序離開,宣告 listbox(待辦總帳 B11「行為不變、只改宣告」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
     </div>
   ),
 }

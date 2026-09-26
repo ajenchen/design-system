@@ -845,7 +845,13 @@ function CustomCombobox({
     <div
       ref={__triggerRef}
       id={fieldCtx?.id}
-      role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-controls={listboxId} tabIndex={0}
+      role="combobox" aria-expanded={open} aria-controls={listboxId} tabIndex={0}
+      // 2026-09-25 待辦總帳 B11「多選下拉(有全選)行為不變、只改宣告」:宣告的彈出型別 = 焦點實際去哪。
+      // 搜尋框在觸發欄位內(searchIn='trigger')→ 焦點留在欄位、清單用 aria-activedescendant = listbox;
+      // 其餘(浮層內搜尋框 / 不可打字)焦點進到浮層、Tab 在面板裡繞圈 = dialog。與下方 onOpenAutoFocus 同一個條件。
+      // W3C:popup 不是 listbox 時 aria-haspopup 要寫出型別(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L410-L411),
+      // dialog 型「DOM focus moves into the dialog」(同檔 #L395)
+      aria-haspopup={searchIn === 'trigger' ? 'listbox' : 'dialog'}
       aria-label={ariaLabel}
       // a11y(2026-07-14 dim-10):div-based role=combobox 的 <label for> 無效,接 FieldLabel labelId
       // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。

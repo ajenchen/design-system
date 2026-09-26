@@ -20,7 +20,7 @@
  */
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, waitForStoryRender } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, waitForDocsRender, waitForStoryRender } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -41,8 +41,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
  *  舊 frame 的執行環境會被銷毀(6fdbd788 runner 上「Execution context was destroyed」)。 */
 const getFrame = async (page) => (await page.waitForSelector('#storybook-preview-iframe')).contentFrame()
 const evalIn = async (page, fn, arg) => { for (let i = 0; i < 20; i++) { try { return await (await getFrame(page)).evaluate(fn, arg) } catch (e) { if (!/context was destroyed|navigation|detached/i.test(String(e))) throw e; await sleep(250) } } throw new Error('preview frame 一直在導航') }
-/** 等到 pred 成立(每 200ms 看一次),最多 timeout ms;共享 runner 上 docs 頁渲染 14 個 story 可能要十幾秒,固定等待會誤判 */
-const waitFor = async (page, pred, timeout) => { const t0 = Date.now(); while (Date.now() - t0 < timeout) { if (await evalIn(page, pred)) return true; await sleep(200) } return false }
 const sel = (x) => `[id="${x}"]`
 
 /** 儀器失效:這一趟沒有量到(story 沒渲染完成 / 缺檔 / 延遲的 chunk 還沒送達),**不是產品裁決**;一律 exit 1,不准當通過也不准略過。 */
@@ -162,9 +160,18 @@ try {
       // `rootChildren: 0 / docsChildren: 0`——**什麼都沒渲染**,也就是這一趟根本沒量到東西(儀器沒跑起來),
       // 不是守衛誤殺正常 docs。同期證據:同一輪 CI 裡 DataTable 的閘量到 main 自己的長工中位就有 372ms。
       // 重試一次仍然空 → 照樣紅。
+      // 「docs 頁渲染出來了」走 lib 的 waitForDocsRender(2026-09-25,待辦總帳 C5):原本這裡是本檔私有的 200ms 輪詢
+      // (只看 #storybook-docs 有子節點、沒被藏起來),與 verify-published-deploy 的 DOCS_SETTLED 是兩份各自的判定(M17)。
+      // 共用判定多驗「currentRender 是這一則 docs、不在 preparing」;等不到回 false,由下面「量到 0 就重試」照舊處理。
       const openDocs = async () => {
         await expandComponentNode(page)
-        return waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
+        try {
+          await waitForDocsRender(await getFrame(page), { docsId: `${P}--docs`, timeoutMs: 60000, notFound: server.notFound, label: `${P} 的 docs 頁` })
+          return true
+        } catch (error) {
+          if (!(error instanceof StoryRenderInstrumentError)) throw error
+          return false
+        }
       }
       // 重試 1 次 → 3 次(2026-09-12,第四次誤紅)。這個 docs 頁要渲染 15 支 story、其中 9 支含 DataTable,
       // 共享 runner 負載高時 60 秒等不完;症狀恆為 `rootChildren: 0 / docsChildren: 0` = **這一趟根本沒量到東西**,

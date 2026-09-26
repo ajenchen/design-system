@@ -3760,7 +3760,8 @@ function DataTableInner<TData>(
             'flex items-center min-w-0 flex-1 gap-1',
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
-            canSort && 'cursor-pointer hover:text-foreground transition-colors',
+            // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
+            canSort && 'cursor-pointer hover:text-foreground',
             // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = data-table.spec.md「八、Row 狀態」巢狀 hover 條):
             // 指標在本欄 ⌄ 欄位選單上時,排序區保留上一行的 hover 字色(排序箭頭繼承此字色,一起保留),⌄ 再亮自己那層。
             // ⌄ 是排序區的**同層兄弟**(排序區是 role=button,不能再包按鈕),指標在兄弟上時排序區不算 :hover。

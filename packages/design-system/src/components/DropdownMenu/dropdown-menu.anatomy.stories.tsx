@@ -838,8 +838,8 @@ const StateBehaviorInner = () => {
           <AnimationFrame label="closing" state="closing" desc="animate-out,~150ms duration" />
         </div>
         <div className="text-caption text-fg-muted pt-2 border-t border-divider">
-          觸發 `close` 的路徑:(a) 點擊 item(auto close)/ (b) Esc / (c) 外部點擊(onPointerDownOutside)/ (d) blur。
-          Trigger 會回到 focused 狀態,保留鍵盤流程。
+          觸發 `close` 的路徑:(a) 點擊 item(auto close)/ (b) Esc / (c) 外部點擊(onPointerDownOutside)/ (d) blur / (e) Tab / Shift+Tab。
+          (a)(b) 焦點回到 Trigger,保留鍵盤流程;(c) 焦點留在點的地方;(e) 焦點從 Trigger 往下 / 往上走一站(2026-09-25,spec「鍵盤操作」)。
         </div>
       </div>
 
@@ -847,7 +847,7 @@ const StateBehaviorInner = () => {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 2:Submenu 展開(hover/focus 延遲 + sideways slide)</span>
         <Desc>
-          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 收起；本 DS 為 LTR-only。
+          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 或 Esc 收起這一層(2026-09-25 起 Esc 只關一層);本 DS 為 LTR-only。
         </Desc>
         <div className="flex gap-6 items-start">
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
@@ -876,7 +876,7 @@ const StateBehaviorInner = () => {
               ChevronRight suffix 是 SubTrigger 的視覺 affordance(消費 item-anatomy row 主檔,不自刻)。
             </div>
             <div className="pt-1 border-t border-divider">
-              鍵盤:焦點在 SubTrigger 時 ArrowRight 展開、ArrowLeft 回 parent。
+              鍵盤:焦點在 SubTrigger 時 ArrowRight 展開;在子選單裡 ArrowLeft 或 Esc 只收這一層、焦點回 SubTrigger。
             </div>
           </div>
         </div>
@@ -934,9 +934,10 @@ const StateBehaviorInner = () => {
           <li>`DropdownMenuItem` 點擊即 close——這是「action 觸發即完成」語意。</li>
           <li>`DropdownMenuCheckboxItem` 點擊不 close——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
           <li>`DropdownMenuSub` 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
-          <li>Escape close 整個選單(含所有展開子層;Radix root close)。ArrowLeft 才逐層收合(焦點回 SubTrigger)。</li>
+          <li>Escape 一次只關焦點所在的那一層:子選單 → 焦點回上一層那一項(與 ArrowLeft 同);主選單 → 焦點回 trigger。每按一次少一層(2026-09-25 起;原本 Radix 預設一次全關,待辦總帳 B10)。</li>
+          <li>選單開著按 Tab / Shift+Tab:一次收起全部層,焦點從 trigger 往下 / 往上走一站(2026-09-25 起;原本 Radix 預設擋掉 Tab,待辦總帳 B11)。</li>
           <li>Portal render 到 body,`z-50` 確保不被 parent overflow 截斷。</li>
-          <li>Focus trap:menu open 時鍵盤焦點進入 menu,close 時自動 restore 到 trigger。</li>
+          <li>焦點不鎖在選單裡(預設非 modal):open 時鍵盤焦點進入 menu;Esc / 選了項目 → 回 trigger,點外面 → 留在點的地方,Tab → 下一站。</li>
         </ul>
       </div>
     </div>
@@ -955,7 +956,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙能力沿用 Radix 選單元件的內建支援,涵蓋語意角色、選單導覽與焦點管理,設計師與工程師不需額外設定。\n\n鍵盤操作:\n\n- Tab — 將焦點移到觸發按鈕\n- Enter / Space / 向下鍵 — 開啟選單\n- 向上鍵 / 向下鍵 — 在選項之間移動\n- Home / End — 跳到第一項 / 最後一項(PageUp / PageDown 同)\n- 輸入首字 — 跳到標籤符合的選項\n- Enter / Space — 選擇目前的選項\n- Esc — 關閉整個選單(含子選單;逐層收合用左方向鍵)\n\n焦點管理:選單開啟時焦點會進入選單,關閉後自動回到原本的觸發按鈕;目前導覽到的選項會以明顯的 highlight 底色標示,鍵盤使用者隨時看得到自己在哪一項。\n\n驗證:鍵盤可完整操作(不需滑鼠),文字對比達 WCAG AA;在 Storybook 無障礙檢查面板上應為零項嚴重問題。"}</p>
+      <p className="whitespace-pre-line">{"無障礙能力沿用 Radix 選單元件的內建支援,涵蓋語意角色、選單導覽與焦點管理(Tab 與子選單的 Esc 兩鍵由本元件改寫,見下),設計師與工程師不需額外設定。\n\n鍵盤操作:\n\n- Tab — 將焦點移到觸發按鈕\n- Enter / Space / 向下鍵 — 開啟選單\n- 向上鍵 / 向下鍵 — 在選項之間移動\n- Home / End — 跳到第一項 / 最後一項(PageUp / PageDown 同)\n- 輸入首字 — 跳到標籤符合的選項\n- Enter / Space — 選擇目前的選項\n- Esc — 只關目前所在的那一層:在子選單裡回到上一層打開它的那一項(同左方向鍵),在主選單裡回到觸發按鈕\n- Tab / Shift+Tab(選單開著時)— 一次收起全部層,焦點從觸發按鈕往下 / 往上走一站\n\n焦點管理:選單開啟時焦點會進入選單;按 Esc 或選了項目,焦點回到觸發按鈕;點外面,焦點留在點的地方;按 Tab,焦點到下一站。鍵盤導覽到的選項畫焦點框(滑鼠移過的選項才上底色),鍵盤使用者隨時看得到自己在哪一項。\n\n驗證:鍵盤可完整操作(不需滑鼠),文字對比達 WCAG AA;在 Storybook 無障礙檢查面板上應為零項嚴重問題。"}</p>
       <p className="mt-4 text-fg-muted">完整 ARIA 細節參考 <a className="text-primary hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/dropdown-menu#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
     </div>
   ),

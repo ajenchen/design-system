@@ -227,7 +227,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 > **不要 → `SurfaceFooter`**(內容左緣對齊**這個浮層的內容左邊界**,見下方「要對齊誰」)
 
 判準是「**誰負責左右 gutter**」—— 跟 `../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」是同一條線:
-列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。
+列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。同一條線也管 body:FileItem `surface="upload-manager"` 的上傳列可點時整列滑過、底色鋪到面板左右邊 → 列自帶 `loose`、面板 body 左右 0(2026-09-25 待辦總帳 B12,推翻 06-03 的「左右交給面板」;owner `../../components/FileItem/file-item.spec.md`「upload-manager 浮層面板 composition」)。
 
 | | `SurfaceFooter` | 列式 footer |
 |---|---|---|
@@ -545,8 +545,8 @@ border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-il
 
 overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `SurfaceFooter`),不持有互動行為 — a11y 大宗在 consumer overlay primitive(Dialog / Sheet / Popover / HoverCard)上,由 Radix 處理:
 
-- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——但**不** trap focus、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
-- **Focus trap**:Dialog / Sheet 自帶 modal focus trap;Popover / HoverCard 不 trap(non-modal canonical)
+- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——Tab 在面板裡繞圈但滑鼠點外面可離開(見下一條)、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
+- **Focus trap / Tab 走向**(2026-09-25 更正,原句「Popover / HoverCard 不 trap」被讀成 Tab 可以走出 Popover,與實測不符;待辦總帳 B11):**對話框型浮層 Tab 留在裡面** —— Dialog / Sheet 是 modal trap(Tab 繞圈,滑鼠點外面也出不去);Popover 是 non-modal:Tab / Shift+Tab 同樣在面板裡繞圈(Radix FocusScope `loop: true`,`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`),只是滑鼠點外面 / 程式移焦可離開並關閉。依據 W3C「Like non-modal dialogs, modal dialogs contain their tab sequence.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。**選單類浮層 Tab = 收起並往下走**(DropdownMenu、單選下拉;規則在 `components/SelectMenu/select-menu.spec.md`「A11y 預設」與 `components/DropdownMenu/dropdown-menu.spec.md`)。HoverCard 焦點不進卡片(Radix 把卡片內可 Tab 節點設 `tabindex="-1"`),Tab 從觸發元素照頁面順序走
 - **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)
 

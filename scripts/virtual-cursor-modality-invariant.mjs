@@ -13,8 +13,10 @@
  *(滑鼠移過 → 底色;鍵盤 → 框),兩種畫法永遠不同時出現;滑鼠停著不算搶(pointer move 才算)。
  * 常駐清單(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可同時出現。
  *
- * 機械載體:hooks/use-input-modality.ts —— `useInputModality`(WICG 啟發式,給常駐清單的虛擬游標)/
- * `useCursorMover` + `markPointerGrab`(反白來歷,給 cmdk / Radix Menu)。
+ * 機械載體:hooks/use-input-modality.ts 的 `useCursorMover` + `markPointerGrab`(反白來歷,給 cmdk / Radix Menu)。
+ * 常駐清單的「這次要不要畫框」:TreeView 2026-09-25 起(待辦總帳 B9 路線乙)改成列上的 roving tabindex 真焦點,
+ * 交給瀏覽器的 `:focus-visible`(與 Sidebar / Tabs / DataTable 同一種);在那之前是 aria-activedescendant 虛擬游標 +
+ * 同檔 `useInputModality`(WICG 啟發式)。TreeView 段因此改量「真焦點所在的那一列」,斷言本身一條不變。
  *
  * 五段(原有)+ 兩組(2026-09-09 下午)都驗,缺一不可:
  *   (A)  真滑鼠點開 → 已選項**不得**有框
@@ -31,7 +33,9 @@
  *   (G)  Field 家族關閉觸發器只用邊框轉色、不畫外框(2026-09-10 下午 user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):
  *        Select / SelectMenu / PeoplePicker 選完後輸入框卸載、焦點回觸發器 —— ↓ Enter 選完 → 觸發器**無外框、邊框轉主色**;滑鼠點選項選完 → 同樣無外框、邊框主色
  *   (H)  同一條規則的其他成員:DatePicker / TimePicker / Combobox 的 div 觸發器,Tab 進來(鍵盤模態)→ **無外框、邊框轉主色**
- * 量 outline 前等 700ms(transition-colors 含 outline-color,立刻量會抓到過渡值)。
+ * 量 outline 前等 700ms(transition-colors 含 outline-color,立刻量會抓到過渡值)。TreeView 段與 (E) 常駐清單段 2026-09-26 起
+ * 改用 lib/launch-browser.mjs 的 settleAfterInteraction(影格靜止 + 沒有進行中的過渡,等不到 = 儀器失效 exit 2);
+ * 其餘段仍是固定睡眠(待辦總帳 C5 殘項)。
  *
  * `--selftest` 對照組(M32「儀器要先有對照組」):每頁載入後注入一段 CSS,把游標列釘回舊行為
  *(底色當游標、不畫框;會搶反白的列另外保留獨立的 :hover 底色與「鍵盤留下的框」;常駐清單 hover 時抹掉框),
@@ -49,7 +53,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
@@ -61,6 +65,8 @@ const SRCS = [
   'packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx',
   'packages/design-system/src/components/Menu/menu-item.tsx',
   'packages/design-system/src/components/TreeView/tree-view.tsx',
+  // 「列上有小按鈕的一串」按鍵判定的共用零件(2026-09-26 由側欄 / 檔案清單 / 樹 / Command 四份合一):樹與側欄段都吃它
+  'packages/design-system/src/lib/roving-list-keyboard.ts',
   'packages/design-system/src/components/Sidebar/sidebar.tsx',
   'packages/design-system/src/components/TimePicker/time-columns.tsx',
 ]
@@ -95,18 +101,21 @@ const OLD_BEHAVIOUR_CSS = `
   ${GRAB_IDLE} { outline: 2px solid var(--ring) !important; outline-offset: -2px !important; }
   [data-sidebar="menu-button"]:hover, [role="tab"]:hover, [role="row"]:hover [role="checkbox"], [data-tree-row]:hover { outline: none !important; }
   [role="listbox"].group\\/listbox [role="option"]:hover { background-color: transparent !important; }`
-// TreeView 的游標只從 aria-activedescendant 得知,CSS 釘不到 → 觀察那個屬性,只把游標那一列釘回舊行為
 // F 的對照組:舊行為「打字後自動落點的反白畫框」—— 把游標列釘成永遠有框(蓋過 openCase 注入的 A–E 對照 CSS,後加者勝),F 的 'new' 斷言必紅
 const OLD_BEHAVIOUR_TYPING_CSS = `${GRAB_CURSOR} { outline: 2px solid var(--ring) !important; outline-offset: -2px !important; background-color: transparent !important; }`
+// TreeView 的游標 = 真焦點所在的那一列(2026-09-25 起 roving tabindex,待辦總帳 B9)。對照組要把「游標那一列」釘回舊行為
+// (底色當游標、不畫框);CSS 的 :focus 也選得到它,但 openCase 注入的對照 CSS 是整頁共用的,用 focusin 只動那一列最不會誤傷別段。
+// 舊版(虛擬游標時代)觀察的是容器的 aria-activedescendant —— 樹上已經沒有那個屬性,留著就是永遠釘不到任何列的假對照組。
+// (2026-09-26 對工作樹真元件實測:本對照組讓 TreeView B / B2 / E1 / E2 與 Sidebar E 五條 'new' 全紅;正常跑 0 紅,淺深兩色)
+const TREE_ROW = '[role="treegrid"] [data-tree-row]'
 const OLD_BEHAVIOUR_TREE_JS = `(() => {
   const pin = () => {
-    const tree = document.querySelector('[role="tree"]'); if (!tree) return
-    const id = tree.getAttribute('aria-activedescendant')
     document.querySelectorAll('[data-tree-row][data-selftest-pinned]').forEach((r) => { r.style.outline = ''; r.style.backgroundColor = ''; r.removeAttribute('data-selftest-pinned') })
-    const row = id && document.getElementById(id)?.querySelector('[data-tree-row]')
+    const a = document.activeElement
+    const row = a && a.matches && a.matches(${JSON.stringify(TREE_ROW)}) ? a : null
     if (row) { row.style.setProperty('outline', 'none', 'important'); row.style.setProperty('background-color', 'var(--neutral-hover)', 'important'); row.setAttribute('data-selftest-pinned', '') }
   }
-  new MutationObserver(pin).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['aria-activedescendant', 'class'] })
+  document.addEventListener('focusin', pin, true)
   pin()
 })()`
 /**
@@ -130,6 +139,21 @@ const openCase = async (page, id, waitSel) => {
     await sv.stop()
     process.exit(2)
   }
+}
+
+/**
+ * 互動之後等「版面真的停了」(lib/launch-browser.mjs 的 settleAfterInteraction,與 openStory 同一份靜止判定:
+ * 連續 10 影格沒有 DOM 變動、沒有進行中的有限長度動畫 / 過渡 —— outline-color 的過渡也算在內)。
+ * 等不到 = 儀器失效:印出已量到的條目、exit 2,不是產品裁決(與 openCase 開不起來同一條路)。
+ */
+const settle = async (label) => {
+  const r = await settleAfterInteraction(page, { frames: 10 })
+  if (r.ok) return
+  console.log(out.join('\n'))
+  console.error(`✗ ${INSTRUMENT_FAIL_MARKER} ${label}:互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)—— 儀器失效,不是產品裁決`)
+  await browser.close().catch(() => {})
+  await sv.stop()
+  process.exit(2)
 }
 
 // 「已選項」= 各元件語意上的選中項;「游標項」= cmdk data-selected / Radix data-highlighted
@@ -381,34 +405,43 @@ for (const t of GRAB_TARGETS) {
 }
 
 // ── TreeView:常駐清單,三態都在同一頁驗 + (E) hover 與框可同時存在 ─────────
+// 2026-09-25 起(待辦總帳 B9 路線乙;tree-view.spec.md「A11y 預設」):role=treegrid + 列上的 roving tabindex 真焦點。
+// 「游標在哪一列」= 焦點所在的那一列(document.activeElement),「這次要不要畫框」= 瀏覽器的 :focus-visible
+// (滑鼠點 → 不畫、鍵盤 → 畫;列的 focus-visible:focus-ring-inset)。斷言 A / B / B2 / E1 / E2 / C / A2 一條都不改,
+// 改的只是游標怎麼找:以前讀容器的 aria-activedescendant、量外層 treeitem wrapper 與它的子孫;現在角色與框都住在列本身。
 {
   const idx = JSON.parse(readFileSync(join(SERVED, 'index.json'), 'utf8'))
   // 只挑 story(type = story):id 前綴會先撞到 `…-展示--docs`,那是 docs 頁,不是 story
   const tid = Object.entries(idx.entries).find(([i, e]) => e.type === 'story' && /treeview-展示--/.test(i))?.[0]
   if (!tid) ck('TreeView 前提:找得到 story', false, '找不到 treeview-展示 story —— 沒東西可驗不能算綠')
   if (tid) {
-    await openCase(page, tid, '[role="treeitem"]')
-    const rowBox = await page.evaluate(() => { const el = document.querySelector('[role="treeitem"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + 24, y: r.top + r.height / 2 } })
+    await openCase(page, tid, TREE_ROW)
+    // 點第一列的名稱文字(列的 aria-labelledby 指到的那段)。舊寫法固定點「列左緣 + 24px」是在賭展開箭頭的寬度 ——
+    // 點到箭頭是展開 / 收合、不是選取(tree-view.tsx handleChevronClick),箭頭改成共用行內小按鈕後寬度也變了(待辦總帳 L5)。
+    const rowBox = await page.evaluate((sel) => {
+      const row = document.querySelector(sel); if (!row) return null
+      const label = document.getElementById(row.getAttribute('aria-labelledby') || '')
+      const r = (label || row).getBoundingClientRect(); return { x: r.left + Math.min(r.width / 2, 40), y: r.top + r.height / 2 }
+    }, TREE_ROW)
     if (rowBox) {
-      await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)
-      // 指到的 treeitem 是外層 wrapper,`focus-ring-inset` 畫在它裡面的那層列上(tree-view.tsx:1394);
-      // 只量 wrapper 本身會永遠 false(A/C 假綠、B 假紅,2026-09-08 抓到)—— 量目標與其子孫。
-      const cursorRing = () => page.evaluate(() => { const tree = document.querySelector('[role="tree"]'); const id = tree?.getAttribute('aria-activedescendant'); const el = id ? document.getElementById(id) : null; if (!el) return null; const drawn = (e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }; return drawn(el) || [...el.querySelectorAll('*')].some(drawn) })
-      // 游標列 vs 其他未選中列的底色(底色住在 [data-tree-row] 那層)
-      const cursorRowVsOthers = () => page.evaluate(() => {
-        const tree = document.querySelector('[role="tree"]'); const id = tree?.getAttribute('aria-activedescendant')
-        const cur = id ? document.getElementById(id) : null; if (!cur) return { error: '無 aria-activedescendant' }
-        const row = cur.querySelector('[data-tree-row]'); if (!row) return { error: '游標 treeitem 內找不到 [data-tree-row]' }
-        const others = [...document.querySelectorAll('[role="treeitem"]')].filter((e) => e !== cur && e.getAttribute('aria-selected') !== 'true' && !e.matches('[aria-disabled="true"]')).map((e) => e.querySelector('[data-tree-row]')).filter(Boolean)
+      await page.mouse.click(rowBox.x, rowBox.y); await settle('TreeView 滑鼠點第一列')
+      // 焦點必須就在列本身(不是列裡的按鈕):框畫在列上,列裡按鈕的框是另一件事(focus-canonical「一個項目一個指示器」)
+      const cursorRing = () => page.evaluate((sel) => { const a = document.activeElement; if (!a || !a.matches(sel)) return null; const c = getComputedStyle(a); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }, TREE_ROW)
+      // 游標列 vs 其他未選中列的底色(aria-selected / aria-disabled 都在列本身上)
+      const cursorRowVsOthers = () => page.evaluate((sel) => {
+        const a = document.activeElement
+        const row = a && a.matches(sel) ? a : null
+        if (!row) return { error: `焦點不在任何一列上(停在 ${a?.tagName || 'null'})` }
+        const others = [...document.querySelectorAll(sel)].filter((e) => e !== row && e.getAttribute('aria-selected') !== 'true' && e.getAttribute('aria-disabled') !== 'true')
         if (!others.length) return { error: '找不到對照列' }
         const o = others[0]; const o2 = others[1] || o
         const rr = o2.getBoundingClientRect(); const cr = row.getBoundingClientRect()
-        return { text: (row.textContent || '').trim().slice(0, 16), selected: cur.getAttribute('aria-selected') === 'true', bg: getComputedStyle(row).backgroundColor, otherBg: getComputedStyle(o).backgroundColor,
+        return { text: (row.textContent || '').trim().slice(0, 16), selected: row.getAttribute('aria-selected') === 'true', bg: getComputedStyle(row).backgroundColor, otherBg: getComputedStyle(o).backgroundColor,
           other2: { x: rr.left + rr.width / 2, y: rr.top + rr.height / 2, text: (o2.textContent || '').trim().slice(0, 16) }, cursorBox: { x: cr.left + cr.width / 2, y: cr.top + cr.height / 2 } }
-      })
+      }, TREE_ROW)
       const ringed = await cursorRing()
-      ck('TreeView A 滑鼠點列:游標列(aria-activedescendant 指到的)不得有框', ringed === false, `ring=${ringed}`)
-      await page.keyboard.press('ArrowDown'); await page.waitForTimeout(700)
+      ck('TreeView A 滑鼠點列:焦點所在的那一列不得有框', ringed === false, `ring=${ringed}`)
+      await page.keyboard.press('ArrowDown'); await settle('TreeView ArrowDown')
       const ringed2 = await cursorRing()
       ck('TreeView B 對照組:ArrowDown 後游標列必須有框', ringed2 === true, `ring=${ringed2}`, 'new')
       const tb2 = await cursorRowVsOthers()
@@ -416,41 +449,41 @@ for (const t of GRAB_TARGETS) {
       else {
         ck('TreeView B2 鍵盤模態游標停在未選中列:**不上底色**(底色 = 其他未選中列)', !tb2.selected && tb2.bg === tb2.otherBg, `「${tb2.text}」selected=${tb2.selected} bg=${tb2.bg} vs ${tb2.otherBg}`, 'new')
         // (E) 常駐清單不搶反白:鍵盤框在時滑鼠 hover 別列 → 那列底色、框仍在原列;hover 游標列本身 → 底色 + 框都在
-        await page.mouse.move(tb2.other2.x, tb2.other2.y); await page.waitForTimeout(700)
+        await page.mouse.move(tb2.other2.x, tb2.other2.y); await settle('TreeView E1 滑鼠移到別列')
         const e1 = await cursorRowVsOthers(); const e1ring = await cursorRing()
         const hoveredBg = await page.evaluate(({ x, y }) => { const row = document.elementFromPoint(x, y)?.closest('[data-tree-row]'); return row ? getComputedStyle(row).backgroundColor : null }, tb2.other2)
         ck('TreeView E1 常駐清單:滑鼠 hover 別列時,鍵盤游標列的框**仍在**(hover 不搶游標)', e1ring === true && !e1.error && e1.text === tb2.text, `ring=${e1ring} cursor=「${e1.error || e1.text}」`, 'new')
         ck('TreeView E1 hover 到的那一列有底色(≠ 游標列底色)', hoveredBg != null && hoveredBg !== e1.bg, `hovered=${hoveredBg} cursor=${e1.bg}`)
-        await page.mouse.move(tb2.cursorBox.x, tb2.cursorBox.y); await page.waitForTimeout(700)
+        await page.mouse.move(tb2.cursorBox.x, tb2.cursorBox.y); await settle('TreeView E2 滑鼠移到游標列')
         const e2 = await cursorRowVsOthers(); const e2ring = await cursorRing()
         ck('TreeView E2 常駐清單:滑鼠停在游標列上 → **底色 + 框都在**', e2ring === true && !e2.error && e2.bg !== e2.otherBg, `ring=${e2ring} bg=${e2.error || e2.bg} vs ${e2.otherBg}`, 'new')
-        await page.mouse.move(5, 5); await page.waitForTimeout(100)
+        await page.mouse.move(5, 5); await settle('TreeView 滑鼠移開')
       }
-      await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)
+      await page.mouse.click(rowBox.x, rowBox.y); await settle('TreeView 再用滑鼠點第一列')
       const ringed3 = await cursorRing()
       ck('TreeView C 再用滑鼠點:框必須消失(模態回到指標)', ringed3 === false, `ring=${ringed3}`)
-      // (A2) 指標模態 hover 另一列:有底色、無框
-      const hoverBox = await page.evaluate(() => {
-        const el = [...document.querySelectorAll('[role="treeitem"]')].find((e) => e.getAttribute('aria-selected') !== 'true' && !e.matches('[aria-disabled="true"]'))
-        const row = el?.querySelector('[data-tree-row]'); if (!row) return null; const r = row.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
-      })
+      // (A2) 指標模態 hover 另一列:有底色、無框。排除焦點所在的那一列 —— 它剛被滑鼠點過、握有真焦點,
+      // 挑到它自己就量不到「另一列」(虛擬游標時代挑第一個未選中 treeitem,剛好是點過那一列時等同量自己)
+      const hoverBox = await page.evaluate((sel) => {
+        const el = [...document.querySelectorAll(sel)].find((e) => e.getAttribute('aria-selected') !== 'true' && e.getAttribute('aria-disabled') !== 'true' && e !== document.activeElement)
+        if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+      }, TREE_ROW)
       if (!hoverBox) ck('TreeView A2 前提:找得到未選中列', false)
       else {
-        await page.mouse.move(hoverBox.x, hoverBox.y); await page.waitForTimeout(700)
-        const hv = await page.evaluate(({ x, y }) => {
+        await page.mouse.move(hoverBox.x, hoverBox.y); await settle('TreeView A2 滑鼠移到未選中列')
+        const hv = await page.evaluate(({ x, y, sel }) => {
           const row = document.elementFromPoint(x, y)?.closest('[data-tree-row]'); if (!row) return { error: '滑鼠下沒有列' }
-          const cur = row.closest('[role="treeitem"]')
-          const other = [...document.querySelectorAll('[role="treeitem"]')].find((e) => e !== cur && e.getAttribute('aria-selected') !== 'true' && !e.matches('[aria-disabled="true"]'))?.querySelector('[data-tree-row]')
-          const drawn = (e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }
-          return { text: (row.textContent || '').trim().slice(0, 16), bg: getComputedStyle(row).backgroundColor, otherBg: other ? getComputedStyle(other).backgroundColor : null, ring: drawn(row) || [...row.querySelectorAll('*')].some(drawn) }
-        }, hoverBox)
+          const other = [...document.querySelectorAll(sel)].find((e) => e !== row && e.getAttribute('aria-selected') !== 'true' && e.getAttribute('aria-disabled') !== 'true')
+          const c = getComputedStyle(row)
+          return { text: (row.textContent || '').trim().slice(0, 16), bg: c.backgroundColor, otherBg: other ? getComputedStyle(other).backgroundColor : null, ring: c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }
+        }, { ...hoverBox, sel: TREE_ROW })
         if (hv.error) ck('TreeView A2 前提:hover 得到列', false, hv.error)
         else {
           ck('TreeView A2 指標模態 hover:**有底色**(≠ 其他列)', hv.otherBg != null && hv.bg !== hv.otherBg, `「${hv.text}」bg=${hv.bg} vs ${hv.otherBg}`)
           ck('TreeView A2 指標模態 hover:**無框**', !hv.ring, `「${hv.text}」`)
         }
       }
-    } else ck('TreeView 前提:找得到 treeitem 的位置', false, '渲染完成且 treeitem 已出現,卻量不到它的位置 —— 整段沒驗不能算綠')
+    } else ck('TreeView 前提:找得到列的位置', false, '渲染完成且列已出現,卻量不到它的位置 —— 整段沒驗不能算綠')
   }
 }
 
@@ -545,19 +578,41 @@ const tabTo = async (match) => {
   return null
 }
 const probeState = () => page.evaluate(() => { const e = document.querySelector('[data-vc-probe]'); if (!e) return null; const c = getComputedStyle(e); return { ring: c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0, bg: c.backgroundColor, color: c.color } })
+/**
+ * `thenKeys`:Tab 到 `match` 之後再按這幾個鍵,量的是按完之後焦點所在的那一個 —— 它必須符合 `expect`、
+ * 而且跟 Tab 停下的那一個在同一個 `sameGroup` 裡(否則代表按鍵把焦點帶去了別的元件,量到的不是這一串)。
+ */
 const PERSISTENT = [
-  { name: 'Sidebar 選單鈕', id: 'design-system-components-sidebar-展示--icon-collapse', match: '[data-sidebar="menu-button"]:not([data-active="true"])', hoverChanges: 'bg' },
+  // 2026-09-25 起(待辦總帳 B9 路線乙;sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」)整串主選單只有一個 Tab 停靠點
+  // = 當前頁 Dashboard(aria-current="page",選中色、hover 不變)。舊寫法 Tab 到「第一個未選中的選單鈕」會越過整串主選單、
+  // 落到頁尾的帳號列 —— 照樣綠,但量的是另一個元件(M37)。改成 Tab 到當前頁 → ↓ 換到同一串的下一項(未選中,hover 底色量得到)再量。
+  { name: 'Sidebar 選單鈕', id: 'design-system-components-sidebar-展示--icon-collapse', match: '[data-sidebar="menu-button"][aria-current="page"]',
+    thenKeys: ['ArrowDown'], expect: '[data-sidebar="menu-button"]:not([data-active="true"])', sameGroup: '[data-sidebar="menu"]', hoverChanges: 'bg' },
   // Radix Tabs 只有當前 tab 在 Tab 順序裡(roving),而當前 tab 已是 text-foreground,hover 沒有可量的改變 → 只驗框不被 hover 抹掉
   { name: 'Tabs', id: 'design-system-components-tabs-展示--default', match: '[role="tab"]', hoverChanges: null },
 ]
 for (const p of PERSISTENT) {
   await openCase(page, p.id, p.match.split(':')[0])
-  const hit = await tabTo(p.match)
+  let hit = await tabTo(p.match)
   if (!hit) { ck(`${p.name} E 前提:Tab 走得到 ${p.match}`, false); continue }
-  await page.waitForTimeout(700)
+  if (p.thenKeys) {
+    for (const key of p.thenKeys) await page.keyboard.press(key)
+    await settle(`${p.name} 按 ${p.thenKeys.join(' ')}`)
+    hit = await page.evaluate(({ expect, group }) => {
+      const prev = document.querySelector('[data-vc-probe]'); const a = document.activeElement
+      const where = `停在 ${a?.tagName || 'null'}「${(a?.textContent || '').trim().slice(0, 16)}」`
+      if (!a || a === prev || !a.matches(expect)) return { error: where }
+      if (!prev || prev.closest(group) !== a.closest(group)) return { error: `${where},離開了 Tab 停下的那一串` }
+      prev.removeAttribute('data-vc-probe'); a.setAttribute('data-vc-probe', '')
+      const r = a.getBoundingClientRect(); const c = getComputedStyle(a)
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, bg: c.backgroundColor, color: c.color, text: (a.textContent || '').trim().slice(0, 16) }
+    }, { expect: p.expect, group: p.sameGroup })
+    if (hit.error) { ck(`${p.name} E 前提:按 ${p.thenKeys.join(' ')} 後焦點落在同一串的 ${p.expect}`, false, hit.error); continue }
+  }
+  await settle(`${p.name} Tab 到之後`)
   const before = await probeState()
   ck(`${p.name} E 前提:Tab 到後有框`, before?.ring === true, `「${hit.text}」`)
-  await page.mouse.move(hit.x - 30, hit.y - 30); await page.mouse.move(hit.x, hit.y, { steps: 4 }); await page.waitForTimeout(700)
+  await page.mouse.move(hit.x - 30, hit.y - 30); await page.mouse.move(hit.x, hit.y, { steps: 4 }); await settle(`${p.name} 滑鼠移上去`)
   const after = await probeState()
   ck(`${p.name} E 常駐清單:滑鼠 hover 到鍵盤焦點所在的元素 → 框**仍在**`, after?.ring === true, `ring=${after?.ring}`, 'new')
   if (p.hoverChanges) ck(`${p.name} E hover 樣式照常出現(${p.hoverChanges} 改變)`, after && after[p.hoverChanges] !== before[p.hoverChanges], `${p.hoverChanges}: ${before?.[p.hoverChanges]} → ${after?.[p.hoverChanges]}`)

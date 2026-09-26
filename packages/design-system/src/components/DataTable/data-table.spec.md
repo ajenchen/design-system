@@ -581,7 +581,7 @@ select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` sch
 ### 八、Row 狀態
 
 - **不使用斑馬紋**——hover 狀態已足夠區分行，斑馬紋疊加會產生多種背景色組合，增加視覺雜訊
-- **選取狀態僅由 row 內的 selection control（`multi`→Checkbox / `single`→Radio）呈現，不另加 selected-row 底色**——避免「勾選框 + row 底色」雙重冗餘指示（2026-05-31 user 決策：有 checkbox 就只用 checkbox 呈現狀態）；hover 用 neutral-hover，與 selection 正交（純表示「正在看的」）。**指標在列或表頭裡的小按鈕上時(巢狀 hover,2026-09-25)**:宿主**保留**自己的 hover,按鈕**再亮**自己那一層 —— 列上的動作鈕 / 巢狀展開鈕 / portal 出去的**列拖曳把手**時整列維持 `data-hovered` 底色;表頭 ⌄ 欄位選單上時排序區維持 `foreground` 字色(排序箭頭跟著),指到欄寬把手則不算。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到表格是 AI 依此推導,與 2026-09-04 user 回報「hover inline action 後整列底色消失」被當 bug 修掉同方向)。列把手帶**專用**的 `data-hover-row-index` 讓 hover 代理認得它屬於哪一列(不重用 `data-row-index`,那個屬性的其他讀者只該找到列本身);⌄ 外層帶 `data-col-menu` 供排序區的兄弟選擇器認。
+- **選取狀態僅由 row 內的 selection control（`multi`→Checkbox / `single`→Radio）呈現，不另加 selected-row 底色**——避免「勾選框 + row 底色」雙重冗餘指示（2026-05-31 user 決策：有 checkbox 就只用 checkbox 呈現狀態）；hover 用 neutral-hover，與 selection 正交（純表示「正在看的」）。**指標在列或表頭裡的小按鈕上時(巢狀滑過)**:規則與 user 原話只住在 `../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段 —— 宿主保留自己的 hover,按鈕自己的滑過色疊在上面(沿同一把灰階往上一階):列上的動作鈕 / 巢狀展開鈕 / portal 出去的**列拖曳把手**時整列維持 `data-hovered` 底色;表頭 ⌄ 欄位選單上時排序區維持 `foreground` 字色(排序箭頭跟著),指到欄寬把手則不算。套到表格是 AI 推導,與 2026-09-04 user 回報「hover inline action 後整列底色消失」被當 bug 修掉同方向。列把手帶**專用**的 `data-hover-row-index` 讓 hover 代理認得它屬於哪一列(不重用 `data-row-index`,那個屬性的其他讀者只該找到列本身);⌄ 外層帶 `data-col-menu` 供排序區的兄弟選擇器認。
 
 ### 九、Row Actions
 

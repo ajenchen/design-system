@@ -51,9 +51,8 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, requireStorybookBuild, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -70,7 +69,10 @@ const TOLERANCE_PX = 1
 const SETTLE_FRAMES = 10
 
 requireStorybookBuild(join(BUILD, 'index.json'))
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories).filter((e) => e.type !== 'docs').map((e) => ({ id: e.id, name: e.name }))
 if (LIMIT) stories = stories.slice(0, LIMIT)
 
@@ -182,10 +184,11 @@ const SHIFT = () => {
   return list.length
 }
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const bad = []
 const survey = []
 let scanned = 0, footersChecked = 0, noRef = 0
+// 點開下拉的覆蓋率(2026-09-25):點開並等到靜止的次數、因停用 / 唯讀而不點的次數 —— 印出來,不再靜默縮水
+let triggersOpened = 0, triggersInert = 0, triggersGone = 0
 const crashed = []
 /** 儀器失效:沒量到的 story(不是產品判定)。 */
 const instrumentFailures = []
@@ -249,15 +252,32 @@ try {
           }
         }
         await collect('載入即見')
-        // 需要點開才看得到的:下拉選單 / 日期時間選擇器
-        const triggers = page.locator('[role="combobox"]')
-        const n = Math.min(await triggers.count(), 6)
-        for (let i = 0; i < n; i += 1) {
-          await triggers.nth(i).click({ timeout: 3_000 }).catch(() => null)
-          await page.waitForTimeout(260) // 點開之後:等下拉 / 浮層的開啟動畫跑完再量 footer
+        // 需要點開才看得到的:下拉選單 / 日期時間選擇器。
+        // 2026-09-25(待辦總帳 C5,M37「沒觀察到 ≠ 沒發生」):原本「點一下(失敗 .catch 吞掉)→ 固定睡 260ms → 量」——
+        // 慢的機器上 260ms 內還沒開,collect 就量到 0 個 footer,那個下拉等於沒驗,而且**沒有任何訊號**(覆蓋率靜默縮水)。
+        // 現在:只點看得見、沒停用的觸發點;點擊本身失敗 = 儀器失效(點名);點完等版面連續 SETTLE_FRAMES 個影格靜止
+        // (lib/launch-browser.mjs settleAfterInteraction,與 openStory 同一份靜止判定,用影格不用毫秒)才量;
+        // 等不到靜止 = 儀器失效。點了沒開出東西(版面靜止、沒有新的 footer)是可靠的觀察,照舊不算違規。
+        // 觸發點在一開始就取定(最多 6 個);前一個互動把後面的收掉是正常的(例:預設開啟的下拉被點關,裡面的搜尋框跟著卸載),
+        // 那種記成「被前一個互動收掉」並印出次數,不當儀器失效、也不默默少算。
+        const handles = (await page.locator('[role="combobox"]:visible').elementHandles()).slice(0, 6)
+        for (let i = 0; i < handles.length; i += 1) {
+          const trigger = handles[i]
+          const state = await trigger.evaluate((el) => (!el.isConnected || el.getClientRects().length === 0 ? 'gone'
+            : el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]') ? 'inert' : 'ok')).catch(() => 'gone')
+          if (state === 'gone') { triggersGone += 1; continue }
+          if (state === 'inert') { triggersInert += 1; continue }
+          try { await trigger.click({ timeout: 10_000 }) } catch (error) {
+            instrumentFailures.push({ story: s.id, detail: `點第 ${i + 1} 個下拉失敗(看得見、沒停用):${String(error?.message || error).split('\n')[0]}` })
+            break
+          }
+          const opened = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!opened.ok) { instrumentFailures.push({ story: s.id, detail: `點開第 ${i + 1} 個下拉後版面 ${opened.framesWaited} 格內沒有靜止(變動 ${opened.lateChanges} 次)` }); break }
+          triggersOpened += 1
           await collect(`點開第 ${i + 1} 個下拉`)
-          await page.keyboard.press('Escape').catch(() => null)
-          await page.waitForTimeout(80) // 等關閉動畫跑完,不擋下一個觸發點
+          await page.keyboard.press('Escape')
+          const closed = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!closed.ok) { instrumentFailures.push({ story: s.id, detail: `關閉第 ${i + 1} 個下拉後版面沒有靜止` }); break }
         }
       } catch (error) {
         // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行、照樣 exit 0)
@@ -279,6 +299,7 @@ try {
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`量到可見的 footer:${footersChecked} 個(其中 ${noRef} 個上方沒有可對齊的東西,略過)`)
+console.log(`點開下拉並等到靜止:${triggersOpened} 次(停用 / 唯讀而不點:${triggersInert} 個;被前一個互動收掉:${triggersGone} 個)`)
 console.log(`整則渲不出來的 story:${crashed.length} 支`)
 
 // --selftest-crash 的判定:兩面都必須成立,而且每一則都要證明注入真的生效(攔到了它的 chunk)。

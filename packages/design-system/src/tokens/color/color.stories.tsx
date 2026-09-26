@@ -77,6 +77,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** 「底」三種層色 × 三個狀態(互動色 story 用;color.spec.md「Hover 換色配對總則」「底」列,待辦總帳 B8) */
+const BASE_SURFACE_DEMOS = [
+  { base: 'bg-canvas', name: 'canvas' },
+  { base: 'bg-surface', name: 'surface' },
+  { base: 'bg-surface-raised', name: 'surface-raised' },
+] as const
+const BASE_STATE_DEMOS = [
+  { state: '平常', layer: '' },
+  { state: '滑過', layer: 'bg-interaction-hover' },
+  { state: '按住', layer: 'bg-interaction-active' },
+] as const
+
 
 // ── 1. Primitives ────────────────────────────────────────────────────────────
 
@@ -305,12 +317,17 @@ export const Interactive: Story = {
           '互動色的三種狀態。使用語義 token（`bg-primary-hover`），不直接引用 primitive step。\n\n' +
           '```tsx\n' +
           '<a className="text-primary hover:text-primary-hover">連結</a>\n' +
+          // @anatomy-exempt-next 這一行是 docs 說明裡的程式碼範例字串,不是渲染出來的原生按鈕(R1 A.5 管的是真控件)
           '<button className="bg-primary hover:bg-primary-hover active:bg-primary-active" />\n' +
           '```\n\n' +
           '> 色盤對應（內部實作）：-1 = subtle、-5 = hover、-6 = base、-7 = active。\n\n' +
           '---\n\n' +
           '#### Neutral Interaction\n\n' +
-          '低調互動背景，用於 list row、tree node。',
+          '低調互動背景，用於 list row、tree node。\n\n' +
+          '#### 依平常底色決定滑過 / 按住(color.spec.md「Hover 換色配對總則」)\n\n' +
+          '透明 → 換成 `bg-neutral-hover` / `bg-neutral-active`;' +
+          '「底」(`bg-canvas` / `bg-surface` / `bg-surface-raised`)→ 底色不換,疊 `bg-interaction-hover` / `bg-interaction-active`;' +
+          '元件自己的填色(例 `bg-secondary`)→ 換成自己的 `-hover` / `-active`。下方靜態列直接畫出各狀態,可點的那張卡片可用滑鼠實測。',
       },
     },
   },
@@ -357,6 +374,37 @@ export const Interactive: Story = {
               {token && <code className="text-caption text-fg-muted">{token}</code>}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 2026-09-25 待辦總帳 B8:依平常底色決定滑過 / 按住。靜態列直接把狀態 class 疊上去畫出來(M15:不必真人滑過也截得到);
+          不放「只會亮、點了沒反應」的示範卡 —— B12「要點了會有反應的才加」 */}
+      <div>
+        <SectionLabel>「底」的滑過 / 按住 — 底色不換,疊一層(bg-interaction-hover / -active)</SectionLabel>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {BASE_SURFACE_DEMOS.map(({ base, name }) => (
+            <div key={name} className="space-y-1">
+              {BASE_STATE_DEMOS.map(({ state, layer }) => (
+                <div
+                  key={state}
+                  data-color-demo={`${name}-${state}`}
+                  className={`${base} ${layer} flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-body`}
+                >
+                  <span className="shrink-0">{state}</span>
+                  <code className="min-w-0 break-all text-right text-caption text-fg-muted">{layer || base}</code>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <SectionLabel>元件自己的填色 — 換成自己的下一階(以 secondary 為例)</SectionLabel>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <SwatchBg bg="var(--secondary)"        label="平常" desc="bg-secondary(neutral-3)" />
+          <SwatchBg bg="var(--secondary-hover)"  label="滑過" desc="bg-secondary-hover(neutral-4)" />
+          <SwatchBg bg="var(--secondary-active)" label="按住" desc="bg-secondary-active(neutral-5)" />
         </div>
       </div>
     </div>

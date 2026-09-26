@@ -19,6 +19,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
+// 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
+import { useSelectMenuPopupKeys } from '@/design-system/components/SelectMenu/select-menu-keyboard'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -475,16 +477,29 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     root?.focus({ preventScroll: true })
   }, [])
 
+  // 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11;W3C / Fluent 出處與理由見 select-menu-keyboard.ts):
+  // 單選 = 選定反白那一項 + 收起 + 焦點從觸發欄位往下 / 往上走;多選(有全選的小面板)= Tab 留在面板裡,行為不變。
+  // 不可打字的單選:空白鍵 = 選這一項,同 Enter(2026-09-26 待辦總帳 L7;出處同檔)。
+  const popupKeys = useSelectMenuPopupKeys({
+    open, multiple, isSelected, commit: handleSelect, close: () => setOpen(false),
+    // 反白列的 data-value(cmdk 已 trim)→ 可選選項值;建立列 / disabled 不算 —— Tab 不替使用者建立新選項
+    resolveOptionValue: (dataValue) => visibleOptions.find((o) => !o.disabled && o.value.trim() === dataValue)?.value,
+  })
+
   // RowSizeProvider 讓 PopoverContent 子樹內任何 <ItemIcon> / <ItemAvatar> /
   // <ItemInlineAction> 都自動讀到對的 size,跟 SidebarProvider / TreeView 同一條規則。
   // (注:Popover 透過 Portal 渲染,context 仍然會跨 portal 傳遞——React context 是 tree-based
   // 不是 DOM-based,Portal 不影響 context propagation)
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      {/* B11:可打字搜尋時焦點在觸發欄位內的輸入框,Tab 規則要掛在這裡(不可打字時掛在下方 Command) */}
+      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown}>{children}</PopoverTrigger>
       <RowSizeProvider value={size}>
       <PopoverContent
+        ref={popupKeys.contentRef}
         id={contentId}
+        // B11:Tab 收起時不讓 Radix 在關閉動畫後把焦點搶回觸發欄位(焦點已走到下一格)
+        onCloseAutoFocus={popupKeys.onCloseAutoFocus}
         // 2026-07-17 Dim 10 a11y 修:role="dialog" 浮層 accessible name(Radix Popover 無自動命名)
         aria-label={ariaLabel}
         // w-auto override PopoverContent default w-72(rich-popover canonical)— SelectMenu 走「跟 trigger 同寬」
@@ -528,6 +543,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         }}
       >
         <Command
+          // B11 / L7:不可打字時焦點在浮層裡(cmdk 殼 / 清單),Tab 與空白鍵的規則掛在這裡
+          onKeyDown={popupKeys.onKeyDown}
           shouldFilter={searchable && filterOption}
           // 2026-07-06 cursor 起點修:單選已有值時 cmdk virtual focus 落在已選項而非第一項。
           // cmdk 1.1.1 初始 state 取 defaultValue、item mount 的 selectFirstItem 有
@@ -740,60 +757,8 @@ export const selectMenuMeta = {
   },
 } as const
 
-/**
- * 2026-07-05 D4 P0 修(searchable 鍵盤死路):trigger 內的裸 <input> 與 portal 內的 cmdk root
- * 在不同 DOM 子樹 — 鍵盤事件永遠 bubble 不到 cmdk 的 ArrowUp/Down/Enter handler([cmdk-root]
- * onKeyDown)→ searchable Select / PeoplePicker single / Combobox searchIn='trigger' 開啟後
- * 只能 Esc。修法 = APG combobox-with-list:trigger input 把三鍵 re-dispatch 給 cmdk root
- * (native KeyboardEvent bubbles 經 React root delegation 觸發 cmdk synthetic handler)。
- * Home/End 刻意不轉送(文字輸入的 caret 語意優先,對齊 MUI/Ant Autocomplete)。
- * aria-activedescendant 綁回 trigger input → 見下方 useActiveDescendant(2026-07-05 D4 補齊)。
- */
-export function forwardKeyToListbox(contentId: string | undefined, e: React.KeyboardEvent): boolean {
-  if (!contentId) return false
-  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return false
-  const root = document.getElementById(contentId)?.querySelector<HTMLElement>('[cmdk-root]')
-  if (!root) return false
-  e.preventDefault()
-  root.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true, cancelable: true }))
-  return true
-}
-
-/**
- * 2026-07-05 D4 補齊(APG combobox aria-activedescendant):追蹤 cmdk 目前 virtual-focus item
- * 的 DOM id,供 trigger 端搜尋 input 綁 `aria-activedescendant` —— SR 才會在方向鍵導覽 /
- * 打字過濾時播報 active option 名。機制:trigger 與 portal 內 cmdk 分屬不同 DOM 子樹,cmdk
- * 只把 active id 綁在自己的 Command.Input / List(cmdk source:item 自帶 auto-generated id +
- * `data-selected="true"` 標記 virtual focus)→ trigger 端用 MutationObserver 監聽 popover 容器
- * (contentId = PopoverContent id)內 `data-selected` 屬性變化 + childList(打字過濾 re-render
- * 換 item 節點),單一機制涵蓋全部更新路徑:開啟初始 auto-highlight / forwardKeyToListbox
- * 方向鍵轉送 / 搜尋過濾後 cmdk 自動移 cursor / pointer hover。
- * 關閉時清 undefined —— ARIA 要求 id 必指向存在於 DOM 的節點,不可留 stale id。
- */
-export function useActiveDescendant(contentId: string | undefined, open: boolean): string | undefined {
-  const [activeId, setActiveId] = React.useState<string | undefined>(undefined)
-  React.useEffect(() => {
-    if (!open || !contentId) {
-      setActiveId(undefined)
-      return
-    }
-    // PopoverContent 與 trigger 同一個 React commit mount(open state 同批 render)→ effect 跑時已在 DOM
-    const container = document.getElementById(contentId)
-    if (!container) return
-    const read = () => {
-      setActiveId(container.querySelector<HTMLElement>('[cmdk-item][data-selected="true"]')?.id || undefined)
-    }
-    // 初始補讀:MutationObserver 只看「觀察開始後」的變化;cmdk 初始 auto-highlight(layout effect
-    // 排程)可能已 commit → rAF 讀當下狀態兜底,與 observer 互補、誰先到都不漏。
-    const raf = requestAnimationFrame(read)
-    const observer = new MutationObserver(read)
-    observer.observe(container, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-selected'] })
-    return () => {
-      cancelAnimationFrame(raf)
-      observer.disconnect()
-    }
-  }, [open, contentId])
-  return activeId
-}
+// forwardKeyToListbox / useActiveDescendant 原樣搬到 select-menu-keyboard.ts(2026-09-25,與 B11 的 Tab 規則同住一個
+// 鍵盤模組;本檔已近 800 行上限)。從這裡轉出,Select / Combobox 既有的 import 路徑不變。
+export { forwardKeyToListbox, useActiveDescendant } from '@/design-system/components/SelectMenu/select-menu-keyboard'
 
 export { SelectMenu }

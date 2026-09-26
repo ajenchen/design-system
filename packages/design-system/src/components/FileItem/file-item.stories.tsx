@@ -103,7 +103,8 @@ export const HoverSwap = {
     <div className="flex flex-col max-w-md gap-4">
       <div>
         <div className="text-caption text-fg-muted mb-2">
-          ↓ 游標移入任一 row:completed 綠 ✓ 變 Download ↓,error 紅 ✗ 變 Retry ⟲
+          ↓ 游標移入任一 row:completed 綠 ✓ 變 Download ↓,error 紅 ✗ 變 Retry ⟲。
+          這幾列沒有傳 onClick(點列本身沒反應),所以整列不上滑過底色,只有換上的那顆鈕有自己的滑過色(待辦總帳 B12)
         </div>
         {/* Rich border card list:無外框 + `gap-2`(item-anatomy「連續 item 貼邊合法性」) */}
         <div className="flex flex-col gap-2">
@@ -252,14 +253,17 @@ export const CompactMixed = {
  * 沒傳就退回 passive 是給既有 consumer 的相容行為,不是這裡要示範的東西。
  * 寫成共用常數而不是「兩邊都記得傳」:**能力集合從此不可能只在其中一則出現**。
  */
-const UPLOAD_MANAGER_COMPLETED = { status: 'completed', onDownload: noop } as const
+// 完成的檔案可以點開(onClick),上傳中 / 失敗的不行 —— 同一個面板裡兩種列並存,示範「點了會有反應的列才有滑過底色」
+// (2026-09-25 待辦總帳 B12:user「要點了會有反應的才加…」)。上傳中還不能開是真實情境,不是示範取巧。
+const UPLOAD_MANAGER_COMPLETED = { status: 'completed', onDownload: noop, onClick: noop } as const
 const UPLOAD_MANAGER_ERROR = { status: 'error', onRetry: noop } as const
 
-// surface="upload-manager":Google Drive / Dropbox 上傳管理面板。面板組合 canonical(2026-06-03 圖五/圖一 user 校準):
-//   - 左右一律 loose(16px,對齊 header);上下目標「邊緣→item ink」= tight(12px),通則 container 該側 = 12 − item 該側留白
-//   - rich item 上下留白 0 → py-tight(12/12 對稱);compact 上留 8(item py)→ pt-1(4),下進度條貼底留 0 → pb-tight(12)
-//   - 列間 gap 反映密度:rich = tight(12px,卡片+48 縮圖)/ compact = 4px(密集文字列)
-//   - rich item 拿掉全部 padding(px-0 py-0,列高靠 avatar 48);左右交給面板,避免雙重 L/R。對比 surface=form 的 border card。
+// surface="upload-manager":Google Drive / Dropbox 上傳管理面板。面板組合 canonical(file-item.spec.md「upload-manager 浮層面板 composition」):
+//   - 2026-09-25 待辦總帳 B12 推翻 06-03 的「左右交給面板」:可點的列滑過底色要鋪到面板左右邊 → 列自帶左右 loose(16px,
+//     文字 x 與 06-03 相同、仍對齊 header 標題),面板 body 左右 0(判準 = overlay-surface.spec.md「誰負責左右 gutter」)
+//   - 上下目標不變:「邊緣→item ink」「ink→ink」= tight(12px)。兩 mode 的列上下各自帶 tight/2 → body 上下也給 tight/2、列間 gap 0
+//     (06-03 compact 的 !pt-1 上下不對稱隨之取消);滑過底色上下各留 tight/2,不貼縮圖、不貼進度條
+//   - 只有完成的列有 onClick(UPLOAD_MANAGER_COMPLETED),上傳中 / 失敗的列點了沒反應 → 不上滑過底色
 export const UploadManagerSurface = {
   name: '上傳管理器 · 豐富(無邊框)',
   render: () => (
@@ -270,12 +274,12 @@ export const UploadManagerSurface = {
         <div className="flex-1 min-w-0"><PopoverTitle>正在上傳 3 個項目</PopoverTitle></div>
         <Button iconOnly variant="text" size="sm" startIcon={ChevronDown} aria-label="收合" onClick={noop} />
       </SurfaceHeader>
-      {/* body 消費 overlay-surface SurfaceBody(非手刻;含 px-loose py-tight + flex-1 scroll 鏈)。
-          rich:py-tight(SurfaceBody 預設)+ gap-tight = 垂直對稱 12px */}
-      <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
+      {/* body 消費 overlay-surface SurfaceBody(非手刻;flex-1 scroll 鏈照用)。左右 0、上下 tight/2、列間 0:
+          gutter 與另一半上下由列自己帶(B12,見上方註解);縮圖↔縮圖、邊緣↔縮圖仍是 12px */}
+      <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
         <FileItem mode="rich" surface="upload-manager" name="Alan Profile.png" status="uploading" progress={40}
           description="5.7 MB of 7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
-        <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" {...UPLOAD_MANAGER_COMPLETED}
+        <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" {...UPLOAD_MANAGER_COMPLETED} data-visual-hover-target
           description="2.4 MB" thumbnailSrc="https://i.pravatar.cc/80?u=xls" actions={deleteBtn} />
         <FileItem mode="rich" surface="upload-manager" name="合約草案 v3.pdf" {...UPLOAD_MANAGER_ERROR}
           description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=pdf" actions={deleteBtn} />
@@ -284,9 +288,9 @@ export const UploadManagerSurface = {
   ),
 }
 
-// surface="upload-manager" 的 compact list:左右 loose 16(同 rich,對齊 header);上下「不對稱」=「12 − item 該側留白」:
-// top !pt-1=4(item 自帶 py-2 的 8 + 4 = 12),bottom 12(進度條貼底、item 下方無留白);gap 只 4px(密集列)。
-// 對比 rich panel(item py-0 → 上下對稱 12 / gap 12),demo 兩 mode 密度差異。
+// surface="upload-manager" 的 compact list:body 寫法與 rich 相同(左右 0、上下 tight/2、列間 0),差別只在列本身 ——
+// compact 列上 tight/2、下 tight/2 + 8(文字↔bar 6 + bar 2),bar 離列底 tight/2(file-item.tsx「compact 內距」段)。
+// 對比 rich panel(列高 = 縮圖 48 + tight),demo 兩 mode 密度差異。
 export const UploadManagerCompactSurface = {
   name: '上傳管理器 · 緊湊(無邊框)',
   render: () => (
@@ -296,16 +300,14 @@ export const UploadManagerCompactSurface = {
         <div className="flex-1 min-w-0"><PopoverTitle>同步 3 個檔案</PopoverTitle></div>
         <Button iconOnly variant="text" size="sm" startIcon={ChevronDown} aria-label="收合" onClick={noop} />
       </SurfaceHeader>
-      {/* body 消費 SurfaceBody(px-loose + pb-tight 自 SSOT);compact 只 override top:`!pt-1`(4px,
-          item 文字上方自帶 8px → 4+8=12;bottom 留 SurfaceBody 預設 py-tight=12,因進度條貼底無留白)。
-          用 `!`(important)而非 `pt-1`:twMerge 不 strip 基底 py-[tight] → 非 important 時 top 12/4 競爭看
-          stylesheet 生成順序(非決定性);`!` 強制 top=4 決定性勝(對齊 List-as-region `!px-0` override 慣例)。
-          列間 gap-1(4px,密集列)。 */}
-      <SurfaceBody className="flex flex-col gap-1 !pt-1">
+      {/* body 同 rich 面板:左右 0、上下 tight/2、列間 0(B12)。用 `!` 沿用 List-as-region `!px-0` 慣例,
+          覆寫勝負不依賴 twMerge 分組與 stylesheet 生成順序。 */}
+      <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
+        {/* 上傳中的列不能開(沒有 onClick)→ 不上滑過底色;與 rich 面板同一組能力(B12) */}
         <FileItem mode="compact" surface="upload-manager" name="季度報告.docx" status="uploading" progress={60}
-          onClick={noop} actions={deleteBtn} />
+          actions={deleteBtn} />
         <FileItem mode="compact" surface="upload-manager" name="客戶名單.csv" {...UPLOAD_MANAGER_COMPLETED}
-          onClick={noop} actions={deleteBtn} />
+          actions={deleteBtn} />
         <FileItem mode="compact" surface="upload-manager" name="封面.png" {...UPLOAD_MANAGER_ERROR}
           description={errorDescWithLog} actions={deleteBtn} />
       </SurfaceBody>

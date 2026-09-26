@@ -17,7 +17,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>TreeView 是階層結構的遞迴元件——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。基於 Radix Collapsible 實作展開/收合,自建 tree 結構 + ARIA tree 鍵盤導覽(Radix 沒有 Tree primitive)。</Desc>
+        <Desc>TreeView 是階層結構的遞迴元件——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。展開/收合的高度動畫借用 Collapsible 元件,樹的結構與 ARIA 樹狀表格(treegrid)鍵盤導覽由元件自建(2026-09-25 由 tree 改為 treegrid,見 spec「鍵盤導覽」)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <TreeView aria-label="文件樹範例" defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>
@@ -47,7 +47,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td>1. 遞迴渲染 + indent</Td><Td mono>indentStep = chevronSize + gap-2(跟 item-layout 一致)</Td></tr>
               <tr><Td>2. 展開 / 收合狀態管理</Td><Td>TreeView 自管 expand state(受控 expandedIds / 非受控 defaultExpandedIds);Radix Collapsible 僅負責子節點高度動畫</Td></tr>
-              <tr><Td>3. 鍵盤導覽 + ARIA tree</Td><Td>↑↓ 移動 / → 展開 / ← 收合 / Enter 選取</Td></tr>
+              <tr><Td>3. 鍵盤導覽 + ARIA 樹狀表格</Td><Td>整棵樹一個 Tab 停靠點 / ↑↓ 換列 / → 展開或進這一列的按鈕 / ← 收合或回上一層 / Enter 選取</Td></tr>
             </tbody>
           </table>
         </div>
@@ -362,8 +362,12 @@ export const StateBehavior: Story = {
         </div>
 
         <div>
-          <H3>Hover inline actions(suffix)</H3>
-          <Desc>hover node 時 suffix 顯示 inline action(重新命名、刪除等)。non-hover 時 suffix 隱藏。</Desc>
+          <H3>列上的動作(suffix)</H3>
+          <Desc>
+            滑過列、或鍵盤焦點在這一列(列本身或列上的按鈕)時,suffix 顯示列上的動作(重新命名、刪除等);其他時候隱藏。
+            鍵盤:↑↓ 換列、→ 進這一列的按鈕、← 回到列;Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上
+            (2026-09-25 前,這棵樹從 Engineering 出發要按 5 下 Tab 才出得去,走過的全是 Alice、Bob 的按鈕)。
+          </Desc>
           <div className="border border-border rounded-lg p-4 max-w-md">
             <TreeView aria-label="工程團隊樹" defaultExpandedIds={['eng', 'frontend']}>
               <TreeItem id="eng" label="Engineering" icon={Users}>
@@ -397,24 +401,42 @@ export const StateBehavior: Story = {
 }
 
 export const KeyboardMatrix: Story = {
-  name: '鍵盤導覽（ARIA tree）',
+  name: '鍵盤導覽（樹狀表格）',
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
-        <H3>鍵盤操作對照</H3>
-        <Desc>TreeView 的 ARIA tree 鍵盤導覽是自建實作(Radix 沒有 Tree primitive)。重排鍵位(最後三列)僅在 `draggable` 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
+        <H3>鍵盤操作對照 — 焦點在列上</H3>
+        <Desc>整棵樹在 Tab 路上只佔一站(列上的 roving tabindex;2026-09-25 總帳 B9 由 tree 改為 treegrid)。Tab 進來落在上次停的那一列,沒有就落在選中的列,再沒有就第一列。重排鍵位(最後三列)僅在 `draggable` 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>按鍵</Th><Th>行為</Th></tr></thead>
             <tbody>
-              <tr><Td mono>↑ / ↓</Td><Td>在可見 nodes 之間移動焦點(跳過已收合的 children)</Td></tr>
-              <tr><Td mono>→</Td><Td>若 collapsed 則展開;若 expanded 則移到第一個 child</Td></tr>
-              <tr><Td mono>←</Td><Td>若 expanded 則收合;若 collapsed 或 leaf 則移到 parent</Td></tr>
-              <tr><Td mono>Enter / Space</Td><Td>選取當前 focus 的 node</Td></tr>
-              <tr><Td mono>Home / End</Td><Td>跳到第一個 / 最後一個可見 node</Td></tr>
+              <tr><Td mono>↑ / ↓</Td><Td>在可見、未停用的列之間移動(跳過已收合的 children)</Td></tr>
+              <tr><Td mono>→</Td><Td>收著的資料夾 → 展開;已展開的資料夾或葉節點 → 進這一列的第一顆按鈕;沒有按鈕 → 不動</Td></tr>
+              <tr><Td mono>←</Td><Td>展開的資料夾 → 收合;收著的資料夾或葉節點 → 回上一層</Td></tr>
+              <tr><Td mono>Enter / Space</Td><Td>選取這一列</Td></tr>
+              <tr><Td mono>Home / End</Td><Td>跳到第一個 / 最後一個可見列</Td></tr>
+              <tr><Td mono>Tab / Shift+Tab</Td><Td>一下就離開整棵樹(別列、本列的按鈕都不在 Tab 路上)</Td></tr>
               <tr><Td mono>Cmd/Ctrl+Shift+↑ / ↓</Td><Td>重排:同層上移 / 下移(需 draggable;整個子樹一起動,結果經 SR live region 播報)</Td></tr>
               <tr><Td mono>Cmd/Ctrl+Shift+→</Td><Td>重排:移入上一個 sibling(需為 folder;收合時自動展開)</Td></tr>
               <tr><Td mono>Cmd/Ctrl+Shift+←</Td><Td>重排:移出,成為 parent 的下一個 sibling</Td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <H3>鍵盤操作對照 — 焦點在列上的按鈕</H3>
+        <Desc>列上的按鈕(更多、新增…)平常可能隱藏,焦點在這一列裡時一定看得到。完整規則見 spec「鍵盤導覽」;可實際操作的範例在「展示 / 列上的動作」。</Desc>
+        <div className="overflow-x-auto">
+          <table className="text-caption border-collapse">
+            <thead><tr><Th>按鍵</Th><Th>行為</Th></tr></thead>
+            <tbody>
+              <tr><Td mono>→</Td><Td>下一顆;已是最後一顆 → 不動</Td></tr>
+              <tr><Td mono>←</Td><Td>上一顆;已是第一顆 → 回到這一列</Td></tr>
+              <tr><Td mono>↑ / ↓</Td><Td>回到上 / 下一列(選單鈕的 ↓ 讓給它自己開選單)</Td></tr>
+              <tr><Td mono>Enter / Space</Td><Td>按鈕自己的動作</Td></tr>
+              <tr><Td mono>Tab</Td><Td>一下就離開整棵樹</Td></tr>
+              <tr><Td mono>Shift+Tab</Td><Td>回到這一列</Td></tr>
             </tbody>
           </table>
         </div>
@@ -430,7 +452,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"tree\",每個節點標記為 role=\"treeitem\",並逐一寫上目前展開狀態、是否選取、所在層級;多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Radix Collapsible,但樹的角色、屬性、鍵盤導覽都是元件自己實作的(Radix 沒有 Tree 元件)。\n\n  鍵盤操作  :\n\n- Tab — 焦點進入整棵樹\n- 上 / 下 — 在可見節點之間移動\n- 右 — 展開資料夾,已展開時移到第一個子節點\n- 左 — 收合資料夾,葉節點時跳回上層\n- Home / End — 跳到第一個 / 最後一個可見節點\n- Enter / 空白鍵 — 選取目前節點\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  焦點  :焦點由元件自己管理——整棵樹是單一 Tab 停靠點,鍵盤移動時用一圈內描邊高亮(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由元件 state 掛上,不是 focus-visible)標示目前位置。沒有焦點鎖定、也沒有焦點還原,因為樹不是浮層。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
+      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"treegrid\"(樹狀表格;2026-09-25 由 tree 改,因為只有樹狀表格定義了「列上有按鈕時鍵盤怎麼走」),每個節點的那一列標記為 role=\"row\",列裡分成主格與放按鈕的動作格(role=\"gridcell\");列上逐一寫著展開狀態、是否選取、所在層級,列名只取標籤文字。多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Collapsible 元件,樹的角色、屬性、鍵盤導覽都是元件自己實作的。讀螢幕軟體會念成「樹狀表格」——尚未用讀螢幕軟體實測。\n\n  鍵盤操作(焦點在列上)  :\n\n- Tab — 進到樹,落在上次停的那一列(沒有就選中的列、再沒有就第一列);再按一下就離開整棵樹\n- 上 / 下 — 換到上 / 下一列\n- 右 — 收著的資料夾先展開;已展開的資料夾或葉節點,進到這一列的第一顆按鈕\n- 左 — 收合資料夾,收著或葉節點時回到上一層\n- Home / End — 跳到第一個 / 最後一個可見列\n- Enter / 空白鍵 — 選取這一列\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  鍵盤操作(焦點在列上的按鈕)  :右 / 左在按鈕之間走,第一顆再按左回到列;上 / 下換到上 / 下一列;Enter / 空白鍵執行按鈕;Tab 一下離開整棵樹,Shift+Tab 回到列。別列的按鈕永遠不在 Tab 路上。\n\n  焦點  :整棵樹只有一個 Tab 停靠點(那一列的 tabIndex 是 0,其他列與所有按鈕都是 -1),焦點是真的落在列或按鈕上。焦點在列上時,列畫一圈內描邊(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由瀏覽器的 :focus-visible 決定畫不畫——滑鼠點列不畫、鍵盤畫);焦點在按鈕上時由按鈕自己畫框。平常隱藏的列上按鈕,焦點在這一列裡時一定看得到。沒有焦點鎖定;唯一的「還焦點」是鍵盤重排後把焦點還給被移動的那一列。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含列上的按鈕與拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
     </div>
   ),
 }

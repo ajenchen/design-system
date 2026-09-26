@@ -167,7 +167,8 @@ const itemVariants = cva(
     'relative inline-flex items-center justify-center',
     'whitespace-nowrap font-medium',
     'border border-border bg-surface text-fg-secondary',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:hover 的外框與字色一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色與外框,待辦總帳 L9 / N4(3))。
+    // 選中的外框與字色跟 hover 是同一組 CSS 屬性,滑鼠點選時指標必在項目上 → 選中變色一併瞬間(與 Chip 同一處理)。
     'cursor-pointer select-none',
     'focus-visible:z-20',
     // disabled：cursor-not-allowed + 鎖住 hover 色（不用 pointer-events-none，否則 cursor 無法變）

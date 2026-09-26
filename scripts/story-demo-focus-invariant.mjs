@@ -22,7 +22,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import {
-  gotoStory, INSTRUMENT_FAIL_MARKER, launchBrowser, launchBrowserOrSkip, openStory, requireStorybookBuild, StoryRenderInstrumentError,
+  INSTRUMENT_FAIL_MARKER, launchBrowser, launchBrowserOrSkip, openStory, requireStorybookBuild, StoryRenderInstrumentError,
 } from './lib/launch-browser.mjs'
 
 const ARGS = process.argv.slice(2)
@@ -130,13 +130,19 @@ async function runSelftest(browser) {
   console.log(`${ghostOk ? '✓' : '✗'} 對照組 不存在的 story:落進儀器失效、點名該 id(${ghostSaw})`)
   // 對照組 6(與機器速度無關的證明,2026-09-24):把 CPU 節流 30 倍再開 Toast 朗讀區域 story —— 它的 play 會點好幾顆按鈕。
   // (a) 舊代理「根節點出現 + 900ms」量到的時候,收尾章還沒蓋(play 還在跑);(b) 共用 openStory 等到渲染完成 + 收尾章 + 靜止再量 → 乾淨。
-  // 兩面都成立才算儀器有效。(a) 刻意呼叫共用 gotoStory 的固定睡眠形狀,重現被淘汰的那個代理。
+  // 兩面都成立才算儀器有效。(a) 刻意重現被淘汰的那個代理:openStory 只等根節點出現(不等渲染完成、不驗健康、不等字型),
+  // 再固定睡 900ms —— 這是本檔唯一允許的固定睡眠,它就是對照組本身(2026-09-25 起不再經 gotoStory:那支薄包裝的最後一個呼叫點
+  // 就是這裡,改完即退役,待辦總帳 C5)。
   const toastId = 'design-system-components-toast-展示--live-region-contract'
   let throttled = false
   try { const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 30 }); throttled = true } catch { /* 無 CDP 就跳過這組,但要講出來 */ }
   let earlyOk = false; let lateOk = false
   if (throttled) {
-    await gotoStory(page, storyUrl(toastId), { waitFor: '#storybook-root > *', settle: 900 })
+    await openStory(page, storyUrl(toastId), {
+      waitFor: '#storybook-root > *', requireRenderFinished: false, health: false, fonts: false, notFound: server.notFound,
+      navigationTimeoutMs: 90_000, timeoutMs: 20_000, // 與原本 gotoStory 的上限相同(只是等不到的天花板)
+    })
+    await page.waitForTimeout(900) // 對照組:被淘汰的「根節點出現 + 900ms」代理(見上),不是「已渲染」的判定
     const early = await page.evaluate(() => document.documentElement.dataset.demoFocusSettled ?? null)
     earlyOk = early === null
     console.log(`${earlyOk ? '✓' : '✗'} 對照組 節流:根節點出現 + 900ms 時收尾章還沒蓋(章=${early})—— 固定睡眠量不到 play 跑完`)

@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-23T10:22:11.769Z"
+    "generatedAt": "2026-09-26T02:58:22.152Z"
   },
   "components": {
     "accordion": {
@@ -322,7 +322,8 @@
         "設計原則": [
           "design-system-components-calendar-設計原則--usage-guidance",
           "design-system-components-calendar-設計原則--color-semantic",
-          "design-system-components-calendar-設計原則--month-view-only-rule"
+          "design-system-components-calendar-設計原則--month-view-only-rule",
+          "design-system-components-calendar-設計原則--read-only-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -733,6 +734,7 @@
           "design-system-components-dropdownmenu-展示--groups",
           "design-system-components-dropdownmenu-展示--with-suffix",
           "design-system-components-dropdownmenu-展示--sub-menu",
+          "design-system-components-dropdownmenu-展示--nested-sub-menu",
           "design-system-components-dropdownmenu-展示--checkbox-items",
           "design-system-components-dropdownmenu-展示--radio-items",
           "design-system-components-dropdownmenu-展示--open-snapshot",
@@ -876,6 +878,7 @@
           "design-system-components-fileupload-展示--bulk-image-upload",
           "design-system-components-fileupload-展示--with-file-list",
           "design-system-components-fileupload-展示--file-list-remove-focus-contract",
+          "design-system-components-fileupload-展示--file-list-keyboard-contract",
           "design-system-components-fileupload-展示--remove-hover-state",
           "design-system-components-fileupload-展示--custom-children",
           "design-system-components-fileupload-展示--button-variant"
@@ -1802,6 +1805,7 @@
           "design-system-components-treeview-展示--action-hover-state",
           "design-system-components-treeview-展示--stepper",
           "design-system-components-treeview-展示--with-checkbox",
+          "design-system-components-treeview-展示--row-actions",
           "design-system-components-treeview-展示--long-label",
           "design-system-components-treeview-展示--drag-and-drop"
         ],
@@ -1826,5 +1830,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 994
+  "totalStories": 998
 }

@@ -144,7 +144,8 @@ const buttonVariants = cva(
        * 2026-05-21 v12 — pressed visual tone(per user「我認同這一個方向,然後預設emphasis」):
        * emphasis = 淡藍底(toolbar functional toggle / 篩選啟用 / 面板開關 — Figma toolbar /
        *            Linear toolbar / Material ToggleButton 共識)
-       * neutral  = 灰底(sidebar/contextual nav row pressed — Linear / Notion / VS Code Activity Bar 共識)
+       * neutral  = 灰底(**可取消**的切換鈕、要比藍底低一級時;不用於導覽 / 目前頁 —— 那是選中列,
+       *            owner = item-anatomy.spec.md「選中 × 互動疊加」;button.spec.md pressedTone 表,待辦總帳 B5 2026-09-25 更正)
        * 預設 `emphasis` per user directive。實際樣式由 compoundVariants(variant × pressedTone)套用。
        * 只在 secondary / tertiary / text variant 觸發 toggle 視覺;primary / link 無視覺效果。
        */
@@ -231,9 +232,9 @@ const buttonVariants = cva(
           'aria-pressed:aria-disabled:hover:text-primary aria-pressed:aria-disabled:active:text-primary',
         ],
       },
-      // neutral tone:灰底(neutral-selected family)— sidebar/contextual nav pressed
-      // 階梯值(selected → -selected-hover → -selected-active)仍在 DECISIONS #19 研究中;下方開啟中 / aria-disabled
-      // 各條都是「跟著本分支的 hover / 靜止 token 走」,改階梯時同一 compound 內一起改。
+      // neutral tone:灰底(neutral-selected family)— 可取消的切換鈕;導覽 / 目前頁不用它(選中列規則,item-anatomy.spec.md「選中 × 互動疊加」)
+      // 階梯值 selected → -selected-hover → -selected-active(2→3→4):user 2026-09-25 選「甲：保留，維持 2→3→4 (Recommended)」
+      // (選項由 AI 提供;待辦總帳 B5)。下方開啟中 / aria-disabled 各條都是「跟著本分支的 hover / 靜止 token 走」,改階梯時同一 compound 內一起改。
       {
         variant: ['secondary', 'tertiary', 'text'],
         pressedTone: 'neutral',
@@ -310,8 +311,8 @@ export interface ButtonProps
    * Pressed 視覺色調(2026-05-21 v12 加):
    * - `'emphasis'`(預設)→ 淡藍底 / primary 字(對齊 Figma toolbar / Linear toolbar /
    *   Material ToggleButton 共識 — toolbar functional toggle / 篩選啟用 / 面板開關)
-   * - `'neutral'` → 灰底 / foreground 字(對齊 Linear / Notion / VS Code Activity Bar
-   *   共識 — sidebar/contextual nav row pressed)
+   * - `'neutral'` → 灰底 / foreground 字 —— **可取消**的切換鈕(再點一次就關掉)需要低一級強調時;
+   *   導覽 / 目前頁不用它(那是選中列,滑過釘住;button.spec.md pressedTone 表,2026-09-25 更正)
    *
    * 僅在 `pressed` 啟用且 variant ∈ {secondary, tertiary, text} 時生效。
    * 跨 toggle context 維持單一 prop API,consumer 視語意選 tone 不另開 variant。

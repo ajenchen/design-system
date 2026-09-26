@@ -39,17 +39,15 @@ import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
 const STATIC_ARG = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
 const STATIC_DIR = STATIC_ARG ? resolve(STATIC_ARG) : join(REPO_ROOT, 'storybook-static')
 
-if (!existsSync(STATIC_DIR)) {
-  console.error(`❌ ${STATIC_DIR} not found. Run \`npm run build-storybook\` first.`)
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(join(STATIC_DIR, 'index.json'))
 
 // ── Stale-build guard(2026-07-05 自抓包 codify)────────────────────────────
 // 本 script 驗的是 storybook-static/ 靜態 build — 若 build 早於 src 最新改動,整輪 smoke =

@@ -23,7 +23,8 @@ import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER } from './lib/launch-browser.mjs'
+import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -47,10 +48,12 @@ requireStorybookBuild(join(STATIC, 'index.json'))
     .reduce((max, f) => Math.max(max, statSync(join(dir, f)).mtimeMs), 0)), 0)
   const builtAt = statSync(join(STATIC, 'index.json')).mtimeMs
   if (newestSrc > builtAt) {
-    console.error('✗ storybook-static 比 DataTable / PeoplePicker 原始碼舊 —— 量到的會是上一版 DOM(假綠)。')
+    // 共用標記 STALE-BUILD + exit 2(缺前置,不是產品裁決;lib/launch-browser.mjs 的標記,gate-selftest-meta 認得)。
+    // 原本印自己的句子並 exit 1,meta-test 會把「建置過時」讀成閘紅(2026-09-25,待辦總帳 C5 缺建置標記寫法不一)。
+    console.error(`✗ ${STALE_BUILD_MARKER}:storybook-static 比 DataTable / PeoplePicker 原始碼舊 —— 量到的會是上一版 DOM(假綠)。`)
     console.error(`   最新原始碼 ${new Date(newestSrc).toISOString()} > 建置 ${new Date(builtAt).toISOString()}`)
     console.error('   請先跑 `npm run build-storybook`。')
-    process.exit(1)
+    process.exit(2)
   }
 }
 
@@ -103,6 +106,9 @@ const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 
 const failures = []
 const passes = []
+const pending = []
+// I31 深色:未經 user 同意的產品主張,只回報不判紅(見 I31 段);user 決定後清成空字串並刪掉那個分支。
+const I31_DARK_PENDING_USER_DECISION = 'governance/planning/2026-09-25-interaction-and-hover-remediation.md X35 / R21 第 5 題 (a)'
 
 function record(invariant, label, pass, detail = '') {
   if (pass) passes.push(`✓ ${invariant} | ${label}`)
@@ -2096,6 +2102,43 @@ for (const storyId of ['design-system-components-datatable-展示--selection-key
   const afterTab = await drawn()
   record('I30', '鍵盤 Tab 走得到表格根節點', landed, JSON.stringify(afterTab))
   record('I30', '鍵盤 Tab 落在表格根節點時必須畫焦點框(WCAG 2.4.7)', landed && afterTab.drawn, JSON.stringify(afterTab))
+}
+
+/* ── I31:區間格在列被滑過時兩個主題都釘住(2026-09-25,待辦總帳 C12⑦ / C1 K16)──────────────
+ * 區間是持續選取,性質同選中列(選中列被滑過時釘住)。淺色 `--primary-subtle` 不透明、深色是 alpha,
+ * 修前深色的列滑過層會從區間格底下透上來(#1C304A → #243851),淺色維持不變 —— 只量淺色的閘結構上看不到。
+ * 修法在 `data-table.css`(含區間格的列被滑過時,滑過層改畫在非區間格上)。
+ * 量測、判定與判定表都在 lib/data-table-range-hover.mjs(唯一住所)。判定表在量之前先跑一遍:判定本身錯了,量到什麼都不算數。
+ * 儀器對照:同一列的非區間格必須有變色、列必須帶 data-hovered、取樣像素必須屬於那一格 —— 任一不成立記成儀器失效(紅),
+ * 不得當成「區間格沒變」。 */
+for (const [name, input, want] of rangeHoverVerdictCases()) {
+  const got = rangeHoverPinVerdict(input).verdict
+  record('I31', `判定表:${name}`, got === want, `期望 ${want},得 ${got}`)
+}
+for (const theme of ['light', 'dark']) {
+  let m
+  try {
+    m = await measureRangeHoverPin(page, { origin: BASE, theme, notFound: server.notFound })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    record('I31', `${theme}:區間格 × 列滑過量得到(儀器)`, false, `INSTRUMENT-FAIL ${error.detail}`)
+    continue
+  }
+  const v = rangeHoverPinVerdict(m)
+  const tag = v.verdict === 'instrument' ? 'INSTRUMENT-FAIL ' : ''
+  const label = `${theme}:區間格在列被滑過時釘住(${formatPixel(m.rangeRest)} → ${formatPixel(m.rangeHover)}),非區間格照常變色`
+  // 深色「釘住」是尚未經 user 同意的產品主張(2026-09-26 R21 第 5 題 (a):世界級只有一半這樣做;待辦總帳 X35
+  // 已從「照現有規則修的 bug」移到「要 user 同意的新主張」)。未決前只回報、不判紅 —— 把 AI 的推論寫成閘 = M36(a)。
+  // 儀器失效照樣紅;user 同意 (a) → 刪掉這個分支;不同意 → 改寫本段期望值。
+  if (theme === 'dark' && v.verdict === 'fail' && I31_DARK_PENDING_USER_DECISION) {
+    pending.push(`⏸ I31 | ${label} | 待 user 決定(${I31_DARK_PENDING_USER_DECISION}):${v.problems.join(';')}`)
+    continue
+  }
+  record('I31', label, v.verdict === 'pass', `${tag}${v.problems.join(';')}`)
+}
+if (pending.length > 0) {
+  console.log('\n--- 待 user 決定(不判紅) ---')
+  console.log(pending.join('\n'))
 }
 
 if (failures.length > 0) {

@@ -13,7 +13,7 @@
 |------|---------|---------------|---------|
 | **Numbered Role Scale** | Radix Colors | 12 step scale，每個 step 號碼本身就是 role（step-9=solid bg、step-10=solid hover），light/dark scale 各自獨立定義值 | 工程量極大——需要重新設計每個色相 × 12 step × 2 mode = 192 個值，且全部 consumer 改 step 號 |
 | **Semantic State Token**（**我們**） | Atlassian DS、GitHub Primer | 互動狀態用 semantic token (`--{hue}-hover` / `--{hue}-active`)，每個 mode 預先計算值 | ✓ 選這個 |
-| **State Layer Overlay** | Material Design 3([state layers](https://m3.material.io/foundations/interaction/states/state-layers)) | 互動狀態用透明 overlay（state layer），不改變底色 | **彩色 / 色相色的底**若改用疊層,跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格。**例外只有「底」**(`--canvas` / `--surface` / `--surface-raised`):底色不換、疊一層中性色,見下方「Hover 換色配對總則」(2026-09-25 user 採用;中性色階半透明、低段可相加,疊一層等於往下一階,畫面不分裂) |
+| **State Layer Overlay** | Material Design 3([state layers](https://m3.material.io/foundations/interaction/states/state-layers)) | 互動狀態用透明 overlay（state layer），不改變底色 | 只拒絕**彩色 / 色相色的底**用疊層:改用疊層會跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格。中性色階半透明、低段可相加,疊一層等於往下一階,畫面不分裂;本 DS 只在「底」(`--canvas` / `--surface` / `--surface-raised`)上用疊層(`bg-interaction-hover` / `-active`),其餘中性填色(`--secondary`…)照換色,範圍見下方「Hover 換色配對總則」(2026-09-25 user 選「採用，底色不換、疊一層 (Recommended)」;這一條刻意偏離 Atlassian 的表面換色,[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation)) |
 | **Consumer-side Mode Handling** | Tailwind CSS | 由 consumer 自己處理 dark mode 變體 (`hover:bg-blue-600 dark:hover:bg-blue-400`) | Token 系統的價值就是封裝 mode 知識，把它推給 consumer 等於放棄抽象化 |
 
 ### 為什麼選 Atlassian 流派
@@ -167,11 +167,13 @@ disabled 元件內的所有子元素必須呈現 disabled 狀態:
 
 ```
 底層背景 (n-2)  <  中層填充 / 輪廓 (n-5)        <  文字 (n-6)
-bg-muted          bg-border / border-border       text-fg-disabled
+bg-disabled       bg-border / border-border       text-fg-disabled
 ```
 
 每階至少差 1 個 primitive step,使用者掃視時才能分清層次。Slider 的 disabled 就是這個公式:track(底,n-2)< range 填充 = thumb 邊框(n-5,**同色**——「Range 色 = Thumb border 色」invariant,thumb 邊框是 range 的視覺延續,不論 state 永遠同色,詳 slider.tsx 註解)< label 文字(n-6)。
 
+> 2026-09-25 改:底層由 `bg-muted` 改為 `bg-disabled`(同值 neutral-2,畫面零變化)—— 這層只在元件停用時出現,依下方「Static Subtle Background」段邊界句「component disabled bg 不走 muted」;Slider 軌道同日跟著改(待辦總帳 C2)。
+>
 > 2026-06-12 修:本段原寫 4 階公式、輪廓層用 `border-fg-disabled`(n-6)、文字層標 n-7+——三者皆與 code 不符(`border-fg-disabled` 全 code 零使用且違反下方規則 3「border-* 一律從 border family 選」;`--fg-disabled` 實為 n-6;slider.tsx 的 range/thumb 邊框同色是刻意設計,曾踩 thumb 融入 track 的同色融色 bug)。對齊 code 真實。
 
 ### ⚠️ fg token 不可當 bg 用(跨 family 借用是 smell)
@@ -315,7 +317,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 
 - **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
   > 2026-09-25 更正:原句寫「`-subtle` 不透明」,與下方「Dark mode subtle」段矛盾 —— 淺色的 step-1 是不透明色票,**深色的 step-1 是 alpha 公式**(`primitives.css` 深色區塊 `--color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`),本身就半透明。兩者的分工看的是「底是誰的」(元件自己的 vs 蓋在別人內容上),不是透不透明。
-  > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。
+  > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。修法(列被滑過時把區間格釘住)已備妥、**未套用**:屬「試算表模式」那組,user 2026-09-26 仍在提問(待辦總帳〇節「被質疑、先不做」、C12⑦)。
 - **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
   > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
 - **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
@@ -729,23 +731,27 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | 平常底色 | 滑過 / 按住時 | 理由 |
 |---|---|---|
 | 透明(列、選單項、文字鈕) | 把底色換成 `--neutral-hover` / `--neutral-active` | 透明底的配對就是這一對 |
-| **「底」**:`--canvas` / `--surface` / `--surface-raised`(頁面、卡片、浮層容器這類層色) | **底色不換,在上面疊一層** `--neutral-hover` / `--neutral-active`(畫在底色之上、內容之下,範圍與底色相同) | 底是「它在哪一層」的顏色,互動不該把它換成別的東西;深色的 `--surface` 本身是白 8% 半透明,換成 `--neutral-hover`(白 4%)會**變暗**(實測 FileItem 卡片 `#1D1D1D`→`#141414`),按住換成 `--neutral-active`(白 8%)則完全沒反應;疊一層兩個主題、任何容器裡方向都對,而且與透明列滑過同色(淺 `#FAFAFA`、深 `#262626`)。user 2026-09-25 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」) |
-| 元件自己的填色:`--secondary`、強調與狀態色、`--surface-strong`、`--neutral-selected`(已按下型態)… | 換成**它自己的配對** —— 同一條色階的下一階 | 填色是元件本身的顏色,照本檔開頭「架構流派定位」的換色流派 |
+| **「底」**:`--canvas` / `--surface` / `--surface-raised`(頁面、卡片、浮層容器這類層色) | **底色不換,在上面疊一層**:`hover:bg-interaction-hover` / `active:bg-interaction-active`(= 把 `--neutral-hover` / `--neutral-active` 畫成 background-image,在底色之上、內容之下,範圍與底色相同;開啟中同滑過,`data-[state=open]:bg-interaction-hover`) | 底是「它在哪一層」的顏色,互動不該把它換成別的東西;深色的 `--surface` 本身是白 8% 半透明,換成 `--neutral-hover`(白 4%)會**變暗**(實測 FileItem 卡片 `#1D1D1D`→`#141414`),按住換成 `--neutral-active`(白 8%)則完全沒反應;疊一層兩個主題、任何容器裡方向都對,與透明列滑過同色。預期值(R14 實測):淺 `#FFFFFF`→滑過 `#FAFAFA`→按住 `#F5F5F5`;深(`--surface` 在頁面上)`#1D1D1D`→`#262626`→`#2E2E2E`。user 2026-09-25 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」) |
+| 元件自己的填色:`--secondary`、強調與狀態色、`--surface-strong`、`--neutral-selected`(已按下型態)… | 換成**它自己的配對** —— 同一條色階的下一階(`--secondary` → `--secondary-hover` / `--secondary-active`,2026-09-25 新增;淺 `#F0F0F0`→`#E8E8E8`→`#D9D9D9`,深約 `#272727`→`#2F2F2F`→`#474747`,頁面底上計算值) | 填色是元件本身的顏色,照本檔開頭「架構流派定位」的換色流派 |
 
-**借用別的底色的配對一律禁止**(例:有底色的元素換成透明底專用的 `--neutral-hover`)。**巢狀**:可點的宿主裡還有自己的按鈕時,指到按鈕上,宿主保留自己的滑過色,按鈕自己的滑過色疊在上面 —— 沿同一把灰階再往上一階(淺色更深、深色更亮)。user 2026-09-25 選「卡片保留、按鈕再亮一層 (Recommended)」;規則用「再往上一階」而不說「再亮」,因為淺色其實是變深(user 同日指出「用再亮一層這樣的措辭是否不夠精準？」)。
+**借用別的底色的配對一律禁止**(例:有底色的元素換成透明底專用的 `--neutral-hover`)。疊層 utility 是 background-image,已在 `lib/utils.ts` 登記為 tailwind-merge `bg-image` 群組(不登記的話 `cn('bg-surface', 'bg-interaction-hover')` 會把底色刪掉);背景圖不做過渡,`motion/motion.spec.md`「hover 回饋不做過渡」天然成立。
 
-- 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色」)= 格子改回透明,跟當月格同一對。
+**巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在「滑到可點卡片內的按鈕上時」一題選「卡片保留、按鈕再亮一層 (Recommended)」(選項由 AI 提供);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
+
+- 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)= 格子改回透明,跟當月格同一對。
 - 錨例 2(2026-09-07,已按下的切換鈕):已按下的靜止底是 neutral-2,滑過值 `--neutral-selected-hover` 卻指到 neutral-1 —— 等於借了透明底 `--neutral-hover` 的值,按下與未按下在滑過時像素完全相同;改成 neutral-3(自己的下一階)才分得出來(下方階梯表)。
-- **能不能當可互動元素的靜止底**:`--secondary` 可以 —— 「Static Subtle Background」段表格 `bg-secondary` 列(本檔 :797)定義它「存在且微淡可辨 — 元素是正常狀態,但需要退後一級」;`--muted` 不可以 —— 同表 `bg-muted` 列(:796)定義它「靜態非互動 surface — 退化 / placeholder / locked 視覺」。
+- **能不能當可互動元素的靜止底**:`--secondary` 可以 —— 「Static Subtle Background」段表格 `bg-secondary` 列定義它「存在且微淡可辨 — 元素是正常狀態,但需要退後一級」;`--muted` 不可以 —— 同表 `bg-muted` 列定義它「靜態非互動 surface — 退化 / placeholder / locked 視覺」。(2026-09-25 拿掉原本的行號,本檔一改就漂)
 - 疊層只用在「底」:彩色 / 色相色的底、元件自己的填色都換色,不疊(理由見本檔開頭「架構流派定位」)。底色本身換不掉的圖片 / 媒體,改元素自己的不透明度(例:Carousel 圓點,`carousel.spec.md`「視覺規格(photo overlay convention)」)。
 - 「底」用疊層是**刻意偏離** Atlassian:[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation) 原文 "Elevations use surface color changes to communicate hovered and pressed states"(表面換成 `elevation.surface.hovered` 這類配對 token)。換色派的其他家也沒有「表面疊、其他換」的先例,只有 Material 3 全面疊層([state layers](https://m3.material.io/foundations/interaction/states/state-layers))。畫面效果有前例:Ant 表格列把「表面 + 一層」先算成實心值再換上去([table style](https://github.com/ant-design/ant-design/blob/master/components/table/style/index.ts),`colorFillAlterSolid`)、Adobe Spectrum 2 表格列同理([TableView.tsx](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-spectrum/s2/src/TableView.tsx),`colorMix`)。
-- 填色需要的配對還不存在(例:`--secondary` 目前沒有 `-hover`)→ 依命名 `--{底}-hover` / `--{底}-active` 新增,值取同一條色階的下一階;同值不同名照樣分開建(下方「禁止事項」)。按壓怎麼走由各家族自己定(飽和色見「互動狀態推導」;中性見下方階梯表)。
+- 填色需要的配對還不存在 → 依命名 `--{底}-hover` / `--{底}-active` 新增,值取同一條色階的下一階(2026-09-25 依此新增 `--secondary-hover` / `--secondary-active`);同值不同名照樣分開建(下方「禁止事項」;例 `--secondary-active` 與 `--border` 同為 neutral-5)。按壓怎麼走由各家族自己定(飽和色見「互動狀態推導」;中性見下方階梯表)。
 
 **現有配對一覽**(值見 `semantic.css`;兩個主題各自成立):
 
 | 靜止底 | hover 配對 | 按壓配對 |
 |---|---|---|
 | 透明(第 0 階) | `--neutral-hover`(neutral-1) | `--neutral-active`(neutral-2) |
+| 「底」`--canvas` / `--surface` / `--surface-raised` | 不換色 —— 疊 `bg-interaction-hover`(畫 `--neutral-hover`);FileItem 大卡片(有 `onClick` 時,B12) | 疊 `bg-interaction-active`(畫 `--neutral-active`)—— 目前無使用者(保留;列 / 卡按下不深一階,待辦總帳 N4(2)) |
+| `--secondary`(neutral-3) | `--secondary-hover`(neutral-4)—— FileItem 小膠囊(有 `onClick` 時,B12) | `--secondary-active`(neutral-5)—— 目前無使用者(保留;同上) |
 | `--neutral-selected`(neutral-2) | `--neutral-selected-hover`(neutral-3) | `--neutral-selected-active`(neutral-4) |
 | `--border`(neutral-5) | `--border-hover`(neutral-6) | 無 |
 | `--scrollbar-thumb`(= `--border`) | `--scrollbar-thumb-hover`(= `--border-hover`) | 無 —— ScrollArea 拇指、DataTable 原生捲軸(Firefox) |
@@ -754,7 +760,9 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | `--primary` / `--info` / `--error` / `--success` / `--warning`(step-6) | `--{名}-hover` | `--{名}-active`(「互動狀態推導」段) |
 | 12 色相實心底 `--color-{hue}-6` | `--{hue}-hover` | `--{hue}-active`(「`--{hue}-hover/active`」段) |
 
-機械防線:`scripts/hover-own-pair-invariant.mjs`(class 層:同一個元素的滑過值必須是自己靜止底的配對;已知待拍板的命中登記在 `scripts/hover-own-pair-baseline.json`)+ `scripts/interaction-ladder-invariant.mjs`(token 層:每條 `-hover` 階梯兩兩相異,中性階梯的 hover = 下一階)。
+**`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-secondary-hover` / `--color-secondary-active`(= 同名 semantic token 的 alias),只為產出 `bg-secondary-hover` / `bg-secondary-active` utility(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改 `--secondary-hover` / `--secondary-active`。
+
+機械防線:`scripts/hover-own-pair-invariant.mjs`(class 層:同一個元素的滑過 / 按住值必須是自己靜止底的配對;「底」只准疊 `bg-interaction-*`、換成 `--neutral-*` 紅,疊層疊在「底」以外也紅;判到 0 組不印 ✓;已知待拍板的命中登記在 `scripts/hover-own-pair-baseline.json`)+ `scripts/interaction-ladder-invariant.mjs`(token 層:每條 `-hover` 階梯兩兩相異,中性階梯的 hover = 下一階)。
 
 ### Selected state family
 
@@ -773,7 +781,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:原值想表達 Fluent 的「hover 預告釋放」,但 neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。方向改為與 Carbon / Atlassian 一致 |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選「甲：保留，維持 2→3→4 (Recommended)」(選項由 AI 提供)。舊文說原值在表達 Fluent 的「hover 預告釋放」,查無一手依據,撤回;舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
 | ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
 | `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
@@ -805,7 +813,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
 | `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ Slider rest track(`slider.tsx`)/ FileItem compact-B progress track(`file-item.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)

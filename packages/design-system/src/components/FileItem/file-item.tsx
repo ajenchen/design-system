@@ -15,7 +15,8 @@ import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/el
  * 兩種 mode（精簡 vs 完整內容呈現）:
  *
  * compact（★ default）: Paperclip 16px 在左。右側 content + bar。
- *   padding 詳 spec「Padding」表(form: px-3 py-2;surface=upload-manager: px-0 保留 py-2)。
+ *   padding 詳 spec「Padding」表(form: px-3 py-2;surface=upload-manager: 列自帶左右 loose、上下 tight/2,
+ *   面板 body 左右 0 —— 2026-09-25 待辦總帳 B12,可點的列滑過底色鋪到面板邊)。
  *   description 只有 error 才顯示。
  *   bar 跟文字左邊對齊（在 icon 右邊的 column 內）。
  *
@@ -25,7 +26,7 @@ import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/el
  *   無 bar → justify-center（文字垂直置中對齊 avatar）
  *
  * status 可選。不傳 = 已上傳檔案（無 bar，可點擊下載）。
- * onClick → 只加 cursor-pointer(**永不顯示 hover-bg**;FileItem 三型態皆 permanent-anchored,詳 spec「Hover 行為 canonical」)。
+ * onClick → cursor-pointer + 滑過底色(只有點了會有反應的才加,依平常底色配對;詳 spec「滑過」段,待辦總帳 B12)。
  */
 
 const STATUS_ICON = {
@@ -59,7 +60,8 @@ export interface FileItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    *   card border 多餘 = 雙層容器）；avatar 作每筆 item 視覺邊界。compact 的進度條/灰底不受 surface 影響
    *   （由 status 決定）。
    * surface-driven（非 status-driven）：避免 form 內 rich 上傳中變無邊框、存好變 card 的邊框閃爍。
-   * 列間 gap 由 List wrapper canonical 決定（form rich 8px / upload-manager rich 12px tight / compact 4px，見 spec）。
+   * 列間 gap 由 List wrapper canonical 決定(form rich 8px / form compact 4px / upload-manager 0 —— 列自帶上下 tight/2,
+   * 列間 ink 距仍 12,2026-09-25 待辦總帳 B12;見 spec)。
    */
   surface?: 'form' | 'upload-manager'
   status?: 'uploading' | 'completed' | 'error'
@@ -114,14 +116,18 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     // compact 只有 error 才顯示 description
     const showDesc = isRich ? !!description : (status === 'error' && !!description)
 
-    // Hover 行為 canonical(2026-04-23 user 校準):**FileItem 永不顯示 hover-bg**。
-    // 各型態都有永久 visual anchor:rich surface=form = border card / rich surface=upload-manager
-    // = avatar 48 thumbnail 作 item 邊界(無邊框)/ compact 無 status = bg-secondary /
-    // compact 有 status = 底部 progress bar(分隔線型 affordance)——再加 hover-bg 是
-    // double-emphasis,視覺雜。世界級共識(Slack / Notion / Figma / Gmail 皆無 hover-bg):
-    // permanent-anchored 元件 hover 只靠 cursor + action icon fade / border highlight,
-    // 不靠 row bg。onClick 存在時只給 `cursor-pointer`,affordance 靠 cursor + 點擊行為本身。
-    const hoverClass = onClick ? 'cursor-pointer' : ''
+    // 滑過底色(2026-09-25 待辦總帳 B12;取代 2026-04-23「FileItem 永不顯示 hover-bg」)。
+    // user 原話:「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」
+    // → 只有傳了 onClick 的列 / 卡才有滑過底色;沒傳就沒有(✓→下載鈕的換位照舊,那顆鈕有自己的滑過色)。
+    // 換上什麼色依「平常底色」配對(tokens/color/color.spec.md「Hover 換色配對總則」),直接寫在下方各 mode 的 cn() 裡、
+    // 跟靜止底同一次呼叫 —— scripts/hover-own-pair-invariant.mjs 才看得到這一對:
+    //   rich + form 卡片 bg-surface(「底」)→ 底不換,疊一層 bg-interaction-hover
+    //   compact 小膠囊 bg-secondary → 換成自己的下一階 bg-secondary-hover
+    //   透明的列(compact 有進度條、upload-manager 的列)→ 換成 bg-neutral-hover
+    // 不加按住(active:)那一階:FileItem「列按下深一階」是待辦總帳 N4 / F 模型 D3(2),尚未提問(AI 推導:不先替 user 決定)。
+    // 列內按鈕(刪除、✓→下載)滑過時換上自己的 neutral-hover(半透明),自然疊在列的滑過色上,不寫特例
+    // (color.spec.md「巢狀滑過」段)。
+    const isUploadManager = surface === 'upload-manager'
 
     // 消費 ProgressBar 元件(SSOT);不再自 roll bar。
     // compact mode 用 2px(極密集 row layout),rich mode 用預設 4px。這是 FileItem
@@ -158,18 +164,19 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         className="relative inline-flex items-center justify-center shrink-0"
         style={{ width: slotHw, height: slotHw }}
       >
-        {/* Passive 狀態 icon:預設可見;若有 hover-swap,row-hover 時淡出 */}
+        {/* Passive 狀態 icon:預設可見;若有 hover-swap,row-hover 時瞬間隱藏、換上操作鈕(不淡出;
+            tokens/motion/motion.spec.md「hover 回饋不做過渡」,2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3)) */}
         <statusConfig.icon
           size={ICON_PX}
           className={cn(
-            'shrink-0 transition-opacity motion-reduce:duration-0',
+            'shrink-0',
             statusConfig.color,
             // 2026-07-05 D4:鍵盤 focus 同步觸發 swap(:has(:focus-visible),對齊 item-anatomy SUFFIX_HOVER_REVEAL_BY_GROUP SSOT)
             hoverAction && 'group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0',
           )}
           aria-hidden
         />
-        {/* Active action:row-hover 時淡入(rich + compact 同 Button xs 統一) */}
+        {/* Active action:row-hover 時瞬間出現(不淡入,同上;rich + compact 同 Button xs 統一) */}
         {hoverAction && (
           <Button
             variant="text"
@@ -178,7 +185,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
             startIcon={hoverAction.icon}
             aria-label={hoverAction.label}
             onClick={(e) => { e.stopPropagation(); hoverAction.onClick() }}
-            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity motion-reduce:duration-0"
+            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100"
           />
         )}
       </span>
@@ -253,14 +260,13 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     // 承接；mouse 仍由 row onClick 承接，兩者皆呼叫同一 callback。
     const rowA11y = {}
 
-    // Compact 靜態背景(AR20):無進度條 → 顯示 `bg-secondary`(= neutral-3)作「檔案已上傳 /
-    // 靜態列表」視覺區隔,跟「上傳中(有 progress bar)」對照。hover 不改 bg(見上方
-    // hoverClass canonical:FileItem 永不顯示 hover-bg)。
-    // **為什麼 bg-secondary 不 bg-neutral-3**:`bg-neutral-3` 不是合法 Tailwind utility
-    // (primitive token `--color-neutral-3` 沒經 `@theme inline` 橋接);`bg-secondary`
-    // 是 semantic token 橋接的 utility(見 `tokens/color/semantic.css`@theme inline),
-    // 底色同樣指向 `--color-neutral-3`。對齊 Badge low / ProgressBar track SSOT。
-    const compactStaticBg = !progressBar ? 'bg-secondary' : ''
+    // Compact 靜態背景(AR20):無 status(= 無進度條)→ `bg-secondary`(= neutral-3)作「檔案已上傳 /
+    // 靜態列表」視覺區隔,跟「上傳中(有 progress bar)」對照;寫在下方 compact 的 cn() 裡(`!hasStatus &&`),
+    // 跟它的滑過配對同一次呼叫(見上方「滑過底色」段)。
+    // **為什麼用 semantic 的 bg-secondary、不直接寫 neutral 第 3 階的 primitive 名**:primitive token
+    // `--color-neutral-3` 沒經 `@theme inline` 橋接,拿它當 utility 會 silent 失效;`bg-secondary` 是 semantic
+    // token 橋接的 utility(見 `tokens/color/semantic.css`@theme inline),底色同樣指向 `--color-neutral-3`。
+    // 對齊 Badge low / ProgressBar track SSOT。
     // Primary row action 與 trailing actions 是 sibling controls，不把整列設成 role=button，
     // 因此不會形成 nested-interactive。透明 full-row button 只接 keyboard/focus；pointer
     // 仍由既有 row onClick 接手，保持 hit area 與 consumer callback contract 不變。
@@ -303,17 +309,25 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
             // 而且必須指得出承擔者」認可的形狀,承擔者就是本行所在的這個列 div。全域外描邊只作用在
             // 「被聚焦的那個元素」身上,套不到非焦點的列;能掛在列上的只有 focus-ring-inset 與填色專用的
             // focus-ring-inset-emphasis,列不是主色填色 → focus-ring-inset。
-            // **不是** item-anatomy「選中 × 互動疊加」表那句「列撐滿容器寬度,左右沒有 2px 可以往外長」:
-            // 那格的消費者清單沒有 FileItem,且它描述的是無圓角、items 緊貼無間隙的列;FileItem 的列有圓角、
-            // 列間 4–12px、左右 16px,那個前提在本元件為假(2026-09-24 審查抓到,勿寫回)。
+            // **不是**靠四周淨空不足,也**不是**引用 item-anatomy「選中 × 互動疊加」表那句「列撐滿容器寬度,
+            // 左右沒有 2px 可以往外長」(那格的消費者清單沒有 FileItem):表單的列有圓角、列間 4–12px;
+            // 上傳管理器的列 2026-09-25 起鋪滿面板寬、列間 0(B12)—— 兩種幾何都用內描邊,理由只有上面那條結構性的
+            // (2026-09-24 審查抓到舊句把「淨空」當理由,勿寫回)。
             // 也**不是**因為捲動容器會裁切 —— 捲動與否明文不進判準。
             'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
             // surface=form → border card(自立輪廓);surface=upload-manager → 無邊框(box 自身是容器,
-            // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。
-            // 2026-06-03 圖五:upload-manager rich 拿掉 px+py(卡片移除後 py 多餘,列高靠 avatar 48 的 content minHeight;
-            // 容器 + gap 控制間距)。form 保留 px-3 py-3 卡片內距。
-            surface === 'upload-manager' ? 'rounded-md' : 'px-3 py-3 border border-divider rounded-md bg-surface',
-            hoverClass,
+            // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。form 保留 px-3 py-3 卡片內距。
+            surface === 'upload-manager'
+              // 上傳管理器的列(2026-09-25 待辦總帳 B12,推翻 2026-06-03「左右拿掉交給容器」):可點的列滑過底色要鋪到
+              // 面板左右邊,所以左右 gutter 改由列自己帶、面板 body 給 0(判準 = overlay-surface.spec.md「誰負責左右 gutter」);
+              // 值 = 原本面板給的 loose → 縮圖與文字的 x 不變。上下各 tight/2、面板 body 上下也給 tight/2、列間 0 ——
+              // 邊緣→縮圖、縮圖→縮圖仍是 tight,滑過底色上下各留 tight/2、不貼縮圖。
+              // 不加圓角:列鋪滿面板寬,圓角碰到面板的直邊會缺角(同 MenuItem 滿版列;AI 推導)。
+              ? 'px-[var(--layout-space-loose)] py-[calc(var(--layout-space-tight)/2)]'
+              : 'px-3 py-3 border border-divider rounded-md bg-surface',
+            onClick && 'cursor-pointer',
+            // 滑過(B12,見上方「滑過底色」段):上傳列平常透明 → 換成 neutral-hover;表單卡片平常是「底」bg-surface → 疊一層
+            onClick && (surface === 'upload-manager' ? 'hover:bg-neutral-hover' : 'hover:bg-interaction-hover'),
             className,
           )}
           onClick={onClick}
@@ -343,26 +357,40 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       )
     }
 
-    // ── compact: py-2, bar absolute 底部 ──
-    // 左右 padding 單一來源(SSOT):form=12px(= px-3);upload-manager=0(由面板提供 L/R)。
-    // progress bar 是 absolute 定位,其 left/right 必須跟此值「同源」—— 否則 surface 一拿掉 padding,
-    // bar 的 offset 沒同步就會對齊跑掉(2026-06-03 圖五 bug:原本 left/right 寫死 0.75rem 假設 px-3)。
-    const compactPadX = surface === 'upload-manager' ? 0 : 12
+    // ── compact: bar absolute 底部 ──
+    // 內距單一來源(SSOT):progress bar 是 absolute 定位,其 left / right / bottom 必須跟列的內距「同源」——
+    // 否則內距一改,bar 就對不齊(2026-06-03 圖五 bug:原本 left/right 寫死 0.75rem 假設 px-3)。
+    //   form:左右 12px(= px-3)、上下 py-2,bar 貼列底。
+    //   upload-manager(2026-09-25 待辦總帳 B12,推翻 2026-06-03 的「左右 0、交給面板」):可點的列滑過底色要鋪到面板
+    //     左右邊,所以左右改由列自己帶 loose(= 原本面板給的值,文字 x 不變)、面板 body 給 0。
+    //     上 tight/2、下 tight/2 + 0.5rem(0.5rem = 原 py-2 下緣那 8:文字↔bar 6 + bar 2),bar 離列底 tight/2;
+    //     面板 body 上下也給 tight/2、列間 0 → 邊緣→文字、bar→下一列文字、bar→邊緣仍全是 tight(與 06-03 同值),
+    //     滑過底色則上下各留 tight/2,bar 不貼底色邊。
+    const compactPadX = isUploadManager ? 'var(--layout-space-loose)' : '12px'
+    const compactBarBottom = isUploadManager ? 'calc(var(--layout-space-tight) / 2)' : '0px'
+    const compactPadBlock = isUploadManager
+      ? { paddingTop: 'calc(var(--layout-space-tight) / 2)', paddingBottom: 'calc(var(--layout-space-tight) / 2 + 0.5rem)' }
+      : undefined
     return (
       <div
         ref={ref}
         className={cn(
           // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-          'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact rounded-md',
-          compactStaticBg,
+          'group/row relative flex items-start gap-2 w-full text-body leading-compact',
+          // form 的列是圓角膠囊 / 圓角列;upload-manager 的列鋪滿面板寬 → 不加圓角(同 rich,AI 推導),上下內距見上方 compactPadBlock
+          !isUploadManager && 'py-2 rounded-md',
+          !hasStatus && 'bg-secondary',
           // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接同樣會畫框的 trailing <Button>;
-          // 幾何同 rich 的內描邊(結構性理由見上方那段)。compact 列若有進度條,它貼著列底,
-          // 會蓋住內描邊底邊那一段;日後要動進度條的貼底位置,這裡的底邊長相會跟著變。
+          // 幾何同 rich 的內描邊(結構性理由見上方那段)。form 的 compact 列若有進度條,它貼著列底,
+          // 會蓋住內描邊底邊那一段;upload-manager 的 bar 離列底 tight/2,不蓋。日後要動進度條的位置,這裡的底邊長相會跟著變。
           'has-[[data-row-focus-target]:focus-visible]:focus-ring-inset',
-          hoverClass,
+          onClick && 'cursor-pointer',
+          // 滑過(B12,見上方「滑過底色」段):有進度條的列平常透明 → 換成 neutral-hover;
+          // 靜態小膠囊平常是 bg-secondary → 換成它自己的下一階 secondary-hover(不借透明底的配對)
+          onClick && (hasStatus ? 'hover:bg-neutral-hover' : 'hover:bg-secondary-hover'),
           className,
         )}
-        style={{ paddingInline: compactPadX }}
+        style={{ paddingInline: compactPadX, ...compactPadBlock }}
         onClick={onClick}
         {...rowA11y}
         {...props}
@@ -378,12 +406,13 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           {contentRow}
         </div>
 
-        {/* ProgressBar: absolute 底部。left/right 與 compactPadX 同源:
-            left = padX + icon + gap-2(0.5rem)對齊 label 首字;right = padX 收在 row 內緣。 */}
+        {/* ProgressBar: absolute 底部。left / right / bottom 與列內距同源(compactPadX / compactBarBottom):
+            left = padX + icon + gap-2(0.5rem)對齊 label 首字;right = padX 收在 row 內緣;
+            bottom = form 0(貼列底)/ upload-manager tight/2(B12,見上方內距段)。 */}
         {progressBar && (
           <div
-            className="absolute bottom-0"
-            style={{ left: `calc(${compactPadX}px + ${ICON_PX}px + 0.5rem)`, right: compactPadX }}
+            className="absolute"
+            style={{ left: `calc(${compactPadX} + ${ICON_PX}px + 0.5rem)`, right: compactPadX, bottom: compactBarBottom }}
           >
             {progressBar}
           </div>

@@ -240,6 +240,9 @@ const radioItemVariants = cva(
   [
     'grid place-content-center shrink-0 rounded-full',
     'border border-border bg-surface',
+    // @hover-transition-allow: 這條過渡的主人是 checked ↔ unchecked 的狀態切換(外框轉主色、圓點出現),與 checkbox.tsx 同一個例外,
+    //   不是 hover;而且它是控件大小的點目標,不是指標掃過去的列面。例外清單的唯一住所 = tokens/motion/motion.spec.md「唯一的例外」
+    //   (2026-09-26 補登,待辦總帳 L9 / N4(3):hover 延伸到外框時盤點出 Radio 與 Checkbox 同一種過渡,先前漏列)。
     'transition-colors duration-150',
     'hover:border-border-hover',
     'data-[state=checked]:border-primary data-[state=checked]:text-primary',

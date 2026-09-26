@@ -34,7 +34,7 @@
  */
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -50,6 +50,8 @@ const VH = 800
 const INSET = 48
 const AVAILABLE = VH - INSET * 2 // 704
 
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記,gate-selftest-meta 認得)。原本直接 ENOENT 崩掉。
+requireStorybookBuild(join(BUILD, 'index.json'))
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 let fail = 0
@@ -105,8 +107,13 @@ try {
     // 點不動 / dialog 沒出現 → 回 null,由「前提:dialog 開得起來」那條判紅(那是產品側的事,不是儀器)
     await trigger.click({ timeout: 10_000 }).catch(() => {})
     await page.locator('[role="dialog"]').first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {})
-    // 固定睡眠只留給「元素出現後的版面穩定」(Radix 開啟動畫 + 上限 calc),不是拿來等頁面
-    await page.waitForTimeout(300)
+    // 元素出現後的版面穩定(Radix 開啟動畫 + 上限 calc):2026-09-25 起等「連續 10 個影格靜止」(settleAfterInteraction,
+    // 與 openStory 同一份判定),不再固定睡 300ms —— 慢的機器上 300ms 會量到開啟動畫中途的高度(待辦總帳 C5)。
+    const settled = await settleAfterInteraction(page, { frames: 10 })
+    if (!settled.ok) {
+      throw new StoryRenderInstrumentError({ storyId: id, kind: 'dom-not-settled',
+        reason: `點開 dialog 之後 ${settled.framesWaited} 格內版面沒有靜止(變動 ${settled.lateChanges} 次),量不到穩態高度`, failedRequests: [] })
+    }
     return page.evaluate(() => {
       const d = document.querySelector('[role="dialog"]')
       if (!d) return null
@@ -179,14 +186,24 @@ try {
       // 少了這一步,H5 的綠燈只證明「現在沒壞」,不證明「壞了會被抓到」。
       if (SELFTEST_H5) await page.addStyleTag({ content: '[role="dialog"]{overflow:visible !important} [data-orientation][dir]{display:block !important}' })
       // 開啟:優先點 story 自己的觸發鈕(排除 Storybook 自身的控制項)
-      // 只點 story 根容器裡、有文字的按鈕(Storybook 自己的控制項在根容器外),最多兩顆、逾時 700ms:
+      // 只點 story 根容器裡的按鈕(Storybook 自己的控制項在根容器外),最多兩顆:
       // 原本掃全頁 4 顆 × 1.5s,在「這支沒有 dialog」時純粹是空等,整條 H5 從 1 分鐘變 6 分鐘。
-      const triggers = await page.locator('#storybook-root button').all().catch(() => [])
+      // 2026-09-25(待辦總帳 C5,M37「沒觀察到 ≠ 沒發生」):原本「點一下(700ms 逾時、失敗吞掉)→ 固定睡 180ms → 看有沒有
+      // dialog」—— 慢的機器上 180ms 內還沒掛上,這支就被記成「沒開出 dialog 而不適用」,H5 覆蓋率靜默縮水。
+      // 現在只點看得見、沒停用的按鈕;點擊失敗 = 儀器失效(點名);點完等版面連續 10 個影格靜止(settleAfterInteraction,
+      // 用影格不用毫秒)再判斷 —— 靜止後仍沒有 dialog 才是可靠的「這顆鈕不開 dialog」。
+      const triggers = await page.locator('#storybook-root button:visible:not([disabled]):not([aria-disabled="true"])').all().catch(() => [])
+      let triggerFailure = null
       for (const t of triggers.slice(0, 2)) {
         if (await page.locator('[role="dialog"]').count() > 0) break
-        await t.click({ timeout: 700 }).catch(() => {})
-        // 180ms:等點擊後 Radix 掛上 [role=dialog] 並開始開啟過渡,下一輪才判斷「開出來了沒」
-        await page.waitForTimeout(180)
+        try { await t.click({ timeout: 10_000 }) } catch (error) { triggerFailure = `點觸發鈕失敗(看得見、沒停用):${String(error?.message ?? error).split('\n')[0]}`; break }
+        const settled = await settleAfterInteraction(page, { frames: 10 })
+        if (!settled.ok) { triggerFailure = `點觸發鈕之後 ${settled.framesWaited} 格內版面沒有靜止(變動 ${settled.lateChanges} 次)`; break }
+      }
+      if (triggerFailure) {
+        console.log(`✗ INSTRUMENT-FAIL story「${id}」沒有量到 —— ${triggerFailure}。這是儀器失效(沒量到),不是產品裁決`)
+        instrumentFails.push({ id, detail: triggerFailure })
+        continue
       }
       let r
       try { r = await page.evaluate(() => {

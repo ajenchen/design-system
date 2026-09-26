@@ -45,9 +45,8 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
 import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -64,7 +63,10 @@ const SETTLE_FRAMES = 10
 const MAX_INSTRUMENT_FAILURES = 25
 
 requireStorybookBuild(join(BUILD, 'index.json'))
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories).filter((e) => e.type !== 'docs').map((e) => ({ id: e.id, name: e.name }))
 if (ONLY) stories = stories.filter((s) => s.id.includes(ONLY))
 if (LIMIT) stories = stories.slice(0, LIMIT)
@@ -139,7 +141,6 @@ const SHIFT = () => {
   return n
 }
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const bad = []
 let scanned = 0, fieldsChecked = 0
 /** 儀器失效:沒量到的 story(不是產品裁決)。 */

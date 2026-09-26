@@ -10,6 +10,9 @@
 `patterns/element-anatomy/item-anatomy.spec.md`)。本檔不重述那些值,只在它們之間定分工。
 與 `drag-canonical.md` 同層級、同形狀(一個能力、一份跨元件契約)。
 
+**彈出框開著時按 `Tab` / `Esc` 做什麼、關了之後焦點回哪,不住在本檔**:單一住所是 `keyboard-model-canonical.md`
+「彈出框開著時的 Tab 與 Esc」(2026-09-25 user 拍板;含全 DS 規則「`Esc` 一次只關最內層」)。本檔只管焦點回到那裡之後,框怎麼畫。
+
 **焦點框與命中區是兩件事,各有 owner**:焦點框是鍵盤游標的指示器 —— 畫在哪、往內還是往外,本檔說了算;
 滑鼠點得到的是多大一塊叫**可點範圍**,owner = `hit-area-canonical.md`(規則:命中區恆等於可視形狀,
 唯一例外是先天無法當目標的線與點)。兩者互不決定:同一顆鈕可以焦點框往內畫,命中區照樣等於可視形狀。
@@ -104,7 +107,7 @@ user 原話(問句):「滑鼠會搶反白的元件,搶完之後,那鍵盤是否�
 | 瀏覽器 `:hover` / `:focus-visible`(DS 的 Sidebar / Tabs / DataTable / TimePicker 欄走真焦點) | pseudo-class | pseudo-class | 兩個獨立 pseudo-class,同一元素可同時 match(每一顆網頁上的按鈕都是這樣) |
 | Material 3 / [material-web `_menu-item.scss`](https://raw.githubusercontent.com/material-components/material-web/main/menu/internal/menuitem/_menu-item.scss) | `md-ripple` 的 `hover-state-layer-*`([`_md-sys-state.scss`](https://raw.githubusercontent.com/material-components/material-web/main/tokens/versions/v0_192/_md-sys-state.scss):hover 0.08 / focus 0.12 / pressed 0.12) | `md-focus-ring`(獨立元素) | 兩個獨立元素,各畫各的 |
 | [VS Code `listWidget.ts`](https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/base/browser/ui/list/listWidget.ts) `DefaultStyleController.style()` | `.monaco-list-row:hover:not(.selected):not(.focused) { background-color: listHoverBackground }` | `.monaco-list:focus .monaco-list-row.focused { outline: 1px solid listFocusOutline; outline-offset: -1px }` + `listFocusBackground` | **部分反例**:焦點列自帶 `listFocusBackground`(底色通道已被焦點佔走),所以 hover 底色在焦點列上被 `:not(.focused)` 排除;hover 別列時兩者同時可見。DS 的鍵盤框不佔底色通道,所以同一列上底色 + 框可疊(AI 推導,見來源總帳) |
-| TreeView(DS 自家,`aria-activedescendant` 虛擬游標) | CSS `:hover` | `showRing`(`useInputModality`) | 獨立;`scripts/virtual-cursor-modality-invariant.mjs` E1/E2 實測同一列底色 + 框都在 |
+| TreeView(DS 自家;2026-09-25 起列上 roving tabindex 真焦點,待辦總帳 B9 —— 之前是 `aria-activedescendant` 虛擬游標 + `useInputModality`) | CSS `:hover` | 列的 `focus-visible:focus-ring-inset`(瀏覽器 `:focus-visible`) | 獨立;`scripts/virtual-cursor-modality-invariant.mjs` E1/E2 實測同一列底色 + 框都在 |
 
 **兩類怎麼分**:滑鼠移過去反白會不會跟過來(規則一的例外)。會 → 反白是唯一游標,適用本節;不會 → 常駐清單,hover 與框獨立。
 DS 內屬於前者的:`CommandItem`(Select / SelectMenu / Combobox / PeoplePicker / Command inline+dialog / AgentPanel 歷史清單都經它)與
@@ -147,8 +150,10 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 [WICG focus-visible explainer「Example heuristic」](https://github.com/WICG/focus-visible/blob/main/explainer.md):
 「if the most recent user interaction was via the keyboard; and the key press did not include a meta,
 alt/option, or control key; then the modality is keyboard. Otherwise, the modality is not keyboard.」
-機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵,見該檔註解)。
-**這個判準只給不搶反白的常駐虛擬游標用(TreeView `showRing`)**:WICG polyfill 只把 keydown / mousedown / pointerdown / touchstart 當輸入,
+機械載體原本是 `hooks/use-input-modality.ts` 的 `useInputModality()`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵)。
+**這個判準只給不搶反白的常駐虛擬游標用**(原本的唯一消費者是 TreeView `showRing`;2026-09-25 TreeView 改成列上真焦點、交給瀏覽器的 `:focus-visible`(待辦總帳 B9)之後沒有消費者,
+**2026-09-26 刪掉 `useInputModality()` 這份零消費者實作**(待辦總帳〇節「按鍵規則合併」:沒人讀的第二套判準會讓人以為常駐清單還有兩種畫框依據;同檔的反白來歷 `useCursorMover` 保留)——
+判準留在這裡,常駐清單若再出現虛擬游標,照這條判準重建、並先問為什麼不能用真焦點):WICG polyfill 只把 keydown / mousedown / pointerdown / touchstart 當輸入,
 **滑鼠移動不算**(mousemove 只在載入時用來判初始模態、第一次移動後就移除 listener —— [`src/focus-visible.js`](https://github.com/WICG/focus-visible/blob/main/src/focus-visible.js) `onInitialPointerMove`),
 所以常駐清單的鍵盤框不會被滑鼠一晃就抹掉,跟瀏覽器對真焦點的行為一致。
 
@@ -165,11 +170,11 @@ MUI Autocomplete 只在 `reason === 'keyboard'` 才加 `Mui-focusVisible`,打字
 `setActive(第一項)`([rc-select OptionList](https://unpkg.com/rc-select/es/OptionList.js)),樣式是 `optionActiveBg` 底色、`outline: none`
 ([antd select dropdown style](https://unpkg.com/antd/es/select/style/dropdown.js))。閘:`virtual-cursor-modality-invariant.mjs` F 段。
 兩個訊號不能共用:拿 WICG 模態畫反白,滑鼠搶走反白後模態仍是鍵盤,被搶到的列會畫框而不是底色(2026-09-09 下午閘 D3 抓到);
-拿反白來歷畫 TreeView,滑鼠一晃鍵盤框就消失。反白因此只有兩種長相:
+拿反白來歷畫常駐清單(當時的 TreeView 虛擬游標),滑鼠一晃鍵盤框就消失。反白因此只有兩種長相:
 **滑鼠搬的**反白 = hover → 底色、無框;**鍵盤搬的**反白 = 游標 → 框、無底色,而且滑鼠停留列的底色一起消失(項目上沒有 `hover:` 樣式)。
 開啟時的落點(cmdk 放在已選項或第一項、Radix 不放)沒有人搬過,用開啟那一下的輸入畫:滑鼠點開 → 底色、鍵盤開 → 框。
 消費者:`CommandItem`(SelectMenu / Select / Combobox / PeoplePicker / Command / AgentPanel 歷史清單都經它)/ DropdownMenu 四種項目(`radixCursorClass`);
-TreeView(`showRing`)仍走 `useInputModality`。
+TreeView 2026-09-25 起是列上真焦點,框交給瀏覽器的 `:focus-visible`,不再經 `useInputModality`(待辦總帳 B9)。
 錨:user 2026-09-08「為何我用滑鼠一開 select 選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?」——
 cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selectedOption?.value}`),
 畫框規則沒有模態條件,滑鼠一點開就畫。閘:`scripts/virtual-cursor-modality-invariant.mjs`
@@ -212,7 +217,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
 | 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
-| 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
+| 什麼時候畫(常駐清單) | 真焦點(規則一「兩類元件」第二表那幾個;TreeView 2026-09-25 起也是,待辦總帳 B9)= 瀏覽器 `:focus-visible`;容器 `aria-activedescendant` 型(TimePicker 欄)= 容器 `:focus-visible` 時畫在被指到的那一格(`time-columns.tsx` `group-focus-visible/listbox:`);常駐虛擬游標若再出現,才照 WICG 模態判準畫(上一節;`useInputModality()` 零消費者實作 2026-09-26 已刪,屆時重建) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
 | **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |
 | **hover × 游標(常駐清單)** | `bg-neutral-hover` + 框都在 | 規則二疊加表 |
@@ -348,7 +353,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 | 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
-| **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單看 `useInputModality`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | TreeView 根(`tree-view.tsx:1394` showRing)/ DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`) |
+| **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
 | **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框 | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
@@ -414,7 +419,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 |---|---|---|---|
 | 1 | **它可以被操作嗎?**(有 onClick / onKeyDown / 是原生互動元素?) | **否 → 不畫**,而且要拿掉 tabIndex。這張表不適用 | `N`,寫「不可操作」 |
 | 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫(回問題一) | 「浮層開啟時的程式落點;內部控件各自有指示」 |
-| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(常駐清單:鍵盤模態 `useInputModality`;會搶反白的選單:鍵盤來歷 `useCursorMover`) | 那個元素／那條 class 的 file:line(例:`tree-view.tsx:1394` 的 `showRing`)|
+| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(常駐清單:容器的 `:focus-visible`;會搶反白的選單:鍵盤來歷 `useCursorMover`) | 那個元素／那條 class 的 file:line(例:`time-columns.tsx` 的 `group-focus-visible/listbox:aria-selected:focus-ring-inset`)|
 | 4 | **它的標籤名是 `input`(文字類)或 `textarea`,或帶 `contenteditable` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
 | 5 | **從自己往上找,有沒有元素在聚焦時改邊框?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
 | 6 | **以上皆否** | **要畫**(幾何走「框怎麼畫」) | — |

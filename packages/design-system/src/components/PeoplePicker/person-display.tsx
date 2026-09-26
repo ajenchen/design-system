@@ -417,7 +417,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
         // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
         // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
-        'transition-opacity duration-150 motion-reduce:duration-0',
+        // 瞬間出現,不寫 transition-opacity(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))。
       ].join(' ')}
     >
       <X size={12} strokeWidth={3} aria-hidden />

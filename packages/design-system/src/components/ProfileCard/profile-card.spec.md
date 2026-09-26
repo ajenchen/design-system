@@ -108,7 +108,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 ## Status 區
 
-非互動狀態標籤以 `bg-muted` 承載(不用 `bg-secondary`——Muted 視覺重量更低,對齊 Badge / Skeleton family)。狀態點顏色走 `--status-*` presence token(2026-04-20):`online` / `away` / `busy` / `offline`——跟 Avatar status 同源、獨立於 success/warning/error(presence 不是 validation state)。訊息必須包在 `<DescriptionList>` 內以 `<DescriptionItem>` 呈現(不可孤立 dt/dd),**完整顯示不截斷**——內容過長時由 Body 區 `<ScrollArea>` 在固定高度內捲動,不 clamp 行數。
+非互動狀態標籤以 `bg-muted` 承載(不用 `bg-secondary`——Muted 視覺重量更低;同用 `bg-muted` 的是 Skeleton,登記在 `../../tokens/color/color.spec.md`「Static Subtle Background」段的 `bg-muted` 列)。2026-09-25 更正引用(待辦總帳 C2 / R12 W2):原寫「對齊 Badge / Skeleton family」,但 Badge 的 `low` 用的是 `bg-secondary`(`../Badge/badge.tsx` `badgeVariants` 的 `low`),不是本條的先例。狀態點顏色走 `--status-*` presence token(2026-04-20):`online` / `away` / `busy` / `offline`——跟 Avatar status 同源、獨立於 success/warning/error(presence 不是 validation state)。訊息必須包在 `<DescriptionList>` 內以 `<DescriptionItem>` 呈現(不可孤立 dt/dd),**完整顯示不截斷**——內容過長時由 Body 區 `<ScrollArea>` 在固定高度內捲動,不 clamp 行數。
 
 ## Info Fields
 

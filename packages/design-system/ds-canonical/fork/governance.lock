@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "c5417bccd30f114df91dcd28d0c6df8f76d071962033966714a1f1883aaf860f",
+      "sha256": "db0c0ebec9f1e54e4f25a29e8ae30202b15d12db2cffad52989446972b5c46af",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -511,7 +511,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
-      "sha256": "0b164ae8023c4851795529411bd3e012f274429db97c1bd25b458416366b4593",
+      "sha256": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "source": "scripts/lib/a11y-static-server.mjs",
       "classification": null,
       "destination": "scripts/lib/a11y-static-server.mjs"
@@ -767,7 +767,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "a2b9807b73f96fee0e74766a4b93533ba3ae547306244ce3e7b9c6c6cdafd412",
+      "sha256": "7717cf577bc92ebda5bfbeddfd0ef87dcc4e7b906466b72ac02426f22ab44770",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

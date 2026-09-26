@@ -37,12 +37,23 @@ import {
   ItemInlineAction,
   ItemInlineActionButton,
   type ItemInlineActionButtonProps,
+  ItemSuffix,
   RowSizeProvider,
   getUniformPrefixSlotStyle,
   ROW_PADDING_BY_SIZE,
   type RowSize,
   type InlineActionConfig,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
+// 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 TreeView / FileUpload / Command 共用;見下方 SidebarMenu)
+import {
+  applyRovingAction,
+  isRovingControlReachable,
+  isTextEntryElement,
+  pickRovingTabStop,
+  removeRovingControlsFromTabOrder,
+  resolveRovingKey,
+  setRovingTabIndex,
+} from "@/design-system/lib/roving-list-keyboard"
 
 /**
  * Sidebar
@@ -614,14 +625,14 @@ const SidebarContent = React.forwardRef<
       // SidebarContent 用 ScrollArea 處理長列表 scroll——跨 OS 一致不吃寬度(macOS
       // overlay vs Windows/Linux always-visible 差異見 scroll-area.tsx 註解)。
       // 呼吸空間和分隔線由 SidebarGroup 自己處理(對齊 MenuGroup 的 py-2 + [&+&]:border-t)。
-      // ScrollArea Root 本身 overflow-hidden,icon-collapsed 時不會露出 scroll chrome。
+      // ScrollArea Root 本身 overflow-hidden,icon-collapsed 時不會露出 scroll chrome。捲動區本身不當 Tab 停靠點(viewportTabIndex={-1};待辦總帳 B9,依 `../ScrollArea/scroll-area.spec.md:103`「內容已有自帶 focusable + 鍵盤處理的元素」時傳 -1):內容是一串串自帶方向鍵的 SidebarMenu,焦點落進任何一項都會把它捲進視野;先前 Tab 第一站是這個捲動區(「混合內容」實測第 1 站),停在上面按 ↓ 焦點不動。
       className={cn(
         "flex min-h-0 flex-1 flex-col",
         className
       )}
       {...props}
     >
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" viewportTabIndex={-1}>
         <div className="flex flex-col">{children}</div>
       </ScrollArea>
     </div>
@@ -878,18 +889,175 @@ SidebarGroupAction.displayName = "SidebarGroupAction"
 // 固定槽,跨 menu 跨 group 對齊。要啟用,在 `<SidebarProvider uniformPrefix>` 全域 opt-in
 // (explicit > implicit,見 sidebar.spec.md「Sidebar 全域 prefix 對齊」段)。SidebarMenu 沒有
 // per-menu 覆寫——沒有真實 use case,YAGNI。
+//
+// ── 鍵盤:一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25,待辦總帳 B9 乙)──
+// 決策出處 = governance/planning/2026-09-25-interaction-and-hover-remediation.md B9,user 逐字:
+// 「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」(附條件同意;條件查證成立記在同檔 B9)。
+// 規格 SSOT = sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」;按鍵判定與執行 = lib/roving-list-keyboard.ts
+// (2026-09-26 與 TreeView / FileUpload / Command 四份合一,同檔〇節「按鍵規則合併」),此處只剩側欄自己的 DOM:誰是列、誰是動作鈕。
+//
+// 實作 = roving tabindex,**直接改 DOM 的 tabindex 屬性**,不經 React props:
+//   - 列上的動作鈕有兩個出口不歸本元件渲染 —— `ItemInlineAction`(item-anatomy.tsx,沒有 tabIndex prop)
+//     與 consumer 的 `inlineActionsSlot`,只能在 DOM 上把它們收成 -1。同一件事只用一種機制(M17),
+//     所以列鈕的 0 / -1 也在同一個函式裡寫(AI 推導的工程取捨)。
+//   - 沒有 JS(SSR 首屏、hydration 前)時什麼都不寫 → 退回瀏覽器原生:每顆都可 Tab,不會變成到不了。
+//   - ARIA 角色維持 ul / li / button,不改成 grid / tree:狀態是「你現在在這一頁」(aria-current),
+//     不是「在控件裡被挑中」(aria-selected)。
+const SIDEBAR_MENU_BUTTON = '[data-sidebar="menu-button"]'
+// 列上的動作鈕 = 宣告式 inlineActions / inlineActionsSlot(包在 menu-inline-actions 裡)+ SidebarMenuAction 本身
+const SIDEBAR_ROW_ACTIONS =
+  '[data-sidebar="menu-inline-actions"] :is(button, a[href], [role="button"]), [data-sidebar="menu-action"]'
+
+type SidebarMenuRow = { button: HTMLElement; actions: HTMLElement[] }
+
+/** 這一串的每一列(只看直接子層 li,依畫面順序)與它自己的動作鈕(依畫面順序;含此刻走不到的,收 -1 時一併收)。 */
+function getSidebarMenuRows(menu: HTMLElement): SidebarMenuRow[] {
+  const rows: SidebarMenuRow[] = []
+  for (const child of Array.from(menu.children)) {
+    if (child.tagName !== "LI") continue
+    const button = child.querySelector<HTMLElement>(SIDEBAR_MENU_BUTTON)
+    if (!button) continue
+    rows.push({ button, actions: Array.from(child.querySelectorAll<HTMLElement>(SIDEBAR_ROW_ACTIONS)) })
+  }
+  return rows
+}
+
+// 原生 disabled 本來就聚焦不了 → 跳過(sidebar.spec.md「Disabled item」)。aria-disabled 仍可聚焦,照舊。
+const isFocusableSidebarTarget = (el: HTMLElement) => !(el as HTMLButtonElement).disabled
+// 畫得出來才走得到:icon 模式的動作鈕、被收起的整組都是 display:none(opacity-0 的滑過才出現鈕不算隱藏)
+const isRenderedSidebarTarget = (el: HTMLElement) => el.getClientRects().length > 0
+
+/**
+ * 哪些列能當落點(方向鍵與 Tab 停靠點共用)。整串看得見時,略過個別被藏起來的列;整串被藏(icon 模式收起的群組)時
+ * 不看可見性,免得重新展開後整串 0 顆可 Tab(展開是祖先屬性變化,本串收不到 mutation)。
+ */
+function sidebarRowNavigability(menu: HTMLElement, rows: SidebarMenuRow[]) {
+  const checkRendered =
+    isRenderedSidebarTarget(menu) &&
+    rows.some((row) => isFocusableSidebarTarget(row.button) && isRenderedSidebarTarget(row.button))
+  return (button: HTMLElement) =>
+    isFocusableSidebarTarget(button) && (!checkRendered || isRenderedSidebarTarget(button))
+}
+
+/**
+ * 整串只留一顆 tabindex=0:上次焦點停過的那一列 → 當前頁(aria-current="page")→ 第一個可用列(X1;
+ * 判定 = lib/roving-list-keyboard.ts `pickRovingTabStop`)。動作鈕一律 -1(別項的與本項的都不在 Tab 路上;→ 才進得去)。
+ */
+function syncSidebarMenuTabStops(menu: HTMLElement, remembered: HTMLElement | null) {
+  const rows = getSidebarMenuRows(menu)
+  const stop = pickRovingTabStop(rows.map((row) => row.button), {
+    remembered,
+    isCurrent: (button) => button.getAttribute("aria-current") === "page",
+    isNavigable: sidebarRowNavigability(menu, rows),
+  })
+  for (const row of rows) {
+    setRovingTabIndex(row.button, row.button === stop ? 0 : -1)
+    removeRovingControlsFromTabOrder(row.actions)
+  }
+}
+
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
   React.ComponentProps<"ul">
->(({ className, ...props }, ref) => (
-  <ul
-    ref={ref}
-    data-sidebar="menu"
-    // 無 gap:items 連續緊貼(對齊 DropdownMenu / TreeView 的視覺節奏)
-    className={cn("flex w-full min-w-0 flex-col", className)}
-    {...props}
-  />
-))
+>(({ className, onKeyDownCapture, onFocus, ...props }, ref) => {
+  const menuRef = React.useRef<HTMLUListElement | null>(null)
+  const rememberedRef = React.useRef<HTMLElement | null>(null)
+  // 收合 / 展開、手機抽屜切換時重算一次(可見性在這些時刻改變,但本串自己的 DOM 沒變)。
+  // 用 useContext 而非 useSidebar():SidebarMenu 單獨渲染(沒有 Provider)時不該丟例外。
+  const sidebarContext = React.useContext(SidebarContext)
+  const sidebarState = sidebarContext?.state
+  const sidebarIsMobile = sidebarContext?.isMobile
+
+  const setRefs = React.useCallback(
+    (el: HTMLUListElement | null) => {
+      menuRef.current = el
+      if (typeof ref === "function") ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = el
+    },
+    [ref]
+  )
+
+  // 掛上時、以及收合 / 展開 / 手機切換後同步一次;本串 DOM 的其他變化交給下方 MutationObserver
+  React.useLayoutEffect(() => {
+    if (menuRef.current) syncSidebarMenuTabStops(menuRef.current, rememberedRef.current)
+  }, [sidebarState, sidebarIsMobile])
+
+  // 列新增 / 移除、disabled 改變、子層自己重繪而本串沒重繪(例:當前頁換了 → 列鈕的 aria-current 變,
+  // 但 SidebarMenu 不訂閱 activeId)
+  React.useEffect(() => {
+    const menu = menuRef.current
+    if (!menu || typeof MutationObserver === "undefined") return
+    const observer = new MutationObserver(() => syncSidebarMenuTabStops(menu, rememberedRef.current))
+    observer.observe(menu, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["disabled", "aria-current"],
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  // 焦點用任何方式進到某一列(Tab 進來 / 方向鍵 / 滑鼠點 / 選單關閉後還焦點)→ 停靠點跟過去,
+  // 下次 Tab 回來就回到這裡(同 calendar.tsx 日期鈕的 onFocus 同步)。
+  const handleFocus = (event: React.FocusEvent<HTMLUListElement>) => {
+    onFocus?.(event)
+    const menu = event.currentTarget
+    const target = event.target as HTMLElement
+    const row = getSidebarMenuRows(menu).find(
+      (r) => r.button === target || r.actions.includes(target)
+    )
+    if (!row) return
+    rememberedRef.current = row.button
+    syncSidebarMenuTabStops(menu, row.button)
+  }
+
+  // 用 capture:方向鍵整串歸清單,要搶在列鈕 / 動作鈕自己的處理之前 —— 帳號列是 `DropdownMenuTrigger asChild`、
+  // 動作鈕可能是選單觸發鈕(inlineActionsSlot),Radix 會拿 ↓ 開選單;這裡先 preventDefault,Radix 的
+  // composeEventHandlers 看到 defaultPrevented 就不執行,開選單照樣用 Enter / Space(AI 推導,見 spec;X6 以此為全宿主的做法)。
+  const handleKeyDownCapture = (event: React.KeyboardEvent<HTMLUListElement>) => {
+    onKeyDownCapture?.(event)
+    const menu = event.currentTarget
+    const target = event.target as HTMLElement
+    const rows = getSidebarMenuRows(menu)
+    const row = rows.find((r) => r.button === target || r.actions.includes(target))
+    // 焦點不在列或動作鈕上(consumer 自己放進列裡的其他控件)→ 不接管,讓它自己的鍵盤照舊
+    if (!row) return
+    const onRow = row.button === target
+    const controls = row.actions.filter(isRovingControlReachable)
+    const action = resolveRovingKey({
+      key: event.key,
+      focus: onRow ? "item" : "control",
+      controlCount: controls.length,
+      controlIndex: onRow ? -1 : controls.indexOf(target),
+      controlIsTextEntry: !onRow && isTextEntryElement(target),
+      defaultPrevented: event.defaultPrevented,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+      altKey: event.altKey,
+      shiftKey: event.shiftKey,
+    })
+    const isNavigable = sidebarRowNavigability(menu, rows)
+    applyRovingAction(action, {
+      event,
+      item: row.button,
+      controls,
+      items: rows.map((r) => r.button),
+      isNavigable,
+    })
+  }
+
+  return (
+    <ul
+      ref={setRefs}
+      data-sidebar="menu"
+      // 無 gap:items 連續緊貼(對齊 DropdownMenu / TreeView 的視覺節奏)
+      className={cn("flex w-full min-w-0 flex-col", className)}
+      onFocus={handleFocus}
+      onKeyDownCapture={handleKeyDownCapture}
+      {...props}
+    />
+  )
+})
 SidebarMenu.displayName = "SidebarMenu"
 
 const SidebarMenuItem = React.forwardRef<
@@ -1065,7 +1233,8 @@ const SidebarMenuButton = React.forwardRef<
     /**
      * Inline actions 的顯示模式:
      * - `false`(預設):永遠顯示
-     * - `"hover"`:row hover 時才淡入(TreeView 模式)
+     * - `"hover"`:滑過這一列、或鍵盤焦點在這一列時才出現,瞬間出現、不淡入(TreeView 模式;
+     *   待辦總帳 L9,sidebar.spec.md「Inline actions」出現時機列)
      */
     actionsReveal?: false | "hover"
   } & VariantProps<typeof sidebarMenuButtonVariants>
@@ -1167,8 +1336,9 @@ const SidebarMenuButton = React.forwardRef<
         //   Primer TreeView(aria-current={isCurrentItem ? 'true' : undefined})。
         // 它與 aria-selected 是兩件事,WAI-ARIA 1.2 aria-current 的 Note 明文說兩者可以並存:
         //   current = 你現在人在這一頁(已發生的事實);selected = 這個控件裡被挑中的那一項。
-        // 側欄導覽是「N 個各自獨立的連結」,不是 composite widget,所以用 current 不用 selected
-        //(判準 → ds-canonical/references/keyboard-model-canonical.md)。
+        // 側欄導覽要表達的是「你現在在這一頁」,不是「控件裡被挑中的那一項」,所以用 current 不用 selected。
+        // 2026-09-25 起一串 SidebarMenu 只佔一個 Tab 停靠點、方向鍵在裡面走(待辦總帳 B9,見上方 SidebarMenu),
+        // 但 ARIA 角色仍是 ul / li / button、沒有宣告 grid / tree 這類 composite 角色 → aria-selected 不適用,這條不變。
         // 純 SR 語意,**零視覺變化**。
         aria-current={isActive ? 'page' : undefined}
         className={cn(sidebarMenuButtonVariants({ size, variant }), className)}
@@ -1182,20 +1352,26 @@ const SidebarMenuButton = React.forwardRef<
 
     // Suffix inline actions——絕對定位在 menu-item 右邊,
     // 跟 button 同層(不是 button 的 child,避免巢狀 button)。
+    // 容器消費 `ItemSuffix`(item-anatomy.tsx):滑過才出現(`hoverReveal`)的規則只住那一份 ——
+    // 2026-09-26 之前這裡另抄了一份同字串,出現方式要跟著 SSOT 改時會漏(M17);它也是「滑過造成的變化一律瞬間」
+    //(待辦總帳 L9 / N4(3),motion.spec.md「hover 回饋不做過渡」)的唯一落點。group 用 `menu-item`(上方 SidebarMenuItem 的 group/menu-item)。
+    // `:has(:focus-visible)` 而非 `:focus-within`:滑鼠點動作鈕不該讓它常駐,只有鍵盤走到時才顯示(ItemSuffix 同註解)。
     const suffixNode = hasActions ? (
-      <span
+      <ItemSuffix
         data-sidebar="menu-inline-actions"
+        hoverReveal={actionsReveal === "hover"}
+        hoverGroup="menu-item"
         className={cn(
-          "absolute top-1/2 -translate-y-1/2 flex items-center gap-2",
+          "absolute top-1/2 -translate-y-1/2",
           "right-[var(--layout-space-loose)]",
           // Icon 模式隱藏(跟 SidebarMenuBadge / SidebarMenuAction 一致)
           "group-data-[collapsible=icon]:hidden",
-          // hover-reveal:滑鼠 hover 或鍵盤 focus(但不是 mouse click 的 focus)時顯示。
-          // 用 `:has(:focus-visible)` 而非 `:focus-within`——focus-within 會被
-          // mouse click 觸發,導致 click 之後 actions 永久顯示直到焦點移走;
-          // focus-visible 只在鍵盤 tab 時啟動,mouse click 不會觸發,符合使用者直覺。
-          actionsReveal === "hover" &&
-            "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0"
+          // 兩顆動作鈕之間的空隙歸列(2026-09-26,待辦總帳 N53 ①,user:「這些看起來幾乎都是bug」;修法 = R20「讓亮著的地方點得到」):
+          // 空隙在滑過時讓列亮著(sidebar.spec.md「Inline actions」段「兩顆動作鈕之間的空隙也算在內」),
+          // 點下去卻落在這個容器、列不導覽 —— 看得到亮卻點不到(hit-area-canonical.md「看到亮起來卻點不到」)。
+          // 容器本身不接指標,只有裡面可以按的東西接;空隙、以及插槽裡不能按的裝飾都穿到底下的列鈕(列鈕 paddingRight 已讓出這一段)。
+          // 指到按鈕上時容器仍是 :hover 的祖先,列的巢狀滑過(上方 cva 的 `~` 選擇器)照舊。
+          "pointer-events-none [&_:is(button,a[href],[role=button],[tabindex])]:pointer-events-auto",
         )}
       >
         {hasSlot
@@ -1203,7 +1379,7 @@ const SidebarMenuButton = React.forwardRef<
           : inlineActions!.map((action, i) => (
               <ItemInlineAction key={action.label + i} action={action} />
             ))}
-      </span>
+      </ItemSuffix>
     ) : null
 
     // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜

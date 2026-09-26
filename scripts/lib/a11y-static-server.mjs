@@ -154,5 +154,21 @@ export async function startA11yStaticServer({ rootDirectory, defaultFile = 'inde
     notFound,
     /** 本次服務的建置快照(沒有 build-info.json 的根目錄為 null)。 */
     snapshot: frozen ? Object.freeze({ dir: frozen.dir, buildInfo: frozen.buildInfo }) : null,
+    /** 正在服務的根目錄(有快照 = 快照目錄;沒有 = 原根目錄)。讀清單一律從這裡讀,見 readServedStorybookIndex。 */
+    servedRoot: root,
   })
+}
+
+/**
+ * 讀**正在服務的那一份**建置的 Storybook index.json(2026-09-25,待辦總帳 C5)。
+ * story 清單必須跟頁面出自同一份建置:伺服器從快照供檔、清單卻讀活目錄的閘,在別人同時 build-storybook 時
+ * 會拿到「清單有、快照沒有」(或反過來)的 story,把「清單與頁面不是同一份」讀成「story 載入失敗」(假的儀器紅),
+ * 或把新增的 story 漏量。有快照 → 讀快照;沒有快照(非 Storybook 根目錄)→ 讀服務中的根目錄 —— 兩者都是「正在服務的那一份」。
+ * 缺檔 / 壞檔照常丟例外(呼叫端先用 requireStorybookBuild 擋「根本沒有建置」)。
+ * @param {{ servedRoot: string }} server startA11yStaticServer 的回傳
+ * @returns {any} 解析後的 index.json
+ */
+export function readServedStorybookIndex(server) {
+  if (!server || typeof server.servedRoot !== 'string') throw new TypeError('readServedStorybookIndex:要傳 startA11yStaticServer 的回傳(需有 servedRoot)')
+  return JSON.parse(fs.readFileSync(path.join(server.servedRoot, 'index.json'), 'utf8'))
 }

@@ -6,19 +6,18 @@
 //   + render-health + 被量的 InlineEdit view 本身出現 + 版面連續 10 影格靜止才量,取代「networkidle + 固定睡 300ms」(M37)。
 //   story 開不起來 = 儀器失效(點名 story、附同源 404、exit 2);渲染完成卻一組 label+view 都沒量到 = 零量測,同樣 exit 2 ——
 //   以前這種情況只印一行 ⚠️、fail 仍是 0,最後印「✅ 全部對齊」並 exit 0。
-import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = process.cwd()
 const STATIC = join(ROOT, 'storybook-static')
-if (!existsSync(join(STATIC, 'index.json'))) { console.error('✗ storybook-static missing. build-storybook first.'); process.exit(2) }
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(join(STATIC, 'index.json'))
 const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: ROOT, environment: process.env })
 if (!runtime) throw new Error('[inline-edit-align] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
 process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
-const { chromium } = await import('playwright')
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const report404 = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
@@ -104,7 +103,7 @@ try {
   console.log('\n=== InlineEdit 對齊量測(content.left vs label.left,Δ≤%s 容差)==='.replace('%s', TOL))
   console.log(results.join('\n'))
   if (unmeasured.length) {
-    console.error(`\n✗ 零量測:${unmeasured.join('、')} —— 這是儀器失效(沒量到),不是產品裁決,也不算對齊`)
+    console.error(`\n✗ ${INSTRUMENT_FAIL_MARKER} 零量測:${unmeasured.join('、')} —— 這是儀器失效(沒量到),不是產品裁決,也不算對齊`)
   } else {
     console.log(fail === 0 ? '\n✅ 全部對齊(Δ≈0)' : `\n❌ ${fail} 欄未對齊`)
   }

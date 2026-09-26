@@ -37,7 +37,7 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -146,7 +146,9 @@ const BREAK = {
     if (!row) return false
     const mark = row.querySelector('[data-state]')
     if (!mark) return false
-    setInterval(() => { mark.setAttribute('data-state', 'checked') }, 10)
+    // 只在值不對時才改(2026-09-25):原本每 10ms 無條件 setAttribute,同值也會產生 DOM 變動紀錄,版面永遠不靜止 ——
+    // 改用「互動之後等靜止」之後,對照組會被判成儀器失效而不是「互斥被弄壞」。破壞的效果不變(「不限」那格一直是勾著)。
+    setInterval(() => { if (mark.getAttribute('data-state') !== 'checked') mark.setAttribute('data-state', 'checked') }, 10)
     return true
   },
   // C:讓只選「不限」的欄位長出一顆 Tag(退化成「不限是一個被選中的項目」)
@@ -214,13 +216,22 @@ const goto = async (id, waitFor) => {
   })
 }
 const 第幾個觸發點 = 0 // 重組後第一格就是開著 unrestricted 的那個(2026-09-18 story 精簡)
+// 互動之後等「版面真的停了」(2026-09-25,待辦總帳 C5):lib/launch-browser.mjs 的 settleAfterInteraction ——
+// 連續 SETTLE_FRAMES 個影格沒有 DOM 變動、沒有進行中的有限長度動畫。取代點開 / 關閉 / 勾選之後的固定睡眠
+// (500 / 700 / 600 / 400 / 300 / 250 / 200ms):那些是「面板已開、重畫已完成」的代理(M37),慢的機器上會量到開啟中途。
+// 刻意保留的固定等待只有兩類,都是被量的東西本身靠計時器:遠端搜尋的 300ms 模擬延遲(量「載入中」那一刻、等它回傳)
+// 與搜尋過濾的等待 —— 計時器期間版面是靜止的,靜止判定會提早回來。等不到靜止 = 儀器失效(下方 catch,exit 1)。
+const settle = async (what) => {
+  const r = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+  if (!r.ok) throw new StoryRenderInstrumentError({ storyId: what, kind: 'dom-not-settled', reason: `互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`, failedRequests: [] })
+}
 let instrumentFailure = null
 
 try {
   // ── A. 位置與分隔線 ────────────────────────────────────────
   await goto(STORY_MAIN, '[role="combobox"]')
   await page.locator('[role="combobox"]').nth(第幾個觸發點).click({ timeout: 5_000 })
-  await page.waitForTimeout(500) // 點開之後:等下拉面板的開啟動畫跑完再讀列與分隔線
+  await settle('A 點開下拉') // 點開之後:等下拉面板的開啟動畫跑完再讀列與分隔線
   if (SELFTEST) { await page.evaluate(BREAK.位置); await page.waitForTimeout(60) }
   const a = await page.evaluate(PANEL)
   ck('A', '選單真的開著(防假綠)', a.開著 === true)
@@ -231,7 +242,7 @@ try {
 
   // ── B. 互斥三條 ───────────────────────────────────────────
   // 點一列之後等 400ms:勾選狀態的 setState → 重畫 → 勾選動畫(元素早已在畫面上)
-  const 點 = async (n) => { await page.locator('[cmdk-root] [role="option"]').nth(n).click({ timeout: 5_000 }); await page.waitForTimeout(400) }
+  const 點 = async (n) => { await page.locator('[cmdk-root] [role="option"]').nth(n).click({ timeout: 5_000 }); await settle(`B 點第 ${n} 列`) }
   if (SELFTEST) { await page.evaluate(BREAK.互斥); await page.waitForTimeout(60) }
   await 點(0)
   const b1 = await page.evaluate(PANEL)
@@ -243,7 +254,7 @@ try {
   const b3 = await page.evaluate(PANEL)
   ck('B', '取消「不限」→ 一個都不剩', b3.列?.every((r) => !r.勾) === true, JSON.stringify(b3.列?.map((r) => r.勾)))
   await page.keyboard.press('Escape').catch(() => null)
-  await page.waitForTimeout(200) // 等下拉面板的關閉動畫跑完
+  await settle('B 關閉下拉') // 等下拉面板的關閉動畫跑完
 
   // ── C. 欄位顯示 ───────────────────────────────────────────
   // 量的是 `UnrestrictedContract`(test-only 契約 probe):給人看的範例只留兩格,
@@ -274,9 +285,9 @@ try {
   // 先關掉前一格的面板再點下一格 —— 開著的 popper 會擋住下一個觸發點的點擊
   //(2026-09-18 對照組實測:塞進去的假列直接 intercept pointer events,整支當場 timeout)。
   await page.keyboard.press('Escape').catch(() => null)
-  await page.waitForTimeout(250) // 等前一格面板的關閉動畫跑完,不擋下一個觸發點
+  await settle('D 關閉 0 筆那格') // 等前一格面板的關閉動畫跑完,不擋下一個觸發點
   await page.locator('[role="combobox"]').nth(1).click({ timeout: 5_000 })
-  await page.waitForTimeout(700) // 點開之後:等載入中那格的面板開啟動畫跑完
+  await settle('D 點開載入中那格') // 點開之後:等載入中那格的面板開啟動畫跑完
   if (SELFTEST) { await page.evaluate(BREAK.訊息); await page.waitForTimeout(60) }
   const d2 = await page.evaluate(PANEL)
   ck('D', '載入中那格的選單真的開著(防假綠)', d2.開著 === true)
@@ -296,11 +307,11 @@ try {
   ck('E', '關著那支的選單真的開著(防假綠)', e0.開著 === true)
   ck('E', '開場就選著撞名的那個選項', e0.勾, JSON.stringify(e0.列))
   await page.locator('[cmdk-root] [role="option"]').nth(2).click({ timeout: 5_000 })
-  await page.waitForTimeout(400) // 等勾選的 setState → 重畫
+  await settle('E 選別的選項') // 等勾選的 setState → 重畫
   const e1 = await 撞名還在()
   ck('E', '選別的選項之後,撞名的那個沒被吃掉', e1.勾, JSON.stringify(e1.列))
   await page.locator('[cmdk-root] [data-slot="surface-footer"] button').first().click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(400) // 等全選的 setState → 重畫
+  await settle('E 按全選') // 等全選的 setState → 重畫
   const e2 = await 撞名還在()
   ck('E', '按全選之後,撞名的那個沒被吃掉', e2.勾, JSON.stringify(e2.列))
   // ── F. 搜尋 ───────────────────────────────────────────────
@@ -329,7 +340,7 @@ try {
       .then(() => true).catch(() => false)
     ck('F', `${模式}:觸發點點得開(防假綠)`, 開得了)
     if (!開得了) continue
-    await page.waitForTimeout(600) // 點開之後:等下拉面板的開啟動畫跑完
+    await settle(`F ${模式} 點開下拉`) // 點開之後:等下拉面板的開啟動畫跑完
     if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
     const 閒置 = await 清單()
     ck('F', `${模式}:沒打字時「不限」在最上面`, 閒置.開著 && 閒置.不限在, JSON.stringify(閒置.字))
@@ -341,12 +352,12 @@ try {
     ck('F', `${模式}:打無結果的字 → 空清單 + 訊息`, !打沒有.不限在 && !!打沒有.空訊息, `列=${JSON.stringify(打沒有.字)} 訊息=${打沒有.空訊息}`)
     await page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first().fill('').catch(() => null)
     await page.keyboard.press('Escape').catch(() => null)
-    await page.waitForTimeout(300) // 等下拉面板的關閉動畫跑完
+    await settle(`F ${模式} 關閉下拉`) // 等下拉面板的關閉動畫跑完
   }
   // 遠端:載入中不得出現(user「等結果都回傳回來了才一起秀出」)
   await goto(STORY_SEARCH, '[role="combobox"]')
   await page.locator('[role="combobox"]').nth(1).click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(600) // 點開之後:等下拉面板的開啟動畫跑完
+  await settle('F 遠端 點開下拉') // 點開之後:等下拉面板的開啟動畫跑完
   if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
   const box = page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first()
   const 有框 = await box.waitFor({ state: 'visible', timeout: 4_000 }).then(() => true).catch(() => false)

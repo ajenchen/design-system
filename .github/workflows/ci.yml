@@ -435,6 +435,15 @@ jobs:
           npm run test:hover-latency-policy
           # DatePicker.Range 區間預覽的判定表(純函式,15 格 + modifier 形狀 + 對照組)
           npm run test:range-preview
+          # TreeView 鍵盤路線的判定表(純函式;2026-09-25 待辦總帳 B9 路線乙):→ 收著先展開、展開後進列上按鈕、Tab 一下離開;
+          # --selftest 以舊路線(→ 跳第一個子項、按鈕不在方向鍵路上)當對照組必須被抓到,並檢查 tree-view.tsx 真的呼叫這支判定。
+          npm run test:tree-keyboard-route
+          # 「列上有小按鈕的一串」共用鍵盤判定(純函式;2026-09-26 側欄 / 檔案清單 / 樹 / Command 四份合一,待辦總帳〇節「按鍵規則合併」):
+          # 判定表 + 落點 / 停靠點 / 執行器 + 四個呼叫端真的呼叫它;--selftest 以合併前三處不一致(X4 / X6 / X7)當對照組必須被抓到。
+          npm run test:roving-list-keyboard
+          # DataTable I31 區間格 × 列滑過的判定表(純函式;待辦總帳 C12⑦ / K16):產品沒釘住 / 儀器看不到 / 真的釘住三種分得開,
+          # 判定表的像素全部來自實測;I31 本身在 data-table-invariants.mjs(同一支 lib,量之前先跑這張表)。
+          npm run test:data-table-range-hover
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
           # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
@@ -711,6 +720,10 @@ jobs:
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants
+          # 選單鍵盤(2026-09-25 待辦總帳 B10 / B11):子選單 Esc 一次只關一層、焦點回上一層那一項;選單開著按 Tab 收起全部、
+          # 焦點落在「關著時從觸發鈕按 Tab 會到的那一格」;AI 浮鈕選單只有 Esc / 選了項目才把焦點還給浮鈕(點外面不搶)。
+          # 先跑純判定表(量不到必須回 instrument),再真按鍵;--selftest 把 Radix 的舊行為造回來必紅。
+          npm run test:dropdown-menu-keyboard
           # 入口鈕拖曳磁吸的純函式單測(拖過視窗右緣、y 在帶內仍算貼邊):那條路只有 pointer capture 把
           # clientX 推出視窗時才走到,沒有任何 story 或瀏覽器閘會產生這種座標,修好當天唯一的證據是一次
           # 手動合成指標紀錄(2026-09-05 稽核抓到)。
@@ -731,10 +744,16 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
+          # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
+          npm run test:tree-view-keyboard-route
           npm run test:shared-carrier-focus
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
+          # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
+          # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
+          npm run test:sidebar-menu-keyboard
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
@@ -955,6 +974,14 @@ jobs:
           # 選了前者,標籤就是唯一的狀態出口,一脫鉤使用者沒有別的線索可以察覺。
           # 驗的是對應關係不是字串(標籤是 prop,可換語言);對照組把標籤釘死,這支必須紅。
           npm run test:select-all-footer
+
+      - name: Single-select Tab leaves the dropdown (browser)
+        run: |
+          # 單選下拉開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11):選定反白那一項、收起、焦點落在觸發欄位的下一格 / 上一格
+          # (= 關著時按同一鍵的落點;在對話框型面板裡只在那一層繞圈)。多選面板(有全選)行為不變、Tab 在面板裡繞圈,
+          # 觸發欄位宣告的彈出型別必須等於實際 Tab 走法(listbox / dialog)。對照組把修正前的走法與宣告注入,S / M / D 三條都必紅。
+          # 跟上面那支共用同一份 storybook build,放同一個 job。
+          npm run test:select-tab-leave
 
       - name: Unrestricted option row (browser)
         run: |

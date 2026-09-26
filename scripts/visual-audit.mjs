@@ -35,7 +35,7 @@
  *   1 = 有 contrast / geometry violation(CI 可用此 gate commit)
  */
 
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
@@ -60,7 +60,7 @@ import {
 } from './lib/visual-audit-interaction.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { createRenderHealthMonitor } from './lib/storybook-render-health.mjs'
-import { visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
+import { visualAuditExitCode, emptyScopeVerdict } from './lib/visual-audit-exit-policy.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
@@ -732,7 +732,11 @@ async function main() {
   // Scope resolution
   const scopedScenarios = filterScenarios(ASSERTIONS.scenarios)
   if (scopedScenarios.length === 0) {
-    console.log('[visual-audit] 0 scenario 符合 scope,跳過(exit 0)')
+    // 0 個 scenario:只有 scope=changed 可以合法地不適用,其餘是儀器失效(lib/visual-audit-exit-policy.mjs,2026-09-25 待辦總帳 C5)
+    const empty = emptyScopeVerdict({ scope: SCOPE, urls: URLS })
+    if (empty.exitCode) console.error(`[visual-audit] ✗ ${INSTRUMENT_FAIL_MARKER} ${empty.reason}`)
+    else console.log(`[visual-audit] ${empty.reason}`)
+    process.exitCode = empty.exitCode
     await stopStorybook()
     return
   }

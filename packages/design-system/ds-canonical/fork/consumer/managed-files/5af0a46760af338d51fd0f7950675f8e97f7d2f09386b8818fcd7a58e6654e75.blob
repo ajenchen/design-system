@@ -31,6 +31,8 @@
 //   requireStorybookBuild(join(STATIC, 'index.json'))            // 沒有建置 → 印 MISSING-BUILD 並 exit 2(缺前置)
 //   await openStory(page, url, { … })                            // 開 story 並證明真的渲染完成(見下方 openStory 區塊)
 //   await waitForStoryRender(frame, { storyId })                 // 不是導覽觸發的切換(管理介面點側欄)也用同一份判定
+//   await settleAfterInteraction(page, { frames: 10 })           // 點開浮層 / 按鍵之後等版面真的停了(取代固定睡眠;ok:false = 儀器失效)
+//   await waitForDocsRender(frame, { docsId, timeoutMs })        // docs 頁真的渲染出來(docs 沒有 story 的 render phase,判定見該函式)
 
 import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
@@ -130,46 +132,14 @@ export function requireStorybookBuild(path, hint = '先跑 `npm run build-storyb
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 開一則 story 並等到**真的要量的東西出現**
+// gotoStory —— 2026-09-25 退役(待辦總帳 C5)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// **為什麼有這個**(2026-09-20,CI 真的紅過一次):
-// `action-bar-toolbar-invariant.mjs` 用 `waitUntil:'load'` + 固定睡 900ms 當「已經渲染好」的代理。
-// 本機四支示範 × 五個寬度 = 20 格全過,CI 上掉了 `url-registry-demo @320` 那一格 ——
-// **每支示範的第一個寬度是冷啟動**,慢的 runner 上 900ms 不夠,於是閘印出
-// 「找不到 data-toolbar-search(示範沒有消費 DataToolbar?)」,指控一個根本不存在的問題。
-// 同一份 `.tsx` 在前兩個 commit 都是綠的,那個 commit 連一個 `.tsx` 都沒動。
-//
-// 這是「拿一個當時剛好成立的觀察量,去代替真正要保證的性質」:
-// 要保證的是「元素已經在畫面上」,量的卻是「過了 900 毫秒」。
-// 固定睡眠**永遠**只是代理 —— 它在快的機器上剛好成立,所以寫的當下看起來是對的。
-//
-// 正解:等那個元素本身。等不到才是真的紅(示範真的沒消費該元件),而且訊息就會是對的。
-// `settle` 是元素出現**之後**才開始的版面穩定時間(量幾何需要,量的是穩態不是過渡中的值)。
-//
-// 用法:
-//   await gotoStory(page, url, { waitFor: '[data-toolbar-search]', settle: 900 })
-//   await gotoStory(page, url, { settle: 400 })   // 沒有特定元素可等時,退化成原本的固定睡眠
-//
-// 回傳 `true` = 等到了(或沒有指定 waitFor);`false` = 逾時沒出現,呼叫端照原本的缺元素路徑判紅。
-// 2026-09-25 起它是 openStory 的薄包裝(不驗 render-finished / render-health,行為與先前逐字相同:
-// 導覽失敗照舊丟 Playwright 原本的例外)。新閘請直接用 openStory。
-export async function gotoStory(page, url, { waitFor = null, settle = 900, timeout = 90000, appearTimeout = 20000 } = {}) {
-  let appeared = true
-  try {
-    await openStory(page, url, {
-      waitFor, requireRenderFinished: false, health: false, fonts: false,
-      navigationTimeoutMs: timeout, timeoutMs: appearTimeout,
-    })
-  } catch (error) {
-    if (!(error instanceof StoryRenderInstrumentError)) throw error
-    if (error.kind === 'navigation' && error.cause) throw error.cause
-    if (error.kind !== 'wait-for-timeout') throw error
-    appeared = false
-  }
-  if (settle > 0) await page.waitForTimeout(settle)
-  return appeared
-}
+// 2026-09-20 起它是「導覽 + 等某個元素 + 固定睡 settle 毫秒」,之後變成 openStory 的薄包裝(不驗渲染完成 / 健康)。
+// 起因:`action-bar-toolbar-invariant.mjs` 用 `waitUntil:'load'` + 固定睡 900ms 當「已渲染」的代理,慢的 runner 上假紅,
+// 還指控「示範沒有消費 DataToolbar」—— 拿當時剛好成立的觀察量(過了 900ms)代替要保證的性質(元素在畫面上),M37。
+// 最後一個呼叫點是 story-demo-focus-invariant.mjs 的節流對照組(刻意重現那個代理),已改成直接呼叫 openStory +
+// 顯式的固定睡眠。現在**全部**瀏覽器閘都走下方的 openStory;不要再加回「等元素 + 固定睡眠」的共用入口。
 
 // ═══════════════════════════════════════════════════════════════════════════
 // openStory —— 「這則 story 真的渲染完成了」的**唯一**實作(全部瀏覽器閘共用)
@@ -336,6 +306,88 @@ function waitForQuietFrames({ frames, capMs, includeParent = false }) {
     } finally { observer.disconnect() }
     return { ok: true, framesWaited, lateChanges, longestBrokenQuiet }
   })()
+}
+
+/**
+ * **互動之後**等「版面真的停了」(2026-09-25,待辦總帳 C5)—— 與 openStory 第 9 步同一份靜止判定(waitForQuietFrames:
+ * 連續 frames 個影格沒有任何 DOM 變動、也沒有進行中的有限長度動畫 / CSS 過渡)。
+ *
+ * 取代「點開浮層後固定睡 N 毫秒」:那是「浮層已開、開啟動畫已停」的代理(M37)。慢的機器上固定睡眠會提早量,
+ * 把「還沒開」讀成「這裡沒有浮層 / 不適用」—— 覆蓋率在沒有任何訊號的情況下縮水(overlay-footer-gutter 的點開下拉、
+ * dialog-height H5 的點開 dialog、focus-indicator 的點開檢視器都是這個形狀)。
+ * 用影格不用毫秒:點擊觸發的 React 更新與開啟動畫是一格一格推進的,主執行緒忙時影格也不跑,所以機器慢只會等久一點;
+ * 點擊若什麼都沒觸發,版面本來就靜止,等滿 frames 格就回來 —— 「這一下沒開出任何東西」因此也是可靠的結論,不是提早放棄。
+ * 限制:靠計時器延後才開的東西(例:有 openDelay 的 HoverCard / Tooltip)不在這個保證裡,那種要等元素本身。
+ * @param {object} target  Playwright 的 Page 或 Frame
+ * @param {{ frames?: number, capMs?: number }} [options]  capMs 只是「等不到」的天花板
+ * @returns {Promise<{ ok: boolean, framesWaited: number, lateChanges: number, longestBrokenQuiet: number }>}
+ *   ok:false = capMs 內等不到靜止 —— 呼叫端必須當**儀器失效**,不得當成「沒開」也不得當成「已開」
+ */
+export async function settleAfterInteraction(target, { frames = 10, capMs = 10_000 } = {}) {
+  if (!target || typeof target.evaluate !== 'function') throw new TypeError('settleAfterInteraction:target 必須是 Playwright 的 Page 或 Frame')
+  if (!Number.isInteger(frames) || frames < 1) throw new TypeError(`settleAfterInteraction:frames 必須是 ≥ 1 的整數,實得 ${JSON.stringify(frames)}`)
+  return target.evaluate(waitForQuietFrames, { frames, capMs })
+}
+
+// 頁面端:docs 頁渲染到哪了(waitForDocsRender 用;回 false = 還沒)。**以 waitForFunction 序列化傳入,不得引用外部變數。**
+function docsRenderState({ docsId }) {
+  const cls = document.body?.classList
+  if (cls?.contains('sb-show-errordisplay')) return { state: 'error-display' }
+  if (cls?.contains('sb-show-nopreview')) return { state: 'no-preview' }
+  const render = window.__STORYBOOK_PREVIEW__?.currentRender
+  if (!render || render.type !== 'docs' || (docsId && render.id !== docsId)) return false
+  if (typeof render.isPreparing === 'function' && render.isPreparing()) return false
+  const docs = document.getElementById('storybook-docs')
+  // 被 Storybook 藏起來的 docs 容器(切去看 story 時的 `hidden`)有內容也不算:那正是 docs 競態閘要抓的殭屍
+  if (!docs || docs.hasAttribute('hidden') || docs.childElementCount === 0) return false
+  return { state: 'rendered', id: render.id }
+}
+
+/**
+ * **docs 頁**(viewMode=docs,或管理介面裡點開元件節點)真的渲染出來了 —— 全部閘共用的唯一判定(2026-09-25,待辦總帳 C5;
+ * 取代 storybook-docs-race-invariant 的私有輪詢與 verify-published-deploy 的 DOCS_SETTLED,M17)。
+ * docs 頁沒有 story 那一套 render phase(`@storybook/core` preview-api 的 CsfDocsRender 只有 preparing 旗標、渲染完 emit DOCS_RENDERED),
+ * 所以判定是:Storybook 的 currentRender 是 **docs**(給 docsId 時必須是這一則)、不在 preparing、`#storybook-docs` 沒被藏起來而且有內容;
+ * 錯誤頁 / 無預覽頁當場停。可選 settleFrames:之後再等版面連續 N 個影格靜止(docs 裡的 story 是陸續畫出來的)。
+ * 等不到 / 錯誤頁 / 無預覽 / 不靜止 → 丟 StoryRenderInstrumentError(儀器失效,不是產品裁決)。
+ * @param {object} target  Playwright 的 Page 或 Frame(管理介面 → preview iframe 的內容框架)
+ * @param {{ docsId?: string, timeoutMs?: number, settleFrames?: number, label?: string, url?: string, notFound?: string[] }} [options]
+ * @returns {Promise<{ docsId: string, ms: number }>}
+ */
+export async function waitForDocsRender(target, options = {}) {
+  const { docsId = null, timeoutMs = 30_000, settleFrames = 0, url = '', notFound = null } = options
+  if (!target || typeof target.waitForFunction !== 'function' || typeof target.evaluate !== 'function') {
+    throw new TypeError('waitForDocsRender:target 必須是 Playwright 的 Page 或 Frame')
+  }
+  const label = options.label ?? docsId ?? '(docs 頁)'
+  const from = Array.isArray(notFound) ? notFound.length : 0
+  const t0 = Date.now()
+  const instrument = (kind, reason, extra = {}) => new StoryRenderInstrumentError({
+    storyId: label, url, kind, reason, ...extra,
+    failedRequests: Array.isArray(notFound) ? [...new Set(notFound.slice(from))].map((path) => `404 ${path}`).slice(0, 8) : [],
+  })
+  let done = null
+  try {
+    const handle = await target.waitForFunction(docsRenderState, { docsId }, { timeout: timeoutMs, polling: 'raf' })
+    done = await handle.jsonValue()
+  } catch (error) {
+    if (error?.name !== 'TimeoutError') throw instrument('render-wait-failed', `等 docs 頁渲染時等待本身中斷:${firstLine(error)}`, { cause: error })
+    const lastSeen = await target.evaluate(() => {
+      const render = window.__STORYBOOK_PREVIEW__?.currentRender
+      const docs = document.getElementById('storybook-docs')
+      return `currentRender = ${render ? `${render.type ?? '?'} / ${render.id ?? '(無 id)'}` : '(無)'};#storybook-docs ${docs ? `${docs.hasAttribute('hidden') ? 'hidden、' : ''}子節點 ${docs.childElementCount}` : '(不存在)'}`
+    }).catch(() => '讀不到頁面狀態')
+    throw instrument('render-timeout', `${timeoutMs / 1000} 秒內等不到 docs 頁渲染出來(最後看到:${lastSeen})`)
+  }
+  if (done.state === 'error-display') {
+    throw instrument('storybook-error', 'Storybook 顯示錯誤頁(docs 渲染拋錯或模組載入失敗)', { storybookError: await target.evaluate(storybookErrorText).catch(() => '') })
+  }
+  if (done.state === 'no-preview') throw instrument('no-preview', 'Storybook 顯示「無預覽」頁(索引裡沒有這一則 docs)')
+  if (settleFrames > 0) {
+    const settled = await target.evaluate(waitForQuietFrames, { frames: settleFrames, capMs: timeoutMs })
+    if (!settled.ok) throw instrument('dom-not-settled', `docs 頁渲染出來後 ${timeoutMs / 1000} 秒內版面沒有連續靜止 ${settleFrames} 個影格(等了 ${settled.framesWaited} 格,期間變動 ${settled.lateChanges} 次)`)
+  }
+  return { docsId: done.id, ms: Date.now() - t0 }
 }
 
 /**

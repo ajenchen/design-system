@@ -32,9 +32,8 @@
  * 「渲染完成且健康、確實沒有 Switch」照舊跳過:那是確定的事實(這支閘掃全 DS 就是為了蓋到組合 story),不是沒量到。
  */
 import { PNG } from 'pngjs'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { readFileSync } from 'node:fs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { join } from 'node:path'
 
 const args = process.argv.slice(2)
@@ -45,6 +44,8 @@ const TOLERANCE = 8 // 每通道 /255;截圖有子像素抗鋸齒,取樣點又�
 const WHITE_DISC_BY_THUMB = { 20: 16, 24: 20 }
 const DISC_TOLERANCE = 1
 
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼)。原本直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
+requireStorybookBuild(join(root, 'index.json'))
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 4 })
@@ -63,7 +64,9 @@ if (selftest) {
 
 // 掃全 DS 的「設計規格」三支固定 story(跟 hover-color-pair 同一套列舉),
 // 不預先過濾元件名 —— Switch 出現在 form / field / settings 等組合 story 裡也要蓋到。
-const index = JSON.parse(readFileSync(join(root, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const index = readServedStorybookIndex(server)
 const allIds = Object.entries(index.entries)
   .filter(([id, e]) => e.type === 'story' && /--(state-behavior|overview|size-matrix)$/.test(id))
   .map(([id]) => id)

@@ -19,9 +19,8 @@
  *
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,10 +32,8 @@ const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.sl
   ?? (process.argv.includes('--static-dir') ? process.argv[process.argv.indexOf('--static-dir') + 1] : null)
 const STATIC = resolve(staticDirArg ?? join(ROOT, 'storybook-static'))
 const STORY_ID = 'design-system-components-pagination-展示--narrow-ladder'
-if (!existsSync(STATIC)) {
-  console.error(`✗ ${STATIC} missing. Run \`npm run build-storybook\` first.`)
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(join(STATIC, 'index.json'))
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const BASE = server.origin

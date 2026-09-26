@@ -800,7 +800,8 @@ ItemInlineAction.displayName = "ItemInlineAction"
 // - `h-[1lh]`:suffix 永遠對齊第一行 label(跟 prefix 解耦)
 // - `ml-auto`:靠右
 // - `gap-2`:多個 inline action 之間的標準間距(inline-action.spec.md canonical SSOT)
-// - `hoverReveal` opt-in:opacity 0→1 on 父層 row hover/focus-visible
+// - `hoverReveal` opt-in:opacity 0→1 on 父層 row hover/focus-visible —— **瞬間出現,不淡入**
+//   (tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))
 //
 // `hoverGroup`(2026-05-05 v8 SSOT 升級):row primitive group selector 參數化。
 //   先前 `/menu-item` hardcode → TreeView(`/tree-item`)/ FileItem(`/row`)/
@@ -810,17 +811,17 @@ ItemInlineAction.displayName = "ItemInlineAction"
 
 const SUFFIX_HOVER_REVEAL_BY_GROUP = {
   "menu-item":
-    "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
+    "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100",
   "tree-item":
-    "opacity-0 group-hover/tree-item:opacity-100 group-has-[:focus-visible]/tree-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
-  row: "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
+    "opacity-0 group-hover/tree-item:opacity-100 group-has-[:focus-visible]/tree-item:opacity-100",
+  row: "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
 } as const
 
 export type ItemSuffixHoverGroup = keyof typeof SUFFIX_HOVER_REVEAL_BY_GROUP
 
 export interface ItemSuffixProps extends React.HTMLAttributes<HTMLSpanElement> {
   /**
-   * Hover-reveal:預設隱藏,父層 row hover / keyboard focus-visible 時才淡入。
+   * Hover-reveal:預設隱藏,父層 row hover / keyboard focus-visible 時才出現(瞬間,不淡入;tokens/motion/motion.spec.md)。
    * 對齊 TreeView / SidebarMenuButton inline action 行為。預設 false(永遠顯示,如 Badge)。
    *
    * 用 `group-has-[:focus-visible]` 而非 `group-focus-within`——後者會被 mouse click 觸發,

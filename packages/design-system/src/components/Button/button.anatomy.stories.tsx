@@ -1,6 +1,6 @@
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
-import { Plus, ChevronDown, Download, Trash2, Settings } from 'lucide-react'
+import { Plus, ChevronDown, Download, Trash2, Settings, Grid3x3, ListFilter, ArrowUpDown, UserMinus, ShieldOff } from 'lucide-react'
 import { Button } from './button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
@@ -697,14 +697,135 @@ export const StateBehavior = {
               <span className="text-fg-muted">⇄</span>
               <Button variant={v} pressed iconOnly startIcon={Settings} aria-label={`${v}（開）`} />
               <span className="text-[11px] text-fg-muted">
-                {`${v} + pressed → primary-subtle 系列（預設 pressedTone="emphasis"；傳 pressedTone="neutral" 則為 neutral-selected 灰底）`}
+                {`${v} + pressed → primary-subtle 系列（預設 pressedTone="emphasis"；傳 pressedTone="neutral" 則為 neutral-selected 灰底，見下一段）`}
               </span>
             </div>
           ))}
         </div>
       </div>
+
+      <NeutralToggleLadder />
+      <StateStackingSnapshot />
     </div>
   ),
+}
+
+/* ── 灰色已按下切換鈕(pressedTone="neutral")的平常 / 滑過 / 按住 ───────────────
+   2026-09-25 待辦總帳 B5:user 選「甲：保留，維持 2→3→4 (Recommended)」後補的第一則畫面(之前零則)。
+   「滑過」欄用開啟中快照畫:button.spec.md「狀態疊加」表 —— 開啟中 = 自己的 hover(pressed × 開啟中 = pressed × hover),
+   所以 `data-state="open"`(Radix 開著浮層時寫在觸發鈕上的同一個屬性)就是滑過的靜態畫面(M15:不必真人滑過也截得到)。
+   「按住」沒有靜態等價物,只列 token 色塊;真的按住由驗收階段用指標量。 */
+const NEUTRAL_TOGGLE_LADDER: { form: string; pressed: boolean; cells: { state: string; bg: string; open?: boolean }[] }[] = [
+  { form: '未按下', pressed: false, cells: [
+    { state: '平常', bg: 'transparent' },
+    { state: '滑過(= 開啟中)', bg: '--neutral-hover', open: true },
+    { state: '按住', bg: '--neutral-active' },
+  ] },
+  { form: '已按下', pressed: true, cells: [
+    { state: '平常', bg: '--neutral-selected' },
+    { state: '滑過(= 開啟中)', bg: '--neutral-selected-hover', open: true },
+    { state: '按住', bg: '--neutral-selected-active' },
+  ] },
+]
+
+function NeutralToggleLadder() {
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-caption font-medium text-fg-secondary">灰色已按下切換鈕 — pressedTone="neutral"(可取消的切換鈕;導覽 / 目前頁不用它)</span>
+      <p className="text-[11px] text-fg-muted">
+        兩個型態各有自己的一條階梯:未按下 透明 → neutral-1 → neutral-2;已按下 neutral-2 → neutral-3 → neutral-4(同一個滑鼠狀態下開與關都分得出來)。滑過欄用開啟中的快照畫(開啟中 = 自己的滑過)。
+      </p>
+      <table className="border-collapse">
+        <thead><tr><Th>型態</Th>{NEUTRAL_TOGGLE_LADDER[0].cells.map((c) => <Th key={c.state}>{c.state}</Th>)}</tr></thead>
+        <tbody>
+          {NEUTRAL_TOGGLE_LADDER.map(({ form, pressed, cells }) => (
+            <tr key={form}>
+              <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{form}</td>
+              {cells.map((c) => (
+                <td key={c.state} className="p-3 border-b border-divider align-top min-w-[160px]">
+                  {c.state === '按住'
+                    ? <span className="text-[11px] text-fg-muted">(只能用指標按住量)</span>
+                    : (
+                      <Button
+                        variant="text"
+                        size="sm"
+                        startIcon={Grid3x3}
+                        pressed={pressed}
+                        pressedTone="neutral"
+                        // 只在開啟中快照才覆寫 data-state:傳 undefined 會蓋掉 Button 自己寫的 data-state="on|off"(props 後展開)
+                        {...(c.open ? { 'data-state': 'open' } : {})}
+                        data-button-demo={`neutral-toggle-${pressed ? 'on' : 'off'}-${c.open ? 'hover' : 'rest'}`}
+                      >
+                        顯示格線
+                      </Button>
+                    )}
+                  <TokenAnnotation colors={{ bg: c.bg, text: '--foreground', border: 'transparent' }} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/* ── 狀態疊加快照(button.spec.md「狀態疊加」表逐列;待辦總帳 C12⑧,M15)────────────────
+   開啟中用 `data-state="open"`、已按下用 `pressed`、停用但保留指標事件用 `aria-disabled` —— 都是元件真的會帶的屬性,
+   不是另外手刻的樣式;滑過 / 按住的釘住行為要用真指標量(驗收清單),這裡只畫得出靜態可以表達的那幾格。 */
+const STACKING_ROWS: { label: string; note: string; render: () => React.ReactNode }[] = [
+  {
+    label: '開啟中(data-state=open)',
+    note: '= 自己的滑過:secondary / tertiary 字與框 primary-hover;text 底 neutral-hover;danger 用 error-hover',
+    render: () => (
+      <>
+        <Button variant="secondary" size="sm" endIcon={ChevronDown} data-state="open" data-button-demo="open-secondary">匯出報表</Button>
+        <Button variant="tertiary" size="sm" startIcon={ListFilter} data-state="open" data-button-demo="open-tertiary">更多篩選</Button>
+        <Button variant="text" size="sm" startIcon={ArrowUpDown} data-state="open" data-button-demo="open-text">排序</Button>
+        <Button variant="secondary" danger size="sm" startIcon={UserMinus} data-state="open" data-button-demo="open-secondary-danger">移除成員</Button>
+        <Button variant="text" danger size="sm" startIcon={ShieldOff} data-state="open" data-button-demo="open-text-danger">撤銷授權</Button>
+      </>
+    ),
+  },
+  {
+    label: '已按下 × 開啟中',
+    note: '= 已按下 × 滑過:emphasis 底與框釘住、字 primary-hover;neutral 底 neutral-selected-hover',
+    render: () => (
+      <>
+        <Button variant="tertiary" size="sm" startIcon={ListFilter} pressed data-state="open" data-button-demo="pressed-open-emphasis">只看未完成</Button>
+        <Button variant="text" size="sm" startIcon={Grid3x3} pressed pressedTone="neutral" data-state="open" data-button-demo="pressed-open-neutral">顯示格線</Button>
+      </>
+    ),
+  },
+  {
+    label: 'aria-disabled',
+    note: '靜止樣式 + opacity-disabled;滑過 / 按住釘在靜止(已按下則釘在按下的靜止)',
+    render: () => (
+      <>
+        <Button variant="tertiary" size="sm" startIcon={Download} aria-disabled="true" data-button-demo="aria-disabled-tertiary">匯出報表</Button>
+        <Button variant="text" size="sm" startIcon={Grid3x3} pressed pressedTone="neutral" aria-disabled="true" data-button-demo="aria-disabled-pressed-neutral">顯示格線</Button>
+      </>
+    ),
+  },
+]
+
+function StateStackingSnapshot() {
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-caption font-medium text-fg-secondary">狀態疊加 — 開啟中 / 已按下 / aria-disabled(button.spec.md「狀態疊加」)</span>
+      <div className="flex flex-col gap-2">
+        {STACKING_ROWS.map(({ label, note, render }) => (
+          <div key={label} className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] text-fg-muted w-36 shrink-0">{label}</span>
+              {render()}
+            </div>
+            <span className="text-[11px] text-fg-muted pl-[9.75rem]">{note}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────

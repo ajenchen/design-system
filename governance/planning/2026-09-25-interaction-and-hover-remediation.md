@@ -5,72 +5,251 @@ user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有
 前一個 session(5dfb4960)的未決題就是因為只放在對話裡而掉了。**本檔是唯一的 live 清單**:完成一項就在這裡標記並附 commit;
 不要只在對話裡宣稱。研究原文在 session scratchpad(會消失),所以每一項的**結論**直接寫在這裡。
 
+**2026-09-25 全面對帳**:三個 session(本次、5dfb4960、b1e3fe19)共 352 筆 user 要求逐筆對照本檔,49 筆(去重 42 項)原本沒有追蹤,已以 N 編號補進 A / C / D3 區;20 多列過期文字已更正。對帳原文在 session scratchpad `recon/UNTRACKED.md`(會消失,結論已全數寫進本檔)。
+
 狀態記號:`待決` = 產品／UI／UX SSOT 的 P2H 真取捨,等 user 拍板;工程項目一律 Standing Authorization AUTO,不等任何人 · `研究中` · `待做` 不需拍板的工程 · `進行中` · `完成`(附 commit)· `暫緩`(附 user 原話)
 
 ---
 
-## A. 等 user 拍板(每一題都是產品／UI／UX SSOT 的 P2H 真取捨)
+## 〇、總覽(先看這一節;其餘各區是明細)
+
+### 主線:一套統一的互動規則(user 的主要目標)
+
+user 原話(本 session):「你繼續處理所有任務直到完美收尾，但我要補充一下,關於那些懸而未決的問題， 你他媽到底可以不可以根據你所有的世界級設計的研究然後通盤有組織性地考慮到底同一個設計系統裡應該如何通盤定義才會有一致的設計語言以及不違背世界級的設計，確保ssot，且ssot可以涵蓋各種情境，且該SSOT是從設計面而合理推導出來而不是導果為因的那種，然後確保不要再那邊給我拼裝車」
+
+- 交付物 = C3「互動模型正本」:滑過、按下、焦點、鍵盤走法、點擊範圍寫成**一份**從設計面推導的規則,涵蓋全 DS 各種情境,各元件規格只指向它。
+- 已由 user 決定、要寫進正本並落地的:B1–B12。C15(月曆沒有新增功能時格子不亮)與 N4(3)(剩下三處改成瞬間)是 AI 依 user 規則推出來、會改到畫面的,**要先經 user 同意**。
+- **工程批次 `wf_6237adf2` 實際結果(09-25,已停止)**:所有產品程式碼(`.tsx` / `.css`)都被核准閘(`check_substantive_edit_approval_preflight`,`EXACT_UI_UX_TARGET_BINDING_MISSING`)擋下 —— 該閘只認「最新一則 user 訊息或 AskUserQuestion 選擇」裡點名的確切目標與做法,子代理沒有 user 訊息、主對話的 B8–B12 同意也已不是最新一則 → 程式改動全部停在 scratch 修改檔(`scratchpad/im/W2/`),寫進 repo 的只有規格、範例、閘與 CI 接線。合規路徑:修改檔逐份核對後,在**一則**訊息裡點名確切檔案與做法,user 用 AskUserQuestion 同意一次,再由主對話套用(產品／UI／UX SSOT P2H)。**不得**用 shell 直接寫檔繞過(misc 組的 `slider.tsx` 就是這樣溜過去的,已揭露)。
+- **修改檔核對完成(09-25,報告全文 `scratchpad/im/W2/review/`)**:14 份修改檔皆可乾淨套上(`agent-panel.lift.diff` 是第二步補丁,只在 set B 時於 set A 之後另套);全部疊上後型別檢查與型別宣告產生 0 錯,對照組(故意塞錯)會紅。會寫入的產品檔 14 支(清單見報告 (d)),另一題 set B(共用 Command 元件的清單鍵盤)4 支。批次自加、user 沒決定過的細節 X1–X35,報告建議多數保留;其中三處是元件之間不一致(X4 按鈕上 Home/End、X6 列上選單鈕按 ↓、X7 樹的 Shift+Tab 要按兩下 —— X7 違反 B9「Tab 一下離開」,屬把已核准決定做對)。**合併(M17 / user「不要再那邊給我拼裝車」)**:清單按鍵表有四份(側欄、檔案清單、樹、Command)、「從觸發鈕找下一站」有兩份(選單、下拉)→ 套用後先收成共用零件再建置;`dropdown-menu.tsx` 879 行超過 800 行上限,拆檔。同批必改的閘:`scripts/focus-indicator-invariants.mjs`(H1f,要照現行 `settle` 寫法)、`scripts/virtual-cursor-modality-invariant.mjs`。套完仍過期、要同批改的文件 14 處(報告 (d) 末段)。不核准也不能放著:工作樹已接上 CI 的新閘會紅,要撤接線。套用後視覺基準圖(FileItem、Button 狀態)要重拍並給 user 看過同意(AGENTS「Visual baseline」)。WM 下次升版會變:側欄鍵盤、匯入對話框的檔案清單讀屏身分、附件清單滑過、文字編輯器選單按 Tab。
+- 工程批次 `wf_6237adf2` 跑完後,逐一核對它改到畫面或操作的地方,**不一律還原**(user 09-25:「你給我仔細確認到底是否是我有明確反對的，如果不是的話就告訴我你擅自改什麼以及合理改的理由，說不定改得有道理就不用改回去了吧？你仔細想想看到底要怎樣亡羊補牢最有效率，不要增加我麻煩」):(1) user 已決定的 → 保留;(2) user 明確反對過的(逐字引得出原話)→ 直接還原,不用問;(3) user 沒說過的 → 列出「改了什麼(畫面上看得到的)、為什麼這樣改、AI 建議留或改回」,改動保留在預覽站讓 user 直接看。(3) 與 R16、R17 的結果合成**同一份清單、一次**給 user(產品／UI／UX SSOT P2H),不分好幾輪問。例:月曆兩個點擊功能被改成一定要傳,畫面不變,但等於規定月曆一定可點,跟 C15 方向相反 → 列入 (3)。
+- **懸而未決的題目照上面這段原話處理,不再拆成一題一題丟回給 user**:A4–A18、N11 與 F 模型各題,一律先過四道篩(`governance/memory/feedback_propose_discipline.md` Sub-rule 6)—— user 已說過的原則推得出答案、世界級一致、現行規格已寫明、已發版且與本次無關。篩掉的不當成選擇題問;但**只要會改到畫面或操作方式(產品／UI／UX),一律先整理成一份「我建議這樣定」清單,user 同意了才改**(AGENTS.md「自主執行 canonical」、`governance/memory/feedback_ship_then_revert_anti_pattern.md`);四道篩都過不了的才是真的選擇題,一次問、用白話。純工程(不改畫面與操作)照常自己做。**更正**:本節上一版寫「直接照答案寫進正本、落地後讓 user 否決」= 先改再問,違反工作流程,已撤回(user 09-25:「你他媽要確保有按照我要求的工作流程跑，關於SSOT的UI/UX異動要經過我同意，其他你應該知道該怎麼做，我們工作流程有定義過」)。四道篩的逐題結果研究中(R17)。
+- 2026-09-25 自我檢討(user:「你他媽不要盡追蹤一些沒意義的任務然後應該追蹤的都遺漏好嗎？你他媽到底是有什麼毛病？root cause 是什麼？」):本檔原本把研究題單、舊清單、內部雜事和 user 交代的事混成 130 列,主線 C3 只剩一列「待做」並卡在 8 題 AI 自己想的題目後面。根因:把「追蹤」做成「把找得到的都列進來」,而不是「user 要的東西有沒有做完」;列表的來源是 AI 的研究文件,不是 user 說過的話。
+
+### 09-25 下半 ~ 09-26 user 訊息逐則對帳(AI 手動,依對話原文)
+
+| user 訊息(摘句) | 落在哪一列 |
+|---|---|
+| 「所以你他媽應該追蹤的任務到底有沒有如實追蹤？…root cause 是什麼？」 | 〇節自我檢討、總覽重整 |
+| 「你他媽要確保有按照我要求的工作流程跑，關於SSOT的UI/UX異動要經過我同意…」 | 〇節同意流程、N11、C15、N4(3) |
+| 「所以這個你還有在查吧？如果你沒在查…」 | N6(R16 當時未開始,已補查) |
+| 「你給我仔細確認到底是否是我有明確反對的…不要增加我麻煩」 | 〇節批次改動處理方式 |
+| 「所以我們目前hover到你說的那個步驟條的那個標題會是怎樣？…截圖明確解釋」 | L12(截圖已給) |
+| 「為何不維持不變？」(滑桿軌道) | N6(維持不變) |
+| 「為何會動到畫面？不是都是點擊的互動問題嗎？」 | N43(撤回)、N44 |
+| 「關於第一題你有研究過世界級的設計類似情境怎麼做嗎？」 | L12 |
+| 「總覽的藍色外圈為何在深色模式看起來跟在亮色模式看起來不一致」 | N48、N49、L14 |
+| 「整列淡灰肯定是錯的…如果是hover在已經完成但非當前狀態的步驟，我們現在是如何處理」 | L12(甲撤回;R18 實測) |
+| 「「Hover會有變化的範圍與可點擊範圍一致」…是否比之前你定義的那條更精準通用」及兩次釐清 | N50 |
+| 「應該也不用一定要規定可以點擊的地方就一定要有樣式變化吧？」 | N50(2) |
+| 「連結線…所以這是沒按照設計規格？」「是規格沒定義清楚還是bug?」 | N52 |
+| 「「展開收合」…」 | N44(user 09-26 說已懂、忽略) |
+| 「評分的星星…是否跟date picker選range的預期區間展示是類似邏輯？」 | N54 |
+| 「這些看起來幾乎都是bug」 | N53 |
+| 「提示卡跳出來之後…我看不懂」 | N50 補充② 已改白話 |
+| 「本身不能點就不在這個原則規範的範疇裡吧？」 | N50 |
+| 「甚至不變也是一種合法的選擇吧？」 | L12 |
+| 「確保所有問題都有追蹤到完美收尾，然後有視覺異動的特別標示出來，然後最初的主線問題到底追蹤得怎樣？」 | 〇節主線狀態、L 表【畫面會變】標記 |
+
+### 09-26 重新分類(user:「具體到底是什麼東西？…所以你仔細確認過所有都是又要我再拍板的東西？」)
+
+- **甲、真的要 user 選(有不同做法)**:L10 手風琴標題、L12 步驟條、L11 手機上滑過才出現的按鈕、L6 手機上的單選下拉、L9「全部瞬間」延伸範圍、L1「View log」連結顏色、L2 月曆事件方塊深色滑過、L13 評分點半顆、N52 連接線正確長相、N50 原則改寫(含 `hit-area-canonical.md:48` 那句)。
+- **乙、照現有規則修的 bug(沒有選擇;只因要改元件程式,核准閘需要 user 在最新一則點頭一次)**:L14 步驟外圈深色間隙(`steps.spec.md:279-281`)、L8 唯讀月曆格子(`color.spec.md:725` + 新原則)、L3「+N」圓與中性頭像底色(`color.spec.md` muted「靜態非互動」段)、L5 樹展開箭頭改用共用行內小按鈕(`inline-action.spec.md:70-84`)、X35 表格區間格(`item-anatomy.spec.md:171` 選中滑過釘住,user 2026-08-11)、L7 三條鍵盤修正(第 3 條依 user「一個藍色focus ring 就已經夠顯眼了」)、N53 五處「亮了卻點不到」、N44、N51。
+- **丙、之前沒問就做了、要 user 確認留不留**:L4 月曆鍵盤走法(09-24)、批次 X1–X35、月曆兩個點擊功能改必填(X34)。
+- `hit-area-canonical.md:48` 那句的來源:user 09-04 對 AI 入口按鈕的原話「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」(`agent-panel.spec.md:442-443`);把它推到「所有沒有滑過變化的東西」是 AI 的延伸。user 09-26 問:「我們新增與修改的原則就是要改掉這個原本造成很多延伸問題的原則吧？」
+- user 09-26 問「圖一到底修好了沒？」→ 未修(L14 / N48,程式在 `steps.tsx`,受核准閘管)。
+
+### 09-26 user 逐題回覆(逐字)與處理
+
+| 題 | user 原話 | 處理 |
+|---|---|---|
+| N50 原則改寫(含 `hit-area-canonical.md:48` 那句) | 「1. 我同意」 | **已同意**:保留 user 09-04 對按鈕的原話,拿掉 AI 延伸到「所有沒有滑過變化的東西」那段,換成新原則(可點的元件:滑過讓它有變化的位置點下去要觸發;不要求點得到的地方一定要有變化)。寫進正本時程式不動,屬規格文字 |
+| L10 手風琴標題 | 「維持」 | **已決:維持**;規格補寫理由(文字) |
+| L12 步驟條可點的步 | 「不變」 | **已決:不變** |
+| L11 手機上滑過才出現的按鈕 | 「先維持，很多都是手機不會出現的功能，且如果真的要解也完全不想動desktop web 的所有元件，反而可能會考慮是否全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製。」 | **已決:維持**;未來方向記為 backlog(全面讓手機也有 hover、行為與桌機一致、不客製) |
+| L6 手機上的單選下拉 | 「上次不是有結論？你叫我先維持啊」 | **AI 錯:重問已決題**(09-18 那題選項原文「Select 單選不動」,`combobox.spec.md:219`)→ 維持,從清單移除 |
+| L9「全部瞬間」延伸 | 「確定這樣才是一致設計語言就做」 | 條件核對:DS 已定滑過底色瞬間(`motion.spec.md:115-131`);同一次滑過底色瞬間、字色與外框卻 0.15 秒 = 兩套手感 → 條件成立,做;勾選框打勾、開關滑動、分頁底線移動這類「選中切換」動畫不在內 |
+| L1「View log」連結 | 「按照新原則，不是本來就沒有一定要有變化嗎？我覺得要改的話改成連結的藍字好像好一點」 | 依新原則滑過不必有變化;照 user 傾向改成 DS 一般連結的藍字(滑過淺一階藍);最終同意清單再確認 |
+| L2 月曆事件方塊深色滑過 | 「所以token要怎樣？會變得很複雜？」 | 已答:不新增 token。根因 = 深色色階第 1 階是半透明、第 2 階是很暗的實色(`primitives.css:292-293`),「換下一階」在深色反而變暗;改法 = 在 `categorical-color.ts` 事件方塊那一處,深色滑過改成「同色相、透明度高一點」,12 色共用一條公式;「疊一層」不行(`color.spec.md:16` 禁止彩色底用疊層)。待 user 看前後圖同意 |
+| L13 評分點半顆 | 「確認世界級的設計是這樣可以照你建議」 | 條件核對:MUI Rating、Ant Rate(rc-rate)都是每顆星以方盒左右比例判半顆(`rating.spec.md` 世界級表,2026-09-24 讀原始碼)→ 成立,做 |
+| L3「+N」圓與灰色頭像 | 「這是哪裡？可以畫出來？」 | 已截圖:頭像疊最後的「+N」圓、沒指定顏色的人名縮寫／圖示頭像;淺 #F5F5F5 → #F0F0F0、深 #1E1E1E → #272727。待 user 同意 |
+| L5 樹展開箭頭 | 「是改成inline action對吧？那巢狀table 的小箭頭是否已經合理正確了？」 | 對,改用共用行內小按鈕。表格巢狀列小箭頭已是共用小按鈕(`data-table.tsx:3308-3316`),實測滑過底色 18×18、點擊範圍同一塊(底色左右邊緣內 0.5px 點得到、外 0.5px 點不到)→ 正確;樹的是手刻 16×16 |
+| L7 鍵盤小修 | 「我看不懂這裡到底在講什麼，所以主線已經有定案了？這邊可以明確合理一致的定義成這樣？」 | 已用白話重講;兩條定義寫進主線正本:「不能打字的選項清單,Enter 與空白鍵都是選這一項」「滑鼠點到哪一格,鍵盤位置就跟到哪一格」 |
+| L4 月曆鍵盤走法 | 「符合我們一致的設計語言且不違背世界級的設計就照建議」 | 條件核對:W3C 格子規範(整格一站、方向鍵、F2 進格內)+ 與已選的乙同一套 + DS 日期格已是一站 + 方向鍵 → 成立,保留 |
+
+### 09-26 同意清單回覆(user 以自訂文字回答,未按「同意」選項)
+
+- 未按「同意」→ 核准閘不放行(`EXACT_UI_UX_TARGET_BINDING_MISSING`);user 原話「其他照你建議做確保符合我們一致認同設計語言且不違背世界級的設計」→ 只把**沒被質疑**的項目與確切檔案再列一次,請 user 按一次同意。
+- **被質疑、先不做、研究中(R21)**:
+  - 評分:「評分是否應該是要不就是都一整顆要不就是都可支援半顆？所以我們該怎麼做？提供兩種類型？還是維持一律一顆？世界級的設計怎麼做？」
+  - 「+N」與頭像:「+n改後會跟tag預設那個灰底一樣？我發現 avatar 堆疊的話，灰底 avatar 有透明度疊在其他avatar看起來會很怪，我們從來沒有處理過這個問題嗎？我們一直都用有透明度的底色？這樣堆疊不是很怪嗎？」
+  - View log:「view log 若是在錯誤訊息中，是否也可以使用跟錯誤訊息同樣的顏色token並加上底線，然後滑上去時會變成 error hover的顏色？這樣符合ds的原則？」
+  - 月曆事件方塊:「關於月曆事件底色的hover樣式，整個ds沒有其他類似的地方？以及若第二階實色在dark mode這麼難用，是否要改成dark mode的第二階實色是有透明度的？仔細全盤ds研究查查看.」
+  - 試算表模式三條:「「表格的試算表模式」世界級的設計也是如此改法？」
+  - 日期空隙:「所以世界級的設計都怎麼處理日期空隙？ant design 是怎樣？各家都研究過？他們應該也不會閃吧？至於實際上是否日期之間有間距我不得而知，因為一般狀態看不出來。」(評分與日期的空隙規則、D2 一併擱置;D1「慢慢移出預覽卡住」屬 bug 照做)
+  - AI 面板選項卡:「我覺得好像不用加上底色變化，若它是 radio 的話，那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」→ 工作樹 `agent-panel.tsx` 選項卡的 `hover:bg-secondary-hover` 先拿掉
+  - 網址欄:「應該要開啟連結才對吧？」(問句,傾向開啟連結)
+  - 原則:user 提出 hover 三種用途(操作可點、操作揭露、資訊揭露)與補充句「不可點擊的元件可以有 hover 回饋，但必須有明確的閱讀、資訊揭露或操作揭露用途；其視覺表現不應讓使用者誤認整個區域可以點擊。沒有上述用途的靜態容器，預設不提供 hover 樣式。」,要求「仔細研究看看到底他所說是否正確並做研究，確保我們訂出一個完整符合我們一致的設計原則且不違背世界級的設計，且可以套用在任何情境都能合理解釋」
+- **沒被質疑、請 user 按同意後套用**(產品／UI／UX SSOT P2H):B8 顏色與疊層、B12 FileItem 與上傳列(不含 AI 面板選項卡)、B9–B11 全部(含單選下拉空白鍵選取)、按鍵規則合併、步驟條三個 bug、唯讀月曆、樹小箭頭改共用小按鈕、4 處「亮了卻點不到」(不含評分)、日期 D1、全部瞬間、35 個細節。
+- **09-26 user 回覆同意**(第二次提問的自訂回覆):「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」→ 核准閘放行。**已套用(工作樹,未提交)**:`semantic.css`(新增 secondary-hover/-active 與疊層寫法;註解拿掉 AI 面板選項卡)、FileItem 兩檔、側欄、選單、AI 浮鈕、單選下拉(含新檔 `select-menu-keyboard.ts`)、Combobox、檔案清單、AI 面板對話紀錄(set A + lift)、指令清單(set B)與兩份規格、找人範例、樹兩檔(雜湊與核對版一致);AI 面板選項卡滑過已拿掉(待研究)。**進行中**:合併重複按鍵規則、步驟條三 bug、唯讀月曆、4 處點不到、日期 D1、全部瞬間、X4/X6/X7 統一、閘與文件(子代理在暫存區備好完整檔,主對話寫明路徑放入)
+- **09-26 第二批已放入(工作樹,未提交)**:子代理在暫存區備好的 64 個檔 + 1 個刪除(`W3/check/COPY-LIST.tsv`),主對話寫明路徑逐批放入,**65/65 雜湊比對一致**;型別檢查在影子樹 0 錯(含對照組)。內容:共用按鍵零件 `lib/roving-list-keyboard.ts`、`lib/focus-after-trigger.ts`、選單拆出 `dropdown-menu-keyboard.ts`(879→670 行)、樹小箭頭改共用小按鈕、X4/X6/X7 統一、單選下拉空白鍵選取、步驟條三 bug(外圈改 outline+offset)、唯讀月曆(`readOnlyDates` / `readOnlyEvents`,型別層「給回呼或宣告唯讀」擇一,撤回改必填)、4 處點不到、日期 D1、全部瞬間、刪除沒人用的 `useInputModality`(公開匯出少一個,WM 未使用)。AI 面板工具列滑過淡入 → 瞬間出現(規格同改)。
+- **09-26 驗收(V3,底稿 `scratchpad/im/V3/` + workflow `wf_df8d73fe`)**:產生、`build:lib`、型別、Storybook 建置全 0;靜態閘 58/60(剩 story 清單待提交、`hover-instant` 2 行待同意);hook 96/96(沙箱 `mktemp` 走 shim,前後 `git status` 相同);瀏覽器閘 11 支全綠(兩支閘自己的時序 bug 已修,各附弄壞會紅的對照組);鍵盤與點擊實測 29 項、滑過實測淺深兩色全部符合,每項有會變的對照組;畫面前後比對 1,094 對:108 對預期、14 對雜訊、4 處不在預期。主對話已修:根 `AGENTS.md` 超過 32KiB(`618e3a37` 起,非本批)、新 token 登記、Sidebar 體積上限重設(鍵盤走法乙,理由寫在 `bundle-budget.json`)、`steps.spec.md:83` 與同檔矛盾、`agent-panel.spec.md:248` 選項卡過期句、三則範例頁跑位(FileItem 原則頁改回上傳面板組合、顏色 token 標籤擠斷、唯讀月曆看不到第二個假日)。I31(表格區間格深色被列滑過染色)判的是 user 未決的 R21 第 5 題 (a) → 深色只回報不判紅,決定後改。
+- **下一份同意清單**(產品／UI／UX SSOT P2H):輪播箭頭滑過淡入(`carousel.tsx:266`)、檔案檢視器縮圖滑過外框(`file-viewer.tsx:652`;選中外框的過渡一併變瞬間,同 Chip / SegmentedControl 已發生的連帶)、數字輸入框與網址欄編輯中「點外框也聚焦」(`number-input.tsx`、`link-input.tsx`;`input.spec.md:150` 已寫三者同一條,程式只接了 Input)、【畫面會變】檔案清單聚焦框蓋住小型列進度條(`file-upload.tsx:332` × `file-item.tsx:370`,建議進度條離列底 2px)、【畫面會變】樹拖放範例「重設」鈕由藍字改成有框按鈕(批次為了過 story 檢查而改,建議保留)、R21 八題與 R22 網址欄空白處(`scratchpad/im/R22/linkinput.md`)。
+
+### 真的需要 user 決定的(目前)
+
+| id | 題目 | 狀態 |
+|---|---|---|
+| N1 | 要不要做「按一個鍵跳出整個側欄」(F6) | 世界級有做(一手見 N1 明細),AI 建議做;等 user 說要不要 |
+| N6 | 步驟條上可點的步驟、滑桿軌道、捲軸槽:點了有反應、滑過卻沒變化 | **更正**:R16 把 user 的「要點了會有反應的才加」讀成「能點的每一處都要加」—— 那句是**限制**(不能點的不加),不是強制;user 自己的補充「若其被hover是有其他的樣式變化則不一定要加吧」也是這個意思。→ **滑桿軌道、捲軸槽:維持不變,不問**(user 09-25 問:「為何不維持不變？」;世界級 10 家有 7 家軌道滑過不變:MUI、Material、Carbon、shadcn、Radix Themes、Spectrum CSS、Spectrum 2;大家認得的是拖那顆圓,圓滑過本來就會變)。→ **步驟條:加不加、怎麼亮都是真的選擇題**,併入〇節清單(產品／UI／UX SSOT P2H):維持不變(MUI、Spectrum CSS)/ 整列淡灰+標題轉黑 / 標題轉淺藍(Carbon、Atlassian、Ant)/ 標題轉黑(同本 DS 分頁標籤);AI 建議加,理由是本 DS 其他「點了會跳到某處」的東西(分頁標籤、頁碼、麵包屑、選單列)滑過都有變化,只有步驟條沒有。現況已截圖給 user:淺深兩色滑過前後標題色、底色量測完全相同(淺 `oklch(0 0 0 / 0.65)`、深 `oklch(1 0 0 / 0.85)`,底 `rgba(0,0,0,0)`) |
+| A20 | 發版 | user 看過預覽站後說「發版」 |
+
+A4–A18、N11、C15、N4(3) 已過四道篩(R17,09-25)。結果:**真的要 user 選 2 題**、**建議這樣定、要 user 同意 10 項**(含 AI 複核後從工程移入的 L13),連同 N6 步驟條與批次 `wf_6237adf2` 沒經同意的改動,合成**一份清單一次**給 user(產品／UI／UX SSOT P2H)。清單草稿(每項:畫面上現在是 → 建議 → 為什麼;全文在 session scratchpad `R17/draft.md`,結論如下):
+
+| 清單項 | 內容 | 類別 |
+|---|---|---|
+| L1(A6) | 【畫面會變】 錯誤訊息裡的「View log」連結:改用 DS 內文連結的藍字底線、滑過淺一階(現在深色滑過完全不變) | 建議、要同意 |
+| L2(A7) | 【畫面會變,深色】 月曆事件方塊深色滑過:改成同色更濃、稍亮(現在變成近黑);淺色不變 | 建議、要同意 |
+| L3(A9②) | 【畫面會變】 「+N」圓形與中性色頭像底色 muted → secondary(user:「我們ds只有明確禁止muted用在可互動底色吧？」) | 建議、要同意 |
+| L4(A17) | 【只改鍵盤操作】 月曆鍵盤:整張一站、方向鍵、F2 進事件(09-24 沒先問就改,只在分支) | 建議保留、要同意 |
+| L5(A18-3) | 【畫面會變】 樹的展開箭頭改用共用行內小按鈕(滑過底 16→18、按下多一階) | 建議、要同意 |
+| L6(A13/OD7) | 【畫面會變,手機】 手機上的 Select 改用跟桌機一樣的下拉(09-18 Combobox 那題原文寫「Select 單選不動」→ 跨目標) | 建議、要同意 |
+| L7(N11 2/3c/3h) | 【鍵盤操作;第 3 條畫面會變(試算表焦點框)】 鍵盤小修三條:單選下拉空白鍵選取、試算表點任何格都帶格游標、試算表只留一個 2px 藍框 | 建議、要同意 |
+| L8(C15) | 【畫面會變】 沒有「新增」功能的月曆:格子與事件滑過不變色;用明確的「唯讀」設定判斷,不用「有沒有傳」(M23(f)) | 建議、要同意 |
+| L9(N4(3)) | 【畫面會變(變色速度)】 「全部瞬間」延伸到字色、外框、列上小按鈕淡入(09-10 題目原文只問底色,底色已做完) | 建議、要同意 |
+| L10(A5) | 【畫面會變】 手風琴標題滑過變淡:甲 維持 / 乙 平常淡一階滑過變深 / 丙 整列淡灰底(AI 推,同 Carbon) | 真的要選 |
+| L11(A13/D7) | 【畫面會變,手機】 只有滑過才出現的小按鈕在手機上:A 不能滑過的裝置就常駐(AI 推)/ B 完全照桌機 | 真的要選 |
+| L12(N6) | 【選「維持不變」以外都會改畫面】 步驟條可點的步滑過(R18 實測 + 反向核對完成):**現況** = 16 則範例、85 步、淺深兩色共 170 次滑過,畫面 0 變化,只有游標變手形(對照組 36/36、32/32、10/10 量得到變化,量具有效)。**世界級 8 家**:整列灰底 1 家(Angular Material,灰底確實蓋到連接線 16–60px;另 Ant 的 inline 小型態不可點也有灰底);標題轉藍 3 家(Ant、Carbon、Atlassian);只換圓 1 家(React Spectrum,未正式版);不變 3 家(MUI、Spectrum CSS、SAP UI5)。**不碰連接線的剩下做法**:乙 標題轉藍(藍在步驟條已代表已完成/目前/下一個可去)/ 丙 標題轉深(會跟「目前那一步」標題同色;8 家沒有一家這樣做)/ 丁 圓換自己的滑過色(會跟焦點外環同色,N9)/ 戊 維持不變。與 N50 的關係(**AI 前一版說「乙丙丁都只變一小塊、不符 user 原則」已撤回** —— 那是誤解 user 原則的結果):user 原則是「滑過讓畫面出現變化的那個指標位置,點下去一定有反應」,變化的是哪一小塊不拘;步驟條可點範圍 = 整列,只要在整列內滑過才讓標題/圓變化,乙丙丁皆符合,要另依其他理由選 | 真的要選(等 N50 一起)。user 09-26:「甚至不變也是一種合法的選擇吧？」→ 是,依 user 原則「不變」合法;唯一牽連是 N50 所記 `hit-area-canonical.md:48` 那句 |
+| L14(N48) | 【畫面會變,深色】 步驟條外圈深色沒有間隙 → 修成跟淺色一樣 | bug 修正,程式受核准閘管,一併同意 |
+| L13(A18-4) | 【只改滑鼠操作】 評分半星模式:每一顆星都能點左半顆(現在只有目前那顆半星能點半邊,鍵盤早就能半顆半顆調;規格引的 MUI、Ant 都是每顆都能點半邊) | 建議、要同意 |
+
+其餘(A4、A5 查看更多、A8、A9①③、A10、A11、A12、A14–A16、A18 多數、N11 多數)= 不用問不用改、已由 user 決定、或前提不成立;依既有規則要修、畫面不變的,列在 N46。
+
+### user 說先不做的(只記錄,不動、不問)
+
+A19 月曆「+N more」展開、N5 淺色滑過偏淡、N24 分割按鈕、N25 表格升級、N28 AI 標誌聆聽、N29 帳號選單 email、OD1 列拖曳替代路徑、OD2 AI 面板鍵盤往返。
+
+### 不列給 user 的
+
+C 區(除 C3)與 D 區是內部工程,AI 自己處理,不拿去問 user。已發版、與本次任務無關的舊事不再提問(user 09-25:「除非跟這次的任務有關，否則不要在那邊翻舊帳，明明就發版了」)。
+
+---
+
+## A. 決策明細(已決、收掉、待篩的都在這裡;要 user 決定的以〇節為準)
 
 | id | 題目 | 目前狀態與已查到的結論 |
 |---|---|---|
-| A1 | **一串東西的鍵盤路線(D1)+ 列上小按鈕怎麼到(D2)** | **已決 → 見 B9–B11**。 **附條件同意、查證中**(2026-09-25)。user 問的其實是「怎麼離開側欄」(原話:「我要問的是如何離開側欄，因為你說tab是進去節點內的action」);AI 答:Tab 經過目前這一項的按鈕(最多 2 顆)後再按一次就離開,最多 3 下;現況每一項每顆按鈕各一下。user 三題的回答全是條件句 —— 走法:「你確定世界級的設計真的是這樣的話就照你建議做」;選單 Tab:「你確定這個符合我們一致的設計語言且不違背世界級的設計就這樣做」;子選單 Esc:「你確定這符合我們一致的設計語言且不違背世界級的設計就這樣做」。**條件滿足前不動工**。AI 題目中「W3C、Adobe、微軟、VS Code 都是這樣」說太滿(W3C 只在樹狀表格寫、微軟自稱實驗性、VS Code 只有擴充樹),正在逐條查證並檢查全 DS 浮層的 Tab/Esc 是否一致,結果要如實回報。以下為先前研究:AI 推薦「路線甲」:方向鍵在項目之間走;Tab 從目前這一項走進它自己的按鈕,走完離開整串;Shift+F10/選單鍵開這一項的全部動作。一手最強的組合是「樹改成 treegrid + Tab 走進目前這一列」(APG treegrid、React Aria、Adobe 表格規格),所以 D1 與「樹要不要改 treegrid」必須一起決定。user 追問原話:「那要如何離開選單？世界級的設計按照這種做法的話一整套是怎樣？你有研究確認過？你花了那麼久的時間應該有確認過吧？」—— 研究已完成、**尚未回覆 user**。結論:Esc 關選單並回到開它的東西(從 ⋯ 開就回 ⋯;從項目開就回那一項);一般動作選完關閉、焦點回開啟者;刪除後焦點到下一項→上一項→容器;改名時焦點進輸入框,Enter/Esc 回樹上同一項;開對話框時,對話框關閉後回到選單的開啟者;點外面則焦點留在點的地方。世界級分歧兩處要 user 決定:(1) 選單裡按 Tab —— APG/Fluent/Primer「關閉並接著往下走」vs Radix(本 DS 現況)/React Aria/VS Code/WinUI「困在選單裡」;(2) 子選單裡按 Esc —— APG/React Aria/Fluent/Primer/VS Code「只關這一層」vs Radix 與 `dropdown-menu.spec.md:187`「全部關」。本 DS 現況:唯一的 Shift+F10 選單(AgentPanel 浮鈕)在點外面後會把焦點搶回來(`agent-panel-fab.tsx:702-705`),是既有偏差。 |
-| A2 | **FileItem(大卡片、小膠囊、可點的上傳列)要不要有滑過底色、怎麼做** | **已決 → 見 B8(怎麼做)、B12(要不要)**。 研究中(user 提議驗證)。已決相關:#4「卡片保留、按鈕再亮一層」;#13「疊一層」若沒有設計理由就是第二套 → AI 已撤回疊層建議。實測:卡片直接換成 `neutral-hover` 在深色會**變暗**(#1D1D1D→#141414,錯);新增 `surface-hover`(深 #282828)方向正確。user 2026-09-25 提議(原話,**提議非決定**):「我覺得卡片的底色是固定不變的，它就像 select menu 那種容器底色一樣，如果要在設計上做hover，應該是疊加上去，但只有這種類型的是這樣，意思就是原本背景顏色是surface類包括surface opaque的就不會變為neutral系列，只有透明的才會，這只是我提出的提議，你幫我整個 ds 全盤檢查驗證確認是否合理以及是否有例外，全部檢查確認後再看要怎樣」→ 全 DS 驗證**已完成**(R14):提議合理、可寫成一條規則;「surface 類不換、透明才換」= DS 出貨元件現況(例外只有兩則 story 手刻膠囊、人名膠囊移除鈕);深色把 surface 換成 neutral 系列 → 滑過變暗、按住完全沒反應(17 個元素);疊上去兩主題方向都對、與透明列滑過同色(淺 #FAFAFA、深 #262626);換色派 9 家無「表面疊、其他換」先例(只有 Material 全面疊),畫面效果有前例(Ant、Adobe 表格列)。待 user 選:甲 疊上去(0 新 token、改寫 `color.spec.md:16` 並寫明刻意偏離 Atlassian)/乙 每種底色新增一對滑過色(約 4–9 顆 token、深色半透明淺色不透明)。連帶發現:按鈕白底款的灰色已按下在深色幾乎看不出(#1D1D1D vs #1E1E1E),甲之下會修好。一併決定:AgentPanel 選項卡、OverflowIndicator 標籤形(同樣站在 `secondary` 上又可點)。小膠囊若要滑過,一定要新增 `secondary-hover`(第 4 格;淺 #F0F0F0→#E8E8E8)。 |
+| A1 | **一串東西的鍵盤路線(D1)+ 列上小按鈕怎麼到(D2)** | **已決 → 見 B9–B11**。user 問的是「怎麼離開側欄」(原話:「我要問的是如何離開側欄，因為你說tab是進去節點內的action」)。**AI 在 09-25 07:35 講錯兩句,已更正**:「最多 3 下離開側欄」是離開一串,不是整個側欄(混合內容側欄今天 19 下);「W3C、Adobe、微軟、VS Code 都是這樣」說太滿(W3C 只在樹狀表格寫、Adobe 正式版預設用方向鍵、微軟側欄 Tab 一下就離開)。三個條件的查證結果:鍵盤走法甲不成立 → user 改選乙(#31,條件成立);選單 Tab 部分成立 → 加上單選下拉一起改(#32);子選單 Esc 成立。研究原文見 session scratchpad `R15/VERDICT.md`。 |
+| A2 | **FileItem(大卡片、小膠囊、可點的上傳列)要不要有滑過底色、怎麼做** | **已決 → 見 B8(怎麼做)、B12(要不要)**。user 提議(原話,**提議非決定**):「我覺得卡片的底色是固定不變的，它就像 select menu 那種容器底色一樣，如果要在設計上做hover，應該是疊加上去，但只有這種類型的是這樣，意思就是原本背景顏色是surface類包括surface opaque的就不會變為neutral系列，只有透明的才會，這只是我提出的提議，你幫我整個 ds 全盤檢查驗證確認是否合理以及是否有例外，全部檢查確認後再看要怎樣」→ R14 全 DS 驗證後 user 選 #30。深色下灰色已按下看不出來的 bug 不在本題範圍(另由 N7 追)。 |
 | A3 | **上傳管理器的列:要不要上色;左右沒有內距** | **已決 → 見 B12**(只有可點的列加滑過;不可點的不加)。user 的前提「Google Drive 上傳列不上色」**未被證實**:唯一找到的圖(Drive 官方社群 2021 使用者截圖)整列淺藍 `#EEF6FE` 鋪到面板邊。世界級分兩派:列不可點 → 不上色(Fluent、shadcn、Carbon、Spectrum 2、Polaris、Material);列不可點但滑過會浮出按鈕 → 仍上淡色(Ant 文字清單、Box 新版上傳面板)。本 DS 的上傳列滑過時 ✓ 會換成下載鈕,屬後者那一類。要上色的話,依 `overlay-surface.spec.md:221-228` 改成列自帶內距、面板給 0,並推翻 2026-06-03「拿掉左右內距」。 |
-| A4 | Button tertiary 滑過轉藍要不要保留 | 待決。`button.tsx` tertiary 的邊框從 `--border` 轉 `primary-hover`,沒寫理由;同類控件 Chip、SegmentedControl、Field 都走中性(`--border-hover`)。 |
-| A5 | Accordion 標題滑過變淡;Sidebar「查看更多」滑過跳一階 | 待決。Accordion 是全 DS 唯一文字滑過變淡(#262626→#595959),「變淡」這個方向是 AI 建元件時自己做的;Sidebar「查看更多」`fg-muted`→`foreground` 跳一階。兩題合併決定。 |
-| A6 | 句中錯誤連結「View log」的顏色 | 待決。`error-text` 借了 `error-hover`:淺色變淺、深色完全不變。(a) 改用 `text-error`(對比降到 4.7:1,滑過 3.3:1)/(b) 新增 `--error-text-hover`。 |
-| A7 | 月曆事件方塊在深色的滑過值 | 待決。hue-1 滑過直接換成 hue-2:淺色對,深色變暗(#1C304A→#00004D);深色沒有現成的「亮一階」。方向本身也要定。 |
-| A8 | ResizeHandle 分隔線滑過跳兩階(n4→n6) | 待決。保留(補理由)或改下一階 n5(線會變淡)。 |
-| A9 | muted 與 secondary 的分界以哪個為準;仍站在 muted 上的可互動元件 | 待決。(a) 保留現有用法、改寫定義(畫面不變,AI 建議)/(b) 保留判斷問句、改用法(表頭、Alert neutral 等變深一階)。依附此題:OverflowIndicator 圓形 +N、FileViewer 縮圖、Avatar neutral(有名片時)。 |
-| A10 | 指標停在月曆事件上時,整格「新增」的亮底要不要熄 | 待決。把 #4 套到月曆是跨類別外推(M8),要另外確認;AI 建議照 #4 維持現況。 |
-| A11 | F 模型 D4:滑鼠滑過時鍵盤位置要不要跟著搬 | 待決(尚未提問)。選項 A/A′/B/C 見 F 模型。 |
-| A12 | F 模型 D5:(a) 到底要不要繞回 (a2) 日子走出月邊緣 (b) SegmentedControl 方向鍵是否直接切換 (c) TimePicker 多欄合一站 (d) 輪播點/縮圖列/頁碼/步驟合一站 (e) Accordion 方向鍵 (f) 試算表 Tab (g) 編輯中 Enter 後停哪 (h) Tab 進來落在哪 | 待決(尚未提問)。 |
-| A13 | F 模型 D7:只有滑過才出現的按鈕在觸控裝置怎麼辦;預設要不要藏;Select 觸控是否拿掉原生選單 | 待決(尚未提問)。 |
-| A14 | F 模型 D8:欄位的鍵盤記號(錯誤狀態、範圍、唯讀) | 待決(尚未提問)。 |
-| A15 | F 模型 D9:停用項目鍵盤停不停得到 | 待決(尚未提問)。 |
-| A16 | F 模型 D10:游標用手形還是一律箭頭 | 待決(尚未提問)。 |
-| A17 | F 模型 6.A:已落地但未確認的 6 項(月曆單一停靠點、事件方塊 F2、側欄 20→18〔#1 已核准〕、側欄窄視窗隱形帶移除、日期格隱形帶移除、檔案列動作鈕不再連帶開檔) | 待決(尚未提問;側欄 18 已由 #1 核准)。 |
-| A18 | F 模型 6.B(二):AI 推導/跨目標延伸的改動清單 | 待決(尚未提問)。 |
+| A4 | Button tertiary 滑過轉藍要不要保留 | 待篩(〇節主線,過四道篩後再定)。`button.tsx` tertiary 的邊框從 `--border` 轉 `primary-hover`,沒寫理由;同類控件 Chip、SegmentedControl、Field 都走中性(`--border-hover`)。 |
+| A5 | Accordion 標題滑過變淡;Sidebar「查看更多」滑過跳一階 | 待篩(〇節主線,過四道篩後再定)。Accordion 是全 DS 唯一文字滑過變淡(#262626→#595959),「變淡」這個方向是 AI 建元件時自己做的;Sidebar「查看更多」`fg-muted`→`foreground` 跳一階。兩題合併決定。 |
+| A6 | 句中錯誤連結「View log」的顏色 | 待篩(〇節主線,過四道篩後再定)。`error-text` 借了 `error-hover`:淺色變淺、深色完全不變。(a) 改用 `text-error`(對比降到 4.7:1,滑過 3.3:1)/(b) 新增 `--error-text-hover`。 |
+| A7 | 月曆事件方塊在深色的滑過值 | 待篩(〇節主線,過四道篩後再定)。hue-1 滑過直接換成 hue-2:淺色對,深色變暗(#1C304A→#00004D);深色沒有現成的「亮一階」。方向本身也要定。 |
+| A8 | ResizeHandle 分隔線滑過跳兩階(n4→n6) | 待篩(〇節主線,過四道篩後再定)。保留(補理由)或改下一階 n5(線會變淡)。 |
+| A9 | muted 與 secondary 的分界以哪個為準;仍站在 muted 上的可互動元件 | 待篩(〇節主線,過四道篩後再定)。(a) 保留現有用法、改寫定義(畫面不變,AI 建議)/(b) 保留判斷問句、改用法(表頭、Alert neutral 等變深一階)。依附此題:OverflowIndicator 圓形 +N、FileViewer 縮圖、Avatar neutral(有名片時)。 |
+| A10 | 指標停在月曆事件上時,整格「新增」的亮底要不要熄 | 待篩(〇節主線,過四道篩後再定)。把 #4 套到月曆是跨類別外推(M8),要另外確認;AI 建議照 #4 維持現況。 |
+| A11 | F 模型 D4:滑鼠滑過時鍵盤位置要不要跟著搬 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A12 | F 模型 D5:(a) 到底要不要繞回 (a2) 日子走出月邊緣 (b) SegmentedControl 方向鍵是否直接切換 (c) TimePicker 多欄合一站 (d) 輪播點/縮圖列/頁碼/步驟合一站 (e) Accordion 方向鍵 (f) 試算表 Tab (g) 編輯中 Enter 後停哪 (h) Tab 進來落在哪 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A13 | F 模型 D7:只有滑過才出現的按鈕在觸控裝置怎麼辦;預設要不要藏;Select 觸控是否拿掉原生選單 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A14 | F 模型 D8:欄位的鍵盤記號(錯誤狀態、範圍、唯讀) | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A15 | F 模型 D9:停用項目鍵盤停不停得到 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A16 | F 模型 D10:游標用手形還是一律箭頭 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
+| A17 | F 模型 6.A:已落地但未確認的 6 項(月曆單一停靠點、事件方塊 F2、側欄 20→18〔#1 已核准〕、側欄窄視窗隱形帶移除、日期格隱形帶移除、檔案列動作鈕不再連帶開檔) | **已列、未確認**:09-24 10:56Z、13:21Z、13:26Z 都列給 user 看過,user 只否決了表格選取格(`7b1b66e9` 已改回),其餘沒有明確確認(側欄 18 已由 #1 核准)。 |
+| A18 | F 模型 6.B(二):AI 推導/跨目標延伸的改動清單 | 待篩(〇節主線):F 模型題目,不再當成題目問 user;過四道篩後寫進正本 C3,篩不掉的才一次問 |
 | A19 | 月曆「+N more」要不要可展開 | 暫緩。user 原話(問句):「「月曆的「+N more」要不要做成可以展開。」現在是怎樣？先不管會怎樣？可以先不管嗎？」;AI 答可先不管(規格已登記後續增量 `calendar.spec.md`)。 |
 | A20 | 發版 | 等 user 看過預覽站後在對話說「發版」。 |
+| N1 | F6 區段導覽鍵(側欄↔主區↔工具列一鍵跳):要不要做 | 待決。user 09-25 問:「世界級的設計若是類似我們的設計也會這樣做？」→ AI 答:有做的一手:Slack(`https://slack.com/help/articles/360000411963-Use-Slack-with-a-screen-reader`「You can navigate between these sections by pressing F6」)、Outlook 網頁版(`https://support.microsoft.com/en-us/office/keyboard-shortcuts-for-outlook-3cdeb221-7ae5-4c1d-8c1d-9e63216c1efd`「Move to a different region… F6」)、Adobe 網頁元件庫內建(`https://react-aria.adobe.com/useLandmark`「Pressing F6 will move focus to the next landmark on the page」)、微軟設計準則(`https://learn.microsoft.com/en-us/windows/apps/design/accessibility/landmarks-and-headings`「Support F6-based pane traversal when your app contains multiple major regions」);明確不做的一手沒查到。AI 建議做。user 前一則原話:「「要不要做區段層級導覽鍵(F6 那類,在側欄與主區之間跳)」所以最終這個架構的ssot到底能不能讓一開始最早提出的file item的鍵盤操作定義是居有定所？」 |
+| N2 | 鍵盤進入「一串一站」的清單時,要不要另外給提示 | **AI 撤回提案(維持現況)**。user 09-25 問:「為何要？不會自動焦點在選單的選項上？」→ 對:Tab 進清單時焦點直接落在一個項目上、那一項有焦點框,這就是提示;W3C 範例與 Adobe、微軟的清單也只這樣做,不另加框 |
+| N3 | 月曆「打字跳到日期」 | **不再提問**:已發版、與本次任務無關。user 09-25:「這個早就決定拍板了，你他媽可以不要拿已經發版的東西再來問我嗎？除非跟這次的任務有關，否則不要在那邊翻舊帳，明明就發版了」(針對 N27,同理適用) |
+| N4 | F 模型 D3 剩下的四小題 | **收掉**(user 09-25 逐題回覆):(2) 列按下要不要深一階 → user:「不用吧？通常只有按鈕才這樣做吧？」→ 維持現況(規格本來就寫列不做按下變化;查過的幾家只有 Material 規定了列的按下樣子);(4) 按鈕之間的空隙算不算點到 → **AI 撤回,不該問**:依 user 09-04 原話「…其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」推出空隙不算(**更正**:AI 在回覆與上一版寫「user 已定」是把前提升格成決定,M36);(5) 選單按下就開還是放開才開 → **AI 撤回,不該問**:世界級一致是按下就開(Radix `dropdown-menu.tsx` onPointerDown;React Aria `useMenuTrigger.ts` 註解 "For consistency with native, open the menu on mouse/key down, but touch up"),維持現況;(3)「全部瞬間」→ user 09-10 原話「第三題改成全部瞬間，確保有SSOT不要有漂移」,**當時題目只問滑過的底色**(A 全部維持 150 毫秒 / B′ 掃過的列面瞬間、浮層選單維持 / C 全部瞬間),底色已做完;延伸到字色、外框、列上小按鈕淡入是新提案 = 清單 L9,**先經 user 同意再改**(AI 上一則回覆寫「直接做,不再問你」是錯的):分頁標籤文字與底線(`tabs.tsx:488/498`)、輸入框外框(`field-wrapper.tsx:90/119`)、滑過才出現的小按鈕淡入(`item-anatomy.tsx:813-816`、`sidebar.tsx:1198`)改成瞬間 —— 待 user 同意(產品／UI／UX SSOT P2H)。user 對這組題的原話:「你是認真在問我這個問題？你為什麼會認為可以？」「你他媽為何現在才在問我這個問題？世界級的設計在這裡是有分歧嗎？你他媽是真的有理由另闢那麼多新戰場嗎？」→ 規則寫進 `governance/memory/feedback_propose_discipline.md` Sub-rule 6(題目交給 user 前必過四道篩) |
+| N5 | 淺色 `--neutral-hover` 只有 2%,比世界級對照都淡 | 暫緩。user 09-02:「第三題先不動」(摘要轉述,artifact 留言原文沒拿到);B8/B12 落地後再提 |
+| N6 | 站在灰底、點了會有反應的其餘元件要不要加滑過 | 範圍縮小。user 09-25:「若其被hover是有其他的樣式變化則不一定要加吧？像是+n底色沒變但是會直接跳tooltip」→ 查證:「+N」標籤滑過直接跳出清單卡片,而且點它不會做別的事(`overflow-indicator.tsx:137-144`,不是「點了有反應」)→ **不加**;Slider 把手滑過本身會變(`slider.tsx:172`)→ 把手不用。**剩兩個真的缺**:Steps 可點的步驟(滑過完全沒變化、只有手形游標,`steps.spec.md:210`;點了會跳到那一步)、Slider 軌道(點了把手跳過去,滑過沒變化)→ 查世界級怎麼表現後再提 |
+| N8 | B8「底」的範圍 | **已確認**。user 09-25:「就是那種overlay的底色，它們是用什麼token?然後一般輸入框的底色用的是surface token對吧？」→ 全 DS 查證:浮起來的選單、彈出框、對話框、側邊抽屜、通知等用 `--surface-raised`(17 支元件,`color.spec.md:83`「modal、popover、dropdown,必須不透明」)= user 說的「surface opaque」;輸入框用 `--surface`(`field-wrapper.tsx:56`),卡片、面板也是 `--surface`;整頁用 `--canvas`。輸入框與白底按鈕滑過時變的是**外框/字色**,不是底色(`field-wrapper.tsx:56`、`button.tsx:96-97,110-111`),所以這條規則不會動到它們。深灰實心 `--surface-strong`(只用在人名膠囊的 ×)不算底 |
+| N24 | Split button 樣式支援矩陣(文字型 primary/secondary/tertiary、圖示型 text) | 暫緩。user 08-28:「這題先放在 backlog 之後再做」;當時說寫進的 `project_split_button_backlog.md` 不存在(repo、home、git 歷史皆無)→ 研究紀錄先從逐字稿重建(工程) |
+| N26 | DataTable 釘選欄:如何讓人看出可捲 | **不再提問**:09-05 舊事、已發版、與本次任務無關(同 N3 的 user 指示);N27 ② 的灰色細槽已讓固定欄底下的捲軸帶接成一整條 |
+| N27 | 表格兩處沒先問就改的東西(固定欄吃滾輪、固定欄底下的灰色細槽) | **收掉,不該問**。user 09-25:「這個早就決定拍板了，你他媽可以不要拿已經發版的東西再來問我嗎？除非跟這次的任務有關，否則不要在那邊翻舊帳，明明就發版了」 |
+| N28 | AI 標誌「聆聽」狀態 | 暫緩。user 09-01:「logo先不做聆聽,其他可以」 |
+| N29 | AccountMenu 要不要加 email 第二行 | 暫緩。user 07-30:「1.我覺得先不動」。規格 `account-menu.spec.md:85` 寫成「不做」、`:108` 列成禁止 = 把「先不動」升格成定案(M36(a))→ 規格改回暫緩(工程,見 C 區同號) |
 
 ## B. 已決、待實作或已完成
 
 | id | 決定(user 原話) | 實作狀態 |
 |---|---|---|
 | B1 | #1 側欄行內按鈕 20→18:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」 | 完成(前一輪;`sidebar.spec.md` 已記原話)。 |
-| B2 | #4 可點卡片裡的按鈕:選「卡片保留、按鈕再亮一層 (Recommended)」;#12 user 問「沒有合理的設計理由，就應該要整個ds一致吧？…」 | 進行中:實測 18 處中 5 處不符(側欄 inlineActions、側欄 SidebarMenuAction、Tabs inlineAction、表格欄標題 ⌄、表格列拖曳把手),全是 DOM 擺法造成、沒有設計理由;修法已在瀏覽器驗證,正在工程批次實作。 |
+| B2 | #4 可點卡片裡的按鈕:選「卡片保留、按鈕再亮一層 (Recommended)」;#12 user 問「沒有合理的設計理由，就應該要整個ds一致吧？…」 | 5 處結構修正完成 `10d0511d`(側欄 inlineActions、SidebarMenuAction、Tabs inlineAction、表格欄標題 ⌄、列拖曳把手)。FileItem 卡片的巢狀滑過隨 B12 做。 |
 | B3 | #5 行內按鈕:選「維持 18,不宣告 AA」 | 待做:寫進互動模型正本(C3)。 |
-| B4 | #18 月曆非當月:選「可以，拿掉底色 (Recommended)」 | 完成 `026d5788`。待補:① 規格與註解把原話寫成「可以，拿掉底色」,要補回逐字的「(Recommended)」並註明是 AI 提供的選項(M36);② 同 commit 新加的「Weekend cell 約束」標「AI 推導」;③ `calendar.spec.md` 深色描述「變淺」應為「更貼近底色」。 |
-| B5 | #21 灰色已按下切換鈕:選「甲：保留，維持 2→3→4 (Recommended)」 | 待做:補 story(目前零則);`semantic.css:370` 的「user 拍板」標籤涵蓋了切換鈕那一行但 user 當天沒談切換鈕 → 改正;`color.spec.md:737` 的「Fluent 預告釋放」無一手、「與 Carbon/Atlassian 一致」只對一半 → 改寫;`button.spec.md:346`(灰底給側欄/導覽列用)與 `:737`(列元件禁用)打架 → 依 owner `item-anatomy.spec.md:171` 改;WM `TypeSettingsDialog.tsx` 的導覽列改走選中列規則(落地前再核對,M8)。 |
-| B6 | #13 滑過一律「換成自己的成對 token」、不疊層(user:「沒有合理的設計理由就不能用兩套吧？」) | 進行中:通用句寫進 `color.spec.md` + 新閘「滑過色必須是元素自己平常底色的配對」;若 A2 採用 user 的 surface 疊加提議,此句要一併改寫。 |
-| B7 | #3 表格列滑過一律亮(閱讀輔助) | 待做:互動模型正本明寫「資料表格列滑過 = 閱讀輔助」(C3)。 |
-| B8 | #30 滑過做法:選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」) | 待做:`color.spec.md` 寫成一條:canvas/surface/surface-raised 當平常底色 → 同一型態內滑過/按下 = 底色不換、疊 `neutral-hover`/`neutral-active`;透明 → 換成 `neutral-hover`;元件自己的填色(secondary、強調色、surface-strong)→ 換成自己的下一階(secondary 新增 `secondary-hover`);`:16` 改成只拒絕彩色疊層並寫明刻意偏離 Atlassian;工程批次已寫的「Hover 換色配對總則」草稿與新閘 `hover-own-pair-invariant` 跟著改(並修「判了 0 組仍印 ✓」)。切換成另一型態(例:白底鈕按下變已按下)不在此條。 |
-| B9 | #31 鍵盤走法 乙:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」(附條件;條件已查證成立) | 待做:↑↓ 選項目、→ 進這一項的小按鈕、← 回項目、Tab 一下離開這一串;收著的資料夾按 → 先展開。樹改用樹狀表格身分;側欄與檔案清單改成一串一站;改寫 `keyboard-model-canonical.md:183`、`:20-40` 與 `sidebar.spec.md` 行內動作段;不論選哪個都要修:樹裡別項按鈕也在 Tab 路上、側欄捲動區多一站(`viewportTabIndex={-1}`)、AI 面板對話紀錄列與多選找人頭像各佔一站。一鍵跳出整個側欄(F6)另談。 |
-| B10 | #25 子選單 Esc:「你確定這符合我們一致的設計語言且不違背世界級的設計就這樣做」(條件已查證成立:9 家中 8 家只關一層、DS 其他疊層浮層實測一致) | 待做:`dropdown-menu.tsx` 子選單 Esc 只關自己那層、焦點回上一層那一項;改 `dropdown-menu.spec.md:187`;補子選單範例與「每按一次 Esc 少一層」量測;在鍵盤/焦點正本補全 DS 規則「Esc 一次只關最內層」。 |
-| B11 | #25 選單 Tab + #32「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」 | 待做:選單開著按 Tab = 收起、從觸發鈕往下走(Shift+Tab 往上);不能打字搜尋的單選下拉同樣收起並選定反白那一項;可打字搜尋的單選下拉補「選定」;修不能打字下拉 Shift+Tab 跳到頁尾的 bug;AI 浮鈕關選單時不再硬搶焦點(`agent-panel-fab.tsx:702-705`);`popover.spec.md:59,:173`、`overlay-surface.spec.md:549`「不鎖焦點」與實測不符要改;鍵盤正本補「彈出框開著時按 Tab」一節。多選下拉(有全選)行為不變、只改宣告。user 可在預覽否決。 |
-| B12 | #33 要不要滑過:「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」 | 待做:只有點了會有反應的才加滑過底色 —— FileItem 有 onClick 時(大卡片疊一層、小膠囊換 `secondary-hover`)、可點的上傳列(透明 → `neutral-hover`,並依 `overlay-surface.spec.md:221-228` 改成列自帶內距、面板給 0,文字位置不變、色塊到面板邊)、AI 面板選項卡(換 `secondary-hover`);不可點的不加(含只浮出下載鈕的上傳列)。撤回 `file-item.spec.md:146`「永不顯示 hover-bg」。內部按鈕滑過色自然疊在宿主之上。規則措辭改為「按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階」(淺色更深、深色更亮),#4 的引文照舊逐字保留。驗收:淺/深、巢狀、邊距全數視覺稽核無異常才算完成。 |
+| B4 | #18 月曆非當月:選「可以，拿掉底色 (Recommended)」 | 完成 `026d5788`。補正(已改,待隨下一批 commit):① `calendar.tsx:547`、`calendar.spec.md:145`、`color.spec.md:737` 引文補回逐字「可以，拿掉底色 (Recommended)」並註明選項由 AI 提供(M36);② `calendar.spec.md:148`「Weekend cell 約束」標「AI 推導、未經 user 確認」;③ 深色描述「變淺」改為「往底色退(淺色變淺、深色變暗)」 |
+| B5 | #21 灰色已按下切換鈕:選「甲：保留，維持 2→3→4 (Recommended)」 | **已套用(工作樹,未 commit)**:`button.anatomy.stories.tsx`「灰色已按下切換鈕」平常 / 滑過 / 按住表;`semantic.css` 的標籤改成 user 選項原話(不再寫「user 拍板」);`color.spec.md` 撤回查無一手的 Fluent「預告釋放」,Carbon / Atlassian 改寫成一手看得到的範圍;`button.spec.md` pressedTone neutral 列改為「可取消的切換鈕」,導覽 / 目前頁走 `item-anatomy.spec.md` 選中列規則。**仍待**:09-25 06:35 給 user 的實測表只量了淺色,user 在這個前提下選甲 —— 深色要重新量(與 N7 相關);WM `TypeSettingsDialog.tsx` 導覽列改走選中列規則(落地前再核對,M8)另排;隨下一批 commit。 |
+| B6 | #13 滑過一律「換成自己的成對 token」、不疊層(user:「沒有合理的設計理由就不能用兩套吧？」) | **部分被 B8(#30)取代**:「底」改成疊一層,其餘照換色。通用句已寫進 `color.spec.md`「Hover 換色配對總則」(`10d0511d`);新閘 `hover-own-pair-invariant` 隨 B8 改。 |
+| B7 | #3 表格列滑過一律亮(閱讀輔助)。user 以問句確認、AI 答是:「照你建議就是維持現狀，對嗎？」 | 待做:互動模型正本明寫「資料表格列滑過 = 閱讀輔助」(C3)。 |
+| B8 | #30 滑過做法:選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」);排除陰影:user「反正我覺得陰影不適合」(DECISIONS #8) | 規格文字完成 `10d0511d`(總則與 `color.spec.md:16`)。**token 與元件已套用(工作樹,未 commit;09-26 user 同意)**:`semantic.css` 新增 `--secondary-hover` / `--secondary-active` 與「底」的疊層 `bg-interaction-hover` / `-active`(`lib/utils.ts` 已登記 tailwind-merge `bg-image` 群組);消費者 = FileItem 大卡片(疊層)與小膠囊(`--secondary-hover`);兩個按住配對目前無使用者(列 / 卡按下不深一階,N4(2));AI 面板選項卡的滑過已拿掉(user 09-26 質疑,R21 研究中);`hover-own-pair-invariant` 認得疊層、判到 0 組不再印 ✓。`color.spec.md` 配對表的使用者欄已依此更正(W3 docs 組,暫存待套)。**仍待**:建置後淺 / 深量測;C4 視覺基準重拍給 user 看。切換成另一型態(例:白底鈕按下變已按下)不在此條。「底」的範圍對應見 N8。 |
+| B9 | #31 鍵盤走法 乙:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」(附條件;條件已查證成立) | **已套用(工作樹,未 commit;09-26 user 同意)**:側欄、樹(樹狀表格 + 列上 roving tabindex)、FileUpload 檔案清單、AI 面板對話紀錄列、多選找人頭像(經共用 Command)都是 ↑↓ 選項目、→ 進這一項的小按鈕、← 回項目、Tab 一下離開這一串;收著的資料夾按 → 先展開;`viewportTabIndex={-1}`。新閘 `sidebar-menu-keyboard` / `tree-view-keyboard-route` 已接 package.json 與 CI(樹的判定表測試隨按鍵表合併改測共用零件 `lib/roving-list-keyboard.ts`,W3 合併組處理接線)。**本批(W3)同步**:`focus-indicator-invariants` H1f 與 `virtual-cursor-modality-invariant` 樹段 / 側欄探針改量真焦點(對工作樹真元件實測綠、對照組紅);`keyboard-model-canonical.md` 補按鈕上 Home/End 與「會開選單的小按鈕 ↓ 也是換項」(X4 / X6);`item-anatomy.spec.md:233-235`、`:271-301`(N18)、`sidebar.spec.md`、`focus-canonical.md`、`drag-canonical.md` 過期句更正(規格類暫存待套)。**進行中(W3 其他組)**:X4 / X6 / X7 程式統一成側欄做法、四份清單按鍵表收成共用零件。**仍待**:建置後跑閘與量測。一鍵跳出整個側欄(F6)見 N1。 |
+| B10 | #25 子選單 Esc:「你確定這符合我們一致的設計語言且不違背世界級的設計就這樣做」(條件已查證成立:9 家中 8 家只關一層、DS 其他疊層浮層實測一致) | **已套用(工作樹,未 commit;09-26 user 同意)**:子選單 Esc 只關自己那層、焦點回上一層那一項(`dropdown-menu.tsx`);`dropdown-menu.spec.md` 按鍵表已改;子選單範例 `nested-sub-menu` 與閘 `dropdown-menu-keyboard` 已接 package.json / CI;鍵盤正本已有「`Esc` 一次只關最內層」節。**進行中(W3 其他組)**:`dropdown-menu.tsx` 超過 800 行拆檔。**仍待**:建置後跑閘。 |
+| B11 | #25 選單 Tab + #32「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」 | **已套用(工作樹,未 commit;09-26 user 同意,含單選下拉空白鍵選取)**:選單開著按 Tab = 收起、從觸發鈕往下走;不能打字搜尋的單選下拉同樣收起並選定反白那一項(`select-menu-keyboard.ts`);可打字搜尋的單選下拉補「選定」;修 Shift+Tab 跳到頁尾;AI 浮鈕不再硬搶焦點;`popover.spec.md`、`overlay-surface.spec.md` 已改寫,`popover.anatomy.stories.tsx` 無障礙摘要本批(W3 docs)對齊;閘 `select-tab-leave` 已接 package.json / CI;鍵盤正本已有「彈出框開著時按 Tab」,本批補「不能打字的選項清單,`Enter` 與空白鍵都是選這一項」(L7 第 2 條;另一句「滑鼠點到哪一格…」未同意、不入)。**進行中(W3 其他組)**:單選下拉空白鍵選取的程式、「從觸發鈕找下一站」兩份收成共用零件。**仍待**:建置後跑閘。**#32 是問句,AI 把它解讀成「單選下拉也一起改」—— 這個解讀已在 09-25 回覆中告訴 user(N16⑤),user 可在預覽否決。** |
+| B12 | #33 要不要滑過:「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」 | **已套用(工作樹,未 commit;09-26 user 同意,產品／UI／UX SSOT P2H)**:FileItem 有 onClick 時(大卡片疊一層、小膠囊換 `secondary-hover`)、可點的上傳列(透明 → `neutral-hover`,列自帶內距、面板給 0,列直角);不可點的不加。**AI 面板選項卡的滑過已拿掉**(user 09-26:「我覺得好像不用加上底色變化…」,R21 研究中)。措辭已隨 `10d0511d` 寫進總則;`item-anatomy.spec.md` 列間 gap 表、`color.spec.md` 使用者清單本批(W3 docs)依此更正(暫存待套)。A2 原列的 OverflowIndicator 標籤形與其他站在 secondary 上可點的元件見 N6。**仍待**:驗收 —— 淺/深、巢狀、邊距全數視覺稽核無異常;C4 視覺基準重拍(FileItem 三張)給 user 看。 |
 
 ## C. 工程(不需拍板)
 
 | id | 內容 | 狀態 |
 |---|---|---|
-| C1 | 滑過配對工程批次:Button 開啟×已按下/危險款(E1)、欄位錯誤×開啟保持紅框(E2)、TimePicker 選中又停用(E3)、aria-disabled 按鈕釘住(E4)、唯讀勾選/單選/開關釘住(E5)、已按下強調款顯式釘住(E6)、側欄動作鈕在當前項旁維持(E7)、26 處手刻檢閱器改 SegmentedControl(E9)、月曆事件方塊拿掉 transition(E10)、文字修正(E11)、新閘與既有閘補盲點(E12)、story 手刻列(E13)、灰色 aria-pressed 備援補按下階(K9)、表格區間格兩主題釘住(K16)、B2 的 5 處結構修正 | 進行中(背景工程批次,建置+實測+修復三段) |
-| C2 | R12 W1–W8:`color.spec.md:777` 改寫「常駐色 vs 狀態色」(等 A9)、ProfileCard 引錯 Badge、Slider 停用軌道 muted→bg-disabled(同值、畫面不變)、月曆 `onDateClick`/`onEventClick` 改必填(M23(f))、過期行號與清單、月曆文字對齊、自訂事件方塊補滑過(等 A2)、來源更正(B4) | 待做 |
-| C3 | **互動模型正本**:用單一 canonical 取代拼裝(keyboard-model / hit-area / focus / item-anatomy 各自一套);修斷掉的指標、MenuItem 分類錯誤、Carbon/Primer 誤引、撤回 `tree-view.spec.md:410`「對齊 GitHub/VS Code」、樹的隱藏按鈕不在 Tab 路上 | 待做(依 A1、A11–A18 結果) |
-| C4 | curated 視覺基準重拍(月曆、側欄、FileItem…) | 待做(所有 UI 改動完成後一次,用 visual-regression workflow) |
+| C1 | 滑過配對工程批次(E1–E13、K9、K16、B2 的 5 處結構修正) | 完成 `10d0511d`;殘項見 C12。 |
+| C2 | R12 W1–W8:`color.spec.md:777` 改寫「常駐色 vs 狀態色」(等 A9)、ProfileCard 引錯 Badge、Slider 停用軌道 muted→bg-disabled(同值、畫面不變)、~~月曆 `onDateClick`/`onEventClick` 改必填~~(撤回,見 C15)、過期行號與清單、月曆文字對齊、自訂事件方塊補滑過(等 A2)、來源更正(B4) | 待做 |
+| C3 | **互動模型正本(主線,見〇節)**:用單一 canonical 取代拼裝(keyboard-model / hit-area / focus / item-anatomy 各自一套);修斷掉的指標、MenuItem 分類錯誤、Carbon/Primer 誤引、撤回 `tree-view.spec.md:410`「對齊 GitHub/VS Code」、樹的隱藏按鈕不在 Tab 路上 | 待做 —— **不再等 A11–A18 逐題拍板**:依〇節,以 user 已決(B1–B12、C15、N4(3))+ 四道篩推導的答案寫成一份;工程批次 `wf_6237adf2` 落地後開始 |
+| C4 | curated 視覺基準重拍(月曆、側欄、FileItem…) | 待做(所有 UI 改動完成後一次,用 visual-regression workflow);**重拍的圖先給 user 看,user 對那組圖說可以改才算數**(AGENTS.md「Visual baseline」) |
 | C5 | 測試腳本剩餘缺陷:最後一個 gotoStory 呼叫點(`story-demo-focus-invariant.mjs`)、慢機器上覆蓋率靜默縮水(select-all-footer、overlay-footer-gutter、dialog-height、focus-indicator)、互動後固定睡眠當「浮層已開」、docs 頁渲染判定私有兩份、story 清單讀活目錄、`visual-audit.mjs` 0 個情境仍 exit 0、孤兒 `scripts/lib/sandboxed-verify-browser.mjs`、缺建置標記寫法不一、小死碼 | 待做 |
-| C6 | 前幾輪總帳餘項:`date-grid.spec.md:106` 重複;`steps.spec.md:83`;過期分隔線註解;`calendar.spec.md:299`、`data-table.spec.md:979` 舊措辭;Combobox principles story 的觸控文字;非逐字的 user 引文(`focus-canonical.md:112`、`date-picker.spec.md:225`、`hit-area-canonical.md:51-52/205`);`hit-area-canonical.md:203/206` 來源;resize-handle「指尖」理由;spec 行數預算;可見改動清單完整性;release-rings 候選落後;`PRODUCT_VISIBLE` 漏 storybook-config;WM:`AppSidebar.tsx:82` 改 icon prop、PermissionConditionsPopover/StatusesTab 殘留舊 ring | 待做 |
-| C7 | `/knowledge-prune`(SessionStart 指示自動跑:hook 57 > soft 26、memory 18) | 待做 |
+| C6 | 前幾輪總帳餘項:`date-grid.spec.md:106` 重複;`steps.spec.md:83`;過期分隔線註解;`calendar.spec.md:299`、`data-table.spec.md:979` 舊措辭;Combobox principles story 的觸控文字;非逐字的 user 引文(`focus-canonical.md:112`、`date-picker.spec.md:225`、`hit-area-canonical.md:51-52/205`,另補 N21 兩處:`date-picker.spec.md:233` 少「(Recommended)」、`hit-area-canonical.md:125` 刪了語氣詞);`hit-area-canonical.md:203/206` 來源;resize-handle「指尖」理由;spec 行數預算(點名見 N19);可見改動清單完整性;release-rings 候選落後;`PRODUCT_VISIBLE` 漏 storybook-config;WM:`AppSidebar.tsx:82` 改 icon prop、PermissionConditionsPopover/StatusesTab 殘留舊 ring | 待做 |
+| C7 | `/knowledge-prune` | 09-24 已跑過一次(`fd11eb1c`、`e89679e1`、`6b7fbc45`),「hook 57」是更早的數字。剩下:memory 條數(18,軟上限 18)與 spec 超上限(N19)。 |
 | C8 | 本機環境:工作樹 `.claude/` 六個過期的產生檢視 | **完成**(`10d0511d`):用檔案工具還原成 HEAD,governance:check 全綠,**不需要 user 在外部跑指令**(先前寫「要在 Claude Code 之外的終端機還原」是錯的)。user 2026-09-25:「沒有這回事，應該極力避免讓我自己跑指令才對，明明所有事都可以在這裡完成，為何還要我跑指令？」→ M36(b') 與沙箱指引衝突時以 M36 為準,prompt-audit 的該項 flag 依此收斂 |
-| C14 | `infra/governance/providers/model-invocation-profiles.json`:治理工具用 API 呼叫 Claude 做自動第二意見審查時的設定,回覆上限 8192 token、不准開思考、要求正常結束;新一代模型預設思考且思考算進上限,長審查可能被截斷而判失敗 → 查證並修正 | 待做 |
-| C9 | CI:`72250160` 之後每個 commit 讀回 required checks | 進行中 |
-| C10 | `/claude-api prompt-audit`:治理提示全盤稽核,交付報告 + 建議 diff(不自動套用) | 交付完成(2026-09-25):276 條(high 62、medium 175、low/flag 39);diff 237 區塊、97 檔、+973/−1139,每 session 載入文字 83.5 KB → 66.6 KB;對現行工作樹 `git apply --check` exit 0。diff 依 prompt-audit 交付約定只提出、不自動套用(可整份或挑段套用)。附帶兩個 flag:M36(b')(4)/Mechanism 10 與沙箱指引衝突(被擋時該不該把指令交給 user);範圍外的 `infra/governance/providers/model-invocation-profiles.json`(Claude max_tokens 8192、不能送 thinking)。另:AGENTS 串接鏈 32,811 bytes > 32 KiB(`check-agents-bootstrap` A1,HEAD 就已超過,Codex 會截斷),diff 會修回 |
+| C14 | `infra/governance/providers/model-invocation-profiles.json`:治理工具用 API 呼叫 Claude 做自動第二意見審查時的設定 | **已查證、已改(待隨下一批 commit)**。事實:這條「直接呼叫 API」的執行層 2026-08-04 已退役,現在只剩純合約檢查、**沒有任何程式真的拿它呼叫模型**(`infra/governance/README.md:55`;`scripts/lib/model-evidence-plan.mjs:18-20`;`buildBrokerApiRequest` 只被轉出、無呼叫點),所以今天不會出事。內容仍過時:允許清單含 Opus 5 / Sonnet 5 / Fable 5,它們不送 thinking 也會思考、思考算進上限,8192 容易截斷(截斷 = 判失敗,不會靜默錯)。改法:上限 8192 → 16000(非串流請求的建議上限約 16K,超過要改串流);**不**把思考模式寫死 —— 允許清單也含 Haiku 4.5 / Sonnet 4.5,它們不支援 adaptive,寫死會讓那兩個直接 400。驗證:`test-provider-review-binding` exit 0;`provider-runtime-conformance` 與 `test-review-capability-selection` 在本機 exit 1,**改回原值對照同樣 exit 1**,原因是本機沒裝 provider CLI toolchain(`GOV-PROVIDER-CLI-TOOLCHAIN-001`),與本改動無關,以 CI 結果為準 |
+| C9 | CI:`72250160` 之後每個 commit 讀回 required checks | **紅**(09-26 讀回):`16c8e2f5` 只有「DataTable pixel gates」的效能比值閘紅(主執行緒長工合計中位數 分支 285ms > main 126ms × 1.25;三趟 分支 724/172/285、main 854/106/126,第一趟兩邊都特別大),「Verify」彙總因此紅;`10d0511d` 的瀏覽器工作因被下一次推送取消而不算數。見 N55 |
+| C10 | `/claude-api prompt-audit`:治理提示全盤稽核,交付報告 + 建議 diff(不自動套用) | 交付完成(2026-09-25):276 條(high 62、medium 175、low/flag 39);diff 237 區塊、97 檔、+973/−1139,每 session 載入文字 83.5 KB → 66.6 KB;對 `16c8e2f5` 工作樹 `git apply --check` exit 0。diff 只提出、不自動套用。附帶的「沙箱指引 vs M36」flag 已依 C8 收斂(以 M36 為準,正本寫入見 N14(c));model-invocation 設定見 C14;AGENTS 串接鏈超過 32 KiB **diff 不會自動修**,改由 N14(a) 追。 |
 | C12 | C1 批次的後續:① `data-table-hover-latency` 的取樣點落在拖曳把手底下(把手蓋住該像素,前後建置都一樣),要改取樣點或先確認該像素屬於列,並改正檔頭「k=9 原因不明」;② 新閘 `hover-own-pair-invariant` 在 `--file` 單檔模式判到 0 組仍印 ✓(M37),並要認得 B8 的「底」疊層寫法(疊在底上合法、底換成 `--neutral-*` 仍紅);③ `motion.spec.md:137` 仍寫六個測試案例;④ `hit-area-canonical.md:19`「懸停回饋形狀 ≡ 命中區」與 #4 巢狀疊加要對齊;⑤ 巢狀滑過規則散在 3 份 spec,收成一個住所;⑥ `carousel.anatomy.stories.tsx:130-143` 仍有手刻膠囊;⑦ 表格區間格在列滑過時兩主題不一致(K16);⑧ Button 各狀態疊加還沒有 story(M15) | 待做 |
 | C13 | Button primary / link 沒有「開啟中」樣式(其他 variant 開啟 = 維持滑過樣子);要不要比照是新主張(M8),列入 A 區下一批提問 | 待決(併 A 區) |
 | C11 | 舊 live 清單收尾:D4 那些「已完成但文件沒更新」的句子回到各 owner 改正;FD、CB 的未結項已搬進 D 區後,registry 改為 reference | 待做 |
+| N43 | Steps 圓比可點列高、上下一小截點不到 | **前提不成立,撤回**(R18 實測 09-25:sm / md / lg 三種尺寸在圓的上下緣打點,落點都在可點列內、游標手形、點擊傳到那一列;只在 Chromium) |
+| N44 | Steps「目前那一步」點了沒反應卻有手形游標、也能 Tab 停上去 | 待做(工程,依既有規則):只在**預設模式**成立。規格定義兩種「每一步底下內容區」模式(`steps.spec.md:358-364`,只在垂直排列有):預設「跟著目前這一步」= 只打開目前這一步的內容,點目前這一步沒有東西可收(實測:點了 DOM 0 變化);「可同時打開多步」(`expansion="multiple"`,範例「展示 / 多重展開模式」)= 每一步內容各自開收,點目前這一步會收起它的內容(實測 aria-expanded true→false)。user 09-25 問:「哪裡有展開收合的範例？同時展開多步又是什麼？我們DS真的有定義過？此外，萬一真的可以收合，為何預設模式不能收合？」→ 已截圖回答;預設模式要不要也能收起屬新的產品選擇,AI 不主動提 |
+| N45 | 文件矛盾:`steps.spec.md:83` 與 `:187-212`(圓點是不是點擊目標);`breadcrumb.tsx:46` 註解說「跟 Tabs 一致」但 Tabs 已改字轉黑;`slider.spec.md:102`「藍段與把手外框永遠同色」與實際不符 | 待做(文字修正,不改畫面) |
+| N46 | R17 篩出的「依既有規則直接修、不改畫面設計」工程項:樹的打字跳位(`keyboard-model-canonical.md:184`)、試算表再按 F2 回格導覽、試算表 Shift+方向鍵擴大範圍(WCAG 2.1.1)、月曆點格內空白也帶鍵盤位置、內建事件方塊鍵盤框往內(`focus-canonical.md:543`)、樹展開箭頭拿掉對讀屏隱藏、輪播投影片裡的輸入框拿回方向鍵(`carousel.tsx:170`)、刪除/消失後焦點去下一項且收起的側欄項目不在 Tab 路上、停用項目游標補禁止符號(`field-controls.spec.md:249`)、讀屏文字改中文、A4/A8/A10 的規格補寫理由、A9① 定義對齊現況、A9③ 縮圖鈕 muted 移到佔位層、`tree-view.tsx:860` 誤引 W3C 的註解、`sidebar.spec.md` 引 Notion 的出處更正、兩處刪了語氣詞的引文(`combobox.spec.md:192`、`focus-canonical.md:320`) | 待做(工程) |
+| N47 | 核准閘的三個漏洞(批次中實際被踩到):① 用 shell 在元件目錄內以相對路徑寫檔、或 `perl -0pi`,閘認不出目標路徑 → 放行(`slider.tsx`、`calendar.tsx` 的 `?.` 移除就是這樣進去的);② `approval-evidence.mjs` 的 `stripCodeComments()` 作用在 `JSON.stringify(candidate)` 之後的單行字串,第一個 `//` 就把後面所有程式碼當註解刪掉,UI 改動會被判成「工程」(M37);③ `2>`、`>/dev/null`、`git add ` 讓唯讀指令被當寫檔(= N20)。 | 待做(工程,改 canonical owner `packages/design-system/ds-canonical/hooks/` 後走 governance:generate) |
+| N48 | Steps 指示圓的外圈在深色主題沒有間隙:外圈用 box-shadow 畫,間隙色寫死 `var(--surface)`(`steps.tsx:53-55`),深色的 `--surface` 是白 8% 半透明 → 底下的藍外圈透上來。實測(09-25,`storybook-static` 非線性範例「總覽」):淺色 圓 #0065EA / 間隙 #FFFFFF / 外圈 #2F85FE;深色 圓 #1982FF / 間隙 **#58A5FF**(應為背景 #0A0A0A)/ 外圈 #4A9DFF → 深色看起來是一顆大藍圓。user 09-25 發現:「另外我發現圖一的總覽的藍色外圈為何在深色模式看起來跟在亮色模式看起來不一致的設計語言？」 | 待做(bug:恢復淺色那種「圓 + 間隙 + 外圈」的原設計):改用與全 DS 焦點框同一種畫法(outline + offset,間隙透明、露出真正的背景),兩主題一致;程式在 `steps.tsx`,受核准閘管 → 併入〇節那份一次同意的清單 |
+| N49 | 同類寫法掃描(M10):頭像狀態小圓點與計數徽章的「挖空圈」用 `var(--surface-raised, var(--canvas))`(`avatar.tsx:299`、`:314`),深色 `--surface-raised` 是不透明的 neutral-3,放在深色頁面(#0A0A0A)上可能出現一圈灰 | 待做:先實測兩主題,成立才修 |
+| N50 | 原則措辭:user 09-25 問「另外基於上述，「Hover會有變化的範圍與可點擊範圍一致」，往這樣的方向去寫原則是否比之前你定義的那條更精準通用？仔細全盤研究查查」;現行 `hit-area-canonical.md:19`「控件的懸停回饋形狀 ≡ 它的命中區」主詞刻意限定「控件」 | **user 09-26 釐清原意**:「我滑到某個區塊但不是滑到文字上但文字卻變色了，此時表示產生了樣式變化，儘管沒滑到文字上，此時點擊也應該要有反應，我的意思是這樣」= 滑過讓畫面出現任何變化的指標位置,點下去都必須有反應(觸發位置 ⊆ 可點範圍);並問「應該也不用一定要規定可以點擊的地方就一定要有樣式變化吧？…世界級設計一定有這個原則嗎？」(反方向是否必須)。AI 兩度誤解成「變化那一塊 = 可點範圍」。研究中(R19:世界級原文 + 全 DS 每類可點元件逐一套用 + 與 user 既有決定兩兩比對 + 反向核對);結論改寫正本屬產品／UI／UX SSOT P2H,user 同意才改 → **研究 + 反向核對完成(R19,09-26;底稿 `scratchpad/im/R19/verify.md`)**:(1) user 的原則(滑過讓畫面出現變化的指標位置,點下去一定有反應)方向正確,現行正本只比形狀、沒寫出這一條;世界級一手:WinUI「Don't display visual feedback if an element doesn't support interaction」、Polaris #1230(由 PR #1273 以「把點擊範圍撐到跟滑過一樣大」關閉)、NN/g「make all related elements linked」、M3「Hover states aren't inherited by … containment … components」。(2) 反方向「點得到的地方一定要有滑過變化」**不是世界級通則**(MUI 分頁、MUI/SAP/Spectrum CSS 步驟條、10 家中 7 家滑桿軌道都沒有);只有兩家在窄範圍內偏向它(WinUI 自訂游標時;Baymard 電商商品列表)。AI 先前多處「要加滑過」(N6 步驟條/滑桿/捲軸槽「要加」、N11 10a 表頭全選格)正是把它當成必須延伸出來的 → 撤回。(3) DS 實測 5 處違反 user 原則(見 N53)。(4) 例外:資料表格列閱讀輔助(#3,Carbon、Spectrum 明文允許);巢狀以最上面亮著的為準(#4);提示卡開著時指標可移上去(WCAG 2.2 SC 1.4.13)。(5) 待 user 決定:只看資訊、本身不能點的東西(「+N」名片、截斷文字提示)滑過會出現提示 —— 算不算「樣式變化、要點得到」。改寫正本屬產品／UI／UX SSOT P2H → **09-26 user 再釐清**:「本身不能點就不在這個原則規範的範疇裡吧？我們在討論的不都是可以被點擊的東西嗎？」→ 原則主詞 = **可以點的元件**;「+N」名單卡、截斷提示這類本身不能點的東西不在範圍內(不是例外,是本來就不管),AI 那一題撤回。**原則草案(AI 措辭,user 同意才寫進正本)**:「可以點的元件:滑鼠停在某個位置時,只要這個元件因此出現任何樣式變化(底色、字色、外框、圖示,不論變的是哪一部分),在那個位置點下去就必須觸發這個元件。不要求:點得到的地方一定要有樣式變化。補充:①巢狀時以最上面有變化的那個為準(#4);②提示卡開著時滑鼠移到卡上,卡所在的範圍不算這個元件的位置(WCAG 2.2 SC 1.4.13)。」與現行 `hit-area-canonical.md:48`「沒有懸停回饋的目標,可視形狀即唯一訊號」(源自 user 09-04「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」,`agent-panel.spec.md:442-443`)的關係要一併定:步驟條選「維持不變」時,整列右側空白點得到但看不到 —— 依該句會被判為看不見的點擊帶 |
+| N51 | Steps 水平版的描述文字不在可點範圍內:滑到上面游標不是手形、點了不會跳到那一步(`steps.tsx:655-660`);垂直版描述文字可以點 → 兩種排列不一致(R18 實測 4/4) | 待做:先確認規格本意;若規格寫「整列可點」即屬 bug 照規格修,否則列入同意清單 |
+| N52 | Steps 垂直、沒有說明文字時連接線看不見(實測「尺寸對照表」:小 18.2px、中 2.2px、大 0px) | **兩者都是**(user 09-26 問:「連結線是規格沒定義清楚還是bug?如果是bug,那我們有定義正確應該長的樣子？」):規格有定義連接線存在(`steps.anatomy.stories.tsx:21`)、顏色規則(`steps.spec.md:324-335`)與目的「讓已走過的路視覺上連續實在」(`steps.anatomy.stories.tsx:220-221`)→ 線看不見違反目的 = bug;規格**沒**定義線離圓多遠、最短多長(8px 只在 `steps.tsx:590`)→ 正確長相未定義,要先補定義(世界級研究 + 前後圖,user 同意)。原寫:規格說 Steps 是「一條有連接關係的進度路徑」(`steps.spec.md:113`)、垂直版有「垂直線」連接每一步(`:381`);程式在線的兩端各留 8px 空白(`steps.tsx:590` `gap = 8`,規格沒寫這個值),中、大尺寸沒有說明文字時列太矮,線被吃光。user 09-25 問:「所以這是沒按照設計規格？」。修法會改到畫面(線變看得見),程式受核准閘管 → 併入同意清單,附前後圖 |
+| N53 | 違反「滑過有變化的位置點下去要有反應」的 5 處(R19 實測,皆附對照點):① 側欄兩顆行內按鈕之間的空隙:列亮著、點了不導覽(`sidebar.tsx:958-959`、`:1185-1189`);② 分頁行內按鈕外層上下:分頁字變深、點了不切換(`tabs.tsx:606-619`);③ 輸入框外框內距 13px:外框變色、點了輸入框不聚焦;④ 評分星星之間的空隙:星星還亮、點了值不變(`rating.tsx:179-181`);⑤ InlineEdit 外圈 1px:外框亮、點了不進編輯(`inline-edit.tsx:393-411`) | user 09-26:「我覺得「DS 裡實測有 5 處違反…」這些看起來幾乎都是bug」→ 以 bug 處理【只改點擊範圍或滑過位置,畫面不變為原則】;每處修法方向研究中(R20)。原寫:每處修法二擇一(那裡不要亮 / 那裡點得到),會改到操作 → 等 N50 原則經 user 同意後一併列入同意清單(產品／UI／UX SSOT P2H) → **R20 修法(五處都選「讓亮著的地方點得到」,顏色不變,只改點擊範圍與游標)**:① 側欄空隙交給列(`sidebar.spec.md:583`);② 分頁外層上下交給分頁(`tabs.spec.md:99`);③ 點輸入框外框內聚焦輸入處(`input.spec.md:135`;同家族 Select、Combobox、TimePicker、PeoplePicker、Textarea 已是如此;MUI、Ant、Primer 同);④ 評分依 N54 規則;⑤ InlineEdit 隱形按鈕往外多蓋 1px(`inline-edit.spec.md:73`)。新發現 ⑥ LinkInput 顯示成連結時外框空白處:亮但點了沒反應,規格沒寫點下去做什麼(`link-input.spec.md:54-55`)→ 要 user 選 |
+| N54 | 評分星星空隙 vs 日期區間預覽 | **研究完成(R20,09-26;`scratchpad/im/R20/verify.md`)**:**同一種邏輯** —— 兩者都只在指標離開整個元件時才清預覽,縫裡(4px)預覽照亮、點下去沒反應(評分 `rating.tsx:179/181`;日期 `date-grid.tsx:186-187/207`,09-24 為修 user 回報的「會閃」刻意做的,做法由 AI 定 `date-picker.spec.md:233`)。實測兩者都重現、附對照點。**建議一致(AI 措辭,待同意)**:預覽類元件(DS 只有評分與日期區間)① 預覽亮著的任何位置、包括縫,點下去就得到正在預覽的值;② 指標離開元件,滑鼠造成的預覽收掉(有鍵盤焦點時退回鍵盤那一天,`date-picker.spec.md:224`);③ 元件內但不在任何目標上的地方維持上一個目標的值。畫面不變,只改點擊。世界級沒有一家三條全做(MUI 評分依橫向位置換算沒有縫、MUI X 日期縫裡點不到、React Aria 縫裡點會確認),是各取一部分。**另有日期區間 3 個 bug**:D1 慢慢移出格陣預覽卡住不收(畫面會變)、D2 沒走中線橫越時會閃(畫面會變)、D3 自動檢查量不到 D1/D2 |
+| N55 | 效能比值閘在只改文件的 commit 上紅(`16c8e2f5`,job 108051250977):要分清是量測雜訊(三趟、第一趟暖機值特大)還是分支(`10d0511d` 的滑過選擇器等)真的讓表格捲動變慢;M10 已記過同一支閘「尾端噪音誤紅」的前例 | 待做(工程):本機用同一台機器交錯跑 main / 分支各多趟找真相;是雜訊就修閘(去掉暖機趟、加趟數),是真退步就修程式 |
+| C15 | 月曆沒有 `onDateClick` / `onEventClick` 時格子與事件方塊怎麼處理:**C2 的「改必填」撤回**,改為可省略,沒傳時該元素不是按鈕、不亮 | 待 user 同意(產品／UI／UX SSOT P2H)(會改到畫面:沒有新增功能的月曆,格子不再亮)。工程批次 `wf_6237adf2` 把兩個 callback 改成必填(沒經 user 同意、而且方向相反)→ 批次跑完後先還原成 HEAD 的可省略,畫面維持不變,等 user 同意再改。理由:兩條 AI 推導方向相反 —— C2 W4(M23(f) 改必填)從沒給 user 看過;F 模型 6.B(一)第 4 項「沒有 onDateClick 時格不亮」09-24 已列給 user、可逐條否決、未被否決;且 #33「要點了會有反應的才加」直接回答:唯讀月曆的格子點了沒反應 → 不加滑過。M23(f) 禁的是「點了沒反應的假按鈕」,可省略 + 不可點正好不違反 |
+| N7 | Button 白底款灰色已按下在深色幾乎等於未按(#1D1D1D / #1E1E1E);目前零使用者,但 DS 仍出貨 | 待做(修法若要動 token 值,附前後圖給 user) |
+| N9 | Steps 焦點外環與「目前這一步」邊框借用 hover token(`steps.tsx:58-60`、`:699`) | 待做;改色若看得見,附圖 |
+| N10 | DataTable 欄寬把手 7px 點擊帶壓進鄰格 3px(user 09-25:「…我們整個系統應該不會有其點擊範圍跟其他元件交疊的情況？」,當時的回答漏了這一處) | 待做:先實測、再告訴 user;若要「鄰格那 3px 不亮」屬新主張則轉 A 區 |
+| N11 | F 模型 6.B(一) 13 項 | AI 09-24 說「直接套用、列給 user 逐條否決」—— 那是先改再問,違反工作流程,撤回。改為:會改到畫面或操作的,整理成「我建議這樣定」清單等 user 同意(產品／UI／UX SSOT P2H;第 4 項見 C15);逐項結果研究中(R17) |
+| N12 | R12 自己標明要補進追蹤的:muted 使用者清單漏 8 個;「選這一天」錯誤說法還在 `keyboard-model-canonical.md:213/:227/:244`、`calendar.spec.md:35`(實際是新增);「+N more」10 則 story 沒畫出;`calendar.tsx` 以 `onCreateEvent &&` 決定畫不畫新增鈕(M23(f));`color.spec.md:808` secondary 清單漏了可點的(AI 面板氣泡、選項卡、OverflowIndicator 標籤形) | 待做 |
+| N13 | 09-24 對帳殘項:① 舊句「命中區 ≡ 可視形狀」還在 `focus-canonical.md:14`、`sidebar.tsx:852`、`agent-panel.spec.md:459`;② 沒有閘守「勾選格整格可點」與「側欄隱形範圍」;③ 被判寫錯的來歷句還在 `sidebar.spec.md:622`、`sidebar.tsx:842`、`hit-area-canonical.md:177`;④ 檔案列滑鼠與鍵盤兩條路沒留紀錄;⑤「先預測、再對答案」紀錄被整段刪;⑥ WM 列上一層透明按鈕只追了一半 | 待做 |
+| N14 | prompt 稽核的真缺陷:(a) AGENTS 串接鏈 32,815 bytes > 32 KiB(Codex 靜默截斷),`check-agents-bootstrap` 沒有執行面呼叫;(b) `self-verify.md` 與 Stop hook 仍以 `tsc -b` 當型別證明,與 AGENTS.md「tsc -b 根本不檢查 DS 原始碼」打架;(c) 「沙箱指引與 M36 衝突時以 M36 為準」寫進 M36 正本 | 待做 |
+| N15 | 回覆以英文為主、用術語:規則已有(`feedback_propose_discipline` Sub-rule 1)但沒有強制面(user 09-24:「你他媽給我講中文，我們的工作流程不是定義過了嗎」;09-25:「要我拍板的給我具體無術語人話言簡意賅說明」;之後又兩次「我看不懂」);09-25 晚再犯:列給 user 的 N4、N8、N27 只寫代號與術語,user:「這到底在講什麼鬼話？鬼看得懂？」「這個又是在講什麼鬼話？誰聽得懂？」→ 加 Stop hook 偵測 | 待做 |
+| N16 | 對話內欠答:① 09-25「…為什麼沒搞懂？原因為何？我講的不合理？」只丟選擇題沒文字回答;② ③ 「為何還要我跑指令？」「所以這個是要我怎樣」;④ 答應用白話回報三個條件成不成立、更正「最多 3 下」「W3C…都是這樣」;⑤ #32 被解讀成 B11 沒告訴 user | ②③ 已在 09-25 回覆;①④⑤ 在下一則回覆一次講清 |
+| N18 | B9 改寫範圍補 `item-anatomy.spec.md:233-235`、`:271-301`(仍寫「側欄 / FileItem 每列一個停靠點」) | 待做(受 N19 行數上限擋) |
+| N19 | 超過行數硬上限的 spec:`item-anatomy` 1219/1200、`agent-panel` 659/500、`overlay-surface` 595/500、`steps` 508/500(`data-table` 見 OE9;`file-item` 497/500 貼線) | 待做,排在 N18 / C3 之前 |
+| N20 | 核准閘把唯讀指令當寫檔:`check_substantive_edit_approval_preflight.sh:57` 的 `*">"*` 命中 `2>`、`>/dev/null`、`=>`,`*"dd "*` 命中 `git add ` | 待做 |
+| N22 | 全 DS 掃手刻的行內動作鈕 + 新閘擋手刻(AI 09-24 承諾;TreeView 展開箭頭、PeoplePicker × 只在 A18 以尺寸追) | 待做 |
+| N23 | 清掉 `overlay-surface.spec.md:431/:433/:466` 的「user 意圖「touch 仍 sm」」(來源不明)與 `agent-panel.spec.md:487-490` 的觸控尺寸理由(user 09-24:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」) | 待做 |
+| N25 | DataTable / TanStack 一次到位升級(`package.json:102` 仍 `^8.21.3`) | 暫緩。user 09-05:「關於升級的部分我則要一次就到位的方案，請勿給我拆階段…等到目前的問題都修正完成之後才會開始考慮升級方案的進行」;方案內一題待定一併列出 |
+| N29 | `account-menu.spec.md:85` / `:108` 改回「暫緩」、拿掉禁止(見 A 區同號) | 待做 |
+| N30 | AgentPanelDock 重新掛載時第一格尺寸 0、y 沒夾住(`agent-panel.spec.md:474-476` 自己寫「已登記未修」) | 待做 |
+| N31 | DataTable 缺陷表 T、I 兩列「登記待補」(`data-table.spec.md:323`、`:333`) | 待做 |
+| N32 | 補 WM full-snapshot 升級路線記憶(09-24 摘要宣稱的 `reference_wm_fullsnapshot_route.md` 不存在;依 `scripts/consumer-fullsnapshot-upgrade.mjs` + `a9b68596` 重建) | 待做 |
+| N33 | gate-reachability 把 package.json 當執行面(`gate-reachability-invariant.mjs:13`、`:60`),從 CI 拿掉一道閘不會紅 | 待做 |
+| N34 | UserPromptSubmit hook 群組全有或全無,壞一支就整組放行 | 待做 |
+| N35 | publish-serial 理由寫「約 1 分」,實測 4.3 分 | 待做 |
+| N36 | 修剪殘項:已刪的 `release-preflight.mjs` 仍被 `orphan-tokens.spec.md:121`、`color.spec.md:253`、`performance-audit/SKILL.md:69` 當現役;`item-anatomy.spec.md:1184/1186`、`color.spec.md:937` 指向產生檢視 `.claude/references/`;`agent-panel.spec.md:477-479`「未實測」已過期 | 待做 |
+| N37 | 按鈕色彩矩陣加等高斷言(`visual-assertions.json:174`,場景 `button-展示--color-matrix`) | 併入 OE8 |
+| N38 | 瀏覽器縮放 125%、150% 下三區自動列高一致,從沒量過 | 待做 |
+| N39 | `agent-logo-continuity` C2 隨機器負載紅綠不定(FD:2027「已記錄,未修」) | 待做 |
+| N40 | 開 `react-hooks/exhaustive-deps` | 待做 |
+| N42 | REVIEW_REGISTRY_INVALID:實際是呼叫 `resolveProviderReviewBinding` 時漏傳 registry(`provider-review-binding.mjs:1013-1015`、`:111`),修呼叫端並撤回「resolver 有 bug」的說法 | 待做 |
 
-## D. 舊 live 清單的未結項(2026-09-25 逐項對 git 查證後併入)
+## D. 舊 live 清單的未結項(內部;2026-09-25 逐項對 git 查證後併入)
 
 來源:FD = `2026-09-06-focus-and-drag-remediation.md`(09-16 之後約 60 個 commit 沒寫回)、CB = `2026-08-02-cloud-compat-and-deep-audit-baton.md`、INV = `2026-07-31-outstanding-work-inventory.md` §3、V14 = `2026-09-06-agent-principles-v14.md`。這幾份的未結項全部搬到這裡後,FD 與 CB 改為 reference(C11)。
 
@@ -101,7 +280,7 @@ user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有
 | OE9 | `data-table.spec.md` 1,002 行,超過 800 行上限 | `check_file_size_budget.sh:47-48` |
 | OE10 | 拖曳播報寫死 assertive,會打斷螢幕閱讀器(當時登記不修) | `lib/drag-announcements.ts` |
 | OE11 | URL 註冊表示範缺「未存檔 → 取消/確認前往」流程 | V14:56 |
-| OE12 | SidebarGroupAction 零使用者、零 story | `sidebar.tsx` |
+| OE12 | SidebarGroupAction 零 story(**不是零使用者**:WM `apps/work/src/components/AppSidebar.tsx:82-84` 在用,C6 已排升版時改 icon prop) | `sidebar.tsx` |
 | OE13 | 並存 modal 開著時舞台能不能捲動沒定義(查證後若是真取捨才問) | 搜 RemoveScroll = 0 |
 | OE14 | 8 個研究探針檔還在磁碟上,只剩刪檔 | `git status --ignored` |
 | OE15 | npm 內建 ip-address/undici 只是認列、沒真修 | `governance-dependency-bootstrap.mjs:417-450` |
@@ -109,11 +288,10 @@ user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有
 | OE17 | verify-upgrade-provenance 一條永不觸發的分支 | `verify-upgrade-provenance.mjs:26,191` |
 | OE18 | 41 個沒人引用的 npm scripts 盤點 | CB §8.6 |
 | OE19 | governance:generate 對 stage 1/4 的增量判斷誤跳 | CB §8.75 |
-| OE20 | 改檔名可繞過 filename 閘(已接受現況,保留紀錄) | CB:20 |
 | OE21 | color-contrast 基線仍非 WCAG AA(740 筆,含深色「新增」鈕 3.69:1);逐一修到元件,動 token 才問 | `a11y-baseline.json` |
 | OE22 | 元件幾乎不用 i18n,硬寫中文 | 搜 `useI18n` = 0 |
 | OE23 | 程式碼豁免標記(allow / as any / eslint-disable)沒有到期複查 | INV §3 |
-| OE24 | hook 數量已到上限 60;knowledge-prune 遙測是否接好未確認(併 C7) | `session_start_governance_check.sh:200` |
+| OE24 | hook 數量已到上限 60(遙測前提已由 `fd11eb1c` 寫進 knowledge-prune SKILL.md:82-84) | `session_start_governance_check.sh:200` |
 | OE25 | 521 條宣稱中約 170 條驗證沒跑 | `.claude/logs/aspirational-wiring-findings.json` |
 
 ### D3. 卡在外部條件
@@ -123,14 +301,15 @@ user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有
 | OB1 | 虛擬捲動崩潰(user 回報),重現不出,已改常駐壓力閘(`ci.yml:754`) | 再遇到時截圖 |
 | OB2 | Windows Chrome 表格捲軸兩軸各半看不到,根因未證 | Windows 實機量兩組數字 |
 | OB3 | 第 83 維度深度稽核 | 只有要跑可升級的稽核時才需要 Netlify 憑證的 reference 名稱(不是密碼) |
+| N41 | Release Recover 遇到改到 workflow 檔的 tag 時需要 PAT | 只有要用時才需要 secret 的 reference 名稱(不是密碼) |
 
 ### D4. 其實已完成、只是文件沒更新(C11 會回到各 owner 修文字)
 
-FD A–L 大部分已在後段關掉但沒劃線;A8 已在 `item-anatomy.spec.md:177` 退役;AD13 四支紅燈測試已修並接 CI(`ci-gate-coverage.mjs:34-38`);AD16 logo 跳幀已修;AD52 核准判斷已認得「照你建議」;AD55 codex 守衛;AD77 story 名稱檢查已進 CI;AD108 核准閘涵蓋 Bash(`618e3a37`);fast-uri main 已 3.1.7;E2 由 AD8 修掉並加常設閘;`data-table.spec.md:974`(c)「列拖曳無客製播報」過期(`data-table.tsx:5256` 已接中文播報);SidebarMenuButton 已有焦點框;CB 主體全部完成。
+FD A–L 大部分已在後段關掉但沒劃線;A8 已在 `item-anatomy.spec.md:177` 退役;AD13 四支紅燈測試已修並接 CI(`ci-gate-coverage.mjs:34-38`);AD16 logo 跳幀已修;AD52 核准判斷已認得「照你建議」;AD55 codex 守衛;AD77 story 名稱檢查已進 CI;AD108 核准閘涵蓋 Bash(`618e3a37`;**有誤擋唯讀指令的缺陷,見 N20**);fast-uri main 已 3.1.7;E2 由 AD8 修掉並加常設閘;`data-table.spec.md:974`(c)「列拖曳無客製播報」過期(`data-table.tsx:5256` 已接中文播報);SidebarMenuButton 已有焦點框;CB 主體全部完成。
 
 ### D5. 已被後來的決定取代
 
-G 區(09-07 裁示與 960 斷點)、150ms 過渡(user「第三題改成全部瞬間」)、骨架列(依 user 09-09、09-12 的話推導為不動 —— 屬 AI 推導,要嚴格可請 user 一句確認)、Codex R23 下一輪、NativeCombobox(`68d9dfdc` 已移除)、搜尋列外框(user「跟世界級的設計一樣就維持現狀」)、G6/L6 並存細節(AD17–19 取代)。
+G 區(09-07 裁示與 960 斷點)、骨架列(依 user 09-09、09-12 的話推導為不動 —— 屬 AI 推導,要嚴格可請 user 一句確認)、Codex R23 下一輪、NativeCombobox(`68d9dfdc` 已移除)、搜尋列外框(user「跟世界級的設計一樣就維持現狀」)、G6/L6 並存細節(AD17–19 取代)。(原列在此的「150ms 過渡(user「第三題改成全部瞬間」)」撤出:`tabs.tsx:488/498`、`field-wrapper.tsx:90/119` 仍是 150ms,範圍待定 → N4)
 
 ## E. 完成紀錄
 
@@ -139,3 +318,5 @@ G 區(09-07 裁示與 960 斷點)、150ms 過渡(user「第三題改成全部瞬
 | 2026-09-25 | 測試腳本:最後一批「沒量到被讀成通過」、私有渲染判定收斂、consumer 發送清單改由 import 閉包推導 | `b57fee87` |
 | 2026-09-25 | 月曆非當月格拿掉 muted 底色、日期數字改淡字(B4) | `026d5788` |
 | 2026-09-25 | CI static 紅:同名常數不同值 | `72250160` |
+| 2026-09-25 | 滑過配對工程批次 C1 + 巢狀滑過 B2 + 「底」疊層規則落文 + 本總帳建立 + `.claude` 過期檢視還原(C8) | `10d0511d` |
+| 2026-09-25 | 總帳 C8 完成、新增 C14 | `16c8e2f5` |

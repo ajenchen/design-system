@@ -102,6 +102,8 @@ TabsContent ← 對應被選中的 trigger
 
   **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
 
+  **action 外層只有 action 本身接指標(2026-09-26,待辦總帳 N53②)**:portal 出去的外層 span 與 trigger 同高(垂直置中 action 用),但 action 只有 icon 高 —— 預設 sm(32px 高的 tab、16px 的 action)時 span 上下各多出 8px。先前那兩塊接指標:指到時分頁字變深(上一段的巢狀滑過標記),點下去卻不切分頁,正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。現在外層 span `pointer-events-none`、只有它的直接子元素(action)`pointer-events-auto`:上下兩塊落回底下的 trigger —— 那裡本來就是 trigger 右緣預留的 paddingRight 區(上方 `inlineAction` 條),點了切分頁、滑過由 trigger 自己的 `hover:` 變色,顏色與先前相同,只有游標與點擊結果改變。巢狀滑過不受影響:原生 `pointerenter` / `pointerleave` 依 DOM 樹送到祖先,指標進出 action 時外層 span 照樣收得到。
+
   **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
 
 ### 對標對象與故意的偏離
@@ -227,7 +229,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 | State | 視覺 |
 |---|---|
 | selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）|
-| 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground` |
+| 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground`,**瞬間**切換、不過渡(`../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9)。選中切換時的底線換色(`after:transition-colors`)是「選中移動」,不是滑過,保留過渡 |
 | disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
 | focus-visible | 內描邊 `focus-visible:focus-ring-inset`(tab 高 = 分頁列高,上下淨空 0 → 往內;`focus-canonical.md`「問題二」;2026-09-09 訂正,原 `ring-offset-1` 是已退役的幾何);鍵盤導覽(左右箭頭)由 Radix 原生處理 |
 

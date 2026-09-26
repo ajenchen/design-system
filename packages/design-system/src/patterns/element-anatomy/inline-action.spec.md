@@ -91,7 +91,7 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 
 - **間距**:`gap-2`(8px)——跟 fieldWrapperStyles 的元素間距一致(Select 的 clear X 和 ChevronDown 就是 gap-2)
 - **對齊**:全部垂直置中在同一行(`flex items-center`)
-- **出現時機**:全部一起出現(TreeItem 的 hover-reveal 是同時淡入所有 action,不逐個)
+- **出現時機**:全部一起出現(TreeItem 的 hover-reveal 是同時出現所有 action,不逐個);**瞬間出現、不淡入**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,2026-09-26 延伸到滑過才出現的按鈕;實作 = `item-anatomy.tsx` 的 `SUFFIX_HOVER_REVEAL_BY_GROUP`)
 
 ### API 設計
 

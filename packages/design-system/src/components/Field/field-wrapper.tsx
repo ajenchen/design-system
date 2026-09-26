@@ -1,5 +1,6 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
@@ -87,7 +88,10 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
 export const FIELD_DEFAULT_CHROME_COMPOUNDS = fieldDefaultChromeCompounds('wrapper')
 
 /** 複合欄位宿主(AgentPromptInput 等 wrapper 型)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
-export const fieldChromeStyles = cva('transition-colors duration-150', {
+// base 空字串 = 不寫 transition-colors:hover 外框一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;
+// 2026-09-26 由底色延伸到外框,待辦總帳 L9 / N4(3))。外框規則來自 fieldDefaultChromeCompounds,單行 wrapper(下方
+// fieldWrapperStyles)、多行 Textarea、本常數三宿主共用同一份,三處必須一起不寫過渡。
+export const fieldChromeStyles = cva('', {
   variants: {
     mode: { edit: '', view: '', readonly: '', disabled: '' },
     variant: { default: '', naked: '' },
@@ -116,7 +120,7 @@ export const fieldWrapperStyles = cva(
     // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
     'inline-flex items-center min-w-0 rounded-md',
     'text-foreground font-normal',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:hover 外框(hover:border-border-hover)一律瞬間,理由與出處同上方 fieldChromeStyles(待辦總帳 L9)
   ],
   {
     variants: {
@@ -278,6 +282,53 @@ export const bareInputStyles = [
   'group-data-[field-mode=disabled]/field:placeholder:text-fg-disabled',
   'group-data-[field-mode=disabled]/field:text-fg-disabled',
 ].join(' ')
+
+// ── 可打字的欄位:整個外框都是輸入處(2026-09-26,待辦總帳 N53③)────────────────────
+//
+// 規則 owner:`field-controls.spec.md`「點擊與游標原則」——「讓點擊穿透到底層的 input/select,確保使用者點擊
+// Field 內任何位置都能 focus/activate」;游標「input / select → `cursor-text` / `cursor-pointer`」。
+// 缺口:startIcon 這類元素靠 pointer-events-none 穿透,但**外框自己的內距與 1px 邊框**底下沒有 input 可以穿透 ——
+// 指到那裡外框變色(hover:border-border-hover),點下去輸入處卻不聚焦 =「亮著卻點不到」
+//(`ds-canonical/references/hit-area-canonical.md`「它要防的失敗是單向的:看到亮起來卻點不到」)。
+// Select / Combobox / TimePicker / PeoplePicker / Textarea 的外框本身就是點擊目標,沒有這個缺口(待辦總帳 N53 實測:點外框與內距都有反應);
+// 只有「外框包著一個 <input>」的可打字控件有:Input、NumberInput、LinkInput 編輯態 —— 三者一律消費這裡,不各寫一份。
+//
+// 做法 = 外框 onMouseDown:點在外框裡、而且不是外框裡另一個可操作的東西(行內動作鈕 / 連結 / 另一個輸入)→ 聚焦那個 input。
+// 用 mousedown + preventDefault、不用 click:click 之前焦點會先離開 input(blur → focus 閃一下、onBlur 驗證誤觸)。
+// 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
+// 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
+
+/** 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input */
+const FIELD_CHROME_OWN_TARGET =
+  'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
+
+/** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */
+export const FIELD_TEXT_ENTRY_CURSOR = 'cursor-text'
+
+/**
+ * 掛在可打字欄位外框的 onMouseDown:點外框內距 / 邊框 / 前置圖示 → 聚焦外框裡的 input。
+ * 不需要 ref:input 從外框自己找(三個宿主的 ref 接法各不同,NumberInput 直接轉發 ref)。
+ */
+export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): void {
+  if (event.button !== 0) return
+  const chrome = event.currentTarget
+  const input = chrome.querySelector<HTMLInputElement>('input:not([type="hidden"])')
+  if (!input || input.disabled) return
+  const target = event.target
+  if (!(target instanceof Element) || target === input) return
+  const own = target.closest(FIELD_CHROME_OWN_TARGET)
+  if (own && own !== chrome && chrome.contains(own)) return
+  event.preventDefault()
+  input.focus()
+  // 插入點落在點的那一側:點在輸入處右邊(右內距 / 右邊框)→ 放最後,左邊 → 放最前,與直接點在文字右側空白的原生行為一致。
+  // 上下內距不動它(focus() 會還原上次的選取)。type=number 沒有 selection API(selectionStart 為 null),跳過。
+  if (typeof input.selectionStart === 'number') {
+    const box = input.getBoundingClientRect()
+    const end = input.value.length
+    if (event.clientX >= box.right) input.setSelectionRange(end, end)
+    else if (event.clientX <= box.left) input.setSelectionRange(0, 0)
+  }
+}
 
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
 // SSOT canonical(M19 / 2026-05-05):cell-as-input naked variant 元件**所有內部

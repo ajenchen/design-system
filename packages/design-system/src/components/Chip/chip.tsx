@@ -55,7 +55,9 @@ const chipVariants = cva(
     // 預設文字: text-fg-secondary (neutral-8) — 對齊 SegmentedControl / Tabs 未選狀態
     'bg-surface text-fg-secondary',
     'text-body leading-compact font-medium whitespace-nowrap',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:hover 的外框與字色一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色與外框,待辦總帳 L9 / N4(3))。
+    // 選中的外框與字色跟 hover 是同一組 CSS 屬性 —— 過渡綁的是屬性,做不到「hover 瞬間、選中過渡」(滑鼠點選的當下
+    // 指標就在 chip 上)→ 選中變色一併瞬間。選中切換保留過渡的例外只有勾選框 / 單選圓 / 開關(motion.spec.md「唯一的例外」)。
     'cursor-pointer select-none',
     // hover（未選）：border 加深一階 + 文字轉深，對齊 Input / SegmentedControl hover
     'hover:border-border-hover hover:text-foreground',

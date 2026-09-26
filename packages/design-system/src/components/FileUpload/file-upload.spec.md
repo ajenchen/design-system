@@ -62,6 +62,8 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 | `loading`（**deferred**）| `loading` prop 為 true | **Deferred:其唯一用途(無清單單檔/頭像替換)場景未定義,showcase 僅呈現 3-state(idle/drag-over/disabled);prop 在 tsx 保留供未來。** 行為:CircularProgress 取代內容;`cursor-progress`(不加 `pointer-events-none`,互動由 isBlocked guard 擋);aria-busy=true。有清單的 flow 進度一律走 FileItem 自身的 progress bar（uploading status）—— FileUpload 內建 list 仍 `surface=form`(dropzone 非獨立浮層 upload manager,見 file-item.spec.md「upload-manager 浮層面板 composition」)|
 | `disabled` | `disabled` prop 為 true | **語意 token(非 opacity — dashed outline surface 走 DS outline-disabled 慣例,3/4 世界級 Ant/Polaris/Carbon 用 token)**:`bg-disabled` 底 + 邊框不變色 + 文字/icon → `fg-disabled`(由 `<Empty disabled>` 控,icon-circle 維持 muted)+ `cursor-not-allowed`(移除 `pointer-events-none` 後生效)|
 
+**邊框變色瞬間切換、不過渡**(2026-09-26 待辦總帳 L9「全部瞬間」延伸到外框,user:「確定這樣才是一致設計語言就做」;同一次滑過底色瞬間、外框卻 0.15 秒 = 兩套手感;SSOT = `../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」;2026-09-26 前是 `transition-colors` 0.15 秒)。
+
 **State 優先序**:`disabled > loading > drag-over > idle`。disabled 最硬(完全不可用),loading 次之(處理中,user 要等),drag-over 最柔(互動中),idle 預設。
 
 **loading vs disabled 的差異**:
@@ -112,7 +114,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - `files`: uploaded / uploading 檔案清單(`FileUploadStatus[]`:id / name / size? / progress? / status? / description? / thumbnailSrc?)。傳入 → drop zone 下方渲染列表,每項經 `FileItem`(status 對應:uploading = progress bar / completed = ✓ / error = ✗);不傳 → 不顯示。consumer 持 state(progress / status),FileUpload 只負責渲染
 - `fileListMode`: 清單每項顯示模式;預設 `'compact'`(單行),`'rich'` 含 thumbnail / size / progress bar
 - `onRemove(id)`: 清單移除 callback;有值 → 每項右側顯示 X 移除鈕(ARIA label 由 `removeAriaLabel` 模板客製,預設「移除 {name}」),無 → view-only
-- 移除焦點:在 callback 前把 focus 交給下一項 remove button；沒有下一項則前一項；清單清空則回 FileUpload owner trigger（dropzone 或 button）。禁止 item unmount 後讓 focus 掉到 `body`。
+- 移除焦點:在 callback 前把 focus 交給下一項 remove button；沒有下一項則前一項；清單清空則回 FileUpload owner trigger（dropzone 或 button）。禁止 item unmount 後讓 focus 掉到 `body`。移除鈕不在 Tab 路上(見「A11y 預設」檔案清單鍵盤),但仍可由程式聚焦;焦點接力到哪一列,清單的 Tab 停靠點就跟到哪一列(2026-09-25 待辦總帳 B9)。
 - `variant` / `buttonLabel`: 見「兩種觸發外觀」段
 
 ---
@@ -149,6 +151,30 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - **button**:使用原生 DS `<Button>`，鍵盤與 disabled 語意由 button 元素提供；accessible name 來自 `buttonLabel`，不使用 dropzone 的 children/name-from-content 規則。
 - `<input type="file">` 以 `className="hidden"`(`display:none`)隱藏，移出無障礙樹且不可聚焦；互動由當前 variant 的可見觸發元件承載。
 - **dropzone accessible name(name-from-content + custom children 例外)**:預設(未傳 children)時 name 來自 wrapper 內 `<Empty>` 的 title + description 文字,非 input 本身。若 consumer 傳入**只有 icon / branding 圖像、無可見文字**的 children，`role="button"` wrapper 會失去 accessible name；此時必須在 `<FileUpload>` root 傳 `aria-label`，或確保 children 含可見文字。
+
+### 檔案清單鍵盤(`files` + `onRemove`)= 一個 Tab 停靠點
+
+2026-09-25 待辦總帳 B9「路線乙」(`governance/planning/2026-09-25-interaction-and-hover-remediation.md`),user 逐字(附條件同意,條件查證成立記在該列):「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」。
+規則與一手依據住 `../../../ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」;本段只列本元件的按鍵表。2026-09-25 前:每一列的移除鈕各佔一站、沒有方向鍵。
+判定與執行 = `../../lib/roving-list-keyboard.ts`(2026-09-26 與 Sidebar / TreeView / Command 四份合一,待辦總帳〇節「按鍵規則合併」;判定表 `scripts/test-roving-list-keyboard.mjs`),本元件只提供「誰是列、列裡有哪些東西」;鍵盤處理掛在捕獲階段(同 Sidebar),`description` 裡放進來的選單鈕按 `↓` 也是換列(批次細節 X6)。列裡若有輸入框,它的方向鍵與空白鍵屬於它自己,`Tab` 仍一下離開。
+
+| 鍵 | 焦點在列上 | 焦點在這一列的按鈕上(移除鈕,或 `description` 裡的連結) |
+|---|---|---|
+| `↑` `↓` | 上 / 下一列,不繞回 | 回到上 / 下一列(焦點落在列上) |
+| `Home` `End` | 第一 / 最後一列 | 同左 |
+| `→` | 進這一列的第一顆按鈕(沒有就不動) | 下一顆;最後一顆停住 |
+| `←` | 不動 | 上一顆;第一顆 → 回到列 |
+| `Tab` / `Shift+Tab` | 一下離開清單 | 同左(先回到本列,再往下 / 往上走一站) |
+| `Enter` / `Space` | —(列本身沒有動作) | 啟動那顆按鈕 |
+
+- 別列的按鈕、這一列的按鈕都不在 Tab 路上(`tabIndex=-1`,`→` 才進得去);從外面 Tab 回來,落在上次停的那一列,沒停過(或那一列已被移除)→ 第一列。
+- 身分:容器 `role="grid"`(`aria-label="已上傳的檔案"`)、每列 `role="row"`(可聚焦,焦點框 = 內描邊 `focus-visible:focus-ring-inset`,同 FileItem 整列焦點框的幾何,`focus-canonical.md`「框怎麼畫」)、列的唯一子元素 FileItem `role="gridcell"`。
+- 為什麼是 grid:W3C listbox 模式明說選項裡不能互動,「To present a list of interactive elements, see the Grid Pattern」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/listbox/listbox-pattern.html#L31-L33>)。
+- 列上多動作時用 grid / row、列的直接子元素是 gridcell:Fluent List「the list item roles should be `grid`, and `row` … each direct child of the `ListItem` component has a role `gridcell`」(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-list/stories/src/List/ListDescription.md#L58>);React Aria GridList 同構(`role: 'grid'` <https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/gridlist/useGridList.ts#L192>、`'row'` / `'gridcell'` <https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/gridlist/useGridListItem.ts#L417-L462>)。
+- 容器與列用 `div`,不用 `ul` / `li`:W3C ARIA in HTML 的 `ul` 允許角色不含 grid(<https://www.w3.org/TR/html-aria/#el-ul>),`li` 在清單裡除了 listitem 不准換角色(<https://www.w3.org/TR/html-aria/#el-li>)。
+- **沒有 `onRemove` 的唯讀清單維持純 `ul` / `li`,不是焦點站**:列上沒有可操作的東西(`focus-canonical.md`「問題一」:不可操作 → 不可聚焦)。
+- 按鈕上的 `↑` `↓`、「先回到本列再離開」、唯讀清單不收成一站:AI 推導(`keyboard-model-canonical.md` 來源總帳);`Esc` 不規定(同該檔)。
+- 驗證:`file-upload.stories.tsx`「檔案清單鍵盤走法驗證」(test-only play)。
 
 ---
 

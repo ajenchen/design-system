@@ -139,6 +139,39 @@ export const FileListRemoveFocusContract = {
   },
 }
 
+// 鍵盤走法契約 probe(2026-09-25 待辦總帳 B9 路線乙;按鍵表 SSOT = file-upload.spec.md「A11y 預設」):
+// 有移除鈕的清單只佔一個 Tab 停靠點,↑↓ 換列、→ 進這一列的移除鈕、← 回列。只屬測試,不寄生在展示 story。
+export const FileListKeyboardContract = {
+  name: '檔案清單鍵盤走法驗證',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  parameters: { demoFocus: 'keep' },
+  tags: ['test-only'],
+  render: () => <FileListDemo />,
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement)
+    const grid = await canvas.findByRole('grid', { name: '已上傳的檔案' })
+    const rows = within(grid).getAllByRole('row')
+    // 整串只有一列在 Tab 路上;列裡的移除鈕都不在(-1,→ 才進得去)
+    await expect(rows.filter((row) => row.tabIndex === 0)).toHaveLength(1)
+    for (const button of within(grid).getAllByRole('button', { name: /^移除 / })) {
+      await expect(button).toHaveAttribute('tabindex', '-1')
+    }
+    // 從拖放區 Tab 一下進清單,落在第一列
+    canvas.getByRole('button', { name: /上傳附件/ }).focus()
+    await userEvent.tab()
+    await expect(rows[0]).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(rows[1]).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(within(rows[1]).getByRole('button', { name: '移除 cover-image.png' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(rows[1]).toHaveFocus()
+    // 停靠點跟著焦點走:從外面 Tab 回來會落在這一列
+    await expect(rows[1]).toHaveAttribute('tabindex', '0')
+    await expect(rows[0]).toHaveAttribute('tabindex', '-1')
+  },
+}
+
 // beta.97 弱化 icon hover 一階的真實互動證據:
 // FileUpload 內建 files 清單自己渲染 remove Button,story 不以 className 模擬 hover。
 export const RemoveHoverState = {

@@ -31,11 +31,13 @@
 // Run: `node scripts/agent-panel-reopen-state.mjs`
 
 // G2:關閉面板後再打開,閱讀位置與草稿必須還在
-import { readFileSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowserOrSkip, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本下一段 statSync 直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
+requireStorybookBuild(join(S,'index.json'))
 for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
                  'packages/design-system/src/components/AgentPanel/agent-panel.tsx']) {
   if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
@@ -51,7 +53,13 @@ const br = await launchBrowserOrSkip()
 // 視窗壓到很矮,對話才會有足夠的捲動範圍 —— 範圍太小的話「捲到中間」與「自動捲到底」
 // 會落在同一個值,測試就分不出有沒有回歸(2026-09-07 踩過:max=60 時兩者都是 60)
 const pg=await br.newPage({viewport:{width:1600,height:300}})
-const idx=JSON.parse(readFileSync(join(sv.snapshot?.dir??S,'index.json'),'utf8'))
+// 互動之後等版面真的停了(lib/launch-browser.mjs settleAfterInteraction);等不到 = 儀器失效 exit 2,不是產品裁決
+const settle=async(what)=>{
+  const r=await settleAfterInteraction(pg,{frames:10})
+  if(r.ok)return
+  console.error(`✗ INSTRUMENT-FAIL ${what}:互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)—— 儀器失效,不是產品裁決`)
+  await br.close(); await sv.stop(); process.exit(2)
+}
 const st={id:'design-system-components-agentpanel-展示--task-assistant'}
 console.log('story:', st.id)
 try {
@@ -95,18 +103,20 @@ else {
     return { cls:String(e.className).slice(0,40), max, now:Math.round(e.scrollTop) }
   })
   console.log('捲動容器:', JSON.stringify(scrollerBox))
-  // 等 scroll 事件派發、面板的捲動處理器記下「使用者剛剛在哪」(元素早已在畫面上,這段等的是事件 → 狀態,不是渲染)
-  await pg.waitForTimeout(250)
+  // 等 scroll 事件派發、面板的捲動處理器記下「使用者剛剛在哪」(元素早已在畫面上,這段等的是事件 → 狀態,不是渲染)。
+  // 2026-09-25 起三處都改成「等版面連續 10 影格靜止」(settleAfterInteraction,待辦總帳 C5)取代固定睡 250 / 500 / 600ms ——
+  // scroll 事件在下一個影格派發,關閉 / 重開的過渡是有限長度動畫,靜止判定都會等到;慢的機器只會等久一點。
+  await settle('捲到中間')
   const before = await state()
   // 按關閉
   const closed = await pg.evaluate(()=>{ const b=[...document.querySelectorAll('button')].find(x=>/關閉/.test(x.getAttribute('aria-label')||'')); if(b){b.click();return true} return false })
   // 等關閉的過渡走完、入口鈕掛上(祖先 display:none 讓捲動歸零 / ResizeObserver 0×0 那一刻也在這段裡)
-  await pg.waitForTimeout(500)
+  await settle('關閉面板')
   const mid = await state()
   // 再打開
   await pg.evaluate(()=>{ const f=document.querySelector('button[aria-haspopup="menu"]'); f?.click() })
   // 等重新打開的過渡走完、面板把閱讀位置還原(還原發生在重新顯示之後的版面回呼裡)
-  await pg.waitForTimeout(600)
+  await settle('重新打開面板')
   const after = await state()
   ck('G2 找得到關閉鈕', closed)
   ck('G2 關閉後面板不可見', !mid.panelVisible, `寬度>0=${mid.panelVisible}`)

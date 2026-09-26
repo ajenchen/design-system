@@ -343,13 +343,15 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 | 值 | 視覺 | 情境（world-class）|
 |---|---|---|
 | `'emphasis'` ★ | 淡藍底 / primary 字 | toolbar functional toggle、篩選、面板開關（Figma / Linear / Material ToggleButton）|
-| `'neutral'` | 灰底 / foreground 字 | sidebar / contextual nav row（Linear / Notion / VS Code Activity Bar）|
+| `'neutral'` | 灰底 / foreground 字;已按下 `neutral-selected` → 滑過 `-selected-hover` → 按住 `-selected-active`(2→3→4 階,user 2026-09-25 選「甲：保留，維持 2→3→4 (Recommended)」,選項由 AI 提供) | **可取消**的切換鈕(再點一次就關掉),需要比預設藍底低一級的強調時。**不用於導覽 / 目前頁**:再點不會取消的是「選中列」,走列元件(`MenuItem` / `SidebarMenuButton`),選中列滑過釘住 —— owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」(本格是全家族唯一 owner;`tokens/color/color.spec.md` 同寫 `-selected-hover`「可取消切換鈕專屬、列元件禁用」)。2026-09-25 更正:本格原寫「側欄 / 導覽列用」,與上述 owner 打架(待辦總帳 B5)|
 
 ```tsx
-<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" />         {/* emphasis default */}
-<Button variant="tertiary" pressed={filterOn} startIcon={Filter}>只看未完成</Button>             {/* emphasis */}
-<Button variant="text" pressed={isActive} pressedTone="neutral" startIcon={Inbox}>收件匣</Button> {/* neutral */}
+<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" />              {/* emphasis default */}
+<Button variant="tertiary" pressed={filterOn} startIcon={Filter}>只看未完成</Button>                  {/* emphasis */}
+<Button variant="text" pressed={showGrid} pressedTone="neutral" startIcon={Grid3x3}>顯示格線</Button> {/* neutral:再點一次關掉 */}
 ```
+
+靜態快照(不必真人滑過也看得到各狀態,M15):`button.anatomy.stories.tsx`「狀態行為」的「灰色已按下切換鈕」與「狀態疊加」兩段。
 
 ### 狀態疊加(開啟中 / pressed / aria-disabled)
 

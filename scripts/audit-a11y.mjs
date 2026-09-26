@@ -39,7 +39,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
   createA11yFingerprintMap,
@@ -80,10 +80,8 @@ const BASELINE_FILE = path.join(ROOT, 'infra/governance/baseline/a11y-baseline.j
 // 版面也要等完,否則同一則 story 的違規節點數會隨機器快慢變,基線指紋 storyId|ruleId → nodeCount 就不穩)
 const SETTLE_FRAMES = 10
 
-if (!fs.existsSync(INDEX_FILE)) {
-  console.error('❌ storybook-static/index.json not found. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(INDEX_FILE)
 
 const index = JSON.parse(fs.readFileSync(INDEX_FILE, 'utf-8'))
 if (!index.entries || typeof index.entries !== 'object') {

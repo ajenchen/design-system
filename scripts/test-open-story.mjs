@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { gotoStory, launchBrowser, openStory, StoryRenderInstrumentError, waitForStoryRender } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForStoryRender } from './lib/launch-browser.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ARGV = process.argv.slice(2)
@@ -245,13 +245,13 @@ try {
     isInstrument(boom, 'render-health') && boom.error.reason.includes('synthetic render exception'),
     boom.ok ? '被判成成功(錯)' : short(boom.error.message))
 
-  // 9. 等的元素永遠不出現 → 儀器失效(wait-for-timeout);gotoStory(薄包裝)照舊回 false / true
+  // 9. 等的元素永遠不出現 → 儀器失效(wait-for-timeout);等得到時照常成功(兩面)
+  //    (2026-09-25:gotoStory 薄包裝已退役,原本這一題順帶驗它的相容回傳值,改驗 openStory 自己的兩面)
   const never = await attempt(page, url('ok'), { waitFor: '[data-never]', timeoutMs: 1000, notFound: server.notFound })
-  const wrapperMissing = await gotoStory(page, url('ok'), { waitFor: '[data-never]', settle: 0, appearTimeout: 1000 })
-  const wrapperPresent = await gotoStory(page, url('ok'), { waitFor: '#storybook-root button', settle: 0 })
-  check('waitFor 等不到 → 儀器失效(wait-for-timeout);gotoStory 相容:等不到回 false、等得到回 true',
-    isInstrument(never, 'wait-for-timeout') && wrapperMissing === false && wrapperPresent === true,
-    `${never.ok ? 'openStory 被判成成功(錯)' : never.error.kind};gotoStory=${wrapperMissing}/${wrapperPresent}`)
+  const present = await attempt(page, url('ok'), { waitFor: '#storybook-root button', timeoutMs: 5000, notFound: server.notFound })
+  check('waitFor 等不到 → 儀器失效(wait-for-timeout);等得到 → 成功',
+    isInstrument(never, 'wait-for-timeout') && present.ok,
+    `${never.ok ? 'openStory 被判成成功(錯)' : never.error.kind};等得到=${present.ok ? '成功' : present.error.kind}`)
 
   // 10. 版面永遠不靜止(每個影格都在改 DOM)→ 要求 settleFrames 時儀器失效;不要求時照常成功(兩面:紅的是靜止判定本身)
   const restless = await attempt(page, url('restless'), { settleFrames: 10, settleTimeoutMs: 1500, notFound: server.notFound })
@@ -372,6 +372,111 @@ try {
       `重新載入=${reloaded.ok ? `成功(frame 導覽 ${frameNavigations} 次,畫面${reloadedShown ? '是' : '不是'}第二次載入)` : short(reloaded.error.message)};`
       + `別的 story=${wrong.ok ? '成功(錯)' : wrong.error.kind};404=${blockedWait.ok ? '成功(錯)' : blockedWait.error.failedRequests.join(',') || blockedWait.error.kind};`
       + `不存在的 id=${missingWait.ok ? '成功(錯)' : missingWait.error.kind};TypeError=${noId}/${noTarget}`)
+  }
+
+  // ── settleAfterInteraction:互動之後等靜止(2026-09-25,待辦總帳 C5)──────────────────────────────
+  // 取代「點開浮層後固定睡 N 毫秒」。兩面都要成立才算這支 helper 有用(M32:對照組要打在真的判準上):
+  //   (a) 點了之後浮層要**好幾個影格**才出現(每格都在改 DOM,模擬慢機器上一格一格推進的更新):固定睡 260ms 看不到浮層
+  //       —— 這正是 overlay-footer-gutter / dialog-height 把「還沒開」讀成「不適用」的形狀;helper 等得到。
+  //   (b) 浮層出現後跑 400ms 開啟過渡:固定睡 260ms 量到過渡中途的值;helper 等到過渡跑完。
+  //   (c) 點了什麼都沒發生:helper 很快回來、ok,頁面上沒有浮層(「這一下沒開出東西」是可靠結論)。
+  //   (d) 版面永遠不靜止:helper 回 ok:false(呼叫端當儀器失效),不得回 ok。
+  //   (e) 寫錯參數 → TypeError。
+  {
+    // 沿用同一個分頁(--single-process 下不開第二個 context / 分頁,見 lib/launch-browser.mjs);setContent 不走網路
+    const interactionPage = page
+    const INTERACTION_HTML = `<!doctype html><html><head><style>
+      #ov { transition: opacity 400ms linear; opacity: 0 } #ov.on { opacity: 1 }
+    </style></head><body>
+      <button id="late">慢慢開</button><button id="fade">淡入</button><button id="noop">沒反應</button><button id="busy">一直變</button>
+      <div id="progress"></div>
+      <script>
+      // IIFE:setContent 以 document.write 換內容、全域物件沿用,頂層 const 第二次宣告會讓整段腳本拋錯(按鈕全沒反應)
+      (() => {
+        const mount = () => { const d = document.createElement('div'); d.id = 'ov'; d.textContent = 'overlay'; document.body.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on'))) }
+        document.getElementById('late').onclick = () => { let n = 0; const step = () => { document.getElementById('progress').textContent = String(++n); if (n < 45) requestAnimationFrame(step); else mount() }; requestAnimationFrame(step) }
+        document.getElementById('fade').onclick = mount
+        document.getElementById('busy').onclick = () => { const tick = () => { document.body.dataset.t = String(performance.now()); requestAnimationFrame(tick) }; tick() }
+      })()
+      </script></body></html>`
+    const reset = () => interactionPage.setContent(INTERACTION_HTML)
+    const overlayState = () => interactionPage.evaluate(() => { const d = document.getElementById('ov'); return d ? Number(getComputedStyle(d).opacity) : null })
+    // (a)
+    await reset(); await interactionPage.click('#late'); await interactionPage.waitForTimeout(260)
+    const lateBySleep = await overlayState()
+    await reset(); await interactionPage.click('#late')
+    const lateSettle = await settleAfterInteraction(interactionPage, { frames: 10, capMs: 10_000 })
+    const lateByHelper = await overlayState()
+    // (b)
+    await reset(); await interactionPage.click('#fade'); await interactionPage.waitForTimeout(260)
+    const fadeBySleep = await overlayState()
+    await reset(); await interactionPage.click('#fade')
+    const fadeSettle = await settleAfterInteraction(interactionPage, { frames: 10, capMs: 10_000 })
+    const fadeByHelper = await overlayState()
+    // (c)
+    await reset(); await interactionPage.click('#noop')
+    const noopSettle = await settleAfterInteraction(interactionPage, { frames: 10, capMs: 10_000 })
+    const noopState = await overlayState()
+    // (d)
+    await reset(); await interactionPage.click('#busy')
+    const busySettle = await settleAfterInteraction(interactionPage, { frames: 10, capMs: 1500 })
+    // (e)
+    const badTarget = await throwsTypeError(() => settleAfterInteraction(null))
+    const badFrames = await throwsTypeError(() => settleAfterInteraction(interactionPage, { frames: 0 }))
+    await interactionPage.goto('about:blank') // 收掉「一直變」的 rAF 迴圈,不留給後面的題目
+    check('settleAfterInteraction:慢慢開的浮層固定睡 260ms 看不到、helper 等得到;淡入過渡固定睡量到中途、helper 等到跑完;沒反應 → ok 且沒有浮層;永遠在變 → ok:false;寫錯參數 → TypeError',
+      lateBySleep === null && lateSettle.ok && lateByHelper === 1
+        && fadeBySleep !== null && fadeBySleep < 1 && fadeSettle.ok && fadeByHelper === 1
+        && noopSettle.ok && noopState === null
+        && busySettle.ok === false
+        && badTarget && badFrames,
+      `慢慢開:睡=${lateBySleep} helper=${lateByHelper}(${lateSettle.ok ? `ok,等 ${lateSettle.framesWaited} 格` : 'ok:false'});`
+      + `淡入:睡=${fadeBySleep} helper=${fadeByHelper};沒反應:${noopSettle.ok ? 'ok' : 'ok:false'} 浮層=${noopState};`
+      + `一直變:${busySettle.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
+  }
+
+  // ── waitForDocsRender:docs 頁真的渲染出來(2026-09-25,待辦總帳 C5;取代兩份私有判定)──────────────────
+  // 合成頁照 Storybook 8.6 的 docs 外觀造:currentRender = { type: 'docs', id, isPreparing() },#storybook-docs 之後才有內容。
+  //   (a) 600ms 後才有內容 → 等得到、回傳那一則的 id;(b) 容器被藏起來(殭屍 docs)有內容也不算 → 逾時;
+  //   (c) 錯誤頁 → storybook-error;(d) currentRender 是別一則 docs → 逾時;(e) 寫錯參數 → TypeError。
+  {
+    const docsPage = page
+    const DOCS_HTML = (mode) => `<!doctype html><html><body class="sb-show-preparing-docs"><div id="storybook-docs"${mode === 'hidden' ? ' hidden' : ''}></div>
+      <div class="sb-errordisplay"><h1 id="error-message"></h1></div>
+      <script>(() => {
+        const mode = ${JSON.stringify(mode)}
+        let preparing = true
+        window.__STORYBOOK_PREVIEW__ = { currentRender: { type: 'docs', id: mode === 'other' ? 'other--docs' : 'button--docs', isPreparing: () => preparing } }
+        setTimeout(() => {
+          preparing = false
+          if (mode === 'error') { document.getElementById('error-message').textContent = 'synthetic docs failure'; document.body.className = 'sb-show-errordisplay'; return }
+          document.body.className = 'sb-show-main'
+          document.getElementById('storybook-docs').innerHTML = '<div class="sbdocs">Button docs</div>'
+        }, 600)
+      })()</script></body></html>`
+    const attemptDocs = async (mode, options) => {
+      // 先換到新的空白文件:setContent 沿用同一個 window,上一段「一直變」留下的 rAF 迴圈會繼續改 DOM(新文件的 body)
+      await docsPage.goto('about:blank')
+      await docsPage.setContent(DOCS_HTML(mode))
+      try { return { ok: true, value: await waitForDocsRender(docsPage, options) } } catch (error) {
+        if (error instanceof StoryRenderInstrumentError) return { ok: false, error }
+        throw error
+      }
+    }
+    const rendered = await attemptDocs('ok', { docsId: 'button--docs', timeoutMs: 5000, settleFrames: 5 })
+    const zombie = await attemptDocs('hidden', { docsId: 'button--docs', timeoutMs: 1500 })
+    const errored = await attemptDocs('error', { docsId: 'button--docs', timeoutMs: 5000 })
+    const other = await attemptDocs('other', { docsId: 'button--docs', timeoutMs: 1500 })
+    const badTarget = await throwsTypeError(() => waitForDocsRender(null))
+    check('waitForDocsRender:晚到的 docs 等得到且點名那一則;藏起來的殭屍 docs 不算;錯誤頁 → storybook-error;別一則 docs 不算;寫錯參數 → TypeError',
+      rendered.ok && rendered.value.docsId === 'button--docs'
+        && isInstrument(zombie, 'render-timeout') && zombie.error.reason.includes('hidden')
+        && isInstrument(errored, 'storybook-error') && errored.error.storybookError.includes('synthetic docs failure')
+        && isInstrument(other, 'render-timeout') && other.error.reason.includes('other--docs')
+        && badTarget,
+      `晚到=${rendered.ok ? `成功(${rendered.value.docsId},${rendered.value.ms}ms)` : short(rendered.error.message)};`
+      + `殭屍=${zombie.ok ? '成功(錯)' : zombie.error.kind};錯誤頁=${errored.ok ? '成功(錯)' : errored.error.kind};`
+      + `別一則=${other.ok ? '成功(錯)' : other.error.kind};TypeError=${badTarget}`)
   }
 
   // ── 真實 Storybook 建置:openStory 依賴的訊號(currentRender.phase / sb-show-errordisplay / #error-message)真的存在 ──

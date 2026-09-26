@@ -12,7 +12,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { countCallSites } from './lib/gate-reachability.mjs'
-import { classifySamples, hoverVerdict, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
+import { classifySamples, hoverVerdict, isBlindSample, isResolutionBound, isStreamBlind, MIN_USABLE_SAMPLES } from './lib/hover-latency-policy.mjs'
 
 const MED = 60
 const MAX = 600
@@ -89,6 +89,25 @@ for (const [name, input, want, why] of [
   else console.log(`✓ isStreamBlind:${name}`)
 }
 
+// 取樣點的所有權(2026-09-25,C12①):取樣點被蓋住 = 看不到,不論有沒有命中;有證明屬於列時退回串流判定
+for (const [name, input, want, why] of [
+  ['取樣點被把手蓋住、沒命中 = 看不到', { owned: false, hit: null, framesAfter: 7, firstGap: 20, maxGap: 20 }, true, '2026-09-25 本機:捲動後左面板 4/4 列的舊取樣點被 BUTTON[拖曳重排此列] 蓋住'],
+  ['取樣點被蓋住、卻「命中」= 仍是看不到', { owned: false, hit: {}, framesAfter: 3 }, true, '命中的可能正是把手淡入造成的變化(量到的是把手,不是列)'],
+  ['取樣點屬於列、沒命中、有幀 = 真訊號', { owned: true, hit: null, framesAfter: 7 }, false, '2026-09-12 真 bug 那一類必須照樣紅'],
+  ['取樣點屬於列、零幀 = 串流全盲', { owned: true, hit: null, framesAfter: 0 }, true, '與 isStreamBlind 同一條'],
+  ['取樣點屬於列、命中 = 看得到', { owned: true, hit: {}, framesAfter: 2 }, false, '正常樣本'],
+]) {
+  const got = isBlindSample(input)
+  if (got !== want) { console.log(`✗ isBlindSample:${name} 應為 ${want} 實得 ${got}(${why})`); fail++ }
+  else console.log(`✓ isBlindSample:${name}`)
+}
+{
+  let threw = false
+  try { isBlindSample({ hit: null, framesAfter: 7 }) } catch { threw = true }
+  if (!threw) { console.log('✗ isBlindSample:沒給 owned 應丟例外(沒量就是沒量,不得當成屬於)'); fail++ }
+  else console.log('✓ isBlindSample:沒給 owned 丟例外(沒量不得當成屬於)')
+}
+
 for (const [name, input, want, why] of [
   ['沒命中就談不上上界', { hit: null, firstFrameIsHit: false, firstGap: 3000, assertMax: MAX }, false, 'NaN 樣本走 blind/lost 那條路'],
   ['命中的不是第一張幀 → 量到的是真的反應時間', { hit: {}, firstFrameIsHit: false, firstGap: 1461, assertMax: MAX }, false, '中間有幀可看,數字有意義'],
@@ -125,12 +144,12 @@ for (const [name, input, want, why] of [
 // 執行面:閘必須真的用這兩支算旗標,不得在閘裡留第二份寫法
 {
   const gateSrc = readFileSync(new URL('./data-table-hover-latency.mjs', import.meta.url), 'utf8')
-  for (const sym of ['isStreamBlind', 'isResolutionBound']) {
+  for (const sym of ['isBlindSample', 'isResolutionBound']) {
     const n = countCallSites(gateSrc, sym)
     if (n < 1) { console.log(`✗ 可達性:閘沒有呼叫 ${sym}`); fail++ }
     else console.log(`✓ 可達性:${sym} 有 ${n} 個呼叫點`)
   }
-  if (/blindness\.push\(!hit/.test(gateSrc)) { console.log('✗ 閘裡還留著第二份 blindness 寫法'); fail++ }
+  if (/blindness\.push\((?!isBlindSample\()/.test(gateSrc)) { console.log('✗ 閘裡還留著第二份 blindness 寫法(每一筆都必須走 isBlindSample)'); fail++ }
   else console.log('✓ 閘裡沒有第二份 blindness 寫法(單一住所)')
 }
 

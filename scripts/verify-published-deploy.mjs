@@ -23,26 +23,21 @@
 // 慢的網路上故事 2.6 秒才畫出來也會被判「空白」,反過來 networkidle 從不成立時也只是默默往下走。
 // 現在全程共用一個分頁,每則經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟:
 //   story:等 Storybook 回報這則渲染完成(含 play)+ render-health(根節點非空、無關鍵資源失敗、無頁面例外);
-//   docs :docs 沒有同一套 render phase,改等 docs 容器真的有內容(或 Storybook 錯誤頁出現)+ 文件層 render-health。
+//   docs :docs 沒有同一套 render phase,改走 lib 的 waitForDocsRender(2026-09-25 起;全部閘共用的 docs 判定,取代本檔原本的
+//         私有 DOCS_SETTLED):currentRender 是這一則 docs、不在 preparing、docs 容器沒被藏起來且有內容;錯誤頁當場停。
 // 等不到 / 不健康 → 該則 L3 fail,訊息點名 story、附 Storybook 錯誤原文與 404 / 失敗請求。
 
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError, waitForDocsRender } from './lib/launch-browser.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLISHED_REPO = 'ajenchen/ds-product-template'
 const SITE = (process.argv.find((a) => a.startsWith('--site='))?.slice('--site='.length) || 'https://ds-product-template.netlify.app').replace(/\/+$/, '')
 const WANT_LIVE = process.argv.includes('--live')
 
-// docs 頁:docs 容器有內容(與原本的「非空白」判準同一條)或 Storybook 錯誤頁已出現 —— 兩者都是終點,回傳哪一種
-const DOCS_SETTLED = () => {
-  if (document.body?.classList.contains('sb-show-errordisplay')) return 'error'
-  const r = document.querySelector('.sbdocs-wrapper, .sbdocs, #storybook-docs, #docs-root')
-  return r && (r.childElementCount > 0 || (r.innerText || '').trim().length > 0) ? 'rendered' : false
-}
 let failed = false
 const fail = (m) => { console.error('❌ ' + m); failed = true }
 const ok = (m) => console.log('✓ ' + m)
@@ -109,24 +104,20 @@ if (WANT_LIVE) {
         const view = isDocs ? 'docs' : 'story'
         const url = `${SITE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=${view}`
         try {
-          await openStory(page, url, isDocs
-            // docs 內容在 docs 容器(#storybook-root 在 docs view 是空的),且 docs 沒有 story 的 render phase:
-            // 以文件層 render-health(關鍵資源失敗 / 頁面例外)+ 等 docs 容器真的有內容
-            ? { storybook: false, waitFor: DOCS_SETTLED }
-            : {})
-          if (isDocs && await page.evaluate(DOCS_SETTLED) === 'error') {
-            const why = (await page.evaluate(() => document.getElementById('error-message')?.textContent ?? '')).trim().slice(0, 200)
-            fail(`L3 docs 顯示 Storybook 錯誤頁:${id}(${why || '無錯誤原文'})`)
-            continue
-          }
+          // docs 內容在 docs 容器(#storybook-root 在 docs view 是空的),且 docs 沒有 story 的 render phase:
+          // openStory 只做文件層 render-health(關鍵資源失敗 / 頁面例外),docs 本身交給共用的 waitForDocsRender
+          await openStory(page, url, isDocs ? { storybook: false } : {})
+          if (isDocs) await waitForDocsRender(page, { docsId: id, url, label: id, timeoutMs: 30_000 })
           ok(`L3 render OK:${id}`)
         } catch (error) {
           if (!(error instanceof StoryRenderInstrumentError)) throw error
+          if (isDocs && error.kind === 'storybook-error') { fail(`L3 docs 顯示 Storybook 錯誤頁:${id}(${error.storybookError || '無錯誤原文'})`); continue }
           fail(`L3 故事沒渲染出來(或空白):${id}(${view})—— ${error.detail}`)
         }
       }
     } catch (e) {
-      fail(`L3 playwright 跑失敗:${e.message.split('\n')[0]}`)
+      // 瀏覽器 / 登入 / 讀不到 index = 這一趟 L3 什麼都沒驗(儀器失效,不是部署裁決),訊息帶共用標記(lib/launch-browser.mjs)
+      fail(`${INSTRUMENT_FAIL_MARKER} L3 playwright 跑失敗(沒驗到任何故事,不是部署裁決):${e.message.split('\n')[0]}`)
     } finally {
       await browser?.close()
     }

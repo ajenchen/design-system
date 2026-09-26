@@ -4,10 +4,11 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
-  CheckCircle2, Circle, Minus,
+  CheckCircle2, Circle, Minus, MoreVertical, Plus,
   type LucideIcon,
 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
+import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 
 const meta: Meta = {
@@ -52,7 +53,7 @@ export const FileBrowser: Story = {
 }
 
 // beta.97 直接修改的 TreeItem expand/collapse chevron hover 證據。
-// Chevron 依 TreeView virtual-focus contract 不進 tab sequence,因此以 row data id 精準取真實 button。
+// Chevron 是 tabIndex=-1 的視覺件(不在 Tab 路上,也不在方向鍵路上;鍵盤展開收合走 → / ←),因此以 node data id 精準取真實 button。
 export const ActionHoverState: Story = {
   name: '展開動作懸停狀態',
   tags: ['test-only'],
@@ -202,7 +203,8 @@ export const WithCheckbox: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const before = canvas.getByRole('button', { name: '樹狀清單之前' })
-    const tree = canvas.getByRole('tree', { name: '權限選擇' })
+    // 2026-09-25 總帳 B9:tree → treegrid,焦點由容器上的虛擬焦點改為列上的 roving tabindex(真焦點)
+    const tree = canvas.getByRole('treegrid', { name: '權限選擇' })
     const after = canvas.getByRole('button', { name: '樹狀清單之後' })
     const visualCheckboxes = canvasElement.querySelectorAll('[role="checkbox"]')
 
@@ -211,21 +213,143 @@ export const WithCheckbox: Story = {
       await expect(checkbox).toHaveAttribute('aria-hidden', 'true')
       await expect(checkbox).toHaveAttribute('tabindex', '-1')
     }
+    // 容器本身不可聚焦 —— 唯一的 Tab 停靠點在列上
+    await expect(tree).not.toHaveAttribute('tabindex')
 
     const readRow = canvasElement.querySelector<HTMLElement>('[data-tree-row="read"]')
-    const readDocsItem = canvasElement.querySelector<HTMLElement>('[data-tree-id="read-docs"]')
-    if (!readRow || !readDocsItem) throw new Error('TreeView 多選測試節點不存在')
+    const readDocsRow = canvasElement.querySelector<HTMLElement>('[data-tree-row="read-docs"]')
+    if (!readRow || !readDocsRow) throw new Error('TreeView 多選測試節點不存在')
 
     await userEvent.click(readRow)
-    await expect(tree).toHaveFocus()
+    await expect(readRow).toHaveFocus()
     await userEvent.keyboard('{ArrowDown}')
-    await expect(tree).toHaveAttribute('aria-activedescendant', readDocsItem.id)
+    await expect(readDocsRow).toHaveFocus()
 
+    // 離開再回來:落在上次停的那一列;再按一下 Tab 就離開整棵樹
     before.focus()
     await userEvent.tab()
-    await expect(tree).toHaveFocus()
+    await expect(readDocsRow).toHaveFocus()
     await userEvent.tab()
     await expect(after).toHaveFocus()
+  },
+}
+
+// ── Row actions + keyboard route(2026-09-25 總帳 B9)──────────────────
+// 列上的「更多動作」「新增頁面」:平常隱藏、滑過或鍵盤焦點在這一列時出現;
+// 鍵盤走法 = ↑↓ 換列、→ 進這一列的按鈕、← 回列、Tab 一下離開整棵樹(SSOT:tree-view.spec.md「鍵盤導覽」)。
+
+const RowActionsTree = () => {
+  const [lastAction, setLastAction] = React.useState<string | null>(null)
+  // 資料夾:⋯ + ＋;檔案:⋯(tree-view.spec.md「Uniform 規則」:⋯ 全部都有、＋ 同類型統一)
+  const more = (name: string) => ({ icon: MoreVertical, label: '更多動作', onClick: () => setLastAction(`更多動作 —「${name}」`) })
+  const add = (name: string) => ({ icon: Plus, label: '新增頁面', onClick: () => setLastAction(`新增頁面 —「${name}」`) })
+  return (
+    <div className="flex flex-col gap-2">
+      <button type="button" className="sr-only">樹狀清單之前</button>
+      <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+        <TreeView aria-label="產品文件" defaultExpandedIds={['requirements']} defaultSelectedIds={['checkout-prd']}>
+          <TreeItem id="requirements" icon={Folder} label="產品需求" inlineActions={[more('產品需求'), add('產品需求')]}>
+            <TreeItem id="roadmap" icon={FileText} label="2026 Q4 路線圖" inlineActions={[more('2026 Q4 路線圖')]} />
+            <TreeItem id="checkout-prd" icon={FileText} label="付款流程改版 PRD" inlineActions={[more('付款流程改版 PRD')]} />
+          </TreeItem>
+          <TreeItem id="design" icon={Folder} label="設計交付" inlineActions={[more('設計交付'), add('設計交付')]}>
+            <TreeItem id="component-spec" icon={FileText} label="元件規格" inlineActions={[more('元件規格')]} />
+          </TreeItem>
+          <TreeItem id="meeting-notes" icon={FileText} label="週會紀錄" inlineActions={[more('週會紀錄')]} />
+        </TreeView>
+      </div>
+      <p className="text-caption text-fg-muted" aria-live="polite">
+        {lastAction ? `最近一次動作:${lastAction}` : '尚未執行任何動作'}
+      </p>
+      <button type="button" className="sr-only">樹狀清單之後</button>
+    </div>
+  )
+}
+
+export const RowActions: Story = {
+  name: '列上的動作',
+  parameters: {
+    // play 用鍵盤走完整條路線(story-rules「示範 = 滑鼠使用者」:示範焦點的 story 必須標 keep)
+    demoFocus: 'keep',
+    docs: {
+      description: {
+        story:
+          '每一列的「更多動作」「新增頁面」平常隱藏,滑過列、或鍵盤焦點在這一列(列本身或列上的按鈕)時出現。' +
+          '鍵盤:Tab 進到樹(落在選中的那一列)→ ↑↓ 換列 → → 進這一列的按鈕,→ / ← 在按鈕之間走,第一顆再按 ← 回到列;' +
+          '收著的資料夾按 → 先展開,已展開的資料夾再按 → 才進按鈕。不論停在列上或按鈕上,Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上。',
+      },
+    },
+  },
+  render: () => <RowActionsTree />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const before = canvas.getByRole('button', { name: '樹狀清單之前' })
+    const after = canvas.getByRole('button', { name: '樹狀清單之後' })
+    const tree = canvas.getByRole('treegrid', { name: '產品文件' })
+    const row = (id: string) => {
+      const el = canvasElement.querySelector<HTMLElement>(`[data-tree-row="${id}"]`)
+      if (!el) throw new Error(`找不到列 ${id}`)
+      return el
+    }
+    const actionsOf = (id: string) => Array.from(row(id).querySelectorAll<HTMLElement>('[data-tree-actions] button'))
+
+    // 1. Tab 路上只有一站:唯一 tabIndex ≥ 0 的是選中的那一列;列上按鈕全是 -1 而且都有名稱(總帳 B9)
+    const stops = Array.from(tree.querySelectorAll<HTMLElement>('[tabindex]')).filter((el) => el.tabIndex >= 0)
+    await expect(stops).toEqual([row('checkout-prd')])
+    for (const button of tree.querySelectorAll<HTMLElement>('[data-tree-actions] button')) {
+      await expect(button).toHaveAttribute('tabindex', '-1')
+      await expect(button.getAttribute('aria-label')?.trim()).toBeTruthy()
+    }
+
+    // 2. Tab 進來落在選中的列;再按一下 Tab 就離開整棵樹;Shift+Tab 回到同一列
+    before.focus()
+    await userEvent.tab()
+    await expect(row('checkout-prd')).toHaveFocus()
+    await userEvent.tab()
+    await expect(after).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(row('checkout-prd')).toHaveFocus()
+
+    // 3. 葉節點:→ 進這一列唯一的按鈕,再 → 不動;Enter 執行按鈕自己的動作、焦點留在按鈕;Tab 一下離開
+    const [prdMore] = actionsOf('checkout-prd')
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(prdMore).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(prdMore).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await expect(canvas.getByText('最近一次動作:更多動作 —「付款流程改版 PRD」')).toBeInTheDocument()
+    await expect(prdMore).toHaveFocus()
+    await userEvent.tab()
+    await expect(after).toHaveFocus()
+
+    // 4. 回來後 ↑↑ 到展開的資料夾:→ 第一顆、→ 第二顆、→ 不動、← 第一顆、← 回列
+    await userEvent.tab({ shift: true })
+    await expect(row('checkout-prd')).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}')
+    await expect(row('requirements')).toHaveFocus()
+    const [folderMore, folderAdd] = actionsOf('requirements')
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(folderMore).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(folderAdd).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(folderAdd).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(folderMore).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(row('requirements')).toHaveFocus()
+
+    // 5. 列上 ← / → 維持樹的語意(收合、再展開,焦點不離開這一列);按鈕上 ↓ 換到下一列
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(row('requirements')).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(row('requirements')).toHaveAttribute('aria-expanded', 'true')
+    await expect(row('requirements')).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}{ArrowDown}')
+    await expect(row('roadmap')).toHaveFocus()
+
+    // 收尾:焦點放回樹外(sr-only 哨兵),畫面回到滑鼠使用者看到的樣子
+    after.focus()
   },
 }
 
@@ -347,9 +471,10 @@ export const DragAndDrop: Story = {
               {renderNodes(tree)}
             </TreeView>
           </div>
-          <button type="button" onClick={() => setTree(INITIAL_TREE)} className="text-caption text-primary hover:text-primary-hover cursor-pointer self-start">
+          {/* 2026-09-25:原本是手刻的原生按鈕元素(展示層禁原生控件,story-rules「禁止」);單獨的輔助動作一律 tertiary(button.spec.md Variant 表) */}
+          <Button variant="tertiary" size="sm" className="self-start" onClick={() => setTree(INITIAL_TREE)}>
             重設
-          </button>
+          </Button>
         </div>
         <div className="w-[240px]">
           <p className="text-caption font-medium text-fg-muted mb-2">移動紀錄</p>

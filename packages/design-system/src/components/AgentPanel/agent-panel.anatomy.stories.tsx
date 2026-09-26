@@ -352,7 +352,7 @@ export const Accessibility: Story = {
       <thead><tr><Th>元件</Th><Th>角色 / 屬性</Th><Th>鍵盤</Th></tr></thead>
       <tbody>
         <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>無自動移焦;改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
-        <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;方向鍵走列</Td></tr>
+        <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;搜尋框 ↑↓ 走列,插入點在字尾時 → 進該列的改名 / 刪除、← 回;兩顆鈕不在 Tab 路上(B9)</Td></tr>
         <tr><Td>AgentConversation</Td><Td>role=log + aria-live=polite</Td><Td>—</Td></tr>
         <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>
         <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;focus-within 常駐顯示</Td></tr>
