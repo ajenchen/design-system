@@ -486,7 +486,7 @@ const tabsTriggerVariants = cva(
     'whitespace-nowrap',
     'font-medium text-fg-secondary',
     // 不寫 transition-colors:滑過的字色一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,
-    // 待辦總帳 L9 / N4(3))。選中切換的**底線**過渡在下方 `after:transition-colors`,那是「選中移動」不是滑過,保留(L9 範圍明文排除)。
+    // 待辦總帳 L9 / N4(3))。選中切換的**底線**過渡在下方 `after:transition-colors`,那是選中切換(每個分頁自己的底線淡出 / 淡入,不會滑過去)不是滑過,保留(L9 範圍明文排除)。
     'cursor-pointer select-none',
     // 焦點框往內:tab 高 = 分頁列高,上下淨空 0(focus-canonical「問題二」驗算表;2026-09-09 Codex R13 抓到規格寫內框、
     // 實作卻是全域外框,在 overflow-scroll 的 TabsList 裡上下各被裁 3–4px)

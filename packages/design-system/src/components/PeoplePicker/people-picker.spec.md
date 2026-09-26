@@ -140,7 +140,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 多人互動邏輯(N tag / overflow / inline-search)| **繼承 Combobox**(但 tag 和溢出**換成圓形 avatar 視覺**)|
 | Avatar 在 field 內 padding(12px 固定)| **PeoplePicker 自己**(不繼承 Combobox density-dependent 公式)|
 | +N 溢出 chip 形狀(**圓形**;stack mode)| **PeoplePicker 自己**(不繼承 Combobox 矩形 tag) |
-| 多人 tag 視覺(default `multiDisplay='stack'`:**圓形 avatar overlap `-ml-0.5`**) | **PeoplePicker 自己**(`multiDisplay='pill'` opt-in 才用 Combobox 矩形 Tag pill,見「多選顯示樣式」)|
+| 多人 tag 視覺(default `multiDisplay='stack'`:**圓形 avatar 往左疊 2px,疊在一起處挖空分開**,畫法 SSOT = `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」) | **PeoplePicker 自己**(`multiDisplay='pill'` opt-in 才用 Combobox 矩形 Tag pill,見「多選顯示樣式」)|
 | 多人 length=1 視覺(降階為 avatar+人名,跟單人視覺一致)| **PeoplePicker 自己**(Combobox 無此特殊)|
 
 #### B. 單人完整 trigger SSOT
@@ -165,7 +165,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | state | trigger 顯示 |
 |---|---|
-| closed | **圓形 avatar stack overlap `-ml-0.5` + 圓形 +N 溢出 chip**(本來放人名的地方不放人名)|
+| closed | **圓形 avatar stack(往左疊 2px、疊在一起處挖空,見 `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」)+ 圓形 +N 溢出 chip**(本來放人名的地方不放人名)|
 | open + inline-search、**未選**(length=0)| input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
 | open + inline-search、**已選**(length≥2)| **avatar stack + 圓形 +N + input cursor 在 +N 的右側**(stack 跟 +N 不動;cursor 接在 +N 後;empty search 不顯 placeholder,純 cursor。對齊 Combobox `trailing` slot placement)|
 | open + panel-search、已選 | avatar stack + 圓形 +N(searchbox 在 panel 內,trigger 視覺不變)|

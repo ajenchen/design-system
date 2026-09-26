@@ -15,7 +15,7 @@ Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記�
 | `drag-canonical.md` | 現行 drag behavior/visual ownership、DataTable/TreeView 能力矩陣與保留中的未來擴充邊界 |
 | `focus-canonical.md` | 鍵盤游標與焦點指示的跨元件 SSOT — 誰能移動游標(只有鍵盤)、游標長什麼樣(有無「懸停→選中」兩段式決定框 vs 共用 focus)、內外描邊判準 |
 | `failure-class-registry.json` | 被抓過的 failure class → mechanical defense／judgment audit 的封閉追蹤表 |
-| `hit-area-canonical.md` | 可點範圍的跨元件 SSOT — **懸停回饋的形狀 ≡ 命中區**(2026-09-24 user 指出「命中區 = 可視形狀」不夠精確後改寫:多數小目標平時沒有可視邊界)、唯一例外(線與點)的四個條件、外擴硬限制、DS 現況盤點 |
+| `hit-area-canonical.md` | **滑過原則**的跨元件唯一住所(2026-09-26:滑過只為三件事 —— 告訴你能操作、叫出按鈕、給你看資訊;能點的元件「滑過有變化的位置點下去一定有反應、能點的地方不一定要變」;判斷順序四題)+ 可點範圍細則:懸停回饋的形狀 ≡ 命中區、唯一例外(線與點)的四個條件、外擴硬限制、DS 現況盤點 |
 | `keyboard-model-canonical.md` | 一串東西該用 Tab 逐項走還是 Tab 一次進去再用方向鍵的跨元件 SSOT — 兩題判準(語意 / 必要性)、`aria-current` ≠ `aria-selected`、撤回「有沒有選中狀態」那條錯判準、宣告 composite 角色就必須實作那套鍵盤 |
 | `governance-audit-coverage.md` | 治理 home × 稽核機制 × 執行頻率覆蓋表 |
 | `item-anatomy-recipe.md` | 7 步建立新 row primitive workflow + audit grep guard |

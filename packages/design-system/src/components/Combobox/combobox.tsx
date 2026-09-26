@@ -341,9 +341,15 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
-        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full flex', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
+        // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話
+        // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)
+        <div key={item.value} ref={el => { tagEls.current[i] = el }}
+          className={cn('shrink-0 max-w-full flex z-[var(--tag-stack-z)] has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', tagWrapperClassName)}
+          style={{ ['--tag-stack-z' as string]: items.length - i, ['--tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>
       ))}
-      <div ref={overflowEl} className={cn('shrink-0 flex', overflowWrapperClassName)}>
+      <div ref={overflowEl}
+        className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', overflowWrapperClassName)}
+        style={{ ['--tag-stack-z-focus' as string]: items.length + 1 }}>
         <OverflowIndicator count={overflow} shape={overflowShape} size={size}>
           {hiddenItems.map(item => (
             renderHiddenTag

@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-26T02:58:22.152Z"
+    "generatedAt": "2026-09-26T09:12:01.697Z"
   },
   "components": {
     "accordion": {
@@ -1319,7 +1319,7 @@
         ],
         "設計原則": [
           "design-system-components-rating-設計原則--usage-guidance",
-          "design-system-components-rating-設計原則--precision-choice",
+          "design-system-components-rating-設計原則--whole-stars-and-compact",
           "design-system-components-rating-設計原則--yellow-star-convention"
         ]
       },

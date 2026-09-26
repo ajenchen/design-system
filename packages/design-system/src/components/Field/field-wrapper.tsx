@@ -298,8 +298,12 @@ export const bareInputStyles = [
 // 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
 // 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
 
-/** 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input */
-const FIELD_CHROME_OWN_TARGET =
+/**
+ * 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input。
+ * 另一個消費者:LinkInput 連結狀態的外框(點「不是這些東西」的地方 = 按鉛筆進入編輯,link-input.spec.md「Link 狀態」)。
+ * 兩處共用這一份清單,不各寫一份。
+ */
+export const FIELD_CHROME_OWN_TARGET =
   'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
 
 /** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */

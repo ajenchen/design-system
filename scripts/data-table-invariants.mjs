@@ -23,7 +23,7 @@ import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -106,9 +106,6 @@ const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 
 const failures = []
 const passes = []
-const pending = []
-// I31 深色:未經 user 同意的產品主張,只回報不判紅(見 I31 段);user 決定後清成空字串並刪掉那個分支。
-const I31_DARK_PENDING_USER_DECISION = 'governance/planning/2026-09-25-interaction-and-hover-remediation.md X35 / R21 第 5 題 (a)'
 
 function record(invariant, label, pass, detail = '') {
   if (pass) passes.push(`✓ ${invariant} | ${label}`)
@@ -2105,7 +2102,10 @@ for (const storyId of ['design-system-components-datatable-展示--selection-key
 }
 
 /* ── I31:區間格在列被滑過時兩個主題都釘住(2026-09-25,待辦總帳 C12⑦ / C1 K16)──────────────
- * 區間是持續選取,性質同選中列(選中列被滑過時釘住)。淺色 `--primary-subtle` 不透明、深色是 alpha,
+ * user 2026-09-26 同意 R21 第 5 題 (a)「兩個主題都維持原色」—— 深色自即日起判紅(原本未決時只回報的分支已刪)。
+ * 依據不是「同選中列」(那條 item-anatomy 規則管選單與清單列,套不到表格格,R21 已撤回),而是 DS 既有三條:
+ * 不新增 token、彩色底不疊層、`--primary-subtle` 被滑過從不換底(data-table.spec.md「試算表模式」段)。
+ * 淺色 `--primary-subtle` 不透明、深色是 alpha,
  * 修前深色的列滑過層會從區間格底下透上來(#1C304A → #243851),淺色維持不變 —— 只量淺色的閘結構上看不到。
  * 修法在 `data-table.css`(含區間格的列被滑過時,滑過層改畫在非區間格上)。
  * 量測、判定與判定表都在 lib/data-table-range-hover.mjs(唯一住所)。判定表在量之前先跑一遍:判定本身錯了,量到什麼都不算數。
@@ -2127,18 +2127,233 @@ for (const theme of ['light', 'dark']) {
   const v = rangeHoverPinVerdict(m)
   const tag = v.verdict === 'instrument' ? 'INSTRUMENT-FAIL ' : ''
   const label = `${theme}:區間格在列被滑過時釘住(${formatPixel(m.rangeRest)} → ${formatPixel(m.rangeHover)}),非區間格照常變色`
-  // 深色「釘住」是尚未經 user 同意的產品主張(2026-09-26 R21 第 5 題 (a):世界級只有一半這樣做;待辦總帳 X35
-  // 已從「照現有規則修的 bug」移到「要 user 同意的新主張」)。未決前只回報、不判紅 —— 把 AI 的推論寫成閘 = M36(a)。
-  // 儀器失效照樣紅;user 同意 (a) → 刪掉這個分支;不同意 → 改寫本段期望值。
-  if (theme === 'dark' && v.verdict === 'fail' && I31_DARK_PENDING_USER_DECISION) {
-    pending.push(`⏸ I31 | ${label} | 待 user 決定(${I31_DARK_PENDING_USER_DECISION}):${v.problems.join(';')}`)
-    continue
-  }
   record('I31', label, v.verdict === 'pass', `${tag}${v.problems.join(';')}`)
 }
-if (pending.length > 0) {
-  console.log('\n--- 待 user 決定(不判紅) ---')
-  console.log(pending.join('\n'))
+
+// ── I32 / I33 共用:試算表 story、格的選擇器、互動後等版面停(不用固定睡眠 —— M37)─────────────
+const SHEET_STORY = 'design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay'
+const SHEET_URL = `${BASE}/iframe.html?id=${SHEET_STORY}&viewMode=story`
+const SHEET_READY = '[role="row"][data-row-index="3"] [role="gridcell"]'
+/** 第 r 列第 c 格的 data-cell-id(欄序:SKU 唯讀 / Product / Qty / Category / In 開關 / URL 連結) */
+const sheetCellId = (r, c) => page.evaluate(([r, c]) => document.querySelector(`[role="row"][data-row-index="${r}"]`)
+  ?.querySelectorAll(':scope > [role="gridcell"]')[c]?.getAttribute('data-cell-id') ?? null, [r, c])
+/** 以 data-cell-id 取格的矩形(不靠 nth-child —— 列裡還可能有拖曳把手等非格子代) */
+const sheetCellBox = (id) => page.evaluate((id) => {
+  const b = id ? document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)?.getBoundingClientRect() : null
+  return b ? { x: b.x, y: b.y, width: b.width, height: b.height } : null
+}, id)
+/** 互動後等版面靜止;等不到 = 儀器失效(呼叫端記紅,不當成產品裁決) */
+const settled = async () => (await settleAfterInteraction(page, { frames: 10 })).ok
+
+/* ── I32:試算表模式一次只有一個焦點框(2026-09-26,user 同意 R21 第 5 題 (b))─────────────────
+ * 要保證的性質(逐字):焦點在表格根節點上時,表格上**恰好一個**焦點指示(根節點的框與格游標框不同時出現)——
+ *   有格游標 → 那一格的 DS 焦點框(`focus-ring-inset` = 2px solid `--ring`、outline-offset -2px),表格根節點不畫;
+ *   沒有格游標(按 Esc 清掉之後)→ 由表格根節點畫(否則焦點在表上卻什麼都看不到,WCAG 2.4.7)。
+ * SSOT:`ds-canonical/references/focus-canonical.md` A 類(「DataTable 根」)+「框怎麼畫」只准三種幾何;
+ *   data-table.spec.md「試算表模式」段。
+ * 修前實測:Tab 進表、點格後按 ↓,都是「根節點 2px 內描邊 + 格上 1px `--primary`」兩個框(R21)。
+ * 儀器對照(M32:綠燈要先證明它會紅):每一步先證明「根節點此刻就是焦點,而且命中 :focus-visible」
+ *   —— 那正是修前會畫外圈的條件;再證明格游標真的存在、而且框的矩形就是那一格(`data-cell-id`)。
+ *   條件不成立記成 INSTRUMENT-FAIL(紅),不拿來判產品。焦點框顏色用同一頁 `var(--ring)` 解出的值比,不寫死色值。
+ * 焦點離開格線區(2026-09-26,AI 依 user (b) 推導,對齊 AG Grid / MUI X / APG —— data-table.spec.md「試算表模式」段):
+ *   步驟 1b:從根節點 Tab 到表頭控件 → 畫面上**只剩那個控件自己的焦點框**,格游標框收起;
+ *   步驟 1c:Shift+Tab 回根節點 → 格游標框在**同一格**重現(位置保留,不是重新放到第一格)。
+ *   儀器:1b 先證明焦點真的落在表頭控件(在表格根節點裡、不在任何格裡、它自己畫了框),1c 先證明焦點回到根節點。
+ * 對照組:同一支腳本 `--build=` 指向修前的建置,步驟 1、2 必紅(兩個框、1px);步驟 3 修前修後都綠(Esc 後本來就由根節點畫)。
+ *   1b 另以「格游標框常駐」的建置(本批第一版)當對照,必紅(表頭控件的框 + 格游標框兩個)。 */
+{
+  const readFocus = () => page.evaluate(() => {
+    const root = document.querySelector('[data-data-table-outer]')
+    const probe = document.createElement('div')
+    probe.style.outline = '2px solid var(--ring)'
+    root.appendChild(probe)
+    const ringColor = getComputedStyle(probe).outlineColor
+    probe.remove()
+    const drawn = (cs) => cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0
+    const geo = (cs) => ({ style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), offset: parseFloat(cs.outlineOffset), color: cs.outlineColor })
+    const rcs = getComputedStyle(root)
+    const rings = [...document.querySelectorAll('[data-selected-cell-id]')]
+    const ring = rings[0] ?? null
+    const cursor = ring?.getAttribute('data-selected-cell-id') ?? null
+    const cell = cursor ? document.querySelector(`[data-cell-id="${CSS.escape(cursor)}"]`) : null
+    const rb = ring?.getBoundingClientRect()
+    const cb = cell?.getBoundingClientRect()
+    return {
+      rootFocused: document.activeElement === root,
+      rootFocusVisible: root.matches(':focus-visible'),
+      rootDrawn: drawn(rcs), root: geo(rcs),
+      rings: rings.length, cursor,
+      ringDrawn: ring ? drawn(getComputedStyle(ring)) : false,
+      ring: ring ? geo(getComputedStyle(ring)) : null,
+      ringOnCell: !!(rb && cb && Math.abs(rb.x - cb.x) < 1 && Math.abs(rb.y - cb.y) < 1
+        && Math.abs(rb.width - cb.width) < 1 && Math.abs(rb.height - cb.height) < 1),
+      ringColor,
+    }
+  })
+  const isDsRing = (g, ringColor) => !!g && g.style === 'solid' && g.width === 2 && g.offset === -2 && g.color === ringColor
+  const describe = (f) => JSON.stringify({ root: f.rootDrawn ? f.root : 'none', cursor: f.cursor, ring: f.ring, ringColor: f.ringColor })
+  // 有格游標的兩個步驟:根節點是焦點且命中 :focus-visible(儀器)→ 恰好一個框、那個框是格游標的 DS 焦點框
+  const checkCursorStep = (step, f, instrumentOk) => {
+    const instrument = []
+    if (!instrumentOk) instrument.push('互動後版面沒有靜止')
+    if (!f.rootFocused) instrument.push('焦點不在表格根節點')
+    if (!f.rootFocusVisible) instrument.push('根節點沒命中 :focus-visible(修前會畫外圈的條件沒成立,量不到要守的事)')
+    if (f.rings !== 1 || !f.cursor) instrument.push(`格游標框數量 ${f.rings}(應為 1)`)
+    else if (!f.ringOnCell) instrument.push(`格游標框的矩形不是 ${f.cursor} 那一格`)
+    if (instrument.length) { record('I32', `${step}:儀器`, false, `INSTRUMENT-FAIL ${instrument.join(';')}`); return }
+    const count = (f.rootDrawn ? 1 : 0) + (f.ringDrawn ? 1 : 0)
+    record('I32', `${step}:恰好一個焦點框(表格根節點不另畫)`, count === 1 && !f.rootDrawn, `框數 ${count}:${describe(f)}`)
+    record('I32', `${step}:格游標框 = DS 焦點框(2px solid --ring,往內 2px)`, isDsRing(f.ring, f.ringColor), describe(f))
+  }
+
+  // 步驟 1:鍵盤 Tab 進表(onFocus 會把游標放上第一格)
+  await loadStory(SHEET_URL, SHEET_READY)
+  let landed = false
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press('Tab')
+    if (await page.evaluate(() => document.activeElement === document.querySelector('[data-data-table-outer]'))) { landed = true; break }
+  }
+  let ok = await settled()
+  const afterTab = await readFocus()
+  if (!landed) record('I32', 'Tab 進表:儀器', false, 'INSTRUMENT-FAIL 按 25 次 Tab 走不到表格根節點')
+  else {
+    checkCursorStep('Tab 進表', afterTab, ok)
+
+    // 步驟 1b:再按 Tab 到表頭控件(排序區)—— 只剩那個控件的焦點框,格游標框收起
+    await page.keyboard.press('Tab')
+    ok = await settled()
+    const onHeader = await page.evaluate(() => {
+      const root = document.querySelector('[data-data-table-outer]')
+      const a = document.activeElement
+      const cs = a ? getComputedStyle(a) : null
+      return {
+        inRoot: !!a && a !== root && root.contains(a),
+        inCell: !!a?.closest('[role="gridcell"]'),
+        inHeader: !!a?.closest('[role="columnheader"]'),
+        activeDrawn: !!cs && cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0,
+        active: a ? `${a.tagName.toLowerCase()}${a.getAttribute('aria-label') ? `[${a.getAttribute('aria-label')}]` : ''} "${(a.textContent || '').trim().slice(0, 20)}"` : null,
+      }
+    })
+    const header = await readFocus()
+    const instrument = []
+    if (!ok) instrument.push('互動後版面沒有靜止')
+    if (!onHeader.inRoot || onHeader.inCell || !onHeader.inHeader) instrument.push(`Tab 之後焦點不在表頭控件上(${onHeader.active})`)
+    if (!onHeader.activeDrawn) instrument.push(`表頭控件自己沒畫焦點框(${onHeader.active})—— 量不到「只剩一個」`)
+    if (instrument.length) record('I32', 'Tab 到表頭控件:儀器', false, `INSTRUMENT-FAIL ${instrument.join(';')}`)
+    else {
+      const count = 1 + (header.rootDrawn ? 1 : 0) + (header.ringDrawn ? 1 : 0)
+      record('I32', `Tab 到表頭控件(${onHeader.active}):只剩那個控件的焦點框,格游標框收起`,
+        count === 1 && header.rings === 0, `框數 ${count}:${describe(header)}`)
+
+      // 步驟 1c:Shift+Tab 回根節點 —— 格游標框在同一格重現(位置保留)
+      await page.keyboard.press('Shift+Tab')
+      ok = await settled()
+      const back = await readFocus()
+      if (!ok || !back.rootFocused) record('I32', 'Shift+Tab 回表格:儀器', false, `INSTRUMENT-FAIL ${!ok ? '互動後版面沒有靜止' : '焦點沒有回到表格根節點'}`)
+      else {
+        record('I32', `Shift+Tab 回表格:格游標框在同一格重現(${afterTab.cursor})`, back.cursor === afterTab.cursor && back.ringOnCell && back.ringDrawn, describe(back))
+        record('I32', 'Shift+Tab 回表格:恰好一個焦點框、是 DS 焦點框', !back.rootDrawn && isDsRing(back.ring, back.ringColor), describe(back))
+      }
+    }
+  }
+
+  // 步驟 2:滑鼠點 Product 第 0 列,再按 ↓(修前這一步根節點變成 :focus-visible 而畫外圈)
+  await loadStory(SHEET_URL, SHEET_READY)
+  const p0 = await sheetCellBox(await sheetCellId(0, 1))
+  if (!p0) record('I32', '點格後按 ↓:儀器', false, 'INSTRUMENT-FAIL 找不到第 0 列 Product 格')
+  else {
+    await page.mouse.click(p0.x + p0.width / 2, p0.y + p0.height / 2)
+    ok = await settled()
+    await page.keyboard.press('ArrowDown')
+    ok = (await settled()) && ok
+    const afterDown = await readFocus()
+    const want = await sheetCellId(1, 1)
+    if (afterDown.cursor !== want) record('I32', '點格後按 ↓:儀器', false, `INSTRUMENT-FAIL 格游標應在 ${want},實得 ${afterDown.cursor}`)
+    else checkCursorStep('點格後按 ↓', afterDown, ok)
+
+    // 步驟 3:按 Esc 清掉格游標(行為不變)→ 焦點仍在表上,改由根節點畫同一種內描邊
+    await page.keyboard.press('Escape')
+    ok = await settled()
+    const afterEsc = await readFocus()
+    const instrument = []
+    if (!ok) instrument.push('互動後版面沒有靜止')
+    if (!afterEsc.rootFocused) instrument.push('焦點不在表格根節點')
+    if (!afterEsc.rootFocusVisible) instrument.push('根節點沒命中 :focus-visible')
+    if (instrument.length) record('I32', 'Esc 之後:儀器', false, `INSTRUMENT-FAIL ${instrument.join(';')}`)
+    else {
+      record('I32', 'Esc 之後:格游標已清(Esc 行為不變)', afterEsc.rings === 0, describe(afterEsc))
+      record('I32', 'Esc 之後:由表格根節點畫 DS 焦點框(恰好一個,WCAG 2.4.7)', afterEsc.rings === 0 && isDsRing(afterEsc.root, afterEsc.ringColor), describe(afterEsc))
+    }
+  }
+}
+
+/* ── I33:試算表模式點任何格,格游標都跟過去(2026-09-26,user 同意 R21 第 5 題 (c))──────────
+ * 要保證的性質(逐字):點唯讀格、開關格的空白處、連結格的空白處,格游標(`[data-selected-cell-id]`)都移到
+ * 被點的那一格,之後按 ↓ 從**新位置**往下走;點開關格空白處不得切換值、點連結格空白處不得開連結;
+ * 唯讀格再點一次不進編輯(沒有可進的編輯)。滑過樣式不在本條範圍(不變)。
+ * SSOT:data-table.spec.md「試算表模式」段(W3C APG grid:每一格都可聚焦,不論能不能編輯)。
+ * 修前:只有「可編輯、非開關、非連結」的格掛點擊,三者點了游標都留在原格,↓ 從舊位置走(R21 實測)。
+ * 儀器對照:(1) 同一流程點可編輯格 Product 必須移動 —— 否則儀器根本沒在量點擊;
+ *   (2) 起點游標先放在第 0 列 Product,「移到那一格」才分得出「本來就在那一格」;
+ *   (3) 點擊落點用 elementFromPoint 證明屬於那一格、而且不在任何互動控件裡(勾選框 / 連結 / 按鈕),找不到 = 儀器失效。
+ * 對照組:`--build=` 指向修前的建置,唯讀 / 開關空白 / 連結空白三格必紅,可編輯格那格照綠。 */
+for (const [label, r, c, kind] of [
+  ['唯讀格 SKU', 2, 0, 'readonly'],
+  ['開關格的空白處', 1, 4, 'switch'],
+  ['連結格的空白處', 2, 5, 'link'],
+  ['可編輯格 Product(儀器對照:這格修前修後都要移動)', 2, 1, 'control'],
+]) {
+  await loadStory(SHEET_URL, SHEET_READY)
+  const startId = await sheetCellId(0, 1)
+  const start = await sheetCellBox(startId)
+  const targetId = await sheetCellId(r, c)
+  const belowId = await sheetCellId(r + 1, c)
+  if (!start || !startId || !targetId || !belowId) { record('I33', `${label}:儀器`, false, 'INSTRUMENT-FAIL 找不到起點格 / 目標格 / 下一列同欄的格'); continue }
+  await page.mouse.click(start.x + start.width / 2, start.y + start.height / 2)
+  let ok = await settled()
+  const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  const startCursor = await cursorOf()
+  // 目標格裡找一個「屬於那一格、不在互動控件裡」的落點(由右往左掃;開關與連結的控件靠左,空白在右)
+  const point = await page.evaluate((id) => {
+    const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
+    if (!cell) return null
+    const b = cell.getBoundingClientRect()
+    const interactive = 'a[href], button, input, textarea, select, [role="checkbox"], [role="switch"], [role="combobox"]'
+    for (const y of [b.y + b.height / 2, b.y + 4, b.y + b.height - 4]) {
+      for (let x = b.x + b.width - 6; x > b.x + 3; x -= 2) {
+        const el = document.elementFromPoint(x, y)
+        if (el && cell.contains(el) && !el.closest(interactive)) return { x, y }
+      }
+    }
+    return null
+  }, targetId)
+  const checkedOf = () => page.evaluate((id) => document.querySelector(`[data-cell-id="${CSS.escape(id)}"] [role="checkbox"]`)?.getAttribute('aria-checked') ?? null, targetId)
+  const checkedBefore = await checkedOf()
+  const urlBefore = page.url()
+  const pagesBefore = page.context().pages().length
+  const instrument = []
+  if (!ok) instrument.push('點起點格後版面沒有靜止')
+  if (startCursor !== startId) instrument.push(`起點格游標應在 ${startId},實得 ${startCursor}`)
+  if (!point) instrument.push(`在 ${targetId} 裡找不到不屬於互動控件的落點`)
+  if (kind === 'switch' && checkedBefore == null) instrument.push('開關格裡找不到勾選框(量不到「值不變」)')
+  if (instrument.length) { record('I33', `${label}:儀器`, false, `INSTRUMENT-FAIL ${instrument.join(';')}`); continue }
+  await page.mouse.click(point.x, point.y)
+  ok = await settled()
+  const afterClick = await cursorOf()
+  if (!ok) { record('I33', `${label}:儀器`, false, 'INSTRUMENT-FAIL 點擊後版面沒有靜止'); continue }
+  record('I33', `${label}:點下去格游標移到 ${targetId}`, afterClick === targetId, `起點 ${startCursor} → 點後 ${afterClick}`)
+  if (kind === 'switch') record('I33', `${label}:點空白處不切換值`, (await checkedOf()) === checkedBefore, `aria-checked ${checkedBefore} → ${await checkedOf()}`)
+  if (kind === 'link') record('I33', `${label}:點空白處不開連結`, page.url() === urlBefore && page.context().pages().length === pagesBefore, `頁數 ${pagesBefore} → ${page.context().pages().length}`)
+  if (kind === 'readonly') {
+    await page.mouse.click(point.x, point.y)
+    ok = await settled()
+    const editors = await page.evaluate(() => document.querySelectorAll('[data-active-editor-host], [data-field-mode="edit"]').length)
+    record('I33', `${label}:再點一次不進編輯、游標留在原格`, ok && editors === 0 && (await cursorOf()) === targetId, `編輯器 ${editors} 個,游標 ${await cursorOf()}`)
+  }
+  await page.keyboard.press('ArrowDown')
+  ok = await settled()
+  const afterDown = await cursorOf()
+  record('I33', `${label}:之後按 ↓ 從新位置往下走(→ ${belowId})`, ok && afterDown === belowId, `↓ 後 ${afterDown}`)
 }
 
 if (failures.length > 0) {

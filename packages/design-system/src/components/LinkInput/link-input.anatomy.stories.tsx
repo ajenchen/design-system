@@ -269,7 +269,7 @@ export const Overview = {
       {/* Interaction flow */}
       <div className="flex flex-col gap-3">
         <H3>互動流程</H3>
-        <Desc>edit 模式下的狀態轉換。核心差異：點擊 value 開啟連結，不是進入編輯——編輯由 Pencil 觸發。</Desc>
+        <Desc>edit 模式下的狀態轉換。核心差異：點擊 value（網址文字）開啟連結，不是進入編輯——編輯由 Pencil 或點外框裡文字以外的空白處觸發。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>觸發</Th><Th>效果</Th></tr></thead>
@@ -277,6 +277,8 @@ export const Overview = {
               {[
                 ['點擊 link text', '開啟連結（target="_blank"）'],
                 ['點擊 Pencil', '切換到 input 狀態，自動 focus'],
+                ['點擊外框空白處（網址文字以外）', '同 Pencil：切換到 input 狀態，自動 focus'],
+                ['從空白處拖過網址文字（選字）', '不進入編輯，保留選取'],
                 ['blur（合法 URL）', '切回 link 狀態，觸發 onChange'],
                 ['blur（不合法 URL）', '維持 input 狀態 + error 邊框'],
                 ['blur（空值）', '清除值，顯示 placeholder'],

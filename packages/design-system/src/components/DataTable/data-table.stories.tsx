@@ -684,10 +684,11 @@ export const InlineEdit: Story = {
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
  *   - sku(readonly)/ inStock(boolean)/ url(openAction)→ 不出現 hover overlay(Contract 15)
- *   - click 1 → cell selected(1px `--primary` border outline,`CELL_RING_STYLES.selected`)
- *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變)
- *   - Shift+click → range(focus = 1px primary outline + 內 cells `--primary-subtle` bg)
- *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,overlay outline
+ *   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
+ *     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
+ *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關 / 連結不進)
+ *   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
+ *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
  *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
  *   - Issue 6 viewport clip:H scroll cell out → overlay 被 panel ClipMask 裁切不溢出
  */
@@ -713,9 +714,9 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
     return (
       <div>
         <p className="text-caption text-fg-muted mb-3">
-          試算表式操作:第一次點 cell 選取(藍框),第二次點才進編輯。Shift+點另一格選範圍,
+          試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關 / 連結欄位沒有 hover 提示
-          (這些格子不需編輯,點下去直接 toggle 或開連結)。
+          (這些格子點第二次也不進編輯:開關直接點勾選框切換,連結點文字開啟)。
         </p>
         <DataTable
           columns={editableColumns}

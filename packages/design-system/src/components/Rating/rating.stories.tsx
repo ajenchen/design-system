@@ -12,7 +12,7 @@ const meta: Meta<typeof Rating> = {
     docs: {
       description: {
         component:
-          '用於讓使用者給出離散星等，或唯讀顯示已提交的個人／平均評分。連續數值改用 Slider，二元喜好改用 Switch 或 icon button，完成進度改用 ProgressBar / CircularProgress。',
+          '讓使用者點一顆整星給分；已提交的個人或平均評分一律用唯讀精簡版「★ 4.7 (12,843)」顯示。連續數值改用 Slider，二元喜好改用 Switch 或 icon button，完成進度改用 ProgressBar / CircularProgress。',
       },
     },
   },
@@ -21,7 +21,7 @@ const meta: Meta<typeof Rating> = {
 export default meta
 type Story = StoryObj<typeof Rating>
 
-/* ── 商品列表的平均分（Amazon / Shopify 風格）── */
+/* ── 商品列表的平均分（Amazon / Shopify 風格）——唯讀精簡版,評論數走 count ── */
 export const ReadOnlyProductRating: Story = {
   name: '商品列表平均分',
   render: () => (
@@ -35,17 +35,14 @@ export const ReadOnlyProductRating: Story = {
         <div key={p.name} className="flex items-center gap-3 p-3 border border-border rounded-md bg-surface">
           <div className="flex-1 min-w-0">
             <div className="text-body font-medium truncate">{p.name}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <Rating
-                value={p.rating}
-                readOnly
-                precision="half"
-                size="xs"
-                aria-label={`平均評分 ${p.rating} 星，共 5 星,${p.count} 則評論`}
-              />
-              <span className="text-caption text-fg-secondary">{p.rating}</span>
-              <span className="text-caption text-fg-muted">({p.count.toLocaleString()})</span>
-            </div>
+            <Rating
+              value={p.rating}
+              count={p.count}
+              readOnly
+              size="xs"
+              className="mt-1"
+              aria-label={`平均評分 ${p.rating} 星，共 5 星，${p.count.toLocaleString()} 則評論`}
+            />
           </div>
         </div>
       ))}
@@ -53,7 +50,7 @@ export const ReadOnlyProductRating: Story = {
   ),
 }
 
-/* ── 送出評分 flow（Yelp / Google Reviews 風格）── */
+/* ── 送出評分 flow（Yelp / Google Reviews 風格）——只有整顆 ── */
 export const InteractiveReview: Story = {
   name: '送出評分流程',
   render: () => {
@@ -71,7 +68,6 @@ export const InteractiveReview: Story = {
               value={rating}
               onChange={setRating}
               size="lg"
-              precision="full"
               aria-label="為這次服務給 1 到 5 星"
             />
             <span className="text-body text-fg-secondary min-w-[48px]">

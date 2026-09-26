@@ -1123,7 +1123,7 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
     <div
       ref={ref}
       className={cn(
-        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(user 2026-09-26 同意「全部瞬間」延伸到所有滑過造成的變化;
+        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」到所有滑過造成的變化;
         // SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」;待辦總帳 L9)。訊息進場的淡入是另一件事(內容出現),不在此。
         'mt-2 flex h-6 items-center gap-2',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
@@ -1386,6 +1386,24 @@ function initialAnswer(q: AgentDecisionQuestion) {
 /** 複選值 = 已勾選 value 集合(含 OTHER_VALUE),以 `\n` 連接存於 answers。 */
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
+/**
+ * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-panel.spec.md「8. AgentDecisionCard」選項卡條):
+ * 指標在整張卡的任何位置 → 卡內的圓(複選是方框)照它被自己的 `<label for>` 滑過時的樣子變色;卡片灰底、字色都不變。
+ * 原本的轉發是 HTML 自己做的(指標在 label 上,label 綁定的控件也算 :hover),範圍只到 SelectionItem 那個 label。
+ * 整張卡不能改成 <label> 來借這個轉發:卡內已有 SelectionItem 的 label、<div> 與「其他」輸入格,都違反 label 的內容規定。
+ * 所以用 DS 既有的「外層具名群組帶動內層」寫法(item-anatomy.tsx 的 `hoverGroup`):卡片掛 `group/agent-option`,
+ * 控件把**它自己的** `hover:` 配對原樣接到群組滑過上。下面兩串逐條鏡射 owner,不新增任何顏色:
+ *   Radio    ← radio-group.tsx `radioItemVariants` 的 `hover:border-border-hover` 與 `data-[state=checked]:hover:…` 兩行
+ *   Checkbox ← checkbox.tsx `checkboxVariants` 的 `hover:border-border-hover` 與 `data-[state=checked]:hover:…` 兩行
+ *              (indeterminate 那行不鏡射:選項卡不會半選)
+ * owner 的 hover 配對一改,這裡必須同一次改動跟著改。
+ * 不帶 owner 的停用 / 唯讀守衛:決策卡的選項沒有停用或唯讀(AgentDecisionOption 無此欄);日後要加,守衛必一起鏡射。
+ */
+const OPTION_RADIO_HOVER =
+  'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:border-primary-hover data-[state=checked]:group-hover/agent-option:text-primary-hover'
+const OPTION_CHECKBOX_HOVER =
+  'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:bg-primary-hover data-[state=checked]:group-hover/agent-option:border-primary-hover'
+
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
   ({ questions, onSubmit, onSkip, className, ...props }, ref) => {
     const titleId = React.useId()
@@ -1457,10 +1475,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       window.setTimeout(() => (document.getElementById(otherInputId) as HTMLInputElement | null)?.focus(), 0)
     // 灰底選項卡 = 唯一行距 owner(py 8);SelectionItem 自帶 py((32−1lh)/2=5.5)歸零,避免 double padding
     // (checkbox.spec.md 零外部 gap 鐵律的反向:間距只能有一個 owner)。
-    // 滑過:暫不加底色變化。user 2026-09-26 對「AI 面板選項卡加滑過」的回覆:「我覺得好像不用加上底色變化，若它是 radio 的話，
-    // 那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」
-    // → 待研究結論(待辦總帳 09-26 同意清單回覆段)再定,這裡維持 HEAD 的樣子。
-    const cardClass = 'cursor-pointer rounded-md bg-secondary px-3 py-2'
+    // 滑過:卡片 = 具名群組 `group/agent-option`,自己不掛任何滑過樣式,只帶動卡內控件(OPTION_RADIO_HOVER /
+    // OPTION_CHECKBOX_HOVER,理由與鏡射來源見其上方註解)。命中區 = 整卡 onClick = 滑過回饋的範圍。
+    const cardClass = 'group/agent-option cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div
         ref={ref}
@@ -1523,6 +1540,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                           onCheckedChange={(next) => toggle(option.value, next === true)}
                           onClick={(e) => e.stopPropagation()}
                           aria-controls={isOther ? otherInputId : undefined}
+                          className={OPTION_CHECKBOX_HOVER}
                         />
                       }
                       label={optionLabel(option)}
@@ -1564,6 +1582,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                           value={option.value}
                           size="md"
                           aria-controls={isOther ? otherInputId : undefined}
+                          className={OPTION_RADIO_HOVER}
                         />
                       }
                       label={optionLabel(option)}

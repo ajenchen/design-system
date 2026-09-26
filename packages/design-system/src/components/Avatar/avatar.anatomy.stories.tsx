@@ -188,6 +188,7 @@ export const Overview = {
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；可與 badgeCount（右上）並存'],
                 ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；可與 status（右下）並存'],
                 ['hoverCard', 'ReactNode', '—', 'hover 時彈出的內容（如 ProfileCard），person avatar 預設必帶'],
+                ['stacked', 'boolean', 'false', '放在頭像堆疊裡：前面有看得見的頭像時，重疊處挖空 + 2px 縫（露出真正的背景，不透色）；詳 avatar.spec.md「頭像堆疊(疊在一起時)」'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

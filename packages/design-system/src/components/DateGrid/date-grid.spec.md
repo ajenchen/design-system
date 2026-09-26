@@ -108,7 +108,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
-| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table,指標經過縫隙會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**(不論移得多快多慢;慢慢從縫裡走出去的那條路 2026-09-26 補上,D1),見下方「日期格的命中區 = 可視形狀」的「現行機制」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table、圓外的四個角屬於 td,指標經過這些地方會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,停在縫裡或可點日子圓外的角裡都算「還在上一天」(不論移得多快多慢、走不走中線;慢慢從縫裡走出去的那條路 2026-09-26 補上 = D1,圓外的角 2026-09-26 補上 = D2),見下方「日期格的命中區 = 可視形狀」的「現行機制」;框亮著時在縫或角裡點下去 = 點停留日,見同節「縫與角裡的點擊」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ### 鄰月日子:一條原則(2026-09-24 user 拍板)
@@ -165,6 +165,8 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 **日期格的可視形狀是那個 28×28(lg 32)的圓**(`day_button` 的 `rounded-full`,懸停時 1.5px 藍圈就畫在它身上),
 **命中區就是同一個圓,不外擴**。跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
 「懸停回饋的形狀 ≡ 命中區」)的唯一例外是「可視形狀先天當不了目標的線與點」;28px 的圓不屬於那一類,吃不到例外。
+(2026-09-26 補註:區間預覽框亮著時,縫與圓外的角裡那一下點擊交給停留日 —— 那**不是**把命中區外擴:滑過仍只從這顆圓開始,
+沒有框時縫與角點了照樣沒反應。規則與理由見下方「縫與角裡的點擊」。)
 
 ### 先前這裡有一條隱形帶,而且比看起來大得多
 
@@ -194,13 +196,20 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 ### 現行機制(`date-grid.tsx`)
 
 1. 月曆格陣掛 `data-day-grid` 錨點(`AnchoredMonthGrid`,覆寫 RDP 的 `MonthGrid`)。
-2. `handleDayMouseLeave`:leave 事件的 `relatedTarget` 若落在**同一張格陣裡、而且既不在 `<td>` 也不在 `<th>` 上**
-   (= border-spacing 的縫),就**不轉發**給消費端;其餘一律照常轉發。
-3. `handleGridMouseOver`:補掉「穿過縫之後停在**不可點**的日子」那條路徑 ——
+2. `handleDayMouseLeave`:leave 事件的 `relatedTarget` 若落在同一張格陣的**縫或角**裡(`isGapOrCorner`),就**不轉發**給消費端;
+   其餘一律照常轉發。
+   - **縫**:在格陣裡、但既不在 `<td>` 也不在 `<th>` 上 —— border-spacing 的 4px 空白、表格最外圈,都屬於 `<table>` 自己。
+   - **角**(2026-09-26 補,D2):在某個**可點日子**的 `<td>` 裡、但不在它那顆圓(button)上。日期是 28px 的圓、放在 28×28 的方格裡,
+     圓外的四個角屬於 td、不屬於圓。先前只算縫、把角當成「已經離開」,指標只要沒走在格子正中線上就先清框再補回 ——
+     2026-09-26 實測(每步 1px,淺深色相同):偏上 1/4 格 6 步、貼上緣 2px 14 步、貼左緣 2px 14 步、斜穿四格交會處 12 步,
+     整條框(17 格)消失;走中線 0 步。09-24 的實測與閘都只走中線,所以沒抓到。
+   - 不可點的日子(含它的角)、空白補位格、星期列、格陣之外:都不算,照常清掉。
+   - 若整張 DateGrid 被放進別的表格的格子裡,`closest('td,th')` 會找到外面那一格;判斷一律以「那一格在不在本格陣裡」為準,不會把縫誤判成離開。
+3. `handleGridMouseOver`:補掉「穿過縫或角之後停在**不可點**的日子、空白補位格或星期列」那條路徑 ——
    disabled 的 button 收不到滑鼠事件、不會再有任何 day enter/leave,沒有這一段的話上一天的預覽框會留著
-   (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。
-4. `handleGridMouseLeave`(2026-09-26 補,D1,待辦總帳 N54):補掉「**從縫裡直接離開格陣**」那條路徑 ——
-   指標離開最外圈那一天時落在縫裡,那次 leave 依第 2 條被吞(欠著);接著指標走出 `<table>`,已經沒有任何一天會再收到 leave、
+   (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。停在縫或角裡不動作(與第 2 條同一支判斷)。
+4. `handleGridMouseLeave`(2026-09-26 補,D1,待辦總帳 N54):補掉「**從縫或角直接離開格陣**」那條路徑 ——
+   指標離開最外圈那一天時落在縫或角裡,那次 leave 依第 2 條被吞(欠著);接著指標走出 `<table>`,已經沒有任何一天會再收到 leave、
    也沒有 `td` / `th` 會收到 mouseover,預覽框就卡在上一天。實測(2026-09-26 前):從 6/13 每步 1px 往右,經過縫、月曆內距、浮層邊,
    走到浮層外 20px,停 2 秒仍是 5/4→6/13;每步 1–4、8px 都卡住,6、12、20px 或一次跳出去才會清 —— 快慢決定了指標有沒有「停」在縫裡。
    修法:格陣 `<table>` 掛 `onMouseLeave`,**只在有欠著的 leave 時**補送一次(一次跳出去那條路 day button 的 leave 已照常轉發,不重送)。
@@ -208,8 +217,11 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
    ([DateRangeCalendar.tsx#L481-L486](https://github.com/mui/mui-x/blob/v9.14.0/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L481-L486)
    `onMouseLeave: () => setRangePreviewDay(null)`),2026-09-24 照 MUI 做「縫裡不清」時沒一起做這一半。
    兩張月曆並排時每張各是一張格陣:兩張之間的空白算離開(`../DatePicker/date-picker.spec.md`「滑鼠離開**日期格區**」)。
-   **不在這裡改的**:縫本身(停在縫裡照亮)與「偏離中線橫越時仍會閃」(D2)—— 兩者屬「預覽類元件」規則,user 尚未同意。
-   閘:`scripts/datepicker-range-preview.mjs`「慢慢移出」段(`exit` 家族,含對照組)。
+   縫與角裡照亮(維持上一天)不變;「偏離中線橫越時仍會閃」(D2)由第 2 條的「角」解決。
+   閘:`scripts/datepicker-range-preview.mjs`「慢慢移出」段(`exit` 家族,含對照組;(c) 路線貼上緣 2px,先穿過角再出去)。
+5. `handleGridClick` / `handleGridPointerDown` / `handleGridMouseMove` / `handleDayFocus`(2026-09-26):框亮著時在縫或角裡點下去 = 點停留日,
+   游標同為手形;`handleDayFocus` 只記「滑鼠停留之後,鍵盤又移了看得見的焦點」(最後一個輸入是鍵盤 → 縫與角不接點擊),不改任何焦點行為 ——
+   見下一節「縫與角裡的點擊」。
 
 錨點刻意用顯式屬性而不是 `closest('table')`:標籤名是「剛好成立的觀察量」,不是要保證的性質(M37);
 而且顯式屬性讓閘的對照組可以只用一行 `removeAttribute` 精準弄壞這個機制。
@@ -217,6 +229,64 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 ⚠️ `AnchoredMonthGrid` **必須定義在 module 層**。第一版寫成 render 內的 inline 箭頭函式,
 每次 render 都是新的 component type → React 把整個格陣 unmount 再 mount → RDP 內部 effect 重設 state →
 `Maximum update depth exceeded`(React #185),storybook 整個 DatePicker range 故事白畫面。
+
+### 縫與角裡的點擊(2026-09-26)
+
+**規則**:區間預覽框亮著、指標停在縫或角裡(框仍停在上一天)時,**點下去 = 點那一天** —— 結果與直接點那一天完全相同
+(DatePicker.Range 正在選結束日時:結束日變成那一天、浮層關)。游標在那裡與日期一樣是手形。
+沒有框的時候,縫與角點下去沒反應、游標不是手形。
+跨元件的原則住在 `../../ds-canonical/references/hit-area-canonical.md`「滑過原則」一-6(評分星星同一條);本節只寫日期的細則。
+
+| 指標在哪、當時的狀態 | 縫與角裡的預覽框 | 點下去 | 游標 |
+|---|---|---|---|
+| 滑鼠從某一天移進縫或角,框亮著、停留端就是那一天 | 維持上一天 | = 點那一天 | 手形 |
+| 沒有框(兩端都空,或對面那端還空、只有單格 hover 圈) | —— | 沒反應 | 一般箭頭 |
+| 鍵盤把框移到別天之後,滑鼠還停在縫或角裡 | 框在鍵盤那一天 | 沒反應(縫與角屬於滑鼠上一天,那一天不是框的停留端) | 一般箭頭 |
+| 觸控 / 觸控筆點在縫或角裡 | —— | 沒反應(維持原樣) | —— |
+| 不可點的日子、空白補位格、星期列 | 清掉(見「現行機制」第 3 條) | 沒反應 | —— |
+
+**來源**:
+- 決定:待辦總帳(`governance/planning/2026-09-25-interaction-and-hover-remediation.md`)N54 建議 ①
+  「預覽亮著的任何位置、包括縫,點下去就得到正在預覽的值」(`:229`,AI 措辭);2026-09-26 同意批次 `:105` ——
+  「日期縫與角」列在 user 沒點名、依「其餘都照建議做嗎」的問法理解為照建議做的四項裡(總帳原文標為 AI 判讀、回報時明講);
+  實作的兩句「在縫或角裡點下去 = 確認正在預覽的那一天」「日期圓圈外的角滑過去不再閃」是 **AI 的措辭**,不是 user 原話。
+- 原則:user 2026-09-26(總帳 `:225`,逐字)「我滑到某個區塊但不是滑到文字上但文字卻變色了，此時表示產生了樣式變化，儘管沒滑到文字上，此時點擊也應該要有反應，我的意思是這樣」;
+  同意改寫原則見 `:65`(「1. 我同意」)。框亮著時,縫與角正是「滑過有變化」的位置。
+
+**點到哪一天 = 框停在哪一天**:同一個角點下去得到哪一天,取決於指標是從哪一天移進來的(例:從 5/20 移進 5/21 的左上角 → 得到 5/20;
+React Aria 實測相同,R20 已指出 —— 它在「月曆裡、但不在按鈕上」放開一律確認正在預覽的區間,[`useRangeCalendar.ts#L80-L86`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L80-L86))。滑鼠甩得很快、中間幾天沒被取樣到時也一樣 —— 框停在哪一天,點下去就是哪一天,永遠是畫面上框著的那一個。
+
+**這不是把命中區外擴**(與上方「命中區就是同一個圓」相容):滑過(enter)仍只從那顆圓開始;沒有框時縫與角點了照樣沒反應。
+縫與角只在「框已經亮著、而且停留端就是那一天」時接那一下點擊 —— 回饋在前、點擊在後,不會出現「沒亮卻點得到」。
+判斷「框的停留端就是那一天」直接看那一格有沒有掛上框的端點 class(`RANGE_PREVIEW_CLASSNAMES` 的起點 / 終點 / 單格,只住在 `date-grid.tsx`)——
+框正是那組 class 畫出來的,所以這一問就是性質本身,不是旁證(M37)。
+
+**實作**:真的去點那顆 button(`button.click()`),不另寫一份選取邏輯 —— 選取、焦點、關浮層都走 react-day-picker 的同一條路,結果與直接點那一天一模一樣。
+游標:日期是 button,手形來自 `../../styles/base.css`「`button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }`」;
+縫與角裡點得到時,格陣掛 `data-gap-confirms`,`month_grid` 的 `data-[gap-confirms]:cursor-pointer` 讓縫(`<table>`)與角(`<td>` 繼承)同為手形。
+游標與點擊用同一支判斷(`gapConfirmTarget`),指標每移一步重算一次(框是 React 狀態、慢一幀才畫上;鍵盤也可能把框移走)。
+
+**只算滑鼠**(AI 工程判斷;user 的討論與 R21 實測都只涵蓋滑鼠):觸控沒有「滑過」,框停在上一次點的那一天,不是手指現在碰到的位置 ——
+手指點在 5/17 的角卻選到 5/10 是錯的。所以觸控 / 觸控筆點在縫或角裡維持原樣(沒反應)。
+
+**鍵盤不變**:本節只動滑鼠。方向鍵、Enter / Space、焦點框、預覽跟著焦點走,全部照舊。
+
+**世界級**(2026-09-26 R21 實測 + 釘版原始碼):
+
+| 系統 | 縫與角裡的預覽 | 在那裡點下去 | 一手出處 |
+|---|---|---|---|
+| MUI X DateRangeCalendar v9.14.0 | 維持上一天(只在離開月份容器時清) | 沒反應 | [`DateRangeCalendar.tsx#L481-L486`](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L481-L486) `onMouseLeave: () => setRangePreviewDay(null),` |
+| Chakra UI DatePicker(Zag 1.43.3) | 維持上一天(只在離開表格時清) | 沒反應 | [`date-picker.connect.ts#L546-L548`](https://github.com/chakra-ui/zag/blob/46f88c089c1dbb0fc681b31172dc5eb8a07eef0d/packages/machines/date-picker/src/date-picker.connect.ts#L546-L548) `onPointerLeave() { send({ type: "TABLE.POINTER_LEAVE" })`;[`date-picker.machine.ts#L516-L519`](https://github.com/chakra-ui/zag/blob/46f88c089c1dbb0fc681b31172dc5eb8a07eef0d/packages/machines/date-picker/src/date-picker.machine.ts#L516-L519) `actions: ["clearHoveredDate"],` |
+| React Aria RangeCalendar | 維持上一天(只有 enter) | **確認正在預覽的區間** | [`useRangeCalendar.ts#L23-L32`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L23-L32) 預設 `select`:"select the currently hovered range of dates."(該設定的範圍:"Controls the behavior when a pointer is released outside the calendar or a blur occurs mid selection");讓「月曆裡、但不在按鈕上」也算進去的是 [`#L80-L86`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L80-L86) 的 `!target.closest('button, [role="button"]')` |
+| Ant Design RangePicker 6.6.5 | 沒有縫:整格就是那一天 | 選那一天 | [`panel.ts#L346-L349`](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/date-picker/style/panel.ts#L346-L349) `borderCollapse: 'collapse',`、[`#L364-L367`](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/date-picker/style/panel.ts#L364-L367) 整格 `cursor: 'pointer',`;[rc-picker `PanelBody.tsx#L145-L164`](https://github.com/react-component/picker/blob/a975a11f9a959a811b1ecd901e8ff8ae8f0e515b/src/PickerPanel/PanelBody.tsx#L145-L164) 同一個 `<td>` 掛 `onClick` / `onMouseEnter` / `onMouseLeave` |
+| **本 DS** | 維持上一天(縫 + 可點日子圓外的角) | 框亮著時 = 點那一天 | 本節 |
+
+沒有一家兩件事都做:「縫與角維持上一天」取 MUI X、Chakra,「縫裡點下去確認」取 React Aria。
+Ant 靠「整格都是那一天」達成同樣的「亮了就點得到」,但它能點的方格(36)大於畫出來的方塊(24),正是本 DS 09-24 撤掉的那條路(上方「先前這裡有一條隱形帶」)。
+Ant 整格是手形(上表 `#L364-L367`),與本節「點得到的縫與角是手形」同一個道理。
+
+閘:`scripts/datepicker-range-preview.mjs` 的 `corner` 家族(四條角落路線,每步 1px)與 `gapclick` 家族(角、縫各點一次 + 沒有框時的對照面),
+兩家各有 `--selftest` 對照組(把「離開圓進到角」改寫成離開格陣 / 攔下縫與角裡的點擊並把游標蓋回 auto → 必須紅)。
 
 ### 實測(2026-09-24)
 
@@ -233,6 +303,24 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 **依據不是觸控尺寸建議** —— 本 DS 明確不以「手指要多大才點得到」當命中區的依據
 (hit-area-canonical「本 DS 不採納觸控尺寸建議」)。
+
+### 實測(2026-09-26,角 + 縫與角的點擊)
+
+Chromium 單一行程、1280×900;「現行建置」= repo 的 `storybook-static`(已含 D1);「D1 前建置」= 09-25 的建置;「修後」= 本次改動建出的 storybook。
+
+| 斷言 | D1 前建置 | 現行建置 | 修後 |
+|---|---|---|---|
+| 角落路線(每步 1px,停 5/20)偏上 1/4 格 / 貼上緣 2px / 貼左緣 2px / 斜穿交會處:框縮掉的步數 | 6 / 14 / 14 / 12 | 6 / 14 / 14 / 12 | **0 / 0 / 0 / 0**(淺、深色另以 R21 量具重量,六條路線全 0) |
+| 同路線上「停在格子裡、圓外的角」的步數(證明路線真的經過角) | 2 / 10 / 10 / 8 | 2 / 10 / 10 / 8 | 2 / 10 / 10 / 8 |
+| 框亮著,在 5/20 右上角點下去 | 沒反應(框早已清掉) | 沒反應(框早已清掉) | 結束日 5/12 → **5/20**、浮層關;游標 `pointer` |
+| 框亮著,在 5/20 右邊縫的中點點下去 | 沒反應;游標 `auto` | 沒反應;游標 `auto` | 結束日 → **5/20**、浮層關;游標 `pointer` |
+| 沒有框(兩端都空),在某天的角裡點下去 | 沒反應;`auto` | 沒反應;`auto` | 沒反應;`auto`(不變) |
+| 慢慢移出 (c):6/13 貼上緣 2px 往右走出浮層 | 一進角框就沒了(格陣最外圈量到 0 格) | 同左 | 最外圈仍有框(48 格)、出去後 0 格 |
+| 鍵盤把框移到 5/5 後,滑鼠仍停在 5/20 的角裡點 | —— | —— | 沒反應;游標 `auto`(對照:不按鍵盤 → 選到 5/20) |
+| 同上,但滑鼠停的是 5/4(剛好是鍵盤那個框的起點) | —— | —— | 沒反應;游標 `auto` |
+| 框亮著,改用手指點同一個角 | —— | —— | 沒反應(對照:滑鼠點 → 選到框著的那一天) |
+| `scripts/datepicker-range-preview.mjs` | 12 條紅(新增 10 條 + D1 的 2 條) | 10 條紅(全是新增的) | 136 條全過;`--selftest` 八個家族全部會紅 |
+| **對照組**:拔掉 `data-day-grid` 錨點(中線橫向) | —— | —— | 縮掉 4 步(量具看得到閃) |
 
 ## Spacing canonical(2026-05-03 v8)
 

@@ -462,8 +462,8 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 **不該用 `--{hue}-text` 的場景**：
 - ❌ Button label（用 `text-white` on primary bg）
-- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）
-- ❌ 任何 hover/active 互動回饋
+- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「View log」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`
+- ❌ 任何 hover/active 互動回饋(上一條例外的連結因此滑過不換色,不得拿 `--{hue}-hover` 補 —— 那是 step-6 填色的配對)
 
 #### 為什麼 step-7 在兩個 mode 都對
 
@@ -724,7 +724,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ### Hover 換色配對總則(2026-09-25)
 
-**範圍:同一個型態之內的滑過與按住。** 型態切換(例:未按下 → 已按下)是換到另一個型態,各自有自己的平常色與滑過色(下方階梯表分兩列),不在本條。只有「點了會有反應」的元素才有底色的滑過回饋(user 2026-09-25:「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方」)。
+**範圍:同一個型態之內的滑過與按住,用什麼顏色。** 型態切換(例:未按下 → 已按下)是換到另一個型態,各自有自己的平常色與滑過色(下方階梯表分兩列),不在本條。**要不要有滑過回饋**不在本檔:全 DS 唯一住所是 `ds-canonical/references/hit-area-canonical.md`「滑過原則」—— 底色的滑過回饋只給「點了會有反應」的元素(一-5,user 2026-09-25 #33,原話在該檔),例外清單(資料表格列、圖表的滑過指示)在同節三-2;例外用的顏色一樣照本表「透明 → `--neutral-hover`」那一對。
 
 依元素**平常的底色是什麼**分三種,一句話管完:
 
@@ -813,7 +813,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
 | `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)
@@ -868,7 +868,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
 | `--tooltip` | tooltip 深色底（不透明）|
-| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；light step-6 / dark step-5 / yellow 用 step-7 提對比）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
+| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 比 step-6 暗,藍 / 紫 / 深橘在卡片上低於圖形 3:1)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：

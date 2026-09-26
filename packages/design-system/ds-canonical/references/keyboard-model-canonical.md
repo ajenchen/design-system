@@ -301,7 +301,7 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
   Fluent:`code === keys.Enter || (!multiselect && code === keys.Space)` → `'CloseSelect'`(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-combobox/library/src/utils/dropdownKeyActions.ts#L55-L57>);
   可打字的那一類:W3C 可打字下拉範例的清單按鍵表沒有 `Space` 列,"Printable Characters: … Types the character in the textbox."(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-autocomplete-list.html#L295-L300>)。
 - 來源:這句是 AI 的白話(待辦總帳 L7 第 2 條);user 2026-09-26 同意清單回覆逐字「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」。
-  各元件的按鍵表(`SelectMenu` / `Select` spec「A11y 預設」)只寫指標回到本節。同一條 L7 的另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」**不在本條**:表格(試算表模式)那一題 user 09-26 仍在提問,未同意。
+  各元件的按鍵表(`SelectMenu` / `Select` spec「A11y 預設」)只寫指標回到本節。同一條 L7 的另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」**不在本條**:它只管表格的試算表模式(點任何格,格游標都跟過去,含唯讀格、開關格與連結格的空白),住 `components/DataTable/data-table.spec.md`「試算表模式」;2026-09-26 AI 建議、user 在「其餘建議」未另提(AI 判讀),同日 user 對寫入清單選「同意，寫入」。
 
 ### `Esc` 一次只關最內層(全 DS 規則)
 
@@ -547,7 +547,7 @@ Microsoft 與 VS Code 都有,我們沒有。這會是產品層決策,不在本�
 | 「『各自一個』才是預設」→ `SidebarMenu`「每項一個 Tab 停靠點,無方向鍵」 | AI 2026-09-24 從 VS Code 那句話推出 | **已撤回(2026-09-25)** —— user 選了路線乙(下一列);VS Code 那句話只支持「收成一個要有理由」,本檔現在寫明理由 |
 | 側欄、樹、FileUpload 檔案清單走路線乙(一串一站、`→` 進列上小按鈕、`Tab` 一下離開) | **user 2026-09-25 附條件同意**,逐字:「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;條件查證 = AI 研究(待辦總帳 B9) | user 拍板(附條件,條件已查證成立) |
 | 路線乙表格裡「按鈕上 `↑` `↓` 回到上下一項」「鍵盤走到的按鈕要看得見」「頭尾不繞回」「按鈕上 `Home` / `End`」「會開選單的小按鈕 `↓` 也是換項」 | 依 Adobe / Fluent / VS Code 一手;後兩條是三處實作不一致時統一成側欄做法 | **AI 推導**,user 2026-09-26 以同意清單(35 個細節,含 X4 / X6)整批同意;「按鈕上按 `Esc`」刻意不規定(未拍板) |
-| 不能打字的選項清單 `Enter` 與空白鍵都是選這一項 | 句子是 AI 的白話(待辦總帳 L7 第 2 條);一手 = W3C 單選下拉範例、Fluent Dropdown | user 2026-09-26 同意(附條件,逐字見該節);L7 另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」未同意、不入本檔 |
+| 不能打字的選項清單 `Enter` 與空白鍵都是選這一項 | 句子是 AI 的白話(待辦總帳 L7 第 2 條);一手 = W3C 單選下拉範例、Fluent Dropdown | user 2026-09-26 同意(附條件,逐字見該節);L7 另一句「滑鼠點到哪一格,鍵盤位置就跟到哪一格」只管試算表模式,住 `data-table.spec.md`「試算表模式」(2026-09-26 寫入) |
 | `TreeView` 改用 `treegrid` 身分 | 待辦總帳 B9「樹改用樹狀表格身分」;理由(W3C 只在樹狀表格定義列上按鈕)是 AI 研究 | 隨路線乙拍板 |
 | 選單開著按 `Tab` = 收起全部、從觸發鈕往下走;子選單 `Esc` 只關一層 | **user 2026-09-25 附條件同意**,逐字見「彈出框開著時的 Tab 與 Esc」;條件查證 = AI 研究(待辦總帳 B10 / B11) | user 拍板(附條件,條件已查證成立) |
 | 不能打字的單選下拉同樣收起並選定反白項、可打字的補「選定」 | user 追問:「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」——問句 + 一致性原則;AI 為滿足「選單類一致」而延伸,回覆已明寫 | **AI 延伸,user 可在預覽否決**(待辦總帳 B11) |

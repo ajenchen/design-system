@@ -1,6 +1,6 @@
 // @anatomy-rationale:
 //   ColorMatrix represented as ShapeMatrix — Trigger pill 色彩由 shape 決定
-//     (circle = bg-muted、tag = tagVariants neutral),非獨立色彩變體。
+//     (circle = bg-secondary、tag = tagVariants neutral —— 兩者同一顆 --secondary),非獨立色彩變體。
 //     ShapeMatrix(3.)已對照 shape × 色彩 token + consumer 場景。HoverCard
 //     content 走深色 tooltip,色彩繼承 tooltip token。
 //   StateBehavior N/A — Trigger pill 本身無 hover 視覺(hover 觸發 HoverCard
@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
-import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 
 const personHover = (name: string, src?: string) => (
@@ -110,8 +110,8 @@ export const Overview: Story = {
             <tbody>
               <tr>
                 <Td mono>Trigger(circle)</Td>
-                <Td>Avatar stack 尾端 +N pill</Td>
-                <Td mono>rounded-full · bg-muted · text-foreground</Td>
+                <Td>Avatar stack 尾端 +N pill(接在頭像後面時,被左邊那顆蓋住的地方挖空)</Td>
+                <Td mono>rounded-full · 內層圓 bg-secondary · text-foreground</Td>
               </tr>
               <tr>
                 <Td mono>Trigger(tag)</Td>
@@ -174,7 +174,7 @@ export const Overview: Story = {
                 <Td mono>className</Td>
                 <Td mono>string</Td>
                 <Td mono>undefined</Td>
-                <Td>額外套到 trigger pill 上(如 Avatar stack 的 ring)</Td>
+                <Td>額外套到 trigger pill 上(頭像堆疊不需要:疊合幾何由 Avatar 的堆疊 SSOT 負責)</Td>
               </tr>
             </tbody>
           </table>
@@ -286,9 +286,9 @@ function OverflowInspector() {
                 <Td mono>bg</Td>
                 <Td>
                   <span className="inline-flex items-center gap-1.5">
-                    <Swatch value={shape === 'circle' ? '--muted' : '--secondary'} size="sm" />
+                    <Swatch value="--secondary" size="sm" />
                     <span className="font-mono">
-                      {shape === 'circle' ? '--muted' : 'tagVariants neutral (--secondary)'}
+                      {shape === 'circle' ? '--secondary(內層圓)' : 'tagVariants neutral (--secondary)'}
                     </span>
                   </span>
                 </Td>
@@ -345,7 +345,7 @@ export const ShapeMatrix: Story = {
                     <div className="p-1 text-caption">預覽</div>
                   </OverflowIndicator>
                 </Td>
-                <Td mono>rounded-full · bg-muted · text-foreground · font-medium</Td>
+                <Td mono>rounded-full · 內層圓 bg-secondary · text-foreground · font-medium</Td>
                 <Td>PeoplePicker / Avatar Group +N</Td>
               </tr>
               <tr>
@@ -465,12 +465,14 @@ export const SizeMatrix: Story = {
                 <Td>DataTable row 人員欄位(20px avatar stack)</Td>
                 <Td mono>sm</Td>
                 <Td>
-                  <div className="flex items-center">
-                    <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={20} hoverCard={personHover(P.A, P_SRC.A)} />
-                    <span className="-ml-1.5">
-                      <Avatar src={P_SRC.B} alt={P.B} color="magenta" size={20} hoverCard={personHover(P.B, P_SRC.B)} />
+                  <div className={`flex items-center ${AVATAR_STACK_CLASS}`}>
+                    <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(0, 3)}>
+                      <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={20} stacked hoverCard={personHover(P.A, P_SRC.A)} />
                     </span>
-                    <span className="-ml-1.5">
+                    <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(1, 3)}>
+                      <Avatar src={P_SRC.B} alt={P.B} color="magenta" size={20} stacked hoverCard={personHover(P.B, P_SRC.B)} />
+                    </span>
+                    <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(2, 3)}>
                       <OverflowIndicator count={3} shape="circle" size="sm">
                         <div className="p-1 text-caption">…</div>
                       </OverflowIndicator>
@@ -495,9 +497,11 @@ export const SizeMatrix: Story = {
                 <Td>Field md 內的 avatar stack(24px)</Td>
                 <Td mono>md</Td>
                 <Td>
-                  <div className="flex items-center">
-                    <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={24} hoverCard={personHover(P.A, P_SRC.A)} />
-                    <span className="-ml-1.5">
+                  <div className={`flex items-center ${AVATAR_STACK_CLASS}`}>
+                    <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(0, 2)}>
+                      <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={24} stacked hoverCard={personHover(P.A, P_SRC.A)} />
+                    </span>
+                    <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(1, 2)}>
                       <OverflowIndicator count={4} shape="circle" size="md">
                         <div className="p-1 text-caption">…</div>
                       </OverflowIndicator>

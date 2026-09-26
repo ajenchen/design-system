@@ -235,14 +235,14 @@ Description 是 ReactNode,**不限純文字**。常見場景:
   description={
     <>
       Network timeout.{' '}
-      <a href="#logs" className="underline hover:text-error-hover">View log</a>
+      <a href="#logs" className="underline">View log</a>
     </>
   }
   onRetry={noop}
 />
 ```
 
-視覺上 underline + hover 色變讓使用者知道「那段文字可點」。
+連結**沿用錯誤訊息的字色**、平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」)。底線是整句紅字裡唯一標出「這段可點」的訊號;滑過不必有變化(`../../ds-canonical/references/hit-area-canonical.md` 已同意的原則:點得到的地方不一定要有滑過變化)。**不可**寫 `hover:text-error-hover`:`--error-hover` 是紅色填色 `--error` 的配對,套在紅字上淺色會變淡(對比 7.2 → 3.3)、深色與 `--error-text` 同一格而完全不變。世界級同款:Polaris 放在 Banner 裡的 Link 自動 monochrome —— 「Makes the link color the same as the current text color and adds an underline」,平常與滑過都是 `color:inherit`([Link.out.css @13.9.5](https://cdn.jsdelivr.net/npm/@shopify/polaris@13.9.5/build/esnext/components/Link/Link.out.css))。顏色規則的例外寫在 `../../tokens/color/color.spec.md`「不該用 `--{hue}-text` 的場景」。
 
 ### 不可混用 invariants
 

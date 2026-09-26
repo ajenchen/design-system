@@ -10,11 +10,12 @@ import { FileViewer, type FileInfo } from '@/design-system/components/FileViewer
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle } from '@/design-system/components/Popover/popover'
 
-// 錯誤 description 範例(含 clickable "View log"):consumer 自由 ReactNode,通常用底線 link 表 clickable
+// 錯誤 description 範例(含 clickable "View log"):consumer 自由 ReactNode。
+// 連結沿用錯誤訊息的紅 + 底線、滑過不換色(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;file-item.spec.md「Description ReactNode 可含 clickable 元素」)
 const errorDescWithLog = (
   <>
     There&rsquo;s something wrong.{' '}
-    <a href="#" className="underline hover:text-error-hover" onClick={(e) => e.preventDefault()}>
+    <a href="#" className="underline" onClick={(e) => e.preventDefault()}>
       View log
     </a>
   </>
@@ -112,7 +113,7 @@ export const HoverSwap = {
             description="Uploaded to URL" thumbnailSrc="https://i.pravatar.cc/80?u=xls"
             onDownload={noop} actions={deleteBtn} />
           <FileItem mode="rich" name="合約草案 v3.pdf" status="error"
-            description="There's something wrong. View log"
+            description={errorDescWithLog}
             thumbnailSrc="https://i.pravatar.cc/80?u=pdf"
             onRetry={noop} actions={deleteBtn} />
         </div>
@@ -126,7 +127,7 @@ export const HoverSwap = {
           <FileItem mode="compact" name="data-2024-q1.csv" status="completed"
             onDownload={noop} actions={deleteBtnXs} />
           <FileItem mode="compact" name="backup-failed.json" status="error"
-            description={<>Network timeout. <a href="#" className="underline hover:text-error-hover" onClick={(e) => e.preventDefault()}>View log</a></>}
+            description={<>Network timeout. <a href="#" className="underline" onClick={(e) => e.preventDefault()}>View log</a></>}
             onRetry={noop} actions={deleteBtnXs} />
         </div>
       </div>
@@ -236,7 +237,7 @@ export const CompactMixed = {
       <FileItem mode="compact" name="圖片草稿.png" status="uploading" progress={40} actions={deleteBtnXs} />
       <FileItem mode="compact" name="回覆範本.docx" onClick={noop} actions={deleteBtnXs} />
       <FileItem mode="compact" name="backup-failed.json" status="error"
-        description={<>Network timeout. <a href="#" className="underline hover:text-error-hover" onClick={(e) => e.preventDefault()}>View log</a></>}
+        description={<>Network timeout. <a href="#" className="underline" onClick={(e) => e.preventDefault()}>View log</a></>}
         onRetry={noop} actions={deleteBtnXs} />
       <FileItem mode="compact" name="附件封面.pdf" onClick={noop} actions={deleteBtnXs} />
     </div>

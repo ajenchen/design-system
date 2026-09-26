@@ -92,6 +92,94 @@ function useDocumentTheme(): string | null {
   return theme
 }
 
+// ── 頭像堆疊(avatar stack)—— 疊在一起時怎麼分開(SSOT,2026-09-26 採用 Primer 的挖空做法,待辦總帳 L3 / R21)──
+//
+// 規格:avatar.spec.md「頭像堆疊(疊在一起時)」段。這裡只放機制,不重述理由。
+//
+// **挖空,不是外圈**:後面那顆被前面那顆蓋住的地方,連同外面一圈縫,整片從畫面上拿掉。
+// 縫裡露出的是**真正在後面的東西**(畫布 / 唯讀欄位 / 滑過的表格列 / 深色欄位),所以:
+//   - 半透明的底色(neutral `--muted`、深色主題的彩色淡底、+N)不會再疊在別人身上透出下面那顆;
+//   - 不必猜「後面是什麼顏色」—— 舊做法 `ring-2 ring-[var(--surface)]` 寫死 `--surface`,
+//     深色主題它自己是半透明(變成一道亮月牙),唯讀欄位 / 滑過列上又變成一圈白邊。
+// 一手出處:GitHub Primer AvatarStack(@primer/react 38.40.0,`AvatarStack.module.css` L168-L194:
+//   第 2 顆起 `mask-composite: exclude` + 圓形 `radial-gradient` 遮罩,挖掉「前一顆的圓 + `--avatar-border-width`」)
+//   https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L168-L194
+//   本 DS 用**單層** radial-gradient 表達同一個幾何(圓內透明、圓外保留),不需要 mask-composite。
+//
+// **結構契約**(每一處堆疊都照這個長相;+N 算最後一項,同尺寸):
+//   堆疊列(AVATAR_STACK_CLASS)> 每一項(item,兄弟節點;AVATAR_STACK_ITEM_CLASS + avatarStackItemStyle,第一項最上層)
+//     > 擁有者(Avatar `stacked` 的最外層 / OverflowIndicator circle 的觸發點,帶 `data-avatar-stack`)> 圓(被挖的那一層)
+//   - 挖空只掛在「圓」那一層,**不掛在擁有者上**:擁有者身上畫的是全域 `:focus-visible` 外描邊,
+//     遮罩會把畫在 border box 外面的焦點框整圈裁掉(CSS Masking:mask 以外的區域不繪製)。
+//   - 何時挖由結構決定:所在那一項**前面有一個看得見的堆疊項目**才挖 —— 第一項不挖;
+//     Combobox 量寬時被 `hidden` 掉的項目不算。所以 PersonAvatarTag(拿不到自己是第幾顆)也能正確。
+//
+// 以下匯出都標 `@internal`:DS 內部的堆疊(MultiPersonDisplay / PersonAvatarTag / OverflowIndicator / story)用,
+// 不進 root barrel;consumer 要顯示多人時用 PeoplePicker 檢視模式,自組時經 subpath 包裝後使用
+// (ui-development.md「符號級 @internal 排除」)。未來 Avatar.Group 會把這段收進元件(overflow-indicator.spec.md)。
+/**
+ * @internal
+ * 第 2 項起往左疊的量(= 舊 `-ml-0.5`)。
+ */
+export const AVATAR_STACK_OVERLAP_PX = 2
+/**
+ * @internal
+ * 縫寬。= 2026-04-02 起舊外圈的寬度(`ring-2`),白底上看起來與舊版相同;
+ * 與 DS 其他「把疊上去的東西分開」的圈同寬(狀態圓點 dotSize<12 時 2px、計數徽章 2px、移除 × 2px)。
+ * Primer 是 1px(`--avatar-border-width: 1px`,`AvatarStack.module.css` L3)——選 2px 是 AI 推導,理由即上兩句。
+ */
+export const AVATAR_STACK_GAP_PX = 2
+
+/**
+ * @internal
+ * 挖空遮罩:把「左邊那顆(同尺寸的圓)+ 一圈縫」從這一層挖掉。sizePx = 堆疊裡每顆的直徑。
+ */
+export function avatarStackCutoutImage(sizePx: number): string {
+  const edge = sizePx / 2 + AVATAR_STACK_GAP_PX
+  const centerX = AVATAR_STACK_OVERLAP_PX - sizePx / 2
+  // ±0.25px 的過渡 = 邊緣反鋸齒(DPR 2 下 1 個裝置像素),不改變縫寬
+  return `radial-gradient(circle at ${centerX}px 50%, transparent ${edge - 0.25}px, #000 ${edge + 0.25}px)`
+}
+
+/**
+ * @internal
+ * 被挖那一層(圓)的 className + style。className 是字面值(Tailwind 要能掃到),
+ * 幾何只從上方兩個常數來(經 CSS 變數 `--avatar-stack-cutout` 傳入),不在 class 字串裡重寫數字。
+ * `-webkit-mask-image` 由 Tailwind v4 的 Lightning CSS 自動補(建置產物實測兩個屬性都在)。
+ */
+export const AVATAR_STACK_CUTOUT_CLASS =
+  '[:has(>[data-avatar-stack]):not([hidden])~*>[data-avatar-stack]>&]:[mask-image:var(--avatar-stack-cutout)]'
+/** @internal 被挖那一層的 style(`--avatar-stack-cutout`),搭配 `AVATAR_STACK_CUTOUT_CLASS`。 */
+export function avatarStackCutoutStyle(sizePx: number): React.CSSProperties {
+  return { ['--avatar-stack-cutout' as string]: avatarStackCutoutImage(sizePx) }
+}
+
+/**
+ * @internal
+ * 堆疊列(每一項的父層)。`isolate` = 疊放順序只在這一列裡比,不跟頁面上其他層(黏住的表頭等)比;
+ * 對齊 Primer `.AvatarStack { isolation: isolate }`(`AvatarStack.module.css` L12)。
+ */
+export const AVATAR_STACK_CLASS = 'isolate'
+/**
+ * @internal
+ * 每一項(item)的外層 className + style(`avatarStackItemStyle`):
+ *   - 第 2 項起往左疊 `AVATAR_STACK_OVERLAP_PX`;
+ *   - 越前面越上層(第一顆在最上面,+N 在最下面)—— 重疊那 2px 滑過時開的是看得到的那顆(上面那顆)的名片;
+ *   - 裡面有東西拿到鍵盤焦點(`:focus-visible`)時整項升到最上層:焦點框往外畫(focus-canonical.md「疊層/徽章不算鄰居」),
+ *     不升的話左半圈會被上面那顆蓋住。對齊 SegmentedControl `focus-visible:z-20`「讓往外長的框壓在相鄰 item 之上」。
+ * count = 項目總數(含 +N)。
+ */
+export const AVATAR_STACK_ITEM_CLASS =
+  'relative inline-flex z-[var(--avatar-stack-z)] has-[:focus-visible]:z-[var(--avatar-stack-z-focus)]'
+/** @internal 每一項的 style,搭配 `AVATAR_STACK_ITEM_CLASS`(說明見上)。 */
+export function avatarStackItemStyle(index: number, count: number): React.CSSProperties {
+  return {
+    marginLeft: index > 0 ? -AVATAR_STACK_OVERLAP_PX : undefined,
+    ['--avatar-stack-z' as string]: count - index,
+    ['--avatar-stack-z-focus' as string]: count + 1,
+  }
+}
+
 // ── Component ──
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -133,6 +221,12 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
    * 只有人員 avatar 需要傳；實體 avatar（專案、組織）不傳。
    */
   hoverCard?: React.ReactNode
+  /**
+   * 這顆頭像是頭像堆疊裡的一項(avatar.spec.md「頭像堆疊(疊在一起時)」)。
+   * true → 最外層帶 `data-avatar-stack`,圓那一層被左邊那顆蓋住的地方 + 2px 縫整片挖掉;
+   * 第一顆(前面沒有看得見的堆疊項目)不挖。只在固定尺寸(`size` 為數字)時生效。
+   */
+  stacked?: boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -143,7 +237,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 // (filter Avatar/PeoplePicker/FieldSurfaceProvider remounts)。
 // code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果
 const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, className, style, ...props }, ref) => {
+  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, stacked = false, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)
     // 2026-07-05 D4:imgError 隨 src 變更 reset — 原 state 首次 onError 後永久 true,consumer 之後
     // 換有效新 src(重傳頭像 / signed URL 刷新)時 showImage 永遠 false,<img> 不再掛載 → 新圖
@@ -192,6 +286,8 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const dotSize = isFill ? 10 : Math.max(8, Math.min(16, Math.round(numSize * 0.28)))
     // Border ring 在 surface 上分離 dot 與 avatar,dotSize ≥ 12 時升階到 3px 保持視覺比例
     const dotBorder = dotSize >= 12 ? 3 : 2
+    // 頭像堆疊(上方「頭像堆疊」段):挖空掛在這一層(圓),不掛在最外層 —— 焦點框畫在最外層。
+    const isStackItem = stacked && !isFill
 
     const avatarEl = (
       <div
@@ -201,6 +297,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
           // 2026-05-13 R3.5 self-dim:Avatar 在 disabled Field wrapper context 內自 dim
           // (取代 field-wrapper.tsx default/bare/naked disabled blanket opacity-disabled 逃生艙)
           isDisabledInField && 'opacity-disabled',
+          isStackItem && AVATAR_STACK_CUTOUT_CLASS,
         )}
         style={{
           ...(isFill
@@ -209,6 +306,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
           borderRadius: radius,
           backgroundColor: showImage ? undefined : colors.bg,
           color: showImage ? undefined : colors.text,
+          ...(isStackItem ? avatarStackCutoutStyle(numSize) : null),
         }}
         data-avatar-size={isFill ? 'fill' : numSize}
         role={!showImage && alt && !hoverCard ? 'img' : undefined}
@@ -277,10 +375,11 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     // :focus-visible 焦點框(畫在 root 的 border box,帶 rounded-full → 變膠囊)、hoverCard 的 Radix 錨點(浮層橫向偏移)。
     // fill 模式的語意就是填滿父容器,必須排除。機械閘:scripts/avatar-anchor-box-invariant.mjs。
     const boxClass = isFill ? '' : 'w-fit'
+    const stackAttr = isStackItem ? { 'data-avatar-stack': '' } : {}
     const baseEl = !hasOverlay
-      ? <div ref={ref} className={cn('inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...focusableProps} {...props}>{avatarEl}</div>
+      ? <div ref={ref} className={cn('inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...stackAttr} {...focusableProps} {...props}>{avatarEl}</div>
       : (
-        <div ref={ref} className={cn('relative inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...focusableProps} {...props}>
+        <div ref={ref} className={cn('relative inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...stackAttr} {...focusableProps} {...props}>
           {avatarEl}
           {/* Status dot:bottom-right(presence — 世界級對照 Slack / Teams / Discord),
               落在 circle avatar 圓周 45° 位置 / square avatar 右下直角;

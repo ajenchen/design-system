@@ -59,11 +59,11 @@ export const UsageGuidance: Story = {
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="商品列表平均分"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品列表平均分</span></LinkTo>
-          <span className="text-fg-secondary"> — 電商搜尋結果每張商品卡的 readOnly 平均分 + 評論數(4.7、12,843 則)</span>
+          <span className="text-fg-secondary"> — 電商搜尋結果每張商品卡的唯讀精簡版「★ 4.7 (12,843)」:一顆實心星 + 平均分 + 評論數</span>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="送出評分流程"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">送出評分流程</span></LinkTo>
-          <span className="text-fg-secondary"> — 訂單完成 / 用餐後使用者親自給分:hover 預覽 + click 送出(interactive)</span>
+          <span className="text-fg-secondary"> — 訂單完成 / 用餐後使用者親自給分:只有整顆,hover 預覽 + click 送出(interactive)</span>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="包在 Field 內"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">包在 Field 內</span></LinkTo>
@@ -77,14 +77,14 @@ export const UsageGuidance: Story = {
       <div>
       <Rule
         title="❌ standalone readOnly 不給可存取名稱"
-        note="純視覺的星星螢幕閱讀器讀不出「4.7 分」。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
+        note="唯讀精簡版畫面上的「4.5」對螢幕閱讀器是隱藏的,它只讀可存取名稱。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
       >
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <Rating value={4.5} readOnly precision="half" size="md" aria-label="平均評分 4.5 星，共 5 星" />
+          <Rating value={4.5} readOnly size="md" aria-label="平均評分 4.5 星，共 5 星" />
           <Label>✅ `aria-label=&quot;平均評分 4.5 星，共 5 星&quot;`</Label>
         </div>
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <Rating value={4.5} readOnly precision="half" size="md" aria-label="平均評分 4.5 星，共 5 星" />
+          <Rating value={4.5} readOnly size="md" aria-label="平均評分 4.5 星，共 5 星" />
           <Label warn>❌ 若省略 aria-label，螢幕閱讀器會讀不出分數；此可執行示範仍保留名稱，避免 demo 本身成為違規來源</Label>
         </div>
       </Rule>
@@ -116,11 +116,12 @@ export const UsageGuidance: Story = {
 
       <Rule
         title="❌ max 超過 7"
-        note="超過 7 顆使用者無法「一眼看出是幾星」——必須一顆顆數。這違背 Rating 快速掃視的本質。若需要更細分度（0–100），改用 Slider。"
+        note="超過 7 顆使用者無法「一眼看出是幾星」——必須一顆顆數。這違背 Rating 快速掃視的本質。若需要更細分度（0–100），改用 Slider。（唯讀精簡版不畫整排星星，所以這條只管可以點的評分；下方示範可以點。）"
       >
         <div className="flex flex-col gap-2 w-[400px] p-4 border border-border rounded-md">
-          <Rating value={7} readOnly max={10} size="md" aria-label="10 星量表" />
-          <Label warn>❌ 10 星量表無法快速掃視 → 超過 7 改用 Slider</Label>
+          <div className="text-caption text-fg-secondary font-medium">為這堂線上課程評分</div>
+          <Rating defaultValue={7} max={10} size="md" aria-label="為這堂線上課程評分，10 星量表" />
+          <Label warn>❌ 送出評分給 10 顆星，使用者要一顆顆數 → 超過 7 改用 Slider</Label>
         </div>
       </Rule>
     </div>
@@ -139,19 +140,19 @@ export const UsageGuidance: Story = {
           </div>
           <div className="flex flex-col gap-2 w-[300px] p-4 border border-border rounded-md">
             <div className="text-caption text-fg-secondary font-medium">商品平均分 — readOnly</div>
-            <Rating value={4.7} readOnly precision="half" size="lg" aria-label="平均 4.7 星" />
+            <Rating value={4.7} count={12843} readOnly size="lg" aria-label="平均評分 4.7 星，共 5 星，12,843 則評論" />
             <Label>平均分數，使用者無法改</Label>
           </div>
         </Rule>
 
         <Rule
           title="❌ 展示平均分時用 interactive"
-          note="使用者以為自己可以改變商品平均分。所有展示用途必須 readOnly。"
+          note="使用者以為自己可以改變商品平均分；而且可以點的評分只有整顆，4.7 會被四捨五入畫成 5 顆，平均分失真。所有展示用途必須 readOnly。"
         >
           <div className="flex flex-col gap-2 w-[300px] p-4 border border-border rounded-md">
-            <div className="text-caption text-fg-secondary font-medium">商品平均分</div>
-            <Rating defaultValue={4.7} precision="half" size="lg" aria-label="誤用範例" />
-            <Label warn>使用者會以為點下去能改平均分 → 改 readOnly</Label>
+            <div className="text-caption text-fg-secondary font-medium">商品平均分 4.7</div>
+            <Rating defaultValue={4.7} size="lg" aria-label="誤用範例" />
+            <Label warn>畫成 5 顆，使用者還會以為點下去能改平均分 → 改 readOnly</Label>
           </div>
         </Rule>
 
@@ -160,9 +161,9 @@ export const UsageGuidance: Story = {
           note="星等是使用者對商品 / 服務的 graded 量化評價。5 顆是世界級共識（超過 7 使用者無法快速掃視）。"
         >
           <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-            <div className="text-caption text-fg-secondary font-medium">商品評分</div>
-            <Rating value={4.7} readOnly precision="half" size="md" aria-label="4.7 星" />
-            <Label>離散 tier:1 / 2 / 3 / 4 / 5(或 0.5 step)</Label>
+            <div className="text-caption text-fg-secondary font-medium">為這次購物評分</div>
+            <Rating defaultValue={4} size="md" aria-label="為這次購物評分" />
+            <Label>離散 tier:只有整顆，1 / 2 / 3 / 4 / 5</Label>
           </div>
         </Rule>
 
@@ -210,44 +211,59 @@ export const UsageGuidance: Story = {
   },
 }
 
-export const PrecisionChoice: Story = {
-  name: '精度選擇',
+export const WholeStarsAndCompact: Story = {
+  name: '整顆星與精簡版',
   render: () => (
     <div>
       <Rule
-        title="full — 送出評分（使用者給分當下）"
-        note="送出流程要「決斷」，整星最清晰。Yelp / Google Reviews / Amazon 的送出表單都是整星——使用者不必在 4 和 4.5 之間猶豫。"
+        title="送出評分只給整顆"
+        note="可以點的 Rating 沒有半顆設定：滑鼠點哪一顆就是那一顆的整數，鍵盤方向鍵每按一下加減 1。使用者給分當下只在 5 個選項裡挑一個。"
       >
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <div className="text-caption text-fg-secondary font-medium">為這次服務評分</div>
-          <Rating defaultValue={0} precision="full" size="lg" aria-label="送出評分" />
-          <Label>step = 1，可選值：1 / 2 / 3 / 4 / 5</Label>
+          <div className="text-caption text-fg-secondary font-medium">為這次外送評分</div>
+          <Rating defaultValue={0} size="lg" aria-label="為這次外送評分" />
+          <Label>可選值：1 / 2 / 3 / 4 / 5</Label>
         </div>
       </Rule>
 
       <Rule
-        title="half — 展示平均分（顯示小數）"
-        note="平均分必定有小數（4.7、3.2、4.5），整星無法表達。半星用 overflow-hidden 疊一個 filled 在 empty 上，呈現「4.5 看起來就是 4 顆半星」。"
+        title="唯讀一律精簡版「★ 數值 (評論數)」"
+        note="展示平均分或別人給的分數時，只畫一顆實心星，數值寫在旁邊（取一位小數），知道評論數就用 count 接在括號裡。唯讀不畫整排星星，所以沒有半顆、也沒有照比例填色。"
       >
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <div className="text-caption text-fg-secondary font-medium">商品平均分</div>
+          <div className="text-caption text-fg-secondary font-medium">AirPods Pro（第二代）平均分</div>
+          <Rating value={4.7} count={12843} readOnly size="md" aria-label="平均評分 4.7 星，共 5 星，12,843 則評論" />
+          <Label>value=4.7、count=12843 → 評論數自動加千分位</Label>
+        </div>
+        <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
+          <div className="text-caption text-fg-secondary font-medium">評論列表 — 王小明的評分</div>
+          <Rating value={5} readOnly size="md" aria-label="王小明給 5 星，共 5 星" />
+          <Label>單則評論沒有評論數 → 不傳 count，不顯示括號</Label>
+        </div>
+        <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
+          <div className="text-caption text-fg-secondary font-medium">民宿房源總分</div>
+          <Rating value={4.92} count={318} readOnly size="md" aria-label="房源評分 4.9 星，共 5 星，318 則評論" />
+          <Label>4.92 → 顯示 4.9（取一位小數）</Label>
+        </div>
+      </Rule>
+
+      <Rule
+        title="❌ 在精簡版旁邊再手寫數值或評論數"
+        note="數值由元件顯示、評論數走 count。自己再拼一次 span 會讓數值出現兩次，字級與間距也不跟 size 走。"
+      >
+        <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
+          <div className="text-caption text-fg-secondary font-medium">Kindle Paperwhite</div>
+          <Rating value={4.5} count={8921} readOnly size="xs" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
+          <Label>✅ 評論數交給 count</Label>
+        </div>
+        <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
+          <div className="text-caption text-fg-secondary font-medium">Kindle Paperwhite</div>
           <div className="flex items-center gap-2">
-            <Rating value={4.7} readOnly precision="half" size="lg" aria-label="平均 4.7" />
-            <span className="text-body text-fg-secondary">4.7</span>
-            <span className="text-caption text-fg-muted">(12,843)</span>
+            <Rating value={4.5} readOnly size="xs" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
+            <span className="text-caption text-fg-secondary">4.5</span>
+            <span className="text-caption text-fg-muted">(8,921)</span>
           </div>
-          <Label>顯示 4.7 需要半星精度</Label>
-        </div>
-      </Rule>
-
-      <Rule
-        title="❌ 送出表單用 half — 使用者猶豫症"
-        note="半星給送出評分會讓使用者陷入「4 跟 4.5 差在哪」的猶豫。送出 = full；半星只用於展示。"
-      >
-        <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <div className="text-caption text-fg-secondary font-medium">送出評分 — 誤用 half</div>
-          <Rating defaultValue={0} precision="half" size="lg" aria-label="誤用範例" />
-          <Label warn>使用者要在 10 個刻度裡選 → 改 full（5 個整星）</Label>
+          <Label warn>❌ 4.5 出現兩次 → 拿掉手寫的 span，改傳 count</Label>
         </div>
       </Rule>
     </div>
@@ -263,17 +279,27 @@ export const YellowStarConvention: Story = {
         note="黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）"
       >
         <div className="flex flex-col gap-2">
-          <Rating value={4.5} readOnly precision="half" size="lg" aria-label="標準黃星" />
-          <Label>✅ `var(--warning)` = yellow-6 — 世界級 convention</Label>
+          <div className="flex flex-wrap gap-6 items-start">
+            <div className="flex flex-col gap-2">
+              <div className="text-caption text-fg-secondary font-medium">為這家餐廳評分（可以點）</div>
+              <Rating defaultValue={4} size="lg" aria-label="為這家餐廳評分" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="text-caption text-fg-secondary font-medium">餐廳平均分（唯讀精簡版）</div>
+              <Rating value={4.5} count={2318} readOnly size="lg" aria-label="餐廳平均評分 4.5 星，共 5 星，2,318 則評論" />
+            </div>
+          </div>
+          <Label>✅ 兩種呈現的星都是 `var(--warning)` = yellow-6 — 世界級 convention</Label>
         </div>
       </Rule>
 
       <Rule
         title="填色 = 黃，空色 = 灰"
-        note="空星用灰（`--divider`，= `--color-neutral-4`）不用黃的淺色（yellow-2）——空星要表達「未選」不是「弱黃選」。灰色是跨系統的「empty / disabled」通用語。"
+        note="空星用灰（`--divider`，= `--color-neutral-4`）不用黃的淺色（yellow-2）——空星要表達「未選」不是「弱黃選」。灰色是跨系統的「empty / disabled」通用語。空星只出現在可以點的評分（唯讀精簡版只有一顆實心星），所以下方用可以點的評分示範。"
       >
         <div className="flex flex-col gap-2">
-          <Rating value={3.5} readOnly precision="half" size="lg" aria-label="黃填灰空" />
+          <div className="text-caption text-fg-secondary font-medium">為這次客服評分（可以點）</div>
+          <Rating defaultValue={3} size="lg" aria-label="為這次客服評分" />
           <Label>✅ filled = `--warning`，empty = `--divider`（= `--color-neutral-4`）</Label>
         </div>
       </Rule>
@@ -285,10 +311,10 @@ export const YellowStarConvention: Story = {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div style={{ color: 'var(--primary)' }} className="inline-flex">
-              <Rating value={4.5} readOnly precision="half" size="lg" aria-label="誤用範例" icon={Star} />
+              <Rating defaultValue={4} size="lg" aria-label="誤用範例" icon={Star} />
             </div>
           </div>
-          <Label warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來）</Label>
+          <Label warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例是可以點的評分，外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來；唯讀精簡版那一顆星同樣硬綁）</Label>
         </div>
       </Rule>
     </div>

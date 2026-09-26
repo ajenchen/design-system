@@ -659,6 +659,14 @@ export type {
 //   - components/AgentPanel:SWELL
 //   - components/AgentPanel:useBeginAnimationsOnMount
 //   - components/AgentPanel:usePrefersReducedMotion
+//   - components/Avatar:AVATAR_STACK_CLASS
+//   - components/Avatar:AVATAR_STACK_CUTOUT_CLASS
+//   - components/Avatar:AVATAR_STACK_GAP_PX
+//   - components/Avatar:AVATAR_STACK_ITEM_CLASS
+//   - components/Avatar:AVATAR_STACK_OVERLAP_PX
+//   - components/Avatar:avatarStackCutoutImage
+//   - components/Avatar:avatarStackCutoutStyle
+//   - components/Avatar:avatarStackItemStyle
 //   - components/Button:ButtonGroupContext
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal

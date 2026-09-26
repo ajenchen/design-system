@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { useTableIsScrolling } from '@/design-system/components/Field/field-context'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -112,6 +112,7 @@ function PersonAvatar({
   className = '',
   style,
   disabled = false,
+  stacked = false,
 }: {
   person: PersonData
   size?: 'sm' | 'md' | 'lg'
@@ -123,6 +124,8 @@ function PersonAvatar({
    *  PeoplePicker disabled 分支無 fieldCtx,Avatar self-dim 搆不到,host 補)。
    *  對齊 people-picker.spec.md「disabled:灰化整個 field,不可互動」。 */
   disabled?: boolean
+  /** 頭像堆疊裡的一項 → 轉給 Avatar `stacked`(挖空;avatar.spec.md「頭像堆疊(疊在一起時)」) */
+  stacked?: boolean
 }) {
   const isTableScrolling = useTableIsScrolling()
   const nameCard = React.useMemo(
@@ -137,6 +140,7 @@ function PersonAvatar({
       className={cn(className, disabled && 'opacity-disabled')}
       style={style}
       hoverCard={nameCard}
+      stacked={stacked}
     />
   )
 }
@@ -174,7 +178,10 @@ PersonDisplay.displayName = 'PersonDisplay'
 
 // ── Multi Person Display ────────────────────────────────────────────────────
 // 多人堆疊:avatar 重疊(-2px),不顯示人名。
-// 第一個 avatar z-index 最高(在最上面),依此類推。
+// 第一個 avatar z-index 最高(在最上面),依此類推;+N 在最下面。
+// 疊在一起的地方用挖空分開(不是外圈):幾何與層次都消費 Avatar 的頭像堆疊 SSOT
+//(`AVATAR_STACK_CLASS` / `AVATAR_STACK_ITEM_CLASS` + `avatarStackItemStyle` + Avatar `stacked` + OverflowIndicator circle;avatar.spec.md「頭像堆疊(疊在一起時)」、
+// people-picker.spec.md §D row 1)。
 // 溢出時顯示 +N 指示器,hover 出 tooltip 列出溢出的人(avatar + 人名)。
 
 function MultiPersonDisplay({
@@ -302,9 +309,11 @@ function MultiPersonDisplay({
 
   // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識):outer items-start + avatar stack
   // 鎖 first-line baseline(整 stack 是 prefix slot,h-[1lh] 對齊 first line)。
+  // 項目總數含 +N(它是最後一項、在最下層)。
+  const stackCount = visible.length + (overflow > 0 ? 1 : 0)
   return (
     <span ref={containerRef} className="inline-flex items-start min-w-0">
-      <ItemPrefix className="!justify-start"><span className="inline-flex items-center min-w-0">
+      <ItemPrefix className="!justify-start"><span className={cn('inline-flex items-center min-w-0', AVATAR_STACK_CLASS)}>
       {visible.map((person, i) => {
         // **2026-05-07 v15.11 Bug D 升級 SSOT**:visible avatar 也支援 inline dismiss
         // (對齊 user directive「avatar = tag」)。Dismiss overlay 走 `AvatarDismissOverlay`
@@ -312,11 +321,11 @@ function MultiPersonDisplay({
         // 都用同一視覺 — 紅圈 X 對齊 avatar 右上,hover/focus-visible 才顯。
         const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
         return (
-          <span key={person.name + i} className={`relative inline-flex group/avatar ${i > 0 ? '-ml-0.5' : ''}`} style={{ zIndex: visible.length - i }}>
+          <span key={person.name + i} className={cn(AVATAR_STACK_ITEM_CLASS, 'group/avatar')} style={avatarStackItemStyle(i, stackCount)}>
             <PersonAvatar
               person={person}
               size={size}
-              className="ring-2 ring-[var(--surface)]"
+              stacked
               disabled={disabled}
             />
             {handleDismiss && <AvatarDismissOverlay onRemove={handleDismiss} label={person.name} />}
@@ -324,10 +333,11 @@ function MultiPersonDisplay({
         )
       })}
       {overflow > 0 && (
+        // +N 也是堆疊的一項:包一層 item,結構與頭像項目相同(item > 觸發點 > 圓),挖空才對得上。
+        <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, stackCount)}>
         <OverflowIndicator
           count={overflow}
           size={size}
-          className="ring-2 ring-[var(--surface)] -ml-0.5"
         >
           {hidden.map((person, i) => (
             <Tag
@@ -353,6 +363,7 @@ function MultiPersonDisplay({
             </Tag>
           ))}
         </OverflowIndicator>
+        </span>
       )}
       </span></ItemPrefix>
     </span>
@@ -395,8 +406,9 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // 世界級 idiom(asymmetric offset by avatar/field size constraint)。
         'absolute -top-px -right-1 z-10',
         'inline-flex items-center justify-center',
-        // **12×12 + 2px white ring**(SSOT match stacked avatar,Slack/Material/iOS
-        // notification badge 2px ring canonical)。改用 `[box-shadow:...]` 而非 `ring-2`
+        // **12×12 + 2px white ring**(Slack/Material/iOS notification badge 2px ring canonical;
+        // 2026-09-26 起頭像堆疊改挖空、不再有外圈,這圈只剩「× 與底下頭像分開」一個用途 ——
+        // 圈色寫死 `--surface` 的問題同 avatar.tsx 狀態圓點 / 計數徽章,待辦總帳 N49)。改用 `[box-shadow:...]` 而非 `ring-2`
         // 避免跟焦點指示在 tailwind-merge 衝突(同 ring family
         // override 互殺)。
         // **2026-09-07 訂正**:原註解寫「也不被 focus-visible ring 蓋掉(不同 layer)」——
@@ -435,6 +447,10 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
 // (useOverflowCount 必要)。把 overlap + group 拉到 Combobox 的 `tagWrapperClassName`
 // 上,sibling-level overlap + group selector 才能正確 chain → AvatarDismissOverlay 的
 // `group-hover/avatar:opacity-100` 才會通。
+//
+// **挖空(2026-09-26)**:本元件拿不到自己是第幾顆,但不需要 —— Avatar `stacked` 的挖空由結構決定
+//(所在 wrapper 前面有看得見的堆疊項目才挖;Combobox 量寬時 `hidden` 的 wrapper 不算),
+// 見 avatar.tsx「頭像堆疊」段、people-picker.spec.md §D row 1。
 function PersonAvatarTag({
   person, size = 'md', onRemove,
 }: {
@@ -444,7 +460,7 @@ function PersonAvatarTag({
 }) {
   return (
     <>
-      <PersonAvatar person={person} size={size} className="ring-2 ring-[var(--surface)]" />
+      <PersonAvatar person={person} size={size} stacked />
       {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
     </>
   )

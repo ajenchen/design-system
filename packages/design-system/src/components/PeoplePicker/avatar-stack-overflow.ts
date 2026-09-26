@@ -29,6 +29,8 @@
  * Primer Truncate(parent-constrained max width)。
  */
 
+import { AVATAR_STACK_OVERLAP_PX } from '@/design-system/components/Avatar/avatar'
+
 /**
  * Pure deterministic visible-count formula for avatar stack with overlap + overflow chip.
  *
@@ -43,7 +45,8 @@ export function getAvatarStackVisibleCount({
   availablePx,
   total,
   avatarPx,
-  overlapPx = 2,
+  // 疊的量只有一個住所:avatar.tsx `AVATAR_STACK_OVERLAP_PX`(2026-09-26 頭像堆疊挖空起)
+  overlapPx = AVATAR_STACK_OVERLAP_PX,
   // NOTE: overflowChipPx is kept for backward-compat API but the slot-based
   // formula below treats chip = avatar physical size(both circles same shape
   // + same -ml-0.5 overlap when stacked)。Consumer 必 ensure 視覺 chip wrapper

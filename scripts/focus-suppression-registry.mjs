@@ -118,8 +118,14 @@ export function scan(files) {
         // A 類 2026-09-09 起含「函式庫管理游標」的項目(cmdk data-selected / Radix data-highlighted):
         // 瀏覽器的 :focus-visible 看不到那個游標,所以框由元件自己畫 —— 同檔**必須**真的有 focus-ring-inset,
         // 否則就是「抑制了瀏覽器的框、自己又沒畫」= 舊 D 類換個字母回流。
-        A: { ok: () => /aria-activedescendant|data-\[highlighted\]|data-\[selected=true\]/.test(src) && /focus-ring-inset/.test(src),
-             need: '同檔要找得到游標來源(`aria-activedescendant` / `data-[highlighted]` / `data-[selected=true]`)**而且**要找得到元件自己畫的 `focus-ring-inset`(A 類 = 框畫在游標項上,不是不畫)' },
+        // 2026-09-26 補第二種證據:**程式游標由別檔畫框**(DataTable 試算表模式:游標是元件 state `selectedCellId`,
+        // 框由 data-table-interaction-layer.tsx 的 SelectionRing 掛 `focus-ring-inset`)。SSOT 的 A 類實例欄本來就列了
+        // 「DataTable 根」,但這裡的證據只認三種游標來源寫法 —— 規格寬、閘窄(M7 子規則 M34)。
+        // 第二種證據一樣不接受「抑制了又沒畫」:承擔者必須寫成 `檔名.tsx:行號`,而那一行(±3)要真的掛 `focus-ring-inset`,
+        // 承擔者搬家或被刪就紅(同 C 類的 carrierPointsAt)。只看這個標記自己之後的文字,不會撿到上方別段註解裡的檔名。
+        A: { ok: () => (/aria-activedescendant|data-\[highlighted\]|data-\[selected=true\]/.test(src) && /focus-ring-inset/.test(src))
+                    || carrierPointsAt(window.slice(m.index), /focus-ring-inset/),
+             need: '同檔要找得到游標來源(`aria-activedescendant` / `data-[highlighted]` / `data-[selected=true]`)**而且**要找得到元件自己畫的 `focus-ring-inset`(A 類 = 框畫在游標項上,不是不畫);或承擔者寫成 `檔名.tsx:行號`,而那一行真的掛 `focus-ring-inset`(程式游標由別檔畫框)' },
         // 判準是標籤名。class 若寫在共用 style 常數裡(cva / xxxStyles),標籤不在附近,
         // 這時改看「本檔到底渲染什麼標籤」—— 那個常數只服務那個標籤。
         B: { ok: () => /<(input|textarea)\b|\.Input\b|<(Input|Textarea)\b/.test(openTag)
@@ -180,6 +186,8 @@ if (process.argv.includes('--selftest')) {
     { n: 'A 類且同檔有 aria-activedescendant + 自畫的框', src: "const a = 'aria-activedescendant'\nconst r = showRing && 'focus-ring-inset'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: false },
     { n: 'A 類有 aria-activedescendant 但同檔沒有 focus-ring-inset(抑制了又沒畫)', src: "const a = 'aria-activedescendant'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'A 類 Radix 游標 + 自畫的框', src: "const c = 'data-[highlighted]:focus-ring-inset'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'A 類程式游標:承擔者寫成檔名:行號,但那個檔不存在(抑制了又指不出誰畫)', src: "// @focus-suppress A — x;承擔者:no-such-file.tsx:12\ncn('outline-none')", bad: true },
+    { n: 'A 類程式游標:承擔者只寫一句話、沒有檔名:行號(驗不到)', src: "// @focus-suppress A — x;承擔者:格上的框\ncn('outline-none')", bad: true },
     { n: 'A 類 Radix 游標但只上底色沒畫框(舊 D 換字母回流)', src: "const c = 'data-[highlighted]:bg-neutral-hover'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: 'D 類已退役', src: "const c = 'data-[highlighted]:bg-neutral-hover'\n// @focus-suppress D — 選單未選中項;承擔者:hover 同色底\ncn('outline-none')", bad: true },
     { n: 'B 類但不在 input/textarea 上', src: "<div\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: true },

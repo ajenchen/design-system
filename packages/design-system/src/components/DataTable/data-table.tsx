@@ -140,13 +140,16 @@ export interface DataTableProps<TData>
    * Excel-like cell selection:click 1=select / click 2=edit / Shift+click=range。
    * Default false opt-in(per codex「DataTable is not a spreadsheet」既有原則 +
    * data-table.principles.stories.tsx「不是試算表」principle story)。
-   * Enable 後 inlineEdit cell click 行為:
-   *   - Plain click → setSelectedCellId,**不**進 edit mode
-   *   - Click on already-selected → enter edit
+   * Enable 後 cell click 行為(**每一格都一樣**,含唯讀格、開關格與連結格的空白處;user 2026-09-26
+   * 「點任何格,藍框都跟過去」):
+   *   - Plain click → setSelectedCellId(格游標移到這一格),**不**進 edit mode
+   *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean / url 沒有可進的編輯,不動)
    *   - Shift+click → extend range from anchor
    *   - Double-click / Enter / F2 / printable(deferred) → enter edit on selected
    *   - Click empty area → clear selection
-   * 視覺:selection ring 1px `--primary`(layer `CELL_RING_STYLES.selected`);range 視覺
+   * 視覺:格游標 = DS 焦點框(`focus-ring-inset`,2px `--ring` 往內;layer `CELL_RING_STYLES.selected`),
+   *   有格游標時表格根節點不另畫外框(根節點與格游標框不同時出現,R21 第 5 題 (b)「只留一個焦點框」為 AI 建議、09-26 user 未另提 → AI 判讀照建議做;方向來自 user 原話「一個藍色focus ring 就已經夠顯眼了」);
+   *   焦點離開格線區(Tab 到表頭控件 / 表外)時格游標框收起、位置保留,回來原格重現;range 視覺
    *   = cell-bg `--primary-subtle`(`[data-range-cell]` CSS),outer ring 已 2026-05-10 retire
    *   — per user「不要 dash 直接實的就好」+ codex Q2.2 token。
    */
@@ -1417,6 +1420,8 @@ function DataTableInner<TData>(
   const [selectedCellId, setSelectedCellId] = React.useState<string | null>(null)
   const [rangeAnchor, setRangeAnchor] = React.useState<string | null>(null)
   const [rangeFocus, setRangeFocus] = React.useState<string | null>(null)
+  // 焦點在不在格線區(根節點 / 格內 / 浮層編輯器)—— 格游標框只在 true 時畫,位置由 selectedCellId 保留(見根節點 onFocus)
+  const [gridHasFocus, setGridHasFocus] = React.useState(false)
   // tableRef declared below (line 967) — click-outside effect 在 tableRef ready 後 wire,
   // 為避免 ordering 問題用 forwarded ref query via DOM `[data-data-table-outer]`。
   // 2026-05-12 click-outside canonical(user 抓「選完 range 後點任何地方該清掉 / 選 cell 後點別處該取消」):
@@ -3216,38 +3221,55 @@ function DataTableInner<TData>(
     // Cell click → 進 edit mode(boolean 不需 — 自己 toggle;url 不需 — 走內部 Pencil button,Phase C 由 UrlCell 內處理)
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
-    const onEditableCellClick = cellEditable && colType !== 'boolean' && colType !== 'url' && !isEditingThisCell
+    // 「點格即編輯」的格:滑過淺框、手形游標、非 spreadsheet 的 Tab 停靠都只跟著這一種(滑過樣式不因下方點擊改動而變)。
+    const cellClickEntersEdit = cellEditable && colType !== 'boolean' && colType !== 'url'
+    const onEditableCellClick = cellClickEntersEdit && !isEditingThisCell
+      ? () => {
+        // Default(non-spreadsheet)inline-edit behavior:click → enter edit
+        setEditingCellId(cellEditId(cellRowId, cellColId))
+      }
+      : undefined
+    // spreadsheet 模式:**點任何格,格游標都跟過去**(user 2026-09-26 同意 R21 第 5 題 (c))——
+    // 唯讀格、開關格與連結格的空白處也一樣。原本只有「點格即編輯」的格掛點擊,於是滑鼠點不到、方向鍵卻走得到唯讀格,
+    // 同一個開關格點勾選框會帶游標(經 commit → restoreCellSelection)、點旁邊空白卻不會。
+    // 世界級同向(一手原始碼,2026-09-26 R21 實測兩主題):AG Grid 36.2.0 按下即 `cellCtrl.focusCell(...)`
+    // (https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/rendering/cell/cellMouseListenerFeature.ts#L183-L196)、
+    // MUI X 9.14.0 放開時 `setCellFocus`
+    // (https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/hooks/features/focus/useGridFocus.ts#L390-L427),
+    // 都不看能不能編輯;W3C APG grid 原文「In a grid, every cell contains a focusable element or is itself focusable,
+    // regardless of whether the cell content is editable or interactive.」
+    // (https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L74)。
+    // 格內自己處理點擊的控件照舊:勾選框切換值(commit 後游標本來就回到這一格)、連結開連結、
+    // 鉛筆鈕 `stopPropagation` 進編輯 —— 這裡只負責「游標跟過去」。
+    const onSpreadsheetCellClick = spreadsheetMode && !isEditingThisCell
       ? (e: React.MouseEvent) => {
-        if (spreadsheetMode) {
-          // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
-          //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
-          //   Click on already-selected → enter edit
-          //   Plain click → select(no edit)+ reset range to single cell
-          // 2026-05-12 fix(user 抓「世界級設計藍邊框留在第一個選的 cell」):前 v1 setSelectedCellId
-          // 到 focus(終點)→ 藍框跑去終點。Fix:selectedCellId 維持 anchor(起點)— 對齊
-          // Excel / Google Sheets / Notion / Airtable shift-extend canonical(anchor 永遠 own
-          // active-cell border,range 用 fill 視覺)。
-          if (e.shiftKey && rangeAnchor != null) {
-            setRangeFocus(cellSpreadsheetId)
-            // selectedCellId stays at anchor (起點 keep active border canonical)
-            return
-          }
-          if (isSelectedCell) {
-            // 2nd click on already-selected → enter edit(Excel-like)
-            setEditingCellId(cellEditId(cellRowId, cellColId))
-            setSelectedCellId(null)
-            setRangeAnchor(null)
-            setRangeFocus(null)
-            return
-          }
-          // 1st click → select only,no edit
-          setSelectedCellId(cellSpreadsheetId)
-          setRangeAnchor(cellSpreadsheetId)
+        // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
+        //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
+        //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)
+        //   Plain click → select(no edit)+ reset range to single cell
+        // 2026-05-12 fix(user 抓「世界級設計藍邊框留在第一個選的 cell」):前 v1 setSelectedCellId
+        // 到 focus(終點)→ 藍框跑去終點。Fix:selectedCellId 維持 anchor(起點)— 對齊
+        // Excel / Google Sheets / Notion / Airtable shift-extend canonical(anchor 永遠 own
+        // active-cell border,range 用 fill 視覺)。
+        if (e.shiftKey && rangeAnchor != null) {
+          setRangeFocus(cellSpreadsheetId)
+          // selectedCellId stays at anchor (起點 keep active border canonical)
+          return
+        }
+        if (isSelectedCell) {
+          // 唯讀 / boolean / url 再點一次:沒有可進的編輯,游標留在原格
+          if (!cellClickEntersEdit) return
+          // 2nd click on already-selected → enter edit(Excel-like)
+          setEditingCellId(cellEditId(cellRowId, cellColId))
+          setSelectedCellId(null)
+          setRangeAnchor(null)
           setRangeFocus(null)
           return
         }
-        // Default(non-spreadsheet)inline-edit behavior:click → enter edit
-        setEditingCellId(cellEditId(cellRowId, cellColId))
+        // 1st click → select only,no edit
+        setSelectedCellId(cellSpreadsheetId)
+        setRangeAnchor(cellSpreadsheetId)
+        setRangeFocus(null)
       }
       : undefined
 
@@ -3395,7 +3417,7 @@ function DataTableInner<TData>(
           // Backward-compat:flag 關時 unset → field-wrapper default `var(--border-hover)`(既有行為)。
           ...(experimentalSpreadsheetOverlay && { '--cell-hover-outline-color': 'transparent' } as React.CSSProperties),
         }}
-        onClick={onEditableCellClick}
+        onClick={spreadsheetMode ? onSpreadsheetCellClick : onEditableCellClick}
         // a11y(2026-07-14 dim-10 修):非 spreadsheet 的 inlineEdit cell 原本只有 onClick —
         // 鍵盤 user 無法聚焦 cell、無法進入編輯(WCAG 2.1.1)。對齊 Atlassian InlineEdit
         // read-view-focusable idiom:editable view cell 可 Tab 聚焦,Enter / F2 進 edit。
@@ -4417,6 +4439,14 @@ function DataTableInner<TData>(
     )
   }
 
+  // 試算表模式此刻有沒有格游標 —— 有:焦點框由格游標畫(interaction layer 的 SelectionRing),根節點不畫;
+  // 沒有(勾選列模式、Esc 清掉游標之後):根節點畫。兩者不同時出現(見根節點 className 註解)。
+  const hasCellCursor = spreadsheetMode && selectedCellId != null
+  // 焦點此刻在不在「格線區」:表格根節點本身、某一格裡(含格內控件,例:勾選框)、或浮層編輯器裡。
+  // 表頭控件(排序區、⌄ 欄位選單)雖在根節點底下,但不算 —— 焦點到那裡時格游標框要收起(見根節點 onFocus / onBlur)。
+  const isGridFocusTarget = (root: HTMLElement, el: EventTarget | null): boolean =>
+    el instanceof Element && (el === root || (root.contains(el) && el.closest('[role="gridcell"], [data-active-editor-host]') != null))
+
   // Single mode 用 RadioGroup wrap 整 table(Radix RadioGroup 用 context 傳遞 value/onValueChange)
   // Multi mode 不需 wrap(Checkbox 各自 controlled,不靠 context)
   const tableContent = (
@@ -4441,13 +4471,33 @@ function DataTableInner<TData>(
       // 那句既有註解說「儲存格選取框 IS the visual focus indicator」只在**已選過一格之後**才成立。
       //
       // 用**內**描邊而不是外描邊,正好避開原始抱怨的形狀 —— 框畫在表格邊框內側,不會在外圈多一圈。
-      // spreadsheet 模式另有儲存格選取框(上方 onFocus 會在 Tab 進場時初始化到第一格),
-      // 兩者不衝突:一個說「焦點在這張表」,一個說「游標在哪一格」。
+      //
+      // 2026-09-26:**試算表模式有格游標時,根節點不畫**(R21 第 5 題 (b):AI 建議、09-26 user 未另提 → AI 判讀照建議做;方向來自 user 原話「一個藍色focus ring 就已經夠顯眼了」)。
+      // 這裡原本寫「外圈框與儲存格選取框兩者不衝突:一個說焦點在這張表,一個說游標在哪一格」—— 與正本相反:
+      // `ds-canonical/references/focus-canonical.md` A 類把「DataTable 根」列為「框畫在被指到的那一項上、
+      // 容器抑制瀏覽器預設外框」。實測 Tab 進表、點格後按 ↓,都同時出現根節點 2px 框 + 格上 1px 框(兩個焦點指示)。
+      // 世界級同向(R21 實測):AG Grid 容器不畫、格「use a border only to indicate focus」
+      // (https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_general.css#L409-L420)、
+      // MUI X 根 `outline: 'none'`
+      // (https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L184)。
+      // 仍由根節點畫的兩種情況(否則焦點在表上卻什麼都看不到,WCAG 2.4.7):
+      //   - 非 spreadsheet 的勾選列模式 —— 沒有格游標,根節點的框是唯一指示(見下方 A4);
+      //   - spreadsheet 模式但此刻沒有任何格被指到(例:按 Esc 清掉格游標之後)。
+      // 判準只有「此刻有沒有格游標」(`hasCellCursor`),所以根節點與格游標框恆只出現一個。
+      // 格游標框本身也只在焦點在格線區裡時才畫(`gridHasFocus`,見下方 onFocus / onBlur):焦點移到表頭控件或離開表格,
+      // 框收起、游標位置保留,Tab / Shift+Tab 回來原格重現 —— 否則表頭控件的焦點框與格游標框是兩個一模一樣的藍框。
       //
       // **A4 仍未關閉**:純選取模式仍然沒有**列**層級的游標(只有表格層級的框)。
       // 那還卡在:虛擬捲動下 activedescendant 目標必須真實存在、同一列在三面板各渲染一次
       // 故 IDREF 歸屬未定(`role=grid` 那個前提已於本日解除)。
-      className={cn(dataTableVariants({ bordered }), isFillHeight && 'flex flex-col', 'focus-visible:focus-ring-inset', className)}
+      className={cn(
+        dataTableVariants({ bordered }), isFillHeight && 'flex flex-col',
+        hasCellCursor
+          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:379
+          ? 'focus-visible:outline-none'
+          : 'focus-visible:focus-ring-inset',
+        className,
+      )}
       // isFillHeight:`maxHeight: 100%`(不是 height:100%)— content 小 → outer = intrinsic
       // (hug rows);content 大或 window 縮 < content → outer cap 到 100% of parent。
       // 行為:**永遠 hug rows**,只在被約束時才 cap + body shrink + V scroll。
@@ -4475,13 +4525,29 @@ function DataTableInner<TData>(
       // 這跟 TreeView 的 Tab 進場缺口是同一個病 —— 容器拿到焦點,但游標還沒初始化。
       // 判準同樣用瀏覽器自己的 `:focus-visible`:滑鼠點進來不初始化(那時使用者自己會點格子),
       // 鍵盤進來才給一個起點。
+      //
+      // 2026-09-26:**格游標框只在焦點在格線區裡時才畫**(`gridHasFocus`;AI 依 (b) 推導 —— (b)「只留一個焦點框」為 AI 建議、09-26 user 未另提 → AI 判讀照建議做,方向來自 user 原話「一個藍色focus ring 就已經夠顯眼了」)。
+      // 焦點從根節點 Tab 到表頭控件、或離開表格時,框收起但**游標位置保留**(`selectedCellId` 不清),
+      // Tab / Shift+Tab 回到根節點時原格重現 —— 修前那一刻是「表頭控件的焦點框 + 格游標框」兩個一模一樣的藍框。
+      // 對齊資料表格派:格上的框只在格(或格內)有焦點時畫 —— AG Grid `.ag-cell-focus…:focus-within`
+      // (https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L281-L291)、
+      // MUI X `& .cell:focus`
+      // (https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L266-L269)、
+      // W3C APG `[role="gridcell"]:focus`
+      // (https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/examples/css/dataGrids.css#L72-L78)。
+      // 區間底色不受影響:它是選取,不是焦點。
       onFocus={spreadsheetMode ? (e) => {
+        setGridHasFocus(isGridFocusTarget(e.currentTarget, e.target))
         if (e.target !== e.currentTarget) return
         if (selectedCellId != null) return
         if (!e.currentTarget.matches(':focus-visible')) return
         const first = e.currentTarget.querySelector<HTMLElement>('[data-cell-id]')
         const id = first?.dataset.cellId
         if (id) setSelectedCellId(id)
+      } : undefined}
+      // 焦點離開格線區(到表頭控件、表外、或瀏覽器視窗失焦)→ 格游標框收起;在格線區內換位置由下一個 onFocus 決定。
+      onBlur={spreadsheetMode ? (e) => {
+        if (!isGridFocusTarget(e.currentTarget, e.relatedTarget)) setGridHasFocus(false)
       } : undefined}
       onMouseOver={enterLeaveHandlers.onMouseOver}
       onMouseOut={enterLeaveHandlers.onMouseOut}
@@ -4825,7 +4891,8 @@ function DataTableInner<TData>(
         //   range(Shift+click rectangle from anchor↔focus)= cell-bg fill via
         //     CSS `[data-range-cell]`(per Issue 1 codex verdict;layer 不畫 range 視覺,
         //     RangeOuterRing / rangeCellIds prop 已 retire)
-        selectedCellId={spreadsheetMode ? selectedCellId : null}
+        // 2026-09-26:格游標框只在焦點在格線區裡時畫(`gridHasFocus`);收起時位置仍在 selectedCellId,回來原格重現
+        selectedCellId={spreadsheetMode && gridHasFocus ? selectedCellId : null}
         cellClickEntersEdit={(cellId) => {
           // 2026-05-10 codex review red light fix(per dual-track verify):
           //   1. cellId parse 用 lastIndexOf(':')(row id 可含 colon)

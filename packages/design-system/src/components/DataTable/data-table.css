@@ -220,6 +220,29 @@
   background: var(--primary-subtle);
 }
 
+/* 區間格在它那一列被滑過時維持原色,淺色深色一致(2026-09-26 user 同意 R21 第 5 題 (a))。
+   列的滑過色畫在「列」上(data-table.tsx 列的 `data-[hovered]:bg-neutral-hover`),區間色畫在「格」上。
+   淺色 `--primary-subtle` 是不透明色票(blue-1),列的滑過色透不上來;深色是 alpha 公式
+   (primitives.css `l c h / calc(0.12 / l)`),列的滑過色會從底下透上來 —— 實測深色 #1C304A → #243851、淺色不變,
+   兩個主題行為不一致(R21 / R11 K16)。
+   做法:**含區間格的列被滑過時,滑過色不畫在列上,改畫在這一列的非區間格上**。
+   - 非區間格:同一層 `--neutral-hover` 疊在同一個底上,顏色與一般列相同(I31 的對照列逐像素比過)。
+   - 區間格:底下不再有滑過層,兩個主題都是平常的區間色。
+   不新增 token(tokens/README.md「找不到現有 family 可鏡射 → 先質疑是否真需要」)、不在彩色底上疊一層
+   (color.spec.md「疊層只用在「底」」)。DS 內 `--primary-subtle` 被滑過時也從不換底(按下的 Button:
+   button.tsx 的 `hover:bg-primary-subtle` 只換字色)。世界級兩派都有:MUI X 同列別格被滑過時選中格不變
+   (GridRootStyles.ts `selectedStyles` 是實色,https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L142-L151);
+   AG Grid 讓列滑過透進區間(https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L375-L392)
+   —— 本 DS 取前者,理由是上面三條既有規則,不是世界級共識。
+   閘:scripts/data-table-invariants.mjs I31(兩主題量像素,含「非區間格仍變色、且與沒有區間的列同色」的對照)。 */
+[role='row'][data-hovered]:has(> [data-range-cell]) {
+  background-color: transparent;
+}
+
+[role='row'][data-hovered]:has(> [data-range-cell]) > [role='gridcell']:not([data-range-cell]) {
+  background-color: var(--neutral-hover);
+}
+
 /* First-row / first-column variants:turn transparent top/left into real divider 若 outer container
    沒有自己 border 提供。當前 DataTable outer 有 rounded border 包整 table → first row top + first col
    left 視覺由 outer border 接,所以本 class 4 邊全 divider OK 不重複。 */

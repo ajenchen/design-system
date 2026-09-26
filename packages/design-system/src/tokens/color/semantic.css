@@ -416,7 +416,7 @@
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */
   --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Alert neutral / scrollbar track */
-  --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級:Tag neutral / Slider rest / Badge low / FileItem progress / ProgressBar / CircularProgress / Steps fillBg */
+  --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級:Tag neutral / Slider rest / Badge low / FileItem progress / ProgressBar / CircularProgress / Steps fillBg / OverflowIndicator「+N」圓(2026-09-26) */
   /* secondary 當「可點元素的平常底色」時的配對(2026-09-25 新增;待辦總帳 B8 / B12,user 選「採用，底色不換、疊一層 (Recommended)」,
      該題同時定下「元件自己的填色(secondary…)→ 換成自己的下一階」;SSOT = color.spec.md「Hover 換色配對總則」)。
      同一條色階往下一階,寫法照 --neutral-selected 家族:半透明 primitive、只寫在 ②,深色由 primitives.css 的 alpha 翻轉自動換值,
@@ -543,12 +543,15 @@
   --inverse-neutral-hover:    var(--black-a02);
   --inverse-neutral-active:   var(--black-a04);
 
-  /* Chart — dark mode 用 step-5（較淡）提升對 dark surface 的可讀度 */
-  --chart-1:                  var(--color-blue-5);
-  --chart-2:                  var(--color-purple-5);
-  --chart-3:                  var(--color-green-5);
-  --chart-4:                  var(--color-yellow-5);
-  --chart-5:                  var(--color-deep-orange-5);
+  /* Chart — dark mode 用 step-6(2026-09-26 由 step-5 改):深色的 step-5 是 l×0.82,比 step-6 **暗**,
+     舊註解寫的「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);
+     step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68(研究 session scratch im/W4/I-palette)。
+     黃色在淺色用 step-7 是為了白底對比;深色的 step-6 已夠亮,不需要。 */
+  --chart-1:                  var(--color-blue-6);
+  --chart-2:                  var(--color-purple-6);
+  --chart-3:                  var(--color-green-6);
+  --chart-4:                  var(--color-yellow-6);
+  --chart-5:                  var(--color-deep-orange-6);
 }
 
 

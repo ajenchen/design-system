@@ -643,6 +643,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 // 讓滑過反而變淺(淺 #F5F5F5 → #FAFAFA)。非當月只靠日期數字的淡字區分,見下方日期鈕與 spec「Outside day cell」。
                 // 唯讀的格不亮:點了沒反應就不給滑過回饋(color.spec.md「Hover 換色配對總則」;待辦總帳 L8)。
                 datesInteractive && 'hover:bg-neutral-hover',
+                // 點得到(點整格 = 在這天新增)→ 手形游標(hit-area-canonical.md 滑過原則一-3;先前只有日期數字鈕是手形,
+                // 格子空白處滑過會亮、點了會新增,游標卻是箭頭)
+                datesInteractive && 'cursor-pointer',
                 !datesInteractive && 'focus-visible:focus-ring-inset',
               )}
             >

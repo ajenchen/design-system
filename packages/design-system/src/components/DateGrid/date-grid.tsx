@@ -110,6 +110,14 @@ export const RANGE_PREVIEW_CLASSNAMES = Object.freeze({
   end: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:-left-[2px] after:right-0 after:rounded-r-full', CLIP_INNER_LEFT),
   single: cn(PREVIEW_FRAME, PREVIEW_STROKE, 'after:inset-x-0 after:rounded-full'),
 })
+// 某一格是不是正畫著框的**端點**(起點 / 終點 / 單格)。判準就是上面這三串 class 有沒有整串落在那個 td 上 ——
+// 框正是由它們畫出來的,而它們只住在本檔(DatePicker.Range 原樣交給 modifiersClassNames),所以這一問就是「框的端點畫在這格上嗎」
+// 本身,不是旁證(M37)。中段只有上下線、不算端點。用在下方「縫或角裡點下去 = 點停留日」:停留日一定是框的端點,
+// 不是端點(框是鍵盤那一天設的、或根本沒有框)就不接那一下點擊。
+const PREVIEW_END_TOKENS = [RANGE_PREVIEW_CLASSNAMES.start, RANGE_PREVIEW_CLASSNAMES.end, RANGE_PREVIEW_CLASSNAMES.single]
+  .map((classes) => classes.split(/\s+/).filter(Boolean))
+const drawsPreviewEnd = (cell: Element | null) =>
+  !!cell && PREVIEW_END_TOKENS.some((tokens) => tokens.every((token) => cell.classList.contains(token)))
 // 預覽「上膛」的格(停留會有框的那些天)**靜態**壓掉 button 的單格 hover 圈。
 // 單格圈是 CSS :hover,指標一到就畫;框是 React 狀態,慢一幀。只靠上面 PREVIEW_FRAME 裡的壓制(掛在停留後才出現的
 // preview modifier 上),每次停留都會先閃一圈整圓、再變成半圓(user 2026-09-23:「hover 到日期都會先看到一圈圓形藍色外框,
@@ -128,27 +136,68 @@ const ZH_FULL_DATE = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'full' })
 const ZH_MONTH_YEAR = new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: 'long' })
 const ZH_WEEKDAY = new Intl.DateTimeFormat('zh-TW', { weekday: 'long' })
 
+// 可點的日子 = 沒有 disabled、也沒有 aria-disabled 的那顆 button(RDP 對鍵盤焦點落在不可選日時改掛 aria-disabled)
+const CLICKABLE_DAY = 'button:not(:disabled):not([aria-disabled="true"])'
+
+// ── 「縫或角」:格陣裡不屬於任何一天、但仍算「指標還在上一天身上」的位置(2026-09-26 補上「角」)──
+//   (a) 縫:既不在 `<td>` 也不在 `<th>` 上 —— border-spacing 的 4px 空白、表格最外圈,都屬於 `<table>` 自己;
+//   (b) 角:在某個**可點日子**的 `<td>` 裡、但不在它那顆 button(28px 的圓)上 —— 圓放在 28×28 的方格裡,圓外的四個角屬於 td。
+// 停在不可點的日子(含它的角)、空白補位格、星期列、或格陣之外 → 都不算,照常清掉。
+// 先前只有 (a):角被當成「已經離開」,指標只要沒走在格子正中線上(偏 1/4 格、貼邊、斜著走)就先清框再補回 ——
+// 2026-09-26 實測整條框(17 格)消失 6–14 步(每步 1px),淺深色相同(世界級對照與一手出處:date-grid.spec.md「縫與角裡的點擊」)。
+// 格陣自己的判斷(`grid.contains(cell)`):整張 DateGrid 若被放進別的表格的格子裡,`closest('td,th')` 會找到外面那一格,
+// 那仍是本格陣的縫,不是「離開」。
+function isGapOrCorner(node: EventTarget | null, grid: Element | null): boolean {
+  if (!(node instanceof Element) || !grid || !grid.contains(node)) return false
+  const cell = node.closest('td,th')
+  if (!cell || !grid.contains(cell)) return true // (a) 縫
+  if (cell.tagName !== 'TD') return false // 星期列
+  const button = node.closest('button')
+  if (button && cell.contains(button)) return false // 就在那顆圓上(可點與否都不是縫也不是角)
+  return cell.querySelector(`:scope > ${CLICKABLE_DAY}`) !== null // (b) 可點日子的角
+}
+
+// 縫或角裡「點下去會確認」時掛在格陣上的屬性,只用來把游標變成跟日期一樣的手形
+//(日期是 button,手形來自 styles/base.css「button:not(:disabled) { cursor: pointer }」)。
+// 下方 month_grid 的 `data-[gap-confirms]:cursor-pointer` 讀的就是它 —— 兩處字串必須一致。
+// 用屬性而不是 React state:它跟著指標每一步變,不該讓整張格陣重畫(同 tabs.tsx 的 data-action-hover、data-table.tsx 的 data-hovered)。
+const GAP_CONFIRMS_ATTR = 'data-gap-confirms'
+
 // 月曆格陣:在 react-day-picker 預設的 `<table {...props} />`
-//(node_modules/react-day-picker/dist/esm/components/MonthGrid.js)上多掛三樣東西 ——
+//(node_modules/react-day-picker/dist/esm/components/MonthGrid.js)上多掛這些東西 ——
 //   (1) `data-day-grid` 錨點,給下方 handleDayMouseLeave 判斷「指標現在停在格陣的哪一種地方」;
-//   (2) `onMouseOver`(由 context 遞進來),補掉「指標穿過縫之後停在不可點的日子」這條路徑;
-//   (3) `onMouseLeave`(由 context 遞進來),補掉「指標從縫裡直接離開格陣」這條路徑(D1,見 handleGridMouseLeave)。
-// 只多三個屬性,不改結構。
+//   (2) `onMouseOver`(由 context 遞進來),補掉「指標穿過縫或角之後停在不可點的日子」這條路徑;
+//   (3) `onMouseLeave`(由 context 遞進來),補掉「指標從縫或角直接離開格陣」這條路徑(D1,見 handleGridMouseLeave);
+//   (4) `onMouseMove` / `onPointerDown` / `onClick`(由 context 遞進來):縫或角裡的手形游標,與「在縫或角裡點下去 = 點停留日」。
+// 只多屬性與事件,不改結構。
 //
 // ⚠️ **必須定義在 module 層,不能寫成 render 內的 inline 箭頭函式。** 寫成 inline 時每次 render 都是一個
 // 新的 component type,React 會把整個格陣 unmount 再 mount,RDP 內部的焦點/動畫 effect 因此重新設 state,
 // 立刻撞上「Maximum update depth exceeded」(React #185)—— 2026-09-24 第一版就是這樣寫的,storybook
 // 整個 DatePicker range 故事白畫面。同檔的 PreviousMonthButton / NextMonthButton 是葉節點按鈕,沒有這個問題。
-// handler 走 context 而不是 props,正是因為 RDP 只給 MonthGrid 固定的那組 props,塞不進第三個。
+// handler 走 context 而不是 props,正是因為 RDP 只給 MonthGrid 固定的那組 props,塞不進額外的。
 interface GridPointerHandlers {
-  onMouseOver?: (event: React.MouseEvent) => void
-  onMouseLeave?: (event: React.MouseEvent) => void
+  onMouseOver?: (event: React.MouseEvent<HTMLTableElement>) => void
+  onMouseLeave?: (event: React.MouseEvent<HTMLTableElement>) => void
+  onMouseMove?: (event: React.MouseEvent<HTMLTableElement>) => void
+  onPointerDown?: (event: React.PointerEvent<HTMLTableElement>) => void
+  onClick?: (event: React.MouseEvent<HTMLTableElement>) => void
 }
 const GridPointerContext = React.createContext<GridPointerHandlers>({})
 
 function AnchoredMonthGrid(props: React.TableHTMLAttributes<HTMLTableElement>) {
-  const { onMouseOver, onMouseLeave } = React.useContext(GridPointerContext)
-  return <table {...props} data-day-grid="" onMouseOver={onMouseOver} onMouseLeave={onMouseLeave} />
+  const { onMouseOver, onMouseLeave, onMouseMove, onPointerDown, onClick } = React.useContext(GridPointerContext)
+  return (
+    <table
+      {...props}
+      data-day-grid=""
+      onMouseOver={onMouseOver}
+      onMouseLeave={onMouseLeave}
+      onMouseMove={onMouseMove}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
+    />
+  )
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -161,50 +210,91 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     numberOfMonths,
     onDayMouseEnter,
     onDayMouseLeave,
+    onDayFocus,
     ...props
   },
   _ref,
 ) {
-  // ── 停留日只在指標真的離開整張格陣時才清(2026-09-24)────────────────────────────
+  // ── 停留日只在指標真的離開整張格陣時才清(2026-09-24;2026-09-26 把「角」也算進來)──────────────
   //
   // react-day-picker 只把 mouseenter / mouseleave 掛在 day button 上,而格與格之間的 4px
-  // (`border-spacing-1`)屬於 `<table>`、不屬於任何一天。指標橫越那 4px 時瀏覽器必然先送一次
-  // leave、再送 enter,消費端(DatePicker 的 previewAnchor)因此把整條區間預覽框卸掉一幀再補回 ——
-  // user 2026-09-23 的原話是「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」。
+  // (`border-spacing-1`)屬於 `<table>`、不屬於任何一天;圓外的四個角屬於 `<td>`、也不屬於那顆圓。
+  // 指標經過這些地方時瀏覽器必然先送一次 leave、再送 enter,消費端(DatePicker 的 previewAnchor)因此把整條區間
+  // 預覽框卸掉再補回 —— user 2026-09-23 的原話是「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」。
   //
   // 先前的解法是給 button 一條 `before:-inset-[2px]` 的隱形帶,讓縫裡也有人收 enter。
   // 那是**表層**解:它改的是命中幾何,而閃動的根因是「停留日被清掉」。而且它讓命中區(32)大於
   // 懸停回饋(28 圓 + 1.5px ring),違反 hit-area-canonical「懸停回饋的形狀 ≡ 命中區」,
   // 而日期格既不是線也不是點,吃不到那條唯一例外。
   //
-  // 根因層的解法就在 MUI:**只在離開整個日曆時才清停留日**
-  //(https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx
-  //  —— `onMouseLeave` 掛在 calendar 容器上,格與格之間不觸發)。本檔用同樣的判準:leave 事件的
-  // `relatedTarget` 還落在同一張 `[data-day-grid]` 裡(縫隙、週列之間、星期列都算)就**不轉發**給消費端。
-  // 指標真的離開格陣時 relatedTarget 落在格陣外(或為 null = 離開視窗),照常轉發。
+  // 根因層的解法:**只在離開整個日曆時才清停留日** —— MUI X 把清除只掛在月份容器上
+  //(v9.14.0 `DateRangeCalendar.tsx#L481-L486` `onMouseLeave: () => setRangePreviewDay(null)`,
+  //  https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L481-L486 ),
+  // Zag(Chakra DatePicker 的底層)只掛在整張表格上(`date-picker.connect.ts#L546-L548` `onPointerLeave` →
+  //  `send({ type: "TABLE.POINTER_LEAVE" })`,
+  //  https://github.com/chakra-ui/zag/blob/46f88c089c1dbb0fc681b31172dc5eb8a07eef0d/packages/machines/date-picker/src/date-picker.connect.ts#L546-L548 )。
+  // 本檔用同樣的判準:leave 事件的 `relatedTarget` 還落在同一張 `[data-day-grid]` 的**縫或角**裡(isGapOrCorner)就
+  // **不轉發**給消費端。指標真的離開格陣時 relatedTarget 落在格陣外(或為 null = 離開視窗),照常轉發。
   //
   // 為什麼錨在 `data-day-grid` 而不是 `closest('table')`:標籤名是「剛好成立的觀察量」,不是要保證的性質
   //(M37);而且顯式屬性讓閘的對照組可以只用一行 `removeAttribute` 精準弄壞這個機制。
-  // 閘:`scripts/datepicker-range-preview.mjs`「跨格不閃」+ 同檔 `--selftest` 對照組。
-  // 「縫」= 在格陣裡、但既不在 `<td>` 也不在 `<th>` 上(border-spacing 的空白屬於 `<table>` 自己)。
-  // 只有這一種位置算「指標還在上一天身上」;停在不可點的日子、星期列、或格陣之外都要照常清掉。
-  const isGridGap = (node: EventTarget | null, grid: Element | null) =>
-    node instanceof Element && !!grid && grid.contains(node) && !node.closest('td,th')
+  // 閘:`scripts/datepicker-range-preview.mjs`「跨格不閃」(中線)+「角落路線」(偏離中線、貼邊、斜穿交會處)+ 同檔 `--selftest` 對照組。
 
-  // 記住最後一次停留的日子:下方 handleGridMouseOver / handleGridMouseLeave 要補送 leave 時用得到
+  // 記住最後一次停留的日子與它的 button:下方補送 leave、縫或角裡的點擊都用得到
   //(消費端 DatePicker 的 onDayMouseLeave 兩個參數都沒用到,但契約要求帶,不能亂編)。
-  const lastEnterRef = React.useRef<{ day: Date; modifiers: Parameters<NonNullable<typeof onDayMouseEnter>>[1] } | null>(null)
-  // 縫裡被吞掉的那一次 leave 還欠著沒送 = 停留日(預覽框)還掛在上一天身上。只有這種狀態才需要在離開格陣時補送。
+  const lastEnterRef = React.useRef<{
+    day: Date
+    modifiers: Parameters<NonNullable<typeof onDayMouseEnter>>[1]
+    button: HTMLButtonElement | null
+  } | null>(null)
+  // 縫或角裡被吞掉的那一次 leave 還欠著沒送 = 停留日(預覽框)還掛在上一天身上。只有這種狀態才需要在離開格陣時補送,
+  // 也只有這種狀態下,縫或角裡的點擊才會交給那一天。
   const owesLeaveRef = React.useRef(false)
+  // 這一下點擊是哪一種指標按的(pointerdown 記、click 讀完就清)。只有滑鼠才有「滑過」:觸控的預覽框是上一次點的那一天,
+  // 不是手指現在碰到的位置,所以觸控 / 觸控筆點在縫或角裡維持原樣(沒反應)。
+  const pressPointerTypeRef = React.useRef<string | null>(null)
+  // 滑鼠停留之後,鍵盤又把**看得見的**焦點移到某一天 = 最後一個輸入是鍵盤(date-picker.spec.md「滑鼠與鍵盤,最後一個輸入贏」),
+  // 框改由焦點那一天決定,滑鼠所在的縫或角就不再代表框的停留端 —— 連「滑鼠上一天剛好是框另一端」的巧合也不接點擊。
+  // 只讀焦點事件、不改任何鍵盤行為;滑鼠再進任何一天就歸零。
+  const keyboardAfterPointerRef = React.useRef(false)
+
+  // 「縫或角裡點下去會確認」的對象:指標正停在縫或角裡(leave 欠著)、上一天那顆 button 還在這張格陣裡而且可點、
+  // 它那一格正畫著框的端點 —— 也就是「框亮著,而且框的停留端就是這一天」。沒有框(兩端都空、只有單格圈)就是 null:
+  // 那時縫與角裡什麼都沒亮,點下去不該有反應(hit-area-canonical「懸停回饋的形狀 ≡ 命中區」)。
+  // 手形游標與點擊用同一支判斷,游標不會說謊。
+  const gapConfirmTarget = (grid: Element | null): HTMLButtonElement | null => {
+    if (!owesLeaveRef.current || keyboardAfterPointerRef.current || !grid) return null
+    const button = lastEnterRef.current?.button
+    if (!button || !button.isConnected || !grid.contains(button) || !button.matches(CLICKABLE_DAY)) return null
+    return drawsPreviewEnd(button.closest('td')) ? button : null
+  }
+  const syncGapCursor = (grid: Element | null) => {
+    grid?.toggleAttribute(GAP_CONFIRMS_ATTR, gapConfirmTarget(grid) !== null)
+  }
 
   const handleDayMouseEnter = (
     day: Date,
     modifiers: Parameters<NonNullable<typeof onDayMouseEnter>>[1],
     event: React.MouseEvent,
   ) => {
-    lastEnterRef.current = { day, modifiers }
+    const button = event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null
+    lastEnterRef.current = { day, modifiers, button }
     owesLeaveRef.current = false
+    keyboardAfterPointerRef.current = false
+    syncGapCursor(button?.closest('[data-day-grid]') ?? null)
     onDayMouseEnter?.(day, modifiers, event)
+  }
+
+  const handleDayFocus = (
+    day: Date,
+    modifiers: Parameters<NonNullable<typeof onDayFocus>>[1],
+    event: React.FocusEvent,
+  ) => {
+    if (event.currentTarget instanceof Element && event.currentTarget.matches(':focus-visible')) {
+      keyboardAfterPointerRef.current = true
+      syncGapCursor(event.currentTarget.closest('[data-day-grid]'))
+    }
+    onDayFocus?.(day, modifiers, event)
   }
 
   const handleDayMouseLeave =
@@ -212,56 +302,97 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     ((day: Date, modifiers: Parameters<NonNullable<typeof onDayMouseLeave>>[1], event: React.MouseEvent) => {
       const from = (event.currentTarget ?? event.target) as Element | null
       const grid = from?.closest?.('[data-day-grid]') ?? null
-      if (isGridGap(event.relatedTarget, grid)) {
+      if (isGapOrCorner(event.relatedTarget, grid)) {
         owesLeaveRef.current = true
+        syncGapCursor(grid)
         return
       }
       owesLeaveRef.current = false
+      syncGapCursor(grid)
       onDayMouseLeave(day, modifiers, event)
     })
 
-  // 補洞:指標**穿過縫之後停在不可點的日子**(順序不合而 disabled 的那些)。
-  // 那條路徑上 button 的 leave 早在縫裡就發生過(被上面吞掉),而 disabled 的 button 收不到滑鼠事件、
+  // 補洞:指標**穿過縫或角之後停在不可點的日子**(順序不合而 disabled 的那些)、空白補位格或星期列。
+  // 那條路徑上 button 的 leave 早在縫或角裡就發生過(被上面吞掉),而 disabled 的 button 收不到滑鼠事件、
   // 不會再有任何 day enter/leave —— 沒有這一段的話,上一天的預覽框會一直留著。
-  // 判準跟上面同一條:停在縫裡不動作;停在 td / th 上但不在可點的日子上,就補送一次 leave。
+  // 判準跟上面同一條:停在縫或角裡不動作;停在其他 td / th 上,就補送一次 leave。
   const handleGridMouseOver =
     onDayMouseLeave &&
-    ((event: React.MouseEvent) => {
+    ((event: React.MouseEvent<HTMLTableElement>) => {
+      const grid = event.currentTarget
       const last = lastEnterRef.current
       if (!last) return
       const target = event.target
       if (!(target instanceof Element)) return
-      if (target.closest('button:not(:disabled):not([aria-disabled="true"])')) return // 停在可點的日子 → 交給 RDP 的 enter
-      if (!target.closest('td,th')) return // 停在縫裡 → 視為還在上一天
+      if (target.closest(CLICKABLE_DAY)) return // 停在可點的日子 → 交給 RDP 的 enter
+      if (isGapOrCorner(target, grid)) { syncGapCursor(grid); return } // 停在縫或角裡 → 視為還在上一天
       owesLeaveRef.current = false
+      syncGapCursor(grid)
       onDayMouseLeave(last.day, last.modifiers, event)
     })
 
-  // D1 補洞(2026-09-26,待辦總帳 N54「日期 D1」;date-grid.spec.md「現行機制」第 4 條):指標**從縫裡直接離開格陣**。
-  // 上面兩支都不管這條路:離開最外圈那一天時 relatedTarget 落在縫裡 → leave 被吞(欠著);接著指標從縫走出 <table>,
+  // D1 補洞(2026-09-26,待辦總帳 N54「日期 D1」;date-grid.spec.md「現行機制」第 4 條):指標**從縫或角直接離開格陣**。
+  // 上面兩支都不管這條路:離開最外圈那一天時 relatedTarget 落在縫或角裡 → leave 被吞(欠著);接著指標走出 <table>,
   // 已經沒有任何一天會再收到 leave、也沒有 td / th 會收到 mouseover —— 預覽框就一直卡在上一天(實測:從 6/13 每步 1px
   // 往右移到浮層外 20px,停 2 秒仍是 5/4→6/13;一次跳出去則會清,因為 day button 的 leave 直接落在格陣外、照常轉發)。
-  // 本檔「只在指標真的離開整張格陣時才清」的判準(上方 isGridGap 註解「停在不可點的日子、星期列、或格陣之外都要照常清掉」)本來就涵蓋這條,
-  // 缺的是實作:MUI X 在月份容器掛 `onMouseLeave: () => setRangePreviewDay(null)`(DateRangeCalendar.tsx#L483,
-  // v9.14.0),09-24 照 MUI 做「縫裡不清」時沒一起做這一半。
+  // 本檔「只在指標真的離開整張格陣時才清」的判準本來就涵蓋這條,缺的是實作:MUI X 在月份容器掛
+  // `onMouseLeave: () => setRangePreviewDay(null)`(上方同一條連結),09-24 照 MUI 做「縫裡不清」時沒一起做這一半。
   // 只在「欠著」時補送:一次跳出去的那條路,day button 的 leave 已經照常轉發過,不重送。
   // 兩張月曆並排時每張各是一張格陣,兩張之間的空白 = 離開格陣(date-picker.spec.md「滑鼠離開日期格區」)。
-  // 縫本身的行為(停在縫裡照亮)與偏離中線的 D2 都不在這裡改(未經同意)。
   const handleGridMouseLeave =
     onDayMouseLeave &&
-    ((event: React.MouseEvent) => {
-      if (!owesLeaveRef.current) return
+    ((event: React.MouseEvent<HTMLTableElement>) => {
+      const owed = owesLeaveRef.current
       owesLeaveRef.current = false
+      syncGapCursor(event.currentTarget)
+      if (!owed) return
       const last = lastEnterRef.current
       if (!last) return
       onDayMouseLeave(last.day, last.modifiers, event)
     })
+
+  // 手形游標跟著每一步更新:框是 React 狀態、慢一幀才畫上,指標若在框畫好之前就滑進縫或角,上面 leave 那一刻還判不到端點;
+  // 鍵盤把框移走時也一樣。每一步重算一次(只讀幾個 class,不觸發 render)。
+  const handleGridMouseMove =
+    onDayMouseLeave &&
+    ((event: React.MouseEvent<HTMLTableElement>) => syncGapCursor(event.currentTarget))
+
+  const handleGridPointerDown =
+    onDayMouseLeave &&
+    ((event: React.PointerEvent<HTMLTableElement>) => { pressPointerTypeRef.current = event.pointerType })
+
+  // ── 縫或角裡點下去 = 點停留日(2026-09-26,待辦總帳 N54 ①;date-grid.spec.md「縫與角裡的點擊」)──
+  // 預覽框亮著時,指標停在縫或角裡,框仍停在上一天(上面吞掉的 leave);此時點下去 = 點那一天的 button —— 真的去點它
+  //(`button.click()`),所以結果、焦點、關浮層都跟直接點那一天一模一樣,不另寫一份選取邏輯。
+  // 點在日子本身上由 RDP 的 handleDayClick 處理(它 stopPropagation,不會走到這裡);點在不可點的格、星期列上 → isGapOrCorner 為 false,沒反應。
+  // 世界級:React Aria 預設就是「在月曆裡、但不在按鈕上放開 = 確認正在預覽的區間」(`useRangeCalendar.ts#L23-L32` 預設 `select`:
+  // "select the currently hovered range of dates."、`#L80-L86` 的條件 `!target.closest('button, [role="button"]')`,
+  // https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L80-L86 );
+  // MUI X、Chakra 在縫裡點沒反應(R21 實測)—— 本 DS 取前者,理由是 user 的原則「滑過有變化的地方,點下去要有反應」(待辦總帳 N50)。
+  const handleGridClick =
+    onDayMouseLeave &&
+    ((event: React.MouseEvent<HTMLTableElement>) => {
+      const pointerType = pressPointerTypeRef.current
+      pressPointerTypeRef.current = null
+      if (pointerType !== 'mouse') return
+      const grid = event.currentTarget
+      if (!isGapOrCorner(event.target, grid)) return
+      gapConfirmTarget(grid)?.click()
+    })
   // Note: react-day-picker v9 DayPicker 未對外 forward ref 到單一 DOM 節點(內部有多 div),
   // 故 ref 簽名保留但不附著(符合 DS 統一 forwardRef 慣例;真要取 DOM 用 wrapper 包)。
   return (
-    <GridPointerContext.Provider value={{ onMouseOver: handleGridMouseOver, onMouseLeave: handleGridMouseLeave }}>
+    <GridPointerContext.Provider
+      value={{
+        onMouseOver: handleGridMouseOver,
+        onMouseLeave: handleGridMouseLeave,
+        onMouseMove: handleGridMouseMove,
+        onPointerDown: handleGridPointerDown,
+        onClick: handleGridClick,
+      }}
+    >
     {/* 下方 <DayPicker> 刻意不隨這層 Provider 往內縮排:整塊兩百多行只為了多包一層 context 而全部位移,
-        會讓 diff 看起來像整檔重寫。Provider 本身沒有任何視覺或結構作用,只把 onMouseOver / onMouseLeave 遞給 AnchoredMonthGrid。 */}
+        會讓 diff 看起來像整檔重寫。Provider 本身沒有任何視覺或結構作用,只把格陣的指標事件(見 GridPointerHandlers)遞給 AnchoredMonthGrid。 */}
     <DayPicker
       // 兩月以上**不渲染鄰月日子**(2026-09-23 user 拍板):同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 /
       // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
@@ -323,6 +454,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 一處宣告、三種 range 狀態一起管,也少兩個要同步的地方。
         month_grid: cn(
           'border-separate border-spacing-1 -m-1',
+          // 縫或角裡點下去會確認停留日時(GAP_CONFIRMS_ATTR,由上方 syncGapCursor 掛),游標跟日期一樣是手形。
+          // td 沒有自己的 cursor,角會繼承這一條;button 自己的 pointer / disabled 的 not-allowed 不受影響。
+          'data-[gap-confirms]:cursor-pointer',
           '[&_tr>td:first-child]:before:!left-0',
           '[&_tr>td:last-child]:before:!right-0',
           // 預覽框(td ::after)在列首 / 列尾同樣不得溢出面板留白;換列處框是開口的,與 track 同款
@@ -363,8 +497,10 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 理由與實測數字寫在 date-grid.spec.md「日期格的命中區 = 可視形狀」)。
           // 2026-09-23 這裡曾有一條 `before:-inset-[2px]`,用四邊各 2px 的**不畫任何東西**的帶去補格間 4px 縫,
           // 解的是「跨格時區間框閃一下」。帶是對的解嗎?不是 —— 閃動的根因是**停留日在縫裡被清掉**,
-          // 幾何外擴只是讓縫裡也有人收 enter。根因層的解法寫在下方 onDayMouseLeave(只在指標真的離開整張格陣時才清),
+          // 幾何外擴只是讓縫裡也有人收 enter。根因層的解法寫在上方 handleDayMouseLeave(只在指標真的離開整張格陣時才清),
           // 那正是同一條註解當時就引到的 MUI 作法。
+          // 2026-09-26「縫或角裡點下去 = 點停留日」**不是**把這個盒外擴:滑過(enter)仍只從這顆圓開始,沒有框時縫與角點了照樣沒反應;
+          // 只有框亮著、停留端就是那一天時,縫與角那一下點擊交給那一天(上方 handleGridClick)。
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(
@@ -484,10 +620,11 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         ),
       }}
       {...props}
-      // 放在 {...props} 之後:本元件對 enter/leave 的記錄與過濾是格陣幾何的不變條件,不可被 consumer 的同名 prop 蓋掉
-      //(consumer 的 handler 本來就由這兩支包住後轉發,語意沒有被吃掉)。
+      // 放在 {...props} 之後:本元件對 enter/leave/focus 的記錄與過濾是格陣幾何的不變條件,不可被 consumer 的同名 prop 蓋掉
+      //(consumer 的 handler 本來就由這三支包住後轉發,語意沒有被吃掉;focus 只多記一個「鍵盤在滑鼠之後」,不改焦點行為)。
       onDayMouseEnter={handleDayMouseEnter}
       onDayMouseLeave={handleDayMouseLeave}
+      onDayFocus={handleDayFocus}
     />
     </GridPointerContext.Provider>
   )
