@@ -29,8 +29,9 @@
  *   F2 浮鈕選單按 Esc → 焦點回浮鈕
  *   F3 浮鈕選單開著點外面 → 選單關、焦點**不在**浮鈕上(舊版會搶回)
  * 對照組(--selftest):在頁面上掛 capture 監聽把舊行為造回來 ——
- *   Tab 被吞(= Radix 擋 Tab)、Esc 改成「點外面」(= 一次全關)、浮鈕點外面後程式把焦點搶回浮鈕 ——
- *   每個情境都必須被判紅,儀器才算有效。
+ *   Tab 被吞(= Radix 擋 Tab)、Esc 改成「點外面」(= 一次全關)、浮鈕選單**卸載後**下一個 macrotask 把焦點搶回浮鈕
+ *   (= 舊 onCloseAutoFocus 的真實時序,不是閘自己睡完再 .focus())—— 每個情境都必須被判紅,儀器才算有效。
+ * F3 的「沒被搶回」是負向主張(2026-09-27,M37):不睡固定 400ms,而是等卸載的證據 → 版面靜止 → 焦點連續 10 影格不動才讀。
  *
  * 用法:node scripts/dropdown-menu-keyboard-invariant.mjs [--static=<dir>] [--selftest]
  */
@@ -85,7 +86,7 @@ if (isMain) await main()
 
 async function main() {
   const { startA11yStaticServer } = await import('./lib/a11y-static-server.mjs')
-  const { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } = await import('./lib/launch-browser.mjs')
+  const { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError, waitForFocusStable } = await import('./lib/launch-browser.mjs')
   const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
   const SELFTEST = process.argv.includes('--selftest')
@@ -144,7 +145,14 @@ async function main() {
         document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', button: 0 }))
       }
     }, true)
-    window.__steal = true // 浮鈕情境 F3:關閉後把焦點搶回浮鈕(= 舊 onCloseAutoFocus)
+    // 浮鈕情境 F3:選單**卸載**後下一個 macrotask 把焦點搶回浮鈕(= 舊 onCloseAutoFocus 的時序:Radix 在 FocusScope 卸載後才還焦點)。
+    // 2026-09-27 之前是閘自己在固定睡 400ms 之後 `.focus()` —— 那是閘替對照組動手,證明不了觀測窗蓋得住真正的時序。
+    const fab = document.querySelector('button[aria-label*="開啟智慧代理"]')
+    new MutationObserver((records) => {
+      for (const r of records) for (const n of r.removedNodes) {
+        if (n.nodeType === 1 && (n.matches?.('[role="menu"]') || n.querySelector?.('[role="menu"]'))) setTimeout(() => fab?.focus(), 0)
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true })
   })
 
   const openCount = () => page.evaluate(() => document.querySelectorAll('[role="menu"][data-state="open"]').length)
@@ -273,11 +281,16 @@ async function main() {
     if (!settled) { rec('F3', 'instrument', '前提:浮鈕選單 3 秒內沒有停在開好的樣子(開啟動畫沒停),點外面量到的不是「開著的選單」'); return }
     await page.mouse.click(4, 4)
     await waitOpen(0)
-    // 觀測窗:舊版在選單卸載(收合動畫結束)時才搶焦點 —— 證明「沒搶」只能看一段時間(同 agent-fab-drag-click 的觀測窗)
-    await page.waitForTimeout(400)
-    if (SELFTEST) await page.evaluate((sel) => { if (window.__steal) document.querySelector(sel)?.focus() }, FAB)
+    // 負向主張「焦點沒被搶回」的觀測窗(2026-09-27,M37;取代固定睡 400ms):舊版是在選單**卸載**(收合動畫結束後)才搶焦點,
+    // 所以先等**卸載這個證據**(選單元素離開 DOM;等不到 = 還在收 / 沒關,由下面的 openAfter 判),再等版面靜止
+    // (settleAfterInteraction:收合動畫是有限動畫、卸載是 DOM 變動),最後要求焦點連續 10 個影格不動(waitForFocusStable:
+    // 焦點搬家不改 DOM,靜止判定看不到它)才讀。固定 400ms 在慢機器上讀在卸載之前 = 假綠;等證據的寫法機器多慢都等得到。
+    await waitFor(() => !document.querySelector('[role="menu"]'), null, 5000)
+    const quiet = await settleAfterInteraction(page, { frames: 10 })
+    const stable = await waitForFocusStable(page, { frames: 10 })
+    if (!quiet.ok || !stable.ok) { rec('F3', 'instrument', `點外面之後${quiet.ok ? '' : `版面 ${quiet.framesWaited} 格內沒靜止(變動 ${quiet.lateChanges} 次)`}${!quiet.ok && !stable.ok ? ';' : ''}${stable.ok ? '' : `焦點 ${stable.framesWaited} 格內一直在跳(換 ${stable.changes} 次)`}`); return }
     const focusOnFab = await page.evaluate((sel) => document.activeElement === document.querySelector(sel), FAB)
-    rec('F3 浮鈕選單開著點外面 → 選單關、焦點不被搶回浮鈕', judgeFabReturn({ how: 'outside', openAfter: await openCount(), focusOnFab }), `focusOnFab=${focusOnFab}`)
+    rec('F3 浮鈕選單開著點外面 → 選單關、焦點不被搶回浮鈕', judgeFabReturn({ how: 'outside', openAfter: await openCount(), focusOnFab }), `focusOnFab=${focusOnFab},等待期間焦點換了 ${stable.changes} 次`)
   })
 
   await browser.close(); await server.stop()

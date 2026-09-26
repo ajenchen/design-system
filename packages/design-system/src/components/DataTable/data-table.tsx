@@ -4441,11 +4441,48 @@ function DataTableInner<TData>(
 
   // 試算表模式此刻有沒有格游標 —— 有:焦點框由格游標畫(interaction layer 的 SelectionRing),根節點不畫;
   // 沒有(勾選列模式、Esc 清掉游標之後):根節點畫。兩者不同時出現(見根節點 className 註解)。
-  const hasCellCursor = spreadsheetMode && selectedCellId != null
+  //
+  // 2026-09-26(M37):「有游標」要量的性質是**游標格此刻畫得出來**,不是「`selectedCellId` 還有值」。
+  // 兩者分開的時候:游標所在的列被篩掉 / 換頁 / 刪掉 —— id 還在,格卻不在列模型裡,格上沒框、根節點也不畫
+  // → 鍵盤聚焦零指示(WCAG 2.4.7)。所以判準改成「游標的列在目前的列模型裡」,懸空的 id 由下面的 effect 清掉。
+  // (虛擬捲動把列暫時卸載不算消失:列還在模型裡,游標仍有效;鍵盤移動 / Tab 回表時由下面的「捲進可視範圍」接住。)
+  const rowIdOfCell = (cellId: string) => cellId.slice(0, cellId.lastIndexOf(':'))
+  const rowIndexById = React.useMemo(() => new Map(rows.map((r, i) => [r.id, i] as const)), [rows])
+  const cursorRowIndex = selectedCellId != null ? rowIndexById.get(rowIdOfCell(selectedCellId)) : undefined
+  const hasCellCursor = spreadsheetMode && cursorRowIndex != null
+  React.useEffect(() => {
+    if (selectedCellId == null || cursorRowIndex != null) return
+    setSelectedCellId(null); setRangeAnchor(null); setRangeFocus(null)
+  }, [selectedCellId, cursorRowIndex])
+  // 游標格捲進可視範圍(鍵盤移動、Tab 進表、編輯退出還原):對齊 AG Grid `ensureIndexVisible` / MUI X `scrollToIndexes` ——
+  // 游標到了看不到的地方等於沒有游標。只動 centerBody 的 scrollTop / scrollLeft(兩側釘住的面板由 onCenterBodyScroll 同步,
+  // 不對格子呼叫 scrollIntoView —— 那會直接捲 overflow:hidden 的側面板,繞過同步)。
+  // 虛擬捲動下游標格還沒掛上 → 先請虛擬化器捲到那一列,掛上後下一輪 effect 再做像素級對齊。
+  React.useLayoutEffect(() => {
+    if (!spreadsheetMode || selectedCellId == null || cursorRowIndex == null) return
+    const body = centerBodyRef.current; const root = tableRef.current
+    if (!body || !root) return
+    const cell = root.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(selectedCellId)}"]`)
+    if (!cell) { if (useVirtual) virtualizer.scrollToIndex(cursorRowIndex, { align: 'auto' }); return }
+    const c = cell.getBoundingClientRect(); const b = body.getBoundingClientRect()
+    if (c.top < b.top) body.scrollTop -= b.top - c.top
+    else if (c.bottom > b.bottom) body.scrollTop += c.bottom - b.bottom
+    if (body.contains(cell)) {
+      if (c.left < b.left) body.scrollLeft -= b.left - c.left
+      else if (c.right > b.right) body.scrollLeft += c.right - b.right
+    }
+  }, [spreadsheetMode, selectedCellId, cursorRowIndex, useVirtual, virtualizer])
   // 焦點此刻在不在「格線區」:表格根節點本身、某一格裡(含格內控件,例:勾選框)、或浮層編輯器裡。
   // 表頭控件(排序區、⌄ 欄位選單)雖在根節點底下,但不算 —— 焦點到那裡時格游標框要收起(見根節點 onFocus / onBlur)。
   const isGridFocusTarget = (root: HTMLElement, el: EventTarget | null): boolean =>
     el instanceof Element && (el === root || (root.contains(el) && el.closest('[role="gridcell"], [data-active-editor-host]') != null))
+  // 持有焦點的格被虛擬捲動卸載時瀏覽器不一定發 blur(焦點靜靜掉到 body),`gridHasFocus` 會停在 true;
+  // 之後游標格捲回畫面,框會畫著但焦點不在 —— 每次虛擬列集合變動後對一次 document.activeElement。
+  React.useEffect(() => {
+    if (!gridHasFocus) return
+    const root = tableRef.current
+    if (root && !isGridFocusTarget(root, document.activeElement)) setGridHasFocus(false)
+  }, [gridHasFocus, rowVirtualItems])
 
   // Single mode 用 RadioGroup wrap 整 table(Radix RadioGroup 用 context 傳遞 value/onValueChange)
   // Multi mode 不需 wrap(Checkbox 各自 controlled,不靠 context)

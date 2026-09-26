@@ -603,7 +603,7 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 - 世界級一手(釘版):Adobe 清單預設用方向鍵進列、按 Tab 整串離開 https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/GridList.test.js#L1122-L1129 ;W3C「滑過才出現的元素可用方向鍵摸到」https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L158 ;回來落在上次那一項 https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L270-L277 ;沒停過落在當前頁 https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treeview/examples/treeview-navigation.html#L344 。
 - 誠實附註:GitHub 與 IBM Carbon 的側欄是每項一站(https://primer.style/product/components/nav-list/accessibility/ 、https://carbondesignsystem.com/components/UI-shell-left-panel/accessibility/),乙不是唯一做法,但不違背世界級。閘 = `scripts/sidebar-menu-keyboard-invariant.mjs`(真按鍵;`--selftest` 對照組)。
 
-### 行內動作的命中區 = 可視形狀(2026-09-24 兩次修正)
+### 行內動作的命中區 = 懸停底色(2026-09-24 兩次修正;標題 2026-09-27 從「= 可視形狀」改正 —— 行內動作平時只看得到圖示,判準是懸停回饋形狀,`ds-canonical/references/hit-area-canonical.md`「為什麼不寫成『命中區 = 可視形狀』」)
 
 `SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),所以它們的幾何由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是`ds-canonical/references/hit-area-canonical.md`。
 
@@ -626,11 +626,11 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
 | 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
 
-那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md:449` 記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md`「遮擋與貼邊」段的「不外推」條(:463-464,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
 
 #### 修正二:它們本來就不該是手刻的
 
-查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx:814` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx:826` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
 
 依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 

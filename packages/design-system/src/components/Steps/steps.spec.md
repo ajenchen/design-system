@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     px: 8
-    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:18-28)"
+    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:20-30)"
     world-class: ["Ant Design Steps small", "MUI Stepper compact"]
   md:
     px: 24
@@ -150,7 +150,7 @@ indicator 圓形 flex items-center 居中
 **`sm`(小點)**
 - ✅ 用在 sidebar 內 nested 流程、緊湊空間、次要進度指示
 - ❌ 步驟需要 icon 或要使用者明確數到「第幾步」時不用(sm 沒有數字/icon,辨識度不足)
-- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:42` 常數名即 `INDICATOR_BOX_WIDTH`。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
+- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:43` 常數名即 `INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 在 `:41`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
 
 **`md`(預設)**
 - ✅ 絕大多數場景:checkout、註冊、設定精靈
@@ -186,8 +186,8 @@ sm 沒有 icon 空間,用色塊表達:
 
 ### 指示點不是命中目標 —— 命中區 = 整列 header(2026-09-24 逐案裁定)
 
-**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:718-722`),
-真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:484-488`)。
+**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:775-778`),
+真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:526-534`)。
 指標落在圓點上時,收到事件的一樣是那一列 —— 圓點只是列裡的一個子元素。
 
 **所以這裡沒有任何外擴**,跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
@@ -196,7 +196,7 @@ sm 沒有 icon 空間,用色塊表達:
 header 沒有懸停底色,所以依同一份契約的退化條款,判準回到**可視形狀本身**(那一列的內容),兩者同一個盒。
 
 **sm 的 8px 圓點外面那個 24×24 的盒是排版欄寬,不是命中區。** 它讓 sm 的 indicator 欄與 md 同為 24px(lg 為 32px)、同一列表內各步的
-label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:42-46`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
+label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:43-47`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
 已正名為 `SM_INDICATOR_BOX` —— 舊名字會讓人以為「視覺 8 / 命中 24」是一條刻意的外擴,於是跑去
 hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 

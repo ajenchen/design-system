@@ -187,6 +187,8 @@ async function measure(build, { afterScroll, sabotage }) {
   // 逐樣本:這一次取樣在 hover 之後有沒有拿到任何一張幀(false = 看得到,true = 全盲)
   const blindness = []
   const unresolved = []
+  // hover **之前**的靜置期串流沒送任何幀 → 沒有基準可比(逐筆原因;這些樣本同時記成 blind)
+  const noBaseline = []
   let resolutionBound = 0
   for (let k = 0; k < ROWS; k++) {
     // 取樣點(2026-09-25 改,待辦總帳 C12①):**證明這個像素屬於那一列**才拿來量,不再用「列左緣 +6」這個代理。
@@ -233,7 +235,16 @@ async function measure(build, { afterScroll, sabotage }) {
     for (let i = 1; i < frames.length; i++) idleGaps.push(Math.round(frames[i].ts - frames[i - 1].ts))
     if (frames.length > 1) frames.splice(0, frames.length - 1)
     const baseline = frames.length ? frames[frames.length - 1] : null
-    if (!baseline) continue
+    if (!baseline) {
+      // 2026-09-27(M37):原本這裡 `continue` —— 這一次取樣既不進 samples 也不進 blindness,判定表(lib/hover-latency-policy.mjs)
+      // 根本不知道有這一次:樣本數默默變少、starved(可用樣本不足 = 儀器失效)永遠算不到它。沒有基準幀 = 看不到,記成 blind
+      // (NaN 樣本 + isBlindSample baseline:false),不是「沒變色」也不准跳過。
+      samples.push(NaN); blindness.push(isBlindSample({ owned: true, baseline: false })); unresolved.push(false)
+      noBaseline.push(`k=${k}:靜置 260ms 內串流沒送任何幀,沒有基準可比`)
+      pngCache.clear()
+      await sleep(120)
+      continue
+    }
     const t0 = performance.timeOrigin + performance.now()
     const sentAt = await page.evaluate(() => performance.timeOrigin + performance.now())
     // 指標落點:取樣點右側 40px、夾在同一列裡(pickSamplePoint 已確認落點屬於同一列);指標本身不在截圖裡
@@ -290,6 +301,7 @@ async function measure(build, { afterScroll, sabotage }) {
   samples.blindness = blindness
   samples.unresolved = unresolved
   samples.occluded = occluded
+  samples.noBaseline = noBaseline
   return samples
 }
 
@@ -392,6 +404,8 @@ const report = (label, mode, s) => {
   console.log('  ' + line)
   // 取樣點證明不了屬於列的樣本逐筆點名(2026-09-25,C12①):它們已計入「看不到」,這裡說清楚是被什麼蓋住
   if (s.occluded?.length) console.log(`   ↳ ${s.occluded.length} 次取樣點不屬於列(記成看不到,不拿去判快慢):${s.occluded.join(';')}`)
+  // hover 前就沒拿到基準幀的樣本逐筆點名(2026-09-27):同樣已計入「看不到」(串流全盲那一項)
+  if (s.noBaseline?.length) console.log(`   ↳ ${s.noBaseline.length} 次 hover 前沒拿到基準幀(記成看不到,不拿去判快慢):${s.noBaseline.join(';')}`)
   // **把「沒變色」的次數一起回傳**(2026-09-12)。舊版只回 `ok`,於是 1.5 秒內沒變色的樣本
   // 從中位數與最大值裡一起被剔除、只在括號裡印個註記 —— 也就是**最糟的那種卡死對這支閘完全隱形**,
   // 而那正是 user 抱怨的「游標到了卻要等好一陣子」。獨立覆核 2026-09-12 指出這個洞。

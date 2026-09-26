@@ -87,7 +87,7 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 三種模式共用同一個 wrapper 結構（`fieldWrapperStyles`），只有底色、邊框、文字色不同。
 
-**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 星星本身(星星即值語言,role=img,全業界 review-stars canonical,不包灰框);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
+**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 精簡版「★ 4.7 (12,843)」(一顆實心星 + 數值 + 選填評論數,`role="img"`;不畫 max 顆星、不包灰框 —— 2026-09-26 user 拍板「唯讀直接一律給精簡版」,規則與世界級對照見 `../Rating/rating.spec.md`「整顆與精簡版」規則 2;2026-09-27 更正,本句先前寫「星星本身」與該 spec 相反);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
 
 ### Loading state(這個值在讀取 / 驗證 / 儲存)
 

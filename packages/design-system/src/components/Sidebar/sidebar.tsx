@@ -854,13 +854,14 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel"
 // 時一起進來,之後從未跟著本 DS 的行內動作 canonical 遷移)。它們自己寫死
 // `aspect-square w-5 ... [&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而
 // `patterns/element-anatomy/inline-action.spec.md` 的尺寸表只有兩種組合(16 圖示配 18 底色、
-// 20 圖示配 22 底色),**20 兩種都不是**。同一個檔案 :814 的收合箭頭早就在消費
+// 20 圖示配 22 底色),**20 兩種都不是**。同一個檔案 :826 的收合箭頭早就在消費
 // `ItemInlineActionButton`,於是同一個元件裡兩套幾何並存。
 // 依 M23(DS 既有 canonical 優先)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 // API 隨之從 children 改成 `icon` prop —— 這是 breaking change,刻意不留 children 後備:
 // M23(f)「『向後相容』不是把新裁示變成可選的理由」。
 //
-// 命中區 ≡ 可視形狀由 primitive 自己保證(`item-anatomy.tsx:730` 那塊**刻意沒有**
+// 命中區 ≡ 懸停底色由 primitive 自己保證(hit-area-canonical「一-4 細則」:行內動作平時沒有可視邊界,
+// 判準是懸停回饋形狀,不是「可視形狀」;`item-anatomy.tsx:730` 那塊**刻意沒有**
 // `pointer-events-none` 的懸停底色 span)。先前這裡另有一圈 `after:-inset-2 after:md:hidden`,
 // 只在 <md 生效、每邊多 8px,實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕,已於同日移除。
 const SidebarGroupAction = React.forwardRef<

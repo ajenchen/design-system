@@ -1,6 +1,7 @@
 // Probe — Windows-like persistent scrollbar 在 DataTable rounded outer 是否仍溢出
 //
-// **量測工具,不是閘**(沒有任何 workflow / npm script 呼叫它;gate-reachability-baseline.json 列為已知無呼叫端)。
+// **量測工具,不是閘**(沒有任何 workflow / npm script 呼叫它;gate-reachability-baseline.json 的 manualOnly 記了「刻意只手動跑」的原因:
+// 它輸出截圖給人看、沒有可讓 CI 判紅綠的斷言;同一個幾何的 CI 閘是 data-table-scrollbar-visibility.mjs)。
 //
 // 環境:macOS overlay scrollbar(0px),不能直接看 Windows 17px persistent。
 // 策略:Playwright + Chromium + 注入 CSS 強制 17px persistent V+H scrollbar(關 -webkit-appearance: none),

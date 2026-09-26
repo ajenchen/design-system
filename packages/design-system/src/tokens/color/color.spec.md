@@ -31,7 +31,7 @@
 |------|------------------|----------|
 | **靜態色值**（subtle bg、text、solid bg） | ❌ Primitives 公式翻轉已自動處理 | **Primitive**——直接 `--color-blue-1`、`--color-blue-7`、`--color-blue-6` |
 | **實心色的互動狀態**(step-6 家族的 hover、active) | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
-| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;`primitives.css` 檔頭) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆事件方塊,`tokens/categorical-color.ts` `CAT_EVENT`) |
+| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;本檔「Dark mode subtle」) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆事件方塊,`tokens/categorical-color.ts` `CAT_EVENT`) |
 
 > 2026-09-26 範圍更正(user 同意,條件「確保這符合我們一致的設計語言且不違背世界級的設計」):原表把「互動狀態」一律寫成「hover 永遠較亮」,實際只對實心色成立 —— 淡底與中性灰的滑過在淺色本來就是變深(本檔「Hover 換色配對總則」:往上一階)。淡底滑過改成第 1→2 階後,深色第 2–4 階同步改成半透明淡底,兩個主題的第 2 階都是「離底更遠一格」,不需要 mode 知識,依本檔「只有真的需要切換主題的東西才開 semantic token」直接用 primitive,不另開 12 個 `--{hue}-subtle-hover`。
 
@@ -500,9 +500,9 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 #### Dark mode subtle
 
-**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors(深色 1 → 12 由暗到亮)、Ant Design 深色色板(混進 `#141414`)、Primer display 色階同一派。另一派(Material 色調、Carbon、Tailwind、Atlassian 色板)號碼是絕對深淺、深色主題另挑號碼 —— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。)
+**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors 深色 1 → 12 由暗到亮(3.0.0 發布檔 `red-dark.css`:`--red-1: #191111` … `--red-12: #ffd1d9`,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark.css);Ant Design 深色色板 1 → 10 由暗到亮(https://ant.design/docs/spec/dark,「Pick your background color #141414」下方色板 color-1 `#111d2c` … color-10 `#b7e3fa`);Primer 中性色階「The light and dark scale directions are inverted, with the light scale starting with white and the dark scale starting with black.」(https://primer.style/foundations/color/base-scales)。另一派:號碼是絕對深淺、深色主題另挑號碼 —— Material 3 參考色調只有一份、0 = 黑 … 100 = 白(https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-ref-palette.scss#L68-L80)、Carbon「The light themes are based on White and Gray 10 backgrounds, and the dark themes use Gray 100 and Gray 90 backgrounds.」(https://carbondesignsystem.com/elements/color/overview/)、Tailwind「with 50 being the lightest, and 950 being the darkest」(https://tailwindcss.com/docs/colors)—— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。Radix / Ant / Primer / Material / Carbon / Tailwind 的一手來源 2026-09-27 逐一抓取核對;Atlassian 色板頁為前端渲染抓不到原文,不點名。)
 
-Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先混好等於在真的底上混)。Dark mode 的 **step-1..4 = 淡底區,同一條 alpha 公式**:
+Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先混好等於在真的底上混)。Dark mode 的 **step-1..4 = 淡底區,同一條 alpha 公式**(step-1 自 2026-07-04 Q10,step-2..4 自 2026-09-26):
 
 ```css
 /* primitives.css dark mode:K = 0.06 × (n+1) → step-1..4 = 0.12 / 0.18 / 0.24 / 0.30 */
@@ -510,10 +510,11 @@ Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先�
 ```
 
 - **為什麼半透明**:深色有頁面 / 卡片 / 浮層 / 滑過中的格四種底,只有半透明能在每一種底上都保持「號碼越大離底越遠」;不透明的淡階放在頁面上比底亮、放在卡片上反而比底暗(2026-09-26 前 step-2..4 往純黑退 `l × 0.28 / 0.44 / 0.62`,12 色的 step-2 全比 step-1 暗、10 色比卡片底還暗 → 月曆事件深色滑過變近黑)。
-- **除以 l**:亮度越高的色相 alpha 越低,感知亮度自動統一;比例 1 : 1.5 : 2 : 2.5 ≈ Radix 深色 alpha 中位數 1 : 1.50 : 1.91 : 2.33。
-- **新色相門檻**:深色 base-6 的 `l ≥ 0.52`(低於此值紫藍、紅一帶在滑過中的格上會出現 step-4 > step-5)。
+- **除以 l**:亮度越高的色相 alpha 越低,感知亮度自動統一;K 的比例 1 : 1.5 : 2 : 2.5 ≈ Radix Colors 3.0.0 深色 alpha **第 3–6 階**(a3 : a4 : a5 : a6,不是 a1–a4)的比例 —— red 45 : 68 : 86 : 104 = 1 : 1.51 : 1.91 : 2.31、blue 58 : 87 : 107 : 127、green 30 : 45 : 60 : 75、amber 34 : 50 : 65 : 81(sRGB 8-bit alpha,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark-alpha.css 等四檔);31 個色相的中位數 1 : 1.48 : 1.89 : 2.37(2026-09-27 依同一版發布檔算;GitHub repo 無 v3.0.0 tag,故引 npm 發布檔)。
+- **新色相門檻**:深色 base-6 的 `l`,掃描下最嚴的色相(紫一帶)約 0.52(2026-09-26 掃 11,880 組假想色相,低於此值紫藍、紅一帶在滑過中的格上會出現 step-4 > step-5);門檻隨色度 / 色相變(現行 `--color-red-6` 深色 l = 0.51 仍過),實際以 `scripts/categorical-color-invariants.mjs` I5「色階順序」為準,不拿單一數字當閘。
 - **step-5..10 不變**:step-5 是深色的按壓色(實心,`l × 0.82`),step-7..10 往白推(文字方向)。
 - **機械防線**:`scripts/categorical-color-invariants.mjs`「色階順序」—— 12 色 × 10 階 × 淺白 / 淺滑過格 / 深頁面 / 卡片 / 浮層 / 滑過格,淺色號碼越大越暗、深色號碼越大越亮,且深色每一階都比底亮。
+  > 已知後果(實測 2026-09-26):第 7 階字在深色滑過中的格(第 2 階淡底疊 `#272727`)上,7 個色相對比 < 4.5(紅 3.07、靛 3.20、紫 3.22、洋紅 3.68、藍 3.75、深橘 3.77、青 4.36),全部 ≥ 3.0;user 2026-09-26 對此說「這個先忽略」→ 擱置,記在待辦總帳,不再提問。
 - 淡底只能當淡底:半透明會透出底下的東西,不能拿來當需要蓋住下層的顏色(本檔「Drop target」段)。
 
 ## 互動狀態推導（Hover / Active）
@@ -824,7 +825,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
 | `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡與訊息氣泡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)
@@ -879,7 +880,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
 | `--tooltip` | tooltip 深色底（不透明）|
-| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 比 step-6 暗,藍 / 紫 / 深橘在卡片上低於圖形 3:1)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
+| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：

@@ -121,6 +121,38 @@ run "$TMP/packages/design-system/src/components/Dialog/dialog.tsx"
 echo "$STDOUT" | grep -q "stripped-padding boolean variant" && { echo "  FAIL: false positive on clean canonical"; FAIL=$((FAIL+1)); } || { echo "  PASS"; PASS=$((PASS+1)); }
 teardown
 
+# ── Check 2.5:自刻 row(MenuItem-like)—— 2026-09-25 滑過底色放寬,認任何 `-hover` 配對 token(含 var() 與 ! 寫法)──
+# 放寬前 fixture 只有 hover:bg-neutral-hover;這裡先釘 baseline,再證明新配對也被認得、非配對 token 不誤攔、豁免有效。
+row_case() {
+  local className="$1" expect="$2"
+  setup
+  mkdir -p "$TMP/apps/demo/src"
+  printf '<div className="%s">row</div>\n' "$className" > "$TMP/apps/demo/src/Rail.tsx"
+  run "$TMP/apps/demo/src/Rail.tsx"
+  if [ "$expect" = hit ]; then
+    echo "$STDOUT" | grep -q "自刻 row" && { echo "  PASS"; PASS=$((PASS+1)); } || { echo "  FAIL: $STDOUT"; FAIL=$((FAIL+1)); }
+  else
+    echo "$STDOUT" | grep -q "自刻 row" && { echo "  FAIL: false positive: $STDOUT"; FAIL=$((FAIL+1)); } || { echo "  PASS"; PASS=$((PASS+1)); }
+  fi
+  teardown
+}
+echo "Test 10: Check 2.5 baseline hover:bg-neutral-hover row → flagged"
+row_case "flex gap-2 px-[var(--layout-space-loose)] py-1.5 hover:bg-neutral-hover rounded-md" hit
+echo "Test 11: Check 2.5 hover:bg-secondary-hover 也被認得 → flagged"
+row_case "flex gap-2 px-[var(--layout-space-loose)] py-1.5 hover:bg-secondary-hover rounded-md" hit
+echo "Test 12: Check 2.5 hover:!bg-[var(--surface-hover)] 寫法 → flagged"
+row_case "flex gap-2 px-[var(--layout-space-loose)] py-1.5 hover:!bg-[var(--surface-hover)] rounded-md" hit
+echo "Test 13: Check 2.5 非配對 token(hover:opacity-80)→ silent"
+row_case "flex gap-2 px-[var(--layout-space-loose)] py-1.5 hover:opacity-80 rounded-md" silent
+echo "Test 14: Check 2.5 menu-item-handcraft-allow 豁免 → silent"
+setup
+mkdir -p "$TMP/apps/demo/src"
+printf '%s\n' '// menu-item-handcraft-allow: virtualized third-party row contract' \
+  '<div className="flex gap-2 px-[var(--layout-space-loose)] py-1.5 hover:bg-secondary-hover rounded-md">row</div>' > "$TMP/apps/demo/src/Rail.tsx"
+run "$TMP/apps/demo/src/Rail.tsx"
+echo "$STDOUT" | grep -q "自刻 row" && { echo "  FAIL: allowlist not honored: $STDOUT"; FAIL=$((FAIL+1)); } || { echo "  PASS"; PASS=$((PASS+1)); }
+teardown
+
 echo ""
 echo "Summary: $PASS passed / $FAIL failed"
 [ "$FAIL" -eq 0 ] || exit 1

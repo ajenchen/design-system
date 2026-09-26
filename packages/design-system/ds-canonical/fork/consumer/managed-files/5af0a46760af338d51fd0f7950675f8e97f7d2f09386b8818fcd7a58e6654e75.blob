@@ -329,6 +329,50 @@ export async function settleAfterInteraction(target, { frames = 10, capMs = 10_0
   return target.evaluate(waitForQuietFrames, { frames, capMs })
 }
 
+// 頁面端:焦點連續 frames 個影格落在同一個元素上。**以 page.evaluate 序列化傳入,不得引用外部變數。**
+// 焦點搬家不改 DOM(`.focus()` 不產生 mutation record),所以 waitForQuietFrames 看不到它 —— 這裡逐影格讀 activeElement。
+function waitForStableFocus({ frames, capMs }) {
+  const frame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()))
+  const describe = (el) => {
+    if (!el || el === document.body || el === document.documentElement) return 'BODY'
+    const role = el.getAttribute('role')
+    const name = el.getAttribute('aria-label') || (el.textContent || '').trim().slice(0, 24)
+    return `${el.tagName.toLowerCase()}${role ? `[${role}]` : ''}${el.id ? `#${el.id}` : ''}「${name}」`
+  }
+  return (async () => {
+    let quiet = 0, changes = 0, framesWaited = 0
+    let last = document.activeElement
+    const start = performance.now()
+    while (quiet < frames) {
+      if (performance.now() - start > capMs) return { ok: false, framesWaited, changes, active: describe(last) }
+      await frame()
+      framesWaited++
+      const now = document.activeElement
+      if (now !== last) { changes++; quiet = 0; last = now } else quiet++
+    }
+    return { ok: true, framesWaited, changes, active: describe(last) }
+  })()
+}
+
+/**
+ * **負向主張的觀測窗**(2026-09-27,M37):「焦點沒被搶回 / 沒被搬走」這種主張不能靠固定睡 N 毫秒再讀一次 ——
+ * 睡得比搶焦點的那一步短就假綠(慢的機器上關閉動畫還沒跑完、Radix FocusScope 卸載後的 setTimeout 0 還沒到),
+ * 睡得長只是把同一個賭注押大一點。改成:先等**該事件的證據**(浮層卸載、版面靜止 —— settleAfterInteraction),
+ * 再用這支證明「相反證據穩定 N 個影格」:焦點連續 frames 個影格都落在同一個元素上,之後呼叫端才讀落點。
+ * 焦點搬家不改 DOM,settleAfterInteraction 看不到它,所以要另外逐影格讀 activeElement。
+ * 用影格不用毫秒:主執行緒忙時影格也不跑,機器慢只會等久一點;搶焦點是同步或下一個 macrotask 的事,一格之內就看得到。
+ * @param {object} target  Playwright 的 Page 或 Frame
+ * @param {{ frames?: number, capMs?: number }} [options]  capMs 只是「等不到」的天花板
+ * @returns {Promise<{ ok: boolean, framesWaited: number, changes: number, active: string }>}
+ *   ok:false = capMs 內焦點一直在跳 —— 呼叫端必須當**儀器失效**,不得當成「沒被搶」也不得當成「被搶了」;
+ *   changes = 觀測期間焦點換了幾次(呼叫端可用它說明「搶焦點發生在等待期間」);active = 最後落點的描述(只供訊息)
+ */
+export async function waitForFocusStable(target, { frames = 10, capMs = 10_000 } = {}) {
+  if (!target || typeof target.evaluate !== 'function') throw new TypeError('waitForFocusStable:target 必須是 Playwright 的 Page 或 Frame')
+  if (!Number.isInteger(frames) || frames < 1) throw new TypeError(`waitForFocusStable:frames 必須是 ≥ 1 的整數,實得 ${JSON.stringify(frames)}`)
+  return target.evaluate(waitForStableFocus, { frames, capMs })
+}
+
 // 頁面端:docs 頁渲染到哪了(waitForDocsRender 用;回 false = 還沒)。**以 waitForFunction 序列化傳入,不得引用外部變數。**
 function docsRenderState({ docsId }) {
   const cls = document.body?.classList

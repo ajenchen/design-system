@@ -41,7 +41,12 @@ EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null) \
 # 另外指示「檔案改動優先用 shell 而非編輯工具」,兩者相乘等於每次改動都預設從洞裡走過去,而且完全沒有訊號。
 # 實證:同一天 subagent 就是走 shell 把 file-item.tsx 的焦點幾何落地的,沒有經過任何授權檢查。
 # 修法:Bash 事件也進來,從命令字串抓「同時出現受管路徑與寫入動詞」的情形,fail closed。
-# 誤判成本 = 跟走 Edit 一樣要授權(可用同一條 escape),遠低於靜默繞過。
+# 2026-09-27 更正:Bash 事件沒有 content / new_string,分類器拿不到「改了什麼」(operation text 為空),
+# 所以受管產品檔的 shell 寫入**沒有任何 transcript 能放行**,不是「跟走 Edit 一樣要授權」—— 這是刻意的 fail closed:
+# 產品程式一律走 Edit / Write 工具(閘看得到內容才能分工程 / UI),shell 寫檔本來就是本分支要堵的洞。
+# 測試:tests/test_check_substantive_edit_approval_preflight.sh §18(18k 釘住這個行為)。
+# 已知缺口(待辦總帳 N20 / N47):寫入動詞是裸子字串比對(`*">"*` 命中 `2>`、`*"dd "*` 命中 `git add`)會誤擋純讀;
+# 相對路徑(`cd packages/design-system && sed -i … src/x.tsx`)抓不到會漏擋 —— 兩者都由 §18 釘住現況,修好後改期望。
 case "$TOOL" in
   Edit|Write|MultiEdit) ;;
   Bash)

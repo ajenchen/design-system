@@ -158,7 +158,7 @@ function isGapOrCorner(node: EventTarget | null, grid: Element | null): boolean 
 }
 
 // 縫或角裡「點下去會確認」時掛在格陣上的屬性,只用來把游標變成跟日期一樣的手形
-//(日期是 button,手形來自 styles/base.css「button:not(:disabled) { cursor: pointer }」)。
+//(日期是 button,手形來自 styles/base.css「button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer }」)。
 // 下方 month_grid 的 `data-[gap-confirms]:cursor-pointer` 讀的就是它 —— 兩處字串必須一致。
 // 用屬性而不是 React state:它跟著指標每一步變,不該讓整張格陣重畫(同 tabs.tsx 的 data-action-hover、data-table.tsx 的 data-hovered)。
 const GAP_CONFIRMS_ATTR = 'data-gap-confirms'
@@ -493,8 +493,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 就跑在那 4px 縫裡 —— 往外畫的 2px 框正好壓在框線上(user 2026-09-23:「date 的鍵盤焦點感覺要改成
           // 往內畫的那種,否則會跟區間藍框有視覺衝突」)。藍底格另走 EMPHASIS_FOCUS_RING_CLASSNAME(白線退 3px)。
           'focus-visible:focus-ring-inset',
-          // 命中區 = 可視形狀 = 這個 28×28(lg 32)的盒,不外擴(hit-area-canonical「懸停回饋的形狀 ≡ 命中區」;
-          // 理由與實測數字寫在 date-grid.spec.md「日期格的命中區 = 可視形狀」)。
+          // 命中區 = 懸停回饋形狀(上面那圈 1.5px 藍圈就畫在這顆圓上)= 可視形狀 = 這顆 28×28(lg 32)的圓,不外擴
+          //(hit-area-canonical「一-4 細則:控件的懸停回饋形狀 ≡ 命中區」;理由與實測數字寫在 date-grid.spec.md「日期格的命中區 = 可視形狀」)。
           // 2026-09-23 這裡曾有一條 `before:-inset-[2px]`,用四邊各 2px 的**不畫任何東西**的帶去補格間 4px 縫,
           // 解的是「跨格時區間框閃一下」。帶是對的解嗎?不是 —— 閃動的根因是**停留日在縫裡被清掉**,
           // 幾何外擴只是讓縫裡也有人收 enter。根因層的解法寫在上方 handleDayMouseLeave(只在指標真的離開整張格陣時才清),

@@ -5,6 +5,7 @@ import { Check, ChevronDown, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
 // 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:48-50 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
-const RING_GAP_PX = 2
+const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
 
 function getOuterRingStyle(ringColor: string, focused: boolean): React.CSSProperties {
@@ -547,7 +548,7 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
         // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
         // `focus-visible:outline-2` 只設寬度、樣式吃 `var(--tw-outline-style)` —— 被上面那個
         // outline-none 設成 none 之後,**那三個 focus-visible class 從寫下起就沒畫過任何東西**。
-        // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(:476-479)= 可操作,
+        // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(上方同一個 div 的四個屬性)= 可操作,
         // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
         // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
         // `styles/base.css:44-47` 的 `outline: 2px solid var(--ring); outline-offset: 2px`

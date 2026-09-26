@@ -254,7 +254,7 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 - **interactive**：`role="slider"` + `aria-valuenow={value}`(四捨五入後的整數,見「邊界案例」)+ `aria-valuemin={0}` + `aria-valuemax={max}` + `aria-valuetext={`{value} of {max} stars`}` + `tabIndex={0}`，鍵盤 Arrow Left/Right/Up/Down ± 1（只有整顆）；Home = 0；End = max（完整 WAI-ARIA slider keyboard pattern）
 - **readOnly**：`role="img"` + accessible name。畫面上的數值與評論數是 `aria-hidden` 的顯示文字，**可存取名稱要自己說出分數**（畫面上有評論數就一起說）。standalone（無 Field）時 `aria-label` 必填，例：`aria-label="平均評分 4.7 星，共 5 星，12,843 則評論"`。無 tabIndex
-  - `Field` 內:`aria-labelledby` 同時指向 `FieldLabel` 與數值文字(`rating.tsx` 唯讀分支),名稱念成「滿意度 4.7」—— 只指欄位標籤會只聽到「滿意度」、聽不到分數(`aria-labelledby` 優先於 `aria-label`)
+  - `Field` 內:`aria-labelledby` 同時指向 `FieldLabel` 與數值文字(`rating.tsx` 唯讀分支),名稱念成「滿意度 4.7」(有評論數時連括號一起:「滿意度 4.7 (12,843)」—— 被 `aria-labelledby` 直接指到的節點即使 `aria-hidden` 也納入名稱,accname 演算法)—— 只指欄位標籤會只聽到「滿意度」、聽不到分數(`aria-labelledby` 優先於 `aria-label`)
 - **disabled**：`aria-disabled="true"` + `pointer-events-none`
 - **單顆星** `aria-hidden`：內部點擊目標是 `<span role="presentation" aria-hidden>`（非 interactive element，避免與外層 `role="slider"` 形成 axe nested-interactive 違規，2026-04-25 修正）都不干擾螢幕閱讀器，父層 role 獨自表達語意
 

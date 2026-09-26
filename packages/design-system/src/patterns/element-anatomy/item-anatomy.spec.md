@@ -200,7 +200,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### ⛔ 2026-09-24 重寫:先前這一節是從實作切入的
 
-原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因。」把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
+原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因,我他媽今天講了一百次了」(commit `c8821266` 訊息第 3 行;2026-09-27 補回先前被截掉的後半句)。把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
 
 ---
 
@@ -210,9 +210,9 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 | 出處 | 逐字 |
 |---|---|
-| **Ant Design** 原始碼 frontmatter | `components/menu/index.en-US.md`:`group: Navigation`,描述 "A versatile menu for **navigation**"<br>`components/tree/index.en-US.md`:`group: **Data Display**",描述 "Multiple-level structure list" |
-| **Primer** `content/ui-patterns/navigation.mdx` | "A tree view **isn't semantically a form of navigation**: it's for **activating an option from a hierarchical list**." |
-| **Carbon** tree-view usage「When not to use」 | "**As the primary navigation in a product's UI.** Instead, use the UI Shell left panel for product navigation."<br>⚠️ **這句的範圍是「主導覽」,不是「側邊欄」** —— 跟 Primer 那句 "global sidebar navigation" 同一層級。它支持的是「樹不是導覽」這個分類,**不是「側邊欄不能有樹」**。Notion 的側邊欄下半就是樹。2026-09-24 我先前就是把 Primer 同類的句子裸引而讀成禁令,user 逐字戳破;這裡同樣不得裸引。 |
+| **Ant Design** 原始碼 frontmatter(釘 6.6.5) | [`components/menu/index.en-US.md#L3-L5`](https://github.com/ant-design/ant-design/blob/6.6.5/components/menu/index.en-US.md#L3-L5):`group: Navigation`,描述 "A versatile menu for **navigation**"<br>[`components/tree/index.en-US.md#L3-L5`](https://github.com/ant-design/ant-design/blob/6.6.5/components/tree/index.en-US.md#L3-L5):`group: **Data Display**",描述 "Multiple-level structure list" |
+| **Primer** `content/ui-patterns/navigation.mdx`(釘 2026-09-27 抓到的 main HEAD) | "A tree view **isn't semantically a form of navigation**: it's for **activating an option from a hierarchical list**."([`navigation.mdx#L150`](https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/ui-patterns/navigation.mdx#L150)) |
+| **Carbon** tree-view usage「When not to use」(釘 carbon-website `d8783ad2`) | "**As the primary navigation in a product's UI.** Instead, use the UI Shell left panel for product navigation."([`tree-view/usage.mdx#L92`](https://github.com/carbon-design-system/carbon-website/blob/d8783ad2ae3b5e59c58f58311491f8a2c4e62631/src/pages/components/tree-view/usage.mdx#L92))<br>⚠️ **這句的範圍是「主導覽」,不是「側邊欄」** —— 跟 Primer 那句 "global sidebar navigation" 同一層級。它支持的是「樹不是導覽」這個分類,**不是「側邊欄不能有樹」**。Notion 的側邊欄下半就是樹。2026-09-24 我先前就是把 Primer 同類的句子裸引而讀成禁令,user 逐字戳破;這裡同樣不得裸引 —— 判準住在 `ds-canonical/rules/meta-patterns.md` M22 的子規則「引用『不要拿 X 當 Y』必須帶 Y 的範圍」,本檔不重述。 |
 
 **兩類東西,不是同一類的兩種做法:**
 

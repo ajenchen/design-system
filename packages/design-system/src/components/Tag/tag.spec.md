@@ -179,7 +179,7 @@ Dismiss 是 Inline Action，icon 色**依宿主是否有色彩分兩支**(判斷
 
 #### 為什麼 Tag 同時用 primitive（靜態色）和 semantic（互動色）
 
-**有意的職責分離**，非 code smell：靜態色（subtle bg、text、solid bg）住 **primitive**——primitives 公式已自動處理 dark mode 翻轉（step-1 alpha、step-7 對比方向）；互動色（hover、active）住 **semantic `--{hue}-hover/active`**——「hover 永遠較亮、active 永遠較暗」的 mode swap 必須住 semantic 層。Tailwind 同款分離（`bg-blue-500` 靜態 vs `hover:bg-blue-600 dark:hover:bg-blue-400` 互動），差別在我們把 mode swap 封裝進 token，consumer 不需自寫 dark variant。詳細流派討論見 `color.spec.md`「架構流派定位」。
+**有意的職責分離**，非 code smell：靜態色（subtle bg、text、solid bg）住 **primitive**——primitives 公式已自動處理 dark mode 翻轉（step-1 alpha、step-7 對比方向）；互動色（hover、active）住 **semantic `--{hue}-hover/active`**——「hover 永遠較亮、active 永遠較暗」(實心底;淡底的滑過走 primitive step-1 → step-2,見 `../../tokens/color/color.spec.md`「Hover 換色配對總則」現有配對一覽)的 mode swap 必須住 semantic 層。Tailwind 同款分離（`bg-blue-500` 靜態 vs `hover:bg-blue-600 dark:hover:bg-blue-400` 互動），差別在我們把 mode swap 封裝進 token，consumer 不需自寫 dark variant。詳細流派討論見 `color.spec.md`「架構流派定位」。
 
 #### `--{hue}-hover/active` 的定位
 

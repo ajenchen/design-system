@@ -23,7 +23,7 @@ import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER, settleAfterInteraction } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, isBrowserRequired, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -106,10 +106,20 @@ const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 
 const failures = []
 const passes = []
+/**
+ * 「沒驗」的獨立帳本(2026-09-27,M37):環境結構上量不到(例:overlay 捲軸機器 gutter 恆 0,軌道不渲染)的斷言,
+ * **不進通過數、也不進失敗數**,結尾單獨印出。2026-09-27 之前這幾條是 `record(…, true)` 記成通過 —— 把「沒驗」寫進通過數,
+ * 「✓ All N invariants pass」就多算了幾條從沒量過的。只在**非必需瀏覽器**的環境允許記到這裡:CI 的瀏覽器 job
+ * (GOVERNANCE_BROWSER_REQUIRED=1,啟動已拿掉 --hide-scrollbars,一定畫得出 classic 捲軸)量不到就是儀器壞了,要紅。
+ */
+const unverified = []
 
 function record(invariant, label, pass, detail = '') {
   if (pass) passes.push(`✓ ${invariant} | ${label}`)
   else failures.push(`✗ ${invariant} | ${label} | ${detail}`)
+}
+function recordUnverified(invariant, label, reason) {
+  unverified.push(`⏭ ${invariant} | ${label} | 未驗:${reason}`)
 }
 
 // ── 開 story:一律經 openStory(2026-09-25)──────────────────────────────────────
@@ -1160,8 +1170,10 @@ sentinelReport.forEach((r, i) => {
  *       SKU / 名稱 / ⋮ 上滾輪,表格完全不動。轉發到 center body。
  * 滾輪那半(I17c/d)不依賴真捲軸;**軌道那半(I17a/b)需要 classic 捲軸環境** —— Playwright headless 預設
  * `--hide-scrollbars` 會讓 gutter 恆 0、軌道不渲染,先前這裡只印一行 ⏭ 靜默跳過,CI 從沒真的斷言過
- * (2026-09-05 稽核 2-17 / 3-03)。啟動處已拿掉該參數,CI 一定走得到;gutter = 0 只剩本機 overlay 捲軸機器,
- * 改記成 `SKIPPED-ENV` 的一條紀錄而不是 console.log,報表看得見「這半沒驗」。
+ * (2026-09-05 稽核 2-17 / 3-03)。啟動處已拿掉該參數,CI 一定走得到;gutter = 0 只剩本機 overlay 捲軸機器。
+ * 2026-09-27(M37):gutter = 0 那三條原本 `record(…, true)` 記成**通過**(「沒驗」被算進 ✓ All N pass)—— 改記進獨立的
+ * 「未驗」帳本(不進通過數、不進失敗數,結尾單獨印);而在必需瀏覽器的 lane(GOVERNANCE_BROWSER_REQUIRED=1,CI)量到 gutter 0
+ * 就是儀器壞了(--hide-scrollbars 又回來了之類),以 INSTRUMENT-FAIL 紅。
  * 順帶守缺陷 H(I17e):center body 的捲軸必須是 `scrollbar-width: thin`、佔位 < 15px —— 把從未生效的
  * `::-webkit-scrollbar` 客製加回去、或改回 `auto`,這裡就紅(Chromium Aura:預設 15 × 2/3 = 10)。
  */
@@ -1230,11 +1242,17 @@ scrollUxReport.forEach((r, i) => {
     record('I17e', `表 ${i + 1}:center body 捲軸在 Chromium 走原生(scrollbar-width:auto,撤回缺陷 H 的 thin)`,
       r.scrollbarWidth === 'auto' && r.gutter >= 15,
       `computed scrollbar-width=${r.scrollbarWidth},gutter ${r.gutter}px(原生 Aura 15px;thin 會是 10)`)
+  } else if (isBrowserRequired()) {
+    // 必需瀏覽器的 lane(CI):啟動已拿掉 --hide-scrollbars,Linux headless 一定畫 classic 捲軸(Aura 15px)。量到 gutter 0
+    // = 儀器壞了(參數又回來了 / 量錯盒子),不是「這半不適用」—— 紅,不得記成未驗(M37:沒觀察到 ≠ 沒發生)。
+    record('I17a', `表 ${i + 1}:必需瀏覽器的 lane 量到 gutter 0`, false, 'INSTRUMENT-FAIL 這個 lane 一定畫得出 classic 捲軸,gutter 0 代表儀器壞了(--hide-scrollbars 回來了?)—— 軌道對齊、軌道不飄、捲軸佔位三條都沒量到')
   } else {
-    // 只剩本機 overlay 捲軸機器會走到這裡(CI 已拿掉 --hide-scrollbars)。記成看得見的 SKIPPED-ENV,不靜默。
-    record('I17a', `SKIPPED-ENV 表 ${i + 1}:本環境捲軸不佔版面(gutter 0),軌道不渲染 —— 軌道對齊未驗,請在 classic 捲軸環境補驗`, true)
-    record('I17b', `SKIPPED-ENV 表 ${i + 1}:同上,捲動後軌道不飄未驗`, true)
-    record('I17e', `SKIPPED-ENV 表 ${i + 1}:同上,thin 捲軸佔位未驗`, true)
+    // 本機 overlay 捲軸機器(macOS)才會走到這裡:捲軸不佔版面、軌道不渲染,這三條**沒驗**。記進獨立的未驗帳本 ——
+    // 不是通過(2026-09-27 之前記 true,把「沒驗」算進 ✓ All N pass),也不是失敗(環境結構上量不到,不是產品裁決)。
+    const reason = `本環境捲軸不佔版面(gutter 0),軌道不渲染;請在 classic 捲軸環境(CI 的瀏覽器 job)補驗`
+    recordUnverified('I17a', `表 ${i + 1}:裝飾軌道與真捲軸帶同一條線`, reason)
+    recordUnverified('I17b', `表 ${i + 1}:捲動後軌道不飄`, reason)
+    recordUnverified('I17e', `表 ${i + 1}:center body 捲軸在 Chromium 走原生、佔位 ≥ 15px`, reason)
   }
   if (r.canScrollY) {
     record('I17c', `表 ${i + 1}:左釘選欄滾輪轉發到 center`, r.wheelDelta === 180,
@@ -2285,6 +2303,79 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
       record('I32', 'Esc 之後:由表格根節點畫 DS 焦點框(恰好一個,WCAG 2.4.7)', afterEsc.rings === 0 && isDsRing(afterEsc.root, afterEsc.ringColor), describe(afterEsc))
     }
   }
+
+  /* 步驟 4、5(2026-09-26,M37「有游標」要量的是「游標格此刻畫得出來」,不是「id 還有值」):
+   *   4. 游標所在的列被篩掉 → 游標清掉;Tab 進表從第一列重新起算,仍恰好一個框。
+   *      修前:id 留著、格不在列模型裡 → 格上沒框、根節點也不畫(`hasCellCursor` 讀 id 非空)= 鍵盤聚焦零指示。
+   *      儀器:先證明篩選前游標真的在第 0 列、篩選後第 0 列已換成別列(列模型真的變了)、Tab 之後焦點真的在根節點。
+   *   5. 虛擬捲動:點第 0 列後按 ↓ 25 次 → 游標格必須掛在 DOM 上、而且整格在捲動區可視範圍內。
+   *      修前:格走到畫面外就卸載,`[data-selected-cell-id]` 0 個。
+   *      儀器:先證明這則 story 真的在虛擬捲動(列數 60 > 30、限高),否則第 5 步量不到要守的事。 */
+  const CURSOR_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--spreadsheet-cursor-contract&viewMode=story`
+  await loadStory(CURSOR_URL, SHEET_READY)
+  const firstCellIdAt = (r) => page.evaluate((r) => document.querySelector(`[role="row"][data-row-index="${r}"] [data-cell-id]`)?.getAttribute('data-cell-id') ?? null, r)
+  const cursorRowOf = (cellId) => (cellId ? cellId.slice(0, cellId.lastIndexOf(':')) : null)
+  {
+    const c0 = await sheetCellBox(await sheetCellId(0, 1))
+    const row0 = cursorRowOf(await firstCellIdAt(0))
+    if (!c0 || !row0) record('I32', '篩掉游標列:儀器', false, 'INSTRUMENT-FAIL 找不到第 0 列 Product 格')
+    else {
+      await page.mouse.click(c0.x + c0.width / 2, c0.y + c0.height / 2)
+      ok = await settled()
+      const before = await readFocus()
+      const filter = page.locator('[data-sheet-filter]')
+      await filter.fill('#2')
+      ok = (await settled()) && ok
+      const row0After = cursorRowOf(await firstCellIdAt(0))
+      const instrument = []
+      if (!ok) instrument.push('互動後版面沒有靜止')
+      if (cursorRowOf(before.cursor) !== row0) instrument.push(`篩選前游標不在第 0 列(${before.cursor})`)
+      if (!row0After || row0After === row0) instrument.push('篩選後第 0 列沒換(列模型沒變,量不到要守的事)')
+      if (instrument.length) record('I32', '篩掉游標列:儀器', false, `INSTRUMENT-FAIL ${instrument.join(';')}`)
+      else {
+        const dangling = await page.evaluate(() => document.querySelectorAll('[data-selected-cell-id]').length)
+        record('I32', '篩掉游標列:游標框不留在畫面上(列不在了)', dangling === 0, `框數 ${dangling}`)
+        await page.keyboard.press('Tab')  // 篩選框 → 表格根節點(根節點在它的子孫之前)
+        ok = await settled()
+        const back = await readFocus()
+        if (!ok || !back.rootFocused || !back.rootFocusVisible) record('I32', '篩掉游標列後 Tab 進表:儀器', false, `INSTRUMENT-FAIL ${!ok ? '互動後版面沒有靜止' : '焦點沒有落在表格根節點 / 沒命中 :focus-visible'}`)
+        else {
+          record('I32', `篩掉游標列後 Tab 進表:游標從第一列重新起算(${back.cursor})`, cursorRowOf(back.cursor) === row0After && back.ringOnCell, describe(back))
+          record('I32', '篩掉游標列後 Tab 進表:恰好一個焦點框(不是零指示)', back.rings === 1 && back.ringDrawn && !back.rootDrawn, describe(back))
+        }
+      }
+    }
+  }
+  {
+    await loadStory(CURSOR_URL, SHEET_READY)
+    const virtual = await page.evaluate(() => {
+      const rows = document.querySelectorAll('[role="row"][data-row-index]').length
+      const body = document.querySelector('[data-datatable-panel="center"]')
+      return { renderedRows: rows, scrollable: !!body && body.scrollHeight > body.clientHeight + 1 }
+    })
+    const c0 = await sheetCellBox(await sheetCellId(0, 1))
+    if (!c0 || !virtual.scrollable || virtual.renderedRows >= 60) record('I32', '虛擬捲動下游標格捲進可視範圍:儀器', false, `INSTRUMENT-FAIL ${!c0 ? '找不到第 0 列 Product 格' : `story 不在虛擬捲動(渲染列 ${virtual.renderedRows} / 可捲 ${virtual.scrollable})`}`)
+    else {
+      await page.mouse.click(c0.x + c0.width / 2, c0.y + c0.height / 2)
+      ok = await settled()
+      for (let i = 0; i < 25; i++) { await page.keyboard.press('ArrowDown'); ok = (await settled()) && ok }
+      const f = await readFocus()
+      const geometry = await page.evaluate(() => {
+        const ring = document.querySelector('[data-selected-cell-id]')
+        const id = ring?.getAttribute('data-selected-cell-id')
+        const cell = id ? document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`) : null
+        const body = document.querySelector('[data-datatable-panel="center"]')
+        if (!cell || !body) return { mounted: !!cell, inView: false }
+        const c = cell.getBoundingClientRect(), b = body.getBoundingClientRect()
+        return { mounted: true, inView: c.top >= b.top - 0.5 && c.bottom <= b.bottom + 0.5, cellTop: c.top, bodyTop: b.top, bodyBottom: b.bottom }
+      })
+      if (!ok) record('I32', '虛擬捲動下游標格捲進可視範圍:儀器', false, 'INSTRUMENT-FAIL 互動後版面沒有靜止')
+      else {
+        record('I32', '虛擬捲動:↓ 25 次後游標格仍掛在 DOM 上、且有框', geometry.mounted && f.rings === 1 && f.ringOnCell, JSON.stringify({ ...geometry, cursor: f.cursor }))
+        record('I32', '虛擬捲動:游標格整格在捲動區可視範圍內', geometry.inView, JSON.stringify(geometry))
+      }
+    }
+  }
 }
 
 /* ── I33:試算表模式點任何格,格游標都跟過去(2026-09-26,user 同意 R21 第 5 題 (c))──────────
@@ -2360,6 +2451,11 @@ if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
 }
+// 未驗的獨立帳本:不進通過數、不進失敗數,但一定印出來(靜默跳過 = 覆蓋率在沒有訊號的情況下縮水)
+if (unverified.length > 0) {
+  console.log(`\n--- 未驗(${unverified.length} 條;環境結構上量不到,不計入通過也不計入失敗)---`)
+  console.log(unverified.join('\n'))
+}
 
 await browser.close()
 await server.stop()
@@ -2368,5 +2464,5 @@ if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invariant(s) failed. Block commit.`)
   process.exit(1)
 }
-console.log(`\n✓ All ${passes.length} invariants pass.`)
+console.log(`\n✓ All ${passes.length} invariants pass.${unverified.length ? `(另 ${unverified.length} 條未驗:I17 環境無傳統捲軸,見上方帳本)` : ''}`)
 process.exit(0)

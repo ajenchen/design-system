@@ -27,16 +27,10 @@
    Scale 推導規則（相對公式，確保任何 base-6 亮度都能產生單調色階）：
    較亮方向: L = l + (1 − l) × F   F: 1=0.90  2=0.75  3=0.58  4=0.40  5=0.20
    較暗方向: L = l × D             D: 7=0.82  8=0.62  9=0.44  10=0.28
-   **原則:號碼 = 離所在底色多遠(與底色的對比)**。淺色號碼越大越深、深色號碼越大越亮,兩個主題同一個意思
-     (Adobe Spectrum 同派:「As the color token name increases in number … the color value's contrast with the background
-     also increases … colors progressively get darker in light theme and lighter in dark themes」,
-     https://spectrum.adobe.com/page/color-fundamentals/;Radix / Ant / Primer display 色階同;2026-09-26 user 指出、研究確認)。
+   原則:號碼 = 離所在底色多遠(淺色號碼越大越深、深色號碼越大越亮,兩個主題同一個意思)。
    dark step-1..4 = 淡底區,同一條半透明公式 oklch(from base-6 l c h / calc(K/l)),K = 0.06 × (n+1) → 0.12 / 0.18 / 0.24 / 0.30
-     — 深色有頁面 / 卡片 / 浮層 / 滑過中的格四種底,只有半透明的淡底能在每一種底上都「號碼越大離底越遠」;
-       除以 l = 感知亮度統一(高亮色相疊得少)。step-1 自 2026-07-04 Q10;step-2..4 自 2026-09-26(原本往純黑退 l×0.28/0.44/0.62,
-       在卡片上比 step-1 還暗、甚至比底色暗 → 月曆事件深色滑過變近黑)。比例 1 : 1.5 : 2 : 2.5 ≈ Radix 深色 alpha 中位數。
-     — 新色相適用門檻:深色 base-6 的 l ≥ 0.52(掃 11,880 組假想色相,低於此值紫藍、紅一帶會出現 4 > 5);
-       機械檢查 scripts/categorical-color-invariants.mjs「色階順序」。
+     (step-2..4 自 2026-09-26;舊公式往純黑退 l×0.28/0.44/0.62,meta-test 對照組仍拿舊式 token 行造壞版)。
+     原則、理由、世界級對照與新色相門檻只寫在 color.spec.md「Dark mode subtle」;機械檢查 scripts/categorical-color-invariants.mjs「色階順序」。
    dark step-5 = l×0.82(實心,深色按壓色);step-7..10 往白推(文字方向),不變。
    C×（不變）:
      lighter: 1=0.14  2=0.22  3=0.45  4=0.75  5=0.90

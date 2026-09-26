@@ -97,6 +97,12 @@ jobs:
           # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
           # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
           npm run test:categorical-color
+          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
+          # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
+          npm run test:token-twin
+          # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
+          #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
+          npm run check:agents-bootstrap
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。

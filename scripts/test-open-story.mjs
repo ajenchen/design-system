@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForStoryRender } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForFocusStable, waitForStoryRender } from './lib/launch-browser.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ARGV = process.argv.slice(2)
@@ -433,6 +433,51 @@ try {
       `慢慢開:睡=${lateBySleep} helper=${lateByHelper}(${lateSettle.ok ? `ok,等 ${lateSettle.framesWaited} 格` : 'ok:false'});`
       + `淡入:睡=${fadeBySleep} helper=${fadeByHelper};沒反應:${noopSettle.ok ? 'ok' : 'ok:false'} 浮層=${noopState};`
       + `一直變:${busySettle.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
+  }
+
+  // ── waitForFocusStable:負向主張「焦點沒被搶回」的觀測窗(2026-09-27,M37)──────────────────────────────
+  // 焦點搬家不改 DOM,settleAfterInteraction 看不到它;固定睡 N 毫秒又是「搶焦點那一步已經跑完」的代理。兩面都要成立:
+  //   (a) 點了之後**8 個影格後**才把焦點搶回按鈕(模擬 Radix FocusScope 卸載後的 setTimeout 0 在慢機器上晚到):
+  //       固定睡 30ms 讀到「焦點還在輸入框」(假綠);helper 等到焦點穩定後讀到「在按鈕上」,而且 changes ≥ 1 說得出搶焦點發生過。
+  //   (b) 點了什麼都沒發生:helper 很快回來、changes 0、焦點仍在原處。
+  //   (c) 焦點永遠在跳:helper 回 ok:false(呼叫端當儀器失效)。(d) 寫錯參數 → TypeError。
+  {
+    const focusPage = page
+    const FOCUS_HTML = `<!doctype html><html><body>
+      <input id="field"><button id="late">晚到的搶焦點</button><button id="noop">沒反應</button><button id="busy">一直跳</button><button id="other">別的</button>
+      <script>
+      (() => {
+        const field = document.getElementById('field')
+        const late = document.getElementById('late')
+        late.onmousedown = (e) => e.preventDefault() // 點按鈕不讓瀏覽器自己把焦點移過去,搶焦點只由下面的排程做
+        late.onclick = () => { let n = 0; const step = () => { if (++n < 8) requestAnimationFrame(step); else setTimeout(() => late.focus(), 0) }; requestAnimationFrame(step) }
+        document.getElementById('noop').onmousedown = (e) => e.preventDefault()
+        const busy = document.getElementById('busy'); busy.onmousedown = (e) => e.preventDefault()
+        busy.onclick = () => { const tick = () => { (document.activeElement === field ? busy : field).focus(); requestAnimationFrame(tick) }; tick() }
+      })()
+      </script></body></html>`
+    const reset = async () => { await focusPage.setContent(FOCUS_HTML); await focusPage.focus('#field') }
+    const activeId = () => focusPage.evaluate(() => document.activeElement?.id ?? null)
+    await reset(); await focusPage.click('#late'); await focusPage.waitForTimeout(30)
+    const lateBySleep = await activeId()
+    await reset(); await focusPage.click('#late')
+    const lateStable = await waitForFocusStable(focusPage, { frames: 10, capMs: 10_000 })
+    const lateByHelper = await activeId()
+    await reset(); await focusPage.click('#noop')
+    const noopStable = await waitForFocusStable(focusPage, { frames: 10, capMs: 10_000 })
+    const noopActive = await activeId()
+    await reset(); await focusPage.click('#busy')
+    const busyStable = await waitForFocusStable(focusPage, { frames: 10, capMs: 1500 })
+    const badTarget = await throwsTypeError(() => waitForFocusStable(null))
+    const badFrames = await throwsTypeError(() => waitForFocusStable(focusPage, { frames: 0 }))
+    await focusPage.goto('about:blank') // 收掉「一直跳」的 rAF 迴圈
+    check('waitForFocusStable:8 格後才搶回焦點 → 固定睡 30ms 假綠(還在輸入框)、helper 讀到被搶且 changes ≥ 1;沒反應 → ok、changes 0、焦點不動;一直跳 → ok:false;寫錯參數 → TypeError',
+      lateBySleep === 'field' && lateStable.ok && lateStable.changes >= 1 && lateByHelper === 'late'
+        && noopStable.ok && noopStable.changes === 0 && noopActive === 'field'
+        && busyStable.ok === false
+        && badTarget && badFrames,
+      `晚到:睡=${lateBySleep} helper=${lateByHelper}(${lateStable.ok ? `ok,換 ${lateStable.changes} 次,等 ${lateStable.framesWaited} 格` : 'ok:false'});`
+      + `沒反應:${noopStable.ok ? 'ok' : 'ok:false'} 換 ${noopStable.changes} 次 焦點=${noopActive};一直跳:${busyStable.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
   }
 
   // ── waitForDocsRender:docs 頁真的渲染出來(2026-09-25,待辦總帳 C5;取代兩份私有判定)──────────────────

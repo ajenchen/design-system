@@ -88,6 +88,8 @@ col.accessor('price', {
 
 詳見 `../Field/field-controls.spec.md`(Mode / Validation)+ `../Field/form-validation.spec.md`(驗證時機)。
 
+**編輯態點外框 = 點輸入處**(2026-09-26):外框的內距與 1px 邊框底下沒有 input,指到那裡外框會亮、點下去卻要能聚焦輸入處 —— 規則、做法與世界級出處住 `../Input/input.spec.md`「點外框 = 點輸入處」,Input / NumberInput / LinkInput 編輯態三者同一條(`field-wrapper.tsx` `focusFieldInputFromChrome`),本檔不重述。
+
 ---
 
 ## 禁止事項

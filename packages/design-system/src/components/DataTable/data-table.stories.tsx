@@ -736,6 +736,52 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
 }
 
 /**
+ * 試算表游標契約(test-only,2026-09-26):給 `scripts/data-table-invariants.mjs` I32 步驟 4、5 量兩件事 ——
+ *   1. 游標所在的列被篩掉(篩選 / 換頁 / 刪除)→ 游標清掉,不留懸空的 id;Tab 進表時從第一列重新起算,
+ *      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
+ *   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
+ * 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
+ */
+export const SpreadsheetCursorContract: Story = {
+  name: '試算表游標契約',
+  tags: ['test-only'],
+  render: () => {
+    const [query, setQuery] = React.useState('')
+    const all = React.useMemo(() => Array.from({ length: 60 }, (_, i) => {
+      const base = editableSampleData[i % editableSampleData.length]
+      return { ...base, sku: `SKU-${String(i + 1).padStart(3, '0')}`, name: `${base.name} #${i + 1}` }
+    }), [])
+    const rows = React.useMemo(() => all.filter((r) => r.name.includes(query)), [all, query])
+    const editCol = createColumnHelper<EditableProduct>()
+    const columns = React.useMemo(
+      () => [
+        editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 110 } }),
+        editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 240 } }),
+        editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
+      ],
+      []
+    )
+    return (
+      <div className="flex flex-col gap-3">
+        <Input aria-label="篩選產品名稱" placeholder="篩選產品名稱(例:#2)" value={query} onChange={(e) => setQuery(e.target.value)} data-sheet-filter />
+        <DataTable
+          columns={columns}
+          data={rows}
+          height="240px"
+          inlineEdit
+          experimentalSpreadsheetOverlay
+          spreadsheetMode
+          experimentalActiveEditorController
+          tableOptions={{ getRowId: (row) => row.sku }}
+          getRowId={(row) => row.sku}
+          onCellCommit={() => {}}
+        />
+      </div>
+    )
+  },
+}
+
+/**
  * Issue 9 cell error system(2026-05-10):consumer-supplied `cellErrors` map shows error message
  * 14px text-error 在 view content 下方,gap-1 spacing。Edit cell 自動 clear visual error。
  * Multi-error 用 array → ul li 分行。aria-describedby + aria-invalid for AT。

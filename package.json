@@ -199,6 +199,8 @@
     "test:dialog-height": "node scripts/dialog-height-invariant.mjs",
     "test:token-creation": "node scripts/token-creation-invariant.mjs",
     "test:categorical-color": "node scripts/categorical-color-invariants.mjs && node scripts/test-categorical-color-invariants.mjs",
+    "test:token-twin": "node scripts/test-token-twin-invariant.mjs",
+    "check:agents-bootstrap": "node scripts/check-agents-bootstrap.mjs --check",
     "test:hover-color-pair": "node scripts/hover-color-pair-invariant.mjs",
     "test:hover-latency-policy": "node scripts/test-hover-latency-policy.mjs"
   },

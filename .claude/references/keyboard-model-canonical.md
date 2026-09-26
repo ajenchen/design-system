@@ -23,14 +23,14 @@
 同一個側邊欄裡同時出現兩種鍵盤模型,**不是漂移,是業界標準做法**,而且可以在原始碼層驗:
 
 VS Code 的側邊區在同一個畫面裡就有三種模型並存 ——
-活動列是 `ariaRole: 'tablist'`(`src/vs/workbench/browser/parts/compositeBar.ts`),item 只有將被聚焦時才拿到 `tabIndex = 0`,
+活動列是 `ariaRole: 'tablist'`(`src/vs/workbench/browser/parts/compositeBar.ts`,<https://github.com/microsoft/vscode/blob/c94d3d7ed24463a41ab03d629b4ee76f6cd901f2/src/vs/workbench/browser/parts/compositeBar.ts#L308>;釘 2026-09-27 抓到的 main HEAD),item 只有將被聚焦時才拿到 `tabIndex = 0`,
 整條是**一個 Tab 停靠點 + 方向鍵**;
-檢視區段標題每一條自己 `setAttribute('tabindex','0')` + `role="button"`(`src/vs/base/browser/ui/splitview/paneview.ts`),
+檢視區段標題每一條自己 `setAttribute('tabindex','0')` + `role="button"`(`src/vs/base/browser/ui/splitview/paneview.ts`,<https://github.com/microsoft/vscode/blob/c94d3d7ed24463a41ab03d629b4ee76f6cd901f2/src/vs/base/browser/ui/splitview/paneview.ts#L260-L262>;同上釘 commit),
 所以**每一條都是獨立 Tab 停靠點**;
-區段裡的檔案樹容器 `tabIndex = 0` + `role="tree"` + `aria-activedescendant`(`src/vs/base/browser/ui/list/listWidget.ts`),
+區段裡的檔案樹容器 `tabIndex = 0` + `role="tree"` + `aria-activedescendant`(`src/vs/base/browser/ui/list/listWidget.ts`,<https://github.com/microsoft/vscode/blob/c94d3d7ed24463a41ab03d629b4ee76f6cd901f2/src/vs/base/browser/ui/list/listWidget.ts#L2081>;同上釘 commit),
 又回到**一個停靠點 + 方向鍵**。
 
-而且 VS Code 官方文件把取捨講得很白(`docs/configure/accessibility/accessibility.md`,逐字):
+而且 VS Code 官方文件把取捨講得很白(`docs/configure/accessibility/accessibility.md`,<https://github.com/microsoft/vscode-docs/blob/f54680b98bd1c3da7227cf0fa837b3c4c90f5075/docs/configure/accessibility/accessibility.md#L129>;釘 2026-09-27 抓到的 main HEAD,逐字):
 
 > "All elements in the workbench support tab navigation. To avoid having too many tab stops, workbench toolbars and tab lists each have only one. Once a toolbar or a tab list has focus, you can use the arrow keys to navigate within them."
 
@@ -92,8 +92,8 @@ user 逐字戳破第 2 條:「你他媽每個節點也有可能有自己的連�
 連結性決定的是「按下去會發生什麼」與「瀏覽器附送什麼」(複製網址、開新分頁、右鍵選單),
 跟「焦點怎麼移動」是兩條正交的軸。
 
-Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/TreeView.tsx` 的 polymorphic 分支
-+ `TreeView.features.stories.tsx` 的 `AsProp` story),焦點仍走 `useRovingTabIndex`。
+Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/TreeView.tsx` 的 polymorphic 分支,<https://github.com/primer/react/blob/67945828439898ace865bd5f7417c562033bcbc2/packages/react/src/TreeView/TreeView.tsx#L132> 是 `useRovingTabIndex` 的呼叫點
++ `TreeView.features.stories.tsx` 的 `AsProp` story,<https://github.com/primer/react/blob/67945828439898ace865bd5f7417c562033bcbc2/packages/react/src/TreeView/TreeView.features.stories.tsx#L1114>;釘 2026-09-27 抓到的 main HEAD),焦點仍走 `useRovingTabIndex`。
 
 ### ⛔ 「在不在側邊欄」不是分界(2026-09-24 撤回一次誤讀)
 
@@ -101,13 +101,14 @@ Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/Tre
 
 我先前引 Primer 的兩句話,寫得像「側邊欄不能有樹」。**那是誤讀,而且是兩層誤讀:**
 
-1. 原文是 "global sidebar navigation"(**全站主導覽**),我只記住了 "sidebar navigation"。
+1. 原文是 "global sidebar navigation"(**全站主導覽**),我只記住了 "sidebar navigation"(`content/components/tree-view.mdx`,<https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/components/tree-view.mdx#L280>;釘 2026-09-27 抓到的 main HEAD)。
 2. 原文是 "Do not replace your NavList with a tree view **to support a deeply nested navigation
-   structure**"(禁的是「為了突破 4 層上限而換成樹」),我只記住了後半句。
+   structure**"(禁的是「為了突破 4 層上限而換成樹」),我只記住了後半句(`content/components/nav-list.mdx`,<https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/components/nav-list.mdx#L142-L144>;同上釘 commit)。
 
 ⚠️ **這個形狀 2026-09-24 一天內差點發生三次**(Primer 兩句 + 差點裸引 Carbon 的「As the primary navigation」)。這不是鍵盤專屬的毛病,**通則住在 meta-patterns M22 的「引用『不要拿 X 當 Y』必須帶 Y 的範圍」子款**,本檔不重述判準,只留這三筆實例。
 
 **Primer 同一個 repo 的另一份文件正面寫著相反的話** —— `content/ui-patterns/navigation.mdx`
+(<https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/ui-patterns/navigation.mdx#L127>、`#L150`;同上釘 commit)
 把 Tree view 與 Nav list 並列在同一章,兩者的句子**一模一樣**:
 
 > Tree view:"it's often used to implement a parent-detail navigation pattern.
@@ -115,8 +116,8 @@ Primer 的 TreeView 也支援 `as="a" href=…`(`packages/react/src/TreeView/Tre
 > Nav list:"A vertical list of links... **It's often used in the sidebar of a split page layout.**"
 
 `tree-view.mdx` 的 Composition 章再講一次:"A common pattern is to render a tree view in a
-**split page layout where the tree view is in the left pane**";它列的「好的使用情境」第一條就是
-"navigating the file structure of a repo" —— 那正是 GitHub code view 的左側 pane。
+**split page layout where the tree view is in the left pane**"(<https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/components/tree-view.mdx#L423>);它列的「好的使用情境」第一條就是
+"navigating the file structure of a repo"(同檔 `#L270`)—— 那正是 GitHub code view 的左側 pane。
 
 ### 真正的軸:landmark 與 widget 是兩條不互斥的軸
 
@@ -181,7 +182,8 @@ W3C APG「Focus VS Selection and the Perception of Dual Focus」逐字:
 "Focus and selection are quite different. From the keyboard user's perspective, focus is a pointer, like a mouse pointer; it tracks the path of navigation."
 
 Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
-`aria-current={isCurrentItem ? 'true' : undefined}` 與 `aria-selected={isFocused ? 'true' : 'false'}` 兩個屬性並列。
+`aria-current={isCurrentItem ? 'true' : undefined}` 與 `aria-selected={isFocused ? 'true' : 'false'}` 兩個屬性並列
+(<https://github.com/primer/react/blob/67945828439898ace865bd5f7417c562033bcbc2/packages/react/src/TreeView/TreeView.tsx#L393-L394>)。
 它的 roving tabindex `focusInStrategy` 第一順位是「Focus the aria-current item if it exists」——
 從外面 Tab 進樹時,焦點直接落在「你現在在的那一頁」。W3C APG Navigation Treeview 範例原始碼註記同樣寫著
 "Only one treeitem in the tree has tabindex=\"0\"" / "In this implementation tabindex=\"0\" is always on the treeitem with aria-current=\"page\""。

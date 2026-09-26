@@ -158,7 +158,7 @@ export const WithBadgeOverlayRule: Story = {
 
       <Rule
         title="Avatar 右上角 count badge — 未讀訊息(chat / messenger 場景)"
-        note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant + surface ring,max=99 自動處理 99+"
+        note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant,與頭像之間的縫從圓上挖出來(不畫外圈),max=99 自動處理 99+"
       >
         <div className="flex items-center gap-4">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} badgeCount={3} />

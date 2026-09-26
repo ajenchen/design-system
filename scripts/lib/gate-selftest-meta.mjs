@@ -73,8 +73,13 @@ const MISSING_PREREQUISITE_MESSAGE = new RegExp(
 // 輸出裡只有 Node 的堆疊,沒有任何人話訊息。
 // 判準刻意用「兩個條件同時成立」而不是單一寬鬆字串:必須是檔案不存在類的錯誤,
 // **而且**出錯的路徑指向 storybook-static —— 這樣不會把真正的失敗吃掉。
+// **「storybook-static」必須是建置根目錄那一段路徑**(2026-09-27),不是子字串:各閘從建置凍結的獨佔快照叫
+// `storybook-static-snapshot-XXXX`(lib/storybook-static-snapshot.mjs SNAPSHOT_PREFIX),快照裡缺檔是儀器失效
+// (複製不完整 / 被別人清掉),不是「本來就沒有建置」—— 子字串比對會把它讀成「缺前置 → 略過」、exit 0。
+// 判準:`storybook-static` 前後是路徑分隔 / 引號 / 空白 / 括號 / 行首行尾;後面接 `-`(snapshot 目錄名)就不算。
+const BUILD_ROOT_SEGMENT = /(^|[/\\'"`\s(])storybook-static(?=$|[/\\'"`\s),:])/mu
 const isMissingStorybookCrash = (text) => (
-  /ENOENT|no such file or directory/u.test(text) && /storybook-static/u.test(text)
+  /ENOENT|no such file or directory/u.test(text) && BUILD_ROOT_SEGMENT.test(text)
 )
 
 const missingPrerequisite = (text) => MISSING_PREREQUISITE_MESSAGE.test(text) || isMissingStorybookCrash(text)
@@ -83,15 +88,17 @@ const missingPrerequisite = (text) => MISSING_PREREQUISITE_MESSAGE.test(text) ||
  * 一次閘執行的判定(純函式;順序即優先序,前面的先贏)。
  * @param {{ status: number|null, text: string }} run   閘的退出碼與完整輸出(stdout + stderr)
  * @param {{ browserRequired?: boolean }} [context]
- * @returns {{ verdict: 'instrument-fail'|'browser-required'|'skip-prerequisite'|'skip-env'|'env-required'|'pass'|'fail' }}
+ * @returns {{ verdict: 'instrument-fail'|'browser-required'|'skip-prerequisite'|'prerequisite-required'|'skip-env'|'env-required'|'pass'|'fail' }}
  */
 export function classifyGateRun({ status, text }, { browserRequired = isBrowserRequired() } = {}) {
   // 1. 儀器失效:沒量到 ≠ 沒發生。放在所有略過判斷之前 —— 輸出裡同時出現缺前置字樣也一樣紅。
   if (INSTRUMENT_FAIL.test(text)) return { verdict: 'instrument-fail' }
   // 2. 必需瀏覽器的 lane 起不了瀏覽器
   if (BROWSER_REQUIRED_FAIL.test(text)) return { verdict: 'browser-required' }
-  // 3. 缺前置(閘明確說了「沒有建置 / 建置過時」)
-  if (missingPrerequisite(text)) return { verdict: 'skip-prerequisite' }
+  // 3. 缺前置(閘明確說了「沒有建置 / 建置過時」):一般環境略過;**必需瀏覽器的 lane 紅**(2026-09-27)——
+  //    那些 job 自己先 build-storybook 才跑閘,在那裡缺建置 / 建置過時 = 這個 job 壞了,不是「這裡本來就沒有」。
+  //    先前這一步不看 browserRequired:CI 瀏覽器 job 缺建置會被印成「略過 … 缺 storybook-static」、exit 0(整批靜默通過,M37)。
+  if (missingPrerequisite(text)) return { verdict: browserRequired ? 'prerequisite-required' : 'skip-prerequisite' }
   // 4. 起不了瀏覽器:一般環境略過;必需瀏覽器的 lane 紅
   if (SKIP_PATTERN.test(text)) return { verdict: browserRequired ? 'env-required' : 'skip-env' }
   // 5. 其餘只看退出碼 —— **包括 2**:沒有標記的 exit 2 不是略過
@@ -127,6 +134,7 @@ export function runGateSelftestMeta(gate, { baseArgs = [], selftestArgs = ['--se
     'instrument-fail': `✗ baseline 儀器失效(exit ${base.status};輸出含 ${INSTRUMENT_FAIL_MARKER})—— 沒量到不是略過,也不是通過`,
     'browser-required': `✗ baseline 起不了瀏覽器,而這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1(exit ${base.status})—— 不准略過`,
     'env-required': `✗ baseline 起不了瀏覽器,而這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1(exit ${base.status})—— 不准略過`,
+    'prerequisite-required': `✗ baseline 缺建置 / 建置過時(exit ${base.status};輸出含 ${MISSING_BUILD_MARKER} / ${STALE_BUILD_MARKER} 或缺 storybook-static),而這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1 —— 這個 job 自己會先 build-storybook,缺了就是 job 壞了,不准略過`,
     fail: `✗ baseline 應該綠卻紅(exit ${base.status})${base.status === 2 ? '—— exit 2 不是略過:略過只認閘明確印出的缺前置 / 環境標記' : ''}`,
   }
   if (baseVerdict !== 'pass') {
@@ -147,6 +155,9 @@ export function runGateSelftestMeta(gate, { baseArgs = [], selftestArgs = ['--se
     ok = false
   } else if (controlVerdict === 'browser-required' || controlVerdict === 'env-required') {
     console.error(`✗ 對照組起不了瀏覽器,而這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1(exit ${control.status})—— 不准略過\n${control.text}`)
+    ok = false
+  } else if (controlVerdict === 'prerequisite-required') {
+    console.error(`✗ 對照組缺建置 / 建置過時,而這個 lane 宣告 ${BROWSER_REQUIRED_ENV}=1(exit ${control.status})—— 這個 job 自己會先 build,缺了就是 job 壞了,不准略過\n${control.text}`)
     ok = false
   } else if (controlVerdict !== 'pass') {
     console.error(`✗ 對照組沒讓閘紅 —— 這支閘的綠燈是零證據(exit ${control.status})\n${control.text}`)

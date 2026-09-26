@@ -216,7 +216,7 @@ Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 c
 - `dotSize = clamp(8, round(avatarSize × 0.28), 16)` — 28% 是 Slack / Teams 世界級平均
 - Floor 8:小 avatar(24-28px)下可辨識但不喧賓奪主(若 floor 10 → 24px avatar 的 dot 占 42% 太大)
 - Ceiling 16:64px+ 的大 avatar 不讓 dot 過度放大,保持「輔助指示器」視覺權重
-- Border ring:2px(dotSize < 12)/ 3px(dotSize ≥ 12)— 在 surface 背景上把 dot 從 avatar 邊緣分離
+- 與頭像之間的縫:**從圓上挖出來**(2026-09-26 起;此前是圓點外畫一圈 `box-shadow`、顏色寫死 `--surface-raised`),寬 = DS 通用縫 `--stack-gap`(2px),dotSize ≥ 12 時多 1px 保持視覺比例。露出的是真正在後面的東西,所以頭像放在深色頁面(#0A0A0A)、半透明卡片、滑過的列上都不會出現一圈錯色的灰邊 —— 舊做法在深色頁面上實測就是一圈 #1F1F1F(待辦總帳 N49;步驟條外圈同一種病、同日改)。挖法與「頭像堆疊」段相同(遮罩挖空,不是外圈);圓點本身不再畫任何圈
 
 ### Status 顏色 token(presence namespace)
 
@@ -224,7 +224,9 @@ Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 c
 
 ### Count badge 實作
 
-Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上 `-top-1 -right-1` 偏移與 surface 色 2px border ring 分離邊界。`badgeCount <= 0` 不渲染(0 或 undefined 皆空)。
+Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上 `-top-1 -right-1` 偏移;與頭像之間的縫(`--stack-gap`,2px)同樣**從圓上挖出來**(膠囊形的洞:徽章寬度隨字數變,由 ResizeObserver 量它的盒子再算遮罩;2026-09-26 起,此前是 surface 色 2px `box-shadow` 外圈,深色會錯色,同上段)。`badgeCount <= 0` 不渲染(0 或 undefined 皆空)。
+
+**編輯態人員標籤的移除 ×**(`PeoplePicker` 堆疊模式,`person-display.tsx` AvatarDismissOverlay)也疊在頭像右上,同樣挖空:Avatar `dismissCutout`(`@internal`)在標籤被滑過 / 焦點在標籤內時(與 × 顯示的條件相同)才打開那個洞,平常頭像完整;× 的位置與大小只有一個住所 `AVATAR_DISMISS_OVERLAY_PX`。
 
 **為什麼預設 `critical`(紅)**:計數 on avatar 在世界級 chat app 的慣例就是「待處理未讀」,紅色是約定俗成的 attention 色;需要其他 variant 的少見情境,consumer 自己 compose `<Avatar>` + `<Badge>` top-right 手刻(不開 prop 避免多選擇認知負擔)。
 
@@ -249,7 +251,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - 圈色寫死 `--surface` 只在白底正確:深色主題 `--surface` 本身是白 8% 半透明,圈變成一道比頭像還亮的月牙;唯讀欄位(`--bg-readonly`)或滑過的表格列上,每顆外面多一圈白邊。
 - 挖空與背景色無關,不需要為每種背景另建不透明 token(`tokens/README.md` 建 token 前先質疑是否真需要)。換成不透明底色的做法,2026-09-26 AI 模擬實測在唯讀欄位上灰頭像與欄位同色、在深色比欄位暗。
 
-**縫寬 2px 是 AI 推導**:與舊外圈同寬(白底上看起來與舊版相同),也與 DS 其他「把疊上去的東西分開」的圈同寬(本檔「Status dot 尺寸與比例」dotSize < 12 時 2px、「Count badge 實作」2px)。Primer 的縫是 1px。
+**縫寬 2px 是 AI 推導**:與舊外圈同寬(白底上看起來與舊版相同),也與 DS 其他「把疊上去的東西分開」的縫同寬(本檔「Status dot 尺寸與比例」、「Count badge 實作」、上傳列的進度條與焦點框、步驟條外圈、全域焦點框往外畫的間隙)—— 這個值 2026-09-26 抽成 token `--stack-gap`(`tokens/uiSize/uiSize.css`;JS 雙生 `tokens/uiSize/stack-gap.ts`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等),本段是它設計理由的住所。Primer 的縫是 1px。
 
 **世界級對照**:
 
@@ -272,6 +274,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - ❌ 不要省略 `alt`——即使有 `src`，`alt` 是圖片失敗時的 fallback 來源
 - ❌ 不要手刻頭像堆疊(負 margin + 外圈 `ring` / `box-shadow` / `border`)——用「頭像堆疊(疊在一起時)」段的共用做法(`stacked` + `AVATAR_STACK_*`)
 - ❌ 不要把挖空遮罩掛在接焦點的外層——遮罩外的東西不繪製,會把畫在外面的焦點框整圈裁掉;遮罩只掛在圓那一層
+- ❌ 不要在疊在頭像上的東西(狀態圓點 / 計數徽章 / 移除 ×)外面畫一圈底色當縫(`box-shadow` / `ring`)——那一圈只在一種底上是對的,深色頁面上是一道灰邊;縫一律從圓上挖(「Overlay」段與「頭像堆疊」段同一套做法)
 
 ---
 

@@ -524,7 +524,7 @@ export interface ComboboxProps {
   overflowWrapperClassName?: string
   /**
    * Tag area gap in px (2026-05-07 v15.13)。預設 4(pill mode 標準 spacing)。
-   * Stack avatar 模式傳 0,讓 `tagWrapperClassName` 的 `-ml-0.5` negative margin 生效
+   * Stack avatar 模式傳 0,讓 `tagWrapperClassName` 的 `-ml-[var(--avatar-stack-overlap)]` negative margin 生效
    * (CSS `gap` 套在 flex container 上會強制 sibling spacing,蓋過 negative margin)。
    * **Q2 known tradeoff**:0 後 useOverflowCount 仍按 wrapper.offsetWidth 累加(不含 overlap
    * 補償)→ +N 偏保守。當前接受;若需精準可 future 加 `overlapPx` 補償邏輯。
@@ -911,7 +911,9 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      {/* `isolate`:標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
+          與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17) */}
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative isolate', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (

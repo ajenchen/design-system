@@ -513,6 +513,7 @@
       "scripts/test-sync-memory.mjs",
       "scripts/test-sync-plugin-aliases.mjs",
       "scripts/test-token-creation-invariant.mjs",
+      "scripts/test-token-twin-invariant.mjs",
       "scripts/test-tree-view-keyboard-route-invariant.mjs",
       "scripts/test-unrestricted-option-invariant.mjs",
       "scripts/test-verify-deep-audit-coverage.mjs",

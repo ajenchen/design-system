@@ -210,6 +210,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 2026-04-21 `principle-audit-protocol.md` v1 寫完沒套 Phase 0 全掃到 D6b/D6c,被 user 抓到「這也是跟一致性有關」才補。AI 寫新東西時套用既有原則有盲點,寫完必反向檢視。
 
 ### M8 — 訂 cross-component canonical 前必 world-class benchmark
+(2026-09-24 的錨例 —— 把行內動作鈕的裁示外推到表格的格、一條欄間線一天漂四次 —— 記在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落,M8 子規則「跨類別外推本身就是新主張」由此折入;本節不重抄。)
 2026-04-22 item-anatomy Inline Action vs Button predicate 疊代 4 次(position-based → density 分界 → fixed-small → chrome corner exception),每次 user 拉回才補對照。若 M8 存在,第一次就該先 benchmark Material IconButton / Polaris Button plain / Atlassian IconButton / Ant Button type=text 的位置規則再訂 rule。
 
 ### M9 — Predicate 寫完 present 前必 4 題自測
@@ -247,6 +248,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 
 ### M18 — Propose-time 自檢 gate(Q0 起源)
 2026-05-18 Sheet 補 / 5 元件 inline-action migrate / 5 元件 SurfaceBody migrate 三題全錯誤 propose 給 user 拍板,grep 後 0 個真 gap(Sheet 已完整 / 6 元件全消費 inline action / Dialog 走 ScrollArea canonical 不該用 SurfaceBody / HoverCard 是 behavior primitive / DatePicker TimePicker 是專用 layout / Sidebar 是 chrome 不是浮層)。User verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」→ 催生 Q0 Pre-ASK self-verify。
+
+### M22 — Benchmark claim 必附出處;引「不要拿 X 當 Y」必帶 Y 的範圍
+2026-09-24 一天三次裁掉禁令的範圍修飾語(Primer「global sidebar navigation」記成「sidebar navigation」、「為了突破四層上限而換成樹」只記後半句、差點裸引 Carbon「As the primary navigation in a product's UI」),錨例與 user 逐字在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落;子規則折入 `rules/meta-patterns.md` M22。2026-09-26 稽核一度判 4 處行號錯(Ant `form/style/index.ts`、Recharts、React Aria、Polaris),第二個人對 raw 原始碼逐一 curl 核對後**現行引用全部正確**(例:Ant 6.6.5 `cursor: 'help'` 就在 L289)—— 稽核員用的是非 raw 檢視或別的版本;教訓:核對行號一律拿釘版本的 raw 檔,而且**稽核的指控本身也要先過對照組**(M32),否則會照著錯的稽核去改對的東西。
 
 ### M23 — DS 內既有 canonical 優先於外部 benchmark
 - 2026-05-03 chevron color:DS `text-foreground`(icon-only Button neutral-9 85%)vs 憑「Ant 5 家 muted」印象覆蓋 → 自開新 tier 違反一致設計語言。

@@ -110,7 +110,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
 | 目標 | 可點(預設) | 唯讀 |
 |---|---|---|
 | 日期格 | 傳 `onDateClick`(**必填**);整格 `hover:bg-neutral-hover`、日期數字是 `<button>`(手形游標、Enter / Space → `onDateClick`) | 寫 `readOnlyDates`、**不可以**傳 `onDateClick`;整格不亮、日期數字是一般文字(同字級、同今天 pill)、游標不變。鍵盤停靠點改為格子本身(見「A11y 預設」) |
-| 事件方塊 | 傳 `onEventClick`(**必填**);`role="button"`、滑過同色深一階、`cursor-pointer`、F2 進格可達 | 寫 `readOnlyEvents`、**不可以**傳 `onEventClick`;同色但不帶滑過(`CAT_SUBTLE`,= `CAT_EVENT` 去掉滑過那一段)、不是按鈕、不進格內導覽;截斷時仍有完整標題提示(資訊揭露,不是點擊回饋) |
+| 事件方塊 | 傳 `onEventClick`(**必填**);`role="button"`、滑過同色濃一格(淺色變深、深色變亮,見「Event tile 規則」Hover tile)、`cursor-pointer`、F2 進格可達 | 寫 `readOnlyEvents`、**不可以**傳 `onEventClick`;同色但不帶滑過(`CAT_SUBTLE`,= `CAT_EVENT` 去掉滑過那一段)、不是按鈕、不進格內導覽;截斷時仍有完整標題提示(資訊揭露,不是點擊回饋) |
 
 - **為什麼二擇一、不是「可省略」**:元件本身沒有內建的「新增」或「打開事件」行為(見「禁止事項」:不自動開表單)。若回調可省略、又拿「有沒有傳」決定長相,忘了傳的 consumer 會得到一個長得能點、點了沒反應的月曆 —— `meta-patterns` M23(f) 禁的正是這件事(不以 callback 有無當渲染閘;無內建行為的 callback 必填)。改成型別層的二擇一(discriminated union):沒宣告唯讀就一定要傳回調,宣告了就不准傳,編譯期就逼每個 consumer 講清楚。
 - **為什麼要有唯讀**:沒有「點日子新增」的月曆(新增走右上角 CTA 的內容排程、純看的假日行事曆)若照樣整格亮、日期數字照樣是按鈕,就是「看起來能點、點了沒反應」。`../../tokens/color/color.spec.md`「Hover 換色配對總則」:只有「點了會有反應」的元素才有底色的滑過回饋。2026-09-25 批次曾把兩個回調改成無條件必填(C2),等於規定月曆一定可點、沒有唯讀的可能,與此相反,已撤回。
@@ -169,6 +169,7 @@ interface CalendarEvent {
 - **一般 event(timed)**:事件色相 subtle 底 + 對應文字色(消費 categorical-color SSOT,與 Tag / Avatar 共用 12 色相),單行 truncate
 - **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條 + 字重略強,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
 - **Hover tile**:事件方塊可點時滑過換成同色濃一格(淡底 step-1 → step-2;淺色變深、深色變亮 —— 色階號碼 = 離所在底色多遠,`../../tokens/color/color.spec.md`「Dark mode subtle」;2026-09-26 前深色 step-2 往純黑退,滑過變近黑);`readOnlyEvents` 時不亮(改用不帶滑過的同一組色 `CAT_SUBTLE`)、不是按鈕
+  > 已知後果(實測 2026-09-26):第 7 階字在深色滑過中的格(第 2 階淡底疊 `#272727`)上,7 個色相對比 < 4.5(紅 3.07、靛 3.20、紫 3.22、洋紅 3.68、藍 3.75、深橘 3.77、青 4.36),全部 ≥ 3.0;user 2026-09-26 對此說「這個先忽略」→ 擱置,記在待辦總帳,不再提問。
 - **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字(對齊 Google Calendar),目前不可點擊(點擊展開 popover 列表為後續增量)
 
 完整 cell + event tile 的 class / token 對照見 anatomy `ColorMatrix` story。

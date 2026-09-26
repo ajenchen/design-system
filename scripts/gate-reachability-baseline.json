@@ -1,5 +1,5 @@
 {
-  "note": "寫了閘就要有人跑它。這裡記的是「目前沒有任何執行面會呼叫」的閘/測試腳本。數字只准往下 —— 新增孤兒會讓 gate-reachability-invariant.mjs 變紅。清掉既有孤兒(接進 CI 或退役)之後跑 --update-baseline 重記。",
+  "note": "寫了閘就要有人跑它。這裡記的是「目前沒有任何執行面會呼叫」的閘/測試腳本。數字只准往下 —— 新增孤兒會讓 gate-reachability-invariant.mjs 變紅。清掉既有孤兒(接進 CI 或退役)之後跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。",
   "generatedBy": "scripts/gate-reachability-invariant.mjs --update-baseline",
   "count": 4,
   "orphans": [
@@ -7,5 +7,8 @@
     "probe-inline-edit-align.mjs",
     "probe-skeleton-band-raster.mjs",
     "probe-windows-scrollbar.mjs"
-  ]
+  ],
+  "manualOnly": {
+    "probe-windows-scrollbar.mjs": "刻意只手動跑(2026-09-27 記):它是截圖探針 —— 輸出 tmp/scrollbar-probe/{story}-baseline.png / -windows-sim.png / -corner-zoom.png 與 report.json 給人看右下角捲軸與圓角外框的關係,沒有任何「溢出多少算紅」的斷言可以讓 CI 判紅綠;同一個幾何(Bug H:Windows 傳統捲軸溢出圓角外框)的 CI 閘是 scripts/data-table-scrollbar-visibility.mjs(斷言 B 捲動區落在裁切祖先 padding-box 內 / C 捲軸內外側 hit-test / D 外側半條像素,ci.yml verify-browser-datatable `--quick` + focus-deep-gates.yml 全矩陣 + --selftest),它同樣拿掉 --hide-scrollbars。2026-09-25 補的「沒捲軸 = exit 1」只是讓手動跑時不印假 complete。"
+  }
 }

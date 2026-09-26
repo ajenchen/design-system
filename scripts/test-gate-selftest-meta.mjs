@@ -7,7 +7,9 @@
  *         宣告 GOVERNANCE_BROWSER_REQUIRED=1 的 lane 起不了瀏覽器也不得略過。
  *   紅: (1) 把「認訊息」那一段拆掉退回只認退出碼 2 的第一版 → 缺前置兩格立刻紅(2026-09-21 實測);
  *       (2) 拿 2026-09-25 修正前的 lib 跑(`--lib=<舊版路徑>`)→ 「INSTRUMENT-FAIL + exit 2」那幾格印出
- *           「略過 … 起不了環境」而紅(2026-09-25 實測:舊版 20 格裡 10 格不符,「story 開不起來 exit 2」那格正是印了「略過 … 起不了環境」)。
+ *           「略過 … 起不了環境」而紅(2026-09-25 實測:舊版 20 格裡 10 格不符,「story 開不起來 exit 2」那格正是印了「略過 … 起不了環境」);
+ *       (3) 拿 2026-09-27 修正前的 lib 跑 → 「ENOENT 在 storybook-static-snapshot-XXXX 底下」那格被讀成缺前置而略過、
+ *           「缺建置 + GOVERNANCE_BROWSER_REQUIRED=1」那兩格被讀成略過 —— 三格都紅。
  *   綠: 每一格都對時綠。不是抽籤 —— 用**合成假閘**(退出碼與輸出由測試指定;儀器失效 / 缺建置那幾格
  *        直接呼叫 lib/launch-browser.mjs 的真實 StoryRenderInstrumentError / requireStorybookBuild 產生標記),
  *        不開瀏覽器、不依賴任何建置產物、子行程環境變數由測試指定,同一份 worktree 重複跑結果恆等。
@@ -111,6 +113,14 @@ const CASES = [
    { baseCode: 1, baseOut: "Error: ENOENT: no such file or directory, lstat '/tmp/snapshot/repo/storybook-static'" },
    (r) => r.status === 0 && /缺 storybook-static/.test(r.out),
    '全庫 50+ 支用到 storybook-static 的腳本沒有存在性守衛,崩潰形狀也必須認得'],
+  ['ENOENT 在建置快照目錄(storybook-static-snapshot-XXXX)底下、不是建置根目錄 → 紅(快照不完整是儀器失效,不是缺前置)',
+   { baseCode: 1, baseOut: "Error: ENOENT: no such file or directory, open '/tmp/storybook-static-snapshot-k3f9a1/iframe.html'" },
+   (r) => r.status === 1 && /baseline 應該綠卻紅/.test(r.out) && !skipped(r),
+   '2026-09-27:子字串比對把快照目錄名 storybook-static-snapshot-… 讀成「缺 storybook-static」而略過、exit 0'],
+  ['ENOENT 在快照 repo 裡的建置根目錄(…/storybook-static-snapshot-XXXX/repo/storybook-static/…)→ 仍是缺前置,略過',
+   { baseCode: 1, baseOut: "Error: ENOENT: no such file or directory, lstat '/tmp/storybook-static-snapshot-k3f9a1/repo/storybook-static/index.json'" },
+   (r) => r.status === 0 && /缺 storybook-static/.test(r.out),
+   '收窄成「建置根目錄那一段路徑」之後,真的缺建置根目錄的那一格不得跟著變紅'],
   ['ENOENT 但不是 storybook-static → 不得當成略過(這是真失敗)',
    { baseCode: 1, baseOut: "Error: ENOENT: no such file or directory, open '/repo/packages/design-system/src/missing.tsx'" },
    (r) => r.status === 1 && /baseline 應該綠卻紅/.test(r.out),
@@ -119,6 +129,16 @@ const CASES = [
    { baseCode: 1, baseOut: '✗ storybook-static 裡有 3 個 story 的焦點框顏色不對' },
    (r) => r.status === 1 && /baseline 應該綠卻紅/.test(r.out),
    '同上,反方向的對照'],
+  ['缺建置(真實 MISSING-BUILD 標記),但 lane 宣告 GOVERNANCE_BROWSER_REQUIRED=1 → 紅(那個 job 自己先 build-storybook,缺了 = job 壞了)',
+   { baseCode: 'missing-build', baseOut: '' },
+   (r) => r.status === 1 && /GOVERNANCE_BROWSER_REQUIRED=1/.test(r.out) && !skipped(r),
+   '2026-09-27:skip-prerequisite 原本不看 browserRequired,CI 的瀏覽器 job 缺建置會被印成略過、exit 0(整批靜默通過)',
+   { env: { GOVERNANCE_BROWSER_REQUIRED: '1' } }],
+  ['建置過時(STALE-BUILD),但 lane 宣告 GOVERNANCE_BROWSER_REQUIRED=1 → 紅',
+   { baseCode: 2, baseOut: '✗ STALE-BUILD:原始碼比 storybook-static 新' },
+   (r) => r.status === 1 && /GOVERNANCE_BROWSER_REQUIRED=1/.test(r.out) && !skipped(r),
+   '同上:CI 的瀏覽器 job 才剛 build 完,過時代表 job 的順序壞了',
+   { env: { GOVERNANCE_BROWSER_REQUIRED: '1' } }],
   // ── 起不了瀏覽器 ──
   ['起不了瀏覽器(一般環境)→ 略過',
    { baseCode: 0, baseOut: '⚠️ SKIPPED-ENV: Chromium 起不來' },

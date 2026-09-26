@@ -260,6 +260,55 @@ else
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 12"
 fi
 
+# Test 13: Check 12(2026-09-24)—— 產生檢視漏掉一群 hook 時,SessionStart 必須在 soft 通道印出提示(exit 0、不阻擋)。
+#   fixture 用**真實**的 provider-view-group-reachability-invariant.mjs 與它讀的每一份文件的原樣副本
+#   (腳本以自己所在目錄的上一層當 ROOT,所以整組搬進 TMP_PROJ 就能對 fixture 文件跑)。
+#   儀器先有對照組:文件齊全時腳本本身要綠、hook 要安靜;之後才拿掉 claude 檢視 PreToolUse 最後一群,
+#   要求 hook 點名該 event / 群組序號與失去覆蓋的 hook 名。序號與 hook 名都從 fixture 文件算,不寫死。
+echo "Test 13: Check 12 provider 檢視漏群組 → SessionStart soft 提示"
+setup_proj
+REPO_ROOT_13="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+REGISTRY_13="packages/governance/canonical/providers.json"
+REACH_REG_13=$(jq -r '.canonical.hookRegistrations' "$REPO_ROOT_13/$REGISTRY_13")
+CLAUDE_VIEW_13=$(jq -r '.providers[] | select(.id == "claude") | .hookConfig' "$REPO_ROOT_13/$REGISTRY_13")
+REACH_VIEWS_13=$(jq -r '.providers[] | select(.capabilities.nativeHooks == true and .hookConfigFormat == "json") | .hookConfig' "$REPO_ROOT_13/$REGISTRY_13")
+FIXTURE_OK_13=1
+for f in scripts/provider-view-group-reachability-invariant.mjs scripts/lib/provider-runtime-contract.mjs \
+         packages/governance/src/provider-review-binding.mjs packages/governance/src/canonical-order.mjs \
+         "$REGISTRY_13" "$REACH_REG_13" $REACH_VIEWS_13; do
+  if [ ! -f "$REPO_ROOT_13/$f" ]; then
+    echo "  FAIL  Test 13 fixture source missing: $f"; FIXTURE_OK_13=0; break
+  fi
+  mkdir -p "$TMP_PROJ/$(dirname "$f")" && cp "$REPO_ROOT_13/$f" "$TMP_PROJ/$f"
+done
+if [ "$FIXTURE_OK_13" = "1" ]; then
+  # 對照組:文件齊全 → 真實腳本在 fixture 裡要綠,hook 要安靜(證明 fixture 本身不是紅的來源)
+  CONTROL_OUT_13=$(cd "$TMP_PROJ" && node scripts/provider-view-group-reachability-invariant.mjs 2>&1); CONTROL_RC_13=$?
+  run_hook
+  CONTROL_HOOK_EXIT_13="$EXIT"; CONTROL_HOOK_OUT_13="$STDOUT_TEXT"
+  # 弄壞:拿掉 claude 檢視 PreToolUse 最後一群;期望的群組序號 = 原群數 − 1,失去覆蓋的 hook 名從 registrations 讀
+  GROUPS_13=$(jq -r '.hooks.PreToolUse | length' "$TMP_PROJ/$CLAUDE_VIEW_13")
+  LOST_INDEX_13=$((GROUPS_13 - 1))
+  LOST_HOOK_13=$(jq -r --argjson i "$LOST_INDEX_13" '.hooks.PreToolUse[$i].hooks[0].hook' "$TMP_PROJ/$REACH_REG_13")
+  jq '.hooks.PreToolUse |= .[:-1]' "$TMP_PROJ/$CLAUDE_VIEW_13" > "$TMP_PROJ/view.tmp" && mv "$TMP_PROJ/view.tmp" "$TMP_PROJ/$CLAUDE_VIEW_13"
+  run_hook
+  if [ "$CONTROL_RC_13" = "0" ] && [ "$CONTROL_HOOK_EXIT_13" = "0" ] && [ -z "$CONTROL_HOOK_OUT_13" ] \
+    && [ "$EXIT" = "0" ] \
+    && echo "$STDOUT_TEXT" | grep -qF "本 session 有 hook 群組沒有派工入口" \
+    && echo "$STDOUT_TEXT" | grep -qF "[claude] PreToolUse 第 ${LOST_INDEX_13} 群" \
+    && echo "$STDOUT_TEXT" | grep -qF "失去覆蓋的 hook: ${LOST_HOOK_13}" \
+    && echo "$STDOUT_TEXT" | grep -qF "重開 session" \
+    && ! echo "$STDOUT_TEXT" | grep -q "BLOCKER"; then
+    echo "  PASS  Test 13 齊全時安靜;漏群組時 soft 點名 PreToolUse 第 ${LOST_INDEX_13} 群 + ${LOST_HOOK_13}"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  Test 13 (control: script rc=$CONTROL_RC_13 hook exit=$CONTROL_HOOK_EXIT_13 out='${CONTROL_HOOK_OUT_13:0:120}'; broken: exit=$EXIT out='${STDOUT_TEXT:0:400}')"
+    FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 13"
+  fi
+else
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 13 (fixture source missing)"
+fi
+teardown_proj
+
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"
 [ "$FAIL" -gt 0 ] && { printf "Failed:%b\n" "$FAILED"; exit 1; }

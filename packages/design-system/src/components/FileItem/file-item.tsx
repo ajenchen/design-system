@@ -6,6 +6,7 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { ProgressBar } from '@/design-system/components/ProgressBar/progress-bar'
 import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 
 /**
  * FileItem — 檔案顯示 / 上傳進度
@@ -98,10 +99,10 @@ function compactBarInset(surface: FileItemProps['surface']) {
 }
 
 /**
- * 焦點框在進度條兩端留的縫(px)。與全域外描邊離元件的 `outline-offset: 2px`、頭像堆疊的縫
- * (`avatar.tsx` AVATAR_STACK_GAP_PX)同寬 —— DS 把「疊在一起的兩樣東西分開」的縫都是 2px。
+ * 焦點框在進度條兩端留的縫(px)= DS 通用的「疊在一起的兩樣東西」之間的縫(`tokens/uiSize/stack-gap.ts`,
+ * 全域外描邊的 outline-offset、頭像堆疊的縫、步驟條外圈的縫都是同一個 token)。
  */
-const BAR_RING_GAP_PX = 2
+const BAR_RING_GAP_PX = STACK_GAP_PX
 
 /**
  * @internal
@@ -270,13 +271,14 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         )}
         {statusSlot}
         {/* **動作鈕不搶整列 click,由元件自己吃掉,不要求 consumer 每次記得**(2026-09-24)。
-            Canonical 早就寫了:`patterns/element-anatomy/item-anatomy.spec.md:432`
+            Canonical 早就寫了:`patterns/element-anatomy/item-anatomy.spec.md`「suffix 可以塞什麼」表的 Inline Action 列
             「明確點擊靶子 ≤ 24px,`stopPropagation` 避免搶 row click」。
-            但先前只有 FileItem **自家**的 hover-swap 鈕做到(本檔 :179),consumer 從 `actions`
+            但先前只有 FileItem **自家**的 hover-swap 鈕做到(本檔 statusSlot 裡 `hoverAction` 那顆 Button 的 `stopPropagation`),consumer 從 `actions`
             傳進來的鈕沒有任何人做 —— 於是「點刪除 → 整列 onClick 也跟著跑 → 檔案被開起來」
             在我們自己的示範裡活到今天(實測:`已上傳` 這則點刪除鈕,FileViewer 就開)。
             同一列同時有整列 onClick 和 trailing action 時,這是**必然**會犯的錯,所以答案不是
-            在文件裡要 consumer 記得,而是元件內部把邊界劃好(同 `AgentPanel`:1441 / `DataTable`:3111)。
+            在文件裡要 consumer 記得,而是元件內部把邊界劃好(同 `agent-panel.tsx` 選項卡裡「其他(自由輸入)」輸入框的
+            `stopPropagation` / `data-table.tsx` 選取欄 `cellEl` 裡 Checkbox 與 RadioGroupItem 的 `stopPropagation`)。
             **只包 `actions`、不包整個 suffix**:suffix 裡的 `{progress}%` 與被動狀態圖示是唯讀
             metadata,item-anatomy「suffix 可以塞什麼」表明寫唯讀 metadata「不搶 row click target」
             = 點它仍該開整列,所以那兩個不進這層。

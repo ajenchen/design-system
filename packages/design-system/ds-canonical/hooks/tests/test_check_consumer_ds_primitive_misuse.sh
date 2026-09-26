@@ -232,6 +232,20 @@ expect_silent "29. 只 hover 無 selected → silent"
 run_hook "$PROD_TSX" 'export const C = () => <div className="hover:bg-neutral-hover bg-neutral-selected">x</div> // @nav-row-handcraft-ok: calendar cell 非 menu 語義'
 expect_silent "30. @nav-row-handcraft-ok escape → silent"
 
+# 2026-09-25 滑過底色放寬:認任何 `-hover` 配對 token(color.spec.md「Hover 換色配對總則」),不只 hover:bg-neutral-hover 這一串字;
+# 唯一排除 neutral-selected-hover(切換鈕專屬)。放寬前 fixture 只有 neutral-hover,新認的配對 0 案例。
+# 30b. POSITIVE:hover:bg-secondary-hover + bg-neutral-selected + button → 也被認得,BLOCK
+run_hook "$PROD_TSX" 'const cls = `flex w-full items-center gap-2 rounded-md hover:bg-secondary-hover ${sel ? "bg-neutral-selected" : ""}`; export const C = () => <button type="button" className={cls}>Task</button>'
+expect_block "30b. 手刻 nav row 用 hover:bg-secondary-hover 配對 → 也被認得,BLOCK"
+
+# 30c. POSITIVE:var() + ! 寫法 hover:!bg-[var(--surface-hover)] → 也被認得,BLOCK
+run_hook "$PROD_TSX" 'const cls = `flex w-full items-center gap-2 rounded-md hover:!bg-[var(--surface-hover)] ${sel ? "bg-neutral-selected" : ""}`; export const C = () => <button type="button" className={cls}>Task</button>'
+expect_block "30c. 手刻 nav row 用 hover:!bg-[var(--surface-hover)] 寫法 → 也被認得,BLOCK"
+
+# 30d. NEGATIVE(唯一排除):hover:bg-neutral-selected-hover 是可取消切換鈕專屬,出現它代表切換鈕不是 menu-item 列 → silent
+run_hook "$PROD_TSX" 'export const C = () => <button type="button" aria-pressed={sel} className="bg-neutral-selected hover:bg-neutral-selected-hover">Bold</button>'
+expect_silent "30d. hover:bg-neutral-selected-hover(切換鈕)不算 menu-item 列簽名 → silent"
+
 # ── 2026-07-10 批次 A(治理覆蓋 matrix 收官)──
 # 31. C5 POSITIVE:亮色底 + text-white 對比配對違規 → BLOCK
 run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-amber-6)] text-white size-4">A</span>'

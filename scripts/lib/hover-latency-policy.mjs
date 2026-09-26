@@ -50,9 +50,14 @@ export const STREAM_STALL_MS = 500
  * **不論有沒有「命中」一律看不到**(命中的可能正是把手淡入造成的變化)。舊取樣點「列左緣 +6」捲動後那幾次
  * 「1.5 秒沒變色」就是這樣來的。`owned` 必須明確給 true / false:沒量就是沒量,不得當成「屬於」。
  */
-export function isBlindSample({ owned, ...stream }) {
+export function isBlindSample({ owned, baseline = true, ...stream }) {
   if (typeof owned !== 'boolean') throw new TypeError(`isBlindSample:owned 必須是 true / false(取樣點有沒有證明屬於那一列),實得 ${JSON.stringify(owned)}`)
+  if (typeof baseline !== 'boolean') throw new TypeError(`isBlindSample:baseline 必須是 true / false(有沒有拿到 hover 前的基準幀),實得 ${JSON.stringify(baseline)}`)
   if (!owned) return true
+  // 2026-09-27(M37):hover **之前**的靜置期串流一張幀都沒送 → 沒有基準可比 → 這一次什麼都看不到。
+  // 先前閘在這裡 `continue`:樣本既不進 samples 也不進 blindness,判定表根本不知道有這一次 —— 樣本數默默變少,
+  // starved(可用樣本不足 = 儀器失效)永遠算不到它。看不到就要記成看不到,不得跳過。
+  if (!baseline) return true
   return isStreamBlind(stream)
 }
 

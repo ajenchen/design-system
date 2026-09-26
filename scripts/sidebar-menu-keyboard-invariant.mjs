@@ -25,6 +25,7 @@
  *   S6 只在滑過時出現的動作鈕(actionsReveal="hover"),焦點在這一列(列或它的動作鈕)時 opacity = 1。
  *   S7 當前頁(aria-current="page")在這一串時,Tab 進來落在它。
  *   S8 列本身是選單觸發鈕(帳號列):↓ 不開選單、焦點不動;Enter 開得了(同一個觀測器看得到選單 → 證明 ↓ 那一格的「0 個選單」不是沒看到)。
+ *      「不開」是負向主張:↓ 之後等版面連續 10 個影格靜止(選單若開會掛 portal + 進場動畫)再數,不睡固定毫秒(2026-09-27,M37)。
  *   S9(指標,2026-09-26 待辦總帳 N53 ①)兩顆動作鈕之間的空隙歸列:命中列鈕、點下去列成為當前頁;對照點(按鈕懸停底色內)命中按鈕。
  *
  * 對照組(--selftest):在 document 的 capture 階段吞掉 keydown(React 收不到方向鍵),並把每串所有列與動作鈕
@@ -38,6 +39,7 @@
  */
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { settleAfterInteraction } from './lib/launch-browser.mjs'
 
 export const STORY_IDS = {
   mixed: 'design-system-components-sidebar-展示--mixed-content',
@@ -242,9 +244,14 @@ export async function runSidebarKeyboardChecks(page, story) {
     if (d.label !== '帳號與設定') rec(false, 'S8', `mixed:走不到帳號列(實得「${d.label}」)`)
     else {
       d = await press(page, 'ArrowDown')
-      await page.waitForTimeout(400)
+      // 負向主張「↓ 不開選單」的觀測窗(2026-09-27,M37;取代固定睡 400ms):選單若開,是 keydown 同步 setState → 下一次 commit
+      // 掛上 portal(DOM 變動)+ 進場動畫(有限動畫);等版面連續 10 個影格靜止,這兩件事都跑完了才數 —— 慢的機器只會等久一點,
+      // 不會提早數到 0。什麼都沒開時版面本來就靜止,等滿 10 格就回來(lib/launch-browser.mjs settleAfterInteraction 註解)。
+      // 等不到靜止 = 儀器失效,不是「沒開」。
+      const settledAfterDown = await settleAfterInteraction(page, { frames: 10 })
       const menusAfterDown = await page.evaluate(() => [...document.querySelectorAll('[role="menu"]')].filter((m) => m.getClientRects().length > 0).length)
-      rec(menusAfterDown === 0 && d.label === '帳號與設定', 'S8', `mixed:帳號列上 ↓ 不開選單、焦點不動(開著的選單 ${menusAfterDown} 個,焦點「${d.label}」)`)
+      if (!settledAfterDown.ok) rec(false, 'S8', `mixed:帳號列上 ↓ 之後版面 ${settledAfterDown.framesWaited} 格內沒有靜止(變動 ${settledAfterDown.lateChanges} 次)—— 儀器失效,不是通過`)
+      else rec(menusAfterDown === 0 && d.label === '帳號與設定', 'S8', `mixed:帳號列上 ↓ 不開選單、焦點不動(版面靜止後開著的選單 ${menusAfterDown} 個,焦點「${d.label}」)`)
       await page.keyboard.press('Enter')
       const opened = await page.waitForSelector('[role="menu"]', { state: 'visible', timeout: 3000 }).then(() => true, () => false)
       rec(opened, 'S8', 'mixed:帳號列上 Enter 開得了選單(同一個觀測器看得到選單)')
