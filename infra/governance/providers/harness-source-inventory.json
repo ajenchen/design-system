@@ -493,6 +493,7 @@
       "scripts/test-product-template-scaffold-lock.mjs",
       "scripts/test-propose-provider-cli-package-content.mjs",
       "scripts/test-provider-view-group-reachability-invariant.mjs",
+      "scripts/test-rating-field-size-invariant.mjs",
       "scripts/test-release-finalizer-mirror-handoff.mjs",
       "scripts/test-repository-hygiene-invariant.mjs",
       "scripts/test-rsync-checksum-invariant.mjs",
