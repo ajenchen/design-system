@@ -625,7 +625,11 @@ jobs:
     # `ci-workflow-scope.test.mjs` 釘住的契約。**調高上限是錯的解**(我試過,撞測試);
     # 搬到排程的 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 都跑。
     # 所以照既有做法拆成平行 job:兩邊各約 7-9 分鐘,都在 15 分鐘內。
-    timeout-minutes: 15
+    # 2026-09-27:拆出來之後閘又長了(form-gap-token 等),本分支 8 筆 CI 實測 11.9 / 12.7 / 12.8 / 13.2 / 14.6 分成功,
+    # 15.1 / 15.1 / 15.2 分三次撞 15 分預算被取消 —— 每一次被砍的那輪,砍掉前的判定全是綠的,砍掉之後 verify 紅、
+    # 發布閘 fail closed。依 2026-09-21 interaction job 的先例(timeout 是執行時間預算不是正確性門檻)改 25,
+    # 並列入 ci-workflow-scope.test.mjs 的 SLOW_BROWSER_JOBS(仍在 25 分硬上限內,真的卡死照樣抓得到)。
+    timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'

@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:86179027fb69f723b9a23bafdcf1321b00c82c9fb3f02ca85e908867b0b50241` |
+| github-repository-governance | `.github/` | `sha256:82eb4598244fcc5260967e383732c0b2757229cf607a3a5658e3aac8e7eca0dd` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:203f9c6346446d727be5925af12b425ee35e33c6d55ecf934e21aa7b0555d3ca` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -203,7 +203,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:90ea8b648deef6df59ba46f48069a551112cb41982cf9a771edeb2ad355db6ce` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:2a68dccfe4cd4294688608263b7ccb6834e1b0675fe38ff751c335440bf40399` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:2155e9ad08dfd0e131485bd30f3b56b113fb92fd8b45e0a81c47f83264107e7c` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:746c82754bb7da8e83d9455734f0511d25812b111f7cd506ec496a016f3764b2` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:906747cec87d2ec1b9b63c125ca2fc03bb68e3c6a7abd14147698671528bfb0d` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:ee94362513e8c84d74cfa96997783b45a6a005c150d7303a7b42e7f484346d14` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
@@ -230,7 +230,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-package-contract | `packages/governance/package.json` | `sha256:68379a4234d7968f5a90442e895032e32cfd9b35002bb825d65902f78c3e624d` |
 | governance-package-readme | `packages/governance/README.md` | `sha256:b641280efb0522ac75abb902cd60ab4dec509488295e056079fc97eaad598500` |
 | governance-package-runtime-corpus | `packages/governance/src/` | `sha256:ef4c7ad7280a6b2ea1b8db9f187f6f15d537520ecb2f8c0c57b2a6c396285273` |
-| governance-package-test-corpus | `packages/governance/test/` | `sha256:d6570f6b251570010a388be90add42c6876711eba0f6a24a78a1c09294f88708` |
+| governance-package-test-corpus | `packages/governance/test/` | `sha256:040b5f58821d608d59d15b83e87588150b8fece255b091c3eea62904f0e985c7` |
 | governance-playwright-runtime-library | `infra/governance/lib/playwright-runtime.mjs` | `sha256:62df0bd1c94d1859b9348eb488357a4eae136340d5f016bbeba0c7e87559843a` |
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
@@ -306,7 +306,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
 | provider-neutral-memory | `governance/memory` | `sha256:3d2d119d86f2b724678e3ee1c849c1350ee239ecd9dfab31c053c54382683b2a` |
-| provider-neutral-planning-ledger | `governance/planning` | `sha256:04a2bace9dabc0b1199fb54325ed4132cda27e0b6e4e93aa1a7421f62eea828f` |
+| provider-neutral-planning-ledger | `governance/planning` | `sha256:6362ecf7a2721e0a769d20f1d0cb83b50730b28447856f0a924bf6676f3a2642` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |
 | provider-review-binding-library | `packages/governance/src/provider-review-binding.mjs` | `sha256:00fd8e1f7193dc0d76b8c3d586889c51b8f8ff47e991a4682e6105937f3a3514` |

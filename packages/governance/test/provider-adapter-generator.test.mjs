@@ -1673,7 +1673,13 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   await wait(8)
   let liveAppendResult
   try {
-    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript)
+    // 2026-09-27 CI 紅一次(0 !== 70;之前多次全綠):runner 的擷取窗只有一次讀取加兩次 stat(遠小於 1ms),
+    // 寫入器每 1–2ms 追加一筆 —— 只要事件迴圈或共享 runner 把寫入器延遲一下,runner 就拿到一個**合法的**
+    // 靜止切面而 exit 0。「寫入器還活著 ⇒ runner 必看到變動」是時序代理(M37),跟下面 optional-append
+    // 2026-09-23 那次同一種病。改用 runner 自己的測試探針:第一次讀取之後**等到真的觀察到 metadata 變動**
+    // 才做第二次讀取,於是「成長中的 transcript 必 70」不再靠排程運氣;探針等不到變動會以
+    // TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
+    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
   } finally {
     appendActive = false
     await appendLoop
@@ -1705,7 +1711,8 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   await wait(8)
   let livePartialResult
   try {
-    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript)
+    // 同上:成長中的半截記錄也要用探針把「變動落在兩次讀取之間」釘死,不靠排程運氣
+    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
   } finally {
     partialActive = false
     await partialLoop
