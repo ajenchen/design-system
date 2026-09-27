@@ -56,7 +56,7 @@ export interface RatingProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   onChange?: (value: number) => void
   /** 滿分(預設 5) */
   max?: number
-  /** 尺寸,同 Switch / Checkbox:明傳最優先,否則跟所在容器(Field 明確指定的 size、表格 surface size),都沒有才 md。沒有 xs(2026-09-27 退役) */
+  /** 尺寸。預設 md、元件只有內容高(同 Switch / Checkbox);解析序同 Input 類:明傳 > Field 明確指定 > Field 預設 md > 表格 surface size > md。沒有 xs(2026-09-27 退役) */
   size?: RatingSize
   /** 唯讀:顯示精簡版「★ 數值 (評論數)」,不響應 hover / click / 鍵盤 */
   readOnly?: boolean
@@ -137,7 +137,7 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     // written next to it」、`count`「formatted with a thousands separator … displayed next to the value」
     // (github.com/microsoft/fluentui react-rating `RatingDisplay.types.ts`,2026-09-26 讀 master)。
     // 本 DS 不另拆元件:唯讀一律走這條,互動才畫五顆星(user 2026-09-26 選的是「唯讀一律精簡版」)。
-    // 星走 icon tier(16 / 16 / 16 / 20);星 ↔ 數值的縫四個尺寸都是 gap-1 4px —— Rating 內只有一種縫(可以點的星與星之間也是 4px),
+    // 星走 icon tier(16 / 16 / 20);星 ↔ 數值的縫三個尺寸都是 gap-1 4px —— Rating 內只有一種縫(可以點的星與星之間也是 4px),
     // user 2026-09-27 拍板(原話「我覺得星號與文字gap應該跟這個一樣都是4px吧？」→「照你建議」);Fluent 2 RatingDisplay 16px 星 + 12px 字
     // 亦是 4px、Tag 資料指示器圖示 ↔ 文字 4px。出處、實量與世界級對照見 rating.spec.md「唯讀精簡版」。
     if (readOnly) {

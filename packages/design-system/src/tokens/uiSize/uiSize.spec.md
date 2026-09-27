@@ -46,7 +46,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | sm / md / lg | **`md`** | —(不消費 field-height:元件只有內容高,可以點的星 20/24/24 = 元件高、唯讀精簡版 21/21/24;列高由 Field 控件槽 `min-h-field-*` 供給,同 Checkbox / Switch。星走 identity scale 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不完全對齊 `--field-height-*`」+「為什麼不完全對齊 icon tier」+ 本檔「跨 regime pointer index」carve-out row;xs 於 2026-09-27 退役) |
+| `Rating` | sm / md / lg | **`md`** | `--field-height-md`(Field 槽;控件 20/24px 對應,元件本身不消費容器:可以點的星 20/24/24 = 元件高、唯讀精簡版 21/21/24;列高由 Field 控件槽 `min-h-field-*` 供給,同 Checkbox / Switch。星走 identity scale 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不完全對齊 `--field-height-*`」+「為什麼不完全對齊 icon tier」+ 本檔「跨 regime pointer index」carve-out row;xs 於 2026-09-27 退役) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -73,7 +73,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 2. 三個欄位(現況 / Rationale / 世界級對照)**都要填**,缺一不可——特別是「世界級對照」不能省,mindset #1 要求對標
 3. 位置:必須在 spec 的「尺寸」主章節之下(不是埋在「何時不用」或「禁止事項」等其他章節)
 
-**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Slider / Textarea / Rating(2026-04-21 批次補齊,五欄格式統一)
+**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「size 只控 root 容器外高」段的散文,沒有用這個子標題(2026-09-27 核對)。
 **需補齊 rationale 段的元件**:(無 — Phase 2 已全部補齊)。未來新增偏離 field-height 的元件 → 必須按本格式寫(三欄格式為本 spec 約定,非機械 enforce;`/design-system-audit` 僅經 audit-prompts 通用 rationale-grep + Rule B density flag 間接把關)。
 
 **audit hook 未來擴展**:若 cva `defaultVariants.size` 不是 `md`,或 `size` variants 的數值不命中 `--field-height-*`,hook 可要求 spec.md 必有符合格式的 rationale 段,否則 block merge(列為 post-Phase-2 可考慮加上的 mechanical gate)。
@@ -200,7 +200,7 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
+| Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20(`starSize = controlHeight × 0.625`)/ MUI 24(medium),出處在 owner 段 |
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |

@@ -32,6 +32,7 @@ export const EXPECTED = {
   standalone: 'md',        // Field 外沒傳 size → md(同 Switch / Checkbox;沒有 standalone 專用預設)
   standaloneSm: 'sm',      // Field 外明傳 sm → sm
   surfaceLg: 'lg',         // 表格 surface size lg、無 Field → lg(field-context surface-size 序)
+  fieldInSurfaceLg: 'md',  // surface lg 裡再包一個沒指定 size 的 Field → Field 預設 md 先於 surface(field-context 解析序;實務 cell 不包 Field,邊界格)
   runtimeXs: 'sm',         // 執行期傳 'xs'(型別已拒,JS 仍可能傳)→ 映到 sm
 }
 const CONTAINER_CLASS = /\b(?:min-)?h-field-(?:xs|sm|md|lg)\b/
@@ -75,6 +76,7 @@ const cases: Record<string, JSX.Element> = {
   standalone: R(),
   standaloneSm: R({ size: 'sm' }),
   surfaceLg: <FieldSurfaceSizeProvider size="lg">{R()}</FieldSurfaceSizeProvider>,
+  fieldInSurfaceLg: <FieldSurfaceSizeProvider size="lg"><Field><FieldLabel>滿意度</FieldLabel>{R()}</Field></FieldSurfaceSizeProvider>,
   runtimeXs: R({ size: 'xs' as never }),
 }
 const warns: string[] = []
