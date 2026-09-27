@@ -18,7 +18,7 @@ type ModeKey = 'interactive' | 'readOnly' | 'disabled'
 const SIZES: SizeKey[] = ['xs', 'sm', 'md', 'lg']
 // 可以點的評分:每顆星對齊 item-anatomy inline Avatar(sm=20 / md=24 / lg=24),詳見 rating.spec.md「為什麼不完全對齊 icon tier」
 const SIZE_PX: Record<SizeKey, number> = { xs: 20, sm: 20, md: 24, lg: 24 }
-// 唯讀精簡版:星與字照 Button 的 icon + label 配對(rating.spec.md「Size — 唯讀精簡版」表)
+// 唯讀精簡版:星走 icon tier,星 ↔ 數值間距走「圖示 ↔ 文字」兩檔規則(12px 字 4px、其餘 8px;rating.spec.md「唯讀精簡版」表)
 const COMPACT: Record<SizeKey, { star: number; text: string; gap: string }> = {
   xs: { star: 16, text: 'text-caption (12px)', gap: 'gap-1 (4px)' },
   sm: { star: 16, text: 'text-body (14px)', gap: 'gap-2 (8px)' },
@@ -362,7 +362,7 @@ export const SizeMatrix = {
         <Desc>
           可以點的評分:每顆 star icon sm=20 / md=24 / lg=24,對齊 item-anatomy inline Avatar——
           一顆星是 filled identity 視覺(主要資料點),跟 Avatar 同重量才能在 row 內 visual weight 對齊。
-          唯讀精簡版:星是數值旁的圖示,星與字照 Button 的 icon + label 配對(16/16/16/20 px、12/14/14/16px 字、4/8/8/8px 間距)。
+          唯讀精簡版:星是數值旁的圖示,走 icon tier(16/16/16/20 px);星與數值的間距照本 DS「圖示 ↔ 文字」兩檔規則——12px 字 4px、14/16px 字 8px(4/8/8/8px),與 GitHub「★ 20.3k」同款。
           兩者 container 都走 `--field-height-*`(xs=24 / sm=28 / md=32 / lg=36)。詳見 rating.spec.md「Size」。
         </Desc>
       </div>
@@ -403,7 +403,7 @@ export const SizeMatrix = {
           Input / NumberInput / DatePicker / Select / Button 等 field-height family 元件並排同一 row 時高度對齊。
           這一層是「外框高度」對齊。可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
           而非 icon tier（16/16/20）——因為每一顆星是 filled identity 視覺（主要資料點），視覺份量要跟 Avatar 齊；
-          唯讀精簡版的那一顆星則是數值旁的圖示，走 icon tier，與 Button 的 icon + label 同一張表。
+          唯讀精簡版的那一顆星則是數值旁的圖示，走 icon tier；星與數值的間距是「圖示 ↔ 文字」的兩檔(12px 字 4px、其餘 8px)。
         </p>
       </div>
     </div>

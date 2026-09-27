@@ -141,8 +141,9 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     // written next to it」、`count`「formatted with a thousands separator … displayed next to the value」
     // (github.com/microsoft/fluentui react-rating `RatingDisplay.types.ts`,2026-09-26 讀 master)。
     // 本 DS 不另拆元件:唯讀一律走這條,互動才畫五顆星(user 2026-09-26 選的是「唯讀一律精簡版」)。
-    // 星 + 字的配對照 Button 的 icon + label 尺寸表(button.spec.md「Size」:xs = 12px 字 + 4px 間距,
-    // 其餘 16/20px icon tier + text-body / text-body-lg + 8px),不另發明。
+    // 星走 icon tier(16 / 16 / 16 / 20);星 ↔ 數值的間距走本 DS「圖示 ↔ 文字」兩檔規則:12px 字 4px、14 / 16px 字 8px
+    // (列內容 gap-2,item-anatomy.spec.md;Button xs 4px)。世界級同款:GitHub「★ 20.3k」16px 圖示 + 8px + 14px 字、
+    // 12px 字 4px;Fluent 2 RatingDisplay compact 4 / 6 / 8px 隨尺寸。出處與實量數字見 rating.spec.md「唯讀精簡版」。
     if (readOnly) {
       const shown = Math.max(0, Math.min(max, currentValue))
       return (

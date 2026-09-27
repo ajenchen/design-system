@@ -73,7 +73,9 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 唯讀精簡版（一顆星 + 數值 + 評論數）
 
-星與字的配對直接消費 Button 的 icon + label 尺寸表(`../Button/button.spec.md`「Pill Layout」Sub-profile 1 表 + 「間距機制」:icon ↔ label 實際視覺間距 sm/md/lg = 8px、xs = 4px),不另發明(`rating.tsx` readOnly 分支註解同此)。
+星 ↔ 數值的間距走本 DS「圖示 ↔ 文字」的兩檔規則:**12px 字配 4px、14 / 16px 字配 8px**(列內容的圖示 ↔ 文字 = `gap-2` 8px,`../../patterns/element-anatomy/item-anatomy.spec.md`;Button xs 12px 字 = 4px,`../Button/button.spec.md`「間距機制」)。它是「一顆星當數值的圖示」的展示列,不是 pill 內的指示器(Tag 那型 4px),也不是動作鈕 —— 早先寫「消費 Button 的 icon + label 表」只是數字相同,理由不對,2026-09-27 user 問「星與文字的間距是怎麼來的」後重查、改寫(`rating.tsx` readOnly 分支註解同此)。
+
+**世界級對照(2026-09-27 讀原始碼 + 實機量)**:同一種「16px 圖示 + 數字」展示列,GitHub 儲存庫頁的星數「★ 20.3k」= 16px octicon + `mr-2` 8px + 14px 字,而 12px 字的 commit 數則是 4px(2026-09-27 headless Chromium 實量 github.com/microsoft/fluentui;`mr-1` / `mr-2` = Primer `$spacer-1` 4px / `$spacer-2` 8px,[layout.scss](https://github.com/primer/css/blob/main/src/support/variables/layout.scss));Ant Design v4 星旁文字 `.ant-rate-text { margin: 0 8px }`([index.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/rate/style/index.less))。唯一有「一顆星 + 數值」精簡版的設計系統是 Fluent 2 `RatingDisplay compact`,它比我們緊一檔:16px 星 + 12px 字 4px(= 本 DS xs)、20px 星 + 14px 字 6px、28px 星 + 16px 字 8px([useRatingDisplayStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingDisplay/useRatingDisplayStyles.styles.ts) `marginLeft: spacingHorizontalXS / SNudge / S`,[spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) 4 / 6 / 8px)。Google Play「4.3★」與 App Store「4.8★」是另一種構造:星比字小(12px 星配 14px 字、10px 星配 22px 字)、貼在數字**後面** 0–3px,像數字的角標(2026-09-27 實量),本 DS 不採 —— 星維持 icon tier 16 / 20px。「一個空格」在本 DS 字級下是 3.4 / 3.8 / 4.2px:xs 的 4px 約等於一個空格;sm 以上是兩個,與 GitHub 同。
 
 | Size | Container 高度 | 星 | 數值與評論數字級 | 星 ↔ 數值間距 | 使用情境 |
 |------|---------------|----|----------------|--------------|---------|
@@ -104,7 +106,7 @@ Rating 的 **container 高度消費 `--field-height-*` token**(sm=28 / md=32 / l
 
 **為什麼對齊 Avatar 不對齊 icon tier**:可以點的每一顆星是 filled shape 的「主要資料視覺」(一顆星 = 一個資料點),與同為 filled 的 identity 元件(Avatar)同尺寸才能在 row 裡 visual weight 對齊;次要 affordance(Input startIcon / Button iconOnly)才走 icon tier(16/16/20)。(歷史:早期 16/16/20 對齊 icon tier,星星比並排 avatar「小一號」——AR48 修正。)
 
-**唯讀精簡版不在此例外內**:它的星是數值旁的圖示,照上方「唯讀精簡版」表走 icon tier(16/16/16/20),與 Button 的 icon + label 同一張表。
+**唯讀精簡版不在此例外內**:它的星是數值旁的圖示,照上方「唯讀精簡版」表走 icon tier(16/16/16/20),間距走「圖示 ↔ 文字」兩檔規則(同上)。
 
 ### 放入 Field 的可組合性
 
@@ -232,7 +234,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,user 2026-05-09 拍板),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
 | 唯讀數值 | `text-foreground` | `--color-neutral-9` | 精簡版的數值(取一位小數),`tabular-nums` |
 | 唯讀評論數 | `text-fg-secondary` | `--color-neutral-8` | 精簡版括號內的評論數,千分位 |
-| 唯讀星與字的尺寸 | 見「Size — 唯讀精簡版」 | — | 照 Button 的 icon + label 配對,不另發明 |
+| 唯讀星與字的尺寸 | 見「Size — 唯讀精簡版」 | — | 星走 icon tier,間距走「圖示 ↔ 文字」兩檔規則(12px 字 4px、其餘 8px),不另發明 |
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽（只有整顆）；星星尺寸不變 |
 | Focus ring | `:focus-visible`(全域規則,無 class)+ `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器顯示全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class,圓角跟著 `rounded-md`;**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
 | Gap between stars | `gap-1` | 4px | 可以點的星與星之間的間距，不隨 size 變化 |
@@ -258,8 +260,6 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 - **disabled**：`aria-disabled="true"` + `pointer-events-none`
 - **單顆星** `aria-hidden`：內部點擊目標是 `<span role="presentation" aria-hidden>`（非 interactive element，避免與外層 `role="slider"` 形成 axe nested-interactive 違規，2026-04-25 修正）都不干擾螢幕閱讀器，父層 role 獨自表達語意
 
----
-
 ## 禁止事項
 
 - ❌ **不用其他色相填充**（藍 / 綠 / 紫 / 紅）——黃星是世界級 convention，破壞使用者的視覺記憶
@@ -271,8 +271,6 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 - ❌ **不用於 binary 情境**（「喜歡 / 不喜歡」）——改用 Switch 或 thumbs icon button
 - ❌ **interactive 狀態下不與 `Field` 的 `Label` 分離超過一個 section**——使用者要清楚「這個評分屬於誰 / 哪個面向」
 - ❌ **`max` 不設超過 7**——超過使用者無法快速掃視，若需更細分度改用 Slider（連續 0–100）
-
----
 
 ## 邊界案例
 
@@ -286,15 +284,13 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 - **Disabled / Loading**:整塊 dim(`opacity-disabled`),兩者視覺同、語義與 ARIA 不同 — 見「Interactive vs ReadOnly」表 +「Loading canonical」段。
 - **Dark mode**:`--warning` / `--divider` / `--foreground` / `--fg-secondary` semantic token 自動 adapt,Rating 不 own dark token。
 
----
-
 ## 相關
 
 - **`Slider`** — 連續數值選擇（0–100、音量、亮度、價格區間）。Rating vs Slider 分界：離散 tier = Rating，連續值 = Slider
 - **`Tag`** — 靜態文字分類標記（「熱門」「Beta」「NEW」）。Rating 是量化,Tag 是文字分類(Badge 僅 count/dot,不承載文字)
 - **`Switch`** — 二元 on/off。Rating 是 graded，Switch 是 binary
 - **`Button iconOnly + pressed={liked}`** — 愛心 / like 的正確實作
-- **`Button`** — 唯讀精簡版的星與字尺寸配對來源(`../Button/button.spec.md`「Pill Layout」)
+- **`item-anatomy`** — 唯讀精簡版星 ↔ 數值間距的來源(列內容圖示 ↔ 文字 `gap-2`;12px 字 4px 同 `../Button/button.spec.md` xs)
 - **Color token 例外** — `color.spec.md`「共用 `--warning` 色相但語境不同」段落
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
