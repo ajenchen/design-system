@@ -47,6 +47,24 @@ function nativeHandlerCount(view) {
   return Object.values(view.config.hooks).flatMap((groups) => groups.flatMap((group) => group.hooks)).length
 }
 
+// 原生 handler 應有幾個,由 canonical 登記推導:一個 canonical 群組只要還有任一支 hook 投影給這個
+// provider,就恰好產生一個 `--event … --group …` 派工入口;整群被排除的群組不產生。
+// 2026-09-24:這幾處原本寫死 16,PreToolUse 多了第 7 群(批准前檢查)就在 CI 假紅。2026-09-21 同一個
+// 檔案才把 hook「總數」從寫死改成推導,同族的這幾個數字卻沒一起改(M10 同族必列完;M37 代理)。
+const hookRegistrations = JSON.parse(await readFile(
+  resolve(repoRoot, 'packages/design-system/ds-canonical/hooks/registrations.json'),
+  'utf8',
+))
+
+function expectedGroupHandlerCount(view) {
+  const projected = new Set(view.projected.map(({ event, hook }) => `${event}\0${hook}`))
+  const count = Object.entries(hookRegistrations.hooks).reduce((sum, [event, groups]) => sum + groups
+    .filter((group) => group.hooks.some((descriptor) => projected.has(`${event}\0${descriptor.hook || descriptor.command}`)))
+    .length, 0)
+  assert.ok(count > 0, 'canonical 群組推導數必須非零,否則下面全是空斷言')
+  return count
+}
+
 test('hook base-template merge dispatch is contract-driven and provider-neutral', async (t) => {
   const sourceRoot = await mkdtemp(resolve(tmpdir(), 'hook-base-contract-'))
   t.after(() => rm(sourceRoot, { recursive: true, force: true }))
@@ -128,8 +146,8 @@ test('Claude and Codex mechanically project the complete compatible hook corpus'
   assert.equal(claude.projected.length, canonicalHookCount)
   assert.equal(codex.projected.length + codex.excluded.length, canonicalHookCount)
   assert.equal(codex.excluded.length, 3)
-  assert.equal(nativeHandlerCount(claude), 16)
-  assert.equal(nativeHandlerCount(codex), 16)
+  assert.equal(nativeHandlerCount(claude), expectedGroupHandlerCount(claude))
+  assert.equal(nativeHandlerCount(codex), expectedGroupHandlerCount(codex))
   assert.equal(codex.excluded.every((item) => item.reasonCode === 'STABLE_TRANSCRIPT_CONTRACT_UNAVAILABLE'), true)
   assert.deepEqual(codex.excluded.map((item) => item.hook).sort(), [
     'check_propose_without_benchmark.sh',
@@ -138,7 +156,7 @@ test('Claude and Codex mechanically project the complete compatible hook corpus'
   ])
   for (const view of [claude, codex]) {
     const commands = Object.values(view.config.hooks).flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)))
-    assert.equal(commands.filter((command) => command.includes('run-provider-hook.mjs')).length, 16)
+    assert.equal(commands.filter((command) => command.includes('run-provider-hook.mjs')).length, expectedGroupHandlerCount(view))
     assert.equal(commands.every((command) => command.includes(' --event ') && command.includes(' --group ')), true)
     assert.equal(commands.every((command) => !command.includes(' --hook ')), true)
     assert.equal(commands.every((command) => command.startsWith('/usr/bin/env -u ')), true)
@@ -311,8 +329,8 @@ test('synthetic Alpha and Beta providers project the same semantics in both dire
   assert.ok(canonicalHookCount > 0, 'canonical hook 登記數必須非零')
   assert.equal(alphaView.projected.length, canonicalHookCount)
   assert.equal(betaView.projected.length, canonicalHookCount)
-  assert.equal(nativeHandlerCount(alphaView), 16)
-  assert.equal(nativeHandlerCount(betaView), 16)
+  assert.equal(nativeHandlerCount(alphaView), expectedGroupHandlerCount(alphaView))
+  assert.equal(nativeHandlerCount(betaView), expectedGroupHandlerCount(betaView))
   assert.deepEqual(alphaView.excluded, [])
   assert.deepEqual(betaView.excluded, [])
 })
@@ -365,9 +383,10 @@ test('a synthetic future provider needs explicit semantic certification and rece
   assert.equal(built.report[0].projectedHooks, codexBaseline.projected.length)
   assert.equal(built.report[0].exclusions.length, codexBaseline.excluded.length)
   assert.equal(built.targets.some((item) => item.path.endsWith('.future-provider/skills/canonical-reviewer/SKILL.md')), true)
-  const portableHooks = buildProviderHookView({ providerId: future.id, registry }).config
+  const portableView = buildProviderHookView({ providerId: future.id, registry })
+  const portableHooks = portableView.config
   const argvHandlers = portableHooks.events.flatMap((event) => event.groups.flatMap((group) => group.handlers))
-  assert.equal(argvHandlers.length, 16)
+  assert.equal(argvHandlers.length, expectedGroupHandlerCount(portableView))
   assert.equal(argvHandlers.every((handler) => Array.isArray(handler.argv)), true)
   assert.equal(argvHandlers.every((handler) => (
     handler.argv[0] === '/usr/bin/env'
@@ -1654,7 +1673,13 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   await wait(8)
   let liveAppendResult
   try {
-    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript)
+    // 2026-09-27 CI 紅一次(0 !== 70;之前多次全綠):runner 的擷取窗只有一次讀取加兩次 stat(遠小於 1ms),
+    // 寫入器每 1–2ms 追加一筆 —— 只要事件迴圈或共享 runner 把寫入器延遲一下,runner 就拿到一個**合法的**
+    // 靜止切面而 exit 0。「寫入器還活著 ⇒ runner 必看到變動」是時序代理(M37),跟下面 optional-append
+    // 2026-09-23 那次同一種病。改用 runner 自己的測試探針:第一次讀取之後**等到真的觀察到 metadata 變動**
+    // 才做第二次讀取,於是「成長中的 transcript 必 70」不再靠排程運氣;探針等不到變動會以
+    // TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
+    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
   } finally {
     appendActive = false
     await appendLoop
@@ -1686,7 +1711,8 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   await wait(8)
   let livePartialResult
   try {
-    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript)
+    // 同上:成長中的半截記錄也要用探針把「變動落在兩次讀取之間」釘死,不靠排程運氣
+    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
   } finally {
     partialActive = false
     await partialLoop

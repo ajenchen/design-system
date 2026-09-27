@@ -59,10 +59,13 @@ if [ -n "$HITS" ]; then
   fi
 fi
 
-# ── Check 2.5: Raw row handcraft (px-loose + py + rounded-md + hover:bg-neutral-hover) ──
+# ── Check 2.5: Raw row handcraft (px-loose + py + rounded-md + hover 底色 token) ──
 # Pattern:`<div className="...flex...gap-2 px-loose py-1.5 rounded-md hover:bg-neutral-hover">`
 # = 自刻 MenuItem-like row 違反 mindset #2(MenuItem primitive 自帶這些 + size canonical + a11y)
-ROW_PATTERN='<div className="[^"]*flex[^"]*gap-[12][^"]*px-\[var\(--layout-space-loose\)\][^"]*hover:bg-neutral-hover[^"]*rounded'
+# 2026-09-25:滑過底色不再只認 `hover:bg-neutral-hover` 這一串字 —— 依 color.spec.md「Hover 換色配對總則」,
+# 有自己靜止底色的列滑過時換成**那個底自己的** `-hover`(例:--secondary-hover / --surface-hover),
+# 只認透明底的配對會讓「用新配對 token 的手刻列」整個漏掉。認任何 `-hover` 配對 token(含 `bg-[var(--x-hover)]` 與 `!` 寫法)。
+ROW_PATTERN='<div className="[^"]*flex[^"]*gap-[12][^"]*px-\[var\(--layout-space-loose\)\][^"]*hover:!?bg-(\[var\(--)?[a-z0-9-]+-hover[^"]*rounded'
 ROW_HITS=$(grep -m 3 -nE "$ROW_PATTERN" "$FILE_PATH" 2>/dev/null)
 if [ -n "$ROW_HITS" ] && ! grep -qE 'menu-item-handcraft-allow:' "$FILE_PATH" 2>/dev/null; then
   VIOLATIONS="${VIOLATIONS}\n⚠️ 自刻 row(MenuItem-like)違反 mindset #2:\n${ROW_HITS}\n  → 改用 <MenuItem startIcon={...} endContent={...} disabled={...}>label</MenuItem>\n  Why:MenuItem 自帶 SelectionItem py 公式 + size canonical + a11y(role=option, aria-disabled, aria-selected) + cursor-not-allowed disabled。\n  Escape hatch:加 \`// menu-item-handcraft-allow: <reason>\` 在檔頭。"

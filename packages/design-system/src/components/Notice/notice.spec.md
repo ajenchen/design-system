@@ -155,7 +155,7 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 
 Notice **不**自帶 Esc-to-dismiss 行為(`notice.tsx` 無 keydown handler);dismiss 純粹由 dismiss button 的 `onClick={onDismiss}` 觸發。若 consumer(Alert / Toast)需要 Esc 關閉,於 consumer 層自行掛 keydown。Dismiss 後的焦點處置 Notice 同樣不管理(無 focus restoration 邏輯)——節點移除後焦點落點由 consumer(Alert / Toast host)決定。
 
-**Focus**:Notice 自身渲染的唯一 focusable 元素是 dismiss `<Button>`(consumer 經 `endContent` 注入的互動元素——如上方建議的 tertiary Button——由 consumer 自管 a11y),focus indicator 走 Button canonical(`focus-visible:ring-2 ring-ring`,box-shadow ring 非 CSS `outline`);Notice 本身無 focus management(dismiss 後焦點處置見上段,由 consumer 決定)。
+**Focus**:Notice 自身渲染的唯一 focusable 元素是 dismiss `<Button>`(consumer 經 `endContent` 注入的互動元素——如上方建議的 tertiary Button——由 consumer 自管 a11y),focus indicator 走 Button canonical(全域 `:focus-visible` 外描邊 `outline: 2px solid var(--ring)`,往外 2px;Button 與 Notice 都不寫任何 focus class);Notice 本身無 focus management(dismiss 後焦點處置見上段,由 consumer 決定)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

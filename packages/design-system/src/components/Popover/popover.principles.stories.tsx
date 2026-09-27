@@ -3,7 +3,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Filter, Copy, Edit, Trash2, Info } from 'lucide-react'
+import { Filter, Copy, Edit, Trash2 } from 'lucide-react'
 import {
   Popover,
   PopoverTrigger,
@@ -28,11 +28,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/design-system/components/Tooltip/tooltip'
+import { FieldLabel } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
@@ -201,12 +197,7 @@ export const UsageGuidance: Story = {
         title="Tooltip — hover 觸發,純文字輔助說明"
         note="解釋 icon 按鈕含義、欄位說明、快捷鍵提示。使用者 hover 看到、移開就消失,內容不可互動。典型案例:Figma toolbar icon tooltip、Slack 按鈕功能提示、Gmail 的快捷鍵說明"
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="text" size="sm" iconOnly startIcon={Info} aria-label="說明" />
-          </TooltipTrigger>
-          <TooltipContent>此欄位只接受英文與數字</TooltipContent>
-        </Tooltip>
+        <FieldLabel info="此欄位只接受英文與數字">專案代碼</FieldLabel>{/* 只給資訊的 ⓘ 用 FieldLabel info(內部就是 Tooltip;平常淡、滑過深一階、一般箭頭),不用 Button:Button 會帶按鈕底色與手形,iconOnly 還會自己再掛一層提示 → 同時浮出兩個 */}
         <Label>↑ 純文字輔助 → Tooltip(hover 觸發,移開消失)</Label>
       </Rule>
 

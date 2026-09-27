@@ -400,15 +400,20 @@ function InlineEditImpl<T = string>(
         >
           {viewNode}
           {/* 隱形 Pressable(僅 editable):提供 click + 鍵盤 Tab focus + Enter/Space 進 edit;透明疊於內容上。
-              hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。 */}
+              hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。
+              `-inset-px`(不是 inset-0):外層 div 有 1px 透明邊框,滑過底色塗滿整個 border box(含那 1px),
+              而 absolute 的 inset-0 只蓋到 padding box —— 外圈那 1px 亮著、點了卻不進 edit(待辦總帳 N53⑤;
+              一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點點不到)。往外多蓋 1px = 恰好等於外框的 border box,
+              「亮的範圍 = 點得到的範圍」(inline-edit.spec.md「點得到的範圍 = 底色範圍」;hit-area-canonical.md「看到亮起來卻點不到」)。
+              不縮滑過底色:底色與 edit 輸入框逐 pixel 對齊是既有不變量,動的只能是命中區。 */}
           {editable && (
             <button
               ref={readButtonRef}
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :402 註解)
-              className="absolute inset-0 cursor-text rounded-md focus-visible:outline-none"
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :397 的 `[&:has(button:focus-visible)]:border-primary`)
+              className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}
         </div>

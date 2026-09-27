@@ -21,7 +21,7 @@ import {
   sha256,
   stableStringify,
 } from '../packages/design-system/tools/shared/safe-filesystem.mjs'
-import { visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
+import { emptyScopeVerdict, visualAuditExitCode } from './lib/visual-audit-exit-policy.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -404,4 +404,16 @@ test('visual-audit exit policy:一般模式五計數任一即紅,重拍模式只
   assert.equal(visualAuditExitCode({ ...zero, contrastViolations: undefined }), 0, '省略的計數走預設 0(解構預設值),不是錯誤')
   assert.throws(() => visualAuditExitCode({ ...zero, contrastViolations: '3' }), /must be a non-negative integer/, '字串數字不算整數')
   assert.throws(() => visualAuditExitCode({ ...zero, geometryViolations: null }), /must be a non-negative integer/, 'null 不走預設值,必須拒絕')
+})
+
+// 2026-09-25(待辦總帳 C5):0 個 scenario 原本一律 exit 0 ——`--scope=all` 在斷言檔讀成空時一張圖都沒截就綠了。
+// 只有 scope=changed 可以合法地不適用;all / component:X / 未知 scope / --urls 的 0 都是儀器失效。
+test('visual-audit 0 個 scenario:只有 scope=changed 放行,其餘儀器失效', () => {
+  assert.equal(emptyScopeVerdict({ scope: 'changed' }).exitCode, 0)
+  assert.equal(emptyScopeVerdict({}).exitCode, 0, '預設 scope 就是 changed(與 visual-audit.mjs 的預設同一個)')
+  assert.equal(emptyScopeVerdict({ scope: 'all' }).exitCode, 1)
+  assert.equal(emptyScopeVerdict({ scope: 'component:buton' }).exitCode, 1, '元件名打錯不得綠')
+  assert.equal(emptyScopeVerdict({ scope: 'whatever' }).exitCode, 1, '未知 scope 退回 all,0 個同樣紅')
+  assert.equal(emptyScopeVerdict({ scope: 'changed', urls: 'http://x' }).exitCode, 1, '--urls 優先於 scope,給了卻 0 個 = 解析壞了')
+  assert.match(emptyScopeVerdict({ scope: 'all' }).reason, /什麼都沒截/)
 })

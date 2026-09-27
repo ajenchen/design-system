@@ -99,14 +99,16 @@ const Slider = React.forwardRef<
       data-readonly={fieldReadonly || undefined}
     >
       {/*
-        Track — rest 用 bg-secondary(n-3,「微淡可辨」),disabled 用 bg-muted(n-2,退化)。
-        跟 Tag neutral / Badge low 同家族。
+        Track — rest 用 bg-secondary(n-3,「微淡可辨」),disabled 用 bg-disabled(n-2,元件停用狀態色)。
+        rest 跟 Tag neutral / Badge low 同家族。
       */}
       <SliderPrimitive.Track className={cn(
         'relative grow overflow-hidden rounded-full h-1',
         // Rest:bg-secondary(n-3,「微淡可辨」的 subtle fill,跟 Tag neutral / Badge low 同級)
-        // Disabled:bg-muted(n-2,「disabled-like 退化」底色)
-        'bg-secondary data-[disabled]:bg-muted',
+        // Disabled:bg-disabled(n-2)。2026-09-25 由 bg-muted 改(待辦總帳 C2 / R12 W3):這層底只在元件停用時出現,
+        // 是元件的停用狀態色,依 color.spec.md「Static Subtle Background」段邊界句「component disabled bg 不走 muted」
+        // 走 --bg-disabled;--muted 是靜態非互動 surface 的 token。兩者同值 neutral-2,畫面零變化。
+        'bg-secondary data-[disabled]:bg-disabled',
       )}>
         {/*
           Range — 填滿段。
@@ -145,8 +147,8 @@ const Slider = React.forwardRef<
             = 8% 白半透明 → thumb 變深色破洞且 track 穿透。
           - Disabled:`bg-canvas`(不透明頁面背景色)— 沉回背景表達「不可動」,
             = Radix disabled thumb 用 gray-1(app background)同款;不透明故 track
-            不穿透。不可用 bg-muted(曾踩 thumb 跟 track 同色融合 bug;canvas 與
-            track 的 muted 隔 n-5 邊框 + 不同值,不融)。
+            不穿透。不可用 bg-muted / bg-disabled(兩者與 track 停用底同值 n-2,曾踩 thumb 跟 track
+            同色融合 bug;canvas 與 track 的停用底隔 n-5 邊框 + 不同值,不融)。
       */}
       {Array.from({ length: thumbCount }).map((_, i) => (
         <SliderPrimitive.Thumb
@@ -163,7 +165,10 @@ const Slider = React.forwardRef<
           className={cn(
             'block h-4 w-4 shrink-0 rounded-full cursor-grab',
             'bg-on-emphasis border-2 border-primary',
-            'transition-all duration-150 motion-reduce:duration-0',
+            // 只過渡陰影(hover / 按壓時的高度),不再過渡外框色:hover 外框一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;
+            // 2026-09-26 由底色延伸到外框,待辦總帳 L9 / N4(3));按壓的外框是同一組屬性,一併瞬間(同 Button 按壓,button.tsx 無過渡)。
+            // 原 transition-all 連外框與停用底色一起過渡。陰影升級不在 2026-09-26 同意範圍(motion.spec.md「不在本規則」),維持 150ms。
+            'transition-shadow duration-150 motion-reduce:duration-0',
             // Hover:border 升 hover 階(light mode 淺一階 lift,= Button primary hover 變色邏輯)
             // + elevation 陰影。2026-07-06 修語:原註解寫「加深」但 primary-hover 比 base 淺,
             // 措辭與 token 相反 — token 不遷就錯註解,註解修正。
@@ -224,7 +229,7 @@ export const sliderMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-muted', 'bg-primary', 'bg-secondary', 'bg-on-emphasis', 'bg-canvas'],
+    bg: ['bg-disabled', 'bg-primary', 'bg-secondary', 'bg-on-emphasis', 'bg-canvas'],
     fg: [],
     ring: [],
   },

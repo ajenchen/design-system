@@ -39,10 +39,14 @@ const REGISTRY = [
     scope: 'menu-item',
   },
   {
-    label: 'Sidebar menu-item action',
+    // 2026-09-26 起側欄不再自抄一份 gating 字串,改消費 ItemSuffix 的 hoverReveal(待辦總帳〇節「按鍵規則合併」C-7 / L9;
+    // sidebar.spec.md「Inline actions」出現時機列)。class 契約由上一筆 item-anatomy 驗;這一筆改驗「真的消費那一份、
+    // 而且沒有又抄回一份」—— 抄回來就是兩個住所(M17),下次改出現方式會漏。
+    label: 'Sidebar menu-item action(消費 ItemSuffix hoverReveal)',
     file: 'packages/design-system/src/components/Sidebar/sidebar.tsx',
-    anchor: 'opacity-0 group-hover/menu-item:opacity-100',
+    anchor: '<ItemSuffix',
     scope: 'menu-item',
+    consumes: [/hoverReveal=\{[^}]+\}/, /hoverGroup="menu-item"/],
   },
   {
     label: 'Carousel arrow wrapper',
@@ -69,6 +73,21 @@ for (const entry of REGISTRY) {
   }
   // 取錨點後一段(涵蓋該 affordance 的 className 區塊)
   const block = source.slice(start, start + 2500)
+  if (entry.consumes) {
+    // 消費者:gating class 住在 ItemSuffix(item-anatomy.tsx),這裡只驗有傳 hoverReveal / hoverGroup,且檔內沒有自己的一份
+    const missing = entry.consumes.filter((re) => !re.test(block)).map(String)
+    const ownCopy = new RegExp(`opacity-0 group-hover/${entry.scope}:opacity-100`).test(source)
+    const problems = []
+    if (missing.length) problems.push(`<ItemSuffix> 缺 ${missing.join(' / ')} → 不會隨滑過 / 鍵盤焦點揭示`)
+    if (ownCopy) problems.push(`檔內又寫了一份 \`opacity-0 group-hover/${entry.scope}:opacity-100\` → 出現規則兩個住所(M17),改用 ItemSuffix hoverReveal`)
+    if (problems.length) {
+      console.error(`✗ ${entry.label} (${entry.file}):\n    - ${problems.join('\n    - ')}`)
+      failures += 1
+    } else {
+      console.log(`✓ ${entry.label}`)
+    }
+    continue
+  }
   const hasHidden = /opacity-0\b/.test(block)
   const hasHoverReveal = new RegExp(`group-hover/${entry.scope}:opacity-100`).test(block)
     || /group-hover(?:\/[a-z-]+)?:opacity-100/.test(block)

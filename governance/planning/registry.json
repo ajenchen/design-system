@@ -265,6 +265,12 @@
       "status": "superseded",
       "executable": false,
       "reason": "Current provider-neutral release, template, and fleet design supersede it."
+    },
+    {
+      "path": "governance/planning/2026-09-25-interaction-and-hover-remediation.md",
+      "status": "active",
+      "executable": true,
+      "reason": "Live backlog for the 2026-09-25 interaction-model and hover-pairing work: every pending user decision (with the research conclusion written inline, because the research lives in a session scratchpad), every decided-but-unimplemented item, and every engineering follow-up, each with its closing commit. Opened because the user asked that every unresolved issue be tracked to closure after the previous session lost its open questions."
     }
   ]
 }

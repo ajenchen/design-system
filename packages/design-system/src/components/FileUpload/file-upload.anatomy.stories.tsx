@@ -2,6 +2,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { FileUpload } from './file-upload'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -126,20 +127,15 @@ export const Inspector: Story = {
             hover 與 drag-over 視覺統一(純 border-driven)。預覽切換狀態後可對照右側 token 面板。
             (loading 已 deferred — 見上方 type 註解)
           </Desc>
-          <div className="flex gap-2 mb-4">
-            {(['idle', 'drag-over', 'disabled'] as StateKey[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setState(s)}
-                className={`px-3 py-1.5 text-caption rounded-md border ${
-                  state === s
-                    ? 'border-primary bg-primary-subtle text-primary'
-                    : 'border-border bg-surface text-foreground hover:bg-neutral-hover'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+          {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項)。取代手刻 pill:
+              它在不透明的 bg-surface 上換成透明底專用的 neutral-hover,深色主題滑過反而變暗(#1D1D1D→#141414,
+              color.spec.md 成對 token 錯配);SegmentedControl 底色恆為 surface、滑過只換邊框與字色 */}
+          <div className="mb-4">
+            <SegmentedControl size="sm" aria-label="State" value={state} onValueChange={(v) => setState(v as StateKey)}>
+              {(['idle', 'drag-over', 'disabled'] as StateKey[]).map((s) => (
+                <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>
+              ))}
+            </SegmentedControl>
           </div>
         </div>
 
@@ -440,7 +436,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載\n- 檔案清單(有 onRemove)= 一個 Tab 停靠點:↑↓ 換列、→ 進該列的移除鈕、← 回列、Tab 一下離開(待辦總帳 B9;按鍵表住 file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」)"}</p>
     </div>
   ),
 }

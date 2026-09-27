@@ -8,7 +8,10 @@ REPO_ROOT="$(git -C "$DIR" rev-parse --show-toplevel)"
 fail=0
 bash "$DIR/test_check_fork_user_plugin_install.sh" < /dev/null || { echo "SUB-FAIL: test_check_fork_user_plugin_install.sh"; fail=1; }
 
-FAULT_DIR=$(mktemp -d)
+# 明指 TMPDIR 並驗非空:macOS 的裸 `mktemp -d` 不看 TMPDIR,沙箱內會失敗回空字串,之後所有路徑都變成
+# 寫到根目錄(失敗記憶索引「mktemp -d 失敗回空」)。
+FAULT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/test-plugin-fork-health.XXXXXX") && [ -n "$FAULT_DIR" ] && [ -d "$FAULT_DIR" ] \
+  || { echo "SUB-FAIL: mktemp -d failed — cannot build fixtures"; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 mkdir -p "$FAULT_DIR/lib"
 cp "$DIR/../lib/_provider_paths.sh" "$FAULT_DIR/lib/_provider_paths.sh"
@@ -127,6 +130,34 @@ if [ "$_rc" -eq 0 ] && [ ! -s "$_stderr" ] \
   echo "PASS: a genuine version mismatch still emits the non-authoritative compatibility notice"
 else
   echo "SUB-FAIL: genuine marketplace mismatch no longer emits its compatibility notice (exit $_rc)"
+  fail=1
+fi
+
+# 回歸(2026-09-25,CI Linux 21ca94e2 偶發紅):規則沒讀 stdin 就退出時,不得被判成「未定義 exit code」。
+# 舊寫法 `printf "$INPUT" | rule` 在 pipefail 下,寫端收到 SIGPIPE → 管線回 141 → 誤判 rc70。
+# 用超過管線緩衝區(64KiB)的輸入讓它**必定**發生,不靠時序。r2 被注入成「不讀 stdin、留下標記、exit 0」,
+# 而且要斷言標記存在 —— 只看 exit 0 會被「r1 的 exit 把整支 hook 提早結束、r2 根本沒跑」騙過
+# (本修法第一版拿掉管線卻沒補子殼層,正是這樣假綠)。
+_BIG_INPUT="$FAULT_DIR/big-input.json"
+{ printf '%s' '{"hook_event_name":"SessionStart","padding":"'; head -c 300000 /dev/zero | tr '\0' 'x'; printf '%s' '"}'; } >"$_BIG_INPUT"
+_R2_MARKER="$FAULT_DIR/r2-reached"
+awk '
+  { print }
+  $0 == "r2_plugin_freshness() {" { print ": >\"$R2_MARKER\"; exit 0" }
+' "$DIR/../check_plugin_fork_health.sh" >"$FAULT_DIR/check_plugin_bigstdin.sh"
+set +e
+R2_MARKER="$_R2_MARKER" \
+  GOVERNANCE_CORPUS_ROOT="$REPO_ROOT" \
+  GOVERNANCE_PROJECT_DIR="$REPO_ROOT" \
+  GOVERNANCE_PROVIDER=codex \
+  bash "$FAULT_DIR/check_plugin_bigstdin.sh" <"$_BIG_INPUT" \
+    >"$FAULT_DIR/big.stdout" 2>"$FAULT_DIR/big.stderr"
+rc=$?
+set -e
+if [ "$rc" -eq 0 ] && [ ! -s "$FAULT_DIR/big.stderr" ] && [ -f "$_R2_MARKER" ]; then
+  echo "PASS: a rule that exits without reading a large stdin is not misread as an undefined exit code"
+else
+  echo "SUB-FAIL: large stdin + rule that does not read it → exit $rc, r2 reached=$([ -f "$_R2_MARKER" ] && echo yes || echo no) ($(head -c 200 "$FAULT_DIR/big.stderr"))"
   fail=1
 fi
 exit $fail

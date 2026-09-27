@@ -649,7 +649,9 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
                 // 不可寫 `outline-none`(它把 --tw-outline-style 設成 none,會讓下面三條靜默失效,
                 // 見 steps.tsx 同款事故)。
                 'focus-visible:focus-ring-inset',
-                'transition-shadow duration-150',
+                // 不寫 transition-shadow:滑過外框(ring-border → ring-border-hover)一律瞬間(motion.spec.md「hover 回饋不做過渡」,
+                // 2026-09-26 L9 延伸,user:「確定這樣才是一致設計語言就做」)。同一條 ring 也畫選中框,所以選中切換跟著瞬間 ——
+                // 同 Chip / SegmentedControl 的選中色(motion.spec.md「同一組屬性若也被選中改變,一併瞬間」)。
                 active
                   ? 'ring-2 ring-primary'
                   : 'ring-1 ring-border hover:ring-border-hover',
@@ -1216,7 +1218,7 @@ export const fileViewerMeta = {
   tokens: {
     bg: ['bg-muted', 'bg-neutral-selected', 'bg-overlay', 'bg-surface-raised'],
     fg: ['text-fg-muted', 'text-foreground'],
-    ring: ['ring-primary', 'ring-ring'],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

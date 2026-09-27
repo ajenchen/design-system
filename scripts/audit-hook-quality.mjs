@@ -10,6 +10,9 @@
  *   - classification: hot (>50/day) / warm (5-50/day) / cool (<5/day) / dead (0 fire 6mo)
  *   - file_exists: yes/no(orphan signal:fire log mentions hook no longer exists)
  *   - retire_candidate: ONLY flag with rationale,NOT execute
+ *   - summary.observation: 儀器自述 —— blind=true 代表觀測窗沒涵蓋分類窗,
+ *     此時所有零筆 hook 標 `unknown`(不是 `dead`)且**零 retire 提名**。
+ *     判準見 lib/hook-fire-observability.mjs;對照組見 test-audit-hook-quality.mjs。
  *
  * Non-goals:
  * - 不刪 hook(per user「品質為前提,不為砍而砍」)
@@ -22,6 +25,7 @@ import { readFileSync, existsSync, writeFileSync, readdirSync, statSync } from '
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { prepareRuntimeEvidenceFile, resolveProviderTelemetryStateRoot } from './lib/governance-runtime-evidence.mjs'
+import { assessObservation, readFireRecords, DEFAULT_WINDOW_MS, DEFAULT_LIVE_TOLERANCE_MS } from './lib/hook-fire-observability.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -39,14 +43,16 @@ if (!existsSync(FIRE_LOG)) {
 // 2026-06-11 fix(prune D2):原只讀 current jsonl(~數小時)卻標「dead 6mo」= 系統性誤導。
 // 聚合 rotated archives(.jsonl.YYYYMM)+ summary 寫明真實觀測窗 span。
 const LOG_DIR = dirname(FIRE_LOG)
-const logFiles = [FIRE_LOG, ...readdirSync(LOG_DIR)
-  .filter(f => f.startsWith('hook-fires-per-hook.jsonl.'))
-  .map(f => join(LOG_DIR, f))]
-const fires = logFiles.flatMap(lf => {
-  try {
-    return readFileSync(lf, 'utf-8').split('\n').filter(Boolean)
-      .map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
-  } catch { return [] }
+const fires = readFireRecords(LOG_DIR)
+
+// 2026-09-24 fix(M37 identity substitution):「log 裡零筆」不等於「這支 hook 沒 fire」。
+// 本 repo 的 _log-fire.sh 要 GOVERNANCE_TELEMETRY_OPT_IN=1 才寫,預設不寫 —— 也就是說
+// 零筆是**預設狀態**。判準與理由住在 lib/hook-fire-observability.mjs,本檔只消費。
+const OBSERVATION = assessObservation({
+  fireTimestamps: fires.map(f => f.ts),
+  nowMs: Date.now(),
+  windowMs: DEFAULT_WINDOW_MS,
+  liveToleranceMs: DEFAULT_LIVE_TOLERANCE_MS,
 })
 
 const perHook = {}
@@ -91,7 +97,9 @@ for (const hook of [...seenHooks].sort()) {
   }
   // Classify
   let classification
-  if (fires6mo === 0) classification = fileExists ? 'dead' : 'orphan'
+  // 儀器全盲時,零筆不構成任何關於這支 hook 的敘述 —— 標 unknown,不標 dead。
+  if (OBSERVATION.blind && fires6mo === 0) classification = fileExists ? 'unknown' : 'unknown-orphan'
+  else if (fires6mo === 0) classification = fileExists ? 'dead' : 'orphan'
   else if (firePerDay > 50) classification = 'hot'
   else if (firePerDay > 5) classification = 'warm'
   else classification = 'cool'
@@ -102,7 +110,10 @@ for (const hook of [...seenHooks].sort()) {
   const isSourcedHelper = hook.startsWith('_') && /log-fire|helper/.test(hook)
   let retireCandidate = false
   let retireReason = null
-  if (classification === 'dead' && fileExists && !isSourcedHelper) {
+  if (classification === 'unknown' || classification === 'unknown-orphan') {
+    retireCandidate = false
+    retireReason = '儀器全盲 —— 觀測窗沒有涵蓋分類窗,零筆不是證據(見 summary.observation.reasons)'
+  } else if (classification === 'dead' && fileExists && !isSourcedHelper) {
     retireCandidate = true
     retireReason = `0 fire in OBSERVED window(觀測窗見 summary.observedWindow,非保證 6mo)— observe rationale before retire`
   } else if (isSourcedHelper && classification === 'dead') {
@@ -138,12 +149,21 @@ const summary = {
   observedWindow: allTs.length ? { from: allTs[0], to: allTs[allTs.length - 1], totalFires: allTs.length } : null,
   totalHooksInFireLog: Object.keys(perHook).length,
   totalActiveFiles: activeHooks.size,
+  // 2026-09-24:儀器自述。blind=true 時本報告**不含任何 retire 提名**,不得拿去砍 hook。
+  observation: {
+    blind: OBSERVATION.blind,
+    reasons: OBSERVATION.reasons,
+    coversWindowStart: OBSERVATION.coversWindowStart,
+    isLive: OBSERVATION.isLive,
+    telemetryOptIn: process.env.GOVERNANCE_TELEMETRY_OPT_IN === '1',
+  },
   classifications: {
     hot: report.filter(r => r.classification === 'hot').length,
     warm: report.filter(r => r.classification === 'warm').length,
     cool: report.filter(r => r.classification === 'cool').length,
     dead: report.filter(r => r.classification === 'dead').length,
     orphan: report.filter(r => r.classification === 'orphan').length,
+    unknown: report.filter(r => r.classification.startsWith('unknown')).length,
   },
   retireCandidates: report.filter(r => r.retireCandidate).length,
   hotHooksForTuning: report.filter(r => r.classification === 'hot').map(r => r.hook),
@@ -164,6 +184,11 @@ writeFileSync(OUT, JSON.stringify({ summary, hooks: report }, null, 2))
 console.log('\n=== Hook Quality Report ===')
 console.log(JSON.stringify(summary, null, 2))
 console.log(`\nFull report: ${OUT}`)
+if (OBSERVATION.blind) {
+  console.log('\n⚠️  儀器全盲:本次沒有任何 retire 提名可以成立。')
+  for (const reason of OBSERVATION.reasons) console.log(`   - ${reason}`)
+  console.log('   要讓這支稽核產生有效輸出:GOVERNANCE_TELEMETRY_OPT_IN=1 讓 hook 開始記錄,累積滿一個分類窗後再跑。')
+}
 console.log('\nNote: This report is OBSERVABILITY only. Route retire decisions through the knowledge-prune authority classifier: engineering/governance retirement is autonomous; only a genuine product/UI/UX SSOT tradeoff requires an exact human decision.')
 
 process.exit(0)

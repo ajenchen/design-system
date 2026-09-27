@@ -22,26 +22,42 @@
  *
  * 對照組(M32「儀器要先有對照組」,`--selftest`):(i) 捲動區加高 2px → B 必紅;(ii) 用 `pointer-events:none`
  * 的遮蓋物蓋住垂直捲軸外側一半 → C 仍綠、D 必紅。
+ *
+ * 載入(2026-09-25):每則 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成(含 play)、
+ * 畫面健康,強制捲軸 CSS 在靜止判定之前注入,再等版面連續靜止 10 個影格(fill-height 的 compute() / 虛擬列量測收斂、
+ * 捲軸厚度改變引起的重排都算在內)才量;取代舊的 load + 固定睡 900ms。**不等 `[data-datatable-hscroll]`**:
+ * 有些 DataTable story(原則 / 解剖)本來就沒有捲動區,量到 0 個是正確結果,不是等不到。
+ * story 開不起來 → 儀器失效(點名 story、列同源 404,exit 2,不是產品裁決,也不算通過;selftest 亦同)。
+ *
+ *   node scripts/data-table-scrollbar-visibility.mjs [--quick] [--selftest] [--only=<id 片段>] [--static-dir <Storybook 建置>]
  */
-import http from 'node:http'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, extname, dirname } from 'node:path'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const { PNG } = createRequire(join(REPO, 'package.json'))('pngjs')
-const STATIC = join(REPO, 'storybook-static')
+const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.slice('--static-dir='.length)
+  ?? (process.argv.includes('--static-dir') ? process.argv[process.argv.indexOf('--static-dir') + 1] : null)
+const STATIC = resolve(staticDirArg ?? join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const QUICK = process.argv.includes('--quick') // PR 閘:6 支代表 story、Windows 預設幾何、中段位置;全矩陣(43 story × 5 幾何 × 3 位置)在排程閘 focus-deep-gates.yml
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7)
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 const TRACK = 0xee, THUMB = 0x99
 
-if (!existsSync(join(STATIC, 'index.json'))) { console.error('storybook-static/index.json 不存在,先 npm run build-storybook'); process.exit(2) }
-const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
+// 沒有建置 → 共用的 MISSING-BUILD 標記 + exit 2(缺前置,不是產品裁決)。原本自印一句沒有標記的訊息再 exit 2,
+// lib/gate-selftest-meta.mjs 只認標記,不認退出碼 → 會被讀成「現況紅」(2026-09-25 收斂)
+requireStorybookBuild(join(STATIC, 'index.json'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+// story 清單也從同一份快照讀,受測的 story 與供檔的建置是同一份(M37)。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
+const index = JSON.parse(readFileSync(join(server.snapshot?.dir ?? STATIC, 'index.json'), 'utf8'))
 let ids = Object.values(index.entries).filter((e) => e.type === 'story' && /datatable/i.test(e.id)).map((e) => e.id)
 if (ONLY) ids = ids.filter((i) => i.includes(ONLY))
 // PR 閘只跑 6 支代表性 story(填滿高度雙軸 / 虛擬捲動 / 釘選欄雙表 / 容器高度 / 自動列高 / 基本);
@@ -49,15 +65,6 @@ if (ONLY) ids = ids.filter((i) => i.includes(ONLY))
 const QUICK_STORIES = ['roadmap-all-in-one', 'virtual-scroll', 'pinned-columns', 'container-height', 'row-auto-height', '--basic']
 if (QUICK && !ONLY) ids = ids.filter((i) => QUICK_STORIES.some((q) => i.endsWith(q) || i.includes(q + '-') || i.includes(q)))
 if (SELFTEST) ids = [ids.find((i) => i.includes('roadmap-all-in-one')) ?? ids[0]]
-
-const server = http.createServer((q, s) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const f = join(STATIC, p)
-  if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return }
-  s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f))
-})
-await new Promise((r) => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
 
 const FULL = [{ sb: 17, dpr: 1 }, { sb: 11, dpr: 1 }, { sb: 17, dpr: 1.25 }, { sb: 17, dpr: 1.5 }, { native: true, dpr: 1 }]
 const MATRIX = SELFTEST || QUICK ? [{ sb: 17, dpr: 1 }] : FULL // PR 閘只跑 Windows 預設幾何、只在中段位置驗(≈25s);原生組與頂/底位置在排程閘
@@ -149,16 +156,24 @@ async function stripOk(page, strip, dumpName) {
 
 const FORCED_CSS = (sb) => `*{scrollbar-width:auto!important;scrollbar-color:auto!important} *::-webkit-scrollbar{width:${sb}px;height:${sb}px} *::-webkit-scrollbar-thumb{background:#999} *::-webkit-scrollbar-track{background:#eee}`
 const failures = []
+const instrumentFailures = []
 let checked = 0, uncovered = 0
+/** 開一則 story、注入(強制組的)捲軸 CSS、等版面靜止;開不起來丟 StoryRenderInstrumentError。 */
+const open = (page, id, geo) => openStory(page, `${BASE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+  beforeSettle: geo.native ? null : (p) => p.addStyleTag({ content: FORCED_CSS(geo.sb) }),
+  settleFrames: 10, notFound: server.notFound,
+})
 const selftest = { clipRed: false, coverStillGreen: false, pixelRed: false }
 
 for (const geo of MATRIX) {
   const { b, page } = await openPage(geo.dpr)
   for (const id of ids) {
-    await page.goto(`${BASE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' })
-    if (!geo.native) await page.addStyleTag({ content: FORCED_CSS(geo.sb) })
-    await page.waitForTimeout(900)
     const tag = geo.native ? 'native' : `sb=${geo.sb} dpr=${geo.dpr}`
+    try { await open(page, id, geo) } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      instrumentFailures.push({ tag, error })
+      continue
+    }
     const positions = QUICK ? ['mid'] : ['top', 'mid', 'end']
     for (const pos of positions) {
       await page.evaluate((pos) => {
@@ -168,6 +183,7 @@ for (const geo of MATRIX) {
           el.scrollLeft = (el.scrollWidth - el.clientWidth) * f
         }
       }, pos)
+      // 元素早已在畫面上;給捲動觸發的虛擬列重畫 / sticky 重排一小段時間再量
       await page.waitForTimeout(150)
       const report = await page.evaluate(INSPECT)
       for (const it of report) {
@@ -193,6 +209,7 @@ for (const geo of MATRIX) {
           const outer = document.querySelector('[data-data-table-outer]'); const slot = outer?.parentElement
           if (!slot) return 'noslot'
           slot.style.height = `${slot.getBoundingClientRect().height - k}px`
+          // 等 ResizeObserver → compute() 把新高度套回捲動區(E 要驗的就是這一輪重算之後的結果)
           await new Promise((r) => setTimeout(r, 350)); return 'shrunk'
         }, k)
         if (rep === 'shrunk') {
@@ -206,7 +223,12 @@ for (const geo of MATRIX) {
       // (i) 加高 2px → B 必紅
       await page.evaluate(() => { const el = [...document.querySelectorAll('[data-datatable-hscroll]')].find((e) => e.scrollHeight > e.clientHeight + 1); if (el) { const h = el.getBoundingClientRect().height + 2; el.style.maxHeight = `${h}px`; el.style.height = `${h}px`; el.style.flex = 'none' } })
       selftest.clipRed = (await page.evaluate(INSPECT)).some((it) => it.clips.length)
-      await page.reload({ waitUntil: 'load' }); await page.addStyleTag({ content: FORCED_CSS(geo.sb) }); await page.waitForTimeout(900)
+      // 重新開一次(同一套等待:渲染完成 → 注入捲軸 CSS → 靜止),取代舊的 reload + 固定睡 900ms
+      try { await open(page, id, geo) } catch (error) {
+        if (!(error instanceof StoryRenderInstrumentError)) throw error
+        instrumentFailures.push({ tag: `${tag} selftest 重開`, error })
+        continue
+      }
       // (ii) pointer-events:none 遮蓋垂直捲軸外側一半 → C 仍綠、D 必紅
       await page.evaluate(() => {
         const el = [...document.querySelectorAll('[data-datatable-hscroll]')].find((e) => e.scrollHeight > e.clientHeight + 1); if (!el) return
@@ -224,12 +246,25 @@ for (const geo of MATRIX) {
   }
   await b.close()
 }
-server.close()
+await server.stop()
 
+if (instrumentFailures.length) {
+  // 沒量到 ≠ 沒問題:任何一則開不起來,這次的綠燈(或 selftest 的「抓到了」)就不成立
+  console.log(`✗ 儀器失效 ${instrumentFailures.length} 次 —— 這些 story × 幾何這次沒有量到(exit 2,不是產品裁決,也不算通過):`)
+  for (const { tag, error } of instrumentFailures.slice(0, 20)) console.log(`  [${tag}] ${error.message}`)
+  for (const f of failures) console.log(`✗ ${f.id} [${f.tag} ${f.pos}] rect=${f.rect.join(',')} → ${f.bad.join(';')}`)
+  process.exit(2)
+}
 if (SELFTEST) {
   const ok = selftest.clipRed && selftest.coverStillGreen && selftest.pixelRed
   console.log(`${ok ? '✓' : '✗'} selftest:加高 2px → 裁切紅=${selftest.clipRed};pointer-events:none 遮蓋 → hit-test 仍綠=${selftest.coverStillGreen}、像素紅=${selftest.pixelRed}`)
   process.exit(ok ? 0 : 1)
+}
+// 一個捲動區都沒量到 ≠「全部捲動區完整」(M37:沒觀察到 ≠ 沒發生)。story 清單空了(改名 / --only 對不到)、
+// 或捲動區選擇器 / 溢出條件失效時,修前印「檢查 0 個捲動區 ✓」exit 0(2026-09-25 以 --only=<不存在> 實測重現)
+if (checked === 0) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${ids.length} 支 story × ${MATRIX.length} 組幾何,一個有溢出的捲動區都沒量到 —— 這是儀器失效(沒量到),不是產品裁決,也不算通過`)
+  process.exit(1)
 }
 console.log(`DataTable 捲軸可見閘:${ids.length} 支 story × ${MATRIX.length} 組幾何(${MATRIX.map((g) => g.native ? '原生' : `${g.sb}px@${g.dpr}`).join(' / ')}),檢查 ${checked} 個捲動區×位置${uncovered ? `;原生組 ${uncovered} 個為覆蓋式捲軸(厚度 0)未覆蓋` : ''}`)
 for (const f of failures) console.log(`✗ ${f.id} [${f.tag} ${f.pos}] rect=${f.rect.join(',')} → ${f.bad.join(';')}`)

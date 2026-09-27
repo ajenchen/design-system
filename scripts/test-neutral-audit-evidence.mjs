@@ -94,6 +94,8 @@ const outside = mkdtempSync(join(tmpdir(), 'neutral-audit-evidence-outside-'))
 try {
   for (const file of [
     'scripts/lib/governance-runtime-evidence.mjs',
+    // audit-hook-quality.mjs 2026-09-24 起 import 這支(觀測窗盲區判定);漏複製 → 夾具裡 ERR_MODULE_NOT_FOUND。
+    'scripts/lib/hook-fire-observability.mjs',
     'scripts/add-story-baseline.mjs',
     'scripts/audit-hook-quality.mjs',
     'scripts/audit-story-quality.mjs',

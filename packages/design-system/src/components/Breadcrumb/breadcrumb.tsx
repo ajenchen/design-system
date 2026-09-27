@@ -406,8 +406,8 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
       'inline-flex items-center gap-2',
       'min-w-0 max-w-full',
       'text-fg-secondary',
+      // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))
       'hover:text-primary-hover',
-      'transition-colors duration-150',
       'rounded-md',
       className
     )
@@ -558,7 +558,7 @@ export const breadcrumbMeta = {
   tokens: {
     bg: [],
     fg: ['text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
 } as const
 

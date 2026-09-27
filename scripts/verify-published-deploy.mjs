@@ -16,17 +16,28 @@
 //   node scripts/verify-published-deploy.mjs                    # L1+L2(CI / audit 預設)
 //   NETLIFY_LIVE_BASIC_AUTH=user:password node scripts/verify-published-deploy.mjs --live
 //   NETLIFY_PREVIEW_PASSWORD=xxx node scripts/verify-published-deploy.mjs --live # legacy dashboard gate
+//   … --live --site=<origin>   # L3 改驗別的部署(例:deploy preview,或本機起的 Storybook 建置 —— 驗 L3 本身用)
+//
+// L3 開故事的等待(2026-09-25,M37):原本每則故事**開一個新分頁**(`--single-process` 沙箱下同一個瀏覽器反覆
+// newPage / close 不穩)、`goto(networkidle)` 失敗還 `.catch` 吞掉,再**固定睡 2.5 / 4 秒**當「渲染好了」的代理 ——
+// 慢的網路上故事 2.6 秒才畫出來也會被判「空白」,反過來 networkidle 從不成立時也只是默默往下走。
+// 現在全程共用一個分頁,每則經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟:
+//   story:等 Storybook 回報這則渲染完成(含 play)+ render-health(根節點非空、無關鍵資源失敗、無頁面例外);
+//   docs :docs 沒有同一套 render phase,改走 lib 的 waitForDocsRender(2026-09-25 起;全部閘共用的 docs 判定,取代本檔原本的
+//         私有 DOCS_SETTLED):currentRender 是這一則 docs、不在 preparing、docs 容器沒被藏起來且有內容;錯誤頁當場停。
+// 等不到 / 不健康 → 該則 L3 fail,訊息點名 story、附 Storybook 錯誤原文與 404 / 失敗請求。
 
 import { execSync } from 'node:child_process'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError, waitForDocsRender } from './lib/launch-browser.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLISHED_REPO = 'ajenchen/ds-product-template'
-const SITE = 'https://ds-product-template.netlify.app'
+const SITE = (process.argv.find((a) => a.startsWith('--site='))?.slice('--site='.length) || 'https://ds-product-template.netlify.app').replace(/\/+$/, '')
 const WANT_LIVE = process.argv.includes('--live')
+
 let failed = false
 const fail = (m) => { console.error('❌ ' + m); failed = true }
 const ok = (m) => console.log('✓ ' + m)
@@ -66,42 +77,49 @@ if (WANT_LIVE) {
   }
   else if (basicAuth && !basicMatch) fail('L3 NETLIFY_LIVE_BASIC_AUTH 必須是非空白 user:password')
   else {
+    let browser
     try {
-      const { chromium } = await import('playwright')
-      const browser = await launchBrowser()
+      browser = await launchBrowser()
       const ctx = await browser.newContext(basicMatch ? {
         httpCredentials: { username: basicMatch[1], password: basicMatch[2] },
       } : {})
-      const login = await ctx.newPage()
-      await login.goto(SITE + '/', { waitUntil: 'domcontentloaded' })
-      const input = await login.$('input[name="password"]')
+      // 全程只用這一個分頁(`--single-process` 沙箱下同一個瀏覽器反覆 newPage / close 不穩,見 lib/launch-browser.mjs 檔頭)
+      const page = await ctx.newPage()
+      await page.goto(SITE + '/', { waitUntil: 'domcontentloaded' })
+      const input = await page.$('input[name="password"]')
       if (input && dashboardPassword) {
         await input.fill(dashboardPassword)
-        await login.keyboard.press('Enter')
-        await login.waitForLoadState('networkidle').catch(() => {})
+        await page.keyboard.press('Enter')
+        // 登入成功 = 密碼框消失(不是「網路閒下來了」);等不到就是登入失敗,不往下假裝有驗
+        const loggedIn = await page.waitForSelector('input[name="password"]', { state: 'detached', timeout: 30_000 }).then(() => true, () => false)
+        if (!loggedIn) throw new Error('dashboard 密碼送出後 30 秒密碼框仍在 —— 登入失敗(密碼錯或頁面改版),L3 沒有驗到任何故事')
       }
       // 讀部署 index 取所有故事
-      const idxRaw = await (await ctx.request.get(SITE + '/index.json')).text()
-      const entries = JSON.parse(idxRaw).entries || {}
+      const idxRes = await ctx.request.get(SITE + '/index.json')
+      if (!idxRes.ok()) throw new Error(`讀不到 ${SITE}/index.json(HTTP ${idxRes.status()})`)
+      const entries = JSON.parse(await idxRes.text()).entries || {}
+      if (!Object.keys(entries).length) throw new Error(`${SITE}/index.json 沒有任何故事 —— 一則都沒驗,不能算通過`)
       for (const [id, e] of Object.entries(entries)) {
         const isDocs = e.type === 'docs'
         const view = isDocs ? 'docs' : 'story'
-        const p = await ctx.newPage()
-        await p.goto(`${SITE}/iframe.html?id=${id}&viewMode=${view}`, { waitUntil: 'networkidle' }).catch(() => {})
-        // docs 頁較重,多等;且 docs 內容在 docs 容器(非 #storybook-root,後者在 docs view 是空的)
-        await p.waitForTimeout(isDocs ? 4000 : 2500)
-        const blank = await p.evaluate((docs) => {
-          const sel = docs ? '.sbdocs-wrapper, .sbdocs, #storybook-docs, #docs-root' : '#storybook-root, #root'
-          const r = document.querySelector(sel)
-          return !r || (r.childElementCount === 0 && (r.innerText || '').trim().length === 0)
-        }, isDocs)
-        if (blank) fail(`L3 故事空白:${id}(${view})`)
-        else ok(`L3 render OK:${id}`)
-        await p.close()
+        const url = `${SITE}/iframe.html?id=${encodeURIComponent(id)}&viewMode=${view}`
+        try {
+          // docs 內容在 docs 容器(#storybook-root 在 docs view 是空的),且 docs 沒有 story 的 render phase:
+          // openStory 只做文件層 render-health(關鍵資源失敗 / 頁面例外),docs 本身交給共用的 waitForDocsRender
+          await openStory(page, url, isDocs ? { storybook: false } : {})
+          if (isDocs) await waitForDocsRender(page, { docsId: id, url, label: id, timeoutMs: 30_000 })
+          ok(`L3 render OK:${id}`)
+        } catch (error) {
+          if (!(error instanceof StoryRenderInstrumentError)) throw error
+          if (isDocs && error.kind === 'storybook-error') { fail(`L3 docs 顯示 Storybook 錯誤頁:${id}(${error.storybookError || '無錯誤原文'})`); continue }
+          fail(`L3 故事沒渲染出來(或空白):${id}(${view})—— ${error.detail}`)
+        }
       }
-      await browser.close()
     } catch (e) {
-      fail(`L3 playwright 跑失敗:${e.message.split('\n')[0]}`)
+      // 瀏覽器 / 登入 / 讀不到 index = 這一趟 L3 什麼都沒驗(儀器失效,不是部署裁決),訊息帶共用標記(lib/launch-browser.mjs)
+      fail(`${INSTRUMENT_FAIL_MARKER} L3 playwright 跑失敗(沒驗到任何故事,不是部署裁決):${e.message.split('\n')[0]}`)
+    } finally {
+      await browser?.close()
     }
   }
 }

@@ -87,7 +87,7 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 三種模式共用同一個 wrapper 結構（`fieldWrapperStyles`），只有底色、邊框、文字色不同。
 
-**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 星星本身(星星即值語言,role=img,全業界 review-stars canonical,不包灰框);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
+**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 精簡版「★ 4.7 (12,843)」(一顆實心星 + 數值 + 選填評論數,`role="img"`;不畫 max 顆星、不包灰框 —— 2026-09-26 user 拍板「唯讀直接一律給精簡版」,規則與世界級對照見 `../Rating/rating.spec.md`「整顆與精簡版」規則 2;2026-09-27 更正,本句先前寫「星星本身」與該 spec 相反);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
 
 ### Loading state(這個值在讀取 / 驗證 / 儲存)
 
@@ -185,7 +185,7 @@ Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.t
 - **欄位內的展示元素**（Avatar）→ 跟隨 `<Field disabled>` / `<Field mode="disabled">` **變淡**（視覺一致），用 fieldCtx 存在性 scope（DataTable cell 無 fieldCtx → 不影響）。
 - **獨立 action 元件**（Button）→ **不**自動 cascade；由 consumer 自控 `disabled`（對齊 MUI Button 無 FormControl 整合 + Ant 排除 custom／非表單控件）。
 
-注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 view = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 view 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 星星鎖定 role=img）+ 響應 `<Field disabled>`;**SegmentedControl 無 view/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
+注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 view = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 view 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 唯讀精簡版「★ 數值」role=img(2026-09-26 起)）+ 響應 `<Field disabled>`;**SegmentedControl 無 view/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
 
 **機械強制**：`scripts/check-field-cascade-resolve.mjs`（required CI + deterministic audit chain）—— 消費 `fieldWrapperStyles` 的控件若散落手刻 `fieldCtx?.{disabled,mode}` 解析（而非走 resolver hook）= fail，防新控件重演 cascade 漏接。
 

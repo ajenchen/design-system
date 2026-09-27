@@ -27,8 +27,10 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
  * ── Unbounded controls 在 header canonical(v5 trick,2026-04-22)──
  * Dismiss X(always unbounded)+ text variant header action → **`size="sm"` native**
  * + SurfaceHeader CSS 自動套負 my trick(對 `[data-unbounded]`),layout 佔位縮回 24
- * (xs 等同)。Rationale:button native size 跟 touch target 保留 sm(a11y 最小 24+ hit
- * target,視覺 render 仍 28/32),layout 佔位精確匹配 chrome-header-height 幾何。詳
+ * (xs 等同)。Rationale:button native size 跟命中區保留 sm(視覺 render 仍 28/32,命中 ≡ 可視
+ * → `ds-canonical/references/hit-area-canonical.md`),layout 佔位精確匹配 chrome-header-height 幾何。
+ * 縮到 xs 的問題是**與 chrome 的比例**(chrome dismiss 是 sm = 28),不是 a11y —— 24 正好是
+ * `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值。詳
  * `overlay-surface.spec.md`「Chrome dismiss size canonical」。
  *
  * **Notification banner family**(Notice / Alert / Toast,fixed `px-4 py-3` variant,

@@ -341,9 +341,15 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
-        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full flex', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
+        // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話
+        // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)
+        <div key={item.value} ref={el => { tagEls.current[i] = el }}
+          className={cn('shrink-0 max-w-full flex z-[var(--tag-stack-z)] has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', tagWrapperClassName)}
+          style={{ ['--tag-stack-z' as string]: items.length - i, ['--tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>
       ))}
-      <div ref={overflowEl} className={cn('shrink-0 flex', overflowWrapperClassName)}>
+      <div ref={overflowEl}
+        className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', overflowWrapperClassName)}
+        style={{ ['--tag-stack-z-focus' as string]: items.length + 1 }}>
         <OverflowIndicator count={overflow} shape={overflowShape} size={size}>
           {hiddenItems.map(item => (
             renderHiddenTag
@@ -518,7 +524,7 @@ export interface ComboboxProps {
   overflowWrapperClassName?: string
   /**
    * Tag area gap in px (2026-05-07 v15.13)。預設 4(pill mode 標準 spacing)。
-   * Stack avatar 模式傳 0,讓 `tagWrapperClassName` 的 `-ml-0.5` negative margin 生效
+   * Stack avatar 模式傳 0,讓 `tagWrapperClassName` 的 `-ml-[var(--avatar-stack-overlap)]` negative margin 生效
    * (CSS `gap` 套在 flex container 上會強制 sibling spacing,蓋過 negative margin)。
    * **Q2 known tradeoff**:0 後 useOverflowCount 仍按 wrapper.offsetWidth 累加(不含 overlap
    * 補償)→ +N 偏保守。當前接受;若需精準可 future 加 `overlapPx` 補償邏輯。
@@ -845,7 +851,13 @@ function CustomCombobox({
     <div
       ref={__triggerRef}
       id={fieldCtx?.id}
-      role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-controls={listboxId} tabIndex={0}
+      role="combobox" aria-expanded={open} aria-controls={listboxId} tabIndex={0}
+      // 2026-09-25 待辦總帳 B11「多選下拉(有全選)行為不變、只改宣告」:宣告的彈出型別 = 焦點實際去哪。
+      // 搜尋框在觸發欄位內(searchIn='trigger')→ 焦點留在欄位、清單用 aria-activedescendant = listbox;
+      // 其餘(浮層內搜尋框 / 不可打字)焦點進到浮層、Tab 在面板裡繞圈 = dialog。與下方 onOpenAutoFocus 同一個條件。
+      // W3C:popup 不是 listbox 時 aria-haspopup 要寫出型別(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L410-L411),
+      // dialog 型「DOM focus moves into the dialog」(同檔 #L395)
+      aria-haspopup={searchIn === 'trigger' ? 'listbox' : 'dialog'}
       aria-label={ariaLabel}
       // a11y(2026-07-14 dim-10):div-based role=combobox 的 <label for> 無效,接 FieldLabel labelId
       // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。
@@ -899,7 +911,9 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      {/* `isolate`:標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
+          與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17) */}
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative isolate', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (
@@ -1029,9 +1043,12 @@ const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
     //   (d) 世界級沒有一家為手機換一套多選 UI(Base UI 明文「同一元件 + multiple,觸控只調定位」/
     //       Apple HIG pop-up button「iOS 無額外考量」/ Polaris / Atlassian / Radix / react-select
     //       文件對裝置零分支)。
-    // 量過:390px 寬下浮層 356px、不溢出、高度放得下;列高 32px 過 WCAG 2.2 AA(24×24)與
-    // DS 自己的 24+ 門檻(overlay-surface.spec.md:431)。**刻意不為觸控加大尺寸** —— 那會變成
-    // 第二套規格,正是這次要消滅的東西。
+    // 量過:390px 寬下浮層 356px、不溢出、高度放得下;列高 32px 高於 DS 自己的 24px 地板
+    // (owner = tokens/uiSize/uiSize.spec.md「元件高度地板」:169)。**刻意不為觸控加大尺寸** ——
+    // 那會變成第二套規格,正是這次要消滅的東西。**不拿觸控尺寸建議當依據**:先前這裡寫的
+    // 「過 WCAG 2.2 AA(24×24)」已於 2026-09-24 撤回(本 DS 以滑鼠精度為前提,見
+    // ds-canonical/references/hit-area-canonical.md「本 DS 不採納觸控尺寸建議」);
+    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431 改指真正的 owner(上一行)。
     return <CustomCombobox {...props} size={size} __triggerRef={ref} />
   }
 )

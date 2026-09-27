@@ -251,7 +251,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 | 建立操作選單（複製 / 刪除 / 分享）| 用 `DropdownMenu` + `DropdownMenuItem`（內部消費 MenuItem）|
 | 建立選值下拉（選項 + 搜尋）| 用 `SelectMenu`（內部消費 MenuItem）|
 | 建立右鍵選單 | 用未來的 `ContextMenu`（待開發）|
-| 直接在 JSX 中用 `<MenuItem>` | ❌ **禁止**——會失去 menu 外層的 Radix 無障礙 / 鍵盤 / 焦點管理。唯一例外:本元件**自身 stories** 的 internal 展示(demo 容器以 `role="listbox"` 滿足 a11y parent 要求,見 `menu-item.stories.tsx`),產品 code 無豁免 |
+| 直接在 JSX 中用 `<MenuItem>` | ❌ **禁止**——會失去 menu 外層的 Radix 無障礙 / 鍵盤 / 焦點管理。唯一例外:本元件與 Avatar / Separator / item-anatomy 的**自身 stories** 靜態視覺預覽;該預覽**不得**假裝成選單——容器用 `role="group"`、每個 MenuItem 傳 `role="presentation"`(2026-09-24 訂正,原本容器掛 `role="listbox"` 只為消 axe `aria-required-parent`,但那個容器沒有選取狀態、沒有方向鍵、沒有焦點管理 = 對輔助科技的空頭承諾,SSOT `ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。產品 code 無豁免 |
 
 ### 消費者
 

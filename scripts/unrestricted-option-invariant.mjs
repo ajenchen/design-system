@@ -26,11 +26,18 @@
  *
  * 對照組 `--selftest`:逐條把上面五件事各弄壞一次,**每一條都必須各自被抓到**(不是「有紅就算」——
  * 那樣只要一條會紅就能掩護其他幾條假綠)。全中 = exit 0,任何一條沒抓到 = exit 1。
+ *
+ * **story 沒渲染出來 = 儀器失效(exit 1,訊息標 INSTRUMENT-FAIL),不是「抓到了」也不是「沒問題」**(2026-09-25,M37):
+ * 每則 story 都經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報
+ * 渲染完成(含 play)、通過 render-health、被量的元素出現、版面連續靜止 SETTLE_FRAMES 個影格。
+ * 修前是 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡 400ms:story 檔 404 時後面的檢查
+ * 全部「選單沒開」而紅 —— 一般模式把儀器問題報成產品問題,**--selftest 更糟:沒渲染的那幾組被算成「弄壞後有抓到」**,
+ * 對照組就這樣假綠。現在等不到一律丟 StoryRenderInstrumentError,點名 story、附同源 404,兩種模式都 exit 1。
+ * 刻意不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -38,6 +45,10 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const BUILD = resolve(ROOT, arg('build', 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const EDGE_TOLERANCE_PX = 1
+// 開啟 story 後要求版面連續靜止幾個影格才量(C 段量左緣幾何;D / E 段的選單是 defaultOpen,要等開啟動畫跑完)
+const SETTLE_FRAMES = 10
+// 開著的下拉面板(D / E 兩則 story 是 defaultOpen:等的是面板本身,不是「根節點有東西」)
+const OPEN_PANEL = '[data-radix-popper-content-wrapper] [cmdk-root]'
 
 const STORY_MAIN = 'design-system-components-combobox-展示--unrestricted-option'
 const STORY_CONTRACT = 'design-system-components-combobox-展示--unrestricted-contract'
@@ -45,10 +56,7 @@ const STORY_MSG = 'design-system-components-combobox-展示--unrestricted-messag
 const STORY_OFF = 'design-system-components-combobox-展示--unrestricted-off-inert'
 const STORY_SEARCH = 'design-system-components-combobox-展示--unrestricted-search'
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 
 // 面板狀態:群組、列、勾選、訊息列。只認開著的 popper 裡的 cmdk 根。
 const PANEL = () => {
@@ -138,7 +146,9 @@ const BREAK = {
     if (!row) return false
     const mark = row.querySelector('[data-state]')
     if (!mark) return false
-    setInterval(() => { mark.setAttribute('data-state', 'checked') }, 10)
+    // 只在值不對時才改(2026-09-25):原本每 10ms 無條件 setAttribute,同值也會產生 DOM 變動紀錄,版面永遠不靜止 ——
+    // 改用「互動之後等靜止」之後,對照組會被判成儀器失效而不是「互斥被弄壞」。破壞的效果不變(「不限」那格一直是勾著)。
+    setInterval(() => { if (mark.getAttribute('data-state') !== 'checked') mark.setAttribute('data-state', 'checked') }, 10)
     return true
   },
   // C:讓只選「不限」的欄位長出一顆 Tag(退化成「不限是一個被選中的項目」)
@@ -195,22 +205,33 @@ const BREAK = {
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 1100 } })
-page.on('pageerror', () => {})
 
 const results = []
 const ck = (組, 名, 通過, 細節 = '') => { results.push({ 組, 名, 通過, 細節 }) }
-const goto = async (id) => {
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-  await page.waitForFunction(() => document.querySelector('#storybook-root')?.children.length > 0, null, { timeout: 15_000 }).catch(() => {})
-  await page.waitForTimeout(400)
+// 開一則 story 並證明它真的渲染完成(見檔頭):waitFor = 這一段接下來要操作 / 量的那個元素本身。
+// 等不到 / 不健康 → openStory 丟 StoryRenderInstrumentError,由下方 catch 轉成儀器失效(exit 1)。
+const goto = async (id, waitFor) => {
+  await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+    waitFor, settleFrames: SETTLE_FRAMES, notFound: server.notFound,
+  })
 }
 const 第幾個觸發點 = 0 // 重組後第一格就是開著 unrestricted 的那個(2026-09-18 story 精簡)
+// 互動之後等「版面真的停了」(2026-09-25,待辦總帳 C5):lib/launch-browser.mjs 的 settleAfterInteraction ——
+// 連續 SETTLE_FRAMES 個影格沒有 DOM 變動、沒有進行中的有限長度動畫。取代點開 / 關閉 / 勾選之後的固定睡眠
+// (500 / 700 / 600 / 400 / 300 / 250 / 200ms):那些是「面板已開、重畫已完成」的代理(M37),慢的機器上會量到開啟中途。
+// 刻意保留的固定等待只有兩類,都是被量的東西本身靠計時器:遠端搜尋的 300ms 模擬延遲(量「載入中」那一刻、等它回傳)
+// 與搜尋過濾的等待 —— 計時器期間版面是靜止的,靜止判定會提早回來。等不到靜止 = 儀器失效(下方 catch,exit 1)。
+const settle = async (what) => {
+  const r = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+  if (!r.ok) throw new StoryRenderInstrumentError({ storyId: what, kind: 'dom-not-settled', reason: `互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`, failedRequests: [] })
+}
+let instrumentFailure = null
 
 try {
   // ── A. 位置與分隔線 ────────────────────────────────────────
-  await goto(STORY_MAIN)
+  await goto(STORY_MAIN, '[role="combobox"]')
   await page.locator('[role="combobox"]').nth(第幾個觸發點).click({ timeout: 5_000 })
-  await page.waitForTimeout(500)
+  await settle('A 點開下拉') // 點開之後:等下拉面板的開啟動畫跑完再讀列與分隔線
   if (SELFTEST) { await page.evaluate(BREAK.位置); await page.waitForTimeout(60) }
   const a = await page.evaluate(PANEL)
   ck('A', '選單真的開著(防假綠)', a.開著 === true)
@@ -220,7 +241,8 @@ try {
   ck('A', '下一組頭上畫 1px 線', a.第二組上邊線 === '1px', a.第二組上邊線)
 
   // ── B. 互斥三條 ───────────────────────────────────────────
-  const 點 = async (n) => { await page.locator('[cmdk-root] [role="option"]').nth(n).click({ timeout: 5_000 }); await page.waitForTimeout(400) }
+  // 點一列之後等 400ms:勾選狀態的 setState → 重畫 → 勾選動畫(元素早已在畫面上)
+  const 點 = async (n) => { await page.locator('[cmdk-root] [role="option"]').nth(n).click({ timeout: 5_000 }); await settle(`B 點第 ${n} 列`) }
   if (SELFTEST) { await page.evaluate(BREAK.互斥); await page.waitForTimeout(60) }
   await 點(0)
   const b1 = await page.evaluate(PANEL)
@@ -232,12 +254,12 @@ try {
   const b3 = await page.evaluate(PANEL)
   ck('B', '取消「不限」→ 一個都不剩', b3.列?.every((r) => !r.勾) === true, JSON.stringify(b3.列?.map((r) => r.勾)))
   await page.keyboard.press('Escape').catch(() => null)
-  await page.waitForTimeout(200)
+  await settle('B 關閉下拉') // 等下拉面板的關閉動畫跑完
 
   // ── C. 欄位顯示 ───────────────────────────────────────────
   // 量的是 `UnrestrictedContract`(test-only 契約 probe):給人看的範例只留兩格,
   // 唯讀 / 檢視 / 對照組那幾格是機械驗證用的,不該擠在側邊欄裡(2026-09-18 user 抓「雜七雜八」)。
-  await goto(STORY_CONTRACT)
+  await goto(STORY_CONTRACT, 'h3')
   if (SELFTEST) { await page.evaluate(BREAK.欄位); await page.waitForTimeout(60) }
   const f = await page.evaluate(FIELDS)
   ck('C', '一般選項用 Tag 呈現(對照:關著那格)', (f.關著?.Tag數 ?? 0) > 0, `Tag=${f.關著?.Tag數}`)
@@ -254,7 +276,7 @@ try {
   ck('C', '只選「不限」不是佔位灰', f.只選不限?.顏色 !== f.佔位?.顏色, `不限=${f.只選不限?.顏色} 佔位=${f.佔位?.顏色}`)
 
   // ── D. 三態訊息列 ─────────────────────────────────────────
-  await goto(STORY_MSG)
+  await goto(STORY_MSG, OPEN_PANEL) // 0 筆那格是 defaultOpen
   if (SELFTEST) { await page.evaluate(BREAK.訊息); await page.waitForTimeout(60) }
   const d1 = await page.evaluate(PANEL)
   ck('D', '0 筆那格的選單真的開著(防假綠)', d1.開著 === true)
@@ -263,9 +285,9 @@ try {
   // 先關掉前一格的面板再點下一格 —— 開著的 popper 會擋住下一個觸發點的點擊
   //(2026-09-18 對照組實測:塞進去的假列直接 intercept pointer events,整支當場 timeout)。
   await page.keyboard.press('Escape').catch(() => null)
-  await page.waitForTimeout(250)
+  await settle('D 關閉 0 筆那格') // 等前一格面板的關閉動畫跑完,不擋下一個觸發點
   await page.locator('[role="combobox"]').nth(1).click({ timeout: 5_000 })
-  await page.waitForTimeout(700)
+  await settle('D 點開載入中那格') // 點開之後:等載入中那格的面板開啟動畫跑完
   if (SELFTEST) { await page.evaluate(BREAK.訊息); await page.waitForTimeout(60) }
   const d2 = await page.evaluate(PANEL)
   ck('D', '載入中那格的選單真的開著(防假綠)', d2.開著 === true)
@@ -274,8 +296,7 @@ try {
   // ── E. 關著時完全惰性 ────────────────────────────────────
   // `unrestricted` 關著 + 某個選項的值剛好是 `__unrestricted__`(預設值)。
   // 這支 story 開場就選著它;選別的選項、按全選,它都必須還在。
-  await goto(STORY_OFF)
-  await page.waitForTimeout(400)
+  await goto(STORY_OFF, OPEN_PANEL) // defaultOpen:等的是開著的面板本身(原本另睡 400ms,已由 openStory 的靜止判定取代)
   if (SELFTEST) { await page.evaluate(BREAK.關著); await page.waitForTimeout(60) }
   const 撞名還在 = async () => {
     const p = await page.evaluate(PANEL)
@@ -286,17 +307,17 @@ try {
   ck('E', '關著那支的選單真的開著(防假綠)', e0.開著 === true)
   ck('E', '開場就選著撞名的那個選項', e0.勾, JSON.stringify(e0.列))
   await page.locator('[cmdk-root] [role="option"]').nth(2).click({ timeout: 5_000 })
-  await page.waitForTimeout(400)
+  await settle('E 選別的選項') // 等勾選的 setState → 重畫
   const e1 = await 撞名還在()
   ck('E', '選別的選項之後,撞名的那個沒被吃掉', e1.勾, JSON.stringify(e1.列))
   await page.locator('[cmdk-root] [data-slot="surface-footer"] button').first().click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(400)
+  await settle('E 按全選') // 等全選的 setState → 重畫
   const e2 = await 撞名還在()
   ck('E', '按全選之後,撞名的那個沒被吃掉', e2.勾, JSON.stringify(e2.列))
   // ── F. 搜尋 ───────────────────────────────────────────────
   // user 2026-09-18 原話:「如果要可以搜得到,不是應該遠端和非遠端都搜得到嗎?但前提是關鍵字要有
   // 配對到吧?然後遠端搜尋的話,應該要等結果都回傳回來了才一起跟其他一般選項同時秀出?」
-  await goto(STORY_SEARCH)
+  await goto(STORY_SEARCH, '[role="combobox"]')
   const 清單 = async () => {
     const p = await page.evaluate(PANEL)
     return { 開著: p.開著, 字: (p.列 || []).map((r) => r.字), 不限在: (p.列 || []).some((r) => r.不限), 空訊息: p.空訊息 }
@@ -308,18 +329,18 @@ try {
     const ok = await box.waitFor({ state: 'visible', timeout: 4_000 }).then(() => true).catch(() => false)
     if (!ok) return { 開著: false, 字: [], 不限在: false, 空訊息: null, 沒有搜尋框: true }
     await box.fill(q, { timeout: 4_000 }).catch(() => null)
-    await page.waitForTimeout(waitMs)
+    await page.waitForTimeout(waitMs) // 等搜尋過濾生效(遠端那格有 300ms 模擬延遲,故 900)
     return 清單()
   }
   // 每格都重新載入 story:對照組會把面板弄成奇怪的狀態,殘留的浮層會擋住下一個觸發點的點擊
   //(2026-09-18 實測:第一版在這裡 timeout 整支崩掉,其他條有沒有被抓到就看不到了)。
   for (const [索引, 模式, 等待, 別的字] of [[0, '本機', 450, 'Elec'], [1, '遠端', 900, '客戶']]) {
-    await goto(STORY_SEARCH)
+    await goto(STORY_SEARCH, '[role="combobox"]')
     const 開得了 = await page.locator('[role="combobox"]').nth(索引).click({ timeout: 5_000 })
       .then(() => true).catch(() => false)
     ck('F', `${模式}:觸發點點得開(防假綠)`, 開得了)
     if (!開得了) continue
-    await page.waitForTimeout(600)
+    await settle(`F ${模式} 點開下拉`) // 點開之後:等下拉面板的開啟動畫跑完
     if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
     const 閒置 = await 清單()
     ck('F', `${模式}:沒打字時「不限」在最上面`, 閒置.開著 && 閒置.不限在, JSON.stringify(閒置.字))
@@ -331,22 +352,25 @@ try {
     ck('F', `${模式}:打無結果的字 → 空清單 + 訊息`, !打沒有.不限在 && !!打沒有.空訊息, `列=${JSON.stringify(打沒有.字)} 訊息=${打沒有.空訊息}`)
     await page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first().fill('').catch(() => null)
     await page.keyboard.press('Escape').catch(() => null)
-    await page.waitForTimeout(300)
+    await settle(`F ${模式} 關閉下拉`) // 等下拉面板的關閉動畫跑完
   }
   // 遠端:載入中不得出現(user「等結果都回傳回來了才一起秀出」)
-  await goto(STORY_SEARCH)
+  await goto(STORY_SEARCH, '[role="combobox"]')
   await page.locator('[role="combobox"]').nth(1).click({ timeout: 5_000 }).catch(() => null)
-  await page.waitForTimeout(600)
+  await settle('F 遠端 點開下拉') // 點開之後:等下拉面板的開啟動畫跑完
   if (SELFTEST) { await page.evaluate(BREAK.搜尋); await page.waitForTimeout(60) }
   const box = page.locator('[data-radix-popper-content-wrapper] [cmdk-root] input').first()
   const 有框 = await box.waitFor({ state: 'visible', timeout: 4_000 }).then(() => true).catch(() => false)
   if (有框) await box.fill('不限', { timeout: 4_000 }).catch(() => null)
-  await page.waitForTimeout(120)
+  await page.waitForTimeout(120) // 刻意取在遠端 300ms 模擬延遲回來之前:量「載入中」那一刻
   const 載入中 = await 清單()
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(700) // 等遠端結果回傳並重畫
   const 回傳後 = await 清單()
   ck('F', '遠端:載入中「不限」不出現', !載入中.不限在, JSON.stringify(載入中.字))
   ck('F', '遠端:結果回傳後「不限」才出現', 回傳後.不限在, JSON.stringify(回傳後.字))
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  instrumentFailure = error
 } finally {
   await page.close().catch(() => null)
   await browser.close().catch(() => null)
@@ -355,6 +379,15 @@ try {
 
 for (const r of results) console.log(`${r.通過 ? '✓' : '✗'} ${r.組} ${r.名}${r.細節 ? ' | ' + r.細節 : ''}`)
 const 失敗 = results.filter((r) => !r.通過)
+
+// 儀器失效優先於任何判定:沒渲染出來的 story 不得被算成「弄壞後有抓到」(selftest),也不得被讀成產品不符(一般模式)
+if (instrumentFailure) {
+  console.error(`\n✗ ${instrumentFailure.message}`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  console.error(`  上面 ${results.length} 條是停下之前量到的;其後各段沒有量${SELFTEST ? ',對照組結論不成立' : ''}。`)
+  process.exit(1)
+}
 
 if (SELFTEST) {
   // 四條各自要被抓到 —— 只看「有沒有紅」會讓一條紅掩護其他三條假綠

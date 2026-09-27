@@ -35,7 +35,15 @@ const checkboxVariants = cva(
     'disabled:data-[state=indeterminate]:bg-disabled disabled:data-[state=indeterminate]:text-fg-disabled disabled:data-[state=indeterminate]:border-transparent',
     // readOnly：鎖定互動但維持 checked/unchecked 視覺
     'data-[readonly=true]:pointer-events-none data-[readonly=true]:cursor-default',
-    'data-[readonly=true]:hover:border-border',
+    // readOnly × hover:每個勾選狀態釘在**自己的**靜止值,不升 hover 階(checkbox.spec.md「狀態」表 readonly 列)。
+    // pointer-events-none 擋不住:指標停在 SelectionItem 的 <label for> 上時,HTML 讓被標記的控件一起進入 :hover。
+    // 原本只有一條 `data-[readonly=true]:hover:border-border`:bg 沒釘、已勾選的框與它同特異度且排在後面 → 滑過 label
+    // 仍轉 primary-hover;而且 border-border 是「未勾選」的靜止值,就算贏了也會把已勾選的框變灰。
+    // 寫法同本檔 disabled 守衛(`disabled:hover:border-transparent`)與 switch.tsx 的 `disabled:data-[state=…]:hover:`。
+    // `enabled:`:readOnly 與 disabled 同時成立時靜止外觀本來就是 disabled,hover 交給 disabled 自己的規則,這裡不搶。
+    'data-[readonly=true]:enabled:data-[state=unchecked]:hover:border-border',
+    'data-[readonly=true]:enabled:data-[state=checked]:hover:bg-primary data-[readonly=true]:enabled:data-[state=checked]:hover:border-primary',
+    'data-[readonly=true]:enabled:data-[state=indeterminate]:hover:bg-primary data-[readonly=true]:enabled:data-[state=indeterminate]:hover:border-primary',
   ],
   {
     variants: {
@@ -386,7 +394,7 @@ export const checkboxMeta = {
   tokens: {
     bg: ['bg-disabled', 'bg-primary', 'bg-primary-hover', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

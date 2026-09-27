@@ -489,7 +489,7 @@ export const timePickerMeta = {
     // panel selected 走 bg-neutral-selected(time-columns.tsx isSelected;spec「欄內 item 狀態」),非 bg-primary。
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

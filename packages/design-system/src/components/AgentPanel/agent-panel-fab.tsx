@@ -592,6 +592,16 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const stage: Stage = { w: size.w, h: size.h, inset }
     const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
     const [menuOpen, setMenuOpen] = React.useState(false)
+    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):只有按 Esc 或選了項目才回入口鈕;
+    // 點外面 → 留在點的地方、Tab → 由 DropdownMenu 帶到下一站。舊版無條件搶回入口鈕(R8 實測點外面也搶)。
+    const returnFocusOnCloseRef = React.useRef(false)
+    const openMenu = () => {
+      returnFocusOnCloseRef.current = false
+      setMenuOpen(true)
+    }
+    // 真正的開啟者是入口鈕(選單錨點是蓋在鈕上、aria-hidden 的透明 span):鈕以 aria-controls 宣告它開的是這個選單,
+    // DropdownMenu 據此從鈕算 Tab 的下一站(dropdown-menu.tsx menuOpener)。
+    const menuId = React.useId()
 
     const shape: Shape = drag ? (drag.placement?.kind ?? 'home') : placement.kind
     const spec = SHAPES[shape]
@@ -614,7 +624,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'F10' && e.shiftKey) {
         e.preventDefault()
-        setMenuOpen(true)
+        openMenu()
         return
       }
       if (placement.kind === 'home') {
@@ -693,21 +703,29 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           )}
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
             {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。
-                關閉後 Radix 會把焦點還給 trigger,但 trigger 是 aria-hidden 的錨點 → 顯式導回真正的按鈕。 */}
+                關閉後 Radix 會把焦點還給 trigger,但 trigger 是 aria-hidden 的錨點 → 需要回鈕時顯式導回真正的按鈕。
+                錨點的 aria-controls 改指向實際的選單 id(預設指向 Radix 自產、已被本檔覆寫掉的 id,會是懸空參照)。 */}
             <DropdownMenuTrigger asChild>
-              <span aria-hidden className="pointer-events-none absolute inset-0" />
+              <span aria-hidden aria-controls={menuOpen ? menuId : undefined} className="pointer-events-none absolute inset-0" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              id={menuId}
               align="end"
+              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」)
+              onEscapeKeyDown={() => {
+                returnFocusOnCloseRef.current = true
+              }}
               onCloseAutoFocus={(e) => {
+                // 一律擋掉 Radix 還給透明錨點(聚焦不了 → 焦點會掉到 body);只有 Esc / 選了項目才回入口鈕(B11)
                 e.preventDefault()
-                buttonRef.current?.focus()
+                if (returnFocusOnCloseRef.current) buttonRef.current?.focus()
+                returnFocusOnCloseRef.current = false
               }}
             >
               {placement.kind === 'home' ? (
-                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement({ kind: 'dock', y: dockMaxY(stage) }) }}>{text.dock}</DropdownMenuItem>
               ) : (
-                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement(AGENT_FAB_HOME) }}>{text.home}</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -768,6 +786,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 aria-label={buttonLabel}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
+                aria-controls={menuOpen ? menuId : undefined}
                 // 自有 handler 一律放在 spread **之後**:型別已擋(見 FabOwnedButtonProps),
                 // 這裡再擋一層執行期(JS consumer / as any 繞過型別)。
                 onPointerDown={onPointerDown}
@@ -776,7 +795,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 onClick={onClick}
                 onContextMenu={(e) => {
                   e.preventDefault()
-                  setMenuOpen(true)
+                  openMenu()
                 }}
               >
                 {/* 可視形狀:漸層環 = 這一層自己的 2px padding,內層 span 只負責面色。

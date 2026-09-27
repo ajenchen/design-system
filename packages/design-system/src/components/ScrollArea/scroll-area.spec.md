@@ -101,7 +101,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 Radix primitive + 本 DS a11y 橋接:
 
 - **鍵盤捲動**:本 DS 在 Viewport 加 `tabIndex={0}`(預設)使其可被鍵盤聚焦(Radix 不自動把 scroll container 標 focusable,Safari 尤其需要;此即 axe `scrollable-region-focusable` fix)。聚焦後 `ArrowUp/Down/Left/Right` / `PageUp/Down` / `Home/End` 捲動為瀏覽器原生行為,非 Radix 提供。**`viewportTabIndex={-1}` opt-out(2026-07-14)**:內容已有自帶 focusable + 鍵盤處理的元素(如 TimePicker `role="listbox"` `tabIndex={0}`)時傳 `-1`,消除「Viewport+內容雙 tab stop、焦點落 Viewport 時方向鍵觸發原生捲動非元件行為」;axe 由內部 focusable 內容滿足。**`viewportTabIndex={null}` composite opt-out(2026-07-31)**:ScrollArea 被 `role="menu"` 等 ARIA composite 當純結構 wrapper、鍵盤與 focus 由其 item family own 時,完全省略 viewport `tabindex`;`-1` 仍會留下 `div[tabindex]`,不能滿足 composite 的 required-children 結構
-- **Focus 可見**:聚焦的 Viewport 顯示 DS focus ring(`focus-visible:outline-ring`,inset 2px),非瀏覽器原生 focus ring
+- **Focus 可見**:聚焦的 Viewport 顯示 DS 焦點框(`focus-visible:focus-ring-inset`,往內 2px),非瀏覽器原生 focus ring(2026-09-24 訂正,原 `focus-visible:outline-ring` 是已退役的手寫 outline 寫法,`scroll-area.tsx:69` 實為 `focus-ring-inset`)
 - **Scrollbar 非 tab stop**:scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)
 - **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)
 

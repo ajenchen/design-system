@@ -69,6 +69,18 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 
 ---
 
+## 底色與 circle 形狀在頭像堆疊裡
+
+**底色 `--secondary`**(兩種形狀同一顆,與 Tag 預設灰相同;2026-09-26 起 `circle` 由 `--muted` 改來,紀錄見待辦總帳 L3):`+N` 不能點,但可以 Tab 聚焦、滑過或聚焦會開名單卡 —— 是可互動元素;`--muted` 不可當可互動元素的靜止底(`../../tokens/color/color.spec.md`「能不能當可互動元素的靜止底」條 + 「Static Subtle Background」表 `bg-muted` 列「靜態非互動」)。
+
+**circle 形狀 = 頭像堆疊的尾端**(畫法 SSOT = `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」):
+
+- 底色畫在觸發點**內層的圓**上,不畫在觸發點本身。接在頭像後面時這個圓被左邊那顆蓋住的地方 + 2px 縫會挖空;遮罩若掛在觸發點上,會把全域 `:focus-visible` 外描邊整圈裁掉。
+- 挖不挖由結構決定:所在那一項前面有看得見的堆疊項目(`stacked` 頭像)才挖。Combobox 等消費者不必多傳 prop;單獨出現的 circle `+N` 不挖。
+- 堆疊契約是同尺寸:circle 的 `sm` / `md` / `lg`(20 / 24 / 24px)要配同直徑的頭像。
+
+---
+
 ## 邊界案例
 
 - **count ≤ 0**:元件自行不渲染(return `null`)——「無溢出」時 consumer 不需條件渲染
@@ -92,7 +104,7 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 
 OverflowIndicator 是**承載 count + HoverCard 的 trigger primitive**,無獨立色彩與互動狀態變體:
 
-- **無 ColorMatrix**:trigger 只有 neutral 一種色彩(`circle` 用 `bg-muted` / `tag` 用 `tagVariants` 的 neutral),無 variant 色彩選項——OverflowIndicator 是結構 primitive,色彩屬於 consumer 決策(若需要色相,trigger 的外框 / 內容由 consumer 包)。
+- **無 ColorMatrix**:trigger 只有 neutral 一種色彩(`circle` 與 `tag` 同一顆 `--secondary`:`circle` 畫在內層的圓上、`tag` 走 `tagVariants` 的 neutral,見下方「底色」段),無 variant 色彩選項——OverflowIndicator 是結構 primitive,色彩屬於 consumer 決策(若需要色相,trigger 的外框 / 內容由 consumer 包)。
 - **無 StateBehavior**:trigger 為 HoverCard 觸發點(keyboard-focusable,有 focus-visible ring),hover / focus 只觸發 HoverCard 開啟,本身無 hover / active / disabled / selected 變化——互動狀態屬於 HoverCard trigger 行為(見 `hover-card.spec.md`),不屬 OverflowIndicator 層級。
 
 對應 anatomy story:保留 `Overview` / `Inspector` / `SizeMatrix`,額外追加元件特有的 `ShapeMatrix`(取代 ColorMatrix 展示 circle vs tag 兩種形狀變體)。

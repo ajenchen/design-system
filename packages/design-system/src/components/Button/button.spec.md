@@ -343,13 +343,26 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 | 值 | 視覺 | 情境（world-class）|
 |---|---|---|
 | `'emphasis'` ★ | 淡藍底 / primary 字 | toolbar functional toggle、篩選、面板開關（Figma / Linear / Material ToggleButton）|
-| `'neutral'` | 灰底 / foreground 字 | sidebar / contextual nav row（Linear / Notion / VS Code Activity Bar）|
+| `'neutral'` | 灰底 / foreground 字;已按下 `neutral-selected` → 滑過 `-selected-hover` → 按住 `-selected-active`(2→3→4 階,user 2026-09-25 選「甲：保留，維持 2→3→4 (Recommended)」,選項由 AI 提供) | **可取消**的切換鈕(再點一次就關掉),需要比預設藍底低一級的強調時。**不用於導覽 / 目前頁**:再點不會取消的是「選中列」,走列元件(`MenuItem` / `SidebarMenuButton`),選中列滑過釘住 —— owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」(本格是全家族唯一 owner;`tokens/color/color.spec.md` 同寫 `-selected-hover`「可取消切換鈕專屬、列元件禁用」)。2026-09-25 更正:本格原寫「側欄 / 導覽列用」,與上述 owner 打架(待辦總帳 B5)|
 
 ```tsx
-<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" />         {/* emphasis default */}
-<Button variant="tertiary" pressed={filterOn} startIcon={Filter}>只看未完成</Button>             {/* emphasis */}
-<Button variant="text" pressed={isActive} pressedTone="neutral" startIcon={Inbox}>收件匣</Button> {/* neutral */}
+<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" />              {/* emphasis default */}
+<Button variant="tertiary" pressed={filterOn} startIcon={Filter}>只看未完成</Button>                  {/* emphasis */}
+<Button variant="text" pressed={showGrid} pressedTone="neutral" startIcon={Grid3x3}>顯示格線</Button> {/* neutral:再點一次關掉 */}
 ```
+
+靜態快照(不必真人滑過也看得到各狀態,M15):`button.anatomy.stories.tsx`「狀態行為」的「灰色已按下切換鈕」與「狀態疊加」兩段。
+
+### 狀態疊加(開啟中 / pressed / aria-disabled)
+
+原則:**開啟中 = 自己的 hover**(`patterns/element-anatomy/inline-action.spec.md`「overlay 開啟 → 同 host hover」);**停用不給互動回饋**(hover / active 釘在靜止)。
+
+| 疊加 | 視覺 |
+|---|---|
+| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;danger 用自己的 `error-hover`(secondary+danger 字與框、text+danger 字)。primary / link 目前無開啟樣式 |
+| pressed × hover / active | emphasis:底色與框**釘住**,只有字換 `primary-hover` / `-active`;neutral:底換 `neutral-selected-hover` / `-active`,字與框釘住 |
+| pressed × 開啟中 | = pressed × hover(Radix 把 `data-state` 改寫成 `open`,由 `aria-pressed` 分支承擔,不套 variant 的開啟樣式) |
+| `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現 |
 
 ### Dismiss 視覺類(X close only)
 
@@ -394,7 +407,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 ```
 → slot 高度由 `--chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
 → default(md): my=-2px / lg: my=-4px
-→ 效果:Button native size 不變(sm 28/32,touch target 亦同),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
+→ 效果:Button native size 不變(sm 28/32,命中區亦同 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 
 **詳**:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
 

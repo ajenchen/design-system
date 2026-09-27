@@ -19,3 +19,20 @@ export function visualAuditExitCode({
   if (updateBaseline === true) return renderErrors > 0 ? 1 : 0
   return contrastViolations > 0 || geometryViolations > 0 || diffBudgetBreached > 0 || renderErrors > 0 || diffErrors > 0 ? 1 : 0
 }
+
+/**
+ * 0 個 scenario 符合 scope 時,這一趟算不算通過(2026-09-25,待辦總帳 C5;M37「沒觀察到 ≠ 沒發生」)。
+ * 原本一律印「跳過(exit 0)」—— `--scope=all` 在斷言檔壞掉 / 讀成空時,整支視覺稽核一張圖都沒截就綠了。
+ * 只有 `--scope=changed` 可以合法地是 0(這次沒有動到有視覺 scenario 的元件);其餘都是儀器失效:
+ *   all → 斷言檔沒有任何 scenario;component:X → X 打錯或沒有 scenario;未知 scope 會退回 all,同理;--urls 給了就不會是 0。
+ * @param {{ scope?: string, urls?: string }} input
+ * @returns {{ exitCode: 0 | 1, reason: string }}
+ */
+export function emptyScopeVerdict({ scope = 'changed', urls = '' } = {}) {
+  if (urls) return { exitCode: 1, reason: `--urls 給了卻沒有任何 scenario(${urls})—— 解析壞了,這一趟什麼都沒截` }
+  if (scope === 'changed') return { exitCode: 0, reason: 'scope=changed:這次沒有動到有視覺 scenario 的元件,不適用(exit 0)' }
+  if (typeof scope === 'string' && scope.startsWith('component:')) {
+    return { exitCode: 1, reason: `scope=${scope} 對不到任何 scenario —— 元件名打錯或該元件沒有視覺 scenario,這一趟什麼都沒截,不算通過` }
+  }
+  return { exitCode: 1, reason: `scope=${scope} 卻沒有任何 scenario —— 斷言檔是空的或讀錯了,這一趟什麼都沒截,不算通過` }
+}

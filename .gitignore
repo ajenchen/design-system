@@ -164,3 +164,6 @@ story-screenshots/
 
 # 閘用暫存打包輸出(見 scripts/.gate-bundles/README.md)
 scripts/.gate-bundles/*.mjs
+
+# 測試把 HOME 指到這裡時 python 會在底下寫快取,曾被誤 commit(d56b0123);目錄本身由測試建立,不追蹤
+empty-home/

@@ -25,11 +25,10 @@
  *
  * 沙箱起不了 Chromium → C1–C6 標 SKIPPED-ENV(exit 0),C7/C8 照常判定;請在可開瀏覽器的環境(CI)補驗其餘。
  */
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname, extname } from 'node:path'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -105,30 +104,36 @@ if (SELFTEST) {
 if (staticFailed.length) { console.log(`✗ agent-logo-continuity 靜態檢查 ${staticFailed.length} 條失敗`); process.exit(1) }
 
 const STATIC = join(ROOT, 'storybook-static')
-if (!existsSync(STATIC)) {
-  console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
-  process.exit(1)
-}
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
-  res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
-})
-await new Promise((r) => server.listen(0, r))
-const BASE = `http://localhost:${server.address().port}`
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記與退出碼,2026-09-25 統一寫法,待辦總帳 C5)
+requireStorybookBuild(join(STATIC, 'index.json'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
+const BASE = server.origin
 
-let browser
-try {
-  browser = await launchBrowser()
-} catch (error) {
-  console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
-  console.error('   此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。')
-  server.close(); process.exit(0)
-}
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const browser = await launchBrowserOrSkip({}, {
+  cleanup: () => server.stop(),
+  hint: '此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。',
+})
 const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
-await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-展示--logo-think-stop&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('svg')
+// 靜止樣本(rest)是 C1 的基準,必須取在「這則 story 真的渲染完成、標誌與『思考』鈕都在、版面已靜止」之後。
+// 原本是 networkidle + 等第一個 svg 出現 —— 代理量:story 檔缺檔時只會 30 秒逾時丟一個不點名 story 的 Playwright 例外。
+// 改由 openStory(lib/launch-browser.mjs,全部瀏覽器閘共用):等 Storybook 回報渲染完成 → 被量的 svg(含色場)與鈕出現 →
+// 連續 10 個影格無 DOM 變動、無進行中的有限動畫。等不到 = 儀器失效(exit 1,點名 story、附 404),不是產品裁決。
+try {
+  await openStory(page, `${BASE}/iframe.html?id=design-system-components-agentpanel-展示--logo-think-stop&viewMode=story`, {
+    waitFor: () => Boolean(document.querySelector('svg linearGradient'))
+      && [...document.querySelectorAll('button')].some((b) => b.textContent.includes('思考')),
+    settleFrames: 10,
+    notFound: server.notFound,
+  })
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  console.error(`✗ ${error.message}`)
+  console.error('✗ agent-logo-continuity:C1–C6 這次沒有量到(儀器失效)—— 不算通過,也不是產品裁決;C7/C8 已於上方判定')
+  await browser.close(); await server.stop(); process.exit(1)
+}
 
 const result = await page.evaluate(async () => {
   const svg = () => document.querySelector('svg')
@@ -173,7 +178,7 @@ const result = await page.evaluate(async () => {
   })
   return { rest: { body: rest.body, grad: rest.grad, overlay: rest.overlay, enter: rest.enter }, frames }
 })
-await browser.close(); server.close()
+await browser.close(); await server.stop()
 
 const norm360 = (a) => ((a % 360) + 360) % 360
 const wrapDelta = (a, b) => { let d = norm360(a) - norm360(b); if (d > 180) d -= 360; if (d < -180) d += 360; return Math.abs(d) }

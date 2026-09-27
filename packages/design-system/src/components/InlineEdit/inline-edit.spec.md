@@ -72,6 +72,8 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 
 **「底色範圍 = 輸入框範圍」不變量**:view 與 edit 兩態共用同一對齊盒(同寬、同 1px 邊框盒),幾何同源(view×default = edit 幾何減 chrome),故 hover 底色與 edit 輸入框逐 pixel 對齊、態切換零位移。(舊版 read 外框 `w-full`+`-mx` 疊加 → 右側短一截、整塊左偏,已修;2026-07-16 -mx 由恆定改條件化;2026-07-17 進一步移除 fieldCtx gate → 純 orientation-aware,委派 view 統一 fieldViewGeometry field-px,standalone 也對齊。)
 
+**點得到的範圍 = 底色範圍**(2026-09-26,待辦總帳 N53⑤):隱形 Pressable 用 `-inset-px` 蓋滿外框的 border box(含那圈 1px 透明邊框),滑過底色亮到哪、點下去就進 edit 到哪。先前是 `inset-0`,只蓋到 padding box —— 外圈 1px 亮著卻點不進 edit(實測一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點),正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。修的是命中區、不是底色:底色與 edit 輸入框逐 pixel 對齊是本條不變量,不能縮。畫面不變,只有那 1px 的游標與點擊結果改變。世界級對照:Atlassian inline-edit 的讀取態把點擊與滑過底色掛在**同一個元素**上,兩者天生同一個盒([`read-view.js#L56`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js) `onClick: onReadViewClick`、同一個 div 的 `className`(#L62)帶滑過樣式)。
+
 **尺寸預設 = `sm`**（2026-07-09 user 拍板）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
 
 **在 `<Field>` 內也是 `sm`**(2026-07-28 user 拍板):Field 的預設 `md` 是「沒人決定過」的預設值,不得壓過本元件宣告的 `sm`。實作雙通道 —— 靜態 `InlineEdit.fieldPreferredSize = 'sm'` 供 Field 直接子元件同步偵測,加上掛載時的 `useRegisterFieldPreferredSize('sm')` 補位(包 wrapper / `React.memo` / HOC 會遮蔽靜態);控件自身尺寸則由 `useResolvedFieldSize` 依 `sizeExplicit` 同步解析,不等註冊。**唯有 consumer 顯式 `size`(在 Field 或 InlineEdit 上)才覆寫**。機制與失效語意 owner → `Field/field.spec.md`「Control 偏好尺寸 SSOT」。

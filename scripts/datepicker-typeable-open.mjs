@@ -20,35 +20,53 @@
 //
 // Run: `node scripts/datepicker-typeable-open.mjs`
 
-import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
-const M={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(S,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':M[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
-const B=`http://localhost:${sv.address().port}`
-let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+// 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
+requireStorybookBuild(join(S,'index.json'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const sv=await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
+process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
+const B=sv.origin
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的 CI 瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const br = await launchBrowserOrSkip({}, { cleanup: () => sv.stop() })
 const pg=await br.newPage({viewport:{width:1280,height:900}})
 const ID='design-system-components-datepicker-展示--typed-input'
 const st=()=>pg.evaluate(()=>({日曆:!!document.querySelector('[data-radix-popper-content-wrapper]'),焦點:document.activeElement?.tagName,值:document.querySelector('input')?.value}))
-const reload=async()=>{await pg.goto(`${B}/iframe.html?id=${ID}&viewMode=story`,{waitUntil:'networkidle'});await pg.waitForTimeout(500)}
+// 開 story:原本 networkidle + 固定睡 500ms 當「已渲染」的代理(缺 story 檔時只會在 pg.$('input') 拿到 null 而炸 TypeError)。
+// 改由共用的 openStory:Storybook 回報渲染完成 → 被量的 input 出現 → 連續 10 影格靜止(接著就要量 input 的框)。
+// 等不到 = 儀器失效:exit 1、點名 story、附 404 —— 不是產品裁決,也不准當通過。
+const reload=async()=>{
+  try { await openStory(pg,`${B}/iframe.html?id=${ID}&viewMode=story`,{waitFor:'input',settleFrames:10,notFound:sv.notFound}) }
+  catch (e) {
+    if (!(e instanceof StoryRenderInstrumentError)) throw e
+    console.error(`✗ ${e.message}`); await br.close(); await sv.stop(); process.exit(1)
+  }
+}
 const out=[];let fail=0
+// 互動之後等「版面真的停了」(2026-09-25,待辦總帳 C5):lib/launch-browser.mjs 的 settleAfterInteraction ——
+// 連續 10 個影格沒有 DOM 變動、沒有進行中的有限長度動畫(浮層開啟動畫、roving focus 的重畫都算)。取代原本
+// 點擊 / 按鍵後固定睡 500 / 300 / 250ms:那是「浮層已開、焦點已落定」的代理(M37),慢的機器上會在開啟動畫中途量。
+// 等不到靜止 = 儀器失效 exit 1,不是產品裁決。
+const settle=async(what)=>{
+  const r=await settleAfterInteraction(pg,{frames:10})
+  if(r.ok)return
+  console.log(out.join('\n'))
+  console.error(`✗ INSTRUMENT-FAIL ${what}:互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)—— 儀器失效,不是產品裁決`)
+  await br.close(); await sv.stop(); process.exit(1)
+}
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`);if(!p)fail++}
 
 // A) 滑鼠點文字區
 await reload()
 const inp=await pg.$('input'); const b=await inp.boundingBox()
-await pg.mouse.click(b.x+40, b.y+b.height/2); await pg.waitForTimeout(500)
+await pg.mouse.click(b.x+40, b.y+b.height/2); await settle('點文字區') // 等日曆浮層開啟動畫 + 開啟後下一幀把焦點拿回輸入框
 const a=await st()
 ck('點文字區 → 日曆打開', a.日曆, JSON.stringify(a))
 ck('點文字區 → 焦點留在輸入框', a.焦點==='INPUT', a.焦點)
-await pg.keyboard.press('End'); await pg.keyboard.type('9'); await pg.waitForTimeout(300)
+await pg.keyboard.press('End'); await pg.keyboard.type('9'); await settle('打字') // 等打字後的受控值回寫與浮層(若會被關)的關閉
 const a2=await st()
 ck('日曆開著時仍可打字', a2.值 !== a.值, `${a.值} → ${a2.值}`)
 ck('打字後日曆仍開著(不會被打字關掉)', a2.日曆)
@@ -56,14 +74,14 @@ ck('打字後日曆仍開著(不會被打字關掉)', a2.日曆)
 // B) 鍵盤 ArrowDown
 await reload()
 await pg.evaluate(()=>document.querySelector('input')?.focus())
-await pg.keyboard.press('ArrowDown'); await pg.waitForTimeout(500)
+await pg.keyboard.press('ArrowDown'); await settle('ArrowDown') // 等日曆浮層開啟動畫 + 焦點搬進日曆格
 const c=await st()
 ck('鍵盤 ArrowDown → 日曆打開', c.日曆, JSON.stringify(c))
 ck('鍵盤開啟 → 焦點進日曆(APG 要求,才 navigate 得了)', c.焦點!=='INPUT', c.焦點)
 // 方向鍵能不能在日曆內走
 const before=await pg.evaluate(()=>document.activeElement?.textContent?.trim())
-await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(250)
+await pg.keyboard.press('ArrowRight'); await settle('ArrowRight') // 等方向鍵把焦點移到下一格(roving focus 的重畫)
 const after=await pg.evaluate(()=>document.activeElement?.textContent?.trim())
 ck('鍵盤開啟後方向鍵能在日曆內移動', before!==after, `${before} → ${after}`)
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
-await br.close(); sv.close(); process.exit(fail?1:0)
+await br.close(); await sv.stop(); process.exit(fail?1:0)

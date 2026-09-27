@@ -2,7 +2,7 @@
   "_generated": "build-fork-governance.mjs",
   "kind": "provider-hook-merge-policies",
   "schemaVersion": 1,
-  "sourceDigest": "d676e191ac6dcfe2a9d076e7e2ebbf5225fc8624275421a404d423e63b7a1033",
+  "sourceDigest": "a22cf76b2776fa4b8c71cc08f3b470b07997e0b4f31faf80ec7fd735eae7d8a4",
   "surfaces": {
     "claude": {
       "schemaVersion": 1,

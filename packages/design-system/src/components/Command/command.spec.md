@@ -86,6 +86,17 @@ cmdk 自動處理：
 - **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list(listbox 的 accessible name 預設「選項」,cmdk 預設是英文 Suggestions;傳 `label` 覆寫,**不要**在 CommandList 上寫 `aria-label`,cmdk 會靜默蓋掉)
 - **鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
 - **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀;**放在 `<CommandList>` 外面(listbox 的兄弟)**:axe `aria-required-children` 不允許 listbox 內有非 option 子元素(2026-09-08 a11y 基線重建抓到),cmdk Empty 只讀 store、不需住在 List 裡;MUI Autocomplete 的 noOptions / loading 同樣在 listbox 外
+- **列裡可聚焦的東西 = 不在 Tab 路上,`→` 才進得去**(2026-09-25 待辦總帳 B9「路線乙」,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `../../../ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)。今天的消費者:AgentPanel 歷史列的改名 / 刪除、SelectMenu 人員選項的名片頭像(PeoplePicker)。09-25 前每一個都各佔一站。本元件的按鍵表(焦點停在搜尋框、沒有搜尋框時停在清單 = home;反白列 = 這一項):
+
+  | 鍵 | 焦點在 home(反白在某一列) | 焦點在反白列裡的東西上 |
+  |---|---|---|
+  | `→` | 進反白列的第一個可聚焦東西;搜尋框只在插入點已在字尾時才進(AI 推導:搜尋框的 `→` 仍要能移插入點);該列沒有東西就照舊 | 下一個;最後一個停住 |
+  | `←` | 照舊(搜尋框移插入點) | 上一個;第一個 → 回 home |
+  | `↑` `↓` `Home` `End` | cmdk 照舊移反白 | 回 home,cmdk 照常移反白 |
+  | `Tab` / `Shift+Tab` | 照舊 | 回 home 再往下 / 往上走一站 = 一下離開這一串 |
+  | `Enter` / `Space` | cmdk 照舊選反白列 | 屬於那個東西(按鈕照常啟動),**不**選這一列 |
+
+  焦點在列裡的東西上時,反白列的鍵盤框讓給那個東西(一個項目一個指示器,`focus-canonical.md`)。`Esc` 不規定、照舊交給外殼。實作 = `command.tsx` `routeCommandRowKeys`(Command 根的 keydown,consumer 的 `onKeyDown` 先跑、擋了預設就不接)+ `syncCommandRowTabStops`(MutationObserver);**判定**與 Sidebar / TreeView / FileUpload 同一份 = `../../lib/roving-list-keyboard.ts` `resolveRovingKey`(2026-09-26 四份合一,待辦總帳〇節「按鍵規則合併」;判定表 `scripts/test-roving-list-keyboard.mjs`),本元件只負責執行(反白由 cmdk 自己搬,所以換項類與 Tab 是「回 home、不擋預設」)。列裡東西上的 `Enter` / `Space` 全 DS 只在這裡處理一次(AgentPanel 歷史列原本另寫一份同樣的 onKeyDown,2026-09-26 收回);列裡的輸入框保留自己的方向鍵與打字。
 - **分隔線**:群組之間的線由 `<CommandGroup>` 自己畫(前面還有另一個看得見的群組才畫上邊線;cmdk 隱藏群組留在 DOM 加 `hidden`,已排除),consumer **不手插** `<CommandSeparator>`(cmdk 在搜尋字非空時不渲 Separator,手插版會讓搜尋時可見群組之間沒線,2026-09-08 修)。`<CommandSeparator>` 只留給非群組內容之間的純視覺分線,固定 `role="presentation"`;不冒充 listbox 選項或其他可導覽項目
 
 Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>` / `<CommandList>` / `<CommandItem>` 即可。

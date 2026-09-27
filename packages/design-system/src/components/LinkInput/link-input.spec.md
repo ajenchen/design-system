@@ -51,8 +51,16 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 有合法 URL 且未在編輯中時：
 - value 以 `text-primary` 藍色顯示，hover 加底線，點擊開啟連結
+- **連結的可點範圍 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行
 - 右側 Pencil inline action 觸發編輯模式
-- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異
+- **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`
+- 按在空白處、拖過網址文字再放開(選字)不算點一下，不進入編輯
+- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異。「value」指網址文字本身，不含外框裡的空白
+
+**世界級對照**：
+- Atlassian inline-edit 的讀取態：點到連結照連結原本的行為，點讀取區其他地方進入編輯 —— [`read-view.js#L27-L37`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js)「If a link is clicked in the read view, default action should be taken」，非連結的點擊 `onEditRequested()`；點擊入口只到滑過範圍為止([`CHANGELOG.md` 4.5.5](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/CHANGELOG.md)「fix inline-edit component edit mode triggering when clicking outside hover width」)
+- Notion URL 屬性：點網址開啟、不進入編輯，編輯另有滑過才出現的按鈕 —— [2021-09-08 release note](https://www.notion.com/releases/2021-09-08)「Clicking the URL opens that page in your web browser, rather than selecting the property for editing. And there's a new Edit URL button that appears when you hover over the property with your cursor.」
+- Salesforce Lightning Design System 記錄詳情：`<a>` 只包住值的文字，編輯是另一顆鉛筆鈕(`Edit: ${label}`)—— [`record-detail/index.jsx#L64-L96`](https://github.com/salesforce-ux/design-system/blob/cb91709d48074a8422a968fecda298a8bc715749/ui/components/form-element/record-detail/index.jsx#L64-L96)
 
 ### Input 狀態
 
@@ -105,6 +113,8 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 ## 禁止事項
 
 - ❌ 不在 link 狀態下讓點擊 value 進入編輯——點擊連結必須開啟連結
+- ❌ 不讓連結撐滿整行——文字右邊看起來空白的地方點下去卻開網頁
+- ❌ 不讓 link 狀態外框裡的空白處滑過變色、點下去卻沒有反應——空白處 = Pencil
 - ❌ 不在打字過程中即時驗證格式——等 blur
 - ❌ 不省略 protocol（http/https）驗證——裸 domain 不是合法 URL
 
@@ -134,6 +144,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 - 字母鍵 — 輸入
 - Enter — 提交,觸發 blur 驗證
 - Esc — 取消編輯,回復原值,不觸發驗證
+- Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。「點外框空白處 = 按 Pencil」是滑鼠的捷徑,外框本身不是 tab stop,鍵盤走 Pencil
 
 **Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。
 

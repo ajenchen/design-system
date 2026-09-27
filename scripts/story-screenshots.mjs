@@ -11,16 +11,21 @@
  * 契約不同,合併會把 dispatch 工具綁進稽核 scenario schema;維持分工、共通修正需雙向同步
  * (:visible 誤報修正已同步概念於兩處)。
  *
+ * **這是工具,不是閘**(零斷言;但「story 沒開起來」必須顯性失敗,不能產出看似正常的截圖)。
+ * 載入(2026-09-25):每則 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成(含 play)、
+ * 畫面健康、渲染期間發出的請求(圖片)全部結束、版面連續靜止 10 個影格(不拍到動畫中途)才截圖;
+ * 取代舊的 networkidle + 固定睡 600ms + 「錯誤頁可見嗎」。
+ * 開不起來 → 儀器失效:點名 story、列同源 404,截圖照存供診斷,exit 1。
+ *
  * 前置:storybook-static/ 已建(npm run build-storybook)。
- * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900] [--touch]
+ * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900] [--touch] [--static-dir=<Storybook 建置>]
  *   --touch:行動裝置模擬(hasTouch + isMobile → Chromium `(pointer: coarse)` match),
  *   驗證 useIsTouchDevice native 分支(Select/Combobox 觸控路徑)的實際渲染。
  */
 import { mkdirSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -44,22 +49,26 @@ if (!Number.isFinite(vw) || !Number.isFinite(vh) || vw <= 0 || vh <= 0) {
 }
 mkdirSync(outDir, { recursive: true })
 
-const server = await startA11yStaticServer({ rootDirectory: join(PROJECT_ROOT, 'storybook-static'), defaultFile: 'iframe.html' })
+const server = await startA11yStaticServer({ rootDirectory: resolve(PROJECT_ROOT, arg('static-dir', 'storybook-static')), defaultFile: 'iframe.html' })
 const touch = process.argv.includes('--touch')
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: vw, height: vh }, hasTouch: touch, isMobile: touch })
 let failures = 0
 for (const id of stories) {
-  await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(600)
-  // story 404 / render error 必須顯性 fail,不可產出誤導性空白截圖。
-  // 必以 :visible 過濾 — .sb-nopreview 正常渲染時也存在(僅 hidden),裸 count 全數誤報(2026-08-05 首跑實證)
-  const errorText = await page.locator('.sb-show-errordisplay:visible, .sb-nopreview:visible').count()
+  // story 404 / render error / 空畫面 / 頁面例外必須顯性 fail,不可產出誤導性的截圖(openStory 丟 StoryRenderInstrumentError)
+  let instrument = null
+  try {
+    // requestsSettled:渲染期間發出的請求(頭像等圖片)全部結束才拍 —— 取代舊版 networkidle 真正想等的那件事
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { requestsSettled: true, settleFrames: 10, notFound: server.notFound })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    instrument = error
+  }
   const file = join(outDir, `${id.replaceAll('/', '_')}.png`)
   await page.screenshot({ path: file, fullPage: true })
-  if (errorText > 0) {
+  if (instrument) {
     failures += 1
-    console.error(`✗ ${id} — story error/404(截圖仍已存供診斷:${file})`)
+    console.error(`✗ ${instrument.message}(截圖仍已存供診斷:${file})`)
   } else {
     console.log(`✓ ${file}`)
   }

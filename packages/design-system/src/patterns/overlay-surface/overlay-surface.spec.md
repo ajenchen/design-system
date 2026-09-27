@@ -227,7 +227,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 > **不要 → `SurfaceFooter`**(內容左緣對齊**這個浮層的內容左邊界**,見下方「要對齊誰」)
 
 判準是「**誰負責左右 gutter**」—— 跟 `../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」是同一條線:
-列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。
+列自己帶 gutter 所以容器給 0;按鈕自己沒有 gutter 所以容器給 `loose`。兩者相加就是 2026-09-17 那次 28px 的病。同一條線也管 body:FileItem `surface="upload-manager"` 的上傳列可點時整列滑過、底色鋪到面板左右邊 → 列自帶 `loose`、面板 body 左右 0(2026-09-25 待辦總帳 B12,推翻 06-03 的「左右交給面板」;owner `../../components/FileItem/file-item.spec.md`「upload-manager 浮層面板 composition」)。
 
 | | `SurfaceFooter` | 列式 footer |
 |---|---|---|
@@ -394,9 +394,9 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 
 ## Chrome dismiss size canonical
 
-**User 設計 insight**:header 的 padding-based sizing 在 **unbounded button**(text variant / dismiss,無 bg/border)場景視覺 padding 過大;在 **bounded button** 則剛好。解法 = **保持 button native size 不變(touch target / 視覺 render 都是 sm 原尺寸),但 layout 佔位縮到 title line-box(24,衍生自 --font-body-lg-size×1.5)** via 負 margin。
+**User 設計 insight**:header 的 padding-based sizing 在 **unbounded button**(text variant / dismiss,無 bg/border)場景視覺 padding 過大;在 **bounded button** 則剛好。解法 = **保持 button native size 不變(命中區 / 視覺 render 都是 sm 原尺寸),但 layout 佔位縮到 title line-box(24,衍生自 --font-body-lg-size×1.5)** via 負 margin。
 
-**Canonical**:button native size **保留 sm**(touch target / 視覺 render 不動);**unbounded 的靠 CSS 負 my 把 layout 佔位縮到 `--chrome-slot-h`** ≤ title line-height,讓 title 主導 chrome 高度。
+**Canonical**:button native size **保留 sm**(命中區 / 視覺 render 不動);**unbounded 的靠 CSS 負 my 把 layout 佔位縮到 `--chrome-slot-h`** ≤ title line-height,讓 title 主導 chrome 高度。
 
 | Button 類型 | 判定(button.tsx L426-427)| Trick 套用 | Layout 佔位 | Dialog/Sheet header (slot 24)| Popover header (slot 21)|
 |--|--|--|--|--|--|
@@ -428,9 +428,10 @@ const CHROME_UNBOUNDED_SLOT =
 - 所有無視覺邊界的 button,不限 dismiss
 
 **為什麼用負 margin 而非 fixed wrapper / size="xs"**:
-- `size="xs"` 會縮小 button 本身,**touch target 也變 24**(違反 a11y 最小 24+ hit target,也違反 user 意圖「touch 仍 sm」)
+- `size="xs"` 會縮小 button 本身,**命中區也跟著縮到 24**,與 overlay chrome 的比例不協調(chrome 的 dismiss 是 `sm` = 28),也違反此處記載的 user 意圖「touch 仍 sm」。**問題在比例,不在 a11y** —— 24 正好等於 `tokens/uiSize/uiSize.spec.md`「元件高度地板」(:169)訂的最小值,沒有低於任何我們採用的門檻;先前這裡寫的「違反 a11y 最小 24+ hit target」既與 :169 自相矛盾、也查無出處,2026-09-24 更正(同 `uiSize.spec.md:350`)
+  - ⚠️ **引號內為本檔既有記載,本輪查無對話出處,依 M36(a) 標為來源不明,不得再當成 user 拍板引用。** 2026-09-24 這一行一度被改寫成「按鈕本身仍 sm」並直接覆蓋掉原字 —— 兩句語意不同(一句講命中/觸控,一句講按鈕盒),而改寫沒有任何揭露。已還原為原字。要動引號內的字,只能拿得出對話原文才動
 - `min-h-chrome-header-height` fixed wrapper 會鎖死高度,**bounded button 失去自然長高能力**(違反 user 意圖)
-- 負 margin:button render / touch target 不變,僅影響 parent flex layout 計算 → 剛好 user 想要的「layout 24,視覺 / 觸控 28」
+- 負 margin:button render / 命中區不變,僅影響 parent flex layout 計算 → 剛好 user 想要的「layout 24,視覺 / 命中 28」
 
 **Consumer 使用方式**:
 
@@ -462,8 +463,8 @@ const CHROME_UNBOUNDED_SLOT =
 - ❌ v1「chrome dismiss 全 xs(DS-wide 統一)」→ 錯:過度簡化 rationale
 - ❌ v2「三家族 modal sm / non-modal xs / banner xs」→ 錯:overlay 內部不必分化
 - ❌ v3「overlay 統一 sm + min-h chrome-header-height 強鎖 48/56」→ 錯:強鎖會讓 bounded button 被鎖死 slot
-- ❌ v4「padding-based + unbounded=xs / bounded=natural」→ 錯:xs 縮小 button 連 touch target 也變 24(違反 a11y / user 意圖)
-- ✅ v5「padding-based + unbounded `data-unbounded` 套負 my(native size sm 不變)/ bounded natural」→ 對:button native size 與 touch target 保 sm,僅 layout 佔位縮回 24,48/56 chrome-header-height 自然達成
+- ❌ v4「padding-based + unbounded=xs / bounded=natural」→ 錯:xs 縮小 button 連命中區也縮到 24,與 chrome 的 28 失衡(違反 user 意圖;**不是 a11y 問題**,見上方「為什麼用負 margin 而非 fixed wrapper / size="xs"」)
+- ✅ v5「padding-based + unbounded `data-unbounded` 套負 my(native size sm 不變)/ bounded natural」→ 對:button native size 與命中區保 sm,僅 layout 佔位縮回 24,48/56 chrome-header-height 自然達成
 
 **SSOT 關聯**:
 - `tokens/uiSize/uiSize.spec.md`「--chrome-header-height」+ `globals.css` 聲明(md=3rem / lg=3.5rem)
@@ -544,8 +545,8 @@ border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-il
 
 overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `SurfaceFooter`),不持有互動行為 — a11y 大宗在 consumer overlay primitive(Dialog / Sheet / Popover / HoverCard)上,由 Radix 處理:
 
-- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——但**不** trap focus、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
-- **Focus trap**:Dialog / Sheet 自帶 modal focus trap;Popover / HoverCard 不 trap(non-modal canonical)
+- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——Tab 在面板裡繞圈但滑鼠點外面可離開(見下一條)、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
+- **Focus trap / Tab 走向**(2026-09-25 更正,原句「Popover / HoverCard 不 trap」被讀成 Tab 可以走出 Popover,與實測不符;待辦總帳 B11):**對話框型浮層 Tab 留在裡面** —— Dialog / Sheet 是 modal trap(Tab 繞圈,滑鼠點外面也出不去);Popover 是 non-modal:Tab / Shift+Tab 同樣在面板裡繞圈(Radix FocusScope `loop: true`,`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`),只是滑鼠點外面 / 程式移焦可離開並關閉。依據 W3C「Like non-modal dialogs, modal dialogs contain their tab sequence.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。**選單類浮層 Tab = 收起並往下走**(DropdownMenu、單選下拉;規則在 `components/SelectMenu/select-menu.spec.md`「A11y 預設」與 `components/DropdownMenu/dropdown-menu.spec.md`)。HoverCard 焦點不進卡片(Radix 把卡片內可 Tab 節點設 `tabindex="-1"`),Tab 從觸發元素照頁面順序走
 - **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)
 

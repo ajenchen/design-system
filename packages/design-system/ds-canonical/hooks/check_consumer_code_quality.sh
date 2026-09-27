@@ -106,7 +106,9 @@ if [ -n "$OVERLAY" ] && ! has_rationale 'overlay-handcraft-allow'; then
   add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives'
 fi
 
-RAW_ROW=$(printf '%s' "$BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*\bflex\b)(?=[^"]*\bgap-[12]\b)(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*hover:bg-neutral-hover)(?=[^"]*rounded)[^"]*"/s') \
+# 滑過底色認任何 `-hover` 配對 token(2026-09-25;color.spec.md「Hover 換色配對總則」:有自己靜止底色的列換成那個底自己的 -hover,
+# 只認 `hover:bg-neutral-hover` 會漏掉用 --secondary-hover / --surface-hover 等配對 token 的手刻列)
+RAW_ROW=$(printf '%s' "$BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*\bflex\b)(?=[^"]*\bgap-[12]\b)(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*hover:!?bg-(?:\[var\(--)?[a-z0-9-]+-hover\b)(?=[^"]*rounded)[^"]*"/s') \
   || governance_hook_integrity_fail 'consumer quality row parser failed'
 if [ -n "$RAW_ROW" ] && ! has_rationale 'menu-item-handcraft-allow'; then
   add_violation 'hand-crafted MenuItem-like row; consume the DS row/menu primitive'

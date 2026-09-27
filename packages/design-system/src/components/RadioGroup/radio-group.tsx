@@ -164,8 +164,19 @@ const RadioGroup = React.forwardRef<
       <div
         {...restDomProps}
         ref={setRef}
-        role="radiogroup"
-        aria-readonly="true"
+        // ⛔ 2026-09-24:這裡原本是 role="radiogroup" + aria-readonly="true",是**空頭承諾**。
+        // 這個分支只渲一個 <span> 顯示選中值,**一個 role="radio" 子元素都沒有**,也沒有任何方向鍵
+        // —— 螢幕閱讀器會宣告「單選群組」並提供方向鍵,按下去什麼都沒有;而且 radiogroup 的
+        // aria-required-children 就是 radio,這棵樹在結構上本來就是壞的。
+        //
+        // 改成 role="group" 是**對齊本 DS 既有先例**(M23):Select 的 ReadonlyDisplay
+        //(select.tsx:374 起)就是純 <span> / <div>,**不掛任何 role**。
+        // aria-readonly 同時拿掉 —— WAI-ARIA 1.2 沒把它列進 group 的支援屬性
+        //(axe 的 aria-allowed-attr 會抓;rating.tsx 唯讀分支 role=img 記過同一個坑)。
+        // 唯讀語意已由「裡面根本沒有可互動控件」表達,與 Select 一致。
+        // 規則 → ds-canonical/references/keyboard-model-canonical.md「宣告了 composite 角色,
+        // 就必須真的實作那套鍵盤」;機械閘 scripts/composite-role-keyboard-invariant.mjs。
+        role="group"
         aria-labelledby={fieldCtx?.labelId}
         aria-invalid={fieldCtx?.invalid || undefined}
         data-readonly="true"
@@ -229,6 +240,9 @@ const radioItemVariants = cva(
   [
     'grid place-content-center shrink-0 rounded-full',
     'border border-border bg-surface',
+    // @hover-transition-allow: 這條過渡的主人是 checked ↔ unchecked 的狀態切換(外框轉主色、圓點出現),與 checkbox.tsx 同一個例外,
+    //   不是 hover;而且它是控件大小的點目標,不是指標掃過去的列面。例外清單的唯一住所 = tokens/motion/motion.spec.md「唯一的例外」
+    //   (2026-09-26 補登,待辦總帳 L9 / N4(3):hover 延伸到外框時盤點出 Radio 與 Checkbox 同一種過渡,先前漏列)。
     'transition-colors duration-150',
     'hover:border-border-hover',
     'data-[state=checked]:border-primary data-[state=checked]:text-primary',
@@ -237,7 +251,11 @@ const radioItemVariants = cva(
     'disabled:data-[state=checked]:bg-disabled disabled:data-[state=checked]:border-transparent disabled:data-[state=checked]:text-fg-disabled',
     // readOnly：鎖定互動但維持 checked/unchecked 視覺
     'data-[readonly=true]:pointer-events-none data-[readonly=true]:cursor-default',
-    'data-[readonly=true]:hover:border-border',
+    // readOnly × hover:框與點都釘在自己的靜止值,不升 hover 階(checkbox.spec.md「狀態 › Radio」表 readonly 列)。
+    // 指標停在 SelectionItem 的 <label for> 上時控件照樣進入 :hover(pointer-events-none 擋不住),原本只釘了
+    // 未選中的框 → 已選中的框與點(text-current)仍轉 primary-hover。寫法與 checkbox.tsx 同一組,`enabled:` 理由同該檔。
+    'data-[readonly=true]:enabled:data-[state=unchecked]:hover:border-border',
+    'data-[readonly=true]:enabled:data-[state=checked]:hover:border-primary data-[readonly=true]:enabled:data-[state=checked]:hover:text-primary',
   ],
   {
     variants: {
@@ -410,7 +428,7 @@ export const radioGroupMeta = {
   tokens: {
     bg: ['bg-disabled', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
-    ring: ['ring-ring'],
+    ring: ['--ring'],
   },
   defaultSize: 'md',
 } as const

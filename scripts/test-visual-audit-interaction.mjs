@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import test from 'node:test'
-import { chromium } from 'playwright'
+// 啟動一律走 lib/launch-browser.mjs 的 launchBrowser(2026-09-25):原本三處各自 `chromium.launch()`,少了本 repo 沙箱必要的
+// `--single-process --no-sandbox`,在沙箱裡三個瀏覽器測試全部在啟動就 FATAL(mach_port_rendezvous Permission denied),
+// 一條斷言都沒跑到(M17:同一個啟動參數散在各處,漏寫的那支就靜靜地什麼都沒驗)。
+// 起不來照樣讓測試紅(不走 launchBrowserOrSkip):這是 harness 成員測試,沒有「這個環境略過」的語意。
+import { launchBrowser } from './lib/launch-browser.mjs'
 import {
   executeVisualInteraction,
   normalizeVisualInteraction,
@@ -34,7 +38,7 @@ test('visual interaction manifest contract is closed and hover-only', () => {
 })
 
 test('visual hover uses a real unique Playwright pointer target and fails closed otherwise', async (t) => {
-  const browser = await chromium.launch()
+  const browser = await launchBrowser()
   t.after(() => browser.close())
   const page = await browser.newPage()
 
@@ -83,7 +87,7 @@ test('visual hover uses a real unique Playwright pointer target and fails closed
 })
 
 test('Storybook render health rejects empty canvases and critical asset failures', async (t) => {
-  const browser = await chromium.launch()
+  const browser = await launchBrowser()
   t.after(() => browser.close())
 
   const page = await browser.newPage()
@@ -123,7 +127,10 @@ test('Storybook render health rejects empty canvases and critical asset failures
     return new Promise((resolve) => server.close(resolve))
   })
 
-  const brokenPage = await browser.newPage()
+  // 同一個 page 導覽過去,不另開 browser.newPage():那會開第二個 browser context,而 launchBrowser 的
+  // `--single-process` 下第二個 context 當場崩(lib/launch-browser.mjs 檔頭)。前一個 monitor 已 dispose,
+  // 新的 monitor 在導覽前掛上,只看得到這一段的請求與例外 —— 隔離程度與原本開新 page 相同。
+  const brokenPage = page
   const brokenMonitor = createStorybookRenderHealthMonitor(brokenPage)
   const address = server.address()
   assert(address && typeof address === 'object')
@@ -136,7 +143,7 @@ test('Storybook render health rejects empty canvases and critical asset failures
 })
 
 test('document render health accepts product roots, rejects infrastructure-only bodies, and catches later page errors', async (t) => {
-  const browser = await chromium.launch()
+  const browser = await launchBrowser()
   t.after(() => browser.close())
   const page = await browser.newPage()
   const monitor = createRenderHealthMonitor(page, { mode: 'document' })

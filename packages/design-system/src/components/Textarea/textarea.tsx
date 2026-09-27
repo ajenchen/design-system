@@ -44,7 +44,9 @@ const textareaVariants = cva(
     //   Textarea 自身 `<textarea disabled>` 帶 disabled HTML attribute,用 `disabled:` variant 直接命中
     'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled',
     'px-[var(--field-px)]',
-    'transition-colors duration-150',
+    // 不寫 transition-colors:hover 外框一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到外框,待辦總帳 L9 / N4(3))。
+    // 外框規則來自 field-wrapper.tsx 的 fieldDefaultChromeCompounds —— 單行 wrapper(fieldWrapperStyles)、
+    // 複合宿主(fieldChromeStyles)與本檔三宿主共用同一份,三處必須一起不寫過渡(hover-instant-invariant 跨檔追這條 spread)。
   ],
   {
     variants: {

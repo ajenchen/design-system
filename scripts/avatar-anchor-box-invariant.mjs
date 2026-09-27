@@ -12,12 +12,18 @@
  *
  * 量的是像素(`getBoundingClientRect`),不是屬性存在與否(M32)。全 story 掃描,不抽樣。
  * 對照組 `--selftest`:注入一個 Avatar 形狀的複製品到 448px 直向 flex 裡,這支必須紅 —— 沒有對照組的綠燈是零證據。
+ *
+ * **沒量到 = 儀器失效(exit 1),不是通過**(2026-09-25,M37):每則 story 經 lib/launch-browser.mjs 的 openStory
+ * (全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報這則渲染完成(含 play)、通過 render-health、版面連續靜止
+ * SETTLE_FRAMES 個影格,才量 Avatar 外框。取代原本的 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)
+ * + 固定睡 160ms。原本任何一則載入失敗只印一行、記進「載入失敗 N 支」,**然後照樣 exit 0**;Storybook 錯誤頁也被當成
+ * 「渲染好了」去量(量到 0 個觸發點 = 通過)。現在逐則點名、附同源 404 帳本,兩種跑法(一般 / --selftest)都 exit 1。
+ * 不用 exit 2:lib/gate-selftest-meta.mjs 與 test-avatar-anchor-box-invariant.mjs 在 2026-09-25 修正前把 exit 2 讀成「缺前置 → 略過」。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -25,13 +31,17 @@ const BUILD = resolve(ROOT, arg('build', 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const LIMIT = Number(arg('limit', '0'))
 const BOX_TOLERANCE_PX = 0.5
+// 開 story 後要求版面連續靜止幾個影格才量外框(量的是幾何:要等排版、量寬後重畫與進場動畫跑完)
+const SETTLE_FRAMES = 10
+// 儀器失效累積到這麼多支就停掃:那時建置整體壞了(例如預覽腳本缺檔),每支都要等到逾時,掃完 1000 多支沒有意義
+const MAX_INSTRUMENT_FAILURES = 25
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
+requireStorybookBuild(join(BUILD, 'index.json'))
 
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories)
   .filter((e) => e.type !== 'docs')
   .map((e) => ({ id: e.id, title: e.title, name: e.name }))
@@ -60,25 +70,28 @@ const PROBE = () => {
   return out
 }
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const stretched = []
 let scanned = 0
 let triggers = 0
-let loadErrors = 0
+/** 儀器失效:沒量到的 story(不是產品裁決)。 */
+const instrumentFailures = []
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-  page.on('pageerror', () => {})
   for (const s of stories) {
+    if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) break
     scanned += 1
     try {
-      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-      await page.waitForFunction(
-        () => document.querySelector('#storybook-root')?.children.length > 0 || document.querySelector('.sb-show-errordisplay'),
-        null,
-        { timeout: 15_000 },
-      ).catch(() => {})
-      await page.waitForTimeout(160)
+      try {
+        await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, {
+          settleFrames: SETTLE_FRAMES, notFound: server.notFound, navigationTimeoutMs: 30_000, timeoutMs: 30_000,
+        })
+      } catch (error) {
+        if (!(error instanceof StoryRenderInstrumentError)) throw error
+        instrumentFailures.push({ story: s.id, detail: error.detail })
+        console.error(`  ! 儀器失效 ${s.id}(${error.kind})—— 詳情見結尾清單`)
+        continue
+      }
       if (SELFTEST && scanned === 1) {
         // 對照組:Avatar 形狀的複製品放進 448px 直向 flex —— 最外層會被拉寬,這支必須抓到
         await page.evaluate(() => {
@@ -102,8 +115,9 @@ try {
         if (a.dx > BOX_TOLERANCE_PX || a.dy > BOX_TOLERANCE_PX) stretched.push({ ...a, story: s.id, name: s.name })
       }
     } catch (error) {
-      loadErrors += 1
-      console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
+      // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)
+      instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
+      console.error(`  ! ${s.id}: 量測途中丟例外:${String(error?.message || error).split('\n')[0]}`)
     }
     if (scanned % 200 === 0) console.error(`… ${scanned}/${stories.length} 支掃完,累計觸發點 ${triggers}`)
   }
@@ -112,7 +126,7 @@ try {
   await server.stop() // `close` 不存在於這個 helper,寫成 close?.() 會靜靜地不關(2026-09-18)
 }
 
-console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
+console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`hover card 觸發點的 Avatar:${triggers} 個`)
 console.log(`外框被拉大(最外層 ≠ 可見圓):${stretched.length} 個`)
 for (const s of stretched) {
@@ -120,6 +134,15 @@ for (const s of stretched) {
 }
 if (stretched.length) {
   console.log('\n修法見 avatar.spec.md「外框 = 可見圓」:固定尺寸模式的最外層要鎖寬,不能只靠 shrink-0。')
+}
+// 儀器失效優先於任何裁決(兩種跑法都一樣):沒量到的 story 不得被讀成「外框都對」,也不得被讀成「對照組抓到了」
+if (instrumentFailures.length) {
+  console.error(`\n✗ 儀器失效:${instrumentFailures.length} 支 story 沒量到 —— 這不是產品裁決(元件不一定有問題),但這一趟不能算通過:`)
+  for (const f of instrumentFailures) console.error(`  - ${f.story}:${f.detail}`)
+  if (instrumentFailures.length >= MAX_INSTRUMENT_FAILURES) console.error(`  已達 ${MAX_INSTRUMENT_FAILURES} 支,停止掃描(還有 ${stories.length - scanned} 支沒掃)—— 建置很可能整體壞了`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  process.exit(1)
 }
 // `--selftest` 的退出碼**是反過來的**(對齊本 repo 其他閘的 selftest 慣例,例如 overlay-detached-anchor):
 // 它問的是「偵測器會不會紅」,所以抓到注入的對照組 = 0(量具有效),沒抓到 = 1(量具失效)。

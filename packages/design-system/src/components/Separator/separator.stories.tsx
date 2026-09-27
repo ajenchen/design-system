@@ -28,22 +28,22 @@ type Story = StoryObj<typeof Separator>
 export const Horizontal: Story = {
   name: '水平',
   render: () => (
-    <div role="listbox" aria-label="settings sections demo" className="border border-border rounded-lg max-w-md overflow-hidden">
-      <MenuItem
+    <div role="group" aria-label="settings sections demo" className="border border-border rounded-lg max-w-md overflow-hidden">
+      <MenuItem role="presentation"
         startIcon={User}
         description="Email、時區、顯示語言"
       >
         帳號設定
       </MenuItem>
       <Separator />
-      <MenuItem
+      <MenuItem role="presentation"
         startIcon={Bell}
         description="Email / 推播通知規則"
       >
         通知
       </MenuItem>
       <Separator />
-      <MenuItem
+      <MenuItem role="presentation"
         startIcon={Shield}
         description="資料分享範圍、權限層級"
       >

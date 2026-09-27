@@ -176,6 +176,41 @@
   content: none;
 }
 
+/* 表頭的欄間短線(2026-09-24 新增)。
+   規格 `data-table.spec.md`「Header vs Body 的視覺區隔」的兩種垂直分隔線:
+   一般非 frozen 欄位之間 = **僅 header 區域、上下留 padding** 的短線;
+   frozen 邊界才是整欄高度。幾何抄 ResizeHandle 的 `lineInsetStart/End="var(--table-cell-py)"`
+   —— 一般欄的短線就是它畫的,兩邊必須同一個內縮值,否則同一列會出現兩種長度的線。
+
+   為什麼需要這個 class:一般欄的短線由 ResizeHandle 附帶畫,而**系統欄(選取 / 拖曳 / 列動作)
+   有自己的 early-return 分支、到不了畫線那一段**(與可不可調寬無關)。2026-09-24 補選取欄的線時我一度直接套
+   `.dtCellGrid`(列身的全高畫法),實測表頭出現 30px 全高線、隔壁欄是 21px 短線,同一列兩種長度
+   —— 正是本規格要避免的。 */
+.dtHeaderColDivider {
+  position: relative;
+}
+
+.dtHeaderColDivider::after {
+  content: '';
+  position: absolute;
+  /* 線高 = **一個行高**,垂直置中。等價於一般欄的「上下各內縮 --table-cell-py」
+     (實測:一般表頭格 38 高、內縮 8.5,38 - 17 = 21 = 1lh),但**不依賴格子自己的高度** ——
+     選取格裡裝的是 16px 的 checkbox 不是一行字,若照抄「上下內縮」會得到比隔壁短的線。
+     2026-09-24 實測翻案:先前用 top/bottom: var(--table-cell-py) 得到 16px,隔壁是 21px。 */
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1lh;
+  right: 0;
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+}
+
+.dtHeaderColDivider[data-dt-last-col]::after {
+  /* 與 .dtCellGrid 同判準:本區最後一欄由凍結邊界線 / 外框接管,不重複畫。 */
+  content: none;
+}
+
 /* Phase 9 Issue 1 fix(2026-05-10):range cells bg fill — cell 自身 bg layer
    (在 cell content 之下),non-overlay。Per codex Q1 verdict 對齊 row selected idiom
    `--primary-subtle`(`data-table.spec.md`「L2 選取」段;原引 L170-174 之 selected-row bg 語意 2026-05-31 已廢除,改指現行段)。
@@ -183,6 +218,29 @@
 /* range fill bg(2026-07-16:cell disabled 態已廢除,原 `:not([data-cell-disabled])` exclusion 移除)。 */
 [data-range-cell] {
   background: var(--primary-subtle);
+}
+
+/* 區間格在它那一列被滑過時維持原色,淺色深色一致(2026-09-26 user 同意 R21 第 5 題 (a))。
+   列的滑過色畫在「列」上(data-table.tsx 列的 `data-[hovered]:bg-neutral-hover`),區間色畫在「格」上。
+   淺色 `--primary-subtle` 是不透明色票(blue-1),列的滑過色透不上來;深色是 alpha 公式
+   (primitives.css `l c h / calc(0.12 / l)`),列的滑過色會從底下透上來 —— 實測深色 #1C304A → #243851、淺色不變,
+   兩個主題行為不一致(R21 / R11 K16)。
+   做法:**含區間格的列被滑過時,滑過色不畫在列上,改畫在這一列的非區間格上**。
+   - 非區間格:同一層 `--neutral-hover` 疊在同一個底上,顏色與一般列相同(I31 的對照列逐像素比過)。
+   - 區間格:底下不再有滑過層,兩個主題都是平常的區間色。
+   不新增 token(tokens/README.md「找不到現有 family 可鏡射 → 先質疑是否真需要」)、不在彩色底上疊一層
+   (color.spec.md「疊層只用在「底」」)。DS 內 `--primary-subtle` 被滑過時也從不換底(按下的 Button:
+   button.tsx 的 `hover:bg-primary-subtle` 只換字色)。世界級兩派都有:MUI X 同列別格被滑過時選中格不變
+   (GridRootStyles.ts `selectedStyles` 是實色,https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L142-L151);
+   AG Grid 讓列滑過透進區間(https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L375-L392)
+   —— 本 DS 取前者,理由是上面三條既有規則,不是世界級共識。
+   閘:scripts/data-table-invariants.mjs I31(兩主題量像素,含「非區間格仍變色、且與沒有區間的列同色」的對照)。 */
+[role='row'][data-hovered]:has(> [data-range-cell]) {
+  background-color: transparent;
+}
+
+[role='row'][data-hovered]:has(> [data-range-cell]) > [role='gridcell']:not([data-range-cell]) {
+  background-color: var(--neutral-hover);
 }
 
 /* First-row / first-column variants:turn transparent top/left into real divider 若 outer container
@@ -194,6 +252,12 @@
    Panel boundary divider canonical(Round 5.2 re-apply per user「你們都同意就做」):
    ────────────────────────────────────────────────────────────
    原 `[data-column-id="__select__"]:not(:last-child)` retire — 走 inlineEdit canonical。
+   **2026-09-24 補完這句話**:退役當下說好「走 inlineEdit canonical」,但 tsx 裡選取欄的
+   render 分支在套上 `.dtCellGrid` 之前就 early-return,於是舊線拿掉、新線沒接到,**兩頭落空**。
+   實測(專案排程全功能整合):全表 325 個格有格線,選取格是唯一沒有的那一個,
+   勾選框跟第一個資料欄視覺上併成同一個盒。user 2026-09-24 拍板補回來 ——
+   現在列身與表頭的選取格都真的套了 `dtCellGrid`,那句「走 inlineEdit canonical」才成立。
+   這是「規則說由某某接手,而某某根本碰不到它」那一族(M37)。
 
    Panel boundary mechanism 把 divider 畫在 panel 內側 1px(paint-only,不入 box model),**不用**
    `border-r/l border-divider` outer edge。為何:Windows V scrollbar paint 蓋 outer-edge

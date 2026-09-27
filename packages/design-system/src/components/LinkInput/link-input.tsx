@@ -3,7 +3,7 @@ import { Pencil } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_CHROME_OWN_TARGET, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -32,6 +32,7 @@ function formatHostname(url: string): string {
 // 取代 LinkInputDisplay sub-component:純展示 a tag,無 input chrome、無 hover affordance。
 // edit mode 內 link state(showLink branch)也共用此 helper,確保「編輯態的 link 顯示」與
 // view mode 的視覺完全一致(SSOT)。
+// 連結 hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
 function renderLinkAnchor(value: string, label?: string) {
   const displayText = label || formatHostname(value)
   return (
@@ -39,7 +40,7 @@ function renderLinkAnchor(value: string, label?: string) {
       href={value}
       target="_blank"
       rel="noopener noreferrer"
-      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline transition-colors"
+      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
@@ -194,6 +195,25 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       })
     }
 
+    // 連結狀態:外框裡「不是連結、不是鉛筆」的地方點下去 = 按鉛筆(user 2026-09-26「確保沒有分歧才照你建議做」,
+    // 研究後照做;規則與出處 link-input.spec.md「Link 狀態」)。
+    // 外框滑過會變色(Field 家族 hover:border-border-hover),變色的地方點下去就要有反應 ——
+    // hit-area-canonical.md 要防的「看到亮起來卻點不到」。連結與鉛筆照它們自己的行為走:
+    // 判斷用 Field 家族共用的「外框裡自有行為的東西」清單(field-wrapper.tsx FIELD_CHROME_OWN_TARGET),不另寫一份。
+    // 用 click 不用 mousedown:與鉛筆同一個觸發時機;按下後拖出外框才放開,click 落在外框之外的共同祖先,不會觸發這裡。
+    // 拖曳選字不是點一下:按在空白處、拖過網址文字、在外框裡放開,瀏覽器仍會在外框上發 click;
+    // 此時直接看「外框裡有沒有被選起來的文字」,有就不進編輯(量的就是要保護的那件事,不拿移動距離當代理)。
+    const handleLinkChromeClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      const chrome = event.currentTarget
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const own = target.closest(FIELD_CHROME_OWN_TARGET)
+      if (own && own !== chrome && chrome.contains(own)) return
+      const selection = window.getSelection()
+      if (selection && !selection.isCollapsed && selection.anchorNode && chrome.contains(selection.anchorNode)) return
+      handleEdit()
+    }
+
     const handleBlur = () => {
       setEditing(false)
       const trimmed = localValue.trim()
@@ -255,11 +275,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         <div
           // 2026-07-05 D4:link 顯示分支同樣接 error(errorProp / fieldCtx.invalid)紅框,
           // 否則 <Field invalid> 下 link state 完全無 error 呈現
-          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), className)}
+          // 外框用文字游標:點空白處進入的是打字(field-controls.spec.md「游標指引」input → cursor-text;同 Input 外框)。
+          // 連結(瀏覽器預設手形)與鉛筆(cursor-pointer)各自覆寫。
+          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), FIELD_TEXT_ENTRY_CURSOR, className)}
           data-field-mode="edit"
           data-error={error ? '' : undefined}
+          onClick={handleLinkChromeClick}
         >
-          <span className="flex-1 min-w-0">
+          {/* flex:連結是 flex item,寬度 = 文字本身、太長時縮到欄寬截斷(min-w-0 + truncate)。
+              不撐滿整行 —— 文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。
+              只改這個分支:view / readonly 的外框沒有第二個動作,連結維持原樣。 */}
+          <span className="flex-1 min-w-0 flex">
             {value && renderLinkAnchor(value, label)}
           </span>
           <ItemInlineAction
@@ -275,8 +301,12 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       <div
         className={cn(
           fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }),
+          // 打字狀態的整個外框都是輸入處:文字游標 + 點內距 / 邊框就聚焦 input(同 Input / NumberInput;待辦總帳 N53③,
+          // input.spec.md 已寫三者同一條;共用實作 field-wrapper.tsx focusFieldInputFromChrome)
+          FIELD_TEXT_ENTRY_CURSOR,
           className,
         )}
+        onMouseDown={focusFieldInputFromChrome}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
       >

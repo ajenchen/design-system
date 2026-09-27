@@ -622,7 +622,7 @@
         "action": "hover",
         "selector": "[data-visual-hover-target]"
       },
-      "rationale": "beta.97 SidebarMenuAction 手刻 consumer；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
+      "rationale": "SidebarMenuAction 的 hover 階梯。2026-09-24 起它不再手刻,改委派 ItemInlineActionButton(16 圖示 / 18 懸停底色),所以這條同時守著委派後的階梯沒跑掉；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
     },
     {
       "id": "design-system-components-treeview-展示--action-hover-state",

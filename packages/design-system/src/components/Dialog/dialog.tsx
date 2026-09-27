@@ -306,7 +306,9 @@ const DialogHeader = React.forwardRef<
   HTMLDivElement,
   DialogHeaderProps
 >(({ className, children, actions, ...props }, ref) => {
-  // Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
+  // Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,命中區亦同 —— 命中 ≡ 可視,
+  // 見 ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的「touch target」正名為命中區,
+  // 本 DS 以滑鼠精度為前提,尺寸不以觸控門檻推導),
   // 但 `dismiss` prop 自動標 `data-unbounded`,SurfaceHeader CSS rule 對其套負 my 讓
   // layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
   // header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。

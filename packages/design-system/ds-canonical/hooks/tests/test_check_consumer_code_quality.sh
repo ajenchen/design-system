@@ -24,6 +24,10 @@ expect() {
 printf 'export const clean: string = "ok"\n' > "$FILE"; expect 0 clean
 printf 'export const bad: any = 1\n' > "$FILE"; expect 2 any
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:bg-neutral-hover rounded-md" />\n' > "$FILE"; expect 2 raw-row
+# 2026-09-25 滑過底色放寬:任何 `-hover` 配對 token 都是手刻列簽名(含 var() 與 ! 寫法);非配對 token 不算(對照組)
+printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:bg-secondary-hover rounded-md" />\n' > "$FILE"; expect 2 raw-row-secondary-hover
+printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:!bg-[var(--surface-hover)] rounded-md" />\n' > "$FILE"; expect 2 raw-row-var-hover
+printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:opacity-80 rounded-md" />\n' > "$FILE"; expect 0 raw-row-no-hover-pair-token
 printf '<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"; expect 2 overlay
 printf '<AppShell layout="primary-header"><SidebarFooter /></AppShell>\n' > "$FILE"; expect 2 primary-header
 

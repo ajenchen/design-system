@@ -46,7 +46,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;icon 走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」段 + 本檔「跨 regime pointer index」carve-out row) |
+| `Rating` | sm / md / lg | **`md`** | `--field-height-md`(Field 槽;控件 20/24px 對應,元件本身不消費容器:可以點的星 20/24/24 = 元件高、唯讀精簡版 21/21/24;列高由 Field 控件槽 `min-h-field-*` 供給,同 Checkbox / Switch。星走 identity scale 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不完全對齊 `--field-height-*`」+「為什麼不完全對齊 icon tier」+ 本檔「跨 regime pointer index」carve-out row;xs 於 2026-09-27 退役) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -73,7 +73,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 2. 三個欄位(現況 / Rationale / 世界級對照)**都要填**,缺一不可——特別是「世界級對照」不能省,mindset #1 要求對標
 3. 位置:必須在 spec 的「尺寸」主章節之下(不是埋在「何時不用」或「禁止事項」等其他章節)
 
-**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Slider / Textarea / Rating(2026-04-21 批次補齊,五欄格式統一)
+**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「size 只控 root 容器外高」段的散文,沒有用這個子標題(2026-09-27 核對)。
 **需補齊 rationale 段的元件**:(無 — Phase 2 已全部補齊)。未來新增偏離 field-height 的元件 → 必須按本格式寫(三欄格式為本 spec 約定,非機械 enforce;`/design-system-audit` 僅經 audit-prompts 通用 rationale-grep + Rule B density flag 間接把關)。
 
 **audit hook 未來擴展**:若 cva `defaultVariants.size` 不是 `md`,或 `size` variants 的數值不命中 `--field-height-*`,hook 可要求 spec.md 必有符合格式的 rationale 段,否則 block merge(列為 post-Phase-2 可考慮加上的 mechanical gate)。
@@ -135,6 +135,15 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 (`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
 (「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
+## Stack Gap 與 Avatar Stack Overlap(2026-09-27 抽 token,M17)
+
+| Token | 值 | 用法 |
+|-------|-----|------|
+| `--stack-gap` | 2px | 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值:全域焦點框往外畫的間隙(`styles/base.css` `:focus-visible` outline-offset)、頭像堆疊 / 狀態圓點 / 計數徽章 / 移除 × 的挖空縫(`avatar.tsx`)、上傳列進度條與焦點框之間的縫(`file-item.tsx`)、步驟條外圈與圓之間的縫(`steps.tsx`)。抽 token 前是 6 處字面值 |
+| `--avatar-stack-overlap` | 2px | 頭像堆疊第 2 顆起往左疊的量(`avatar.tsx` 遮罩幾何與項目位移、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`)。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份 |
+
+**命名原則**:兩者都是跨元件的幾何值,住 uiSize(與 `--field-px` 同「跨元件共享值才進 token」判準);不帶元件名的 `--stack-gap` 因為它不屬於任何一個元件。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+
 ## Table Row
 
 DataTable 行高。density 切換統一 +0.5rem (+8px)。
@@ -170,6 +179,8 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 比 24px 更小的互動區域只存在於元件內部的 Inline Action（如 Tag dismiss、Field endAction），由宿主元件的 spec 定義規格。
 
+**地板管的是自帶盒子的獨立元件(Button / Input / Chip 這類 pill 或框),不是「嵌在一列中的小控件」**:Checkbox(16 / 20)、Radio、Switch(20 / 24)、Rating 的星(20 / 24)本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、SelectionItem 的 py 公式、表格格子、列),它們不消費 field-height 容器、也不為了湊 24 把命中盒撐大(`hit-area-canonical.md`「命中區 = 可視形狀」)。2026-09-27 codify:Rating 原本自己吃 `h-field-*` 容器,Field 外把列撐高、對命中零幫助,改回小控件模型。
+
 ### Icon 尺寸 Tier
 
 系統有兩個 icon tier，由元件引用的 field-height token 決定：
@@ -189,7 +200,7 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star | `components/Rating/rating.spec.md:85` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
+| Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20(`starSize = controlHeight × 0.625`)/ MUI 24(medium),出處在 owner 段 |
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
@@ -347,7 +358,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 - **Fixed-height 套到能 grow 的 chrome**(e.g. 把 Dialog 改 fixed-h 48):DialogDescription 被剪切 → 違反 modal 作為完整決策 context 的職責
 - **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):高度會變成內容驅動，違反 sidebar 的固定 chrome contract
-- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:touch target 變 24 違反 a11y,且 dismiss 按鈕尺寸與 overlay chrome 比例不協調 — v5 trick 同時保視覺 + a11y + 幾何
+- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:按鈕本身被縮到 24,**與 overlay chrome 的比例不協調**(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於本檔「元件高度地板」段(:169)訂的最小值,沒有低於任何我們採用的門檻。先前這裡寫的「touch target 變 24 違反 a11y」既與 :169 自相矛盾、也查無出處,2026-09-24 更正;我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示),不以觸控尺寸建議作依據。v5 trick 同時保視覺 + 幾何:layout 只佔 24,視覺與命中仍是 `sm` 的 28
 
 ---
 
@@ -467,17 +478,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## 模式切換
 
-初始狀態在 `index.html` 設定：
-
-```html
-<html data-density="md">
-```
-
-動態切換：
-
-```ts
-document.documentElement.setAttribute('data-density', 'lg')
-```
+初始狀態在 `index.html` 設定 `<html data-density="md">`;動態切換 `document.documentElement.setAttribute('data-density', 'lg')`。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

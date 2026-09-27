@@ -15,11 +15,17 @@
  * 根因紀錄:Combobox 每個 tag 外的量測 wrapper 原是區塊盒,高度由欄位字型行高(21px)決定,sm 的 Tag(20px)
  * 沿基線沉底 → 上 3.9 / 下 2.1;wrap 的 `py-1` 寫死 4px 與單行置中(3/3/5)差 1px。owner:combobox.tsx OverflowTagList。
  *
+ * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成
+ * (含 play)+ render-health + 被量的 [data-tag-root] 本身 + 版面連續 10 影格靜止,才開始量像素。取代原本的
+ * 「load + 等 Tag + 固定睡 600ms」(固定睡眠是「版面已穩定」的代理)。story 開不起來 = 儀器失效:點名 story、附同源 404、
+ * exit 1(不用 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「環境起不來 → 略過」,沒量到會被 meta-test 當成綠),不是產品裁決,也不會在 --selftest 下被算成「對照組讓它紅了」。
+ *
  * 用法:node scripts/tag-field-vertical-inset.mjs [--static=<dir>] [--selftest]
  */
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -30,10 +36,10 @@ const STORIES = [
   'design-system-components-select-設計規格--size-matrix',
 ]
 const SABOTAGE = '[data-tag-root]{vertical-align:baseline}div.shrink-0.max-w-full{display:block!important}[data-field-mode]{padding-top:4px!important;padding-bottom:4px!important}'
-const MIME = { '.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png','.map':'application/json' }
-const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
-  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
-await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
+// 失敗(非零結束或拋錯)一律附上同源 404 帳本:「儀器沒拿到檔」不得被讀成「Tag 沒置中」
+process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 const PROBE = () => {
   const out = []; const seen = new Set()
   for (const t of document.querySelectorAll('[data-tag-root]')) {
@@ -61,13 +67,28 @@ const PROBE = () => {
 }
 const browser = await launchBrowser(); const ctx = await browser.newContext({ viewport: { width: 1400, height: 1600 }, deviceScaleFactor: 1 }); const page = await ctx.newPage()
 const all = []
+const instrumentFails = []
 for (const id of STORIES) {
-  await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 })
-  await page.waitForSelector('[data-tag-root]', { timeout: 30000 }); await page.waitForTimeout(600)
+  try {
+    // 渲染完成(含 play)+ render-health + 被量的 Tag 本身 + 版面連續 10 影格靜止(量的是置中 / wrap 高度這類幾何,要穩態)
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+      waitFor: '[data-tag-root]', settleFrames: 10, navigationTimeoutMs: 90000, notFound: server.notFound,
+    })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.log(`✗ ${error.message}`)
+    instrumentFails.push(id)
+    continue
+  }
   if (SELFTEST) await page.addStyleTag({ content: SABOTAGE })
   for (const r of await page.evaluate(PROBE)) all.push({ story: id.split('--')[1], ...r })
 }
-await browser.close(); server.close()
+await browser.close(); await server.stop()
+if (instrumentFails.length) {
+  // 沒量到 ≠ 通過,也 ≠ 對照組紅了:取樣不完整,本次不下任何產品判定(同源 404 帳本由上方 exit 監聽印出)
+  console.log(`✗ 儀器失效:${instrumentFails.length} 則 story 沒量到(${instrumentFails.join(', ')})—— 這不是產品裁決,本次不判定 I1–I7`)
+  process.exit(1)
+}
 let failed = 0
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
 const single = all.filter((r) => !r.wrap)

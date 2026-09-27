@@ -13,6 +13,7 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
@@ -133,7 +134,7 @@ const CONSUMERS: Record<ConsumerKey, ConsumerPreset> = {
     desc: '頁面列表（未來元件）',
     mode: 'reading',
     py: 'py-3 (12px)',
-    pyDesc: '觸控友好的列表行高',
+    pyDesc: '頁面級列表的寬鬆行高(配閱讀模式與較大 avatar)',
     px: 'px-4 (16px)',
     pxDesc: '頁面標準水平間距',
     gap: 'gap-3 (12px)',
@@ -203,15 +204,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
 }
 
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
-
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
     <span className="text-[11px] text-fg-muted font-medium w-[88px] shrink-0 pt-0.5 flex items-center gap-1.5">
@@ -243,10 +235,20 @@ const Z = {
   },
 }
 
-/** Menu container — role=listbox 滿足內部 MenuItem role=option 的 parent(axe aria-required-parent)。 */
+/**
+ * Menu container — **靜態視覺預覽,不是真的 listbox**。
+ *
+ * 2026-09-24:原本是 `role="listbox"`,理由是「滿足內部 MenuItem role=option 的 parent
+ *(axe aria-required-parent)」。那是拿一個 ARIA 角色去消 lint,而不是描述這東西真的是什麼 ——
+ * 這個容器沒有選取狀態、沒有方向鍵、沒有焦點管理,`listbox` 是對輔助科技的空頭承諾
+ *(SSOT:`ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。
+ * 正解是**兩邊一起拿掉**:容器改 `role="group"`(結構角色,不承諾鍵盤),
+ * 裡面的 MenuItem 傳 `role="presentation"`(元件本就支援,見 menu-item.tsx 的「ARIA 單一 owner gate」),
+ * 於是既沒有孤兒 option,也沒有假的 composite。
+ */
 const MenuFrame = ({ children, width = 320 }: { children: React.ReactNode; width?: number }) => (
   <div
-    role="listbox"
+    role="group"
     aria-label="Anatomy inspector menu preview"
     className="rounded-lg bg-surface-raised border border-border overflow-hidden py-2"
     style={{ width, boxShadow: 'var(--elevation-200)' }}
@@ -444,29 +446,30 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">情境</span>
-          <div className="flex gap-1.5">
+          <SegmentedControl size="sm" aria-label="情境" value={consumer} onValueChange={(v) => setConsumer(v as ConsumerKey)}>
             {(Object.keys(CONSUMERS) as ConsumerKey[]).map((c) => (
-              <Tab key={c} active={consumer === c} onClick={() => setConsumer(c)}>{CONSUMER_DISPLAY[c].tab}</Tab>
+              <SegmentedControlItem key={c} value={c}>{CONSUMER_DISPLAY[c].tab}</SegmentedControlItem>
             ))}
-          </div>
+          </SegmentedControl>
           <span className="text-[10px] text-fg-muted font-mono">{CONSUMER_DISPLAY[consumer].sub}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasPrefix</span>
-          <div className="flex gap-1.5">
-            <Tab active={hasPrefix} onClick={() => setHasPrefix(true)}>on</Tab>
-            <Tab active={!hasPrefix} onClick={() => setHasPrefix(false)}>off</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="hasPrefix" value={hasPrefix ? 'on' : 'off'} onValueChange={(v) => setHasPrefix(v === 'on')}>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+          </SegmentedControl>
           {consumer === 'SelectionItem' && (
             <span className="text-[11px] text-fg-muted">
               SelectionItem 的 prefix 是<strong>除了 control 之外</strong>的視覺輔助
@@ -476,60 +479,62 @@ const InspectorInner = () => {
         {hasPrefix && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">prefixType</span>
-            <div className="flex gap-1.5">
-              <Tab active={prefixType === 'icon'} onClick={() => setPrefixType('icon')}>icon</Tab>
-              <Tab active={prefixType === 'avatar'} onClick={() => setPrefixType('avatar')}>avatar</Tab>
-            </div>
+            <SegmentedControl size="sm" aria-label="prefixType" value={prefixType} onValueChange={(v) => setPrefixType(v as PrefixType)}>
+              <SegmentedControlItem value="icon">icon</SegmentedControlItem>
+              <SegmentedControlItem value="avatar">avatar</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
         {/* SelectionItem avatar 沒有 block 模式(left checkbox + block avatar = 歪斜) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label 內容長度</span>
-          <div className="flex gap-1.5">
-            <Tab active={labelLength === 'short'} onClick={() => setLabelLength('short')}>short</Tab>
-            <Tab active={labelLength === 'medium'} onClick={() => setLabelLength('medium')}>medium</Tab>
-            <Tab active={labelLength === 'long'} onClick={() => setLabelLength('long')}>long</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="label 內容長度" value={labelLength} onValueChange={(v) => setLabelLength(v as ContentLength)}>
+            <SegmentedControlItem value="short">short</SegmentedControlItem>
+            <SegmentedControlItem value="medium">medium</SegmentedControlItem>
+            <SegmentedControlItem value="long">long</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label clamp</span>
-          <div className="flex gap-1.5">
-            <Tab active={labelClampOverride === 'preset'} onClick={() => setLabelClampOverride('preset')}>
+          {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
+          <SegmentedControl size="sm" aria-label="label clamp" value={String(labelClampOverride)} onValueChange={(v) => setLabelClampOverride(v === '1' ? 1 : v === '2' ? 2 : (v as 'preset' | 'unbounded'))}>
+            <SegmentedControlItem value="preset">
               preset({preset.labelMaxLines ?? '∞'})
-            </Tab>
-            <Tab active={labelClampOverride === 1} onClick={() => setLabelClampOverride(1)}>1</Tab>
-            <Tab active={labelClampOverride === 2} onClick={() => setLabelClampOverride(2)}>2</Tab>
-            <Tab active={labelClampOverride === 'unbounded'} onClick={() => setLabelClampOverride('unbounded')}>∞</Tab>
-          </div>
+            </SegmentedControlItem>
+            <SegmentedControlItem value="1">1</SegmentedControlItem>
+            <SegmentedControlItem value="2">2</SegmentedControlItem>
+            <SegmentedControlItem value="unbounded">∞</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">description</span>
-          <div className="flex gap-1.5">
-            <Tab active={descContent === 'none'} onClick={() => setDescContent('none')}>none</Tab>
-            <Tab active={descContent === 'short'} onClick={() => setDescContent('short')}>short</Tab>
-            <Tab active={descContent === 'medium'} onClick={() => setDescContent('medium')}>medium</Tab>
-            <Tab active={descContent === 'long'} onClick={() => setDescContent('long')}>long</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="description" value={descContent} onValueChange={(v) => setDescContent(v as DescContent)}>
+            <SegmentedControlItem value="none">none</SegmentedControlItem>
+            <SegmentedControlItem value="short">short</SegmentedControlItem>
+            <SegmentedControlItem value="medium">medium</SegmentedControlItem>
+            <SegmentedControlItem value="long">long</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         {hasDescription && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">desc clamp</span>
-            <div className="flex gap-1.5">
-              <Tab active={descClampOverride === 'preset'} onClick={() => setDescClampOverride('preset')}>
+            {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
+            <SegmentedControl size="sm" aria-label="desc clamp" value={String(descClampOverride)} onValueChange={(v) => setDescClampOverride(v === '1' ? 1 : v === '2' ? 2 : (v as 'preset' | 'unbounded'))}>
+              <SegmentedControlItem value="preset">
                 preset({preset.descMaxLines ?? '∞'})
-              </Tab>
-              <Tab active={descClampOverride === 1} onClick={() => setDescClampOverride(1)}>1</Tab>
-              <Tab active={descClampOverride === 2} onClick={() => setDescClampOverride(2)}>2</Tab>
-              <Tab active={descClampOverride === 'unbounded'} onClick={() => setDescClampOverride('unbounded')}>∞</Tab>
-            </div>
+              </SegmentedControlItem>
+              <SegmentedControlItem value="1">1</SegmentedControlItem>
+              <SegmentedControlItem value="2">2</SegmentedControlItem>
+              <SegmentedControlItem value="unbounded">∞</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasSuffix</span>
-          <div className="flex gap-1.5">
-            <Tab active={hasSuffix} onClick={() => setHasSuffix(true)}>on</Tab>
-            <Tab active={!hasSuffix} onClick={() => setHasSuffix(false)}>off</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="hasSuffix" value={hasSuffix ? 'on' : 'off'} onValueChange={(v) => setHasSuffix(v === 'on')}>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 
@@ -541,7 +546,7 @@ const InspectorInner = () => {
           <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             {consumer === 'MenuItem' && (
               <MenuFrame width={360}>
-                <MenuItem
+                <MenuItem role="presentation"
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
                   avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
@@ -986,10 +991,10 @@ export const AlignmentThreshold = {
 
           {/* Live example */}
           <MenuFrame width={360}>
-            <MenuItem size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
+            <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
               電子郵件通知
             </MenuItem>
-            <MenuItem size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
+            <MenuItem role="presentation" size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
               推送通知
             </MenuItem>
           </MenuFrame>
@@ -1040,10 +1045,10 @@ export const AlignmentThreshold = {
 
           {/* Live example */}
           <MenuFrame width={360}>
-            <MenuItem size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
+            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
               Alice Chen
             </MenuItem>
-            <MenuItem size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
+            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
               Bob Wang
             </MenuItem>
           </MenuFrame>
@@ -1123,7 +1128,7 @@ export const ReadingModes = {
             <div key={sz} className="flex items-start gap-3">
               <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
               <MenuFrame width={300}>
-                <MenuItem size={sz} startIcon={Mail} description="每日寄送摘要信件">
+                <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日寄送摘要信件">
                   電子郵件通知
                 </MenuItem>
               </MenuFrame>
@@ -1287,9 +1292,9 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">Prefix icon = foreground（代表內容）</span>
             <MenuFrame width={260}>
-              <MenuItem size="md" startIcon={Mail}>電子郵件</MenuItem>
-              <MenuItem size="md" startIcon={Settings}>設定</MenuItem>
-              <MenuItem size="md" startIcon={Star}>收藏</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Mail}>電子郵件</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Settings}>設定</MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Star}>收藏</MenuItem>
             </MenuFrame>
           </div>
 
@@ -1297,7 +1302,7 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">Suffix indicator = fg-muted（指示方向）</span>
             <MenuFrame width={280}>
-              <MenuItem
+              <MenuItem role="presentation"
                 size="md"
                 startIcon={Globe}
                 endContent={
@@ -1309,7 +1314,7 @@ export const IconColorsAndPresets = {
               >
                 語言
               </MenuItem>
-              <MenuItem
+              <MenuItem role="presentation"
                 size="md"
                 startIcon={Lock}
                 endContent={
@@ -1327,7 +1332,7 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">危險操作 = 與 label 同色（text-error）</span>
             <MenuFrame width={260}>
-              <MenuItem size="md" startIcon={Trash2} className="text-error">
+              <MenuItem role="presentation" size="md" startIcon={Trash2} className="text-error">
                 刪除專案
               </MenuItem>
             </MenuFrame>
@@ -1380,10 +1385,10 @@ export const IconColorsAndPresets = {
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-fg-muted font-medium">MenuItem</span>
             <MenuFrame width={280}>
-              <MenuItem size="md" startIcon={Mail} description="每日寄送摘要信件">
+              <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件">
                 電子郵件通知
               </MenuItem>
-              <MenuItem size="md" startIcon={Bell}>
+              <MenuItem role="presentation" size="md" startIcon={Bell}>
                 推送通知
               </MenuItem>
             </MenuFrame>

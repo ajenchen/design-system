@@ -216,7 +216,7 @@ const InspectorView = () => {
                 <li><TokenCell token="--fg-muted" display="chevron · text-fg-muted" /></li>
                 <li><TokenCell token="--fg-secondary" display="content · text-fg-secondary" /></li>
                 <li><TokenCell token="--divider" display="item border · border-divider" /></li>
-                <li><TokenCell token="--ring" display="focus ring · ring" /></li>
+                <li><TokenCell token="--ring" display="focus ring · focus-ring-inset" /></li>
               </ul>
             </section>
             <section>
@@ -288,7 +288,7 @@ export const ColorMatrix: Story = {
                 <Td><TokenCell token="--foreground" display="foreground" /></Td>
                 <Td><TokenCell token="--fg-muted" display="fg-muted" /></Td>
                 <Td>
-                  外加 <span className="font-mono">ring-2 ring-ring ring-offset-2</span>
+                  外加內描邊 <span className="font-mono">focus-visible:focus-ring-inset</span>(往內 2px)
                 </Td>
               </tr>
               <tr>
@@ -331,7 +331,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td>Focus ring</Td>
                 <Td><TokenCell token="--ring" display="ring" /></Td>
-                <Td mono>ring-2 ring-ring ring-offset-2</Td>
+                <Td mono>focus-visible:focus-ring-inset</Td>
               </tr>
             </tbody>
           </table>

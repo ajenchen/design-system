@@ -54,6 +54,18 @@
   --action-divider-inset: 0.5rem; /* 8px — 兩端各 4px */
   --action-divider-min: calc(var(--field-height-xs) - var(--action-divider-inset)); /* 16px */
 
+  /* Stack gap — 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(2026-09-26 抽 token,M17:同值散在 6 處字面值)。
+     消費者:全域焦點框往外畫的間隙(styles/base.css `:focus-visible` outline-offset)、頭像堆疊挖空的縫與狀態圓點 /
+     計數徽章的挖空縫(avatar.tsx)、上傳列進度條與焦點框之間的縫(file-item.tsx)、步驟條外圈與圓之間的縫(steps.tsx)。
+     JS 雙生:tokens/uiSize/stack-gap.ts `STACK_GAP_PX`(遮罩幾何與 outline 內距要用數字算),由
+     scripts/token-twin-invariant.mjs 機械鎖住兩邊相等。設計理由住 avatar.spec.md「頭像堆疊(疊在一起時)」段。 */
+  --stack-gap: 2px;
+  /* Avatar stack overlap — 頭像堆疊第 2 顆起往左疊的量(2026-09-26 抽 token:此前 `-ml-0.5` 字面值散在
+     people-picker-helpers.ts / people-picker.tsx,與 avatar.tsx 常數各寫一份)。JS 雙生:avatar.tsx `AVATAR_STACK_OVERLAP_PX`
+     (量寬要用數字算),同樣由 scripts/token-twin-invariant.mjs 鎖住。消費者:avatar.tsx 挖空遮罩與項目位移、
+     PeoplePicker 編輯態的標籤 wrapper。 */
+  --avatar-stack-overlap: 2px;
+
   /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */

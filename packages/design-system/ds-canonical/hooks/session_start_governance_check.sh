@@ -294,6 +294,22 @@ if command -v node >/dev/null 2>&1 && [ -f scripts/sync-governance-counters.mjs 
   fi
 fi
 
+# Check 12: Provider 檢視群組可達性(2026-09-24 —— 這個 session 的 hook 是不是真的有人叫)
+#
+# 為什麼要在 SessionStart 查:Claude Code 在 session 開始就把 settings.json 讀進去凍住了。
+# 2026-09-24:P0 批准前置閘從 PreToolUse 第 7 群搬到第 8 群,registrations.json 與 git index
+# 都對了,工作樹那份還停在 7 群 —— 整個 session 零覆蓋且零訊號,11 個受治理檔案被編輯後
+# 還被寫成「都過了 P0 閘」。CI 那支閘(test:provider-view-group-reachability)擋的是「送出去的東西」,
+# 這裡擋的是「你現在這個 session 手上的東西」—— 兩者不同,缺一不可。
+VIEW_REACH=""
+if command -v node >/dev/null 2>&1 && [ -f scripts/provider-view-group-reachability-invariant.mjs ]; then
+  REACH_OUT=$(node scripts/provider-view-group-reachability-invariant.mjs 2>&1 || true)
+  if grep -q "沒有派工入口" <<<"$REACH_OUT"; then
+    VIEW_REACH=$(grep -E "^  \[|^      " <<<"$REACH_OUT" | awk 'NR <= 8')
+    PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- ⚠️  本 session 有 hook 群組沒有派工入口(= 那些 hook 這個 session 完全不會被呼叫):\n${VIEW_REACH}\n  → 跑 npm run governance:generate 並**重開 session**;在那之前不得宣稱這些閘有覆蓋到任何改動。"
+  fi
+fi
+
 # Check 11: Cross-repo env smoke(2026-05-30 — NON-BLOCKING:只進 PRUNE_TRIGGERS soft channel,
 # 永不進 BLOCKER 路徑、永不非零退出。set -uo pipefail(無 -e)→ 探針非零返回不殺 script;
 # 但 set -u 下 unset var 必 ${VAR:-} guard。每探針獨立、無 network、無 blocking subshell。

@@ -15,12 +15,25 @@ import {
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
+// 鍵盤接線(開關狀態 / Tab 離開 / 子選單 Esc)住在 dropdown-menu-keyboard.ts —— 本檔只留視覺層(2026-09-26 拆檔,見該檔檔頭)
+import {
+  DropdownMenuKeyboardProvider,
+  DropdownMenuLevelProvider,
+  useDropdownMenuRootKeyboard,
+  useDropdownMenuSubKeyboard,
+  useMenuContentKeyboard,
+  useMenuTriggerRef,
+  useSubMenuContentKeyboard,
+  useSubMenuTriggerRef,
+} from './dropdown-menu-keyboard'
 
 /**
  * DropdownMenu — Radix DropdownMenu + MenuItem visual layer
  *
  * 架構分工：
  * - Radix primitives：behavior（keyboard nav, focus management, aria roles）
+ *   —— 兩處由 DS 蓋掉 Radix 預設(2026-09-25 user 拍板,待辦總帳 B10 / B11;見下方「鍵盤」段):
+ *   選單開著按 Tab = 收起全部、從開啟者往下走(Radix 預設擋掉 Tab);子選單 Esc = 只關這一層(Radix 預設關整棵)。
  * - MenuItem：visual（layout, padding, icon alignment, typography）
  *
  * Radix primitive 是外層容器,擁有反白(`data-[highlighted]`)的長相:反白是唯一的游標,誰最後搬動它就用誰的畫法
@@ -89,6 +102,10 @@ const radixCursorClass = (cursorByKeyboard: boolean) =>
 /** 滑鼠(只算 mouse,鏡射 Radix Menu 的 whenMouse —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)移過項目 = 指標搶走反白;capture 版搶在 Radix 自己的 onPointerMove 之前記來歷。 */
 const radixGrab = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') markPointerGrab(e) }
 
+// ── 鍵盤:選單開著時按 Tab / 子選單裡按 Esc(2026-09-25 user 拍板,待辦總帳 B10 / B11)──
+// 規則住所 = ds-canonical/references/keyboard-model-canonical.md「彈出框開著時的 Tab 與 Esc」;
+// 機械落地 = ./dropdown-menu-keyboard.ts(「從觸發點算下一站」與 SelectMenu 共用 lib/focus-after-trigger.ts)。
+
 // ── Root ──
 // **預設 non-modal(2026-09-10 user 拍板:「這個是 popover 類型的互動的東西不是 dialog 類型的互動的東西」)**。
 // Radix 的 modal menu 會在開啟時對外面整片下 `pointer-events: none`(DismissableLayer 的
@@ -111,25 +128,18 @@ const DropdownMenu = ({
   modal = false,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
-  const resolvedOpen = open ?? uncontrolledOpen
-  const handleOpenChange = React.useCallback(
-    (nextOpen: boolean) => {
-      if (open === undefined) setUncontrolledOpen(nextOpen)
-      onOpenChange?.(nextOpen)
-    },
-    [onOpenChange, open],
-  )
-
+  // 開關狀態由本層擁有、受控地交給 Radix(Tab 離開與子選單 Esc 傳到根都要從 DS 這一側關掉選單;見 dropdown-menu-keyboard.ts)
+  const { resolvedOpen, handleOpenChange, keyboard, level } = useDropdownMenuRootKeyboard({ open, defaultOpen, onOpenChange })
   return (
     <DropdownMenuModalOpenContext.Provider value={modal && resolvedOpen}>
-      <DropdownMenuPrimitive.Root
-        open={open}
-        defaultOpen={defaultOpen}
-        onOpenChange={handleOpenChange}
-        modal={modal}
-        {...props}
-      />
+      <DropdownMenuKeyboardProvider keyboard={keyboard} level={level}>
+        <DropdownMenuPrimitive.Root
+          open={resolvedOpen}
+          onOpenChange={handleOpenChange}
+          modal={modal}
+          {...props}
+        />
+      </DropdownMenuKeyboardProvider>
     </DropdownMenuModalOpenContext.Provider>
   )
 }
@@ -140,9 +150,11 @@ const DropdownMenuTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
 >(({ className, tabIndex, ...props }, ref) => {
   const modalOpen = React.useContext(DropdownMenuModalOpenContext)
+  // 記下觸發點:選單開著按 Tab 時從它算下一站(B11;dropdown-menu-keyboard.ts)
+  const setRef = useMenuTriggerRef(ref)
   return (
     <DropdownMenuPrimitive.Trigger
-      ref={ref}
+      ref={setRef}
       // modal open 時 trigger 位於 Radix aria-hidden subtree：移出 sequential focus order；
       // 關閉時仍由 Radix programmatically focus，且恢復 consumer 原 tabIndex。
       tabIndex={modalOpen ? -1 : tabIndex}
@@ -189,7 +201,24 @@ const DropdownMenuGroup = React.forwardRef<
 DropdownMenuGroup.displayName = 'DropdownMenuGroup'
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
-const DropdownMenuSub = DropdownMenuPrimitive.Sub
+
+// ── Sub ──
+// 開關狀態由本層擁有(受控交給 Radix),並提供「關掉這一層」給子選單的 Esc 用(B10:Esc 只關最內層、焦點回上一層那一項;dropdown-menu-keyboard.ts)。
+const DropdownMenuSub = ({
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Sub>) => {
+  const { resolvedOpen, handleOpenChange, level } = useDropdownMenuSubKeyboard({ open, defaultOpen, onOpenChange })
+  return (
+    <DropdownMenuLevelProvider level={level}>
+      <DropdownMenuPrimitive.Sub open={resolvedOpen} onOpenChange={handleOpenChange} {...props} />
+    </DropdownMenuLevelProvider>
+  )
+}
+DropdownMenuSub.displayName = 'DropdownMenuSub'
+
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
 // ── Content ──
@@ -211,10 +240,13 @@ interface DropdownMenuContentProps
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   DropdownMenuContentProps
->(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, ...props }, ref) => (
+>(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
+  // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
+  const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
+  return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
-      ref={ref}
+      ref={menuKeyboard.ref}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
@@ -224,17 +256,12 @@ const DropdownMenuContent = React.forwardRef<
       // field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md" 會把選單釘在 md-scale,
       // lg page 上對不上 lg 觸發點。原 data-density 是 409b91da a11y 批次順手加(對齊 Popover),非設計
       // 決策 → 移除,item 隨 page density 與觸發點一致(tier 仍由 size prop 決定)。
-      // Focus return on close:不 override `onCloseAutoFocus` — 用 Radix 內建 default
-      // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管)。
-      // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」
-      // (w3.org/WAI/ARIA/apg/patterns/menubar/);shadcn dropdown-menu 同樣不 override。
+      // Focus return on close:除了 Tab 離開(B11)之外不 override `onCloseAutoFocus` — 用 Radix 內建 default
+      // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管;
+      // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」)。
       // 2026-06-11 移除 2026-04-08 的 `(e) => e.preventDefault()` hardcode:它跑在 Radix
       // composeEventHandlers 內建 handler 之前,defaultPrevented → trigger focus 被 skip →
-      // Esc 關閉後 focus 掉到 body(APG violation)。原動機「mouse close 後 trigger 殘留
-      // focus ring」不構成 override 理由:實測(2026-06-12 playwright)pointer item-click
-      // close 後 programmatic refocus 在 Chromium 仍可 match `:focus-visible`(UA heuristic),
-      // 但與 shadcn 官方 live demo 同流程 DOM 比對 IDENTICAL — Radix 生態一致接受此
-      // tradeoff:APG keyboard focus-return 優先於 cosmetic ring。
+      // Esc 關閉後 focus 掉到 body(APG violation)。Tab 離開那一條例外的理由住 dropdown-menu-keyboard.ts。
       className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
       style={{
         boxShadow: 'var(--elevation-200)',
@@ -248,6 +275,9 @@ const DropdownMenuContent = React.forwardRef<
           : 'var(--radix-dropdown-menu-content-available-height, 100vh)',
       }}
       {...props}
+      // 選單開著按 Tab = 收起全部、從開啟者往下 / 往上走(B11;蓋掉 Radix 的擋 Tab)
+      onKeyDown={menuKeyboard.onKeyDown}
+      onCloseAutoFocus={menuKeyboard.onCloseAutoFocus}
     >
       <RowSizeProvider value={size}>
         {/* body 恆在 flex-1 ScrollArea 內:超過 clamped 高度即跨-OS 一致捲動(不吃寬度);
@@ -258,15 +288,18 @@ const DropdownMenuContent = React.forwardRef<
       </RowSizeProvider>
     </DropdownMenuPrimitive.Content>
   </DropdownMenuPrimitive.Portal>
-))
+  )
+})
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 
 // ── SubContent ──
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, children, ...props }, ref) => {
+>(({ className, children, onKeyDown, onEscapeKeyDown, ...props }, ref) => {
   const size = useRowSize()
+  // 子選單裡 Tab 收起全部層(B11)、Esc 只關這一層(B10)—— dropdown-menu-keyboard.ts
+  const subKeyboard = useSubMenuContentKeyboard(onKeyDown, onEscapeKeyDown)
   return (
     <DropdownMenuPrimitive.SubContent
       ref={ref}
@@ -274,6 +307,8 @@ const DropdownMenuSubContent = React.forwardRef<
       className={cn(floatingLayerClass, 'py-2', className)}
       style={{ boxShadow: 'var(--elevation-200)', minWidth: 180 }}
       {...props}
+      onKeyDown={subKeyboard.onKeyDown}
+      onEscapeKeyDown={subKeyboard.onEscapeKeyDown}
     >
       <RowSizeProvider value={size}>
         {children}
@@ -395,6 +430,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
   const size = useRowSize()
   const iconPx = ICON_SIZE[size]
   const cursorByKeyboard = useCursorMover() === 'keyboard'
+  // 記下這一層的觸發項:子選單按 Esc 只關這一層時,焦點回到它(B10;dropdown-menu-keyboard.ts)
+  const setRef = useSubMenuTriggerRef(ref)
 
   // SubTrigger suffix: [value?] [badge?] [ChevronRight] with gap-1
   const endContent = (
@@ -407,7 +444,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 
   return (
     <DropdownMenuPrimitive.SubTrigger
-      ref={ref}
+      ref={setRef}
       // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(endContent 的 value/badge 不進比對)。
       textValue={typeof children === 'string' ? children : undefined}
       className={cn(

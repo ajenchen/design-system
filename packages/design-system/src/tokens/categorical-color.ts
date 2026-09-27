@@ -131,7 +131,12 @@ export const CAT_SOLID_TOKENS: Record<CategoricalHue, { bg: string; text: string
   magenta: { bg: 'var(--color-magenta-6)', text: 'var(--on-emphasis)' },
 }
 
-/** Calendar event tile:subtle 底 + hover step-2(1:1)。 */
+/**
+ * Calendar event tile:subtle 底 + hover step-2(1:1)。
+ * 淡底的滑過 = 同色離底更遠一格:淺色變深、深色變亮(色階號碼 = 離所在底色多遠;primitives.css 檔頭、
+ * color.spec.md「Dark mode subtle」)。與上方實心色互動 state 不同 —— 那是 semantic `--{hue}-hover`(深色要反轉),
+ * 這裡是淡底區 step-1 → step-2,兩主題同向,直接用 primitive(2026-09-26 深色 step-2..4 改半透明淡底後成立)。
+ */
 export const CAT_EVENT: Record<CategoricalHue, string> = {
   blue: 'bg-[var(--color-blue-1)] text-[var(--color-blue-7)] hover:bg-[var(--color-blue-2)]',
   green: 'bg-[var(--color-green-1)] text-[var(--color-green-7)] hover:bg-[var(--color-green-2)]',

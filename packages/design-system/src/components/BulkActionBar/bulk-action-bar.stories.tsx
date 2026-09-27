@@ -68,10 +68,11 @@ export const WithExtendDatasetHint: Story = {
             allSelected ? (
               <>
                 已選取全部 {TOTAL} 個項目。{' '}
+                {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
                 <button
                   type="button"
                   onClick={() => { setSelection([]); setAllSelected(false) }}
-                  className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                 >
                   清除選取項目
                 </button>
@@ -79,10 +80,11 @@ export const WithExtendDatasetHint: Story = {
             ) : (
               <>
                 已選取本頁全部 {selection.length} 個。{' '}
+                {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
                 <button
                   type="button"
                   onClick={() => setAllSelected(true)}
-                  className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                 >
                   點此選取全部 {TOTAL} 個項目
                 </button>

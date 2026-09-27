@@ -214,7 +214,9 @@ test('clean authority plugin cache projects all canonical Claude registrations a
   const specs = projectedGroupSpecs(buildClaudePluginHookView())
   const descriptors = Object.values(data.view.hooks)
     .flatMap((groups) => groups.flatMap((group) => group.hooks))
-  assert.equal(specs.length, 16)
+  // 群組數由 canonical 登記推導(projectedGroupSpecs),不寫死:2026-09-24 寫死的 16 在 PreToolUse
+  // 多了第 7 群後成為假紅。要保證的性質是「每個 canonical 群組恰好投影一個 handler」,由下一行與迴圈驗。
+  assert.ok(specs.length > 0, 'canonical 群組推導數必須非零,否則下面全是空斷言')
   assert.equal(descriptors.length, specs.length)
   for (const { event, groupIndex, matcher } of specs) {
     const { nativeEvent, group } = projectedGroupFor({ config: data.view }, event, groupIndex)

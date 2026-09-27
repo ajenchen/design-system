@@ -4,9 +4,10 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Settings, Save, Info, AlertCircle } from 'lucide-react'
+import { Settings, Save, AlertCircle } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
 import { Button } from '@/design-system/components/Button/button'
+import { FieldLabel } from '@/design-system/components/Field/field'
 
 const meta: Meta = {
   title: 'Design System/Components/Tooltip/設計原則',
@@ -93,15 +94,7 @@ export const UsageGuidance: Story = {
           title="✅ 補充資訊可以用 tooltip(錯過也不影響主流程)"
           note="「這個設定是什麼意思」「shortcut key 是什麼」等對主流程非必要的補充可以用 tooltip——看到更好,沒看到也無傷大雅"
         >
-          <div className="flex items-center gap-2">
-            <span>密度設定</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Info} aria-label="密度說明" />
-              </TooltipTrigger>
-              <TooltipContent>影響 Button / Input / row 的垂直空間</TooltipContent>
-            </Tooltip>
-          </div>
+          <FieldLabel info="影響 Button / Input / row 的垂直空間">密度設定</FieldLabel>
           <Label>↑ info icon 的補充說明,錯過不影響使用</Label>
         </Rule>
       </Section>
@@ -111,12 +104,7 @@ export const UsageGuidance: Story = {
           title="Tooltip — 純文字、語意為描述、不放互動元素"
           note="適合一句話的提示。語意是純描述（role=tooltip / aria-describedby），不該放可點擊元素。離開 trigger 往浮層移動時，靠 Radix 的 grace 區維持開啟（讓滑鼠可移入），非計時延遲。"
         >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Info} aria-label="說明" />
-            </TooltipTrigger>
-            <TooltipContent>這個設定會影響所有專案的預設值</TooltipContent>
-          </Tooltip>
+          <FieldLabel info="這個設定會影響所有專案的預設值">預設時區</FieldLabel>{/* 只給資訊的 ⓘ 用 FieldLabel info(平常淡、滑過深一階、一般箭頭),不用 Button:Button 會帶按鈕底色與手形,iconOnly 還會自己再掛一層提示 → 同時浮出兩個 */}
           <Label>↑ 純文字說明；滑鼠離開觸發器即關閉（移入浮層內容則保持開啟）</Label>
         </Rule>
 

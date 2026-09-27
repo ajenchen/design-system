@@ -97,11 +97,11 @@ const config = {
 
 | Token | Light mode | Dark mode | 建議 |
 |-------|-----------|-----------|------|
-| `--chart-1` | `blue-6` | `blue-5` | 第一類別（主要） |
-| `--chart-2` | `purple-6` | `purple-5` | 第二類別 |
-| `--chart-3` | `green-6` | `green-5` | 第三類別 |
-| `--chart-4` | `yellow-7` | `yellow-5` | 第四類別（yellow-7 在 light mode 提升對 white bg 的對比） |
-| `--chart-5` | `deep-orange-6` | `deep-orange-5` | 第五類別 |
+| `--chart-1` | `blue-6` | `blue-6` | 第一類別（主要） |
+| `--chart-2` | `purple-6` | `purple-6` | 第二類別 |
+| `--chart-3` | `green-6` | `green-6` | 第三類別 |
+| `--chart-4` | `yellow-7` | `yellow-6` | 第四類別（yellow-7 在 light mode 提升對 white bg 的對比） |
+| `--chart-5` | `deep-orange-6` | `deep-orange-6` | 第五類別 |
 
 **為什麼固定到 primitive 而非 semantic token**：避免未來 brand swap（primary 改色）時 chart-1 跟著漂移——data viz 的色彩意義是「類別」,不應被品牌色變動污染。
 
@@ -124,6 +124,29 @@ const config = {
 | Cartesian grid line | `stroke-divider` |
 | Axis tick | `text-fg-muted`（填 `fill-fg-muted`） |
 | Dot fill | 依 series color |
+| 滑過指示帶(長條圖) | `fill-neutral-hover`(見下節) |
+| 滑過指示線(折線 / 面積 / 散佈 / 雷達) | `stroke-border`(見下節) |
+
+### 滑過指示(Recharts 叫 tooltip cursor)
+
+滑鼠停在圖上時,Recharts 除了浮出提示,還會標出「提示在講哪一個類別」:長條圖是整個類別位置上的一條帶,折線、面積、散佈、雷達圖是一條線。Recharts 自己的說明:"Cursor is the background, or a highlight, that shows when user mouses over or activates an area. It usually shows together with a tooltip to emphasise which part of the chart does the tooltip refer to."([`Cursor.tsx#L125-L130`](https://github.com/recharts/recharts/blob/v3.8.1/src/component/Cursor.tsx#L125-L130))
+
+- **為什麼可以有**:圖表本身不能點,滑過時本來不該變;這條帶與線是全 DS 滑過原則的例外清單第 ② 項(`../../../ds-canonical/references/hit-area-canonical.md`「滑過原則」三-2),規則只住在那裡,本檔只寫顏色。
+- **顏色**:Recharts 3.8.1 把兩者寫死成 `#ccc`(帶 [`getCursorRectangle.ts#L22`](https://github.com/recharts/recharts/blob/v3.8.1/src/util/cursor/getCursorRectangle.ts#L22)、線 [`Cursor.tsx#L107`](https://github.com/recharts/recharts/blob/v3.8.1/src/component/Cursor.tsx#L107)),深色主題下是一條亮灰直條。`chart.tsx` 改成:
+  - 帶 = `--neutral-hover`,跟資料表格列滑過同一色。它是半透明的,疊在圖表所在的底(頁面或卡片)上,底色本身不換 —— 跟 `../../tokens/color/color.spec.md`「Hover 換色配對總則」對「底」的做法(疊一層 `--neutral-hover`)同一件事。
+  - 線 = `--border`,比網格線 `--divider` 高一階,才看得出「這條是滑過指示、不是網格」。
+  - 只換 Recharts 的預設值(選擇器看屬性值 `#ccc`),跟同檔網格、參考線的覆寫同一種寫法。
+- **實測**(2026-09-26,建置後逐點取色;對照組:改前兩個主題都是 `#CCCCCC`,DOM 屬性改後仍是 `#ccc`,證明是樣式蓋掉的):
+
+  | | 淺色 | 深色 |
+  |---|---|---|
+  | 長條圖的帶,頁面底上 | `#FFFFFF` → `#FAFAFA` | `#0A0A0A` → `#141414` |
+  | 長條圖的帶,卡片(`--surface`)上 | `#FFFFFF` → `#FAFAFA` | `#1D1D1D` → `#262626` |
+  | 同一個建置的資料表格列滑過(對照) | `#FFFFFF` → `#FAFAFA` | `#1D1D1D` → `#262626` |
+  | 折線圖的線 | `#D9D9D9` | `#474747` |
+
+  帶跟表格列逐像素相同;散佈與雷達圖的線也換成 `--border`(用只存在於驗證環境的範例量,DS 範例沒有這兩種圖)。
+- **比別家淡**:MUI X Charts 的帶是淺色灰 10%、深色白 10%([`ChartsAxisHighlightPath.ts#L10-L22`](https://github.com/mui/mui-x/blob/6503fbca0b62a298eebe6cf1af619a014a0f16b7/packages/x-charts/src/ChartsAxisHighlight/ChartsAxisHighlightPath.ts#L10-L22)),shadcn 用 `fill-muted`([`chart.tsx#L67`](https://github.com/shadcn-ui/ui/blob/98a1fe67/apps/v4/registry/new-york-v4/ui/chart.tsx#L67))。本 DS 選跟表格列同一色,是為了全 DS 同一種滑過語言(2026-09-26 user:「圖表灰帶確保符合我們一致的設計語言且視覺上合理就可以」);不用 `--muted` 是因為它在本 DS 的意思是「靜態、不可操作的面」(`color.spec.md`「Static Subtle Background」),不是滑過。淺色整體偏淡是 `--neutral-hover` 本身的取值(待辦總帳 N5,目前暫緩),要改就改那一個值,表格列與圖表一起變。
 
 ---
 
@@ -142,6 +165,7 @@ const config = {
 - ❌ **不硬寫色值**：`<Bar fill="#3b82f6" />` 違規,改用 `fill="var(--color-{key})"` 搭配 ChartConfig
 - ❌ **不用 shadcn chart color token**（`--chart-1`..`--chart-5` 我們有自己的定義,shadcn 預設走 HSL 會與我們 oklch palette 漂移）
 - ❌ **不自訂 Tooltip / Legend 視覺**（一律用 `ChartTooltipContent` / `ChartLegendContent`,確保跨圖表視覺一致）
+- ❌ **不自訂滑過指示的顏色**(`<ChartTooltip cursor={{ fill: … }} />` 這類):`chart.tsx` 只換 Recharts 的預設色,自己傳的顏色會原樣畫出來、繞過 DS token;同上一條的理由
 - ❌ **不超過 5 類別**（見上節;改用 grouping 或切視覺化類型）
 - ❌ **不在 chart 裡放互動元件**（Button / Input）——chart 是 passive 視覺化層,互動走 toolbar / filter（action-bar pattern）
 
@@ -153,7 +177,7 @@ Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
 
 - **有 Inspector(chart-type + 視覺選項 playground)**:chart 的「決定性 props」是資料(`data`)與配色(`ChartConfig`),不是單一 variant/size 切換,所以 Inspector 不是 variant 切換器,而是 chart 類型 playground——右側 Controls 即時切 `type`(bar / line / area / pie)、`showLegend`、`showGrid`、`tooltipIndicator`(dot / line / dashed),觀察同一份 `ChartConfig` 在不同圖表類型下的色彩與指示器應用,取代 SizeMatrix / StateBehavior。
 - **無 SizeMatrix**:chart 無 sm/md/lg size prop,高度由 `aspect-video`(預設)或 consumer 包 `AspectRatio` 覆寫決定(見本 spec「定位」段)。尺寸屬 container 職責,不是 chart 的變體維度。
-- **無 StateBehavior**:chart 是 passive 視覺化層,本身無 hover / focus / active / selected / disabled 互動狀態——資料點 hover 由 Recharts tooltip 處理(色彩規則已在 `ColorMatrix` 覆蓋),非 chart 元件層級的 state。
+- **無 StateBehavior**:chart 是 passive 視覺化層,本身無 hover / focus / active / selected / disabled 互動狀態——滑過時會出現的只有 Recharts 的提示與滑過指示(見「滑過指示」),都是「給你看資訊」,不是元件狀態(提示的色彩規則已在 `ColorMatrix` 覆蓋)。
 
 對應 anatomy story:`Overview`(多種 chart 類型實例)+ `Inspector`(chart-type playground)+ `CategoryTokens`(元件特有 5 色 categorical token)+ `ColorMatrix`(tooltip/legend/grid 視覺 token)+ `Accessibility`(無障礙)。
 
@@ -163,12 +187,13 @@ Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
 
 - **顏色非唯一語義**：不只靠色彩區分類別,配合 icon / label / pattern（Recharts 的 `strokeDasharray` 等）讓色盲 / 黑白列印仍可辨識
 - **Tooltip 鍵盤可存取**：Recharts v3 的 `accessibilityLayer`(Recharts 3.x 預設啟用;本 DS 長條 / 折線 / 面積範例另顯式標明此 prop 文件化依賴,圓餅 / 環圈走預設)內建鍵盤導覽——圖表 SVG 自動取得 `tabIndex=0` + `role="application"`,使用者用方向鍵 ←/→ 沿軸刻度逐一瀏覽資料點,讀屏器朗讀當前資料點;無需 controlled `activeIndex` 手動接線
-- **對比度**：`--chart-*` 在 light/dark 的 step 選擇已考量對 canvas bg 的對比（light=step-6 / dark=step-5）
+- **對比度**：`--chart-*` 兩主題都 step-6(淺色的 yellow 用 step-7;2026-09-26 深色由 step-5 改 step-6),理由與對比數字見 `../../tokens/color/color.spec.md`「Utility Tokens」`--chart-*` 列
 
 ---
 
 ## 相關
 
 - `../../tokens/color/color.spec.md` — `--chart-1..5` semantic token 定義
+- `../../../ds-canonical/references/hit-area-canonical.md` — 滑過原則(為什麼圖表可以有滑過指示帶)
 - Recharts v3 官方文件 — `https://recharts.org`
 - shadcn chart 原始參考 — `https://ui.shadcn.com/docs/components/chart`

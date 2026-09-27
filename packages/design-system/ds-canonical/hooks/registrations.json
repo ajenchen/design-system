@@ -150,13 +150,6 @@
           },
           {
             "kind": "hook",
-            "hook": "check_substantive_edit_approval_preflight.sh",
-            "runtime": "bash",
-            "outputMode": "blocking",
-            "transcript": "stable-required"
-          },
-          {
-            "kind": "hook",
             "hook": "check_ds_anchor_preflight.sh",
             "runtime": "bash",
             "outputMode": "governance-context-or-block",
@@ -222,6 +215,18 @@
             "hook": "check_story_determinism.sh",
             "runtime": "bash",
             "outputMode": "diagnostic"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          {
+            "kind": "hook",
+            "hook": "check_substantive_edit_approval_preflight.sh",
+            "runtime": "bash",
+            "outputMode": "blocking",
+            "transcript": "stable-required"
           }
         ]
       }

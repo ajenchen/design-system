@@ -659,10 +659,24 @@ export type {
 //   - components/AgentPanel:SWELL
 //   - components/AgentPanel:useBeginAnimationsOnMount
 //   - components/AgentPanel:usePrefersReducedMotion
+//   - components/Avatar:AVATAR_DISMISS_OVERLAY_PX
+//   - components/Avatar:AVATAR_OWN_CUTOUT_CLASS
+//   - components/Avatar:AVATAR_STACK_CLASS
+//   - components/Avatar:AVATAR_STACK_CUTOUT_CLASS
+//   - components/Avatar:AVATAR_STACK_GAP_PX
+//   - components/Avatar:AVATAR_STACK_ITEM_CLASS
+//   - components/Avatar:AVATAR_STACK_OVERLAP_PX
+//   - components/Avatar:AVATAR_STACK_OWN_CUTOUT_CLASS
+//   - components/Avatar:avatarOverlayCutout
+//   - components/Avatar:avatarStackCutoutImage
+//   - components/Avatar:avatarStackCutoutStyle
+//   - components/Avatar:avatarStackItemStyle
 //   - components/Button:ButtonGroupContext
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
+//   - components/FileItem:FILE_ITEM_RING_LAYER_CLASS
+//   - components/FileItem:fileItemRingCutoutStyle
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton
@@ -678,6 +692,7 @@ export * from './tokens/elevation/overlay-geometry'
 export * from './tokens/motion/motion'
 export * from './tokens/motion/overlay-motion'
 export * from './tokens/uiSize/icon-size'
+export * from './tokens/uiSize/stack-gap'
 
 // ─── Hooks ────────────────────────────────────────────────────────────────
 export * from './hooks/use-controllable'
@@ -691,6 +706,8 @@ export * from './hooks/use-truncated'
 // ─── Lib utilities ────────────────────────────────────────────────────────
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
+export * from './lib/focus-after-trigger'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
+export * from './lib/roving-list-keyboard'
 export * from './lib/utils'

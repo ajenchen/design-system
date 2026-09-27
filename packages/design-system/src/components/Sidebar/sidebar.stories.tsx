@@ -213,7 +213,8 @@ export const IconCollapse: Story = {
   },
 }
 
-// beta.97 SidebarMenuAction 手刻 consumer 的 hover 階梯證據。
+// SidebarMenuAction 的 hover 階梯證據。2026-09-24 起它委派 `ItemInlineActionButton`(不再手刻),
+// 所以這則同時是「委派後幾何正確」的視覺回歸樣本:16 圖示 / 18 懸停底色。
 // 用 public Sidebar composition render 真實 row/action 關係,不直接複製 action class。
 export const ActionHoverState: Story = {
   name: '側邊欄動作懸停狀態',
@@ -226,9 +227,7 @@ export const ActionHoverState: Story = {
             <SidebarMenuButton id="roadmap" startIcon={Folder}>
               產品路線圖
             </SidebarMenuButton>
-            <SidebarMenuAction aria-label="更多產品路線圖操作" data-visual-hover-target>
-              <MoreVertical />
-            </SidebarMenuAction>
+            <SidebarMenuAction icon={MoreVertical} aria-label="更多產品路線圖操作" data-visual-hover-target />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarProvider>

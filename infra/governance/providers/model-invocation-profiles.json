@@ -27,7 +27,7 @@
         "stream": false,
         "bodyTopLevelFields": ["max_tokens", "messages", "model", "output_config", "system"],
         "fixedFields": [
-          {"pointer": "/max_tokens", "canonicalJson": "8192", "purpose": "output-token-limit"},
+          {"pointer": "/max_tokens", "canonicalJson": "16000", "purpose": "output-token-limit"},
           {"pointer": "/messages/0/role", "canonicalJson": "\"user\"", "purpose": "user-message-role"},
           {"pointer": "/output_config/format/type", "canonicalJson": "\"json_schema\"", "purpose": "structured-output-type"}
         ]

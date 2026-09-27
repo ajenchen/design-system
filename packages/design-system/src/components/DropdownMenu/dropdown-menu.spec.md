@@ -176,7 +176,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 
 ## 鍵盤操作
 
-由 Radix DropdownMenu 提供：
+由 Radix DropdownMenu 提供;**`Tab` / `Shift+Tab` 與子選單裡的 `Escape` 兩處由本元件改寫**(2026-09-25,來歷見下一節):
 
 | 按鍵 | 行為 |
 |---|---|
@@ -184,9 +184,21 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 | `Home` / `End` | 跳到第一／最後一個 item（`PageUp` / `PageDown` 同） |
 | 首字 typeahead | 打字元自動跳到 **label 符合**的 item——children 為字串時元件自動 forward `textValue`,description / badge / shortcut 不進比對;複雜 children(非純字串)由 consumer 顯式給 `textValue` |
 | `Enter` / `Space` | 執行目前焦點的動作 |
-| `Escape` | 關閉整個選單（含所有展開子層；Radix root close）。逐層收合用 `←` |
+| `Tab` / `Shift+Tab` | **收起全部層(含子選單),焦點從開啟選單的那顆鈕往下 / 往上走一站** —— 效果等於在觸發鈕上按 `Tab` / `Shift+Tab`。選單內容掛在頁面最末端,所以下一站一律從觸發鈕算,不從選單項算。觸發鈕在對話框或面板裡時,照那個框的規則在框內繞圈;頁面上已經沒有下一站時,焦點留在觸發鈕 |
+| `Escape` | **只關焦點所在的那一層**:在主選單 → 關選單、焦點回觸發鈕;在子選單 → 只關這一層、焦點回上一層打開它的那一項(與 `←` 同效果)。**每按一次少一層** |
 | `→` | 展開子選單 |
 | `←` | 收合子選單，焦點回到 SubTrigger |
+
+**關閉之後焦點去哪**(全 DS 規則住在 `ds-canonical/references/keyboard-model-canonical.md`「彈出框開著時的 Tab 與 Esc」,本表只是本元件的落地):
+`Escape` 或選了項目 → 回觸發鈕;點外面 → 留在點的地方(非 modal 預設,Radix `hasInteractedOutsideRef`);`Tab` → 已經走到下一站,不再拉回觸發鈕,也不呼叫 consumer 的 `onCloseAutoFocus`。
+
+### `Tab` 與子選單 `Escape` 的來歷(2026-09-25)
+
+**user 原話(逐字,附條件同意)**:選單 Tab:「你確定這個符合我們一致的設計語言且不違背世界級的設計就這樣做」;子選單 Esc:「你確定這符合我們一致的設計語言且不違背世界級的設計就這樣做」;追問:「看最後是怎樣定義，選單類應該要一致吧？這樣才符合世界級的設計？」。條件(世界級 + DS 一致)的查證是 **AI 研究**(待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` B10 / B11);Tab 那一題 user 可在預覽否決。
+
+- **子選單 `Escape` 只關一層**:W3C「Close the menu that contains focus and return focus to the element or context, e.g., menu button or parent `menuitem`, from which the menu was opened」(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/menubar/menu-and-menubar-pattern.html#L153 );同派:Adobe React Aria(https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/menu/useSubmenuTrigger.ts#L161-L171 )、Fluent(https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-menu/library/src/components/Menu/Menu.cy.tsx#L952-L964 )、GitHub Primer 測試「closes top menu on escape or left arrow key press」(https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/ActionMenu/ActionMenu.test.tsx#L626-L649 )、VS Code(https://github.com/microsoft/vscode/blob/2ec783d855253a817b5787fb48bc6c3d8d31c0c5/src/vs/base/browser/ui/menu/menu.ts#L953-L957 )、Windows 桌面選單(https://github.com/microsoft/microsoft-ui-xaml/blob/258a2e9b0852b69c98162e6daf9906ec8fe5161a/dxaml/xcp/dxaml/lib/MenuFlyoutPresenter_Partial.cpp#L232-L235 )、Chrome(https://github.com/chromium/chromium/blob/c53fe9e04b2856967d1f2f716b99b0911251e521/ui/views/controls/menu/menu_controller.cc#L2155-L2167 )、Firefox「Pressing Escape hides one level of menus only.」(https://github.com/mozilla-firefox/firefox/blob/0a5c5bffebd796cedba281419efd2f8f3cc7c85d/layout/xul/nsXULPopupManager.cpp#L2642-L2648 )。有一手資料的 9 家裡唯一例外是本元件的底層 Radix(子選單 Esc 呼叫 `rootContext.onClose()` 關整棵,https://github.com/radix-ui/primitives/blob/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/menu/src/menu.tsx#L1262-L1266 ),本元件改寫它。DS 內部:對話框、側滑面板、AI 面板早已寫明 Esc 只關最上層 / 最內層(`../Dialog/dialog.spec.md`、`../Sheet/sheet.spec.md`、`../AgentPanel/agent-panel.spec.md`),子選單原本是全 DS 唯一例外。
+- **`Tab` 收起並往下走**:W3C「When focus is on a `menuitem` in a `menu` or `menubar`, move focus out of the `menu` or `menubar`, and close all menus and submenus.」(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/menubar/menu-and-menubar-pattern.html#L82 );Fluent 測試「should be able to tab to next element after the root trigger」(https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-menu/library/src/components/Menu/Menu.cy.tsx#L579 );Primer「When Tab or Shift+Tab is pressed, the menu should close and the focus should naturally move to the next item」(https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/hooks/useMenuKeyboardNavigation.ts#L29-L30 )。**世界級在這題不一致**:Radix(「menus should not be navigated using tab key so we prevent it」,https://github.com/radix-ui/primitives/blob/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/menu/src/menu.tsx#L570-L572 )、Adobe React Aria(測試「contains focus within the menu」,https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/Menu.test.tsx#L1842-L1877 )、VS Code(「Stop tab navigation of menus」,https://github.com/microsoft/vscode/blob/2ec783d855253a817b5787fb48bc6c3d8d31c0c5/src/vs/base/browser/ui/menu/menu.ts#L132-L139 )是「按了不動」那一派。本 DS 採 W3C 這一派,理由是 DS 自己的鍵盤分工「Tab 換區、方向鍵在區裡走、Esc 退一步」(`ds-canonical/references/keyboard-model-canonical.md`)——選單是一個區,Tab 就該離開它(AI 推導,條件查證見待辦總帳 B11)。
+- **實作**:`dropdown-menu-keyboard.ts` 的 `handleMenuTab`(`Content` / `SubContent` 的 `onKeyDown`)與子選單的 `closeLevel`(`SubContent` 的 `onEscapeKeyDown`);2026-09-26 從 `dropdown-menu.tsx` 拆出(該檔 879 行超過 800 行上限),`dropdown-menu.tsx` 只留視覺層。「從觸發點算下一站」與 SelectMenu 共用一份 `../../lib/focus-after-trigger.ts`(2026-09-26 兩份合一,待辦總帳〇節「按鍵規則合併」)。觸發點是透明錨點時(AgentFab 右鍵選單),以「宣告 `aria-controls` 指向本選單的可聚焦元素」為開啟者。觸發點本身不在 Tab 路上時(例:樹 / 側欄列上 `tabIndex=-1` 的選單鈕),以它在文件裡的位置為起點往下 / 往上走 —— 從列上選單鈕打開的選單按 `Tab`,會直接離開那一整串。
 
 ---
 
@@ -237,14 +249,15 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 
 **Keyboard 行為**:
 
-- Tab — focus trigger
+- Tab — 選單關著:把焦點移到觸發鈕(觸發鈕本身是一站)
 - Enter / Space / ↓ — 開啟
 - ↑/↓ — 導覽 items（Home/End 跳首尾項，PageUp/PageDown 同）
 - 首字 typeahead — 打字元自動跳到 label 符合的 item(比對 `textValue`,見「鍵盤操作」表)
 - Enter / Space — 選擇目前焦點的選項
-- Esc — 關閉
+- Tab / Shift+Tab — 選單開著:收起全部層,焦點從觸發鈕往下 / 往上走一站(2026-09-25 起,見「鍵盤操作」)
+- Esc — 只關焦點所在的那一層(子選單 → 回上一層那一項;主選單 → 回觸發鈕)
 
-**Focus**:Radix primitive 自管 focus trap / restoration。反白(Radix `data-highlighted`)是**唯一的游標**,依**反白來歷**分流(owner = `ds-canonical/references/focus-canonical.md` 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):**滑鼠移過搬走反白** = hover → `bg-neutral-hover`、無框;**鍵盤搬走反白** = 游標 → 畫框 `focus-ring-inset`(內描邊,列撐滿選單寬)、不上底色,而且滑鼠停留列的 hover 底色一起消失(四種項目上都沒有 `hover:` 樣式;滑鼠停著不算搶,2026-09-09 下午 user 三問、Radix Menu 原始碼證實 `onPointerMove → item.focus()` 就是搶 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)。來歷由 `hooks/use-input-modality.ts` 的 `useCursorMover` + 各項目 `onPointerMoveCapture → markPointerGrab` 判(本元件刻意用 `data-highlighted` + 模態而非瀏覽器 `:focus-visible`,因 Radix 對 hover 做程式化 focus、各瀏覽器 `:focus-visible` 行為不一 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」)。2026-09-09 之前鍵盤導覽到的未選中項只有底色不畫框 —— AI 推導自 Radix 慣例,已撤回。**Trigger focus 指示**:Trigger 走全域 `:focus-visible` 外描邊(`styles/base.css`,幾何 SSOT = focus-canonical「框怎麼畫」);asChild 場景由子元件(通常 Button)同樣走全域外描邊。
+**Focus**:預設非 modal —— 焦點不鎖在選單裡(`Tab` 會離開,見上)。開啟時焦點進選單;關閉時 `Esc` / 選了項目 → 回觸發鈕,點外面 → 留在點的地方,`Tab` → 下一站(本元件 `onCloseAutoFocus` 在 Tab 離開時擋掉還觸發鈕)。反白(Radix `data-highlighted`)是**唯一的游標**,依**反白來歷**分流(owner = `ds-canonical/references/focus-canonical.md` 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):**滑鼠移過搬走反白** = hover → `bg-neutral-hover`、無框;**鍵盤搬走反白** = 游標 → 畫框 `focus-ring-inset`(內描邊,列撐滿選單寬)、不上底色,而且滑鼠停留列的 hover 底色一起消失(四種項目上都沒有 `hover:` 樣式;滑鼠停著不算搶,2026-09-09 下午 user 三問、Radix Menu 原始碼證實 `onPointerMove → item.focus()` 就是搶 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)。來歷由 `hooks/use-input-modality.ts` 的 `useCursorMover` + 各項目 `onPointerMoveCapture → markPointerGrab` 判(本元件刻意用 `data-highlighted` + 模態而非瀏覽器 `:focus-visible`,因 Radix 對 hover 做程式化 focus、各瀏覽器 `:focus-visible` 行為不一 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」)。2026-09-09 之前鍵盤導覽到的未選中項只有底色不畫框 —— AI 推導自 Radix 慣例,已撤回。**Trigger focus 指示**:Trigger 走全域 `:focus-visible` 外描邊(`styles/base.css`,幾何 SSOT = focus-canonical「框怎麼畫」);asChild 場景由子元件(通常 Button)同樣走全域外描邊。
 
 **ARIA composite scroll wrapper**:`DropdownMenuContent` 的 viewport-aware body 仍消費 `ScrollArea`,但 viewport 傳 `viewportTabIndex={null}` 完全省略 generic wrapper 的 `tabindex`。`role="menu"` 內的 focus owner 是 Radix roving-focus `menuitem*` family；額外 `div[tabindex]` 會破壞 required-children 結構。群組 Label 是正常可讀文字,使用 `fg-secondary`(非低對比的 `fg-muted`)。
 

@@ -101,7 +101,7 @@ export const ColorMatrix: Story = {
             <tbody>
               <tr><Td>Track 厚度</Td><Td mono>4px(h-1)</Td><Td>—</Td></tr>
               <tr><Td>Track 底色 default</Td><Td><TokenCell token="--secondary" display="bg-secondary" /></Td><Td><TokenCell token="--secondary" display="--secondary(neutral-3)" /></Td></tr>
-              <tr><Td>Track 底色 disabled</Td><Td><TokenCell token="--muted" display="bg-muted" /></Td><Td><TokenCell token="--muted" display="--muted(neutral-2)" /></Td></tr>
+              <tr><Td>Track 底色 disabled</Td><Td><TokenCell token="--bg-disabled" display="bg-disabled" /></Td><Td><TokenCell token="--bg-disabled" display="--bg-disabled(neutral-2,元件停用狀態色)" /></Td></tr>
               <tr><Td>Range 填滿色 default</Td><Td><TokenCell token="--primary" display="bg-primary" /></Td><Td><TokenCell token="--primary" /></Td></tr>
               <tr><Td>Range 填滿色 disabled</Td><Td><TokenCell token="--border" display="bg-border" /></Td><Td><TokenCell token="--border" display="--border(neutral-5)" /></Td></tr>
               <tr><Td>Thumb 直徑</Td><Td mono>16px(h-4 w-4)</Td><Td>—</Td></tr>

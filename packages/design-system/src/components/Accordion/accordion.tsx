@@ -48,7 +48,9 @@ const AccordionTrigger = React.forwardRef<
       className={cn(
         'flex flex-1 items-center justify-between gap-2',
         'py-4 text-body font-medium text-foreground text-left',
-        'transition-colors hover:text-fg-secondary',
+        // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
+        // 下方箭頭的 transition-transform 是展開狀態的旋轉,不是 hover 觸發,保留。
+        'hover:text-fg-secondary',
         // 內描邊:trigger 撐滿標題列高,往外 +2px 實測會壓到下方的內容區(2026-09-07 量測)
         'focus-visible:focus-ring-inset',
         // AccordionTrigger 單一 text-style 列 → semantic `text-fg-disabled`(非 opacity);Button canonical 對齊
@@ -106,7 +108,7 @@ export const accordionMeta = {
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
-    ring: ['ring-ring'],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

@@ -684,10 +684,11 @@ export const InlineEdit: Story = {
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
  *   - sku(readonly)/ inStock(boolean)/ url(openAction)→ 不出現 hover overlay(Contract 15)
- *   - click 1 → cell selected(1px `--primary` border outline,`CELL_RING_STYLES.selected`)
- *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變)
- *   - Shift+click → range(focus = 1px primary outline + 內 cells `--primary-subtle` bg)
- *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,overlay outline
+ *   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
+ *     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
+ *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關 / 連結不進)
+ *   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
+ *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
  *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
  *   - Issue 6 viewport clip:H scroll cell out → overlay 被 panel ClipMask 裁切不溢出
  */
@@ -713,9 +714,9 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
     return (
       <div>
         <p className="text-caption text-fg-muted mb-3">
-          試算表式操作:第一次點 cell 選取(藍框),第二次點才進編輯。Shift+點另一格選範圍,
+          試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關 / 連結欄位沒有 hover 提示
-          (這些格子不需編輯,點下去直接 toggle 或開連結)。
+          (這些格子點第二次也不進編輯:開關直接點勾選框切換,連結點文字開啟)。
         </p>
         <DataTable
           columns={editableColumns}
@@ -728,6 +729,52 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
           tableOptions={{ getRowId: (row) => row.sku }}
           getRowId={(row) => row.sku}
           onCellCommit={handleCommit}
+        />
+      </div>
+    )
+  },
+}
+
+/**
+ * 試算表游標契約(test-only,2026-09-26):給 `scripts/data-table-invariants.mjs` I32 步驟 4、5 量兩件事 ——
+ *   1. 游標所在的列被篩掉(篩選 / 換頁 / 刪除)→ 游標清掉,不留懸空的 id;Tab 進表時從第一列重新起算,
+ *      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
+ *   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
+ * 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
+ */
+export const SpreadsheetCursorContract: Story = {
+  name: '試算表游標契約',
+  tags: ['test-only'],
+  render: () => {
+    const [query, setQuery] = React.useState('')
+    const all = React.useMemo(() => Array.from({ length: 60 }, (_, i) => {
+      const base = editableSampleData[i % editableSampleData.length]
+      return { ...base, sku: `SKU-${String(i + 1).padStart(3, '0')}`, name: `${base.name} #${i + 1}` }
+    }), [])
+    const rows = React.useMemo(() => all.filter((r) => r.name.includes(query)), [all, query])
+    const editCol = createColumnHelper<EditableProduct>()
+    const columns = React.useMemo(
+      () => [
+        editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 110 } }),
+        editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 240 } }),
+        editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
+      ],
+      []
+    )
+    return (
+      <div className="flex flex-col gap-3">
+        <Input aria-label="篩選產品名稱" placeholder="篩選產品名稱(例:#2)" value={query} onChange={(e) => setQuery(e.target.value)} data-sheet-filter />
+        <DataTable
+          columns={columns}
+          data={rows}
+          height="240px"
+          inlineEdit
+          experimentalSpreadsheetOverlay
+          spreadsheetMode
+          experimentalActiveEditorController
+          tableOptions={{ getRowId: (row) => row.sku }}
+          getRowId={(row) => row.sku}
+          onCellCommit={() => {}}
         />
       </div>
     )
@@ -1211,7 +1258,7 @@ export const WithBulkActions: Story = {
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'include', ids: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                       >
                         清除選取項目
                       </button>
@@ -1223,7 +1270,7 @@ export const WithBulkActions: Story = {
                       <button
                         type="button"
                         onClick={() => setSelection({ mode: 'all', excluded: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
                       >
                         點此選取全部 {TOTAL} 個項目
                       </button>

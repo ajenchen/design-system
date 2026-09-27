@@ -74,7 +74,9 @@ TreeView、DataTable row 與 DataTable column 都使用 `@dnd-kit/core` 的
    故 SSOT 擁有的不是「一組鍵」而是**「情境 → 鍵位」對照表,每個分支各附世界級 cite**;
    消費者只宣告自己屬於哪個情境。這樣表格不是「例外」,而是命中對照表的另一列 —— 仍是 SSOT,不是分岔。
 
-6. **Pointer 與鍵盤都要可完成合法操作**：TreeView 因 `aria-activedescendant` 使用自建鍵盤分支；
+6. **Pointer 與鍵盤都要可完成合法操作**：TreeView 使用自建鍵盤分支(Cmd/Ctrl+Shift+方向鍵,每按即 commit)——
+   dnd-kit `KeyboardSensor` 是「按住 → 方向鍵搬 → 放開」的抓取模式,啟動鍵 Enter / 空白鍵正是樹的「選取目前列」
+   (`tree-view.tsx` 鍵盤重排段註解;2026-09-25 更正:舊理由「因 `aria-activedescendant`」在列改為真焦點後已不成立,待辦總帳 B9)；
    DataTable 無 `SortableContext`，不可誤套 `sortableKeyboardCoordinates`。
 
 ## Collision canonical

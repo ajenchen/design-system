@@ -24,14 +24,14 @@ benchmark:
 
 TreeView 是**階層結構的遞迴元件**。一個 TreeItem 就是一個 node——有 children 就可展開,沒有就是 leaf。沒有第二個概念。
 
-**實作基礎**：基於 Radix Collapsible 實作展開 / 收合，自建 tree 結構與 ARIA tree 鍵盤導覽（Radix 沒有 Tree primitive）。
+**實作基礎**：基於 Radix Collapsible（[`packages/react/collapsible`](https://github.com/radix-ui/primitives/tree/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/collapsible)）實作展開 / 收合，自建樹狀結構與 ARIA **樹狀表格（`treegrid`）**鍵盤導覽（Radix 沒有 Tree / Treegrid primitive）。2026-09-25 由 `tree` 改為 `treegrid`,決定與理由見「鍵盤導覽」。
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
 TreeView 本身只負責三件事:
 1. **遞迴渲染** + indent
 2. **展開/收合**狀態管理
-3. **鍵盤導覽** + ARIA tree
+3. **鍵盤導覽** + ARIA 樹狀表格(`treegrid`)
 
 它不管 node 裡面長什麼樣——icon、badge、status indicator、inline action 等視覺都由 consumer 透過 props / slots 決定。不同使用情境(sidebar nav、file browser、stepper)是同一個 TreeView 的不同消費方式,不是不同元件。
 
@@ -70,8 +70,8 @@ TreeView 本身只負責三件事:
 </TreeView>
 ```
 
-- `TreeView`:外層容器,`role="tree"`,管理 expand state + focused node + keyboard
-- `TreeItem`:唯一的 node 元件,`role="treeitem"`。**有 children = expandable,沒有 = leaf**
+- `TreeView`:外層容器,`role="treegrid"`,管理 expand state + 唯一的 Tab 停靠點 + keyboard
+- `TreeItem`:唯一的 node 元件。**有 children = expandable,沒有 = leaf**。DOM 是「無角色的 node 容器 → 一列 `role="row"`(主格 `gridcell` + 有按鈕時的動作格 `gridcell`)→ 子項容器」:樹狀表格的列只能擁有格、不能包住子列,所以層級 / 展開 / 選取屬性都在 `row` 上(見「ARIA」)
 
 ---
 
@@ -82,7 +82,7 @@ TreeView 本身只負責三件事:
 | Slot | 說明 | 存在條件 |
 |---|---|---|
 | **indent** | `paddingLeft = depth × indentStep` | depth > 0 |
-| **chevron** | `ChevronRight`(展開時 `rotate-90` transition,見「動畫」)| 有 children |
+| **chevron** | 共用行內小按鈕 `ItemInlineActionButton` + `ChevronRight`(展開時 `rotate-90` transition,見「動畫」)| 有 children |
 | **chevron placeholder** | 等寬空白,確保同層 leaf label 對齊 | 沒 children(每個 leaf 無條件留等寬空白,不檢查 siblings)|
 | **icon** | `LucideIcon`,跟 label 同色(內容 icon) | 可選 |
 | **label** | 主要文字 | 必有 |
@@ -91,6 +91,8 @@ TreeView 本身只負責三件事:
 ### Chevron 的特殊性
 
 Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover 時 `fg-secondary`,只前進一階)/ 位置在 indent 之後 icon 之前 / 點擊只 toggle expand 不觸發 selection / `rotate-90` transition。
+
+**消費共用行內小按鈕**(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」):箭頭本身就是 `ItemInlineActionButton`(`../../patterns/element-anatomy/item-anatomy.tsx`),尺寸照 `../../patterns/element-anatomy/inline-action.spec.md`「尺寸對照」TreeItem 列 —— 圖示與排版佔位 16(lg 20)、**滑過底色 18(lg 22)= 點得到的範圍**(`../../../ds-canonical/references/hit-area-canonical.md`)、按下多一階 `neutral-active`。與 DataTable 巢狀列的展開箭頭同一顆(`../DataTable/data-table.tsx` nestedPrefix)。縮排不變:箭頭仍住 `ItemPrefix` 鎖寬的槽,多出的 1px 靠溢出不吃版位。2026-09-26 之前這裡手刻一顆 16×16 的按鈕,滑過底色與點擊範圍都只有 16、也沒有按下態。箭頭 `tabIndex=-1`、對讀屏隱藏(展開 / 收合的鍵盤與語意在列上:`→` / `←` 與 `aria-expanded`)。
 
 ### 佔位規則(chevron + icon)
 
@@ -115,11 +117,11 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ## 展開/收合
 
-**行為**:點整行(label / icon / 空白)→ select(預設所有 node 可選);點 chevron → toggle expand,不 select;鍵盤 `→`(收合 expandable)→ expand;`←`(展開 expandable)→ collapse;`←`(leaf / 收合 node)→ 焦點到 parent。
+**行為**:點整行(label / icon / 空白)→ select(預設所有 node 可選);點 chevron → toggle expand,不 select;鍵盤 `→`(收合 expandable)→ expand;`←`(展開 expandable)→ collapse;`←`(leaf / 收合 node)→ 焦點到 parent。(點列上的按鈕目前**也會**選取該列 —— 既有行為,本次未改,焦點則留在按鈕上。)
 
-**預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 可讓整行同時 select + expand(適合 stepper)——**此連帶展開僅限指標點擊(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只觸發 select,展開 / 收合一律走 `→` / `←`(對齊 WAI-ARIA treeview「Enter 啟用、方向鍵展開收合」慣例)。
+**預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 可讓整行同時 select + expand(適合 stepper)——**此連帶展開僅限指標點擊(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只觸發 select,展開 / 收合一律走 `→` / `←`(W3C 樹狀表格同樣是「方向鍵展開收合、`Enter` 執行預設動作」,[treegrid-pattern.html#L60-L80](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treegrid/treegrid-pattern.html#L60-L80))。
 
-**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron `transition-transform duration-150 rotate-0 → rotate-90`(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
+**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron 圖示(2026-09-26 起掛在 `ItemInlineActionButton` 的 `iconClassName`)`transition-transform duration-150 rotate-0 → rotate-90` —— 展開 / 收合是狀態切換的動畫,不是滑過回饋,保留(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
 
 ---
 
@@ -161,20 +163,47 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ## 鍵盤導覽
 
+**整棵樹在 Tab 路上只佔一站**:列上 roving tabindex —— 停靠點那一列 `tabIndex=0`,其餘列、所有列上的按鈕、展開箭頭、勾選框都是 `-1`。Tab 進來落在:上次焦點停的那一列 → 選中的列 → 第一個可用列(W3C 對樹狀表格「回到上次停的那一個」與對樹「落在選中項,沒有就第一項」兩條合在一起,[keyboard-interface-practice.html#L270-L284](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L270-L284))。
+
+焦點在**列**上:
+
 | 按鍵 | 行為 |
 |---|---|
-| `↑` | 焦點移到上一個可見 node |
-| `↓` | 焦點移到下一個可見 node |
-| `→` | 展開(若收合);移到第一個 child(若已展開) |
-| `←` | 收合(若展開);移到 parent(若已收合或是 leaf) |
-| `Home` | 焦點移到第一個 node |
-| `End` | 焦點移到最後一個可見 node |
-| `Enter` / `Space` | 觸發 selection(等同點擊 label 的 select;`expandOnSelect` 的連帶展開僅限指標點擊,鍵盤展開 / 收合用 `→` / `←`) |
+| `↑` / `↓` | 上 / 下一個可見、未停用的列 |
+| `Home` / `End` | 第一個 / 最後一個可見列 |
+| `→` | 收著的資料夾 → 展開(焦點不動);已展開的資料夾或葉節點 → 進**這一列**的第一顆按鈕;沒有按鈕 → 不動 |
+| `←` | 展開的資料夾 → 收合;收著的資料夾或葉節點 → 回上一層;最外層 → 不動 |
+| `Enter` / `Space` | 選取(等同點擊 label;`expandOnSelect` 的連帶展開僅限指標點擊) |
+| `Tab` / `Shift+Tab` | **一下就離開整棵樹**(別列、本列的按鈕都不在 Tab 路上) |
 | `Cmd/Ctrl+Shift+↑` / `↓` | 重排:同層上移 / 下移(僅 `draggable` 時;詳「Drag and Drop → 鍵盤重排」) |
 | `Cmd/Ctrl+Shift+→` | 重排:移入上一個 sibling(需為 folder;收合時自動展開) |
 | `Cmd/Ctrl+Shift+←` | 重排:移出,成為 parent 的下一個 sibling |
 
-遵循 [WAI-ARIA TreeView pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)。重排鍵位在 modifier 層,與 APG 導覽鍵完全正交(APG 無 drag-and-drop pattern,重排屬 application-level 鍵位)。
+焦點在**列上的按鈕**上:
+
+| 按鍵 | 行為 |
+|---|---|
+| `→` | 下一顆;已是最後一顆 → 不動 |
+| `←` | 上一顆;已是第一顆 → 回到這一列 |
+| `↑` / `↓` | 回到上 / 下一列(選單鈕也一樣;開選單用 `Enter` / `Space`) |
+| `Home` / `End` | 第一個 / 最後一個可見列 |
+| `Enter` / `Space` | 按鈕自己的動作(原生) |
+| `Tab` / `Shift+Tab` | **一下就離開整棵樹**(焦點先回這一列,再由瀏覽器往下 / 往上走一站) |
+
+**2026-09-26 統一成側欄做法的三格**(批次細節 X4 / X6 / X7,待辦總帳〇節「09-26 同意清單回覆」,user 逐字:「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」):按鈕上 `Home` / `End` 原本不處理 → 換到第一 / 最後一列(X4);選單鈕上 `↓` 原本讓給按鈕開選單 → 換下一列(X6;同 `../Sidebar/sidebar.spec.md`「方向鍵整串歸清單」);按鈕上 `Shift+Tab` 原本先落回這一列、要按兩下 → 一下離開(X7,這一格原本就違反 B9「Tab 一下離開」)。
+
+**滑過才出現的按鈕**(`actionsReveal="hover"`):焦點在這一列裡(列本身或列上的按鈕)時一定看得到;滑鼠點列不算(`:focus-visible` 判定)。
+
+**決定來源**:總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` B9,user 原話「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」(附條件同意;條件經研究查證成立,同帳 A1)。與選單的同一套說法:Tab 換到下一區、方向鍵在區塊裡移動。
+
+**一手依據**(路線本身;以下各格的細節 = AI 依這些來源對齊,不是 user 逐格裁示):
+- 滑過才出現的東西用方向鍵走到、整組只佔一站:W3C grid [grid-pattern.html#L158](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L158)、[keyboard-interface-practice.html#L264](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L264)
+- 樹狀表格的 `→`(收著先展開、展開後進列)、最右一格 `→` 不動、第一格 `←` 回列:[treegrid-pattern.html#L66-L80](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treegrid/treegrid-pattern.html#L66-L80)
+- Adobe 正式版樹預設「方向鍵進列」:[s2 TreeView.mdx#L391](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/dev/s2-docs/pages/s2/TreeView.mdx#L391);它的樹是 `treegrid`:[useTree.ts#L57](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/tree/useTree.ts#L57);`→` 進列裡的按鈕、`↓` 換列、Tab 直接離開:[GridList.test.js#L1118-L1129](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/test/GridList.test.js#L1118-L1129)
+- **AI 推導**(研究沒有明文要求的兩格):`←` 在收著 / 葉節點上回上一層 —— 樹的語意,Adobe 同([useGridListItem.ts#L501-L519](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/gridlist/useGridListItem.ts#L501-L519));W3C 樹狀表格原文在這兩種列上是「不動」(#L78),本 DS 沿用樹的行為;按鈕上 `↑` / `↓` 換列 —— Adobe 方向鍵模式([useGridListItem.ts#L298-L309](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/gridlist/useGridListItem.ts#L298-L309))。2026-09-26 前還有第三格「選單鈕的 `↓` 讓給按鈕」(對照微軟 Fluent 樹的例外 [useTreeItem.tsx#L201](https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-tree/library/src/components/TreeItem/useTreeItem.tsx#L201)),已依 X6 統一成側欄做法(換下一列),理由是同一個 DS 裡「列上有小按鈕的一串」只有一張按鍵表。
+- 判定與執行 = `../../lib/roving-list-keyboard.ts`(2026-09-26 由本元件的 `tree-keyboard-route.ts` 與 Sidebar / FileUpload / Command 四份合一),本元件只讀樹自己的狀態(哪一列、展開與否、上一層)與重排。判定表 `scripts/test-roving-list-keyboard.mjs`(全宿主)+ `scripts/test-tree-keyboard-route.mjs`(樹專屬格,含舊路線對照組);瀏覽器量測 `scripts/tree-view-keyboard-route-invariant.mjs`(R3 = X7、R4 = X4)。鍵盤處理掛在捕獲階段(同 Sidebar),所以選單鈕自己的 `↓` 搶不到。
+
+重排鍵位在 modifier 層,與導覽鍵完全正交(W3C 沒有拖放 pattern,重排屬 application-level 鍵位)。
 
 ---
 
@@ -182,9 +211,11 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 | 元素 | Role | 屬性 |
 |---|---|---|
-| TreeView 容器 | `role="tree"` | **`aria-label` 或 `aria-labelledby`(擇一必填 — accessible name)**,`aria-multiselectable`(多選時) |
-| TreeItem 外層 | `role="treeitem"` | `aria-expanded`(expandable 才有),`aria-selected`,`aria-level` |
-| TreeItem children 容器 | `role="group"` | — |
+| TreeView 容器 | `role="treegrid"`(不可聚焦) | **`aria-label` 或 `aria-labelledby`(擇一必填 — accessible name)**,`aria-multiselectable`(多選時) |
+| TreeItem 外層(node 容器) | 無角色 | — (只放內部用的 `data-tree-*`) |
+| TreeItem 的列 | `role="row"`(`tabIndex` 0 = 停靠點 / -1) | `aria-level`,`aria-expanded`(expandable 才有),`aria-selected`(`selectionMode≠none`),`aria-disabled`,`aria-labelledby` → 自己的 label(列名只取 label,不併入按鈕名) |
+| 主格 / 動作格 | `role="gridcell"` | 動作格裡每顆按鈕 `tabIndex=-1`、**必須有可讀名稱**(`inlineActions` 由 `label` 給 `aria-label`;`inlineActionsSlot` 缺名稱時 dev 模式 `console.warn`) |
+| TreeItem children 容器 | 無角色(2026-09-25 前是 `group`;樹狀表格的列之間不允許 `group`) | — |
 
 ---
 
@@ -254,7 +285,9 @@ Sidebar 不會自動辨識任意 tree 容器；consumer 必須在承載 TreeView
 
 ## Hover-only Inline Actions
 
-TreeItem 右側 inline actions（宣告式 `inlineActions: InlineActionConfig[]` 或 escape-hatch `inlineActionsSlot`，**非** `actions` prop）預設在 hover 該列**或鍵盤 focus-visible 該列**時出現(opacity 0→1 transition)；`actionsReveal={false}` 則常駐不 hover-reveal。**為什麼**:(a) 視覺清潔(10+ node × 2-3 icon = 20-30 灰 icon 同屏噪音極大);(b) 業界一致(Notion / VS Code / Figma 都 hover-only);(c) 不影響操作(要操作自然會 hover)。
+TreeItem 右側 inline actions（宣告式 `inlineActions: InlineActionConfig[]` 或 escape-hatch `inlineActionsSlot`，**非** `actions` prop）預設在 hover 該列**或鍵盤 focus-visible 該列**時出現(opacity 0→1)；`actionsReveal={false}` 則常駐不 hover-reveal。**為什麼**:(a) 視覺清潔(10+ node × 2-3 icon = 20-30 灰 icon 同屏噪音極大);(b) 業界一致(Notion / VS Code / Figma 都 hover-only);(c) 不影響操作(要操作自然會 hover)。
+
+**出現是瞬間的、不淡入**(2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,user:「確定這樣才是一致設計語言就做」;2026-09-26 前是 0.15 秒淡入)。出現規則只住 `ItemSuffix` 的 `hoverReveal`(`../../patterns/element-anatomy/item-anatomy.tsx`),SSOT = `../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」。
 
 **Uniform 規則**:同類型 node 的 hover action 必須完全一致,否則 discovery 失敗。
 - **⋯ (more menu)**:所有 node 統一有,menu 內容由 consumer 依 node type 動態(rename / delete / duplicate)
@@ -266,7 +299,7 @@ TreeItem 右側 inline actions（宣告式 `inlineActions: InlineActionConfig[]`
 
 Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary`;hover bg `neutral-hover`;action 間距 / 高度對齊規則見 `../../patterns/element-anatomy/inline-action.spec.md`(canonical SSOT,2026-04-24 自 item-anatomy 抽出)。
 
-**宣告式 API**(對齊 `inline-action.spec.md` + `SidebarMenuButton.inlineActions`):`inlineActions: InlineActionConfig[]` + `actionsReveal: false | "hover"`(預設 `"hover"`,鍵盤 focus-visible 也顯)。內部用 `<ItemInlineAction>` helper 渲染,consumer **不可手刻 button JSX**(canonical 在 `item-anatomy.tsx`,共用 size 查表 / Tooltip / hover bg / aria)。Hover-reveal 用 `group-has-[:focus-visible]/tree-item:opacity-100` 而非 `group-focus-within`(後者 mouse click 會永久顯示)。
+**宣告式 API**(對齊 `inline-action.spec.md` + `SidebarMenuButton.inlineActions`):`inlineActions: InlineActionConfig[]` + `actionsReveal: false | "hover"`(預設 `"hover"`,鍵盤 focus-visible 也顯)。內部用 `<ItemInlineAction>` helper 渲染,consumer **不可手刻 button JSX**(canonical 在 `item-anatomy.tsx`,共用 size 查表 / Tooltip / hover bg / aria)。Hover-reveal 用 `group-has-[:focus-visible]/tree-item:opacity-100`(焦點在列上的按鈕)+ `group-focus-visible/tree-item:opacity-100`(焦點在列本身;2026-09-25 列改為真焦點後補,總帳 B9),而非 `group-focus-within`(後者 mouse click 會永久顯示)。鍵盤怎麼走到這些按鈕見「鍵盤導覽」。
 
 ---
 
@@ -287,7 +320,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 
 ### 鍵盤重排(2026-07-14 v1)
 
-`draggable` 啟用後,鍵盤與指標同樣可重排(WCAG 2.1.1 keyboard parity——四鍵可組合出任何 pointer 可達的合法樹位置)。鍵位 `Cmd/Ctrl+Shift+方向鍵`(對齊 [Notion 移動 block 鍵位](https://www.notion.com/help/keyboard-shortcuts),WebFetch 驗證紀錄 `.claude/logs/treeview-keyboard-dnd-design.md#L25`;[Asana](https://keycombiner.com/collections/asana/) / [Todoist](https://www.todoist.com/help/articles/use-keyboard-shortcuts-in-todoist-Wyovn2) 同「modifier+方向鍵直接移動」派),對虛擬焦點(`aria-activedescendant`)節點操作,**每按一下立即 commit**——無 grab-mode、無預覽、無 cancel(反向鍵即 undo)。**不用** dnd-kit `KeyboardSensor`:其 activator 需可接收 DOM focus([dnd-kit sensors 文件](https://dndkit.com/api-documentation/sensors/keyboard)),與單一 tab stop 虛擬焦點模型(2026-07-05 D4 拍板)結構性不相容,故為容器 `handleKeyDown` 的自建分支。
+`draggable` 啟用後,鍵盤與指標同樣可重排(WCAG 2.1.1 keyboard parity——四鍵可組合出任何 pointer 可達的合法樹位置)。鍵位 `Cmd/Ctrl+Shift+方向鍵`(對齊 [Notion 移動 block 鍵位](https://www.notion.com/help/keyboard-shortcuts),WebFetch 驗證紀錄 `.claude/logs/treeview-keyboard-dnd-design.md#L25`;[Asana](https://keycombiner.com/collections/asana/) / [Todoist](https://www.todoist.com/help/articles/use-keyboard-shortcuts-in-todoist-Wyovn2) 同「modifier+方向鍵直接移動」派),對焦點所在的那一列操作(只從列上發動;焦點在列上的按鈕時不重排),**每按一下立即 commit**——無 grab-mode、無預覽、無 cancel(反向鍵即 undo)。**不用** dnd-kit `KeyboardSensor`:它是「按下開始 → 方向鍵搬 → 再按放下」的抓取模式,預設用 `Enter` / `Space` 開始([dnd-kit sensors 文件](https://dndkit.com/api-documentation/sensors/keyboard)),而本元件這兩個鍵是「選取」、重排語意又是每按即 commit,故為容器 `handleKeyDown` 的自建分支。(舊理由「列不可聚焦,與虛擬焦點結構性不相容」在 2026-09-25 列改為真焦點後不再成立,已撤回。)
 
 | 按鍵 | 行為 | 發出事件 |
 |---|---|---|
@@ -299,7 +332,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 - **契約同 pointer**:同一個 `onDragEnd` + `TreeDragEndEvent`,consumer API 零改動。**頻率差異**:pointer 一手勢一次、keyboard 每步一次——有伺服器持久化的 consumer 建議 optimistic update(不建議 debounce batch,會破壞每按即 commit 語意)。
 - **邊界 no-op**:已在最上方 / 最下方 / 最外層、無可移入的 folder → 不發事件,只 SR 播報原因。
 - **disabled**:disabled node 不可移動,也不可當 target 錨點——相鄰 sibling disabled 時錨到最近 enabled sibling 表達同一插槽(可達位置與 pointer 一致;pointer 的 `useDroppable` 同樣 disable disabled node)。
-- **視覺**:每按即 commit,節點真實移動即回饋——**不用** dropIndicator / DragOverlay(那是「預覽中」的視覺語言,用在已 commit 的操作上會說謊);保留 keyboard focus ring 跟隨(`focusedId` 是 node id,移動後 `aria-activedescendant` 自動指向新位置)+ 移動後 `scrollIntoView`。
+- **視覺**:每按即 commit,節點真實移動即回饋——**不用** dropIndicator / DragOverlay(那是「預覽中」的視覺語言,用在已 commit 的操作上會說謊);保留 keyboard focus ring 跟隨 —— 移動後焦點還給被移動的那一列(React 搬動或重掛該列時瀏覽器會把焦點丟到 body,`tree-view.tsx` 在下一個影格把焦點放回去;2026-09-25 前靠 `aria-activedescendant` 自動跟上)+ 移動後 `scrollIntoView`。
 - **互斥**:pointer 拖曳進行中忽略鍵盤重排;`draggable` 未啟用時整組鍵位 no-op(不落入導覽)。
 - **SR 播報**:TreeView 自有 sr-only `role="status"` polite live region(消費 `select-menu.tsx` `SelectMenuLiveStatus` 先例;單一節點覆寫式更新,快速連按只播最新)。文案 zh-TW 預設(「已將『X』移到『Y』之後,第 n 項,共 m 項」/「已將『X』移入『Y』」/「已在最上方」等),`reorderAnnouncements` prop per-key 覆寫(i18n 覆寫點),含 `instructions` sr-only 操作說明(tree 容器 `aria-describedby` 指向,僅 `draggable` 渲染)。播報為 optimistic(事件發出即播,假設 consumer 依約 reorder);移入原本收合的 folder 時序數不可知,播報省略序數。
 
@@ -391,27 +424,20 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 
 ## A11y 預設
 
-**ARIA / Pattern**:自建 ARIA tree(非沿用 Radix 預設)。容器 `role="tree"`(多選時加 `aria-multiselectable`),每個 node `role="treeitem"` + `aria-expanded`(expandable 才有)/ `aria-selected` / `aria-level`,皆由元件手動設定(`tree-view.tsx` TreeItem render)。Radix `collapsible` 僅用於 children 展開 / 收合的高度動畫,**不提供** tree 的 role / aria / 鍵盤導覽(Radix 沒有 Tree primitive,見「定位」段)。對齊 [WAI-ARIA TreeView pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)。`aria-setsize` / `aria-posinset` **刻意省略**:APG 規定只有當節點未全數 render 進 DOM(lazy load)或 DOM 序 ≠ 閱讀序時才必需;本元件全可見節點皆在 DOM(`querySelectorAll('[role="treeitem"]:not([hidden])')`)且 DOM 序 = 閱讀序,故非必需。
+**ARIA / Pattern**:自建 ARIA **樹狀表格**(2026-09-25 由 `tree` 改,總帳 B9)。容器 `role="treegrid"`(多選時加 `aria-multiselectable`),每個 node 的列 `role="row"` + `aria-level` / `aria-expanded`(expandable 才有)/ `aria-selected` / `aria-labelledby`,列裡是 `gridcell`(主格 + 動作格),皆由元件手動設定(`tree-view.tsx` TreeItem render;完整對照見上方「ARIA」表)。Radix Collapsible([`packages/react/collapsible`](https://github.com/radix-ui/primitives/tree/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/collapsible))僅用於 children 展開 / 收合的高度動畫,**不提供**任何角色 / aria / 鍵盤導覽。為什麼是樹狀表格:W3C 只在樹狀表格定義了「列裡有按鈕時鍵盤怎麼走」([treegrid-pattern.html#L62-L80](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treegrid/treegrid-pattern.html#L62-L80)),一般樹的頁面沒有;Adobe 的樹同樣是 `treegrid`([useTree.ts#L57](https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/tree/useTree.ts#L57))。讀螢幕軟體會念成「樹狀表格」—— **未用讀螢幕軟體實測**。`aria-setsize` / `aria-posinset` **刻意省略**:只有當列未全數 render 進 DOM(lazy load)或 DOM 序 ≠ 閱讀序時才必需;本元件可見列皆在 DOM 且 DOM 序 = 閱讀序。
 
-**Accessible name(必填契約)**:`role="tree"` 的名稱無法從子節點內容推導,consumer **必須**提供 `aria-label`(直接字串)或 `aria-labelledby`(指向可見標題的 id)其中之一——有可見標題時優先 `aria-labelledby`,無則用 `aria-label`。兩者皆缺 → 螢幕閱讀器只讀出「tree」無法辨識用途(WAI-ARIA APG 要求 `role="tree"` 具 accessible name)。`tree-view.tsx` 於 `process.env.NODE_ENV !== 'production'` 時 `console.warn` 提示,避免上線後才發現無名稱樹(對齊 Button / Tag 的 dev-only 誤用警告 idiom)。
+**Accessible name(必填契約)**:`role="treegrid"` 的名稱無法從子節點內容推導,consumer **必須**提供 `aria-label`(直接字串)或 `aria-labelledby`(指向可見標題的 id)其中之一——有可見標題時優先 `aria-labelledby`,無則用 `aria-label`。兩者皆缺 → 螢幕閱讀器只讀出角色名、無法辨識用途。`tree-view.tsx` 於 `process.env.NODE_ENV !== 'production'` 時 `console.warn` 提示,避免上線後才發現無名稱樹(對齊 Button / Tag 的 dev-only 誤用警告 idiom)。列上的每顆按鈕也必須有名稱(見「ARIA」表)。
 
-**Keyboard 行為**(自建 handler,`tree-view.tsx` handleKeyDown):
+**Keyboard 行為**(`tree-view.tsx` handleKeyDownCapture → 共用純函式 `../../lib/roving-list-keyboard.ts` `resolveRovingKey`):完整按鍵表見「鍵盤導覽」段,此處不重複。
 
-- Tab — 焦點進入整棵 tree(單一 tab stop)
-- ↑/↓ — 在可見 node 之間移動
-- → — 展開 node,已展開則移到第一個 child
-- ← — 收合 node,leaf 則跳回 parent
-- Home / End — 跳到第一個 / 最後一個可見 node
-- Enter / Space — 選取目前 node
-- Cmd/Ctrl+Shift+↑/↓/→/← — 重排目前 node(僅 `draggable` 時;上下 = 同層移動、→ = 移入 folder、← = 移出到上層,詳「鍵盤重排」段)
+**Focus**:**列上的 roving tabindex、真 DOM 焦點**(2026-09-25 取代原本的 `aria-activedescendant` 虛擬焦點:`→` 要把焦點真的交給列裡的按鈕、`←` 再交回列,列若維持虛擬焦點,同一棵樹就有兩種焦點模型)。停靠點那一列 `tabIndex=0`,其餘 `-1`;容器不可聚焦。焦點框 = 列自己的 `focus-visible:focus-ring-inset`(瀏覽器 `:focus-visible` 決定畫不畫:滑鼠點列不畫、鍵盤畫;與 Sidebar 選單鈕同寫法);焦點在列上的按鈕時由按鈕自己畫框,列不再多畫。點列上的按鈕時焦點留在按鈕;點列的其他地方或展開箭頭時焦點給列。**無** focus trap、**無** focus restoration(樹不是浮層);唯一的「還焦點」是鍵盤重排後還給被移動的列(見「鍵盤重排」)。
 
-**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`focus-ring-inset` outline,2026-09-06 起不再是 box-shadow ring;原文 `ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
+**「單一 Tab 停靠點」包含列上的按鈕**:auto-render checkbox 與 consumer 傳入的 `checkbox` element 由 TreeItem 正規化為 `aria-hidden` + `tabIndex={-1}`(只鏡像列的 `aria-selected`);`inlineActions` / `inlineActionsSlot` 裡每一個可聚焦元素也都是 `tabIndex={-1}`,只能用 `→` / `←` 從自己那一列走到 —— 所以不論幾列有按鈕,Tab 一下就離開整棵樹。
+2026-09-25 撤回原句「按鈕是各自獨立的 tab stop(對齊 GitHub / VS Code 檔案樹『row action 可 Tab』慣例)」:查證後 GitHub 的樹列按鈕根本不讓 Tab 到([TreeView.tsx#L843-L875](https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/TreeView/TreeView.tsx#L843-L875)),VS Code 只有**目前那一列**的按鈕走得到([listWidget.ts#L609-L659](https://github.com/microsoft/vscode/blob/d2dacb76b2f5c1cafcf24dc3c1906e6f4f47918e/src/vs/base/browser/ui/list/listWidget.ts#L609-L659)),那句「對齊」不成立;舊做法在「工程團隊樹」要按 5 下 Tab 才出得去,而且走過的全是別列的按鈕(總帳 B9 / C3)。
 
-**「單一 tab stop」範圍限樹的 node 導覽**:auto-render checkbox 與 consumer 傳入的 `checkbox` element 都由 TreeItem 正規化為 `aria-hidden` + `tabIndex={-1}`，只鏡像 treeitem 的 `aria-selected`、不佔 tab 序；但公開 `inlineActions` / `inlineActionsSlot` 經 `ItemInlineAction` 渲染的原生 `<button>` 是各自獨立的 tab stop(對齊 GitHub / VS Code 檔案樹「row action 可 Tab」慣例)。故當某列有 inline actions 時,整頁 Tab 序會依序停在這些按鈕上——「單一 tab stop」指的是**樹形節點導覽**進出點,非「整棵樹含 action 只有一個 tab 停靠」。
+**SR 播報(重排)**:鍵盤重排結果經 TreeView 自有 sr-only `role="status"` polite live region 播報,容器 `aria-describedby` 指向 sr-only 操作說明(兩者僅 `draggable` 時渲染、皆在 `role="treegrid"` 之外——樹狀表格的合法 children 只有 row / rowgroup);文案可經 `reorderAnnouncements` prop 覆寫,詳「鍵盤重排」段。
 
-**SR 播報(重排)**:鍵盤重排結果經 TreeView 自有 sr-only `role="status"` polite live region 播報,tree 容器 `aria-describedby` 指向 sr-only 操作說明(兩者僅 `draggable` 時渲染、皆在 `role="tree"` 之外——tree 的合法 children 只有 treeitem / group);文案可經 `reorderAnnouncements` prop 覆寫,詳「鍵盤重排」段。
-
-**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作導覽 / 選取 / 展開收合 / **拖曳重排**(無需滑鼠;2026-07-14 v1 補齊——重排走容器 handleKeyDown 的 `Cmd/Ctrl+Shift+方向鍵` 分支,非 dnd-kit `KeyboardSensor`,sensors 仍僅 `PointerSensor`,見「鍵盤重排」段)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作導覽 / 選取 / 展開收合 / 列上按鈕 / **拖曳重排**(無需滑鼠;重排走容器 handleKeyDown 的 `Cmd/Ctrl+Shift+方向鍵` 分支,非 dnd-kit `KeyboardSensor`,sensors 仍僅 `PointerSensor`,見「鍵盤重排」段)。鍵盤路線的機械驗證:`scripts/test-roving-list-keyboard.mjs` + `scripts/test-tree-keyboard-route.mjs`(判定表)+ `scripts/tree-view-keyboard-route-invariant.mjs`(瀏覽器實按,含對照組)+ 展示頁「列上的動作」story 的 play。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

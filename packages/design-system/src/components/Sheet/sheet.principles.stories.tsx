@@ -35,6 +35,8 @@ import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { SidebarProvider, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/設計原則',
@@ -248,13 +250,19 @@ export const SidePropRule: Story = {
             <SheetHeader>
               <SheetTitle>目錄</SheetTitle>
             </SheetHeader>
-            <div className="flex-1 py-2 flex flex-col">
-              {['總覽', '任務', '成員', '設定'].map(name => (
-                <button key={name} type="button" className="px-3 py-2 text-body text-left hover:bg-neutral-hover rounded-md">
-                  {name}
-                </button>
-              ))}
-            </div>
+            {/* 目錄 = 側欄導覽列 → 消費 SidebarMenuButton,不手刻 <button>(ui-development.md「既有 primitive 優先消費」;
+                M23(e):說得出「它是 Sidebar」就照 sidebar.spec.md —— left 側滑本身就是 Sidebar 小視口的內部基建)。
+                hover = neutral-hover + 字升 foreground、當前項 neutral-selected 且滑過釘住、鍵盤焦點畫內描邊,全由元件負責。
+                SidebarProvider minHeight:auto 取消 min-h-svh(先例 sidebar.stories.tsx ActionHoverState) */}
+            <SidebarProvider className="flex-1 py-2" style={{ minHeight: 'auto' }}>
+              <SidebarMenu>
+                {['總覽', '任務', '成員', '設定'].map(name => (
+                  <SidebarMenuItem key={name}>
+                    <SidebarMenuButton id={name}>{name}</SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarProvider>
           </SheetContent>
         </Sheet>
         <Label>↑ 主導覽 / 目錄 → 左側(mobile hamburger 展開)</Label>
@@ -272,12 +280,22 @@ export const SidePropRule: Story = {
             <SheetHeader>
               <SheetTitle>分享</SheetTitle>
             </SheetHeader>
-            <SheetBody className="flex flex-col gap-2">
-              {['複製連結', '傳送到 Email', '加入我的最愛', '匯出 PDF'].map(name => (
-                <button key={name} type="button" className="px-3 py-2 text-body text-left hover:bg-neutral-hover rounded-md">
-                  {name}
-                </button>
-              ))}
+            {/* 單擊即生效的短文字選項 → 選單列,不手刻 <button>(overlay-surface.spec.md「Menu 移植到 Dialog body」+
+                「預設:浮層的 body 是一份可選清單 → 走選單列」);裸用 MenuItem 被 menu-item.spec.md 禁止 → 用 Command 包
+                (自帶方向鍵與 listbox,先例 dialog.stories.tsx「主體放清單」、popover.stories.tsx StatusFilterPanel)。
+                List-as-region:body 撤 chrome padding、列內距在 Command 根設一次 --item-px(item-anatomy.spec.md「Token: --item-px」) */}
+            <SheetBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、CommandGroup py-2 own;非 tabs !pt-0 hack)*/}
+              <Command label="分享方式" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+                <CommandList>
+                  <CommandGroup>
+                    {['複製連結', '傳送到 Email', '加入我的最愛', '匯出 PDF'].map(name => (
+                      <CommandItem key={name} value={name}>
+                        {name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
             </SheetBody>
           </SheetContent>
         </Sheet>

@@ -218,7 +218,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ### focus-visible
 
-由底層 ToggleGroup 處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。Focus ring 對齊 Button：`ring-2 ring-ring ring-offset-1`。
+由底層 ToggleGroup 處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。焦點框對齊 Button：全域 `:focus-visible` 外描邊（`styles/base.css` 的 `outline: 2px solid var(--ring)`，往外 `outline-offset: 2px`；item 不寫任何 ring / outline class，只加 `focus-visible:z-20` 把聚焦 item 提到相鄰 item 之上，讓外描邊浮在 `-ml-px` 重疊的鄰居 border 之上——與選中態 `z-10` 同一種手法；幾何 SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」）。
 
 ---
 
@@ -276,7 +276,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 - ↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix `toggle-group` 未鎖 `orientation`(沿用 default 雙軸 roving),APG 接受 group 同時支援兩軸方向鍵
 - Enter / Space — 選取目前 focus 的 item
 
-**Focus**:Radix primitive 採 roving tabindex（整組共用單一 tab 停留點，方向鍵在 item 間移動焦點，不切換選取），非 Dialog 式 focus trap / restoration。Focus ring 對齊 Button focus-visible canonical（`focus-visible:ring-2 ring-ring ring-offset-1`——box-shadow ring，非 CSS outline）。
+**Focus**:Radix primitive 採 roving tabindex（整組共用單一 tab 停留點，方向鍵在 item 間移動焦點，不切換選取），非 Dialog 式 focus trap / restoration。焦點框對齊 Button focus-visible canonical（全域 `:focus-visible` 外描邊 `outline: 2px solid var(--ring)`，往外 2px——CSS outline，非 box-shadow ring；item 不寫任何 ring class）。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

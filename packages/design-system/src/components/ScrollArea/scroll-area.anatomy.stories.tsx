@@ -445,7 +445,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `scroll-area.spec.md` 「A11y 預設」段。摘要(Radix primitive + 本 DS 橋接):\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS focus ring(focus-visible:outline-ring,inset 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
+      <p className="whitespace-pre-line">{"詳 `scroll-area.spec.md` 「A11y 預設」段。摘要(Radix primitive + 本 DS 橋接):\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS 焦點框(focus-visible:focus-ring-inset,往內 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
     </div>
   ),
 }

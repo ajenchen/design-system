@@ -350,9 +350,10 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)
 - ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵,與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
 - ↑ / ↓ — 選單展開後在選項間移動
-- Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)
+- Tab / Shift+Tab(選單展開時,searchable 與否皆同)— 選定反白那一項 → 收起 → 焦點落到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時從觸發點按 Tab / Shift+Tab 會到的那一格;在對話框 / 小面板裡則只在那一層裡走、到邊緣繞回)。2026-09-25 前(實測):不可打字時 Tab 卡在浮層裡或落到頁面外、Shift+Tab 跳到頁尾,都不選定;可打字時 Tab 收起但不選定、Shift+Tab 停在觸發點本身且選單不關。W3C 出處與逐字規則見 `../SelectMenu/select-menu.spec.md`「A11y 預設」(單選那一條);來源 = 待辦總帳 B11
+- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc)
 
-**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
+**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

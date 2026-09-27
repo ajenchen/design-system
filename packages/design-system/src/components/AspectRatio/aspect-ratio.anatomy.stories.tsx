@@ -7,6 +7,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { AspectRatio } from './aspect-ratio'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 /**
@@ -86,21 +87,15 @@ const InspectorDemo = () => {
   const current = RATIO_PRESETS.find(r => r.label === preset) ?? RATIO_PRESETS[0]
   return (
     <div>
-      <div className="flex gap-2 mb-6">
-        {RATIO_PRESETS.map(r => (
-          <button
-            key={r.label}
-            type="button"
-            onClick={() => setPreset(r.label)}
-            className={`px-3 py-1.5 rounded-md text-caption font-mono border ${
-              preset === r.label
-                ? 'bg-foreground text-inverse-fg border-foreground'
-                : 'bg-canvas text-foreground border-border hover:bg-neutral-hover'
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
+      {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項)。取代手刻 pill:
+          它把頁面最底層的 bg-canvas 當控件底色、滑過換成透明底專用的 neutral-hover(color.spec.md 成對 token 錯配;
+          只因父層剛好也是 canvas 才看起來沒事),選中又用反相 bg-foreground 自創第三種選中樣式 */}
+      <div className="mb-6">
+        <SegmentedControl size="sm" aria-label="比例" value={preset} onValueChange={setPreset}>
+          {RATIO_PRESETS.map(r => (
+            <SegmentedControlItem key={r.label} value={r.label}>{r.label}</SegmentedControlItem>
+          ))}
+        </SegmentedControl>
       </div>
 
       <div className="grid grid-cols-[1fr_320px] gap-8 items-start">

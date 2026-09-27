@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: AGENTS.md / CLAUDE.md 的 bootstrap 結構完整 —— A1 root→最深 package scope 的指令鏈 ≤ 32KiB(Codex 靜默截斷上限)、
+ *         A2 CLAUDE.md 以 `@AGENTS.md` 開頭、A3 Rule Index 路徑存在且 provider view 只出現在明示 adapter 的說明、
+ *         A4 兩檔無重複 normative 標題、A5 npm files 含兩檔且 shipped package instructions 來自獨立短 source。
+ *   紅: 任一斷言不成立 → 印出哪一條與實測數字(例:鏈的 bytes),exit 1。
+ *   綠: 五條全部成立。純靜態讀檔,結果不隨時間 / 機器變。
+ *   執行面: 2026-09-27 起 verify-static `npm run check:agents-bootstrap`(此前只有 fixture 測試呼叫,真 repo 沒人跑 —— 待辦總帳 N14(a))。
+ *
  * check-agents-bootstrap.mjs — PNG P1.3 bootstrap 完整性閘(2026-07-16)。
  *
  * 為何存在:PNG 架構下治理核心 = AGENTS.md(provider-neutral;Codex 原生 discovery),

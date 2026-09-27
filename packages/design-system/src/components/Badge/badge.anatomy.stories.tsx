@@ -6,6 +6,7 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Badge } from './badge'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/Badge/設計規格',
@@ -77,15 +78,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   }
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: value === 'white' ? '#fff' : `var(${value})` }} />
 }
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -214,7 +206,9 @@ export const Overview = {
 const InspectorInner = () => {
   const [variant, setVariant] = useState<VariantKey>('low')
   const [mode, setMode] = useState<ModeKey>('count')
-  const [count, setCount] = useState(3)
+  // 初始值必須是 Count 選項之一(segmented-control.spec.md 禁止事項:必須有 default value、不得全都未選);
+  // 原本 3 不在 [1, 5, 12, 99, 150] 裡,控制列一開始沒有任何一項被選中
+  const [count, setCount] = useState(5)
 
   const colors = TOKEN_MAP[variant]
   const isDot = mode === 'dot'
@@ -222,27 +216,28 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Variant</span>
-          <div className="flex flex-wrap gap-1.5">
-            {(isDot ? VARIANTS.filter((v) => v === 'critical' || v === 'high') : VARIANTS).map((v) => <Tab key={v} active={variant === v} onClick={() => setVariant(v)}>{v}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Variant" value={variant} onValueChange={(v) => setVariant(v as VariantKey)}>
+            {(isDot ? VARIANTS.filter((v) => v === 'critical' || v === 'high') : VARIANTS).map((v) => <SegmentedControlItem key={v} value={v}>{v}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            <Tab active={mode === 'count'} onClick={() => setMode('count')}>count</Tab>
-            <Tab active={mode === 'dot'} onClick={() => { setMode('dot'); if (variant !== 'critical' && variant !== 'high') setVariant('critical') }}>dot</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => { setMode(v as ModeKey); if (v === 'dot' && variant !== 'critical' && variant !== 'high') setVariant('critical') }}>
+            <SegmentedControlItem value="count">count</SegmentedControlItem>
+            <SegmentedControlItem value="dot">dot</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         {!isDot && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-16 shrink-0">Count</span>
-            <div className="flex gap-1.5">
-              {[1, 5, 12, 99, 150].map((n) => <Tab key={n} active={count === n} onClick={() => setCount(n)}>{n}</Tab>)}
-            </div>
+            <SegmentedControl size="sm" aria-label="Count" value={String(count)} onValueChange={(v) => setCount(Number(v))}>
+              {[1, 5, 12, 99, 150].map((n) => <SegmentedControlItem key={n} value={String(n)}>{n}</SegmentedControlItem>)}
+            </SegmentedControl>
           </div>
         )}
       </div>

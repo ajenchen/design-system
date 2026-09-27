@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { Info, Settings } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { Button } from '../Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/Tooltip/設計規格',
@@ -61,15 +62,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   }
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
 }
-
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -226,15 +218,14 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Side</span>
-          <div className="flex gap-1.5">
-            {(['top', 'right', 'bottom', 'left'] as const).map((s) => (
-              <Tab key={s} active={side === s} onClick={() => setSide(s)}>{s}</Tab>
-            ))}
-          </div>
+          <SegmentedControl size="sm" aria-label="Side" value={side} onValueChange={(v) => setSide(v as SideKey)}>
+            {(['top', 'right', 'bottom', 'left'] as const).map((s) => <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
       </div>
 

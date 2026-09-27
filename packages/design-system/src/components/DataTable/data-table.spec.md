@@ -130,6 +130,42 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 一般 column 只在 header 有短線——body 的欄位邊界由 header 引導，不需額外視覺噪音。但 frozen column 的邊界是結構性的分隔（固定區域 vs 捲動區域），需要全高度的線來明確標示。Row actions 欄本質上是 frozen right column，左邊界也使用 full-height 分隔線。
 
+#### 三種垂直分隔線的**畫法歸屬**,以及選取欄為何會漏掉(2026-09-24 root cause)
+
+上表原本只列兩種。**實際有三種**,而且三種各由**不同元件**負責畫 —— 這就是選取欄漏線的根因:
+
+| 種類 | 幾何 | 誰畫的 | 什麼情況下不會被畫 |
+|---|---|---|---|
+| **表頭欄間短線** | 一個行高(`1lh`),垂直置中 | 畫在 **`ResizeHandle` 那個區塊**裡(`showLine` + `lineInsetStart/End="var(--table-cell-py)"`)。進入條件是 `if (!showDivider && !isResizable) return null` —— **只要該畫線就會渲染,與可不可調寬無關** | **選取欄有自己的 early-return 分支,到不了這一段**—— 它是 `headerCellEl` 裡**唯一**這樣的欄。拖拉欄與列動作欄走一般分支,所以有線 |
+| **凍結邊界線** | 整欄高度,貫穿水平捲軸帶 | `dtPanelBoundaryLeft/Right` 畫在面板上 | 非面板邊界的欄 |
+| **列身欄間線**(僅 inline edit / spreadsheet 模式)| 整格高度 | cell 自己的 `.dtCellGrid` | 選取欄的 render 分支在套上這個 class **之前就 early-return** |
+
+⛔ **這一段的第一版寫錯過,同日更正**:原本寫「系統欄不可調寬 → 不渲染 `ResizeHandle` → 永遠沒線」。**不可調寬不是原因** —— 實測 `with-bulk-actions` 那則故事 `enableColumnResize` 預設 `false`、全部欄位都不可調寬,卻有 5 條表頭線。**兩件事同時成立 ≠ 前者導致後者**;真正的因是 early-return。
+
+**Root cause 一句話:規範用「這是哪一種邊界」定義線,程式碼卻用「這裡剛好渲染了哪個元件」畫線。**
+兩者在多數欄位上碰巧一致,所以看起來沒事;**一旦某一欄不渲染那個元件,線就靜默消失,而且沒有任何訊號**。
+這是 M37「用一個當時剛好成立的觀察量代替要保證的性質」的標準形狀:
+要保證的是「這是一個欄邊界」,實際判的是「這裡有沒有 `ResizeHandle`」。
+
+**歷史怎麼走到這一步**:選取欄原本有自己的 ad-hoc 規則
+(`[data-column-id="__select__"]:not(:last-child)` 加 border-right),2026-05-12 退役,
+註解寫的理由是「走 inlineEdit canonical」—— 但那句話從來沒有被驗證過:
+`dtCellGrid` 碰不到選取欄的 render 分支,`ResizeHandle` 也不會在系統欄渲染。
+**退役一條規則時說「改由某某接手」,卻沒有當場驗證某某真的作用得到那個對象** —— 同一族的判準見
+`ds-canonical/skills/design-system-audit/references/historical-bugs.md`。
+
+**2026-09-24 補線時我自己又踩了同一族三次**(全部由 user 抓到,留檔警惕):
+1. 直接把列身的 `.dtCellGrid`(整格高)套到表頭 → 表頭出現 30px 全高線、隔壁是 21px 短線。
+   **一般非 frozen 欄的線不是整高,整高只屬於 frozen 邊界** —— 上表第一行就寫著,我沒讀就照抄隔壁。
+2. 給表頭加 `self-stretch` → 表頭格變 39、隔壁 38。**其他表頭格是內容高 + 列的 `align-items:center` 置中**,
+   把一般欄撐滿等於把它當成 frozen 在畫。
+3. 線的內縮寫成 `top/bottom: var(--table-cell-py)` → 得到 16px,隔壁 21px。
+   因為那個 calc 含 `1lh`,而選取欄沒帶表頭字級 class,繼承到根字級(16/24)算出 7,隔壁是 14/21 算出 8.5。
+   **正解是直接寫 `height: 1lh` + 垂直置中**,不依賴格子自己的高度與字級推導。
+
+**判準(寫任何一條線之前)**:先答「這是哪一種邊界」,再去看**那一種**的幾何與畫法,
+**不要看隔壁那一格怎麼寫就照抄** —— 隔壁可能是另一種邊界,或是靠某個這一欄不會渲染的元件在畫。
+
 **Header 文字弱化。** Header 是結構標籤，不是資訊本體。字體與 body 相同但使用次要文字色，搭配 muted 背景拉出層級，讓視覺重心留在 body 的資料上。
 
 ### 六、外框規則
@@ -545,7 +581,7 @@ select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` sch
 ### 八、Row 狀態
 
 - **不使用斑馬紋**——hover 狀態已足夠區分行，斑馬紋疊加會產生多種背景色組合，增加視覺雜訊
-- **選取狀態僅由 row 內的 selection control（`multi`→Checkbox / `single`→Radio）呈現，不另加 selected-row 底色**——避免「勾選框 + row 底色」雙重冗餘指示（2026-05-31 user 決策：有 checkbox 就只用 checkbox 呈現狀態）；hover 用 neutral-hover，與 selection 正交（純表示「正在看的」）
+- **選取狀態僅由 row 內的 selection control（`multi`→Checkbox / `single`→Radio）呈現，不另加 selected-row 底色**——避免「勾選框 + row 底色」雙重冗餘指示（2026-05-31 user 決策：有 checkbox 就只用 checkbox 呈現狀態）；hover 用 neutral-hover，與 selection 正交（純表示「正在看的」）。`spreadsheetMode` 的區間格被滑過時維持原色(滑過色只畫在該列的非區間格上),規則見「試算表模式」段。**指標在列或表頭裡的小按鈕上時(巢狀滑過)**:規則與 user 原話只住在 `../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段 —— 宿主保留自己的 hover,按鈕自己的滑過色疊在上面(沿同一把灰階往上一階):列上的動作鈕 / 巢狀展開鈕 / portal 出去的**列拖曳把手**時整列維持 `data-hovered` 底色;表頭 ⌄ 欄位選單上時排序區維持 `foreground` 字色(排序箭頭跟著),指到欄寬把手則不算。套到表格是 AI 推導,與 2026-09-04 user 回報「hover inline action 後整列底色消失」被當 bug 修掉同方向。列把手帶**專用**的 `data-hover-row-index` 讓 hover 代理認得它屬於哪一列(不重用 `data-row-index`,那個屬性的其他讀者只該找到列本身);⌄ 外層帶 `data-col-menu` 供排序區的兄弟選擇器認。
 
 ### 九、Row Actions
 
@@ -648,7 +684,12 @@ preserveSelectionOnFilter?: boolean   // default false
 - click checkbox → toggle 該 row
 - **shift-click checkbox** → 從 anchor row 到當前 row 區間選(內部 track anchor)
 - header checkbox click → toggle 全可見
-- **整 cell 區可點擊**(canonical):cell padding 任何位置(不只視覺 checkbox/radio 本體)點擊都觸發 toggle / select，擴大 hit target 且不要求精準瞄準。Disabled row 不觸發。實作:select cell 容器 div onClick 委派到 toggleRow / setSelection
+- **整 cell 區可點擊**(canonical):選取格的 padding 任何位置(不只視覺 checkbox 本體)點擊都觸發 toggle / select,表頭全選格同理。Disabled row 不觸發。**表頭全選格只在 `mode="multi"` 可點**:`single` 模式沒有「全選」這回事(RadioGroup 一次只能選一列),表頭選取格與「可選的列為 0」時一樣停用(`data-table.tsx` `isHeaderDisabled = selectableVisibleIds.length === 0 || mode !== 'multi'`;2026-09-27 補寫,此前只在程式裡)。實作:select cell 容器 div 的 `onClick` 委派到 `toggleRow` / `setSelection`,內部 checkbox / radio 用 `stopPropagation` 避免重複觸發。
+  - **理由已於 2026-09-24 換掉。** 舊理由寫的是「擴大 hit target 且不要求精準瞄準」—— 那是觸控論述,而 user 2026-09-24 裁示本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據。同日我一度依據另一條規則把 `onClick` 拿掉,**也是錯的,當天改回來**。
+  - **現行理由是世界級一手對照**:AG Grid / MUI X Data Grid / react-data-grid / Glide Data Grid 四家的 cell 都是點擊目標,而且**四家沒有任何一家讓選取格的空白處變成死區** —— AG Grid 聚焦該 cell(原始碼註解逐字 "we need to make sure the cell wrapping that checkbox is focused")、MUI X 該 cell 出現 focus outline、react-data-grid 該 cell 變 active cell、Glide 直接選列(整格無命中測試)。
+  - **「命中區 = 懸停回饋形狀」那條規則不適用於表格的格**:三家是「hover 畫在列、點擊目標卻是格」,形狀本來就不一致。那條規則的成立範圍是**控件層**(按鈕、行內動作),owner 與撤回紀錄見 `ds-canonical/references/hit-area-canonical.md`「適用範圍」節。
+  - **也不依「有沒有畫垂直格線」分流**:查無一手依據。真正切的那一刀是 `cellSelection` 這類 feature flag —— AG Grid 的 `columnBorder` 預設是透明色,同一份 DOM、同一份 JS,只差上不上色。
+  - **選取欄在格線模式下有自己的欄間線**(user 2026-09-24 拍板補回來)。它曾有過專用規則,2026-05-12 退役時說好「走 inlineEdit canonical」,但 tsx 的選取欄分支在套上 `dtCellGrid` 之前就 early-return —— 舊線拿掉、新線沒接到,**兩頭落空**。實測全表 325 個格有格線、選取格是唯一沒有的那一個,勾選框與第一個資料欄視覺上併成同一個盒。現在列身與表頭都套 `dtCellGrid`,本區最後一欄仍不畫(`data-dt-last-col`,凍結邊界線 / 外框接管)。**這條跟可點範圍無關** —— 上一條已明記「有格線 → 整格可點」查無一手依據;補線是視覺 bug 修復,兩件事不綁在一起。
 
 ### 五、Disabled rows
 
@@ -812,6 +853,20 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 3. **唯一 edit affordance = hover Pencil**(xs iconOnly tertiary,`opacity-0 group-hover/cell:opacity-100`,onClick `stopPropagation` + `onRequestEdit`)— 對齊 AG Grid 官方三件套(`suppressClickEdit` + 「including a button in your cell renderer」+ `startEditingCell()`,https://www.ag-grid.com/react-data-grid/cell-editing-start-stop/)+ Jira hover-pencil + Notion title cell hover-OPEN 鏡像;Atlaskit target-tag 分流(點 `<a>` 導航、點空白區編輯)為次選已評估不採(與 hover-outline 統一 affordance 衝突)
 4. **edit 觸發後 = 一般 field 行為契約**:Pencil 只負責「進入 edit」一步;進入後 autoFocus 進輸入、Esc 取消、Enter/blur commit、驗證時機、focus 樣式全部回歸 field-controls edit-mode canonical,與其他型別 cell edit 零特例。若 edit 態控件與 form 場景不同(url 用 plain `<Input>` 非 LinkInput — LinkInput edit 預設顯 link 態,cell 需直接輸入),**必在上表該行寫明 documented 例外 + rationale**,禁只留 code 註解
 
+### 試算表模式(`spreadsheetMode`):點格、焦點框、區間色(2026-09-26)
+
+**來源**:user 2026-09-26 同意三條改法(待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` X35 / L7)。三條都只作用在 `spreadsheetMode`;預設模式與勾選列模式不變。
+
+| 情境 | 規則 | 依據 |
+|---|---|---|
+| **點任何格** | 格游標(藍框)移到被點的那一格 —— **唯讀格、開關格與連結格的空白處都一樣**。Shift+點 = 從起點延伸區間(藍框留在起點);再點一次已選的格 = 進編輯,**只限**「點格即編輯」的格,唯讀 / boolean / url 沒有可進的編輯,游標留在原格。格內自己處理點擊的控件照舊:勾選框切換值(commit 後游標本來就回到該格)、連結開連結、鉛筆鈕進編輯。**滑過樣式不變**:淺框提示與手形游標仍只給點格即編輯的格 | W3C APG grid 原文「In a grid, every cell contains a focusable element or is itself focusable, regardless of whether the cell content is editable or interactive.」([grid-pattern.html#L74](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/grid-pattern.html#L74));AG Grid 36.2.0 按下即 `focusCell`,不看能不能編輯([cellMouseListenerFeature.ts#L183-L196](https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/rendering/cell/cellMouseListenerFeature.ts#L183-L196));MUI X 9.14.0 放開時 `setCellFocus`([useGridFocus.ts#L390-L427](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/hooks/features/focus/useGridFocus.ts#L390-L427));Handsontable 唯讀格「still allow navigation and copying of data」([read-only cells](https://handsontable.com/docs/javascript-data-grid/read-only-cells/))。DS 內部:方向鍵本來就走得到唯讀格(可走的欄只排除勾選欄),修前「滑鼠點不到、鍵盤走得到」自相矛盾 |
+| **根節點與格游標只畫一個框** | 有格游標時,焦點框 = 那一格的 DS 焦點框(`focus-ring-inset`,2px `--ring` 往內),表格根節點**不畫**;此刻沒有格游標(例:按 Esc 清掉之後)才由根節點畫同一種內描邊。勾選列模式沒有格游標,仍由根節點畫。滑鼠點格與鍵盤移動看到的是同一個框;焦點離開格線區時格游標框收起(見表下第一條) | `ds-canonical/references/focus-canonical.md` A 類把「DataTable 根」列為「框畫在被指到的那一項上、容器抑制瀏覽器預設外框」,「框怎麼畫」只准三種幾何(原本的 1px `--primary` 是第四種,而且與根節點 2px 框同時出現 = 兩個焦點指示)。世界級(R21 實測)都只在格上畫、容器不畫:AG Grid「cells use a border only to indicate focus」([_general.css#L409-L420](https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_general.css#L409-L420))、MUI X 根 `outline: 'none'`([GridRootStyles.ts#L184](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L184))、APG `[role="gridcell"]:focus` 點線框([dataGrids.css#L72-L78](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/examples/css/dataGrids.css#L72-L78))。**框的粗細不是世界級共識**(AG Grid 1px `border: 1px solid`([_grid-layout.css#L281-L291](https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L281-L291))、APG 3px 點線(同上 dataGrids.css))—— 2px 取自 DS 自己的焦點框幾何 |
+| **區間格 × 列被滑過** | 區間格(`--primary-subtle`)在它那一列被滑過時**維持原色,淺深一致**;同一列的非區間格照常變 `--neutral-hover`,顏色與沒有區間的列相同。做法:含區間格的列被滑過時,滑過色不畫在列上、改畫在該列的非區間格上(`data-table.css`)。修前淺色不變(`--primary-subtle` 不透明)、深色 #1C304A → #243851(alpha 公式讓列的滑過色透上來) | 不新增 token(`../../tokens/README.md`「找不到現有 family 可鏡射 → 先質疑是否真需要」)、彩色底不疊層(`../../tokens/color/color.spec.md`「疊層只用在「底」」)、DS 內 `--primary-subtle` 被滑過從不換底(按下的 Button 只換字色)。世界級**兩派都有,不是共識**:MUI X 同列別格被滑過時選中格不變([GridRootStyles.ts#L142-L151](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L142-L151)),AG Grid 讓列滑過透進區間([_grid-layout.css#L375-L392](https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L375-L392))。本段依上面三條 DS 既有規則選前者 |
+
+- **焦點離開格線區時格游標框收起**(2026-09-26,**AI 依 (b) 推導 —— (b)「只留一個焦點框」為 AI 建議、09-26 user 未另提 → AI 判讀照建議做,方向來自 user 原話「一個藍色focus ring 就已經夠顯眼了」**):格游標框只在焦點在格線區裡時畫 —— 表格根節點、某一格裡(含格內控件,例:勾選框)、或浮層編輯器。焦點 Tab 到表頭控件(排序區、⌄ 欄位選單)或離開表格時,框收起、**游標位置保留**,Tab / Shift+Tab 回到表格時原格重現;區間底色不受影響(選取不是焦點)。否則那一刻是「表頭控件的焦點框 + 格游標框」兩個一模一樣的藍框。對齊資料表格派:格上的框只在格(或格內)有焦點時畫 —— AG Grid `.ag-cell-focus…:focus-within`([_grid-layout.css#L281-L291](https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L281-L291))、MUI X `& .cell:focus`([GridRootStyles.ts#L266-L269](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L266-L269))、W3C APG `[role="gridcell"]:focus`([dataGrids.css#L72-L78](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/examples/css/dataGrids.css#L72-L78))。試算表產品(Excel / Google Sheets)作用格常駐的做法未驗證,不採。
+- **Esc 行為不變**:未編輯時 Esc 清掉格游標與區間;焦點留在表格上,焦點框改由根節點畫(上表第二列)。
+- **機械閘**:`scripts/data-table-invariants.mjs` I31(區間格兩主題釘住)/ I32(根節點與格游標框不同時出現、格游標 = DS 焦點框、Esc 後由根節點接手、Tab 到表頭控件時只剩那個控件的框、Shift+Tab 回來原格重現)/ I33(點唯讀格、開關格空白、連結格空白都移動格游標,且開關值不變、不開連結)。
+
 ### Nested rows — forward TanStack
 
 ```tsx
@@ -869,7 +924,7 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 ## Overlay + cell error SSOT(Phase 9)
 
-**Overlay**:viewport `position:fixed inset:0` layer。`getCellRect()` 從 `getBoundingClientRect()` 取 float coords no rounding。Paint:hover/selected ring `outline outline-offset:-1px` in-place(range outer ring 已 2026-05-10 retire — range 視覺只剩 cell-bg `--primary-subtle` `[data-range-cell]`,bg 已足以標示範圍、外框冗餘);active editor host portal opaque `<div>` z 3(cell 保持 view 態)。**Viewport clip**(Issue 6):body panel 加 `data-datatable-panel="left|center|right"`;`getCellGeometry()` return cell+panel rect;`<ClipMask>` panel rect `overflow:hidden`,內部 `toRelRect()` 轉 mask-relative(hover/selected ring 按 panel clip,不畫出 pin boundary)。Active editor host **不 clip**，因為 editor 必能越過 cell paint layer 接收互動。
+**Overlay**:viewport `position:fixed inset:0` layer。`getCellRect()` 從 `getBoundingClientRect()` 取 float coords no rounding。Paint:hover ring 1px `--border-hover` `outline outline-offset:-1px` in-place;selected ring(格游標)= DS 焦點框 `focus-ring-inset`(2px `--ring` 往內,只掛 class 不寫值,2026-09-26 起;見「試算表模式」段)(range outer ring 已 2026-05-10 retire — range 視覺只剩 cell-bg `--primary-subtle` `[data-range-cell]`,bg 已足以標示範圍、外框冗餘);active editor host portal opaque `<div>` z 3(cell 保持 view 態)。**Viewport clip**(Issue 6):body panel 加 `data-datatable-panel="left|center|right"`;`getCellGeometry()` return cell+panel rect;`<ClipMask>` panel rect `overflow:hidden`,內部 `toRelRect()` 轉 mask-relative(hover/selected ring 按 panel clip,不畫出 pin boundary)。Active editor host **不 clip**，因為 editor 必能越過 cell paint layer 接收互動。
 
 **Cell errors**(Issue 9):`cellErrors?: Record<string, string|string[]>` prop key `${rowId}:${colId}`。Cell view 態渲 error 14px `text-error` 下方 gap-1;array→`<ul><li>`;single→`<span>`。`aria-describedby` + `aria-invalid` + `<span role="alert">`。`overflow:visible` 當有 error(搭 `autoRowHeight`)。**Per-row state SSOT** cell-render wrapper(`items-X` 等)必 consume `effectiveAutoRowForCell`,禁 global `autoRowHeight`(audit `audit-data-table-row-mode-ssot.mjs` 強制)。**Edit-clears-own-cell** 自動清視覺,consumer onCellCommit validate 後回填。**a11y caveat**:≥ 5 同時 `role="alert"` 第一次 paint AT 噪音 → consumer 可考 `role="status"` fallback，避免初次 paint 同時打斷多次。
 
@@ -935,13 +990,14 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 **Keyboard 行為**(目前實作 — `tableKeyboardHandler`):
 - ↑↓←→:cell-to-cell navigation **僅 `spreadsheetMode` opt-in 時生效**;selection 尚未建立時按方向鍵自動選取第一個 visible cell(鍵盤可直接進入 spreadsheet 導覽,無需滑鼠 click — 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」,2026-07-05 D4 補);預設模式方向鍵無作用
 - Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url 時);**Enter 確認後維持原格不下移**(2026-07-05 user 拍板;10 家實查:Excel 系 7 家下移、AG Grid 預設維持原格 — 採 AG Grid 派,數據 → `.claude/logs/deep-audit-2026-07-03/enter-commit-navigation-benchmark.json`;未來連續輸入需求可重議 opt-in);**edit 退出(commit / Esc)後 selection 還原至該 cell、焦點還給 table root**(editor unmount 後焦點掉到 body 才收回,不搶 user 點擊的新焦點 — 對齊 spreadsheet RFC Contract 11 + Excel / AG Grid,2026-07-05 D4 補)
+  - **兩個鍵都給的理由是跨元件規則**(owner → `ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵」):**`F2` 恆為進格;`Enter` 在該格的主要動作沒有佔走它時,也是進格**。本元件的檢視態儲存格沒有主要動作,所以兩個都給;`Calendar` 日期鈕的 `Enter` 被「選這一天」佔走,所以只給 `F2`。新元件照這條判,不要再逐案挑鍵。
 - Cmd/Ctrl+A:`mode="multi"` selection 時選全可見列(扣 disabled)
-- Esc:取消 editing(spreadsheet)/ 清 selection(selection mode);**IME 組字中的 Enter / Esc 不觸發 commit / cancel**(cell editor 帶 `isComposing` guard,2026-07-05 D4 補 — 中文選字 Enter 不誤提交半截組字)
+- Esc:取消 editing(spreadsheet)/ 未在編輯時清格游標與區間(spreadsheet;焦點框改由表格根節點畫)/ 清 selection(selection mode);**IME 組字中的 Enter / Esc 不觸發 commit / cancel**(cell editor 帶 `isComposing` guard,2026-07-05 D4 補 — 中文選字 Enter 不誤提交半截組字)
 - Tab:進入表格後操作排序與勾選;portal edit(`experimentalActiveEditorController`)中 Tab / Shift+Tab = commit 當前 draft + 移至下一個 editable cell 進 edit(2026-07-05 D4 補 commit — 原本換格丟 draft)
 
 > APG grid full keyboard model(Home/End、Ctrl+Home/End、PageUp/PageDown、roving cell action)為 `role="grid"` future tier 目標,**尚未實作**。
 
-**Focus**:table root `tabIndex=0` **僅在 selection enabled 或 `spreadsheetMode` 時**(否則 `undefined` = 不可 focus);cell 目前無 roving `tabindex=-1` 機制。互動元素(勾選框 / 排序 header / 展開鈕 / row action)各自 focusable + focus-visible ring(`outline: 2px solid var(--ring)`)。APG grid roving-tabindex focus model 為 future tier 目標,尚未實作 → 見 [WAI APG keyboard model](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction)。
+**Focus**:table root `tabIndex=0` **僅在 selection enabled 或 `spreadsheetMode` 時**(否則 `undefined` = 不可 focus);cell 目前無 roving `tabindex=-1` 機制。**根節點與格游標框不同時出現**(2026-09-26):`spreadsheetMode` 有格游標時畫在那一格(`focus-ring-inset`,只在焦點在格線區裡時畫;Tab 到表頭控件時收起、位置保留),根節點不畫;沒有格游標(Esc 之後)與勾選列模式由根節點畫 `focus-visible:focus-ring-inset`(規則與依據見「試算表模式」段)。互動元素(勾選框 / 排序 header / 展開鈕 / row action)各自 focusable + focus-visible ring(`outline: 2px solid var(--ring)`)。APG grid roving-tabindex focus model 為 future tier 目標,尚未實作 → 見 [WAI APG keyboard model](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

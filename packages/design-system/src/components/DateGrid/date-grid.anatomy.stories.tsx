@@ -50,7 +50,7 @@ const PARTS: Record<PartKey, PartSpec> = {
   dayHover:     { label: 'Hover',        bg: 'transparent',     text: '--foreground',  border: '--primary',   extra: 'hover 藍圈 1.5px(無填底)' },
   dayOutside:   { label: 'Outside 月份', bg: 'transparent',     text: '--fg-muted',    border: 'transparent' },
   dayDisabled:  { label: 'Disabled',     bg: '--bg-disabled',   text: '--fg-disabled', border: 'transparent', extra: 'bg-disabled · cursor-not-allowed · native disabled' },
-  dayFocus:     { label: 'Focus-visible',bg: 'transparent',     text: '--foreground',  border: '--ring',      extra: 'ring-2 ring-ring' },
+  dayFocus:     { label: 'Focus-visible',bg: 'transparent',     text: '--foreground',  border: '--ring',      extra: 'focus-visible:focus-ring-inset · 內描邊往內 2px;填色格 focus-ring-inset-emphasis(1px 白線退 3px)' },
 }
 
 const PART_ORDER: PartKey[] = [
@@ -280,7 +280,7 @@ export const Inspector = {
                 <span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span>
               </div>
               <PropRow label="日格 Radius">rounded-full · 圓形</PropRow>
-              <PropRow label="Focus">ring-2 ring-ring</PropRow>
+              <PropRow label="Focus">focus-visible:focus-ring-inset · 內描邊往內 2px;填色格 focus-ring-inset-emphasis(1px 白線退 3px)</PropRow>
               <PropRow label="Transition">transition-colors</PropRow>
             </div>
           </div>

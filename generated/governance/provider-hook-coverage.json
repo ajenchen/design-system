@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:b2c1dd63449c5716823253037b771264f1ddffa5aa7a3eaf016e0cf24be814f2",
+      "hookRegistrations": "sha256:923fe1cd0af9b960729002f5b1fa1eced1e8f59bdd057b15a6b5a6b5f31678b4",
       "providerRegistry": "sha256:c8c96ab26ea34a73d6223c57cad875bbc57fbb00407850f6537b8f71c5016508",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -290,21 +290,6 @@
         {
           "event": "PreToolUse",
           "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_substantive_edit_approval_preflight.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "blocking",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "stable-required",
-          "requirements": [],
-          "nativeEvent": "PreToolUse",
-          "projectedMatcher": "Edit|Write|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
           "hook": "check_ds_anchor_preflight.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -464,6 +449,21 @@
           "requirements": [],
           "nativeEvent": "PreToolUse",
           "projectedMatcher": "Edit|Write|MultiEdit",
+          "nativeCoverage": "projected",
+          "certificationImpact": "runtime-certification-required"
+        },
+        {
+          "event": "PreToolUse",
+          "canonicalMatcher": "Edit|Write|MultiEdit|Bash",
+          "hook": "check_substantive_edit_approval_preflight.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "blocking",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "stable-required",
+          "requirements": [],
+          "nativeEvent": "PreToolUse",
+          "projectedMatcher": "Edit|Write|MultiEdit|Bash",
           "nativeCoverage": "projected",
           "certificationImpact": "runtime-certification-required"
         },
@@ -1890,7 +1890,7 @@
         },
         {
           "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
+          "canonicalMatcher": "Edit|Write|MultiEdit|Bash",
           "hook": "check_substantive_edit_approval_preflight.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -2262,36 +2262,6 @@
         {
           "event": "PreToolUse",
           "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_substantive_edit_approval_preflight.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "blocking",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "stable-required",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "declared",
-            "authority": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-            "runner": "scripts/run-provider-hook.mjs",
-            "prepareArgv": [
-              "--authority-decision",
-              "prepare"
-            ],
-            "verifyArgv": [
-              "--authority-decision",
-              "verify"
-            ],
-            "evidence": "scripts/test-authority-decision-evidence.mjs",
-            "detail": "The existing provider-neutral hook runner prepares and verifies one content-addressed authority receipt with the canonical classifier; native projection remains feedback-only and every untested runtime remains not-certified."
-          }
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
           "hook": "check_ds_anchor_preflight.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -2485,6 +2455,36 @@
           "certificationImpact": "not-certified",
           "authoritativeFallback": {
             "status": "none"
+          }
+        },
+        {
+          "event": "PreToolUse",
+          "canonicalMatcher": "Edit|Write|MultiEdit|Bash",
+          "hook": "check_substantive_edit_approval_preflight.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "blocking",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "stable-required",
+          "requirements": [],
+          "nativeCoverage": "gap",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
+          "certificationImpact": "not-certified",
+          "authoritativeFallback": {
+            "status": "declared",
+            "authority": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
+            "runner": "scripts/run-provider-hook.mjs",
+            "prepareArgv": [
+              "--authority-decision",
+              "prepare"
+            ],
+            "verifyArgv": [
+              "--authority-decision",
+              "verify"
+            ],
+            "evidence": "scripts/test-authority-decision-evidence.mjs",
+            "detail": "The existing provider-neutral hook runner prepares and verifies one content-addressed authority receipt with the canonical classifier; native projection remains feedback-only and every untested runtime remains not-certified."
           }
         },
         {

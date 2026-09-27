@@ -19,12 +19,18 @@
  *
  * 對照組(`--selftest`):注入 `[data-field-group]{row-gap:12px}` 模擬「有人把它改回固定值」,必須紅。
  *
+ * 載入(2026-09-25):每則 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成
+ * (含 play)、畫面健康才判斷「這則有沒有 FieldGroup」。舊版導覽失敗與「根節點 5 秒內沒內容」都被 `.catch(() => {})`
+ * 吞掉,接著 `[data-field-group]` 數到 0 就 `continue` —— **沒開起來的 story 被當成「沒有 FieldGroup」靜默略過**。
+ * 現在開不起來 = 儀器失效(點名 story、列同源 404,exit 2,不是產品裁決;selftest 亦同);只有「確定渲染完成、
+ * 而且真的沒有 FieldGroup」才略過(那是確定性的理由:這則 story 不含表單)。
+ *
  *   node scripts/form-gap-token-invariant.mjs [--build=<dir>] [--selftest]
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -61,6 +67,7 @@ for (const file of tsxFiles) {
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 const violations = []
+const instrumentFailures = []
 let seen = 0
 
 try {
@@ -81,11 +88,18 @@ try {
     .filter(([id, e]) => e.type === 'story' && (/--(state-behavior|overview|size-matrix|anatomy)$/.test(id) || /field/i.test(id)))
     .map(([id]) => id)
   for (const id of ids) {
-    await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load' }).catch(() => {})
-    await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 5000 }).catch(() => {})
+    try {
+      await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { notFound: server.notFound })
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      instrumentFailures.push(error)
+      continue
+    }
+    // 渲染完成後仍沒有 FieldGroup = 這則 story 不含表單(確定性的略過理由,不是「沒開起來」)
     if (await page.locator('[data-field-group]').count() === 0) continue
     for (const density of ['md', 'lg']) {
       await page.evaluate((d) => document.documentElement.setAttribute('data-density', d), density)
+      // 元素早已在畫面上;給 density 切換後可能的 JS 端重算一小段時間(純 CSS 變數本身在 getComputedStyle 時就已同步生效)
       await page.waitForTimeout(90)
       for (const gap of await page.evaluate(() => [...document.querySelectorAll('[data-field-group]')].map((n) => getComputedStyle(n).rowGap))) {
         seen += 1
@@ -100,6 +114,14 @@ try {
 
 console.log(`S 段:掃了 ${tsxFiles.length} 個 .tsx,找到 ${staticViolations.length} 處 className / prop 覆寫`)
 console.log(`R 段:量了 ${seen} 個 (FieldGroup × density) 組合`)
+if (instrumentFailures.length) {
+  // 沒量到 ≠ 沒有 FieldGroup:任何一則開不起來,這次的綠燈就不成立(一般與 selftest 皆同)
+  console.error(`✗ 儀器失效:${instrumentFailures.length} 則 story 開不起來 —— 它們有沒有 FieldGroup、間距對不對,這次都沒量到(exit 2,不是產品裁決,也不算通過):`)
+  for (const e of instrumentFailures.slice(0, 12)) console.error(`  ${e.message}`)
+  if (instrumentFailures.length > 12) console.error(`  …另 ${instrumentFailures.length - 12} 則`)
+  if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
+  process.exit(2)
+}
 if (seen === 0) { console.error('✗ 一個 FieldGroup 都沒量到 —— 這次什麼都沒驗到,視同紅燈'); process.exit(1) }
 if (SELFTEST) {
   if (staticViolations.length === 0) { console.error('✗ 對照組:S 段注入 className="gap-4" 之後仍然沒抓到 —— 靜態那半失效'); process.exit(1) }

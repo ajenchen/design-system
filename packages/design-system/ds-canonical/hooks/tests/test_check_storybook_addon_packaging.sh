@@ -86,4 +86,25 @@ else
   echo "SUB-FAIL: >256KiB early policy match changed contract (exit $rc)"
   fail=1
 fi
+
+# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+# 上兩格只看 exit 與輸出,證明不了 r2 有跑。把 r2 注入成「不讀 stdin、留標記、exit 0」,用 >256 KiB 的 allow 輸入跑:
+# 不讀 stdin 就退出不得被判成 rc70(舊寫法 `printf | rule` 會 SIGPIPE → 141),而且標記必須存在(r2 真的被派工到)。
+_R2_MARKER="$FAULT_DIR/r2-reached"
+awk '
+  { print }
+  $0 == "r2_preset_cjs() {" { print ": >\"$R2_MARKER\"; exit 0" }
+' "$DIR/../check_storybook_addon_packaging.sh" >"$FAULT_DIR/check_addon_bigstdin.sh"
+set +e
+R2_MARKER="$_R2_MARKER" bash "$FAULT_DIR/check_addon_bigstdin.sh" \
+  <"$FAULT_DIR/large-allow-input.json" \
+  >"$FAULT_DIR/big.stdout" 2>"$FAULT_DIR/big.stderr"
+rc=$?
+set -e
+if [ "$rc" -eq 0 ] && [ ! -s "$FAULT_DIR/big.stdout" ] && [ ! -s "$FAULT_DIR/big.stderr" ] && [ -f "$_R2_MARKER" ]; then
+  echo "PASS: >256KiB input + r2 exit without reading stdin → rc0 and r2 was reached"
+else
+  echo "SUB-FAIL: large stdin + non-reading r2 → exit $rc, r2 reached=$([ -f "$_R2_MARKER" ] && echo yes || echo no) ($(head -c 200 "$FAULT_DIR/big.stderr"))"
+  fail=1
+fi
 exit $fail

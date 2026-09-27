@@ -37,9 +37,15 @@ const meta: Meta<typeof MenuItem> = {
 export default meta
 type Story = StoryObj<typeof MenuItem>
 
-/** Menu 容器 — 模擬浮層外觀。demo 用 role='listbox' 滿足 MenuItem role='option' 的 parent 要求(axe aria-required-parent);
- *  只放訊息列(非 option)的 demo 改 role='group' —— listbox 裡不得只有非 option 子元素(axe aria-required-children,2026-09-08)。 */
-const MenuContainer = ({ children, width = 320, role = 'listbox' }: { children: React.ReactNode; width?: number; role?: 'listbox' | 'group' }) => (
+/** Menu 容器 — 模擬浮層外觀的**靜態視覺預覽**,不是真的選單。
+ *
+ * 2026-09-24:預設 role 從 `'listbox'` 改 `'group'`,裡面的 MenuItem 一律傳 `role="presentation"`。
+ * 原本掛 listbox 的理由只是「滿足 MenuItem role='option' 的 parent 要求(axe aria-required-parent)」——
+ * 那是拿角色去消 lint,不是描述它真的是什麼:這個容器沒有選取狀態、沒有方向鍵、沒有焦點管理,
+ * `listbox` 對螢幕閱讀器是空頭承諾(SSOT:`ds-canonical/references/keyboard-model-canonical.md`「鐵律」)。
+ * 兩邊一起拿掉就同時消滅了孤兒 option 與假 composite,axe 仍 0 ARIA violation(2026-09-24 實跑)。
+ * `role` prop 保留是為了讓個別 demo 還能顯式標注,但沒有任何 demo 該回去用 listbox。 */
+const MenuContainer = ({ children, width = 320, role = 'group' }: { children: React.ReactNode; width?: number; role?: 'listbox' | 'group' }) => (
   <div role={role} aria-label="Menu demo items" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
     style={{ boxShadow: 'var(--elevation-200)', width }}>
     {children}
@@ -52,9 +58,9 @@ export const Default: Story = {
   name: '基本',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem>收件匣</MenuItem>
-      <MenuItem>草稿</MenuItem>
-      <MenuItem>已傳送</MenuItem>
+      <MenuItem role="presentation">收件匣</MenuItem>
+      <MenuItem role="presentation">草稿</MenuItem>
+      <MenuItem role="presentation">已傳送</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -70,9 +76,9 @@ export const WithDescription: Story = {
   name: '前置圖示 + 說明文字',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem startIcon={Mail} description="每日摘要信件">電子郵件通知</MenuItem>
-      <MenuItem startIcon={Bell} description="即時推播到裝置">推播通知</MenuItem>
-      <MenuItem startIcon={Settings} description="自訂通知偏好">進階設定</MenuItem>
+      <MenuItem role="presentation" startIcon={Mail} description="每日摘要信件">電子郵件通知</MenuItem>
+      <MenuItem role="presentation" startIcon={Bell} description="即時推播到裝置">推播通知</MenuItem>
+      <MenuItem role="presentation" startIcon={Settings} description="自訂通知偏好">進階設定</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -83,9 +89,9 @@ export const AvatarInline: Story = {
   name: '頭像',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ src: avatarSrc('Alice Chen', 48), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen') }}>Alice Chen</MenuItem>
-      <MenuItem avatar={{ src: avatarSrc('Bob Wang', 48), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang') }}>Bob Wang</MenuItem>
-      <MenuItem avatar={{ src: avatarSrc('Carol Lin', 48), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin') }}>Carol Lin</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Alice Chen', 48), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen') }}>Alice Chen</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Bob Wang', 48), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang') }}>Bob Wang</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Carol Lin', 48), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin') }}>Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -96,9 +102,9 @@ export const AvatarBlock: Story = {
   name: '頭像 + 說明文字',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
-      <MenuItem avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
-      <MenuItem avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門">Carol Lin</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
+      <MenuItem role="presentation" avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門">Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -119,10 +125,10 @@ export const WithStartContent: Story = {
     // LucideIcon 表達不了 → startContent;selected = 目前編輯中的類型
     <MenuContainer width={224}>
       <MenuGroup>
-        <MenuItem size="sm" startContent={<TypeBadge hue="indigo" glyph={FileText} />} selected>Task</MenuItem>
-        <MenuItem size="sm" startContent={<TypeBadge hue="red" glyph={Bug} />}>Bug</MenuItem>
-        <MenuItem size="sm" startContent={<TypeBadge hue="turquoise" glyph={Rocket} />}>Release</MenuItem>
-        <MenuItem size="sm" startContent={<TypeBadge hue="purple" glyph={FileText} />} disabled>Epic（已停用）</MenuItem>
+        <MenuItem role="presentation" size="sm" startContent={<TypeBadge hue="indigo" glyph={FileText} />} selected>Task</MenuItem>
+        <MenuItem role="presentation" size="sm" startContent={<TypeBadge hue="red" glyph={Bug} />}>Bug</MenuItem>
+        <MenuItem role="presentation" size="sm" startContent={<TypeBadge hue="turquoise" glyph={Rocket} />}>Release</MenuItem>
+        <MenuItem role="presentation" size="sm" startContent={<TypeBadge hue="purple" glyph={FileText} />} disabled>Epic（已停用）</MenuItem>
       </MenuGroup>
     </MenuContainer>
   ),
@@ -134,9 +140,9 @@ export const States: Story = {
   name: '狀態',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem startIcon={Mail}>收件匣</MenuItem>
-      <MenuItem startIcon={Mail} selected>已星標（單選）</MenuItem>
-      <MenuItem startIcon={Mail} disabled>已封存</MenuItem>
+      <MenuItem role="presentation" startIcon={Mail}>收件匣</MenuItem>
+      <MenuItem role="presentation" startIcon={Mail} selected>已星標（單選）</MenuItem>
+      <MenuItem role="presentation" startIcon={Mail} disabled>已封存</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -159,13 +165,13 @@ const MultiSelectDemo = () => {
   return (
     <>
       <MenuGroup>
-        <MenuItem checkbox checked={selected.email} startIcon={Mail} onClick={() => toggle('email')}>電子郵件</MenuItem>
-        <MenuItem checkbox checked={selected.push} startIcon={Bell} onClick={() => toggle('push')}>推播通知</MenuItem>
-        <MenuItem checkbox checked={selected.slack} startIcon={Settings} onClick={() => toggle('slack')}>Slack</MenuItem>
-        <MenuItem checkbox checked={false} disabled startIcon={Star}>SMS（已停用）</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.email} startIcon={Mail} onClick={() => toggle('email')}>電子郵件</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.push} startIcon={Bell} onClick={() => toggle('push')}>推播通知</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.slack} startIcon={Settings} onClick={() => toggle('slack')}>Slack</MenuItem>
+        <MenuItem role="presentation" checkbox checked={false} disabled startIcon={Star}>SMS（已停用）</MenuItem>
       </MenuGroup>
       <MenuFooter>
-        <MenuItem checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
+        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
       </MenuFooter>
     </>
   )
@@ -183,15 +189,15 @@ export const Groups: Story = {
   render: () => (
     <MenuContainer>
       <MenuGroup>
-        <MenuItem header>最近使用</MenuItem>
-        <MenuItem startIcon={FileText}>Q3 產品路線圖.md</MenuItem>
-        <MenuItem startIcon={FileText}>客戶反饋整理</MenuItem>
+        <MenuItem role="presentation" header>最近使用</MenuItem>
+        <MenuItem role="presentation" startIcon={FileText}>Q3 產品路線圖.md</MenuItem>
+        <MenuItem role="presentation" startIcon={FileText}>客戶反饋整理</MenuItem>
       </MenuGroup>
       <MenuGroup>
-        <MenuItem header>所有專案</MenuItem>
-        <MenuItem startIcon={Folder}>設計系統升級 v2</MenuItem>
-        <MenuItem startIcon={Folder}>行銷活動 2026</MenuItem>
-        <MenuItem startIcon={BarChart3}>業務儀表板</MenuItem>
+        <MenuItem role="presentation" header>所有專案</MenuItem>
+        <MenuItem role="presentation" startIcon={Folder}>設計系統升級 v2</MenuItem>
+        <MenuItem role="presentation" startIcon={Folder}>行銷活動 2026</MenuItem>
+        <MenuItem role="presentation" startIcon={BarChart3}>業務儀表板</MenuItem>
       </MenuGroup>
     </MenuContainer>
   ),
@@ -206,10 +212,10 @@ export const Messages: Story = {
     // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
     <div className="flex gap-4">
       <MenuContainer width={240} role="group"><MenuGroup>
-        <MenuItem message>沒有人員</MenuItem>
+        <MenuItem role="presentation" message>沒有人員</MenuItem>
       </MenuGroup></MenuContainer>
       <MenuContainer width={240} role="group"><MenuGroup>
-        <MenuItem message startContent={<CircularProgress size={ICON_SIZE.md} />}>載入選項中</MenuItem>
+        <MenuItem role="presentation" message startContent={<CircularProgress size={ICON_SIZE.md} />}>載入選項中</MenuItem>
       </MenuGroup></MenuContainer>
     </div>
   ),
@@ -221,7 +227,7 @@ export const Creatable: Story = {
   name: '可建立新項',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem startIcon={Plus}>直接使用「新標籤」</MenuItem>
+      <MenuItem role="presentation" startIcon={Plus}>直接使用「新標籤」</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -245,13 +251,13 @@ const FullExampleDemo = () => {
   return (
     <MenuContainer>
       <MenuGroup>
-        <MenuItem header>成員</MenuItem>
-        <MenuItem checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
-        <MenuItem checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
-        <MenuItem checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
+        <MenuItem role="presentation" header>成員</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
+        <MenuItem role="presentation" checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
       </MenuGroup>
       <MenuFooter>
-        <MenuItem checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
+        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
       </MenuFooter>
     </MenuContainer>
   )

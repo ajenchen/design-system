@@ -30,10 +30,19 @@ export const CANONICAL_WORKSPACE_BUILD_SCRIPTS = Object.freeze({
   build: 'tsc -b && vite build',
   typecheck: 'tsc --noEmit',
 })
+// 必須是**相對 import 閉包**:staged 的檢查器只看得到這裡列的檔。a11y-static-server 的依賴
+//(canonical-path-containment 自 2026-07-28、storybook-static-snapshot 自 2026-09-24)與 audit-consumer-a11y 的
+// openStory(launch-browser → storybook-render-health,2026-09-25)漏列時,staged 的 a11y 檢查器在 import 階段就
+// ERR_MODULE_NOT_FOUND(2026-09-25 以 --stage-trusted-product-checks 實跑重現)。閉包由 test-consumer-source-harness 斷言。
 export const TRUSTED_PRODUCT_CHECK_FILES = Object.freeze([
   'scripts/audit-consumer-a11y.mjs',
   'scripts/consumer-source-harness.mjs',
   'scripts/lib/a11y-static-server.mjs',
+  'scripts/lib/canonical-path-containment.mjs',
+  'scripts/lib/launch-browser.mjs',
+  'scripts/lib/provider-lifecycle.mjs',
+  'scripts/lib/storybook-render-health.mjs',
+  'scripts/lib/storybook-static-snapshot.mjs',
   'scripts/lint-ds-internal-imports.mjs',
 ])
 export const TRUSTED_PRODUCT_RUNTIME_FILES = Object.freeze([

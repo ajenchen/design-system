@@ -79,8 +79,17 @@
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ Static Subtle ─────────────────────────────────────────────────────┐
-   │  --muted          弱化底色 Tag neutral（neutral-2）                 │
-   │  --secondary      Badge low 底色（neutral-3，比 muted 深一階）      │
+   │  --muted          不可操作 / placeholder 底色（neutral-2）          │
+   │  --secondary      正常存在、退後一級的底色（neutral-3）             │
+   │    --secondary-hover   可點時滑過 = 下一階 neutral-4(2026-09-25)  │
+   │    --secondary-active  可點時按住 = 再下一階 neutral-5             │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ 「底」的滑過 / 按住 = 疊一層(2026-09-25,color.spec.md「Hover 換色配對總則」)┐
+   │  --canvas / --surface / --surface-raised 當平常底色、同一型態內:   │
+   │    底色不換,疊 bg-interaction-hover / bg-interaction-active       │
+   │    (= 把 --neutral-hover / --neutral-active 畫在底色之上、內容之下)│
+   │  透明 → 換成 --neutral-hover;自己的填色 → 換成自己的下一階        │
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 中性互動背景（兩個獨立 family）─────────────────────────────────────┐
@@ -134,11 +143,14 @@
    │  Neutral     bg-neutral-hover / bg-neutral-active / bg-disabled     │
    │              bg-neutral-selected / bg-neutral-selected-hover /       │
    │              bg-neutral-selected-active                              │
-   │              bg-muted / bg-secondary                                 │
+   │              bg-muted / bg-secondary /                               │
+   │              bg-secondary-hover / bg-secondary-active                │
+   │  底的疊層    bg-interaction-hover / bg-interaction-active            │
+   │              (background-image,不動底色;只給「底」用,見上方框)  │
    │  Border      border-border / border-border-hover / border-divider   │
-   │  Focus       ring-ring                                               │
+   │  Focus       --ring（全域 :focus-visible 外描邊,元件不寫 class）     │
    │  Inverse     bg-inverse-neutral-hover / bg-inverse-neutral-active   │
-   │              （solid neutral 上的互動 overlay）                      │
+   │              （solid neutral 上透明子元素的滑過/按壓配對,換色非疊層）│
    │                                                                      │
    │  Tag/Avatar 的色相 hover/active 用 var() 直接引用：                  │
    │     hover: var(--blue-hover) / var(--red-hover) / ...                │
@@ -181,7 +193,8 @@
      hover 兩 mode 都走 neutral-7-opaque(step-7 在 dark mode 自動 lighter 公式 →
      對稱「engaged」感:light hover 變深 / dark hover 變亮)。
      **用 -opaque variant**(對齊 `--surface-raised` 既有 opaque convention):surface 是
-     視覺底色 layer,alpha 跟下層 bg compositing 致視覺位移 + colorMix accuracy 不可靠。 */
+     視覺底色 layer,alpha 跟下層 bg compositing 致視覺位移 + colorMix accuracy 不可靠。
+     配對:靜止 --surface-strong → 滑過 --surface-strong-hover(下一階;登記於 color.spec.md「Hover 換色配對總則」)。 */
   --surface-strong:       var(--color-neutral-6-opaque);
   --surface-strong-hover: var(--color-neutral-7-opaque);
   --overlay:              var(--black-a45);
@@ -304,9 +317,10 @@
   --indigo-active:        var(--color-indigo-7);
 
   /* Inverse — solid neutral（neutral-9）背景上的內容
-     neutral 在 dark mode 反轉（近黑 → 近白），上面的文字與互動覆蓋層也要反轉
+     neutral 在 dark mode 反轉（近黑 → 近白），上面的文字與透明子元素的互動配對也要反轉
      - --inverse-fg 對應 --foreground（文字 base）
-     - --inverse-neutral-hover/active 對應 --neutral-hover/active（互動覆蓋層）
+     - --inverse-neutral-hover/active 對應 --neutral-hover/active(inverse 底上**透明子元素**滑過/按下時換上的配對 ——
+       換色,不是疊在 inverse 底色上的遮罩;2026-09-25 更正原「互動覆蓋層」用詞,SSOT = color.spec.md「Hover 換色配對總則」)
      - 未來擴充：--inverse-fg-secondary/muted/disabled 對齊 --fg-* 變體
 
      ┌─ Inverse-neutral-* 數值規則（嚴格對稱）─────────────────────────┐
@@ -367,17 +381,23 @@
        --neutral-active  = :active 瞬間 click 回饋（transient）
        --neutral-selected = 持續 toggle on / 長時間選中（persistent）
 
-     選中之上的疊加(2026-08-11 user 拍板;SSOT = item-anatomy.spec.md「選中 × 互動疊加」格):
-       -hover  = 可取消切換鈕專屬(列元件禁用本 token)
-                 **2026-09-07 由「變淺」改為「變深」**:原本是 neutral-1,想表達 Fluent ToggleButton
-                 的「hover 預告釋放」。但 neutral-1 正好就是 `--neutral-hover` 的值 —— 實測兩個主題
-                 皆同(淺色 2%、深色 4%),加上 `variant='text'` 按下與未按下的文字色也都是
-                 foreground,結果是**切換鈕按下與未按下,在滑鼠懸停時像素完全相同**,
+     選中之上的疊加(SSOT = item-anatomy.spec.md「選中 × 互動疊加」格;該格的「選中列」各列由它自己標出處):
+       **來源更正(2026-09-25,依 R13 查證;待辦總帳 B5)**:本段原本整段標「2026-08-11 user 拍板」,
+       但那天 user 談的是**選中的列**(而且是問句),沒有談切換鈕;下面 -hover / -active 兩行的值
+       是 AI 在 2026-09-07 改的(07760448),當時 user 的訊息是問句、沒有明確同意。
+       2026-09-25 user 對灰色已按下切換鈕選「甲：保留，維持 2→3→4 (Recommended)」(選項由 AI 提供),
+       這組值自此才有 user 的決定。
+       -hover  = 可取消切換鈕專屬(列元件禁用本 token;選中列滑過釘住,見 item-anatomy.spec.md)
+                 **2026-09-07 由「變淺」改為「變深」**:原本是 neutral-1。neutral-1 正好就是
+                 `--neutral-hover` 的值 —— 實測兩個主題皆同(淺色 2%、深色 4%),加上 `variant='text'`
+                 按下與未按下的文字色也都是 foreground,結果是**切換鈕按下與未按下,在滑鼠懸停時像素完全相同**,
                  「這顆開著沒」的訊號在 hover 當下整個消失。
+                 (舊註解說原值是在表達 Fluent ToggleButton 的「hover 預告釋放」—— 查不到 Fluent 一手文件
+                  或原始碼這樣說,那是我們自己的解讀,2026-09-25 撤回;一手出處與同方向的前例見 color.spec.md
+                  「Selected state family」表 `bg-neutral-selected-hover` 列)
                  改成 neutral-3 後階梯單調且處處不撞:
                      未按下  透明 → hover neutral-1 → 按壓 neutral-2
                      已按下  neutral-2 → hover neutral-3 → 按壓 neutral-4
-                 方向與 Carbon / Atlassian 的同名 token 一致(兩家本來就是變深)。
        -active = 只有「按住」的瞬間(按壓專屬;禁借給 hover/反白 — 2026-07-05 D4 借用已於 2026-08-11 糾正)
                  2026-09-07 由 neutral-3 上調 neutral-4:-hover 佔走 neutral-3 後,不上調就會
                  變成 hover 與按壓同值(問題只是從一處搬到另一處)。
@@ -395,13 +415,21 @@
 
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */
-  --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Calendar 非當月 / Alert neutral / scrollbar track */
-  --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級:Tag neutral / Slider rest / Badge low / FileItem progress / ProgressBar / CircularProgress / Steps fillBg */
+  --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Alert neutral / scrollbar track */
+  --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級;用途清單 SSOT 在 color.spec.md「Static Subtle Background」表,本行不重列 */
+  /* secondary 當「可點元素的平常底色」時的配對(2026-09-25 新增;待辦總帳 B8 / B12,user 選「採用，底色不換、疊一層 (Recommended)」,
+     該題同時定下「元件自己的填色(secondary…)→ 換成自己的下一階」;SSOT = color.spec.md「Hover 換色配對總則」)。
+     同一條色階往下一階,寫法照 --neutral-selected 家族:半透明 primitive、只寫在 ②,深色由 primitives.css 的 alpha 翻轉自動換值,
+     不需 ③ 覆寫。三態預期 hex 只寫在 color.spec.md「Hover 換色配對總則」表「元件自己的填色」列(頁面底上計算值,深色量測可能差 1/255)。
+     消費者(B12):FileItem 小膠囊有 onClick 時。-active 與 --border 同值(neutral-5)但語意獨立,不合併(color.spec.md「為什麼同值仍分兩個 token」)。 */
+  --secondary-hover:      var(--color-neutral-4);
+  --secondary-active:     var(--color-neutral-5);
 
   /* Scrollbar — Lane / chrome / thumb(2026-05-09 抽 SSOT,DataTable fake + ScrollArea 共享)
      Track 用 --muted(靜態 lane,非 disabled 元件 bg);Thumb 用 --border(中性低對比 chrome)。
      對齊 shadcn ScrollArea(thumb=bg-border)/ MUI X DataGrid scrollbar slot / AG Grid grid theme tokens。
-     避免直接借 --bg-disabled(color.spec.md:169 語意 drift)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。 */
+     避免直接借 --bg-disabled(color.spec.md:169 語意 drift)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。
+     配對:靜止 --scrollbar-thumb → 滑過 --scrollbar-thumb-hover(= --border → --border-hover 下一階;登記於 color.spec.md「Hover 換色配對總則」)。 */
   --scrollbar-track:       var(--muted);
   --scrollbar-thumb:       var(--border);
   --scrollbar-thumb-hover: var(--border-hover);
@@ -420,8 +448,8 @@
      搜尋雙檔制 = VS Code findMatchBackground(current)/ findMatchHighlightBackground(others)普世慣例;
      amber-3 / -5 對階 Radix step 3(UI element bg)/ step 5(Active/Selected bg);行內文字保持原色
      → 底色停亮階,故 -current 不取 -active 映射的第 7 階(--amber-active 已佔且 -active = 按壓語意)。
-     Dark:-selection / -match 由 primitive 公式自動反轉;-current 需降一階覆寫 amber-4
-     (dark amber-5 白字對比 3.03 < 4.5,詳 dark 區塊註解)。 */
+     Dark:-selection / -match 由 primitive 公式自動換值;-current 需覆寫(amber 基準色 45% 半透明,見 dark 區塊;
+     理由與對比數字只寫在 color.spec.md「Highlight」段 Dark 條)。 */
   --text-selection:       color-mix(in oklch, var(--color-blue-5) 30%, transparent);
   --search-match:         var(--color-amber-3);
   --search-match-current: var(--color-amber-5);
@@ -430,7 +458,9 @@
      一組兩個:底色 + 邊框,任何 drag & drop / 磁吸停靠的合法區域都消費同一組,不各自定義。
      底色必半透明(同 Highlight 段的「覆蓋在內容上就不能不透明」鐵律,VS Code theme-color:
      「The color must not be opaque so as not to hide underlying decorations」)——這是它與 --primary-subtle
-     的分工:-subtle 是元件自己的淡底(不透明、底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     的分工:-subtle 是元件自己的淡底(底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     (分工看「底是誰的」,不是透不透明:深色的 step-1 本身就是 alpha 公式,見 primitives.css 深色區塊;
+      2026-09-25 更正原「-subtle 不透明」的說法,SSOT = color.spec.md「Drop target」段)
      15% = **DS 自家 alpha 階梯上的既有階**(light --_na5 / dark --_na4,亦即 --black-a15 / --white-a15 用的那一階;
      不自創新階),且落在世界級區間內(Material 3 dragged state layer 0.16 / VS Code light editorGroup.dropBackground
      0.18 / Atlassian color.background.selected.hovered ≈ 0.20)。一個公式兩個模式(--primary 在 dark 由 primitive
@@ -460,7 +490,7 @@
 
   /* Semantic hover/active 方向反轉（dark: hover=step-7, active=step-5）
      subtle 和 text 不需要覆寫——primitives 已在 dark mode 處理
-     （step-1 用 alpha 公式，step-7 用 lighter 公式） */
+     （step-1..4 用 alpha 公式,step-7 用 lighter 公式;號碼 = 離所在底色多遠,原則見 color.spec.md「Dark mode subtle」、公式見 primitives.css 檔頭） */
   --primary-hover:        var(--color-blue-7);
   --primary-active:       var(--color-blue-5);
   --info-hover:           var(--color-blue-7);
@@ -500,25 +530,29 @@
   --indigo-hover:         var(--color-indigo-7);
   --indigo-active:        var(--color-indigo-5);
 
-  /* Highlight — dark 唯一覆寫:-current 降一階 amber-4。
-     數學驗收(oklch→sRGB→WCAG):dark amber-5 配白字對比 3.03 過不了 4.5 鐵門檻;
-     amber-4 = 5.89 ✓ 且與 amber-3(全部配對)區辨 1.86 優於 light 的 1.31。
-     --text-selection / --search-match 由 primitive 公式自動反轉,不需覆寫。 */
-  --search-match-current: var(--color-amber-4);
+  /* Highlight — dark 唯一覆寫:-current(2026-09-26 由 amber-4 改成 amber 基準色 45% 半透明;理由與對比數字只寫在
+     color.spec.md「Highlight」段 Dark 條)。仍是半透明 —— 蓋在文字上要透得出底(本檔 Highlight 段「must not be opaque」)。
+     --text-selection / --search-match 由 primitive 公式自動換值,不需覆寫。
+     為什麼是 45%、為什麼寫 color-mix(AI 推導;commit fe7cefd1 只寫「否則與全部配對區辨 1.21」):它是為了同時湊到白字 ≥ 4.5
+     與跟全部配對(amber-3 = 0.24 / 0.82 ≈ 29%)區辨 ≥ 1.49 量出來的值,不在淡底的 K 階梯上(step-4 = 0.30 / 0.82 ≈ 37%,
+     再上一格 K = 0.36 ≈ 44%);為何取 45 而非 44 沒有紀錄。寫 color-mix 而非 oklch(from …) 是照本檔 --text-selection 的
+     semantic 層 alpha 寫法(它的 30% 同樣不在階梯上;color.spec.md「Drop target」段註:階梯是「優先取用」不是「唯一合法」)。 */
+  --search-match-current: color-mix(in oklch, var(--color-amber-6) 45%, transparent);
 
-  /* Inverse — dark mode 反轉（深字 + 黑色透明 overlay）
-     overlay 值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
+  /* Inverse — dark mode 反轉（深字 + 黑色透明的滑過/按壓配對,換色非疊層）
+     配對值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
      2026-05-20 fix:raw oklch → primitive --black-a85(既有 alpha token,L46)*/
   --inverse-fg:               var(--black-a85);
   --inverse-neutral-hover:    var(--black-a02);
   --inverse-neutral-active:   var(--black-a04);
 
-  /* Chart — dark mode 用 step-5（較淡）提升對 dark surface 的可讀度 */
-  --chart-1:                  var(--color-blue-5);
-  --chart-2:                  var(--color-purple-5);
-  --chart-3:                  var(--color-green-5);
-  --chart-4:                  var(--color-yellow-5);
-  --chart-5:                  var(--color-deep-orange-5);
+  /* Chart — dark mode 用 step-6(2026-09-26 由 step-5 改;深色 step-5 比 step-6 暗,藍 / 紫 / 深橘不到圖形 3:1)。
+     理由與對比數字只寫在 color.spec.md「Utility Tokens」--chart 列;黃色深色不需 step-7。 */
+  --chart-1:                  var(--color-blue-6);
+  --chart-2:                  var(--color-purple-6);
+  --chart-3:                  var(--color-green-6);
+  --chart-4:                  var(--color-yellow-6);
+  --chart-5:                  var(--color-deep-orange-6);
 }
 
 
@@ -542,6 +576,9 @@
 
   /* Secondary / Muted */
   --color-secondary:             var(--secondary);
+  /* secondary 可點時的滑過 / 按住配對(2026-09-25,color.spec.md「Hover 換色配對總則」;待辦總帳 B8) */
+  --color-secondary-hover:       var(--secondary-hover);
+  --color-secondary-active:      var(--secondary-active);
   --color-muted:                 var(--muted);
 
   /* Status */
@@ -631,4 +668,23 @@
 
   /* Branding */
   --color-brand:                 var(--brand);
+}
+
+/* ── 「底」的滑過 / 按住 = 疊一層(2026-09-25;SSOT = color.spec.md「Hover 換色配對總則」,待辦總帳 B8)──
+   user 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」)。
+   只給平常底色是 --canvas / --surface / --surface-raised 的可點元素、在**同一型態內**的滑過 / 按住用:
+   底色(background-color)不動,把 --neutral-hover / --neutral-active 畫成一層 background-image ——
+   畫在底色之上、內容之下,範圍與底色相同(預設 border-box:半透明框的像素跟透明元素換色時一樣微變,不留外圈)。
+   透明元素照舊換成 bg-neutral-hover;元件自己的填色(secondary、強調色、surface-strong、neutral-selected)換成自己的 -hover,
+   不用本組;型態切換(例:未按下 → 已按下)不在本條。
+   背景圖不做過渡,motion.spec.md「hover 回饋不做過渡」天然成立。tailwind-merge 已在 lib/utils.ts 登記為 bg-image 群組,
+   與 bg-surface 等底色 class 不互刪(不登記會把底色刪掉,2026-09-25 以 tailwind-merge 3.5 實測)。
+   機械防線:scripts/hover-own-pair-invariant.mjs(本組只准疊在「底」上;「底」換成 --neutral-* 仍紅)——
+   該閘從本檔讀 `@utility bg-* { background-image: linear-gradient(var(--X), var(--X)) }`,改名或改寫法要同步它。
+   預期值(R14 §4.1 實測)只寫在 color.spec.md「Hover 換色配對總則」表「底」列。 */
+@utility bg-interaction-hover {
+  background-image: linear-gradient(var(--neutral-hover), var(--neutral-hover));
+}
+@utility bg-interaction-active {
+  background-image: linear-gradient(var(--neutral-active), var(--neutral-active));
 }

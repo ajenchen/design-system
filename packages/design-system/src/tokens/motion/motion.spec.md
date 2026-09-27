@@ -114,15 +114,27 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 
 **a11y**:prefers-reduced-motion 下 `motion-reduce:animate-none` 全 7 浮層統一關進出場動畫(overlay-motion SSOT 保證,無漏)。
 
-## hover 回饋不做過渡(2026-09-10 user 拍板)
+## hover 回饋不做過渡(2026-09-10 user 拍板;2026-09-26 延伸到字色、外框與滑過淡入)
 
-**規則**:凡是 hover 驅動的**底色**變化,一律**瞬間**切換 —— 不寫 `transition-colors` / `transition-all`,也不寫任何會把 `background-color` 一起過渡的宣告。
+**規則**:凡是 hover 驅動的**顏色與顯隱**變化,一律**瞬間**切換 —— 包括:
 
-**user 原話**(2026-09-10):「第三題改成全部瞬間,確保有SSOT不要有漂移」。
+| 變化 | 例 |
+|---|---|
+| 底色 | 列、選單項、按鈕、日期格的滑過底色(2026-09-10) |
+| 字色 | 麵包屑 / 連結 / 表頭排序區 / 手風琴標題的滑過字色(2026-09-26) |
+| 外框色(含畫成外框的 ring) | Chip、分段控制、輸入框、多行輸入框、滑桿把手的滑過外框(2026-09-26) |
+| 滑過才出現的元素(opacity 0 → 1) | 列上的行內小按鈕(`ItemSuffix hoverReveal`)、檔案列的下載 / 重試換鈕、頭像移除鈕、表格連結格的編輯鈕(2026-09-26) |
 
-**為什麼**:過渡的時長必須短於「指標停在一個項目上的時間」,否則底色永遠追不上指標。表格列高 36–52px,指標以 500–1000px/s 掃過時每 **40–90ms** 就換一列,150ms 的過渡在每一列都完成不了 —— 畫面上會同時有兩三列半亮的拖尾(2026-09-10 量到 hover 最終色延遲 p95 **109ms**,其中 **84ms** 是過渡本身)。浮層選單雖然是「移到目標就停」、停留時間夠,但一個 DS 裡兩種 hover 手感就是漂移的來源,所以統一瞬間。
+不寫任何會把該屬性一起過渡的宣告:`transition-colors`、`transition-opacity`、`transition-all`、不帶後綴的 `transition`、列出該屬性的 `transition-[…]`;ring 另含 `transition-shadow`。同一組屬性若也被選中 / 聚焦 / 按壓改變(例:Chip 選中的外框與字色、輸入框聚焦外框),一併瞬間 —— CSS 過渡綁的是屬性,同一個屬性做不到「hover 改時瞬間、選中改時過渡」(滑鼠點選的當下指標就在元件上),留著過渡就等於 hover 也在過渡。
 
-**一手來源**(三家資料格 / 清單完全不做 hover 過渡):
+**user 原話**:
+
+- 2026-09-10(底色):「第三題改成全部瞬間,確保有SSOT不要有漂移」。當時題目只問滑過的底色(A 全部維持 150 毫秒 / B′ 掃過的列面瞬間、浮層選單維持 / C 全部瞬間)。
+- 2026-09-26(延伸,待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` 〇節 L9 / N4(3)):對「延伸到字色、外框、列上小按鈕淡入」回「確定這樣才是一致設計語言就做」;同意清單回覆「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」。延伸的判斷:底色已瞬間,同一次滑過字色與外框卻 0.15 秒 = 同一個 DS 兩套手感,就是 user 要避免的漂移。
+
+**為什麼**:過渡的時長必須短於「指標停在一個項目上的時間」,否則底色永遠追不上指標。表格列高 36–52px,指標以 500–1000px/s 掃過時每 **40–90ms** 就換一列,150ms 的過渡在每一列都完成不了 —— 畫面上會同時有兩三列半亮的拖尾(2026-09-10 量到 hover 最終色延遲 p95 **109ms**,其中 **84ms** 是過渡本身)。浮層選單雖然是「移到目標就停」、停留時間夠,但一個 DS 裡兩種 hover 手感就是漂移的來源,所以統一瞬間;字色、外框與滑過淡入同理(2026-09-26)。
+
+**一手來源**(底色,三家資料格 / 清單完全不做 hover 過渡):
 
 | 來源 | 證據 |
 |---|---|
@@ -132,11 +144,17 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 | (反例,不採用)Ant Design Table | `components/table/style/index.ts` td `transition: background-color ${motionDurationMid}` = 200ms |
 | (反例,不採用)MUI ListItemButton | `ListItemButton.js` `getTransitionStyles(theme,'background-color',{duration: shortest})` = 150ms |
 
-**唯一的例外(已登記)**:Checkbox 與 Switch 保留 `transition-colors` —— 那條過渡的主人是 **checked ↔ unchecked 的狀態切換**(Ant / Material 的核取框與切換鈕同樣會動),不是 hover;而且它們是控件大小的點目標,不是指標掃過去的列面。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`。
+**唯一的例外(已登記)**:Checkbox、Radio(RadioGroupItem)與 Switch 保留 `transition-colors` —— 那條過渡的主人是 **checked ↔ unchecked 的狀態切換**(勾選框打勾、單選圓轉主色、開關滑動;Ant / Material 的核取框與切換鈕同樣會動),不是 hover;它們是控件大小的點目標,不是指標掃過去的列面。滑過的外框升階與它共用同一條過渡,這是例外的已知代價。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`(`checkbox.tsx`、`radio-group.tsx`、`switch.tsx` 各一處)。Radio 2026-09-26 補登:它與 Checkbox 同一份狀態規格(`components/Checkbox/checkbox.spec.md`「狀態 › Radio」),先前漏列。
 
-**機械強制**:`scripts/hover-instant-invariant.mjs`(同一段 class 同時宣告 hover 底色與顏色過渡 → 紅;`--selftest` 六個正反例證明它該紅時會紅)。
+**不在本規則(不是 hover 觸發,保留過渡)**:選中切換類動畫 —— 分頁底線淡出 / 淡入(`after:transition-colors`;每個分頁自己的底線,不會滑過去)、手風琴展開(`animate-accordion-*`)、展開箭頭旋轉(手風琴 / 樹 / 表格,`transition-transform`)、輪播指示點寬度(`transition-[width]`)、側欄收合寬度、進度條數值、浮層進出場(本檔「進出場動畫 token」段)。
 
-**落地範圍**(2026-09-10 一次改完):MenuItem / DropdownMenu 四種項目 / TreeView 列與展開箭頭 / DataTable 列 / Sidebar 選單鈕與兩個動作鈕 / 行內動作鈕與其底色層 / TimePicker 欄 / Calendar 格 / DateGrid 日期 / Button / ScrollArea 捲軸 / InlineEdit / FileItem 兩種列 / Carousel 指示點 / 欄寬把手。箭頭旋轉(`transition-transform`)與指示點寬度(`transition-[width]`)不是顏色,保留。
+**不在本規則(2026-09-26 同意範圍未涵蓋,維持現況)**:hover 造成的**形變與高度** —— 微放大(`hover:scale-*`)與陰影升級(`hover:shadow-*` / `hover:[box-shadow:…]`)。目前用到的只有 AI 浮動按鈕(`components/AgentPanel/agent-panel-fab.tsx`,微放大 + 陰影 150ms)與滑桿把手的陰影(`components/Slider/slider.tsx`,外框已瞬間、陰影 150ms)。要不要也改成瞬間是另一題,未經 user 決定前不動。
+
+**機械強制**:`scripts/hover-instant-invariant.mjs` —— 同一個 class 宣告單位(一個 `cn()` / `cva()` 呼叫、一個 `*className` 屬性、一個 class 值的 const 或物件屬性)裡,同時有「hover 驅動的底色 / 字色 / 外框 / ring / 顯隱」與「會過渡同一族屬性、作用在同一個目標(元素本身 vs `after:` 等偽元素 vs 子元素)的 transition」→ 紅。hover class 或 transition 寫在別的 const、經 import 或函式回傳再傳進來也算(例:Calendar 事件方塊的 `CAT_EVENT`、Textarea 的 `fieldDefaultChromeCompounds`)。`--selftest` 的正反例證明它該紅時會紅、該綠時不紅(個數不在此寫死 —— 2026-09-25 曾因這裡寫「六個」、補跨檔後沒跟上被抓到,待辦總帳 C12③)。**掃不到**:hover 由 JS 狀態驅動、class 裡看不到 hover 字樣的淡入(例 `opacity: visible ? 1 : 0`),這類由元件自己的規格負責,已知清單見待辦總帳。「底」的滑過疊層(`bg-interaction-hover`,background-image)本來就不會被 `transition-colors` 過渡,天然瞬間。
+
+**落地範圍**:
+- 2026-09-10(底色,一次改完):MenuItem / DropdownMenu 四種項目 / TreeView 列與展開箭頭 / DataTable 列 / Sidebar 選單鈕與兩個動作鈕 / 行內動作鈕與其底色層 / TimePicker 欄 / Calendar 格 / DateGrid 日期 / Button / ScrollArea 捲軸 / InlineEdit / FileItem 兩種列 / Carousel 指示點 / 欄寬把手。箭頭旋轉(`transition-transform`)與指示點寬度(`transition-[width]`)不是顏色,保留。
+- 2026-09-26(字色 / 外框 / 滑過淡入):Accordion 標題字色 / Breadcrumb 連結 / Chip / SegmentedControl / Textarea / LinkInput 連結 / DataTable 表頭排序區字色與連結格編輯鈕 / Slider 把手外框 / ItemSuffix `hoverReveal`(三種列:選單項、樹、列)/ FileItem 狀態換鈕 / PeoplePicker 頭像移除鈕;Radio 補登例外。同規則的其餘宿主(Tabs 標籤字色、Field 外框、Sidebar 行內動作鈕、FileUpload 拖放區外框、FileViewer 縮圖外框(同一條 ring 也畫選中框,選中切換一併瞬間)、Carousel 箭頭、AgentPanel 訊息工具列)同日全部落地;閘 `hover-instant-invariant` 綠 = 全 DS 落地。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

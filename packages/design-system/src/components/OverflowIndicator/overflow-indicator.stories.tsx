@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'
-import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 
@@ -101,13 +101,15 @@ export const AvatarStackOverflow: Story = {
       <p className="text-caption text-fg-muted">
         GitHub PR Reviewers — 只顯示前 3 位,其餘 +3 hover 看完整清單。
       </p>
-      <div className="flex items-center">
+      {/* 頭像堆疊消費 Avatar 的堆疊 SSOT(avatar.spec.md「頭像堆疊(疊在一起時)」):每項一層 item、
+          第一顆在最上面、+N 是最後一項;疊在一起的地方挖空,不手刻負 margin / 外圈。 */}
+      <div className={`flex items-center ${AVATAR_STACK_CLASS}`}>
         {reviewers.slice(0, 3).map((p, i) => (
-          <span key={p.name} className={i > 0 ? '-ml-1.5' : ''}>
-            <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={24} hoverCard={personHoverCard(p)} />
+          <span key={p.name} className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(i, 4)}>
+            <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={24} stacked hoverCard={personHoverCard(p)} />
           </span>
         ))}
-        <span className="-ml-1.5">
+        <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(3, 4)}>
           <OverflowIndicator count={reviewers.length - 3} shape="circle" size="md">
             <div className="flex flex-col gap-1 min-w-[160px] text-caption">
               {reviewers.slice(3).map((p) => (
@@ -185,15 +187,16 @@ const assigneeColumns: ColumnDef<AssigneeRow>[] = [
     cell: ({ row }) => {
       const visible = row.original.assignees.slice(0, 2)
       const hidden = row.original.assignees.slice(2)
+      const stackCount = visible.length + (hidden.length > 0 ? 1 : 0)
       return (
-        <div className="flex items-center">
+        <div className={`flex items-center ${AVATAR_STACK_CLASS}`}>
           {visible.map((p, i) => (
-            <span key={p.name} className={i > 0 ? '-ml-1.5' : ''}>
-              <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personHoverCard(p)} />
+            <span key={p.name} className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(i, stackCount)}>
+              <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} stacked hoverCard={personHoverCard(p)} />
             </span>
           ))}
           {hidden.length > 0 && (
-            <span className="-ml-1.5">
+            <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, stackCount)}>
               <OverflowIndicator count={hidden.length} shape="circle" size="sm">
                 <div className="flex flex-col gap-1 min-w-[140px]">
                   {hidden.map((p) => (

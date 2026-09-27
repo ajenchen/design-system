@@ -7,7 +7,7 @@ import ts from 'typescript'
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const expected = new Map([
   ['packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx', ['InlineActionHoverState']],
-  ['packages/design-system/src/components/FileUpload/file-upload.stories.tsx', ['RemoveHoverState', 'FileListRemoveFocusContract']],
+  ['packages/design-system/src/components/FileUpload/file-upload.stories.tsx', ['RemoveHoverState', 'FileListRemoveFocusContract', 'FileListKeyboardContract']],
   ['packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx', ['MultiRemoveFocusContract', 'StackRemoveOverlayProbe']],
   ['packages/design-system/src/components/TreeView/tree-view.stories.tsx', ['ActionHoverState']],
   ['packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx', ['OpenSnapshot', 'ItemHover']],

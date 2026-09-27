@@ -76,6 +76,11 @@ const twMerge = extendTailwindMerge({
       // Custom opacity utility(對應 tokens/opacity/opacity.css `@utility opacity-disabled`)。
       // 不註冊 group → tailwind-merge 用 default opacity-N heuristic,可能誤判 class 衝突。
       'opacity': ['opacity-disabled'],
+      // 「底」的滑過 / 按住疊層(對應 tokens/color/semantic.css `@utility bg-interaction-hover / -active`;
+      // color.spec.md「Hover 換色配對總則」,待辦總帳 B8)。它們寫的是 background-image,不是底色 ——
+      // 不註冊的話 tailwind-merge 把 `bg-*` 一律猜成 bg-color,`cn('bg-surface', 'bg-interaction-hover')`
+      // 會把 bg-surface 刪掉,底色整個消失(2026-09-25 以 tailwind-merge 3.5 實測)。登記在 bg-image 才對得上它真正寫的屬性。
+      'bg-image': ['bg-interaction-hover', 'bg-interaction-active'],
     },
   },
 })

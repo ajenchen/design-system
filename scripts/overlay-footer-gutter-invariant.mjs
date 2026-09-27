@@ -23,33 +23,84 @@
  * 而再跑一次全 1035 支的掃描等於把 CI 時間加倍。錨(同日):新加的蓋板 story 用了需要 SidebarProvider 的
  * demo helper,`tsc -b`、`build:lib`、`build-storybook` 三關全綠,story 卻整則渲不出來(runtime 才炸)。
  *
+ * **沒量到 = 儀器失效(exit 1,訊息標「儀器失效」),不是通過**(2026-09-25,M37):每則 story 經 lib/launch-browser.mjs 的 openStory
+ * (全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報渲染完成(含 play)、通過 render-health、版面連續靜止
+ * SETTLE_FRAMES 個影格,才量 footer。取代原本的 domcontentloaded + 等根節點有子元素(等不到還 `.catch` 吞掉)+ 固定睡
+ * 140ms。原本任何一則載入失敗只印一行「! id」、記進「載入失敗 N 支」,**然後照樣 exit 0** —— 那幾則的 footer 從沒量過,
+ * 卻算在「掃描 1042 支(不抽樣)」裡。現在分兩類:
+ *   - story 自己渲染拋錯(Storybook 錯誤頁、沒有任何同源 404)→ 照舊算「整則渲不出來」(本閘的產品判定,exit 1);
+ *   - 其他一切沒量到(同源 404 / 等不到渲染完成 / 空畫面 / 頁面例外 / 版面不靜止 / 量測本身丟例外)→ 儀器失效,
+ *     逐則點名、附同源 404 帳本,exit 1(三種模式都是;--selftest 不得把它算成「抓到了」)。
+ *     不用 exit 2:lib/gate-selftest-meta.mjs 在 2026-09-25 修正前把 exit 2 讀成「起不了環境 → 略過」,用 2 等於讓 meta-test 把沒量到吞掉。
+ *   兩類的分界只有一處:classifyOpenStoryFailure(下方)。
+ *
+ * **`--selftest-crash` 驗的是上面那條真實分界,不是 DOM 裡的字**(2026-09-25 改寫):
+ * 原本的對照組在 openStory **成功之後**把 `.sb-show-errordisplay` 塞進 DOM,再由一段 openStory 之後的檢查抓到 ——
+ * 但真實流程裡那段檢查**永遠觸發不了**:錯誤畫面在 openStory 第 3 步就被判成 storybook-error 丟出,第 4 / 10 步的
+ * render-health 也會先讀到 #error-message;走到那段檢查時畫面已證明是 sb-show-main + 健康。對照組於是只在證明
+ * 「一段死碼會紅」,真正決定「渲不出來 vs 儀器失效」的 classifyOpenStoryFailure 從沒被對照過(M32:對照組要打在真的判準上)。
+ * 現在攔 story 模組本身(page.route,不寫任何建置檔),讓 Storybook 自己顯示真的錯誤頁、由 openStory 丟出真的例外,兩面都驗:
+ *   A. story 模組一載入就拋錯(同源沒有任何缺檔)→ 必須判成「整則渲不出來」並點名那一則;
+ *   B. story 模組 404(同源缺檔)→ 必須判成「儀器失效」並附上那個 404,**不得**算成渲不出來。
+ * 任一面不成立 → exit 1。那段死碼一併刪除(它不可能抓到任何東西,留著只會讓人以為有第二道防線)。
+ *
  * Run: `node scripts/overlay-footer-gutter-invariant.mjs [--survey] [--build=dir] [--lanes=4]`
  *      `--survey` 只印清單不判定(盤點用)。
+ *      `--selftest` 對照組:footer 左內距推 7px,必須紅。
+ *      `--selftest-crash [--limit=3]` 對照組:上面 A / B 兩面(沒給 --limit 時取前 3 則)。
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync, existsSync } from 'node:fs'
-import { launchBrowser } from './lib/launch-browser.mjs'
-import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, requireStorybookBuild, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
+import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const BUILD = resolve(ROOT, arg('build', 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
-// 「渲不出來」那條也要有對照組(M32):把錯誤畫面塞進 DOM,偵測器必須抓到。
+// 「渲不出來 vs 儀器失效」那條分界也要有對照組(M32):攔 story 模組,兩面都驗(見檔頭)。
 const SELFTEST_CRASH = process.argv.includes('--selftest-crash')
 const SURVEY = process.argv.includes('--survey')
 const LANES = Number(arg('lanes', '4'))
-const LIMIT = Number(arg('limit', '0'))
+// --selftest-crash 沒給 --limit 時取前 3 則:第 1 則驗 B(缺檔)、其餘驗 A(拋錯),不需要全掃
+const LIMIT = Number(arg('limit', SELFTEST_CRASH ? '3' : '0'))
 const TOLERANCE_PX = 1
+// 開 story 後要求版面連續靜止幾個影格才量 footer 左緣(量的是幾何,要等排版與進場動畫跑完)
+const SETTLE_FRAMES = 10
 
-if (!existsSync(join(BUILD, 'index.json'))) {
-  console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
-  process.exit(2)
-}
-const index = JSON.parse(readFileSync(join(BUILD, 'index.json'), 'utf8'))
+requireStorybookBuild(join(BUILD, 'index.json'))
+// story 清單讀**正在服務的那一份**建置(快照),不讀活目錄 —— 清單與頁面必須出自同一份建置
+//(2026-09-25,待辦總帳 C5;lib/a11y-static-server.mjs 的 readServedStorybookIndex)
+const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
+const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories).filter((e) => e.type !== 'docs').map((e) => ({ id: e.id, name: e.name }))
 if (LIMIT) stories = stories.slice(0, LIMIT)
+
+/**
+ * openStory 丟出的 StoryRenderInstrumentError → 本閘的兩類之一(**唯一的分界**;--selftest-crash 兩面都打在這裡)。
+ * story 自己渲染拋錯(Storybook 錯誤頁 / render 結果 errored,而且沒有任何**同源**檔案缺檔 / 載入失敗)= 本閘順帶擋的
+ * 「整則渲不出來」(產品判定);其餘都是沒量到(儀器失效)。
+ * 只看同源:跨網域的遠端頭像圖(i.pravatar.cc)在沙箱裡本來就載不到,不能讓它把真的渲染崩潰改判成儀器失效。
+ * failedRequests 的同源項是「404 /路徑」(伺服器帳本 / 回應碼)或「/路徑(net::…)」(請求失敗),跨網域項是完整網址。
+ * @returns {{ kind: 'crash', message: string } | { kind: 'instrument', detail: string }}
+ */
+function classifyOpenStoryFailure(error) {
+  const sameOriginFailures = error.failedRequests.filter((request) => /^(?:\d{3} )?\//.test(request))
+  const selfCrash = (error.kind === 'storybook-error' || error.kind === 'render-errored') && sameOriginFailures.length === 0
+  return selfCrash
+    ? { kind: 'crash', message: error.storybookError || error.reason }
+    : { kind: 'instrument', detail: error.detail }
+}
+
+// ── --selftest-crash 的注入:攔 story 模組(CSF chunk),不動任何建置檔 ──────────────────────
+// 第 1 則(idx 0)→ B:模組回 404(同源缺檔);其餘 → A:模組一執行就拋錯(回 200,同源沒有任何缺檔)。
+// 攔的是 `assets/<檔名>.stories-<hash>.js`:story 檔在建置裡的 chunk 名(同一個 CSF 檔的 story 共用一個 chunk)。
+// page.route 會停用 HTTP 快取,同一個 chunk 每次導覽都重新經過這裡,所以同一頁上逐則切換注入方式是確定的。
+const CRASH_MESSAGE = '對照組:假裝這則 story 的模組一載入就拋錯'
+const STORY_CHUNK = /\/assets\/[^/]+\.stories-[A-Za-z0-9_-]+\.js$/
+const crashVariantOf = (idx) => (idx === 0 ? 'missing-chunk' : 'throw')
+/** --selftest-crash:每則 story 用了哪種注入、實際攔到幾個 chunk(沒攔到 = 對照組沒生效,不得算通過) */
+const injected = new Map()
 
 /** 量每一個可見的 surface-footer,以及它正上方那疊東西的前緣。 */
 const PROBE = () => {
@@ -133,11 +184,14 @@ const SHIFT = () => {
   return list.length
 }
 
-const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const bad = []
 const survey = []
-let scanned = 0, footersChecked = 0, loadErrors = 0, noRef = 0
+let scanned = 0, footersChecked = 0, noRef = 0
+// 點開下拉的覆蓋率(2026-09-25):點開並等到靜止的次數、因停用 / 唯讀而不點的次數 —— 印出來,不再靜默縮水
+let triggersOpened = 0, triggersInert = 0, triggersGone = 0
 const crashed = []
+/** 儀器失效:沒量到的 story(不是產品判定)。 */
+const instrumentFailures = []
 let cursor = 0
 const browsers = []
 try {
@@ -145,31 +199,39 @@ try {
     const browser = await launchBrowser()
     browsers.push(browser)
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-    page.on('pageerror', () => {})
+    /** 這個 lane 目前在開哪一則(--selftest-crash 的注入依它決定 A / B) */
+    let current = null
+    if (SELFTEST_CRASH) {
+      await page.route(STORY_CHUNK, async (route) => {
+        const record = current && injected.get(current)
+        if (!record) return route.continue()
+        record.chunks.push(new URL(route.request().url()).pathname)
+        if (record.variant === 'missing-chunk') return route.fulfill({ status: 404, body: '' })
+        return route.fulfill({ status: 200, contentType: 'application/javascript', body: `throw new Error(${JSON.stringify(CRASH_MESSAGE)})\n` })
+      })
+    }
     for (;;) {
-      if ((SELFTEST && bad.length > 0) || (SELFTEST_CRASH && crashed.length > 0)) break
+      if (SELFTEST && bad.length > 0) break
       const idx = cursor++
       if (idx >= stories.length) break
       const s = stories[idx]
       scanned += 1
+      current = s.id
+      if (SELFTEST_CRASH) injected.set(s.id, { variant: crashVariantOf(idx), chunks: [] })
       try {
-        await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-        await page.waitForFunction(() => document.querySelector('#storybook-root')?.children.length > 0 || document.querySelector('.sb-show-errordisplay'), null, { timeout: 15_000 }).catch(() => {})
-        await page.waitForTimeout(140)
-        if (SELFTEST_CRASH) {
-          await page.evaluate(() => {
-            const d = document.createElement('div')
-            d.className = 'sb-show-errordisplay'
-            d.innerHTML = '<div id="error-message">對照組:假裝這則 story 炸了</div>'
-            document.body.appendChild(d)
+        try {
+          await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`, {
+            settleFrames: SETTLE_FRAMES, notFound: server.notFound, navigationTimeoutMs: 30_000, timeoutMs: 30_000,
           })
+        } catch (error) {
+          if (!(error instanceof StoryRenderInstrumentError)) throw error
+          const verdict = classifyOpenStoryFailure(error)
+          if (verdict.kind === 'crash') crashed.push({ story: s.id, name: s.name, 訊息: verdict.message })
+          else instrumentFailures.push({ story: s.id, detail: verdict.detail })
+          continue
         }
-        const crash = await page.evaluate(() => {
-          const err = document.querySelector('.sb-show-errordisplay')
-          if (!err) return null
-          return (document.querySelector('#error-message')?.textContent || err.textContent || '').trim().slice(0, 200)
-        })
-        if (crash) { crashed.push({ story: s.id, name: s.name, 訊息: crash }); continue }
+        // openStory 成功 = Storybook 回報 finished、畫面是 sb-show-main、render-health(含 #error-message)前後兩次都過 ——
+        // 這裡不再另查 `.sb-show-errordisplay`:那段檢查在真實流程裡不可能觸發(見檔頭),錯誤畫面一律由上面的分界判定。
         const collect = async (how) => {
           if (SELFTEST) { await page.evaluate(SHIFT); await page.waitForTimeout(30) }
           const found = await page.evaluate(PROBE)
@@ -190,23 +252,41 @@ try {
           }
         }
         await collect('載入即見')
-        // 需要點開才看得到的:下拉選單 / 日期時間選擇器
-        const triggers = page.locator('[role="combobox"]')
-        const n = Math.min(await triggers.count(), 6)
-        for (let i = 0; i < n; i += 1) {
-          await triggers.nth(i).click({ timeout: 3_000 }).catch(() => null)
-          await page.waitForTimeout(260)
+        // 需要點開才看得到的:下拉選單 / 日期時間選擇器。
+        // 2026-09-25(待辦總帳 C5,M37「沒觀察到 ≠ 沒發生」):原本「點一下(失敗 .catch 吞掉)→ 固定睡 260ms → 量」——
+        // 慢的機器上 260ms 內還沒開,collect 就量到 0 個 footer,那個下拉等於沒驗,而且**沒有任何訊號**(覆蓋率靜默縮水)。
+        // 現在:只點看得見、沒停用的觸發點;點擊本身失敗 = 儀器失效(點名);點完等版面連續 SETTLE_FRAMES 個影格靜止
+        // (lib/launch-browser.mjs settleAfterInteraction,與 openStory 同一份靜止判定,用影格不用毫秒)才量;
+        // 等不到靜止 = 儀器失效。點了沒開出東西(版面靜止、沒有新的 footer)是可靠的觀察,照舊不算違規。
+        // 觸發點在一開始就取定(最多 6 個);前一個互動把後面的收掉是正常的(例:預設開啟的下拉被點關,裡面的搜尋框跟著卸載),
+        // 那種記成「被前一個互動收掉」並印出次數,不當儀器失效、也不默默少算。
+        const handles = (await page.locator('[role="combobox"]:visible').elementHandles()).slice(0, 6)
+        for (let i = 0; i < handles.length; i += 1) {
+          const trigger = handles[i]
+          const state = await trigger.evaluate((el) => (!el.isConnected || el.getClientRects().length === 0 ? 'gone'
+            : el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]') ? 'inert' : 'ok')).catch(() => 'gone')
+          if (state === 'gone') { triggersGone += 1; continue }
+          if (state === 'inert') { triggersInert += 1; continue }
+          try { await trigger.click({ timeout: 10_000 }) } catch (error) {
+            instrumentFailures.push({ story: s.id, detail: `點第 ${i + 1} 個下拉失敗(看得見、沒停用):${String(error?.message || error).split('\n')[0]}` })
+            break
+          }
+          const opened = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!opened.ok) { instrumentFailures.push({ story: s.id, detail: `點開第 ${i + 1} 個下拉後版面 ${opened.framesWaited} 格內沒有靜止(變動 ${opened.lateChanges} 次)` }); break }
+          triggersOpened += 1
           await collect(`點開第 ${i + 1} 個下拉`)
-          await page.keyboard.press('Escape').catch(() => null)
-          await page.waitForTimeout(80)
+          await page.keyboard.press('Escape')
+          const closed = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!closed.ok) { instrumentFailures.push({ story: s.id, detail: `關閉第 ${i + 1} 個下拉後版面沒有靜止` }); break }
         }
       } catch (error) {
-        loadErrors += 1
-        console.error(`  ! ${s.id}: ${String(error.message).split('\n')[0]}`)
+        // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行、照樣 exit 0)
+        instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
       }
       if (scanned % 250 === 0) console.error(`… ${scanned}/${stories.length} 支掃完`)
-      if ((SELFTEST && bad.length > 0) || (SELFTEST_CRASH && crashed.length > 0)) { console.error(`… 對照組在第 ${scanned} 支就抓到了,提早收工`); break }
+      if (SELFTEST && bad.length > 0) { console.error(`… 對照組在第 ${scanned} 支就抓到了,提早收工`); break }
     }
+    current = null
     await page.close(); await browser.close()
   }
   await Promise.all(Array.from({ length: Math.max(1, LANES) }, () => lane()))
@@ -217,9 +297,52 @@ try {
   await Promise.race([server.stop(), new Promise((r) => setTimeout(r, 3_000).unref?.())]).catch(() => null)
 }
 
-console.log(`\n掃描 ${scanned} 支 story(不抽樣),載入失敗 ${loadErrors} 支`)
+console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`量到可見的 footer:${footersChecked} 個(其中 ${noRef} 個上方沒有可對齊的東西,略過)`)
+console.log(`點開下拉並等到靜止:${triggersOpened} 次(停用 / 唯讀而不點:${triggersInert} 個;被前一個互動收掉:${triggersGone} 個)`)
 console.log(`整則渲不出來的 story:${crashed.length} 支`)
+
+// --selftest-crash 的判定:兩面都必須成立,而且每一則都要證明注入真的生效(攔到了它的 chunk)。
+// 放在一般的儀器失效回報**之前**:B 面刻意造出的儀器失效是對照組的預期結果,由這裡逐則核對,不以 INSTRUMENT-FAIL 標記回報
+//(那個標記只留給「真的沒量到」)。任何一則偏離預期(A 被判成儀器失效、B 被判成渲不出來、注入沒生效、照常量完)→ exit 1。
+if (SELFTEST_CRASH) {
+  const confirmed = []
+  const problems = []
+  for (const [storyId, record] of injected) {
+    const crash = crashed.find((c) => c.story === storyId)
+    const instrument = instrumentFailures.find((f) => f.story === storyId)
+    if (!record.chunks.length) { problems.push(`${storyId}:注入沒生效(沒攔到任何 story chunk),這一則不能當對照`); continue }
+    if (record.variant === 'throw') {
+      if (crash && !instrument && crash.訊息.includes(CRASH_MESSAGE)) confirmed.push(`A 模組拋錯 → 整則渲不出來:${storyId}(Storybook 錯誤:${crash.訊息.slice(0, 80)})`)
+      else problems.push(`A 模組拋錯卻${instrument ? `被判成儀器失效(${instrument.detail})` : crash ? `錯誤訊息不是注入的那個(${crash.訊息})` : '沒被判成任何失敗(照常量完)'}:${storyId}`)
+    } else {
+      const named = instrument && record.chunks.some((chunk) => instrument.detail.includes(chunk))
+      if (instrument && !crash && named) confirmed.push(`B 模組 404 → 儀器失效並附上那個 404:${storyId}(${record.chunks[0]})`)
+      else problems.push(`B 模組 404 卻${crash ? `被判成整則渲不出來(${crash.訊息})` : instrument ? `儀器失效訊息沒附那個 404(${instrument.detail})` : '沒被判成任何失敗(照常量完)'}:${storyId}`)
+    }
+  }
+  const sides = new Set([...injected.values()].map((record) => record.variant))
+  if (!sides.has('throw') || !sides.has('missing-chunk')) problems.push(`兩面沒有都跑到(實際只有:${[...sides].join('、') || '無'});--limit 至少要 2`)
+  for (const line of confirmed) console.log(`  ✓ ${line}`)
+  if (problems.length) {
+    console.error('✗ selftest-crash:「渲不出來 vs 儀器失效」的分界對照不成立 —— 這條分界的綠燈不算證據:')
+    for (const p of problems) console.error(`  - ${p}`)
+    process.exit(1)
+  }
+  console.log(`✓ selftest-crash:分界兩面都成立(拋錯 → 渲不出來 ${confirmed.filter((l) => l.startsWith('A')).length} 則、缺檔 → 儀器失效 ${confirmed.filter((l) => l.startsWith('B')).length} 則)`)
+  process.exit(0)
+}
+
+// 儀器失效:逐則點名 + 同源 404 帳本。任何模式下都 exit 1 —— 沒量到的 story 不得被讀成「footer 都對齊」或「對照組抓到了」
+const reportInstrumentFailures = () => {
+  if (!instrumentFailures.length) return false
+  console.error(`\n✗ ${INSTRUMENT_FAIL_MARKER}(儀器失效):${instrumentFailures.length} 支 story 沒量到 —— 這不是產品裁決,但這一趟不能算通過:`)
+  for (const f of instrumentFailures.slice(0, 40)) console.error(`  - ${f.story}:${f.detail}`)
+  if (instrumentFailures.length > 40) console.error(`  …另外 ${instrumentFailures.length - 40} 支`)
+  const missing = [...new Set(server.notFound)]
+  if (missing.length) console.error(`  同源 404 帳本:${missing.join(', ')}`)
+  return true
+}
 
 if (SURVEY) {
   const byKey = new Map()
@@ -229,14 +352,10 @@ if (SURVEY) {
   }
   console.log('\n── 盤點(元件 | 殼 | 參照 | footer 左內距 | 差) ──')
   for (const [k, v] of [...byKey.entries()].sort()) console.log(`  ${v}×  ${k}`)
-  process.exit(0)
+  process.exit(reportInstrumentFailures() ? 1 : 0)
 }
+if (reportInstrumentFailures()) process.exit(1)
 
-if (SELFTEST_CRASH) {
-  const ok = crashed.length > 0
-  console.log(ok ? `✓ selftest-crash:把錯誤畫面塞進 DOM 之後抓到 ${crashed.length} 支 —— 偵測器會紅` : '✗ selftest-crash:塞了錯誤畫面卻沒抓到 —— 偵測器無效')
-  process.exit(ok ? 0 : 1)
-}
 if (SELFTEST) {
   const ok = bad.length > 0
   console.log(ok ? `✓ selftest:把 footer 左內距推 7px 之後,這支抓到 ${bad.length} 筆 —— 量具會紅` : '✗ selftest:推歪了卻沒抓到 —— 量具無效')

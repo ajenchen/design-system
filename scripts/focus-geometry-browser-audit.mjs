@@ -5,6 +5,11 @@
 //
 // SSOT:`packages/design-system/ds-canonical/references/focus-canonical.md`「問題二」
 //
+// @gate-contract
+//   保證: 每個元件的代表 story 在淺色 / 深色主題下**確實渲染完成後**,焦點框不被裁、不撞鄰居;無框站點有看得見的承擔者;宣告內描邊的站點確實需要往內。沒量到的 story 一律以「儀器失效」紅,不讀成通過
+//   紅: 焦點框被裁 / 撞鄰居超過基準線、承擔者零差異、內描邊其實放得下 → 指名該站;story 載不起來(id 不存在、chunk 404、render 出錯)或零量測 → 以儀器失效紅並點名 story。--selftest / --selftest-inset 分別把焦點視覺釘死 / 釘成內描邊,必須紅;每次執行先跑儀器判定表(載入失敗 / 零量測 / 空清單必紅),不過就不掃
+//   綠: 現況全 DS 兩主題全部載入且量到焦點站、產品清單都在基準線內時綠。「載入成功」的判定是共用的 openStory(lib/launch-browser.mjs),它的兩面對照(不存在的 id / 被擋的 chunk 必判失敗、真實 story 必載得起來)在 scripts/test-open-story.mjs,每個 PR 都跑
+//
 // `focus-geometry-invariant.mjs` 是靜態的(守「只准兩種幾何」),這一支是動態的
 // (守「每一站選對了那一種」)。兩支合起來才完整:靜態掃不出「這個元素四周有沒有空間」。
 //
@@ -27,26 +32,118 @@
 //
 // 起不了 Chromium 的受限環境回報 SKIPPED-ENV(同 data-table-invariants 先例)。
 //
-// Run: `node scripts/focus-geometry-browser-audit.mjs`
+// **載入失敗 = 儀器失效,不是通過**(2026-09-25):
+// 原本一則 story 載不起來時只在報告印一行 ✗、不計入失敗 —— 而更常見的情形連那一行都沒有:
+// Storybook 對「找不到這個 story id」「story 的 chunk 404」**不丟例外**,`goto` 照樣成功,
+// 畫面換成 Storybook 自己的錯誤頁。Tab 走訪接著就在錯誤頁上量到 4 個說明連結,
+// 當成元件的焦點站算進「正常外描邊」。實測(舊版,2026-09-25):一份刪掉 Button / Checkbox
+// stories chunk 的建置 → 「合計:正常外描邊 8」+「✓ 焦點框幾何全部正確」、exit 0;
+// 只剩一則不存在 story 的索引 → 「正常外描邊 4」、exit 0。全部 58 則都載不起來也一樣是綠的。
+// 這是 M37「沒觀察到 ≠ 沒發生」—— 還更糟,量到的是錯誤頁,不是元件。
+//
+// 現在:
+//   (1) 每則 story 先證明「真的渲染完成」才量:lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作;
+//       2026-09-25 收斂前本檔有自己的一份 loadStory)—— Storybook 回報 render phase = finished(含 play 函式)、
+//       不是錯誤頁、根節點有內容、沒有關鍵資源 404 / 頁面例外(lib/storybook-render-health.mjs)。
+//       任一不成立 → 記成**儀器失效**,訊息點名 story 與原因,並聲明那不是產品裁決。
+//   (2) 地板:清單是空的、或某個主題全程量到 0 個焦點站 → 儀器失效。
+//       渲染成功但 Tab 走訪一站都沒抵達:畫面上其實有可聚焦元素 → 儀器失效;真的沒有 → 列為「無裁決」。
+//   (3) 每次執行(三種模式都一樣)先跑儀器判定表(見 instrumentSelfCheck);自檢沒過就不掃。
+//       「載入失敗偵測器此刻會紅」的兩面對照(不存在的 id、被擋的 chunk、真實 story 必載得起來)跟著共用實作
+//       住在 scripts/test-open-story.mjs(每個 PR 在真實建置上跑),不在各閘各留一份。
+//   「已渲染」不再用固定睡眠代理(原本 networkidle + 400ms):FileItem 的 play 函式在根節點出現後
+//   還要約 450ms 才把焦點移到刪除鈕,固定睡眠在慢機器上會讓 Tab 走訪跟 play 搶焦點。
+//
+// Run: `node scripts/focus-geometry-browser-audit.mjs [--selftest | --selftest-inset]`
+//   除錯 / 對照組用(CI 不用):
+//   `--story <id>`          只量指定的 story(可重複)
+//   `--static-dir <目錄>`   改量另一份 Storybook 建置(預設 ./storybook-static)
 
 // 焦點框「會不會被裁 / 會不會撞到鄰居」偵測器
 // 決定每一站該用外描邊(全域)還是內描邊(focus-ring-inset)。判準 SSOT:focus-canonical 問題二。
-import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 
-const STATIC=join(process.cwd(),'storybook-static')
-const MIME={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.woff':'font/woff','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(STATIC,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':MIME[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
-const B=`http://localhost:${sv.address().port}`
-let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
+const ARGV = process.argv.slice(2)
+const SELFTEST = ARGV.includes('--selftest')
+const SELFTEST_INSET = ARGV.includes('--selftest-inset')
+const optionValues = (name) => ARGV.flatMap((arg, i) => {
+  if (arg.startsWith(`${name}=`)) return [arg.slice(name.length + 1)]
+  return arg === name && ARGV[i + 1] && !ARGV[i + 1].startsWith('--') ? [ARGV[i + 1]] : []
+})
+for (const name of ['--story', '--static-dir']) {
+  if (ARGV.some((a) => a === name || a.startsWith(`${name}=`)) && !optionValues(name).length) {
+    console.error(`✗ ${name} 後面要接值`); process.exit(1)
+  }
+}
+const ONLY_STORIES = optionValues('--story')
+const STATIC = resolve(optionValues('--static-dir').at(-1) ?? join(process.cwd(), 'storybook-static'))
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+const B=server.origin
+// story 索引也從同一份快照讀(元件清單與實際供檔的建置必須是同一份)
+const SERVED_ROOT = server.snapshot?.dir ?? STATIC
+const INDEX=join(SERVED_ROOT,'index.json')
+// 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「元件沒渲染」
+const report404=()=>{ if(server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
+// 起不了 Chromium:一般環境 SKIPPED-ENV exit 0;GOVERNANCE_BROWSER_REQUIRED=1 的瀏覽器 job → exit 1(lib/launch-browser.mjs)
+const br = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
+
+// ── 「這則 story 真的渲染完成了嗎」────────────────────────────────────────
+// 要保證的性質是「量的是這則 story 渲染完成後的畫面」—— 由共用的 openStory 直接等那個性質(M37),
+// 不退回固定睡眠;等不到 / 不健康時它丟 StoryRenderInstrumentError,這裡轉成「儀器失效」的一筆紀錄。
+const oneLine = (s) => String(s).split('\n')[0].slice(0, 240)
+async function loadStory(pg, origin, storyId) {
+  try {
+    await openStory(pg, `${origin}/iframe.html?id=${storyId}&viewMode=story`, { timeoutMs: 20000, navigationTimeoutMs: 30000, notFound: server.notFound })
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, reason: error instanceof StoryRenderInstrumentError ? error.detail : oneLine(error?.message ?? error) }
+  }
+}
+
+// 畫面上「Tab 應該走得到」的元素數。只在 Tab 走訪一站都沒抵達時用來分辨兩種情形:
+// 真的沒有可聚焦元素(本閘對這則 story 無裁決)vs. 有元素卻沒走到(儀器沒在量 → 失效)。
+const countTabbable = () => [...document.querySelectorAll('a[href],area[href],button,input,select,textarea,iframe,summary,[tabindex],[contenteditable]')]
+  .filter((e) => e.tabIndex >= 0 && !e.disabled && e.type !== 'hidden' && !e.closest('[inert]') &&
+    e.getClientRects().length > 0 && getComputedStyle(e).visibility === 'visible').length
+
+// ── 儀器判定(純函式;判定表在 instrumentSelfCheck 每次執行都跑)──────────────
+// 儀器失效優先於任何產品裁決:沒量到的東西不能被讀成「沒問題」,也不能被讀成「元件壞了」。
+function instrumentVerdict({ planned, failures, stations }) {
+  const problems = []
+  if (planned === 0) problems.push('要量的 story 清單是空的 —— 一則都沒量,不能說「全部正確」')
+  for (const f of failures) problems.push(`${f.label} [${f.theme}] story=${f.storyId}:${f.reason}`)
+  if (planned > 0) {
+    for (const [theme, n] of Object.entries(stations)) {
+      if (n === 0) problems.push(`${theme} 主題全程量到 0 個焦點站 —— 儀器沒有量到任何東西`)
+    }
+  }
+  return problems
+}
+
+// ── 儀器判定表:判定式此刻真的會紅嗎 ─────────────────────────────────────
+// 每次執行都跑(一般 / --selftest / --selftest-inset 三種模式都一樣),不靠 CI 另外記得呼叫:
+//   全部載入失敗 / 一則失敗 / 零量測 / 清單為空 → 必紅;正常 → 必綠。
+// 「載入失敗偵測器」本身(不存在的 id、被擋的 chunk)的兩面對照在 scripts/test-open-story.mjs(共用實作一份、對照組一份)。
+function instrumentSelfCheck() {
+  const problems = [], lines = []
+  const fake = (n) => Array.from({ length: n }, (_, i) => ({ label: `假${i}`, theme: 'light', storyId: `fake-${i}`, reason: '對照' }))
+  const table = [
+    ['全部 story 載入失敗', { planned: 2, failures: fake(4), stations: { light: 0, dark: 0 } }, true],
+    ['一則 story 載入失敗', { planned: 2, failures: fake(1), stations: { light: 5, dark: 5 } }, true],
+    ['全部載入但零量測', { planned: 2, failures: [], stations: { light: 0, dark: 0 } }, true],
+    ['清單為空', { planned: 0, failures: [], stations: { light: 0, dark: 0 } }, true],
+    ['正常', { planned: 2, failures: [], stations: { light: 5, dark: 5 } }, false],
+  ]
+  const wrong = table.filter(([, input, red]) => (instrumentVerdict(input).length > 0) !== red).map(([name]) => name)
+  if (wrong.length) problems.push(`判定表不成立:${wrong.join('、')}`)
+  else lines.push(`✓ 判定表 ${table.length}/${table.length}(載入失敗 / 零量測 / 空清單必紅,正常必綠)`)
+  return { problems, lines }
+}
 
 const DETECT = `(() => {
   const el = document.activeElement
@@ -154,112 +251,168 @@ const DETECT = `(() => {
     size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems, insetSite, boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
 })()`
 
-const idx = JSON.parse(readFileSync(join(STATIC,'index.json'),'utf8'))
+const idx = JSON.parse(readFileSync(INDEX,'utf8'))
 // **元件清單從 storybook 索引自動推導,不寫死。**
 // 2026-09-07:原本是一份手寫的 39 個名字,而 DS 有 67 個元件 —— 漏了 Input / Select /
 // Textarea / Dialog / Sheet / Pagination 等 29 個,卻在報告裡宣稱「全 DS」。
 // 寫死的清單還有個更糟的性質:**新元件不會自動進來**,漏了也不會有人發現。
-const COMPS = [...new Set(
-  Object.values(JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries)
-    .map((e) => e.title.replace(/\s/g, '').match(/Components\/([^/]+)/)?.[1])
-    .filter(Boolean),
-)]
+const compOf = (entry) => entry?.title?.replace(/\s/g, '').match(/Components\/([^/]+)/)?.[1]
+const COMPS = [...new Set(Object.values(idx.entries).map(compOf).filter(Boolean))]
+const pickStory = (comp) => {
+  const cands = Object.values(idx.entries).filter(e=>e.title.replace(/\s/g,'').includes(`/${comp}/`) && !/--docs$/.test(e.id) && !/usage-guidance|inspector|-rule$/.test(e.id))
+  return cands.find(e=>/展示/.test(e.title)) || cands.find(e=>/state-behavior|overview|accessibility/.test(e.id)) || cands[0]
+}
 // 對照組只需要證明「儀器該紅時會紅」,不需要全掃 —— 全掃要 5 分鐘,
 // 為了證明儀器讓 CI 多花 5 分鐘不划算。取前 4 個元件足夠(實測仍會紅十幾處)。
-const SWEEP = process.argv.includes('--selftest') ? COMPS.slice(0, 4) : COMPS
-console.log(`涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
+const SWEEP = SELFTEST ? COMPS.slice(0, 4) : COMPS
+// 要量的每一則 story。`--story` 只給除錯與對照組用:指定的 id 不在索引裡也照樣去載 —— 由載入判定點名它。
+const TARGETS = ONLY_STORIES.length
+  ? ONLY_STORIES.map((id) => ({ label: compOf(idx.entries[id]) ?? id, storyId: id, inIndex: Boolean(idx.entries[id]) }))
+  : SWEEP.map((comp) => ({ label: comp, storyId: pickStory(comp)?.id ?? null, inIndex: true }))
+{ const seenLabels = new Set(); for (const t of TARGETS) { t.key = seenLabels.has(t.label) ? `${t.label}#${t.storyId}` : t.label; seenLabels.add(t.label) } }
+console.log(ONLY_STORIES.length
+  ? `只量指定的 ${TARGETS.length} 則 story(--story)\n`
+  : `涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
 const report = {}
-const pg = await br.newPage({ viewport:{width:1440,height:900} })
-for (const theme of ['light','dark']) {
-  for (const comp of SWEEP) {
-    const cands = Object.values(idx.entries).filter(e=>e.title.replace(/\s/g,'').includes(`/${comp}/`) && !/--docs$/.test(e.id) && !/usage-guidance|inspector|-rule$/.test(e.id))
-    const story = cands.find(e=>/展示/.test(e.title)) || cands.find(e=>/state-behavior|overview|accessibility/.test(e.id)) || cands[0]
-    if (!story) { if(theme==='light') report[comp]={err:'無 story'}; continue }
-    try {
-      await pg.goto(`${B}/iframe.html?id=${story.id}&viewMode=story`,{waitUntil:'networkidle',timeout:20000})
-      // DS 的主題是 <html data-theme>,不是 prefers-color-scheme(semantic.css:424 / primitives.css:259)
-      await pg.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
-      // 對照組(--selftest):把所有焦點視覺全部釘死,承擔者證明就該全部變「零差異」。
-      // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。
-      if (process.argv.includes('--selftest')) {
-        await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible{outline:none!important}` })
+const failures = []            // 儀器失效:這則 story 沒有被量到(不是產品裁決)
+const noStations = []          // 渲染成功、但畫面上沒有任何可聚焦元素 → 本閘對它無裁決(也不是通過)
+const stations = { light: 0, dark: 0 }
+let selfCheck = { problems: [], lines: [] }
+try {
+  const pg = await br.newPage({ viewport:{width:1440,height:900} })
+  selfCheck = instrumentSelfCheck()
+  console.log('儀器自檢(判定表,每次執行都跑):')
+  selfCheck.lines.forEach((l) => console.log('  ' + l))
+  selfCheck.problems.forEach((p) => console.log('  ✗ ' + p))
+  console.log('')
+  // 自檢沒過 = 偵測器此刻不可信,量了也不能當證據 —— 不掃。也順帶擋住「整批 story 各等 20 秒逾時」
+  // 把 job 撐爆(例:Storybook 升級改了 render phase 訊號,58 × 2 則會各自逾時)。
+  const themes = selfCheck.problems.length ? [] : ['light', 'dark']
+  if (!themes.length) console.log('儀器自檢沒過 → 不掃(偵測器此刻不可信,量到的東西也不能當證據)\n')
+  for (const theme of themes) {
+    for (const target of TARGETS) {
+      const { key, label, storyId } = target
+      if (!storyId) {
+        if (theme === 'light') failures.push({ label, theme: '兩個主題', storyId: '(無)', reason: '索引裡這個元件沒有可量測的 story(全是 docs / usage-guidance / inspector / rule)' })
+        continue
       }
-      if (process.argv.includes('--selftest-inset')) {
-        await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
+      const loaded = await loadStory(pg, B, storyId)
+      if (!loaded.ok) {
+        failures.push({ label, theme, storyId, reason: (target.inIndex ? '' : '索引裡沒有這個 id;') + loaded.reason })
+        continue
       }
-      await pg.waitForTimeout(400)
-      const seen=new Set(), rows=[]
-      for (let i=0;i<45;i++) {
-        await pg.keyboard.press('Tab')
-        const m = await pg.evaluate(DETECT)
-        if (!m) continue
-        const k = m.desc+'|'+m.size
-        if (seen.has(k)) continue
-        seen.add(k); rows.push(m)
-        if (rows.length>=14) break
-      }
-      // ── 承擔者證明(非同步,等 transition 穩態)────────────────────────
-      // 無框元素在原始碼裡宣告了「承擔者是誰」,但宣告是人寫的。這裡去現場證明:
-      // 聚焦前後,自己或鄰域(往上 5 層 + 往下 30 個後代)的**可見**樣式差異必須非空。
-      // 「可見」要濾掉兩種假差異:(a) outline-style 是 none 時的 color/width 變化畫不出來;
-      // (b) 過渡進行中的同色不同序列化(oklch ↔ oklab)。所以每次取樣前都等 700ms。
-      const flCount = await pg.evaluate(() => window.__fl || 0)
-      for (let n = 1; n <= flCount; n++) {
-        const sel = `[data-fl-idx="${n}"]`
-        const exists = await pg.$(sel)
-        if (!exists) continue
-        await pg.evaluate((q) => {
-          const e = document.querySelector(q); if (!e) return
-          window.__chain = []; let m = e
-          for (let k = 0; k < 5 && m; k++) { window.__chain.push(m); m = m.parentElement }
-          let c = 0; for (const d of e.querySelectorAll('*')) { if (c++ >= 30) break; window.__chain.push(d) }
-          window.__target = e
-        }, sel)
-        const PROPS = ['outlineStyle','outlineWidth','outlineColor','borderColor','borderWidth','backgroundColor','boxShadow','textDecorationLine','textDecorationColor']
-        const snap = () => pg.evaluate((props) => window.__chain.map((e) => {
-          const c = getComputedStyle(e); return props.map((k) => c[k])
-        }), PROPS)
-        await pg.evaluate(() => window.__target.blur()); await pg.waitForTimeout(700)
-        const before = await snap()
-        await pg.evaluate(() => window.__target.focus()); await pg.waitForTimeout(700)
-        const after = await snap()
-        const names = await pg.evaluate(() => window.__chain.map((e) =>
-          (e === window.__target ? '自己' : window.__target.contains(e) ? '後代' : '祖先') + ':' +
-          e.tagName.toLowerCase() + '.' + String(e.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.')))
-        const changed = []
-        for (let k = 0; k < before.length; k++) {
-          const diff = []
-          for (let q = 0; q < PROPS.length; q++) {
-            if (before[k][q] === after[k][q]) continue
-            if ((PROPS[q] === 'outlineColor' || PROPS[q] === 'outlineWidth') && before[k][0] === 'none' && after[k][0] === 'none') continue
-            diff.push(PROPS[q])
-          }
-          if (diff.length) changed.push(names[k] + '(' + diff.join(',') + ')')
+      try {
+        // DS 的主題是 <html data-theme>,不是 prefers-color-scheme(semantic.css:424 / primitives.css:259)
+        await pg.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
+        // 對照組(--selftest):把所有焦點視覺全部釘死,承擔者證明就該全部變「零差異」。
+        // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。
+        if (SELFTEST) {
+          // `*::before{outline:none}`(2026-09-26):承擔者證明也看 ::before 框圖層了,對照組要連它一起釘死,否則這一段的紅燈是假的
+          await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible,*::before{outline:none!important}` })
         }
-        const hasAD = await pg.evaluate((q) => !!document.querySelector(q)?.hasAttribute('aria-activedescendant'), sel)
-        // **用編號配對,不用順序** —— 走訪會去重(seen),順序對不上就會把甲的承擔者
-        // 安到乙頭上(2026-09-08 第一版就這樣把選單鈕的承擔者安給了 AppShell 的 input)。
-        const row = rows.find((x) => x.flIdx === n)
-        if (row) row.carrier = hasAD ? ['(虛擬游標,另由 H1f 驗)'] : changed
-      }
-      for (const r of rows) if (r.carrier === 'pending') r.carrier = []
+        if (SELFTEST_INSET) {
+          await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
+        }
+        // 這 400ms **不再是**「已渲染」的代理(渲染完成已由 loadStory → 共用的 openStory 直接等到);留下的用途只剩
+        // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值)。
+        await pg.waitForTimeout(400)
+        const seen=new Set(), rows=[]
+        for (let i=0;i<45;i++) {
+          await pg.keyboard.press('Tab')
+          const m = await pg.evaluate(DETECT)
+          if (!m) continue
+          const k = m.desc+'|'+m.size
+          if (seen.has(k)) continue
+          seen.add(k); rows.push(m)
+          if (rows.length>=14) break
+        }
+        // ── 承擔者證明(非同步,等 transition 穩態)────────────────────────
+        // 無框元素在原始碼裡宣告了「承擔者是誰」,但宣告是人寫的。這裡去現場證明:
+        // 聚焦前後,自己或鄰域(往上 5 層 + 往下 30 個後代)的**可見**樣式差異必須非空。
+        // 「可見」要濾掉兩種假差異:(a) outline-style 是 none 時的 color/width 變化畫不出來;
+        // (b) 過渡進行中的同色不同序列化(oklch ↔ oklab)。所以每次取樣前都等 700ms。
+        const flCount = await pg.evaluate(() => window.__fl || 0)
+        for (let n = 1; n <= flCount; n++) {
+          const sel = `[data-fl-idx="${n}"]`
+          const exists = await pg.$(sel)
+          if (!exists) continue
+          await pg.evaluate((q) => {
+            const e = document.querySelector(q); if (!e) return
+            window.__chain = []; let m = e
+            for (let k = 0; k < 5 && m; k++) { window.__chain.push(m); m = m.parentElement }
+            let c = 0; for (const d of e.querySelectorAll('*')) { if (c++ >= 30) break; window.__chain.push(d) }
+            window.__target = e
+          }, sel)
+          const PROPS = ['outlineStyle','outlineWidth','outlineColor','borderColor','borderWidth','backgroundColor','boxShadow','textDecorationLine','textDecorationColor']
+          // 2026-09-26:也看 `::before` 的外框 —— 框可以畫在自己的 `::before`「框圖層」上(focus-canonical「框怎麼畫」框圖層列:
+          // FileItem / FileUpload 列底貼著進度條時,框改畫在 ::before 才能在進度條那段挖空)。原本只取元素本身的計算樣式,
+          // 畫在 ::before 上的框對這支儀器是隱形的,會把「真的有畫」誤報成「承擔者零差異」(M37:沒觀察到 ≠ 沒發生)。
+          // 只收外框三項:框圖層只畫外框;其餘屬性照舊看元素本身。
+          const PSEUDO = ['outlineStyle','outlineWidth','outlineColor']
+          const snap = () => pg.evaluate(([props, pseudo]) => window.__chain.map((e) => {
+            const c = getComputedStyle(e), b = getComputedStyle(e, '::before')
+            return [...props.map((k) => c[k]), ...pseudo.map((k) => b[k])]
+          }), [PROPS, PSEUDO])
+          await pg.evaluate(() => window.__target.blur()); await pg.waitForTimeout(700)
+          const before = await snap()
+          await pg.evaluate(() => window.__target.focus()); await pg.waitForTimeout(700)
+          const after = await snap()
+          const names = await pg.evaluate(() => window.__chain.map((e) =>
+            (e === window.__target ? '自己' : window.__target.contains(e) ? '後代' : '祖先') + ':' +
+            e.tagName.toLowerCase() + '.' + String(e.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.')))
+          const changed = []
+          for (let k = 0; k < before.length; k++) {
+            const diff = []
+            for (let q = 0; q < PROPS.length; q++) {
+              if (before[k][q] === after[k][q]) continue
+              if ((PROPS[q] === 'outlineColor' || PROPS[q] === 'outlineWidth') && before[k][0] === 'none' && after[k][0] === 'none') continue
+              diff.push(PROPS[q])
+            }
+            // ::before 的外框(同一個「outline-style 為 none 時顏色/寬度變化畫不出來」過濾)
+            const P0 = PROPS.length
+            for (let q = 0; q < PSEUDO.length; q++) {
+              if (before[k][P0 + q] === after[k][P0 + q]) continue
+              if (q > 0 && before[k][P0] === 'none' && after[k][P0] === 'none') continue
+              diff.push('::before ' + PSEUDO[q])
+            }
+            if (diff.length) changed.push(names[k] + '(' + diff.join(',') + ')')
+          }
+          const hasAD = await pg.evaluate((q) => !!document.querySelector(q)?.hasAttribute('aria-activedescendant'), sel)
+          // **用編號配對,不用順序** —— 走訪會去重(seen),順序對不上就會把甲的承擔者
+          // 安到乙頭上(2026-09-08 第一版就這樣把選單鈕的承擔者安給了 AppShell 的 input)。
+          const row = rows.find((x) => x.flIdx === n)
+          if (row) row.carrier = hasAD ? ['(虛擬游標,另由 H1f 驗)'] : changed
+        }
+        for (const r of rows) if (r.carrier === 'pending') r.carrier = []
 
-      report[comp] = report[comp] || { story: story.id }
-      report[comp][theme] = rows
-    } catch(e) { report[comp] = { err: String(e.message).split('\n')[0].slice(0,60) } }
+        // 一站都沒走到:先問「畫面上有沒有 Tab 該走得到的東西」,不直接當成「沒有問題」
+        if (!rows.length) {
+          const tabbable = await pg.evaluate(countTabbable)
+          if (tabbable > 0) {
+            failures.push({ label, theme, storyId, reason: `Tab 走訪 45 次沒抵達任何元素,但畫面上有 ${tabbable} 個可聚焦元素 —— 儀器沒在量` })
+            continue
+          }
+          if (theme === 'light') noStations.push(`${label}(${storyId})`)
+        }
+        stations[theme] += rows.length
+        report[key] = report[key] || { story: storyId }
+        report[key][theme] = rows
+      } catch (e) {
+        failures.push({ label, theme, storyId, reason: '量測途中出錯:' + oneLine(e?.message ?? e) })
+      }
+    }
   }
-}
-await pg.close()
+  await pg.close()
+} catch (e) { report404(); await br.close(); await server.stop(); throw e }
 // Linux runner 沒有 TMPDIR 這個環境變數(只有 macOS 一定有),
 // 直接串接會寫到字面上的 `undefined/clipdetect.json` 而整支掛掉 ——
 // 這支被接進 CI 的第一次執行就是這樣紅的(2026-09-08)。用 os.tmpdir() 才可攜。
-writeFileSync(join(tmpdir(), 'clipdetect.json'), JSON.stringify(report,null,1))
+writeFileSync(join(tmpdir(), 'clipdetect.json'), JSON.stringify({ report, failures, noStations, stations }, null, 1))
 
 let noFrame=0, clipped=0, ok=0
 const noCarrier=[]
 console.log('══ 沒有畫框的(可能是 WCAG 違規,也可能指示器在別的元素上)══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) { console.log(`  ${c}: ✗ ${v.err}`); continue }
   for (const r of (v.light||[])) if (!r.drawn && !r.boxShadow) {
     const who = Array.isArray(r.carrier) ? r.carrier : []
     const okCarrier = who.length > 0
@@ -270,7 +423,6 @@ for (const [c,v] of Object.entries(report)) {
 }
 console.log('\n══ 框會被裁 / 會撞到鄰居 → 應改內描邊 ══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.light||[])) if (r.drawn && !r.insetSite && r.problems.length) {
     console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,44).padEnd(44)} ${r.style.padEnd(20)} ${r.problems.map(p=>p.kind+'('+p.detail+')←'+p.by.slice(0,26)).join(' ')}`); clipped++ }
 }
@@ -287,7 +439,6 @@ const JUSTIFIED_INSET = [
 console.log('\n══ 宣告內描邊、但往外也放得下 → 應改回外描邊(判準:淨空 ≥ 4px)══')
 const insetUnjustified = []
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.light||[])) if (r.insetSite && !r.problems.length) {
     const waiver = JUSTIFIED_INSET.find((w) => w.comp === c && w.match.test(r.desc))
     if (waiver) { console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,46)} ${r.size}  ← 已登記:${waiver.why.slice(0,60)}…`); continue }
@@ -297,34 +448,51 @@ for (const [c,v] of Object.entries(report)) {
 }
 console.log('\n══ 深色主題下有無殘留白間隙(box-shadow 通道)══')
 for (const [c,v] of Object.entries(report)) {
-  if (v.err) continue
   for (const r of (v.dark||[])) if (r.boxShadow) console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,44)} boxShadow=${r.boxShadow}`)
 }
-for (const v of Object.values(report)) if(!v.err) for (const r of (v.light||[])) if (r.drawn && !r.problems.length) ok++
+for (const v of Object.values(report)) for (const r of (v.light||[])) if (r.drawn && !r.problems.length) ok++
 console.log(`\n合計:正常外描邊 ${ok} / 需改內描邊 ${clipped} / 無框 ${noFrame}`)
-await br.close(); sv.close()
+await br.close(); await server.stop()
+// ── 儀器判定優先:沒量到的不准被讀成通過(三種模式一律)────────────────────
+// 「量到」= 兩個主題都真的載入並走訪完(有結果才算),不是「沒有失敗紀錄」—— 沒掃也不會有失敗紀錄
+const measured = TARGETS.filter((t) => Array.isArray(report[t.key]?.light) && Array.isArray(report[t.key]?.dark)).length
+console.log(`量測涵蓋:${measured}/${TARGETS.length} 則 story 兩個主題都載入並走訪完;焦點站 light ${stations.light} / dark ${stations.dark}`)
+if (noStations.length) console.log(`  渲染成功但畫面上沒有任何可聚焦元素(本閘對它們無裁決,不是通過):${noStations.join('、')}`)
+const instrumentProblems = selfCheck.problems.length
+  ? [...selfCheck.problems.map((p) => `儀器自檢 ${p}`), `全部 ${TARGETS.length} 則 story 未量(自檢沒過就不掃)`]
+  : instrumentVerdict({ planned: TARGETS.length, failures, stations })
+if (instrumentProblems.length) {
+  console.error(`\n✗ 儀器失效 —— 以下 ${instrumentProblems.length} 項本閘沒有量到該量的東西。這不是產品裁決(元件不一定有問題),`)
+  console.error('  但「沒量到」不等於「沒問題」,所以這次不能算通過(上面的清單與合計只涵蓋量到的部分):')
+  instrumentProblems.forEach((p) => console.error('  ' + p))
+  report404()
+  process.exit(1)
+}
 // 基準線:1 站 —— Combobox story 裡那顆與欄位相鄰的 <Button>。它是共用 primitive,
 // 外描邊壓到鄰接控件外緣 2px 是各家(Material / Atlassian)都接受的,不是元件缺陷。
-if (process.argv.includes('--selftest')) {
+if (SELFTEST) {
   console.log(noCarrier.length
     ? `\n✓ selftest:把焦點視覺全部釘死時,${noCarrier.length} 處承擔者證明確實變紅`
     : '\n✗ selftest:焦點視覺都釘死了卻還說找得到承擔者 —— 這一段的綠燈不算證據')
+  if (!noCarrier.length) report404()
   process.exit(noCarrier.length ? 0 : 1)
 }
 // 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些就該被指名(否則這段的綠燈不算證據)
-if (process.argv.includes('--selftest-inset')) {
+if (SELFTEST_INSET) {
   console.log(insetUnjustified.length
     ? `\n✓ selftest-inset:把所有焦點框釘成內描邊時,${insetUnjustified.length} 處被指名「其實放得下」`
     : '\n✗ selftest-inset:全部釘成內描邊了卻一處都沒指名 —— 反向檢查沒有在跑')
+  if (!insetUnjustified.length) report404()
   process.exit(insetUnjustified.length ? 0 : 1)
 }
 if (noCarrier.length) {
   console.error(`\n✗ ${noCarrier.length} 處沒有框、而且聚焦前後鄰域零差異 —— 宣告的承擔者其實沒在畫:`)
   noCarrier.forEach((n) => console.error('  ' + n))
+  report404()
   process.exit(1)
 }
 const BASELINE = 1
-if (clipped > BASELINE) { console.error(`\n✗ 有 ${clipped} 站的焦點框會被裁或撞到鄰居(基準線 ${BASELINE})`); process.exit(1) }
+if (clipped > BASELINE) { console.error(`\n✗ 有 ${clipped} 站的焦點框會被裁或撞到鄰居(基準線 ${BASELINE})`); report404(); process.exit(1) }
 // 反向門檻:2026-09-10 起 0 —— 行內動作鈕 / DataTable 排序表頭 / Calendar 日期格改回外描邊、Tabs 登記例外之後,
 // DS 內每一處 `focus-ring-inset` 都是真的貼邊(選單項 / 事件方塊 / Tag 移除鈕 / 捲動模式的 tab…)。
 // 有新的一站被指名而且不在 JUSTIFIED_INSET,就是又有人憑印象翻內。
@@ -333,6 +501,7 @@ if (insetUnjustified.length > BASELINE_INSET) {
   console.error(`\n✗ 有 ${insetUnjustified.length} 站宣告內描邊、但四周其實放得下(基準線 ${BASELINE_INSET})——` +
     ' 依 focus-canonical「問題二」預設往外;真的貼邊請附實測數字')
   insetUnjustified.forEach((n) => console.error('  ' + n))
+  report404()
   process.exit(1)
 }
 console.log('✓ 焦點框幾何全部正確(含「宣告內描邊是否必要」的反向驗證)')

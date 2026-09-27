@@ -405,6 +405,7 @@ export const StateBehavior: Story = {
           <li>`error` 優先於 `completed`——同一 step 若同時在 completedValues + errorValues,一律渲染 error(紅底 X)。</li>
           <li>Focus ring 顏色自動切換:current 走 `--info-hover`(linear=false 時走 `--border-hover`)、error 走 `--error-hover`。</li>
           <li>upcoming step 不可點(linear)或 reachable 判定為 false 時 cursor:not-allowed,鍵盤 Tab 跳過。</li>
+          <li>預設展開模式(follow-active)下,current 那一步點了不會發生任何事 → 不是按鈕、鍵盤 Tab 跳過、游標是一般箭頭(它不是被禁止,只是「你就在這裡」);multiple 模式下點它會收合 / 展開內容,照舊可點(steps.spec.md「目前那一步可不可以點」)。</li>
           <li>sm size(8px dot)無 indicator icon——太小畫不出 check / X;大 tier(md/lg)才有 icon 反饋。</li>
         </ul>
       </div>

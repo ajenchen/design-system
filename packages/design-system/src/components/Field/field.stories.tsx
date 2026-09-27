@@ -61,6 +61,29 @@ export const Vertical: Story = {
   ),
 }
 
+// ── 標籤旁的說明圖示(FieldLabel info)────────────────────────────────────
+// @story-history: 2026-09-26 補 —— 此前全 repo 沒有任何範例用到 `<FieldLabel info>`,ⓘ 的平常 / 滑過樣子
+// 在預覽站看不到(M15)。ⓘ = 給資訊的觸發處(hit-area-canonical.md 三-1):平常淡、滑過深一階、游標一般箭頭。
+
+export const LabelInfo: Story = {
+  name: '標籤旁的說明圖示',
+  render: () => (
+    <div className="max-w-sm">
+      <FieldGroup>
+        <Field>
+          <FieldLabel info="開立公司發票才需要填寫;個人發票可以留空">統一編號</FieldLabel>
+          <Input placeholder="8 碼數字" />
+        </Field>
+
+        <Field required>
+          <FieldLabel info="每月帳單與付款收據會寄到這個信箱">帳單寄送 Email</FieldLabel>
+          <Input placeholder="billing@example.com" />
+        </Field>
+      </FieldGroup>
+    </div>
+  ),
+}
+
 // ── Field 狀態 cascade（2026-06-08 補：disabled / mode 透過 context 流給所有 field 控件）──────
 // @story-history: Field 透過 context 把 disabled / mode 流給「所有」field 控件。此前無 story 覆蓋此
 // cascade，致 picker 漏讀 fieldCtx.mode、Switch/Rating/Slider/PeoplePicker 漏讀 fieldCtx.disabled 的 cascade
@@ -90,7 +113,7 @@ export const StateCascade: Story = {
         </div>
       </div>
       <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 星星鎖定、Slider 鎖互動保留視覺'}</p>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 顯示精簡版「★ 數值」、Slider 鎖互動保留視覺'}</p>
         <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
           <Field mode="readonly" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>

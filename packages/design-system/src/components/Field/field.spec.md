@@ -64,7 +64,7 @@ Field 和 Field Controls（Input / NumberInput / DatePicker / Select / Combobox 
 Field 若需要次要 action（如「重設」「全選」「從範本帶入」），**唯一預留位置 = label 行最右端**（label 與 action 兩端對齊）：
 
 - 形式：超連結樣文字（link-like text），**字級與行高皆同 FieldLabel**（`text-body` 14px、同 label 的 leading）——同字級同行高即天然等高，這是「不增高」的機制核心（user 2026-08-05 確認）。
-- 硬約束：**不得增加 label 行高度**（避免 field 被撐高）。等高機制之外還需三個盒模型條件缺一不可：(1) **零垂直 padding、無固定高度盒**——禁用 DS `Button`（xs 也自帶 `h-field-xs` 固定盒 + 自身 leading，`button.tsx` xs variant），必須是純文字元素；(2) **單行 `whitespace-nowrap`**（換行即行盒 ×2）；(3) **hit target 以 pseudo-element／負 margin 擴大**，不得用 padding 滿足 a11y 觸控目標（underline／focus ring 不佔佈局，無礙）。
+- 硬約束：**不得增加 label 行高度**（避免 field 被撐高）。等高機制之外還需三個盒模型條件缺一不可：(1) **零垂直 padding、無固定高度盒**——禁用 DS `Button`（xs 也自帶 `h-field-xs` 固定盒 + 自身 leading，`button.tsx` xs variant），必須是純文字元素；(2) **單行 `whitespace-nowrap`**（換行即行盒 ×2）；(3) **不得用 padding 把盒子撐大**（padding 直接長高 label 行）；也**不得在文字外加一圈看不見的邊**——命中區恆等於可視／懸停回饋的形狀，超連結樣文字的目標就是那行文字本身（owner = `ds-canonical/references/hit-area-canonical.md`）。underline／focus ring 不佔佈局，無礙。**2026-09-24 更正**：原文寫「hit target 以 pseudo-element／負 margin 擴大，不得用 padding 滿足 a11y 觸控目標」——「滿足 a11y 觸控目標」這個依據已撤回（本 DS 以滑鼠指標的精度為前提，不拿觸控尺寸建議當依據），連帶那個外擴處方也不再成立；保留的只有「不得用 padding」這條不增高的機制。
 - 此位置是 field 次要 action 的**專屬 slot**——禁止把次要 action 放在 control 下方、error 位置或 field 外圍（那些位置屬 description/error/表單層動作）。
 - 對齊世界級：Polaris TextField `labelAction`（https://polaris.shopify.com/components/selection-and-input/text-field 的「With label action」example；2026-08-05 WebFetch 驗證 prop 存在）。
 - 狀態：**2026-08-05 user 拍板記錄,尚未實作**。實作時走 `<FieldLabelAction>` 類 slot + `/component-quality-gate`；在那之前任何 story/產品範例**不得**自行發明次要 action 擺位（anchor：PeoplePicker 多人 story 曾把 play() 測試用「重設協作者」按鈕誤植為 control 下方的產品 UI,2026-08-05 移除）。
@@ -268,9 +268,11 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(field.tsx L391-416)
-- **disabled 時整顆不渲染**(L403)— info 是 action affordance(hover 互動),非類型身份 indicator,non-editable 隱藏
-- 設計定位:inline action pattern(補充工具,視覺退後)— label 的 primary interaction 是 input,info 是輔助
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:434-450`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:443`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:434`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
+- 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
 ---
 
@@ -418,8 +420,11 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | hover(無 focus)| `--border-hover` | `hover:border-border-hover` |
 | **focus(無 error)** | `--primary` | **`focus-within:!border-primary`**(error:false compound;`!important` 勝 data-state)|
 | focus + hover | `--primary` | `focus-within:hover:!border-primary`(M11 AND case)|
-| open(無 focus)| `--border-hover` | `data-[state=open]:border-border-hover` |
+| open(無 focus,無 error)| `--border-hover` | `data-[state=open]:border-border-hover`(error:false compound)|
 | **error(edit 全程,含聚焦)** | `--error` | `border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error`(error:true compound)|
+| error × open(無 focus)| `--error-hover` | `data-[state=open]:border-error-hover`(error:true compound)|
+
+**open = 維持自己的 hover 框**(`patterns/element-anatomy/inline-action.spec.md`「overlay 開啟 → 同 host hover」),所以依 error 分流;2026-09-25 前寫在共用 compound,error 欄位開面板時紅框被換成灰框。
 
 **Error × focus 疊加 canonical(2026-07-05 user 拍板「照 Mantine」)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,12 家實查中唯一同款機制的 Mantine(Input.module.css:focus 僅 border 換 primary-filled、outline none)在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 / Ant 暈 / Bootstrap 暈)前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
 

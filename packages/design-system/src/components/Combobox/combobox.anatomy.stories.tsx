@@ -1,6 +1,7 @@
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { Combobox } from './combobox'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Tag } from '@/design-system/components/Tag/tag'
 
 const meta: Meta = {
@@ -147,18 +148,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
     ))}
   </div>
 )
-
-const Tab = ({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => {
-  if (disabled) return <span className="px-2.5 py-1 text-[12px] font-mono rounded-md text-fg-disabled bg-neutral-hover cursor-not-allowed">{children}</span>
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-        active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-      }`}>
-      {children}
-    </button>
-  )
-}
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
@@ -354,48 +343,51 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {MODES.map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Error</span>
-          <div className="flex gap-1.5">
-            <Tab active={!error} onClick={() => setError(false)}>off</Tab>
-            <Tab active={error} onClick={() => setError(true)} disabled={!isEdit}>on</Tab>
-          </div>
+          {/* 停用項用元件自身 disabled(segmented-control.spec.md「disabled」);停用項不得是當前值 → value 取實際生效值 */}
+          <SegmentedControl size="sm" aria-label="Error" value={error && isEdit ? 'on' : 'off'} onValueChange={(v) => setError(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on" disabled={!isEdit}>on</SegmentedControlItem>
+          </SegmentedControl>
           {!isEdit && <span className="text-[11px] text-fg-secondary">僅 edit 模式</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Wrap</span>
-          <div className="flex gap-1.5">
-            <Tab active={!wrap} onClick={() => setWrap(false)}>off</Tab>
-            <Tab active={wrap} onClick={() => setWrap(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Wrap" value={wrap ? 'on' : 'off'} onValueChange={(v) => setWrap(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Clearable</span>
-          <div className="flex gap-1.5">
-            <Tab active={!clearable} onClick={() => setClearable(false)}>off</Tab>
-            <Tab active={clearable} onClick={() => setClearable(true)}>on</Tab>
-          </div>
+          <SegmentedControl size="sm" aria-label="Clearable" value={clearable ? 'on' : 'off'} onValueChange={(v) => setClearable(v === 'on')}>
+            <SegmentedControlItem value="off">off</SegmentedControlItem>
+            <SegmentedControlItem value="on">on</SegmentedControlItem>
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-secondary w-16 shrink-0">Value</span>
-          <div className="flex gap-1.5">
-            <Tab active={value.length > 0} onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>有值 (3)</Tab>
-            <Tab active={value.length === 0} onClick={() => setValue([])}>空值</Tab>
-          </div>
+          {/* 「有值 (3)」再點一次 = 還原成 3 筆(預覽裡移除過 tag 時);已選中項再點不會觸發 onValueChange(spec「點擊已選中 item:不取消選取」),故另掛 onClick */}
+          <SegmentedControl size="sm" aria-label="Value" value={value.length > 0 ? 'filled' : 'empty'} onValueChange={(v) => setValue(v === 'filled' ? ['electronics', 'food', 'lifestyle'] : [])}>
+            <SegmentedControlItem value="filled" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>有值 (3)</SegmentedControlItem>
+            <SegmentedControlItem value="empty">空值</SegmentedControlItem>
+          </SegmentedControl>
         </div>
       </div>
 
@@ -922,7 +914,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區,Tab 照頁面順序離開,宣告 listbox(待辦總帳 B11「行為不變、只改宣告」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
     </div>
   ),
 }

@@ -76,7 +76,7 @@ benchmark:
 
 ## a11y
 
-- `role="separator"` + `aria-orientation`(horizontal 拖拉 → `vertical` 分隔線)+ `aria-valuenow / aria-valuemin / aria-valuetext="Npx"`(+ 有上限才 `aria-valuemax`;無上限時 valuetext 避免被讀成百分比)+ `aria-label` 必填;`tabIndex=0`;focus-visible = `outline-2 outline-offset-[-2px] outline-ring`(DataTable 既有字串)。
+- `role="separator"` + `aria-orientation`(horizontal 拖拉 → `vertical` 分隔線)+ `aria-valuenow / aria-valuemin / aria-valuetext="Npx"`(+ 有上限才 `aria-valuemax`;無上限時 valuetext 避免被讀成百分比)+ `aria-label` 必填;`tabIndex=0`;焦點框 = `focus-visible:focus-ring-inset`(內描邊,往內 2px;`resize-handle.tsx:243`)。
 - 鍵盤:←/→(horizontal)或 ↑/↓(vertical)每步 `step`、Home = min、End = max(有上限才);命中的鍵 preventDefault + stopPropagation(不冒泡到排序 / 欄位拖曳)。
 - `disabled` = 只畫線:無 role / tabIndex / cursor,`aria-hidden`。
 - 對照 [APG Window Splitter](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/):Left/Right Arrow 移動垂直 splitter、Home/End 到極限。

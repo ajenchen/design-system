@@ -3,7 +3,7 @@ import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import type { InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { fieldWrapperStyles, bareInputStyles } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -174,8 +174,12 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       <div
         className={cn(
           fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+          // 整個外框都是輸入處:文字游標 + 點內距 / 邊框就聚焦 input(同 Input;待辦總帳 N53③,
+          // 規則 owner field-controls.spec.md「點擊與游標原則」,共用實作 field-wrapper.tsx focusFieldInputFromChrome)
+          FIELD_TEXT_ENTRY_CURSOR,
           className,
         )}
+        onMouseDown={focusFieldInputFromChrome}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
       >

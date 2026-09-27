@@ -140,7 +140,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 多人互動邏輯(N tag / overflow / inline-search)| **繼承 Combobox**(但 tag 和溢出**換成圓形 avatar 視覺**)|
 | Avatar 在 field 內 padding(12px 固定)| **PeoplePicker 自己**(不繼承 Combobox density-dependent 公式)|
 | +N 溢出 chip 形狀(**圓形**;stack mode)| **PeoplePicker 自己**(不繼承 Combobox 矩形 tag) |
-| 多人 tag 視覺(default `multiDisplay='stack'`:**圓形 avatar overlap `-ml-0.5`**) | **PeoplePicker 自己**(`multiDisplay='pill'` opt-in 才用 Combobox 矩形 Tag pill,見「多選顯示樣式」)|
+| 多人 tag 視覺(default `multiDisplay='stack'`:**圓形 avatar 往左疊 2px,疊在一起處挖空分開**,畫法 SSOT = `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」) | **PeoplePicker 自己**(`multiDisplay='pill'` opt-in 才用 Combobox 矩形 Tag pill,見「多選顯示樣式」)|
 | 多人 length=1 視覺(降階為 avatar+人名,跟單人視覺一致)| **PeoplePicker 自己**(Combobox 無此特殊)|
 
 #### B. 單人完整 trigger SSOT
@@ -165,7 +165,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | state | trigger 顯示 |
 |---|---|
-| closed | **圓形 avatar stack overlap `-ml-0.5` + 圓形 +N 溢出 chip**(本來放人名的地方不放人名)|
+| closed | **圓形 avatar stack(往左疊 2px、疊在一起處挖空,見 `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」)+ 圓形 +N 溢出 chip**(本來放人名的地方不放人名)|
 | open + inline-search、**未選**(length=0)| input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
 | open + inline-search、**已選**(length≥2)| **avatar stack + 圓形 +N + input cursor 在 +N 的右側**(stack 跟 +N 不動;cursor 接在 +N 後;empty search 不顯 placeholder,純 cursor。對齊 Combobox `trailing` slot placement)|
 | open + panel-search、已選 | avatar stack + 圓形 +N(searchbox 在 panel 內,trigger 視覺不變)|
@@ -321,6 +321,8 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - 字母鍵 — type-ahead 搜尋
 - ↑/↓ — 導覽 people
 - Enter — 選擇 / 取消選擇
+- Tab / Shift+Tab(picker 開著)— **single**(包 `<Select searchable>`):選定反白那一位 → 收起 → 焦點走到觸發欄位的下一個 / 上一個可 Tab 元素;**multi**(包 `<Combobox>`):行為不變,預設 panel-top 搜尋時 Tab 在面板裡繞圈(搜尋框 → 清單 → 全選),`searchIn='trigger'` 時焦點在欄位內、Tab 照頁面順序離開。規則單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(W3C 出處在該處;來源 = 待辦總帳 B11)
+- →(選單清單裡的頭像名片)— 每一位的頭像(名片觸發點)**不在 Tab 路上**(09-25 前多選浮層 4 人 = 4 站);多選浮層內搜尋時,插入點在字尾按 `→` 進反白那一位的頭像(名片浮出),`←` 回搜尋框;頭像上 ↑↓ / Home / End 回搜尋框並移反白、Tab / Shift+Tab 一下離開清單、Enter / Space **不**選這一位。2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;按鍵表住 `../Command/command.spec.md`「A11y 預設」(鍵盤路由 Command 提供,本元件不另寫)。欄位裡已選人員的頭像 / 移除 ×(stack)照 Combobox Tag 移除契約(`../Combobox/combobox.spec.md`「Tag 操作」),不在此列
 
 **Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 的 Combobox 基座焦點留在輸入框,本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 

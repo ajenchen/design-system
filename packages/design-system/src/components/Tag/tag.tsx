@@ -295,7 +295,7 @@ export const tagMeta = {
     //(anatomy TOKEN_MAP 以 stripVar 機械衍生,零漂移)。
     bg: ['bg-neutral-active', 'bg-neutral-hover', 'bg-secondary', 'bg-transparent'],
     fg: ['text-foreground', 'text-inverse-fg'],
-    ring: [],
+    ring: ['focus-ring-inset', '--ring'],
   },
   defaultVariant: 'neutral',
   defaultSize: 'md',

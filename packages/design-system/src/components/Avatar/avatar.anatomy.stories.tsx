@@ -7,6 +7,8 @@ import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Building2, Folder, Globe } from 'lucide-react'
 import { Avatar } from './avatar'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import {
   CATEGORICAL_HUES,
   CAT_SUBTLE_TOKENS,
@@ -100,15 +102,6 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
   return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
 }
 
-const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-    }`}>
-    {children}
-  </button>
-)
-
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
     <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
@@ -195,6 +188,7 @@ export const Overview = {
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；可與 badgeCount（右上）並存'],
                 ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；可與 status（右下）並存'],
                 ['hoverCard', 'ReactNode', '—', 'hover 時彈出的內容（如 ProfileCard），person avatar 預設必帶'],
+                ['stacked', 'boolean', 'false', '放在頭像堆疊裡：前面有看得見的頭像時，重疊處挖空 + 2px 縫（露出真正的背景，不透色）；詳 avatar.spec.md「頭像堆疊(疊在一起時)」'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -238,41 +232,44 @@ const InspectorInner = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Controls */}
+      {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
+          取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
-          <div className="flex gap-1.5">
-            {(['image', 'icon', 'text'] as const).map((m) => <Tab key={m} active={mode === m} onClick={() => setMode(m)}>{m}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
+            {(['image', 'icon', 'text'] as const).map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Shape</span>
-          <div className="flex gap-1.5">
-            {(['circle', 'square'] as const).map((s) => <Tab key={s} active={shape === s} onClick={() => setShape(s)}>{s}</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Shape" value={shape} onValueChange={(v) => setShape(v as ShapeKey)}>
+            {(['circle', 'square'] as const).map((s) => <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
-          <div className="flex gap-1.5">
-            {PRESET_SIZES.map((s) => <Tab key={s} active={size === s} onClick={() => setSize(s)}>{s}px</Tab>)}
-          </div>
+          <SegmentedControl size="sm" aria-label="Size" value={String(size)} onValueChange={(v) => setSize(Number(v))}>
+            {PRESET_SIZES.map((s) => <SegmentedControlItem key={s} value={String(s)}>{s}px</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
         {mode !== 'image' && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-16 shrink-0">Color</span>
-            <div className="flex flex-wrap gap-1.5">
-              {ALL_COLORS.map((c) => <Tab key={c} active={color === c} onClick={() => setColor(c)}>{c}</Tab>)}
-            </div>
+            {/* > 5 個選項不用 SegmentedControl(segmented-control.spec.md 禁止事項「超過 5 個 item」)→ ChipGroup 單選
+                (chip.spec.md「與 SegmentedControl 的差異」:規模可多、wrap 換行)。Radix 單選再點已選項回傳空字串 → 忽略,維持恆有一值 */}
+            <ChipGroup type="single" aria-label="Color" value={color} onValueChange={(v) => { if (v) setColor(v as ColorKey) }}>
+              {ALL_COLORS.map((c) => <Chip key={c} value={c}>{c}</Chip>)}
+            </ChipGroup>
           </div>
         )}
         {mode !== 'image' && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-16 shrink-0">Solid</span>
-            <div className="flex gap-1.5">
-              <Tab active={!solid} onClick={() => setSolid(false)}>off</Tab>
-              <Tab active={solid} onClick={() => setSolid(true)}>on</Tab>
-            </div>
+            <SegmentedControl size="sm" aria-label="Solid" value={solid ? 'on' : 'off'} onValueChange={(v) => setSolid(v === 'on')}>
+              <SegmentedControlItem value="off">off</SegmentedControlItem>
+              <SegmentedControlItem value="on">on</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
       </div>

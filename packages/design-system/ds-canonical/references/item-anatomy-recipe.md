@@ -42,7 +42,7 @@ const myItemVariants = cva(
     "flex w-full items-start gap-2 text-left",
     "px-[var(--layout-space-loose)]",  // ← 跨 row primitive 共用 padding
     "cursor-pointer select-none outline-none",
-    "transition-colors",
+    // 不寫 transition-colors:hover 回饋一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     "hover:bg-neutral-hover focus-visible:bg-neutral-hover",
     "data-[active=true]:bg-neutral-selected",
   ],
@@ -99,7 +99,7 @@ interface MyItemProps {
   <span className={cn(
     "h-[1lh] shrink-0 ml-auto flex items-center gap-2",
     actionsReveal === "hover" &&
-      "opacity-0 group-hover/my-item:opacity-100 group-has-[:focus-visible]/my-item:opacity-100 transition-opacity"
+      "opacity-0 group-hover/my-item:opacity-100 group-has-[:focus-visible]/my-item:opacity-100"
   )}>
     {inlineActions.map((action, i) => (
       <ItemInlineAction key={action.label + i} action={action} />
@@ -109,6 +109,8 @@ interface MyItemProps {
 ```
 
 **用 `group-has-[:focus-visible]`,不要用 `group-focus-within`**——後者會被 mouse click 觸發。
+
+**瞬間出現,不寫 `transition-opacity`**——滑過才出現的按鈕屬 hover 回饋,一律瞬間(`tokens/motion/motion.spec.md`「hover 回饋不做過渡」,2026-09-26 由底色延伸到字色、外框與滑過淡入;`scripts/hover-instant-invariant.mjs` 會擋)。group 名是 `menu-item` / `tree-item` / `row` 之一時,直接用 `<ItemSuffix hoverReveal hoverGroup=…>`,不要自己抄這串 class。
 
 ### Step 5 — Single selection(如需)
 

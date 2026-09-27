@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     px: 8
-    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(hit area 24px),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:18-28)"
+    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:20-30)"
     world-class: ["Ant Design Steps small", "MUI Stepper compact"]
   md:
     px: 24
@@ -80,7 +80,7 @@ Steps 是 `patterns/element-anatomy/item-anatomy.spec.md` 的 row primitive **co
 - **預設文字色**:`text-fg-secondary`;`value` 指向的 step(focused)為 `text-foreground`
 - **Icon tier**:`INDICATOR_ICON_SIZE = { sm: 0, md: 16, lg: 20 }`(sm 為純圓點無內部 icon,見 size table)
 - **Description 永遠可選**,任何 size 都不強制
-- **Hit area 地板**:可點擊的 indicator 至少 `field-height-xs`(24px),不足者用透明 padding 撐開
+- **Indicator 欄寬**:sm 的 8px 圓點放在 24px 排版盒裡(與 md 的 24px 圓同寬;lg 圓本身 32px,`steps.tsx` `INDICATOR_BOX_WIDTH`);這個盒不是命中區 —— 可點的是整列 header(見本檔「指示點不是命中目標」)
 
 ---
 
@@ -137,7 +137,7 @@ indicator 圓形 flex items-center 居中
 
 | Size | Indicator 直徑 | 內部 icon | 內部數字字體 | Label 字體 | Description 字體 |
 |---|---|---|---|---|---|
-| `sm` | 8px dot(hit area 24px)| 純圓點,不放數字/icon | — | `text-body` (14px) | `text-caption` (12px) |
+| `sm` | 8px dot(排版盒 24px)| 純圓點,不放數字/icon | — | `text-body` (14px) | `text-caption` (12px) |
 | `md` | 24px circle | 16px | `text-body` (14px) | `text-body` (14px) | `text-caption` (12px) |
 | `lg` | 32px circle | 20px | `text-body-lg` (16px) | `text-body-lg` (16px) | `text-body` (14px) |
 
@@ -150,7 +150,7 @@ indicator 圓形 flex items-center 居中
 **`sm`(小點)**
 - ✅ 用在 sidebar 內 nested 流程、緊湊空間、次要進度指示
 - ❌ 步驟需要 icon 或要使用者明確數到「第幾步」時不用(sm 沒有數字/icon,辨識度不足)
-- sm 的 indicator 視覺只有 8px,但 hit area 撐到 24px(`field-height-xs` 地板),可點擊時不違反互動元件最小尺寸規則
+- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:43` 常數名即 `INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 在 `:41`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
 
 **`md`(預設)**
 - ✅ 絕大多數場景:checkout、註冊、設定精靈
@@ -184,6 +184,32 @@ sm 沒有 icon 空間,用色塊表達:
 - `completed` → 藍實心點(`bg-info`)
 - `error` → 紅實心點(`bg-error`)
 
+### 指示點不是命中目標 —— 命中區 = 整列 header(2026-09-24 逐案裁定)
+
+**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:775-778`),
+真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:526-534`)。
+指標落在圓點上時,收到事件的一樣是那一列 —— 圓點只是列裡的一個子元素。
+
+**所以這裡沒有任何外擴**,跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
+「懸停回饋的形狀 ≡ 命中區」)要禁的是「在元素之外長出一圈吃指標的東西」,本元件不存在這種東西:
+命中區就是 header 自己的盒,一個 `-inset` / `hitSlop` / 透明 border 都沒有。
+header 沒有懸停底色,所以依同一份契約的退化條款,判準回到**可視形狀本身**(那一列的內容),兩者同一個盒。
+
+**sm 的 8px 圓點外面那個 24×24 的盒是排版欄寬,不是命中區。** 它讓 sm 的 indicator 欄與 md 同為 24px(lg 為 32px)、同一列表內各步的
+label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:43-47`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
+已正名為 `SM_INDICATOR_BOX` —— 舊名字會讓人以為「視覺 8 / 命中 24」是一條刻意的外擴,於是跑去
+hit-area-canonical 找例外理由,但根本沒有外擴這回事。
+
+**實測(2026-09-24,`elementFromPoint` 逐點掃描,storybook 設計規格--尺寸對照表)**:
+
+| 量的東西 | 結果 |
+|---|---|
+| 24×24 裝飾盒的 `aria-hidden` | `true`;內含 8×8 的點 |
+| 指標打在點的正中心,收到的是誰 | **`role="button"` 的整列 header**(不是那顆點) |
+| 整列 header 的盒 | 1214×18.2 @ (33,121.1) —— 命中就是這個盒 |
+| header 的懸停底色 | `rgba(0,0,0,0)`(hover 前後都是)→ 無懸停回饋,判準回到可視形狀 |
+| 對照組 | 沒有 `role="button"` 祖先的那些 step(不可點的列),同一個點打下去收到的是裝飾 `span` 自己、沒有任何處理器 —— 證明這支探針分得出「可點」與「不可點」 |
+
 ### 自動推導(順序即優先級,對齊 `computeState`)
 
 **Consumer 不手寫每個 step 的 state**。State 由 Steps root 的 props 依下列順序推導(`steps.tsx` `computeState`):
@@ -197,7 +223,7 @@ linear && step 在 reachable(completed ∪ 首個未完成)→ reachable
 其他                                                → upcoming
 ```
 
-**關鍵**:`value` 命中的 step 在兩種模式下 content state 都是 `current`,但 **filled 藍的「正在做」視覺只屬於 linear**。非 linear 的 current 渲染中性 `bg-secondary` + `foreground` 數字(見「Non-linear 被選中 ≠ filled 藍」),focus 由 box-shadow 外環表達,**不會**出現 filled 藍。
+**關鍵**:`value` 命中的 step 在兩種模式下 content state 都是 `current`,但 **filled 藍的「正在做」視覺只屬於 linear**。非 linear 的 current 渲染中性 `bg-secondary` + `foreground` 數字(見「Non-linear 被選中 ≠ filled 藍」),focus 由 outline 外環表達,**不會**出現 filled 藍。
 
 ### 為什麼非 linear 的 current 不渲染 filled 藍
 
@@ -207,25 +233,25 @@ linear && step 在 reachable(completed ∪ 首個未完成)→ reachable
 - 跟 mental model「我只是在看,這步還沒做」衝突
 - completedValues 沒有變化,前一個 filled 藍 step 突然不見
 
-正確做法:focus 視覺跟「進度視覺」完全解耦——focus 透過 box-shadow 外環表達,filled 藍由 linear / completedValues 決定。filled「正在做」視覺是 linear 的概念。
+正確做法:focus 視覺跟「進度視覺」完全解耦——focus 透過 outline 外環表達,filled 藍由 linear / completedValues 決定。filled「正在做」視覺是 linear 的概念。
 
 Per-item `state="error"` prop 存在但是 **escape hatch**,僅用在 inline JSX 想直接宣告錯誤的罕見場景;一般情況用 `errorValues` array 統一管理,不要混用。
 
 ---
 
-## Focus marker — Outer ring(box-shadow,bounding box 永遠不變)
+## Focus marker — Outer ring(outline + offset,bounding box 永遠不變)
 
-**`value` 指向的 step,透過「box-shadow 外圈環」視覺表達 focus**。
+**`value` 指向的 step,透過「outline 外圈環」視覺表達 focus**。
 
 ### Outer ring 的關鍵設計
 
-- **Bounding box 固定**:focus 外環以 box-shadow 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px hit area)
-- **Surface gap + ring 兩層外環**:內圈先用 surface 色拉開一段 gap,外圈再疊 ring 色,形成「indicator 外有一圈帶間隙的環」——精確 gap / ring 寬度與 box-shadow 值見 steps.tsx `getOuterRingShadow`。兩層 shadow 不改變 bounding box，因此不會推動連接線或文字。
+- **Bounding box 固定**:focus 外環以 outline 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px 排版盒)
+- **透明間隙 + 外環**:`outline` 2px、`outline-offset` 2px —— indicator 與環之間那 2px 是**透明**的,露出底下真正的背景,形成「indicator 外有一圈帶間隙的環」;數值見 steps.tsx `getOuterRingStyle`(`RING_GAP_PX` / `RING_WIDTH_PX`),與全 DS 焦點框(`styles/base.css` `:focus-visible` 的 `outline: 2px solid var(--ring); outline-offset: 2px`)同一組粗細與間隙。outline 不改變 bounding box,因此不會推動連接線或文字。
 - **Ring 色由 state 決定**:`error` → `--error-hover`;non-linear `current` → `--border-hover`;其餘(含 linear current / completed / upcoming / reachable)→ `--info-hover`
 
 ### State × Focus 視覺矩陣(md/lg)
 
-filled 底色與內容色**完全由 content state 決定,不因 focused 改變**;focused 只額外疊一圈 box-shadow 外環。
+filled 底色與內容色**完全由 content state 決定,不因 focused 改變**;focused 只額外疊一圈 outline 外環。
 
 | State | 底色 + 內容(focused / non-focused 相同) | Focused 額外疊加 |
 |---|---|---|
@@ -244,26 +270,30 @@ filled 底色與內容色**完全由 content state 決定,不因 focused 改變*
 
 ### Sm 尺寸的 focus 處理
 
-sm 的 8px dot 用同一套 `getOuterRingShadow` box-shadow halo 在 dot 外圍繞圈——**但仍在 24px hit area 內**,所以 bounding 不變。
+sm 的 8px dot 用同一套 `getOuterRingStyle` outline 外環在 dot 外圍繞圈——**但仍在 24px 的 indicator 排版盒內**,所以 bounding 不變。(那個盒是欄寬,不是命中區;見上方「指示點不是命中目標」。)
 
 ### 為什麼 bounding 不變這麼重要
 
-連結線幾何依賴 indicator 的邊緣位置。如果 focus 改變 bounding box,連結線的起點/終點會跟著變,造成「focused step 的連結線比別的短一點點」的視覺不齊感。**box-shadow 外環不佔 layout**——focus 狀態變化時外部幾何完全不變——連結線可以用統一公式,自然一致。
+連結線幾何依賴 indicator 的邊緣位置。如果 focus 改變 bounding box,連結線的起點/終點會跟著變,造成「focused step 的連結線比別的短一點點」的視覺不齊感。**outline 外環不佔 layout**——focus 狀態變化時外部幾何完全不變——連結線可以用統一公式,自然一致。
 
-### 為什麼用 surface-gap 而非單純貼邊 ring
+### 為什麼外環與圓之間要有一圈間隙
 
-直接在 filled circle 外貼一圈同色 ring 會讀成「雙圈」很醜;先用 `var(--surface)` 拉一圈 2px gap 再疊 ring,讓環跟 indicator 之間有底色間隙,視覺乾淨且各 state 都清楚(對齊 shadcn `ring-offset` / Polaris focus indicator surface-gap canonical)。
+直接在 filled circle 外貼一圈同色 ring 會讀成「雙圈」很醜;環與 indicator 之間隔一圈 2px 的間隙,視覺乾淨且各 state 都清楚。
+
+**間隙必須是透明的,不可以用某個底色「畫」出來**(2026-09-26 修,待辦總帳 N48 / L14)。2026-09-25 以前的寫法是兩層 box-shadow:內層用 `var(--surface)` 實心畫一圈假裝間隙,外層再疊環色。`--surface` 在淺色是不透明白,看起來沒事;在深色是白 8% 半透明,底下那層環色透上來 —— 實測(storybook 非線性「總覽」)淺色 圓 #0065EA / 間隙 #FFFFFF / 外環 #2F85FE,深色 圓 #1982FF / 間隙 **#58A5FF**(應為頁面底 #0A0A0A)/ 外環 #4A9DFF,深色整顆看起來是一個大藍圓,兩主題長得不一樣(user 09-25 原話:「另外我發現圖一的總覽的藍色外圈為何在深色模式看起來跟在亮色模式看起來不一致的設計語言？」)。而且就算換成不透明色,Steps 放在卡片、對話框、側欄裡時,那個顏色也不會剛好等於底下的背景。
+
+現行寫法是 `outline` + `outline-offset`:offset 那一圈本來就不畫任何東西,露出的永遠是真正的背景,兩主題、任何容器都同一個長相 ——與全 DS 焦點框(`../../ds-canonical/references/focus-canonical.md`「框怎麼畫」;`styles/base.css` `:focus-visible`)同一種畫法。
 
 ### Non-linear 被選中 ≠ filled 藍(關鍵規則)
 
 非 linear 模式使用者點 upcoming step 瀏覽時,step 的 content state 變為 `current`(`computeState` 對 value 命中者一律回 current),但渲染**刻意中性**。視覺上會是(md/lg):
 - 底色:`bg-secondary`(**刻意不同於 linear upcoming 的 `bg-muted`**——non-linear 所有 step 都可點,不該像 linear upcoming 那樣呈現「鎖住/還到不了」的 muted 灰;secondary 傳達「可導覽但非當前」)
 - 數字:`foreground`(可讀,非 disabled 弱字——呼應 step 可達)
-- 外環:`--border-hover` box-shadow ring(focus marker,表達「你在看這一步」;`resolveRingColor` 對 non-linear current)
+- 外環:`--border-hover` outline 外環(focus marker,表達「你在看這一步」;`resolveRingColor` 對 non-linear current)
 
 **不會**出現 linear current 的 filled 藍——這對齊使用者 mental model「我只是在看,這步還沒做」。non-linear current 與 upcoming 同為 `bg-secondary` 底,被選中(focused)的 step 以 `--border-hover` 外環標示。sm 尺寸的 dot 在 non-linear current 仍用 `fg-disabled` 灰點(8px dot 最小化呈現)。
 
-**Ring 不是 selection marker**。Steps 不是 SelectMenu / DropdownMenu 這類 selection control;ring 是 focus marker 單一語意。`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」規則 B 指出的 `bg-neutral-selected`、radio 圓圈等 selection 視覺**都不適用 Steps**——Steps 用 box-shadow 外環表達「you are here」,不是「你選中了這個」。
+**Ring 不是 selection marker**。Steps 不是 SelectMenu / DropdownMenu 這類 selection control;ring 是 focus marker 單一語意。`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」規則 B 指出的 `bg-neutral-selected`、radio 圓圈等 selection 視覺**都不適用 Steps**——Steps 用 outline 外環表達「you are here」,不是「你選中了這個」。
 
 ---
 
@@ -317,6 +347,10 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 | `linear=true`(預設) | 可點:`completed` / `current` / `error` / `reachable`(下一個未完成)。**不可點**:`upcoming`(尚未解鎖)。 |
 | `linear=false` | 所有非 `disabled` 的 step 都可點。適合 setting wizard、教學目錄等「步驟之間無強依賴」的場景。 |
 
+兩種模式共同的例外:**預設展開模式(`follow-active`)下 `value` 指到的那一步不可點** —— 見下方「Expansion」的「目前那一步可不可以點」。
+
+不可點分兩種,游標不同(`steps.tsx` `isLocked` / `isClickable`):**鎖住**(`disabled`、linear 的 `upcoming`)= 禁止游標 `cursor-not-allowed`;**你就在這裡**(上述目前那一步)= 一般箭頭,它沒有被禁止,只是點了不會發生任何事。兩種都沒有 `role="button"`、不進 Tab 序;差別在焦點框:鎖住的步不可聚焦(`outline-none`),目前那一步保留 `tabIndex=-1`、焦點框照畫(理由見「Expansion」的「目前那一步可不可以點」)。
+
 ### 點擊 completed step 的行為
 
 `linear=true` 下使用者點 completed step:
@@ -336,6 +370,18 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 | `follow-active`(預設) | 只有 `value` 指向的 step 渲染 `<StepContent>`。value 切換時 content 跟著切。其他 step 即使寫了 `<StepContent>` 也不顯示。 |
 | `multiple` | 每個 step 獨立管理展開狀態,**可同時展開多個**。點 step header 永遠先更新 `value`(focus),並額外切換該 step 的展開。`defaultExpanded` 接 `"all" \| "none" \| string[]`,預設 `"none"`。 |
 
+### 目前那一步可不可以點(2026-09-26,待辦總帳 N44)
+
+| 模式 | 點 `value` 指到的那一步會發生什麼 | 所以 |
+|---|---|---|
+| `follow-active`(預設) | 什麼都不會發生:`onValueChange` 收到同一個值,展開又綁在 `value` 上(實測點了 DOM 0 變化) | **不可點**:不是按鈕、不進 Tab 序、一般箭頭游標(不是手形、也不是禁止符號) |
+| `multiple` | 收合 / 展開它自己的內容(`aria-expanded` true ↔ false) | 可點,照舊是按鈕 |
+
+2026-09-25 以前兩種模式都把它做成按鈕,預設模式因此出現「手形游標 + 可以 Tab 停上去,按下去卻沒有任何反應」。判準就是本元件自己的鍵盤規則「Tab — focus 每個 **clickable** step」:點了不會發生事的東西不是 clickable。
+
+**它仍保留 `tabIndex=-1`**(不進 Tab 序,但能持有焦點):鍵盤使用者在某一步按 Enter / Space 跳過去時,焦點所在的那一列正好變成「目前那一步」;若它同時變成完全不可聚焦,瀏覽器依 HTML 的 focus fixup 會把焦點丟回頁首,下一個 Tab 得從頭來。`-1` 讓焦點留在原地、Tab / Shift+Tab 照常往前後走,焦點框照全域 `:focus-visible` 畫(用滑鼠點過去不會出現框)。
+世界級對照:[Atlassian progress-tracker `stage.js#L69-L73`](https://cdn.jsdelivr.net/npm/@atlaskit/progress-tracker@11.4.4/dist/es2019/internal/stage.js)(只有 `status === 'visited'` 的步才渲染成連結,目前那一步不是連結 → 不是停靠點);[Carbon `ProgressIndicator.tsx#L315-L323`](https://github.com/carbon-design-system/carbon/blob/v11.117.0/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L315-L323)(目前那一步 `onClick={!current ? onClick : undefined}`、加 `--unclickable`,樣式 [`_progress-indicator.scss#L228-L231`](https://github.com/carbon-design-system/carbon/blob/v11.117.0/packages/styles/scss/components/progress-indicator/_progress-indicator.scss#L228-L231) `cursor: default`,但仍 `tabIndex={0}`);[Ant Design `steps/style/index.ts#L183-L185`](https://github.com/ant-design/ant-design/blob/6.6.5/components/steps/style/index.ts#L183-L185)(手形游標只給 `[role='button']:not(-active)`,目前那一步是一般箭頭)。三家一致的是「目前那一步不給手形游標」;Tab 停不停,Atlassian 不停、Carbon / Ant 仍停 —— 本 DS 取不停,理由是上面那條本元件自己的鍵盤規則(停上去按 Enter / Space 沒有任何事可做)。
+
 ### 為什麼 `all` 隸屬於 `multiple`
 
 `all`(全部展開)跟 `none`(全部收合)**本質上都是「使用者可以同時展開多個」的行為**——差別只在初始狀態。把它們並列在同一個 mode 下、用 `defaultExpanded` 決定初始狀態,是比「三個平行 enum 值」更乾淨的結構。`follow-active` 則是完全不同的 mental model(展開狀態綁定 `value`,使用者不能獨立切換),所以拆成獨立 mode。
@@ -354,6 +400,8 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 |---|---|---|---|---|
 | `vertical`(預設) | 上 → 下 | 垂直線,穿過 description / content | indicator 右側 | 支援 |
 | `horizontal` | 左 → 右 | 水平線 | indicator 右側(同行) | 不支援(忽略) |
+
+**可點範圍 = 整列 header,兩種排列都包含描述**(2026-09-26,待辦總帳 N51):垂直版的描述本來就在 header 裡;水平版的描述在連接線下方另起一列,2026-09-25 以前那一列放在 header 外面 —— 滑到描述上游標不是手形、點了也不會跳到那一步(實測 4/4)。現在水平版 header 是直向兩列(第一列 indicator + label + connector,第二列描述),描述一樣點得到;描述那一列的行高照舊(`leading-normal`,= 搬家前從 li 根繼承的值),畫面不變。
 
 **何時用 horizontal**:步驟 ≤ 5、重視「進度條」感、水平空間充足、不需要 per-step content 區。
 **何時用 vertical**:步驟 > 5、需要 description 或 content、行動裝置、主流程精靈。
@@ -444,7 +492,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 ## 相關
 
-- `../../patterns/element-anatomy/item-anatomy.spec.md` — Row primitive 繼承規則（字體 / icon tier / hit area 地板）
+- `../../patterns/element-anatomy/item-anatomy.spec.md` — Row primitive 繼承規則（字體 / icon tier / 列高）
 - `../Tabs/tabs.spec.md` — 平行視圖切換（非進度場景）
 - `../Breadcrumb/breadcrumb.spec.md` — 位置路徑（非進度場景）
 - `../RadioGroup/radio-group.spec.md` — 選值（非進度場景）
@@ -459,12 +507,12 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 - **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
 - **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
-- **展開狀態 ARIA**(2026-07-05 D4 加):垂直模式 step 含 `<StepContent>` 時,clickable header(`role="button"`)輸出 `aria-expanded`(反映 content 展開狀態;`multiple` toggle 與 `follow-active` 皆同步),並在 content 實際渲染(展開)時以 `aria-controls` 指向 content 區(收合時 content 不在 DOM,不輸出避免 dangling reference)——對齊 WAI-ARIA disclosure pattern trigger 最低要求。chevron 維持 `aria-hidden` 純視覺。
-- **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS inset focus ring(`focus-visible:outline-2 outline-offset-[-2px] outline-ring`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。展示層 `MultipleExpansion` 以 play assertion 驗證該節點確實 overflow、可聚焦。
+- **展開狀態 ARIA**(2026-07-05 D4 加):垂直模式 step 含 `<StepContent>` 時,clickable header(`role="button"`)輸出 `aria-expanded`(反映 content 展開狀態;`multiple` toggle 與 `follow-active` 皆同步;`follow-active` 下目前那一步不是按鈕、沒有 `aria-expanded`,它的內容恆展開 —— 見「Expansion」的「目前那一步可不可以點」),並在 content 實際渲染(展開)時以 `aria-controls` 指向 content 區(收合時 content 不在 DOM,不輸出避免 dangling reference)——對齊 WAI-ARIA disclosure pattern trigger 最低要求。chevron 維持 `aria-hidden` 純視覺。
+- **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS 內描邊焦點框(`focus-visible:focus-ring-inset`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。展示層 `MultipleExpansion` 以 play assertion 驗證該節點確實 overflow、可聚焦。
 
 **Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
 
-- Tab — focus 每個 clickable step(各自 tab stop)
+- Tab — focus 每個 clickable step(各自 tab stop);鎖住的步與預設展開模式下的目前那一步不是 clickable,不停(見「Expansion」的「目前那一步可不可以點」)
 - Enter / Space — navigate to step(`role=button` 元素必同時支援)
 - **不提供方向鍵 roving**:採 native button sequential Tab(對齊 Carbon ProgressIndicator);MUI / Angular Material 的「tablist + 方向鍵 roving」是另一派世界級做法,本 DS 不採(避免把 `role=button` 改寫成 `role=tab` 的語義改動)。
 

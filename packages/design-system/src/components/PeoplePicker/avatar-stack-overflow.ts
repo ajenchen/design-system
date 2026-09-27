@@ -6,7 +6,7 @@
  * Real root cause of Bug 3「same cell width but different overflow timing per total count」:
  *   1. `useOverflowCount` 在 Combobox 用 DOM `offsetWidth` 量測 + `overflowW = 60` fallback(實際 24px)
  *   2. `overflowEl` 不被 ResizeObserver observe,first calc 用 fallback 後不會 recalc
- *   3. `offsetWidth` 不減 `-ml-0.5` overlap → measurement 偏保守
+ *   3. `offsetWidth` 不減 overlap(當時 `-ml-0.5`) → measurement 偏保守
  *   4. **架構違反**:`MultiPersonDisplay` display path 用 canvas-based 算 / Combobox edit path 用 DOM offsetWidth
  *      → 同 cell width 兩 path 不同結果 → user verbatim「同寬 cell overflow 時間不一樣」SSOT 根本被違反
  *
@@ -29,13 +29,16 @@
  * Primer Truncate(parent-constrained max width)。
  */
 
+import { AVATAR_STACK_OVERLAP_PX } from '@/design-system/components/Avatar/avatar'
+import { OVERFLOW_INDICATOR_CIRCLE_PX } from '@/design-system/components/OverflowIndicator/overflow-indicator'
+
 /**
  * Pure deterministic visible-count formula for avatar stack with overlap + overflow chip.
  *
  * @param availablePx — Container width available for the entire stack(含 +N chip 預留空間)
  * @param total — Total avatars in selection
  * @param avatarPx — Per-avatar pixel width(包含 ring border)
- * @param overlapPx — Negative margin overlap between siblings(default 2px = `-ml-0.5`)
+ * @param overlapPx — Negative margin overlap between siblings(default = `AVATAR_STACK_OVERLAP_PX`,CSS 雙生 `--avatar-stack-overlap`)
  * @param overflowChipPx — Width reserved for +N indicator when overflow needed(default 24px = circle h-6 min-w-6)
  * @returns visible count(0 ≤ visible ≤ total)。若全部 fit 則 visible = total(無 +N chip);否則 visible 為 max fit。
  */
@@ -43,11 +46,12 @@ export function getAvatarStackVisibleCount({
   availablePx,
   total,
   avatarPx,
-  overlapPx = 2,
+  // 疊的量只有一個住所:avatar.tsx `AVATAR_STACK_OVERLAP_PX`(2026-09-26 頭像堆疊挖空起)
+  overlapPx = AVATAR_STACK_OVERLAP_PX,
   // NOTE: overflowChipPx is kept for backward-compat API but the slot-based
   // formula below treats chip = avatar physical size(both circles same shape
   // + same -ml-0.5 overlap when stacked)。Consumer 必 ensure 視覺 chip wrapper
-  // 也套同 `-ml-0.5` overlap class(Combobox `overflowWrapperClassName`)。
+  // 也套同 `-ml-[var(--avatar-stack-overlap)]` overlap class(Combobox `overflowWrapperClassName`)。
   overflowChipPx: _overflowChipPx = 24,
 }: {
   availablePx: number
@@ -66,7 +70,7 @@ export function getAvatarStackVisibleCount({
   //   被當「stack 外額外 chunk」。User 抓 length=4→4、length=5→2+3 = 物理錯。
   //
   // **User 物理模型(對齊 MUI AvatarGroup / Primer AvatarStack / Material idiom)**:
-  //   avatar 跟 +N 都是同尺寸圓形 + 同 -ml-0.5 overlap → 同 step。空間 W 容
+  //   avatar 跟 +N 都是同尺寸圓形 + 同 `--avatar-stack-overlap` overlap → 同 step。空間 W 容
   //   `slots = 1 + floor((W - avatar) / step)` 個圓。total ≤ slots → 全 avatar 無 chip;
   //   total > slots → (slots-1) avatar + 1 chip(共 slots 個圓)。
   //
@@ -81,7 +85,8 @@ export function getAvatarStackVisibleCount({
 }
 
 /**
- * Map size token to avatar pixel(對齊 person-display.tsx:80 AVATAR_PX SSOT)。
+ * 人員頭像每個尺寸的直徑(px)—— 與 Tag 高度對齊:sm=20px, md/lg=24px(對齊 item-anatomy AVATAR_SIZE.inline)。
+ * 這裡是唯一住所:person-display.tsx 的 `AVATAR_PX` 直接指向它(2026-09-27 前兩檔各寫一份,M17)。
  */
 export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
   sm: 20,
@@ -90,11 +95,7 @@ export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
 }
 
 /**
- * Default overflow chip width per size(對齊 overflow-indicator.tsx:17 triggerSize SSOT)。
- * shape='circle' → h-{5|6} min-w-{5|6} ≈ 20-24px
+ * +N 圓的直徑 = OverflowIndicator circle 形狀自己的尺寸(唯一住所在 overflow-indicator.tsx),
+ * 不再另抄一份(2026-09-27 前是第三份同值)。堆疊契約「同尺寸」讓它與 AVATAR_STACK_AVATAR_PX 逐尺寸相等。
  */
-export const AVATAR_STACK_OVERFLOW_CHIP_PX: Record<'sm' | 'md' | 'lg', number> = {
-  sm: 20,
-  md: 24,
-  lg: 24,
-}
+export const AVATAR_STACK_OVERFLOW_CHIP_PX = OVERFLOW_INDICATOR_CIRCLE_PX

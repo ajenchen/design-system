@@ -558,7 +558,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 跟 avatar 同 slot(等寬同 step,non-overlapping 多 24px 區塊不再 saw)。對齊 user
       // 「avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形」物理模型 directive +
       // MUI AvatarGroup / Primer AvatarStack 共識(`AvatarGroup.js` L54-59 same negative margin)。
-      overflowWrapperClassName="-ml-0.5 first:ml-0 relative inline-flex"
+      overflowWrapperClassName="-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex"
       tagAreaGapPx={0}
       tagAreaPaddingLeftPx={undefined}
       // 2026-05-12 Round 7 fix(user 抓 image 2「+N tag 應該圓形不是矩形」+ 對齊 GitHub picker idiom):

@@ -6,6 +6,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
 import { tagVariants } from '@/design-system/components/Tag/tag'
+import { AVATAR_STACK_CUTOUT_CLASS, avatarStackCutoutStyle } from '@/design-system/components/Avatar/avatar'
 import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 /**
@@ -19,11 +20,14 @@ import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/to
  * 改用 tagVariants 直接套樣式。
  */
 
-const triggerSize: Record<string, string> = {
-  sm: 'h-5 min-w-5',
-  md: 'h-6 min-w-6',
-  lg: 'h-6 min-w-6',
-}
+/**
+ * @internal
+ * circle 形狀每個尺寸的直徑(px)。高與最小寬直接讀這裡(inline style),不再另寫一份 `h-5 / h-6` class
+ * (2026-09-27 前是 class 與數字各一份,M17)。circle 接在頭像堆疊尾端時,挖空的幾何 = 左邊那顆頭像的直徑;
+ * 堆疊契約是「同尺寸」(avatar.spec.md「頭像堆疊」),所以取自己的直徑。PeoplePicker 量寬用的 +N 寬也從這裡來
+ *(`avatar-stack-overflow.ts` AVATAR_STACK_OVERFLOW_CHIP_PX 直接指向本常數)。
+ */
+export const OVERFLOW_INDICATOR_CIRCLE_PX: Record<'sm' | 'md' | 'lg', number> = { sm: 20, md: 24, lg: 24 }
 
 const triggerText: Record<string, string> = {
   sm: 'text-[10px]',
@@ -91,7 +95,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
 
 const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorProps>(
   function OverflowIndicator(
-    { count, shape = 'circle', size = 'md', children, className, ...props },
+    { count, shape = 'circle', size = 'md', children, className, style, ...props },
     ref,
   ) {
     if (count <= 0) return null
@@ -106,26 +110,42 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         ref={ref}
         data-overflow-indicator=""
         tabIndex={0}
-        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-pointer ', className)}
+        // 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;
+        // hit-area-canonical.md 滑過原則三-1「不能讓人以為點下去會做事」)
+        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-default', className)}
+        style={style}
         {...props}
       >
         <span className="px-1">+{count}</span>
       </span>
     ) : (
+      // circle = 頭像堆疊的尾端(avatar.spec.md「頭像堆疊(疊在一起時)」)。
+      // 底色 `--secondary`(2026-09-26 採用,待辦總帳 L3;跟 Tag 預設灰同一顆):+N 雖然不能點,但可以 Tab 聚焦、
+      // 滑過或聚焦會開名單卡 = 可互動元素;`--muted` 不可當可互動元素的靜止底(color.spec.md
+      // 「能不能當可互動元素的靜止底」條 + 「Static Subtle Background」表 `bg-muted` 列「靜態非互動」)。
+      // 底色畫在內層的圓上、不畫在觸發點本身:接在頭像堆疊後面時這個圓要被挖空,
+      // 遮罩掛在觸發點上會把全域 :focus-visible 外描邊整圈裁掉。
+      // 是否挖空由結構決定(前面有看得見的堆疊項目才挖),所以 Combobox 不必多傳任何 prop。
       <span
         ref={ref}
         data-overflow-indicator=""
+        data-avatar-stack=""
         tabIndex={0}
         className={cn(
-          'shrink-0 rounded-full inline-grid place-content-center',
-          'bg-muted text-foreground font-medium leading-none cursor-pointer',
-          triggerSize[size],
+          'relative shrink-0 rounded-full inline-grid place-content-center',
+          'text-foreground font-medium leading-none cursor-default', // 同上方 tag 形狀:只浮出名單,點了沒作用 → 不用手形
           triggerText[size],
           className,
         )}
+        style={{ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size], ...style }}
         {...props}
       >
-        +{count}
+        <span
+          aria-hidden
+          className={cn('absolute inset-0 rounded-full bg-secondary', AVATAR_STACK_CUTOUT_CLASS)}
+          style={avatarStackCutoutStyle(OVERFLOW_INDICATOR_CIRCLE_PX[size])}
+        />
+        <span className="relative">+{count}</span>
       </span>
     )
 
@@ -161,7 +181,7 @@ export const overflowIndicatorMeta = {
   // 2026-07-04 audit 對齊(spec:95「本身無 hover / active / disabled / selected 變化」;code 有 focus-visible ring tsx:106/121)
   states: ['default', 'focus-visible'],
   tokens: {
-    bg: ['bg-muted'],
+    bg: ['bg-secondary'],
     fg: ['text-foreground'],
     ring: [],
   },

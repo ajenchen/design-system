@@ -30,12 +30,20 @@
 // 抓拖曳目標時注意:DataTable 第一顆表頭是**鎖定欄**(`data-column-locked`,不可拖),
 // 必須抓有 `aria-roledescription` 的那種,否則「拖了沒事」會被誤判成通過(也踩過)。
 //
+// **story 沒渲染出來 = 儀器失效(exit 1,訊息標 INSTRUMENT-FAIL),不是產品裁決**(2026-09-25,M37):
+// 每則 story 經 lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)開啟 —— 等 Storybook 回報渲染完成、
+// 通過 render-health、要操作的元素出現、版面連續靜止 SETTLE_FRAMES 個影格,才開始拖。取代原本的 networkidle + 固定睡
+// 500–600ms。等不到 → 點名 story、附同源 404,exit 1(不用 2:gate meta-test 的約定裡 2 = 缺前置 → 略過)。
+// 面板也一樣:原本點開後固定睡 500ms 再找拖曳把手,找不到就印「略過」放行 —— 慢的機器上欄位顯示面板那 6 條會整組
+// 靜默不驗。現在先等面板本身出現;欄位顯示面板沒有把手 = 紅。排序面板在這則 story 沒有任何排序條件(只有「加排序」鈕,
+// 2026-09-25 實測 0 個把手),所以它的 0 個把手是**確定的**,照舊不驗,但會印出理由(不是「沒量到」)。
+//
 // Run: `node scripts/drag-runtime-contract.mjs`
 
-import { chromium } from 'playwright'
-import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { statSync } from 'node:fs'
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // stale-build 守衛:量到舊 DOM = 假綠
 for (const f of ['packages/design-system/src/lib/drag-announcements.ts','packages/design-system/src/lib/drag-visual.ts',
@@ -44,135 +52,159 @@ for (const f of ['packages/design-system/src/lib/drag-announcements.ts','package
   if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
     console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) }
 }
-const M={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2'}
-const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
- const f=join(S,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}
- s.writeHead(200,{'content-type':M[extname(f)]||'application/octet-stream'});s.end(readFileSync(f))})
-await new Promise(r=>sv.listen(0,r))
-const B=`http://localhost:${sv.address().port}`
-let br
-try { br = await chromium.launch({headless:true,args:['--single-process','--no-sandbox']}) }
-catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromium(' + String(e.message).split('\n')[0] + ')'); process.exit(0) }
-const pg=await br.newPage({viewport:{width:1600,height:1000}})
+// 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
+const server=await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
+const B=server.origin
+// 失敗時一併印同源 404 帳本:不讓「儀器沒拿到檔」被讀成「元件沒渲染」
+const report404=()=>{ if(server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }
+// 起不了 Chromium → SKIPPED-ENV exit 0(行為照舊;啟動參數改由 lib/launch-browser.mjs 單一來源提供,不再自己寫一份)
+const br = await launchBrowserOrSkip()
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
-const live = () => pg.evaluate(()=>[...document.querySelectorAll('[aria-live]')].map(n=>({l:n.getAttribute('aria-live'),t:(n.textContent||'').trim()})).filter(x=>x.t))
+// 開 story 後要求版面連續靜止幾個影格才開始量把手 / 表頭 / 樹節點的座標
+const SETTLE_FRAMES = 10
+let instrumentFailure = null
+try {
+  const pg=await br.newPage({viewport:{width:1600,height:1000}})
+  const live = () => pg.evaluate(()=>[...document.querySelectorAll('[aria-live]')].map(n=>({l:n.getAttribute('aria-live'),t:(n.textContent||'').trim()})).filter(x=>x.t))
+  // 開一則 story 並證明它真的渲染完成(見檔頭);waitFor = 接下來要操作的元素本身
+  const open = (id, waitFor) => openStory(pg, `${B}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitFor, settleFrames: SETTLE_FRAMES, notFound: server.notFound })
 
-for (const [panel, label] of [['欄位顯示','欄位顯示面板'], ['排序','排序面板']]) {
-  await pg.goto(`${B}/iframe.html?id=design-system-components-datatable-展示--with-bulk-actions&viewMode=story`,{waitUntil:'networkidle'})
-  await pg.waitForTimeout(600)
-  const trigger = await pg.$(`button[aria-label="${panel}"]`)
-  if(!trigger){ ck(`C4 ${label}:找得到觸發鈕`, false); continue }
-  await trigger.click(); await pg.waitForTimeout(500)
-  const handle = await pg.$('[aria-label="拖曳重排"]')
-  if(!handle){ out.push(`… ${label} 沒有拖曳把手,略過`); continue }
-  const box = await handle.boundingBox()
-  const cx = box.x+box.width/2, cy = box.y+box.height/2
-
-  // (1) 零位移:按下、不動、放開 → 不得啟動拖曳、不得播報
-  await pg.mouse.move(cx, cy); await pg.mouse.down(); await pg.waitForTimeout(250)
-  const zeroPressed = await pg.evaluate(()=>document.querySelector('[aria-label="拖曳重排"]')?.getAttribute('aria-pressed'))
-  const zeroLive = await live()
-  await pg.mouse.up(); await pg.waitForTimeout(150)
-  ck(`C4 ${label}:零位移不得啟動拖曳`, zeroPressed !== 'true', `aria-pressed=${zeroPressed}`)
-  ck(`C4 ${label}:零位移不得播報`, zeroLive.length === 0, JSON.stringify(zeroLive))
-
-  // (2) 超過門檻(移 20px)→ 必須啟動,證明門檻不是把功能鎖死
-  await pg.mouse.move(cx, cy); await pg.mouse.down()
-  for (const dy of [3, 10, 20, 40]) { await pg.mouse.move(cx, cy+dy, {steps:3}); await pg.waitForTimeout(70) }
-  const movedLive = await live()
-  // 用「播報有沒有出現」當拖曳啟動的證明,不用 aria-pressed —— 那個屬性在拖曳結束後就被清掉,
-  // 拿它當事後斷言會量到 null 而誤判(2026-09-07 踩過)。
-  ck(`C4 ${label}:超過門檻後拖曳仍可啟動(門檻沒把功能鎖死)`,
-     movedLive.some(x=>/提起|移到|不在可放置/.test(x.t)), JSON.stringify(movedLive).slice(0,140))
-  ck(`C4 ${label}:播報是繁中`, movedLive.length>0 && movedLive.every(x=>/[\u4e00-\u9fff]/.test(x.t)), JSON.stringify(movedLive).slice(0,140))
-  await pg.mouse.up(); await pg.waitForTimeout(250)
-  const endLive = await live()
-  ck(`C4 ${label}:放開後有結果播報`, endLive.some(x=>/已移動|未變更/.test(x.t)), JSON.stringify(endLive).slice(0,140))
-
-  // (3) C1 的核心:拉起來又放回原位 → 必須說「未變更順序」,不得謊稱成功
-  await pg.mouse.move(cx, cy); await pg.mouse.down()
-  for (const dy of [3, 10, 20]) { await pg.mouse.move(cx, cy+dy, {steps:3}); await pg.waitForTimeout(60) }
-  await pg.mouse.move(cx, cy, {steps:5}); await pg.waitForTimeout(120)
-  await pg.mouse.up(); await pg.waitForTimeout(300)
-  const noopLive = await live()
-  ck(`C1 ${label}:放回原位必須說「未變更順序」,不得謊稱已移動`,
-     noopLive.some(x=>/未變更順序/.test(x.t)), JSON.stringify(noopLive).slice(0,140))
-}
-
-// ── C5:拖曳中的 ghost 不得進無障礙樹 ──
-await pg.goto(`${B}/iframe.html?id=design-system-components-datatable-展示--column-reorder&viewMode=story`,{waitUntil:'networkidle'})
-await pg.waitForTimeout(600)
-const beforeN = await pg.evaluate(()=>document.querySelectorAll('[role="columnheader"]').length)
-// 第一顆是鎖定欄,要抓有 aria-roledescription 的
-const dragHdr = await pg.$('[role="columnheader"][data-column-id][aria-roledescription]')
-if (!dragHdr) ck('C5 找得到可拖曳表頭', false)
-else {
-  const hb = await dragHdr.boundingBox()
-  await pg.mouse.move(hb.x+hb.width/2, hb.y+hb.height/2); await pg.mouse.down()
-  for (const dx of [3,12,30,80,140]) { await pg.mouse.move(hb.x+hb.width/2+dx, hb.y+hb.height/2, {steps:4}); await pg.waitForTimeout(60) }
-  const during = await pg.evaluate(()=>{
-    const ov=document.querySelector('[class*="bg-surface-raised"][class*="pointer-events-none"]')
-    return { started: !!ov, ah: ov?ov.getAttribute('aria-hidden'):null,
-      dom: document.querySelectorAll('[role="columnheader"]').length,
-      at: [...document.querySelectorAll('[role="columnheader"]')].filter(e=>!e.closest('[aria-hidden="true"]')).length }
-  })
-  await pg.mouse.up(); await pg.waitForTimeout(200)
-  ck('C5 前提:拖曳真的啟動了(否則以下數字是假綠)', during.started, JSON.stringify(during))
-  ck('C5 ghost 掛了 aria-hidden', during.ah==='true', String(during.ah))
-  ck('C5 AT 看得見的 columnheader 數量不變', during.at===beforeN, `平常 ${beforeN} / 拖曳中 AT 可見 ${during.at}(DOM 含 ghost ${during.dom})`)
-}
-
-// ── C3:鍵盤重排 —— 一次一格,而且播報要跟真實順序一致 ──
-{
-  const order = () => pg.evaluate(() => [...document.querySelectorAll('[role="columnheader"][data-column-id]')]
-    .filter(h => !h.closest('[aria-hidden="true"]'))   // 排除 DragOverlay 的 ghost,否則會多算一欄
-    .map(h => h.dataset.columnId).join(','))
-  for (const n of [1, 3]) {
-    await pg.goto(`${B}/iframe.html?id=design-system-components-datatable-展示--column-reorder&viewMode=story`,{waitUntil:'networkidle'})
+  // expectHandles:這則 story 裡該面板有沒有可拖的列。排序面板 = false:story 沒設排序條件(見檔頭),0 個把手是確定的。
+  for (const [panel, label, expectHandles] of [['欄位顯示','欄位顯示面板',true], ['排序','排序面板',false]]) {
+    await open('design-system-components-datatable-展示--with-bulk-actions', `button[aria-label="${panel}"]`)
+    const trigger = await pg.$(`button[aria-label="${panel}"]`)
+    if(!trigger){ ck(`C4 ${label}:找得到觸發鈕`, false); continue }
+    await trigger.click()
+    // 等面板本身出現(不是固定睡眠);出現之後的 500ms 是等開啟動畫跑完,把手座標才是停下來的值
+    const opened = await pg.waitForSelector('[role="dialog"] [data-slot="surface-body"]', { timeout: 10000 }).then(() => true, () => false)
+    if(!opened){ ck(`C4 ${label}:點觸發鈕後面板有打開`, false, '10 秒內沒出現 [role=dialog] 的 surface-body'); continue }
     await pg.waitForTimeout(500)
-    const before = await order()
-    const focused = await pg.evaluate(() => {
-      // 第一顆是鎖定欄,要抓有 aria-roledescription 的
-      const h = document.querySelector('[role="columnheader"][data-column-id][aria-roledescription]')
-      if (!h) return null; h.focus(); return h.dataset.columnId })
-    if (!focused) { ck('C3 找得到可用鍵盤拖曳的表頭', false); break }
-    await pg.keyboard.press('Space'); await pg.waitForTimeout(200)
-    for (let i = 0; i < n; i++) { await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(140) }
-    await pg.keyboard.press('Space'); await pg.waitForTimeout(400)
-    const after = await order()
+    const handle = await pg.$('[role="dialog"] [aria-label="拖曳重排"]')
+    if(!handle){
+      if (expectHandles) ck(`C4 ${label}:面板裡有拖曳把手`, false, '面板已開啟但 0 個 [aria-label="拖曳重排"]')
+      else out.push(`… ${label}:0 個拖曳把手 —— 這則 story 沒有排序條件,沒有可拖的列(確定性,不是沒量到)`)
+      continue
+    }
+    const box = await handle.boundingBox()
+    const cx = box.x+box.width/2, cy = box.y+box.height/2
+
+    // (1) 零位移:按下、不動、放開 → 不得啟動拖曳、不得播報
+    // 以下各段滑鼠 / 鍵盤之間的短暫等待都是「元素早已在畫面上」之後的互動節拍:讓 dnd-kit 感測器處理事件、播報寫進 live region
+    await pg.mouse.move(cx, cy); await pg.mouse.down(); await pg.waitForTimeout(250) // 按住不動 250ms:給感測器(錯誤地)啟動的機會
+    const zeroPressed = await pg.evaluate(()=>document.querySelector('[aria-label="拖曳重排"]')?.getAttribute('aria-pressed'))
+    const zeroLive = await live()
+    await pg.mouse.up(); await pg.waitForTimeout(150) // 等放開後的狀態清掉
+    ck(`C4 ${label}:零位移不得啟動拖曳`, zeroPressed !== 'true', `aria-pressed=${zeroPressed}`)
+    ck(`C4 ${label}:零位移不得播報`, zeroLive.length === 0, JSON.stringify(zeroLive))
+
+    // (2) 超過門檻(移 20px)→ 必須啟動,證明門檻不是把功能鎖死
+    await pg.mouse.move(cx, cy); await pg.mouse.down()
+    for (const dy of [3, 10, 20, 40]) { await pg.mouse.move(cx, cy+dy, {steps:3}); await pg.waitForTimeout(70) }
+    const movedLive = await live()
+    // 用「播報有沒有出現」當拖曳啟動的證明,不用 aria-pressed —— 那個屬性在拖曳結束後就被清掉,
+    // 拿它當事後斷言會量到 null 而誤判(2026-09-07 踩過)。
+    ck(`C4 ${label}:超過門檻後拖曳仍可啟動(門檻沒把功能鎖死)`,
+       movedLive.some(x=>/提起|移到|不在可放置/.test(x.t)), JSON.stringify(movedLive).slice(0,140))
+    ck(`C4 ${label}:播報是繁中`, movedLive.length>0 && movedLive.every(x=>/[\u4e00-\u9fff]/.test(x.t)), JSON.stringify(movedLive).slice(0,140))
+    await pg.mouse.up(); await pg.waitForTimeout(250) // 等放下後的結果播報寫入
     const endLive = await live()
-    const beforeArr = before.split(','), afterArr = after.split(',')
-    const moved = afterArr.indexOf(focused) - beforeArr.indexOf(focused)
-    // 一次按鍵 = 跨一格。沒有這條的話,dnd-kit 預設每次只移 25px,欄寬 100–240px
-    // 意味著「移一格要按 11 次」—— 能操作但沒人會用(2026-09-07 實測)。
-    ck(`C3 ArrowRight×${n} 應該正好移動 ${n} 格`, moved === n, `『${focused}』移了 ${moved} 格:${after}`)
-    // 播報必須與真實順序一致 —— 「說已移動但其實沒動」正是 C1 那類謊報
-    const claimsMoved = endLive.some(x => /已移動/.test(x.t))
-    ck(`C3 ArrowRight×${n} 播報與真實順序一致`, claimsMoved === (after !== before), JSON.stringify(endLive))
-  }
-}
+    ck(`C4 ${label}:放開後有結果播報`, endLive.some(x=>/已移動|未變更/.test(x.t)), JSON.stringify(endLive).slice(0,140))
 
-// ── C2:TreeView 指標拖曳也要有繁中播報(先前實測整趟是空字串)──
-{
-  await pg.goto(`${B}/iframe.html?id=design-system-components-treeview-展示--drag-and-drop&viewMode=story`,{waitUntil:'networkidle'})
-  await pg.waitForTimeout(600)
-  const item = await pg.$('[data-tree-row]')
-  if (!item) ck('C2 找得到可拖曳的樹節點', false)
+    // (3) C1 的核心:拉起來又放回原位 → 必須說「未變更順序」,不得謊稱成功
+    await pg.mouse.move(cx, cy); await pg.mouse.down()
+    for (const dy of [3, 10, 20]) { await pg.mouse.move(cx, cy+dy, {steps:3}); await pg.waitForTimeout(60) }
+    await pg.mouse.move(cx, cy, {steps:5}); await pg.waitForTimeout(120)
+    await pg.mouse.up(); await pg.waitForTimeout(300) // 等「未變更順序」播報寫入
+    const noopLive = await live()
+    ck(`C1 ${label}:放回原位必須說「未變更順序」,不得謊稱已移動`,
+       noopLive.some(x=>/未變更順序/.test(x.t)), JSON.stringify(noopLive).slice(0,140))
+  }
+
+  // ── C5:拖曳中的 ghost 不得進無障礙樹 ──
+  await open('design-system-components-datatable-展示--column-reorder', '[role="columnheader"][data-column-id][aria-roledescription]')
+  const beforeN = await pg.evaluate(()=>document.querySelectorAll('[role="columnheader"]').length)
+  // 第一顆是鎖定欄,要抓有 aria-roledescription 的
+  const dragHdr = await pg.$('[role="columnheader"][data-column-id][aria-roledescription]')
+  if (!dragHdr) ck('C5 找得到可拖曳表頭', false)
   else {
-    const b = await item.boundingBox()
-    await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
-    await pg.mouse.down()
-    for (const dy of [3, 12, 30, 60]) { await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + dy, {steps:4}); await pg.waitForTimeout(70) }
-    const mid = await live()
-    await pg.mouse.up(); await pg.waitForTimeout(300)
-    const end = await live()
-    // 先前的症狀:整趟拖曳下來 live region 維持空字串(繁中那份只有鍵盤路徑在寫,
-    // 指標路徑走 dnd-kit 英文預設,而那份預設寫進的是 dnd-kit 自己的 region)
-    ck('C2 TreeView 指標拖曳中有繁中播報', mid.some(x => /[\u4e00-\u9fff]/.test(x.t)), JSON.stringify(mid).slice(0,140))
-    ck('C2 TreeView 放開後有結果播報', end.some(x => /已移動|未變更|已取消/.test(x.t)), JSON.stringify(end).slice(0,140))
+    const hb = await dragHdr.boundingBox()
+    await pg.mouse.move(hb.x+hb.width/2, hb.y+hb.height/2); await pg.mouse.down()
+    for (const dx of [3,12,30,80,140]) { await pg.mouse.move(hb.x+hb.width/2+dx, hb.y+hb.height/2, {steps:4}); await pg.waitForTimeout(60) }
+    const during = await pg.evaluate(()=>{
+      const ov=document.querySelector('[class*="bg-surface-raised"][class*="pointer-events-none"]')
+      return { started: !!ov, ah: ov?ov.getAttribute('aria-hidden'):null,
+        dom: document.querySelectorAll('[role="columnheader"]').length,
+        at: [...document.querySelectorAll('[role="columnheader"]')].filter(e=>!e.closest('[aria-hidden="true"]')).length }
+    })
+    await pg.mouse.up(); await pg.waitForTimeout(200) // 等放下後 ghost 卸載
+    ck('C5 前提:拖曳真的啟動了(否則以下數字是假綠)', during.started, JSON.stringify(during))
+    ck('C5 ghost 掛了 aria-hidden', during.ah==='true', String(during.ah))
+    ck('C5 AT 看得見的 columnheader 數量不變', during.at===beforeN, `平常 ${beforeN} / 拖曳中 AT 可見 ${during.at}(DOM 含 ghost ${during.dom})`)
   }
-}
 
-console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
-await br.close(); sv.close(); process.exit(fail?1:0)
+  // ── C3:鍵盤重排 —— 一次一格,而且播報要跟真實順序一致 ──
+  {
+    const order = () => pg.evaluate(() => [...document.querySelectorAll('[role="columnheader"][data-column-id]')]
+      .filter(h => !h.closest('[aria-hidden="true"]'))   // 排除 DragOverlay 的 ghost,否則會多算一欄
+      .map(h => h.dataset.columnId).join(','))
+    for (const n of [1, 3]) {
+      await open('design-system-components-datatable-展示--column-reorder', '[role="columnheader"][data-column-id][aria-roledescription]')
+      const before = await order()
+      const focused = await pg.evaluate(() => {
+        // 第一顆是鎖定欄,要抓有 aria-roledescription 的
+        const h = document.querySelector('[role="columnheader"][data-column-id][aria-roledescription]')
+        if (!h) return null; h.focus(); return h.dataset.columnId })
+      if (!focused) { ck('C3 找得到可用鍵盤拖曳的表頭', false); break }
+      await pg.keyboard.press('Space'); await pg.waitForTimeout(200)
+      for (let i = 0; i < n; i++) { await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(140) }
+      await pg.keyboard.press('Space'); await pg.waitForTimeout(400) // 等放下後的重排 commit 與結果播報
+      const after = await order()
+      const endLive = await live()
+      const beforeArr = before.split(','), afterArr = after.split(',')
+      const moved = afterArr.indexOf(focused) - beforeArr.indexOf(focused)
+      // 一次按鍵 = 跨一格。沒有這條的話,dnd-kit 預設每次只移 25px,欄寬 100–240px
+      // 意味著「移一格要按 11 次」—— 能操作但沒人會用(2026-09-07 實測)。
+      ck(`C3 ArrowRight×${n} 應該正好移動 ${n} 格`, moved === n, `『${focused}』移了 ${moved} 格:${after}`)
+      // 播報必須與真實順序一致 —— 「說已移動但其實沒動」正是 C1 那類謊報
+      const claimsMoved = endLive.some(x => /已移動/.test(x.t))
+      ck(`C3 ArrowRight×${n} 播報與真實順序一致`, claimsMoved === (after !== before), JSON.stringify(endLive))
+    }
+  }
+
+  // ── C2:TreeView 指標拖曳也要有繁中播報(先前實測整趟是空字串)──
+  {
+    await open('design-system-components-treeview-展示--drag-and-drop', '[data-tree-row]')
+    const item = await pg.$('[data-tree-row]')
+    if (!item) ck('C2 找得到可拖曳的樹節點', false)
+    else {
+      const b = await item.boundingBox()
+      await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
+      await pg.mouse.down()
+      for (const dy of [3, 12, 30, 60]) { await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + dy, {steps:4}); await pg.waitForTimeout(70) }
+      const mid = await live()
+      await pg.mouse.up(); await pg.waitForTimeout(300) // 等放下後的結果播報寫入
+      const end = await live()
+      // 先前的症狀:整趟拖曳下來 live region 維持空字串(繁中那份只有鍵盤路徑在寫,
+      // 指標路徑走 dnd-kit 英文預設,而那份預設寫進的是 dnd-kit 自己的 region)
+      ck('C2 TreeView 指標拖曳中有繁中播報', mid.some(x => /[\u4e00-\u9fff]/.test(x.t)), JSON.stringify(mid).slice(0,140))
+      ck('C2 TreeView 放開後有結果播報', end.some(x => /已移動|未變更|已取消/.test(x.t)), JSON.stringify(end).slice(0,140))
+    }
+  }
+} catch (e) {
+  if (!(e instanceof StoryRenderInstrumentError)) { report404(); throw e }
+  instrumentFailure = e
+}
+finally { await br.close(); await server.stop() }
+
+console.log(out.join('\n'))
+// 儀器失效優先於任何判定:沒渲染出來的 story 不是「通過」也不是「產品不符」
+if (instrumentFailure) {
+  console.error(`\n✗ ${instrumentFailure.message}`)
+  report404()
+  console.error(`  上面 ${out.length} 行是停下之前量到的;其後各項沒有量。`)
+  process.exit(1)
+}
+console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
+if(fail) report404()
+process.exit(fail?1:0)

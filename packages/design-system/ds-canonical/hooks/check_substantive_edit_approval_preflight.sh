@@ -32,9 +32,40 @@ TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/n
 EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null) \
   || governance_hook_integrity_fail 'substantive approval event extraction failed'
 
-# Only PreToolUse for Edit|Write|MultiEdit
+# Only PreToolUse
 [ "$EVENT" != "PreToolUse" ] && exit 0
-case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
+
+# 2026-09-24:本閘原本只認 Edit|Write|MultiEdit,於是用 shell 寫同一個檔案(sed -i / heredoc / tee /
+# python open(...,'w'))是**零檢查** —— 閘要保證的性質是「沒有未授權的 DS 原始碼改動」,它實際量的卻是
+# 「沒有未授權的編輯工具呼叫」,換個工具兩者就分開(M37 identity substitution)。本 session 的 harness
+# 另外指示「檔案改動優先用 shell 而非編輯工具」,兩者相乘等於每次改動都預設從洞裡走過去,而且完全沒有訊號。
+# 實證:同一天 subagent 就是走 shell 把 file-item.tsx 的焦點幾何落地的,沒有經過任何授權檢查。
+# 修法:Bash 事件也進來,從命令字串抓「同時出現受管路徑與寫入動詞」的情形,fail closed。
+# 2026-09-27 更正:Bash 事件沒有 content / new_string,分類器拿不到「改了什麼」(operation text 為空),
+# 所以受管產品檔的 shell 寫入**沒有任何 transcript 能放行**,不是「跟走 Edit 一樣要授權」—— 這是刻意的 fail closed:
+# 產品程式一律走 Edit / Write 工具(閘看得到內容才能分工程 / UI),shell 寫檔本來就是本分支要堵的洞。
+# 測試:tests/test_check_substantive_edit_approval_preflight.sh §18(18k 釘住這個行為)。
+# 已知缺口(待辦總帳 N20 / N47):寫入動詞是裸子字串比對(`*">"*` 命中 `2>`、`*"dd "*` 命中 `git add`)會誤擋純讀;
+# 相對路徑(`cd packages/design-system && sed -i … src/x.tsx`)抓不到會漏擋 —— 兩者都由 §18 釘住現況,修好後改期望。
+case "$TOOL" in
+  Edit|Write|MultiEdit) ;;
+  Bash)
+    BASH_CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null) \
+      || governance_hook_integrity_fail 'substantive approval bash command extraction failed'
+    # 快速退出:命令裡完全沒提到受管根目錄就不是本閘的事(絕大多數 Bash 呼叫走這條)
+    case "$BASH_CMD" in
+      *packages/design-system/src/*|*node_modules/@qijenchen/design-system/*|*apps/*) ;;
+      *) exit 0 ;;
+    esac
+    # 寫入動詞:涵蓋原地編輯、重導、複製移動、以及腳本語言的寫檔呼叫
+    case "$BASH_CMD" in
+      *"sed -i"*|*"perl -i"*|*" > "*|*" >> "*|*">"*|*"tee "*|*"cp "*|*"mv "*|*"truncate"*|*"dd "*\
+      |*"writeFileSync"*|*"open("*"'w'"*|*'open('*'"w"'*|*"outputFileSync"*|*"fs.write"*|*"patch "*|*"git apply"*) ;;
+      *) exit 0 ;;
+    esac
+    ;;
+  *) exit 0 ;;
+esac
 
 # MultiEdit/batch payload 的任一 production path 都必須受關；不可用第一個 benign path 遮蔽後續修改。
 PATHS=$(printf '%s' "$INPUT" | jq -r '
@@ -43,6 +74,16 @@ PATHS=$(printf '%s' "$INPUT" | jq -r '
    (.tool_input.edits[]? | .file_path? // .path?)]
   | map(select(type == "string" and length > 0)) | unique[]' 2>/dev/null) \
   || governance_hook_integrity_fail 'substantive approval path extraction failed'
+
+# Bash 事件沒有 file_path 欄位(2026-09-24):路徑改從命令字串抽,否則 PATHS 為空 → 後面判成「無受管路徑」
+# 而放行,等於補了 case 卻仍然是洞(M32:寫完閘先問「弄壞它會紅嗎」——這一步沒做就會假綠)。
+if [ "$TOOL" = "Bash" ]; then
+  BASH_PATHS=$(printf '%s' "$BASH_CMD" \
+    | tr " \t'\"\`(),;|&<>" '\n' \
+    | grep -E '(^|/)(packages/design-system/src|node_modules/@qijenchen/design-system|apps)/[^[:space:]]*\.(tsx|ts|css)$' \
+    | sort -u) || BASH_PATHS=""
+  PATHS=$(printf '%s\n%s' "$PATHS" "$BASH_PATHS" | grep -v '^$' | sort -u)
+fi
 
 # Substantive scope(2026-05-26 extended per user verbatim「未來其他人 fork 也會偏移 / 該程式化的都沒程式化」):
 # - DS internal: packages/design-system/src/**.{tsx,ts,css}

@@ -142,6 +142,17 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 
 ---
 
+## 點外框 = 點輸入處(2026-09-26,待辦總帳 N53③)
+
+`default` 外框「明確邀請輸入」(上表),所以**外框裡任何不是按鈕 / 連結的地方,點下去都聚焦輸入處**:外框內距(N53 實測左 13px、上 5.5px,含 1px 邊框)、1px 邊框本身、前置 `startIcon`。`endAction` / `endSlot` 的按鈕照它自己的行為走,不搶焦點。外框用文字游標(`cursor-text`);停用時不掛(停用自有 `cursor-not-allowed`)。
+
+- **為什麼是 bug 不是新規則**:規則早就寫在 `../Field/field-controls.spec.md`「點擊與游標原則」——「讓點擊穿透到底層的 input/select,確保使用者點擊 Field 內任何位置都能 focus/activate」、游標「input → `cursor-text`」。缺的是外框自己的內距與邊框:底下沒有 input 可以穿透,指到時外框變色(`hover:border-border-hover`),點下去卻不聚焦 —— 正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。同家族 Select / Combobox / TimePicker / PeoplePicker / Textarea 的外框本身就是點擊目標,本來就沒有這個缺口。
+- **實作只有一份**:`../Field/field-wrapper.tsx` 的 `focusFieldInputFromChrome`(外框 `onMouseDown`)+ `FIELD_TEXT_ENTRY_CURSOR`。所有「外框包著一個 `<input>`」的可打字控件(Input、NumberInput、LinkInput 編輯態)消費同一支,不各寫一份。用 mousedown 而不是 click:click 之前焦點會先離開輸入處(blur → focus 閃一下、`onBlur` 驗證誤觸)。插入點落在點的那一側:點在輸入處右邊放最後、左邊放最前。
+- **畫面**:外框顏色、焦點框都不變(聚焦後的藍框與直接點輸入處相同);只有游標與點擊結果改變。
+- **世界級對照**:[MUI InputBase `InputBase.js#L478-L481`](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/InputBase/InputBase.js#L478-L481)(點根元素 → `inputRef.current.focus()`)、根元素 [`cursor: 'text'`(#L105)](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/InputBase/InputBase.js#L105);[Primer `TextInput.tsx#L150-L154`](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/TextInput/TextInput.tsx#L150-L154)(外框 `onClick={focusInput}`,[#L217](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/TextInput/TextInput.tsx#L217));[rc-input(Ant Design)`BaseInput.tsx#L48-L51`](https://github.com/react-component/input/blob/v1.8.0/src/BaseInput.tsx#L48-L51)(容器內任何點擊 → `triggerFocus`)。
+
+---
+
 ## Auto-width(AR46,2026-04-21)
 
 `autoWidth` prop:Input 寬度自動等於「內容寬(value / placeholder)+ startIcon + endAction + padding」,基於 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+)。

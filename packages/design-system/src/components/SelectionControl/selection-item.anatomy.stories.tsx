@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -285,42 +286,17 @@ function SelectionInspector() {
       <div className="flex flex-col gap-6">
         <div>
           <H3>Size</H3>
-          <div className="flex gap-2">
-            {SIZES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSize(s)}
-                className={`px-2.5 py-1 text-caption rounded-md font-mono cursor-pointer ${
-                  s === size
-                    ? 'bg-primary text-white'
-                    : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
+          <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
+            {SIZES.map((s) => <SegmentedControlItem key={s} value={s}>{s}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
 
         <div>
           <H3>Prefix</H3>
-          <div className="flex gap-2">
-            {(['none', 'icon', 'avatar'] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPrefix(p)}
-                className={`px-2.5 py-1 text-caption rounded-md font-mono cursor-pointer ${
-                  p === prefix
-                    ? 'bg-primary text-white'
-                    : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl size="sm" aria-label="Prefix" value={prefix} onValueChange={(v) => setPrefix(v as 'none' | 'icon' | 'avatar')}>
+            {(['none', 'icon', 'avatar'] as const).map((p) => <SegmentedControlItem key={p} value={p}>{p}</SegmentedControlItem>)}
+          </SegmentedControl>
         </div>
 
         <div>
@@ -574,7 +550,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。\n\n鍵盤操作、焦點環、勾選狀態都由傳入的控件(Checkbox / Radio)負責:\n\n- Tab — 焦點落在控件本身\n- Space — 由控件切換勾選狀態\n- 焦點環(ring 2px box-shadow,顏色取自 var(--ring))由控件自己畫\n\n搭配建議:\n\n- 控件對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應的 checkbox / radio pattern。\n- 用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。\n- 驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。\n\n鍵盤操作、焦點框、勾選狀態都由傳入的控件(Checkbox / Radio)負責:\n\n- Tab — 焦點落在控件本身\n- Space — 由控件切換勾選狀態\n- 焦點框(outline 2px var(--ring),往外 2px)由全域 :focus-visible 規則畫在控件上——控件本身不寫任何焦點 class\n\n搭配建議:\n\n- 控件對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應的 checkbox / radio pattern。\n- 用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。\n- 驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

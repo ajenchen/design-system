@@ -60,13 +60,13 @@ export const UsageGuidance: Story = {
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
-          <div role="listbox" aria-label="Avatar 誤用範例" className="border border-divider rounded-lg bg-surface py-1">
+          <div role="group" aria-label="Avatar 誤用範例" className="border border-divider rounded-lg bg-surface py-1">
             {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
-            <MenuItem avatar={{ alt: '設定' }}>設定</MenuItem>
+            <MenuItem role="presentation" avatar={{ alt: '設定' }}>設定</MenuItem>
           </div>
           <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</Label>
-          <div role="listbox" aria-label="功能圖示正確用法" className="border border-divider rounded-lg bg-surface py-1">
-            <MenuItem startIcon={Settings}>設定</MenuItem>
+          <div role="group" aria-label="功能圖示正確用法" className="border border-divider rounded-lg bg-surface py-1">
+            <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
           </div>
           <Label>↑ ✓ 功能 / 動作 / 概念用 Lucide icon,語義清楚不會誤認身份</Label>
         </Rule>
@@ -85,10 +85,10 @@ export const UsageGuidance: Story = {
           title="Avatar 代表身份,Icon 代表概念"
           note="判斷法:「這代表『誰』還是『做什麼』?」誰 / 什麼實體 → Avatar;做什麼 / 某個概念 → Icon"
         >
-          <div role="listbox" aria-label="身份與功能圖示對照" className="border border-divider rounded-lg bg-surface py-1">
+          <div role="group" aria-label="身份與功能圖示對照" className="border border-divider rounded-lg bg-surface py-1">
             {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
-            <MenuItem avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
-            <MenuItem avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
+            <MenuItem role="presentation" avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
+            <MenuItem role="presentation" avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
           </div>
           {/* 視覺圖例(legend),非 list item */}
           <div className="flex items-center gap-3 flex-wrap mt-2">
@@ -158,7 +158,7 @@ export const WithBadgeOverlayRule: Story = {
 
       <Rule
         title="Avatar 右上角 count badge — 未讀訊息(chat / messenger 場景)"
-        note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant + surface ring,max=99 自動處理 99+"
+        note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant,與頭像之間的縫從圓上挖出來(不畫外圈),max=99 自動處理 99+"
       >
         <div className="flex items-center gap-4">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} badgeCount={3} />
@@ -231,8 +231,8 @@ export const HoverCardIntegrationRule: Story = {
             {/* 主畫面呈現關鍵狀態:Family 2 row 結構(avatar + label + description)由 MenuItem
                 承載——size=lg 觸發 block 對齊(avatar 跨越 label + description 中心)。
                 這正是 item-anatomy.spec.md 的 Family 2 設計準則,不手刻 flex row。 */}
-            <div role="listbox" aria-label="成員狀態列表" className="border border-divider rounded-lg bg-surface py-1 w-full">
-              <MenuItem
+            <div role="group" aria-label="成員狀態列表" className="border border-divider rounded-lg bg-surface py-1 w-full">
+              <MenuItem role="presentation"
                 size="lg"
                 avatar={{ src: 'https://i.pravatar.cc/64?u=alex-wang', alt: 'Alex Wang' }}
                 description={<span className="text-error">已離職</span>}

@@ -243,13 +243,20 @@ assert.match(productionSource, /storyIdsSha256: scanCorpus\.storyIdsSha256/, 'ba
 assert.match(productionSource, /evaluateA11yScanIntegrity\(results\.violationsByStory\)/, 'production CLI must block scan errors before all output modes')
 assert.match(productionSource, /evaluateA11ySeverityGate\(results\)/, 'production CLI must call the tested severity gate')
 assert.match(productionSource, /startA11yStaticServer\(\{ rootDirectory: STORYBOOK_DIR/, 'production CLI must use the owned contained server')
-assert.match(productionSource, /createStorybookRenderHealthMonitor\(page\)/, 'production CLI must monitor render health before navigation')
-assert.match(productionSource, /renderHealth\.assertHealthy\(\{ label: s\.id \}\)/, 'production CLI must reject blank canvases, preview errors, and critical resource failures')
-assert.match(productionSource, /renderHealth\.dispose\(\)/, 'production CLI must release every page monitor')
+// 2026-09-25:渲染完成 / render-health 改由共用的 openStory(lib/launch-browser.mjs)負責 —— 它在導覽前掛監聽、
+// 等 Storybook 回報渲染完成、跑 render-health(空畫面 / 錯誤頁 / 關鍵資源失敗 / 頁面例外),等不到就丟例外。
+// 這裡鎖的是「每則 story 都走那條路、沒有關掉任何一步、沒有退回睡眠代理、沒量到就 fail closed」。
+assert.match(productionSource, /await openStory\(page, url, \{[^}]*notFound: server\.notFound/, 'production CLI must open every story through the shared openStory (render finished + render health) with the 404 ledger')
+assert.doesNotMatch(productionSource, /(?:health|requireRenderFinished|fonts): false/, 'production CLI must not switch off any openStory readiness step')
+assert.doesNotMatch(productionSource, /waitUntil: 'networkidle'|waitForTimeout\(/, 'production CLI must not use a load / sleep proxy for "the story rendered"')
+assert.match(productionSource, /results\.violationsByStory\[s\.id\] = \[\{ id: 'audit-error'/, 'an unrendered story must fail closed as audit-error, never as a WCAG pass')
 assert.doesNotMatch(productionSource, /--(?:fixture|skip-a11y|mock-axe)\b/, 'production CLI must expose no test bypass')
 
 const smokeSource = readFileSync(fileURLToPath(new URL('./storybook-smoke-test.mjs', import.meta.url)), 'utf8')
-assert.match(smokeSource, /stdio:\s*\['ignore',\s*'ignore',\s*'ignore'\]/, 'smoke server must not block on unread child output pipes')
+// 2026-09-25:smoke 不再起 python 子行程供檔(那條斷言防的是「子行程輸出管線沒人讀而卡住」),
+// 改成行程內的共用伺服器 —— 從本次獨佔的建置快照供檔、帶同源 404 帳本。鎖新的不變式,並確認子行程不會回流。
+assert.match(smokeSource, /startA11yStaticServer\(\{ rootDirectory: STATIC_DIR/, 'smoke must serve the build through the shared in-process snapshot server')
+assert.doesNotMatch(smokeSource, /\bspawn\(|python3? -m http\.server/, 'smoke must not reintroduce a child static-server process')
 assert.match(smokeSource, /if \(unprobed\.length > 0\)[\s\S]*?exitCode = 1/, 'any unprobed story must fail the smoke gate')
 assert.match(smokeSource, /if \(failures\.length === 0 && unprobed\.length === 0\)/, 'smoke success must require complete coverage and zero failures')
 assert.doesNotMatch(smokeSource, /unprobed[^\n]*(?:非致命|nonfatal)|(?:非致命|nonfatal)[^\n]*unprobed/i, 'unprobed coverage must never be documented as nonfatal')
