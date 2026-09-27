@@ -408,3 +408,7 @@ G 區(09-07 裁示與 960 斷點)、骨架列(依 user 09-09、09-12 的話推�
 | 2026-09-27 | P3 區間日期外框點了開最近那一段(甲)、OverflowIndicator / 頭像尺寸常數只留一份(M17)、token-twin 夾具改名(修 CI 同名常數閘紅)、P1 D / P2 擱置入帳 | `98f78d70` |
 | 2026-09-27 | `--stack-gap` / `--avatar-stack-overlap` 登記進 uiSize.spec.md(CI token-creation 閘 T2 紅);required CI 全綠(20 check:18 success、2 neutral) | `ea166f7a` |
 | 2026-09-27 | N56 唯讀評分星 ↔ 數字間距補世界級對照(數字不變、理由改寫,spec 回到 300 行內);126 張視覺基準換成正式渲染器重拍版(user「可以改」);M8 第二錨例入 historical-bugs | `1da3e9a8` |
+| 2026-09-27 | 評分基準換成文字改寫後的重拍版;M8 第二錨例補述;完成紀錄補 1da3e9a8 | `01f2952a` |
+| 2026-09-27 | N57–N60:Rating 尺寸模型改走 Switch / Checkbox(元件只有內容高、列高交給所在的列;sm / md / lg 預設 md;xs 整個退役;星↔數字 4px;Field 內跟 Field);規格 / uiSize / hit-area / anatomy / 3 story / 閘一起落;實機驗證全過 | `95a34ada` |
+| 2026-09-27 | 新閘改名 `rating-field-size-invariant.mjs` + meta test,登記進 harness 清單(CI「Governance control plane」紅 → 綠) | `8e9a370f` |
+| 2026-09-27 | 評分兩張基準(尺寸表、送出評分流程)換成正式渲染器重拍版(user「可以改」);Field 內那張逐位元相同 | (本次) |
