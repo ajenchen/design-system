@@ -46,7 +46,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;可以點的星走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier;唯讀精簡版「★ 數值」的星走 icon tier(同 Button icon + label)— 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」+「唯讀精簡版」段 + 本檔「跨 regime pointer index」carve-out row) |
+| `Rating` | sm / md / lg | **`md`** | —(不消費 field-height:元件只有內容高,可以點的星 20/24/24 = 元件高、唯讀精簡版 21/21/24;列高由 Field 控件槽 `min-h-field-*` 供給,同 Checkbox / Switch。星走 identity scale 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不完全對齊 `--field-height-*`」+「為什麼不完全對齊 icon tier」+ 本檔「跨 regime pointer index」carve-out row;xs 於 2026-09-27 退役) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -178,6 +178,8 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 **field-height-xs（24px）是獨立互動元件的最小高度。** 任何可獨立存在的互動元件（Button、Input 等）不得使用比 field-height-xs 更小的高度。若空間不足以容納 24px，應重新檢視容器佈局，而非縮小元件。
 
 比 24px 更小的互動區域只存在於元件內部的 Inline Action（如 Tag dismiss、Field endAction），由宿主元件的 spec 定義規格。
+
+**地板管的是自帶盒子的獨立元件(Button / Input / Chip 這類 pill 或框),不是「嵌在一列中的小控件」**:Checkbox(16 / 20)、Radio、Switch(20 / 24)、Rating 的星(20 / 24)本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、SelectionItem 的 py 公式、表格格子、列),它們不消費 field-height 容器、也不為了湊 24 把命中盒撐大(`hit-area-canonical.md`「命中區 = 可視形狀」)。2026-09-27 codify:Rating 原本自己吃 `h-field-*` 容器,Field 外把列撐高、對命中零幫助,改回小控件模型。
 
 ### Icon 尺寸 Tier
 

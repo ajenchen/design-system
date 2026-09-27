@@ -100,6 +100,9 @@ jobs:
           # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
           # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
           npm run test:token-twin
+          # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
+          # Field 內沒指定 size 的評分靜默變 24px 兩個月沒人看見(spec 三處都寫跟 Field);2026-09-27 查證抓到,先紅後綠。
+          npm run test:rating-field-size
           # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
           #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
           npm run check:agents-bootstrap

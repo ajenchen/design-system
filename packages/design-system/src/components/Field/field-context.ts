@@ -168,9 +168,11 @@ const FieldSurfaceSizeContext = React.createContext<FieldSize | null>(null)
 export function useResolvedFieldSize<T extends string = FieldSize>(sizeProp?: T | null, fallback?: T): T {
   const fieldCtx = React.useContext(FieldContext)
   const surfaceSize = React.useContext(FieldSurfaceSizeContext)
-  // generic T(預設 FieldSize)讓非-input 控件(SegmentedControl/Rating 的 'xs'|'sm'|'md'|'lg' 超集、各自 fallback)
+  // generic T(預設 FieldSize)讓非-input 控件(SegmentedControl 的 'xs'|'sm'|'md'|'lg' 超集、各自 fallback)
   // 也走同一 SSOT resolution。fieldCtx.size/surfaceSize 為 FieldSize(T 的子集)→ widen cast 安全。
-  // fallback 未傳預設 'md'(input-class 控件向後相容);Rating 傳 'xs'、SegmentedControl 傳 'md'。
+  // fallback 未傳預設 'md'(input-class 控件向後相容);SegmentedControl / Switch / Checkbox 傳 'md'(它們不接表格 surface size),
+  // Rating 不傳(要接 surface size;它曾傳 'xs',Field 內沒指定 size 時因下面的 sizeExplicit 規則靜默變 xs 兩個月,2026-09-27 xs 退役)。
+  // 注意:傳了 fallback 就排在 Field 預設 md 與 surface size 前面 —— 要接表格尺寸的控件不能傳。
   //
   // 2026-07-28:Field 的 size 只有在 consumer 顯式指定、或 Field 已解析出 control 偏好時才算「決定過」
   // (`sizeExplicit`)。否則那只是 Field 的預設 md,不該壓過控件自己宣告的 fallback ——

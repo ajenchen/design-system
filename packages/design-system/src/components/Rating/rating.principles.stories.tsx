@@ -252,14 +252,14 @@ export const WholeStarsAndCompact: Story = {
         note="數值由元件顯示、評論數走 count。自己再拼一次 span 會讓數值出現兩次，字級與間距也不跟 size 走。"
       >
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <div className="text-caption text-fg-secondary font-medium">Kindle Paperwhite</div>
-          <Rating value={4.5} count={8921} readOnly size="xs" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
+          <div className="text-body font-medium">Kindle Paperwhite</div>
+          <Rating value={4.5} count={8921} readOnly size="sm" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
           <Label>✅ 評論數交給 count</Label>
         </div>
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <div className="text-caption text-fg-secondary font-medium">Kindle Paperwhite</div>
+          <div className="text-body font-medium">Kindle Paperwhite</div>
           <div className="flex items-center gap-2">
-            <Rating value={4.5} readOnly size="xs" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
+            <Rating value={4.5} readOnly size="sm" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
             <span className="text-caption text-fg-secondary">4.5</span>
             <span className="text-caption text-fg-muted">(8,921)</span>
           </div>

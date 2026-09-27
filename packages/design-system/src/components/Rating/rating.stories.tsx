@@ -39,7 +39,7 @@ export const ReadOnlyProductRating: Story = {
               value={p.rating}
               count={p.count}
               readOnly
-              size="xs"
+              size="sm"
               className="mt-1"
               aria-label={`平均評分 ${p.rating} 星，共 5 星，${p.count.toLocaleString()} 則評論`}
             />

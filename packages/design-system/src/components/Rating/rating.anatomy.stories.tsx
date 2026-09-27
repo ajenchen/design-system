@@ -12,27 +12,25 @@ export default meta
 
 /* ── Data ─────────────────────────────────────────────── */
 
-type SizeKey = 'xs' | 'sm' | 'md' | 'lg'
+type SizeKey = 'sm' | 'md' | 'lg'
 type ModeKey = 'interactive' | 'readOnly' | 'disabled'
 
-const SIZES: SizeKey[] = ['xs', 'sm', 'md', 'lg']
-// 可以點的評分:每顆星對齊 item-anatomy inline Avatar(sm=20 / md=24 / lg=24),詳見 rating.spec.md「為什麼不完全對齊 icon tier」
-const SIZE_PX: Record<SizeKey, number> = { xs: 20, sm: 20, md: 24, lg: 24 }
-// 唯讀精簡版:星走 icon tier,星 ↔ 數值間距走「圖示 ↔ 文字」兩檔規則(12px 字 4px、其餘 8px;rating.spec.md「唯讀精簡版」表)
+const SIZES: SizeKey[] = ['sm', 'md', 'lg']
+// 可以點的評分:每顆星對齊 item-anatomy inline Avatar(sm=20 / md=24 / lg=24),元件高 = 星高,詳見 rating.spec.md「Size」
+const SIZE_PX: Record<SizeKey, number> = { sm: 20, md: 24, lg: 24 }
+// 唯讀精簡版:星走 icon tier,星 ↔ 數值的縫三個尺寸都是 gap-1 4px(Rating 內只有一種縫;rating.spec.md「唯讀精簡版」表)
 const COMPACT: Record<SizeKey, { star: number; text: string; gap: string }> = {
-  xs: { star: 16, text: 'text-caption (12px)', gap: 'gap-1 (4px)' },
-  sm: { star: 16, text: 'text-body (14px)', gap: 'gap-2 (8px)' },
-  md: { star: 16, text: 'text-body (14px)', gap: 'gap-2 (8px)' },
-  lg: { star: 20, text: 'text-body-lg (16px)', gap: 'gap-2 (8px)' },
+  sm: { star: 16, text: 'text-body (14px)', gap: 'gap-1 (4px)' },
+  md: { star: 16, text: 'text-body (14px)', gap: 'gap-1 (4px)' },
+  lg: { star: 20, text: 'text-body-lg (16px)', gap: 'gap-1 (4px)' },
 }
 
-// 對齊 rating.spec.md「Size」表 canonical:xs = standalone 預設（商品卡 / 評論列表旁 / 搜尋結果 row,
-// component default）,sm/md/lg 為 Field 配對尺寸(2026-07-04 補 xs — SizeMatrix 不該藏預設尺寸)
+// 對齊 rating.spec.md「Size」表 canonical:使用時機 = 跟所在容器(Field / 表格 / 列);獨立擺放才用預設 md。
+// xs 於 2026-09-27 退役(可以點的 xs 與 sm 只差容器,容器拿掉後相同;唯讀 xs 是 AI 自訂、無 user 同意、產品零處)。
 const SIZE_USE: Record<SizeKey, string> = {
-  xs: 'Standalone 預設 — 商品卡 / 評論列表旁（component default,container 24）',
-  sm: 'Field sm 並排（Field 配對尺寸）',
-  md: 'Field 預設 — 一般表單評分欄位',
-  lg: '送出評分的 review form、強調的主 CTA 區塊',
+  sm: 'Field sm、sm 列（緊湊清單、表格 sm）',
+  md: '預設 — 一般表單、md 列、獨立擺放',
+  lg: 'Field lg、送出評分的主 CTA 區塊',
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -103,7 +101,7 @@ export const Overview = {
               ['defaultValue', 'number', '0', 'uncontrolled 預設值'],
               ['onChange', '(value: number) => void', '—', '評分改變 callback（滑鼠只給整數；鍵盤從目前值加減 1）'],
               ['max', 'number', '5', '滿分星數（世界級慣例 = 5，不建議超過 7）'],
-              ['size', "'xs'|'sm'|'md'|'lg'", 'xs / md', '尺寸。可以點的星 20/20/24/24 px(對齊 inline Avatar);唯讀精簡版星 16/16/16/20 px + 字級照 Button。預設依情境:獨立展示 xs,Field 內跟隨 Field md'],
+              ['size', "'sm'|'md'|'lg'", 'md', '尺寸,同 Switch / Checkbox:明傳最優先,否則跟所在容器(Field / 表格),都沒有才 md。可以點的星 20/24/24 px(對齊 inline Avatar)、元件高 = 星高;唯讀精簡版星 16/16/20 px + 字 14/14/16 px,高 = 行高'],
               ['readOnly', 'boolean', 'false', '唯讀：一律精簡版（一顆實心星 + 數值 + 選填 count），不響應 hover/click/鍵盤'],
               ['count', 'number', '—', '唯讀時接在數值後的評論數（千分位）；可以點的評分不顯示'],
               ['disabled', 'boolean', 'false', '完全停用'],
@@ -362,8 +360,8 @@ export const SizeMatrix = {
         <Desc>
           可以點的評分:每顆 star icon sm=20 / md=24 / lg=24,對齊 item-anatomy inline Avatar——
           一顆星是 filled identity 視覺(主要資料點),跟 Avatar 同重量才能在 row 內 visual weight 對齊。
-          唯讀精簡版:星是數值旁的圖示,走 icon tier(16/16/16/20 px);星與數值的間距照本 DS「圖示 ↔ 文字」兩檔規則——12px 字 4px、14/16px 字 8px(4/8/8/8px),與 GitHub「★ 20.3k」同款。
-          兩者 container 都走 `--field-height-*`(xs=24 / sm=28 / md=32 / lg=36)。詳見 rating.spec.md「Size」。
+          唯讀精簡版:星是數值旁的圖示,走 icon tier(16/16/20 px);星與數值的縫三個尺寸都是 4px——Rating 內只有一種縫,跟可以點的星與星之間相同。
+          兩者都只有內容高(可以點的 = 星高 20/24/24;唯讀 = 行高 21/21/24),不吃 `--field-height-*`;列高由所在的列(Field 槽 / 表格 / 列)供給。詳見 rating.spec.md「Size」。
         </Desc>
       </div>
 
@@ -397,13 +395,13 @@ export const SizeMatrix = {
       </table>
 
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Container 消費 field-height;星的尺寸依呈現分兩套</span>
+        <span className="text-caption font-medium text-fg-secondary">元件只有內容高,列高交給所在的列;星的尺寸依呈現分兩套</span>
         <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed">
-          Rating 的 container 消費 `--field-height-*`（xs=24 / sm=28 / md=32 / lg=36），讓它與
-          Input / NumberInput / DatePicker / Select / Button 等 field-height family 元件並排同一 row 時高度對齊。
-          這一層是「外框高度」對齊。可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
+          Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 `--field-height-*`，放進 Field 時由 Field 控件槽
+          （min-h-field-* + items-center）撐出跟 Input / Select 一樣的列高並置中；Field 外的列由列自己決定，評分不再撐高列。
+          可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
           而非 icon tier（16/16/20）——因為每一顆星是 filled identity 視覺（主要資料點），視覺份量要跟 Avatar 齊；
-          唯讀精簡版的那一顆星則是數值旁的圖示，走 icon tier；星與數值的間距是「圖示 ↔ 文字」的兩檔(12px 字 4px、其餘 8px)。
+          唯讀精簡版的那一顆星則是數值旁的圖示，走 icon tier；星與數值的縫一律 4px，與星和星之間相同。
         </p>
       </div>
     </div>
