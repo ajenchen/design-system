@@ -403,3 +403,4 @@ G 區(09-07 裁示與 960 斷點)、骨架列(依 user 09-09、09-12 的話推�
 | 2026-09-27 | 全面稽核批次:DataTable 游標零指示(M37)+ I32 步驟 4、5、頭像縫挖空(N49)、`--stack-gap` / `--avatar-stack-overlap` + token-twin 閘、閘的時序代理 8 項、hook 零覆蓋測試 +336 行、SSOT 文字漂移 ~60 處、check-agents-bootstrap 接 CI(N14(a))、empty-home 雜物 | `4c38649f` |
 | 2026-09-27 | P3 區間日期外框點了開最近那一段(甲)、OverflowIndicator / 頭像尺寸常數只留一份(M17)、token-twin 夾具改名(修 CI 同名常數閘紅)、P1 D / P2 擱置入帳 | `98f78d70` |
 | 2026-09-27 | `--stack-gap` / `--avatar-stack-overlap` 登記進 uiSize.spec.md(CI token-creation 閘 T2 紅);required CI 全綠(20 check:18 success、2 neutral) | `ea166f7a` |
+| 2026-09-27 | N56 唯讀評分星 ↔ 數字間距補世界級對照(數字不變、理由改寫,spec 回到 300 行內);126 張視覺基準換成正式渲染器重拍版(user「可以改」);M8 第二錨例入 historical-bugs | `1da3e9a8` |
