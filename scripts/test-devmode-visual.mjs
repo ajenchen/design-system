@@ -34,14 +34,30 @@
  *     換掉(far-sibling 截到的是別的元素)—— 現在先把滑鼠停到 manager 左上角,sibling hover 放在最後一次版面變動之後。
  */
 import fs from 'fs'
+import path from 'node:path'
 import {
   INSTRUMENT_FAIL_MARKER,
   StoryRenderInstrumentError,
   launchBrowserOrSkip,
   openStory,
 } from './lib/launch-browser.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
-const BASE = (process.env.SB_URL || `http://localhost:${process.env.SB_PORT || '6006'}`).replace(/\/+$/, '')
+// 2026-09-29(待辦總帳 N33 接進 CI 時抓到):舊寫法預設 `http://localhost:6006`,本機剛好有人開著 dev server 就綠、
+// CI 沒有就 ECONNREFUSED —— 綠燈是「別人剛好開著」的代理(M37)。現在:明給 SB_URL / SB_PORT 才用外部的;
+// 沒給就跟其他瀏覽器閘一樣,從本次獨佔的 storybook-static 建置快照起本機靜態站(lib/a11y-static-server.mjs)。
+let staticServer = null
+let BASE
+if (process.env.SB_URL) BASE = process.env.SB_URL.replace(/\/+$/, '')
+else if (process.env.SB_PORT) BASE = `http://localhost:${process.env.SB_PORT}`
+else {
+  // `--static=<dir>`(與其他瀏覽器閘同名旗標)可指到別的建置目錄;預設 repo 根的 storybook-static(必須是真目錄,不接受 symlink)
+  const staticArg = process.argv.find((a) => a.startsWith('--static='))
+  const staticDir = path.resolve(staticArg ? staticArg.slice('--static='.length) : 'storybook-static')
+  staticServer = await startA11yStaticServer({ rootDirectory: staticDir, defaultFile: 'index.html' })
+  BASE = staticServer.origin
+}
+console.log(`Storybook:${BASE}${staticServer ? '(本次自起的靜態站,來源 storybook-static)' : '(外部指定)'}`)
 const OUT_DIR = 'tmp'
 // 每一步「等某個東西出現」的上限 —— 只是等不到的上限,不是「已經好了」的代理;成功一律由那個東西真的出現決定
 const STEP_TIMEOUT_MS = 20_000
@@ -300,4 +316,5 @@ if (instrument.length > 0) {
   console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrument.length} 個案例沒有量到(儀器失效,不是 addon 的問題;沒量到不等於通過):`)
   for (const r of instrument) console.error(`   - ${r.t.name}(${r.t.storyId}):${r.reason}`)
 }
+if (staticServer) await staticServer.stop()
 process.exit(passed.length === tests.length ? 0 : 1)

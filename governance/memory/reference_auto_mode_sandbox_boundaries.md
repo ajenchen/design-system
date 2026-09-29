@@ -24,6 +24,7 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 
 - 交易內的封閉 npm(`scripts/lib/closed-tool-execution.mjs` 的 env 只有 `PATH=/usr/bin:/bin`)**刻意不透傳 `HTTPS_PROXY`**,沙箱網路又只走代理 → `sync-all --apply` 的 protected-base 重建、`setup:dependencies` 的 verified npm 取得,在沙箱內一律 `getaddrinfo ENOTFOUND registry.npmjs.org`。`NODE_USE_ENV_PROXY=1` 只救得了 node fetch,救不了子程序 npm。**端到端只能靠 CI**;本機改用「讀 code + 對照組小 repo + 純函式測試」三件證據收斂(2026-09-27 sync-all 新增檔 bug 就是這樣抓到的)。
 - Playwright 要把 `HTTPS_PROXY` 給 browser proxy;瀏覽器閘一律起本機靜態站,`file://` 整個不渲染。
+- **`governance:generate` 的 control-plane 快照把 `scripts/**` 整棵樹(含未追蹤檔)算進 inputDigest**:工作樹殘留任何未追蹤的探針檔,本機 `governance:check` 綠、CI 在乾淨 checkout 重生就 GOV-SNAPSHOT-001 紅(2026-09-29 連紅兩輪才抓到)。**任何 canonical 改動後的 generate + commit 一律在沒有未追蹤檔的 clone 裡做**;`rm` 在 auto mode 會被擋,直接再 clone 一份乾淨的。
 
 ## 三、auto mode 分類器(outcome-based;被擋就停,不得繞)
 
