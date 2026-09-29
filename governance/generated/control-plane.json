@@ -3075,8 +3075,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 569,
-      "hash": "sha256:55601687ec5c7ec189a4188975e114780d19490fbe2038806ec99b4c022a63f5",
+      "files": 566,
+      "hash": "sha256:1b69da270d5a5166f0c60a54b375782eff8d4eee7c4ed13b61cd8d1a55fbb45f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
