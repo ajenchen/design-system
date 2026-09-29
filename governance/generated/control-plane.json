@@ -1053,12 +1053,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:82c17173dfe06c5f28e961973d7320fee35ab3b43921a23807c5c724f99f7724",
+      "hash": "sha256:935d2cbec3fba8c5eb912ecfced3749ecce38475f5ca6389adab34b3e2b07fd6",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 35130,
+      "size": 36722,
       "type": "file"
     },
     {
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 47,
-      "hash": "sha256:71dd9fd40cdd77ca50097c800855a1c342103c4fe540808209915a7b2e32292c",
+      "hash": "sha256:6efd481d13649ddf390408daaefbc55535ed1781718aff7f9968203514379615",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 569,
-      "hash": "sha256:52fcb92e0a3a3d80b1fcbdc4ebaa8ea5dd91f113b4acd271534b23e6c52b4218",
+      "hash": "sha256:b23d3ed4dd8f03d6d5927fea8a516f708703b28de0071978d112b4fdadd51736",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

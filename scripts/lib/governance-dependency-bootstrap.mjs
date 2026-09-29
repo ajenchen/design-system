@@ -447,16 +447,20 @@ function assertRemediatedFinding(name, finding) {
   if (name === 'undici') {
     // Same situation as ip-address: bundled in npm 11.19.0, no overlay slot yet, fixed 6.28.0
     // exists. Tracked in the cloud-compat baton; exact-shape acknowledgment, drift fails closed.
+    // 2026-09-29(待辦總帳 OE15):上游 2026-09-28 再發 GHSA-3wwx-pv8p-q78v(moderate,DoS via unhandled error,
+    // >=6.25.0 <6.28.1,修在 6.28.1),finding.range 從 <=6.27.0 變 <=6.28.0、via 從 3 則變 4 則 —— 與 ip-address 同一天
+    // 同一種形狀,同樣只把新形狀認列進來(bundled 的 undici 仍是舊版、npm 11.x 沒有帶修正版的 release)。
     invariant(
       finding.severity === 'moderate'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/undici'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=6.27.0'
+        && finding.range === '<=6.28.0'
         && matchesExactAdvisorySet(finding, 'undici', [
           { source: 1130716, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate' },
           { source: 1130727, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate' },
           { source: 1130732, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate' },
+          { source: 1239934, range: '>=6.25.0 <6.28.1', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
     )

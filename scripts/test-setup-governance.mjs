@@ -808,9 +808,11 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           { source: 1130716, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate', range: '<6.28.0' },
           { source: 1130727, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate', range: '<6.28.0' },
           { source: 1130732, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate', range: '<6.28.0' },
+          // 2026-09-28 上游新發一則(OE15,2026-09-29 認列):range 隨之變 <=6.28.0
+          { source: 1239934, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate', range: '>=6.25.0 <6.28.1' },
         ],
         effects: [],
-        range: '<=6.27.0',
+        range: '<=6.28.0',
         nodes: ['node_modules/npm/node_modules/undici'],
       },
     },
@@ -837,6 +839,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
     stale.vulnerabilities['ip-address'].range = '<=10.3.0'
     assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
+  {
+    const stale = structuredClone(report)
+    stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 3)
+    stale.vulnerabilities.undici.range = '<=6.27.0'
+    assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 舊的三則形狀必須被判成漂移')
   }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
