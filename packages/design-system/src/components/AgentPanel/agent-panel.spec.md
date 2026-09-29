@@ -238,82 +238,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   ArrowUp/Plus 線稿(14/24)視覺偏重,2026-09-02 user 抓「太巨大」後改自繪)。
 - textarea `aria-label="訊息"`。
 
-### 8. AgentDecisionCard(決策卡)
+### 8. AgentDecisionCard(決策卡)→ `agent-decision-card.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
-- 僅代理被阻擋、需人決策時出現;完全覆蓋輸入區、貼面板底。
-- 繼承 Popover surface(rounded-lg、border、elevation-200、compact header 45)+SurfaceFooter;
-  改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
-- Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
-- 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
-  **整卡可點**(滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
-  (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
-  + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
-  「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
-  [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
-  距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
-  鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
-  幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
-- 選項卡滑過(2026-09-26 AI 建議,列在「其餘建議」、user 未另提 → AI 判讀照建議做;user 的問句見上;待辦總帳 B12):指標在整張卡的**任何位置**(內距、圓與字的空隙、說明文字、「其他」卡的輸入格),
-  卡內的圓(複選是方框)照它被自己的 label 滑過時的樣子變色 —— 顏色即 `../Checkbox/checkbox.spec.md`「狀態」Radio / Checkbox 表的 hover 列,
-  不新增顏色;**卡片灰底不換色**、字色不變;卡與卡之間的 8 不屬任何卡,滑過不變、點了也不選。
-  理由:DS 原本的單選/複選項目本身沒有滑過樣式,回應的只有控件(`../SelectionControl/selection-item.spec.md`「為何無 ColorMatrix / StateBehavior」),
-  指到字上圓也會變是 HTML label 的轉發;選項卡的命中區是整卡,同一套語言的回應範圍就是整卡。
-  user 原問句(逐字;問句,不是決定):「我覺得好像不用加上底色變化，若它是 radio 的話，那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」
-  「其他」卡指在輸入格上:圓照樣變,輸入格外框自己的滑過疊在上面 —— 卡片是宿主、輸入格是卡內控件,宿主保留自己的滑過
-  (`../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段;套到「宿主的滑過是控件變色」是 AI 推導);點輸入格即選中「其他」,圓亮起來的承諾成立。
-  作法:卡片掛具名群組 `group/agent-option`,控件把**自己的** `hover:` 配對原樣接到群組滑過(`agent-panel.tsx` `OPTION_RADIO_HOVER` /
-  `OPTION_CHECKBOX_HOVER`,逐條鏡射 `../RadioGroup/radio-group.tsx` / `../Checkbox/checkbox.tsx` 的 hover 行,owner 改色時同步改);
-  不把整卡改成 `<label>`:卡內已有 SelectionItem 的 label、`<div>` 與輸入格,違反 [WHATWG label 內容模型](https://html.spec.whatwg.org/multipage/forms.html#the-label-element)。
-  鍵盤不受影響(焦點框仍在控件本體)。世界級:卡片式單選 [Joy UI Radio `overlay`](https://github.com/mui/material-ui/blob/f2e0dab9d80271310843c57b9bd430e07e267b8d/docs/data/joy/components/radio-button/radio-button.md#L113-L119)
-  同形(整卡可點、滑過只變圓;Joy UI 已於 2026-03-11 自 MUI 主 repo 移除,只作曾經的做法);Carbon RadioTile 改換卡片底色
-  ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
-  本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
-- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
-- 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
-  [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 user 拍板);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
-  「其他」選中而文字為空 → 下一題/送出 disabled。
-- 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
-  預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
-- 進出=淡入+下滑 8、`--motion-duration-overlay`。
-- A11y:`role="group"` + `aria-labelledby`;radiogroup / checkbox 原生鍵盤。
-
-#### 產題守則(約束代理出題品質;標 ⚙ 者由元件 DEV 警告或渲染邏輯機械強制)
-
-1. ⚙ **題數 1–3,每題必須改變代理下一步**;能一題就不問兩題;禁「計畫可以嗎?」類空問。
-   ([Claude Agent SDK AskUserQuestion 1–4 題/次](https://code.claude.com/docs/en/agent-sdk/user-input),
-   本 DS 收緊為 ≤3;[GOV.UK one thing per page](https://design-system.service.gov.uk/patterns/question-pages/))
-2. ⚙ **一題一步**:一次只顯示一題;N≥2 才顯示小標「n / N」;第二題起可「上一題」回頭改答(答案保留),不可跳題。
-   ([GOV.UK 需要才加簡單「Question 3 of 9」](https://design-system.service.gov.uk/patterns/question-pages/);
-   [NN/g wizards 標出目前步、強制順序](https://www.nngroup.com/articles/wizards/))
-3. ⚙ **題目=一句完整問句、以「?」結尾、句內點名決策對象**(「公告要用哪種語氣?」);禁「確定嗎?」「注意!」。
-   ([Material 對話框標題=問句或陳述、禁 Are you sure?](https://m1.material.io/components/dialogs.html))
-4. ⚙ **具名選項 2–4 個**(不含「其他」);>4 → 拆題。
-   ([SDK 2–4 options](https://code.claude.com/docs/en/agent-sdk/user-input);
-   [NN/g ≤5 用 radio](https://www.nngroup.com/articles/listbox-dropdown/);`../RadioGroup/radio-group.spec.md`「2-5 且全部可見」)
-5. ⚙ **選項標籤單行、≤10 字、無句尾標點、同題平行結構**;標籤說「選了會怎樣」,禁 A/B/C、「方案一」。
-   ([Polaris ChoiceList:label based on what the option will do、無句尾標點](https://github.com/Shopify/polaris/blob/main/polaris.shopify.com/content/components/selection-and-input/choice-list.mdx))
-6. ⚙ **每個具名選項附一行差異描述**:單句、無句號、不重複標籤、同題各選項比同一個維度(後果/取捨)。
-   ([GOV.UK hint 單句無句號](https://design-system.service.gov.uk/components/radios/))
-7. ⚙ **「其他」由元件附加、永遠最後**;代理不得自列「其他」;送出值=使用者文字(非「其他」二字);空字串不得前進。
-   ([SDK:custom text as the answer value, not the word 'Other'](https://code.claude.com/docs/en/agent-sdk/user-input);
-   [GOV.UK none 選項放最後](https://design-system.service.gov.uk/components/checkboxes/))
-8. ⚙ **單選題必預選推薦解、推薦解排第一、「(建議)」由元件標**(代理不寫該字樣);推薦必是代理有證據的最佳解。
-   例外:不可逆/安全/法律/身分稱謂類題 `noDefault` 不預選,把後果寫進描述。
-   ([NN/g:pre-select the recommended when confident;例外 legal/presumptuous](https://www.nngroup.com/articles/radio-buttons-default-selection/);
-   反例 [GOV.UK do not pre-select](https://design-system.service.gov.uk/components/radios/) 的顧慮是漏答/交錯答,本卡一題一步且 Skip 明示用預設繼續,故取 NN/g 立場)
-9. **排序**:推薦第一;其餘常見→少見或邏輯序(小→大、保守→激進),禁字母序;「其他」最後。
-   ([GOV.UK most-to-least common](https://design-system.service.gov.uk/components/radios/))
-10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、
-    **不預選**、仍附「其他」。([SDK multiSelect](https://code.claude.com/docs/en/agent-sdk/user-input);
-    [GOV.UK checkboxes 不預選](https://design-system.service.gov.uk/components/checkboxes/))
-11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出)。
-    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html);[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
-12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
-    ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
-13. **每步不需捲動即可讀完**(面板寬內 4 選項+描述皆單行);描述過長=精簡,不截斷
-    (`../Checkbox/checkbox.spec.md`「Clamp 政策」;ScrollArea 僅兜底)。
-14. **內容真實**:題目與選項必是可辨識業務情境(檔名、頻道、客戶名);禁 Option A/B/C、Lorem(`AGENTS.md` mindset #4)。
+決策卡的外觀(繼承 Popover surface 配方 + SurfaceFooter)/ 選項卡與滑過 / 步進與跳過 / 產題守則 14 條,整段住在 `./agent-decision-card.spec.md`;本檔只留這個指標。
 
 ### 9. AgentDecisionSummary(決策回執)
 
@@ -349,213 +276,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 問候區圖示位=`<AgentLogo state="attract" size={48}>`(招喚態邀請開始);
   其餘照既有 Empty 元件(icon slot)。
 
-## AgentLogo(標誌;附屬資產)
+## AgentLogo(標誌;附屬資產)→ `agent-panel-logo.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
-- 造型=user 提供黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ、軸角 121.717°);
-  產品用尺寸 16-48(展示 story 放大到 72 以便逐格檢視動畫,不是新的產品級距);**所有尺寸同一造型**(4 層:面 + 底面陰影 + 面 + 提亮;2026-09-02 user 拍板:
-  形狀規則、不設簡化檔;原「≤24 自動簡化」與 `detail` prop 已移除)。
-- 一息 3 秒家族(文字微光 2s 另計);緩動=swell(吸/起)/ settle(呼/收)/ exit(加速起步)token 值。
-- **呼吸包絡(招喚與思考共用)**:0 靜 → **35% 吸頂**(脹 1.07、白疊層 14%)→ **85% 回落到底** →
-  **85–100% 靜止空拍**;呼出去的波 0–35% 貼邊聚亮 → 35% 離體 → **90% 散盡**(比本體多 0.15s 餘韻)。
-  依據:靜息呼吸 12–20 次/分 → 一息 3–5s([NCBI StatPearls](https://www.ncbi.nlm.nih.gov/books/NBK537306/));
-  靜息 I:E ≈ 1:2、呼氣為被動回彈且呼氣末有停頓([Deranged Physiology](https://derangedphysiology.com/main/cicm-primary-exam/respiratory-system/Chapter-539/inspiratory-pause-ie-ratio-and-inspiratory-rise-time));
-  脹=吸氣([Apple Watch Breathe](https://support.apple.com/guide/watch/start-a-reflect-or-breathe-session-apd371dfe3d7/watchos))。
-  **亮度包絡取代透明度包絡**:吸氣亮(白疊層)、呼氣暗;本體不透明度恆 1——白面上變淡=像停用,
-  且與 shrink/scale 疊加屬前庭誘因([MDN prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion));
-  2026-09-02 user 問「呼吸是否搭配透明度」→ 研究結論採亮度包絡 + 靜止空拍,不加透明度。
-- **每次進入狀態從靜止起跑**:SMIL `begin="indefinite"` + 掛載當下 `beginElement()`(文件時間軸的
-  `begin="0s"` 會讓晚掛的動畫從半途起跑、加速段直接凍在終點);同一 commit 掛上的標誌本體與 FAB 光圈同相。
-  **起跑鍵必含 exit 段**:think → 減速段新掛的洞形變與亮度淡出同樣是 `begin="indefinite"`,鍵不含該段 = 7 個
-  animate 永不起跑(整段減速洞持圓、停定瞬間跳回橢圓;2026-09-03 逐格實測的斷層根因);已起跑的呼吸疊層
-  由 `data-begun` 守衛不重啟。機械驗證 = `scripts/agent-logo-continuity-invariant.mjs` C6。
-  同一支腳本的 **C7/C8 是純原始碼靜態檢查、不開瀏覽器**,所以任何環境都真的跑(不會被 SKIPPED-ENV 蓋掉):
-  C7 從定稿 path 反解外輪廓圓心並比對 `LOGO_CX/LOGO_CY`,同時掃 tsx 內是否還有把 627 當中心用的殘留
-  (扣掉註解後全掃,不列舉寫法);C8 擋轉速寫死 —— ω 必須由 `BREATH_S / SPIN_TURNS_PER_BREATH` 推出,
-  且一息必須切成整數圈。
-- 狀態(prop `state`;「招喚/漣漪」為本家族新造狀態名,定義唯一住所=本節):
-  - **still 靜止(=待機)**:完全不動。2026-09-02 拍板:待機一律靜止,不另立呼吸態,狀態分類收斂為三態。
-  - **attract 招喚**(空狀態/FAB 有新訊):呼吸包絡上的脹 1.07+吸氣微亮(白疊層 0→14%→0→0)
-    +遮罩單波(雙色放射盤內藍 .5→靛 .44→紫 .34→邊緣 0;行程 560→830;0–35% 貼邊聚亮(swell)、
-    35% 離體擴散(settle)、90% 散盡;遮罩護負空間、無模糊)。`ripple={false}` 供 FAB 光圈代位。
-  - **think 思考**(=回覆中):靜止起步 → 加速 0.25s(=半圈,exit 曲線,位移 126° 使交接速度連續)
-    → 等速 **720°/s(0.5s/圈 = 一息/6)**,linear,**持續到離開思考,一直思考就不停**;離開思考 →
-    **減速段**:從當下角度以 exit 曲線的時間鏡像 (0,0,0.7,1) 續轉最小 ≥252° 且落回正位 0° 的角度
-    (時長 Δ/(ω·0.7) ∈ 0.50–1.21s,交接速度連續、停定即正位),**停定即接靜止、不淡入**(見「轉場」)。
-    轉速依據(2026-09-04 修訂;取代 2026-09-02 版):比較對象一律取**出貨值**、逐檔讀第一手原始碼,
-    由快到慢 —— [Chakra v2 0.45s](https://github.com/chakra-ui/chakra-ui/blob/v2/packages/components/src/spinner/spinner.tsx#L68)、
-    [Carbon 690ms](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/loading/_animation.scss#L13)、
-    [Bootstrap .75s](https://github.com/twbs/bootstrap/blob/main/scss/_variables.scss#L1694)、
-    [Radix Themes 800ms](https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/spinner.css#L2)、
-    [Primer 1000ms](https://github.com/primer/react/blob/main/packages/react/src/Spinner/Spinner.tsx#L10)、
-    [Ant 1.2s](https://github.com/ant-design/ant-design/blob/master/components/spin/style/index.ts#L196)、
-    [Fluent 1.5s](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts#L58)、
-    [VS Code 1.5s](https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css#L23)、
-    [Material 3 ≈1568ms](https://github.com/material-components/material-web/blob/main/progress/internal/_circular-progress.scss#L47)
-    (單層等速旋轉的常數是 `$linear-rotate-duration: calc($arc-duration * 360 / 306)` = 1333 × 360 / 306 ≈ 1568ms;
-    `#L43` 的 `$arc-duration: 1333ms` 是弧長形變週期、不是轉速 —— 2026-09-05 更正,2026-09-02 版原本寫對,
-    Material 因此移到「由快到慢」最慢端)。
-    取 **0.5s/圈**:落在最快檔 0.45–0.69s 之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
-    卻讓「一息 = N 圈」斷掉(3 ÷ 0.45 = 6.67),故不取。實心雙緞帶比細弧線更吃轉速,取最快檔而非中性帶。
-    **閃爍**:造型無 C2 對稱(洞心繞轉軸轉 180° 不落回自身)→ 整圈才重複一次 = 2.0 Hz,低於
-    [WCAG 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html) 的 3 次/秒;
-    且 24px 全圖僅 576 px²,遠低於其面積門檻 341×256 = 87,296 px²。
-    (2026-09-02 版曾以「600ms = urgent/frantic」定上限,來源是一篇 Jetpack Compose 教學、無研究方法,
-    且被誤記為「實測」;2026-09-04 撤除該引用,改以出貨值定範圍。)
-    加速未完即離開 → 等加速段結束再減速;<1 影格直接切。+**負空間形變耦合轉速**(起步 0.25s 洞
-    橢圓→正圓、同 exit 曲線,轉到最快時洞正好圓;等速持圓;減速段正圓→橢圓、同 DECEL 曲線與時長,停定 0°
-    時洞正好回定稿形。2026-09-02 user 問「形變是否用在高速」→ 由 6s 呼吸圓化改為速度耦合:形狀說速度、
-    亮度說呼吸;對齊 squash-and-stretch「形變跟著速度」與 Dynamic Island「形隨動作」)+吸氣微亮(亮度
-    6s=2 息,峰值 14% 與招喚統一)+色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
-- **轉心 = 外輪廓圓心 (634.671, 604.106),不是 viewBox 中心 (627, 627)**(2026-09-04 修訂):
-  墨色區 = 圓盤(r=505.300)減內橢圓;圓盤圓心由外弧端點反解(SVG 1.1 §F.6.5)得上值,與 viewBox 中心
-  差 24.145 單位 = 外半徑的 4.78%。旋轉/縮放/波源全部用它。繞 viewBox 中心會出兩個瑕疵:
-  (a) 思考態外緣每圈進出一次,24px 下**峰對峰 0.924px**,讀起來像動畫沒對正、不是轉速;
-  (b) 招喚態遮罩(r=512)原想留 6.7 單位等寬餘量,偏心後一側超出本體 17.4、對側多切 30.8,
-  光暈與本體邊緣之間出現不對稱死環。三個轉心選項覆算:外輪廓圓心對 viewBox 中心是 **Pareto 支配**
-  (外緣晃動 24.145→0,洞公轉半徑 65.051→43.487);移到洞心則外緣晃動反增到 43.487,更糟。
-- **負空間不置中**(2026-09-04;回答「最快速時洞是否該回到標誌中心」):**不要**。最快速時洞已是正圓,
-  正圓與圓盤同心 = 完美圓環 = 旋轉不變,輪廓運動歸零 —— 恰好在最需要速度感的一刻把速度訊號關掉;
-  且洞心與圓盤心相距 43.487 單位是定稿造型的**剛體不變量**(任何轉心選擇都不改變),要歸零只能改寫
-  定稿路徑,等於在最被注視的一刻把黃金比例莫比烏斯換成泛用同心圓環。速度訊號維持由 2026-09-02 拍板的
-  「形狀說速度」(橢圓→正圓)承擔,不另加位移通道。
-- 轉場:狀態切換=新狀態 0.15s 淡入(`--motion-duration-overlay`,只動 opacity),禁跳切;**例外:still ↔ think
-  不淡入**——兩邊在交接那一刻本來就長得一模一樣(定稿形、0°、無疊層),淡入會讓整顆先變透明再回來 = 斷層
-  (2026-09-03 user「最後沒有流暢地把負空間以及色彩回復」根因之一);淡入只留給形態真的不同的交接(招喚 ↔ 其他)。
-  減速段的色場基底亦設為當下角度,否則起跑前一影格會閃回 0°。**減動作**:
-  互動觸發必可停(WCAG 2.3.3);常駐 loop 全停(嚴於條文),一律回靜止、淡入亦停。
-- 多實例安全:漸層/遮罩 id 以 useId 唯一化。
+造型 / 三態(still / attract / think)/ 呼吸包絡 / 思考轉速與轉心 / 負空間形變 / 轉場與減動作,整段住在 `./agent-panel-logo.spec.md`(對應 `agent-panel-logo.tsx`);本檔只留這個指標。
 
-## AgentFab(浮動開關鈕;附屬資產)
+## AgentFab(浮動開關鈕;附屬資產)→ `agent-panel-fab.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
-- 40 圓=`--field-height-lg` 於 lg 密度;圓形 iconOnly;面=`bg-surface-raised`+
-  `--elevation-200`(不寫死白色);內置 24 標誌(同一造型)。
-- 外框=AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱);
-  兩極=`AGENT_BRAND` 藍 258 / 紫 294(= `--color-blue-4` / `--color-purple-4`;品牌資產常數,agent-panel-logo.tsx 唯一數值來源;各落於兩緞帶
-  色相家族內;2026-09-02 藍→紫改色)。
-- 動畫:待機=靜止(=標誌 still 態;2026-09-02 拍板全家族待機一律靜止);
-  有新訊=招喚態(標誌蓄勢;漣漪由邊框光圈代位:0–35% 貼邊聚亮至 .35(swell)→ 35% 呼氣起點
-  自邊框射出 r 21→27(settle)→ 90% 散盡 → 靜止空拍;寬 2.5;與標誌同 dur/keyTimes/曲線、同一
-  commit 掛載故同相;光圈漸層=環同兩極同方位);懸停=陰影升一級+微放大;點擊=開面板。
-- 減動作:光圈屬位移 loop → 全停(標誌內部自回靜止)。
-- **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 `AgentPanelHeader.logoState` 同名 —— 產品端同一個變數餵兩邊;
-  2026-09-03 user 拍板「若開啟的 session 是思考中,FAB 的 logo 也應該是思考中」):入口鈕 = 那個對話**收起來的樣子**,
-  不是另一個獨立的東西 —— 代理在回覆時即使面板關著,入口鈕標誌照樣轉(`think`);有新訊 = 招喚(`attract`,標誌蓄勢
-  + 邊框光圈);閒置 = 靜止(`still`)。兩種形態(40 圓 / 28 貼邊)都跟,尺寸變、狀態不變。光圈只給招喚態:思考態的
-  訊號是標誌自己在轉,再加光圈會變成兩個 loop 互相打架。對照:[Android Bubbles 收合後仍以圖示承載該對話的動態](https://developer.android.com/develop/ui/views/notifications/bubbles)。
-- **放置與互斥**(2026-09-02 拍板;2026-09-03 抽成元件):FAB 為 opt-in 浮動入口,固定於舞台右下、內距
-  `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
-  (兩者互斥,開面板的入口與關面板的 × 不並存)。互斥、位置記憶與標誌狀態的**唯一住所 = `AgentPanelDock`**
-  (`<AgentPanelDock logoState={s}>{({ close, logoState }) => <AgentPanel>…</AgentPanel>}</AgentPanelDock>`,
-  外層容器需 `relative`):開時只渲染面板(× 接 `close`)、關時只渲染入口鈕(點一下開回來);產品端與所有 story
-  都用它,不各自寫一份 `open ? panel : fab`(「入口鈕三態」那個 story 例外:它展示的是獨立 `AgentFab` 的三種標誌狀態,沒有面板可互斥)。
-  **一個舞台一個 Dock**:家的座標只有一組(右下角離邊 loose),同一個 relative 容器內放兩個 `AgentPanelDock` 會像素級重疊;
-  要在同一頁擺兩個代理入口,請各自給不同的 relative 舞台(2026-09-03 稽核補上的不變式)。
-- **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
-  「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
-  位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
-  與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
-  - **命中區 = 可視形狀本身**(2026-09-04 user 拍板原話:「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」;
-    「當我點擊按鈕的任何地方包括左側靠近邊邊的地方,只要還在按鈕範圍內就應該觸發事件」)。
-    三者**恆等**,沒有例外可以解釋:看得到的每一點都點得到、點得到的每一點都看得到、會出 tooltip 的範圍就是這一塊。
-    作法:語意 `<button>` 的尺寸與圓角**都等於可視形狀**(貼邊 28 + `rounded-l-full`、在家 40 + `rounded-full`);
-    漸層環是這一層自己的 2px padding,內層 span 只負責面色,所以按鈕的 border box 邊緣就是使用者看到的邊緣。
-    **DOM 盒 / 無障礙 target / 命中區 / Radix 錨點四者是同一個形狀。**
-    - **不外推**(2026-09-03 曾外推到 40×40,2026-09-04 撤回):外推會生出隱形帶,搶走底下內容的點擊,
-      並把 Radix 錨點推遠(tooltip 離可視形狀 20px 而不是 8px)。tooltip 與觸發點的距離恆為 8px(`OVERLAY_SIDE_OFFSET`),
-      兩者不重疊 —— 所以「點 tooltip 觸發按鈕」不是需求,也不該發生。
-    - **「會出 tooltip 的範圍」指的是觸發範圍,不是「tooltip 保持開著的範圍」**(2026-09-05 更正敘述):Radix Tooltip
-      未設 `disableHoverableContent` 時,游標離開鈕、穿過那 8px 空隙移向 tooltip 的期間 tooltip 不關
-      ([Radix Tooltip `disableHoverableContent` / hoverable content](https://www.radix-ui.com/primitives/docs/components/tooltip)),
-      這是**刻意保留**的 —— [WCAG 1.4.13 Content on Hover or Focus](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)
-      要求懸停內容可被指標到達(hoverable)。空隙上的點擊落到底下內容是正確的,tooltip 開著不代表那裡屬於鈕。
-      定位殼改 `w-fit`(2026-09-04)拿掉的是殼比鈕寬 12px 的**結構鬆弛**(殼一直是 `pointer-events-none`,從未參與命中);
-      它對「空隙上 tooltip 仍開著」沒有、也不可能有影響 —— 先前把「殼的帶讓 tooltip 開著」記為此症狀的根因是誤判,撤回。
-      命中區 ≡ 可視形狀仍是這顆鈕的唯一契約(它沒有另外的懸停回饋,所以 `ds-canonical/references/hit-area-canonical.md`「一-4 細則」的「懸停回饋形狀 ≡ 命中區」在它身上退化成可視形狀;那條通則只管控件,不延伸成全 DS「點得到的都要看得到」—— 整列、整張卡照該檔滑過原則一-2)。
-    - **也不內縮**:先前寫成「按鈕保持矩形、圓角只畫內層,角落才點得到」,那是把**多**當成修正 ——
-      使用者要的是相等。(同時撤回一條誤判:2026-09-03 記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中;
-      複核幾何後,D 形在該高度的左緣本來就在 x≈6.8 而非 x=0,那幾點原本就在**視覺之外**,不是死區。)
-    - **貼邊鈕壓在別人的捲軸上時,鈕贏**(2026-09-04 user 拍板原話:「按鈕可能已經蓋到了表格的捲軸,
-      但點按鈕仍應該觸發按鈕的事件而不應該是捲動捲軸,因為按鈕是蓋在表格上,fab 通常也都是 z-index 最上面的東西」)。
-      入口鈕是浮在內容之上的全域入口,不是內容的一部分;它蓋到什麼,那一塊就歸它。
-      實測(真實滑鼠,非 `elementFromPoint`):貼邊鈕 x=1179–1207 與 DataTable 垂直捲軸 x≈1175–1190 重疊約 11px,
-      在重疊區點擊 → 面板開啟、`scrollTop` 不變。
-      **注意**:`document.elementFromPoint` **看不到原生捲軸**(它不是 DOM 元素),所以這一條只能用真實指標事件驗,
-      不能用命中圖 —— 先前的「每一點都命中」驗證對這個場景是盲的。
-      (本條取代 2026-09-03 的舊立場「捲軸露出的那幾 px 不屬於鈕,點在那裡捲動內容是正確行為」。)
-    - **懸停微放大掛在按鈕上**(不是內層):命中盒與可視形狀一起放大,兩者永遠同步;掛在內層的話
-      放大後可視會比命中盒大一圈。陰影升一級畫在內層(陰影屬於那個看得見的形狀)。值與獨立
-      `AgentFab` 同一組(`scale-[1.04]` + `--elevation-200-hover`),沒有另訂。
-    - **已登記未修**(2026-09-04 對抗式稽核):(a) `AgentPanelDock` 開面板時整顆 `AgentFabDock` 被卸載,
-      關回來是全新掛載 → 首格 `size` 為 0,`placementStyle` 在 `s.h === 0` 時不夾 y,若面板開著期間視窗
-      變矮,記住的貼邊 y 會先畫在超出合法範圍的位置再跳回;同一格的 `inset` 也還是 fallback 16。
-      (b) `resizable` 把手改用 `patterns/resize-handle` 後 pointerdown 多了 `preventDefault()`,
-      理論上會讓「拖欄寬時編輯中的 cell 自動結算」的時機改變 —— **未實測**(本機沙箱起不了 Chromium),
-      不寫成已知行為。
-    - **機械閘**:`scripts/agent-fab-hit-area-invariant.mjs` 掃 `elementFromPoint().closest('button')` 的
-      **真實命中測試**(不是 class 或 rect 的字面值),逐點分類「在可視形狀內/外」(圓角半徑直接讀
-      computed style,所以任何形態都適用),斷言 **H1 可視形狀內每一點都點得到(0 個死點)/
-      H4 可視形狀外不得點得到(只容 1.5px 次像素,再多就是隱形帶)/ H5 定位殼不得大於鈕 /
-      H2 不越舞台右下緣 / H3 舞台零溢出**;
-      **注意此閘驗不到「鈕壓在原生捲軸上」那一條** —— `elementFromPoint` 看不到捲軸(它不是 DOM 元素),
-      那條只能用真實指標事件驗;
-      併在 `npm run test:agent-panel-invariants`。最小點擊尺寸的世界級對照
-      ([Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
-      [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html))
-      是**尺寸建議**,不是「命中要大於視覺」的依據 —— 要滿足它應該把**可視形狀**做大,而不是加隱形邊。
-  - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
-    `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
-    lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;
-    招喚態同款蓄勢、光圈省略),只有 y 可變、夾在右緣帶內。沒有第三種位置,使用者不可能把鈕拖到難用的地方。
-    **兩種形態點一下都直接開面板**(一段);< 8px 位移視為點擊。
-    **拖曳(≥ 8px)放開不得開面板,且不得依賴事件時序**(2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,
-    但我明明就只是要移動它而已」):瀏覽器對同一顆鈕補發的 click 由旗標吞掉,旗標只在**下一次 pointerdown** 才清、不用計時器
-    (舊版 `setTimeout(0)` 在 click 晚一個 task 送達的環境 —— 遠端隔離 / 輸入代理 —— 會漏);鍵盤合成的 click(detail 0)不吞。
-    **拖曳的判準不是「中途收到幾個 pointermove」**:放開時若尚未判成拖曳,再以放開點走一次同一套位置計算(門檻 / 磁吸帶 / 落點),
-    pointermove 被代理丟掉 / 合併(只剩按下與放開)時仍判成拖曳、仍落到同一個磁吸位置(舊版只在 pointermove 裡設 moved,0 個 move 放開在 80px 外會被當成點擊);
-    已判成拖曳的手勢維持原判、落點取最後一次移動。
-    機械閘 `scripts/agent-fab-drag-click-invariant.mjs`(晚到 100ms 的 click 必被吞;0 個 move 放開在 80px 外不開面板;對照組先發 pointerdown 把旗標清掉必紅)。
-  - **右緣帶**(磁吸區;2026-09-03 user 留言拍板幾何):寬 36(= `--field-height-md`;游標離右緣 ≤ 36 即進帶,已在帶內時
-    再多 16px 才算離開,遲滯防抖);上緣 = 貼邊鈕圓心落在視窗中線(鈕頂 = 舞台高 ÷ 2 − 14);下緣 = 貼邊鈕底離家頂一個
-    loose(鈕頂 = 舞台高 − 2·loose − 68)。貼邊鈕只能從中線往下拖到家上方,永不與家重疊、不壓分頁列;矮視窗放不下時整帶
-    收成中線一點。帶(底色)= 這個矩形 = 貼邊鈕合法 y 範圍。判定用**指標**位置(意圖在指尖)。
-  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**底色 + 三邊虛線框**標出(見下「帶的樣式」);
-    游標一進帶內,預覽當場變成貼邊鈕**貼在右緣、停在放開會落的高度**(帶內所見即所得,不預告在游標下);
-    放開在帶內 → 落定;放開在帶外 → 飛回家。
-  - **拖 28 貼邊鈕**:不顯示帶;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
-  - **帶的樣式**(2026-09-03 user 拍板;SSOT = `color.spec.md`「Drop target」段):消費 DS「可放下的區域」配對 ——
-    底 `bg-drop-target`(`--primary` @ 15% **兩模式都半透明**:覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律;
-    15% = DS alpha 階梯上的既有階,且落在世界級區間 Material dragged 0.16 / VS Code 0.18 / Atlassian ≈0.20)+ **三邊 2px dashed**
-    `border-drop-target-border`(= `--primary-hover`;dashed = DS「可放下的暫時目標」語彙,與 FileUpload 拖入區同一組 token)。
-    **貼右緣那側不畫線、不留圓角**(`border-r-0 rounded-l-md`;Sheet / Sidebar / AppShell 側欄 / 貼邊鈕「環只畫露出三邊」同語言)。
-    與 FileUpload 常駐拖入區的分工:那邊靜止就看得見、進入合法區只換邊框不填色;這裡憑空出現、需要整區底色才讀得出範圍,
-    落點回饋由鈕自己的所見即所得預覽承擔(對照表在 color.spec.md)。
-  - **等價路徑**:鍵盤 家 → `→` 貼邊(停在帶底 = 家頂上方一個 loose);貼邊 `↑↓` 16px、`←` / Home 回家;右鍵 / Shift+F10
-    DropdownMenu 依狀態只給一項(家:「縮小按鈕」`ArrowRightToLine` / 貼邊:「放大按鈕」`ArrowLeftFromLine` —— 線 = 右緣、
-    箭頭方向 = 鍵盤 → / ← 等價路徑,[lucide 官方 tags collapse / expand 鏡像對](https://github.com/lucide-icons/lucide/blob/main/icons/arrow-right-to-line.json);
-    Maximize2 家族在 DS = 全螢幕、Panel 家族 = 面板本身,故不用;2026-09-03 user 拍板「縮小按鈕與放大按鈕
-    + 前綴 icon」——「按鈕」點名對象,與 FileViewer 內容縮放的「放大 / 縮小」不混淆;DS 無 ContextMenu,以受控 DropdownMenu 代);
-    拖曳中 Esc 取消回原位。Tooltip 兩態不同:家「問我或推走我」(2026-09-03 user 文案,邀請拖曳)/ 貼邊
-    「開啟智慧代理」(2026-09-03 user 留言:小鈕只寫開啟;= aria-label);拖曳中不顯示。
-  - **動作**(依 motion.spec.md;2026-09-03 對照四家後定):形態切換 `--motion-duration-overlay` 150ms
-    ([Carbon moderate-01 150ms「小型展開、短距離移動」](https://carbondesignsystem.com/elements/motion/overview/))/
-    飛回家與落點修正 `--motion-duration-surface` 250ms + enter 曲線([Atlassian transitions 150–400ms「較長時長幫助
-    追蹤空間變化」](https://atlassian.design/foundations/motion);拖曳中跟指標不過渡)/ 帶底色淡入淡出 150ms;
-    prefers-reduced-motion 三者全部直接落定([Atlassian「全部停用仍可用」](https://atlassian.design/foundations/motion)、
-    [Fluent「提供 no motion 設定」](https://fluent2.microsoft.design/motion)、WCAG 2.3.3)。
-  - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「預覽 = 落點」;沒命中 = 圓鈕跟游標、
-    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-panel-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是帶的底色範圍),流程不變。
-    判準:以指標判定、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做「最近磁吸點」
-    (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。**指標 x 夾在舞台內再判區(超出右緣讀作右緣;y 不夾)**:
-    拖曳用 pointer capture,`clientX` 可以越過視窗右緣,夾回舞台後仍落在右緣帶內 → 拖過頭一樣算貼邊;y 不夾,越過上下緣就是沒命中。
-  - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'home'}` /
-    `{kind:'dock',y}`),DS 不寫 storage;要跨 session 記憶由 consumer 存。
-  - 對照:[Copilot DAB 可拖到內容區側邊變小圖示、拖回畫布即展開](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
-    [Windows Snap「拖到螢幕邊時 Snap 框當場顯示」= 拖曳中預告落點](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
-    [Android Bubbles 任意拖、拖到底部才出現關閉區](https://developer.android.com/develop/ui/views/notifications/bubbles)、
-    [Teambition 專案頁 hover「−」收到右緣、點圓弧先展開](https://www.teambition.com/)(2026-09-02 實測;本 DS 收合後
-    一段即開、且形態在拖曳中就切換,比它少一步、回饋更早);Material 明文 FAB 不移動
-    ([M3 FAB](https://m3.material.io/components/floating-action-button/guidelines))→ 可拖在 DS 為 opt-in。
-- A11y:`aria-label="開啟智慧代理"`。
+入口鈕的尺寸 / 環 / 動畫 / 標誌狀態跟隨 / 放置與互斥(`AgentPanelDock`)/ 遮擋與貼邊(`AgentFabDock`:命中區 = 可視形狀、家與貼邊兩種位置、右緣帶、拖曳 ≠ 點擊判準、等價路徑、區域 → 落點表),整段住在 `./agent-panel-fab.spec.md`(對應 `agent-panel-fab.tsx`);本檔只留這個指標。
 
 ## 附:anatomy 分層 rationale(2026-09-03 稽核補)
 
@@ -672,3 +399,12 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
   / `components/Tag` / `components/OverflowIndicator` / `components/CircularProgress`
   / `components/Empty` / `components/RadioGroup` / `components/Dialog`
   / `tokens/motion/motion.css` / `tokens/uiSize/uiSize.css`。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `agent-decision-card.spec.md`
+- `agent-panel-fab.spec.md`
+- `agent-panel-logo.spec.md`
+- `dialog.spec.md`

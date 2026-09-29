@@ -626,7 +626,7 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
 | 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
 
-那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md`「遮擋與貼邊」段的「不外推」條(:463-464,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel-fab.spec.md`「遮擋與貼邊」段的「不外推」條(:42-43;2026-09-27 拆檔前為 `agent-panel.spec.md:463-464`,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
 
 #### 修正二:它們本來就不該是手刻的
 
@@ -779,6 +779,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `account-menu.spec.md`
+- `agent-panel.spec.md`
 - `app-shell.spec.md`
 - `density.spec.md`
 - `header-canonical.spec.md`

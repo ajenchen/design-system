@@ -10,19 +10,27 @@
  *   - 2026-09-18 native/custom parity 閘:只掛在自述「非 required check」的 nightly。
  *   - ci.yml 註解自己記過兩次 distribute-column-widths / pagination 同一種病。
  *
- * 量法:把「執行面」當根(`.github/workflows/**`、`package.json`、`ds-canonical/hooks/**`、
- * `ds-canonical/skills/**`、`infra/governance/{test,lib}/**`),遞移展開它們提到的 `scripts/*.mjs`,
- * 算不出來的就是孤兒。名字像閘/測試的孤兒(`invariant|probe|audit|check|test-|gate`)才進判定 ——
+ * 量法:把「執行面」當根(`.github/workflows/**`、`ds-canonical/hooks/**`、
+ * `ds-canonical/skills/**`、`infra/governance/{test,lib}/**`、harness inventory),遞移展開它們提到的
+ * `scripts/*.mjs`,算不出來的就是孤兒。名字像閘/測試的孤兒(`invariant|probe|audit|check|test-|gate`)才進判定 ——
  * 一次性工具腳本不在此列。
+ *
+ * **package.json 不是根(2026-09-27,N33)**:它只是 `npm run <name>` 的查表。舊量法把它當根,
+ * 於是「從 ci.yml 拿掉一道閘」不會紅 —— package.json 還留著那條 script,閘就被判成可達
+ * (拿「有一條 npm script 提到它」代替「CI 會跑它」,M37)。現在 npm script 只在**某個執行面真的
+ * `npm run` 到它**時才算數(lib/workflow-invocation-surface.mjs;pre/post hook 與 npm script 互相呼叫都遞移),
+ * 而且 workflow 的 `#` 註解整行剔除 —— ci.yml 註解裡記過的「這支沒被呼叫」病史,名字出現在那裡不算有人跑。
+ * 對照組多兩面:只在 package.json 出現的合成閘必紅;只被 workflow 註解提到的合成閘必紅。
  *
  * **棘輪,不是一次到位**:現況有一批既有孤兒,一次全接進 CI 會同時炸開且無法評估落點。
  * 因此鎖 baseline(`scripts/gate-reachability-baseline.json`):**新增孤兒 = 紅**,既有孤兒清掉會提醒更新
  * baseline。數字只准往下,不准往上。要合法新增一支閘,就得同時把它接進某個執行面。
  *
  * @gate-contract
- *   保證: 名字像閘/測試的腳本,真的有執行面(CI / npm script / hook / skill)會呼叫它
- *   紅: 新增一支沒有任何人呼叫的閘(或把某支從 CI 拿掉)→ 本閘必須指名它並紅
- *   綠: 沒有新增孤兒時必須綠;selftest 每次都注入合成孤兒驗它會紅,所以綠燈不是因為量具壞了
+ *   保證: 名字像閘/測試的腳本,真的有執行面(CI workflow 直接或經 npm run / hook / skill / harness)會呼叫它
+ *   紅: 新增一支沒有任何人呼叫的閘(或把某支從 CI 拿掉、只剩 package.json 那條 script)→ 本閘必須指名它並紅
+ *   綠: 沒有新增孤兒時必須綠;selftest 每次都注入合成孤兒(無人提到 / 只在 package.json / 只在 workflow 註解)驗它會紅,
+ *       並注入一支經 workflow `npm run` 可達的合成閘驗它會綠,所以綠燈不是因為量具壞了
  *
  * 用法:
  *   node scripts/gate-reachability-invariant.mjs              判定
@@ -33,6 +41,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { discoverGateMetaTestPairs } from './lib/gate-meta-test-inventory.mjs'
+import { readWorkflowSources, readWorkspaceScripts, resolveWorkflowInvocationSurface } from './lib/workflow-invocation-surface.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
@@ -40,6 +49,11 @@ const UPDATE = process.argv.includes('--update-baseline')
 const BASELINE = join(ROOT, 'scripts', 'gate-reachability-baseline.json')
 const GATE_LIKE = /invariant|probe|audit|check|^test-|gate/
 const SYNTHETIC = 'synthetic-orphan-invariant.mjs'
+// 對照組(N33):三支合成閘各只在一種「看起來有人提到、其實沒人跑」的地方出現,必須全部被抓;
+// 第四支經 workflow `npm run` → package.json script 真的可達,必須放行 —— 兩面都驗,量具才不是抽籤。
+const SYNTHETIC_PKG_ONLY = 'synthetic-pkg-only-invariant.mjs'
+const SYNTHETIC_COMMENT_ONLY = 'synthetic-comment-only-invariant.mjs'
+const SYNTHETIC_VIA_NPM = 'synthetic-via-npm-invariant.mjs'
 
 const read = (p) => { try { return readFileSync(p, 'utf8') } catch { return '' } }
 const walk = (dir, out = []) => {
@@ -54,10 +68,8 @@ const walk = (dir, out = []) => {
   return out
 }
 
-// 執行面 = 真的會把腳本跑起來的地方
-const executionSurfaces = [
-  ...walk(join(ROOT, '.github/workflows')),
-  join(ROOT, 'package.json'),
+// 執行面 = 真的會把腳本跑起來的地方。**package.json 不在裡面**:它只是 `npm run` 的查表(見檔頭)。
+const otherSurfaces = [
   ...walk(join(ROOT, 'packages/design-system/ds-canonical/hooks')),
   ...walk(join(ROOT, 'packages/design-system/ds-canonical/skills')),
   ...walk(join(ROOT, 'infra/governance/test')),
@@ -67,7 +79,24 @@ const executionSurfaces = [
   // 漏掉它會讓 22 支真的每晚都在跑的測試被誤判成「沒人呼叫的孤兒」(2026-09-21)。
   join(ROOT, 'infra/governance/providers/harness-source-inventory.json'),
 ].filter((p) => /\.(ya?ml|json|sh|mjs|md)$/.test(p))
-const corpus = executionSurfaces.map(read).join('\n')
+const workflows = readWorkflowSources(ROOT)
+const packageScripts = JSON.parse(read(join(ROOT, 'package.json')) || '{}').scripts ?? {}
+const workspaceScripts = readWorkspaceScripts(ROOT)
+if (SELFTEST) {
+  // 只在 package.json 出現:沒有任何 workflow / hook 會 `npm run` 到這條 script
+  packageScripts['test:synthetic-pkg-only'] = `node scripts/${SYNTHETIC_PKG_ONLY}`
+  // 只在 workflow 註解出現:整行剔除後不該算數
+  workflows['synthetic-selftest.yml'] = `name: synthetic\n# node scripts/${SYNTHETIC_COMMENT_ONLY}\njobs:\n  x:\n    steps:\n      - run: npm run test:synthetic-via-npm\n`
+  // 經 workflow `npm run` → package.json script → 腳本:這才是真的可達
+  packageScripts['test:synthetic-via-npm'] = `node scripts/${SYNTHETIC_VIA_NPM} && node scripts/${SYNTHETIC_VIA_NPM} --selftest`
+}
+const invocation = resolveWorkflowInvocationSurface({
+  workflows,
+  packageScripts,
+  workspaceScripts,
+  extraSurfaces: otherSurfaces.map(read),
+})
+const corpus = invocation.corpus
 
 const SELF = 'gate-reachability-invariant.mjs'
 const scripts = readdirSync(join(ROOT, 'scripts')).filter((f) => f.endsWith('.mjs'))
@@ -75,7 +104,11 @@ const scripts = readdirSync(join(ROOT, 'scripts')).filter((f) => f.endsWith('.mj
 // 不排除的話它一被接進 CI,就會把所有它列出來的孤兒都「變成可達」——量具把自己量綠。
 // 2026-09-18 實測:接進 CI 後對照組立刻假綠,就是這個自我參照。
 const source = Object.fromEntries(scripts.filter((f) => f !== SELF).map((f) => [f, read(join(ROOT, 'scripts', f))]))
-if (SELFTEST) { scripts.push(SYNTHETIC); source[SYNTHETIC] = '// 合成孤兒:沒有任何執行面提到它\n' }
+if (SELFTEST) {
+  for (const f of [SYNTHETIC, SYNTHETIC_PKG_ONLY, SYNTHETIC_COMMENT_ONLY, SYNTHETIC_VIA_NPM]) {
+    scripts.push(f); source[f] = `// 合成閘 ${f}:只給對照組用\n`
+  }
+}
 
 // 執行面直接提到的算可達(量具自己被 CI 呼叫,所以它本身是可達的)
 const reachable = new Set(scripts.filter((f) => corpus.includes(f)))
@@ -136,7 +169,7 @@ const fixed = [...known].filter((f) => !orphans.includes(f))
 const staleManual = Object.keys(manualOnly).filter((f) => !orphans.includes(f))
 const pending = orphans.filter((f) => !(f in manualOnly))
 
-console.log(`掃描 ${scripts.length} 支 scripts/*.mjs;執行面(CI / package.json / hooks / skills / infra)可達 ${reachable.size} 支`)
+console.log(`掃描 ${scripts.length} 支 scripts/*.mjs;執行面(CI workflow 直接或經 npm run / hooks / skills / infra / harness)可達 ${reachable.size} 支;被執行面觸發到的 npm script ${invocation.npmScripts.size} 條`)
 console.log(`名字像閘/測試卻沒人呼叫:${orphans.length} 支(baseline ${baseline.count};其中刻意只手動跑、理由已記 ${Object.keys(manualOnly).length - staleManual.length} 支)`)
 for (const [f, why] of Object.entries(manualOnly)) if (orphans.includes(f)) console.log(`  · 刻意只手動跑:scripts/${f} —— ${why}`)
 if (fixed.length) console.log(`↓ 已接好線或已退役 ${fixed.length} 支:${fixed.slice(0, 8).join(', ')}${fixed.length > 8 ? ' …' : ''}\n   → 跑 --update-baseline 把它們從 baseline 移除,數字才會真的往下`)

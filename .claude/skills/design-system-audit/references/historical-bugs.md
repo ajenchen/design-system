@@ -436,3 +436,30 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
   「這支測試有沒有真的看過它的閘紅一次」,目前只能靠讀 code,**先記在這裡讓下一個人知道覆蓋閘的邊界在哪**。
 
 - **2026-09-24 同一天第三次:引用「不要拿 X 當 Y」時把 Y 的範圍吃掉**。前兩次是 Primer:`tree-view.mdx` 寫的是 "**global sidebar navigation**"(全站主導覽)我記成 "sidebar navigation";`nav-list.mdx` 寫的是「不要**為了突破四層上限**而把 NavList 換成 tree」我記成後半句。第三次差點再犯:我在新寫的設計判準裡裸引 Carbon 的 "**As the primary navigation in a product's UI**" 當「樹不是導覽」的依據,user 當場攔下:「這題我上面已經回覆過了喔,notion 你還記得吧?你他媽不要又給我鬼打牆喔」。**固定規則:引用任何一家的「不要拿 X 當 Y」時,必須把 Y 的範圍逐字寫出來** —— `primary` / `global` 這種修飾語就是範圍本身,拿掉它就變成另一句話。裸引一次,下一個人就會把它當禁令。三次都是同一個病:**把自己讀出來的範圍當成原文寫的範圍**(M36)。
+
+## M37 第十一種形狀:「未暫存的 diff ≡ 這次改了什麼」只在沒有新檔的版本成立(2026-09-27,beta.146 consumer 同步)
+
+WM `Sync Design System` run 36303338183(repository_dispatch)在第 6 步「Apply canonical upgrade transaction」以
+`GOV-UPGRADE-007:live upgrade patch/index/base differs from protected-base reconstruction` 失敗。
+`scripts/sync-all.mjs` 的 live 比對拿**未暫存的 `git diff`**(index → 工作樹)跟重建端 `git add -A` 之後的
+`--cached` diff 比 bytes(`verify-upgrade-evidence.mjs` `stagedPatch`)。兩者只在「所有改到的路徑本來就在 index 裡」時相等:
+**新增的受管檔案在 live 端是 untracked,根本不會出現在未暫存 diff**,重建端卻以 `new file` 列出 → bytes 必不同。
+這道比對 2026-07-28 上線,beta.132–145 每一版新增檔數都是 0,所以兩個月零訊號;beta.146 第一次新增三支
+(`scripts/lib/launch-browser.mjs`、`storybook-render-health.mjs`、`storybook-static-snapshot.mjs`)就紅。
+
+- **對照組實驗三格**(scratch 小 repo,結論不靠推理):① 現行比對法 + 新檔 → 不同(live 1 檔、重建 2 檔,重現 CI 形狀);
+  ② live 先 `add -A` 再比 `--cached` → 相同;③ 新檔先放進 base 再同步(現行比對法)→ 相同。
+- **修法**(本 repo `scripts/sync-all.mjs`,隨下一版釋出到 consumer):live 端用**同一條**指令暫存(`add -A -- .`)、
+  比同樣的 `--cached` diff,比完 `git reset -- .` 還原 index;下游契約不變(index 乾淨、HEAD 不動、新檔留在工作樹當
+  untracked 交給 PR 步驟 `git add --all`)。`scripts/test-sync-all-transaction.mjs` 新增「新增受管檔案」情境:
+  修法前必紅並指名那句、修法後綠(43 → 44 個 ✅,其餘情境不變)。
+- **為什麼 beta.146 還是要另外處理**:consumer 的同步永遠跑「升級前」的腳本(安全性質:交易期間不執行 incoming 程式),
+  所以修法要到 beta.148 的同步才真正生效(beta.147 的同步跑的是 beta.146 那份)。beta.146 用第 ③ 格解:
+  三支檔案 bytes 逐字取自 166e6614 血塊、sha256 與 `consumer/lock.json` 核對,先放進 WM protected main(WM #94),
+  再重派 consumer。**這不是繞過閘,是讓兩邊的 diff 都不含它們**;若 beta.147 再新增受管檔案,要再做一次第 ③ 格。
+- **判準**(M37 三問的具體化):要保證的性質是「工作樹相對 protected base 的**完整**變更集合」;實際量的是
+  「index 對工作樹的差」;兩者在「有 untracked 新檔」時分開。凡拿 `git diff` 當變更集合,先問「新檔在不在裡面」。
+- **同一天的兩個沙箱教訓**(不是產品 bug,但會讓修復卡住):(1) 本機重現時 `.governance-upgrade-*` 交易目錄要建在 repo 的
+  **同層**(`dirname(repoRoot)`),沙箱只准寫 repo 內 → 把 repo clone 到 `$TMPDIR` 底下一層再跑;(2) 交易內的封閉 npm 執行環境
+  刻意不透傳 `HTTPS_PROXY`,沙箱網路又只走代理 → 本機跑不到重建那一步,所以根因改用「讀 code + 對照組小 repo + 修法測試」三件證據收斂,
+  而不是等一次完整重現。

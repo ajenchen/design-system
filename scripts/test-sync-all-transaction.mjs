@@ -1696,6 +1696,68 @@ try {
   must(run('git', ['add', '-A']), 'git add applied control-plane delta')
   if (run('git', ['diff', '--cached', '--quiet']).status !== 0) must(run('git', ['commit', '-qm', 'applied release-bound control-plane delta fixture']), 'git commit applied delta')
 
+  // 2026-09-27 新增受管檔案(M37「未暫存的 diff ≡ 這次改了什麼」只在沒有新檔時成立):
+  // 重建端的 patch 是 `git add -A` 之後的 --cached diff(新檔以 new file 出現),live 端原本拿
+  // 「未暫存的 git diff」比 bytes —— untracked 的新檔根本不會出現,所以 beta.146(這道比對
+  // 2026-07-28 上線後第一個新增受管檔案的版本:scripts/lib/launch-browser / storybook-render-health /
+  // storybook-static-snapshot)在 WM run 36303338183 第 6 步以「live upgrade patch/index/base differs
+  // from protected-base reconstruction」失敗。對照組:修法前這個情境必紅並指名那句;修法後必綠、
+  // 新檔確實落地、index 仍乾淨(新檔留在工作樹當 untracked,交給 PR 步驟的 `git add --all`)。
+  const addedCanonical = join(temp, 'added-ds-canonical')
+  cpSync(dsCanonical, addedCanonical, { recursive: true })
+  const addedFork = join(addedCanonical, 'fork')
+  const addedManifestPath = join(addedFork, 'manifest.json')
+  const addedManifest = JSON.parse(readFileSync(addedManifestPath, 'utf8'))
+  const addedDestination = 'scripts/lib/new-managed-body-fixture.mjs'
+  if (existsSync(join(repo, addedDestination)) || addedManifest.consumer.managedFiles[addedDestination]) {
+    throw new Error('added managed destination must not pre-exist in the consumer fixture or the corpus')
+  }
+  const addedBody = '// new managed body fixture(2026-09-27:sync-all 必須能新增受管檔案)\nexport const NEW_MANAGED_BODY_FIXTURE = true\n'
+  const addedArtifact = `consumer/managed-files/${sha(addedBody)}.blob`
+  writeFileSync(join(addedFork, addedArtifact), addedBody)
+  // managedFiles 與 materialization.exactPaths 都是排序過的 inventory(validateInstalledForkCorpus
+  // 以「exactly derived from authenticated corpus」比對),新檔要插在排序位置、兩處同步。
+  addedManifest.consumer.managedFiles = Object.fromEntries(
+    Object.entries({ ...addedManifest.consumer.managedFiles, [addedDestination]: addedArtifact })
+      .sort(([left], [right]) => compareUtf8Bytes(left, right)),
+  )
+  addedManifest.consumer.materialization.exactPaths = [...new Set([...addedManifest.consumer.materialization.exactPaths, addedDestination])].sort()
+  writeFileSync(addedManifestPath, JSON.stringify(addedManifest, null, 2) + '\n')
+  const addedLockPath = join(addedFork, 'governance.lock')
+  const addedLock = JSON.parse(readFileSync(addedLockPath, 'utf8'))
+  const addedManifestEntry = addedLock.entries.find((entry) => entry.file === 'manifest.json')
+  if (!addedManifestEntry) throw new Error('corpus lock must bind manifest.json')
+  addedManifestEntry.sha256 = sha(readFileSync(addedManifestPath))
+  addedLock.entries.push({ schemaVersion: 1, file: addedArtifact, sha256: sha(addedBody), source: addedDestination, classification: null, destination: addedDestination })
+  addedLock.entries.sort((left, right) => compareUtf8Bytes(left.file, right.file))
+  writeFileSync(addedLockPath, JSON.stringify(addedLock, null, 2) + '\n')
+  const addedBomPath = join(addedFork, 'consumer/lock.json')
+  const addedBom = JSON.parse(readFileSync(addedBomPath, 'utf8'))
+  addedBom.payload.managedFiles = Object.fromEntries(
+    Object.entries({ ...addedBom.payload.managedFiles, [addedDestination]: sha(addedBody) })
+      .sort(([left], [right]) => compareUtf8Bytes(left, right)),
+  )
+  addedBom.payload.forkCorpusLockSha256 = sha(readFileSync(addedLockPath))
+  writeFileSync(addedBomPath, JSON.stringify(addedBom, null, 2) + '\n')
+  const addedHeadBefore = run('git', ['rev-parse', 'HEAD']).stdout.trim()
+  const added = run(process.execPath, [join(repo, 'scripts/sync-all.mjs'), '--apply', '--to', dsVersion, '--json'], {
+    env: { ...baseEnv, FAKE_DS_CANONICAL: addedCanonical, FAKE_NPM_MODE: 'success' },
+  })
+  const addedReport = parseReport(added, 'added managed file')
+  const addedUntracked = run('git', ['ls-files', '--others', '--exclude-standard', '--', addedDestination]).stdout.trim()
+  if (
+    added.status !== 0
+    || addedReport.ok !== true
+    || !existsSync(join(repo, addedDestination))
+    || readFileSync(join(repo, addedDestination), 'utf8') !== addedBody
+    || run('git', ['diff', '--cached', '--quiet']).status !== 0
+    || run('git', ['rev-parse', 'HEAD']).stdout.trim() !== addedHeadBefore
+    || addedUntracked !== addedDestination
+  ) throw new Error(`added managed file did not apply cleanly(新檔必須落地、index 乾淨、HEAD 不動、新檔 untracked):${added.stdout}\n${added.stderr}`)
+  console.log('✅ success: a release that ADDS a managed file applies(live comparison stages like the reconstruction;2026-09-27 beta.146 anchor)')
+  must(run('git', ['add', '-A']), 'git add applied added-managed-file fixture')
+  if (run('git', ['diff', '--cached', '--quiet']).status !== 0) must(run('git', ['commit', '-qm', 'applied added managed file fixture']), 'git commit applied added managed file')
+
   writeFileSync(join(repo, 'node_modules/original-only.txt'), 'original installed tree')
 
   const assertRollback = (result, label, before) => {

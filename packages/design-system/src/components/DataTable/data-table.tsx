@@ -44,7 +44,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rec
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX, createStepToNeighborCoordinateGetter } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -2728,7 +2728,7 @@ function DataTableInner<TData>(
     console.error(
       `[DataTable] 尚不支援欄位群組(巢狀 columns):${grouped.length} 個欄位定義帶了 \`columns\`。` +
       '表頭只會渲染最上層並被葉欄位 id 濾光,結果是空白表頭且與資料對不齊。' +
-      '請先攤平成單層欄位(見 data-table.spec.md 兩容器缺陷清單 D)。',
+      '請先攤平成單層欄位(見 data-table-known-defects.spec.md 兩容器缺陷清單 D)。',
     )
   }, [columns])
   /**
@@ -5209,16 +5209,14 @@ function DataTableInner<TData>(
   // 播報時讀它即可。不需要重算一次判定,避免兩份邏輯漂移。
   const reorderOutcomeRef = React.useRef<DragOutcome | null>(null)
 
-  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭)。
-  const dragAnnouncements = React.useMemo(
-    // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
-    // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
-    () => createDragAnnouncements({
-      getOutcome: () => reorderOutcomeRef.current,
-      kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
-    }),
-    [],
-  )
+  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭):繁中播報 + polite 區域 + 繁中操作說明
+  //(2026-09-27 OE10:先前直接把 createDragAnnouncements 交給 dnd-kit,文字落在它寫死的 assertive 區域,每到一個落點就打斷)。
+  // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
+  // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
+  const drag = useDragAccessibility({
+    getOutcome: () => reorderOutcomeRef.current,
+    kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+  })
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
     reorderOutcomeRef.current = null
@@ -5358,11 +5356,13 @@ function DataTableInner<TData>(
         // 繁中播報 + 誠實回報結果(C1/B2 修,2026-09-07)。
         // 先前四個 DndContext 全都沒傳 accessibility(全 DS grep = 0 命中),於是吃 dnd-kit
         // 的英文預設,而且是從它自己的生命週期發的 —— 會在我們根本沒重排時播「已放到 X」。
-        accessibility={{ announcements: dragAnnouncements }}
+        accessibility={drag.accessibility}
       >
         {/* v15.0 Path B:無 SortableContext(useDraggable + useDroppable 各自獨立,不需 sort context)。
             無 auto-shift visual reorder — source 留原位,indicator 顯 drop preview。 */}
         {node}
+        {/* 拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility)—— 沒渲染 = 整趟拖曳無聲 */}
+        {drag.liveRegion}
         {/* DragOverlay portal — row 跟 column 都用同一個 overlay state(dragOverlayHtml /
             dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。 */}
         <DragOverlay dropAnimation={null}>

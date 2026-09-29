@@ -45,7 +45,7 @@
 import { existsSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireFreshStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -55,17 +55,11 @@ const SELFTEST = process.argv.includes('--selftest')
 const STORY = 'design-system-components-treeview-設計規格--state-behavior'
 const TREE = '[role="treegrid"][aria-label="工程團隊樹"]'
 
-requireStorybookBuild(join(BUILD, 'index.json'))
-// stale-build 守衛:建置比被驗的原始碼舊 = 驗到舊的 JS(假綠 / 假紅都有可能)
-const buildMtime = statSync(join(BUILD, 'index.json')).mtimeMs
+// stale-build 守衛:建置比被驗的原始碼舊 = 驗到舊的 JS(假綠 / 假紅都有可能)——
+// lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)。
+// 原本 `existsSync(p) && …`:原始碼改名守衛就靜靜關掉(M37);現在原始碼不存在是閘設定錯、直接紅。
 // 判定住在 lib/roving-list-keyboard.ts(2026-09-26 由 TreeView/tree-keyboard-route.ts 併入四宿主共用零件)
-for (const f of ['packages/design-system/src/components/TreeView/tree-view.tsx', 'packages/design-system/src/lib/roving-list-keyboard.ts']) {
-  const p = join(ROOT, f)
-  if (existsSync(p) && statSync(p).mtimeMs > buildMtime) {
-    console.error(`✗ STALE-BUILD:${f} 比 ${BUILD} 新 —— 先重新 build storybook`)
-    process.exit(2)
-  }
-}
+requireFreshStorybookBuild(BUILD, ['packages/design-system/src/components/TreeView/tree-view.tsx', 'packages/design-system/src/lib/roving-list-keyboard.ts'])
 
 // 對照組:舊路線的三個形狀(見檔頭)。addInitScript 會在每次導覽重新套用;
 // 主格裡的按鈕不在 TreeItem 的 MutationObserver 範圍(它只管動作格),所以不會被元件改回 -1。

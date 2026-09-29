@@ -1,5 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# 焦點語彙與拖曳無障礙 — 待辦總帳(2026-09-06 開,live)
+# 焦點語彙與拖曳無障礙 — 待辦總帳(2026-09-06 開;2026-09-27 結案 → reference)
+
+**2026-09-27 結案(registry `reference`,非可執行)**:本檔的未結項已於 2026-09-25 逐項對 git 查證後併入 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` D 區(OD / OE / OB 編號),live 追蹤只看那裡;本檔後段已關掉但前段沒劃線的列,2026-09-27 依既有 `~~` 慣例就地標註(A3 / A6 / F 隔離令 / G 區 8 條與 H6 邊界 2 / codex 未做完三條 / AD77 story-quality / fast-uri / FieldGroup gap)。本檔只作證據與 user 原話來源,不得重啟;下面「本檔是唯一的 live 清單」是 2026-09-06 當時的話,只剩歷史。
 
 **為什麼有這份文件**:2026-09-06 的長 session 產生了大量已定案但未實作、以及已實測但未處理的項目。
 user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個未推的 commit、一個研究殘留目錄,
@@ -17,10 +19,10 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 |---|---|---|
 | A1 | ~~全 DS 焦點指示 SSOT 文件~~ | **已解除並落地** → `packages/design-system/ds-canonical/references/focus-canonical.md`。研究結論:**不該外擴選單模型**,W3C 自己正在把 hover 移焦點從選單規範撤除(`w3c/aria-practices#3238` 今天仍 OPEN;2025-02-18 Task Force「Hearing none」) |
 | A2 | ~~內描邊 vs 外描邊的決定規則~~ | **已寫入 A1 文件**「內描邊 vs 外描邊」段 |
-| A3 | `--neutral-selected-focus` 的處置 | **2026-09-06 撤回先前敘述**:原本寫「user 已拍板退役」= 把 user 的話放大(M36(a))。user 原話是「把焦點底色那些**沒用到的**token該刪的就刪一刪」,授權範圍是刪死用法。本 token 有 4 個活用法且 `color.spec.md:694` 有 WCAG 理由。**要不要統一、往哪邊統一,未拍板** |
+| A3 | ~~`--neutral-selected-focus` 的處置~~ | **已退役**(同檔 O4「A3 token 退役」:user 拍板畫框後 5 處全遷 → 0 用法 → 已刪,順序「先補框再退役」;2026-09-27 劃線)。原敘述:**2026-09-06 撤回先前敘述**:原本寫「user 已拍板退役」= 把 user 的話放大(M36(a))。user 原話是「把焦點底色那些**沒用到的**token該刪的就刪一刪」,授權範圍是刪死用法。本 token 有 4 個活用法且 `color.spec.md:694` 有 WCAG 理由。**要不要統一、往哪邊統一,未拍板** |
 | A5 | ~~「選中列 × 鍵盤游標」該用深一階底色還是 ring~~ | **2026-09-07 user 拍板:畫框。** 原話「A5畫框」。同一則追加待研究題:「框線何時用 ring 何時用 outline 何時用 0 間隙何時用 1px 何時用 2px?是否有合理規則?以及是否有些要整合?」→ 幾何規則由 A11 研究後落地 |
 | A5-舊 | (原敘述保留供追溯)| DS 現況兩種並存:深一階底色 4 處(DropdownMenu / SelectMenu / AgentPanel / Sidebar)vs ring 1 處(TreeView)。屬產品/UI/UX SSOT 真取捨,**待 A7 研究回來後拍板**。注意:乙案(維持深一階底色)本身就是這題要決定的事,不能拿來當現成選項 |
-| A6 | **`item-anatomy.spec.md` 缺一格:「未選中列 × 鍵盤焦點」** | 2026-09-06 查出。`:171-175` 那張 2026-08-11 user 拍板的表三列**全部**以「選中列 ×」開頭,從未涵蓋未選中的列。7 個消費者各自填空,能查到的三處全填 `bg-neutral-hover`(= 跟滑鼠 hover 同色):`dropdown-menu.tsx:25/36`(Radix,滑鼠會搬走反白 → 只會有一個高亮,**正確**)、`sidebar.tsx:939`(常駐,兩個可同時亮 → **壞**)、`menu-item.tsx:49`(被 SelectMenu 全選列以 `tabIndex={0}` 啟用,在 cmdk 清單外 → **壞**)。**這一格才是側邊欄與全選列兩個 bug 的共同根因**;修法是在 family owner 補格(擴充 SSOT),不是在消費者端各自處理,也不是開例外 |
+| A6 | ~~**`item-anatomy.spec.md` 缺一格:「未選中列 × 鍵盤焦點」**~~ | **已補格**(同檔 O4「A6 `item-anatomy.spec.md` 補上缺的那一格」;現行 owner = `item-anatomy.spec.md`「選中 × 互動疊加」表「未選中列 × 鍵盤焦點／反白」列,user 2026-09-09 拍板畫框;2026-09-27 劃線)。原敘述:2026-09-06 查出。`:171-175` 那張 2026-08-11 user 拍板的表三列**全部**以「選中列 ×」開頭,從未涵蓋未選中的列。7 個消費者各自填空,能查到的三處全填 `bg-neutral-hover`(= 跟滑鼠 hover 同色):`dropdown-menu.tsx:25/36`(Radix,滑鼠會搬走反白 → 只會有一個高亮,**正確**)、`sidebar.tsx:939`(常駐,兩個可同時亮 → **壞**)、`menu-item.tsx:49`(被 SelectMenu 全選列以 `tabIndex={0}` 啟用,在 cmdk 清單外 → **壞**)。**這一格才是側邊欄與全選列兩個 bug 的共同根因**;修法是在 family owner 補格(擴充 SSOT),不是在消費者端各自處理,也不是開例外 |
 | A10 | 全 DS 焦點徹查五題 —— **已回,五題全部未通過對抗驗證**(workflow `w63027x3j`)| 驗證抓到的比研究本身重要:(1) 「outline 遷移」建議會靜默弄壞 20 處(見 C13);(2) 盤點漏一半(41 行 vs 23);(3) 「全DS對照」那份**重新提出了 2026-09-06 已撤回的版本**(要求選單畫 ring),驗證者引 `focus-canonical.md` 的勘誤段駁回 —— **SSOT 有發揮作用**;(4) 它還想把 A5 那格標成可 AUTO,被駁。(5) 各家矩陣的「(c) 常駐清單 7 家 0 例外」被駁:Ant 的常駐側欄是 `Menu mode="inline"`(rc-menu),`useActive` 無條件 `onMouseEnter → onActive`,**Ant 是「一律搬」的真實反例**(待自行複驗)|
 | A7 | 三題研究 —— **已回,三題全部未通過對抗驗證**(workflow `wkwrala0w`)| 站得住的部分已抽出到 C13/C14 與下方。**最重要的一條是程序性的**:研究稿對第一題的結論是「不該統一,兩條路都對」,而 user 2026-09-06 已逐字說過「當然是按照 tree view 啊,我們不就是要確保整個ds 有SSOT有一致的設計語言嗎?」——**驗證者抓到那是 AI 拿 benchmark 覆蓋 user 已表達的方向**。不採納。A5 仍待 user 拍板,但拍板的起點是 user 已說的話,不是研究稿的反向結論 |
 | A9 | ~~焦點框機制要收斂到哪一套~~ | **2026-09-07 user 拍板:用甲(全域 `outline`)。** 原話「A9用甲啊」。**但附條件**,原話:「甲那麼完美當初為何不直接用甲,你確定其中沒有陷阱對嗎?當初不選甲是否有合理理由?仔細研究查證,**確保在做到理想狀態後都沒有缺點且不會改壞任何東西就用甲**」→ 條件由 A11 研究滿足後才動工 |
@@ -83,7 +85,7 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 ## F. user 已裁示為 backlog
 
 - 「上移／下移」單指標控制項(WCAG 2.5.7 + `drag-canonical.md` invariant 6)。落地形式已定:該列 `rowActions` overflow 選單多兩個項目,樣式沿用既有 menu、無新 token;僅 API 歸屬(DS 於 `enableRowDrag` 時自動注入 vs consumer 自加)待定
-- Agent 面板規格的實作(2026-08-11 隔離令仍有效:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule)
+- ~~Agent 面板規格的實作(2026-08-11 隔離令仍有效:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule)~~ —— **2026-09-27 標註:隔離令已解除**,2026-09-07 起 user 排定並落地實作(權威 = `2026-09-06-agent-principles-v14.md`;`governance/memory/project_agent_ui_draft_model.md` How 2);這一行與該 memory 曾互相矛盾,以 memory 為準
 
 ## G. Agent 原則的三個落地差距(2026-09-07 user 指派,跨模型對辯中)
 
@@ -110,7 +112,7 @@ Claude 三路 Phase A 獨立提案 → codex 隔離 context 獨立提案 → 兩
 不得改壞 Dialog 對「沒有 URL 的 Modal」的既有隔離(那正是 A 條要的)/ ≥3 家世界級對照附 citation /
 優先消費既有 token pattern / 附機械驗證方案(M32:量數值不驗屬性存在)。
 
-**2026-08-11 隔離令仍有效**:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule。本輪只產方案。
+~~**2026-08-11 隔離令仍有效**:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule。本輪只產方案。~~ —— **2026-09-27 標註:已解除**(2026-09-07 起落地實作,見 F 區同一標註)
 
 ### G 區進度(2026-09-07 跨模型對辯 workflow `wc20yypmr` 已完成兩輪)
 
@@ -173,7 +175,7 @@ Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反�
 
 順序 **2 → 3 → 1**(風險由低到高)。做完 2+3(不含 1)可示意 **B / E / F**;做完 1(需先過真瀏覽器 POC)才是完整 **A** 條。底子用 `agent-panel.stories.tsx:445` 的 Fab story。
 **C / D / G 三條不在這三個差距裡**,要示意需補一個 story 內的最小假路由 —— 純工程。
-待 user 拍板共 **8 條**(先前 6 條全部成立,共識稿另補 2 條)。
+~~待 user 拍板共 **8 條**(先前 6 條全部成立,共識稿另補 2 條)。~~ —— 已由下方「G 區:user 2026-09-07 對 8 條待拍板的裁示(逐字保留)」與 K3 收斂清單取代(2026-09-27 標註)。
 
 ### 研究殘留(累積 7 項,全部 untracked)
 
@@ -319,7 +321,7 @@ user 2026-09-07 原話:「所有要有焦點框的地方都應該仔細確認它
 
 ### H6 抑制側 72 處的判定
 
-合法 66(A 同區塊有替代指示 49 / B 畫在別的元素 11 / C 元素不可聚焦、純防禦 5 / D 有明文記錄的刻意決策 1 = `data-table.tsx:3286`,即 2026-05-12 user 親自抓的那次)、**違規 4**(見 H2)、邊界待拍板 2。
+合法 66(A 同區塊有替代指示 49 / B 畫在別的元素 11 / C 元素不可聚焦、純防禦 5 / D 有明文記錄的刻意決策 1 = `data-table.tsx:3286`,即 2026-05-12 user 親自抓的那次)、**違規 4**(見 H2)、~~邊界待拍板 2~~(已由 K3 取代:「焦點框這條線:0 項」,三問決定程序 user 2026-09-07 逐字拍完;2026-09-27 標註)。
 
 ## I. 視覺稽核結果(workflow `wvw8cz1sc`,**唯一通過對抗驗證的一份**)
 
@@ -2017,9 +2019,9 @@ R1 可以撤掉的工作:確認期間保留 agent 互動、讓 agent 新浮層�
 
 ### codex 還指出、但我尚未做完的
 
-- **窄版層級**:v14 要 URL Modal 在 agent 後方,現況 `z-20` vs `z-50` 會反過來。未修。
-- **FileViewer** 直接建 Radix Root/Portal(`file-viewer.tsx:954`),只改 DS Dialog 會漏掉它;
-  它的 window keydown(`:883`)只排除輸入框,並列後在 agent 內按方向鍵 / `i` / `f` 仍會操作 FileViewer。未修。
+- ~~**窄版層級**:v14 要 URL Modal 在 agent 後方,現況 `z-20` vs `z-50` 會反過來。未修。~~ —— **已修**(`agent-panel.tsx:411-424` 蓋板 `z-[45]`、`dialog.tsx:246-247` 並存面降 `z-40`、一般確認框維持 `z-50`;2026-09-27 劃線)
+- ~~**FileViewer** 直接建 Radix Root/Portal(`file-viewer.tsx:954`),只改 DS Dialog 會漏掉它;
+  它的 window keydown(`:883`)只排除輸入框,並列後在 agent 內按方向鍵 / `i` / `f` 仍會操作 FileViewer。未修。~~ —— **已修**(`file-viewer.tsx:905-923` 快捷鍵作用域限定在檢視器內:事件來源不在檢視器內就不接手;2026-09-27 劃線)
 - **F 條不是 keep-mounted 能獨立完成**:還要區分「同次宿主期間」與「新一次進入宿主」,
   且包含 BFCache 返回(`pageshow.persisted`)。未做。
 - v14 檔內把落地差距 2、3 標「已解」**應縮成具體已驗證項目** —— 量測生命週期、宿主隔離與 F 的初始化還沒完成。
@@ -2077,8 +2079,8 @@ full/non-modal 兩極,MUI 的 `disableEnforceFocus` 只解焦點鎖不解 AT 隱
 
 ### 差距 1 還沒完的部分(已寫進 v14 檔的表,不假裝做完)
 
-窄版層級(agent 蓋板 `z-20` vs Dialog `z-50` 會反過來擋 agent)、URL 註冊表、
-FileViewer 直接建 Radix Portal 且其 window keydown 只排除輸入框、Esc 依焦點所屬區分派。
+~~窄版層級(agent 蓋板 `z-20` vs Dialog `z-50` 會反過來擋 agent)~~(已修,見上方「codex 還指出」段的標註)、URL 註冊表、
+~~FileViewer 直接建 Radix Portal 且其 window keydown 只排除輸入框~~(已修 `file-viewer.tsx:905-923`)、Esc 依焦點所屬區分派。
 
 ## AD18 並存真的走通了 —— 但過程中連撞四個坑,每個都會讓「看起來對」
 
@@ -3049,7 +3051,7 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 ### AD77 既有債(非本批造成,查證時順手盤到,登記不冒充已解)(2026-09-10)
 
 - **a11y 全掃 5038 條 serious**(color-contrast 5033、nested-interactive 4、可捲動區不可聚焦 1),分布在 737 個 story。CI 的 `a11y-and-size.yml` 走的是 baseline-diff(只擋新增),所以這是既有基線不是本批回歸;本批另跑一次 `--gate`:**0 regression vs baseline**(1033 story 全掃,critical 0)。
-- **story 名稱中英夾雜 4 處**(`people-picker.stories.tsx:147`、`dialog.stories.tsx:562` 與 `:599`、`agent-panel.stories.tsx:1100`),`story-quality:check` 抓得到但**這支從未接進 CI**。沒有當場改名的理由:story 名 = story id,`dialog-coexistence` 等閘以 id 定位,改名要連閘一起改,屬另一批的 scope;登記在此,不列為已解。
+- **story 名稱中英夾雜 4 處**(`people-picker.stories.tsx:147`、`dialog.stories.tsx:562` 與 `:599`、`agent-panel.stories.tsx:1100`),`story-quality:check` 抓得到但~~**這支從未接進 CI**~~(**2026-09-21 起已進 CI**:`ci.yml:212` `npm run --silent story-quality:check`;2026-09-27 劃線)。沒有當場改名的理由:story 名 = story id,`dialog-coexistence` 等閘以 id 定位,改名要連閘一起改,屬另一批的 scope;登記在此,不列為已解。
 
 ### AD76 user 2026-09-10:「我們的基本原則是元素可能合法地被塞在視覺上四周淨空不到 4px 的地方才往內吧?這題之前不是有討論過了嗎?仔細研究查證」—— 行內動作鈕的框翻案回往外,並補上「宣告往內是否必要」的反向閘(2026-09-10)
 
@@ -3804,7 +3806,7 @@ user 質疑我引的 `field.spec.md:306/381`。逐行核對後:**cite 逐字屬�
 **未解的上游問題(登記,不在本次 scope)**:FieldGroup 三級用硬寫的 `gap-3/4/6`,數值上剛好等於
 `tight`(md 12)/ `loose`(md 16)/ `loose`(lg 24),但**凍結不隨 density 縮放**。
 這與 `layoutSpace.spec.md:300`「容器級 gap 走 token」的方向相反。要不要讓表單間距跟著 density 走,
-是產品層可感知決定,列待拍板。
+是產品層可感知決定,~~列待拍板~~ —— **已拍板**:AD105(同檔,user 2026-09-12「照你建議並確保整個 ds 都有 ssot,不要有任何偏移」;2026-09-27 標註)。
 
 ## AD100 — dark mode 捲軸是亮色:token 是對的,但 Chromium 根本沒在看它
 
@@ -3927,7 +3929,7 @@ user 問「compact/normal/loose 真的是我定義的嗎?」。全盤查證結�
 
 **移除三檔的影響**(若改為消費 `--layout-space-loose`):md density 下 `normal`(16px)= loose token(16px),
 **33 個用法裡 32 個視覺零變化**;lg 下從凍結的 16px 變成 24px(即開始履行 density 的承諾);
-唯一的 compact 用例 12px → 16px。**待 user 拍板**(這是可感知的產品決定,不自行落地)。
+唯一的 compact 用例 12px → 16px。~~**待 user 拍板**(這是可感知的產品決定,不自行落地)。~~ —— **已拍板**:見下方 AD105(user 2026-09-12「照你建議並確保整個 ds 都有 ssot,不要有任何偏移」;2026-09-27 標註)。
 
 ---
 
@@ -4471,9 +4473,9 @@ CI 8 個 job 全綠。`data-table-invariants` 332 條全過。hover 三輪 42 �
   —— 基準發生率太低,6 對 6 沒有檢定力,不得據此宣稱修好。要驗證需遠更大的樣本。
 - **`data-table.spec.md` 935 行 > hard cap 800**:本次前已 925(既有債務),我加 10 行。
   不為了容納自己的內容去調高上限;需要一次真正的 prune 或把缺陷表拆成獨立檔。
-- **`Verify authority candidate` 連紅**:它安裝的是 PR **base(main)** 的相依樹,而 main 的
+- ~~**`Verify authority candidate` 連紅**:它安裝的是 PR **base(main)** 的相依樹,而 main 的
   `fast-uri@3.1.5` 有 GHSA(修補版 3.1.6)。本分支已是 3.1.7(commit `13d997a9`),
-  但**結構上合併前不可能變綠**。自 2026-09-08 起連續 100 次失敗,非本次造成。
+  但**結構上合併前不可能變綠**。自 2026-09-08 起連續 100 次失敗,非本次造成。~~ —— **個案已解**(main 的 `package-lock.json` 已是 fast-uri 3.1.7);**結構問題**「用 main 的依賴樹跑 npm audit,新弱點通報會卡住所有 PR」= 待辦總帳 OE6(2026-09-27 劃線)
 - **visual-audit 仍非 PR 閘**(掛在排程的 visual-regression.yml)。
 - **visual-audit 基準線與本機環境不符**:全 DS 102 scenario 有 28 筆超標,其中 **22 筆是未觸碰的元件**
   (FileViewer 68.8%、Carousel 24.5%),基準線在 CI/Linux 產生 → 本機 macOS 跑基準線比對不可用,

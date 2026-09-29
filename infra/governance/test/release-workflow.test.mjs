@@ -1050,11 +1050,19 @@ test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
     '.storybook/preview.ts',
     '.storybook/theme.css',
     'apps/work/src/pages/work-items/work-items.stories.tsx',
+    // 2026-09-27(C6):storybook-config 沒有 src/,preview / preset / addon 直接住在套件根
+    'packages/storybook-config/preview.tsx',
+    'packages/storybook-config/addons-preset.ts',
+    'packages/storybook-config/addons/ds-devmode/preview.ts',
+    'packages/storybook-config/addons/ds-devmode/preset.cjs',
   ]) assert.ok(hit(p), `${p} 是預覽看得見的,漏掉就是 2026-09-20 那個破口`)
   for (const p of [
     'packages/design-system/package.json',
     'scripts/release-orchestrator.mjs',
     'AGENTS.md',
     '.github/workflows/ci.yml',
+    'packages/storybook-config/package.json',
+    'packages/storybook-config/tsconfig.json',
+    'packages/storybook-config/dist/preview.js',
   ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })

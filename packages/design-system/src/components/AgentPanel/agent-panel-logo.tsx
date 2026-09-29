@@ -3,11 +3,11 @@
  *
  * ── 消費的 SSOT ──
  * - 造型:user 提供之黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ=1.618、軸角 121.717°;
- *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=**自家色階逐階取值**(primitives.css light
+ *   agent-panel-logo.spec.md「AgentLogo」節)。漸層停駐色=**自家色階逐階取值**(primitives.css light
  *   段 blue-2..7 / indigo-5 / purple-3..8;品牌色不隨主題,color.spec.md「品牌」段);每個常數行尾
  *   `// = --color-xxx-N` 是 scripts/agent-logo-brand-scale-invariant.mjs 的機械綁定,禁刪
  *   (2026-09-02 user:「所有顏色都要根據我們的設計語言調整」→ 由自訂 oklch 改為自家色階)。
- * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
+ * - 狀態動畫:agent-panel-logo.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
  *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
  *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
  * - 思考態轉速:靜止 → 0.25s 加速(=半圈,exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 720°/s
@@ -20,7 +20,7 @@
  *   改 token 必同步此處。
  * - 狀態切換:新狀態 0.15s 淡入(--motion-duration-overlay;agent-panel.css `.agent-logo-enter`)。
  * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停 → 一律回靜止
- *   (agent-panel.spec.md「轉場與減動作」)。
+ *   (agent-panel-logo.spec.md「轉場與減動作」)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'

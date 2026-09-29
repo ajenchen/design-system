@@ -426,6 +426,8 @@ col.accessor('status', {
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `action-bar.spec.md`
+- `agent-panel.spec.md`
 - `checkbox.spec.md`
 - `circular-progress.spec.md`
 - `combobox.spec.md`
@@ -443,6 +445,7 @@ col.accessor('status', {
 - `people-picker.spec.md`
 - `rating.spec.md`
 - `segmented-control.spec.md`
+- `select-menu.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
 - `switch.spec.md`

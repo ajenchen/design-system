@@ -313,7 +313,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
     useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
 
-    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md:545` 三條表,2026-09-07 訂):
+    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」三條表,2026-09-07 訂):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
     //   焦點在面板內、面板內沒有浮層 → **什麼都不關**
     //   焦點在面板外 → 關該區自己的浮層,**不跨區碰面板**
@@ -1354,7 +1354,7 @@ const OTHER_LABEL = '其他'
 const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
 
-/** 產題守則機械層(agent-panel.spec.md §8 ⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
+/** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
 function warnDecisionRules(questions: AgentDecisionQuestion[]) {
   const warn = (msg: string) => console.warn(`[AgentDecisionCard] 產題守則:${msg}`)
   if (questions.length === 0 || questions.length > 3) warn(`題數 1–3(收到 ${questions.length})。`)
@@ -1387,7 +1387,7 @@ function initialAnswer(q: AgentDecisionQuestion) {
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
 /**
- * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-panel.spec.md「8. AgentDecisionCard」選項卡條):
+ * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-decision-card.spec.md「8. AgentDecisionCard」選項卡條):
  * 指標在整張卡的任何位置 → 卡內的圓(複選是方框)照它被自己的 `<label for>` 滑過時的樣子變色;卡片灰底、字色都不變。
  * 原本的轉發是 HTML 自己做的(指標在 label 上,label 綁定的控件也算 :hover),範圍只到 SelectionItem 那個 label。
  * 整張卡不能改成 <label> 來借這個轉發:卡內已有 SelectionItem 的 label、<div> 與「其他」輸入格,都違反 label 的內容規定。

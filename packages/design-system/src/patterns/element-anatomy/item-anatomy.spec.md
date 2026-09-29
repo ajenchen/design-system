@@ -1156,9 +1156,9 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 
 ---
 
-## Recipe + 自我檢查 → `.claude/references/item-anatomy-recipe.md`
+## Recipe + 自我檢查 → `ds-canonical/references/item-anatomy-recipe.md`
 
-建立新 row primitive 的 7 步 workflow + audit grep guard + SidebarMenuButton 獨立實作風險,搬到 `.claude/references/item-anatomy-recipe.md`(spec 2026-04-24 prune 瘦身 — Recipe 是 workflow 類,搬 reference 減 spec 體積)。
+建立新 row primitive 的 7 步 workflow + audit grep guard + SidebarMenuButton 獨立實作風險,搬到 `ds-canonical/references/item-anatomy-recipe.md`(canonical owner,不指產生檢視;spec 2026-04-24 prune 瘦身 — Recipe 是 workflow 類,搬 reference 減 spec 體積)。
 
 本節僅保留 pointer。建 row primitive → 讀 reference + 本 spec 的結構 / padding / 24px 閾值 / slot 規範 / 選擇狀態視覺 / Inline Action spec 等 canonical。
 
@@ -1167,9 +1167,9 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `alert.spec.md`
+- `button.spec.md`
 - `checkbox.spec.md`
 - `color.spec.md`
-- `command.spec.md`
 - `dropdown-menu.spec.md`
 - `element-anatomy.spec.md`
 - `empty.spec.md`
@@ -1181,10 +1181,12 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `layoutSpace.spec.md`
 - `menu-item.spec.md`
 - `notice.spec.md`
+- `overlay-surface.spec.md`
 - `select-menu.spec.md`
 - `select.spec.md`
 - `selection-item.spec.md`
 - `sidebar.spec.md`
+- `steps-state-visuals.spec.md`
 - `steps.spec.md`
 - `tabs.spec.md`
 - `time-picker.spec.md`

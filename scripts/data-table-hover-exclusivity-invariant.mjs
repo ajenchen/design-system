@@ -2,7 +2,7 @@
 /**
  * DataTable：同一時間最多一列 hover(2026-09-16,user：「捲動之後很容易會出現一個畫面同時有兩筆 row 呈現 hover 的狀態」)。
  *
- * SSOT：`components/DataTable/data-table.spec.md`「列 hover」段的不變式 ——
+ * SSOT：`components/DataTable/data-table-scroll-performance.spec.md`「同一時間最多一列 hover」段的不變式(2026-09-27 自 data-table.spec.md 拆出)——
  *   **同一時間最多一列被標記,而且是指標底下那一列**。
  * 根因(修前)：標記由三個寫入者各自加減,清除用「瀏覽器記得的舊索引」定址;捲動時瀏覽器的命中點落後畫面 1–4 列,
  *   補正先把標記移到新列,遲來的 mouseout 去刪一個早就清掉的索引(空轉)→ 舊列標記成孤兒 → 遲來的 mouseover 只加不清 → 兩列同時亮。
@@ -34,16 +34,14 @@
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireFreshStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-requireStorybookBuild(path.join(root, 'index.json'))
-if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/DataTable/data-table.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
-  console.error(`✗ STALE-BUILD：data-table.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
-}
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(root, ['packages/design-system/src/components/DataTable/data-table.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 const printNotFound = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }

@@ -195,7 +195,7 @@ Row action 的 affordance 是「次要功能」,不是 primary CTA。Button chro
 ```
 
 **chrome corner action group(Alert / Toast / Dialog / Popover header corner)** 屬 **Button family**(action group region,不是 inline action)。Canonical 不在本 spec — 詳:
-- 尺寸:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(overlay sm + v5 trick / banner xs explicit)
+- 尺寸:`patterns/overlay-surface/overlay-chrome-sizing.spec.md`「Chrome dismiss size canonical」(overlay sm + v5 trick / banner xs explicit)
 - variant / divider:`patterns/action-bar/action-bar.spec.md`(corner action group)
 
 ### 邊界案例
@@ -321,7 +321,7 @@ hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 fo
 - `data-table.spec.md`
 - `field-controls.spec.md`
 - `item-anatomy.spec.md`
-- `overlay-surface.spec.md`
+- `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`
 - `sheet.spec.md`
 - `sidebar.spec.md`

@@ -17,7 +17,7 @@ import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / FileUpload / Command 共用;判定表 scripts/test-roving-list-keyboard.mjs
@@ -607,10 +607,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // 這裡把指標路徑也接上,並誠實回報結果:守衛擋下(不合法 target / 子樹內)
     // 就播「未變更」而不是假的成功。共用 SSOT 見 `lib/drag-announcements.ts`。
     const dragOutcomeRef = React.useRef<DragOutcome | null>(null)
-    const dndAnnouncements = React.useMemo(
-      () => createDragAnnouncements({ getOutcome: () => dragOutcomeRef.current, kind: '項目' }),
-      [],
-    )
+    // 指標拖曳的播報走 polite 區域 + 繁中操作說明(2026-09-27 OE10;先前交給 dnd-kit 寫死的 assertive 區域)
+    const drag = useDragAccessibility({ getOutcome: () => dragOutcomeRef.current, kind: '項目' })
 
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
       dragOutcomeRef.current = null
@@ -997,9 +995,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
-          accessibility={{ announcements: dndAnnouncements }}
+          accessibility={drag.accessibility}
         >
           {treeEl}
+          {/* 指標拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility);鍵盤重排另有下方自有區域 */}
+          {drag.liveRegion}
           {draggable && (
             <>
               {/* 鍵盤重排 SR 播報 — TreeView 自有 sr-only polite live region(單一節點覆寫式更新;

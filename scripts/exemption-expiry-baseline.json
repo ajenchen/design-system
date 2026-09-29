@@ -1,0 +1,2509 @@
+{
+  "note": "豁免標記到期複查的棘輪。這裡記的是「目前已知的無主(無日期無指標)/ 過期(日期超過 N 天)」標記。數字只准往下 —— 新增的無主、新過期的會讓 exemption-expiry-invariant.mjs 變紅。修好(補日期 / 指標、或拿掉豁免)之後跑 --update-baseline 重記。key 不含行號;改了標記的字仍沒補日期會以新 key 變紅,那是刻意的。",
+  "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
+  "reviewAfterDays": 180,
+  "recordedAt": "2026-09-27",
+  "count": 312,
+  "byKind": {
+    "unanchored": 312,
+    "expired": 0
+  },
+  "entries": [
+    {
+      "key": "eslint|packages/design-system/src/components/AccountMenu/account-menu.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/AccountMenu/account-menu.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/AgentPanel/agent-panel.tsx|code-quality-allow|54b26ab5d288",
+      "family": "cq",
+      "file": "packages/design-system/src/components/AgentPanel/agent-panel.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size foundational composite family(9 元件一家族檔,同 Sidebar 前例)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Alert/alert.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Alert/alert.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Alert/alert.anatomy.stories.tsx|@anatomy-rationale|97b324ebe673",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Alert/alert.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — Alert 固定 md tier(由消費的 Notice primitive 決定), // 不隨 density"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Alert/alert.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Alert/alert.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cast|packages/design-system/src/components/AppShell/app-shell.stories.tsx|as any|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/AppShell/app-shell.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/AppShell/app-shell.stories.tsx|as any|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/AppShell/app-shell.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/AppShell/app-shell.stories.tsx|as any|da39a3ee5e6b#3",
+      "family": "cast",
+      "file": "packages/design-system/src/components/AppShell/app-shell.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx|@anatomy-rationale|6423055b0ac5",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix N/A — AspectRatio 是 pure layout primitive,bg / radius 由 // con"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx|@anatomy-rationale|29aa1f84173b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon) // 與 s"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
+      "marker": "@anatomy-exempt-next",
+      "kind": "unanchored",
+      "hint": "{/* @anatomy-exempt-next */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
+      "marker": "@anatomy-exempt-next",
+      "kind": "unanchored",
+      "hint": "{/* @anatomy-exempt-next */}"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Avatar/avatar.tsx|code-quality-allow|a4287fe8160c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Avatar/avatar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCar"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Badge/badge.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Badge/badge.anatomy.stories.tsx|@anatomy-rationale|1da56c7b627e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior N/A — Badge 是純展示元件(無互動),無 hover / focus / active / // disabl"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Breadcrumb/breadcrumb.tsx|code-quality-allow|6053be544058",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — Breadcrumb 含 BreadcrumbList(主)+ BreadcrumbItem + BreadcrumbEllips"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Breadcrumb/breadcrumb.tsx|code-quality-allow|23f144b3eea0",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public consumer-facing item spec type;對齊 BreadcrumbProps API co"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Breadcrumb/breadcrumb.tsx|code-quality-allow|63b1bc8c701b",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — items props × children narrowing × collapse-with-overflow × t"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Breadcrumb/breadcrumb.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx|@anatomy-rationale|1de9cf74480b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix N/A — BulkActionBar 無 contrast 底色 / 無顏色變體(spec「無底色 contrast」)。"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx|code-quality-allow|a24bb8b2ea79",
+      "family": "cq",
+      "file": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API per spec.md(consumer i18n override hook)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx|code-quality-allow|f6a3315eade1",
+      "family": "cq",
+      "file": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API per spec.md(consumer spread + override)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Button/button.tsx|code-quality-allow|d0c3061646b2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Button/button.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(Button + iconOnly + danger + loading + asC"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Button/button.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Button/button.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/Button/button.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205#2",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/Button/button.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205#3",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/Button/button.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx|@anatomy-rationale|007af379a97e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — Calendar 是單一 month canvas，沒有 size variant。 // StateBehavi"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Carousel/carousel.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Carousel/carousel.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Carousel/carousel.tsx|code-quality-allow|75c146205084",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Carousel/carousel.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 與 CarouselPrevious 結構對稱的 JSX-heavy arrow(方向/位置/邊界三態 className"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Chart/chart.anatomy.stories.tsx|@anatomy-rationale|0ccc5263a4e7",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Chart/chart.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — Chart 寬度由 ResponsiveContainer 自動填滿父層,高度由 // consumer clas"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Chart/chart.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Chart/chart.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Checkbox/checkbox-group.tsx|as unknown as|cd374fe2e38f",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Checkbox/checkbox-group.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// Field layout declaration:block primitive(多項堆疊)——進入 <Field> 時 // control area 自動切 items-start + pa"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Chip/chip.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Chip/chip.tsx|as unknown as|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Chip/chip.tsx|as unknown as|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|954831b25ad5",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|954831b25ad5#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|37308e63c1cb",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Chip/chip.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — multi / single / none selection mode each has 事務性 branch,拆 fn"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx|@anatomy-rationale|53eca2feb1ac",
+      "family": "escape",
+      "file": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // Inspector N/A — size 為自由 number prop,互動決策點少(僅 value / size / // affix),由 O"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/CircularProgress/circular-progress.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/CircularProgress/circular-progress.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx|@anatomy-exempt|09a61c628d23",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: Dialog footer Cancel/Delete buttons are action cancel (not overlay dismiss); pre"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Coachmark/coachmark.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Coachmark/coachmark.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Combobox/combobox.tsx|code-quality-allow|c8995834c17a",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Combobox/combobox.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/Combob"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/active-editor-controller.ts|code-quality-allow|110f37eaca0d",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/active-editor-controller.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public type contract for active-editor controller pattern,reser"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/active-editor-controller.ts|code-quality-allow|855b4ed3adce",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/active-editor-controller.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public type contract,same rationale"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/active-editor-controller.ts|code-quality-allow|cef90ca3d980",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/active-editor-controller.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public type contract,policy interface for cell-edit lifecycle c"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/cell-registry.tsx|any-allow|21d936b6c909",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/cell-registry.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form column value(consumer-defined,跨 type 共用 signature)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/cell-registry.tsx|any-allow|0797acd1812b",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/cell-registry.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form consumer meta bag(prefix / options / formatOptions / locale / linkLabel 等)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DataTable/cell-registry.tsx|@naked-row-mode-allow|81994b24e3ce",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DataTable/cell-registry.tsx",
+      "marker": "@naked-row-mode-allow",
+      "kind": "unanchored",
+      "hint": "<span className=\"group/cell relative flex items-center w-full\"> {/* @naked-row-mode-allow: URL hover"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table-filter-labels.ts|code-quality-allow|3172638540b7",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table-filter-labels.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public i18n defaults, re-exported by panel."
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table-filter-panel.tsx|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table-filter-panel.tsx|eslint-disable-next-line|193b336d7068#2",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx|@anatomy-rationale|6db5d8928901",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix 以 RowHeightMatrix 呈現 —— DataTable 的 size(sm / md / lg)主要 // 體現在"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx|@benchmark-unverified|d0bcf51d55bd",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "// @benchmark-unverified: Linear / Notion / Airtable 的 row-density 控件僅為外部近似參照,非 DS 命名依據。 // StateBeh"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#3",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#4",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#5",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#6",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#7",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#8",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#9",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#10",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#11",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#12",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|5ee8a3cb7de9",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": "// 用既有 column accessorKey 順序作 fallback initial"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|5ee8a3cb7de9#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": "// 用既有 column accessorKey 順序作 fallback initial"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#13",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#14",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#15",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#16",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#17",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#18",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#19",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#20",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.stories.tsx|as any|da39a3ee5e6b#21",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.stories.tsx",
+      "marker": "as any",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|510d1a41b326",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 對齊本 module 既有 escape 紀律"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|2e2c119c20fb",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// (large table 累積上百 inert focus stops,grid navigation 體驗壞)。 // **拆分**:rowAttributes 留空(row 是 passiv"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|c707a1ddc3a9",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// useDraggable.attributes 含 `role=\"button\"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role=\"columnhe"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|1298e112f5d0",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — Portal escape + cross-region hover delegation + MutationObser"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|fc77a8eb5da3",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form column value(consumer-defined,同 CellComponentProps.value)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|9b37201613ba",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form consumer meta bag(同 CellComponentProps.meta)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|03385476f1dc",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form consumer meta — same rationale as L143 renderTypedValue"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|6415b57a98d7",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: react-table runtime lookup"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|77ff026836f7",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps -- columnSizingState 是 getSize() 的真實輸入"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b#3",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|1cf28f347706",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — single keyboard dispatch covering Cmd+A / Esc / Arrow / Space"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|28a54953b209",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: column meta free-form"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|44f60365321f",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — header render 含 selection tri-state / sort indicator / column"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|ba68ed80f6b0",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b#4",
+      "family": "cast",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068#2",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|06d5c92d5109",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — audit 誤偵測 isPrimaryRegion 為 function(實為 const);真實 long body ="
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|015c70ac5ed2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — virtualizer × sticky panel × drag listeners × hover delegatio"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|4ee4224da56c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — baseRowDiv 含 row drag listeners / sticky panel / hover delega"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|00266d795cf6",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 此 const 之下的整個 if-block 含 dnd-kit hooks + SortableRowProvider "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|d3e213d941e5",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: free-form column meta bag"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|28a54953b209#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: column meta free-form"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|6b88720cce66",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: column meta 是 free-form bag"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068#3",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|0245d87c4daa",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: generic-constrained forwardRef cannot set displayName through typed API without erasin"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/filter-tree.ts|any-allow|d5670c22b092",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/filter-tree.ts",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: row-generic — TanStack row.original 是 generic,filter eval 跨 type 必走 any"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/filter-tree.ts|any-allow|52a4e4decf58",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/filter-tree.ts",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: row-generic"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/filter-tree.ts|any-allow|52a4e4decf58#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/filter-tree.ts",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: row-generic"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/filter-tree.ts|code-quality-allow|266028bc3795",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/filter-tree.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 13-operator switch dispatch table,table-driven 重構會把 op-specif"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DateGrid/date-grid.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DateGrid/date-grid.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DatePicker/date-picker.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DatePicker/date-picker.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DatePicker/date-picker.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DatePicker/date-picker.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx|@anatomy-exempt|9fef8ccc4b72",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: inspector 規格表格(token / prop 對照)用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx|@anatomy-rationale|32f288b249cb",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix N/A — 純 typography 元件,色彩固定為 fg-secondary(label)+ // foreground"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx|@anatomy-exempt|e8b9b0528b31",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: spec-reference tables(Props 速查 / Layout token / 視覺 token / 開關方式對照 / Focus manage"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
+      "marker": "@tabs-content-gap-ok",
+      "kind": "unanchored",
+      "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
+      "marker": "@tabs-content-gap-ok",
+      "kind": "unanchored",
+      "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea#3",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
+      "marker": "@tabs-content-gap-ok",
+      "kind": "unanchored",
+      "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea#4",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
+      "marker": "@tabs-content-gap-ok",
+      "kind": "unanchored",
+      "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/Dialog/dialog.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/Dialog/dialog.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx|@overlay-open-skip|d2e2591a4d43",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx",
+      "marker": "@overlay-open-skip",
+      "kind": "unanchored",
+      "hint": "// @overlay-open-skip: 本則教的是鍵盤開關行為(每按一次 Esc 少一層、Tab 收起往下走),要從「關著」開始操作; // 浮層開著的視覺快照由同檔 OpenSnapshot("
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Empty/empty.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Field/field.anatomy.stories.tsx|@anatomy-exempt|b64f58104854",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Field/field.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy 參考用靜態 props / 責任 / 色彩對照表（純文件,非互動資料表格,不需 DataTable runtime）"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Field/field.tsx|code-quality-allow|cd6e62c11ca3",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Field/field.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(Field + FieldLabel + FieldDescription + Fi"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Field/field.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Field/field.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Field/field.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Field/field.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Field/use-form-validation.ts|code-quality-allow|571b86f59423",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Field/use-form-validation.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 單一 validation 生命週期 state machine(blur 驗證/edit 清 error/Escape "
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Field/use-form-validation.ts|as unknown as|3d819a1a3029",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Field/use-form-validation.ts",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// 泛型 K 窄化到 Path<T> 需經 unknown(RHF Path 是 template-literal type,K 不直接 overlap)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx|@anatomy-rationale|ec81acf05e08",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: Inspector + ColorMatrix N/A — FieldControlGroup 是 // self-contained layout-pr"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileItem/file-item.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileItem/file-item.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx|@anatomy-exempt|10b629400cbc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: 設計規格 anatomy 文件用 token-matrix / props doc 表格(教學對照,非 list-item raw-table 反 patter"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileUpload/file-upload.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileUpload/file-upload.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileViewer/file-viewer-types.ts|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer-types.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileViewer/file-viewer.tsx|code-quality-allow|8a4df193eb97",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — composite 拼裝(Toolbar / ZoomInput / InfoPanel / Filmstrip + Dialog"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileViewer/file-viewer.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/FileViewer/file-viewer.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/FileViewer/image-renderer.tsx|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/FileViewer/image-renderer.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx|@anatomy-rationale|62060a9a9cd2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // Inspector / ColorMatrix / SizeMatrix / StateBehavior N/A — HoverCard 是 // "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@story-trait-allow|cd36123f56e4",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@story-trait-allow",
+      "kind": "unanchored",
+      "hint": "// @story-trait-allow: missing-default missing-opensnapshot"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/InlineEdit/inline-edit.tsx|as unknown as|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/InlineEdit/inline-edit.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/InlineEdit/inline-edit.tsx|as unknown as|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/InlineEdit/inline-edit.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/InlineEdit/inline-edit.tsx|as unknown as|da39a3ee5e6b#3",
+      "family": "cast",
+      "file": "packages/design-system/src/components/InlineEdit/inline-edit.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/InlineEdit/inline-edit.tsx|as unknown as|da39a3ee5e6b#4",
+      "family": "cast",
+      "file": "packages/design-system/src/components/InlineEdit/inline-edit.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Input/input.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Input/input.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx|@anatomy-rationale|a3f0f08bd03a",
+      "family": "escape",
+      "file": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by Overview「互動流程」段(7 種觸發 → 效果對照) // + ColorMatrix「ed"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/LinkInput/link-input.stories.tsx|@story-trait-rationale|75439df362e4",
+      "family": "escape",
+      "file": "packages/design-system/src/components/LinkInput/link-input.stories.tsx",
+      "marker": "@story-trait-rationale",
+      "kind": "unanchored",
+      "hint": "// @story-trait-rationale: isInputLike -> Validation — Validation 已示範 malformed URL 的錯誤邊框與修正流程；另開 er"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/LinkInput/link-input.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/LinkInput/link-input.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx|@anatomy-rationale|718156b786a2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「State 色彩對照」段(default / hover / // sel"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Menu/menu-item.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Menu/menu-item.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Menu/menu-item.tsx|@row-slot-handcraft-allow|f60eb6cdbd9e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Menu/menu-item.tsx",
+      "marker": "@row-slot-handcraft-allow",
+      "kind": "unanchored",
+      "hint": "// @row-slot-handcraft-allow: MenuItem 自身即 row primitive（item-anatomy Family 1 owner），此 tag/endConte"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Notice/notice.anatomy.stories.tsx|@anatomy-rationale|d8c890de9829",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix represented as VariantIconMap — Notice 不擁有底色 / 邊框,只 // 負責 layo"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/NumberInput/number-input.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/NumberInput/number-input.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/NumberInput/number-input.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/NumberInput/number-input.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker-helpers.ts|code-quality-allow|e9baabc38088",
+      "family": "cq",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker-helpers.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — paired helper for SSOT primitive(同上 hook + future use rationale"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|ba046687794c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: rest 含 `onChange: FormEventHandler` 跟 Select onChange signature 衝突 — DOM runtime sprea"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd#2",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|dc602ac7d82d",
+      "family": "cq",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spr"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd#3",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|dc602ac7d82d#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spr"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Popover/popover.anatomy.stories.tsx|@anatomy-exempt-next|14191198b9c8",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt-next",
+      "kind": "unanchored",
+      "hint": "{/* @anatomy-exempt-next: Props 速查表為純文件對照(prop/type/default),非元件資料展示;DataTable 過重 */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Popover/popover.anatomy.stories.tsx|@overlay-open-skip|7900c9b35fb2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx",
+      "marker": "@overlay-open-skip",
+      "kind": "unanchored",
+      "hint": "{/* @overlay-open-skip:12-cell 定位矩陣示範 side×align 落點,全部 defaultOpen 會讓 12 個浮層互相重疊;點擊逐格開啟即可觀察定位,開啟態視覺覆"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Popover/popover.principles.stories.tsx|@overlay-open-skip|0dca9264729e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Popover/popover.principles.stories.tsx",
+      "marker": "@overlay-open-skip",
+      "kind": "unanchored",
+      "hint": "{/* @overlay-open-skip:視覺語言比較卡片——同一「顯示欄位」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@overlay-open-skip|fd216aa7a712",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx",
+      "marker": "@overlay-open-skip",
+      "kind": "unanchored",
+      "hint": "// @overlay-open-skip: 本檔絕大多數 story 直接 render ProfileCard(內容不藏在浮層,snapshot 可見); // 唯一 HoverCard demo"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@anatomy-rationale|d433c8025854",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — ProfileCard 是固定寬度(320px)hover content template, // 不提供 si"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/ProfileCard/profile-card.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205#2",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205#3",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx|@anatomy-rationale|79412a5067a4",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — Track 高度固定 4px(無 size prop),與 Material / Carbon / // Atla"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Rating/rating.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Rating/rating.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx|@anatomy-rationale|73ff8db43e82",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior represented as OrientationBehavior — ScrollArea 是 OS chrome "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx|@anatomy-rationale|6229d1e60eb7",
+      "family": "escape",
+      "file": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix represented as StateBehavior「視覺狀態對照」段 — SegmentedControl // 不分"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Select/select.anatomy.stories.tsx|@anatomy-rationale|67312dc47651",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Select/select.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Mode x State 色彩對照」段(3 mode × // 4 sta"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Select/select.tsx|code-quality-allow|8a5962e5fd93",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Select/select.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helper"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Select/select.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Select/select.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Select/select.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Select/select.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Select/select.tsx|as unknown as|f1589acf6cc4",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Select/select.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// onKeyDownProp 在 handler 內先跑(見下)。mobile-only attrs(autoFocus / autoComplete) // 已在 destructure 層丟棄"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Select/select.tsx|as unknown as|377fabda9d74",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Select/select.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": "// passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上 // consumer handler 同樣最先收到)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx|@anatomy-rationale|6180f8732c8b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix represented as ModeMatrix — SelectMenu 是 Internal composite //"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx|@anatomy-rationale|16993dde7048",
+      "family": "escape",
+      "file": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix represented as PrefixAlignment — SelectionItem 是 layout // pri"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/SelectionControl/selection-item.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/SelectionControl/selection-item.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/SelectionControl/selection-item.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/SelectionControl/selection-item.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Sheet/sheet.principles.stories.tsx|@tabs-content-gap-ok|72655d98d88c",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx",
+      "marker": "@tabs-content-gap-ok",
+      "kind": "unanchored",
+      "hint": "<SheetBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 c"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|c26a07c9832b",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(SidebarProvider / Sidebar / SidebarMenu / "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|e82566c9cdb8",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ mobile + handl"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|954831b25ad5",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|954831b25ad5#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Slider/slider.tsx|code-quality-allow|db2ed45f408f",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Slider/slider.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite(thumb-count 推導 + Field disabled 整合 + m"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Steps/steps.tsx|code-quality-allow|52bc496da1ca",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Steps/steps.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(Steps + StepItem + orientation/state/conne"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Steps/steps.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Steps/steps.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Steps/steps.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Steps/steps.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Steps/steps.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Steps/steps.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Steps/steps.tsx|code-quality-allow|32ef3df4e312#3",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Steps/steps.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Switch/switch.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Switch/switch.anatomy.stories.tsx|@anatomy-rationale|c358d73cb07d",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix represented as StateBehavior「視覺狀態對照」段 — Switch 不分 // variant 色"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Switch/switch.tsx|@row-slot-handcraft-allow|18bf685e936e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Switch/switch.tsx",
+      "marker": "@row-slot-handcraft-allow",
+      "kind": "unanchored",
+      "hint": "{/* @row-slot-handcraft-allow: Field 控件的 1lh 首行對齊 wrapper(selection-control 家族 Checkbox/RadioGroup 同"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|993b879cf01b",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown swi"
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Tabs/tabs.tsx|as unknown as|da39a3ee5e6b",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cast|packages/design-system/src/components/Tabs/tabs.tsx|as unknown as|da39a3ee5e6b#2",
+      "family": "cast",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "as unknown as",
+      "kind": "unanchored",
+      "hint": ""
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|954831b25ad5",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|954831b25ad5#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tag/tag.anatomy.stories.tsx|@anatomy-rationale|c45a37f093dc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Dismiss 按鈕色彩」段(default / // hover / a"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/Tag/tag.tsx|eslint-disable-next-line|823b8acc1205",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/Tag/tag.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-console"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx|@anatomy-rationale|b04f2ce268ce",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「四種 mode / state × 色彩 Token」段 // (5 st"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Textarea/textarea.tsx|code-quality-allow|84cfbe45245d",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Textarea/textarea.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — Textarea forwardRef body 含 mode×size×variant×error 4 軸 prop +"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Textarea/textarea.tsx|any-allow|e66989ffeab0",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Textarea/textarea.tsx",
+      "marker": "any-allow",
+      "kind": "unanchored",
+      "hint": "// any-allow: CSS `field-sizing` 尚未進 TypeScript lib.dom,narrow 到 CSSProperties 仍需 cast"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TimePicker/time-columns.tsx|code-quality-allow|360c55d3401b",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TimePicker/time-columns.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — column 含 scroll-into-view useEffect / WAI-ARIA listbox 鍵盤 han"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
+      "family": "escape",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx|@anatomy-rationale|e6df121a8634",
+      "family": "escape",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Trigger Field family + Panel item // "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TimePicker/time-picker.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TimePicker/time-picker.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Toast/toast.anatomy.stories.tsx|@anatomy-rationale|525a4a980619",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // SizeMatrix N/A — Toast 消費 Notice primitive,固定 md tier(text-body 14px、 // p"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/Toast/toast.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/Toast/toast.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx|@anatomy-rationale|a3d28acb3868",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // ColorMatrix N/A — Tooltip 色彩固定(--tooltip bg + white text,內部 wrapper // 強制 "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|da2bd8d19852",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational composite(TreeView owns tree logic + TreeItem + drag"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|18b2f7b7eebd",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public event/state type — consumer event handler parameter type"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|18b2f7b7eebd#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public event/state type — consumer event handler parameter type"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|565345224cf3",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public prop type — consumer 覆寫播報文案的參數型別"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|14f915aea3c7",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 四鍵語意(同層上下 / 移入 / 移出)+ 邊界播報結構緊密, // 拆 sub-fn 會跨 fn 傳 siblings "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|32ef3df4e312#2",
+      "family": "cq",
+      "file": "packages/design-system/src/components/TreeView/tree-view.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "eslint|packages/design-system/src/hooks/use-known-options.ts|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/hooks/use-known-options.ts",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "cq|packages/design-system/src/hooks/use-overflow-items.ts|code-quality-allow|701fb9f1d206",
+      "family": "cq",
+      "file": "packages/design-system/src/hooks/use-overflow-items.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — hook return type — API surface for consumers who want to annota"
+    },
+    {
+      "key": "cq|packages/design-system/src/hooks/use-overflow-items.ts|code-quality-allow|701fb9f1d206#2",
+      "family": "cq",
+      "file": "packages/design-system/src/hooks/use-overflow-items.ts",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — hook return type — API surface for consumers who want to annota"
+    },
+    {
+      "key": "eslint|packages/design-system/src/hooks/use-truncated.ts|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/hooks/use-truncated.ts",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
+    },
+    {
+      "key": "cq|packages/design-system/src/lib/i18n/i18n-context.tsx|code-quality-allow|bc7951a83b5c",
+      "family": "cq",
+      "file": "packages/design-system/src/lib/i18n/i18n-context.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/lib/i18n/i18n-context.tsx|code-quality-allow|bc7951a83b5c#2",
+      "family": "cq",
+      "file": "packages/design-system/src/lib/i18n/i18n-context.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/lib/i18n/i18n-context.tsx|code-quality-allow|bc7951a83b5c#3",
+      "family": "cq",
+      "file": "packages/design-system/src/lib/i18n/i18n-context.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "cq|packages/design-system/src/lib/i18n/i18n-context.tsx|code-quality-allow|bc7951a83b5c#4",
+      "family": "cq",
+      "file": "packages/design-system/src/lib/i18n/i18n-context.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/action-bar/action-bar.spec.md|@benchmark-unverified-blanket|e515118e377d",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/action-bar/action-bar.spec.md",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "unanchored",
+      "hint": "<!-- @benchmark-unverified-blanket: body 含 pattern 級 world-class 對照(世界級對照表 L17-24 + Variant narrow-s"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md|@benchmark-unverified|881e4af639d9",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| **單一固定 size** | Chip (`h-field-sm`) / Notice / Alert / Toast | 世界級共識(Material 3 filter chips / Mat"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md|@benchmark-unverified|df14a5af15ba",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**世界級對照**(DS-wide 共識): <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/inline-action.spec.md|@benchmark-unverified|1852d3618480",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**世界級對照**: <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|def0b85c320c",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "Menu item / dropdown item 的 suffix 是**可以**塞 Switch / Checkbox / Select 的——世界級 dropdown menu(macOS / "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|0c385152b5ba",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**世界級對照**:macOS View menu「Show toolbar」+ ✓ / Figma View menu「Show layout grids」+ toggle / VS Code Vi"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|03fb600c676b",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefi"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|5695abae7726",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**業界 convention**:Apple HIG list section、Material 3 list、Atlassian DSP 全部採用「section-scoped consisten"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|3b50da13a09d",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| B | Notion / Linear / Atlassian Confluence | 全域對齊 | 🟡 Opt-in via `uniformPrefix` | <!-- @benchmar"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|399762559538",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "要對齊 Notion 模式,在 row primitive 的頂層 wrapper(例如 `<TreeView>` 的 root)加: <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|f32adff12723",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "本 DS 採 density-prop 派(A 派),跟 Material / Carbon / Ant 對齊。`mode` 比 `dense` 更 self-documenting。 <!-- @b"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@anatomy-exempt|ce0e7545effb",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@anatomy-exempt",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt: Item Anatomy pattern spec 的教學 story,使用 raw <table> 呈現 token/align/primitive 對照表("
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|4d9d1769bf3e",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: file-size — foundational SSOT for Family 1+2 row primitives + all item-anatom"
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|5ca6b29567ae",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public constant — DS API surface,consumer 可引(即使當前 internal-only"
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|344ac862059f",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — cva variant/styles table — 拆 fn 會失去 type inference + 跨 fn 傳 c"
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|32ef3df4e312",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|c8c0e2b8f83b",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — forwardRef body 含 size×color×hoverCard 三正交 prop 渲染分流,拆出 sub-f"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.spec.md|@benchmark-unverified|6ca41e933fb2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**Counter-pattern(reject)**:Material UI 採 parent-owned separator、Tabs 只負責 active indicator；本 DS 不採此方"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.spec.md|@benchmark-unverified|23cdd15934e7",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| **A. Overlay header(Padding-based)** | `sm`(32/40)| 對齊 Ant verbatim「small size could be used in Mo"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.spec.md|@benchmark-unverified|dbde6a9dfd17",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| **C. Standalone(tabs 取代 chrome header)** | `lg`(48/56)| Tabs 直接取代 header 用,**tab 高 = chrome-header"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.spec.md|@benchmark-unverified|fc66a039952f",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- 中間階梯(md=40)無清楚場景 — 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size(無 sm/md/lg 階梯)= "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md|@benchmark-unverified|0d067cb72fa2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "回傳 `linear-gradient` 字串。`reserveArrowWidth` > 0 時 fade 會延伸到 arrow button 底下(Material 3 scrim 原理);= 0"
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx|code-quality-allow|5ca6b29567ae",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public constant — DS API surface,consumer 可引(即使當前 internal-only"
+    },
+    {
+      "key": "cq|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx|code-quality-allow|5ca6b29567ae#2",
+      "family": "cq",
+      "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: dead-export — public constant — DS API surface,consumer 可引(即使當前 internal-only"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-chrome-sizing.spec.md|@benchmark-unverified|1f22603e7396",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-chrome-sizing.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**世界級對照**(7 家 DS 同 split): <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-chrome-sizing.spec.md|@benchmark-unverified|14a8dd9bc460",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-chrome-sizing.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "> **依據**:Linear / Notion / Airtable / Carbon / Material Menu / Atlassian Popup popover bodies 共識用 sm"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md|@benchmark-unverified|301cdb6dfbe6",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "2. **世界級主流不做 universal flush**:Material M3 / Atlassian Dialog / Mantine Modal / shadcn Dialog 都讓 con"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md|@benchmark-unverified|fa501cdd9537",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "### 世界級對照(Linear-family canonical;≥5 家) <!-- @benchmark-unverified: see frontmatter benchmark list f"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md|@benchmark-unverified|689df831360f",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| Material M3 / Polaris Modal+List | px only | item inset | ✗(另一合法家族,鬆散版)| <!-- @benchmark-unverifie"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/resize-handle/resize-handle.spec.md|@benchmark-unverified|865ced6330d9",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| **Material X-DataGrid** | column-separator(resize 命中區)~8px | 1px hairline(`MuiDataGrid-iconSeparat"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/color/color.stories.tsx|@anatomy-exempt-next|cc7abebbf85a",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/color/color.stories.tsx",
+      "marker": "@anatomy-exempt-next",
+      "kind": "unanchored",
+      "hint": "// @anatomy-exempt-next 這一行是 docs 說明裡的程式碼範例字串,不是渲染出來的原生按鈕(R1 A.5 管的是真控件)"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md|@benchmark-unverified|af172c9ae1c8",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "世界級對齊:Material 3 / Polaris / Apple HIG / Atlassian 都按「relationship not type」決定 spacing。 <!-- @benchm"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md|@benchmark-unverified|b409e3133f65",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- **答**:`loose`(16/24)— 對齊 Material / Polaris / Apple HIG / Atlassian 共識 <!-- @benchmark-unverified "
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/motion/motion.spec.md|@benchmark-unverified|3925864e5c33",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/motion/motion.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| `--motion-delay-plain` | `500ms` | Tooltip 純文字提示 | 被動 hint,需 user「真停留」才觸發,避免滑過列表時 N 次視覺擾動。對齊 Mater"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/motion/motion.spec.md|@benchmark-unverified|b2c30a4f2387",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/motion/motion.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- **MUI/Ant 100ms 是 fast-tier 例外**:適合 form input help text 等「我就是要快」的 dense 場景,不適合通用 chrome tooltip。 "
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/motion/motion.spec.md|@benchmark-unverified|a2103b74efb9",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/motion/motion.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "2. **世界級 idiom**:Material 3 documentation 公開使用「plain tooltip」+「rich tooltip」術語(verified URL above) <"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/motion/motion.spec.md|@benchmark-unverified|30377fea1d03",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/motion/motion.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "500ms 對齊 Material 3 / Apple HIG / shadcn 主流共識(三家集中在 500ms),避 MUI/Ant 100ms(form input fast-tier 不適通用"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|67b836b24db9",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "選 0.45 的位置: <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|3cd1d0e70439",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(1) 雙策略並存(token swap 為主 + opacity blanket 為輔)— 對齊 Carbon / Atlassian 折衷哲學** <!-- @benchmark-unveri"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|22561b3dffe4",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(2) Single tier 0.45 而非 Tailwind multi-tier opacity scale — 對齊 Polaris / Apple 單值哲學** <!-- @benchm"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|9ec29757e55a",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(1) 4 tier(xs/md/lg/full)— 對齊 Ant Design 4-tier minimal,捨多家 6+ tier** <!-- @benchmark-unverified -"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|be29541f9aaf",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(2) Geometric scale(2 / 4 / 8 doubling)— 對齊 Tailwind / Polaris 慣例** <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|03ec58f02f70",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(3) `rounded-full` 9999px 而非 50%(對齊 Tailwind / Polaris)** <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|1e84328faba2",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(4) 保留 `--radius-sm` token 但不用 — 對齊 Material「reserve for future dense pattern」** <!-- @benchmark-u"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/typography/typography.spec.md|@benchmark-unverified|a01bd291c063",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/typography/typography.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(1) Body base = 14px(對齊 Material / Carbon / Ant 三家共識)** <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/typography/typography.spec.md|@benchmark-unverified|6fdd6cffe066",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/typography/typography.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(2) 二元 line-height(1.5 / 1.3)— 對齊 Carbon「productive vs supplementary」哲學** <!-- @benchmark-unverifi"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/typography/typography.spec.md|@benchmark-unverified|45dc03590a8a",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/typography/typography.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier** <!-- @benchmark-unverifie"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/typography/typography.spec.md|@benchmark-unverified|846f843fd17a",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/typography/typography.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "**(4) Font weight 3 階(400/500/700)— 對齊 Carbon / Polaris 共識** <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/uiSize/uiSize.spec.md|@benchmark-unverified|5c6c6262e538",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/uiSize/uiSize.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| `Chip` | 固定 `h-field-sm`（28/32px） | Material 3 / Atlassian / Polaris 共識：filter chips 使用單一高度。不暴露 si"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/uiSize/uiSize.spec.md|@benchmark-unverified|1a0772139b20",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/uiSize/uiSize.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- Material App Bar 56dp(mobile)/ 64dp(desktop);Airbnb 主站 header 80px;Shopify 64px <!-- @benchmark-un"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/uiSize/uiSize.spec.md|@benchmark-unverified|956eac740ef5",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/uiSize/uiSize.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "| Material M3 | AppBar 56/64 dp | Dialog min-height + padding | <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/uiSize/uiSize.spec.md|@benchmark-unverified|b30da85d2c86",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/uiSize/uiSize.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- Density lg 模式下 56px 對齊 Material 桌面 app bar 的舒適呼吸 <!-- @benchmark-unverified: see frontmatter bench"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/uiSize/uiSize.spec.md|@benchmark-unverified|d1a408f3d604",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/uiSize/uiSize.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "unanchored",
+      "hint": "- 對齊 **Polaris / Atlassian** 的 iconOnly idiom(2/4 家世界級派,另 2 家 Material/Ant 用 padding-based 屬不同設計取捨) "
+    },
+    {
+      "key": "escape|apps/template/src/AllDsComponents.stories.tsx|@layout-space-magic-ok|66c2a5c386e8",
+      "family": "escape",
+      "file": "apps/template/src/AllDsComponents.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: portal 入口 dev artifact(import smoke + export dump)debug 外框,非 consumer 產品 "
+    },
+    {
+      "key": "escape|apps/template/src/AllDsComponents.stories.tsx|@layout-space-magic-ok|4d7ebdaa4e0f",
+      "family": "escape",
+      "file": "apps/template/src/AllDsComponents.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: export list debug dump(dev artifact)— code-block 內距,非 consumer 產品 layout"
+    },
+    {
+      "key": "escape|apps/template/src/App.tsx|@layout-space-magic-ok|b2d9c91dfcf6",
+      "family": "escape",
+      "file": "apps/template/src/App.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: Sidebar#IconCollapse chrome-header-brand baseline owns fixed 8px Avatar-"
+    },
+    {
+      "key": "escape|apps/template/src/App.tsx|@layout-space-magic-ok|d955fc8ec00d",
+      "family": "escape",
+      "file": "apps/template/src/App.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: Sidebar#IconCollapse PageContent metric-card baseline owns fixed 4px lab"
+    },
+    {
+      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|b54fe04e8ff3",
+      "family": "escape",
+      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 16px outer story rh"
+    },
+    {
+      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294",
+      "family": "escape",
+      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
+    },
+    {
+      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#2",
+      "family": "escape",
+      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
+    },
+    {
+      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#3",
+      "family": "escape",
+      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
+    },
+    {
+      "key": "eslint|scripts/agent-logo-brand-scale-invariant.mjs|eslint-disable-next-line|911d91cb172c",
+      "family": "eslint",
+      "file": "scripts/agent-logo-brand-scale-invariant.mjs",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-new-func"
+    },
+    {
+      "key": "allowlist|scripts/named-constant-drift-invariant.mjs|ALLOWLIST.AVATAR_SIZE|ae9bf140806e",
+      "family": "allowlist",
+      "file": "scripts/named-constant-drift-invariant.mjs",
+      "marker": "ALLOWLIST.AVATAR_SIZE",
+      "kind": "unanchored",
+      "hint": "AVATAR_SIZE: '不同元件各自的頭像尺寸(FileItem 48 / ProfileCard 64)——兩者沒有共用語意,不是同一個值的兩份',"
+    },
+    {
+      "key": "allowlist|scripts/named-constant-drift-invariant.mjs|ALLOWLIST.LOOKBACK|0f71266c3973",
+      "family": "allowlist",
+      "file": "scripts/named-constant-drift-invariant.mjs",
+      "marker": "ALLOWLIST.LOOKBACK",
+      "kind": "unanchored",
+      "hint": "LOOKBACK: '兩支不相干腳本各自的回看視窗(focus-suppression 8 / hover-instant 3),語意不同',"
+    },
+    {
+      "key": "eslint|scripts/visual-audit.mjs|eslint-disable-next-line|94679cee723e",
+      "family": "eslint",
+      "file": "scripts/visual-audit.mjs",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line no-global-assign"
+    },
+    {
+      "key": "registry|scripts/gate-meta-test-exclusions.json|check-src-republish|10897f0fbe64",
+      "family": "registry",
+      "file": "scripts/gate-meta-test-exclusions.json",
+      "marker": "check-src-republish",
+      "kind": "unanchored",
+      "hint": "The harness requires a pre-version-bump Git fixture, while release preflight may invoke the auto-run"
+    },
+    {
+      "key": "registry|scripts/gate-meta-test-exclusions.json|codex-run-guarded|56b8b7cbc416",
+      "family": "registry",
+      "file": "scripts/gate-meta-test-exclusions.json",
+      "marker": "codex-run-guarded",
+      "kind": "unanchored",
+      "hint": "The portability suite explicitly owns this classifier-only regression so it cannot be confused with "
+    },
+    {
+      "key": "registry|scripts/hover-own-pair-baseline.json|patterns/resize-handle/resize-handle.tsx|group-hover/resize:bg-[var(--border-hover)]|bg-transparent|0115dd4e9af8",
+      "family": "registry",
+      "file": "scripts/hover-own-pair-baseline.json",
+      "marker": "patterns/resize-handle/resize-handle.tsx|group-hover/resize:bg-[var(--border-hover)]|bg-transparent",
+      "kind": "unanchored",
+      "hint": "showLine=false 時靜止線由消費端畫(面板邊界線 / 外框),本元件只在滑過時把 --border-hover 畫在同一個像素上 —— 與上一筆是同一題(分隔線的滑過值),一起拍板"
+    },
+    {
+      "key": "registry|infra/governance/providers/harness-non-governance-exclusions.json|scripts/test-devmode-visual.mjs|3574c757bc08",
+      "family": "registry",
+      "file": "infra/governance/providers/harness-non-governance-exclusions.json",
+      "marker": "scripts/test-devmode-visual.mjs",
+      "kind": "unanchored",
+      "hint": "Interactive Storybook/Playwright screenshot exploration requires a separately running UI target, per"
+    }
+  ]
+}

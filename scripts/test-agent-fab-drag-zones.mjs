@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // AgentFab 拖曳磁吸純函式單測 —— 守「拖過視窗右緣、y 在帶內,仍算貼邊」
-// (agent-panel.spec.md「區域 → 落點表」;user 2026-09-04 回報「拖到最右邊放開卻飛回家」)。
+// (agent-panel-fab.spec.md「區域 → 落點表」;user 2026-09-04 回報「拖到最右邊放開卻飛回家」)。
 //
 // 為什麼需要:這條規則住在 `useSnapDrag` onMove 的 `dragPoint`(指標 x 夾在舞台內再判區)。只有 pointer capture
 // 讓 `clientX` 超出視窗時才會走到,沒有任何 story 或瀏覽器閘會產生這種座標;修好當天(f0464cff)唯一的證據是一次

@@ -68,7 +68,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - `npx vite build --report`(vite bundle visualizer)
-- **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;release-preflight 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
+- **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;CI `verify-static` job 直呼 `npm run --silent check:bundle-size`(`.github/workflows/ci.yml`,2026-09-21 接進;舊句「release-preflight 內建必跑」的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役);蓄意增大 → `--init` 更新 budget + commit 說明)
 
 ### Phase F — Report and route
 

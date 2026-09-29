@@ -312,7 +312,7 @@ const DialogHeader = React.forwardRef<
   // 但 `dismiss` prop 自動標 `data-unbounded`,SurfaceHeader CSS rule 對其套負 my 讓
   // layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
   // header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
-  // 詳 overlay-surface.spec.md「Chrome dismiss size canonical」
+  // 詳 patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」(2026-09-27 自 overlay-surface.spec.md 拆出)
   const closeButton = (
     <DialogPrimitive.Close asChild>
       <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />

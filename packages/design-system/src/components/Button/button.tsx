@@ -484,7 +484,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // 讓 layout 佔位縮到 24(chrome-header-height 幾何)— button native size 與命中區不變
     // (命中 ≡ 可視,見 ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的
     //  「touch target」正名為命中區 —— 本 DS 以滑鼠精度為前提,尺寸不以觸控門檻推導)。
-    // 詳 overlay-surface.spec.md「Chrome dismiss size canonical」
+    // 詳 patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」(2026-09-27 自 overlay-surface.spec.md 拆出)
     const unboundedAttr =
       resolvedVariant === 'text' || dismiss ? { 'data-unbounded': 'true' } : {}
 

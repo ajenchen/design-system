@@ -2558,10 +2558,31 @@ try {
     'live upgraded transaction authority',
   )
   assertClosedGitLocalConfiguration(repoRoot)
+  // 2026-09-27(M37:「未暫存的 diff ≡ 這次改了什麼」只在沒有新檔的版本成立):重建端的 patch 是
+  // `git add -A` 之後的 --cached diff(新增檔以 new file 出現),而這裡原本拿「未暫存的 git diff」比
+  // bytes —— untracked 的新增受管檔案根本不會出現在未暫存 diff。這道比對 2026-07-28 上線後,
+  // beta.146 是第一個新增受管檔案的 release(scripts/lib/launch-browser / storybook-render-health /
+  // storybook-static-snapshot),WM run 36303338183 第 6 步因此少三個檔而被判「與重建不符」。
+  // 修法:live 端用**同一條**指令暫存(add -A -- .)、比同樣的 --cached diff,比完用 `git reset -- .`
+  // 把 index 還原(只動 index、不動工作樹),下游契約不變:index 乾淨、HEAD 不動、新檔留在工作樹
+  // 當 untracked 交給 PR 步驟的 `git add --all` 收。對照組:scripts/test-sync-all-transaction.mjs
+  // 「新增受管檔案」情境(修法前紅、修法後綠)。
+  const liveStage = runClosedGit(['add', '-A', '--', '.'], { cwd: repoRoot, output: 'ignore' })
+  if (liveStage.error || liveStage.signal !== null || liveStage.status !== 0) {
+    throw new Error('live upgrade result could not be staged for the protected-base comparison')
+  }
   const livePatch = runClosedGit(
-    ['diff', '--binary', '--full-index', '--no-ext-diff', '--no-textconv', '--no-renames'],
+    ['diff', '--cached', '--binary', '--full-index', '--no-ext-diff', '--no-textconv', '--no-renames'],
     { cwd: repoRoot, output: 'buffer', maxOutputBytes: 64 * 1024 * 1024 },
   )
+  const unstagedDiff = runClosedGit(
+    ['diff', '--name-only', '-z', '--no-ext-diff', '--no-textconv'],
+    { cwd: repoRoot, output: 'buffer' },
+  )
+  const liveUnstage = runClosedGit(['reset', '-q', '--', '.'], { cwd: repoRoot, output: 'ignore' })
+  if (liveUnstage.error || liveUnstage.signal !== null || liveUnstage.status !== 0) {
+    throw new Error('live upgrade index could not be restored after the protected-base comparison')
+  }
   const stagedDiff = runClosedGit(
     ['diff', '--cached', '--name-only', '-z', '--no-ext-diff', '--no-textconv'],
     { cwd: repoRoot, output: 'buffer' },
@@ -2574,6 +2595,11 @@ try {
     || livePatch.status !== 0
     || !Buffer.isBuffer(livePatch.stdout)
     || !livePatch.stdout.equals(reconstructedUpgrade.patchBytes)
+    || unstagedDiff.error
+    || unstagedDiff.signal !== null
+    || unstagedDiff.status !== 0
+    || !Buffer.isBuffer(unstagedDiff.stdout)
+    || unstagedDiff.stdout.length !== 0
     || stagedDiff.error
     || stagedDiff.signal !== null
     || stagedDiff.status !== 0

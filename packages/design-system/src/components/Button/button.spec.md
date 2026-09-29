@@ -187,6 +187,8 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
 
 > **`tertiary` 是日常最常用的變體。** 確認/取消配對、工具列輔助操作、卡片上的 CTA 幾乎都用 tertiary。
 
+**tertiary 滑過轉藍(字與框 `--primary-hover`,`button.tsx` tertiary 分支)為什麼保留**(2026-09-27 補寫理由;待辦總帳 A4,2026-09-25 R17 篩為保留,**AI 推導、未逐題經 user 拍板**):同類控件 Chip / SegmentedControl / Field 滑過走中性 `--border-hover`,tertiary 卻走主色 —— 因為它是**動作鈕**,不是選項容器或輸入欄位。世界級對照:Ant Design 的預設按鈕(`type="default"`,對應本元件 tertiary)滑過就是字與框轉 `colorPrimaryHover`(一手:[`components/button/style/token.ts`](https://github.com/ant-design/ant-design/blob/master/components/button/style/token.ts) `defaultHoverColor: token.colorPrimaryHover` / `defaultHoverBorderColor: token.colorPrimaryHover`,2026-09-27 讀 master);本 DS 的 `secondary` 也是字與框轉 `primary-hover`(下方「狀態疊加」表),tertiary 與它同一條「輪廓鈕滑過轉主色」語言,改成中性反而讓兩個輪廓鈕分家。Chip / SegmentedControl 只有**選中態**滑過才轉藍(`chip.tsx` `data-[state=on]:hover:text-primary-hover`),那是「選中 × 滑過」規則,與未選中動作鈕的滑過不同題。
+
 **世界級對照(per-variant)**:
 - `primary` ≈ Material `Filled` / Polaris `Primary` / Ant `type="primary"` / Carbon `Primary`
 - `secondary` ≈ Carbon `Tertiary` / Ant `ghost`(`color="primary" variant="outlined"`)/ Bootstrap `.btn-outline-primary`
@@ -409,7 +411,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 → default(md): my=-2px / lg: my=-4px
 → 效果:Button native size 不變(sm 28/32,命中區亦同 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 
-**詳**:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
+**詳**:`patterns/overlay-surface/overlay-chrome-sizing.spec.md`「Chrome dismiss size canonical」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
 
 **Consumer 無需手動加**:Button 自動設。若 consumer 自刻非 Button 的 unbounded control(罕見),可手動加 `data-unbounded="true"` 加入 canonical。
 
@@ -488,7 +490,7 @@ N/A(action trigger,無資料層)。
 - `file-upload.spec.md`
 - `header-canonical.spec.md`
 - `item-anatomy.spec.md`
-- `overlay-surface.spec.md`
+- `overlay-chrome-sizing.spec.md`
 - `pagination.spec.md`
 - `segmented-control.spec.md`
 - `switch.spec.md`

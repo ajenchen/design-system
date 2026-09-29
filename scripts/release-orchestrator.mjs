@@ -83,6 +83,12 @@ export const PRODUCT_VISIBLE = [
   /^packages\/[^/]+\/src\/.*\.(tsx?|jsx?|css|mdx)$/,
   /^\.storybook\/.*\.(tsx?|jsx?|css|mdx)$/,
   /^apps\/.*\.stories\.(tsx?|mdx)$/,
+  // 2026-09-27(待辦總帳 C6):`packages/storybook-config` 沒有 src/ 目錄 —— preview.tsx(decorator / 佈景 /
+  // 全域參數)、addons-preset.ts 與 addons/ds-devmode/**(preset / preview / manager)直接住在套件根,
+  // `.storybook/main.ts` 與 `.storybook/preview.tsx` 都是從 `@qijenchen/storybook-config/{preset,preview}`
+  // 匯入的;改了它們預覽一定變,第一條 `packages/<pkg>/src` 卻抓不到 —— 跟 2026-09-20 漏 `.storybook/`
+  // 是同一種破口。dist/ 與 node_modules/ 是建置產物,不算。
+  /^packages\/storybook-config\/(?!dist\/|node_modules\/).*\.(tsx?|jsx?|cjs|css|mdx)$/,
 ]
 
 /**

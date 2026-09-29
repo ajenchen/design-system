@@ -23,7 +23,7 @@ import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError, isBrowserRequired, launchBrowserOrSkip, requireStorybookBuild, STALE_BUILD_MARKER, settleAfterInteraction } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, isBrowserRequired, launchBrowserOrSkip, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -36,26 +36,13 @@ const STATIC = resolve(ROOT, process.argv.find((a) => a.startsWith('--build='))?
 requireStorybookBuild(join(STATIC, 'index.json'))
 // **stale-build 守衛**(2026-09-03 補;失敗記憶索引既有條目:「storybook-smoke 驗舊 build = 假綠」):
 // 只檢查目錄存不存在會讓「改了 src 但沒重建」的情況拿到假綠 —— 量到的是上一版的 DOM。
-{
-  // I27 量的是 PeoplePicker 的頭像串,只盯 DataTable 會讓它拿到假綠 —— 斷言依賴哪個目錄
-  // 就必須盯哪個目錄(2026-09-06 補;原本只有 DataTable)。
-  const SRC_DIRS = [
-    join(ROOT, 'packages/design-system/src/components/DataTable'),
-    join(ROOT, 'packages/design-system/src/components/PeoplePicker'),
-  ]
-  const newestSrc = SRC_DIRS.reduce((outer, dir) => Math.max(outer, readdirSync(dir)
-    .filter((f) => /\.(tsx?|css)$/.test(f))
-    .reduce((max, f) => Math.max(max, statSync(join(dir, f)).mtimeMs), 0)), 0)
-  const builtAt = statSync(join(STATIC, 'index.json')).mtimeMs
-  if (newestSrc > builtAt) {
-    // 共用標記 STALE-BUILD + exit 2(缺前置,不是產品裁決;lib/launch-browser.mjs 的標記,gate-selftest-meta 認得)。
-    // 原本印自己的句子並 exit 1,meta-test 會把「建置過時」讀成閘紅(2026-09-25,待辦總帳 C5 缺建置標記寫法不一)。
-    console.error(`✗ ${STALE_BUILD_MARKER}:storybook-static 比 DataTable / PeoplePicker 原始碼舊 —— 量到的會是上一版 DOM(假綠)。`)
-    console.error(`   最新原始碼 ${new Date(newestSrc).toISOString()} > 建置 ${new Date(builtAt).toISOString()}`)
-    console.error('   請先跑 `npm run build-storybook`。')
-    process.exit(2)
-  }
-}
+// I27 量的是 PeoplePicker 的頭像串,只盯 DataTable 會讓它拿到假綠 —— 斷言依賴哪個目錄就必須盯哪個目錄(2026-09-06 補;原本只有 DataTable)。
+// 判定住在 lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5「缺建置標記寫法不一」):
+// 共用標記 STALE-BUILD + exit 2(缺前置,不是產品裁決;gate-selftest-meta 認得)。
+requireFreshStorybookBuild(STATIC, [
+  'packages/design-system/src/components/DataTable',
+  'packages/design-system/src/components/PeoplePicker',
+])
 
 // **供檔與啟動一律走共用實作**(2026-09-25 收斂,M17):
 // 原本本檔自己一份 http.createServer + 自己的快照 + 自己的 404 帳本、自己一份 chromium.launch 參數 ——
@@ -146,7 +133,7 @@ async function loadStory(url, waitFor) {
 }
 
 // ── S1:未掛載區骨架底只准消費 Skeleton 同一顆 token(2026-09-15,user 問「骨架底跟 Skeleton 有 SSOT 嗎」)──
-// SSOT:data-table.spec.md「骨架底」段(bar = `--muted`、列底線 = `--divider`,幾何抄列殼)+ skeleton.spec.md「bg-muted」段。
+// SSOT:data-table-scroll-performance.spec.md「零空白不變條件」段的「做法」(骨架底;2026-09-27 自 data-table.spec.md 拆出)(bar = `--muted`、列底線 = `--divider`,幾何抄列殼)+ skeleton.spec.md「bg-muted」段。
 // 這層是 CSS 漸層畫的,沒有 DOM 可以量色,所以守「原始碼消費的是 token、不是字面色值」——
 // `unmountedSkeletonStyle` 函式體必含 var(--muted) 與 var(--divider),且不得出現 #hex / rgb( / oklch( 字面色。
 {

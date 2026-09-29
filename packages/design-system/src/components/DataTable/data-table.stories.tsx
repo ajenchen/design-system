@@ -2306,7 +2306,7 @@ export const RoadmapAllInOne: Story = {
 }
 
 /* ── Feature-split perf budget story(2026-05-14 codex perf debate verdict;2026-06-12 deep-audit
-   R2 重建 — 2026-05-17 stories 整併批次誤 retire,但 spec「六之三」Case B hard gate +
+   R2 重建 — 2026-05-17 stories 整併批次誤 retire,但 spec(data-table-scroll-performance.spec.md)「六之三」Case B hard gate +
    scripts/runtime-perf-datatable.mjs:20 仍指向本 story,gate 形同不可跑):──────────────────
    獨立 perf 量測 story — 同 Roadmap 13 cols rich-cell data(useRoadmapColumns SSOT),但**禁用**
    row drag / column reorder / column resize / selection / spreadsheet overlay,只保 inline edit

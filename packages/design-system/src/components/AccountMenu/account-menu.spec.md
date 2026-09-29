@@ -82,7 +82,7 @@ controlled `open` / `onOpenChange`，不靠查找 portal DOM。
 
 - **「AccountMenu 該收 `mode` prop 自動決定放置」** — 錯;放置 SSOT 在 app-shell.spec.md,consumer 決定(元件收 mode = 第二份 SSOT + 元件被迫依賴 AppShell context 才能 render,Storybook / 非 AppShell 產品用不了)。
 - **「demo 的 `AccountMenu` 是另一個元件」** — 不是;`_demo-helpers.tsx` 的 `AccountMenu` 是綁示範資料(Alan Chen)的薄 wrapper,消費本元件。
-- **「要顯示 email 第二行」** — 不做。Identity Label 的公開 contract 只含 `user.name`；不可為未核准的第二行擴充 `AccountMenuUser` 或另造展示資料。
+- **「要顯示 email 第二行」** — **暫緩,不是定案不做**(user 2026-07-30 原話:「1.我覺得先不動」;本檔先前寫成「不做」並列入禁止事項 = 把「先不動」升格成定案,M36(a),2026-09-27 改回)。目前 Identity Label 的公開 contract 只含 `user.name`;要加第二行時另提 RFC 再擴充 `AccountMenuUser`,不在討論前自行擴充或另造展示資料。
 
 ## A11y 預設
 
@@ -105,7 +105,6 @@ controlled `open` / `onOpenChange`，不靠查找 portal DOM。
 - ❌ **`primary-sidebar` 派桌面用 AccountMenu**(該 mode 帳號家 = SidebarFooter;app-shell.spec.md 放置 SSOT)
 - ❌ **同畫面同時出現兩個帳號入口**(app-shell.spec.md「只能出現一次」rule)
 - ❌ **用 ProfileCard 當帳號選單內容**(看別人 vs 自己語義錯置)
-- ❌ **自行加入 email 第二行**(`user.name` 是 identity Label 唯一文字 contract)
 - ❌ **繞過本元件手刻 avatar + DropdownMenu 重造帳號入口**(跨 consumer 漂移;本元件即 canonical 收斂)
 
 ## Benchmark(M8 / M22 cite)

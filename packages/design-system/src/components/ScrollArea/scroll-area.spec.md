@@ -151,6 +151,8 @@ Radix Viewport 內建 wrapper `min-width:100%; display:table`——這是**水�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `data-table-known-defects.spec.md`
 - `dialog.spec.md`
 - `file-viewer.spec.md`
 - `overlay-surface.spec.md`
+- `sidebar.spec.md`

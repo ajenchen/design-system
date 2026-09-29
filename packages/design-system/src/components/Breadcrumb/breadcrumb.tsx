@@ -43,7 +43,9 @@ import {
  *
  * ── 視覺 ──
  *   Link (預設): text-fg-secondary
- *   Link hover:  text-primary-hover (canonical「互動高亮」, 跟 Tabs / Chip 用法一致)
+ *   Link hover:  text-primary-hover(連結滑過換色 canonical,owner color.spec.md「連結 hover = 換色」;
+ *                跟 Tabs / Chip 不是同一條 —— Tabs 滑過是字轉 foreground、Chip 只有選中態滑過才轉 primary-hover;
+ *                2026-09-27 更正舊句「跟 Tabs / Chip 用法一致」)
  *   Page (當前): text-foreground(不加粗 — 加粗會讓 breadcrumb 最右端視覺過重,見 spec)
  *   Separator:  ChevronRight (size 跟 list 一致), text-fg-muted
  *

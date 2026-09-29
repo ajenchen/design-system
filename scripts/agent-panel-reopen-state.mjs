@@ -3,7 +3,7 @@
 // AgentPanel 關閉後再打開:狀態必須還在(spec E 條「閱讀位置保存」/ F 條「初始化為關閉」)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// SSOT:`components/AgentPanel/agent-panel.spec.md`「放置與互斥」段。
+// SSOT:`components/AgentPanel/agent-panel-fab.spec.md`「放置與互斥」段(2026-09-27 自 agent-panel.spec.md 拆出)。
 //
 // 2026-09-07 之前 `AgentPanelDock` 是 `if (open) return children` —— 關閉的瞬間整個面板
 // 連同它的 state 一起卸載。改成一直渲染、關閉時 `display:none` 之後,又發現第二層問題:
@@ -34,15 +34,12 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowserOrSkip, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowserOrSkip, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本下一段 statSync 直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
-requireStorybookBuild(join(S,'index.json'))
-for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
-                 'packages/design-system/src/components/AgentPanel/agent-panel.tsx']) {
-  if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
-    console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) }
-}
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(S, ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
+                               'packages/design-system/src/components/AgentPanel/agent-panel.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv=await startA11yStaticServer({rootDirectory:S,defaultFile:'iframe.html'})
 process.once('exit',(code)=>{ if(code&&sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })

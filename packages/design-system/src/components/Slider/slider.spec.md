@@ -300,4 +300,5 @@ Inspector 提供 `min` / `max` / `step` / `defaultValue` × `size` 即時調整(
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `number-input.spec.md`
+- `rating.spec.md`
 - `switch.spec.md`

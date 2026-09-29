@@ -27,7 +27,7 @@ import { Eye, EyeOff, Lock, GripVertical, Search, RotateCcw, X as XIcon } from '
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemPrefix, ItemLabel, ItemInlineActionButton, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { cn } from '@/lib/utils'
@@ -128,10 +128,8 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
     useSensor(KeyboardSensor),
   )
-  const announcements = React.useMemo(
-    () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '欄位' }),
-    [],
-  )
+  // 繁中播報 + polite 區域 + 繁中操作說明(2026-09-27 OE10;先前交給 dnd-kit 寫死的 assertive 區域)
+  const drag = useDragAccessibility({ getOutcome: () => outcomeRef.current, kind: '欄位' })
 
   const handleDragEnd = (e: DragEndEvent) => {
     outcomeRef.current = null
@@ -198,7 +196,8 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
       <PopoverBody className="!px-0 !py-0">
         <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           {dndEnabled ? (
-            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>
+              {drag.liveRegion}
               <SortableContext
                 items={filteredEntries.map((e) => e.id).filter((id) => !lockedSet.has(id))}
                 strategy={verticalListSortingStrategy}

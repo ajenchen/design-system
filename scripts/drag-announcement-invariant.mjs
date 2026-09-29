@@ -36,11 +36,18 @@ function walk(dir, out = []) {
  *                                      使用者只想點一下,零位移就觸發拖曳 + 兩則 assertive 播報
  *                                      (2026-09-07 C4:欄位顯示面板與排序面板都中)
  */
+// 2026-09-27(待辦總帳 OE10):播報改走 `useDragAccessibility` 的 **polite** 區域 —— dnd-kit 自己的 live region
+// 寫死 assertive(`@dnd-kit/accessibility` LiveRegion),每到一個落點就打斷螢幕閱讀器。所以判準從
+// 「有沒有 accessibility={{ announcements }}」換成三件事:(1) 檔案有呼叫 `useDragAccessibility(`;
+// (2) `<DndContext … accessibility={<x>.accessibility}` 把 hook 的物件整份交給 dnd-kit(不准再直傳 announcements ——
+// 那條路的文字會落在 assertive 區域);(3) 檔案有渲染 `{<x>.liveRegion}`(沒渲染 = 整趟拖曳無聲,靜默)。
 export function findUnannouncedDndContexts(files) {
   const bad = []
   for (const f of files) {
     const src = readFileSync(f, 'utf8')
     if (!src.includes('<DndContext')) continue
+    const usesHook = /\buseDragAccessibility\(/.test(src)
+    const rendersLiveRegion = /\{\s*[A-Za-z_$][\w$]*\.liveRegion\s*\}/.test(src)
     const lines = src.split('\n')
     lines.forEach((l, i) => {
       if (!l.includes('<DndContext')) return
@@ -48,10 +55,13 @@ export function findUnannouncedDndContexts(files) {
       let block = ''
       for (let j = i; j < Math.min(i + 30, lines.length); j++) {
         block += lines[j] + '\n'
-        if (/^\s*>\s*$/.test(lines[j]) || lines[j].includes('announcements }}>')) break
+        if (/^\s*>\s*$/.test(lines[j]) || /accessibility=\{[^}]*\}\s*>/.test(lines[j]) || lines[j].includes('announcements }}>')) break
       }
       const missing = []
-      if (!/accessibility=\{\{\s*announcements/.test(block)) missing.push('accessibility={{ announcements }}')
+      if (/accessibility=\{\{\s*announcements/.test(block)) missing.push('accessibility={{ announcements }} 直傳給 dnd-kit(文字會落在它寫死的 assertive 區域)')
+      else if (!/accessibility=\{[A-Za-z_$][\w$]*\.accessibility\}/.test(block)) missing.push('accessibility={<hook>.accessibility}')
+      if (!usesHook) missing.push('useDragAccessibility(…)(lib/drag-announcements.ts)')
+      if (!rendersLiveRegion) missing.push('{<hook>.liveRegion} 沒渲染(polite 區域不在 DOM = 整趟拖曳無聲)')
       if (!/\bsensors=\{/.test(block)) missing.push('sensors(啟動門檻)')
       if (missing.length) bad.push({ file: f.replace(ROOT, 'src'), line: i + 1, missing: missing.join(' + ') })
     })
@@ -60,11 +70,16 @@ export function findUnannouncedDndContexts(files) {
 }
 
 if (process.argv.includes('--selftest')) {
+  const good = 'const drag = useDragAccessibility({ getOutcome, kind: "列" })\n'
   const cases = [
     { src: '<DndContext\n  onDragEnd={x}\n>', shouldFail: true },
-    { src: '<DndContext\n  onDragEnd={x}\n  accessibility={{ announcements }}\n>', shouldFail: true },  // 缺 sensors
-    { src: '<DndContext\n  sensors={s}\n  onDragEnd={x}\n>', shouldFail: true },  // 缺播報
-    { src: '<DndContext sensors={s} onDragEnd={x} accessibility={{ announcements }}>', shouldFail: false },
+    { src: good + '<DndContext\n  onDragEnd={x}\n  accessibility={drag.accessibility}\n>\n{drag.liveRegion}', shouldFail: true },  // 缺 sensors
+    { src: good + '<DndContext\n  sensors={s}\n  onDragEnd={x}\n>\n{drag.liveRegion}', shouldFail: true },  // 缺播報
+    { src: '<DndContext sensors={s} onDragEnd={x} accessibility={{ announcements }}>', shouldFail: true },  // 舊寫法:直傳 → assertive
+    { src: good + '<DndContext sensors={s} onDragEnd={x} accessibility={drag.accessibility}>', shouldFail: true },  // 沒渲染 liveRegion
+    { src: '<DndContext sensors={s} onDragEnd={x} accessibility={drag.accessibility}>\n{drag.liveRegion}', shouldFail: true },  // 沒呼叫 hook
+    { src: good + '<DndContext sensors={s} onDragEnd={x} accessibility={drag.accessibility}>\n  {drag.liveRegion}\n</DndContext>', shouldFail: false },
+    { src: good + '<DndContext\n  sensors={s}\n  onDragEnd={x}\n  accessibility={drag.accessibility}\n>\n  {node}\n  {drag.liveRegion}', shouldFail: false },
     { src: 'no dnd here', shouldFail: false },
   ]
   let ok = true
@@ -80,8 +95,8 @@ if (process.argv.includes('--selftest')) {
 
 const bad = findUnannouncedDndContexts(walk(ROOT))
 if (bad.length) {
-  console.error('✗ 下列 DndContext 少了必要 prop(兩個都是靜默壞掉):')
-  console.error('  · accessibility={{ announcements }} → 消費 `lib/drag-announcements.ts` 的 createDragAnnouncements()')
+  console.error('✗ 下列 DndContext 少了必要接線(每一項都是靜默壞掉):')
+  console.error('  · const drag = useDragAccessibility({ getOutcome, kind })(`lib/drag-announcements.ts`)→ accessibility={drag.accessibility} + 渲染 {drag.liveRegion}')
   console.error('  · sensors → PointerSensor 帶 `lib/drag-visual.ts` 的 DRAG_ACTIVATION_DISTANCE_PX')
   bad.forEach(b => console.error(`    ${b.file}:${b.line}  缺:${b.missing}`))
   process.exit(1)

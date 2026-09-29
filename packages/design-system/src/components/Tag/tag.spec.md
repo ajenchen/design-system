@@ -283,16 +283,6 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 - `../Chip/chip.spec.md` — 可互動 filter（Tag 的互動版本）
 - `../Combobox/combobox.spec.md` — 多選場景會渲染 Tag 陣列
 - `../ProfileCard/profile-card.spec.md` — 人員資訊顯示
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
-- `avatar.spec.md`
-- `badge.spec.md`
-- `inline-action.spec.md`
-- `overflow-indicator.spec.md`
-
 ## 截斷量測不加快取(2026-09-14 退回紀錄)
 
 Tag 用 Canvas `measureText` 判截斷(flex 內 `scrollWidth` 不可靠)。一次量測做三件事:`getComputedStyle`(逼出樣式重算)、
@@ -304,3 +294,12 @@ CPU 剖析實測:一次 6,000px/s 手勢裡這個 measure 自身時間 142–232
 曾加兩層快取(字型 + 文字寬,`document.fonts` `loadingdone` 時整個清掉)。同機交錯 CPU 剖析(dpr2 + CPU×6):
 main 223ms / 加快取後 380ms / 再把快取鍵最佳化後 412ms —— 每次呼叫要組兩個字串當鍵(其中一個含 Tag 的 Tailwind class,數百字元)再各查一次 Map,
 組字串加雜湊比它想省的那兩個瀏覽器呼叫還貴。要再嘗試必先重跑同一組對照剖析,拿到比 main 低的數字才可回來。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `avatar.spec.md`
+- `badge.spec.md`
+- `inline-action.spec.md`
+- `overflow-indicator.spec.md`

@@ -103,6 +103,10 @@ jobs:
           # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
           # Field 內沒指定 size 的評分靜默變 24px 兩個月沒人看見(spec 三處都寫跟 Field);2026-09-27 查證抓到,先紅後綠。
           npm run test:rating-field-size
+          # spec 之間的「被引用」段(reciprocal pointer):閘 2026-05 就有,但 `--check` 從沒有任何執行面呼叫過(只被
+          # deep-audit plan 引用;待辦總帳 N61,2026-09-27 發版前全掃抓到 22 個 spec 漂移)—— 2026-09-27 接進來,漂移當場紅;
+          # 修法是跑 `node scripts/add-reciprocal-pointers.mjs`(無 --check)重生後 commit。
+          npm run test:reciprocal-pointers
           # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
           #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
           npm run check:agents-bootstrap
@@ -856,6 +860,10 @@ jobs:
           # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
           # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
           npm run test:action-bar-toolbar
+          # DS Devmode addon 的視覺驗證(定位層 / 小距離紅線 / 緊湊標籤 / 兄弟距離,6 案例,本機 12 秒):
+          # 2026-09-27 gate-reachability 把 package.json 從執行面拿掉(N33)後它成了孤兒 —— 只有 `npm run devmode:test` 提到它、
+          # 從沒有 workflow 跑過。本機實跑全綠才接上(不是把紅燈接進 CI)。
+          npm run devmode:test
           # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
           # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
           npm run test:overlay-detached-anchor

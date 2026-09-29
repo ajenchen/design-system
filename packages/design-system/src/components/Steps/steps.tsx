@@ -48,7 +48,7 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
 
 // ── Outer ring(outline + offset,不佔排版)─────────────────────────────────
 //
-// 2026-09-26 由 box-shadow 改成 outline(待辦總帳 N48 / L14;steps.spec.md「為什麼外環與圓之間要有一圈間隙」)。
+// 2026-09-26 由 box-shadow 改成 outline(待辦總帳 N48 / L14;steps-state-visuals.spec.md「為什麼外環與圓之間要有一圈間隙」)。
 // 舊寫法是兩層陰影:先用一圈 `var(--surface)` 的**實心**陰影假裝間隙,再疊環色。深色主題的 `--surface`
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。

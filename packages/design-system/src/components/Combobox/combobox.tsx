@@ -1048,7 +1048,7 @@ const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
     // 那會變成第二套規格,正是這次要消滅的東西。**不拿觸控尺寸建議當依據**:先前這裡寫的
     // 「過 WCAG 2.2 AA(24×24)」已於 2026-09-24 撤回(本 DS 以滑鼠精度為前提,見
     // ds-canonical/references/hit-area-canonical.md「本 DS 不採納觸控尺寸建議」);
-    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431 改指真正的 owner(上一行)。
+    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431(該段 2026-09-27 起住 overlay-chrome-sizing.spec.md「為什麼用負 margin 而非 fixed wrapper / size="xs"」)改指真正的 owner(上一行)。
     return <CustomCombobox {...props} size={size} __triggerRef={ref} />
   }
 )

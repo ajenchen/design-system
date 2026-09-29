@@ -310,13 +310,16 @@ Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/7
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `accordion.spec.md`
+- `agent-panel.spec.md`
 - `alert.spec.md`
 - `coachmark.spec.md`
 - `command.spec.md`
 - `dropdown-menu.spec.md`
 - `file-viewer.spec.md`
+- `overlay-chrome-sizing.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`
 - `scroll-area.spec.md`
 - `sheet.spec.md`
 - `toast.spec.md`
+- `uiSize.spec.md`

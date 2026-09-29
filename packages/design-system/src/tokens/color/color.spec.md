@@ -255,7 +255,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <Progress className="bg-primary" value={60} />
 ```
 
-**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(release-preflight chain),回潮 `--primary` 即 fail。2026-06-05 user 拍板把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)。
+**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 user 拍板把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)。
 
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
@@ -824,8 +824,8 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
-| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)/ Slider rest track(`slider.tsx`)/ FileItem compact 靜態小膠囊(`file-item.tsx`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 決策卡選項卡與訊息氣泡(`agent-panel.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
+| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`)/ DataTable 表頭面板(`data-table.tsx:375 HEADER_PANEL`)與虛擬捲動骨架列的 bar(`data-table.tsx:571`,`var(--muted)`)/ Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:212`,2026-07-14 拆檔自 filter-panel)/ Calendar 星期列(`calendar.tsx:556`)/ Coachmark 媒體區佔位(`coachmark.tsx:202`)/ ProfileCard 狀態列(`profile-card.tsx:284`)/ FileViewer 縮圖鈕底(`file-viewer.tsx:639`;縮圖鈕可點,muted 該移到佔位層 —— 待辦總帳 A9③,程式待改)/ scrollbar track(`semantic.css:433`)/ anatomy `<th>`(`stories-helpers/anatomy/anatomy-utils.tsx:27`)。2026-09-27 重掃(`rg bg-muted` 非 story tsx + css,補 5 個漏列、行號全部對齊):舊清單的「tab 容器 / code block」目前沒有真實消費者,已移除 |
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx:44`)/ OverflowIndicator「+N」圓(`overflow-indicator.tsx:145`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)與標籤形(`overflow-indicator.tsx:108`,借 `tagVariants` 的中性底,同樣可 Tab 聚焦、滑過開名單)/ Slider rest track(`slider.tsx:111`)/ FileItem compact 靜態小膠囊(`file-item.tsx:442`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 訊息氣泡(`agent-panel.tsx:995`)與決策卡選項卡(`agent-panel.tsx:1480`,可點;滑過底色 2026-09-26 user 質疑後拿掉,待辦總帳 R21 研究中)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`,`stroke="var(--secondary)"`)/ Steps fillBg(`steps.tsx:823,836`,`var(--secondary)`)/ ProgressBar track(`progress-bar.tsx:97`)。**站在這個底上而且可點的(小膠囊、選項卡、+N)滑過時換自己的配對 `--secondary-hover`,不借透明底的 `--neutral-hover`**(「Hover 換色配對總則」;2026-09-27 依待辦總帳 N12 補齊可點的使用者並對齊行號)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)
@@ -833,7 +833,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 **為什麼不能反過來**:Skeleton 用 `bg-secondary` 會太深,搶走真正內容出現時的視覺落差;Tag neutral 用 `bg-muted` 會太淡,小面積元素辨識度不足。深淺差一階(neutral-2 vs neutral-3)在小元素上的感知差異比大面積更明顯。
 
-**跟 `bg-neutral-hover` / `bg-neutral-active` 的區別**:neutral 系列表達**互動**狀態(hover / 選中);muted / secondary 表達**結構性的靜態層級** — 即使沒有互動,它永遠是這個顏色。
+**跟 `bg-neutral-hover` / `bg-neutral-active` 的區別 —— 常駐色 vs 狀態色**(2026-09-27 改寫;原句「即使沒有互動,它永遠是這個顏色」在 2026-09-25「Hover 換色配對總則」立了 `--secondary-hover` 之後已不準):muted / secondary 是**常駐色** —— 元素靜止時的結構層級,沒有互動也是這個顏色;`bg-neutral-hover` / `bg-neutral-active` 是**狀態色** —— 只在指標停上、按住的那一刻出現,放開就消失,而且只給**靜止底是透明**的元素用。兩者的關係:站在常駐色 `bg-secondary` 上的可互動元素(可點的小膠囊、+N、選項卡)滑過時**換成自己的配對** `--secondary-hover` / `--secondary-active`,不借透明底的 `--neutral-hover`(「Hover 換色配對總則」);`bg-muted` 不能當可互動元素的靜止底(上方「能不能當可互動元素的靜止底」條),所以它沒有、也不該有滑過配對。
 
 **邊界 — component disabled bg 不走 muted**:Button / Input / Checkbox 等元件 disabled state 走 `--bg-disabled` semantic,不是 `--muted`(同值 neutral-2 但不同 owner — `--bg-disabled` 是 component-state token,`--muted` 是 surface-non-interactive token,per「為什麼同值仍分兩個 token」段 rule)。**Readonly state 同理但用自己的 token `--bg-readonly`**(2026-06-10):readonly ≠ disabled(可聚焦/選取/提交,僅不可改值,per Carbon「navigable but not operable」),不借 `--bg-disabled` 名;也不走 `--muted`(readonly 是互動元件 state,非 Skeleton 類靜態 surface)。三者同值 neutral-2、owner 獨立,可分離演進。
 
@@ -954,7 +954,7 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 ```
 
 ## 結構性保留 token canonical
-SSOT → `.claude/references/structural-token-retention.md`(6 類保留 + sub-agent triple-verify 流程)
+SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner,不指產生檢視;6 類保留 + sub-agent triple-verify 流程)
 
 ---
 
@@ -962,9 +962,15 @@ SSOT → `.claude/references/structural-token-retention.md`(6 類保留 + sub-ag
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel-fab.spec.md`
+- `agent-panel.spec.md`
+- `button.spec.md`
+- `calendar.spec.md`
 - `chart.spec.md`
+- `data-table.spec.md`
 - `date-grid.spec.md`
 - `file-item.spec.md`
+- `file-upload.spec.md`
 - `notice.spec.md`
 - `opacity.spec.md`
 - `progress-bar.spec.md`
