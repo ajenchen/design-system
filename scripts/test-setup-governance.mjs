@@ -792,9 +792,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           { source: 1130722, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high', range: '<=10.3.0' },
           { source: 1130723, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate', range: '>=10.1.1 <=10.2.1' },
           { source: 1130724, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate', range: '>=10.1.1 <=10.2.0' },
+          // 2026-09-28 上游新發兩則(OE15,2026-09-29 認列):range 隨之變 <=10.5.0
+          { source: 1239948, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate', range: '<=10.5.0' },
+          { source: 1239949, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate', range: '>=10.2.0 <=10.5.0' },
         ],
         effects: [],
-        range: '<=10.3.0',
+        range: '<=10.5.0',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -827,6 +830,14 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
+  // 對照組(M32):2026-09-28 之前的三則形狀(range <=10.3.0)現在是「漂移」,必須 fail closed 並指名 ip-address ——
+  // 認列是 exact shape,少兩則 / 舊 range 都不准放行(否則認列變成寬鬆的白名單)。
+  {
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
+    stale.vulnerabilities['ip-address'].range = '<=10.3.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
   // (2026-09-04): when the registry advisory service is down, `npm audit --json` emits

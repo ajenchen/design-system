@@ -420,17 +420,25 @@ function assertRemediatedFinding(name, finding) {
     // fix and the overlay machinery has no third slot yet; the fixed 10.4.0 exists, and extending
     // the overlay (or moving to npm 12) is tracked in the cloud-compat baton as the next branch.
     // DoS-class parsing advisories in dev-only npm CLI internals; nothing ships to production from
-    // this tree. Any drift — a fourth advisory, a new node, a severity change — fails closed here.
+    // this tree. Any drift — a sixth advisory, a new node, a severity change — fails closed here.
+    // 2026-09-29(待辦總帳 OE15):上游 2026-09-28 又發兩則 moderate(GHSA-rpw4-54j3-4h4q `Address6.isLinkLocal()`
+    // 誤認 fe80::/64、GHSA-2vr4-cq9g-pvrc 沒有分類器認得 NAT64 64:ff9b::/96;都修在 10.5.1),finding.range 隨之
+    // 從 <=10.3.0 變成 <=10.5.0、via 從 3 則變 5 則 —— 這道 exact-shape 認列當場把 CI 每個 job 都擋在
+    // 「Install locked dependencies once」(這正是 OE6「新弱點通報會卡住所有 PR」的形狀)。bundled 的仍是 10.2.0、
+    // npm 11.x 仍沒有帶 10.5.1 的版本,曝險與 08-03 那三則同類(dev-only CLI 內部的位址解析),所以只把新形狀認列進來;
+    // 註:consumer 的同步永遠跑自己 protected main 上的這份腳本,新認列要靠受管檔案更新才會抵達 consumer。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.3.0'
+        && finding.range === '<=10.5.0'
         && matchesExactAdvisorySet(finding, 'ip-address', [
           { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
           { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
           { source: 1130724, range: '>=10.1.1 <=10.2.0', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate' },
+          { source: 1239948, range: '<=10.5.0', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate' },
+          { source: 1239949, range: '>=10.2.0 <=10.5.0', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate' },
         ]),
       `npm audit ip-address finding differs from the acknowledged bundled preimage(${shape})`,
     )
