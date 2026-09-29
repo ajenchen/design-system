@@ -1008,7 +1008,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:dd330133bde2b5172db03ea17ccc0b8347198a147615bb9c8a106b9d708232f3",
+      "hash": "sha256:29428a0f146be3681204b623370eead2398e36adcee4c215819d651c393afc8f",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1790,7 +1790,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4",
+      "hash": "sha256:51a2a5abc36b06f7b20398c61f1396dd87f20609b9085c6fb1adeadc9cd0799d",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 47,
-      "hash": "sha256:2f9f70d44122a50319e91866fa96f8a439975d8b03f9302d5832915d6d37ea71",
+      "hash": "sha256:4e98323112c2c1cd752da0ea7b19c5b3c50fd7ec37597f42310ab60f5e7ff926",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
