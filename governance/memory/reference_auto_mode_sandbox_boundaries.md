@@ -44,3 +44,8 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 2. **有沒有等價傳輸**:git 走 Basic token、npm 走代理、瀏覽器走代理、GitHub 讀取走 curl(`gh` 在沙箱 TLS 不通)。
 3. **交給 user 的指令**必須在沙箱外才成立:對話內 `!` 與 Bash 同一個沙箱,不算。
 4. **分類器擋下 = 停在該處並回報**,把準備好的 diff / 分支 / PR 連結交出去;不拆小、不換分身、不下一 turn 再試。
+
+## 五、clone 必先裝 hooks,否則快照在提交時就過期(2026-09-29 同一天兩次)
+
+`.husky/pre-commit` 第一行 `node scripts/governance-build-graph.mjs --precommit` 會在**每次提交時**重生並暫存 control-plane 快照;主目錄有 `core.hooksPath=.husky`,但 scratchpad 的 clone 是 `git clone` 出來的,**沒有**這個設定,提交時什麼都不跑。結果:改了快照輸入(`scripts/**`、`governance/planning/**`、`governance/memory/**`……由 `scripts/governance-build-graph.json` 的 control-plane `sources` 決定)卻沒手動重生 → CI `GOV-SNAPSHOT-001` 紅(`1c1cfc6f` 未追蹤探針檔、`b3a323b5` 補追蹤表一列後沒重生)。**開 clone 後第一件事**:`node scripts/setup-governance-hooks.mjs`(把 `core.hooksPath` 設成 `.husky`),之後提交一律 `git add` 後**不帶路徑**的 `git commit`(帶路徑的部分提交會讓 pre-commit 卡在 index 鎖,見 historical-bugs.md)。要驗 hook 真的有跑:提交只改一個輸入檔,`git show --stat HEAD` 必須同時帶出 `governance/control-plane.lock.json`。
+
