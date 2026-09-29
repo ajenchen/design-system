@@ -159,6 +159,7 @@ const SHIFT_FOOTER = () => {
 const bad = []
 let scanned = 0
 let footersChecked = 0
+let coveredSkipped = 0 // 被 modal 遮罩蓋住、點不到的觸發點(2026-09-29;不靜默,印進摘要)
 let liveFlips = 0
 let unrestrictedSeen = 0
 /** 儀器失效:沒量到的 story(不是產品裁決)。 */
@@ -204,9 +205,18 @@ try {
       }
       const handles = await page.locator('[role="combobox"]:visible').elementHandles()
       for (let i = 0; i < handles.length; i += 1) {
-        const state = await handles[i].evaluate((el) => (!el.isConnected || el.getClientRects().length === 0 ? 'gone'
-          : el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]') ? 'inert' : 'ok')).catch(() => 'gone')
+        const state = await handles[i].evaluate((el) => {
+          if (!el.isConnected || el.getClientRects().length === 0) return 'gone'
+          if (el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]')) return 'inert'
+          return 'ok'
+        }).catch(() => 'gone')
         if (state !== 'ok') continue // 停用 / 唯讀不點;被前一個互動收掉(預設開啟的下拉被點關)照常略過
+        // 2026-09-29:被 modal 遮罩蓋住的觸發點(例 AgentPanel「未存檔的修改」story 一開場就疊兩層對話框)看得見但點不到,
+        // click 會等到逾時 → 整支 story 被記成儀器失效。先用 Playwright 自己的可操作性檢查(trial:捲進視窗、可見、穩定、
+        // 點擊點命中自己)試一次,過不了 = 被蓋住,略過並計數(不靜默)。第一版自己算 elementFromPoint 沒先捲進視窗,
+        // 把 35 個在視窗外的觸發點誤判成被蓋住(本機重跑抓到),改用與真正點擊同一份判準。
+        const covered = await handles[i].click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
+        if (covered) { coveredSkipped += 1; continue }
         await handles[i].click({ timeout: 10_000 })
         await settleOr(`點開第 ${i + 1} 個下拉`) // 量左緣,不能量到縮放進場的中間值
         // 對照組要在**量之前**就把東西弄壞(幾何那條量的是 before),不然推了也量不到
@@ -274,7 +284,7 @@ try {
 }
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
-console.log(`開到帶全選 footer 的面板:${footersChecked} 次`)
+console.log(`開到帶全選 footer 的面板:${footersChecked} 次;被遮罩蓋住而略過的觸發點:${coveredSkipped} 個`)
 console.log(`按下去真的把全選狀態翻面:${liveFlips} 次`)
 console.log(`開到帶「不限」列的面板(那列已排除在分母外):${unrestrictedSeen} 次`)
 console.log(`標籤 / 狀態 / a11y 不符:${bad.length} 筆`)

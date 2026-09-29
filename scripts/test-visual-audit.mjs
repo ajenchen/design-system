@@ -22,6 +22,9 @@
  * Run: node scripts/test-visual-audit.mjs
  */
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { exitOnBrowserLaunchFailure, launchBrowser } from './lib/launch-browser.mjs'
 import {
   judgeGeometryAssertion,
@@ -198,11 +201,9 @@ try {
 // 明確給一個不存在的 base 必須 INSTRUMENT-FAIL 紅,而且要在開靜態站 / 檢查建置之前就紅(不依賴 storybook-static 存不存在);
 // 全零 sha(首推 / force-push 的 event.before)視同沒指定 → 走 origin/main 預設鏈並印出用了哪個 base。
 {
-  const { spawnSync } = await import('node:child_process')
-  const { fileURLToPath } = await import('node:url')
-  const { dirname, join } = await import('node:path')
   const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
-  const runCli = (base) => spawnSync(process.execPath, [join(REPO, 'scripts/visual-audit.mjs'), '--static', '--scope=changed', '--no-diff', '--no-a11y', `--base=${base}`], { cwd: REPO, encoding: 'utf-8', timeout: 60_000 })
+  // 腳本路徑寫成靜態字面值、以 cwd 定位(治理來源政策 harness-source-inventory:Node argv 的腳本運算元必須可審閱,計算出來的路徑不算)
+  const runCli = (base) => spawnSync(process.execPath, ['scripts/visual-audit.mjs', '--static', '--scope=changed', '--no-diff', '--no-a11y', `--base=${base}`], { cwd: REPO, encoding: 'utf-8', timeout: 60_000 })
   const bad = runCli('no-such-ref-for-control')
   ok(bad.status === 1 && /INSTRUMENT-FAIL:--base=no-such-ref-for-control/.test(bad.stderr), `--base 指到不存在的 ref → exit 1 + INSTRUMENT-FAIL 指名(不退回 origin/main 猜;實得 exit ${bad.status})`)
   ok(!/owned static Storybook 就緒|build-info\.json/.test(`${bad.stdout}\n${bad.stderr}`), 'base 錯要在開靜態站 / 檢查建置之前就紅(與 storybook-static 存不存在無關)')

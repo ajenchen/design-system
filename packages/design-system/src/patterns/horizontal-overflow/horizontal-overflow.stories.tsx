@@ -152,8 +152,13 @@ export const ArrowUnmountHandsOffFocus: Story = {
   render: () => <FilmstripScrollDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const scroller = canvasElement.querySelector<HTMLElement>('[data-overflow-scroller]')
-    if (!scroller) throw new Error('找不到捲動容器(useScrollEdges 沒有標 data-overflow-scroller)')
+    // 容器的標記由 useScrollEdges 的 effect 在掛載後才寫上;慢的 runner 上 play 可能先於 passive effect 跑到,
+    // 所以等元素本身出現(M32:等那個元素,不用固定睡眠),不拿「第一次查不到」當產品裁決(2026-09-29 CI 首跑抓到)。
+    const scroller = await waitFor(() => {
+      const el = canvasElement.querySelector<HTMLElement>('[data-overflow-scroller]')
+      if (!el) throw new Error('捲動容器尚未被 useScrollEdges 標上 data-overflow-scroller')
+      return el
+    })
     const right = await canvas.findByRole('button', { name: '向右捲動' })
     right.focus()
     await expect(document.activeElement).toBe(right)

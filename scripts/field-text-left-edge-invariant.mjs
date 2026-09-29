@@ -45,7 +45,7 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -168,6 +168,18 @@ try {
           console.error(`  ! 儀器失效 ${s.id}(${error.kind})—— 詳情見結尾清單`)
           continue
         }
+        // 2026-09-29 CI(run 5ade7355):AgentPanel 兩支 story 的欄位量到 19px(應 13px),本機同一份程式 264 個欄位全綠 ——
+        // 那兩支 story 掛載後才開對話框 / 面板,openStory 的版面靜止在動畫**開始前**就過了,慢的 runner 上量到縮放進場的中間值
+        // (M32 第四題「機器慢的時候還會綠嗎」)。量之前先等頁面上所有**有限次**的動畫 / 過渡結束(無限循環的 spinner /
+        // skeleton 永遠不會 finished,第一版沒濾掉、閘在第一支有 spinner 的 story 就卡死;另設 5 秒上限當儀器保險),再等版面靜止。
+        await page.evaluate(() => Promise.race([
+          Promise.allSettled(document.getAnimations()
+            .filter((a) => { const t = a.effect?.getTiming?.(); return !t || Number.isFinite(t.iterations) })
+            .map((a) => a.finished)),
+          new Promise((resolve) => setTimeout(resolve, 5_000)),
+        ]))
+        const settled = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+        if (!settled.ok) { instrumentFailures.push({ story: s.id, detail: `動畫結束後 ${settled.framesWaited} 格內版面沒有靜止(變動 ${settled.lateChanges} 次)` }); continue }
         // 對照組:注入內距後等 30ms 讓樣式生效(量測本身的 getBoundingClientRect 也會強制同步排版,這步只是保險)
         if (SELFTEST) { await page.evaluate(SHIFT); await page.waitForTimeout(30) }
         for (const r of await page.evaluate(PROBE)) {
