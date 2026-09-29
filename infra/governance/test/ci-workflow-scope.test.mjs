@@ -117,14 +117,18 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   //(原本是裸 `npm ci`,被 scripts/audit-workflow-security.mjs 判 WF-LIFECYCLE / SIGNATURE / VULNERABILITY,
   // 讓「Verify authority candidate without credentials」每支 PR 都紅)。
   const installingJobs = Object.entries(workflow.jobs).filter(([id]) => id !== 'verify')
-  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length + 1)
+  // 2026-09-29:參考建置的重裝改用**候選(HEAD)的**治理程式(`setup-authority-governance.mjs --root=tmp/ref-src`),
+  // 不再呼叫參考樹自己的 `setup:dependencies`(main 上那份不認得之後才登記的通報形狀 → 候選一改相依就死在安裝;ad442603 首跑),
+  // 所以 `setup:dependencies` 的出現次數回到「每個會跑程式的 job 各一次」。
+  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length)
   const commandLines = source.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
   assert.equal((commandLines.match(/\bnpm ci\b/g) ?? []).length, 0, 'ci.yml 不得出現裸 npm ci(參考建置也走 setup:dependencies;註解不算)')
   // 2026-09-23:參考建置(main)的 lock 與候選相同時共用候選已驗證的 node_modules,不再第二次安裝 ——
   // 否則「比 main」綁死在「main 裝得起來」,main 上的供應鏈閘一紅,連修它的 PR 都過不了(#153 第一輪)。
   // lock 不同才重裝;symlink 必須在移除 worktree 前先解開。
   const referenceBuild = source.slice(source.indexOf('git worktree add tmp/ref-src'), source.indexOf('git worktree remove --force tmp/ref-src'))
-  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n\s+echo[^\n]*\n\s+\(cd tmp\/ref-src && npm run --silent setup:dependencies\)\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才重裝')
+  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n(?:\s+#[^\n]*\n)*\s+echo[^\n]*\n\s+node "\$GITHUB_WORKSPACE\/scripts\/setup-authority-governance\.mjs" --dependencies-only --root=tmp\/ref-src --vulnerability-policy=report-render-only-reference\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才用候選的治理程式對參考樹安裝(弱點只報告、完整性照擋),不得呼叫參考樹自己的 setup:dependencies')
+  assert.doesNotMatch(referenceBuild, /cd tmp\/ref-src && npm run --silent setup:dependencies/, '參考樹不得再跑自己那份 bootstrap(main 上的舊形狀會把候選鎖死)')
   assert.match(referenceBuild, /\[ -L tmp\/ref-src\/node_modules \] && rm tmp\/ref-src\/node_modules\n\s*$/, '移除 worktree 前必須先解開 symlink')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):

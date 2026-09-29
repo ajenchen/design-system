@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:c58f5c75478ba7fda8b9054e123127d93ffb3ddf5a883ef6a69a3961e68b9e9d",
+      "hash": "sha256:d85dab59c3180d679d2753fd0c2249b9e9271aa2f9311b27699f3572921a5532",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
