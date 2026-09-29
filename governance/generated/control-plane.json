@@ -1467,12 +1467,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:811ed3390a4ff6b4e818a5ce8b5c0ce34e10f48fb443b6177d6e4c8e14fa9670",
+      "hash": "sha256:8537daddc2bc4ad7f5464407ec4ba5e9373b7461ac5a862a8f19cfaf625f4d54",
       "id": "exact-verified-npm-runtime-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/verified-exact-npm-runtime.mjs",
-      "size": 43395,
+      "size": 46247,
       "type": "file"
     },
     {
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 572,
-      "hash": "sha256:73570af6f331541099e81e130ced87bee27f40297702155dec9a3127136f5600",
+      "hash": "sha256:8db6c3bef271d0d4f05dcc79fd4bd0f6c6d40a36229ec6efa89afdd4734e081f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

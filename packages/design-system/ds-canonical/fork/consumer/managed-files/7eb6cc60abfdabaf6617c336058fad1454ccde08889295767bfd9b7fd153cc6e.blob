@@ -291,20 +291,59 @@ async function downloadCanonicalRegistryTarball(url, {
   })
 }
 
-export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000 } = {}) {
-  return downloadCanonicalRegistryTarball(url, {
+// 2026-09-29(ab9a4e1a 那一輪:governance control plane job 在任何閘之前死在「canonical npm download timed out」,
+// PAT 沒有 actions:write 不能重跑;與 09-24 `npm audit` 的 ECONNRESET 同一族)。只對**暫時性傳輸失敗**重試 ——
+// 逾時、連線被重設／拒絕、DNS 暫時失敗、socket hang up、上游 502/503/504 —— 上限 3 次、退避 2s/4s;
+// 契約失敗(非 canonical origin / 重導向 / 內容編碼 / 超出封閉預算 / 長度不符 / 空檔)一律不重試,用盡仍 fail closed、
+// 訊息帶 attempts。下載回來的位元組仍走原本的 SHA-512 / lock digest 驗證,重試不放寬任何完整性檢查。
+// 判定抽成純函式 `isTransientRegistryDownloadFailure`,測試兩面對照(該重試的、不該重試的)。
+export const NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT = 3
+export const NPM_RUNTIME_DOWNLOAD_BACKOFF_MS = 2_000
+const TRANSIENT_DOWNLOAD_REASON = /download timed out|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|EPIPE|socket hang up|download returned HTTP 50[234]\b/i
+const CONTRACT_DOWNLOAD_REASON = /outside the canonical registry contract|unexpected content encoding|closed archive budget|differs from Content-Length|download is empty/i
+export function isTransientRegistryDownloadFailure(error) {
+  const text = String(error?.message || '')
+  return TRANSIENT_DOWNLOAD_REASON.test(text) && !CONTRACT_DOWNLOAD_REASON.test(text)
+}
+
+export async function downloadWithTransientRetry(attempt, {
+  label = 'canonical registry',
+  retryLimit = NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT,
+  backoffMs = NPM_RUNTIME_DOWNLOAD_BACKOFF_MS,
+  sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+  report = (line) => console.error(line),
+} = {}) {
+  invariant(typeof attempt === 'function', `${label} download attempt must be a function`)
+  invariant(Number.isInteger(retryLimit) && retryLimit >= 1, `${label} download retry limit must be a positive integer`)
+  for (let attemptNumber = 1; ; attemptNumber += 1) {
+    try {
+      return await attempt(attemptNumber)
+    } catch (error) {
+      if (!isTransientRegistryDownloadFailure(error)) throw error
+      if (attemptNumber >= retryLimit) {
+        throw new Error(`${String(error?.message || error)}(after ${attemptNumber} attempts)`)
+      }
+      const wait = backoffMs * attemptNumber
+      report(`⚠️  GOV-NPM-RUNTIME-001:${label} download transient failure(attempt ${attemptNumber}/${retryLimit}),retrying in ${wait}ms:${String(error?.message || error).slice(0, 240)}`)
+      await sleep(wait)
+    }
+  }
+}
+
+export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report } = {}) {
+  return downloadWithTransientRetry(() => downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm',
     pathPattern: /^\/npm\/-\/npm-\d+\.\d+\.\d+\.tgz$/,
     timeoutMs,
-  })
+  }), { label: 'canonical npm', retryLimit, backoffMs, sleep, report })
 }
 
-export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000 } = {}) {
-  return downloadCanonicalRegistryTarball(url, {
+export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report } = {}) {
+  return downloadWithTransientRetry(() => downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm security overlay',
     pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.9|tar\/-\/tar-7\.5\.22)\.tgz$/,
     timeoutMs,
-  })
+  }), { label: 'canonical npm security overlay', retryLimit, backoffMs, sleep, report })
 }
 
 function decodeTarField(header, offset, length, label) {
