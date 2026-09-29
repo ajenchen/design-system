@@ -198,7 +198,26 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
       continue
     }
 
-    await page.mouse.click(display.left + display.width / 2, display.top + 20)
+    if (t.editEntry === 'pencil') {
+      // url 型別的入口不是點格 / 鍵盤,是滑過格子後才出現的 Pencil 鈕(cell-registry.tsx UrlCell `aria-label="編輯連結"`;
+      // 缺陷 T,2026-09-29 補):真的把指標移進格子讓它顯出來,再點鈕本身 —— 不用 JS `.click()` 跳過揭示(M32)。
+      await page.mouse.move(display.left + display.width / 2, display.top + display.height / 2)
+      await page.waitForTimeout(200) // 等滑過揭示(hover 回饋不做過渡,這裡等的是 hover 事件派發後的重繪)
+      const pencil = await page.evaluate(({ row, col }) => {
+        const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
+        const btn = cell?.querySelector('button[aria-label="編輯連結"]')
+        if (!btn) return null
+        const r = btn.getBoundingClientRect()
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2, opacity: getComputedStyle(btn).opacity, w: r.width }
+      }, t)
+      if (!pencil || pencil.w === 0 || Number(pencil.opacity) === 0) {
+        record('I1', `${t.label} display↔edit cell width 一致`, false, `滑過後找不到可見的 Pencil 鈕(I1 真測路徑未進入):${JSON.stringify(pencil)}`)
+        continue
+      }
+      await page.mouse.click(pencil.x, pencil.y)
+    } else {
+      await page.mouse.click(display.left + display.width / 2, display.top + 20)
+    }
     await page.waitForTimeout(500) // 等點擊後儲存格切進 edit 態(Field 掛上 + 版面重算)
 
     const edit = await page.evaluate(({ row, col }) => {
@@ -215,15 +234,16 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
     await page.waitForTimeout(300) // 等 Escape 退出 edit 態回到 display
 
     if (!edit) {
-      // 沒進 edit mode。**只有 boolean 與 url 是設計上就沒有 in-cell 編輯欄位的**,而且那是
-      // 程式碼裡明文排除的兩種:`data-table.tsx` 的鍵盤進 edit 判斷寫死
-      // `meta.type !== 'boolean' && meta.type !== 'url'`。這兩種標成 SKIP 並印出來,
+      // 沒進 edit mode。**只有 boolean 是設計上就沒有 in-cell 編輯欄位的**(Checkbox 直接 toggle);
+      // `data-table.tsx` 的鍵盤進 edit 判斷寫死 `meta.type !== 'boolean' && meta.type !== 'url'` 是**入口排除**,
+      // url 仍有 in-cell 編輯欄位,只是入口是滑過後的 Pencil(上方 `editEntry: 'pencil'` 路徑;2026-09-29 之前這裡把 url
+      // 也寫成「設計上就沒有」而跳過,缺陷 T 登記待補的就是這一格)。boolean 標成 SKIP 並印出來,
       // 讓覆蓋範圍是「明示的」而不是「靜默的」;其餘型別沒進 edit 就是真的壞了,照樣紅。
       // (2026-09-04 逐格實測校正:multiSelect / person / multiPerson / date / time **都有**
       //  in-cell Field —— date 會同時開 Popover,但 cell 內仍有 `data-field-mode="edit"`。
       //  原本我憑印象把這五種標成「走 Popover 不適用」,量過才發現是錯的。)
       if (t.noInCellField) {
-        console.log(`⏭  I1-4 ${t.label} — 設計上無 in-cell 編輯欄位(data-table.tsx 鍵盤 edit 判斷明文排除),不適用 0-delta 斷言`)
+        console.log(`⏭  I1-4 ${t.label} — 設計上無 in-cell 編輯欄位(Checkbox 直接 toggle;data-table.tsx 鍵盤 edit 判斷明文排除),不適用 0-delta 斷言`)
         continue
       }
       record('I1', `${t.label} display↔edit cell width 一致`, false, 'no edit field — I1 真測路徑未進入')
@@ -264,7 +284,8 @@ await checkDisplayEditStability('design-system-components-datatable-展示--inli
   { row: 0, col: 6, label: 'Owner(person)' },
   { row: 0, col: 7, label: 'Reviewers(multiPerson)' },
   { row: 0, col: 8, label: 'In(boolean)', noInCellField: true },
-  { row: 0, col: 9, label: 'URL(url)', noInCellField: true },
+  // url:入口是滑過後的 Pencil 鈕(缺陷 T「登記待補」→ 2026-09-29 補上;edit 態是 naked Input,帶 data-field-mode="edit")
+  { row: 0, col: 9, label: 'URL(url,Pencil 入口)', editEntry: 'pencil' },
   { row: 0, col: 10, label: 'Price(currency)' },
   { row: 0, col: 11, label: 'Release(date)' },
   { row: 0, col: 12, label: 'Reminder(time)' },
@@ -2432,6 +2453,183 @@ for (const [label, r, c, kind] of [
   ok = await settled()
   const afterDown = await cursorOf()
   record('I33', `${label}:之後按 ↓ 從新位置往下走(→ ${belowId})`, ok && afterDown === belowId, `↓ 後 ${afterDown}`)
+}
+
+/* ── I34:勾選格整格可點(2026-09-29,待辦總帳 N13 ②)──────────────────────────────────────
+ * 要保證的性質(逐字):選取欄的列身格,點在勾選框**之外**的格內空白處也會切換這一列的選取(容器 div 掛 onClick + cursor-pointer,
+ * `hit-area-canonical.md` 對照表第 13 列「整格(約 40px)」;2026-09-24 曾拿「懸停回饋形狀 ≡ 命中區」把 onClick 拿掉,查四家一手 0/4 成立,當天改回)。
+ * SSOT:data-table.spec.md「L2 Selection」+ hit-area-canonical.md 第 13 列。
+ * 儀器對照:(1) 落點用 elementFromPoint 證明屬於那一格、且不在勾選框 / 任何控件裡,找不到 = 儀器失效;
+ *   (2) 點勾選框本身必須切回來(證明狀態讀得到、勾選框自己沒壞);(3) 點旁邊的資料格不得切換(證明不是「點哪裡都選」)。
+ * 對照組:test-data-table-invariants.mjs 在建置複本注入 `[data-column-id="__select__"]{pointer-events:none}`(子代 auto)
+ *   = 空白處點不到容器 → 必紅。 */
+{
+  const SEL_STORY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--selection-keyboard-and-shift&viewMode=story`
+  const SEL_CELL = '[role="row"][data-row-index="1"] [data-column-id="__select__"]'
+  await loadStory(SEL_STORY, SEL_CELL)
+  const geo = await page.evaluate((sel) => {
+    const cell = document.querySelector(sel)
+    const box = cell?.querySelector('[role="checkbox"]')
+    if (!cell || !box) return null
+    const c = cell.getBoundingClientRect(); const b = box.getBoundingClientRect()
+    const interactive = 'button, a[href], input, [role="checkbox"], [role="radio"]'
+    let blank = null
+    for (let x = c.left + 3; x < b.left - 1; x += 1) {
+      const y = c.top + c.height / 2
+      const el = document.elementFromPoint(x, y)
+      if (el && cell.contains(el) && !el.closest(interactive)) { blank = { x, y }; break }
+    }
+    // 對照用的資料格:同一個 data-row-index 的任一個不是選取欄的格。選取欄住在凍結區,凍結區與中央區各自渲染自己的
+    // [role="row"](同一個 data-row-index),所以不能只在選取格自己的 row 裡找。
+    const rowIndex = cell.closest('[role="row"]')?.getAttribute('data-row-index')
+    const dataCell = rowIndex == null ? null
+      : document.querySelector(`[role="row"][data-row-index="${rowIndex}"] :is([role="cell"], [role="gridcell"]):not([data-column-id="__select__"])`)?.getBoundingClientRect()
+    return { cell: { w: c.width, h: c.height }, box: { x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width }, blank,
+      data: dataCell ? { x: dataCell.left + dataCell.width / 2, y: dataCell.top + dataCell.height / 2 } : null }
+  }, SEL_CELL)
+  const checked = () => page.evaluate((sel) => document.querySelector(`${sel} [role="checkbox"]`)?.getAttribute('aria-checked') ?? null, SEL_CELL)
+  const before = await checked()
+  if (!geo || !geo.blank || !geo.data || before !== 'false') {
+    record('I34', '儀器', false, `INSTRUMENT-FAIL 找不到勾選格 / 格內勾選框以外的空白落點 / 旁邊的資料格,或起始狀態不是未勾(${JSON.stringify({ geo, before })})`)
+  } else {
+    await page.mouse.click(geo.blank.x, geo.blank.y)
+    let ok = await settled()
+    const afterBlank = await checked()
+    record('I34', `勾選格空白處(x=${geo.blank.x.toFixed(1)},勾選框左緣外 ${(geo.box.x - geo.box.w / 2 - geo.blank.x).toFixed(1)}px)點下去 → 這一列勾起來`, ok && afterBlank === 'true', `aria-checked ${before} → ${afterBlank}`)
+    await page.mouse.click(geo.box.x, geo.box.y)
+    ok = await settled()
+    const afterBox = await checked()
+    record('I34', '對照:點勾選框本身 → 切回未勾(狀態讀得到、勾選框沒壞)', ok && afterBox === 'false', `aria-checked ${afterBlank} → ${afterBox}`)
+    await page.mouse.click(geo.data.x, geo.data.y)
+    ok = await settled()
+    const afterData = await checked()
+    record('I34', '對照:點旁邊的資料格 → 不切換(不是點哪裡都選)', ok && afterData === 'false', `aria-checked ${afterBox} → ${afterData}`)
+    await page.mouse.move(0, 0)
+  }
+}
+
+/* ── I35:試算表 Shift+方向鍵擴大區間(2026-09-29,待辦總帳 N46)──────────────────────────────
+ * 要保證的性質(逐字):有格游標時按 Shift+方向鍵,起點(格游標 `[data-selected-cell-id]`)不動、區間(`[data-range-cell]`)往那個方向長一格;
+ * 第二下從上一次的終點繼續;放開 Shift 再按方向鍵 = 一般移動,區間清空、游標移到新格。
+ * SSOT:data-table.spec.md「Keyboard 行為」Shift+↑↓←→ 條(AG Grid / MUI X 一手引文在該條)。
+ * 儀器對照:先證明起點格游標真的在 (0,1)(否則「不動」是空話);對照組 = test-data-table-invariants.mjs 在建置複本的 iframe.html
+ *   注入捕獲階段吞掉 Shift+方向鍵的 script(= 2026-09-29 前 Shift 被忽略的形狀)→ 必紅。 */
+{
+  await loadStory(SHEET_URL, SHEET_READY)
+  const id01 = await sheetCellId(0, 1); const id11 = await sheetCellId(1, 1); const id21 = await sheetCellId(2, 1); const id02 = await sheetCellId(0, 2)
+  const start = await sheetCellBox(id01)
+  const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  const rangeIds = () => page.evaluate(() => [...document.querySelectorAll('[data-range-cell]')].map((el) => el.getAttribute('data-cell-id')).sort())
+  if (!start || !id01 || !id11 || !id21 || !id02) record('I35', '儀器', false, 'INSTRUMENT-FAIL 找不到 (0,1) / (1,1) / (2,1) / (0,2) 格')
+  else {
+    await page.mouse.click(start.x + start.width / 2, start.y + start.height / 2)
+    let ok = await settled()
+    const c0 = await cursorOf()
+    if (!ok || c0 !== id01) record('I35', '儀器', false, `INSTRUMENT-FAIL 點 (0,1) 後格游標應在 ${id01},實得 ${c0}`)
+    else {
+      await page.keyboard.press('Shift+ArrowDown'); ok = (await settled()) && ok
+      const r1 = await rangeIds(); const c1 = await cursorOf()
+      await page.keyboard.press('Shift+ArrowDown'); ok = (await settled()) && ok
+      const r2 = await rangeIds(); const c2 = await cursorOf()
+      record('I35', 'Shift+↓ 一下:區間 = (0,1)+(1,1),起點不動', ok && JSON.stringify(r1) === JSON.stringify([id01, id11].sort()) && c1 === id01, `區間 ${JSON.stringify(r1)} / 游標 ${c1}`)
+      record('I35', 'Shift+↓ 第二下:區間從上一次的終點長到 (2,1),起點仍不動', ok && JSON.stringify(r2) === JSON.stringify([id01, id11, id21].sort()) && c2 === id01, `區間 ${JSON.stringify(r2)} / 游標 ${c2}`)
+      await page.keyboard.press('ArrowRight'); ok = (await settled()) && ok
+      const r3 = await rangeIds(); const c3 = await cursorOf()
+      record('I35', '放開 Shift 按 →:一般移動,區間清空、游標到 (0,2)', ok && r3.length === 0 && c3 === id02, `區間 ${JSON.stringify(r3)} / 游標 ${c3}`)
+      await page.keyboard.press('Shift+ArrowLeft'); ok = (await settled()) && ok
+      const r4 = await rangeIds(); const c4 = await cursorOf()
+      record('I35', '再 Shift+←:從新起點 (0,2) 往左長到 (0,1),起點不動', ok && JSON.stringify(r4) === JSON.stringify([id01, id02].sort()) && c4 === id02, `區間 ${JSON.stringify(r4)} / 游標 ${c4}`)
+    }
+  }
+}
+
+/* ── I36:編輯中再按 F2 = 結算、回到格導覽(2026-09-29,待辦總帳 N46)──────────────────────────
+ * 要保證的性質(逐字):文字型可編輯格(Product)按 F2 進編輯;打字後再按 F2 → 編輯器關閉、值留著(commit)、格游標回到同一格;
+ * 之後方向鍵從這一格繼續走(格導覽已還原)。
+ * SSOT:keyboard-model-canonical.md「F2 恆為進到格裡的控件,再按一次回到格導覽」(APG "A subsequent press of F2 restores grid navigation functions.");
+ *   data-table.spec.md「Keyboard 行為」Enter / F2 條;實作 field-edit-keys.ts `commitOnF2`。
+ * 儀器對照:先證明 F2 真的開了編輯器、焦點在輸入框(否則「再按 F2 關掉」是空話);對照組 = test-data-table-invariants.mjs 注入
+ *   捕獲階段吞掉輸入框裡 F2 的 script(= 2026-09-29 前 F2 在編輯中無作用)→ 必紅。 */
+{
+  await loadStory(SHEET_URL, SHEET_READY)
+  const id21 = await sheetCellId(2, 1); const id31 = await sheetCellId(3, 1)
+  const box = await sheetCellBox(id21)
+  const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  const editors = () => page.evaluate(() => document.querySelectorAll('[data-active-editor-host] input, [data-active-editor-host] textarea, [data-field-mode="edit"] input, [data-field-mode="edit"] textarea').length)
+  const cellText = () => page.evaluate((id) => document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)?.textContent?.trim() ?? null, id21)
+  if (!box || !id21 || !id31) record('I36', '儀器', false, 'INSTRUMENT-FAIL 找不到 (2,1) / (3,1) 格')
+  else {
+    const textBefore = await cellText()
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    let ok = await settled()
+    await page.keyboard.press('F2'); ok = (await settled()) && ok
+    const opened = await editors()
+    const focusIsInput = await page.evaluate(() => ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName ?? ''))
+    if (!ok || opened !== 1 || !focusIsInput) record('I36', '儀器', false, `INSTRUMENT-FAIL F2 沒有把 (2,1) 打開成編輯器(編輯器 ${opened} 個,焦點在輸入框=${focusIsInput})`)
+    else {
+      await page.keyboard.press('End')
+      await page.keyboard.type(' 補', { delay: 20 })
+      await page.keyboard.press('F2'); ok = (await settled()) && ok
+      const closed = await editors(); const c = await cursorOf(); const textAfter = await cellText()
+      record('I36', '編輯中再按 F2:編輯器關閉、格游標回到同一格', ok && closed === 0 && c === id21, `編輯器 ${closed} 個 / 游標 ${c}`)
+      record('I36', '編輯中再按 F2:打的字留著(結算,不是丟掉)', ok && textAfter !== null && textBefore !== null && textAfter.endsWith('補') && textAfter !== textBefore, `「${textBefore}」→「${textAfter}」`)
+      await page.keyboard.press('ArrowDown'); ok = (await settled()) && ok
+      const cDown = await cursorOf()
+      record('I36', 'F2 出格後 ↓ 從同一格往下走(格導覽已還原)', ok && cDown === id31, `↓ 後 ${cDown}`)
+    }
+  }
+}
+
+// ── I37:填滿高度(height="100%")量的是 outer 真正拿到的格子,而且表頭 / 兄弟變高要重算(2026-09-29,待辦總帳 OE3)──
+// SSOT:data-table.spec.md「二、高度模式」。兩面對照(改前的建置實測):父層加 40px 內距 → 表身底比外框底多 39px、
+// 表頭墊高 20px → 多 19px(外框 overflow:hidden 把水平捲軸與最後一列裁掉)。改後兩者都要 ≤ 1px,且 body 上限恰好少掉注入量。
+// 量法:取像素(getBoundingClientRect),不是讀 style 字面;每次注入後等版面連續靜止(100ms 穩定窗 + rAF 都在裡面)。
+{
+  // 本段自己印每一條(檔尾只印失敗;這段是 2026-09-29 新閘,通過與否都要看得到)
+  const rec = (label, ok, detail = '') => { record('I37', label, ok, detail); console.log(`${ok ? '✓' : '✗'} I37 | ${label}${detail ? ' | ' + detail : ''}`) }
+  await page.setViewportSize({ width: 1400, height: 700 })
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story`, '[data-datatable-panel="center"] [role="row"]')
+  const measureFill = () => page.evaluate(() => {
+    const root = document.querySelector('[role="table"], [role="grid"]')
+    const body = document.querySelector('[data-datatable-panel="center"]')
+    if (!root || !body) return null
+    let parent = root.parentElement
+    while (parent && getComputedStyle(parent).display === 'contents') parent = parent.parentElement
+    const pcs = getComputedStyle(parent)
+    const pr = parent.getBoundingClientRect()
+    const px = (v) => parseFloat(v) || 0
+    const R = root.getBoundingClientRect(), B = body.getBoundingClientRect(), H = root.firstElementChild.getBoundingClientRect()
+    return { rootBottom: R.bottom, parentContentBottom: pr.bottom - px(pcs.paddingBottom) - px(pcs.borderBottomWidth), bodyBottom: B.bottom, bodyMax: px(body.style.maxHeight), headerH: H.height, overflow: getComputedStyle(root).overflow, rows: body.querySelectorAll('[role="row"]').length }
+  })
+  // 注入之後等的是**上限真的被重算**(body 的 maxHeight 換了值;元件 100ms 穩定窗 + rAF 都在裡面),不是固定睡眠也不是「版面靜了」
+  // 的代理(靜止判定會在穩定窗還沒到之前就回來,2026-09-29 第一版就是這樣量到 590 → 590);3 秒還沒換 = 沒重算(產品裁決,紅)。
+  const inject = async (fn, arg) => {
+    const before = await page.evaluate(() => document.querySelector('[data-datatable-panel="center"]')?.style.maxHeight ?? null)
+    await page.evaluate(fn, arg)
+    const changed = await page.waitForFunction((prev) => (document.querySelector('[data-datatable-panel="center"]')?.style.maxHeight ?? null) !== prev, before, { timeout: 3000, polling: 'raf' }).then(() => true).catch(() => false)
+    const s = await settleAfterInteraction(page, { frames: 10, capMs: 4000 })
+    return changed && s.ok
+  }
+  const fillBase = await measureFill()
+  if (!fillBase) rec('填滿高度:找得到外框 / 中央表身', false, 'selector 找不到')
+  else {
+    // 前提:這支 story 的資料多到會被上限裁(否則 hug 狀態下「表身底 ≤ 外框底」恆真,下面的斷言空轉)
+    rec('前提:外框撐到父層內容盒底(資料超過格子,填滿而非 hug)', Math.abs(fillBase.rootBottom - fillBase.parentContentBottom) <= 1 && fillBase.bodyMax > 0, JSON.stringify(fillBase))
+    rec('自然狀態:表身底不超出外框底(外框 overflow:hidden 才會裁)', fillBase.bodyBottom <= fillBase.rootBottom + 1, `body ${fillBase.bodyBottom} / root ${fillBase.rootBottom}`)
+    const PAD = 40, HEAD = 20
+    const padOk = await inject((n) => { let p = document.querySelector('[role="table"], [role="grid"]').parentElement; while (p && getComputedStyle(p).display === 'contents') p = p.parentElement; p.style.paddingBottom = `${n}px` }, PAD)
+    const padded = await measureFill()
+    rec(`父層加 ${PAD}px 內距:外框跟著父層內容盒縮、表身底 ≤ 外框底(量的是內容盒不是 border-box)`, padOk && padded.bodyBottom <= padded.rootBottom + 1 && Math.abs(padded.rootBottom - padded.parentContentBottom) <= 1, JSON.stringify(padded))
+    rec(`父層加 ${PAD}px 內距:body 上限恰好少 ${PAD}(±1)`, Math.abs((fillBase.bodyMax - padded.bodyMax) - PAD) <= 1, `${fillBase.bodyMax} → ${padded.bodyMax}`)
+    await inject(() => { let p = document.querySelector('[role="table"], [role="grid"]').parentElement; while (p && getComputedStyle(p).display === 'contents') p = p.parentElement; p.style.paddingBottom = '' })
+    const restored = await measureFill()
+    rec('拿掉內距後 body 上限回到原值', Math.abs(restored.bodyMax - fillBase.bodyMax) <= 1, `${restored.bodyMax} vs ${fillBase.bodyMax}`)
+    const headOk = await inject((n) => { document.querySelector('[role="table"], [role="grid"]').firstElementChild.style.paddingBottom = `${n}px` }, HEAD)
+    const tallHeader = await measureFill()
+    rec(`表頭墊高 ${HEAD}px(父層盒子不變):表身重算、底 ≤ 外框底(表頭在觀察名單上)`, headOk && tallHeader.headerH >= fillBase.headerH + HEAD - 1 && tallHeader.bodyBottom <= tallHeader.rootBottom + 1, JSON.stringify(tallHeader))
+    rec(`表頭墊高 ${HEAD}px:body 上限恰好少 ${HEAD}(±1)`, Math.abs((fillBase.bodyMax - tallHeader.bodyMax) - HEAD) <= 1, `${fillBase.bodyMax} → ${tallHeader.bodyMax}`)
+    await inject(() => { document.querySelector('[role="table"], [role="grid"]').firstElementChild.style.paddingBottom = '' })
+  }
 }
 
 if (failures.length > 0) {

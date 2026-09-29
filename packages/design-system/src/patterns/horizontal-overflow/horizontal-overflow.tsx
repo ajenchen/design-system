@@ -152,8 +152,35 @@ export const OverflowScrollArrow: React.FC<OverflowScrollArrowProps> = ({
   'aria-label': ariaLabel,
 }) => {
   const defaultLabel = direction === 'left' ? '向左捲動' : '向右捲動' // i18n-allow: DS default; consumer override via aria-label prop
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  // ── 焦點接力(2026-09-29,待辦總帳 OE26)──
+  // 箭頭是條件渲染(spec「典型 scroll 模式組裝」:`!atEnd && canScroll`),鍵盤使用者按到底的那一下,焦點正停在它上面,
+  // 卸載會讓焦點掉到 body、下一次 Tab 從文件開頭重來。layout-effect 的 cleanup 在 React 把節點拿掉之前跑,此時 activeElement
+  // 還是這顆鈕 → 交給同一個容器裡的另一側箭頭(到底時左箭頭一定在);另一側也沒有(內容不再溢出)→ 交給捲動容器本身
+  //(`useScrollEdges` 在容器上標 `data-overflow-scroller`,焦點給它時補 tabindex=-1)。同 BulkActionBar 的 return-focus,沒有新 prop。
+  React.useLayoutEffect(() => {
+    const el = buttonRef.current
+    return () => {
+      if (!el || document.activeElement !== el) return
+      const host = el.closest<HTMLElement>('[data-overflow-arrow]')?.parentElement
+      if (!host) return
+      // 等這次 commit 做完再找另一側:同一次 commit 常常「卸掉這一側、掛上另一側」(捲回起點:左箭頭卸、右箭頭掛),
+      // React 先做刪除再做插入,cleanup 當下另一側還不在 DOM 裡 —— 2026-09-29 第一版在這裡直接找,story 閘抓到焦點落到容器而不是箭頭。
+      queueMicrotask(() => {
+        const active = document.activeElement
+        if (active && active !== document.body && host.contains(active)) return // 已有人接手(例如消費者自己搬了焦點)
+        const other = Array.from(host.querySelectorAll<HTMLElement>('[data-overflow-arrow] button')).find((b) => b !== el && b.isConnected)
+        if (other) { other.focus({ preventScroll: true }); return }
+        const scroller = host.querySelector<HTMLElement>('[data-overflow-scroller]')
+        if (!scroller) return
+        if (!scroller.hasAttribute('tabindex')) scroller.setAttribute('tabindex', '-1')
+        scroller.focus({ preventScroll: true })
+      })
+    }
+  }, [])
   return (
     <div
+      data-overflow-arrow={direction}
       className={cn(
         'absolute top-0 bottom-0 flex items-center pointer-events-none z-10',
         direction === 'left' ? 'left-0' : 'right-0',
@@ -161,6 +188,7 @@ export const OverflowScrollArrow: React.FC<OverflowScrollArrowProps> = ({
     >
       <div className="pointer-events-auto">
         <Button
+          ref={buttonRef}
           variant="text"
           size="sm"
           iconOnly

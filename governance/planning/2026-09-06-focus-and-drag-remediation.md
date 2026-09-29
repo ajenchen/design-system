@@ -4207,6 +4207,10 @@ DataTable 範圍內 332 條不變式全過。
 - hover 長尾仍在(約每 10–16 次一次 ~400ms),且原本的門檻設計抓不到(已修 ④,但中位數門檻仍會平均掉它)
 - 2× 的呈現幀距 branch 273 vs main 216(1.27×)踩過專案自訂的 1.25 上限;n=5 分布重疊,**未定案**,
   而 CI 明文不疊 CPU 節流 → 這個可疑點結構上不會被任何 PR 檢查抓到
+  → **2026-09-29 結案(AUTO,量測判準屬工程)**:那個 1.27× 是 2× CPU 節流下 n=5 的「單趟最長」比值,而同一支儀器**同一份建置內部**的
+  單趟最長散布就達 1.8×(`scripts/data-table-fast-scroll.mjs:999`,09-19/20 因此把比值判定改成聚合量、單趟最長只印診斷 `:1003-1028`);
+  儀器雜訊比觀察到的差值還寬,該數字不帶資訊,不另立 2× 節流閘(CI 明文不疊節流的理由同檔 `:10`)。釘選區捲動本身的 PR 閘已接上:
+  `ci.yml` verify-browser-datatable 加 `--mode=pinned --selftest` 與 `--mode=pinned --runs=3 --ref=main`(長工合計 ≤ 300ms、幀距 ≤ 600ms、比值不比 main 差)。
 - **CI 沒有任何 wheel / pinned 模式的閘**(`grep -c "mode=wheel\|mode=pinned" ci.yml` = 0)——
   user 的真實情境(Chrome 開預覽、用滾輪捲)零覆蓋
 - 視覺稽查主線對那三個缺陷貢獻是 0(124 scenario / 12 個 hover / **0 個幾何斷言** / **0 個 dark mode 場景**);

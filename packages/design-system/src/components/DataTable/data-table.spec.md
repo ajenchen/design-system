@@ -75,7 +75,7 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 
 ### 二、高度模式(有高度約束 vs 無高度約束,決定可用的功能組合)
 
-- **有高度約束**(固定 `height="400px"` 等具體 px/rem,或 `height="100%"` 由父 flex 提供約束,Linear 做法——都走相同 cap 行為,無 dead surface):資料少→outer 內容高度;資料多→撐到上限後內部 scroll(虛擬捲動啟用,header 固定)
+- **有高度約束**(固定 `height="400px"` 等具體 px/rem,或 `height="100%"` 由父 flex 提供約束,Linear 做法——都走相同 cap 行為,無 dead surface):資料少→outer 內容高度;資料多→撐到上限後內部 scroll(虛擬捲動啟用,header 固定)。**填滿高度量的是 outer 真正拿到的格子**(2026-09-29,待辦總帳 OE3):父層**內容盒**(扣 padding / border)減掉同一個流向裡的剛性兄弟(工具列、分頁列;`flex-grow > 0` 的兄弟不扣)與 gap;表頭與每個兄弟都在觀察名單上(表頭變高、分頁列後出現都會重算)。同一個父層放兩張填滿高度的表格不支援(各給自己的格子)。閘 `scripts/data-table-invariants.mjs` I37。
 - **無高度約束**(auto):內容決定高度,table 框只包住內容;適合少量資料、預覽、嵌入式表格。犧牲:無虛擬捲動(全部渲染)、header 隨頁面捲走、水平捲軸在 table 最底部——這些不是 bug,是模式的取捨
 
 ### 三、三區域架構（AG Grid 模式）
@@ -654,7 +654,8 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 
 **Keyboard 行為**(目前實作 — `tableKeyboardHandler`):
 - ↑↓←→:cell-to-cell navigation **僅 `spreadsheetMode` opt-in 時生效**;selection 尚未建立時按方向鍵自動選取第一個 visible cell(鍵盤可直接進入 spreadsheet 導覽,無需滑鼠 click — 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」,2026-07-05 D4 補);預設模式方向鍵無作用
-- Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url 時);**Enter 確認後維持原格不下移**(2026-07-05 user 拍板;10 家實查:Excel 系 7 家下移、AG Grid 預設維持原格 — 採 AG Grid 派,數據 → `.claude/logs/deep-audit-2026-07-03/enter-commit-navigation-benchmark.json`;未來連續輸入需求可重議 opt-in);**edit 退出(commit / Esc)後 selection 還原至該 cell、焦點還給 table root**(editor unmount 後焦點掉到 body 才收回,不搶 user 點擊的新焦點 — 對齊 spreadsheet RFC Contract 11 + Excel / AG Grid,2026-07-05 D4 補)
+- Shift+↑↓←→(2026-09-29,待辦總帳 N46;WCAG 2.1.1「Shift+點擊做得到的,鍵盤也要做得到」):從格游標(起點)往那個方向**擴大 / 縮小區間**——起點與藍框不動(同 Shift+點擊:起點永遠是 `selectedCellId`),動的是終點;第二下起從上一次的終點繼續;放開 Shift 再按方向鍵 = 一般移動、區間重設為單格。一手:AG Grid "Focusing a cell and then holding down ⇧ Shift and using the arrow keys will create a range starting from the focused cell."(<https://www.ag-grid.com/javascript-data-grid/cell-selection/>);MUI X "Use the arrow keys to focus on a cell, then hold Shift and navigate to another cell—if Shift is released and pressed again then the selection will restart from the last focused cell."(<https://mui.com/x/react-data-grid/cell-selection/>;本 DS 重設回**起點**而非「上一次的終點」,對齊本檔既有 Shift+點擊 canonical)。2026-09-29 前方向鍵一律重設起點、Shift 被忽略
+- Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url 時);**Enter 確認後維持原格不下移**(2026-07-05 user 拍板;10 家實查:Excel 系 7 家下移、AG Grid 預設維持原格 — 採 AG Grid 派,數據 → `.claude/logs/deep-audit-2026-07-03/enter-commit-navigation-benchmark.json`;未來連續輸入需求可重議 opt-in);**edit 退出(commit / Esc)後 selection 還原至該 cell、焦點還給 table root**(editor unmount 後焦點掉到 body 才收回,不搶 user 點擊的新焦點 — 對齊 spreadsheet RFC Contract 11 + Excel / AG Grid,2026-07-05 D4 補);**編輯中再按 `F2` = 結算、回到格導覽**(2026-09-29,待辦總帳 N46;跨元件規則 `ds-canonical/references/keyboard-model-canonical.md`「`F2` 恆為進到格裡的控件,再按一次回到格導覽」,APG Grid 逐字 "A subsequent press of F2 restores grid navigation functions.";值留著 = commit,因為 APG 只把「還原」寫在 Escape 那一條,本元件的 Esc 已是取消編輯;只有文字型編輯器(string / number / url)吃這個鍵,浮層型(date / select / person)的出口仍是選值或點外面;實作 = `../Field/field-edit-keys.ts` `commitOnF2`,`cell-registry.tsx` makeKeyHandler 傳 true)
   - **兩個鍵都給的理由是跨元件規則**(owner → `ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵」):**`F2` 恆為進格;`Enter` 在該格的主要動作沒有佔走它時,也是進格**。本元件的檢視態儲存格沒有主要動作,所以兩個都給;`Calendar` 日期鈕的 `Enter` 被「選這一天」佔走,所以只給 `F2`。新元件照這條判,不要再逐案挑鍵。
 - Cmd/Ctrl+A:`mode="multi"` selection 時選全可見列(扣 disabled)
 - Esc:取消 editing(spreadsheet)/ 未在編輯時清格游標與區間(spreadsheet;焦點框改由表格根節點畫)/ 清 selection(selection mode);**IME 組字中的 Enter / Esc 不觸發 commit / cancel**(cell editor 帶 `isComposing` guard,2026-07-05 D4 補 — 中文選字 Enter 不誤提交半截組字)

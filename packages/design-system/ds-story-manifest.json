@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-26T16:11:13.748Z"
+    "generatedAt": "2026-09-29T06:35:03.111Z"
   },
   "components": {
     "accordion": {
@@ -77,7 +77,8 @@
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
-          "design-system-components-agentpanel-展示--url-registry-demo"
+          "design-system-components-agentpanel-展示--url-registry-demo",
+          "design-system-components-agentpanel-展示--unsaved-changes-guard"
         ],
         "設計規格": [
           "design-system-components-agentpanel-設計規格--overview",
@@ -253,7 +254,8 @@
         "展示": [
           "design-system-components-bulkactionbar-展示--default",
           "design-system-components-bulkactionbar-展示--with-extend-dataset-hint",
-          "design-system-components-bulkactionbar-展示--empty-selection-hidden"
+          "design-system-components-bulkactionbar-展示--empty-selection-hidden",
+          "design-system-components-bulkactionbar-展示--focus-returns-after-clear"
         ],
         "設計規格": [
           "design-system-components-bulkactionbar-設計規格--overview",
@@ -309,8 +311,10 @@
       "tiers": {
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
+          "design-system-components-calendar-展示--launch-week",
           "design-system-components-calendar-展示--content-publishing-schedule",
-          "design-system-components-calendar-展示--empty-calendar"
+          "design-system-components-calendar-展示--empty-calendar",
+          "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
         ],
         "設計規格": [
           "design-system-components-calendar-設計規格--overview",
@@ -1515,6 +1519,7 @@
         "展示": [
           "design-system-components-sidebar-展示--icon-collapse",
           "design-system-components-sidebar-展示--action-hover-state",
+          "design-system-components-sidebar-展示--group-action",
           "design-system-components-sidebar-展示--mixed-content",
           "design-system-components-sidebar-展示--offcanvas",
           "design-system-components-sidebar-展示--integration-sidebar"
@@ -1808,6 +1813,7 @@
           "design-system-components-treeview-展示--stepper",
           "design-system-components-treeview-展示--with-checkbox",
           "design-system-components-treeview-展示--row-actions",
+          "design-system-components-treeview-展示--delete-handoff",
           "design-system-components-treeview-展示--long-label",
           "design-system-components-treeview-展示--drag-and-drop"
         ],
@@ -1832,5 +1838,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1000
+  "totalStories": 1006
 }

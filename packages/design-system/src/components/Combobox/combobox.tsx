@@ -644,7 +644,11 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass, className)}
+        wrap ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass,
+        // 停用:外框是 cursor-not-allowed(fieldWrapperStyles disabled compound),但裡面的 Tag 自帶 cursor-text,指到 tag 上就變回文字游標
+        //(2026-09-29 全站掃出);停用的欄位整塊都是禁止符號(field-controls.spec.md「游標指引」disabled → cursor-not-allowed)
+        resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed',
+        className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (

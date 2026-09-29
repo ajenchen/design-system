@@ -386,7 +386,7 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 
 | 元件 | 焦點在 | `Enter` | `F2` | 出格 |
 |---|---|---|---|---|
-| `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape` |
+| `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape`(取消)/ `F2`(結算;2026-09-29 補上「再按一次回到格導覽」那一半,文字型編輯器) |
 | `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 在這一天新增(`onDateClick`)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
 | `Calendar` 月檢視,日期格唯讀(`readOnlyDates`,2026-09-26)| **格**(日期數字不是按鈕,格裡沒有那一個控件)| 進格(格沒有主要動作)| 進格 | `Escape` / `F2` |
 

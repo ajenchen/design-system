@@ -510,6 +510,7 @@
       "scripts/test-setup-workspace.mjs",
       "scripts/test-sidebar-menu-keyboard-invariant.mjs",
       "scripts/test-status-color-invariant.mjs",
+      "scripts/test-steps-connector-geometry-invariant.mjs",
       "scripts/test-story-demo-focus-invariant.mjs",
       "scripts/test-storybook-docs-race-invariant.mjs",
       "scripts/test-switch-thumb-ring-invariant.mjs",
@@ -523,7 +524,8 @@
       "scripts/test-verify-mirror-evidence.mjs",
       "scripts/test-verify-mirror-release.mjs",
       "scripts/test-verify-upgrade-evidence.mjs",
-      "scripts/test-virtual-cursor-modality-invariant.mjs"
+      "scripts/test-virtual-cursor-modality-invariant.mjs",
+      "scripts/test-visual-audit.mjs"
     ]
   },
   "direct": [

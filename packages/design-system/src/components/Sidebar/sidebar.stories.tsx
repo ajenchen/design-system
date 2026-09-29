@@ -16,6 +16,7 @@ import {
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarGroupAction,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuAction,
@@ -233,6 +234,84 @@ export const ActionHoverState: Story = {
       </SidebarProvider>
     </div>
   ),
+}
+
+// ── 1b. 群組動作(SidebarGroupAction)──────────────────────────────────────
+// 群組標題列右端那顆行內動作鈕:清單型群組的「新增一筆」入口(work-management `AppSidebar.tsx` 的
+// All projects + Create project 同款,2026-09-29 補 story,待辦總帳 OE12)。`icon` 必填 —— 2026-09-24 起委派
+// `ItemInlineActionButton`,API 從 children 改成 icon prop,刻意不留 children 後備(sidebar.spec.md「API 破壞性變更」,M23(f));
+// 幾何(16 圖示 / 18 懸停底色、貼齊標題右緣 loose、上緣 top-2)由那顆 primitive 決定,icon 收合模式整顆隱藏。
+// 專案名稱取自代理整頁示範同一個假資料世界(結帳流程改版 …),「建立專案」把待排程的下一個專案加進群組。
+const PROJECTS_SEED = [
+  { id: 'checkout', label: '結帳流程改版' },
+  { id: 'reconcile', label: '對帳批次' },
+  { id: 'notify', label: '支付失敗通知' },
+]
+const PROJECTS_BACKLOG = ['會員等級重算', '發票寄送']
+export const GroupAction: Story = {
+  name: '群組動作',
+  parameters: { docs: { description: { story: '群組標題列右端的行內動作鈕(`SidebarGroupAction`,`icon` 必填,放在 `SidebarGroupLabel` 之後、`SidebarGroupContent` 之前,由群組的 relative 定位貼齊右緣):清單型群組的「新增一筆」入口,這裡是「所有專案」的「建立專案」。它委派 `ItemInlineActionButton`,懸停底色就是命中區;側欄收成 icon 模式時整顆隱藏(標題也不在了)。' } } },
+  render: function GroupActionStory() {
+    const [activeId, setActiveId] = React.useState<string>('checkout')
+    const [projects, setProjects] = React.useState(PROJECTS_SEED)
+    const createProject = () => {
+      const next = PROJECTS_BACKLOG[projects.length - PROJECTS_SEED.length]
+      if (!next) return
+      setProjects((list) => [...list, { id: `p${list.length + 1}`, label: next }])
+    }
+    return (
+      <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <WorkspaceBrand />
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {MAIN_NAV.slice(0, 2).map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton id={item.id} startIcon={item.icon} tooltip={item.label}>
+                        {item.label}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>所有專案</SidebarGroupLabel>
+              <SidebarGroupAction icon={Plus} aria-label="建立專案" onClick={createProject} />
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {projects.map((p) => (
+                    <SidebarMenuItem key={p.id}>
+                      <SidebarMenuButton id={p.id} startIcon={Folder} tooltip={p.label}>
+                        {p.label}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <UserFooter />
+          </SidebarFooter>
+        </Sidebar>
+        <PageContent
+          title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
+          description={
+            <>
+              「所有專案」群組標題列右端是 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarGroupAction</code>
+              (建立專案):滑過才有底色,底色就是命中區;按下去把下一個專案加進清單。
+              點左上角 <strong>SidebarTrigger</strong> 收成 icon 模式,群組標題與這顆鈕一起隱藏。
+            </>
+          }
+        />
+      </SidebarProvider>
+    )
+  },
 }
 
 // ── 2. 混合內容(SidebarMenu + TreeView)─────────────────────────────────

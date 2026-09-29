@@ -82,7 +82,8 @@ const openPanelViaFab = async (page) => {
 // 對照組(M32「儀器要先有對照組」):--selftest 把蓋板的左內距硬設 0、把遮罩藏起來(= 2026-09-16 之前的樣子),
 // 「蓋板左留內距」「蓋板底下有遮罩」兩條在每個蓋板寬度都必須紅,否則量具無效。
 const SELFTEST = process.argv.includes('--selftest')
-const SABOTAGE = '[role="complementary"][data-agent-panel-mode="overlay"]{left:0!important} [data-agent-panel-scrim]{display:none!important}'
+// 第三項破壞:把面板根節點改回 `overflow:hidden`(= 2026-09-29 之前的樣子)—— 並排態「把手外側 2px 命中把手」(OE1)必須紅。
+const SABOTAGE = '[role="complementary"][data-agent-panel-mode="overlay"]{left:0!important} [data-agent-panel-scrim]{display:none!important} [role="complementary"]{overflow:hidden!important}'
 for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
   await pg.setViewportSize({width:W,height:800})
   // 對照組的破壞 CSS 在靜止判定之前注入(原本注入後另睡 100ms):它觸發的 250ms `left` 過渡由同一個靜止判定等完
@@ -104,7 +105,12 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     const probe=document.createElement('div'); probe.className='bg-overlay'; document.body.appendChild(probe)
     const overlayBg=getComputedStyle(probe).backgroundColor; probe.remove()
     const near=(a,b)=>Math.abs(a-b)<=1
-    return { mode:p.dataset.agentPanelMode, container:host.clientWidth,
+    // OE1(2026-09-29):把手 7px 命中區有 3px 在面板左緣**外側**(宿主那側),面板根節點不得裁掉它
+    // (resize-handle.spec.md「命中區」);用 elementFromPoint 真命中,不看 class 字面(M32)。
+    const midY = P.top + P.height/2
+    const hits = (x)=>{ if(!handle) return null; const el=document.elementFromPoint(x, midY); return el===handle || handle.contains(el) }
+    const handleHit = handle ? { outer2: hits(P.left-2), inner2: hits(P.left+2), overflowX: cs.overflowX, overflowY: cs.overflowY } : null
+    return { mode:p.dataset.agentPanelMode, container:host.clientWidth, handleHit,
       panelW:Math.round(P.width),
       pos:cs.position, valuemax:handle?+handle.getAttribute('aria-valuemax'):null,
       hasHandle:!!handle,
@@ -128,6 +134,10 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     ck(`G3 @${W} 寬上限 = min(640, 容器 × 3/8) = ${expMax}`, r.valuemax === expMax, `aria-valuemax=${r.valuemax}`)
     ck(`G3 @${W} 面板不超過舞台的 3/5(面板 ${r.panelW} ≤ 舞台 ${r.stage} × 3/5)`, r.panelW <= r.stage*3/5 + 1, `舞台 ${r.stage}`)
     ck(`G3 @${W} 並排態不畫蓋板遮罩`, !r.scrim, `scrim=${r.scrim}`)
+    // OE1:左緣外側 2px 與內側 2px 都必須打到把手;對照組(根節點注回 overflow:hidden)外側必須打不到、內側仍打到
+    const hh = r.handleHit
+    if (SELFTEST) ck(`OE1 對照組 @${W}:注入 overflow:hidden 時把手外側 2px 必須打不到(內側仍打到)`, !!hh && hh.outer2 === false && hh.inner2 === true, JSON.stringify(hh))
+    else ck(`OE1 @${W} 把手外側 2px 命中把手(面板根節點 overflow-x 不裁把手;resize-handle.spec「命中區」)`, !!hh && hh.outer2 === true && hh.inner2 === true && hh.overflowX === 'visible', JSON.stringify(hh))
   } else {
     // 2026-09-16 user 裁示(v14 來源總帳):蓋板不再蓋滿 —— 左留 Dialog 同一顆 --layout-space-viewport-inset、右貼齊容器、
     // 底下鋪 CoexistenceMask(z-30、--overlay、接住指標)。2026-09-17 user 改裁示:點遮罩**關閉面板**(並存 modal 留著)。
@@ -150,9 +160,11 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
 }
 if (SELFTEST) {
   const sab = out.filter((l) => /蓋板左留|蓋板底下有遮罩/.test(l))
-  const ok = sab.length === 4 && sab.every((l) => l.startsWith('✗'))
-  console.log(sab.map((l) => '  ' + l).join('\n'))
-  console.log(ok ? `✓ selftest:對照組(左內距設 0 + 藏遮罩)讓 ${sab.length} 條蓋板斷言全紅,量具會紅` : `✗ selftest:對照組沒讓每一條蓋板斷言紅(${sab.filter((l) => l.startsWith('✗')).length}/${sab.length})—— 量具無效`)
+  // OE1 對照組:並排的 6 個寬度都要證明「注回 overflow:hidden 就打不到外側」(斷言本身寫成通過 = 打不到)
+  const oe1 = out.filter((l) => /OE1 對照組/.test(l))
+  const ok = sab.length === 4 && sab.every((l) => l.startsWith('✗')) && oe1.length === 6 && oe1.every((l) => l.startsWith('✓'))
+  console.log([...sab, ...oe1].map((l) => '  ' + l).join('\n'))
+  console.log(ok ? `✓ selftest:對照組(左內距設 0 + 藏遮罩)讓 ${sab.length} 條蓋板斷言全紅;注回 overflow:hidden 讓 ${oe1.length} 個並排寬度的把手外側都打不到 —— 量具會紅` : `✗ selftest:對照組沒讓每一條蓋板斷言紅(${sab.filter((l) => l.startsWith('✗')).length}/${sab.length})或把手外側對照組沒成立(${oe1.filter((l) => l.startsWith('✓')).length}/${oe1.length})—— 量具無效`)
   await br.close(); await sv.stop(); process.exit(ok ? 0 : 1)
 }
 

@@ -238,7 +238,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽（只有整顆）；星星尺寸不變 |
 | Focus ring | `:focus-visible`(全域規則,無 class)+ `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器(= 貼著星列的內容盒,2026-09-27 起不再是 field-height 盒)顯示全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class,圓角跟著 `rounded-md`;**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
 | Gap between stars | `gap-1` | 4px | 可以點的星與星之間的間距，不隨 size 變化 |
-| Disabled | `opacity-disabled` + `pointer-events-none` | — | 整體降透明度，阻擋所有事件 |
+| Disabled | `opacity-disabled` + `cursor-not-allowed` + 星 `pointer-events-none` | — | 整體降透明度，阻擋所有事件(星上);容器留著接指標只為了掛禁止符號(`ds-canonical/references/hit-area-canonical.md` 滑過原則一-3「停用的用禁止符號」;2026-09-29 前容器也 `pointer-events-none`,游標由外層決定、永遠是箭頭) |
 
 ### Star icon 無 stroke outline
 
@@ -254,10 +254,10 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 ## A11y 預設
 
-- **interactive**：`role="slider"` + `aria-valuenow={value}`(四捨五入後的整數,見「邊界案例」)+ `aria-valuemin={0}` + `aria-valuemax={max}` + `aria-valuetext={`{value} of {max} stars`}` + `tabIndex={0}`，鍵盤 Arrow Left/Right/Up/Down ± 1（只有整顆）；Home = 0；End = max（完整 WAI-ARIA slider keyboard pattern）
+- **interactive**：`role="slider"` + `aria-valuenow={value}`(四捨五入後的整數,見「邊界案例」)+ `aria-valuemin={0}` + `aria-valuemax={max}` + `aria-valuetext={`{value} 星,共 {max} 星`}`(讀屏文字中文,2026-09-29 由 `{value} of {max} stars` 改;全庫 SR label 中文 2026-07-04,說法同下方唯讀範例「平均評分 4.7 星，共 5 星」)+ `tabIndex={0}`，鍵盤 Arrow Left/Right/Up/Down ± 1（只有整顆）；Home = 0；End = max（完整 WAI-ARIA slider keyboard pattern）
 - **readOnly**：`role="img"` + accessible name。畫面上的數值與評論數是 `aria-hidden` 的顯示文字，**可存取名稱要自己說出分數**（畫面上有評論數就一起說）。standalone（無 Field）時 `aria-label` 必填，例：`aria-label="平均評分 4.7 星，共 5 星，12,843 則評論"`。無 tabIndex
   - `Field` 內:`aria-labelledby` 同時指向 `FieldLabel` 與數值文字(`rating.tsx` 唯讀分支),名稱念成「滿意度 4.7」(有評論數時連括號一起:「滿意度 4.7 (12,843)」—— 被 `aria-labelledby` 直接指到的節點即使 `aria-hidden` 也納入名稱,accname 演算法)—— 只指欄位標籤會只聽到「滿意度」、聽不到分數(`aria-labelledby` 優先於 `aria-label`)
-- **disabled**：`aria-disabled="true"` + `pointer-events-none`
+- **disabled**：`aria-disabled="true"` + 星 `pointer-events-none`(容器 `cursor-not-allowed`,見「視覺規格」Disabled 列)
 - **單顆星** `aria-hidden`：內部點擊目標是 `<span role="presentation" aria-hidden>`（非 interactive element，避免與外層 `role="slider"` 形成 axe nested-interactive 違規，2026-04-25 修正）都不干擾螢幕閱讀器，父層 role 獨自表達語意
 
 ## 禁止事項

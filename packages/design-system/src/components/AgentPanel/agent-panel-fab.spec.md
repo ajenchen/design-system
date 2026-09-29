@@ -64,9 +64,13 @@
     - **懸停微放大掛在按鈕上**(不是內層):命中盒與可視形狀一起放大,兩者永遠同步;掛在內層的話
       放大後可視會比命中盒大一圈。陰影升一級畫在內層(陰影屬於那個看得見的形狀)。值與獨立
       `AgentFab` 同一組(`scale-[1.04]` + `--elevation-200-hover`),沒有另訂。
-    - **已登記未修**(2026-09-04 對抗式稽核):(a) `AgentPanelDock` 開面板時整顆 `AgentFabDock` 被卸載,
-      關回來是全新掛載 → 首格 `size` 為 0,`placementStyle` 在 `s.h === 0` 時不夾 y,若面板開著期間視窗
-      變矮,記住的貼邊 y 會先畫在超出合法範圍的位置再跳回;同一格的 `inset` 也還是 fallback 16。
+    - **2026-09-04 對抗式稽核登記的兩條**:(a) **已修(2026-09-29,待辦總帳 N30)**:`AgentPanelDock` 開面板時整顆 `AgentFabDock` 被卸載,
+      關回來是全新掛載 → 首格 `size` 為 0,舊 `placementStyle` 在 `s.h === 0` 時放行未夾的 y、家的內距用 fallback 16
+      (改前實測:面板開著時視窗 800 → 400,關面板的第一次 commit 寫進 DOM 的 `top` 是未夾的 700、合法上界 300;
+      那一格沒被畫出來,靠的是 layout effect 內 setState 在 paint 前同步重繪)。現在靜止位置全由 CSS 對舞台錨定:
+      貼邊 `top: clamp(50% − 14px, y, max(…, 100% − 2·loose − 68px))`、家 `top: calc(100% − loose − 40px)` + `right: var(--layout-space-loose)`,
+      任何一格都不依賴量測;閘 `scripts/agent-panel-reopen-state.mjs` N30 段(殼重掛時 style 每一個被覆寫的舊值套到探針上量像素、
+      rAF 逐格、回家過渡中途取樣)+ `scripts/test-agent-fab-drag-zones.mjs`(表達式與 JS 公式同一組常數)。
       (b) `resizable` 把手改用 `patterns/resize-handle` 後 pointerdown 多了 `preventDefault()`,
       讓「拖欄寬時編輯中的 cell 自動結算」不再發生。**狀態的 owner 是 `../DataTable/data-table-known-defects.spec.md` 缺陷表 U 列**
       (「不修,登記為既定行為」,隨 `a7b2be94`(#124)登記):編輯中拖欄寬不再自動結算退出編輯,cell 維持編輯態、

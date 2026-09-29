@@ -43,6 +43,8 @@
  *   wheel  :對 center 容器 dispatch `wheel`(deltaY 300/400/500/600 輪替,每 16ms 一次,連續 40 次)。
  *            合成的 WheelEvent 沒有預設動作(untrusted),所以自己補 `scrollTop += deltaY`。
  *   pinned :同上但 dispatch 在左釘選面板,走元件自己的滾輪轉發(data-table.tsx makeBindPinnedPanel,非 passive 監聽)。
+ *            這條路 mouse / gesture 都走不到(它們對準中央區),是「滑鼠停在 ID / 選取欄上捲」的唯一覆蓋(2026-09-29,總帳 OE7)。
+ *            轉發斷掉 = scrollTop 沒動 → 直接紅(產品缺陷,不是儀器);空白類斷言與 wheel 同理不適用(JS 在主執行緒寫 scrollTop)。
  *   mouse  :CDP `Input.dispatchMouseEvent mouseWheel`(trusted,走真的輸入管線與合成執行緒;不等回應,照 16ms 節奏丟)。
  *   gesture:**真實呈現幀(2026-09-09,Codex R8 駁回「預估 paint 空白」後改用)**:CDP `Input.synthesizeScrollGesture`(走原生輸入管線與
  *            合成執行緒,--gesture-px / --gesture-speed)+ `Page.startScreencast`(合成器實際送出的每一幀)。每一幀把中央捲動區切成
@@ -737,7 +739,14 @@ try {
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
         if (r.noTarget) { console.log(`✗ ${build.label}/${mode}:找不到 dispatch 目標(pinned 模式需要左釘選面板)`); failed++; continue }
         if (i === 1 && mode === MODES[0]) console.log(`   ${build.label}:${build.dir}\n   story 起點:中間區掛 ${r.setup.rows} 列、視窗高 ${r.setup.H}px、可捲 ${r.setup.scrollHeight}px、左釘選面板 ${r.setup.hasLeft ? '有' : '無(改用中間區自己的列當視窗內集合,列缺恆 0)'}、React hook ${r.setup.hookOk ? '接上' : '沒接上(commits 無效)'}${r.setup.longtaskErr ? '、longtask 觀測失敗 ' + r.setup.longtaskErr : ''}`)
-        if (r.scrolled <= 0) { console.log(`✗ ${line(r, i)}\n   → scrollTop 沒動,這個模式的事件沒有造成捲動(儀器對照失敗)`); failed++; continue }
+        // pinned 模式的 scrollTop 由**元件的轉發**推動(腳本刻意不補 `cb.scrollTop += dy`,見 RUN_TICKS):沒動就是釘選面板的
+        // 滾輪沒轉發到中央捲動區 —— 那是產品缺陷(data-table.tsx makeBindPinnedPanel),不是儀器對照失敗,訊息要指對地方。
+        if (r.scrolled <= 0) {
+          console.log(`✗ ${line(r, i)}\n   → ${mode === 'pinned'
+            ? 'scrollTop 沒動:釘選面板收到的滾輪**沒有轉發**到中央捲動區(產品缺陷:data-table.tsx makeBindPinnedPanel)'
+            : 'scrollTop 沒動,這個模式的事件沒有造成捲動(儀器對照失敗)'}`)
+          failed++; continue
+        }
         console.log(`   ${line(r, i)}`)
         results.push(r)
       }
@@ -952,8 +961,9 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
     // 空閘守衛(2026-09-12):`wheel` 用 JS 改 scrollTop,結構上不會有合成器超前的空白 ——
     // 把零空白斷言掛上去會是一道永遠不會紅的閘(對照組實測:兩層機制關掉 + 卡死主執行緒仍 0 幀)。
     // 寧可明確失敗也不要假綠。真輸入路徑用 `--mode=mouse`。
-    if (MODES.includes('wheel')) {
-      console.log('✗ --assert-max-blank-frames 不可用於 --mode=wheel:該模式由 JS 改 scrollTop(主執行緒),空白偵測結構上不會紅 = 空閘。真輸入路徑請用 --mode=mouse')
+    // pinned 同族(2026-09-29,M10 同族當場修):它的 scrollTop 是元件轉發時在主執行緒寫的,跟 wheel 一樣沒有合成器超前。
+    for (const structural of ['wheel', 'pinned']) if (MODES.includes(structural)) {
+      console.log(`✗ --assert-max-blank-frames 不可用於 --mode=${structural}:該模式由 JS 改 scrollTop(主執行緒),空白偵測結構上不會紅 = 空閘。真輸入路徑請用 --mode=mouse`)
       failed++
     }
     const limit = Number(ASSERT_BLANK_FRAMES)

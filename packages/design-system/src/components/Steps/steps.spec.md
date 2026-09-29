@@ -262,6 +262,15 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 **可點範圍 = 整列 header,兩種排列都包含描述**(2026-09-26,待辦總帳 N51):垂直版的描述本來就在 header 裡;水平版的描述在連接線下方另起一列,2026-09-25 以前那一列放在 header 外面 —— 滑到描述上游標不是手形、點了也不會跳到那一步(實測 4/4)。現在水平版 header 是直向兩列(第一列 indicator + label + connector,第二列描述),描述一樣點得到;描述那一列的行高照舊(`leading-normal`,= 搬家前從 li 根繼承的值),畫面不變。
 
+### Connector 幾何(2026-09-29,待辦總帳 N52;user 09-26 裁「兩者都是」= 規格沒定義 + bug)
+
+- **線寬 1px,x = 指示欄中心**(垂直)/ y = label 第一行中線(水平)。
+- **圓到線的縫兩端各 8px**,兩端對稱。一手區間:MUI `StepLabel` vertical `padding: '8px 0'`(每側 8;[StepLabel.js#L65-L68](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/StepLabel/StepLabel.js#L65-L68))、Ant `marginXXS × 1.5` = 6([steps/style/vertical.ts#L25-L29](https://github.com/ant-design/ant-design/blob/5.27.4/components/steps/style/vertical.ts#L25-L29))、Chakra `--steps-gutter = spacing.3` = 12([recipes/steps.ts#L15](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/steps.ts#L15));DS 取 8 = 區間正中,與列內 prefix / suffix 的 `gap-2` 同一個數。
+- **線最短 24px,長度不隨說明文字有無變動**。唯一一手明文地板:MUI `StepConnector` vertical `minHeight: 24`([StepConnector.js#L50](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/StepConnector/StepConnector.js#L50));Ant / Chakra 沒有地板(線是列高的餘數,無說明時 Ant 32px 圓只剩 ≈ 4px),Carbon 是另一種模型(1px 線貼左緣全高連續)。24 也等於本元件的步間距 `pb-6`,可讀成「線至少一個步間距」。
+- **落地**:非末項垂直 `li` 的最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;`steps.tsx` `verticalItemMinHeight`);有說明時列自然更高、不受影響。水平線的最短寬吃同一個 24(先前 `min-w-4` 16px 沒入規格;同元件同概念只准一個地板)。
+- **為什麼是根層修**:線長原本 = li 高 − 2r − 16(餘數),沒有說明時 md 只剩 2.2px、lg 是 0 —— 違反上方「對齊不變量」:指示欄節奏是元件本體,不得隨說明有無變動。
+- **閘**:`scripts/steps-connector-geometry-invariant.mjs`(量三尺寸無說明的垂直線高 ≥ 24、兩端縫 = 8;selftest 用修法前的實測 2.2 / 0 當對照組必紅)。
+
 **何時用 horizontal**:步驟 ≤ 5、重視「進度條」感、水平空間充足、不需要 per-step content 區。
 **何時用 vertical**:步驟 > 5、需要 description 或 content、行動裝置、主流程精靈。
 

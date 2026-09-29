@@ -94,6 +94,6 @@ Storybook 官方 addon 全部用 `.js` + CJS 包(no `"type":"module"`)。我們�
 
 ## Mechanical enforcement(hook)
 
-canonical `packages/design-system/ds-canonical/hooks/check_storybook_addon_packaging.sh` 的 r2(2026-06-11 merge)透過各 provider adapter 在 PreToolUse/Edit/Write 等效偵測:
+canonical `packages/design-system/ds-canonical/hooks/check_storybook_addon_packaging.sh` 的 r2(2026-06-11 merge)透過各 provider adapter 在 **PostToolUse**(Write|Edit|MultiEdit;`hooks/registrations.json`)等效偵測:
 - `*storybook-config/addons/*/preset.ts` 含 `require.resolve` / `createRequire` / `fileURLToPath` → BLOCKER 提示用 `.cjs` 替代
-- `*storybook-config/addons/*/preset.cjs` 不存在 + package.json exports 點 `.ts` → WARN
+- 「`preset.cjs` 不存在 + package.json exports 點 `.ts` → WARN」這條**從未實作**(hook 只有 r1 addon-subdir-ship / r2 preset-cjs 兩條;2026-07-10 hunt 判 OVERCLAIM,2026-09-29 覆核仍無)—— 要的話依「SSOT 必 P0 不留紙上 WARN」補成 r3 BLOCKER,不留紙上 WARN

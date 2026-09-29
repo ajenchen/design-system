@@ -140,6 +140,9 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
+          // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
+          // 否則 axe 把 fg-disabled 的格式化數字當一般文字誤報 color-contrast(4 則 story)。不是轉發 consumer 的 aria-*,是元件自己的狀態
+          aria-disabled={resolvedMode === 'disabled' || undefined}
         >
           <span
             className={cn(

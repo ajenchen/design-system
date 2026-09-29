@@ -1,10 +1,10 @@
 // @story-history: hasInteractiveStates trait — TreeView interactive states(hover / focus / selected / disabled)由 TreeItem 內部處理(spec.md state machine + anatomy StateBehavior story 已 cover),showcase 層 manual Disabled/States story retired per F migration(2026-05-15)— anatomy.stories.tsx auto-compile owns StateBehavior 6-canonical。AllSizes 同理 retired(SizeMatrix anatomy auto-compile owns)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
-  CheckCircle2, Circle, Minus, MoreVertical, Plus,
+  CheckCircle2, Circle, Minus, MoreVertical, Plus, Trash2,
   type LucideIcon,
 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
@@ -67,8 +67,9 @@ export const ActionHoverState: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    // 展開箭頭 2026-09-29 起保留名字(aria-label 展開 / 收合)、不再 aria-hidden(tree-view.spec.md「展開 / 收合 chevron」;待辦總帳 N46)
     const action = canvasElement.querySelector<HTMLElement>(
-      '[data-tree-id="product-roadmap"] button[aria-hidden="true"]',
+      '[data-tree-row="product-roadmap"] button[aria-label="展開"]',
     )
     if (!action) throw new Error('TreeView 展開動作不存在')
     action.setAttribute('data-visual-hover-target', '')
@@ -350,6 +351,89 @@ export const RowActions: Story = {
 
     // 收尾:焦點放回樹外(sr-only 哨兵),畫面回到滑鼠使用者看到的樣子
     after.focus()
+  },
+}
+
+// ── 刪除節點後焦點接力(2026-09-29 待辦總帳 N46「刪除 / 消失後焦點去下一項」)──────────
+// 真實情境:知識庫的頁面樹,列上的「刪除」把節點從資料裡拿掉。焦點在被刪的那一列(或它的按鈕)上時,
+// 接力到畫面順序的**下一個可見列**(可能是下一個頂層節點);沒有下一列 → **上一個可見列**(可能就是父節點);禁止掉到 body。
+// 落點順序同 FileUpload 的移除鈕(下一個 → 上一個 → 擁有者)。
+type WikiNode = { id: string; label: string; children?: WikiNode[] }
+const dropNode = (nodes: WikiNode[], id: string): WikiNode[] =>
+  nodes.filter((n) => n.id !== id).map((n) => (n.children ? { ...n, children: dropNode(n.children, id) } : n))
+const DeleteHandoffTree = () => {
+  const [nodes, setNodes] = React.useState<WikiNode[]>([
+    { id: 'handbook', label: '員工手冊', children: [
+      { id: 'onboarding', label: '到職第一週' },
+      { id: 'expense', label: '報帳流程' },
+      { id: 'leave', label: '請假規定' },
+    ] },
+    { id: 'archive', label: '封存' },
+  ])
+  const remove = (id: string) => ({ icon: Trash2, label: '刪除', onClick: () => setNodes((prev) => dropNode(prev, id)) })
+  const renderNodes = (list: WikiNode[]) => list.map((n) => (
+    <TreeItem key={n.id} id={n.id} icon={n.children ? Folder : FileText} label={n.label} inlineActions={[remove(n.id)]}>
+      {n.children ? renderNodes(n.children) : undefined}
+    </TreeItem>
+  ))
+  return (
+    <div className="flex flex-col gap-2">
+      <button type="button" className="sr-only">樹狀清單之前</button>
+      <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+        <TreeView aria-label="知識庫" defaultExpandedIds={['handbook']}>{renderNodes(nodes)}</TreeView>
+      </div>
+      <button type="button" className="sr-only">樹狀清單之後</button>
+    </div>
+  )
+}
+
+export const DeleteHandoff: Story = {
+  name: '刪除後焦點接力',
+  parameters: {
+    demoFocus: 'keep',
+    docs: {
+      description: {
+        story:
+          '列上的「刪除」把節點從資料裡拿掉時,鍵盤焦點不會掉到頁面外:接力到畫面順序的下一個可見列(可能是下一個頂層節點);' +
+          '已是最後一列 → 上一個可見列(可能就是父節點)。這則的 play 用鍵盤實際刪四次驗證(同層下一列 / 下一個頂層節點 / 上一列 / 父節點)。',
+      },
+    },
+  },
+  render: () => <DeleteHandoffTree />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const before = canvas.getByRole('button', { name: '樹狀清單之前' })
+    const row = (id: string) => {
+      const el = canvasElement.querySelector<HTMLElement>(`[data-tree-row="${id}"]`)
+      if (!el) throw new Error(`找不到列 ${id}`)
+      return el
+    }
+    // Tab 進樹落在第一列(員工手冊),↓↓ 到「報帳流程」,→ 進它的「刪除」,Enter 刪掉 → 焦點接力到下一列「請假規定」
+    before.focus()
+    await userEvent.tab()
+    await expect(row('handbook')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    await expect(row('expense')).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(row('expense').querySelector('[data-tree-actions] button')).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(canvasElement.querySelector('[data-tree-row="expense"]')).toBeNull())
+    await waitFor(() => expect(row('leave')).toHaveFocus())
+    // 刪掉「請假規定」(員工手冊的最後一個子節點):畫面順序的下一個可見列是下一個頂層節點「封存」
+    await userEvent.keyboard('{ArrowRight}{Enter}')
+    await waitFor(() => expect(canvasElement.querySelector('[data-tree-row="leave"]')).toBeNull())
+    await waitFor(() => expect(row('archive')).toHaveFocus())
+    // 刪掉「封存」(整棵樹最後一列):沒有下一列 → 上一個可見列「到職第一週」
+    await userEvent.keyboard('{ArrowRight}{Enter}')
+    await waitFor(() => expect(canvasElement.querySelector('[data-tree-row="archive"]')).toBeNull())
+    await waitFor(() => expect(row('onboarding')).toHaveFocus())
+    // 再刪「到職第一週」(唯一剩下的子節點):上一列就是父節點「員工手冊」;整棵樹的 Tab 停靠點跟著落在它
+    await userEvent.keyboard('{ArrowRight}{Enter}')
+    await waitFor(() => expect(canvasElement.querySelector('[data-tree-row="onboarding"]')).toBeNull())
+    await waitFor(() => expect(row('handbook')).toHaveFocus())
+    await expect(row('handbook')).toHaveAttribute('tabindex', '0')
+    // 收尾:焦點放回樹外
+    canvas.getByRole('button', { name: '樹狀清單之後' }).focus()
   },
 }
 

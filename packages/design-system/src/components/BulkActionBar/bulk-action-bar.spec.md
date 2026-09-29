@@ -194,6 +194,7 @@ interface BulkActionBarLabels {
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)
 - 鍵盤:Esc → `onClearSelection()`(consumer 應監聽 page-level keydown 觸發);Tab 序按 DOM 順序 = clear(X)→ actions(count 是純文字 span,非互動元素 → 不參與 Tab)
 - Disabled action(無權限等)用 Button `disabled` + tooltip 解釋,**不藏 action**(避免 user 困惑)
+- **焦點接力(2026-09-29,待辦總帳 N46)**:選取清空 / 批次動作把選取消掉時本列整個卸載;鍵盤焦點若正停在列內(清除 × 或動作鈕),元件把焦點還給「進入本列之前」的元素(focus 事件的 relatedTarget,通常是列的勾選框或表格),同 Dialog 的 return-focus 契約;那個元素已不在文件裡就不動。沒有新 prop(內建 fallback,`meta-patterns` M23(f))。閘:`bulk-action-bar.stories.tsx`「清除後焦點回到勾選框」play(story-demo-focus 閘載入每支 story 並跑 play)
 
 ---
 

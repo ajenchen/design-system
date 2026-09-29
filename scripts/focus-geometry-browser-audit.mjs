@@ -54,7 +54,11 @@
 //   「已渲染」不再用固定睡眠代理(原本 networkidle + 400ms):FileItem 的 play 函式在根節點出現後
 //   還要約 450ms 才把焦點移到刪除鈕,固定睡眠在慢機器上會讓 Tab 走訪跟 play 搶焦點。
 //
-// Run: `node scripts/focus-geometry-browser-audit.mjs [--selftest | --selftest-inset]`
+// Run: `node scripts/focus-geometry-browser-audit.mjs [--selftest | --selftest-inset] [--component <Name>…]`
+//   `--component <Name>`    只量這些元件(可重複;名字 = storybook 標題 `Components/<Name>` 那一段,也就是
+//                           `packages/design-system/src/components/<Name>/` 的目錄名)。PR 的 changed-scope 模式
+//                           (focus-deep-gates.yml,2026-09-29 待辦總帳 OE4)用 git diff 算出改到的元件目錄餵進來;
+//                           指定的名字不在索引裡 → 儀器失效紅(不是「這個元件沒問題」),與 --story 同一種嚴格度。
 //   除錯 / 對照組用(CI 不用):
 //   `--story <id>`          只量指定的 story(可重複)
 //   `--static-dir <目錄>`   改量另一份 Storybook 建置(預設 ./storybook-static)
@@ -74,12 +78,13 @@ const optionValues = (name) => ARGV.flatMap((arg, i) => {
   if (arg.startsWith(`${name}=`)) return [arg.slice(name.length + 1)]
   return arg === name && ARGV[i + 1] && !ARGV[i + 1].startsWith('--') ? [ARGV[i + 1]] : []
 })
-for (const name of ['--story', '--static-dir']) {
+for (const name of ['--story', '--static-dir', '--component']) {
   if (ARGV.some((a) => a === name || a.startsWith(`${name}=`)) && !optionValues(name).length) {
     console.error(`✗ ${name} 後面要接值`); process.exit(1)
   }
 }
 const ONLY_STORIES = optionValues('--story')
+const ONLY_COMPONENTS = optionValues('--component')
 const STATIC = resolve(optionValues('--static-dir').at(-1) ?? join(process.cwd(), 'storybook-static'))
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -262,9 +267,17 @@ const pickStory = (comp) => {
   const cands = Object.values(idx.entries).filter(e=>e.title.replace(/\s/g,'').includes(`/${comp}/`) && !/--docs$/.test(e.id) && !/usage-guidance|inspector|-rule$/.test(e.id))
   return cands.find(e=>/展示/.test(e.title)) || cands.find(e=>/state-behavior|overview|accessibility/.test(e.id)) || cands[0]
 }
+// `--component`(2026-09-29,待辦總帳 OE4 changed-scope):只量這些元件。名字對不到索引 = 儀器失效,不是「沒問題」——
+// 改到的目錄名跟 storybook 標題不一致(改名 / 沒有 story)時,靜默量到 0 個等於這次什麼都沒驗(M37)。
+const unknownComponents = ONLY_COMPONENTS.filter((name) => !COMPS.includes(name))
+if (unknownComponents.length) {
+  console.error(`✗ INSTRUMENT-FAIL:--component 指定的元件不在 storybook 索引裡:${unknownComponents.join('、')}(索引有 ${COMPS.length} 個:${COMPS.join('、')})`)
+  await br.close(); await server.stop(); report404(); process.exit(2)
+}
+const SCOPED = ONLY_COMPONENTS.length ? COMPS.filter((name) => ONLY_COMPONENTS.includes(name)) : COMPS
 // 對照組只需要證明「儀器該紅時會紅」,不需要全掃 —— 全掃要 5 分鐘,
-// 為了證明儀器讓 CI 多花 5 分鐘不划算。取前 4 個元件足夠(實測仍會紅十幾處)。
-const SWEEP = SELFTEST ? COMPS.slice(0, 4) : COMPS
+// 為了證明儀器讓 CI 多花 5 分鐘不划算。取前 4 個元件足夠(實測仍會紅十幾處);有 --component 時就在那幾個上證。
+const SWEEP = SELFTEST ? SCOPED.slice(0, 4) : SCOPED
 // 要量的每一則 story。`--story` 只給除錯與對照組用:指定的 id 不在索引裡也照樣去載 —— 由載入判定點名它。
 const TARGETS = ONLY_STORIES.length
   ? ONLY_STORIES.map((id) => ({ label: compOf(idx.entries[id]) ?? id, storyId: id, inIndex: Boolean(idx.entries[id]) }))
@@ -272,7 +285,9 @@ const TARGETS = ONLY_STORIES.length
 { const seenLabels = new Set(); for (const t of TARGETS) { t.key = seenLabels.has(t.label) ? `${t.label}#${t.storyId}` : t.label; seenLabels.add(t.label) } }
 console.log(ONLY_STORIES.length
   ? `只量指定的 ${TARGETS.length} 則 story(--story)\n`
-  : `涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
+  : ONLY_COMPONENTS.length
+    ? `只量改到的 ${SWEEP.length} 個元件(--component:${SWEEP.join('、')};全 DS 索引有 ${COMPS.length} 個)\n`
+    : `涵蓋 ${SWEEP.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
 const report = {}
 const failures = []            // 儀器失效:這則 story 沒有被量到(不是產品裁決)
 const noStations = []          // 渲染成功、但畫面上沒有任何可聚焦元素 → 本閘對它無裁決(也不是通過)

@@ -492,7 +492,8 @@ function ReadonlyDisplay({
   const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
 
   return (
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+    // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>

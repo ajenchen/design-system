@@ -338,7 +338,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ### pressed（toggle）
 
-`pressed` 設定時 Button 自動寫入 `aria-pressed` + `data-state`，由 `variant × pressedTone` compoundVariants 套樣式。**僅 `secondary` / `tertiary` / `text` 有視覺；primary / link 無效果**。
+`pressed` 設定時 Button 自動寫入 `aria-pressed` + `data-state`，由 `variant × pressedTone` compoundVariants 套樣式。**僅 `secondary` / `tertiary` / `text` 有視覺；primary / link 無效果**。**`secondary` × `neutral` 的已按下是疊層不換底**(2026-09-29,待辦總帳 N7):secondary 的靜止底是 `--surface`(「底」),依 `color.spec.md`「Hover 換色配對總則」第 2 列「底不換、疊一層」用 `bg-interaction-selected` 家族;換底的話深色 `--surface` 與 `--neutral-selected` 都是白 8%,已按下會跟未按下一模一樣(#1E1E1E)。淺色疊層結果與換底相同,階梯仍是 2→3→4。
 
 **`pressedTone`**(v12):
 
@@ -361,7 +361,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 | 疊加 | 視覺 |
 |---|---|
-| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;danger 用自己的 `error-hover`(secondary+danger 字與框、text+danger 字)。primary / link 目前無開啟樣式 |
+| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;**primary 底 `primary-hover`;link 字 `primary-hover`**;danger 用自己的 `error-hover`(primary+danger 底、secondary+danger 字與框、text+danger 字)。2026-09-29(待辦總帳 C13)補 primary / link:七家一手(Radix、shadcn、MUI、Ant、Carbon 全不給;Atlassian `isSelected`、Fluent `MenuButton` 每個 appearance 含 primary 都給;Polaris `pressed` 亦含 primary)沒有任何一家「給部分 variant、獨獨豁免 primary」,DS 既已選「給」,這兩個 variant 只是同一條規則的落地 |
 | pressed × hover / active | emphasis:底色與框**釘住**,只有字換 `primary-hover` / `-active`;neutral:底換 `neutral-selected-hover` / `-active`,字與框釘住 |
 | pressed × 開啟中 | = pressed × hover(Radix 把 `data-state` 改寫成 `open`,由 `aria-pressed` 分支承擔,不套 variant 的開啟樣式) |
 | `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現 |

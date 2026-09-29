@@ -37,6 +37,14 @@ export interface EditSettleKeyOptions {
    * 其餘 commit 走 blur。
    */
   commitOnEnter?: boolean
+  /**
+   * `F2` 是否 = commit(回到格導覽)。預設 false。
+   * 只有**格子裡的編輯器**(DataTable cell)傳 true:跨元件規則 `ds-canonical/references/keyboard-model-canonical.md`
+   * 「進格用什麼鍵」——「`F2` 恆為進到格裡的控件,再按一次回到格導覽」(APG Grid「Editing and Navigating Inside a Cell」逐字:
+   * "A subsequent press of F2 restores grid navigation functions.")。值留著(= commit)而不是丟掉:APG 只把「還原」寫在 Escape 那一條,
+   * F2 那一條沒有;DataTable 的 Escape 已是「取消編輯」,F2 是另一條出口。InlineEdit 不是格,不傳。
+   */
+  commitOnF2?: boolean
 }
 
 /**
@@ -52,6 +60,10 @@ export function makeEditSettleKeyHandler(opts: EditSettleKeyOptions) {
     if (e.key === 'Escape') {
       e.preventDefault()
       opts.onCancel(e)
+    } else if (e.key === 'F2' && opts.commitOnF2) {
+      // 格子裡的編輯器:再按一次 F2 = 結算、回到格導覽(見 EditSettleKeyOptions.commitOnF2)
+      e.preventDefault()
+      opts.onCommit(e)
     } else if (e.key === 'Enter') {
       // 單行(commitOnEnter):Enter = commit。
       // 多行(commitOnEnter:false):plain Enter = 換行(不攔,交還 Textarea 預設),

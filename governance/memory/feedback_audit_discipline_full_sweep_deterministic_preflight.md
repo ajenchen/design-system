@@ -53,12 +53,12 @@ Sub-agent dispatch prompt 必含 3 directives(verbatim,不可弱化):
 
 ## Mechanical enforcement
 
-- `stop_self_audit.sh` 偵測 sub-agent prompt 含「sample / subset / top N / pick top / too many」+ `--deep` mode → BLOCKER
-- `check_audit_sample_escape.sh` pre + post Agent dispatch 雙向攔 sample escape keyword(2026-05-23)
-- `scripts/audit-preflight.mjs` 必先跑;`stop_self_audit.sh` 偵測 audit 但 24h 內無 preflight log → BLOCKER
+- `stop_self_audit.sh` 偵測 sub-agent prompt 含「sample / subset / top N / pick top / too many」+ `--deep` mode → **soft WARN**(命中只進 WARNINGS、由下一 turn 注入;而且只在讀過 codex reply 的 turn 才掃)。真 BLOCKER = 下一條(2026-07-10 hunt 判 OVERCLAIM,2026-09-29 覆核:hook `SAMPLE_RE` 仍不設 CRITICAL flag)
+- `check_audit_sample_escape.sh` pre + post Agent dispatch 雙向攔 sample escape keyword(2026-05-23;exit 2 BLOCKER)
+- `scripts/audit-preflight.mjs` 必先跑(design-system-audit SKILL Phase 0.5 directive)。**沒有任何 hook 檢查「24h 內有沒有 preflight log」**(2026-07-10 hunt 判 ORPHAN,2026-09-29 覆核 `stop_self_audit.sh` 仍無 preflight 機制);preflight 漏跑靠 SKILL 紀律
 - `scripts/audit-story-quality.mjs --check` deterministic 全掃 + ci.yml `npm run story-quality:check` step
 - design-system-audit SKILL Phase 0.5 mandatory directive
-- `references/audit-prompts.md` template 必含 NO-SAMPLE / deterministic script / preflight directives
+- NO-SAMPLE directive 住在 `references/audit-prompts.md` 各 judgment dim 的「Coverage requirement」段(不是檔頭 template);deterministic script chain / preflight directive 住 design-system-audit SKILL.md dim 表與 Phase 0.5 / Phase 1 段(2026-07-10 hunt 判 OVERCLAIM「template 必含」,2026-09-29 覆核:檔頭 4000 字內無 NO-SAMPLE)
 
 ## Anti-pattern(永久 ban)
 

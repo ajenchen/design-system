@@ -135,7 +135,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   點入口鈕重開 → 抽屜再蓋回舞台,舞台上並存中的 modal 在它後方暫不可操作、按 × 又顯露。
   **實作契約**:面板**不知道連結**,收合是消費端在自己的內部導航裡做的 —— 用 `onModeChange` 記住形態,
   「蓋板且代理開著 → `onOpenChange(false)`」;目標是頁面時把焦點交給舞台(`<main tabIndex={-1}>`,AppShell skip-to-main 同款),
-  目標是 modal 時由 Dialog 開啟時自己聚焦。瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」,不收合。
+  目標是 modal 時由 Dialog 開啟時自己聚焦。瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」,不收合
+  (依據與「Esc 永遠不關面板」同一條:HTML Standard 把 Android 返回鍵與 Esc 歸為同一類 close request,
+  <https://html.spec.whatwg.org/multipage/interaction.html#close-requests>;桌機上一頁只做歷史導航;Radix / Headless UI 的浮層也不綁 history —— 2026-09-29 待辦總帳 OD3,完整對照在 `governance/planning/2026-09-06-agent-principles-v14.md` 來源總帳)。
   示範 `agent-panel.stories.tsx` UrlRegistryDemo;閘 `scripts/agent-url-registry-demo-invariant.mjs` S9。
   對照(同一條「模態抽屜選定目的地即讓位、常駐抽屜維持」):
   [Material navigation drawer:modal 供手機、選定項目即 `drawerLayout.close()`;standard 供平板 / 桌機、可與內容同時互動](https://github.com/material-components/material-components-android/blob/master/docs/components/NavigationDrawer.md)、
@@ -331,6 +333,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
    回來時補上。**沒有版面時量到的數字不代表任何事,不能拿來做決定。**
 
 機械閘:`scripts/agent-panel-reopen-state.mjs`。
+
+**F 條的最後半句「原分頁離開宿主後返回」**(2026-09-29 補,待辦總帳 OE2):瀏覽器從 back/forward cache 還原舊畫面時元件不會重新掛載,`defaultOpen=false` 不會再跑;`AgentPanelDock` 聽 `pageshow`(`persisted` 才算)自己關回去,「新對話」由宿主聽同一個事件重設(示範 `UrlRegistryDemo`;閘 `scripts/agent-url-registry-demo-invariant.mjs` S14,persisted:false 必不動)。
 
 ## Esc 與關閉語意(不變量;2026-09-07 訂)
 

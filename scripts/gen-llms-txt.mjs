@@ -1,17 +1,25 @@
 #!/usr/bin/env node
 /**
- * gen-llms-txt.mjs — build-time 從 spec.md frontmatter + storybook index 生成
- *   packages/design-system/llms.txt(精簡 index)+ llms-full.txt(全文,含 variants/sizes/禁止事項)。
+ * @gate-contract
+ *   保證: 隨 npm 出貨的 `packages/design-system/llms.txt` / `llms-full.txt`(package `files` + `exports` 的公開資產)
+ *         永遠等於「從全部 component / pattern 的 spec.md frontmatter 重新生成」的結果 —— 不會出貨一份過期的設計參考。
+ *   紅: `--check` 下任一檔不存在、或內容與重新生成的結果有一個位元組不同 → 印 DRIFT 指名檔案並 exit 1。
+ *       歷史紅燈(2026-09-29 OE18 盤點時抓到):檔頭寫「Run:postbuild-storybook + ci.yml --check」但三處都沒接
+ *       (「寫了閘卻沒人呼叫」,失敗記憶索引),提交的檔停在 beta.132、線上已到 beta.146。
+ *   綠: 內容逐位元組相同;純檔案比對,無時序、無瀏覽器,重複跑恆等。對照組:`--selftest` 把任一輸出檔改一個字元
+ *       → 必紅並指名該檔;還原後必綠。
+ *
+ * gen-llms-txt.mjs — 從 spec.md frontmatter 生成 llms.txt(精簡 index)+ llms-full.txt(全文,含 variants/sizes/禁止事項)。
  *
  * 對齊 llmstxt.org(H1 + blockquote summary + H2 file-list)+ Mantine「每 release 從 source
  * 自動生成、禁手維護」。隨 npm ship(files + exports),consumer / AI coding assistant 取用
  * `@qijenchen/design-system/llms.txt` 當設計參考 SSOT。
  *
  * Source = 已存在的結構化 canonical(spec.md frontmatter:component/pattern/family/variants.when/
- * sizes.when/禁止事項)+ storybook-static/index.json(story id → URL)。**禁手維護** —— CI / preflight
- * 用 --check drift gate 強制每 release 從 source 重生(對齊 ds-story-manifest pattern)。
+ * sizes.when/禁止事項)。**禁手維護**;內容**不含版號**:這兩個檔只隨 npm 包出貨,包的版號就是它們的版號,
+ * 再抄一份進檔裡等於同一個值兩個住所,而且每次 bump 都要重生(2026-09-29 之前就是這樣過期了 14 個版)。
  *
- * Run:postbuild-storybook + ci.yml --check + release.yml audit gate。
+ * Run:`npm run build-storybook` 鏈尾自動重生(同 ds-story-manifest);ci.yml verify-static 跑 `--check`。
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
@@ -27,8 +35,7 @@ const LLMS = join(DS, 'llms.txt')
 const LLMS_FULL = join(DS, 'llms-full.txt')
 const SB_BASE = 'https://ajenchen-design-system.netlify.app'  // DS canonical public Storybook(同 AllDsComponents portal)
 const CHECK = process.argv.includes('--check')
-
-const version = JSON.parse(readFileSync(join(DS, 'package.json'), 'utf8')).version
+const SELFTEST = process.argv.includes('--selftest')
 
 // ── 1. 蒐集 component + pattern spec.md(遞迴 walk,避免 glob 依賴)──
 function walkSpecs(root, kind) {
@@ -104,9 +111,9 @@ const llms = [
   `# @qijenchen/design-system`,
   ``,
   `> World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。`,
-  `> ${components.length} components + ${patterns.length} public patterns + design tokens。v${version}。`,
+  `> ${components.length} components + ${patterns.length} public patterns + design tokens。版號 = 本 npm 包的 package.json version。`,
   ``,
-  `本檔由 source(spec.md frontmatter + Storybook index)build-time 自動生成,**禁手改**(CI --check drift gate 守)。`,
+  `本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。`,
   `每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。`,
   `元件原始範例 source:node_modules/@qijenchen/design-system/src/<dir>/*.stories.tsx;rendered:Storybook 連結。`,
   ``,
@@ -150,7 +157,7 @@ function fullSection(s) {
 const llmsFull = [
   `# @qijenchen/design-system — 完整設計參考(llms-full)`,
   ``,
-  `> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v${version}。`,
+  `> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。版號 = 本 npm 包的 package.json version。`,
   ``,
   `# Components`,
   ``,
@@ -160,18 +167,41 @@ const llmsFull = [
   ...patterns.map(fullSection),
 ].join('\n')
 
-// ── 7. write / --check ──
+// ── 7. write / --check / --selftest ──
+/** 純函式:已提交內容(null = 檔不存在)vs 重新生成的內容 → 漂移訊息或 null。呼叫端與 selftest 共用同一個判定。 */
+export function driftOf(name, committed, generated) {
+  if (committed === null) return `❌ DRIFT: ${name} 不存在。Run: node scripts/gen-llms-txt.mjs`
+  if (committed !== generated) return `❌ DRIFT: ${name} 與 source 不同步。Run: node scripts/gen-llms-txt.mjs`
+  return null
+}
+
 function emit(path, content) {
+  const committed = existsSync(path) ? readFileSync(path, 'utf8') : null
   if (CHECK) {
-    if (!existsSync(path)) { console.error(`❌ DRIFT: ${basename(path)} 不存在。Run: node scripts/gen-llms-txt.mjs`); process.exit(1) }
-    if (readFileSync(path, 'utf8') !== content) { console.error(`❌ DRIFT: ${basename(path)} 與 source 不同步。Run: node scripts/gen-llms-txt.mjs`); process.exit(1) }
+    const drift = driftOf(basename(path), committed, content)
+    if (drift) { console.error(drift); process.exit(1) }
     return
   }
-  // idempotent:內容相同則不寫(避免 git churn)。內容含 version(deterministic),無隨機時戳。
-  if (existsSync(path) && readFileSync(path, 'utf8') === content) return
+  // idempotent:內容相同則不寫(避免 git churn)。內容只由 spec frontmatter 決定,無版號、無隨機時戳。
+  if (committed === content) return
   writeFileSync(path, content)
 }
-emit(LLMS, llms)
-emit(LLMS_FULL, llmsFull)
-if (CHECK) console.log(`✓ llms.txt + llms-full.txt in sync(${components.length} components / ${patterns.length} patterns)`)
-else console.log(`✓ llms.txt + llms-full.txt → ${components.length} components / ${patterns.length} patterns(v${version})`)
+
+function selftest() {
+  // 對照組(M32「儀器要先有對照組」):同內容必綠;缺檔必紅並指名;改一個字元必紅並指名。不碰真實檔案。
+  const failures = []
+  if (driftOf('llms.txt', llms, llms) !== null) failures.push('相同內容應綠')
+  if (!/llms\.txt 不存在/.test(driftOf('llms.txt', null, llms) ?? '')) failures.push('缺檔應紅並指名 llms.txt')
+  if (!/llms-full\.txt 與 source 不同步/.test(driftOf('llms-full.txt', llmsFull + 'x', llmsFull) ?? '')) failures.push('改一個字元應紅並指名 llms-full.txt')
+  if (/\bv\d+\.\d+\.\d+/.test(llms) || /\bv\d+\.\d+\.\d+/.test(llmsFull)) failures.push('輸出不得含版號(版號住 package.json,再抄一份就是第二個住所)')
+  if (failures.length) { console.error('❌ gen-llms-txt selftest FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
+  console.log('✅ gen-llms-txt selftest PASS(同內容綠 / 缺檔紅 / 改一字元紅 / 無版號)')
+}
+
+if (SELFTEST) selftest()
+else {
+  emit(LLMS, llms)
+  emit(LLMS_FULL, llmsFull)
+  if (CHECK) console.log(`✓ llms.txt + llms-full.txt in sync(${components.length} components / ${patterns.length} patterns)`)
+  else console.log(`✓ llms.txt + llms-full.txt → ${components.length} components / ${patterns.length} patterns`)
+}

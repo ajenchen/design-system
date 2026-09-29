@@ -797,7 +797,10 @@ const SidebarGroupLabel = React.forwardRef<
   //
   // **為什麼 chevron 是 inline action 而非整個 label 是 trigger**:
   // 1. 同 sidebar 內的 inline action 視覺必須一致(fg-muted → fg-secondary、hover bg、圓角)
-  // 2. Linear / Notion / Finder 等世界級 sidebar 都是「label 裝飾、chevron 互動」
+  // 2. Linear / Finder 等世界級 sidebar 是「label 裝飾、chevron 互動」。**Notion 不是**(2026-09-29 出處更正,待辦總帳 N46):
+  //    Notion 的側欄說明頁逐字 "Click on the name of a sidebar section — Teamspaces, Shared, or Private — to collapse it"
+  //    (https://www.notion.com/help/navigate-with-the-sidebar)—— 點區段名稱就收合;本 DS 沒有跟,理由是第 1 與第 3 點。
+  //    2026-09-29 前這裡把 Notion 列在同一邊,是憑印象寫的(M22)。
   // 3. 整個 label 當 trigger 會把 label 升格為 button,跟非 collapsible group 的 label
   //    語意不一致(一個是 div、一個是 button),無障礙與視覺焦點都會跳動
   if (group?.collapsible) {
@@ -1132,7 +1135,12 @@ const sidebarMenuButtonVariants = cva(
     // 2026-05-31 M24:SidebarMenuButton 主要為 icon+label(currentColor 可改寫)→ 用 semantic
     // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:374),
     // 非 opacity-disabled(opacity 保留給圖片/avatar/Switch 等無法改寫內部色者,per color.spec.md:103/118/701)。
-    "disabled:pointer-events-none disabled:text-fg-disabled",
+    // 原生 disabled 的 button 本來就不會發 click,不再 pointer-events-none:留著接指標只為了掛禁止符號
+    //(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;2026-09-29 全站掃出:「混合內容」的「delta（已封存）」游標是箭頭,
+    // 因為 pointer-events-none 讓 cursor 由 li 決定)。上方 hover 的底色 / 字色由 disabled:hover 釘住(:disabled:hover 特異性高過 :hover)。
+    "disabled:text-fg-disabled disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-fg-disabled",
+    // aria-disabled(asChild 的 <a> 等非 button 宿主)仍靠 pointer-events-none 擋掉點擊 / 導覽 —— 那是它唯一的擋法;
+    // 代價是游標由外層決定(箭頭)。要拿掉這裡的 pointer-events-none,得先在 asChild 宿主補 click guard(另案)。
     "aria-disabled:pointer-events-none aria-disabled:text-fg-disabled",
     "data-[active=true]:bg-neutral-selected data-[active=true]:text-foreground",
     // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 當前項釘住不變

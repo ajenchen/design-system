@@ -1,18 +1,38 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: PR 改到的每個元件,其 `scripts/visual-assertions.json` 場景在真瀏覽器裡渲染成功(play() 不丟例外),
+ *         且掛在場景上的幾何 / 顏色斷言(equalHeight / padding4Sided / gap / color;判定住 lib/visual-audit-geometry.mjs)
+ *         全部成立、選擇器都找得到元素 —— 不會有「斷言的元素改名後靜默變綠」。
+ *   紅: 任一場景 render error、任一斷言不成立、任一選擇器找不到元素 → 印場景 id 與數字並 exit 1;
+ *       `--scope=changed` 找不到可比對的 base(或明確給的 --base 不存在)→ INSTRUMENT-FAIL exit 1,不猜、不退回。
+ *       歷史紅燈:2026-09-12 前選擇器找不到會被吞成通過;2026-09-29 前 `git diff main...HEAD` 在沒有本地 main 的
+ *       乾淨 checkout 裡靜默落回工作樹 → 算出 0 個元件 → exit 0 假綠(M37)。
+ *   綠: 改到的元件全部場景渲染成功、斷言成立;沒改到任何元件時印出 base 與「無 scenario 可跑」後綠(base 已 rev-parse 驗證存在)。
+ *       對照組:判定函式 56 題在 scripts/test-visual-audit.mjs(含合成 DOM 讀值),`--base=<不存在的 ref>` 必 INSTRUMENT-FAIL。
+ *       量法:靜態 storybook + Playwright 逐場景 getBoundingClientRect / getComputedStyle / canvas 讀像素,不看 class 名。
+ *
  * visual-audit — 全自動視覺稽核(Layer A mechanical + screenshot 給 Layer B /visual-audit skill 用)
  *
  * ── Layer 分工 ──
  * Layer A(本 script,mechanical)
  *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;neutral runtime evidence)
  *   2. WCAG 對比度掃描:每個 story 找可見文字 / icon 和底色對比,flag AA 不過(< 4.5:1 for text)
- *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided / gap 三種 type)
+ *   3. 幾何 / 顏色 assertion(契約、讀值、判定全住 lib/visual-audit-geometry.mjs:equalHeight / padding4Sided / gap / color)
  *      **2026-09-12 修了兩件事**:
  *      (a) 選擇器找不到原本**靜默吞掉當通過** —— 那讓「選擇器打錯 / 元素改名 / story 改版後元素消失」
  *          三種真實回歸全部變綠燈,補再多斷言都不可信。現在記成 `selectorMissing` 違規。
  *          真的不適用就不要在該 scenario 掛那條斷言,不該靠引擎幫忙吞。
  *      (b) 開始補真的斷言(在這之前 124 個 scenario 有 0 個 `assertions` → geometryViolations 恆空,
  *          這條管線等於死碼)。
+ *      **2026-09-29 再修兩個查實的缺陷**(待辦總帳 OE8;對照組 scripts/test-visual-audit.mjs):
+ *      (c) padding4Sided 只會四邊互比、只量第一個元素 —— Field 家族(`0 12 0 12`)恆假紅;現在認 symmetric all / horizontal / vertical,
+ *          且對選到的全部元素判。
+ *      (d) gap 用 `parseFloat(computed gap) || 0` —— grid 只設 column-gap 時 computed 是 `"normal 12px"` → NaN → 0 → 假紅;
+ *          row / column 不同值只讀到 row。現在逐軸讀 row-gap / column-gap,`normal` 讀成 0(那一軸畫出來就是 0),可指定 axis。
+ *      場景另可帶 `globals`({ theme, density }):同一則 story 用深色主題 / 另一密度再拍一張(檔名另取、基準圖另一槽);
+ *      值域封閉在 lib(不認得的 global 被 Storybook 靜默忽略、不認得的值會照寫進 `data-theme` 但沒有那套 token → 拍到淺色卻當深色 = 假覆蓋;
+ *      對照組 2026-09-29:`theme:dark` 讀回 `<html data-theme="dark">` + body 近黑,`theme:hc` 讀回 `data-theme="hc"` + body 純白)。
  *   4. 產出 <absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json
  *
  * Layer B(`/visual-audit` skill,AI judgement)
@@ -43,7 +63,7 @@ import { writeFile, readFile } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawnSync, execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import {
   ensureRuntimeEvidenceDirectory,
   prepareRuntimeEvidenceFile,
@@ -58,6 +78,13 @@ import {
   executeVisualInteraction,
   normalizeVisualInteraction,
 } from './lib/visual-audit-interaction.mjs'
+import {
+  judgeGeometryAssertion,
+  normalizeGeometryAssertion,
+  normalizeScenarioGlobals,
+  readGeometryInPage,
+  storybookGlobalsQuery,
+} from './lib/visual-audit-geometry.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { createRenderHealthMonitor } from './lib/storybook-render-health.mjs'
 import { visualAuditExitCode, emptyScopeVerdict } from './lib/visual-audit-exit-policy.mjs'
@@ -139,7 +166,19 @@ try {
       scenario.interaction,
       `scenarios[${index}].interaction`,
     )
-    return interaction ? { ...scenario, interaction } : scenario
+    // 斷言與 globals 的契約在這裡就驗完(lib/visual-audit-geometry.mjs):未知 type / 欄位 / symmetric / axis / 主題值 → 整個 run 停,
+    // 不讓一條寫壞的斷言進瀏覽器後被當成「選不到」或被靜默忽略
+    if (scenario.assertions !== undefined && !Array.isArray(scenario.assertions)) {
+      throw new Error(`scenarios[${index}].assertions must be an array`)
+    }
+    const assertions = scenario.assertions?.map((assertion, j) => normalizeGeometryAssertion(assertion, `scenarios[${index}].assertions[${j}]`))
+    const globals = normalizeScenarioGlobals(scenario.globals, `scenarios[${index}].globals`)
+    return {
+      ...scenario,
+      ...(interaction ? { interaction } : {}),
+      ...(assertions ? { assertions } : {}),
+      ...(globals ? { globals } : {}),
+    }
   })
 } catch (err) {
   console.error(`[visual-audit] FATAL: scripts/visual-assertions.json 讀取/契約驗證失敗(${err.message})— fail-closed,不做內建 fallback`)
@@ -285,80 +324,20 @@ async function scanContrast(page) {
 
 // ── Geometry assertions ──────────────────────────────────────────────────────
 
+// 讀值(readGeometryInPage,瀏覽器端,對選到的**全部**元素)→ 判定(judgeGeometryAssertion,純函式)。
+// 兩者都住 lib/visual-audit-geometry.mjs,判定表與合成 DOM 對照組在 scripts/test-visual-audit.mjs(2026-09-29,OE8)。
+// 2026-09-12 起的既有語意不變:**選不到元素 = selectorMissing 違規,不是跳過**(`$$eval` 選不到只回空陣列、不丟例外,
+// 判定端把空陣列判成 selectorMissing;選擇器語法壞掉會丟例外,走 catch 記同一種違規)。
+// 原本這裡靜默吞掉,理由寫「story 可能沒 render 該元素」—— 但那讓「選擇器打錯」「元素被改名」「story 改版後元素消失」
+// 三種真實回歸全部變成綠燈。真的不適用的場景應該不要在該 scenario 掛那條斷言,而不是靠引擎幫忙吞。
 async function runGeometryAssertions(page, assertions) {
   if (!assertions || assertions.length === 0) return []
   const violations = []
   for (const a of assertions) {
     try {
-      if (a.type === 'equalHeight') {
-        const heights = await page.$$eval(a.selector, (els) => els.map((el) => el.getBoundingClientRect().height))
-        // **選不到元素 = 違規,不是跳過**(2026-09-12 第二處)。上一輪只修了 `catch` 那條路
-        // (`$eval` 選不到會丟例外),但 `$$eval` 選不到**只回空陣列、不丟例外** ——
-        // 於是 equalHeight 掛一個語法合法卻選不到的選擇器,仍然靜默通過。
-        // 實證:`#storybook-root button-nope-xyz` 在 equalHeight 是綠、在 gap 是 selectorMissing,兩條路不一致。
-        if (heights.length === 0) {
-          violations.push({ assertion: a.name, type: 'selectorMissing', selector: a.selector, error: 'equalHeight: 選不到任何元素' })
-          continue
-        }
-        const first = heights[0]
-        const mismatch = heights.filter((h) => Math.abs(h - first) > 0.5)
-        if (mismatch.length > 0) {
-          violations.push({
-            assertion: a.name,
-            type: 'equalHeight',
-            expected: first,
-            actual: heights,
-            selector: a.selector,
-          })
-        }
-      } else if (a.type === 'padding4Sided') {
-        const padding = await page.$eval(a.selector, (el) => {
-          const s = getComputedStyle(el)
-          return {
-            top: parseFloat(s.paddingTop),
-            right: parseFloat(s.paddingRight),
-            bottom: parseFloat(s.paddingBottom),
-            left: parseFloat(s.paddingLeft),
-          }
-        })
-        const vals = Object.values(padding)
-        const first = vals[0]
-        const mismatch = vals.some((v) => Math.abs(v - first) > 0.5)
-        if (mismatch) {
-          violations.push({
-            assertion: a.name,
-            type: 'padding4Sided',
-            expected: `all = ${a.expected ?? first}`,
-            actual: padding,
-            selector: a.selector,
-          })
-        } else if (a.expected !== undefined && Math.abs(first - a.expected) > 0.5) {
-          violations.push({
-            assertion: a.name,
-            type: 'padding4Sided',
-            expected: a.expected,
-            actual: first,
-            selector: a.selector,
-          })
-        }
-      } else if (a.type === 'gap') {
-        const gap = await page.$eval(a.selector, (el) => parseFloat(getComputedStyle(el).gap) || 0)
-        if (Math.abs(gap - a.expected) > 0.5) {
-          violations.push({
-            assertion: a.name,
-            type: 'gap',
-            expected: a.expected,
-            actual: gap,
-            selector: a.selector,
-          })
-        }
-      }
+      const measured = await page.$$eval(a.selector, readGeometryInPage, a)
+      violations.push(...judgeGeometryAssertion(a, measured))
     } catch (err) {
-      // **選擇器找不到 = 違規,不是跳過**(2026-09-12 修)。
-      // 原本這裡靜默吞掉,理由寫「story 可能沒 render 該元素」——
-      // 但那讓「選擇器打錯」「元素被改名」「story 改版後元素消失」三種真實回歸全部變成綠燈,
-      // 補再多斷言都不可信。真的不適用的場景應該不要在該 scenario 掛那條斷言,
-      // 而不是靠引擎幫忙吞。
       violations.push({
         assertion: a.name,
         type: 'selectorMissing',
@@ -400,11 +379,13 @@ async function auditScenario(browser, scenario, opts = {}) {
   // deterministic、對動畫排程零副作用;時間與 calendar stories 釘的 2026-07-15 一致。
   // scenario 可有 .url(任意 URL,for product app routes)或 .id(Storybook story id)
   // 4-cell LTR-only matrix:opts.matrixCell { theme, density }。RTL 明確不支援，不存在 dir 軸。
-  // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar)
+  // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar):
+  // 場景自己的 `globals`(深色版場景等,2026-09-29)先,--matrix 的 cell 蓋過去(cell 已寫進檔名,matrix 模式本來就是全矩陣)
   const matrixCell = opts.matrixCell
-  const globalsParam = matrixCell
-    ? `&globals=theme:${matrixCell.theme};density:${matrixCell.density}`
-    : ''
+  const globalsParam = storybookGlobalsQuery({
+    ...(scenario.globals ?? {}),
+    ...(matrixCell ? { theme: matrixCell.theme, density: matrixCell.density } : {}),
+  })
   const url = scenario.url
     ? scenario.url
     // demoFocus=on:基準圖要拍 user 在 Storybook 介面看到的畫面(預覽層的示範收尾只在管理介面 iframe 或帶此參數時才開;
@@ -603,32 +584,55 @@ async function installFrozenDate(page) {
 // ── Scope resolution ───────────────────────────────────────────────────────
 // 依 --scope / --urls 過濾 ASSERTIONS.scenarios 或產生 ad-hoc scenarios
 
-function getChangedComponents() {
-  // 讀 git diff 找動到的 packages/design-system/src/components/<Name>/ 目錄
-  try {
-    // 相比 main:用 `git diff main...HEAD --name-only` + working tree
-    const committedFiles = execSync('git diff main...HEAD --name-only 2>/dev/null || echo ""', {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-    }).trim().split('\n').filter(Boolean)
-    const workingFiles = execSync('git diff --name-only HEAD 2>/dev/null || echo ""', {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-    }).trim().split('\n').filter(Boolean)
-    const stagedFiles = execSync('git diff --cached --name-only 2>/dev/null || echo ""', {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-    }).trim().split('\n').filter(Boolean)
-    const all = new Set([...committedFiles, ...workingFiles, ...stagedFiles])
-    const components = new Set()
-    for (const f of all) {
-    const m = /^packages\/design-system\/src\/components\/([^/]+)\//.exec(f)
-      if (m) components.add(m[1])
-    }
-    return components
-  } catch {
-    return new Set()
+// 2026-09-29(待辦總帳 OE8 接進 PR CI 前查實):原本寫死 `git diff main...HEAD`,在 CI 的 PR checkout 與本機 clone 都沒有
+// 本地 `main`(只有 `origin/main`)→ 指令失敗被 `|| echo ""` 吞掉 → 靜默落回「只看工作樹」→ 乾淨 checkout 算出 0 個元件 → exit 0
+// 假綠(M37「沒觀察到被當成沒發生」)。現在 base 一律明確解析並 `rev-parse --verify`,解析不到就 INSTRUMENT-FAIL 紅,不猜。
+const CHANGED_BASE = ARGS_KV['--base'] // 明確指定(CI 傳 PR base sha / push 的前一個 head)
+const ZERO_SHA = /^0{40}$/
+
+function resolveChangedBase() {
+  const refExists = (ref) => {
+    const r = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd: PROJECT_ROOT, encoding: 'utf-8' })
+    return r.status === 0
   }
+  // 明確指定的 base 打錯 = 錯,不准退回別的 ref(退回就是拿 origin/main 當「user 要比的那個」的代理);
+  // 只有全零 sha(首推 / force-push 的 event.before)視同「沒指定」走預設鏈。
+  if (CHANGED_BASE && !ZERO_SHA.test(CHANGED_BASE)) {
+    if (refExists(CHANGED_BASE)) return CHANGED_BASE
+    console.error(`[visual-audit] INSTRUMENT-FAIL:--base=${CHANGED_BASE} 不是這個 repo 裡存在的 commit;scope=changed 拒絕猜別的 base`)
+    process.exit(1)
+  }
+  const candidates = [process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : null, 'origin/main', 'main'].filter(Boolean)
+  const base = candidates.find(refExists)
+  if (!base) {
+    console.error(`[visual-audit] INSTRUMENT-FAIL:scope=changed 找不到可比對的 base(試過:${candidates.join(', ')});傳 --base=<ref> 或 fetch origin/main`)
+    process.exit(1)
+  }
+  return base
+}
+
+function getChangedComponents() {
+  // 讀 git diff 找動到的 packages/design-system/src/components/<Name>/ 目錄:已提交(相對 base 的 merge-base)+ 工作樹 + 暫存
+  const base = resolveChangedBase()
+  const run = (args) => {
+    const r = spawnSync('git', args, { cwd: PROJECT_ROOT, encoding: 'utf-8' })
+    if (r.status !== 0) {
+      console.error(`[visual-audit] INSTRUMENT-FAIL:git ${args.join(' ')} 失敗:${(r.stderr || '').trim()}`)
+      process.exit(1)
+    }
+    return r.stdout.trim().split('\n').filter(Boolean)
+  }
+  const committedFiles = run(['diff', `${base}...HEAD`, '--name-only'])
+  const workingFiles = run(['diff', '--name-only', 'HEAD'])
+  const stagedFiles = run(['diff', '--cached', '--name-only'])
+  const all = new Set([...committedFiles, ...workingFiles, ...stagedFiles])
+  const components = new Set()
+  for (const f of all) {
+    const m = /^packages\/design-system\/src\/components\/([^/]+)\//.exec(f)
+    if (m) components.add(m[1])
+  }
+  console.log(`[visual-audit] scope=changed base=${base}(${committedFiles.length} 個已提交檔 + ${workingFiles.length + stagedFiles.length} 個工作樹/暫存檔)`)
+  return components
 }
 
 function filterScenarios(allScenarios) {
@@ -701,6 +705,18 @@ async function closeBrowser() {
 async function main() {
   await ensureOutDir()
 
+  // Scope resolution 先做:scope=changed 的 base 解析錯(或沒改到任何元件)要在建 / 開 Storybook 之前就有裁決,
+  // 不依賴 storybook-static 存不存在(2026-09-29;CLI 對照組在 scripts/test-visual-audit.mjs)。
+  const scopedScenarios = filterScenarios(ASSERTIONS.scenarios)
+  if (scopedScenarios.length === 0) {
+    // 0 個 scenario:只有 scope=changed 可以合法地不適用,其餘是儀器失效(lib/visual-audit-exit-policy.mjs,2026-09-25 待辦總帳 C5)
+    const empty = emptyScopeVerdict({ scope: SCOPE, urls: URLS })
+    if (empty.exitCode) console.error(`[visual-audit] ✗ ${INSTRUMENT_FAIL_MARKER} ${empty.reason}`)
+    else console.log(`[visual-audit] ${empty.reason}`)
+    process.exitCode = empty.exitCode
+    return
+  }
+
   if (AUTO_START) {
     console.log('[visual-audit] 建立 production Storybook...')
     const build = spawnSync('npm', ['run', 'build-storybook'], {
@@ -729,17 +745,6 @@ async function main() {
     }
   }
 
-  // Scope resolution
-  const scopedScenarios = filterScenarios(ASSERTIONS.scenarios)
-  if (scopedScenarios.length === 0) {
-    // 0 個 scenario:只有 scope=changed 可以合法地不適用,其餘是儀器失效(lib/visual-audit-exit-policy.mjs,2026-09-25 待辦總帳 C5)
-    const empty = emptyScopeVerdict({ scope: SCOPE, urls: URLS })
-    if (empty.exitCode) console.error(`[visual-audit] ✗ ${INSTRUMENT_FAIL_MARKER} ${empty.reason}`)
-    else console.log(`[visual-audit] ${empty.reason}`)
-    process.exitCode = empty.exitCode
-    await stopStorybook()
-    return
-  }
   console.log(`[visual-audit] scope=${URLS ? 'urls' : SCOPE},跑 ${scopedScenarios.length} scenario`)
 
   browser = await launchBrowser({ headless: !HEADED })

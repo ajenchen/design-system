@@ -255,7 +255,7 @@ Hero carousel 建議 ≤ 5 張；超過此數量時，使用者難以預期循�
 - 每個 `CarouselItem` `role="group" aria-roledescription="slide"`
 - Arrow `aria-label="上一張"` / `"下一張"`
 - Dots 容器 `role="group"` + `aria-label="輪播指示器"`;每個 dot 為原生 `<button>`,`aria-label="跳至第 N 張"`,**目前這張的 dot `aria-current="true"`**(向 SR 告知「你在這張」)— 對齊 DS FileViewer filmstrip canonical(`file-viewer.spec.md`「Filmstrip 規則」)+ Bootstrap 5 carousel indicators idiom
-- 鍵盤:按方向對應 orientation(`horizontal` 用 `ArrowLeft` / `ArrowRight`;`vertical` 用 `ArrowUp` / `ArrowDown`)切換(根容器 `onKeyDownCapture`);dots 可 `Tab` focus
+- 鍵盤:按方向對應 orientation(`horizontal` 用 `ArrowLeft` / `ArrowRight`;`vertical` 用 `ArrowUp` / `ArrowDown`)切換(根容器 `onKeyDownCapture`);dots 可 `Tab` focus。**投影片裡的文字輸入(輸入框 / 多行框 / 下拉 / 可編輯區)保留自己的方向鍵**(2026-09-29,待辦總帳 N46):焦點在它們上面時根容器不接手,`←→` / `↑↓` 是移插入點、換選項;判斷式 = 全 DS 唯一那份 `src/lib/roving-list-keyboard.ts` `isTextEntryElement`(與「列上有小按鈕的一串」的「項目裡的輸入框保留自己的方向鍵」同一條,`ds-canonical/references/keyboard-model-canonical.md`)。2026-09-29 前根容器在捕獲階段一律搶走,表單投影片打不了方向鍵。閘:`scripts/test-roving-list-keyboard.mjs`「isTextEntryElement 的消費者」段
 
 ### 為何 dots 不用 tabs 模型(canonical,2026-06-12)
 

@@ -92,7 +92,7 @@ TreeView 本身只負責三件事:
 
 Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover 時 `fg-secondary`,只前進一階)/ 位置在 indent 之後 icon 之前 / 點擊只 toggle expand 不觸發 selection / `rotate-90` transition。
 
-**消費共用行內小按鈕**(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」):箭頭本身就是 `ItemInlineActionButton`(`../../patterns/element-anatomy/item-anatomy.tsx`),尺寸照 `../../patterns/element-anatomy/inline-action.spec.md`「尺寸對照」TreeItem 列 —— 圖示與排版佔位 16(lg 20)、**滑過底色 18(lg 22)= 點得到的範圍**(`../../../ds-canonical/references/hit-area-canonical.md`)、按下多一階 `neutral-active`。與 DataTable 巢狀列的展開箭頭同一顆(`../DataTable/data-table.tsx` nestedPrefix)。縮排不變:箭頭仍住 `ItemPrefix` 鎖寬的槽,多出的 1px 靠溢出不吃版位。2026-09-26 之前這裡手刻一顆 16×16 的按鈕,滑過底色與點擊範圍都只有 16、也沒有按下態。箭頭 `tabIndex=-1`、對讀屏隱藏(展開 / 收合的鍵盤與語意在列上:`→` / `←` 與 `aria-expanded`)。
+**消費共用行內小按鈕**(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」):箭頭本身就是 `ItemInlineActionButton`(`../../patterns/element-anatomy/item-anatomy.tsx`),尺寸照 `../../patterns/element-anatomy/inline-action.spec.md`「尺寸對照」TreeItem 列 —— 圖示與排版佔位 16(lg 20)、**滑過底色 18(lg 22)= 點得到的範圍**(`../../../ds-canonical/references/hit-area-canonical.md`)、按下多一階 `neutral-active`。與 DataTable 巢狀列的展開箭頭同一顆(`../DataTable/data-table.tsx` nestedPrefix)。縮排不變:箭頭仍住 `ItemPrefix` 鎖寬的槽,多出的 1px 靠溢出不吃版位。2026-09-26 之前這裡手刻一顆 16×16 的按鈕,滑過底色與點擊範圍都只有 16、也沒有按下態。箭頭 `tabIndex=-1`(不佔 Tab 停靠點;展開 / 收合的鍵盤在列上:`→` / `←`),**但保留名字與角色、不 `aria-hidden`**(2026-09-29 更正,待辦總帳 N46):`aria-label` 展開 / 收合 + `aria-expanded`,語音控制使用者喊「展開」才按得到、讀屏在列裡也叫得到它;與 DataTable 巢狀列的展開箭頭同一種寫法(`../DataTable/data-table.tsx` nestedPrefix)。2026-09-29 前寫 `aria-hidden`,一顆能聚焦(`tabIndex=-1` 仍可被程式與滑鼠聚焦)的按鈕對讀屏隱藏是 axe `aria-hidden-focus` 那一族。
 
 ### 佔位規則(chevron + icon)
 
@@ -175,9 +175,12 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 | `←` | 展開的資料夾 → 收合;收著的資料夾或葉節點 → 回上一層;最外層 → 不動 |
 | `Enter` / `Space` | 選取(等同點擊 label;`expandOnSelect` 的連帶展開僅限指標點擊) |
 | `Tab` / `Shift+Tab` | **一下就離開整棵樹**(別列、本列的按鈕都不在 Tab 路上) |
+| 打字(可見字元) | **打字跳位**(2026-09-29,待辦總帳 N46;`ds-canonical/references/keyboard-model-canonical.md` 五條判準第 2 條把「打字前導」列為樹必備):焦點移到**下一個**名字以該字開頭的可見列(從目前這一列的下一列往後找,到底繞回第一列;折疊大小寫);1 秒內連打多個字 = 以整串比對(「fr」→ Frontend);連打同一個字母而沒有名字以「bb」開頭時退回單字循環(在同字母的列之間輪流)。`Space` 不算(它是選取)。一手:W3C APG Tree View 逐字 "Type a character: focus moves to the next node with a name that starts with the typed character." / "Type multiple characters in rapid succession: focus moves to the next node with a name that starts with the string of characters typed."(<https://www.w3.org/WAI/ARIA/apg/patterns/treeview/>);1 秒的累積窗與同字母退回是 AI 推導。閘:`scripts/tree-view-keyboard-route-invariant.mjs` K1(真按鍵)+ `scripts/test-tree-keyboard-route.mjs`(判定表) |
 | `Cmd/Ctrl+Shift+↑` / `↓` | 重排:同層上移 / 下移(僅 `draggable` 時;詳「Drag and Drop → 鍵盤重排」) |
 | `Cmd/Ctrl+Shift+→` | 重排:移入上一個 sibling(需為 folder;收合時自動展開) |
 | `Cmd/Ctrl+Shift+←` | 重排:移出,成為 parent 的下一個 sibling |
+
+**列被刪掉時焦點接力**(2026-09-29,待辦總帳 N46「刪除 / 消失後焦點去下一項」):consumer 從資料裡拿掉節點時,焦點若在那一列(或它的按鈕)上,接力到畫面順序的**下一個可見列**(可能是下一個頂層節點);沒有下一列 → **上一個可見列**(可能就是父節點);禁止掉到 `body`。落點順序同 `../FileUpload/file-upload.spec.md`「移除焦點」(下一個 → 上一個 → 擁有者)。收合中的分支不算候選(整段子樹一起卸載,落點是收合的那個父節點)。實作 = `tree-view.tsx` TreeItem 的 layout-effect cleanup(節點拆掉前鄰列都還在);驗證 = `tree-view.stories.tsx`「刪除後焦點接力」(play 實刪四次)。
 
 焦點在**列上的按鈕**上:
 

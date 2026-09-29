@@ -60,7 +60,7 @@
 | agent 開著,寬 → 窄 → 寬 | 並列 → 覆蓋抽屜(左留內距 + 遮罩)→ 並列;對話、草稿、閱讀位置都不重設 | B·E |
 | 窄螢幕主動關閉 agent,再拉寬 | 仍然關著;進行中的回覆不因關閉而停止 | E |
 | 沒 URL 的確認框還沒關,窄 → 寬 | 確認框繼續阻擋 agent;拉寬不解除阻擋 | A·B·E |
-| 同分頁在宿主內按上一頁 / 下一頁 | 宿主依歷史導航;agent 工作狀態保留(蓋板下**不**收成:上一頁不是 agent 內的動作 —— AI 推導、未拍板,見來源總帳) | C·E |
+| 同分頁在宿主內按上一頁 / 下一頁 | 宿主依歷史導航;agent 工作狀態保留(蓋板下**不**收成:上一頁不是 agent 內的動作 —— AI 推導,2026-09-29 依據補齊,見來源總帳) | C·E |
 | agent 點外部連結,再回到原分頁 | 外站在新分頁;原分頁沒離開宿主,agent 狀態保留 | C·F |
 | 原分頁從網址列離開宿主,再上一頁返回;瀏覽器還原了舊畫面 | agent 重新初始化為關閉的新對話 | F |
 | 網址只差一個 hash、頁籤或 Modal 狀態 | 宿主完成指定的變化;agent 工作狀態保留(從 agent 點的:並排維持、蓋板收成) | B·C·E |
@@ -97,7 +97,7 @@
 | user 2026-09-09 原話 | 「開啟 agent 點內部連結當然要有優先呈現該連結內容啊,怎麼可能讓 agent 還霸道佔位?原則到底是哪裡寫錯了?」 | 現行 SSOT。落到條 B 末句、推導表「窄螢幕(蓋板),agent 點內部另一頁」「窄螢幕,agent 點有 URL 的 Modal」「按確認前往」三列 |
 | 條 E 加「以及條 B 窄螢幕的收成」 | **AI 推導**(結論兩兩相容性掃描:原 E「開關只由你明確的開關操作改變」與新條 B 互斥,不改 E 兩條不能同時為真);user 未逐字說過 | 依你的原話採納,未拍板 |
 | 「收成 = 入口鈕、不是卸載」 | `agent-panel.spec.md`「關閉不等於卸載」(2026-09-07 G2)既有 | 沿用 |
-| 瀏覽器 chrome 的上一頁 / 下一頁在蓋板下**不**收成 agent | **AI 推導**(它不是「agent 內的動作」;推導表「同分頁在宿主內按上一頁 / 下一頁」列維持原答案) | 未拍板,示範照此 |
+| 瀏覽器 chrome 的上一頁 / 下一頁在蓋板下**不**收成 agent | **AI 推導**(它不是「agent 內的動作」;推導表「同分頁在宿主內按上一頁 / 下一頁」列維持原答案)。**2026-09-29 依據補齊(待辦總帳 OD3)**:HTML Standard 把 Android 返回鍵與 Esc 歸為同一類 close request(<https://html.spec.whatwg.org/multipage/interaction.html#close-requests>「Some example close requests are: The Esc key on desktop platforms. The back button or gesture on certain mobile platforms such as Android.」),而本 DS 已裁「面板是常駐 app UI,Esc 永遠不關」(`agent-panel.spec.md`「Esc 永遠不關面板」段,引 Microsoft「The Esc key only affects transient UI, it does not close, or back navigate through, app UI.」)—— 返回不關是同一條不變量的機械結果;桌機的上一頁不在 close request 例子裡,只做歷史導航。Radix Dialog / Popover 與 Headless UI Dialog 都不綁 history(<https://github.com/radix-ui/primitives/issues/2586>、<https://github.com/tailwindlabs/headlessui/issues/1985>);WICG 明言用 history 管 UI 狀態「generally not great」(<https://github.com/WICG/close-watcher/blob/main/README.md#L328>)。唯一反向慣例是 Android 原生(MDC standard sheet 也接返回鍵收起),要走那條得註冊 CloseWatcher,而 HTML spec 讓 Esc 與返回走同一路 → 等於推翻「Esc 不關面板」;那才是牽動既有裁示的取捨,現行不動 | AI 推導、與平台模型一致;示範照此 |
 
 ## 來源總帳(2026-09-16):窄螢幕蓋板「留邊 + 遮罩」
 
@@ -148,7 +148,7 @@
 | Esc 分派 | **已解**(2026-09-08):面板在 **`window` 的 capture 階段**攔 Esc(捕獲順序 window → document,結構上一定先於 Radix 的 document capture,不靠註冊順序的僥倖),焦點在面板內時 `preventDefault()`;Radix 的 `if (!event.defaultPrevented && onDismiss)` 因此不 dismiss。對照組驗焦點在 modal 內時仍然關得掉 |
 | 並存時的 outside dismiss | **已解**(2026-09-08):非模態分支會在「焦點跑到框外」時 dismiss —— 把焦點移進常駐區域就等於框外互動,對話框當場關掉(實測連 Esc 都還沒按)。Dialog 在有 `persistentElements` 時擋掉來自常駐區域的 `onFocusOutside` / `onPointerDownOutside` / `onInteractOutside` |
 
-| 2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 起 Dock 預設開啟、關閉時卸載面板 —— 沒辦法保證 F 條「初始化為關閉」與 E 條「閱讀位置保存」 | **已解**(2026-09-07:`display:contents` keep-mounted;閘 `agent-panel-reopen-state.mjs`)|
+| 2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 起 Dock 預設開啟、關閉時卸載面板 —— 沒辦法保證 F 條「初始化為關閉」與 E 條「閱讀位置保存」 | **已解,但範圍是**:2026-09-07 `display:contents` keep-mounted 解的是 E 條「閱讀位置保存」與 F 條的「初次進入 / 重新整理 / 新開分頁初始化為關閉」(`defaultOpen=false`);F 條最後半句「**原分頁離開宿主後返回**」(back/forward cache 還原、元件不重掛)2026-09-29 才補:`AgentPanelDock` 聽 `pageshow` persisted 關回、宿主重設對話(`agent-panel-fab.tsx:911-926`、`agent-panel.stories.tsx:1136-1145`)。閘 `agent-panel-reopen-state.mjs` + `agent-url-registry-demo-invariant.mjs` S14 |
 | 3 | 推擠與斷點還掛在 backlog | `agent-panel.spec.md:83` 明寫「面板與 app 的推擠/斷點 = backlog」—— B 條要落地,這一條得先解 | **已解**(2026-09-07:容器基準斷點 1080,2026-09-09 user 拍板改 960「我覺得 960px 作為 agent 蓋板的斷點應該可以」+ `resolvePanelWidthMax`;閘 `agent-panel-breakpoint.mjs`)|
 
 ## 來源與審查紀錄

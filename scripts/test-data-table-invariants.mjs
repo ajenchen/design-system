@@ -91,12 +91,28 @@ try {
   cpSync(STATIC, copy, { recursive: true })
   const copiedTarget = join(copy, relative(STATIC, target))
   writeFileSync(copiedTarget, readFileSync(copiedTarget, 'utf8').replace(TOKEN_RE, (_m, p1) => `${p1}11px`))
+  // 第二~四個違規(2026-09-29,I34 / I35 / I36):在複本的 iframe.html 開頭掛兩支捕獲階段的聽者(React 掛在 root 容器,document 的捕獲聽者先跑):
+  //   click —— 目標**就是**選取欄的列身格容器本身(不是裡面的勾選框)時吞掉 = 2026-09-24「把整格的 onClick 拿掉」的形狀:空白處點下去沒事、
+  //            勾選框自己照常。不用 CSS pointer-events:none 做這件事:那會讓 elementFromPoint 落到列上,I34 的儀器對照(落點屬於那一格)
+  //            先判儀器失效,紅在錯的地方(2026-09-29 第一版就是這樣,meta-test 自己抓到)。
+  //   keydown —— Shift+方向鍵、以及輸入框裡的 F2 吞掉 = 2026-09-29 前「Shift 被忽略」「編輯中 F2 無作用」的形狀;其他鍵(I32 / I33 的方向鍵、Esc、Enter)照常。
+  const BREAK = '<script>'
+    + 'document.addEventListener("click",function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute("data-column-id")==="__select__")e.stopImmediatePropagation()},true);'
+    + 'document.addEventListener("keydown",function(e){var t=e.target&&e.target.tagName;if((e.shiftKey&&/^Arrow/.test(e.key))||(e.key==="F2"&&(t==="INPUT"||t==="TEXTAREA")))e.stopImmediatePropagation()},true)'
+    + '</script>'
+  const iframeHtml = join(copy, 'iframe.html')
+  const html = readFileSync(iframeHtml, 'utf8')
+  if (!/<head>/.test(html)) { console.error('✗ 複本的 iframe.html 找不到 <head>,無法注入對照組(meta-test 無效)'); process.exit(1) }
+  writeFileSync(iframeHtml, html.replace('<head>', '<head>' + BREAK))
   resignBuildManifest(copy)
   const { status: code, text } = runGate([`--build=${copy}`])
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(I6 font detection 失效)'); ok = false }
   else if (/INSTRUMENT-FAIL/.test(text)) { console.error('✗ 注入違規後的紅是儀器失效(沒量到),不是偵測到違規 —— 不能算被抓\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I6 \|/.test(text)) { console.error('✗ 注入違規後有紅,但不是 I6 抓到的 —— 不能證明 I6 會紅\n' + text.slice(-1500)); ok = false }
-  else console.log('✓ 注入違規被抓(I6 @lg 字級崩,exit ' + code + ')')
+  else if (!/✗ I34 \| 勾選格空白處/.test(text)) { console.error('✗ 勾選格容器不接指標後 I34「空白處點下去」那條沒有紅 —— 不能證明 I34 會紅\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I35 \| Shift\+↓ 一下/.test(text)) { console.error('✗ 吞掉 Shift+方向鍵後 I35「Shift+↓ 一下」那條沒有紅 —— 不能證明 I35 會紅\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I36 \| 編輯中再按 F2:編輯器關閉/.test(text)) { console.error('✗ 吞掉輸入框裡的 F2 後 I36「編輯器關閉」那條沒有紅 —— 不能證明 I36 會紅\n' + text.slice(-1500)); ok = false }
+  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞,exit ' + code + ')')
 } finally {
   rmSync(copyRoot, { recursive: true, force: true })
 }

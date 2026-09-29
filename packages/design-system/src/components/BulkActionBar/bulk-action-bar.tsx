@@ -80,6 +80,8 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
     { selection, onClearSelection, actions, hiddenByFilter, totalSelected, labels: labelsOverride, className, ...props },
     ref
   ) {
+    const { onFocus: _onFocus, onBlur: _onBlur, ...propsWithoutFocusHandlers } = props
+    void _onFocus; void _onBlur
     const labels: BulkActionBarLabels = React.useMemo(
       () => ({ ...BULK_ACTION_BAR_DEFAULT_LABELS, ...labelsOverride }),
       [labelsOverride]
@@ -87,11 +89,39 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
 
     // selection.length === 0 自動藏(對齊 spec 禁止事項 #3)。
     // 反向選取(DataTable all 模式)例外:visible 全被 excluded 但 totalSelected>0 仍有選取 → 顯示(2026-06-22)
-    if (selection.length === 0 && (totalSelected ?? 0) === 0) return null
+    const visible = !(selection.length === 0 && (totalSelected ?? 0) === 0)
+
+    // ── 焦點接力(2026-09-29,待辦總帳 N46 子項「批次動作列消失後焦點回表格」;spec「a11y 預設」)──
+    // 選取清空 / 批次動作把選取消掉時本列整個卸載;鍵盤使用者若正停在列內(清除 × 或某個動作鈕),焦點會掉到 body、
+    // 下一次 Tab 從文件開頭重來。卸載時把焦點還給「進入本列之前」的元素(通常是列的勾選框或表格),同 Dialog 的
+    // return-focus 契約;它已不在文件裡就不動。沒有新 prop:進入前的元素由 focus 事件的 relatedTarget 記下(內建 fallback,M23(f))。
+    const focusWithinRef = React.useRef(false)
+    const returnFocusToRef = React.useRef<HTMLElement | null>(null)
+    React.useLayoutEffect(() => {
+      if (visible || !focusWithinRef.current) return
+      focusWithinRef.current = false
+      const target = returnFocusToRef.current
+      returnFocusToRef.current = null
+      if (target && target.isConnected && (document.activeElement === document.body || document.activeElement === null)) {
+        target.focus({ preventScroll: true })
+      }
+    }, [visible])
+
+    if (!visible) return null
 
     return (
       <div
         ref={ref}
+        onFocus={(e) => {
+          props.onFocus?.(e)
+          focusWithinRef.current = true
+          const from = e.relatedTarget as HTMLElement | null
+          if (from && !e.currentTarget.contains(from)) returnFocusToRef.current = from
+        }}
+        onBlur={(e) => {
+          props.onBlur?.(e)
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) focusWithinRef.current = false
+        }}
         // 2026-07-06 user 拍板:role "toolbar" → "group" — 原宣告 toolbar 但未實作 APG toolbar
         // 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);group 語意誠實,
         // Tab 序照 DOM(spec 本有 canonical),Gmail / Linear bulk bar 實務同款。
@@ -104,7 +134,7 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
           'border-t border-divider',
           className
         )}
-        {...props}
+        {...propsWithoutFocusHandlers}
       >
         {/* X close — md dismiss(2026-05-04 spec update:default placement = footer variant,
             visual weight 對齊 Dialog footer commitment buttons md;same-row consistency 維持)

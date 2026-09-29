@@ -3,8 +3,8 @@
  * @gate-contract
  *   保證: TreeView(設計規格「工程團隊樹」)用真按鍵量時,整棵樹在 Tab 路上只佔一站、列上的按鈕只能用 → / ← 走到、
  *         從列或按鈕上 Tab 一下就離開整棵樹,鍵盤焦點在列上時該列的隱藏按鈕看得到(待辦總帳 B9 路線乙),淺色與深色各一輪
- *   紅: --selftest 注入舊路線的三個形狀(每列主格塞一顆可 Tab 的按鈕、document capture 吞掉 → / ←、動作格釘成 opacity 0),
- *       S1 / T1 / R1 / V1 在兩個主題都必須紅;少一條沒紅 → exit 1;story 開不起來或建置比原始碼舊 = exit 2(不算通過)
+ *   紅: --selftest 注入舊路線的四個形狀(每列主格塞一顆可 Tab 的按鈕、document capture 吞掉 → / ← 與列上的可見字元、動作格釘成 opacity 0),
+ *       S1 / T1 / R1 / V1 / K1 在兩個主題都必須紅;少一條沒紅 → exit 1;story 開不起來或建置比原始碼舊 = exit 2(不算通過)
  *   綠: 沒弄壞時必須綠;story 經 openStory 等渲染完成 + 版面靜止才量,按鍵後等影格(rAF)再讀焦點,隱藏按鈕的透明度
  *       以 waitForFunction 等到過渡跑完才判(不量過渡中間值);Tab 次數是實按數出來的,不是從 DOM 結構推算
  *
@@ -33,6 +33,8 @@
  *   V2 鍵盤焦點在列上 → 列畫出往內的框(outline 實線、offset < 0)
  *   V3 滑鼠點 Bob 這一列 → 焦點在 Bob、**不畫框**(:focus-visible 不成立);之後 Tab 一下就離開
  *   L1 ← 在葉節點 Alice → 回到 Frontend;← 在展開的 Frontend → 收合(aria-expanded=false);→ 再展開、焦點留在 Frontend
+ *   K1 列上打字跳位(2026-09-29 N46;W3C APG Tree View "Type a character"):b → Bob、a → Alice(繞回)、f → Frontend、e → Engineering、
+ *      快打「al」→ Alice、「alx」沒有 → 不動;對照組把列上的可見字元在 document 捕獲階段吞掉(= 2026-09-29 前沒有打字跳位)→ 必紅
  *
  * 對照組 `--selftest`:注入舊路線的三個形狀 —— 在每一列的主格裡塞一顆可 Tab 的按鈕(= 別列的按鈕在 Tab 路上)、
  * 在 document 捕獲階段吞掉 → / ←(= 方向鍵進不了按鈕)、把動作格釘成 opacity 0(= 焦點在列裡時按鈕仍隱藏)。
@@ -88,6 +90,8 @@ const BREAK_BACK_TO_OLD_ROUTE = () => {
   }
   document.addEventListener('keydown', (e) => {
     if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target?.closest?.('[data-tree-row]')) e.stopImmediatePropagation()
+    // K1 的舊形狀(2026-09-29 前):列上打字沒有任何處理 —— 把可見字元吞掉,焦點不動
+    if (e.key.length === 1 && e.key !== ' ' && e.target?.closest?.('[data-tree-row]')) e.stopImmediatePropagation()
   }, true)
   new MutationObserver(apply).observe(document, { childList: true, subtree: true })
   apply()
@@ -250,6 +254,27 @@ const runTheme = async (theme) => {
     toParent === 'row:frontend' && collapsed === 'false' && expanded === 'true' && stay === 'row:frontend',
     `${toParent} / 收合後 aria-expanded=${collapsed} / 展開後=${expanded} / 焦點 ${stay}`)
 
+  // K1 打字跳位(2026-09-29 待辦總帳 N46;tree-view.spec.md「鍵盤導覽」打字列;W3C APG Tree View "Type a character")
+  // 從 Frontend 起(L1 之後焦點在這裡;樹全開:Engineering / Frontend / Alice / Bob):
+  //   b → Bob;a → Alice(從 Bob 往後找,到底繞回:Engineering、Frontend、Alice);f → Frontend(繞回);e → Engineering;
+  //   快速連打 a、l → 「al」→ Alice(從 Engineering 往後:Frontend 不合,Alice 合);再打 x(沒有名字以「alx」開頭)→ 不動。
+  // 每一下都等 rAF×2 再讀焦點。單字之間**刻意隔 1.1 秒**:元件的累積窗是 1 秒(tree-view.tsx TYPEAHEAD_WINDOW_MS),
+  // 1 秒內連打的字算同一串(「ba」→ 沒有名字以 ba 開頭 → 不動),這裡要驗的是四個**獨立**的單字跳位;這不是「等版面穩定」的固定睡眠,
+  // 是被驗的性質本身有時間窗(M37:量測必須照性質的定義,不是照機器速度)。快打那一步反過來用 30ms 間隔,證明累積真的成串。
+  const typed = []
+  for (const k of ['b', 'a', 'f', 'e']) { await page.waitForTimeout(1100); await press(k); await settled(); typed.push(await where()) }
+  await page.waitForTimeout(1100)
+  await page.keyboard.type('al', { delay: 30 })
+  await settled()
+  typed.push(await where())
+  await press('x')
+  await settled()
+  typed.push(await where())
+  ck(`K1${tag} 列上打字跳位:b → Bob;a → Alice(繞回);f → Frontend;e → Engineering;快打「al」→ Alice;「alx」沒有 → 不動`,
+    JSON.stringify(typed) === JSON.stringify(['row:bob', 'row:alice', 'row:frontend', 'row:eng', 'row:alice', 'row:alice']),
+    typed.join(' → '))
+  // 焦點放回 Alice 之後的狀態不影響 V3(V3 用滑鼠點 Bob)
+
   // V3 滑鼠點列:焦點給列、不畫框;之後 Tab 一下離開
   // 點之前先等「那一點真的點得到 Bob 那一列」,不是只等元素 visible(M32「量測值受動畫影響 → 等穩態再量」):
   // L1 剛用 → 把 Frontend 重新展開,展開動畫期間子列的版面盒已在最終位置、畫面卻還被裁掉,elementFromPoint 落在
@@ -304,7 +329,7 @@ const 失敗 = results.filter((r) => !r.通過)
 
 if (SELFTEST) {
   // 對照組要紅在對的地方:S1(多出停靠點)、T1(Tab 出不去)、R1(方向鍵進不了按鈕)、V1(按鈕仍隱藏),兩個主題都要
-  const mustFail = ['S1', 'T1', 'R1', 'V1']
+  const mustFail = ['S1', 'T1', 'R1', 'V1', 'K1']
   const missed = []
   for (const theme of ['light', 'dark']) {
     for (const id of mustFail) {

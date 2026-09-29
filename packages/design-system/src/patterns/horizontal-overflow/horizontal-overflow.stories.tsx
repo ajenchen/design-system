@@ -5,6 +5,7 @@
 // overflow affordance(scroll arrows / menu trigger / fade mask)一律從這裡取用。
 // 本頁給 DS contributor 看 primitive 的組裝方式與 canonical 規則。
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, waitFor, within } from '@storybook/test'
 import {
   useScrollEdges,
   useScrollByPage,
@@ -136,4 +137,34 @@ export const MenuMode: Story = {
       </p>
     </div>
   ),
+}
+
+
+/**
+ * 到底時焦點交給另一側箭頭(2026-09-29 待辦總帳 OE26):箭頭是條件渲染,鍵盤使用者按到底的那一下焦點正停在它上面,
+ * 卸載會讓焦點掉到 body。test-only:以 play 當閘(story-demo-focus 閘載入每支 story 並跑 play,斷言不成立就紅);
+ * 對照組 = 先驗證焦點真的在右箭頭上、右箭頭真的卸載了,再驗證焦點落在左箭頭。
+ */
+export const ArrowUnmountHandsOffFocus: Story = {
+  name: '到底時焦點交給另一側箭頭',
+  tags: ['test-only'],
+  parameters: { demoFocus: 'keep' },
+  render: () => <FilmstripScrollDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const scroller = canvasElement.querySelector<HTMLElement>('[data-overflow-scroller]')
+    if (!scroller) throw new Error('找不到捲動容器(useScrollEdges 沒有標 data-overflow-scroller)')
+    const right = await canvas.findByRole('button', { name: '向右捲動' })
+    right.focus()
+    await expect(document.activeElement).toBe(right)
+    // 一步捲到底(不走 smooth 動畫,免得時序決定結果)
+    scroller.scrollTo({ left: scroller.scrollWidth, behavior: 'instant' as ScrollBehavior })
+    await waitFor(() => expect(canvas.queryByRole('button', { name: '向右捲動' })).toBeNull())
+    const left = canvas.getByRole('button', { name: '向左捲動' })
+    await expect(document.activeElement).toBe(left)
+    // 兩側都不在(內容不再溢出)→ 焦點交給捲動容器本身
+    scroller.scrollTo({ left: 0, behavior: 'instant' as ScrollBehavior })
+    await waitFor(() => expect(canvas.queryByRole('button', { name: '向左捲動' })).toBeNull())
+    await expect(document.activeElement).toBe(canvas.getByRole('button', { name: '向右捲動' }))
+  },
 }

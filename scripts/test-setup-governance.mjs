@@ -46,6 +46,7 @@ import {
   nextPatchVersion,
   runClosedBootstrapStep,
   runVulnerabilityAuditUnderPolicy,
+  GOVERNANCE_VULNERABILITY_POLICIES,
   isTransientAdvisoryEndpointFailure,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
@@ -1592,6 +1593,20 @@ test('vulnerability policy:enforce 照舊丟錯,render-only 只報告並留 rece
   assert.equal(lines.length, 1)
   assert.match(lines[0], /GOV-RENDER-ONLY-REFERENCE.*baseline-browser-mapping/)
   assert.equal(runVulnerabilityAuditUnderPolicy('report-render-only-reference', passing, { report }).status, 'passed', '稽核本來就過時,render-only 回真 receipt')
+  // 2026-09-29 OE6:governance-anchor 裝的是 protected main 的樹,不是渲染容器 —— 要有自己的名字、自己的理由,receipt 與 log 不得
+  // 印成「歷史參考樹」。兩個只報告政策行為相同,差別**只在**它們說出的理由與 receipt kind。
+  const anchorReceipt = runVulnerabilityAuditUnderPolicy('report-protected-base-verifier', failing, { report })
+  assert.deepEqual({ ...anchorReceipt }, {
+    schemaVersion: 1,
+    kind: 'protected-base-verifier-vulnerability-audit-receipt',
+    status: 'reported-not-enforced',
+    policy: 'report-protected-base-verifier',
+    reason: 'GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:baseline-browser-mapping',
+  })
+  assert.equal(lines.length, 2)
+  assert.match(lines[1], /GOV-PROTECTED-BASE-VERIFIER.*GOV-CANDIDATE-DEPS-002.*baseline-browser-mapping/)
+  assert.doesNotMatch(lines[1], /渲染容器|RENDER-ONLY/, 'anchor 的 receipt 不得借用渲染容器的理由')
+  assert.deepEqual([...GOVERNANCE_VULNERABILITY_POLICIES], ['enforce', 'report-render-only-reference', 'report-protected-base-verifier'])
   assert.throws(() => runVulnerabilityAuditUnderPolicy('ignore', passing, { report }), /unsupported vulnerability policy:ignore/)
   assert.throws(() => runVulnerabilityAuditUnderPolicy(undefined, passing, { report }), /unsupported vulnerability policy:undefined/)
   assert.throws(() => runVulnerabilityAuditUnderPolicy('enforce', 'not-a-function', { report }), /must be callable/)

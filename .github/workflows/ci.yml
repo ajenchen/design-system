@@ -54,6 +54,9 @@ jobs:
         run: |
           npm run build-storybook
           /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
+          # 2026-09-29(OE18 盤點):隨 npm 出貨的 llms.txt / llms-full.txt 檔頭自稱「CI --check 守」,但從沒接進任何 workflow,
+          # 提交的檔停在 beta.132 過期 14 版沒人知道。build-storybook 鏈尾已重生,這裡驗 git 樹沒有漂移 + 對照組會紅。
+          npm run check:llms-txt
 
       # DataTable pixel invariants must run where a browser exists. The local macOS sandbox cannot
       # launch Chromium (Mach lookup closed), which is exactly how the beta.100 multi-person cell
@@ -395,6 +398,19 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=mouse --runs=3 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # **釘選區的滾輪路徑**(2026-09-29,待辦總帳 OE7;09-06 覆核指出 `grep -c "mode=pinned" ci.yml` = 0,零覆蓋):
+          # 滑鼠停在左釘選欄(ID / 選取框)上捲時,事件落在 `overflow-hidden` 的釘選面板,由元件自己的非 passive 滾輪監聽
+          # 轉發到中央捲動區(data-table.tsx makeBindPinnedPanel)—— gesture / mouse 都對準中央區,走不到這條路。
+          # 閘住兩件事:(1) 轉發還在 —— 腳本在 pinned 模式刻意不補 scrollTop,沒動就指名「轉發沒到中央區」紅;
+          # (2) 轉發路徑的主執行緒長工合計與幀距不比 main 差(--ref=main 比值,判準與 mouse 同一份 lib)。
+          # 空白類斷言**不掛**在這個模式:它跟 wheel 一樣由 JS 在主執行緒寫 scrollTop,結構上不會有合成器超前,
+          # 掛上去是一道永遠不紅的空閘(腳本對 wheel / pinned 都有守衛,給了就紅)。
+          # 本機(M32 四問):弄壞 → selftest 三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;時序 → 判中位數 + 比值,
+          # 與 mouse 同一套;機器慢 → 比值把兩個 build 在同一跑之內量,慢一起慢。成本:1 趟 5 秒、selftest 14 秒,約 +1 分鐘。
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 指標底下那一列的 hover / hover 反應延遲 / 預掛緩衝自適應 三支(CI 逐支計時合計 5.4 分)與
           # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(10 分)2026-09-15 搬到 verify-browser-datatable-perception:
           # 本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),只搬感知段之後仍 21 分,再搬三支 hover 類的閘
@@ -439,6 +455,11 @@ jobs:
       - name: DataTable perception + handle gates (browser)
         run: |
           npx --no-install playwright install chromium
+          # 虛擬游標模態閘的**對照組**(2026-09-29,待辦總帳 G5):`test:virtual-cursor-modality` 只跑現況,它的 --selftest
+          # (把游標列釘回舊行為 → 100 條游標長相斷言必須全紅)在整個 repo 沒有任何執行面跑過 —— 夜間 harness 的 meta-test
+          # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過。現況那趟留在 verify-browser-agent(13 分 / 上限 15,
+          # ci-workflow-scope 釘死);對照組本機要 100 秒以上,放在這個 7 分鐘的 job(同樣先 build-storybook),照 2026-09-15 按預算拆 job 的先例。
+          node scripts/virtual-cursor-modality-invariant.mjs --selftest
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
@@ -800,6 +821,17 @@ jobs:
           # 選單訊息列(2026-09-08 user 拍板):「沒有選項 / 載入中」都是一列 MenuItem 的列幾何(md 48 = 8 + 32 + 8),
           # 列高 / 群組留白 / 置中 / 搜尋列與觸發點的轉圈尺寸與位置 / 不可互動,每條都量像素;對照組在 focus-deep-gates.yml。
           npm run test:menu-message-row
+          # Steps 連接線幾何(2026-09-29 待辦總帳 N52):三尺寸垂直、無說明文字時線高 ≥ 24、兩端縫 8 —— 修法前 md 只有 2.2px、lg 是 0
+          # (線長是列高的餘數);selftest 把修法前的實測餵進判定函式必紅。
+          npm run test:steps-connector-geometry
+          # 視覺稽核只掃這次改到的元件(2026-09-29 待辦總帳 OE8:126 個場景只有 7 個掛斷言、從沒在 PR 上跑過)。只跑 render error 與
+          # 幾何 / 顏色斷言:--no-diff(基準圖是視覺回歸 workflow 釘死容器裡的 Ubuntu 渲染,別的 runner 會整排假破預算)、
+          # --no-a11y(a11y 另有 a11y-and-size.yml 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——
+          # 不讓腳本在沒有本地 main 的乾淨 checkout 裡靜默算出 0 個元件(M37);base 不存在是 INSTRUMENT-FAIL 紅,不是綠。
+          # 本機實測:沒改元件 0.5 秒結束、單一元件 2–11 秒、19 個元件 53 個場景 81 秒。
+          node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"
+        env:
+          VISUAL_AUDIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
       # both merged without any gate exercising them. These two commands bind cloud survivability

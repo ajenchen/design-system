@@ -132,6 +132,8 @@ return (
 )
 ```
 
+> **箭頭卸載時的焦點接力(2026-09-29,待辦總帳 OE26)**:箭頭是條件渲染,鍵盤使用者按到底的那一下焦點正停在它上面;`OverflowScrollArrow` 在 layout-effect cleanup(React 拿掉節點之前)看到焦點在自己身上,就交給同容器另一側箭頭,兩側都沒有(內容不再溢出)就交給捲動容器(`useScrollEdges` 在容器上標 `data-overflow-scroller`,必要時補 `tabindex=-1`)。消費者不用多傳任何東西;同 BulkActionBar / Dialog 的 return-focus 契約。閘:`horizontal-overflow.stories.tsx`「到底時焦點交給另一側箭頭」play。
+
 > **雙軸 overflow contract(2026-05-19 codify)**:啟用水平捲動時必同時抑制垂直捲動，避免 CSS overflow 軸計算讓 active indicator 進入非預期的垂直 scroll range。確切 utility 由各 consumer source 擁有；Primer UnderlineNav 採同一雙軸約束。
 
 ### 典型 menu 模式組裝

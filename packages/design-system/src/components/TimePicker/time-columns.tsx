@@ -263,7 +263,8 @@ export function TimeColumns({
         values={hourValues}
         selected={safeValue.hours}
         disabledSet={disabledSets.hours}
-        label="hours"
+        // 讀屏文字中文(全庫 SR label 中文,2026-07-04;同元件的「清除時間」「選擇時間」早已是中文,只有三欄的 listbox 名稱漏了)
+        label="時"
         onSelect={(h) => onChange({ ...safeValue, hours: h })}
         withDivider
       />
@@ -271,7 +272,7 @@ export function TimeColumns({
         values={minuteValues}
         selected={safeValue.minutes}
         disabledSet={disabledSets.minutes}
-        label="minutes"
+        label="分"
         onSelect={(m) => onChange({ ...safeValue, minutes: m })}
         withDivider={showSeconds}
       />
@@ -280,7 +281,7 @@ export function TimeColumns({
           values={secondValues}
           selected={safeValue.seconds}
           disabledSet={disabledSets.seconds}
-          label="seconds"
+          label="秒"
           onSelect={(s) => onChange({ ...safeValue, seconds: s })}
         />
       )}

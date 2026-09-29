@@ -477,7 +477,9 @@ const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut }: {
   const textClass = danger ? 'text-error' : state === 'disabled' ? 'text-fg-disabled' : ''
   const fontClass = size === 'lg' ? 'text-body-lg' : 'text-body'
   return (
+    // aria-disabled:靜態預覽畫的是「停用中的項目」,明告 inactive 才不會被 axe 當一般文字誤報 color-contrast(2026-09-29,待辦總帳 OE21;三個 Preview 同修)
     <div className={`flex items-start gap-2 px-3 ${fontClass} leading-compact ${bgClass} ${textClass}`}
+      aria-disabled={state === 'disabled' || undefined}
       style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
       <div className="h-[1lh] flex items-center shrink-0"><Icon size={iconPx} /></div>
       <span>{label}</span>
@@ -496,6 +498,7 @@ const SubTriggerPreview = ({ size, state, icon: Icon, label, triggerValue }: {
   const fontClass = size === 'lg' ? 'text-body-lg' : 'text-body'
   return (
     <div className={`flex items-start gap-2 px-3 ${fontClass} leading-compact ${bgClass} ${textClass}`}
+      aria-disabled={state === 'disabled' || undefined}
       style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
       <div className="h-[1lh] flex items-center shrink-0"><Icon size={iconPx} /></div>
       <span>{label}</span>
@@ -518,6 +521,7 @@ const CheckboxPreview = ({ size, label, checked, state }: {
   const checkboxPx = SIZE_SPECS[size].icon
   return (
     <div className={`flex items-start gap-2 px-3 ${fontClass} leading-compact ${bgClass} ${textClass}`}
+      aria-disabled={state === 'disabled' || undefined}
       style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
       <div className="h-[1lh] flex items-center shrink-0">
         <div className={`rounded border flex items-center justify-center shrink-0 ${isCheckedVisual ? 'bg-primary border-primary' : 'border-border'}`}
@@ -568,7 +572,9 @@ export const ColorMatrix = {
                   const isCheckboxSelected = type === 'checkbox' && st === 'active/selected'
                   return (
                     <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
+                      {/* aria-disabled:disabled 那一格畫的是停用中的項目,明告 inactive 才不會被 axe 當一般文字誤報 color-contrast(2026-09-29,待辦總帳 OE21) */}
                       <div className="rounded px-3 py-1.5 text-body leading-compact border border-border flex items-center gap-2"
+                        aria-disabled={st === 'disabled' || undefined}
                         style={{
                           backgroundColor: `var(${ITEM_TOKEN_MAP[type][st].bg})`,
                           color: `var(${ITEM_TOKEN_MAP[type][st].text})`,
@@ -610,6 +616,7 @@ export const ColorMatrix = {
                 {STATES.map((st) => (
                   <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
                     <div className="rounded px-3 py-1.5 text-body leading-compact border border-border flex items-center gap-2"
+                      aria-disabled={st === 'disabled' || undefined}
                       style={{
                         backgroundColor: `var(${DANGER_ITEM_MAP[st].bg})`,
                         color: `var(${DANGER_ITEM_MAP[st].text})`,

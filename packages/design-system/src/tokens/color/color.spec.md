@@ -747,6 +747,8 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 **借用別的底色的配對一律禁止**(例:有底色的元素換成透明底專用的 `--neutral-hover`)。疊層 utility 是 background-image,已在 `lib/utils.ts` 登記為 tailwind-merge `bg-image` 群組(不登記的話 `cn('bg-surface', 'bg-interaction-hover')` 會把底色刪掉);背景圖不做過渡,`motion/motion.spec.md`「hover 回饋不做過渡」天然成立。
 
+**已按下型態落在「底」上也是疊層**(2026-09-29,待辦總帳 N7):白底 `secondary` 切換鈕(`pressedTone="neutral"`)的靜止底是 `--surface`,已按下三階用 `bg-interaction-selected` / `-selected-hover` / `-selected-active`(= 把 `--neutral-selected` 階梯畫成 background-image)—— 第 2 列的「底不換、疊一層」延伸到已按下;換底的話深色 `--surface`(白 8%)與 `--neutral-selected`(neutral-2 = 白 8%)疊在頁面底上同為 `#1E1E1E`,已按下看不見。淺色疊層結果與換底相同(`#F5F5F5` → `#F0F0F0` → `#E8E8E8`),深色 `#303030` → `#373737` → `#3D3D3D`(頁面底上計算值)。透明底的 tertiary / text 仍換底(`--neutral-selected` 家族是它們自己的填色)。
+
 **巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在「滑到可點卡片內的按鈕上時」一題選「卡片保留、按鈕再亮一層 (Recommended)」(選項由 AI 提供);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
 
 - 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)= 格子改回透明,跟當月格同一對。

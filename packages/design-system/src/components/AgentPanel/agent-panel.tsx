@@ -402,7 +402,12 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
           // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
           data-agent-panel-mode={mode}
           className={cn(
-            'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
+            // 不再 `overflow-hidden`(2026-09-29,待辦總帳 OE1;DataTable 表頭格 2026-09-10 AD63 同一條):它會把左緣把手
+            // 跨到宿主那側的外側 3px 裁掉,7px 命中區只剩面板內的 4px 可點 —— resize-handle.spec.md「命中區」明寫
+            // 消費端容器不得用 overflow:hidden 裁到它、要壓 flex `min-width:auto` 改 `min-w-0`。橫向不裁;縱向改 `overflow-y-clip`
+            // (與 overflow-x:visible 並存不會被升成 auto、不成為捲動容器),讓貼底浮層的 slide-in 仍照舊被面板底緣裁住。
+            // 閘:`scripts/agent-panel-breakpoint.mjs`「OE1 把手外側」(左緣外 2px 必命中把手;對照組注入 overflow:hidden 必紅)。
+            'relative flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-y-clip bg-surface',
             // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就翻成蓋板。
             // 2026-09-16 user 裁示:蓋板不再蓋滿 —— 上下右貼齊容器、左邊留 Dialog 同一顆 `--layout-space-viewport-inset`(48px),
             // 底下鋪遮罩讓人知道面板下面還有東西(遮罩見上方 showScrim)。「蓋滿」原是 v14 條 B 的字,同日改字(v14 來源總帳 2026-09-16)。

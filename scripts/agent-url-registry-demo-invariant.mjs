@@ -30,6 +30,8 @@
  *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」:
  *       守衛只認開著時的 aria-controls,選單關閉中 Radix 還焦點給選單容器那一次被當成框外;鍵盤 Enter 是對照)
  *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
+ *   S14 條 F「原分頁離開宿主後返回」:合成 pageshow(persisted:true)→ 代理關回、宿主畫面不動、重開是新對話;persisted:false 必不動(2026-09-29)
+ *   S15 未存檔的修改 → 離開前先確認(story UnsavedChangesGuard,並排 + 蓋板):取消留在原地、確認才前往;沒有修改時連結直接走(2026-09-29)
  *       (AD68 產品側變體:portal 浮層對 0×0 錨點只會定位到 (0,8) 還搶焦點;修法 = 觸發鈕失去版面就關)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
  *
@@ -267,12 +269,12 @@ const instrumentFails = []
  * 開示範:回 { browser, page };story 開不起來回 null(已印出並記成儀器失效,呼叫端略過該寬度的量測)。
  * `--single-process` 沙箱:一個 browser 只能開一個 context → 每個寬度重開(launch-browser.mjs 註解)。
  */
-async function openDemo(width, height = 900) {
+async function openDemo(width, height = 900, storyId = id) {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width, height } })
   try {
     // 渲染完成(含 play)+ render-health + 代理面板本身 + 版面連續 10 影格靜止:S0 一開場就量幾何,量的是穩態
-    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story`, {
       waitFor: '[role="complementary"]', settleFrames: 10, notFound: server.notFound,
     })
   } catch (error) {
@@ -536,6 +538,22 @@ for (const width of [1440, 1180]) {
   await h.click('button[aria-label="開啟智慧代理"]')
   check(`${W} S6 重新整理後再開代理是空的新對話(條 F),歷史仍列舊 session`, (await h.panelInput())?.value === '' && (await h.panelTitle()) === '新對話' && (await h.history()).rows.length >= 3, JSON.stringify({ panel: await h.panelInput(), title: await h.panelTitle() }))
 
+  // ── S14 條 F 最後半句「原分頁離開宿主後返回」(2026-09-29,待辦總帳 OE2):瀏覽器從 back/forward cache 還原舊畫面 ──
+  //    headless 關著 bfcache(啟動參數 --disable-back-forward-cache),真的離開再回來量不到;瀏覽器還原時唯一送出的訊號就是
+  //    `pageshow` + `persisted:true`,這裡合成同一個事件。對照組:`persisted:false`(一般載入也會發)必須什麼都不動。
+  await h.typeIntoPanel('登入逾時的修法'); await page.keyboard.press('Enter'); await page.waitForTimeout(400)
+  const beforeShow = { open: await h.panelOpen(), title: await h.panelTitle(), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs() }
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: false }))); await page.waitForTimeout(300)
+  const notPersisted = { open: await h.panelOpen(), title: await h.panelTitle() }
+  check(`${W} S14 對照組:pageshow(persisted:false = 一般載入)不動代理(仍開著、標題不變)`, beforeShow.open && notPersisted.open && notPersisted.title === beforeShow.title && /登入逾時的修法/.test(beforeShow.title), JSON.stringify({ beforeShow, notPersisted }))
+  // 450ms:等面板關閉的過渡(--motion-duration-surface 250ms)走完、入口鈕掛上
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))); await page.waitForTimeout(450)
+  const restored = { open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]'), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs() }
+  check(`${W} S14 BFCache 返回(pageshow persisted)→ 代理回到關閉、入口鈕在;宿主畫面原封不動(網址 / tab / 對話框都跟離開前一樣)`, !restored.open && restored.fab && restored.loc === beforeShow.loc && restored.tab === beforeShow.tab && restored.dialogs === beforeShow.dialogs, JSON.stringify({ beforeShow, restored }))
+  await h.click('button[aria-label="開啟智慧代理"]')
+  const s14reopened = { input: (await h.panelInput())?.value, title: await h.panelTitle(), history: await h.history() }
+  check(`${W} S14 重開是空的新對話,離開前那則進了歷史`, s14reopened.input === '' && s14reopened.title === '新對話' && s14reopened.history.rows.some((r) => /登入逾時的修法/.test(r)), JSON.stringify(s14reopened))
+
   // ── S13 歷史浮層開著時,宿主不經指標 / 焦點把面板收起(合成 click 重新整理 → 代理回初始關閉 = keep-mounted display:none)──
   //    AD68 產品側變體:浮層 portal 到 body 不會跟著消失,Radix 對 0×0 錨點只會定位到 (0,8)、焦點留在搜尋框;修法 = 觸發鈕失去版面就關浮層。
   const popoverState = () => page.evaluate(() => {
@@ -650,6 +668,50 @@ S9: {
     return { d: true, inert: !!d.closest('[inert]'), hitInDialog: !!hit && d.contains(hit), focused: document.activeElement === i }
   })
   check(`${W} S9 再按 × 收起 agent → modal 顯露、可操作(命中 modal、可聚焦、不 inert)`, revealed.d && !revealed.inert && revealed.hitInDialog && revealed.focused, JSON.stringify(revealed))
+  await browser.close()
+}
+
+// ── S15 未存檔的修改 → 離開前先確認(v14 推導表「窄螢幕,內部導航觸發沒有 URL 的未存檔確認框」+ 取消 / 確認前往兩列;
+//    2026-09-29,待辦總帳 OE11;story `UnsavedChangesGuard` 一開場就停在確認框上)──
+//    並排 1440 與蓋板 900 各走一次:確認框蓋住代理(條 A)→ 取消:對話框、修改、代理都在原地 → 再從代理點「我的任務」又被攔 →
+//    確認:宿主到「我的任務」、對話框關;並排代理維持開啟、蓋板代理收成入口鈕(條 B·C·E)。
+const guardId = Object.values(index.entries).find((e) => e.type === 'story' && /agentpanel/i.test(e.id) && /unsaved-changes-guard/.test(e.id))?.id
+if (!guardId) { console.log('✗ 找不到 UnsavedChangesGuard story'); instrumentFails.push({ width: 0, detail: 'UnsavedChangesGuard story 不在 index.json' }) }
+for (const width of guardId ? [1440, 900] : []) {
+  const opened = await openDemo(width, 900, guardId)
+  if (!opened) continue
+  const { browser, page } = opened
+  const overlay = width < 960
+  const W = `[${width}px ${overlay ? '蓋板' : '並排'}]`
+  const h = bind(page)
+  const DIRTY_TITLE = '修正登入逾時(含 SSO 逾時)'
+  const FAB = 'button[aria-label="開啟智慧代理"]'
+  const titleValue = () => page.evaluate(() => document.querySelector('#demo-task-title')?.value ?? null)
+  const state = async () => ({ dialogs: await h.dialogs(), confirm: await h.$('#demo-leave-confirm'), loc: await h.location(), tab: await h.selectedTab(), title: await titleValue(), panelOpen: await h.panelOpen(), draft: (await h.panelInput())?.value ?? null, fab: await h.$(FAB) })
+  // 「代理被擋」的判準與 S5 同一個:打字無效(一般 modal 的焦點鎖 + pointer-events,不是 inert 屬性 —— S5 實測並存中的面板不會被標 inert)
+  const s0 = await state()
+  await h.typeIntoPanel('x')
+  const s0typed = (await h.panelInput())?.value ?? null
+  check(`${W} S15 開場:任務對話框帶著未儲存的修改 + 沒有網址的確認框在上面(兩層)、網址仍是任務網址、代理被擋(打字無效;條 A)`, s0.dialogs === 2 && s0.confirm && s0.title === DIRTY_TITLE && s0.loc === TASK_4821 && s0.draft === '' && s0typed === '', JSON.stringify({ ...s0, typed: s0typed }))
+  await h.click('#demo-leave-cancel')
+  const s1 = await state()
+  await h.typeIntoPanel('y')
+  const s1typed = (await h.panelInput())?.value ?? null
+  check(`${W} S15 取消:確認框消失,對話框與修改都還在、網址不動、代理抽屜仍開著且可用(打得進字;推導表「按取消」)`, s1.dialogs === 1 && !s1.confirm && s1.title === DIRTY_TITLE && s1.loc === TASK_4821 && s1.panelOpen && s1typed === 'y', JSON.stringify({ ...s1, typed: s1typed }))
+  await h.click('#demo-link-mine')
+  const s2 = await state()
+  check(`${W} S15 再從代理點「我的任務」:導航停下來等確認(確認框回來、網址不動、修改還在)`, s2.dialogs === 2 && s2.confirm && s2.loc === TASK_4821 && s2.title === DIRTY_TITLE, JSON.stringify(s2))
+  await h.click('#demo-leave-confirm')
+  const s3 = await state()
+  check(`${W} S15 不儲存並前往:宿主到「我的任務」、對話框關;${overlay ? '蓋板代理收成入口鈕' : '並排代理維持開啟'}(推導表「按確認前往」)`, s3.dialogs === 0 && s3.loc === MINE_URL && s3.tab === '我的任務' && (overlay ? (!s3.panelOpen && s3.fab) : s3.panelOpen), JSON.stringify(s3))
+  // 對照組:對話框剛開、沒有修改 → 代理的連結照舊直接走,不出確認框(蓋板態每次從代理導向舞台都會收成入口鈕,先點回來)
+  if (overlay) await h.click(FAB)
+  await h.click('#demo-link-task-4821')
+  const s4 = await state()
+  if (overlay) await h.click(FAB)
+  await h.click('#demo-link-mine')
+  const s5 = await state()
+  check(`${W} S15 對照組:對話框剛開、沒有修改 → 代理再點「我的任務」直接走,不出確認框`, s4.dialogs === 1 && s4.loc === TASK_4821 && s5.dialogs === 0 && !s5.confirm && s5.loc === MINE_URL, JSON.stringify({ s4, s5 }))
   await browser.close()
 }
 

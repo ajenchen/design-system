@@ -155,7 +155,7 @@ Sidebar 有兩種正交的內容形態，consumer 嚴格擇一或混用：
 
 ### 為什麼只有 1 層
 
-Linear、Notion、Slack、VS Code、Figma、Gmail——**沒有任何頂級產品在 sidebar 主選單用語意階層**。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
+Linear、Slack、VS Code、Figma、Gmail——**沒有任何頂級產品在 sidebar 主選單用語意階層**。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
 
 ### 「Projects > A / B」這類
 

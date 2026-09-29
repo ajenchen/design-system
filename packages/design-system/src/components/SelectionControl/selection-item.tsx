@@ -185,6 +185,9 @@ function ContentSlot({ htmlFor, disabled, label, description, sizeKey, labelClam
       </label>
       {description && (
         <p
+          // 2026-09-29 a11y(待辦總帳 OE21):與上方 label 同一條理由 —— 說明文字跟著降成 fg-disabled 時也要明告 inactive,
+          // 否則 axe color-contrast 把它當一般文字誤報(RadioGroup 狀態行為 / SelectionControl 前綴圖示兩則 story)
+          aria-disabled={disabled || undefined}
           className={cn(
             sizeKey === 'lg' ? 'mt-[var(--item-gap-label-desc-reading-lg)]' : 'mt-[var(--item-gap-label-desc-reading)]',
             'break-words',

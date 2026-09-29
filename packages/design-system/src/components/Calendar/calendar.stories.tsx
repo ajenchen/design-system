@@ -67,6 +67,44 @@ export const TeamCalendar: Story = {
 }
 
 /**
+ * 產品上線週 — 上線日一天塞滿 5 件事(發版、客服待命、上線公告、監控輪值、慶功)
+ * 每格最多畫 3 筆,超出的以「+N more」計數提示(calendar.spec.md「邊界案例 › 單格事件 > 3」;目前不可點,展開 popover 為後續增量,
+ * user 2026-09-25 說先不做 —— 待辦總帳 A19)。這一則存在的理由是讓「+N more」在畫面上看得到(M15:stakeholder 看得到的狀態要有快照)。
+ */
+export const LaunchWeek: Story = {
+  name: '產品上線週',
+  render: () => {
+    const events: CalendarEvent[] = [
+      { id: 'l1', title: 'Code freeze', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'red' },
+      { id: 'l2', title: 'Release v2.0', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
+      { id: 'l3', title: '客服待命(全天)', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'yellow', allDay: true },
+      { id: 'l4', title: '上線公告 10:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'green' },
+      { id: 'l5', title: '監控輪值 14:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'purple' },
+      { id: 'l6', title: '慶功 18:30', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'orange' },
+      { id: 'l7', title: 'Post-mortem', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
+    ]
+    return (
+      <div className="h-screen p-4 bg-canvas">
+        <Calendar
+          defaultReferenceDate={now}
+          today={now}
+          events={events}
+          onEventClick={demoOpenEvent}
+          onDateClick={demoAddOnDate}
+          onCreateEvent={() => alert('開啟新事件對話框')}
+        />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    // 7/15 有 5 件事:只畫前 3 筆(全天事件排最前),其餘 2 筆以「+2 more」提示、不進 DOM
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('+2 more')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: '事件:慶功 18:30' })).toBeNull()
+  },
+}
+
+/**
  * 內容發佈排程 — Blog / 影片發布月曆
  * 排內容走右上角「排內容」,日子本身不能點來新增 → `readOnlyDates`(格子不亮、日期數字不是按鈕);
  * 已排好的內容點得開 → `onEventClick`。
@@ -128,4 +166,42 @@ export const EmptyCalendar: Story = {
       />
     </div>
   ),
+}
+
+/**
+ * 點格內空白也帶鍵盤位置(2026-09-29 待辦總帳 N46 月曆子項;calendar.spec.md「Cell 規則 › 命中區」):
+ * 滑鼠點日期格的空白處(不是日期數字鈕、不是事件方塊)後,鍵盤停靠點與焦點都搬到這一天的日期鈕 ——
+ * 之後方向鍵從這一格出發,而不是從上一次鍵盤停的那一格。test-only:沒有既有月曆瀏覽器閘,以 play 當閘
+ *(story-demo-focus 閘會載入每支 story 並跑 play,斷言不成立就紅);對照組 = 先把停靠點放在別的日子,證明真的搬過來。
+ */
+export const CellBlankClickMovesKeyboardStop: Story = {
+  name: '點格內空白帶鍵盤位置',
+  tags: ['test-only'],
+  parameters: { demoFocus: 'keep' },
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <Calendar defaultReferenceDate={now} today={now} events={[]} onDateClick={fn()} onEventClick={fn()} onCreateEvent={fn()} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const cells = Array.from(canvasElement.querySelectorAll<HTMLElement>('[role="gridcell"]'))
+    const dayOf = (c: HTMLElement) => c.querySelector('button')?.textContent?.trim()
+    // 當月 22 號(上月末 / 下月初的非當月格都到不了 22,第一個就是當月)
+    const cell = cells.find((c) => dayOf(c) === '22')
+    if (!cell) throw new Error('找不到 22 號的格')
+    const dateButton = cell.querySelector<HTMLButtonElement>('button')
+    if (!dateButton) throw new Error('22 號的格沒有日期鈕')
+    // 對照組:先把鍵盤停靠點放在別的日子
+    const other = cells.find((c) => dayOf(c) === '1' && c !== cell)
+    const otherButton = other?.querySelector<HTMLButtonElement>('button')
+    if (!otherButton) throw new Error('找不到 1 號的日期鈕')
+    otherButton.focus()
+    await expect(document.activeElement).toBe(otherButton)
+    await expect(dateButton).toHaveAttribute('tabindex', '-1')
+    // 點格子本身(user-event 的 click 落在格子元素、不是日期鈕;格內沒有事件方塊)
+    await userEvent.click(cell)
+    await expect(document.activeElement).toBe(dateButton)
+    await expect(dateButton).toHaveAttribute('tabindex', '0')
+    await expect(otherButton).toHaveAttribute('tabindex', '-1')
+  },
 }

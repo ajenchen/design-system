@@ -46,6 +46,18 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
   lg: INDICATOR_SIZE.lg,
 }
 
+// 連接線幾何(`steps.spec.md`「Connector 幾何」;2026-09-29 待辦總帳 N52):
+// - 圓到線的縫兩端各 8px:MUI StepLabel vertical `padding: '8px 0'`(每側 8)/ Ant `marginXXS × 1.5` = 6 / Chakra gutter 12 的區間正中,
+//   與 DS 列內 prefix / suffix 的 `gap-2` 同一個數。
+// - 線最短 24px:唯一一手明文地板是 MUI StepConnector vertical `minHeight: 24`;也剛好等於 DS 的步間距 `pb-6`。
+// 線長原本是「列高的餘數」(li 高 − 2r − 16):沒有說明文字時 md 只剩 2.2px、lg 是 0 —— 而規格說指示欄節奏是元件本體、
+// 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響);
+// 水平線的最短寬吃同一個常數(先前是 `min-w-4` 16px、規格沒寫,同元件同概念不該有兩個地板)。
+// 閘:`scripts/steps-connector-geometry-invariant.mjs`。
+const CONNECTOR_GAP_PX = 8
+const CONNECTOR_MIN_PX = 24
+const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CONNECTOR_GAP_PX + CONNECTOR_MIN_PX
+
 // ── Outer ring(outline + offset,不佔排版)─────────────────────────────────
 //
 // 2026-09-26 由 box-shadow 改成 outline(待辦總帳 N48 / L14;steps-state-visuals.spec.md「為什麼外環與圓之間要有一圈間隙」)。
@@ -464,6 +476,10 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
             className,
           )}
           {...props}
+          // 垂直非末項的最小高度 = 圓 + 兩端縫 + 線地板(見 CONNECTOR_MIN_PX 註解);consumer 傳的 style 仍保留
+          style={isVertical && !__isLast
+            ? { minHeight: verticalItemMinHeight(steps.size), ...(props as { style?: React.CSSProperties }).style }
+            : (props as { style?: React.CSSProperties }).style}
         >
           <StepItemLayout>{children}</StepItemLayout>
         </li>
@@ -638,11 +654,12 @@ function VerticalConnectorLine() {
   const item = useStepItemContext()
   const isBlue = item.state === 'completed'
   const radius = INDICATOR_SIZE[steps.size] / 2
-  const gap = 8
+  const gap = CONNECTOR_GAP_PX
 
   return (
     <div
       aria-hidden
+      data-steps-connector="vertical"
       className={cn(
         // leading-compact:connector 的 0.5lh 須跟 scanning label 同行高(1.3)→ 起點對齊 circle 中心
         // (circle 對齊 label 第一行;label 已 leading-compact)。否則 connector 繼承 li 根 1.5 → 0.5lh 偏大 → 起點偏低。
@@ -702,8 +719,8 @@ function HorizontalLayout({
         <div className="shrink-0 min-w-0">{label}</div>
         {/* Connector 在 item 內部,flex-1 填滿剩餘寬度 */}
         {!item.isLast && (
-          <div className="h-[1lh] flex-1 flex items-center min-w-4" aria-hidden>
-            <div className={cn('h-px w-full', isBlue ? 'bg-info' : 'bg-border')} />
+          <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_PX }} aria-hidden>
+            <div data-steps-connector="horizontal" className={cn('h-px w-full', isBlue ? 'bg-info' : 'bg-border')} />
           </div>
         )}
       </div>
@@ -778,6 +795,7 @@ function SmIndicator({
       style={{ width: SM_INDICATOR_BOX, height: SM_INDICATOR_BOX }}
     >
       <span
+        data-steps-indicator="sm"
         className={cn('block rounded-full', disabled && 'opacity-disabled')}
         style={dotStyle}
       />
@@ -842,6 +860,7 @@ function MdLgIndicator({
   return (
     <span
       aria-hidden
+      data-steps-indicator={size}
       className={cn(
         'relative inline-flex items-center justify-center shrink-0 rounded-full',
         // 狀態切換(upcoming → current → completed)時的填色 / 數字色過渡;**不含 outline-color** ——

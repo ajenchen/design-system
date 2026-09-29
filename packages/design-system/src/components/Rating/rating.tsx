@@ -210,7 +210,8 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
         aria-valuenow={isInteractive ? wholeValue : undefined}
         aria-valuemin={isInteractive ? 0 : undefined}
         aria-valuemax={isInteractive ? max : undefined}
-        aria-valuetext={isInteractive ? `${wholeValue} of ${max} stars` : undefined}
+        // 讀屏文字中文(全庫 SR label 中文,2026-07-04;同 spec 唯讀範例「平均評分 4.7 星，共 5 星」的說法)
+        aria-valuetext={isInteractive ? `${wholeValue} 星,共 ${max} 星` : undefined}
         aria-disabled={disabled || undefined}
         // a11y: 刻意不設 aria-readonly — readOnly 時 role=img(axe aria-allowed-attr 禁 img 用 aria-readonly,2026-04-25);
         //       interactive 時 role=slider 但必非 readOnly(isInteractive = !readOnly)。兩 state 皆不該有此屬性,故省略。
@@ -230,8 +231,11 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
           'inline-flex items-center gap-1 rounded-md',
           // 預覽亮著時縫裡點得到 → 縫裡也是手形(與星同一個游標)
           isInteractive && hoverValue !== null && 'cursor-pointer',
-          // disabled 跟 loading 視覺相同(composite uniform dim),semantic 由 aria-disabled / aria-busy 區分
-          (disabled || loading) && 'opacity-disabled pointer-events-none',
+          // disabled 跟 loading 視覺相同(composite uniform dim),semantic 由 aria-disabled / aria-busy 區分。
+          // 事件仍全部擋在星上(子元素 pointer-events-none;容器此時沒有任何 handler),容器自己留著接指標
+          // 只為了掛禁止符號 —— 容器也 pointer-events-none 的話游標由外層決定,永遠是箭頭
+          //(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;field-controls.spec.md「游標指引」)。
+          (disabled || loading) && 'opacity-disabled cursor-not-allowed [&>*]:pointer-events-none',
           className,
         )}
         {...props}

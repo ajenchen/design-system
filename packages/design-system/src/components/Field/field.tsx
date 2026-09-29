@@ -474,6 +474,9 @@ const FieldDescription = React.forwardRef<
         className
       )}
       data-field-slot="description"
+      // 2026-09-29 a11y(待辦總帳 OE21):與上方 FieldLabel 同一條理由 —— styled-disabled 的說明文字必明告 inactive,
+      // 否則 axe color-contrast 把 fg-disabled(#BFBFBF,1.83:1)當一般文字誤報(field 色彩對照 / 狀態行為兩則 story 各 1 筆)
+      aria-disabled={disabled || undefined}
       {...props}
     >
       {children}

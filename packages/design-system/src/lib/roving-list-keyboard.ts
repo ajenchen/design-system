@@ -59,6 +59,13 @@ export interface RovingKeyInput {
   tree?: RovingTreeState
   /** 可以用 Cmd / Ctrl + Shift + 方向鍵重排(只有 draggable 的樹) */
   reorderable?: boolean
+  /**
+   * 這一串有「打字跳位」(只有樹:keyboard-model-canonical.md 五條判準第 2 條「需要 tree 那一整套鍵盤模型(打字前導、…)」)。
+   * 焦點在項目上打一個可見字元 → 回 `typeahead`,由宿主找下一個名字以該字開頭的項目;平面清單(側欄 / 檔案清單)不傳 = 不處理。
+   * 出處:W3C APG Tree View 逐字 "Type a character: focus moves to the next node with a name that starts with the typed character."
+   * (<https://www.w3.org/WAI/ARIA/apg/patterns/treeview/>)。
+   */
+  typeahead?: boolean
   /** 事件已被更外層的捕獲處理程式 preventDefault */
   defaultPrevented: boolean
   metaKey: boolean
@@ -92,6 +99,8 @@ export type RovingKeyAction =
   | { type: 'activate-control' }
   /** 鍵盤重排(樹;修飾鍵層,與導覽鍵正交) */
   | { type: 'reorder'; key: RovingReorderKey }
+  /** 打字跳位(只有 `typeahead: true` 的宿主):焦點在項目上打了一個可見字元,由宿主找下一個名字以它開頭的項目 */
+  | { type: 'typeahead'; char: string }
 
 const REORDER_KEYS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 const isReorderKey = (key: string): key is RovingReorderKey => REORDER_KEYS.includes(key)
@@ -107,6 +116,7 @@ const isReorderKey = (key: string): key is RovingReorderKey => REORDER_KEYS.incl
  * | ← | 樹:展開的先收合、否則回上一層;平面清單:不動 | 上一個;第一個 → 回項目 |
  * | Tab / Shift+Tab | 一下離開這一串 | 同左(X7:先回項目、再由瀏覽器往外走) |
  * | Enter / 空白鍵 | 這一項自己的預設動作 | 那個東西自己的動作 |
+ * | 可見字元(只有 `typeahead` 宿主 = 樹)| 打字跳位:下一個名字以它開頭的項目(W3C APG Tree View) | 不處理(按鈕上打字沒有意義) |
  */
 export function resolveRovingKey(input: RovingKeyInput): RovingKeyAction {
   const { key } = input
@@ -191,6 +201,8 @@ export function resolveRovingKey(input: RovingKeyInput): RovingKeyAction {
     case ' ':
       return { type: 'activate-item' }
     default:
+      // 打字跳位(樹):單一可見字元(空白鍵已在上面 = 選取;Shift+字母 也是一個可見字元,大小寫由宿主比對時折疊)
+      if (input.typeahead && key.length === 1 && key !== ' ') return { type: 'typeahead', char: key }
       return { type: 'none' }
   }
 }
@@ -322,6 +334,8 @@ export interface RovingDomHost {
   onParent?: () => void
   /** 項目本身的預設動作要由宿主執行時才傳(樹 = 選取);不傳 = 項目是原生按鈕,交給瀏覽器 */
   onActivateItem?: () => void
+  /** 打字跳位(只有 `typeahead: true` 的宿主):宿主自己累積字串、找項目、搬焦點 */
+  onTypeahead?: (char: string) => void
 }
 
 /**
@@ -347,6 +361,12 @@ export function applyRovingAction(action: RovingKeyAction, host: RovingDomHost):
       if (!host.onActivateItem) return
       event.preventDefault()
       host.onActivateItem()
+      return
+    case 'typeahead':
+      // 判定只在 typeahead 宿主才會回這格;擋預設是為了不讓 Firefox「輸入時搜尋」之類的瀏覽器功能吃掉字元
+      if (!host.onTypeahead) return
+      event.preventDefault()
+      host.onTypeahead(action.char)
       return
     default:
       break

@@ -67,8 +67,12 @@ const buttonVariants = cva(
     // aria-disabled 給語意 + visual,但不 suppress functionality;functionality 由 consumer 阻 e.g.
     // RowDragHandle listeners 只在 canDrag spread)。**故意不加** `aria-disabled:pointer-events-none`
     // — Round 4 RowDragHandle Tooltip flicker fix root cause:aria-disabled buttons 必保 pointer events
-    // 讓 Radix Tooltip pointerenter 通過。HTML `disabled` 保 PE:none(完全 inactive)。
-    'disabled:pointer-events-none',
+    // 讓 Radix Tooltip pointerenter 通過。
+    // 2026-09-29(待辦總帳 N46 停用游標全站掃):原生 `disabled` 原本也掛 `pointer-events-none`(「完全 inactive」),
+    // 結果上面那句 `disabled:cursor-not-allowed` 從來沒生效 —— 沒有指標事件就沒有游標,全站 35 顆停用的 Button 家族
+    //(分頁箭頭 / 輪播箭頭 / AI 面板送出鈕)都是箭頭游標,違反 hit-area-canonical.md「停用的用禁止符號」。
+    // 現在停用不再切掉指標事件;滑過 / 按住的回饋改由各 variant 的 `disabled:hover:` / `disabled:active:` 顯式釘在停用靜止值
+    //(同 aria-disabled 的寫法;原生 disabled 的按鈕本來就不派發 click)。
     // 2026-05-12 fix v2(playwright pixel-quantified verify 抓 opacity=1 不生效):
     // `opacity-disabled` 是 custom Tailwind v4 `@utility`(opacity.css:21),variant prefix
     // `aria-disabled:` 跟 custom @utility 不 compose(`aria-disabled:cursor-not-allowed` 標準
@@ -87,10 +91,15 @@ const buttonVariants = cva(
           'bg-primary text-on-emphasis',
           'hover:bg-primary-hover',
           'active:bg-primary-active',
+          // 開啟中 = 自己的 hover(inline-action.spec.md:26「overlay 開啟 → 同 host hover」)。2026-09-29 待辦總帳 C13:
+          // 七家一手裡沒有任何一家「給部分 variant、獨獨豁免 primary」(Atlassian / Fluent 每個 appearance 含 primary 都給;
+          // Radix / shadcn / MUI / Ant / Carbon 全都不給);DS 早選了「給」,primary / link 缺的只是同一條規則的落地。
+          'data-[state=open]:bg-primary-hover',
           // aria-disabled 的 hover / active 釘在靜止(button.spec.md「狀態疊加」表 aria-disabled 列:與 disabled 同樣不給互動回饋;
-          // 原生 disabled 靠 pointer-events-none,aria-disabled 為了 Tooltip 保留指標事件,只能顯式釘住;先例 switch.tsx 的 `disabled:…:hover:` 守衛)
+          // 原生 disabled 與 aria-disabled 都顯式釘住(2026-09-29 前原生 disabled 靠 pointer-events-none,見檔頭);先例 switch.tsx 的 `disabled:…:hover:` 守衛)
           'aria-disabled:hover:bg-primary aria-disabled:active:bg-primary',
           'disabled:bg-disabled disabled:text-fg-disabled disabled:border-transparent',
+          'disabled:hover:bg-disabled disabled:active:bg-disabled',
         ],
         secondary: [
           'bg-surface text-primary border-primary',
@@ -103,6 +112,7 @@ const buttonVariants = cva(
           'aria-disabled:not-aria-pressed:hover:text-primary aria-disabled:not-aria-pressed:hover:border-primary',
           'aria-disabled:not-aria-pressed:active:text-primary aria-disabled:not-aria-pressed:active:border-primary',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
+          'disabled:hover:text-fg-disabled disabled:hover:border-border disabled:active:text-fg-disabled disabled:active:border-border',
           // 2026-05-21 v12:Toggle pressed 視覺移到 compoundVariants(variant × pressedTone),
           // 同時支援 emphasis(藍底)/ neutral(灰底)兩 tone。詳 cva.compoundVariants 段。
         ],
@@ -116,6 +126,7 @@ const buttonVariants = cva(
           'aria-disabled:not-aria-pressed:hover:text-foreground aria-disabled:not-aria-pressed:hover:border-border',
           'aria-disabled:not-aria-pressed:active:text-foreground aria-disabled:not-aria-pressed:active:border-border',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
+          'disabled:hover:text-fg-disabled disabled:hover:border-border disabled:active:text-fg-disabled disabled:active:border-border',
         ],
         text: [
           'bg-transparent text-foreground border-transparent',
@@ -127,14 +138,18 @@ const buttonVariants = cva(
           // aria-disabled 釘住(同 secondary 註解)
           'aria-disabled:not-aria-pressed:hover:bg-transparent aria-disabled:not-aria-pressed:active:bg-transparent',
           'disabled:bg-transparent disabled:text-fg-disabled',
+          'disabled:hover:bg-transparent disabled:hover:text-fg-disabled disabled:active:bg-transparent disabled:active:text-fg-disabled',
         ],
         link: [
           'bg-transparent text-primary border-transparent',
           'hover:text-primary-hover',
           'active:text-primary-active',
+          // 開啟中 = 自己的 hover(link 的 hover 只換字色;同 primary 分支註解,2026-09-29 C13)
+          'data-[state=open]:text-primary-hover',
           // aria-disabled 釘住(同 primary 註解;link 無 pressed 視覺,不需 not-aria-pressed)
           'aria-disabled:hover:text-primary aria-disabled:active:text-primary',
           'disabled:text-fg-disabled',
+          'disabled:hover:text-fg-disabled disabled:active:text-fg-disabled',
         ],
       },
       danger: {
@@ -169,6 +184,8 @@ const buttonVariants = cva(
           'bg-error text-on-emphasis border-transparent',
           'hover:bg-error-hover',
           'active:bg-error-active',
+          // 開啟中 = 自己的 hover(同 primary 分支,2026-09-29 C13)
+          'data-[state=open]:bg-error-hover',
           // aria-disabled 釘在自己的靜止紅(button.spec.md「狀態疊加」表 aria-disabled 列)
           'aria-disabled:hover:bg-error aria-disabled:active:bg-error',
         ],
@@ -216,6 +233,7 @@ const buttonVariants = cva(
           'data-[state=on]:hover:bg-primary-subtle data-[state=on]:hover:border-transparent data-[state=on]:hover:text-primary-hover',
           'data-[state=on]:active:bg-primary-subtle data-[state=on]:active:border-transparent data-[state=on]:active:text-primary-active',
           'data-[state=on]:disabled:bg-disabled data-[state=on]:disabled:text-fg-disabled data-[state=on]:disabled:border-transparent',
+          'data-[state=on]:disabled:hover:bg-disabled data-[state=on]:disabled:hover:text-fg-disabled data-[state=on]:disabled:hover:border-transparent data-[state=on]:disabled:active:bg-disabled data-[state=on]:disabled:active:text-fg-disabled data-[state=on]:disabled:active:border-transparent',
           // aria-pressed fallback(Radix overlay trigger override data-state 時仍生效)—— 逐條鏡像上方 data-[state=on] 分支
           'aria-pressed:bg-primary-subtle aria-pressed:text-primary aria-pressed:border-transparent',
           'aria-pressed:hover:bg-primary-subtle aria-pressed:hover:border-transparent aria-pressed:hover:text-primary-hover',
@@ -223,6 +241,7 @@ const buttonVariants = cva(
           'aria-pressed:active:bg-primary-subtle aria-pressed:active:border-transparent aria-pressed:active:text-primary-active',
           // pressed + disabled:disabled 視覺優先(button.spec.md「狀態 → disabled」pressed + disabled 條);fallback 分支原本缺這條,鏡像 data-[state=on]:disabled
           'aria-pressed:disabled:bg-disabled aria-pressed:disabled:text-fg-disabled aria-pressed:disabled:border-transparent',
+          'aria-pressed:disabled:hover:bg-disabled aria-pressed:disabled:hover:text-fg-disabled aria-pressed:disabled:hover:border-transparent aria-pressed:disabled:active:bg-disabled aria-pressed:disabled:active:text-fg-disabled aria-pressed:disabled:active:border-transparent',
           // 按下的觸發鈕開啟中 = 按下自己的 hover(底色與邊框不動、字 primary-hover),不是 variant 的開啟樣式
           //(inline-action.spec.md「overlay 開啟 → 同 host hover」;button.spec.md「狀態疊加」表開啟中列)。
           // Radix 會把 data-state 改寫成 open,所以只走 aria-pressed;(0,3,0) > variant 的 data-[state=open] (0,2,0)
@@ -235,8 +254,10 @@ const buttonVariants = cva(
       // neutral tone:灰底(neutral-selected family)— 可取消的切換鈕;導覽 / 目前頁不用它(選中列規則,item-anatomy.spec.md「選中 × 互動疊加」)
       // 階梯值 selected → -selected-hover → -selected-active(2→3→4):user 2026-09-25 選「甲：保留，維持 2→3→4 (Recommended)」
       // (選項由 AI 提供;待辦總帳 B5)。下方開啟中 / aria-disabled 各條都是「跟著本分支的 hover / 靜止 token 走」,改階梯時同一 compound 內一起改。
+      // 2026-09-29(待辦總帳 N7):secondary 從這一組拆出去(下一組)—— 它的靜止底是 `--surface`(「底」),已按下要**疊層**不換底:
+      // 深色 --surface 與 --neutral-selected 都是白 8%,換底後已按下 = 未按下(#1E1E1E = #1E1E1E);tertiary / text 是透明底,換底沒問題。
       {
-        variant: ['secondary', 'tertiary', 'text'],
+        variant: ['tertiary', 'text'],
         pressedTone: 'neutral',
         class: [
           'data-[state=on]:bg-neutral-selected data-[state=on]:text-foreground data-[state=on]:border-transparent',
@@ -244,17 +265,43 @@ const buttonVariants = cva(
           'data-[state=on]:hover:bg-neutral-selected-hover data-[state=on]:hover:text-foreground data-[state=on]:hover:border-transparent',
           'data-[state=on]:active:bg-neutral-selected-active data-[state=on]:active:text-foreground data-[state=on]:active:border-transparent',
           'data-[state=on]:disabled:bg-transparent data-[state=on]:disabled:text-fg-disabled',
+          'data-[state=on]:disabled:hover:bg-transparent data-[state=on]:disabled:hover:text-fg-disabled data-[state=on]:disabled:active:bg-transparent data-[state=on]:disabled:active:text-fg-disabled',
           // aria-pressed fallback —— 逐條鏡像上方 data-[state=on] 分支
           'aria-pressed:bg-neutral-selected aria-pressed:text-foreground aria-pressed:border-transparent',
           'aria-pressed:hover:bg-neutral-selected-hover aria-pressed:hover:text-foreground aria-pressed:hover:border-transparent',
           // 補齊第三階(按壓):fallback 原本缺,data-[state=on] 分支與 emphasis 分支都有(同 emphasis 2026-07-07 註解)
           'aria-pressed:active:bg-neutral-selected-active aria-pressed:active:text-foreground aria-pressed:active:border-transparent',
           'aria-pressed:disabled:bg-transparent aria-pressed:disabled:text-fg-disabled',
+          'aria-pressed:disabled:hover:bg-transparent aria-pressed:disabled:hover:text-fg-disabled aria-pressed:disabled:active:bg-transparent aria-pressed:disabled:active:text-fg-disabled',
           // 按下的觸發鈕開啟中 = 按下自己的 hover(neutral-selected-hover),不是 variant 的 neutral-hover / primary-hover(同 emphasis 分支註解)
           'aria-pressed:data-[state=open]:bg-neutral-selected-hover aria-pressed:data-[state=open]:text-foreground aria-pressed:data-[state=open]:border-transparent',
           // 按下 + aria-disabled:hover / active 釘在按下的靜止底色
           'data-[state=on]:aria-disabled:hover:bg-neutral-selected data-[state=on]:aria-disabled:active:bg-neutral-selected',
           'aria-pressed:aria-disabled:hover:bg-neutral-selected aria-pressed:aria-disabled:active:bg-neutral-selected',
+        ],
+      },
+      // secondary(白底)× neutral:底留 `bg-surface`,已按下三階用疊層 utility(semantic.css `bg-interaction-selected` 家族 =
+      // 把 --neutral-selected / -hover / -active 畫成 background-image,在底色之上、內容之下;配對總則第 2 列「底不換,疊一層」)。
+      // 淺色疊層結果與換底相同(#F5F5F5 / #F0F0F0 / #E8E8E8),深色才分得出來(#303030 / #37 / #3D)。逐條鏡像上一組;
+      // 停用態拿掉疊層(`bg-none`)而不是把底換成透明 —— 白底鈕停用仍是白底。
+      {
+        variant: 'secondary',
+        pressedTone: 'neutral',
+        class: [
+          // 底寫明 `bg-surface`(與 variant 相同,不換底):疊層是疊在「底」上,hover-own-pair 閘據此判定,不必去別的 compound 找靜止底
+          'data-[state=on]:bg-surface data-[state=on]:bg-interaction-selected data-[state=on]:text-foreground data-[state=on]:border-transparent',
+          'data-[state=on]:hover:bg-interaction-selected-hover data-[state=on]:hover:text-foreground data-[state=on]:hover:border-transparent',
+          'data-[state=on]:active:bg-interaction-selected-active data-[state=on]:active:text-foreground data-[state=on]:active:border-transparent',
+          'data-[state=on]:disabled:bg-none data-[state=on]:disabled:text-fg-disabled',
+          'data-[state=on]:disabled:hover:bg-none data-[state=on]:disabled:hover:text-fg-disabled data-[state=on]:disabled:active:bg-none data-[state=on]:disabled:active:text-fg-disabled',
+          'aria-pressed:bg-surface aria-pressed:bg-interaction-selected aria-pressed:text-foreground aria-pressed:border-transparent',
+          'aria-pressed:hover:bg-interaction-selected-hover aria-pressed:hover:text-foreground aria-pressed:hover:border-transparent',
+          'aria-pressed:active:bg-interaction-selected-active aria-pressed:active:text-foreground aria-pressed:active:border-transparent',
+          'aria-pressed:disabled:bg-none aria-pressed:disabled:text-fg-disabled',
+          'aria-pressed:disabled:hover:bg-none aria-pressed:disabled:hover:text-fg-disabled aria-pressed:disabled:active:bg-none aria-pressed:disabled:active:text-fg-disabled',
+          'aria-pressed:data-[state=open]:bg-interaction-selected-hover aria-pressed:data-[state=open]:text-foreground aria-pressed:data-[state=open]:border-transparent',
+          'data-[state=on]:aria-disabled:hover:bg-interaction-selected data-[state=on]:aria-disabled:active:bg-interaction-selected',
+          'aria-pressed:aria-disabled:hover:bg-interaction-selected aria-pressed:aria-disabled:active:bg-interaction-selected',
         ],
       },
     ],

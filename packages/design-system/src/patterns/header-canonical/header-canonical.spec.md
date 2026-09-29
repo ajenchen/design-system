@@ -53,7 +53,7 @@ benchmark:
 
 ### 1. Border-bottom
 
-- **Token**:`border-b border-divider`(1px / `--divider-color`)
+- **Token**:`border-b border-divider`(1px / `--divider`,`semantic.css`;`--divider-color` 這個名字從不存在,2026-07-10 hunt 判 STALE、2026-09-29 改正)
 - **Default**:有 border(分區效果)
 - **Auto-suppress when withTabs**:見下「withTabs 連動」段
 

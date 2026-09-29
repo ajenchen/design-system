@@ -80,7 +80,7 @@ const twMerge = extendTailwindMerge({
       // color.spec.md「Hover 換色配對總則」,待辦總帳 B8)。它們寫的是 background-image,不是底色 ——
       // 不註冊的話 tailwind-merge 把 `bg-*` 一律猜成 bg-color,`cn('bg-surface', 'bg-interaction-hover')`
       // 會把 bg-surface 刪掉,底色整個消失(2026-09-25 以 tailwind-merge 3.5 實測)。登記在 bg-image 才對得上它真正寫的屬性。
-      'bg-image': ['bg-interaction-hover', 'bg-interaction-active'],
+      'bg-image': ['bg-interaction-hover', 'bg-interaction-active', 'bg-interaction-selected', 'bg-interaction-selected-hover', 'bg-interaction-selected-active'],
     },
   },
 })

@@ -28,9 +28,26 @@ export const GOVERNANCE_DEPENDENCY_NPM_STEPS = Object.freeze([
 
 // 2026-09-23:歷史參考樹(視覺回歸重拍把 8/5 的 commit 放到同一個容器重拍,run #291)永遠無法滿足「今天」的弱點
 // 資料庫 —— 那棵樹的相依是八月鎖定的,之後才登記的 advisory(baseline-browser-mapping 2.10.43)它不可能修。
-// 完整性(lock 精確安裝 / 簽章 / attestation)照舊 fail closed;只有弱點稽核在 `report-render-only-reference` 政策
-// 下改為「跑、印、記進 receipt、不擋」。這個政策只准用在無憑證、用完即丟的渲染容器(workflow 明文指定),預設仍是 enforce。
-export const GOVERNANCE_VULNERABILITY_POLICIES = Object.freeze(['enforce', 'report-render-only-reference'])
+// 完整性(lock 精確安裝 / 簽章 / attestation)照舊 fail closed;只有弱點稽核在「只報告」政策下改為「跑、印、記進 receipt、不擋」。
+// 每個只報告政策都要說出**為什麼這棵樹可以不擋**,receipt 與 log 印的是那個理由,不得借用別的政策名(2026-09-29 OE6:anchor
+// 借 render-only 的名字,receipt 就會寫「歷史參考樹、渲染容器」,而它裝的其實是 protected main 的樹)。預設仍是 enforce。
+//   report-render-only-reference:歷史參考樹,無憑證、用完即丟的渲染容器(視覺回歸重拍,workflow 明文指定)。
+//   report-protected-base-verifier:governance-anchor 裝 protected main 的相依樹只為執行驗證程式;這棵樹的弱點 base 自己的
+//     required CI 已擋過,而候選**新增**的弱點由 install-candidate-dependencies.mjs 對 base / 候選各跑 npm audit 取差集
+//     (GOV-CANDIDATE-DEPS-002)來擋 —— 在這裡 enforce 只會讓「認列新 advisory 形狀」的修復 PR 自己過不了(自鎖,M36(b))。
+const REPORT_ONLY_VULNERABILITY_POLICIES = Object.freeze({
+  'report-render-only-reference': Object.freeze({
+    marker: 'GOV-RENDER-ONLY-REFERENCE',
+    kind: 'render-only-reference-vulnerability-audit-receipt',
+    why: '歷史參考樹,無憑證、用完即丟的渲染容器',
+  }),
+  'report-protected-base-verifier': Object.freeze({
+    marker: 'GOV-PROTECTED-BASE-VERIFIER',
+    kind: 'protected-base-verifier-vulnerability-audit-receipt',
+    why: 'protected main 的相依樹只供驗證程式執行,候選新增的弱點另由 GOV-CANDIDATE-DEPS-002 差集擋',
+  }),
+})
+export const GOVERNANCE_VULNERABILITY_POLICIES = Object.freeze(['enforce', ...Object.keys(REPORT_ONLY_VULNERABILITY_POLICIES)])
 
 export function runVulnerabilityAuditUnderPolicy(policy, run, {
   errorPrefix = 'GOV-DEPENDENCY-BOOTSTRAP-001',
@@ -39,14 +56,15 @@ export function runVulnerabilityAuditUnderPolicy(policy, run, {
   invariant(GOVERNANCE_VULNERABILITY_POLICIES.includes(policy), `unsupported vulnerability policy:${String(policy)}`, errorPrefix)
   invariant(typeof run === 'function', 'vulnerability audit runner must be callable', errorPrefix)
   if (policy === 'enforce') return run()
+  const reportOnly = REPORT_ONLY_VULNERABILITY_POLICIES[policy]
   try {
     return run()
   } catch (error) {
     const reason = String(error?.message || error).slice(0, 600)
-    report(`⚠️  GOV-RENDER-ONLY-REFERENCE:弱點稽核只報告、不擋(歷史參考樹,無憑證、用完即丟的渲染容器):${reason}`)
+    report(`⚠️  ${reportOnly.marker}:弱點稽核只報告、不擋(${reportOnly.why}):${reason}`)
     return Object.freeze({
       schemaVersion: 1,
-      kind: 'render-only-reference-vulnerability-audit-receipt',
+      kind: reportOnly.kind,
       status: 'reported-not-enforced',
       policy,
       reason,
