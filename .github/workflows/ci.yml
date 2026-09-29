@@ -408,7 +408,10 @@ jobs:
           # 本機(M32 四問):弄壞 → selftest 三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;時序 → 判中位數 + 比值,
           # 與 mouse 同一套;機器慢 → 比值把兩個 build 在同一跑之內量,慢一起慢。成本:1 趟 5 秒、selftest 14 秒,約 +1 分鐘。
           node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
-          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 \
+          # --tick-ms=64(2026-09-29 首跑 297b22be 抓到):預設 16ms × 40 刻 = 0.65 秒手勢,CI runner 的 screencast 約 6 fps,
+          # 一趟只收到 8–9 張呈現幀,低於「呈現幀 < 10 = 儀器失效作廢」的地板,三趟全作廢 → 假紅(本機同一份程式 19 幀綠)。
+          # 刻度放慢到 64ms(同一段 18000px、2.5 秒,像人轉滾輪的節奏)讓取樣窗夠長;兩個 build 同參數,比值仍公平。
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 --tick-ms=64 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 指標底下那一列的 hover / hover 反應延遲 / 預掛緩衝自適應 三支(CI 逐支計時合計 5.4 分)與
