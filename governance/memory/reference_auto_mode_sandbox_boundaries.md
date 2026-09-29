@@ -35,7 +35,7 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 | 在 clone 裡 `git update-ref refs/heads/main origin/main` 再 checkout main(想從乾淨 main 跑 `release:auto`) | 未說明 | `release:auto` / `release:status` 從主目錄跑,而主目錄的 main 要先由 user 在終端機快轉 |
 | 用 API `PUT /pulls/N/merge` 合併 consumer(WM)PR | 危險動作 | consumer PR 的合併只能經 orchestrator(`release:auto`)或 user 按鈕;非 automation 分支的 WM PR 由 user 合 |
 | 派代理去改 hook(`check_substantive_edit_approval_preflight.sh`、`run-provider-hook`、`stop_self_audit.sh`)或 CI/治理 workflow 一整包 | Self-Modification | hook 類待辦需要有權限的 session;改 CI workflow 本身(`.github/workflows/*.yml`)以主代理直接 Edit 是可以的 |
-| 把 npm 內建套件新弱點通報的 exact-shape 認列預先 commit 進 consumer(WM) | Security Weaken | 在 DS 自己 repo 認列(同一段)沒有被擋;consumer 那份要 user 授權或 user 自己提交 |
+| 把 npm 內建套件新弱點通報的 exact-shape 認列預先 commit 進 consumer(WM) | Security Weaken | **這件事本來就不需要做**(2026-09-29 晚查證,user 反問「又再作繭自縛?」後):WM 的同步工作流用普通 `npm ci` 安裝、`scripts/sync-all.mjs` 只從安裝程式借 `assertNoRootNpmShrinkwrap`、沒有任何 WM 工作流呼叫 `setup-governance.mjs`,所以那份過期認列不在同步路徑上;而它是受管檔案,下一次同步會被正常更新。當初的「要 user 授權或自己提交」是從 DS 這邊一段註解推論、沒查證(M18 Q0),已撤回。教訓:被擋之後先問「這件事是不是真的必要」,再談誰來做 |
 | 複製 `.git/governance-runtime/release-consent/current.json` 到 clone | 未說明(同意 receipt 不得搬家) | 不搬 receipt |
 
 ## 四、判斷式(M36(b') 四問的具體答案)
