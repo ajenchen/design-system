@@ -1,6 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { Slot } from "@radix-ui/react-slot"
+import { RemoveScroll } from "react-remove-scroll"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -51,6 +53,8 @@ const DialogClose = DialogPrimitive.Close
 // Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成同 family 的另一個 role token:
 // 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
 const DIALOG_INSET_VAR = 'var(--layout-space-viewport-inset)'
+// 並存捲動鎖的「沒有 shards」:同一個參照,預設路徑的 effect 設回它時 React 會 bail out,不多一次 render。
+const NO_SCROLL_SHARDS: Array<{ current: Element }> = []
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -157,6 +161,27 @@ const DialogContent = React.forwardRef<
   // 實測初始關閉 / 開→關 背景仍 inert(R3 生命週期反例)。
   useOverlayCoexistence(!!persistentElements && !!contentEl, keep)
 
+  // 並存時的**捲動鎖**(2026-09-29,待辦總帳 OE13;user 原話「第二題照你建議」—— 建議由 AI 提出、user 採納:
+  // 鎖舞台、常駐區照常可捲)。規格說並存 modal「對宿主其餘部分仍然是 modal」(dialog.spec.md「並存」),而 Radix 只在 modal 分支
+  // 掛捲動鎖:react-dialog `DialogOverlayImpl` 逐字 `<RemoveScroll as={Slot} allowPinchZoom shards={[contentRef, …]}>`、
+  // `DialogOverlay` 在 `context.modal` 為 false 時回 null(https://github.com/radix-ui/primitives/blob/main/packages/react/dialog/src/dialog.tsx)。
+  // 並存走 `modal={false}` → 非模態分支沒有任何捲動處理,滾輪落在舞台就把宿主捲走(修前實測)。
+  // 這裡用 Radix 同款機制、同一個套件(react-remove-scroll,Radix 的相依,現列為 DS 直接相依、與 lock 同版):
+  //   · Content 自己是鎖的根(`as={Slot}` 把 onWheelCapture / onTouchMoveCapture 與 ref 合進 Content,不多一層 DOM);
+  //   · 常駐節點是 shards ——「鎖外、但准捲」:滾輪落在常駐區,react-remove-scroll 只擋它捲到底之後的溢出,自己的捲動照常;
+  //   · 其餘一切(舞台、遮罩)的 wheel / touchmove 被 preventDefault;上面再疊一個一般 modal 時,它的鎖成為 lockStack 最上層接手。
+  // shards 在 effect 內取(與上方 keep 同一個理由:ref 那時才有值),react-remove-scroll 在事件當下才讀它們;
+  // 沒傳 persistentElements 時 shards 恆為同一個空陣列、不掛 RemoveScroll,預設路徑一個位元不變(Radix 自己已鎖)。
+  // `removeScrollBar` 保留預設 true,與一般 modal 同款:body 有捲軸時拿掉並以 padding 補寬防跳版;並排佈局 body 沒捲軸 → gap 0,
+  // 開關對話框常駐區 0px 位移(閘量)。
+  // **限制**:常駐區自己 portal 到 body 的非模態浮層不在 shards 裡,滾輪會被擋 —— 與已裝版本 Radix 在一般 modal 裡開 Popover 同款限制。
+  // 閘:scripts/dialog-coexist-scroll-lock-invariant.mjs(舞台空白處合成滾輪 scrollTop 不變 / 常駐區清單會動 / 一般 modal 照舊鎖;--selftest 在頁面上拆掉鎖必紅)。
+  const [scrollShards, setScrollShards] = React.useState<Array<{ current: Element }>>(NO_SCROLL_SHARDS)
+  React.useEffect(() => {
+    if (!persistentElements || !contentEl) { setScrollShards(NO_SCROLL_SHARDS); return }
+    setScrollShards(persistentElements().map((current) => ({ current })))
+  }, [persistentElements, contentEl])
+
   // 非模態分支會在「互動或焦點跑到框外」時 dismiss(`DialogContentNonModal` 追蹤
   // `hasInteractedOutsideRef`)。並存的時候這正好會反咬:**把焦點移進常駐區域就等於框外互動**,
   // 對話框當場關掉 —— 實測就是這樣,連 Esc 都還沒按(2026-09-08)。
@@ -199,7 +224,6 @@ const DialogContent = React.forwardRef<
 
   const resolvedHeight: 'fill' | 'hug' = height ?? (autoHeight ? 'hug' : 'fill')
   if (process.env.NODE_ENV !== 'production' && height != null && autoHeight != null) {
-    // eslint-disable-next-line no-console
     console.warn('[DialogContent] `height` 與 `autoHeight` 同時傳了;`autoHeight` 已 deprecated,這次以 `height` 為準。')
   }
   // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
@@ -225,57 +249,66 @@ const DialogContent = React.forwardRef<
     ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
   }
 
+  const content = (
+    <DialogPrimitive.Content
+      ref={composedRef}
+      // Density:**全繼承 page**(layout-space + ui-size 都不自鎖)。2026-06-16 定論(撤回本 session 一度加的
+      // data-layout-space="lg"):density.spec 第 10 行親自定義 layout-space 管「dialog body padding」——
+      // Dialog 鎖死它 = override 自家 dial 對它點名要管的對象失效 = 自相矛盾。有同類 padding-density dial 的
+      // 世界級(SAP Fiori syncStyleClass / AWS Cloudscape「all view types」)都讓 modal 跟 page dial 走、不鎖固定 tier。
+      // 效果:md page → body px-loose 16 / header py-tight 12(header 48);lg page → 24 / 16(header 56),隨 page。
+      // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
+      // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
+      onOpenAutoFocus={handleOpenAutoFocus}
+      {...guardOutside}
+      className={cn(
+        // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
+        // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
+        persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
+                           : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
+        // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
+        // (`overlay-surface.tsx:180-182` 逐字:「parent(PopoverContent / HoverCardContent /
+        // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
+        // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
+        // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
+        "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
+        // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;時長 / 曲線 / reduced-motion 由
+        // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit)。
+        // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
+        // 是為了在 keyframe 的 `transform` 裡重寫置中位移(v3 的 -translate-x-1/2 也走 transform,會被 keyframe 蓋掉);
+        // Tailwind v4 的 -translate-x-1/2 改寫進獨立的 `translate` 屬性,不再被 keyframe 蓋掉,兩者相加 = 第一幀
+        // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
+        // 閘:scripts/dialog-coexistence-invariant.mjs「進場第一幀」(靜態禁同用 + 第一幀幾何 + 對照組)。
+        surfaceMotion,
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        className,
+      )}
+      style={{
+        boxShadow: 'var(--elevation-200)',
+        maxWidth: `min(${maxWidthCss}, calc(100vw - ${insetCalc}))`,
+        ...heightStyle,
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Content>
+  )
+
   return (
     <DialogPortal container={portalContainer ?? undefined}>
       {/* 並存(modal={false})時 Radix 不畫 Overlay;user 2026-09-08:「為何 modal 沒有遮罩」—— 它仍是 modal,
           宿主要被遮,只有保留節點挖洞。一般 modal 走 Radix 自己的 Overlay(z-50)。 */}
       {/* 洞只挖給常駐節點;Content 本來就在遮罩上層(z-40 > z-30),挖給它反而會留下開場動畫縮放中量到的錯位白框 */}
       {persistentElements ? <CoexistenceMask keep={persistentElements} /> : <DialogOverlay />}
-      <DialogPrimitive.Content
-        ref={composedRef}
-        // Density:**全繼承 page**(layout-space + ui-size 都不自鎖)。2026-06-16 定論(撤回本 session 一度加的
-        // data-layout-space="lg"):density.spec 第 10 行親自定義 layout-space 管「dialog body padding」——
-        // Dialog 鎖死它 = override 自家 dial 對它點名要管的對象失效 = 自相矛盾。有同類 padding-density dial 的
-        // 世界級(SAP Fiori syncStyleClass / AWS Cloudscape「all view types」)都讓 modal 跟 page dial 走、不鎖固定 tier。
-        // 效果:md page → body px-loose 16 / header py-tight 12(header 48);lg page → 24 / 16(header 56),隨 page。
-        // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
-        // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
-        onOpenAutoFocus={handleOpenAutoFocus}
-        {...guardOutside}
-        className={cn(
-          // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
-          // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
-          persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
-                             : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
-          // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
-          // (`overlay-surface.tsx:180-182` 逐字:「parent(PopoverContent / HoverCardContent /
-          // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
-          // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
-          // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
-          "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
-          // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;時長 / 曲線 / reduced-motion 由
-          // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit)。
-          // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
-          // 是為了在 keyframe 的 `transform` 裡重寫置中位移(v3 的 -translate-x-1/2 也走 transform,會被 keyframe 蓋掉);
-          // Tailwind v4 的 -translate-x-1/2 改寫進獨立的 `translate` 屬性,不再被 keyframe 蓋掉,兩者相加 = 第一幀
-          // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
-          // 閘:scripts/dialog-coexistence-invariant.mjs「進場第一幀」(靜態禁同用 + 第一幀幾何 + 對照組)。
-          surfaceMotion,
-          "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          className,
-        )}
-        style={{
-          boxShadow: 'var(--elevation-200)',
-          maxWidth: `min(${maxWidthCss}, calc(100vw - ${insetCalc}))`,
-          ...heightStyle,
-          ...style,
-        }}
-        {...props}
-      >
-        {children}
-      </DialogPrimitive.Content>
+      {/* 並存:Content 當捲動鎖的根、常駐節點當 shards(理由與限制見上方 scrollShards 註解);預設路徑直接渲染 Content,不多任何一層 */}
+      {persistentElements ? (
+        <RemoveScroll as={Slot} allowPinchZoom shards={scrollShards}>
+          {content}
+        </RemoveScroll>
+      ) : content}
     </DialogPortal>
   )
 })

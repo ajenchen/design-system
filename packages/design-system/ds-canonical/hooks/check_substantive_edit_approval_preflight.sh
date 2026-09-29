@@ -45,8 +45,29 @@ EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null) \
 # 所以受管產品檔的 shell 寫入**沒有任何 transcript 能放行**,不是「跟走 Edit 一樣要授權」—— 這是刻意的 fail closed:
 # 產品程式一律走 Edit / Write 工具(閘看得到內容才能分工程 / UI),shell 寫檔本來就是本分支要堵的洞。
 # 測試:tests/test_check_substantive_edit_approval_preflight.sh §18(18k 釘住這個行為)。
-# 已知缺口(待辦總帳 N20 / N47):寫入動詞是裸子字串比對(`*">"*` 命中 `2>`、`*"dd "*` 命中 `git add`)會誤擋純讀;
-# 相對路徑(`cd packages/design-system && sed -i … src/x.tsx`)抓不到會漏擋 —— 兩者都由 §18 釘住現況,修好後改期望。
+# 已知缺口(待辦總帳 N47):相對路徑(`cd packages/design-system && sed -i … src/x.tsx`)抓不到會漏擋 —— §18g 釘住現況,修好後改期望。
+# N20(裸子字串誤擋純讀)2026-09-29 已修,見下方 bash_cmd_writes;§18f 改為放行期望。
+
+# 命令字串裡有沒有「會寫檔」的動作。回 0 = 有。
+bash_cmd_writes() {
+  local c="$1" rest re_verb re_redirect re_open
+  # 動詞要有詞首分隔(行首 / 空白 / ; | & ( `),`git add` 不再命中 `dd`、`ripgrep` 不命中 `cp`
+  re_verb='(^|[[:space:];|&(`])(sed[[:space:]]+-[A-Za-z]*i|perl[[:space:]]+-[A-Za-z]*i|tee|cp|mv|truncate|dd|patch)[[:space:]]'
+  [[ "$c" =~ $re_verb ]] && return 0
+  case "$c" in *"git apply"*|*"writeFileSync"*|*"outputFileSync"*|*"fs.write"*) return 0 ;; esac
+  # 腳本語言的寫檔開檔:open(..., 'w' / "w" / 'a' / 'wb' …)
+  re_open="open\([^)]*['\"](w|a)[b+]*['\"]"
+  [[ "$c" =~ $re_open ]] && return 0
+  # 重導:`>` / `>>` 前面不是數字(2>)、&(&>)、= - < >(=>、->、<>、>>)且目標不是 /dev/… 才算寫檔;逐個檢查,不因第一個是 /dev/null 就放過後面的
+  re_redirect='(^|[^0-9&=<>-])>{1,2}[[:space:]]*([^&[:space:]]+)(.*)$'
+  rest="$c"
+  while [[ "$rest" =~ $re_redirect ]]; do
+    case "${BASH_REMATCH[2]}" in /dev/*) ;; *) return 0 ;; esac
+    rest="${BASH_REMATCH[3]}"
+  done
+  return 1
+}
+
 case "$TOOL" in
   Edit|Write|MultiEdit) ;;
   Bash)
@@ -57,12 +78,12 @@ case "$TOOL" in
       *packages/design-system/src/*|*node_modules/@qijenchen/design-system/*|*apps/*) ;;
       *) exit 0 ;;
     esac
-    # 寫入動詞:涵蓋原地編輯、重導、複製移動、以及腳本語言的寫檔呼叫
-    case "$BASH_CMD" in
-      *"sed -i"*|*"perl -i"*|*" > "*|*" >> "*|*">"*|*"tee "*|*"cp "*|*"mv "*|*"truncate"*|*"dd "*\
-      |*"writeFileSync"*|*"open("*"'w'"*|*'open('*'"w"'*|*"outputFileSync"*|*"fs.write"*|*"patch "*|*"git apply"*) ;;
-      *) exit 0 ;;
-    esac
+    # 寫入動詞:涵蓋原地編輯、重導、複製移動、以及腳本語言的寫檔呼叫。
+    # 2026-09-29(待辦總帳 N20):原本用裸子字串比對,`*">"*` 命中 `2>/dev/null` / `2>&1` 的 fd 重導、`*"dd "*` 命中
+    # `git add`,純讀取被當成寫檔擋下(測試 §18f 釘過現況)。改成:動詞要有詞首分隔(行首 / 空白 / ; | & ( `),
+    # 重導只算「不是 fd 重導(2>、&>、>&)、不是箭頭或比較(=>、->、<>)、目標不是 /dev/…」的 `>` / `>>`,而且逐個檢查
+    # (`cmd >/dev/null; echo x > a.tsx` 第一個是 /dev/null 也不能放過第二個)。
+    bash_cmd_writes "$BASH_CMD" || exit 0
     ;;
   *) exit 0 ;;
 esac

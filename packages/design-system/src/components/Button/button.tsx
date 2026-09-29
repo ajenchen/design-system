@@ -458,7 +458,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // 靜默忽略會讓 consumer 誤以為「傳了但位置錯」。Dev mode 印 warning 引導改用 `badge` prop
     // (inline 位置,跟 label 並列)或改 `iconOnly`。Spec SSOT:badge.spec.md「Overlay 適用元件」。
     if (process.env.NODE_ENV !== 'production' && overlayBadge && !iconOnly) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[DS Button] `overlayBadge` 只適用於 `iconOnly` Button。有 label 的 Button 請改用 `badge` prop(inline 位置,跟 label 並列),或移除 label 改為 iconOnly。SSOT:badge.spec.md「Overlay 適用元件 canonical」節。'
       )
@@ -469,7 +468,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // 例外:overlayBadge 跟 iconOnly 並用 canonical(上方 overlayBadge 反向 warn 已 cover;相對指法,免行號漂移)。
     // 不擋 image canonical「icon + 下拉指示 = 不加 iconOnly + startIcon + endIcon + aria-label」(那 case iconOnly=false 不 trigger)。
     if (process.env.NODE_ENV !== 'production' && iconOnly && (EndIcon !== undefined || badge != null)) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[DS Button] `iconOnly` 嚴格定義為「只有一個 icon,正方形」,不可與 `endIcon` 或 `badge` 並用。若需 icon + 下拉指示 → 不加 iconOnly + startIcon + endIcon + aria-label;若需 icon + 角標 → iconOnly + overlayBadge。SSOT:button.spec.md `iconOnly 的邊界` 節 + `badge.spec.md` Overlay 適用元件 canonical。'
       )
@@ -495,7 +493,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // danger 視覺)— consumer 可能出「不紅的刪除鍵」而不自知。Spec SSOT:button.spec.md
     // 「禁止事項」danger 條(2026-07-14 deep-audit 補 warn,對齊既有 overlayBadge / iconOnly warn pattern)。
     if (process.env.NODE_ENV !== 'production' && resolvedDanger && (resolvedVariant === 'tertiary' || resolvedVariant === 'link')) {
-      // eslint-disable-next-line no-console
       console.warn(
         `[DS Button] \`danger\` 不支援 variant="${resolvedVariant}"(無對應 compoundVariant,會靜默渲染成一般 ${resolvedVariant},無紅色 danger 視覺)。危險操作請改用 primary(立即不可逆)/ secondary(可反悔)/ text(低度)。SSOT:button.spec.md「禁止事項」danger 條。`
       )

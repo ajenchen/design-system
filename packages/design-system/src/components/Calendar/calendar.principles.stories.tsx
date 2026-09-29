@@ -18,10 +18,11 @@ type Story = StoryObj
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
-//(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。原則頁的可點範例也給**看得見的反應**,
-// 不給空函式(空函式 = 點了沒反應)。與展示頁 calendar.stories.tsx 同一種示範手法。
+//(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
+// 原則頁的可點範例也給**看得見的反應**,不給空函式(空函式 = 點了沒反應)。與展示頁 calendar.stories.tsx 同一種示範手法。
 const demoAddOnDate = (date: Date) => alert(`在 ${date.getMonth() + 1}/${date.getDate()} 新增事件`)
 const demoOpenEvent = (event: CalendarEvent) => alert(`點了事件:${event.title}`)
+const demoCreateEvent = () => alert('開啟新事件對話框')
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-12">
@@ -93,6 +94,7 @@ export const UsageGuidance: Story = {
                   today={now}
                   onDateClick={demoAddOnDate}
                   onEventClick={demoOpenEvent}
+                  onCreateEvent={demoCreateEvent}
                   events={[
                     { id: 'a', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
                   ] as CalendarEvent[]}
@@ -121,6 +123,7 @@ export const ColorSemantic: Story = {
             today={now}
             onDateClick={demoAddOnDate}
             onEventClick={demoOpenEvent}
+            onCreateEvent={demoCreateEvent}
             events={[
               { id: '1', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
               { id: '2', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
@@ -152,6 +155,7 @@ export const MonthViewOnlyRule: Story = {
             today={now}
             onDateClick={demoAddOnDate}
             onEventClick={demoOpenEvent}
+            onCreateEvent={demoCreateEvent}
             events={[
               { id: '1', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
             ] as CalendarEvent[]}
@@ -169,7 +173,7 @@ export const ReadOnlyRule: Story = {
     <div className="space-y-6">
       <Rule
         title="點了沒反應的東西不長成可點的樣子:日期格、事件方塊各自宣告「可點」或「唯讀」"
-        note="日期格(點一下 = 在這天新增)與事件方塊(點一下 = 打開事件)是兩個獨立的點擊目標。可點就傳回調 onDateClick / onEventClick —— 整格滑過變色、日期數字是按鈕、事件方塊是按鈕;沒有這個動作就寫 readOnlyDates / readOnlyEvents —— 不亮、不是按鈕、游標不變,鍵盤仍可用方向鍵在格陣裡走。兩者都不能省略不講:型別層要求二擇一,不會出現「看起來能點、點了沒反應」的格子。下例是公司假日行事曆:假日只是標記、沒有詳情可開,日子也不在這裡新增 → 兩者都唯讀。"
+        note="日期格(點一下 = 在這天新增)與事件方塊(點一下 = 打開事件)是兩個獨立的點擊目標。可點就傳回調 onDateClick / onEventClick —— 整格滑過變色、日期數字是按鈕、事件方塊是按鈕;沒有這個動作就寫 readOnlyDates / readOnlyEvents —— 不亮、不是按鈕、游標不變,鍵盤仍可用方向鍵在格陣裡走。兩者都不能省略不講:型別層要求二擇一,不會出現「看起來能點、點了沒反應」的格子。右上角「新事件」是全域新增入口,不在這個二擇一裡、永遠在(onCreateEvent 必填):點了之後先選日期,哪些日子不能新增由新增流程決定,不由這顆鈕的有無表達。下例是公司假日行事曆:假日只是標記、沒有詳情可開,日子也不在格子上點來新增 → 兩者都唯讀;新增假日走右上角。"
       >
         {/* 整月都要看得到(24 號第二個假日在第四週):高度同 calendar.anatomy.stories.tsx 整月示範 */}
         <div className="h-[560px] border border-divider rounded-md overflow-hidden">
@@ -178,6 +182,7 @@ export const ReadOnlyRule: Story = {
             today={now}
             readOnlyDates
             readOnlyEvents
+            onCreateEvent={() => alert('開啟新增假日對話框')}
             events={[
               { id: 'h1', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-03`, color: 'green', allDay: true },
               { id: 'h2', title: '年中盤點(辦公室關閉)', start: `${thisMonth}-24`, end: `${thisMonth}-24`, color: 'green', allDay: true },

@@ -297,7 +297,12 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
     const [expandedInternal, setExpandedInternal] = React.useState<Set<string>>(() =>
       normalizeExpanded(defaultExpanded, childValues),
     )
-    const expandedSet = isExpandedControlled ? new Set(expandedProp) : expandedInternal
+    // Controlled 時 `new Set(expandedProp)` 每 render 都是新參照,會讓下方 ctxValue 的 useMemo 每次都重算 → 包進 useMemo,
+    // 只在 expandedProp / expandedInternal 真的換了才建新 Set(2026-09-29,eslint exhaustive-deps)。
+    const expandedSet = React.useMemo(
+      () => (isExpandedControlled ? new Set(expandedProp) : expandedInternal),
+      [isExpandedControlled, expandedProp, expandedInternal],
+    )
 
     const toggleExpanded = React.useCallback((itemValue: string) => {
       const compute = (prev: Set<string>) => {

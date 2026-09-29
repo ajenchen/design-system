@@ -46,7 +46,6 @@ export const ProfileCardDefaultActions = ({
   // Dev-mode warning(對齊本檔 defaultFieldValues dev-warn 先例):預設 actions 沒接 handler
   // = 按鈕點了永遠沒反應(2026-07-06 D4 finding);production 必傳 callback 或自組 actions。
   if (process.env.NODE_ENV !== 'production' && !onChat && !onCall) {
-    // eslint-disable-next-line no-console
     console.warn(
       '[DS ProfileCard] ProfileCardDefaultActions 未接 onChat/onCall——按鈕點擊無反應。請傳入 callback(PersonData.onChat/onCall 會自動 forward)或自組 actions。'
     )
@@ -199,7 +198,6 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
         Object.values(DEFAULT_FIELD_LABEL).includes(f.label as string),
       )
       if (legacyEntry) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[ProfileCard] "${name}":legacy pattern — fields[].label="${legacyEntry.label}" ` +
           `is a default field. Migrate to defaultFieldValues={{ id, employeeNumber }} prop ` +
@@ -210,7 +208,6 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
 
     // Dev mode warn:consumer 沒傳 default field 任何 key → 提示補完(避免漂移成 placeholder-only)
     if (process.env.NODE_ENV !== 'production' && !defaultFieldValues) {
-      // eslint-disable-next-line no-console
       console.warn(
         `[ProfileCard] "${name}":no defaultFieldValues passed — sections will render placeholders. ` +
         `Pass at least { id, employeeNumber } via defaultFieldValues prop. ` +

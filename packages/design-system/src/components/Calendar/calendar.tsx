@@ -109,8 +109,13 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** 事件資料 */
   events?: CalendarEvent[]
 
-  /** 點新事件 CTA 回調 */
-  onCreateEvent?: () => void
+  /**
+   * 右上角「新事件」CTA 的回調 —— 全域新增入口,恆渲染;日期能不能新增由新增流程自己擋,不由這顆鈕的有無表達
+   *(user 2026-09-29:「右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊」)。
+   * 元件沒有內建的「新增」行為,所以必填:meta-patterns M23(f)—— 固定元素不以 callback 有無當渲染閘、
+   * 無內建 fallback 的 callback 必填。唯讀月曆(`readOnlyDates` / `readOnlyEvents`)一樣要傳。
+   */
+  onCreateEvent: () => void
 
   /** 0 = Sunday, 1 = Monday。預設 0(對齊 Google Calendar 美系預設) */
   weekStartsOn?: 0 | 1
@@ -129,7 +134,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** 月份導覽 <nav> landmark 的 aria-label。Override for i18n. */
   navAriaLabel?: string
   todayLabel?: string
-  /** 「新事件」CTA 文字。Override for i18n。CTA 僅在傳 `onCreateEvent` 時渲染(spec Toolbar 段)。 */
+  /** 「新事件」CTA 文字。Override for i18n。CTA 是 toolbar 的固定元素、恆渲染(spec Toolbar 段;`onCreateEvent` 必填)。 */
   createLabel?: string
 }
 
@@ -362,9 +367,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
 
   // Tab 進來時停在哪一天:今天在這個月就是今天,否則這個月 1 號
   //(APG Date Picker Dialog 範例:「If no date has been selected, places focus on the current date.」)。
+  // 相依用「今天 00:00 的毫秒數」(primitive),不用 resolvedToday 物件:沒傳 `today` 時它每次 render 都是
+  // 新的 new Date(),拿物件當相依 = memo 每次都重算(eslint exhaustive-deps 抓的就是這個)。
+  // 不把 new Date() 包進 useMemo 凍在掛載時:行事曆分頁常掛好幾天,跨過午夜「今天」的 pill、Today 鈕目標
+  // 都要在下一次 render 跟著走(react-day-picker 9.14 DayPicker.js:131 同樣每次 render 重取 today)。
+  const todayDayMs = startOfDay(resolvedToday).getTime()
   const anchorDate = React.useMemo(
-    () => (isSameMonth(resolvedToday, refDate) ? startOfDay(resolvedToday) : startOfMonth(refDate)),
-    [resolvedToday, refDate],
+    () => (isSameMonth(todayDayMs, refDate) ? new Date(todayDayMs) : startOfMonth(refDate)),
+    [todayDayMs, refDate],
   )
   // 已畫出來的日期範圍(含上/下月 outside day —— 本元件的 outside day 是有事件、可點的真格,
   // 與 APG 範例把 outside day 清空 disable 的做法不同,所以「跨月」的界線是格陣邊界而非月份邊界)。
@@ -547,11 +557,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
 
-        {onCreateEvent && (
-          <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
-            {createLabel}
-          </Button>
-        )}
+        {/* 全域新增入口:toolbar 固定元素、恆渲染(M23(f);2026-09-29 前寫成 `{onCreateEvent && …}`,唯讀月曆就沒這顆鈕 —— 已撤回,
+            日期能不能新增由新增流程自己擋,不由鈕的有無表達,user 2026-09-29 原話見 CalendarOwnProps.onCreateEvent) */}
+        <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
+          {createLabel}
+        </Button>
       </div>
 
       {/* Weekday header */}

@@ -223,7 +223,6 @@ const SelectionItem = React.forwardRef<HTMLDivElement, SelectionItemProps>(
   ) => {
     const sizeKey: SizeKey = size ?? 'md'
     if (process.env.NODE_ENV !== 'production' && Icon && avatar) {
-      // eslint-disable-next-line no-console
       console.warn('[SelectionItem] `icon` 和 `avatar` 互斥,只會渲染 icon。')
     }
     // Block 對齊:control 跟 prefix(avatar)一起走 block 高度,「selection + identity」視覺單元不歪斜

@@ -1247,14 +1247,24 @@ for read_cmd in \
   expect_pass_silent "18e. Bash 純讀取不受管 → 放行: $read_cmd"
 done
 
-# 18f. N20 已知誤擋(釘住現況;修好後把這三格改成 expect_pass_silent):
-#   寫入動詞用子字串比對 —— \`2>/dev/null\` / \`2>&1\` 裡的 \`>\`,以及 \`git add\` 裡的 \`dd \`,都被當成寫入。
-for false_block in \
+# 18f. N20(2026-09-29 已修):fd 重導(2>/dev/null、2>&1)、/dev/null 目標、`git add`、箭頭 / 比較裡的 `>` 都是純讀 → 放行;
+#   同一句裡第一個是 /dev/null、後面另有真重導 → 仍要擋(逐個檢查,不因第一個放過第二個);`>>` 追加也是寫。
+for read_cmd in \
   "cat $BASH_DS_TSX 2>/dev/null" \
   "grep -c foo $BASH_DS_TSX 2>&1" \
-  "git add $BASH_DS_TSX"; do
-  run_hook_bash "$false_block" "$TX_NEUTRAL"
-  expect_block "18f. N20 已知誤擋讀取(現況 BLOCK,修好後改期望): $false_block" "BLOCKER"
+  "git add $BASH_DS_TSX" \
+  "cat $BASH_DS_TSX > /dev/null" \
+  "grep -n '=>' $BASH_DS_TSX" \
+  "rg -n 'a->b' $BASH_DS_TSX 2>&1 | head -3"; do
+  run_hook_bash "$read_cmd" "$TX_NEUTRAL"
+  expect_pass_silent "18f. N20 修後純讀不再誤擋: $read_cmd"
+done
+for write_cmd in \
+  "cat $BASH_DS_TSX >/dev/null; echo x > $BASH_DS_TSX" \
+  "printf 'x' >> $BASH_DS_TSX 2>/dev/null" \
+  "echo x >$BASH_DS_TSX"; do
+  run_hook_bash "$write_cmd" "$TX_NEUTRAL"
+  expect_block "18f2. N20 修後真重導仍擋(含第一個是 /dev/null 的): $write_cmd" "BLOCKER"
 done
 
 # 18g. N47 已知漏擋(釘住現況;修好後改成 expect_block):

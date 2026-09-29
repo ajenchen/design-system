@@ -34,7 +34,7 @@ import {
   type TableOptions,
   type Column,
 } from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import { TableScrollProvider } from '@/design-system/components/Field/field-context'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
@@ -388,6 +388,9 @@ function applySelectIds(
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
 // 穩定的空陣列:`?? []` 每次 render 新身分會讓 TanStack 的 pinning / columns memo 失效(Codex R6 2026-09-08)
 const EMPTY_COLUMN_IDS: string[] = []
+// 同款:非虛擬模式下 `rowVirtualItems` 的空陣列。寫成字面值 `[]` 每次 render 都是新身分,拿它當相依的 effect(焦點掉到 body 的補對)
+// 就每次 render 都跑(exhaustive-deps 2026-09-29)。
+const EMPTY_VIRTUAL_ITEMS: VirtualItem[] = []
 // 表頭面板:**只帶底色**。底色**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
 // 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
 // 下分隔線**不在這裡**:它掛在外層列群組的 `.dtHeaderRowGroup::after`(data-table.css),見下文。
@@ -715,10 +718,15 @@ function SourceRowProvider({
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
   // **v15.6 button-only drag**:setActivatorNodeRef 不接 row,改由 RowDragHandle Button 接(via ctx)。
   // setNodeRef = primary row(source DOM,ghost 抓這個);droppable.setNodeRef = same row(droppable target)。
+  // setNodeRef 先解構再呼叫:dnd-kit 的 setNodeRef 是 `useCallback(…, [])` 的穩定函式、不讀 this,但 useDraggable / useDroppable
+  // 每次 render 都回新物件。寫成 `draggable.setNodeRef(el)` 會被 exhaustive-deps 視為「方法呼叫依賴接收者」而要求列整個 draggable,
+  // 列了 setRefs 就每 render 換身分 → React 每 render 先用 null 再用元素呼叫 ref → dnd-kit 每次都重登記節點。
+  const { setNodeRef: setDraggableNodeRef } = draggable
+  const { setNodeRef: setDroppableNodeRef } = droppable
   const setRefs = React.useCallback((el: HTMLElement | null) => {
-    draggable.setNodeRef(el)
-    droppable.setNodeRef(el)
-  }, [draggable.setNodeRef, droppable.setNodeRef])
+    setDraggableNodeRef(el)
+    setDroppableNodeRef(el)
+  }, [setDraggableNodeRef, setDroppableNodeRef])
   const isDragging = draggable.isDragging
   // a11y(2026-05-07 v15.10 codex P1 fix):button-only drag mode 下,row 本身不該成為
   // keyboard tab stop。dnd-kit `useDraggable.attributes` 含 `role="button" tabIndex=0
@@ -839,10 +847,13 @@ function DraggableHeaderCell({
   // **v15.0 Path B refactor**(對齊 TreeView SSOT):分離 useDraggable + useDroppable,不 auto-shift
   const draggable = useDraggable({ id, disabled, data: { type: 'column', columnId: id } })
   const droppable = useDroppable({ id, disabled, data: { type: 'column', columnId: id } })
+  // setNodeRef 先解構再呼叫(同 SourceRowProvider 的理由:穩定函式,但接收者物件每 render 都新)。
+  const { setNodeRef: setDraggableNodeRef } = draggable
+  const { setNodeRef: setDroppableNodeRef } = droppable
   const setRefs = React.useCallback((el: HTMLElement | null) => {
-    draggable.setNodeRef(el)
-    droppable.setNodeRef(el)
-  }, [draggable.setNodeRef, droppable.setNodeRef])
+    setDraggableNodeRef(el)
+    setDroppableNodeRef(el)
+  }, [setDraggableNodeRef, setDroppableNodeRef])
   const isDragging = draggable.isDragging
   const dragStyle: React.CSSProperties = {
     ...dragSourceStyle(isDragging),
@@ -1360,6 +1371,19 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
 // props 全 primitive / stable reference → memo 真命中,unchanged cells render 成本歸零。
 // Cite world-class:AG Grid「cell renderer stable reference」/ MUI X DataGrid memoized subcomponents。
 const EMPTY_META: Record<string, unknown> = {}
+
+/** 等價於 `React.useMemo(() => ({}), deps)`(長度相同且每一項 Object.is 全等 → 回同一個 epoch 物件,否則換新),
+ *  差別只在相依清單是**變數**:`epochDeps` / `headerEpochDeps` 刻意手列成變數,由 scripts/data-table-row-cache-deps-invariant.mjs
+ *  機械對照渲染函式真正讀到的外層變數(比 exhaustive-deps 的靜態檢查嚴),而 exhaustive-deps 只接受陣列字面值、對變數一律報錯;
+ *  把清單抄進字面值 = 同一份清單兩個住所,必漂移。比對在 render 期做,跟同一段的 rowRenderTickRef / prevEpochDepsRef 同款。 */
+function useDepsEpoch(deps: unknown[]): object {
+  const ref = React.useRef<{ deps: unknown[]; epoch: object } | null>(null)
+  const prev = ref.current
+  const same = prev !== null && prev.deps.length === deps.length && prev.deps.every((d, i) => Object.is(d, deps[i]))
+  const next = same ? prev : { deps, epoch: {} }
+  ref.current = next
+  return next.epoch
+}
 
 interface MemoCellSlotProps {
   Cell: React.ComponentType<CellComponentProps>
@@ -2287,7 +2311,8 @@ function DataTableInner<TData>(
 
   virtualizerRef.current = virtualizer
   // 一次 render 只取一次 virtual items(預排隊 / 列高同步 / 三區 render 共用同一份快照;Codex R20 A3)
-  const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : []
+  // 非虛擬模式回模組層常數,不寫 `[]`:字面值每次 render 都是新身分,會讓拿它當相依的 effect 每次 render 都跑。
+  const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : EMPTY_VIRTUAL_ITEMS
   // 列殼預排隊(每次 render;要在 virtualizer 建好之後、renderBodyRows 之前):把這次會掛的列裡「還不是真列」的,
   /**
    * 指標底下那一列的 id(2026-09-11;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
@@ -2694,7 +2719,6 @@ function DataTableInner<TData>(
     }
     return ids
     // any-allow: react-table runtime lookup
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spreadsheetMode, rangeAnchor, rangeFocus, table])
   const rangeCellIdSet = React.useMemo(() => new Set(rangeCellIds || []), [rangeCellIds])
 
@@ -3031,7 +3055,7 @@ function DataTableInner<TData>(
         setHoveredRow(relatedIdx)
       },
     }
-  }, [enableHover])
+  }, [enableHover, setHoveredRow])
   // 維持 API:hoverProps(idx) 仍存在但 no-op,實際邏輯搬到 table 層 delegation
   const hoverProps = (_idx: number): Record<string, never> => ({})
 
@@ -3531,8 +3555,12 @@ function DataTableInner<TData>(
   }
 
   // ── L2 Selection helpers ──
-  const visibleRowIdsKey = React.useMemo(() => rows.map(r => r.id).join(','), [rows])
-  const visibleRowIdsSet = React.useMemo(() => new Set(rows.map(r => r.id)), [visibleRowIdsKey])
+  // 可見列 id 序列的鍵:rows 換身分(重新載入 / 排序 / 編輯回填)但 id 序列沒變時鍵不變,Set 與下面的 filter effect 都只跟著鍵走。
+  // Set 必須只依賴鍵、不能依賴 rows:useControllable 的 setter 在 controlled 模式下**無條件**呼叫 onSelectionChange,
+  // Set 若跟著 rows 換身分,filter effect 就會在每次 rows 換身分時把同一份 selection 再回報 consumer 一次。
+  // 所以 Set 直接從鍵解回來;鍵用 JSON 而不是 join(','):id 含逗號或空字串時 join 會把不同的 id 序列編成同一把鍵。
+  const visibleRowIdsKey = React.useMemo(() => JSON.stringify(rows.map(r => r.id)), [rows])
+  const visibleRowIdsSet = React.useMemo(() => new Set<string>(JSON.parse(visibleRowIdsKey) as string[]), [visibleRowIdsKey])
 
   // 對齊 spec L2 七、Filter 套用 → filtered-out selected rows 預設清掉
   React.useEffect(() => {
@@ -4175,8 +4203,7 @@ function DataTableInner<TData>(
     if (stats && prevEpochDepsRef.current) epochDeps.forEach((d, i) => { if (!Object.is(d, prevEpochDepsRef.current![i])) { stats.epochIdx ??= {}; stats.epochIdx[i] = (stats.epochIdx[i] ?? 0) + 1 } })
     prevEpochDepsRef.current = epochDeps
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rowRenderEpoch = React.useMemo(() => ({}), epochDeps)
+  const rowRenderEpoch = useDepsEpoch(epochDeps)
 
   // 表頭元素快取(2026-09-08):表頭不隨捲動改變,但 DataTableInner 每步 render 都重呼叫 renderHeaderRow → 每步 593 個
   // 表頭元件重繪(fiber 歸因實測)。與列快取同款:deps 全等就回同一個元素,React 在表頭 fiber 直接 bailout。
@@ -4184,7 +4211,7 @@ function DataTableInner<TData>(
   const headerEpochDeps: unknown[] = [
     rowRenderEpoch, enableColumnReorder, headerCheckedState, selectableVisibleIds, onColumnFilterTrigger, onColumnResize, toggleHeaderCheckbox,
   ]
-  const headerRenderEpoch = React.useMemo(() => ({}), headerEpochDeps)
+  const headerRenderEpoch = useDepsEpoch(headerEpochDeps)
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
@@ -4549,11 +4576,13 @@ function DataTableInner<TData>(
     el instanceof Element && (el === root || (root.contains(el) && el.closest('[role="gridcell"], [data-active-editor-host]') != null))
   // 持有焦點的格被虛擬捲動卸載時瀏覽器不一定發 blur(焦點靜靜掉到 body),`gridHasFocus` 會停在 true;
   // 之後游標格捲回畫面,框會畫著但焦點不在 —— 每次虛擬列集合變動後對一次 document.activeElement。
+  // `rows` 也列進來:非虛擬模式下列集合只隨 rows 變(列被資料變動 / 篩選卸載時同樣不發 blur);先前非虛擬模式的
+  // `rowVirtualItems` 是每 render 新的 `[]`,這個 effect 因此每次 render 都跑、順便蓋到這種情況,改成穩定常數後由 rows 明確承接。
   React.useEffect(() => {
     if (!gridHasFocus) return
     const root = tableRef.current
     if (root && !isGridFocusTarget(root, document.activeElement)) setGridHasFocus(false)
-  }, [gridHasFocus, rowVirtualItems])
+  }, [gridHasFocus, rowVirtualItems, rows])
 
   // Single mode 用 RadioGroup wrap 整 table(Radix RadioGroup 用 context 傳遞 value/onValueChange)
   // Multi mode 不需 wrap(Checkbox 各自 controlled,不靠 context)
@@ -5237,7 +5266,7 @@ function DataTableInner<TData>(
       if (isReorderNoop(activeIdx, overIdx, side)) { setDropIndicator(null); return }
       setDropIndicatorIfChanged({ id: String(over.id), side, type: 'row' })
     }
-  }, [allRowIds, isReorderNoop, setDropIndicatorIfChanged])
+  }, [allRowIds, setDropIndicatorIfChanged])
 
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)
@@ -5341,7 +5370,7 @@ function DataTableInner<TData>(
     if (isReorderNoop(oldIdx, newIdx, position)) return
     reorderOutcomeRef.current = { kind: '列', label: sourceId }
     onRowReorder?.(sourceId, targetId, position)
-  }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds, isReorderNoop])
+  }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds])
 
   // 2026-05-06 v11:column reorder collision detection — drag column 時 droppable filter
   // 只保留 column id(避免 over 觸發 row);drag row 走 sameParent canonical。

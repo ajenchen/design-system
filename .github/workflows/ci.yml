@@ -57,6 +57,10 @@ jobs:
           # 2026-09-29(OE18 盤點):隨 npm 出貨的 llms.txt / llms-full.txt 檔頭自稱「CI --check 守」,但從沒接進任何 workflow,
           # 提交的檔停在 beta.132 過期 14 版沒人知道。build-storybook 鏈尾已重生,這裡驗 git 樹沒有漂移 + 對照組會紅。
           npm run check:llms-txt
+          # React hooks 兩條規則(2026-09-29 待辦總帳 N40;repo 第一份 eslint 設定 eslint.config.mjs,只開 rules-of-hooks / exhaustive-deps):
+          # exhaustive-deps 抓的是 effect / callback / memo 漏相依造成的過期閉包 —— 畫面上是「有時候不更新」,沒有像素閘量得到。
+          # 首掃 22 錯 + 12 條沒作用的 disable 註解,逐處讀語意修(不整批 disable),見 5ade7355 之後那批 commit。
+          npm run check:react-hooks
 
       # DataTable pixel invariants must run where a browser exists. The local macOS sandbox cannot
       # launch Chromium (Mach lookup closed), which is exactly how the beta.100 multi-person cell
@@ -810,6 +814,9 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
+          # 並存時的捲動鎖(2026-09-29 待辦總帳 OE13,user「第二題照你建議」):對話框 + 常駐區並存時舞台鎖捲動、常駐區照常可捲、一般 modal 照舊鎖,
+          # 三處都真的合成滾輪量 scrollTop;--selftest 在頁面上把鎖拆掉(document 捕獲階段吞掉 wheel + 拿掉 body 的 data-scroll-locked)必紅。
+          npm run test:dialog-coexist-scroll-lock
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):

@@ -90,7 +90,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   readOnlyEvents                            // 事件方塊唯讀(與 onEventClick 二擇一):不亮、不是按鈕
   onDateClick={(date) => ...}               // 點月 cell / 日期數字鈕回調(用於新增);日期格可點時必填
   readOnlyDates                             // 日期格唯讀(與 onDateClick 二擇一):不亮、日期數字不是按鈕
-  onCreateEvent={() => ...}                 // 點「新事件」CTA 回調
+  onCreateEvent={() => ...}                 // 點右上角「新事件」CTA 回調;必填(CTA 是 toolbar 固定元素、恆渲染,見「Toolbar」段)
   weekStartsOn={0 | 1}                      // 0=Sun, 1=Mon
   renderEventTile={(event) => ReactNode}    // 自訂 event tile 視覺
   locale="en-US"                            // Intl 語系(月份標題 / 星期名;預設 'en-US')
@@ -98,7 +98,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   nextAriaLabel="下個月"                    // i18n override:next 導覽鈕 aria-label
   navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
   todayLabel="今天"                         // i18n override:「今天」按鈕文字
-  createLabel="新事件"                      // i18n override:「新事件」CTA 文字(僅在傳 onCreateEvent 時渲染)
+  createLabel="新事件"                      // i18n override:「新事件」CTA 文字
   className
 />
 ```
@@ -115,8 +115,8 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
 - **為什麼二擇一、不是「可省略」**:元件本身沒有內建的「新增」或「打開事件」行為(見「禁止事項」:不自動開表單)。若回調可省略、又拿「有沒有傳」決定長相,忘了傳的 consumer 會得到一個長得能點、點了沒反應的月曆 —— `meta-patterns` M23(f) 禁的正是這件事(不以 callback 有無當渲染閘;無內建行為的 callback 必填)。改成型別層的二擇一(discriminated union):沒宣告唯讀就一定要傳回調,宣告了就不准傳,編譯期就逼每個 consumer 講清楚。
 - **為什麼要有唯讀**:沒有「點日子新增」的月曆(新增走右上角 CTA 的內容排程、純看的假日行事曆)若照樣整格亮、日期數字照樣是按鈕,就是「看起來能點、點了沒反應」。`../../tokens/color/color.spec.md`「Hover 換色配對總則」:只有「點了會有反應」的元素才有底色的滑過回饋。2026-09-25 批次曾把兩個回調改成無條件必填(C2),等於規定月曆一定可點、沒有唯讀的可能,與此相反,已撤回。
 - **命名**:沿用 DS 既有的 `readOnly` 語彙 —— `../Rating/rating.tsx` 的 `readOnly`「唯讀:…不響應 hover / click / 鍵盤」、Field 家族的 readonly 模式(看得到、聚焦得到、改不了)—— 加上作用對象(`Dates` / `Events`),因為兩個目標要能分開宣告。世界級同一個語意:[MUI X `FormProps.readOnly`](https://github.com/mui/mui-x/blob/v9.14.0/packages/x-date-pickers/src/internals/models/formProps.ts#L8-L13)(DateCalendar 繼承:「When read-only, the value cannot be changed but the user can interact with the interface.」)、[React Aria `useCalendarCell.ts#L207-L212`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useCalendarCell.ts#L207-L212)(`isReadOnly` 時按下不選取、只把焦點移到那一天 —— 格陣導覽照常)。
-- `onCreateEvent` 維持可選,因為「新事件」CTA 本身是條件渲染(見 Toolbar 段),不傳就沒有那顆鈕,不會出現點了沒反應的東西。
-- 範例:`展示 — 內容發佈月曆` / `展示 — 空行事曆`(`readOnlyDates`:新增走 CTA,事件點得開)、`設計原則 — 唯讀的日期格與事件`(兩者都唯讀的假日行事曆)。
+- **`onCreateEvent` 也必填,而且沒有唯讀版本**(2026-09-29,待辦總帳 N12(a)):右上角「新事件」是**全域新增入口**、toolbar 的固定元素、恆渲染(見「Toolbar」段),與日期格 / 事件方塊可不可點無關 —— 唯讀月曆(假日行事曆)也有這顆鈕;哪些日期不能新增由新增流程自己擋(點了之後先選日期,選不到的日子在那裡被擋),不由這顆鈕的有無表達。user 2026-09-29 原話:「第三題,右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊,所以我不確定你到底要我決定什麼」。2026-09-29 前本條寫「維持可選,因為 CTA 是條件渲染」—— 那是 AI 寫的(eff41482 / 166e6614,查不到 user 原話),正是 M23(f) 禁的「拿 callback 有無當渲染閘」,已撤回。
+- 範例:`展示 — 內容發佈月曆` / `展示 — 空行事曆`(`readOnlyDates`:新增走 CTA,事件點得開)、`設計原則 — 唯讀的日期格與事件`(兩者都唯讀的假日行事曆,右上角「新事件」照樣在)。
 
 ### Event type
 
@@ -182,7 +182,7 @@ interface CalendarEvent {
 
 - 左 Nav:`<Button iconOnly>` prev/next + `<Button>今天</Button>` 跳 today
 - 中央 title:`<h2 className="text-h3">` or `text-body-lg font-medium`
-- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>` — **條件渲染:僅在傳 `onCreateEvent` 回調時出現**(未傳 = 無 CTA;與格子 / 事件方塊可不可點無關,那兩者由「API」段「日期格與事件方塊:可點或唯讀」各自宣告);文案由 `createLabel` prop override(對齊 `todayLabel` 等 chrome 文字 i18n override 慣例)
+- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>` — **固定元素、恆渲染;`onCreateEvent` 必填**(`meta-patterns` M23(f):spec anatomy 列出的固定元素不以 callback 有無當渲染閘,無內建行為的 callback 必填)。它是全域新增入口,與格子 / 事件方塊可不可點無關(那兩者由「API」段「日期格與事件方塊:可點或唯讀」各自宣告,同段末條有 user 2026-09-29 原話);哪些日期不能新增由新增流程自己擋,不由這顆鈕的有無表達。文案由 `createLabel` prop override(對齊 `todayLabel` 等 chrome 文字 i18n override 慣例)
 
 對齊 `patterns/action-bar/action-bar.spec.md`(左 context / 中 focus / 右 CTA 的經典分組)。
 
@@ -223,7 +223,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - ❌ 不用 `<DayPicker>` 為底層——DayPicker 是 form control 用,結構不適合 page-level event canvas
 - ❌ 不硬寫 month grid 為 `<table>`——用 CSS grid(月 view 為 per-cell 模型不跨欄 span,見「Event tile 規則」;後續週 / 日 view 的 timeline / 拖拉增量需 grid 自由佈局,table 結構難擴充)
 - ❌ 不把 event 資料存在元件內部 state——event 是 consumer 責任,本元件是純 view
-- ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX)
+- ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX);也**不拿回調有沒有傳決定畫不畫「新事件」CTA**(M23(f),見「Toolbar」段;唯讀月曆一樣有這顆鈕)
 - ❌ 不重造 date math——月 / 週 grid 邊界運算(`startOfMonth` / `eachDayOfInterval` / `isSameMonth` 等)一律用 `date-fns`。**唯一例外(D3 perf,tsx `eventsByDate` memo 有註解)**:每 render 對 42 cells 分桶事件的 hot path 用原生 timestamp 迭代(`new Date(y, m, d).getTime()` + `setDate(+1)`)—— 避免 per-cell `isWithinInterval` 的 O(42×N) 重複掃描;此 raw-Date 迭代**限縮在** bucketing memo 內,不外溢為通則
 
 ---

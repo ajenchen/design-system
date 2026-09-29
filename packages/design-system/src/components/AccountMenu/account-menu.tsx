@@ -117,7 +117,6 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
       !onOpenSettings &&
       !onSignOut
     ) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[DS AccountMenu] default 選單項未接 onViewProfile/onOpenSettings/onSignOut——item 點擊無反應。請傳入 callback 或自組 children。'
       )

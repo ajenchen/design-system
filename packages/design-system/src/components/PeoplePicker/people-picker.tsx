@@ -418,7 +418,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 型別跟 PeoplePicker `HTMLAttributes<HTMLDivElement>` 不一致(`onCopy` / `onChange` 等)。
         // Runtime spread 等效 — DOM 收到 attrs 不挑剔(非 allowlist attrs 落 CustomSelect rest,
         // 續 spread 到 trigger div,runtime 行為不變)。
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // any-allow: rest 含 `onChange: FormEventHandler` 跟 Select onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
         {...(rest as any)}
       />
@@ -465,7 +464,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         className={className}
         aria-label={ariaLabel}
         // codex P2 forward(see Select branch comment for type-cast rationale)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
         {...(rest as any)}
         // **Tag SSOT canonical**:用 `avatar` prop(不塞 children),Tag 內部統一
@@ -595,7 +593,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
           </Tag>
         )
       }}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
       {...(rest as any)}
       tagRenderer={(item, onRemove) => {

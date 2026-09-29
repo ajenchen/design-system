@@ -103,8 +103,9 @@ export function useTruncated<E extends HTMLElement = HTMLElement>(
       if (t) clearTimeout(t)
       cleanup()
     }
-    // deps 由 consumer 決定(Tag: [children];其餘: []);measure 走 ref 不需進 deps。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps 由 consumer 決定(預設 [] = mount-once;Tag / Calendar / Select 等傳文字來源);measure 走 ref 不需進 deps;
+    // recheckAfterPaint / timing 是 call-site 固定字面值,只在訂閱當下讀一次。exhaustive-deps 只認 useEffect /
+    // useLayoutEffect 等已知名字(config 未設 additionalHooks),不檢查 `useIsoEffect` 別名 → 這裡不掛 eslint-disable。
   }, deps)
 
   return { ref, isTruncated }

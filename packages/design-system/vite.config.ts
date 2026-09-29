@@ -76,6 +76,8 @@ export default defineConfig({
         'lucide-react',
         'react-day-picker',
         'react-hook-form',  // 2026-07-05 D3:beta.80 漏列 → 整包 inline 進 dist(gzip 15.3KB + sourcemap)
+        'react-remove-scroll',  // 2026-09-29 OE13:Dialog 並存捲動鎖直接 import(Radix 的相依,現為 DS 直接相依);漏列會跟 react-hook-form 一樣整包 inline
+        'aria-hidden',  // 2026-09-29 OE13 同族:lib/overlay-coexistence.ts 直接 import suppressOthers(Radix 的相依);先前沒列 → dist 已 inline(dist/lib/overlay-coexistence.js 找不到 import 只找得到內文)
         'react-zoom-pan-pinch',
         'recharts',
         'sonner',

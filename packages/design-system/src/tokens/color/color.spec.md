@@ -480,7 +480,7 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 **step-7 vs semantic active 的區別**：兩者在 light mode 都指向 step-7，但 dark mode 行為不同。semantic active（如 `--primary-active`）在 dark mode 反轉為 step-5（壓暗模擬按壓感），而 primitive step-7 在 dark mode 仍維持高對比方向。簡言之：active 服務於互動回饋，step-7 服務於閱讀對比，兩者目的不同，dark mode 方向相反。
 
-**例外：step-6 滿版底色上的「亮色 hue」文字用 `--on-emphasis-dark`（`black-a85`,深色)**——yellow / amber / orange / lime / turquoise 亮度極高,白字（`--on-emphasis`）連 WCAG 3:1 都不過,必須深色文字（見上「`--on-emphasis` 配對」段)。此例外只在底色是 step-6 時觸發,step-1 subtle 底色上仍用 step-7。（green-6 白字亦不過 3:1,但列 documented exception 維持白字。)
+**例外：step-6 滿版底色上的「亮色 hue」文字用 `--on-emphasis-dark`（`black-a85`,深色)**——yellow / amber / orange / lime / turquoise 亮度極高,白字（`--on-emphasis`）連 WCAG 3:1 都不過,必須深色文字（見上「`--on-emphasis` 配對」段)。此例外只在底色是 step-6 時觸發,step-1 subtle 底色上仍用 step-7。（green-6 白字亦不過 3:1,但列 documented exception 維持白字。)**2026-09-29 user 重新確認維持 step-7**(原話:「要我拍板的第一題就照舊規格」):淡底上 yellow / lime / amber / green / orange 的 step-7 文字對比實測 2.46–3.82(1×1 canvas 讀 token 值、WCAG 公式),已知未達 AA,維持現狀不改 token;a11y 基線(`infra/governance/baseline/a11y-baseline.json`)記為已知。
 
 ### Subtle 背景（淡色填充）
 

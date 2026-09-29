@@ -190,7 +190,6 @@ function TagInner(
   // 內部結構;原僅 jsdoc/spec 約束會靜默通過 → 2026-07-05 對齊 Button overlayBadge dev-warn
   // 先例(button.tsx「Dev-mode warning」段)補齊家族一致 runtime 防線。
   if (process.env.NODE_ENV !== 'production' && Icon && avatar) {
-    // eslint-disable-next-line no-console
     console.warn(
       '[DS Tag] `icon` 與 `avatar` 互斥(同為 prefix slot),同時傳會並列渲染破壞 Tag 內部結構,請只擇一。SSOT:tag.spec.md Props 表 + tag.principles.stories.tsx IconRule。'
     )

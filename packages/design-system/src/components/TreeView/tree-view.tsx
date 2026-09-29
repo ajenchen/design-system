@@ -416,10 +416,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // ── 唯一的 Tab 停靠點(roving tabindex)──
     // 順序:焦點最後停的那一列(仍看得到)→ 選中的第一列 → 第一個可用列
     // (W3C keyboard-interface「進入組合元件時落在選中項,沒有就第一項」;來源見 spec)。
-    // 每次 render 後在 layout 階段重算(列的展開 / 選取 / 卸載都會改變答案),相同就不 setState,不會迴圈。
+    // 在 layout 階段從真 DOM 重算,相同就不 setState,不會迴圈:答案只看列的存在 / 開合 / aria-selected / aria-disabled 與 focusedId,
+    // 不看 tabStopId 本身(它只影響列的 tabIndex),所以 set 之後那一次重算必然相等。
     const [tabStopId, setTabStopId] = React.useState<string | null>(null)
-    // 只用來觸發一次 re-render(值本身不讀):列卸載後讓下方 layout effect 重算停靠點
-    const [, setRowRepairTick] = React.useState(0)
+    // 值本身不讀,只當下方 layout effect 的相依:列卸載時 TreeView 自己不一定 re-render,靠它讓 effect 重算停靠點
+    const [rowRepairTick, setRowRepairTick] = React.useState(0)
     const tabStopRef = React.useRef<string | null>(null)
     tabStopRef.current = tabStopId
     const focusedIdRef = React.useRef<string | null>(null)
@@ -438,7 +439,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       })
       const next = stop?.dataset.treeRow ?? null
       if (next !== tabStopId) setTabStopId(next)
-    })
+      // 相依 = 會改變「哪些列存在 / 在開著的分支裡 / aria-selected / aria-disabled」的 render 輸入,加上 remembered(focusedId)與比對用的 tabStopId:
+      // children(節點增刪 / disabled)、expandedIds(子樹掛載與開合)、selectedIds + selectionMode(aria-selected)、rowRepairTick(列卸載通知)。
+      // 2026-09-29 前沒有相依清單(每次 render 都跑);列 DOM 只會因這幾個輸入而變,其餘 render(拖曳落點 / 播報文字 / 無關 prop)重算結果必相同,
+      // 跳過不改行為。日後新增會影響列 DOM 的輸入時要一併列進來。
+    }, [children, expandedIds, selectedIds, selectionMode, focusedId, tabStopId, rowRepairTick])
     // 列被卸載(例:consumer 收合了焦點所在列的上一層,關閉動畫結束後子樹才卸載 —— 那一刻 TreeView 本身不會 re-render)
     // → 若它是停靠點或焦點所在,觸發一次重算,否則整棵樹會從 Tab 路上消失。
     const onRowUnmount = React.useCallback((id: string) => {

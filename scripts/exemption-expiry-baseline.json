@@ -2,21 +2,13 @@
   "note": "豁免標記到期複查的棘輪。這裡記的是「目前已知的無主(無日期無指標)/ 過期(日期超過 N 天)」標記。數字只准往下 —— 新增的無主、新過期的會讓 exemption-expiry-invariant.mjs 變紅。修好(補日期 / 指標、或拿掉豁免)之後跑 --update-baseline 重記。key 不含行號;改了標記的字仍沒補日期會以新 key 變紅,那是刻意的。",
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
-  "recordedAt": "2026-09-27",
-  "count": 312,
+  "recordedAt": "2026-09-29",
+  "count": 295,
   "byKind": {
-    "unanchored": 312,
+    "unanchored": 295,
     "expired": 0
   },
   "entries": [
-    {
-      "key": "eslint|packages/design-system/src/components/AccountMenu/account-menu.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/AccountMenu/account-menu.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
     {
       "key": "cq|packages/design-system/src/components/AgentPanel/agent-panel.tsx|code-quality-allow|54b26ab5d288",
       "family": "cq",
@@ -216,30 +208,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/Button/button.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205#2",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/Button/button.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/Button/button.tsx|eslint-disable-next-line|823b8acc1205#3",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/Button/button.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
     },
     {
       "key": "escape|packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
@@ -754,14 +722,6 @@
       "hint": "// any-allow: react-table runtime lookup"
     },
     {
-      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
-    },
-    {
       "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|77ff026836f7",
       "family": "eslint",
       "file": "packages/design-system/src/components/DataTable/data-table.tsx",
@@ -816,14 +776,6 @@
       "marker": "as unknown as",
       "kind": "unanchored",
       "hint": ""
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068#2",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
     },
     {
       "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|code-quality-allow|06d5c92d5109",
@@ -882,7 +834,7 @@
       "hint": "// any-allow: column meta 是 free-form bag"
     },
     {
-      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068#3",
+      "key": "eslint|packages/design-system/src/components/DataTable/data-table.tsx|eslint-disable-next-line|193b336d7068",
       "family": "eslint",
       "file": "packages/design-system/src/components/DataTable/data-table.tsx",
       "marker": "eslint-disable-next-line",
@@ -1016,14 +968,6 @@
       "marker": "@tabs-content-gap-ok",
       "kind": "unanchored",
       "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/Dialog/dialog.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/Dialog/dialog.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
     },
     {
       "key": "escape|packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx|@overlay-open-skip|d2e2591a4d43",
@@ -1314,14 +1258,6 @@
       "hint": "// code-quality-allow: dead-export — paired helper for SSOT primitive(同上 hook + future use rationale"
     },
     {
-      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
-    },
-    {
       "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|ba046687794c",
       "family": "cq",
       "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
@@ -1330,28 +1266,12 @@
       "hint": "// any-allow: rest 含 `onChange: FormEventHandler` 跟 Select onChange signature 衝突 — DOM runtime sprea"
     },
     {
-      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd#2",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
-    },
-    {
       "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|dc602ac7d82d",
       "family": "cq",
       "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
       "marker": "any-allow",
       "kind": "unanchored",
       "hint": "// any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spr"
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/PeoplePicker/people-picker.tsx|eslint-disable-next-line|dca7189690bd#3",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/PeoplePicker/people-picker.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line @typescript-eslint/no-explicit-any"
     },
     {
       "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker.tsx|any-allow|dc602ac7d82d#2",
@@ -1410,36 +1330,12 @@
       "hint": "// @anatomy-rationale: // SizeMatrix N/A — ProfileCard 是固定寬度(320px)hover content template, // 不提供 si"
     },
     {
-      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
-    {
       "key": "cq|packages/design-system/src/components/ProfileCard/profile-card.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205#2",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/ProfileCard/profile-card.tsx|eslint-disable-next-line|823b8acc1205#3",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/ProfileCard/profile-card.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
     },
     {
       "key": "escape|packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx|@anatomy-rationale|79412a5067a4",
@@ -1544,14 +1440,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
-    },
-    {
-      "key": "eslint|packages/design-system/src/components/SelectionControl/selection-item.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/SelectionControl/selection-item.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
     },
     {
       "key": "escape|packages/design-system/src/components/Sheet/sheet.principles.stories.tsx|@tabs-content-gap-ok|72655d98d88c",
@@ -1738,14 +1626,6 @@
       "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Dismiss 按鈕色彩」段(default / // hover / a"
     },
     {
-      "key": "eslint|packages/design-system/src/components/Tag/tag.tsx|eslint-disable-next-line|823b8acc1205",
-      "family": "eslint",
-      "file": "packages/design-system/src/components/Tag/tag.tsx",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line no-console"
-    },
-    {
       "key": "escape|packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx|@anatomy-rationale|b04f2ce268ce",
       "family": "escape",
       "file": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx",
@@ -1912,14 +1792,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: dead-export — hook return type — API surface for consumers who want to annota"
-    },
-    {
-      "key": "eslint|packages/design-system/src/hooks/use-truncated.ts|eslint-disable-next-line|193b336d7068",
-      "family": "eslint",
-      "file": "packages/design-system/src/hooks/use-truncated.ts",
-      "marker": "eslint-disable-next-line",
-      "kind": "unanchored",
-      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
     },
     {
       "key": "cq|packages/design-system/src/lib/i18n/i18n-context.tsx|code-quality-allow|bc7951a83b5c",
@@ -2488,14 +2360,6 @@
       "marker": "codex-run-guarded",
       "kind": "unanchored",
       "hint": "The portability suite explicitly owns this classifier-only regression so it cannot be confused with "
-    },
-    {
-      "key": "registry|scripts/hover-own-pair-baseline.json|patterns/resize-handle/resize-handle.tsx|group-hover/resize:bg-[var(--border-hover)]|bg-transparent|0115dd4e9af8",
-      "family": "registry",
-      "file": "scripts/hover-own-pair-baseline.json",
-      "marker": "patterns/resize-handle/resize-handle.tsx|group-hover/resize:bg-[var(--border-hover)]|bg-transparent",
-      "kind": "unanchored",
-      "hint": "showLine=false 時靜止線由消費端畫(面板邊界線 / 外框),本元件只在滑過時把 --border-hover 畫在同一個像素上 —— 與上一筆是同一題(分隔線的滑過值),一起拍板"
     },
     {
       "key": "registry|infra/governance/providers/harness-non-governance-exclusions.json|scripts/test-devmode-visual.mjs|3574c757bc08",

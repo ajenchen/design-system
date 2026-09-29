@@ -250,7 +250,10 @@ function useOverflowCount(
       containerObs.disconnect()
       itemObs.disconnect()
     }
-  }, [containerRef, totalCount, enabled, gap, visibleCountOverride])  // 2026-05-15 Bug 3 fix:visibleCountOverride 入 deps,override 改 trigger recalc
+  // 2026-05-15 Bug 3 fix:visibleCountOverride 入 deps,override 改 trigger recalc。
+  // 2026-09-29 exhaustive-deps:tagEls / overflowEl 是呼叫端 useRef 出來的 ref 物件(唯一呼叫端 OverflowTagList),
+  // 身分整個生命週期不變,列進來不會多跑 —— 跟 containerRef 同一種東西、同一種待遇;規則看不穿函式參數才要求明列。
+  }, [containerRef, tagEls, overflowEl, totalCount, enabled, gap, visibleCountOverride])
 
   return state
 }
@@ -765,7 +768,13 @@ function CustomCombobox({
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
   const [open, setOpen] = React.useState(defaultOpen)
   const [search, setSearchState] = React.useState('')
-  const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
+  // 2026-09-29 exhaustive-deps:`onSearchChange` 走 ref、`setSearch` 身分固定(同 hooks/use-controllable.ts:24 的 onChangeRef 寫法)。
+  // 下面「關閉時清搜尋」的 effect 要把 setSearch 列進相依;若 setSearch 仍跟著 onSearchChange 換身分,consumer 用 inline 箭頭
+  // (本檔 stories 的遠端搜尋範例就是)→ 每次父層重繪都換一個 → 關著的時候 effect 反覆跑 → onSearchChange('') 反覆呼叫 →
+  // 範例裡 setOptions([]) 是新陣列不會 bail-out → 父層再重繪 → 無限迴圈。ref 讓 effect 只在 open 變動時跑,行為 Δ=0。
+  const onSearchChangeRef = React.useRef(onSearchChange)
+  onSearchChangeRef.current = onSearchChange
+  const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChangeRef.current?.(next) }, [])
   // 2026-05-12 Q3 fix:trigger 內 inline 搜尋 input ref,onOpenAutoFocus 時 explicit focus
   // 讓 user 看到 cursor 知道可 inline search(跟 Select inputRef SSOT 同模式)。
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -776,7 +785,8 @@ function CustomCombobox({
   // (機制詳 select-menu.tsx useActiveDescendant docblock;必在 early return 前呼叫 — React #310 hook 順序)。
   const activeOptionId = useActiveDescendant(listboxId, open)
 
-  React.useEffect(() => { if (!open) setSearch('') }, [open])
+  // 關閉時清搜尋。setSearch 身分固定(見上方 ref 寫法),列進相依只是如實宣告,effect 仍只在 open 變動時跑。
+  React.useEffect(() => { if (!open) setSearch('') }, [open, setSearch])
 
   // React #310 fix(對齊 select.tsx):以下 hooks(useMemo/useRef)必在 conditional early-return 前
   // 無條件呼叫。resolvedMode 在 edit↔非edit 切換時 hook 數量不可變動,否則 Rules of Hooks

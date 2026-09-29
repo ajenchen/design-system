@@ -454,6 +454,7 @@
       "scripts/test-data-table-row-cache-deps-invariant.mjs",
       "scripts/test-data-table-row-under-pointer-invariant.mjs",
       "scripts/test-data-table-scroll-perception.mjs",
+      "scripts/test-dialog-coexist-scroll-lock-invariant.mjs",
       "scripts/test-dialog-coexistence-invariant.mjs",
       "scripts/test-dialog-height-invariant.mjs",
       "scripts/test-drag-announcement-invariant.mjs",
