@@ -305,8 +305,13 @@ jobs:
             echo "reference lock == candidate lock → 共用已驗證的 node_modules"
             ln -s "$PWD/node_modules" tmp/ref-src/node_modules
           else
-            echo "reference lock != candidate lock → 參考樹走受管 bootstrap 重裝"
-            (cd tmp/ref-src && npm run --silent setup:dependencies)
+            # 2026-09-29(ad442603 首跑):lock 不同時原本跑**參考樹自己的** bootstrap —— 候選一改相依(本 PR 加 eslint / react-remove-scroll),
+            # 就落到 main 上那份不認得 09-28 新通報形狀的舊 bootstrap,整個 job 死在安裝(與上面 2026-09-23 那條同一種自鎖,只是換一個分支)。
+            # 改用**候選(HEAD)的**治理程式對參考樹安裝(`--root=`),弱點稽核走 report-render-only-reference:參考樹是無憑證、
+            # 用完即丟的渲染容器(只為建一份 Storybook 給比值當分母),與 visual-regression.yml 重拍歷史參考樹同一套政策與理由;
+            # 完整性(lock 精確安裝 / 簽章 / attestation)照舊擋。
+            echo "reference lock != candidate lock → 用候選的治理程式對參考樹安裝(弱點只報告)"
+            node "$GITHUB_WORKSPACE/scripts/setup-authority-governance.mjs" --dependencies-only --root=tmp/ref-src --vulnerability-policy=report-render-only-reference
           fi
           (cd tmp/ref-src && npm run build:lib && npm run build-storybook)
           mv tmp/ref-src/storybook-static tmp/ref-storybook
