@@ -286,16 +286,24 @@ function exactArray(value, expected) {
 }
 
 // Exactly the advisory set the registry serves today for the copy bundled inside npm 11.19.0.
-// The disk copy is replaced with the fixed 5.0.9 by the security overlay; npm audit reads the
+// The disk copy is replaced with the fixed 5.0.12 by the security overlay; npm audit reads the
 // LOCK, which still records the bundled 5.0.7, so the finding itself never disappears — it is
-// acknowledged here in exact shape and any drift (a third advisory, a new node) fails closed.
+// acknowledged here in exact shape and any drift (another advisory, a new node) fails closed.
 // 2026-08-04: GHSA-rgw5-rvv9-x895 landed (<5.0.9); overlay bumped 5.0.8 → 5.0.9 the same day.
+// 2026-09-30: upstream published GHSA-6j4f-fj2g-mc7p (high, <5.0.10), GHSA-qhr7-859c-m2p7 (high, <5.0.11)
+// and GHSA-q2hr-2g5m-vwhr (moderate, <5.0.12) at 2026-09-29T23:44Z. The 5.0.9 overlay AND the hoisted
+// top-level copy were inside the new ranges, so this is a real remediation, not an acknowledgement:
+// overlay + hoisted copy → 5.0.12 (published 2026-09-14). After the bump the only node left in the finding
+// is npm's bundled copy that the overlay replaces on disk; minimatch is no longer an effect.
 const VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES = Object.freeze([
   Object.freeze({
-    findingRange: '4.0.0 - 5.0.8',
+    findingRange: '4.0.0 - 5.0.11',
     advisories: Object.freeze([
       Object.freeze({ source: 1130591, range: '>=4.0.0 <5.0.8', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high' }),
       Object.freeze({ source: 1130734, range: '>=4.0.0 <5.0.9', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high' }),
+      Object.freeze({ source: 1240103, range: '>=4.0.0 <5.0.12', url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr', severity: 'moderate' }),
+      Object.freeze({ source: 1240107, range: '>=4.0.0 <5.0.11', url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7', severity: 'high' }),
+      Object.freeze({ source: 1240111, range: '>=4.0.0 <5.0.10', url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p', severity: 'high' }),
     ]),
   }),
 ])

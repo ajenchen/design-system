@@ -1084,6 +1084,25 @@ function withRequiredChecks(repository, pullRequest) {
  * 兩件事各自一個旗標:`dispatched` 只擋重複派工(重派會重跑 sync workflow),
  * `pullRequestOpened` 只擋重複開 PR。
  */
+/**
+ * consumer 手上那一版之後、鏈上的**下一版**:第五步該派給它的版本。
+ *
+ * 2026-09-30 事故:beta.146 的 WM 同步失敗(新增檔案),WM 停在 145;beta.147 發布後第五步照舊派 147,
+ * WM 的升級交易比對 `incoming.immutableHeadSnapshot`(147 宣告的前一版 = 146)與它手上的 currentSnapshot(145)
+ * → GOV-UPGRADE-007,而且**每次重派都一樣**。原本這一步只認「目前這一版」,consumer 少跳一版就永遠接不上,
+ * 只能靠人手動派中間那一版 —— 自家工具的缺陷丟回 user(M36(b)),當晚 user 兩次反問「作繭自縛?」。
+ * 現在直接量要保證的性質(M37):要派的是「installed 在 tag 順序上的下一個」,不是「線上最新」。
+ * installed 讀不到、不在鏈上、或已是清單最後一個 → 退回目前這一版(維持舊行為,不多做假設)。
+ * 純函式,判定表在 infra/governance/test/release-workflow.test.mjs。
+ */
+export function nextConsumerVersion(installed, releaseTagsDesc, currentVersion) {
+  if (!installed || !Array.isArray(releaseTagsDesc)) return currentVersion
+  const ascending = [...releaseTagsDesc].reverse().map((tag) => String(tag).replace(/^v/, ''))
+  const index = ascending.indexOf(installed)
+  if (index < 0) return currentVersion
+  return ascending[index + 1] || currentVersion
+}
+
 export function consumerStepAction({ delivery, branchExists, dispatched = false, pullRequestOpened = false } = {}) {
   if (branchExists) return pullRequestOpened ? 'wait' : 'create-pr'
   if (delivery === 'repository-dispatch-pr') return dispatched ? 'wait' : 'dispatch'
@@ -1237,6 +1256,21 @@ export function buildConsumerPullRequestCreateArgs(target, { version, commit }) 
 export function buildPublishedTemplatePullRequestCreateArgs(target, options) {
   invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
   return buildConsumerPullRequestCreateArgs(target, options)
+}
+
+/** 鏈上中間版本的 release commit:本地 tag 優先(clone 有 tag),沒有就問 API(annotated tag 要再解一層)。 */
+function releaseCommitForTag(repository, tag) {
+  const local = run('git', ['rev-parse', '--verify', `${tag}^{commit}`], { allowFailure: true })
+  const localSha = local.ok ? String(local.stdout || '').trim() : ''
+  if (/^[a-f0-9]{40}$/.test(localSha)) return localSha
+  const ref = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
+  let sha = ref?.object?.sha || null
+  if (sha && ref?.object?.type === 'tag') {
+    const annotated = ghJson(['api', `repos/${repository}/git/tags/${sha}`], { allowFailure: true })
+    sha = annotated?.object?.sha || null
+  }
+  invariant(sha && /^[a-f0-9]{40}$/.test(sha), `找不到 ${tag} 指向的 release commit(本地與 API 都讀不到)—— 中間版本無法派給 consumer`)
+  return sha
 }
 
 function consumerAutomationBranchExists(target, version) {
@@ -1834,32 +1868,46 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       continue
     }
 
+    const desired = readJson(GITHUB_DESIRED_PATH)
+    const releaseTags = listReleaseTags()
     for (const target of observation.consumers.filter(item => !item.exactVersion || item.checkReadback?.trusted !== true)) {
       invariant(
         !(target.exactVersion && target.checkReadback?.trusted !== true),
         `consumer ${target.repository} has the exact package version but lacks trusted release-check provenance: ${target.checkReadback?.reason || 'unknown reason'}`,
       )
-      if (target.pullRequest) {
-        if (target.pullRequest.state === 'MERGED') {
+      // 鏈(2026-09-30):consumer 能接的只有「它手上那一版的下一版」。少跳一版就先派中間那一版,
+      // 該版 PR 合併、lock 讀回之後下一輪自然走到目前這一版。判斷在 nextConsumerVersion(純函式)。
+      const installed = installedConsumerVersion(target)
+      const chainVersion = nextConsumerVersion(installed, releaseTags, observation.version)
+      const chainIsCurrent = chainVersion === observation.version
+      const chainCommit = chainIsCurrent ? observation.releaseCommitSha : releaseCommitForTag(observation.repository, `v${chainVersion}`)
+      const chainPullRequest = chainIsCurrent ? target.pullRequest : matchingConsumerPullRequest(target, chainVersion, chainCommit)
+      const chainCheck = chainIsCurrent ? target.checkReadback : consumerCheckReadback(target, chainPullRequest, desired)
+      const chainKey = `${target.repository}@${chainVersion}`
+      if (!chainIsCurrent) {
+        console.log(`   consumer ${target.repository} 手上是 ${installed || '(讀不到)'},先派鏈上的下一版 ${chainVersion}(${observation.version} 宣告的前一版接不上它)`)
+      }
+      if (chainPullRequest) {
+        if (chainPullRequest.state === 'MERGED') {
           invariant(
-            target.checkReadback?.trusted === true,
-            `merged consumer PR lacks trusted release-check provenance: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+            chainCheck?.trusted === true,
+            `merged consumer PR lacks trusted release-check provenance: ${chainPullRequest.url}: ${chainCheck?.reason || 'unknown reason'}`,
           )
           continue
         }
-        const checks = checkRollupStatus(target.pullRequest.requiredChecks)
-        invariant(checks !== 'failed', `consumer PR failed checks: ${target.pullRequest.url}`)
+        const checks = checkRollupStatus(chainPullRequest.requiredChecks)
+        invariant(checks !== 'failed', `consumer PR failed checks: ${chainPullRequest.url}`)
         if (checks === 'pending') {
-          if (!noWait) gh(['pr', 'checks', `${target.pullRequest.number}`, '--repo', target.repository, '--required', '--watch', '--interval', '10'])
+          if (!noWait) gh(['pr', 'checks', `${chainPullRequest.number}`, '--repo', target.repository, '--required', '--watch', '--interval', '10'])
           continue
         }
         invariant(
-          target.checkReadback?.trusted === true,
-          `consumer PR check provenance differs from SSOT: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+          chainCheck?.trusted === true,
+          `consumer PR check provenance differs from SSOT: ${chainPullRequest.url}: ${chainCheck?.reason || 'unknown reason'}`,
         )
         gh([
-          'pr', 'merge', `${target.pullRequest.number}`, '--repo', target.repository,
-          '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,
+          'pr', 'merge', `${chainPullRequest.number}`, '--repo', target.repository,
+          '--squash', '--delete-branch', '--match-head-commit', chainPullRequest.headRefOid,
         ])
       } else {
         // 分支還沒被 sync workflow 推上來 → 先派工;已經推上來但還沒有 PR → 由本地 canonical
@@ -1868,23 +1916,23 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         // 判斷本身在 consumerStepAction(純函式,判定表驗得到);這裡只負責執行。
         const action = consumerStepAction({
           delivery: target.delivery,
-          branchExists: consumerAutomationBranchExists(target, observation.version),
-          dispatched: dispatchedConsumers.has(target.repository),
-          pullRequestOpened: openedConsumerPullRequests.has(target.repository),
+          branchExists: consumerAutomationBranchExists(target, chainVersion),
+          dispatched: dispatchedConsumers.has(chainKey),
+          pullRequestOpened: openedConsumerPullRequests.has(chainKey),
         })
         if (action === 'create-pr') {
           gh(buildConsumerPullRequestCreateArgs(target, {
-            version: observation.version,
-            commit: observation.releaseCommitSha,
+            version: chainVersion,
+            commit: chainCommit,
           }).args)
-          openedConsumerPullRequests.add(target.repository)
+          openedConsumerPullRequests.add(chainKey)
         } else if (action === 'dispatch') {
           dispatchConsumer(target, {
-            version: observation.version,
-            tag: observation.tag,
-            commit: observation.releaseCommitSha,
+            version: chainVersion,
+            tag: `v${chainVersion}`,
+            commit: chainCommit,
           })
-          dispatchedConsumers.add(target.repository)
+          dispatchedConsumers.add(chainKey)
         }
       }
     }

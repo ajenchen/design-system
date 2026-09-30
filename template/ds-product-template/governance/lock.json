@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.147",
-    "storybookConfig": "0.1.0-beta.147"
+    "designSystem": "0.1.0-beta.148",
+    "storybookConfig": "0.1.0-beta.148"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "0ec6bbbf12f018010f9aeefd0b3cbdf00ff1fae032fe97c05da84ecb3b2a443d",
+    "forkCorpusLockSha256": "4f7c615eefd3a1b8cc33055cf47570b4cc6e877dc77de4f52c791f0ad736c636",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "2857e18472615169f0043ea0e19ca9a53240c89f808fbcec965b29249ab172f4",
+    "providerLifecycleSha256": "0b5c37ec27205e3b3f6d1a2cad9e3a0226ae39bd960f5ebb3ec65b7476ca1db5",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
     "commonInstructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
@@ -109,12 +109,12 @@
       "scripts/lib/closed-tool-execution.mjs": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "6a50540b801c0e561d9b416758685d2441027673b5b06ccc0e4cf25ae126e131",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "99038726b23f7bec8ad4146cb7aa22123d6edb2583d6eed1ec9ea31e002fce35",
       "scripts/lib/launch-browser.mjs": "b02ac574a00dedf75476a200261aa3145c87ebe8ce2bfd7b08024b241a760b05",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
       "scripts/lib/storybook-static-snapshot.mjs": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
-      "scripts/lib/verified-exact-npm-runtime.mjs": "8537daddc2bc4ad7f5464407ec4ba5e9373b7461ac5a862a8f19cfaf625f4d54",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "9d6fe1441f29cd6f553fd84417140b49bf132fe708dbc9151803834859af154e",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",

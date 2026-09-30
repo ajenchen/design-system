@@ -298,8 +298,11 @@ if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) 
         via: [
           { source: 1130591, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high', range: '>=4.0.0 <5.0.8' },
           { source: 1130734, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high', range: '>=4.0.0 <5.0.9' },
+          { source: 1240103, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr', severity: 'moderate', range: '>=4.0.0 <5.0.12' },
+          { source: 1240107, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7', severity: 'high', range: '>=4.0.0 <5.0.11' },
+          { source: 1240111, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p', severity: 'high', range: '>=4.0.0 <5.0.10' },
         ],
-        effects: [], range: '4.0.0 - 5.0.8', nodes: ['node_modules/npm/node_modules/brace-expansion'],
+        effects: [], range: '4.0.0 - 5.0.11', nodes: ['node_modules/npm/node_modules/brace-expansion'],
       },
       npm: {
         name: 'npm', severity: 'high', isDirect: true, via: ['tar'], effects: [],
@@ -376,7 +379,7 @@ fs.writeFileSync(path.join(installedMinimatch, 'package.json'), JSON.stringify({
 fs.writeFileSync(path.join(installedMinimatch, 'index.js'), "const { expand } = require('brace-expansion')\\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\\n")
 fs.writeFileSync(path.join(installedTar, 'package.json'), JSON.stringify({ name: 'tar', version: '7.5.19' }) + '\\n')
 for (const [directory, manifest] of [
-  ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.9' }],
+  ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.12' }],
   ['npm-runtime-tar-patch', { name: 'tar', version: '7.5.22' }],
 ]) {
   const target = path.join(process.cwd(), 'node_modules', directory)

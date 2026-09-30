@@ -62,7 +62,7 @@ const temporary = []
 const version = '1.2.3-beta.4'
 const exactNpmVersion = '11.19.0'
 const exactNpmIntegrity = 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw=='
-const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.9'
+const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.12'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
 const exactNpmSecondaryOverlaySpec = 'npm:tar@7.5.22'
 const exactNpmSecondaryOverlayIntegrity = 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA=='
@@ -142,8 +142,8 @@ function fixture({
       },
       'node_modules/npm-runtime-brace-expansion-patch': {
         name: 'brace-expansion',
-        version: '5.0.9',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
+        version: '5.0.12',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz',
         integrity: exactNpmOverlayIntegrity,
         dev: true,
       },
@@ -339,10 +339,10 @@ const runtimeFactory = async () => {
     treeDigest: overlay.treeDigest,
     auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
@@ -722,14 +722,15 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     treeDigest,
     auditClosureDigest: 'c'.repeat(64),
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
-  // The exact dual-advisory registry state served since 2026-08-04 (GHSA-rgw5-rvv9-x895 landed).
+  // The exact registry state served since 2026-09-29T23:44Z (three more advisories, fixed in 5.0.10–5.0.12;
+  // the overlay moved to 5.0.12 the same day). Advisory order is the order npm audit returns.
   const finding = {
     name: 'brace-expansion',
     severity: 'high',
@@ -750,9 +751,33 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
       severity: 'high',
       range: '>=4.0.0 <5.0.9',
+    }, {
+      source: 1240103,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+      severity: 'moderate',
+      range: '>=4.0.0 <5.0.12',
+    }, {
+      source: 1240107,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.11',
+    }, {
+      source: 1240111,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.10',
     }],
     effects: [],
-    range: '4.0.0 - 5.0.8',
+    range: '4.0.0 - 5.0.11',
     nodes: ['node_modules/npm/node_modules/brace-expansion'],
     fixAvailable: true,
   }

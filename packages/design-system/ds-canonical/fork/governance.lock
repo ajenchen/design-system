@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "6a50540b801c0e561d9b416758685d2441027673b5b06ccc0e4cf25ae126e131",
+      "sha256": "99038726b23f7bec8ad4146cb7aa22123d6edb2583d6eed1ec9ea31e002fce35",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -479,7 +479,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "8537daddc2bc4ad7f5464407ec4ba5e9373b7461ac5a862a8f19cfaf625f4d54",
+      "sha256": "9d6fe1441f29cd6f553fd84417140b49bf132fe708dbc9151803834859af154e",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "bd48c026e685ac734159c47ff36e80bb8d36cf265b7cdfb117309040f5935c1a",
+      "sha256": "897148c182a77d70e0f1d1ab5eee4a1d9f32bf184d894a2f5756d9fdc6e1da58",
       "source": null,
       "classification": null,
       "destination": null
