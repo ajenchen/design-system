@@ -803,7 +803,8 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       },
       undici: {
         name: 'undici',
-        severity: 'moderate',
+        // 2026-09-29T18:21Z 上游再發一則 high(GHSA-rfgv-xxqx-mfg5)→ finding.severity 從 moderate 變 high(2026-09-30 認列)
+        severity: 'high',
         isDirect: false,
         via: [
           { source: 1130716, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate', range: '<6.28.0' },
@@ -811,6 +812,9 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           { source: 1130732, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate', range: '<6.28.0' },
           // 2026-09-28 上游新發一則(OE15,2026-09-29 認列):range 隨之變 <=6.28.0
           { source: 1239934, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate', range: '>=6.25.0 <6.28.1' },
+          // 2026-09-29T18:21Z 上游再發兩則(2026-09-30 認列):low + high,range 不變
+          { source: 1240039, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-r53p-7pc4-xj5r', severity: 'low', range: '<6.28.1' },
+          { source: 1240042, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high', range: '>=6.7.0 <6.28.1' },
         ],
         effects: [],
         range: '<=6.28.0',
@@ -818,7 +822,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 1, high: 4, critical: 0, total: 5 },
+      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 5, critical: 0, total: 5 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
     },
   }
@@ -846,6 +850,13 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 3)
     stale.vulnerabilities.undici.range = '<=6.27.0'
     assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 舊的三則形狀必須被判成漂移')
+  }
+  {
+    // 2026-09-30 對照組:09-29 認列的四則 / moderate 形狀(2eb5b433 讓 main 全紅的那一份)現在也是漂移
+    const stale = structuredClone(report)
+    stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 4)
+    stale.vulnerabilities.undici.severity = 'moderate'
+    assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-29 的四則 moderate 形狀必須被判成漂移')
   }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
