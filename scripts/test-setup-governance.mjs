@@ -821,9 +821,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-09-28 上游新發兩則(OE15,2026-09-29 認列):range 隨之變 <=10.5.0
           { source: 1239948, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate', range: '<=10.5.0' },
           { source: 1239949, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate', range: '>=10.2.0 <=10.5.0' },
+          // 2026-09-29T23:46Z 上游再發兩則(2026-09-30 認列):range 隨之變 <=10.7.0
+          { source: 1240097, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate', range: '<=10.7.0' },
+          { source: 1240098, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate', range: '<=10.7.0' },
         ],
         effects: [],
-        range: '<=10.5.0',
+        range: '<=10.7.0',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -869,6 +872,13 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
     stale.vulnerabilities['ip-address'].range = '<=10.3.0'
     assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
+  {
+    // 2026-09-30 對照組:09-29 認列的五則 / <=10.5.0 形狀現在也是漂移
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 5)
+    stale.vulnerabilities['ip-address'].range = '<=10.5.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, 'ip-address 09-29 的五則形狀必須被判成漂移')
   }
   {
     const stale = structuredClone(report)

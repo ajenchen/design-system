@@ -453,18 +453,24 @@ function assertRemediatedFinding(name, finding) {
     // 「Install locked dependencies once」(這正是 OE6「新弱點通報會卡住所有 PR」的形狀)。bundled 的仍是 10.2.0、
     // npm 11.x 仍沒有帶 10.5.1 的版本,曝險與 08-03 那三則同類(dev-only CLI 內部的位址解析),所以只把新形狀認列進來;
     // 註:consumer 的同步永遠跑自己 protected main 上的這份腳本,新認列要靠受管檔案更新才會抵達 consumer。
+    // 2026-09-30:上游 2026-09-29T23:46Z 再發兩則 moderate(GHSA-j6r3-76f7-8jcv isInSubnet 跨位址族比較、
+    // GHSA-h3mg-xc3c-68pw Address6 解析診斷字串無長度上限;都修在 10.7.1),range 從 <=10.5.0 變 <=10.7.0、
+    // via 從 5 則變 7 則。bundled 仍是 10.2.0、npm 11.x 仍無帶修正版的 release、修補層沒有這個 slot,
+    // 曝險同類(dev-only CLI 內部的位址解析),照同一套只認列新形狀;舊的 5 則形狀由對照組判漂移。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.5.0'
+        && finding.range === '<=10.7.0'
         && matchesExactAdvisorySet(finding, 'ip-address', [
           { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
           { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
           { source: 1130724, range: '>=10.1.1 <=10.2.0', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate' },
           { source: 1239948, range: '<=10.5.0', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate' },
           { source: 1239949, range: '>=10.2.0 <=10.5.0', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate' },
+          { source: 1240097, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate' },
+          { source: 1240098, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate' },
         ]),
       `npm audit ip-address finding differs from the acknowledged bundled preimage(${shape})`,
     )
