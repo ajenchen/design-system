@@ -54,7 +54,10 @@ const AccordionTrigger = React.forwardRef<
         // 內描邊:trigger 撐滿標題列高,往外 +2px 實測會壓到下方的內容區(2026-09-07 量測)
         'focus-visible:focus-ring-inset',
         // AccordionTrigger 單一 text-style 列 → semantic `text-fg-disabled`(非 opacity);Button canonical 對齊
-        'disabled:text-fg-disabled disabled:pointer-events-none',
+        // 停用:不再 pointer-events-none(原生 disabled 的 button 本來就不會發 click),留著接指標只為了掛禁止符號 ——
+        // pointer-events-none 讓 cursor 由外層決定、永遠是箭頭(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;
+        // 2026-09-29 全站掃出:停用的手風琴標題游標是箭頭)。滑過的字色變化改由 disabled:hover 釘住。
+        'disabled:text-fg-disabled disabled:cursor-not-allowed disabled:hover:text-fg-disabled',
         // 2026-05-31 M24:disabled 時 chevron(icon 載體)亦降 text-fg-disabled,不停留 text-fg-muted
         //（muted=neutral-7 比 disabled=neutral-6 深 → 層級顛倒)。覆寫 chevron 自身 text-fg-muted。
         'disabled:[&>svg]:text-fg-disabled',

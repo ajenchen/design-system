@@ -16,7 +16,7 @@
  *   `gate-reachability-invariant.mjs` 的閘名樣式(GATE_LIKE),所以不在 `gate-reachability-baseline.json`
  *   的孤兒清單裡 —— 也**不該手動加進去**:該閘會把「在 baseline 但不在孤兒清單」的項目報成
  *   「已接好線或已退役」,那是假訊號。
- * - `data-table.spec.md`「六之三、Runtime perf budget canonical」那張表標了 hard gate 門檻,
+ * - `data-table-scroll-performance.spec.md`「六之三、Runtime perf budget canonical」那張表(2026-09-27 自 data-table.spec.md 拆出)標了 hard gate 門檻,
  *   但本檔從來沒有比對那些門檻,也沒有人跑它 —— 那張表目前**沒有機械強制**。要讓它成為閘,
  *   得先決定在哪種環境量(見下一段)與門檻是否重校(spec 已註明 4x 門檻是 user 決策);本檔不自行發明門檻。
  * - 本工具用 headless(`lib/launch-browser.mjs`)。M32(g)(`ds-canonical/rules/meta-patterns.md`)逐字:

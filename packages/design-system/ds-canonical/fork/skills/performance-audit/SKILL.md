@@ -68,7 +68,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - `npx vite build --report`(vite bundle visualizer)
-- **bundle-size gate(已落地 2026-07-07)**:`npm run build`(budget SSOT = the product build/bundle budget configuration,total + top-8 entry 各 +10% headroom;governance check and protected product CI 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
+- **bundle-size gate(已落地 2026-07-07)**:`npm run build`(budget SSOT = the product build/bundle budget configuration,total + top-8 entry 各 +10% headroom;CI `verify-static` job 直呼 `run the product-specific --silent check only when package.json defines it`(`.github/workflows/ci.yml`,2026-09-21 接進;舊句「governance check and protected product CI 內建必跑」的 `perform the equivalent check described in the common product instruction (governance check and protected product CI.mjs is DS-author-only)` 已於 2026-08-04 退役);蓄意增大 → `--init` 更新 budget + commit 說明)
 
 ### Phase F — Report and route
 

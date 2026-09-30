@@ -12,7 +12,7 @@ on:
         type: boolean
         default: false
       reference_ref:
-        description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;留空 = 預設(job env REFERENCE_REF 的 fallback:最後一次週跑綠 2026-08-05 的 commit)'
+        description: '歸因參考 commit:也在同一個容器重拍它,同渲染器下與 HEAD 逐張比;留空 = 預設(job 內解析:origin/main 上最近一次「GitHub 真的有已發布 release」的 v* tag)'
         type: string
         default: ''
       target_ref:
@@ -57,7 +57,10 @@ jobs:
       # 三種觸發的輸入收斂到這兩個變數,步驟只讀這裡(SSOT):按鈕 → inputs;API → client_payload;排程 → 兩邊都空
       # = 只比對、不重拍。布林用 == true 比(payload 必須送 JSON 布林,字串 'true' 另外接住),不用 truthy 猜。
       UPDATE_BASELINE: ${{ (inputs.update_baseline == true || github.event.client_payload.update_baseline == true || github.event.client_payload.update_baseline == 'true') && 'true' || 'false' }}
-      REFERENCE_REF: ${{ inputs.reference_ref || github.event.client_payload.reference_ref || '2ec2f3fedd94aa30e9b091eac4d713374484bd05' }}
+      # 2026-09-29(待辦總帳 C4):預設參考 commit 原本寫死在這裡(2026-08-05 最後一次週跑綠的 commit)—— 每發一版就過期一次,
+      # 而那棵樹的 build-storybook 還不產 build-info.json(09-27 實跑 INSTRUMENT-FAIL)。「上次發版的樹」不是常數,
+      # 留空時由下方「Resolve reference ref」步驟在 job 內解析成完整 40 碼 SHA 再寫進 GITHUB_ENV;這裡只收明確輸入。
+      REFERENCE_REF: ${{ inputs.reference_ref || github.event.client_payload.reference_ref || '' }}
       # 要拍的樹:按鈕 / API 沒給就是觸發當下的 commit(github.sha;排程與空 payload 都落到這裡 = 拍預設分支)
       TARGET_REF: ${{ inputs.target_ref || github.event.client_payload.target_ref || github.sha }}
     timeout-minutes: 60  # ~124 curated scenarios × screenshot + diff;update_baseline 時多一次參考 commit 的建置與重拍
@@ -90,6 +93,43 @@ jobs:
           for tool in bash git jq node perl python3; do
             command -v "$tool" >/dev/null || { echo "missing closed-profile interpreter: $tool" >&2; exit 1; }
           done
+
+      # 參考 commit 的兩條路都收斂成「完整 40 碼 SHA 寫進 GITHUB_ENV」,後面的步驟只讀 env.REFERENCE_REF:
+      #   · 明確輸入(按鈕 / API):解析成 commit,解不到就紅(09-27 實跑:短 SHA 當 ref → checkout 直接死;識別字串要完整 40 碼,M32)。
+      #   · 留空:origin/main 上由新到舊掃 v* tag,取第一個 **GitHub 真的有已發布 release** 的 —— tag 存在 ≠ 已發布(M37 第十種形狀):
+      #     2026-09-29 盤點 141 個 tag 只有 128 個有 release,報廢版號(例:beta.141)在 main 上有 tag、沒有 release,
+      #     `git describe` 會挑到它。API 回 404 = 這個 tag 沒有 release(往下找);回其他非 200 = 判不了,以儀器失效紅,不猜。
+      #     `releases/latest` 不能用:它只認非 prerelease,實測回的是 2026 年初的 beta.96。
+      #   簽出用 fetch-depth: 0(上面的 checkout),tags 與 origin/main 都在本地,這一步除了 Releases API 不再碰網路。
+      - name: Resolve reference ref(留空 = origin/main 上最近一次已發布的 release tag)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$REFERENCE_REF" ]; then
+            resolved="$(git rev-parse --verify --quiet "${REFERENCE_REF}^{commit}")" \
+              || { echo "✗ INSTRUMENT-FAIL:reference_ref「${REFERENCE_REF}」在這棵樹裡解析不到 commit(要完整 40 碼 SHA、tag 或分支名)" >&2; exit 1; }
+            echo "參考 commit(明確輸入):${REFERENCE_REF} → ${resolved}"
+          else
+            chosen=""
+            for tag in $(git tag --merged origin/main --sort=-v:refname 'v*'); do
+              code="$(curl -sS -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
+                -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' \
+                "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$tag")" || code="curl-failed"
+              if [ "$code" = "200" ] && [ "$(jq -r '.draft' "$RUNNER_TEMP/release.json")" = "false" ]; then chosen="$tag"; break; fi
+              if [ "$code" != "200" ] && [ "$code" != "404" ]; then
+                echo "✗ INSTRUMENT-FAIL:GitHub Releases API 對 $tag 回 $code,判不了它有沒有發布(這不是「沒有 release」)" >&2; exit 1
+              fi
+              echo "· $tag:沒有已發布的 release(API $code),往前找"
+            done
+            [ -n "$chosen" ] || { echo "✗ INSTRUMENT-FAIL:origin/main 上找不到任何有已發布 release 的 v* tag" >&2; exit 1; }
+            resolved="$(git rev-parse --verify "refs/tags/${chosen}^{commit}")"
+            echo "參考 commit(預設 = 最近一次已發布的 release):$chosen → $resolved"
+          fi
+          case "$resolved" in
+            *[!0-9a-f]*|"") echo "✗ INSTRUMENT-FAIL:解析結果不是十六進位 SHA:$resolved" >&2; exit 1 ;;
+          esac
+          [ "${#resolved}" -eq 40 ] || { echo "✗ INSTRUMENT-FAIL:解析結果不是 40 碼:$resolved" >&2; exit 1; }
+          echo "REFERENCE_REF=$resolved" >> "$GITHUB_ENV"
 
       - name: Install and audit with the lock-verified npm runtime
         run: npm run --silent setup:dependencies

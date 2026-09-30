@@ -636,7 +636,10 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
               data-thumb-index={i}
               onClick={() => onSelect(i)}
               className={cn(
-                'shrink-0 rounded-md bg-muted overflow-hidden',
+                // 底色不掛在按鈕上:`bg-muted` 是「靜態非互動 surface」(color.spec.md「能不能當可互動元素的靜止底」:
+                // `--muted` 不可以),縮圖鈕是可點的;它只當**佔位層**(沒有預覽圖時的檔案圖示 + 副檔名)的底,
+                // 有圖時圖填滿整格、看不到底(待辦總帳 A9③,2026-09-29;畫面不變)。
+                'shrink-0 rounded-md overflow-hidden',
                 // 2026-09-07 C14:選中與鍵盤焦點原本都是 `ring-2` + `--ring: var(--primary)`
                 // (semantic.css:337 是全 repo 唯一定義)→ 已選中的縮圖被聚焦時 **0 像素變化**,
                 // 違反 APG「selected 必須與 focus 指示器在視覺上可區分」。
@@ -668,7 +671,7 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
                     draggable={false}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-0.5 bg-muted">
                     <FileText size={20} className="text-fg-muted" aria-hidden />
                     <span className="text-footnote text-fg-muted font-medium">{ext}</span>
                   </div>

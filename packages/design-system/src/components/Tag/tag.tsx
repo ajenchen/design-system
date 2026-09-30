@@ -33,7 +33,8 @@ function getMeasureCtx() {
 export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 } as const
 
 const tagVariants = cva(
-  "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
+  // 停用(consumer 掛 aria-disabled;Combobox 的停用示範就是)→ 禁止符號蓋掉 cursor-text(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」,2026-09-29 全站掃出)
+  "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text aria-disabled:cursor-not-allowed",
   {
     variants: {
       // color：categorical 色相(裝飾性分類,非語意狀態)。**消費 categorical-color SSOT**——
@@ -189,7 +190,6 @@ function TagInner(
   // 內部結構;原僅 jsdoc/spec 約束會靜默通過 → 2026-07-05 對齊 Button overlayBadge dev-warn
   // 先例(button.tsx「Dev-mode warning」段)補齊家族一致 runtime 防線。
   if (process.env.NODE_ENV !== 'production' && Icon && avatar) {
-    // eslint-disable-next-line no-console
     console.warn(
       '[DS Tag] `icon` 與 `avatar` 互斥(同為 prefix slot),同時傳會並列渲染破壞 Tag 內部結構,請只擇一。SSOT:tag.spec.md Props 表 + tag.principles.stories.tsx IconRule。'
     )

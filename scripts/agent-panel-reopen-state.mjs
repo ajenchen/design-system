@@ -3,7 +3,7 @@
 // AgentPanel 關閉後再打開:狀態必須還在(spec E 條「閱讀位置保存」/ F 條「初始化為關閉」)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// SSOT:`components/AgentPanel/agent-panel.spec.md`「放置與互斥」段。
+// SSOT:`components/AgentPanel/agent-panel-fab.spec.md`「放置與互斥」段(2026-09-27 自 agent-panel.spec.md 拆出)。
 //
 // 2026-09-07 之前 `AgentPanelDock` 是 `if (open) return children` —— 關閉的瞬間整個面板
 // 連同它的 state 一起卸載。改成一直渲染、關閉時 `display:none` 之後,又發現第二層問題:
@@ -34,15 +34,12 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowserOrSkip, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowserOrSkip, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本下一段 statSync 直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
-requireStorybookBuild(join(S,'index.json'))
-for (const f of ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
-                 'packages/design-system/src/components/AgentPanel/agent-panel.tsx']) {
-  if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
-    console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) }
-}
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(S, ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
+                               'packages/design-system/src/components/AgentPanel/agent-panel.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv=await startA11yStaticServer({rootDirectory:S,defaultFile:'iframe.html'})
 process.once('exit',(code)=>{ if(code&&sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
@@ -130,5 +127,64 @@ else {
   // 面板卸載也不會掉 —— 它測的是 story 不是面板(2026-09-07 訂正:先前拿它當證據是錯的)。
   ck('G2 附帶:受控草稿當然還在(這條不構成 G2 的證據)', after.draft === before.draft, `「${before.draft}」→「${after.draft}」`)
 }
+// ── N30(2026-09-29,待辦總帳):面板關回來時入口鈕殼是全新掛載 —— 第一格就要在合法範圍,而且不能靠量測 ──
+// SSOT:agent-panel-fab.spec.md「遮擋與貼邊」(貼邊 y 合法範圍 = 中線 … 家頂上方一個 loose)。
+// 舊版 `placementStyle` 在舞台高還是 0 的第一次 commit 放行未夾的 y、家的內距用 fallback 16,靠 layout effect 同步重繪蓋掉;
+// 改後靜止位置全由 CSS 對舞台的百分比 clamp,任何一格都不依賴量測。
+// 量法:殼重掛時用 MutationObserver(attributeOldValue)收下 style 屬性**每一個被覆寫掉的舊值**,逐一套到探針元素上量成像素;
+// 舊版第一格會量到 700(舞台 400 高時合法上界 300)→ 紅;另以 rAF 逐格量畫出來的位置。
+const FAB_STORY = `${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`
+try {
+  await pg.setViewportSize({ width: 1400, height: 800 })
+  await openStory(pg, FAB_STORY, { waitFor: 'button[aria-label="開啟智慧代理"]', settleFrames: 10, notFound: sv.notFound })
+} catch (error) {
+  if (!(error instanceof StoryRenderInstrumentError)) throw error
+  console.error(`✗ ${error.message}`); console.error('✗ agent-panel-reopen-state N30:儀器失效 —— 入口鈕 story 開不起來')
+  await br.close(); await sv.stop(); process.exit(2)
+}
+const FAB = 'button[aria-label="開啟智慧代理"]'
+const shellTop = () => pg.evaluate(() => { const s = document.querySelector('[data-placement]'); const st = s?.offsetParent; return s && st ? Math.round((s.getBoundingClientRect().top - st.getBoundingClientRect().top) * 10) / 10 : null })
+await pg.focus(FAB); await pg.keyboard.press('ArrowRight'); await settle('鍵盤貼邊')
+const docked = await pg.evaluate(() => {
+  const s = document.querySelector('[data-placement]'); const st = s.offsetParent; const H = st.clientHeight
+  const loose = parseFloat(getComputedStyle(s).getPropertyValue('--layout-space-loose'))
+  return { placement: s.dataset.placement, top: s.getBoundingClientRect().top - st.getBoundingClientRect().top, expect: H - 2 * loose - 68, H, loose }
+})
+ck('N30 前提:鍵盤 → 貼邊停在帶底(y = 舞台高 − 2·loose − 68)', docked.placement === 'dock' && Math.abs(docked.top - docked.expect) <= 1, JSON.stringify(docked))
+await pg.click(FAB); await settle('開面板')
+await pg.setViewportSize({ width: 1400, height: 400 }); await settle('視窗變矮')
+await pg.evaluate(() => {
+  const panel = document.querySelector('[role="complementary"]')
+  let host = panel.parentElement; while (host && getComputedStyle(host).display === 'contents') host = host.parentElement
+  window.__n30 = { old: [], frames: [] }
+  new MutationObserver((ms) => { for (const m of ms) if (m.type === 'attributes' && m.target.matches?.('[data-placement]') && m.oldValue != null) window.__n30.old.push(m.oldValue) })
+    .observe(host, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style'] })
+  const raf = (n) => { if (n <= 0) return; requestAnimationFrame(() => { const s = document.querySelector('[data-placement]'); const st = s?.offsetParent; if (s && st) window.__n30.frames.push(Math.round((s.getBoundingClientRect().top - st.getBoundingClientRect().top) * 10) / 10); raf(n - 1) }) }
+  raf(8)
+  document.querySelector('[role="complementary"] button[aria-label="關閉面板"]').click()
+})
+await settle('關面板(殼重掛)')
+const n30 = await pg.evaluate(() => {
+  const s = document.querySelector('[data-placement]'); const st = s.offsetParent; const H = st.clientHeight
+  const loose = parseFloat(getComputedStyle(s).getPropertyValue('--layout-space-loose'))
+  const minY = Math.floor(H / 2 - 14), maxY = Math.max(minY, H - 2 * loose - 68)
+  const values = [...window.__n30.old, s.getAttribute('style') ?? '']
+  const probe = document.createElement('div'); st.appendChild(probe)
+  const tops = values.map((v) => { probe.setAttribute('style', `position:absolute;width:1px;height:1px;pointer-events:none;visibility:hidden;${/top:\s*[^;]+/.exec(v)?.[0] ?? ''}`); return Math.round((probe.getBoundingClientRect().top - st.getBoundingClientRect().top) * 10) / 10 })
+  probe.remove()
+  return { H, loose, minY, maxY, values, tops, frames: window.__n30.frames, finalTop: Math.round((s.getBoundingClientRect().top - st.getBoundingClientRect().top) * 10) / 10, finalStyleTop: s.style.top, finalStyleRight: s.style.right }
+})
+const inRange = (t) => t >= n30.minY - 1 && t <= n30.maxY + 1
+ck('N30 殼重掛後寫進 DOM 的每一個 top(含被覆寫掉的第一格)都在合法範圍(舊版第一格 = 未夾的 700)', n30.values.length > 0 && n30.tops.every(inRange), JSON.stringify({ range: [n30.minY, n30.maxY], tops: n30.tops, values: n30.values }))
+ck('N30 畫出來的每一格都在合法範圍', n30.frames.length > 0 && n30.frames.every(inRange), JSON.stringify({ range: [n30.minY, n30.maxY], frames: n30.frames }))
+ck('N30 視窗變矮後貼邊 y 被夾到帶底', Math.abs(n30.finalTop - n30.maxY) <= 1, `top ${n30.finalTop} / maxY ${n30.maxY}`)
+ck('N30 靜止位置不是量出來的 px 代理:top 是對舞台的 clamp() 表達式', /^clamp\(/.test(n30.finalStyleTop), `top="${n30.finalStyleTop}" right="${n30.finalStyleRight}"`)
+// 家 ↔ 貼邊的位置過渡仍在(calc / clamp 之間要能內插):按 Home 回家,100ms 取樣要落在兩端之間
+await pg.focus(FAB); const fromTop = await shellTop(); await pg.keyboard.press('Home'); await pg.waitForTimeout(100); const midTop = await shellTop(); await settle('回家')
+const homeTop = await shellTop()
+const homeExpect = n30.H - n30.loose - 40
+ck('N30 貼邊 → 回家:過渡中途(100ms)位置落在兩端之間(calc / clamp 之間仍有內插)', fromTop != null && midTop != null && homeTop != null && midTop > Math.min(fromTop, homeTop) + 2 && midTop < Math.max(fromTop, homeTop) - 2, `貼邊 ${fromTop} → 100ms ${midTop} → 家 ${homeTop}`)
+ck('N30 回家後 top = 舞台高 − loose − 40(right / top 都由 CSS 變數錨定,不吃 fallback 16)', homeTop != null && Math.abs(homeTop - homeExpect) <= 1 && (await pg.evaluate(() => document.querySelector('[data-placement]').style.right)) === 'var(--layout-space-loose)', `top ${homeTop} / 應 ${homeExpect}`)
+
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
 await br.close(); await sv.stop(); process.exit(fail?1:0)

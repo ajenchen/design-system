@@ -101,12 +101,15 @@ function makeKeyHandler(
 ) {
   // 消費 edit-in-place 鍵盤結算 SSOT(field-edit-keys.ts):IME guard + Enter/Esc dispatch 統一
   // (2026-07-09 抽出;原本 InlineEdit 漏 IME guard = bug,現同源)。value 讀取為 input-specific,留本地。
+  // commitOnF2:格子裡的編輯器再按一次 F2 = 結算、回到格導覽(keyboard-model-canonical.md「F2 恆為進到格裡的控件,
+  // 再按一次回到格導覽」;2026-09-29 前 F2 只有進格的一半,出格只剩 Escape / Enter)。
   return makeEditSettleKeyHandler({
     onCommit: (e) => {
       const raw = (e.target as HTMLInputElement).value
       onCommit?.(parseValue ? parseValue(raw) : raw)
     },
     onCancel: () => onCancel?.(),
+    commitOnF2: true,
   })
 }
 

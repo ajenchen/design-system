@@ -728,6 +728,58 @@ const NEUTRAL_TOGGLE_LADDER: { form: string; pressed: boolean; cells: { state: s
   ] },
 ]
 
+// 白底(secondary)切換鈕的階梯:未按下三格底都是 --surface(secondary 的滑過 / 按住只換字色與框色),已按下三階是
+// **疊在 --surface 上**的 --neutral-selected 家族(bg-interaction-selected*;2026-09-29 待辦總帳 N7,
+// button.spec.md「pressedTone」段)—— 淺色跟換底看起來一樣,深色才看得出差別(換底會是 #1E1E1E = #1E1E1E)。
+const NEUTRAL_TOGGLE_LADDER_SECONDARY: typeof NEUTRAL_TOGGLE_LADDER = [
+  { form: '未按下', pressed: false, cells: [
+    { state: '平常', bg: '--surface' },
+    { state: '滑過(= 開啟中)', bg: '--surface', open: true },
+    { state: '按住', bg: '--surface' },
+  ] },
+  { form: '已按下', pressed: true, cells: [
+    { state: '平常', bg: '--neutral-selected' },
+    { state: '滑過(= 開啟中)', bg: '--neutral-selected-hover', open: true },
+    { state: '按住', bg: '--neutral-selected-active' },
+  ] },
+]
+
+function NeutralToggleLadderTable({ variant, ladder, idPrefix }: { variant: 'text' | 'secondary'; ladder: typeof NEUTRAL_TOGGLE_LADDER; idPrefix: string }) {
+  return (
+    <table className="border-collapse">
+      <thead><tr><Th>型態</Th>{ladder[0].cells.map((c) => <Th key={c.state}>{c.state}</Th>)}</tr></thead>
+      <tbody>
+        {ladder.map(({ form, pressed, cells }) => (
+          <tr key={form}>
+            <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{form}</td>
+            {cells.map((c) => (
+              <td key={c.state} className="p-3 border-b border-divider align-top min-w-[160px]">
+                {c.state === '按住'
+                  ? <span className="text-[11px] text-fg-muted">(只能用指標按住量)</span>
+                  : (
+                    <Button
+                      variant={variant}
+                      size="sm"
+                      startIcon={Grid3x3}
+                      pressed={pressed}
+                      pressedTone="neutral"
+                      // 只在開啟中快照才覆寫 data-state:傳 undefined 會蓋掉 Button 自己寫的 data-state="on|off"(props 後展開)
+                      {...(c.open ? { 'data-state': 'open' } : {})}
+                      data-button-demo={`${idPrefix}-${pressed ? 'on' : 'off'}-${c.open ? 'hover' : 'rest'}`}
+                    >
+                      顯示格線
+                    </Button>
+                  )}
+                <TokenAnnotation colors={{ bg: c.bg, text: '--foreground', border: 'transparent' }} />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 function NeutralToggleLadder() {
   return (
     <div className="flex flex-col gap-3">
@@ -735,37 +787,12 @@ function NeutralToggleLadder() {
       <p className="text-[11px] text-fg-muted">
         兩個型態各有自己的一條階梯:未按下 透明 → neutral-1 → neutral-2;已按下 neutral-2 → neutral-3 → neutral-4(同一個滑鼠狀態下開與關都分得出來)。滑過欄用開啟中的快照畫(開啟中 = 自己的滑過)。
       </p>
-      <table className="border-collapse">
-        <thead><tr><Th>型態</Th>{NEUTRAL_TOGGLE_LADDER[0].cells.map((c) => <Th key={c.state}>{c.state}</Th>)}</tr></thead>
-        <tbody>
-          {NEUTRAL_TOGGLE_LADDER.map(({ form, pressed, cells }) => (
-            <tr key={form}>
-              <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{form}</td>
-              {cells.map((c) => (
-                <td key={c.state} className="p-3 border-b border-divider align-top min-w-[160px]">
-                  {c.state === '按住'
-                    ? <span className="text-[11px] text-fg-muted">(只能用指標按住量)</span>
-                    : (
-                      <Button
-                        variant="text"
-                        size="sm"
-                        startIcon={Grid3x3}
-                        pressed={pressed}
-                        pressedTone="neutral"
-                        // 只在開啟中快照才覆寫 data-state:傳 undefined 會蓋掉 Button 自己寫的 data-state="on|off"(props 後展開)
-                        {...(c.open ? { 'data-state': 'open' } : {})}
-                        data-button-demo={`neutral-toggle-${pressed ? 'on' : 'off'}-${c.open ? 'hover' : 'rest'}`}
-                      >
-                        顯示格線
-                      </Button>
-                    )}
-                  <TokenAnnotation colors={{ bg: c.bg, text: '--foreground', border: 'transparent' }} />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <NeutralToggleLadderTable variant="text" ladder={NEUTRAL_TOGGLE_LADDER} idPrefix="neutral-toggle" />
+      <span className="text-caption font-medium text-fg-secondary">白底(secondary)切換鈕 — 已按下三階疊在 --surface 上(不換底)</span>
+      <p className="text-[11px] text-fg-muted">
+        白底鈕的底是「底」(--surface),已按下依配對總則第 2 列疊層而不換底:淺色看起來與換底相同,深色 --surface 與 --neutral-selected 都是白 8%,換底的話已按下會跟未按下一模一樣 —— 切到深色主題看這一表就看得出差別。
+      </p>
+      <NeutralToggleLadderTable variant="secondary" ladder={NEUTRAL_TOGGLE_LADDER_SECONDARY} idPrefix="neutral-toggle-secondary" />
     </div>
   )
 }
@@ -779,6 +806,8 @@ const STACKING_ROWS: { label: string; note: string; render: () => React.ReactNod
     note: '= 自己的滑過:secondary / tertiary 字與框 primary-hover;text 底 neutral-hover;danger 用 error-hover',
     render: () => (
       <>
+        <Button variant="primary" size="sm" endIcon={ChevronDown} data-state="open" data-button-demo="open-primary">建立</Button>
+        <Button variant="link" size="sm" endIcon={ChevronDown} data-state="open" data-button-demo="open-link">更多選項</Button>
         <Button variant="secondary" size="sm" endIcon={ChevronDown} data-state="open" data-button-demo="open-secondary">匯出報表</Button>
         <Button variant="tertiary" size="sm" startIcon={ListFilter} data-state="open" data-button-demo="open-tertiary">更多篩選</Button>
         <Button variant="text" size="sm" startIcon={ArrowUpDown} data-state="open" data-button-demo="open-text">排序</Button>

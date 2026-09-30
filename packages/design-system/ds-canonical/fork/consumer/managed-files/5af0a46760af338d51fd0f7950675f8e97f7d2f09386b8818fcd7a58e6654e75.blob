@@ -29,12 +29,15 @@
 //   const browser = await launchBrowserOrSkip()                  // 起不來 → SKIPPED-ENV exit 0;必需瀏覽器的 lane → BROWSER-REQUIRED exit 1
 //   const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop(), hint: '…' })   // 退出前先收尾
 //   requireStorybookBuild(join(STATIC, 'index.json'))            // 沒有建置 → 印 MISSING-BUILD 並 exit 2(缺前置)
+//   requireFreshStorybookBuild(STATIC, ['packages/design-system/src/components/X/x.tsx'])   // 沒有建置 → MISSING-BUILD;建置比原始碼舊 → STALE-BUILD exit 2(唯一實作,見該函式)
 //   await openStory(page, url, { … })                            // 開 story 並證明真的渲染完成(見下方 openStory 區塊)
 //   await waitForStoryRender(frame, { storyId })                 // 不是導覽觸發的切換(管理介面點側欄)也用同一份判定
 //   await settleAfterInteraction(page, { frames: 10 })           // 點開浮層 / 按鍵之後等版面真的停了(取代固定睡眠;ok:false = 儀器失效)
 //   await waitForDocsRender(frame, { docsId, timeoutMs })        // docs 頁真的渲染出來(docs 沒有 story 的 render phase,判定見該函式)
 
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { createRenderHealthMonitor } from './storybook-render-health.mjs'
 
@@ -129,6 +132,73 @@ export function requireStorybookBuild(path, hint = '先跑 `npm run build-storyb
   if (existsSync(path)) return
   console.error(`✗ ${MISSING_BUILD_MARKER}:找不到 ${path} —— ${hint}(缺前置,不是產品裁決)`)
   process.exit(2)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// requireFreshStorybookBuild —— 「建置存在、而且不比被驗的原始碼舊」的**唯一**實作(2026-09-27,待辦總帳 C5)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼收成一支**:此前 16 支瀏覽器閘各自寫一份 stale-build 守衛,寫法五花八門 ——
+//   · 拿來比的建置檔不同(index.html / index.json / iframe.html 三種);
+//   · 有的印 STALE-BUILD exit 2(gate-selftest-meta 認得 → 略過),有的印自己的句子 exit 1(header-tabs-slot、
+//     storybook-smoke-test:meta-test 把「建置過時」讀成**閘紅**);
+//   · 兩支用 `existsSync(f) && …` 包住 —— 原始碼一改名,守衛就**靜靜關掉**(M37:「守衛存在」被當成「守衛在跑」);
+//   · 有的遞迴掃整棵 src、有的只列幾個檔、有的只掃一層目錄。
+// 修一份其他十五份不會跟著好,正是 M17 禁止的平行實作。
+//
+// 判準(要保證的性質逐字):**建置目錄裡最早寫出的那個輸出檔,不早於任何一個被列出的原始碼(檔或整棵目錄下的 .ts/.tsx/.css)的最後修改時間。**
+//   · 建置時間取 iframe.html / index.html / index.json 三者中**最早**的 mtime(最保守:建置開始寫輸出之後改的原始碼一律算過時);
+//   · 三者都不存在 → MISSING-BUILD exit 2(缺前置);
+//   · 列出的原始碼**不存在 → exit 1、印明確訊息**(這是閘自己設定錯,不是缺前置也不是產品;不准用 existsSync 靜默放行);
+//   · 任一原始碼比建置新 → STALE-BUILD exit 2(缺前置;點名最新的那個檔)。
+// 目錄遞迴時跳過 node_modules / dist。
+//
+// 用法:
+//   requireFreshStorybookBuild(STATIC, ['packages/design-system/src/components/DataTable/data-table.tsx'])
+//   requireFreshStorybookBuild(STATIC, ['packages/design-system/src', 'src'], { hint: '先跑 npm run build-storybook' })
+//   const { builtAtMs, newest } = requireFreshStorybookBuild(…)   // 過了才回來;newest = { path, mtimeMs }
+// 原始碼路徑相對於 repo 根(本檔的上上層),或絕對路徑。
+const BUILD_OUTPUT_MARKERS = ['iframe.html', 'index.html', 'index.json']
+const SOURCE_FILE_RE = /\.(tsx?|css)$/u
+const SOURCE_SKIP_DIRS = new Set(['node_modules', 'dist'])
+const REPO_ROOT_FOR_BUILD_CHECK = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+function newestSourceUnder(path, acc) {
+  const info = statSync(path)
+  if (info.isDirectory()) {
+    for (const entry of readdirSync(path, { withFileTypes: true })) {
+      if (entry.isDirectory()) { if (!SOURCE_SKIP_DIRS.has(entry.name)) newestSourceUnder(join(path, entry.name), acc) }
+      else if (SOURCE_FILE_RE.test(entry.name)) { const m = statSync(join(path, entry.name)).mtimeMs; if (m > acc.mtimeMs) { acc.mtimeMs = m; acc.path = join(path, entry.name) } }
+    }
+  } else if (info.mtimeMs > acc.mtimeMs) { acc.mtimeMs = info.mtimeMs; acc.path = path }
+}
+
+/**
+ * @param {string} staticDir 建置目錄
+ * @param {string[]} sources 被驗的原始碼(檔或目錄;相對 repo 根或絕對路徑)—— 空陣列是 TypeError:沒列原始碼的「新鮮度」守衛守不了任何東西
+ * @param {{ hint?: string }} [options]
+ * @returns {{ builtAtMs: number, newest: { path: string, mtimeMs: number } }}
+ */
+export function requireFreshStorybookBuild(staticDir, sources, { hint = '先跑 `npm run build-storybook`' } = {}) {
+  if (!Array.isArray(sources) || sources.length === 0) throw new TypeError('requireFreshStorybookBuild:sources 必須是非空陣列(要守哪些原始碼)')
+  const outputs = BUILD_OUTPUT_MARKERS.map((name) => join(staticDir, name)).filter((path) => existsSync(path))
+  if (outputs.length === 0) requireStorybookBuild(join(staticDir, 'index.json'), hint) // 不會回來(exit 2)
+  const builtAtMs = Math.min(...outputs.map((path) => statSync(path).mtimeMs))
+  const newest = { path: '', mtimeMs: -Infinity }
+  for (const source of sources) {
+    const path = isAbsolute(source) ? source : join(REPO_ROOT_FOR_BUILD_CHECK, source)
+    if (!existsSync(path)) {
+      console.error(`✗ stale-build 守衛設定錯:列出的原始碼不存在 ${source} —— 原始碼改名 / 搬家後守衛等於關掉,這是閘自己的錯(不是缺前置、不是產品裁決)`)
+      process.exit(1)
+    }
+    newestSourceUnder(path, newest)
+  }
+  if (newest.mtimeMs > builtAtMs) {
+    const rel = newest.path.startsWith(REPO_ROOT_FOR_BUILD_CHECK) ? newest.path.slice(REPO_ROOT_FOR_BUILD_CHECK.length + 1) : newest.path
+    console.error(`✗ ${STALE_BUILD_MARKER}:${rel} 比 ${staticDir} 新(原始碼 ${new Date(newest.mtimeMs).toISOString()} > 建置 ${new Date(builtAtMs).toISOString()})—— ${hint}(缺前置,不是產品裁決)`)
+    process.exit(2)
+  }
+  return { builtAtMs, newest }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

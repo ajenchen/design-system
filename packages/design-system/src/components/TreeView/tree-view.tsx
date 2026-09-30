@@ -17,7 +17,7 @@ import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / FileUpload / Command 共用;判定表 scripts/test-roving-list-keyboard.mjs
@@ -161,6 +161,8 @@ const DEFAULT_REORDER_ANNOUNCEMENTS: Required<TreeReorderAnnouncements> = {
 // + 子項容器(`data-tree-children`,Radix Collapsible Content)。列不得包住子列(treegrid 的 row 只能擁有格),
 // 所以 aria-level / aria-expanded / aria-selected 都住在 row 上,wrapper 只是結構。
 const ROW_SELECTOR = '[data-tree-row]'
+/** 打字跳位:兩次按鍵相隔在這之內算同一串(AI 推導;見 TreeView 內 typeahead) */
+const TYPEAHEAD_WINDOW_MS = 1000
 const cssEscape = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&')
 const rowSelector = (id: string) => `[data-tree-row="${cssEscape(id)}"]`
@@ -404,6 +406,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // (來源見 tree-view.spec.md「A11y 預設」)。
     const [focusedId, setFocusedId] = React.useState<string | null>(null)
     const treeRef = React.useRef<HTMLDivElement>(null)
+    // 打字跳位的累積字串(見下方 typeahead)
+    const typeaheadRef = React.useRef({ buffer: '', at: 0 })
     React.useImperativeHandle(ref, () => treeRef.current!)
     const focusRow = React.useCallback((id: string) => {
       treeRef.current?.querySelector<HTMLElement>(rowSelector(id))?.focus({ preventScroll: true })
@@ -412,10 +416,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // ── 唯一的 Tab 停靠點(roving tabindex)──
     // 順序:焦點最後停的那一列(仍看得到)→ 選中的第一列 → 第一個可用列
     // (W3C keyboard-interface「進入組合元件時落在選中項,沒有就第一項」;來源見 spec)。
-    // 每次 render 後在 layout 階段重算(列的展開 / 選取 / 卸載都會改變答案),相同就不 setState,不會迴圈。
+    // 在 layout 階段從真 DOM 重算,相同就不 setState,不會迴圈:答案只看列的存在 / 開合 / aria-selected / aria-disabled 與 focusedId,
+    // 不看 tabStopId 本身(它只影響列的 tabIndex),所以 set 之後那一次重算必然相等。
     const [tabStopId, setTabStopId] = React.useState<string | null>(null)
-    // 只用來觸發一次 re-render(值本身不讀):列卸載後讓下方 layout effect 重算停靠點
-    const [, setRowRepairTick] = React.useState(0)
+    // 值本身不讀,只當下方 layout effect 的相依:列卸載時 TreeView 自己不一定 re-render,靠它讓 effect 重算停靠點
+    const [rowRepairTick, setRowRepairTick] = React.useState(0)
     const tabStopRef = React.useRef<string | null>(null)
     tabStopRef.current = tabStopId
     const focusedIdRef = React.useRef<string | null>(null)
@@ -434,7 +439,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       })
       const next = stop?.dataset.treeRow ?? null
       if (next !== tabStopId) setTabStopId(next)
-    })
+      // 相依 = 會改變「哪些列存在 / 在開著的分支裡 / aria-selected / aria-disabled」的 render 輸入,加上 remembered(focusedId)與比對用的 tabStopId:
+      // children(節點增刪 / disabled)、expandedIds(子樹掛載與開合)、selectedIds + selectionMode(aria-selected)、rowRepairTick(列卸載通知)。
+      // 2026-09-29 前沒有相依清單(每次 render 都跑);列 DOM 只會因這幾個輸入而變,其餘 render(拖曳落點 / 播報文字 / 無關 prop)重算結果必相同,
+      // 跳過不改行為。日後新增會影響列 DOM 的輸入時要一併列進來。
+    }, [children, expandedIds, selectedIds, selectionMode, focusedId, tabStopId, rowRepairTick])
     // 列被卸載(例:consumer 收合了焦點所在列的上一層,關閉動畫結束後子樹才卸載 —— 那一刻 TreeView 本身不會 re-render)
     // → 若它是停靠點或焦點所在,觸發一次重算,否則整棵樹會從 Tab 路上消失。
     const onRowUnmount = React.useCallback((id: string) => {
@@ -607,10 +616,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // 這裡把指標路徑也接上,並誠實回報結果:守衛擋下(不合法 target / 子樹內)
     // 就播「未變更」而不是假的成功。共用 SSOT 見 `lib/drag-announcements.ts`。
     const dragOutcomeRef = React.useRef<DragOutcome | null>(null)
-    const dndAnnouncements = React.useMemo(
-      () => createDragAnnouncements({ getOutcome: () => dragOutcomeRef.current, kind: '項目' }),
-      [],
-    )
+    // 指標拖曳的播報走 polite 區域 + 繁中操作說明(2026-09-27 OE10;先前交給 dnd-kit 寫死的 assertive 區域)
+    const drag = useDragAccessibility({ getOutcome: () => dragOutcomeRef.current, kind: '項目' })
 
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
       dragOutcomeRef.current = null
@@ -906,6 +913,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         controlIndex: onRow ? -1 : actions.indexOf(target),
         controlIsTextEntry: !onRow && isTextEntryElement(target),
         tree: { hasChildren: wrapper?.dataset.treeHasChildren === 'true', expanded: expandedIds.has(id), hasParent: parentId != null },
+        // 打字跳位只在列上(按鈕上打字沒有意義;動作格裡的輸入框由 controlIsTextEntry 保住自己的打字)
+        typeahead: onRow,
         // 未啟用拖曳 → 重排組合整組 no-op(modifier 組合不落入導覽)
         reorderable: draggable,
         defaultPrevented: e.defaultPrevented,
@@ -933,7 +942,40 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         onCollapse: () => toggleExpand(id),
         onParent: () => { if (parentId) focusRow(parentId) },
         onActivateItem: () => select(id),
+        onTypeahead: (char) => typeahead(char, row),
       })
+    }
+
+    // ── 打字跳位(typeahead;2026-09-29 待辦總帳 N46)──
+    // keyboard-model-canonical.md 五條判準第 2 條把「打字前導」列為樹必備的鍵盤模型;規格 tree-view.spec.md「鍵盤導覽」。
+    // W3C APG Tree View 逐字:"Type a character: focus moves to the next node with a name that starts with the typed character." /
+    // "Type multiple characters in rapid succession: focus moves to the next node with a name that starts with the string of
+    // characters typed."(https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)。
+    // 名字 = 列的 accessible name(aria-labelledby 指到的 label 文字),比對折疊大小寫;候選 = 看得到、沒停用的列,
+    // 從目前這一列的**下一列**往後找、到底再從頭(繞回一圈,最後才是自己 → 只有自己符合就不動)。
+    // 連打同一個字母(「bb」)而沒有名字以「bb」開頭時退回單字循環(連按同一鍵 = 在同字母的列之間輪流)。
+    // 字串累積窗 1000ms(AI 推導,無外部出處;超過就當重新開始)。判定在 lib/roving-list-keyboard.ts(`typeahead` 格),
+    // 這裡只做「找哪一列、搬焦點」。
+    const typeahead = (char: string, row: HTMLElement) => {
+      const tree = treeRef.current
+      if (!tree) return
+      const now = Date.now()
+      const state = typeaheadRef.current
+      const buffer = now - state.at <= TYPEAHEAD_WINDOW_MS ? state.buffer + char : char
+      typeaheadRef.current = { buffer, at: now }
+      const rows = Array.from(tree.querySelectorAll<HTMLElement>(ROW_SELECTOR)).filter((r) => isInOpenBranch(r) && isRowEnabled(r))
+      const nameOf = (r: HTMLElement) => {
+        const labelledBy = r.getAttribute('aria-labelledby')
+        const label = labelledBy ? document.getElementById(labelledBy) : null
+        return (label?.textContent ?? '').trim().toLocaleLowerCase()
+      }
+      const start = rows.indexOf(row)
+      const ordered = [...rows.slice(start + 1), ...rows.slice(0, start + 1)]
+      const find = (prefix: string) => ordered.find((r) => nameOf(r).startsWith(prefix))
+      const lower = buffer.toLocaleLowerCase()
+      const sameChar = lower.length > 1 && [...lower].every((c) => c === lower[0])
+      const target = find(lower) ?? (sameChar ? find(lower[0]) : undefined)
+      target?.focus({ preventScroll: true })
     }
 
     const treeEl = (
@@ -997,9 +1039,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
-          accessibility={{ announcements: dndAnnouncements }}
+          accessibility={drag.accessibility}
         >
           {treeEl}
+          {/* 指標拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility);鍵盤重排另有下方自有區域 */}
+          {drag.liveRegion}
           {draggable && (
             <>
               {/* 鍵盤重排 SR 播報 — TreeView 自有 sr-only polite live region(單一節點覆寫式更新;
@@ -1229,6 +1273,34 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       }
     }, [isFocused])
 
+    // ── 列被刪掉時焦點去下一列(2026-09-29 待辦總帳 N46「刪除 / 消失後焦點去下一項」)──
+    // consumer 從資料裡拿掉這個節點時,焦點若在這一列或它的按鈕上,搬到**下一列**;沒有下一列 → **上一列**(上一列可能就是父節點)。
+    // 落點順序同 FileUpload focusAfterFileRemoval(下一個 → 上一個 → 擁有者)。用 layout effect 的 cleanup:它在 React 把這棵子樹從 DOM
+    // 拆掉之前跑,鄰列都還在、焦點還在列上;passive effect 的 cleanup 跑的時候節點已不在 DOM、焦點早掉到 body。真正搬焦點放到 microtask
+    //(commit 同步結束之後):那時列真的不在 DOM 了才搬 —— StrictMode 開發模式會多跑一次 cleanup 再 re-mount,那一次列還在,不搬。
+    // 收合中的分支(Collapsible 關閉動畫結束後才卸載、期間 data-state="closed")不算候選:整段子樹都在拆,落點是上一列(= 收合的父節點)。
+    // 整棵樹一起卸載時候選全空 / 目標也已離線,focus() 是 no-op。
+    React.useLayoutEffect(() => () => {
+      const row = rowRef.current
+      const active = document.activeElement
+      if (!row || !active || !row.contains(active)) return
+      const tree = row.closest<HTMLElement>('[role="treegrid"]')
+      const wrapper = row.closest<HTMLElement>('[data-tree-id]')
+      if (!tree || !wrapper) return
+      const rows = Array.from(tree.querySelectorAll<HTMLElement>(ROW_SELECTOR))
+        .filter((r) => !wrapper.contains(r) && isInOpenBranch(r) && isRowEnabled(r))
+      const after = rows.find((r) => (wrapper.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
+      const before = [...rows].reverse().find((r) => (wrapper.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_PRECEDING) !== 0)
+      const target = after ?? before
+      if (!target) return
+      queueMicrotask(() => {
+        if (row.isConnected) return
+        const now = document.activeElement
+        if (now && now !== document.body && now.isConnected) return // 有人(consumer 的對話框等)已經接走焦點
+        target.focus({ preventScroll: true })
+      })
+    }, [])
+
     // ── 列上的按鈕不在 Tab 路上(總帳 B9;tree-view.spec.md「鍵盤導覽」)──
     // 動作格裡每一個可聚焦的東西都設 tabIndex=-1,改由 → / ← 走到。用 DOM 設而不是逐一傳 prop:
     // inlineActionsSlot 是 consumer 的任意 ReactNode(選單觸發鈕、連結…),拿不到它們的 props;
@@ -1313,14 +1385,18 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     // 依據 inline-action.spec.md「尺寸對照」TreeItem 列 + hit-area-canonical.md:滑過底色 18(lg 22)= 點得到的範圍,
     // 盒與排版佔位仍是圖示尺寸 16 / 20,多出的 1px 靠溢出;按下多一階 neutral-active)。與 DataTable 巢狀列的展開箭頭同一顆
     //(data-table.tsx nestedPrefix)。2026-09-26 之前這裡手刻一顆 16×16 的 <button>,滑過底色與點擊範圍都只有 16。
-    // 鍵盤用 → / ← 展開收合(列上的 aria-expanded),箭頭本身不在 Tab 路上、對讀屏隱藏。
+    // 鍵盤用 → / ← 展開收合(列上的 aria-expanded),箭頭本身不在 Tab 路上(tabIndex -1),**但保留名字與角色、不 aria-hidden**
+    //(2026-09-29 待辦總帳 N46):語音控制使用者喊「展開」才按得到、讀屏在列裡也叫得到它;與 DataTable 巢狀列的展開箭頭同一種寫法
+    //(data-table.tsx nestedPrefix:aria-label 展開 / 收合 + aria-expanded)。2026-09-29 前寫 aria-hidden,一顆能聚焦的按鈕對讀屏隱藏
+    // 也是 axe aria-hidden-focus 那一族。
     const chevronSlot = (
       <ItemPrefix style={{ width: iconPx }}>
         {hasChildren ? (
           <ItemInlineActionButton
             icon={ChevronRight}
             tabIndex={-1}
-            aria-hidden
+            aria-label={isExpanded ? '收合' : '展開'}
+            aria-expanded={isExpanded}
             onClick={handleChevronClick}
             // 展開 / 收合的旋轉是狀態切換的動畫,不是滑過回饋 → 保留(motion.spec.md「hover 回饋不做過渡」只管滑過;
             // 滑過底色與圖示色由 ItemInlineActionButton 瞬間切換)

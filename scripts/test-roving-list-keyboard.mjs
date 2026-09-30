@@ -11,6 +11,8 @@
  *        `--selftest` 用合併前三處不一致的舊行為當對照組(樹:按鈕上 Home / End 不處理、選單鈕 ↓ 讓給按鈕、Shift+Tab 交給瀏覽器),
  *        判定表必須抓到 ≥ 5 格不符,抓不到 = 判定表沒在驗 X4 / X6 / X7 → exit 1。
  *   綠: 全部相符時綠;純函式與假元素(只有 focus / preventDefault 兩個方法),無時鐘、無隨機、無瀏覽器,重複跑結果恆等。
+ *   2026-09-29 加(待辦總帳 N46):(1) `typeahead` 宿主(樹)項目上打字 → `typeahead`,平面清單照舊不處理;
+ *        (2)「isTextEntryElement 的消費者」段:判斷式本身的判定表 + carousel.tsx 根容器方向鍵必先問它(修前形狀 = 沒那一行,同段自帶對照組必紅)。
  *
  * 樹專屬的格(展開 / 收合 / 回上一層 / 重排)另在 scripts/test-tree-keyboard-route.mjs(同一支純函式,以樹的輸入形狀驗)。
  * 瀏覽器實按:scripts/sidebar-menu-keyboard-invariant.mjs / scripts/tree-view-keyboard-route-invariant.mjs。
@@ -22,6 +24,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   applyRovingAction,
+  isTextEntryElement,
   pickRovingTabStop,
   pickRovingTarget,
   resolveRovingKey,
@@ -29,6 +32,8 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
+// --selftest 只跑判定表對照組就結束(既有行為);消費者段的對照組在正常跑時一併驗(它是純字串比對,不依賴任何環境)
+const SELFTEST_CONSUMERS = !SELFTEST
 
 const base = {
   key: '', focus: 'item', controlCount: 0, controlIndex: -1, defaultPrevented: false,
@@ -37,7 +42,7 @@ const base = {
 const item = (key, extra = {}) => ({ ...base, key, ...extra })
 const ctl = (key, controlIndex, controlCount, extra = {}) => ({ ...base, key, focus: 'control', controlIndex, controlCount, ...extra })
 const tree = (hasChildren, expanded, hasParent = true) => ({ tree: { hasChildren, expanded, hasParent } })
-const show = (a) => (a.type === 'control' ? `control#${a.index}` : a.type === 'reorder' ? `reorder:${a.key}` : a.type)
+const show = (a) => (a.type === 'control' ? `control#${a.index}` : a.type === 'reorder' ? `reorder:${a.key}` : a.type === 'typeahead' ? `typeahead:${a.char}` : a.type)
 
 // [名稱, 輸入, 期望] —— 期望值照 keyboard-model-canonical.md「列上有小按鈕的一串」與各宿主 spec 的按鍵表逐格寫
 const TABLE = [
@@ -56,7 +61,11 @@ const TABLE = [
   ['項目上 Alt+↓ → 不搶', item('ArrowDown', { altKey: true }), 'none'],
   ['項目上 Ctrl+↓ → 不搶(修飾鍵層留給瀏覽器 / 輔助科技)', item('ArrowDown', { ctrlKey: true }), 'none'],
   ['外層已 preventDefault → 不搶', item('ArrowDown', { defaultPrevented: true }), 'none'],
-  ['項目上打字 → 不處理', item('a'), 'none'],
+  ['項目上打字 → 不處理(平面清單:側欄 / 檔案清單沒有打字跳位)', item('a'), 'none'],
+  ['typeahead 宿主(樹)項目上打字 → 打字跳位(2026-09-29 N46;W3C APG Tree View "Type a character")', item('a', { typeahead: true }), 'typeahead:a'],
+  ['typeahead 宿主項目上空白鍵 → 仍是預設動作', item(' ', { typeahead: true }), 'activate-item'],
+  ['typeahead 宿主項目上 Ctrl+a → 不搶', item('a', { typeahead: true, ctrlKey: true }), 'none'],
+  ['typeahead 宿主按鈕上打字 → 不處理', ctl('a', 0, 2, { typeahead: true }), 'none'],
   // ── 焦點在這一項的按鈕上 ──
   ['第 1 顆(共 2 顆)按 → → 第 2 顆', ctl('ArrowRight', 0, 2), 'control#1'],
   ['最後一顆按 → → 不動', ctl('ArrowRight', 1, 2), 'consume'],
@@ -214,6 +223,41 @@ for (const host of HOSTS) {
 }
 const legacy = 'packages/design-system/src/components/TreeView/tree-keyboard-route.ts'
 ck(`舊的平行實作 ${legacy} 已移除(合併進 lib/roving-list-keyboard.ts)`, !existsSync(join(ROOT, legacy)))
+
+// ── isTextEntryElement 的消費者(2026-09-29 待辦總帳 N46「輪播投影片裡的輸入框拿回方向鍵」)──
+// 「文字輸入保留自己的方向鍵」全 DS 只有 lib 這一份判斷式;輪播根容器在捕獲階段接方向鍵,必須先問它。
+// (1) 判斷式本身的判定表(假元素:只有 tagName / type / isContentEditable 三個欄位);
+// (2) carousel.tsx 真的呼叫它、而且在方向鍵分支**之前**(否則是平行實作或沒生效,M37)。
+// 對照組(--selftest):用修前的 carousel.tsx 形狀(沒有這一行)跑同一個檢查,必須紅。
+const fakeEl = (tagName, extra = {}) => ({ tagName, isContentEditable: false, ...extra })
+for (const [name, el, expected] of [
+  ['<input type=text> 是文字輸入', fakeEl('INPUT', { type: 'text' }), true],
+  ['<input>(沒寫 type = text)是文字輸入', fakeEl('INPUT', { type: 'text' }), true],
+  ['<input type=checkbox> 不是(沒有插入點)', fakeEl('INPUT', { type: 'checkbox' }), false],
+  ['<input type=range> 不是', fakeEl('INPUT', { type: 'range' }), false],
+  ['<textarea> 是', fakeEl('TEXTAREA'), true],
+  ['<select> 是(↑↓ 換選項)', fakeEl('SELECT'), true],
+  ['contenteditable 是', fakeEl('DIV', { isContentEditable: true }), true],
+  ['<button> 不是', fakeEl('BUTTON'), false],
+  ['<div> 不是', fakeEl('DIV'), false],
+]) {
+  ck(`isTextEntryElement:${name}`, isTextEntryElement(el) === expected, `得到 ${isTextEntryElement(el)}`)
+}
+const carouselPath = 'packages/design-system/src/components/Carousel/carousel.tsx'
+export function carouselGuardsTextEntry(src) {
+  const imports = /from ["']@\/design-system\/lib\/roving-list-keyboard["']/.test(src)
+  const guard = src.indexOf('isTextEntryElement(e.target')
+  const arrows = src.indexOf("orientation === 'horizontal' ? 'ArrowLeft'")
+  return imports && guard >= 0 && arrows >= 0 && guard < arrows
+}
+const carouselSrc = readFileSync(join(ROOT, carouselPath), 'utf8')
+ck(`${carouselPath} 的根容器方向鍵先問 isTextEntryElement(投影片裡的輸入框保留自己的方向鍵)`, carouselGuardsTextEntry(carouselSrc))
+if (SELFTEST_CONSUMERS) {
+  // 修前的形狀:同一份原始碼拿掉那一行 —— 檢查必須紅
+  const before = carouselSrc.replace(/\n\s*if \(isTextEntryElement\(e\.target as Element\)\) return\n/, '\n')
+  const caught = before !== carouselSrc && !carouselGuardsTextEntry(before)
+  ck('selftest:修前的 carousel.tsx(沒有 isTextEntryElement 那一行)被抓到', caught)
+}
 
 if (failed) { console.log(`\n✗ ${failed} 格不符`); process.exit(1) }
 console.log(`\n✓ 列上有小按鈕的一串:${results.length} 格判定 + 落點 / 停靠點 / 執行器 / 四個呼叫端全部相符`)

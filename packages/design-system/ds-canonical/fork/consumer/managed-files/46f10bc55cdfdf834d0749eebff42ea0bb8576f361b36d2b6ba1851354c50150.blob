@@ -28,9 +28,26 @@ export const GOVERNANCE_DEPENDENCY_NPM_STEPS = Object.freeze([
 
 // 2026-09-23:歷史參考樹(視覺回歸重拍把 8/5 的 commit 放到同一個容器重拍,run #291)永遠無法滿足「今天」的弱點
 // 資料庫 —— 那棵樹的相依是八月鎖定的,之後才登記的 advisory(baseline-browser-mapping 2.10.43)它不可能修。
-// 完整性(lock 精確安裝 / 簽章 / attestation)照舊 fail closed;只有弱點稽核在 `report-render-only-reference` 政策
-// 下改為「跑、印、記進 receipt、不擋」。這個政策只准用在無憑證、用完即丟的渲染容器(workflow 明文指定),預設仍是 enforce。
-export const GOVERNANCE_VULNERABILITY_POLICIES = Object.freeze(['enforce', 'report-render-only-reference'])
+// 完整性(lock 精確安裝 / 簽章 / attestation)照舊 fail closed;只有弱點稽核在「只報告」政策下改為「跑、印、記進 receipt、不擋」。
+// 每個只報告政策都要說出**為什麼這棵樹可以不擋**,receipt 與 log 印的是那個理由,不得借用別的政策名(2026-09-29 OE6:anchor
+// 借 render-only 的名字,receipt 就會寫「歷史參考樹、渲染容器」,而它裝的其實是 protected main 的樹)。預設仍是 enforce。
+//   report-render-only-reference:歷史參考樹,無憑證、用完即丟的渲染容器(視覺回歸重拍,workflow 明文指定)。
+//   report-protected-base-verifier:governance-anchor 裝 protected main 的相依樹只為執行驗證程式;這棵樹的弱點 base 自己的
+//     required CI 已擋過,而候選**新增**的弱點由 install-candidate-dependencies.mjs 對 base / 候選各跑 npm audit 取差集
+//     (GOV-CANDIDATE-DEPS-002)來擋 —— 在這裡 enforce 只會讓「認列新 advisory 形狀」的修復 PR 自己過不了(自鎖,M36(b))。
+const REPORT_ONLY_VULNERABILITY_POLICIES = Object.freeze({
+  'report-render-only-reference': Object.freeze({
+    marker: 'GOV-RENDER-ONLY-REFERENCE',
+    kind: 'render-only-reference-vulnerability-audit-receipt',
+    why: '歷史參考樹,無憑證、用完即丟的渲染容器',
+  }),
+  'report-protected-base-verifier': Object.freeze({
+    marker: 'GOV-PROTECTED-BASE-VERIFIER',
+    kind: 'protected-base-verifier-vulnerability-audit-receipt',
+    why: 'protected main 的相依樹只供驗證程式執行,候選新增的弱點另由 GOV-CANDIDATE-DEPS-002 差集擋',
+  }),
+})
+export const GOVERNANCE_VULNERABILITY_POLICIES = Object.freeze(['enforce', ...Object.keys(REPORT_ONLY_VULNERABILITY_POLICIES)])
 
 export function runVulnerabilityAuditUnderPolicy(policy, run, {
   errorPrefix = 'GOV-DEPENDENCY-BOOTSTRAP-001',
@@ -39,14 +56,15 @@ export function runVulnerabilityAuditUnderPolicy(policy, run, {
   invariant(GOVERNANCE_VULNERABILITY_POLICIES.includes(policy), `unsupported vulnerability policy:${String(policy)}`, errorPrefix)
   invariant(typeof run === 'function', 'vulnerability audit runner must be callable', errorPrefix)
   if (policy === 'enforce') return run()
+  const reportOnly = REPORT_ONLY_VULNERABILITY_POLICIES[policy]
   try {
     return run()
   } catch (error) {
     const reason = String(error?.message || error).slice(0, 600)
-    report(`⚠️  GOV-RENDER-ONLY-REFERENCE:弱點稽核只報告、不擋(歷史參考樹,無憑證、用完即丟的渲染容器):${reason}`)
+    report(`⚠️  ${reportOnly.marker}:弱點稽核只報告、不擋(${reportOnly.why}):${reason}`)
     return Object.freeze({
       schemaVersion: 1,
-      kind: 'render-only-reference-vulnerability-audit-receipt',
+      kind: reportOnly.kind,
       status: 'reported-not-enforced',
       policy,
       reason,
@@ -420,17 +438,25 @@ function assertRemediatedFinding(name, finding) {
     // fix and the overlay machinery has no third slot yet; the fixed 10.4.0 exists, and extending
     // the overlay (or moving to npm 12) is tracked in the cloud-compat baton as the next branch.
     // DoS-class parsing advisories in dev-only npm CLI internals; nothing ships to production from
-    // this tree. Any drift — a fourth advisory, a new node, a severity change — fails closed here.
+    // this tree. Any drift — a sixth advisory, a new node, a severity change — fails closed here.
+    // 2026-09-29(待辦總帳 OE15):上游 2026-09-28 又發兩則 moderate(GHSA-rpw4-54j3-4h4q `Address6.isLinkLocal()`
+    // 誤認 fe80::/64、GHSA-2vr4-cq9g-pvrc 沒有分類器認得 NAT64 64:ff9b::/96;都修在 10.5.1),finding.range 隨之
+    // 從 <=10.3.0 變成 <=10.5.0、via 從 3 則變 5 則 —— 這道 exact-shape 認列當場把 CI 每個 job 都擋在
+    // 「Install locked dependencies once」(這正是 OE6「新弱點通報會卡住所有 PR」的形狀)。bundled 的仍是 10.2.0、
+    // npm 11.x 仍沒有帶 10.5.1 的版本,曝險與 08-03 那三則同類(dev-only CLI 內部的位址解析),所以只把新形狀認列進來;
+    // 註:consumer 的同步永遠跑自己 protected main 上的這份腳本,新認列要靠受管檔案更新才會抵達 consumer。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.3.0'
+        && finding.range === '<=10.5.0'
         && matchesExactAdvisorySet(finding, 'ip-address', [
           { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
           { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
           { source: 1130724, range: '>=10.1.1 <=10.2.0', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate' },
+          { source: 1239948, range: '<=10.5.0', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate' },
+          { source: 1239949, range: '>=10.2.0 <=10.5.0', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate' },
         ]),
       `npm audit ip-address finding differs from the acknowledged bundled preimage(${shape})`,
     )
@@ -439,16 +465,20 @@ function assertRemediatedFinding(name, finding) {
   if (name === 'undici') {
     // Same situation as ip-address: bundled in npm 11.19.0, no overlay slot yet, fixed 6.28.0
     // exists. Tracked in the cloud-compat baton; exact-shape acknowledgment, drift fails closed.
+    // 2026-09-29(待辦總帳 OE15):上游 2026-09-28 再發 GHSA-3wwx-pv8p-q78v(moderate,DoS via unhandled error,
+    // >=6.25.0 <6.28.1,修在 6.28.1),finding.range 從 <=6.27.0 變 <=6.28.0、via 從 3 則變 4 則 —— 與 ip-address 同一天
+    // 同一種形狀,同樣只把新形狀認列進來(bundled 的 undici 仍是舊版、npm 11.x 沒有帶修正版的 release)。
     invariant(
       finding.severity === 'moderate'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/undici'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=6.27.0'
+        && finding.range === '<=6.28.0'
         && matchesExactAdvisorySet(finding, 'undici', [
           { source: 1130716, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate' },
           { source: 1130727, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate' },
           { source: 1130732, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate' },
+          { source: 1239934, range: '>=6.25.0 <6.28.1', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
     )

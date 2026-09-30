@@ -215,10 +215,10 @@ export async function runAuthorityGovernanceSetup(options = {}) {
 }
 
 // 2026-09-23:`--dependencies-only` 多兩個只在視覺回歸重拍用的旗標 —— `--root=<dir>` 讓 HEAD 的治理程式對另一棵
-// 簽出的參考樹安裝(它自己的歷史版 bootstrap 不可能知道之後才登記的弱點),`--vulnerability-policy=` 選
-// report-render-only-reference 讓弱點稽核只報告不擋(完整性照舊擋)。兩個旗標只接在 --dependencies-only 後面,
-// 各只能出現一次;其他形狀一律拒絕。
-export const AUTHORITY_SETUP_USAGE = 'usage: setup-authority-governance.mjs [--dependencies-only [--root=<dir>] [--vulnerability-policy=<enforce|report-render-only-reference>]|--verify-runtime]'
+// 簽出的參考樹安裝(它自己的歷史版 bootstrap 不可能知道之後才登記的弱點),`--vulnerability-policy=` 選一個只報告政策
+// 讓弱點稽核只報告不擋(完整性照舊擋;政策清單與各自的理由住 lib/governance-dependency-bootstrap.mjs,2026-09-29 加
+// governance-anchor 用的 report-protected-base-verifier)。兩個旗標只接在 --dependencies-only 後面,各只能出現一次;其他形狀一律拒絕。
+export const AUTHORITY_SETUP_USAGE = `usage: setup-authority-governance.mjs [--dependencies-only [--root=<dir>] [--vulnerability-policy=<${GOVERNANCE_VULNERABILITY_POLICIES.join('|')}>]|--verify-runtime]`
 
 export function parseAuthoritySetupArguments(args) {
   invariant(Array.isArray(args) && args.every((value) => typeof value === 'string'), AUTHORITY_SETUP_USAGE)

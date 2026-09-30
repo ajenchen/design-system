@@ -19,6 +19,9 @@ import test from 'node:test'
 import { gzipSync } from 'node:zlib'
 import {
   downloadCanonicalNpmTarball,
+  downloadWithTransientRetry,
+  isTransientRegistryDownloadFailure,
+  NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT,
   materializeVerifiedExactNpmRuntime,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmArtifact,
@@ -370,3 +373,56 @@ test('test-only HTTPS transport serves a deterministic exact lock artifact witho
     restore()
   }
 })
+
+// 2026-09-29:下載暫時性失敗要重試(ab9a4e1a 那一輪死在「canonical npm download timed out」),契約失敗不重試;兩面對照。
+test('transient registry download failures are classified two-sided', () => {
+  for (const message of [
+    'GOV-NPM-RUNTIME-001:canonical npm download timed out',
+    'read ECONNRESET',
+    'getaddrinfo EAI_AGAIN registry.npmjs.org',
+    'socket hang up',
+    'GOV-NPM-RUNTIME-001:canonical npm download returned HTTP 503; redirects are forbidden',
+  ]) assert.equal(isTransientRegistryDownloadFailure(new Error(message)), true, message)
+  for (const message of [
+    'GOV-NPM-RUNTIME-001:canonical npm download returned HTTP 404; redirects are forbidden',
+    'GOV-NPM-RUNTIME-001:canonical npm download returned HTTP 301; redirects are forbidden',
+    'GOV-NPM-RUNTIME-001:canonical npm tarball URL is outside the canonical registry contract',
+    'GOV-NPM-RUNTIME-001:canonical npm download exceeded the closed archive budget',
+    'GOV-NPM-RUNTIME-001:canonical npm download length differs from Content-Length',
+    'GOV-NPM-RUNTIME-001:canonical npm download is empty',
+    'GOV-NPM-RUNTIME-001:npm tarball is not a bounded canonical gzip archive:unexpected end',
+  ]) assert.equal(isTransientRegistryDownloadFailure(new Error(message)), false, message)
+})
+
+test('download retry: timed-out attempts are retried with backoff, contract failures are not, exhaustion fails closed with attempts', async () => {
+  const waits = []
+  const reports = []
+  const sleep = async (ms) => { waits.push(ms) }
+  const report = (line) => { reports.push(line) }
+  let calls = 0
+  const bytes = await downloadWithTransientRetry(async () => {
+    calls += 1
+    if (calls < 3) throw new Error('GOV-NPM-RUNTIME-001:canonical npm download timed out')
+    return Buffer.from('ok')
+  }, { label: 'canonical npm', sleep, report })
+  assert.deepEqual(bytes, Buffer.from('ok'))
+  assert.equal(calls, 3)
+  assert.deepEqual(waits, [2_000, 4_000])
+  assert.equal(reports.length, 2)
+  assert.match(reports[0], /attempt 1\/3/)
+
+  let contractCalls = 0
+  await assert.rejects(() => downloadWithTransientRetry(async () => {
+    contractCalls += 1
+    throw new Error('GOV-NPM-RUNTIME-001:canonical npm download returned HTTP 404; redirects are forbidden')
+  }, { sleep, report }), /HTTP 404/)
+  assert.equal(contractCalls, 1, 'contract failure must not be retried')
+
+  let exhausted = 0
+  await assert.rejects(() => downloadWithTransientRetry(async () => {
+    exhausted += 1
+    throw new Error('read ECONNRESET')
+  }, { sleep, report }), new RegExp(`ECONNRESET\\(after ${NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT} attempts\\)`))
+  assert.equal(exhausted, NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT)
+})
+

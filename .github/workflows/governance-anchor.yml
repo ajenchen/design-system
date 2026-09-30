@@ -47,7 +47,15 @@ jobs:
         run: |
           : > "$RUNNER_TEMP/npmrc-user-empty"
           : > "$RUNNER_TEMP/npmrc-global-empty"
-          npm run --silent setup:dependencies
+          # 2026-09-29(待辦總帳 OE6):這裡裝的是 protected main 的依賴樹,只為了執行下面的驗證程式。原本弱點稽核走 enforce
+          # (exact-shape 認列,任何新 advisory 一律 fail closed)—— 於是上游 2026-09-28 對 npm 內建 ip-address / undici 各發新通報那天,
+          # **每一個** PR 的 anchor 都紅,連「把新形狀認列進 bootstrap」的修復 PR 也過不了:anchor 跑的是 base 的腳本,base 不可能認得
+          # 之後才登記的形狀(自鎖,M36(b))。完整性(lock 精確安裝 / 簽章 / attestation)照舊擋;弱點稽核在這棵樹改成只報告、進 receipt、
+          # 不擋 —— 候選相對 main **新增**的弱點由下一步 install-candidate-dependencies.mjs 對兩棵樹各跑 npm audit --json 取差集來擋。
+          # 政策名就是理由:report-protected-base-verifier(lib/governance-dependency-bootstrap.mjs 定義,receipt 與 log 印的是「protected main
+          # 的樹只供驗證程式執行、候選新增弱點由 GOV-CANDIDATE-DEPS-002 差集擋」),不借 report-render-only-reference 的名字 —— 那個
+          # 的理由是「歷史參考樹、用完即丟的渲染容器」,不是這棵樹。本 job 仍無任何 secret、persist-credentials: false、runner 用完即丟。
+          npm run --silent setup:dependencies -- --vulnerability-policy=report-protected-base-verifier
 
       - name: Verify all other privileged closure changes structurally
         env:

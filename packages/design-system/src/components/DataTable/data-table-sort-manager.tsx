@@ -5,7 +5,7 @@ import { Plus, Trash2, X as XIcon, RotateCcw, GripVertical } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
@@ -99,10 +99,8 @@ function DataTableSortManagerInner<TData>({
     useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
     useSensor(KeyboardSensor),
   )
-  const announcements = React.useMemo(
-    () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '排序條件' }),
-    [],
-  )
+  // 繁中播報 + polite 區域 + 繁中操作說明(2026-09-27 OE10;先前交給 dnd-kit 寫死的 assertive 區域)
+  const drag = useDragAccessibility({ getOutcome: () => outcomeRef.current, kind: '排序條件' })
 
   const handleDragEnd = (event: DragEndEvent) => {
     outcomeRef.current = null
@@ -152,7 +150,8 @@ function DataTableSortManagerInner<TData>({
           無條件時 CTA 直接顯示,不需要 Empty 大區塊 */}
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         {sorting.length > 0 && (
-          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>
+            {drag.liveRegion}
             <SortableContext items={sorting.map(s => s.id)} strategy={verticalListSortingStrategy}>
               {sorting.map((sort, index) => {
                 const usedByOthers = new Set(sorting.filter((_, i) => i !== index).map((s) => s.id))

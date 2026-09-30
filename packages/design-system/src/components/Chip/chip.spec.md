@@ -244,6 +244,7 @@ ColorMatrix:展示 default / hover / selected / disabled 四狀態的 bg / borde
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `badge.spec.md`
 - `pagination.spec.md`
 - `tag.spec.md`

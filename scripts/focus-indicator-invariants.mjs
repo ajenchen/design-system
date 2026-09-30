@@ -49,7 +49,7 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowserOrSkip, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowserOrSkip, openStory, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError, waitForFocusStable } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const STATIC = join(process.cwd(),'storybook-static')
@@ -58,8 +58,8 @@ requireStorybookBuild(join(STATIC,'index.json'))
 // stale-build 守衛:build 產物必須比任何被驗證的原始碼新,否則驗到的是舊 CSS/JS(假綠)
 // lib/roving-list-keyboard.ts:TreeView 的按鍵判定(2026-09-25 B9 拆出、2026-09-26 併入四宿主共用零件);只改判定時也要擋住舊建置
 const SRCS = ['packages/design-system/src/components/FileViewer/file-viewer.tsx','packages/design-system/src/components/FileItem/file-item.tsx','packages/design-system/src/components/TreeView/tree-view.tsx','packages/design-system/src/lib/roving-list-keyboard.ts','packages/design-system/src/components/RadioGroup/radio-group.tsx','packages/design-system/src/components/AgentPanel/agent-panel.tsx']
-const buildMtime = statSync(join(STATIC,'index.html')).mtimeMs
-for (const f of SRCS) { const m = statSync(f).mtimeMs; if (m > buildMtime) { console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) } }
+// lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(STATIC, SRCS)
 
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -253,8 +253,11 @@ await go('design-system-components-slider-設計規格--overview',{waitFor:'[rol
   check('F5 每個 slider thumb 都可 Tab(WCAG 2.1.1)', before.total>0 && before.tabbable===before.total,
         `${before.tabbable}/${before.total} 可 Tab`)
   let landed=false
-  // 每次 Tab 後稍等再讀 activeElement(只是節奏,判準是「焦點落在 slider 上」本身)
-  for(let i=0;i<20;i++){ await pg.keyboard.press('Tab'); await pg.waitForTimeout(70)
+  // 每次 Tab 後等焦點連續 3 個影格落定再讀 activeElement(lib/launch-browser.mjs waitForFocusStable;用影格不用毫秒,
+  // 2026-09-27 取代固定睡 70ms —— 慢的機器上 70ms 內焦點還沒搬完就讀,會多按幾次 Tab、最後把「走不到」錯記成產品)
+  for(let i=0;i<20;i++){ await pg.keyboard.press('Tab')
+    const focus = await waitForFocusStable(pg, { frames: 3 })
+    if (!focus.ok) { check('F5 儀器:Tab 之後焦點一直在跳(沒量到)', false, JSON.stringify(focus)); break }
     if(await pg.evaluate(()=>document.activeElement?.getAttribute('role')==='slider')){landed=true;break} }
   check('F5 真的用 Tab 走得到 slider', landed)
   // thumb 有 `transition-all duration-150`,連 outline-offset 也一起過渡 ——

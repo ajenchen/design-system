@@ -5,7 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where AGENTS.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已定稿歸檔 BACKLOG(2026-08-11);SSOT 路徑在本檔內(planning 歸檔 §〇);實作前禁寫入 DS canonical
+- [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已落地(2026-09-07 起實作;唯一權威 = planning `2026-09-06-agent-principles-v14.md`,2026-08-11 規格與隔離令只剩歷史);後續改動走 spec / v14 propose 流程,禁把 v14 已答題重列為未決
 - [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 
 ## Feedback (workflow / collaboration discipline)
@@ -26,6 +26,7 @@
 - [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)
 - [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)+ C-prime fork 治理 shipped beta.70；歷史單一 Claude cloud target/snapshot 曾親證 proactive 指引與機械強制生效，不構成目前或所有 cloud certification(2026-07-14 合併 project_cprime)
 - [reference_perf_validation_same_host.md](reference_perf_validation_same_host.md) — 效能驗收必同網域:user 慢機器把 *.netlify.app 送進遠端隔離 thin client(LoAF 歸因 `thin-client-min.js`),github.io 本地渲染;程式碼無退步;先歸因再消融(2026-09-15)
+- [reference_auto_mode_sandbox_boundaries.md](reference_auto_mode_sandbox_boundaries.md) — Claude Code auto mode 沙箱與分類器實測邊界(主目錄 .claude 鎖 → clone 到 $TMPDIR;封閉 npm 不透傳代理 → 端到端只靠 CI;分類器擋 merge API / hook 自改 / consumer 認列 → 停下回報)(2026-09-29)
 
 ---
 **Prune history**(細節在 governance/archive/memory-retired/ + git log):

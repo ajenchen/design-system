@@ -5,7 +5,7 @@
  *         串內 ↑↓ / Home End / → ← 照 sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」的按鍵表走。
  *   紅: 任一串多於 / 少於一站、viewport 或動作鈕進了 Tab 路、任一按鍵結果不符 → 印出該條與實際焦點並 exit 1;
  *        --selftest 在 document capture 吞掉 keydown 並把每顆都改回 tabindex=0(舊的每項一站),S1/S2/S3 必紅;
- *        並把動作鈕容器改回接指標(2026-09-26 前的形狀),S9 必紅。
+ *        並把動作鈕容器改回接指標(2026-09-26 前的形狀),S9 必紅;再把窄視窗的隱形外擴帶打回去(2026-09-24 前的形狀),S10 必紅。
  *        story 開不起來 = 儀器失效 exit 1(不是產品裁決)。
  *   綠: 四則 story(混合內容 / 完整佈局 / 動作懸停 / AppShell 主側欄)全部斷言成立,且至少量到一串 SidebarMenu。
  *
@@ -27,6 +27,8 @@
  *   S8 列本身是選單觸發鈕(帳號列):↓ 不開選單、焦點不動;Enter 開得了(同一個觀測器看得到選單 → 證明 ↓ 那一格的「0 個選單」不是沒看到)。
  *      「不開」是負向主張:↓ 之後等版面連續 10 個影格靜止(選單若開會掛 portal + 進場動畫)再數,不睡固定毫秒(2026-09-27,M37)。
  *   S9(指標,2026-09-26 待辦總帳 N53 ①)兩顆動作鈕之間的空隙歸列:命中列鈕、點下去列成為當前頁;對照點(按鈕懸停底色內)命中按鈕。
+ *   S10(指標,2026-09-29 待辦總帳 N13 ②)SidebarMenuAction 外面沒有隱形帶:400px 視窗(那圈帶只在 <md 生效)鈕盒四面外 +4px 都不是
+ *      menu-action;對照點鈕盒中心必須是 menu-action。對照組把 2026-09-24 拿掉的那圈帶(`::after{inset:-8px}`)用 CSS 打回去,S10 必紅。
  *
  * 對照組(--selftest):在 document 的 capture 階段吞掉 keydown(React 收不到方向鍵),並把每串所有列與動作鈕
  * 改回 tabindex=0(= 舊的「每項一站」)→ S1 / S2 / S3 必須紅。
@@ -62,6 +64,8 @@ export const SABOTAGE = () => {
   // S9 的舊形狀:動作鈕的容器接指標(2026-09-26 前),空隙點下去落在容器、列不導覽
   const style = document.createElement('style')
   style.textContent = '[data-sidebar="menu-inline-actions"]{pointer-events:auto !important}'
+    // S10 的舊形狀:只在 <md 視窗生效的隱形外擴帶(2026-09-24 前 `after:absolute after:-inset-2 after:md:hidden`,每邊 8px)
+    + '@media (max-width:767.98px){[data-sidebar="menu-action"]{position:relative}[data-sidebar="menu-action"]::after{content:"";position:absolute;inset:-8px}}'
   document.head.appendChild(style)
 }
 
@@ -172,6 +176,39 @@ export async function runSidebarKeyboardChecks(page, story) {
     rec(d.kind === 'action' && /更多/.test(d.label), 'S3', `actionHover:→ 進 SidebarMenuAction(實得 ${d.kind}「${d.label}」)`)
     d = await press(page, 'ArrowLeft')
     rec(d.kind === 'row', 'S3', `actionHover:← 回到列(實得 ${d.kind}「${d.label}」)`)
+
+    // S10(指標,2026-09-29 待辦總帳 N13 ②):SidebarMenuAction 的命中區 = 懸停底色,**外面沒有隱形帶** —— sidebar.spec.md
+    // 「行內動作的命中區 = 懸停底色 › 修正一:拿掉只在窄視窗生效的隱形外擴帶」。那圈帶只在 <md 視窗生效,所以在 400px 視窗量
+    //(規格實測的同一個寬度):鈕盒四面外 +4px 的探針都不得打到 menu-action(要打到列鈕或列文字);對照點鈕盒中心必須打到 menu-action
+    //(證明儀器真的看得到這顆鈕)。對照組:--selftest 把那圈帶原樣用 CSS 打回去(`::after{inset:-8px}`)→ 必紅。
+    const viewport = page.viewportSize()
+    await page.setViewportSize({ width: 400, height: 900 })
+    const probe = await page.evaluate(async () => {
+      const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+      await raf()
+      const action = document.querySelector('[data-sidebar="menu-action"]')
+      if (!action) return null
+      const r = action.getBoundingClientRect()
+      if (!(r.width > 0 && r.height > 0)) return null
+      const who = (x, y) => {
+        const el = document.elementFromPoint(x, y)
+        return el?.closest('[data-sidebar="menu-action"]') ? 'action'
+          : el?.closest('[data-sidebar="menu-button"]') ? 'row' : el ? `other:${el.tagName.toLowerCase()}` : 'none'
+      }
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2
+      return {
+        box: { w: r.width, h: r.height },
+        center: who(cx, cy),
+        outside: { top: who(cx, r.top - 4), bottom: who(cx, r.bottom + 4), left: who(r.left - 4, cy), right: who(r.right + 4, cy) },
+      }
+    })
+    await page.setViewportSize(viewport ?? { width: 1280, height: 900 })
+    if (!probe || probe.center !== 'action') rec(false, 'S10', `actionHover@400px:量不到 SidebarMenuAction(${JSON.stringify(probe)})—— 儀器失效,不是通過`)
+    else {
+      const hits = Object.values(probe.outside)
+      rec(hits.every((h) => h !== 'action'), 'S10',
+        `actionHover@400px:鈕盒 ${probe.box.w}×${probe.box.h} 四面外 +4px 都不是 menu-action(上 ${probe.outside.top} / 下 ${probe.outside.bottom} / 左 ${probe.outside.left} / 右 ${probe.outside.right};中心 ${probe.center})`)
+    }
   }
 
   if (story === 'mixed') {
@@ -328,8 +365,8 @@ async function main() {
   for (const r of all) { console.log(`${r.ok ? '✓' : '✗'} ${r.id} ${r.msg}`); if (!r.ok) failed++ }
   if (SELFTEST) {
     const red = new Set(all.filter((r) => !r.ok).map((r) => r.id))
-    const ok = ['S1', 'S2', 'S3', 'S9'].every((id) => red.has(id))
-    console.log(ok ? `✓ selftest:對照組讓 S1/S2/S3/S9 都紅(共 ${failed} 條),量具會紅` : `✗ selftest:對照組沒讓 S1/S2/S3/S9 全紅(紅了:${[...red].join(',') || '無'})—— 量具無效`)
+    const ok = ['S1', 'S2', 'S3', 'S9', 'S10'].every((id) => red.has(id))
+    console.log(ok ? `✓ selftest:對照組讓 S1/S2/S3/S9/S10 都紅(共 ${failed} 條),量具會紅` : `✗ selftest:對照組沒讓 S1/S2/S3/S9/S10 全紅(紅了:${[...red].join(',') || '無'})—— 量具無效`)
     process.exit(ok ? 0 : 1)
   }
   console.log(failed ? `✗ sidebar-menu-keyboard-invariant ${failed} 條失敗` : `✅ sidebar-menu-keyboard-invariant PASS(${all.length} 條)`)

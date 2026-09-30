@@ -24,7 +24,7 @@
 import { statSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, STALE_BUILD_MARKER } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, requireFreshStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -34,8 +34,9 @@ const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const STORY = arg('story') ?? 'design-system-components-datatable-展示--roadmap-all-in-one'
 requireStorybookBuild(join(STATIC, 'index.json'))
-const srcM = statSync(join(REPO, 'packages/design-system/src/components/DataTable/data-table.tsx')).mtimeMs
-if (!staticArg && statSync(join(STATIC, 'index.json')).mtimeMs < srcM) { console.error(`✗ ${STALE_BUILD_MARKER}:storybook-static 比 data-table.tsx 舊,先重建`); process.exit(2) }
+// stale-build 守衛:預設目錄的 build 必須比 data-table.tsx 新(指定 --static 的並行工作者自己負責)
+// —— lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+if (!staticArg) requireFreshStorybookBuild(STATIC, ['packages/design-system/src/components/DataTable/data-table.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 const printNotFound = () => { if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) }

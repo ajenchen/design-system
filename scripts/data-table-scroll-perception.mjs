@@ -8,7 +8,7 @@
 // (以 run nonce + attempt 認身分,不以「路徑上剛好有一份」認):子程序沒寫出 summary 就是沒量到,不得拿上一次執行
 // 留在同一個 --out 的舊 summary 去判「停頓 → 重跑」或「慢機器判準 → 綠」。
 import { launchBrowser, openStory, StoryRenderInstrumentError } from "./lib/launch-browser.mjs";
-import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS } from "./lib/scroll-perception-budget.mjs";
+import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS, retryBackoffMs } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { PNG } from "pngjs";
@@ -77,6 +77,10 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
           ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px 的 ${summary.stallFraction === 1 ? "整個" : "3/4"}),第 ${attempt} 次作廢,重跑`
           : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt}/${MAX_ATTEMPTS} 次作廢,重跑`
       );
+      // 重跑前退避(lib/scroll-perception-budget.mjs 的 retryBackoffMs,父行程逾時同一份推導);只是重跑節奏,不改任何判準。
+      const backoffMs = retryBackoffMs(attempt);
+      console.log(`  ↷ 退避 ${backoffMs}ms 再重跑`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, backoffMs);
       continue;
     }
     if (summary?.stalled) {
@@ -89,7 +93,10 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
       const validAttempts = attempts.filter((x) => x.captureCoverageValid);
       const verdicts = validAttempts.map((x) => slowMachineVerdict(x));
       const slowOk = validAttempts.length > 0 && verdicts.every((v) => v.ok);
-      console.log(
+      // 一次有效擷取都沒有 → 慢機器判準沒有東西可判:這是儀器(runner)這段時間量不到,不是表格「未過」(M37:沒觀察到 ≠ 沒發生)。
+      // 仍然紅(required job 不能把量不到讀成綠),但訊息要指名是儀器,不指控產品。
+      if (validAttempts.length === 0) console.log(`✗ INSTRUMENT-FAIL:${MAX_ATTEMPTS} 次全部整窗跳轉(${attempts.map((x) => x.maxScrollEventJumpPx).join(" / ")}px)且沒有一次擷取有效 —— runner 這段時間跟不上 ${summary.peak}px/s,慢機器判準沒有可判的樣本;不是表格的裁決,要重跑(可調 DT_PERCEPTION_MAX_ATTEMPTS)`);
+      else console.log(
         `${slowOk ? "✓" : "✗"} ${MAX_ATTEMPTS} 次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
           `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整、靜止後補齊 ${slowOk ? "✓" : "✗"}` +
           (slowOk ? "" : `;未過:${verdicts.flatMap((v) => v.reasons).join(" / ")}`) +

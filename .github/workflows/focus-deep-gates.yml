@@ -7,7 +7,10 @@ name: Focus and drag deep gates
 # 塞進去會把 job 撐爆 —— 2026-09-08 實際撞過兩次逾時。
 #
 # 對應 AGENTS.md 的稽核分層:Tier 2 日常開發走 changed scope,
-# Tier 3 週期性 deep 走全 DS。這裡就是 Tier 3 的那一層。
+# Tier 3 週期性 deep 走全 DS。排程 / 手動 = Tier 3 全掃;
+# **pull_request = Tier 2 changed-scope**(2026-09-29,待辦總帳 OE4):只跑這次改到的元件目錄對應的閘,
+# 沒改到就 skip 並印出原因。不是 required check(ci-workflow-scope 的 required 清單不含本檔),紅了不擋五步;
+# 也不用 GitHub 的 `paths:` 過濾 —— 那會讓「沒改到」變成沒有任何 run、零訊號,改到與否要在 job 內用 git diff 判並印出來。
 # PR 閘裡留的是輕量的那幾支(shared-carrier / datepicker / drag-runtime /
 # focus-indicator / virtual-scroll-stress,合計約 63 秒)。
 
@@ -15,6 +18,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '17 3 * * 2'
+  pull_request:
 
 permissions:
   contents: read
@@ -32,46 +36,132 @@ jobs:
       # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;
       # focus-geometry-browser-audit / menu-message-row 等都走那條共用政策)
       GOVERNANCE_BROWSER_REQUIRED: '1'
+      # pull_request 才有 base 分支;排程 / 手動這裡是空字串 → 全掃
+      PR_BASE_REF: ${{ github.base_ref }}
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
+          # changed-scope 要算 origin/<base>...HEAD,淺層簽出沒有那段歷史
+          fetch-depth: 0
+
+      # ── 決定範圍(SSOT:後面每一步只讀這裡寫進 GITHUB_ENV 的旗標)────────────────────────────────
+      # 規則(與 ci-workflow-scope.test.mjs 對 required 閘「不得用 paths 過濾」的精神一致:判斷在 job 內、結果印出來):
+      #   · 排程 / 手動 → SCOPE=all,全部閘照舊全掃。
+      #   · pull_request → 改到的檔案 = git diff --name-only origin/<base>...HEAD:
+      #       - 改到 packages/design-system/src/ 底下**元件目錄以外**的東西(lib / patterns / tokens / styles)→ 影響面不可分割,
+      #         等同全掃(SCOPE=all);
+      #       - 只改到 components/<Name>/ → SCOPE=changed:焦點幾何只量那些元件(--component,對照組也在同一批上證);
+      #         DataTable 三支只在 DataTable 改到時跑;選單訊息列只在它的 owner(Select / Combobox / Command / PeoplePicker /
+      #         SelectMenu / Menu)改到時跑;「+N」溢出掃描只在 OverflowIndicator 或它的消費者(從原始碼 grep import 推導,
+      #         不寫死清單)改到時跑;
+      #       - DS 原始碼一個都沒改到 → 每一步 skip 並印原因(不是「全綠」,是「不適用」)。
+      - name: Resolve scope(排程 / 手動 = 全 DS;pull_request = 只掃改到的元件)
+        run: |
+          scope=all; focus_args=''; run_datatable=1; run_menu=1; run_overflow=1; reason=''
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base="origin/${PR_BASE_REF}"
+            git rev-parse --verify --quiet "${base}^{commit}" >/dev/null || { echo "✗ INSTRUMENT-FAIL:找不到 ${base},算不出改到什麼" >&2; exit 1; }
+            changed="$(git diff --name-only "${base}...HEAD")"
+            ds_changed="$(printf '%s\n' "$changed" | grep -E '^packages/design-system/src/' || true)"
+            shared_changed="$(printf '%s\n' "$ds_changed" | grep -Ev '^packages/design-system/src/components/[^/]+/' || true)"
+            components="$(printf '%s\n' "$ds_changed" | sed -n 's#^packages/design-system/src/components/\([^/]*\)/.*#\1#p' | sort -u | tr '\n' ' ' | sed 's/ *$//')"
+            if [ -z "$ds_changed" ]; then
+              scope=none; run_datatable=0; run_menu=0; run_overflow=0
+              reason="這次沒改到 packages/design-system/src/ 底下任何檔案(改到的 $(printf '%s\n' "$changed" | grep -c . || true) 個檔全在 DS 原始碼之外)"
+            elif [ -n "$shared_changed" ]; then
+              scope=all
+              reason="改到元件目錄以外的 DS 原始碼(影響面不可分割,等同全掃):$(printf '%s\n' "$shared_changed" | head -5 | tr '\n' ' ')"
+            else
+              scope=changed
+              for c in $components; do focus_args="$focus_args --component $c"; done
+              case " $components " in *" DataTable "*) run_datatable=1 ;; *) run_datatable=0 ;; esac
+              run_menu=0; for c in $components; do case "$c" in Select|Combobox|Command|PeoplePicker|SelectMenu|Menu) run_menu=1 ;; esac; done
+              # 「+N」的 owner 從原始碼推導:OverflowIndicator 自己 + 任何 import 它的元件目錄
+              overflow_owners="$(grep -rl -e 'overflow-indicator' -e 'OverflowIndicator' packages/design-system/src/components --include='*.tsx' --include='*.ts' \
+                | sed -n 's#^packages/design-system/src/components/\([^/]*\)/.*#\1#p' | sort -u | tr '\n' ' ')"
+              run_overflow=0; for c in $components; do case " $overflow_owners " in *" $c "*) run_overflow=1 ;; esac; done
+              reason="改到的元件:${components};「+N」owner:${overflow_owners}"
+            fi
+          else
+            reason="事件 ${GITHUB_EVENT_NAME}:全 DS 掃描(Tier 3)"
+          fi
+          echo "SCOPE=${scope}"; echo "  ${reason}"
+          if [ "$scope" = none ]; then echo "  四類閘全部不適用"; else echo "  焦點幾何:${focus_args:-(全部)};DataTable 三支:${run_datatable};選單訊息列:${run_menu};「+N」溢出:${run_overflow}"; fi
+          {
+            echo "SCOPE=${scope}"
+            echo "FOCUS_ARGS=${focus_args}"
+            echo "RUN_DATATABLE=${run_datatable}"
+            echo "RUN_MENU=${run_menu}"
+            echo "RUN_OVERFLOW=${run_overflow}"
+          } >> "$GITHUB_ENV"
+
+      - name: Skip(這次沒改到 DS 原始碼,深掃不適用)
+        if: ${{ env.SCOPE == 'none' }}
+        run: echo "↷ SCOPE=none:沒改到 packages/design-system/src/,焦點幾何 / DataTable / 選單 / 「+N」四類閘都不適用(不是全綠,是沒有東西可掃)"
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: ${{ env.SCOPE != 'none' }}
         with:
           node-version: '24.14.0'
           cache: npm
 
       - name: Install and audit with the lock-verified npm runtime
+        if: ${{ env.SCOPE != 'none' }}
         run: npm run --silent setup:dependencies
 
       - name: Install Playwright chromium
+        if: ${{ env.SCOPE != 'none' }}
         run: npm run --silent setup:playwright -- --with-deps
 
       - name: Build DS lib + types
+        if: ${{ env.SCOPE != 'none' }}
         run: npm run build:lib 2>&1 | tail -10
 
       - name: Build storybook
+        if: ${{ env.SCOPE != 'none' }}
         run: npm run build-storybook 2>&1 | tail -20
 
-      - name: Focus geometry full sweep(58 components × 2 themes)+ control group
+      - name: Focus geometry sweep(全 DS 58 元件 × 2 主題,或只掃改到的元件)+ control group
+        if: ${{ env.SCOPE != 'none' }}
         run: |
-          node scripts/focus-geometry-browser-audit.mjs
-          # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
+          # FOCUS_ARGS 空 = 全掃;有值 = `--component X --component Y`(改到的元件;名字不在索引裡會以儀器失效紅,不會靜默量 0 個)
+          # shellcheck disable=SC2086
+          node scripts/focus-geometry-browser-audit.mjs $FOCUS_ARGS
+          # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅(同一批元件上證)。
           # 不跑這一步的話,「無框但都有承擔者」那個綠燈不算證據。
-          node scripts/focus-geometry-browser-audit.mjs --selftest
+          # shellcheck disable=SC2086
+          node scripts/focus-geometry-browser-audit.mjs --selftest $FOCUS_ARGS
           # 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些必須被指名
           #(2026-09-10 加:原本「已內描邊」是直接豁免,宣告往內之後就永遠不再重驗 ——
           # 行內動作鈕因此帶著一句沒量過的註解活了兩個月)。
-          node scripts/focus-geometry-browser-audit.mjs --selftest-inset
+          # shellcheck disable=SC2086
+          node scripts/focus-geometry-browser-audit.mjs --selftest-inset $FOCUS_ARGS
+
+      - name: DataTable scrollbar / scroll-cost / row-cache deep gates + control groups
+        if: ${{ env.SCOPE != 'none' && env.RUN_DATATABLE == '1' }}
+        run: |
           node scripts/data-table-scrollbar-visibility.mjs
           node scripts/data-table-scrollbar-visibility.mjs --selftest
           node scripts/data-table-scroll-cost.mjs --selftest
           node scripts/data-table-row-cache-deps-invariant.mjs --selftest
-          node scripts/menu-message-row-invariant.mjs --selftest
+      - name: Skip DataTable deep gates(這次沒改到 DataTable)
+        if: ${{ env.SCOPE == 'changed' && env.RUN_DATATABLE != '1' }}
+        run: echo "↷ 沒改到 components/DataTable/,三支 DataTable 深掃不適用"
+
+      - name: Menu message row control group
+        if: ${{ env.SCOPE != 'none' && env.RUN_MENU == '1' }}
+        run: node scripts/menu-message-row-invariant.mjs --selftest
+      - name: Skip menu message row(這次沒改到它的 owner)
+        if: ${{ env.SCOPE == 'changed' && env.RUN_MENU != '1' }}
+        run: echo "↷ 沒改到 Select / Combobox / Command / PeoplePicker / SelectMenu / Menu,選單訊息列對照組不適用"
 
       - name: Overflow indicator containment(all widths)+ control group
+        if: ${{ env.SCOPE != 'none' && env.RUN_OVERFLOW == '1' }}
         run: |
           npm run test:overflow-indicator
+      - name: Skip overflow indicator sweep(這次沒改到「+N」的 owner)
+        if: ${{ env.SCOPE == 'changed' && env.RUN_OVERFLOW != '1' }}
+        run: echo "↷ 沒改到 OverflowIndicator 或任何 import 它的元件,「+N」溢出全寬度掃描不適用"

@@ -45,7 +45,7 @@ export const UsageGuidance: StoryObj = {
       <section>
         <h3 className="text-body-lg font-medium">動態紀律</h3>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
-          <li>標誌三態(靜止=待機/招喚/思考)定義唯一住所=agent-panel.spec.md AgentLogo 節;禁另立本體語言。</li>
+          <li>標誌三態(靜止=待機/招喚/思考)定義唯一住所=agent-panel-logo.spec.md AgentLogo 節;禁另立本體語言。</li>
           <li>呼吸包絡全家族共用:一息 3 秒,35% 吸頂、85% 回落、之後靜止空拍;呼出去的波 90% 才散盡。吸氣變亮、呼氣變暗,本體不變淡。</li>
           <li>標誌配色全部取自自家色階(藍 blue-3→7、紫 purple-3→7、陰影 purple-8、提亮 blue-2、波 blue-5→indigo-5→purple-5),機械腳本每次比對;入口鈕邊框與光圈只從 AgentLogo 的 AGENT_BRAND(blue-4 / purple-4)取色。</li>
           <li>思考:靜止起步半圈時間加速到 0.75 秒一圈(快檔上緣,不慌不懶),一直思考就不停;離開思考才減速、落回正位再淡入下一狀態。</li>

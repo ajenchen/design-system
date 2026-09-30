@@ -141,6 +141,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `calendar.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`

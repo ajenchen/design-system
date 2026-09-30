@@ -117,14 +117,18 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   //(原本是裸 `npm ci`,被 scripts/audit-workflow-security.mjs 判 WF-LIFECYCLE / SIGNATURE / VULNERABILITY,
   // 讓「Verify authority candidate without credentials」每支 PR 都紅)。
   const installingJobs = Object.entries(workflow.jobs).filter(([id]) => id !== 'verify')
-  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length + 1)
+  // 2026-09-29:參考建置的重裝改用**候選(HEAD)的**治理程式(`setup-authority-governance.mjs --root=tmp/ref-src`),
+  // 不再呼叫參考樹自己的 `setup:dependencies`(main 上那份不認得之後才登記的通報形狀 → 候選一改相依就死在安裝;ad442603 首跑),
+  // 所以 `setup:dependencies` 的出現次數回到「每個會跑程式的 job 各一次」。
+  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length)
   const commandLines = source.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
   assert.equal((commandLines.match(/\bnpm ci\b/g) ?? []).length, 0, 'ci.yml 不得出現裸 npm ci(參考建置也走 setup:dependencies;註解不算)')
   // 2026-09-23:參考建置(main)的 lock 與候選相同時共用候選已驗證的 node_modules,不再第二次安裝 ——
   // 否則「比 main」綁死在「main 裝得起來」,main 上的供應鏈閘一紅,連修它的 PR 都過不了(#153 第一輪)。
   // lock 不同才重裝;symlink 必須在移除 worktree 前先解開。
   const referenceBuild = source.slice(source.indexOf('git worktree add tmp/ref-src'), source.indexOf('git worktree remove --force tmp/ref-src'))
-  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n\s+echo[^\n]*\n\s+\(cd tmp\/ref-src && npm run --silent setup:dependencies\)\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才重裝')
+  assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n(?:\s+#[^\n]*\n)*\s+echo[^\n]*\n\s+node "\$GITHUB_WORKSPACE\/scripts\/setup-authority-governance\.mjs" --dependencies-only --root=tmp\/ref-src --vulnerability-policy=report-render-only-reference\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才用候選的治理程式對參考樹安裝(弱點只報告、完整性照擋),不得呼叫參考樹自己的 setup:dependencies')
+  assert.doesNotMatch(referenceBuild, /cd tmp\/ref-src && npm run --silent setup:dependencies/, '參考樹不得再跑自己那份 bootstrap(main 上的舊形狀會把候選鎖死)')
   assert.match(referenceBuild, /\[ -L tmp\/ref-src\/node_modules \] && rm tmp\/ref-src\/node_modules\n\s*$/, '移除 worktree 前必須先解開 symlink')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
@@ -185,7 +189,14 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     'node scripts/governance-build-graph.mjs --check',
     'npm run build',
   ]) assert.match(source, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  assert.doesNotMatch(source, /setup:playwright|setup:provider-cli|test:governance-harnesses|test-governance-build-graph|@qijenchen\/governance test|storybook-smoke-test|visual-audit/)
+  // 2026-09-29(待辦總帳 OE8):視覺稽核以前整支排除在 PR 閘之外 —— 像素比對是釘死容器的 Ubuntu 渲染、a11y 另有基線閘、全量 131 場景
+  // 100 秒。現在只准**一種確定性形狀**進 PR:只掃改到的元件、不做像素比對、不跑 a11y、base 明確傳入(沒有本地 main 的乾淨 checkout
+  // 不准靜默算出 0 個元件)。任何其他形狀的 visual-audit 呼叫(--scope=all、帶 diff、沒給 base)仍然禁止。
+  const ALLOWED_VISUAL_AUDIT = 'node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"'
+  assert.equal(source.split(ALLOWED_VISUAL_AUDIT).length - 1, 1, '視覺稽核只准以「改到的元件 + 無像素比對 + 無 a11y + 明確 base」這一種形狀進 PR 閘,且只出現一次')
+  assert.match(source, /VISUAL_AUDIT_BASE: \$\{\{ github\.event\.pull_request\.base\.sha \|\| github\.event\.before \}\}/, 'base 必須是 PR base sha 或 push 的前一個 head,不得留給腳本猜')
+  const withoutAllowedVisualAudit = source.split('\n').filter((line) => !(line.includes('visual-audit') && (line.includes(ALLOWED_VISUAL_AUDIT) || line.trimStart().startsWith('#')))).join('\n')
+  assert.doesNotMatch(withoutAllowedVisualAudit, /setup:playwright|setup:provider-cli|test:governance-harnesses|test-governance-build-graph|@qijenchen\/governance test|storybook-smoke-test|visual-audit/)
 })
 
 for (const name of [
@@ -225,8 +236,11 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   // 三種觸發(按鈕 / repository_dispatch / 排程)的輸入收斂到 job env 的兩個變數,步驟只讀 env(SSOT);
   // 參考 commit 的預設值只能寫一次(env 的 fallback),手動輸入的 default 留空。
   assert.match(source, /UPDATE_BASELINE: \$\{\{ \(inputs\.update_baseline == true \|\| github\.event\.client_payload\.update_baseline == true/, 'UPDATE_BASELINE 必須同時接按鈕與 repository_dispatch')
-  assert.match(source, /REFERENCE_REF: \$\{\{ inputs\.reference_ref \|\| github\.event\.client_payload\.reference_ref \|\| '[0-9a-f]{40}' \}\}/, 'REFERENCE_REF 的 fallback 必須是完整 40 碼 SHA')
-  assert.equal((source.match(/2ec2f3fedd94aa30e9b091eac4d713374484bd05/g) ?? []).length, 1, '參考 commit 的預設值只能有一個住所(env 的 fallback)')
+  // 2026-09-29:預設參考 commit 不再寫死(每發一版就過期一次,09-27 兩次實跑都倒在它不產 build-info.json);
+  // 留空由 job 內解析成「最近一次真的已發布」的 release —— tag 存在 ≠ 已發布(實查 141 個 tag 只有 128 個有 release)。
+  assert.match(source, /REFERENCE_REF: \$\{\{ inputs\.reference_ref \|\| github\.event\.client_payload\.reference_ref \|\| '' \}\}/, 'REFERENCE_REF 不再寫死預設 commit:留空由 job 內解析成最近一次已發布的 release')
+  assert.match(source, /name: Resolve reference ref[\s\S]{0,3000}git tag --merged origin\/main --sort=-v:refname 'v\*'[\s\S]{0,1500}releases\/tags\/[\s\S]{0,1500}echo "REFERENCE_REF=\$resolved" >> "\$GITHUB_ENV"/, '留空時必須在 job 內掃 origin/main 的 v* tag、以 Releases API 確認真的已發布、解析成完整 SHA 寫進 GITHUB_ENV(tag 存在 ≠ 已發布)')
+  assert.doesNotMatch(source, /'[0-9a-f]{40}'/, '不得再寫死任何 commit 當預設參考(每發一版就過期一次)')
   assert.doesNotMatch(source.slice(source.indexOf('\njobs:\n')).replace(/inputs\.(update_baseline|reference_ref|target_ref)/g, ''), /\$\{\{[^}]*inputs\./, 'jobs 區的步驟不得直接讀 inputs,一律經 env')
   // 2026-09-23:repository_dispatch 永遠用預設分支的 workflow 檔,checkout 不指定 ref 就只拍 main ——「修了元件、baseline 要
   // 跟著換」的 PR 分支永遠拍不到。要拍哪棵樹是輸入(target_ref),不是「觸發當下 main 是哪一版」這個代理(M37)。

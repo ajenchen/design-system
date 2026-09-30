@@ -1,5 +1,16 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: 每一份 spec 被別的 spec 在 SSOT 語境(相關 / SSOT / See also / 近親 / 家族 / 消費 段)指到時,它自己的
+ *         「## 被引用(auto-maintained,Dim 3 reciprocal audit)」段逐字等於「重生一次會寫出來的那一段」——
+ *         沒有缺(有人指它、它沒列)、沒有過時(列了已經沒人指它的來源)、沒有多餘的殘段(0 inbound 卻還留著)。
+ *   紅: 把任一份 spec 的「被引用」段刪掉、少列一個來源、或多留一個沒人指的來源 → `--check` 必須指名那份 spec 並 exit 1
+ *       (2026-09-27 發版前全掃:22 份 spec 漂移,實跑 exit 1;2026-09-29 拆檔後新增 7 份 spec,--check 先紅、重生後綠)。
+ *   綠: 「被引用」段與重生結果逐字相同時 exit 0;判定是純字串比對(重生 → compare),重複跑結果恆等,不靠時序。
+ *   量法: 對 packages/design-system/src/**\/*.spec.md 掃 A→B 指標(regex + 6 行 SSOT 語境),建反向圖,對每個 B 重生
+ *         auto-maintained 段;`--check` 只比對不寫入(drift → exit 1),無旗標則寫回。執行面:`npm run test:reciprocal-pointers`
+ *         (ci.yml verify-static,2026-09-29 接入;此前 --check 從沒有任何執行面呼叫,待辦總帳 N61)。
+ *
  * Batch-add reciprocal pointers to spec.md files (Dim 3 fix).
  *
  * For every A→B cross-spec pointer in a SSOT context (相關 / SSOT / See also / 近親 / 家族 / 消費 section),

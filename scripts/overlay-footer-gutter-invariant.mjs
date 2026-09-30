@@ -188,7 +188,7 @@ const bad = []
 const survey = []
 let scanned = 0, footersChecked = 0, noRef = 0
 // 點開下拉的覆蓋率(2026-09-25):點開並等到靜止的次數、因停用 / 唯讀而不點的次數 —— 印出來,不再靜默縮水
-let triggersOpened = 0, triggersInert = 0, triggersGone = 0
+let triggersOpened = 0, triggersInert = 0, triggersGone = 0, triggersCovered = 0
 const crashed = []
 /** 儀器失效:沒量到的 story(不是產品判定)。 */
 const instrumentFailures = []
@@ -263,10 +263,18 @@ try {
         const handles = (await page.locator('[role="combobox"]:visible').elementHandles()).slice(0, 6)
         for (let i = 0; i < handles.length; i += 1) {
           const trigger = handles[i]
-          const state = await trigger.evaluate((el) => (!el.isConnected || el.getClientRects().length === 0 ? 'gone'
-            : el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]') ? 'inert' : 'ok')).catch(() => 'gone')
+          const state = await trigger.evaluate((el) => {
+            if (!el.isConnected || el.getClientRects().length === 0) return 'gone'
+            if (el.matches(':disabled, [aria-disabled="true"], [data-disabled], [aria-readonly="true"], [readonly]')) return 'inert'
+            return 'ok'
+          }).catch(() => 'gone')
           if (state === 'gone') { triggersGone += 1; continue }
           if (state === 'inert') { triggersInert += 1; continue }
+          // 2026-09-29:被 modal 遮罩蓋住的觸發點(例 AgentPanel「未存檔的修改」story 一開場就疊兩層對話框)看得見但點不到,
+          // click 會等到逾時而把整支 story 記成儀器失效。先用 Playwright 自己的可操作性檢查(trial)試一次,過不了 = 被蓋住 →
+          // 略過並計數(同 select-all-footer 閘;自己算 elementFromPoint 沒先捲進視窗會把視窗外的誤判成被蓋住)。
+          const covered = await trigger.click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
+          if (covered) { triggersCovered += 1; continue }
           try { await trigger.click({ timeout: 10_000 }) } catch (error) {
             instrumentFailures.push({ story: s.id, detail: `點第 ${i + 1} 個下拉失敗(看得見、沒停用):${String(error?.message || error).split('\n')[0]}` })
             break
@@ -299,7 +307,7 @@ try {
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`量到可見的 footer:${footersChecked} 個(其中 ${noRef} 個上方沒有可對齊的東西,略過)`)
-console.log(`點開下拉並等到靜止:${triggersOpened} 次(停用 / 唯讀而不點:${triggersInert} 個;被前一個互動收掉:${triggersGone} 個)`)
+console.log(`點開下拉並等到靜止:${triggersOpened} 次(停用 / 唯讀而不點:${triggersInert} 個;被前一個互動收掉:${triggersGone} 個;被遮罩蓋住而略過:${triggersCovered} 個)`)
 console.log(`整則渲不出來的 story:${crashed.length} 支`)
 
 // --selftest-crash 的判定:兩面都必須成立,而且每一則都要證明注入真的生效(攔到了它的 chunk)。

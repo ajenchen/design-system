@@ -34,7 +34,7 @@ import {
   type TableOptions,
   type Column,
 } from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import { TableScrollProvider } from '@/design-system/components/Field/field-context'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
@@ -44,7 +44,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rec
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
+import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX, createStepToNeighborCoordinateGetter } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -59,6 +59,38 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { Button } from '@/design-system/components/Button/button'
+
+// ── 填滿高度(height="100%" / "fill")的格子量法 ────────────────────────────────
+// outer 用 `maxHeight:100%` 而不是 `height:100%`(資料少要 hug),所以它自己的高度被 body 反向決定,不能量它;
+// 要量的是它**能拿到**的格子:第一個有盒子的祖先(跳過 `display:contents`)的**內容盒**,再扣掉同一個流向裡的
+// 剛性兄弟(工具列、分頁列;不扣 `flex-grow > 0` 的兄弟 —— 它們會自己讓)與 gap。父層是 flex-row / grid 時
+// 兄弟不在同一條線上,只扣父層的內距。2026-09-29(待辦總帳 OE3);消費端契約見 data-table.spec.md「二、高度模式」。
+function resolveFillHeightParent(outer: HTMLElement): HTMLElement | null {
+  let el = outer.parentElement
+  while (el && getComputedStyle(el).display === 'contents') el = el.parentElement
+  return el
+}
+function measureFillHeightSlot(outer: HTMLElement): { height: number } | null {
+  const parent = resolveFillHeightParent(outer)
+  if (!parent) return null
+  const cs = getComputedStyle(parent)
+  const px = (v: string) => parseFloat(v) || 0
+  let height = parent.getBoundingClientRect().height - px(cs.paddingTop) - px(cs.paddingBottom) - px(cs.borderTopWidth) - px(cs.borderBottomWidth)
+  const isFlex = cs.display.includes('flex')
+  const stacked = isFlex ? cs.flexDirection.startsWith('column') : !cs.display.includes('grid')
+  if (!stacked) return { height: Math.max(0, height) }
+  const rowGap = isFlex ? px(cs.rowGap) : 0
+  let siblings = 0
+  for (const child of Array.from(parent.children)) {
+    if (child === outer || !(child instanceof HTMLElement)) continue
+    const ccs = getComputedStyle(child)
+    if (ccs.display === 'none' || ccs.display === 'contents' || ccs.position === 'absolute' || ccs.position === 'fixed') continue
+    if (isFlex && px(ccs.flexGrow) > 0) continue
+    height -= child.getBoundingClientRect().height + px(ccs.marginTop) + px(ccs.marginBottom)
+    siblings++
+  }
+  return { height: Math.max(0, height - rowGap * siblings) }
+}
 
 // ── Variants ─────────────────────────────────────────────────────────────────
 
@@ -356,6 +388,9 @@ function applySelectIds(
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
 // 穩定的空陣列:`?? []` 每次 render 新身分會讓 TanStack 的 pinning / columns memo 失效(Codex R6 2026-09-08)
 const EMPTY_COLUMN_IDS: string[] = []
+// 同款:非虛擬模式下 `rowVirtualItems` 的空陣列。寫成字面值 `[]` 每次 render 都是新身分,拿它當相依的 effect(焦點掉到 body 的補對)
+// 就每次 render 都跑(exhaustive-deps 2026-09-29)。
+const EMPTY_VIRTUAL_ITEMS: VirtualItem[] = []
 // 表頭面板:**只帶底色**。底色**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
 // 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
 // 下分隔線**不在這裡**:它掛在外層列群組的 `.dtHeaderRowGroup::after`(data-table.css),見下文。
@@ -683,10 +718,15 @@ function SourceRowProvider({
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
   // **v15.6 button-only drag**:setActivatorNodeRef 不接 row,改由 RowDragHandle Button 接(via ctx)。
   // setNodeRef = primary row(source DOM,ghost 抓這個);droppable.setNodeRef = same row(droppable target)。
+  // setNodeRef 先解構再呼叫:dnd-kit 的 setNodeRef 是 `useCallback(…, [])` 的穩定函式、不讀 this,但 useDraggable / useDroppable
+  // 每次 render 都回新物件。寫成 `draggable.setNodeRef(el)` 會被 exhaustive-deps 視為「方法呼叫依賴接收者」而要求列整個 draggable,
+  // 列了 setRefs 就每 render 換身分 → React 每 render 先用 null 再用元素呼叫 ref → dnd-kit 每次都重登記節點。
+  const { setNodeRef: setDraggableNodeRef } = draggable
+  const { setNodeRef: setDroppableNodeRef } = droppable
   const setRefs = React.useCallback((el: HTMLElement | null) => {
-    draggable.setNodeRef(el)
-    droppable.setNodeRef(el)
-  }, [draggable.setNodeRef, droppable.setNodeRef])
+    setDraggableNodeRef(el)
+    setDroppableNodeRef(el)
+  }, [setDraggableNodeRef, setDroppableNodeRef])
   const isDragging = draggable.isDragging
   // a11y(2026-05-07 v15.10 codex P1 fix):button-only drag mode 下,row 本身不該成為
   // keyboard tab stop。dnd-kit `useDraggable.attributes` 含 `role="button" tabIndex=0
@@ -807,10 +847,13 @@ function DraggableHeaderCell({
   // **v15.0 Path B refactor**(對齊 TreeView SSOT):分離 useDraggable + useDroppable,不 auto-shift
   const draggable = useDraggable({ id, disabled, data: { type: 'column', columnId: id } })
   const droppable = useDroppable({ id, disabled, data: { type: 'column', columnId: id } })
+  // setNodeRef 先解構再呼叫(同 SourceRowProvider 的理由:穩定函式,但接收者物件每 render 都新)。
+  const { setNodeRef: setDraggableNodeRef } = draggable
+  const { setNodeRef: setDroppableNodeRef } = droppable
   const setRefs = React.useCallback((el: HTMLElement | null) => {
-    draggable.setNodeRef(el)
-    droppable.setNodeRef(el)
-  }, [draggable.setNodeRef, droppable.setNodeRef])
+    setDraggableNodeRef(el)
+    setDroppableNodeRef(el)
+  }, [setDraggableNodeRef, setDroppableNodeRef])
   const isDragging = draggable.isDragging
   const dragStyle: React.CSSProperties = {
     ...dragSourceStyle(isDragging),
@@ -1328,6 +1371,19 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
 // props 全 primitive / stable reference → memo 真命中,unchanged cells render 成本歸零。
 // Cite world-class:AG Grid「cell renderer stable reference」/ MUI X DataGrid memoized subcomponents。
 const EMPTY_META: Record<string, unknown> = {}
+
+/** 等價於 `React.useMemo(() => ({}), deps)`(長度相同且每一項 Object.is 全等 → 回同一個 epoch 物件,否則換新),
+ *  差別只在相依清單是**變數**:`epochDeps` / `headerEpochDeps` 刻意手列成變數,由 scripts/data-table-row-cache-deps-invariant.mjs
+ *  機械對照渲染函式真正讀到的外層變數(比 exhaustive-deps 的靜態檢查嚴),而 exhaustive-deps 只接受陣列字面值、對變數一律報錯;
+ *  把清單抄進字面值 = 同一份清單兩個住所,必漂移。比對在 render 期做,跟同一段的 rowRenderTickRef / prevEpochDepsRef 同款。 */
+function useDepsEpoch(deps: unknown[]): object {
+  const ref = React.useRef<{ deps: unknown[]; epoch: object } | null>(null)
+  const prev = ref.current
+  const same = prev !== null && prev.deps.length === deps.length && prev.deps.every((d, i) => Object.is(d, deps[i]))
+  const next = same ? prev : { deps, epoch: {} }
+  ref.current = next
+  return next.epoch
+}
 
 interface MemoCellSlotProps {
   Cell: React.ComponentType<CellComponentProps>
@@ -2255,7 +2311,8 @@ function DataTableInner<TData>(
 
   virtualizerRef.current = virtualizer
   // 一次 render 只取一次 virtual items(預排隊 / 列高同步 / 三區 render 共用同一份快照;Codex R20 A3)
-  const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : []
+  // 非虛擬模式回模組層常數,不寫 `[]`:字面值每次 render 都是新身分,會讓拿它當相依的 effect 每次 render 都跑。
+  const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : EMPTY_VIRTUAL_ITEMS
   // 列殼預排隊(每次 render;要在 virtualizer 建好之後、renderBodyRows 之前):把這次會掛的列裡「還不是真列」的,
   /**
    * 指標底下那一列的 id(2026-09-11;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
@@ -2388,8 +2445,6 @@ function DataTableInner<TData>(
   // 後續 measureElement 修正到 6×40 = 240,差 24px 視覺看起來像「table 慢慢長高」。fix = estimate
   // 預設 size-aware 對齊 token(見下方 estimateRowHeight default 計算)。
   const [bodyMaxHeight, setBodyMaxHeight] = React.useState<number | null>(null)
-  // L5 分頁 × isFillHeight(2026-07-07 C12):bar 高度量測用 — compute() 需扣分頁列 footprint
-  const paginationBarRef = React.useRef<HTMLDivElement | null>(null)
   React.useLayoutEffect(() => {
     if (!isFillHeight) { setBodyMaxHeight(null); return }
     // **R4 真根因 fix(2026-05-09 v2 — codex Q3.6 root cause + Q3.9 reproduce verified)**:
@@ -2409,6 +2464,18 @@ function DataTableInner<TData>(
     //
     // Codex root cause cite:circular feedback `tableRef.height ↔ bodyMaxHeight ↔ body layout ↔ tableRef.height`
     // Reproduce verified:viewport 1280→1920→900,parentH 392/672/292 變化,但 a524e03 fix 下 bodyRectH 永遠 240。
+    //
+    // **2026-09-29 兩處修正(待辦總帳 OE3;實測 roadmap story:父層加 40px 內距 → 表身底部被外框裁掉 39px、
+    // 表頭墊高 20px → 裁掉 19px,兩者都是「量錯 / 沒觀察」的直接後果)**:
+    //   (1) **量錯父層**:先前拿 parent 的 border-box 高(`getBoundingClientRect().height`)當格子,父層的 padding / border
+    //       與**同一個流向裡的兄弟**(工具列、分頁列)都被算進可用高;而 outer 自己的 CSS `maxHeight:100%` 是對父層
+    //       **內容盒**算的 → JS 給 body 的上限比 outer 拿得到的格子大,多出來的部分被 outer 的 `overflow:hidden` 裁掉
+    //       (裁的正是水平捲軸與最後一列)。現在量的是 outer **真正拿到的格子**:父層內容盒 − 同流向的剛性兄弟(margin box)− gap
+    //       (`measureFillHeightSlot`);分頁列從此不必另記 ref 特別扣(它就是 composedContent 裡的一個兄弟)。
+    //   (2) **只觀察父層**:表頭變高(size 切換、表頭換行)、兄弟變高(工具列換行、分頁列出現)都不改父層的盒子,
+    //       ResizeObserver 不會響 → body 上限停在過期值。現在表頭與每個兄弟都在觀察名單上,父層子節點增減
+    //       (分頁列在資料到齊後才出現)由 MutationObserver 重綁。
+    //   閘:`scripts/data-table-invariants.mjs` I37(父層加內距 / 表頭墊高之後,表身底 ≤ 外框底,上限恰好少掉注入量)。
     let rafId: number | null = null
     let stableTimer: ReturnType<typeof setTimeout> | null = null
     let lastValue: number | null = null
@@ -2426,20 +2493,11 @@ function DataTableInner<TData>(
     // 對齊 TanStack Virtual `observeElementRect` + Material X-DataGrid 「resize debounce 100ms」慣例。
     const compute = () => {
       if (!tableRef.current) return
-      // ⭐ 量 parent slot(definite height,不受 child 反向影響),fallback 用 outer
-      const parentEl = tableRef.current.parentElement
-      const slotH = parentEl?.getBoundingClientRect().height
-                ?? tableRef.current.getBoundingClientRect().height
+      // ⭐ 量 outer 真正拿到的格子(父層內容盒 − 剛性兄弟 − gap;不受 child 反向影響),量不到父層才退回 outer 自己
+      const slot = measureFillHeightSlot(tableRef.current)
+      const slotH = slot?.height ?? tableRef.current.getBoundingClientRect().height
       const headerEl = tableRef.current.firstElementChild as HTMLElement | null
       const headerH = headerEl?.getBoundingClientRect().height ?? 0
-      // L5 分頁 × isFillHeight(2026-07-07 C12):啟用分頁時 parent slot = composedContent
-      // wrapper(含分頁列 + tight gap),body 可用高必扣分頁列 footprint,否則 body 撐滿
-      // 把分頁列擠出 / 被 overflow 裁掉
-      const barEl = paginationBarRef.current
-      const barFootprint = barEl
-        ? barEl.getBoundingClientRect().height +
-          (parseFloat(getComputedStyle(barEl.parentElement as Element).rowGap) || 0)
-        : 0
       // 2026-09-08 填滿高度(fill-height)的外框邊框預算修正:slotH 是 outer 所在 slot 的高,而
       // outer 帶 `border`(預設上下各 1px;`bordered={false}` 時 computed 為 0,不會多扣);header +
       // body 住在 outer 的 content box 裡,不扣的話三個區塊比可用高度多 2px,底部被外框
@@ -2448,7 +2506,7 @@ function DataTableInner<TData>(
       // 的完整歸因(該症狀在 Mac 模擬 Windows 幾何重現不了,待實機截圖;Codex R4 2026-09-08 同判)。
       const outerCs = getComputedStyle(tableRef.current)
       const borderY = (parseFloat(outerCs.borderTopWidth) || 0) + (parseFloat(outerCs.borderBottomWidth) || 0)
-      const next = Math.max(0, slotH - headerH - barFootprint - borderY)
+      const next = Math.max(0, slotH - headerH - borderY)
       // 只濾次像素雜訊(2026-09-08 收緊;原 `< 4px` 守衛會把 slot 縮小 1–3px 整個丟掉 → 區塊比
       // 可用高度多 1–3px、底部被外框裁掉,跟漏扣邊框是同一種病)。settle 期的多次微變由下方
       // 100ms stability window 合併,不需要靠丟值。閘:`data-table-scrollbar-visibility.mjs` 動態縮高案例。
@@ -2470,11 +2528,28 @@ function DataTableInner<TData>(
       })
     }
     compute() // initial schedule(會 enter stability window 等 100ms settle)
-    // ⭐ 只 observe parent,不 observe tableRef(打破 circular)
+    // ⭐ 觀察名單 = 父層(內容盒)+ 表頭 + 父層裡的每個兄弟;**不 observe tableRef 自己**(打破 circular)。
+    // 父層子節點增減(分頁列在資料到齊後才出現、工具列後掛)→ 重綁名單再算一次。
     const obs = new ResizeObserver(scheduleCompute)
-    if (tableRef.current?.parentElement) obs.observe(tableRef.current.parentElement)
+    const outer = tableRef.current
+    const parentEl = outer ? resolveFillHeightParent(outer) : null
+    // 表頭與兄弟看的是 **border-box**(它們佔掉的是含 padding / border 的整個盒子;預設的 content-box 在只改 padding 時不會響 ——
+    // I37 對照組實測:表頭墊 20px padding,content-box 觀察一聲不吭、上限停在過期值);父層看 content-box(padding 變了就是格子變了)。
+    const bind = () => {
+      obs.disconnect()
+      if (!outer) return
+      const headerEl = outer.firstElementChild
+      if (headerEl) obs.observe(headerEl, { box: 'border-box' })
+      if (!parentEl) return
+      obs.observe(parentEl)
+      for (const child of Array.from(parentEl.children)) if (child !== outer) obs.observe(child, { box: 'border-box' })
+    }
+    bind()
+    const childList = parentEl ? new MutationObserver(() => { bind(); scheduleCompute() }) : null
+    if (parentEl && childList) childList.observe(parentEl, { childList: true })
     return () => {
       obs.disconnect()
+      childList?.disconnect()
       if (rafId != null) cancelAnimationFrame(rafId)
       if (stableTimer != null) clearTimeout(stableTimer)
     }
@@ -2644,7 +2719,6 @@ function DataTableInner<TData>(
     }
     return ids
     // any-allow: react-table runtime lookup
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spreadsheetMode, rangeAnchor, rangeFocus, table])
   const rangeCellIdSet = React.useMemo(() => new Set(rangeCellIds || []), [rangeCellIds])
 
@@ -2728,7 +2802,7 @@ function DataTableInner<TData>(
     console.error(
       `[DataTable] 尚不支援欄位群組(巢狀 columns):${grouped.length} 個欄位定義帶了 \`columns\`。` +
       '表頭只會渲染最上層並被葉欄位 id 濾光,結果是空白表頭且與資料對不齊。' +
-      '請先攤平成單層欄位(見 data-table.spec.md 兩容器缺陷清單 D)。',
+      '請先攤平成單層欄位(見 data-table-known-defects.spec.md 兩容器缺陷清單 D)。',
     )
   }, [columns])
   /**
@@ -2981,7 +3055,7 @@ function DataTableInner<TData>(
         setHoveredRow(relatedIdx)
       },
     }
-  }, [enableHover])
+  }, [enableHover, setHoveredRow])
   // 維持 API:hoverProps(idx) 仍存在但 no-op,實際邏輯搬到 table 層 delegation
   const hoverProps = (_idx: number): Record<string, never> => ({})
 
@@ -3481,8 +3555,12 @@ function DataTableInner<TData>(
   }
 
   // ── L2 Selection helpers ──
-  const visibleRowIdsKey = React.useMemo(() => rows.map(r => r.id).join(','), [rows])
-  const visibleRowIdsSet = React.useMemo(() => new Set(rows.map(r => r.id)), [visibleRowIdsKey])
+  // 可見列 id 序列的鍵:rows 換身分(重新載入 / 排序 / 編輯回填)但 id 序列沒變時鍵不變,Set 與下面的 filter effect 都只跟著鍵走。
+  // Set 必須只依賴鍵、不能依賴 rows:useControllable 的 setter 在 controlled 模式下**無條件**呼叫 onSelectionChange,
+  // Set 若跟著 rows 換身分,filter effect 就會在每次 rows 換身分時把同一份 selection 再回報 consumer 一次。
+  // 所以 Set 直接從鍵解回來;鍵用 JSON 而不是 join(','):id 含逗號或空字串時 join 會把不同的 id 序列編成同一把鍵。
+  const visibleRowIdsKey = React.useMemo(() => JSON.stringify(rows.map(r => r.id)), [rows])
+  const visibleRowIdsSet = React.useMemo(() => new Set<string>(JSON.parse(visibleRowIdsKey) as string[]), [visibleRowIdsKey])
 
   // 對齊 spec L2 七、Filter 套用 → filtered-out selected rows 預設清掉
   React.useEffect(() => {
@@ -3618,6 +3696,27 @@ function DataTableInner<TData>(
         const curRowIdx = allRows.indexOf(curRowId)
         const curColIdx = allCols.indexOf(curColId)
         if (curRowIdx < 0 || curColIdx < 0) return
+        // Shift+方向鍵 = 從格游標(起點)往那個方向擴大 / 縮小區間(2026-09-29,待辦總帳 N46;WCAG 2.1.1:
+        // Shift+點擊做得到的,鍵盤也要做得到)。起點不動(selectedCellId / rangeAnchor 留在原格,藍框留在起點,
+        // 同 Shift+點擊的 canonical,見 onSpreadsheetCellClick),動的是終點 rangeFocus;第二下起從上一次的終點繼續。
+        // 一手:AG Grid "Focusing a cell and then holding down ⇧ Shift and using the arrow keys will create a range
+        // starting from the focused cell."(https://www.ag-grid.com/javascript-data-grid/cell-selection/);
+        // MUI X "Use the arrow keys to focus on a cell, then hold Shift and navigate to another cell"
+        //(https://mui.com/x/react-data-grid/cell-selection/)。2026-09-29 前方向鍵一律重設起點,Shift 被忽略。
+        if (e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          const focusId = rangeFocus ?? selectedCellId
+          const fColon = focusId.lastIndexOf(':')
+          const fRowIdx = allRows.indexOf(focusId.slice(0, fColon))
+          const fColIdx = allCols.indexOf(focusId.slice(fColon + 1))
+          if (fRowIdx < 0 || fColIdx < 0) return
+          const nRow = e.key === 'ArrowUp' ? Math.max(0, fRowIdx - 1) : e.key === 'ArrowDown' ? Math.min(allRows.length - 1, fRowIdx + 1) : fRowIdx
+          const nCol = e.key === 'ArrowLeft' ? Math.max(0, fColIdx - 1) : e.key === 'ArrowRight' ? Math.min(allCols.length - 1, fColIdx + 1) : fColIdx
+          if (nRow !== fRowIdx || nCol !== fColIdx) {
+            e.preventDefault()
+            setRangeFocus(`${allRows[nRow]}:${allCols[nCol]}`)
+          }
+          return
+        }
         let nextRowIdx = curRowIdx
         let nextColIdx = curColIdx
         if (e.key === 'ArrowUp' && curRowIdx > 0) { nextRowIdx = curRowIdx - 1 }
@@ -3683,7 +3782,7 @@ function DataTableInner<TData>(
     // 非 isCellEditable — 原 deps 列 isCellEditable 是靠 canEditCell identity-stable 才無實害的
     // stale-closure 地雷;改列真實依賴 canEditCell(其 useCallback deps 已含 isCellEditable)。
     [enabled, mode, hasAnySelection, selectableVisibleIds, setSelection,
-     spreadsheetMode, selectedCellId, editingCellId, table, canEditCell]
+     spreadsheetMode, selectedCellId, rangeFocus, editingCellId, table, canEditCell]
   )
 
   // ── Header cell ──
@@ -4104,8 +4203,7 @@ function DataTableInner<TData>(
     if (stats && prevEpochDepsRef.current) epochDeps.forEach((d, i) => { if (!Object.is(d, prevEpochDepsRef.current![i])) { stats.epochIdx ??= {}; stats.epochIdx[i] = (stats.epochIdx[i] ?? 0) + 1 } })
     prevEpochDepsRef.current = epochDeps
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rowRenderEpoch = React.useMemo(() => ({}), epochDeps)
+  const rowRenderEpoch = useDepsEpoch(epochDeps)
 
   // 表頭元素快取(2026-09-08):表頭不隨捲動改變,但 DataTableInner 每步 render 都重呼叫 renderHeaderRow → 每步 593 個
   // 表頭元件重繪(fiber 歸因實測)。與列快取同款:deps 全等就回同一個元素,React 在表頭 fiber 直接 bailout。
@@ -4113,7 +4211,7 @@ function DataTableInner<TData>(
   const headerEpochDeps: unknown[] = [
     rowRenderEpoch, enableColumnReorder, headerCheckedState, selectableVisibleIds, onColumnFilterTrigger, onColumnResize, toggleHeaderCheckbox,
   ]
-  const headerRenderEpoch = React.useMemo(() => ({}), headerEpochDeps)
+  const headerRenderEpoch = useDepsEpoch(headerEpochDeps)
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
@@ -4478,11 +4576,13 @@ function DataTableInner<TData>(
     el instanceof Element && (el === root || (root.contains(el) && el.closest('[role="gridcell"], [data-active-editor-host]') != null))
   // 持有焦點的格被虛擬捲動卸載時瀏覽器不一定發 blur(焦點靜靜掉到 body),`gridHasFocus` 會停在 true;
   // 之後游標格捲回畫面,框會畫著但焦點不在 —— 每次虛擬列集合變動後對一次 document.activeElement。
+  // `rows` 也列進來:非虛擬模式下列集合只隨 rows 變(列被資料變動 / 篩選卸載時同樣不發 blur);先前非虛擬模式的
+  // `rowVirtualItems` 是每 render 新的 `[]`,這個 effect 因此每次 render 都跑、順便蓋到這種情況,改成穩定常數後由 rows 明確承接。
   React.useEffect(() => {
     if (!gridHasFocus) return
     const root = tableRef.current
     if (root && !isGridFocusTarget(root, document.activeElement)) setGridHasFocus(false)
-  }, [gridHasFocus, rowVirtualItems])
+  }, [gridHasFocus, rowVirtualItems, rows])
 
   // Single mode 用 RadioGroup wrap 整 table(Radix RadioGroup 用 context 傳遞 value/onValueChange)
   // Multi mode 不需 wrap(Checkbox 各自 controlled,不靠 context)
@@ -5166,7 +5266,7 @@ function DataTableInner<TData>(
       if (isReorderNoop(activeIdx, overIdx, side)) { setDropIndicator(null); return }
       setDropIndicatorIfChanged({ id: String(over.id), side, type: 'row' })
     }
-  }, [allRowIds, isReorderNoop, setDropIndicatorIfChanged])
+  }, [allRowIds, setDropIndicatorIfChanged])
 
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)
@@ -5209,16 +5309,14 @@ function DataTableInner<TData>(
   // 播報時讀它即可。不需要重算一次判定,避免兩份邏輯漂移。
   const reorderOutcomeRef = React.useRef<DragOutcome | null>(null)
 
-  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭)。
-  const dragAnnouncements = React.useMemo(
-    // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
-    // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
-    () => createDragAnnouncements({
-      getOutcome: () => reorderOutcomeRef.current,
-      kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
-    }),
-    [],
-  )
+  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭):繁中播報 + polite 區域 + 繁中操作說明
+  //(2026-09-27 OE10:先前直接把 createDragAnnouncements 交給 dnd-kit,文字落在它寫死的 assertive 區域,每到一個落點就打斷)。
+  // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
+  // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
+  const drag = useDragAccessibility({
+    getOutcome: () => reorderOutcomeRef.current,
+    kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+  })
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
     reorderOutcomeRef.current = null
@@ -5272,7 +5370,7 @@ function DataTableInner<TData>(
     if (isReorderNoop(oldIdx, newIdx, position)) return
     reorderOutcomeRef.current = { kind: '列', label: sourceId }
     onRowReorder?.(sourceId, targetId, position)
-  }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds, isReorderNoop])
+  }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds])
 
   // 2026-05-06 v11:column reorder collision detection — drag column 時 droppable filter
   // 只保留 column id(避免 over 觸發 row);drag row 走 sameParent canonical。
@@ -5305,8 +5403,9 @@ function DataTableInner<TData>(
     // 無條件 justify-end(2026-07-07 C16:原 paginationHasExtras 判斷式 = 平行重複 Pagination
     // 內部 hasExtras 拼寫,未來加 extra 必 drift)——完整形態 Pagination 自帶 w-full
     // justify-between,justify-end 對其為 no-op;純頁碼形態靠右 = 拍板 #6(shadcn justify-end /
-    // Ant Table bottomEnd / MUI / Carbon 4 家)。ref 供 isFillHeight bodyMaxHeight 扣 bar 高(C12)。
-    <div ref={paginationBarRef} className="flex justify-end">
+    // Ant Table bottomEnd / MUI / Carbon 4 家)。isFillHeight 的 body 上限把它當 composedContent 裡的
+    // 一個剛性兄弟扣掉(`measureFillHeightSlot`,2026-09-29;原 C12 的專用 ref 已不需要)。
+    <div className="flex justify-end">
       <Pagination
         total={totalRowCount}
         page={currentPage}
@@ -5358,11 +5457,13 @@ function DataTableInner<TData>(
         // 繁中播報 + 誠實回報結果(C1/B2 修,2026-09-07)。
         // 先前四個 DndContext 全都沒傳 accessibility(全 DS grep = 0 命中),於是吃 dnd-kit
         // 的英文預設,而且是從它自己的生命週期發的 —— 會在我們根本沒重排時播「已放到 X」。
-        accessibility={{ announcements: dragAnnouncements }}
+        accessibility={drag.accessibility}
       >
         {/* v15.0 Path B:無 SortableContext(useDraggable + useDroppable 各自獨立,不需 sort context)。
             無 auto-shift visual reorder — source 留原位,indicator 顯 drop preview。 */}
         {node}
+        {/* 拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility)—— 沒渲染 = 整趟拖曳無聲 */}
+        {drag.liveRegion}
         {/* DragOverlay portal — row 跟 column 都用同一個 overlay state(dragOverlayHtml /
             dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。 */}
         <DragOverlay dropAnimation={null}>

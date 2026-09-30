@@ -205,4 +205,5 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `data-table.spec.md`
+- `horizontal-overflow.spec.md`
 - `segmented-control.spec.md`

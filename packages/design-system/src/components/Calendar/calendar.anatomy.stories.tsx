@@ -31,10 +31,12 @@ const sampleEvents: CalendarEvent[] = [
 ]
 
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
-//(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。規格頁的可點範例也給**看得見的反應**,
-// 不給空函式(空函式 = 點了沒反應);真實 app 在這裡開「當日新增事件」面板 / 事件詳情。與展示頁 calendar.stories.tsx 同一種示範手法。
+//(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
+// 規格頁的可點範例也給**看得見的反應**,不給空函式(空函式 = 點了沒反應);真實 app 在這裡開「當日新增事件」面板 / 事件詳情 /
+// 新事件對話框。與展示頁 calendar.stories.tsx 同一種示範手法。
 const demoAddOnDate = (date: Date) => alert(`在 ${date.getMonth() + 1}/${date.getDate()} 新增事件`)
 const demoOpenEvent = (event: CalendarEvent) => alert(`點了事件:${event.title}`)
+const demoCreateEvent = () => alert('開啟新事件對話框')
 
 // Keep dynamic-token documentation readable without presenting Tailwind's
 // source scanner with an invalid literal arbitrary-value candidate.
@@ -54,7 +56,7 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} onCreateEvent={demoCreateEvent} />
     </div>
   ),
 }
@@ -71,9 +73,10 @@ export const Inspector: Story = {
     locale: 'en-US',
     events: sampleEvents,
     today: now,
-    // 可點模式的回調(沒宣告唯讀就必填);檢閱器切 props 時照樣點得出反應
+    // 可點模式的回調(沒宣告唯讀就必填)+ 全域新增入口(恆必填);檢閱器切 props 時照樣點得出反應
     onDateClick: demoAddOnDate,
     onEventClick: demoOpenEvent,
+    onCreateEvent: demoCreateEvent,
   },
   argTypes: {
     weekStartsOn: { control: 'radio', options: [0, 1] },
@@ -109,7 +112,7 @@ export const ColorMatrix: Story = {
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
           <div className="h-[560px]">
-            <Calendar events={colorEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} />
+            <Calendar events={colorEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} onCreateEvent={demoCreateEvent} />
           </div>
         </div>
 
@@ -229,9 +232,9 @@ export const StateBehavior: Story = {
         <div>• <b>多事件 cell</b>:超出 3 則的 event 顯示「+N more」</div>
         <div>• <b>event hover</b>:tile 切同色濃一階(淺色變深、深色變亮)`hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
-        <div>• <b>唯讀</b>(`readOnlyDates` / `readOnlyEvents`,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見「設計原則 — 唯讀的日期格與事件」)</div>
+        <div>• <b>唯讀</b>(`readOnlyDates` / `readOnlyEvents`,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見「設計原則 — 唯讀的日期格與事件」);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
       </div>
-      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} onDateClick={demoAddOnDate} onEventClick={demoOpenEvent} onCreateEvent={demoCreateEvent} />
     </div>
   ),
   play: async ({ canvasElement }) => {

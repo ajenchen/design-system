@@ -118,7 +118,7 @@ benchmark:
 ## Audit chain
 
 - **Dim 48**(= `design-system-audit/SKILL.md` 的「Unused / orphan token detector」audit 維度)— chain 本 spec + `audit-orphan-tokens.mjs --check`(not raw `grep var()`)
-- **CI**:`release.yml` deterministic-gates step + `scripts/release-preflight.mjs` 直呼 `node scripts/audit-orphan-tokens.mjs --check` — fail = real orphan 出現
+- **CI**:`scripts/test-audit-orphan-tokens.mjs`(gate-meta 家族,由 `scripts/run-gate-meta-tests.mjs` 帶跑,住在夜間 `governance-harnesses.yml` 的 `test:governance-harnesses`)的 baseline 步直呼 `node scripts/audit-orphan-tokens.mjs --check` — fail = real orphan 出現;再注入一顆假 orphan 證明會紅。**PR / release lane 目前不跑它**(舊句寫的 `scripts/release-preflight.mjs` 已於 #40 退役、`release.yml` 也不再直呼;2026-09-27 對帳改寫)
 - **Hook**:無 hook(本 audit run-time / monthly cadence,非 PreToolUse 攔截場景)
 
 ## 永久解決承諾

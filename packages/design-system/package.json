@@ -4,7 +4,7 @@
     "type": "git",
     "url": "git+https://github.com/ajenchen/design-system.git"
   },
-  "version": "0.1.0-beta.146",
+  "version": "0.1.0-beta.147",
   "private": false,
   "description": "World-class design system — components, patterns, tokens, hooks (single source of truth for team distribution).",
   "type": "module",
@@ -77,6 +77,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "aria-hidden": "1.2.6",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -110,6 +111,7 @@
     "react-day-picker": "^9.14.0",
     "react-hook-form": "^7.80.0",
     "react-is": "^18.0.0 || ^19.0.0",
+    "react-remove-scroll": "2.7.2",
     "react-zoom-pan-pinch": "^4.0.3",
     "recharts": "^3.8.1",
     "pngjs": "7.0.0",

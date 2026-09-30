@@ -775,7 +775,7 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
  * (dialog.spec.md「Header actions slot」:`<Button variant="text" iconOnly>`;button.spec.md「text + danger」=
  * 工具列刪除 icon、有後續確認);body 照 DS 表單版面放四個 Field;footer 只有取消(tertiary)與儲存(primary)。
  */
-function TaskDialog({ task, portalContainer, persistentElements, onSave, onCancel, onDelete, onCloseAutoFocus }: {
+function TaskDialog({ task, portalContainer, persistentElements, onSave, onCancel, onDelete, onCloseAutoFocus, onDirtyChange, initialDraft }: {
   task: Task | null
   portalContainer: HTMLElement
   persistentElements: () => Element[]
@@ -784,11 +784,17 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   onDelete?: () => void
   /** 關閉後焦點回到開啟它的元素(沒有 DialogTrigger 時 Radix 會落到 body;2026-09-09 Codex R13) */
   onCloseAutoFocus?: (e: Event) => void
+  /** 草稿是否與已儲存的內容不同(宿主拿它決定內部導航要不要先問;關閉 / 卸載時回 false)。 */
+  onDirtyChange: (dirty: boolean) => void
+  /** 開啟時就帶著未儲存的修改(OpenSnapshot 用;M15)。 */
+  initialDraft?: Partial<TaskDraft>
 }) {
-  const [draft, setDraft] = React.useState<TaskDraft>(() =>
-    task ? { title: task.title, assignee: task.assignee, status: task.status, due: task.due } : { title: '', assignee: '', status: 'todo', due: '' },
-  )
+  const saved = React.useMemo<TaskDraft>(() => (task ? { title: task.title, assignee: task.assignee, status: task.status, due: task.due } : { title: '', assignee: '', status: 'todo', due: '' }), [task])
+  const [draft, setDraft] = React.useState<TaskDraft>(() => ({ ...saved, ...initialDraft }))
   const set = <K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) => setDraft((d) => ({ ...d, [key]: value }))
+  const dirty = (Object.keys(saved) as (keyof TaskDraft)[]).some((k) => draft[k] !== saved[k])
+  React.useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
+  React.useEffect(() => () => onDirtyChange(false), [onDirtyChange])
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }} persistentElements={persistentElements}>
       <DialogContent maxWidth={480} autoHeight portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
@@ -855,6 +861,34 @@ function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
         <DialogFooter>
           <Button id="demo-confirm-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
           <Button id="demo-confirm-delete" variant="primary" danger startIcon={Trash2} onClick={onConfirm}>刪除</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * 沒有網址的「未存檔的修改」確認框(v14 推導表「窄螢幕,內部導航觸發沒有 URL 的未存檔確認框」三列;2026-09-29 補,待辦總帳 OE11):
+ * 任務對話框裡改了還沒儲存,代理的內部連結要把宿主帶去別處 → 導航先停下來問。同一套破壞性動作範本(上方 ConfirmDeleteDialog):
+ * header 一行問句、body 說是哪一筆與後果、footer 取消(tertiary)+ 不儲存並前往(primary danger —— 放棄修改是破壞性的)。
+ * 傳送到畫布、不傳 persistentElements:蓋住一切含代理(條 A);取消 → 留在原內容、代理照舊;確認 → 宿主完成導航
+ * (並排代理維持開啟、蓋板收成入口鈕,與其他從代理發起的導航同一條路)。
+ */
+function ConfirmLeaveDialog({ task, onStay, onLeave, portalContainer }: {
+  task: Task; onStay: () => void; onLeave: () => void; portalContainer: HTMLElement
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onStay() }}>
+      <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer} aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>要放棄未儲存的修改?</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p className="text-body">{taskLabel(task)} 的修改還沒儲存,現在前往別處會遺失這些修改。</p>
+        </DialogBody>
+        <DialogFooter>
+          <Button id="demo-leave-cancel" variant="tertiary" onClick={onStay}>取消</Button>
+          <Button id="demo-leave-confirm" variant="primary" danger onClick={onLeave}>不儲存並前往</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -978,7 +1012,12 @@ function focusWhenOperable(resolve: () => HTMLElement | null, frames = 10) {
   if (frames > 0) requestAnimationFrame(() => focusWhenOperable(resolve, frames - 1))
 }
 
-function UrlRegistryScene() {
+/** 從代理發起、被「未存檔的修改」攔下來等確認的導航(v14 推導表:導航等待確認;取消留下、確認才走)。 */
+type PendingNavigation = { navigate: () => void; target: 'page' | 'modal' }
+/** OpenSnapshot 用的初始狀態(M15):一開場就停在指定網址、任務對話框帶著未儲存的修改、代理的內部連結已被攔下等確認。 */
+type SceneInitial = { location: Location; taskDraft: Partial<TaskDraft>; pendingNavigation: 'mine' }
+
+function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
   const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
   const mainRef = React.useRef<HTMLElement | null>(null)
@@ -996,7 +1035,7 @@ function UrlRegistryScene() {
   const agentModeRef = React.useRef(agentMode)
   agentModeRef.current = agentMode
   // 歷史堆疊合成一個 state,`go` 才是穩定的 callback(代理回覆裡的連結閉包會抓住它)
-  const [nav, setNav] = React.useState<{ entries: Location[]; index: number }>({ entries: [{ url: ALL_TASKS.url }], index: 0 })
+  const [nav, setNav] = React.useState<{ entries: Location[]; index: number }>({ entries: [initial?.location ?? { url: ALL_TASKS.url }], index: 0 })
   const navRef = React.useRef(nav)
   navRef.current = nav
   const go = React.useCallback((next: Location) => setNav((n) => ({ entries: [...n.entries.slice(0, n.index + 1), next], index: n.index + 1 })), [])
@@ -1031,7 +1070,7 @@ function UrlRegistryScene() {
    */
   const stageRef = React.useRef<HTMLDivElement | null>(null)
   stageRef.current = stage
-  const fromAgent = React.useCallback((navigate: () => void, target: 'page' | 'modal') => {
+  const runFromAgent = React.useCallback((navigate: () => void, target: 'page' | 'modal') => {
     navigate()
     if (agentModeRef.current !== 'overlay') return
     setAgentOpen(false)
@@ -1041,6 +1080,26 @@ function UrlRegistryScene() {
       target === 'page' ? mainRef.current : stageRef.current?.querySelector<HTMLElement>('[role="dialog"]') ?? null,
     ))
   }, [])
+  /**
+   * 未存檔的修改 → 離開前先確認(v14 推導表「窄螢幕,內部導航觸發沒有 URL 的未存檔確認框」+ 接下來的取消 / 確認前往兩列;
+   * 條 A·D·E)。任務對話框回報它有未儲存的修改(`onDirtyChange`),代理的內部連結就先停下來,把要走的導航記著、開沒有網址的
+   * 確認框(蓋住一切含代理);取消 → 什麼都不動(對話框、修改、代理抽屜都還在);確認 → 才真的走原本那條 `runFromAgent`。
+   * 對話框裡沒有未儲存的修改時,連結照舊直接走。這是宿主的事(DS 的面板不知道連結、也不知道對話框裡改了什麼)。
+   */
+  const dirtyRef = React.useRef(false)
+  const onDirtyChange = React.useCallback((dirty: boolean) => { dirtyRef.current = dirty }, [])
+  const [pendingNav, setPendingNav] = React.useState<PendingNavigation | null>(null)
+  // OpenSnapshot 的「已被攔下」狀態要在任務對話框**掛上之後**才出現(與真實順序相同:對話框先開、連結後點)。
+  // 兩個一起在第一次 commit 掛上的話,並存對話框的 suppressOthers 會把同一批掛上的確認框也設成 inert
+  // (它只在自己掛載時盤點一次「其餘」),確認框就點不到 —— 真實流程裡確認框永遠是後來的,不會遇到。
+  const initialPending = initial?.pendingNavigation
+  React.useEffect(() => {
+    if (initialPending === 'mine') setPendingNav({ navigate: () => go({ url: MY_TASKS.url }), target: 'page' })
+  }, [initialPending, go])
+  const fromAgent = React.useCallback((navigate: () => void, target: 'page' | 'modal') => {
+    if (dirtyRef.current) { setPendingNav({ navigate, target }); return }
+    runFromAgent(navigate, target)
+  }, [runFromAgent])
   const initialSessions = React.useMemo<Session[]>(() => [
     { id: 's1', title: '登入逾時追蹤', group: '今天', draft: '', messages: [
       { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
@@ -1074,6 +1133,16 @@ function UrlRegistryScene() {
     setAgentOpen(false)
     sessions.reset()
   }
+  // v14 條 F 最後半句「原分頁離開宿主後返回」:瀏覽器從 back/forward cache 還原舊畫面(`pageshow` 且 persisted)——
+  // 宿主畫面原封不動(來源頁、對話框、tab 都還在),代理仍要回到關閉的新對話。「關閉」AgentPanelDock 自己做
+  // (它是開關的 owner,會發 onOpenChange(false));「新對話」是宿主的,這裡只重設 session(同 reload 的後半)。
+  const resetSessionsRef = React.useRef(sessions.reset)
+  resetSessionsRef.current = sessions.reset
+  React.useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) resetSessionsRef.current() }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
   const modalTaskNum = view.modal?.kind === 'task' ? view.modal.num : null
   const openTaskModal = modalTaskNum == null ? null : tasks.find((t) => t.num === modalTaskNum) ?? null
   const nextNum = Math.max(...tasks.map((t) => t.num)) + 1
@@ -1121,6 +1190,9 @@ function UrlRegistryScene() {
                 portalContainer={stage}
                 persistentElements={keepForDialog}
                 onCloseAutoFocus={returnFocus}
+                onDirtyChange={onDirtyChange}
+                // 只有一開場那一次帶著修改(還停在第一筆歷史);之後再回到同一個網址是全新開啟的乾淨對話框
+                initialDraft={initial && nav.entries.length === 1 && initial.location.url === cur.url ? initial.taskDraft : undefined}
                 onCancel={closeModal}
                 onDelete={openTaskModal ? () => setConfirmDelete(openTaskModal) : undefined}
                 onSave={(draft) => {
@@ -1141,6 +1213,14 @@ function UrlRegistryScene() {
                   setConfirmDelete(null)
                   closeModal()
                 }}
+              />
+            )}
+            {canvas && pendingNav && openTaskModal && (
+              <ConfirmLeaveDialog
+                task={openTaskModal}
+                portalContainer={canvas}
+                onStay={() => setPendingNav(null)}
+                onLeave={() => { const p = pendingNav; setPendingNav(null); runFromAgent(p.navigate, p.target) }}
               />
             )}
           </Stage>
@@ -1165,4 +1245,29 @@ export const UrlRegistryDemo: Story = {
     },
   },
   render: () => <UrlRegistryScene />,
+}
+
+/**
+ * 同一個世界的第二則示意(2026-09-29,待辦總帳 OE11):任務對話框裡改了標題還沒儲存,代理回覆裡的「我的任務」被點下 ——
+ * 導航停下來問(沒有網址的確認框,蓋住一切含代理),取消留在原地、確認才前往。一開場就停在這個當口(M15 OpenSnapshot)。
+ */
+export const UnsavedChangesGuard: Story = {
+  name: '示意(假資料)— 未存檔的修改:離開前先確認',
+  parameters: {
+    docs: {
+      story: openOverlayDocsStory('720px'),
+      description: {
+        story: '假資料示意,與「網址註冊表」同一個專案。任務 #4821 的對話框開著、標題已改成「修正登入逾時(含 SSO 逾時)」但還沒儲存;代理回覆裡的「我的任務」是內部導航,宿主先停下來開一個沒有網址的確認框「要放棄未儲存的修改?」—— 它蓋住一切,包含代理(v14 條 A)。按「取消」:確認框消失,對話框、修改、代理抽屜都還在原地;按「不儲存並前往」:宿主切到「我的任務」,並排時代理維持開啟,窄畫布(蓋板)時代理收成右下角入口鈕、目的內容顯露(v14 推導表「未存檔確認框」三列)。對話框裡沒有未儲存的修改時,連結照舊直接走。',
+      },
+    },
+  },
+  render: () => (
+    <UrlRegistryScene
+      initial={{
+        location: { url: taskUrl(4821), backgroundLocation: ALL_TASKS.url },
+        taskDraft: { title: '修正登入逾時(含 SSO 逾時)' },
+        pendingNavigation: 'mine',
+      }}
+    />
+  ),
 }

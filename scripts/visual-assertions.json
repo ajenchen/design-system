@@ -1,5 +1,5 @@
 {
-  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名) / 可選 interaction({action:'hover',selector}:截圖前由 Playwright locator.hover() 維持真實 CSS :hover,selector 必唯一且缺失/重複 fail-closed) / 可選 assertions[](DOM 幾何測量陣列) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。",
+  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名,必唯一:基準圖與歸因報告都以檔名為鍵) / 可選 globals({theme:'light'|'dark', density:'md'|'lg'}:同一則 story 用 Storybook 全域 toolbar 的另一組值再拍一張,值域封閉在 scripts/lib/visual-audit-geometry.mjs,寫錯在載入時就停) / 可選 interaction({action:'hover',selector}:截圖前由 Playwright locator.hover() 維持真實 CSS :hover,selector 必唯一且缺失/重複 fail-closed) / 可選 assertions[](DOM 幾何 / 顏色測量陣列;type = equalHeight | padding4Sided{symmetric?: all|horizontal|vertical, expected?} | gap{expected, axis?: both|row|column} | color{property, expected};每條對選到的全部元素判,選不到 = selectorMissing;契約 SSOT = scripts/lib/visual-audit-geometry.mjs 檔頭) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。新場景沒有 Ubuntu 基準圖:一般模式會記 diff error(fail-closed),要照 .github/workflows/visual-regression.yml 檔頭的 update_baseline 流程補拍。",
   "scenarios": [
     {
       "id": "design-system-components-datepicker-展示--default",
@@ -172,7 +172,15 @@
     },
     {
       "id": "design-system-components-button-設計規格--color-matrix",
-      "file": "button-color-matrix.png"
+      "file": "button-color-matrix.png",
+      "assertions": [
+        {
+          "name": "色彩對照表全部按鈕等高(size=sm,不分 variant / danger / disabled)",
+          "type": "equalHeight",
+          "selector": "#storybook-root td button",
+          "rationale": "N37(待辦總帳 2026-09-25 :325):兩張表的按鈕都是 size=sm(button.anatomy.stories.tsx ColorMatrix),variant / danger / disabled 只改色不改高;button.tsx sizeVariants sm = h-field-sm(28px)。覆核實測 2026-09-29 n=32 全 28px;對照組把第 5 顆高度改 32px → 紅(actual[4]=32)。"
+        }
+      ]
     },
     {
       "id": "design-system-components-button-設計規格--size-matrix",
@@ -659,6 +667,75 @@
         "selector": "[data-visual-hover-target]"
       },
       "rationale": "beta.97 DataTable nested row expander 手刻 consumer；story play 只驗 component pointer path 並標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
+    },
+    {
+      "id": "design-system-components-button-設計規格--color-matrix",
+      "file": "button-color-matrix--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版(2026-09-29,待辦總帳 OE8:126 場景 0 深色)。同一則 story 用 Storybook globals theme:dark 拍;Button 8 variant × 6 state + danger 的深色 token 全在這一張。幾何斷言與淺色版同一條(高度不隨主題變)。",
+      "assertions": [
+        {
+          "name": "色彩對照表全部按鈕等高(深色)",
+          "type": "equalHeight",
+          "selector": "#storybook-root td button",
+          "rationale": "同淺色版 N37;深色只換色 token,不得改高。覆核實測 2026-09-29(globals theme:dark 讀回 <html data-theme=\"dark\">、body 近黑)n=32 全 28px;對照組第 5 顆改 32px → 紅。"
+        }
+      ]
+    },
+    {
+      "id": "design-system-components-field-展示--vertical",
+      "file": "field-vertical--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版(2026-09-29,OE8)。Field 標籤 / 說明 / 錯誤 / 控件邊框的深色 token 對照;兩條 gap 斷言與淺色版同(間距不隨主題變)。",
+      "assertions": [
+        {
+          "name": "FieldGroup 欄位間距 = --layout-space-loose(md 16px)(深色)",
+          "type": "gap",
+          "selector": "[data-field-group]",
+          "expected": 16,
+          "rationale": "同淺色版;density 決定、主題不影響。"
+        },
+        {
+          "name": "Field vertical 內部節奏 gap = 4px(深色)",
+          "type": "gap",
+          "selector": "[data-field-orientation=\"vertical\"]",
+          "expected": 4,
+          "rationale": "同淺色版 field.spec.md:84「Field 內部 gap(vertical)| gap-1(4px)」。"
+        }
+      ]
+    },
+    {
+      "id": "design-system-components-datatable-展示--pinned-columns",
+      "file": "datatable-pinned--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版(2026-09-29,OE8)。釘選欄的陰影 / 分隔線 / 表頭底色在深色底上的對照(2026-09-26 深色淡階改半透明後,表格是最容易看出「淡底比底暗」的地方)。"
+    },
+    {
+      "id": "design-system-components-sidebar-展示--icon-collapse",
+      "file": "sidebar-icon-collapse--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版(2026-09-29,OE8)。側欄底色 / 選中項 / 分隔線的深色 token 對照。"
+    },
+    {
+      "id": "design-system-components-dialog-展示--open-snapshot",
+      "file": "dialog-open-snapshot--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版(2026-09-29,OE8)。浮層底色 / 遮罩 / Header-Body-Footer 分隔線在深色的對照;兩條幾何斷言與淺色版同。",
+      "assertions": [
+        {
+          "name": "DialogFooter 按鈕間距 = 8px(深色)",
+          "type": "gap",
+          "selector": "[data-dialog-footer]",
+          "expected": 8,
+          "rationale": "同淺色版。"
+        },
+        {
+          "name": "DialogFooter 內按鈕等高(深色)",
+          "type": "equalHeight",
+          "selector": "[data-dialog-footer] button",
+          "rationale": "同淺色版(取消 tertiary / 確認刪除 danger)。"
+        }
+      ]
     }
   ]
 }

@@ -90,7 +90,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   readOnlyEvents                            // 事件方塊唯讀(與 onEventClick 二擇一):不亮、不是按鈕
   onDateClick={(date) => ...}               // 點月 cell / 日期數字鈕回調(用於新增);日期格可點時必填
   readOnlyDates                             // 日期格唯讀(與 onDateClick 二擇一):不亮、日期數字不是按鈕
-  onCreateEvent={() => ...}                 // 點「新事件」CTA 回調
+  onCreateEvent={() => ...}                 // 點右上角「新事件」CTA 回調;必填(CTA 是 toolbar 固定元素、恆渲染,見「Toolbar」段)
   weekStartsOn={0 | 1}                      // 0=Sun, 1=Mon
   renderEventTile={(event) => ReactNode}    // 自訂 event tile 視覺
   locale="en-US"                            // Intl 語系(月份標題 / 星期名;預設 'en-US')
@@ -98,7 +98,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   nextAriaLabel="下個月"                    // i18n override:next 導覽鈕 aria-label
   navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
   todayLabel="今天"                         // i18n override:「今天」按鈕文字
-  createLabel="新事件"                      // i18n override:「新事件」CTA 文字(僅在傳 onCreateEvent 時渲染)
+  createLabel="新事件"                      // i18n override:「新事件」CTA 文字
   className
 />
 ```
@@ -115,8 +115,8 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
 - **為什麼二擇一、不是「可省略」**:元件本身沒有內建的「新增」或「打開事件」行為(見「禁止事項」:不自動開表單)。若回調可省略、又拿「有沒有傳」決定長相,忘了傳的 consumer 會得到一個長得能點、點了沒反應的月曆 —— `meta-patterns` M23(f) 禁的正是這件事(不以 callback 有無當渲染閘;無內建行為的 callback 必填)。改成型別層的二擇一(discriminated union):沒宣告唯讀就一定要傳回調,宣告了就不准傳,編譯期就逼每個 consumer 講清楚。
 - **為什麼要有唯讀**:沒有「點日子新增」的月曆(新增走右上角 CTA 的內容排程、純看的假日行事曆)若照樣整格亮、日期數字照樣是按鈕,就是「看起來能點、點了沒反應」。`../../tokens/color/color.spec.md`「Hover 換色配對總則」:只有「點了會有反應」的元素才有底色的滑過回饋。2026-09-25 批次曾把兩個回調改成無條件必填(C2),等於規定月曆一定可點、沒有唯讀的可能,與此相反,已撤回。
 - **命名**:沿用 DS 既有的 `readOnly` 語彙 —— `../Rating/rating.tsx` 的 `readOnly`「唯讀:…不響應 hover / click / 鍵盤」、Field 家族的 readonly 模式(看得到、聚焦得到、改不了)—— 加上作用對象(`Dates` / `Events`),因為兩個目標要能分開宣告。世界級同一個語意:[MUI X `FormProps.readOnly`](https://github.com/mui/mui-x/blob/v9.14.0/packages/x-date-pickers/src/internals/models/formProps.ts#L8-L13)(DateCalendar 繼承:「When read-only, the value cannot be changed but the user can interact with the interface.」)、[React Aria `useCalendarCell.ts#L207-L212`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useCalendarCell.ts#L207-L212)(`isReadOnly` 時按下不選取、只把焦點移到那一天 —— 格陣導覽照常)。
-- `onCreateEvent` 維持可選,因為「新事件」CTA 本身是條件渲染(見 Toolbar 段),不傳就沒有那顆鈕,不會出現點了沒反應的東西。
-- 範例:`展示 — 內容發佈月曆` / `展示 — 空行事曆`(`readOnlyDates`:新增走 CTA,事件點得開)、`設計原則 — 唯讀的日期格與事件`(兩者都唯讀的假日行事曆)。
+- **`onCreateEvent` 也必填,而且沒有唯讀版本**(2026-09-29,待辦總帳 N12(a)):右上角「新事件」是**全域新增入口**、toolbar 的固定元素、恆渲染(見「Toolbar」段),與日期格 / 事件方塊可不可點無關 —— 唯讀月曆(假日行事曆)也有這顆鈕;哪些日期不能新增由新增流程自己擋(點了之後先選日期,選不到的日子在那裡被擋),不由這顆鈕的有無表達。user 2026-09-29 原話:「第三題,右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊,所以我不確定你到底要我決定什麼」。2026-09-29 前本條寫「維持可選,因為 CTA 是條件渲染」—— 那是 AI 寫的(eff41482 / 166e6614,查不到 user 原話),正是 M23(f) 禁的「拿 callback 有無當渲染閘」,已撤回。
+- 範例:`展示 — 內容發佈月曆` / `展示 — 空行事曆`(`readOnlyDates`:新增走 CTA,事件點得開)、`設計原則 — 唯讀的日期格與事件`(兩者都唯讀的假日行事曆,右上角「新事件」照樣在)。
 
 ### Event type
 
@@ -160,8 +160,8 @@ interface CalendarEvent {
 - **日期 header**:右上角數字(對齊 Google Calendar 視覺慣例)
 - **Today cell**:日期數字以 info-filled pill 強調(對齊 Google Calendar today pill)
 - **Outside day cell**:上/下月溢出日期**只用淡字**區分(日期數字 `fg-muted`),**不加底色**(2026-09-25 user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)。理由:非當月格跟當月格的可點性相同(日期格可點時一樣可點,`onDateClick` = 在這天新增;唯讀時一樣唯讀,見「API」段「日期格與事件方塊:可點或唯讀」與下方「為什麼跨月的界線是格陣邊界」段),所以 (1) 字色用「淡」不用「disabled」—— disabled 字色留給真的不可操作的東西;(2) 底色跟當月格一樣透明,滑過時是同一個滑過色。這跟 DateGrid 的「鄰月日子」是同一條規則(`../DateGrid/date-grid.spec.md` outside 列:淡字、只有文字、比 disabled 弱)。2026-04-21 起的舊寫法「背景略暗」用的是 `bg-muted`,那是「不可操作」的 token(`../../tokens/color/color.spec.md`「Static Subtle Background」段),放在可點的格上造成滑過反而往底色退(淺色變淺、深色變暗;實測淺色 `#F5F5F5` → `#FAFAFA`、深色 `#2F2F2F` → `#262626`),已撤除
-- **Hover cell**:日期格可點時整 cell 帶 neutral-hover 提示可點擊新增入口;`readOnlyDates` 時不亮(點了沒反應就不給滑過回饋)
-- **命中區**:懸停回饋是**整格**(`hover:bg-neutral-hover`),而整格就是命中區(cell div 的 onClick = `onDateClick`)—— 懸停形狀 ≡ 命中區,合 `ds-canonical/references/hit-area-canonical.md`。右上角的日期數字鈕**不是第二個目標**,是同一個目標的鍵盤入口:它自己沒有任何 hover 樣式,平日底色恆為透明,動作與宿主格相同,也完全落在格內,所以不會生出隱形帶、搶不走別人的點擊。它的 24px 圓盒是**今天 pill 的高度**(平日跟齊 → 跨 cell 數字落在同一條光學基線)+ 焦點框幾何,**不是**某條最小點擊尺寸;原本 `calendar.tsx` 註解寫的「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回(本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據)。實測(1280×900,md,`展示 — 團隊行事曆`):平日鈕 24.00×24.00 且背景 `rgba(0,0,0,0)`、數字字面 6.58×17;今天鈕 31.30×24.00(`px-2`)帶 `bg-info`;格 178×155.80,hover 前後格底色 `rgba(0,0,0,0)` → `oklch(0 0 0 / 0.02)`,鈕底色兩次皆透明;掃全部 stylesheet 命中該鈕的 `:hover` 規則 = 0 條。`readOnlyDates` 時沒有命中區可談:格子不接點擊、不亮,日期數字是一般文字
+- **Hover cell**:日期格可點時整 cell 帶 neutral-hover 提示可點擊新增入口;`readOnlyDates` 時不亮(點了沒反應就不給滑過回饋)。**指標停在格內的事件方塊上時,整格的 neutral-hover 不熄**,方塊自己的滑過色疊在格的滑過色上 —— 這是 `../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段的規則(user 2026-09-25 在「可點卡片裡的按鈕」一題選「卡片保留、按鈕再亮一層 (Recommended)」,選項由 AI 提供)。**把它套到月曆格 × 事件方塊是 AI 推導**(待辦總帳 A10;2026-09-25 R17 篩為維持現況、未逐題經 user 拍板):格是「在這天新增」的可點宿主、方塊是格裡另一個可點目標,與卡片裡的按鈕同構,所以照同一條、不另立例外(2026-09-27 補寫理由)
+- **命中區**:懸停回饋是**整格**(`hover:bg-neutral-hover`),而整格就是命中區(cell div 的 onClick = `onDateClick`)—— 懸停形狀 ≡ 命中區,合 `ds-canonical/references/hit-area-canonical.md`。右上角的日期數字鈕**不是第二個目標**,是同一個目標的鍵盤入口:它自己沒有任何 hover 樣式,平日底色恆為透明,動作與宿主格相同,也完全落在格內,所以不會生出隱形帶、搶不走別人的點擊。**點格內空白處也把鍵盤位置帶過來**(2026-09-29,待辦總帳 N46):格陣的停靠點(roving tabindex)搬到這一天、焦點落在這一天的日期鈕,之後 `Tab` 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它 —— 與 DataTable 試算表「滑鼠點到哪一格,鍵盤位置就跟到哪一格」同一條(`../DataTable/data-table.spec.md`「試算表模式」);2026-09-29 前只有點到日期數字鈕(原生 button)才會。它的 24px 圓盒是**今天 pill 的高度**(平日跟齊 → 跨 cell 數字落在同一條光學基線)+ 焦點框幾何,**不是**某條最小點擊尺寸;原本 `calendar.tsx` 註解寫的「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回(本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據)。實測(1280×900,md,`展示 — 團隊行事曆`):平日鈕 24.00×24.00 且背景 `rgba(0,0,0,0)`、數字字面 6.58×17;今天鈕 31.30×24.00(`px-2`)帶 `bg-info`;格 178×155.80,hover 前後格底色 `rgba(0,0,0,0)` → `oklch(0 0 0 / 0.02)`,鈕底色兩次皆透明;掃全部 stylesheet 命中該鈕的 `:hover` 規則 = 0 條。`readOnlyDates` 時沒有命中區可談:格子不接點擊、不亮,日期數字是一般文字
 - **Weekend cell**:弱化背景(對齊 Google);MVP 未實作,列後續增量。**約束(2026-09-25,AI 推導、未經 user 確認)**:週末格一樣可點,所以若要加底色**不可用 `bg-muted`**(不可操作的 token,見上方 Outside day cell),而且要同時定好它自己的滑過色,不能沿用透明格的 `neutral-hover`(否則滑過會往底色退:淺色變淺、深色變暗)
 
 ### Event tile 規則
@@ -182,7 +182,7 @@ interface CalendarEvent {
 
 - 左 Nav:`<Button iconOnly>` prev/next + `<Button>今天</Button>` 跳 today
 - 中央 title:`<h2 className="text-h3">` or `text-body-lg font-medium`
-- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>` — **條件渲染:僅在傳 `onCreateEvent` 回調時出現**(未傳 = 無 CTA;與格子 / 事件方塊可不可點無關,那兩者由「API」段「日期格與事件方塊:可點或唯讀」各自宣告);文案由 `createLabel` prop override(對齊 `todayLabel` 等 chrome 文字 i18n override 慣例)
+- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>` — **固定元素、恆渲染;`onCreateEvent` 必填**(`meta-patterns` M23(f):spec anatomy 列出的固定元素不以 callback 有無當渲染閘,無內建行為的 callback 必填)。它是全域新增入口,與格子 / 事件方塊可不可點無關(那兩者由「API」段「日期格與事件方塊:可點或唯讀」各自宣告,同段末條有 user 2026-09-29 原話);哪些日期不能新增由新增流程自己擋,不由這顆鈕的有無表達。文案由 `createLabel` prop override(對齊 `todayLabel` 等 chrome 文字 i18n override 慣例)
 
 對齊 `patterns/action-bar/action-bar.spec.md`(左 context / 中 focus / 右 CTA 的經典分組)。
 
@@ -223,7 +223,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - ❌ 不用 `<DayPicker>` 為底層——DayPicker 是 form control 用,結構不適合 page-level event canvas
 - ❌ 不硬寫 month grid 為 `<table>`——用 CSS grid(月 view 為 per-cell 模型不跨欄 span,見「Event tile 規則」;後續週 / 日 view 的 timeline / 拖拉增量需 grid 自由佈局,table 結構難擴充)
 - ❌ 不把 event 資料存在元件內部 state——event 是 consumer 責任,本元件是純 view
-- ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX)
+- ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX);也**不拿回調有沒有傳決定畫不畫「新事件」CTA**(M23(f),見「Toolbar」段;唯讀月曆一樣有這顆鈕)
 - ❌ 不重造 date math——月 / 週 grid 邊界運算(`startOfMonth` / `eachDayOfInterval` / `isSameMonth` 等)一律用 `date-fns`。**唯一例外(D3 perf,tsx `eventsByDate` memo 有註解)**:每 render 對 42 cells 分桶事件的 hot path 用原生 timestamp 迭代(`new Date(y, m, d).getTime()` + `setDate(+1)`)—— 避免 per-cell `isWithinInterval` 的 O(42×N) 重複掃描;此 raw-Date 迭代**限縮在** bucketing memo 內,不外溢為通則
 
 ---
@@ -304,7 +304,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 | `Home` / `End` | 該週的第一天 / 最後一天(依 `weekStartsOn`) | 同上:"Home — Moves focus to the first day (e.g Sunday) of the current week." / "End — Moves focus to the last day (e.g. Saturday) of the current week." |
 | `PageUp` / `PageDown` | 上一個月 / 下一個月,焦點落在同一個日號;該日號不存在則落當月最後一天 | 同上:"Page Down — Changes the grid of dates to the next month. Moves focus to the day of the month that has the same number. If that day does not exist, moves focus to the last day of the month." |
 | `Shift+PageUp` / `Shift+PageDown` | 去年 / 明年的同月同日,溢位規則同上 | 同上:"Shift + Page Down — Changes the grid of dates to the same month in the next year." |
-| `Enter` / `Space` | 日期格可點:啟用目前這一天 → `onDateClick`(native button activation)。`readOnlyDates`:格子沒有主要動作 → `Enter` 等於進格(同下列 `F2`),`Space` 無動作 | APG Date Picker Dialog 的 Date Grid 把 Space/Enter 指派給「選這一天」;唯讀時依 `keyboard-model-canonical.md`「`Enter` 恆為「啟動焦點上的東西」—— 焦點在格上時那就等於進格」 |
+| `Enter` / `Space` | 日期格可點:**在目前這一天新增** → `onDateClick`(native button activation;本元件沒有「選日期」語意,`onDateClick` = 在這天新增,見「API」段 —— 舊句「啟用目前這一天」/「選這一天」2026-09-27 更正)。`readOnlyDates`:格子沒有主要動作 → `Enter` 等於進格(同下列 `F2`),`Space` 無動作 | APG Date Picker Dialog 的 Date Grid 把 Space/Enter 指派給選取該日(APG 的例子是日期選擇器,動作是選日期;本元件鍵位相同、動作是在這天新增);唯讀時依 `keyboard-model-canonical.md`「`Enter` 恆為「啟動焦點上的東西」—— 焦點在格上時那就等於進格」 |
 | `F2` | **進格**:焦點移到本格第一個事件 tile(`readOnlyEvents` 時方塊不是 widget,沒有可停的,不動作) | APG Grid Pattern:"F2: ... If the cell contains one or more widgets, places focus on the first widget." |
 
 格內(焦點在事件 tile 時,grid navigation 依 APG 定義**已停用**):
@@ -337,6 +337,8 @@ Toolbar 的 prev / 今天 / next / 新事件 CTA 是格陣外的標準控件,各
 
 **`renderEventTile` 的鍵盤責任歸屬**:自訂 tile 的外層 wrapper 由本元件統一 own `role="button"`、`tabIndex={-1}`、`data-calendar-tile`、focus ring 與 Enter/Space activation —— 自訂視覺不會把 keyboard parity 推給 consumer。`readOnlyEvents` 時外層只是一層排版用的 `div`(不是按鈕、不進格內導覽、沒有焦點框),同一份可點 / 唯讀契約。Consumer 回傳內容必為 presentational(不可再巢狀 button / link,否則等於在 grid 裡多開 Tab 停靠點);互動由 `onEventClick` 單一 owner 承接。
 
-**Focus**:鍵盤聚焦時(`focus-visible`)畫 outline 焦點框,幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(同 button.spec A11y 段;2026-09-24 訂正,原 `ring-2 ring-ring` + box-shadow + `outline-none` 是已退役的寫法)。日期數字按鈕與內建事件 tile 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);`renderEventTile` 自訂 tile 的外層 wrapper 寫內描邊 `focus-visible:focus-ring-inset`(往內 2px;事件方塊之間 gap 只有 2px,往外會壓到上下相鄰的方塊)。`readOnlyDates` 時焦點在格子本身,格與格之間零間距 → 同樣往內 `focus-visible:focus-ring-inset`(`focus-canonical.md`「問題二」)。
+**`renderEventTile` 的滑過責任歸屬**(2026-09-27 補,待辦總帳 C2;規則全部消費既有 canonical,沒有新主張):外層 wrapper 只 own 鍵盤與命中,**不畫滑過**(`calendar.tsx` 的 wrapper 只有 `rounded-md focus-visible:focus-ring-inset`)—— 它不知道自訂內容的靜止底是什麼,替你選配對就會踩「借別的底的配對」;所以**滑過回饋由 consumer 在回傳內容上自己畫**,規則與內建 tile 同一份:(1) 可點才有滑過、`readOnlyEvents` 時不畫(`../../tokens/color/color.spec.md`「Hover 換色配對總則」:只有點了會有反應的才加);(2) 滑過值 = 自己靜止底的配對 —— 淡底 step-1 → step-2 同內建 tile(上方「Hover tile」),站在「底」上就疊 `bg-interaction-hover`,禁換成透明底的 `--neutral-hover`(`scripts/hover-own-pair-invariant.mjs` 只掃 DS 原始碼,consumer 端要自己守這條);(3) 亮起來的形狀 ≡ 命中區(`ds-canonical/references/hit-area-canonical.md`「一-4 細則」):命中區是 wrapper 整塊,所以回傳內容要鋪滿 wrapper,不可只讓內層一小塊變色;(4) 指到 tile 上時宿主格的 `neutral-hover` 照亮(上方「Hover cell」巢狀規則)。
+
+**Focus**:鍵盤聚焦時(`focus-visible`)畫 outline 焦點框,幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(同 button.spec A11y 段;2026-09-24 訂正,原 `ring-2 ring-ring` + box-shadow + `outline-none` 是已退役的寫法)。日期數字按鈕走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);**事件 tile(內建與 `renderEventTile` 自訂的外層 wrapper)都寫內描邊 `focus-visible:focus-ring-inset`**(往內 2px;事件方塊之間 gap 只有 2px,往外會壓到上下相鄰的方塊 —— `ds-canonical/references/focus-canonical.md`「套回實測值驗證」Calendar 事件 tile 列:內 −2px。2026-09-29 前本句把內建 tile 寫成往外、程式也沒寫 class,與正本相反;待辦總帳 N46 更正)。`readOnlyDates` 時焦點在格子本身,格與格之間零間距 → 同樣往內 `focus-visible:focus-ring-inset`(`focus-canonical.md`「問題二」)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。

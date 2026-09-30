@@ -53,7 +53,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
@@ -70,9 +70,9 @@ const SRCS = [
   'packages/design-system/src/components/Sidebar/sidebar.tsx',
   'packages/design-system/src/components/TimePicker/time-columns.tsx',
 ]
-requireStorybookBuild(join(STATIC, 'index.html'), '先 build storybook(或用 --static=<dir>)')
-const buildMtime = statSync(join(STATIC, 'index.html')).mtimeMs
-for (const f of SRCS) { if (existsSync(f) && statSync(f).mtimeMs > buildMtime) { console.error(`✗ STALE-BUILD:${f} 比 ${STATIC} 新 —— 先重新 build storybook`); process.exit(2) } }
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)。
+// 原本 `existsSync(f) && …`:SRCS 裡任一檔改名,守衛就靜靜關掉(M37);現在原始碼不存在是閘設定錯、直接紅。
+requireFreshStorybookBuild(STATIC, SRCS, { hint: '先 build storybook(或用 --static=<dir>)' })
 
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })

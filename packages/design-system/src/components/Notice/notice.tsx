@@ -153,7 +153,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           // 已移除)。item-anatomy.spec.md 把 Notice 的 action/dismiss 對應到 suffix slot;ItemSuffix
           // base geometry(h-[1lh] shrink-0 ml-auto flex items-center gap-2)正是此處所需,hoverReveal
           // 預設 false 故無 row inline-action 機制干擾。內裝 dismiss = Button iconOnly dismiss xs(banner
-          // family canonical,overlay-surface.spec.md「Chrome dismiss size canonical」)。
+          // family canonical,patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」)。
           <ItemSuffix>
             {endContent}
             {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx:184-193)。

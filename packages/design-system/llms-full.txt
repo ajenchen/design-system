@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.132。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。版號 = 本 npm 包的 package.json version。
 
 # Components
 
@@ -341,7 +341,7 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Steps/
 
 ### Sizes
-- **sm**: Sidebar / 緊湊 onboarding;indicator 8px dot(hit area 24px),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:18-28)
+- **sm**: Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:20-30)
 - **md**: 預設 — 主流程 wizard / checkout / 註冊;indicator 24px circle,內部 icon 16px(對齊 uiSize Icon Tier sm/md)
 - **lg**: Marketing / 重要 onboarding;indicator 32px circle,內部 icon 20px(對齊 uiSize Icon Tier lg)
 

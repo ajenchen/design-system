@@ -95,7 +95,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/performance-audit/SKILL.md",
-      "sha256": "7cf7e2a728222b9942de866ffa7c5133ecb6e8809364442376f934b83335c350",
+      "sha256": "627c8fa6a37d3cd75a716abc6f477e0db321865dfb6e4cfe8efd03c442973761",
       "source": "providers/codex/skills/performance-audit",
       "classification": null,
       "destination": null
@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "82c17173dfe06c5f28e961973d7320fee35ab3b43921a23807c5c724f99f7724",
+      "sha256": "bd65b04f11872ac9acc5ddf98b90506846eab629018b4bb35a07a65613bfdb07",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "95fdb808ae067e5a9b1167c5260c9defb165077f695b1324be8f2f356a6db4c0",
+      "sha256": "b02ac574a00dedf75476a200261aa3145c87ebe8ce2bfd7b08024b241a760b05",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -479,7 +479,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "811ed3390a4ff6b4e818a5ce8b5c0ce34e10f48fb443b6177d6e4c8e14fa9670",
+      "sha256": "8537daddc2bc4ad7f5464407ec4ba5e9373b7461ac5a862a8f19cfaf625f4d54",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -551,7 +551,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
-      "sha256": "613e10b71405805af900ad328d6baf0ae0ce3a02e58085aab6984163b7f8ad1a",
+      "sha256": "a4392d893207c425a973f6dbfd1351568ee3e21a8205a7c5b550914ad775199b",
       "source": "scripts/sync-all.mjs",
       "classification": null,
       "destination": "scripts/sync-all.mjs"
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "008b0cc5b21e583d2c0394c69f85df3a4a0da941ca6e705978aac715d2dd518f",
+      "sha256": "bd48c026e685ac734159c47ff36e80bb8d36cf265b7cdfb117309040f5935c1a",
       "source": null,
       "classification": null,
       "destination": null
@@ -1039,7 +1039,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/performance-audit/SKILL.md",
-      "sha256": "aa78ebdf7b3413ca0fdcd9d16f81c22ce15ade59fc89f5dab31fb382b202905d",
+      "sha256": "5659167c166c9687a8e9c1bc5c6b4a0d522bb2fdbeb5108c819db32e0f489a85",
       "source": "skills/performance-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1279,7 +1279,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/performance-audit/SKILL.md",
-      "sha256": "7cf7e2a728222b9942de866ffa7c5133ecb6e8809364442376f934b83335c350",
+      "sha256": "627c8fa6a37d3cd75a716abc6f477e0db321865dfb6e4cfe8efd03c442973761",
       "source": "skills/performance-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1559,7 +1559,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/performance-audit/SKILL.md",
-      "sha256": "4dc8b663ba9f4f373c81b34c996a6ba1972e81c5610acc93c239e397c1f9d128",
+      "sha256": "9353b7b54df0a1142178ba9cc47a84867da15c38954bc9f921243ef420370f0c",
       "source": null,
       "classification": null,
       "destination": null

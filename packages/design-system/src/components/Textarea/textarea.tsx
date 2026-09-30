@@ -43,6 +43,10 @@ const textareaVariants = cva(
     // K10 fix(2026-05-04):disabled 時 placeholder + text 切 fg-disabled(parallel 到 bareInputStyles)
     //   Textarea 自身 `<textarea disabled>` 帶 disabled HTML attribute,用 `disabled:` variant 直接命中
     'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled',
+    // 停用游標:外框(fieldWrapperStyles disabled compound)是 cursor-not-allowed,但 <textarea disabled> 自己的 UA 樣式
+    // 是 cursor: default,指到文字區就變回箭頭 —— 同 Input(input.tsx 停用分支)在控件本身補上禁止符號
+    //(field-controls.spec.md「游標指引」disabled → cursor-not-allowed;hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」)。
+    'disabled:cursor-not-allowed',
     'px-[var(--field-px)]',
     // 不寫 transition-colors:hover 外框一律瞬間(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到外框,待辦總帳 L9 / N4(3))。
     // 外框規則來自 field-wrapper.tsx 的 fieldDefaultChromeCompounds —— 單行 wrapper(fieldWrapperStyles)、

@@ -489,7 +489,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 - `button.spec.md`
 - `dialog.spec.md`
 - `header-canonical.spec.md`
-- `overlay-surface.spec.md`
+- `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`
 - `segmented-control.spec.md`
 - `selection-item.spec.md`

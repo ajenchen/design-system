@@ -88,12 +88,15 @@ const FieldSurfaceContext = React.createContext<FieldSurface | null>(null)
  *
  * 優先順序:FieldSurfaceContext(host-provided) → FieldContext.surface(Field-wrapper-provided)
  *           → fallback 'form'。
+ *
+ * 兩個 context 一律無條件讀完再挑值(Rules of Hooks):FieldSurface 全是非空字串,
+ * `??` 與原本的 truthy 早退判定結果一字不差;多訂閱一次 FieldContext 不會多觸發重渲 ——
+ * 它的 value 在 field.tsx 已 useMemo,identity 只在 mode/size/disabled 等真值改變時才變。
  */
 export function useFieldSurface(): FieldSurface {
   const surfaceCtx = React.useContext(FieldSurfaceContext)
-  if (surfaceCtx) return surfaceCtx
   const fieldCtx = React.useContext(FieldContext)
-  return fieldCtx?.surface ?? 'form'
+  return surfaceCtx ?? fieldCtx?.surface ?? 'form'
 }
 
 /**

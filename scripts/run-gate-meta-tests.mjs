@@ -83,6 +83,12 @@ export function runGateMetaTests({
     const environment = disposableSnapshotEnvironment(snapshot)
     let pass = 0
     const failed = []
+    // 「略過」要看得見(2026-09-29,待辦總帳 G5):快照裡沒有 storybook-static(gitignore 的建置產物永不複製),
+    // 需要瀏覽器的包裝一律印「· 略過:… 缺 storybook-static」然後 exit 0 —— 以前這批被計成 pass,摘要只寫
+    // 「ran=N pass=N」,37 支閘的紅側從來沒在這條 lane 被證明過而且零訊號。這裡只認包裝自己印的標記
+    // (lib/gate-selftest-meta.mjs 的「· 略過:」),不猜;略過的清單印在摘要裡,而「這些閘的對照組有沒有別人跑」
+    // 由 scripts/ci-gate-coverage.mjs 第二條規則在每個 PR 的 verify-static 裡守(那裡是靜態的,不需要建置)。
+    const skipped = []
     for (const { file, stem } of inventory.runnable) {
       verifyDisposableSnapshotToolProfile(snapshot)
       const child = command(process.execPath, [join(snapshot.snapshotRoot, 'scripts', file)], {
@@ -92,6 +98,7 @@ export function runGateMetaTests({
         timeout: timeoutMs,
       })
       verifyDisposableSnapshotToolProfile(snapshot)
+      if (child.status === 0 && /^· 略過:/mu.test(`${child.stdout ?? ''}`)) skipped.push(stem)
       if (child.status === 0) pass += 1
       else failed.push({
         stem,
@@ -104,6 +111,8 @@ export function runGateMetaTests({
       total: inventory.runnable.length,
       discoverable: inventory.discoverable.length,
       ran: pass + failed.length,
+      // 計在 pass 裡(exit 0),但單獨列出:「略過」不是「驗過」
+      skipped,
       failed,
       excluded: inventory.excluded.map(({ stem, executionClass }) => ({ stem, executionClass })),
       excludedByClass: Object.fromEntries(
@@ -124,7 +133,12 @@ function printResult(result) {
   const excluded = Object.entries(result.excludedByClass)
     .map(([name, stems]) => `${name}:${stems.length}[${stems.join(',')}]`)
     .join(',')
-  console.log(`gate meta-tests(snapshot): discoverable=${result.discoverable} ran=${result.ran} pass=${result.pass} excluded-by-class={${excluded}}`)
+  const skipped = result.skipped ?? []
+  console.log(`gate meta-tests(snapshot): discoverable=${result.discoverable} ran=${result.ran} pass=${result.pass} skipped-missing-build=${skipped.length} excluded-by-class={${excluded}}`)
+  if (skipped.length) {
+    console.log(`· 略過(快照裡沒有 storybook-static,計在 pass 但沒驗到任何東西;它們的對照組由 ci.yml 瀏覽器 job 跑,scripts/ci-gate-coverage.mjs 守):`)
+    console.log(`  ${skipped.map((stem) => `test-${stem}.mjs`).join(', ')}`)
+  }
   if (result.callerDrift.length) {
     console.error('❌ caller repository changed while disposable meta-tests ran:')
     result.callerDrift.slice(0, 100).forEach((path) => console.error(`   - ${path}`))

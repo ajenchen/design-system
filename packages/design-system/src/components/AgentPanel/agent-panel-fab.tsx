@@ -262,24 +262,29 @@ const placementXY = (s: Stage, p: AgentFabPlacement): Point =>
     : { x: s.w - s.inset - FAB_PX, y: s.h - s.inset - FAB_PX }
 
 /**
- * **靜止時一律用 CSS `right` / `bottom` 從右下角錨定,不用量出來的 `left`**(2026-09-03 user 回報
+ * **靜止時一律用 CSS 從舞台邊緣錨定,不用量出來的數字**(2026-09-03 user 回報
  * 「小鈕左側點不到」「切 story 回來鈕不見了」的共同根因):
  * 以 `left = 量到的舞台寬 − 40` 定位時,只要量到的寬度比當下版面舊一格(捲軸出現的那一刻),鈕就會凸出可視區,
  * 凸出的那段 `elementFromPoint` 回 null = 點不到;而且鈕自己造成的水平溢出會生出捲軸 → 舞台變窄 → 位置更偏,
  * 量測與版面互相追成迴圈,ResizeObserver 判定 loop 後停手,鈕就卡在出界(或整顆看不見)的狀態。
- * 用 right/bottom 錨定後:x 不需要任何量測,永遠貼齊 padding box 邊緣、不可能溢出;量測只剩「夾 y」與「動畫」用途,
- * 因此**量不到尺寸時也照樣正確顯示**(不再需要 visibility 守衛)。
+ * x 用 `right` 錨定後永遠貼齊 padding box 邊緣、不可能溢出。
+ *
+ * **y 也一樣(2026-09-29,待辦總帳 N30)**:舊版貼邊 y 用 JS 夾在合法範圍,但夾的輸入是量到的舞台高 ——
+ * 面板開著時整顆 AgentFabDock 被卸載,關回來是全新掛載,第一次 commit 的舞台高是 0,`s.h > 0` 守衛只好放行未夾的 y、
+ * 家的內距也只能用 fallback 16;正確值要等 useLayoutEffect 量完再同步重繪一次才寫進去(實測第一格從沒被畫出來,
+ * 但那是靠 React「layout effect 內的 setState 在 paint 前同步沖」撐住的,規則本身寫在一個會過期的觀察量上,M37)。
+ * 現在合法範圍直接用 CSS 對舞台的百分比表達 —— `clamp(50% − 14px, y, max(50% − 14px, 100% − 2·loose − 68px))`
+ * 與下方 `dockMinY` / `dockMaxY` 同一組公式(百分比對 absolute 定位的包含塊 = 舞台的 padding box,與 `clientHeight` 同義)——
+ * 任何一格都不依賴量測,舞台變矮時瀏覽器自己夾,JS 的 `stage` 只剩拖曳 / 鍵盤 / 帶的幾何在用。
+ * 家與貼邊都寫成 `top`,兩態之間照樣過渡(CSS 會在 calc / clamp 之間內插)。
  */
-const placementStyle = (s: Stage, p: AgentFabPlacement): React.CSSProperties => {
-  if (p.kind === 'dock') {
-    const y = s.h > 0 ? clamp(p.y, dockMinY(s), dockMaxY(s)) : Math.max(0, p.y)
-    return { left: 'auto', right: 0, top: y, bottom: 'auto' }
-  }
-  // 家:量到高度就用 top(才能和貼邊態的 top 互相過渡);還沒量到就用 bottom —— 位置一樣正確,只是第一格不做動畫。
-  return s.h > 0
-    ? { left: 'auto', right: s.inset, top: s.h - s.inset - FAB_PX, bottom: 'auto' }
-    : { left: 'auto', right: s.inset, top: 'auto', bottom: s.inset }
-}
+const INSET_VAR = 'var(--layout-space-loose)'
+const DOCK_MIN_Y_CSS = `calc(50% - ${DOCK_PX / 2}px)`
+const DOCK_MAX_Y_CSS = `max(${DOCK_MIN_Y_CSS}, calc(100% - 2 * ${INSET_VAR} - ${FAB_PX + DOCK_PX}px))`
+const placementStyle = (p: AgentFabPlacement): React.CSSProperties =>
+  p.kind === 'dock'
+    ? { left: 'auto', right: 0, top: `clamp(${DOCK_MIN_Y_CSS}, ${Math.max(0, p.y)}px, ${DOCK_MAX_Y_CSS})`, bottom: 'auto' }
+    : { left: 'auto', right: INSET_VAR, top: `calc(100% - ${INSET_VAR} - ${FAB_PX}px)`, bottom: 'auto' }
 const inRect = (p: Point, r: Rect, pad: number) =>
   p.x >= r.x - pad && p.x <= r.x + r.w + pad && p.y >= r.y - pad && p.y <= r.y + r.h + pad
 
@@ -315,7 +320,7 @@ const dragPoint = (s: Stage, dx: number, dy: number): Point => ({ x: clamp(dx, 0
  * @internal 拖曳磁吸的純函式與常數(無 DOM),只給 `scripts/test-agent-fab-drag-zones.mjs` 單測消費;
  * 不是 consumer API(root barrel 排除,per-component subpath `export *` 仍看得到)。
  */
-export const AGENT_FAB_DRAG_INTERNALS = { BAND_PX, DOCK_PX, HYSTERESIS, dockMinY, dockMaxY, dragPoint, findZone, SNAP_ZONES } as const
+export const AGENT_FAB_DRAG_INTERNALS = { BAND_PX, DOCK_PX, FAB_PX, HYSTERESIS, dockMinY, dockMaxY, dragPoint, findZone, SNAP_ZONES, placementStyle } as const
 
 function readPx(el: HTMLElement | null, variable: string, fallback: number) {
   if (!el) return fallback
@@ -606,9 +611,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const shape: Shape = drag ? (drag.placement?.kind ?? 'home') : placement.kind
     const spec = SHAPES[shape]
     const isDock = shape === 'dock'
+    // 拖曳中跟指標(px);靜止位置不吃 stage(CSS 自己對舞台夾,見 placementStyle)
     const posStyle: React.CSSProperties = drag
       ? { left: 'auto', right: Math.max(0, stage.w - drag.x - FAB_PX), top: drag.y, bottom: 'auto' }
-      : placementStyle(stage, placement)
+      : placementStyle(placement)
     /** 帶只在拖 40 圓鈕時可見(拖小鈕不顯示;user 2026-09-03)。 */
     const showZones = drag?.origin === 'home'
 
@@ -692,7 +698,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
             className,
           )}
-          // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
+          // 靜止位置全由 CSS 對舞台錨定(right / clamp),量到舞台尺寸之前就已正確;`ready` 只管要不要開過渡。
           style={posStyle}
         >
           {/* 招喚態光圈:與獨立 AgentFab 同一顆元件;貼邊態省略(半圓貼邊,波會被切一半)。 */}
@@ -842,7 +848,11 @@ export interface AgentPanelDockProps
   /** 入口鈕位置(受控);省略 = 由本元件保管,面板開關不會忘記(見下方註解)。 */
   /** 面板是否開啟(受控);省略 = 非受控。 */
   open?: boolean
-  /** 非受控初始開關;預設開。 */
+  /**
+   * 非受控初始開關;預設**關**(v14 條 F:初次進入 / 重新整理 / 新開分頁都是關閉的新對話)。
+   * 瀏覽器從 back/forward cache 還原舊畫面(`pageshow` 且 `persisted`)時本元件也會關回去(受控時發 `onOpenChange(false)`);
+   * 對話本身要不要重設是消費端的事,消費端聽同一個 `pageshow` 事件處理。
+   */
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
   /** 代理狀態:面板標題列與入口鈕標誌吃同一個值(關著面板也照跑)。 */
@@ -899,6 +909,20 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
       [placementProp, onPlacementChange],
     )
     const close = React.useCallback(() => setOpen(false), [setOpen])
+    // v14 條 F 的最後半句「**以及原分頁離開宿主後返回**,均重新初始化為關閉的新對話」(2026-09-29,待辦總帳 OE2):
+    // 從網址列離開宿主再按上一頁回來,瀏覽器可能直接從 back/forward cache 還原整個舊畫面 —— JS 堆疊原封不動、
+    // 元件不會重新掛載,`defaultOpen = false` 那條路不會再走一次,面板就帶著離開前的狀態繼續開著。
+    // 唯一的訊號是 `pageshow` 且 `event.persisted === true`(一般載入的 pageshow 是 persisted:false,不動)。
+    // 「關閉」由本元件做(它是開關的 owner;受控時走 onOpenChange(false) 交給消費端);「新對話」那半句是宿主的
+    // (面板不知道對話),宿主聽同一個事件重設,與它自己的「重新整理」同一段(示範 agent-panel.stories.tsx UrlRegistryScene)。
+    // 閘:`scripts/agent-url-registry-demo-invariant.mjs` S14(合成 pageshow:persisted:true 必關、persisted:false 必不動)。
+    React.useEffect(() => {
+      const onPageShow = (event: PageTransitionEvent) => {
+        if (event.persisted) setOpen(false)
+      }
+      window.addEventListener('pageshow', onPageShow)
+      return () => window.removeEventListener('pageshow', onPageShow)
+    }, [setOpen])
     // ── 2026-09-07 G2:關閉時**不再卸載面板**,改成藏起來 ──────────────────────
     //
     // 原本是 `if (open) return children`,關閉的瞬間整個面板連同它的 state 一起消失:

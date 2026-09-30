@@ -53,7 +53,7 @@ benchmark:
 
 ### 1. Border-bottom
 
-- **Token**:`border-b border-divider`(1px / `--divider-color`)
+- **Token**:`border-b border-divider`(1px / `--divider`,`semantic.css`;`--divider-color` 這個名字從不存在,2026-07-10 hunt 判 STALE、2026-09-29 改正)
 - **Default**:有 border(分區效果)
 - **Auto-suppress when withTabs**:見下「withTabs 連動」段
 
@@ -326,6 +326,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `account-menu.spec.md`
+- `agent-panel.spec.md`
 - `app-shell.spec.md`
 - `density.spec.md`
 - `dialog.spec.md`

@@ -100,9 +100,9 @@
     },
     {
       "path": "governance/planning/2026-08-02-cloud-compat-and-deep-audit-baton.md",
-      "status": "active",
-      "executable": true,
-      "reason": "Live remediation backlog for the Claude Code cloud session regression (containerized sandbox start) plus the residual deep-audit contract gaps; each step names its canonical owner and the guarantee it preserves."
+      "status": "reference",
+      "executable": false,
+      "reason": "Closed 2026-09-27: the cloud-session regression fix and the §8 consumer/provenance work are complete and recorded in-document; its residual engineering items were verified against git on 2026-09-25 and moved into governance/planning/2026-09-25-interaction-and-hover-remediation.md section D (e.g. OE18 = CB §8.6, OE19 = CB §8.75). Retained as evidence only; must not be re-executed."
     },
     {
       "path": "governance/planning/2026-08-02-deep-audit-beta107-baton.md",
@@ -142,9 +142,9 @@
     },
     {
       "path": "governance/planning/2026-09-06-focus-and-drag-remediation.md",
-      "status": "active",
-      "executable": true,
-      "reason": "Live remediation backlog for the 2026-09-06 focus-vocabulary and drag-accessibility session: each item names its evidence, its blocking decision, and what closure requires. Opened because the session proved conversation-resident tracking loses items."
+      "status": "reference",
+      "executable": false,
+      "reason": "Closed 2026-09-27: every still-open item was verified against git on 2026-09-25 and moved into governance/planning/2026-09-25-interaction-and-hover-remediation.md section D (OD/OE/OB ids); items closed in later sections were struck through in place on 2026-09-27. Retained as evidence and decision provenance (user verbatim rulings, measurements) only; must not be re-executed."
     },
     {
       "path": "governance/planning/cell-indicator-ssot-rfc.md",

@@ -492,7 +492,8 @@ function ReadonlyDisplay({
   const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
 
   return (
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+    // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
@@ -660,7 +661,13 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const [open, setOpen] = React.useState(defaultOpen)
     const [search, setSearchState] = React.useState('')
-    const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
+    // onSearchChange 走 ref(同 agent-panel.tsx onModeChangeRef 的寫法):setSearch 身分因此穩定,下方「關閉時清搜尋」
+    // 的 effect 才能把 setSearch 列進相依而不多跑。若改成 useCallback 隨 onSearchChange 換身分,消費端傳 inline 箭頭函式
+    // (select.stories.tsx RemoteSearchDemo 就是)時,關著的每次 render 都會重發 onSearchChange('') → 消費端 setOptions([])
+    // 換新陣列 → 再 render → 再重發,無限更新;ref 讀的永遠是最新一版回呼,也沒有過期閉包。
+    const onSearchChangeRef = React.useRef(onSearchChange)
+    onSearchChangeRef.current = onSearchChange
+    const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChangeRef.current?.(next) }, [])
     const inputRef = React.useRef<HTMLInputElement>(null)
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
     // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
@@ -669,8 +676,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // (機制詳 select-menu.tsx useActiveDescendant docblock;必在 early return 前呼叫 — React #310 hook 順序)。
     const activeOptionId = useActiveDescendant(listboxId, open)
 
-    // 關閉時清搜尋
-    React.useEffect(() => { if (!open) setSearch('') }, [open])
+    // 關閉時清搜尋(setSearch 身分穩定 → 這個 effect 實際只在 open 變動時跑,與列相依前的次數相同)
+    React.useEffect(() => { if (!open) setSearch('') }, [open, setSearch])
 
     // **React #310 fix(2026-05-04)**:所有 hooks 必在任何 early return 前 call,
     //   否則 disabled→edit 切換時 hook count 變動 → React 死亡。

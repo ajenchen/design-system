@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { installCandidateDependencies } from './install-candidate-dependencies.mjs'
+import { diffAuditFindings, installCandidateDependencies, parseAuditFindings } from './install-candidate-dependencies.mjs'
 import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime.mjs'
 import { runVerifiedNpm } from './run-verified-npm.mjs'
 
@@ -262,7 +262,13 @@ test('candidate dependency install applies and verifies the exact runtime overla
   assert.equal(result.npm, '11.19.0')
   assert.equal(result.securityOverlay, installedOverlay)
   assert.equal(result.vulnerabilityAudit.status, 'passed')
-  assert.deepEqual(result.vulnerabilityAudit.remediatedFindings, ['brace-expansion', 'npm', 'tar'])
+  // 2026-09-29(OE6):候選與 base 跑同一份報告 → 三筆全是「繼承自 main」,零新增;receipt 記兩邊的原始稽核摘要
+  assert.equal(result.vulnerabilityAudit.kind, 'candidate-differential-vulnerability-audit-receipt')
+  assert.deepEqual(result.vulnerabilityAudit.introduced, [])
+  assert.deepEqual(result.vulnerabilityAudit.inherited.map((item) => item.name), ['brace-expansion', 'npm', 'tar'])
+  assert.deepEqual(result.vulnerabilityAudit.resolved, [])
+  assert.equal(result.vulnerabilityAudit.base.findings, 3)
+  assert.equal(result.vulnerabilityAudit.candidate.findings, 3)
   assert.equal(cleaned, 1)
   assert.deepEqual(events, [
     'ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
@@ -270,12 +276,18 @@ test('candidate dependency install applies and verifies the exact runtime overla
     'verify-overlay',
     'audit signatures --registry=https://registry.npmjs.org/',
     'audit --audit-level=high --json --registry=https://registry.npmjs.org/',
+    'audit --audit-level=high --json --registry=https://registry.npmjs.org/',
   ])
   assert.deepEqual(calls.map(({ args }) => args.slice(1)), [
     ['ci', '--legacy-peer-deps', '--ignore-scripts', '--registry=https://registry.npmjs.org/'],
     ['audit', 'signatures', '--registry=https://registry.npmjs.org/'],
     ['audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/'],
+    ['audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/'],
   ])
+  // 差集的兩趟稽核:先 base(trusted)、再候選;兩邊都是 pipe 回來的 JSON,不是 inherit
+  assert.equal(calls.at(-2).options.cwd, realpathSync(trusted))
+  assert.equal(calls.at(-1).options.cwd, realpathSync(candidate))
+  assert.deepEqual(calls.at(-2).options.stdio, ['ignore', 'pipe', 'pipe'])
   for (const call of calls) {
     assert.equal(call.command, process.execPath)
     assert.equal(call.options.shell, false)
@@ -831,4 +843,94 @@ test('verified npm pack accepts only the canonical real release destination', as
     '--json',
     '--ignore-scripts',
   ])
+})
+
+// ── 差集式弱點稽核(2026-09-29,待辦總帳 OE6)的兩面對照 ─────────────────────────────────────
+// 用已知的真實 advisory 當夾具(lodash GHSA-35jh-r3h4-6jhm / minimist GHSA-xvch-5gv4-984h);
+// 「候選多一筆 → 必紅並點名」是這條規則存在的理由,「兩邊一樣 → 綠」「base 多一筆 → 綠(修掉了)」是它不該誤傷的兩面,
+// 「任一邊報告壞掉 → 紅」是 M37:壞掉的 base 不得讀成「base 沒有弱點」(否則候選每一筆都變新增),也不得略過。
+const advisoryReport = (findings) => JSON.stringify({
+  auditReportVersion: 2,
+  vulnerabilities: Object.fromEntries(findings.map(([name, severity, range, via]) => [name, {
+    name, severity, isDirect: false, range, nodes: [`node_modules/${name}`], effects: [],
+    via: via.map(([source, url, viaRange]) => ({ source, name, dependency: name, url, severity, range: viaRange })),
+  }])),
+  metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: findings.length, critical: 0, total: findings.length } },
+})
+const LODASH = ['lodash', 'high', '<4.17.21', [[1096305, 'https://github.com/advisories/GHSA-35jh-r3h4-6jhm', '<4.17.21']]]
+const MINIMIST = ['minimist', 'critical', '<1.2.6', [[1096466, 'https://github.com/advisories/GHSA-xvch-5gv4-984h', '<1.2.6']]]
+
+function differentialFixture({ baseReport, candidateReport }) {
+  const { workspace, trusted, candidate } = fixture()
+  const trustedReal = realpathSync(trusted)
+  const candidateReal = realpathSync(candidate)
+  const audits = []
+  const run = () => installCandidateDependencies({
+    trustedRoot: trusted,
+    workspaceRoot: workspace,
+    candidatePath: 'candidate',
+    environment: { PATH: process.env.PATH, GITHUB_WORKSPACE: workspace },
+    runtimeFactory: async () => verifiedRuntime(trusted),
+    runner(command, args, options) {
+      const npmArgs = args.slice(1)
+      if (npmArgs[0] !== 'audit' || npmArgs[1] !== '--audit-level=high') return { status: 0 }
+      const side = options.cwd === trustedReal ? 'base' : options.cwd === candidateReal ? 'candidate' : 'unknown'
+      audits.push(side)
+      const stdout = side === 'base' ? baseReport : candidateReport
+      return { status: stdout && stdout.includes('"high"') ? 1 : 0, stdout, stderr: '' }
+    },
+  })
+  return { run, audits }
+}
+
+test('differential audit blocks a candidate that introduces an advisory protected main does not have, naming it', async () => {
+  const { run, audits } = differentialFixture({ baseReport: advisoryReport([]), candidateReport: advisoryReport([LODASH]) })
+  await assert.rejects(run(), (error) => {
+    assert.match(error.message, /GOV-CANDIDATE-DEPS-002:candidate introduces 1 vulnerability finding/)
+    assert.match(error.message, /lodash high <4\.17\.21\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-35jh-r3h4-6jhm/)
+    return true
+  })
+  assert.deepEqual(audits, ['base', 'candidate'])
+})
+
+test('differential audit blocks a new advisory on a package protected main already has a different advisory for', async () => {
+  const lodashOld = ['lodash', 'high', '<4.17.19', [[1000001, 'https://github.com/advisories/GHSA-p6mc-m468-83gw', '<4.17.19']]]
+  const lodashBoth = ['lodash', 'high', '<4.17.21', [[1000001, 'https://github.com/advisories/GHSA-p6mc-m468-83gw', '<4.17.19'], [1096305, 'https://github.com/advisories/GHSA-35jh-r3h4-6jhm', '<4.17.21']]]
+  const { run } = differentialFixture({ baseReport: advisoryReport([lodashOld]), candidateReport: advisoryReport([lodashBoth]) })
+  await assert.rejects(run(), /lodash high <4\.17\.21\(new-advisory\)← https:\/\/github\.com\/advisories\/GHSA-35jh-r3h4-6jhm$/m)
+})
+
+test('differential audit passes when protected main has the same findings, and when the candidate fixed one', async () => {
+  const same = await differentialFixture({ baseReport: advisoryReport([LODASH, MINIMIST]), candidateReport: advisoryReport([LODASH, MINIMIST]) }).run()
+  assert.equal(same.vulnerabilityAudit.status, 'passed')
+  assert.deepEqual(same.vulnerabilityAudit.inherited.map((item) => item.name), ['lodash', 'minimist'])
+  assert.deepEqual(same.vulnerabilityAudit.introduced, [])
+  const fixed = await differentialFixture({ baseReport: advisoryReport([LODASH, MINIMIST]), candidateReport: advisoryReport([LODASH]) }).run()
+  assert.deepEqual(fixed.vulnerabilityAudit.resolved, ['minimist'])
+  assert.deepEqual(fixed.vulnerabilityAudit.inherited.map((item) => item.name), ['lodash'])
+})
+
+test('differential audit fails closed when either side is not a valid audit report (a broken base is not an empty base)', async () => {
+  await assert.rejects(
+    differentialFixture({ baseReport: 'not json at all', candidateReport: advisoryReport([]) }).run(),
+    /GOV-CANDIDATE-DEPS-002:protected-base npm audit did not produce JSON/,
+  )
+  await assert.rejects(
+    differentialFixture({ baseReport: JSON.stringify({ message: '503 Service Unavailable - POST /security/advisories/bulk' }), candidateReport: advisoryReport([]) }).run(),
+    /GOV-CANDIDATE-DEPS-002:protected-base npm audit advisory endpoint failed:503/,
+  )
+  await assert.rejects(
+    differentialFixture({ baseReport: advisoryReport([]), candidateReport: JSON.stringify({ auditReportVersion: 1 }) }).run(),
+    /GOV-CANDIDATE-DEPS-002:candidate npm audit JSON schema is unsupported/,
+  )
+})
+
+test('pure diff: identical sets inherit, extra candidate advisory is introduced, extra base finding is resolved', () => {
+  const base = parseAuditFindings(advisoryReport([LODASH, MINIMIST]), 'base')
+  const head = parseAuditFindings(advisoryReport([LODASH, ['minimist', 'critical', '<1.2.6', [[1096466, 'https://github.com/advisories/GHSA-xvch-5gv4-984h', '<1.2.6'], [1, 'https://github.com/advisories/GHSA-fake-new-one', '<1.2.6']]]]), 'candidate')
+  const diff = diffAuditFindings(base, head)
+  assert.deepEqual(diff.inherited.map((item) => item.name), ['lodash'])
+  assert.deepEqual(diff.introduced.map((item) => [item.name, item.reason, item.advisories]), [['minimist', 'new-advisory', ['https://github.com/advisories/GHSA-fake-new-one']]])
+  assert.deepEqual(diffAuditFindings(head, base).resolved, [])
+  assert.deepEqual(diffAuditFindings(base, parseAuditFindings(advisoryReport([]), 'candidate')).resolved, ['lodash', 'minimist'])
 })

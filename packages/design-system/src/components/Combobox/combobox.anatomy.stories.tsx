@@ -614,7 +614,8 @@ export const ColorMatrix = {
             <span className="text-fg-muted text-caption">vs</span>
             <div className="flex flex-col gap-1 items-start">
               <span className="text-[11px] text-fg-secondary">disabled Tag</span>
-              <Tag size="sm" className="bg-disabled text-fg-disabled">Electronics</Tag>
+              {/* aria-disabled:這顆畫的是「停用中的 Tag」,明告 inactive 才不會被 axe 當一般文字誤報 color-contrast(2026-09-29,待辦總帳 OE21) */}
+              <Tag size="sm" className="bg-disabled text-fg-disabled" aria-disabled="true">Electronics</Tag>
             </div>
           </div>
         </div>

@@ -46,6 +46,7 @@ import {
   nextPatchVersion,
   runClosedBootstrapStep,
   runVulnerabilityAuditUnderPolicy,
+  GOVERNANCE_VULNERABILITY_POLICIES,
   isTransientAdvisoryEndpointFailure,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
@@ -792,9 +793,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           { source: 1130722, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high', range: '<=10.3.0' },
           { source: 1130723, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate', range: '>=10.1.1 <=10.2.1' },
           { source: 1130724, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate', range: '>=10.1.1 <=10.2.0' },
+          // 2026-09-28 上游新發兩則(OE15,2026-09-29 認列):range 隨之變 <=10.5.0
+          { source: 1239948, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate', range: '<=10.5.0' },
+          { source: 1239949, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate', range: '>=10.2.0 <=10.5.0' },
         ],
         effects: [],
-        range: '<=10.3.0',
+        range: '<=10.5.0',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -805,9 +809,11 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           { source: 1130716, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate', range: '<6.28.0' },
           { source: 1130727, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate', range: '<6.28.0' },
           { source: 1130732, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate', range: '<6.28.0' },
+          // 2026-09-28 上游新發一則(OE15,2026-09-29 認列):range 隨之變 <=6.28.0
+          { source: 1239934, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate', range: '>=6.25.0 <6.28.1' },
         ],
         effects: [],
-        range: '<=6.27.0',
+        range: '<=6.28.0',
         nodes: ['node_modules/npm/node_modules/undici'],
       },
     },
@@ -827,6 +833,20 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
+  // 對照組(M32):2026-09-28 之前的三則形狀(range <=10.3.0)現在是「漂移」,必須 fail closed 並指名 ip-address ——
+  // 認列是 exact shape,少兩則 / 舊 range 都不准放行(否則認列變成寬鬆的白名單)。
+  {
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
+    stale.vulnerabilities['ip-address'].range = '<=10.3.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
+  {
+    const stale = structuredClone(report)
+    stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 3)
+    stale.vulnerabilities.undici.range = '<=6.27.0'
+    assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 舊的三則形狀必須被判成漂移')
+  }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
   // (2026-09-04): when the registry advisory service is down, `npm audit --json` emits
@@ -1573,6 +1593,20 @@ test('vulnerability policy:enforce 照舊丟錯,render-only 只報告並留 rece
   assert.equal(lines.length, 1)
   assert.match(lines[0], /GOV-RENDER-ONLY-REFERENCE.*baseline-browser-mapping/)
   assert.equal(runVulnerabilityAuditUnderPolicy('report-render-only-reference', passing, { report }).status, 'passed', '稽核本來就過時,render-only 回真 receipt')
+  // 2026-09-29 OE6:governance-anchor 裝的是 protected main 的樹,不是渲染容器 —— 要有自己的名字、自己的理由,receipt 與 log 不得
+  // 印成「歷史參考樹」。兩個只報告政策行為相同,差別**只在**它們說出的理由與 receipt kind。
+  const anchorReceipt = runVulnerabilityAuditUnderPolicy('report-protected-base-verifier', failing, { report })
+  assert.deepEqual({ ...anchorReceipt }, {
+    schemaVersion: 1,
+    kind: 'protected-base-verifier-vulnerability-audit-receipt',
+    status: 'reported-not-enforced',
+    policy: 'report-protected-base-verifier',
+    reason: 'GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:baseline-browser-mapping',
+  })
+  assert.equal(lines.length, 2)
+  assert.match(lines[1], /GOV-PROTECTED-BASE-VERIFIER.*GOV-CANDIDATE-DEPS-002.*baseline-browser-mapping/)
+  assert.doesNotMatch(lines[1], /渲染容器|RENDER-ONLY/, 'anchor 的 receipt 不得借用渲染容器的理由')
+  assert.deepEqual([...GOVERNANCE_VULNERABILITY_POLICIES], ['enforce', 'report-render-only-reference', 'report-protected-base-verifier'])
   assert.throws(() => runVulnerabilityAuditUnderPolicy('ignore', passing, { report }), /unsupported vulnerability policy:ignore/)
   assert.throws(() => runVulnerabilityAuditUnderPolicy(undefined, passing, { report }), /unsupported vulnerability policy:undefined/)
   assert.throws(() => runVulnerabilityAuditUnderPolicy('enforce', 'not-a-function', { report }), /must be callable/)

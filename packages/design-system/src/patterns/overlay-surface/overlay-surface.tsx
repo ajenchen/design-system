@@ -31,7 +31,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
  * → `ds-canonical/references/hit-area-canonical.md`),layout 佔位精確匹配 chrome-header-height 幾何。
  * 縮到 xs 的問題是**與 chrome 的比例**(chrome dismiss 是 sm = 28),不是 a11y —— 24 正好是
  * `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值。詳
- * `overlay-surface.spec.md`「Chrome dismiss size canonical」。
+ * `overlay-chrome-sizing.spec.md`「Chrome dismiss size canonical」(2026-09-27 自 `overlay-surface.spec.md` 拆出)。
  *
  * **Notification banner family**(Notice / Alert / Toast,fixed `px-4 py-3` variant,
  * 無 padding-based header)→ dismiss 用 `size="xs"` explicit(24 固定,無 trick)。

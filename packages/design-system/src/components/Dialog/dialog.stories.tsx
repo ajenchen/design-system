@@ -504,15 +504,20 @@ export const WithTabsInHeader = {
               </DescriptionList>
             </TabsContent>
             <TabsContent value="integrations" className="mt-0">
-              <div className="flex flex-col gap-[var(--layout-space-loose)]">
+              {/* 設定列 = item-anatomy Family 2 reading row([content] [ItemSuffix: Switch]),與本檔「通知設定」示範同一結構
+                  (2026-09-29 待辦總帳 OD5:先前手刻 flex justify-between,是同檔已有先例的平行實作;M23(d) 最相近同目的 canonical)。
+                  沒有 desc 的列 suffix 仍以 h-[1lh] 對齊 label 第一行;世界級對照同上方註解(macOS / iOS Settings、Gmail、Notion 皆 suffix control)。 */}
+              <div className="flex flex-col">
                 {[
                   { key: 'slack', label: 'Slack 通知', on: true },
                   { key: 'github', label: 'GitHub PR 同步', on: true },
                   { key: 'linear', label: 'Linear issue 連動', on: false },
                 ].map((it) => (
-                  <div key={it.key} className="flex items-center justify-between">
-                    <span className="text-body">{it.label}</span>
-                    <Switch defaultChecked={it.on} aria-label={it.label} />
+                  <div key={it.key} className="flex items-start gap-3 py-2">
+                    <div className="min-w-0 flex-1 text-body">{it.label}</div>
+                    <ItemSuffix>
+                      <Switch defaultChecked={it.on} aria-label={it.label} />
+                    </ItemSuffix>
                   </div>
                 ))}
               </div>

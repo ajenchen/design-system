@@ -39,13 +39,15 @@ const resolveTree = (t) => resolveRovingKey({
   controlCount: t.actionCount,
   controlIndex: t.actionIndex,
   tree: { hasChildren: t.hasChildren, expanded: t.expanded, hasParent: t.hasParent },
+  // 打字跳位只在列上(tree-view.tsx `typeahead: onRow`)
+  typeahead: t.focus === 'row',
   reorderable: t.draggable,
   defaultPrevented: t.defaultPrevented,
   metaKey: t.metaKey, ctrlKey: t.ctrlKey, altKey: t.altKey, shiftKey: t.shiftKey,
 })
 const row = (key, extra = {}) => ({ ...base, key, ...extra })
 const act = (key, actionIndex, actionCount, extra = {}) => ({ ...base, key, focus: 'action', actionIndex, actionCount, ...extra })
-const show = (a) => (a.type === 'control' ? `action#${a.index}` : a.type === 'reorder' ? `reorder:${a.key}` : a.type)
+const show = (a) => (a.type === 'control' ? `action#${a.index}` : a.type === 'reorder' ? `reorder:${a.key}` : a.type === 'typeahead' ? `typeahead:${a.char}` : a.type)
 
 // [名稱, 輸入, 期望]
 const TABLE = [
@@ -70,6 +72,14 @@ const TABLE = [
   ['列上 Cmd+Shift+↑ → 重排', row('ArrowUp', { metaKey: true, shiftKey: true }), 'reorder:ArrowUp'],
   ['列上 Ctrl+Shift+→ → 重排(不是進按鈕)', row('ArrowRight', { ctrlKey: true, shiftKey: true, actionCount: 2 }), 'reorder:ArrowRight'],
   ['不可拖曳的樹:列上 Cmd+Shift+↑ → 不處理', row('ArrowUp', { metaKey: true, shiftKey: true, draggable: false }), 'none'],
+  // ── 打字跳位(2026-09-29 待辦總帳 N46;tree-view.spec.md「鍵盤導覽」打字列;W3C APG Tree View "Type a character")──
+  ['列上打 b → 打字跳位(宿主找下一個名字以 b 開頭的列)', row('b'), 'typeahead:b'],
+  ['列上打 Shift+B(大寫 B)→ 也是打字跳位(大小寫由宿主折疊)', row('B', { shiftKey: true }), 'typeahead:B'],
+  ['列上打中文字 → 打字跳位', row('前'), 'typeahead:前'],
+  ['列上空白鍵 → 仍是選取,不是打字', row(' '), 'activate-item'],
+  ['列上 Ctrl+b → 不搶(修飾鍵層留給瀏覽器)', row('b', { ctrlKey: true }), 'none'],
+  ['列上 Cmd+b → 不搶', row('b', { metaKey: true }), 'none'],
+  ['按鈕上打 b → 不處理(按鈕上打字沒有意義)', act('b', 0, 2), 'none'],
   // ── 按鈕上 ──
   ['第 1 顆(共 2 顆)按 → → 第 2 顆', act('ArrowRight', 0, 2), 'action#1'],
   ['最後一顆(共 2 顆)按 → → 不動', act('ArrowRight', 1, 2), 'consume'],

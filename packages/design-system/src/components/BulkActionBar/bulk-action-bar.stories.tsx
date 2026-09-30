@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, within } from '@storybook/test'
 import { Trash2, Archive, Tag as TagIcon, MoveRight, Download } from 'lucide-react'
 import { BulkActionBar } from './bulk-action-bar'
 import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
+import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 
 const meta: Meta<typeof BulkActionBar> = {
   title: 'Design System/Components/BulkActionBar/展示',
@@ -123,4 +125,55 @@ export const EmptySelectionHidden: Story = {
       </div>
     </div>
   ),
+}
+
+/**
+ * 焦點接力(2026-09-29 待辦總帳 N46 子項;spec「a11y 預設」):鍵盤使用者從列的勾選框 Tab 進批次列、按下「清除選取」後,
+ * 本列整個卸載 —— 焦點不掉到 body,還給進入前的那個勾選框。test-only:以 play 當閘(story-demo-focus 閘會載入每支 story
+ * 並跑 play,斷言不成立就紅);對照組 = 先驗證 Tab 真的停在「清除選取」上,再驗證清除後焦點回到同一個勾選框。
+ */
+export const FocusReturnsAfterClear: Story = {
+  name: '清除後焦點回到勾選框',
+  tags: ['test-only'],
+  parameters: { demoFocus: 'keep' },
+  render: () => {
+    const [selection, setSelection] = useState<string[]>(['doc-1', 'doc-2'])
+    const docs = [
+      { id: 'doc-1', name: 'Q3 財報' },
+      { id: 'doc-2', name: '合約範本 v4' },
+    ]
+    return (
+      <div className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-1">
+          {docs.map((doc) => (
+            <li key={doc.id} className="flex items-center gap-2 text-body">
+              <Checkbox
+                aria-label={`選取 ${doc.name}`}
+                checked={selection.includes(doc.id)}
+                onCheckedChange={(next) => setSelection((prev) => (next === true ? [...prev, doc.id] : prev.filter((id) => id !== doc.id)))}
+              />
+              <span>{doc.name}</span>
+            </li>
+          ))}
+        </ul>
+        <BulkActionBar
+          selection={selection}
+          onClearSelection={() => setSelection([])}
+          actions={<Button variant="tertiary" size="md" startIcon={Download}>下載</Button>}
+        />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const last = canvas.getByRole('checkbox', { name: '選取 合約範本 v4' })
+    last.focus()
+    await expect(document.activeElement).toBe(last)
+    await userEvent.tab()
+    const clear = canvas.getByRole('button', { name: '清除選取' })
+    await expect(document.activeElement).toBe(clear)
+    await userEvent.keyboard('{Enter}')
+    await expect(canvas.queryByRole('group', { name: '批次操作' })).toBeNull()
+    await expect(document.activeElement).toBe(last)
+  },
 }

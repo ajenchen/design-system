@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // AgentFab 拖曳磁吸純函式單測 —— 守「拖過視窗右緣、y 在帶內,仍算貼邊」
-// (agent-panel.spec.md「區域 → 落點表」;user 2026-09-04 回報「拖到最右邊放開卻飛回家」)。
+// (agent-panel-fab.spec.md「區域 → 落點表」;user 2026-09-04 回報「拖到最右邊放開卻飛回家」)。
 //
 // 為什麼需要:這條規則住在 `useSnapDrag` onMove 的 `dragPoint`(指標 x 夾在舞台內再判區)。只有 pointer capture
 // 讓 `clientX` 超出視窗時才會走到,沒有任何 story 或瀏覽器閘會產生這種座標;修好當天(f0464cff)唯一的證據是一次
@@ -86,4 +86,33 @@ test('onMove 真的走 dragPoint(防止測試只測自己:規則若被改回 inl
   const src = readFileSync(SRC, 'utf8')
   assert.match(src, /const p = dragPoint\(stage, ev\.clientX - originX, ev\.clientY - originY\)/)
   assert.doesNotMatch(src, /x:\s*clamp\(ev\.clientX - originX/)
+})
+
+// ── N30(2026-09-29):靜止位置由 CSS 對舞台錨定,不依賴量測 ──────────────────────────────
+// 舊版 `placementStyle(stage, p)` 在舞台高還是 0 的第一次 commit 放行未夾的 y(agent-panel-fab.spec.md「2026-09-04 對抗式稽核登記的兩條」(a));
+// 現在合法範圍直接寫成對舞台的百分比 clamp,與 dockMinY / dockMaxY 同一組常數 —— 這裡守「同一組」。
+test('N30 貼邊 = clamp(50% − 14px, y, max(50% − 14px, 100% − 2·loose − 68px));家 = calc(100% − loose − 40px) + right: loose', () => {
+  const half = I.DOCK_PX / 2
+  const dock = I.placementStyle({ kind: 'dock', y: 700 })
+  assert.equal(dock.top, `clamp(calc(50% - ${half}px), 700px, max(calc(50% - ${half}px), calc(100% - 2 * var(--layout-space-loose) - ${I.FAB_PX + I.DOCK_PX}px)))`)
+  assert.equal(dock.right, 0)
+  const home = I.placementStyle({ kind: 'home' })
+  assert.equal(home.top, `calc(100% - var(--layout-space-loose) - ${I.FAB_PX}px)`)
+  assert.equal(home.right, 'var(--layout-space-loose)')
+  // 負的 y 不外洩(舊版也是 Math.max(0, y))
+  assert.match(String(I.placementStyle({ kind: 'dock', y: -30 }).top), /, 0px, /)
+})
+
+test('N30 CSS 表達式與 JS dockMinY / dockMaxY 用同一組常數(舞台 720 高、loose 16:JS 上界 = 720 − 32 − 68)', () => {
+  assert.equal(I.dockMaxY(stage), stage.h - 2 * stage.inset - I.FAB_PX - I.DOCK_PX)
+  assert.equal(I.dockMinY(stage), Math.floor(stage.h / 2 - I.DOCK_PX / 2))
+  const top = String(I.placementStyle({ kind: 'dock', y: 0 }).top)
+  assert.ok(top.includes(`- ${I.FAB_PX + I.DOCK_PX}px`) && top.includes(`- ${I.DOCK_PX / 2}px`) && top.includes('2 * var(--layout-space-loose)'), top)
+})
+
+test('N30 placementStyle 不再讀舞台尺寸(規則若被改回「量到才夾」,本測必紅)', () => {
+  const src = readFileSync(SRC, 'utf8')
+  assert.match(src, /const placementStyle = \(p: AgentFabPlacement\): React\.CSSProperties =>/)
+  assert.doesNotMatch(src, /s\.h > 0 \? clamp\(p\.y/)
+  assert.match(src, /: placementStyle\(placement\)/)
 })

@@ -688,3 +688,16 @@
 @utility bg-interaction-active {
   background-image: linear-gradient(var(--neutral-active), var(--neutral-active));
 }
+/* 已按下型態落在「底」上(白底 secondary 切換鈕,pressedTone="neutral"):底不換、疊層 —— 配對總則第 2 列
+   (color.spec.md「Hover 換色配對總則」)。2026-09-29 待辦總帳 N7:深色 --surface(白 8%)與 --neutral-selected
+   (neutral-2 = 白 8%)疊在頁面底上都是 #1E1E1E,「換底」的已按下在深色看不見;疊層後 #1E1E1E + 8% = #303030,
+   淺色疊層結果仍是 #F5F5F5(與換底相同,畫面不變)。階梯仍是 2→3→4(user 2026-09-25 選「甲」)。 */
+@utility bg-interaction-selected {
+  background-image: linear-gradient(var(--neutral-selected), var(--neutral-selected));
+}
+@utility bg-interaction-selected-hover {
+  background-image: linear-gradient(var(--neutral-selected-hover), var(--neutral-selected-hover));
+}
+@utility bg-interaction-selected-active {
+  background-image: linear-gradient(var(--neutral-selected-active), var(--neutral-selected-active));
+}

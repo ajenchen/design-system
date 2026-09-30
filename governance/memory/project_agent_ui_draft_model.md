@@ -5,10 +5,10 @@ metadata:
   node_type: memory
   type: project
   originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
-  modified: 2026-09-16T00:00:00.000Z
+  modified: 2026-09-27T00:00:00.000Z
 ---
 
-# AI agent 面板規格 — 已定稿,BACKLOG(2026-08-11)
+# AI agent 面板規格 — 已落地(2026-09-07 起實作;唯一權威 = agent 原則 v14)
 
 **⚠️ 2026-09-08 更新:SSOT 已換人。** 現行唯一權威 =
 `governance/planning/2026-09-06-agent-principles-v14.md`(agent 原則 v14 七條)。
@@ -20,7 +20,7 @@ v14 定稿後一度只存在於 scratchpad,repo 無副本,直接造成 2026-09-0
 
 **user 拍板定位(逐字)**:「先確保有完整有脈絡記錄下來,之後我們再安排,目前先放在 backlog,但要確保沒有遺漏我們討論的細節,也不要讓這個規格汙染目前ds不該被汙染的地方」。
 
-**Why**:規格歷經雙方對抗稽核(我方 43 項 + codex 7 組)修畢、未決項 0;但未排實作。最大風險是(a)細節散失回 scratchpad/對話,(b)條款提早滲入 DS spec/token/hook。
+**Why**(2026-08-11 當時):規格歷經雙方對抗稽核(我方 43 項 + codex 7 組)修畢、未決項 0,當時未排實作(2026-09-07 起已排定並落地,見 How 2;2026-09-27 更正本檔標題,先前標題「BACKLOG」已過期)。當時的最大風險是(a)細節散失回 scratchpad/對話,(b)條款提早滲入 DS spec/token/hook。
 
 **How to apply**:
 1. 任何 agent 面板相關工作**先讀 v14**(`2026-09-06-agent-principles-v14.md`,含來源總帳);它與其他來源衝突時以它為準。2026-08-11 的 §〇 只是歷史,不再當需求輸入。

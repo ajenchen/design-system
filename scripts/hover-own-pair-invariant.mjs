@@ -269,7 +269,10 @@ function conflicts(a, b) {
   if (a.eqVal === undefined && b.eqVal === undefined) return a.pol !== b.pol
   if (a.eqVal !== undefined && b.eqVal !== undefined) {
     if (a.eqVal === b.eqVal) return a.pol !== b.pol
-    return a.pol && b.pol                                                    // 同一個值不可能同時等於兩個不同字面值
+    // 值集合(cva compoundVariants 的陣列值以 `|` 連接):兩個都成立時,集合不相交才互斥;相交(例 `tertiary|text` 與 `text`)可同時成立
+    const A = a.eqVal.split('|'), B = b.eqVal.split('|')
+    const overlap = A.some((x) => B.includes(x))
+    return !overlap && a.pol && b.pol                                        // 同一個值不可能同時等於兩個不相交的集合
   }
   return false
 }
@@ -350,7 +353,14 @@ function cvaHop(prop, sf) {
         for (const other of obj.properties) {
           if (other === prop || !ts.isPropertyAssignment(other)) continue
           const v = unwrap(other.initializer)
-          const val = ts.isStringLiteral(v) ? v.text : v.kind === ts.SyntaxKind.TrueKeyword ? 'true' : v.kind === ts.SyntaxKind.FalseKeyword ? 'false' : null
+          let val = ts.isStringLiteral(v) ? v.text : v.kind === ts.SyntaxKind.TrueKeyword ? 'true' : v.kind === ts.SyntaxKind.FalseKeyword ? 'false' : null
+          // 2026-09-29:cva 允許 `variant: ['tertiary', 'text']`(這一組對任一值都成立)。先前陣列讀不出原子 → 兩組 compoundVariants
+          // (`['tertiary','text'] × neutral` 與 `'secondary' × neutral`)被當成可同時成立,後寫的靜止底蓋掉前一組的,
+          // 把 Button 已按下的疊層 / 換色互相配錯(先 5 筆、加了明示底之後反過來 9 筆假紅)。值集合以 `|` 連接,conflicts() 用集合是否相交判互斥。
+          if (val === null && ts.isArrayLiteralExpression(v)) {
+            const items = v.elements.map((e) => unwrap(e)).map((e) => (ts.isStringLiteral(e) ? e.text : null))
+            if (items.length && items.every((x) => x !== null)) val = items.join('|')
+          }
           if (val !== null) atoms.push({ expr: `cva:${propName(other)}`, eqVal: val, pol: true })
         }
         return { call, atoms }
@@ -604,6 +614,8 @@ export function selftest(table, log = console.log) {
     ['已按下切換鈕配自己的 -selected-hover', `const a = cn('data-[state=on]:bg-neutral-selected data-[state=on]:hover:bg-neutral-selected-hover')`, 0],
     ['選中底以 !selected 守衛排除(menu-item 的形狀)', `const a = cn(selected && 'bg-neutral-selected', !disabled && !selected && 'hover:bg-neutral-hover')`, 0],
     ['三元兩個分支互斥', `const a = cn(on ? 'bg-primary hover:bg-primary-hover' : 'hover:bg-neutral-hover')`, 0],
+    ['cva compoundVariants 的陣列 variant 與另一組互斥(Button 已按下兩組 tone 的形狀,2026-09-29)', `const v = cva('', { variants: { variant: { secondary: ['bg-surface'], tertiary: ['bg-surface'], text: ['bg-transparent'] } }, compoundVariants: [{ variant: ['tertiary', 'text'], pressedTone: 'neutral', class: ['data-[state=on]:bg-neutral-selected', 'data-[state=on]:hover:bg-neutral-selected-hover'] }, { variant: 'secondary', pressedTone: 'neutral', class: ['data-[state=on]:bg-surface', 'data-[state=on]:hover:bg-interaction-selected-hover'] }] })`, 0],
+    ['cva compoundVariants 陣列 variant 自己配錯仍要紅', `const v = cva('', { variants: { variant: { tertiary: ['bg-surface'], text: ['bg-transparent'] } }, compoundVariants: [{ variant: ['tertiary', 'text'], pressedTone: 'neutral', class: ['data-[state=on]:bg-neutral-selected', 'data-[state=on]:hover:bg-neutral-hover'] }] })`, 1],
     ['cva 不同 variant 值互斥', `const v = cva('', { variants: { variant: { primary: ['bg-primary', 'hover:bg-primary-hover'], text: ['bg-transparent', 'hover:bg-neutral-hover'] } } })`, 0],
     ['twMerge 後寫者勝(選中時後面的釘住蓋掉前面的透明配對)', `const a = cn('hover:bg-neutral-hover', isSelected && 'bg-neutral-selected hover:bg-neutral-selected')`, 0],
     ['色相 hover 配 step-6 實心底', `const a = 'bg-[var(--color-blue-6)] hover:bg-[var(--blue-hover)]'`, 0],
@@ -713,7 +725,8 @@ export function evaluateTree({ table = loadTable(), files = walk(SRC).map((p) =>
   }
   const baseline = useBaseline && existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')).entries || [] : []
   // 已知清單只收兩種、每筆都要寫理由 —— 否則它就變成「把紅燈塞進去」的後門
-  const malformed = baseline.filter((e) => !['pending', 'unreachable'].includes(e.kind) || !e.reason || e.reason.length < 12 || !e.file || !e.hover || !e.rest)
+  // documented(2026-09-29 加):值已經定案、理由寫在 owner spec(reason 必須指到 spec 檔:行);不再印成「待 user 拍板」
+  const malformed = baseline.filter((e) => !['pending', 'unreachable', 'documented'].includes(e.kind) || !e.reason || e.reason.length < 12 || !e.file || !e.hover || !e.rest || (e.kind === 'documented' && !/\.spec\.md:\d+/.test(e.reason)))
   const known = new Map(baseline.map((e) => [`${e.file}|${e.hover}|${e.rest}`, e]))
   const fresh = all.violations.filter((v) => !known.has(baselineKey(v)))
   const pending = all.violations.filter((v) => known.has(baselineKey(v)))
@@ -764,14 +777,14 @@ function main() {
     for (const e of all.evaluated) console.log(`${e.verdict} ${e.path}:${e.line}  ${e.hover}  ×  ${e.rest}`)
   }
   if (malformed.length) {
-    console.error(`✗ hover-own-pair-baseline.json 有 ${malformed.length} 筆格式不合(kind 只准 pending / unreachable,reason 必須寫清楚):`)
+    console.error(`✗ hover-own-pair-baseline.json 有 ${malformed.length} 筆格式不合(kind 只准 pending / unreachable / documented,reason 必須寫清楚;documented 必須指到 spec 檔:行):`)
     for (const e of malformed) console.error(`  ${JSON.stringify(e)}`)
     process.exit(1)
   }
 
   console.log(`掃了 ${fileCount} 個檔;配對表 ${table.pairs.size} 組、按住配對 ${table.pressPairs.size} 組、「底」疊層 utility ${table.layers.size} 個(從 semantic.css 現讀);判了 ${all.evaluated.length} 組 (滑過 / 按住值, 靜止值)`)
   if (pending.length) {
-    const label = { pending: '待 user 拍板', unreachable: '執行期不會發生' }
+    const label = { pending: '待 user 拍板', unreachable: '執行期不會發生', documented: '已定案、理由在規格' }
     console.log(`\n· 已知命中(${pending.length} 筆,登記於 scripts/hover-own-pair-baseline.json,不擋):`)
     for (const v of pending) {
       const e = known.get(baselineKey(v))

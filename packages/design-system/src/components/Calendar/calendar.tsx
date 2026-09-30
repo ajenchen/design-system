@@ -109,8 +109,13 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** 事件資料 */
   events?: CalendarEvent[]
 
-  /** 點新事件 CTA 回調 */
-  onCreateEvent?: () => void
+  /**
+   * 右上角「新事件」CTA 的回調 —— 全域新增入口,恆渲染;日期能不能新增由新增流程自己擋,不由這顆鈕的有無表達
+   *(user 2026-09-29:「右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊」)。
+   * 元件沒有內建的「新增」行為,所以必填:meta-patterns M23(f)—— 固定元素不以 callback 有無當渲染閘、
+   * 無內建 fallback 的 callback 必填。唯讀月曆(`readOnlyDates` / `readOnlyEvents`)一樣要傳。
+   */
+  onCreateEvent: () => void
 
   /** 0 = Sunday, 1 = Monday。預設 0(對齊 Google Calendar 美系預設) */
   weekStartsOn?: 0 | 1
@@ -129,7 +134,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** 月份導覽 <nav> landmark 的 aria-label。Override for i18n. */
   navAriaLabel?: string
   todayLabel?: string
-  /** 「新事件」CTA 文字。Override for i18n。CTA 僅在傳 `onCreateEvent` 時渲染(spec Toolbar 段)。 */
+  /** 「新事件」CTA 文字。Override for i18n。CTA 是 toolbar 的固定元素、恆渲染(spec Toolbar 段;`onCreateEvent` 必填)。 */
   createLabel?: string
 }
 
@@ -224,8 +229,10 @@ function MonthEventTile({
               // hover-instant 閘看不到 .ts 裡的 class 字串,這格因此漏掉;2026-09-25 補拿掉。
               tileBase,
               'cursor-pointer',
-              // 焦點:tile 由格內導覽(F2 進格)取得焦點,本行沒有焦點 class,走 styles/base.css 全域 `:focus-visible`。
-              //(2026-05-31 #22 補的 `focus-visible:ring-2` 已於 a7b2be94 移除;舊註解寫的「補 ring」不再成立。)
+              // 焦點:tile 由格內導覽(F2 進格)取得焦點。框**往內**畫:事件方塊之間 gap-0.5 = 2px,往外 +2px 會壓到上下相鄰的方塊
+              //(focus-canonical.md「套回實測值驗證」Calendar 事件 tile 列:內 −2px;與下方自訂 tile 的 wrapper 同一條)。
+              // 2026-09-29 前這裡沒寫 class、走全域外描邊,與正本相反(待辦總帳 N46「內建事件方塊鍵盤框往內」)。
+              'focus-visible:focus-ring-inset',
               colorClass,
             )}
           >
@@ -360,9 +367,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
 
   // Tab 進來時停在哪一天:今天在這個月就是今天,否則這個月 1 號
   //(APG Date Picker Dialog 範例:「If no date has been selected, places focus on the current date.」)。
+  // 相依用「今天 00:00 的毫秒數」(primitive),不用 resolvedToday 物件:沒傳 `today` 時它每次 render 都是
+  // 新的 new Date(),拿物件當相依 = memo 每次都重算(eslint exhaustive-deps 抓的就是這個)。
+  // 不把 new Date() 包進 useMemo 凍在掛載時:行事曆分頁常掛好幾天,跨過午夜「今天」的 pill、Today 鈕目標
+  // 都要在下一次 render 跟著走(react-day-picker 9.14 DayPicker.js:131 同樣每次 render 重取 today)。
+  const todayDayMs = startOfDay(resolvedToday).getTime()
   const anchorDate = React.useMemo(
-    () => (isSameMonth(resolvedToday, refDate) ? startOfDay(resolvedToday) : startOfMonth(refDate)),
-    [resolvedToday, refDate],
+    () => (isSameMonth(todayDayMs, refDate) ? new Date(todayDayMs) : startOfMonth(refDate)),
+    [todayDayMs, refDate],
   )
   // 已畫出來的日期範圍(含上/下月 outside day —— 本元件的 outside day 是有事件、可點的真格,
   // 與 APG 範例把 outside day 清空 disable 的做法不同,所以「跨月」的界線是格陣邊界而非月份邊界)。
@@ -545,11 +557,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
 
-        {onCreateEvent && (
-          <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
-            {createLabel}
-          </Button>
-        )}
+        {/* 全域新增入口:toolbar 固定元素、恆渲染(M23(f);2026-09-29 前寫成 `{onCreateEvent && …}`,唯讀月曆就沒這顆鈕 —— 已撤回,
+            日期能不能新增由新增流程自己擋,不由鈕的有無表達,user 2026-09-29 原話見 CalendarOwnProps.onCreateEvent) */}
+        <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
+          {createLabel}
+        </Button>
       </div>
 
       {/* Weekday header */}
@@ -611,7 +623,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 // 焦點框往外(= 不寫)。2026-09-10 重量:日期數字鈕(24×24)在格子裡是**置中**的,不是撐滿 ——
                 // 上 6 / 下 4(下方是同格的事件容器)/ 左 128 / 右 7,最小 4.00 = canonical「算放得下」。
                 // 2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊
-                //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方自訂 tile 的 focus-ring-inset)。
+                //(彼此 gap-0.5 = 2px),那一處往內(內建 tile 與自訂 tile 的 wrapper 都寫 focus-ring-inset)。
                 'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
                 isToday && 'px-2 bg-info text-on-emphasis',
                 // 非當月 = 淡字 `fg-muted`,**不是** `fg-disabled`:這天跟當月格同一種可點性(可點就一樣可點,唯讀就一樣唯讀),
@@ -624,6 +636,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 // W3C button 語義禁止互動後代,cell 內含 role="button" 事件 tile = nested-interactive 違規。
                 // 對齊 Google Calendar:gridcell = 容器,日期數字按鈕 = 日期級 keyboard 入口,tile 各自為 button。
                 // div onClick 保留滑鼠「點 cell 空白處等同點日期」便利(keyboard 走日期數字按鈕,功能等價)。
+                // 點格內空白處也把**鍵盤位置**帶過來(2026-09-29,待辦總帳 N46):停靠點(roving tabindex)搬到這一天、
+                // 焦點落在這一天的日期鈕 —— 之後 Tab 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它;
+                // 2026-09-29 前只有點到日期數字鈕才會(它是原生 button,瀏覽器自己給焦點),點空白處停靠點留在別天。
+                // 同一條規則 DataTable 試算表已做(「滑鼠點到哪一格,鍵盤位置就跟到哪一格」,data-table.spec.md「試算表模式」)。
                 //
                 // **日期格唯讀(readOnlyDates)時**(2026-09-26,待辦總帳 L8 / C15):格子不接點擊、不亮,日期數字只是文字;
                 // 格子裡於是只剩文字(與可點的事件方塊,若有)→ 依 APG Grid「A cell contains text or a single graphic and
@@ -632,7 +648,16 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 <div
                   key={date.toISOString()}
                   role="gridcell"
-                  {...(datesInteractive ? { onClick: () => onDateClick(date) } : dayStop)}
+                  {...(datesInteractive
+                    ? {
+                      onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+                        // 日期鈕與事件方塊自己的 onClick 都 stopPropagation,走到這裡一定是格內空白處
+                        dayStopOf(e.currentTarget)?.focus({ preventScroll: true })
+                        setFocusedDateState(date)
+                        onDateClick(date)
+                      },
+                    }
+                    : dayStop)}
               className={cn(
                 'flex flex-col gap-1 min-h-28 p-1.5 text-left',
                 'border-r border-b border-divider last:border-r-0',

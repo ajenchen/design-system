@@ -2,7 +2,7 @@
 /**
  * AgentFab 拖曳 ≠ 點擊不變條件(2026-09-16,user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,但我明明就只是要移動它而已」)。
  *
- * SSOT:agent-panel.spec.md「入口鈕」段「拖曳(≥ 8px)放開不得開面板,且不得依賴事件時序」。
+ * SSOT:agent-panel-fab.spec.md「AgentFab」段「拖曳(≥ 8px)放開不得開面板,且不得依賴事件時序」。
  * 根因:拖曳放開後瀏覽器對同一顆鈕補發 click;舊版用 setTimeout(0) 清「吞下一個 click」旗標,只要 click 比 pointerup 晚一個 task 送達
  *(遠端隔離 / 輸入代理環境),旗標已清、click 漏過去 → 面板被打開。本機 Chromium 兩者同一 task(0ms),所以真滑鼠重現不了;
  * 這支閘用 DOM 事件直接造出「晚到的 click」。
@@ -24,15 +24,13 @@
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-requireStorybookBuild(path.join(root, 'index.json'))
-if (fs.statSync(path.join(REPO, 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx')).mtimeMs > fs.statSync(path.join(root, 'index.html')).mtimeMs) {
-  console.error(`✗ STALE-BUILD:agent-panel-fab.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2)
-}
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(root, ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })

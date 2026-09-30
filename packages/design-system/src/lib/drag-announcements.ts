@@ -25,6 +25,25 @@
 // handler 靜默 `return prev`,而螢幕閱讀器仍聽到「已移動」。
 // 2026-09-07 錨:ColumnReorder story 的 columnOrder 漏了 `seller`(畫面 7 欄、state 6 個),
 // 拖到該欄時就是這個情況;已修 story,並由 `scripts/drag-runtime-contract.mjs` 守著。
+//
+// **播報的禮貌等級 = polite,不是 assertive**(2026-09-27,待辦總帳 OE10):
+// dnd-kit 6.3.1 自己的 live region 寫死 `aria-live="assertive"`
+// (`@dnd-kit/accessibility` LiveRegion 的 `ariaLiveType = "assertive"`,`DndContext` 沒有任何 prop 能改),
+// 拖曳中每移到一個落點就打斷螢幕閱讀器正在唸的句子。WAI-ARIA 1.2 對 `assertive` 的定義:
+// "Indicates that updates to the region have the highest priority and should be presented to the user immediately."
+// 並明文 "don't use the assertive value unless the interruption is imperative"
+// (<https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-live>,
+// 轉述 <https://www.w3.org/TR/wai-aria-1.2/#aria-live>)。拖曳的落點回饋不是「必須打斷」的事 ——
+// DS 內自己的先例也是這麼判的:TreeView 鍵盤重排的區域是 polite(tree-view.tsx)、Toast 只有 error / warning
+// 才 assertive(toast.tsx)、Alert 同(alert.tsx)。所以 `useDragAccessibility` 把文字寫進**本檔自己的 polite 區域**,
+// 交給 dnd-kit 的那份永遠是空字串(它的 assertive 區域因此一個字都不會唸)。
+// 世界級並非一致(react-beautiful-dnd 的 announcer 是 assertive),這裡依 DS 內既有 canonical(M23)取 polite。
+//
+// **操作說明也一併改成繁中**:dnd-kit 預設的 `screenReaderInstructions.draggable`
+// ("To pick up a draggable item, press the space bar…")會被掛到每一顆把手的 `aria-describedby`,
+// 四個 DndContext 先前全部唸英文。
+
+import * as React from 'react'
 
 /** 拖曳結果。`null` = 沒有真的重排(被守衛擋下 / 使用者放在原位)。 */
 export interface DragOutcome {
@@ -84,4 +103,63 @@ export function createDragAnnouncements({ getOutcome, kind }: DragAnnouncementAr
     onDragCancel: ({ active }: { active: ActiveLike }) =>
       `已取消移動${kindOf(active)}『${String(active.id)}』,回到原位`,
   }
+}
+
+/**
+ * dnd-kit 掛在每顆把手 `aria-describedby` 上的操作說明(繁中;取代 dnd-kit 的英文預設)。
+ * 句型沿用 TreeView 既有的鍵盤重排說明(tree-view.tsx `DEFAULT_REORDER_ANNOUNCEMENTS.instructions`)。
+ */
+export const DRAG_SCREEN_READER_INSTRUCTIONS = {
+  draggable: '按空白鍵提起,用方向鍵移動,再按空白鍵放下;按 Esc 取消。', // i18n-allow: DS 預設文案
+}
+
+type DragAnnouncements = ReturnType<typeof createDragAnnouncements>
+
+/**
+ * 四個 `DndContext` 共用的無障礙接線:**繁中播報 + polite 區域 + 繁中操作說明**。
+ *
+ * 用法:
+ * ```tsx
+ * const drag = useDragAccessibility({ getOutcome: () => outcomeRef.current, kind: '列' })
+ * <DndContext sensors={…} onDragEnd={…} accessibility={drag.accessibility}>
+ *   {children}
+ *   {drag.liveRegion}
+ * </DndContext>
+ * ```
+ * `accessibility.announcements` 的四個函式把句子寫進 `liveRegion`(role=status、aria-live=polite)後
+ * **回傳空字串**:dnd-kit 只在回傳值非 null 時寫進它自己的 assertive 區域,空字串寫進去也沒有東西可唸。
+ * `liveRegion` 必須渲染在 DOM 裡(放在 DndContext 內外都可以);沒渲染 = 螢幕閱讀器整趟拖曳無聲,
+ * 靜態閘 `scripts/drag-announcement-invariant.mjs` 會抓。
+ */
+export function useDragAccessibility(args: DragAnnouncementArgs): {
+  accessibility: { announcements: DragAnnouncements; screenReaderInstructions: typeof DRAG_SCREEN_READER_INSTRUCTIONS }
+  liveRegion: React.ReactElement
+} {
+  const [text, setText] = React.useState('')
+  // 呼叫端幾乎都傳 inline 箭頭函式;拿它們當 memo 依賴會每次 render 重建 announcements、DndContext 也跟著拿到新物件。
+  // 所以 announcements 只建一份,讀取時再經 ref 取最新的 getOutcome / kind。
+  const argsRef = React.useRef(args)
+  argsRef.current = args
+  const accessibility = React.useMemo(() => {
+    const inner = createDragAnnouncements({
+      getOutcome: () => argsRef.current.getOutcome(),
+      kind: (active) => { const k = argsRef.current.kind; return typeof k === 'function' ? k(active) : k },
+    })
+    // 同一句連續兩次(例:拖曳中一直停在同一個落點)不重寫 —— 文字沒變,polite 區域本來就不會再唸;
+    // 換成別句再回來則會唸(狀態真的變了)。
+    const speak = (s: string) => { setText(s); return '' }
+    const announcements: DragAnnouncements = {
+      onDragStart: (e) => speak(inner.onDragStart(e)),
+      onDragOver: (e) => speak(inner.onDragOver(e)),
+      onDragEnd: () => speak(inner.onDragEnd()),
+      onDragCancel: (e) => speak(inner.onDragCancel(e)),
+    }
+    return { announcements, screenReaderInstructions: DRAG_SCREEN_READER_INSTRUCTIONS }
+  }, [])
+  const liveRegion = React.createElement(
+    'div',
+    { role: 'status', 'aria-live': 'polite', 'aria-atomic': true, className: 'sr-only', 'data-drag-live-region': '' },
+    text,
+  )
+  return { accessibility, liveRegion }
 }

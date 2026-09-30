@@ -88,11 +88,15 @@ export function useScrollEdges<T extends HTMLElement = HTMLElement>(): UseScroll
     // 監聽 children 變化（items 增減、字體載入）
     const mo = new MutationObserver(update)
     mo.observe(el, { childList: true, subtree: true, characterData: true })
+    // 標記捲動容器(2026-09-29,待辦總帳 OE26):OverflowScrollArrow 卸載時若焦點在它身上、另一側箭頭也不在,
+    // 就把焦點交給這個容器 —— 靠這個屬性找到它,消費者不用多傳 ref。
+    el.setAttribute('data-overflow-scroller', '')
 
     return () => {
       el.removeEventListener('scroll', update)
       ro.disconnect()
       mo.disconnect()
+      el.removeAttribute('data-overflow-scroller')
     }
   }, [])
 

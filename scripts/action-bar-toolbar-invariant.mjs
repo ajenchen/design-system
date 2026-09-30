@@ -24,14 +24,13 @@
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
-requireStorybookBuild(path.join(root, 'index.json'), '先 build storybook(或用 --static=<dir> 指定)')
-const helperMtime = fs.statSync(path.join(REPO, 'packages/design-system/src/stories-helpers/scene/data-toolbar.tsx')).mtimeMs
-if (helperMtime > fs.statSync(path.join(root, 'index.html')).mtimeMs) { console.error(`✗ STALE-BUILD:data-toolbar.tsx 比 ${root} 新 —— 先重建該 storybook build`); process.exit(2) }
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(root, ['packages/design-system/src/stories-helpers/scene/data-toolbar.tsx'], { hint: '先 build storybook(或用 --static=<dir> 指定)' })
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })

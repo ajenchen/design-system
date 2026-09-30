@@ -43,15 +43,13 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError, requireFreshStorybookBuild } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // stale-build 守衛:量到舊 DOM = 假綠
-for (const f of ['packages/design-system/src/lib/drag-announcements.ts','packages/design-system/src/lib/drag-visual.ts',
-                 'packages/design-system/src/components/DataTable/data-table.tsx',
-                 'packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx']) {
-  if (statSync(f).mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
-    console.error(`✗ STALE-BUILD:${f} 比 storybook-static 新 —— 先跑 npm run build-storybook`); process.exit(2) }
-}
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
+requireFreshStorybookBuild(S, ['packages/design-system/src/lib/drag-announcements.ts','packages/design-system/src/lib/drag-visual.ts',
+                               'packages/design-system/src/components/DataTable/data-table.tsx',
+                               'packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server=await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
 const B=server.origin

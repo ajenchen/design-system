@@ -254,6 +254,9 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
           data-field-mode={resolvedMode}
+          // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
+          // 否則 axe 把灰化連結文字當一般文字誤報 color-contrast(modes / 色彩對照 / 尺寸對照三則 story)
+          aria-disabled={resolvedMode === 'disabled' || undefined}
         >
           <span className="flex-1 min-w-0 truncate">
             {resolvedMode === 'disabled'

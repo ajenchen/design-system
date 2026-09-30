@@ -1,5 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# 2026-08-02 雲端相容性修復 + Deep Audit 收尾 baton
+# 2026-08-02 雲端相容性修復 + Deep Audit 收尾 baton(2026-09-27 結案 → reference)
+
+**2026-09-27 結案(registry `reference`,非可執行)**:§0-DONE 與 §8 記錄的修復已全部完成;本檔剩下的工程殘項(例:§8.6 的 41 個沒人引用的 npm scripts、§8.75 的 `governance:generate` 增量誤跳)已於 2026-09-25 逐項對 git 查證後併入 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` D 區(OE18 / OE19 等),live 追蹤只看那裡;本檔只作證據與來源,不得重啟。下面「接手者先讀 §1,再依 §3 順序執行」是 2026-08-02 當時的指示,只剩歷史。
 
 **接手者先讀 §1,再依 §3 順序執行。** 本檔是 2026-08-02 一次 6 路平行稽核(+2 路對抗)的結論,
 證據已收斂到 canonical owner;**不要重跑全域盤點**。
@@ -85,11 +87,11 @@ step 5 的精確實情(2026-08-04 複驗):真正重複的是 `hooks/hooks.json:7
 `packages/governance/src/closed-tool-execution.mjs:58` 是 **gh 候選路徑**,與該 PATH 是不同概念,
 **不得合併**。
 
-## §0 為什麼停在這裡
+## §0 為什麼停在這裡(2026-08-02 當時的快照;**2026-09-27 標歷史**:本檔早已 commit,§0-DONE 與 §8 記錄後續全部完成,本節只留當時的判斷)
 
 Claude session 額度用盡(3%)。判斷:以殘餘額度動 materializer/schema 會留下半套改動,
 同時弄壞本機與雲端,比只壞雲端更糟。故只留交接、不動 code。
-本檔寫於 branch `claude/cloud-compat-baton`,**尚未 commit**(接手者請先 commit 再開工)。
+~~本檔寫於 branch `claude/cloud-compat-baton`,**尚未 commit**(接手者請先 commit 再開工)。~~(已過期,見本節標題)
 
 ## §1 現況一句話
 

@@ -4,6 +4,7 @@ import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-reac
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
+import { isTextEntryElement } from '@/design-system/lib/roving-list-keyboard'
 
 /**
  * Carousel — 圖片 / 內容水平(或垂直)輪播
@@ -127,6 +128,10 @@ const Carousel = React.forwardRef<
     }, [api, onSelect, onReInit])
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      // 投影片裡的文字輸入(輸入框 / 多行框 / 下拉 / 可編輯區)保留自己的方向鍵:它們的 ←→ / ↑↓ 是移插入點、換選項,
+      // 根容器在捕獲階段搶走等於讓表單打不了字(carousel.spec.md「A11y 預設」鍵盤條;判斷式 = 全 DS 唯一那份
+      // isTextEntryElement,與「列上有小按鈕的一串」的「項目裡的輸入框保留自己的方向鍵」同一條)。
+      if (isTextEntryElement(e.target as Element)) return
       // 鍵盤方向對齊內容捲動方向(APG 建議):horizontal → ←/→;vertical → ↑/↓
       const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp'
       const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown'

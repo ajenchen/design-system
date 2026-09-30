@@ -155,7 +155,7 @@ Sidebar 有兩種正交的內容形態，consumer 嚴格擇一或混用：
 
 ### 為什麼只有 1 層
 
-Linear、Notion、Slack、VS Code、Figma、Gmail——**沒有任何頂級產品在 sidebar 主選單用語意階層**。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
+Linear、Slack、VS Code、Figma、Gmail——**沒有任何頂級產品在 sidebar 主選單用語意階層**。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
 
 ### 「Projects > A / B」這類
 
@@ -626,7 +626,7 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
 | 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
 
-那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel.spec.md`「遮擋與貼邊」段的「不外推」條(:463-464,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel-fab.spec.md`「遮擋與貼邊」段的「不外推」條(:42-43;2026-09-27 拆檔前為 `agent-panel.spec.md:463-464`,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
 
 #### 修正二:它們本來就不該是手刻的
 
@@ -779,6 +779,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `account-menu.spec.md`
+- `agent-panel.spec.md`
 - `app-shell.spec.md`
 - `density.spec.md`
 - `header-canonical.spec.md`

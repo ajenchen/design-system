@@ -313,7 +313,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
     useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
 
-    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md:545` 三條表,2026-09-07 訂):
+    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」三條表,2026-09-07 訂):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
     //   焦點在面板內、面板內沒有浮層 → **什麼都不關**
     //   焦點在面板外 → 關該區自己的浮層,**不跨區碰面板**
@@ -402,7 +402,12 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
           // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
           data-agent-panel-mode={mode}
           className={cn(
-            'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
+            // 不再 `overflow-hidden`(2026-09-29,待辦總帳 OE1;DataTable 表頭格 2026-09-10 AD63 同一條):它會把左緣把手
+            // 跨到宿主那側的外側 3px 裁掉,7px 命中區只剩面板內的 4px 可點 —— resize-handle.spec.md「命中區」明寫
+            // 消費端容器不得用 overflow:hidden 裁到它、要壓 flex `min-width:auto` 改 `min-w-0`。橫向不裁;縱向改 `overflow-y-clip`
+            // (與 overflow-x:visible 並存不會被升成 auto、不成為捲動容器),讓貼底浮層的 slide-in 仍照舊被面板底緣裁住。
+            // 閘:`scripts/agent-panel-breakpoint.mjs`「OE1 把手外側」(左緣外 2px 必命中把手;對照組注入 overflow:hidden 必紅)。
+            'relative flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-y-clip bg-surface',
             // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就翻成蓋板。
             // 2026-09-16 user 裁示:蓋板不再蓋滿 —— 上下右貼齊容器、左邊留 Dialog 同一顆 `--layout-space-viewport-inset`(48px),
             // 底下鋪遮罩讓人知道面板下面還有東西(遮罩見上方 showScrim)。「蓋滿」原是 v14 條 B 的字,同日改字(v14 來源總帳 2026-09-16)。
@@ -1354,7 +1359,7 @@ const OTHER_LABEL = '其他'
 const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
 
-/** 產題守則機械層(agent-panel.spec.md §8 ⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
+/** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
 function warnDecisionRules(questions: AgentDecisionQuestion[]) {
   const warn = (msg: string) => console.warn(`[AgentDecisionCard] 產題守則:${msg}`)
   if (questions.length === 0 || questions.length > 3) warn(`題數 1–3(收到 ${questions.length})。`)
@@ -1387,7 +1392,7 @@ function initialAnswer(q: AgentDecisionQuestion) {
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
 /**
- * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-panel.spec.md「8. AgentDecisionCard」選項卡條):
+ * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-decision-card.spec.md「8. AgentDecisionCard」選項卡條):
  * 指標在整張卡的任何位置 → 卡內的圓(複選是方框)照它被自己的 `<label for>` 滑過時的樣子變色;卡片灰底、字色都不變。
  * 原本的轉發是 HTML 自己做的(指標在 label 上,label 綁定的控件也算 :hover),範圍只到 SelectionItem 那個 label。
  * 整張卡不能改成 <label> 來借這個轉發:卡內已有 SelectionItem 的 label、<div> 與「其他」輸入格,都違反 label 的內容規定。

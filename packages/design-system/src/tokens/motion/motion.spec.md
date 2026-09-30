@@ -160,4 +160,9 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel-fab.spec.md`
+- `dialog.spec.md`
+- `file-upload.spec.md`
 - `hover-card.spec.md`
+- `sidebar.spec.md`
+- `tree-view.spec.md`

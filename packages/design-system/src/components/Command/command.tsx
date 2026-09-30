@@ -225,7 +225,8 @@ const CommandInput = React.forwardRef<
     // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。
   }
 >(({ className, size: sizeProp, ...props }, ref) => {
-  const size = sizeProp ?? useRowSize('md')
+  const inherited = useRowSize('md')
+  const size = sizeProp ?? inherited
   return (
   <div
     className={cn(
@@ -273,7 +274,7 @@ const CommandList = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
 >(({ className, label = '選項', ...props }, ref) => ( // i18n-allow: DS 預設 listbox 名稱(cmdk 預設是英文 Suggestions)
   /* @story-baseline: overlay-surface.spec.md#Viewport-aware-scroll-chain-invariant(M25 SSOT owner)
-      owner spec: overlay-surface.spec.md:34/53/347-362 —— 「浮層 body 永遠 flex-1 min-h-0 overflow-y-auto;
+      owner spec: overlay-surface.spec.md「SurfaceBody」+ overlay-chrome-sizing.spec.md「為什麼 SurfaceHeader 是 padding-based」(2026-09-27 拆檔前 = overlay-surface.spec.md:34/53/347-362)—— 「浮層 body 永遠 flex-1 min-h-0 overflow-y-auto;
         中間 wrapper 都必 flex flex-col h-full min-h-0;viewport 太小 body 內壓縮捲動」。
       conflicting code(修前): 本 ScrollArea 固定 max-h-300 無 flex-1 → 在夾住的 SelectMenu PopoverContent
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
@@ -302,7 +303,8 @@ const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize }
 >(({ className, children, size: sizeProp, ...props }, ref) => {
-  const size = sizeProp ?? useRowSize('md')
+  const inherited = useRowSize('md')
+  const size = sizeProp ?? inherited
   // 字串訊息登記到 Command 根的 live region(sr-only;根一直掛著)。元素 children(如 CommandLoading,自帶 role="status")
   // 不登記,避免同一狀態播兩次。本元件本身一直掛著(cmdk Empty 只在 0 筆時渲內容),所以 effect 不受筆數影響。
   const setEmptyText = React.useContext(EmptyTextContext)
@@ -332,7 +334,8 @@ CommandEmpty.displayName = CommandPrimitive.Empty.displayName
  * 搜尋列 / 觸發點不為選項轉圈;觸發點的轉圈是 Field 家族 `loading` = 這個值在讀取 / 驗證 / 儲存,另一件事)。
  */
 function CommandLoading({ label, size: sizeProp }: { label: string; size?: CommandSize }) {
-  const size = sizeProp ?? useRowSize('md')
+  const inherited = useRowSize('md')
+  const size = sizeProp ?? inherited
   return (
     <MenuItem size={size} message role="status" startContent={<CircularProgress size={ICON_SIZE[size]} />}>
       {label}
@@ -434,7 +437,8 @@ const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   CommandItemProps
 >(({ className, children, size: sizeProp, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
-  const size = sizeProp ?? useRowSize('md')
+  const inherited = useRowSize('md')
+  const size = sizeProp ?? inherited
   const cursorByKeyboard = useCursorMover() === 'keyboard'
   const childIsMenuItem = React.isValidElement(children) && children.type === MenuItem
   const end = shortcut != null ? <CommandShortcut>{shortcut}</CommandShortcut> : endContent
