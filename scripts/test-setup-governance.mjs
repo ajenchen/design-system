@@ -48,6 +48,7 @@ import {
   runVulnerabilityAuditUnderPolicy,
   GOVERNANCE_VULNERABILITY_POLICIES,
   isTransientAdvisoryEndpointFailure,
+  acceptsHistoricalNpmOverlay,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
@@ -62,7 +63,7 @@ const temporary = []
 const version = '1.2.3-beta.4'
 const exactNpmVersion = '11.19.0'
 const exactNpmIntegrity = 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw=='
-const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.9'
+const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.12'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
 const exactNpmSecondaryOverlaySpec = 'npm:tar@7.5.22'
 const exactNpmSecondaryOverlayIntegrity = 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA=='
@@ -142,8 +143,8 @@ function fixture({
       },
       'node_modules/npm-runtime-brace-expansion-patch': {
         name: 'brace-expansion',
-        version: '5.0.9',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
+        version: '5.0.12',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz',
         integrity: exactNpmOverlayIntegrity,
         dev: true,
       },
@@ -339,10 +340,10 @@ const runtimeFactory = async () => {
     treeDigest: overlay.treeDigest,
     auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
@@ -722,14 +723,15 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     treeDigest,
     auditClosureDigest: 'c'.repeat(64),
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
-  // The exact dual-advisory registry state served since 2026-08-04 (GHSA-rgw5-rvv9-x895 landed).
+  // The exact registry state served since 2026-09-29T23:44Z (three more advisories, fixed in 5.0.10–5.0.12;
+  // the overlay moved to 5.0.12 the same day). Advisory order is the order npm audit returns.
   const finding = {
     name: 'brace-expansion',
     severity: 'high',
@@ -750,9 +752,33 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
       severity: 'high',
       range: '>=4.0.0 <5.0.9',
+    }, {
+      source: 1240103,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+      severity: 'moderate',
+      range: '>=4.0.0 <5.0.12',
+    }, {
+      source: 1240107,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.11',
+    }, {
+      source: 1240111,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.10',
     }],
     effects: [],
-    range: '4.0.0 - 5.0.8',
+    range: '4.0.0 - 5.0.11',
     nodes: ['node_modules/npm/node_modules/brace-expansion'],
     fixAvailable: true,
   }
@@ -796,9 +822,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-09-28 上游新發兩則(OE15,2026-09-29 認列):range 隨之變 <=10.5.0
           { source: 1239948, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate', range: '<=10.5.0' },
           { source: 1239949, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate', range: '>=10.2.0 <=10.5.0' },
+          // 2026-09-29T23:46Z 上游再發兩則(2026-09-30 認列):range 隨之變 <=10.7.0
+          { source: 1240097, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate', range: '<=10.7.0' },
+          { source: 1240098, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate', range: '<=10.7.0' },
         ],
         effects: [],
-        range: '<=10.5.0',
+        range: '<=10.7.0',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -844,6 +873,13 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
     stale.vulnerabilities['ip-address'].range = '<=10.3.0'
     assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
+  {
+    // 2026-09-30 對照組:09-29 認列的五則 / <=10.5.0 形狀現在也是漂移
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 5)
+    stale.vulnerabilities['ip-address'].range = '<=10.5.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, 'ip-address 09-29 的五則形狀必須被判成漂移')
   }
   {
     const stale = structuredClone(report)
@@ -1707,3 +1743,12 @@ test('npm audit 對 advisory 端點的暫時性網路錯誤重試 3 次後仍 fa
   // 上限必須是正整數
   assert.throws(() => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner: () => ({ status: 0, stdout: clean, stderr: '' }), npmRuntime, installedOverlayReceipt, retryLimit: 0 }), /retry limit must be a positive integer/)
 })
+
+// 2026-09-30:只有渲染用參考樹可用歷史認證修補層;判定表逐一走過每個政策(新增政策時這格必須被刻意補上)。
+test('only the render-only reference policy may install a historically certified npm overlay', () => {
+  const table = { enforce: false, 'report-render-only-reference': true, 'report-protected-base-verifier': false }
+  assert.deepEqual(Object.keys(table).sort(), [...GOVERNANCE_VULNERABILITY_POLICIES].sort(), 'every vulnerability policy needs an explicit row')
+  for (const [policy, expected] of Object.entries(table)) assert.equal(acceptsHistoricalNpmOverlay(policy), expected, policy)
+  assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
+})
+

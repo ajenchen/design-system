@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-09-29T07:43:46.344Z",
-    "stories": 1055,
+    "generatedAt": "2026-09-30T17:55:25.044Z",
+    "stories": 1058,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -259,12 +259,14 @@
       "design-system-components-coachmark-設計規格--size-matrix",
       "design-system-components-coachmark-設計規格--state-behavior",
       "design-system-components-combobox-展示--in-data-table",
+      "design-system-components-combobox-展示--inline-search-focus-contract",
       "design-system-components-combobox-展示--loading-first-open",
       "design-system-components-combobox-展示--modes",
       "design-system-components-combobox-展示--modes-remove-focus-contract",
       "design-system-components-combobox-展示--remote-search",
       "design-system-components-combobox-展示--remote-search-hint",
       "design-system-components-combobox-展示--searchable",
+      "design-system-components-combobox-展示--searchable-inline-wrap",
       "design-system-components-combobox-展示--size-alignment",
       "design-system-components-combobox-展示--unrestricted-contract",
       "design-system-components-combobox-展示--unrestricted-message-states",
@@ -591,7 +593,9 @@
       "design-system-components-peoplepicker-展示--hug-width-multi-stack",
       "design-system-components-peoplepicker-展示--loading-first-open",
       "design-system-components-peoplepicker-展示--multi",
+      "design-system-components-peoplepicker-展示--multi-inline-search",
       "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
+      "design-system-components-peoplepicker-展示--overflow-remove-focus-contract",
       "design-system-components-peoplepicker-展示--remote-search",
       "design-system-components-peoplepicker-展示--single",
       "design-system-components-peoplepicker-展示--size-alignment",
@@ -657,7 +661,6 @@
       "design-system-components-radiogroup-設計規格--size-matrix",
       "design-system-components-radiogroup-設計規格--state-behavior",
       "design-system-components-rating-展示--in-field",
-      "design-system-components-rating-展示--interactive-review",
       "design-system-components-rating-展示--read-only-product-rating",
       "design-system-components-rating-設計原則--usage-guidance",
       "design-system-components-rating-設計原則--whole-stars-and-compact",
@@ -1060,8 +1063,8 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "f372871b8781d4704065896122566922d2cd50e8ee1de8a89fd1e18a7af59957",
-    "fingerprints": 749
+    "storyIdsSha256": "7afdd9d7a700a89de4cc5216e16c94fdc3ba6ad76d825aea18928a8b002a570b",
+    "fingerprints": 748
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1522,7 +1525,6 @@
     "design-system-components-radiogroup-設計規格--overview|color-contrast": 15,
     "design-system-components-radiogroup-設計規格--size-matrix|color-contrast": 26,
     "design-system-components-radiogroup-設計規格--state-behavior|color-contrast": 12,
-    "design-system-components-rating-展示--interactive-review|color-contrast": 1,
     "design-system-components-rating-設計原則--usage-guidance|color-contrast": 21,
     "design-system-components-rating-設計原則--whole-stars-and-compact|color-contrast": 9,
     "design-system-components-rating-設計原則--yellow-star-convention|color-contrast": 5,

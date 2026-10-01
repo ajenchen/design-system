@@ -23,6 +23,8 @@ import {
 } from "@/design-system/components/Sheet/sheet"
 import { Skeleton } from "@/design-system/components/Skeleton/skeleton"
 import { ChromeHeader } from "@/design-system/patterns/header-canonical/chrome-header"
+import { isImeComposing } from "@/design-system/lib/ime-composition"
+import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
 import {
   Tooltip,
   TooltipContent,
@@ -185,9 +187,7 @@ const SidebarProvider = React.forwardRef<
       const current = openMobileRef.current
       const next = typeof value === "function" ? value(current) : value
       if (next && !current && typeof document !== "undefined") {
-        mobileOpenerRef.current = opener ?? (
-          document.activeElement instanceof HTMLElement ? document.activeElement : null
-        )
+        mobileOpenerRef.current = opener ?? captureFocusOrigin()
       }
       openMobileRef.current = next
       setOpenMobileState(next)
@@ -222,10 +222,10 @@ const SidebarProvider = React.forwardRef<
         ) {
           // 2026-07-05 D4 修:全域攔截加三道 guard——
           // (1) defaultPrevented:app 層 editor 已處理同快捷鍵時不 double-fire;
-          // (2) isComposing:IME 組字中不攔(組字期間 key 事件不代表使用者意圖);
-          // (3) 可編輯 target:input / textarea / contentEditable 內 Cmd/Ctrl+B 是
-          //     bold 等編輯語意,快捷鍵讓位(對齊 VS Code / Linear 讓位可編輯區慣例)。
-          if (event.defaultPrevented || event.isComposing) return
+          // (2) IME 組字中不攔(組字期間 key 事件不代表使用者意圖;判準 lib/ime-composition.ts,2026-09-30 補 keyCode 229);
+          // (3) 可編輯 target:input / textarea / contentEditable 內 Cmd/Ctrl+B 常是粗體等編輯指令,快捷鍵讓位。
+          //     這一道是本 DS 自己的理由(編輯語意優先),不是對齊外部產品;規則住 sidebar.spec.md「快捷鍵不衝突」。
+          if (event.defaultPrevented || isImeComposing(event)) return
           const target = event.target
           if (
             target instanceof HTMLElement &&
@@ -378,11 +378,12 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
+            // 關閉後焦點還給開啟抽屜的元素(SidebarTrigger 不是 Radix SheetTrigger → Radix 沒有東西可還);
+            // 還法全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + modal,指標關閉不畫鍵盤框、焦點已被接走不搶)
             onCloseAutoFocus={(event) => {
-              event.preventDefault()
               const opener = mobileOpenerRef.current
               mobileOpenerRef.current = null
-              if (opener?.isConnected) opener.focus({ preventScroll: true })
+              returnFocusToOpener(event, opener, { noTrigger: true, modal: true })
             }}
             className="w-[var(--sidebar-width)] bg-surface p-0 text-foreground [&>button]:hidden"
             style={

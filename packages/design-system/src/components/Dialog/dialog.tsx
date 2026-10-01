@@ -13,6 +13,7 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
+import { withImeSafeEscape } from "@/design-system/lib/ime-composition"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -135,7 +136,7 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
@@ -292,6 +293,8 @@ const DialogContent = React.forwardRef<
         ...style,
       }}
       {...props}
+      // 輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
+      onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
     >
       {children}
     </DialogPrimitive.Content>

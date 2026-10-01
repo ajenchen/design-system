@@ -30,6 +30,7 @@ import {
   validateConsumerCheckProvenance,
   consentCoversHead,
   consumerStepAction,
+  nextConsumerVersion,
   productContentDigest,
   productChangeSinceBaseline,
   publishedBaselineRef,
@@ -1066,3 +1067,14 @@ test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
     'packages/storybook-config/dist/preview.js',
   ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })
+
+test('consumer 鏈:少跳一版時先派手上那一版的下一版,不是目前這一版(2026-09-30 WM 145 vs beta.147)', () => {
+  const tags = ['v0.1.0-beta.147', 'v0.1.0-beta.146', 'v0.1.0-beta.145', 'v0.1.0-beta.144']
+  assert.equal(nextConsumerVersion('0.1.0-beta.145', tags, '0.1.0-beta.147'), '0.1.0-beta.146', 'WM 停在 145 → 先派 146')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '146 的下一版就是目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags.slice(1), '0.1.0-beta.147'), '0.1.0-beta.147', '本地 tag 還沒 fetch 到 147 → 退回目前這一版')
+  assert.equal(nextConsumerVersion(null, tags, '0.1.0-beta.147'), '0.1.0-beta.147', 'installed 讀不到 → 維持舊行為,不多假設')
+  assert.equal(nextConsumerVersion('0.1.0-beta.999', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '不在鏈上 → 目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.147', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '已是最新 → 目前這一版')
+})
+

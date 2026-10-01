@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
 import { defaultFilter } from 'cmdk'
@@ -20,7 +21,7 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 // 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
-import { useSelectMenuPopupKeys } from '@/design-system/components/SelectMenu/select-menu-keyboard'
+import { useSelectMenuPopupKeys, useTriggerSearch } from '@/design-system/components/SelectMenu/select-menu-keyboard'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -93,8 +94,8 @@ export interface SelectMenuProps {
   createLabel?: (query: string) => string
   /**
    * 受控搜尋字串(2026-07-18 決策11:讓 consumer 用**外部搜尋**(如 Select 的 trigger 內嵌 input)
-   * 驅動 creatable create-row 顯隱)。傳入 = 受控(SelectMenu 不自管 search、close 不 reset,由
-   * parent 負責);不傳 = 內部 uncontrolled(既有行為,零影響)。搭配 `searchable=false` +
+   * 驅動 creatable create-row 顯隱)。傳入 = 受控(字住在 parent;SelectMenu 要改字時經 `onSearchChange` 通知 ——
+   * 關閉時清空、欄位內多選挑選後清空、建立列選完清空都一樣);不傳 = 內部 uncontrolled。搭配 `searchable=false` +
    * `creatable` 時,SelectMenu 不畫自己的 input,但 create-row 仍依此 search 顯示。
    */
   search?: string
@@ -133,7 +134,7 @@ export interface SelectMenuProps {
    *
    * **為什麼預設關**(user 原話):「消費端要自行判斷到底選單的內容是否要出現不限這個選項啊,
    * 我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」—— 這是**語意判斷**,DS 判斷不了。
-   * 何時該開 / 不該開見 `select-menu.spec.md`「何時用 / 何時不用」。
+   * 何時該開 / 不該開見 `select-menu-unrestricted.spec.md`「何時該開 / 何時不該開」。
    *
    * **「不限」不是「全選」**:全選是「現在清單上這些」,不限是「不設限,含以後新增的選項」。
    * 所以它是一個**獨立的值**,不會被展開成具體選項,也不會因為使用者手動勾滿就自動變成它。
@@ -190,6 +191,12 @@ export interface SelectMenuProps {
   renderLabel?: (option: SelectMenuOption) => React.ReactNode
   /** 攔截 PopoverContent 的 onOpenAutoFocus（如 Select searchable 需阻止 focus 搶走） */
   onOpenAutoFocus?: (e: Event) => void
+  /**
+   * 反白列 id / 清單 id 變了就回報(浮層關閉、清單卸載時回報 undefined)。搜尋框在觸發欄位內的 consumer(Select `searchable` /
+   * Combobox `searchIn='trigger'`)用它寫輸入框的 aria-activedescendant + aria-controls:接 `useActiveDescendant(inputRef)` 的回傳值。
+   * 原樣轉給 Command(反白 id 的唯一讀法住那裡,`Command/command.tsx` `useCommandRootObserver`)。
+   */
+  onActiveOptionChange?: (active: CommandActiveOption | undefined) => void
 
   /**
    * Popover 內容容器的 DOM id(set 在 PopoverContent 外層 div,**非** cmdk 內層 `role="listbox"` 本身)。
@@ -250,6 +257,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   onOpenChange: controlledOnOpenChange,
   renderLabel,
   onOpenAutoFocus,
+  onActiveOptionChange,
   contentId,
   'aria-label': ariaLabel = '選項清單', // i18n-allow: DS default; consumer override via aria-label prop
   className,
@@ -278,7 +286,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   )
 
   // ── 清單來源(2026-09-09 user 拍板;owner:select-menu.spec.md「遠端搜尋」「Suggestions」)──
-  // 本機過濾:永遠是 options(cmdk 自己過濾;舊清單不清)。
+  // 本機過濾:options(浮層內搜尋框 → cmdk 自己過濾;搜尋字在觸發欄位 → 下方 labelMatchesSearch;舊清單不清)。
   // 遠端搜尋(filterOption=false):
   //   關鍵字空 + 有給 suggestions → 建議清單(部分選項,DS 加「建議」標題);
   //   抓資料中 → 舊 options 不顯示(只剩載入訊息列;Ant select-users 示範 setOptions([]) / Polaris 藏 optionsMarkup;
@@ -286,11 +294,17 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   //   其餘 → options(伺服器結果;關鍵字空時也視為部分清單,加「建議」標題)。
   const isRemote = !filterOption
   const isIdle = search.trim() === ''
+  // 搜尋字在觸發欄位(受控 search、本元件不畫搜尋框):cmdk 看不到這個字,本機過濾在這裡做 —— **一條規則**:
+  // label 含關鍵字(去頭尾空白、不分大小寫;與下方建立列的同名判定同樣 trim)。2026-09-30 前 Select / Combobox 各寫一份且漂移
+  // (Select trim、Combobox 不 trim:「fu 」在 Combobox 得 0 筆),「不限」列又完全不看這個字(見下方),收回這裡一份。
+  const isTriggerSearch = isSearchControlled && !searchable
+  const searchQuery = search.trim().toLowerCase()
+  const labelMatchesSearch = React.useCallback((label: string) => label.toLowerCase().includes(searchQuery), [searchQuery])
   const visibleOptions = React.useMemo<SelectMenuOption[]>(() => {
-    if (!isRemote) return options
+    if (!isRemote) return isTriggerSearch && !isIdle ? options.filter((o) => labelMatchesSearch(o.label)) : options
     if (isIdle && suggestions !== undefined) return suggestions
     return optionsLoading ? [] : options
-  }, [isRemote, isIdle, suggestions, optionsLoading, options])
+  }, [isRemote, isTriggerSearch, isIdle, labelMatchesSearch, suggestions, optionsLoading, options])
   // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
   const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
 
@@ -318,9 +332,12 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 本機模式「不限」是一顆會被註冊、也會被過濾的普通列,筆數自然正確;遠端模式不過濾,
   // 但它只在配對到時才渲染,所以「沒有選項」該出現的時候仍然出得來。兩邊都不需要 `forceMount`
   //(那會讓它不被計入筆數,反而造成「不限 + 沒有選項」同時出現)。
+  // 搜尋字在觸發欄位時 cmdk 不過濾(shouldFilter=false),所以本機也要自己比,用跟一般選項同一條(上方 labelMatchesSearch;
+  // 2026-09-30 前這裡把「本機」一律當成 cmdk 在過濾 → 打「fo」清單出現「不限、Food」、反白在「不限」,Enter 就把「不限」取消了)
   const unrestrictedMatchesSearch = isIdle
     ? visibleOptions.length > 0
-    : !isRemote || defaultFilter(unrestrictedValue, search, [unrestrictedLabel]) > 0
+    : isRemote ? defaultFilter(unrestrictedValue, search, [unrestrictedLabel]) > 0
+    : !isTriggerSearch || labelMatchesSearch(unrestrictedLabel)
   const showUnrestricted = multiple && unrestricted && !optionsLoading && unrestrictedMatchesSearch
 
   // 開發模式警告:保留值跟真實選項撞名 → cmdk 以 value 當 identity,撞名會雙亮 + 選錯(同 `__create__` 的病)
@@ -355,6 +372,10 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 「不限」目前是不是被選著 —— 放在 `selectedValues` 之後(它依賴那個值)。
   const isUnrestrictedSelected = multiple && unrestricted && selectedValues.includes(unrestrictedValue)
 
+  // 搜尋字在觸發欄位:多選挑選後清空關鍵字、打字 → 反白回第一個符合項(select-menu-keyboard.ts useTriggerSearch;規則 spec「搜尋關鍵字何時保留、何時清空」)
+  const commandRef = React.useRef<HTMLDivElement>(null)
+  const { clearAfterPick } = useTriggerSearch({ commandRef, active: open && isTriggerSearch, multiple, search, setSearch })
+
   const handleSelect = React.useCallback(
     (optionValue: string) => {
       if (multiple) {
@@ -380,12 +401,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           next = [...withoutUnrestricted(selectedValues), optionValue]
         }
         onValueChange?.(next)
+        clearAfterPick()
       } else {
         onValueChange?.(optionValue)
         setOpen(false)
       }
     },
-    [multiple, selectedValues, isSelected, onValueChange, setOpen, unrestricted, unrestrictedValue]
+    [multiple, selectedValues, isSelected, onValueChange, setOpen, unrestricted, unrestrictedValue, clearAfterPick]
   )
 
   // ── Multi-select: select all ──
@@ -430,7 +452,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
       const existing = unrestricted ? selectedValues.filter((v) => v !== unrestrictedValue) : selectedValues
       onValueChange?.(applySelectAll(existing, selectableOptions.map((o) => o.value)))
     }
-  }, [multiple, allState, selectableOptions, selectedValues, onValueChange, unrestricted, unrestrictedValue])
+    clearAfterPick()
+  }, [multiple, allState, selectableOptions, selectedValues, onValueChange, unrestricted, unrestrictedValue, clearAfterPick])
 
   // ── Creatable ──
   const showCreate = React.useMemo(() => {
@@ -459,10 +482,17 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     return grouped
   }, [groups, visibleOptions, showSuggestionHeading, suggestionsLabel])
 
-  // ── Reset search on close(僅 uncontrolled;受控時由 parent 負責 reset)──
+  // ── 浮層關閉 → 清空搜尋關鍵字(受控 / 未受控同一條;全 DS 只有這一份,規則 select-menu.spec.md「搜尋關鍵字何時保留、何時清空」)──
+  // 未受控:清自己的字;受控(Select / Combobox 把字留在自己身上 —— 欄位上的一鍵清空要能連字一起清):經 onSearchChange('') 叫持有者清。
+  // 只在「開 → 關」那一下、而且字不是空的才做:關著時持有者自己設的字不動,掛載時也不多發一次 onSearchChange('')。
+  // 2026-10-01 前:只清未受控的字,受控時由 parent 各寫一份 `useEffect(() => { if (!open) setSearch('') })`(select.tsx、combobox.tsx),
+  // 同一條規則三個住所(而且兩個 parent 在掛載時都對 consumer 多發一次 onSearchChange(''))。
+  const wasOpenRef = React.useRef(open)
   React.useEffect(() => {
-    if (!open && !isSearchControlled) setInternalSearch('')
-  }, [open, isSearchControlled])
+    const justClosed = wasOpenRef.current && !open
+    wasOpenRef.current = open
+    if (justClosed && search !== '') setSearch('')
+  }, [open, search, setSearch])
 
   // 2026-06-01 Select/Combobox #15(user 拍板 A):非搜尋時開選單把 focus 移到 cmdk-root,
   // 讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。原 PopoverContent default autofocus 找 body
@@ -486,20 +516,35 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     resolveOptionValue: (dataValue) => visibleOptions.find((o) => !o.disabled && o.value.trim() === dataValue)?.value,
   })
 
+  // ── 觸發欄位的開關只認「按在觸發欄位 DOM 裡」的 click(2026-10-01;規則 spec「A11y 預設」Focus 段「觸發欄位的開關」)──
+  // React 合成事件會穿過 portal 沿元件樹冒泡(同 TreeView handleKeyDownCapture 的判斷):觸發欄位裡的頭像名片、「+N」浮出清單
+  // 是掛在 body 的另一層,按在上面的 click 也會冒到這裡的開關 —— 開著時把選單關掉(關鍵字跟著清),關著時把選單打開。
+  // 不擋事件:Radix 的開關只認 preventDefault(`composeEventHandlers(onClick, onOpenToggle)`),那會連卡片裡連結的預設動作一起擋;
+  // 事件照常往上冒,觸發欄位的祖先(例:DataTable 儲存格)收到的跟以前一樣。只讓這一次開關不生效:
+  // 旗標在這一次 click 的同步派發裡設,緊接著被 Radix 的開關(→ 下方 onOpenChange)用掉;事件已被別人 preventDefault 時 Radix 不開關,旗標也不設。
+  const ignoreToggleRef = React.useRef(false)
+  const handleTriggerClick = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
+    ignoreToggleRef.current = !e.defaultPrevented && !e.currentTarget.contains(e.target as Node)
+  }, [])
+  const handlePopoverOpenChange = React.useCallback((next: boolean) => {
+    if (ignoreToggleRef.current) { ignoreToggleRef.current = false; return }
+    setOpen(next)
+  }, [setOpen])
+
   // RowSizeProvider 讓 PopoverContent 子樹內任何 <ItemIcon> / <ItemAvatar> /
   // <ItemInlineAction> 都自動讀到對的 size,跟 SidebarProvider / TreeView 同一條規則。
   // (注:Popover 透過 Portal 渲染,context 仍然會跨 portal 傳遞——React context 是 tree-based
   // 不是 DOM-based,Portal 不影響 context propagation)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handlePopoverOpenChange}>
       {/* B11:可打字搜尋時焦點在觸發欄位內的輸入框,Tab 規則要掛在這裡(不可打字時掛在下方 Command) */}
-      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown}>{children}</PopoverTrigger>
+      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown} onClick={handleTriggerClick}>{children}</PopoverTrigger>
       <RowSizeProvider value={size}>
       <PopoverContent
         ref={popupKeys.contentRef}
         id={contentId}
-        // B11:Tab 收起時不讓 Radix 在關閉動畫後把焦點搶回觸發欄位(焦點已走到下一格)
-        onCloseAutoFocus={popupKeys.onCloseAutoFocus}
+        // B11:Tab 收起時不讓 Radix 在關閉動畫後把焦點搶回觸發欄位(焦點已走到下一格);指標挑選收起 → 還焦點不畫鍵盤框(Command 同一支)
+        onCloseAutoFocus={(e) => { popupKeys.onCloseAutoFocus(e); returnFocusToOpener(e, popupKeys.triggerRef.current) }}
         // 2026-07-17 Dim 10 a11y 修:role="dialog" 浮層 accessible name(Radix Popover 無自動命名)
         aria-label={ariaLabel}
         // w-auto override PopoverContent default w-72(rich-popover canonical)— SelectMenu 走「跟 trigger 同寬」
@@ -543,6 +588,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         }}
       >
         <Command
+          ref={commandRef}
+          // 觸發欄位內輸入框的 aria-activedescendant(反白 id 由 Command 根讀,見 onActiveOptionChange prop)
+          onActiveOptionChange={onActiveOptionChange}
           // B11 / L7:不可打字時焦點在浮層裡(cmdk 殼 / 清單),Tab 與空白鍵的規則掛在這裡
           onKeyDown={popupKeys.onKeyDown}
           shouldFilter={searchable && filterOption}

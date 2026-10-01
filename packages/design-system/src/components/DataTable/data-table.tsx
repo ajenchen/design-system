@@ -58,6 +58,7 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { Button } from '@/design-system/components/Button/button'
 
 // ── 填滿高度(height="100%" / "fill")的格子量法 ────────────────────────────────
@@ -3658,7 +3659,7 @@ function DataTableInner<TData>(
       // Codex Q-B1:不分 mouse selected vs keyboard focused,共用 selectedCellId state。
       // Phase B3 IME guard(2026-05-10 per codex Q-B3):中文輸入法組字中 ignore 所有 nav keys。
       // 2026-05-16 Round 5 audit Dim 27 fix:`keyCode` deprecated but still in KeyboardEvent type — no cast needed。
-      if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
+      if (isImeComposing(e)) return // 判準唯一住所 lib/ime-composition.ts(2026-09-30 收成一支)
       // 2026-07-14 dim-10 修:spreadsheet 分支排除 descendant 互動控件 — 焦點在 cell 內
       // action button / link / input 時,Enter 應 activate 該控件、方向鍵交還控件,
       // 原 handler 會 preventDefault 取消按鈕 activation、拿舊 selectedCellId 導覽。
@@ -4954,7 +4955,7 @@ function DataTableInner<TData>(
             // 此處 portal wrapper 是最近 controller 等價層;Field 內部 input 自帶 isComposing 但
             // wrapper-level Tab handler 必須也 guard,避免 onKeyDownCapture 早於 Field input)
             // 2026-05-16 Round 5 audit Dim 27 fix:`keyCode` deprecated but still in KeyboardEvent type — no cast needed
-            if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
+            if (isImeComposing(e)) return // 判準唯一住所 lib/ime-composition.ts
             if (e.key !== 'Tab') return
             e.preventDefault()
             e.stopPropagation()

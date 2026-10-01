@@ -63,7 +63,8 @@ const PaletteDemo = () => {
 
   return (
     <div className="flex flex-col gap-3 max-w-xl">
-      <Button variant="tertiary" startIcon={Search} onClick={() => setOpen(true)}>搜尋或輸入指令…(⌘K)</Button>
+      {/* 開對話框的按鈕宣告彈出型別與開合(Radix DialogTrigger 會自動帶;指令面板沒有 DialogTrigger,由按鈕自己寫) */}
+      <Button variant="tertiary" startIcon={Search} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>搜尋或輸入指令…(⌘K)</Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜尋 issue、人員,或輸入指令…" />
         <CommandEmpty>沒有結果</CommandEmpty>

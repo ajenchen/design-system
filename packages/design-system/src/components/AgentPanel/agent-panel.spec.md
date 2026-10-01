@@ -181,7 +181,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   - ButtonDivider 置於自動高度 actions cluster(gap-2)內(action-bar 規則 3 誤觸保護;
     直接放固定高 chrome header 會退化為容器高)。
 - A11y:每鈕 `aria-label`;標題觸發 `aria-haspopup="dialog"` + `aria-expanded`;
-  改名/刪除 Dialog 關閉後焦點回到標題觸發。
+  改名/刪除 Dialog 關閉後焦點還給開啟它的行內動作鈕;那一列已隨歷史浮層收起 → 回標題觸發(全 DS 一支 `../../lib/overlay-focus-return.ts`,2026-09-30)。
 
 ### 3. AgentConversation(訊息卷軸區)
 
@@ -233,6 +233,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
   超寬=`useOverflowIndices` 量測 + `<OverflowIndicator shape="tag">`(+N,浮層列出被藏 Tag)。
   分工:輸入中 Tag(可 dismiss)、送出後 Chip assist 視覺(2026-09-01 拍板之本家族分工)。
+- 鍵盤:`Enter` 送出、`Shift+Enter` 換行;**輸入法組字中的 `Enter` 是選字,不送出**(判準全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`;2026-09-30 前只看 `isComposing`,Safari 用注音按 Enter 選字的那一顆 `isComposing` 已是 false、只剩 `keyCode` 229,訊息會被直接送出)。
 - 工具列高 40、鈕 xs、內距 8;`+`(`onAddAttachment` 必填)恆渲染;送出=Button primary xs;
   **送出↔停止**:代理進行中同鈕同位換實心正方,0.15s 淡切;停止態 `aria-label="停止生成"`。
   實心正方=**12/24 grid 自繪**(8px @ icon 16;= Material Symbols `stop` 480/960 比例,
@@ -270,7 +271,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   空白 → `invalid` + FieldError「名稱不可空白」,儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);
   刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
-- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發。
+- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發(開啟時 `captureFocusOrigin` 記下行內動作鈕、關閉時 `returnFocusToOpener` 還,找不到就走標題觸發這條 fallback;2026-09-30 前是關閉後 `setTimeout 0` 聚焦標題的另一份實作)。
 - 所有 callback(`onSelectConversation` / `onRenameConversation` / `onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
 
 ### 附:空狀態

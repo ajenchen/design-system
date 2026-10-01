@@ -34,6 +34,8 @@
 //   await waitForStoryRender(frame, { storyId })                 // 不是導覽觸發的切換(管理介面點側欄)也用同一份判定
 //   await settleAfterInteraction(page, { frames: 10 })           // 點開浮層 / 按鍵之後等版面真的停了(取代固定睡眠;ok:false = 儀器失效)
 //   await waitForDocsRender(frame, { docsId, timeoutMs })        // docs 頁真的渲染出來(docs 沒有 story 的 render phase,判定見該函式)
+//   const at = await ownSurfacePosition(handle)                  // 觸發欄位自己的表面(不在 Tag / 頭像 / 按鈕上);交給 handle.click({ position: at.position })
+//   await parkPointer(page)                                      // 開關浮層之後把指標停到中性位置(不留在會滑過開卡片的東西上)
 
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
@@ -441,6 +443,103 @@ export async function waitForFocusStable(target, { frames = 10, capMs = 10_000 }
   if (!target || typeof target.evaluate !== 'function') throw new TypeError('waitForFocusStable:target 必須是 Playwright 的 Page 或 Frame')
   if (!Number.isInteger(frames) || frames < 1) throw new TypeError(`waitForFocusStable:frames 必須是 ≥ 1 的整數,實得 ${JSON.stringify(frames)}`)
   return target.evaluate(waitForStableFocus, { frames, capMs })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 指標落點 —— 「點觸發欄位自己的表面」與「把指標停到中性位置」的**唯一**實作(2026-10-01)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼有這兩支**:掃全部 story、逐一點開每個 `[role="combobox"]` 的閘(overlay-footer-gutter、select-all-footer)原本用
+// Playwright 的預設點法 —— 點元素**正中央**,點完指標就停在那裡。那是「點開這個下拉」的代理(M37):正中央剛好是欄位空白處時成立,
+// 正中央落在欄位裡的 Tag 頭像 / 頭像堆疊 / Tag × 上時就不成立 —— 2026-09-30 欄位內搜尋框改成與 Tag 同列後,PeoplePicker
+// 「多人 × 欄位內搜尋」第 3 格高度 60 → 32,正中央變成「Eric Tsai」那顆頭像:按下去焦點與指標都落在頭像上,名片卡(322×374)
+// 打開並蓋住第 4 格,第 4 格點不到(overlay-footer-gutter 兩次全掃都紅在 Timeout;select-all-footer 9 次紅 4 次)。
+// 同一天另一則(「+N 浮出清單移除驗證」)正中央是頭像堆疊的「+N」,指標停在那裡 → 名單卡打開蓋住第 2 格,被默默算成「被遮罩蓋住」而沒量。
+// 產品在 main 上點頭像本來就會開名片卡(實測 main 與分支同一個行為)—— 錯的是量具:點的不是「欄位」,而是欄位裡另一個有自己行為的東西。
+//
+// 要保證的性質(逐字):**按下去的那一點,elementFromPoint 是觸發欄位自己(或它裡面沒有自己行為的部分:空白、文字、欄位內輸入框);
+// 不在它裡面任何一個自有行為的東西上(按鈕、連結、Tag、頭像、頭像堆疊 / +N、任何 Radix 觸發點)**;
+// 以及**每次開關之後,指標不停在任何一個會因滑過而打開東西的元素上**。
+//
+// 用法:
+//   const at = await ownSurfacePosition(handle)                    // { ok, position, why } —— position 相對元素 padding box 左上角(Playwright click 的 position 同義)
+//   await handle.click({ position: at.position, timeout })          // 由 Playwright 自己做可操作性檢查(被蓋住照樣會失敗)
+//   const at = await ownSurfacePosition(handle, { prefer: 'end' }) // 從右端往左找(箭頭那一側;預設 'center' = 離正中央最近的點)
+//   await parkPointer(page)                                         // { ok, x, y, neutral } —— 已經移過去了;neutral:false = 整個畫面找不到中性位置(停在最後一個候選)
+// 兩支的判準都在頁面端函式裡,也匯出給必須在自己的 page.evaluate 裡用同一份判準的閘(OWN_SURFACE_EXCLUDE)。
+
+/** 觸發欄位裡「有自己行為」的東西:按在這些上面不算按在欄位上。刻意包含 `[data-state]`(Radix 的 Tooltip / HoverCard / Popover 觸發點都帶它)。 */
+export const OWN_SURFACE_EXCLUDE = 'button, a[href], [role="button"], [data-collection-remove], [data-tag-root], [data-avatar-size], [data-avatar-stack], [data-overflow-indicator], [data-state]'
+/** 滑過會有反應的東西:指標不得停在這些上面。 */
+const HOVER_REACTIVE = 'a[href], button, [role="button"], [data-state], [tabindex], input, textarea, select, [data-radix-popper-content-wrapper], [role="dialog"], [data-tag-root], [data-avatar-size], [data-overflow-indicator], [title]'
+
+// 頁面端:在 el 上找一個自己的表面點。**以 evaluate 序列化傳入,不得引用外部變數。**
+function ownSurfacePointInPage(el, { prefer, exclude }) {
+  if (!el || !el.isConnected || el.getClientRects().length === 0) return { ok: false, why: '看不見或不在文件裡' }
+  el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+  const r = el.getBoundingClientRect()
+  const cx = r.left + r.width / 2
+  const cy = r.top + r.height / 2
+  const xs = []
+  for (let x = r.left + 3; x <= r.right - 3; x += 6) xs.push(x)
+  xs.push(cx)
+  const ys = [cy, r.top + Math.min(r.height / 2, 14)]
+  for (let y = r.top + 4; y <= r.bottom - 4; y += 8) ys.push(y)
+  const points = []
+  for (const y of ys) for (const x of xs) points.push([x, y])
+  if (prefer === 'end') points.sort((a, b) => (Math.abs(a[1] - cy) - Math.abs(b[1] - cy)) || (b[0] - a[0]))
+  else points.sort((a, b) => Math.hypot(a[0] - cx, a[1] - cy) - Math.hypot(b[0] - cx, b[1] - cy))
+  const own = (hit) => {
+    if (!hit || !el.contains(hit)) return false
+    for (let n = hit; n && n !== el; n = n.parentElement) if (n.matches(exclude)) return false
+    return true
+  }
+  for (const [x, y] of points) {
+    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue
+    const hit = document.elementFromPoint(x, y)
+    if (own(hit)) {
+      return { ok: true, x, y, position: { x: x - (r.left + el.clientLeft), y: y - (r.top + el.clientTop) }, hit: hit === el ? 'self' : hit.tagName.toLowerCase() }
+    }
+  }
+  return { ok: false, why: '整個觸發欄位上找不到自己的表面(被蓋住,或全被 Tag / 頭像 / 按鈕佔滿)' }
+}
+
+// 頁面端:找一個中性的指標停放點(命中的是 html / body / 沒有任何滑過反應的祖先)。**以 evaluate 序列化傳入,不得引用外部變數。**
+function neutralPointInPage({ reactive }) {
+  const w = innerWidth, h = innerHeight
+  const candidates = [[w - 2, h - 2], [2, h - 2], [w - 2, 2], [2, 2], [w / 2, h - 2], [w - 2, h / 2], [2, h / 2], [w / 2, 2]]
+  for (const [x, y] of candidates) {
+    const hit = document.elementFromPoint(x, y)
+    if (!hit || hit === document.documentElement || hit === document.body || !hit.closest(reactive)) return { x, y, neutral: true }
+  }
+  return { x: candidates[0][0], y: candidates[0][1], neutral: false }
+}
+
+/**
+ * 觸發欄位(或任何會被點開的元素)上「自己的表面」的點,相對它的 padding box 左上角 —— 直接交給 Playwright 的 `click({ position })`。
+ * 會先把元素捲到畫面中央(Playwright 之後再捲也不影響相對位置)。
+ * @param {import('playwright').ElementHandle} handle
+ * @param {{ prefer?: 'center' | 'end' }} [options]  center(預設)= 離正中央最近的點;end = 同一列從右端往左(箭頭那一側)
+ * @returns {Promise<{ ok: boolean, position?: { x: number, y: number }, x?: number, y?: number, hit?: string, why?: string }>}
+ *   ok:false = 找不到自己的表面(被蓋住或全被佔滿)—— 呼叫端**不得**退回點正中央(那正是這支要取代的代理),要照「被蓋住」計數並印出
+ */
+export async function ownSurfacePosition(handle, { prefer = 'center' } = {}) {
+  if (!handle || typeof handle.evaluate !== 'function') throw new TypeError('ownSurfacePosition:handle 必須是 Playwright 的 ElementHandle')
+  if (prefer !== 'center' && prefer !== 'end') throw new TypeError(`ownSurfacePosition:prefer 只能是 'center' 或 'end',實得 ${JSON.stringify(prefer)}`)
+  return handle.evaluate(ownSurfacePointInPage, { prefer, exclude: OWN_SURFACE_EXCLUDE }).catch((error) => ({ ok: false, why: `量不到(${String(error?.message || error).split('\n')[0]})` }))
+}
+
+/**
+ * 把指標停到畫面上一個中性的位置(滑過不會打開任何東西),並回傳停在哪。每次開關浮層之後呼叫,免得指標留在剛才點的地方,
+ * 把那裡的名片卡 / 名單卡 / Tooltip 打開、蓋住下一個要點的東西。
+ * @param {import('playwright').Page} page
+ * @returns {Promise<{ x: number, y: number, neutral: boolean }>}  neutral:false = 候選位置都有反應(仍停在第一個候選,呼叫端可印出)
+ */
+export async function parkPointer(page) {
+  if (!page || typeof page.evaluate !== 'function' || !page.mouse) throw new TypeError('parkPointer:page 必須是 Playwright 的 Page')
+  const spot = await page.evaluate(neutralPointInPage, { reactive: HOVER_REACTIVE })
+  await page.mouse.move(spot.x, spot.y)
+  return spot
 }
 
 // 頁面端:docs 頁渲染到哪了(waitForDocsRender 用;回 false = 還沒)。**以 waitForFunction 序列化傳入,不得引用外部變數。**

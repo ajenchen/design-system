@@ -79,6 +79,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/design-system/components/Command/command'
+import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
   ItemInlineAction,
@@ -106,6 +107,7 @@ import {
   DialogTitle,
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import './agent-panel.css'
 
@@ -623,11 +625,19 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [renameTarget, setRenameTarget] = React.useState<AgentConversationSummary | null>(null)
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
-    /** Dialog 關閉後焦點回歷史觸發鈕(Popover 已因焦點外移關閉;WCAG 2.4.3)。 */
-    // Dialog 關閉後焦點:歷史浮層仍開 → 交給 Radix 還原到觸發它的行內動作(改名/刪除);浮層已關
-    // → 延到下一個 macrotask 回標題觸發(晚於 FocusScope 還原到已消失元素 → body 的動作,2026-09-02 實測)。
-    const historyOpenRef = React.useRef(historyOpen)
-    historyOpenRef.current = historyOpen
+    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。
+    // 對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還(全 DS 一支:沒有觸發點 + modal,
+    // 開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。
+    const dialogOpenerRef = React.useRef<HTMLElement | null>(null)
+    const openDialog = (open: () => void) => {
+      dialogOpenerRef.current = captureFocusOrigin()
+      open()
+    }
+    const returnFocusFromDialog = (event: Event) => {
+      const opener = dialogOpenerRef.current
+      dialogOpenerRef.current = null
+      returnFocusToOpener(event, opener, { noTrigger: true, modal: true, fallback: () => triggerRef.current })
+    }
     // 觸發器失去版面時關掉歷史浮層(2026-09-10 實測兩條路徑):宿主用 display:none 收起 keep-mounted 的面板
     // (AgentPanelDock,路由切換 / 全域快捷鍵這類不經指標與焦點的關閉)、或 Storybook 把整頁 docs 藏起來 —— 浮層 portal 到 body
     // 不會跟著消失,Radix 對 0×0 的錨點會把它定位到視窗左上角 (0, 8),焦點還留在裡面。ResizeObserver 在元素變成
@@ -641,12 +651,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
       ro.observe(el)
       return () => ro.disconnect()
     }, [historyOpen])
-    const returnFocus = () => {
-      window.setTimeout(() => {
-        if (historyOpenRef.current) return
-        triggerRef.current?.focus({ preventScroll: true })
-      }, 0)
-    }
 
     const groups = React.useMemo(() => {
       const order: string[] = []
@@ -703,6 +707,9 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               align="start"
               aria-label="歷史對話" // i18n-allow: DS 預設文案
               className="overflow-hidden p-0"
+              // 滑鼠挑一則對話收起 → 焦點回標題但不畫鍵盤框(打過字之後尤其會冒出來;規則與唯一實作住 lib/overlay-focus-return.ts,
+              // SelectMenu 同一支);鍵盤收起與「改名 / 刪除開了對話框」照原本(交還 Radix / 不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, triggerRef.current)}
             >
               <Command label="歷史對話">
                 {/* 搜尋列幾何 = CommandInput SSOT(2026-09-08 刪掉這裡的第二份 py/h 覆寫) */}
@@ -726,8 +733,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                               onSelectConversation?.(conversation.id)
                               setHistoryOpen(false)
                             }}
-                            onRename={() => setRenameTarget(conversation)}
-                            onDelete={() => setDeleteTarget(conversation)}
+                            onRename={() => openDialog(() => setRenameTarget(conversation))}
+                            onDelete={() => openDialog(() => setDeleteTarget(conversation))}
                           />
                         ))}
                       </CommandGroup>
@@ -755,30 +762,24 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
           <AgentRenameDialog
             conversation={renameTarget}
             onOpenChange={(next) => {
-              if (!next) {
-                setRenameTarget(null)
-                returnFocus()
-              }
+              if (!next) setRenameTarget(null)
             }}
             onConfirm={(nextTitle) => {
               onRenameConversation?.(renameTarget.id, nextTitle)
               setRenameTarget(null)
-              returnFocus()
             }}
+            onCloseAutoFocus={returnFocusFromDialog}
           />
         )}
         {deleteTarget && (
           <Dialog
             open
             onOpenChange={(next) => {
-              if (!next) {
-                setDeleteTarget(null)
-                returnFocus()
-              }
+              if (!next) setDeleteTarget(null)
             }}
           >
             {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-            <DialogContent autoHeight maxWidth={440}>
+            <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={returnFocusFromDialog}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
@@ -786,7 +787,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary" onClick={() => { setDeleteTarget(null); returnFocus() }}>
+                <Button variant="tertiary" onClick={() => setDeleteTarget(null)}>
                   取消
                 </Button>
                 <Button
@@ -795,7 +796,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   onClick={() => {
                     onDeleteConversation?.(deleteTarget.id)
                     setDeleteTarget(null)
-                    returnFocus()
                   }}
                 >
                   刪除
@@ -815,10 +815,13 @@ function AgentRenameDialog({
   conversation,
   onOpenChange,
   onConfirm,
+  onCloseAutoFocus,
 }: {
   conversation: AgentConversationSummary
   onOpenChange: (open: boolean) => void
   onConfirm: (title: string) => void
+  /** 關閉後焦點還給誰(由開啟它的標題列決定,見 AgentPanelHeader returnFocusFromDialog) */
+  onCloseAutoFocus: (event: Event) => void
 }) {
   const [value, setValue] = React.useState(conversation.title)
   const [touched, setTouched] = React.useState(false)
@@ -834,7 +837,7 @@ function AgentRenameDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-      <DialogContent autoHeight maxWidth={440}>
+      <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>改名對話</DialogTitle>
         </DialogHeader>
@@ -849,7 +852,8 @@ function AgentRenameDialog({
               onBlur={() => setTouched(true)}
               onKeyDown={(e) => {
                 // form-validation:Enter=等同 blur(觸發驗證並提交);Esc 由 Dialog 承接=取消。
-                if (e.key === 'Enter') {
+                // 輸入法選字的 Enter 不提交(判準 lib/ime-composition.ts;2026-09-30 前沒有 → 用注音改名,按 Enter 選字就直接存了半截)
+                if (e.key === 'Enter' && !isImeComposing(e)) {
                   e.preventDefault()
                   commit()
                 }
@@ -1262,8 +1266,9 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={(e) => {
-            // 按 Enter 送出、Shift+Enter 換行(拍板)。
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            // 按 Enter 送出、Shift+Enter 換行(拍板)。輸入法選字的 Enter 不送出(判準 lib/ime-composition.ts;2026-09-30 前只看
+            // isComposing,Safari 用注音按 Enter 選字時那一顆 isComposing 已是 false、只剩 keyCode 229 → 訊息被直接送出)
+            if (e.key === 'Enter' && !e.shiftKey && !isImeComposing(e)) {
               e.preventDefault()
               submit()
             }

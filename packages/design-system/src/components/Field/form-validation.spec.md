@@ -24,7 +24,7 @@
 #### 尚未出錯的欄位
 
 1. **Focus 中不顯示錯誤**——即使輸入內容不合法,focus 狀態不驗證、不顯示 error
-2. **Blur 時驗證**——使用者離開 field 後才顯示 error
+2. **Blur 時驗證**——使用者離開 field 後才顯示 error(可執行層 bug fix,2026-10-01,待辦總帳 N67:因滑鼠按下 / 觸控點一下別的東西而離開時,這一格的驗證延到這一下按壓完成、click 已送出之後才跑;按住連結 / 圖片拖一段(原生拖曳,不會有 click)則在瀏覽器取消這一下按壓或拖曳結束時就補驗,「按著」不會卡住 —— 當場驗的話錯誤訊息在按下與放開之間長出來、把下方的按鈕推走,這一下點擊落空,送出 / 取消都沒發生(實測 CreateProjectForm 送出鈕被推 25px、對話框 footer 271.6 → 321.6);按到的是送出或重設就由它們接手,焦點回到這一格就不驗,鍵盤離開照舊立刻驗)
 3. **Enter 等同 blur**——觸發驗證並離開編輯(適用於單行 field)
 4. **Escape 取消**——回復原值，不觸發驗證
 
@@ -40,7 +40,7 @@
 ### Submit 驗證
 
 7. **Submit 驗證全部**——點擊 submit 時對所有欄位執行驗證(不依賴個別 field 的 blur 狀態)
-8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位(focus 僅對可由 DOM `name` 定位的 native input 生效,非 native 控件(Select / Combobox / RadioGroup 等)fallback 為 scroll + error 視覺,見下方「v1 邊界」(b);**「第一個」= DOM 視覺順序**,非 validate key 宣告順序;對齊瀏覽器原生 reportValidity + react-hook-form shouldFocusError,2026-07-07 code 同步)。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
+8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到**被送出的那張表單裡**的第一個錯誤欄位(以 DOM `name` 定位,哪些控件定位得到見下方「v1 邊界」(b);同頁另一張表單的同名欄位不算 —— 經 `getInputProps` 接線的欄位有沒有 `<form>`、送出時帶不帶 event 都一樣,其餘控件見 (b),2026-10-01 code 同步;**「第一個」= DOM 視覺順序**,非 validate key 宣告順序;對齊瀏覽器原生 reportValidity + react-hook-form shouldFocusError,2026-07-07 code 同步)。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
 9. **Async / cross-field 驗證 defer 到 submit**——某些驗證無法在 blur 當下完成(如「名稱是否重複」需要 API 查詢、跨欄位邏輯如「結束日不得早於開始日」),這些在 submit 時統一判斷。若有錯誤,同樣 anchor 到第一個出錯欄位。
 
 **Double-submit 防護(2026-07-05 D4 codify,規則 9 的必然配套)**:async onSubmit 進行期間,重複 submit(連點按鈕 / 連按 Enter)一律忽略——否則業務層被並發呼叫兩次(重複建立資源的經典事故)。submit 期間狀態以 `isSubmitting` 暴露(餵 Button loading / disabled;`submitDisabled` 同步為 true);onSubmit 拋錯時先復位 `isSubmitting` 再讓錯誤原樣上拋(不吞錯,表單回到可重送狀態)。`isSubmitting` 是這段生命週期的唯一 state owner。
@@ -79,13 +79,13 @@ const form = useFormValidation({
 
 | 功能(規則) | 實作位置 |
 |---|---|
-| Blur validation timing(1/2/6)+ Edit 清 error(5)+ Escape 回復(4) | **`useFormValidation` 內建(不可配置)** |
+| Blur validation timing(1/2/6)+ Edit 清 error(5)+ Escape 回復(4;原值 = `initialValues`,即 dirty 比對基準 —— 回復後該欄算沒改過、清掉該欄錯誤) | **`useFormValidation` 內建(不可配置)** |
 | Submit 全驗 + anchor 第一個錯誤(7/8)+ 業務/async 錯誤同軌(9) | **`useFormValidation.handleSubmit` 內建** |
 | Dirty tracking + Submit button 狀態(Create/Update) | **`useFormValidation.submitDisabled`** |
 | Double-submit 防護 + submit 進行中狀態(規則 9 配套) | **`useFormValidation.handleSubmit` 重入 guard + `isSubmitting`** |
 | Field error visual(紅框 + FieldError) | Field 元件 `invalid` context(既有,hook 不侵入) |
 
-**v1 邊界**(誠實 documented):(a) `getInputProps` 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select / Combobox / DatePicker / TimePicker;onChange 收 event 或裸值皆可);Checkbox / Switch(onCheckedChange)用 `setFieldValue` 自接。(b) focus-first-error 以 DOM `name` 屬性定位 —— native input 生效;非 native 控件 focus 略過(error 視覺仍由 Field 紅框 + FieldError 呈現)。(c) 不用 hook 的 consumer 仍可全手動(Field `invalid` prop 是 engine-agnostic 的,見 field.spec.md 定位)。
+**v1 邊界**(誠實 documented):(a) `getInputProps` 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select / Combobox / DatePicker / TimePicker;onChange 收 event 或裸值皆可);Checkbox / Switch(onCheckedChange)用 `setFieldValue` 自接。(b) focus-first-error 以 DOM `name` 屬性定位,**只認這個 hook 實例自己的欄位**:`getInputProps` 在控件上掛 `data-form-validation`(值 = hook 實例 id,控件的 `{...props}` 把它轉到帶 name 的元素或其外層),所以不靠 `<form>`、也不靠 submit event —— 沒有 `<form>`、footer 按鈕 `onClick={() => form.handleSubmit()}` 的對話框同樣落在自己的欄位。找到帶該 name 的元素就 focus + 捲到中間(native input;Rating 根節點帶 name 且 `tabIndex=0`,見 `../Rating/rating.spec.md`「放入 Field 的可組合性」;桌機 Select 的 mirror,見 `../Select/select.spec.md`「原生表單參與」段);控件沒有帶 name 的元素就不移焦點、也不捲動(error 視覺仍由 Field 紅框 + FieldError 呈現)。沒走 `getInputProps` 的控件(Checkbox / Switch 用 `setFieldValue` 自接、自己寫 `name`)沒有這個標記:只在 submit event 所在的 `<form>` 內找,沒有 `<form>` 可界定時找整頁沒被其他表單標記的第一個同名元素。(c) 不用 hook 的 consumer 仍可全手動(Field `invalid` prop 是 engine-agnostic 的,見 field.spec.md 定位)。
 
 ---
 
@@ -150,8 +150,9 @@ Email 格式 / URL 格式 / 必填等「single-field 純 syntax」blur 即可判
 Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification + 3.3.3 Error Suggestion):
 
 - **Error message ARIA**:`<FieldError>` 容器 id = `{fieldId}-error`(fieldId 為 Field 的 `id` prop / `useId`,field.tsx:174),控件經 Field context 自動接 `aria-errormessage`(有 error 時指向 errorId)+ `aria-invalid="true"`;`aria-describedby` 保留給 FieldDescription(descriptionId)。SR 在 focus field 時可得 label + error 完整資訊;接線 SSOT 見 `field.spec.md`「驗證與 aria 屬性」段(input.tsx:187-190)
-- **Submit error scroll**:submit 失敗後,focus 自動 jump 到第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`;focus 僅對 DOM `name`-locatable native input 生效,非 native 控件 fallback 為 scroll + error 視覺,見「v1 邊界」(b))
-- **Error 宣告**:`<FieldError>` 為 `role="alert"`(隱含 `aria-live="assertive"`,field.tsx:468)——error 文字一出現即由 SR 宣讀;children 有值才渲染(children-gated,非讀 Field.invalid)。目前**無**獨立 `aria-live="polite"` 容器,跨欄位 / async error 亦透過對應 field 的 `<FieldError>` 呈現
+- **Submit error scroll**:submit 失敗後,focus 自動 jump 到被送出那張表單的第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`;定位得到哪些控件見「v1 邊界」(b))
+- **Error 宣告**:`<FieldError>` 為 `role="alert"`(隱含 `aria-live="assertive"`,field.tsx:468)——error 文字一出現即由 SR 宣讀;children 有值才渲染(children-gated,非讀 Field.invalid)。錯誤**不**另設 `aria-live="polite"` 容器(polite 朗讀區只用於下一條的送出成功宣告),跨欄位 / async error 亦透過對應 field 的 `<FieldError>` 呈現
+- **Submit 成功宣告**(WCAG 4.1.3 Status Messages):送出成功的結果必須讓讀屏聽到 —— 用一開始就在的 `role="status"` 朗讀區只換內容(每次成功換一個新的文字節點,連送兩次也會再念;表單內容一改(編輯 / Escape 回復)或送出失敗就收掉,不與新的錯誤並排;範例 `field.stories.tsx` CreateProjectForm / UpdateProjectSettingsForm),或 Toast(`../Toast/toast.spec.md`);兩者怎麼選見待辦總帳 N64,未定案
 - **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:395);required 語意由內部輸入控件的 `aria-required`(input.tsx:188)承擔,避免讀屏讀出「asterisk」語義不清
 - **Color-only error 警告**:error border 紅色之外必有文字訊息(WCAG 1.4.1 不僅靠顏色)— 由 `<FieldError>` 文字承擔;DS **不**在 input 內放 error 狀態 icon(見 `field-controls.spec.md`「禁止事項」)
 

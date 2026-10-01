@@ -672,6 +672,7 @@ export type {
 //   - components/Avatar:avatarStackCutoutStyle
 //   - components/Avatar:avatarStackItemStyle
 //   - components/Button:ButtonGroupContext
+//   - components/Combobox:findInlineSearchMirror
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
@@ -707,7 +708,10 @@ export * from './hooks/use-truncated'
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
 export * from './lib/focus-after-trigger'
+export * from './lib/ime-composition'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
+export * from './lib/overlay-focus-return'
+export * from './lib/pointer-press'
 export * from './lib/roving-list-keyboard'
 export * from './lib/utils'

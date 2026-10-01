@@ -223,7 +223,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 ## Dismiss / Clear 規則(對齊 `packages/design-system/ds-canonical/references/props-naming.md` callback canonical)
 
 - **關閉 Panel** → `onOpenChange(false)`(Popover 內建)/ outside click / Esc —— 這是 **overlay close**,不是 `onClear`
-- **清空值** → `clearable={true}` 在 trigger 的 endAction slot 顯示 `X` 透過 `ItemInlineActionButton`(canonical),點擊 `onChange("")`
+- **清空值** → `clearable={true}` 在 trigger 的 endAction slot 顯示 `X` 透過 `ItemInlineActionButton`(canonical),點擊 `onChange("")`;按鈕隨清空卸載,焦點在它身上(鍵盤按 `Enter` / 空白、Chrome 滑鼠按下)時交回觸發欄位,不掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select / Combobox / DatePicker 同一支;2026-09-30 前實測落在 `body`)
 - **禁止**:用帶文字 label 的 Button(「清除」)作 clear
 
 ---
