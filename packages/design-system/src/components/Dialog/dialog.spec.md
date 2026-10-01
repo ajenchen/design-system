@@ -280,8 +280,8 @@ Radix Dialog 自動處理：
 - **Modal 語意**：`role="dialog"`(Radix 刻意**不**設 `aria-modal="true"`,改用 aria-hidden 的 `hideOthers()` 把背景兄弟節點設 `aria-hidden` + FocusScope trap 達成隔離,避免 `aria-modal` 在部分 screen reader 隱藏整頁的已知 bug）
 - **標題綁定**：`<DialogTitle>` 自動成為 `aria-labelledby` 指向對象，screen reader 開啟時讀出標題
 - **Focus trap**：焦點鎖在 Dialog 內，Tab 循環不逃出
-- **Esc 關閉**：按 Esc 自動關閉
-- **Focus return**：關閉時焦點返回 trigger 元素
+- **Esc 關閉**：按 Esc 自動關閉。**輸入法組字中的 Esc 不關**(那一下是在取消選字,例:改名對話框用注音打字時按 Esc 取消選字,不該把對話框連同打到一半的名字一起關掉;2026-10-01 前會):`DialogContent` 的 `onEscapeKeyDown` 經 `../../lib/ime-composition.ts` `withImeSafeEscape` 擋掉,consumer 的 `onEscapeKeyDown` 在那一下不會被呼叫(規則與出處同 `../Popover/popover.spec.md`「A11y 預設」Esc 條)
+- **Focus return**：關閉時焦點返回 trigger 元素(Radix 只還給 `DialogTrigger`;受控 `open`、沒有 `DialogTrigger` 時它沒有東西可還 → 焦點掉到 body。那種開法要在開啟時記下開啟者、關閉時交給 `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(`noTrigger` + `modal`),DS 內 `CommandDialog` / AgentPanel 改名與刪除對話框 / FileViewer 已接)
 - **Overlay click**：點擊 overlay 關閉（可透過 `onPointerDownOutside` 阻止）
 
 Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `VisuallyHidden` 包裹提供給 screen reader。

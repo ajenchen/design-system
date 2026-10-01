@@ -296,6 +296,11 @@ Source(AI 讀此看官方範例): src/components/SegmentedControl/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Select/
 
+## SelectMenu
+
+Storybook: https://ajenchen-design-system.netlify.app
+Source(AI 讀此看官方範例): src/components/SelectMenu/
+
 ## Separator(family self-contained)
 
 Storybook: https://ajenchen-design-system.netlify.app

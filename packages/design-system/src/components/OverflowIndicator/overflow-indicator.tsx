@@ -42,6 +42,13 @@ export interface OverflowIndicatorProps
   size?: 'sm' | 'md' | 'lg'
   children: React.ReactNode
   className?: string
+  /**
+   * 按在浮出清單(HoverCard 內容,portal)上的 mousedown(2026-09-30)。消費者用它把「按在自己的零件上焦點不動」的判準
+   * 延伸到這張卡 —— 浮出清單在另一個 portal,consumer 自己容器上的 mousedown 判準以 DOM 包含判斷、看不到它。
+   * 唯一用途:Combobox 搜尋框握著焦點時,按卡裡的 Tag × 焦點不離開搜尋框(`lib/pointer-press.ts` `keepFocusOnPointerPress`,
+   * 規則 `SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段)。
+   */
+  onContentMouseDown?: React.MouseEventHandler<HTMLDivElement>
 }
 
 function ShrinkWrapList({ children }: { children: React.ReactNode }) {
@@ -95,7 +102,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
 
 const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorProps>(
   function OverflowIndicator(
-    { count, shape = 'circle', size = 'md', children, className, style, ...props },
+    { count, shape = 'circle', size = 'md', children, className, style, onContentMouseDown, ...props },
     ref,
   ) {
     if (count <= 0) return null
@@ -158,7 +165,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>
-        <HoverCardContent className="bg-tooltip rounded-lg" data-theme="dark">
+        <HoverCardContent className="bg-tooltip rounded-lg" data-theme="dark" onMouseDown={onContentMouseDown}>
           <ShrinkWrapList>{children}</ShrinkWrapList>
         </HoverCardContent>
       </HoverCard>

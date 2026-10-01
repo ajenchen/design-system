@@ -13,7 +13,7 @@ import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Select as SelectPublic } from '@/design-system/components/Select/select'
-import { Combobox as ComboboxPublic } from '@/design-system/components/Combobox/combobox'
+import { Combobox as ComboboxPublic, findInlineSearchMirror } from '@/design-system/components/Combobox/combobox'
 import { PersonDisplay, MultiPersonDisplay, PersonAvatarTag, buildPersonProfileCard, resolvePerson, type PersonValue } from './person-display'
 import {
   getAvatarStackVisibleCount,
@@ -272,7 +272,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       const tagArea = cachedTagArea?.isConnected
         ? cachedTagArea
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
-      const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
+      // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
+      // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變
+      const available = (tagArea?.clientWidth ?? trigger?.clientWidth ?? 0) - (findInlineSearchMirror(tagArea)?.getBoundingClientRect().width ?? 0)
       const visible = getAvatarStackVisibleCount({
         availablePx: available,
         total: selectedNames.length,
@@ -284,8 +286,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     calc()
     const ro = new ResizeObserver(calc)
     ro.observe(root)
+    // 欄位內搜尋框的量尺:打字變寬就重算(外框尺寸不變,只觀察外框收不到)
+    const mirror = findInlineSearchMirror(root)
+    if (mirror) ro.observe(mirror)
     return () => ro.disconnect()
-  }, [resolvedMode, isMulti, effectiveMultiDisplay, selectedNames.length, size])
+  }, [resolvedMode, isMulti, effectiveMultiDisplay, selectedNames.length, size, searchIn])
   // Merge ref:forward to parent + capture for ResizeObserver
   const mergedStackRef = React.useCallback((el: HTMLDivElement | null) => {
     stackContainerRef.current = el
@@ -570,7 +575,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 2026-05-14 I4 fix(per codex+Layer A 共識):hidden items 在 `+N` overflow popover 顯
       // Tag with avatar(對齊 view path MultiPersonDisplay popover SSOT,user 抓 display vs edit
       // overflow 視覺不一致)。
-      renderHiddenTag={(item) => {
+      // 移除走 Combobox 給的 onRemove(與欄位上的頭像同一條:焦點接力 → onChange;2026-09-30 前這裡自己呼叫 onChange,
+      // 跳過焦點接力,焦點在被移除的 × 上時掉到 body —— 實測)
+      renderHiddenTag={(item, onRemove) => {
         const p = resolvePerson(findPerson(directory, item.value))
         return (
           <Tag
@@ -585,9 +592,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
                 hoverCard={buildPersonProfileCard(p)}
               />
             }
-            onRemove={() => {
-              onChange?.(selectedNames.filter(n => n !== item.value).map(n => findPerson(directory, n)))
-            }}
+            onRemove={onRemove}
           >
             {p.name}
           </Tag>

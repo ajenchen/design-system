@@ -3,10 +3,12 @@ import { Pencil } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_CHROME_OWN_TARGET, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -199,7 +201,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 研究後照做;規則與出處 link-input.spec.md「Link 狀態」)。
     // 外框滑過會變色(Field 家族 hover:border-border-hover),變色的地方點下去就要有反應 ——
     // hit-area-canonical.md 要防的「看到亮起來卻點不到」。連結與鉛筆照它們自己的行為走:
-    // 判斷用 Field 家族共用的「外框裡自有行為的東西」清單(field-wrapper.tsx FIELD_CHROME_OWN_TARGET),不另寫一份。
+    // 判斷用全 DS 共用的「容器裡自有行為的東西」判準(lib/pointer-press.ts;Field 外框、cmdk 選單同一份),不另寫一份。
     // 用 click 不用 mousedown:與鉛筆同一個觸發時機;按下後拖出外框才放開,click 落在外框之外的共同祖先,不會觸發這裡。
     // 拖曳選字不是點一下:按在空白處、拖過網址文字、在外框裡放開,瀏覽器仍會在外框上發 click;
     // 此時直接看「外框裡有沒有被選起來的文字」,有就不進編輯(量的就是要保護的那件事,不拿移動距離當代理)。
@@ -207,8 +209,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       const chrome = event.currentTarget
       const target = event.target
       if (!(target instanceof Element)) return
-      const own = target.closest(FIELD_CHROME_OWN_TARGET)
-      if (own && own !== chrome && chrome.contains(own)) return
+      if (isOwnPointerTarget(chrome, target)) return
       const selection = window.getSelection()
       if (selection && !selection.isCollapsed && selection.anchorNode && chrome.contains(selection.anchorNode)) return
       handleEdit()
@@ -238,6 +239,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+      // 輸入法選字的 Enter / Esc 是在選字,不提交、不取消(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
+      if (isImeComposing(e)) return
       if (e.key === 'Enter') inputRef.current?.blur()
       if (e.key === 'Escape') {
         setLocalValue(value ?? '')

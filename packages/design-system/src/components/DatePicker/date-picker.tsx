@@ -4,7 +4,7 @@ import * as React from 'react'
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
@@ -24,6 +24,8 @@ import {
   type TimeStep,
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -358,7 +360,8 @@ export interface DatePickerProps
    *   - `Enter` / `Blur` → `parseDateInput` 解析 → 合法 commit `onChange`;不合法 set
    *     aria-invalid + keep draft visible(user 可繼續修)
    *   - `Esc` → reset draft 回 committed value
-   *   - IME composition 期間不觸發驗證(中日韓輸入法 onCompositionStart/End 攔截)
+   *   - IME 組字中不觸發驗證:鍵盤那一側(Enter / Esc / ↓)走全 DS 一支 `lib/ime-composition.ts` `isImeComposing`,
+   *     失焦那一側(不是鍵盤事件)仍靠 onCompositionStart/End 的 ref(2026-09-30)
    *   - Calendar pick → 同步 input draft + commit(走原 path)
    *   - **點欄位任何地方都開日曆,焦點留在輸入框可繼續打字**(2026-09-07;Ant 官方文件
    *     「By clicking the input box, you can select a date from a popup calendar」+ inputReadOnly:false)
@@ -465,6 +468,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // Issue 10 typed input(2026-05-10):draft string + invalid flag + IME composition guard。
     const [inputDraft, setInputDraft] = React.useState<string>(displayLive)
     const [inputInvalid, setInputInvalid] = React.useState(false)
+    // 只給 onBlur 用:組字中失焦不提交半截(失焦不是鍵盤事件,isImeComposing 判不了;鍵盤那一側走 isImeComposing)
     const composingRef = React.useRef(false)
     // 2026-09-07:記住浮層是**怎麼被打開的**。
     // 指標開啟 → 焦點留在輸入框(使用者正在用滑鼠,可能還想打字;日曆用點的即可)
@@ -623,6 +627,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 // <input> 自有 Enter/Esc 語意(commit / reset draft),Calendar icon click 開
                 // popover(Material/Ant typed-date idiom),避免 div 層 keydown 與 input 衝突。
                 onKeyDown={typeable ? undefined : (e) => {
+                  // 事件來自欄位裡的按鈕(「清除日期」)時照按鈕自己的行為走 —— 否則下面的 preventDefault 取消按鈕的啟動、
+                  // 反而打開日曆,鍵盤永遠清不掉(2026-09-30 實測 Enter / 空白都是;Select / Combobox / TimePicker 2026-07-14 已修同一條,本檔漏了)
+                  if (e.target !== e.currentTarget && (e.target as HTMLElement).closest?.('button')) return
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true) }
                   if (e.key === 'Escape') setOpen(false)
                 }}
@@ -667,7 +674,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     onCompositionStart={() => { composingRef.current = true }}
                     onCompositionEnd={() => { composingRef.current = false }}
                     onKeyDown={(e) => {
-                      if (composingRef.current) return
+                      // 輸入法選字的 Enter / Esc / ↓ 不提交、不還原、不開日曆(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 前這裡
+                      // 只看 compositionstart/end 的 ref —— Safari 注音按 Enter 選字時 compositionend 先到,那一下 Enter 被當成提交)
+                      if (isImeComposing(e)) return
                       if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
                       if (e.key === 'Escape') { setInputDraft(displayLive); setInputInvalid(false); e.preventDefault() }
                       if (e.key === 'ArrowDown' && !open) { e.preventDefault(); openedByPointerRef.current = false; setOpen(true) }
@@ -699,6 +708,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                       // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
                       onClick: (e) => {
                         e?.stopPropagation()
+                        // 按鈕隨清空卸載:焦點在它身上先交回欄位(可打字 → 輸入框;否則觸發欄位),不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)
+                        if (e) keepFieldFocusBeforeUnmount(e.currentTarget, typedInputRef.current ?? e.currentTarget.closest<HTMLElement>('[role="combobox"]'))
                         onChange?.('')
                         setDraft(null)
                       },
@@ -893,11 +904,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     // 2026-07-05 D4 focus 回復:Range 只用 PopoverAnchor(start/end button 自行 onClick 開啟),
     // Radix triggerRef 恆 null → 內建 onCloseAutoFocus 的 triggerRef.focus() no-op 後又
     // preventDefault 掉 FocusScope fallback → Esc/確定/選完自動關閉後焦點掉到 document.body
-    // (WCAG 2.4.3)。手動回焦 active 端 button(對齊 Ant RangePicker);outside-click 關閉
-    // 依 Radix non-modal 慣例不搶焦(hasInteractedOutside 鏡射 Radix 自家 guard)。
+    // (WCAG 2.4.3)。改由 PopoverContent 的 onCloseAutoFocus 回焦 active 端 button(對齊 Ant RangePicker);outside-click 關閉
+    // 依 Radix non-modal 慣例不搶焦 —— 判斷住全 DS 一支 lib/overlay-focus-return.ts(2026-09-30 前本檔自己記 hasInteractedOutside)。
     const startBtnRef = React.useRef<HTMLButtonElement>(null)
     const endBtnRef = React.useRef<HTMLButtonElement>(null)
-    const hasInteractedOutsideRef = React.useRef(false)
 
     // Draft sync canonical(2026-07-14 dim-26 V4 修,升級 2026-05-02 v3):
     // - open=false(關閉期間):controlled value 變更**必**同步 draft — needConfirm 顯示層讀
@@ -1020,8 +1030,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const handleNow = () => {
       setActive(showTime ? nowIsoDateTime() : dateToIso(new Date()))
     }
-    const handleClearRange = (e?: React.MouseEvent) => {
+    const handleClearRange = (e?: React.MouseEvent<HTMLButtonElement>) => {
       e?.stopPropagation()
+      // 按鈕隨清空卸載:焦點在它身上先交給起始日那顆鈕,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)
+      if (e) keepFieldFocusBeforeUnmount(e.currentTarget, startBtnRef.current)
       // Clear = 立刻 commit + 同步 draft(對齊 single mode + user 體感)
       // dual-state 同步,否則 popover 開著時 displayValue=draft 仍顯示舊 [start, end]
       onChange?.([null, null])
@@ -1216,18 +1228,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           className="w-auto p-0"
           align="start"
           aria-label="日期區間選擇" // i18n-allow: DS default dialog label
-          // 2026-07-05 D4 focus 回復(機制詳 :758 comment):outside-click 標記不搶焦(鏡射
-          // Radix non-modal 自家 hasInteractedOutside guard);其餘關閉路徑(Esc / 確定 /
-          // 選完自動關)preventDefault 掉內建 triggerRef.focus()(Anchor-only 恆 null no-op)
-          // 後手動回焦 active 端 button — 對齊 Ant RangePicker 關閉後焦點回 active 端輸入格。
-          onInteractOutside={() => { hasInteractedOutsideRef.current = true }}
-          onCloseAutoFocus={(e) => {
-            e.preventDefault()
-            if (!hasInteractedOutsideRef.current) {
-              ;(activeEnd === 'start' ? startBtnRef : endBtnRef).current?.focus()
-            }
-            hasInteractedOutsideRef.current = false
-          }}
+          // 2026-07-05 D4 focus 回復(機制詳 startBtnRef 上方註解):Esc / 確定 / 選完自動關 → 回焦 active 端 button
+          // (Anchor-only 時 Radix 內建的 triggerRef.focus() 恆 null no-op)— 對齊 Ant RangePicker 關閉後焦點回 active 端輸入格;
+          // 點外面收起不搶。還法全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + 非 modal;2026-09-30 前這裡自己記 hasInteractedOutside)
+          onCloseAutoFocus={(e) => returnFocusToOpener(e, (activeEnd === 'start' ? startBtnRef : endBtnRef).current, { noTrigger: true })}
         >
           {/* a11y(2026-07-14 dim-10 修):accessible name 收斂到外層 PopoverContent(Radix 自帶
               role="dialog")— 原內層第二個 role="dialog" 移除,避免 nested dialog 且外層 dialog 無名。

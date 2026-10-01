@@ -18,12 +18,13 @@
 //
 // ── 新增 edit-in-place host 的規矩(2026-07-10)──
 // 之後任何新的「就地編輯」host(第 3 個以上),**Enter/Esc/Cmd·Ctrl+Enter/IME 組字結算一律消費本
-// helper**,禁再手刻 `isComposing || keyCode===229` guard 或 Enter/Esc dispatch —— 現有 3 host
+// helper**,禁再手刻 Enter/Esc dispatch(組字判準本身住 `lib/ime-composition.ts` `isImeComposing`,全 DS 一支) —— 現有 3 host
 // (cell string / cell number / InlineEdit multiline)已全數收斂於此,手刻 = drift 回頭路(正是 2026-07
 // 之前 InlineEdit 漏 IME guard 的病根)。單行傳 `commitOnEnter` 預設;多行傳 `commitOnEnter:false`
 // (本 helper 內建 Cmd/Ctrl+Enter=commit)。此為文件層 SSOT 規矩,不另設 hook(host 少 + 避治理膨脹)。
 
 import type * as React from 'react'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 export interface EditSettleKeyOptions {
   /** Enter(非組字中)→ 呼叫。已 preventDefault。 */
@@ -55,8 +56,8 @@ export interface EditSettleKeyOptions {
 export function makeEditSettleKeyHandler(opts: EditSettleKeyOptions) {
   const commitOnEnter = opts.commitOnEnter ?? true
   return (e: React.KeyboardEvent) => {
-    // IME 組字 guard(見檔頭)—— 對齊 cell-registry 既有寫法 + data-table nav handler。
-    if (e.nativeEvent.isComposing || (e.nativeEvent as { keyCode?: number }).keyCode === 229) return
+    // IME 組字 guard(見檔頭;判準唯一住所 lib/ime-composition.ts,2026-09-30 自本檔與另六處手寫收成一支)
+    if (isImeComposing(e)) return
     if (e.key === 'Escape') {
       e.preventDefault()
       opts.onCancel(e)

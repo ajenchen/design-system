@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
@@ -136,6 +136,56 @@ export const Multi: Story = {
   render: () => <MultiPicker />,
 }
 
+/* ── 多人 × 欄位內搜尋(searchIn='trigger')──
+   Outlook 排會議:出席者欄位直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位;
+   頭像堆疊(預設)與每人一顆標籤(`multiDisplay='pill'`)兩種顯示,各放「已有人」與「還沒選」一格(選填那一格可一鍵清空)——
+   欄位內搜尋框空值也在(people-picker.spec.md §D / §E:有頭像 → 純插入點,空 → 欄位 placeholder);
+   它的寬度 = 打的字(combobox.spec.md「欄位內搜尋框的寬度」):接在最後一位後面,空的時候不自己佔一列 ——
+   「會議記錄寄給」兩顆標籤排在同一列,關著的欄位沒有多一列空白(2026-09-30 前 60px 固定下限讓搜尋框自己換到第二列)。 */
+const InlineSearchAttendees = () => {
+  const [required, setRequired] = React.useState<PersonValue[]>(samplePeople.slice(0, 3))
+  const [optional, setOptional] = React.useState<PersonValue[]>([])
+  const [notify, setNotify] = React.useState<PersonValue[]>(samplePeople.slice(3, 5))
+  const [cc, setCc] = React.useState<PersonValue[]>([])
+  return (
+    // 版面消費 field.stories.tsx FormValidation 同一組:區塊之間 layout-space-loose、標題 → 內容 layout-space-tight、多個欄位走 FieldGroup
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-body font-bold text-foreground">頭像堆疊(預設)</h3>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>必要出席者</FieldLabel>
+            <PeoplePicker searchIn="trigger" value={required} people={samplePeople} onChange={setRequired} />
+          </Field>
+          <Field>
+            <FieldLabel>選擇性出席者</FieldLabel>
+            <PeoplePicker searchIn="trigger" clearable value={optional} people={samplePeople} onChange={setOptional} />
+          </Field>
+        </FieldGroup>
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-body font-bold text-foreground">每人一顆標籤(multiDisplay=&quot;pill&quot;)</h3>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>會議記錄寄給</FieldLabel>
+            <PeoplePicker searchIn="trigger" multiDisplay="pill" value={notify} people={samplePeople} onChange={setNotify} />
+          </Field>
+          <Field>
+            <FieldLabel>副本</FieldLabel>
+            <PeoplePicker searchIn="trigger" multiDisplay="pill" clearable value={cc} people={samplePeople} onChange={setCc} />
+          </Field>
+        </FieldGroup>
+      </div>
+    </div>
+  )
+}
+
+export const MultiInlineSearch: Story = {
+  name: '多人 × 欄位內搜尋',
+  parameters: { docs: { description: { story: 'Outlook 排會議:在欄位裡直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位。頭像堆疊與每人一顆標籤兩種顯示,各放已有人與還沒選的一格。' } } },
+  render: () => <InlineSearchAttendees />,
+}
+
 /* ── hug 寬度 × 多人頭像串 ────────────────────────────────────────────────
    為什麼需要這個 story:`width='hug'` 的欄位是 `w-fit max-w-full`(寬度由內容決定),
    而頭像串「畫幾顆」也是量出來的 —— 兩者互為因果就會形成單向棘輪:
@@ -206,6 +256,27 @@ export const StackRemoveOverlayProbe: Story = {
     const btn = await canvas.findByRole('button', { name: '移除 Alice Chen' })
     btn.focus()
   },
+}
+
+// 「+N」浮出清單的移除契約 probe(2026-09-30):窄欄位裡頭像堆疊溢出成 +N,浮出清單裡的人員 Tag × 走 Combobox 同一條移除路徑
+// —— 焦點接力不掉到 body、搜尋框握著焦點時不搬焦點(規則 select-menu.spec.md「A11y 預設」Focus 段、combobox.spec.md「Tag 操作」)。
+// 兩格:浮層內搜尋(預設)與欄位內搜尋(`searchIn='trigger'`)。瀏覽器閘 searchable-menu-focus-invariant.mjs 從 index 讀到它、量 +N 卡片裡的 ×。
+// 其餘人員 story 的欄位夠寬、六個人放得下,沒有 +N;DataTable 窄格有 +N 但不在該閘的家族裡。
+// 同 MultiRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,自 sidebar / Autodocs 排除。
+const OverflowRemovePickers = () => {
+  const [inMenu, setInMenu] = React.useState<PersonValue[]>(samplePeople)
+  const [inField, setInField] = React.useState<PersonValue[]>(samplePeople)
+  return (
+    <div className="flex flex-col gap-6 w-40">
+      <PeoplePicker value={inMenu} people={samplePeople} onChange={setInMenu} clearable aria-label="審核人(窄欄位,浮層內搜尋)" />
+      <PeoplePicker searchIn="trigger" value={inField} people={samplePeople} onChange={setInField} clearable aria-label="審核人(窄欄位,欄位內搜尋)" />
+    </div>
+  )
+}
+export const OverflowRemoveFocusContract: Story = {
+  name: '+N 浮出清單移除驗證',
+  tags: ['test-only'],
+  render: () => <OverflowRemovePickers />,
 }
 
 /* ── 一鍵清空(選填欄位) ── */

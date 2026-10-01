@@ -44,6 +44,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -597,13 +598,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const stage: Stage = { w: size.w, h: size.h, inset }
     const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
     const [menuOpen, setMenuOpen] = React.useState(false)
-    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):只有按 Esc 或選了項目才回入口鈕;
+    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):按 Esc、選了項目 → 回入口鈕;
     // 點外面 → 留在點的地方、Tab → 由 DropdownMenu 帶到下一站。舊版無條件搶回入口鈕(R8 實測點外面也搶)。
-    const returnFocusOnCloseRef = React.useRef(false)
-    const openMenu = () => {
-      returnFocusOnCloseRef.current = false
-      setMenuOpen(true)
-    }
+    // 判斷住 lib/overlay-focus-return.ts(沒有觸發點 + 非 modal;2026-09-30 前這裡用一個 ref 記「是不是 Esc / 選了項目」)
+    const openMenu = () => setMenuOpen(true)
     // 真正的開啟者是入口鈕(選單錨點是蓋在鈕上、aria-hidden 的透明 span):鈕以 aria-controls 宣告它開的是這個選單,
     // DropdownMenu 據此從鈕算 Tab 的下一站(dropdown-menu.tsx menuOpener)。
     const menuId = React.useId()
@@ -717,21 +715,14 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             <DropdownMenuContent
               id={menuId}
               align="end"
-              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」)
-              onEscapeKeyDown={() => {
-                returnFocusOnCloseRef.current = true
-              }}
-              onCloseAutoFocus={(e) => {
-                // 一律擋掉 Radix 還給透明錨點(聚焦不了 → 焦點會掉到 body);只有 Esc / 選了項目才回入口鈕(B11)
-                e.preventDefault()
-                if (returnFocusOnCloseRef.current) buttonRef.current?.focus()
-                returnFocusOnCloseRef.current = false
-              }}
+              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」);
+              // Radix 的觸發點是透明錨點(聚焦不了 → 焦點會掉到 body),所以開啟者 = 入口鈕、由這裡還(按在外面收起不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, buttonRef.current, { noTrigger: true })}
             >
               {placement.kind === 'home' ? (
-                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement({ kind: 'dock', y: dockMaxY(stage) }) }}>{text.dock}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
               ) : (
-                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement(AGENT_FAB_HOME) }}>{text.home}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

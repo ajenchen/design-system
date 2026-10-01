@@ -2,8 +2,9 @@
  * @internal — SelectMenu 的鍵盤橋接:觸發欄位與浮層清單分屬兩棵 DOM 子樹(浮層 portal 到 body 最後),
  * 這裡收三件事,由 select-menu.tsx 轉出(Select / Combobox 既有 import 路徑不變):
  *   1. `forwardKeyToListbox`  —— 觸發欄位內的輸入框把 ↑ ↓ Enter 轉送給 cmdk(2026-07-05 D4,原住 select-menu.tsx,原樣搬來)
- *   2. `useActiveDescendant`  —— 觸發欄位輸入框的 aria-activedescendant(同上,原樣搬來)
+ *   2. `useActiveDescendant`  —— 觸發欄位輸入框的 aria-activedescendant + aria-controls(值由 Command 根讀、SelectMenu 轉交;2026-09-30 改)
  *   3. `useSelectMenuPopupKeys` —— 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11)與不可打字單選的空白鍵(2026-09-26,L7)
+ *   4. `useTriggerSearch`     —— 搜尋字在觸發欄位時:打字把反白放回第一個符合項、多選挑選後清空關鍵字(2026-09-30)
  * 2026-09-25 搬家理由(AI 推導):select-menu.tsx 已 799 行,加 3 會超過 `scripts/code-quality-audit.mjs` 的 800 行上限;
  * 三者同一件事(跨子樹的鍵盤 / 焦點接線),與清單渲染無關。
  * 2026-09-26:「從觸發欄位算下一站」與 DropdownMenu 合成一份 `lib/focus-after-trigger.ts`(待辦總帳〇節「按鍵規則合併」)。
@@ -12,6 +13,14 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { focusFromTrigger, tabbableOrder } from '@/design-system/lib/focus-after-trigger'
 import { isTextEntryElement } from '@/design-system/lib/roving-list-keyboard'
+import { dispatchRelayedKey } from '@/design-system/hooks/use-input-modality'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import {
+  applyListboxRelation,
+  getActiveOption,
+  moveCursorToFirstOption,
+  type CommandActiveOption,
+} from '@/design-system/components/Command/command'
 
 /**
  * 2026-07-05 D4 P0 修(searchable 鍵盤死路):trigger 內的裸 <input> 與 portal 內的 cmdk root
@@ -20,53 +29,78 @@ import { isTextEntryElement } from '@/design-system/lib/roving-list-keyboard'
  * 只能 Esc。修法 = APG combobox-with-list:trigger input 把三鍵 re-dispatch 給 cmdk root
  * (native KeyboardEvent bubbles 經 React root delegation 觸發 cmdk synthetic handler)。
  * Home/End 刻意不轉送(文字輸入的 caret 語意優先,對齊 MUI/Ant Autocomplete)。
- * aria-activedescendant 綁回 trigger input → 見下方 useActiveDescendant(2026-07-05 D4 補齊)。
+ * 代發走 hooks/use-input-modality.ts `dispatchRelayedKey`(2026-09-30):使用者按的那一下已在觸發欄位上記過反白來歷,
+ * 代發的那一份不再記一次 —— 否則 Enter 選完後(多選不關)反白會被當成鍵盤搬的而畫框,與浮層內搜尋框按 Enter 不同。
+ * aria-activedescendant 綁回 trigger input → 見下方 useActiveDescendant。
+ * 輸入法組字中不轉送(2026-09-30):選字的 ↑ ↓ Enter 是在操作候選字;代發出去的是一顆全新事件,isComposing / keyCode 都被洗掉,
+ * cmdk 自己的組字判斷看不出來 —— 判準 lib/ime-composition.ts(全 DS 一支)。
  */
 export function forwardKeyToListbox(contentId: string | undefined, e: React.KeyboardEvent): boolean {
-  if (!contentId) return false
+  if (!contentId || isImeComposing(e)) return false
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return false
   const root = document.getElementById(contentId)?.querySelector<HTMLElement>('[cmdk-root]')
   if (!root) return false
   e.preventDefault()
-  root.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true, cancelable: true }))
+  dispatchRelayedKey(root, e.key)
   return true
 }
 
 /**
- * 2026-07-05 D4 補齊(APG combobox aria-activedescendant):追蹤 cmdk 目前 virtual-focus item
- * 的 DOM id,供 trigger 端搜尋 input 綁 `aria-activedescendant` —— SR 才會在方向鍵導覽 /
- * 打字過濾時播報 active option 名。機制:trigger 與 portal 內 cmdk 分屬不同 DOM 子樹,cmdk
- * 只把 active id 綁在自己的 Command.Input / List(cmdk source:item 自帶 auto-generated id +
- * `data-selected="true"` 標記 virtual focus)→ trigger 端用 MutationObserver 監聽 popover 容器
- * (contentId = PopoverContent id)內 `data-selected` 屬性變化 + childList(打字過濾 re-render
- * 換 item 節點),單一機制涵蓋全部更新路徑:開啟初始 auto-highlight / forwardKeyToListbox
- * 方向鍵轉送 / 搜尋過濾後 cmdk 自動移 cursor / pointer hover。
- * 關閉時清 undefined —— ARIA 要求 id 必指向存在於 DOM 的節點,不可留 stale id。
+ * 觸發欄位內搜尋框的 aria-activedescendant 與 aria-controls(APG combobox:DOM 焦點留在 combobox,反白靠 aria-activedescendant;
+ * 規則住 SelectMenu/select-menu.spec.md「A11y 預設」Focus 段)。
+ * **值只有一個來源**:Command 根讀到的反白列與清單 id(Command/command.tsx `useCommandRootObserver`),經 SelectMenu `onActiveOptionChange`
+ * 交到這裡;回傳的 callback 用唯一寫法 `applyListboxRelation` 直接寫進輸入框 —— 不經 React state,反白每移一格不重繪整個欄位與整份清單。
+ * 兩個一起寫:ARIA 1.2 要求 textbox 用 aria-activedescendant 時,aria-controls 必須指到包住那個選項的 listbox(出處見 applyListboxRelation)。
+ * 浮層關閉(清單卸載)時收到 undefined → 兩個一起移除(ARIA:id 必須指向畫面上存在的節點)。
+ * 2026-09-30 前:本 hook 自己拿 contentId 找浮層,effect 跑的那一刻浮層還沒掛上 —— Radix Portal 第一輪渲 null、
+ * 在自己的 layout effect 之後才掛 children(node_modules/@radix-ui/react-portal/dist/index.mjs:12-14)—— 找不到就 return、
+ * 依賴不變不再重跑,Select `searchable` / Combobox `searchIn='trigger'` 的輸入框上恆為 null(實測)。
  */
-export function useActiveDescendant(contentId: string | undefined, open: boolean): string | undefined {
-  const [activeId, setActiveId] = React.useState<string | undefined>(undefined)
-  React.useEffect(() => {
-    if (!open || !contentId) {
-      setActiveId(undefined)
-      return
-    }
-    // PopoverContent 與 trigger 同一個 React commit mount(open state 同批 render)→ effect 跑時已在 DOM
-    const container = document.getElementById(contentId)
-    if (!container) return
-    const read = () => {
-      setActiveId(container.querySelector<HTMLElement>('[cmdk-item][data-selected="true"]')?.id || undefined)
-    }
-    // 初始補讀:MutationObserver 只看「觀察開始後」的變化;cmdk 初始 auto-highlight(layout effect
-    // 排程)可能已 commit → rAF 讀當下狀態兜底,與 observer 互補、誰先到都不漏。
-    const raf = requestAnimationFrame(read)
-    const observer = new MutationObserver(read)
-    observer.observe(container, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-selected'] })
-    return () => {
-      cancelAnimationFrame(raf)
-      observer.disconnect()
-    }
-  }, [open, contentId])
-  return activeId
+export function useActiveDescendant(inputRef: React.RefObject<HTMLElement | null>) {
+  return React.useCallback((active: CommandActiveOption | undefined) => applyListboxRelation(inputRef.current, active), [inputRef])
+}
+
+/**
+ * 搜尋字在觸發欄位(受控 `search`、SelectMenu 不畫搜尋框)時的兩條規則(關鍵字的去留表住 select-menu.spec.md「搜尋關鍵字何時保留、何時清空」):
+ *
+ * (a) **多選挑選後清空關鍵字**(2026-09-30 user 同意,原話「其他部分我覺得”可以”」):`clearAfterPick()` 由 SelectMenu 的挑選路徑
+ *     (handleSelect / handleSelectAll:勾、取消勾、「不限」、全選)呼叫,經受控 `onSearchChange('')` 交給持有關鍵字的 consumer。
+ *     浮層內搜尋框(`searchable`)保留關鍵字,不走這裡;單選選完即收起,關鍵字隨關閉清空。
+ * (b) **打字 → 反白回到第一個符合項**,與浮層內搜尋框同一條規則
+ *     (cmdk 在自己的搜尋字一變就選第一項,cmdk/src/index.tsx #L238-L242;觸發欄位的字 cmdk 看不到,反白會停在舊的那一列)。
+ *     **挑選後的清空不算打字**:反白留在剛挑的那一列,與浮層內搜尋框「選了不動反白」一致,滑鼠挑選時反白也還在指標底下
+ *     (MUI useAutocomplete 多選「Keep the current selected highlight while the popup stays open」,
+ *     https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L632-L645)。
+ *     判斷「這次搜尋字變化來自挑選」用 (a) 當下立的記號 + 變成的值就是空字串 —— 量的就是那件事本身;2026-09-30 初版用「已選值有沒有跟著變」
+ *     推斷,consumer 沒在同一次 commit 更新值(固定值的規格範例、數量上限擋掉、非同步提交)時會把挑選誤判成打字、反白跳回第一列(M37)。
+ */
+export function useTriggerSearch(params: {
+  commandRef: React.RefObject<HTMLElement | null>
+  /** 開著、而且搜尋字在觸發欄位 */
+  active: boolean
+  multiple: boolean
+  search: string
+  setSearch: (next: string) => void
+}) {
+  const { commandRef, active, search } = params
+  const latest = React.useRef(params)
+  latest.current = params
+  const lastSearch = React.useRef(search)
+  const clearedByPick = React.useRef(false)
+  React.useLayoutEffect(() => {
+    if (lastSearch.current === search) return
+    lastSearch.current = search
+    const picked = clearedByPick.current && search === ''
+    clearedByPick.current = false
+    if (!picked && active && commandRef.current) moveCursorToFirstOption(commandRef.current)
+  }, [active, search, commandRef])
+  const clearAfterPick = React.useCallback(() => {
+    const p = latest.current
+    if (!p.active || !p.multiple || p.search === '') return
+    clearedByPick.current = true
+    p.setSearch('')
+  }, [])
+  return { clearAfterPick }
 }
 
 // ── 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11;SSOT = select-menu.spec.md「A11y 預設」)─────────────
@@ -132,11 +166,10 @@ interface SelectMenuPopupKeysParams {
 /** 焦點在文字輸入上(可打字搜尋的搜尋框):空白鍵是打字,不是選取(判準 = lib/roving-list-keyboard.ts `isTextEntryElement`,全 DS 一份) */
 const isTextEntryTarget = (target: EventTarget | null) => target instanceof Element && isTextEntryElement(target)
 
-/** 反白列(cmdk 的 data-selected)對應的可選選項值;建立列 / 停用 / 沒有反白 → undefined */
+/** 反白列(讀法唯一住所 Command/command.tsx `getActiveOption`)對應的可選選項值;建立列 / 停用 / 沒有反白 → undefined */
 function highlightedOptionValue(content: HTMLElement | null, resolve: (dataValue: string) => string | undefined) {
-  const dataValue = content
-    ?.querySelector<HTMLElement>('[cmdk-item][data-selected="true"]:not([data-disabled="true"])')
-    ?.getAttribute('data-value')
+  const active = getActiveOption(content)
+  const dataValue = active?.getAttribute('data-disabled') === 'true' ? null : active?.getAttribute('data-value')
   return dataValue == null ? undefined : resolve(dataValue)
 }
 
@@ -163,8 +196,8 @@ export function useSelectMenuPopupKeys(params: SelectMenuPopupKeysParams) {
   const onKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     const p = latest.current
     if (e.altKey || e.ctrlKey || e.metaKey) return
-    // IME 組字中不動(同 DataTable handleEditTab 的 isComposing / 229 守衛)
-    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
+    // IME 組字中不動(判準唯一住所 lib/ime-composition.ts)
+    if (isImeComposing(e)) return
     if (!p.open || e.defaultPrevented) return
     const content = contentRef.current
 

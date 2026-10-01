@@ -269,7 +269,11 @@ if (process.argv[2] === 'audit' && process.argv[3] === 'signatures') {
   process.exit(0)
 }
 if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) {
-  if (mode === 'high-audit-failure') {
+  // 2026-09-30:升級交易的弱點裁決改成差集(protected base 稽核一次、升級後再稽核一次,只擋新帶進來的)。
+  // 所以「升級帶進新弱點」這個失敗情境,那筆弱點只能出現在升級之後的樹:以 cwd 的 lock 是否已是目標版判斷。
+  const auditedLock = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package-lock.json'), 'utf8'))
+  const auditingUpgradedTree = auditedLock.packages?.['node_modules/' + DS]?.version === fixture.FAKE_RELEASE_VERSION
+  if (mode === 'high-audit-failure' && auditingUpgradedTree) {
     process.stdout.write(JSON.stringify({
       auditReportVersion: 2,
       vulnerabilities: {

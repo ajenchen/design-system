@@ -335,6 +335,7 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 
 `Esc` 那一列是 W3C 原文(上引 `#L153`);其餘三列是 **AI 研究的歸納**(待辦總帳 A1 列的研究結論;非 modal 選單點外面不搶焦點 = Radix `hasInteractedOutsideRef` 的既有行為)。
 既有偏差與修法:AI 浮鈕的右鍵選單原本關閉時一律把焦點搶回浮鈕(點外面也搶),改成只有 `Esc` / 選了項目才回(`AgentPanel/agent-panel-fab.tsx`,待辦總帳 B11)。
+實作:Radix 有自己的觸發點時由 Radix 還;沒有觸發點(快捷鍵 / 普通按鈕 / 錨點 / 受控開啟)的浮層一律交給 `packages/design-system/src/lib/overlay-focus-return.ts` `returnFocusToOpener`(全 DS 一支,2026-09-30 由五份收成;modal 按遮罩收起也還、非 modal 點外面不搶,指標收起不畫鍵盤框)。
 
 
 ## 焦點放在格上還是格裡的控件上,以及進格用什麼鍵(跨元件規則,2026-09-24 訂)

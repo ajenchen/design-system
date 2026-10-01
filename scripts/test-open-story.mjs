@@ -3,7 +3,7 @@
  * @gate-contract
  *   保證: lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的「story 真的渲染完成」唯一實作)只在 Storybook 回報這則 story 渲染完成(含 play)、畫面健康、被等的元素出現、版面靜止之後才回傳;任何一項等不到或不成立都丟 StoryRenderInstrumentError,訊息點名 story id、附 Storybook 錯誤原文與 404 路徑,並聲明不是產品裁決 —— 絕不回成功、絕不靜默略過
  *   紅: 不存在的 story id、被擋的 story 檔(伺服器 404 / 請求被中斷)、永遠渲染不完、play 還沒跑完、渲染完是空畫面、頁面例外、等的元素不出現、版面永遠不靜止、卡在 afterEach 卻沒允許、允許 afterEach 時卡在 rendering、管理介面 iframe 裡是錯誤頁 / 404 / 找不到 iframe、iframe 裡完成的是別的 story —— 任一題若被 openStory / waitForStoryRender 判成成功(或錯誤種類 / 點名 / 404 清單不對)即 exit 1;寫錯選項(finishedPhases 給 play 之前的 phase、沒有 story id)必須丟 TypeError。把 helper 的副本逐項弄壞(拿掉 render phase 等待、拿掉錯誤頁判定、拿掉 404 清單、靜止判定不看 DOM 變動、改回固定睡眠、拿掉 render-health、忽略 waitFor、忽略 finishedPhases、previewFrame 不換量測對象、previewFrame 的靜止判定不看外層管理介面、不比對 story id)各自至少讓一題紅
- *   綠: 正常 story 必須成功;story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)
+ *   綠: 正常 story 必須成功;story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)。同檔另驗同一支 lib 的指標落點(2026-10-01):ownSurfacePosition 必須點在觸發欄位自己的表面(不在 Tag / 頭像 / 按鈕 / Radix 觸發點上)、整格被蓋住回 ok:false,parkPointer 必須停在沒有滑過反應的位置 —— 合成頁與真實建置(PeoplePicker「多人 × 欄位內搜尋」第 3 格正中央是頭像)兩面:舊點法(點正中央、指標留在原地)必須重現「名片卡蓋住下一格」,helper 必須讓下一格點得到
  *
  * 為什麼有這支(2026-09-25):四支閘各自長出一份「等 story 真的畫完」,收斂成 openStory 之後,
  * 原本散在各閘 selftest 裡驗「等待本身」的對照組(focus-geometry 的不存在 id / 刪 chunk、overflow 的晚到 +N /
@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForFocusStable, waitForStoryRender } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, ownSurfacePosition, parkPointer, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForFocusStable, waitForStoryRender } from './lib/launch-browser.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ARGV = process.argv.slice(2)
@@ -480,6 +480,83 @@ try {
       + `沒反應:${noopStable.ok ? 'ok' : 'ok:false'} 換 ${noopStable.changes} 次 焦點=${noopActive};一直跳:${busyStable.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
   }
 
+  // ── ownSurfacePosition + parkPointer:點觸發欄位自己的表面、開關後指標停到中性位置(2026-10-01)──────────────
+  // 取代全掃閘「點正中央、點完指標留在原地」的代理(M37)。合成頁照真的形狀造:第一格觸發欄位的正中央是一顆 Tag 頭像,
+  // 滑過 / 聚焦頭像就開一張卡(同 Radix HoverCard 的觸發),卡片蓋住第二格。兩面都要成立:
+  //   (a) 舊寫法(handle.click() 點正中央、指標留在原地)→ 卡片打開、第二格的 trial click 失敗(= overlay-footer-gutter 在「多人 × 欄位內搜尋」紅的形狀);
+  //   (b) helper:ownSurfacePosition 找到的點不在 Tag / 頭像 / 按鈕 / Radix 觸發點上,按下去開的是欄位自己的選單、卡片沒開;
+  //       parkPointer 停的位置沒有滑過反應;之後第二格點得到。
+  //   (c) 整格被遮罩蓋住 → ok:false(呼叫端當「被蓋住」計數,不得退回正中央);(d) 右下角有會滑過反應的東西 → parkPointer 換下一個候選;
+  //   (e) 寫錯參數 → TypeError。
+  {
+    const pointerPage = page
+    const POINTER_HTML = `<!doctype html><html><body style="margin:0;font:14px sans-serif">
+      <div id="t1" role="combobox" tabindex="0" style="position:absolute;left:40px;top:40px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888">
+        <span data-tag-root data-state="closed" style="position:absolute;left:110px;top:3px;display:inline-flex;align-items:center;gap:4px;background:#eee;padding:0 4px;height:24px">
+          <span id="avatar" data-avatar-size="16" data-state="closed" tabindex="0" style="display:inline-block;width:80px;height:20px;background:#fa0"></span>Eric<button type="button" data-collection-remove>×</button>
+        </span>
+      </div>
+      <div id="t2" role="combobox" tabindex="0" style="position:absolute;left:40px;top:120px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888"></div>
+      <div id="t3" role="combobox" tabindex="0" style="position:absolute;left:40px;top:200px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888"></div>
+      <div id="modal" style="position:absolute;left:0;top:190px;width:600px;height:60px;background:rgba(0,0,0,.3)"></div>
+      <script>
+      (() => {
+        document.addEventListener('mousemove', (e) => { window.__lastPointer = [e.clientX, e.clientY] }, true)
+        const avatar = document.getElementById('avatar')
+        const openCard = () => { if (document.getElementById('card')) return; const c = document.createElement('div'); c.id = 'card'; c.style.cssText = 'position:absolute;left:30px;top:80px;width:340px;height:100px;background:#333'; document.body.appendChild(c) }
+        avatar.addEventListener('pointerenter', openCard)
+        avatar.addEventListener('focus', openCard)
+        for (const id of ['t1', 't2']) document.getElementById(id).addEventListener('click', (e) => { if (e.target.closest('#avatar, button')) return; document.getElementById(id).dataset.opened = String(Number(document.getElementById(id).dataset.opened || 0) + 1) })
+      })()
+      </script></body></html>`
+    const reset = () => pointerPage.setContent(POINTER_HTML)
+    const cardOpen = () => pointerPage.evaluate(() => !!document.getElementById('card'))
+    // (a) 舊寫法
+    await reset()
+    const t1a = await pointerPage.$('#t1')
+    const centerHitsAvatar = await pointerPage.evaluate(() => { const r = document.getElementById('t1').getBoundingClientRect(); return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#avatar') })
+    await t1a.click()
+    await settleAfterInteraction(pointerPage, { frames: 5 })
+    const oldCard = await cardOpen()
+    const oldT1Opened = await pointerPage.evaluate(() => document.getElementById('t1').dataset.opened ?? null)
+    const oldT2Covered = await (await pointerPage.$('#t2')).click({ trial: true, timeout: 1_000 }).then(() => false, () => true)
+    // (b) helper(換內容不會移動指標:先把 (a) 停在頭像上的指標移開,兩面同一個起點)
+    await pointerPage.mouse.move(1, 1)
+    await reset()
+    const t1b = await pointerPage.$('#t1')
+    const at = await ownSurfacePosition(t1b)
+    const atHit = at.ok ? await pointerPage.evaluate(({ x, y }) => { const h = document.elementFromPoint(x, y); return h ? (h.closest('[data-tag-root], [data-avatar-size], button') ? 'tag/avatar/button' : h.id || h.tagName) : null }, at) : null
+    if (at.ok) await t1b.click({ position: at.position })
+    const parked = await parkPointer(pointerPage)
+    await settleAfterInteraction(pointerPage, { frames: 5 })
+    const parkedHit = await pointerPage.evaluate(({ x, y }) => { const h = document.elementFromPoint(x, y); return h === document.documentElement || h === document.body ? 'page' : h?.id || h?.tagName }, parked)
+    // 指標真的移過去了(不是只回報一個位置):頁面最後收到的 mousemove 就在那一點
+    const pointerAtPark = await pointerPage.evaluate(({ x, y }) => { const p = window.__lastPointer; return !!p && Math.abs(p[0] - x) <= 1 && Math.abs(p[1] - y) <= 1 }, parked)
+    const newCard = await cardOpen()
+    const newT1Opened = await pointerPage.evaluate(() => document.getElementById('t1').dataset.opened ?? null)
+    const newT2Covered = await (await pointerPage.$('#t2')).click({ trial: true, timeout: 1_000 }).then(() => false, () => true)
+    // (c) 被遮罩整格蓋住
+    const t3 = await ownSurfacePosition(await pointerPage.$('#t3'))
+    // (d) 右下角有會滑過反應的按鈕 → 換候選
+    await pointerPage.evaluate(() => { const b = document.createElement('button'); b.id = 'fab'; b.style.cssText = 'position:fixed;right:0;bottom:0;width:60px;height:60px'; document.body.appendChild(b) })
+    const parked2 = await parkPointer(pointerPage)
+    const parked2Hit = await pointerPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id || 'page', parked2)
+    // (e)
+    const badHandle = await throwsTypeError(() => ownSurfacePosition(null))
+    const badPrefer = await throwsTypeError(() => ownSurfacePosition(t1b, { prefer: 'middle' }))
+    const badPage = await throwsTypeError(() => parkPointer(null))
+    await pointerPage.goto('about:blank')
+    check('ownSurfacePosition + parkPointer:正中央是頭像時舊寫法開了卡片、蓋住下一格;helper 點在欄位自己的表面(不開卡片、欄位真的收到 click)、指標停在中性位置、下一格點得到;整格被蓋住 → ok:false;右下角有按鈕 → 換位置;寫錯參數 → TypeError',
+      centerHitsAvatar && oldCard && oldT2Covered
+        && at.ok && atHit !== 'tag/avatar/button' && !newCard && newT1Opened === '1' && parked.neutral && parkedHit === 'page' && pointerAtPark && !newT2Covered
+        && t3.ok === false
+        && parked2.neutral && parked2Hit !== 'fab'
+        && badHandle && badPrefer && badPage,
+      `舊:正中央是頭像=${centerHitsAvatar} 卡片=${oldCard} 欄位收到=${oldT1Opened} 下一格被蓋=${oldT2Covered};`
+      + `helper:${at.ok ? `點在 ${atHit}` : `ok:false(${at.why})`} 卡片=${newCard} 欄位收到=${newT1Opened} 停在 ${parkedHit}(neutral=${parked.neutral},指標真的在那=${pointerAtPark}) 下一格被蓋=${newT2Covered};`
+      + `遮罩下:${t3.ok ? 'ok(錯)' : 'ok:false'};有按鈕的角落:停在 ${parked2Hit};TypeError=${badHandle}/${badPrefer}/${badPage}`)
+  }
+
   // ── waitForDocsRender:docs 頁真的渲染出來(2026-09-25,待辦總帳 C5;取代兩份私有判定)──────────────────
   // 合成頁照 Storybook 8.6 的 docs 外觀造:currentRender = { type: 'docs', id, isPreparing() },#storybook-docs 之後才有內容。
   //   (a) 600ms 後才有內容 → 等得到、回傳那一則的 id;(b) 容器被藏起來(殭屍 docs)有內容也不算 → 逾時;
@@ -559,6 +636,58 @@ try {
         check('真實建置:story 檔被擋 → 儀器失效並列出失敗請求',
           hits > 0 && isInstrument(realBlocked, 'storybook-error') && realBlocked.error.failedRequests.some((f) => new RegExp(`/assets/${base}-`).test(f)),
           `攔到 ${hits} 次;${realBlocked.ok ? '被判成成功(錯)' : short(realBlocked.error.message)}`)
+      }
+      // ownSurfacePosition + parkPointer 的真實對照(2026-10-01):PeoplePicker「多人 × 欄位內搜尋」第 3 格的正中央是「Eric Tsai」Tag 的頭像 ——
+      // 全掃閘(overlay-footer-gutter / select-all-footer)舊的點法在這一則紅過。舊點法必須重現「名片卡打開、蓋住第 4 格」,helper 必須讓第 4 格點得到、開得起來。
+      // 前提(正中央真的落在頭像上)不成立 = 這組對照失去牙齒,照樣紅 —— 換一則正中央落在頭像上的觸發欄位,不准默默放行。
+      {
+        const id = 'design-system-components-peoplepicker-展示--multi-inline-search'
+        const covered = (h) => h.click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
+        const hoverCardShown = () => page.waitForFunction(() => [...document.querySelectorAll('[data-radix-popper-content-wrapper]')]
+          .some((w) => !w.querySelector('[cmdk-root]') && w.getBoundingClientRect().height > 60), null, { timeout: 5_000, polling: 'raf' }).then(() => true, () => false)
+        const openAndGrab = async () => {
+          // 導覽不會移動指標:上一次停在頭像上的指標,在新載入的同一則 story 上照樣停在頭像上 → 先停到中性位置再開始(兩面同一個起點)
+          await page.mouse.move(1, 1)
+          await openStory(page, `${real.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { settleFrames: 10, notFound: real.notFound })
+          await parkPointer(page)
+          await settleAfterInteraction(page, { frames: 10 })
+          const handles = await page.locator('[role="combobox"]:visible').elementHandles()
+          return { third: handles[2], fourth: handles[3] }
+        }
+        if (!index.entries[id]) {
+          check(`真實建置:指標落點對照組的 story ${id} 存在`, false, 'index.json 裡找不到 —— 這組對照失效,要換一則正中央落在頭像上的觸發欄位')
+        } else {
+          // 舊點法:點正中央、指標留在原地
+          const old = await openAndGrab()
+          const centerOnAvatar = await old.third.evaluate((el) => { el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('[data-avatar-size]') })
+          await old.third.click({ timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          await page.keyboard.press('Escape')
+          await settleAfterInteraction(page, { frames: 10 })
+          const oldCard = await hoverCardShown()
+          const oldCovered = await covered(old.fourth)
+          // helper:點自己的表面、開關之後把指標停到中性位置
+          const neu = await openAndGrab()
+          const at = await ownSurfacePosition(neu.third)
+          if (at.ok) await neu.third.click({ position: at.position, timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          const thirdOpened = await neu.third.getAttribute('aria-expanded')
+          await parkPointer(page)
+          await page.keyboard.press('Escape')
+          await settleAfterInteraction(page, { frames: 10 })
+          await parkPointer(page)
+          await settleAfterInteraction(page, { frames: 10 })
+          const newCovered = await covered(neu.fourth)
+          const at4 = await ownSurfacePosition(neu.fourth)
+          if (at4.ok && !newCovered) await neu.fourth.click({ position: at4.position, timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          const fourthOpened = await neu.fourth.getAttribute('aria-expanded')
+          await page.keyboard.press('Escape')
+          check('真實建置:正中央落在 Tag 頭像的觸發欄位 —— 舊點法開了名片卡、蓋住下一格;ownSurfacePosition + parkPointer 開的是選單、下一格點得到也開得起來',
+            centerOnAvatar && oldCard && oldCovered && at.ok && thirdOpened === 'true' && !newCovered && at4.ok && fourthOpened === 'true',
+            `前提(正中央是頭像)=${centerOnAvatar};舊:名片卡=${oldCard} 第 4 格被蓋=${oldCovered};`
+            + `helper:第 3 格${at.ok ? `點在 ${at.hit}、開了=${thirdOpened}` : `ok:false(${at.why})`} 第 4 格被蓋=${newCovered} 開了=${fourthOpened}`)
+        }
       }
     } finally { await real.stop() }
   }

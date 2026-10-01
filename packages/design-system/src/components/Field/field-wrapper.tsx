@@ -3,6 +3,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
@@ -300,14 +301,6 @@ export const bareInputStyles = [
 // 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
 // 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
 
-/**
- * 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input。
- * 另一個消費者:LinkInput 連結狀態的外框(點「不是這些東西」的地方 = 按鉛筆進入編輯,link-input.spec.md「Link 狀態」)。
- * 兩處共用這一份清單,不各寫一份。
- */
-export const FIELD_CHROME_OWN_TARGET =
-  'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
-
 /** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */
 export const FIELD_TEXT_ENTRY_CURSOR = 'cursor-text'
 
@@ -322,8 +315,9 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
   if (!input || input.disabled) return
   const target = event.target
   if (!(target instanceof Element) || target === input) return
-  const own = target.closest(FIELD_CHROME_OWN_TARGET)
-  if (own && own !== chrome && chrome.contains(own)) return
+  // 外框裡本身可操作的東西(行內動作鈕 / 連結 / 另一個輸入)照它自己的行為走,不把焦點搶給 input。
+  // 「哪些東西自有行為」與 LinkInput 連結態外框、cmdk 選單共用一份判準(lib/pointer-press.ts,2026-09-30 自本檔搬出)
+  if (isOwnPointerTarget(chrome, target)) return
   event.preventDefault()
   input.focus()
   // 插入點落在點的那一側:點在輸入處右邊(右內距 / 右邊框)→ 放最後,左邊 → 放最前,與直接點在文字右側空白的原生行為一致。
@@ -334,6 +328,19 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
     if (event.clientX >= box.right) input.setSelectionRange(end, end)
     else if (event.clientX <= box.left) input.setSelectionRange(0, 0)
   }
+}
+
+/**
+ * 欄位裡會隨這一下動作卸載的按鈕(一鍵清空 ×;Combobox Tag × 落到最後一顆時同一個 owner):焦點若在它身上,先交給 owner
+ * (觸發欄位內的搜尋框,沒有就是觸發欄位本身),焦點不隨 DOM 卸載掉到 body(combobox.spec.md「Tag 操作」同一條:
+ * 「焦點不可因 DOM unmount 掉到 body」)。焦點不在它身上(搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動。
+ * 世界級:rc-select 清空後聚焦容器(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L711-L721)。
+ * 2026-09-30 前:Select「清除選取」、Combobox / PeoplePicker「清除全部」用鍵盤按下後焦點落在 body(實測)。
+ */
+export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined, owner: HTMLElement | null | undefined): void {
+  const active = leaving?.ownerDocument.activeElement
+  if (!leaving || !owner || !active || !leaving.contains(active)) return
+  owner.focus({ preventScroll: true })
 }
 
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────

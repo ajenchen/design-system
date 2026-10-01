@@ -9,6 +9,7 @@ import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncate
 import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { withImeSafeEscape } from "@/design-system/lib/ime-composition"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -73,7 +74,7 @@ const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -112,6 +113,8 @@ const PopoverContent = React.forwardRef<
             className
           )}
           {...props}
+          // 輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
+          onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
         />
       </PopoverTitleContext.Provider>
     </PopoverPrimitive.Portal>

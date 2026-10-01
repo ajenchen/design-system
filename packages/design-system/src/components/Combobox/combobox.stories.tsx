@@ -147,6 +147,7 @@ export const SizeAlignment: Story = {
 /* ── 搜尋 ── */
 export const Searchable: Story = {
   name: '搜尋',
+  parameters: { docs: { description: { story: '電商後台幫商品貼分類。上面的搜尋框在浮層裡:打「o」可以連勾 Food、Clothing,勾完關鍵字還在;下面的搜尋框在欄位裡:勾完一項關鍵字就清空,直接打下一個。兩種位置用滑鼠點選或按 Enter 結果一樣,游標一直留在搜尋框裡。把下面欄位的 Electronics 按 × 清空後,點欄位直接打字一樣會過濾 —— 空值時欄位裡也有搜尋框。' } } },
   render: () => {
     const [value, setValue] = React.useState<string[]>(['electronics'])
     const [value2, setValue2] = React.useState<string[]>(['electronics'])
@@ -163,7 +164,7 @@ export const Searchable: Story = {
           />
         </div>
         <div className="flex flex-col gap-4">
-          <p className="text-caption text-fg-muted">searchIn='trigger' — inline 搜尋框，直接在欄位內輸入</p>
+          <p className="text-caption text-fg-muted">searchIn='trigger' — 欄位內搜尋框，勾一項就清空關鍵字</p>
           <Combobox
             options={categoryOptions}
             value={value2}
@@ -175,6 +176,108 @@ export const Searchable: Story = {
         </div>
       </div>
     )
+  },
+}
+
+/* ── 欄位內搜尋 × 換行 ── */
+// 內容後台幫文章貼標籤:標籤常超過一行、表單有空間 → wrap;在欄位裡直接打字找標籤(searchIn='trigger')。
+// 搜尋框永遠是 Tag 區最後一格,寬度 = 打的字(combobox.spec.md「欄位內搜尋框的寬度」):空的時候接在最後一顆 Tag 後面、不自己佔一列,
+// 打的字放不下這一列才換到下一列。一開始三顆 Tag 排滿第一列(320px 寬剩不到 60px),空的搜尋框接在第三顆後面、欄位只有一列;
+// 打字後放不下就換到第二列、欄位變兩列。它與 Tag 等高
+// (field-controls.spec.md「wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px」;scripts/visual-assertions.json 量等高、列距 4px、搜尋框不單獨佔一列)。
+// 2026-09-30 前搜尋框有 60px 固定下限:就是這個狀態 —— 三顆 Tag 排滿第一列後,空的搜尋框自己換到第二列,關著的欄位多一列空白(實測 main 54.2px 高、修後 32px)。
+// 2026-10-01 前這則一開始是四顆 Tag(兩列),修前修後長得一樣,看不出那一列空白 —— 改成三顆,預設畫面就是被修掉的那個狀態。
+const articleTagOptions = [
+  { value: 'design-system', label: '設計系統' },
+  { value: 'accessibility', label: '無障礙' },
+  { value: 'frontend', label: '前端工程' },
+  { value: 'performance', label: '效能優化' },
+  { value: 'user-research', label: '使用者研究' },
+  { value: 'product-strategy', label: '產品策略' },
+]
+function ArticleTagsField() {
+  const [value, setValue] = React.useState<string[]>(['design-system', 'accessibility', 'frontend'])
+  return (
+    <div className="w-80" data-visual-inline-wrap="">
+      <Field>
+        <FieldLabel>文章標籤</FieldLabel>
+        <Combobox wrap searchable searchIn="trigger" options={articleTagOptions} value={value} onChange={setValue} placeholder="選擇標籤…" />
+      </Field>
+    </div>
+  )
+}
+export const SearchableInlineWrap: Story = {
+  name: '欄位內搜尋 × 換行',
+  parameters: { docs: { description: { story: '內容後台幫文章貼標籤。三個標籤排滿第一列,欄位內的搜尋框接在最後一個標籤後面(空的時候只佔一個游標寬,欄位不會多出一列空白);點欄位直接打字找下一個標籤,打的字放不下這一列才換到下一列,選完關鍵字清空、游標留在欄位裡。' } } },
+  render: () => <ArticleTagsField />,
+}
+
+// 欄位內搜尋(searchIn='trigger')的焦點 / 關鍵字 / aria-activedescendant 契約 probe(2026-09-30,user 同意「其他部分我覺得”可以”」;
+// 最後一段「浮層開著按 Tag × 焦點不離開搜尋框」是同一條不變式延伸到欄位上的按鈕,屬 AI 推導,出處見 select-menu.spec.md Focus 段)。
+// 規則住 select-menu.spec.md「A11y 預設」Focus 段與「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「邊界案例」Empty。
+// 從空值開始 —— 上面「搜尋」範例一開始就帶著 Electronics,空值那條路徑(2026-09-30 前沒有輸入框)沒有任何 story 會走到。
+// 同 ModesRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,自 sidebar / Autodocs 排除,
+// 瀏覽器閘逐支開 story 時照跑 play;結束在「已勾兩項、浮層開著、關鍵字已清空、焦點在欄位內搜尋框」這一格,visual-audit 看得到。
+const InlineSearchProbe = () => {
+  const [value, setValue] = React.useState<string[]>([])
+  return (
+    <div className="max-w-sm">
+      <Combobox options={categoryOptions} value={value} onChange={setValue} searchable searchIn="trigger"
+        placeholder="選擇商品分類…" aria-label="商品分類(欄位內搜尋 probe)" />
+    </div>
+  )
+}
+export const InlineSearchFocusContract: Story = {
+  name: '欄位內搜尋焦點驗證',
+  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的焦點
+  parameters: { demoFocus: 'keep' },
+  tags: ['test-only'],
+  render: () => <InlineSearchProbe />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doc = canvasElement.ownerDocument
+    const page = within(doc.body) // 浮層 portal 到 body
+    // 空值也有搜尋框,提示字是欄位 placeholder
+    const input = await canvas.findByRole('textbox', { name: '搜尋選項' })
+    await expect(input).toHaveAttribute('placeholder', '選擇商品分類…')
+    // 點它 → 開啟、焦點在它身上
+    await userEvent.click(input)
+    await waitFor(() => expect(input).toHaveFocus())
+    // 打字過濾 → 滑鼠點選項:焦點不離開搜尋框、關鍵字清空
+    await userEvent.type(input, 'fu')
+    await userEvent.click(await page.findByRole('option', { name: /Furniture/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Furniture' })).toBeInTheDocument())
+    await expect(input).toHaveFocus()
+    await expect(input).toHaveValue('')
+    // 在清單裡取消最後一項(有值 → 空):輸入框不卸載、焦點不掉、提示字回來
+    await userEvent.click(await page.findByRole('option', { name: /Furniture/ }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: '移除 Furniture' })).toBeNull())
+    await expect(canvas.getByRole('textbox', { name: '搜尋選項' })).toBe(input)
+    await expect(input).toHaveFocus()
+    // 鍵盤挑選同一條:打字 → 反白回第一個符合項 → Enter
+    await userEvent.type(input, 'fo{Enter}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Food' })).toBeInTheDocument())
+    await expect(input).toHaveFocus()
+    await expect(input).toHaveValue('')
+    await userEvent.type(input, 'cl{Enter}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Clothing' })).toBeInTheDocument())
+    // 焦點所在的搜尋框帶 aria-activedescendant,指向真的存在、而且正被反白的那一列;aria-controls 指到包住它的 listbox(ARIA 1.2)
+    await waitFor(() => {
+      const id = input.getAttribute('aria-activedescendant')
+      expect(id).toBeTruthy()
+      const active = doc.getElementById(id as string)
+      expect(active).toHaveAttribute('data-selected', 'true')
+      const listbox = doc.getElementById(input.getAttribute('aria-controls') ?? '')
+      expect(listbox).toHaveAttribute('role', 'listbox')
+      expect(listbox?.contains(active)).toBe(true)
+    })
+    // 浮層開著、打了關鍵字,按欄位上 Tag 的 ×:移除那一項,焦點與關鍵字都留在搜尋框
+    await userEvent.type(input, 'f')
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Food' }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: '移除 Food' })).toBeNull())
+    await expect(input).toHaveFocus()
+    await expect(input).toHaveValue('f')
+    await userEvent.clear(input)
   },
 }
 

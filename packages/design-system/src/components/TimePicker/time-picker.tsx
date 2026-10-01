@@ -8,6 +8,7 @@ import {
   fieldWrapperStyles,
   bareInputStyles,
   fieldDisplayTextClass,
+  keepFieldFocusBeforeUnmount,
 } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -394,6 +395,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
                   label: '清除時間', // i18n-allow: DS default inline-action label
                   onClick: (e) => {
                     e?.stopPropagation()
+                    // 按鈕隨清空卸載:焦點在它身上先交回觸發欄位,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount;2026-09-30 前實測落在 body)
+                    if (e) keepFieldFocusBeforeUnmount(e.currentTarget, e.currentTarget.closest<HTMLElement>('[role="combobox"]'))
                     onChange?.('')
                   },
                 }}

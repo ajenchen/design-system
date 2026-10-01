@@ -10,6 +10,8 @@ import { isTextEntryElement } from "@/design-system/lib/roving-list-keyboard"
  * 下一個人會以為常駐清單還有兩種畫框依據。刪除依據:待辦總帳〇節「09-26 同意清單回覆」(同意的清單含「按鍵規則合併」與 X8),
  * user 逐字:「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」。
  * 常駐清單(TreeView / Sidebar / FileUpload 檔案清單)現在全部是真焦點 + `focus-visible:`,不需要這裡。
+ * 2026-09-30 另加 `getLastUserInput()`(最近一次使用者輸入是鍵盤還是指標、按在哪個元素):**不是**第二套畫框判準 ——
+ * 它不決定任何東西畫不畫框,只給「浮層收起後還焦點」判斷這次收起是不是指標造成的(見下方該段)。
  *
  * `useCursorMover()` + `markPointerGrab()` —— 給會搶反白的浮層選單(cmdk / Radix Menu)。
  *    這類選單裡反白只有一個主人:滑鼠移過項目就把反白搶走(cmdk `onPointerMove → select()` /
@@ -24,6 +26,7 @@ import { isTextEntryElement } from "@/design-system/lib/roving-list-keyboard"
  *    MUI Autocomplete 只在 `reason === 'keyboard'`(方向鍵)才加 `focusVisible`,打字後的 autoHighlight 不加;
  *    Ant rc-select 在 searchValue 一變就 `setActive(第一項)`、樣式是 `optionActiveBg` 底色、`outline: none`。
  *    所以打字後的自動落點用「開啟那一下」的來歷畫:滑鼠點進輸入框 → 底色;Tab 進來 → 框。
+ *    DS 代發給 cmdk 根的鍵(`dispatchRelayedKey`,見下方)也不算:使用者按的那一下已經依上面的規則記過了(2026-09-30)。
  *    2026-09-09 user:「滑鼠會搶反白的元件,搶完之後,那鍵盤是否可以再搶回?且搶回去之後原本滑鼠的 hover 樣式即會消失
  *    直到滑鼠又搶回來才會再出現,且滑鼠的搶應該是包括鍵盤焦點一起搶吧?」—— 三題都是「對」,一手來源見 focus-canonical Sources。
  *
@@ -63,14 +66,47 @@ function setMover(next: InputModality) {
   cursorMover = next
   moverListeners.forEach((l) => l())
 }
+
+// ── DS 代發的鍵不是使用者按的(2026-09-30)──
+// 觸發欄位與浮層清單分屬兩棵 DOM 子樹,DS 會把鍵「代發」給 cmdk 根:觸發欄位內搜尋框的 ↑ ↓ Enter
+// (SelectMenu/select-menu-keyboard.ts `forwardKeyToListbox`)、打字 / 游標弄丟後把反白放回第一項的 Home
+// (Command/command.tsx `moveCursorToFirstOption`)。使用者按的那一下已在觸發欄位上依上面的規則記過了(打字不算、方向鍵算),
+// 代發的那一份目標是 cmdk 根(不是文字輸入框),不排除就會被記成「鍵盤搬了游標」—— 打字後的自動落點冒出鍵盤框,
+// 正是檔頭 2026-09-10 user 抓的那件事。判準**只認 DS 自己代發的那一顆事件**(WeakSet 身分),不拿 `isTrusted` 當代理:
+// 測試 / 自動化工具派送的鍵同樣 isTrusted=false,卻代表使用者在按(M37)。
+const relayedKeyEvents = new WeakSet<Event>()
+
+/** 代發一顆 keydown 給 `target`(冒泡、可取消),並標記為「不是使用者按的」;回傳該事件(呼叫端可看 defaultPrevented)。 */
+export function dispatchRelayedKey(target: EventTarget, key: string): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+  relayedKeyEvents.add(event)
+  target.dispatchEvent(event)
+  return event
+}
+
+// ── 最近一次「使用者」輸入是什麼、按在哪(2026-09-30)──
+// 給「浮層收起後把焦點還給開啟者」判斷這次收起是不是指標造成的(lib/overlay-focus-return.ts `returnFocusToOpener`):
+// 指標挑選 → 還焦點時不畫鍵盤框;鍵盤(Enter / Esc)→ 照瀏覽器啟發式畫框。與上面的反白來歷是兩件事:
+// 在文字輸入框裡打字不搬反白,但仍是一次鍵盤輸入 —— 這裡記的是「使用者最後動的是哪一種輸入裝置、按在哪個元素上」,不排除打字。
+// DS 代發的鍵(dispatchRelayedKey)同樣不算,理由同上。
+type LastUserInput = { readonly kind: InputModality | null; readonly target: EventTarget | null }
+let lastUserInput: LastUserInput = { kind: null, target: null }
+/** 最近一次使用者輸入(keydown / pointerdown,都在 document capture 階段記;還沒有任何輸入 → kind null)。 */
+export function getLastUserInput(): LastUserInput {
+  return lastUserInput
+}
+
 function onKeyDown(e: KeyboardEvent) {
+  if (relayedKeyEvents.has(e)) return
   observedAnyInput = true
+  lastUserInput = { kind: "keyboard", target: e.target }
   // 反白來歷:修飾鍵不算;在文字輸入框裡打字(非游標鍵)不算(見檔頭)
   const typing = isTextEntryTarget(e.target) && !CURSOR_KEYS_IN_TEXT_ENTRY.has(e.key)
   if (!MODIFIER_KEYS.has(e.key) && !typing) setMover("keyboard")
 }
-function onPointerDown() {
+function onPointerDown(e: PointerEvent) {
   observedAnyInput = true
+  lastUserInput = { kind: "pointer", target: e.target }
   setMover("pointer")
 }
 function onPointerMove(e: PointerEvent) {

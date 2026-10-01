@@ -48,6 +48,7 @@ import {
   runVulnerabilityAuditUnderPolicy,
   GOVERNANCE_VULNERABILITY_POLICIES,
   isTransientAdvisoryEndpointFailure,
+  acceptsHistoricalNpmOverlay,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
@@ -1742,3 +1743,12 @@ test('npm audit 對 advisory 端點的暫時性網路錯誤重試 3 次後仍 fa
   // 上限必須是正整數
   assert.throws(() => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner: () => ({ status: 0, stdout: clean, stderr: '' }), npmRuntime, installedOverlayReceipt, retryLimit: 0 }), /retry limit must be a positive integer/)
 })
+
+// 2026-09-30:只有渲染用參考樹可用歷史認證修補層;判定表逐一走過每個政策(新增政策時這格必須被刻意補上)。
+test('only the render-only reference policy may install a historically certified npm overlay', () => {
+  const table = { enforce: false, 'report-render-only-reference': true, 'report-protected-base-verifier': false }
+  assert.deepEqual(Object.keys(table).sort(), [...GOVERNANCE_VULNERABILITY_POLICIES].sort(), 'every vulnerability policy needs an explicit row')
+  for (const [policy, expected] of Object.entries(table)) assert.equal(acceptsHistoricalNpmOverlay(policy), expected, policy)
+  assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
+})
+

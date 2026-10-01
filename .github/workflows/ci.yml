@@ -136,6 +136,11 @@ jobs:
           # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
           # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
           npm run test:hover-own-pair
+          # 展示層 story 漂移棘輪(2026-09-30):Rating「送出評分流程」範例同時有「新建情境卻停用送出鈕」「寫死間距」
+          #「用 div 當標題」三種漂移,各有 spec 明文卻沒有任何機械面看得到展示層 story(layout-space hook 整個跳過
+          # packages/design-system/src/)。四條規則(另含 DS 沒有的字級 class)只准往下,新增一筆就紅並印 file:line;
+          # 既有數字鎖在 scripts/story-layer-drift-baseline.json。CI 只跑判定 + selftest,永遠不跑 --write-baseline。
+          npm run test:story-layer-drift
 
       - name: Registered test scripts nothing was running
         run: |
@@ -525,7 +530,7 @@ jobs:
     #     「由子行程的 MAX_ATTEMPTS 推導」(根因見該檔:子行程依設計最多重試 5 次、每次約 38 秒,
     #     最壞 190 秒,父行程卻只給 120 秒)。放寬之後最壞情況會把原 job 推到 25 分鐘上限,
     #     所以把「把手 / 釘選 resize / dpr1 感知迴圈」整段搬出來,兩邊都留餘裕。
-    name: Verify browser(DataTable handles + dpr1 perception)
+    name: Verify browser(DataTable handles + dpr1 perception + searchable menu focus)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -579,6 +584,21 @@ jobs:
             node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --assert=on --latency-assert=$LAT --out=tmp/datatable-content-bursts-$dpr
             node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=$LAT --out=tmp/datatable-content-wheel-$dpr
           done
+
+      - name: Searchable menu keeps focus in its search box (browser)
+        run: |
+          # 可搜尋選單開著時,滑鼠點選項 = 按 Enter(user 2026-09-30 同意,原話「其他部分我覺得”可以”」;SSOT select-menu.spec.md
+          #「A11y 預設」Focus 段 +「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「Tag 操作」與「邊界案例」Empty、command.spec.md「A11y 預設」)。
+          # 量的(每一條點名型別 / story / 第幾個觸發點):挑選時與挑選後焦點留在搜尋框、點完打的字進得去、aria-activedescendant 指向反白那一列而且關聯得上、
+          # 欄位內多選每挑一次清空關鍵字 / 浮層內保留、單選收起回觸發點且指標挑選不帶 :focus-visible、Tag × /「+N」浮出清單裡的 × 與卡片本身 / 全選
+          # 不搬焦點也不關選單、選單關著按「+N」裡的 × 焦點不掉到 body、Tag 排滿後打的字看得全、比整列長的字停在整列寬並捲動、打了字後滑鼠一鍵清空
+          # 連關鍵字一起清、鍵盤一鍵清空焦點留在欄位、組字中的 Enter 不選 / Esc 不關(一般 Esc 對照照樣關)、Combobox searchIn='trigger' 空值時仍有搜尋框。
+          # 候選 story 從 index.json 依「SelectMenu + 宣告搜尋 prop 的包裝元件 + Command 的直接使用者(AgentPanel 歷史、CommandDialog)」家族推導,
+          # 逐一真的點開判型,四型與直接使用者都要量到;--selftest 在頁面上把修法逐一拆掉(13 組),每一組都必須紅在指定的型與直接使用者。
+          # 放這個 job(2026-10-01 從 verify-browser-select-all 搬來):那邊 CI 實測 9.4–11.4 分(不含這支),這支本機單獨實測掃描 159 秒 + 對照組 227 秒,
+          # CI 上同類閘約本機的 1.2–1.4 倍(select-all-footer 本機 281–291 秒 / CI 330–417 秒)→ 估 8–9 分,疊上去 18–20 分、貼近 25 分上限;
+          # 這個 job CI 實測 5.8–7.7 分。同一份 storybook build、瀏覽器已在上一步裝好;步驟依序跑,不與上面的感知量測同時佔 CPU。
+          npm run test:searchable-menu-focus
 
       - name: Preserve DataTable scroll perception evidence
         if: always()
@@ -798,6 +818,13 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,
+          # 真鍵盤 / 滑鼠 / 觸控逐條走 form-validation.spec.md 規則 1 / 2 / 4 / 5 / 6 / 7 / 8(錯誤會清掉、Escape 回原值、焦點只在被送出的
+          # 那張表裡找、錯誤長出來不會把這一下 click 推離送出 / 重設鈕、原生拖曳之後「按著」不會卡住);不需要 storybook。
+          # --selftest 十一個單一根因突變(errors 以物件身分 memo / Escape 用 resetField / 整頁 getElementsByName / 不掛歸屬標記 /
+          # 不以 form 界定 / 按著時當場驗 / 觸控不算按壓 / 延後的驗證不跑 / 焦點回來仍驗 / 原生拖曳不算按壓結束 / 取消只結束
+          # 被取消的那一個 pointer)各自必須剛好紅它負責的列,對照列全程綠。
+          npm run test:form-validation-contract
           # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
           # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
           npm run test:tree-view-keyboard-route

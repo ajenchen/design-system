@@ -50,6 +50,8 @@ import type {
   FileRendererProps,
 } from './file-viewer-types'
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { isImeComposing, withImeSafeEscape } from "@/design-system/lib/ime-composition"
+import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
 
 /**
  * FileViewer — 可延伸的網頁檔案 preview shell(modal fullscreen)
@@ -247,7 +249,8 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commitDraft}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            // 輸入法選字的 Enter 不提交(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
+            if (e.key === 'Enter' && !isImeComposing(e)) {
               e.preventDefault()
               commitDraft()
               ;(e.target as HTMLInputElement).blur()
@@ -810,6 +813,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   labels: labelsOverride,
   className,
   onOpenAutoFocus,
+  onCloseAutoFocus,
+  onEscapeKeyDown,
   ...props
 }, ref) {
   const labels = React.useMemo(
@@ -828,6 +833,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     onChange: onOpenChange,
   })
   const contentRef = React.useRef<HTMLDivElement | null>(null)
+  // 開啟當下握著焦點的元素(縮圖 / 「預覽」鈕…):關閉後還給它。FileViewer 由受控 `open` 開、沒有 Radix 觸發點,
+  // Radix 沒有東西可還 → 2026-09-30 前關閉後焦點掉到 body(實測)。記 / 還都走 lib/overlay-focus-return.ts(全 DS 一支)
+  const openerRef = React.useRef<HTMLElement | null>(null)
   const setContentRef = React.useCallback(
     (node: HTMLDivElement | null) => {
       contentRef.current = node
@@ -1055,11 +1063,22 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           // 讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar control/Tooltip。
           // Consumer handler 可先取消；未取消時由本元件阻止 Radix default 並聚焦 Content。
           onOpenAutoFocus={(event) => {
+            // 先記開啟者(FocusScope 派發這個事件時焦點還沒搬進來)
+            openerRef.current = captureFocusOrigin()
             onOpenAutoFocus?.(event)
             if (event.defaultPrevented) return
             event.preventDefault()
             contentRef.current?.focus({ preventScroll: true })
           }}
+          // 關閉 → 焦點還給開啟者(consumer 的 handler 先跑、擋了預設就不接;並存模式非 modal:按在常駐區收起不搶)
+          onCloseAutoFocus={(event) => {
+            onCloseAutoFocus?.(event)
+            const opener = openerRef.current
+            openerRef.current = null
+            returnFocusToOpener(event, opener, { noTrigger: true, modal: !persistentElements })
+          }}
+          // 縮放比例輸入框用輸入法時:輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
+          onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
         >
           {/* 鎖 dark subtree。Density 繼承 page(不另設 data-density)。
               header 高度透過 `--chrome-header-height` 自動 density-aware(md=48 / lg=56)。

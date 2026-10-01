@@ -30,7 +30,7 @@ const COMPACT: Record<SizeKey, { star: number; text: string; gap: string }> = {
 const SIZE_USE: Record<SizeKey, string> = {
   sm: 'Field sm、sm 列（緊湊清單、表格 sm）',
   md: '預設 — 一般表單、md 列、獨立擺放',
-  lg: 'Field lg、送出評分的主 CTA 區塊',
+  lg: 'Field lg、lg 列',
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -676,7 +676,10 @@ export const SliderWithLiveNumberInput: Story = {
 const EXISTING_PROJECT_NAMES = ['產品路線圖 Q3', '客服工單系統'] // 模擬「名稱重複」業務驗證(規則 9)
 
 function UpdateProjectSettingsForm() {
-  const [saved, setSaved] = React.useState(false)
+  // 送出結果(WCAG 4.1.3):saved.count = 連續第幾次存檔成功(0 = 不顯示),以它當 key,每次成功都換一個新的文字節點,
+  // 連存兩次讀屏也會再念一次;saved.of = 那次存下的內容。內容一改(編輯 / Escape 回復)或被業務驗證擋下就歸 0 ——
+  // 「已儲存 ✓」不會跟新的錯誤並排。歸 0 直接在 render 裡比對內容時做,不用 effect(effect 在 commit 之後才跑 = 每次編輯多一輪 render)
+  const [saved, setSaved] = React.useState({ count: 0, of: '' })
   const form = useFormValidation({
     initialValues: { name: '產品路線圖', ownerEmail: 'pm@acme.com' },
     intent: 'update', // Update:disabled-until-dirty(沒改就不用存)
@@ -686,11 +689,13 @@ function UpdateProjectSettingsForm() {
     },
     onSubmit: (values) => {
       if (EXISTING_PROJECT_NAMES.includes(String(values.name).trim())) {
+        setSaved({ count: 0, of: '' })
         return { name: '此專案名稱已存在' } // 業務驗證(規則 9)→ 自動 setError + anchor
       }
-      setSaved(true)
+      setSaved((s) => ({ count: s.count + 1, of: JSON.stringify(values) }))
     },
   })
+  if (saved.count > 0 && saved.of !== JSON.stringify(form.values)) setSaved({ count: 0, of: '' })
   return (
     <form onSubmit={form.handleSubmit} className="w-80" aria-label="專案設定">
       <FieldGroup>
@@ -709,14 +714,15 @@ function UpdateProjectSettingsForm() {
       {/* 規則 4:內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
       <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
         <Button type="submit" variant="primary" disabled={form.submitDisabled}>儲存變更</Button>
-        {saved && <span className="text-caption text-fg-muted">已儲存 ✓</span>}
+        {/* 送出結果要讓讀屏聽到(WCAG 4.1.3):朗讀區一開始就在、只換內容 —— 同 command.tsx CommandEmptyStatus 的 role="status" 寫法 */}
+        <span role="status" aria-live="polite" className="text-caption text-fg-muted">{saved.count > 0 ? <span key={saved.count}>已儲存 ✓</span> : null}</span>
       </div>
     </form>
   )
 }
 
 function CreateProjectForm() {
-  const [created, setCreated] = React.useState(false)
+  const [created, setCreated] = React.useState({ count: 0, of: '' }) // 同上 saved:連續第幾次建立成功 + 那次建立的內容
   const form = useFormValidation({
     initialValues: { name: '', ownerEmail: '' },
     intent: 'create', // Create:永遠 enabled(不讓使用者猜「為什麼按不了」)
@@ -724,8 +730,9 @@ function CreateProjectForm() {
       name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
       ownerEmail: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
     },
-    onSubmit: () => setCreated(true),
+    onSubmit: (values) => setCreated((s) => ({ count: s.count + 1, of: JSON.stringify(values) })),
   })
+  if (created.count > 0 && created.of !== JSON.stringify(form.values)) setCreated({ count: 0, of: '' }) // 內容一改就收掉
   return (
     <form onSubmit={form.handleSubmit} className="w-80" aria-label="建立專案">
       <FieldGroup>
@@ -742,7 +749,7 @@ function CreateProjectForm() {
       </FieldGroup>
       <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
         <Button type="submit" variant="primary">建立專案</Button>
-        {created && <span className="text-caption text-fg-muted">已建立 ✓</span>}
+        <span role="status" aria-live="polite" className="text-caption text-fg-muted">{created.count > 0 ? <span key={created.count}>已建立 ✓</span> : null}</span>
       </div>
     </form>
   )

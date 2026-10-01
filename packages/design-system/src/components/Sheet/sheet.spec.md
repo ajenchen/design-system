@@ -129,7 +129,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 **Keyboard 行為**:
 
 - Tab — focus trap 在 sheet 內
-- Esc — 關閉
+- Esc — 關閉;**輸入法組字中的 Esc 不關**(那一下是在取消選字;`SheetContent` 的 `onEscapeKeyDown` 經 `../../lib/ime-composition.ts` `withImeSafeEscape` 擋掉,規則同 `../Popover/popover.spec.md`「A11y 預設」Esc 條,2026-10-01)
 - Shift+Tab — 反向 focus 循環
 
 **Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration 例外(2026-07-14)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShellAside 手機模式)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>` — 必自建 `onCloseAutoFocus` snapshot 還原(先例:AppShellAside app-shell.tsx / DatePicker Range date-picker.tsx:1061;WCAG 2.4.3)。

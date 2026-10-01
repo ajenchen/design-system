@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { withImeSafeEscape } from "@/design-system/lib/ime-composition"
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -114,7 +115,7 @@ export const handleSheetOpenAutoFocus = (e: Event) => {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
+>(({ side = "right", className, children, onEscapeKeyDown, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
@@ -123,6 +124,8 @@ const SheetContent = React.forwardRef<
       // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
       className={cn(sheetVariants({ side }), className)}
       {...props}
+      // 輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
+      onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
     >
       {children}
     </SheetPrimitive.Content>

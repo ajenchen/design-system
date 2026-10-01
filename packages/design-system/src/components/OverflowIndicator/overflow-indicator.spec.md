@@ -118,6 +118,7 @@ OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + H
 - **identity root = trigger pill span**:ref 指向 hover 前即顯示的 `+N` 計數 pill(非 portal 內的 HoverCard content);consumer 取得 ref 可量測 / 定位 trigger
 - **`...props` spread 到 trigger pill**:`Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'>` 的 DOM attribute(如 `aria-*` / `data-*` / event handler)落在 trigger span 上
 - **HoverCard content 不暴露 ref**:浮層內容在 portal(DOM 離散),由底層 HoverCard 管理,不透過 OverflowIndicator 控制
+- **唯一的內容層 prop:`onContentMouseDown`**(2026-09-30):按在浮出清單上的 mousedown。消費者用它把「按在自己的零件上焦點不動」的判準延伸到這張卡 —— 卡在另一個 portal,消費者容器上的 mousedown 判準以 DOM 包含判斷、看不到它。唯一用途:Combobox 搜尋框握著焦點時,按卡裡的 Tag × 焦點不離開搜尋框(判準 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段)。卡裡的名片(Avatar hoverCard,另一個 portal、另一個控件)不受影響。按在卡上的 **click** 照 React 元件樹冒泡回 +N 所在的容器;Combobox 觸發欄位的開關只認 target 在觸發欄位 DOM 裡的 click、不理它(`../SelectMenu/select-menu.spec.md`「觸發欄位的開關」),本元件不另寫(2026-10-01)
 
 若 consumer 需要程式化控制 HoverCard content(custom Portal / content ref),應改用 HoverCard + Tag 自組。`displayName = 'OverflowIndicator'` 保留。
 
