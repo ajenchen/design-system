@@ -86,8 +86,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const HOOK = resolve(ROOT, 'packages/design-system/src/components/Field/use-form-validation.ts')
 const SELFTEST = process.argv.includes('--selftest')
 const HOOK_OVERRIDE = process.argv.find((a) => a.startsWith('--hook='))?.slice('--hook='.length)
-/** 互動之後版面要連續靜止幾個影格 */
-const SETTLE_FRAMES = 4
 /** 讀焦點前焦點要連續幾個影格不動 */
 const FOCUS_FRAMES = 6
 /** 等證據的天花板(不是「已發生」的代理):超過就是儀器失效 */
@@ -337,7 +335,8 @@ const formSel = (label) => `form[aria-label="${label}"]`
 const inputSel = (label, name) => `${formSel(label)} input[name="${name}"]`
 
 async function settle(page) {
-  const r = await settleAfterInteraction(page, { frames: SETTLE_FRAMES, capMs: WAIT_CAP_MS })
+  // 版面靜止的影格數用共用 helper 的預設(scripts/lib/launch-browser.mjs settleAfterInteraction,全庫同一個值)
+  const r = await settleAfterInteraction(page, { capMs: WAIT_CAP_MS })
   if (!r.ok) throw new InstrumentError(`版面 ${WAIT_CAP_MS}ms 內等不到靜止`)
 }
 async function focusStable(page) {
