@@ -113,8 +113,9 @@ export const StateBehavior: Story = {
           hover / active / focus-visible 全數繼承 Button:未選數字與上下頁 = text variant(hover 淡灰底、
           active 深一階);當前頁 = secondary variant(hover 升 primary-hover 階、按壓 primary-active,
           無灰底 —— 選中之上的互動 = 同色相升降階)。當前頁是位置指示非 toggle —— 點擊當前頁
-          fire onPageChange(同頁),不會「取消選中」。第一頁 / 最後一頁時對應箭頭 disabled
-          (focus 掉落行為對齊 Ant / MUI,不做 focus 轉移)。
+          fire onPageChange(同頁),不會「取消選中」。第一頁 / 最後一頁時對應箭頭 disabled;
+          用鍵盤按到底的那一下,焦點留在那顆箭頭上、不掉到頁面(Button 的「握著焦點時被停用」規則,
+          keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」)。
         </Desc>
         <Pagination total={100} page={page} onPageChange={setPage} />
         <p className="text-caption text-fg-muted">目前在第 {page} 頁 —— 點數字 / 箭頭觀察 controlled 行為。</p>

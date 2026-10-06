@@ -105,7 +105,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 每個 Tag 有 dismiss 按鈕（X），點擊移除該選項。
 
-Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒有下一個則前一個；最後一個移除後回 owner:`searchable` + `searchIn='trigger'` 時是欄位內的搜尋框(它恆在,見「邊界案例」Empty),其餘是 combobox 觸發區。焦點不可因 DOM unmount 掉到 `body`；PeoplePicker 的自訂 avatar Tag 亦走相同 `data-collection-remove` contract。**只在焦點會跟著被移除的東西一起消失時才接力**(焦點在某顆 × 或 Tag 區裡別的東西上);焦點不在 Tag 區(浮層內搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動焦點(`combobox.tsx` `focusAfterTagRemoval`;2026-09-30 前不論焦點在哪一律搬到下一顆 × 或 owner,浮層內搜尋框握著焦點時會被拉回觸發區)。**「+N」浮出清單裡的 ×** 走同一條移除路徑:焦點在那顆 × 上(滑鼠按下、搜尋框沒握著焦點時)→ 移除後交回 owner(卡片裡的 × 不在欄位的接力序上),不掉到 `body`;consumer 自訂的隱藏項(`renderHiddenTag`)一律用它的第二個參數 `onRemove` 移除 —— 自己呼叫 `onChange` 會跳過焦點接力(PeoplePicker 2026-09-30 前就是這樣,焦點掉到 body,實測)。
+Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒有下一個則前一個；最後一個移除後回 owner:`searchable` + `searchIn='trigger'` 時是欄位內的搜尋框(它恆在,見「邊界案例」Empty),其餘是 combobox 觸發區。焦點不可因 DOM unmount 掉到 `body`；PeoplePicker 的自訂 avatar Tag 亦走相同 `data-collection-remove` contract。**只在焦點會跟著被移除的東西一起消失時才接力**(焦點在某顆 × 或 Tag 區裡別的東西上);焦點不在 Tag 區(浮層內搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動焦點(實作全 DS 一支 `../../lib/collection-removal-focus.ts` `focusAfterCollectionRemoval`,2026-10-01 由本元件 `focusAfterTagRemoval`、FileUpload、AgentPanel 輸入盒附件列三份收成;2026-09-30 前不論焦點在哪一律搬到下一顆 × 或 owner,浮層內搜尋框握著焦點時會被拉回觸發區)。**「+N」浮出清單裡的 ×** 走同一條移除路徑:焦點在那顆 × 上(滑鼠按下、搜尋框沒握著焦點時)→ 移除後交回 owner(卡片裡的 × 不在欄位的接力序上),不掉到 `body`;consumer 自訂的隱藏項(`renderHiddenTag`)一律用它的第二個參數 `onRemove` 移除 —— 自己呼叫 `onChange` 會跳過焦點接力(PeoplePicker 2026-09-30 前就是這樣,焦點掉到 body,實測)。
 
 **搜尋框握著焦點時用滑鼠按 ×**(浮層開著、欄位內或浮層內的搜尋框都算):移除那一項,焦點與關鍵字都留在搜尋框、浮層不關 —— 觸發區 `onMouseDown` 擋預設、click 照常(判準共用 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`)。同一條也管一鍵清空 ×、Tag 本體、欄位空白處,以及「+N」浮出清單裡的 Tag ×(浮出清單在另一個 portal,本元件在那張卡上掛同一支判準:`../OverflowIndicator/overflow-indicator.tsx` `onContentMouseDown` ← `combobox.tsx` `keepSearchFocus`)。世界級同做法:rc-select 選取區按在輸入框以外就擋預設(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/SelectInput/index.tsx#L182-L209>)、MUI Autocomplete 根元素 `handleMouseDown` 同(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1316-L1329>)。四種搜尋框位置的完整焦點表住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段「按清單以外的地方」。2026-09-30 前:浮層開著、打了關鍵字,按 Tag × 焦點被搬到下一顆 ×(Chrome 按鈕在 mousedown 就拿到焦點),之後打的字全部丟掉(實測)。
 
@@ -181,6 +181,15 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 - `errorMessage` prop 由 Field wrapper 顯示於下方
 - multi mode 可附 `min` / `max` selected count 限制(consumer 自驗,Combobox 不獨立 own validation rules)
 - Validation timing:預設 onBlur + onSubmit,onChange 不立即 validate(避免邊選邊紅)
+
+## 表單整合(`useFormValidation`,2026-10-01)
+
+`<Combobox {...form.getInputProps('tags')} />` 真的接得上(`../Field/form-validation.spec.md` v1 邊界 (a);待辦總帳 N82 —— 2026-10-01 前規格宣稱支援、實作卻在解構時把 `name` / `onBlur` / `onKeyDown` / `data-*` 全丟掉,規則 2 / 4 / 8 一條都到不了)。接線照 Select 的 allowlist 做法(`combobox.tsx` ComboboxProps 檔頭):
+
+- `name` 掛在**可聚焦的觸發區**(規則 8「焦點移到第一個錯誤欄位」以 `name` 定位並聚焦;隱藏的原生 `<select>` 不是焦點站)
+- `onBlur`:**觸發區 + 它的清單浮層 + 「+N」浮出清單 = 同一個欄位**(`../../lib/composite-field-focus.ts`,待辦總帳 N83)—— 開啟時焦點搬進浮層(浮層內搜尋框 / cmdk 殼)、或按「+N」卡裡的 Tag ×(卡在另一個 portal,以 `../OverflowIndicator/overflow-indicator.tsx` `contentId` 認得,2026-10-07 補)都不算離開,規則 2 的驗證只在真的離開時跑一次;修前一開清單必填錯誤就長出來
+- `onKeyDown`:consumer 先跑、擋了預設就不走元件導覽;規則 4 的 Esc 回復只在那一下**歸欄位**時動作(`../../lib/overlay-escape.ts`):清單開著按 Esc 只關清單、值不動;清單關著、值改過 → 回復值(放在 Dialog 裡第一下回復、第二下才關;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)
+- `data-*`(`data-form-validation` 歸屬標記、`data-escape-layer` Esc 層宣告)轉到觸發區
 
 ## Ref 契約(cross-mode 例外,2026-07-17 user 拍板)
 

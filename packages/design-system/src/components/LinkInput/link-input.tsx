@@ -8,7 +8,7 @@ import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -106,6 +106,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
+      onBlur: onBlurProp,
+      onKeyDown: onKeyDownProp,
       ...props
     },
     ref
@@ -135,11 +137,25 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     const [localValue, setLocalValue] = React.useState(value ?? '')
     const [localError, setLocalError] = React.useState(false)
     const inputRef = React.useRef<HTMLInputElement | null>(null)
+    const pencilRef = React.useRef<HTMLButtonElement | null>(null)
+    // 鍵盤結算(Enter 提交 / Esc 取消)後焦點去哪(同 InlineEdit「退出 edit 態(focus 分流)」):結算讓輸入框卸載(切回連結狀態)時,
+    // 焦點本來會掉到 body → 交給鉛筆(編輯入口);輸入框還在(網址無效 / 清空)就留在輸入框。只在焦點真的掉了才接手,焦點已被別處接走不搶。
+    // 2026-10-01 前 Enter 走 blur、Esc 後焦點掉到 body(實測);同日第一版在 keydown 當下同步聚焦鉛筆、沒 preventDefault,
+    // 同一下 Enter 的 keypress 落到鉛筆上又把編輯打開 —— 現改走 Field/field-edit-keys.ts(它會 preventDefault),焦點在 commit 之後才搬。
+    const returnFocusRef = React.useRef(false)
 
     // Sync external value → local
     React.useEffect(() => {
       if (!editing) setLocalValue(value ?? '')
     }, [value, editing])
+
+    React.useEffect(() => {
+      if (!returnFocusRef.current || editing) return
+      returnFocusRef.current = false
+      const active = document.activeElement
+      if (active && active !== document.body && active.isConnected) return
+      pencilRef.current?.focus()
+    })
 
     // Merge refs
     const setRef = React.useCallback((el: HTMLInputElement | null) => {
@@ -215,21 +231,29 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       handleEdit()
     }
 
-    const handleBlur = () => {
-      setEditing(false)
+    /** 結算草稿(blur / Enter 共用):空白 = 清值;合法 = 提交;不合法 = 紅框、留在輸入框。回傳是否離開了編輯態。 */
+    const settleDraft = () => {
       const trimmed = localValue.trim()
       if (!trimmed) {
         // Empty is OK — clear value
         setLocalError(false)
+        setEditing(false)
         onChange?.('')
-        return
+        return true
       }
       if (isValidUrl(trimmed)) {
         setLocalError(false)
+        setEditing(false)
         onChange?.(trimmed)
-      } else {
-        setLocalError(true)
+        return true
       }
+      setLocalError(true)
+      return false
+    }
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      settleDraft()
+      onBlurProp?.(e)
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,15 +262,28 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       if (localError) setLocalError(false)
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      // 輸入法選字的 Enter / Esc 是在選字,不提交、不取消(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
-      if (isImeComposing(e)) return
-      if (e.key === 'Enter') inputRef.current?.blur()
-      if (e.key === 'Escape') {
+    // Esc 層(ds-canonical/references/keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」):正在編輯、或有打了還沒存的字,
+    // 這一下 Esc 歸本元件(放在 Dialog / Sheet 裡第一下只取消編輯、不關浮層);乾淨的輸入框沒有這一層。
+    const ownsEscape = editing || localError || localValue !== (value ?? '')
+    // Enter / Esc 走全 DS 就地編輯鍵盤結算 SSOT(Field/field-edit-keys.ts:IME guard + preventDefault + Esc 分層);2026-10-01 前這裡自己寫
+    const settleKeys = editSettleKeyProps({
+      onCommit: () => { returnFocusRef.current = true; settleDraft() },
+      onCancel: () => {
+        returnFocusRef.current = true
         setLocalValue(value ?? '')
         setLocalError(false)
         setEditing(false)
-      }
+      },
+      escapeLayer: ownsEscape,
+    })
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // 自己的草稿 / 編輯態是同一個 `<input>` 上更內層的那一層:Esc 先歸它,consumer 自己接的 onKeyDown 下一下才輪到
+      //(LinkInput 不是 useFormValidation getInputProps 的支援對象:連結狀態不渲 input,表單的 props 到不了 —— 待辦總帳 N85)
+      if (e.key === 'Escape' && ownsEscape) { settleKeys.onKeyDown(e); return }
+      // 其餘鍵 consumer 先跑、擋了預設就不走元件的(同 Rating / Select / NumberInput 的寫法;2026-10-01 前 `{...props}` 在後,consumer 的 onKeyDown 整支蓋掉元件的)
+      onKeyDownProp?.(e)
+      if (e.defaultPrevented) return
+      settleKeys.onKeyDown(e)
     }
 
     // readonly — 顯示藍色連結（可點擊）
@@ -295,6 +332,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
             {value && renderLinkAnchor(value, label)}
           </span>
           <ItemInlineAction
+            ref={pencilRef}
             size={size ?? 'md'}
             action={{ icon: Pencil, label: '編輯連結', onClick: handleEdit }} // i18n-allow: DS default inline-action label
           />
@@ -320,10 +358,6 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           ref={setRef}
           type="url"
           id={idProp ?? fieldCtx?.id}
-          value={localValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           aria-invalid={error || undefined}
           aria-required={fieldCtx?.required || undefined}
@@ -331,6 +365,13 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
           className={bareInputStyles}
           {...props}
+          // 元件自己的 handler 列在 {...props} 之後(consumer 的在 handler 內先跑);settleKeys 帶的 Esc 層宣告(data-escape-layer)一起掛,
+          // 它的 onKeyDown 由下一行的 handleKeyDown 包住(先分 Esc 歸誰、再 consumer、再結算)
+          {...settleKeys}
+          value={localValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
         />
       </div>
     )

@@ -114,7 +114,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - `files`: uploaded / uploading 檔案清單(`FileUploadStatus[]`:id / name / size? / progress? / status? / description? / thumbnailSrc?)。傳入 → drop zone 下方渲染列表,每項經 `FileItem`(status 對應:uploading = progress bar / completed = ✓ / error = ✗);不傳 → 不顯示。consumer 持 state(progress / status),FileUpload 只負責渲染
 - `fileListMode`: 清單每項顯示模式;預設 `'compact'`(單行),`'rich'` 含 thumbnail / size / progress bar
 - `onRemove(id)`: 清單移除 callback;有值 → 每項右側顯示 X 移除鈕(ARIA label 由 `removeAriaLabel` 模板客製,預設「移除 {name}」),無 → view-only
-- 移除焦點:在 callback 前把 focus 交給下一項 remove button；沒有下一項則前一項；清單清空則回 FileUpload owner trigger（dropzone 或 button）。禁止 item unmount 後讓 focus 掉到 `body`。移除鈕不在 Tab 路上(見「A11y 預設」檔案清單鍵盤),但仍可由程式聚焦;焦點接力到哪一列,清單的 Tab 停靠點就跟到哪一列(2026-09-25 待辦總帳 B9)。
+- 移除焦點:在 callback 前把 focus 交給下一項 remove button；沒有下一項則前一項；清單清空則回 FileUpload owner trigger（dropzone 或 button）。**只在焦點會跟著被移除的東西一起消失時才動**(焦點在那顆 × 上、或在清單裡別的東西上;焦點在清單外 → 不搶),基準是**被點到的那顆 ×**(焦點在列上時照樣接到下一顆)。實作全 DS 一支 `../../lib/collection-removal-focus.ts` `focusAfterCollectionRemoval`(2026-10-01 由本元件、Combobox、AgentPanel 輸入盒三份收成;規則同 `../Combobox/combobox.spec.md`「Tag 操作 › 個別移除」)。禁止 item unmount 後讓 focus 掉到 `body`。移除鈕不在 Tab 路上(見「A11y 預設」檔案清單鍵盤),但仍可由程式聚焦;焦點接力到哪一列,清單的 Tab 停靠點就跟到哪一列(2026-09-25 待辦總帳 B9)。
 - `variant` / `buttonLabel`: 見「兩種觸發外觀」段
 
 ---

@@ -21,20 +21,27 @@
  * 2 Blur 時驗證            → getInputProps().onBlur 跑 validate[name];指標按著時的離開延到這一下按壓完成
  *                            (click 已送出)才驗 —— 見 settlePress(2026-10-01,待辦總帳 N67)
  * 3 Enter 等同 blur        → form 內 Enter 觸發 submit(全驗,超集);單行控件原生行為
- * 4 Escape 取消回復原值    → getInputProps().onKeyDown Escape → 寫回 initialValues[name] + 清 error
+ * 4 Escape 取消回復原值    → getInputProps().onKeyDown Escape → 寫回 dirty 比對基準 + 清 error。欄位改過時 getInputProps 另掛
+ *                            `data-escape-layer`:放在 Dialog / Sheet / Popover 裡,第一下 Esc 回復、浮層不關,第二下才關
+ *                            (lib/overlay-escape.ts,2026-10-01,待辦總帳 N68);控件自己的彈出層剛被同一下 Esc 關掉時不回復(一下只少一層)
  * 5 開始編輯立即清除 error → onChange 先清 errors[name](不論新值合法與否)
  * 6 Blur 重新驗證          → 同 2(離開時重判)
  * 7 Submit 驗證全部        → handleSubmit 對所有 validate keys 全跑(不依賴 blur 狀態)
  * 8 Anchor 到第一個錯誤    → focus + scrollIntoView({block:'center'});每次 submit 重算;只找這個 hook 實例自己的欄位
  * 9 Async / 跨欄位 defer 到 submit → onSubmit 回傳 field-keyed errors → 同 8 anchor
  * + Submit button:Create 永遠 enabled / Update disabled-until-dirty → `submitDisabled`
+ * + 更新表單送出成功後,剛送出的值成為新的比對基準(2026-10-01,待辦總帳 N69 / 規格「Submit Button 狀態」):
+ *   isDirty 回 false、送出鈕再度停用、Escape 回到已存的值 —— 不是存檔前的舊值;await 期間使用者又打的字逐格重算
  * + Double-submit 防護(2026-07-05 D4):await onSubmit 期間重入直接忽略;`isSubmitting`
  *   暴露餵 Button loading / disabled;onSubmit reject 先復位再原樣上拋(不吞錯)
  *
  * ── v1 邊界(spec「可執行層」段 documented)──
  * - getInputProps 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select /
- *   Combobox / DatePicker / TimePicker;onChange 收 event 或裸值皆可)。Checkbox / Switch
- *   (onCheckedChange)consumer 自接 setFieldValue。
+ *   Combobox / DatePicker / TimePicker / Rating;onChange 收 event 或裸值皆可)。Checkbox / Switch
+ *   (onCheckedChange)consumer 自接 setFieldValue。回傳的是一整組:覆寫其中的 handler(例 onKeyDown)要轉呼叫原本那一支 ——
+ *   欄位改過時同一組帶著 Esc 層宣告,浮層把第一下 Esc 留給這一格回復;蓋掉不轉呼叫 = 回復沒人做,浮層守門會在派送完發現沒人認領而照常關
+ *   (lib/overlay-escape.ts「宣告 ≠ 處理」;不會困住,但規則 4 沒了)。規格 form-validation.spec.md v1 邊界 (a)。LinkInput **不在清單**:它的連結狀態不渲 input,
+ *   getInputProps 帶的 name / 標記 / handler 到不了(待辦總帳 N85)。
  * - focus-first-error 以 DOM `name` 屬性定位(帶 name 的可聚焦元素生效:native input、Rating 根節點、
  *   桌機 Select 的 mirror;控件沒有這種元素則略過,errors 視覺仍由 Field 紅框 + FieldError 呈現)。
  *   歸屬 = getInputProps 掛在控件上的 `data-form-validation`(值 = 本 hook 實例 id):只認自己標記的元素,
@@ -46,6 +53,7 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import type { FieldValues, Path, PathValue, DefaultValues } from 'react-hook-form'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl, type EscapeLayerScope } from '@/design-system/lib/overlay-escape'
 
 export interface UseFormValidationOptions<T extends FieldValues> {
   /** 表單初始值(Update 場景 = 現有資料;dirty 比對基準) */
@@ -79,6 +87,8 @@ export interface FormFieldInputProps<V = unknown> {
   onKeyDown: (e: React.KeyboardEvent) => void
   /** 規則 8 的歸屬標記(值 = 本 hook 實例 id):送出失敗時只把焦點移到自己標記的欄位,不會跑到同頁另一張表單的同名欄位 */
   'data-form-validation': string
+  /** 規則 4 的 Esc 層宣告:這一欄改過(值 ≠ 比對基準)時才有 —— 浮層守門看到就把這一下 Esc 留給欄位回復,不關浮層(lib/overlay-escape.ts) */
+  [ESCAPE_LAYER_ATTR]?: EscapeLayerScope
 }
 
 export interface UseFormValidationReturn<T extends FieldValues> {
@@ -96,7 +106,7 @@ export interface UseFormValidationReturn<T extends FieldValues> {
   getInputProps: <K extends keyof T & string>(name: K) => FormFieldInputProps<T[K]>
   /** 接 `<form onSubmit={form.handleSubmit}>`(規則 7/8/9) */
   handleSubmit: (e?: React.FormEvent) => Promise<void>
-  /** 整表重置回 initialValues(清 errors + dirty) */
+  /** 整表重置回比對基準(清 errors + dirty)。基準 = 掛載時的 initialValues;更新表單送出成功後 = 剛送出的值 */
   reset: () => void
   /** Escape hatch:非 value/onChange 控件(Checkbox/Switch)手動寫值 */
   setFieldValue: (name: keyof T & string, value: unknown) => void
@@ -116,6 +126,17 @@ function extractValue(eventOrValue: unknown): unknown {
     return (eventOrValue.target as HTMLInputElement).value
   }
   return eventOrValue
+}
+
+/** 「這一欄改過了嗎」的比對(規則 4 的 Esc 層與送出後重算 dirty 共用):原始值 / 陣列(Combobox)/ Date 逐項比,其餘走 RHF 同款的 JSON 深比對。 */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => sameValue(v, b[i]))
+  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime()
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    try { return JSON.stringify(a) === JSON.stringify(b) } catch { return false }
+  }
+  return false
 }
 
 /** 規則 8 的歸屬標記。getInputProps 把它掛到控件上,控件的 `{...props}` 把 data-* 轉到帶 name 的元素本身
@@ -312,9 +333,11 @@ export function useFormValidation<T extends FieldValues>(
     <K extends keyof T & string>(name: K): FormFieldInputProps<T[K]> => {
       // 泛型 K 窄化到 Path<T> 需經 unknown(RHF Path 是 template-literal type,K 不直接 overlap)
       const path = name as unknown as Path<T>
+      const value = form.watch(path) as T[K]
+      const original = (form.formState.defaultValues as Partial<T> | undefined)?.[name]
       return {
         name,
-        value: form.watch(path) as T[K],
+        value,
         onChange: (eventOrValue: unknown) => {
           // 規則 5:開始編輯立即清除 error(不論新值合法與否,給修正空間)
           if (form.getFieldState(path).error) form.clearErrors(path)
@@ -327,23 +350,42 @@ export function useFormValidation<T extends FieldValues>(
           if (isPointerPressed()) deferBlurValidation(name, event)
           else validateField(name)
         },
-        // 規則 4:Escape 回復原值,不觸發驗證。原值 = dirty 比對基準(RHF defaultValues = 掛載時的 initialValues),
-        // 寫回後 dirty 自然回 false(Update 送出鈕再度停用)。不用 resetField:它只對 register 過的欄位生效
+        // 規則 4:Escape 回復原值,不觸發驗證。原值 = dirty 比對基準(RHF defaultValues = 掛載時的 initialValues;更新表單送出成功後
+        // = 剛送出的值),寫回後 dirty 自然回 false(Update 送出鈕再度停用)。不用 resetField:它只對 register 過的欄位生效
         // (`index.esm.mjs` resetField 開頭 `if (get(_fields, name))`),本 hook 不走 register → 靜默無作用。
         onKeyDown: (e: React.KeyboardEvent) => {
           // 輸入法組字中的 Esc 是取消組字,不回復欄位(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
-          if (e.key === 'Escape' && !isImeComposing(e)) {
-            const original = (form.formState.defaultValues as Partial<T> | undefined)?.[name]
-            form.setValue(path, original as PathValue<T, Path<T>>, { shouldDirty: true })
-            form.clearErrors(path)
-          }
+          if (e.key !== 'Escape' || isImeComposing(e)) return
+          // 這一下已被 Radix 用來關控件自己的彈出層(可搜尋的 Select / 可打字的 DatePicker 清單開著)→ 不回復:一下只少一層
+          // (lib/overlay-escape.ts;浮層守門留給欄位的那一下讀起來是「歸控件」,照常回復)
+          if (!isEscapeForControl(e)) return
+          form.setValue(path, original as PathValue<T, Path<T>>, { shouldDirty: true })
+          form.clearErrors(path)
         },
         // 規則 8:標記「這欄屬於這個表單實例」
         [OWNER_ATTR]: owner,
+        // 規則 4 的 Esc 層:改過才算一層(乾淨的欄位按 Esc 就直接關浮層)。控件的 `{...props}` 把它跟 data-form-validation 一起轉到元素上
+        ...escapeLayerProps(!sameValue(value, original)),
       }
     },
     [form, validateField, deferBlurValidation, owner],
   )
+
+  // 更新表單送出成功 → 剛送出的值成為新的比對基準(form-validation.spec.md「Submit Button 狀態」:存檔後「沒改就不用存」,送出鈕再度停用;
+  // Escape 回到已存的值)。用 reset(snapshot, { keepValues }):RHF 7.80 帶 values 的 reset 會更新 defaultValues
+  // (https://github.com/react-hook-form/documentation/blob/3ac1fe0254947748d993cd4b1915fc5dea87ba8b/src/content/docs/useform/reset.mdx#L38),
+  // keepValues 保留 await 期間使用者又打的字 —— 但 keepValues 會把 isDirty 歸零,所以那些欄位要逐格 setValue(shouldDirty) 重算。
+  // 快照是送出那一刻取的值(不是 reset 當下的 getValues:await 期間打的字不是「已存的」,M37)。
+  // 新建表單不重設:建立後 consumer 常要 reset() 回空白繼續建下一筆,重設會讓 reset() 回到剛建立的值。
+  // 對照:Mantine `form.resetDirty(values)`(https://github.com/mantinedev/mantine/blob/f38933cb4f1c534600f4ff59ee3ddbb4685a4bc4/apps/mantine.dev/src/pages/form/status.mdx#L106-L119)、
+  // RHF 官方範例 `if (formState.isSubmitSuccessful) reset(…)`(同上 reset.mdx#L246-L258)。
+  const rebaseline = React.useCallback((snapshot: T) => {
+    const live = form.getValues()
+    form.reset(snapshot, { keepValues: true, keepErrors: true, keepIsSubmitted: true, keepSubmitCount: true })
+    for (const key of Object.keys(live)) {
+      if (!sameValue(live[key], snapshot[key])) form.setValue(key as Path<T>, live[key] as PathValue<T, Path<T>>, { shouldDirty: true })
+    }
+  }, [form])
 
   // 2026-07-05 D4 double-submit 防護:連點 submit / 連按 Enter 在 await onSubmit(規則 9
   // async 業務驗證)期間會並發呼叫 onSubmit(重複建立資源的經典事故)。ref 同步擋重入
@@ -400,14 +442,16 @@ export function useFormValidation<T extends FieldValues>(
               message: businessErrors[name as keyof T] as string,
             })
           }
-          if (names.length > 0) focusFirstError(names, owner, scope)
+          if (names.length > 0) { focusFirstError(names, owner, scope); return }
         }
+        // 成功(沒有業務錯誤、沒有拋錯):更新表單把剛送出的值定為新基準(見 rebaseline)
+        if (intent === 'update') rebaseline(current)
       } finally {
         isSubmittingRef.current = false
         setIsSubmitting(false)
       }
     },
-    [form, validate, onSubmit, owner],
+    [form, validate, onSubmit, owner, intent, rebaseline],
   )
 
   return {

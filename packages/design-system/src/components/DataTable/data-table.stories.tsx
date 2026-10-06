@@ -1813,12 +1813,14 @@ export const FilterPanelLabelsAndLimit: Story = {
     await expect(flat.getByText('Past 7 days')).toBeInTheDocument()
     await userEvent.click(flat.getByRole('button', { name: 'Add filter' }))
     await waitFor(() => expect(flat.getAllByLabelText('Filter field')).toHaveLength(2))
-    await expect(flat.getByRole('button', { name: 'Add filter' })).toBeDisabled()
+    // 剛按下去的那顆鈕握著焦點時變停用 → 不轉原生 disabled、改 aria-disabled(button.tsx 可聚焦的停用,2026-10-01;焦點不掉到 body);
+    // 沒被按的同族鈕照舊原生 disabled(下方)
+    await expect(flat.getByRole('button', { name: 'Add filter' })).toHaveAttribute('aria-disabled', 'true')
 
     const nestedCondition = within(canvas.getByTestId('filter-limit-nested-condition'))
     await userEvent.click(nestedCondition.getByRole('button', { name: 'Add nested filter' }))
     await waitFor(() => expect(nestedCondition.getAllByLabelText('Filter field')).toHaveLength(2))
-    await expect(nestedCondition.getByRole('button', { name: 'Add nested filter' })).toBeDisabled()
+    await expect(nestedCondition.getByRole('button', { name: 'Add nested filter' })).toHaveAttribute('aria-disabled', 'true')
     await expect(nestedCondition.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
 
     const nestedGroup = within(canvas.getByTestId('filter-limit-nested-group'))
@@ -1827,7 +1829,7 @@ export const FilterPanelLabelsAndLimit: Story = {
     for (const button of nestedGroup.getAllByRole('button', { name: 'Add nested filter' })) {
       await expect(button).toBeDisabled()
     }
-    await expect(nestedGroup.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
+    await expect(nestedGroup.getByRole('button', { name: 'Add filter group' })).toHaveAttribute('aria-disabled', 'true')
 
     const mountCapZero = within(canvas.getByTestId('filter-limit-mount-zero'))
     await expect(mountCapZero.queryAllByLabelText('Filter field')).toHaveLength(0)

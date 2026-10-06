@@ -129,10 +129,10 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 **Keyboard 行為**:
 
 - Tab — focus trap 在 sheet 內
-- Esc — 關閉;**輸入法組字中的 Esc 不關**(那一下是在取消選字;`SheetContent` 的 `onEscapeKeyDown` 經 `../../lib/ime-composition.ts` `withImeSafeEscape` 擋掉,規則同 `../Popover/popover.spec.md`「A11y 預設」Esc 條,2026-10-01)
+- Esc — 關閉;**一次只少一層,焦點所在的控件自己那一層也算一層**(2026-10-01;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):側板裡改過的欄位(接 `useFormValidation`)/ 就地編輯中 / 格游標 / 拖曳中 → 第一下 Esc 由控件撤銷、側板不關,第二下才關;**輸入法組字中的 Esc 不關**(那一下是在取消選字)。機制:`SheetContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape`(取代 ime-composition.ts 的 `withImeSafeEscape`),規則同 `../Dialog/dialog.spec.md`「A11y 預設」Esc 條
 - Shift+Tab — 反向 focus 循環
 
-**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration 例外(2026-07-14)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShellAside 手機模式)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>` — 必自建 `onCloseAutoFocus` snapshot 還原(先例:AppShellAside app-shell.tsx / DatePicker Range date-picker.tsx:1061;WCAG 2.4.3)。
+**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration(2026-10-01 起 DS 預設)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShellAside 手機模式)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>`(WCAG 2.4.3)—— `SheetContent` 現在**預設**在內容掛上時記下開啟者、關閉時沒有 Radix 觸發點就經 `../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn` 還回去(待辦總帳 OE29;規則同 `../Dialog/dialog.spec.md`「Focus return」條);consumer 自己接了 `onOpenAutoFocus` / `onCloseAutoFocus` 的(AppShellAside app-shell.tsx、Sidebar 窄版抽屜:帶 fallback)照舊先跑、擋了預設就勝出。`Sheet`(Root)的 `modal` 經 context 交給 Content(非 modal 點外面收起不搶焦點)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

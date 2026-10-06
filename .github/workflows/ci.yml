@@ -477,6 +477,10 @@ jobs:
           # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過。現況那趟留在 verify-browser-agent(13 分 / 上限 15,
           # ci-workflow-scope 釘死);對照組本機要 100 秒以上,放在這個 7 分鐘的 job(同樣先 build-storybook),照 2026-09-15 按預算拆 job 的先例。
           node scripts/virtual-cursor-modality-invariant.mjs --selftest
+          # useFormValidation 契約的**對照組**(2026-10-01):判定留在 verify-browser-interaction(那個 job 已 10.8–13.0 分),
+          # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
+          # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),同上一支按預算放在這個約 7 分的 job。
+          node scripts/form-validation-contract-invariant.mjs --selftest
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
@@ -750,6 +754,14 @@ jobs:
           # 全掃 1033 支 story 要 2 分 22 秒,但「className 蓋掉」已由 S 全面覆蓋,不需要用 6 倍瀏覽器時間再驗。
           node scripts/form-gap-token-invariant.mjs --selftest
           node scripts/form-gap-token-invariant.mjs
+          # 「這一下 Esc 由誰處理」與「焦點不掉到 body」(2026-10-01;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」
+          # 「按了之後自己變停用」「關了之後焦點去哪」;待辦總帳 N68–N70 / N82–N84 / OE29 / OE30):每一個宣告了自己有一層的 DS 控件放進 Dialog / Popover
+          # 用真鍵盤走 —— 剛好「層數 + 1」下關閉、焦點從不落 body;另含 Combobox 表單接線、開彈出層不算離開、選單項開的對話框還焦點、
+          # 集合移除接力、Enter 提交不重開編輯、輸入盒附件、分頁到底、改名對話框;2026-10-07 加宣告了 Esc 層卻沒人處理不困住、
+          # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式)。
+          # 不需要 storybook(原始碼打包進空白頁),本機約 85 秒。
+          # 對照組(--selftest,二十五個突變)在 verify-browser-select-all:本 job CI 實測 11.9–14.6 分,疊上去貼近 25 分上限。
+          node scripts/escape-and-focus-contract-invariant.mjs
 
 
   verify-browser-interaction:
@@ -821,10 +833,12 @@ jobs:
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,
           # 真鍵盤 / 滑鼠 / 觸控逐條走 form-validation.spec.md 規則 1 / 2 / 4 / 5 / 6 / 7 / 8(錯誤會清掉、Escape 回原值、焦點只在被送出的
           # 那張表裡找、錯誤長出來不會把這一下 click 推離送出 / 重設鈕、原生拖曳之後「按著」不會卡住);不需要 storybook。
-          # --selftest 十一個單一根因突變(errors 以物件身分 memo / Escape 用 resetField / 整頁 getElementsByName / 不掛歸屬標記 /
-          # 不以 form 界定 / 按著時當場驗 / 觸控不算按壓 / 延後的驗證不跑 / 焦點回來仍驗 / 原生拖曳不算按壓結束 / 取消只結束
-          # 被取消的那一個 pointer)各自必須剛好紅它負責的列,對照列全程綠。
-          npm run test:form-validation-contract
+          # 2026-10-01 下午(待辦總帳 N64 / N68 / N69 / OE29)加十列:對話框裡的表單 Esc 一次一層、受控對話框關閉後焦點回開啟者、
+          # 送出中 / 存檔後焦點留在送出鈕(可聚焦的停用)、更新表單存檔後重設比對基準、送出成功跳 Toast(三則 story 原始碼)。
+          # 2026-10-07 加 T-dialog / T-sheet(放在浮層裡、送出成功就關的三則 story:Toast、關閉、再打開時 reset)。
+          # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)在 verify-browser-datatable-perception ——
+          # 本 job CI 實測 10.8–13.0 分,疊上去貼近 25 分上限(ci-workflow-scope.test.mjs),照 virtual-cursor-modality 對照組的先例按預算放。
+          node scripts/form-validation-contract-invariant.mjs
           # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
           # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
           npm run test:tree-view-keyboard-route
@@ -1093,6 +1107,16 @@ jobs:
           # 對照組把四件事各弄壞一次,**每一條都要各自被抓到**(只看「有沒有紅」會讓一條掩護其他三條)。
           # 跟上面那支共用同一份 storybook build,放同一個 job。
           npm run test:unrestricted-option
+
+      - name: Escape and focus contract — control group (browser)
+        run: |
+          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):二十五個單一根因突變
+          # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
+          # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
+          # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相)
+          # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機 10.8 分(2026-10-07 實測 650 秒、同時另有建置在跑;循序約 25 分);不需要 storybook,
+          # 放這裡是按預算:本 job 拆分後實測 508 秒,overlay job 已 11.9–14.6 分(ci-workflow-scope.test.mjs 釘 25 分上限)。
+          node scripts/escape-and-focus-contract-invariant.mjs --selftest
 
   verify-browser-field-edges:
     # 2026-09-20 從 select-all job 拆出來的第九個 job。理由是**牆鐘**,不是逾時:

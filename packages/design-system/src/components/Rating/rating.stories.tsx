@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
@@ -74,25 +75,24 @@ export const ReadOnlyProductRating: Story = {
 // 走 <Field mode="readonly">,rating.spec.md「放入 Field 的可組合性」)。
 
 function ServiceRatingForm() {
-  // 第幾次送出成功,0 = 還沒送;> 0 → 切唯讀(送出後不能再改,不需要「一編輯就收掉」);以它當 key,再按一次送出讀屏也會再念
-  const [submitted, setSubmitted] = useState(0)
+  // 送出成功 → Toast(user 2026-10-01 逐字:「以上噎一律處理到完美，然後送出成功跳提示」;form-validation.spec.md「A11y 預設 › Submit 成功宣告」),
+  // 讀屏由 Toaster 的 polite 朗讀區宣讀;送出後同一欄切唯讀(rating.spec.md「送出前 = interactive,送出後 = readOnly」)
+  const [submitted, setSubmitted] = useState(false)
   const form = useFormValidation({
     initialValues: { rating: 0 },
     intent: 'create', // 新建:送出鈕永遠可按,按了才驗證全部(form-validation.spec.md「Submit Button 狀態」)
     validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
-    onSubmit: () => setSubmitted((n) => n + 1),
+    onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
   })
   return (
     <form onSubmit={form.handleSubmit} className="w-80" aria-label="為這次服務評分">
-      <Field required invalid={!!form.errors.rating} mode={submitted > 0 ? 'readonly' : 'edit'}>
+      <Field required invalid={!!form.errors.rating} mode={submitted ? 'readonly' : 'edit'}>
         <FieldLabel>整體滿意度</FieldLabel>
         <Rating {...form.getInputProps('rating')} />
         <FieldError>{form.errors.rating}</FieldError>
       </Field>
       <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
         <Button type="submit" variant="primary">送出評分</Button>
-        {/* 送出結果要讓讀屏聽到(WCAG 4.1.3):朗讀區一開始就在、只換內容 —— 同 command.tsx CommandEmptyStatus 的 role="status" 寫法 */}
-        <span role="status" aria-live="polite" className="text-caption text-fg-muted">{submitted > 0 ? <span key={submitted}>已送出 ✓</span> : null}</span>
       </div>
     </form>
   )
@@ -104,11 +104,17 @@ export const InField: Story = {
     docs: {
       description: {
         story:
-          '訂單完成後幫這次服務評分。送出鈕永遠可按:沒給分就離開評分或按送出,欄位顯示「請至少給 1 星」;按送出時焦點同時移到評分。送出成功後同一欄改成唯讀精簡版,旁邊顯示「已送出 ✓」。',
+          '訂單完成後幫這次服務評分。送出鈕永遠可按:沒給分就離開評分或按送出,欄位顯示「請至少給 1 星」;按送出時焦點同時移到評分。送出成功後跳出「評分已送出」提示(Toast),同一欄改成唯讀精簡版。',
       },
     },
   },
-  render: () => <ServiceRatingForm />,
+  // Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one」合約允許)
+  render: () => (
+    <>
+      <Toaster />
+      <ServiceRatingForm />
+    </>
+  ),
 }
 
 /* @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */

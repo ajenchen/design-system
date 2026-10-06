@@ -11,7 +11,7 @@
   "counterExamples": "story-counter-example:設計原則層放行的 ❌ 反例標記(只准往下;新增一個要隨基準檔一起送審)",
   "escapes": "layout-space-magic-ok:被 @layout-space-magic-ok 逃生口放行的寫死間距(每個字一筆;分類器本來就放行的 micro 不算;只准往下,新增要隨基準檔一起送審)",
   "totals": {
-    "primary-submit-disabled": 1,
+    "primary-submit-disabled": 0,
     "hardcoded-spacing": 264,
     "div-heading": 0,
     "unknown-typography": 3,
@@ -66,12 +66,6 @@
       }
     },
     "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx": {
-      "primary-submit-disabled": {
-        "count": 1,
-        "hits": [
-          "0fb375273188"
-        ]
-      },
       "hardcoded-spacing": {
         "count": 12,
         "hits": [

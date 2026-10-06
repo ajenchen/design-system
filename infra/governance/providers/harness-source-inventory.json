@@ -459,6 +459,7 @@
       "scripts/test-dialog-height-invariant.mjs",
       "scripts/test-drag-announcement-invariant.mjs",
       "scripts/test-dropdown-menu-keyboard-invariant.mjs",
+      "scripts/test-escape-and-focus-contract-invariant.mjs",
       "scripts/test-exemption-expiry-invariant.mjs",
       "scripts/test-field-label-binding-invariant.mjs",
       "scripts/test-field-text-left-edge-invariant.mjs",

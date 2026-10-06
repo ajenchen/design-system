@@ -10,8 +10,9 @@ import {
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldDescription, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
@@ -206,10 +207,29 @@ export const Default = {
   ),
 }
 
-export const WithForm = {
-  name: '表單',
-  render: () => (
-    <Dialog>
+/**
+ * 對話框裡的表單走 `useFormValidation`(2026-10-01;form-validation.spec.md 可執行層):改過的欄位第一下 Esc 回復、第二下才關對話框
+ * (keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」);沒有表單引擎的 `<Input>` 沒有「原值」可回復,Esc 直接關 ——
+ * DS 自己的表單範例因此一律接 hook,預覽看到的就是裁示的行為。沒有 `<form>`:footer 鈕 `onClick={() => void form.handleSubmit()}`(規則 8b 的寫法)。
+ * 送出成功 → Toast 再關閉(form-validation.spec.md「Submit 成功宣告」;user 2026-10-01 逐字「…然後送出成功跳提示」,文案是 AI 依 toast.spec 句型擬的)。
+ * 建立表單每次打開都是空白的:打開那一刻 `reset()`(AI 推導)—— 取消、Esc、送出成功關閉都會經過下一次打開;關閉當下不清,收起動畫期間欄位不會先閃成空白。
+ */
+function CreateProjectDialogForm() {
+  const [open, setOpen] = useState(false)
+  const form = useFormValidation({
+    initialValues: { name: '', description: '' },
+    validate: { name: (v) => (String(v).trim() ? undefined : '專案名稱必填') },
+    onSubmit: () => {
+      toast({ variant: 'success', title: '專案已建立' })
+      setOpen(false)
+    },
+  })
+  const handleOpenChange = (next: boolean) => {
+    if (next) form.reset()
+    setOpen(next)
+  }
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>開啟 Modal</Button>
       </DialogTrigger>
@@ -220,13 +240,14 @@ export const WithForm = {
         </DialogHeader>
         <DialogBody>
           <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            <Field>
+            <Field required invalid={!!form.errors.name}>
               <FieldLabel>專案名稱</FieldLabel>
-              <Input placeholder="例:Q3 設計改版" />
+              <Input placeholder="例:Q3 設計改版" {...form.getInputProps('name')} />
+              <FieldError>{form.errors.name}</FieldError>
             </Field>
             <Field>
               <FieldLabel>描述</FieldLabel>
-              <Input placeholder="一句話介紹專案目標..." />
+              <Input placeholder="一句話介紹專案目標..." {...form.getInputProps('description')} />
               <FieldDescription>選填，簡述專案用途</FieldDescription>
             </Field>
           </div>
@@ -235,10 +256,21 @@ export const WithForm = {
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary">建立</Button>
+          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export const WithForm = {
+  name: '表單',
+  // Toast 的 Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個)
+  render: () => (
+    <>
+      <Toaster />
+      <CreateProjectDialogForm />
+    </>
   ),
 }
 

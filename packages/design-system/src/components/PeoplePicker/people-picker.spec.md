@@ -328,7 +328,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 
 **Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
-移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
+移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`(實作全 DS 一支 `../../lib/collection-removal-focus.ts`,2026-10-01)。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

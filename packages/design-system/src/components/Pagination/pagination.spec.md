@@ -155,7 +155,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 | `page` 越界(< 1 或 > 總頁數) | 防禦性 clamp 後渲染(顯示層不炸);糾正責任在 consumer / DataTable(接資料變動時同步 clamp) |
 | `pageSize <= 0`(consumer contract violation) | 防禦 clamp 至 1(不渲染垃圾格位、totalPages 不會變 Infinity/NaN) |
 | 極大總頁數(500+) | 摺疊規則不變(恆 ≤ 7 格);數字鈕寬度容納 3-4 位數自然撐開 |
-| 邊界頁 disabled 時 focus 落點 | 接受 focus 掉落(對齊 Ant / MUI 行為);不做 focus 轉移 |
+| 邊界頁 disabled 時 focus 落點 | 按到頭的那一下,箭頭在握著焦點時變停用 → Button 不轉原生 `disabled`、焦點留在原鈕(`aria-disabled` 可聚焦停用,焦點離開後才回原生 disabled)。不做 focus 轉移。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」(2026-10-01;本列原寫「接受 focus 掉落(對齊 Ant / MUI)」,查無 user 原話、與全 DS「焦點不掉到 body」相反,AI 推導改寫) |
 
 ## Loading / 空值
 

@@ -1,4 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Sheet,
@@ -11,8 +12,9 @@ import {
   SheetClose,
 } from './sheet'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldDescription, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
@@ -28,10 +30,29 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-export const CreateProjectRight: Story = {
-  name: '建立新專案（右側滑入）',
-  render: () => (
-    <Sheet>
+/**
+ * 側板裡的表單走 `useFormValidation`(2026-10-01;form-validation.spec.md 可執行層):改過的欄位第一下 Esc 回復、第二下才關側板
+ * (keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」);沒有表單引擎的 `<Input>` 沒有「原值」可回復,Esc 直接關 ——
+ * DS 自己的表單範例因此一律接 hook,預覽看到的就是裁示的行為。沒有 `<form>`:footer 鈕 `onClick={() => void form.handleSubmit()}`(規則 8b 的寫法)。
+ * 送出成功 → Toast 再關閉(form-validation.spec.md「Submit 成功宣告」;user 2026-10-01 逐字「…然後送出成功跳提示」,文案是 AI 依 toast.spec 句型擬的)。
+ * 每次打開那一刻 `reset()`(AI 推導):建立表單回到空白、更新表單回到最後存下的值;關閉當下不清,收起動畫期間欄位不會先閃掉。
+ */
+function CreateProjectSheet() {
+  const [open, setOpen] = useState(false)
+  const form = useFormValidation({
+    initialValues: { name: '', description: '' },
+    validate: { name: (v) => (String(v).trim() ? undefined : '專案名稱必填') },
+    onSubmit: () => {
+      toast({ variant: 'success', title: '專案已建立' })
+      setOpen(false)
+    },
+  })
+  const handleOpenChange = (next: boolean) => {
+    if (next) form.reset()
+    setOpen(next)
+  }
+  return (
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button variant="primary">建立新專案</Button>
       </SheetTrigger>
@@ -44,13 +65,14 @@ export const CreateProjectRight: Story = {
             fw-adjacent 的微 tight 視覺損失 < 非 fw-adjacent 的 loose 破壞。
             詳 `layoutSpace.spec.md` 規則 3 caveat。 */}
         <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
-          <Field>
+          <Field required invalid={!!form.errors.name}>
             <FieldLabel>專案名稱</FieldLabel>
-            <Input placeholder="例:Q2 產品路線圖" />
+            <Input placeholder="例:Q2 產品路線圖" {...form.getInputProps('name')} />
+            <FieldError>{form.errors.name}</FieldError>
           </Field>
           <Field>
             <FieldLabel>描述</FieldLabel>
-            <Textarea placeholder="簡述此專案的目標與範圍" rows={4} />
+            <Textarea placeholder="簡述此專案的目標與範圍" rows={4} {...form.getInputProps('description')} />
             <FieldDescription>選填,可在建立後補上</FieldDescription>
           </Field>
           {/* 多選場景:初始成員權限(從設計系統中組合出 Jira / Linear 專案建立流程的典型多選欄位)
@@ -69,17 +91,48 @@ export const CreateProjectRight: Story = {
           <SheetClose asChild>
             <Button variant="tertiary">取消</Button>
           </SheetClose>
-          <Button variant="primary">建立專案</Button>
+          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立專案</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  )
+}
+
+export const CreateProjectRight: Story = {
+  name: '建立新專案（右側滑入）',
+  // Toast 的 Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個)
+  render: () => (
+    <>
+      <Toaster />
+      <CreateProjectSheet />
+    </>
   ),
 }
 
-export const EditUserRight: Story = {
-  name: '編輯成員詳情（右側滑入）',
-  render: () => (
-    <Sheet>
+/**
+ * 更新表單(同上接 hook):沒改不能存(form-validation.spec.md「Submit Button 狀態」更新列),Esc 第一下回復改過的欄位、第二下才關。
+ * 送出成功 → Toast 再關閉;存下的值成為新的比對基準,下次打開(`reset()`)就是存下的值。
+ */
+function EditUserSheet() {
+  const [open, setOpen] = useState(false)
+  const form = useFormValidation({
+    initialValues: { displayName: 'Ada Chen', title: 'Design Engineer', email: 'ada.chen@example.com' },
+    intent: 'update',
+    validate: {
+      displayName: (v) => (String(v).trim() ? undefined : '顯示名稱必填'),
+      email: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
+    },
+    onSubmit: () => {
+      toast({ variant: 'success', title: '成員資料已儲存' })
+      setOpen(false)
+    },
+  })
+  const handleOpenChange = (next: boolean) => {
+    if (next) form.reset()
+    setOpen(next)
+  }
+  return (
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button variant="tertiary">檢視成員詳情</Button>
       </SheetTrigger>
@@ -92,17 +145,19 @@ export const EditUserRight: Story = {
             fw-adjacent 的微 tight 視覺損失 < 非 fw-adjacent 的 loose 破壞。
             詳 `layoutSpace.spec.md` 規則 3 caveat。 */}
         <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
-          <Field>
+          <Field required invalid={!!form.errors.displayName}>
             <FieldLabel>顯示名稱</FieldLabel>
-            <Input defaultValue="Ada Chen" />
+            <Input {...form.getInputProps('displayName')} />
+            <FieldError>{form.errors.displayName}</FieldError>
           </Field>
           <Field>
             <FieldLabel>職稱</FieldLabel>
-            <Input defaultValue="Design Engineer" />
+            <Input {...form.getInputProps('title')} />
           </Field>
-          <Field>
+          <Field required invalid={!!form.errors.email}>
             <FieldLabel>Email</FieldLabel>
-            <Input defaultValue="ada.chen@example.com" />
+            <Input {...form.getInputProps('email')} />
+            <FieldError>{form.errors.email}</FieldError>
           </Field>
           <Field>
             <FieldLabel>進階權限</FieldLabel>
@@ -118,10 +173,20 @@ export const EditUserRight: Story = {
           <SheetClose asChild>
             <Button variant="tertiary">取消</Button>
           </SheetClose>
-          <Button variant="primary">儲存變更</Button>
+          <Button variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled} onClick={() => void form.handleSubmit()}>儲存變更</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  )
+}
+
+export const EditUserRight: Story = {
+  name: '編輯成員詳情（右側滑入）',
+  render: () => (
+    <>
+      <Toaster />
+      <EditUserSheet />
+    </>
   ),
 }
 

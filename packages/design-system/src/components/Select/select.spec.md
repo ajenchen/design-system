@@ -266,6 +266,10 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ---
 
+## 表單接線(`useFormValidation`,2026-10-01)
+
+`onBlur` 以**觸發欄位 + 它的清單浮層 = 同一個欄位**判定(`../../lib/composite-field-focus.ts`,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;可搜尋 → 欄位內搜尋框)不算離開,`useFormValidation` 規則 2 的驗證只在真的離開時跑一次 —— 修前一開清單,必填錯誤就長出來(實測)。`onKeyDown` consumer 先跑(dim-9 既有);規則 4 的 Esc 回復只在那一下歸欄位時動作:清單開著按 Esc 只關清單、值不動(`../../lib/overlay-escape.ts`;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)。
+
 ## Clearable
 
 `clearable` 在有值時顯示 clear 按鈕。

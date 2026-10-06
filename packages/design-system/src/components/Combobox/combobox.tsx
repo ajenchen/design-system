@@ -2,6 +2,8 @@
 // @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 4 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
+import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
+import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -309,6 +311,8 @@ interface OverflowTagListProps {
   onRemove?: (value: string) => void
   /** 按在 +N 浮出清單上的 mousedown(portal;觸發欄位上的 onMouseDown 看不到它),見 CustomCombobox `keepSearchFocus` */
   onOverflowMouseDown?: React.MouseEventHandler<HTMLDivElement>
+  /** +N 浮出清單的 id(portal;觸發欄位以它把這張卡算成同一個欄位的零件,見 CustomCombobox 觸發區的 onBlur) */
+  overflowContentId?: string
   /** 單行模式要替欄位內搜尋框留位時,傳包住它的 Tag 區(量尺在裡面,見 findInlineSearchMirror);沒有欄位內搜尋框不傳 */
   reserveRoot?: React.RefObject<HTMLElement | null>
   /** Tag area gap in px(default 4)。Stack mode 傳 0 讓 negative margin 生效 */
@@ -343,7 +347,7 @@ interface OverflowTagListProps {
   visibleCountOverride?: number
 }
 
-function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHiddenTag, onRemove, onOverflowMouseDown, reserveRoot, tagWrapperClassName, overflowWrapperClassName, gap = GAP, overflowShape = 'tag', visibleCountOverride }: OverflowTagListProps) {
+function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHiddenTag, onRemove, onOverflowMouseDown, overflowContentId, reserveRoot, tagWrapperClassName, overflowWrapperClassName, gap = GAP, overflowShape = 'tag', visibleCountOverride }: OverflowTagListProps) {
   const tagEls = React.useRef<(HTMLDivElement | null)[]>([])
   const overflowEl = React.useRef<HTMLDivElement>(null)
   const { visibleCount, ready } = useOverflowCount(containerRef, tagEls, overflowEl, items.length, !wrap, gap, visibleCountOverride, reserveRoot)
@@ -383,7 +387,7 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
       <div ref={overflowEl}
         className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', overflowWrapperClassName)}
         style={{ ['--tag-stack-z-focus' as string]: items.length + 1 }}>
-        <OverflowIndicator count={overflow} shape={overflowShape} size={size} onContentMouseDown={onOverflowMouseDown}>
+        <OverflowIndicator count={overflow} shape={overflowShape} size={size} onContentMouseDown={onOverflowMouseDown} contentId={overflowContentId}>
           {hiddenItems.map(item => (
             renderHiddenTag
               ? <React.Fragment key={item.value}>{renderHiddenTag(item, () => onRemove?.(item.value))}</React.Fragment>
@@ -445,6 +449,25 @@ function ComboboxTagStack({
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface ComboboxProps {
+  // ── 表單接線(`<Combobox {...form.getInputProps('tags')} />`;同 Select 的 allowlist 做法,只承諾真的有實作出口的屬性)──
+  // 為什麼、修前的狀況與總帳編號住 combobox.spec.md「表單整合」與 form-validation.spec.md v1 邊界 (a);這裡的 JSDoc 只寫 consumer 要知道的事
+  // (它會原樣出現在 Storybook 的屬性表)。
+  /** 表單欄位名稱(`useFormValidation` 規則 8 以它定位、聚焦;掛在可聚焦的觸發區上)。 */
+  name?: string
+  /** 觸發區的 id(預設沿用 Field 給的 id)。 */
+  id?: string
+  /** 焦點進入觸發區時呼叫。 */
+  onFocus?: React.FocusEventHandler<HTMLDivElement>
+  /** 焦點真的離開欄位時呼叫一次(移進自己的清單或「+N」浮出清單不算離開)。 */
+  onBlur?: React.FocusEventHandler<HTMLDivElement>
+  /** 觸發區的鍵盤事件;先於元件自己的導覽執行,呼叫 `preventDefault()` 就不走元件的導覽。 */
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>
+  /** 覆寫觸發區的 `aria-describedby`(預設接 Field 的說明文字)。 */
+  'aria-describedby'?: string
+  /** 覆寫觸發區的 `aria-errormessage`(預設接 Field 的錯誤訊息)。 */
+  'aria-errormessage'?: string
+  /** `data-*` 轉到觸發區(同 Select)。 */
+  [dataAttribute: `data-${string}`]: unknown
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
@@ -717,36 +740,8 @@ function ReadonlyMultiSelect({
 // target);唯本處 actionable drop。
 type ComboboxInternalProps = ComboboxProps & { __triggerRef?: React.Ref<HTMLDivElement> }
 
-/**
- * Tag × 移除後的焦點接力(combobox.spec.md「Tag 操作」個別移除):**只在焦點會跟著被移除的東西一起消失時才動**
- * —— 焦點在某顆 ×(鍵盤 Tab 到它、或 Chrome 滑鼠按下按鈕會給焦點;含 +N 浮出清單裡那幾顆,它們在 portal 裡、不在 Tag 區)
- * 或 Tag 區裡別的東西上 → 下一顆 × → 前一顆 → owner。
- * 焦點不在這些地方(浮層內搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動;搜尋框握著焦點時按 × 本來就不搬焦點(觸發區 onMouseDown)。
- * 2026-09-30 前不論焦點在哪一律 focus(下一顆 ?? owner):浮層內搜尋框握著焦點時按 ×(Safari)會把焦點從浮層拉回觸發區。
- */
-function focusAfterTagRemoval(container: HTMLElement | null, owner: HTMLElement | null) {
-  const active = document.activeElement
-  if (!container || !active || !(container.contains(active) || active.closest('[data-collection-remove]'))) return
-  const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('[data-collection-remove]'))
-    .filter((button) => button.getClientRects().length > 0)
-  const index = buttons.indexOf(active as HTMLButtonElement)
-  const next = index >= 0 ? buttons[index + 1] ?? buttons[index - 1] : undefined
-  const fallback = owner ?? container.closest<HTMLElement>('[role="combobox"]')
-  ;(next ?? fallback)?.focus()
-
-  // Some renderers intentionally change anatomy at collection length 1 (PeoplePicker stack:
-  // avatar stack → avatar + name). That remounts the button focused above. Re-apply the same
-  // next→previous→owner policy after React commits so focus cannot fall back to body.
-  const preferredIndex = index >= 0
-    ? (buttons[index + 1] ? index : buttons[index - 1] ? index - 1 : -1)
-    : -1
-  window.requestAnimationFrame(() => {
-    const updatedButtons = Array.from(container.querySelectorAll<HTMLButtonElement>('[data-collection-remove]'))
-      .filter((button) => button.getClientRects().length > 0)
-    const updatedTarget = preferredIndex >= 0 ? updatedButtons[preferredIndex] : undefined
-    ;(updatedTarget ?? fallback)?.focus()
-  })
-}
+// Tag × 移除後的焦點接力(combobox.spec.md「Tag 操作」個別移除):全 DS 一支 lib/collection-removal-focus.ts `focusAfterCollectionRemoval`
+// (2026-10-01 由本檔 `focusAfterTagRemoval`、FileUpload、AgentPanel 輸入盒附件列三份收成;本檔那份是最完整的底稿:只在焦點會跟著消失時才動 + rAF 重套)。
 
 // 轉換 ComboboxOption → SelectMenuOption:同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
 // 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description / disabled / icon / group)。
@@ -791,7 +786,17 @@ function CustomCombobox({
   overflowShape,
   showDisplayEndIcon = false,
   'aria-label': ariaLabel,
+  name,
+  id: idProp,
+  onFocus,
+  onBlur: onBlurProp,
+  onKeyDown: onKeyDownProp,
+  'aria-describedby': ariaDescribedByProp,
+  'aria-errormessage': ariaErrorMessageProp,
+  ...rest
 }: ComboboxInternalProps) {
+  // 表單接線的 data-*(見 ComboboxProps 檔頭):其餘已具名解構,rest 只剩 data-*
+  const dataAttrs = Object.fromEntries(Object.entries(rest).filter(([key]) => key.startsWith('data-')))
   const tagAreaGap = tagAreaGapPx ?? GAP
   const fieldCtx = useFieldContext()
   const error = useResolvedFieldInvalid(errorProp)
@@ -816,6 +821,8 @@ function CustomCombobox({
   // a11y: 為 listbox 容器(SelectMenu 內 PopoverContent)建立穩定 id,讓 trigger 的
   // aria-controls 能指向它(WAI-ARIA combobox pattern 要求)。React.useId 在 SSR/CSR 都穩定。
   const listboxId = React.useId()
+  // +N 浮出清單(portal)也是這個欄位的零件:觸發區的 onBlur 以 id 認得它(lib/composite-field-focus.ts `extra`)
+  const overflowCardId = React.useId()
   // a11y:searchIn='trigger' 搜尋框的 aria-activedescendant = 反白列 id(Command 根讀、SelectMenu 轉交,直接寫進 inputRef;
   // 機制詳 select-menu-keyboard.ts useActiveDescendant;必在 early return 前呼叫 — React #310 hook 順序)。
   const onActiveOptionChange = useActiveDescendant(inputRef)
@@ -870,7 +877,7 @@ function CustomCombobox({
   const tagHeight = TAG_HEIGHT_PX[size]
 
   const handleRemove = (v: string) => {
-    focusAfterTagRemoval(tagAreaRef.current, inputRef.current)
+    focusAfterCollectionRemoval(tagAreaRef.current, { owner: inputRef.current })
     onChange?.(value.filter(x => x !== v))
   }
 
@@ -901,8 +908,10 @@ function CustomCombobox({
 
   const trigger = (
     <div
+      // 表單接線(見 ComboboxProps 檔頭):consumer 的 data-* 與 name 先 spread,元件自己的屬性 / handler 在後(handler 內先呼叫 consumer 的)
+      {...(({ ...dataAttrs, name }) as unknown as React.HTMLAttributes<HTMLDivElement>)}
       ref={__triggerRef}
-      id={fieldCtx?.id}
+      id={idProp ?? fieldCtx?.id}
       role="combobox" aria-expanded={open} aria-controls={listboxId} tabIndex={0}
       // 2026-09-25 待辦總帳 B11「多選下拉(有全選)行為不變、只改宣告」:宣告的彈出型別 = 焦點實際去哪。
       // 搜尋框在觸發欄位內(searchIn='trigger')→ 焦點留在欄位、清單用 aria-activedescendant = listbox;
@@ -918,8 +927,13 @@ function CustomCombobox({
       // 值處理中(Field 家族 loading):跟 Input wrapper 同樣標 aria-busy(field-controls.spec.md「Loading state」)
       aria-busy={loading || undefined}
       aria-required={fieldCtx?.required || undefined}
-      aria-describedby={fieldCtx?.descriptionId}
-      aria-errormessage={error ? fieldCtx?.errorId : undefined}
+      aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+      aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
+      onFocus={onFocus}
+      // 觸發區 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):焦點搬進浮層(浮層內搜尋框 / cmdk 殼)不算離開,
+      // consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次
+      // 「+N」浮出清單在另一個 portal,按卡裡的 Tag × 焦點搬進卡,也不算離開(extra;2026-10-07 前漏了這張卡,非搜尋型 Combobox 按卡裡的 × 就驗證)
+      onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId, extra: () => [document.getElementById(overflowCardId)] }, onBlurProp)}
       // 2026-09-07:本元件是 Field 家族的「單一狀態控制項」——依 focus-canonical 規則二第三列,
       // 滑鼠與鍵盤**共用同一套 focus 樣式**,而 Field 的那一套就是邊框轉 primary
       // (field-wrapper.tsx `focus-within:!border-primary`)。所以這裡要抑制全域外描邊,
@@ -943,6 +957,9 @@ function CustomCombobox({
       //   open 後不 preventDefault 讓方向鍵自由流向選單導覽)。
       // 純 additive:此 trigger 原無 onKeyDown,不覆寫既有 handler;open 邏輯仍走 setOpen SSOT。
       onKeyDown={(e) => {
+        // consumer 先跑(getInputProps 的 Esc 回復:只在這一下歸它時 —— 浮層開著時 Radix 已用掉這一下,不回復),擋了預設就不走元件導覽(同 Select)
+        onKeyDownProp?.(e)
+        if (e.defaultPrevented) return
         // 輸入法組字中的 Enter / 空白 / 方向鍵 / Esc 是在選字,不開關選單、不轉送(判準 lib/ime-composition.ts,2026-09-30)
         if (isImeComposing(e)) return
         // a11y(2026-07-14 dim-10):Enter/Space 來自 descendant 互動元素(Tag 移除 / clear 按鈕)
@@ -988,6 +1005,7 @@ function CustomCombobox({
             renderHiddenTag={renderHiddenTag}
             onRemove={handleRemove}
             onOverflowMouseDown={keepSearchFocus}
+            overflowContentId={overflowCardId}
             reserveRoot={inlineSearch ? tagAreaRef : undefined} />
         ) : isUnrestrictedOnly ? (
           /* 只選「不限」→ 一般已填值的純文字:與下面 placeholder **同一顆 span 的盒**,

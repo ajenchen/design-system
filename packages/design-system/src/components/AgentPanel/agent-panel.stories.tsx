@@ -34,7 +34,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/compon
 import { PageHeader } from '@/design-system/components/AppShell/_demo-helpers'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
@@ -790,9 +791,26 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   initialDraft?: Partial<TaskDraft>
 }) {
   const saved = React.useMemo<TaskDraft>(() => (task ? { title: task.title, assignee: task.assignee, status: task.status, due: task.due } : { title: '', assignee: '', status: 'todo', due: '' }), [task])
-  const [draft, setDraft] = React.useState<TaskDraft>(() => ({ ...saved, ...initialDraft }))
-  const set = <K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) => setDraft((d) => ({ ...d, [key]: value }))
-  const dirty = (Object.keys(saved) as (keyof TaskDraft)[]).some((k) => draft[k] !== saved[k])
+  // 表單走 useFormValidation(2026-10-01;form-validation.spec.md 可執行層):改過的欄位第一下 Esc 回復、第二下才關對話框
+  //(keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」;2026-10-01 前一下就關、打到一半的標題跟著丟掉)。
+  // 比對基準 = 已儲存的內容(saved);OpenSnapshot 帶進來的未儲存修改(initialDraft)掛上後逐格寫入,所以一開就是 dirty。
+  const form = useFormValidation({
+    initialValues: saved,
+    intent: task ? 'update' : 'create',
+    validate: { title: (v) => (String(v).trim() ? undefined : '標題必填') },
+    // 送出成功 → Toast(form-validation.spec.md「Submit 成功宣告」;user 2026-10-01 逐字「…然後送出成功跳提示」,文案是 AI 依 toast.spec 句型擬的),
+    // 再交給宿主存檔並關掉對話框(onSave → closeModal)
+    onSubmit: (draft) => {
+      toast({ variant: 'success', title: task ? '任務已儲存' : '任務已建立' })
+      onSave({ ...draft, title: draft.title.trim() })
+    },
+  })
+  const { setFieldValue, isDirty: dirty } = form
+  React.useEffect(() => {
+    for (const [key, value] of Object.entries(initialDraft ?? {})) setFieldValue(key as keyof TaskDraft, value)
+    // 只在掛上時套一次(OpenSnapshot 的初始草稿)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   React.useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
   React.useEffect(() => () => onDirtyChange(false), [onDirtyChange])
   return (
@@ -807,27 +825,29 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
         </DialogHeader>
         <DialogBody>
           <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            <Field required id="demo-task-title">
+            <Field required id="demo-task-title" invalid={!!form.errors.title}>
               <FieldLabel>標題</FieldLabel>
-              <Input value={draft.title} onChange={(e) => set('title', e.target.value)} placeholder="例:修正登入逾時" />
+              <Input {...form.getInputProps('title')} placeholder="例:修正登入逾時" />
+              <FieldError>{form.errors.title}</FieldError>
             </Field>
             <Field>
               <FieldLabel>指派人</FieldLabel>
-              <PeoplePicker aria-label="指派人" value={draft.assignee || null} people={PEOPLE} onChange={(v) => set('assignee', v[0] ? personName(v[0]) : '')} />
+              <PeoplePicker aria-label="指派人" value={form.values.assignee || null} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
             </Field>
             <Field>
               <FieldLabel>狀態</FieldLabel>
-              <Select aria-label="狀態" options={STATUS_OPTIONS} value={draft.status} onChange={(v) => set('status', v as TaskStatus)} />
+              <Select aria-label="狀態" options={STATUS_OPTIONS} {...form.getInputProps('status')} />
             </Field>
             <Field>
               <FieldLabel>截止日</FieldLabel>
-              <DatePicker aria-label="截止日" typeable value={draft.due || null} onChange={(v) => set('due', v)} />
+              <DatePicker aria-label="截止日" typeable {...form.getInputProps('due')} value={form.values.due || null} />
             </Field>
           </div>
         </DialogBody>
         <DialogFooter>
           <Button id="demo-task-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
-          <Button id="demo-task-save" variant="primary" disabled={!draft.title.trim()} onClick={() => onSave({ ...draft, title: draft.title.trim() })}>儲存</Button>
+          {/* 標題空白時停用照舊(story-layer 漂移棘輪 (a) 已記這一筆;閘 agent-url-registry-demo S4 依賴),送出走 hook 的 handleSubmit(規則 7 / 8) */}
+          <Button id="demo-task-save" variant="primary" disabled={!form.values.title.trim()} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1227,6 +1247,8 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
         </Tabs>
         <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} onModeChange={setAgentMode} sessions={sessions} persistentElements={keepForPanel} />
       </SimulatedBrowser>
+      {/* 任務存檔成功的 Toast:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個) */}
+      <Toaster />
     </div>
   )
 }

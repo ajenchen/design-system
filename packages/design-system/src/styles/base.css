@@ -64,6 +64,19 @@
   }
 }
 
+/* `disabled:` 變體也認「可聚焦的停用」(2026-10-01;規則 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」)。
+ *
+ * Button 忙碌(loading)時、或在握有焦點的那一刻被停用時,不轉成原生 `disabled`(WHATWG focus fixup:握著焦點的元素被停用,焦點被重設到
+ * viewport = `<body>`,https://github.com/whatwg/html/blob/92f248013013096b5a780afffd8377fb9a6eba87/source#L123634-L123645),
+ * 改成 `aria-disabled="true"` + `data-disabled-focusable` 並由元件擋掉觸發 —— 但**長相必須與原生停用完全相同**(灰底、禁止符號游標),
+ * 不是 `aria-disabled` 那套「保留品牌色 + 不透明度」的 Tooltip 用長相(button.spec.md「狀態疊加」表 aria-disabled 列)。
+ * 所以把內建的 `disabled:` 變體擴成「原生 :disabled **或** 帶 data-disabled-focusable」:Button 既有的那一整組 `disabled:*` class 一個字不改就套得到,
+ * 其他元件寫 `disabled:` 的地方只多認一個沒有人會掛的屬性,零影響。Tailwind 4.2 實測:覆寫內建變體不改產出順序,編出的 CSS 正規化後與修改前逐條同序。
+ * 另一半在 Button(`button.tsx` `withoutAriaDisabledLook`):這個狀態同時帶 `aria-disabled="true"`,`aria-disabled:` 那一組(含滑過 / 按住釘在品牌色)
+ * 與這裡的 `disabled:` 同為 (0,3,0),先後由產出順序決定 —— 所以在 class 層拿掉,不在這裡覆寫 `aria-disabled` 變體(2026-10-07 實測:覆寫它會把它註冊成
+ * 新的靜態變體、整組從 aria-* 那一段搬到 data-* 之後產出,改變所有 Tooltip 用 aria-disabled 鈕的先後)。 */
+@custom-variant disabled (&:disabled, &[data-disabled-focusable]);
+
 /* 焦點框(內描邊)—— 兩種幾何裡的另一種。
  *
  * SSOT:`ds-canonical/references/focus-canonical.md`「問題二:畫在外面還是裡面?」

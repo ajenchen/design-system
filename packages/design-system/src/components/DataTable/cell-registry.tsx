@@ -34,7 +34,7 @@ import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/
 import { Button } from '@/design-system/components/Button/button'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
-import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 
 // ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板「全部收窄」)──────────────
@@ -103,7 +103,9 @@ function makeKeyHandler(
   // (2026-07-09 抽出;原本 InlineEdit 漏 IME guard = bug,現同源)。value 讀取為 input-specific,留本地。
   // commitOnF2:格子裡的編輯器再按一次 F2 = 結算、回到格導覽(keyboard-model-canonical.md「F2 恆為進到格裡的控件,
   // 再按一次回到格導覽」;2026-09-29 前 F2 只有進格的一半,出格只剩 Escape / Enter)。
-  return makeEditSettleKeyHandler({
+  // 2026-10-01 回傳的是一組 props(onKeyDown + data-escape-layer):格編輯中是焦點所在控件自己的一層,表格放在 Dialog / Sheet 裡時
+  // 第一下 Esc 只取消編輯、不關浮層(lib/overlay-escape.ts;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)
+  return editSettleKeyProps({
     onCommit: (e) => {
       const raw = (e.target as HTMLInputElement).value
       onCommit?.(parseValue ? parseValue(raw) : raw)
@@ -163,9 +165,9 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
         defaultValue={v}
         onChange={(e) => onDraft?.((e.target as HTMLTextAreaElement).value)}
         onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
-        // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Cmd/Ctrl+Enter commit;
+        // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc 分層 + Cmd/Ctrl+Enter commit;
         // plain Enter=換行)。commitOnEnter:false → 純 Enter 不攔。
-        onKeyDown={makeEditSettleKeyHandler({
+        {...editSettleKeyProps({
           onCommit: (e) => onCommit?.((e.target as HTMLTextAreaElement).value),
           onCancel: () => onCancel?.(),
           commitOnEnter: false,
@@ -182,7 +184,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
       defaultValue={v}
       onChange={(e) => onDraft?.(e.target.value)}
       onBlur={(e) => onCommit?.(e.target.value)}
-      onKeyDown={makeKeyHandler(onCommit, onCancel)}
+      {...makeKeyHandler(onCommit, onCancel)}
     />
   )
 }
@@ -229,9 +231,9 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft, aria
       suffix={meta?.suffix}
       precision={meta?.precision}
       onBlur={() => onCommit?.(localValue)}
-      // 單行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Enter commit)。
+      // 單行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc 分層 + Enter commit)。
       // commit localValue(controlled state,非 e.target.value)。
-      onKeyDown={makeEditSettleKeyHandler({
+      {...editSettleKeyProps({
         onCommit: () => onCommit?.(localValue),
         onCancel: () => onCancel?.(),
       })}
@@ -495,7 +497,7 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
       size={sizeForInput(size)}
       defaultValue={value != null ? String(value) : ''}
       onBlur={(e) => onCommit?.(e.target.value)}
-      onKeyDown={makeKeyHandler(onCommit, onCancel)}
+      {...makeKeyHandler(onCommit, onCancel)}
     />
   )
 }

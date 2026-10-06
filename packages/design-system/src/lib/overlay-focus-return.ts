@@ -30,13 +30,75 @@
  * 2026-09-30 之前的五份:Command `returnFocusAfterCommandClose`(SelectMenu / AgentPanel 歷史 / CommandDialog)、Sidebar 窄版抽屜、
  * AppShell 窄版側欄、DatePicker 區間、AgentPanel 入口鈕右鍵選單各寫一份「記開啟者 + 關閉時還」,判準各不相同
  * (有的不管焦點已被接走、有的不分指標鍵盤、有的按遮罩收起不還);FileViewer 一份都沒有(受控開啟、沒有觸發點 → 關閉後焦點掉到 body,實測)。
+ *
+ * **2026-10-01 起 DialogContent / SheetContent 預設就做這件事**(待辦總帳 OE29;`useTriggerlessFocusReturn`):consumer 用受控 `open`、沒有
+ * `DialogTrigger` 開的對話框不必再自己記開啟者 —— 內容掛上時記下,關閉時找不到 Radix 觸發點(`aria-controls` 指向這個 content 的元素)就由這裡還。
+ * 開啟者若住在一個會跟著關掉的選單 / 浮層裡(列上的 ⋯ 選單項開了對話框),關閉時它已不在畫面上 → 記下的是**那個選單的觸發鈕**(`persistentOpenerOf`):
+ * W3C 對 dialog 關閉後焦點的要求是回到「打開它的那個元素,或在它消失時合理的替代」(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L96-L101),
+ * React Aria FocusScope 還焦點時同樣沿著「已不在 DOM 的節點 → 它的替代」走(https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx#L1060-L1071)。
  */
+import * as React from 'react'
 import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
 
 /** 開啟的那一刻記下「此刻握著焦點的元素」(= 之後要還的對象);焦點在 body / 沒有 → null。 */
 export function captureFocusOrigin(doc: Document = document): HTMLElement | null {
   const active = doc.activeElement
   return active instanceof HTMLElement && active !== doc.body ? active : null
+}
+
+/**
+ * 開啟者住在一個會跟著關掉的選單 / 浮層裡時,改記它的觸發鈕(往上一路找到頁面上常駐的那一顆):
+ * Radix DropdownMenu / ContextMenu 的內容帶 `aria-labelledby` = 觸發鈕 id、子選單內容亦同(`@radix-ui/react-menu` 1.2.x dist `aria-labelledby: subContext.triggerId`);
+ * Popover 內容沒有 `aria-labelledby` 指向觸發鈕,改找 `[aria-controls="<content id>"]`(Radix PopoverTrigger / DialogTrigger 都寫這個)。
+ * 不在任何選單 / 浮層裡 → 原樣回傳。
+ */
+export function persistentOpenerOf(opener: HTMLElement | null): HTMLElement | null {
+  let current = opener
+  const seen = new Set<Element>()
+  while (current) {
+    // 選單內容(`role="menu"`,含子選單)或 Radix popper 殼裡的那一層內容(Popover / HoverCard 的 role=dialog 等);Dialog 本身不是(它不會跟著關)
+    const content = current.closest<HTMLElement>('[role="menu"], [data-radix-popper-content-wrapper] > [role]')
+    if (!content || seen.has(content)) return current
+    seen.add(content)
+    const doc = current.ownerDocument
+    const labelledBy = content.getAttribute('aria-labelledby')
+    const trigger = (labelledBy ? doc.getElementById(labelledBy) : null)
+      ?? (content.id ? doc.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(content.id)}"]`) : null)
+    if (!(trigger instanceof HTMLElement) || content.contains(trigger)) return current
+    current = trigger
+  }
+  return current
+}
+
+/** 指著這個 content 的 Radix 觸發點(DialogTrigger / PopoverTrigger 都寫 `aria-controls`);沒有 = 受控、沒有觸發點開的。 */
+export function radixTriggerOf(content: Element | null): HTMLElement | null {
+  if (!content?.id) return null
+  const trigger = content.ownerDocument.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(content.id)}"]`)
+  return trigger && !content.contains(trigger) ? trigger : null
+}
+
+/**
+ * DialogContent / SheetContent 的預設(2026-10-01,待辦總帳 OE29):內容掛上時記下開啟者,關閉時沒有 Radix 觸發點就還給它。
+ * 回傳的兩個 handler 由 DS 的 Content **組合**(consumer 的 `onOpenAutoFocus` / `onCloseAutoFocus` 先跑;consumer 已 `preventDefault` 就不接 ——
+ * CommandDialog / AgentPanel / FileViewer 這類自己接線的照舊由自己勝出)。`modal` 照 Radix 的 modal 狀態(並存 `persistentElements` 時為 false)。
+ */
+export function useTriggerlessFocusReturn(modal: boolean): {
+  onOpenAutoFocus: (event: Event) => void
+  onCloseAutoFocus: (event: Event) => void
+} {
+  const openerRef = React.useRef<HTMLElement | null>(null)
+  return {
+    // FocusScope 派發 onOpenAutoFocus 時焦點還沒搬進來 → 讀到的是開啟者;住在選單裡的開啟者改記選單的觸發鈕
+    onOpenAutoFocus: () => { openerRef.current = persistentOpenerOf(captureFocusOrigin()) },
+    onCloseAutoFocus: (event) => {
+      const opener = openerRef.current
+      openerRef.current = null
+      const content = event.currentTarget instanceof Element ? event.currentTarget : null
+      const trigger = radixTriggerOf(content)
+      // 有觸發點:Radix 自己會還,這裡只接手指標造成的收起(不畫鍵盤框);沒有:一律還
+      returnFocusToOpener(event, trigger ?? opener, trigger ? {} : { noTrigger: true, modal })
+    },
+  }
 }
 
 export interface ReturnFocusOptions {

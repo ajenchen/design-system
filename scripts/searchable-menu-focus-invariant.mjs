@@ -100,7 +100,7 @@ const MENU_OWNER_MODULE = 'SelectMenu/select-menu'
 const COMMAND_MODULE = 'Command/command'
 /** 規則的實作(不在家族目錄裡、但決定這支閘量到什麼):指標住 Command 根,判準、還焦點、代發鍵、組字、欄位焦點交接各一支共用檔,
  *  「+N」浮出清單住 OverflowIndicator(卡片上的 mousedown 通道)與 HoverCard(卡片這一層本身;按卡片不關選單住 SelectMenu 觸發欄位的開關,已在家族裡),
- *  組字中的 Esc 不關浮層住 Popover / Dialog 的內容元件(lib/ime-composition.ts withImeSafeEscape)。 */
+ *  「這一下 Esc 由誰處理」(含組字中的 Esc 不關浮層)住 Popover / Dialog 的內容元件(lib/overlay-escape.ts withOverlayEscape;2026-10-01 取代 ime-composition.ts 的 withImeSafeEscape)。 */
 const RULE_SOURCES = [
   `${COMPONENTS_DIR}/Command`,
   `${COMPONENTS_DIR}/OverflowIndicator`,
@@ -110,6 +110,7 @@ const RULE_SOURCES = [
   'packages/design-system/src/lib/pointer-press.ts',
   'packages/design-system/src/lib/overlay-focus-return.ts',
   'packages/design-system/src/lib/ime-composition.ts',
+  'packages/design-system/src/lib/overlay-escape.ts',
   'packages/design-system/src/hooks/use-input-modality.ts',
   `${COMPONENTS_DIR}/Field/field-wrapper.tsx`,
 ]

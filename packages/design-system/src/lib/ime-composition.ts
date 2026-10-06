@@ -26,23 +26,6 @@ export function isImeComposing(event: KeyEventLike): boolean {
   return native.isComposing === true || native.keyCode === 229
 }
 
-/**
- * Radix 浮層 / 對話框的 `onEscapeKeyDown`:**輸入法組字中的 Esc 是在取消選字,不是「關掉這一層」**(2026-10-01)。
- * Radix 的 Esc 監聽掛在 document 捕獲階段、只看 `event.key === 'Escape'`
- * (https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/use-escape-keydown/src/use-escape-keydown.tsx#L14-L19;
- * 本 repo 安裝的 1.1.1 dist/index.mjs:7-10 同),DismissableLayer 呼叫 `onEscapeKeyDown` 之後、沒被 `preventDefault` 就關
- * (https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110;
- * 安裝的 1.1.11 dist/index.mjs:59-66 同)—— 組字中按 Esc 會把選單 / 指令面板 / 改名對話框 / 日期欄位的日曆連同打到一半的字一起關掉。
- * 元件自己的 `onKeyDown` 已先問 `isImeComposing`,但那管不到 Radix 在捕獲階段的這一條。
- * 組字中:`preventDefault()`(Radix 看到就不關),**不**轉呼叫 consumer 的 handler(那一下不是要關閉的 Esc);其餘照舊轉呼叫。
- * 全 DS 的可關閉浮層只掛這一支:Popover / Dialog / Sheet 的內容元件,與直接用 Radix Dialog 的 FileViewer(使用者清單住 `README.md` 本模組那一列)。
- */
-export function withImeSafeEscape<E extends KeyboardEvent>(handler?: (event: E) => void): (event: E) => void {
-  return (event) => {
-    if (isImeComposing(event)) {
-      event.preventDefault()
-      return
-    }
-    handler?.(event)
-  }
-}
+// 2026-10-01 上午曾在這裡放 `withImeSafeEscape`(浮層的 `onEscapeKeyDown`:組字中的 Esc 不關那一層)。同日下午「這一下 Esc 由誰處理」
+// 擴成一條完整規則(焦點所在控件自己那一層也算一層),判定住 `lib/overlay-escape.ts` `withOverlayEscape`,組字那一條併進它的第一步 ——
+// 模組名(輸入法)與職責(Esc 分層)不符,不留兩支守門。本檔只剩判準本身。

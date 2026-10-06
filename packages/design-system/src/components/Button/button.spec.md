@@ -318,7 +318,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 ### disabled
 
 - 防止表單重複送出、避免使用者因延遲而重複點擊
-- `disabled` 本身**不代表**正在載入；若需傳達載入中，應同時設定 `loading`
+- `disabled` 本身**不代表**正在載入；若需傳達載入中，應同時設定 `loading`。**握著焦點的那一刻被停用 → 不轉原生 `disabled`**(2026-10-01):改 `aria-disabled` + `data-disabled-focusable`、擋掉觸發、長相與原生停用相同,焦點留在原鈕,焦點離開後才回原生 disabled(Tab 序與今天相同)。規則、根因(HTML focus fixup)、七家出處與機制住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」,本檔只放指標
 - disabled 時品牌 / 狀態色完全移除，統一回到 neutral——避免「可用但弱化」的視覺誤導
 - danger 在 disabled 時同樣消失，呈現與非 danger 版本相同的外觀
 - `pressed` + disabled 並存:**disabled 視覺優先**——pressed 底色被 disabled token 取代(state > emphasis,同 M24 precedence;`aria-pressed` 語意仍保留)
@@ -326,7 +326,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ### loading
 
-顯示 `CircularProgress`(indeterminate),自動 disabled(`disabled={disabled || loading}`),設定 `aria-busy`。disabled + loading 並存時視覺以 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
+顯示 `CircularProgress`(indeterminate),設定 `aria-busy`,**可聚焦的停用**:`aria-disabled` + `data-disabled-focusable`、擋掉 click 與表單隱含送出、焦點留著、Tab 走得到(2026-10-01;2026-10-01 前走原生 `disabled`,按下送出那一刻焦點被瀏覽器丟到 `<body>`,待辦總帳 N69)。長相與原生停用相同 —— 靜止、滑過、按住都是(灰底、禁止符號游標;`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,`button.tsx` 在這個狀態拿掉 `aria-disabled:` 開頭的那一整組 class),**不是**下方「狀態疊加」表 `aria-disabled` 列那套不透明度 + 滑過釘在品牌色的長相(2026-10-07 修:前一版滑過時仍套品牌色,閘 `scripts/escape-and-focus-contract-invariant.mjs` F-look)。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」。disabled + loading 並存時視覺同樣是 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
 
 **CircularProgress 永遠在左側(`startIcon` 位置)**,方向與行動發起一致:
 - 有 `startIcon` → icon 換成 CircularProgress(同位置替換)
@@ -364,7 +364,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 | 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;**primary 底 `primary-hover`;link 字 `primary-hover`**;danger 用自己的 `error-hover`(primary+danger 底、secondary+danger 字與框、text+danger 字)。2026-09-29(待辦總帳 C13)補 primary / link:七家一手(Radix、shadcn、MUI、Ant、Carbon 全不給;Atlassian `isSelected`、Fluent `MenuButton` 每個 appearance 含 primary 都給;Polaris `pressed` 亦含 primary)沒有任何一家「給部分 variant、獨獨豁免 primary」,DS 既已選「給」,這兩個 variant 只是同一條規則的落地 |
 | pressed × hover / active | emphasis:底色與框**釘住**,只有字換 `primary-hover` / `-active`;neutral:底換 `neutral-selected-hover` / `-active`,字與框釘住 |
 | pressed × 開啟中 | = pressed × hover(Radix 把 `data-state` 改寫成 `open`,由 `aria-pressed` 分支承擔,不套 variant 的開啟樣式) |
-| `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現 |
+| `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現。**例外**:忙碌 / 握著焦點時被停用的可聚焦停用(`data-disabled-focusable`)走原生停用的長相,不走這一列(見「loading」段) |
 
 ### Dismiss 視覺類(X close only)
 

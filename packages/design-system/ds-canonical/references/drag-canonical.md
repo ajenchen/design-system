@@ -79,6 +79,14 @@ TreeView、DataTable row 與 DataTable column 都使用 `@dnd-kit/core` 的
    (`tree-view.tsx` 鍵盤重排段註解;2026-09-25 更正:舊理由「因 `aria-activedescendant`」在列改為真焦點後已不成立,待辦總帳 B9)；
    DataTable 無 `SortableContext`，不可誤套 `sortableKeyboardCoordinates`。
 
+8. **拖曳中的 `Esc` 只取消拖曳,不關外層浮層、不動容器自己的 `Esc`**(2026-10-01,AI 推導;跨元件規則住
+   `keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」表的「拖曳中」列)。dnd-kit 的 KeyboardSensor 把 `Esc` 當取消鍵、
+   PointerSensor 在 document 上聽 `Esc` 取消指標拖曳,**兩者都不看 `defaultPrevented`**,所以拖曳一定會被取消;問題是同一下還會被
+   Popover / Dialog 關掉(排序面板 / 欄位面板裡鍵盤搬條件時按 `Esc`,2026-10-01 實測一下少兩層),DataTable 自己的 `Esc`(清格游標)也跟著動。
+   四個 `DndContext` 一律 spread `lib/drag-announcements.ts` `useDragAccessibility().escapeLayer` 到裝著可拖項目的容器:拖曳中掛上
+   `data-escape-layer` 讓浮層守門留住這一下,並在捕獲階段把它標成**獨占**(`lib/overlay-escape.ts` `claimEscape`),容器與其他控件的
+   `isEscapeForControl` 都讀到 false。閘:`scripts/escape-and-focus-contract-invariant.mjs` E-drag / E-drag-table。
+
 ## Collision canonical
 
 需要「pointer 離開合法 target 就取消」的場景，先用 `pointerWithin`，鍵盤／非 pointer 再以

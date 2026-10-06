@@ -7,6 +7,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Slider } from '@/design-system/components/Slider/slider'
@@ -676,10 +677,11 @@ export const SliderWithLiveNumberInput: Story = {
 const EXISTING_PROJECT_NAMES = ['產品路線圖 Q3', '客服工單系統'] // 模擬「名稱重複」業務驗證(規則 9)
 
 function UpdateProjectSettingsForm() {
-  // 送出結果(WCAG 4.1.3):saved.count = 連續第幾次存檔成功(0 = 不顯示),以它當 key,每次成功都換一個新的文字節點,
-  // 連存兩次讀屏也會再念一次;saved.of = 那次存下的內容。內容一改(編輯 / Escape 回復)或被業務驗證擋下就歸 0 ——
-  // 「已儲存 ✓」不會跟新的錯誤並排。歸 0 直接在 render 裡比對內容時做,不用 effect(effect 在 commit 之後才跑 = 每次編輯多一輪 render)
-  const [saved, setSaved] = React.useState({ count: 0, of: '' })
+  // 送出成功 → Toast(user 2026-10-01 逐字:「以上噎一律處理到完美，然後送出成功跳提示」;form-validation.spec.md「A11y 預設 › Submit 成功宣告」)。
+  // 讀屏由 Toaster 的 polite 朗讀區宣讀(toast.spec.md「DS 自帶完整 announcer」),表單內不再自建 role=status;
+  // 業務驗證回傳錯誤時不跳。文案沿用 toast.spec 範例的「名詞 + 已 + 動詞」句型(「專案已儲存」;Polaris "noun + verb",
+  // https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/toast.mdx#L81-L88)。
+  // 存檔後:送出的值成為新的比對基準 → 「儲存變更」再度停用、Escape 回到已存的值;焦點留在送出鈕上(button.tsx 可聚焦的停用)。
   const form = useFormValidation({
     initialValues: { name: '產品路線圖', ownerEmail: 'pm@acme.com' },
     intent: 'update', // Update:disabled-until-dirty(沒改就不用存)
@@ -689,13 +691,11 @@ function UpdateProjectSettingsForm() {
     },
     onSubmit: (values) => {
       if (EXISTING_PROJECT_NAMES.includes(String(values.name).trim())) {
-        setSaved({ count: 0, of: '' })
         return { name: '此專案名稱已存在' } // 業務驗證(規則 9)→ 自動 setError + anchor
       }
-      setSaved((s) => ({ count: s.count + 1, of: JSON.stringify(values) }))
+      toast({ variant: 'success', title: '專案設定已儲存' })
     },
   })
-  if (saved.count > 0 && saved.of !== JSON.stringify(form.values)) setSaved({ count: 0, of: '' })
   return (
     <form onSubmit={form.handleSubmit} className="w-80" aria-label="專案設定">
       <FieldGroup>
@@ -713,16 +713,14 @@ function UpdateProjectSettingsForm() {
       </FieldGroup>
       {/* 規則 4:內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
       <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
-        <Button type="submit" variant="primary" disabled={form.submitDisabled}>儲存變更</Button>
-        {/* 送出結果要讓讀屏聽到(WCAG 4.1.3):朗讀區一開始就在、只換內容 —— 同 command.tsx CommandEmptyStatus 的 role="status" 寫法 */}
-        <span role="status" aria-live="polite" className="text-caption text-fg-muted">{saved.count > 0 ? <span key={saved.count}>已儲存 ✓</span> : null}</span>
+        {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
+        <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
       </div>
     </form>
   )
 }
 
 function CreateProjectForm() {
-  const [created, setCreated] = React.useState({ count: 0, of: '' }) // 同上 saved:連續第幾次建立成功 + 那次建立的內容
   const form = useFormValidation({
     initialValues: { name: '', ownerEmail: '' },
     intent: 'create', // Create:永遠 enabled(不讓使用者猜「為什麼按不了」)
@@ -730,9 +728,8 @@ function CreateProjectForm() {
       name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
       ownerEmail: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
     },
-    onSubmit: (values) => setCreated((s) => ({ count: s.count + 1, of: JSON.stringify(values) })),
+    onSubmit: () => { toast({ variant: 'success', title: '專案已建立' }) }, // 送出成功 → Toast(同上方更新表單;新建不重設基準,consumer 要清空自己 reset())
   })
-  if (created.count > 0 && created.of !== JSON.stringify(form.values)) setCreated({ count: 0, of: '' }) // 內容一改就收掉
   return (
     <form onSubmit={form.handleSubmit} className="w-80" aria-label="建立專案">
       <FieldGroup>
@@ -748,8 +745,7 @@ function CreateProjectForm() {
         </Field>
       </FieldGroup>
       <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
-        <Button type="submit" variant="primary">建立專案</Button>
-        <span role="status" aria-live="polite" className="text-caption text-fg-muted">{created.count > 0 ? <span key={created.count}>已建立 ✓</span> : null}</span>
+        <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
       </div>
     </form>
   )
@@ -757,13 +753,17 @@ function CreateProjectForm() {
 
 export const FormValidation: Story = {
   name: '表單驗證 — useFormValidation 可執行層',
+  // Toast 的 Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個);兩張表共用這一個
   render: () => (
+    <>
+    <Toaster />
     <div className="flex flex-wrap items-start gap-[var(--layout-space-loose)]">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <h3 className="text-body font-bold">更新:專案設定(disabled-until-dirty)</h3>
         <p className="text-caption text-fg-muted max-w-80">
           按鈕沒改不亮;打字中不報錯(blur 才驗);已出錯欄位一編輯立即清 error;
-          Escape 回復原值;空 submit / 格式錯 → anchor 到第一個錯誤欄位。
+          Escape 回復原值;空 submit / 格式錯 → anchor 到第一個錯誤欄位。送出成功跳 Toast,
+          存檔後按鈕再度停用、焦點留在按鈕上、Escape 回到剛存的值。
           試著把名稱改成「產品路線圖 Q3」再儲存,會觸發「名稱重複」業務驗證。
         </p>
         <UpdateProjectSettingsForm />
@@ -777,5 +777,6 @@ export const FormValidation: Story = {
         <CreateProjectForm />
       </div>
     </div>
+    </>
   ),
 }

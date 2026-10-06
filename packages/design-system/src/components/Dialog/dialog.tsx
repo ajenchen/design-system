@@ -13,7 +13,8 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
-import { withImeSafeEscape } from "@/design-system/lib/ime-composition"
+import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
+import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -37,13 +38,18 @@ import { withImeSafeEscape } from "@/design-system/lib/ime-composition"
 // Root 的 modal 互相打架 —— 忘了 `modal={false}` 時 Radix 仍執行 hideOthers(content),
 // 保留區不會變可用;跨模型審查 2026-09-08 R3 指出)。FileViewer 已是同款自動推導。
 const DialogCoexistContext = React.createContext<(() => Element[]) | undefined>(undefined)
+// Content 要知道自己是不是 modal(關閉後還焦點:modal 按遮罩收起也還、非 modal 點外面不搶;lib/overlay-focus-return.ts)。
+// Radix 沒有把 modal 暴露給 Content,由 Root 經 context 交下去(並存 persistentElements 時為 false,同下方 Root 的推導)。
+const DialogModalContext = React.createContext<boolean>(true)
 type DialogRootProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
   /** 並存區域(中性契約):這個對話框開著時仍然可用的節點。傳了就自動非模態。 */
   persistentElements?: () => Element[]
 }
 const Dialog = ({ persistentElements, modal, ...props }: DialogRootProps) => (
   <DialogCoexistContext.Provider value={persistentElements}>
-    <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+    <DialogModalContext.Provider value={persistentElements ? false : (modal ?? true)}>
+      <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+    </DialogModalContext.Provider>
   </DialogCoexistContext.Provider>
 )
 Dialog.displayName = 'Dialog'
@@ -136,9 +142,14 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, ...props }, ref) => {
+>(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
+  const modal = React.useContext(DialogModalContext) && !persistentElementsProp
+  // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29):受控 `open`、沒有 DialogTrigger 開的對話框,Radix 沒有東西可還 → 焦點掉到 body。
+  // 內容掛上時記下開啟者(住在選單裡的開啟者改記選單的觸發鈕),關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;
+  // consumer 自己接了 onOpenAutoFocus / onCloseAutoFocus 的(CommandDialog / AgentPanel / FileViewer)照舊先跑、擋了預設就不接。
+  const focusReturn = useTriggerlessFocusReturn(modal)
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
   // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
   // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
@@ -238,16 +249,26 @@ const DialogContent = React.forwardRef<
   // 預設 Radix 會 focus first tabbable = close X → Button iconOnly 的 focus-triggered
   // tooltip 會立即顯示「關閉」,user-hostile。此 callback 攔截:先找 body 第一個
   // input/textarea/select/button(排除 data-dismiss)focus;找不到就 focus container(不 focus X)。
+  // 2026-10-01:consumer 的 onOpenAutoFocus 不再被 `{...props}` 整支蓋掉 —— 先記開啟者、再跑 consumer 的、consumer 沒擋預設才走 DS 預設落點。
+  // 選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx 可聚焦的停用),不該成為開啟時的落點。
   const handleOpenAutoFocus = (e: Event) => {
+    focusReturn.onOpenAutoFocus(e)
+    onOpenAutoFocus?.(e)
+    if (e.defaultPrevented) return
     e.preventDefault()
     const content = e.currentTarget as HTMLElement
     const firstBodyTarget = content.querySelector<HTMLElement>(
-      '[data-dialog-body] input:not([disabled]),[data-dialog-body] textarea:not([disabled]),[data-dialog-body] select:not([disabled]),[data-dialog-body] button:not([disabled]):not([data-dismiss])'
+      '[data-dialog-body] input:not([disabled]),[data-dialog-body] textarea:not([disabled]),[data-dialog-body] select:not([disabled]),[data-dialog-body] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
     )
     const firstFooterButton = content.querySelector<HTMLElement>(
-      '[data-dialog-footer] button:not([disabled]):not([data-dismiss])'
+      '[data-dialog-footer] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
     )
     ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
+  }
+  // consumer 的先跑、擋了預設就不接(AgentPanel / CommandDialog / FileViewer 自己的接線勝出);沒擋 → DS 預設還給開啟者
+  const handleCloseAutoFocus = (e: Event) => {
+    onCloseAutoFocus?.(e)
+    focusReturn.onCloseAutoFocus(e)
   }
 
   const content = (
@@ -261,6 +282,7 @@ const DialogContent = React.forwardRef<
       // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
       // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
       onOpenAutoFocus={handleOpenAutoFocus}
+      onCloseAutoFocus={handleCloseAutoFocus}
       {...guardOutside}
       className={cn(
         // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
@@ -293,8 +315,9 @@ const DialogContent = React.forwardRef<
         ...style,
       }}
       {...props}
-      // 輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
-      onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
+      // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
+      //(改過的欄位 / 就地編輯中 / 格游標 / 拖曳中)且在這一層裡面 → 留給控件、不關;其餘照舊關閉
+      onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentEl)}
     >
       {children}
     </DialogPrimitive.Content>

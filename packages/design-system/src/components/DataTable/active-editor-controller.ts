@@ -14,8 +14,8 @@
  * | Contract 3 commit/cancel | `controller.commit()` | per-cell `onCommit` / `onCommitLive` callback in cell-registry |
  * | Contract 4 Tab navigation | `controller.routeKeyDown` | `data-table.tsx handleEditTab(符號指法免行號漂移)`(onKeyDownCapture per portal cell) |
  * | Contract 6 unmount preserve draft | `controller.onAnchorUnmount` | `data-table.tsx editingDraft` lifted state + `onDraft` prop(Phase 7) |
- * | Contract 10 IME guard | `controller.onCompositionStart/End` | cell-registry per-editor isComposing guard(makeKeyHandler + Textarea/NumberCell onKeyDown,2026-07-05 D4 補 — 原宣稱的 Field per-control guard 不存在)+ `data-table.tsx isComposing(符號指法)` early-return(nav + Tab route) |
- * | Esc cancel | `controller.cancel()` | per-cell Field `onCancel` callback + Radix Popover outside-click |
+ * | Contract 10 IME guard | `controller.onCompositionStart/End` | cell-registry per-editor isComposing guard(makeKeyHandler + Textarea/NumberCell 的 `editSettleKeyProps`(2026-10-01 起回傳 onKeyDown + Esc 層宣告),2026-07-05 D4 補 — 原宣稱的 Field per-control guard 不存在)+ `data-table.tsx isComposing(符號指法)` early-return(nav + Tab route) |
+ * | Esc cancel | `controller.cancel()` | per-cell Field `onCancel` callback(`Field/field-edit-keys.ts` `editSettleKeyProps`:編輯中宣告 Esc 層,表格放在 Dialog / Sheet 裡第一下 Esc 只取消編輯、不關浮層 —— `lib/overlay-escape.ts`,2026-10-01)+ Radix Popover outside-click |
  *
  * Verify(grep `src/`):**zero runtime consumer** of the class — only `experimentalActiveEditorController`
  * prop name string referenced(this is a flag,not a class import)。Class is dead code as of

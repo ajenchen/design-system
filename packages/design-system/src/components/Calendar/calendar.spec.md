@@ -313,7 +313,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 |---|---|---|
 | `↓` / `→` | 下一個事件 tile(到底不繞回) | APG Grid Pattern:"Right Arrow or Down Arrow: If the cell contains multiple widgets, moves focus to the next widget inside the cell, optionally wrapping to the first widget if focus is on the last widget." |
 | `↑` / `←` | 上一個事件 tile(到頂不繞回) | 同上:"Left Arrow or Up Arrow: If the cell contains multiple widgets, moves focus to the previous widget inside the cell" |
-| `Escape` / `F2` | **出格**:焦點回到本格的日期停靠點(可點:日期數字鈕;`readOnlyDates`:格子本身),grid navigation 恢復 | 同上:"Escape: restores grid navigation." / "F2: ... A subsequent press of F2 restores grid navigation functions." |
+| `Escape` / `F2` | **出格**:焦點回到本格的日期停靠點(可點:日期數字鈕;`readOnlyDates`:格子本身),grid navigation 恢復。格內模式是焦點所在控件自己的一層(方塊帶 `data-escape-layer`):月曆放在 Dialog 裡第一下 `Escape` 只出格、不關對話框(`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」,2026-10-01) | 同上:"Escape: restores grid navigation." / "F2: ... A subsequent press of F2 restores grid navigation functions." |
 | `Enter` / `Space` | 觸發 `onEventClick` | 本元件既有行為(tile `role="button"`;`readOnlyEvents` 時沒有可進的方塊) |
 
 Toolbar 的 prev / 今天 / next / 新事件 CTA 是格陣外的標準控件,各自一個 Tab 停靠點(它們不是 `grid` 的後代,不套單一停靠點規則)。

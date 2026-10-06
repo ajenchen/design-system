@@ -49,6 +49,7 @@
     "test:datepicker-typeable-open": "node scripts/datepicker-typeable-open.mjs",
     "test:datepicker-range-preview": "node scripts/datepicker-range-preview.mjs && node scripts/datepicker-range-preview.mjs --selftest",
     "test:form-validation-contract": "node scripts/form-validation-contract-invariant.mjs && node scripts/form-validation-contract-invariant.mjs --selftest",
+    "test:escape-and-focus-contract": "node scripts/escape-and-focus-contract-invariant.mjs && node scripts/escape-and-focus-contract-invariant.mjs --selftest",
     "test:tree-view-keyboard-route": "node scripts/tree-view-keyboard-route-invariant.mjs && node scripts/tree-view-keyboard-route-invariant.mjs --selftest",
     "test:range-preview": "node scripts/test-range-preview.mjs",
     "test:tree-keyboard-route": "node scripts/test-tree-keyboard-route.mjs && node scripts/test-tree-keyboard-route.mjs --selftest",

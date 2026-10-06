@@ -403,7 +403,11 @@ export interface ButtonProps
    * 「Dismiss canonical — X close only」段。
    */
   dismiss?: boolean
-  /** 載入中狀態：startIcon 替換為 spinner，自動 disabled；badge / endIcon 維持顯示以避免 layout shift */
+  /**
+   * 載入中狀態：startIcon 替換為 spinner;**可聚焦的停用**(`aria-busy` + `aria-disabled`,擋掉觸發,焦點留著、Tab 走得到);
+   * badge / endIcon 維持顯示以避免 layout shift。長相與原生停用相同(灰底 + 禁止符號游標)。
+   * 2026-10-01 前走原生 `disabled`:按下送出的那一刻按鈕變停用,焦點被瀏覽器丟到 `<body>`(待辦總帳 N69)。
+   */
   loading?: boolean
   /** 撐滿父容器寬度 */
   fullWidth?: boolean
@@ -419,6 +423,54 @@ export interface ButtonProps
 // padding-based)。我們選 padding-free 因 SSOT 性更強(SegmentedControl / Tag dismiss
 // 等 host 全可共用同 utility class,無需各自抄公式)。詳 button.spec.md「iconOnly 鐵律」。
 const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
+
+// ── 可聚焦的停用(2026-10-01;規則 ds-canonical/references/keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」)──
+// 根因:WHATWG「focus fixup rule」—— 握有焦點的元素被原生 `disabled` 時,焦點被重設到 viewport(= `<body>`)
+// (https://github.com/whatwg/html/blob/92f248013013096b5a780afffd8377fb9a6eba87/source#L123634-L123645 "It might also happen to an input
+// element when the element gets disabled.")。全 DS 一整族「按了之後自己變停用」都因此掉焦點:送出中 / 存檔後的送出鈕(N69)、分頁到頭、
+// 縮放到極限、輪播到端點、加條件到上限、新對話、送出後輸入盒變空、決策卡下一題。
+// 修法在 Button 根層,兩種情況不轉成原生 disabled,改 `aria-disabled="true"` + `data-disabled-focusable` + 擋掉觸發:
+//   (1) 忙碌(`loading`)一律 —— React Aria isPending "disables press and hover events while retaining focusability"
+//       (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/src/Button.tsx#L89-L93)、
+//       Primer `aria-disabled={loading}` + `onClick={loading ? undefined : onClick}`(https://github.com/primer/react/blob/f2c075a5d4d0b51a279c39effa18226ad909929d/packages/react/src/Button/ButtonBase.tsx#L93-L127)、
+//       Ant `if (innerLoading || mergedDisabled) { e.preventDefault(); return }` 且 `disabled={mergedDisabled}` 不含 loading
+//       (https://github.com/ant-design/ant-design/blob/bde03c864b2e9feb7f86f86d8a4b4451f8aefa6a/components/button/Button.tsx#L293-L299、#L474);
+//       反例誠實列出:MUI `disabled={disabled || loading}`(https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/Button/Button.js#L595)= DS 修前的寫法。
+//   (2) `disabled` 在**握有焦點的那一刻**變 true —— 直到焦點離開才換回原生 disabled(之後 Shift+Tab 回不來,照 APG 慣例 1 離開 Tab 序);
+//       沒有焦點時被停用的按鈕維持原生 disabled,Tab 序與過去完全相同。「只在握著焦點時才改用可聚焦停用」這個收窄是 AI 對 APG 兩條慣例
+//       (https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/practices/keyboard-interface/keyboard-interface-practice.html#L394-L396、#L414-L416、#L434)
+//       與 HTML 根因的綜合,不是任何一家的原文;機制本身(aria-disabled 可聚焦 + 擋觸發)有 Material Web soft-disabled
+//       (https://github.com/material-components/material-web/blob/a6b2d2640b336e5d9fc73133a317e9173827ba95/button/internal/button.ts#L39-L48)、
+//       Fluent `disabledFocusable`(https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-button/library/src/components/Button/Button.types.ts#L34-L41)、
+//       Ariakit `accessibleWhenDisabled`(https://github.com/ariakit/ariakit/blob/c87988effdff42edf4934ded906aa32ee3c04b66/packages/ariakit-react-components/src/focusable/focusable.tsx#L607-L627)的先例。
+// 長相:`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,cva 那一整組 `disabled:*` 原樣套上 —— 灰底、禁止符號,
+// 與原生停用逐項相同(計算樣式對照,含滑過 / 按住);`aria-disabled:` 那套「保留品牌色 + 不透明度 + 滑過 / 按住釘在品牌色」是 Tooltip 用的
+// 「看得見但不能按」長相(button.spec.md「狀態疊加」表),不是忙碌,所以這個狀態下**整組** `aria-disabled:` class 不出現(見 withoutAriaDisabledLook)。
+// 為什麼在 class 層拿掉、不靠 CSS 先後:兩組同為 (0,3,0)(`.x[aria-disabled=true]:hover` vs `:is(.y:disabled,.y[data-disabled-focusable]):hover`),
+// 誰勝由產出順序決定 —— 2026-10-07 前只拿掉了不透明度,滑過 / 按住的品牌色釘子仍在,忙碌鈕與存檔後的送出鈕一滑過就變成品牌藍配 25% 黑字
+// (獨立驗證抓到;Tailwind 4.2 實測:覆寫 `aria-disabled` 變體會把它註冊成新的靜態變體、整組從 aria-* 那一段搬到 data-* 之後產出,所以也不改 CSS)。
+// 擋觸發:click 先 `preventDefault` + `stopPropagation`、不呼叫 consumer(Enter / 空白合成的 click 也走這條);`type="submit"` 保留 ——
+// 隱含送出(在欄位按 Enter)時瀏覽器會對「沒有被原生停用的預設按鈕」派發 click,同一個 preventDefault 就取消送出
+// (https://github.com/whatwg/html/blob/92f248013013096b5a780afffd8377fb9a6eba87/source#L64546-L64552)。不採 React Aria 把 type 換成 button 的做法:
+// 依 HTML,表單沒有送出鈕且只有一個會擋隱含送出的欄位時,表單會由自己送出。
+// consumer 的 handler:會啟動動作的(click / 鍵盤 / 按下放開)在這個狀態一律不轉呼叫;只保留焦點與滑過類(Tooltip 要靠 onPointerMove 才會開 ——
+// Radix Tooltip 在 pointermove 開啟,`@radix-ui/react-tooltip` dist/index.mjs:184)。
+const PRESERVED_WHILE_DISABLED = new Set([
+  'onFocus', 'onBlur', 'onFocusCapture', 'onBlurCapture',
+  'onPointerEnter', 'onPointerLeave', 'onPointerOver', 'onPointerOut', 'onPointerMove',
+  'onMouseEnter', 'onMouseLeave', 'onMouseOver', 'onMouseOut', 'onMouseMove',
+])
+function stripActivationHandlers<P extends Record<string, unknown>>(props: P): P {
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(props)) {
+    if (/^on[A-Z]/.test(key) && typeof value === 'function' && !PRESERVED_WHILE_DISABLED.has(key)) continue
+    out[key] = value
+  }
+  return out as P
+}
+const blockActivation = (e: React.SyntheticEvent) => { e.preventDefault(); e.stopPropagation() }
+/** 可聚焦的停用時拿掉 `aria-disabled:` 那一整組長相(含 `data-[state=on]:aria-disabled:…` 這類疊在後面的),只剩原生停用那一組(見上方「長相」段)。 */
+const withoutAriaDisabledLook = (classes: string) => classes.split(/\s+/).filter((c) => !/(^|:)aria-disabled:/.test(c)).join(' ')
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -502,6 +554,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const groupCtx = React.useContext(ButtonGroupContext)
     const resolvedFullWidth = fullWidth || !!groupCtx.fullWidth
 
+    // 可聚焦的停用(見檔頭 PRESERVED_WHILE_DISABLED 段):此刻是否握有焦點 —— 只有「握著時被停用」才改用可聚焦停用,
+    // 焦點離開那一刻換回原生 disabled(事件在 blur 當下更新,下一次 render 就是原生 disabled)。
+    const [holdsFocus, setHoldsFocus] = React.useState(false)
+    const focusableDisabled = !asChild && (loading || (!!disabled && holdsFocus))
+
     const Comp = asChild ? Slot : 'button'
     const iconSize = resolvedSize === 'lg' ? 20 : 16
 
@@ -573,8 +630,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       </>
     )
 
+    // 元件自己的 cva 長相;可聚焦的停用時拿掉 aria-disabled 那一組(consumer 的 className 不動,照舊排在它後面由 twMerge 合併)
+    const ownVariantClasses = buttonVariants({ variant: resolvedVariant, danger: resolvedDanger, size: resolvedSize, pressedTone })
     const sharedClassName = cn(
-      buttonVariants({ variant: resolvedVariant, danger: resolvedDanger, size: resolvedSize, pressedTone, className }),
+      focusableDisabled ? withoutAriaDisabledLook(ownVariantClasses) : ownVariantClasses,
+      className,
       // iconOnly 鐵律:padding-free + aspect-square + flex-center (Polaris idiom)
       // 0 magic-number 0 公式自動正方形。詳 ICON_ONLY_BASE rationale。
       resolvedIconOnly && ICON_ONLY_BASE,
@@ -582,8 +642,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
       // 弱化 icon hover 一階(item-anatomy.tsx ItemInlineActionButton 同階梯 SSOT)
       dismiss && 'text-fg-muted hover:text-fg-secondary',
-      // aria-disabled 的 dismiss hover 釘在 fg-muted(button.spec.md「狀態疊加」表 aria-disabled 列)
-      dismiss && 'aria-disabled:hover:text-fg-muted',
+      // aria-disabled 的 dismiss hover 釘在 fg-muted(button.spec.md「狀態疊加」表 aria-disabled 列);可聚焦的停用不是那個長相(見上方 ownVariantClasses)
+      dismiss && !focusableDisabled && 'aria-disabled:hover:text-fg-muted',
       resolvedFullWidth && 'w-full',
     )
 
@@ -614,12 +674,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={sharedClassName}
         ref={ref}
         type="button"
-        disabled={disabled || loading}
+        // 可聚焦的停用(見檔頭):忙碌一律、disabled 在握有焦點時 → 不轉原生 disabled;其餘照舊原生
+        disabled={focusableDisabled ? false : (!!disabled || loading)}
         aria-busy={loading || undefined}
+        aria-disabled={focusableDisabled || undefined}
+        data-disabled-focusable={focusableDisabled ? '' : undefined}
         aria-label={ariaLabel}
         {...toggleAttrs}
         {...unboundedAttr}
-        {...restProps}
+        {...(focusableDisabled ? stripActivationHandlers(restProps) : restProps)}
+        // 握有焦點與否的追蹤只在這兩個事件(consumer 的同名 handler 已在上方 spread,這裡接著呼叫)
+        onFocus={(e) => { setHoldsFocus(true); restProps.onFocus?.(e) }}
+        onBlur={(e) => { setHoldsFocus(false); restProps.onBlur?.(e) }}
+        // 擋掉觸發:consumer 的 onClick 已被 stripActivationHandlers 拿掉;Enter / 空白合成的 click 與表單隱含送出派來的 click 都走這一條
+        {...(focusableDisabled ? { onClick: blockActivation, onDoubleClick: blockActivation } : null)}
       >
         {nativeChildren}
       </Comp>

@@ -16,6 +16,7 @@
 // M21 retract:filter-value-picker.tsx 1 consumer → 2026-05-03 inline 回 panel(上列 2026-07-14
 //   @internal 拆檔非 M21 迴轉:非 public 抽象,file-size hard cap 驅動,consumer 仍只見 panel)。
 import * as React from 'react'
+import { escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
 import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
@@ -1946,6 +1947,29 @@ function DataTableInner<TData>(
 
   const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
 
+  // ── C1 修:dnd-kit 會播報假的成功(2026-09-07)──────────────────────────
+  // 根因:dnd-kit 從它自己的 onDragEnd 播報「Draggable item X was dropped over Y」
+  //(core.esm.js:64-72 的英文預設),**完全不知道我們的守衛已經 return、根本沒重排**。
+  // handleDragEnd 有 7 個提早 return(無 over / 同 id / 找不到 index / isReorderNoop /
+  // 未跨中點 / 跨 parent / 非同層),其中任何一個發生時,螢幕閱讀器仍會聽到「已放到 X」。
+  // 這是對輔助科技宣稱假結果,不是措辭問題。
+  //
+  // 修法:dnd-kit 的 dispatch 順序是 `handler?.(event)` 先跑、`dispatchMonitorEvent`
+  //(播報)後跑(core.esm.js:3166-3170 實查),所以在 handler 內記下「有沒有真的 commit」,
+  // 播報時讀它即可。不需要重算一次判定,避免兩份邏輯漂移。
+  const reorderOutcomeRef = React.useRef<DragOutcome | null>(null)
+
+  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭):繁中播報 + polite 區域 + 繁中操作說明
+  //(2026-09-27 OE10:先前直接把 createDragAnnouncements 交給 dnd-kit,文字落在它寫死的 assertive 區域,每到一個落點就打斷)。
+  // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
+  // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
+  // 2026-10-01 從 handleDragEnd 上方搬到這裡:表格根節點(下方 JSX)要讀 `drag.escapeLayer`(拖曳中 Esc 只取消拖曳),
+  // 它在 JSX 之後宣告會踩到 TDZ;hook 順序照舊無條件。
+  const drag = useDragAccessibility({
+    getOutcome: () => reorderOutcomeRef.current,
+    kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+  })
+
   // 快速捲動的列殼 —— **自適應機器畫列能力**(2026-09-09,AD56:R17 的固定判準在慢機器失效)。
   // 不用兩次 render 的瞬時速度(快機器的正常短捲會被誤判,R17 H1),也不用固定跳距(慢機器 commit 頻繁、每次位移不到一個
   // viewport,永遠不觸發,主執行緒畫不完真列 → CI 6,000px/s 整片白 1 秒)。改成每次 render 先算「這一幀畫得完幾列真列」=
@@ -3740,6 +3764,9 @@ function DataTableInner<TData>(
           return
         }
         else if (e.key === 'Escape') {
+          // 格游標是焦點所在控件自己的一層(表格根 data-escape-layer="self"):放在 Dialog 裡第一下 Esc 只清游標、不關對話框;
+          // 這一下已被 Radix 用來關掉別的浮層、或被拖曳取消獨占 → 不動(lib/overlay-escape.ts;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)
+          if (!isEscapeForControl(e)) return
           e.preventDefault()
           setSelectedCellId(null)
           setRangeAnchor(null)
@@ -3771,8 +3798,9 @@ function DataTableInner<TData>(
         setSelection(prev => applySelectIds(prev, selectableVisibleIds, true))
         return
       }
-      // Esc:clear selection
+      // Esc:clear selection(列選取是焦點所在控件自己的一層,同上方格游標那條)
       if (e.key === 'Escape' && hasAnySelection) {
+        if (!isEscapeForControl(e)) return
         e.preventDefault()
         setSelection({ mode: 'include', ids: [] })
         anchorRowIdRef.current = null
@@ -4545,14 +4573,22 @@ function DataTableInner<TData>(
   // 兩者分開的時候:游標所在的列被篩掉 / 換頁 / 刪掉 —— id 還在,格卻不在列模型裡,格上沒框、根節點也不畫
   // → 鍵盤聚焦零指示(WCAG 2.4.7)。所以判準改成「游標的列在目前的列模型裡」,懸空的 id 由下面的 effect 清掉。
   // (虛擬捲動把列暫時卸載不算消失:列還在模型裡,游標仍有效;鍵盤移動 / Tab 回表時由下面的「捲進可視範圍」接住。)
+  // 2026-10-07 補同族的另一半(M10;獨立驗證抓到):游標所在的**欄**被隱藏時同樣懸空 —— 列還在、欄不在可見欄裡,格一樣畫不出來,
+  // 而鍵盤 handler 開頭 `curColIdx < 0` 就 return,連 Esc 都走不到;根節點卻仍以「有游標」宣告 Esc 層(下方 escapeLayerProps),
+  // 放在 Dialog 裡按 Esc 五下都關不掉對話框(鍵盤陷阱,WCAG 2.1.2)。判準與 handler 同一條:列在列模型裡 **且** 欄在可見欄裡。
   const rowIdOfCell = (cellId: string) => cellId.slice(0, cellId.lastIndexOf(':'))
+  const colIdOfCell = (cellId: string) => cellId.slice(cellId.lastIndexOf(':') + 1)
   const rowIndexById = React.useMemo(() => new Map(rows.map((r, i) => [r.id, i] as const)), [rows])
   const cursorRowIndex = selectedCellId != null ? rowIndexById.get(rowIdOfCell(selectedCellId)) : undefined
-  const hasCellCursor = spreadsheetMode && cursorRowIndex != null
+  // 可見欄與鍵盤 handler 同一份(`getVisibleLeafColumns` 扣掉勾選欄),TanStack 自己依 columnVisibility / columnOrder memo
+  const cursorColVisible = selectedCellId != null
+    && table.getVisibleLeafColumns().some((c) => c.id !== SELECT_COL_ID && c.id === colIdOfCell(selectedCellId))
+  const cursorDrawable = cursorRowIndex != null && cursorColVisible
+  const hasCellCursor = spreadsheetMode && cursorDrawable
   React.useEffect(() => {
-    if (selectedCellId == null || cursorRowIndex != null) return
+    if (selectedCellId == null || cursorDrawable) return
     setSelectedCellId(null); setRangeAnchor(null); setRangeFocus(null)
-  }, [selectedCellId, cursorRowIndex])
+  }, [selectedCellId, cursorDrawable])
   // 游標格捲進可視範圍(鍵盤移動、Tab 進表、編輯退出還原):對齊 AG Grid `ensureIndexVisible` / MUI X `scrollToIndexes` ——
   // 游標到了看不到的地方等於沒有游標。只動 centerBody 的 scrollTop / scrollLeft(兩側釘住的面板由 onCenterBodyScroll 同步,
   // 不對格子呼叫 scrollIntoView —— 那會直接捲 overflow:hidden 的側面板,繞過同步)。
@@ -4656,6 +4692,13 @@ function DataTableInner<TData>(
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}
       // 2026-05-10:`enabled || spreadsheetMode` — spreadsheet keyboard nav 跨 row-selection-disabled 場景也要 fire
       onKeyDown={enabled || spreadsheetMode ? tableKeyboardHandler : undefined}
+      // Esc 層宣告(2026-10-01;規則 keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」):此刻有格游標 / 列選取 → 根節點自己是一層
+      //(格游標用 `hasCellCursor` = 游標格此刻畫得出來,與鍵盤 handler 能不能處理 Esc 同一條;2026-10-07 前用 `selectedCellId != null`,欄被隱藏時宣告了卻沒人處理)
+      //(`self`:只有焦點就在根上才算;焦點進到格裡的控件時由那個控件自己宣告)。拖曳中改成拖曳那一層(整個子樹;Esc 只取消拖曳,
+      // 格游標與浮層都不動 —— lib/drag-announcements.ts useDragAccessibility.escapeLayer)
+      {...(drag.dragging
+        ? drag.escapeLayer
+        : escapeLayerProps((hasCellCursor && editingCellId == null) || (enabled && hasAnySelection), 'self'))}
       // 2026-09-07:**Tab 進場就把游標放上去**。
       // 上面那段註解說「儲存格選取框 IS the visual focus indicator」—— 但那只在使用者
       // **已經選過一格之後**才成立。實測 Tab 落在這個根節點時,根節點自己不畫(outline-none)、
@@ -5298,26 +5341,7 @@ function DataTableInner<TData>(
   // Sync ref(handleDragOver closure 抓不到最新 reorderableColumnIds)
   React.useEffect(() => { reorderableColumnIdsRef.current = reorderableColumnIds }, [reorderableColumnIds])
 
-  // ── C1 修:dnd-kit 會播報假的成功(2026-09-07)──────────────────────────
-  // 根因:dnd-kit 從它自己的 onDragEnd 播報「Draggable item X was dropped over Y」
-  //(core.esm.js:64-72 的英文預設),**完全不知道我們的守衛已經 return、根本沒重排**。
-  // handleDragEnd 有 7 個提早 return(無 over / 同 id / 找不到 index / isReorderNoop /
-  // 未跨中點 / 跨 parent / 非同層),其中任何一個發生時,螢幕閱讀器仍會聽到「已放到 X」。
-  // 這是對輔助科技宣稱假結果,不是措辭問題。
-  //
-  // 修法:dnd-kit 的 dispatch 順序是 `handler?.(event)` 先跑、`dispatchMonitorEvent`
-  //(播報)後跑(core.esm.js:3166-3170 實查),所以在 handler 內記下「有沒有真的 commit」,
-  // 播報時讀它即可。不需要重算一次判定,避免兩份邏輯漂移。
-  const reorderOutcomeRef = React.useRef<DragOutcome | null>(null)
-
-  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭):繁中播報 + polite 區域 + 繁中操作說明
-  //(2026-09-27 OE10:先前直接把 createDragAnnouncements 交給 dnd-kit,文字落在它寫死的 assertive 區域,每到一個落點就打斷)。
-  // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
-  // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
-  const drag = useDragAccessibility({
-    getOutcome: () => reorderOutcomeRef.current,
-    kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
-  })
+  // reorderOutcomeRef / drag(dnd-kit 播報 SSOT)宣告在 activeDragId 旁(2026-10-01 搬,見該處註解)
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
     reorderOutcomeRef.current = null

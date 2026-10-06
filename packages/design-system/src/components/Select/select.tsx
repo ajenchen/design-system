@@ -2,6 +2,7 @@
 // code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helpers + 4-mode renderer + Field SSOT consumption,split-into-files 會破壞 file-local helper closure
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
+import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
@@ -647,7 +648,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, onBlur: onBlurProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -892,6 +893,10 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // 觸發欄位內的搜尋框握著焦點時,按欄位上的其他東西(清除 ×、選中值疊字、空白處、箭頭)焦點不離開搜尋框,click 照常動作
         // (2026-09-30;判準共用 lib/pointer-press.ts,Combobox 觸發區同一支;規則 select-menu.spec.md「A11y 預設」Focus 段的焦點表)
         onMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, searchable ? inputRef.current : null)}
+        // 觸發欄位 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;
+        // 可搜尋 → 欄位內的搜尋框,本來就在欄位裡)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次。
+        // 2026-10-01 前一開清單就 blur,必填錯誤在還沒選任何東西時就長出來(實測)
+        onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)}
         onKeyDown={(e) => {
           // passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上
           // consumer handler 同樣最先收到);component 導覽邏輯照舊在後。

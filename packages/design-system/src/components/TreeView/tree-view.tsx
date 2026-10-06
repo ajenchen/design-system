@@ -1,5 +1,6 @@
 // code-quality-allow: file-size — foundational composite(TreeView owns tree logic + TreeItem + drag-drop + keyboard;拆 sub-component 會把 register/unregister 跨檔傳 ref 複雜化超過可讀性 gain)
 import * as React from 'react'
+import { escapeLayerProps } from '@/design-system/lib/overlay-escape'
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
 import {
   DndContext,
@@ -1010,7 +1011,10 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           ['--tree-px' as string]: CONTEXT_PX_VAR[context],
           ...props.style,
         } as React.CSSProperties}
-        onKeyDownCapture={handleKeyDownCapture}
+        // 指標拖曳中按 Esc 只取消拖曳(dnd-kit PointerSensor 在 document 上聽 Esc):宣告這一層、把這一下標成拖曳獨占,
+        // 外層 Dialog / Popover 不關、樹自己的鍵盤路也不動(lib/drag-announcements.ts useDragAccessibility.escapeLayer;drag-canonical.md invariant 8)
+        {...escapeLayerProps(drag.dragging)}
+        onKeyDownCapture={(e) => { drag.escapeLayer.onKeyDownCapture?.(e); handleKeyDownCapture(e) }}
         // 焦點落在任何一列或列裡的按鈕 → 記下是哪一列(它就是下一次 Tab 進來的落點;總帳 B9)
         onFocus={(e) => {
           ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)

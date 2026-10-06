@@ -299,7 +299,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 | 鍵 | 行為 | 生效條件 |
 |---|------|---------|
-| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字;`../../lib/ime-composition.ts` `withImeSafeEscape` 掛在本元件的 `DialogPrimitive.Content`,2026-10-01) | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
+| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字);**焦點所在的控件宣告了自己還有一層時那一下歸控件**(全 DS 一條,`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)—— 兩條都由 `../../lib/overlay-escape.ts` `withOverlayEscape` 掛在本元件的 `DialogPrimitive.Content`(2026-10-01;同日上午的 `withImeSafeEscape` 併入) | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
 | `ArrowLeft` | 上一個檔案 | `files.length > 1` |
 | `ArrowRight` | 下一個檔案 | `files.length > 1` |
 | `+` / `=` | zoom in(下一個 preset) | `capabilities.zoom === true` |

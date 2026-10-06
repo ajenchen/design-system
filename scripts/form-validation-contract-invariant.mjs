@@ -5,7 +5,7 @@
  *        form-validation.spec.md 的規則 1 / 2 / 4 / 5 / 6 / 7 / 8 動作 —— 用真鍵盤、真滑鼠、觸控在欄位同名的幾張表單上逐條走
  *        (每一列見下方「判定表」):錯誤會顯示也會清掉、Escape 回原值、送出失敗時焦點只落在被送出那張表的第一個錯誤、
  *        打了不合法的值直接按下方的按鈕時,錯誤長出來不會把這一下 click 推離那顆按鈕;原生拖曳之後「按著」不會卡住。
- *   紅: 任一條不符 → 逐條點名 exit 1。`--selftest` 在同一份 hook 原始碼上各造回一個 2026-10-01 修掉的根因(十一個,見下方
+ *   紅: 任一條不符 → 逐條點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個 2026-10-01 修掉的根因(二十六個:hook 十一個 + 對話框 / 送出鈕焦點 / Toast 十五個,見下方
  *        「突變」與 MUTANTS),每個突變都必須**剛好**紅它負責的那幾條(多紅少紅都算量具不可信),契約列每一條都要被某個突變弄紅過。
  *   綠: 現行 hook 每條都量到且符合,且對照列(C2 剛掛載就空送出看得到錯誤、C3 第一張表的焦點搬家、
  *        C5 只清被編輯那欄、C6 改成仍不合法再離開錯誤回來、C9 reset 清空、C8b / C8c 那一下送出真的有跑驗證)
@@ -14,6 +14,8 @@
  *        = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成通過(M37:沒量到 ≠ 沒發生)。
  *   註: 2026-10-01 新增(待辦總帳 N65)。修正前的 hook 以 `--hook=<修正前的檔案>` 跑,R2 / R4a / R4b / R5 / R6 / R7 / R8 / R8b / R8c
  *        全紅 —— 那就是它的天然對照組;同日第一版修法(只以 `<form>` 界定)只紅 R8b(當天實跑紀錄在待辦總帳 N65 列)。
+ *        同日下午(待辦總帳 N64 / N68 / N69 / OE29)加 `--root=<整棵原始碼>`:突變與對照組不再只限 hook —— Dialog / Popover / Button 的原始碼、
+ *        三則表單 story 都打進 harness(scripts/lib/ds-source-harness.mjs);修改前的基準樹(git archive)跑 `--root=` 剛好紅下方十列新契約、舊列全綠(2026-10-07 加 T-dialog / T-sheet 後是十二列,同樣只紅新契約)。
  *        同日加規則 2 × 滑鼠 / 觸控那幾列(待辦總帳 N67):第一輪修好、還沒有延後的 hook 以 `--hook=` 跑,剛好紅 R2d-submit / R2d-touch /
  *        R2d-cancel / R2d-footer(實跑紀錄在待辦總帳 N67 列)。context 開 hasTouch 才點得了觸控;滑鼠與鍵盤照常。
  *        同日驗證抓到延後的第一版把原生拖曳卡成「一直按著」(R2d-drag):那一版以 `--hook=` 跑剛好只紅 R2d-drag。
@@ -40,9 +42,26 @@
  *   R8 `<form onSubmit={form.handleSubmit}>`;R8b 沒有 `<form>`、footer 按鈕 `onClick={() => void form.handleSubmit()}`
  *   不帶 event(WM 16 支表單全是這個寫法);R8c 沒走 getInputProps 的控件(勾選框用 setFieldValue 自接、自己寫 name),
  *   只能靠被送出的 `<form>` 界定。
+ * 對話框裡的表單(2026-10-01 下午;規則 keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」「按了之後自己變停用」「關了之後焦點去哪」):
+ *   R-return 受控、沒有 DialogTrigger 的 Dialog 用 Esc 關閉 → 焦點回到開啟它的按鈕(不是 body);
+ *   R4-dialog 對話框裡改過的欄位按 Esc → 值回復、對話框**不關**;再按一下才關;
+ *   R4-one-layer 可打字的 DatePicker 值改過、日曆開著按 Esc → 只關日曆、值不動、對話框不關;再按 → 值回復;再按 → 關;
+ *   R9-busy 忙碌鈕本身(不經 hook 的最小表單,只接 loading;hook 的重入防護與 submitDisabled 會掩蓋 Button 的 loading 路徑)用滑鼠按下 →
+ *     忙碌期間焦點仍在它上面、aria-busy、原生 disabled=false;同一張表的欄位裡按 Enter(隱含送出)與再按一次都不送出(submit 事件 1 次、
+ *     consumer onClick 1 次)。忙碌多久由量具放行(window.__releaseBusy),不用固定毫秒;
+ *   R9-saved 存檔完成 → 焦點仍在送出鈕、aria-disabled="true"、原生 disabled=false(可聚焦的停用);
+ *   R9-leave 接著 Tab → 焦點往下走、送出鈕回到原生 disabled;Shift+Tab 回不到它(離開 Tab 序);
+ *   R4-saved 存檔後再改欄位按 Esc → 回到**剛存的值**,不是存檔前的舊值;
+ * 送出成功的回饋(user 2026-10-01「送出成功跳提示」;harness 直接掛三則 story 原始碼):
+ *   T-update / T-create / T-rating 送出成功後 Toaster 的 polite 朗讀區 = 該表的文案、有一則 [data-sonner-toast]、表單內沒有 role=status;
+ *   T-update 另附對照:業務驗證擋下(名稱重複)時 polite 區不變、沒有 toast。
+ *   T-dialog / T-sheet(2026-10-07;放在浮層裡、送出成功就關的三則 story 原始碼:Dialog「表單」、Sheet「建立新專案」「編輯成員詳情」):
+ *     空白送出 → 欄位報錯、浮層不關、沒有 Toast;填好送出 → 多一則該文案的 Toast、浮層關閉;再打開 → 建立表單是空白、更新表單是剛存的值
+ *     (修前:沒有 Toast;建立表單再打開還留著上次打的字。Toast 以「該文案的 [data-sonner-toast] 多一則」判,不讀朗讀區 ——
+ *     「專案已建立」T-create 也用,朗讀區留著上一則的字分不出來)。
  *
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,這裡是人讀版)──
- * errors 以物件身分 memo(RHF 原地改 errors)→ R2 / R2d-drag / R2d-later / R2d-submit / R2d-tab / R2d-touch / R4b-error / R5 / R6 / R7;
+ * errors 以物件身分 memo(RHF 原地改 errors)→ R2 / R2d-drag / R2d-later / R2d-submit / R2d-tab / R2d-touch / R4b-error / R5 / R6 / R7(+ T-update 的業務錯誤對照、T-dialog / T-sheet 的空白送出報錯);
  * Escape 改回 resetField(本 hook 不 register → 無作用)→ R4a / R4b-value;
  * 焦點改回整頁 getElementsByName 第一個 → R2d-footer / R2d-submit / R2d-touch / R8 / R8b / R8c;
  * getInputProps 不掛歸屬標記(只剩 `<form>` 界定)→ R2d-footer / R8b;沒標記的元素不以 `<form>` 界定 → R8c;
@@ -50,7 +69,13 @@
  * 按壓只認 pointer 事件、不認觸控補發的 mousedown / mouseup → R2d-touch;
  * 延後的驗證永遠不跑 → R2d-drag / R2d-later;延後的驗證不管焦點回來了沒 → R1-refocus;
  * 原生拖曳不算按壓結束(pointercancel 只放掉 pointer、不聽 dragend = 驗證抓到的那一版)→ R2d-drag;
- * 取消只結束被取消的那一個 pointer(筆的按壓留著,來源被移出頁面時 dragend 也救不回)→ R2d-drag。
+ * 取消只結束被取消的那一個 pointer(筆的按壓留著,來源被移出頁面時 dragend 也救不回)→ R2d-drag;
+ * Escape 改回 resetField 另連帶 R4-dialog / R4-one-layer / R4-saved(對話框裡同一個回復);
+ * 欄位改過不掛 Esc 層 / 浮層守門不看標記 → R4-dialog / R4-one-layer / R4-saved(都是「對話框裡改過的欄位按 Esc」);
+ * DialogContent 不記開啟者 → R-return;Button loading 走原生 disabled → R9-busy;Button 握著焦點時仍轉原生 disabled → R9-saved;
+ * Button 焦點離開後不回原生 disabled → R9-leave;送出成功不重設基準 → R4-saved / R9-leave / R9-saved / T-sheet;可聚焦停用不擋 click → R9-busy;
+ * 三則 story 各拿掉 toast() → T-update / T-create / T-rating。(「Esc 不看 Radix 已用掉」在 escape-and-focus-contract 量,理由見 MUTANTS 該處註解)
+ * Dialog「表單」拿掉 toast() / 打開時不 reset() → T-dialog;Sheet「編輯成員詳情」拿掉 toast() / 「建立新專案」打開時不 reset() → T-sheet。
  *
  * ── 為什麼測 hook 本身、不測 story ──
  * 這支 hook 是 DS 表單驗證方法論的可執行層(form-validation.spec.md「可執行層」),DS 內的 CreateProjectForm /
@@ -67,39 +92,53 @@
  * 等不到 = 儀器失效。共用實作:lib/launch-browser.mjs。
  *
  * 用法:
- *   node scripts/form-validation-contract-invariant.mjs                 判定(現行 hook)
- *   node scripts/form-validation-contract-invariant.mjs --selftest      對照組(十一個單一根因突變,各自必須剛好紅該紅的)
- *   node scripts/form-validation-contract-invariant.mjs --hook=<路徑>   改測另一份 hook 原始碼(例:修正前的版本),判定表不變
+ *   node scripts/form-validation-contract-invariant.mjs                 判定(現行原始碼)
+ *   node scripts/form-validation-contract-invariant.mjs --selftest      對照組(二十六個單一根因突變,各自必須剛好紅該紅的)
+ *   node scripts/form-validation-contract-invariant.mjs --hook=<路徑>   只換 hook 原始碼(例:修正前的版本),判定表不變
+ *   node scripts/form-validation-contract-invariant.mjs --root=<dir>    改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { build } from 'esbuild'
+import { resolve } from 'node:path'
 import {
   INSTRUMENT_FAIL_MARKER,
   launchBrowserOrSkip,
   settleAfterInteraction,
   waitForFocusStable,
 } from './lib/launch-browser.mjs'
+import {
+  FOCUS_FRAMES,
+  InstrumentError,
+  REPO_ROOT,
+  WAIT_CAP_MS,
+  bundleDsHarness,
+  dsSourceDir,
+  mountHarness,
+  replaceOnce,
+  resolveSourceRoot,
+} from './lib/ds-source-harness.mjs'
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const HOOK = resolve(ROOT, 'packages/design-system/src/components/Field/use-form-validation.ts')
+const ROOT = REPO_ROOT
+/** 要量的整棵原始碼(`--root=`;預設本 repo) */
+const SOURCE_ROOT = resolveSourceRoot()
+const HOOK_FILE = 'components/Field/use-form-validation.ts'
+const HOOK = resolve(dsSourceDir(SOURCE_ROOT), HOOK_FILE)
 const SELFTEST = process.argv.includes('--selftest')
 const HOOK_OVERRIDE = process.argv.find((a) => a.startsWith('--hook='))?.slice('--hook='.length)
-/** 讀焦點前焦點要連續幾個影格不動 */
-const FOCUS_FRAMES = 6
-/** 等證據的天花板(不是「已發生」的代理):超過就是儀器失效 */
-const WAIT_CAP_MS = 10_000
+/**
+ * selftest 同時跑幾個突變(每條 lane 一個瀏覽器、一個分頁,同 escape-and-focus-contract / story-demo-focus:焦點、鍵盤、觸控不跨 lane 共用)。
+ * 單一變體要把 37 列整趟走完(約 55 秒,大多在等版面 / 焦點靜止),27 個變體循序要 25 分鐘;判定(非 selftest)只跑一趟,不受影響。
+ * `--lanes=1` = 循序(除錯用)。
+ */
+const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes='))?.slice('--lanes='.length) ?? 4) || 4)
 
-class InstrumentError extends Error {}
-
-// ─── 十一個單一根因突變(--selftest)────────────────────────────────────────────
-// 錨點找不到 = hook 原始碼改了、突變沒套上 → 儀器失效(不得讓「沒突變」看起來像「突變也綠」)。
+// ─── 二十六個單一根因突變(--selftest;`file` 相對 packages/design-system/src,省略 = hook)──────────
+// 錨點找不到 = 原始碼改了、突變沒套上 → 儀器失效(不得讓「沒突變」看起來像「突變也綠」)。
 const MUTANTS = [
   {
     id: 'errors-identity-memo',
     what: 'errors 以 RHF errors 物件身分 memo(修正前 :147-154)',
-    expectRed: ['R2', 'R2d-drag', 'R2d-later', 'R2d-submit', 'R2d-tab', 'R2d-touch', 'R4b-error', 'R5', 'R6', 'R7'],
+    // T-update 的業務錯誤對照(名稱重複 → FieldError)、T-dialog / T-sheet 的空白送出報錯同樣讀 errors,同一個根因連帶紅
+    expectRed: ['R2', 'R2d-drag', 'R2d-later', 'R2d-submit', 'R2d-tab', 'R2d-touch', 'R4b-error', 'R5', 'R6', 'R7', 'T-dialog', 'T-sheet', 'T-update'],
     apply: (src) => replaceOnce(src,
       /  const errors: Partial<Record<keyof T, string>> = \{\}\n  for \(const key of Object\.keys\(rhfErrors\)\) \{\n([\s\S]*?)\n  \}\n/,
       '  const errors = React.useMemo(() => {\n    const out: Partial<Record<keyof T, string>> = {}\n'
@@ -110,7 +149,8 @@ const MUTANTS = [
   {
     id: 'escape-reset-field',
     what: 'Escape 改回 form.resetField(修正前 :188)',
-    expectRed: ['R4a', 'R4b-value'],
+    // 對話框裡那三列走同一個回復(R4-dialog / R4-one-layer 的第二下 / 存檔後的 R4-saved),同一個根因一起紅
+    expectRed: ['R4-dialog', 'R4-one-layer', 'R4-saved', 'R4a', 'R4b-value'],
     apply: (src) => replaceOnce(src,
       /form\.setValue\(path, original as PathValue<T, Path<T>>, \{ shouldDirty: true \}\)/,
       'form.resetField(path)'),
@@ -183,20 +223,133 @@ const MUTANTS = [
       /for \(const \[id, type\] of pressedPointers\) if \(type !== 'touch'\) pressedPointers\.delete\(id\)/,
       'pressedPointers.delete(p.pointerId)'),
   },
+  // ── 2026-10-01 下午(對話框裡的表單 / 送出鈕焦點 / Toast)──
+  {
+    id: 'escape-no-layer-marker',
+    what: 'getInputProps 在欄位改過時不掛 data-escape-layer(浮層守門看不到 → Esc 直接關對話框)',
+    // R4-one-layer 的第二下(回復)、存檔後的 R4-saved 也是「對話框裡改過的欄位按 Esc」,一起紅
+    expectRed: ['R4-dialog', 'R4-one-layer', 'R4-saved'],
+    apply: (src) => replaceOnce(src, /\n        \.\.\.escapeLayerProps\(!sameValue\(value, original\)\),\n/, '\n'),
+  },
+  {
+    id: 'overlay-gate-ignores-layer',
+    what: '浮層守門不看控件的 Esc 層宣告(修前的 withImeSafeEscape 只管組字)',
+    file: 'lib/overlay-escape.ts',
+    expectRed: ['R4-dialog', 'R4-one-layer', 'R4-saved'],
+    apply: (src) => replaceOnce(src, /if \(layer && content && content\.contains\(layer\)\) \{/, 'if (false) {'),
+  },
+  // 「Esc 不看這一下是否已被 Radix 用掉」的突變不在這裡:本 harness 的 R4-one-layer 用可打字的 DatePicker,它的輸入框自己先問
+  // isEscapeForControl、Radix 用掉的那一下根本不會轉給表單 —— hook 那一道在這裡量不到(單一突變弄不紅任何一列 = 零證據)。
+  // 它在 escape-and-focus-contract 的 E-combobox-popup(欄位內搜尋的 Combobox:清單開著時焦點仍在欄位、這一下會冒泡到表單)量。
+  {
+    id: 'no-triggerless-return',
+    what: 'DialogContent 預設不還焦點給開啟者(Radix 只還給 DialogTrigger,受控開啟掉到 body)',
+    file: 'lib/overlay-focus-return.ts',
+    expectRed: ['R-return'],
+    apply: (src) => replaceOnce(src, /returnFocusToOpener\(event, trigger \?\? opener, trigger \? \{\} : \{ noTrigger: true, modal \}\)/, 'void opener'),
+  },
+  {
+    id: 'button-loading-native-disabled',
+    what: 'Button 忙碌時仍走原生 disabled(焦點被瀏覽器丟到 body;MUI 派)',
+    file: 'components/Button/button.tsx',
+    expectRed: ['R9-busy'],
+    apply: (src) => replaceOnce(src, /const focusableDisabled = !asChild && \(loading \|\| \(!!disabled && holdsFocus\)\)/, 'const focusableDisabled = !asChild && (!!disabled && holdsFocus)'),
+  },
+  {
+    id: 'button-no-focus-hold',
+    what: 'Button 握著焦點時被停用仍轉原生 disabled(存檔後焦點掉到 body)',
+    file: 'components/Button/button.tsx',
+    expectRed: ['R9-saved'],
+    apply: (src) => replaceOnce(src, /const focusableDisabled = !asChild && \(loading \|\| \(!!disabled && holdsFocus\)\)/, 'const focusableDisabled = !asChild && loading'),
+  },
+  {
+    id: 'button-focus-hold-never-released',
+    what: 'Button 焦點離開後不回原生 disabled(一直是可聚焦的停用 → 停用鈕永遠留在 Tab 序裡)',
+    file: 'components/Button/button.tsx',
+    expectRed: ['R9-leave'],
+    apply: (src) => replaceOnce(src, /onBlur=\{\(e\) => \{ setHoldsFocus\(false\); restProps\.onBlur\?\.\(e\) \}\}/, 'onBlur={(e) => { restProps.onBlur?.(e) }}'),
+  },
+  {
+    id: 'no-rebaseline',
+    what: '更新表單送出成功後不重設比對基準(存檔後仍 dirty、Esc 回到存檔前的舊值)',
+    // 存檔後仍 dirty → 送出鈕一直可按:R9-saved(不是可聚焦的停用)、R9-leave(Tab 之後也不是原生停用)一起紅;
+    // Sheet「編輯成員詳情」再打開時 reset() 回到存檔前的舊值(T-sheet)也是同一個根因
+    expectRed: ['R4-saved', 'R9-leave', 'R9-saved', 'T-sheet'],
+    apply: (src) => replaceOnce(src, /\n        if \(intent === 'update'\) rebaseline\(current\)\n/, '\n'),
+  },
+  {
+    id: 'button-click-not-blocked',
+    what: '可聚焦的停用不擋 click(忙碌中欄位裡按 Enter = 隱含送出、再按一次 → 表單照樣送出)',
+    file: 'components/Button/button.tsx',
+    expectRed: ['R9-busy'],
+    apply: (src) => replaceOnce(src, /\{\.\.\.\(focusableDisabled \? \{ onClick: blockActivation, onDoubleClick: blockActivation \} : null\)\}/, ''),
+  },
+  {
+    id: 'toast-update-removed',
+    what: '更新表單送出成功不跳 Toast',
+    file: 'components/Field/field.stories.tsx',
+    expectRed: ['T-update'],
+    apply: (src) => replaceOnce(src, /toast\(\{ variant: 'success', title: '專案設定已儲存' \}\)/, 'void 0'),
+  },
+  {
+    id: 'toast-create-removed',
+    what: '建立表單送出成功不跳 Toast',
+    file: 'components/Field/field.stories.tsx',
+    expectRed: ['T-create'],
+    apply: (src) => replaceOnce(src, /toast\(\{ variant: 'success', title: '專案已建立' \}\)/, 'void 0'),
+  },
+  {
+    id: 'toast-rating-removed',
+    what: '評分送出成功不跳 Toast',
+    file: 'components/Rating/rating.stories.tsx',
+    expectRed: ['T-rating'],
+    apply: (src) => replaceOnce(src, /toast\(\{ variant: 'success', title: '評分已送出' \}\)/, 'void 0'),
+  },
+  // ── 2026-10-07:放在浮層裡、送出成功就關的表單(獨立驗證抓到:送出成功沒跳提示、建立表單再打開還留著上次的字)──
+  {
+    id: 'toast-dialog-removed',
+    what: 'Dialog「表單」送出成功不跳 Toast(直接關)',
+    file: 'components/Dialog/dialog.stories.tsx',
+    expectRed: ['T-dialog'],
+    apply: (src) => replaceOnce(src, /toast\(\{ variant: 'success', title: '專案已建立' \}\)/, 'void 0'),
+  },
+  {
+    id: 'dialog-no-reset-on-open',
+    what: 'Dialog「表單」打開時不 reset()(送出成功關掉再打開,上次打的字還在)',
+    file: 'components/Dialog/dialog.stories.tsx',
+    expectRed: ['T-dialog'],
+    apply: (src) => replaceOnce(src, /if \(next\) form\.reset\(\)/, 'if (false) form.reset()'),
+  },
+  {
+    id: 'toast-sheet-edit-removed',
+    what: 'Sheet「編輯成員詳情」送出成功不跳 Toast(直接關)',
+    file: 'components/Sheet/sheet.stories.tsx',
+    expectRed: ['T-sheet'],
+    apply: (src) => replaceOnce(src, /toast\(\{ variant: 'success', title: '成員資料已儲存' \}\)/, 'void 0'),
+  },
+  {
+    id: 'sheet-create-no-reset-on-open',
+    what: 'Sheet「建立新專案」打開時不 reset()',
+    file: 'components/Sheet/sheet.stories.tsx',
+    expectRed: ['T-sheet'],
+    apply: (src) => replaceOnce(src, /(function CreateProjectSheet\(\) \{[\s\S]*?)if \(next\) form\.reset\(\)/, '$1if (false) form.reset()'),
+  },
 ]
-
-function replaceOnce(src, pattern, replacement) {
-  const hits = src.match(new RegExp(pattern.source, `${pattern.flags.replace('g', '')}g`))?.length ?? 0
-  if (hits !== 1) throw new InstrumentError(`突變錨點命中 ${hits} 次(應為 1):${pattern} —— hook 原始碼改了,selftest 的突變要跟著改`)
-  return src.replace(pattern, replacement)
-}
 
 // ─── harness(打包進空白頁)──────────────────────────────────────────────────
 // 兩張表的欄位同名(name / ownerEmail),更新表單在 DOM 前面、建立表單在後面 —— 同 field.stories.tsx「表單驗證」。
 const HARNESS = `
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
-import { useFormValidation } from 'form-validation-hook-under-test'
+import { useFormValidation } from '@/design-system/components/Field/use-form-validation'
+import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/design-system/components/Dialog/dialog'
+import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
+import { Button } from '@/design-system/components/Button/button'
+import { FormValidation } from '@/design-system/components/Field/field.stories'
+import { InField } from '@/design-system/components/Rating/rating.stories'
+import { WithForm as DialogWithForm } from '@/design-system/components/Dialog/dialog.stories'
+import { CreateProjectRight, EditUserRight } from '@/design-system/components/Sheet/sheet.stories'
 
 const validate = {
   name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
@@ -280,9 +433,70 @@ function DetachOnDragLink() {
   return gone ? null : <a href="#drag-help-2" data-drag-detach onDragStart={() => { setTimeout(() => setGone(true), 0) }}>拖曳後移除的連結</a>
 }
 
-function App({ mount }) {
+// ── 對話框裡的更新表單(R-return / R4-dialog / R4-one-layer / R9-* / R4-saved)──
+// 受控 open、沒有 DialogTrigger(WM 13 支對話框表單的寫法);onSubmit 是 async(await 期間 = 忙碌)。送出鈕用 DS Button:
+// loading 接 isSubmitting、disabled 接 submitDisabled;consumer 的 onClick 計數「這一下有沒有真的落到按鈕上」。
+// 「控件自己的彈出層開著時 Esc 只關彈出層」那一列用可打字的 DatePicker(本 harness 的 context 開 hasTouch 給 R2d-touch 用,
+// pointer: coarse 成立 → Select 會走原生 <select> 路徑,沒有彈出層可量)。
+function DialogForm() {
+  const [open, setOpen] = React.useState(false)
+  const [submits, setSubmits] = React.useState(0)
+  const [clicks, setClicks] = React.useState(0)
+  const form = useFormValidation({
+    initialValues: { name: '產品路線圖', due: '2026-03-12' },
+    intent: 'update',
+    validate: { name: (v) => (String(v).trim() ? undefined : '專案名稱必填') },
+    // await 期間 = 忙碌;多久由量具決定(window.__releaseDialogSubmit),不用固定毫秒當「還在忙」的代理 —— 慢機器上固定 1500ms 會在量完之前就結束(M37)
+    onSubmit: async () => { setSubmits((n) => n + 1); await new Promise((r) => { window.__releaseDialogSubmit = r }) },
+  })
   return (
-    <main data-mount={mount}>
+    <section aria-label="對話框表單" data-submits={submits} data-submit-clicks={clicks}>
+      <button type="button" data-open-dialog onClick={() => setOpen(true)}>開啟設定</button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent id="form-dialog" autoHeight maxWidth={480}>
+          <DialogHeader><DialogTitle>專案設定</DialogTitle></DialogHeader>
+          <DialogBody>
+            <form aria-label="對話框設定" onSubmit={form.handleSubmit}>
+              <label>專案名稱<input {...form.getInputProps('name')} /></label>
+              <label>截止日<DatePicker aria-label="截止日" typeable {...form.getInputProps('due')} /></label>
+              <p data-due>{form.values.due}</p>
+              <Button type="submit" variant="primary" data-dialog-submit loading={form.isSubmitting} disabled={form.submitDisabled} onClick={() => setClicks((c) => c + 1)}>儲存變更</Button>
+              <button type="button" data-dialog-next>之後的按鈕</button>
+            </form>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    </section>
+  )
+}
+
+// 忙碌鈕本身(R9-busy):不經 hook —— hook 自己有重入防護、送出中 submitDisabled 也為 true(握著焦點時本來就走可聚焦的停用),
+// 兩者都會掩蓋 Button 的 loading 路徑。這裡只有 loading:送出 → 忙碌,直到量具放行;submit 事件與 consumer onClick 各自計數。
+function BusyFixture() {
+  const [busy, setBusy] = React.useState(false)
+  const [submits, setSubmits] = React.useState(0)
+  const [clicks, setClicks] = React.useState(0)
+  window.__releaseBusy = () => setBusy(false)
+  return (
+    <form aria-label="忙碌鈕" data-busy-submits={submits} data-busy-clicks={clicks}
+      onSubmit={(e) => { e.preventDefault(); setSubmits((n) => n + 1); setBusy(true) }}>
+      <label>備註<input name="memo" defaultValue="" /></label>
+      <Button type="submit" variant="primary" data-busy-submit loading={busy} onClick={() => setClicks((c) => c + 1)}>送出備註</Button>
+    </form>
+  )
+}
+
+function App({ mount, view }) {
+  // 送出成功 → Toast 的三列直接掛三則 story 的原始碼(field.stories / rating.stories 的 render),一次只掛一則(各自帶自己的 <Toaster />)
+  if (view === 'story-field') return <TooltipProvider><main data-mount={mount} data-view={view}>{FormValidation.render()}</main></TooltipProvider>
+  if (view === 'story-rating') return <TooltipProvider><main data-mount={mount} data-view={view}>{InField.render()}</main></TooltipProvider>
+  // 放在浮層裡、送出成功就關的三則(一次只掛一則:各自帶自己的 <Toaster />,兩則同時掛 = 兩個 Toaster、每則 Toast 畫兩次)
+  if (view === 'story-dialog') return <TooltipProvider><main data-mount={mount} data-view={view}>{DialogWithForm.render()}</main></TooltipProvider>
+  if (view === 'story-sheet-create') return <TooltipProvider><main data-mount={mount} data-view={view}>{CreateProjectRight.render()}</main></TooltipProvider>
+  if (view === 'story-sheet-edit') return <TooltipProvider><main data-mount={mount} data-view={view}>{EditUserRight.render()}</main></TooltipProvider>
+  return (
+    <TooltipProvider>
+    <main data-mount={mount} data-view={view}>
       <p data-blank>表單驗證契約 harness(R2d-later 按在這一行的空白處)</p>
       {/* R2d-drag 按住它往右拖:在所有表單上方,錯誤長出來推不到它;往右拖只經過這一行,不會把連結放進任何輸入框 */}
       <p><a href="#drag-help" data-drag-source>拖曳說明連結</a> <DetachOnDragLink /></p>
@@ -292,40 +506,35 @@ function App({ mount }) {
       <FooterSubmitPanel label="新增類型" intent="create" initialValues={{ name: '' }} />
       <AgreeForm label="條款 A" />
       <AgreeForm label="條款 B" />
+      <DialogForm />
+      <BusyFixture />
     </main>
+    </TooltipProvider>
   )
 }
 
 const root = createRoot(document.getElementById('root'))
 let mount = 0
-window.__remount = () => { mount += 1; root.render(<App key={mount} mount={mount} />); return mount }
+window.__view = (view) => { mount += 1; root.render(<App key={mount} mount={mount} view={view} />); return mount }
+window.__remount = () => window.__view('forms')
 window.__remount()
 `
 
-async function bundle(hookPath, mutate) {
-  const result = await build({
-    stdin: { contents: HARNESS, loader: 'tsx', resolveDir: ROOT, sourcefile: 'form-validation-contract-harness.tsx' },
-    bundle: true,
-    write: false,
-    format: 'iife',
-    platform: 'browser',
-    jsx: 'automatic',
-    absWorkingDir: ROOT,
-    logLevel: 'silent',
-    define: { 'process.env.NODE_ENV': '"production"' },
-    plugins: [{
-      name: 'hook-under-test',
-      setup(b) {
-        b.onResolve({ filter: /^form-validation-hook-under-test$/ }, () => ({ path: hookPath, namespace: 'hook-under-test' }))
-        b.onLoad({ filter: /.*/, namespace: 'hook-under-test' }, () => ({
-          contents: mutate ? mutate(readFileSync(hookPath, 'utf8')) : readFileSync(hookPath, 'utf8'),
-          loader: 'ts',
-          resolveDir: dirname(HOOK),
-        }))
-      },
-    }],
-  })
-  return result.outputFiles[0].text
+/** `--hook=`:只換 hook 檔的內容(其餘照 SOURCE_ROOT);突變:只動它負責的那一個檔。 */
+function makeMutate(hookOverride, mutant) {
+  const target = mutant ? resolve(dsSourceDir(SOURCE_ROOT), mutant.file ?? HOOK_FILE) : null
+  let applied = false
+  const mutate = (path, src) => {
+    let out = src
+    if (hookOverride && path === HOOK) out = readFileSync(hookOverride, 'utf8')
+    if (mutant && path === target) { applied = true; out = mutant.apply(out) }
+    return out
+  }
+  mutate.assertApplied = () => { if (mutant && !applied) throw new InstrumentError(`突變目標 ${mutant.file ?? HOOK_FILE} 沒被打包進 harness —— 突變沒套上`) }
+  return mutate
+}
+async function bundle(mutate) {
+  return bundleDsHarness({ root: SOURCE_ROOT, harness: HARNESS, harnessName: 'form-validation-contract-harness.tsx', mutate })
 }
 
 // ─── 量具 ────────────────────────────────────────────────────────────────────
@@ -349,6 +558,28 @@ async function remount(page) {
   await page.waitForSelector(`main[data-mount="${n}"] ${formSel(CREATE)}`, { timeout: WAIT_CAP_MS })
     .catch(() => { throw new InstrumentError('harness 重新掛載後等不到表單') })
   await settle(page)
+}
+/** 切到某一則 story 的畫面(T 列);等它的表單掛上 */
+async function view(page, name, readySelector) {
+  const n = await page.evaluate((v) => window.__view(v), name)
+  await page.waitForSelector(`main[data-mount="${n}"][data-view="${name}"] ${readySelector}`, { timeout: WAIT_CAP_MS })
+    .catch(() => { throw new InstrumentError(`story 畫面 ${name} 等不到 ${readySelector}`) })
+  await settle(page)
+}
+async function waitUntil(page, fn, label) {
+  await page.waitForFunction(fn, null, { timeout: WAIT_CAP_MS }).catch(() => { throw new InstrumentError(`${WAIT_CAP_MS}ms 內等不到:${label}`) })
+  await settle(page)
+}
+
+/**
+ * 等「送出結果」出現,等不到**不是**儀器失效而是量到的結果:回傳有沒有看到(進判定的 detail),然後照樣等版面靜止再讀快照。
+ * 用在 Toast 那三列 —— 「送出成功卻什麼回饋都沒有」正是那幾列要抓的產品缺陷(突變拿掉 toast() 就是這個形狀);
+ * 量具看得到結果的證據另有:同一列的業務錯誤對照(alert 出現)與修改前的建置(表單內朗讀區文字出現)。
+ */
+async function waitForOutcome(page, fn) {
+  const seen = await page.waitForFunction(fn, null, { timeout: WAIT_CAP_MS }).then(() => true, () => false)
+  await settle(page)
+  return seen
 }
 
 /** 讀一張表的狀態:值 / aria-invalid / 錯誤文字 / 送出次數 / 送出鈕停用 / 焦點落點 */
@@ -666,27 +897,224 @@ async function runChecks(page) {
   check('C9', 'control', 'reset():空白送出出錯後按重設 → 值與錯誤全部清空',
     c.name.value === '' && c.ownerEmail.value === '' && clean(c.name) && clean(c.ownerEmail), c)
 
+  // ═══ 對話框裡的更新表單(2026-10-01 下午)═══
+  const DLG = '#form-dialog[data-state="open"]'
+  const DSUB = '[data-dialog-submit]'
+  const dsnap = () => page.evaluate(() => {
+    const ae = document.activeElement
+    const sec = document.querySelector('section[aria-label="對話框表單"]')
+    const sub = document.querySelector('[data-dialog-submit]')
+    const label = ae?.getAttribute?.('aria-label') ?? (ae instanceof HTMLInputElement ? ae.name : (ae?.textContent ?? '').trim().slice(0, 16))
+    return {
+      dialog: !!document.querySelector('#form-dialog[data-state="open"]'),
+      active: !ae || ae === document.body ? 'BODY' : `${ae.tagName}${label ? `:${label}` : ''}`,
+      activeIsSubmit: !!sub && ae === sub,
+      name: document.querySelector('#form-dialog input[name="name"]')?.value ?? null,
+      due: document.querySelector('[data-due]')?.textContent ?? null,
+      calendar: !!document.querySelector('[role="dialog"][aria-label="日期選擇"]'),
+      submits: Number(sec?.dataset.submits), clicks: Number(sec?.dataset.submitClicks),
+      busy: sub?.getAttribute('aria-busy') === 'true', ariaDisabled: sub?.getAttribute('aria-disabled') === 'true', nativeDisabled: sub?.disabled ?? null,
+      focusable: sub?.hasAttribute('data-disabled-focusable') ?? false,
+    }
+  })
+  const openDlg = async () => {
+    await remount(page)
+    await click(page, '[data-open-dialog]')
+    await page.waitForSelector(DLG, { timeout: WAIT_CAP_MS }).catch(() => { throw new InstrumentError('對話框沒開') })
+    await settle(page); await focusStable(page)
+  }
+
+  // R-return:乾淨的對話框按 Esc 關閉 → 焦點回開啟鈕
+  await openDlg()
+  await press(page, 'Escape'); await focusStable(page)
+  let g = await dsnap()
+  check('R-return', 'contract', '受控、沒有 DialogTrigger 的 Dialog 按 Esc 關閉 → 焦點回到開啟它的按鈕(不是 body)', !g.dialog && g.active === 'BUTTON:開啟設定', g)
+
+  // R4-dialog:改過的欄位 Esc → 回復、對話框不關;再 Esc → 關
+  await openDlg()
+  await click(page, '#form-dialog input[name="name"]'); await press(page, 'End'); await type(page, ' v2')
+  await press(page, 'Escape'); await focusStable(page)
+  const afterEsc1 = await dsnap()
+  await press(page, 'Escape'); await focusStable(page)
+  const afterEsc2 = await dsnap()
+  check('R4-dialog', 'contract', '對話框裡改過的欄位按 Esc → 值回「產品路線圖」、對話框不關、焦點留在欄位;再按一下才關',
+    afterEsc1.dialog && afterEsc1.name === '產品路線圖' && afterEsc1.active === 'INPUT:name' && !afterEsc2.dialog, { afterEsc1, afterEsc2 })
+
+  // R4-one-layer:可打字的 DatePicker 值改過(打新日期 + Enter 提交)、日曆開著 → Esc 只關日曆、值不動;再 Esc 回復值;再 Esc 關
+  await openDlg()
+  await page.focus('#form-dialog input[role="combobox"]'); await settle(page)
+  await clearFocused(page); await type(page, '2026/04/01'); await press(page, 'Enter')
+  g = await dsnap()
+  if (g.due !== '2026-04-01') throw new InstrumentError(`打新日期 + Enter 後值不是 2026-04-01:${JSON.stringify(g)}`)
+  // 用滑鼠點欄位開日曆:焦點留在輸入框(date-picker.tsx openedByPointerRef),這一下 Esc 的「最內層」才是日曆本身 ——
+  // 鍵盤開(↓)焦點會進日曆、落在有 Tooltip 的「上一個月」上,第一下 Esc 收的是 Tooltip(也是一層),量不到本列要的「日曆 vs 欄位」
+  await click(page, '#form-dialog input[role="combobox"]')
+  await page.waitForSelector('[role="dialog"][aria-label="日期選擇"]', { timeout: WAIT_CAP_MS }).catch(() => { throw new InstrumentError('日曆沒開') })
+  await settle(page); await focusStable(page)
+  await press(page, 'Escape'); await focusStable(page)
+  const oneA = await dsnap()
+  await press(page, 'Escape'); await focusStable(page)
+  const oneB = await dsnap()
+  await press(page, 'Escape'); await focusStable(page)
+  const oneC = await dsnap()
+  check('R4-one-layer', 'contract', '可打字的 DatePicker 值改成 2026-04-01、日曆開著按 Esc → 只關日曆、值仍 2026-04-01、對話框不關;再 Esc → 值回 2026-03-12;再 Esc → 關對話框',
+    oneA.dialog && !oneA.calendar && oneA.due === '2026-04-01' && oneB.dialog && oneB.due === '2026-03-12' && !oneC.dialog, { oneA, oneB, oneC })
+
+  // R9-busy:忙碌鈕本身(BusyFixture,不經 hook —— hook 的重入防護與 submitDisabled 會掩蓋 Button 的 loading 路徑)
+  const BUSY = '[data-busy-submit]'
+  const bsnap = () => page.evaluate(() => {
+    const b = document.querySelector('[data-busy-submit]')
+    const f = document.querySelector('form[aria-label="忙碌鈕"]')
+    const ae = document.activeElement
+    return {
+      active: !ae || ae === document.body ? 'BODY' : ae === b ? 'BUSY-BUTTON' : `${ae.tagName}:${ae.getAttribute('name') ?? ''}`,
+      busy: b?.getAttribute('aria-busy') === 'true', ariaDisabled: b?.getAttribute('aria-disabled') === 'true', nativeDisabled: b?.disabled ?? null,
+      submits: Number(f?.dataset.busySubmits), clicks: Number(f?.dataset.busyClicks),
+    }
+  })
+  await remount(page)
+  await page.locator(BUSY).scrollIntoViewIfNeeded(); await settle(page)
+  await pressAndRelease(page, BUSY)
+  const busy = await bsnap()
+  // 忙碌中:同一張表的欄位裡按 Enter(隱含送出 = 瀏覽器對預設送出鈕派 click)+ 再按一次送出鈕 → 都不送出
+  // (Playwright 的可操作性檢查把 aria-disabled="true" 當停用、不肯按;這裡要量的正是「真的按下去產品擋不擋」→ force)
+  await click(page, 'form[aria-label="忙碌鈕"] input[name="memo"]'); await press(page, 'Enter')
+  const afterEnter = await bsnap()
+  await page.click(BUSY, { force: true }); await settle(page); await focusStable(page)
+  const afterRetry = await bsnap()
+  check('R9-busy', 'contract', '忙碌鈕(loading)用滑鼠按下 → 焦點仍在它上面、aria-busy、原生 disabled=false;忙碌中在同一張表的欄位按 Enter(隱含送出)與再按一次都不送出(submit 事件 1 次、consumer onClick 1 次)',
+    busy.active === 'BUSY-BUTTON' && busy.busy && busy.nativeDisabled === false && busy.submits === 1
+    && afterEnter.submits === 1 && afterRetry.submits === 1 && afterRetry.clicks === 1 && afterRetry.busy, { busy, afterEnter, afterRetry })
+  await page.evaluate(() => window.__releaseBusy?.()); await settle(page)
+
+  // R9-saved / R9-leave / R4-saved:對話框裡的更新表單(經 hook;送出中 = await,何時結束由量具放行)
+  await openDlg()
+  await click(page, '#form-dialog input[name="name"]'); await press(page, 'End'); await type(page, ' v2')
+  await pressAndRelease(page, DSUB)
+  const dialogBusy = await dsnap()
+  await page.evaluate(() => window.__releaseDialogSubmit?.())
+  await waitUntil(page, () => document.querySelector('[data-dialog-submit]')?.getAttribute('aria-busy') !== 'true', '送出完成(aria-busy 消失)')
+  await focusStable(page)
+  const saved = await dsnap()
+  check('R9-saved', 'contract', '存檔完成 → 焦點仍在送出鈕、aria-disabled="true" + data-disabled-focusable、原生 disabled=false(可聚焦的停用,不掉到 body)',
+    saved.activeIsSubmit && saved.ariaDisabled && saved.focusable && saved.nativeDisabled === false && saved.dialog && saved.submits === 1, { dialogBusy, saved })
+  await press(page, 'Tab'); await focusStable(page)
+  const afterTab = await dsnap()
+  await press(page, 'Shift+Tab'); await focusStable(page)
+  const afterShiftTab = await dsnap()
+  check('R9-leave', 'contract', '接著按 Tab → 焦點往下走、送出鈕回到原生 disabled;Shift+Tab 回不到它(離開 Tab 序)',
+    !afterTab.activeIsSubmit && afterTab.active !== 'BODY' && afterTab.nativeDisabled === true && !afterShiftTab.activeIsSubmit && afterShiftTab.active !== 'BODY', { afterTab, afterShiftTab })
+  await click(page, '#form-dialog input[name="name"]'); await press(page, 'End'); await type(page, ' x')
+  await press(page, 'Escape'); await focusStable(page)
+  const savedEsc = await dsnap()
+  check('R4-saved', 'contract', '存檔後再改欄位按 Esc → 回到剛存的「產品路線圖 v2」,不是存檔前的「產品路線圖」;對話框不關',
+    savedEsc.dialog && savedEsc.name === '產品路線圖 v2', savedEsc)
+  await press(page, 'Escape')
+
+  // ═══ 送出成功 → Toast(三則 story 原始碼)═══
+  const tsnap = (formLabel) => page.evaluate((lbl) => ({
+    polite: document.querySelector('[data-toast-live-region="polite"]')?.textContent ?? null,
+    toasts: document.querySelectorAll('[data-sonner-toast]').length,
+    statusInForm: document.querySelectorAll(`form[aria-label="${lbl}"] [role="status"]`).length,
+    alert: document.querySelector(`form[aria-label="${lbl}"] [role="alert"]`)?.textContent ?? null,
+    readonly: !!document.querySelector(`form[aria-label="${lbl}"] [role="img"]`),
+  }), formLabel)
+  // 等「送出結果出現」(Toast / 錯誤 / 修改前建置的表單內「已儲存 ✓」朗讀區)—— 等不到也照樣讀快照、進判定(見 waitForOutcome):
+  // 「送出成功卻什麼回饋都沒有」就是這幾列要抓的缺陷,不是儀器失效
+  await view(page, 'story-field', formSel(UPDATE))
+  await click(page, inputSel(UPDATE, 'name')); await press(page, 'End'); await type(page, ' v2')
+  await click(page, `${formSel(UPDATE)} button[type="submit"]`)
+  const seenUpdate = await waitForOutcome(page, () => document.querySelectorAll('[data-sonner-toast]').length > 0 || document.querySelector('form[aria-label="專案設定"] [role="alert"]') || (document.querySelector('form[aria-label="專案設定"] [role="status"]')?.textContent ?? '').trim() !== '')
+  const tUpdate = { ...(await tsnap(UPDATE)), outcomeSeen: seenUpdate }
+  await view(page, 'story-field', formSel(UPDATE))
+  await click(page, inputSel(UPDATE, 'name')); await clearFocused(page); await type(page, '產品路線圖 Q3')
+  await click(page, `${formSel(UPDATE)} button[type="submit"]`); await focusStable(page)
+  const tUpdateBiz = await tsnap(UPDATE)
+  check('T-update', 'contract', '更新表單送出成功 → Toaster polite 朗讀區 =「專案設定已儲存」、一則 Toast、表單內沒有 role=status;業務驗證擋下(名稱重複)→ 沒有 Toast、FieldError「此專案名稱已存在」',
+    tUpdate.polite === '專案設定已儲存' && tUpdate.toasts >= 1 && tUpdate.statusInForm === 0 && tUpdateBiz.toasts === 0 && tUpdateBiz.alert === '此專案名稱已存在' && tUpdateBiz.polite !== '專案設定已儲存', { tUpdate, tUpdateBiz })
+  await view(page, 'story-field', formSel(CREATE))
+  await click(page, inputSel(CREATE, 'name')); await type(page, 'Checkout revamp')
+  await click(page, inputSel(CREATE, 'ownerEmail')); await type(page, 'pm@acme.com')
+  await click(page, `${formSel(CREATE)} button[type="submit"]`)
+  const seenCreate = await waitForOutcome(page, () => document.querySelectorAll('[data-sonner-toast]').length > 0 || document.querySelector('form[aria-label="建立專案"] [role="alert"]') || (document.querySelector('form[aria-label="建立專案"] [role="status"]')?.textContent ?? '').trim() !== '')
+  const tCreate = { ...(await tsnap(CREATE)), outcomeSeen: seenCreate }
+  check('T-create', 'contract', '建立表單送出成功 → polite 朗讀區 =「專案已建立」、一則 Toast、表單內沒有 role=status',
+    tCreate.polite === '專案已建立' && tCreate.toasts >= 1 && tCreate.statusInForm === 0, tCreate)
+  const RATING = '為這次服務評分'
+  await view(page, 'story-rating', `form[aria-label="${RATING}"]`)
+  await page.focus(`form[aria-label="${RATING}"] [role="slider"]`); await settle(page)
+  await press(page, 'ArrowRight'); await press(page, 'ArrowRight'); await press(page, 'ArrowRight')
+  await click(page, `form[aria-label="${RATING}"] button[type="submit"]`)
+  const seenRating = await waitForOutcome(page, () => document.querySelectorAll('[data-sonner-toast]').length > 0 || document.querySelector('form[aria-label="為這次服務評分"] [role="alert"]') || (document.querySelector('form[aria-label="為這次服務評分"] [role="status"]')?.textContent ?? '').trim() !== '')
+  const tRating = { ...(await tsnap(RATING)), outcomeSeen: seenRating }
+  check('T-rating', 'contract', '評分送出成功 → polite 朗讀區 =「評分已送出」、一則 Toast、表單內沒有 role=status、評分欄切成唯讀(role=img)',
+    tRating.polite === '評分已送出' && tRating.toasts >= 1 && tRating.statusInForm === 0 && tRating.readonly, tRating)
+
+  // ═══ 浮層裡的表單:送出成功 → Toast、關閉;下次打開 reset()(2026-10-07)═══
+  // 浮層是 Radix Dialog(Sheet 同),內容 role=dialog;Toast 以「這則文案的 [data-sonner-toast] 多一則」判(朗讀區可能還留著上一則同樣的字)
+  const OPEN = '[role="dialog"][data-state="open"]'
+  const ostate = (title) => page.evaluate(({ title, OPEN }) => {
+    const dlg = document.querySelector(OPEN)
+    return {
+      open: !!dlg,
+      toasts: Array.from(document.querySelectorAll('[data-sonner-toast]')).filter((el) => (el.textContent ?? '').includes(title)).length,
+      alert: dlg?.querySelector('[role="alert"]')?.textContent?.trim() ?? null,
+      first: dlg?.querySelector('input')?.value ?? null,
+    }
+  }, { title, OPEN })
+  const openOverlay = async (trigger) => {
+    await click(page, `main button:has-text("${trigger}")`)
+    await page.waitForSelector(OPEN, { timeout: WAIT_CAP_MS }).catch(() => { throw new InstrumentError(`按「${trigger}」浮層沒開`) })
+    await settle(page); await focusStable(page)
+  }
+  const closeOverlay = async () => {
+    for (let i = 0; i < 3 && (await page.$(OPEN)); i += 1) await press(page, 'Escape')
+    if (await page.$(OPEN)) throw new InstrumentError('浮層收不掉')
+  }
+  /** 一則浮層表單:空白送出(只看報錯)→ 填好送出 → 再打開;回傳每一步的狀態 */
+  const overlayForm = async ({ name, trigger, submit, title, fill, blankSubmit }) => {
+    await view(page, name, 'button')
+    await openOverlay(trigger)
+    let blank = null
+    if (blankSubmit) { await click(page, `${OPEN} button:has-text("${submit}")`); await focusStable(page); blank = await ostate(title) }
+    await page.click(`${OPEN} input`); await settle(page)
+    await clearFocused(page); await type(page, fill)
+    const before = await ostate(title)
+    await click(page, `${OPEN} button:has-text("${submit}")`)
+    const seen = await waitForOutcome(page, () => !document.querySelector('[role="dialog"][data-state="open"]'))
+    const after = { ...(await ostate(title)), outcomeSeen: seen }
+    if (after.open) await closeOverlay()
+    await openOverlay(trigger)
+    const reopened = await ostate(title)
+    await closeOverlay()
+    return { blank, before, after, reopened }
+  }
+  const tDialog = await overlayForm({ name: 'story-dialog', trigger: '開啟 Modal', submit: '建立', title: '專案已建立', fill: 'Checkout revamp', blankSubmit: true })
+  check('T-dialog', 'contract', 'Dialog「表單」:空白送出 → 報「專案名稱必填」、不關、沒有 Toast;填好送出 → 多一則「專案已建立」Toast、對話框關閉;再打開 → 欄位是空白(建立表單打開時 reset)',
+    tDialog.blank?.open && tDialog.blank.alert === '專案名稱必填' && tDialog.blank.toasts === 0
+    && !tDialog.after.open && tDialog.after.toasts === tDialog.before.toasts + 1 && tDialog.reopened.first === '', tDialog)
+  const tSheetCreate = await overlayForm({ name: 'story-sheet-create', trigger: '建立新專案', submit: '建立專案', title: '專案已建立', fill: 'Q2 產品路線圖', blankSubmit: true })
+  const tSheetEdit = await overlayForm({ name: 'story-sheet-edit', trigger: '檢視成員詳情', submit: '儲存變更', title: '成員資料已儲存', fill: 'Ada Chen-Wu', blankSubmit: false })
+  check('T-sheet', 'contract', 'Sheet「建立新專案」同 T-dialog(空白報錯不關、送出成功多一則「專案已建立」並關閉、再打開是空白);「編輯成員詳情」改名送出 → 多一則「成員資料已儲存」並關閉、再打開是剛存的「Ada Chen-Wu」',
+    tSheetCreate.blank?.open && tSheetCreate.blank.alert === '專案名稱必填' && tSheetCreate.blank.toasts === 0
+    && !tSheetCreate.after.open && tSheetCreate.after.toasts === tSheetCreate.before.toasts + 1 && tSheetCreate.reopened.first === ''
+    && !tSheetEdit.after.open && tSheetEdit.after.toasts === tSheetEdit.before.toasts + 1 && tSheetEdit.reopened.first === 'Ada Chen-Wu', { tSheetCreate, tSheetEdit })
+
   return out
 }
 
 // 全程只開一個 context / page:沙箱參數 --single-process 下關掉 context 會把整個瀏覽器帶走(2026-10-01 實測,
 // 第二個變體 newPage 就丟「browser has been closed」)。每個變體先導到 about:blank —— 新的 window,上一份 bundle 的全域不留。
-async function runVariant(page, label, hookPath, mutate) {
-  const code = await bundle(hookPath, mutate)
-  const pageErrors = []
-  const onError = (e) => pageErrors.push(String(e?.message || e))
-  page.on('pageerror', onError)
+async function runVariant(page, label, mutate) {
+  const code = await bundle(mutate)
+  mutate?.assertApplied?.()
+  const { pageErrors, dispose } = await mountHarness(page, code, `main[data-mount="1"] ${formSel(CREATE)}`)
   try {
-    await page.goto('about:blank')
-    await page.setContent('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"></head><body><div id="root"></div></body></html>')
-    await page.addScriptTag({ content: code })
-    await page.waitForSelector(`main[data-mount="1"] ${formSel(CREATE)}`, { timeout: WAIT_CAP_MS })
-      .catch(() => { throw new InstrumentError(`harness 沒有渲染出來${pageErrors.length ? `(頁面例外:${pageErrors[0]})` : ''}`) })
     const checks = await runChecks(page)
     if (pageErrors.length) throw new InstrumentError(`頁面例外:${pageErrors.join(' | ')}`)
     return { label, checks }
   } finally {
-    page.off('pageerror', onError)
+    dispose()
   }
 }
 
@@ -702,30 +1130,57 @@ function report({ label, checks }) {
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
 
 let browser
+const laneBrowsers = []
 try {
   browser = await launchBrowserOrSkip({}, { hint: '這支閘不需要 storybook 建置,只需要 Chromium' })
   // hasTouch:R2d-touch 要點得了觸控(page.touchscreen);滑鼠與鍵盤照常
-  const page = await (await browser.newContext({ viewport: { width: 900, height: 700 }, hasTouch: true })).newPage()
+  const CONTEXT = { viewport: { width: 900, height: 700 }, hasTouch: true }
+  const page = await (await browser.newContext(CONTEXT)).newPage()
+  const hookOverride = HOOK_OVERRIDE ? resolve(process.cwd(), HOOK_OVERRIDE) : null
+  const rootLabel = SOURCE_ROOT === ROOT ? '本 repo' : SOURCE_ROOT
   if (!SELFTEST) {
-    const hookPath = HOOK_OVERRIDE ? resolve(process.cwd(), HOOK_OVERRIDE) : HOOK
-    const result = await runVariant(page, `hook = ${hookPath.startsWith(ROOT) ? hookPath.slice(ROOT.length + 1) : hookPath}`, hookPath, null)
+    const result = await runVariant(page, `原始碼 = ${rootLabel}${hookOverride ? `,hook = ${hookOverride}` : ''}`, makeMutate(hookOverride, null))
     report(result)
     const red = result.checks.filter((c) => !c.pass)
     if (red.length) {
-      console.log(`\n✗ form-validation 契約:${red.length} 條不符(${redIds(result.checks).join(' / ')})—— SSOT form-validation.spec.md 規則 1–8`)
+      console.log(`\n✗ form-validation 契約:${red.length} 條不符(${redIds(result.checks).join(' / ')})—— SSOT form-validation.spec.md 規則 1–8 / keyboard-model-canonical.md 兩節 / Toast`)
       process.exitCode = 1
     } else {
-      console.log(`\n✓ form-validation 契約:${result.checks.length} 條全綠(規則 1 / 2 / 4 / 5 / 6 / 7 / 8 + 對照列)`)
+      console.log(`\n✓ form-validation 契約:${result.checks.length} 條全綠(規則 1 / 2 / 4 / 5 / 6 / 7 / 8 + 對話框 / 送出鈕焦點 / Toast + 對照列)`)
     }
   } else {
-    const baseline = await runVariant(page, '現行 hook(selftest 基準,必須全綠)', HOOK, null)
+    const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', makeMutate(hookOverride, null))
     report(baseline)
     const problems = []
     if (redIds(baseline.checks).length) problems.push(`現行 hook 本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
-    for (const m of MUTANTS) {
-      const result = await runVariant(page, `突變 ${m.id}:${m.what}`, HOOK, m.apply)
+    // 突變彼此獨立:分 LANES 條 lane 並行跑(第一條 lane 沿用上面那個分頁),結果依 MUTANTS 的順序回報
+    const results = new Array(MUTANTS.length)
+    const lanePages = [page]
+    for (let i = 1; i < Math.min(LANES, MUTANTS.length); i += 1) {
+      const b = await launchBrowserOrSkip({}, { hint: '這支閘不需要 storybook 建置,只需要 Chromium' })
+      laneBrowsers.push(b)
+      lanePages.push(await (await b.newContext(CONTEXT)).newPage())
+    }
+    let next = 0
+    let laneFailure = null
+    const settled = await Promise.allSettled(lanePages.map(async (lanePage) => {
+      // 任一條 lane 儀器失效就不再領新的突變(整趟本來就不能算通過),其他 lane 把手上那一個跑完再收
+      for (let i = next++; i < MUTANTS.length && !laneFailure; i = next++) {
+        const m = MUTANTS[i]
+        try {
+          results[i] = await runVariant(lanePage, `突變 ${m.id}:${m.what}`, makeMutate(hookOverride, m))
+        } catch (error) {
+          laneFailure ??= error
+          throw error
+        }
+      }
+    }))
+    const rejected = settled.find((r) => r.status === 'rejected')
+    if (rejected) throw rejected.reason
+    for (const [i, m] of MUTANTS.entries()) {
+      const result = results[i]
       report(result)
       const red = redIds(result.checks)
       const want = [...m.expectRed].sort()
@@ -752,5 +1207,6 @@ try {
     throw error
   }
 } finally {
+  for (const b of laneBrowsers) await b.close().catch(() => {})
   await browser?.close()
 }

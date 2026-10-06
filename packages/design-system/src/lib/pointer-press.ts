@@ -7,6 +7,8 @@
  *   - cmdk 選單(`components/Command/command.tsx` Command 根):點選項 / 清單 / 訊息列,DOM 焦點留在控制這份清單的 combobox
  *   - 觸發欄位內有搜尋框的 Select / Combobox 觸發區(`keepFocusOnPointerPress`):搜尋框握著焦點時,按 Tag ×、一鍵清空 ×、
  *     欄位空白處都不把焦點搬走;Combobox「+N」浮出清單(另一個 portal)由它自己掛同一支(OverflowIndicator `onContentMouseDown`)
+ *   - AgentPanel 輸入盒(`components/AgentPanel/agent-panel.tsx` AgentPromptInput 外框 + 附件「+N」浮出清單,2026-10-01 待辦總帳 OE30):
+ *     textarea 握著焦點時,按附件 ×、+、送出、停止,焦點與正在打的字都留在輸入盒(同一個複合輸入控件的零件)
  * 用 mousedown 擋預設、不等 click:click 之前焦點早已被瀏覽器搬走(blur → focus 閃一下)。
  * 世界級同一手法:rc-select 清單 `onMouseDown` → `event.preventDefault()`
  * (https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/OptionList.tsx#L79-L81)、

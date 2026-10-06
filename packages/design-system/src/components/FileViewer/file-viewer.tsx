@@ -50,7 +50,8 @@ import type {
   FileRendererProps,
 } from './file-viewer-types'
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { isImeComposing, withImeSafeEscape } from "@/design-system/lib/ime-composition"
+import { isImeComposing } from "@/design-system/lib/ime-composition"
+import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
 
 /**
@@ -1077,8 +1078,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             openerRef.current = null
             returnFocusToOpener(event, opener, { noTrigger: true, modal: !persistentElements })
           }}
-          // 縮放比例輸入框用輸入法時:輸入法組字中的 Esc 是在取消選字,不關這一層(全 DS 一支,判準與出處住 lib/ime-composition.ts withImeSafeEscape)
-          onEscapeKeyDown={withImeSafeEscape(onEscapeKeyDown)}
+          // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):縮放比例輸入框用輸入法組字中不關;
+          // 焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
+          onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
         >
           {/* 鎖 dark subtree。Density 繼承 page(不另設 data-density)。
               header 高度透過 `--chrome-header-height` 自動 density-aware(md=48 / lg=56)。

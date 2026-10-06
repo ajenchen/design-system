@@ -17,7 +17,6 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { dispatchRelayedKey, markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
-import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
 import { isOwnPointerTarget, keepFocusOnPointerPress } from "@/design-system/lib/pointer-press"
 import { isImeComposing } from "@/design-system/lib/ime-composition"
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定(與 Sidebar / TreeView / FileUpload 共用;見下方 routeCommandRowKeys)
@@ -354,17 +353,6 @@ const Command = React.forwardRef<
 Command.displayName = CommandPrimitive.displayName
 
 /**
- * 掛上的那一刻記下「此刻握著焦點的元素」(= 開啟面板的那個按鈕 / 快捷鍵按下時的焦點)。layout effect 早於 Radix FocusScope 的
- * 開啟自動聚焦(那一步在 useEffect),所以讀到的還是開啟前的焦點。
- */
-function RememberFocusOrigin({ into }: { into: React.MutableRefObject<HTMLElement | null> }) {
-  React.useLayoutEffect(() => {
-    into.current = captureFocusOrigin()
-  }, [into])
-  return null
-}
-
-/**
  * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
  * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
  * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
@@ -375,14 +363,12 @@ function RememberFocusOrigin({ into }: { into: React.MutableRefObject<HTMLElemen
 const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
   // 關閉後焦點還給**開啟當下握著焦點的元素**(2026-09-30;dialog.spec.md「Focus return:關閉時焦點返回 trigger 元素」)。
   // 指令面板多半由快捷鍵或普通按鈕的 onClick 開啟,沒有 DialogTrigger;Radix Dialog 只還給 DialogTrigger,沒有就不還 → 焦點掉到 body
-  // (2026-09-30 實測本檔「全域指令面板」:點項目收起後 activeElement = BODY)。還的方式全 DS 一支(lib/overlay-focus-return.ts,
-  // 沒有觸發點 + modal;指標挑選不畫鍵盤框)。
-  const returnToRef = React.useRef<HTMLElement | null>(null)
+  // (2026-09-30 實測本檔「全域指令面板」:點項目收起後 activeElement = BODY)。
+  // 2026-10-01 起這是 DialogContent 的**預設**(待辦總帳 OE29;dialog.tsx useTriggerlessFocusReturn:掛上時記開啟者、沒有 Radix 觸發點就經
+  // lib/overlay-focus-return.ts 還,指標挑選不畫鍵盤框),本檔那份 RememberFocusOrigin 收掉,不留第二份。
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight
-        onCloseAutoFocus={(event) => returnFocusToOpener(event, returnToRef.current, { noTrigger: true, modal: true })}>
-        <RememberFocusOrigin into={returnToRef} />
+      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
             第一個 input)。2026-09-09 實測:沒有這個標記時焦點停在 dialog 殼上 —— 方向鍵到不了 cmdk(開了就是鍵盤死路,
