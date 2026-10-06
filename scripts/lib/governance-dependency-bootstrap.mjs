@@ -488,6 +488,7 @@ function assertRemediatedFinding(name, finding) {
     // #167 合併進 main 的那一輪(2eb5b433)16 個 job 全死在「Install locked dependencies once」,發布被 fail closed 擋下。
     // 曝險不變:bundled 6.27.0 只被 npm CLI 內部用、不進產品;仍只認列 exact shape,下一則再發照樣紅。
     // 根治(換到帶 undici ≥6.28.1 / ip-address ≥10.5.1 的 npm runtime,或給 overlay 加第三、四個 slot)在 cloud-compat baton。
+    // 2026-10-06 同類再加兩筆(http-cache-semantics、postcss-selector-parser,見下方兩段),處置同 OE15:認列即緩解。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
@@ -503,6 +504,48 @@ function assertRemediatedFinding(name, finding) {
           { source: 1240042, range: '>=6.7.0 <6.28.1', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (name === 'http-cache-semantics') {
+    // 2026-10-06 認列(PR #169 head 849d8667 每個 job 紅在「Install locked dependencies once」;10-01 的 7065fd49 那輪還綠):
+    // GHSA-ch52-4w7c-c8xp(high,<=4.2.0,max-stale 讓**共用快取**把別的使用者被刻意歸零的回應交出去)。與 ip-address / undici
+    // 同一種處境:只存在於 npm 11.19.0 內建的 4.2.0;npm 最新的 11.21.0 與 12.2.0 內建的仍是 4.2.0;修補層沒有這個 slot。
+    // 曝險:npm 只經 make-fetch-happen 用它管自己的本機快取,而 make-fetch-happen 以 `shared: false`(私有快取)建 policy
+    //(npm/node_modules/make-fetch-happen/lib/cache/policy.js);我們的 npm 執行不帶任何憑證(憑證變數全剝除、always-auth=false),
+    // CI 每個 job 都是全新 HOME —— 不存在「別的使用者的回應」可被交出。dev-only CLI 內部,不進產品。
+    // 只認列 exact shape(一則、<=4.2.0、只在 npm 內建的那一份節點);再多一則、換節點、換範圍都 fail closed。
+    invariant(
+      finding.severity === 'high'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/http-cache-semantics'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<=4.2.0'
+        && matchesExactAdvisorySet(finding, 'http-cache-semantics', [
+          { source: 1240991, range: '<=4.2.0', url: 'https://github.com/advisories/GHSA-ch52-4w7c-c8xp', severity: 'high' },
+        ]),
+      `npm audit http-cache-semantics finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (name === 'postcss-selector-parser') {
+    // 2026-10-06(同一輪):GHSA-rj75-hqrm-r3gf(moderate,<7.1.6,扁平選擇器 `.a.a.a…` 解析是平方時間,CPU 耗盡)。
+    // 只存在於 npm 11.19.0 內建的 7.1.4(修在 7.1.6;npm 最新的 11.21.0 與 12.2.0 內建的仍是 7.1.4);修補層沒有這個 slot。
+    // 曝險:npm 只在 `npm query` / `npm sbom` 經 @npmcli/query 解析選擇器。我們唯一會跑到的是發版的
+    // `npm sbom --workspaces --package-lock-only --sbom-format=cyclonedx`(scripts/run-verified-npm.mjs 鎖死 argv),
+    // 選擇器由 npm 依我們自己的 workspace 名稱在內部組出(npm/lib/commands/sbom.js #buildSelector),沒有外部輸入。
+    // 通報原文明說「Ordinary build-time use on trusted sources is not affected」。dev-only CLI 內部,不進產品。
+    // 只認列 exact shape;再多一則、換節點、換範圍、嚴重度改變都 fail closed。
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/postcss-selector-parser'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<7.1.6'
+        && matchesExactAdvisorySet(finding, 'postcss-selector-parser', [
+          { source: 1241232, range: '<7.1.6', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate' },
+        ]),
+      `npm audit postcss-selector-parser finding differs from the acknowledged bundled preimage(${shape})`,
     )
     return
   }

@@ -849,9 +849,32 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
         range: '<=6.28.0',
         nodes: ['node_modules/npm/node_modules/undici'],
       },
+      // 2026-10-06 認列(PR #169 849d8667 全紅那一輪的真實 npm audit 形狀):npm 內建、修補層無 slot、npm 最新版也沒帶修正版
+      'http-cache-semantics': {
+        name: 'http-cache-semantics',
+        severity: 'high',
+        isDirect: false,
+        via: [
+          { source: 1240991, name: 'http-cache-semantics', dependency: 'http-cache-semantics', url: 'https://github.com/advisories/GHSA-ch52-4w7c-c8xp', severity: 'high', range: '<=4.2.0' },
+        ],
+        effects: [],
+        range: '<=4.2.0',
+        nodes: ['node_modules/npm/node_modules/http-cache-semantics'],
+      },
+      'postcss-selector-parser': {
+        name: 'postcss-selector-parser',
+        severity: 'moderate',
+        isDirect: false,
+        via: [
+          { source: 1241232, name: 'postcss-selector-parser', dependency: 'postcss-selector-parser', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate', range: '<7.1.6' },
+        ],
+        effects: [],
+        range: '<7.1.6',
+        nodes: ['node_modules/npm/node_modules/postcss-selector-parser'],
+      },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 5, critical: 0, total: 5 },
+      vulnerabilities: { info: 0, low: 0, moderate: 1, high: 6, critical: 0, total: 7 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
     },
   }
@@ -862,7 +885,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     installedOverlayReceipt: options.installedOverlayReceipt ?? installedOverlayReceipt,
   })
   const receipt = evaluate()
-  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'])
+  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'http-cache-semantics', 'ip-address', 'npm', 'postcss-selector-parser', 'tar', 'undici'])
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
@@ -893,6 +916,80 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 4)
     stale.vulnerabilities.undici.severity = 'moderate'
     assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-29 的四則 moderate 形狀必須被判成漂移')
+  }
+  // 2026-10-06 對照組(M32):http-cache-semantics / postcss-selector-parser 的認列是 exact shape,不是名字白名單。
+  // (a) 認列之前的判定 = 這兩筆一律是未處理 finding:把 evaluator 換回「沒有這兩段」等價於把它們改名 —— 必紅且指名。
+  for (const name of ['http-cache-semantics', 'postcss-selector-parser']) {
+    const renamed = structuredClone(report)
+    const finding = renamed.vulnerabilities[name]
+    delete renamed.vulnerabilities[name]
+    renamed.vulnerabilities[`${name}-x`] = { ...finding, name: `${name}-x` }
+    assert.throws(() => evaluate(renamed), new RegExp(`unremediated high/moderate finding:${name}-x`), `${name}:沒有認列的同形狀 finding 必紅`)
+  }
+  {
+    // (b) 上游再發一則(via 多一則、range 變寬)→ 漂移
+    const grown = structuredClone(report)
+    grown.vulnerabilities['http-cache-semantics'].via.push({ source: 1299999, name: 'http-cache-semantics', dependency: 'http-cache-semantics', url: 'https://github.com/advisories/GHSA-xxxx-xxxx-xxxx', severity: 'moderate', range: '<=4.3.0' })
+    grown.vulnerabilities['http-cache-semantics'].range = '<=4.3.0'
+    assert.throws(() => evaluate(grown), /http-cache-semantics finding differs from the acknowledged bundled preimage/, 'http-cache-semantics 多一則必須被判成漂移')
+  }
+  {
+    // (c) 同一則落在真實相依(不在 npm 內建樹)→ 不在認列範圍,必紅:認列只涵蓋修補層無 slot 的 npm 內建那一份
+    const hoisted = structuredClone(report)
+    hoisted.vulnerabilities['http-cache-semantics'].nodes = ['node_modules/http-cache-semantics']
+    assert.throws(() => evaluate(hoisted), /http-cache-semantics finding differs from the acknowledged bundled preimage/, 'http-cache-semantics 出現在真實相依節點必紅')
+  }
+  {
+    const hoisted = structuredClone(report)
+    hoisted.vulnerabilities['postcss-selector-parser'].nodes = ['node_modules/npm/node_modules/postcss-selector-parser', 'node_modules/postcss-selector-parser']
+    assert.throws(() => evaluate(hoisted), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser 多一個真實相依節點必紅')
+  }
+  {
+    // (d) 嚴重度上調 / range 改變 → 漂移(metadata 同步調整,確保紅的原因是形狀而不是計數)
+    const rescored = structuredClone(report)
+    rescored.vulnerabilities['postcss-selector-parser'].severity = 'high'
+    rescored.vulnerabilities['postcss-selector-parser'].via[0].severity = 'high'
+    rescored.metadata.vulnerabilities.moderate = 0
+    rescored.metadata.vulnerabilities.high = 7
+    assert.throws(() => evaluate(rescored), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser 嚴重度改變必須被判成漂移')
+    const widened = structuredClone(report)
+    widened.vulnerabilities['postcss-selector-parser'].range = '<7.1.7'
+    assert.throws(() => evaluate(widened), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser range 改變必須被判成漂移')
+  }
+  // (e) 逐條件對照組(2026-10-07,變異測試補洞):上面幾組每次都同時改了兩個條件(via 與 range、via 與嚴重度),
+  // 於是把認列裡的「advisory 清單逐字相符」「finding 嚴重度」「直接相依」「受影響上層」「finding range」任一條拿掉,
+  // 測試照樣全綠 —— 別的條件先擋下了。這裡每一格**只改一個條件**、其餘維持認列形狀,metadata 計數同步調整,
+  // 讓「那一條被拿掉」時 evaluator 會放行、測試會紅。第一格就是 09-30 undici 那次的真實形狀:range 不變、
+  // 嚴重度不變,只是 via 多了一則。
+  const singleConditionDrift = {
+    'http-cache-semantics': { otherSeverity: 'moderate', otherRange: '<=4.2.1' },
+    'postcss-selector-parser': { otherSeverity: 'high', otherRange: '<7.1.7' },
+  }
+  for (const [name, alt] of Object.entries(singleConditionDrift)) {
+    const cells = [
+      ['上游多發一則同範圍、同嚴重度的通報(只有 via 變)', (finding) => {
+        finding.via.push({ ...finding.via[0], source: 1299998, url: 'https://github.com/advisories/GHSA-zzzz-zzzz-zzzz' })
+      }],
+      ['advisory 換號(只有 via 的 source 變)', (finding) => { finding.via[0].source += 1 }],
+      ['advisory 自己的範圍變(只有 via 的 range 變)', (finding) => { finding.via[0].range = alt.otherRange }],
+      ['finding range 變(via 不變)', (finding) => { finding.range = alt.otherRange }],
+      ['finding 嚴重度變(via 不變)', (finding, counts) => {
+        counts[finding.severity] -= 1
+        finding.severity = alt.otherSeverity
+        counts[finding.severity] += 1
+      }],
+      ['變成直接相依', (finding) => { finding.isDirect = true }],
+      ['多出受影響的上層套件', (finding) => { finding.effects = ['npm'] }],
+    ]
+    for (const [label, mutate] of cells) {
+      const drifted = structuredClone(report)
+      mutate(drifted.vulnerabilities[name], drifted.metadata.vulnerabilities)
+      assert.throws(
+        () => evaluate(drifted),
+        new RegExp(`${name} finding differs from the acknowledged bundled preimage`),
+        `${name}:${label} → 必須被判成漂移`,
+      )
+    }
   }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
@@ -959,7 +1056,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   // 現在驗的是三件性質:治理版 11.19.0 仍受影響 / 11.19.1 不在範圍(修好的 npm 存在)/ 只經 tar。
   const registryAfterNpm1210 = structuredClone(report)
   registryAfterNpm1210.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2'
-  assert.deepEqual(evaluate(registryAfterNpm1210).remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'], '上游發版只動 12.x 尾巴 → 必須放行')
+  assert.deepEqual(evaluate(registryAfterNpm1210).remediatedFindings, ['brace-expansion', 'http-cache-semantics', 'ip-address', 'npm', 'postcss-selector-parser', 'tar', 'undici'], '上游發版只動 12.x 尾巴 → 必須放行')
 
   const fixedNpmAlsoListed = structuredClone(report)
   fixedNpmAlsoListed.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.1'

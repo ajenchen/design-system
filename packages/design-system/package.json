@@ -73,7 +73,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "build:dts": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build:dts": "tsc -p tsconfig.json && node rewrite-declaration-path-aliases.mjs -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -124,8 +124,5 @@
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
     "tailwindcss": ">=4.1.0"
-  },
-  "devDependencies": {
-    "tsc-alias": "^1.8.17"
   }
 }

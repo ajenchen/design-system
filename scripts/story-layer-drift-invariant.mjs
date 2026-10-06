@@ -171,7 +171,7 @@ export const RULE_IDS = Object.freeze(['primary-submit-disabled', 'hardcoded-spa
 export const RULES = Object.freeze({
   'primary-submit-disabled': {
     label: '(a) 新建表單的主送出鈕被停用',
-    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 永遠 enabled」+ :142「❌ 對 Create form 用 disabled-until-dirty Submit button」',
+    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 永遠 enabled」+ :146「❌ 對 Create form 用 disabled-until-dirty Submit button」',
     fix: '送出鈕永遠可按,按下時由 useFormValidation 驗證並把焦點帶到第一個錯誤(同 field.stories.tsx CreateProjectForm);真的是更新類 / 對話輸入盒,在該行正上方寫 {/* @submit-intent: update|composer — 理由 */}',
   },
   'hardcoded-spacing': {

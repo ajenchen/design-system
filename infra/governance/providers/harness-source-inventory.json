@@ -374,6 +374,7 @@
         "scripts/test-release-bom.mjs",
         "scripts/test-release-consent.mjs",
         "scripts/test-review-capability-selection.mjs",
+        "scripts/test-rewrite-declaration-path-aliases.mjs",
         "scripts/test-roving-list-keyboard.mjs",
         "scripts/test-run-gate-meta-tests-isolation.mjs",
         "scripts/test-standard-five-step-ci-evidence.mjs",

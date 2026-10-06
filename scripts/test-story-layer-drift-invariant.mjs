@@ -193,7 +193,7 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 306, '元素間 gap 硬寫'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 159, '刻意固定'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '永遠 enabled'],
-    ['packages/design-system/src/components/Field/form-validation.spec.md', 142, 'disabled-until-dirty'],
+    ['packages/design-system/src/components/Field/form-validation.spec.md', 146, 'disabled-until-dirty'],
     // (c) 不收 span 的出處:chrome 文字(workspace brand / user name)明文用 span + text-body-lg font-medium
     ['packages/design-system/src/components/Sidebar/sidebar.spec.md', 264, 'text-body-lg font-medium'],
     // test-only 不在範圍的出處
@@ -412,7 +412,12 @@ try {
   })
 
   check('CLI 進入點:真的 `node scripts/story-layer-drift-invariant.mjs` 在臨時 repo —— 乾淨 → 0、注入一筆 → 1', () => {
-    const run = () => spawnSync(process.execPath, [join(fixture, SELF), '--base=HEAD'], { cwd: fixture, encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME } })
+    // 腳本路徑寫成本檔的字面常數(相對臨時 repo 的 cwd):harness 來源清單要能靜態審查 node 的 script operand,
+    // 從別支模組 import 的 SELF 審不到(`Harness source uses unreviewable Node pre-script argv`,2026-10-07 CI 治理套件抓到);
+    // 下一行斷言把它綁回 SELF,兩者不得分岔。
+    const GATE_CLI = 'scripts/story-layer-drift-invariant.mjs'
+    assert.equal(GATE_CLI, SELF)
+    const run = () => spawnSync(process.execPath, [GATE_CLI, '--base=HEAD'], { cwd: fixture, encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME } })
     const clean = run()
     // 綠燈必須來自真的跑完判定(印出結論),不是進入點沒觸發的 exit 0
     assert.ok(clean.status === 0 && clean.stdout.includes('沒有新增漂移'), `${clean.stdout}\n${clean.stderr}`)

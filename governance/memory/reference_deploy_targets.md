@@ -92,7 +92,7 @@ Task／deliverable 明確要求 independent review 時，跨 provider audit 由 
 
 ## ⚠️ /tmp scratchpad 的壽命:3 天沒存取就被系統清掉(2026-10-06 錨)
 
-macOS 會刪掉 `/private/tmp` 底下 **3 天沒被存取的檔案**(目錄殼留著,所以 `ls` 看起來還在)。2026-10-01 → 10-06 因額度暫停 5 天,scratchpad 裡所有 scratch clone(ds-steps / ds-forms / ds-sweep / ds-rating)、它們的 throwaway git、patch 檔、研究原始檔與前後截圖**全部消失**;只有已 push 到 PR 分支的 Combobox / Rating / 供應鏈改動倖存。Steps 退役、表單與對話框、範例層漂移三批已驗證的工作必須重做。 **規則**:(1) 任一批次驗證通過 → **當天**整合進唯一工作分支並 push,不得把已驗證成果只放在 /tmp 等其他批次;(2) 研究結論必落在 workflow journal(`~/.claude/projects`,不在 /tmp)或 repo ledger,/tmp 的來源快取與截圖視為可拋,交付用的對照圖要立刻 SendUserFile 或放進 repo 可寫區;(3) 預期停工超過 1 天(額度、等 user)前,先把每份 scratch 副本的 diff 存成 patch 推到分支。
+macOS 會刪掉 `/private/tmp` 底下 **3 天沒被存取的檔案**(目錄殼留著,所以 `ls` 看起來還在)。2026-10-01 → 10-06 因額度暫停 5 天,scratchpad 裡所有 scratch clone(ds-steps / ds-forms / ds-sweep / ds-rating)、它們的 throwaway git、patch 檔、研究原始檔與前後截圖**全部消失**;只有已 push 到 PR 分支的 Combobox / Rating / 供應鏈改動倖存。Steps 退役、表單與對話框、範例層漂移三批已驗證的工作必須重做。 **規則**:(1) 任一批次驗證通過 → **當天**整合進唯一工作分支並 push,不得把已驗證成果只放在 /tmp 等其他批次;(2) 研究結論必落在 repo ledger 或 provider 的持久 workflow 紀錄(不在 /tmp;Claude adapter 的位置是 `~/.claude/projects`,屬可重建的 provider 紀錄、非 SSOT),/tmp 的來源快取與截圖視為可拋,交付用的對照圖要立刻 SendUserFile 或放進 repo 可寫區;(3) 預期停工超過 1 天(額度、等 user)前,先把每份 scratch 副本的 diff 存成 patch 推到分支。
 
 ## 交預覽連結給 user 之前必驗它是不是這個 commit(2026-09-11)
 
