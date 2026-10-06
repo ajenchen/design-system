@@ -24,9 +24,9 @@ type Story = StoryObj<typeof RadioGroupItem>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
         <RadioGroup defaultValue="yearly" aria-label="付款方案(edit mode demo)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
@@ -34,7 +34,7 @@ export const Modes: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <RadioGroup mode="view" value="yearly" aria-label="付款方案(view 模式示範)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
@@ -42,7 +42,7 @@ export const Modes: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <RadioGroup mode="readonly" value="yearly" aria-label="付款方案(readonly mode demo)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" />
@@ -50,7 +50,7 @@ export const Modes: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         {/* mode="disabled" → Radix Root disabled 原生 propagate 全 item(radio 控件真停用);
             RadioGroupDisabledContext 同步讓每個 item 的 label/description 降 text-fg-disabled */}
         <RadioGroup mode="disabled" value="yearly" aria-label="付款方案(disabled mode demo)">
@@ -71,10 +71,10 @@ export const Modes: Story = {
 export const VerticalGroup: Story = {
   name: '直式群組',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
-          <p className="text-caption text-fg-muted mb-1">size="{size}"</p>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size="{size}"</p>
           <RadioGroup defaultValue="monthly">
             <RadioGroupItem size={size} value="monthly" label="月付方案" />
             <RadioGroupItem size={size} value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
@@ -90,7 +90,8 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    <RadioGroup defaultValue="light" className="flex gap-6 max-w-md">
+    // @layout-space-magic-ok: 水平選項群組:選擇控件家族水平 16px(checkbox.spec.md:304 / :306,SelectionItem 共用)(layoutSpace.spec.md:113 同範疇 spec-own)
+    <RadioGroup defaultValue="light" orientation="horizontal" className="flex flex-wrap gap-4 max-w-md">
       <RadioGroupItem value="light" label="淺色" />
       <RadioGroupItem value="dark" label="深色" />
       <RadioGroupItem value="system" label="系統" />

@@ -32,6 +32,8 @@ import { FieldLabel } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { Separator } from '@/design-system/components/Separator/separator'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/設計原則',
@@ -47,10 +49,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-3 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -68,16 +70,17 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Popover 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Popover/展示" name="篩選面板"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">篩選面板</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:往下看下方「Popover 與近親元件的分界」三組對照(對上 Dialog、DropdownMenu、Tooltip),確認該用哪個元件。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:往下看下方「Popover 與近親元件的分界」三組對照(對上 Dialog、DropdownMenu、Tooltip),確認該用哪個元件。</p>
     </div>
 
       {/* vs 近親 — VsDialogRule — 原 VsDialogRule */}
@@ -172,7 +175,9 @@ export const UsageGuidance: Story = {
                 <Checkbox label="我建立的" />
                 <Checkbox label="我追蹤的" />
               </CheckboxGroup>
-              <div className="border-t border-divider pt-3 mt-1 text-caption text-fg-muted">最多 3 個條件</div>
+              {/* consumer 自己放的分隔線用 Separator(separator.spec.md「Consumer 手動放 → Separator 元件」);條件群 → 註腳 = functional → 上下 tight */}
+              <Separator className="my-[var(--layout-space-tight)]" />
+              <p className="text-caption text-fg-muted">最多 3 個條件</p>
             </PopoverBody>
             <PopoverFooter>
               <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
@@ -249,7 +254,7 @@ export const VisualAlignmentRule: Story = {
         note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡);Dialog 不鎖 layout-space,全繼承 page(md page → 16 / lg page → 24)。兩者 ui-size 都繼承 page"
       >
         {/* @overlay-open-skip:視覺語言比較卡片——同一「顯示欄位」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見檔頭 escape),開啟態覆蓋於展示 / anatomy */}
-        <div className="flex flex-col items-start gap-2">
+        <ExampleGroup align="start">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="tertiary">顯示欄位</Button>
@@ -270,8 +275,8 @@ export const VisualAlignmentRule: Story = {
             </PopoverContent>
           </Popover>
           <Label>↑ 同一內容以 Popover 呈現(non-modal 輕量浮層)</Label>
-        </div>
-        <div className="flex flex-col items-start gap-2">
+        </ExampleGroup>
+        <ExampleGroup align="start">
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="tertiary">顯示欄位</Button>
@@ -292,7 +297,7 @@ export const VisualAlignmentRule: Story = {
             </DialogContent>
           </Dialog>
           <Label>↑ 同一內容以 Dialog 呈現(modal 阻斷背景)</Label>
-        </div>
+        </ExampleGroup>
         <Label>↑ 容器不同、chrome 視覺語言完全一致,consumer 切換不會產生視覺斷層</Label>
       </Rule>
 

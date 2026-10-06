@@ -40,25 +40,25 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
     return (
-      <div className="flex flex-col gap-6 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
           <Combobox mode="view" options={categoryOptions} value={value} aria-label="類別(view 模式示範)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
           <Combobox mode="readonly" options={categoryOptions} value={value} aria-label="類別(readonly mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
           <Combobox mode="disabled" options={categoryOptions} value={value} aria-label="類別(disabled mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly (empty)</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly (empty)</h3>
           <Combobox mode="readonly" options={categoryOptions} value={[]} aria-label="類別(readonly empty demo)" />
         </div>
       </div>
@@ -126,9 +126,9 @@ export const SizeAlignment: Story = {
     const [lg, setLg] = React.useState(['electronics', 'food', 'lifestyle'])
     const states: Record<string, [string[], (v: string[]) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
+          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
             <Combobox size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" aria-label={`商品分類(size=${size})`} />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -152,8 +152,8 @@ export const Searchable: Story = {
     const [value, setValue] = React.useState<string[]>(['electronics'])
     const [value2, setValue2] = React.useState<string[]>(['electronics'])
     return (
-      <div className="flex flex-col gap-6 max-w-sm">
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">searchable — 浮層內搜尋框，關鍵字保留可連續勾選</p>
           <Combobox
             options={categoryOptions}
@@ -163,7 +163,7 @@ export const Searchable: Story = {
             aria-label="類別(searchable popover demo)"
           />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">searchIn='trigger' — 欄位內搜尋框，勾一項就清空關鍵字</p>
           <Combobox
             options={categoryOptions}
@@ -386,13 +386,13 @@ export const UnrestrictedOption: Story = {
     const [region, setRegion] = React.useState<string[]>(['electronics'])
     const [any, setAny] = React.useState<string[]>(['__unrestricted__'])
     return (
-      <div className="flex flex-col gap-6 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">清單最上面多一列,下面自動有分隔線</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">清單最上面多一列,下面自動有分隔線</h3>
           <Combobox unrestricted options={categoryOptions} value={region} onChange={setRegion} aria-label="銷售地區" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">只選「不限」時,欄位是純文字不是 tag</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」時,欄位是純文字不是 tag</h3>
           <Combobox unrestricted options={categoryOptions} value={any} onChange={setAny} aria-label="銷售地區(不限)" />
         </div>
       </div>
@@ -407,25 +407,25 @@ export const UnrestrictedContract: Story = {
   name: '不限:欄位顯示契約',
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">關著(對照:一般選項渲 tag)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">關著(對照:一般選項渲 tag)</h3>
         <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="類別(不限關閉)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」—— 欄位不渲 Tag</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」—— 欄位不渲 Tag</h3>
         <Combobox unrestricted options={categoryOptions} value={['__unrestricted__']} onChange={() => {}} aria-label="銷售地區(只選不限)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 唯讀</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 唯讀</h3>
         <Combobox unrestricted mode="readonly" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(唯讀)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">只選「不限」· 檢視</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 檢視</h3>
         <Combobox unrestricted mode="view" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(檢視)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自訂文字(對照:佔位字左緣)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自訂文字(對照:佔位字左緣)</h3>
         <Combobox unrestricted unrestrictedLabel="全部地區" options={categoryOptions} value={[]} onChange={() => {}} aria-label="銷售地區(自訂不限文字)" />
       </div>
     </div>
@@ -476,13 +476,13 @@ export const UnrestrictedSearch: Story = {
   render: function UnrestrictedSearchStory() {
     const [local, setLocal] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-6 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">本機過濾 —— 打「不限」找得到,打別的字它消失</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">本機過濾 —— 打「不限」找得到,打別的字它消失</h3>
           <Combobox unrestricted searchable options={categoryOptions} value={local} onChange={setLocal} aria-label="類別(本機搜尋,不限開啟)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">遠端搜尋 —— 等結果回傳才跟一般選項一起出現</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">遠端搜尋 —— 等結果回傳才跟一般選項一起出現</h3>
           <UnrestrictedRemoteSearchProbe />
         </div>
       </div>
@@ -496,13 +496,13 @@ export const UnrestrictedMessageStates: Story = {
   name: '不限:訊息列三態不受影響',
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">0 筆選項 —— 顯示「沒有選項」,不出現不限</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">0 筆選項 —— 顯示「沒有選項」,不出現不限</h3>
         <Combobox unrestricted options={[]} value={[]} onChange={() => {}} defaultOpen aria-label="空清單(不限開啟)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">載入中 —— 顯示載入列,不出現不限</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">載入中 —— 顯示載入列,不出現不限</h3>
         <Combobox unrestricted optionsLoading options={[]} value={[]} onChange={() => {}} aria-label="載入中(不限開啟)" />
       </div>
     </div>
@@ -564,7 +564,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">multiSelect 欄位自動用多個 Tag 渲染</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">multiSelect 欄位自動用多個 Tag 渲染</p>
         <DataTable columns={columns} data={data} height="auto" />
       </div>
     )

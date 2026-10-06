@@ -1,9 +1,9 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { FileText } from 'lucide-react'
 import { Chip, ChipGroup } from './chip'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { AgentMessage } from '@/design-system/components/AgentPanel/agent-panel'
 
 const meta: Meta<typeof ChipGroup> = {
   title: 'Design System/Components/Chip/展示',
@@ -41,9 +41,9 @@ export const Default: Story = {
 export const States: Story = {
   name: '狀態',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <div>
-        <div className="text-caption text-fg-muted mb-2">Default / hover / selected / disabled</div>
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Default / hover / selected / disabled</div>
         <ChipGroup type="multiple" defaultValue={['typescript']}>
           <Chip value="react">React</Chip>
           <Chip value="typescript">TypeScript</Chip>
@@ -92,20 +92,24 @@ export const SingleSelection: Story = {
 //   已 cover layout 機制比較與業務情境。展示層保留 typical 情境(Default / States / WithBadge / SingleSelection)。
 //   注意:Chip 是 filter chip,不提供 dismiss / 可移除態(spec「禁止事項」),故無 Removable story。
 
-/** assist 分支(2026-09-02):按鈕語意、可獨立使用——智慧代理訊息內的附件開啟(真實消費場景)。 */
+/** assist 分支(2026-09-02):按鈕語意、可獨立使用——智慧代理訊息內的附件開啟(真實消費場景)。
+ *  直接渲染消費端 AgentMessage(使用者訊息氣泡 + 附件列),不手抄它的內距 / 附件列間距(那兩個值的主人是
+ *  agent-panel.tsx 的 AgentMessage;抄一份就會在它改值時漂移 —— 2026-10-01 前這裡多畫了 FileText 圖示,
+ *  而 AgentMessage 的附件 Chip 本來就不帶圖示)。 */
 export const AssistAttachments: Story = {
   name: '按鈕語意附件',
   render: () => (
-    <div className="max-w-xs rounded-md bg-secondary px-3 py-2">
-      <div className="mb-2 flex flex-wrap gap-1">
-        <Chip variant="assist" startIcon={FileText} aria-label="附件:sprint-42-backlog.csv" onClick={() => {}}>
-          sprint-42-backlog.csv
-        </Chip>
-        <Chip variant="assist" startIcon={FileText} aria-label="附件:排程規則.md" onClick={() => {}}>
-          排程規則.md
-        </Chip>
-      </div>
-      <p className="text-body">把這份待辦按優先級重排,衝突的排程幫我標出來。</p>
+    <div className="max-w-xs">
+      <AgentMessage
+        role="user"
+        attachments={[
+          { id: 'backlog', label: 'sprint-42-backlog.csv' },
+          { id: 'rules', label: '排程規則.md' },
+        ]}
+        onAttachmentClick={() => {}}
+      >
+        把這份待辦按優先級重排,衝突的排程幫我標出來。
+      </AgentMessage>
     </div>
   ),
 }

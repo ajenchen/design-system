@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 /**
  * FileViewer 設計原則(do / don't)——使用判斷指南。
@@ -30,6 +31,18 @@ type Story = StoryObj
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// 快捷鍵 ↔ 對應 button 對照表(「快捷鍵總覽」Rule 的資料;資料驅動讓每一欄的儲存格幾何只寫一次)
+const SHORTCUT_TABLE_HEADERS = ['鍵', '行為', '對應 button'] as const
+const SHORTCUT_TABLE_ROWS: ReadonlyArray<readonly [key: string, action: string, button: string]> = [
+  ['Esc', '關閉 viewer', 'toolbar X'],
+  ['← / →', '上 / 下一個檔案', 'viewport prev/next arrow + filmstrip 點擊'],
+  ['+ / =', 'Zoom in', 'ZoomInput dropdown preset'],
+  ['-', 'Zoom out', 'ZoomInput dropdown preset'],
+  ['0', '重設為 100%', 'ZoomInput 輸入 100%'],
+  ['F', 'Fit to page', 'ZoomInput dropdown「Fit to page」'],
+  ['I', 'Toggle Info panel', 'toolbar Info button'],
+]
+
 const Rule = ({
   title,
   note,
@@ -39,14 +52,14 @@ const Rule = ({
   note?: string
   children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
     {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">
         {note}
       </p>
     )}
-    <div className="flex flex-wrap gap-3 items-start">{children}</div>
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -100,10 +113,11 @@ export const UsageGuidance: Story = {
   render: () => {
     const [fvOpen, setFvOpen] = React.useState(false)
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
         <p>適合 FileViewer 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+        {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="space-y-1">
           <li>
             <LinkTo kind="Design System/Components/FileViewer/展示" name="Jira — 附件多圖檢視"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Jira — 附件多圖檢視</span></LinkTo>
@@ -121,7 +135,7 @@ export const UsageGuidance: Story = {
             <LinkTo kind="Design System/Components/FileViewer/展示" name="活動相集 — 縮圖膠卷展開"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">活動相集 — 開啟縮圖膠卷瀏覽跳轉</span></LinkTo>
           </li>
         </ul>
-        <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+        <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
       </div>
 
       {/* vs 近親 + 何時不用 — 原 WhenNotToUse(FileViewer vs Dialog) */}
@@ -574,51 +588,27 @@ export const KeyboardShortcutRule: Story = {
           title="快捷鍵總覽(每個都有對應 button)"
           note="設計時 keyboard ↔ button 對應表寫進 spec(見 file-viewer.spec.md「鍵盤支援」段)。這個對應關係不是實作細節,是 a11y 的結構承諾 — 任何新增 shortcut 都必須同步新增對應 button"
         >
-          <div className="w-full max-w-[640px] rounded-md border border-border p-3">
+          <div className="w-full max-w-[640px] rounded-md border border-border p-[var(--layout-space-loose)]">
             <table className="w-full text-caption">
               <thead className="text-fg-muted">
                 <tr>
-                  <th className="text-left font-normal pb-1">鍵</th>
-                  <th className="text-left font-normal pb-1">行為</th>
-                  <th className="text-left font-normal pb-1">對應 button</th>
+                  {SHORTCUT_TABLE_HEADERS.map((header) => (
+                    // @layout-space-magic-ok: 說明表格表頭儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列)
+                    <th key={header} className="text-left font-normal pb-1">{header}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="text-foreground">
-                <tr>
-                  <td className="font-mono py-0.5">Esc</td>
-                  <td className="py-0.5">關閉 viewer</td>
-                  <td className="py-0.5">toolbar X</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">← / →</td>
-                  <td className="py-0.5">上 / 下一個檔案</td>
-                  <td className="py-0.5">viewport prev/next arrow + filmstrip 點擊</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">+ / =</td>
-                  <td className="py-0.5">Zoom in</td>
-                  <td className="py-0.5">ZoomInput dropdown preset</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">-</td>
-                  <td className="py-0.5">Zoom out</td>
-                  <td className="py-0.5">ZoomInput dropdown preset</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">0</td>
-                  <td className="py-0.5">重設為 100%</td>
-                  <td className="py-0.5">ZoomInput 輸入 100%</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">F</td>
-                  <td className="py-0.5">Fit to page</td>
-                  <td className="py-0.5">ZoomInput dropdown「Fit to page」</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">I</td>
-                  <td className="py-0.5">Toggle Info panel</td>
-                  <td className="py-0.5">toolbar Info button</td>
-                </tr>
+                {SHORTCUT_TABLE_ROWS.map(([shortcut, action, button]) => (
+                  <tr key={shortcut}>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="font-mono py-0.5">{shortcut}</td>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="py-0.5">{action}</td>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="py-0.5">{button}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

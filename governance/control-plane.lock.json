@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:1389f639da2ab036d4920aa8b3860e0fde9035ab4fb4003814fcad9914fc1fa2",
+      "hash": "sha256:640aacd2f11a6d700d753aad2223d0ff02258b5b4eec6379e3c2e6b76d7284f6",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b7c36a5bb90e6675f875664b2c0da5e361c83035b5a4b6ab4526fe13cecb8c1f",
+      "hash": "sha256:4160736ed369f7001a0467628a7203a0c0afe1206248567c647dc4d6a272c512",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139525,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:6a6bb0f245fd0f116b87e30085458249590aff822d266a3f91ff723a6fdce580",
+  "inputDigest": "sha256:3b487fe9d7499f58b5f314f737fe38a8f6a361bcc63930525fa04d0b8e98fd58",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -216,10 +216,10 @@
           "targetDigest": "sha256:b81508a97e3b364dd9c348e6da4ef222f951fc8359ae1a13f4dee60c6117bc7f"
         },
         {
-          "expectedTargetDigest": "sha256:b4cc910a12272941a1cf4130ac4e2ead9b5af50c9ac3794891d3bf9d674d88a8",
+          "expectedTargetDigest": "sha256:ac5a681fe6d4b683c6c73b59430916cb72c7f3ef2dd729d50ae5e47b814acd9b",
           "name": "story-writing",
-          "sourceDigest": "sha256:16e46be9be25771e8a2fcc79dee90c1a3959879b4b164eba56f32fef3656c534",
-          "targetDigest": "sha256:b4cc910a12272941a1cf4130ac4e2ead9b5af50c9ac3794891d3bf9d674d88a8"
+          "sourceDigest": "sha256:7bf11718d007ef7e56a9fe59df44074e4abdffb6c82bf6434a1e5b3cd88e6c04",
+          "targetDigest": "sha256:ac5a681fe6d4b683c6c73b59430916cb72c7f3ef2dd729d50ae5e47b814acd9b"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -439,10 +439,10 @@
           "targetDigest": "sha256:557deefd2e45d81dbcb2ba683bc7a4cce2882822e19c4e6a8812fde03b5708ed"
         },
         {
-          "expectedTargetDigest": "sha256:f27effa716a3e0344e0eb4e720f1b48e2b5d11b56a77fab25fe681eb3e71f053",
+          "expectedTargetDigest": "sha256:250b13e4e9493943b1b41872eae7abd738fd997fa5026af5c8ba0169cac9cf2e",
           "name": "story-writing",
-          "sourceDigest": "sha256:16e46be9be25771e8a2fcc79dee90c1a3959879b4b164eba56f32fef3656c534",
-          "targetDigest": "sha256:f27effa716a3e0344e0eb4e720f1b48e2b5d11b56a77fab25fe681eb3e71f053"
+          "sourceDigest": "sha256:7bf11718d007ef7e56a9fe59df44074e4abdffb6c82bf6434a1e5b3cd88e6c04",
+          "targetDigest": "sha256:250b13e4e9493943b1b41872eae7abd738fd997fa5026af5c8ba0169cac9cf2e"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:23b275f1525a0572792f1dfb25ea92a37b28530af99975969f98e27a7f65e70f",
+  "snapshotDigest": "sha256:9a9192dccc07d8e073961ac7417ef7cfd0079360d3867f0682291c587fa91d1b",
   "sources": [
     {
       "hash": "sha256:134d76a97fd35723867efe207c561eb8db7a6ac7f360641b9949fda94cfaf21c",
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:d99053c31f7d6966110198d2343e0cae7611c85d3bb5e65962990008c1617567",
+      "hash": "sha256:c955e65e30a5ac78864670c7483fc3494e58383e94007dc3c0e47984d21ac364",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3222,7 +3222,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 47,
-      "hash": "sha256:f36ec60fe19df792f8326eed0ea8851ddff046dbec0a233f36171db27068b744",
+      "hash": "sha256:d81011825a8c3cf84999f7114d432f69aa318358f53e9b6306abd90275c17f7b",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3587,8 +3587,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 582,
-      "hash": "sha256:872442f332b00d788311b1fb682b8c1169fea58d7c10c153fde18217f10eb6ee",
+      "files": 584,
+      "hash": "sha256:8dbff98e17f08c29ba9bd709d606b9dad57274af515e9069949c0958134b1c45",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -167,10 +167,10 @@ export const ColumnResize: Story = {
     const [widths, setWidths] = React.useState<Record<string, number>>({})
     const [pinnedWidths, setPinnedWidths] = React.useState<Record<string, number>>({})
     return (
-      <div className="flex flex-col gap-8 max-w-5xl">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-5xl">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">基本 — 全 data column 可拖</h3>
-          <p className="text-caption text-fg-muted mb-3">
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">基本 — 全 data column 可拖</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
             拖 header 右側分隔線可調整欄寬。滑到分隔線上會變色提示,拖動時會跟著游標即時調整。
             勾選欄等系統欄位寬度固定,不可調整。
             <br />目前各欄寬度:{JSON.stringify(widths)}
@@ -184,8 +184,8 @@ export const ColumnResize: Story = {
           />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">欄位釘選與欄寬調整並存</h3>
-          <p className="text-caption text-fg-muted mb-3">
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">欄位釘選與欄寬調整並存</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
             把 SKU 跟產品名稱固定在左側,依然可以拖動分隔線調整這兩欄的寬度。
             <br />目前各欄寬度:{JSON.stringify(pinnedWidths)}
           </p>
@@ -233,7 +233,7 @@ export const ColumnReorder: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-5xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-5xl">
         <p className="text-caption text-fg-muted">
           開啟欄位重排(enableColumnReorder)後,拖住欄標題即可移動整欄:拖曳中欄位以半透明
           浮影跟著游標,目標欄的左或右邊緣會出現落點提示線(依游標位置判定放在前或後)。
@@ -286,7 +286,7 @@ export const RowAutoHeightInlineEdit: Story = {
     ]
     return (
       <div className="max-w-5xl">
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應頂對齊。
           Click 任一 cell 進 edit:文字位置 view↔edit 不偏移(仍頂對齊),
           frame 填 cell,Field 自帶 state ring(focus-within → primary)。
@@ -317,23 +317,23 @@ export const RowAutoHeight: Story = {
           : 'Standard delivery.',
     })), [])
     return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
-        <p className="text-caption text-fg-muted mb-3">所有內容垂直置中，文字截斷</p>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">固定行高（預設）</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">所有內容垂直置中，文字截斷</p>
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高（autoRowHeight）</h3>
-        <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row</p>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自動行高（autoRowHeight）</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">內容頂部對齊，wrap 欄位可撐高 row</p>
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
       </div>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
           (M15:沒有 story 覆蓋的狀態等於沒被截圖驗過)。三區同一列必須等高，機械閘 I15 逐列比對。 */}
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions</h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自動行高 × 釘選欄 × Row Actions</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           撐高的欄位在中段，釘選欄與 actions 在左右兩個獨立容器；同一列三區必須等高
         </p>
         <DataTable
@@ -353,8 +353,8 @@ export const RowAutoHeight: Story = {
       {/* 同一個缺陷在虛擬模式下的版本:列的位移 `vr.start` 只由 center 的量測推出,pinned 區
           比 center 高的列會直接壓到下一列的位置。共用列高之後 center 量到的就是共用值,三區同解。 */}
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions × 虛擬捲動</h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自動行高 × 釘選欄 × Row Actions × 虛擬捲動</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           50 筆(超過虛擬門檻 30);捲動時被撐高的列進出視窗，三區仍須逐列等高
         </p>
         <DataTable
@@ -381,13 +381,13 @@ export const RowAutoHeight: Story = {
 export const EmptyState: Story = {
   name: '空狀態',
   render: () => (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">預設空狀態</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">預設空狀態</h3>
         <DataTable columns={baseColumns} data={[]} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自訂空狀態</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自訂空狀態</h3>
         <DataTable
           columns={baseColumns}
           data={[]}
@@ -407,23 +407,23 @@ export const ContainerHeight: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-1">無約束</h3>
-          <p className="text-caption text-fg-muted mb-3">height="auto"，table 高度完全取決於內容，不出現捲軸</p>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">無約束</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">height="auto"，table 高度完全取決於內容，不出現捲軸</p>
           <DataTable columns={baseColumns} data={sampleData} height="auto" />
         </div>
 
         <div>
-          <h3 className="text-body font-bold text-foreground mb-1">有約束</h3>
-          <p className="text-caption text-fg-muted mb-3">height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</p>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-footnote text-fg-muted mb-3">3 筆資料</p>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">有約束</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</p>
+          <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+              <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
               <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="300px" />
             </div>
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-footnote text-fg-muted mb-3">50 筆資料</p>
+            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+              <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">50 筆資料</p>
               <DataTable columns={baseColumns} data={manyRows} height="300px" />
             </div>
           </div>
@@ -437,10 +437,10 @@ export const ContainerHeight: Story = {
 export const RowActions: Story = {
   name: '列操作',
   render: () => (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">Row Actions（常駐）</h3>
-        <p className="text-caption text-fg-muted mb-3">actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。</p>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">Row Actions（常駐）</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。</p>
         <DataTable
           columns={baseColumns}
           data={sampleData}
@@ -454,8 +454,8 @@ export const RowActions: Story = {
         />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">3+ actions：MoreVertical 收納</h3>
-        <p className="text-caption text-fg-muted mb-3">前 1-2 個高頻 action inline + MoreVertical dropdown</p>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">3+ actions：MoreVertical 收納</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">前 1-2 個高頻 action inline + MoreVertical dropdown</p>
         <DataTable
           columns={baseColumns}
           data={sampleData.slice(0, 3)}
@@ -478,10 +478,10 @@ export const PinnedColumns: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">Left pinned + Row Actions（水平捲動）</h3>
-          <p className="text-caption text-fg-muted mb-3">SKU 固定左側，actions 固定右側，中間水平捲動。</p>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">Left pinned + Row Actions（水平捲動）</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">SKU 固定左側，actions 固定右側，中間水平捲動。</p>
           <div style={{ maxWidth: 700 }}>
             <DataTable
               columns={columnsWithPrice}
@@ -498,8 +498,8 @@ export const PinnedColumns: Story = {
           </div>
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">垂直捲動 + Pinned + Row Actions</h3>
-          <p className="text-caption text-fg-muted mb-3">header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。</p>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">垂直捲動 + Pinned + Row Actions</h3>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。</p>
           <div style={{ maxWidth: 700 }}>
             <DataTable
               columns={columnsWithPrice}
@@ -650,7 +650,7 @@ export const InlineEdit: Story = {
     }
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
           SKU 是唯讀的;開關欄位直接點即可切換;連結欄位 hover 才顯示鉛筆改值,直接點開連結;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
@@ -713,7 +713,7 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
     }
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關 / 連結欄位沒有 hover 提示
           (這些格子點第二次也不進編輯:開關直接點勾選框切換,連結點文字開啟)。
@@ -819,7 +819,7 @@ export const CellErrors: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           欄位驗證錯誤直接顯示在內容下方,不蓋住資料。一格多個錯誤分行條列。點進該格編輯時暫時隱藏錯誤,
           交給使用者修正;commit 後由 app 端決定是否還要顯示。
@@ -875,7 +875,7 @@ export const CellErrorsFixedRowOverride: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           表格本身是固定行高(沒開 autoRowHeight),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
           自動撐高顯示訊息;PRD-002、PRD-004 沒錯誤,維持原本的固定行高,內容垂直置中。
@@ -958,7 +958,7 @@ export const NestedRows: Story = {
       <div>
         {/* 實作:forward TanStack getSubRows;縮排共用 --tree-indent-{sm,md,lg} token(跨 TreeView
             設計語言);chevron click stopPropagation 不觸發 row select。 */}
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           樹狀表格:點列首的三角形展開 / 收合子任務,子任務逐層縮排(與 TreeView 同一套縮排節奏);
           點三角形只切換展開,不會順帶選取整列。
         </p>
@@ -1042,7 +1042,7 @@ export const NestedRowsWithDrag: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         <p className="text-caption text-fg-muted">
           Tree-table drag 設計準則:top-level rows 可拖(handle 浮在 row 左緣),
           sub-rows 無 handle 不可拖(對齊 Notion 保守)。Cross-parent drop 過濾,
@@ -1306,7 +1306,7 @@ export const SelectionKeyboardAndShift: Story = {
     const [selection, setSelection] = React.useState<string[]>([])
     const data = generateLargeData(15)
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           試試:點第一 row checkbox → <kbd>Shift</kbd>+點第五 row → 1-5 全選 ·
           整 table 點任意 row 後按 <kbd>Cmd/Ctrl+A</kbd> 全選 · 按 <kbd>Esc</kbd> 清除 ·
@@ -1333,7 +1333,7 @@ export const SelectionSingleMode: Story = {
   render: () => {
     const [selection, setSelection] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           <code>selectable=&quot;single&quot;</code>:每次只選一個,點新 row 自動清舊 row。
           視覺用 <strong>Radio</strong>(對齊 Material DataGrid / Polaris IndexTable 共識),
@@ -1360,7 +1360,7 @@ export const SelectionDisabledRows: Story = {
   render: () => {
     const [selection, setSelection] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           Out of stock 商品不可選 — 只 disable checkbox,row 內容正常 render(對齊 spec L2 五)。
         </p>
@@ -1548,8 +1548,8 @@ export const FilterPanelEmpty: Story = {
 // 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
 const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
   <section className="w-full max-w-[680px]">
-    <h3 className="text-body font-medium mb-1">{title}</h3>
-    {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
+    <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">{title}</h3>
+    {note ? <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">{note}</p> : null}
     {children}
   </section>
 )
@@ -1627,7 +1627,7 @@ export const FilterPanelStates: Story = {
     }))
 
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <Section title="已填條件">
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
         </Section>
@@ -1703,9 +1703,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
   const [prefillConsumed, setPrefillConsumed] = React.useState(false)
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div data-testid="filter-label-child-pickers">
-        <h3 className="text-body font-medium mb-2">English child-picker labels</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">English child-picker labels</h3>
         <DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
@@ -1716,7 +1716,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
       </div>
 
       <div data-testid="filter-limit-flat">
-        <h3 className="text-body font-medium mb-2">English labels + flat cap</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">English labels + flat cap</h3>
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
@@ -1727,7 +1727,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
       </div>
 
       <div data-testid="filter-limit-nested-condition">
-        <h3 className="text-body font-medium mb-2">Nested condition cap</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Nested condition cap</h3>
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
@@ -1738,7 +1738,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
       </div>
 
       <div data-testid="filter-limit-nested-group">
-        <h3 className="text-body font-medium mb-2">Nested group cap</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Nested group cap</h3>
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
@@ -1749,7 +1749,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
       </div>
 
       <div data-testid="filter-limit-mount-zero">
-        <h3 className="text-body font-medium mb-2">Initial mount at zero capacity</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Initial mount at zero capacity</h3>
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
@@ -1760,8 +1760,8 @@ const FilterPanelLabelsAndLimitHarness = () => {
       </div>
 
       <div data-testid="filter-limit-prefill">
-        <h3 className="text-body font-medium mb-2">Prefill at capacity</h3>
-        <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-2">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Prefill at capacity</h3>
+        <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
         <DataTableFilterPanel
@@ -1869,7 +1869,7 @@ export const RowDragInteractive: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         <p className="text-caption text-fg-muted">
           handle 浮在 row 左緣（不佔 column 空間，Jira 設計準則）。pinned-left（SKU）+ pinned-right（Updated）+
           center 中段欄。拖曳時 source 列留在原位（半透明壓住視覺），2px 主色落點提示線在左固定欄、
@@ -1918,7 +1918,7 @@ export const RowDragWithVirtualization: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         {/* 實作(v3):enableRowDrag 自動拉高 overscan ≥ 5;drag 期間 freeze measureElement;
             snapToCursorModifier 讓 ghost 對齊游標(不鎖軸)— 三者合修「拖曳 + 捲動錯位」。 */}
         <p className="text-caption text-fg-muted">
@@ -2372,16 +2372,16 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 export const WithPagination: Story = {
   name: '分頁',
   render: () => (
-    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-8">
+    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           預設形態:`pagination` 傳 true — 128 筆 / 每頁 20 = 7 頁,分頁列間距 tight、頁碼靠右
           (spec「L5:分頁」canonical);與虛擬滾動互斥(分頁時 useVirtual 關閉)。
         </p>
         <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           完整形態:「共 N 筆」opt-in(showTotal)+ 每頁筆數 Select(pageSizeOptions)——
           左資訊右頁碼 justify-between;換每頁筆數自動回第 1 頁;filter 縮小自動 clamp 當前頁。
         </p>

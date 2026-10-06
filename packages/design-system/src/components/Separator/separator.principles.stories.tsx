@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Separator/設計原則',
@@ -27,10 +28,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-4">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -48,10 +49,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Separator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Separator/展示" name="水平"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平分隔</span></LinkTo>
@@ -66,7 +68,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Separator/展示" name="在 DescriptionList 區塊之間"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DescriptionList 區塊之間</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -102,11 +104,11 @@ export const DecorativeSemanticRule: Story = {
     <div>
       <Rule
         title="預設 decorative=true — 純視覺分隔,screen reader 跳過"
-        note="大多數場景(settings panel 內的區塊分組、toolbar 間隔、menu 項目分組)屬視覺性分隔。讓 screen reader 跳過,避免語意噪音"
+        note="大多數場景(settings panel 內的區塊分組、同一列 meta 資訊分組、menu 項目分組)屬視覺性分隔。讓 screen reader 跳過,避免語意噪音。toolbar / action region 的按鈕群分隔不走 Separator,用 ButtonGroup + ButtonDivider"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm">更多操作</Button>
+            <Button className="self-start" variant="tertiary" size="sm">更多操作</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem startIcon={Pencil}>重新命名</DropdownMenuItem>
@@ -122,15 +124,15 @@ export const DecorativeSemanticRule: Story = {
         title="明確結構性分組(語意分隔)→ decorative={false}"
         note={'當 Separator 真的代表內容層級的結構邊界(例如 profile page 的「個人」vs「團隊」兩個 section),設 decorative={false},讓 screen reader 讀出 role="separator"'}
       >
-        <div className="border border-border rounded-lg p-4 max-w-md flex flex-col gap-3">
-          <div>
-            <div className="text-body font-medium">個人資訊</div>
-            <div className="text-caption text-fg-muted">姓名、email、時區</div>
+        <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
+          <div className="flex flex-col gap-[var(--item-gap-label-desc-scanning)]">
+            <h4 className="text-h6 font-medium text-foreground">個人資訊</h4>
+            <p className="text-caption text-fg-muted">姓名、email、時區</p>
           </div>
           <Separator decorative={false} />
-          <div>
-            <div className="text-body font-medium">團隊資訊</div>
-            <div className="text-caption text-fg-muted">所屬團隊、職稱</div>
+          <div className="flex flex-col gap-[var(--item-gap-label-desc-scanning)]">
+            <h4 className="text-h6 font-medium text-foreground">團隊資訊</h4>
+            <p className="text-caption text-fg-muted">所屬團隊、職稱</p>
           </div>
         </div>
         <Label>↑ 兩個 section 是頁面結構的主層級 → 需要 a11y 語意</Label>

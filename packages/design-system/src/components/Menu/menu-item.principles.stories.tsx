@@ -18,10 +18,11 @@ type Story = StoryObj
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Menu 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Internal/Menu/展示" name="基本"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">信箱資料夾切換選單(收件匣 / 草稿 / 已傳送)— 純文字選項</span></LinkTo>
@@ -39,11 +40,11 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/Menu/展示" name="多選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">通知管道多選(電子郵件 / 推播 / Slack)</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:先確認情境是否屬於上面這些「在選單裡挑一個或多個選項」的場景;若不是(例如是可編輯的表單欄位、或需要大塊內容的列表行),改用對應的近親元件,下方「vs 近親元件」段有說明。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先確認情境是否屬於上面這些「在選單裡挑一個或多個選項」的場景;若不是(例如是可編輯的表單欄位、或需要大塊內容的列表行),改用對應的近親元件,下方「vs 近親元件」段有說明。</p>
     </div>
 
       {/* vs 近親元件 */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p className="font-medium">vs 近親元件</p>
       <p>MenuItem 是「選單選項列」這個樣式的實際元件;它的排版規則(左側圖示/頭像、文字、右側標記怎麼對齊)與選單選項、列表項、檔案項等共用同一套設計準則。</p>
       <ul>
@@ -61,21 +62,22 @@ export const UsageGuidance: Story = {
 export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
-    <div className="flex flex-col gap-12">
-      <div className="prose prose-sm max-w-prose">
-        <p>MenuItem 是選單選項列的共用排版元件,由以下三類選單元件包起來使用,不會直接寫在產品頁面裡:</p>
-
-        <h4>Pattern 1 — DropdownMenu + MenuItem(action menu)</h4>
+    // 段落 ↔ 段落 = loose、段落標題 → 內容 = tight(與設計原則頁 Section / Rule 同一套;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
+    <div className="flex max-w-prose flex-col gap-[var(--layout-space-loose)]">
+      <p>MenuItem 是選單選項列的共用排版元件,由以下三類選單元件包起來使用,不會直接寫在產品頁面裡:</p>
+      <section className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h5 font-semibold text-foreground">Pattern 1 — DropdownMenu + MenuItem(action menu)</h3>
         <p>使用者點擊觸發某個 action(複製 / 刪除 / 重新命名)→ <LinkTo kind="Design System/Components/DropdownMenu/展示" name="基本"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DropdownMenu</span></LinkTo>(Radix 控制 open / close + keyboard nav,MenuItem 提供 row layout)。</p>
-
-        <h4>Pattern 2 — SelectMenu(Popover + Command + MenuItem)— form value 選擇</h4>
+      </section>
+      <section className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h5 font-semibold text-foreground">Pattern 2 — SelectMenu(Popover + Command + MenuItem)— form value 選擇</h3>
         <p>使用者選一個 / 多個值寫回 form → <LinkTo kind="Design System/Components/Select/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Select</span></LinkTo> / <LinkTo kind="Design System/Components/Combobox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Combobox</span></LinkTo>(內部已組合 SelectMenu + cmdk + MenuItem)。</p>
-
-        <h4>Pattern 3 — ContextMenu + MenuItem(右鍵選單,未來)</h4>
+      </section>
+      <section className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h5 font-semibold text-foreground">Pattern 3 — ContextMenu + MenuItem(右鍵選單,未來)</h3>
         <p>右鍵觸發 contextual action → 預留消費者(Radix ContextMenu + MenuItem 同 layout primitive)。</p>
-
-        <p className="text-fg-muted">禁止:在產品頁面裡自己用 <code>&lt;div&gt;</code> 拼一列選單(像 <code>&lt;div className="flex px-2 py-1.5"&gt;</code>)— 一律透過上方的 MenuItem 系選單元件(DropdownMenu / SelectMenu 等,內部消費 MenuItem),才能確保所有選單列的對齊與間距一致。MenuItem 本身是 internal 排版元件,在產品頁面直接裸用會失去外層選單的無障礙 / 鍵盤 / 焦點管理(詳 spec「何時用 / 何時不用」)。各區塊的對齊規則(左側圖示/頭像在 24px 內對齊、文字往下堆疊、右側標記可有可無)由選項列共用設計準則統一規範。</p>
-      </div>
+      </section>
+      <p className="text-fg-muted">禁止:在產品頁面裡自己用 <code>&lt;div&gt;</code> 拼一列選單(像 <code>&lt;div className="flex px-2 py-1.5"&gt;</code>)— 一律透過上方的 MenuItem 系選單元件(DropdownMenu / SelectMenu 等,內部消費 MenuItem),才能確保所有選單列的對齊與間距一致。MenuItem 本身是 internal 排版元件,在產品頁面直接裸用會失去外層選單的無障礙 / 鍵盤 / 焦點管理(詳 spec「何時用 / 何時不用」)。各區塊的對齊規則(左側圖示/頭像在 24px 內對齊、文字往下堆疊、右側標記可有可無)由選項列共用設計準則統一規範。</p>
     </div>
   ),
 }

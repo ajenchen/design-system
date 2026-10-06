@@ -9,6 +9,7 @@ import { AppShell, AppShellAside } from './app-shell'
 import { AcmeSidebar, PageHeader, GlobalHeader, MAIN_NAV } from './_demo-helpers'
 import { SidebarProvider } from '@/design-system/components/Sidebar/sidebar'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -215,29 +216,33 @@ function IssueDetail({ issue }: { issue: Issue | null }) {
     )
   }
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <ItemContent
-          size="lg"
-          label={issue.title}
-          description={issue.id}
-          descriptionTone="muted"
-          labelTruncate={false}
-          labelClassName="font-medium text-foreground"
-        />
-        <div className="flex flex-wrap gap-2">
-          <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
-          <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
+    <div className="flex flex-col px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <ItemContent
+            size="lg"
+            label={issue.title}
+            description={issue.id}
+            descriptionTone="muted"
+            labelTruncate={false}
+            labelClassName="font-medium text-foreground"
+          />
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="flex flex-wrap gap-1">
+            <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
+            <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
+          </div>
         </div>
+        <DescriptionList orientation="horizontal" divided>
+          <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
+          <DescriptionItem label="Due">{issue.due}</DescriptionItem>
+        </DescriptionList>
       </div>
-      <DescriptionList orientation="horizontal" divided>
-        <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
-        <DescriptionItem label="Due">{issue.due}</DescriptionItem>
-      </DescriptionList>
-      <div className="flex gap-2">
+      {/* 規則 4:最後內容 → action button = --layout-space-bottom(48px,commitment 前留白);按鈕之後到容器底是 element → 容器底 = tight */}
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
         <Button size="sm" variant="primary" startIcon={UserCheck}>分派給我</Button>
         <Button size="sm" variant="tertiary" startIcon={CheckCircle2}>標記完成</Button>
-      </div>
+      </ButtonGroup>
     </div>
   )
 }

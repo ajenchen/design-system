@@ -9,6 +9,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { SearchX, FolderOpen, Inbox, WifiOff } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 
@@ -22,8 +24,9 @@ type Story = StoryObj
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -33,10 +36,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-4">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -45,6 +48,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  // @layout-space-magic-ok: Empty 外框留白由容器決定且刻意不隨 density(empty.spec.md:69 / :183)(layoutSpace.spec.md:113 同範疇 spec-own)
   <div className={`border border-border rounded-lg p-8 max-w-md ${className ?? ''}`}>{children}</div>
 )
 
@@ -55,8 +59,9 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>適合 Empty 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/Empty/展示" name="搜尋無結果"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋無結果</span></LinkTo>
@@ -65,7 +70,7 @@ export const UsageGuidance: Story = {
               <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">空清單</span></LinkTo>
             </li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
         </div>
       </Section>
 
@@ -113,6 +118,7 @@ export const UsageGuidance: Story = {
           note="Empty 代表「已經查過、確定沒有」;loading 是「還沒查完、不確定有沒有」。直接顯示 Empty 會讓使用者以為資料真的沒有,然後一秒後內容跳出來,視覺跳動破壞信任"
         >
           <Frame>
+            {/* @layout-space-magic-ok: 骨架文字行之間(同一文字區的 micro)(layoutSpace.spec.md:166 micro) */}
             <div className="flex flex-col gap-3">
               <Skeleton className="h-5 w-2/3" />
               <Skeleton className="h-4 w-full" />
@@ -231,10 +237,10 @@ export const StructureRule: Story = {
             title="開始你的第一個專案"
             description="從範本快速建立,或自己從零規劃"
             action={
-              <div className="flex gap-2">
+              <ButtonGroup>
                 <Button variant="tertiary">從範本</Button>
                 <Button variant="primary">從零建立</Button>
-              </div>
+              </ButtonGroup>
             }
           />
         </Frame>
@@ -251,10 +257,10 @@ export const StructureRule: Story = {
             title="還沒有專案"
             description="選一個方式開始"
             action={
-              <div className="flex gap-2">
+              <ButtonGroup>
                 <Button variant="primary">匯入資料</Button>
                 <Button variant="primary">建立新專案</Button>
-              </div>
+              </ButtonGroup>
             }
           />
         </Frame>

@@ -8,6 +8,9 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Flag } from 'lucide-react'
 import { Select } from './select'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計原則',
@@ -19,8 +22,9 @@ type Story = StoryObj
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -30,10 +34,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-xs">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-xs">{children}</CaptionedExamples>
   </div>
 )
 
@@ -64,8 +68,9 @@ export const UsageGuidance: Story = {
     return (
       <div>
         <Section title="何時用">
-          <div className="prose prose-sm max-w-prose">
+          <div className="max-w-prose">
             <p>適合 Select 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
             <ul className="space-y-1">
               <li>
                 <LinkTo kind="Design System/Components/Select/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo>
@@ -83,7 +88,7 @@ export const UsageGuidance: Story = {
                 <LinkTo kind="Design System/Components/Select/展示" name="搜尋"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋</span></LinkTo>
               </li>
             </ul>
-            <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+            <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
           </div>
         </Section>
 
@@ -206,7 +211,7 @@ export const ImmediateVsSubmitRule: Story = {
           note="Jira status、Linear priority、filter、theme 切換。改了立刻寫 DB / 送 API / 改 URL。onChange 通常呼叫 mutation 或 setState 更新父層。沒有「取消」的概念"
         >
           <div>
-            <p className="text-caption text-fg-muted mb-1">Task status(改了立刻寫 DB)</p>
+            <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Task status(改了立刻寫 DB)</p>
             <Select display="tag" options={statusOptions} value={immediate} onChange={setImmediate} />
           </div>
           <Label>↑ 視覺上是獨立的 inline control,旁邊沒有 submit button</Label>
@@ -216,15 +221,16 @@ export const ImmediateVsSubmitRule: Story = {
           title="隨 form 送出 — onChange 只更新 local state"
           note="建立/編輯表單、對話框設定。onChange 寫進 React state,直到 submit button 被按才送出。有「取消」可回復"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
             <Field>
               <FieldLabel>Category</FieldLabel>
               <Select options={categoryOptions} value={draft} onChange={setDraft} />
             </Field>
-            <div className="flex gap-2 pt-2">
-              <button className="h-field-md px-3 text-body rounded-md bg-primary text-inverse-fg">儲存</button>
-              <button className="h-field-md px-3 text-body rounded-md border border-border">取消</button>
-            </div>
+            {/* 規則 4:最後內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
+            <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+              <Button variant="primary">儲存</Button>
+              <Button variant="tertiary">取消</Button>
+            </ButtonGroup>
           </div>
           <Label>↑ 包在 Form 容器內 + submit / cancel button,使用者清楚儲存時機</Label>
         </Rule>

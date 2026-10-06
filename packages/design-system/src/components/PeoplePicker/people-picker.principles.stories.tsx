@@ -6,6 +6,7 @@ import { PeoplePicker } from './people-picker'
 import type { PersonValue } from './person-display'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/設計原則',
@@ -21,10 +22,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -56,6 +57,7 @@ export const UsageGuidance: Story = {
           title="何時用 — 真實業務場景"
           note="PeoplePicker 用於「選擇 user 為值」場景 — 資料本質是「人」,需要 avatar 視覺輔助辨識(對比一般 Combobox 純字串)。Avatar-first display 對齊 Linear assignee picker / Asana people field / Slack mention picker 共識,讓使用者「掃 avatar 而非讀名字」更快。"
         >
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單人</span></LinkTo>
@@ -73,7 +75,7 @@ export const UsageGuidance: Story = {
           title="vs Select — PeoplePicker 是選人員(選項有 avatar 視覺)"
           note="assign task、email 收件人、PR reviewer、文章作者等場景:資料本質是人,使用者靠 avatar + 名字識別(不是純文字 label)。對齊 Slack people picker / Jira assignee dropdown 的 avatar-first 模式"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 指派 task 給某人（單選）</Label>
             <PeoplePicker
               value={assignee}
@@ -81,14 +83,14 @@ export const UsageGuidance: Story = {
               people={team}
               aria-label="task 負責人"
             />
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="❌ 選非人員(分類 / 狀態)用 PeoplePicker"
           note="Avatar 視覺是「選人」的獨有語意——選「優先級」、「產品類別」、「訂單狀態」這些非人員的分類用 Select / Combobox,否則 avatar 會變成無意義裝飾"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 選產品分類用 Select（沒有 avatar 概念）</Label>
             <Select
               options={[
@@ -99,7 +101,7 @@ export const UsageGuidance: Story = {
               value={category}
               onChange={setCategory}
             />
-          </div>
+          </ExampleGroup>
           <Label warn>↑ 非人員不要用 PeoplePicker</Label>
         </Rule>
 

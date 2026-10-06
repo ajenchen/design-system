@@ -523,7 +523,7 @@ export const ModeMatrix: Story = {
             <div className="flex flex-col gap-2">
               <span className="text-footnote text-fg-muted font-mono">Simple single</span>
               <SelectMenu options={statusOptions} value={single} onValueChange={(v) => setSingle(v as string)}>
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   {statusOptions.find((o) => o.value === single)?.label}
                 </Button>
               </SelectMenu>
@@ -537,7 +537,7 @@ export const ModeMatrix: Story = {
                 onValueChange={(v) => setSearch(v as string)}
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   {search ? reviewerOptions.find((o) => o.value === search)?.label : '選擇 reviewer'}
                 </Button>
               </SelectMenu>
@@ -551,7 +551,7 @@ export const ModeMatrix: Story = {
                 onValueChange={(v) => setMulti(v as string[])}
                 multiple
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   已選 {multi.length} 項
                 </Button>
               </SelectMenu>
@@ -566,7 +566,7 @@ export const ModeMatrix: Story = {
                 multiple
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Reviewer {multiSearch.length > 0 ? `(${multiSearch.length})` : ''}
                 </Button>
               </SelectMenu>
@@ -590,7 +590,7 @@ export const ModeMatrix: Story = {
                   setCreatable((prev) => [...prev, v])
                 }}
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Tags {creatable.length > 0 ? `(${creatable.length})` : ''}
                 </Button>
               </SelectMenu>
@@ -606,7 +606,7 @@ export const ModeMatrix: Story = {
                 multiple
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Labels ({grouped.length})
                 </Button>
               </SelectMenu>

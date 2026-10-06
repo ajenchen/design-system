@@ -5,6 +5,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Switch } from './switch'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Switch/設計原則',
@@ -18,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -40,16 +42,17 @@ export const UsageGuidance: Story = {
     const [bluetooth, setBluetooth] = React.useState(true)
     const [agreeTerms, setAgreeTerms] = React.useState(false)
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Switch 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Switch/展示" name="搭配標籤"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搭配標籤</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時,問自己:這是切換即生效的獨立開關,還是表單裡要按送出才成立的勾選?前者用 Switch,後者用 Checkbox。下面幾段有完整對照。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時,問自己:這是切換即生效的獨立開關,還是表單裡要按送出才成立的勾選?前者用 Switch,後者用 Checkbox。下面幾段有完整對照。</p>
     </div>
 
       {/* vs 近親元件 — 原 VsCheckboxRule */}
@@ -58,18 +61,14 @@ export const UsageGuidance: Story = {
           title="vs 近親元件 — Switch 最適合即時生效的布林開關"
           note="切換即生效——物理開關類比(牆上 light switch、iPhone settings)。使用者按下那刻 Bluetooth 就開了,不經任何 submit 流程"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-body font-medium">Bluetooth</div>
-                <div className="text-caption text-fg-muted">切換立刻開 / 關</div>
-              </div>
-              <Switch
-                checked={bluetooth}
-                onCheckedChange={setBluetooth}
-                aria-label="Bluetooth"
-              />
-            </div>
+          {/* 標籤 / 說明用 Switch 自己的 label / description(switch.spec.md「label / description 整合」:左文字、右開關,間距與字級由 Switch 擁有) */}
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+            <Switch
+              checked={bluetooth}
+              onCheckedChange={setBluetooth}
+              label="Bluetooth"
+              description="切換立刻開 / 關"
+            />
           </div>
           <Label>↑ 獨立 inline control,無 submit / cancel 流程</Label>
         </Rule>
@@ -78,16 +77,16 @@ export const UsageGuidance: Story = {
           title="何時不用 / 替代元件 — Form 內的同意 / 勾選用 Checkbox"
           note="「我同意服務條款」是「勾選 → 送出 → 法律成立」的書面行為。Switch 的物理開關隱喻暗示「我打開了接受條款這個功能」——心智錯位且違反約定俗成(全球沒有 form 用 Switch 同意條款)"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
             <Checkbox
               label="我同意服務條款與隱私政策"
               checked={agreeTerms}
               onCheckedChange={(v) => setAgreeTerms(v === true)}
             />
-            <div className="flex gap-2 pt-2">
+            <ButtonGroup className="mt-[var(--layout-space-bottom)]">
               <Button variant="primary">送出</Button>
               <Button variant="tertiary">取消</Button>
-            </div>
+            </ButtonGroup>
           </div>
           <Label>↑ Form 內同意條款用 Checkbox,隨 submit 才成立</Label>
         </Rule>
@@ -106,13 +105,13 @@ export const UsageGuidance: Story = {
         title="Readonly(standalone)保留正常顏色(可讀)/ Disabled 降透明度(弱化)"
         note="兩者都鎖定互動,但視覺訊號不同:readonly 告訴使用者「這個值就是這樣,你看得清」;disabled 告訴使用者「這個 field 目前不可用」(弱化暗示低優先)"
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Readonly ON(顏色正常)</div>
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Readonly ON(顏色正常)</div>
             <Switch readOnly defaultChecked aria-label="唯讀的開啟狀態設定" />
           </div>
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Disabled ON(opacity 降低)</div>
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Disabled ON(opacity 降低)</div>
             <Switch disabled defaultChecked aria-label="停用的開啟狀態設定" />
           </div>
         </div>
@@ -138,21 +137,21 @@ export const DisabledOpacityRule: Story = {
         title="Switch disabled 用 opacity,不用灰階 swap"
         note="Switch 的 on/off 最強視覺載體是顏色(track bg-primary vs bg-border);thumb 位移與 checked 小 check icon 是輔助線索。若灰階 swap(primary → border),disabled 的 ON/OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態"
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Rest ON</div>
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Rest ON</div>
             <Switch defaultChecked aria-label="可用的開啟狀態 Switch" />
           </div>
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Rest OFF</div>
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Rest OFF</div>
             <Switch aria-label="可用的關閉狀態 Switch" />
           </div>
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Disabled ON(opacity 保留顏色)</div>
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Disabled ON(opacity 保留顏色)</div>
             <Switch defaultChecked disabled aria-label="停用的開啟狀態 Switch" />
           </div>
-          <div className="border border-dashed border-divider rounded-md p-3">
-            <div className="text-caption text-fg-muted mb-2">Disabled OFF</div>
+          <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Disabled OFF</div>
             <Switch disabled aria-label="停用的關閉狀態 Switch" />
           </div>
         </div>

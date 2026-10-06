@@ -5,6 +5,7 @@ import { Sparkles, Bot, Users, FolderPlus, Keyboard, MousePointer2, Command } fr
 import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 
 const meta: Meta = {
   title: 'Design System/Components/Coachmark/展示',
@@ -24,7 +25,7 @@ export const FeatureDiscovery: Story = {
   render: () => {
     const [open, setOpen] = React.useState(true)
     return (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-[var(--layout-space-tight)]">
         <Coachmark
           open={open}
           onOpenChange={setOpen}
@@ -86,40 +87,43 @@ export const MultiStepTour: Story = {
     // 修法:**只 active step render Coachmark wrapper**,Radix 每 step 視為 fresh mount,無 race。
     // 對齊 Ant Tour / Shepherd.js / Joyride 世界級多步驟 tour pattern。
     return (
-      <div className="flex flex-col gap-6 min-w-[360px]">
-        <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-surface">
-          {tourSteps.map((s, i) => {
-            const isCurrent = step === i
-            const trigger = (
-              <Button variant={isCurrent ? 'primary' : 'tertiary'} size="sm" startIcon={s.icon}>
-                {s.anchor}
-              </Button>
-            )
-            if (!isCurrent) {
-              return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
-            }
-            return (
-              <Coachmark
-                key={s.anchor}
-                open={open}
-                onOpenChange={setOpen}
-                kind="new-features"
-                image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
-                title={s.title}
-                description={s.description}
-                step={{ current: i + 1, total: tourSteps.length }}
-                onPrev={i > 0 ? () => setStep(i - 1) : undefined}
-                onSkip={() => setOpen(false)}
-                onNext={() => (i === tourSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
-                isLastStep={i === tourSteps.length - 1}
-                side="bottom"
-                align="start"
-              >
-                {trigger}
-              </Coachmark>
-            )
-          })}
+      <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-[360px]">
+        <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-lg bg-surface">
+          <ButtonGroup>
+            {tourSteps.map((s, i) => {
+              const isCurrent = step === i
+              const trigger = (
+                <Button variant={isCurrent ? 'primary' : 'tertiary'} size="sm" startIcon={s.icon}>
+                  {s.anchor}
+                </Button>
+              )
+              if (!isCurrent) {
+                return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
+              }
+              return (
+                <Coachmark
+                  key={s.anchor}
+                  open={open}
+                  onOpenChange={setOpen}
+                  kind="new-features"
+                  image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
+                  title={s.title}
+                  description={s.description}
+                  step={{ current: i + 1, total: tourSteps.length }}
+                  onPrev={i > 0 ? () => setStep(i - 1) : undefined}
+                  onSkip={() => setOpen(false)}
+                  onNext={() => (i === tourSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
+                  isLastStep={i === tourSteps.length - 1}
+                  side="bottom"
+                  align="start"
+                >
+                  {trigger}
+                </Coachmark>
+              )
+            })}
+          </ButtonGroup>
         </div>
+        {/* @layout-space-magic-ok: 「重設 Tour」按鈕 ↔ 同列的進度狀態文字 8px(控件 ↔ 它的行內狀態)(layoutSpace.spec.md:166 micro)—— 與待辦總帳 N64 待決的「送出鈕 ↔ 已送出 ✓」同一種關係,N64 拍板後一起改 */}
         <div className="flex gap-2">
           <Button variant="tertiary" size="sm" onClick={() => { setStep(0); setOpen(true) }}>重設 Tour</Button>
           <span className="text-footnote text-fg-muted self-center">
@@ -168,41 +172,43 @@ export const TipsMultiStep: Story = {
 
     // 同 MultiStepTour:只 active step render Coachmark(避免多 Coachmark 共存時 Radix race bug)
     return (
-      <div className="flex flex-col gap-6 min-w-[360px]">
-        <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-surface">
-          {tipSteps.map((s, i) => {
-            const isCurrent = step === i
-            const trigger = (
-              <Button variant={isCurrent ? 'primary' : 'tertiary'} size="sm" startIcon={s.icon}>
-                {s.anchor}
-              </Button>
-            )
-            if (!isCurrent) {
-              return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
-            }
-            return (
-              <Coachmark
-                key={s.anchor}
-                open={open}
-                onOpenChange={setOpen}
-                kind="tips"
-                image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
-                title={s.title}
-                description={s.description}
-                step={{ current: i + 1, total: tipSteps.length }}
-                onPrev={i > 0 ? () => setStep(i - 1) : undefined}
-                onSkip={() => setOpen(false)}
-                onNext={() => (i === tipSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
-                isLastStep={i === tipSteps.length - 1}
-                side="bottom"
-                align="start"
-              >
-                {trigger}
-              </Coachmark>
-            )
-          })}
+      <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-[360px]">
+        <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-lg bg-surface">
+          <ButtonGroup>
+            {tipSteps.map((s, i) => {
+              const isCurrent = step === i
+              const trigger = (
+                <Button variant={isCurrent ? 'primary' : 'tertiary'} size="sm" startIcon={s.icon}>
+                  {s.anchor}
+                </Button>
+              )
+              if (!isCurrent) {
+                return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
+              }
+              return (
+                <Coachmark
+                  key={s.anchor}
+                  open={open}
+                  onOpenChange={setOpen}
+                  kind="tips"
+                  image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
+                  title={s.title}
+                  description={s.description}
+                  step={{ current: i + 1, total: tipSteps.length }}
+                  onPrev={i > 0 ? () => setStep(i - 1) : undefined}
+                  onSkip={() => setOpen(false)}
+                  onNext={() => (i === tipSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
+                  isLastStep={i === tipSteps.length - 1}
+                  side="bottom"
+                  align="start"
+                >
+                  {trigger}
+                </Coachmark>
+              )
+            })}
+          </ButtonGroup>
         </div>
-        <div className="flex gap-2">
+        <div className="flex">
           <Button variant="tertiary" size="sm" onClick={() => { setStep(0); setOpen(true) }}>重設 Tips</Button>
         </div>
         <p className="text-footnote text-fg-muted">

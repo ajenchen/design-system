@@ -4,8 +4,9 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Bell, Home } from 'lucide-react'
 import { Avatar } from './avatar'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
+import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Avatar/設計原則',
@@ -19,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -31,8 +32,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -44,14 +46,15 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>Avatar 代表「誰」——人、團隊、組織、專案的視覺身份。適合的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>留言者、指派者、團隊成員列表的人員識別;workspace / 組織 / App 的身份標識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo></li>
             <li>成員沒上傳照片、或頭像圖片載入失敗時,以名字首字 + 色彩維持可辨識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="備援顯示"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">備援顯示</span></LinkTo></li>
             <li>通訊錄、成員選單、chat 列表等列表項目的主視覺 prefix —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="情境用例"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">情境用例</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
       </Section>
 
@@ -60,13 +63,17 @@ export const UsageGuidance: Story = {
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
-          <div role="group" aria-label="Avatar 誤用範例" className="border border-divider rounded-lg bg-surface py-1">
-            {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
-            <MenuItem role="presentation" avatar={{ alt: '設定' }}>設定</MenuItem>
+          <div className="border border-divider rounded-lg bg-surface">
+            <MenuGroup aria-label="Avatar 誤用範例">
+              {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
+              <MenuItem role="presentation" avatar={{ alt: '設定' }}>設定</MenuItem>
+            </MenuGroup>
           </div>
           <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</Label>
-          <div role="group" aria-label="功能圖示正確用法" className="border border-divider rounded-lg bg-surface py-1">
-            <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
+          <div className="border border-divider rounded-lg bg-surface">
+            <MenuGroup aria-label="功能圖示正確用法">
+              <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
+            </MenuGroup>
           </div>
           <Label>↑ ✓ 功能 / 動作 / 概念用 Lucide icon,語義清楚不會誤認身份</Label>
         </Rule>
@@ -85,30 +92,37 @@ export const UsageGuidance: Story = {
           title="Avatar 代表身份,Icon 代表概念"
           note="判斷法:「這代表『誰』還是『做什麼』?」誰 / 什麼實體 → Avatar;做什麼 / 某個概念 → Icon"
         >
-          <div role="group" aria-label="身份與功能圖示對照" className="border border-divider rounded-lg bg-surface py-1">
-            {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
-            <MenuItem role="presentation" avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
-            <MenuItem role="presentation" avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
-          </div>
-          {/* 視覺圖例(legend),非 list item */}
-          <div className="flex items-center gap-3 flex-wrap mt-2">
-            {/* @anatomy-exempt-next */}
-            <div className="flex items-center gap-2">
-              <Avatar src="https://i.pravatar.cc/48?u=ada-chen" alt="Ada Chen" size={24} />
-              <span className="text-footnote text-fg-muted">人員</span>
+          {/* 選單 → 解讀它的圖例 = labeling(tight);兩者成一組,與 Rule 內其他範例並列(loose 由 Rule 擁有) */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="border border-divider rounded-lg bg-surface">
+              <MenuGroup aria-label="身份與功能圖示對照">
+                {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
+                <MenuItem role="presentation" avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
+                <MenuItem role="presentation" avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
+              </MenuGroup>
             </div>
-            <div className="flex items-center gap-2">
-              <Home size={16} />
-              <span className="text-footnote text-fg-muted">首頁(概念)</span>
-            </div>
-            {/* @anatomy-exempt-next */}
-            <div className="flex items-center gap-2">
-              <Avatar alt="ABC Corp" size={24} color="purple" />
-              <span className="text-footnote text-fg-muted">組織</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Bell size={16} />
-              <span className="text-footnote text-fg-muted">通知(動作)</span>
+            {/* 視覺圖例(legend),非 list item;四個並列圖例 → loose */}
+            <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
+              {/* @anatomy-exempt-next  @layout-space-magic-ok: 頭像 / 圖示 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+              <div className="flex items-center gap-2">
+                <Avatar src="https://i.pravatar.cc/48?u=ada-chen" alt="Ada Chen" size={24} />
+                <span className="text-footnote text-fg-muted">人員</span>
+              </div>
+              {/* @layout-space-magic-ok: 頭像 / 圖示 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+              <div className="flex items-center gap-2">
+                <Home size={16} />
+                <span className="text-footnote text-fg-muted">首頁(概念)</span>
+              </div>
+              {/* @anatomy-exempt-next  @layout-space-magic-ok: 頭像 / 圖示 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+              <div className="flex items-center gap-2">
+                <Avatar alt="ABC Corp" size={24} color="purple" />
+                <span className="text-footnote text-fg-muted">組織</span>
+              </div>
+              {/* @layout-space-magic-ok: 頭像 / 圖示 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+              <div className="flex items-center gap-2">
+                <Bell size={16} />
+                <span className="text-footnote text-fg-muted">通知(動作)</span>
+              </div>
             </div>
           </div>
         </Rule>
@@ -127,7 +141,7 @@ export const FallbackRule: Story = {
       >
         {/* 刻意示範 initials fallback:後三顆**必須**無 src(fallback 順序示範,
             2026-07-08 demo 人像真實化 sweep 豁免保留) */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar alt="Ada Chen" size={40} src="https://i.pravatar.cc/80?img=1" />
           <Avatar alt="Ada Chen" size={40} />
           <Avatar alt="Alice Wang" size={40} />
@@ -147,7 +161,7 @@ export const WithBadgeOverlayRule: Story = {
         title="Avatar 右下角 status dot — presence(在線 / 忙碌 / 離開 / 離線)"
         note="用 Avatar 的 `status` prop(不是手刻 `<Badge dot>`)—— 顏色走 presence semantic token(`--status-online` 等,獨立於 success / error / warning),位置固定 avatar 右下角,尺寸程式化 28%"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" />
           <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} status="busy" />
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} status="away" />
@@ -160,7 +174,7 @@ export const WithBadgeOverlayRule: Story = {
         title="Avatar 右上角 count badge — 未讀訊息(chat / messenger 場景)"
         note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant,與頭像之間的縫從圓上挖出來(不畫外圈),max=99 自動處理 99+"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} badgeCount={3} />
           <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} badgeCount={12} />
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={128} />
@@ -172,7 +186,7 @@ export const WithBadgeOverlayRule: Story = {
         title="✅ status(右下 presence)+ badgeCount(右上 count)可並存"
         note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" badgeCount={3} />
           <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} status="busy" />
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={12} />
@@ -218,30 +232,32 @@ export const HoverCardIntegrationRule: Story = {
         title="❌ 關鍵資訊只靠 hover 顯示(觸控裝置看不到)"
         note="ProfileCard hover 本身用法沒錯,問題是「資訊的唯一出口」。觸控裝置無 hover 能力,若必看資訊(狀態角色、是否離職、權限等)只出現在 hover 浮層裡,平板 / 手機使用者完全錯過。hover 是補充資訊管道,不是關鍵資訊唯一載體"
       >
-        <div className="flex items-start gap-8">
-          <div className="flex flex-col gap-2">
+        <div className="flex items-start gap-[var(--layout-space-loose)]">
+          <ExampleGroup>
             <Avatar src="https://i.pravatar.cc/96?u=alex-wang" alt="Alex Wang" size={48}
               hoverCard={
                 <ProfileCard name="Alex Wang" subtitle="Engineer · 已離職" onViewMore={() => {}} />
               }
             />
             <Label warn>❌ 「已離職」只出現在 hover 內 — 觸控使用者看不到,可能誤發訊息給已離職成員</Label>
-          </div>
-          <div className="flex flex-col gap-2">
+          </ExampleGroup>
+          <ExampleGroup>
             {/* 主畫面呈現關鍵狀態:Family 2 row 結構(avatar + label + description)由 MenuItem
                 承載——size=lg 觸發 block 對齊(avatar 跨越 label + description 中心)。
                 這正是 item-anatomy.spec.md 的 Family 2 設計準則,不手刻 flex row。 */}
-            <div role="group" aria-label="成員狀態列表" className="border border-divider rounded-lg bg-surface py-1 w-full">
-              <MenuItem role="presentation"
-                size="lg"
-                avatar={{ src: 'https://i.pravatar.cc/64?u=alex-wang', alt: 'Alex Wang' }}
-                description={<span className="text-error">已離職</span>}
-              >
-                Alex Wang
-              </MenuItem>
+            <div className="border border-divider rounded-lg bg-surface w-full">
+              <MenuGroup aria-label="成員狀態列表">
+                <MenuItem role="presentation"
+                  size="lg"
+                  avatar={{ src: 'https://i.pravatar.cc/64?u=alex-wang', alt: 'Alex Wang' }}
+                  description={<span className="text-error">已離職</span>}
+                >
+                  Alex Wang
+                </MenuItem>
+              </MenuGroup>
             </div>
             <Label>✅ 關鍵狀態直接在主畫面呈現(Family 2 MenuItem 的 description slot 標示),hover 只補充細節</Label>
-          </div>
+          </ExampleGroup>
         </div>
       </Rule>
     </div>

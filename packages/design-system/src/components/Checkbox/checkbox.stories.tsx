@@ -3,6 +3,7 @@
 // 2026-07-14 audit Dim 46 補),跟 anatomy focused subsection 不同教學,不另開抽象 Default/AllSizes。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Checkbox } from './checkbox'
+import { CheckboxGroup } from './checkbox-group'
 
 const meta: Meta<typeof Checkbox> = {
   title: 'Design System/Components/Checkbox/展示',
@@ -20,22 +21,22 @@ type Story = StoryObj<typeof Checkbox>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
         <Checkbox defaultChecked aria-label="同意條款(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <Checkbox mode="view" checked />
-        <p className="text-caption text-fg-muted mt-1">純視覺 glyph（勾/叉 icon，Check/X）；語意由 context（如 DataTable 表頭 + 行標籤）提供，view 不暴露獨立 aria-label。需螢幕報讀器可讀的勾選請用 edit / readonly 模式。</p>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">純視覺 glyph（勾/叉 icon，Check/X）；語意由 context（如 DataTable 表頭 + 行標籤）提供，view 不暴露獨立 aria-label。需螢幕報讀器可讀的勾選請用 edit / readonly 模式。</p>
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <Checkbox readOnly checked aria-label="同意條款(readonly mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <Checkbox disabled checked aria-label="同意條款(disabled mode demo)" />
       </div>
     </div>
@@ -46,10 +47,10 @@ export const Modes: Story = {
 export const States: Story = {
   name: '狀態',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <p className="text-caption text-fg-muted mb-2">md（16px，預設）</p>
-        <div className="flex items-center gap-4">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">md（16px，預設）</p>
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Checkbox aria-label="off" />
           <Checkbox defaultChecked aria-label="on" />
           <Checkbox checked="indeterminate" aria-label="indeterminate" />
@@ -57,7 +58,7 @@ export const States: Story = {
           <Checkbox disabled defaultChecked aria-label="disabled on" />
           <Checkbox disabled checked="indeterminate" aria-label="disabled indeterminate" />
         </div>
-        <div className="flex items-center gap-4 mt-1 text-[10px] text-fg-muted">
+        <div className="flex items-center gap-[var(--layout-space-loose)] mt-[var(--layout-space-tight)] text-footnote text-fg-muted">
           <span className="w-4 text-center">off</span>
           <span className="w-4 text-center">on</span>
           <span className="w-4 text-center">—</span>
@@ -67,8 +68,8 @@ export const States: Story = {
         </div>
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">lg（20px）</p>
-        <div className="flex items-center gap-4">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">lg（20px）</p>
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Checkbox size="lg" aria-label="off" />
           <Checkbox size="lg" defaultChecked aria-label="on" />
           <Checkbox size="lg" checked="indeterminate" aria-label="indeterminate" />
@@ -85,16 +86,17 @@ export const States: Story = {
 export const VerticalGroup: Story = {
   name: '直式群組',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
-          <p className="text-caption text-fg-muted mb-1">size="{size}"</p>
-          <div className="grid">
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size="{size}"</p>
+          {/* 直式群組 = <CheckboxGroup>(預設 vertical = grid、外層 0 gap,列距由 SelectionItem py 擁有;checkbox.spec.md「Orientation」) */}
+          <CheckboxGroup aria-label="商品類別">
             {/* 公開 API:`<Checkbox label>` 自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
             <Checkbox size={size} label="Electronics" />
             <Checkbox size={size} label="Furniture" description="桌椅、收納、辦公家具" />
             <Checkbox size={size} label="Food & Beverage" />
-          </div>
+          </CheckboxGroup>
         </div>
       ))}
     </div>
@@ -105,11 +107,11 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    <div className="flex gap-4 max-w-md">
+    <CheckboxGroup orientation="horizontal" aria-label="商品類別" className="max-w-md">
       <Checkbox label="Electronics" />
       <Checkbox label="Furniture" />
       <Checkbox label="Food" />
-    </div>
+    </CheckboxGroup>
   ),
 }
 

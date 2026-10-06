@@ -4,7 +4,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2, AlertCircle } from 'lucide-react'
+import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2 } from 'lucide-react'
 import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import {
@@ -27,6 +27,8 @@ import {
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { Alert } from '@/design-system/components/Alert/alert'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Coachmark/設計原則',
@@ -42,10 +44,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-3 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -54,8 +56,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -67,14 +70,15 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>適合 Coachmark 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">首次推出 AI 助理時 anchor 到入口按鈕介紹(單步驟)</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步 新手導覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">新用戶首登的三步功能導覽(多步 Onboarding)</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步提示"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">進階快捷鍵的漸進式提示(多步 Tips)</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
       </Section>
 
@@ -83,10 +87,13 @@ export const UsageGuidance: Story = {
           title="❌ 不用 Coachmark 做錯誤提示"
           note="錯誤訊息是使用者動作的回饋(表單驗證失敗、API 錯誤、權限不足)— 應該用 Notice / Alert / Toast 呈現事件。Coachmark 是主動推送教學,語意完全相反"
         >
-          <div className="flex items-center gap-2 p-3 border border-error/30 bg-error/5 rounded-md text-caption">
-            <AlertCircle className="w-4 h-4 text-error" />
-            <span className="text-foreground">這是錯誤訊息的樣子 — 應該用 Notice / Alert / Toast,不是 Coachmark</span>
-          </div>
+          <Alert
+            variant="error"
+            appearance="subtle"
+            title="這是錯誤訊息的樣子"
+            description="使用者動作的回饋應該用 Notice / Alert / Toast 呈現,不是 Coachmark"
+            className="max-w-md"
+          />
           <Label warn>錯誤 → Notice / Alert / Toast;Coachmark 只用於主動推送教學</Label>
         </Rule>
 
@@ -246,7 +253,7 @@ export const MultiStepBestPracticesRule: Story = {
         title="最後一步 isLastStep = Next 變 Done"
         note="語意切換告訴使用者「這是最後一步」。如果最後步仍寫 Next,使用者不知道 tour 是否結束,體驗斷裂。Done 的語意收斂明確,讓使用者知道「我完成了」"
       >
-        <div className="flex gap-6">
+        <div className="flex">
           <Coachmark
             open
             image={<MediaGradient from="var(--color-green-6)" to="var(--color-green-7)" icon={Sparkles} label="完成" />}

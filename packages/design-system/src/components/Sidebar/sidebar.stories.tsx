@@ -69,6 +69,7 @@ const MAIN_NAV = [
 // Consumer 抄此 pattern 用於 SidebarHeader 內 brand。raw <Avatar size={24}>(chrome header 非 row context)。
 // Per header-canonical.spec.md:57-72 + sidebar.spec.md:241-247。
 const WorkspaceBrand = () => (
+  // @layout-space-magic-ok: WorkspaceBrand:Avatar ↔ 工作區名稱 8px(chrome brand 行內 micro,sidebar.spec.md:264)(layoutSpace.spec.md:166 micro)
   <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
     <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
     <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
@@ -152,6 +153,7 @@ const PageContent = ({ title, description }: { title: string; description: React
           {([['專案數量', 24], ['團隊成員', 8], ['本週提交', 47], ['待處理', 3]] as const).map(([t, v]) => (
             <div key={t} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
               <p className="text-caption text-fg-muted">{t}</p>
+              {/* @layout-space-magic-ok: 指標卡 標籤 ↔ 數值 4px(同一張卡內 label ↔ value 的 micro;apps/template App.tsx metric-card 既有註記)(layoutSpace.spec.md:166 micro) */}
               <p className="text-h5 font-semibold mt-1">{v}</p>
             </div>
           ))}
@@ -202,8 +204,10 @@ export const IconCollapse: Story = {
           title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
           description={
             <>
+              {/* @layout-space-magic-ok: 說明文字裡行內 code / kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               扁平主導覽用 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarMenu</code>,
               每項必須有 icon。點左上角 <strong>SidebarTrigger</strong>(灰框按鈕)或按
+              {/* @layout-space-magic-ok: 說明文字裡行內 kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               <kbd className="text-caption px-1 bg-neutral-hover rounded">⌘B</kbd> 切換收合。
               收合後變 icon rail,hover 顯示 tooltip。
             </>
@@ -303,6 +307,7 @@ export const GroupAction: Story = {
           title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
           description={
             <>
+              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               「所有專案」群組標題列右端是 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarGroupAction</code>
               (建立專案):滑過才有底色,底色就是命中區;按下去把下一個專案加進清單。
               點左上角 <strong>SidebarTrigger</strong> 收成 icon 模式,群組標題與這顆鈕一起隱藏。
@@ -472,8 +477,9 @@ export const MixedContent: Story = {
             : activeId}
           description={
             <>
+              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               上方 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarMenu</code> 是 designer 設計好的主導覽,
-              下方 <code className="text-caption px-1 bg-neutral-hover rounded">TreeView</code> 是使用者自建的 project 資料。
+              下方 <code /* @layout-space-magic-ok: 句子裡的行內 code 內距 4px(行內文字 micro;標記放標籤內,另起註解行會吃掉兩段文字間的空白)(layoutSpace.spec.md:166 micro) */ className="text-caption px-1 bg-neutral-hover rounded">TreeView</code> 是使用者自建的 project 資料。
               整個 sidebar 同時只有一個 active,切到 icon 模式後 TreeView 整段隱藏。
             </>
           }
@@ -521,6 +527,7 @@ export const Offcanvas: Story = {
           description={
             <>
               Offcanvas 模式:收合時整個 sidebar 滑出畫面。重新展開的唯一方法是點左上角
+              {/* @layout-space-magic-ok: 說明文字裡行內 kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               <strong> SidebarTrigger </strong>或按 <kbd className="text-caption px-1 bg-neutral-hover rounded">⌘B</kbd>。
             </>
           }
@@ -601,6 +608,7 @@ export const IntegrationSidebar: Story = {
           }
           description={
             <>
+              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
               開啟 <code className="text-caption px-1 bg-neutral-hover rounded">uniformPrefix</code>
               {' '}後,icon 導覽項與帶 logo 的整合項會對齊到同一條左緣,讓文字起點一致
               (如 Notion / Raycast / Linear 的整合區)。預設關閉。

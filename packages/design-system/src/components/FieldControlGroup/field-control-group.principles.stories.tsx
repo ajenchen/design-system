@@ -27,16 +27,17 @@ const OPS = OPERATOR_REGISTRY.string
 export const UsageGuidance: Story = {
   name: '使用準則',
   render: () => (
-    <div className="flex flex-col gap-10 w-[640px]">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] w-[640px]">
       <section>
-        <h2 className="text-body-lg font-bold mb-3">何時用 ✓</h2>
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">何時用 ✓</h2>
+        {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
           <li>兩個語意連動的 control 視覺一體(電話 = 國碼 + 號碼)</li>
           <li>Filter row(field + op + value)</li>
           <li>Search input + Submit button</li>
           <li>Range input(start + end + 中介符號)</li>
         </ul>
-        <div className="mt-3">
+        <div className="mt-[var(--layout-space-tight)]">
           <FieldControlGroup block>
             <Input className="flex-1" startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
             <Button variant="primary">搜尋</Button>
@@ -45,28 +46,29 @@ export const UsageGuidance: Story = {
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">何時不用 ✗</h2>
-        <div className="grid grid-cols-2 gap-6">
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">何時不用 ✗</h2>
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
           <div>
-            <p className="text-body font-medium mb-2 text-error-text">❌ 多 fields 垂直排列</p>
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 多 fields 垂直排列</h3>
             <FieldGroup>
               <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
               <Field><FieldLabel>Email</FieldLabel><Input /></Field>
             </FieldGroup>
-            <p className="text-caption text-fg-muted mt-1">→ 用 FieldGroup,不是 FieldControlGroup</p>
+            <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">→ 用 FieldGroup,不是 FieldControlGroup</p>
           </div>
           <div>
-            <p className="text-body font-medium mb-2 text-error-text">❌ 不相關 controls 強行接合</p>
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 不相關 controls 強行接合</h3>
             <p className="text-caption text-fg-muted">姓名 + 公司電話放同一 group 語意混亂 — 用 separate Field</p>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">FieldControlGroup vs FieldGroup</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="border border-divider rounded-md p-4">
-            <p className="text-body font-bold mb-2">FieldGroup(垂直堆疊)</p>
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">FieldControlGroup vs FieldGroup</h2>
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldGroup(垂直堆疊)</h3>
+            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
             <ul className="text-body text-fg-secondary space-y-1">
               <li>Scope:多個 Field</li>
               <li>Direction:vertical</li>
@@ -74,8 +76,9 @@ export const UsageGuidance: Story = {
               <li>語意:表單 section</li>
             </ul>
           </div>
-          <div className="border border-divider rounded-md p-4">
-            <p className="text-body font-bold mb-2">FieldControlGroup(橫向接合)</p>
+          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldControlGroup(橫向接合)</h3>
+            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
             <ul className="text-body text-fg-secondary space-y-1">
               <li>Scope:多個 control(1 Field 內)</li>
               <li>Direction:horizontal</li>
@@ -87,7 +90,8 @@ export const UsageGuidance: Story = {
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">內容準則</h2>
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">內容準則</h2>
+        {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
           <li>Children 同 size — 不混用 sm/md/lg(視覺高度需一致)</li>
           <li>Children 自管 width — fixed selects + flex input 是典型 pattern</li>
@@ -97,7 +101,7 @@ export const UsageGuidance: Story = {
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">繼承 Field 尺寸 — 包進 Field 當 control slot</h2>
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">繼承 Field 尺寸 — 包進 Field 當 control slot</h2>
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
           <FieldControlGroup block>
@@ -105,11 +109,11 @@ export const UsageGuidance: Story = {
             <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
           </FieldControlGroup>
         </Field>
-        <p className="text-caption text-fg-muted mt-2">Field label / description / error 對 group 整體生效;children 的 size 各自從外層 Field context 繼承(FCG 不傳遞 size)。</p>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">Field label / description / error 對 group 整體生效;children 的 size 各自從外層 Field context 繼承(FCG 不傳遞 size)。</p>
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">Standalone 逐一設尺寸 — Filter row 場景</h2>
+        <h2 className="text-h5 font-semibold mb-[var(--layout-space-tight)]">Standalone 逐一設尺寸 — Filter row 場景</h2>
         <FieldControlGroup block>
           <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
           <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />

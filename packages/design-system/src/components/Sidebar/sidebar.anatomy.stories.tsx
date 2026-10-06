@@ -153,7 +153,7 @@ export const Overview: Story = {
         </div>
         <div className="flex flex-col gap-2 max-w-md">
           <Label>結構樹</Label>
-          <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider leading-relaxed">{`SidebarProvider
+          <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider">{`SidebarProvider
   Sidebar
     SidebarHeader          ← h-[var(--chrome-header-height)]
     SidebarContent         ← flex-1 + ScrollArea 捲動

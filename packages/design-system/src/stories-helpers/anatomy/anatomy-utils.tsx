@@ -12,11 +12,11 @@ import React from 'react'
  */
 
 export const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-body font-bold text-foreground mb-2">{children}</h3>
+  <h3 className="text-h6 font-semibold text-foreground mb-2">{children}</h3>
 )
 
 export const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted mb-4 max-w-[720px] leading-relaxed">{children}</p>
+  <p className="text-caption text-fg-muted mb-4 max-w-[720px]">{children}</p>
 )
 
 export const Td = ({ children, mono, className }: { children: React.ReactNode; mono?: boolean; className?: string }) => (

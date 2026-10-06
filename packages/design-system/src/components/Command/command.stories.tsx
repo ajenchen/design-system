@@ -62,9 +62,9 @@ const PaletteDemo = () => {
   }, [])
 
   return (
-    <div className="flex flex-col gap-3 max-w-xl">
+    <div className="flex flex-col max-w-xl">
       {/* 開對話框的按鈕宣告彈出型別與開合(Radix DialogTrigger 會自動帶;指令面板沒有 DialogTrigger,由按鈕自己寫) */}
-      <Button variant="tertiary" startIcon={Search} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>搜尋或輸入指令…(⌘K)</Button>
+      <Button className="self-start" variant="tertiary" startIcon={Search} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>搜尋或輸入指令…(⌘K)</Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜尋 issue、人員,或輸入指令…" />
         <CommandEmpty>沒有結果</CommandEmpty>
@@ -133,7 +133,7 @@ const ActionCommandDemo = () => {
   const [lastAction, setLastAction] = useState<string | null>(null)
 
   return (
-    <div className="flex flex-col gap-3 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
       <div className="rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
         <Command>
           <CommandInput placeholder="輸入指令…" />

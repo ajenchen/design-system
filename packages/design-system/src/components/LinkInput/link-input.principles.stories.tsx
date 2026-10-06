@@ -4,6 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
 import { Input } from '@/design-system/components/Input/input'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/LinkInput/設計原則',
@@ -19,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -41,10 +42,11 @@ export const UsageGuidance: Story = {
     const [website, setWebsite] = React.useState('https://github.com')
     const [slug, setSlug] = React.useState('my-design-system')
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 LinkInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/LinkInput/展示" name="空值"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">空值</span></LinkTo>
@@ -62,7 +64,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/LinkInput/展示" name="檢視樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示樣式</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:先確認這個值是不是「儲存後使用者會想直接點開的完整網址」。若不是(例如純字串代號、email、內部路徑),改用 Input。下方「vs 近親」段有正反對照範例。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先確認這個值是不是「儲存後使用者會想直接點開的完整網址」。若不是(例如純字串代號、email、內部路徑),改用 Input。下方「vs 近親」段有正反對照範例。</p>
     </div>
 
       {/* vs 近親 — 原 VsInputRule */}
@@ -71,25 +73,25 @@ export const UsageGuidance: Story = {
           title="LinkInput — 有合法 URL 時變藍色連結，點擊開啟新分頁"
           note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。點網址文字永遠是開連結;要改就按右側 Pencil,或點欄位裡文字以外的空白處"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 個人資料：Website（儲存後可直接點擊開啟）</Label>
             <LinkInput value={website} onChange={setWebsite} aria-label="Website" />
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="❌ 用 LinkInput 存非 URL 的字串"
           note="slug / 代號 / email / 內部 route 路徑沒有 protocol(http/https),LinkInput 的 blur 驗證會 false reject。用 Input 搭配適合的驗證"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 專案 slug 用 Input（純字串,不是 URL）</Label>
             <Input value={slug} onChange={(e) => setSlug(e.target.value)} aria-label="專案 slug" />
-          </div>
-          <div>
+          </ExampleGroup>
+          <ExampleGroup>
             <Label warn>❌ 錯用：把 slug 塞進 LinkInput</Label>
             <LinkInput value="my-design-system" onChange={() => {}} aria-label="專案 slug（LinkInput 誤用）" />
             <Label warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</Label>
-          </div>
+          </ExampleGroup>
         </Rule>
       </div>
     </div>
@@ -115,10 +117,10 @@ export const DisplayStateRule: Story = {
         title="空值、編輯中、格式錯誤 → input 外觀"
         note="這三種場景沒有「可點擊的連結」可以展示,退回 input 形式接受輸入"
       >
-        <div>
+        <ExampleGroup>
           <Label>✅ 空值：直接顯示輸入框,不需要先按 Pencil</Label>
           <LinkInput value="" onChange={() => {}} aria-label="Website" />
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule

@@ -32,8 +32,10 @@ type Story = StoryObj
 export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-sm flex items-center gap-3">
+    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro)
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
+      {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間(layoutSpace.spec.md:166 micro) */}
       <div className="flex flex-col gap-2 flex-1">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-48" />
@@ -45,8 +47,9 @@ export const UserProfileCard: Story = {
 export const TaskListLoading: Story = {
   name: '任務列表載入',
   render: () => (
-    <div className="flex flex-col gap-1 max-w-2xl border border-border rounded-lg divide-y divide-border">
+    <div className="flex flex-col max-w-2xl border border-border rounded-lg divide-y divide-border">
       {Array.from({ length: 5 }).map((_, i) => (
+        // @layout-space-magic-ok: 同質任務列的列內距與槽距 = 頁面列表列幾何 px 16px / py 12px / 槽距 12px(item-anatomy.spec.md:1029-1031)(layoutSpace.spec.md:165 同質清單列)
         <div key={i} className="flex items-center gap-3 px-4 py-3">
           <Skeleton className="h-4 w-4 rounded-full" />
           <Skeleton className="h-4 w-16" />
@@ -78,6 +81,7 @@ const loadingColumns: ColumnDef<LoadingRow>[] = [
     header: '客戶',
     meta: { width: 200 },
     cell: () => (
+      // @layout-space-magic-ok: 表格儲存格骨架 頭像 ↔ 名稱(layoutSpace.spec.md:166 micro)
       <div className="flex items-center gap-2">
         <Skeleton className="h-6 w-6 rounded-full" />
         <Skeleton className="h-4 w-24" />
@@ -99,20 +103,26 @@ export const TableRowLoading: Story = {
 export const DocumentLoading: Story = {
   name: '文件載入',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-2xl">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-2xl">
       <Skeleton className="h-8 w-1/2" />
+      {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字(layoutSpace.spec.md:166 micro) */}
       <div className="flex items-center gap-2">
         <Skeleton className="h-5 w-5 rounded-full" />
         <Skeleton className="h-3 w-32" />
       </div>
-      <div className="flex flex-col gap-2 mt-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-      </div>
-      <div className="flex flex-col gap-2 mt-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
+      {/* 段與段並列 = loose;標題 → 作者列 → 內文 = 同一份文件的 functional 鏈 = tight */}
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
+        </div>
+        {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
       </div>
     </div>
   ),
@@ -121,9 +131,9 @@ export const DocumentLoading: Story = {
 export const CardGridLoading: Story = {
   name: '卡片網格載入',
   render: () => (
-    <div className="grid grid-cols-3 gap-4 max-w-4xl">
+    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)] max-w-4xl">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border border-border rounded-lg p-3 flex flex-col gap-3">
+        <div key={i} className="border border-border rounded-lg p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
           <Skeleton className="h-32 w-full rounded-md" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />

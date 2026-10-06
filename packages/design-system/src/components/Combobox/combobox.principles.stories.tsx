@@ -2,7 +2,11 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Combobox/設計原則',
@@ -18,10 +22,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -41,6 +45,19 @@ const categoryOptions = [
   { value: 'sports', label: 'Sports' },
 ]
 
+// 「❌ Table cell 不用 wrap」反例:消費真 DataTable 的 multiSelect 欄(cell-registry 的 MultiSelectCell 就是表格裡的
+// Combobox),只把反例本身(autoRowHeight + meta.wrap)打開 —— 不手刻表頭 / 列幾何去模擬一張表。
+type ProductRow = { name: string; categories: string[] }
+const WRAP_ROWS: ProductRow[] = [
+  { name: 'Headphones', categories: ['electronics', 'lifestyle', 'sports'] },
+  { name: 'USB Hub', categories: ['electronics'] },
+]
+const productCol = createColumnHelper<ProductRow>()
+const WRAP_COLUMNS = [
+  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 120 } }),
+  productCol.accessor('categories', { header: 'Categories', meta: { type: 'multiSelect', options: categoryOptions, wrap: true, width: 200 } }),
+]
+
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 // ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
@@ -51,10 +68,11 @@ export const UsageGuidance: Story = {
   render: () => {
     const [tags, setTags] = React.useState(['electronics', 'food'])
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Combobox 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Combobox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo>
@@ -69,7 +87,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Combobox/展示" name="DataTable 整合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 整合</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -156,19 +174,9 @@ export const WrapRule: Story = {
           title="❌ Table cell 不用 wrap"
           note="多行會破壞 row 高度一致性，讓 table 變得不規則。Table cell 永遠用單行，使用者需要完整清單時 hover +N"
         >
-          <div className="border border-border rounded-lg overflow-hidden w-full max-w-md">
-            <div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted">
-              <span className="w-24 text-caption font-medium">Product</span>
-              <span className="text-caption font-medium">Categories</span>
-            </div>
-            <div className="flex items-start gap-3 px-3 py-2">
-              <span className="w-24 text-caption pt-1">Headphones</span>
-              <Combobox wrap options={categoryOptions} value={['electronics', 'lifestyle', 'sports']} mode="readonly" className="flex-1" />
-            </div>
-            <div className="flex items-start gap-3 px-3 py-2 border-t border-border">
-              <span className="w-24 text-caption pt-1">USB Hub</span>
-              <Combobox wrap options={categoryOptions} value={['electronics']} mode="readonly" className="flex-1" />
-            </div>
+          {/* 表格寬 = 窄欄位(DataTable 預設各欄均分剩餘寬度;max-w-sm 讓 Categories 欄放不下三個 Tag → 反例才看得出列高不一) */}
+          <div className="w-full max-w-sm">
+            <DataTable columns={WRAP_COLUMNS} data={WRAP_ROWS} getRowId={(r) => r.name} height="auto" autoRowHeight />
           </div>
           <Label warn>↑ 每 row 高度不同 → 掃視節奏被破壞。Table 用單行 + +N 指示器</Label>
         </Rule>

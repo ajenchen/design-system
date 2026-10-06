@@ -128,7 +128,7 @@ export const Accessibility: Story = {
   render: () => (
     <div className="flex flex-col gap-4 max-w-[720px]">
       <H3>A11y 預設</H3>
-      <p className="text-body leading-relaxed whitespace-pre-line">
+      <p className="text-body whitespace-pre-line">
         {'ARIA:WAI-ARIA 無專門 pagination pattern,公認做法(shadcn / MUI / Atlassian 一致)=\n' +
           '- root <nav aria-label="Pagination">(landmark;英文 pattern 名,follow Breadcrumb 慣例)\n' +
           '- 當前頁 aria-current="page"(不用 aria-pressed —— pressed 是可取消 toggle,當前頁不可取消)\n' +

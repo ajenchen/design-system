@@ -6,8 +6,10 @@ import { X } from 'lucide-react'
 import { FileUpload } from './file-upload'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Alert } from '@/design-system/components/Alert/alert'
+import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/FileUpload/設計原則',
@@ -27,12 +29,12 @@ const Rule = ({
   note?: string
   children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
     {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>
     )}
-    <div className="flex flex-col gap-3 max-w-lg">{children}</div>
+    <CaptionedExamples caption={Label} className="max-w-lg">{children}</CaptionedExamples>
   </div>
 )
 
@@ -58,10 +60,11 @@ const noop = () => {}
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 FileUpload 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/FileUpload/展示" name="單檔上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">履歷 / 大頭貼等單檔上傳</span></LinkTo>
@@ -76,7 +79,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/FileUpload/展示" name="自訂內容"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">品牌化上傳區 — 自訂 dropzone 內容</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁 <code>UsageGuidance</code>「vs 近親」段)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁 <code>UsageGuidance</code>「vs 近親」段)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -92,7 +95,7 @@ export const UsageGuidance: Story = {
         title="❌ 不加 scale / shadow 等裝飾性 drag-over 信號"
         note="drag-over 只用邊框顏色(border-primary-hover,底維持 surface 不變 bg)傳達狀態。加 scale 會讓區塊在拖放瞬間晃動、使用者滑鼠與 drop target 錯位;加 shadow 和元件 elevation 體系衝突。"
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted">
             ✓ 僅改邊框顏色(dashed primary-hover,底維持 surface)
           </div>
@@ -130,19 +133,19 @@ export const UsageGuidance: Story = {
         title='✅ 表單內 inline field — 用 FileUpload variant="button"'
         note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
       >
-        <div className="flex flex-col gap-3 w-full">
+        <FieldGroup className="w-full">
           <Field>
             <FieldLabel>申請人姓名</FieldLabel>
             <Input placeholder="王小明" />
           </Field>
           <Field>
             <FieldLabel>申請人身分證</FieldLabel>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-[var(--layout-space-tight)]">
               <Input className="flex-1" placeholder="A123456789" />
               <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
             </div>
           </Field>
-        </div>
+        </FieldGroup>
         <Label>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</Label>
       </Rule>
 
@@ -214,41 +217,45 @@ export const DivisionOfLaborRule: Story = {
           title="✅ FileUpload 觸發 + FileItem 顯示"
           note="本範例走 consumer 自組清單:FileUpload 負責拖放偵測 + 觸發選檔,已上傳清單由 consumer 用 FileItem map 渲染。DS 同時支援第二條路——把清單交給 FileUpload 的 files prop 內建渲染(見下一則規則);兩條路都合法,差別只在觸發與清單狀態由誰持有,重點是都不重畫 FileItem 內部視覺。這正是 Notion / Slack / Figma 的附件 flow 做法。"
         >
-          <FileUpload
-            multiple
-            title="加入附件"
-            description="任何檔案類型"
-            onUpload={(accepted) =>
-              setFiles((prev) => [
-                ...prev,
-                ...accepted.map((f) => ({
-                  name: f.name,
-                  description: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
-                })),
-              ])
-            }
-          />
-          {files.length > 0 && (
-            <div className="flex flex-col gap-1">
-              {files.map((f, i) => (
-                <FileItem
-                  key={`${f.name}-${i}`}
-                  mode="compact"
-                  name={f.name}
-                  actions={
-                    <Button
-                      variant="text"
-                      size="xs"
-                      iconOnly
-                      startIcon={X}
-                      aria-label={`移除 ${f.name}`}
-                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                    />
-                  }
-                />
-              ))}
-            </div>
-          )}
+          {/* @layout-space-magic-ok: FileUpload → consumer 自組的 compact FileItem 清單 4px,與內建 files 清單同值(file-upload.tsx fileListClassName compact 模式 gap 4px / mt 4px;file-item.spec.md:264 List wrapper canonical) */}
+          <div className="flex flex-col gap-1">
+            <FileUpload
+              multiple
+              title="加入附件"
+              description="任何檔案類型"
+              onUpload={(accepted) =>
+                setFiles((prev) => [
+                  ...prev,
+                  ...accepted.map((f) => ({
+                    name: f.name,
+                    description: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
+                  })),
+                ])
+              }
+            />
+            {files.length > 0 && (
+              // @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:264 List wrapper canonical;layoutSpace.spec.md:113 同範疇 spec-own)
+              <div className="flex flex-col gap-1">
+                {files.map((f, i) => (
+                  <FileItem
+                    key={`${f.name}-${i}`}
+                    mode="compact"
+                    name={f.name}
+                    actions={
+                      <Button
+                        variant="text"
+                        size="xs"
+                        iconOnly
+                        startIcon={X}
+                        aria-label={`移除 ${f.name}`}
+                        onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                      />
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </Rule>
 
         <Rule
@@ -289,11 +296,14 @@ export const ErrorFeedbackRule: Story = {
             }}
           />
           {errors.length > 0 && (
-            <div className="rounded-md border border-error bg-error-subtle px-3 py-2 text-caption text-error-text">
-              {errors.map((msg, i) => (
-                <div key={i}>{msg}</div>
+            <Alert
+              variant="error"
+              appearance="subtle"
+              title="以下檔案無法上傳"
+              description={errors.map((msg, i) => (
+                <span key={i} className="block">{msg}</span>
               ))}
-            </div>
+            />
           )}
         </Rule>
 

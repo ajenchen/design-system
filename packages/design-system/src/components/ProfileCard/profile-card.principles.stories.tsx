@@ -6,6 +6,7 @@ import { MessageCircle, Phone, ChevronDown } from 'lucide-react'
 import { ProfileCard } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/ProfileCard/設計原則',
@@ -21,10 +22,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -81,10 +82,11 @@ function InlineHoverExample() {
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 ProfileCard 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/ProfileCard/展示" name="懸停展開 ProfileCard"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">懸停留言者 / PR reviewer / 成員列表的頭像,展開人員詳情卡</span></LinkTo>
@@ -107,6 +109,7 @@ export const UsageGuidance: Story = {
         title="❌ 單純顯示名字用 ProfileCard → 過重"
         note="列表項目只顯示名字 + 頭像時,用 Avatar + Text 就好。ProfileCard 是 hover 才展開的詳情卡,不是 list item 樣式"
       >
+        {/* @layout-space-magic-ok: 頭像 ↔ 姓名(反例主題不是間距)(layoutSpace.spec.md:166 micro) */}
         <div className="flex items-center gap-2">
           <Avatar src={AVATAR_URL} alt="Alice" size={24} />
           <span className="text-body">Alice Chen</span>
@@ -165,7 +168,7 @@ export const FixedWidthRule: Story = {
         title="ProfileCard 永遠 320px，不隨內容伸縮"
         note="HoverCard 浮層寬度由 ProfileCard 決定。若寬度隨內容變化,使用者在不同人員的卡之間切換時,浮層會左右跳動,體驗破碎。固定寬度保證穩定預測。對照 Material Snackbar 固定 344px,世界級 DS 一致採「單一元件 設計準則 寬度固定」策略"
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <div className="border border-border rounded-lg">
             <ProfileCard name="Bob" avatar={{ src: AVATAR_URL, alt: 'Bob' }} subtitle="Engineering" status="online" />
           </div>
@@ -204,7 +207,7 @@ export const SectionRule: Story = {
         title="每個 section 各有渲染規則"
         note="Profile header + Info fields 永遠顯示（fields 為 always-render：缺值顯 — 佔位，固定結構防漂移）;status / actions / viewMore 則各自按有無資料決定渲染。不強制全部塞滿——不同情境（basic contact / full profile）自然長出不同形狀"
       >
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
           <div className="border border-border rounded-lg">
             <ProfileCard name="Alice Chen" avatar={{ src: AVATAR_URL, alt: 'Alice' }} subtitle="Designer" />
           </div>

@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Download } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
+import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
 import {
   HoverCard,
   HoverCardTrigger,
@@ -39,6 +40,7 @@ function DelayRow({ token, value, usage, consumers }: {
   token: string; value: string; usage: string; consumers: string
 }) {
   return (
+    // @layout-space-magic-ok: token 表的每一列(TokenRow,同質列:欄距 / 列內距屬列幾何)(layoutSpace.spec.md:165 同質清單列)
     <div className="grid items-center gap-x-6 gap-y-1 border-b border-border py-4 last:border-0"
       style={{ gridTemplateColumns: '200px 80px 1fr 220px' }}>
       <div>
@@ -56,8 +58,8 @@ export const Overview: Story = {
   name: '總覽',
   render: () => (
     <div className="max-w-4xl">
-      <h2 className="text-h3 mb-2">Hover Delay Tokens</h2>
-      <p className="text-body text-fg-secondary mb-6">
+      <h2 className="text-h3 mb-[var(--layout-space-tight)]">Hover Delay Tokens</h2>
+      <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
         三層 tier:<code>plain</code>(被動文字提示)/ <code>rich</code>(含 fetch 的內容預覽,門檻更高)/
         <code>close</code>(通用關閉緩衝)。命名對齊 Material 3「plain / rich tooltip」術語 +
         DS 既有 <code>compact / rich</code> mode 詞彙。
@@ -86,8 +88,8 @@ export const Overview: Story = {
           與 motion.css / motion.spec.md 兩 sub-family 現況 drift(「系統無 duration/easing token」已過時)。
           世界級對照值 cite:tokens/motion/motion.spec.md#L113-L116 表(m3.material.io/styles/motion/easing-and-duration
           + carbondesignsystem.com/guidelines/motion/overview,spec frontmatter benchmark 段)。 */}
-      <h2 className="text-h3 mb-2 mt-10">進出場動畫 Tokens</h2>
-      <p className="text-body text-fg-secondary mb-6">
+      <h2 className="text-h3 mb-[var(--layout-space-tight)] mt-[var(--layout-space-loose)]">進出場動畫 Tokens</h2>
+      <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
         Overlay fade/zoom/slide 的 duration / easing / 幾何,由 tw-animate-css 的
         <code>--tw-duration</code> / <code>--tw-ease</code> 變數綁定;共用 SSOT =
         <code>overlay-motion.ts</code>(overlayMotion / surfaceMotion)。世界級對照見
@@ -131,7 +133,7 @@ export const Overview: Story = {
         consumers="zoom 型進場 overlay"
       />
 
-      <p className="text-caption text-fg-muted mt-6">
+      <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">
         實際 CSS 值見 <code>packages/design-system/src/tokens/motion/motion.css</code>;
         JS number 鏡像見同目錄 <code>motion.ts</code>;tier 選擇表(何時用哪 token)見 <code>motion.spec.md</code>。
       </p>
@@ -146,9 +148,9 @@ export const Overview: Story = {
 export const DelayFeel: Story = {
   name: '延遲體感',
   render: () => (
-    <div className="flex max-w-2xl flex-col gap-8">
-      <section className="flex flex-col gap-2">
-        <div className="text-body font-medium text-foreground">plain(500ms)— 工具列 icon 按鈕的文字提示</div>
+    <div className="flex max-w-2xl flex-col gap-[var(--layout-space-loose)]">
+      <section className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">plain(500ms)— 工具列 icon 按鈕的文字提示</h3>
         <p className="text-caption text-fg-secondary">
           hover 下方按鈕停留 500ms 才出現 tooltip;快速滑過不觸發。移開後 tooltip 立即依全域
           Provider 收合節奏消失。
@@ -158,13 +160,13 @@ export const DelayFeel: Story = {
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
-        <div className="text-body font-medium text-foreground">rich(700ms)+ close(200ms)— 留言裡的人名預覽卡</div>
+      <section className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">rich(700ms)+ close(200ms)— 留言裡的人名預覽卡</h3>
         <p className="text-caption text-fg-secondary">
           rich 內容(可能含 fetch)門檻比 plain 高 200ms——必須「真的想看」才停留 700ms;
           移開後 200ms 內移回卡片不會關(close 緩衝)。
         </p>
-        <p className="text-body leading-relaxed">
+        <p className="text-body">
           這版 onboarding 流程的視覺稿請找
           {/* defaultOpen:讓 visual snapshot 看得到卡片(M15 OpenSnapshot);移開再 hover 即體驗 700/200ms 時序 */}
           <HoverCard defaultOpen>
@@ -172,20 +174,27 @@ export const DelayFeel: Story = {
               <a
                 href="#"
                 onClick={(e) => e.preventDefault()}
+                // @layout-space-magic-ok: 句子裡的行內人名連結左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro)
                 className="text-primary underline underline-offset-2 mx-1 cursor-pointer"
               >
                 陳美惠
               </a>
             </HoverCardTrigger>
+            {/* 人員預覽卡一律 ProfileCard(hover-card.spec.md:33「人員資訊卡：Avatar hover 顯示 ProfileCard」;內容與 chrome 的 owner)。
+                外殼照 Avatar hoverCard 內建那一層(avatar.tsx「HoverCardContent canonical」):不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定 */}
             <HoverCardContent
-              className="bg-surface-raised border border-border rounded-lg p-4"
-              style={{ boxShadow: 'var(--elevation-200)', width: 260 }}
+              className="bg-surface-raised border border-border rounded-lg overflow-hidden"
+              style={{ boxShadow: 'var(--elevation-200)' }}
             >
-              <div className="flex flex-col gap-1">
-                <div className="text-body font-medium text-foreground">陳美惠</div>
-                <div className="text-caption text-fg-secondary">產品設計師 · Design Platform</div>
-                <div className="text-footnote text-fg-muted">台北 · GMT+8 · 上班時間 10:00–19:00</div>
-              </div>
+              <ProfileCard
+                name="陳美惠"
+                subtitle="產品設計師 · Design Platform"
+                defaultFieldValues={{ id: 'MEIHUI', employeeNumber: '2048731' }}
+                fields={[
+                  { label: '所在地', value: '台北 · GMT+8' },
+                  { label: '上班時間', value: '10:00–19:00' },
+                ]}
+              />
             </HoverCardContent>
           </HoverCard>
           確認,她負責這一季的設計系統整合。

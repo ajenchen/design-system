@@ -17,6 +17,7 @@ const meta: Meta<typeof TooltipContent> = {
   },
   decorators: [
     (Story) => (
+      // @layout-space-magic-ok: decorator 四周 64px 畫布留白,讓 Tooltip 浮層落在畫布內(畫布留白,非元素間距;layoutSpace.spec.md:176 判準)
       <div className="flex items-center justify-center p-16">
         <Story />
       </div>

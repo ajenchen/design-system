@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/compon
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計原則',
@@ -30,14 +31,14 @@ const Rule = ({
   note?: string
   children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
     {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">
         {note}
       </p>
     )}
-    <div className="flex flex-col gap-3 max-w-[640px]">{children}</div>
+    <CaptionedExamples caption={Label} className="max-w-[640px]">{children}</CaptionedExamples>
   </div>
 )
 
@@ -69,6 +70,7 @@ export const UsageGuidance: Story = {
         title="何時用 — 真實業務場景"
         note="Accordion 適合「多個獨立主題、使用者依興趣或當下需要展開單一段」的內容(非互斥可同時展開,Radix Accordion type='multiple');每段內容 self-contained,不展開不影響上下脈絡。對齊 Material 3 Expansion panel / Polaris Disclosure 共識。"
       >
+        {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="space-y-1">
           <li>
             <LinkTo kind="Design System/Components/Accordion/展示" name="FAQ 常見問題"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">FAQ 常見問題</span></LinkTo>
@@ -86,7 +88,7 @@ export const UsageGuidance: Story = {
         title="vs Tabs — Tabs 是互斥平行視圖(看 A 就不看 B)"
         note='三個 tab 是「同一層級的平行視角」,使用者每次只需一個。切換等於「換視角」,兩個視角不會同時需要。'
       >
-        <div className='border border-border rounded-lg p-4'>
+        <div className='border border-border rounded-lg p-[var(--layout-space-loose)]'>
           <Tabs defaultValue='overview'>
             <TabsList>
               <TabsTrigger value='overview'>總覽</TabsTrigger>
@@ -352,11 +354,13 @@ export const SingleItemRule: Story = {
         title='✅ 改用 `<details>` 或自組 toggle 按鈕'
         note='原生 `<details>` 是單區塊展開的 HTML 原語;若需要自訂視覺可做一個「顯示更多 ↓」按鈕。'
       >
-        <details className='border-b border-divider pb-4'>
-          <summary className='py-4 text-body font-medium text-foreground cursor-pointer'>
+        {/* 原生 details 不抄 Accordion 的整條分隔線 / 列內距(accordion.tsx 的 AccordionTrigger 上下 16px、AccordionContent 底部 16px)——
+            那正是上一則說的「過重」;摘要 ↔ 展開內容 = 標題 → 它標示的內容(layoutSpace.spec.md 規則 3 functional = tight) */}
+        <details>
+          <summary className='text-body font-medium text-foreground cursor-pointer'>
             顯示更多資訊
           </summary>
-          <p className='text-body text-fg-secondary'>單一區塊用 details 即可。</p>
+          <p className='mt-[var(--layout-space-tight)] text-body text-fg-secondary'>單一區塊用 details 即可。</p>
         </details>
         <Label>原生 HTML 簡潔,無須額外 JS</Label>
       </Rule>

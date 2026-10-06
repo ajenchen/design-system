@@ -6,6 +6,7 @@ import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/FileItem/設計原則',
@@ -19,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-lg">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-lg">{children}</CaptionedExamples>
   </div>
 )
 
@@ -38,10 +39,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 FileItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/FileItem/展示" name="豐富樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</span></LinkTo>
@@ -59,7 +61,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊 混合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">同一批次混合上傳中 / 完成 / 失敗狀態的清單</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -104,14 +106,14 @@ export const ModeRule: Story = {
         title="先問：使用者靠縮圖辨識，還是靠檔名快速掃視？"
         note="mode 是資訊策略，不是大小 variant。只在縮圖會改變判斷時選 rich；其餘批次上傳與附件清單預設 compact，讀者才能用一致節奏掃視。"
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border border-divider bg-surface p-4">
+        <div className="grid gap-[var(--layout-space-loose)] sm:grid-cols-2">
+          <div className="rounded-md border border-divider bg-surface p-[var(--layout-space-loose)]">
             <p className="text-body font-medium text-foreground">rich：縮圖會幫助辨識</p>
-            <p className="mt-1 text-caption text-fg-muted">設計稿、照片或文件預覽；圖像內容比副檔名更能區分檔案。</p>
+            <p className="mt-[var(--item-gap-label-desc-reading)] text-caption text-fg-muted">設計稿、照片或文件預覽；圖像內容比副檔名更能區分檔案。</p>
           </div>
-          <div className="rounded-md border border-divider bg-surface p-4">
+          <div className="rounded-md border border-divider bg-surface p-[var(--layout-space-loose)]">
             <p className="text-body font-medium text-foreground">compact：檔名與狀態是主要訊息</p>
-            <p className="mt-1 text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
+            <p className="mt-[var(--item-gap-label-desc-reading)] text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
           </div>
         </div>
         <Label>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</Label>
@@ -220,10 +222,11 @@ export const ActionsRule: Story = {
           status="error"
           mode="rich"
           actions={
-            <div className="flex gap-1">
+            // 兩顆動作鈕直接交給 FileItem 的 actions 槽:槽距由元件的 ItemSuffix 擁有,不自己包一層 flex
+            <>
               <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" />
               <Button variant="text" size="xs" iconOnly startIcon={X} aria-label="移除" />
-            </div>
+            </>
           }
         />
       </Rule>

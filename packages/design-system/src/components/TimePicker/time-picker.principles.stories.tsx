@@ -33,10 +33,11 @@ type Story = StoryObj<typeof TimePicker>
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 TimePicker 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/TimePicker/展示" name="會議時段"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">會議時段</span></LinkTo>
@@ -54,12 +55,13 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/TimePicker/展示" name="員工上班時段設定"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">員工上班時段設定</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">不確定是否該用 TimePicker 時,先對照下方「何時不用」清單;若情境不符,改用清單建議的替代元件(例如同時要日期就用 DatePicker)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">不確定是否該用 TimePicker 時,先對照下方「何時不用」清單;若情境不符,改用清單建議的替代元件(例如同時要日期就用 DatePicker)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div className="prose prose-sm max-w-prose space-y-4">
+      <div className="max-w-prose space-y-[var(--layout-space-tight)]">
       <p>TimePicker 只管時間,以下情境改用其他元件:</p>
+      {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 / 項目符號縮排(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="list-disc list-inside space-y-1 text-fg-secondary">
         <li><strong>同時選日期和時間</strong> → DatePicker 加 showTime prop（canonical 2026-05-02，Ant idiom；非 DatePicker + TimePicker 並列，見 DatePicker 設計原則）。Linear 的 reminder「日期 + 時間」是單一 datetime picker</li>
         <li><strong>時間範圍（from-to）</strong> → 兩個 TimePicker 並列。Google Calendar 的 event time 是兩個 picker</li>
@@ -74,21 +76,21 @@ export const UsageGuidance: Story = {
 export const RuleMinuteStepForMeetings: Story = {
   name: '會議時段用 15 分鐘間隔',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <p className="text-caption text-fg-secondary max-w-prose">
         會議排程以 15 分鐘為粒度是世界級慣例(Google Calendar / Outlook / Notion Calendar
         的時間選單預設都是 15)。用預設 minuteStep=1 會讓使用者困在挑「9:07 還是 9:08」,
         失去會議排程的本質——這類情境一律設 minuteStep=15。
       </p>
-      <div className="flex gap-8">
-        <div className="flex flex-col gap-1.5">
+      <div className="flex gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-caption font-medium text-foreground">✅ minuteStep=15</h3>
           <Field>
             <FieldLabel>專案週會時間</FieldLabel>
             <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
           </Field>
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-caption font-medium text-fg-muted">❌ 預設 minuteStep=1(會議排程無意義)</h3>
           <Field>
             <FieldLabel>專案週會時間</FieldLabel>
@@ -113,12 +115,12 @@ export const RuleClearNoLabelButton: Story = {
   render: () => {
     const [t, setT] = React.useState<string>('14:30')
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <p className="text-caption text-fg-secondary max-w-prose">
           設定 clearable 後,TimePicker 會自動在欄位尾端渲染一個 X 行內動作來清空值,點擊即清空。
           不要自己擺一顆「清除」文字按鈕——全站統一用 X 圖示表達「移除已填內容」,與其他欄位的清除慣例一致。
         </p>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-caption font-medium text-foreground">✅ clearable=true(自動渲染 X 行內動作)</h3>
           <Field>
             <FieldLabel>提醒時間</FieldLabel>

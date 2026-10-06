@@ -53,7 +53,7 @@ function Shell({ children, className }: { children: ReactNode; className?: strin
 export const ThreePartStructure: Story = {
   name: '三段式結構',
   render: () => (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <Shell className="w-[420px]">
         <SurfaceHeader>
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">邀請成員加入專案</h2>
@@ -63,6 +63,7 @@ export const ThreePartStructure: Story = {
           <p className="text-body text-foreground">
             輸入 Email 即可邀請成員加入「Acme 品牌改版」專案。
           </p>
+          {/* @layout-space-magic-ok: SurfaceBody 內第二段落的段距 8px(同一段文字流的段落間距)(layoutSpace.spec.md:166 micro) */}
           <p className="mt-2 text-caption text-fg-secondary">
             被邀請者會收到通知信,接受後自動取得專案的檢視與留言權限。
           </p>
@@ -88,7 +89,7 @@ export const BodyScroll: Story = {
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
   parameters: { demoFocus: 'keep' },
   render: () => (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <Shell className="flex h-[280px] w-[420px] flex-col">
         <SurfaceHeader>
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">服務條款更新</h2>
@@ -99,6 +100,7 @@ export const BodyScroll: Story = {
           role="region"
           aria-label="服務條款更新內容"
         >
+          {/* @layout-space-magic-ok: 條款逐條列(同質列)(layoutSpace.spec.md:165 同質清單列) */}
           <div className="flex flex-col gap-3 text-body text-foreground">
             <p>1. 資料保存期限由 30 天調整為 90 天,到期後自動匿名化。</p>
             <p>2. 新增歐盟區域資料中心選項,既有工作區可在設定頁遷移。</p>

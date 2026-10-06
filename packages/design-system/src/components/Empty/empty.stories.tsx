@@ -23,6 +23,7 @@ type Story = StoryObj<typeof Empty>
 export const SearchNoResults: Story = {
   name: '搜尋無結果',
   render: () => (
+    // @layout-space-magic-ok: 有框容器包 Empty 的外框留白由容器決定且刻意不隨 density(empty.spec.md:69 / :183)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="border border-border rounded-lg p-8 max-w-md">
       <Empty
         icon={SearchX}
@@ -38,6 +39,7 @@ export const SearchNoResults: Story = {
 export const NoTasks: Story = {
   name: '空清單',
   render: () => (
+    // @layout-space-magic-ok: 有框容器包 Empty 的外框留白由容器決定且刻意不隨 density(empty.spec.md:69 / :183)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="border border-border rounded-lg p-8 max-w-md">
       <Empty
         icon={Inbox}
@@ -57,6 +59,7 @@ export const NoTasks: Story = {
 export const NoPermission: Story = {
   name: '權限不足',
   render: () => (
+    // @layout-space-magic-ok: 有框容器包 Empty 的外框留白由容器決定且刻意不隨 density(empty.spec.md:69 / :183)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="border border-border rounded-lg p-8 max-w-md">
       <Empty
         icon={Lock}

@@ -54,7 +54,8 @@ export const Rich = {
   render: () => (
     // rich(預設 form surface)各 status 展示:uploading / completed(保留 100% 完成條)/ error
     // 也可傳 onClick/onDownload 讓整 row 點開(預設 FileViewer,consumer 決定)
-    // Rich 永遠 border card → list wrapper `gap-2` 防邊框相黏
+    // Rich 永遠 border card → list wrapper gap 8px 防邊框相黏
+    // @layout-space-magic-ok: rich FileItem 清單 gap 8px(file-item.spec.md:264 List wrapper canonical:rich 有邊框卡片 8px 防相黏)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="flex flex-col gap-2 max-w-md">
       <FileItem mode="rich" name="Alan Profile.png" status="uploading" progress={40}
         description="5.7 MB of 7.5MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
@@ -88,7 +89,8 @@ export const Compact = {
   name: '緊湊樣式',
   render: () => (
     // compact + status 各狀態展示(uploading / completed / error,永遠有 progress bar)
-    // list wrapper `gap-1`(4px)簡化 canonical — compact list 統一 gap-1,不論純/混合(2026-04-23)
+    // list wrapper gap 4px 簡化 canonical — compact list 統一 4px,不論純/混合(2026-04-23)
+    // @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264 List wrapper canonical:compact 4px)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="flex flex-col gap-1 max-w-md">
       <FileItem mode="compact" name="UXP T-Phone.csv" status="uploading" progress={60} actions={deleteBtnXs} />
       <FileItem mode="compact" name="UXP T-Phone.csv" status="error" description={errorDescWithLog} actions={deleteBtnXs} />
@@ -101,13 +103,14 @@ export const Compact = {
 export const HoverSwap = {
   name: '懸停替換',
   render: () => (
-    <div className="flex flex-col max-w-md gap-4">
+    <div className="flex flex-col max-w-md gap-[var(--layout-space-loose)]">
       <div>
-        <div className="text-caption text-fg-muted mb-2">
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           ↓ 游標移入任一 row:completed 綠 ✓ 變 Download ↓,error 紅 ✗ 變 Retry ⟲。
           這幾列沒有傳 onClick(點列本身沒反應),所以整列不上滑過底色,只有換上的那顆鈕有自己的滑過色(待辦總帳 B12)
         </div>
-        {/* Rich border card list:無外框 + `gap-2`(item-anatomy「連續 item 貼邊合法性」) */}
+        {/* Rich border card list:無外框 + 列距 8px(item-anatomy「連續 item 貼邊合法性」) */}
+        {/* @layout-space-magic-ok: rich FileItem 清單 gap 8px(file-item.spec.md:264 List wrapper canonical:rich 有邊框卡片 8px 防相黏)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="flex flex-col gap-2">
           <FileItem mode="rich" name="Q1 營收報表.xlsx" status="completed" data-visual-hover-target
             description="Uploaded to URL" thumbnailSrc="https://i.pravatar.cc/80?u=xls"
@@ -119,10 +122,11 @@ export const HoverSwap = {
         </div>
       </div>
       <div>
-        <div className="text-caption text-fg-muted mb-2">
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           緊湊樣式也是同一套規則:狀態圖示與刪除鈕的大小、位置一致,垂直置中對齊
         </div>
-        {/* Compact list 統一 gap-1(canonical 簡化) */}
+        {/* Compact list 統一列距 4px(canonical 簡化) */}
+        {/* @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264 List wrapper canonical:compact 4px)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="flex flex-col gap-1">
           <FileItem mode="compact" name="data-2024-q1.csv" status="completed"
             onDownload={noop} actions={deleteBtnXs} />
@@ -187,9 +191,10 @@ export const Clickable = {
             違反 file-item.spec.md「❌ 不混用 rich + compact 在同一 list」(Invariant 1 —
             高度差破壞 row rhythm)。改拆兩個區段:圖片整組 rich、文件整組 compact,
             同區段 mode 統一(spec 建議的分區段做法);FileViewer index 跨兩區段連續。 */}
-        <div className="flex flex-col gap-4 max-w-md">
-          <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <h3 className="text-caption font-medium text-fg-muted">圖片</h3>
+            {/* @layout-space-magic-ok: rich FileItem 清單 gap 8px(file-item.spec.md:264 List wrapper canonical:rich 有邊框卡片 8px 防相黏)(layoutSpace.spec.md:113 同範疇 spec-own) */}
             <div className="flex flex-col gap-2">
               {attachmentFiles.slice(0, 2).map((f, i) => (
                 <FileItem
@@ -204,8 +209,9 @@ export const Clickable = {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <h3 className="text-caption font-medium text-fg-muted">文件</h3>
+            {/* @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264 List wrapper canonical:compact 4px)(layoutSpace.spec.md:113 同範疇 spec-own) */}
             <div className="flex flex-col gap-1">
               {attachmentFiles.slice(2).map((f, i) => (
                 <FileItem
@@ -233,6 +239,7 @@ export const CompactMixed = {
     // —— completed-保留 是「剛完成的 upload session」,無 status 是「已存 attachment」,
     //    業務語義互斥(表單情境完成後 consumer 會清掉 status 轉靜態)。
     // 這 mixed 情境只含:上傳中(uploading/error)+ 已存附件(saved attachments,無 status)
+    // @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264 List wrapper canonical:compact 4px)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="flex flex-col gap-1 max-w-md">
       <FileItem mode="compact" name="圖片草稿.png" status="uploading" progress={40} actions={deleteBtnXs} />
       <FileItem mode="compact" name="回覆範本.docx" onClick={noop} actions={deleteBtnXs} />

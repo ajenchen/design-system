@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Action Bar',
@@ -28,10 +29,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -44,7 +45,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
    chrome 水平內距 canonical `px-[var(--layout-space-loose)]`(對齊 chrome-header.tsx 同 token)。 */
 const ToolbarFrame = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="flex items-center justify-between w-full px-[var(--layout-space-loose)] min-h-[52px] border border-border rounded-lg bg-surface">
-    <span className="text-body font-bold text-foreground shrink-0 mr-4">{title}</span>
+    <span className="text-body font-bold text-foreground shrink-0 mr-[var(--layout-space-loose)]">{title}</span>
     {children}
   </div>
 )
@@ -115,18 +116,18 @@ export const RoleIdentification: Story = {
         title="可配置資料操作（篩選 / 排序 / 分組）— 業務操作，Toolbar 全程 icon-only"
         note="篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後加 `pressed`（預設 emphasis tone）——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」"
       >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[var(--layout-space-tight)]">
             <ConfigurableDemo />
             <Label>點擊切換配置狀態</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[var(--layout-space-tight)]">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
             </ButtonGroup>
             <Label>text — 預設，適合密集表格 toolbar</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[var(--layout-space-tight)]">
             <ButtonGroup>
               <Button variant="tertiary" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
               <Button variant="tertiary" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />

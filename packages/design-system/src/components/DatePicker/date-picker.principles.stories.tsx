@@ -4,6 +4,7 @@ import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DatePicker } from './date-picker'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/DatePicker/設計原則',
@@ -19,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-xs">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-xs">{children}</CaptionedExamples>
   </div>
 )
 
@@ -31,8 +32,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -44,8 +46,9 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>適合 DatePicker 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/DatePicker/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">請假單送審後日期欄位從可編輯轉唯讀/純展示(四模式)</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/DatePicker/展示" name="可清除"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">篩選器的選填截止日,填錯一鍵清空(可清除)</span></LinkTo></li>
@@ -53,7 +56,7 @@ export const UsageGuidance: Story = {
             <li><LinkTo kind="Design System/Components/DatePicker/展示" name="範圍模式:訂房 / 訂機票情境"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Range:訂房 / 訂機票情境</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/DatePicker/展示" name="檢視樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">審批詳情頁唯讀展示申請日期(展示樣式)</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
       </Section>
 

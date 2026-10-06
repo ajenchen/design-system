@@ -66,21 +66,21 @@ const samplePeople = [
 const SinglePicker = () => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit（可互動）</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} aria-label="負責人(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <PeoplePicker mode="view" value={samplePeople[0]} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <PeoplePicker mode="readonly" value={samplePeople[0]} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <PeoplePicker mode="disabled" value={samplePeople[0]} />
       </div>
     </div>
@@ -118,13 +118,13 @@ const MultiPicker = () => {
   const [val, setVal] = React.useState<PersonValue[]>(samplePeople.slice(0, 4))
   const readonlyVal = samplePeople.slice(0, 4)
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit（可互動,多選）</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動,多選）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <PeoplePicker mode="readonly" value={readonlyVal} />
       </div>
     </div>
@@ -151,7 +151,7 @@ const InlineSearchAttendees = () => {
     // 版面消費 field.stories.tsx FormValidation 同一組:區塊之間 layout-space-loose、標題 → 內容 layout-space-tight、多個欄位走 FieldGroup
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-body font-bold text-foreground">頭像堆疊(預設)</h3>
+        <h3 className="text-h6 font-semibold text-foreground">頭像堆疊(預設)</h3>
         <FieldGroup>
           <Field>
             <FieldLabel>必要出席者</FieldLabel>
@@ -164,7 +164,7 @@ const InlineSearchAttendees = () => {
         </FieldGroup>
       </div>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-body font-bold text-foreground">每人一顆標籤(multiDisplay=&quot;pill&quot;)</h3>
+        <h3 className="text-h6 font-semibold text-foreground">每人一顆標籤(multiDisplay=&quot;pill&quot;)</h3>
         <FieldGroup>
           <Field>
             <FieldLabel>會議記錄寄給</FieldLabel>
@@ -196,23 +196,25 @@ export const MultiInlineSearch: Story = {
 export const HugWidthMultiStack: Story = {
   name: '寬度貼合內容 × 多人',
   render: () => (
-    <div className="flex flex-col gap-4" style={{ width: 720 }}>
+    <div className="flex flex-col gap-[var(--layout-space-tight)]" style={{ width: 720 }}>
       <p className="text-caption text-fg-muted">
         容器 720px。<code>width=&quot;hug&quot;</code> 的欄位寬度由內容決定,頭像串可畫幾顆則由
         「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
       </p>
-      <PeoplePicker
-        width="hug"
-        mode="readonly"
-        value={samplePeople.slice(0, 6)}
-        aria-label="協作者(hug 寬度)"
-      />
-      <PeoplePicker
-        width="fill"
-        mode="readonly"
-        value={samplePeople.slice(0, 6)}
-        aria-label="協作者(fill 寬度,對照組)"
-      />
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <PeoplePicker
+          width="hug"
+          mode="readonly"
+          value={samplePeople.slice(0, 6)}
+          aria-label="協作者(hug 寬度)"
+        />
+        <PeoplePicker
+          width="fill"
+          mode="readonly"
+          value={samplePeople.slice(0, 6)}
+          aria-label="協作者(fill 寬度,對照組)"
+        />
+      </div>
     </div>
   ),
 }
@@ -286,13 +288,13 @@ const ClearablePicker = () => {
   const [delegate, setDelegate] = React.useState<PersonValue | null>(samplePeople[1])
   const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">單人(代理人,選填)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">單人(代理人,選填)</h3>
         <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">多人(觀察者,選填)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">多人(觀察者,選填)</h3>
         <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
       </div>
     </div>
@@ -308,7 +310,7 @@ export const Clearable: Story = {
 const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-[var(--layout-space-tight)]">
       <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" aria-label={`負責人(size=${size})`} />
       <Button variant="primary" size={size}>送出</Button>
       <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -319,7 +321,7 @@ const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
 export const SizeAlignment: Story = {
   name: '尺寸',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <SizePicker key={size} size={size} />
       ))}

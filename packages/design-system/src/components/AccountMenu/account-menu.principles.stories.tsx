@@ -28,8 +28,8 @@ const Rule = ({
   note: string
   children?: ReactNode
 }) => (
-  <section className="space-y-3">
-    <h3 className="text-h5">{title}</h3>
+  <section className="space-y-[var(--layout-space-tight)]">
+    <h3 className="text-h6 font-semibold text-foreground">{title}</h3>
     <p className="max-w-2xl text-body text-fg-secondary">{note}</p>
     {children}
   </section>
@@ -38,7 +38,7 @@ const Rule = ({
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex max-w-3xl flex-col gap-10">
+    <div className="flex max-w-3xl flex-col gap-[var(--layout-space-loose)]">
       <Rule
         title="用在目前登入者的帳號入口"
         note="AccountMenu 表示「我自己的個人資料、設定與登出」；primary-header 桌面模式放 global header 右側，行動裝置 global header 被 Sheet 取代時搬到 SidebarHeader。"
@@ -64,8 +64,9 @@ export const UsageGuidance: Story = {
 export const PlacementRule: Story = {
   name: '放置規則:每個畫面只出現一次',
   render: () => (
-    <div className="max-w-3xl space-y-6 text-body">
-      <h3 className="text-h5">Placement owner = AppShell spec</h3>
+    <div className="max-w-3xl space-y-[var(--layout-space-tight)] text-body">
+      <h3 className="text-h6 font-semibold text-foreground">Placement owner = AppShell spec</h3>
+      {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 / 項目符號縮排(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="list-disc space-y-2 pl-5 text-fg-secondary">
         <li><strong>primary-header：</strong>global header 右側使用 AccountMenu。</li>
         <li><strong>primary-sidebar：</strong>帳號入口留在 SidebarFooter，不另放 AccountMenu。</li>
@@ -79,13 +80,13 @@ export const PlacementRule: Story = {
 export const CompositionRule: Story = {
   name: '組合規則:固定身分,開放內容',
   render: () => (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-3xl flex-col gap-[var(--layout-space-tight)]">
       <p className="text-body text-fg-secondary">
         Trigger 與 identity Label 由 AccountMenu 固定，預設 actions 可透過 callbacks 使用；
         產品需要 i18n 或額外項目時以 <code>children</code> 取代 default action 集合，
         不繞過元件重刻 avatar + dropdown。
       </p>
-      <div className="inline-flex w-fit items-center gap-4 rounded-md border border-dashed border-divider p-4">
+      <div className="inline-flex w-fit items-center gap-[var(--layout-space-tight)] rounded-md border border-dashed border-divider p-[var(--layout-space-loose)]">
         <AccountMenu
           user={DEMO_USER}
           onViewProfile={noop}

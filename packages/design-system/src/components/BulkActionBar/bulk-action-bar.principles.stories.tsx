@@ -5,6 +5,7 @@ import { Trash2, Archive } from 'lucide-react'
 import { BulkActionBar } from './bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/BulkActionBar/設計原則',
@@ -14,17 +15,18 @@ export default meta
 type Story = StoryObj
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
 
 const Rule = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
-  <div className="mb-10">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-secondary mb-4 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -37,13 +39,14 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>BulkActionBar 是「選取狀態驅動」的批次操作列,跟 selection state 生命週期綁定。真實業務場景:</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="基本"><span className="text-primary hover:text-primary-hover cursor-pointer">基本</span></LinkTo>(收件匣多選郵件後,一次封存 / 加標籤 / 刪除)</li>
             <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="提示擴選整個資料集"><span className="text-primary hover:text-primary-hover cursor-pointer">提示擴選整個資料集</span></LinkTo>(資料集共 5370 筆、本頁只顯示 50 筆:本頁全選後浮出提示,可一鍵把選取範圍擴大到全部 5370 筆)</li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定:對照 spec.md「何時用 / 何時不用」段。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定:對照 spec.md「何時用 / 何時不用」段。</p>
         </div>
       </Section>
 
