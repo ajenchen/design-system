@@ -3,7 +3,6 @@
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, within } from '@storybook/test'
 import { Check } from 'lucide-react'
 import {
   Steps,
@@ -231,77 +230,13 @@ export const Horizontal: Story = {
   },
 }
 
-// ── Multiple expansion ─────────────────────────────────────────────────
-
-export const MultipleExpansion: Story = {
-  name: '多重展開模式',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
-  render: () => (
-    <div className="w-[480px]">
-      <p className="text-caption text-fg-secondary mb-4">
-        點 step header 切換展開(並更新 value)。本例顯式傳 `defaultExpanded="all"` 全部展開起手(預設 `"none"`)。
-      </p>
-      <Steps
-        defaultValue="b"
-        completedValues={['a']}
-        expansion="multiple"
-        defaultExpanded="all"
-        linear={false}
-      >
-        <StepItem value="a">
-          <StepLabel>安裝套件</StepLabel>
-          <StepDescription>執行 npm install</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              npm install @qijenchen/design-system
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="b">
-          <StepLabel>匯入元件</StepLabel>
-          <StepDescription>從 design-system 引入</StepDescription>
-          <StepContent>
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Steps 元件匯入範例程式碼"
-              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:focus-ring-inset"
-            >
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"import { Steps } from '@/design-system/components/Steps/steps'"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="c">
-          <StepLabel>設定 provider</StepLabel>
-          <StepDescription>包在 App 最外層</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"<TooltipProvider>{children}</TooltipProvider>"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-      </Steps>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const scrollRegion = canvas.getByRole('region', {
-      name: 'Steps 元件匯入範例程式碼',
-    })
-
-    await expect(scrollRegion.scrollWidth).toBeGreaterThan(scrollRegion.clientWidth)
-    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
-    scrollRegion.focus()
-    await expect(scrollRegion).toHaveFocus()
-  },
-}
+// @story-history: MultipleExpansion(多重展開模式,安裝指南三步可同時展開)retired 2026-09-30 —
+//   整個「可同時打開多步」模式(`expansion="multiple"` / `defaultExpanded` / controlled `expanded`)隨之退役:
+//   Steps 的內容區只跟著目前那一步(steps.spec.md「內容跟著目前那一步」);安裝指南這種「讀者自己開合、沒有目前位置」
+//   的編號說明改用 Accordion(steps.spec.md「何時不用」第二張表)。
+//   user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」(AI 建議、user 採納,條件見原話)。
+//   本則的 play 原本順帶驗證 StepContent 內 consumer 自己的捲動區可聚焦;退役後 DS 內沒有任何 story 示範這條
+//   (steps.spec.md「A11y 預設」如實寫明),規則文字保留為指引。
 
 // @story-history: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
 //   EXAMPLE_REDUNDANT — indicator 對齊 label 第一行的 column rhythm 已由 anatomy「欄位節奏」+

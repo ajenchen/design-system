@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     px: 8
-    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:20-30)"
+    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:19-29)"
     world-class: ["Ant Design Steps small", "MUI Stepper compact"]
   md:
     px: 24
@@ -28,6 +28,8 @@ benchmark:
 
 **流程進度指示器**:把多步驟任務的「現在走到哪、完成了哪些、還剩哪些」視覺化為一條有序的 indicator + label 序列。
 
+**「目前那一步」的定義**(2026-09-30):一條流程裡使用者**現在所在的位置**,只由導覽(點已完成 / 可到達的步)或系統進度(parent 推進 `value`)設定 —— 它不是「讀者自己開合、正在讀哪一段」。非 linear 模式點某一步把 `value` 移過去,仍是導覽(`steps-state-visuals.spec.md`「為什麼非 linear 的 current 不渲染 filled 藍」所說的「使用者在看哪一步」就是這個位置,只是不渲染 filled 藍)。一份讓讀者自己開合、沒有進度的編號說明沒有這個位置,就不是 Steps(見「何時不用」第二張表)。
+
 **實作基礎**：本 DS 自建的組合元件——Icon / number indicator + Text 有序序列，由 parent 統一推導進度與 focus state。
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節的 **scanning-mode** 規格——跟 MenuItem / TreeItem 同 scanning-family：label `text-body`、description 縮 `text-caption`（sm/md）+ `leading-compact`（非 reading-mode 的 body + default leading），consume `--item-gap-label-desc-scanning` token。Steps 有明文例外：indicator inline 對齊 label 第一行（不走 24px 閾值）。
@@ -44,7 +46,7 @@ benchmark:
 - **CI / build 的 pipeline 狀態**:有序步驟且每步有明確完成 / 進行中 / 失敗狀態
 - **步驟數量有限且已知**(3–7 個最佳;超過 7 個考慮改為 section + progress bar)
 
-**判斷準則**:有**順序**、有**離散進度狀態**、步驟數量**有限且已知** → Steps;否則用其他元件。
+**判斷準則**:有**順序**、有**離散進度狀態**、步驟數量**有限且已知**,而且有一個由導覽或系統進度設定的**「目前那一步」** → Steps;否則用其他元件。
 
 ## 何時不用
 
@@ -58,6 +60,14 @@ Steps 只解決「有順序、有進度、步數有限且明確」的場景。�
 | 分段表單佈局(不需進度感)| Form layout pattern + heading | 純分段不等於有進度順序 |
 | 無限 / 動態步數 | ProgressBar + 步驟計數文字 | Steps 需步數有限且已知 |
 | 使用者可自由跳步（非線性流程）| Tabs | Steps 強調線性順序,跳步破壞 mental model |
+| 巢狀步驟(步驟底下還有子步驟)| `TreeView`(user 2026-10-01 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」;單選導覽用法見 `../TreeView/tree-view.spec.md:130`「單選(預設,nav tree / stepper)」)| Steps 沒有巢狀 API;巢狀步驟一樣有「目前那一步」,所以列在這張表、不在下一張。TreeView 要怎麼表達父步點擊與灰色彙總等契約尚待 user 裁示(待辦總帳 N72),裁示前不改 TreeView |
+
+### 有編號,但沒有「目前那一步」(2026-09-30;來源見「內容跟著目前那一步」的「來源」)
+
+| 場景 | 改用 | 原因 |
+|------|------|------|
+| 說明 / 教學類的編號步驟(安裝指南、長篇旅程指南這類讀者自己讀、自己開合的內容)| `Accordion`(`../Accordion/accordion.spec.md:30` 何時用已列「使用教學」;要不要收合、單開或多開看它自己的定位 `:20` 與 type 判斷法 `:55`;編號寫進 trigger 文字,anatomy 固定見 `:123`)| 讀者自己決定看哪一段,沒有進度、也不會有「目前那一步」;Accordion 沒有進度語意,正好 |
+| 設定清單(帳號開通、工作區初始化的待辦:每一項獨立、可以跳著做、每項帶一顆動作鈕)| DS 目前沒有對應元件(待辦總帳 N71)| 不是一條有順序的流程,Steps 的 linear / 目前那一步都套不上 |
 
 ---
 
@@ -70,8 +80,8 @@ Steps 是 `patterns/element-anatomy/item-anatomy.spec.md` 的 row primitive **co
 | Prefix | `StepIndicator`(圓形 + 數字 / icon)|
 | Label | `StepLabel` |
 | Description | `StepDescription`(永遠可選)|
-| Suffix | 展開 chevron(僅 `expansion="multiple"` 且該 step 有 content 時渲染;消費 item-anatomy `<ItemSuffix>`)|
-| Content | `StepContent`(垂直模式特有)|
+| Suffix | —(Steps 沒有列尾動作;header 不是開合鈕,所以也沒有 chevron —— 見「內容跟著目前那一步」)|
+| Content | `StepContent`(垂直模式特有,只在目前那一步渲染)|
 
 ### 從 item-layout **繼承**的規則(不重複定義)
 
@@ -129,7 +139,7 @@ indicator 圓形 flex items-center 居中
 → indicator 位置完全不受 description 有無影響
 ```
 
-實作:indicator 容器(垂直 / 水平)與展開 chevron 一律消費 `patterns/element-anatomy` 的 `<ItemPrefix>` / `<ItemSuffix>` primitive(`h-[1lh] shrink-0 flex items-center` 的 SSOT),不手刻 wrapper(M17)。
+實作:indicator 容器(垂直 / 水平)一律消費 `patterns/element-anatomy` 的 `<ItemPrefix>` primitive(`h-[1lh] shrink-0 flex items-center` 的 SSOT),不手刻 wrapper(M17)。
 
 ---
 
@@ -150,7 +160,7 @@ indicator 圓形 flex items-center 居中
 **`sm`(小點)**
 - ✅ 用在 sidebar 內 nested 流程、緊湊空間、次要進度指示
 - ❌ 步驟需要 icon 或要使用者明確數到「第幾步」時不用(sm 沒有數字/icon,辨識度不足)
-- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:43` 常數名即 `INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 在 `:41`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
+- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:42` 常數名即 `INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 在 `:40`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
 
 **`md`(預設)**
 - ✅ 絕大多數場景:checkout、註冊、設定精靈
@@ -172,8 +182,8 @@ indicator 圓形 flex items-center 居中
 
 ### 指示點不是命中目標 —— 命中區 = 整列 header(2026-09-24 逐案裁定)
 
-**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:775-778`),
-真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:526-534`)。
+**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:714-717`),
+真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:467-489`)。
 指標落在圓點上時,收到事件的一樣是那一列 —— 圓點只是列裡的一個子元素。
 
 **所以這裡沒有任何外擴**,跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
@@ -182,7 +192,7 @@ indicator 圓形 flex items-center 居中
 header 沒有懸停底色,所以依同一份契約的退化條款,判準回到**可視形狀本身**(那一列的內容),兩者同一個盒。
 
 **sm 的 8px 圓點外面那個 24×24 的盒是排版欄寬,不是命中區。** 它讓 sm 的 indicator 欄與 md 同為 24px(lg 為 32px)、同一列表內各步的
-label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:43-47`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
+label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:42-46`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
 已正名為 `SM_INDICATOR_BOX` —— 舊名字會讓人以為「視覺 8 / 命中 24」是一條刻意的外擴,於是跑去
 hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
@@ -206,9 +216,9 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 | `linear=true`(預設) | 可點:`completed` / `current` / `error` / `reachable`(下一個未完成)。**不可點**:`upcoming`(尚未解鎖)。 |
 | `linear=false` | 所有非 `disabled` 的 step 都可點。適合 setting wizard、教學目錄等「步驟之間無強依賴」的場景。 |
 
-兩種模式共同的例外:**預設展開模式(`follow-active`)下 `value` 指到的那一步不可點** —— 見下方「Expansion」的「目前那一步可不可以點」。
+兩種模式共同的例外:**`value` 指到的那一步不可點** —— 見下方「內容跟著目前那一步」的「目前那一步可不可以點」。
 
-不可點分兩種,游標不同(`steps.tsx` `isLocked` / `isClickable`):**鎖住**(`disabled`、linear 的 `upcoming`)= 禁止游標 `cursor-not-allowed`;**你就在這裡**(上述目前那一步)= 一般箭頭,它沒有被禁止,只是點了不會發生任何事。兩種都沒有 `role="button"`、不進 Tab 序;差別在焦點框:鎖住的步不可聚焦(`outline-none`),目前那一步保留 `tabIndex=-1`、焦點框照畫(理由見「Expansion」的「目前那一步可不可以點」)。
+不可點分兩種,游標不同(`steps.tsx` `isLocked` / `isClickable`):**鎖住**(`disabled`、linear 的 `upcoming`)= 禁止游標 `cursor-not-allowed`;**你就在這裡**(上述目前那一步)= 一般箭頭,它沒有被禁止,只是點了不會發生任何事。兩種都沒有 `role="button"`、不進 Tab 序;差別在焦點框:鎖住的步不可聚焦(`outline-none`),目前那一步保留 `tabIndex=-1`、焦點框照畫(理由見「內容跟著目前那一步」的「目前那一步可不可以點」)。
 
 ### 點擊 completed step 的行為
 
@@ -222,34 +232,36 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 ---
 
-## Expansion(垂直模式 content 區的展開行為)
+## 內容跟著目前那一步(垂直模式的 content 區)
 
-| 模式 | 行為 |
+**只有 `value` 指向的那一步渲染 `<StepContent>`;`value` 切換時內容跟著切。其他步即使寫了 `<StepContent>` 也不顯示。** 內容區沒有自己的開合狀態:header 不是開合鈕(沒有 chevron、沒有 `aria-expanded`),點它只有一個意思 ——「跳到那一步」。
+
+世界級同向(內容跟著 active step,使用者不另外開合):[MUI `StepContent.js#L90-L118`](https://github.com/mui/material-ui/blob/daaa525c3af0bd99329da1f1ab0d2bd64648ea79/packages/mui-material/src/StepContent/StepContent.js#L90-L118)(`in: active || expanded`:內容隨 `active` 顯示;MUI 另留一個 app 層的 `expanded` 讓應用程式把非 active 的步撐開,本 DS 不提供這一層)、[Carbon `ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348)(步是一顆 `<button>`,沒有任何展開狀態)、[Cloudscape `wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144)(目前那一步是 `aria-current="step"` 的 `<span>`,全檔 0 個 `aria-expanded`)。
+
+內容區放「要使用者照抄的值」時,消費 Field 的唯讀模式,不手刻灰底方塊:設計規格「方向」的 DKIM 設定精靈在目前那一步底下用 `FieldGroup` + `<Field mode="readonly">` 的 `Input`(主機名稱)/ `Textarea`(TXT 記錄值)—— 唯讀有值仍是原生 input / textarea,保留選取 / 複製語意(`../Field/field-controls.spec.md:357`「readonly native input 兩派統一」);唯讀要設在 Field 的 `mode` 上,控件自己的原生 `readOnly` 在 Field 裡排在 context mode 之後(`../Field/field-controls.spec.md:148-150`「原生屬性與 mode」)。
+
+### 目前那一步可不可以點(2026-09-26,待辦總帳 N44;2026-09-30 隨「可同時打開多步」模式退役簡化成一列)
+
+| 點 `value` 指到的那一步會發生什麼 | 所以 |
 |---|---|
-| `follow-active`(預設) | 只有 `value` 指向的 step 渲染 `<StepContent>`。value 切換時 content 跟著切。其他 step 即使寫了 `<StepContent>` 也不顯示。 |
-| `multiple` | 每個 step 獨立管理展開狀態,**可同時展開多個**。點 step header 永遠先更新 `value`(focus),並額外切換該 step 的展開。`defaultExpanded` 接 `"all" \| "none" \| string[]`,預設 `"none"`。 |
+| 什麼都不會發生:`onValueChange` 收到同一個值,內容又只跟著 `value` 走(實測點了 DOM 0 變化) | **不可點**:不是按鈕、不進 Tab 序、一般箭頭游標(不是手形、也不是禁止符號) |
 
-### 目前那一步可不可以點(2026-09-26,待辦總帳 N44)
-
-| 模式 | 點 `value` 指到的那一步會發生什麼 | 所以 |
-|---|---|---|
-| `follow-active`(預設) | 什麼都不會發生:`onValueChange` 收到同一個值,展開又綁在 `value` 上(實測點了 DOM 0 變化) | **不可點**:不是按鈕、不進 Tab 序、一般箭頭游標(不是手形、也不是禁止符號) |
-| `multiple` | 收合 / 展開它自己的內容(`aria-expanded` true ↔ false) | 可點,照舊是按鈕 |
-
-2026-09-25 以前兩種模式都把它做成按鈕,預設模式因此出現「手形游標 + 可以 Tab 停上去,按下去卻沒有任何反應」。判準就是本元件自己的鍵盤規則「Tab — focus 每個 **clickable** step」:點了不會發生事的東西不是 clickable。
+2026-09-25 以前它被做成按鈕,因此出現「手形游標 + 可以 Tab 停上去,按下去卻沒有任何反應」。判準就是本元件自己的鍵盤規則「Tab — focus 每個 **clickable** step」:點了不會發生事的東西不是 clickable。
 
 **它仍保留 `tabIndex=-1`**(不進 Tab 序,但能持有焦點):鍵盤使用者在某一步按 Enter / Space 跳過去時,焦點所在的那一列正好變成「目前那一步」;若它同時變成完全不可聚焦,瀏覽器依 HTML 的 focus fixup 會把焦點丟回頁首,下一個 Tab 得從頭來。`-1` 讓焦點留在原地、Tab / Shift+Tab 照常往前後走,焦點框照全域 `:focus-visible` 畫(用滑鼠點過去不會出現框)。
 世界級對照:[Atlassian progress-tracker `stage.js#L69-L73`](https://cdn.jsdelivr.net/npm/@atlaskit/progress-tracker@11.4.4/dist/es2019/internal/stage.js)(只有 `status === 'visited'` 的步才渲染成連結,目前那一步不是連結 → 不是停靠點);[Carbon `ProgressIndicator.tsx#L315-L323`](https://github.com/carbon-design-system/carbon/blob/v11.117.0/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L315-L323)(目前那一步 `onClick={!current ? onClick : undefined}`、加 `--unclickable`,樣式 [`_progress-indicator.scss#L228-L231`](https://github.com/carbon-design-system/carbon/blob/v11.117.0/packages/styles/scss/components/progress-indicator/_progress-indicator.scss#L228-L231) `cursor: default`,但仍 `tabIndex={0}`);[Ant Design `steps/style/index.ts#L183-L185`](https://github.com/ant-design/ant-design/blob/6.6.5/components/steps/style/index.ts#L183-L185)(手形游標只給 `[role='button']:not(-active)`,目前那一步是一般箭頭)。三家一致的是「目前那一步不給手形游標」;Tab 停不停,Atlassian 不停、Carbon / Ant 仍停 —— 本 DS 取不停,理由是上面那條本元件自己的鍵盤規則(停上去按 Enter / Space 沒有任何事可做)。
 
-### 為什麼 `all` 隸屬於 `multiple`
-
-`all`(全部展開)跟 `none`(全部收合)**本質上都是「使用者可以同時展開多個」的行為**——差別只在初始狀態。把它們並列在同一個 mode 下、用 `defaultExpanded` 決定初始狀態,是比「三個平行 enum 值」更乾淨的結構。`follow-active` 則是完全不同的 mental model(展開狀態綁定 `value`,使用者不能獨立切換),所以拆成獨立 mode。
-
 ### 水平模式無 content
 
-`orientation="horizontal"` 時 `<StepContent>` 一律不渲染,`expansion` prop 被忽略。水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏。Consumer 可以共用同一份 JSX 在兩種 orientation 間切換,不會報錯。
+`orientation="horizontal"` 時 `<StepContent>` 一律不渲染。水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏。Consumer 可以共用同一份 JSX 在兩種 orientation 間切換,不會報錯。
 
-**展開 controlled/uncontrolled(2026-07-18 user 拍板補完整雙向)**:`multiple` 模式支援 controlled `expanded: string[]` + `onExpandedChange`(與 `defaultExpanded` uncontrolled 二選一)。理由:Steps 整體 API 哲學是 **parent 掌控狀態**(`value` / `completedValues` / `errorValues` 全 parent-controlled),唯獨展開狀態原只 uncontrolled 自相矛盾;且最近親 `TreeView` 就是完整雙向(`expandedIds` + `onExpandedChange` + `defaultExpandedIds`)。對齊 Radix/MUI/Ant Accordion 全數雙向。傳 `expanded` 時展開狀態由 consumer 掌控,toggle step 經 `onExpandedChange` 回寫新陣列。
+### 來源(2026-09-30「可同時打開多步」模式退役;2026-10-01 巢狀步驟改由 TreeView 承接)
+
+- **決定 —— AI 建議、user 採納(條件見原話)**:user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」。AI 的建議是:不把 GOV.UK step-by-step navigation 那種「讀者自己開合的學習步驟」納入 Steps 的範例,並退役 `expansion="multiple"` / `defaultExpanded` / controlled `expanded` + `onExpandedChange` 整組 API 與展示層「多重展開模式」story。這句採納只涵蓋退役本身;「何時不用」第二張表的兩列(說明 / 教學類編號步驟、設定清單)是退役後的工程落地,各列都引 owner spec 的行號,沒有新的 user 決定。
+- **為什麼退役**:GOV.UK 自己把 step-by-step navigation 定位成「[this pattern is for use in your prototype only](https://design-system.service.gov.uk/patterns/step-by-step-navigation/)」、「step by step navigation is not for use within transactional services」—— 它是內容頁的導覽(每一步是一段可開合的連結清單,還有「show all」),不是交易流程的進度;而 Steps 是進度指示器,「目前那一步」只由導覽或系統進度設定。兩個模型綁在同一個元件上,就會出現 2026-09-25 user 問的那幾題(待辦總帳 N44:「哪裡有展開收合的範例？同時展開多步又是什麼？」)。
+- **巢狀步驟 —— user 的決定(2026-10-01)**:user 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」。落在「何時不用」第一張表(巢狀步驟有「目前那一步」,不屬於第二張表)。這句話決定的是 owner;TreeView 端的巢狀步驟契約(點父步會發生什麼、父步的灰色彙總怎麼算)仍待 user 裁示(待辦總帳 N72),裁示前不改 TreeView。
+- **一起退役的舊記錄**:2026-07-18 `5481e00b` 補上的 controlled `expanded` / `onExpandedChange`(該 commit 與本檔舊版都記為「user 拍板」,未留 user 原話)隨整個模式一起退役。
+- **根因**:2026-04-16 `cbbcc0b0` 首版的 `steps.spec.md:289` 寫的是 multiple 模式「點 step header 切換該 step 的展開(不切換 `value`)」,同日 `a6101d15` 把程式改成點 header 也更新 `value`(該 commit 在 `steps.tsx` 加的註解原文:「永遠更新 focus(value),multiple 模式額外 toggle 展開」)—— 從那天起 header 同時背著「導覽」與「開合」兩個語意;2026-07-05 `7e69aad7` 再給它 `aria-expanded`,讀屏從此把導覽念成開合(見「A11y 預設」)。
 
 ---
 
@@ -288,13 +300,11 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
   linear={boolean}                             // 預設 true
   size="sm" | "md" | "lg"                      // 預設 md ★ cva default
   orientation="vertical" | "horizontal"        // 預設 vertical
-  expansion="follow-active" | "multiple"       // 預設 follow-active
-  defaultExpanded="all" | "none" | string[]    // 只在 expansion=multiple 有效
 >
   <StepItem value="info" disabled?={boolean} state?="error">
     <StepLabel>基本資料</StepLabel>
     <StepDescription>填寫姓名與聯絡方式</StepDescription>  {/* 可選 */}
-    <StepContent>                                          {/* 可選;水平模式忽略 */}
+    <StepContent>                                          {/* 可選;只在目前那一步渲染;水平模式忽略 */}
       <p>當前步驟的動作指引、表單欄位或按鈕</p>
     </StepContent>
   </StepItem>
@@ -338,7 +348,7 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 ## Inspector 與矩陣分工
 
-Steps 的決策是「展示所有步驟進度」,需要一整條鏈才能呈現設計——關鍵維度由 `OrientationMatrix` / `ColorMatrix`(含 4 狀態色)/ `SizeMatrix` / `StateBehavior`(進度流轉 / linear / error interrupt)/ 元件特有 `IndentAlignment` 五張 side-by-side 矩陣 story 完整覆蓋;`Inspector`(元件檢閱器)另補單一互動 playground(Controls 切 value / completedValues / errorValues / size / orientation / linear / expansion,對齊 anatomy 6-canonical)。矩陣是設計比對主路徑,Inspector 供即時 prop 試切。
+Steps 的決策是「展示所有步驟進度」,需要一整條鏈才能呈現設計——關鍵維度由 `OrientationMatrix` / `ColorMatrix`(含 4 狀態色)/ `SizeMatrix` / `StateBehavior`(進度流轉 / linear / error interrupt)/ 元件特有 `IndentAlignment` 五張 side-by-side 矩陣 story 完整覆蓋;`Inspector`(元件檢閱器)另補單一互動 playground(Controls 切 value / completedValues / errorValues / size / orientation / linear,對齊 anatomy 6-canonical)。矩陣是設計比對主路徑,Inspector 供即時 prop 試切。
 
 ## StateBehavior 說明(Steps 層級特有)
 
@@ -371,16 +381,16 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 ## A11y 預設
 
-**ARIA / Pattern**:[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/) **無**正式 stepper pattern(2026-06-01 M26 source-verified:APG 31 patterns 無 stepper / wizard / progress)。本元件採 **Carbon ProgressIndicator 模型** — root `<ol>` + clickable step `role="button"` + focused step `aria-current="step"` + indicator `aria-hidden`(純視覺)。
+**ARIA / Pattern**:[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/) **無**正式 stepper pattern(2026-06-01 M26 source-verified:APG 31 patterns 無 stepper / wizard / progress)。本元件採 **Carbon ProgressIndicator 模型**([`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348),釘在 2026-09-23 的 commit)— root `<ol>` + clickable step `role="button"` + focused step `aria-current="step"`(Cloudscape Wizard 同款:[`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144))+ indicator `aria-hidden`(純視覺)。
 
 - **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
 - **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
-- **展開狀態 ARIA**(2026-07-05 D4 加):垂直模式 step 含 `<StepContent>` 時,clickable header(`role="button"`)輸出 `aria-expanded`(反映 content 展開狀態;`multiple` toggle 與 `follow-active` 皆同步;`follow-active` 下目前那一步不是按鈕、沒有 `aria-expanded`,它的內容恆展開 —— 見「Expansion」的「目前那一步可不可以點」),並在 content 實際渲染(展開)時以 `aria-controls` 指向 content 區(收合時 content 不在 DOM,不輸出避免 dangling reference)——對齊 WAI-ARIA disclosure pattern trigger 最低要求。chevron 維持 `aria-hidden` 純視覺。
-- **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS 內描邊焦點框(`focus-visible:focus-ring-inset`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。展示層 `MultipleExpansion` 以 play assertion 驗證該節點確實 overflow、可聚焦。
+- **沒有 `aria-expanded` / `aria-controls`**(2026-09-30 拿掉;2026-07-05 `7e69aad7` 加的):header 點了是「跳到那一步」,不是切換一塊內容的顯示,WAI-ARIA disclosure trigger 的語意套上去會讓讀屏把導覽念成開合。目前那一步只由 `li` 的 `aria-current="step"` 說出來。對照:Carbon [`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348)—— 步是一顆 `<button>`,a11y 屬性只有 `disabled` / `aria-disabled` / `tabIndex`(其餘是 `type` / `className` / `onClick` / `onKeyDown` / `title` / `...rest`),全檔 0 個 `aria-expanded`;Cloudscape [`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144)—— 目前那一步是 `aria-current="step"` 的 `<span>`,全檔 0 個 `aria-expanded`。
+- **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS 內描邊焦點框(`focus-visible:focus-ring-inset`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。鍵盤到不到得了這類區域由 a11y 閘的 axe 規則 `scrollable-region-focusable`(wcag2a;`scripts/audit-a11y.mjs:133` 的 tag 集合)看守;2026-09-30 起 DS 內沒有任何 story 示範這條(原本示範它的「多重展開模式」已退役),規則文字保留為 consumer 指引。
 
 **Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
 
-- Tab — focus 每個 clickable step(各自 tab stop);鎖住的步與預設展開模式下的目前那一步不是 clickable,不停(見「Expansion」的「目前那一步可不可以點」)
+- Tab — focus 每個 clickable step(各自 tab stop);鎖住的步與目前那一步不是 clickable,不停(見「內容跟著目前那一步」的「目前那一步可不可以點」)
 - Enter / Space — navigate to step(`role=button` 元素必同時支援)
 - **不提供方向鍵 roving**:採 native button sequential Tab(對齊 Carbon ProgressIndicator);MUI / Angular Material 的「tablist + 方向鍵 roving」是另一派世界級做法,本 DS 不採(避免把 `role=button` 改寫成 `role=tab` 的語義改動)。
 

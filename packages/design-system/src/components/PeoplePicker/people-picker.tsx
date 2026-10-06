@@ -64,7 +64,7 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 // 2026-07-17 Dim 26 修:`defaultValue` 一併 Omit — 本元件 controlled-only(spec「Controlled-only
 // rationale」),React.HTMLAttributes 內建的 `defaultValue` 若不 Omit 會讓 consumer 傳入假
 // uncontrolled API,runtime 經 `...rest` 靜默轉送 trigger div 後無效。Omit 本身即 type-level
-// regression(consumer 傳 defaultValue 直接 TS 編譯錯)。DS 先例 steps.tsx:166 同款 Omit。
+// regression(consumer 傳 defaultValue 直接 TS 編譯錯)。DS 先例 steps.tsx:206 同款 Omit。
 export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   /** Field mode(edit / view / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode

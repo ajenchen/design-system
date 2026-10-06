@@ -84,9 +84,6 @@ export const UsageGuidance: Story = {
         <li>
           <LinkTo kind="Design System/Components/Steps/展示" name="水平"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">結帳流程進度(水平)</span></LinkTo>
         </li>
-        <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="多重展開模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">安裝指南逐步教學(多重展開模式)</span></LinkTo>
-        </li>
       </ul>
       <p className="text-fg-secondary mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用下方清單建議的近親元件。</p>
     </div>
@@ -100,6 +97,8 @@ export const UsageGuidance: Story = {
         <li><strong>時間軸或歷史紀錄</strong> → Timeline（未來）。時序事件和進度語義不同</li>
         <li><strong>超過 7 步的流程</strong> → ProgressBar + 計數。Steps 會視覺過長</li>
         <li><strong>使用者可自由跳步</strong> → Tabs。Steps 暗示線性順序,可跳步改用 Tabs</li>
+        <li><strong>巢狀步驟（步驟底下還有子步驟）</strong> → TreeView。Steps 沒有巢狀結構</li>
+        <li><strong>說明 / 教學類的編號步驟</strong> → Accordion。讀者自己開合、沒有「目前那一步」,編號寫進每段標題</li>
       </ul>
     </div>
     </div>

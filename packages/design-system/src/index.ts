@@ -518,7 +518,6 @@ export type {
   StepDescriptionProps,
   StepItemProps,
   StepLabelProps,
-  StepsExpansion,
   StepsOrientation,
   StepsProps,
   StepsSize,

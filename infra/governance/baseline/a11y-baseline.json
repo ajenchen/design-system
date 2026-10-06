@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-09-30T17:55:25.044Z",
-    "stories": 1058,
+    "stories": 1057,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -790,7 +790,6 @@
       "design-system-components-slider-設計規格--state-behavior",
       "design-system-components-steps-展示--default",
       "design-system-components-steps-展示--horizontal",
-      "design-system-components-steps-展示--multiple-expansion",
       "design-system-components-steps-展示--non-linear",
       "design-system-components-steps-設計原則--blue-connector-logic",
       "design-system-components-steps-設計原則--column-rhythm",
@@ -1063,7 +1062,7 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "7afdd9d7a700a89de4cc5216e16c94fdc3ba6ad76d825aea18928a8b002a570b",
+    "storyIdsSha256": "83a3c852ea97a92d63b2bbc0f7ad6997cc84923f8590696e4733dc8845735aeb",
     "fingerprints": 748
   },
   "fingerprints": {

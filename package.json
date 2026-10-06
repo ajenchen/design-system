@@ -209,6 +209,7 @@
     "test:rating-field-size": "node scripts/test-rating-field-size-invariant.mjs",
     "test:reciprocal-pointers": "node scripts/add-reciprocal-pointers.mjs --check",
     "test:steps-connector-geometry": "node scripts/steps-connector-geometry-invariant.mjs && node scripts/steps-connector-geometry-invariant.mjs --selftest",
+    "test:steps-content-follows-current": "node scripts/steps-content-follows-current-invariant.mjs && node scripts/steps-content-follows-current-invariant.mjs --selftest",
     "check:agents-bootstrap": "node scripts/check-agents-bootstrap.mjs --check",
     "test:hover-color-pair": "node scripts/hover-color-pair-invariant.mjs",
     "test:hover-latency-policy": "node scripts/test-hover-latency-policy.mjs"

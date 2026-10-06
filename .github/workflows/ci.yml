@@ -866,6 +866,9 @@ jobs:
           # Steps 連接線幾何(2026-09-29 待辦總帳 N52):三尺寸垂直、無說明文字時線高 ≥ 24、兩端縫 8 —— 修法前 md 只有 2.2px、lg 是 0
           # (線長是列高的餘數);selftest 把修法前的實測餵進判定函式必紅。
           npm run test:steps-connector-geometry
+          # Steps 內容跟著目前那一步(2026-09-30 退役「可同時打開多步」模式):每則 import Steps 的 story 逐一點 header / 按「下一步」,
+          # 內容區只准出現在 aria-current="step" 那一步、header 不得帶 aria-expanded / aria-controls;selftest 判定表 + 真建置上注入三種舊毛病(header 帶 aria-expanded、內容放錯步、點 header 後舊內容留在原步)必被抓到。
+          npm run test:steps-content-follows-current
           # 視覺稽核只掃這次改到的元件(2026-09-29 待辦總帳 OE8:126 個場景只有 7 個掛斷言、從沒在 PR 上跑過)。只跑 render error 與
           # 幾何 / 顏色斷言:--no-diff(基準圖是視覺回歸 workflow 釘死容器裡的 Ubuntu 渲染,別的 runner 會整排假破預算)、
           # --no-a11y(a11y 另有 a11y-and-size.yml 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——

@@ -514,6 +514,7 @@
       "scripts/test-sidebar-menu-keyboard-invariant.mjs",
       "scripts/test-status-color-invariant.mjs",
       "scripts/test-steps-connector-geometry-invariant.mjs",
+      "scripts/test-steps-content-follows-current-invariant.mjs",
       "scripts/test-story-demo-focus-invariant.mjs",
       "scripts/test-story-layer-drift-invariant.mjs",
       "scripts/test-storybook-docs-race-invariant.mjs",

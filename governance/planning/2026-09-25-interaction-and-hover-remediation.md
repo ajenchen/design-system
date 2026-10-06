@@ -13,6 +13,45 @@ user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有
 
 ## 〇、總覽(先看這一節;其餘各區是明細)
 
+### 2026-10-06 起:PR #169 批次總追蹤(本節是這一批的唯一清單;完成一項就在這裡改狀態並附 commit)
+
+user 2026-10-06 原話:「把所有任務處理完整完美，確保沒有因為額度問題中斷、壞掉，反正確保所有我叫你做的任務都要追蹤到完美收尾，請務必知道自己到底還有哪些沒做完，然後確保所有人類更動都是合規且必須的，不要亂改東西或是改壞原本好的東西 然後整個處理完後列出所有畫面上有變動的地方並給我圖片」;同日:「你要確保所有任務包括上述之外的都有被追蹤直到完美收尾,且所有任務都要確保符合我們一致的dS設計語言且不違背世界級的設計，然後確保最後要我拍版的真的是根據工作流程要我拍版的東西,此外確保所有視覺的異動都有告知我」。
+
+**為什麼這一節存在**:10-01 ~ 10-06 停工五天,session scratch(/tmp)裡三批已驗證、還沒推上去的工作全被系統清掉(macOS 會刪 3 天沒存取的暫存檔),只能照 workflow 紀錄重做。教訓已入 `governance/memory/reference_deploy_targets.md`「/tmp scratchpad 的壽命」:驗證過的批次**當天**推上去;追蹤清單放在會推上 GitHub 的這份檔,不放 /tmp。
+
+**要 user 拍板的只有三類**(AGENTS.md):產品／UI／UX SSOT 證據收斂後仍有的真取捨(「自主執行 canonical」表第一列)、發版同意「發版」(「Git / release canonical」1.5)、視覺基準圖「可以改」(「Visual baseline」)。其餘工程 AUTO,但**所有看得見的變化都列給 user 並附圖**。
+
+| id | 項目 | 狀態 |
+|---|---|---|
+| P1 | 供應鏈:brace-expansion 5.0.12 overlay、consumer 差異稽核、release 鏈回溯、版號 beta.148 | 完成 `a89b6610` |
+| P2 | 可搜尋選單焦點批次(Combobox / Select / SelectMenu / PeoplePicker / Command)| 完成 `a89b6610` |
+| P3 | Rating 改版 + 共用表單驗證根因 + 範例層漂移棘輪閘(`scripts/story-layer-drift-invariant.mjs`)| 完成 `a89b6610`;CI 修正 `7065fd49` |
+| P4 | PR 說明寫清楚「主線供應鏈驗證」(非必要檢查)為何紅:它跑 main 上的驗證器,不認得本 PR 的 overlay 5.0.12,同 #167 前例 | 待做 |
+| P5 | Steps「可同時打開多步」退役 + 巢狀步驟改由 TreeView 承接(C-Steps N71–N81)| 完成(本 commit;重做版經視覺全比對、對抗審查、修正、再驗)|
+| P6 | 表單與對話框(送出成功 = Toast〔user 10-01「然後送出成功跳提示」〕、對話框 Esc 分層、存檔後焦點留在按鈕、更新表單基準重設、無觸發點的焦點歸還、AI 面板改名對話框、LinkInput、Combobox 表單接線)| 重做中(workflow `wf_abb9144d-850`)|
+| P7 | 範例層舊漂移(1782 處)+ 9 個排除資料夾最後一輪 + 段落間距層級(要 user 選,附對照圖)| 重做中(workflow `wf_270f4cfe-510`)|
+| T1 | TreeView 當步驟用:沒有自己頁面的大步驟 —— 目前位置在它裡面時點它不動、在外面時跳到第一個子步驟(A2)| **已決**(user 10-06「C對吧」;若 user 更正以更正為準)→ 待實作 |
+| T2 | TreeView:點了畫面完全沒變化時改為開合(D)| 研究中(user 10-06「Ｄ我覺得從圖片上看出我的提議似乎沒什麼問題,你要不要再仔細研究？」)|
+| T3 | TreeView:收起含目前位置的大步驟時,灰底要不要由大步驟代顯;有內容 / 沒內容的大步驟要不要分開(E)| 研究中(user 10-06「E我覺得是否要區分大步驟是否有自己的內容？…感覺這題還是要仔細研究一下吧？」)|
+| T4 | TreeView 步驟狀態圖示:放在列尾、只顯示成功 / 失敗、沒內容的大步驟收起時顯示子步驟的 AND(user 10-01「我覺得收起來之後大步驟的狀態顯示是所有子步驟的and 運算結果就夠了吧？」;10-06「如果加在後方感覺不錯,然後應該只需要秀成功或失敗這兩種狀態？」)| 研究中 |
+| T5 | TreeView `expandOnSelect`:規格寫「選取 + 展開」,程式卻是開合切換(`tree-view.tsx` toggleExpand,自 `e447ee7d`)→ 改成只展開 | 待做(對齊既有規格,AUTO)|
+| T6 | 收合時子項閃一下才消失(根因:Radix Presence 收起動畫結束到卸載之間少了終態)→ TreeView、Accordion、AI 面板思考區塊、Dialog、其他浮層同族修 | 待做 |
+| T7 | 「減少動態效果」設定全族失效(選擇器權重問題)→ 同族修,更正 `motion.spec.md:115` | 待做 |
+| T8 | 動畫時長兩處宣告不一致(`base.css` 150ms vs `agent-panel.spec.md` 200ms)→ 先查 motion SSOT 再對齊 | 待做 |
+| K1 | Backspace:關鍵字空白時刪最後一個已選項(多選 / 「不限」);Select 單選只在可清除時清值;按住不連刪;報讀「已移除『X』」| **已決**(user 10-06「可以跟」)→ 待實作 |
+| K2 | 清單開著按清除 × 後,反白回到第一項 | **已決**(user 10-06「Ａ,B照你建議」)→ 待實作 |
+| K3 | 焦點在欄位本身時打字 = 打開清單、字進搜尋框(注音第一鍵要測);同批修「按 × 後焦點掉到欄位本體、再按 Esc 掉到頁面最上層」(違 `select.spec.md:276`),範圍避開 `select-menu.spec.md:384` | **已決**(同上)→ 待實作 |
+| K4 | 「不限」+ 欄位內搜尋:打開時「不限」變灰字提示、打字就讓位、刪光再回來(關著時逐像素不變)—— DS 自己的規則是欄位上用文字顯示的值一打字就讓位(Select 單選、PeoplePicker 單人),「不限」偏離;同批修 PeoplePicker 多人只選 1 位時名字也要讓位(`people-picker.spec.md:164` 有寫、程式沒做)+ 範例、閘、三處文件指標 | 待做(對齊 DS 既有規則,AUTO;畫面會變,已附圖告知 user)|
+| K5 | PeoplePicker 觸控裝置(原生分支)段落核對 | 待做 |
+| V1 | a11y / 豁免到期基線收緊 | 待做 |
+| R1 | 全部批次合入、CI 必要檢查全綠、預覽站對上 head | 進行中 |
+| R2 | 所有畫面變動清單 + 前後圖交給 user | 待做 |
+| R3 | user「可以改」→ 重拍視覺基準圖 | 等 user |
+| R4 | user「發版」→ `release:auto` → beta.148 發布與讀回 | 等 user |
+| R5 | WM:full-snapshot 145 → 148、還原 SidebarGroupActionTransition 暫時處理、更新 `ds-cheatsheets.md`、讀回 | 待做(發版後)|
+
+**已登記、不在這一批**(完成報告會講明):OE27 欄位內搜尋框自己的 role=combobox(關著的欄位打字沒反應同根)、OE28 浮層內 / 欄位內搜尋的比對算法不一致、Steps backlog(N71 / N73 / N74 / N76)、Select 點搜尋框本身會關清單(規格沒寫)。
+
 ### 主線:一套統一的互動規則(user 的主要目標)
 
 user 原話(本 session):「你繼續處理所有任務直到完美收尾，但我要補充一下,關於那些懸而未決的問題， 你他媽到底可以不可以根據你所有的世界級設計的研究然後通盤有組織性地考慮到底同一個設計系統裡應該如何通盤定義才會有一致的設計語言以及不違背世界級的設計，確保ssot，且ssot可以涵蓋各種情境，且該SSOT是從設計面而合理推導出來而不是導果為因的那種，然後確保不要再那邊給我拼裝車」
@@ -337,6 +376,24 @@ C 區(除 C3)與 D 區是內部工程,AI 自己處理,不拿去問 user。已發
 | N68 | 表單放在對話框 / 側板裡時,欄位按 Escape 會連整個對話框一起關掉,規則 4 的「回復這一格」等於沒有:Radix 在 document **捕獲階段**收 Escape(`node_modules/@radix-ui/react-use-escape-keydown/dist/index.mjs:12` `{ capture: true }`,1.1.1),比欄位自己的 handler 早。2026-07-03 稽核已記(`.claude/logs/deep-audit-2026-07-03/d4-results.json:730`,P2,建議兩段式 Escape),未處理;N65 修好 Escape 之後仍成立 | **待決(產品／UI／UX 取捨;讀原始碼推導,未實測)**:第一下 Escape 回復欄位、第二下才關對話框,或維持「一下就關」。WM 16 支表單裡 13 支的檔名是 Dialog / Sheet / Drawer |
 | N69 | 更新表單按「儲存變更」後,鍵盤焦點掉到 `<body>`:送出期間 `submitDisabled` 為 true(`form-validation.spec.md`「Double-submit 防護」),範例把它接在按鈕的原生 `disabled` 上,瀏覽器把焦點從被停用的按鈕拿掉,送出完按鈕恢復、焦點不回來。實測(2026-10-01 walk,淺深兩色,修改前後相同,scratch `rating-work/iter4/fix2/walk-summary-*.txt`):UpdateProjectSettingsForm 存檔後 U5 / U6b / U6d 焦點 = BODY;CreateProjectForm 的送出鈕沒接 disabled,C6 焦點留在按鈕。Button 的 `loading` 同樣走原生 disabled(`button.spec.md`「loading」`disabled={disabled || loading}`),所以不只這則範例 | **待辦(a11y;非本批引入,本批 frozen scope 外,未動;AI 觀察,未做 benchmark)**:方向 —— 送出中改用 `aria-disabled`(焦點留著、仍擋重送)或送出後把焦點放回按鈕;牽涉 Button `loading` 的語意,動手前先查 ≥3 家 |
 | N70 | N67 的同族(M10 當場盤):AgentPanel「改名對話」(`agent-panel.tsx:814-866` AgentRenameDialog)自己手寫 blur 驗證(`onBlur={() => setTouched(true)}` → 「名稱不可空白」),沒走 `useFormValidation`,所以 N67 的修法到不了它。清空名稱後直接用滑鼠按「取消」→ 離開那一下錯誤長出來、置中的 autoHeight 對話框變高,取消鈕上緣 150.8 → 204.8,這一下點擊落空(取消 0 次、對話框沒關);「儲存」在名稱空白時本來就停用。實測用同一組 dist 元件與 props 的複本(scratch `rating-work/iter5/agent-rename-replica.log`),不是 story 本身。其他在 blur 時改變畫面的 DS 控件 —— LinkInput 離開時切出編輯狀態、網址無效只換紅框(`link-input.tsx:217-231`、`:187`)、InlineEdit 離開時切回檢視(`inline-edit.tsx:176-185`)、DatePicker 輸入提交、DataTable 格編輯、FileViewer —— 本輪**未量**,會不會把下方按鈕推離按下的位置待量 | **待辦(工程,AUTO;本批 frozen scope 外,未動;AI 觀察)**:AgentRenameDialog 的方向(AI 建議)—— 改接 `useFormValidation`(名稱必填寫進 `validate`),延後就一起到位,不另寫一份按壓追蹤(M17)。注意:目前名稱空白時「儲存」停用(`disabled={!dirty \|\| empty}`),`form-validation.spec.md`「Submit Button 狀態」的更新表單是 disabled-until-dirty,照它改會變成空白也能按、按了才報錯 —— 那是可見行為變更,動手前要把這一點攤開;只接驗證、保留現有停用條件也可行。其餘控件先量再判 |
+
+### C-Steps(2026-09-30 → 10-01:Steps「可同時打開多步」模式退役、巢狀步驟改由 TreeView 承接;N71–N80 只記錄、不實作;N81 本批完成)
+
+user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」—— **AI 建議、user 採納(條件見原話)**,這句採納只涵蓋退役本身:`expansion="multiple"` / `defaultExpanded` / controlled `expanded` + `onExpandedChange` 整組 API、展示層「多重展開模式」story、header 的 `aria-expanded` / `aria-controls`(2026-07-05 `7e69aad7` 加的)一起拿掉,內容區只跟著目前那一步(`steps.spec.md`「內容跟著目前那一步」,含「來源」與根因:2026-04-16 `cbbcc0b0` 的 `steps.spec.md:289` 寫「不切換 `value`」、同日 `a6101d15` 把程式改成點 header 也更新 `value`);2026-07-18 `5481e00b` 的 controlled `expanded`(該 commit 與舊 spec 記為「user 拍板」,未留 user 原話)隨之退役。「方向」範例的垂直版從安裝指南改成 DKIM 設定精靈(內容區用 `FieldGroup` + `<Field mode="readonly">` 的 Input / Textarea,不手刻卡片;規格「內容跟著目前那一步」寫明為什麼用唯讀欄位,引 `field-controls.spec.md:357` 唯讀有值保留選取 / 複製),原本掛在退役 story 上、順帶示範「consumer 捲動區可聚焦」的 play 跟著退役,規格如實寫明目前沒有 story 示範這條。第一版曾連帶改寫 Accordion 的 type 段與兩則 Accordion 範例、並把路由表整張標成 user 採納,審查後全部還原(M23:不在 Steps 的批次裡改別的元件的規則;M36:採納只涵蓋退役本身),Accordion 只多一列指回 Steps 判斷準則的「何時不用」指標(`accordion.spec.md:45`)。user 2026-10-01 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」—— 這是 user 自己的決定,落在 `steps.spec.md:63`(何時不用第一張表:巢狀步驟有「目前那一步」)與「來源」`:262`;它帶出的 TreeView 契約見 N72。使用指引 story 的「改用其他元件」清單同步補上「說明 / 教學類編號步驟 → Accordion」「巢狀步驟 → TreeView」兩列(code / spec / story 三方一致)。新閘 `scripts/steps-content-follows-current-invariant.mjs`(`npm run test:steps-content-follows-current`,CI verify-browser-interaction;meta test `scripts/test-steps-content-follows-current-invariant.mjs`):每則 import Steps 的 story 逐一點 header、按一次「下一步」、再把按完才可點的 header 點一輪(預設精靈因此會點回剛完成的那一步、內容必須跟著回來),內容區只准在 `aria-current="step"` 那一步、header 不得帶 `aria-expanded` / `aria-controls`;「點 header 讓有內容區的步驟條換步」零次 = 儀器失效;`--selftest` 判定表 + 真建置上每則有步驟條的 story 注入 `aria-expanded`、每則有內容區的 story 把內容放錯步、再注入「點 header 後舊內容留在原步」跑完整掃描,都必被抓到 + 以退役前建置當對照組(`--control-static`)四種違規都紅、含預設精靈已完成那一步的 `aria-expanded="false"`。a11y 基線只拿掉退役那一則 story 的語料(1058 → 1057,`createA11yStoryCorpus` 重算指紋語料 sha),不重拍任何指紋。
+
+| id | 內容 | 狀態 |
+|---|---|---|
+| N71 | 設定清單(帳號開通、工作區初始化的待辦:每一項獨立、可跳著做、每項帶一顆動作鈕)在 DS 沒有 owner —— 它不是一條有順序的流程,`steps.spec.md:70`(何時不用第二張表)只寫「DS 目前沒有對應元件」。Accordion 的禁止事項 `accordion.spec.md:92` 只禁重焦點互動內容(complex form / Dialog trigger)、少量輸入可以,單顆動作鈕沒有明文,所以也不能直接寫成「改用 Accordion」 | **待決(產品／UI SSOT;AI 推導、未經 user 確認)**:要不要新元件、或由既有元件承接;user 09-30 那句話沒有回答這題 |
+| N72 | 巢狀步驟的 owner:user 2026-10-01 原話「巢狀清單一律由tree view，因為treeview才支援巢狀」→ 路由寫進 `steps.spec.md:63`(何時不用第一張表 —— 巢狀步驟有「目前那一步」;指向 `tree-view.spec.md:130` 單選導覽用法),原話與「這句決定的是 owner」記在「來源」`:262`。**TreeView 的巢狀步驟契約(點父步會發生什麼、父步的灰色彙總狀態怎麼算)尚待 user 裁示,裁示前不改 TreeView**。現有 `tree-view.stories.tsx:85-107`「步驟引導」示範不能當 canonical 引用:① `expandOnSelect` 讓點父列同時選取 + 展開;② `aria-selected` 與「進行中」icon 給出兩個互相衝突的「你在這裡」訊號;③ 狀態 icon 全是 `aria-hidden`,讀屏得不到任何狀態;④ 綠色 `CheckCircle2` 與 Steps 狀態 SSOT(`steps-state-visuals.spec.md:13` completed = 藍底 `bg-info`)衝突;⑤ 目前那一步用 `neutral-selected`,是 `steps.spec.md:345` 明文禁止的 selection 語意。另:`steps.spec.md:161` sm 尺寸「用在 sidebar 內 nested 流程」一句可讀成兩種意思(側欄裡的子流程 / 巢狀步驟),與契約一起收。Accordion 自己的規則照舊:`accordion.spec.md:88`「不在 Accordion 內放另一個 Accordion(巢狀會讓使用者迷失;用 TreeView 或拆頁)」 | **待決(產品／UI／UX SSOT,等 user 給契約)** |
+| N73 | `linear=false` 的定義自相矛盾:`steps.spec.md:62`「使用者可自由跳步 → Tabs」vs `:217`「`linear=false` 適合 setting wizard、教學目錄」、`steps-state-visuals.spec.md:42`「例如設定頁、教學目錄」,`steps.spec.md:45`「入職 / onboarding 進度:教學性流程」也近似。本輪只把「目前那一步 = 一條流程裡的位置、只由導覽或系統進度設定」寫進 `steps.spec.md:31`,並在同句寫明非 linear 點某一步移動 `value` 仍是導覽 —— `steps-state-visuals.spec.md:42`「value 的語意是『使用者在看哪一步』」說的就是這個位置(只是不渲染 filled 藍),兩句相容。新路由表(`:69` 說明 / 教學類編號步驟 → Accordion)與「教學目錄 → Steps `linear=false`」依 `:49` 的判準**不衝突**:教學目錄若有使用者在課程間移動的「目前位置」就是 Steps(非 linear),讀者自己開合、沒有目前位置的編號說明才是 Accordion;`:31` 與 `:69` 不論 N73 怎麼決都成立。要決的只有 `:62` 與 `:217` 哪一句是對的(以及兩處「教學目錄」措辭) | **待決(產品／UI／UX SSOT;本批之前就開著)** |
+| N74 | CI / build pipeline 的每一步各自一段可開合的 log(多步同時打開比對):退役「可同時打開多步」後 Steps 不再承接這種用法,DS 沒有 owner;`steps.spec.md:46` 何時用仍列「CI / build 的 pipeline 狀態」—— 只指狀態,不含每步的 log | **待決(產品／UI SSOT;AI 推導)** |
+| N75 | 可點的樣子、沒有行為:10 則規格 / 原則 story 的 header 有 `role="button"`、`tabIndex=0`、手形游標,點了卻不會移動(`value` 受控、沒傳 `onValueChange`;例:設計規格「狀態行為」點 7 下、目前那一步移動 0 次)。新閘 `steps-content-follows-current` 會把「點了 header、目前那一步一次都沒移動」的 story 逐一列出,但不判紅 —— 那是本列待決的 API 語意,不是「內容跟著目前那一步」這條規則。Steps 應有一個明確的「純追蹤、不可導覽」prop,而不是拿「沒傳 `onValueChange`」當代理(M23(f):可省略 callback ≠ 可省略行為;M37:當下剛好成立的觀察量) | **待決(API 語意;AI 推導)**:方向 —— 加 prop(例如 `interactive={false}`)讓追蹤用法明說,header 隨之拿掉按鈕語意;定了之後規格 / 原則 story 全部改用它 |
+| N76 | 進度追蹤 vs Timeline 的邊界:`steps.spec.md:44` 把物流追蹤(已下單 → 揀貨 → 出貨 → 送達)列進 Steps,`:59` 又把「時間軸歷史事件」送去 Timeline(未來元件);兩者都是系統推進、唯讀,目前只靠措辭分 | **待決(產品／UI SSOT)**;候選判準(AI 推導、未經 user 確認):有「還剩哪些」= Steps、只有「發生過什麼」= Timeline |
+| N77 | 全 DS 掃「header 帶 `aria-expanded` 卻不是開合鈕」/「導覽與開合混在同一顆鈕」:本輪只做 Steps 一支閘;Accordion / Collapsible / SidebarGroup / TreeView 的 header 語意沒有一支 DS-wide 的閘看 | **待做(工程,AUTO;下一批)** |
+| N78 | GOV.UK step-by-step navigation 的「show all」(一次全部展開,[step-by-step-nav.js#L56-L73](https://github.com/alphagov/govuk_publishing_components/blob/d9555b6049597f5542083695f7cfb965ac547988/app/assets/javascripts/govuk_publishing_components/components/step-by-step-nav.js#L56-L73)):長篇旅程指南改用 Accordion 後沒有這個功能 —— `accordion.spec.md:89`「不寫『全部展開 / 全部收合』按鈕」照舊 | **已知缺口(記錄;不改 Accordion 規則)** |
+| N79 | WM `docs/work-blueprint/ds-cheatsheets.md:584` 仍列 Steps 的 `expansion ('follow-active'\|'multiple')` 等退役 props;WM 目前沒有任何 Steps 使用 | **待做**:在 release 第 5 步(template / WM exact-version PR)一併更新,不在 DS 這份 PR 動 WM |
+| N80 | 來源總帳:本批在規格裡留下唯一等 user 的句子是 N72 的 TreeView 巢狀步驟契約(`steps.spec.md:63` 與 `:262`),沒有其他規格句子等 user。退役本身是 AI 建議、user 採納(原話在 `steps.spec.md:260`);巢狀步驟 → TreeView 是 user 2026-10-01 自己的決定(原話在 `:63` 與 `:262`),它決定了 owner,契約題(N72)是那個決定帶出來的、屬於本批;「何時不用」第二張表兩列各引 owner spec 行號,沒有新的 user 決定(設定清單那列 `:70` 只陳述「DS 目前沒有對應元件」這個事實,要不要補元件是 N71 的待決題,規格沒有替它下結論)。N71 / N73 / N76 記的是本批之前規格就有的缺口或矛盾(本批只是記下來) | **記錄** |
+| N81 | `inline-action.spec.md:157` 自稱「所有 DS 用法一覽」卻沒列 Accordion 標題列的 ChevronDown(`accordion.tsx:70-74`,`aria-hidden`) | **完成(本批)**:補一列,分類 Decorative(決策樹 Q1 否 `:133-134`:整條標題列是 Radix Trigger 按鈕,chevron 自己不做事、host 是 click target `:126`;對照 SidebarGroup header chevron 那顆自己是可點的 toggle → Inline Action) |
 
 ## D. 舊 live 清單的未結項(內部;2026-09-25 逐項對 git 查證後併入)
 

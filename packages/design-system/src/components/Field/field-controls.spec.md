@@ -448,6 +448,7 @@ col.accessor('status', {
 - `select-menu.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
+- `steps.spec.md`
 - `switch.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`
