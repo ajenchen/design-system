@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: DS 的 story 三層(packages/design-system/src/**\/*.stories.tsx;story-rules.md「三層定位」:展示 / 設計規格 / 設計原則,
+ *   保證: DS 的 story 三層(展示 / 設計規格 / 設計原則,不含 test-only 夾具)不會「新增」四種範例層漂移 ——
+ *         (a) 新建表單停用主送出鈕、(b) 寫死間距、(c) 用 div / p 做標題、(d) DS 沒有的字級 class;
+ *         每檔每條規則的命中數(含兩種放行標記本身)不得高於 scripts/story-layer-drift-baseline.json(棘輪)。
+ *   紅: 任一檔任一規則比基準多、新檔有命中、基準比 merge-base 實測寬或格式不合、CI 裡數字變少卻沒收緊基準 → 指名 file:line 並 exit 1;
+ *       --selftest 以 82f24938 原版 Rating 與合成新檔證明四條規則各自在指定行紅(細則見下)。
+ *   綠: 命中數不高於基準時綠;乾淨的合成檔與合法標記 0 筆;純靜態(TypeScript AST + 既有分類器)、不讀時間、不開瀏覽器,
+ *       同一份工作樹重複跑結果相同;掃到 0 檔或儀器讀不到 = 儀器失效(exit 2),不讀成通過。
+ *
+ *   (以下細則是上面三句的完整條文;@gate-contract 檢查只讀開頭 2000 字,所以摘要放前面 —— 2026-10-07 CI gate-control-group 抓到
+ *    細則把「綠」擠到 2000 字之後)
+ *   保證細則: DS 的 story 三層(packages/design-system/src/**\/*.stories.tsx;story-rules.md「三層定位」:展示 / 設計規格 / 設計原則,
  *         不含標 tags:['test-only'] 的自動化夾具 story)不會「新增」Rating 送出評分範例曾有的四種漂移,每檔每條規則的命中數不得高於
  *         scripts/story-layer-drift-baseline.json(棘輪;新檔任何一筆都算新增)。各層適用的規則(2026-10-01 起;理由見下方「範圍」):
  *         展示層 / 設計原則層 = 四條全收;設計規格層(*.anatomy)= (a)(c)(d),(b) 不收(量測矩陣 / Inspector 的版面本身就是固定幾何)。
@@ -19,7 +29,7 @@
  *         (c) 用 <div> / <p> 做標題(標題字級 + 加粗字重、只有文字、沒被截斷,而且後面接著它要當標題的區塊;不論排成幾行),
  *             typography.spec.md:43「視覺標題 ≠ 語義標題(一律用 h1–h6)」;
  *         (d) DS 字級 token 裡沒有的 text-* 字級 class —— 允許集合從 typography.css 的 @utility 讀,Tailwind 預設字級從 tailwindcss/theme.css 讀。
- *   紅: 任一檔任一規則的命中數高於基準、或新檔有命中 → 印出新增命中的 file:line 並 exit 1;基準本身比 merge-base 寬
+ *   紅細則: 任一檔任一規則的命中數高於基準、或新檔有命中 → 印出新增命中的 file:line 並 exit 1;基準本身比 merge-base 寬
  *       (用同一支儀器量 base 那棵樹,任一檔任一規則基準記的數字高於 base 實測:數字一致的手改加額度、替新檔預留)→ exit 1;
  *       基準格式不合(count ≠ hits、指紋不是 12 碼十六進位、替不在範圍的檔記數字)→ exit 1;CI 找不到可比對的 base → 儀器失效;
  *       CI 裡任一格比基準少而基準沒在同一個 PR 收緊 → exit 1(2026-10-06:否則合併後下一個無關 PR 會因「基準比 base 寬」誤紅、指名錯的 PR);
@@ -34,7 +44,7 @@
  *       在原本那幾行紅((b) :21 :25 :39 :60 + (d) :74;(c) :38 :96),對已提交的基準比都是新增;
  *       `@story-counter-example` 綁的兩句 canonical 原文(story-rules.md:17 三層定位、category-templates.md:168 do/don't 只住 principles)
  *       任一句不見了 → 儀器失效;helper 的 `<div 標題字級 加粗>{title}</div>{children}` → (c) 紅(後面接 `{note}` 文字 → 0 筆)。
- *   綠: 命中數不高於基準時綠(數字變少允許,會提示收緊基準);乾淨的合成檔(用 token、h1–h6、hook 送出狀態、合法註記、
+ *   綠細則: 命中數不高於基準時綠(數字變少允許,會提示收緊基準);乾淨的合成檔(用 token、h1–h6、hook 送出狀態、合法註記、
  *        側欄 chrome 的 workspace brand span(sidebar.spec.md:264)、列裡的名稱 + 說明、截斷的列標籤、批次操作鈕)0 筆;
  *        test-only story(與只被它用到的模組層小元件)裡的同一段漂移 0 筆;設計規格層的寫死間距 0 筆;
  *        設計原則層四條漂移各自帶合法 `@story-counter-example:`(正上方或同一行)0 筆;
