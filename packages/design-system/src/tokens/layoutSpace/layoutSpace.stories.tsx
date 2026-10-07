@@ -32,13 +32,14 @@ function SpaceRow({ utility, mdValue, lgValue, usage }: {
   usage: string
 }) {
   return (
+    // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
     <div className="grid items-center gap-x-6 gap-y-1 border-b border-border py-4 last:border-0"
       style={{ gridTemplateColumns: '220px 80px 80px 1fr 100px' }}>
       <div>
         <code className="block text-caption font-medium text-fg-secondary">{utility}</code>
       </div>
-      <div className="text-caption font-mono text-fg-muted">md: {mdValue}</div>
-      <div className="text-caption font-mono text-fg-muted">lg: {lgValue}</div>
+      <div className="text-caption font-mono text-fg-secondary">md: {mdValue}</div>
+      <div className="text-caption font-mono text-fg-secondary">lg: {lgValue}</div>
       <div className="text-body text-foreground">{usage}</div>
       <div className="flex items-center justify-end">
         <div aria-hidden="true" className="bg-primary h-6" style={{ width: mdValue }} />
@@ -52,23 +53,25 @@ export const Overview: Story = {
   name: '總覽',
   render: () => (
     <div className="max-w-5xl">
-      <h2 className="text-h3 mb-2">Layout Space Tokens</h2>
-      <p className="text-body text-fg-secondary mb-6">
+      <h2 className="text-h3 mb-[var(--layout-space-tight)]">Layout Space Tokens</h2>
+      <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
         Pattern 層級間距 token,跟 density 連動(md / lg 兩個值)。下表展示 md density 預覽。
       </p>
 
       <SpaceRow utility="--layout-space-tight" mdValue="12px" lgValue="16px" usage="header / footer 上下 padding;緊密 inline gap" />
       <SpaceRow utility="--layout-space-loose" mdValue="16px" lgValue="24px" usage="surface 左右 padding;tabs trigger gap;form field 間距" />
-      <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="Dialog / Sheet body 底部多一拍 + modal viewport inset(固定,不隨 density)" />
+      <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="最後內容 → action buttons 的結論留白(Dialog / Sheet body 底部;固定,不隨 density)" />
+      <SpaceRow utility="--layout-space-viewport-inset" mdValue="48px" lgValue="48px" usage="浮層外殼 → 視窗邊的安全距離(Dialog 高度上限與最大寬度;固定,不隨 density)" />
 
-      <h3 className="text-h5 mt-8 mb-2">使用規則</h3>
+      <h3 className="text-h5 mt-[var(--layout-space-loose)] mb-[var(--layout-space-tight)]">使用規則</h3>
+      {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 24px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="list-disc pl-6 text-body text-fg-secondary space-y-1">
         <li>跨範疇 + functional 交互 → <code>tight</code>(12/16);同範疇 / bundled → 元件 spec 自管</li>
         <li>跨範疇 + parallel → <code>loose</code>(16/24)</li>
-        <li>容器最底部 → <code>bottom</code>(48 固定)</li>
+        <li>最後內容 → action buttons → <code>bottom</code>(48 固定);後面沒有 action 的容器底依角色走 <code>loose</code> / <code>tight</code> / 0</li>
       </ul>
 
-      <p className="text-caption text-fg-muted mt-6">
+      <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">
         實際 CSS 值見 <code>packages/design-system/src/tokens/layoutSpace/layoutSpace.css</code>;規則 6 條(親疏判)詳 spec.md。
       </p>
     </div>

@@ -160,7 +160,8 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     //   scroll chain)+ viewport-adaptive `PopoverBody`(取代原 fixed `ScrollArea max-h-72`)。三個
     //   DataTable state-panel 收斂成同一形狀,body 隨視窗高度自適應(高螢幕多欄不再硬卡 288px)。
     //   寬度仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿)。
-    <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props}>
+    // 鍵盤搬欄位(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;lib/drag-announcements.ts useDragAccessibility.escapeLayer)
+    <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props} {...drag.escapeLayer}>
       <PopoverHeader hideClose>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">欄位顯示</PopoverTitle>

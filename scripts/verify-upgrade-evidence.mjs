@@ -40,7 +40,9 @@ import {
 } from './verify-upgrade-provenance.mjs'
 import {
   assertNoRootNpmShrinkwrap,
-  runVerifiedHighVulnerabilityAudit,
+  assertNoIntroducedAuditFindings,
+  diffAuditFindings,
+  runAuditFindingsJson,
 } from './lib/governance-dependency-bootstrap.mjs'
 import {
   assertVerifiedExactNpmRuntimeCapability,
@@ -592,6 +594,17 @@ export async function reconstructExpectedUpgrade({
       cli, 'ci', '--legacy-peer-deps', '--ignore-scripts', '--no-audit', '--no-fund',
       `--registry=${NPM_REGISTRY}`,
     ], { cwd: sandbox, env: npmEnv, label: 'verified exact npm protected-base reconstruction' })
+    // 差集式弱點稽核(2026-09-30):升級前的 protected base 與升級後各跑一次同樣的 \`npm audit --json\`(同一時刻、
+    // 同一份 advisory 資料庫、同一個 verified npm),只擋「這次升級新帶進來的」。原本這裡對升級後的樹跑 exact-shape
+    // 認列(enforce),而執行的是 consumer protected main 上**凍結**的腳本 —— 它不可能認得發版之後才登記的通報,
+    // 於是上游每發一則通報,連「帶著修補的那次升級」都裝不起來(beta.146 / 147 的 WM 同步連環 GOV-SUPPLY-005)。
+    // 升級前就存在的弱點照樣印出來(owner 是 consumer 自己的安全更新,例如 Dependabot),不再擋住升級本身 ——
+    // 對齊 GitHub dependency review「只擋 PR 新引入的」分工。完整性(lock 精確安裝 / 簽章 / overlay)照舊擋。
+    const baseVulnerabilityAudit = runAuditFindingsJson(cli, sandbox, {
+      environment: npmEnv,
+      label: 'protected-base',
+      prefix: 'GOV-UPGRADE-DEPENDENCY-001',
+    })
     const previousCorpus = validateInstalledForkCorpus(sandbox)
     run(process.execPath, [
       cli, 'install',
@@ -606,15 +619,16 @@ export async function reconstructExpectedUpgrade({
     ], { cwd: sandbox, env: npmEnv, label: 'protected-base npm signature audit' })
     let auditReport
     try { auditReport = JSON.parse(signatureJson) } catch { throw new Error('protected-base npm signature audit did not produce closed JSON') }
-    runVerifiedHighVulnerabilityAudit(process.execPath, [
-      cli, 'audit', '--audit-level=high', '--json', `--registry=${NPM_REGISTRY}`,
-    ], {
-      root: sandbox,
+    invariant(installedOverlayReceipt?.status === 'verified', 'GOV-UPGRADE-DEPENDENCY-001:npm security overlay was not verified on the reconstructed tree')
+    const candidateVulnerabilityAudit = runAuditFindingsJson(cli, sandbox, {
       environment: npmEnv,
-      npmRuntime,
-      installedOverlayReceipt,
-      errorPrefix: 'GOV-UPGRADE-DEPENDENCY-001',
-      timeoutMs: 30 * 60 * 1_000,
+      label: 'candidate',
+      prefix: 'GOV-UPGRADE-DEPENDENCY-001',
+    })
+    assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings), {
+      prefix: 'GOV-UPGRADE-DEPENDENCY-001',
+      subject: `upgrade to ${expectedVersion}`,
+      baseLabel: 'the consumer protected base',
     })
     const packages = exactInstalledUpgradePackages(sandbox, expectedVersion, trustPolicy)
     const provenance = await verifyUpgradeProvenance({

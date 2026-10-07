@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save, X } from 'lucide-react'
 import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof Button> = {
   title: 'Design System/Components/Button/展示',
@@ -69,13 +70,15 @@ const meta: Meta<typeof Button> = {
 export default meta
 type Story = StoryObj<typeof Button>
 
+// 間距(layoutSpace.spec.md 規則 3;category-templates.md「教學框的間距與標題」):本檔是變體樣本的對照列 ——
+// 並列的樣本之間 loose、說明 ↔ 它標的那一列樣本 tight(ExampleGroup)、一組一組的對照之間 loose。
 // 2026-05-18 加(per user 抓「為何開頭是按下狀態」):Default story 放最頂,
 // 入口顯預設 variant 五連發(primary / secondary / tertiary / text / link),
 // 讓 user 第一眼看到按鈕長什麼樣 — 而非 transient state demo。
 export const Default: Story = {
   name: '預設',
   render: () => (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
       <Button variant="primary">送出申請</Button>
       <Button variant="secondary">儲存草稿</Button>
       <Button variant="tertiary">取消</Button>
@@ -88,21 +91,27 @@ export const Default: Story = {
 export const Pressed: Story = {
   name: '按下狀態',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">secondary</span>
-        <Button variant="secondary">顯示側欄</Button>
-        <Button variant="secondary" pressed>已顯示側欄</Button>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button variant="secondary">顯示側欄</Button>
+          <Button variant="secondary" pressed>已顯示側欄</Button>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">tertiary</span>
-        <Button variant="tertiary">自動儲存</Button>
-        <Button variant="tertiary" pressed>自動儲存中</Button>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button variant="tertiary">自動儲存</Button>
+          <Button variant="tertiary" pressed>自動儲存中</Button>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">text</span>
-        <Button variant="text">靜音</Button>
-        <Button variant="text" pressed>已靜音</Button>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button variant="text">靜音</Button>
+          <Button variant="text" pressed>已靜音</Button>
+        </div>
       </div>
     </div>
   ),
@@ -113,13 +122,13 @@ export const Pressed: Story = {
 export const Danger: Story = {
   name: '危險 語意',
   render: () => (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
         <Button variant="primary" danger>刪除專案</Button>
         <Button variant="secondary" danger>移除成員</Button>
         <Button variant="text" danger>撤銷授權</Button>
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
         <Button variant="primary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
         <Button variant="secondary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
         <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
@@ -141,17 +150,21 @@ export const WithBadge: Story = {
   name: 'Badge 槽位',
   args: { size: 'sm' },
   render: (args) => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">badge — inline 計數</p>
-        <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button>
-        <Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">badge + endIcon compound</p>
-        <Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button>
-        <Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button>
-      </div>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">badge — inline 計數</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button>
+          <Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button>
+        </div>
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">badge + endIcon compound</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button>
+          <Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button>
+        </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -161,28 +174,34 @@ export const WithBadge: Story = {
 export const IconOnly: Story = {
   name: '純圖示',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">variants — size="sm"</p>
-        <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" />
-        <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" />
-        <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" />
-        <Button size="sm" iconOnly variant="text"      startIcon={Settings}  aria-label="設定" />
-        <Button size="sm" iconOnly variant="text" pressed startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">danger — size="sm"</p>
-        <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" />
-        <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" />
-        <Button size="sm" iconOnly variant="text"      danger startIcon={Trash2} aria-label="刪除" />
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">sizes — variant="text"</p>
-        <Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" />
-        <Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" />
-        <Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" />
-        <Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" />
-      </div>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">variants — size="sm"</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" />
+          <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" />
+          <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" />
+          <Button size="sm" iconOnly variant="text"      startIcon={Settings}  aria-label="設定" />
+          <Button size="sm" iconOnly variant="text" pressed startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
+        </div>
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">danger — size="sm"</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" />
+          <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" />
+          <Button size="sm" iconOnly variant="text"      danger startIcon={Trash2} aria-label="刪除" />
+        </div>
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">sizes — variant="text"</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
+          <Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" />
+          <Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" />
+          <Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" />
+          <Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" />
+        </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -192,10 +211,10 @@ export const IconOnly: Story = {
 export const Disabled: Story = {
   name: '停用',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">全 variants(form footer 情境)</p>
-        <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">全 variants(form footer 情境)</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" disabled>儲存</Button>
           <Button variant="secondary" disabled>取消</Button>
           <Button variant="tertiary" disabled>預覽</Button>
@@ -203,33 +222,33 @@ export const Disabled: Story = {
           <Button variant="text" pressed disabled>已啟用自動儲存</Button>
           <Button variant="link" disabled>了解更多</Button>
         </div>
-      </div>
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">danger</p>
-        <div className="flex flex-wrap gap-3">
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">danger</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" danger disabled>刪除專案</Button>
           <Button variant="secondary" danger disabled>移除成員</Button>
           <Button variant="text" danger disabled>撤銷授權</Button>
         </div>
-      </div>
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">icon-only — 全 variants</p>
-        <div className="flex flex-wrap gap-3">
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">icon-only — 全 variants</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" disabled size="sm" iconOnly startIcon={Plus} aria-label="新增" />
           <Button variant="secondary" disabled size="sm" iconOnly startIcon={Download} aria-label="下載" />
           <Button variant="tertiary" disabled size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           <Button variant="text" disabled size="sm" iconOnly startIcon={Search} aria-label="搜尋" />
           <Button variant="text" pressed disabled size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
         </div>
-      </div>
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">icon-only — danger</p>
-        <div className="flex flex-wrap gap-3">
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">icon-only — danger</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" danger disabled size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
           <Button variant="secondary" danger disabled size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
           <Button variant="text" danger disabled size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -237,10 +256,11 @@ export const Disabled: Story = {
 export const Loading: Story = {
   name: '載入中',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 行為對照 */}
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">行為對照：操作前與載入中</p>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">行為對照：操作前與載入中</p>
+        {/* @layout-space-magic-ok: 行為對照表(欄標 + 三列同質對照列),範例原值:列距 12px = 同質列的列間距(layoutSpace.spec.md:165「同質 list 的列間距」);欄距 24px 是同一列裡格與格的距離,沒有規格定義(AI 判讀:表格內部幾何,不是並列區塊) */}
         <div className="grid grid-cols-[auto_auto_1fr] items-center gap-x-6 gap-y-3">
           <span className="text-caption text-fg-muted">操作前</span>
           <span className="text-caption text-fg-muted">載入中</span>
@@ -255,12 +275,12 @@ export const Loading: Story = {
           <Button size="sm" iconOnly startIcon={Download} loading aria-label="下載中" />
           <span className="text-caption text-fg-muted">icon-only：spinner 替換 icon</span>
         </div>
-      </div>
+      </ExampleGroup>
 
       {/* 全 variants — with startIcon */}
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">全 variants — with startIcon(匯出 / 同步情境)</p>
-        <div className="flex flex-wrap items-center gap-3">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">全 variants — with startIcon(匯出 / 同步情境)</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" startIcon={Download} loading>匯出報表</Button>
           <Button variant="secondary" startIcon={Download} loading>同步 Stripe</Button>
           <Button variant="tertiary" startIcon={Download} loading>重新整理</Button>
@@ -268,12 +288,12 @@ export const Loading: Story = {
           <Button variant="text" pressed startIcon={Download} loading>下載中</Button>
           <Button variant="primary" danger startIcon={Trash2} loading>刪除專案</Button>
         </div>
-      </div>
+      </ExampleGroup>
 
       {/* 全 variants — without startIcon */}
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">全 variants — without startIcon(匯出 / 同步情境)</p>
-        <div className="flex flex-wrap items-center gap-3">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">全 variants — without startIcon(匯出 / 同步情境)</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" loading>匯出報表</Button>
           <Button variant="secondary" loading>同步 Stripe</Button>
           <Button variant="tertiary" loading>重新整理</Button>
@@ -281,19 +301,19 @@ export const Loading: Story = {
           <Button variant="text" pressed loading>處理中</Button>
           <Button variant="primary" danger loading>刪除專案</Button>
         </div>
-      </div>
+      </ExampleGroup>
 
       {/* icon-only */}
-      <div>
-        <p className="mb-2 text-caption text-fg-muted">icon-only</p>
-        <div className="flex flex-wrap items-center gap-3">
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted">icon-only</p>
+        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" loading size="sm" iconOnly startIcon={Download} aria-label="下載" />
           <Button variant="secondary" loading size="sm" iconOnly startIcon={Download} aria-label="下載" />
           <Button variant="tertiary" loading size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
           <Button variant="text" loading size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           <Button variant="text" pressed loading size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -301,7 +321,7 @@ export const Loading: Story = {
 export const FullWidth: Story = {
   name: '全寬',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <Button variant="primary" fullWidth>確認送出</Button>
       <Button variant="tertiary" fullWidth>取消</Button>
       <Button variant="primary" danger fullWidth startIcon={Trash2}>永久刪除</Button>

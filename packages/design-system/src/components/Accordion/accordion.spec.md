@@ -42,6 +42,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 | 複雜 sidebar 導航（深度 tree）| `TreeView` / `Sidebar` | Accordion 無 nested 結構 |
 | 收合整個浮層/側欄 | `Dialog` / `Sheet` / `Popover` | 那是浮層控制不是 inline 收合 |
 | 長列表只顯示 N 個 | 自組 「顯示更多」按鈕 | Accordion 不是「more / less」pattern |
+| 走完一條流程、要標出目前在哪一步 | `Steps`(`../Steps/steps.spec.md:49` 判斷準則) | Accordion 沒有「目前那一步」,開合不是進度 |
 
 ---
 

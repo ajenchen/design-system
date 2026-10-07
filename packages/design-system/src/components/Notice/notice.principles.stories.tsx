@@ -12,9 +12,9 @@ export default meta
 type Story = StoryObj
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-10">
-    <h3 className="text-body-lg font-medium text-foreground mb-2">{title}</h3>
-    <div className="prose prose-sm max-w-prose">{children}</div>
+  <section className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    <div className="max-w-prose">{children}</div>
   </section>
 )
 
@@ -24,6 +24,7 @@ export const UsageGuidance: Story = {
     <div>
       <Section title="何時用">
         <p>適合 Notice 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+        {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="space-y-1">
           <li>
             <LinkTo kind="Design System/Internal/Notice/展示" name="部署成功 橫幅"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">CI/CD 部署成功橫幅 — 附「查看部署紀錄」動作</span></LinkTo>
@@ -41,7 +42,7 @@ export const UsageGuidance: Story = {
             <LinkTo kind="Design System/Internal/Notice/展示" name="中性 純文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">成員邀請待加入提醒 — 中性純文字</span></LinkTo>
           </li>
         </ul>
-        <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
+        <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
       </Section>
 
       <Section title="何時不用 + 替代">
@@ -73,7 +74,7 @@ export const CompositionRules: Story = {
   render: () => (
     <div>
       <Section title="Pattern 1 — Alert(persistent inline announcement)">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>需要「持續顯示直到 user 主動 dismiss」→ <LinkTo kind="Design System/Components/Alert/展示" name="單行（低調 vs 實心對照）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Alert 低調單行</span></LinkTo>。Alert 內部消費 Notice + 加上 dismiss button + live region ARIA(error/warning → role="alert" assertive;info/success/neutral → role="status" polite)。</p>
           <ul>
             <li>典型場景:付款失敗 banner / workspace 警告 / 重要通知 user 必看</li>
@@ -83,7 +84,7 @@ export const CompositionRules: Story = {
       </Section>
 
       <Section title="Pattern 2 — Toast(auto-dismiss floating announcement)">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>需要「短暫提示,使用者不需 acknowledge」→ <LinkTo kind="Design System/Components/Toast/展示" name="有標題與描述"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">有 Title + Description</span></LinkTo>。Toast 基於 Sonner + 消費 Notice layout,自動 4 秒消失(可調)。</p>
           <ul>
             <li>典型場景:儲存成功 / 複製到剪貼簿 / 非關鍵操作回饋</li>
@@ -93,7 +94,7 @@ export const CompositionRules: Story = {
       </Section>
 
       <Section title="禁止 — 自刻 announcement row">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>建新 announcement 類元件(例如 InAppNotification banner)→ 必消費 Notice primitive,不可自刻 <code>&lt;div className="flex p-3 bg-..."&gt;</code>(對齊 M1 主檔消費準則 / 確保 icon 選擇 + variant token 一致)。</p>
         </div>
       </Section>

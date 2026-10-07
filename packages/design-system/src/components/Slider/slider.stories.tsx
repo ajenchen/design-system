@@ -3,6 +3,7 @@ import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
+import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 
 const meta: Meta<typeof Slider> = {
   title: 'Design System/Components/Slider/展示',
@@ -26,22 +27,29 @@ type Story = StoryObj<typeof Slider>
 export const SizeAlignment: Story = {
   name: '容器尺寸對齊',
   render: () => (
-    <div className="w-[420px] flex flex-col gap-6">
+    <div className="w-[420px] flex flex-col gap-[var(--layout-space-tight)]">
       <p className="text-caption text-fg-secondary max-w-[480px]">
         三個 size 下 track 厚度與 thumb 直徑一致——只有容器外高跟著
         `--field-height-*` 變。這讓 Slider 能在同一列跟 NumberInput 等 field
         控件並排、field-height 完美對齊,同時保持自己的視覺身分不變。
       </p>
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex flex-col gap-2">
-          <div className="text-caption text-fg-muted">size = {size}</div>
-          <div className="flex items-center gap-3">
-            <span className="text-body w-10 shrink-0">音量</span>
-            <Slider size={size} defaultValue={[40]} aria-label="音量" className="flex-1" />
-            <NumberInput size={size} value={40} onChange={() => {}} aria-label="音量數值" className="w-20 shrink-0" />
+      {/* 三個尺寸示範並列 = loose;說明 → 示範群 = tight */}
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <div key={size} className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="text-caption text-fg-muted">size = {size}</div>
+            {/* 標籤 ↔ 控件 消費 Field 水平模式(slider.spec.md「跟 Field 整合」:Field 內每個控件傳同一個 size)。 */}
+            <Field orientation="horizontal" size={size}>
+              <FieldLabel>音量</FieldLabel>
+              {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5) */}
+              <div className="flex flex-1 min-w-0 items-center gap-2">
+                <Slider size={size} defaultValue={[40]} className="flex-1" />
+                <NumberInput size={size} value={40} onChange={() => {}} aria-label="音量數值" className="w-20 shrink-0" />
+              </div>
+            </Field>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   ),
 }
@@ -53,23 +61,22 @@ export const MinMaxStep: Story = {
   render: () => {
     const [quality, setQuality] = React.useState([80])
     return (
-      <div className="w-[360px] flex flex-col gap-4">
+      <div className="w-[360px] flex flex-col gap-[var(--layout-space-tight)]">
         <p className="text-caption text-fg-secondary">
           匯出圖片品質——限制在 10–100% 之間,每次以 5% 為一階(min / max / step)
         </p>
-        <div className="flex items-center gap-3">
-          <span className="text-body w-16 shrink-0">圖片品質</span>
+        {/* 標籤 / 顯示值消費 Field(slider.spec.md「跟 Field 整合」+「搭配顯示值」) */}
+        <Field>
+          <FieldLabel>匯出圖片品質</FieldLabel>
           <Slider
             value={quality}
             onValueChange={setQuality}
             min={10}
             max={100}
             step={5}
-            aria-label="匯出圖片品質"
-            className="flex-1"
           />
-          <span className="text-caption text-fg-muted font-mono w-10 shrink-0">{quality[0]}%</span>
-        </div>
+          <FieldDescription>目前 {quality[0]}%</FieldDescription>
+        </Field>
       </div>
     )
   },
@@ -87,13 +94,13 @@ export const OnCommit: Story = {
     const [preview, setPreview] = React.useState([3000])
     const [applied, setApplied] = React.useState([3000])
     return (
-      <div className="w-[360px] flex flex-col gap-4">
+      <div className="w-[360px] flex flex-col gap-[var(--layout-space-tight)]">
         <p className="text-caption text-fg-secondary">
           價格上限篩選——拖曳時即時預覽,放開才送出查詢(適合昂貴操作如 API
           query、重新載入結果)
         </p>
-        <div className="flex items-center gap-3">
-          <span className="text-body w-12 shrink-0">價格</span>
+        <Field>
+          <FieldLabel>價格上限</FieldLabel>
           <Slider
             value={preview}
             onValueChange={setPreview}
@@ -101,10 +108,9 @@ export const OnCommit: Story = {
             min={0}
             max={10000}
             step={100}
-            aria-label="價格上限"
-            className="flex-1"
           />
-        </div>
+        </Field>
+        {/* @layout-space-magic-ok: 兩行讀數(即時預覽 / 已套用查詢)同一文字塊 4px(行內 micro;layoutSpace.spec.md:166 micro) */}
         <div className="flex flex-col gap-1 text-caption">
           <span className="text-fg-secondary">即時預覽:${preview[0]}</span>
           <span className="text-foreground font-medium">已套用查詢:${applied[0]}</span>

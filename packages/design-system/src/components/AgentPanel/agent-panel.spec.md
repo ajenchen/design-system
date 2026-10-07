@@ -18,7 +18,7 @@ traits:
   `agent-panel-logo.tsx` / `agent-panel-fab.tsx`)。
 - **實作基礎**:組合式——消費 ChromeHeader(header-canonical)、overlay-surface(SurfaceHeader/
   Footer)、Popover surface 配方、SelectMenu 同源 primitives(Popover+Command+MenuItem)、
-  Radix Collapsible(經 animate-accordion)、RadioGroup、Chip(assist 分支)、Tag、
+  Radix Collapsible(經 disclosureMotion)、RadioGroup、Chip(assist 分支)、Tag、
   OverflowIndicator、CircularProgress、Dialog、Empty、Button 家族。無自建 primitive;
   唯一自建=AgentLogo/AgentFab 的品牌 SVG 資產(無既有 primitive 可對應)。
 - **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
@@ -181,7 +181,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   - ButtonDivider 置於自動高度 actions cluster(gap-2)內(action-bar 規則 3 誤觸保護;
     直接放固定高 chrome header 會退化為容器高)。
 - A11y:每鈕 `aria-label`;標題觸發 `aria-haspopup="dialog"` + `aria-expanded`;
-  改名/刪除 Dialog 關閉後焦點回到標題觸發。
+  改名/刪除 Dialog 關閉後焦點還給開啟它的行內動作鈕;那一列已隨歷史浮層收起 → 回標題觸發(全 DS 一支 `../../lib/overlay-focus-return.ts`,2026-09-30)。
 
 ### 3. AgentConversation(訊息卷軸區)
 
@@ -207,13 +207,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
 - 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
-- Chevron=accordion 慣例(Suffix 位、rotate-180、150ms、motion-reduce 0);色=`text-fg-muted`
+- Chevron=accordion 慣例(Suffix 位、rotate-180、motion-reduce 0);時長 `--motion-duration-overlay` 150ms(本檔「動畫總表」;Accordion 自己的箭頭是 200ms,兩者不同步是已回報的待決項,`tokens/motion/motion.spec.md`「開合動畫」同族另見 (3));色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
 - 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°、
   `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
   reduced-motion 自停。**完成步驟靜態、色 `text-fg-secondary`**(次要層級,非 muted)。
-- 開合=Radix Collapsible + `animate-accordion-down/up`(200ms ease-out)。
+- 開合=Radix Collapsible + `disclosureMotion`(`tokens/motion/disclosure-motion.ts`,與 TreeView / Accordion 同一份):`--motion-duration-disclosure` 200ms、ease-out;收起後保持高度 0 直到卸載;減少動態不播。
 - A11y:標題=button + `aria-expanded`;內文不另設 aria-live(容器已是 live region)。
 
 ### 6. AgentToolbar(訊息工具列)
@@ -233,12 +233,17 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
   超寬=`useOverflowIndices` 量測 + `<OverflowIndicator shape="tag">`(+N,浮層列出被藏 Tag)。
   分工:輸入中 Tag(可 dismiss)、送出後 Chip assist 視覺(2026-09-01 拍板之本家族分工)。
+- 鍵盤:`Enter` 送出、`Shift+Enter` 換行;**輸入法組字中的 `Enter` 是選字,不送出**(判準全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`;2026-09-30 前只看 `isComposing`,Safari 用注音按 Enter 選字的那一顆 `isComposing` 已是 false、只剩 `keyCode` 229,訊息會被直接送出)。
 - 工具列高 40、鈕 xs、內距 8;`+`(`onAddAttachment` 必填)恆渲染;送出=Button primary xs;
   **送出↔停止**:代理進行中同鈕同位換實心正方,0.15s 淡切;停止態 `aria-label="停止生成"`。
   實心正方=**12/24 grid 自繪**(8px @ icon 16;= Material Symbols `stop` 480/960 比例,
   https://fonts.google.com/icons?icon.query=stop;lucide Square 填滿為 20/24 = 13.3px,較
   ArrowUp/Plus 線稿(14/24)視覺偏重,2026-09-02 user 抓「太巨大」後改自繪)。
 - textarea `aria-label="訊息"`。
+- **焦點**(2026-10-01,待辦總帳 OE30):textarea 握著焦點時用滑鼠按附件 ×、+、送出、停止、「+N」卡裡的 × —— 焦點與正在打的字都留在輸入盒,click 照常
+  (同一個複合輸入控件的零件;判準全 DS 一支 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`,外框與 +N 卡各掛一次,同 Combobox 觸發欄位;
+  修前 Chrome 在 mousedown 把焦點交給那顆 ×、移除後掉到 body,接著打的字不見)。鍵盤移除(焦點在 × 上按 Enter / 空白)照 `../Combobox/combobox.spec.md`
+  「Tag 操作 › 個別移除」的接力:下一顆 × → 前一顆 → textarea;+N 卡裡的 × → 直接回 textarea(`../../lib/collection-removal-focus.ts`,三份收成一支)。
 
 ### 8. AgentDecisionCard(決策卡)→ `agent-decision-card.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
@@ -267,10 +272,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,**瞬間出現、不淡入** —— 2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,規則住 ItemSuffix;2026-09-26 前 150ms 淡入);**鍵盤(2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)**:改名/刪除**不在 Tab 路上**(09-25 前 4 列 = 8 站);搜尋框 ↑↓ 移反白,插入點在字尾時 `→` 進反白列的「改名」、再 `→`「刪除」(停住),`←` 退一顆、第一顆 `←` 回搜尋框;鈕上 ↑↓ / Home / End = 回搜尋框並移反白;鈕上 Tab / Shift+Tab 一下離開這一串(浮層照舊在面板裡繞圈);鍵盤反白的那一列浮出改名/刪除,焦點進到鈕上時反白列的框讓給那顆鈕(一個項目一個指示器)——「插入點在字尾」條件(搜尋框的 `→` 仍要能移插入點)與「鍵盤反白列浮出」是 AI 推導;Esc 不規定(照舊關浮層)。
   **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
 - 改名=Dialog(`autoHeight` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
-  空白 → `invalid` + FieldError「名稱不可空白」,儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);
+  **驗證走 `useFormValidation`**(2026-10-01,待辦總帳 N70;`../Field/form-validation.spec.md` 更新類):沒改停用、改了亮、還原再停;焦點在欄位裡不報錯(規則 1)、
+  清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」可按**,按了才顯示 FieldError「名稱不可空白」並把焦點移到欄位(規則 7 / 8;
+  原「空白時停用」查無 user 原話且與 hook 的 submitDisabled 衝突,AI 推導改寫);Enter=儲存;**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
+  (`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」),沒改直接關);
   刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
-- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發。
+- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發(開啟時 `captureFocusOrigin` 記下行內動作鈕、關閉時 `returnFocusToOpener` 還,找不到就走標題觸發這條 fallback;2026-09-30 前是關閉後 `setTimeout 0` 聚焦標題的另一份實作)。
 - 所有 callback(`onSelectConversation` / `onRenameConversation` / `onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
 
 ### 附:空狀態
@@ -301,7 +309,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 蓋板遮罩(容器 < 960)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
 | 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
 | 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
-| 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
+| 思考塊開合 | Radix Collapsible + disclosureMotion | `--motion-duration-disclosure` 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
 | 標誌思考旋轉 | 起步 0.25s(=半圈,exit)→ 0.5s/圈 linear | 一息/12、一息/6 |
@@ -350,6 +358,11 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 焦點在面板內,面板內沒有任何浮層 | **什麼都不關** | 沒有暫時性 UI 可關;關掉面板等於關 app UI |
 | 焦點在面板外(側邊欄 / 主內容 / Dialog)且那裡開著浮層 | **關該區自己的浮層,不跨區碰面板** | 作用域封閉在焦點所在區,跨區關會讓使用者失去他沒在看的東西 |
 
+**機制只有一個判定點**(2026-10-01):原本 `agent-panel.tsx` 自己掛一支 window 捕獲監聽(Radix 在 document 捕獲階段收 Esc、只送給疊最上層而不看焦點在哪一區;
+window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 收成 `../../lib/overlay-escape.ts` 一支:面板的分區判定 = `useEscapeRegion(rootRef)`(行為逐條保留,
+含 Tooltip 特例;留住的那一下記成「已交給控件」,面板裡改過的欄位才讀得到這一下是給它的),浮層守門 = `withOverlayEscape`(「焦點所在的控件自己那一層也算一層」,
+`ds-canonical/references/keyboard-model-canonical.md`)。
+
 **推論(不必另外訂)**:面板的關閉有三條路 —— header 的 `×`、FAB 的切換、以及**蓋板態下點面板外的遮罩**
 (2026-09-17 user 裁示,見「與 app 的推擠與斷點」;2026-09-16 到 09-17 之間是「點了不關」,已被取代)。
 **Esc 不在其中**:上表三條不變 —— 遮罩點擊是指標的「外部點擊」語意(與 Dialog 同一條線),
@@ -386,8 +399,9 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
 
 - `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
 - `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
-- Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按;改名 Dialog 走
-  form-validation 更新類規則(未異動停用/dirty 亮/還原再停;**空白時一併停用**,避免可按卻無反應)。
+- Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按(剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
+  `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停;空白可按、按了報錯並移焦點 ——
+  2026-10-01 前這裡寫「空白時一併停用,避免可按卻無反應」,查無 user 原話,且 hook 下按了會報錯移焦點,前提不成立,見上方「改名」條)。
 
 ## Loading / 無障礙預設
 
@@ -412,3 +426,5 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
 - `agent-panel-fab.spec.md`
 - `agent-panel-logo.spec.md`
 - `dialog.spec.md`
+- `motion.spec.md`
+- `overflow-indicator.spec.md`

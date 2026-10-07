@@ -1,3 +1,4 @@
+// @story-baseline: packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx#WithTabs(「固定顯示」的頁首 = 公開的 ChromeHeader,標題 h2 text-body-lg font-medium —— 嵌在 docs 頁裡的示範頁首不得再出一個 h1)
 // @story-history: hasVariants/hasInteractiveStates 的 canonical core stories(AllVariants / States)
 //   集中在 anatomy.stories.tsx 的 ColorMatrix + StateBehavior(Inspector 互動);本 showcase
 //   提供真實業務 scenario(部署 / 系統警示)而非 trait grid 重複展示。
@@ -5,6 +6,7 @@ import type { Meta } from '@storybook/react'
 import { RefreshCw, Share2 } from 'lucide-react'
 import { Alert } from './alert'
 import { Button } from '@/design-system/components/Button/button'
+import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import type { NoticeVariant } from '@/design-system/components/Notice/notice'
 
 const meta: Meta = {
@@ -44,13 +46,15 @@ const actionBtn = <Button variant="tertiary" size="xs">查看詳情</Button>
 export const SingleLine = {
   name: '單行（低調 vs 實心對照）',
   render: () => (
-    <div className="grid grid-cols-2 gap-6 max-w-5xl">
+    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-5xl">
       {(['subtle', 'solid'] as const).map((appearance) => (
-        <div key={appearance} className="flex flex-col gap-3">
+        <div key={appearance} className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption text-fg-muted font-medium">
             {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
           </span>
-          {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} endContent={actionBtn} />)}
+          <div className="flex flex-col gap-[var(--layout-space-loose)]">
+            {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} endContent={actionBtn} />)}
+          </div>
         </div>
       ))}
     </div>
@@ -60,13 +64,15 @@ export const SingleLine = {
 export const WithDescription = {
   name: '含說明文字（低調 vs 實心對照）',
   render: () => (
-    <div className="grid grid-cols-2 gap-6 max-w-5xl">
+    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-5xl">
       {(['subtle', 'solid'] as const).map((appearance) => (
-        <div key={appearance} className="flex flex-col gap-3">
+        <div key={appearance} className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption text-fg-muted font-medium">
             {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
           </span>
-          {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} description={D[v]} endContent={actionBtn} />)}
+          <div className="flex flex-col gap-[var(--layout-space-loose)]">
+            {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} description={D[v]} endContent={actionBtn} />)}
+          </div>
         </div>
       ))}
     </div>
@@ -76,7 +82,7 @@ export const WithDescription = {
 export const CornerActionGroup = {
   name: '右上角操作群組',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-lg">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-lg">
       <span className="text-caption text-fg-muted">
         Alert 右上角是操作按鈕群組。關閉鈕左側可以並排重新整理、分享等額外按鈕,全部用同一種最小尺寸的純圖示按鈕。
         關閉鈕左邊有其他操作時,分隔線由 DS 自動放(誤觸保護,見 action-bar.spec.md 第五節),使用端只要傳 endContent。
@@ -107,28 +113,30 @@ export const CornerActionGroup = {
 export const Fixed = {
   name: '固定顯示',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <span className="text-caption text-fg-muted">固定在 header 底下,無圓角,full-width。</span>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-caption text-fg-muted font-medium">Subtle Fixed</span>
-        <div className="border border-divider rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-surface border-b border-divider">
-            <span className="text-body font-medium">專案設定</span>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <span className="text-caption text-fg-muted font-medium">Subtle Fixed</span>
+          <div className="border border-divider rounded-lg overflow-hidden">
+            <ChromeHeader className="bg-surface">
+              <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
+            </ChromeHeader>
+            {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" placement="fixed" title={L[v]} />)}
+            <div className="p-[var(--layout-space-loose)] text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
           </div>
-          {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" placement="fixed" title={L[v]} />)}
-          <div className="p-4 text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-caption text-fg-muted font-medium">Solid Fixed</span>
-        <div className="border border-divider rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-surface border-b border-divider">
-            <span className="text-body font-medium">專案設定</span>
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <span className="text-caption text-fg-muted font-medium">Solid Fixed</span>
+          <div className="border border-divider rounded-lg overflow-hidden">
+            <ChromeHeader className="bg-surface">
+              <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
+            </ChromeHeader>
+            {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" placement="fixed" title={L[v]} />)}
+            <div className="p-[var(--layout-space-loose)] text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
           </div>
-          {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" placement="fixed" title={L[v]} />)}
-          <div className="p-4 text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
         </div>
       </div>
     </div>

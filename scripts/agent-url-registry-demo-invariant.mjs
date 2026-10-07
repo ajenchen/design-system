@@ -11,8 +11,9 @@
  *   S1 清單三列(ID / 標題 / 指派人 / 狀態 / 截止日)+ 點標題連結開有 URL 的 modal + 幾何(modal ∩ 面板 = ∅、遮罩 = 舞台)
  *      + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal;對照組:焦點在 modal 內 Esc 該關)
  *   S2 header 一行標題 + 垃圾桶 icon-only 在 actions slot;footer 只有取消 / 儲存,儲存 primary 且最右
- *   S3 四個 Field(標題 / 指派人 / 狀態 / 截止日)存檔 → 清單那一列更新(含截止日欄)
- *   S4 新增任務(toolbar primary、有 URL)→ 清單多一列
+ *   S3 四個 Field(標題 / 指派人 / 狀態 / 截止日)存檔 → 清單那一列更新(含截止日欄);存檔成功跳 Toast「任務已儲存」(2026-10-07,
+ *      form-validation.spec.md「Submit 成功宣告」—— user 2026-10-01 逐字「…然後送出成功跳提示」,文案 AI 擬)
+ *   S4 新增任務(toolbar primary、有 URL)→ 清單多一列;跳 Toast「任務已建立」
  *   S5 刪除 → 沒有 URL 的確認框(primary danger)擋住代理、置中於整個模擬視窗;取消恢復並存;確認 → 清單少一列
  *   S6 tab 與背景位置模式:代理連結「我的任務」→ 切 tab、清單篩成自己的;再點任務 → modal 背景是「我的任務」;
  *      重新整理 = 直接以任務網址進入 → 背景是預設的「所有任務」;上一頁 / 下一頁維持
@@ -364,6 +365,9 @@ for (const width of [1440, 1180]) {
   await page.fill('input[role="combobox"][aria-label="截止日"]', '2026-09-20'); await page.keyboard.press('Enter'); await page.waitForTimeout(300)
   const dueTyped = await page.evaluate(() => document.querySelector('input[role="combobox"][aria-label="截止日"]')?.value)
   await h.click('#demo-task-save')
+  const toastSeen = (title) => page.waitForFunction((t) => Array.from(document.querySelectorAll('[data-sonner-toast]')).some((el) => (el.textContent ?? '').includes(t)), title, { timeout: 4000 }).then(() => true, () => false)
+  const savedToast = await toastSeen('任務已儲存')
+  check(`${W} S3 存檔成功跳 Toast「任務已儲存」(送出成功跳提示)`, savedToast, JSON.stringify({ toasts: await page.evaluate(() => Array.from(document.querySelectorAll('[data-sonner-toast]')).map((el) => el.textContent?.trim())) }))
   const rows1 = await h.rows()
   check(`${W} S3 儲存後 modal 關、網址列回清單、那一列更新(標題 / 指派人 / 狀態 / 截止日)`, (await h.dialogs()) === 0 && (await h.location()) === TASKS_URL && rows1.length === 3 && /修正登入逾時\(含 SSO\)/.test(rows1[0]) && /Alan Chen/.test(rows1[0]) && /進行中/.test(rows1[0]) && /2026-09-20/.test(rows1[0]), JSON.stringify({ rows1, loc: await h.location() }))
   await h.click('[role="row"] a[href$="/tasks/4821"]')
@@ -382,6 +386,8 @@ for (const width of [1440, 1180]) {
   check(`${W} S4 新增任務:網址 /tasks/new、header 一行「新增任務」、沒有垃圾桶、標題空白時儲存停用`, (await h.location()) === '/projects/8821/tasks/new' && newShape.title === '新增任務' && !newShape.del && newShape.saveDisabled === true, JSON.stringify(newShape))
   await page.click('#demo-task-title'); await page.keyboard.type('補 QA 環境資訊')
   await h.click('#demo-task-save')
+  const createdToast = await toastSeen('任務已建立')
+  check(`${W} S4 建立成功跳 Toast「任務已建立」(送出成功跳提示)`, createdToast, JSON.stringify({ toasts: await page.evaluate(() => Array.from(document.querySelectorAll('[data-sonner-toast]')).map((el) => el.textContent?.trim())) }))
   const rows2 = await h.rows()
   check(`${W} S4 儲存後清單多一列(#4836 補 QA 環境資訊)`, rows2.length === 4 && /#4836/.test(rows2[3]) && /補 QA 環境資訊/.test(rows2[3]) && (await h.location()) === TASKS_URL, JSON.stringify(rows2))
 
@@ -428,7 +434,8 @@ for (const width of [1440, 1180]) {
   const hist1 = await h.history()
   check(`${W} S7 歷史當前標記跟著移到「Q3 客訴分類」`, hist1.current.length === 1 && /Q3 客訴分類/.test(hist1.current[0]), JSON.stringify(hist1.current))
   await h.click('[role="complementary"] button[aria-label="新對話"]')
-  const fresh = await page.evaluate(() => ({ title: document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim(), empty: /開始第一個對話/.test(document.querySelector('[role="complementary"]')?.textContent ?? ''), plusDisabled: document.querySelector('[role="complementary"] button[aria-label="新對話"]')?.disabled }))
+  // 「+」被按下後對話變空 → 它在握著焦點時變停用:Button 不轉原生 disabled、改 aria-disabled(可聚焦的停用,button.tsx 2026-10-01;焦點留在原鈕)—— 兩種都算「停用」
+  const fresh = await page.evaluate(() => { const plus = document.querySelector('[role="complementary"] button[aria-label="新對話"]'); return ({ title: document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim(), empty: /開始第一個對話/.test(document.querySelector('[role="complementary"]')?.textContent ?? ''), plusDisabled: !!plus && (plus.disabled || plus.getAttribute('aria-disabled') === 'true') }) })
   const hist2 = await h.history()
   check(`${W} S7 「+」開新 session:標題「新對話」、空狀態「開始第一個對話」、+ 停用、歷史仍 3 筆且無當前標記`, fresh.title === '新對話' && fresh.empty && fresh.plusDisabled === true && hist2.rows.length === 3 && hist2.current.length === 0, JSON.stringify({ fresh, hist2 }))
   await h.typeIntoPanel('排 Sprint 25 回顧會'); await page.keyboard.press('Enter'); await page.waitForTimeout(400)

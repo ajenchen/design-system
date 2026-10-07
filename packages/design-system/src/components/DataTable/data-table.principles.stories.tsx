@@ -6,6 +6,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
 import { Empty } from '@/design-system/components/Empty/empty'
 import './column-types'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/DataTable/設計原則',
@@ -19,10 +20,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-4xl">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-4xl">{children}</CaptionedExamples>
   </div>
 )
 
@@ -66,10 +67,11 @@ const CATEGORY_OPTIONS = [
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 DataTable 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/DataTable/設計規格" name="對齊規則（跨產業共識）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品庫存後台 — 單價 / 金額數字靠右對齊</span></LinkTo>
@@ -81,7 +83,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/DataTable/展示" name="空狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">目錄尚無商品 — 空狀態引導新增</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}

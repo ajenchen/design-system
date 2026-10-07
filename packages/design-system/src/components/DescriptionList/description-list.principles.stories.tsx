@@ -4,9 +4,13 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Input } from '@/design-system/components/Input/input'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { createColumnHelper } from '@tanstack/react-table'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/DescriptionList/設計原則',
@@ -22,10 +26,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-4">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -34,8 +38,21 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`border border-border rounded-lg p-4 ${className ?? ''}`}>{children}</div>
+  <div className={`border border-border rounded-lg p-[var(--layout-space-loose)] ${className ?? ''}`}>{children}</div>
 )
+
+// ── DataTable 範例資料(「多個使用者的同結構屬性」)───────────────────────────
+type Member = { name: string; email: string; team: string }
+const MEMBERS: Member[] = [
+  { name: 'Ada Chen', email: 'ada.chen@example.com', team: 'Design' },
+  { name: '王小明', email: 'ming@example.com', team: 'Engineering' },
+]
+const memberCol = createColumnHelper<Member>()
+const MEMBER_COLUMNS = [
+  memberCol.accessor('name', { header: '姓名', meta: { type: 'string', width: 140 } }),
+  memberCol.accessor('email', { header: 'Email', meta: { type: 'string', width: 220 } }),
+  memberCol.accessor('team', { header: '團隊', meta: { type: 'string', width: 140 } }),
+]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -47,10 +64,11 @@ const Frame = ({ children, className }: { children: React.ReactNode; className?:
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 DescriptionList 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/DescriptionList/展示" name="使用者個資"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">使用者個資</span></LinkTo>
@@ -68,7 +86,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/DescriptionList/展示" name="水平佈局"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平佈局</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* vs 近親 — VsDataTableRule — 原 VsDataTableRule */}
@@ -78,7 +96,7 @@ export const UsageGuidance: Story = {
         note="每一行是同一個對象(使用者 / 訂單 / 商品)的不同屬性(姓名 / email / 時區)。讀取模式,不支援排序、篩選、多選"
       >
         <Frame className="max-w-md">
-          <div className="text-body font-medium mb-2">使用者資料</div>
+          <h4 className="text-h6 font-medium mb-[var(--layout-space-tight)]">使用者資料</h4>
           <DescriptionList cols={1}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
             <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -92,29 +110,10 @@ export const UsageGuidance: Story = {
         title="DataTable — 多個同結構實體的集合(多 row)"
         note="每一 row 是不同實體、同樣欄位結構。需要排序、篩選、分頁 → DataTable,不是 DescriptionList"
       >
-        <Frame className="max-w-xl">
-          <table className="w-full text-body border-collapse">
-            <thead>
-              <tr className="text-fg-secondary text-left">
-                <th className="pb-2 font-normal">姓名</th>
-                <th className="pb-2 font-normal">Email</th>
-                <th className="pb-2 font-normal">團隊</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-divider">
-                <td className="py-2">Ada Chen</td>
-                <td className="py-2">ada.chen@example.com</td>
-                <td className="py-2">Design</td>
-              </tr>
-              <tr className="border-t border-divider">
-                <td className="py-2">王小明</td>
-                <td className="py-2">ming@example.com</td>
-                <td className="py-2">Engineering</td>
-              </tr>
-            </tbody>
-          </table>
-        </Frame>
+        {/* 範例消費它要讀者去用的那個元件(M23):最小的 DataTable —— 兩列、無虛擬捲動 / 拖曳 / 篩選 */}
+        <div className="w-full max-w-xl">
+          <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} height="auto" />
+        </div>
         <Label>↑ 「多個使用者」的同結構屬性 → DataTable(需要排序 / 篩選)</Label>
       </Rule>
 
@@ -228,10 +227,12 @@ export const LabelAlignmentRule: Story = {
         note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `orientation=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
       >
         <Frame className="max-w-md">
+          {/* @story-counter-example: ❌ 反例:手刻 flex 模擬 label / value 列(本則教的正是「不要自己用 flex 排」,py 4px 是反例本身) */}
           <div className="flex justify-between py-1">
             <span className="text-body text-fg-secondary">姓名</span>
             <span className="text-body">Ada Chen</span>
           </div>
+          {/* @story-counter-example: ❌ 反例:手刻 flex 模擬 label / value 列(本則教的正是「不要自己用 flex 排」,py 4px 是反例本身) */}
           <div className="flex justify-between py-1">
             <span className="text-body text-fg-secondary">Email</span>
             <span className="text-body">ada.chen@example.com</span>
@@ -272,7 +273,7 @@ export const NoInteractionRule: Story = {
         title="❌ 需要編輯 → 用 Field 系統,不是 DescriptionList"
         note="DescriptionList 是唯讀展示。若使用者要能改(Input / Select / DatePicker),改用 Field — 有明確的 label、input、validation、submit 語義"
       >
-        <div className="flex flex-col gap-3 max-w-md">
+        <FieldGroup className="max-w-md">
           <Field>
             <FieldLabel>Email</FieldLabel>
             <Input defaultValue="ada.chen@example.com" />
@@ -281,7 +282,7 @@ export const NoInteractionRule: Story = {
             <FieldLabel>職稱</FieldLabel>
             <Input defaultValue="Design Engineer" />
           </Field>
-        </div>
+        </FieldGroup>
         <Label>↑ 可編輯欄位 → Field 系統;唯讀屬性 → DescriptionList</Label>
       </Rule>
 
@@ -292,6 +293,7 @@ export const NoInteractionRule: Story = {
         <Frame className="max-w-md">
           <DescriptionList cols={1}>
             <DescriptionItem label="Email">
+              {/* @layout-space-magic-ok: 反例 dd 內 值 ↔ 編輯鈕(反例主題是 dd 放互動元件,間距是行內 micro)(layoutSpace.spec.md:166 micro) */}
               <div className="flex items-center gap-2">
                 <span>ada.chen@example.com</span>
                 <Button variant="text" size="xs">編輯</Button>

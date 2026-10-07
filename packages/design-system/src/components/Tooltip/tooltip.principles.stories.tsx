@@ -8,6 +8,9 @@ import { Settings, Save, AlertCircle } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
 import { Button } from '@/design-system/components/Button/button'
 import { FieldLabel } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Tooltip/設計原則',
@@ -17,8 +20,9 @@ export default meta
 type Story = StoryObj
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -28,10 +32,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -46,8 +50,9 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>適合 Tooltip 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/Tooltip/展示" name="非 Button 元素"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">非 Button 元素</span></LinkTo>
@@ -59,7 +64,7 @@ export const UsageGuidance: Story = {
               <LinkTo kind="Design System/Components/Tooltip/展示" name="長文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長文字</span></LinkTo>
             </li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:回到「畫面上的資訊是否已足夠」這個核心問題;若提示需要被點擊或停留互動,改用近親元件(見下方「vs 近親」)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:回到「畫面上的資訊是否已足夠」這個核心問題;若提示需要被點擊或停留互動,改用近親元件(見下方「vs 近親」)。</p>
         </div>
       </Section>
 
@@ -70,7 +75,7 @@ export const UsageGuidance: Story = {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="primary" danger>刪除帳號</Button>
+              <Button className="self-start" variant="primary" danger>刪除帳號</Button>
             </TooltipTrigger>
             <TooltipContent>此動作會永久刪除所有資料且無法復原</TooltipContent>
           </Tooltip>
@@ -83,7 +88,7 @@ export const UsageGuidance: Story = {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-full px-3 py-1.5 border border-error rounded-md">invalid@email</div>
+              <Input error defaultValue="invalid@email" aria-label="Email" />
             </TooltipTrigger>
             <TooltipContent>Email 格式不正確</TooltipContent>
           </Tooltip>
@@ -114,9 +119,10 @@ export const UsageGuidance: Story = {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="tertiary" size="sm">Ada Chen</Button>
+              <Button className="self-start" variant="tertiary" size="sm">Ada Chen</Button>
             </TooltipTrigger>
             <TooltipContent>
+              {/* @layout-space-magic-ok: 反例 tooltip 內 名稱 ↔ 連結(反例主題是 tooltip 放互動元素)(layoutSpace.spec.md:166 micro) */}
               <div className="flex flex-col gap-1">
                 <span>Ada Chen</span>
                 <button className="text-primary">→ 查看 profile</button>
@@ -152,11 +158,11 @@ export const NeedsTooltipRule: Story = {
         title="✅ Icon-only button 必有 tooltip(icon 沒 label)"
         note="純 icon 按鈕的視覺完全不傳達「做什麼」,hover 需要 tooltip 補 label。Button 的 iconOnly 模式內建自動 tooltip(aria-label 驅動),不需要手動包 Tooltip"
       >
-        <div className="flex items-center gap-2">
+        <ButtonGroup>
           <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           <Button variant="tertiary" size="sm" iconOnly startIcon={Save} aria-label="儲存" />
           <Button variant="tertiary" size="sm" iconOnly startIcon={AlertCircle} aria-label="警告" />
-        </div>
+        </ButtonGroup>
         <Label>↑ hover 每顆會跳出 aria-label 對應的 tooltip(自動,不需手動包)</Label>
       </Rule>
 
@@ -166,7 +172,7 @@ export const NeedsTooltipRule: Story = {
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="primary">儲存</Button>
+            <Button className="self-start" variant="primary">儲存</Button>
           </TooltipTrigger>
           <TooltipContent>儲存</TooltipContent>
         </Tooltip>
@@ -179,6 +185,7 @@ export const NeedsTooltipRule: Story = {
       >
         <Tooltip defaultOpen>
           <TooltipTrigger asChild>
+            {/* @layout-space-magic-ok: 截斷示意框自身內距(layoutSpace.spec.md:168 元件自身微幾何) */}
             <div className="w-32 truncate px-3 py-1 border border-border rounded-md cursor-default">
               2026 亞洲市場品牌改版與官網重構
             </div>

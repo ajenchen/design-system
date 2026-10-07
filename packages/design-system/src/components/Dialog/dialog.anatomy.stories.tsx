@@ -412,7 +412,7 @@ export const ColorMatrix: Story = {
             <tbody>
               <tr><Td>進場</Td><Td mono>fade-in-0 + zoom-in-95(從中心淡入 + 輕微縮放,不位移)</Td><Td mono>--motion-duration-surface / --motion-easing-enter</Td></tr>
               <tr><Td>離場</Td><Td mono>fade-out-0 + zoom-out-95</Td><Td mono>--motion-duration-surface / --motion-easing-exit</Td></tr>
-              <tr><Td>reduced-motion</Td><Td mono>motion-reduce:animate-none</Td><Td>—</Td></tr>
+              <tr><Td>reduced-motion</Td><Td mono>不播(surfaceMotion 只在 motion-safe 下宣告動畫)</Td><Td>—</Td></tr>
             </tbody>
           </table>
         </div>

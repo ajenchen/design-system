@@ -273,6 +273,9 @@ const arrowWrapperClass = cn(
   'opacity-0 group-hover/carousel:opacity-100',
   'focus-within:opacity-100',
   '[&:has(button:disabled)]:opacity-0 [&:has(button:disabled)]:pointer-events-none',
+  // 到端點的箭頭在握著焦點時被停用 → Button 不轉原生 disabled(可聚焦的停用,button.tsx;規則 keyboard-model-canonical.md「按了之後自己變停用」):
+  // 滑鼠按到底的照舊立刻收起(沒有鍵盤框可看);鍵盤按到底的留著,讓焦點框看得見(WCAG 2.4.7),焦點離開才收
+  '[&:has(button[data-disabled-focusable]:not(:focus-visible))]:opacity-0 [&:has(button[data-disabled-focusable]:not(:focus-visible))]:pointer-events-none',
 )
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding

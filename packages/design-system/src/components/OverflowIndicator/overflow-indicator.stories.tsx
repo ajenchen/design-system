@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { OverflowIndicator } from './overflow-indicator'
-import { Tag } from '@/design-system/components/Tag/tag'
+import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
@@ -57,23 +57,21 @@ const labelTags = [
 export const ComboboxTagOverflow: Story = {
   name: 'Combobox 標籤溢出',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
       <p className="text-caption text-fg-muted">
         Jira 任務 labels 欄位 — 單行模式時顯示前 2 個 tag,其餘折成 +N hover 展開。
       </p>
-      <div className="border border-border rounded-md px-3 py-1.5 flex items-center gap-1 bg-surface">
-        {labelTags.slice(0, 2).map((t) => (
-          <Tag key={t.value} size="sm">
-            {t.label}
-          </Tag>
-        ))}
-        <OverflowIndicator count={labelTags.length - 2} shape="tag" size="sm">
-          {labelTags.slice(2).map((t) => (
-            <Tag key={t.value} size="sm">
-              {t.label}
-            </Tag>
-          ))}
-        </OverflowIndicator>
+      {/* 消費真的 Combobox(唯讀單行):欄位外框、Tag 內距(tag.spec.md「圓角與間距」fieldTagInsetX/Y)與
+          放不下就折成 +N 的量測都由元件負責(combobox.tsx 單行模式內建 OverflowIndicator),不手排。
+          w-40 = 側欄窄欄位,5 個 label 放得下前 2 個 → +3。 */}
+      <div className="w-40">
+        <Combobox
+          mode="readonly"
+          size="sm"
+          options={labelTags}
+          value={labelTags.map((t) => t.value)}
+          aria-label="任務 labels"
+        />
       </div>
     </div>
   ),
@@ -97,7 +95,7 @@ const reviewers = [
 export const AvatarStackOverflow: Story = {
   name: '人員頭像 疊合 +N',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
       <p className="text-caption text-fg-muted">
         GitHub PR Reviewers — 只顯示前 3 位,其餘 +3 hover 看完整清單。
       </p>
@@ -111,8 +109,10 @@ export const AvatarStackOverflow: Story = {
         ))}
         <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(3, 4)}>
           <OverflowIndicator count={reviewers.length - 3} shape="circle" size="md">
+            {/* @layout-space-magic-ok: +N 浮層內的同質人員列(layoutSpace.spec.md:165 同質清單列) */}
             <div className="flex flex-col gap-1 min-w-[160px] text-caption">
               {reviewers.slice(3).map((p) => (
+                // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名(layoutSpace.spec.md:166 micro)
                 <div key={p.name} className="flex items-center gap-2">
                   <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personHoverCard(p)} />
                   <span>{p.name}</span>
@@ -198,8 +198,10 @@ const assigneeColumns: ColumnDef<AssigneeRow>[] = [
           {hidden.length > 0 && (
             <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, stackCount)}>
               <OverflowIndicator count={hidden.length} shape="circle" size="sm">
+                {/* @layout-space-magic-ok: +N 浮層內的同質人員列(layoutSpace.spec.md:165 同質清單列) */}
                 <div className="flex flex-col gap-1 min-w-[140px]">
                   {hidden.map((p) => (
+                    // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名(layoutSpace.spec.md:166 micro)
                     <div key={p.name} className="flex items-center gap-2">
                       <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personHoverCard(p)} />
                       <span>{p.name}</span>

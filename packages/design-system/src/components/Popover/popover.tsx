@@ -9,6 +9,7 @@ import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncate
 import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -40,17 +41,18 @@ const PopoverClose = PopoverPrimitive.Close
 // 第一 match,header 內互動元素(非 data-dismiss)會搶走 body 首元素焦點,且 bare 段漏 select。
 // 改為:先 body-scoped 查詢,查無才退 bare 全域清單(保留 naked popover — consumer 不用
 // PopoverBody 自管結構 — 的 fallback 意圖),最後 footer → content 容器。
+// 選擇器排除 `aria-disabled="true"`(2026-10-01):忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx 可聚焦的停用),不該成為開啟時的落點。
 const handlePopoverOpenAutoFocus = (e: Event) => {
   e.preventDefault()
   const content = e.currentTarget as HTMLElement
   const firstBodyTarget = content.querySelector<HTMLElement>(
-    '[data-popover-body] input:not([disabled]),[data-popover-body] textarea:not([disabled]),[data-popover-body] select:not([disabled]),[data-popover-body] button:not([disabled]):not([data-dismiss])'
+    '[data-popover-body] input:not([disabled]),[data-popover-body] textarea:not([disabled]),[data-popover-body] select:not([disabled]),[data-popover-body] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
   )
   const firstBareTarget = content.querySelector<HTMLElement>(
-    'input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]):not([data-dismiss])'
+    'input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
   )
   const firstFooterButton = content.querySelector<HTMLElement>(
-    '[data-popover-footer] button:not([disabled]):not([data-dismiss])'
+    '[data-popover-footer] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
   )
   ;(firstBodyTarget ?? firstBareTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
 }
@@ -73,18 +75,25 @@ const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
     () => ({ titleId, onTitleMount: () => setHasTitle(true), onTitleUnmount: () => setHasTitle(false) }),
     [titleId],
   )
+  // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
+  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+  }, [ref])
   return (
     <PopoverPrimitive.Portal>
       <PopoverTitleContext.Provider value={titleContext}>
         <PopoverPrimitive.Content
-          ref={ref}
+          ref={composedRef}
           align={align}
           sideOffset={sideOffset}
           collisionPadding={collisionPadding}
@@ -106,12 +115,16 @@ const PopoverContent = React.forwardRef<
             // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)
             "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
             overlayMotion,
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             "origin-[var(--radix-popover-content-transform-origin)]",
             className
           )}
           {...props}
+          // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
+          // 且在這一層裡面(面板裡改過的欄位 / 鍵盤拖曳中的條件)→ 留給控件、不關;控件在外面(可打字的 DatePicker 欄位 + 它自己的日曆)→ 照舊關這一層
+          onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
         />
       </PopoverTitleContext.Provider>
     </PopoverPrimitive.Portal>

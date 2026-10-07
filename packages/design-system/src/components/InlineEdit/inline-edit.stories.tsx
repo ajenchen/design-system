@@ -29,7 +29,8 @@ export const TaskTitle: Story = {
     const [title, setTitle] = React.useState('Fix flaky checkout e2e test on Safari')
     return (
       <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-        <p className="mb-1 text-caption text-fg-secondary">PROJ-482</p>
+        {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:76 / :81 context dependency) */}
+        <p className="mb-[var(--layout-space-tight)] text-caption text-fg-secondary">PROJ-482</p>
         <InlineEdit
           as="h1"
           value={title}
@@ -38,7 +39,7 @@ export const TaskTitle: Story = {
           readClassName="text-h4 font-bold text-foreground"
           placeholder="Add a title…"
         />
-        <p className="mt-4 text-body text-fg-muted">
+        <p className="mt-[var(--layout-space-tight)] text-body text-fg-muted">
           標題平常是純文字,滑鼠移入顯示灰底提示可編輯;點擊(或鍵盤 Tab + Enter)切成輸入框,Enter 儲存、Esc 取消。
         </p>
       </div>
@@ -61,7 +62,7 @@ export const MetadataFields: Story = {
   render: () => (
     <div className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
       {/* heading → fields = tight（functional labeling）;fields 彼此 = loose（parallel 獨立欄位,layoutSpace.spec.md 親疏 3 級） */}
-      <h2 className="mb-[var(--layout-space-tight)] text-body font-bold text-foreground">Details</h2>
+      <h2 className="mb-[var(--layout-space-tight)] text-h6 font-medium text-foreground">Details</h2>
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <MetaRow label="Summary" value="Q3 launch checklist owner handoff" />
         <MetaRow label="Story points" value="5" />
@@ -82,7 +83,7 @@ function StateRow({
     <div {...rest}>
       {/* standalone(無 Field)的 InlineEdit 不帶 -mx(w-full),view 值自帶 px-field-px 內距
           (fieldViewGeometry);caption 同步 px-field-px 讓說明與值文字左緣對齊 */}
-      <p className="mb-2 px-[var(--field-px)] text-caption text-fg-muted">{caption}</p>
+      <p className="mb-[var(--layout-space-tight)] px-[var(--field-px)] text-caption text-fg-muted">{caption}</p>
       {children}
     </div>
   )
@@ -91,7 +92,7 @@ function StateRow({
 export const States: Story = {
   name: '狀態:檢視/懸停/編輯',
   render: () => (
-    <div className="flex w-[440px] flex-col gap-6">
+    <div className="flex w-[440px] flex-col gap-[var(--layout-space-loose)]">
       <StateRow caption="view(靜止)—— 純值,透明邊框(預留、不可見)、無底色">
         <StatefulInlineEdit value="Design review notes" label="標題" />
       </StateRow>

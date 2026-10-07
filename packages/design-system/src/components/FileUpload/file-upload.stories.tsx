@@ -2,10 +2,8 @@
 import type { Meta } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
 import { useState } from 'react'
-import { Image as ImageIcon, X } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 import { FileUpload } from './file-upload'
-import { FileItem } from '@/design-system/components/FileItem/file-item'
-import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
 
 const meta: Meta<typeof FileUpload> = {
@@ -42,39 +40,27 @@ export const ResumeUpload = {
 export const BulkImageUpload = {
   name: '批次上傳',
   render: () => {
-    const [files, setFiles] = useState<File[]>([])
+    // 選好的相片交給 FileUpload 內建 `files` / `onRemove` 清單(與下方 WithFileList / ButtonVariant 同一條路):
+    // 上傳入口 ↔ 清單的距離、清單列距、移除鈕全由元件依 fileListMode 套用(file-item.spec.md「List wrapper canonical」),story 不手刻 FileItem。
+    type Photo = { id: string; name: string; size?: number; status?: 'completed' }
+    const [files, setFiles] = useState<Photo[]>([])
     return (
-      <div className="max-w-lg flex flex-col gap-3">
+      <div className="max-w-lg">
         <FileUpload
           multiple
           accept="image/*"
           title="拖曳相片到這裡,或點擊選取"
           description="支援 JPG / PNG / GIF,可一次選多張"
-          onUpload={(accepted) => setFiles((prev) => [...prev, ...accepted])}
+          files={files}
+          fileListMode="compact"
+          onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
+          onUpload={(accepted) =>
+            setFiles((prev) => [
+              ...prev,
+              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+            ])
+          }
         />
-        {files.length > 0 && (
-          // Compact FileItem 上傳完成有 bg-secondary 靜態底色 → 必 `gap-1`(4px)防貼邊
-          // (見 file-item.spec.md「List wrapper canonical」+ item-anatomy「連續 item 貼邊合法性」)
-          <div className="flex flex-col gap-1">
-            {files.map((f, i) => (
-              <FileItem
-                key={`${f.name}-${i}`}
-                mode="compact"
-                name={f.name}
-                actions={
-                  <Button
-                    variant="text"
-                    size="xs"
-                    iconOnly
-                    startIcon={X}
-                    aria-label={`移除 ${f.name}`}
-                    onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                  />
-                }
-              />
-            ))}
-          </div>
-        )}
       </div>
     )
   },

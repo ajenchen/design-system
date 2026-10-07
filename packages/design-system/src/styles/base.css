@@ -64,6 +64,30 @@
   }
 }
 
+/* `disabled:` 變體也認「可聚焦的停用」(2026-10-01;規則 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」)。
+ *
+ * Button 忙碌(loading)時、或在握有焦點的那一刻被停用時,不轉成原生 `disabled`(WHATWG focus fixup:握著焦點的元素被停用,焦點被重設到
+ * viewport = `<body>`,https://github.com/whatwg/html/blob/92f248013013096b5a780afffd8377fb9a6eba87/source#L123634-L123645),
+ * 改成 `aria-disabled="true"` + `data-disabled-focusable` 並由元件擋掉觸發 —— 但**長相必須與原生停用完全相同**(灰底、禁止符號游標),
+ * 不是 `aria-disabled` 那套「保留品牌色 + 不透明度」的 Tooltip 用長相(button.spec.md「狀態疊加」表 aria-disabled 列)。
+ * 所以把內建的 `disabled:` 變體擴成「原生 :disabled **或** 帶 data-disabled-focusable」:Button 既有的那一整組 `disabled:*` class 一個字不改就套得到。
+ * Tailwind 4.2 實測:覆寫內建變體不改產出順序,編出的 CSS 正規化後與修改前逐條同序。
+ * 另一半在 Button(`button.tsx` `withoutAriaDisabledLook`):這個狀態同時帶 `aria-disabled="true"`,`aria-disabled:` 那一組(含滑過 / 按住釘在品牌色)
+ * 與這裡的 `disabled:` 同為 (0,3,0),先後由產出順序決定 —— 所以在 class 層拿掉,不在這裡覆寫 `aria-disabled` 變體(2026-10-07 實測:覆寫它會把它註冊成
+ * 新的靜態變體、整組從 aria-* 那一段搬到 data-* 之後產出,改變所有 Tooltip 用 aria-disabled 鈕的先後)。
+ *
+ * **選擇器必須寫成一個 `&:is(…)`,不可寫成兩個 `&` 的清單**(2026-10-07,DataTable 快速捲動量測抓到)。
+ * 清單寫法 `(&:disabled, &[data-disabled-focusable])` 與其他變體疊用時,Lightning CSS 攤平巢狀會產出 `:is(.x:disabled,.x[data-disabled-focusable]):hover`
+ * 這種**主體以 `:is(` 開頭**的選擇器(41 條:disabled:hover / disabled:active / disabled:placeholder / aria-pressed:disabled:hover…)。
+ * 瀏覽器的規則分桶要從主體複合選擇器取出 class / id / 標籤;主體是多參數的 `:is()` 就取不到,整條規則落進「每個元素都要試配」的通用桶
+ *(Chromium `third_party/blink/renderer/core/css/rule_set.cc`:`:is/:where` 只有 `IsSingleComplexSelector` 時才照參數分桶,其餘走 `universal_rules_`,
+ * https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/css/rule_set.cc)——
+ * 頁面上每個元素每次重算樣式都多試 41 條。同一份 JS、只換 CSS 的交錯對照(gesture / pinned 各 8 輪):樣式重算時間 +12%(8/8 輪,
+ * 次數不變、每次變貴);改寫成 `.x:is(:disabled,[data-disabled-focusable]):hover`(主體以 class 開頭,照常進 class 桶)後回到 main 的 ±1.5%。
+ * `:is()` 的權重取參數裡最大的那個:`:is(:disabled, [data-disabled-focusable])` = (0,1,0),與 `:disabled`、`[…]` 各自相同,
+ * 所以兩種寫法編出的每條規則權重相同、產出順序相同,配對的元素也相同 —— 只差瀏覽器能不能分桶。 */
+@custom-variant disabled (&:is(:disabled, [data-disabled-focusable]));
+
 /* 焦點框(內描邊)—— 兩種幾何裡的另一種。
  *
  * SSOT:`ds-canonical/references/focus-canonical.md`「問題二:畫在外面還是裡面?」
@@ -112,40 +136,13 @@
     同日 user 指出唯讀應該跟可編輯的欄位一樣用 1px 邊框轉主色 —— 改用既有的 `focus-within:!border-primary`
     之後這條 utility 沒有消費者,留著就是第三種幾何的入口,刪掉。歷史見 field-wrapper.tsx 頂端 JSDoc。) */
 
-/* Radix Collapsible height animation — consumed by TreeView. */
-@keyframes collapsible-down {
-  from { height: 0; }
-  to { height: var(--radix-collapsible-content-height); }
-}
-
-@keyframes collapsible-up {
-  from { height: var(--radix-collapsible-content-height); }
-  to { height: 0; }
-}
-
-@utility animate-collapsible-down {
-  animation: collapsible-down 150ms ease-out;
-}
-
-@utility animate-collapsible-up {
-  animation: collapsible-up 150ms ease-out;
-}
-
-/* Radix Accordion height animation — Radix exposes a different content-height var. */
-@keyframes accordion-down {
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
-}
-
-@utility animate-accordion-down {
-  animation: accordion-down 200ms ease-out;
-}
-
-@utility animate-accordion-up {
-  animation: accordion-up 200ms ease-out;
-}
+/* 原地展開收合(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊)的高度動畫 —— 本檔**不**宣告。
+ *
+ * keyframe(collapsible-down / -up)與工具類(animate-collapsible-*)由 tw-animate-css 提供(styles/tokens.css 第一行引入);
+ * 時長 / 何時播 / 收尾 / 減少動態的唯一住所是 `tokens/motion/disclosure-motion.ts`(disclosureMotion)+ motion.css 的
+ * `--motion-duration-disclosure`。
+ *
+ * 2026-10-07 刪掉這裡原本的 `@keyframes collapsible-* / accordion-*` 與 `@utility animate-collapsible-*`(150ms)/
+ * `animate-accordion-*`(200ms):tw-animate-css 自 2026-07-14 引入後有同名的 theme 工具類,建置後兩份宣告併進同一條規則、
+ * 後寫的 `animation:` 勝出 —— 這裡的 150ms 從那天起就沒生效過,卻和 agent-panel.spec.md 的 200ms 各寫各的(待辦總帳 T8)。
+ * 同名重宣告的機械防線:scripts/motion-ssot-invariant.mjs。 */

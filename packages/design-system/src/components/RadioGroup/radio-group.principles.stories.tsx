@@ -3,6 +3,7 @@ import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/RadioGroup/設計原則',
@@ -16,10 +17,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -28,8 +29,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -43,13 +45,14 @@ export const UsageGuidance: Story = {
     return (
       <div>
         <Section title="何時用">
-          <div className="prose prose-sm max-w-prose mb-8">
+          <div className="max-w-prose mb-[var(--layout-space-loose)]">
             <p>適合 RadioGroup 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
             <ul className="space-y-1">
               <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="直式群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">直式群組</span></LinkTo><span className="text-fg-secondary"> — 訂閱方案選擇(月付 / 年付 / 終身):需要對比價格與說明的決策節點,直式 + description 完整閱讀</span></li>
               <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="水平排列"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平排列</span></LinkTo><span className="text-fg-secondary"> — 外觀主題切換(淺色 / 深色 / 系統):2-3 個短 label、不需描述文字,橫排省垂直空間</span></li>
             </ul>
-            <p className="text-fg-muted mt-3">判斷不確定時:回頭看「何時用 / 何時不用」;若仍不符,改用近親元件(見下方「vs 近親元件」)。</p>
+            <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:回頭看「何時用 / 何時不用」;若仍不符,改用近親元件(見下方「vs 近親元件」)。</p>
           </div>
         </Section>
 

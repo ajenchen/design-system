@@ -3,7 +3,8 @@
  * @gate-contract
  *   保證: scripts/visual-audit.mjs 的幾何 / 顏色斷言引擎(契約 + 讀值 + 判定都住 lib/visual-audit-geometry.mjs)在該紅的時候會紅、該放的時候會放:
  *         padding4Sided 認得 symmetric(all / horizontal / vertical);gap 逐軸讀 row-gap / column-gap,computed `normal` 讀成 0、不再是 parseFloat NaN → 0 的假讀值;
- *         equalHeight / padding4Sided / gap / color 都對選到的全部元素判;選不到 = selectorMissing;場景的 globals(theme / density)與斷言契約壞了在載入時就 throw
+ *         equalHeight / padding4Sided / gap / color / sharesRow 都對選到的全部元素判;選不到 = selectorMissing;場景的 globals(theme / density)與斷言契約壞了在載入時就 throw;
+ *         sharesRow(2026-09-30):元素單獨佔一列 / 找不到 peers → 紅,與 peers 同列 → 綠
  *   紅: (判定表)Field 控件水平內距 {0,12,0,12} 用 symmetric:'all' 判 → 紅;column-gap 12 的 grid(row 是 normal)用 axis:'both' 判 expected 12 → 紅;
  *        expected 對不上 / 第二顆矮 4px / 選不到元素 / 期望色不是合法顏色 / 第三顆顏色不同 → 紅;
  *        未知 type、未知欄位、symmetric 亂寫、axis 亂寫、globals 用 hc / rtl → 載入即 throw
@@ -59,6 +60,8 @@ throwsContract(() => normalizeGeometryAssertion({ name: ' x', type: 'equalHeight
 throwsContract(() => normalizeScenarioGlobals({ theme: 'hc' }), /theme must be one of light \/ dark/, 'globals theme:hc(會被寫成 data-theme="hc" 但沒有那套 token,畫面仍淺色 —— 2026-06-11 假覆蓋那一種)→ throw')
 throwsContract(() => normalizeScenarioGlobals({ dir: 'rtl' }), /dir is not a Storybook global/, 'globals dir:rtl(Storybook 會靜默忽略)→ throw')
 throwsContract(() => normalizeScenarioGlobals({}), /must name at least one/, 'globals 空物件 → throw')
+throwsContract(() => normalizeGeometryAssertion({ name: 'r', type: 'sharesRow', selector: 'a' }), /peers must be a non-empty/, 'sharesRow 缺 peers → throw')
+throwsContract(() => normalizeGeometryAssertion({ name: 'r', type: 'sharesRow', selector: 'a', peers: 'b', scope: ' ' }), /scope must be a non-empty/, 'sharesRow scope 空白 → throw')
 ok(normalizeGeometryAssertion({ name: 'p', type: 'padding4Sided', selector: 'a' }).symmetric === 'all', 'padding4Sided 預設 symmetric = all')
 ok(normalizeGeometryAssertion({ name: 'g', type: 'gap', selector: 'a', expected: 8 }).axis === 'both', 'gap 預設 axis = both')
 ok(normalizeScenarioGlobals(undefined) === undefined, 'globals 沒給 = undefined(Storybook 用預設 light / md)')
@@ -105,8 +108,8 @@ console.log('── 判定表:equalHeight / selectorMissing / color ──')
 ok(judge({ name: 'h', type: 'equalHeight', selector: 'x' }, { elements: [28, 28, 28, 28] }).length === 0, '四顆 28 → 綠')
 ok(judge({ name: 'h', type: 'equalHeight', selector: 'x' }, { elements: [28, 24, 28, 28] })[0]?.actual?.[1] === 24, '第二顆 24 → 紅,actual 列出全部')
 ok(judge({ name: 'h', type: 'equalHeight', selector: 'x' }, { elements: [28, 28.4] }).length === 0, '±0.5px 內算相等(次像素)')
-for (const type of ['equalHeight', 'gap', 'padding4Sided', 'color']) {
-  const a = { name: 'none', type, selector: 'x', ...(type === 'gap' ? { expected: 8 } : {}), ...(type === 'color' ? { property: 'color', expected: 'red' } : {}) }
+for (const type of ['equalHeight', 'gap', 'padding4Sided', 'color', 'sharesRow']) {
+  const a = { name: 'none', type, selector: 'x', ...(type === 'gap' ? { expected: 8 } : {}), ...(type === 'color' ? { property: 'color', expected: 'red' } : {}), ...(type === 'sharesRow' ? { peers: 'y' } : {}) }
   ok(judge(a, { elements: [], expected: '#ff0000' })[0]?.type === 'selectorMissing', `${type} 選不到元素 → selectorMissing(不是通過)`)
 }
 ok(judge({ name: 'c', type: 'color', selector: 'x', property: 'color', expected: 'red' }, { expected: '#ff0000', elements: [{ actual: '#ff0000', raw: 'rgb(255, 0, 0)' }] }).length === 0,
@@ -116,6 +119,15 @@ ok(judge({ name: 'c', type: 'color', selector: 'x', property: 'color', expected:
 ok(judge({ name: 'c', type: 'color', selector: 'x', property: 'color', expected: 'not-a-color' }, { expected: null, elements: [{ actual: '#ff0000', raw: 'rgb(255, 0, 0)' }] })[0]?.error?.includes('不是瀏覽器認得的'),
   '期望色不合法 → 紅(斷言壞了不算通過)')
 throwsContract(() => judge({ name: 'h', type: 'equalHeight', selector: 'x' }, { elements: ['28'] }), /readings must be numbers/, '讀值形狀不對 → throw(不是靜默判綠)')
+
+// ── 4b. 判定表:sharesRow(2026-09-30)──────────────────────────────────────
+console.log('── 判定表:sharesRow ──')
+const rowA = { name: 'r', type: 'sharesRow', selector: 'input', peers: '[data-tag-root]', scope: '[role="combobox"]' }
+ok(judge(rowA, { elements: [{ peers: 4, sameRow: 1, top: 36, bottom: 60 }] }).length === 0, '搜尋框與一顆 Tag 同列 → 綠')
+ok(judge(rowA, { elements: [{ peers: 3, sameRow: 0, top: 64, bottom: 88 }] })[0]?.actual?.sameRow === 0, '搜尋框單獨佔一列(同列 0 顆 Tag)→ 紅(2026-09-30 前 60px 下限的形狀)')
+ok(/找不到任何 peers/.test(judge(rowA, { elements: [{ peers: 0, sameRow: 0, top: 0, bottom: 24 }] })[0]?.error ?? ''), '找不到 peers → 紅(量不到不算通過)')
+ok(judge(rowA, { elements: [{ peers: 2, sameRow: 1, top: 0, bottom: 24 }, { peers: 2, sameRow: 0, top: 30, bottom: 54 }] })[0]?.index === 1, '兩個欄位只有第二個單獨一列 → 紅且點名 index 1')
+throwsContract(() => judge(rowA, { elements: [{ peers: '2' }] }), /sharesRow readings must be/, 'sharesRow 讀值形狀不對 → throw')
 
 // ── 5. 瀏覽器:讀值本身(合成 DOM,與 story 無關)────────────────────────────
 console.log('── 瀏覽器讀值(合成 DOM)──')
@@ -138,6 +150,10 @@ try {
       .tall { height: 32px; }
       #red { color: #ff0000; background-color: rgb(255, 0, 0); border-top-color: rgb(255 0 0); }
       #teal { color: oklch(0.5 0.1 200); background-color: rgba(0, 0, 0, 0.45); }
+      .row-field { display: flex; flex-wrap: wrap; gap: 4px; width: 200px; }
+      .row-field .tag { width: 80px; height: 24px; }
+      .row-field input { width: 150px; height: 24px; padding: 0; border: 0; }
+      #row-ok input { width: 20px; }
     </style>
     <div id="grid"><span>a</span><span>b</span></div>
     <div id="flex"><span>a</span><span>b</span></div>
@@ -146,6 +162,8 @@ try {
     <button class="btn">1</button><button class="btn">2</button><button class="btn tall">3</button>
     <div id="red">r</div>
     <div id="teal">t</div>
+    <div role="combobox" id="row-ok" class="row-field"><span class="tag" data-tag-root></span><span class="tag" data-tag-root></span><input></div>
+    <div role="combobox" id="row-alone" class="row-field"><span class="tag" data-tag-root></span><span class="tag" data-tag-root></span><input></div>
   `)
   const read = (selector, assertion) => page.$$eval(selector, readGeometryInPage, normalizeGeometryAssertion(assertion))
 
@@ -193,6 +211,15 @@ try {
   const alpha = await read('#teal', { name: 'c', type: 'color', selector: '#teal', property: 'backgroundColor', expected: 'oklch(0 0 0 / 0.45)' })
   ok(alpha.elements[0].actual === '#000000/0.45' && alpha.expected === '#000000/0.45',
     `半透明:rgba(0,0,0,.45) 與 oklch(0 0 0 / 0.45) 都正規化成 ${alpha.elements[0].actual}(fg-muted 那一類 token 才比得出來)`)
+  // sharesRow:兩顆 80px Tag 之後,20px 的輸入框放得下同一列(綠);150px 的輸入框放不下、自己換到下一列(紅)—— 同一張頁、只差寬度
+  const rowOk = await read('#row-ok input', { name: 'r', type: 'sharesRow', selector: '#row-ok input', peers: '[data-tag-root]', scope: '[role="combobox"]' })
+  ok(rowOk.elements[0].peers === 2 && rowOk.elements[0].sameRow === 2, `sharesRow 讀值:20px 輸入框與兩顆 Tag 同列(peers ${rowOk.elements[0].peers} / 同列 ${rowOk.elements[0].sameRow})`)
+  ok(judge({ name: 'r', type: 'sharesRow', selector: '#row-ok input', peers: '[data-tag-root]', scope: '[role="combobox"]' }, rowOk).length === 0, '→ 綠')
+  const rowAlone = await read('#row-alone input', { name: 'r', type: 'sharesRow', selector: '#row-alone input', peers: '[data-tag-root]', scope: '[role="combobox"]' })
+  ok(rowAlone.elements[0].peers === 2 && rowAlone.elements[0].sameRow === 0, `sharesRow 讀值:150px 輸入框自己換到下一列(同列 ${rowAlone.elements[0].sameRow})`)
+  ok(judge({ name: 'r', type: 'sharesRow', selector: '#row-alone input', peers: '[data-tag-root]', scope: '[role="combobox"]' }, rowAlone).length === 1, '→ 紅')
+  const rowScoped = await read('#row-alone input', { name: 'r', type: 'sharesRow', selector: '#row-alone input', peers: '#row-ok [data-tag-root]' })
+  ok(rowScoped.elements[0].peers === 2, 'sharesRow 沒給 scope → 整頁找 peers(給了 scope 才限在同一個欄位裡)')
 } finally {
   await browser.close()
 }

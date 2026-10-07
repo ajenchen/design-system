@@ -22,6 +22,7 @@ import {
   DropdownMenuLabel,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/設計原則',
@@ -35,10 +36,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -54,10 +55,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 DropdownMenu 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/DropdownMenu/展示" name="群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">群組 — 帳號選單(個人資料 / 設定 / 登出分組)</span></LinkTo>
@@ -75,7 +77,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/DropdownMenu/展示" name="單選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單選 — 檔案清單排序方式</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:先看「選完之後畫面是否需要保留選中狀態」——需要就改用 Select / SelectMenu。下方的「DropdownMenu vs 選值元件」與「群組 vs 分隔線」範例提供更完整的對照。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先看「選完之後畫面是否需要保留選中狀態」——需要就改用 Select / SelectMenu。下方的「DropdownMenu vs 選值元件」與「群組 vs 分隔線」範例提供更完整的對照。</p>
     </div>
 
       {/* vs 近親 — VsSelectMenuRule — 原 VsSelectMenuRule */}
@@ -86,7 +88,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            <Button className="self-start" variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem startIcon={Copy}>複製</DropdownMenuItem>
@@ -105,7 +107,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">選擇狀態</Button>
+            <Button className="self-start" variant="tertiary">選擇狀態</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem>待處理</DropdownMenuItem>
@@ -132,7 +134,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">帳號選單</Button>
+            <Button className="self-start" variant="tertiary">帳號選單</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
@@ -159,7 +161,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">檔案操作</Button>
+            <Button className="self-start" variant="tertiary">檔案操作</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
@@ -180,7 +182,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">❌ 手動 Separator</Button>
+            <Button className="self-start" variant="tertiary">❌ 手動 Separator</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuLabel>我的帳號</DropdownMenuLabel>
@@ -216,7 +218,7 @@ export const ItemTypeRule: Story = {
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary">檔案操作</Button>
+              <Button className="self-start" variant="tertiary">檔案操作</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem startIcon={Copy} shortcut="⌘C">複製連結</DropdownMenuItem>
@@ -233,7 +235,7 @@ export const ItemTypeRule: Story = {
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary" startIcon={Filter}>顯示欄位</Button>
+              <Button className="self-start" variant="tertiary" startIcon={Filter}>顯示欄位</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>表格欄位</DropdownMenuLabel>
@@ -251,7 +253,7 @@ export const ItemTypeRule: Story = {
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary" startIcon={ArrowUp}>排序方式</Button>
+              <Button className="self-start" variant="tertiary" startIcon={ArrowUp}>排序方式</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>依以下排序</DropdownMenuLabel>
@@ -279,7 +281,7 @@ export const DestructiveRule: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+            <Button className="self-start" variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem startIcon={Copy}>複製</DropdownMenuItem>
@@ -320,7 +322,7 @@ export const SuffixRule: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">檔案</Button>
+            <Button className="self-start" variant="tertiary">檔案</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem shortcut="⌘N">新增</DropdownMenuItem>

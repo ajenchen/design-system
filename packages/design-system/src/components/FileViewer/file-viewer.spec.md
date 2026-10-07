@@ -299,7 +299,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 | 鍵 | 行為 | 生效條件 |
 |---|------|---------|
-| `Esc` | 關閉 viewer | Radix Dialog 預設 |
+| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字);**焦點所在的控件宣告了自己還有一層時那一下歸控件**(全 DS 一條,`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)—— 兩條都由 `../../lib/overlay-escape.ts` `withOverlayEscape` 掛在本元件的 `DialogPrimitive.Content`(2026-10-01;同日上午的 `withImeSafeEscape` 併入) | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
 | `ArrowLeft` | 上一個檔案 | `files.length > 1` |
 | `ArrowRight` | 下一個檔案 | `files.length > 1` |
 | `+` / `=` | zoom in(下一個 preset) | `capabilities.zoom === true` |
@@ -369,6 +369,7 @@ Radix DialogPrimitive 自動處理:
 - 所有 iconOnly button 皆有 `aria-label`(中文,跟 DS 其他元件風格一致)
 - Filmstrip `role="group"` + `aria-label` + thumb `<button>` + `aria-current`(非 tablist;見「Filmstrip 規則」段理由)
 - InfoPanel 用 `<aside aria-label="檔案詳細資訊">` 語意標記
+- **關閉後焦點還給開啟者**(2026-09-30):FileViewer 由受控 `open` 開、沒有 Radix 觸發點,Radix 沒有東西可還 —— 此前關閉後焦點掉到 body(實測)。現在 `onOpenAutoFocus` 最先記下當下握著焦點的元素(縮圖 / 「預覽」鈕…,`captureFocusOrigin`),`onCloseAutoFocus` 先跑 consumer 的 handler、沒被擋就交給全 DS 一支 `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(標準 modal:按遮罩收起也還;並存模式 `persistentElements` 為非 modal:按在常駐區收起不搶;指標收起不畫鍵盤框)。
 - `DialogContent` 固定 `tabIndex={-1}`；`onOpenAutoFocus` 先執行 consumer handler,若未被取消則阻止 Radix 把焦點送到第一個 toolbar control,並主動 `focus({ preventScroll: true })` fullscreen shell。開啟後焦點立即位於 viewer/FocusScope 內,不留在被 `aria-hidden` 的背景 trigger,也不因首個 icon button focus 而誤觸 tooltip。consumer 若有專屬初始焦點可在 handler 中 `preventDefault()` 後自行聚焦。
 
 ---

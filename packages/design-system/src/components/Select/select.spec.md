@@ -54,7 +54,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 - **空值 = `value=''`**:無選擇時送空字串,**不** default 第一項——採 MUI 式**單一 hidden input**而非 Radix BubbleSelect 完整 `<select>` option tree(後者無空 option 時 default 第一項,radix-ui/primitives issue #3521 documented footgun;2026-07-13 codex 辯論 verdict)
 - **原生 required 僅收顯式 `required` prop**(裸表單 opt-in):`<Field required>` 的 context required 續走 `aria-required` + `useFormValidation`(RHF)方法論(`form-validation.spec.md` 規則 1-9),不對既有 Field+RHF consumer 注入瀏覽器原生 bubble
 - **a11y 不變**:mirror `aria-hidden` + 不入 Tab 序,semantics 仍由 `role="combobox"` trigger own;顯式 `required` prop 同步進 trigger `aria-required`(對齊 mobile 原生 `<select required>` 播報)
-- **副作用(升級)**:`useFormValidation` 規則 8(focus-first-error 以 DOM name 定位)桌機 Select 現在可被定位——focus 落 mirror → trigger `focus-within` 顯示 focus 邊框,不再落入「非 native 控件略過」fallback
+- **副作用(升級)**:`useFormValidation` 規則 8(focus-first-error 以 DOM name 定位)桌機 Select 現在可被定位——focus 落 mirror → trigger `focus-within` 顯示 focus 邊框,不再落入 v1 邊界 (b)「控件沒有帶 name 的元素就不移焦點」那一支
 
 **世界級對照**:MUI Select 非原生模式同步 opacity-0 hidden input 攜 `name`/`required`(官方測試涵蓋 required 阻止提交 + FormData 值,[github.com/mui/material-ui Select.test.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js))/ React Spectrum [HiddenSelect](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-aria/select/src/HiddenSelect.tsx) / Headless UI Listbox `name` → [hidden input kept in sync](https://headlessui.com/react/listbox#using-with-html-forms)。Ant 走純 Form.Item(React state)派;本 DS 因型別已承諾 `name`/`form`/`required`,「同一 public API 依裝置改變提交語義」比補 projection 更危險(codex verdict),故補鏡像。
 
@@ -87,7 +87,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 value 軸 dual-mode,open 軸**刻意只有** `defaultOpen`(初始開)+ `onOpenChange`(通知 callback),無 controlled `open` prop:
 
 - **已知需求只要「初始開 + 知道何時關」**:(1) 視覺快照 — Storybook OpenSnapshot / visual-audit(M15)需「免互動即開」state,`defaultOpen` 一行達成;(2) DataTable cell-as-input(`DataTable/cell-registry.tsx`)— click → 1-step 開選單靠 `defaultOpen`,dismiss 後 `onOpenChange(false)` → cell exit edit mode
-- **受控成本高**:open 是內部 interaction state machine 的一環 — 關閉自動清 search(select.tsx「關閉時清搜尋」effect)/ searchable trigger 在 open 時切 input 顯示模式 / Enter / Space / ArrowDown opener + Esc dismiss 全是內部 intent。controlled `open` 要 consumer 忠實 echo 每一條,漏接任一 → 卡開 / 卡關 / search 殘留
+- **受控成本高**:open 是內部 interaction state machine 的一環 — 關閉自動清 search(`../SelectMenu/select-menu.tsx`「浮層關閉 → 清空搜尋關鍵字」,經 `onSearchChange('')` 叫本元件清;規則 `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」)/ searchable trigger 在 open 時切 input 顯示模式 / Enter / Space / ArrowDown opener + Esc dismiss 全是內部 intent。controlled `open` 要 consumer 忠實 echo 每一條,漏接任一 → 卡開 / 卡關 / search 殘留
 - **世界級對照**:Radix Popover([radix-ui.com/primitives/docs/components/popover](https://www.radix-ui.com/primitives/docs/components/popover))/ Ant Select([ant.design/components/select](https://ant.design/components/select))/ MUI Select([mui.com/material-ui/api/select](https://mui.com/material-ui/api/select/))皆提供 controlled `open` — 它們是泛用 primitive / library,必須支援任意 orchestration;本 DS 是 opinionated form control,無真實 consumer 需求前不為「可能性」付受控成本(Rule-of-3)
 
 **若未來要開 controlled open**:同 value 軸走既有 `useControllable` hook(M17 SSOT)+ 測 controlled↔uncontrolled switch,屬 major API 擴充,目前不在 scope。
@@ -193,6 +193,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 `searchable` 啟用後 field 變 input，打字即篩選 options。判斷依以下順序：
 
+**開啟時已選值怎麼顯示**(指標,不在這裡重寫):已選值讓位給搜尋輸入框 —— 打開還沒打字時,值以灰色提示疊在同一個位置(讀屏略過),一打字就消失,字從 `--field-px` 那條線開始,字刪光又回來(`select.tsx` `CustomSelectTriggerContent` 的 `showSelectedOverlay`)。規則住 `../PeoplePicker/people-picker.spec.md` §B「open + inline-search、選 1 人」列與 §E 提示字公式(:194),Combobox 只選「不限」× 欄位內搜尋同一條(`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」)。
+
 **searchable × tag 模式的內距(2026-09-15 user 裁定)**:searchable 是單選、關閉時框裡仍是「輸入」語意,已選的 Tag 跟其他文字選項一樣貼 `--field-px`(12px),**不套** `fieldTagInsetX` 的四邊等距公式(那是非 searchable tag 模式與 Combobox 的);開啟時同一個框放搜尋輸入,套了會在開關之間跳 9px。code:`select.tsx` `!searchable && tagPadding[size]`。
 
 ### 主判準：label 性質
@@ -226,7 +228,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - `creatable` **需搭配 `searchable`**——搜尋字串非空且無完全同名既有選項時,dropdown 底部出現 create row(`Plus` icon + `createLabel`,預設「直接使用「{query}」」),點擊觸發 `onCreate(query)`。
 - **邏輯 / 顯示 / 互動 SSOT 住在 `SelectMenu`**(與 `Combobox.creatable` 同一底層):Select 的 trigger 內嵌搜尋 input 以**受控 `search`** 驅動 SelectMenu 的 create-row 顯隱(`SelectMenu.search` prop,選配受控;不傳 = 內部 uncontrolled,既有 consumer 零影響)。
-- `onCreate` 由 consumer 實作(通常:加進 options + 選取新值);create row 選取後 SelectMenu 清 search(受控時回呼 `onSearchChange`)。
+- `onCreate` 由 consumer 實作(通常:加進 options + 選取新值);create row 選取後 SelectMenu 清 search(受控時回呼 `onSearchChange`;同表「選建立列」那一列,`../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」)。
 - **非 searchable 時無 create 通道**(沒有輸入處);`creatable` 單獨傳無效。
 - 何時用:label 是使用者自訂的自由文字集合(標籤 / 分類 / 專案名),清單非窮舉、允許擴充。何時不用:固定 enum(狀態 / 角色 / 國家)——不該讓使用者新增。
 
@@ -266,13 +268,20 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ---
 
+## 表單接線(`useFormValidation`,2026-10-01)
+
+`onBlur` 以**觸發欄位 + 它的清單浮層 = 同一個欄位**判定(`../../lib/composite-field-focus.ts`,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;可搜尋 → 欄位內搜尋框)不算離開,`useFormValidation` 規則 2 的驗證只在真的離開時跑一次 —— 修前一開清單,必填錯誤就長出來(實測)。`onKeyDown` consumer 先跑(dim-9 既有);規則 4 的 Esc 回復只在那一下歸欄位時動作:清單開著按 Esc 只關清單、值不動(`../../lib/overlay-escape.ts`;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)。
+
 ## Clearable
 
 `clearable` 在有值時顯示 clear 按鈕。
 
 - Clear 按鈕在 ChevronDown 左側
-- 清除後回到 placeholder 狀態
+- 清除後回到 placeholder 狀態;可搜尋時打到一半的關鍵字一起清(2026-09-30,規則與三家查證住 `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」一鍵清空列)
 - 只在 edit 模式顯示
+- 清單開著時按它,反白回第一列(同打開一個空欄位;2026-10-07 待辦總帳 K2,規則住 `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」一鍵清空之後反白那一條)
+- `searchable` + `clearable`:關鍵字空白時按 `Backspace` = 按這顆 ×(清值、反白回第一列、讀屏念「已移除『X』」);**沒開 clearable 時 `Backspace` 不清值** —— 必須有值的欄位 Backspace 不能做出 × 做不到的事(下方「何時開 clearable」)。規則與哪幾項是 AI 推導住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard `Backspace` 列(2026-10-07 待辦總帳 K1)
+- **清除後焦點**:按鈕隨清除卸載 —— 焦點在它身上(鍵盤按 `Enter` / 空白、Chrome 滑鼠按下)時交回觸發欄位(原生 `<select>` 路徑交回那顆 `<select>`),不掉到 `body`;可搜尋而且浮層開著、欄位內搜尋框握著焦點時按它,焦點留在搜尋框。交接只有一支 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(Combobox / TimePicker / DatePicker 同用);四種搜尋框位置的焦點表住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段。2026-09-30 前:鍵盤按「清除選取」後焦點落在 `body`(實測,PeoplePicker 單人「一鍵清空」)。
 
 **何時開 clearable**：
 - 「無選擇」是有效狀態（選填欄位、可清除的 filter）→ 開
@@ -302,7 +311,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 歷史:2026-05-15 audit B 補 `loading` → 2026-07-04 Q3「不清空 stale options」→ 2026-09-08 兩處轉圈 → **2026-09-09 拆成兩個 prop、選項載入指示只在選單內**(同一時刻兩顆轉圈的病根是同字兩義,見 select-menu.spec.md「Loading」的世界級對照)。
 
-**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 Select 自己做,遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空),並以受控 `search` 交給 SelectMenu。`suggestions?: SelectOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)三個 prop 機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;從建議選到的值 `selectedOpt` 同時回查 `options` 與 `suggestions`。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
+**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 SelectMenu 依受控 `search` 做(一條規則:label 含關鍵字、去頭尾空白、不分大小寫;2026-09-30 自本元件與 Combobox 各一份收回,`../SelectMenu/select-menu.spec.md`「遠端搜尋」段首),遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空),並以受控 `search` 交給 SelectMenu。`suggestions?: SelectOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)三個 prop 機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;從建議選到的值 `selectedOpt` 同時回查 `options` 與 `suggestions`。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
 
 ---
 
@@ -342,7 +351,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 ## A11y 預設
 
-**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`(開啟時實際聚焦的元素,accessible name 直接接在 input 本身:有 Field label 時 `aria-labelledby` 指向之、consumer `aria-label` 優先,兩者皆無時 fallback「搜尋選項」——與 Combobox 搜尋框 `searchAriaLabel` 同 canonical)。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
+**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`(開啟時實際聚焦的元素,帶 `aria-activedescendant` 指向反白的選項,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;accessible name 直接接在 input 本身:有 Field label 時 `aria-labelledby` 指向之、consumer `aria-label` 優先,兩者皆無時 fallback「搜尋選項」——與 Combobox 搜尋框 `searchAriaLabel` 同 canonical；這顆 input 不寫 `tabIndex`,但它只在開啟時存在,開著按 Tab 由下方 Keyboard 的 Tab 列接管(選定 + 收起 + 走到下一格),所以不會變成第二個 Tab 停靠點 —— 與 Combobox 欄位內搜尋框 `tabIndex=-1`「單一鍵盤聚焦點」同一個結果,2026-10-07 補記)。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
 
 **Keyboard 行為**:
 
@@ -351,9 +360,11 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵,與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
 - ↑ / ↓ — 選單展開後在選項間移動
 - Tab / Shift+Tab(選單展開時,searchable 與否皆同)— 選定反白那一項 → 收起 → 焦點落到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時從觸發點按 Tab / Shift+Tab 會到的那一格;在對話框 / 小面板裡則只在那一層裡走、到邊緣繞回)。2026-09-25 前(實測):不可打字時 Tab 卡在浮層裡或落到頁面外、Shift+Tab 跳到頁尾,都不選定;可打字時 Tab 收起但不選定、Shift+Tab 停在觸發點本身且選單不關。W3C 出處與逐字規則見 `../SelectMenu/select-menu.spec.md`「A11y 預設」(單選那一條);來源 = 待辦總帳 B11
-- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc)
+- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc);按過欄位上的東西(清除 ×、再點一下搜尋框)之後按 Esc 收起,焦點同樣回觸發點、不掉到頁面上(2026-10-07,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段「指標按在觸發欄位上不算按在外面」)
+- 字母鍵(searchable,焦點在觸發點本身、選單關著:Tab 進來、Esc 收起、選完 / 清空之後)— 打開選單,這個字進搜尋框;輸入法第一鍵同樣(2026-10-07 待辦總帳 K3,規則住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 段)
+- Backspace(searchable + clearable,關鍵字空白)— 清掉值,同按清除 ×(見上方「Clearable」)
 
-**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
+**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件;滑鼠點選項與 `Enter` 相同,收起前焦點不離開它,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

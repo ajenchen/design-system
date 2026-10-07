@@ -208,5 +208,6 @@ Auto-size 只服務 inline editing：view 與 edit 共用內容寬度，避免�
 - `form-validation.spec.md`
 - `link-input.spec.md`
 - `number-input.spec.md`
+- `select-menu.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

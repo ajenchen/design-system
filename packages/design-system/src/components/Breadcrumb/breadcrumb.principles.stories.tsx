@@ -20,6 +20,8 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Breadcrumb/設計原則',
@@ -35,10 +37,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -58,10 +60,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>Breadcrumb 顯示「目前頁面在資訊階層中的位置」,適合 ≥ 3 層的階層頁面。真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           電商多層分類、檔案管理器等深層頁面,路徑過長時中段折疊、點 ⋯ 可展開中間層 —— 見{' '}
@@ -76,7 +79,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Breadcrumb/展示" name="整合 React Router / Next.js Link"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">整合 React Router / Next.js Link</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用相近的其他元件(見下方「跟相近元件怎麼分」的範例)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用相近的其他元件(見下方「跟相近元件怎麼分」的範例)。</p>
     </div>
 
       {/* vs 近親 — VsTabsRule — 原 VsTabsRule */}
@@ -85,7 +88,7 @@ export const UsageGuidance: Story = {
         title="Breadcrumb — 「你在哪裡」的階層位置"
         note="表達 parent-child 關係,使用者看 breadcrumb 知道「我從哪一層走到這裡」,點前面任一層可回到上層"
       >
-        <div>
+        <ExampleGroup>
           <Label>✅ 電商產品頁：顯示目前商品在分類樹的位置</Label>
           <Breadcrumb>
             <BreadcrumbList>
@@ -106,8 +109,8 @@ export const UsageGuidance: Story = {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
-        <div>
+        </ExampleGroup>
+        <ExampleGroup>
           <Label>✅ 文件系統：檔案深在多層資料夾裡</Label>
           <Breadcrumb>
             <BreadcrumbList>
@@ -128,14 +131,14 @@ export const UsageGuidance: Story = {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule
         title="❌ 用 Breadcrumb 做平行 view 切換 → 應該用 Tabs"
         note="若三者是「同一層級的不同 view」(訂單 / 顧客 / 產品都是 dashboard 的不同頁),那是 Tabs。Breadcrumb 表達「上下層」,不是「並列切換」"
       >
-        <div>
+        <ExampleGroup>
           <Label>❌ 錯用：這三者是平行 view,沒有 parent-child 關係</Label>
           <Breadcrumb>
             <BreadcrumbList>
@@ -153,17 +156,17 @@ export const UsageGuidance: Story = {
             </BreadcrumbList>
           </Breadcrumb>
           <Label warn>↑ 改用 Tabs</Label>
-          <Tabs defaultValue="products" className="mt-2">
+          <Tabs defaultValue="products">
             <TabsList>
               <TabsTrigger value="orders">訂單</TabsTrigger>
               <TabsTrigger value="customers">顧客</TabsTrigger>
               <TabsTrigger value="products">產品</TabsTrigger>
             </TabsList>
-            <TabsContent value="orders" className="text-body text-fg-muted mt-2">訂單列表、篩選與批次出貨</TabsContent>
-            <TabsContent value="customers" className="text-body text-fg-muted mt-2">顧客名單、分群與生命週期價值</TabsContent>
-            <TabsContent value="products" className="text-body text-fg-muted mt-2">商品目錄、庫存與上下架狀態</TabsContent>
+            <TabsContent value="orders" className="text-body text-fg-muted">訂單列表、篩選與批次出貨</TabsContent>
+            <TabsContent value="customers" className="text-body text-fg-muted">顧客名單、分群與生命週期價值</TabsContent>
+            <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
           </Tabs>
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule
@@ -281,7 +284,7 @@ export const LongPathRule: Story = {
       >
         {/* maxItems={99} 停用 auto-collapse:負例要示範「不折疊」時六層真的撐破窄容器。
             若用預設 maxItems=4,compositionalContent 會把中段折成 ⋯,反而變成正例 → demo 失效。 */}
-        <div className="max-w-sm border border-border rounded-md p-3 overflow-x-auto">
+        <div className="max-w-sm border border-border rounded-md p-[var(--layout-space-loose)] overflow-x-auto">
           <Breadcrumb>
             <BreadcrumbList maxItems={99}>
               <BreadcrumbItem><BreadcrumbLink href="#">組織</BreadcrumbLink></BreadcrumbItem>
@@ -335,7 +338,7 @@ export const ScopeRule: Story = {
         title="❌ 把 Breadcrumb 當 nav bar，塞搜尋 / 按鈕 / avatar"
         note="Breadcrumb 是「位置指示器」,不是 nav。塞功能會變成 nav bar,兩者職責混亂。頁面 header 的其他功能獨立擺放"
       >
-        <div className="flex items-center gap-3 border border-border rounded-md p-3">
+        <div className="flex items-center gap-[var(--layout-space-loose)] border border-border rounded-md p-[var(--layout-space-loose)]">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem><BreadcrumbLink href="#">專案</BreadcrumbLink></BreadcrumbItem>
@@ -343,8 +346,10 @@ export const ScopeRule: Story = {
               <BreadcrumbItem><BreadcrumbPage>Design System</BreadcrumbPage></BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <Button variant="tertiary" size="sm">邀請成員</Button>
-          <Button variant="primary" size="sm">新增元件</Button>
+          <ButtonGroup>
+            <Button variant="tertiary" size="sm">邀請成員</Button>
+            <Button variant="primary" size="sm">新增元件</Button>
+          </ButtonGroup>
         </div>
         <Label warn>↑ 按鈕應該放 page header / action bar,不塞進 breadcrumb</Label>
       </Rule>

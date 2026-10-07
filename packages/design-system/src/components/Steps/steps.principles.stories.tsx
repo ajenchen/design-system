@@ -3,6 +3,7 @@ import * as React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Steps, StepItem, StepLabel, StepDescription } from './steps'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/設計原則',
@@ -14,6 +15,8 @@ export default meta
 type Story = StoryObj<typeof Steps>
 
 // ── 標題 / 副標 / 範例註解的三層排版 ──
+// 間距(category-templates.md「教學框的間距與標題」;layoutSpace.spec.md 規則 3):標題 → 副標 → 範例 = tight(命名 / 描述它下面那一塊),
+// 範例 ↔ 範例 = loose(並列),範例 ↔ 它的註解 = tight(ExampleGroup)。
 
 function Section({
   title,
@@ -25,8 +28,8 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
+    <section className="flex flex-col gap-[var(--layout-space-tight)]">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <h3 className="text-h3 text-foreground">{title}</h3>
         {subtitle && (
           <p className="text-caption text-fg-secondary max-w-[720px]">{subtitle}</p>
@@ -42,7 +45,7 @@ function ExamplePair({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="flex flex-wrap gap-8 items-start">{children}</div>
+  return <div className="flex flex-wrap items-start gap-[var(--layout-space-loose)]">{children}</div>
 }
 
 function Example({
@@ -53,10 +56,10 @@ function Example({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-3 w-[280px]">
+    <ExampleGroup className="w-[280px]">
       <div>{children}</div>
-      <p className="text-footnote text-fg-secondary leading-compact">{label}</p>
-    </div>
+      <p className="text-footnote text-fg-secondary">{label}</p>
+    </ExampleGroup>
   )
 }
 
@@ -70,10 +73,11 @@ function Example({
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Steps 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Steps/展示" name="預設"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">註冊申請精靈(預設)</span></LinkTo>
@@ -84,22 +88,22 @@ export const UsageGuidance: Story = {
         <li>
           <LinkTo kind="Design System/Components/Steps/展示" name="水平"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">結帳流程進度(水平)</span></LinkTo>
         </li>
-        <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="多重展開模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">安裝指南逐步教學(多重展開模式)</span></LinkTo>
-        </li>
       </ul>
-      <p className="text-fg-secondary mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用下方清單建議的近親元件。</p>
+      <p className="text-fg-secondary mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用下方清單建議的近親元件。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div className="prose prose-sm max-w-prose space-y-4">
+      <div className="max-w-prose space-y-[var(--layout-space-tight)]">
       <p>Steps 表達線性進度,以下情境改用其他元件:</p>
+      {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="list-disc list-inside space-y-1 text-fg-secondary">
         <li><strong>平行視圖切換</strong> → Tabs / SegmentedControl。Asana 的檢視模式用 SegmentedControl</li>
         <li><strong>選擇器（選一個值）</strong> → Select / RadioGroup / SegmentedControl。Steps 只顯示進度</li>
         <li><strong>時間軸或歷史紀錄</strong> → Timeline（未來）。時序事件和進度語義不同</li>
         <li><strong>超過 7 步的流程</strong> → ProgressBar + 計數。Steps 會視覺過長</li>
         <li><strong>使用者可自由跳步</strong> → Tabs。Steps 暗示線性順序,可跳步改用 Tabs</li>
+        <li><strong>巢狀步驟（步驟底下還有子步驟）</strong> → TreeView。Steps 沒有巢狀結構</li>
+        <li><strong>說明 / 教學類的編號步驟</strong> → Accordion。讀者自己開合、沒有「目前那一步」,編號寫進每段標題</li>
       </ul>
     </div>
     </div>
@@ -265,7 +269,7 @@ export const LinearBackClickDoesNotMutate: Story = {
         title="點 completed step 只改 focus(value),不會自動取消完成狀態"
         subtitle="Steps 的進度狀態由 parent own(value 為 controlled / uncontrolled defaultValue 雙模),從不偷偷 mutate parent 的 completedValues。若應用層需要「使用者改錯了就 block 後續」,應由應用層自己從 completedValues 移除,Steps 內部絕不 auto-remove。"
       >
-        <div className="flex flex-col gap-3 w-[360px]">
+        <ExampleGroup className="w-[360px]">
           <p className="text-caption text-fg-secondary">
             點 Step 1 或 Step 2(completed)看看——value 會跳回去,但 ✓ 完成標記
             維持不變。
@@ -291,7 +295,7 @@ export const LinearBackClickDoesNotMutate: Story = {
           <p className="text-footnote text-fg-muted">
             Current value: <code>{value}</code>
           </p>
-        </div>
+        </ExampleGroup>
       </Section>
     )
   },

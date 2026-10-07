@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { Upload as UploadIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Empty } from '@/design-system/components/Empty/empty'
@@ -114,14 +115,13 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   removeAriaLabel?: (name: string) => string
 }
 
+// 移除後的焦點接力:全 DS 一支 lib/collection-removal-focus.ts(2026-10-01 由本檔、Combobox、AgentPanel 輸入盒三份收成;
+// 基準是被點到的那顆 ×,焦點在列上(路線乙:列是停靠點、× 不在 Tab 路上)時照樣接到下一顆 ×、沒有則前一顆、再沒有回上傳鈕 / 拖放區)
 function focusAfterFileRemoval(current: HTMLButtonElement) {
   // 清單容器兩種元素都可能(唯讀 ul / 可操作 grid div,見下方 fileListNode),用資料屬性找
   const list = current.closest<HTMLElement>('[data-file-upload-list]')
-  const buttons = list ? Array.from(list.querySelectorAll<HTMLButtonElement>('[data-collection-remove]')) : []
-  const index = buttons.indexOf(current)
-  const next = buttons[index + 1] ?? buttons[index - 1]
   const owner = list?.parentElement?.querySelector<HTMLElement>('[data-file-upload-owner]')
-  ;(next ?? owner)?.focus()
+  focusAfterCollectionRemoval(list, { removed: current, owner })
 }
 
 // ── 鍵盤:內建檔案清單 = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9「路線乙」)──

@@ -42,6 +42,20 @@ export interface OverflowIndicatorProps
   size?: 'sm' | 'md' | 'lg'
   children: React.ReactNode
   className?: string
+  /**
+   * 按在浮出清單(HoverCard 內容,portal)上的 mousedown(2026-09-30)。消費者用它把「按在自己的零件上焦點不動」的判準
+   * 延伸到這張卡 —— 浮出清單在另一個 portal,consumer 自己容器上的 mousedown 判準以 DOM 包含判斷、看不到它。
+   * 兩個使用者,同一支判準(`lib/pointer-press.ts` `keepFocusOnPointerPress`):Combobox 搜尋框握著焦點時,按卡裡的 Tag × 焦點不離開搜尋框
+   * (規則 `SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段);AgentPanel 輸入盒 textarea 握著焦點時,按附件 +N 卡裡的 × 焦點與打到一半的字
+   * 都留在輸入盒(2026-10-01,待辦總帳 OE30;`AgentPanel/agent-panel.spec.md`「AgentPromptInput」)。
+   */
+  onContentMouseDown?: React.MouseEventHandler<HTMLDivElement>
+  /**
+   * 浮出清單(HoverCard 內容,portal)的 id(2026-10-07)。消費者用它把這張卡算成自己的零件 —— 卡在另一個 portal,不是觸發點的 DOM 子孫。
+   * 唯一用途:Combobox 的「觸發區 + 它的彈出層 = 同一個欄位」判準(`lib/composite-field-focus.ts` `extra`):按卡裡的 Tag × 時焦點搬進卡,
+   * 不算離開欄位(規則 `Field/form-validation.spec.md` v1 邊界 (a);修前非搜尋型 Combobox 按卡裡的 × 就觸發 consumer 的 onBlur 驗證)。
+   */
+  contentId?: string
 }
 
 function ShrinkWrapList({ children }: { children: React.ReactNode }) {
@@ -95,7 +109,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
 
 const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorProps>(
   function OverflowIndicator(
-    { count, shape = 'circle', size = 'md', children, className, style, ...props },
+    { count, shape = 'circle', size = 'md', children, className, style, onContentMouseDown, contentId, ...props },
     ref,
   ) {
     if (count <= 0) return null
@@ -158,7 +172,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>
-        <HoverCardContent className="bg-tooltip rounded-lg" data-theme="dark">
+        <HoverCardContent id={contentId} className="bg-tooltip rounded-lg" data-theme="dark" onMouseDown={onContentMouseDown}>
           <ShrinkWrapList>{children}</ShrinkWrapList>
         </HoverCardContent>
       </HoverCard>

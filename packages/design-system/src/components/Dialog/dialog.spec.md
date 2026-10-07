@@ -196,7 +196,8 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 | 進場 | `fade-in-0` + `zoom-in-95`(opacity 0→1、scale 0.95→1,transform-origin 中心) | `--motion-duration-surface` 250ms / `--motion-easing-enter` |
 | 離場 | `fade-out-0` + `zoom-out-95` | `--motion-duration-surface` 250ms / `--motion-easing-exit` |
 | Overlay | 只 fade | 同上 |
-| `prefers-reduced-motion` | `motion-reduce:animate-none`(surfaceMotion 內建) | — |
+| 收尾 | 關閉後保持最後一格(透明 / 縮小)直到卸載(surfaceMotion 內建 `holdClosedEndState`,不靠 Radix 的執行期補丁;`tokens/motion/motion.spec.md`「開合動畫」) | — |
+| `prefers-reduced-motion` | 不播:surfaceMotion 只在 `motion-safe:` 下宣告動畫(2026-10-07 前寫的 `motion-reduce:animate-none` 權重輸給 `data-[state=…]:animate-*`,從沒生效,待辦總帳 T7) | — |
 
 **為何不用 slide(置中位移)**:置中靠 `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`。shadcn v3 時代 DialogContent 另掛 `slide-in-from-left-1/2 slide-in-from-top-[48%]`,那是因為 Tailwind v3 的 `-translate-x-1/2` 走 `transform`,會被 keyframe 的 `transform` 整個蓋掉,所以要在 keyframe 裡把置中位移再寫一次(v3 dialog 原始碼:<https://ui.shadcn.com/r/styles/new-york/dialog.json>)。Tailwind v4 的 `-translate-x-1/2` 改寫進獨立的 `translate` 屬性(<https://tailwindcss.com/docs/translate>,`translate: calc(1/2 * -100%) var(--tw-translate-y)`),不再被 keyframe 蓋掉;而 tw-animate-css 的 `@keyframes enter` 仍是 `transform: translate3d(var(--tw-enter-translate-x), var(--tw-enter-translate-y), 0) scale3d(…)`(`node_modules/tw-animate-css/dist/tw-animate.css`)。兩個位移相加 → 第一幀中心落在視窗中心**左 w/2、上 0.48h**(480×189 的確認框實測 −240px / −90.72px),看起來就是從左上角飛進來。shadcn v4 版本已把這兩組 class 拿掉(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>:`translate-x-[-50%] translate-y-[-50%] … data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,無 slide)。
 
@@ -280,8 +281,8 @@ Radix Dialog 自動處理：
 - **Modal 語意**：`role="dialog"`(Radix 刻意**不**設 `aria-modal="true"`,改用 aria-hidden 的 `hideOthers()` 把背景兄弟節點設 `aria-hidden` + FocusScope trap 達成隔離,避免 `aria-modal` 在部分 screen reader 隱藏整頁的已知 bug）
 - **標題綁定**：`<DialogTitle>` 自動成為 `aria-labelledby` 指向對象，screen reader 開啟時讀出標題
 - **Focus trap**：焦點鎖在 Dialog 內，Tab 循環不逃出
-- **Esc 關閉**：按 Esc 自動關閉
-- **Focus return**：關閉時焦點返回 trigger 元素
+- **Esc 關閉**：按 Esc 自動關閉 —— **一次只少一層,而焦點所在的控件自己那一層也算一層**(2026-10-01;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):對話框裡改過的欄位(接 `useFormValidation`)/ 就地編輯中 / 表格的格游標 / 拖曳中 → 第一下 Esc 由控件撤銷(回復欄位 / 取消編輯 / 清游標 / 取消拖曳),對話框不關,第二下才關;乾淨的控件按 Esc 直接關。**輸入法組字中的 Esc 不關**(那一下是在取消選字,例:改名對話框用注音打字時按 Esc 取消選字,不該把對話框連同打到一半的名字一起關掉)。機制:`DialogContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape`(2026-10-01 取代 ime-composition.ts 的 `withImeSafeEscape`)—— 焦點所在控件在這一層裡宣告了 `data-escape-layer` 就把那一下留給它,consumer 的 `onEscapeKeyDown` 在那一下不會被呼叫;沒有表單引擎的 `<Input>` 沒有「原值」可回復,Esc 直接關
+- **Focus return**：關閉時焦點返回開啟它的元素。Radix 只還給 `DialogTrigger`;**受控 `open`、沒有 `DialogTrigger`(普通按鈕 / 列上動作 / 快捷鍵開的)→ `DialogContent` 預設就記下開啟者、關閉時還給它**(2026-10-01,待辦總帳 OE29;`../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn`:內容掛上時記開啟者、沒有 Radix 觸發點就經 `returnFocusToOpener` 還,modal 按遮罩收起也還)。開啟者住在一個會跟著關掉的選單 / 浮層裡(列上的 ⋯ 選單項開了對話框)→ 還給那個選單的觸發鈕(`persistentOpenerOf`;W3C dialog 關閉後焦點「回到打開它的那個元素,或在它消失時合理的替代」,<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L96-L101>)。consumer 要送去別處就在 `onCloseAutoFocus` 先 `preventDefault()` 再自己 focus(`CommandDialog` 2026-10-01 已改用預設;AgentPanel 改名 / 刪除對話框、FileViewer 自己接線的照舊勝出)。2026-10-01 前這種開法焦點掉到 body(實測 Dialog 並存夾具、AgentPanel 刪除確認框)
 - **Overlay click**：點擊 overlay 關閉（可透過 `onPointerDownOutside` 阻止）
 
 Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `VisuallyHidden` 包裹提供給 screen reader。
@@ -317,6 +318,7 @@ Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/7
 - `command.spec.md`
 - `dropdown-menu.spec.md`
 - `file-viewer.spec.md`
+- `motion.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`

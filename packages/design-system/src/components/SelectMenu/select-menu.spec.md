@@ -94,143 +94,35 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ---
 
-## 「不限」選項(2026-09-18 user 拍板)
+## 搜尋關鍵字何時保留、何時清空(2026-09-30 user 同意,原話「其他部分我覺得”可以”」)
 
-多選可以在清單最上面加一列「不限」。**`unrestricted` 預設關**,由消費端自行開啟
-(形狀比照同檔 `creatable` + `createLabel`:opt-in boolean + 另一個 label prop)。
+搜尋框有兩個位置。關鍵字的去留只看「搜尋框在哪」與「選完浮層關不關」,**不分滑鼠點選或按 `Enter`**:
 
-### 「不限」不是「全選」——這是整段的核心
+- **浮層內搜尋框**:`searchable` 時本元件自己的 `CommandInput`(Combobox 預設 `searchIn='menu'`、PeoplePicker 多選預設)。
+- **觸發欄位內的搜尋框**:consumer 放在觸發欄位裡,以受控 `search` 交給本元件(Select `searchable`、PeoplePicker 單選、Combobox / PeoplePicker 多選 `searchIn='trigger'`)。
 
-| | 全選按鈕 | 「不限」 |
-|---|---|---|
-| 意思 | **現在清單上這幾個** | **不設限**,涵蓋現在與**以後新增**的選項 |
-| 存進去的值 | 每一個具體選項的值 | **一個獨立的保留值**,不展開成具體選項 |
-| 使用者手動勾滿時 | 就是勾滿,**不會**自動變成「不限」 | — |
-| 按「取消全選」之後 | 變成空的,**不會**自動勾「不限」 | — |
+| 事件 | 浮層內 × 多選 | 浮層內 × 單選(只有直接用本元件時;公開元件沒有這個組合) | 觸發欄位內 × 多選 | 觸發欄位內 × 單選 |
+|---|---|---|---|---|
+| 在清單裡選一項或取消一項(含「不限」列) | **保留**;浮層不關,可接著勾同一批結果 | 收起 → 隨關閉清空 | **清空**;浮層不關,清單回到全部選項,接著打下一個 | 收起 → 隨關閉清空 |
+| 選建立列(`creatable`) | 清空 | 清空 | 清空 | 清空 |
+| 按欄位上 Tag 的 ×(含 +N 浮出清單裡的;不是在清單裡挑選) | 不動 | —(單選沒有 Tag ×) | 不動 | —(單選沒有 Tag ×) |
+| 一鍵清空(`clearable` 的 ×) | **清空** | 清空 | **清空** | **清空** |
+| 浮層關閉(`Esc` / 點外面 / `Tab` 離開 / 單選選完收起) | 清空 | 清空 | 清空 | 清空 |
 
-**這兩件事不可互相取代**:一個報表篩選若存的是「當下這 5 個地區」,明年多一個地區時它不會涵蓋;
-存「不限」才會。反過來,若使用者真的只要這 5 個,就不該被偷偷升格成「不限」。
-
-### 何時該開 / 何時不該開
-
-**該開**:選單代表一種**限制條件**,而「不設限」是一個有意義的狀態,而且要涵蓋未來新增的選項。
-典型:報表篩選的地區 / 類別 / 狀態、權限條件、通知範圍。
-
-**不該開**:選單是在**挑具體標的**——要附加哪幾個檔案、把誰加進這個團隊、搬到哪個資料夾。
-那裡「不限」不是一個值,是一句沒有意義的話。
-
-**開了但一個一般選項都沒有** = 這個選單根本不給選,設定本身有問題(開發模式會警告)。
-
-### 位置與結構
-
-- `CommandGroup` 包成**清單的第一組**;分隔線由 `CommandGroup` 自己的規則畫在**下一組的頂端**
-  (`../Command/command.tsx:263-268`;判準 owner `../../patterns/element-anatomy/item-anatomy.spec.md`
-  「Group auto-separation」)。**不插 Separator、不寫新 CSS。**
-- 結構先例是同檔下方的**可建立列**:同樣無標題、單獨一列、自成一組,只是它在最下面。
-- ❌ **不得用 `MenuGroup`**:這一列**是選項**,要點得到、鍵盤上下鍵走得到;`MenuGroup` 的列不經 cmdk 註冊
-  (那正是訊息列選它的理由,見 `../Command/command.tsx:187-189`),放這裡會變成鍵盤走不到的孤兒,
-  而且它的相鄰線用 `[&+&]`(同 class 相鄰)也對不上 `CommandGroup`。
-
-### 出現條件
-
-兩條各自獨立的規則。
-
-**(a) 三種訊息列的情境一律不出現** —— 載入中 / 清單真的沒東西 / 遠端還沒打字
-(user 原話:「這三種狀態有需要出現不限的選項嗎?應該不用出現吧」)。
-
-**(b) 搜尋時跟一般選項一樣照關鍵字配對** —— user 2026-09-18 原話:「如果要可以搜得到,不是應該
-遠端和非遠端都搜得到嗎?但前提是關鍵字要有配對到吧?然後遠端搜尋的話,應該要等結果都回傳回來了
-才一起跟其他一般選項同時秀出?」落地:
-
-| 模式 | 誰負責比對 |
-|---|---|
-| 本機(cmdk `shouldFilter=true`)| **照渲染出來,交給 cmdk**,用 `value` + `keywords` 比,跟其他選項同一套規則 |
-| 遠端(`shouldFilter=false`,cmdk 不過濾)| 自己呼叫 cmdk 公開匯出的**同一支** `defaultFilter` 比一次;「等結果回傳」由 `!optionsLoading` 保證 |
-
-❌ **不得用兩套比對規則**:本機一套、遠端另一套會讓同一個字在兩種清單有不同結果。
-cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直接消費它。
-實測它對中文正常:查「不限」0.9 / 「不」0.891 / 「限」0.17 / 「zzz」0。
-
-⚠️ **筆數與訊息列的相容性**:cmdk 的訊息列只在「筆數 = 0」時渲
-(`node_modules/cmdk`:`P(u => u.filtered.count === 0) ? <div cmdk-empty> : null`)。
-本機模式「不限」是會被註冊也會被過濾的普通列,筆數自然正確;遠端模式不過濾,但它只在配對到時
-才渲染,所以「沒有選項」該出現時仍出得來。**兩邊都不需要 `forceMount`** ——
-那會讓它不計入筆數,反而造成「不限 + 沒有選項」同時出現。
-
-📌 **2026-09-18 修正紀錄**:原本這裡寫的是「沒在搜尋」(`isIdle`),搜尋框一有字就整列不渲染。
-那**不是 user 說的**,是 AI 自己放寬的;後果是打「不限」兩個字會得到「沒有選項」,而那一列
-上一秒還在第一行(實測),同時傳給它的 `keywords` 變成永遠到不了的死碼。
-邊界案例:遠端搜尋時若伺服器回 0 筆、但查詢配對到「不限」,清單只列「不限」——
-這是「查詢確實命中了它」的誠實結果,不出「沒有選項」。
-
-### 互斥(三條)
-
-1. 勾「不限」→ 清掉所有一般選項(值只剩「不限」)
-2. 勾任一一般選項 → 取消「不限」
-3. 取消「不限」→ 回到**未選**(不還原上一批)
-
-寫在 `handleSelect` 一處即可:欄位上的 Tag × 碰不到「不限」(它不渲成 Tag,所以沒有它的 ×),
-一鍵清空是整個清成空陣列、把它一起清掉本來就對。**這兩條既有路徑不需要改。**
-
-### 全選按鈕
-
-「不限」**不進**「可選選項」(它不是來自 options),所以全選狀態天然只看一般選項。
-按全選前先把「不限」濾掉再交給 `applySelectAll` —— 那支共用工具的語意是「保留既有 + 追加未選」
-(`../../lib/multi-select-ordering.ts`),不濾的話「不限」會跟全部一般選項並存。
-❌ **不得為此修改 `applySelectAll`**:它是通用排序規則,別的使用者也在吃。
-❌ **不得把「不限」塞進 options 陣列**:一塞,全選狀態的分母就多一個永遠勾不滿的東西,
-按鈕的字會永遠停在「全選」、按第二次沒反應。
-
-**任何「算有幾個選項 / 是不是全選了」的東西都要排除這一列**,判準是它身上的結構記號
-`data-unrestricted`,**不是**比對 `unrestrictedValue` 的字串 —— 那是消費端可改的 prop,
-拿字串當判準等於把判準交給呼叫端。2026-09-18 實測:`scripts/select-all-footer-invariant.mjs`
-沒排除時當場誤判成「全選狀態沒變標籤卻變了」(勾選數 1→5、選項數 6、`已全選` 恆 false)。
-
-### 欄位顯示
-
-- 一般選項一律 Tag(只選一個也是)
-- **只選「不限」時不渲 Tag**,走**一般已填值**那條純文字路徑:與 placeholder 同一顆 span、
-  同一個字級(`fieldDisplayTextClass`)、同一個位置,**唯一差別是不套 `fieldEmptyColorClass` 那層灰**
-  —— 與單選欄位的寫法完全相同(`../Select/select.tsx:352-353`)
-- **欄位的左內距必須是標準的 `--field-px`,不是 tagPadding**。依據逐字在
-  `../Field/field-controls.spec.md:298`:「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態
-  使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding」。
-  tagPadding(`fieldTagInsetX`)的理由是**讓 Tag 四邊等距**(`../Tag/tag.spec.md`「圓角與間距」
-  + `field-controls.spec.md:279`),跟文字無關 —— 欄位裡沒有 Tag 時本來就不該套。
-  「只選『不限』」正是這條規則涵蓋的情形:值非空、但不渲 Tag。
-  做法:「要不要縮內距」與「要不要渲 Tag」**每條路徑只准有一個判斷式**(`hasTags`),
-  內距與渲染都吃它。
-  ❌ **不得讓兩者各寫各的**:2026-09-18 user 抓到「不限」的字掉到 4px(md 標準值是 13px,少 9px),
-  根因就是 readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`,新增「值非空但不渲 Tag」
-  這第三種狀態時只改到渲染那一側。閘 `scripts/field-text-left-edge-invariant.mjs` 全庫機械強制
-  (把判斷式改回舊寫法,它會指名這一格說「量到 4px,應為 13px」)。
-- 四條路徑都要一致:可編輯 / 原生 / 唯讀 / 檢視
-- 欄位上的文字與選單那一列**同一個來源**(`unrestrictedLabel`),不會兩邊各寫各的
-- 有一鍵清空的欄位,只選「不限」時照常有
-
-### 英文用字
-
-程式與英文標籤**避開 `Any`**:`../DataTable/filter-operators.ts:134` 與 `:149` 的 `has_any_of`
-其 `labelEn` 已經是 `'Any'`(含其中之一),而那個篩選面板用的正是本元件 —— 會同畫面撞名。
-
-### 單選不提供
-
-單選本來就互斥,「不限」在那裡就是一個普通選項,消費端在選項清單第一筆自己放一個即可,元件不需支援。
-
-### 機械強制
-
-上面四件事都會**靜默**壞掉(擺錯位置只會看起來像第一個選項、互斥壞掉會生出「不限 + 三個選項」
-這種畫面上完全合理的矛盾值),所以四條都有閘:
-
-| 閘 | 驗什麼 | 對照組 |
-|---|---|---|
-| `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位四條路徑都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
-| `scripts/select-all-footer-invariant.mjs` | 全選按鈕的字與勾選狀態綁死時,分母已排除「不限」列 | `--selftest-unrestricted` 拔掉 `data-unrestricted` 記號,必須紅 |
-| `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
-
-兩支都在 CI 的 `Multi-select footer label/state` job 裡跑(共用同一份 storybook build)。
+- 觸發欄位內 × 多選「每選一項就清空」屬於清空派:Ant Design `autoClearSearchValue` 預設 `true`「Whether the current search will be cleared on selecting an item」(<https://github.com/ant-design/ant-design/blob/f9fb37ad1afff8a3cd8e25cbe4b4af1da8f687f7/components/select/index.en-US.md>),實作只在清單選取路徑清(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/Select.tsx#L604-L610>);MUI Autocomplete 多選時輸入值恆為空字串(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L74-L80>),每次選完即重設(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L818-L823>);react-select 每次選值都 `onInputChange('', { action: 'set-value' })`(<https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/Select.tsx#L1015-L1021>);Polaris 多選範例選完 `updateText('')`(<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/pages/examples/combobox-with-multi-select.tsx#L55-L68>)。另一派(保留)照實列出:Carbon FilterableMultiSelect 測試「should not clear input value after a user makes a selection」(<https://github.com/carbon-design-system/carbon/blob/40f8d5cfaed733feefa2e7c39b8e9eea1795d97d/packages/react/src/components/MultiSelect/__tests__/FilterableMultiSelect-test.js#L346-L357>)。本 DS 選清空派 = user 2026-09-30 同意的那一項。
+- 浮層內 × 多選「保留」是既有規格(`../Combobox/combobox.stories.tsx`「搜尋」說明文字、`../PeoplePicker/people-picker.spec.md`「搜尋型態」panel-top),同派:Primer SelectPanel 多選選完不關(<https://github.com/primer/react/blob/a89299ae77e8f444599f94d7e9ca368c17be3f9a/packages/react/src/SelectPanel/SelectPanel.tsx#L664-L672>),關鍵字只由使用者輸入改變(<https://github.com/primer/react/blob/a89299ae77e8f444599f94d7e9ca368c17be3f9a/packages/react/src/SelectPanel/SelectPanel.tsx#L312-L313>);Ant Design 表格篩選浮層的搜尋框只在關閉時清空(<https://github.com/ant-design/ant-design/blob/f9fb37ad1afff8a3cd8e25cbe4b4af1da8f687f7/components/table/hooks/useFilter/FilterDropdown.tsx#L268-L272>)。另一派:Base UI 浮層內搜尋選完即清空(<https://github.com/mui/base-ui/blob/b34551d644f2e58ebf8fc1050d949f6654ceca6c/packages/react/src/combobox/root/AriaCombobox.tsx#L711-L712>)。
+- 兩個位置為什麼不同(AI 推導):浮層內搜尋框和已選的 Tag 分在兩處,保留關鍵字才能連續勾同一批結果;觸發欄位內的搜尋框擠在 Tag 後面,選完不清空的話,下一次要找別的就得先手動刪字。
+- 「按 Tag 的 ×」:移除一項不是在清單裡挑選,不碰關鍵字(AI 記錄的現行行為,與 Ant Design 一致:移除 Tag 的路徑不碰關鍵字,<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L554-L561>)。
+- 「一鍵清空」**連關鍵字一起清**(2026-09-30 起;AI 推導 —— 依世界級三家原始碼查證的多數對齊,不是 user 的逐題裁示):Ant Design 清空時 `onInternalSearch('', false, false)`(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L712-L722>);MUI Autocomplete 清除鈕 `setInputValueState('')` 並回報 `'clear'`(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L906-L914>);react-select 清除鈕只清值、不清輸入(`clearValue` 只呼叫 `onChange`,<https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/Select.tsx#L1087-L1093>)—— 三家兩家清。一鍵清空的意思是「整個欄位重來」,留著上一輪的關鍵字會讓清空後的清單仍被過濾。清除鈕**何時出現**不跟著改(有值才出現;只打了字、沒有值時不出現 —— 三家只有 Ant 在只有關鍵字時也顯示,<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/hooks/useAllowClear.tsx#L32-L37>)。實作:Select `clearEl`、Combobox「清除全部」鈕各自在清值的同一下 `setSearch('')`;Combobox 的浮層內搜尋框因此改由 Combobox 持有關鍵字、以受控 `search` 交給本元件(2026-09-30 前那一份住在本元件內部,欄位上的按鈕碰不到)。2026-09-30 前:兩種位置都「不動」(打了字按一鍵清空,清單仍被舊關鍵字過濾,實測)。
+- **清空之後反白停在哪**(AI 推導,依本元件既有規則對齊,2026-09-30 實測):觸發欄位內 × 多選挑選後清空,反白**留在剛挑的那一列** —— 與浮層內搜尋框「選了不動反白」同一條,滑鼠挑選時反白也還在指標底下(MUI 多選同:「Keep the current selected highlight while the popup stays open」,<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L632-L645>);接著打字,反白回到第一個符合項(兩種位置同一條:浮層內由 cmdk 自己做,觸發欄位內由 `select-menu-keyboard.ts` `useTriggerSearch` 補上)。「這次搜尋字變化來自挑選」由挑選路徑當下立的記號判斷(記號 + 變成的值是空字串),**不**用「已選值有沒有跟著變」推斷 —— consumer 沒在同一次 commit 更新值(固定值的規格範例、數量上限擋掉、非同步提交)時,那種推斷會把挑選誤判成打字、反白跳回第一列(M37)。
+- **一鍵清空之後反白回第一列**(2026-10-07,待辦總帳 K2;user 2026-10-06「Ａ,B照你建議,確保符合我們一致的設計語言且不違背世界級的設計」):一鍵清空 = 整個欄位重來,反白落點跟打開一個空欄位相同(下方「A11y 預設」Focus 段第一句:第一個 / 已選選項,清空後沒有已選的)。上一條「打字 → 回第一項」管不到這一格:關鍵字本來就空時清空不會改變搜尋字,反白會停在剛被清掉的那一列,接著按 `Enter` 就把它選回來(2026-10-06 實測)。關鍵字空白時用 `Backspace` 清掉 Select 單選的值(下方 Keyboard `Backspace` 列)是同一個動作、同一個落點。**開了「不限」的欄位第一列就是「不限」本身**:清空後反白在「不限」,接著按 `Enter` 會選回「不限」—— 跟打開一個空欄位時反白也在「不限」一致,照實記錄、不另訂跳過它的規則(那會是一條新的產品規則)。實作 `select-menu-keyboard.ts` `moveHighlightToFirst`(Select / Combobox 的一鍵清空與 Select 的 `Backspace` 清值呼叫)。
+- 實作(誰持有關鍵字、誰清):**關鍵字的持有者** —— Select(`searchable`)與 Combobox(`searchable`,兩種搜尋框位置都是,2026-09-30 起浮層內也受控;PeoplePicker 經它們)把字留在自己身上、以受控 `search` 交給本元件;直接用本元件、不傳 `search` 時字住本元件(未受控)。**清空規則全部住本元件**,受控時經 `onSearchChange('')` 叫持有者清,持有者不另寫:① 浮層關閉清空(`select-menu.tsx`「浮層關閉 → 清空」:只在開 → 關那一下、字不是空的才清 —— 關著時持有者自己設的字不動,掛載時也不多發一次 `onSearchChange('')`);② 觸發欄位內 × 多選挑選後清空(挑選路徑 `handleSelect` / `handleSelectAll`:勾、取消勾、「不限」、全選,呼叫 `select-menu-keyboard.ts` `useTriggerSearch` 的 `clearAfterPick`);③ 建立列選完清空。**唯一例外是一鍵清空**:那顆按鈕長在觸發欄位上、本元件看不到,由持有者在清值的同一下 `setSearch('')`(Select `clearEl`、Combobox「清除全部」)。浮層內的「保留」就是不清(沒有程式)。2026-09-30 初版把欄位內多選的清空放在 `../Combobox/combobox.tsx`(`handleMenuValueChange`),同一天收回本元件;2026-10-01 前「關閉清空」在受控時由 `../Select/select.tsx`、`../Combobox/combobox.tsx` 各寫一份 `useEffect(() => { if (!open) setSearch('') })`,連本元件未受控那份共三個住所(兩個持有者在掛載時還各對 consumer 多發一次 `onSearchChange('')`)—— 收成本元件一份。
 
 ---
+
+## 「不限」選項(2026-09-18 user 拍板)→ `select-menu-unrestricted.spec.md`(2026-09-30 抽出,獨立 SSOT)
+
+多選清單最上面的「不限」列:和全選的差別、何時該開 / 不該開、位置與結構、出現條件(三種訊息列不出現、搜尋時照關鍵字配對)、互斥三條、全選按鈕的分母、欄位顯示、英文用字、單選為何不提供、機械強制 —— 整段住在 `./select-menu-unrestricted.spec.md`;本檔只留這個指標。
 
 ## Creatable（建立新選項）
 
@@ -265,7 +157,7 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 **群組之間的分隔線由 CommandGroup 自己畫**(item-anatomy.spec.md「Group auto-separation」:consumer 不手插 Separator):CommandGroup 用「前面還有另一個看得見的群組」的兄弟選擇器畫上邊線(cmdk 把被搜尋濾掉的群組留在 DOM、加 `hidden`,所以排除 `[hidden]`)。2026-09-08 修:原本 SelectMenu 手插 `<CommandSeparator>`,cmdk 在搜尋字非空時不渲 Separator → 搜尋時可見群組之間沒線。機械閘 M9:兩組可見恰好一條線、搜尋剩一組沒有線。
 ## 遠端搜尋(`filterOption` / `onSearchChange`,2026-09-08 user 拍板「併」;2026-09-09 user 拍板抓資料中清舊清單)
 
-預設 `filterOption = true`:有搜尋列時在本機用搜尋字過濾(cmdk `shouldFilter`)。**遠端搜尋**(每打一個字向伺服器抓、伺服器已經過濾好)傳 `filterOption={false}`:對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Yes. Pass `shouldFilter={false}`」),伺服器回什麼列什麼,不再被新的字二次過濾(本機過濾會把伺服器用別名命中的結果藏掉)。搜尋字由 `onSearchChange` 回呼(含清空),consumer 據此抓資料並切 `optionsLoading`。Select / Combobox / PeoplePicker 三個消費者都轉發(`select.tsx` / `combobox.tsx` / `people-picker.tsx`;Select 與 Combobox `searchIn='trigger'` 另把觸發點的搜尋字以受控 `search` 交給 SelectMenu,清單狀態機才分得出「關鍵字空」與「抓資料中」)。
+預設 `filterOption = true`:有搜尋列時在本機用搜尋字過濾 —— 浮層內搜尋框交給 cmdk(`shouldFilter`);搜尋字在觸發欄位(受控 `search`、本元件不畫搜尋框)時 cmdk 看不到那個字,由本元件自己過濾,**只有一條規則** `labelMatchesSearch`:選項 label 含關鍵字(去頭尾空白、不分大小寫,與建立列的同名判定同樣 trim)。2026-09-30 前這條規則在 `select.tsx` 與 `combobox.tsx` 各寫一份且已漂移(Select trim、Combobox 不 trim:「fu 」在 Combobox 得 0 筆),收回本元件一份,consumer 只傳完整 `options`。已知落差(未處理;登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` OE28,狀態以那一列為準,本檔不另記):浮層內搜尋框的 cmdk 比對是模糊比對、而且連 `description` 一起比,觸發欄位內是 label 子字串 —— 同一個字在兩種位置可能得到不同結果。**遠端搜尋**(每打一個字向伺服器抓、伺服器已經過濾好)傳 `filterOption={false}`:對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Yes. Pass `shouldFilter={false}`」),伺服器回什麼列什麼,不再被新的字二次過濾(本機過濾會把伺服器用別名命中的結果藏掉)。搜尋字由 `onSearchChange` 回呼(含清空),consumer 據此抓資料並切 `optionsLoading`。Select / Combobox / PeoplePicker 三個消費者都轉發(`select.tsx` / `combobox.tsx` / `people-picker.tsx`;Select 與 Combobox `searchIn='trigger'` 另把觸發點的搜尋字以受控 `search` 交給 SelectMenu,清單狀態機才分得出「關鍵字空」與「抓資料中」)。
 
 **遠端模式的清單狀態機**(SSOT = `select-menu.tsx` 的 `visibleOptions`;三個消費者不另定義):
 
@@ -439,17 +331,78 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - Tab — focus trigger(選單關著時)
 - Enter / Space — 開啟 menu(trigger 由 consumer 經 `PopoverTrigger asChild` 提供,開啟行為由 consumer trigger 負責:Select / Combobox 的 trigger 是 `role="combobox"` 容器,自綁 Enter / Space handler 觸發開啟;若 consumer 用 DS `<Button>`(native button)則由 native click 觸發)
 - ↑/↓ — 導覽 options(menu 開啟後)
-- Enter — 選擇(不可打字的單選:Space 與 Enter 相同,見下方 Space 列)
+- Enter — 選擇(不可打字的單選:Space 與 Enter 相同,見下方 Space 列);滑鼠點選與 Enter 結果相同,焦點與關鍵字的去留見下方 **Focus** 段與「搜尋關鍵字何時保留、何時清空」;輸入法組字中的 Enter 是選字,不選(見下方「輸入法組字中」)
 - 字母鍵 — type-ahead 過濾(search 模式)
+- 字母鍵,**焦點在觸發欄位本身**(不是搜尋框;Tab 進來、`Esc` 收起、Select 選完 / 清空之後焦點停在這裡)、清單關著 — **打開清單,這個字進搜尋框**(欄位內 / 浮層內兩種位置都是;Select `searchable`、Combobox / PeoplePicker 可搜尋時)。輸入法的第一鍵(`keyCode` 229 / `Process`)同樣把焦點交給搜尋框,接著的組字落在搜尋框裡;空白鍵維持「打開清單」、不打進關鍵字;帶 Ctrl / ⌘ / Alt 的是快捷鍵、不算(2026-10-07,待辦總帳 K3;user 2026-10-06 同上句。2026-10-06 前這時打的字沒有人接 —— 「可打字搜尋的下拉」同一類欄位一個有反應、一個沒反應,`ds-canonical/references/keyboard-model-canonical.md` 上表)。依據:W3C 可打字下拉範例「Printable Characters: … Types the character in the textbox.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-autocomplete-list.html#L295-L300>)。實作 `select-menu-keyboard.ts` `routeTypingToSearch`(同步打開清單、焦點交給搜尋框、不擋這一下的預設 —— 字落進已握著焦點的搜尋框)。**輸入法第一鍵的已知限制(AI 推導,真機待驗)**:瀏覽器在不能打字的元素上多半不啟用輸入法,注音第一鍵可能以英文字母送進搜尋框;根治是讓搜尋框自己當 combobox、焦點永遠落在能打字的框上(待辦總帳 OE27,另案)。
+- `Backspace`,**關鍵字空白時** — **等於按「最後一個值」的 ×**(2026-10-07,待辦總帳 K1;user 2026-10-06「可以跟」= 跟 MUI / rc-select / react-select 三家):多選刪最後一個 Tag(`../Combobox/combobox.spec.md`「Tag 操作」);只選「不限」時刪掉「不限」、回到未選(`./select-menu-unrestricted.spec.md` 互斥第 3 條);Select 單選**只在 `clearable` 時**清值(必須有值的欄位不開 clearable,`../Select/select.spec.md`「何時開 clearable」—— Backspace 不做出 × 做不到的事;MUI 一般單選同樣要求沒有關掉清除功能 `!disableClearable`(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1217-L1222>),react-select 單選要 `isClearable`(<https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/Select.tsx#L1597-L1610>),rc-select 單選不刪(刪值條件含 `multiple`,<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L503-L530>))。三家「關鍵字空白才刪最後一個」的條件:MUI `inputValue === ''`(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1096-L1118>)、rc-select `!mergedSearchValue`(同上 rc-select 連結)、react-select `if (inputValue) return`(同上 react-select 連結)。有關鍵字時只刪字。焦點在搜尋框或觸發欄位本身都算(欄位上的按鈕不算),刪完焦點不動、清單開關不變。**按住連發不連刪**:刪到關鍵字空了之後的連發不接著刪值,放開再按一下才刪(判準 `KeyboardEvent.repeat`;三家只有 rc-select 擋:按住刪關鍵字時刪到空後 250ms 內的 Backspace 不刪值 —— <https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L475-L480>、`setClearLock` <https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L501-L506>、鎖的時長 <https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/hooks/useLock.ts#L9-L30>)。組字中不刪。刪掉時讀屏念「已移除『X』」(polite 播報區 `select-menu-removal-status.tsx`;焦點沒動,不念的話聽不到少了一個;react-select 念「option X, deselected.」<https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/accessibility/index.ts#L134-L137>)。那句話只在它還是現況時掛著:值又變了、焦點離開欄位就清空(react-select 的播報區同樣只在欄位有焦點時有內容 <https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/components/LiveRegion.tsx#L213-L220>;2026-10-07 驗證回報:修前刪掉「日本」再選「美國」,欄位裡仍寫著「已移除『日本』」,讀屏逐字瀏覽會讀到過期句子)。其中「Select 單選只在 clearable 時清值」「按住不連刪」「讀屏念『已移除「X」』」三項是 AI 依三家原始碼推導、user 沒有表示同意或反對(待辦總帳 K1 / R2 行為變化清單)。範圍:Combobox / PeoplePicker 多選限搜尋框在觸發欄位內(`searchIn='trigger'`)。**兩者的預設是浮層內搜尋(`searchIn='menu'`),那一路還沒有定案**:(a) 清單關著、焦點在欄位本身按 `Backspace`;(b) 焦點在浮層裡的搜尋框按 `Backspace`(搜尋框在另一個 portal、跟 Tag 不相鄰)—— 兩格等 user 決定(待辦總帳 K1 列,2026-10-07 驗證回報),定案前兩格都維持修前(不刪值)。實作 `select-menu-keyboard.ts` `isRemoveLastValueKey`。
 - Tab / Shift+Tab(menu 開啟 + **單選**)— **選定反白那一項**(已是目前值就不重發 `onValueChange`;反白在建立列 / 沒有反白時只收起,Tab 不替使用者建立新選項)→ **收起** → 焦點落到**觸發欄位的下一個 / 上一個**可 Tab 元素,也就是「選單關著時從觸發欄位按 Tab / Shift+Tab 會到的同一格」;觸發欄位在對話框 / 小面板(`role="dialog"`)裡時只在那一層裡走、到邊緣繞回(那一層的 Tab 留在裡面,見 `../Popover/popover.spec.md`「A11y 預設」)。依據:W3C 單選下拉範例 Tab 列「Sets the value to the content of the focused option in the listbox. / Closes the listbox. / Performs the default action, moving focus to the next focusable element.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-select-only.html#L187-L199>),Shift+Tab 同樣選定 —— 該範例在觸發欄位失焦時選定、不分方向(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/js/select-only.js#L249-L260>);Fluent 單選 `case 'Tab': !multiselect && activeOption && selectOption(e, activeOption);`(<https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-combobox/library/src/utils/useTriggerSlot.ts#L198-L200>)。來源:待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` B11(user #25 附條件同意 + #32 一致性原則;單選下拉與選單一起改屬 AI 依一致性推導,user 可於預覽否決)。實作 `select-menu-keyboard.ts` `useSelectMenuPopupKeys`;「下一格」與選單同一份 `../../lib/focus-after-trigger.ts`(2026-09-26 兩份合一):頁面上已經沒有下一格時,焦點**留在觸發欄位**(與 `DropdownMenu` 同一句,`ds-canonical/references/keyboard-model-canonical.md`「彈出框開著時的 Tab 與 Esc」;2026-09-26 前這裡交還瀏覽器,會落在 Radix 關閉動畫期間仍掛在 `<body>` 首尾的隱形焦點護欄上)
 - Space(menu 開啟 + **單選、不可打字**)— **選這一項**,與 Enter 相同:選定反白那一項 → 收起 → 焦點回觸發欄位(2026-09-26 待辦總帳 L7 第 1 條,主線定義「不能打字的選項清單,Enter 與空白鍵都是選這一項」;同意 = 同帳〇節「09-26 同意清單回覆」)。依據:W3C 單選下拉範例「Listbox Popup」表 Space 列與 Enter 列逐字相同「Sets the value to the content of the focused option in the listbox. / Closes the listbox. / Sets visual focus on the combobox.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-select-only.html#L177-L186>)。可打字時空白鍵是打字,不選;多選(面板)不在本條。實作 `select-menu-keyboard.ts` `useSelectMenuPopupKeys`
-- Tab / Shift+Tab(menu 開啟 + **多選**)— **行為不變:Tab 在面板裡繞圈**(浮層內搜尋框 → 清單捲動區 → footer 的全選按鈕 → 回到第一格;全選按鈕是真的 `<button>`,天生在 Tab 序裡;它在 CommandList 之外、非 cmdk-item,cmdk 方向鍵導覽不涵蓋)。多選面板裡有搜尋框 / 全選鈕、DOM 焦點會進到面板,是 W3C 的 dialog 型彈出,照對話框規則把 Tab 留在裡面(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L391>、<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。焦點停在開啟時的程式落點(`[cmdk-root]`,tabIndex -1)時也一樣留在面板裡 —— 2026-09-25 前這一格按 Shift+Tab 會照 DOM 順序跳到**頁尾**並關掉面板(浮層掛在 body 最後;R15 實測)。搜尋框在觸發欄位內(Combobox `searchIn='trigger'`)時焦點不在面板裡,Tab 照頁面順序離開、面板隨焦點離開而關
+- Tab / Shift+Tab(menu 開啟 + **多選**)— **行為不變:Tab 在面板裡繞圈**(浮層內搜尋框 → 清單捲動區 → footer 的全選按鈕 → 回到第一格;全選按鈕是真的 `<button>`,天生在 Tab 序裡;它在 CommandList 之外、非 cmdk-item,cmdk 方向鍵導覽不涵蓋)。多選面板裡有搜尋框 / 全選鈕、DOM 焦點會進到面板,是 W3C 的 dialog 型彈出,照對話框規則把 Tab 留在裡面(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L391>、<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。焦點停在開啟時的程式落點(`[cmdk-root]`,tabIndex -1)時也一樣留在面板裡 —— 2026-09-25 前這一格按 Shift+Tab 會照 DOM 順序跳到**頁尾**並關掉面板(浮層掛在 body 最後;R15 實測)。搜尋框在觸發欄位內(Combobox `searchIn='trigger'`)時焦點不在面板裡,Tab 照 DOM 順序走:頁面上觸發欄位後面還有可 Tab 的元素 → 走到那裡、面板隨焦點離開而關;觸發欄位已是頁面最後一格 → 下一格是掛在 body 最後的浮層(清單捲動區 → 全選鈕),進去之後在浮層裡繞圈(2026-09-30 實測,Radix FocusScope `loop`)。清單型的標準形狀(欄位內輸入框自己是 `role="combobox"`、清單不進 Tab 序)是另一件結構工作,已登記:待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` OE27
 - Enter / Space(focus 在全選按鈕)— 切換全選 / 全清。瀏覽器原生按鈕行為,不需自寫 handler;cmdk root 的 Enter 只對 `[cmdk-item]` 的反白項派送,不會重複觸發
 - Esc — 關閉
 
 **觸發欄位宣告的彈出型別**(owner = consumer trigger,Select / Combobox 各自宣告;2026-09-25 B11「多選下拉(有全選)行為不變、只改宣告」):宣告必須等於「開著時 Tab 怎麼走」—— Tab 收起、往頁面下一格走(清單型)= `aria-haspopup="listbox"`(Select / PeoplePicker 單選、Combobox `searchIn='trigger'`);Tab 在面板裡繞圈(對話框型,面板裡有搜尋框 / 全選鈕、DOM 焦點進到面板)= `aria-haspopup="dialog"`(Combobox `searchIn='menu'`、PeoplePicker 多選預設)。已知落差(未處理,另登記):不可打字的 Select 開啟時 DOM 焦點進到浮層的 cmdk 殼,而 W3C 單選下拉範例是焦點留在觸發欄位、由觸發欄位的 `aria-activedescendant` 指向選項(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/js/select-only.js#L327-L328>)。W3C:popup 不是 listbox 時 `aria-haspopup` 要寫出型別(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L410-L411>),dialog 型「DOM focus moves into the dialog」(同檔 #L395)。
 
-**Focus**:menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(`aria-activedescendant` 高亮,非 DOM focus;cmdk listbox 模式);searchable 時 DOM focus 給搜尋 input,非 searchable 時 DOM focus 移到 cmdk 的 `[cmdk-root]`(`Command` 元素,見 `handleNonSearchableAutoFocus`),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。option 為 `role="option"` 無 tabIndex,DOM focus 不落在 option 上。選完 / Esc 關閉時 focus 回 trigger;**單選按 Tab 收起時焦點走到下一格、不回 trigger**(Radix 關閉後「還焦點給 trigger」那一步由 `onCloseAutoFocus` 擋掉,否則關閉動畫結束後會把焦點搶回來)。
+**Focus**:浮層開啟時反白(`aria-activedescendant` 指的那一項,不是 DOM 焦點)落在第一個 / 已選選項。DOM 焦點的**開啟時落點**有三種:浮層內搜尋框(`searchable`);觸發欄位內的搜尋框(consumer 以 `onOpenAutoFocus` 放進去:Select `searchable`、Combobox / PeoplePicker `searchIn='trigger'`);不可打字時 cmdk 的 `[cmdk-root]`(`handleNonSearchableAutoFocus`),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。選項是 `role="option"`、無 tabIndex,DOM 焦點不落在選項上。
+
+**滑鼠點選項 = 按 `Enter`:DOM 焦點不離開搜尋框**(2026-09-30 user 同意,原話「其他部分我覺得”可以”」;同意的範圍是「浮層開著時,滑鼠點清單裡的選項」這一件)。機制住 Command 根(`../Command/command.spec.md`「A11y 預設」指標那一條),本元件與 Select / Combobox / PeoplePicker 都不另寫。
+
+**延伸到清單與欄位的其他位置**(AI 推導 —— 同一條不變式「搜尋框握著焦點時,按同一個 combobox 的零件只做動作、不換焦點」的其餘位置;依 rc-select 整份清單擋 mousedown(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/OptionList.tsx#L79-L81>)、選取區按在輸入框以外也擋(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/SelectInput/index.tsx#L182-L209>),MUI 清單「Prevent blur」(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1472-L1479>)、根元素 `handleMouseDown` 按在輸入框以外就擋(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1316-L1329>)):搜尋框握著焦點時,下列位置按下滑鼠也不搬 DOM 焦點,click 照常動作:
+- 清單裡不是控件的地方:建立列、「不限」列、群組標題、訊息列、選項裡的頭像、清單捲軸(Command 根,同上)。
+- 觸發欄位上的東西:Tag ×、一鍵清空 ×、Tag 本體、欄位空白處、箭頭(Select / Combobox 觸發欄位的 `onMouseDown`,判準共用 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`;搜尋框在欄位內或浮層內都算)。
+- Combobox「+N」浮出清單裡的 Tag × 與卡片本身:浮出清單是隱藏的那幾個 Tag,與欄位上的 Tag 是同一個控件的零件。它掛在另一個 portal(`../OverflowIndicator/overflow-indicator.tsx`),觸發欄位 `onMouseDown` 的 DOM 包含判斷看不到它 → Combobox 在卡片上掛同一支判準(`onContentMouseDown`,container = 那張卡;`../Combobox/combobox.tsx` `keepSearchFocus`)。按卡片本身(不是 ×)**選單也不關、關鍵字不動**:由觸發欄位的開關負責(見下方「觸發欄位的開關」;2026-10-01 前按卡片空白處 / 隱藏 Tag 的字,浮層內搜尋時選單關掉、焦點回觸發區,欄位內搜尋時選單關掉、關鍵字被清,實測)。卡片裡的名片頭像另開的名片(ProfileCard,有自己的動作鈕)的焦點不算在這條,照原生;按它同樣不會把選單關掉(同一條開關規則)。
+- 搜尋框在觸發欄位內(清單型:DOM 焦點的主人是欄位內搜尋框,清單靠它的 `aria-activedescendant`)時,浮層 footer 的全選鈕 —— 它是可 Tab 的按鈕(觸發欄位是頁面最後一格時 Tab 會照 DOM 順序走進浮層,見上方 Keyboard 多選 Tab 列),但滑鼠按它是在同一個控件上下指令,不換焦點的主人。
+
+**例外:搜尋框在浮層內**(對話框型,Tab 在面板裡繞圈,見上方 Keyboard 多選 Tab 列)時,浮層裡的真控件照原生拿焦點 —— footer 的全選鈕、列上的按鈕與搜尋框在同一個 Tab 序上(W3C dialog 型「DOM focus moves into the dialog」,<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L395>)。
+
+**觸發欄位的開關只認按在觸發欄位 DOM 裡的 click**(2026-10-01,AI 推導 —— 為了修上面「+N」卡片本身 / 名片把選單關掉的 bug;關著時按它們不再打開選單是同一條規則的另一面,見下方「兩個方向同一條」):portal 只搬 DOM,React 的 click 仍照元件樹冒泡(React 文件「Events from portals propagate according to the React tree rather than the DOM tree」,<https://github.com/reactjs/react.dev/blob/75ef18a9172e4c100b5d5650ae14c395c5c8ef42/src/content/reference/react-dom/createPortal.md#L61>)。觸發欄位裡的頭像名片、「+N」浮出清單都是掛在 body 的另一層,按在上面的 click 會冒到觸發欄位的開關(Radix `PopoverTrigger` 的 `onClick` 開關,<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/popover/src/popover.tsx#L151>)。本元件的 `PopoverTrigger` 只讓「click 的 target 在觸發欄位 DOM 裡」的那一下開關選單(`select-menu.tsx` `handleTriggerClick` / `handlePopoverOpenChange`;判斷同 `../TreeView/tree-view.tsx` `handleKeyDownCapture`「DOM 上不在這棵樹裡的一律不管」),Select / Combobox / PeoplePicker 都經這裡,不另寫。
+- **不擋事件**:Radix 的開關只認 `preventDefault`(`composeEventHandlers` 看 `defaultPrevented`,<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/core/primitive/src/primitive.tsx#L11-L19>),那會連卡片裡連結的預設動作一起擋;所以只讓這一次開關不生效,click 照常往上冒 —— 觸發欄位的祖先(例:DataTable 儲存格)收到的跟以前一樣。選單裡選項頭像的名片不經過這個開關(浮層不是觸發欄位的子樹),照舊。
+- **兩個方向同一條**:開著時按名片 / 「+N」卡片不關選單、關鍵字不動;關著時按觸發欄位頭像的名片 / 「+N」卡片不再打開選單(2026-10-01 前會打開,是同一個冒泡的副作用)。
+- 焦點不在這條管:按名片空白處,焦點照原生落到 body(名片不是本控件的零件,見上方「+N」那一列最後一句)。
+
+選完之後:
+
+| 搜尋框位置 × 選取模式 | 選一項(滑鼠點選 = `Enter`)之後 | DOM 焦點 | 關鍵字 |
+|---|---|---|---|
+| 浮層內 × 多選(Combobox 預設、PeoplePicker 多選預設) | 浮層不關 | 留在浮層內搜尋框,接著打的字直接進搜尋框 | 保留 |
+| 觸發欄位內 × 多選(Combobox / PeoplePicker `searchIn='trigger'`) | 浮層不關 | 留在觸發欄位內的搜尋框。**空值與有值同一條**:第一次選(空 → 有值)、在清單裡取消最後一項(有值 → 空)都不換輸入框、不掉焦點(該框恆在,`../Combobox/combobox.spec.md`「邊界案例」Empty) | 清空 |
+| 觸發欄位內 × 單選(Select `searchable`、PeoplePicker 單選) | 收起 | 回觸發欄位(輸入框隨收起卸載) | 隨關閉清空 |
+| 浮層內 × 單選(只有直接用本元件時) | 收起 | 回觸發點 | 隨關閉清空 |
+| 不可打字 × 單選 | 收起 | 回觸發欄位 | — |
+| 不可打字 × 多選(DataTable 多選儲存格、篩選值) | 浮層不關 | 仍在浮層裡:滑鼠點選後落在 `[cmdk-list]`(cmdk 原生行為,方向鍵照常;這裡沒有 combobox 握著焦點,指標那一條不適用) | — |
+
+按清單以外的地方(一格一個狀態疊加,M5;每一格 2026-09-30 在建置好的 Storybook 實測,量具 = 真滑鼠按下 / 放開與真鍵盤,讀 `document.activeElement`):
+
+| 按下的東西 | 浮層內 × 多選 | 觸發欄位內 × 多選 | 觸發欄位內 × 單選 | 不可打字 |
+|---|---|---|---|---|
+| 欄位上的 Tag ×(滑鼠,浮層開著;可打字時已打了關鍵字) | 移除該項;焦點留在浮層內搜尋框、關鍵字不動、浮層不關 | 移除該項;焦點留在欄位內搜尋框、關鍵字不動、浮層不關 | —(單選沒有 Tag) | 照原生:焦點到那顆 ×,移除後交給下一顆 × → 前一顆 → 觸發欄位 |
+| 「+N」浮出清單裡的 Tag ×(滑鼠;浮層開著、已打了關鍵字) | 同上一列:移除該項;焦點留在浮層內搜尋框、關鍵字不動、浮層不關 | 同上一列:焦點留在欄位內搜尋框 | —(單選沒有 Tag) | 照原生:焦點到那顆 ×,移除後交回觸發欄位(卡片裡的 × 不在欄位的 Tag 接力序上);不掉到 body |
+| footer 的全選 / 取消全選(滑鼠) | 照原生:焦點移到那顆鈕(面板 Tab 序上,見上方例外) | 焦點留在欄位內搜尋框,接著打的字直接進去 | —(單選沒有全選) | 照原生:焦點移到那顆鈕 |
+| 一鍵清空 ×(滑鼠,浮層開著) | 清空(值與關鍵字);焦點留在浮層內搜尋框 | 清空(值與關鍵字);焦點留在欄位內搜尋框 | 清空(值與關鍵字);焦點留在欄位內搜尋框 | 照原生:焦點到 ×,清空後交回觸發欄位 |
+| Tag ×(鍵盤,浮層關著、Tab 走到 ×) | 下一顆 × → 前一顆 → 觸發欄位(`../Combobox/combobox.spec.md`「Tag 操作」) | 下一顆 × → 前一顆 → 欄位內搜尋框 | — | 同浮層內 |
+| 一鍵清空 ×(鍵盤,浮層關著) | 交回觸發欄位 | 交回欄位內搜尋框 | 交回觸發欄位 | 交回觸發欄位 |
+| 浮層開著時用指標按過觸發欄位上的東西(×、Tag ×、搜尋框本身),之後按 `Esc` / `Enter` 收起 | 焦點回觸發欄位 | 焦點回觸發欄位(與直接按 `Esc` 同一個落點) | 焦點回觸發欄位 | 焦點回觸發欄位 |
+
+按鈕隨動作卸載時的交接只有一支:`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(焦點在要卸載的按鈕上才交給 owner;不在就不動);Tag × 的接力住全 DS 一支 `../../lib/collection-removal-focus.ts` `focusAfterCollectionRemoval`(2026-10-01 由 Combobox / FileUpload / AgentPanel 輸入盒三份收成),+N 浮出清單裡的 × 也走它(PeoplePicker 的頭像 Tag 經 `renderHiddenTag` 的第二個參數同一條路,2026-09-30 前它自己呼叫 onChange、跳過接力)。2026-09-30 前:浮層開著時按 Tag × 焦點被搬到下一顆 ×(Chrome 按鈕在 mousedown 就拿到焦點),欄位內搜尋時按全選焦點停在按鈕上,之後打的字全部丟掉;鍵盤按一鍵清空後焦點落在 body;按 +N 浮出清單裡的 × —— Combobox 浮層內搜尋時焦點落到觸發區、PeoplePicker 落到 body(2026-09-30 實測)。
+
+**指標按在觸發欄位上不算「按在外面」**(2026-10-07,待辦總帳 K3 同批):Radix 非 modal Popover 只要沒被擋,就把按在浮層以外的指標記成「互動過外面」—— 觸發欄位本身也算外面(它自己再擋關閉,但記號已設),之後用 `Esc` / `Enter` 收起時就不把焦點還給觸發欄位(<https://github.com/radix-ui/primitives/blob/4a49a34316fa8068389ed0f8619383af1bfd734b/packages/react/popover/src/popover.tsx#L350-L372>;本 repo 裝的 1.1.15 同一段在 `@radix-ui/react-popover/dist/index.mjs` 的 `onCloseAutoFocus` / `onInteractOutside`)。修前上表最後一列:Select 與浮層內搜尋的焦點掉到頁面上(搜尋框隨收起卸載),欄位內搜尋的焦點停在搜尋框、與直接按 `Esc` 的落點不同(2026-10-06 實測;違 `../Select/select.spec.md`「Clearable」清除後焦點)。本元件 `onInteractOutside` 把「指標按在觸發欄位裡」擋掉(判準 `select-menu-keyboard.ts` `isPointerOnTrigger`,同 `../../lib/overlay-focus-return.ts`「按在開啟者上不算外面」);只認指標,鍵盤 Tab 走到欄位上的 × 維持原樣。**範圍守住下一段括號那一格**:欄位內搜尋框握著焦點時點欄位收起,焦點留在搜尋框 —— 由 `overlay-focus-return.ts` 的 (a′) 明說(焦點本來就在開啟者裡、指標收起 → 不搬)。
+
+**收起後焦點回觸發點的長相**:收起若是指標造成的(最近一次輸入是按在浮層裡或觸發點上的指標:滑鼠點選項、點觸發欄位收起),焦點還給觸發點時明說 `focusVisible: false`,不畫鍵盤框(Combobox 欄位內搜尋框握著焦點時點欄位收起,焦點本來就留在欄位裡的搜尋框、不必還;實測);鍵盤收起(`Enter` / `Esc`)照瀏覽器規則(Button 觸發畫框、Field 家族觸發只有邊框轉色)。為什麼要明說:搜尋框是文字輸入,永遠帶 `:focus-visible`,瀏覽器對「程式把焦點從它移走」的規則是新的那一個也給框(CSS Selectors 4 `:focus-visible` 啟發式,<https://github.com/w3c/csswg-drafts/blob/main/selectors-4/Overview.bs>);修法前沒有這件事,是因為 mousedown 先把焦點交給了 `[cmdk-list]`(指標聚焦、不給框)。實測(Chromium 147):打字後滑鼠點選項,本元件 Button 觸發(檢閱器「In progress」)與 AgentPanel 歷史標題冒出 2px 框 → 修後不帶 `:focus-visible`。實作 = `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(本元件 PopoverContent 的 `onCloseAutoFocus` 在 Tab 收起的處理之後呼叫;全 DS「浮層關閉後焦點還給開啟者」只有這一支:AgentPanel 歷史浮層、`CommandDialog`、Sidebar 窄版抽屜、AppShell 窄版側欄、FileViewer、DatePicker 區間、AgentPanel 入口鈕右鍵選單同用)。已知限制:`focusVisible` 選項 Chrome / Edge 145、Firefox 104、Safari 18.4 起支援(MDN browser-compat-data `focus.options_focusVisible_parameter`,<https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json>),更舊的引擎忽略它 → 觸發點畫上鍵盤框(與鍵盤收起同長相,操作不受影響)。
+
+關鍵字那一欄的完整事件表住「搜尋關鍵字何時保留、何時清空」;收起後按 `Tab` / `Esc` / 點外面的走向住 `ds-canonical/references/keyboard-model-canonical.md`「彈出框開著時的 Tab 與 Esc」。選完 / Esc 關閉時焦點回觸發欄位;**單選按 Tab 收起時焦點走到下一格、不回 trigger**(Radix 關閉後「還焦點給 trigger」那一步由 `onCloseAutoFocus` 擋掉,否則關閉動畫結束後會把焦點搶回來)。
+
+- 依據:W3C「DOM Focus is maintained on the combobox and the assistive technology focus is moved within the listbox using `aria-activedescendant`」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L211>)、「When a descendant of a listbox, grid, or tree popup is focused, DOM focus remains on the combobox」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/combobox-pattern.html#L420>)。
+- 世界級同一做法(滑鼠按下選項不搶焦點):Ant Design rc-select 清單 `onMouseDown` → `preventDefault()`(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/OptionList.tsx#L79-L81>);MUI listbox「// Prevent blur」(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1472-L1479>);react-select `onMenuMouseDown` → `preventDefault()` + `focusInput()`(<https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/Select.tsx#L1290-L1296>);Polaris 選項「prevents lost of focus on Textfield」(<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Listbox/components/Option/Option.tsx#L63-L66>);Headless UI 選項 mousedown「This keeps the input focused」(<https://github.com/tailwindlabs/headlessui/blob/d13526d02a2de92c4ad7b62c15cd980636543fe2/packages/%40headlessui-react/src/components/combobox/combobox.tsx#L1492-L1497>);Primer 焦點落到選項時送回輸入框(<https://github.com/primer/behaviors/blob/2bf9d423b288aabb192fe3e6e8d968dec636e798/src/focus-zone.ts#L700-L709>)。DS 內先例:`../Field/field-wrapper.tsx` `focusFieldInputFromChrome` 同樣在 mousedown 擋預設、焦點不離開輸入處(`../Input/input.spec.md`「點外框 = 點輸入處」),兩者共用「哪些東西自有行為」的判準 `../../lib/pointer-press.ts`。
+
+**焦點所在的那個搜尋框必須帶 `aria-activedescendant`,指向目前反白選項的 id**(兩種位置都一樣;依據同上 W3C #L211 / #L420;2026-09-30 user 同意,同一句原話):浮層開著且有反白時必為該選項的 id,清單 0 筆、沒有反白時不寫,浮層關閉(清單卸載)時移除 —— id 必須指向 DOM 裡真的存在的節點。反白 id 只有一個來源:Command 根讀 `[cmdk-item][data-selected="true"]`(`../Command/command.spec.md`「A11y 預設」);浮層內搜尋框由 Command 自己寫,觸發欄位內的搜尋框經本元件 `onActiveOptionChange` 交給 consumer 的 `useActiveDescendant(inputRef)`(`select-menu-keyboard.ts`,Select / Combobox 共用)。2026-09-30 前:觸發欄位內的輸入框上恆為 null,浮層內搜尋框開啟時也是 null、要等第一次方向鍵才有值(實測)—— 螢幕報讀器在開啟、打字過濾時念不到反白項。
+
+**觸發欄位內的搜尋框另帶 `aria-controls` = 清單(`[cmdk-list]`,`role="listbox"`)的 id,與 `aria-autocomplete="list"`**:ARIA 1.2 對 `aria-activedescendant` 的 MUST —— 指到的元素必須是焦點元素的後代,或焦點元素是 combobox / textbox / searchbox 而且 `aria-controls` 指到支援 `aria-activedescendant` 的元素(<https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant>)。那顆輸入框是 textbox、清單在浮層 portal 裡(不是它的後代);外層 `div[role=combobox]` 的 `aria-controls` 指的是浮層殼(`role="dialog"`,不支援 `aria-activedescendant`),補不上這一層。兩個屬性同一個來源、同一支寫法(`../Command/command.tsx` `applyListboxRelation`),清單卸載時一起移除;`aria-autocomplete="list"` 與浮層內 `[cmdk-input]` 同宣告(打字會過濾清單)。**不加 `aria-expanded`**:textbox 不支援這個屬性,展開狀態由外層 `role="combobox"` 宣告。2026-09-30 初版只寫了 `aria-activedescendant`(審查抓到,實測輸入框無 `aria-controls`)。讓輸入框自己成為 `role="combobox"`(W3C 可打字 combobox 的標準形狀)是另一件事,已另登記。
+
+**輸入法組字中**:觸發欄位(Select / Combobox)與欄位內搜尋框按的 `Enter` / 空白 / 方向鍵 / `Esc` 是在選字,不開關選單、不轉送給清單(`forwardKeyToListbox` 與觸發欄位 `onKeyDown` 開頭都先問 `../../lib/ime-composition.ts` `isImeComposing`,全 DS 一支);浮層內搜尋框由 cmdk 自己的組字判斷與 Command 根同一支判準把關。**`Esc` 另有一層**:Radix 的 Esc 監聽掛在 document 捕獲階段、只看 `event.key`(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/use-escape-keydown/src/use-escape-keydown.tsx#L14-L19>),元件自己的 `onKeyDown` 擋不到它 —— 由浮層那一層的 `PopoverContent`(`../Popover/popover.tsx`)`onEscapeKeyDown` 經同一支模組的 `withImeSafeEscape` 擋掉(Dialog / Sheet / FileViewer 同一支)。2026-09-30 前欄位內搜尋框是全 DS 唯一沒有組字判斷的搜尋框,而且代發給清單的那一顆是全新事件、`isComposing` / `keyCode` 都被洗掉;2026-10-01 前組字中按 `Esc` 仍會經 Radix 把選單關掉(實測兩種搜尋框位置都關、關鍵字一起清)。
+
+機械閘:`scripts/searchable-menu-focus-invariant.mjs`(`ci.yml` verify-browser-datatable-handles)—— 候選 story 從 Storybook index 讀,家族 = 本元件 + 自己宣告 `searchable` / `searchIn` prop 的包裝元件(從原始碼 import 推導)+ Command 的直接使用者(自己 import Command 而且渲染 `<CommandInput` 的元件:AgentPanel 歷史浮層,加上 Command 自己的 `CommandDialog`);逐一真的用滑鼠點開每個觸發點、看 DOM 判型(欄位內 / 浮層內 × 單選 / 多選,四型與直接使用者都要量到),量上面三張表的焦點(按下的當下與放開之後)、點完接著打字、`aria-activedescendant` 指向反白列而且關聯得上(後代或 `aria-controls` 的 listbox)、關鍵字去留、單選指標挑選收起後觸發點不帶 `:focus-visible`、Tag × / 「+N」浮出清單裡的 × 與卡片本身 / 全選不搬焦點也不關選單(按完接著打的字進得去)、選單關著按浮出清單裡的 × 焦點不掉到 body、欄位內多選 Tag 排滿後打的字看得全、欄位內搜尋打了比整列還長的字時搜尋框停在整列寬並捲動(`../Combobox/combobox.spec.md`「欄位內搜尋框的寬度」)、打了字後滑鼠按一鍵清空連關鍵字一起清、鍵盤一鍵清空焦點留在欄位、組字中的 `Enter` 不選、組字中的 `Esc`(`isComposing` 與 `keyCode` 229 兩型)不關選單而同一條派發路徑的一般 `Esc` 照樣關,以及 Combobox `searchIn='trigger'` 空值時的搜尋框。`--selftest` 在頁面上把修法逐一拆掉(選項 mousedown 搶焦點 / 輸入框寫不上 `aria-activedescendant` / 空值藏起搜尋框 / 還焦點的 `focusVisible: false` 被吃掉 / 欄位內搜尋框的 `aria-controls` 被拿掉 / 觸發欄位 mousedown 搶焦點 / 清空前的焦點交接被吃掉 / 鍵盤事件看不出組字 / 浮出清單 mousedown 搶焦點 / 浮出清單移除後的焦點交接被吃掉 / 欄位內搜尋框的量尺不算數 / 組字中的 `Esc` 被當成一般 `Esc` / 欄位內搜尋框那一格的寬沒有上限),每一組都必須紅在指定的型(含直接使用者);一鍵清空連關鍵字一起清(React state)與按卡片本身不關選單(React 合成事件的冒泡)頁面上拆不掉,以判定表必紅 + 對修前建置實跑必紅為證。
+
+欄位上的按鍵(Keyboard 段的 `Backspace` 與「焦點在觸發欄位本身時打字」兩列、「一鍵清空之後反白回第一列」、上表最後一列「按過觸發欄位上的東西再收起」)與值的讓位(`./select-menu-unrestricted.spec.md`「欄位顯示」欄位內搜尋框那一條、`../PeoplePicker/people-picker.spec.md` §C)另一支閘:`scripts/searchable-field-keys-invariant.mjs`(`ci.yml` verify-browser-interaction)—— 41 列逐格量(含守住上一段括號那一格、點外面不搶焦點、空白鍵只打開、連發 / 組字中不刪等對照列;播報字值變了 / 離開欄位就清空;讓位不改欄寬),輸入法第一鍵用 CDP 真的組字;`--selftest` = 判定表 + 八組在頁面上拆掉修法(Backspace 到不了元件 / 播報字清掉後又被放回去 / 欄位本身的字到不了元件 / 清空後的反白搬移被擋 / 按在觸發欄位上又被記成按在外面 / 值的文字打開後不讓位 / 讓位後留下寬的量尺被拿掉 / 多人 1 位那一格又跟搜尋框平分空間),各自紅在自己那一族、對照列全程綠;對修前建置實跑紅在每一族。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -463,6 +416,8 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - `empty.spec.md`
 - `field-controls.spec.md`
 - `menu-item.spec.md`
+- `overflow-indicator.spec.md`
 - `people-picker.spec.md`
 - `popover.spec.md`
+- `select-menu-unrestricted.spec.md`
 - `select.spec.md`

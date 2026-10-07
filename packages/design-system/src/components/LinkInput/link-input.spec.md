@@ -81,8 +81,10 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 1. **blur 時驗證**——使用者離開 field 時才檢查格式
 2. **開始打字時清除 error**——輸入任一字元即移除錯誤狀態(Escape 還原原值亦清除);單純重新 focus 不清除
-3. **Enter 觸發 blur**——等同離開 field
-4. **Escape 取消編輯**——回復原值，不觸發驗證
+3. **Enter 提交**——結算草稿(等同離開 field 的驗證):合法 → 提交、切回連結狀態,焦點給鉛筆;網址無效 → 紅框、**焦點留在輸入框**;清空 → 清值、留在輸入框。2026-10-01 前 Enter 走 `blur()`,網址無效 / 清空時焦點掉到 `<body>`(實測);同日第一版在 keydown 當下同步聚焦鉛筆又沒 preventDefault,同一下 Enter 的 keypress 落到鉛筆上把編輯重開 —— 現改走 `../Field/field-edit-keys.ts` `editSettleKeyProps`(全 DS 就地編輯鍵盤結算 SSOT:IME guard + preventDefault),焦點在 commit 之後、只在真的掉了才搬
+4. **Escape 取消編輯**——回復原值，不觸發驗證;焦點給鉛筆(同 `../InlineEdit/inline-edit.spec.md`「退出 edit 態(focus 分流)」)。**正在編輯、或有打了還沒存的字,是焦點所在控件自己的一層**(2026-10-01;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):放在 Dialog / Sheet 裡第一下 Esc 只取消、浮層不關,第二下才關;它是同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層的一層 —— 先收它,consumer 的 Esc 下一下才輪到(表單引擎目前接不上 LinkInput,見下段)
+
+**不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
 
 URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 
@@ -142,8 +144,8 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 
 - Tab — focus
 - 字母鍵 — 輸入
-- Enter — 提交,觸發 blur 驗證
-- Esc — 取消編輯,回復原值,不觸發驗證
+- Enter — 提交(見「驗證」3:合法 → 連結狀態、焦點給鉛筆;無效 / 清空 → 留在輸入框)
+- Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(見「驗證」4:浮層裡第一下只取消、第二下才關浮層)
 - Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。「點外框空白處 = 按 Pencil」是滑鼠的捷徑,外框本身不是 tab stop,鍵盤走 Pencil
 
 **Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。

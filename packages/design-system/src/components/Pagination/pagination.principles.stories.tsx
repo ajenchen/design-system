@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Pagination } from './pagination'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Pagination/設計原則',
@@ -18,10 +19,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -50,7 +51,7 @@ export const UsageGuidance: Story = {
           title="何時不用:無盡瀏覽 feed → load-more / 虛擬滾動"
           note="activity stream、通知列表這類「往下讀」的流,頁碼是錯的心智模型 —— 使用者不在乎第幾頁,只在乎更多內容。與虛擬滾動互斥:兩者是互斥的大資料策略(TanStack 官方定位),同一份資料不可同時用。"
         >
-          <Button variant="tertiary">載入更多通知</Button>
+          <Button variant="tertiary" className="self-start">載入更多通知</Button>
           <Label>✓ feed 尾端用 load-more;超大資料集在 DataTable 內建虛擬滾動</Label>
           <Label warn>✗ 給 activity feed 加頁碼 —— 讀流被切斷,回頭找內容也記不住頁碼</Label>
         </Rule>

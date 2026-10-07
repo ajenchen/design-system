@@ -1,0 +1,1317 @@
+{
+  "note": "story 漂移棘輪(scripts/story-layer-drift-invariant.mjs)的基準。每檔每條規則的 count 只准往下:高於這裡 = 新增漂移 → 紅;新檔 = 0。hits 是每筆命中的指紋,只用來指出「哪一行是新的」。數字變少後由人在本機跑 --write-baseline 收緊;CI 永遠不跑 --write-baseline。2026-09-30 首次建閘只收展示層;2026-10-01 全 DS 掃除後範圍擴到設計原則層(四條)與設計規格層((a)(c)(d)),同時收緊到掃除後的現況 —— 剩下的數字全在當時另有工作進行、留待下一輪的 Field / Rating / TreeView / Steps / AgentPanel / Dialog / Sheet / Toast / Button 九個資料夾,逐條清單用 --list 看,修法排在待辦總帳。",
+  "generatedBy": "node scripts/story-layer-drift-invariant.mjs --write-baseline",
+  "scope": "packages/design-system/src/**/*.stories.tsx(展示層 / 設計原則層:四條;設計規格層 *.anatomy.stories.tsx:(a)(c)(d);標 test-only 的 story 不收)",
+  "rules": [
+    "primary-submit-disabled",
+    "hardcoded-spacing",
+    "div-heading",
+    "unknown-typography"
+  ],
+  "counterExamples": "story-counter-example:設計原則層放行的 ❌ 反例標記(只准往下;新增一個要隨基準檔一起送審)",
+  "escapes": "layout-space-magic-ok:被 @layout-space-magic-ok 逃生口放行的寫死間距(每個字一筆;分類器本來就放行的 micro 不算;只准往下,新增要隨基準檔一起送審)",
+  "totals": {
+    "primary-submit-disabled": 0,
+    "hardcoded-spacing": 0,
+    "div-heading": 0,
+    "unknown-typography": 0,
+    "story-counter-example": 5,
+    "layout-space-magic-ok": 499
+  },
+  "files": {
+    "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AccountMenu/account-menu.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "96a5acaecebb",
+          "c18068b9e734"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "0120f2b23f62",
+          "580f866cc11a"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AgentPanel/agent-panel.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 8,
+        "hits": [
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "c6c2d453821f",
+          "c6c2d453821f",
+          "c6c2d453821f",
+          "c6c2d453821f"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 8,
+        "hits": [
+          "4ec43176031c",
+          "53e1508b5d93",
+          "8340d7767714",
+          "9f5ed5964047",
+          "bf89226d4740",
+          "c839fbfeaba9",
+          "dd598861dfd3",
+          "f3ceec75d331"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Alert/alert.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 6,
+        "hits": [
+          "0eda60aa688c",
+          "0eda60aa688c",
+          "0eda60aa688c",
+          "0eda60aa688c",
+          "0eda60aa688c",
+          "329c532d568b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AppShell/app-shell.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "4281fa88afd3"
+        ]
+      }
+    },
+    "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "0e874a59976f",
+          "0e874a59976f",
+          "16eac1e3b006",
+          "44724c3495fd",
+          "d0b78ab9e330"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 6,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Badge/badge.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 8,
+        "hits": [
+          "a2ad742a6759",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "44724c3495fd",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Button/button.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "352a30033899",
+          "a2ad742a6759",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Button/button.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "839bb2dc540f",
+          "a11f8d426767"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "0776d203bb37",
+          "44724c3495fd",
+          "a2ad742a6759",
+          "f020951d4443"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Calendar/calendar.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "1860c547d0ac",
+          "8b1904bbd4cd"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "04a30a3c1324",
+          "26799ec616eb",
+          "a2ad742a6759",
+          "de5d6f1a74dd",
+          "e18dbca74007",
+          "e7035f58379d",
+          "ecd7919fb81b",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Carousel/carousel.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "1d9238bae749",
+          "55875df613bc",
+          "95e1c0052083",
+          "d7784dd691c1"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Chart/chart.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Chip/chip.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "38747646988d",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 8,
+        "hits": [
+          "24b4968c6808",
+          "2eb690f8e049",
+          "44724c3495fd",
+          "91f9be4a1d5b",
+          "96dcb223326f",
+          "a977051c9cf5",
+          "ae124d46a247",
+          "cba16fb45611"
+        ]
+      }
+    },
+    "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "0acc3418ee69",
+          "2f8807848111",
+          "4c787159eaf1"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Coachmark/coachmark.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "31c763935ced"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Command/command.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "44724c3495fd",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DateGrid/date-grid.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "757fb04786b7"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DatePicker/date-picker.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "3057f162bad8",
+          "3057f162bad8",
+          "3057f162bad8",
+          "3057f162bad8",
+          "bb4001c50269"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx": {
+      "story-counter-example": {
+        "count": 2,
+        "hits": [
+          "99dd3c7accb6",
+          "99dd3c7accb6"
+        ]
+      },
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Dialog/dialog.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "0ffb06756a09",
+          "67daabda3d14",
+          "8308568ef322",
+          "8529cb87aa04",
+          "ae71e1307129",
+          "ae71e1307129",
+          "be04eef5be9a",
+          "f36b3ba04e14",
+          "f7c8d4c72b57"
+        ]
+      }
+    },
+    "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Empty/empty.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "087d8635074b",
+          "39456e13412a",
+          "44724c3495fd",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Empty/empty.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "3b182c8a94fc",
+          "3b182c8a94fc",
+          "3b182c8a94fc"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Field/field.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Field/field.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a5ae4d8e225c"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 6,
+        "hits": [
+          "158ffb264990",
+          "158ffb264990",
+          "26126b332403",
+          "26126b332403",
+          "ad0d4eecc09b",
+          "ad0d4eecc09b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FileItem/file-item.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 7,
+        "hits": [
+          "1f549f550f4c",
+          "1f549f550f4c",
+          "5b4b66472f5b",
+          "5b4b66472f5b",
+          "62dd94ba953b",
+          "8a0296678df5",
+          "8a0296678df5"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "8a0296678df5",
+          "8a0296678df5",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "2795d1fb3659",
+          "2b48009b3d5c",
+          "75bfa413bc1f",
+          "a2ad742a6759",
+          "a6ff3f6579e0"
+        ]
+      }
+    },
+    "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "62c82fef2f31"
+        ]
+      }
+    },
+    "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "44724c3495fd",
+          "7257f09b0745",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/HoverCard/hover-card.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 11,
+        "hits": [
+          "0ae634e2e536",
+          "2325c9a2078c",
+          "2e050b08ce98",
+          "636d860773c4",
+          "6af1211534a4",
+          "7257f09b0745",
+          "bdc291b6bbce",
+          "d4f0e1490d1b",
+          "e99451353abd",
+          "f1474d938ee1",
+          "fcf8cc5eb9d8"
+        ]
+      }
+    },
+    "packages/design-system/src/components/InlineEdit/inline-edit.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "1563ade88062",
+          "3635ac9df088",
+          "3b4b409f551c",
+          "8f57d074c506"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Input/input.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Menu/menu-item.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Notice/notice.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "1b3e315e4dae",
+          "2e050b08ce98",
+          "2e050b08ce98",
+          "636d860773c4"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Pagination/pagination.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "8de37197d71c"
+        ]
+      }
+    },
+    "packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Popover/popover.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ProfileCard/profile-card.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "d2fa539659df"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 18,
+        "hits": [
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "147ea1c2c406",
+          "44724c3495fd",
+          "7257f09b0745",
+          "7257f09b0745",
+          "8a0296678df5",
+          "a2ad742a6759",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "3e70d9144c98"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Rating/rating.principles.stories.tsx": {
+      "story-counter-example": {
+        "count": 1,
+        "hits": [
+          "ed0d4093a9b6"
+        ]
+      },
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "38747646988d",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 13,
+        "hits": [
+          "15ec386db7bc",
+          "15ec386db7bc",
+          "18ec57bdf6f3",
+          "20319177edc9",
+          "3f5cb67b830a",
+          "5235ece4c8f2",
+          "5235ece4c8f2",
+          "5235ece4c8f2",
+          "6f36c142aedc",
+          "9d9a1c16c5f4",
+          "9d9a1c16c5f4",
+          "a2ad742a6759",
+          "aa3157744842"
+        ]
+      }
+    },
+    "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 8,
+        "hits": [
+          "0e6e9a5ed73a",
+          "369da5ab193f",
+          "5e0ef2a2df34",
+          "725440dc1ca3",
+          "a3a013f28d4e",
+          "a3a013f28d4e",
+          "d728f511a4fc",
+          "e33dae48d295"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Select/select.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "44724c3495fd",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Separator/separator.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Separator/separator.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "8c41ede94745"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "491a6dd9b5e7",
+          "a2ad742a6759",
+          "e3eefbc801b9",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Sidebar/sidebar.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "44a435fe8cfa",
+          "4b97a85064be",
+          "55be4150b209",
+          "68b433fb350b",
+          "787c31ff55f7",
+          "7f336741f777",
+          "a4f480005ad2",
+          "f3cc13c3f2fc",
+          "fa490716a95a"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Skeleton/skeleton.principles.stories.tsx": {
+      "story-counter-example": {
+        "count": 1,
+        "hits": [
+          "c69041dc3442"
+        ]
+      },
+      "layout-space-magic-ok": {
+        "count": 14,
+        "hits": [
+          "2eb690f8e049",
+          "2eb690f8e049",
+          "49967b1d49a0",
+          "49967b1d49a0",
+          "4f0b45c8fb28",
+          "4f0b45c8fb28",
+          "7257f09b0745",
+          "9027e2e5ea66",
+          "9027e2e5ea66",
+          "9027e2e5ea66",
+          "9027e2e5ea66",
+          "9027e2e5ea66",
+          "a2ad742a6759",
+          "ecd7919fb81b"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Skeleton/skeleton.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "1f549f550f4c",
+          "1f549f550f4c",
+          "2eb690f8e049",
+          "2ebb76ab40fe",
+          "572a0baf7805",
+          "77a3fd7ad36c",
+          "e28ccd117f22",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Slider/slider.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "a2ad742a6759",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Slider/slider.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "6f862e2ec1fc",
+          "9bce3cb8571d"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Steps/steps.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "e3eefbc801b9"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Steps/steps.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "7257f09b0745"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Switch/switch.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Switch/switch.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "d801408cdf37"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "44724c3495fd",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Tag/tag.principles.stories.tsx": {
+      "story-counter-example": {
+        "count": 1,
+        "hits": [
+          "b640bf54c588"
+        ]
+      },
+      "layout-space-magic-ok": {
+        "count": 12,
+        "hits": [
+          "38747646988d",
+          "a2ad742a6759",
+          "ecd7919fb81b",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68",
+          "f65f7d181a68"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Tag/tag.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "4281fa88afd3",
+          "4281fa88afd3"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "a2ad742a6759",
+          "e3eefbc801b9"
+        ]
+      }
+    },
+    "packages/design-system/src/components/TimePicker/time-picker.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Toast/toast.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Toast/toast.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "b2ead4a4f8a0",
+          "b2ead4a4f8a0"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "39987fdb7aa5",
+          "44724c3495fd",
+          "8a0296678df5",
+          "983b08ad0532",
+          "a2ad742a6759"
+        ]
+      }
+    },
+    "packages/design-system/src/components/Tooltip/tooltip.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 1,
+        "hits": [
+          "7c53a807452e"
+        ]
+      }
+    },
+    "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "a2ad742a6759",
+          "ecd7919fb81b",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4"
+        ]
+      }
+    },
+    "packages/design-system/src/components/TreeView/tree-view.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 9,
+        "hits": [
+          "b42b3b2dc497",
+          "b42b3b2dc497",
+          "b42b3b2dc497",
+          "c251bdfcbab7",
+          "d84c2a50aa08",
+          "d84c2a50aa08",
+          "dcba3037bf4d",
+          "fdc25b59af8f",
+          "fdc25b59af8f"
+        ]
+      }
+    },
+    "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 81,
+        "hits": [
+          "03b4e19cbe41",
+          "087d8635074b",
+          "0bce48f677f7",
+          "0c9cf52967e5",
+          "0c9cf52967e5",
+          "0f8b16603ad4",
+          "0f8b16603ad4",
+          "163e399b1fc2",
+          "169bebcefa11",
+          "17f3d769eb8d",
+          "1b22ed8af2bc",
+          "1e5baca8db93",
+          "21f8de3b3fe9",
+          "21f8de3b3fe9",
+          "21f8de3b3fe9",
+          "2ccddd70c4b8",
+          "2e3c2e58903e",
+          "2f1a2914a90a",
+          "310b5226d5ae",
+          "32e9b279d23f",
+          "35be50ed3182",
+          "35d599658d43",
+          "35d599658d43",
+          "36b7d5e3179c",
+          "38736cc147ab",
+          "3fb45e02d67e",
+          "422d43a06aea",
+          "46ac55d9736d",
+          "48cca825e893",
+          "49bc0f551892",
+          "4fca3b265604",
+          "4fca3b265604",
+          "52e5455d90a8",
+          "52e7316bb5e2",
+          "533833d06087",
+          "558ed8a25f98",
+          "558ed8a25f98",
+          "58a62d9725e0",
+          "5a3690da8ec6",
+          "5f032a8d37c6",
+          "600e286225a2",
+          "63dfc7ccaa17",
+          "6d656e3e3e43",
+          "77b99a1c58e3",
+          "77b99a1c58e3",
+          "807e7d3bb026",
+          "82e71acae916",
+          "83dc1b631a1b",
+          "87d3fc7f3287",
+          "8ed983ce6caa",
+          "94aa7d787b68",
+          "94aa7d787b68",
+          "9fc991968666",
+          "a4ab054314c5",
+          "b0c50982df04",
+          "b24581532d03",
+          "b7e78e4373a5",
+          "c4ffea518a1c",
+          "d90fafe3557b",
+          "d90fafe3557b",
+          "d950b2c64237",
+          "dd5cdcb7d800",
+          "dd6a387cbce1",
+          "dd6a387cbce1",
+          "e233c7271af4",
+          "e3f892e6092f",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ed0d4093a9b6",
+          "ee4434f22514",
+          "f1a319016226",
+          "f76fc5930b6b",
+          "fb2662a39619",
+          "fbac8fd3e8ce",
+          "fc93bafd13dc"
+        ]
+      }
+    },
+    "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "135b4311e5be",
+          "528ae58bc8fc",
+          "528ae58bc8fc",
+          "528ae58bc8fc",
+          "95ce0f32f0b5"
+        ]
+      }
+    },
+    "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "04b16f639e76",
+          "5348b6c23c37"
+        ]
+      }
+    },
+    "packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "12652f5df215",
+          "21ed75203081"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/color/color.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 25,
+        "hits": [
+          "443bd92dcede",
+          "6f6c02a5d6e5",
+          "70d4d558d2e5",
+          "844421913907",
+          "87f88783948c",
+          "8881efe42be0",
+          "89ba5bfbaa76",
+          "8b4dc944e7fb",
+          "8bc05710d959",
+          "924bef2ce598",
+          "92c085b15262",
+          "9b3abc7a54f8",
+          "9d0ab6bc85f0",
+          "a8236a0a64ee",
+          "b0d45d326249",
+          "bc33784e6030",
+          "c79a01f45a7c",
+          "ceadf735bfa7",
+          "ceadf735bfa7",
+          "ceadf735bfa7",
+          "cee296476be7",
+          "d0bf2d4c66e7",
+          "dd2e350000fb",
+          "e3ac39368f1b",
+          "feb53b34028a"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/density/density.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 14,
+        "hits": [
+          "01aa0fc29a0a",
+          "1cd4c9ebdc29",
+          "1ec2c5124a6b",
+          "28472faae543",
+          "2ff4635a8918",
+          "5d69d4844045",
+          "5e3759c27ba8",
+          "6d88566eea47",
+          "89601c044841",
+          "95d676bf3ea6",
+          "b1cca988e90b",
+          "b9d5f1df0023",
+          "e31f63f16a39",
+          "f85a8c60acc8"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/elevation/elevation.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "074f90cb5eee",
+          "074f90cb5eee",
+          "7072bae7fd91"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/layoutSpace/layoutSpace.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "88e6d19cb16f",
+          "9f35d4d3e58c",
+          "ab0b2197a540",
+          "d8b5f4ec45d9",
+          "dcb4041b33e0"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/motion/motion.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "2325c9a2078c",
+          "9f35d4d3e58c",
+          "d8b5f4ec45d9",
+          "dcb4041b33e0"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/opacity/opacity.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "9f35d4d3e58c",
+          "d8b5f4ec45d9",
+          "dcb4041b33e0",
+          "ed0d4093a9b6"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/radius/radius.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 4,
+        "hits": [
+          "41f9bbc5b776",
+          "41f9bbc5b776",
+          "41f9bbc5b776",
+          "41f9bbc5b776"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/typography/typography.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 7,
+        "hits": [
+          "3eb7dedab145",
+          "45505c2e831f",
+          "5d63266b68b4",
+          "8b4433cf395d",
+          "9be02fe2c50b",
+          "e7724323469d",
+          "f7821f2e46c5"
+        ]
+      }
+    },
+    "packages/design-system/src/tokens/uiSize/uiSize.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 5,
+        "hits": [
+          "4d204f27f895",
+          "4d204f27f895",
+          "b01792b2efe3",
+          "b01792b2efe3",
+          "ed0d4093a9b6"
+        ]
+      }
+    }
+  }
+}

@@ -58,10 +58,10 @@ const HoverCardContent = React.forwardRef<
         // 2026-05-04 viewport-aware max-h SSOT(對齊 Popover):header/footer 永遠 in-viewport,body 壓縮 scroll
         // 2026-05-05 audit dim 35 fix:加 `min-h-0` 完成 M25 chain invariant
         "max-h-[var(--radix-hover-card-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
-        // 2026-07-05 補 motion-reduce 豁免:對齊 overlay 家族 canonical(popover.tsx / dialog.tsx /
-        // dropdown-menu.tsx / tooltip.tsx 同位置寫法)— prefers-reduced-motion 下停用進出場動畫。
+        // 何時播 / 時長 / 曲線 / 收尾 / 減少動態 = overlayMotion(tokens/motion/overlay-motion.ts;與 Popover / DropdownMenu / Tooltip 同一份);
+        // 這裡只寫幾何。(2026-07-05 曾在此補 motion-reduce 豁免,但那條守衛的權重輸給 data-[state=…]:animate-*,
+        // 從來沒生效 —— 2026-10-07 改由 overlayMotion 只在 motion-safe 下宣告動畫,待辦總帳 T7)
         overlayMotion,
-        "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",

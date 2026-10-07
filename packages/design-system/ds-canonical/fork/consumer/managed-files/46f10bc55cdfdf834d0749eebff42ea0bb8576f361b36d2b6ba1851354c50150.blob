@@ -286,16 +286,24 @@ function exactArray(value, expected) {
 }
 
 // Exactly the advisory set the registry serves today for the copy bundled inside npm 11.19.0.
-// The disk copy is replaced with the fixed 5.0.9 by the security overlay; npm audit reads the
+// The disk copy is replaced with the fixed 5.0.12 by the security overlay; npm audit reads the
 // LOCK, which still records the bundled 5.0.7, so the finding itself never disappears — it is
-// acknowledged here in exact shape and any drift (a third advisory, a new node) fails closed.
+// acknowledged here in exact shape and any drift (another advisory, a new node) fails closed.
 // 2026-08-04: GHSA-rgw5-rvv9-x895 landed (<5.0.9); overlay bumped 5.0.8 → 5.0.9 the same day.
+// 2026-09-30: upstream published GHSA-6j4f-fj2g-mc7p (high, <5.0.10), GHSA-qhr7-859c-m2p7 (high, <5.0.11)
+// and GHSA-q2hr-2g5m-vwhr (moderate, <5.0.12) at 2026-09-29T23:44Z. The 5.0.9 overlay AND the hoisted
+// top-level copy were inside the new ranges, so this is a real remediation, not an acknowledgement:
+// overlay + hoisted copy → 5.0.12 (published 2026-09-14). After the bump the only node left in the finding
+// is npm's bundled copy that the overlay replaces on disk; minimatch is no longer an effect.
 const VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES = Object.freeze([
   Object.freeze({
-    findingRange: '4.0.0 - 5.0.8',
+    findingRange: '4.0.0 - 5.0.11',
     advisories: Object.freeze([
       Object.freeze({ source: 1130591, range: '>=4.0.0 <5.0.8', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high' }),
       Object.freeze({ source: 1130734, range: '>=4.0.0 <5.0.9', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high' }),
+      Object.freeze({ source: 1240103, range: '>=4.0.0 <5.0.12', url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr', severity: 'moderate' }),
+      Object.freeze({ source: 1240107, range: '>=4.0.0 <5.0.11', url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7', severity: 'high' }),
+      Object.freeze({ source: 1240111, range: '>=4.0.0 <5.0.10', url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p', severity: 'high' }),
     ]),
   }),
 ])
@@ -445,18 +453,24 @@ function assertRemediatedFinding(name, finding) {
     // 「Install locked dependencies once」(這正是 OE6「新弱點通報會卡住所有 PR」的形狀)。bundled 的仍是 10.2.0、
     // npm 11.x 仍沒有帶 10.5.1 的版本,曝險與 08-03 那三則同類(dev-only CLI 內部的位址解析),所以只把新形狀認列進來;
     // 註:consumer 的同步永遠跑自己 protected main 上的這份腳本,新認列要靠受管檔案更新才會抵達 consumer。
+    // 2026-09-30:上游 2026-09-29T23:46Z 再發兩則 moderate(GHSA-j6r3-76f7-8jcv isInSubnet 跨位址族比較、
+    // GHSA-h3mg-xc3c-68pw Address6 解析診斷字串無長度上限;都修在 10.7.1),range 從 <=10.5.0 變 <=10.7.0、
+    // via 從 5 則變 7 則。bundled 仍是 10.2.0、npm 11.x 仍無帶修正版的 release、修補層沒有這個 slot,
+    // 曝險同類(dev-only CLI 內部的位址解析),照同一套只認列新形狀;舊的 5 則形狀由對照組判漂移。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.5.0'
+        && finding.range === '<=10.7.0'
         && matchesExactAdvisorySet(finding, 'ip-address', [
           { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
           { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
           { source: 1130724, range: '>=10.1.1 <=10.2.0', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate' },
           { source: 1239948, range: '<=10.5.0', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate' },
           { source: 1239949, range: '>=10.2.0 <=10.5.0', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate' },
+          { source: 1240097, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate' },
+          { source: 1240098, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate' },
         ]),
       `npm audit ip-address finding differs from the acknowledged bundled preimage(${shape})`,
     )
@@ -474,6 +488,7 @@ function assertRemediatedFinding(name, finding) {
     // #167 合併進 main 的那一輪(2eb5b433)16 個 job 全死在「Install locked dependencies once」,發布被 fail closed 擋下。
     // 曝險不變:bundled 6.27.0 只被 npm CLI 內部用、不進產品;仍只認列 exact shape,下一則再發照樣紅。
     // 根治(換到帶 undici ≥6.28.1 / ip-address ≥10.5.1 的 npm runtime,或給 overlay 加第三、四個 slot)在 cloud-compat baton。
+    // 2026-10-06 同類再加兩筆(http-cache-semantics、postcss-selector-parser,見下方兩段),處置同 OE15:認列即緩解。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
@@ -489,6 +504,48 @@ function assertRemediatedFinding(name, finding) {
           { source: 1240042, range: '>=6.7.0 <6.28.1', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (name === 'http-cache-semantics') {
+    // 2026-10-06 認列(PR #169 head 849d8667 每個 job 紅在「Install locked dependencies once」;10-01 的 7065fd49 那輪還綠):
+    // GHSA-ch52-4w7c-c8xp(high,<=4.2.0,max-stale 讓**共用快取**把別的使用者被刻意歸零的回應交出去)。與 ip-address / undici
+    // 同一種處境:只存在於 npm 11.19.0 內建的 4.2.0;npm 最新的 11.21.0 與 12.2.0 內建的仍是 4.2.0;修補層沒有這個 slot。
+    // 曝險:npm 只經 make-fetch-happen 用它管自己的本機快取,而 make-fetch-happen 以 `shared: false`(私有快取)建 policy
+    //(npm/node_modules/make-fetch-happen/lib/cache/policy.js);我們的 npm 執行不帶任何憑證(憑證變數全剝除、always-auth=false),
+    // CI 每個 job 都是全新 HOME —— 不存在「別的使用者的回應」可被交出。dev-only CLI 內部,不進產品。
+    // 只認列 exact shape(一則、<=4.2.0、只在 npm 內建的那一份節點);再多一則、換節點、換範圍都 fail closed。
+    invariant(
+      finding.severity === 'high'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/http-cache-semantics'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<=4.2.0'
+        && matchesExactAdvisorySet(finding, 'http-cache-semantics', [
+          { source: 1240991, range: '<=4.2.0', url: 'https://github.com/advisories/GHSA-ch52-4w7c-c8xp', severity: 'high' },
+        ]),
+      `npm audit http-cache-semantics finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (name === 'postcss-selector-parser') {
+    // 2026-10-06(同一輪):GHSA-rj75-hqrm-r3gf(moderate,<7.1.6,扁平選擇器 `.a.a.a…` 解析是平方時間,CPU 耗盡)。
+    // 只存在於 npm 11.19.0 內建的 7.1.4(修在 7.1.6;npm 最新的 11.21.0 與 12.2.0 內建的仍是 7.1.4);修補層沒有這個 slot。
+    // 曝險:npm 只在 `npm query` / `npm sbom` 經 @npmcli/query 解析選擇器。我們唯一會跑到的是發版的
+    // `npm sbom --workspaces --package-lock-only --sbom-format=cyclonedx`(scripts/run-verified-npm.mjs 鎖死 argv),
+    // 選擇器由 npm 依我們自己的 workspace 名稱在內部組出(npm/lib/commands/sbom.js #buildSelector),沒有外部輸入。
+    // 通報原文明說「Ordinary build-time use on trusted sources is not affected」。dev-only CLI 內部,不進產品。
+    // 只認列 exact shape;再多一則、換節點、換範圍、嚴重度改變都 fail closed。
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/postcss-selector-parser'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<7.1.6'
+        && matchesExactAdvisorySet(finding, 'postcss-selector-parser', [
+          { source: 1241232, range: '<7.1.6', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate' },
+        ]),
+      `npm audit postcss-selector-parser finding differs from the acknowledged bundled preimage(${shape})`,
     )
     return
   }
@@ -687,6 +744,13 @@ export function runVerifiedHighVulnerabilityAudit(command, args, {
   }
 }
 
+// 渲染用參考樹(舊 commit、無憑證、用完即丟)可用它當時認證過的修補層版本;其餘政策 —— 一般安裝、
+// protected-base verifier、consumer 同步 —— 一律只接受現行版本(verified-exact-npm-runtime.mjs 的歷史清單)。
+// 判定表在 scripts/test-setup-governance.mjs。
+export function acceptsHistoricalNpmOverlay(vulnerabilityPolicy) {
+  return vulnerabilityPolicy === 'report-render-only-reference'
+}
+
 export async function runVerifiedGovernanceDependencyBootstrap({
   root: rootPath,
   platform = process.platform,
@@ -714,7 +778,8 @@ export async function runVerifiedGovernanceDependencyBootstrap({
   })
   assertClosedProjectNpmConfig(root, expectedNpmrcLines, { errorPrefix })
   await validateRoleRepository(root)
-  const expectedNpm = resolveExactNpmRuntimeContract(root)
+  const historicalOverlay = acceptsHistoricalNpmOverlay(vulnerabilityPolicy)
+  const expectedNpm = resolveExactNpmRuntimeContract(root, { historicalOverlay })
   invariant(expectedNpm.version === GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION, `npm runtime must remain exactly ${GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION}`, errorPrefix)
   const snapshot = captureBootstrapAuthority(root, authorityPaths, { errorPrefix })
   const isolated = createIsolatedGovernanceNpmEnvironment(baseEnvironment, {
@@ -725,7 +790,7 @@ export async function runVerifiedGovernanceDependencyBootstrap({
   let installedOverlayReceipt = null
   let auditReceipt = null
   try {
-    npmRuntime = await runtimeFactory({ repositoryRoot: root, env: isolated.env, runner })
+    npmRuntime = await runtimeFactory({ repositoryRoot: root, env: isolated.env, runner, historicalOverlay })
     try { assertVerifiedExactNpmRuntimeCapability(npmRuntime, expectedNpm) } catch (error) {
       invariant(false, error?.message || 'verified exact npm runtime factory returned an invalid capability', errorPrefix)
     }
@@ -759,4 +824,161 @@ export async function runVerifiedGovernanceDependencyBootstrap({
   } finally {
     try { npmRuntime?.cleanup?.() } finally { isolated.cleanup() }
   }
+}
+
+// ── 差集式弱點稽核(2026-09-29 OE6 立於 install-candidate-dependencies.mjs;2026-09-30 搬來共用 lib,consumer 升級交易也用)────────────────────────────────────────────────
+//
+// 原本這裡對候選跑 enforce 稽核(exact-shape 認列;任何新 advisory 一律 fail closed)。那道判準的 owner 是 protected main
+// 自己的 CI(lib/governance-dependency-bootstrap.mjs);放在 anchor 裡有一個結構性後果:anchor 執行的是 **base 的**腳本,
+// base 不可能認得之後才登記的 advisory —— 上游 2026-09-28 對 npm 內建 ip-address / undici 發新通報那天,每個 PR 的 anchor 都紅,
+// 連「把新形狀認列進 bootstrap」的修復 PR 也被 anchor 擋住(它的候選樹跟 main 一模一樣,只是 base 的 exact-shape 不認得)。
+// anchor 要回答的問題只有一個:**候選相對 protected main 有沒有新增弱點**。所以改成兩棵樹各跑一次同樣的 `npm audit --json`
+// (同一時刻、同一份 advisory 資料庫、同一個 verified npm),取差集:
+//   · 候選有、base 沒有的(套件 × advisory)→ 擋(GOV-CANDIDATE-DEPS-002,逐筆點名 advisory URL);
+//   · 兩邊都有的 → 繼承自 main,印出、進 receipt、不擋(main 的既有狀態由 main 自己的 CI 與 OE15 認列 / overlay 負責);
+//   · base 有、候選沒有的 → 修好了,印出。
+// **任一邊的稽核結果不是合格的報告(非 JSON / advisory 端點錯誤 / schema 不對 / 退出碼不是 0|1)→ 一律紅**:
+// base 壞掉不得讀成「base 沒有弱點」(那會把候選的每一筆都判成新增),也不得讀成略過(M37)。
+// 差集只用本檔(base 的腳本)算;候選程式碼一行都不執行(它只是被 audit 的資料)。
+const DIFFERENTIAL_AUDIT_ARGS = Object.freeze(['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`])
+export const DIFFERENTIAL_AUDIT_DEFAULT_PREFIX = 'GOV-CANDIDATE-DEPS-002'
+
+/** 純函式:`npm audit --json`(auditReportVersion 2)→ Map<套件, {severity, range, advisories:Set<advisory URL 或 source>}>。 */
+export function parseAuditFindings(stdout, label = 'candidate', prefix = DIFFERENTIAL_AUDIT_DEFAULT_PREFIX) {
+  let report
+  try { report = JSON.parse(String(stdout || '')) } catch {
+    throw new Error(`${prefix}:${label} npm audit did not produce JSON`)
+  }
+  if (!report || typeof report !== 'object' || Array.isArray(report)) throw new Error(`${prefix}:${label} npm audit did not produce a JSON object`)
+  if (report.auditReportVersion === undefined) {
+    // registry 的 advisory 服務掛掉時吐的是錯誤物件(parse 得過、沒有 auditReportVersion);訊息形狀對齊 bootstrap,
+    // 讓 isTransientAdvisoryEndpointFailure 認得出「暫時性網路錯誤」而重試。
+    const summary = typeof report.message === 'string'
+      ? `advisory endpoint failed:${report.message.slice(0, 200)}`
+      : `unrecognised audit payload(keys:${Object.keys(report).slice(0, 12).join(',') || '<none>'})`
+    throw new Error(`${prefix}:${label} npm audit ${summary}`)
+  }
+  if (report.auditReportVersion !== 2 || !report.vulnerabilities || typeof report.vulnerabilities !== 'object' || Array.isArray(report.vulnerabilities)) {
+    throw new Error(`${prefix}:${label} npm audit JSON schema is unsupported`)
+  }
+  const findings = new Map()
+  for (const [name, finding] of Object.entries(report.vulnerabilities)) {
+    if (!finding || typeof finding !== 'object' || finding.name !== name || !Array.isArray(finding.via)) {
+      throw new Error(`${prefix}:${label} npm audit finding is malformed:${name}`)
+    }
+    const advisories = new Set()
+    for (const via of finding.via) {
+      if (typeof via === 'string') continue // 經由別的套件傳染:那個套件自己有一筆,advisory 記在它那裡
+      if (!via || typeof via !== 'object' || (!Number.isInteger(via.source) && typeof via.url !== 'string')) {
+        throw new Error(`${prefix}:${label} npm audit advisory is malformed:${name}`)
+      }
+      advisories.add(typeof via.url === 'string' && via.url ? via.url : `source:${via.source}`)
+    }
+    findings.set(name, { severity: String(finding.severity ?? 'unknown'), range: String(finding.range ?? ''), advisories })
+  }
+  return findings
+}
+
+/** 純函式:候選相對 base 的差集。只有 introduced 會擋。 */
+export function diffAuditFindings(base, candidate) {
+  const byName = (left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0)
+  const introduced = []
+  const inherited = []
+  for (const [name, finding] of candidate) {
+    const baseline = base.get(name)
+    const advisories = [...finding.advisories].sort()
+    if (!baseline) {
+      introduced.push({ name, severity: finding.severity, range: finding.range, advisories, reason: 'package-not-vulnerable-in-base' })
+      continue
+    }
+    const fresh = advisories.filter((advisory) => !baseline.advisories.has(advisory))
+    if (fresh.length) introduced.push({ name, severity: finding.severity, range: finding.range, advisories: fresh, reason: 'new-advisory' })
+    else inherited.push({ name, severity: finding.severity, range: finding.range, advisories })
+  }
+  const resolved = [...base.keys()].filter((name) => !candidate.has(name)).sort()
+  return Object.freeze({ introduced: introduced.sort(byName), inherited: inherited.sort(byName), resolved })
+}
+
+export function runAuditFindingsJson(cli, root, {
+  environment,
+  runner = spawnSync,
+  label,
+  prefix = DIFFERENTIAL_AUDIT_DEFAULT_PREFIX,
+  retryLimit = GOVERNANCE_AUDIT_TRANSIENT_RETRY_LIMIT,
+  backoffMs = GOVERNANCE_AUDIT_TRANSIENT_BACKOFF_MS,
+  sleep = sleepSync,
+  report = (line) => console.error(line),
+} = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    const result = runner(process.execPath, [cli, ...DIFFERENTIAL_AUDIT_ARGS], {
+      cwd: root,
+      env: { ...environment, NPM_CONFIG_REGISTRY: GOVERNANCE_DEPENDENCY_REGISTRY, NPM_CONFIG_IGNORE_SCRIPTS: 'true', NPM_CONFIG_STRICT_SSL: 'true' },
+      encoding: 'utf8',
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 30 * 60 * 1_000,
+      windowsHide: true,
+    })
+    if (result?.error) throw result.error
+    if (!Number.isInteger(result?.status) || (result.status !== 0 && result.status !== 1)) {
+      throw new Error(`${prefix}:${label} npm audit returned an invalid exit status:${String(result?.status)}`)
+    }
+    try {
+      const findings = parseAuditFindings(result.stdout, label, prefix)
+      return { findings, rawAuditSha256: createHash('sha256').update(Buffer.from(String(result.stdout || ''))).digest('hex') }
+    } catch (error) {
+      if (!isTransientAdvisoryEndpointFailure(error) || attempt >= retryLimit) throw error
+      const wait = backoffMs * attempt
+      report(`⚠️  ${prefix}:${label} npm audit advisory endpoint transient failure(attempt ${attempt}/${retryLimit}),retrying in ${wait}ms`)
+      sleep(wait)
+    }
+  }
+}
+
+/**
+ * 差集的裁決與報告(兩個呼叫端共用):inherited / resolved 只印不擋,introduced 逐筆點名後擋。
+ * 呼叫端:DS 的 anchor 候選安裝(本檔 runDifferentialVulnerabilityAudit)與 consumer 升級交易的重建
+ *(verify-upgrade-evidence.mjs reconstructExpectedUpgrade)。
+ */
+export function assertNoIntroducedAuditFindings(diff, {
+  prefix = DIFFERENTIAL_AUDIT_DEFAULT_PREFIX,
+  subject = 'candidate',
+  baseLabel = 'protected main',
+  report = (line) => console.error(line),
+} = {}) {
+  for (const item of diff.inherited) report(`·  繼承自 ${baseLabel}(不擋;owner 是 ${baseLabel} 自己的 CI / 安全更新):${item.name} ${item.severity} ${item.range} ← ${item.advisories.join(', ')}`)
+  for (const name of diff.resolved) report(`·  ${subject} 已修掉:${name}`)
+  if (diff.introduced.length) {
+    const lines = diff.introduced.map((item) => `${item.name} ${item.severity} ${item.range}(${item.reason})← ${item.advisories.join(', ') || '(經由其他套件)'}`)
+    throw new Error(`${prefix}:${subject} introduces ${diff.introduced.length} vulnerability finding(s) that ${baseLabel} does not have:\n  ${lines.join('\n  ')}`)
+  }
+}
+
+export function runDifferentialVulnerabilityAudit({
+  cli,
+  trustedRoot,
+  candidate,
+  environment,
+  runner = spawnSync,
+  retryLimit = GOVERNANCE_AUDIT_TRANSIENT_RETRY_LIMIT,
+  backoffMs = GOVERNANCE_AUDIT_TRANSIENT_BACKOFF_MS,
+  sleep = sleepSync,
+  report = (line) => console.error(line),
+} = {}) {
+  const common = { environment, runner, retryLimit, backoffMs, sleep, report }
+  const base = runAuditFindingsJson(cli, trustedRoot, { ...common, label: 'protected-base' })
+  const head = runAuditFindingsJson(cli, candidate, { ...common, label: 'candidate' })
+  const diff = diffAuditFindings(base.findings, head.findings)
+  assertNoIntroducedAuditFindings(diff, { report })
+  return Object.freeze({
+    schemaVersion: 1,
+    kind: 'candidate-differential-vulnerability-audit-receipt',
+    status: 'passed',
+    policy: 'block-only-findings-introduced-relative-to-protected-base',
+    base: Object.freeze({ root: trustedRoot, findings: base.findings.size, rawAuditSha256: base.rawAuditSha256 }),
+    candidate: Object.freeze({ root: candidate, findings: head.findings.size, rawAuditSha256: head.rawAuditSha256 }),
+    introduced: Object.freeze([]),
+    inherited: Object.freeze(diff.inherited.map((item) => Object.freeze({ ...item, advisories: Object.freeze(item.advisories) }))),
+    resolved: Object.freeze(diff.resolved),
+  })
 }

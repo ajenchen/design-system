@@ -129,7 +129,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 ```tsx
 <div>
-  <div className="text-body font-medium mb-[var(--layout-space-tight)]">基本資料</div>
+  <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">基本資料</h3>
   <DescriptionList>
     <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
     <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -141,7 +141,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
-**Heading typography 建議**:`text-body font-medium text-foreground`(同 item label size,靠 weight 區分層級),不用加粗 / 放大 / 換色——讓 heading 是「標籤」不是「標題」。
+**Heading typography 建議**:`text-h6 font-medium text-foreground`(語義標題用 h3 + text-h6 —— 14px,與 item label 同大,字重是唯一的強調;typography.spec.md 標題字級),不放大 / 換色。
 
 **常見誤解**:(1)「DL label 視覺像 FieldLabel 就拿來排表單」— `dl` 無 `<label for>` 對 input 的綁定,編輯場景一律 Field(見禁止事項第 1 條);(2)「section heading 是 DL 內建 prop」— heading 是 consumer pattern(DL 無 heading prop),需要分組時 consumer 自包並遵守上方 gap 規則。
 

@@ -9,14 +9,12 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 ## ⚠️ 永久 runtime/transport self-awareness(2026-07-23 provider-neutral consolidation)
 
 **Task／deliverable 明確要求跨 provider independent review 時**，以 `packages/governance/canonical/providers.json`、`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 與 target-bound certification/readback 解析 current runtime、獨立 peer、transport 與隔離條件。不得從 provider 專屬環境變數、個人家目錄或工作區字串猜測地端／雲端；registry 未宣告、peer 不獨立、transport 不可用或證據不足時，只有 required-review claim 標 `REVIEW-BLOCKED`，不得阻擋一般工程、deep audit 或 standard release。
-歷史 Codex CLI、GitHub mention 與 bypass 指令已移至 `governance/archive/memory-retired/`，只作 non-authority provenance，禁止當 current runbook。
-**User 原話**(2026-05-15):「你應該每次在和 codex 協作前都會自己主動自動知道自己在地端還是雲端然後進而知道該以何種工作流程工作,對嗎」
+歷史 Codex CLI、GitHub mention 與 bypass 指令已移至 `governance/archive/memory-retired/`，只作 non-authority provenance，禁止當 current runbook。 **User 原話**(2026-05-15):「你應該每次在和 codex 協作前都會自己主動自動知道自己在地端還是雲端然後進而知道該以何種工作流程工作,對嗎」
 
 ## ⚠️ 永久 anti-pattern:檢查部署看 Netlify 不看 GitHub Pages
 
 **User 訊息含「Netlify / deploy 沒更新 / 沒部署」**:❌ 絕禁 `gh api …/deployments`(GitHub Pages 只看 main)、❌ 絕禁結論「沒 merge main 所以沒 deploy」;✅ 必檢查 Netlify per-branch preview(任何 branch push 都自動 deploy)。
-**歷史 user 原話（2026-05-15；只保留 Netlify-vs-Pages target 辨識教訓，git trigger 已由 2026-07-20 Standing Authorization supersede）**：「所有你做的編輯都會直接部署到 netlify,直到我驗證確認才會叫你 push 到 main(GitHub page)…你現在不應該去檢查 GitHub page 是否是最新,而是應該檢查 netlify 是否是最新才對吧?」現行 git authority 只讀 `feedback_solo_dev_workflow.md` 與 `AGENTS.md`「# Git / release canonical」。**2026-09-18 更正**:原文寫「不得從本引文恢復 user push／merge trigger」,該句已被 2026-09-02 裁示推翻 —— 合併前確實有一道發版同意閘(user 看過預覽後說「發版」才落 receipt),見本檔下方「Netlify preview 給 user 看 → user 說「發版」(receipt)→ protected merge」與 AGENTS.md 1.5。此處只是不得從 2026-05-15 那段舊引文**額外**推出別的 trigger。
-犯錯 anchor:2026-05-15 連 3 次查 Pages SHA 下錯結論。
+**歷史 user 原話（2026-05-15；只保留 Netlify-vs-Pages target 辨識教訓，git trigger 已由 2026-07-20 Standing Authorization supersede）**：「所有你做的編輯都會直接部署到 netlify,直到我驗證確認才會叫你 push 到 main(GitHub page)…你現在不應該去檢查 GitHub page 是否是最新,而是應該檢查 netlify 是否是最新才對吧?」現行 git authority 只讀 `feedback_solo_dev_workflow.md` 與 `AGENTS.md`「# Git / release canonical」。**2026-09-18 更正**:原文寫「不得從本引文恢復 user push／merge trigger」,該句已被 2026-09-02 裁示推翻 —— 合併前確實有一道發版同意閘(user 看過預覽後說「發版」才落 receipt),見本檔下方「Netlify preview 給 user 看 → user 說「發版」(receipt)→ protected merge」與 AGENTS.md 1.5。此處只是不得從 2026-05-15 那段舊引文**額外**推出別的 trigger。 犯錯 anchor:2026-05-15 連 3 次查 Pages SHA 下錯結論。
 
 ## Deploy URL 自動推導(hook `inject_deploy_url_after_push.sh` v4,2026-05-27 user verbatim「不管 repo 都自動推導」)
 
@@ -88,11 +86,13 @@ Task／deliverable 明確要求 independent review 時，跨 provider audit 由 
 
 ## How to apply(密碼 / 雲端)+ 錨例
 
-被問 Netlify 密碼 / fork user 設密碼 → 免費只有 Edge Function Basic Auth(`STORYBOOK_BASIC_AUTH`);Dashboard 與 `_headers` 都是 Pro,
-Identity 未 deprecated 但不適合 simple gate。寫 fork-template setup / README / provider adapter / audit dim 62 一律套 Rule 1 的 canonical 與禁用詞。
+被問 Netlify 密碼 / fork user 設密碼 → 免費只有 Edge Function Basic Auth(`STORYBOOK_BASIC_AUTH`);Dashboard 與 `_headers` 都是 Pro,Identity 未 deprecated 但不適合 simple gate。寫 fork-template setup / README / provider adapter / audit dim 62 一律套 Rule 1 的 canonical 與禁用詞。
 被問「能操作 X repo 嗎」→ 先確認該 target/provider 的 certification 與授權,再走 clone-on-demand(首選已認證的 Git-connected sandbox,Codespaces 是 fallback)。
-**錨例**:2026-05-29 我兩度搞錯免費密碼(先說 `_headers` 免費、又說 Dashboard Basic Password 是 free-tier 唯一可用 —— 兩者都是 Pro),還誤信 Identity deprecated;
-2026-06-05 user「仔細查查研究」→ 7 路官方 docs + 4 路對抗 refute 三證,同一輪抓到「修沒貫徹到 memory SSOT + audit dim 62」= M10 漏 governance 層。
+**錨例**:2026-05-29 我兩度搞錯免費密碼(先說 `_headers` 免費、又說 Dashboard Basic Password 是 free-tier 唯一可用 —— 兩者都是 Pro),還誤信 Identity deprecated;2026-06-05 user「仔細查查研究」→ 7 路官方 docs + 4 路對抗 refute 三證,同一輪抓到「修沒貫徹到 memory SSOT + audit dim 62」= M10 漏 governance 層。
+
+## ⚠️ /tmp scratchpad 的壽命:3 天沒存取就被系統清掉(2026-10-06 錨)
+
+macOS 會刪掉 `/private/tmp` 底下 **3 天沒被存取的檔案**(目錄殼留著,所以 `ls` 看起來還在)。2026-10-01 → 10-06 因額度暫停 5 天,scratchpad 裡所有 scratch clone(ds-steps / ds-forms / ds-sweep / ds-rating)、它們的 throwaway git、patch 檔、研究原始檔與前後截圖**全部消失**;只有已 push 到 PR 分支的 Combobox / Rating / 供應鏈改動倖存。Steps 退役、表單與對話框、範例層漂移三批已驗證的工作必須重做。 **規則**:(1) 任一批次驗證通過 → **當天**整合進唯一工作分支並 push,不得把已驗證成果只放在 /tmp 等其他批次;(2) 研究結論必落在 repo ledger 或 provider 的持久 workflow 紀錄(不在 /tmp;Claude adapter 的位置是 `~/.claude/projects`,屬可重建的 provider 紀錄、非 SSOT),/tmp 的來源快取與截圖視為可拋,交付用的對照圖要立刻 SendUserFile 或放進 repo 可寫區;(3) 預期停工超過 1 天(額度、等 user)前,先把每份 scratch 副本的 diff 存成 patch 推到分支。
 
 ## 交預覽連結給 user 之前必驗它是不是這個 commit(2026-09-11)
 

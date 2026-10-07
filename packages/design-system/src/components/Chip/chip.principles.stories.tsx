@@ -6,6 +6,7 @@ import { Chip, ChipGroup } from './chip'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Chip/設計原則',
@@ -21,10 +22,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -45,10 +46,11 @@ export const UsageGuidance: Story = {
     const [langs, setLangs] = React.useState<string[]>(['js', 'ts'])
     const [period, setPeriod] = React.useState('week')
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Chip 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Chip/展示" name="預設"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">技術文章列表的語言標籤濾鏡(多選)</span></LinkTo>
@@ -60,7 +62,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Chip/展示" name="單選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">程式語言擇一的單選濾鏡(type="single")</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親元件」段)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親元件」段)。</p>
     </div>
 
       {/* vs 近親元件 — 原 VsSegmentedRule */}
@@ -69,7 +71,7 @@ export const UsageGuidance: Story = {
           title="vs 近親元件 — Chip 是多選濾鏡(可選任意數量)"
           note="Material Design Filter Chip 的實作:一排獨立 pill,可勾選任意組合。典型場景:技術文章列表的語言標籤濾鏡、商品列表的類別篩選、搜尋結果的多維度過濾"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 部落格文章的語言濾鏡（可多選）</Label>
             <ChipGroup type="multiple" value={langs} onValueChange={(v) => setLangs(v as string[])}>
               <Chip value="js">JavaScript</Chip>
@@ -79,14 +81,14 @@ export const UsageGuidance: Story = {
               <Chip value="rs">Rust</Chip>
             </ChipGroup>
             <Label>↑ 目前選了 {langs.length} 種語言</Label>
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="vs 近親元件 — 互斥單選(同時只能選一個)用 SegmentedControl"
           note="2–5 個互斥選項、視覺要表達「連體」關係,用 SegmentedControl。Chip 各自獨立的視覺反而模糊了「只能選一個」的語意"
         >
-          <div>
+          <ExampleGroup>
             <Label>❌ 錯用：時間週期是互斥單選,卻用 Chip</Label>
             <ChipGroup type="single" defaultValue="week">
               <Chip value="day">日</Chip>
@@ -94,19 +96,20 @@ export const UsageGuidance: Story = {
               <Chip value="month">月</Chip>
             </ChipGroup>
             <Label warn>↑ 改用 SegmentedControl（視覺連體 = 互斥語意更清楚）</Label>
-            <SegmentedControl value={period} onValueChange={setPeriod} className="mt-2">
+            <SegmentedControl value={period} onValueChange={setPeriod}>
               <SegmentedControlItem value="day">日</SegmentedControlItem>
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="vs 近親元件 — 純顯示、不可互動用 Tag"
           note="Chip 是 control(選擇 / 未選),Tag 是 label(資訊標記)。商品卡上「新品 / 熱銷」是 Tag 不是 Chip"
         >
-          <div className="flex items-center gap-2">
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="flex items-center gap-1">
             <Tag color="red">熱銷</Tag>
             <Tag color="blue">新品</Tag>
           </div>
@@ -154,7 +157,7 @@ export const LayoutRule: Story = {
           title="wrap（預設）— filter panel / tag cloud"
           note="塞不下換行,預設選擇。垂直空間充足,filter panel / 設定頁 tag 選取等場景"
         >
-          <div className="max-w-md border border-border rounded-md p-3">
+          <div className="max-w-md border border-border rounded-md p-[var(--layout-space-loose)]">
             <ChipGroup type="multiple" value={tagsW} onValueChange={(v) => setTagsW(v as string[])}>
               {options.map(o => <Chip key={o} value={o}>{labels[o]}</Chip>)}
             </ChipGroup>
@@ -166,7 +169,7 @@ export const LayoutRule: Story = {
           title="scroll — 單行 toolbar / header 必須固定高度"
           note="垂直空間受限(toolbar / card header),橫向捲動 + fade mask 指示溢出。搭配左右 scroll arrow 給鍵盤和滑鼠使用者"
         >
-          <div className="max-w-md border border-border rounded-md p-3">
+          <div className="max-w-md border border-border rounded-md p-[var(--layout-space-loose)]">
             <ChipGroup type="multiple" layout="scroll" value={tagsS} onValueChange={(v) => setTagsS(v as string[])}>
               {options.map(o => <Chip key={o} value={o}>{labels[o]}</Chip>)}
             </ChipGroup>
@@ -178,7 +181,7 @@ export const LayoutRule: Story = {
           title="menu — 單行但要完整選項可見"
           note="單行水平捲動,chip 全可見不隱藏;dropdown(ChevronDown)永遠列出全部 chip。對齊 Chrome tab dropdown / VS Code editor tabs 的「show all」pattern。menu 模式必須 controlled(value + onValueChange)"
         >
-          <div className="max-w-md border border-border rounded-md p-3">
+          <div className="max-w-md border border-border rounded-md p-[var(--layout-space-loose)]">
             <ChipGroup type="multiple" layout="menu" value={tagsM} onValueChange={(v) => setTagsM(v as string[])}>
               {options.map(o => <Chip key={o} value={o}>{labels[o]}</Chip>)}
             </ChipGroup>

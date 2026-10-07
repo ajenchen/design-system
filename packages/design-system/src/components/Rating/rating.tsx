@@ -213,19 +213,15 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
         // 讀屏文字中文(全庫 SR label 中文,2026-07-04;同 spec 唯讀範例「平均評分 4.7 星，共 5 星」的說法)
         aria-valuetext={isInteractive ? `${wholeValue} 星,共 ${max} 星` : undefined}
         aria-disabled={disabled || undefined}
+        // Field 驗證接線(form-validation.spec.md「A11y 預設」Error message ARIA:控件經 Field context 自動接
+        // aria-invalid + 有 error 時 aria-errormessage 指向 FieldError;同 Input / DatePicker / TimePicker)。
+        // 只掛在 role=slider —— disabled / loading 的 role=img 不是可修正的輸入。置於 {...props} 前,consumer 仍可覆寫。
+        aria-invalid={isInteractive && fieldCtx?.invalid ? true : undefined}
+        aria-errormessage={isInteractive && fieldCtx?.invalid ? fieldCtx.errorId : undefined}
         // a11y: 刻意不設 aria-readonly — readOnly 時 role=img(axe aria-allowed-attr 禁 img 用 aria-readonly,2026-04-25);
         //       interactive 時 role=slider 但必非 readOnly(isInteractive = !readOnly)。兩 state 皆不該有此屬性,故省略。
         aria-busy={loading || undefined}
         tabIndex={isInteractive ? 0 : undefined}
-        onKeyDown={handleKeyDown}
-        onMouseLeave={() => setHoverValue(null)}
-        // 星與星之間的縫(`gap-1`;元件只有內容高,沒有上下留白):指標從某顆星移進來時,那顆星的預覽照舊亮著
-        // (只有離開整個元件才收);亮著時在這裡點下去 = 確認正在預覽的值(AI 建議,2026-09-26 列在
-        // 「其餘建議」裡、user 未另提 → 照建議做,AI 判讀;hit-area-canonical.md 滑過原則一-6)。
-        // 點在星上由星自己處理(e.target 是星,不是容器),不會重複送出。
-        onClick={isInteractive ? (e) => {
-          if (e.target === e.currentTarget && hoverValue !== null) setValue(hoverValue)
-        } : undefined}
         className={cn(
           // 元件只有內容高(= 星高);列高由所在的列供給(見檔頭「高度模型」)。焦點框跟著這個內容盒(rounded-md)
           'inline-flex items-center gap-1 rounded-md',
@@ -239,6 +235,26 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
           className,
         )}
         {...props}
+        // 元件自己的三個 handler 必列在 {...props} 之後,consumer 傳同名 handler 時先跑 consumer 的、再跑元件的
+        // (consumer preventDefault = 跳過元件的,同 Radix composeEventHandlers 慣例;Switch / Checkbox 的 onClick 同一修法)。
+        // 列在前面時會被整個蓋掉:rating.spec.md「放入 Field 的可組合性」的 `{...form.getInputProps('rating')}`
+        // 帶 onKeyDown(規則 4 Escape 回復),方向鍵 / Home / End 因此全部失效。
+        onKeyDown={(e) => {
+          props.onKeyDown?.(e)
+          if (!e.defaultPrevented) handleKeyDown(e)
+        }}
+        onMouseLeave={(e) => {
+          props.onMouseLeave?.(e)
+          setHoverValue(null)
+        }}
+        // 星與星之間的縫(`gap-1`;元件只有內容高,沒有上下留白):指標從某顆星移進來時,那顆星的預覽照舊亮著
+        // (只有離開整個元件才收);亮著時在這裡點下去 = 確認正在預覽的值(AI 建議,2026-09-26 列在
+        // 「其餘建議」裡、user 未另提 → 照建議做,AI 判讀;hit-area-canonical.md 滑過原則一-6)。
+        // 點在星上由星自己處理(e.target 是星,不是容器),不會重複送出。
+        onClick={isInteractive ? (e) => {
+          props.onClick?.(e)
+          if (!e.defaultPrevented && e.target === e.currentTarget && hoverValue !== null) setValue(hoverValue)
+        } : props.onClick}
       >
         {Array.from({ length: max }, (_, i) => {
           const starValue = i + 1

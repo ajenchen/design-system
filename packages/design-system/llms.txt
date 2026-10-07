@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 59 components + 4 public patterns + design tokens。版號 = 本 npm 包的 package.json version。
+> 60 components + 4 public patterns + design tokens。版號 = 本 npm 包的 package.json version。
 
 本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
@@ -53,6 +53,7 @@
 - [ScrollArea](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/ScrollArea
 - [SegmentedControl](https://ajenchen-design-system.netlify.app): sizes:xs/sm/md/lg — src:components/SegmentedControl
 - [Select](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Select
+- [SelectMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/SelectMenu
 - [Separator](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Separator
 - [Sheet](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Sheet
 - [Sidebar](https://ajenchen-design-system.netlify.app): variants:default/meta;sizes:sm/md/lg — src:components/Sidebar

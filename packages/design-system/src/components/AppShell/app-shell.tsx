@@ -25,6 +25,8 @@ import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { useIsNarrowViewport } from '@/design-system/hooks/use-is-narrow-viewport'
 import { cn } from '@/lib/utils'
+import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,6 +184,8 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
     // ⌘B sidebar toggle by Sidebar SSOT(本 component 不重覆 register)
     React.useEffect(() => {
       const onKey = (e: KeyboardEvent) => {
+        // 輸入法組字中不接(與 Sidebar ⌘B 同一條;判準 lib/ime-composition.ts)
+        if (isImeComposing(e)) return
         if (e.key === '.' && (e.metaKey || e.ctrlKey)) {
           e.preventDefault()
           setAsideOpen(!asideOpen)
@@ -347,16 +351,15 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
             // 解:開啟時 snapshot opener(事件 dispatch 時 Radix 尚未移焦;MUI/React Aria/Ant snapshot
             // 共識 + DatePicker Range 先例 date-picker.tsx:1061),關閉手動還原;opener 已 unmount →
             // fallback skip-link main(#app-shell-main tabIndex=-1)。
+            // 記開啟者 / 還焦點全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + modal;開啟者不在了 → 主內容區)
             onOpenAutoFocus={(e) => {
-              asideOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+              asideOpenerRef.current = captureFocusOrigin()
               handleSheetOpenAutoFocus(e) // 接力 DS 預設 body-focus(自訂 handler 覆寫預設,故顯式呼叫)
             }}
             onCloseAutoFocus={(e) => {
-              e.preventDefault()
               const opener = asideOpenerRef.current
               asideOpenerRef.current = null
-              if (opener?.isConnected) { opener.focus({ preventScroll: true }); return }
-              document.getElementById('app-shell-main')?.focus({ preventScroll: true })
+              returnFocusToOpener(e, opener, { noTrigger: true, modal: true, fallback: () => document.getElementById('app-shell-main') })
             }}
             className={cn(
               'w-[min(90vw,var(--app-shell-aside-modal-width))] flex flex-col p-0 [&>button]:hidden',

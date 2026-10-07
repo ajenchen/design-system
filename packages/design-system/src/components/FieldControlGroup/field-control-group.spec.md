@@ -36,7 +36,7 @@ benchmark:
 - 單一 control(直接用 Field 即可)
 - 多個獨立 fields 垂直排列 → 用 `FieldGroup`
 - 同一 question 多 options(Checkbox 群組)→ 用 `CheckboxGroup` / `RadioGroup`
-- 需 outer 統一 border 但 children 之間有顯著 gap(非接合)→ 直接 `flex gap-2`
+- children 之間要有間距(非接合)→ 不用 FieldControlGroup,改一般橫排,間距照 `layoutSpace.spec.md` 規則決定:控件 ↔ 它自己的送出 / 動作鈕 = `gap-[var(--layout-space-tight)]`(規則 3「跨範疇 + 直接 functional 交互」);並列的輸入框之間照規則 5(起迄一組 `gap-2`、不同組 `gap-4`)
 
 ## 近親分界
 

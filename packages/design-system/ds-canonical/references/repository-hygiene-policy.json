@@ -45,6 +45,7 @@
         "commands": "compatibility symlink to provider commands",
         "components.json": "component tooling configuration",
         "docs": "repository documentation",
+        "eslint.config.mjs": "ESLint flat config for the react-hooks gate (check:react-hooks, N40)",
         "generated": "committed generated repository views",
         "governance": "repository governance state and projections",
         "hooks": "provider hook compatibility surface",

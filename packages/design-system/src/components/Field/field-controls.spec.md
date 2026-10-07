@@ -216,6 +216,11 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 - 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT)+ Select / Combobox / DatePicker / PeoplePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`)
 - **何時不用**:form 直欄(fill 對齊)、DataTable cell(naked 已 `!h-full` 滿格,cell 寬由 column 管)
+- **欄位內搜尋讓位不改欄寬**(2026-10-07,待辦總帳 K4):可搜尋欄位打開時,值裡用文字畫的部分(只選「不限」、PeoplePicker 多人只選 1 位的名字)讓位給欄位內搜尋框,
+  它原本的寬留在搜尋框那一格 —— hug 欄位打開前後、打的字沒超過那段值之前欄寬不變(規則 `../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」、
+  `../PeoplePicker/people-picker.spec.md` §C;probe `field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」,閘 `scripts/searchable-field-keys-invariant.mjs`)。
+  已知未解(2026-10-07 實測,另列待辦,不在 K4 範圍):多選文字標籤(Combobox 一般 Tag)在 hug 欄位裡縮成只剩「+N」(三個標籤 → 76px「+3」;標籤可見數用自己的 hug 寬量,互為因果,
+  與 PeoplePicker 頭像串 2026-09-07 修過的棘輪同一類,`../PeoplePicker/people-picker.stories.tsx`「寬度貼合內容 × 多人」);PeoplePicker 單人(Select)hug 欄位打開時欄寬 151 → 204px(搜尋框的固有寬)
 - Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`(https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx)/ Radix Select Trigger intrinsic sizing(https://www.radix-ui.com/primitives/docs/components/select)
 
 ---
@@ -448,6 +453,7 @@ col.accessor('status', {
 - `select-menu.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
+- `steps.spec.md`
 - `switch.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

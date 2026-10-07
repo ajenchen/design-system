@@ -28,14 +28,14 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-09-20:第九個跑東西的 job `verify-browser-field-edges`。select-all 一個 job 序列跑五支
   // 全 story 掃描,實測 1076 秒(17.9 分)—— 是關鍵路徑第二長的,而那五支彼此獨立、只共用同一份
   // storybook build。拆一半出來平行跑,各自約 9-10 分。user 原話:「你他媽發版到底是要發多久?」
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
   // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
   // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
   // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -53,8 +53,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-overlay 同列(2026-09-27):2026-09-12 拆出來時兩邊各 7-9 分,之後閘又加了(form-gap-token 等),
   // 本分支 8 筆 CI 實測 11.9–14.6 分成功、15.1 / 15.1 / 15.2 分三次撞 15 分被取消(被砍前的判定全綠);
   // 同 interaction 的理由:逾時毀掉的是裁決,不是品質訊號。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
+  // verify-browser-searchable-fields 同列(2026-10-07):從 interaction 拆出的可搜尋欄位按鍵閘 + 從 datatable-handles 搬來的選單焦點閘,
+  // 建置 + 安裝約 4 分、兩支閘本機合計約 10 分(CI 約 1.2–1.4 倍)→ 估 15–18 分,15 分上限會被取消。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -150,8 +152,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-datatable-handles。原因是同日把該 job 裡對照組的逾時由寫死 120s 改成由子行程
   // 的 MAX_ATTEMPTS 推導(根因:子行程依設計最多重試 5 次、每次約 38 秒,父行程卻只給 120 秒),
   // 放寬後最壞情況會把原 job 推到 25 分鐘上限。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 13)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 11)
+  // 13 → 14 / 11 → 12(2026-10-07):新增 verify-browser-searchable-fields(從 interaction / datatable-handles 拆出,同樣自己 build storybook 與裝 chromium)。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 14)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 12)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
   // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
@@ -175,7 +178,8 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
         ? `${id} 裝了 Chromium 跑瀏覽器閘,必須在 job 層宣告 GOVERNANCE_BROWSER_REQUIRED: '1'(否則起不了瀏覽器會被印成 SKIPPED-ENV 當通過)`
         : `${id} 沒有裝 Chromium,不得宣告 GOVERNANCE_BROWSER_REQUIRED(那裡的判定表刻意在無瀏覽器環境跑)`)
   }
-  assert.equal(browserJobs.length, 11, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  // 11 → 12(2026-10-07):新增 verify-browser-searchable-fields。
+  assert.equal(browserJobs.length, 12, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
   assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
   for (const command of [
     'npm run build:lib',

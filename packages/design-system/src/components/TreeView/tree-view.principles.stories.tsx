@@ -4,6 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Folder, FileText, Image, Users, User } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/設計原則',
@@ -17,10 +18,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -29,8 +30,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -42,8 +44,9 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>適合 TreeView 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="檔案瀏覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">檔案瀏覽</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="步驟引導"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">步驟引導</span></LinkTo></li>
@@ -51,14 +54,15 @@ export const UsageGuidance: Story = {
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="長標籤"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長標籤</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="拖曳重排"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">拖曳重排</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
 
         <Rule
           title="TreeView 的 sweet spot — 階層資料 + 任意多層 + 展開收合"
           note="檔案資料夾、組織架構、專案 / 子專案 / 任務。每個 node 有 children 就可展開,沒有就是 leaf"
         >
-          <div className="border border-border rounded-lg p-3 w-80">
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="border border-border rounded-lg py-2 w-80">
             <TreeView aria-label="文件與下載資料夾樹" defaultExpandedIds={['docs', 'photos', 'downloads']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -80,7 +84,8 @@ export const UsageGuidance: Story = {
           title='❌ 互斥展開(同時只開一個):用 Accordion type="single"'
           note='TreeView 預設允許任意多個節點同時展開。平面設定分段若需要「展開一個、其他自動收合」的互斥語意,用 Accordion type="single"(非 TreeView)'
         >
-          <div className="border border-border rounded-lg p-3 w-80">
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="border border-border rounded-lg py-2 w-80">
             <TreeView aria-label="帳號設定分段" selectionMode="none" defaultExpandedIds={['account', 'notify', 'privacy']}>
               <TreeItem id="account" label="帳號設定">
                 <TreeItem id="account-email" label="電子郵件" />
@@ -104,7 +109,8 @@ export const UsageGuidance: Story = {
           title="❌ 平面資料(無階層):用 DataTable / list"
           note="TreeView 為階層而設計——若資料本質是平面(使用者清單、訂單清單),用 DataTable 更自然,TreeView 的遞迴結構徒增 overhead"
         >
-          <div className="border border-border rounded-lg p-3 w-80">
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="border border-border rounded-lg py-2 w-80">
             <TreeView aria-label="平面使用者清單反例">
               <TreeItem id="alice" label="Alice" icon={User} />
               <TreeItem id="bob" label="Bob" icon={User} />
@@ -136,7 +142,8 @@ export const ExpandSelectSeparationRule: Story = {
           title="Chevron = 展開 / 收合;Label = 選取 / 執行"
           note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。世界級 tree 元件的共識(VS Code、macOS Finder、Linear)"
         >
-          <div className="border border-border rounded-lg p-3 w-80">
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="border border-border rounded-lg py-2 w-80">
             <TreeView aria-label="展開與選取行為範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -168,7 +175,8 @@ export const IndentRule: Story = {
         title="Indent 必須用 gap-2(8px)和 chevronSize 對齊"
         note="indentStep = chevronSize + gap-2,跟 item-layout 的 prefix-content gap 一致。讓 indent 視覺跟 item-layout 融為一體,而非獨立數字系統"
       >
-        <div className="border border-border rounded-lg p-3 w-80">
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="border border-border rounded-lg py-2 w-80">
           <TreeView aria-label="工程團隊縮排範例" defaultExpandedIds={['eng', 'frontend', 'backend']}>
             <TreeItem id="eng" label="Engineering" icon={Users}>
               <TreeItem id="frontend" label="Frontend" icon={Users}>
@@ -188,7 +196,8 @@ export const IndentRule: Story = {
         title="Chevron placeholder 保留對齊"
         note="同層 siblings 有展開 icon、有的沒有 → label 不對齊。TreeView 自動給葉節點留 chevron 位置(透明 placeholder),consumer 不需介入"
       >
-        <div className="border border-border rounded-lg p-3 w-80">
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="border border-border rounded-lg py-2 w-80">
           <TreeView aria-label="行銷素材資料夾樹" defaultExpandedIds={['assets', 'social']}>
             <TreeItem id="assets" label="行銷素材" icon={Folder}>
               <TreeItem id="hero" label="活動主視覺.png" icon={Image} />
@@ -205,7 +214,8 @@ export const IndentRule: Story = {
         title="❌ 混用有 icon / 無 icon 的節點"
         note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳(見 spec「Icon 一致性原則」)"
       >
-        <div className="border border-border rounded-lg p-3 w-80">
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="border border-border rounded-lg py-2 w-80">
           <TreeView aria-label="icon 混用反例檔案樹" defaultExpandedIds={['src', 'public']}>
             <TreeItem id="src" label="src" icon={Folder}>
               <TreeItem id="app" label="App.tsx" icon={FileText} />

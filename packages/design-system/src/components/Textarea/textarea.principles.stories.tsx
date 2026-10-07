@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
 import { Input } from '@/design-system/components/Input/input'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Textarea/設計原則',
@@ -20,10 +21,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -42,10 +43,11 @@ export const UsageGuidance: Story = {
     const [comment, setComment] = React.useState('')
     const [title, setTitle] = React.useState('')
     return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Textarea 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Textarea/展示" name="基本用法"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Issue 回報、評論留言等多行輸入(基本用法)</span></LinkTo>
@@ -54,7 +56,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Textarea/展示" name="在 Field 內"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">表單內的專案說明、備註欄位(在 Field 內)</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-secondary mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,見下方與 Input 的分界示範。</p>
+      <p className="text-fg-secondary mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,見下方與 Input 的分界示範。</p>
     </div>
 
       {/* vs 近親 — 原 VsInputRule */}
@@ -63,7 +65,7 @@ export const UsageGuidance: Story = {
           title="Textarea — 多行自由輸入(可能有換行、段落)"
           note="評論、描述、備註、bio、issue content 等場景:內容可能多行,使用者需要看到全貌邊寫邊 review。Enter 在 Textarea 裡是換行,不是 submit"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ GitHub issue 留言框</Label>
             <Textarea
               value={comment}
@@ -72,14 +74,14 @@ export const UsageGuidance: Story = {
               aria-label="Issue 留言"
               rows={4}
             />
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="❌ 單行內容(標題 / 姓名 / URL)用 Textarea"
           note="單行內容使用者預期 Enter 提交 form,Textarea 的 Enter 是換行會破壞預期。使用 Input,鍵盤行為對齊 form submit"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 專案標題用 Input(單行,Enter 提交)</Label>
             <Input
               value={title}
@@ -87,12 +89,12 @@ export const UsageGuidance: Story = {
               placeholder="輸入專案名稱"
               aria-label="專案名稱"
             />
-          </div>
-          <div>
+          </ExampleGroup>
+          <ExampleGroup>
             <Label warn>❌ 錯用:把單行標題做成 Textarea</Label>
             <Textarea rows={1} placeholder="輸入專案名稱" aria-label="專案名稱（Textarea 誤用）" />
             <Label warn>↑ 使用者按 Enter 會換行,無法提交 form</Label>
-          </div>
+          </ExampleGroup>
         </Rule>
       </div>
     </div>
@@ -179,7 +181,7 @@ export const NoIconRule: Story = {
         title="需要 action button → 放 Field 外(Textarea 下方或旁邊)"
         note="例如 comment box 的「送出」按鈕放 Textarea 下方,不塞進框內"
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[var(--layout-space-bottom)]">
           <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" />
           <div className="flex justify-end">
             <Button variant="primary" size="sm">送出</Button>

@@ -71,10 +71,12 @@ function FilmstripScrollDemo() {
         className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
-        <div className="flex w-fit gap-2 py-1">
+        {/* @layout-space-magic-ok: 膠片列上下 4px 給縮圖焦點框空間(micro)(layoutSpace.spec.md:166 micro) */}
+        <div className="flex w-fit gap-[var(--layout-space-tight)] py-1">
           {SLIDE_TITLES.map((title, i) => (
             <div
               key={title}
+              // @layout-space-magic-ok: 單張投影片縮圖內距(縮圖自身微幾何)(layoutSpace.spec.md:168 元件自身微幾何)
               className="flex h-16 w-24 shrink-0 flex-col justify-between rounded-md border border-border bg-surface p-2"
             >
               <span className="truncate text-caption text-foreground">{title}</span>
@@ -96,7 +98,7 @@ function FilmstripScrollDemo() {
 export const ScrollMode: Story = {
   name: '捲動模式',
   render: () => (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <FilmstripScrollDemo />
       <p className="max-w-[480px] text-caption text-fg-muted">
         簡報縮圖列(對標 FileViewer filmstrip)。fade mask 提示還有內容,arrow 一次捲 80% 容器寬;
@@ -116,7 +118,7 @@ const PROJECT_TABS = ['概覽', '活動', '檔案', '權限', '整合', '帳單'
 export const MenuMode: Story = {
   name: '選單模式',
   render: () => (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <div>
         <DropdownMenu defaultOpen>
           <DropdownMenuTrigger asChild>

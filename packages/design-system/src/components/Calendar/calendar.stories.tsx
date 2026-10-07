@@ -52,7 +52,7 @@ export const TeamCalendar: Story = {
       { id: '8', title: 'Customer meeting', start: `${thisMonth}-25`, end: `${thisMonth}-25`, color: 'orange' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
         <Calendar
           defaultReferenceDate={now}
           today={now}
@@ -84,7 +84,7 @@ export const LaunchWeek: Story = {
       { id: 'l7', title: 'Post-mortem', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
         <Calendar
           defaultReferenceDate={now}
           today={now}
@@ -122,11 +122,12 @@ export const ContentPublishingSchedule: Story = {
       { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'orange' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
         <Calendar
           events={events}
           defaultReferenceDate={now}
           today={now}
+          // @layout-space-magic-ok: 自訂事件方塊照抄元件內建 tileBase 'rounded-md px 6px py 2px'(calendar.tsx:200;layoutSpace.spec.md:168 元件自身微幾何)
           renderEventTile={(event) => <span className="block truncate rounded-md bg-secondary px-1.5 py-0.5 text-caption text-foreground">{event.title}</span>}
           onEventClick={customTileActivated}
           readOnlyDates
@@ -155,7 +156,7 @@ export const ContentPublishingSchedule: Story = {
 export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar
         events={[]}
         defaultReferenceDate={now}

@@ -35,8 +35,9 @@ import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
-import { SidebarProvider, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
+import { SidebarProvider, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/設計原則',
@@ -52,10 +53,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-3 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -73,10 +74,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Sheet 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Sheet/展示" name="建立新專案（右側滑入）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">建立新專案（右側滑入）</span></LinkTo>
@@ -85,7 +87,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Sheet/展示" name="編輯成員詳情（右側滑入）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">編輯成員詳情（右側滑入）</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁下方「vs 近親」對照段)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁下方「vs 近親」對照段)。</p>
     </div>
 
       {/* vs 近親 — VsDialogRule — 原 VsDialogRule */}
@@ -253,15 +255,18 @@ export const SidePropRule: Story = {
             {/* 目錄 = 側欄導覽列 → 消費 SidebarMenuButton,不手刻 <button>(ui-development.md「既有 primitive 優先消費」;
                 M23(e):說得出「它是 Sidebar」就照 sidebar.spec.md —— left 側滑本身就是 Sidebar 小視口的內部基建)。
                 hover = neutral-hover + 字升 foreground、當前項 neutral-selected 且滑過釘住、鍵盤焦點畫內描邊,全由元件負責。
-                SidebarProvider minHeight:auto 取消 min-h-svh(先例 sidebar.stories.tsx ActionHoverState) */}
-            <SidebarProvider className="flex-1 py-2" style={{ minHeight: 'auto' }}>
-              <SidebarMenu>
-                {['總覽', '任務', '成員', '設定'].map(name => (
-                  <SidebarMenuItem key={name}>
-                    <SidebarMenuButton id={name}>{name}</SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
+                SidebarProvider minHeight:auto 取消 min-h-svh(先例 sidebar.stories.tsx ActionHoverState)。
+                列集合上下的呼吸由 SidebarGroup 擁有(item-anatomy.spec.md「垂直 padding 歸屬」:SidebarMenu 的外層容器 = SidebarGroup),不在外殼手寫 */}
+            <SidebarProvider className="flex-1" style={{ minHeight: 'auto' }}>
+              <SidebarGroup>
+                <SidebarMenu>
+                  {['總覽', '任務', '成員', '設定'].map(name => (
+                    <SidebarMenuItem key={name}>
+                      <SidebarMenuButton id={name}>{name}</SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
             </SidebarProvider>
           </SheetContent>
         </Sheet>

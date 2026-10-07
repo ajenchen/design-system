@@ -8,6 +8,7 @@ import { CircularProgress } from './circular-progress'
 import { Input } from '@/design-system/components/Input/input'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
  * CircularProgress 展示——整個設計系統 circular 形式進度的 SSOT。
@@ -34,7 +35,7 @@ type Story = StoryObj
 export const Default: Story = {
   name: '預設',
   render: () => (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-[var(--layout-space-loose)]">
       {/* CircularProgress 只提供一種預設尺寸(24);其他尺寸由 consumer context 自動縮放
           (Button loading = iconSize / Input loading = iconSize / Empty = iconSize)。
           不 parallel 展示多 sizes 因為 DS 不「提供各種 sizes」讓 consumer 挑,而是透過原則
@@ -63,7 +64,7 @@ export const InlineAction: Story = {
       { file: 'presentation.pdf', value: undefined },
     ]
     return (
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <Input
           startIcon={Search}
           loading
@@ -72,22 +73,29 @@ export const InlineAction: Story = {
           aria-label="搜尋 GitHub repositories"
         />
 
-        <div className="flex flex-col gap-2">
+        {/* 上傳佇列 = 一串同質列(語意清單 ul / li;列距 8px 由 micro 分類器認得的清單結構擁有)。
+            這裡示範的是 CircularProgress 放進列尾,不是 FileItem:FileItem 上傳中畫的是進度條(file-item.spec.md),不是圓形進度 */}
+        <ul aria-label="上傳佇列" className="flex flex-col gap-2">
           {uploads.map((u) => (
-            <div
+            <li
               key={u.file}
-              className="flex items-center gap-3 border border-border rounded-md px-3 py-2 text-body"
+              // @layout-space-magic-ok: 上傳列外框內距 12 / 8px 是這張示範列自己的固定幾何(layoutSpace.spec.md:168);列內 圖示 ↔ 檔名 ↔ 進度 8px 是 micro(layoutSpace.spec.md:166),圖示依 item-anatomy.spec.md:285 包進 ItemPrefix
+              className="flex items-start gap-2 border border-border rounded-md px-3 py-2 text-body"
             >
-              <Upload size={16} className="text-fg-muted" />
-              <span className="flex-1 truncate">{u.file}</span>
-              {u.value != null ? (
-                <CircularProgress size={16} value={u.value} affix="value" aria-label={`${u.file} 上傳 ${u.value}%`} />
-              ) : (
-                <CircularProgress size={16} label="準備中" />
-              )}
-            </div>
+              <ItemPrefix>
+                <Upload size={16} className="text-fg-muted" />
+              </ItemPrefix>
+              <ItemContent label={u.file} />
+              <ItemSuffix>
+                {u.value != null ? (
+                  <CircularProgress size={16} value={u.value} affix="value" aria-label={`${u.file} 上傳 ${u.value}%`} />
+                ) : (
+                  <CircularProgress size={16} label="準備中" />
+                )}
+              </ItemSuffix>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     )
   },

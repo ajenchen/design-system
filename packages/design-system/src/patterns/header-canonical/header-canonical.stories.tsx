@@ -14,9 +14,10 @@ import {
   X,
 } from 'lucide-react'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
-import { SurfaceHeader } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { SurfaceHeader, SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Button } from '@/design-system/components/Button/button'
-import { Separator } from '@/design-system/components/Separator/separator'
+import { ButtonDivider, ButtonGroup } from '@/design-system/components/Button/button-group'
 import {
   Tabs,
   TabsList,
@@ -59,6 +60,7 @@ function Panel({ children }: { children: ReactNode }) {
 export const SingleRow = () => (
   <Panel>
     <ChromeHeader>
+      {/* @layout-space-magic-ok: chrome 標題區 圖示 ↔ 檔名(ChromeHeader 自身 children 也是 gap 8px,chrome-header.tsx:181)(layoutSpace.spec.md:166 micro) */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <FileText size={16} className="shrink-0 text-foreground" aria-hidden />
         <span className="truncate text-body-lg text-foreground" title="2026 Q1 財務報告.pdf">
@@ -66,13 +68,19 @@ export const SingleRow = () => (
         </span>
       </div>
       {/* 右側按鈕 = children + flex(title flex-1 推開);排列遵循 action-bar:
-          動作群(放大/下載)── Separator ── dismiss(關閉)分群,buttons 全 size="sm"(chrome header canonical)*/}
-      <Button iconOnly variant="text" size="sm" startIcon={ZoomIn} aria-label="放大" />
-      <Button iconOnly variant="text" size="sm" startIcon={Download} aria-label="下載" />
-      <Separator orientation="vertical" className="h-6 mx-1" />
-      <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
+          動作群(放大/下載)── 群組分隔線 ── dismiss(關閉),buttons 全 size="sm"(chrome header canonical)。
+          分隔線唯一實作 = ButtonDivider,而且要住在自動高度的 ButtonGroup 裡(action-bar.spec.md「分隔線幾何」:
+          直接放在固定高度的 chrome header 會退化成容器高;禁用 Separator 畫 action region 群組線) */}
+      <ButtonGroup>
+        <Button iconOnly variant="text" size="sm" startIcon={ZoomIn} aria-label="放大" />
+        <Button iconOnly variant="text" size="sm" startIcon={Download} aria-label="下載" />
+        <ButtonDivider />
+        <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
+      </ButtonGroup>
     </ChromeHeader>
-    <div className="flex flex-col gap-2 p-6 text-body text-fg-secondary">
+    {/* chrome header 下方內容區:水平 loose(規則 6)、header → 第一個元素 tight(規則 2);meta 行 ↔ 內文 8px = 同一段文字的行距 micro */}
+    {/* @layout-space-magic-ok: meta 行 ↔ 內文 8px(同一段文字的行距 micro)(layoutSpace.spec.md:166 micro) */}
+    <div className="flex flex-col gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body text-fg-secondary">
       <p className="text-caption text-fg-muted">陳雅婷 更新於 2026/04/18 · 12 頁 · 2.4 MB</p>
       <p>本季合併營收 NT$4.82 億,較上季成長 8.2%;毛利率維持 41%。附錄含各區域損益與現金流量表。</p>
     </div>
@@ -99,21 +107,25 @@ export const WithTabs = () => (
         </h2>
         <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
       </ChromeHeader>
+      {/* TabsContent 內建 mt-tight 已擁有 header → content(tabs.spec.md:193);內層只補水平 loose + 底部 element → 容器底 tight(規則 4 B) */}
       <TabsContent value="overview">
-        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+        {/* @layout-space-magic-ok: 概覽兩行(專案 meta ↔ 說明)= 同一段文字的行距 micro(layoutSpace.spec.md:166 micro) */}
+        <div className="flex flex-col gap-1 px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">
           <p>負責人:林思妤 · 期程:2026/03–2026/06 · 狀態:設計中</p>
           <p>將既有品牌識別全面翻新——logo、配色與元件庫,預計 Q2 上線。</p>
         </div>
       </TabsContent>
       <TabsContent value="activity">
-        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+        {/* @layout-space-magic-ok: gap 4px = 同質活動紀錄列的列距(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="flex flex-col gap-1 px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">
           <p>陳柏宇 上傳了「新版 logo 提案 v3」· 2 小時前</p>
           <p>林思妤 將狀態改為「設計中」· 昨天</p>
           <p>Aisha Khan 留言:配色再往暖色調微調 · 3 天前</p>
         </div>
       </TabsContent>
       <TabsContent value="files">
-        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+        {/* @layout-space-magic-ok: gap 4px = 同質檔案列的列距(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="flex flex-col gap-1 px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">
           <p>品牌識別規範_v3.pdf · 8.1 MB</p>
           <p>logo 原始檔.ai · 24 MB</p>
           <p>配色對照表.xlsx · 320 KB</p>
@@ -162,7 +174,7 @@ export const WithTabsOverflowScroll = () => (
         </ChromeHeader>
         {projectSettingsTabs.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <div className="p-6 text-body text-fg-secondary">{t.content}</div>
+            <div className="px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">{t.content}</div>
           </TabsContent>
         ))}
       </Tabs>
@@ -192,7 +204,7 @@ export const WithTabsOverflowMenu = () => (
         </ChromeHeader>
         {projectSettingsTabs.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <div className="p-6 text-body text-fg-secondary">{t.content}</div>
+            <div className="px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">{t.content}</div>
           </TabsContent>
         ))}
       </Tabs>
@@ -206,51 +218,48 @@ WithTabsOverflowMenu.storyName = '含分頁列 — 溢出 ⌄ 導覽選單'
  *  只在有 sidebar 時有意義 → canonical demo 放 AppShell primary-header(leadingRail = <SidebarTrigger />),
  *  不在此 generic header anatomy 孤立展示(2026-06-08 per user:孤立 demo 會誤導成通用 slot,且 icon 易被亂換)。*/
 export const Overview = () => (
-  <div className="flex flex-col gap-8">
-    <section className="flex flex-col gap-2">
-      <div className="text-body font-medium text-foreground">Single-row(標題 + 動作列)</div>
-      <div className="text-body-sm text-fg-secondary">
+  <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <section className="flex flex-col gap-[var(--layout-space-tight)]">
+      <h3 className="text-h6 font-semibold text-foreground">Single-row(標題 + 動作列)</h3>
+      <p className="text-caption text-fg-secondary">
         最常見的 chrome header。對標 FileViewer Toolbar / Sidebar header。border-b 自畫、px-loose、dismiss size=sm。
-      </div>
+      </p>
       <SingleRow />
     </section>
-    <section className="flex flex-col gap-2">
-      <div className="text-body font-medium text-foreground">withTabs(標題列 + 分頁列)</div>
-      <div className="text-body-sm text-fg-secondary">
+    <section className="flex flex-col gap-[var(--layout-space-tight)]">
+      <h3 className="text-h6 font-semibold text-foreground">withTabs(標題列 + 分頁列)</h3>
+      <p className="text-caption text-fg-secondary">
         header 內含分頁。對標 FileViewer InfoPanel。傳 tabsSlot,border 改由 TabsList 全寬畫一條線。
-      </div>
+      </p>
       <WithTabs />
     </section>
-    <section className="flex flex-col gap-2">
-      <div className="text-body font-medium text-foreground">A 家族 overlay(SurfaceHeader)— 浮層標題列</div>
-      <div className="text-body-sm text-fg-secondary">
+    <section className="flex flex-col gap-[var(--layout-space-tight)]">
+      <h3 className="text-h6 font-semibold text-foreground">A 家族 overlay(SurfaceHeader)— 浮層標題列</h3>
+      <p className="text-caption text-fg-secondary">
         Dialog / Sheet / Popover / Coachmark 的頂部標題列。高度 padding-based(由內容撐、對齊 chrome-header-height),跟
         chrome 家族共用同一組契約:border-b、px-loose、dismiss size=sm、tabs 連動。consumer 多用 DialogHeader /
         SheetHeader / PopoverHeader wrapper,此處用底層 SurfaceHeader 展示 anatomy。
-      </div>
+      </p>
       <div className="overflow-hidden rounded-md border border-divider bg-surface-raised shadow-[var(--elevation-200)]">
         <SurfaceHeader>
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">編輯專案設定</h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
-        <div className="flex flex-col gap-3 p-6 text-body text-fg-secondary">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-caption text-fg-muted">專案名稱</span>
-            <span className="text-foreground">Acme 品牌改版專案</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-caption text-fg-muted">可見範圍</span>
-            <span className="text-foreground">團隊成員(12 人)</span>
-          </div>
-        </div>
+        {/* 浮層 body 消費 SurfaceBody(px-loose py-tight,不手刻殼);標籤 / 值兩組用 DescriptionList(story-rules.md:84) */}
+        <SurfaceBody>
+          <DescriptionList cols={1}>
+            <DescriptionItem label="專案名稱">Acme 品牌改版專案</DescriptionItem>
+            <DescriptionItem label="可見範圍">團隊成員(12 人)</DescriptionItem>
+          </DescriptionList>
+        </SurfaceBody>
       </div>
     </section>
-    <section className="flex flex-col gap-2">
-      <div className="text-body font-medium text-foreground">leadingRail — 見 AppShell（非此處）</div>
-      <div className="text-body-sm text-fg-secondary">
+    <section className="flex flex-col gap-[var(--layout-space-tight)]">
+      <h3 className="text-h6 font-semibold text-foreground">leadingRail — 見 AppShell（非此處）</h3>
+      <p className="text-caption text-fg-secondary">
         ChromeHeader 另有 leadingRail slot(寬 = sidebar 收合寬,專為跟 sidebar 收合 icon 對齊)。因它只在「有
         sidebar」時有意義,canonical demo 放在 AppShell primary-header（leadingRail = SidebarTrigger）,不在此孤立展示。
-      </div>
+      </p>
     </section>
   </div>
 )

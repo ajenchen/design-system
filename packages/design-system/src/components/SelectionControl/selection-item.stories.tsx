@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Mail, Bell, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 
 const meta: Meta<typeof SelectionItem> = {
@@ -29,14 +30,16 @@ type Story = StoryObj<typeof SelectionItem>
 export const NotificationPreferences: Story = {
   name: '通知偏好',
   render: () => (
-    <div className="flex flex-col gap-2 max-w-md">
-      <p className="text-caption text-fg-muted mb-2">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
+      <p className="text-caption text-fg-muted">
         帳號設定頁 — 勾選要接收的通知類型。由 Checkbox 消費 SelectionItem 提供結構。
       </p>
-      <Checkbox defaultChecked label="產品更新電子報" description="每兩週寄送,可隨時取消訂閱" />
-      <Checkbox label="安全性警告" description="登入裝置變動、密碼變更等重要事件" />
-      <Checkbox defaultChecked label="Workspace 邀請通知" />
-      <Checkbox label="行銷活動優惠" description="我想收到優惠碼與限時活動資訊" />
+      <CheckboxGroup aria-label="通知類型">
+        <Checkbox defaultChecked label="產品更新電子報" description="每兩週寄送,可隨時取消訂閱" />
+        <Checkbox label="安全性警告" description="登入裝置變動、密碼變更等重要事件" />
+        <Checkbox defaultChecked label="Workspace 邀請通知" />
+        <Checkbox label="行銷活動優惠" description="我想收到優惠碼與限時活動資訊" />
+      </CheckboxGroup>
     </div>
   ),
 }
@@ -48,11 +51,11 @@ export const NotificationPreferences: Story = {
 export const PlanPicker: Story = {
   name: '方案選擇',
   render: () => (
-    <div className="flex flex-col gap-2 max-w-md">
-      <p className="text-caption text-fg-muted mb-2">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
+      <p className="text-caption text-fg-muted">
         帳單頁切換付款週期 — RadioGroup 消費 SelectionItem。
       </p>
-      <RadioGroup defaultValue="annual" className="flex flex-col gap-2">
+      <RadioGroup defaultValue="annual">
         <RadioGroupItem value="monthly" label="月繳" description="$12 / 月 · 可隨時取消" />
         <RadioGroupItem value="annual" label="年繳(省 20%)" description="$115 / 年 · 相當於 $9.6 / 月" />
         <RadioGroupItem value="lifetime" label="終身買斷" description="$299 一次付款 · 僅限 Pro plan" />
@@ -68,34 +71,36 @@ export const PlanPicker: Story = {
 export const WithPrefixIcon: Story = {
   name: '前綴圖示',
   render: () => (
-    <div className="flex flex-col gap-2 max-w-md">
-      <p className="text-caption text-fg-muted mb-2">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
+      <p className="text-caption text-fg-muted">
         Figma-like permission scope picker — control + icon(24px 閾值內 inline)+ label + description。
       </p>
-      <SelectionItem
-        control={<Checkbox defaultChecked aria-label="讀取 email 信箱" />}
-        icon={Mail}
-        label="讀取 email 信箱"
-        description="僅用於通知,永遠不會外流"
-      />
-      <SelectionItem
-        control={<Checkbox aria-label="存取 Drive 檔案" />}
-        icon={Folder}
-        label="存取 Drive 檔案"
-        description="讀取並修改你授權的資料夾"
-      />
-      <SelectionItem
-        control={<Checkbox defaultChecked aria-label="推播通知權限" />}
-        icon={Bell}
-        label="推播通知權限"
-      />
-      <SelectionItem
-        control={<Checkbox aria-label="Admin 層級操作" />}
-        icon={Shield}
-        label="Admin 層級操作"
-        description="僅限 workspace owner 開啟"
-        disabled
-      />
+      <CheckboxGroup aria-label="權限範圍">
+        <SelectionItem
+          control={<Checkbox defaultChecked aria-label="讀取 email 信箱" />}
+          icon={Mail}
+          label="讀取 email 信箱"
+          description="僅用於通知,永遠不會外流"
+        />
+        <SelectionItem
+          control={<Checkbox aria-label="存取 Drive 檔案" />}
+          icon={Folder}
+          label="存取 Drive 檔案"
+          description="讀取並修改你授權的資料夾"
+        />
+        <SelectionItem
+          control={<Checkbox defaultChecked aria-label="推播通知權限" />}
+          icon={Bell}
+          label="推播通知權限"
+        />
+        <SelectionItem
+          control={<Checkbox aria-label="Admin 層級操作" />}
+          icon={Shield}
+          label="Admin 層級操作"
+          description="僅限 workspace owner 開啟"
+          disabled
+        />
+      </CheckboxGroup>
     </div>
   ),
 }
@@ -107,29 +112,31 @@ export const WithPrefixIcon: Story = {
 export const WithPrefixAvatarBlock: Story = {
   name: '前綴頭像',
   render: () => (
-    <div className="flex flex-col gap-2 max-w-md">
-      <p className="text-caption text-fg-muted mb-2">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
+      <p className="text-caption text-fg-muted">
         多選 reviewer — control + avatar(32px block 模式,跟 control 一起對齊 text block center)+ name +
         role。
       </p>
-      <SelectionItem
-        control={<Checkbox defaultChecked aria-label="選取 Ada Chen" />}
-        avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
-        label="Ada Chen"
-        description="Design Engineer · Frontend team"
-      />
-      <SelectionItem
-        control={<Checkbox aria-label="選取張美真" />}
-        avatar={{ src: 'https://i.pravatar.cc/64?u=zhang-meizhen', alt: '張美真', color: 'magenta' }}
-        label="張美真"
-        description="Product Designer · Platform team"
-      />
-      <SelectionItem
-        control={<Checkbox defaultChecked aria-label="選取林伯彥" />}
-        avatar={{ src: 'https://i.pravatar.cc/64?u=lin-boyan', alt: '林伯彥', color: 'green' }}
-        label="林伯彥"
-        description="Staff Engineer · Infra team"
-      />
+      <CheckboxGroup aria-label="Reviewers">
+        <SelectionItem
+          control={<Checkbox defaultChecked aria-label="選取 Ada Chen" />}
+          avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
+          label="Ada Chen"
+          description="Design Engineer · Frontend team"
+        />
+        <SelectionItem
+          control={<Checkbox aria-label="選取張美真" />}
+          avatar={{ src: 'https://i.pravatar.cc/64?u=zhang-meizhen', alt: '張美真', color: 'magenta' }}
+          label="張美真"
+          description="Product Designer · Platform team"
+        />
+        <SelectionItem
+          control={<Checkbox defaultChecked aria-label="選取林伯彥" />}
+          avatar={{ src: 'https://i.pravatar.cc/64?u=lin-boyan', alt: '林伯彥', color: 'green' }}
+          label="林伯彥"
+          description="Staff Engineer · Infra team"
+        />
+      </CheckboxGroup>
     </div>
   ),
 }

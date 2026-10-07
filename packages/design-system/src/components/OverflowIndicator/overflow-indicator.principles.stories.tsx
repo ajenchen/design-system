@@ -18,10 +18,11 @@ type Story = StoryObj
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 OverflowIndicator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="Combobox 標籤溢出"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Combobox 標籤溢出</span></LinkTo>
@@ -33,11 +34,11 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 人員欄位</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
     </div>
 
       {/* vs 近親 — VsScrollAreaRule — 原 VsScrollAreaRule */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>處理超出空間的 2 種策略:</p>
       <ul>
         <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,hover 展開看完整清單</li>
@@ -54,8 +55,8 @@ export const UsageGuidance: Story = {
 export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
-    <div className="flex flex-col gap-12">
-      <div className="prose prose-sm max-w-prose">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div className="max-w-prose">
         <p>OverflowIndicator 是顯示「還有 N 個沒列出來」的 `+N` 小標籤,由下列幾種元件在內部使用(顯示前幾項 + 把剩下的折成 `+N`),不直接放在頁面程式碼裡:</p>
 
         <h4>Pattern 1 — Combobox 標籤溢出(單行模式)</h4>

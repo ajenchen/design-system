@@ -147,7 +147,7 @@ export const FilterRow: Story = {
     const [value, setValue] = React.useState('')
     return (
       <div className="w-[640px]">
-        <p className="text-caption text-fg-muted mb-3">DataTable 進階篩選 row 是 FieldControlGroup 的典型 consumer。</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">DataTable 進階篩選 row 是 FieldControlGroup 的典型 consumer。</p>
         <FieldControlGroup block>
           <Select className="!w-[160px] flex-shrink-0" options={FILTER_FIELDS} value={field} onChange={setField} />
           <Select className="!w-[120px] flex-shrink-0" options={STRING_OPS} value={op} onChange={setOp} />

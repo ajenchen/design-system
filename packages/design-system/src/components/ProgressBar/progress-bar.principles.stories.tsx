@@ -9,6 +9,7 @@ import { ProgressBar } from './progress-bar'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/ProgressBar/設計原則',
@@ -20,8 +21,9 @@ type Story = StoryObj
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -31,10 +33,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} naturalWidth>{children}</CaptionedExamples>
   </div>
 )
 
@@ -46,7 +48,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 
 // 情境展示容器——讓例子有真實產品感
 const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: number }) => (
-  <div className="border border-border rounded-md bg-surface px-4 py-3" style={{ width }}>
+  <div className="border border-border rounded-md bg-surface px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]" style={{ width }}>
     {children}
   </div>
 )
@@ -58,8 +60,9 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose">
+        <div className="max-w-prose">
           <p>適合 ProgressBar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/ProgressBar/展示" name="批次任務進度"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">批次任務進度</span></LinkTo>
@@ -70,7 +73,7 @@ export const UsageGuidance: Story = {
               <span className="text-fg-secondary"> — 列表中每列各自的配額使用率 / 任務完成度,4px 細線不搶走主要欄位的閱讀重量</span>
             </li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
         </div>
       </Section>
 
@@ -80,6 +83,7 @@ export const UsageGuidance: Story = {
           note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
         >
           <Frame>
+            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
             <div className="flex items-center gap-3">
               <CircularProgress aria-label="計算中" />
               <span className="text-body">計算統計報表中...</span>
@@ -93,6 +97,7 @@ export const UsageGuidance: Story = {
           note="ProgressBar fill 有 300ms transition,在極短操作反而閃爍不自然。< 1 秒的非同步通常不需要任何 loading 視覺(結果直接呈現即可)。"
         >
           <Frame>
+            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
             <div className="flex items-center gap-2">
               <span className="text-body">已儲存</span>
               <span className="text-footnote text-fg-muted">· 剛才</span>
@@ -108,6 +113,7 @@ export const UsageGuidance: Story = {
           <Frame width={480}>
             {/* 上傳列表載體 = FileItem(compact list gap-1 canonical;內部消費 ProgressBar)—
                 不手組 Paperclip + 檔名 + ProgressBar(見下方「檔案上傳 UI → 用 FileItem」rule) */}
+            {/* @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264)(layoutSpace.spec.md:113 同範疇 spec-own) */}
             <div className="flex flex-col gap-1">
               <FileItem mode="compact" name="會議記錄_0418.docx" status="completed" />
               <FileItem mode="compact" name="簡報素材.zip" status="uploading" progress={62} />
@@ -134,7 +140,8 @@ export const UsageGuidance: Story = {
           note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
         >
           <Frame>
-            <div className="flex items-center gap-2 mb-2">
+            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
               <TableIcon size={16} className="text-fg-muted" />
               <span className="text-body flex-1">匯出客戶名單 CSV</span>
               <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
@@ -144,6 +151,7 @@ export const UsageGuidance: Story = {
           <Label>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</Label>
 
           <Frame>
+            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
             <div className="flex items-center gap-3">
               <CircularProgress aria-label="驗證信用卡中" />
               <div className="flex flex-col">
@@ -155,7 +163,8 @@ export const UsageGuidance: Story = {
           <Label>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</Label>
 
           <Frame>
-            <div className="flex items-center gap-2 mb-2">
+            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
               <FileText size={16} className="text-fg-muted" />
               <span className="text-body flex-1">產生季度報表中...</span>
             </div>
@@ -169,7 +178,8 @@ export const UsageGuidance: Story = {
           note="FileItem 是檔案情境的 標準消費端 primitive(檔名 / icon / 進度 / status / actions 一條龍),內部自己會消費 ProgressBar。自組 raw ProgressBar + 檔名 + Paperclip + 狀態 icon 會讓 consumer 每次重覆發明一套檔案列表 layout,視覺/行為漂移無可避免。世界級對照:Ant Design Upload 內部用 Progress,consumer 不直接拼裝。"
         >
           <Frame>
-            <div className="flex items-center gap-2 mb-2">
+            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
               <Paperclip size={16} className="text-fg-muted" />
               <span className="text-body flex-1">附件_會議記錄.docx</span>
               <span className="text-caption text-fg-muted">58%</span>
@@ -179,13 +189,14 @@ export const UsageGuidance: Story = {
           <Label warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</Label>
 
           <Frame width={440}>
-            <div className="flex items-center gap-2 mb-3">
+            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
               <FileText size={18} className="text-primary" />
               <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
               <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
             </div>
             <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
-            <p className="text-footnote text-fg-muted mt-2">處理中,預計剩餘 28 秒</p>
+            <p className="text-footnote text-fg-muted mt-[var(--layout-space-tight)]">處理中,預計剩餘 28 秒</p>
           </Frame>
           <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
         </Rule>
@@ -203,7 +214,8 @@ export const StatusRule: Story = {
         note="三種 status 是進度的完整生命週期:在途(inProgress,fill 用 --info)→ 終態二選一(success / error)。不要用 status 表達「警示」或「接近上限」等中間語意——那是 Notice / Alert 的職責。"
       >
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">Q1_財報.xlsx</span>
           </div>
@@ -212,7 +224,8 @@ export const StatusRule: Story = {
         <Label>✅ 上傳中用 inProgress,affix 顯示進度百分比</Label>
 
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">簡報_final.pptx</span>
           </div>
@@ -221,7 +234,8 @@ export const StatusRule: Story = {
         <Label>✅ 完成用 success + 勾 icon(終態指示)</Label>
 
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">影片素材.mp4</span>
             <span className="text-caption text-error">檔案過大</span>
@@ -236,7 +250,8 @@ export const StatusRule: Story = {
         note="ProgressBar 語意是進度三態(進行中 / 完成 / 失敗)。配額超標屬業務規則,由 consumer 決定在多少 % 切換到 error,不要在 ProgressBar 加中間色。上方若要提示,用 Notice / Alert。"
       >
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <span className="text-body flex-1">儲存空間</span>
             <span className="text-caption text-error tabular-nums">95% 使用</span>
           </div>
@@ -257,7 +272,7 @@ export const AffixRule: Story = {
         note="value 讓使用者讀到確切數字,適合配額、完成比例等需要精確資訊的情境。status-icon 只在完成或失敗時呈現,讓終態一眼可辨。"
       >
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center mb-[var(--layout-space-tight)]">
             <span className="text-body flex-1">儲存空間</span>
           </div>
           <ProgressBar value={78} status="inProgress" affix="value" aria-label="儲存空間使用率" />
@@ -265,7 +280,8 @@ export const AffixRule: Story = {
         <Label>✅ 配額顯示:affix=value,使用者要知道確切百分比</Label>
 
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">提案書_終版.pdf</span>
           </div>
@@ -279,7 +295,8 @@ export const AffixRule: Story = {
         note="Enum 涵蓋不了的客製需求用 ReactNode。例如上傳中提供「取消」按鈕,或顯示 2.3 / 5.0 MB 等具體 bytes(Dropbox / Google Drive 做法)。"
       >
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">設計規範_v2.pdf</span>
           </div>
@@ -293,7 +310,8 @@ export const AffixRule: Story = {
         <Label>✅ 上傳中附取消按鈕,使用者可中斷</Label>
 
         <Frame>
-          <div className="flex items-center gap-2 mb-2">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">影片素材.mp4</span>
           </div>
@@ -312,7 +330,8 @@ export const AffixRule: Story = {
         note="FileItem compact mode 檔名那行已經提供足夠情境,bar 本身不需再重複百分比,此時不傳 affix(純 bar)。"
       >
         <Frame>
-          <div className="flex items-center gap-2 mb-1">
+          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">附件.zip</span>
             <span className="text-caption text-fg-muted tabular-nums">55%</span>

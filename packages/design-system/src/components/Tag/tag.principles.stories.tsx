@@ -6,6 +6,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Tag as TagIcon } from 'lucide-react'
 import { Tag } from './tag'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { Button } from '@/design-system/components/Button/button'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Tag/設計原則',
@@ -19,10 +21,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -31,8 +33,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -44,14 +47,15 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>適合 Tag 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/Tag/展示" name="頭像"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">頭像</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Tag/展示" name="可移除"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">可移除</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Tag/展示" name="截斷 + Tooltip"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">截斷 + Tooltip</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
       </Section>
 
@@ -60,8 +64,9 @@ export const UsageGuidance: Story = {
           title="❌ 用 Tag 做 overlay 通知圓點"
           note="Tag 太大,放在角落會蓋住主元件;且 Tag 承載語意內容,用來單純計數太重 — 改用 Badge"
         >
-          <div className="relative inline-flex">
-            <button className="px-4 py-2 border rounded-md">通知</button>
+          {/* self-start:Rule 的範例欄是直排 flex,不縮回按鈕寬的話外框會被拉滿,Tag 就掛不到按鈕角落 */}
+          <div className="relative inline-flex self-start">
+            <Button variant="tertiary">通知</Button>
             <Tag color="red" className="absolute -top-2 -right-2">3</Tag>
           </div>
           <Label warn>↑ Tag 太大,疊在 button 角落違和 → 用 Badge</Label>
@@ -71,7 +76,8 @@ export const UsageGuidance: Story = {
           title="❌ 用 Badge 做分類標籤"
           note="Badge 不承載語意,單純數字/dot。「Electronics」這類分類必須用 Tag 才有 variant 色 + 可讀文字"
         >
-          <Badge count={0} variant="high" className="!w-auto !px-2" />
+          {/* @story-counter-example: ❌ 反例:強撐 Badge 放分類文字(!w-auto 與加寬內距正是本則要示範的誤用) */}
+          <Badge count={0} variant="high" className="!w-auto !px-2 self-start" />
           <Label warn>↑ Badge 不設計來放文字 label 做分類 → 用 Tag</Label>
         </Rule>
       </Section>
@@ -81,7 +87,8 @@ export const UsageGuidance: Story = {
           title="Tag — 分類標籤、狀態標記、多選已選值"
           note="承載語意(類別 / 狀態),通常有 variant 色彩區分。較大、可含 icon / dismiss button、適合放語意內容"
         >
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="flex items-center gap-1 flex-wrap">
             <Tag color="blue">進行中</Tag>
             <Tag color="green">已完成</Tag>
             <Tag color="yellow">待審核</Tag>
@@ -94,7 +101,7 @@ export const UsageGuidance: Story = {
           title="Badge — 通知計數、狀態紅點"
           note="overlay 在元件角落,較小(16px),表達「數量」或「有新東西」——不承載語意內容"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[var(--layout-space-loose)]">
             <Badge count={3} variant="critical" />
             <Badge count={12} variant="high" />
             <Badge dot variant="critical" aria-label="有新訊息" />
@@ -114,7 +121,8 @@ export const VariantNotSemanticRule: Story = {
         title="Variant 是「顏色」,不是「語意」"
         note="red 不一定代表「錯誤」,green 不一定代表「成功」。語意由消費端的內容和上下文決定。世界級 DS(Atlassian/Polaris)都採這個架構——避免強綁語意後 categorical color 不夠用的困境"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="red">紅色標籤</Tag>
           <Tag color="green">綠色分類</Tag>
           <Tag color="blue">藍色狀態</Tag>
@@ -130,7 +138,8 @@ export const VariantNotSemanticRule: Story = {
         title="❌ 只靠 variant 色傳達狀態(color-blind 失效)"
         note="「這個 Tag 是紅色 → 錯誤」這種單靠顏色的語意對 color-blind 使用者失效。必須用 label 文字明確傳達"
       >
-        <div className="flex items-center gap-2">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1">
           <Tag color="red" />
           <Tag color="green" />
           <Tag color="yellow" />
@@ -149,7 +158,8 @@ export const SubtleVsSolidRule: Story = {
         title="Subtle(預設)— 淺底深字,適合一般分類 / 狀態"
         note="視覺重量較輕,不搶頁面焦點。99% 場景用 subtle"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue">Draft</Tag>
           <Tag color="green">Published</Tag>
           <Tag color="yellow">Under Review</Tag>
@@ -162,7 +172,8 @@ export const SubtleVsSolidRule: Story = {
         title="Solid — 深底白字,需要視覺強調時"
         note="重點標籤、重要狀態標記。視覺重量較高,一頁內不該多個 solid(會互相搶戲)"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="red" solid>緊急</Tag>
           <Tag color="blue" solid>VIP</Tag>
           <Tag color="yellow" solid>精選</Tag>
@@ -174,7 +185,8 @@ export const SubtleVsSolidRule: Story = {
         title="❌ 所有 Tag 都用 solid"
         note="視覺重量太高,使用者無法分辨哪個真的重要。subtle 是基礎,solid 是強調——多數應該是 subtle"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue" solid>電子產品</Tag>
           <Tag color="green" solid>服飾</Tag>
           <Tag color="red" solid>食品</Tag>
@@ -197,7 +209,8 @@ export const DismissRule: Story = {
           title="用 onRemove callback,Tag 自動渲染 X button"
           note="消費者不需要自己組 remove button——傳 onRemove,Tag 內部處理尺寸、hover、a11y。多選 Combobox 的已選 tag 用這個 pattern"
         >
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="flex items-center gap-1 flex-wrap">
             {tags.map(t => (
               <Tag key={t} color="blue" onRemove={() => setTags(tags.filter(x => x !== t))}>
                 {t}
@@ -211,7 +224,8 @@ export const DismissRule: Story = {
           title="Dismiss icon 繼承 Tag 文字色(有色時跟色)"
           note="不同於一般 inline action 的 fg-muted——Tag 有色變體時 dismiss 跟 Tag 文字同色,視覺一體"
         >
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          <div className="flex items-center gap-1 flex-wrap">
             <Tag color="blue" onRemove={() => {}}>React</Tag>
             <Tag color="green" onRemove={() => {}}>TypeScript</Tag>
             <Tag color="red" onRemove={() => {}}>Storybook</Tag>
@@ -239,7 +253,8 @@ export const IconRule: Story = {
         title="icon — 類別圖示(tag label 的視覺強化)"
         note="用 LucideIcon,Tag 一律固定 16px、不隨 Tag 尺寸縮放——讓所有 Tag 的 icon 前綴維持相同節奏,一整排並排掃視時對齊不跳動。icon 顏色繼承 Tag 文字色(有色 variant 就跟該色),而不是自成一色:避免 icon 變成 Tag 內第二個視覺焦點,搶走 label 的主體性。"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue" icon={TagIcon}>Feature</Tag>
           <Tag color="green" icon={TagIcon}>Bug Fix</Tag>
         </div>
@@ -249,7 +264,8 @@ export const IconRule: Story = {
         title="avatar — 人員 / 組織類 Tag 前綴"
         note="多選 Combobox 的已選成員用 avatar + name 組合。avatar 只提供視覺辨識(一眼看到「是個人」),真正承載身份的是名字;兩者並用才能避免相似頭像、或圖片載入失敗時的誤認——所以 avatar Tag 一定要保留可見姓名,不能只放頭像。人員 / 組織標籤同理。"
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=1" alt="" className="w-4 h-4 rounded-full" />}>
             Ada Chen
           </Tag>

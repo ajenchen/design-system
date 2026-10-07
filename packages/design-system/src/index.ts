@@ -202,6 +202,7 @@ export {
 export type {
   ComboboxOption,
   ComboboxProps,
+  ComboboxTagRenderState,
 } from './components/Combobox/index'
 export {
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
@@ -518,7 +519,6 @@ export type {
   StepDescriptionProps,
   StepItemProps,
   StepLabelProps,
-  StepsExpansion,
   StepsOrientation,
   StepsProps,
   StepsSize,
@@ -646,7 +646,7 @@ export type {
 //   - components/SelectionControl
 //   - patterns/horizontal-overflow
 //   - patterns/overlay-surface
-// 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
+// 另有個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;components / patterns / tokens / hooks 的 subpath 仍有):
 //   - components/AgentPanel:AGENT_BRAND
 //   - components/AgentPanel:AGENT_FAB_DRAG_INTERNALS
 //   - components/AgentPanel:BREATH_DUR
@@ -672,6 +672,7 @@ export type {
 //   - components/Avatar:avatarStackCutoutStyle
 //   - components/Avatar:avatarStackItemStyle
 //   - components/Button:ButtonGroupContext
+//   - components/Combobox:findInlineSearchMirror
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
@@ -685,10 +686,15 @@ export type {
 //   - patterns/element-anatomy:RowSizeProvider
 //   - patterns/element-anatomy:TruncatedText
 //   - patterns/element-anatomy:TruncatedTextProps
+// 出口全部是 @internal 的 tokens / hooks / lib 模組整個不進 front-door(2026-10-07;檔頭標模組層 @internal,或每個出口都標):
+//   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/roving-list-keyboard.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - tokens/motion/closed-end-state.ts(每個出口都標 @internal;subpath 仍有)
 
 // ─── Tokens(JS mirrors — token SSOT 程式面)──────────────────────────────
 export * from './tokens/categorical-color'
 export * from './tokens/elevation/overlay-geometry'
+export * from './tokens/motion/disclosure-motion'
 export * from './tokens/motion/motion'
 export * from './tokens/motion/overlay-motion'
 export * from './tokens/uiSize/icon-size'
@@ -704,10 +710,14 @@ export * from './hooks/use-overflow-items'
 export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
+export * from './lib/collection-removal-focus'
+export * from './lib/composite-field-focus'
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
-export * from './lib/focus-after-trigger'
+export * from './lib/ime-composition'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
-export * from './lib/roving-list-keyboard'
+export * from './lib/overlay-escape'
+export * from './lib/overlay-focus-return'
+export * from './lib/pointer-press'
 export * from './lib/utils'

@@ -10,6 +10,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ItemContent, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta = {
   title: 'Design System/Components/CircularProgress/設計原則',
@@ -21,8 +23,9 @@ type Story = StoryObj
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -32,10 +35,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-6 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -50,7 +53,7 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed mb-6">
+        <p className="text-caption text-fg-muted max-w-[720px]">
           CircularProgress 用於「使用者觸發 async 動作後的即時回饋」與「全頁 / 浮層的 loading 訊號」。
           詳細情境 → 「常見消費場景」story(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
         </p>
@@ -61,7 +64,8 @@ export const UsageGuidance: Story = {
           title="❌ 不用 CircularProgress 當常駐視覺裝飾"
           note="語意鎖「正在載入、正在處理」。永遠旋轉的裝飾會讓 a11y 使用者(螢幕閱讀器)持續收到 loading 通知,也讓視覺使用者無法判斷何時結束"
         >
-          <div className="flex items-center gap-2 border border-border rounded-lg p-3 w-72">
+          {/* @layout-space-magic-ok: 示範卡內 圖示 ↔ 文字(卡內行內 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             <CircularProgress aria-label="載入中（裝飾誤用示範）" />
             <span className="text-body">歡迎使用本系統</span>
           </div>
@@ -72,15 +76,19 @@ export const UsageGuidance: Story = {
           title="❌ 不要多個 CircularProgress 同時旋轉"
           note="同一畫面多個 indeterminate 會讓使用者不知道注意力該放哪。通常是結構問題:應該用父層單一 overlay,或改用 Skeleton 描述整個佈局"
         >
-          <div className="flex flex-col gap-2 w-72">
+          {/* 一串同質的載入列(語意清單 ul / li;列距 8px 由 micro 分類器認得的清單結構擁有) */}
+          <ul aria-label="載入中的項目" className="flex flex-col gap-2 w-72">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
+              // @layout-space-magic-ok: 載入列外框內距 12 / 8px 是這張示範列自己的固定幾何(layoutSpace.spec.md:168);列內 旋轉指示 ↔ 文字 8px 是 micro(layoutSpace.spec.md:166),指示依 item-anatomy.spec.md:285 包進 ItemPrefix
+              <li key={i} className="flex items-start gap-2 border border-border rounded-md px-3 py-2 text-body">
                 {/* size=16 = field-inline canonical;此例為反例(不該多個一起轉)。 */}
-                <CircularProgress size={16} aria-label={`載入項目 ${i + 1}`} />
-                <span className="text-body text-fg-muted">載入項目 {i + 1}</span>
-              </div>
+                <ItemPrefix>
+                  <CircularProgress size={16} aria-label={`載入項目 ${i + 1}`} />
+                </ItemPrefix>
+                <ItemContent label={`載入項目 ${i + 1}`} labelClassName="text-fg-muted" />
+              </li>
             ))}
-          </div>
+          </ul>
           <Label warn>四個同時轉 → 改用 Skeleton 做整個列表佔位</Label>
         </Rule>
 
@@ -102,18 +110,19 @@ export const UsageGuidance: Story = {
           title="❌ 達 100% 不 swap,留在 value=100"
           note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。世界級慣例(Gmail / Dropbox / Google Drive):上傳完成即消失,swap 為 ✓ icon / 實際內容 / Empty。本 DS 不提供 success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
         >
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-[var(--layout-space-loose)]">
+            <ExampleGroup align="center">
               <CircularProgress value={100} size={24} aria-label="進度 100%（穩態誤用）" />
               <Label warn>❌ 穩態停留 100% → 使用者困惑</Label>
-            </div>
-            <div className="flex flex-col items-center gap-2">
+            </ExampleGroup>
+            <ExampleGroup align="center">
+              {/* @layout-space-magic-ok: 完成態 圖示 ↔ 文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
               <div className="inline-flex items-center gap-2 text-success">
                 <Check size={16} aria-hidden />
                 <span className="text-body">已完成</span>
               </div>
               <Label>✅ Swap 為 Check icon + label / 直接呈現該呈現的內容</Label>
-            </div>
+            </ExampleGroup>
           </div>
         </Rule>
       </Section>
@@ -131,8 +140,10 @@ export const UsageGuidance: Story = {
           title="Skeleton — 內容佔位(佈局已知、等資料填入)"
           note="List / table / card grid 初次載入——佈局結構確定,只差資料。用 Skeleton 讓版面先定型,避免資料回來時跳動"
         >
-          <div className="flex items-center gap-3 w-72 border border-border rounded-lg p-3">
+          {/* @layout-space-magic-ok: 骨架列內 頭像佔位 ↔ 文字佔位(同一列的 micro)(layoutSpace.spec.md:166 micro) */}
+          <div className="flex items-center gap-3 w-72 border border-border rounded-lg p-[var(--layout-space-loose)]">
             <Skeleton className="h-10 w-10 rounded-full" />
+            {/* @layout-space-magic-ok: 骨架文字兩行之間(同一文字區的 micro)(layoutSpace.spec.md:166 micro) */}
             <div className="flex flex-col gap-2 flex-1">
               <Skeleton className="h-4 w-3/5" />
               <Skeleton className="h-3 w-1/3" />
@@ -161,24 +172,24 @@ export const IndeterminateVsDeterminateRule: Story = {
         title="不知道時長 → 不傳 value(indeterminate);能量化進度 → 傳 value(determinate)"
         note="CircularProgress 兩態合一(Material / Chakra 流派)。判斷法:consumer 能告訴使用者「完成了 X%」嗎?能 → determinate、不能 → indeterminate。選錯會讓使用者一直盯著 0% 以為壞掉,或看著旋轉以為是裝飾。"
       >
-        <div className="flex flex-col items-center gap-2">
+        <ExampleGroup align="center">
           <CircularProgress aria-label="等待第三方驗證" />
           <Label>✅ 第三方金流驗證:不知道要多久 → 不傳 value</Label>
-        </div>
-        <div className="flex flex-col items-center gap-2">
+        </ExampleGroup>
+        <ExampleGroup align="center">
           <CircularProgress value={65} affix="value" aria-label="檔案上傳進度 65%" />
           <Label>✅ 檔案上傳:bytes 已知 → 傳 value={'{N}'}</Label>
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule
         title="Determinate 若無法量化會變假進度"
         note="value 永遠停在 0% 或隨機亂跳會讓使用者懷疑 app 壞掉。若操作本質不可量化,維持 indeterminate 到底,不要硬傳 value 假裝。"
       >
-        <div className="flex flex-col items-center gap-2">
+        <ExampleGroup align="center">
           <CircularProgress value={0} aria-label="報表產生進度 0%（假進度誤用）" />
           <Label warn>❌ 生成報表中卻永遠卡 0% → 改用 indeterminate(不傳 value)</Label>
-        </div>
+        </ExampleGroup>
       </Rule>
     </div>
   ),
@@ -254,7 +265,8 @@ export const SizeMatchContextRule: Story = {
         title="24px(預設)— row primitive 的 loading footer、card 內 inline loading"
         note="中等尺寸,放在 row / card 內容區,視覺重量足夠吸引注意但不喧賓奪主"
       >
-        <div className="flex items-center justify-center gap-2 border border-border rounded-lg p-4 w-72">
+        {/* @layout-space-magic-ok: 載入列內 旋轉指示 ↔ 文字(卡內行內 micro)(layoutSpace.spec.md:166 micro) */}
+        <div className="flex items-center justify-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
           <CircularProgress size={24} aria-label="載入更多留言" />
           <span className="text-body text-fg-muted">載入更多留言...</span>
         </div>

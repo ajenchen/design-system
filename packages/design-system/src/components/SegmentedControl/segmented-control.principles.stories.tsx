@@ -9,6 +9,8 @@ import { SegmentedControl, SegmentedControlItem } from './segmented-control'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { ButtonDivider, ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/SegmentedControl/設計原則',
@@ -24,10 +26,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-4">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
   </div>
 )
 
@@ -43,22 +45,22 @@ export const UsageGuidance: Story = {
     const [align, setAlign] = useState('left')
     const [period, setPeriod] = useState('week')
     return (
-      <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {/* vs 近親元件 — 原 WhatItIs(定位與分界) */}
         <div>
         <Rule
           title="vs 近親元件 — SegmentedControl 是 compact control(可驅動下方內容變化)"
           note="常見誤解：以為 SegmentedControl 只能當 value input（選了就結束）。實際上它可以驅動下方局部內容變化——chart 維度切換、list 排序切換、form 條件欄位切換都是正當用法。關鍵是規模：它切的是局部變體（一個 chart / 一段 form section），不是整個 container"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 純 value input（值直接送出，不影響下方）</Label>
             <SegmentedControl value={align} onValueChange={setAlign} iconOnly>
               <SegmentedControlItem value="left" startIcon={AlignLeft} aria-label="靠左對齊" />
               <SegmentedControlItem value="center" startIcon={AlignCenter} aria-label="置中對齊" />
               <SegmentedControlItem value="right" startIcon={AlignRight} aria-label="靠右對齊" />
             </SegmentedControl>
-          </div>
-          <div>
+          </ExampleGroup>
+          <ExampleGroup>
             <Label>✅ 驅動下方 chart 維度變化（局部變體，不是結構）</Label>
             <SegmentedControl value={period} onValueChange={setPeriod}>
               <SegmentedControlItem value="day">日</SegmentedControlItem>
@@ -66,14 +68,14 @@ export const UsageGuidance: Story = {
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
             <Label>↑ 切換會重載下方 chart 資料，但 chart 還是同一個 chart，不是換一整個 view</Label>
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="何時不用 / 替代元件 — 切的是整塊 container 結構 → 用 Tabs"
           note="若每個「選項」背後是一整塊獨立子頁（有自己的 toolbar / filters / table / actions），那是 Tabs 的規模不是 SegmentedControl。判斷 fallback：把它跟 Input / Button 並排違不違和？違和 → Tabs"
         >
-          <div>
+          <ExampleGroup>
             <Label>❌ 錯用：這三者各自是完整子頁，不該用 SegmentedControl</Label>
             <SegmentedControl defaultValue="orders">
               <SegmentedControlItem value="orders">訂單</SegmentedControlItem>
@@ -81,24 +83,24 @@ export const UsageGuidance: Story = {
               <SegmentedControlItem value="products">產品</SegmentedControlItem>
             </SegmentedControl>
             <Label warn>↑ 改用 Tabs</Label>
-            <Tabs defaultValue="orders" className="mt-2">
+            <Tabs defaultValue="orders">
               <TabsList>
                 <TabsTrigger value="orders">訂單</TabsTrigger>
                 <TabsTrigger value="customers">顧客</TabsTrigger>
                 <TabsTrigger value="products">產品</TabsTrigger>
               </TabsList>
-              <TabsContent value="orders" className="text-body text-fg-muted mt-2">訂單列表、篩選與批次出貨（各自的 toolbar / table）</TabsContent>
-              <TabsContent value="customers" className="text-body text-fg-muted mt-2">顧客名單、分群與生命週期價值</TabsContent>
-              <TabsContent value="products" className="text-body text-fg-muted mt-2">商品目錄、庫存與上下架狀態</TabsContent>
+              <TabsContent value="orders" className="text-body text-fg-muted">訂單列表、篩選與批次出貨（各自的 toolbar / table）</TabsContent>
+              <TabsContent value="customers" className="text-body text-fg-muted">顧客名單、分群與生命週期價值</TabsContent>
+              <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
             </Tabs>
-          </div>
+          </ExampleGroup>
         </Rule>
 
         <Rule
           title="何時不用 / 替代元件 — 單一功能 on/off → 用 Button pressed"
           note="1 個 item 的 SegmentedControl 沒有選擇語意。二元狀態用 Button pressed"
         >
-          <Button variant="text" pressed>已釘選</Button>
+          <Button className="self-start" variant="text" pressed>已釘選</Button>
         </Rule>
         </div>
 
@@ -193,22 +195,22 @@ export const IconOnlyRule: Story = {
         title="✅ 全組統一 icon-only 或全組帶 label"
         note="SegmentedControl 的 iconOnly 是整組決策，不是個別 item。全 icon 或全 label，不可混搭——混搭會破壞 segmented 對稱感，使用者也無法預測哪個 item 有 tooltip"
       >
-        <div>
+        <ExampleGroup>
           <Label>✅ 全 icon-only（自動 Tooltip）</Label>
           <SegmentedControl defaultValue="list" iconOnly>
             <SegmentedControlItem value="list" startIcon={List} aria-label="清單" />
             <SegmentedControlItem value="board" startIcon={LayoutGrid} aria-label="看板" />
             <SegmentedControlItem value="calendar" startIcon={Calendar} aria-label="行事曆" />
           </SegmentedControl>
-        </div>
-        <div>
+        </ExampleGroup>
+        <ExampleGroup>
           <Label>✅ 全帶 label（可選配 startIcon）</Label>
           <SegmentedControl defaultValue="list">
             <SegmentedControlItem value="list" startIcon={List}>清單</SegmentedControlItem>
             <SegmentedControlItem value="board" startIcon={LayoutGrid}>看板</SegmentedControlItem>
             <SegmentedControlItem value="calendar" startIcon={Calendar}>行事曆</SegmentedControlItem>
           </SegmentedControl>
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule
@@ -235,39 +237,43 @@ export const FullWidthRule: Story = {
         title="fullWidth 的判準：跟著容器尺度走，不是跟著 label 長度"
         note="對齊 Apple HIG / Material 3 / Carbon 等世界級定義——segmented 永遠各 item 等寬或全由內容決定，不存在『撐滿但寬度不一』的混血模式。所以 fullWidth 的選擇只看容器大小，不看 label 長度"
       >
-        <div>
+        <ExampleGroup>
           <Label>✅ 小容器（Dialog / Sheet / 窄 sidebar / Field row）→ fullWidth</Label>
-          <div className="w-[360px] p-4 border border-border rounded-md">
-            <div className="text-caption text-fg-muted mb-2">Dialog 內（360px 容器）</div>
+          <div className="w-[360px] p-[var(--layout-space-loose)] border border-border rounded-md">
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Dialog 內（360px 容器）</div>
             <SegmentedControl defaultValue="day" fullWidth>
               <SegmentedControlItem value="day">日</SegmentedControlItem>
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
           </div>
-        </div>
+        </ExampleGroup>
 
-        <div>
+        <ExampleGroup>
           <Label>✅ 寬容器 / toolbar 並排其他 control → hug（預設）</Label>
-          <div className="flex items-center gap-3 p-2 border border-border rounded-md">
-            <span className="text-caption text-fg-muted">Toolbar：</span>
-            <SegmentedControl defaultValue="day" size="sm">
-              <SegmentedControlItem value="day">日</SegmentedControlItem>
-              <SegmentedControlItem value="week">週</SegmentedControlItem>
-              <SegmentedControlItem value="month">月</SegmentedControlItem>
-            </SegmentedControl>
-            <div className="h-5 w-px bg-divider" />
-            <span className="text-body text-fg-muted">其他工具列元素…</span>
+          {/* 工具列外框(chrome 內距)+ 控件 / 分隔線之間交給 ButtonGroup(action region 8px 槽距的主人,action-bar.spec.md:288-292),
+              不手刻槽距(同 tabs.principles「SegmentedControl 在 toolbar 裡跟 Button / Input 並排」) */}
+          <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-md">
+            <ButtonGroup>
+              <span className="text-caption text-fg-muted">Toolbar：</span>
+              <SegmentedControl defaultValue="day" size="sm">
+                <SegmentedControlItem value="day">日</SegmentedControlItem>
+                <SegmentedControlItem value="week">週</SegmentedControlItem>
+                <SegmentedControlItem value="month">月</SegmentedControlItem>
+              </SegmentedControl>
+              <ButtonDivider />
+              <span className="text-body text-fg-muted">其他工具列元素…</span>
+            </ButtonGroup>
           </div>
           <Label>↑ 這裡若 fullWidth 會搶走同行其他元素的空間</Label>
-        </div>
+        </ExampleGroup>
       </Rule>
 
       <Rule
         title="常見誤解：「label 長度差異不能用 fullWidth」是錯的"
         note="SegmentedControl 的 items 永遠等寬（fullWidth 時）或全由內容決定（hug 時），不存在「短 label 周圍空白失衡」的情況——fullWidth 永遠平均分配空間。唯一要擔心的是 label 被截斷，那是 content overflow 問題（該減少選項或改 Select），跟 fullWidth 無關"
       >
-        <div>
+        <ExampleGroup>
           <Label>✅ 就算 label 長度差異大，fullWidth 仍然等寬，視覺不會失衡</Label>
           <div className="w-[480px]">
             <SegmentedControl defaultValue="all" fullWidth>
@@ -276,7 +282,7 @@ export const FullWidthRule: Story = {
               <SegmentedControlItem value="done">已完成</SegmentedControlItem>
             </SegmentedControl>
           </div>
-        </div>
+        </ExampleGroup>
       </Rule>
     </div>
   ),

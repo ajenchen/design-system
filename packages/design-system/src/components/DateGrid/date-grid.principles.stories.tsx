@@ -8,6 +8,7 @@ import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/設計原則',
@@ -24,8 +25,9 @@ const storyDate = (day: number) =>
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
     <div>{children}</div>
   </section>
 )
@@ -39,10 +41,10 @@ const Rule = ({
   note?: string
   children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-5 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
@@ -55,9 +57,10 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Demo = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="flex flex-col gap-2 min-w-0">
+  <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-0">
     <span className="text-footnote text-fg-secondary font-medium">{title}</span>
-    <div className="bg-surface-raised border border-border rounded-lg p-2 w-fit">{children}</div>
+    {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner */}
+    <div className="bg-surface-raised border border-border rounded-lg w-fit">{children}</div>
   </div>
 )
 
@@ -72,8 +75,9 @@ export const UsageGuidance: Story = {
     return (
       <div>
         <Section title="何時用">
-          <div className="prose prose-sm max-w-prose">
+          <div className="max-w-prose">
             <p>適合 DateGrid 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
             <ul className="space-y-1">
               <li>
                 <LinkTo kind="Design System/Internal/DateGrid/展示" name="單日 — 生日 / 到期日"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Single — 生日 / 到期日</span></LinkTo>
@@ -88,7 +92,7 @@ export const UsageGuidance: Story = {
                 <LinkTo kind="Design System/Internal/DateGrid/展示" name="行內 — 儀表板小卡"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">行內 — Linear 專案截止日小卡</span></LinkTo>
               </li>
             </ul>
-            <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+            <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
           </div>
         </Section>
 
@@ -131,8 +135,8 @@ export const UsageGuidance: Story = {
             note="dashboard 小卡、側欄 widget、日期 filter bar。使用者一眼就看到整月,不需點開。DateGrid 是純 primitive,不自包 Popover。"
           >
             <Demo title="Linear 專案截止日 widget">
-              <div className="flex flex-col gap-2 w-fit">
-                <span className="text-caption text-fg-muted px-1">Project deadline</span>
+              <div className="flex flex-col w-fit">
+                <span className="text-caption text-fg-muted px-[var(--item-px,var(--field-px))] pt-[var(--item-px,var(--field-px))]">Project deadline</span>
                 <DateGrid
                   mode="single"
                   selected={inline}
@@ -150,7 +154,8 @@ export const UsageGuidance: Story = {
             note="表單欄位、設定頁、table cell 編輯。使用者先看到日期值,需要改時才展開選擇器。DatePicker 內部消費 DateGrid 作為 popup 內容。"
           >
             <Demo title="Notion 設定頁:訂閱續約日">
-              <div className="w-[220px]">
+              {/* 欄位不像 DateGrid 自帶內距,外框裡的欄位用同一個 --item-px 內縮,兩個示範框的內容離框邊一樣遠 */}
+              <div className="w-[220px] box-content p-[var(--item-px,var(--field-px))]">
                 <DatePicker value={date} onChange={setDate} clearable />
               </div>
             </Demo>
@@ -189,7 +194,7 @@ export const ModeRule: Story = {
       })
 
       return (
-        <div className="flex flex-col gap-10">
+        <div>
           <Rule
             title="single — 單一日期(生日、到期日、截止日)"
             note="資料欄位只接受一個日期值。使用者心智模型:「我要選一個日」。點新日取代舊選。此 mode 是 DatePicker 內建行為,最常見。"

@@ -25,6 +25,7 @@ type Story = StoryObj
 
 function TypeRow({ utility, meta, sample }: { utility: string; meta: string; sample: string }) {
   return (
+    // @layout-space-magic-ok: 字級表同質列(layoutSpace.spec.md:165 同質清單列)
     <div className="grid items-baseline gap-x-6 gap-y-1 border-b border-border py-4 last:border-0"
       style={{ gridTemplateColumns: '180px 1fr' }}>
       <div>
@@ -77,15 +78,18 @@ export const FontWeight: Story = {
     },
   },
   render: () => (
+    // @layout-space-magic-ok: 字重表同質列距(layoutSpace.spec.md:165 同質清單列)
     <div className="max-w-lg space-y-1">
       {[
         { label: '（預設）font-normal', cls: 'font-normal', weight: '400' },
         { label: 'font-medium',         cls: 'font-medium', weight: '500' },
         { label: 'font-bold',           cls: 'font-bold',   weight: '700' },
       ].map(({ label, cls, weight }) => (
+        // @layout-space-magic-ok: 字重表列內(樣字 ↔ 名稱)/ 列內距(layoutSpace.spec.md:165 同質清單列)
         <div key={weight} className="flex items-baseline gap-6 border-b border-border py-3 last:border-0">
           <div className="w-44 shrink-0">
             <code className="text-caption font-medium text-fg-secondary">{label}</code>
+            {/* @layout-space-magic-ok: 樣字 ↔ 字重名行內 8px(layoutSpace.spec.md:166 micro) */}
             <span className="ml-2 text-caption text-fg-muted">{weight}</span>
           </div>
           <p className={`text-body ${cls}`}>
@@ -112,20 +116,20 @@ export const LineHeight: Story = {
     },
   },
   render: () => (
-    <div className="grid max-w-2xl grid-cols-2 gap-6">
+    <div className="grid max-w-2xl grid-cols-2 gap-[var(--layout-space-loose)]">
       <div>
-        <code className="mb-2 block text-caption font-medium text-fg-secondary">
+        <code className="mb-[var(--layout-space-tight)] block text-caption font-medium text-fg-secondary">
           text-body · leading-normal (1.5)
         </code>
-        <p className="text-body leading-normal rounded-md bg-neutral-hover p-4">
+        <p className="text-body leading-normal rounded-md bg-neutral-hover p-[var(--layout-space-loose)]">
           適合連續閱讀的段落內文。充足的行距讓眼睛在換行時容易找到下一行的起點，降低閱讀疲勞。
         </p>
       </div>
       <div>
-        <code className="mb-2 block text-caption font-medium text-fg-secondary">
+        <code className="mb-[var(--layout-space-tight)] block text-caption font-medium text-fg-secondary">
           text-body · leading-compact (1.3)
         </code>
-        <p className="text-body leading-compact rounded-md bg-neutral-hover p-4">
+        <p className="text-body leading-compact rounded-md bg-neutral-hover p-[var(--layout-space-loose)]">
           適合單行固定高度容器內文字（Button / Tabs trigger / Chip / Notice / MenuItem 等），避免 1lh 大於容器高度造成垂直偏移。
         </p>
       </div>

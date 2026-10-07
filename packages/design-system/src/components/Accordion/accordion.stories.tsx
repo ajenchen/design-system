@@ -6,7 +6,8 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from './accordion'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Input } from '@/design-system/components/Input/input'
 
 const meta: Meta<typeof Accordion> = {
@@ -96,47 +97,48 @@ export const FAQ: Story = {
 
 export const SettingsSections: Story = {
   name: '設定分組',
+  // 每段展開後是「設定名稱 → 目前值」的唯讀摘要 = DescriptionList(story-rules.md:84「key/value 用 DescriptionList」),列距由它擁有
   render: () => (
     <div className="max-w-[640px]">
       <Accordion type="multiple" defaultValue={['notifications']}>
         <AccordionItem value="general">
           <AccordionTrigger>一般設定</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>工作區名稱:Acme Design Team</p>
-              <p>時區:台北(UTC+8)</p>
-              <p>預設語言:繁體中文</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="工作區名稱">Acme Design Team</DescriptionItem>
+              <DescriptionItem label="時區">台北(UTC+8)</DescriptionItem>
+              <DescriptionItem label="預設語言">繁體中文</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="notifications">
           <AccordionTrigger>通知偏好</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>Email 每日摘要:開啟</p>
-              <p>桌面即時通知:關閉</p>
-              <p>@提及我時:立即通知</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="Email 每日摘要">開啟</DescriptionItem>
+              <DescriptionItem label="桌面即時通知">關閉</DescriptionItem>
+              <DescriptionItem label="@提及我時">立即通知</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="security">
           <AccordionTrigger>安全與登入</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>兩步驟驗證:已啟用(Authenticator)</p>
-              <p>登入工作階段:3 個裝置</p>
-              <p>最近登入:2 小時前(Chrome on macOS)</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="兩步驟驗證">已啟用(Authenticator)</DescriptionItem>
+              <DescriptionItem label="登入工作階段">3 個裝置</DescriptionItem>
+              <DescriptionItem label="最近登入">2 小時前(Chrome on macOS)</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="billing">
           <AccordionTrigger>帳單與付款</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>目前方案:Team(月付 NT$480 / 每位使用者)</p>
-              <p>下次扣款:2026/05/19</p>
-              <p>付款方式:Visa **** 4242</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="目前方案">Team(月付 NT$480 / 每位使用者)</DescriptionItem>
+              <DescriptionItem label="下次扣款">2026/05/19</DescriptionItem>
+              <DescriptionItem label="付款方式">Visa **** 4242</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -149,7 +151,7 @@ export const SettingsSections: Story = {
 export const AdvancedOptions: Story = {
   name: '進階選項可隱藏',
   render: () => (
-    <div className="max-w-[640px] flex flex-col gap-4">
+    <div className="max-w-[640px] flex flex-col gap-[var(--layout-space-loose)]">
       <Field>
         <FieldLabel>專案名稱</FieldLabel>
         <Input defaultValue="Q2 發布計畫" />
@@ -165,7 +167,7 @@ export const AdvancedOptions: Story = {
         <AccordionItem value="advanced">
           <AccordionTrigger>進階選項</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-3">
+            <FieldGroup>
               <Field>
                 <FieldLabel>專案識別碼(選填)</FieldLabel>
                 <Input className="font-mono" placeholder="例:Q2-RELEASE" />
@@ -174,7 +176,7 @@ export const AdvancedOptions: Story = {
                 <FieldLabel>預設檢視模式</FieldLabel>
                 <Input defaultValue="看板" />
               </Field>
-            </div>
+            </FieldGroup>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="notifications">

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { Input } from './input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { Field, FieldError } from '@/design-system/components/Field/field'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Input/設計原則',
@@ -22,10 +24,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -34,8 +36,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
-    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+  <section className="mb-[var(--layout-space-loose)]">
+    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -47,15 +50,16 @@ export const UsageGuidance: Story = {
   render: () => (
     <div>
       <Section title="何時用">
-        <div className="prose prose-sm max-w-prose mb-8">
+        <div className="max-w-prose mb-[var(--layout-space-loose)]">
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/Input/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Input/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋列 — 輸入框與按鈕並排等高</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Input/展示" name="尾端操作"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">密碼顯示切換 / 搜尋清除等尾端操作</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Input/展示" name="錯誤狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Email 格式錯誤的驗證回饋</span></LinkTo></li>
           </ul>
-          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
       </Section>
 
@@ -237,10 +241,10 @@ export const ErrorRule: Story = {
         title="Error 只用邊框 + 外部 help text"
         note="紅色邊框已足夠傳達「這個欄位有問題」,具體訊息由 Form 層的 help text 補充。Input 尾部不放 ⚠️ 狀態 icon"
       >
-        <div>
-          <Input error defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
-          <p className="text-caption text-error mt-1">請輸入有效的 email 地址</p>
-        </div>
+        <Field invalid>
+          <Input defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
+          <FieldError>請輸入有效的 email 地址</FieldError>
+        </Field>
       </Rule>
 
       <Rule

@@ -9,6 +9,7 @@ import {
   DropdownMenuGroup, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta = {
@@ -156,7 +157,7 @@ const MOVE_TARGETS = [
 ] as const
 
 const NestedSubMenuDemo = () => (
-  <div className="flex items-center gap-2">
+  <ButtonGroup>
     <Button variant="tertiary" startIcon={UserPlus}>指派給我</Button>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -184,7 +185,7 @@ const NestedSubMenuDemo = () => (
       </DropdownMenuContent>
     </DropdownMenu>
     <Button variant="tertiary" startIcon={Share2}>分享</Button>
-  </div>
+  </ButtonGroup>
 )
 
 export const NestedSubMenu: StoryObj = {

@@ -32,6 +32,7 @@ export const GlobalHeaderEntry: StoryObj = {
   name: '全域標頭帳號入口',
   render: () => (
     <ChromeHeader className="bg-surface">
+      {/* @layout-space-magic-ok: ChromeHeader 品牌區 Avatar ↔ 工作區名稱的 8px(同 apps/template App.tsx:65 Sidebar#IconCollapse chrome-header-brand baseline)(layoutSpace.spec.md:166 micro) */}
       <div className="flex items-center gap-2 min-w-0">
         {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with --chrome-header-avatar-size */}
         <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
@@ -52,6 +53,7 @@ export const GlobalHeaderEntry: StoryObj = {
 export const OpenSnapshot: StoryObj = {
   name: '展開快照',
   render: () => (
+    // @layout-space-magic-ok: 展開快照在下方保留 256px 畫布高度,讓開著的選單落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
     <div className="flex justify-end pb-64">
       <AccountMenu
         user={DEMO_USER}

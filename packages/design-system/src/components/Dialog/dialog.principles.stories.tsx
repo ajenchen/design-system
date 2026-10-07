@@ -14,6 +14,8 @@ import {
 } from './dialog'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/設計原則',
@@ -27,10 +29,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -46,10 +48,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Dialog 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Dialog/展示" name="表單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">表單</span></LinkTo>
@@ -64,7 +67,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Dialog/展示" name="主體放清單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">主體放清單</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -75,17 +78,24 @@ export const UsageGuidance: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="primary">建立新專案</Button>
+            <Button className="self-start" variant="primary">建立新專案</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={480}>
             <DialogHeader>
               <DialogTitle>建立新專案</DialogTitle>
             </DialogHeader>
             <DialogBody>
-              <div className="space-y-3">
-                <Input placeholder="專案名稱" />
-                <Input placeholder="專案描述" />
-              </div>
+              {/* 表單欄位堆疊 = FieldGroup(欄位之間 loose,field.spec.md);欄位名稱由 FieldLabel 承擔,不拿 placeholder 當名稱 */}
+              <FieldGroup>
+                <Field>
+                  <FieldLabel>專案名稱</FieldLabel>
+                  <Input />
+                </Field>
+                <Field>
+                  <FieldLabel>專案描述</FieldLabel>
+                  <Input />
+                </Field>
+              </FieldGroup>
             </DialogBody>
             <DialogFooter>
               <Button variant="tertiary">取消</Button>
@@ -101,7 +111,7 @@ export const UsageGuidance: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="primary">❌ 「儲存成功」用 Dialog</Button>
+            <Button className="self-start" variant="primary">❌ 「儲存成功」用 Dialog</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={400}>
             <DialogHeader>
@@ -124,7 +134,7 @@ export const UsageGuidance: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="primary">❌ 方案到期提示用 Dialog</Button>
+            <Button className="self-start" variant="primary">❌ 方案到期提示用 Dialog</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={420}>
             <DialogHeader>
@@ -151,7 +161,7 @@ export const UsageGuidance: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
+            <Button className="self-start" variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={440}>
             <DialogHeader>
@@ -210,7 +220,7 @@ export const FooterActionRule: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="tertiary">標準配對</Button>
+            <Button className="self-start" variant="tertiary">標準配對</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={420}>
             <DialogHeader>
@@ -233,7 +243,7 @@ export const FooterActionRule: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="tertiary" startIcon={AlertTriangle}>刪除動作確認</Button>
+            <Button className="self-start" variant="tertiary" startIcon={AlertTriangle}>刪除動作確認</Button>
           </DialogTrigger>
           <DialogContent autoHeight maxWidth={420}>
             <DialogHeader>

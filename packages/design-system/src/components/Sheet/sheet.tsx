@@ -5,6 +5,8 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
+import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -38,7 +40,15 @@ import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
  * SheetBody 同 DialogBody:ScrollArea + 內層 px-loose / pt-tight / pb-bottom(詳 SheetBody comment)。
  */
 
-const Sheet = SheetPrimitive.Root
+// Content 要知道自己是不是 modal(關閉後還焦點:modal 按遮罩收起也還、非 modal 點外面不搶;lib/overlay-focus-return.ts)。
+// Radix 沒有把 modal 暴露給 Content,由 Root 經 context 交下去(同 Dialog 的 DialogModalContext)。
+const SheetModalContext = React.createContext<boolean>(true)
+const Sheet = ({ modal, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) => (
+  <SheetModalContext.Provider value={modal ?? true}>
+    <SheetPrimitive.Root modal={modal} {...props} />
+  </SheetModalContext.Provider>
+)
+Sheet.displayName = 'Sheet'
 
 const SheetTrigger = SheetPrimitive.Trigger
 
@@ -51,9 +61,14 @@ const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
-    // motion-reduce:animate-none — prefers-reduced-motion 豁免,對齊 DialogOverlay canonical(dialog.tsx DialogOverlay 同 token,2026-07-05 P2 收乾)
+    // 遮罩與面板同一組 何時播 / 時長 / 曲線 / 收尾 / 減少動態 = surfaceMotion(與 DialogOverlay、FileViewer 遮罩同一份;
+    // dialog.spec.md「動畫」表「Overlay:同上」、motion.spec.md「模態面板 Dialog/Sheet/FileViewer → --motion-duration-surface」)。
+    // 2026-10-07 前這裡自己寫 animate-in/out + motion-reduce:animate-none:時長吃 tw-animate 預設 150ms/ease(沒接 token),
+    // 減少動態守衛又輸給 data-[state=…] 的權重、從沒生效(待辦總帳 T7 / T8)。這裡只寫幾何。
     className={cn(
-      "fixed inset-0 z-50 bg-overlay data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-overlay",
+      surfaceMotion,
+      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -69,9 +84,9 @@ const sheetVariants = cva(
   // 核心容器 — 無 padding(由 SheetBody / SheetHeader / SheetFooter 自理 padding,
   // 對齊 overlay-surface pattern + Dialog canonical)
   // Animation canonical:panel = surfaceMotion 250ms(--motion-duration-surface)雙向一致
-  // (D4 audit:500ms 太久 sluggish)+ motion-reduce 豁免
+  // (D4 audit:500ms 太久 sluggish);何時播 / 收尾 / 減少動態也在 surfaceMotion,這裡只寫 slide 幾何
   // overflow-hidden min-h-0:同 Dialog,補上 overlay-surface primitive 要求的父層契約(2026-09-12)。
-  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out ${surfaceMotion}`,
+  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out ${surfaceMotion}`,
   {
     variants: {
       side: {
@@ -97,16 +112,17 @@ interface SheetContentProps
     VariantProps<typeof sheetVariants> {}
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
-/** @internal DS 預設 open-focus(首個 body 互動元素)。consumer 傳自訂 onOpenAutoFocus 會覆寫
- *  本預設({...props} 在後),需自訂前置行為(如 AppShellAside opener snapshot)時 import 接力呼叫。 */
+/** @internal DS 預設 open-focus(首個 body 互動元素)。2026-10-01 起 SheetContent 會**組合** consumer 的 onOpenAutoFocus(consumer 先跑、
+ *  沒擋預設才走這支),不再被 `{...props}` 整支蓋掉;自訂前置行為(如 AppShellAside opener snapshot)後仍可 import 接力呼叫。
+ *  選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx),不該成為開啟時的落點。 */
 export const handleSheetOpenAutoFocus = (e: Event) => {
   e.preventDefault()
   const content = e.currentTarget as HTMLElement
   const firstBodyTarget = content.querySelector<HTMLElement>(
-    '[data-sheet-body] input:not([disabled]),[data-sheet-body] textarea:not([disabled]),[data-sheet-body] select:not([disabled]),[data-sheet-body] button:not([disabled]):not([data-dismiss])'
+    '[data-sheet-body] input:not([disabled]),[data-sheet-body] textarea:not([disabled]),[data-sheet-body] select:not([disabled]),[data-sheet-body] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
   )
   const firstFooterButton = content.querySelector<HTMLElement>(
-    '[data-sheet-footer] button:not([disabled]):not([data-dismiss])'
+    '[data-sheet-footer] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
   )
   ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
 }
@@ -114,20 +130,42 @@ export const handleSheetOpenAutoFocus = (e: Event) => {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      onOpenAutoFocus={handleSheetOpenAutoFocus}
-      // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {children}
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+>(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
+  // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 窄版抽屜 / AppShell 窄版側欄)照舊先跑、擋了預設就不接。
+  const focusReturn = useTriggerlessFocusReturn(React.useContext(SheetModalContext))
+  // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
+  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+  }, [ref])
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={composedRef}
+        onOpenAutoFocus={(e) => {
+          focusReturn.onOpenAutoFocus(e)
+          onOpenAutoFocus?.(e)
+          if (!e.defaultPrevented) handleSheetOpenAutoFocus(e)
+        }}
+        onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e)
+          focusReturn.onCloseAutoFocus(e)
+        }}
+        // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
+        className={cn(sheetVariants({ side }), className)}
+        {...props}
+        // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
+        onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
+      >
+        {children}
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  )
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 // ── SheetHeader:SurfaceHeader + Close X(對齊 DialogHeader canonical)──────────

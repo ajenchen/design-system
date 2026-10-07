@@ -1,7 +1,17 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
+import React from 'react'
 import { ScrollArea, ScrollBar } from './scroll-area'
+import {
+  SidebarProvider,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from '@/design-system/components/Sidebar/sidebar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
@@ -81,6 +91,7 @@ const PRODUCT_COLUMNS = [
     header: 'Status',
     meta: { width: 110 },
     cell: (info) => (
+      // @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro)
       <span className="inline-flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[info.getValue()] }} />
         {info.getValue()}
@@ -137,6 +148,7 @@ const PR_COLUMNS = [
     header: 'Checks',
     meta: { width: 140 },
     cell: (info) => (
+      // @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro)
       <span className="inline-flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
         {info.getValue()}
@@ -161,17 +173,20 @@ export const VerticalIssueList: Story = {
   name: '垂直捲動 — Linear 議題清單',
   render: () => (
     <div className="max-w-xl">
-      <p className="text-caption text-fg-muted mb-3">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         長 issue 清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,不吃寬度。
       </p>
       <ScrollArea className="h-[320px] border border-border rounded-lg">
         {/* 列是靜態 div(無 onClick、不能聚焦)→ 不給 hover 底色與 cursor-pointer:hover 回饋要誠實回答「再點會發生什麼」
             (item-anatomy.spec.md「選中 × 互動疊加」表)。本則示範的是 ScrollArea 捲動,不是可點的議題列 */}
-        <div className="p-2">
+        {/* @layout-space-magic-ok: 有框容器裡的列集合,wrapper 自己加上下 8px(item-anatomy.spec.md:367 實作規則:Story demo 在 bordered container 展示 row 集合時 wrapper 自己加 py-2) */}
+        <div className="py-2">
           {LINEAR_ISSUES.map((issue) => (
+            // @layout-space-magic-ok: 議題列外框內距 12 / 8px 與欄距 12px 是這串靜態示範列自己的固定幾何(layoutSpace.spec.md:168);列與列相接,沒有列距
             <div key={issue.id} className="flex items-center gap-3 px-3 py-2">
               <span className="text-caption font-mono text-fg-muted shrink-0 w-20">{issue.id}</span>
               <span className="text-body flex-1 truncate">{issue.title}</span>
+              {/* @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
               <span className="inline-flex items-center gap-1.5 text-footnote shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[issue.status] }} />
                 <span className="text-fg-secondary">{issue.status}</span>
@@ -186,37 +201,49 @@ export const VerticalIssueList: Story = {
 
 export const SidebarNav: Story = {
   name: '垂直捲動 — Notion 側欄 導覽',
-  render: () => (
-    <div className="w-[260px]">
-      <p className="text-caption text-fg-muted mb-3">
-        Sidebar 導覽區,多個群組項目超過可見高度。
-      </p>
-      <ScrollArea className="h-[400px] border border-border rounded-lg bg-canvas">
-        <div className="p-3">
-          {NOTION_NAV.map((group) => (
-            <div key={group.section} className="mb-4">
-              <div className="px-2 py-1 text-footnote text-fg-muted font-medium">{group.section}</div>
-              {/* 同上:靜態示意列不給 hover / cursor-pointer。真的側欄導覽請用 Sidebar(SidebarMenuButton;SidebarContent 自帶 ScrollArea) */}
-              {group.items.map((item) => (
-                <div key={item} className="px-2 py-1.5 text-body truncate">
-                  {item}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
-  ),
+  render: function SidebarNavStory() {
+    const [activeId, setActiveId] = React.useState('Engineering wiki')
+    return (
+      <div className="w-[260px]">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
+          Sidebar 導覽區,多個群組項目超過可見高度。
+        </p>
+        {/* 列是真的 Sidebar 列元件(SidebarGroup / SidebarMenu):群組間距、分隔線、列高都由元件擁有,不手抄列幾何。
+            Sidebar 自己的 SidebarContent 內建的就是同一個 ScrollArea;這裡把同一組列放進獨立的 ScrollArea 示範捲動。
+            SidebarProvider 只為了列元件需要的 context(作用中項目 / 列尺寸);它預設撐滿視窗高(min-h-svh,app 外殼用),這裡高度交給 ScrollArea */}
+        <SidebarProvider activeId={activeId} onActiveChange={setActiveId} className="min-h-0">
+          {/* 內容是一串自帶方向鍵的 SidebarMenu,捲動區本身不當 Tab 停靠點(scroll-area.spec.md:103,同 SidebarContent) */}
+          <ScrollArea className="h-[400px] w-full border border-border rounded-lg bg-canvas" viewportTabIndex={-1}>
+            {NOTION_NAV.map((group) => (
+              <SidebarGroup key={group.section}>
+                <SidebarGroupLabel>{group.section}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item}>
+                        <SidebarMenuButton id={item}>{item}</SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </ScrollArea>
+        </SidebarProvider>
+      </div>
+    )
+  },
 }
 
 export const HorizontalProductTable: Story = {
   name: '水平捲動 — Stripe 寬欄位商品表',
   render: () => (
     <div className="max-w-[640px]">
-      <p className="text-caption text-fg-muted mb-3">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         8 欄商品表(SKU / Name / Category / Stock / Price / Margin / Channel / Status)欄寬總和超出
-        640px 容器 → 用 <code className="font-mono text-footnote bg-muted px-1 rounded">orientation=&quot;horizontal&quot;</code> scrollbar。
+        640px 容器 → 用{' '}
+        {/* @layout-space-magic-ok: 句子裡的行內 code 左右 4px 內距(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
+        <code className="font-mono text-footnote bg-muted px-1 rounded">orientation=&quot;horizontal&quot;</code> scrollbar。
         比 native 的優勢:Windows 不吃 17px,右邊 Status 欄不被裁切。
         表格本體消費真 DataTable(height=&quot;auto&quot; 無高度約束,捲動由 ScrollArea own)。
       </p>
@@ -234,7 +261,7 @@ export const BothDirections: Story = {
   name: '雙向捲動 — GitHub PR 大型檢閱表',
   render: () => (
     <div className="max-w-[560px]">
-      <p className="text-caption text-fg-muted mb-3">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         容器 560×280px、內容寬 &gt; 560、高 &gt; 280,同時渲染 vertical + horizontal scrollbar
         (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal,見 scroll-area.spec.md「Orientation」)。
         表格本體消費真 DataTable(height=&quot;auto&quot;,雙向捲動完全由 ScrollArea own)。

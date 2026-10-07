@@ -212,7 +212,7 @@ function CustomAside() {
 - **Scroll ownership**:Aside 自帶 scroll(body 包 `<ScrollArea>` primitive + `min-h-0`,per Atlassian Layout 慣例),main 自帶 scroll,**禁止** body-level scroll
 
 **Modal overlay** 行為:
-- 消費既有 `sheet.spec.md` canonical(從右滑出 + Esc 關 + click-outside 關 + focus trap);**restore focus 由 AppShellAside 自建**(controlled Sheet 無 SheetTrigger → Radix 內建回焦失效;開啟時 snapshot opener、關閉還原、opener 已卸載 fallback `#app-shell-main`,WCAG 2.4.3,2026-07-14)
+- 消費既有 `sheet.spec.md` canonical(從右滑出 + Esc 關 + click-outside 關 + focus trap);**restore focus 走全 DS 一支 `../../lib/overlay-focus-return.ts`**(controlled Sheet 無 SheetTrigger → Radix 內建回焦失效;開啟時 `captureFocusOrigin` 記 opener、關閉 `returnFocusToOpener` 還原(沒有觸發點 + modal)、opener 已卸載 fallback `#app-shell-main`,WCAG 2.4.3;2026-07-14 自建,2026-09-30 收成共用)
 - **title prop required**(per `sheet.spec.md`「禁止事項」禁無 title — `aria-labelledby` 強制)
 - 跟 Sidebar mobile fallback 同 SSOT
 

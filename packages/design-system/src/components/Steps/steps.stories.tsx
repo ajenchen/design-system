@@ -3,7 +3,6 @@
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, within } from '@storybook/test'
 import { Check } from 'lucide-react'
 import {
   Steps,
@@ -13,6 +12,7 @@ import {
   StepContent,
 } from './steps'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
@@ -62,9 +62,12 @@ export const Default: Story = {
     // success card;「再填一份申請」是成功頁的真實產品 action(Google Forms
     // 「Submit another response」同款,https://support.google.com/docs/answer/2839588),
     // 非 demo 治具。
+    // 間距(layoutSpace.spec.md):有框卡片內距 = loose(規則 1);標題列 → 說明 = tight(規則 3 labeling);
+    // 最後的內容 → 動作鈕 = bottom(規則 4,:127)
     if (submitted) {
       return (
-        <div className="w-[480px] flex flex-col gap-4 p-6 bg-muted rounded-md border border-border">
+        <div className="w-[480px] flex flex-col p-[var(--layout-space-loose)] bg-muted rounded-md border border-border">
+          {/* @layout-space-magic-ok: 結果圖示 ↔ 標題(同一列的行內 micro)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-3">
             <span className="h-8 w-8 rounded-full bg-info flex items-center justify-center shrink-0">
               <Check className="text-white" size={20} strokeWidth={2.5} aria-hidden />
@@ -73,14 +76,14 @@ export const Default: Story = {
               已成功送出申請
             </span>
           </div>
-          <p className="text-body text-fg-secondary">
+          <p className="mt-[var(--layout-space-tight)] text-body text-fg-secondary">
             我們會盡快處理,結果將寄送至您的電子信箱。
           </p>
-          <div>
+          <ButtonGroup className="mt-[var(--layout-space-bottom)]">
             <Button variant="tertiary" onClick={reset}>
               再填一份申請
             </Button>
-          </div>
+          </ButtonGroup>
         </div>
       )
     }
@@ -96,14 +99,13 @@ export const Default: Story = {
             <StepLabel>基本資料</StepLabel>
             <StepDescription>填寫姓名與聯絡方式</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請輸入你的姓名、電子郵件與電話。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                </div>
-              </div>
+              {/* 規則 4:步驟說明(最後的內容)→ 動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有 */}
+              <p className="text-body text-fg-secondary">
+                請輸入你的姓名、電子郵件與電話。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={advance}>下一步</Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
 
@@ -111,17 +113,15 @@ export const Default: Story = {
             <StepLabel>帳號設定</StepLabel>
             <StepDescription>選擇使用者名稱與密碼</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  設定登入帳號。使用者名稱至少 3 個字元。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <p className="text-body text-fg-secondary">
+                設定登入帳號。使用者名稱至少 3 個字元。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={advance}>下一步</Button>
+                <Button variant="tertiary" onClick={back}>
+                  上一步
+                </Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
 
@@ -129,17 +129,15 @@ export const Default: Story = {
             <StepLabel>確認並送出</StepLabel>
             <StepDescription>送出前最後檢查</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請確認所有欄位正確,按下送出後系統會建立您的帳號。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={submit}>送出</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <p className="text-body text-fg-secondary">
+                請確認所有欄位正確,按下送出後系統會建立您的帳號。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={submit}>送出</Button>
+                <Button variant="tertiary" onClick={back}>
+                  上一步
+                </Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
         </Steps>
@@ -231,77 +229,13 @@ export const Horizontal: Story = {
   },
 }
 
-// ── Multiple expansion ─────────────────────────────────────────────────
-
-export const MultipleExpansion: Story = {
-  name: '多重展開模式',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
-  render: () => (
-    <div className="w-[480px]">
-      <p className="text-caption text-fg-secondary mb-4">
-        點 step header 切換展開(並更新 value)。本例顯式傳 `defaultExpanded="all"` 全部展開起手(預設 `"none"`)。
-      </p>
-      <Steps
-        defaultValue="b"
-        completedValues={['a']}
-        expansion="multiple"
-        defaultExpanded="all"
-        linear={false}
-      >
-        <StepItem value="a">
-          <StepLabel>安裝套件</StepLabel>
-          <StepDescription>執行 npm install</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              npm install @qijenchen/design-system
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="b">
-          <StepLabel>匯入元件</StepLabel>
-          <StepDescription>從 design-system 引入</StepDescription>
-          <StepContent>
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Steps 元件匯入範例程式碼"
-              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:focus-ring-inset"
-            >
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"import { Steps } from '@/design-system/components/Steps/steps'"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="c">
-          <StepLabel>設定 provider</StepLabel>
-          <StepDescription>包在 App 最外層</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"<TooltipProvider>{children}</TooltipProvider>"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-      </Steps>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const scrollRegion = canvas.getByRole('region', {
-      name: 'Steps 元件匯入範例程式碼',
-    })
-
-    await expect(scrollRegion.scrollWidth).toBeGreaterThan(scrollRegion.clientWidth)
-    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
-    scrollRegion.focus()
-    await expect(scrollRegion).toHaveFocus()
-  },
-}
+// @story-history: MultipleExpansion(多重展開模式,安裝指南三步可同時展開)retired 2026-09-30 —
+//   整個「可同時打開多步」模式(`expansion="multiple"` / `defaultExpanded` / controlled `expanded`)隨之退役:
+//   Steps 的內容區只跟著目前那一步(steps.spec.md「內容跟著目前那一步」);安裝指南這種「讀者自己開合、沒有目前位置」
+//   的編號說明改用 Accordion(steps.spec.md「何時不用」第二張表)。
+//   user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」(AI 建議、user 採納,條件見原話)。
+//   本則的 play 原本順帶驗證 StepContent 內 consumer 自己的捲動區可聚焦;退役後 DS 內沒有任何 story 示範這條
+//   (steps.spec.md「A11y 預設」如實寫明),規則文字保留為指引。
 
 // @story-history: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
 //   EXAMPLE_REDUNDANT — indicator 對齊 label 第一行的 column rhythm 已由 anatomy「欄位節奏」+

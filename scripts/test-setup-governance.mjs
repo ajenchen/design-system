@@ -48,6 +48,7 @@ import {
   runVulnerabilityAuditUnderPolicy,
   GOVERNANCE_VULNERABILITY_POLICIES,
   isTransientAdvisoryEndpointFailure,
+  acceptsHistoricalNpmOverlay,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
@@ -62,7 +63,7 @@ const temporary = []
 const version = '1.2.3-beta.4'
 const exactNpmVersion = '11.19.0'
 const exactNpmIntegrity = 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw=='
-const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.9'
+const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.12'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
 const exactNpmSecondaryOverlaySpec = 'npm:tar@7.5.22'
 const exactNpmSecondaryOverlayIntegrity = 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA=='
@@ -142,8 +143,8 @@ function fixture({
       },
       'node_modules/npm-runtime-brace-expansion-patch': {
         name: 'brace-expansion',
-        version: '5.0.9',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
+        version: '5.0.12',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz',
         integrity: exactNpmOverlayIntegrity,
         dev: true,
       },
@@ -339,10 +340,10 @@ const runtimeFactory = async () => {
     treeDigest: overlay.treeDigest,
     auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
@@ -722,14 +723,15 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     treeDigest,
     auditClosureDigest: 'c'.repeat(64),
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
-  // The exact dual-advisory registry state served since 2026-08-04 (GHSA-rgw5-rvv9-x895 landed).
+  // The exact registry state served since 2026-09-29T23:44Z (three more advisories, fixed in 5.0.10–5.0.12;
+  // the overlay moved to 5.0.12 the same day). Advisory order is the order npm audit returns.
   const finding = {
     name: 'brace-expansion',
     severity: 'high',
@@ -750,9 +752,33 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
       severity: 'high',
       range: '>=4.0.0 <5.0.9',
+    }, {
+      source: 1240103,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+      severity: 'moderate',
+      range: '>=4.0.0 <5.0.12',
+    }, {
+      source: 1240107,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.11',
+    }, {
+      source: 1240111,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.10',
     }],
     effects: [],
-    range: '4.0.0 - 5.0.8',
+    range: '4.0.0 - 5.0.11',
     nodes: ['node_modules/npm/node_modules/brace-expansion'],
     fixAvailable: true,
   }
@@ -796,9 +822,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-09-28 上游新發兩則(OE15,2026-09-29 認列):range 隨之變 <=10.5.0
           { source: 1239948, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rpw4-54j3-4h4q', severity: 'moderate', range: '<=10.5.0' },
           { source: 1239949, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate', range: '>=10.2.0 <=10.5.0' },
+          // 2026-09-29T23:46Z 上游再發兩則(2026-09-30 認列):range 隨之變 <=10.7.0
+          { source: 1240097, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate', range: '<=10.7.0' },
+          { source: 1240098, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate', range: '<=10.7.0' },
         ],
         effects: [],
-        range: '<=10.5.0',
+        range: '<=10.7.0',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -820,9 +849,32 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
         range: '<=6.28.0',
         nodes: ['node_modules/npm/node_modules/undici'],
       },
+      // 2026-10-06 認列(PR #169 849d8667 全紅那一輪的真實 npm audit 形狀):npm 內建、修補層無 slot、npm 最新版也沒帶修正版
+      'http-cache-semantics': {
+        name: 'http-cache-semantics',
+        severity: 'high',
+        isDirect: false,
+        via: [
+          { source: 1240991, name: 'http-cache-semantics', dependency: 'http-cache-semantics', url: 'https://github.com/advisories/GHSA-ch52-4w7c-c8xp', severity: 'high', range: '<=4.2.0' },
+        ],
+        effects: [],
+        range: '<=4.2.0',
+        nodes: ['node_modules/npm/node_modules/http-cache-semantics'],
+      },
+      'postcss-selector-parser': {
+        name: 'postcss-selector-parser',
+        severity: 'moderate',
+        isDirect: false,
+        via: [
+          { source: 1241232, name: 'postcss-selector-parser', dependency: 'postcss-selector-parser', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate', range: '<7.1.6' },
+        ],
+        effects: [],
+        range: '<7.1.6',
+        nodes: ['node_modules/npm/node_modules/postcss-selector-parser'],
+      },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 5, critical: 0, total: 5 },
+      vulnerabilities: { info: 0, low: 0, moderate: 1, high: 6, critical: 0, total: 7 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
     },
   }
@@ -833,7 +885,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     installedOverlayReceipt: options.installedOverlayReceipt ?? installedOverlayReceipt,
   })
   const receipt = evaluate()
-  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'])
+  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'http-cache-semantics', 'ip-address', 'npm', 'postcss-selector-parser', 'tar', 'undici'])
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
@@ -844,6 +896,13 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 3)
     stale.vulnerabilities['ip-address'].range = '<=10.3.0'
     assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, '舊的三則形狀必須被判成漂移')
+  }
+  {
+    // 2026-09-30 對照組:09-29 認列的五則 / <=10.5.0 形狀現在也是漂移
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 5)
+    stale.vulnerabilities['ip-address'].range = '<=10.5.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, 'ip-address 09-29 的五則形狀必須被判成漂移')
   }
   {
     const stale = structuredClone(report)
@@ -857,6 +916,80 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 4)
     stale.vulnerabilities.undici.severity = 'moderate'
     assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-29 的四則 moderate 形狀必須被判成漂移')
+  }
+  // 2026-10-06 對照組(M32):http-cache-semantics / postcss-selector-parser 的認列是 exact shape,不是名字白名單。
+  // (a) 認列之前的判定 = 這兩筆一律是未處理 finding:把 evaluator 換回「沒有這兩段」等價於把它們改名 —— 必紅且指名。
+  for (const name of ['http-cache-semantics', 'postcss-selector-parser']) {
+    const renamed = structuredClone(report)
+    const finding = renamed.vulnerabilities[name]
+    delete renamed.vulnerabilities[name]
+    renamed.vulnerabilities[`${name}-x`] = { ...finding, name: `${name}-x` }
+    assert.throws(() => evaluate(renamed), new RegExp(`unremediated high/moderate finding:${name}-x`), `${name}:沒有認列的同形狀 finding 必紅`)
+  }
+  {
+    // (b) 上游再發一則(via 多一則、range 變寬)→ 漂移
+    const grown = structuredClone(report)
+    grown.vulnerabilities['http-cache-semantics'].via.push({ source: 1299999, name: 'http-cache-semantics', dependency: 'http-cache-semantics', url: 'https://github.com/advisories/GHSA-xxxx-xxxx-xxxx', severity: 'moderate', range: '<=4.3.0' })
+    grown.vulnerabilities['http-cache-semantics'].range = '<=4.3.0'
+    assert.throws(() => evaluate(grown), /http-cache-semantics finding differs from the acknowledged bundled preimage/, 'http-cache-semantics 多一則必須被判成漂移')
+  }
+  {
+    // (c) 同一則落在真實相依(不在 npm 內建樹)→ 不在認列範圍,必紅:認列只涵蓋修補層無 slot 的 npm 內建那一份
+    const hoisted = structuredClone(report)
+    hoisted.vulnerabilities['http-cache-semantics'].nodes = ['node_modules/http-cache-semantics']
+    assert.throws(() => evaluate(hoisted), /http-cache-semantics finding differs from the acknowledged bundled preimage/, 'http-cache-semantics 出現在真實相依節點必紅')
+  }
+  {
+    const hoisted = structuredClone(report)
+    hoisted.vulnerabilities['postcss-selector-parser'].nodes = ['node_modules/npm/node_modules/postcss-selector-parser', 'node_modules/postcss-selector-parser']
+    assert.throws(() => evaluate(hoisted), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser 多一個真實相依節點必紅')
+  }
+  {
+    // (d) 嚴重度上調 / range 改變 → 漂移(metadata 同步調整,確保紅的原因是形狀而不是計數)
+    const rescored = structuredClone(report)
+    rescored.vulnerabilities['postcss-selector-parser'].severity = 'high'
+    rescored.vulnerabilities['postcss-selector-parser'].via[0].severity = 'high'
+    rescored.metadata.vulnerabilities.moderate = 0
+    rescored.metadata.vulnerabilities.high = 7
+    assert.throws(() => evaluate(rescored), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser 嚴重度改變必須被判成漂移')
+    const widened = structuredClone(report)
+    widened.vulnerabilities['postcss-selector-parser'].range = '<7.1.7'
+    assert.throws(() => evaluate(widened), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser range 改變必須被判成漂移')
+  }
+  // (e) 逐條件對照組(2026-10-07,變異測試補洞):上面幾組每次都同時改了兩個條件(via 與 range、via 與嚴重度),
+  // 於是把認列裡的「advisory 清單逐字相符」「finding 嚴重度」「直接相依」「受影響上層」「finding range」任一條拿掉,
+  // 測試照樣全綠 —— 別的條件先擋下了。這裡每一格**只改一個條件**、其餘維持認列形狀,metadata 計數同步調整,
+  // 讓「那一條被拿掉」時 evaluator 會放行、測試會紅。第一格就是 09-30 undici 那次的真實形狀:range 不變、
+  // 嚴重度不變,只是 via 多了一則。
+  const singleConditionDrift = {
+    'http-cache-semantics': { otherSeverity: 'moderate', otherRange: '<=4.2.1' },
+    'postcss-selector-parser': { otherSeverity: 'high', otherRange: '<7.1.7' },
+  }
+  for (const [name, alt] of Object.entries(singleConditionDrift)) {
+    const cells = [
+      ['上游多發一則同範圍、同嚴重度的通報(只有 via 變)', (finding) => {
+        finding.via.push({ ...finding.via[0], source: 1299998, url: 'https://github.com/advisories/GHSA-zzzz-zzzz-zzzz' })
+      }],
+      ['advisory 換號(只有 via 的 source 變)', (finding) => { finding.via[0].source += 1 }],
+      ['advisory 自己的範圍變(只有 via 的 range 變)', (finding) => { finding.via[0].range = alt.otherRange }],
+      ['finding range 變(via 不變)', (finding) => { finding.range = alt.otherRange }],
+      ['finding 嚴重度變(via 不變)', (finding, counts) => {
+        counts[finding.severity] -= 1
+        finding.severity = alt.otherSeverity
+        counts[finding.severity] += 1
+      }],
+      ['變成直接相依', (finding) => { finding.isDirect = true }],
+      ['多出受影響的上層套件', (finding) => { finding.effects = ['npm'] }],
+    ]
+    for (const [label, mutate] of cells) {
+      const drifted = structuredClone(report)
+      mutate(drifted.vulnerabilities[name], drifted.metadata.vulnerabilities)
+      assert.throws(
+        () => evaluate(drifted),
+        new RegExp(`${name} finding differs from the acknowledged bundled preimage`),
+        `${name}:${label} → 必須被判成漂移`,
+      )
+    }
   }
 
   // Advisory-endpoint failure must report itself, not masquerade as a schema problem
@@ -923,7 +1056,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   // 現在驗的是三件性質:治理版 11.19.0 仍受影響 / 11.19.1 不在範圍(修好的 npm 存在)/ 只經 tar。
   const registryAfterNpm1210 = structuredClone(report)
   registryAfterNpm1210.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || 12.0.0-pre.0.0 - 12.0.2'
-  assert.deepEqual(evaluate(registryAfterNpm1210).remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'], '上游發版只動 12.x 尾巴 → 必須放行')
+  assert.deepEqual(evaluate(registryAfterNpm1210).remediatedFindings, ['brace-expansion', 'http-cache-semantics', 'ip-address', 'npm', 'postcss-selector-parser', 'tar', 'undici'], '上游發版只動 12.x 尾巴 → 必須放行')
 
   const fixedNpmAlsoListed = structuredClone(report)
   fixedNpmAlsoListed.vulnerabilities.npm.range = '<=10.9.8 || 11.0.0-pre.0 - 11.19.1'
@@ -1707,3 +1840,12 @@ test('npm audit 對 advisory 端點的暫時性網路錯誤重試 3 次後仍 fa
   // 上限必須是正整數
   assert.throws(() => runVerifiedHighVulnerabilityAudit(process.execPath, args, { root: '/tmp', environment: {}, runner: () => ({ status: 0, stdout: clean, stderr: '' }), npmRuntime, installedOverlayReceipt, retryLimit: 0 }), /retry limit must be a positive integer/)
 })
+
+// 2026-09-30:只有渲染用參考樹可用歷史認證修補層;判定表逐一走過每個政策(新增政策時這格必須被刻意補上)。
+test('only the render-only reference policy may install a historically certified npm overlay', () => {
+  const table = { enforce: false, 'report-render-only-reference': true, 'report-protected-base-verifier': false }
+  assert.deepEqual(Object.keys(table).sort(), [...GOVERNANCE_VULNERABILITY_POLICIES].sort(), 'every vulnerability policy needs an explicit row')
+  for (const [policy, expected] of Object.entries(table)) assert.equal(acceptsHistoricalNpmOverlay(policy), expected, policy)
+  assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
+})
+

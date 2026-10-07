@@ -87,7 +87,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `command.spec.md` 「A11y 預設」段。摘要:\n\ncmdk 自動處理：\n\n-   List 語意  ： role=\"listbox\"  +  aria-activedescendant  指向目前 highlight 項\n-   搜尋框  ： role=\"combobox\"  +  aria-expanded  /  aria-controls  指向 list\n-   鍵盤導覽  ：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 CommandDialog（Cmd+K）模式由 Radix Dialog 的 DismissableLayer 提供；inline <Command> 模式按 Esc 無反應\n-   空狀態  ： <CommandEmpty>  自動帶  role=\"presentation\" ,不干擾 screen reader 的 list 朗讀\n\nConsumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用  <CommandInput>  /  <CommandList>  /  <CommandItem>  即可。"}</p>
+      <p className="whitespace-pre-line">{"詳 `command.spec.md` 「A11y 預設」段。摘要:\n\ncmdk 自動處理：\n\n-   List 語意  ： role=\"listbox\" \n-   aria-activedescendant  :搜尋框與清單上都 = 反白那一列的 id,由 Command 根讀  [cmdk-item][data-selected]  寫上(cmdk 自己的值開啟時是空的);觸發欄位內的搜尋框經  onActiveOptionChange  拿同一個 id\n-   指標  :握著焦點的是控制這份清單的 combobox(搜尋框)時,滑鼠按在清單上不搬走它的焦點 —— 點選項與按 Enter 結果相同\n-   搜尋框  ： role=\"combobox\"  +  aria-expanded  /  aria-controls  指向 list\n-   鍵盤導覽  ：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 CommandDialog（Cmd+K）模式由 Radix Dialog 的 DismissableLayer 提供；inline <Command> 模式按 Esc 無反應\n-   空狀態  ： <CommandEmpty>  自動帶  role=\"presentation\" ,不干擾 screen reader 的 list 朗讀\n\nConsumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用  <CommandInput>  /  <CommandList>  /  <CommandItem>  即可。"}</p>
     </div>
   ),
 }

@@ -4,6 +4,8 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { toast, Toaster } from './toast'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Toast/設計原則',
@@ -17,10 +19,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -36,10 +38,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Toast 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Toast/展示" name="有標題與描述"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">有 Title + Description</span></LinkTo>
@@ -48,7 +51,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Toast/展示" name="點擊觸發通知"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">點擊觸發通知</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:先看下方「何時用 / 何時不用」的對照;若訊息重要到使用者必須看到、或需要使用者確認,就不該用 Toast,改用 Alert(持久顯示)或 Dialog(阻斷確認)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先看下方「何時用 / 何時不用」的對照;若訊息重要到使用者必須看到、或需要使用者確認,就不該用 Toast,改用 Alert(持久顯示)或 Dialog(阻斷確認)。</p>
     </div>
 
       {/* vs 近親 — VsAlertVsDialogRule — 原 VsAlertVsDialogRule */}
@@ -57,14 +60,14 @@ export const UsageGuidance: Story = {
         title="Toast — 短暫自動消失、非阻斷、不保留"
         note="操作結果回饋(儲存成功、已複製、訊息已送出)。使用者不需要看到也沒關係——不該阻斷流程。自動消失(預設 4000ms)"
       >
-        <div className="flex gap-2 flex-wrap">
+        <ButtonGroup>
           <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存', description: '變更已同步至雲端' })}>
             觸發成功 Toast
           </Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結', description: '已複製到剪貼簿' })}>
             觸發複製 Toast
           </Button>
-        </div>
+        </ButtonGroup>
       </Rule>
 
       <Rule
@@ -73,6 +76,7 @@ export const UsageGuidance: Story = {
       >
         <Button
           variant="tertiary"
+          className="self-start"
           onClick={() => toast({
             variant: 'error',
             title: '付款失敗',
@@ -91,6 +95,7 @@ export const UsageGuidance: Story = {
       >
         <Button
           variant="tertiary"
+          className="self-start"
           onClick={() => toast({
             variant: 'warning',
             title: '是否刪除專案？',
@@ -117,6 +122,7 @@ export const ActionRule: Story = {
       >
         <Button
           variant="tertiary"
+          className="self-start"
           onClick={() => toast({
             variant: 'success',
             title: '已刪除訊息',
@@ -155,19 +161,20 @@ export const VariantRule: Story = {
         title="success / info / warning / error 各自對應場景"
         note="與 Alert 共用 Notice primitive 與三層 theme 架構(variant × theme 映射各自不同,如 success:Toast 反轉 surface / Alert solid 綠底)。語意由事件類型決定——不靠 consumer 用顏色暗示"
       >
-        <div className="flex flex-col gap-2">
+        {/* 直排的一組觸發鈕 = 垂直 ButtonGroup(鈕與鈕之間由群組擁有,button-group.tsx;直排時撐滿欄寬是群組的正規行為) */}
+        <ButtonGroup orientation="vertical">
           <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>success</Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結' })}>info</Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '空間即將用完' })}>warning</Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '操作失敗' })}>error</Button>
-        </div>
+        </ButtonGroup>
       </Rule>
 
       <Rule
         title="neutral — 無特定語意的資訊"
         note="公告、系統訊息、無明確 good/bad 的通知"
       >
-        <Button variant="tertiary" onClick={() => toast({ variant: 'neutral', title: '檔案已下載' })}>neutral 範例</Button>
+        <Button variant="tertiary" className="self-start" onClick={() => toast({ variant: 'neutral', title: '檔案已下載' })}>neutral 範例</Button>
       </Rule>
       <Toaster />
     </div>
@@ -182,7 +189,7 @@ export const DurationRule: Story = {
         title="預設 4000ms(無 action)— 足夠讀完一行但不拖累"
         note="多數場景用預設。使用者有足夠時間讀「已儲存」。過短 = 來不及看,過長 = 堆積"
       >
-        <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>
+        <Button variant="tertiary" className="self-start" onClick={() => toast({ variant: 'success', title: '已儲存' })}>
           預設 4000ms
         </Button>
       </Rule>
@@ -193,6 +200,7 @@ export const DurationRule: Story = {
       >
         <Button
           variant="tertiary"
+          className="self-start"
           onClick={() => toast({
             variant: 'success',
             title: '已刪除 3 個項目',

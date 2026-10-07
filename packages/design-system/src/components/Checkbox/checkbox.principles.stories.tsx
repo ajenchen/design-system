@@ -5,6 +5,10 @@ import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
+import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
+import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計原則',
@@ -20,10 +24,10 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
   </div>
 )
 
@@ -50,6 +54,7 @@ export const UsageGuidance: Story = {
           title="何時用 — 真實業務場景"
           note="Checkbox 用於「獨立布林開關(on/off)」或「同類選項可複選」場景 — 每個 Checkbox 的值跟其他互不影響(對比 RadioGroup 互斥)。提交前可反悔(state local),點擊即時 toggle 視覺,不需要額外確認。對齊 WAI-ARIA `role=checkbox` / Polaris Choice 共識。"
         >
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/Checkbox/展示" name="直式群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品類別的複選清單(直式群組)</span></LinkTo>
@@ -64,7 +69,7 @@ export const UsageGuidance: Story = {
           title="vs Switch — Checkbox 是表單內、隨 submit 才生效、可反悔"
           note="勾選不代表立刻生效——使用者按「儲存」前都可以反悔。心智模型是「選擇 / 同意」，視覺語言強調「尚未確定」"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
             <CheckboxGroup>
               <Checkbox
                 label="我同意服務條款與隱私政策"
@@ -78,10 +83,10 @@ export const UsageGuidance: Story = {
                 onCheckedChange={(v) => setNotif(v ? 'checked' : 'unchecked')}
               />
             </CheckboxGroup>
-            <div className="flex gap-2 pt-2">
-              <button className="h-field-md px-3 text-body rounded-md bg-primary text-inverse-fg">儲存</button>
-              <button className="h-field-md px-3 text-body rounded-md border border-border">取消</button>
-            </div>
+            <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+              <Button variant="primary">儲存</Button>
+              <Button variant="tertiary">取消</Button>
+            </ButtonGroup>
           </div>
           <Label>↑ 同意條款、訂閱選擇——form 內、有 submit / cancel button</Label>
         </Rule>
@@ -90,9 +95,20 @@ export const UsageGuidance: Story = {
           title="Switch — 獨立 inline、切換即生效、無 submit 流程"
           note="使用者按下那刻 Bluetooth / Wi-Fi / 通知 就已經開 / 關。心智模型是物理開關（真實世界的 light switch），視覺語言強調「現在就是這樣」"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
-            <Switch label="Bluetooth" checked={bluetooth} onCheckedChange={setBluetooth} />
-            <Switch label="Wi-Fi" description="2.4 GHz + 5 GHz" checked={wifi} onCheckedChange={setWifi} />
+          {/* 純 settings list:horizontal Field + FieldGroup horizontalLabelWidth,toggle 自動齊右、label 統一寬度
+              (switch.spec.md「Horizontal Field 自動齊右」+「同一畫面多個 horizontal Switch Field → 必搭配 FieldGroup horizontalLabelWidth」)。
+              不放 FieldDescription:horizontal Field 的說明落在控件欄,開關齊右後說明會懸在列中間 */}
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+            <FieldGroup horizontalLabelWidth="120px">
+              <Field orientation="horizontal">
+                <FieldLabel>Bluetooth</FieldLabel>
+                <Switch checked={bluetooth} onCheckedChange={setBluetooth} />
+              </Field>
+              <Field orientation="horizontal">
+                <FieldLabel>Wi-Fi</FieldLabel>
+                <Switch checked={wifi} onCheckedChange={setWifi} />
+              </Field>
+            </FieldGroup>
           </div>
           <Label>↑ 系統設定類——獨立 inline control、旁邊沒有 submit 流程</Label>
         </Rule>
@@ -101,10 +117,10 @@ export const UsageGuidance: Story = {
           title="❌ 用 Switch 做 form 同意"
           note="「我同意條款」是「勾選 → 送出 → 法律成立」的書面行為。Switch 的物理開關隱喻暗示「我打開了接受條款這個功能」——心智錯位且違反約定俗成"
         >
-          <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
             <Switch label="我同意服務條款" />
-            <div className="flex gap-2 pt-2">
-              <button className="h-field-md px-3 text-body rounded-md bg-primary text-inverse-fg">送出</button>
+            <div className="mt-[var(--layout-space-bottom)]">
+              <Button variant="primary">送出</Button>
             </div>
           </div>
           <Label warn>↑ 同意條款用 Switch → 心智模型錯誤 + 與產業共識背離（全球沒有 form 用 Switch 同意條款）</Label>

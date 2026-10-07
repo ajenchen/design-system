@@ -10,6 +10,7 @@ import {
 import { TreeView, TreeItem } from './tree-view'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/展示',
@@ -28,6 +29,7 @@ type Story = StoryObj
 export const FileBrowser: Story = {
   name: '檔案瀏覽',
   render: () => (
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
       <TreeView aria-label="檔案瀏覽" defaultExpandedIds={['src', 'components']}>
         <TreeItem id="src" icon={Folder} label="src">
@@ -85,6 +87,7 @@ const StepPending = () => <Minus size={16} className="text-fg-muted" />
 export const Stepper: Story = {
   name: '步驟引導',
   render: () => (
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
       <TreeView
         aria-label="申請流程"
@@ -151,6 +154,7 @@ const CheckboxTree = () => {
   return (
     <div>
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView
           selectionMode="multiple"
@@ -245,8 +249,10 @@ const RowActionsTree = () => {
   const more = (name: string) => ({ icon: MoreVertical, label: '更多動作', onClick: () => setLastAction(`更多動作 —「${name}」`) })
   const add = (name: string) => ({ icon: Plus, label: '新增頁面', onClick: () => setLastAction(`新增頁面 —「${name}」`) })
   return (
-    <div className="flex flex-col gap-2">
+    // 樹 ↔ 它下方的動作讀數 = tight(控件 → 它的讀數,layoutSpace.spec.md 規則 3);前後兩顆 sr-only 鈕絕對定位、不佔版位
+    <ExampleGroup>
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="產品文件" defaultExpandedIds={['requirements']} defaultSelectedIds={['checkout-prd']}>
           <TreeItem id="requirements" icon={Folder} label="產品需求" inlineActions={[more('產品需求'), add('產品需求')]}>
@@ -263,7 +269,7 @@ const RowActionsTree = () => {
         {lastAction ? `最近一次動作:${lastAction}` : '尚未執行任何動作'}
       </p>
       <button type="button" className="sr-only">樹狀清單之後</button>
-    </div>
+    </ExampleGroup>
   )
 }
 
@@ -377,8 +383,10 @@ const DeleteHandoffTree = () => {
     </TreeItem>
   ))
   return (
-    <div className="flex flex-col gap-2">
+    // 前後兩顆 sr-only 鈕絕對定位、不佔版位 → 版面上只有樹框一個子節點,不設 gap(原本的 8px 不作用)
+    <div className="flex flex-col">
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="知識庫" defaultExpandedIds={['handbook']}>{renderNodes(nodes)}</TreeView>
       </div>
@@ -442,9 +450,10 @@ export const DeleteHandoff: Story = {
 export const LongLabel: Story = {
   name: '長標籤',
   render: () => (
-    <div className="flex gap-8 items-start">
-      <div className="flex flex-col gap-2">
+    <div className="flex gap-[var(--layout-space-loose)] items-start">
+      <ExampleGroup>
         <span className="text-caption font-medium text-fg-muted">預設 truncate</span>
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
           <TreeView aria-label="產品設計檔案樹（截斷）" defaultExpandedIds={['proj']}>
             <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
@@ -453,9 +462,10 @@ export const LongLabel: Story = {
             </TreeItem>
           </TreeView>
         </div>
-      </div>
-      <div className="flex flex-col gap-2">
+      </ExampleGroup>
+      <ExampleGroup>
         <span className="text-caption font-medium text-fg-muted">label 換行（移除 truncate）</span>
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
           <TreeView aria-label="產品設計檔案樹（換行）" defaultExpandedIds={['proj2']}>
             <TreeItem id="proj2" icon={Folder} label={<span className="break-words whitespace-normal">2026 產品品牌識別設計提案完整版</span>}>
@@ -464,7 +474,7 @@ export const LongLabel: Story = {
             </TreeItem>
           </TreeView>
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -532,12 +542,14 @@ export const DragAndDrop: Story = {
     const [log, setLog] = React.useState<string[]>([])
 
     return (
-      <div className="flex gap-6 items-start">
-        <div className="flex flex-col gap-2">
+      // 示範欄 ↔ 紀錄欄並列 = loose;說明 → 樹 → 重設鈕 = tight(說明在替樹命名、重設鈕直接作用在這棵樹,layoutSpace.spec.md 規則 3)
+      <div className="flex gap-[var(--layout-space-loose)] items-start">
+        <ExampleGroup>
           <p className="text-caption text-fg-muted max-w-xs">
             Figma 風格:整列拖曳,items 真的會移動。拖到其他 node 上方(before) / 下方(after) / 中間(inside 成為子項)。
             鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
           </p>
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:262 / :269 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
           <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
             <TreeView
               aria-label="拖曳排序"
@@ -559,9 +571,10 @@ export const DragAndDrop: Story = {
           <Button variant="tertiary" size="sm" className="self-start" onClick={() => setTree(INITIAL_TREE)}>
             重設
           </Button>
-        </div>
+        </ExampleGroup>
         <div className="w-[240px]">
-          <p className="text-caption font-medium text-fg-muted mb-2">移動紀錄</p>
+          <p className="text-caption font-medium text-fg-muted mb-[var(--layout-space-tight)]">移動紀錄</p>
+          {/* @layout-space-magic-ok: 移動紀錄是一串同質的紀錄列,列距 4px(layoutSpace.spec.md:165 同質清單列) */}
           <div className="flex flex-col gap-1 text-[11px] font-mono text-fg-secondary">
             {log.length === 0 && <span className="text-fg-muted">拖曳 node 後這裡會顯示</span>}
             {log.map((l, i) => <span key={i}>{l}</span>)}

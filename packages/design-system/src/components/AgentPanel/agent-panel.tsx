@@ -17,7 +17,7 @@
  *   行內動作=ItemSuffix hoverReveal + ItemInlineAction(懸停/鍵盤 focus-visible 浮出);思考列=CircularProgress 16。
  * - 訊息:氣泡 bg-secondary/rounded-md/8/12;附件=Chip assist 分支(chip.spec.md),相互 4;
  *   輪距 40=8+24(Button text xs)+8。
- * - 思考塊:Radix Collapsible+animate-accordion(base.css;Sidebar 同法);chevron=accordion 慣例
+ * - 思考塊:Radix Collapsible+disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView / Accordion 同一份);chevron=accordion 慣例
  *   (裝飾指示、色同 Select 觸發器 chevron);微光僅標題+最新行(agent-panel.css);完成步驟 fg-secondary。
  * - 輸入盒:欄位家族內距(--field-control-py-md/--field-px/text-body;32 等高鐵律);
  *   附件列=Tag md 單列 + OverflowIndicator(+N,useOverflowIndices 量測);送出/停止=Button primary xs。
@@ -79,6 +79,10 @@ import {
   CommandItem,
   CommandList,
 } from '@/design-system/components/Command/command'
+import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { useEscapeRegion } from '@/design-system/lib/overlay-escape'
+import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
   ItemInlineAction,
@@ -96,7 +100,7 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Chip } from '@/design-system/components/Chip/chip'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Input } from '@/design-system/components/Input/input'
-import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import {
   Dialog,
   DialogBody,
@@ -106,6 +110,8 @@ import {
   DialogTitle,
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import './agent-panel.css'
 
@@ -317,34 +323,11 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
     //   焦點在面板內、面板內沒有浮層 → **什麼都不關**
     //   焦點在面板外 → 關該區自己的浮層,**不跨區碰面板**
-    // 但 Radix 的 `useEscapeKeydown` 在 **document 上用 capture** 監聽,
-    // `dismissable-layer.tsx` 只把 Esc 送給「疊最上層」而**不看焦點在哪一區**。
-    // 後果:舞台上開著 modal 時,在 agent 輸入框打字按 Esc 會關掉那個 modal —— 正是跨區。
-    //
-    // 攔法:掛在 **`window`** 的 capture 階段。捕獲順序是 window → document → …,
-    // 所以它一定跑在 Radix 的 document capture 之前 —— 這是**結構上的先後**,
-    // 不是「誰先註冊誰先跑」那種靠掛載順序的僥倖。
-    // (第一版掛在 document 上,實測失敗:Dialog 在 JSX 裡排在面板前面,
-    //  它的監聽先註冊、先跑、先 dismiss,我的 preventDefault 根本來不及。)
-    // Radix 的 handler 寫著 `if (!event.defaultPrevented && onDismiss)` —— 看到已被
-    // preventDefault 就不會 dismiss。不用 `stopImmediatePropagation`,那會連別人的合法處理一起吃掉。
-    //
-    // 會搶焦點的浮層(Popover / DropdownMenu / Dialog)因為焦點已經不在面板內,
-    // 這裡不攔,它們照樣被自己的 layer 關掉 —— 那正是第一列要的行為。
-    React.useEffect(() => {
-      const onKeyDownCapture = (event: KeyboardEvent) => {
-        if (event.key !== 'Escape') return
-        const panel = rootRef.current
-        const active = document.activeElement
-        if (!panel || !active || !panel.contains(active)) return
-        // 面板內若正開著 Tooltip(不搶焦點的浮層),這一下 Esc 該關它(spec:545 第一列),
-        // 不能被我們吃掉 —— R3 實測 Tooltip 的 Esc 因此失效。
-        if (document.querySelector('[role="tooltip"]')) return
-        event.preventDefault()
-      }
-      window.addEventListener('keydown', onKeyDownCapture, { capture: true })
-      return () => window.removeEventListener('keydown', onKeyDownCapture, { capture: true })
-    }, [])
+    // 2026-10-01 前這裡自己掛一支 window 捕獲監聽(Radix 在 document 捕獲階段收 Esc、只送給疊最上層而不看焦點在哪一區;
+    // 掛在 window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 只准有一個判定點 → 原封搬進 lib/overlay-escape.ts `useEscapeRegion`
+    //(行為逐條保留,含 Tooltip 特例);唯一的新增:留住的那一下記成「已交給控件」而不是只 preventDefault,面板裡若有自帶 Esc 層的控件
+    //(改過的欄位)才讀得到這一下是給它的。
+    useEscapeRegion(rootRef)
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
 
@@ -623,11 +606,19 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [renameTarget, setRenameTarget] = React.useState<AgentConversationSummary | null>(null)
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
-    /** Dialog 關閉後焦點回歷史觸發鈕(Popover 已因焦點外移關閉;WCAG 2.4.3)。 */
-    // Dialog 關閉後焦點:歷史浮層仍開 → 交給 Radix 還原到觸發它的行內動作(改名/刪除);浮層已關
-    // → 延到下一個 macrotask 回標題觸發(晚於 FocusScope 還原到已消失元素 → body 的動作,2026-09-02 實測)。
-    const historyOpenRef = React.useRef(historyOpen)
-    historyOpenRef.current = historyOpen
+    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。
+    // 對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還(全 DS 一支:沒有觸發點 + modal,
+    // 開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。
+    const dialogOpenerRef = React.useRef<HTMLElement | null>(null)
+    const openDialog = (open: () => void) => {
+      dialogOpenerRef.current = captureFocusOrigin()
+      open()
+    }
+    const returnFocusFromDialog = (event: Event) => {
+      const opener = dialogOpenerRef.current
+      dialogOpenerRef.current = null
+      returnFocusToOpener(event, opener, { noTrigger: true, modal: true, fallback: () => triggerRef.current })
+    }
     // 觸發器失去版面時關掉歷史浮層(2026-09-10 實測兩條路徑):宿主用 display:none 收起 keep-mounted 的面板
     // (AgentPanelDock,路由切換 / 全域快捷鍵這類不經指標與焦點的關閉)、或 Storybook 把整頁 docs 藏起來 —— 浮層 portal 到 body
     // 不會跟著消失,Radix 對 0×0 的錨點會把它定位到視窗左上角 (0, 8),焦點還留在裡面。ResizeObserver 在元素變成
@@ -641,12 +632,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
       ro.observe(el)
       return () => ro.disconnect()
     }, [historyOpen])
-    const returnFocus = () => {
-      window.setTimeout(() => {
-        if (historyOpenRef.current) return
-        triggerRef.current?.focus({ preventScroll: true })
-      }, 0)
-    }
 
     const groups = React.useMemo(() => {
       const order: string[] = []
@@ -703,6 +688,9 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               align="start"
               aria-label="歷史對話" // i18n-allow: DS 預設文案
               className="overflow-hidden p-0"
+              // 滑鼠挑一則對話收起 → 焦點回標題但不畫鍵盤框(打過字之後尤其會冒出來;規則與唯一實作住 lib/overlay-focus-return.ts,
+              // SelectMenu 同一支);鍵盤收起與「改名 / 刪除開了對話框」照原本(交還 Radix / 不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, triggerRef.current)}
             >
               <Command label="歷史對話">
                 {/* 搜尋列幾何 = CommandInput SSOT(2026-09-08 刪掉這裡的第二份 py/h 覆寫) */}
@@ -726,8 +714,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                               onSelectConversation?.(conversation.id)
                               setHistoryOpen(false)
                             }}
-                            onRename={() => setRenameTarget(conversation)}
-                            onDelete={() => setDeleteTarget(conversation)}
+                            onRename={() => openDialog(() => setRenameTarget(conversation))}
+                            onDelete={() => openDialog(() => setDeleteTarget(conversation))}
                           />
                         ))}
                       </CommandGroup>
@@ -755,30 +743,24 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
           <AgentRenameDialog
             conversation={renameTarget}
             onOpenChange={(next) => {
-              if (!next) {
-                setRenameTarget(null)
-                returnFocus()
-              }
+              if (!next) setRenameTarget(null)
             }}
             onConfirm={(nextTitle) => {
               onRenameConversation?.(renameTarget.id, nextTitle)
               setRenameTarget(null)
-              returnFocus()
             }}
+            onCloseAutoFocus={returnFocusFromDialog}
           />
         )}
         {deleteTarget && (
           <Dialog
             open
             onOpenChange={(next) => {
-              if (!next) {
-                setDeleteTarget(null)
-                returnFocus()
-              }
+              if (!next) setDeleteTarget(null)
             }}
           >
             {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-            <DialogContent autoHeight maxWidth={440}>
+            <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={returnFocusFromDialog}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
@@ -786,7 +768,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary" onClick={() => { setDeleteTarget(null); returnFocus() }}>
+                <Button variant="tertiary" onClick={() => setDeleteTarget(null)}>
                   取消
                 </Button>
                 <Button
@@ -795,7 +777,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   onClick={() => {
                     onDeleteConversation?.(deleteTarget.id)
                     setDeleteTarget(null)
-                    returnFocus()
                   }}
                 >
                   刪除
@@ -810,59 +791,69 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
 )
 AgentPanelHeader.displayName = 'AgentPanelHeader'
 
-/** 改名 Dialog:Field+Input 預填全選;儲存=更新類 dirty 規則;空名 blur 顯錯;Esc=Dialog 取消。 */
+/** 改名 Dialog:Field+Input 預填全選;驗證走 `useFormValidation`(更新類:沒改停用、空白按「儲存」才報錯並移焦點);Enter=儲存;Esc 先回復名稱、再按一次才關。 */
 function AgentRenameDialog({
   conversation,
   onOpenChange,
   onConfirm,
+  onCloseAutoFocus,
 }: {
   conversation: AgentConversationSummary
   onOpenChange: (open: boolean) => void
   onConfirm: (title: string) => void
+  /** 關閉後焦點還給誰(由開啟它的標題列決定,見 AgentPanelHeader returnFocusFromDialog) */
+  onCloseAutoFocus: (event: Event) => void
 }) {
-  const [value, setValue] = React.useState(conversation.title)
-  const [touched, setTouched] = React.useState(false)
-  const trimmed = value.trim()
-  const dirty = trimmed !== conversation.title
-  const empty = trimmed.length === 0
-  const showError = touched && empty
-  const commit = () => {
-    setTouched(true)
-    if (empty || !dirty) return
-    onConfirm(trimmed)
-  }
+  // 走 form-validation 可執行層(2026-10-01,待辦總帳 N70;規格 agent-panel.spec.md「改名」):規則 1(焦點在欄位裡不報錯)/ 2(離開才驗,指標按著時延到
+  // 按壓完成 —— 清空後直接按「取消」不再被長出來的錯誤推走,N67 同根)/ 4(Esc 回復,放在 Dialog 裡第一下只回復、第二下才關,N68)/ 7 / 8(按「儲存」才
+  // 報「名稱不可空白」並把焦點移到欄位)。2026-10-01 前這裡自己寫 touched / onBlur / `disabled={!dirty || empty}`:焦點還在欄位裡清空就當場報錯(違規則 1)、
+  // 清空直接按取消那一下落空(實測取消鈕上緣 150.8 → 204.8)、Esc 一下關整個對話框。「空白時儲存停用」沒有 user 原話,且與 hook 的 submitDisabled
+  //(只看 pristine / 送出中)衝突 —— 再加 `|| empty` 就是第二份規則(M17 / M30);規則 1 下空白錯誤在聚焦時看不到,停用鈕就變成規格自己點名的
+  // 「讓使用者猜為什麼按不了」。改成可按、按了報錯並移焦點。
+  const form = useFormValidation({
+    initialValues: { title: conversation.title },
+    intent: 'update',
+    validate: { title: (v) => (String(v).trim() ? undefined : '名稱不可空白') }, // i18n-allow: DS 預設文案
+    onSubmit: ({ title }) => {
+      const trimmed = String(title).trim()
+      // 修剪後與原名相同 = 只改了空白,不算改名:只關閉、不呼叫 onConfirm(保留原語意)
+      if (trimmed === conversation.title) { onOpenChange(false); return }
+      onConfirm(trimmed)
+    },
+  })
+  const titleProps = form.getInputProps('title')
   return (
     <Dialog open onOpenChange={onOpenChange}>
       {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-      <DialogContent autoHeight maxWidth={440}>
+      <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>改名對話</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <Field required invalid={showError}>
+          {/* 沒有 <form>:footer 鈕 onClick={() => void form.handleSubmit()}(form-validation.spec.md R8b 的寫法);不包 <form> 以免切斷 Dialog 的 flex 鏈(M25) */}
+          <Field required invalid={!!form.errors.title}>
             <FieldLabel>名稱</FieldLabel>
             <Input
-              value={value}
-              error={showError}
-              onChange={(e) => setValue(e.target.value)}
+              {...titleProps}
+              error={!!form.errors.title}
               onFocus={(e) => e.currentTarget.select()}
-              onBlur={() => setTouched(true)}
               onKeyDown={(e) => {
-                // form-validation:Enter=等同 blur(觸發驗證並提交);Esc 由 Dialog 承接=取消。
-                if (e.key === 'Enter') {
+                titleProps.onKeyDown(e)
+                // 規則 3:Enter = 儲存。輸入法選字的 Enter 不提交(判準 lib/ime-composition.ts;2026-09-30 前沒有 → 用注音改名,按 Enter 選字就直接存了半截)
+                if (e.key === 'Enter' && !isImeComposing(e)) {
                   e.preventDefault()
-                  commit()
+                  void form.handleSubmit()
                 }
               }}
             />
-            {showError && <FieldError>名稱不可空白</FieldError>}
+            <FieldError>{form.errors.title}</FieldError>
           </Field>
         </DialogBody>
         <DialogFooter>
           <Button variant="tertiary" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button variant="primary" disabled={!dirty || empty} onClick={commit}>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>
             儲存
           </Button>
         </DialogFooter>
@@ -1086,9 +1077,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
             className="shrink-0 text-fg-muted transition-transform duration-[var(--motion-duration-overlay)] motion-reduce:duration-0 group-data-[state=open]/agent-thinking:rotate-180"
           />
         </CollapsiblePrimitive.Trigger>
-        <CollapsiblePrimitive.Content
-          className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up motion-reduce:animate-none"
-        >
+        <CollapsiblePrimitive.Content className={disclosureMotion}>
           {/* 完成步驟=fg-secondary(2026-09-02 拍板;原 muted 太淺);微光行基色由 agent-panel.css 自管。 */}
           <div className="mt-2 flex flex-col gap-1 border-l border-divider pl-3 text-fg-secondary">
             {steps?.map((step, index) => <div key={index}>{step}</div>)}
@@ -1182,15 +1171,25 @@ export interface AgentPromptInputProps
 function PromptAttachmentRow({
   attachments,
   onRemove,
+  owner,
 }: {
   attachments: AgentPromptAttachment[]
   onRemove: (attachment: AgentPromptAttachment) => void
+  /** 這個複合輸入控件的主人(textarea):移除後焦點接力的終點、按 +N 卡裡的零件時焦點不離開它 */
+  owner: React.RefObject<HTMLTextAreaElement | null>
 }) {
   const { containerRef, registerItem, overflowIndices } = useOverflowIndices<HTMLDivElement>({
     reserveTriggerWidth: 48,
   })
   const hidden = new Set(overflowIndices)
   const hiddenItems = attachments.filter((_, i) => hidden.has(i))
+  // 移除後的焦點接力(2026-10-01,待辦總帳 OE30;combobox.spec.md「Tag 操作 › 個別移除」同一條,全 DS 一支 lib/collection-removal-focus.ts):
+  // 焦點在某顆 × 上(鍵盤、或 textarea 沒握著焦點時滑鼠按下)→ 下一顆 × → 前一顆 → textarea;+N 卡裡的 × → 直接回 textarea。
+  // 修前焦點隨 × 卸載掉到 body,接著打的字不見(實測)。textarea 握著焦點時按 × 本來就不搬焦點(下方 onMouseDown / onContentMouseDown)。
+  const remove = (attachment: AgentPromptAttachment) => {
+    focusAfterCollectionRemoval(containerRef.current, { owner: owner.current })
+    onRemove(attachment)
+  }
   return (
     // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。
     // 被藏的 Tag 留在 flow 內、排到 +N 之後(order-last)並隱形:useOverflowIndices 每次重量都拿得到
@@ -1202,15 +1201,16 @@ function PromptAttachmentRow({
           ref={registerItem(index)}
           className={cn('shrink-0', hidden.has(index) && 'invisible order-last')}
         >
-          <Tag size="md" onRemove={() => onRemove(attachment)}>
+          <Tag size="md" onRemove={() => remove(attachment)}>
             {attachment.label}
           </Tag>
         </div>
       ))}
       {hiddenItems.length > 0 && (
-        <OverflowIndicator count={hiddenItems.length} shape="tag" size="md">
+        // 浮出清單在另一個 portal,外框的 onMouseDown 看不到它 → 卡上掛同一支判準(同 Combobox `keepSearchFocus`;OverflowIndicator `onContentMouseDown`)
+        <OverflowIndicator count={hiddenItems.length} shape="tag" size="md" onContentMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, owner.current)}>
           {hiddenItems.map((attachment) => (
-            <Tag key={attachment.id} size="md" onRemove={() => onRemove(attachment)}>
+            <Tag key={attachment.id} size="md" onRemove={() => remove(attachment)}>
               {attachment.label}
             </Tag>
           ))}
@@ -1242,6 +1242,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
       if (busy || !canSubmit) return
       onSubmit()
     }
+    const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
     return (
       <div
         ref={ref}
@@ -1254,16 +1255,22 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           className,
         )}
         {...props}
+        // textarea 握著焦點時,用滑鼠按這個複合輸入控件的零件(附件 ×、+、送出、停止、空白處)焦點與正在打的字都留在輸入盒,click 照常
+        //(2026-10-01,待辦總帳 OE30;判準全 DS 一支 lib/pointer-press.ts keepFocusOnPointerPress,Select / Combobox 觸發欄位同一支;
+        // 修前 Chrome 在 mousedown 把焦點交給那顆 ×、移除後掉到 body,接著打的字不見,實測)。+、送出、停止是同根延伸(AI 推導)。
+        onMouseDown={(e) => { props.onMouseDown?.(e); keepFocusOnPointerPress(e, e.currentTarget, textareaRef.current) }}
       >
         {attachments.length > 0 && (
-          <PromptAttachmentRow attachments={attachments} onRemove={onRemoveAttachment} />
+          <PromptAttachmentRow attachments={attachments} onRemove={onRemoveAttachment} owner={textareaRef} />
         )}
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={(e) => {
-            // 按 Enter 送出、Shift+Enter 換行(拍板)。
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            // 按 Enter 送出、Shift+Enter 換行(拍板)。輸入法選字的 Enter 不送出(判準 lib/ime-composition.ts;2026-09-30 前只看
+            // isComposing,Safari 用注音按 Enter 選字時那一顆 isComposing 已是 false、只剩 keyCode 229 → 訊息被直接送出)
+            if (e.key === 'Enter' && !e.shiftKey && !isImeComposing(e)) {
               e.preventDefault()
               submit()
             }

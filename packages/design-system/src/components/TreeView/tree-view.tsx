@@ -1,5 +1,6 @@
 // code-quality-allow: file-size — foundational composite(TreeView owns tree logic + TreeItem + drag-drop + keyboard;拆 sub-component 會把 register/unregister 跨檔傳 ref 複雜化超過可讀性 gain)
 import * as React from 'react'
+import { escapeLayerProps } from '@/design-system/lib/overlay-escape'
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
 import {
   DndContext,
@@ -19,6 +20,7 @@ import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
+import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定與執行(與 Sidebar / FileUpload / Command 共用;判定表 scripts/test-roving-list-keyboard.mjs
 // + 樹專屬格 scripts/test-tree-keyboard-route.mjs;SSOT tree-view.spec.md「鍵盤導覽」,總帳 B9 + 〇節「按鍵規則合併」)
@@ -1010,7 +1012,10 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           ['--tree-px' as string]: CONTEXT_PX_VAR[context],
           ...props.style,
         } as React.CSSProperties}
-        onKeyDownCapture={handleKeyDownCapture}
+        // 指標拖曳中按 Esc 只取消拖曳(dnd-kit PointerSensor 在 document 上聽 Esc):宣告這一層、把這一下標成拖曳獨占,
+        // 外層 Dialog / Popover 不關、樹自己的鍵盤路也不動(lib/drag-announcements.ts useDragAccessibility.escapeLayer;drag-canonical.md invariant 8)
+        {...escapeLayerProps(drag.dragging)}
+        onKeyDownCapture={(e) => { drag.escapeLayer.onKeyDownCapture?.(e); handleKeyDownCapture(e) }}
         // 焦點落在任何一列或列裡的按鈕 → 記下是哪一列(它就是下一次 Tab 進來的落點;總帳 B9)
         onFocus={(e) => {
           ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)
@@ -1588,12 +1593,13 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
 
           {/* Children: Collapsible 展開/收合。
               2026-09-25:子項容器不再是 role="group"(樹狀表格裡 row 之間不允許 group);
-              data-tree-children 讓鍵盤查詢認得「關閉動畫中(data-state=closed)的子樹」並跳過。 */}
+              data-tree-children 讓鍵盤查詢認得「關閉動畫中(data-state=closed)的子樹」並跳過。
+              高度動畫 / 收尾 / 減少動態 = disclosureMotion(tokens/motion/disclosure-motion.ts;與 Accordion、AgentPanel 思考塊同一份)。 */}
           {hasChildren && (
             <CollapsiblePrimitive.Root open={isExpanded}>
               <CollapsiblePrimitive.Content
                 data-tree-children=""
-                className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none"
+                className={disclosureMotion}
               >
                 <DepthContext.Provider value={depth + 1}>
                   <div className="flex flex-col w-full">

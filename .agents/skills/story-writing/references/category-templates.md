@@ -167,6 +167,14 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 **禁止**:do/don't 對照放 showcase(屬 principles)/ token table 放 showcase(屬 anatomy)/ 純 variant grid 無 rule 放 principles(屬 showcase)。
 
+## 教學框的間距與標題(2026-10-01)
+
+- **範例 ↔ 它的說明** = `--layout-space-tight`(`layoutSpace.spec.md` 規則 3 labeling);**範例組 ↔ 範例組** = `--layout-space-loose`。住所 `src/stories-helpers/examples/example-captions.tsx`:Rule helper 的範例區一律 `<CaptionedExamples caption={Label}>`(說明自動併進它說的範例),手寫的「樣本 + 說明」小格用 `<ExampleGroup>`;只有一則說明貼著一個樣本的單格,直接在說明上寫 `mb-` / `mt-[var(--layout-space-tight)]` 是同一個值。不在各頁自寫其他值或外框。
+- **教學框說明文字(Rule 的 note)** = `text-caption`,行高用字級本身的 1.3,不疊 `leading-relaxed`(`typography.spec.md:50-53`「`text-caption`（12px）/ `text-footnote`（10px）：全部 lh 1.3 固定」)。
+- **卡片 / 列裡「標題 ↔ 說明」**(同一個文字塊)= `--item-gap-label-desc-*`(`item-anatomy.spec.md`「Label ↔ Desc 間距」),不是 tight、不是寫死 4 / 8px。
+- **標題**一律 `<h1>`–`<h6>` + `text-h5`(16px)/ `text-h6`(14px)(`typography.spec.md:85-88`):教學框標題 `font-semibold`、範例裡的產品標題 `font-medium`;chrome 標題沿用 `text-body-lg font-medium`(header-canonical)。
+- 機械:`scripts/story-layer-drift-invariant.mjs`((b) 寫死間距 / (c) div 當標題 / (d) 不存在的字級)。
+
 ## 強制機制
 
 - **Hook** `check_canonical_propagation.sh` E.1 principles:PreToolUse 接受單一完整 `UsageGuidance`，split style 則攔少於 2 個 decision dimensions
