@@ -12,11 +12,11 @@
   "escapes": "layout-space-magic-ok:被 @layout-space-magic-ok 逃生口放行的寫死間距(每個字一筆;分類器本來就放行的 micro 不算;只准往下,新增要隨基準檔一起送審)",
   "totals": {
     "primary-submit-disabled": 0,
-    "hardcoded-spacing": 264,
+    "hardcoded-spacing": 0,
     "div-heading": 0,
-    "unknown-typography": 3,
-    "story-counter-example": 4,
-    "layout-space-magic-ok": 438
+    "unknown-typography": 0,
+    "story-counter-example": 5,
+    "layout-space-magic-ok": 499
   },
   "files": {
     "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx": {
@@ -46,39 +46,30 @@
       }
     },
     "packages/design-system/src/components/AgentPanel/agent-panel.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 13,
+      "layout-space-magic-ok": {
+        "count": 8,
         "hits": [
-          "0047e43ab1db",
-          "174c2cb0fa3a",
-          "174c2cb0fa3a",
-          "174c2cb0fa3a",
-          "174c2cb0fa3a",
-          "39d81cf2edbb",
-          "39d81cf2edbb",
-          "39d81cf2edbb",
-          "39d81cf2edbb",
-          "c5b3c8e3730b",
-          "c5b3c8e3730b",
-          "c5b3c8e3730b",
-          "c5b3c8e3730b"
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "0f62834ff24e",
+          "c6c2d453821f",
+          "c6c2d453821f",
+          "c6c2d453821f",
+          "c6c2d453821f"
         ]
       }
     },
     "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 12,
+      "layout-space-magic-ok": {
+        "count": 8,
         "hits": [
-          "008850534be1",
           "4ec43176031c",
-          "54bf1ad7c250",
-          "8114ddf6904d",
+          "53e1508b5d93",
           "8340d7767714",
           "9f5ed5964047",
-          "aa5ff5720938",
-          "b2e1ec033ce6",
           "bf89226d4740",
-          "daa58281ec5d",
+          "c839fbfeaba9",
           "dd598861dfd3",
           "f3ceec75d331"
         ]
@@ -171,71 +162,21 @@
       }
     },
     "packages/design-system/src/components/Button/button.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 20,
+      "layout-space-magic-ok": {
+        "count": 3,
         "hits": [
-          "1ff4632e4757",
-          "239788cc1ffd",
-          "29dde1d7230c",
-          "31d516fab40b",
-          "4c59a10dbd1a",
-          "574d3b5d683d",
-          "708ccb147c40",
-          "7257f09b0745",
-          "80502481769c",
-          "8d6bc5c71330",
+          "352a30033899",
           "a2ad742a6759",
-          "ad2f04ef3229",
-          "b66fecc010ae",
-          "cb792a81b237",
-          "cc04633ad144",
-          "de32cc39c4b8",
-          "ed0d4093a9b6",
-          "efe59f591ad1",
-          "f2a72c3014d2",
-          "f2a72c3014d2"
+          "ed0d4093a9b6"
         ]
       }
     },
     "packages/design-system/src/components/Button/button.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 35,
+      "layout-space-magic-ok": {
+        "count": 2,
         "hits": [
-          "087d8635074b",
-          "19e254acad6c",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "3155ca4b01ce",
-          "48cca825e893",
-          "5bbbe287577d",
-          "5bbbe287577d",
-          "5bbbe287577d",
-          "5bbbe287577d",
           "839bb2dc540f",
-          "8ac8f3a98ef1",
-          "9b56d526faed",
-          "9c9fa623f324",
-          "a11f8d426767",
-          "a6bcf736c050",
-          "c97e501c3383",
-          "ccc31804a3bc",
-          "ccc31804a3bc",
-          "ccc31804a3bc",
-          "ccc31804a3bc",
-          "ccc31804a3bc",
-          "ccc31804a3bc",
-          "ce21b8499fdf",
-          "d337f9b3f72d",
-          "d3e6f38de2db"
+          "a11f8d426767"
         ]
       }
     },
@@ -432,25 +373,17 @@
       }
     },
     "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 8,
+      "layout-space-magic-ok": {
+        "count": 1,
         "hits": [
-          "14716bf9040a",
-          "1ff4632e4757",
-          "29dde1d7230c",
-          "31d516fab40b",
-          "95fdab4597ab",
-          "a2ad742a6759",
-          "a9813f9600ac",
-          "cc04633ad144"
+          "a2ad742a6759"
         ]
       }
     },
     "packages/design-system/src/components/Dialog/dialog.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 10,
+      "layout-space-magic-ok": {
+        "count": 9,
         "hits": [
-          "06927bc29362",
           "0ffb06756a09",
           "67daabda3d14",
           "8308568ef322",
@@ -493,96 +426,19 @@
       }
     },
     "packages/design-system/src/components/Field/field.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 12,
+      "layout-space-magic-ok": {
+        "count": 2,
         "hits": [
-          "29dde1d7230c",
-          "2bbbc5ac8479",
-          "31d516fab40b",
-          "3ed8901adc78",
-          "444fc2c971e0",
-          "5dc06b062a49",
-          "7a7c32e5dd0f",
-          "8122df64c54d",
-          "8b525b0229af",
-          "927d2a0be48f",
-          "95fdab4597ab",
-          "a2ad742a6759"
+          "a2ad742a6759",
+          "ecd7919fb81b"
         ]
       }
     },
     "packages/design-system/src/components/Field/field.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 60,
+      "layout-space-magic-ok": {
+        "count": 1,
         "hits": [
-          "087d8635074b",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1d99450d8936",
-          "1e2386c0338d",
-          "1e2386c0338d",
-          "21eb2b3f6c39",
-          "25c8df400bc4",
-          "25c8df400bc4",
-          "25c8df400bc4",
-          "32437be6fa4b",
-          "32aaff2f0548",
-          "32b3152e7ef0",
-          "4d9c089b85ab",
-          "4f8a9f1d4725",
-          "524520a346e2",
-          "5bb87c00c1ef",
-          "5bb87c00c1ef",
-          "5bd1d6ab9e63",
-          "5e6bf933edf4",
-          "66aa350bae61",
-          "70da3f93e56f",
-          "7f4bc2a22bd6",
-          "80ca6676f911",
-          "813ebf7cd869",
-          "8d2ca685bdd1",
-          "adb6719a5992",
-          "adb6719a5992",
-          "adb6719a5992",
-          "adb6719a5992",
-          "ae4114ff066e",
-          "c1bb9375521f",
-          "cf8dc2dde05e",
-          "cfacff0a6a9f",
-          "d01a4f07a71e",
-          "d01a4f07a71e",
-          "d01a4f07a71e",
-          "d2732a4a9295",
-          "daa2d42b2924",
-          "dc8d88bfc626",
-          "dd3395dc3a2c",
-          "e12f3c2a4af2",
-          "e3765a1923ee",
-          "e4bdfe203de3",
-          "e6335e74876a",
-          "ed9d2c00429b",
-          "f1f9b079c6a3",
-          "f30fb391acae",
-          "f4d91ff5694e",
-          "fed7d9cb69fe"
-        ]
-      },
-      "unknown-typography": {
-        "count": 3,
-        "hits": [
-          "bcbf6bd20fb6",
-          "e4e23df91b7d",
-          "ea40db824fcb"
+          "a5ae4d8e225c"
         ]
       }
     },
@@ -844,29 +700,17 @@
       }
     },
     "packages/design-system/src/components/Rating/rating.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 12,
-        "hits": [
-          "1ff4632e4757",
-          "29dde1d7230c",
-          "31d516fab40b",
-          "6aa1adf4492e",
-          "95fdab4597ab",
-          "a2ad742a6759",
-          "abda9039bcb7",
-          "cc04633ad144",
-          "dfb2e4f29c55",
-          "ed0d4093a9b6",
-          "ed0d4093a9b6",
-          "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Rating/rating.stories.tsx": {
-      "hardcoded-spacing": {
+      "story-counter-example": {
         "count": 1,
         "hits": [
-          "5bb87c00c1ef"
+          "ed0d4093a9b6"
+        ]
+      },
+      "layout-space-magic-ok": {
+        "count": 2,
+        "hits": [
+          "38747646988d",
+          "a2ad742a6759"
         ]
       }
     },
@@ -948,17 +792,10 @@
       }
     },
     "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 8,
+      "layout-space-magic-ok": {
+        "count": 1,
         "hits": [
-          "1ff4632e4757",
-          "29dde1d7230c",
-          "31d516fab40b",
-          "3b8b3651f991",
-          "4782cc814b14",
-          "95fdab4597ab",
-          "a2ad742a6759",
-          "dfe1b64b638f"
+          "a2ad742a6759"
         ]
       }
     },
@@ -1055,35 +892,19 @@
       }
     },
     "packages/design-system/src/components/Steps/steps.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 10,
+      "layout-space-magic-ok": {
+        "count": 2,
         "hits": [
-          "1f549f550f4c",
-          "1ff4632e4757",
-          "3155339da249",
-          "334dcdb38c4d",
-          "706164c61245",
-          "921230950a2d",
           "a2ad742a6759",
-          "cf220e54b4a4",
-          "e3eefbc801b9",
-          "f227d21b984c"
+          "e3eefbc801b9"
         ]
       }
     },
     "packages/design-system/src/components/Steps/steps.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 9,
+      "layout-space-magic-ok": {
+        "count": 1,
         "hits": [
-          "087d8635074b",
-          "087d8635074b",
-          "087d8635074b",
-          "10597642fbdf",
-          "31c763935ced",
-          "31c763935ced",
-          "31c763935ced",
-          "7257f09b0745",
-          "cf1e588edbfe"
+          "7257f09b0745"
         ]
       }
     },
@@ -1172,36 +993,19 @@
       }
     },
     "packages/design-system/src/components/Toast/toast.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 9,
+      "layout-space-magic-ok": {
+        "count": 1,
         "hits": [
-          "05433ce55fe3",
-          "1f549f550f4c",
-          "1ff4632e4757",
-          "29dde1d7230c",
-          "31d516fab40b",
-          "84045ad109ba",
-          "95fdab4597ab",
-          "a2ad742a6759",
-          "a9813f9600ac"
+          "a2ad742a6759"
         ]
       }
     },
     "packages/design-system/src/components/Toast/toast.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 11,
+      "layout-space-magic-ok": {
+        "count": 2,
         "hits": [
-          "5bbbe287577d",
-          "5bbbe287577d",
-          "6e430009c927",
-          "7ef7341f38c1",
-          "7ef7341f38c1",
-          "aef85549b356",
-          "aef85549b356",
-          "b33212038168",
-          "e2342e300393",
-          "e2342e300393",
-          "ef23e2cd6f3e"
+          "b2ead4a4f8a0",
+          "b2ead4a4f8a0"
         ]
       }
     },
@@ -1226,45 +1030,29 @@
       }
     },
     "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 17,
+      "layout-space-magic-ok": {
+        "count": 9,
         "hits": [
-          "29dde1d7230c",
-          "31d516fab40b",
-          "3ed8901adc78",
-          "444fc2c971e0",
-          "49f308d4b133",
-          "49f308d4b133",
-          "49f308d4b133",
-          "49f308d4b133",
-          "49f308d4b133",
-          "49f308d4b133",
-          "49f308d4b133",
-          "5dc06b062a49",
-          "8b525b0229af",
-          "927d2a0be48f",
-          "95fdab4597ab",
           "a2ad742a6759",
-          "a9813f9600ac"
+          "ecd7919fb81b",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4",
+          "f1d9e4225ce4"
         ]
       }
     },
     "packages/design-system/src/components/TreeView/tree-view.stories.tsx": {
-      "hardcoded-spacing": {
-        "count": 17,
+      "layout-space-magic-ok": {
+        "count": 9,
         "hits": [
-          "1f549f550f4c",
-          "1f549f550f4c",
-          "1f549f550f4c",
-          "1f549f550f4c",
-          "1f549f550f4c",
-          "533833d06087",
-          "6d08511d01ca",
           "b42b3b2dc497",
           "b42b3b2dc497",
           "b42b3b2dc497",
           "c251bdfcbab7",
-          "caa9057b56ea",
           "d84c2a50aa08",
           "d84c2a50aa08",
           "dcba3037bf4d",

@@ -7,6 +7,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
@@ -15,6 +16,7 @@ import { NumberInput } from '@/design-system/components/NumberInput/number-input
 import { Select } from '@/design-system/components/Select/select'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Rating } from '@/design-system/components/Rating/rating'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/展示',
@@ -99,10 +101,10 @@ const CASCADE_PRIORITY = [
 export const StateCascade: Story = {
   name: '欄位狀態連動 — 停用態 / 純展示態 流給所有控件',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field disabled> — 所有控件自動停用（含 Switch / Rating / Slider / Select / DatePicker）'}</p>
-        <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <ExampleGroup>
+        <p className="text-caption font-medium text-fg-secondary">{'<Field disabled> — 所有控件自動停用（含 Switch / Rating / Slider / Select / DatePicker）'}</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)] max-w-3xl">
           <Field disabled className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field disabled className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" onChange={() => {}} aria-label="優先級" /></Field>
           <Field disabled className="w-44"><FieldLabel>截止日</FieldLabel><DatePicker value="2026-06-20" onChange={() => {}} /></Field>
@@ -112,10 +114,10 @@ export const StateCascade: Story = {
           <Field disabled className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox defaultChecked /></Field>
           <Field disabled className="w-44"><FieldLabel>付款方式</FieldLabel><RadioGroup defaultValue="card"><RadioGroupItem value="card" label="信用卡" /><RadioGroupItem value="cash" label="貨到付款" /></RadioGroup></Field>
         </div>
-      </div>
-      <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 顯示精簡版「★ 數值」、Slider 鎖互動保留視覺'}</p>
-        <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption font-medium text-fg-secondary">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 顯示精簡版「★ 數值」、Slider 鎖互動保留視覺'}</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)] max-w-3xl">
           <Field mode="readonly" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
@@ -124,10 +126,10 @@ export const StateCascade: Story = {
           <Field mode="readonly" className="w-44"><FieldLabel>滿意度</FieldLabel><Rating value={4} aria-label="滿意度" /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>完成度</FieldLabel><Slider defaultValue={[40]} aria-label="完成度" /></Field>
         </div>
-      </div>
-      <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="view"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
-        <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
+      </ExampleGroup>
+      <ExampleGroup>
+        <p className="text-caption font-medium text-fg-secondary">{'<Field mode="view"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
+        <div className="flex flex-wrap gap-[var(--layout-space-loose)] max-w-3xl">
           <Field mode="view" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="view" className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" aria-label="優先級" /></Field>
           <Field mode="view" className="w-44"><FieldLabel>截止日</FieldLabel><DatePicker value="2026-06-20" onChange={() => {}} /></Field>
@@ -135,7 +137,7 @@ export const StateCascade: Story = {
           <Field mode="view" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
           <Field mode="view" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -173,10 +175,10 @@ export const Horizontal: Story = {
 export const HorizontalLabelAlignment: Story = {
   name: '水平:標籤與控件垂直對齊',
   render: () => (
-    <div className="max-w-3xl flex flex-col gap-8">
+    <div className="max-w-3xl flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <h3 className="text-body font-bold mb-2">驗證：單行 label 與 input 中線對齊</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">驗證：單行 label 與 input 中線對齊</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           Label 是單行時，文字應與 input 的文字中線完全對齊。
           這是 padding-top: calc((field-height - 1lh) / 2) 的基本情境。
         </p>
@@ -187,8 +189,8 @@ export const HorizontalLabelAlignment: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">驗證：多行 label 第一行對齊 input 中線</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">驗證：多行 label 第一行對齊 input 中線</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           Label 換行時，第一行仍然與 input 中線對齊，後續行往下流。
           視覺上 label 從 input 中線往下延伸，而不是從 input 頂部開始。
         </p>
@@ -199,28 +201,28 @@ export const HorizontalLabelAlignment: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">驗證：size 切換時 label 自動跟隨</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">驗證：size 切換時 label 自動跟隨</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           公式用 <code>var(--field-height-&#123;size&#125;)</code>，size 切換時 padding-top 自動重算，
           無需 JS 測量。
         </p>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <div>
-            <div className="text-caption text-fg-muted mb-1">小尺寸 sm — 控件高 28px</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">小尺寸 sm — 控件高 28px</div>
             <Field orientation="horizontal" labelWidth="100px" size="sm">
               <FieldLabel>電子郵件</FieldLabel>
               <Input size="sm" placeholder="name@example.com" />
             </Field>
           </div>
           <div>
-            <div className="text-caption text-fg-muted mb-1">中尺寸 md — 控件高 32px</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">中尺寸 md — 控件高 32px</div>
             <Field orientation="horizontal" labelWidth="100px" size="md">
               <FieldLabel>電子郵件</FieldLabel>
               <Input size="md" placeholder="name@example.com" />
             </Field>
           </div>
           <div>
-            <div className="text-caption text-fg-muted mb-1">大尺寸 lg — 控件高 36px</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">大尺寸 lg — 控件高 36px</div>
             <Field orientation="horizontal" labelWidth="100px" size="lg">
               <FieldLabel>電子郵件</FieldLabel>
               <Input size="lg" placeholder="name@example.com" />
@@ -237,10 +239,10 @@ export const HorizontalLabelAlignment: Story = {
 export const MixedControlAlignment: Story = {
   name: '混合控制元件的高度對齊',
   render: () => (
-    <div className="flex flex-col gap-8 max-w-3xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
       <div>
-        <h3 className="text-body font-bold mb-2">垂直 Field：Input / Checkbox / Switch 高度節奏一致</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">垂直 Field：Input / Checkbox / Switch 高度節奏一致</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           每個欄位的控件區都有相同的最小高度,讓整欄看起來節奏一致。
           文字輸入框會撐滿整個高度,勾選框與開關則維持原本尺寸並在區內垂直置中。
         </p>
@@ -261,11 +263,11 @@ export const MixedControlAlignment: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">水平並排：Input / Checkbox / Switch 中線對齊</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">水平並排：Input / Checkbox / Switch 中線對齊</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           多個 Field 橫向並排時，每個 Field 的 control 中線都在同一水平線上。
         </p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           <Field>
             <FieldLabel>姓名</FieldLabel>
             <Input placeholder="input" />
@@ -282,7 +284,7 @@ export const MixedControlAlignment: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">Horizontal Field：label 與任何 control 都對齊中線</h3>
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Horizontal Field：label 與任何 control 都對齊中線</h3>
         <FieldGroup>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>姓名</FieldLabel>
@@ -308,16 +310,16 @@ export const MixedControlAlignment: Story = {
 export const SegmentedControlInField: Story = {
   name: 'SegmentedControl 作為 Field 控制元件',
   render: () => (
-    <div className="flex flex-col gap-8 max-w-3xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
       <div>
-        <h3 className="text-body font-bold mb-2">Vertical：SegmentedControl 自動繼承 Field size</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Vertical：SegmentedControl 自動繼承 Field size</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           分段控制器放進欄位後,會自動沿用欄位設定的尺寸,不需要再單獨指定——跟按鈕、輸入框的做法一致。
           整個欄位改尺寸時,分段控制器也會跟著一起縮放。
         </p>
         <FieldGroup>
           <div>
-            <div className="text-caption text-fg-muted mb-1">小尺寸 sm</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">小尺寸 sm</div>
             <Field size="sm">
               <FieldLabel>檢視模式</FieldLabel>
               <SegmentedControl defaultValue="list">
@@ -329,7 +331,7 @@ export const SegmentedControlInField: Story = {
             </Field>
           </div>
           <div>
-            <div className="text-caption text-fg-muted mb-1">中尺寸 md</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">中尺寸 md</div>
             <Field size="md">
               <FieldLabel>檢視模式</FieldLabel>
               <SegmentedControl defaultValue="list">
@@ -340,7 +342,7 @@ export const SegmentedControlInField: Story = {
             </Field>
           </div>
           <div>
-            <div className="text-caption text-fg-muted mb-1">大尺寸 lg</div>
+            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">大尺寸 lg</div>
             <Field size="lg">
               <FieldLabel>檢視模式</FieldLabel>
               <SegmentedControl defaultValue="list">
@@ -354,8 +356,8 @@ export const SegmentedControlInField: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">Horizontal：label 與 SegmentedControl 中線對齊</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Horizontal：label 與 SegmentedControl 中線對齊</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           水平排列時,分段控制器跟其他控件(輸入框、勾選框、開關)一樣維持相同的行高節奏,
           標籤的第一行會對齊控件的垂直中線。
         </p>
@@ -382,8 +384,8 @@ export const SegmentedControlInField: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">Disabled：Field disabled 時 SegmentedControl 跟著 disabled</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Disabled：Field disabled 時 SegmentedControl 跟著 disabled</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           跟 Button / Input 相同——Field 的 disabled state 透過 context 傳給 SegmentedControl，
           consumer 不需要在 SegmentedControl 上重複傳 disabled。
         </p>
@@ -409,10 +411,10 @@ export const SegmentedControlInField: Story = {
 export const BlockControlRadioGroup: Story = {
   name: '區塊內控制元件 — RadioGroup',
   render: () => (
-    <div className="flex flex-col gap-8 max-w-3xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
       <div>
-        <h3 className="text-body font-bold mb-2">Vertical:RadioGroup 在 control area 內堆疊</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Vertical:RadioGroup 在 control area 內堆疊</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           單選群組會讓欄位自動切換成「多行區塊」排版——
           控件區不固定高度,而是把第一個選項的中線對齊到單行控件的中線位置。
           使用時不需要額外傳任何設定。
@@ -431,8 +433,8 @@ export const BlockControlRadioGroup: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">Horizontal:label 第一行對齊第一個 option 中線</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Horizontal:label 第一行對齊第一個 option 中線</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           水平排列時,標籤與控件區用同一套對齊方式,讓兩者的「第一行中線」落在同一條基準線上,
           所以標籤文字會精準對齊第一個單選項的文字中線,後面的選項往下排列。
         </p>
@@ -447,8 +449,8 @@ export const BlockControlRadioGroup: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">Inline + Block 並排:FieldGroup 韻律不斷</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Inline + Block 並排:FieldGroup 韻律不斷</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           同一組欄位裡混用單行控件(輸入框)和多行控件(單選群組)時,每個欄位標籤的
           第一行中線都落在同一條視覺基準上——姓名輸入框的中線、性別第一個選項(男性)的中線、Email 輸入框的中線。
           這就是整套欄位一致的行高節奏。
@@ -481,10 +483,10 @@ export const BlockControlRadioGroup: Story = {
 export const ButtonAsControl: Story = {
   name: 'Button 作為控制元件',
   render: () => (
-    <div className="flex flex-col gap-8 max-w-3xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
       <div>
-        <h3 className="text-body font-bold mb-2">Upload Button 作為附件欄位的 control</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Upload Button 作為附件欄位的 control</h3>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           Button 是「承載 file value 的輸入介面」——點擊開檔案選擇器,結果寫回 field。
           Button 高度與 `field-height` 共用同一組 token,放進 inline control area 自然對齊
           Input 中線,horizontal label 公式也直接套用,不需要任何特例。
@@ -507,8 +509,8 @@ export const ButtonAsControl: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold mb-2">判斷標準:點擊是否產生此欄位的 value?</h3>
-        <p className="text-caption text-fg-muted mb-4 max-w-xl">
+        <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">判斷標準:點擊是否產生此欄位的 value?</h3>
+        <p className="text-caption text-fg-muted max-w-xl">
           ✅ 上傳檔案、開選人對話框、Connect OAuth——Button 是 control。<br/>
           ❌ 表單 submit / cancel、頁面導覽、刪除整筆資料——這些是 form / page action,
           不是 field control,要放在 form footer 或 page header。
@@ -523,37 +525,39 @@ export const ButtonAsControl: Story = {
 export const LabelWidth: Story = {
   name: '標籤寬度',
   render: () => (
-    <div className="max-w-2xl flex flex-col gap-4">
+    <ExampleGroup className="max-w-2xl">
       <p className="text-caption text-fg-muted">labelWidth 支援任何 CSS length 值(80px / 160px / 240px / 30% 等);同一表單依最長的 label 挑一個固定寬,讓控件起點對齊。</p>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <div className="text-caption text-fg-muted mb-1">labelWidth = 80px</div>
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">labelWidth = 80px</div>
         <Field orientation="horizontal" labelWidth="80px">
           <FieldLabel>城市</FieldLabel>
           <Input placeholder="如:台北市" />
         </Field>
       </div>
       <div>
-        <div className="text-caption text-fg-muted mb-1">labelWidth = 160px(預設常用)</div>
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">labelWidth = 160px(預設常用)</div>
         <Field orientation="horizontal" labelWidth="160px">
           <FieldLabel>公司統一編號</FieldLabel>
           <Input placeholder="8 碼數字" />
         </Field>
       </div>
       <div>
-        <div className="text-caption text-fg-muted mb-1">labelWidth = 240px(寬 label 欄)</div>
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">labelWidth = 240px(寬 label 欄)</div>
         <Field orientation="horizontal" labelWidth="240px">
           <FieldLabel>發票寄送電子郵件地址</FieldLabel>
           <Input placeholder="billing@company.com" />
         </Field>
       </div>
       <div>
-        <div className="text-caption text-fg-muted mb-1">labelWidth = 30%(比例)</div>
+        <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">labelWidth = 30%(比例)</div>
         <Field orientation="horizontal" labelWidth="30%">
           <FieldLabel>備註</FieldLabel>
           <Input placeholder="選填" />
         </Field>
       </div>
-    </div>
+      </div>
+    </ExampleGroup>
   ),
 }
 
@@ -604,15 +608,16 @@ export const WithSlider: Story = {
 export const SliderAlignsWithOtherFields: Story = {
   name: 'Slider 跟 Input / NumberInput 並排',
   render: () => (
-    <div className="flex flex-col gap-8">
+    <ExampleGroup>
       <p className="text-caption text-fg-secondary max-w-[560px]">
         把 Slider、Input、NumberInput 並排在同一個 Field 行裡,會看到三者的高度
         完全對齊(`h-field-*`)——Slider 的 track/thumb 視覺身分不變,只有容器
         外高跟著 Field size 變。
       </p>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
-          <div className="text-caption text-fg-muted mb-3">size = {size}</div>
+          <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size = {size}</div>
           <FieldGroup>
             <Field orientation="horizontal" labelWidth="96px">
               <FieldLabel>姓名</FieldLabel>
@@ -629,7 +634,8 @@ export const SliderAlignsWithOtherFields: Story = {
           </FieldGroup>
         </div>
       ))}
-    </div>
+      </div>
+    </ExampleGroup>
   ),
 }
 
@@ -643,7 +649,8 @@ export const SliderWithLiveNumberInput: Story = {
       <div className="max-w-sm">
         <Field>
           <FieldLabel>縮放比例</FieldLabel>
-          <div className="flex items-center gap-3 w-full">
+          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5) */}
+          <div className="flex items-center gap-2 w-full">
             <div className="flex-1 min-w-0">
               <Slider
                 value={[value]}
@@ -712,10 +719,10 @@ function UpdateProjectSettingsForm() {
         </Field>
       </FieldGroup>
       {/* 規則 4:內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
-      <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
         {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
         <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
-      </div>
+      </ButtonGroup>
     </form>
   )
 }
@@ -744,9 +751,9 @@ function CreateProjectForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
         <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
-      </div>
+      </ButtonGroup>
     </form>
   )
 }
@@ -759,7 +766,7 @@ export const FormValidation: Story = {
     <Toaster />
     <div className="flex flex-wrap items-start gap-[var(--layout-space-loose)]">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-body font-bold">更新:專案設定(disabled-until-dirty)</h3>
+        <h3 className="text-h6 font-semibold">更新:專案設定(disabled-until-dirty)</h3>
         <p className="text-caption text-fg-muted max-w-80">
           按鈕沒改不亮;打字中不報錯(blur 才驗);已出錯欄位一編輯立即清 error;
           Escape 回復原值;空 submit / 格式錯 → anchor 到第一個錯誤欄位。送出成功跳 Toast,
@@ -769,7 +776,7 @@ export const FormValidation: Story = {
         <UpdateProjectSettingsForm />
       </div>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-body font-bold">建立:新專案(永遠 enabled)</h3>
+        <h3 className="text-h6 font-semibold">建立:新專案(永遠 enabled)</h3>
         <p className="text-caption text-fg-muted max-w-80">
           Create 按鈕永遠可按 —— 點了才驗證全部並 scroll 到第一個錯誤,
           不讓使用者對著 disabled 按鈕猜原因。

@@ -396,7 +396,7 @@ export const SizeMatrix = {
 
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">元件只有內容高,列高交給所在的列;星的尺寸依呈現分兩套</span>
-        <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed">
+        <p className="text-caption text-fg-muted max-w-[720px]">
           Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 `--field-height-*`，放進 Field 時由 Field 控件槽
           （min-h-field-* + items-center）撐出跟 Input / Select 一樣的列高並置中；Field 外的列由列自己決定，評分不再撐高列。
           可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），

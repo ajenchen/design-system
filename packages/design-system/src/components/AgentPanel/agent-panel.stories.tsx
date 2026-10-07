@@ -25,6 +25,7 @@ import {
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -95,7 +96,8 @@ function PanelFrame({
     >
       {stage && <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{stage}</div>}
       {aside && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">{aside}</div>
+        // 旁註 = 一行讀數 + 一行說明(同一個文字塊)→ 兩行之間用 item 文字塊的 label ↔ description 間距(item-anatomy.spec.md「Label ↔ Desc 間距」)
+        <div className="flex flex-1 flex-col items-center justify-center gap-[var(--item-gap-label-desc-reading)] text-body text-fg-secondary">{aside}</div>
       )}
       {/* 顯式開啟:DS 預設依 v14 條 F 是「關閉」,而 M15 要求家族展示要能截到開啟態。
           靠預設值截圖等於讓 story 綁在某個預設上,預設一改 story 就默默變空。 */}
@@ -145,6 +147,7 @@ export const TaskAssistant: Story = {
                 steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
                 currentStep={<span>正在標記衝突項目…</span>}
               />
+              {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距 */}
               <p className="mt-2">
                 初步整理完成:P0 共 6 筆,其中「支付逾時重試」與「對帳批次」的排程互相衝突,建議錯開到不同夜間時段。
               </p>
@@ -398,6 +401,7 @@ export const DecisionSummaryInFlow: Story = {
           <AgentMessage role="agent">
             已按你的選擇繼續:
             <AgentDecisionSummary
+              // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距
               className="mt-2"
               entries={[
                 { question: '公告要用哪種語氣?', answer: '正式版' },
@@ -581,7 +585,9 @@ export const Fab: Story = {
 export const LogoStates: Story = {
   name: '標誌三態',
   render: () => (
-    <div className="flex items-end gap-12 p-12">
+    // 三個標誌並列 = loose(layoutSpace.spec.md 規則 3)
+    // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪(agent-panel-logo.spec.md:33 行程 560→830)(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+    <div className="flex items-end gap-[var(--layout-space-loose)] p-12">
       {(
         [
           ['still', '靜止(待機)'],
@@ -589,10 +595,10 @@ export const LogoStates: Story = {
           ['think', '思考中(代理回覆中)'],
         ] as const
       ).map(([state, label]) => (
-        <div key={state} className="flex flex-col items-center gap-3">
+        <ExampleGroup key={state} align="center">
           <AgentLogo state={state} size={72} label={label} />
           <span className="text-caption text-fg-muted">{label}</span>
-        </div>
+        </ExampleGroup>
       ))}
     </div>
   ),
@@ -617,7 +623,9 @@ export const LogoThinkStop: Story = {
     }
     React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
     return (
-      <div className="flex items-center gap-12 p-12">
+      // 標誌 ↔ 驅動它的按鈕 ↔ 狀態讀數 = tight(控件 → 它驅動的畫面 / 讀數,layoutSpace.spec.md 規則 3)
+      // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪(agent-panel-logo.spec.md:33 行程 560→830)(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      <div className="flex items-center gap-[var(--layout-space-tight)] p-12">
         <AgentLogo state={state} size={72} label={state} />
         <Button variant="tertiary" size="sm" onClick={start}>思考 3 秒</Button>
         <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
@@ -1126,12 +1134,15 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
       { role: 'agent', content: (
         <>
           <p>跟你問的有關的有四處:</p>
+          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距;清單項之間 4px 是同質清單列(layoutSpace.spec.md:165) */}
           <ul className="mt-2 flex flex-col gap-1">
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
             <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
             <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
+            {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px(行內 micro)(layoutSpace.spec.md:166 micro) */}
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
+          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距 */}
           <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
         </>
       ) },

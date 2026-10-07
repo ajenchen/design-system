@@ -12,6 +12,7 @@ import {
   StepContent,
 } from './steps'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
@@ -61,9 +62,12 @@ export const Default: Story = {
     // success card;「再填一份申請」是成功頁的真實產品 action(Google Forms
     // 「Submit another response」同款,https://support.google.com/docs/answer/2839588),
     // 非 demo 治具。
+    // 間距(layoutSpace.spec.md):有框卡片內距 = loose(規則 1);標題列 → 說明 = tight(規則 3 labeling);
+    // 最後的內容 → 動作鈕 = bottom(規則 4,:127)
     if (submitted) {
       return (
-        <div className="w-[480px] flex flex-col gap-4 p-6 bg-muted rounded-md border border-border">
+        <div className="w-[480px] flex flex-col p-[var(--layout-space-loose)] bg-muted rounded-md border border-border">
+          {/* @layout-space-magic-ok: 結果圖示 ↔ 標題(同一列的行內 micro)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-3">
             <span className="h-8 w-8 rounded-full bg-info flex items-center justify-center shrink-0">
               <Check className="text-white" size={20} strokeWidth={2.5} aria-hidden />
@@ -72,14 +76,14 @@ export const Default: Story = {
               已成功送出申請
             </span>
           </div>
-          <p className="text-body text-fg-secondary">
+          <p className="mt-[var(--layout-space-tight)] text-body text-fg-secondary">
             我們會盡快處理,結果將寄送至您的電子信箱。
           </p>
-          <div>
+          <ButtonGroup className="mt-[var(--layout-space-bottom)]">
             <Button variant="tertiary" onClick={reset}>
               再填一份申請
             </Button>
-          </div>
+          </ButtonGroup>
         </div>
       )
     }
@@ -95,14 +99,13 @@ export const Default: Story = {
             <StepLabel>基本資料</StepLabel>
             <StepDescription>填寫姓名與聯絡方式</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請輸入你的姓名、電子郵件與電話。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                </div>
-              </div>
+              {/* 規則 4:步驟說明(最後的內容)→ 動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有 */}
+              <p className="text-body text-fg-secondary">
+                請輸入你的姓名、電子郵件與電話。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={advance}>下一步</Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
 
@@ -110,17 +113,15 @@ export const Default: Story = {
             <StepLabel>帳號設定</StepLabel>
             <StepDescription>選擇使用者名稱與密碼</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  設定登入帳號。使用者名稱至少 3 個字元。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <p className="text-body text-fg-secondary">
+                設定登入帳號。使用者名稱至少 3 個字元。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={advance}>下一步</Button>
+                <Button variant="tertiary" onClick={back}>
+                  上一步
+                </Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
 
@@ -128,17 +129,15 @@ export const Default: Story = {
             <StepLabel>確認並送出</StepLabel>
             <StepDescription>送出前最後檢查</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請確認所有欄位正確,按下送出後系統會建立您的帳號。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={submit}>送出</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <p className="text-body text-fg-secondary">
+                請確認所有欄位正確,按下送出後系統會建立您的帳號。
+              </p>
+              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+                <Button variant="primary" onClick={submit}>送出</Button>
+                <Button variant="tertiary" onClick={back}>
+                  上一步
+                </Button>
+              </ButtonGroup>
             </StepContent>
           </StepItem>
         </Steps>

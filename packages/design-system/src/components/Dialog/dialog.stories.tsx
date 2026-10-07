@@ -55,6 +55,7 @@ function NotificationSettings() {
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
           <div className="flex flex-col py-2">
             {items.map((n) => (
               // item-anatomy Family 2:[content: title + desc(--item-gap-label-desc-scanning gap)] [ItemSuffix: Switch]
@@ -62,6 +63,7 @@ function NotificationSettings() {
               // px-loose:content 對齊 header/footer 的 loose padding(body flush 無水平 padding)
               <div
                 key={n.key}
+                // @layout-space-magic-ok: 同質設定列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);內容 ↔ 後綴開關 12px 是列內部間距,沒有規格定義
                 className="flex items-start gap-3 py-2 px-[var(--layout-space-loose)]"
               >
                 <div className="min-w-0 flex-1">
@@ -137,6 +139,7 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用:成員名單這種展示列」走 Family 2 手組)
     <div
       role="listitem"
+      // @layout-space-magic-ok: 同質成員列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1031)
       className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)]"
     >
       <Avatar
@@ -292,6 +295,7 @@ export const LongContent = {
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
             30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
@@ -345,7 +349,7 @@ export const ListBody = {
   name: '主體放清單',
   parameters: openOverlayParameters('560px'),
   render: () => (
-    <div className="flex flex-col gap-6 items-start">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
       <Dialog defaultOpen>
         <DialogTrigger asChild>
@@ -356,6 +360,7 @@ export const ListBody = {
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
             <div role="list" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
@@ -545,6 +550,7 @@ export const WithTabsInHeader = {
                   { key: 'github', label: 'GitHub PR 同步', on: true },
                   { key: 'linear', label: 'Linear issue 連動', on: false },
                 ].map((it) => (
+                  // @layout-space-magic-ok: 同質設定列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);內容 ↔ 後綴開關 12px 是列內部間距,沒有規格定義
                   <div key={it.key} className="flex items-start gap-3 py-2">
                     <div className="min-w-0 flex-1 text-body">{it.label}</div>
                     <ItemSuffix>

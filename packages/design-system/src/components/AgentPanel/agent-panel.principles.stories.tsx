@@ -10,18 +10,21 @@ export default meta
 export const UsageGuidance: StoryObj = {
   name: '使用指引',
   render: () => (
-    <article className="max-w-2xl space-y-6 text-body text-foreground">
+    // 段落 ↔ 段落 = loose(並列);段落標題 → 它的清單 = tight(標題在替清單命名)—— 與其他設計原則頁的 Rule 同一套(layoutSpace.spec.md 規則 3)
+    <article className="max-w-2xl space-y-[var(--layout-space-loose)] text-body text-foreground">
       <section>
-        <h3 className="text-body-lg font-medium">何時用</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
+        <h3 className="text-h5 font-semibold">何時用</h3>
+        {/* @layout-space-magic-ok: 項目符號清單:列距 space-y 4px = 同質清單項的列間距(layoutSpace.spec.md:165);pl 20px 是項目符號的懸掛縮排,清單自身幾何、不是區塊間距(AI 判讀;layoutSpace.spec.md:176 判準) */}
+        <ul className="mt-[var(--layout-space-tight)] list-disc space-y-1 pl-5 text-fg-secondary">
           <li>產品頁右側需要常駐可開合的智慧代理對話(任務助理、資料問答、批次操作代理)。</li>
           <li>代理需要人類拍板時(AgentDecisionCard)、回顧歷史對話時(歷史浮層)。</li>
           <li>頁面需要全域入口喚起代理(AgentFab,含有新訊招喚)。</li>
         </ul>
       </section>
       <section>
-        <h3 className="text-body-lg font-medium">何時不用(手足分界)</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
+        <h3 className="text-h5 font-semibold">何時不用(手足分界)</h3>
+        {/* @layout-space-magic-ok: 項目符號清單:列距 space-y 4px = 同質清單項的列間距(layoutSpace.spec.md:165);pl 20px 是項目符號的懸掛縮排,清單自身幾何、不是區塊間距(AI 判讀;layoutSpace.spec.md:176 判準) */}
+        <ul className="mt-[var(--layout-space-tight)] list-disc space-y-1 pl-5 text-fg-secondary">
           <li>單次確認/破壞性確認 → Dialog(阻擋語意屬 modal,非代理協作卡)。</li>
           <li>靜態說明/導覽提示 → Coachmark / Tooltip(無對話回合)。</li>
           <li>一般表單輸入 → Field 家族(AgentPromptInput 是代理複合輸入盒,非通用欄位)。</li>
@@ -29,8 +32,9 @@ export const UsageGuidance: StoryObj = {
         </ul>
       </section>
       <section>
-        <h3 className="text-body-lg font-medium">產題守則(AgentDecisionCard;完整版見 agent-panel.spec.md §8)</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
+        <h3 className="text-h5 font-semibold">產題守則(AgentDecisionCard;完整版見 agent-panel.spec.md §8)</h3>
+        {/* @layout-space-magic-ok: 項目符號清單:列距 space-y 4px = 同質清單項的列間距(layoutSpace.spec.md:165);pl 20px 是項目符號的懸掛縮排,清單自身幾何、不是區塊間距(AI 判讀;layoutSpace.spec.md:176 判準) */}
+        <ul className="mt-[var(--layout-space-tight)] list-disc space-y-1 pl-5 text-fg-secondary">
           <li>1–3 題,每題必須真的改變代理下一步;能一題就不問兩題,禁「計畫可以嗎?」類空問。</li>
           <li>一題一步:一次只顯示一題,兩題以上才顯示「n / N」;第一題左鈕=跳過(用預設繼續),第二題起左鈕=上一題(答案保留、不可跳題);右鈕=下一題,末步=送出。</li>
           <li>題目=完整問句、以「?」結尾、句內點名決策對象(「公告要用哪種語氣?」);禁「確定嗎?」。</li>
@@ -43,8 +47,9 @@ export const UsageGuidance: StoryObj = {
         </ul>
       </section>
       <section>
-        <h3 className="text-body-lg font-medium">動態紀律</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
+        <h3 className="text-h5 font-semibold">動態紀律</h3>
+        {/* @layout-space-magic-ok: 項目符號清單:列距 space-y 4px = 同質清單項的列間距(layoutSpace.spec.md:165);pl 20px 是項目符號的懸掛縮排,清單自身幾何、不是區塊間距(AI 判讀;layoutSpace.spec.md:176 判準) */}
+        <ul className="mt-[var(--layout-space-tight)] list-disc space-y-1 pl-5 text-fg-secondary">
           <li>標誌三態(靜止=待機/招喚/思考)定義唯一住所=agent-panel-logo.spec.md AgentLogo 節;禁另立本體語言。</li>
           <li>呼吸包絡全家族共用:一息 3 秒,35% 吸頂、85% 回落、之後靜止空拍;呼出去的波 90% 才散盡。吸氣變亮、呼氣變暗,本體不變淡。</li>
           <li>標誌配色全部取自自家色階(藍 blue-3→7、紫 purple-3→7、陰影 purple-8、提亮 blue-2、波 blue-5→indigo-5→purple-5),機械腳本每次比對;入口鈕邊框與光圈只從 AgentLogo 的 AGENT_BRAND(blue-4 / purple-4)取色。</li>

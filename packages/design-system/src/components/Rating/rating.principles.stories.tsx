@@ -4,9 +4,11 @@ import LinkTo from '@storybook/addon-links/react'
 import { Heart, ThumbsUp, Star } from 'lucide-react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Slider } from '@/design-system/components/Slider/slider'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Rating/設計原則',
@@ -22,15 +24,15 @@ const Rule = ({
 }: {
   title: string; note?: string; children: React.ReactNode
 }) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-wrap gap-6 items-start">{children}</div>
+  <div className="mb-[var(--layout-space-loose)]">
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
+    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
   </div>
 )
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal mt-2 ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
+  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
 // 一個範例 = 一欄(固定寬、內容靠左,同一條 Rule 的範例並排比較)。範例直接放在 Rule 裡 —— 同 DS 其他設計原則頁的
@@ -38,8 +40,9 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 //   · 範例要有名字時,名字由 FieldLabel 承擔:可以點的放 <Field>,唯讀的放 <Field mode="readonly">
 //     (rating.spec.md「放入 Field 的可組合性」「Interactive vs ReadOnly」);
 //   · 不需要名字的範例(standalone 唯讀、誤用示範)自帶 aria-label,說明寫在 Label。
+// 範例 ↔ 它的 Label = tight,由共用的 ExampleGroup 擁有(category-templates.md「教學框的間距與標題」),Label 自己不帶 margin。
 const Example = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col items-start w-80">{children}</div>
+  <ExampleGroup align="start" className="w-80">{children}</ExampleGroup>
 )
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -50,10 +53,11 @@ const Example = ({ children }: { children: React.ReactNode }) => (
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Rating 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="商品列表平均分"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品列表平均分</span></LinkTo>
@@ -64,7 +68,7 @@ export const UsageGuidance: Story = {
           <span className="text-fg-secondary"> — 訂單完成後幫這次服務評分:只有整顆,hover 預覽、click 給分;離開評分或按送出時驗證,送出後同一欄變唯讀精簡版(interactive → readOnly)</span>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -199,7 +203,8 @@ export const UsageGuidance: Story = {
           note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器（badge.spec：不用 Badge 做分類標籤）。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
         >
           <Example>
-            <div className="flex items-center gap-2">
+            {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+            <div className="flex items-center gap-1">
               <Tag color="blue">熱門</Tag>
               <Tag color="neutral">Beta</Tag>
             </div>
@@ -212,10 +217,10 @@ export const UsageGuidance: Story = {
           note="愛心 / 豎拇指是 binary（喜歡 / 不喜歡），不是 1–5 分。用 Button iconOnly + pressed，不用 Rating 換 icon。"
         >
           <Example>
-            <div className="flex items-center gap-2">
+            <ButtonGroup>
               <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
               <Button variant="text" iconOnly startIcon={ThumbsUp} aria-label="喜歡" />
-            </div>
+            </ButtonGroup>
             <Label>收藏 / 喜歡是二元切換 → Button + pressed，不是 Rating 換 Heart icon</Label>
           </Example>
         </Rule>
@@ -282,6 +287,7 @@ export const WholeStarsAndCompact: Story = {
         <Example>
           <Field mode="readonly">
             <FieldLabel>Kindle Paperwhite 平均分</FieldLabel>
+            {/* @story-counter-example: 反例本身就是在精簡版旁手拼數值與評論數 span,連同這一列手寫的 8px 間距(不跟 size 走)一起示範錯在哪 */}
             <div className="flex items-center gap-2">
               <Rating value={4.5} />
               <span className="text-caption text-fg-secondary">4.5</span>
@@ -303,24 +309,21 @@ export const YellowStarConvention: Story = {
         title="黃星 = 世界級 convention，破壞 = 破壞使用者直覺"
         note="黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）"
       >
-        {/* 兩個範例並排、共用一句說明(比的是同一件事:兩種呈現的星色) */}
-        <div className="flex flex-col">
-          <div className="flex flex-wrap gap-6 items-start">
-            <Example>
-              <Field>
-                <FieldLabel>為這家餐廳評分</FieldLabel>
-                <Rating defaultValue={4} />
-              </Field>
-            </Example>
-            <Example>
-              <Field mode="readonly">
-                <FieldLabel>餐廳平均分</FieldLabel>
-                <Rating value={4.5} count={2318} />
-              </Field>
-            </Example>
-          </div>
-          <Label>✅ 兩種呈現（可以點的評分 / 唯讀精簡版）的星都是 `var(--warning)` = yellow-6 — 世界級 convention</Label>
-        </div>
+        {/* 兩個範例並排、共用一句說明(比的是同一件事:兩種呈現的星色)—— 直接放進 Rule:CaptionedExamples 把兩則範例併成一段
+            (範例之間 loose),說明貼在整段下方(tight) */}
+        <Example>
+          <Field>
+            <FieldLabel>為這家餐廳評分</FieldLabel>
+            <Rating defaultValue={4} />
+          </Field>
+        </Example>
+        <Example>
+          <Field mode="readonly">
+            <FieldLabel>餐廳平均分</FieldLabel>
+            <Rating value={4.5} count={2318} />
+          </Field>
+        </Example>
+        <Label>✅ 兩種呈現（可以點的評分 / 唯讀精簡版）的星都是 `var(--warning)` = yellow-6 — 世界級 convention</Label>
       </Rule>
 
       <Rule

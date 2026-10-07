@@ -5,6 +5,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useState } from 'react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -91,9 +92,9 @@ function ServiceRatingForm() {
         <Rating {...form.getInputProps('rating')} />
         <FieldError>{form.errors.rating}</FieldError>
       </Field>
-      <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
         <Button type="submit" variant="primary">送出評分</Button>
-      </div>
+      </ButtonGroup>
     </form>
   )
 }
