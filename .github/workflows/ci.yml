@@ -601,21 +601,6 @@ jobs:
             node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=$LAT --out=tmp/datatable-content-wheel-$dpr
           done
 
-      - name: Searchable menu keeps focus in its search box (browser)
-        run: |
-          # 可搜尋選單開著時,滑鼠點選項 = 按 Enter(user 2026-09-30 同意,原話「其他部分我覺得”可以”」;SSOT select-menu.spec.md
-          #「A11y 預設」Focus 段 +「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「Tag 操作」與「邊界案例」Empty、command.spec.md「A11y 預設」)。
-          # 量的(每一條點名型別 / story / 第幾個觸發點):挑選時與挑選後焦點留在搜尋框、點完打的字進得去、aria-activedescendant 指向反白那一列而且關聯得上、
-          # 欄位內多選每挑一次清空關鍵字 / 浮層內保留、單選收起回觸發點且指標挑選不帶 :focus-visible、Tag × /「+N」浮出清單裡的 × 與卡片本身 / 全選
-          # 不搬焦點也不關選單、選單關著按「+N」裡的 × 焦點不掉到 body、Tag 排滿後打的字看得全、比整列長的字停在整列寬並捲動、打了字後滑鼠一鍵清空
-          # 連關鍵字一起清、鍵盤一鍵清空焦點留在欄位、組字中的 Enter 不選 / Esc 不關(一般 Esc 對照照樣關)、Combobox searchIn='trigger' 空值時仍有搜尋框。
-          # 候選 story 從 index.json 依「SelectMenu + 宣告搜尋 prop 的包裝元件 + Command 的直接使用者(AgentPanel 歷史、CommandDialog)」家族推導,
-          # 逐一真的點開判型,四型與直接使用者都要量到;--selftest 在頁面上把修法逐一拆掉(13 組),每一組都必須紅在指定的型與直接使用者。
-          # 放這個 job(2026-10-01 從 verify-browser-select-all 搬來):那邊 CI 實測 9.4–11.4 分(不含這支),這支本機單獨實測掃描 159 秒 + 對照組 227 秒,
-          # CI 上同類閘約本機的 1.2–1.4 倍(select-all-footer 本機 281–291 秒 / CI 330–417 秒)→ 估 8–9 分,疊上去 18–20 分、貼近 25 分上限;
-          # 這個 job CI 實測 5.8–7.7 分。同一份 storybook build、瀏覽器已在上一步裝好;步驟依序跑,不與上面的感知量測同時佔 CPU。
-          npm run test:searchable-menu-focus
-
       - name: Preserve DataTable scroll perception evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -689,6 +674,66 @@ jobs:
             tmp/datatable-handle-*/
           if-no-files-found: ignore
           retention-days: 14
+
+  verify-browser-searchable-fields:
+    # 2026-10-07 拆出(照 overlay / perception / sweeps / select-all / field-edges 的先例:超時就照主題拆平行 job,不調高上限)。
+    # 起因:可搜尋欄位按鍵閘(K1–K4)疊進 verify-browser-interaction 後 0464ba54 跑到 25.4 分被取消(那個 job 平常已 20.9–22.8 分);
+    # 同主題的「可搜尋選單焦點」閘原本放在 verify-browser-datatable-handles(18.9 分),一起搬來,兩個原 job 都鬆開。
+    # 預估:建置 + 安裝約 4 分、按鍵閘本機 3.6 分、焦點閘本機掃描 159 秒 + 對照組 227 秒,CI 約本機 1.2–1.4 倍 → 約 15–18 分,列 SLOW_BROWSER_JOBS(25 分)。
+    name: Verify browser(searchable field keys + menu focus)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Searchable field keys (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 可搜尋欄位上的按鍵與值的讓位(2026-10-07 待辦總帳 K1–K4):關鍵字空白的 Backspace 刪最後一個值 / 一鍵清空後反白回第一列 /
+          # 焦點在欄位本身時打字 = 打開清單、字進搜尋框(含輸入法第一鍵,CDP 真組字)/ 按過 × 再 Esc 焦點回欄位 /「不限」與多人 1 位的名字打開後讓位。
+          # 播報字值變了 / 離開欄位就清空;「不限」與多人 1 位的名字讓位不改欄寬、窄欄位名字放得下就完整。
+          # 只跑 --selftest:它先對沒動過的頁面跑完整 41 列(紅就停),再八組在頁面上拆掉修法各自必紅 —— 判定那一輪不必再跑第二次。
+          # 本機(同時另有多支瀏覽器閘在跑)3 分 36 秒。2026-10-07 更正:原本放在 verify-browser-interaction,當時註解引的「本 job CI 實測 10.8–13.0 分」是 09-21 的舊數字,
+          # 該 job 實際已 20.9–22.8 分(02f12767 / b5757ee6 / 40b432da),疊上去 0464ba54 跑到 25.4 分被取消 —— 搬到本 job。
+          npm run test:searchable-field-keys
+
+      - name: Searchable menu keeps focus in its search box (browser)
+        run: |
+          # 可搜尋選單開著時,滑鼠點選項 = 按 Enter(user 2026-09-30 同意,原話「其他部分我覺得”可以”」;SSOT select-menu.spec.md
+          #「A11y 預設」Focus 段 +「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「Tag 操作」與「邊界案例」Empty、command.spec.md「A11y 預設」)。
+          # 量的(每一條點名型別 / story / 第幾個觸發點):挑選時與挑選後焦點留在搜尋框、點完打的字進得去、aria-activedescendant 指向反白那一列而且關聯得上、
+          # 欄位內多選每挑一次清空關鍵字 / 浮層內保留、單選收起回觸發點且指標挑選不帶 :focus-visible、Tag × /「+N」浮出清單裡的 × 與卡片本身 / 全選
+          # 不搬焦點也不關選單、選單關著按「+N」裡的 × 焦點不掉到 body、Tag 排滿後打的字看得全、比整列長的字停在整列寬並捲動、打了字後滑鼠一鍵清空
+          # 連關鍵字一起清、鍵盤一鍵清空焦點留在欄位、組字中的 Enter 不選 / Esc 不關(一般 Esc 對照照樣關)、Combobox searchIn='trigger' 空值時仍有搜尋框。
+          # 候選 story 從 index.json 依「SelectMenu + 宣告搜尋 prop 的包裝元件 + Command 的直接使用者(AgentPanel 歷史、CommandDialog)」家族推導,
+          # 逐一真的點開判型,四型與直接使用者都要量到;--selftest 在頁面上把修法逐一拆掉(13 組),每一組都必須紅在指定的型與直接使用者。
+          # 放這個 job(2026-10-01 從 verify-browser-select-all 搬來):那邊 CI 實測 9.4–11.4 分(不含這支),這支本機單獨實測掃描 159 秒 + 對照組 227 秒,
+          # CI 上同類閘約本機的 1.2–1.4 倍(select-all-footer 本機 281–291 秒 / CI 330–417 秒)→ 估 8–9 分,疊上去 18–20 分、貼近 25 分上限;
+          # 這個 job CI 實測 5.8–7.7 分。同一份 storybook build、瀏覽器已在上一步裝好;步驟依序跑,不與上面的感知量測同時佔 CPU。
+          npm run test:searchable-menu-focus
 
   verify-browser-overlay:
     name: Verify browser(overlay + theme gates)
@@ -865,12 +910,6 @@ jobs:
           # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
           # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
           npm run test:sidebar-menu-keyboard
-          # 可搜尋欄位上的按鍵與值的讓位(2026-10-07 待辦總帳 K1–K4):關鍵字空白的 Backspace 刪最後一個值 / 一鍵清空後反白回第一列 /
-          # 焦點在欄位本身時打字 = 打開清單、字進搜尋框(含輸入法第一鍵,CDP 真組字)/ 按過 × 再 Esc 焦點回欄位 /「不限」與多人 1 位的名字打開後讓位。
-          # 播報字值變了 / 離開欄位就清空;「不限」與多人 1 位的名字讓位不改欄寬、窄欄位名字放得下就完整。
-          # 只跑 --selftest:它先對沒動過的頁面跑完整 41 列(紅就停),再八組在頁面上拆掉修法各自必紅 —— 判定那一輪不必再跑第二次。
-          # 本機(同時另有多支瀏覽器閘在跑)3 分 36 秒;本 job CI 實測 10.8–13.0 分,疊上去仍在 25 分上限內(ci-workflow-scope.test.mjs)。
-          npm run test:searchable-field-keys
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
@@ -1216,7 +1255,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1225,6 +1264,7 @@ jobs:
           BROWSER_DT: ${{ needs.verify-browser-datatable.result }}
           BROWSER_DT3: ${{ needs.verify-browser-datatable-perception.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
+          BROWSER_SEARCH_FIELDS: ${{ needs.verify-browser-searchable-fields.result }}
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
@@ -1237,8 +1277,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
