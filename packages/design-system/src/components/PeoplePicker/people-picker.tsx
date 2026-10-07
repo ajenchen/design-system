@@ -509,6 +509,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }
   // ── edit mode ─────────────────────────────────────────────────────────────
   // (selectedNames 派生已 hoist 至檔上方 hooks 區,見 D3 P0 修註解)
+  // 多人只選 1 位 = 頭像 + 名字(spec.md §C);欄位內搜尋框開著時名字讓位。「這一格是頭像 + 名字」只判一次,
+  // 下方 tagRenderer(畫不畫名字)與 Combobox `yieldedTagText`(讓位後留下名字的寬)用同一個判斷式 —— 兩件事不會各說各話
+  const soleName = selectedNames.length === 1 ? resolvePerson(findPerson(directory, selectedNames[0])).name : undefined
 
   return (
     <Combobox
@@ -556,7 +559,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // wrapper 變 intrinsic content-width → PersonDisplay `w-full` resolves to intrinsic → truncate 無效。
       // 修法:length=1 wrapper 改 `flex-1 min-w-0 overflow-hidden` 提供 width constraint 給 PersonDisplay。
       // SSOT helper `getPeoplePickerTagWrapperClass(count)` 集中,future 改 wrapper 行為改一處。
-      tagWrapperClassName={getPeoplePickerTagWrapperClass(selectedNames.length)}
+      // 搜尋框在欄位內時,多人 1 位那一格只拿自己要的寬(不跟搜尋框那一格平分空間;helper 註解)
+      tagWrapperClassName={getPeoplePickerTagWrapperClass(selectedNames.length, searchIn === 'trigger')}
+      // 名字讓位之後留下它的寬(搜尋框那一格的量尺;依內容寬的欄位打開前後欄寬不變 —— spec.md §C open + inline-search 列,2026-10-07 待辦總帳 K4)
+      yieldedTagText={soleName}
       // 2026-05-16 真 root cause fix:overflow chip wrapper 套同 `-ml-0.5` 讓 chip 物理上
       // 跟 avatar 同 slot(等寬同 step,non-overlapping 多 24px 區塊不再 saw)。對齊 user
       // 「avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形」物理模型 directive +
@@ -600,15 +606,16 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       }}
       // any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
       {...(rest as any)}
-      tagRenderer={(item, onRemove) => {
+      tagRenderer={(item, onRemove, state) => {
         const p = resolvePerson(findPerson(directory, item.value))
         // 2026-05-12 Q2 fix(user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」):
         // selectedNames.length === 1 → PersonDisplay(avatar + name)代替 PersonAvatarTag(avatar only)。
         // SSOT 對齊 PeoplePicker single mode line 201 selectedItemRenderer。多選 1 人時視覺等同單選,
-        // 只在 length > 1 才走 stack(各 avatar 純 chip)。多選 + inline 搜尋場景拿掉 name 改 cursor
-        // 走 `searchIn='trigger'` opt-in(2026-05-12 規則 3 ship,已轉傳 Combobox;default 'menu' 走 panel-top search)。
-        if (selectedNames.length === 1) {
-          return <PersonDisplay key={item.value} value={p} size={size} onRemove={onRemove} />
+        // 只在 length > 1 才走 stack(各 avatar 純 chip)。
+        // 欄位內搜尋框開著(state.searchActive)時名字讓位給插入點、頭像留著(spec.md §C open + inline-search 列)——
+        // 2026-05-12 這一列就寫了,程式一直沒做,打字時畫成「Alice Chen bo」(2026-10-07 待辦總帳 K4 補上;與「不限」同一條:值裡用文字畫的部分不和關鍵字並排)
+        if (soleName !== undefined) {
+          return <PersonDisplay key={item.value} value={p} size={size} onRemove={onRemove} nameYielded={state.searchActive} />
         }
         return (
           <PersonAvatarTag

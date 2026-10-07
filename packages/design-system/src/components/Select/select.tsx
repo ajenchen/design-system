@@ -2,6 +2,7 @@
 // code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helpers + 4-mode renderer + Field SSOT consumption,split-into-files 會破壞 file-local helper closure
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
+import { flushSync } from 'react-dom'
 import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -15,7 +16,8 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { RemovalStatus, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
@@ -687,6 +689,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // a11y:搜尋框在觸發欄位內時,輸入框的 aria-activedescendant = 反白列 id(Command 根讀、SelectMenu 轉交,直接寫進 inputRef;
     // 機制詳 select-menu-keyboard.ts useActiveDescendant;必在 early return 前呼叫 — React #310 hook 順序)。
     const onActiveOptionChange = useActiveDescendant(inputRef)
+    // Backspace 清掉值時的讀屏播報(SelectMenu/select-menu-removal-status.tsx;必在 early return 前 —— React #310 hook 順序)。
+    // 值又變了 / 焦點離開欄位就退場(同檔 (a)(b);下方 onBlur 呼叫 clearRemoval)
+    const { said: removalSaid, announce: announceRemoval, clear: clearRemoval } = useRemovalAnnouncement(value ?? '')
 
     // 關閉時清搜尋:由 SelectMenu 做(下方受控 `search` + `onSearchChange = setSearch`;全 DS 一份,select-menu.tsx「浮層關閉 → 清空」)
 
@@ -767,9 +772,11 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     }
 
     // 2026-05-21 D3 Phase B codex 抓:Custom clear 用 setValue 不直接 onChange,uncontrolled clear 才能真清 internal state。
-    // 一鍵清空連打到一半的關鍵字一起清(select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列,2026-09-30)
+    // 一鍵清空連打到一半的關鍵字一起清(select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列,2026-09-30);
+    // 清單開著時反白回第一列(2026-10-07 待辦總帳 K2,select-menu-keyboard.ts moveHighlightToFirst)
+    const clearValue = () => { setValue(''); setSearch(''); if (open) moveHighlightToFirst(listboxId) }
     const clearEl = showClear ? (
-      <SelectClearButton size={size ?? 'md'} onClear={() => { setValue(''); setSearch('') }} stopPropagation
+      <SelectClearButton size={size ?? 'md'} onClear={clearValue} stopPropagation
         focusOwner={(button) => button.closest<HTMLElement>('[role="combobox"]')} />
     ) : null
 
@@ -896,11 +903,18 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // 觸發欄位 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;
         // 可搜尋 → 欄位內的搜尋框,本來就在欄位裡)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次。
         // 2026-10-01 前一開清單就 blur,必填錯誤在還沒選任何東西時就長出來(實測)
-        onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)}
+        // 真的離開欄位(觸發欄位與浮層都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
+        onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, (event: React.FocusEvent<HTMLDivElement>) => {
+          clearRemoval()
+          ;(onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)?.(event)
+        })}
         onKeyDown={(e) => {
           // passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上
           // consumer handler 同樣最先收到);component 導覽邏輯照舊在後。
           onKeyDownProp?.(e as unknown as React.KeyboardEvent<HTMLSelectElement>)
+          // 焦點在欄位本身(不是搜尋框)時打字 = 打開清單、字進搜尋框(2026-10-07 待辦總帳 K3;判準 select-menu-keyboard.ts routeTypingToSearch)。
+          // 排在組字判斷之前:欄位本身不能打字,輸入法的第一鍵(keyCode 229)在這裡就是「開始打字」,不是選字
+          if (searchable && routeTypingToSearch(e, { open, openNow: () => flushSync(() => setOpen(true)), searchBox: () => inputRef.current })) return
           // 輸入法組字中的 Enter / 空白 / 方向鍵 / Esc 是在選字,不開關選單、不轉送(判準 lib/ime-composition.ts,2026-09-30)
           if (isImeComposing(e)) return
           // 2026-07-14 dim-10 修:內層清除按鈕(SelectClearButton → ItemInlineAction <button>)
@@ -912,6 +926,14 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(見 select-menu.tsx
           // forwardKeyToListbox docblock — 原「open 後不攔讓方向鍵導覽」在跨 DOM 子樹機制上不成立)
           if (open && forwardKeyToListbox(listboxId, e)) return
+          // 關鍵字空白時 Backspace = 按清除 ×(2026-10-07 待辦總帳 K1):只在 clearable —— 必須有值的欄位不開 clearable(select.spec.md「何時開 clearable」),
+          // Backspace 不能做出 × 做不到的事;焦點在欄位本身或搜尋框都算;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」
+          if (searchable && showClear && isRemoveLastValueKey(e, search)) {
+            e.preventDefault()
+            announceRemoval(selectedLabel, '')
+            clearValue()
+            return
+          }
           if (e.key === 'Enter' || e.key === ' ') {
             // 2026-06-11 P0 a11y(R2 deep-audit):原 guard `!searchable` 連「關閉時的鍵盤開啟」一起擋
             // → searchable Select / PeoplePicker single 鍵盤打不開(WCAG 2.1.1)。原意只是開啟後
@@ -927,6 +949,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         {clearEl}
         {chevronEl}
         {hiddenInputEl}
+        <RemovalStatus said={removalSaid} />
       </div>
     )
 

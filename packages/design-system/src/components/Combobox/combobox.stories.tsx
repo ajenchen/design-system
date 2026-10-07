@@ -281,6 +281,28 @@ export const InlineSearchFocusContract: Story = {
   },
 }
 
+// 欄位上的按鍵契約 probe(2026-10-07,待辦總帳 K1–K3 與同族焦點修正):兩種搜尋框位置各一格,都開一鍵清空、開場兩個 Tag。
+// 閘 `scripts/searchable-field-keys-invariant.mjs` 逐格量:關鍵字空白按 Backspace 刪最後一個 Tag(連發 / 組字中不刪)、清單開著按 × 反白回第一列、
+// 焦點在欄位本身打字 = 打開清單且字進搜尋框(含輸入法第一鍵)、按過 × / Tag × 再 Esc 焦點回觸發欄位。
+// 規則住 select-menu.spec.md「A11y 預設」;這些都是互動之後的狀態,沒有新畫面可看,所以 test-only。
+function FieldKeysProbe() {
+  const [inline, setInline] = React.useState<string[]>(['electronics', 'food'])
+  const [popover, setPopover] = React.useState<string[]>(['electronics', 'food'])
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <Combobox options={categoryOptions} value={inline} onChange={setInline} searchable searchIn="trigger" clearable
+        placeholder="選擇商品分類…" aria-label="商品分類(欄位內搜尋,可清空)" />
+      <Combobox options={categoryOptions} value={popover} onChange={setPopover} searchable clearable
+        placeholder="選擇商品分類…" aria-label="商品分類(浮層內搜尋,可清空)" />
+    </div>
+  )
+}
+export const FieldKeysContract: Story = {
+  name: '欄位按鍵驗證',
+  tags: ['test-only'],
+  render: () => <FieldKeysProbe />,
+}
+
 /* ── 載入中(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
 // Notion 頁面「連結資料庫」:工作區的資料庫清單由 API 回傳
 const databaseOptions = [
@@ -488,6 +510,49 @@ export const UnrestrictedSearch: Story = {
       </div>
     )
   },
+}
+
+// 契約 probe:只選「不限」× 欄位內搜尋框(`searchIn='trigger'`;2026-10-07 前 repo 裡零則 story 同時開這兩個)。
+// 顯示照單選欄位那一條(select-menu-unrestricted.spec.md「欄位顯示」欄位內搜尋框那一列,待辦總帳 K4):關著是一般已填值的黑字
+// (與第二格不可搜尋的「不限」長得一樣;短標籤逐像素相同)、打開還沒打字變灰色提示(讀屏略過)、一打字就讓位、字刪光又回來。
+// 閘 `scripts/searchable-field-keys-invariant.mjs` 量這幾格(連同 Backspace 刪掉「不限」、按 × 之後反白落在第一列 —— 第一列就是「不限」本身);
+// 關著的畫面跟其他「不限」範例一樣,沒有新東西可看,所以 test-only。
+// 讓位不改欄寬(依內容寬、窄欄位長標籤)的 probe 住 Field 的「欄位內搜尋讓位 × 欄寬」(寬度軸的 owner,field.stories.tsx)。
+function UnrestrictedInlineSearchProbe() {
+  const [inline, setInline] = React.useState<string[]>(['__unrestricted__'])
+  const [plain, setPlain] = React.useState<string[]>(['__unrestricted__'])
+  const [empty, setEmpty] = React.useState<string[]>([])
+  const [narrow, setNarrow] = React.useState<string[]>(['__unrestricted__'])
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <div>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 欄位內搜尋</h3>
+        <Combobox unrestricted searchable searchIn="trigger" clearable options={categoryOptions} value={inline} onChange={setInline}
+          placeholder="選擇商品類別…" aria-label="商品類別(欄位內搜尋)" />
+      </div>
+      <div>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 不可搜尋(對照:關著的長相)</h3>
+        <Combobox unrestricted clearable options={categoryOptions} value={plain} onChange={setPlain} aria-label="商品類別(對照)" />
+      </div>
+      <div>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">空值 · 欄位內搜尋(對照:提示字的灰)</h3>
+        <Combobox unrestricted searchable searchIn="trigger" options={categoryOptions} value={empty} onChange={setEmpty}
+          placeholder="選擇商品類別…" aria-label="商品類別(空值)" />
+      </div>
+      <div>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 欄位內搜尋 × 換行(窄欄位)</h3>
+        <div className="w-44">
+          <Combobox unrestricted searchable searchIn="trigger" wrap options={categoryOptions} value={narrow} onChange={setNarrow}
+            aria-label="商品類別(窄欄位換行)" />
+        </div>
+      </div>
+    </div>
+  )
+}
+export const UnrestrictedInlineSearch: Story = {
+  name: '不限 × 欄位內搜尋',
+  tags: ['test-only'],
+  render: () => <UnrestrictedInlineSearchProbe />,
 }
 
 // 契約 probe:三種訊息列(載入中 / 沒有選項 / 遠端還沒打字)出現時,「不限」不得把它們擠掉。

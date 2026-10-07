@@ -2,6 +2,7 @@
 // @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 4 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
+import { flushSync } from 'react-dom'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
@@ -14,7 +15,8 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
@@ -448,6 +450,16 @@ function ComboboxTagStack({
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+/**
+ * 欄位上「值」此刻的顯示狀態 —— `tagRenderer` 的第三個參數(2026-10-07,待辦總帳 K4)。
+ * `searchActive`:欄位內搜尋框開著(`searchIn='trigger'` + 清單打開)。此刻值裡**用文字畫的部分**讓位給搜尋框,有框的東西(Tag、頭像)留著
+ * (people-picker.spec.md §C「open + inline-search」列:多人只選 1 位時名字的位置換成插入點;「不限」同一條由本元件自己做,
+ * select-menu-unrestricted.spec.md「欄位顯示」)。PeoplePicker 多人頭像堆疊用它把「頭像 + 名字」換成「頭像 + 空出名字的位置」(插入點就在原本名字那條線)。
+ */
+export interface ComboboxTagRenderState {
+  searchActive: boolean
+}
+
 export interface ComboboxProps {
   // ── 表單接線(`<Combobox {...form.getInputProps('tags')} />`;同 Select 的 allowlist 做法,只承諾真的有實作出口的屬性)──
   // 為什麼、修前的狀況與總帳編號住 combobox.spec.md「表單整合」與 form-validation.spec.md v1 邊界 (a);這裡的 JSDoc 只寫 consumer 要知道的事
@@ -556,7 +568,7 @@ export interface ComboboxProps {
    * 用例:PeoplePicker(multi)用此 slot 把 selected tag 換成 avatar + name pill,而非
    * 純文字 Tag。對齊 PeoplePicker = Combobox wrapper SSOT。
    */
-  tagRenderer?: (item: { value: string; label: string }, onRemove: () => void) => React.ReactNode
+  tagRenderer?: (item: { value: string; label: string }, onRemove: () => void, state: ComboboxTagRenderState) => React.ReactNode
   /**
    * 2026-05-14 I4 fix:Optional renderer for hidden items in `+N` overflow popover
    * (對齊 view path MultiPersonDisplay overflow popover 含 avatar SSOT)。PeoplePicker stack
@@ -574,6 +586,14 @@ export interface ComboboxProps {
    * (`group/avatar`)— 既保留 Combobox 必要 measurement wrapper,又讓 dismiss/overlap 視覺生效。
    */
   tagWrapperClassName?: string
+  /**
+   * @internal PeoplePicker 內部協議 — end-user 勿用(2026-10-07,待辦總帳 K4 驗證回報)。
+   * `tagRenderer` 在欄位內搜尋框開著(`ComboboxTagRenderState.searchActive`)時**讓位**出去的那段文字 —— PeoplePicker 多人只選 1 位時是那個人的名字
+   * (people-picker.spec.md §C open + inline-search 列)。名字讓位之後,它原本佔的寬併進搜尋框那一格(看不見的量尺),
+   * 欄寬因此不因打開而變、打的字沒超過名字之前也不變;沒有這一格時依內容寬(`width="hug"`)的欄位一打開就縮(實測 154.92 → 85.8px)。
+   * 只在 `tagRenderer` 真的讓位時傳(PeoplePicker 用同一個判斷式決定兩件事);不讓位的 Tag(有框)不傳。
+   */
+  yieldedTagText?: string
   /** @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer hook)。
    *  2026-05-16:overflow chip wrapper 套此 class(對齊 tagWrapperClassName)。Stack 模式
    *  pass `-ml-0.5 first:ml-0` 讓 chip 跟 avatar 同 overlap step,物理上 chip = 1 個 slot 不
@@ -662,7 +682,7 @@ function ReadonlyMultiSelect({
       // 2026-05-14 I2 fix(spec contract (e) view typography canonical):empty bare span 套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field family 統一。
       // 「不限」與 placeholder 共用同一顆 span、同一個字級與位置,**唯一差別是不套那層灰**
-      // (`Select` 單選欄位就是這樣寫的,select.tsx:352-353;字級 SSOT `field-wrapper.tsx:387`)。
+      // (`Select` 單選欄位就是這樣寫的,select.tsx `CustomSelectTriggerContent` 純文字那一支 `!value && 'text-fg-muted'`;字級 SSOT `field-wrapper.tsx` `fieldDisplayTextClass`)。
       if (isUnrestrictedOnly) return <span className={cn(fieldDisplayTextClass(sz), className)}>{unrestrictedLabel}</span>
       if (!hasTags) return <span className={cn(fieldDisplayTextClass(sz), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
@@ -779,6 +799,7 @@ function CustomCombobox({
   tagRenderer,
   renderHiddenTag,
   tagWrapperClassName,
+  yieldedTagText,
   overflowWrapperClassName,
   tagAreaGapPx,
   visibleCountOverride,
@@ -826,6 +847,9 @@ function CustomCombobox({
   // a11y:searchIn='trigger' 搜尋框的 aria-activedescendant = 反白列 id(Command 根讀、SelectMenu 轉交,直接寫進 inputRef;
   // 機制詳 select-menu-keyboard.ts useActiveDescendant;必在 early return 前呼叫 — React #310 hook 順序)。
   const onActiveOptionChange = useActiveDescendant(inputRef)
+  // Backspace 刪掉最後一個值時的讀屏播報(SelectMenu/select-menu-removal-status.tsx;必在 early return 前)。
+  // 值又變了 / 焦點離開欄位就退場(同檔 (a)(b);下方 onBlur 呼叫 clearRemoval)
+  const { said: removalSaid, announce: announceRemoval, clear: clearRemoval } = useRemovalAnnouncement(removalValueKey(value))
   // 搜尋框在欄位內(`searchIn='trigger'`)—— 下方恆在的輸入框、按欄位不搬焦點、aria-activedescendant 接線共用這一個判斷
   // (PeoplePicker 多選 `searchIn='trigger'` 經本元件同吃,顯示規則 people-picker.spec.md §D / §E)
   const inlineSearch = searchable && searchIn === 'trigger'
@@ -897,6 +921,11 @@ function CustomCombobox({
     return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} unrestricted={unrestricted} unrestrictedLabel={unrestrictedLabel} unrestrictedValue={unrestrictedValue} />
   }
 
+  // 欄位上值的顯示狀態(2026-10-07 待辦總帳 K4,ComboboxTagRenderState):欄位內搜尋框開著時,值裡用文字畫的部分讓位給搜尋框
+  const tagState: ComboboxTagRenderState = { searchActive: inlineSearch && open }
+  // 搜尋框:欄位內(恆在)/ 浮層內(打開之後才在)—— 欄位本身收到打字時把焦點交給它(K3)
+  const searchBox = () => (inlineSearch ? inputRef.current : document.getElementById(listboxId)?.querySelector<HTMLInputElement>('[cmdk-input]'))
+
   // 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):觸發點右側、箭頭左邊(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭),
   // 跟 Input 的 endAction 槽同義 —— 與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu)
   const chevronEl = (
@@ -933,7 +962,11 @@ function CustomCombobox({
       // 觸發區 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):焦點搬進浮層(浮層內搜尋框 / cmdk 殼)不算離開,
       // consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次
       // 「+N」浮出清單在另一個 portal,按卡裡的 Tag × 焦點搬進卡,也不算離開(extra;2026-10-07 前漏了這張卡,非搜尋型 Combobox 按卡裡的 × 就驗證)
-      onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId, extra: () => [document.getElementById(overflowCardId)] }, onBlurProp)}
+      // 真的離開欄位(觸發欄位、浮層、「+N」浮出清單都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
+      onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId, extra: () => [document.getElementById(overflowCardId)] }, (event) => {
+        clearRemoval()
+        onBlurProp?.(event)
+      })}
       // 2026-09-07:本元件是 Field 家族的「單一狀態控制項」——依 focus-canonical 規則二第三列,
       // 滑鼠與鍵盤**共用同一套 focus 樣式**,而 Field 的那一套就是邊框轉 primary
       // (field-wrapper.tsx `focus-within:!border-primary`)。所以這裡要抑制全域外描邊,
@@ -960,6 +993,9 @@ function CustomCombobox({
         // consumer 先跑(getInputProps 的 Esc 回復:只在這一下歸它時 —— 浮層開著時 Radix 已用掉這一下,不回復),擋了預設就不走元件導覽(同 Select)
         onKeyDownProp?.(e)
         if (e.defaultPrevented) return
+        // 焦點在欄位本身(不是搜尋框)時打字 = 打開清單、字進搜尋框(欄位內 / 浮層內兩種位置;2026-10-07 待辦總帳 K3,判準 select-menu-keyboard.ts
+        // routeTypingToSearch)。排在組字判斷之前:欄位本身不能打字,輸入法的第一鍵(keyCode 229)在這裡就是「開始打字」,不是選字
+        if (searchable && routeTypingToSearch(e, { open, openNow: () => flushSync(() => setOpen(true)), searchBox })) return
         // 輸入法組字中的 Enter / 空白 / 方向鍵 / Esc 是在選字,不開關選單、不轉送(判準 lib/ime-composition.ts,2026-09-30)
         if (isImeComposing(e)) return
         // a11y(2026-07-14 dim-10):Enter/Space 來自 descendant 互動元素(Tag 移除 / clear 按鈕)
@@ -973,6 +1009,18 @@ function CustomCombobox({
         ) return
         // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(select-menu.tsx forwardKeyToListbox)
         if (open && forwardKeyToListbox(listboxId, e)) return
+        // 關鍵字空白時 Backspace = 按「最後一個值」的 ×(2026-10-07 待辦總帳 K1,user「可以跟」MUI / rc-select / react-select):
+        // 刪最後一個 Tag;只選「不限」時就是它 → 回到未選(select-menu-unrestricted.spec.md 互斥第 3 條)。焦點在欄位內搜尋框或欄位本身都算
+        // (欄位上的按鈕不算);焦點不動、清單開關不變;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」。
+        // 只在搜尋框在欄位內時:浮層內搜尋框在另一個 portal、跟 Tag 不相鄰,那一條沒有定案(待辦總帳 K1 列,2026-10-07 回報)
+        if (inlineSearch && value.length > 0 && (e.target === inputRef.current || e.target === e.currentTarget) && isRemoveLastValueKey(e, search)) {
+          e.preventDefault()
+          const last = items[items.length - 1]
+          const next = value.slice(0, -1)
+          announceRemoval(isUnrestrictedOnly ? unrestrictedLabel : last.label, removalValueKey(next))
+          onChange?.(next)
+          return
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           // 2026-06-11 P0 a11y(R2,同 select.tsx 修):Combobox 恆 searchable → 原 `!searchable`
           // guard 使 Enter/Space 永遠開不了(僅 ArrowDown 可)。正確 guard = !open。
@@ -998,7 +1046,7 @@ function CustomCombobox({
             visibleCountOverride={visibleCountOverride}
             renderTag={(item) => (
               tagRenderer
-                ? tagRenderer(item, () => handleRemove(item.value))
+                ? tagRenderer(item, () => handleRemove(item.value), tagState)
                 : <Tag size={size} className="shrink-0 relative z-10"
                     onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
             )}
@@ -1007,12 +1055,12 @@ function CustomCombobox({
             onOverflowMouseDown={keepSearchFocus}
             overflowContentId={overflowCardId}
             reserveRoot={inlineSearch ? tagAreaRef : undefined} />
-        ) : isUnrestrictedOnly ? (
+        ) : isUnrestrictedOnly && !inlineSearch ? (
           /* 只選「不限」→ 一般已填值的純文字:與下面 placeholder **同一顆 span 的盒**,
-             唯一差別是不套那層灰(對齊單選欄位 select.tsx:352-353)。
+             唯一差別是不套那層灰(對齊單選欄位 select.tsx `CustomSelectTriggerContent` 純文字那一支 `!value && 'text-fg-muted'`)。
              左緣靠上面 `hasTags` 讓欄位退回 `--field-px`,不是在這裡另外補位移。
-             欄位內有搜尋框時它跟 Tag 一樣是「值」,搜尋框接在後面、佔剩下的寬 → 自己不撐 flex-1。 */
-          <span className={cn('min-w-0 truncate', !inlineSearch && 'flex-1', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
+             欄位內有搜尋框時不畫在這裡,改畫在搜尋框那一格(見下方,單選欄位的讓位做法)。 */
+          <span className={cn('min-w-0 truncate flex-1', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
         ) : inlineSearch ? null : (
           /* 2026-05-12 Stream C Issue 3 fix(codex Q3 Cluster C):placeholder span 必 flex-1 min-w-0
              truncate,narrow container 時單行省略(對齊 Combobox text-tag truncate canonical)。
@@ -1024,7 +1072,8 @@ function CustomCombobox({
             空值 / 只選「不限」/ 有 Tag 三態切換不重掛,焦點與已打的字都不會掉(規則 combobox.spec.md「邊界案例」Empty)。
             2026-09-30 前它只是 Tag 清單的尾巴(value=[] 時不存在):空值打字沒反應、取消最後一項輸入框跟著卸載
             (清單仍被看不見的關鍵字過濾)、鍵盤開啟後焦點停在觸發區、第一次挑選後打的字丟掉(實測)。
-            提示字 = people-picker.spec.md §E「Avatar-presence → placeholder」:欄位上看得到值(Tag / 不限)→ 空、純插入點;
+            提示字 = people-picker.spec.md §E「Avatar-presence → placeholder」:欄位上看得到有框的值(Tag)→ 空、純插入點;只選「不限」→ 輸入框自己的提示字空白,
+            「不限」本身畫在同一格當記憶提示(下方疊字,§E :194「看不到有框的值 → 已選值的名字」;2026-10-07 前這裡寫「不限 → 空」,與 :194 相反);
             空值 → 欄位 placeholder(未傳時「選擇…」,與不可搜尋時那顆 span 同一句;field-controls.spec.md「Placeholder vocabulary」)。
             樣式 = Field 家族 bareInputStyles(字級 / 行高繼承欄位、placeholder 灰、截斷省略、停用色、焦點抑制 @focus-suppress B 宣告在那裡;
             Select 觸發欄位內搜尋框同一份)+ 文字游標(field-controls.spec.md「游標指引」input → cursor-text)。
@@ -1044,6 +1093,30 @@ function CustomCombobox({
           <span className={cn('relative z-10 grid grid-cols-[minmax(0,100%)] flex-auto max-w-full', FIELD_TEXT_ENTRY_CURSOR)}>
             {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它) */}
             <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${search} `}</span>
+            {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
+                不和打的關鍵字並排(2026-10-01 起畫成「不限 fo」,同一個欄位裡值與關鍵字同字級同色、只隔 4px)。
+                關著 = 一般已填值的黑字(與不可搜尋的「不限」同一顆盒、同字級、同位置,逐像素相同);開著、還沒打字 = 同一個位置的灰色提示、讀屏略過
+                (焦點在搜尋框上,值由觸發欄位宣告);一打字就不畫,字從 `--field-px` 那條線開始;字刪光又回來。
+                疊在搜尋框同一格、排在輸入框之前(插入點畫在它上面);pointer-events-none —— 點它就是點輸入處。
+                規則住 select-menu-unrestricted.spec.md「欄位顯示」;提示字公式 people-picker.spec.md §E :194(看不到有框的值 → 已選值的名字)。 */}
+            {isUnrestrictedOnly && !search && (
+              <span aria-hidden={open || undefined}
+                className={cn('pointer-events-none col-start-1 row-start-1 self-center min-w-0 truncate', fieldDisplayTextClass(size), open && 'text-fg-muted')}>
+                {unrestrictedLabel}
+              </span>
+            )}
+            {/* 讓位的值留下的寬(2026-10-07,待辦總帳 K4 驗證回報「hug 欄位一打開縮 69px」):值裡用文字畫的部分讓位給搜尋框之後,
+                它原本佔的寬併進這一格 —— 看不見、高 0、讀屏略過的量尺,與上面打字量尺同一種(這一格的寬 = 兩者取大)。
+                所以依內容寬(`width="hug"`)的欄位打開前後欄寬一樣,打的字沒超過那段值之前也一樣,超過才跟著字長(同一般欄位內搜尋);
+                填滿寬的欄位看不出差別(這一格本來就吃掉這一列剩下的空間)。兩種讓位,量尺內容照「關著時那一段原本是什麼」:
+                · 只選「不限」:關著時「不限」就畫在這一格裡(上面那層字),打字讓位後留下「不限」本身的寬;
+                · PeoplePicker 多人 1 位(`yieldedTagText`):關著時名字在 Tag 那一格、後面接著這一格空的插入點,所以留下「名字 + 一個插入點空白」
+                  (與上面打字量尺 `${search} ` 同一個插入點)—— 兩者加起來剛好是關著那一列的寬,不多不少。 */}
+            {isUnrestrictedOnly && search ? (
+              <span aria-hidden className={cn('invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none', fieldDisplayTextClass(size))}>{unrestrictedLabel}</span>
+            ) : tagState.searchActive && yieldedTagText ? (
+              <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${yieldedTagText} `}</span>
+            ) : null}
             <input ref={inputRef} value={search}
               // 關著時打字 = 要找東西 → 順手打開清單(輸入框恆在之後才碰得到這個情況:鍵盤移除最後一個 Tag 後焦點落在這裡、清單關著)。
               // 世界級同做法:rc-select「Open if from typing」(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L429-L432);
@@ -1077,6 +1150,8 @@ function CustomCombobox({
                   keepFieldFocusBeforeUnmount(e?.currentTarget, inputRef.current ?? tagAreaRef.current?.closest<HTMLElement>('[role="combobox"]'))
                   onChange?.([])
                   setSearch('')
+                  // 清單開著:反白回第一列(2026-10-07 待辦總帳 K2;開了「不限」時第一列就是「不限」本身)
+                  if (open) moveHighlightToFirst(listboxId)
                 },
               }}
             />
@@ -1084,6 +1159,7 @@ function CustomCombobox({
         )}
         {chevronEl}
       </ItemSuffix>
+      <RemovalStatus said={removalSaid} />
     </div>
   )
 

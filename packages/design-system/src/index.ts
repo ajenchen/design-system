@@ -202,6 +202,7 @@ export {
 export type {
   ComboboxOption,
   ComboboxProps,
+  ComboboxTagRenderState,
 } from './components/Combobox/index'
 export {
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,

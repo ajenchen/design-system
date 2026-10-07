@@ -508,6 +508,7 @@
       "scripts/test-rsync-checksum-invariant.mjs",
       "scripts/test-run-deterministic-deep-audit.mjs",
       "scripts/test-score-infra-best-practice.mjs",
+      "scripts/test-searchable-field-keys-invariant.mjs",
       "scripts/test-searchable-menu-focus-invariant.mjs",
       "scripts/test-select-all-footer-invariant.mjs",
       "scripts/test-select-tab-leave-invariant.mjs",

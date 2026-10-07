@@ -17,6 +17,9 @@ import { Select } from '@/design-system/components/Select/select'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Rating } from '@/design-system/components/Rating/rating'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
+import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/展示',
@@ -786,4 +789,63 @@ export const FormValidation: Story = {
     </div>
     </>
   ),
+}
+
+// ── 欄位內搜尋讓位 × 欄寬(test-only 契約 probe,2026-10-07 待辦總帳 K4 驗證回報) ──────────────────────────
+// 欄位上用文字畫的值(只選「不限」、PeoplePicker 多人只選 1 位的名字)打開時讓位給欄位內搜尋框;讓位**不改欄寬**——
+// 它原本的寬留在搜尋框那一格,依內容寬(本檔「寬度軸」owner = field-controls.spec.md「寬度軸(width: fill / hug)」)的欄位打開前後、
+// 打的字沒超過值之前欄寬都不變;關著時與不可搜尋的「不限」、同寬的單人欄位長得一樣(窄欄位長標籤的截斷點、名字放得下就完整)。
+// 規則住 select-menu-unrestricted.spec.md「欄位顯示」與 people-picker.spec.md §C;閘 `scripts/searchable-field-keys-invariant.mjs` 逐格量。
+// 放在 Field 而不是 Combobox / PeoplePicker:量的是寬度軸,而且可搜尋選單焦點閘(searchable-menu-focus,掃那幾個元件目錄)
+// 會在這些依內容寬 / 窄欄位上挑選多項 —— 依內容寬的多選文字標籤會縮成只剩「+N」(既有問題,另列待辦),那支閘的空值步驟因此量不到。
+// 關著的長相與既有範例相同、互動後的欄寬沒有新畫面,所以 test-only(story-rules「Technical probe visibility」)。
+const yieldCategoryOptions = [
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'furniture', label: 'Furniture' },
+  { value: 'food', label: 'Food' },
+]
+const yieldReviewers: PersonValue[] = [{ name: 'Alice Chen' }, { name: 'Bob Lin' }, { name: 'Charlie Wu' }]
+function InlineSearchYieldWidthProbe() {
+  const [hug, setHug] = React.useState<string[]>(['__unrestricted__'])
+  const [hugPlain, setHugPlain] = React.useState<string[]>(['__unrestricted__'])
+  const [long, setLong] = React.useState<string[]>(['__unrestricted__'])
+  const [longPlain, setLongPlain] = React.useState<string[]>(['__unrestricted__'])
+  const [reviewerHug, setReviewerHug] = React.useState<PersonValue[]>([yieldReviewers[0]])
+  const [reviewerNarrow, setReviewerNarrow] = React.useState<PersonValue[]>([yieldReviewers[0]])
+  const [owner, setOwner] = React.useState<PersonValue | null>(yieldReviewers[0])
+  const longLabel = '不限(全部商品類別都可以)'
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">只選「不限」· 依內容寬(欄位內搜尋 / 不可搜尋對照)</h3>
+        <Combobox width="hug" unrestricted searchable searchIn="trigger" options={yieldCategoryOptions} value={hug} onChange={setHug}
+          aria-label="商品類別(依內容寬,欄位內搜尋)" />
+        <Combobox width="hug" unrestricted options={yieldCategoryOptions} value={hugPlain} onChange={setHugPlain} aria-label="商品類別(依內容寬,對照)" />
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">只選「不限」· 窄欄位長標籤(欄位內搜尋 / 不可搜尋對照)</h3>
+        <div className="w-40 flex flex-col gap-[var(--layout-space-tight)]">
+          <Combobox unrestricted unrestrictedLabel={longLabel} searchable searchIn="trigger" options={yieldCategoryOptions} value={long} onChange={setLong}
+            aria-label="商品類別(窄欄位長標籤,欄位內搜尋)" />
+          <Combobox unrestricted unrestrictedLabel={longLabel} options={yieldCategoryOptions} value={longPlain} onChange={setLongPlain}
+            aria-label="商品類別(窄欄位長標籤,對照)" />
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">PeoplePicker 多人只選 1 位 · 依內容寬 / 窄欄位(單人對照)</h3>
+        <PeoplePicker width="hug" searchIn="trigger" value={reviewerHug} people={yieldReviewers} onChange={setReviewerHug} aria-label="審核人(依內容寬,欄位內搜尋)" />
+        <div className="w-48">
+          <PeoplePicker searchIn="trigger" value={reviewerNarrow} people={yieldReviewers} onChange={setReviewerNarrow} aria-label="審核人(窄欄位,欄位內搜尋)" />
+        </div>
+        <div className="w-48">
+          <PeoplePicker value={owner} people={yieldReviewers} onChange={(v) => setOwner(v[0] ?? null)} aria-label="負責人(窄欄位,單人對照)" />
+        </div>
+      </div>
+    </div>
+  )
+}
+export const InlineSearchYieldWidthContract: Story = {
+  name: '欄位內搜尋讓位 × 欄寬驗證',
+  tags: ['test-only'],
+  render: () => <InlineSearchYieldWidthProbe />,
 }

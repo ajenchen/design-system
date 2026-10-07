@@ -193,6 +193,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 `searchable` 啟用後 field 變 input，打字即篩選 options。判斷依以下順序：
 
+**開啟時已選值怎麼顯示**(指標,不在這裡重寫):已選值讓位給搜尋輸入框 —— 打開還沒打字時,值以灰色提示疊在同一個位置(讀屏略過),一打字就消失,字從 `--field-px` 那條線開始,字刪光又回來(`select.tsx` `CustomSelectTriggerContent` 的 `showSelectedOverlay`)。規則住 `../PeoplePicker/people-picker.spec.md` §B「open + inline-search、選 1 人」列與 §E 提示字公式(:194),Combobox 只選「不限」× 欄位內搜尋同一條(`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」)。
+
 **searchable × tag 模式的內距(2026-09-15 user 裁定)**:searchable 是單選、關閉時框裡仍是「輸入」語意,已選的 Tag 跟其他文字選項一樣貼 `--field-px`(12px),**不套** `fieldTagInsetX` 的四邊等距公式(那是非 searchable tag 模式與 Combobox 的);開啟時同一個框放搜尋輸入,套了會在開關之間跳 9px。code:`select.tsx` `!searchable && tagPadding[size]`。
 
 ### 主判準：label 性質
@@ -277,6 +279,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 - Clear 按鈕在 ChevronDown 左側
 - 清除後回到 placeholder 狀態;可搜尋時打到一半的關鍵字一起清(2026-09-30,規則與三家查證住 `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」一鍵清空列)
 - 只在 edit 模式顯示
+- 清單開著時按它,反白回第一列(同打開一個空欄位;2026-10-07 待辦總帳 K2,規則住 `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」一鍵清空之後反白那一條)
+- `searchable` + `clearable`:關鍵字空白時按 `Backspace` = 按這顆 ×(清值、反白回第一列、讀屏念「已移除『X』」);**沒開 clearable 時 `Backspace` 不清值** —— 必須有值的欄位 Backspace 不能做出 × 做不到的事(下方「何時開 clearable」)。規則與哪幾項是 AI 推導住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard `Backspace` 列(2026-10-07 待辦總帳 K1)
 - **清除後焦點**:按鈕隨清除卸載 —— 焦點在它身上(鍵盤按 `Enter` / 空白、Chrome 滑鼠按下)時交回觸發欄位(原生 `<select>` 路徑交回那顆 `<select>`),不掉到 `body`;可搜尋而且浮層開著、欄位內搜尋框握著焦點時按它,焦點留在搜尋框。交接只有一支 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(Combobox / TimePicker / DatePicker 同用);四種搜尋框位置的焦點表住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段。2026-09-30 前:鍵盤按「清除選取」後焦點落在 `body`(實測,PeoplePicker 單人「一鍵清空」)。
 
 **何時開 clearable**：
@@ -347,7 +351,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 ## A11y 預設
 
-**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`(開啟時實際聚焦的元素,帶 `aria-activedescendant` 指向反白的選項,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;accessible name 直接接在 input 本身:有 Field label 時 `aria-labelledby` 指向之、consumer `aria-label` 優先,兩者皆無時 fallback「搜尋選項」——與 Combobox 搜尋框 `searchAriaLabel` 同 canonical)。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
+**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`(開啟時實際聚焦的元素,帶 `aria-activedescendant` 指向反白的選項,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;accessible name 直接接在 input 本身:有 Field label 時 `aria-labelledby` 指向之、consumer `aria-label` 優先,兩者皆無時 fallback「搜尋選項」——與 Combobox 搜尋框 `searchAriaLabel` 同 canonical；這顆 input 不寫 `tabIndex`,但它只在開啟時存在,開著按 Tab 由下方 Keyboard 的 Tab 列接管(選定 + 收起 + 走到下一格),所以不會變成第二個 Tab 停靠點 —— 與 Combobox 欄位內搜尋框 `tabIndex=-1`「單一鍵盤聚焦點」同一個結果,2026-10-07 補記)。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
 
 **Keyboard 行為**:
 
@@ -356,7 +360,9 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵,與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
 - ↑ / ↓ — 選單展開後在選項間移動
 - Tab / Shift+Tab(選單展開時,searchable 與否皆同)— 選定反白那一項 → 收起 → 焦點落到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時從觸發點按 Tab / Shift+Tab 會到的那一格;在對話框 / 小面板裡則只在那一層裡走、到邊緣繞回)。2026-09-25 前(實測):不可打字時 Tab 卡在浮層裡或落到頁面外、Shift+Tab 跳到頁尾,都不選定;可打字時 Tab 收起但不選定、Shift+Tab 停在觸發點本身且選單不關。W3C 出處與逐字規則見 `../SelectMenu/select-menu.spec.md`「A11y 預設」(單選那一條);來源 = 待辦總帳 B11
-- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc)
+- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc);按過欄位上的東西(清除 ×、再點一下搜尋框)之後按 Esc 收起,焦點同樣回觸發點、不掉到頁面上(2026-10-07,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段「指標按在觸發欄位上不算按在外面」)
+- 字母鍵(searchable,焦點在觸發點本身、選單關著:Tab 進來、Esc 收起、選完 / 清空之後)— 打開選單,這個字進搜尋框;輸入法第一鍵同樣(2026-10-07 待辦總帳 K3,規則住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 段)
+- Backspace(searchable + clearable,關鍵字空白)— 清掉值,同按清除 ×(見上方「Clearable」)
 
 **Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件;滑鼠點選項與 `Enter` 相同,收起前焦點不離開它,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 

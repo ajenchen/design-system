@@ -21,7 +21,7 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 // 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
-import { useSelectMenuPopupKeys, useTriggerSearch } from '@/design-system/components/SelectMenu/select-menu-keyboard'
+import { isPointerOnTrigger, useSelectMenuPopupKeys, useTriggerSearch } from '@/design-system/components/SelectMenu/select-menu-keyboard'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -385,7 +385,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         //   取消「不限」→ 回到**未選**(不還原上一批,user 原話「回到未選狀態」)
         // 寫在同一個 handler 裡而不是另抽一層:欄位上的 Tag × 與一鍵清空都碰不到「不限」
         //(「不限」不渲成 Tag,所以沒有它的 ×;清空是整個清成空陣列,把它一起清掉本來就對),
-        // 所以唯一會改到「不限」的入口就是這裡。
+        // 所以清單裡唯一會改到「不限」的入口就是這裡(欄位上關鍵字空白的 Backspace 刪掉它 = 空陣列,與第 3 條同一個值,select-menu-unrestricted.spec.md「互斥」)。
         // `unrestricted` 關著時這整段必須是**結構上惰性**,不能只是「實務上碰不到」:
         // `unrestrictedValue` 有預設值,關著時若消費端剛好有個選項的值就叫 `__unrestricted__`,
         // 沒包這層 guard 的話選別的選項會把它靜默吃掉(2026-09-18 自查補)。
@@ -561,15 +561,6 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         align={align}
         sideOffset={OVERLAY_SIDE_OFFSET}
         onOpenAutoFocus={onOpenAutoFocus ?? (!searchable ? handleNonSearchableAutoFocus : undefined)}
-        // **2026-05-07 v15.16 nested portal fix**:Tag dismiss inside trigger
-        // 區的 OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在
-        // PopoverContent 內)— Radix DismissableLayer document-level outside
-        // detection 跨 portal 視為「outside」→ SelectMenu 被誤關閉。
-        // 攔 `onPointerDownOutside`,檢查 click target 是否在另一個 Radix portal
-        // 內,是 → preventDefault 取消 close。對齊 Ant Design Select multiSelect
-        // tagRender 行為(連續移除不關 dropdown)。
-        // SSOT propagation:fix 在 SelectMenu level → Combobox / 其他 SelectMenu
-        // consumer 自動受益。
         // **2026-05-07 v15.16 nested portal fix**:Tag dismiss inside trigger 區的
         // OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在 SelectMenu
         // PopoverContent 內)— Radix DismissableLayer document-level pointerdown +
@@ -582,7 +573,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         // consumer 自動受益。
         onInteractOutside={(e) => {
           const target = e.detail.originalEvent.target as HTMLElement | null
-          if (target?.closest('[data-radix-popper-content-wrapper]')) {
+          // 另一個 portal(+N 浮出清單)/ 指標按在觸發欄位本身都不是「按在外面」(後者 2026-10-07,理由見 select-menu-keyboard.ts isPointerOnTrigger)
+          if (target?.closest('[data-radix-popper-content-wrapper]') || isPointerOnTrigger(e.detail.originalEvent, popupKeys.triggerRef.current)) {
             e.preventDefault()
           }
         }}
@@ -807,6 +799,6 @@ export const selectMenuMeta = {
 
 // forwardKeyToListbox / useActiveDescendant 原樣搬到 select-menu-keyboard.ts(2026-09-25,與 B11 的 Tab 規則同住一個
 // 鍵盤模組;本檔已近 800 行上限)。從這裡轉出,Select / Combobox 既有的 import 路徑不變。
-export { forwardKeyToListbox, useActiveDescendant } from '@/design-system/components/SelectMenu/select-menu-keyboard'
+export { forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch } from '@/design-system/components/SelectMenu/select-menu-keyboard'
 
 export { SelectMenu }

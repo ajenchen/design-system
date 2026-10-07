@@ -72,6 +72,7 @@
     "test:select-tab-leave": "node scripts/select-tab-leave-invariant.mjs && node scripts/select-tab-leave-invariant.mjs --selftest",
     "test:searchable-menu-focus": "node scripts/searchable-menu-focus-invariant.mjs && node scripts/searchable-menu-focus-invariant.mjs --selftest",
     "test:unrestricted-option": "node scripts/unrestricted-option-invariant.mjs && node scripts/unrestricted-option-invariant.mjs --selftest",
+    "test:searchable-field-keys": "node scripts/searchable-field-keys-invariant.mjs --selftest",
     "test:field-text-left-edge": "node scripts/field-text-left-edge-invariant.mjs && node scripts/field-text-left-edge-invariant.mjs --selftest",
     "test:combobox-single-path": "node scripts/combobox-single-path-invariant.mjs && node scripts/combobox-single-path-invariant.mjs --selftest",
     "test:rsync-checksum": "node scripts/rsync-checksum-invariant.mjs && node scripts/rsync-checksum-invariant.mjs --selftest",

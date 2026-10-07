@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-10-06T18:28:02.710Z",
-    "stories": 1057,
+    "generatedAt": "2026-10-07T04:15:01.114Z",
+    "stories": 1060,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -258,6 +258,7 @@
       "design-system-components-coachmark-設計規格--overview",
       "design-system-components-coachmark-設計規格--size-matrix",
       "design-system-components-coachmark-設計規格--state-behavior",
+      "design-system-components-combobox-展示--field-keys-contract",
       "design-system-components-combobox-展示--in-data-table",
       "design-system-components-combobox-展示--inline-search-focus-contract",
       "design-system-components-combobox-展示--loading-first-open",
@@ -269,6 +270,7 @@
       "design-system-components-combobox-展示--searchable-inline-wrap",
       "design-system-components-combobox-展示--size-alignment",
       "design-system-components-combobox-展示--unrestricted-contract",
+      "design-system-components-combobox-展示--unrestricted-inline-search",
       "design-system-components-combobox-展示--unrestricted-message-states",
       "design-system-components-combobox-展示--unrestricted-off-inert",
       "design-system-components-combobox-展示--unrestricted-option",
@@ -428,6 +430,7 @@
       "design-system-components-field-展示--form-validation",
       "design-system-components-field-展示--horizontal",
       "design-system-components-field-展示--horizontal-label-alignment",
+      "design-system-components-field-展示--inline-search-yield-width-contract",
       "design-system-components-field-展示--label-info",
       "design-system-components-field-展示--label-width",
       "design-system-components-field-展示--mixed-control-alignment",
@@ -1062,7 +1065,7 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "83a3c852ea97a92d63b2bbc0f7ad6997cc84923f8590696e4733dc8845735aeb",
+    "storyIdsSha256": "a2e679ccc44f2b6b223e86b435c26dba8d3b827ed64650d720dd1d94407f152c",
     "fingerprints": 744
   },
   "fingerprints": {

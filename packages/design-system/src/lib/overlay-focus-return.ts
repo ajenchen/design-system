@@ -14,7 +14,8 @@
  *   按遮罩收起也還(Radix modal 對自己的觸發點也是這樣)。
  * - **沒有觸發點 + 非 modal**(`noTrigger`;DatePicker 區間、AgentPanel 入口鈕右鍵選單):一律還,**除了**指標按在浮層與開啟者以外的地方
  *   收起 —— 那是使用者把注意力移到別處,不搶(Radix 非 modal Popover `hasInteractedOutside` 同一條)。
- * 三種都一樣的兩條:(a) 關閉的那一刻焦點已經被別的東西接走(不在 body、也不在正在關的浮層裡:列上的改名鈕開了對話框、Tab 走到下一格)→ 不搶;
+ * 三種都一樣的兩條:(a) 關閉的那一刻焦點已經被別的東西接走(不在 body、也不在正在關的浮層裡:列上的改名鈕開了對話框、Tab 走到下一格)→ 不搶
+ * (焦點就在開啟者裡面、指標收起的 → 也不搬,(a′));
  * (b) 開啟者已不在畫面上 → 交給呼叫端的退路(AppShell:主內容區),沒有退路就照 Radix 原樣。
  *
  * 為什麼指標收起要明說 `focusVisible: false`:可搜尋的浮層開著時焦點在搜尋框(文字輸入永遠符合 `:focus-visible`),CSS Selectors 4 的啟發式是
@@ -122,14 +123,18 @@ export function returnFocusToOpener(event: Event, opener: HTMLElement | null | u
   const doc = target.ownerDocument
   const surface = event.currentTarget instanceof Node ? event.currentTarget : null
   const active = doc.activeElement
-  // (a) 焦點已被別的東西接走 → 不搶(沒有觸發點時還要擋掉 Radix / FocusScope 的預設,它會把焦點拉去別處)
-  if (active && active !== doc.body && !surface?.contains(active)) {
-    if (noTrigger) event.preventDefault()
-    return
-  }
   const last = getLastUserInput()
   const byPointer = last.kind === 'pointer'
   const pointerInside = byPointer && last.target instanceof Node && (!!surface?.contains(last.target) || target.contains(last.target))
+  // (a) 焦點已被別的東西接走 → 不搶(沒有觸發點時還要擋掉 Radix / FocusScope 的預設,它會把焦點拉去別處)。
+  // (a′)(2026-10-07)焦點本來就在開啟者**裡面**(Combobox 欄位內搜尋框:觸發欄位的零件,收起後仍在),而且是指標按在開啟者 / 浮層上收起的 →
+  //     焦點已經「在開啟者上」,也擋掉 Radix 那一步 —— 否則它把焦點從搜尋框搬到開啟者外框(select-menu.spec.md「A11y 預設」Focus 段
+  //     「收起後焦點回觸發點的長相」括號那一格)。修前這一格靠 Radix 把「按在觸發欄位」記成按在外面才碰巧守住;SelectMenu 不再這樣記之後
+  //     (select-menu-keyboard.ts isPointerOnTrigger)由這裡明說。鍵盤收起不在這一條:照 Radix 還給開啟者本身。
+  if (active && active !== doc.body && !surface?.contains(active)) {
+    if (noTrigger || (pointerInside && target.contains(active))) event.preventDefault()
+    return
+  }
   if (!noTrigger && !pointerInside) return // Radix 有觸發點:鍵盤收起 / 按在外面收起照 Radix 原樣
   event.preventDefault()
   if (byPointer && !pointerInside && !modal) return // 非 modal、按在外面收起:不搶

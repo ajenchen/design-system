@@ -159,9 +159,9 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | state | trigger 顯示 |
 |---|---|
-| closed | avatar + 人名 + ellipsis(= 單人 closed,共享 `PersonDisplay`)|
+| closed | avatar + 人名 + ellipsis(= 單人 closed,共享 `PersonDisplay`)。搜尋框在欄位內(`searchIn='trigger'`)時,同一列還有恆在的搜尋框那一格(Combobox `flex-auto`):名字那一格**只拿自己要的寬**、放不下才省略,剩下的給搜尋框(`people-picker-helpers.ts` `getPeoplePickerTagWrapperClass` 第二個參數)。2026-10-07 前那一格是 `flex-1`(基準寬 0),跟搜尋框那一格**平分**剩下的空間 —— 192px 寬的欄位名字只拿到 37px(要 69px)、被切成「Alice C…」,旁邊空著一大段,與單人 closed 不同(閘 `scripts/searchable-field-keys-invariant.mjs` K4-people-narrow,與同寬單人欄位比)|
 | open + panel-search | avatar + 人名 + ellipsis(panel 內搜尋,trigger 視覺不變)|
-| open + inline-search | avatar + **input cursor**(原本人名位置被輸入區取代;**因 avatar 仍可見,placeholder 永遠空,只剩 cursor** — 對齊 §E 「avatar 存在 → placeholder 空」rule,避免視覺重複造成混亂)|
+| open + inline-search | avatar + **input cursor**(原本人名位置被輸入區取代;**因 avatar 仍可見,placeholder 永遠空,只剩 cursor** — 對齊 §E 「avatar 存在 → placeholder 空」rule,避免視覺重複造成混亂)。實作:Combobox 以 `tagRenderer` 第三個參數 `ComboboxTagRenderState.searchActive`(欄位內搜尋框開著)告訴本元件,這時那一格只畫頭像、名字的位置空出來(`person-display.tsx` `PersonDisplay` 的 `nameYielded`:頭像到名字之間同一個 `gap-2` 留著,搜尋框剛好從原本名字那條線開始;外層不撐滿,`people-picker-helpers.ts` `getPeoplePickerTagWrapperClass` 第二個參數)。2026-10-07 前這一列有寫、程式沒做:打字時畫成「Alice Chen bo」(待辦總帳 K4,閘 `scripts/searchable-field-keys-invariant.mjs`)。**讓位不改欄寬**:名字原本的寬(連同後面那個插入點)併進搜尋框那一格(Combobox `yieldedTagText`,看不見的量尺)—— 依內容寬(`width="hug"`)的欄位打開、打的字沒超過名字之前欄寬都不變(同日驗證回報:沒有這一格時打開就縮 69px、× 與箭頭往左跳;與「不限」同一條,`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」)|
 
 #### D. 多人 length≥2 trigger SSOT(avatar stack 視覺)
 
@@ -337,4 +337,5 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `combobox.spec.md`
+- `field-controls.spec.md`
 - `select-menu.spec.md`

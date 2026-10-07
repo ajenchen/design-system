@@ -82,6 +82,8 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 
 寫在 `handleSelect` 一處即可:欄位上的 Tag × 碰不到「不限」(它不渲成 Tag,所以沒有它的 ×),
 一鍵清空是整個清成空陣列、把它一起清掉本來就對。**這兩條既有路徑不需要改。**
+關鍵字空白時按 `Backspace`(2026-10-07 待辦總帳 K1,`./select-menu.spec.md`「A11y 預設」Keyboard `Backspace` 列)刪掉的是最後一個值 ——
+只選「不限」時就是它,結果是空陣列,與第 3 條「取消『不限』→ 回到未選」同一個值,不經 `handleSelect` 也不會生出矛盾的值。
 
 ### 全選按鈕
 
@@ -102,7 +104,8 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 - 一般選項一律 Tag(只選一個也是)
 - **只選「不限」時不渲 Tag**,走**一般已填值**那條純文字路徑:與 placeholder 同一顆 span、
   同一個字級(`fieldDisplayTextClass`)、同一個位置,**唯一差別是不套 `fieldEmptyColorClass` 那層灰**
-  —— 與單選欄位的寫法完全相同(`../Select/select.tsx:352-353`)
+  —— 與單選欄位的寫法完全相同(`../Select/select.tsx` `CustomSelectTriggerContent` 純文字那一支 `!value && 'text-fg-muted'`;
+  2026-10-07 前這裡引的 `:352-353` 早已漂到別的程式,改指符號名)
 - **欄位的左內距必須是標準的 `--field-px`,不是 tagPadding**。依據逐字在
   `../Field/field-controls.spec.md:298`:「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態
   使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding」。
@@ -117,7 +120,22 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
   (把判斷式改回舊寫法,它會指名這一格說「量到 4px,應為 13px」)。
 - 四條路徑都要一致:可編輯 / 原生 / 唯讀 / 檢視
 - 欄位上的文字與選單那一列**同一個來源**(`unrestrictedLabel`),不會兩邊各寫各的
-- 有一鍵清空的欄位,只選「不限」時照常有
+- 有一鍵清空的欄位,只選「不限」時照常有;清單開著按它,反白回第一列 —— 第一列就是「不限」本身,接著按 `Enter` 會選回「不限」
+  (跟打開一個空欄位一致,照實記錄;要跳過它是一條新的產品規則,不在這裡訂。`./select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」)
+- **欄位內有搜尋框時**(Combobox `searchable` + `searchIn='trigger'`;2026-10-07 待辦總帳 K4):「不限」照**單選欄位的讓位做法**顯示 ——
+  關著 = 上面那條一般已填值的黑字(同字級、同位置、同色,**與不可搜尋的「不限」長得一樣**:標籤短、欄位填滿寬時逐像素相同;
+  長標籤在窄欄位的截斷點、依內容寬時的欄寬也與不可搜尋的相同 —— 2026-10-07 前「不限」與搜尋框分兩格,長標籤少 6px 就開始省略、依內容寬多 8px);
+  打開還沒打字 = 同一個位置的**灰色提示**、讀屏略過,插入點在 `--field-px` 那條線;**一打字就讓位**,打的字從那條線開始;字刪光提示回來;
+  換行模式打長字時欄高不變(值與關鍵字不並排,不會擠出第二列)。**讓位不改欄寬**:「不限」讓位後,它原本的寬留在搜尋框那一格(看不見的量尺)——
+  依內容寬(`width="hug"`)的欄位打開、打的字沒超過「不限」之前欄寬都不變,超過才跟著字長;填滿寬的欄位看不出差別
+  (`../Combobox/combobox.tsx` 搜尋框那一格「讓位的值留下的寬」;與 PeoplePicker 多人 1 位的名字同一條,`../PeoplePicker/people-picker.spec.md` §C)。
+  依據(DS 內部一致性,user 2026-10-06「應該是要確保我們DS自身有一致性才對」):欄位上**用文字畫的值**一碰到打字就讓位 —— Select 單選
+  (`../Select/select.tsx` `showSelectedOverlay`)、PeoplePicker 單人與多人只選 1 位(`../PeoplePicker/people-picker.spec.md` §B、§C);
+  「不限」是純文字、沒有框,所以跟它們同一條;有框的 Tag / 頭像才留在原位、搜尋框接在後面。提示字公式 `people-picker.spec.md` §E :194
+  (看不到有框的值 → 顯示已選值的名字)。2026-10-01 起曾畫成「不限 fo」(值與關鍵字同字級同色、只隔 4px;`../Combobox/combobox.spec.md`
+  「邊界案例」Empty 那一列的括號),查不到 user 看過或同意的紀錄,依上面的規則更正。user 2026-09-18 訂「不限」長相時的原話
+  「反正其當下的樣式跟select的field control應該是一樣的」講的是當時(還不會與欄位內搜尋框同時出現);延伸到「打字時也跟 Select 一樣」是 AI 推導。
+  實作 `../Combobox/combobox.tsx`(搜尋框那一格疊一層字;Backspace 刪掉「不限」見上方「互斥」)。
 
 ### 英文用字
 
@@ -138,8 +156,9 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 | `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位四條路徑都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
 | `scripts/select-all-footer-invariant.mjs` | 全選按鈕的字與勾選狀態綁死時,分母已排除「不限」列 | `--selftest-unrestricted` 拔掉 `data-unrestricted` 記號,必須紅 |
 | `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
+| `scripts/searchable-field-keys-invariant.mjs` | 只選「不限」× 欄位內搜尋框:關著與不可搜尋的「不限」同位置同色(窄欄位長標籤截斷寬、依內容寬的欄寬也相同)、打開變灰色提示且讀屏略過、打字讓位、字刪光回來、換行模式欄高不變、依內容寬時打開與打字欄寬不變;Backspace 刪掉「不限」;一鍵清空後反白落在「不限」那一列(story `combobox.stories.tsx`「不限 × 欄位內搜尋」;依內容寬與窄欄位長標籤兩對在 `../Field/field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」;都是 test-only) | 在頁面上讓「不限」打開後仍是黑字、打字時仍並排,或拿掉讓位後留下寬的量尺,K4 那幾列必須紅(對修前建置實跑同樣紅) |
 
-兩支都在 CI 的 `Multi-select footer label/state` job 裡跑(共用同一份 storybook build)。
+前兩支在 CI 的 `verify-browser-select-all` job、第三支在 `verify-browser-field-edges` job、第四支在 `verify-browser-interaction` job 裡跑(各自用該 job 的 storybook build)。
 
 ---
 
@@ -147,4 +166,6 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `combobox.spec.md`
+- `field-controls.spec.md`
 - `select-menu.spec.md`

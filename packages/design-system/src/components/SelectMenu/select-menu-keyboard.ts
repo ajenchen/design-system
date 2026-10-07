@@ -5,6 +5,9 @@
  *   2. `useActiveDescendant`  —— 觸發欄位輸入框的 aria-activedescendant + aria-controls(值由 Command 根讀、SelectMenu 轉交;2026-09-30 改)
  *   3. `useSelectMenuPopupKeys` —— 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11)與不可打字單選的空白鍵(2026-09-26,L7)
  *   4. `useTriggerSearch`     —— 搜尋字在觸發欄位時:打字把反白放回第一個符合項、多選挑選後清空關鍵字(2026-09-30)
+ *   5. 觸發欄位上的三條按鍵規則(2026-10-07,待辦總帳 K1–K3):`moveHighlightToFirst`(一鍵清空後反白回第一列)、
+ *      `isRemoveLastValueKey`(關鍵字空白的 Backspace = 按最後一個值的 ×)、`routeTypingToSearch`(焦點在欄位本身時打字 → 打開清單、字進搜尋框);
+ *      移除時的讀屏播報區住 `select-menu-removal-status.tsx`
  * 2026-09-25 搬家理由(AI 推導):select-menu.tsx 已 799 行,加 3 會超過 `scripts/code-quality-audit.mjs` 的 800 行上限;
  * 三者同一件事(跨子樹的鍵盤 / 焦點接線),與清單渲染無關。
  * 2026-09-26:「從觸發欄位算下一站」與 DropdownMenu 合成一份 `lib/focus-after-trigger.ts`(待辦總帳〇節「按鍵規則合併」)。
@@ -102,6 +105,82 @@ export function useTriggerSearch(params: {
   }, [])
   return { clearAfterPick }
 }
+
+// ── 觸發欄位上的三條按鍵規則(2026-10-07,待辦總帳 K1–K3;SSOT = select-menu.spec.md「A11y 預設」Keyboard 段)──────────────
+// Select / Combobox(PeoplePicker 經它們)的觸發欄位各自呼叫,判準只住這裡一份。
+
+/**
+ * 一鍵清空之後,反白回到第一個可選列(K2;user 2026-10-06「Ａ,B照你建議,確保符合我們一致的設計語言且不違背世界級的設計」)。
+ * 一鍵清空 = 整個欄位重來,跟打開一個空欄位同一個落點(本元件 spec「A11y 預設」Focus 段第一句:反白落在第一個 / 已選選項,清空後沒有已選的)。
+ * 清單只在「搜尋字有變」時才把反白放回第一項(上方 useTriggerSearch (b);浮層內搜尋框由 cmdk 自己做)—— 關鍵字本來就空時清空不會動它,
+ * 反白停在剛被清掉的那一列,接著按 Enter 會把它選回來(2026-10-06 實測)。開了「不限」的欄位第一列就是「不限」本身(同開一個空欄位)。
+ * 浮層關著(清單不在)時什麼都不做 —— 下次打開本來就從第一項 / 已選項開始。
+ */
+export function moveHighlightToFirst(contentId: string | undefined) {
+  const root = contentId ? document.getElementById(contentId)?.querySelector<HTMLElement>('[cmdk-root]') : null
+  if (root) moveCursorToFirstOption(root)
+}
+
+/**
+ * K1:這一下 Backspace 是不是「按最後一個值的 ×」—— 關鍵字空白、不是按住連發、不在輸入法組字中(user 2026-10-06「可以跟」= 跟 MUI / rc-select / react-select)。
+ * 呼叫端另外確認:焦點在觸發欄位本身或欄位內的搜尋框(不是欄位上的按鈕)、欄位裡有值、這種欄位的值可以被清掉(Select 單選只在 clearable,
+ * select.spec.md「何時開 clearable」:必須有值的欄位 Backspace 不能做出 × 做不到的事)。
+ * - 關鍵字空白才刪:三家同一個條件(MUI `inputValue === ''` https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1096-L1118、
+ *   rc-select `!mergedSearchValue` https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L503-L530、react-select `if (inputValue) return` https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/Select.tsx#L1597-L1610)。
+ * - 連發不刪(AI 依原始碼推導,user 未表示同意或反對 —— 待辦總帳 R2 行為變化清單):按住刪一長串關鍵字,刪到空之後的連發不接著把值一個個吃掉,
+ *   放開再按一下才刪。三家只有 rc-select 擋(刪到空後 250ms 內不刪,https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L475-L480、
+ *   #L501-L506,時長 https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/hooks/useLock.ts#L9-L30),這裡用鍵盤事件自帶的連發記號
+ *   (`KeyboardEvent.repeat`),量的就是「這一下是不是按住產生的」本身,不用計時器當代理(M37)。
+ * - 組字中不刪:判準唯一住所 lib/ime-composition.ts。
+ */
+export function isRemoveLastValueKey(e: React.KeyboardEvent, keyword: string): boolean {
+  return e.key === 'Backspace' && keyword === '' && !e.repeat && !isImeComposing(e)
+}
+
+/**
+ * K3:焦點在觸發欄位本身(不是欄位內的搜尋框、不是欄位上的按鈕)時打字 = 打開清單、這個字進搜尋框
+ * (user 2026-10-06 同上;W3C 可打字下拉範例「Printable Characters: … Types the character in the textbox.」,
+ * https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/combobox/examples/combobox-autocomplete-list.html#L295-L300)。
+ * 焦點會停在欄位本身的時機:Tab 進來、Esc 收起、Select 選完 / 清空之後(select.spec.md「Clearable」、本元件 spec Focus 段)—— 2026-10-06 前這時打的字沒有人接。
+ * 「開始打字」= 一般可列印字元(空白鍵不算:它在欄位上是「打開清單」,本元件 spec Keyboard 段)或輸入法處理中的第一鍵(keyCode 229 / key 'Process':
+ * 欄位本身不能打字、不可能在這裡組字,這一下就是使用者開始用輸入法打字的訊號)。帶 Ctrl / ⌘ / Alt 的是快捷鍵,不算。
+ * 做法:打開清單(同步 commit,搜尋框此刻就在),焦點交給搜尋框,**不擋這一下的預設** —— 字(或輸入法接著的組字)落進已握著焦點的搜尋框。
+ * 回傳是否接手了這一下。輸入法第一鍵的限制(AI 推導,真機待驗):瀏覽器在不可編輯的元素上通常不啟用輸入法,第一鍵可能以英文字母送出;
+ * 根治是讓搜尋框自己當 combobox、焦點永遠落在能打字的框上(待辦總帳 OE27,不在這一批)。
+ */
+export function routeTypingToSearch(e: React.KeyboardEvent, { open, openNow, searchBox }: {
+  open: boolean
+  /** 同步打開清單(呼叫端以 flushSync 包自己的 setOpen) */
+  openNow: () => void
+  /** 打開之後的搜尋框(欄位內 / 浮層內) */
+  searchBox: () => HTMLElement | null | undefined
+}): boolean {
+  if (e.target !== e.currentTarget || e.ctrlKey || e.metaKey || e.altKey) return false
+  const typing = isImeComposing(e) || e.key === 'Process' || (e.key.length === 1 && e.key !== ' ')
+  if (!typing) return false
+  if (!open) openNow()
+  const box = searchBox()
+  if (!box) return false
+  box.focus()
+  return true
+}
+
+/**
+ * 這一下「按在外面」其實是指標按在觸發欄位本身(×、Tag ×、欄位內搜尋框、空白處、箭頭)—— 是的話 SelectMenu 的 `onInteractOutside` 擋掉
+ * (2026-10-07,待辦總帳 K3 同批)。Radix 非 modal Popover 只要沒被擋,就把它記成「互動過外面」(@radix-ui/react-popover 1.1.15
+ * dist/index.mjs:185-192;原始碼 https://github.com/radix-ui/primitives/blob/4a49a34316fa8068389ed0f8619383af1bfd734b/packages/react/popover/src/popover.tsx#L350-L372;它自己再擋關閉,但記號已設),之後用 Esc / Enter 收起時就不把焦點還給觸發欄位(同檔 :179)——
+ * Select 的搜尋框隨收起卸載、浮層內搜尋框跟著浮層卸載,焦點掉到頁面上(違 select.spec.md「Clearable」清除後焦點、select-menu.spec.md
+ * 「A11y 預設」Focus 段「選完 / Esc 關閉時焦點回觸發欄位」;2026-10-06 實測)。判準同 lib/overlay-focus-return.ts「按在開啟者上不算外面」。
+ * 只認指標:鍵盤 Tab 走到欄位上的 × 那種 focusin 維持原樣。欄位內搜尋框握著焦點時點欄位收起、焦點留在搜尋框(select-menu.spec.md
+ * Focus 段「收起後焦點回觸發點的長相」括號那一格)由 overlay-focus-return 的 (a′) 守。
+ */
+export function isPointerOnTrigger(original: Event, trigger: HTMLElement | null): boolean {
+  const target = original.target
+  return original.type === 'pointerdown' && target instanceof Node && !!trigger?.contains(target)
+}
+
+/** 欄位上「值被移除」的讀屏播報句型(K1;句型同 lib/drag-announcements.ts「已移動…『X』」)。 */
+export const removalAnnouncement = (label: string) => `已移除『${label}』` // i18n-allow: DS default 讀屏播報
 
 // ── 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11;SSOT = select-menu.spec.md「A11y 預設」)─────────────
 //
