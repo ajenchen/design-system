@@ -1041,7 +1041,6 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           className={cn(
             'fixed inset-0 z-50 bg-overlay',
             surfaceMotion,
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           )}
         />
@@ -1055,7 +1054,6 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             // @focus-suppress E — E 浮層程式落點;承擔者:dialog 殼,開啟時程式聚焦;內部工具列/縮圖各自有指示
             'fixed inset-0 z-50 outline-none',
             surfaceMotion,
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
             className,

@@ -61,9 +61,14 @@ const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
-    // motion-reduce:animate-none — prefers-reduced-motion 豁免,對齊 DialogOverlay canonical(dialog.tsx DialogOverlay 同 token,2026-07-05 P2 收乾)
+    // 遮罩與面板同一組 何時播 / 時長 / 曲線 / 收尾 / 減少動態 = surfaceMotion(與 DialogOverlay、FileViewer 遮罩同一份;
+    // dialog.spec.md「動畫」表「Overlay:同上」、motion.spec.md「模態面板 Dialog/Sheet/FileViewer → --motion-duration-surface」)。
+    // 2026-10-07 前這裡自己寫 animate-in/out + motion-reduce:animate-none:時長吃 tw-animate 預設 150ms/ease(沒接 token),
+    // 減少動態守衛又輸給 data-[state=…] 的權重、從沒生效(待辦總帳 T7 / T8)。這裡只寫幾何。
     className={cn(
-      "fixed inset-0 z-50 bg-overlay data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-overlay",
+      surfaceMotion,
+      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -79,9 +84,9 @@ const sheetVariants = cva(
   // 核心容器 — 無 padding(由 SheetBody / SheetHeader / SheetFooter 自理 padding,
   // 對齊 overlay-surface pattern + Dialog canonical)
   // Animation canonical:panel = surfaceMotion 250ms(--motion-duration-surface)雙向一致
-  // (D4 audit:500ms 太久 sluggish)+ motion-reduce 豁免
+  // (D4 audit:500ms 太久 sluggish);何時播 / 收尾 / 減少動態也在 surfaceMotion,這裡只寫 slide 幾何
   // overflow-hidden min-h-0:同 Dialog,補上 overlay-surface primitive 要求的父層契約(2026-09-12)。
-  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out ${surfaceMotion}`,
+  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out ${surfaceMotion}`,
   {
     variants: {
       side: {

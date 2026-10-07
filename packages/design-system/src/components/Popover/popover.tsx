@@ -115,7 +115,8 @@ const PopoverContent = React.forwardRef<
             // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)
             "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
             overlayMotion,
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             "origin-[var(--radix-popover-content-transform-origin)]",
             className

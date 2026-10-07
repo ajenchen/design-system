@@ -170,7 +170,7 @@ const InspectorView = () => {
 
           <div>
             <H3>藍圖(Blueprint)</H3>
-            <Desc>Trigger 為 `py-4`(vertical padding),水平寬度由父容器決定。Chevron 16px + transition 200ms。Content 有 `pb-4` 與 `data-[state=closed]:animate-accordion-up` / `data-[state=open]:animate-accordion-down`。</Desc>
+            <Desc>Trigger 為 `py-4`(vertical padding),水平寬度由父容器決定。Chevron 16px + transition 200ms。Content 有 `pb-4`,高度動畫消費共用的 `disclosureMotion`(`tokens/motion/disclosure-motion.ts`:200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。</Desc>
             <div className="border border-border rounded-lg p-4 max-w-[520px] bg-muted/40">
               <div className="border border-dashed border-primary-hover py-1 px-2 rounded mb-2">
                 <div className="flex items-center justify-between gap-2">
@@ -230,8 +230,8 @@ const InspectorView = () => {
               <p className="font-mono text-fg-muted mb-2">MOTION</p>
               <ul className="flex flex-col gap-1">
                 <li><span className="font-mono">chevron rotate</span> · <span className="font-mono">200ms</span></li>
-                <li><span className="font-mono">content open</span> · <span className="font-mono">animate-accordion-down</span></li>
-                <li><span className="font-mono">content close</span> · <span className="font-mono">animate-accordion-up</span></li>
+                <li><span className="font-mono">content open / close</span> · <span className="font-mono">disclosureMotion 200ms</span></li>
+                <li><span className="font-mono">reduced motion</span> · <span className="font-mono">不播</span></li>
               </ul>
             </section>
           </div>
@@ -405,7 +405,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>collapsed ↔ expanded</H3>
-        <Desc>點擊 trigger 切換狀態。Chevron 旋轉 180°(transition 200ms),content 套用 `animate-accordion-down` / `animate-accordion-up`(高度動畫由 Radix 提供的 CSS var 驅動)。</Desc>
+        <Desc>點擊 trigger 切換狀態。Chevron 旋轉 180°(transition 200ms),content 的高度動畫消費 `disclosureMotion`(高度由 Radix 提供的 CSS var 驅動;關閉後保持高度 0 直到卸載,系統設定「減少動態」時不播)。</Desc>
         <div className="grid grid-cols-2 gap-4 max-w-[800px]">
           <div>
             <p className="text-footnote text-fg-muted mb-2 font-mono">data-state="closed"</p>

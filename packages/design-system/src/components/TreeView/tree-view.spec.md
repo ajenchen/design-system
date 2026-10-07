@@ -121,7 +121,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 **預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 可讓整行同時 select + expand(適合 stepper)——**此連帶展開僅限指標點擊(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只觸發 select,展開 / 收合一律走 `→` / `←`(W3C 樹狀表格同樣是「方向鍵展開收合、`Enter` 執行預設動作」,[treegrid-pattern.html#L60-L80](https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/treegrid/treegrid-pattern.html#L60-L80))。
 
-**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron 圖示(2026-09-26 起掛在 `ItemInlineActionButton` 的 `iconClassName`)`transition-transform duration-150 rotate-0 → rotate-90` —— 展開 / 收合是狀態切換的動畫,不是滑過回饋,保留(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
+**動畫**:children 用 Radix `Collapsible` height animation(0 → auto),消費共用的 `disclosureMotion`(`tokens/motion/disclosure-motion.ts`:`--motion-duration-disclosure` 200ms、收起後保持高度 0 直到卸載、減少動態不播;owner = `tokens/motion/motion.spec.md`「開合動畫:何時播、怎麼收尾」);chevron 圖示(2026-09-26 起掛在 `ItemInlineActionButton` 的 `iconClassName`)`transition-transform duration-150 rotate-0 → rotate-90` —— 展開 / 收合是狀態切換的動畫,不是滑過回饋,保留(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
 
 ---
 

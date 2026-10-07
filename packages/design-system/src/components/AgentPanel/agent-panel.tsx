@@ -17,7 +17,7 @@
  *   行內動作=ItemSuffix hoverReveal + ItemInlineAction(懸停/鍵盤 focus-visible 浮出);思考列=CircularProgress 16。
  * - 訊息:氣泡 bg-secondary/rounded-md/8/12;附件=Chip assist 分支(chip.spec.md),相互 4;
  *   輪距 40=8+24(Button text xs)+8。
- * - 思考塊:Radix Collapsible+animate-accordion(base.css;Sidebar 同法);chevron=accordion 慣例
+ * - 思考塊:Radix Collapsible+disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView / Accordion 同一份);chevron=accordion 慣例
  *   (裝飾指示、色同 Select 觸發器 chevron);微光僅標題+最新行(agent-panel.css);完成步驟 fg-secondary。
  * - 輸入盒:欄位家族內距(--field-control-py-md/--field-px/text-body;32 等高鐵律);
  *   附件列=Tag md 單列 + OverflowIndicator(+N,useOverflowIndices 量測);送出/停止=Button primary xs。
@@ -111,6 +111,7 @@ import {
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import './agent-panel.css'
 
@@ -1076,9 +1077,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
             className="shrink-0 text-fg-muted transition-transform duration-[var(--motion-duration-overlay)] motion-reduce:duration-0 group-data-[state=open]/agent-thinking:rotate-180"
           />
         </CollapsiblePrimitive.Trigger>
-        <CollapsiblePrimitive.Content
-          className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up motion-reduce:animate-none"
-        >
+        <CollapsiblePrimitive.Content className={disclosureMotion}>
           {/* 完成步驟=fg-secondary(2026-09-02 拍板;原 muted 太淺);微光行基色由 agent-panel.css 自管。 */}
           <div className="mt-2 flex flex-col gap-1 border-l border-divider pl-3 text-fg-secondary">
             {steps?.map((step, index) => <div key={index}>{step}</div>)}

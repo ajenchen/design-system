@@ -21,7 +21,7 @@ Motion token 系統。\`--motion-*\` 統一前綴下**兩個 sub-family**(2026-0
 
 **(A) delay 3-tier**(「hover 觸發 → 延遲 N ms → overlay 顯示」)——目的不是動畫長度,是「user 真的想看」過濾器。
 
-**(B) 進出場動畫**(overlay fade/zoom/slide 的 duration / easing / 幾何)——\`--motion-duration-{overlay,surface}\` + \`--motion-easing-{enter,exit}\` + \`--motion-enter-{distance,scale}\`,由 tw-animate-css 的 \`--tw-duration\` / \`--tw-ease\` 變數綁定;共用 SSOT = \`overlay-motion.ts\`(overlayMotion / surfaceMotion)。
+**(B) 進出場動畫**(overlay fade/zoom/slide 與原地展開收合的 duration / easing / 幾何)——\`--motion-duration-{overlay,surface,disclosure}\` + \`--motion-easing-{enter,exit}\` + \`--motion-enter-{distance,scale}\`,由 tw-animate-css 的 \`--tw-duration\` / \`--tw-ease\` 變數綁定;共用 SSOT = \`overlay-motion.ts\`(overlayMotion / surfaceMotion)與 \`disclosure-motion.ts\`(disclosureMotion)—— 何時播(只在沒有要求減少動態時)、關閉後保持最後一格,也都在這兩份裡。
 
 完整規則:\`packages/design-system/src/tokens/motion/motion.spec.md\`
 
@@ -90,10 +90,11 @@ export const Overview: Story = {
           + carbondesignsystem.com/guidelines/motion/overview,spec frontmatter benchmark 段)。 */}
       <h2 className="text-h3 mb-[var(--layout-space-tight)] mt-[var(--layout-space-loose)]">進出場動畫 Tokens</h2>
       <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
-        Overlay fade/zoom/slide 的 duration / easing / 幾何,由 tw-animate-css 的
+        Overlay fade/zoom/slide 與原地展開收合的 duration / easing / 幾何,由 tw-animate-css 的
         <code>--tw-duration</code> / <code>--tw-ease</code> 變數綁定;共用 SSOT =
-        <code>overlay-motion.ts</code>(overlayMotion / surfaceMotion)。世界級對照見
-        <code>motion.spec.md</code>「進出場動畫 token」表。
+        <code>overlay-motion.ts</code>(overlayMotion / surfaceMotion)與 <code>disclosure-motion.ts</code>(disclosureMotion),
+        系統設定「減少動態」時不播、關閉後保持最後一格。世界級對照見
+        <code>motion.spec.md</code>「進出場動畫 token」表與「開合動畫」段。
       </p>
 
       <DelayRow
@@ -107,6 +108,12 @@ export const Overview: Story = {
         value="250ms"
         usage="模態面板進出場——面積大、位移遠,慢一階(對照表 cite: motion.spec.md#L114)"
         consumers="Dialog / Sheet / FileViewer"
+      />
+      <DelayRow
+        token="--motion-duration-disclosure"
+        value="200ms"
+        usage="原地展開收合的高度動畫——值沿用三個消費者現況實際渲染的時長(cite: motion.spec.md「開合動畫」段)"
+        consumers="TreeView / Accordion / AgentPanel 思考塊"
       />
       <DelayRow
         token="--motion-easing-enter"

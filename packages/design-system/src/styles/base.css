@@ -136,40 +136,13 @@
     同日 user 指出唯讀應該跟可編輯的欄位一樣用 1px 邊框轉主色 —— 改用既有的 `focus-within:!border-primary`
     之後這條 utility 沒有消費者,留著就是第三種幾何的入口,刪掉。歷史見 field-wrapper.tsx 頂端 JSDoc。) */
 
-/* Radix Collapsible height animation — consumed by TreeView. */
-@keyframes collapsible-down {
-  from { height: 0; }
-  to { height: var(--radix-collapsible-content-height); }
-}
-
-@keyframes collapsible-up {
-  from { height: var(--radix-collapsible-content-height); }
-  to { height: 0; }
-}
-
-@utility animate-collapsible-down {
-  animation: collapsible-down 150ms ease-out;
-}
-
-@utility animate-collapsible-up {
-  animation: collapsible-up 150ms ease-out;
-}
-
-/* Radix Accordion height animation — Radix exposes a different content-height var. */
-@keyframes accordion-down {
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
-}
-
-@utility animate-accordion-down {
-  animation: accordion-down 200ms ease-out;
-}
-
-@utility animate-accordion-up {
-  animation: accordion-up 200ms ease-out;
-}
+/* 原地展開收合(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊)的高度動畫 —— 本檔**不**宣告。
+ *
+ * keyframe(collapsible-down / -up)與工具類(animate-collapsible-*)由 tw-animate-css 提供(styles/tokens.css 第一行引入);
+ * 時長 / 何時播 / 收尾 / 減少動態的唯一住所是 `tokens/motion/disclosure-motion.ts`(disclosureMotion)+ motion.css 的
+ * `--motion-duration-disclosure`。
+ *
+ * 2026-10-07 刪掉這裡原本的 `@keyframes collapsible-* / accordion-*` 與 `@utility animate-collapsible-*`(150ms)/
+ * `animate-accordion-*`(200ms):tw-animate-css 自 2026-07-14 引入後有同名的 theme 工具類,建置後兩份宣告併進同一條規則、
+ * 後寫的 `animation:` 勝出 —— 這裡的 150ms 從那天起就沒生效過,卻和 agent-panel.spec.md 的 200ms 各寫各的(待辦總帳 T8)。
+ * 同名重宣告的機械防線:scripts/motion-ssot-invariant.mjs。 */

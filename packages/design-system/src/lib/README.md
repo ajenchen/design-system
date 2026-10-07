@@ -11,6 +11,8 @@
 
 **核心特徵**:沒有 visual surface(不 render UI),但 ≥ 2 個 DS 元件 import 它使用。
 
+**公開與否**:lib 沒有 subpath export,進 root barrel 的就是 npm 公開 API。只給 DS 元件內部用的模組在檔頭 JSDoc 標 `@internal`(現有 `roving-list-keyboard.ts`、`focus-after-trigger.ts`),`scripts/gen-design-system-barrel.mjs` 就不放進 root(2026-10-07 起;規則 `ds-canonical/rules/ui-development.md`「Root barrel front-door 排除」)。
+
 ---
 
 ## 跟 hooks/ / patterns/ / components/ 分權

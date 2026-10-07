@@ -18,7 +18,7 @@ traits:
   `agent-panel-logo.tsx` / `agent-panel-fab.tsx`)。
 - **實作基礎**:組合式——消費 ChromeHeader(header-canonical)、overlay-surface(SurfaceHeader/
   Footer)、Popover surface 配方、SelectMenu 同源 primitives(Popover+Command+MenuItem)、
-  Radix Collapsible(經 animate-accordion)、RadioGroup、Chip(assist 分支)、Tag、
+  Radix Collapsible(經 disclosureMotion)、RadioGroup、Chip(assist 分支)、Tag、
   OverflowIndicator、CircularProgress、Dialog、Empty、Button 家族。無自建 primitive;
   唯一自建=AgentLogo/AgentFab 的品牌 SVG 資產(無既有 primitive 可對應)。
 - **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
@@ -207,13 +207,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
 - 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
-- Chevron=accordion 慣例(Suffix 位、rotate-180、150ms、motion-reduce 0);色=`text-fg-muted`
+- Chevron=accordion 慣例(Suffix 位、rotate-180、motion-reduce 0);時長 `--motion-duration-overlay` 150ms(本檔「動畫總表」;Accordion 自己的箭頭是 200ms,兩者不同步是已回報的待決項,`tokens/motion/motion.spec.md`「開合動畫」同族另見 (3));色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
 - 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°、
   `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
   reduced-motion 自停。**完成步驟靜態、色 `text-fg-secondary`**(次要層級,非 muted)。
-- 開合=Radix Collapsible + `animate-accordion-down/up`(200ms ease-out)。
+- 開合=Radix Collapsible + `disclosureMotion`(`tokens/motion/disclosure-motion.ts`,與 TreeView / Accordion 同一份):`--motion-duration-disclosure` 200ms、ease-out;收起後保持高度 0 直到卸載;減少動態不播。
 - A11y:標題=button + `aria-expanded`;內文不另設 aria-live(容器已是 live region)。
 
 ### 6. AgentToolbar(訊息工具列)
@@ -309,7 +309,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 蓋板遮罩(容器 < 960)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
 | 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
 | 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
-| 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
+| 思考塊開合 | Radix Collapsible + disclosureMotion | `--motion-duration-disclosure` 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
 | 標誌思考旋轉 | 起步 0.25s(=半圈,exit)→ 0.5s/圈 linear | 一息/12、一息/6 |
@@ -426,4 +426,5 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
 - `agent-panel-fab.spec.md`
 - `agent-panel-logo.spec.md`
 - `dialog.spec.md`
+- `motion.spec.md`
 - `overflow-indicator.spec.md`

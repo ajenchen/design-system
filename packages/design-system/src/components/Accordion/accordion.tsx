@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
 
 /**
  * Accordion — Radix Accordion + 本 DS token
@@ -85,10 +86,9 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
-    className={cn(
-      'overflow-hidden text-body text-fg-secondary',
-      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down motion-reduce:animate-none',
-    )}
+    // 高度動畫 / 收尾 / 減少動態 = disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView、AgentPanel 思考塊同一份 ——
+    // Accordion.Content 內部就是 Collapsible.Content,同一節點也有 --radix-collapsible-content-height,共用 collapsible keyframe)
+    className={cn(disclosureMotion, 'text-body text-fg-secondary')}
     {...props}
   >
     <div className={cn('pb-4', className)}>{children}</div>

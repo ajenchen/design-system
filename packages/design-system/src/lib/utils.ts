@@ -13,7 +13,8 @@ import { extendTailwindMerge } from 'tailwind-merge'
  *
  * 修法:**font-size group 和 text-color group 都明確列舉**,不留猜測空間。
  */
-const twMerge = extendTailwindMerge({
+// 泛型參數 = 本檔新增(非 tailwind-merge 內建)的 class group id;內建的(font-size / text-color / opacity / bg-image)只是擴充成員
+const twMerge = extendTailwindMerge<'animation-fill-mode'>({
   extend: {
     classGroups: {
       'font-size': [
@@ -81,6 +82,10 @@ const twMerge = extendTailwindMerge({
       // 不註冊的話 tailwind-merge 把 `bg-*` 一律猜成 bg-color,`cn('bg-surface', 'bg-interaction-hover')`
       // 會把 bg-surface 刪掉,底色整個消失(2026-09-25 以 tailwind-merge 3.5 實測)。登記在 bg-image 才對得上它真正寫的屬性。
       'bg-image': ['bg-interaction-hover', 'bg-interaction-active', 'bg-interaction-selected', 'bg-interaction-selected-hover', 'bg-interaction-selected-active'],
+      // tw-animate-css 的 `fill-mode-*`(animation-fill-mode)。不登記的話 tailwind-merge 把它當成 SVG 的 `fill-{color}`,
+      // 同一個變體下遇到 `fill-current` / `fill-primary` 會被當成衝突刪掉(2026-10-07 實測:`fill-mode-forwards fill-current` → `fill-current`)。
+      // 開合動畫的收尾靠它(tokens/motion/closed-end-state.ts),被刪 = 收起後的樣子又只剩 JS 補丁撐。
+      'animation-fill-mode': ['fill-mode-none', 'fill-mode-forwards', 'fill-mode-backwards', 'fill-mode-both'],
     },
   },
 })

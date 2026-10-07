@@ -128,6 +128,10 @@ jobs:
           node scripts/gen-design-system-barrel.mjs
           git diff --exit-code -- packages/design-system/src/index.ts 'packages/design-system/src/**/index.ts' \
             || { echo '✗ 產生器產物與來源不同步:請在本機跑 gen-component-indexes.mjs + gen-design-system-barrel.mjs 並 commit'; exit 1; }
+          # 上面那道只驗「index.ts = 產生器輸出」;產生器的規則錯了照樣綠。2026-10-07 抓到 tokens / hooks / lib 的 `export *`
+          # 不看 @internal(holdClosedEndState、roving-list-keyboard / focus-after-trigger 整個模組從 npm root 對外)——
+          # 九格判定表守規則本身,對照組(舊版產生器)四格必紅。純靜態,約 1 秒。
+          npm run test:design-system-barrel
           # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組的正反例證明它該紅時會紅;
           # 2026-09-25 起也掃 .ts,並追「寫在常數裡再經變數傳進來」的 hover 底色(Calendar 事件方塊漏掉的那種)。
           node scripts/hover-instant-invariant.mjs
@@ -136,6 +140,11 @@ jobs:
           # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
           # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
           npm run test:hover-own-pair
+          # 開合動畫 SSOT(2026-10-07,待辦總帳 T6 / T7 / T8):data-state 開合動畫只住在 tokens/motion(overlayMotion / surfaceMotion /
+          # disclosureMotion)、一律包在 motion-safe:(`motion-reduce:animate-none` 的權重輸給 data-[state=…],減少動態從沒生效)、
+          # 關閉保持最後一格(不靠 Radix Presence 的執行期補丁)、DS 不重宣告 tw-animate-css 同名動畫(舊 base.css 150ms 被蓋掉)、
+          # 時長綁 token、規格毫秒數與 token 同值。meta-test 先跑對照組(五種舊形狀各自必紅)再跑現況。
+          npm run test:motion-ssot
           # 展示層 story 漂移棘輪(2026-09-30):Rating「送出評分流程」範例同時有「新建情境卻停用送出鈕」「寫死間距」
           #「用 div 當標題」三種漂移,各有 spec 明文卻沒有任何機械面看得到展示層 story(layout-space hook 整個跳過
           # packages/design-system/src/)。四條規則(另含 DS 沒有的字級 class)只准往下,新增一筆就紅並印 file:line;
@@ -765,6 +774,10 @@ jobs:
           # 不需要 storybook(原始碼打包進空白頁),本機約 85 秒。
           # 對照組(--selftest,二十五個突變)在 verify-browser-select-all:本 job CI 實測 11.9–14.6 分,疊上去貼近 25 分上限。
           node scripts/escape-and-focus-contract-invariant.mjs
+          # 開合動畫的收尾與減少動態(2026-10-07,待辦總帳 T6 / T7;本機約 40 秒 + 對照組 40 秒):10 個成員(TreeView / Accordion /
+          # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單)讓 JS 收尾晚到 200ms,
+          # 收起動畫結束到卸載之間每一格都不得看見內容「長回來」;減少動態下開與關都不得播動畫。meta-test = 現況必綠 + 對照組必紅。
+          npm run test:open-close-motion
 
 
   verify-browser-interaction:
