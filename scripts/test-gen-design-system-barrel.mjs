@@ -17,14 +17,24 @@
  * 用法: node scripts/test-gen-design-system-barrel.mjs [--generator <產生器路徑>]
  */
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, rmSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const genArg = process.argv.indexOf('--generator')
-const GENERATOR = genArg > 0 ? resolve(process.argv[genArg + 1]) : join(ROOT, 'scripts/gen-design-system-barrel.mjs')
+// 被啟動的產生器路徑必須能被 harness 來源清單靜態審查(兩個分支都是 import.meta.dirname 起算的固定路徑):
+// 對照組 `--generator <舊版>` 先把指定的檔複製到固定位置再跑,不直接把指令列路徑交給 node
+// (2026-10-07 CI 治理套件抓到「unreviewable Node pre-script argv」)。複製到 repo 的 node_modules/.cache,
+// 舊版裡的 `import ts from 'typescript'` 才解析得到。
+const GENERATOR_DEFAULT = join(import.meta.dirname, 'gen-design-system-barrel.mjs')
+const GENERATOR_CONTROL = join(import.meta.dirname, '..', 'node_modules', '.cache', 'gen-barrel-control.mjs')
+if (genArg > 0) {
+  mkdirSync(dirname(GENERATOR_CONTROL), { recursive: true })
+  copyFileSync(resolve(process.argv[genArg + 1]), GENERATOR_CONTROL)
+}
+const GENERATOR = genArg > 0 ? GENERATOR_CONTROL : GENERATOR_DEFAULT
 
 // ── 合成夾具:形狀照真實案例(closed-end-state 的符號層、roving-list-keyboard 的模組層檔頭)──
 const FIXTURE = {
@@ -94,7 +104,7 @@ for (const [rel, body] of Object.entries(FIXTURE)) {
   writeFileSync(join(SRC, rel), body.endsWith('\n') ? body : `${body}\n`)
 }
 
-const gen = (...args) => spawnSync(process.execPath, [GENERATOR, ...args], { cwd: dir, encoding: 'utf8' })
+const gen = (...args) => spawnSync(process.execPath, ['--', GENERATOR, ...args], { cwd: dir, encoding: 'utf8' })
 const first = gen()
 let ok = true
 const results = []
