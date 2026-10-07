@@ -446,7 +446,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 // 長相:`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,cva 那一整組 `disabled:*` 原樣套上 —— 灰底、禁止符號,
 // 與原生停用逐項相同(計算樣式對照,含滑過 / 按住);`aria-disabled:` 那套「保留品牌色 + 不透明度 + 滑過 / 按住釘在品牌色」是 Tooltip 用的
 // 「看得見但不能按」長相(button.spec.md「狀態疊加」表),不是忙碌,所以這個狀態下**整組** `aria-disabled:` class 不出現(見 withoutAriaDisabledLook)。
-// 為什麼在 class 層拿掉、不靠 CSS 先後:兩組同為 (0,3,0)(`.x[aria-disabled=true]:hover` vs `:is(.y:disabled,.y[data-disabled-focusable]):hover`),
+// 為什麼在 class 層拿掉、不靠 CSS 先後:兩組同為 (0,3,0)(`.x[aria-disabled=true]:hover` vs `.y:is(:disabled,[data-disabled-focusable]):hover`),
 // 誰勝由產出順序決定 —— 2026-10-07 前只拿掉了不透明度,滑過 / 按住的品牌色釘子仍在,忙碌鈕與存檔後的送出鈕一滑過就變成品牌藍配 25% 黑字
 // (獨立驗證抓到;Tailwind 4.2 實測:覆寫 `aria-disabled` 變體會把它註冊成新的靜態變體、整組從 aria-* 那一段搬到 data-* 之後產出,所以也不改 CSS)。
 // 擋觸發:click 先 `preventDefault` + `stopPropagation`、不呼叫 consumer(Enter / 空白合成的 click 也走這條);`type="submit"` 保留 ——
