@@ -305,6 +305,26 @@ buildFullFixture()
     flowResults.push(`  unknown provider fail-closed: ❌ exit=${unknown.exit}`); fail++
   } else flowResults.push('  unknown provider fail-closed: ✅ integrity-class machine-readable adapter rejection')
 }
+// G4 同族(2026-10-07):派發器找不到 jq 時要講「工具不在」,不是「provider 不認得」(改前就是 ADAPTER_UNKNOWN)。
+// 對照組:把派發器裡的 jq 路徑換成不存在的位置跑一次,跑完原樣寫回。
+{
+  const dispatcherPath = join(FULL, 'governance/bin', 'fork-governance-dispatcher.sh')
+  const dispatcherSource = readFileSync(dispatcherPath, 'utf8')
+  const withoutJq = dispatcherSource.replaceAll('/usr/bin/jq', '/nonexistent-governance-tool/jq')
+  let missingJq
+  try {
+    if (withoutJq === dispatcherSource) throw new Error('dispatcher no longer references /usr/bin/jq')
+    writeFileSync(dispatcherPath, withoutJq)
+    missingJq = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+      event: 'PostToolUse', operation: 'write_file', path: 'apps/demo/src/Clean.tsx', content: 'clean',
+    }))
+  } finally {
+    writeFileSync(dispatcherPath, dispatcherSource)
+  }
+  if (missingJq?.exit !== 70 || !missingJq.err.includes('GOVERNANCE_INTEGRITY:HOOK_TOOL_MISSING:jq')) {
+    flowResults.push(`  missing jq fail-closed: ❌ exit=${missingJq?.exit} err=${JSON.stringify((missingJq?.err || '').trim().slice(0, 200))}`); fail++
+  } else flowResults.push('  missing jq fail-closed: ✅ named tool failure, not an adapter rejection')
+}
 // dispatcher:PostToolUse CLEAN 檔 → 必 exit 0(B1 回歸鎖:用 bash 跑 .py hook 會 syntax-error exit 2 → 誤擋所有乾淨編輯 = brick)
 {
   const c = runTpl('fork-governance-dispatcher.sh', JSON.stringify({

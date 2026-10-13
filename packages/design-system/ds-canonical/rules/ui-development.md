@@ -50,7 +50,7 @@ paths:
 
 **一句話 pointer**:
 - 新 row 元件 → `patterns/element-anatomy/item-anatomy.spec.md`「自我檢查」
-- 清 unused imports / export 異動後:`npx tsc -b` → grep `export {}` → `npm run storybook` → 互動驗
+- 清 unused imports / export 異動後:`npm run build:lib`(型別證明;設計系統本庫的 `tsc -b` 不檢查 DS 原始碼,見 AGENTS.md 失敗記憶索引)→ grep `export {}` → `npm run storybook` → 互動驗
 - Inline Action vs Button → item-anatomy.spec.md「Inline Action 設計規格」
 - 陰影:必 `--elevation-*`;禁 `shadow-sm/md/lg/xl/2xl`
 - 視覺容器 breathing:有邊界 → 必 inner padding

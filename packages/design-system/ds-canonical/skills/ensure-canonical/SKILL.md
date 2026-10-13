@@ -119,7 +119,7 @@ Substantive 動議: <工程 → evidence/review/rollback；產品 UI/UX 真取�
 
 ### Phase 7 — Verify
 
-- `npx tsc -b 2>&1 | tail -3` → 0 error
+- `npm run build:lib` → exit 0(型別證明;`tsc -b` 在設計系統本庫不檢查 DS 原始碼,不算)
 - `npm run build-storybook 2>&1 | tail -3` → ✓ built
 - `bash packages/design-system/ds-canonical/hooks/tests/run-all.sh` → all suites pass
 - `git status --short` → clean

@@ -91,6 +91,13 @@ const CLOSED_PRIVATE_RUNTIME_BASES = Object.freeze({
   darwin: '/private/tmp',
   linux: '/tmp',
 })
+// The one declared tool set of the canonical hook corpus. The sealed profile pins exactly these;
+// the ordinary (open) profile in scripts/run-provider-hook.mjs checks the same labels on the hook
+// PATH and puts a probe in place of each missing one, so a hook that actually invokes a missing tool
+// is degraded by name (or, for a PreToolUse gate that blocks writes, blocks the call) instead of
+// silently reading empty input (58 bash hooks shell out to jq; perl added 2026-08-04 for three
+// hooks and the hardcoded-strings lib).
+export const CLOSED_HOOK_TOOL_LABELS = Object.freeze(['bash', 'git', 'jq', 'node', 'perl', 'python3'])
 const CLOSED_HOOK_EXECUTABLE_CANDIDATES = Object.freeze({
   darwin: Object.freeze({
     bash: Object.freeze(['/bin/bash']),
@@ -750,9 +757,7 @@ export function materializeClosedHookToolProfile({
   )
   const canonicalRepo = canonicalRepositoryRoot(repoRoot)
   const executableRecords = Object.fromEntries(
-    // perl added 2026-08-04: three canonical hooks and the hardcoded-strings lib shell out to it,
-    // so the pinned tool profile has to declare it like every other hook interpreter.
-    ['bash', 'git', 'jq', 'node', 'perl', 'python3'].map((label) => [
+    CLOSED_HOOK_TOOL_LABELS.map((label) => [
       label,
       resolveClosedHookExecutable({
         label,

@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "f93ae738bbcf6598346f15d4b37b0ba99c53e5f34a0b1210bbd3990e3e6cfa8c",
+    "forkCorpusLockSha256": "7b6b96fe2c9c59f128f0ecd17c3437282c7cf75e0b7869cdb4050117fe4966a8",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "0b5c37ec27205e3b3f6d1a2cad9e3a0226ae39bd960f5ebb3ec65b7476ca1db5",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
         "hookSha256": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4",
-        "skillsSha256": "9fe7d00c9b930eb98215c5ecdd3bf0e6435771a17d28a2089fe3ca9a3e5f712f",
+        "skillsSha256": "6f0be3d4a97611f827eda278140fa75a8797145ccbf5e222adcbc4a7aef2bff6",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
         "hookSha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
-        "skillsSha256": "2a1f165d3172e4fae086536f7e862067ad6fef664cd9e125bea42048b276b5fa",
+        "skillsSha256": "7815e173db7eb73740b0d5ba374d90d48522e1929b0bec44105e9a88ea06f0ed",
         "treeDigests": {}
       },
       "generic": {
@@ -74,7 +74,7 @@
     },
     "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
     "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
-    "sharedSkillsSha256": "cada56d2972f28e8dca8f85fcdf2743b12fef5e9875f7e129ee7ad27039b3d74",
+    "sharedSkillsSha256": "4e6a71e6f9c1808d997b13bbddf857544b4a8dc13c0cf1bb575ed8cc7cd3e2a8",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
@@ -106,7 +106,7 @@
       "scripts/consumer-source-harness.mjs": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
       "scripts/lib/a11y-static-server.mjs": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
-      "scripts/lib/closed-tool-execution.mjs": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
+      "scripts/lib/closed-tool-execution.mjs": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
       "scripts/lib/governance-dependency-bootstrap.mjs": "f2918632c942c72f05c4fdbd80518e54cbc5a51a80edb355a39400befd6e27d5",

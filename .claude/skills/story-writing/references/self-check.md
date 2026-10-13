@@ -15,6 +15,6 @@
 ## 交付前最後一輪
 
 - [ ] `npm run storybook` 本地跑過,每個 story 視覺正常渲染
-- [ ] `npx tsc --noEmit` 無錯
+- [ ] `npm run typecheck:stories` 無錯(story 檔的型別;動到元件 .tsx 再加 `npm run build:lib`。根目錄 `npx tsc --noEmit` 一個檔都不檢查,不算)
 - [ ] dark mode 切換正常(色塊 / 文字色自動更新)
 - [ ] density 切換正常(若元件屬 field-height family)

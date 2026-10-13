@@ -168,9 +168,12 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   if grep -qiE "$CLAIM_RE" <<< "$LAST_ASSISTANT" \
     && ! grep -qiE "$RETRACT_RE" <<< "$LAST_ASSISTANT"; then
     # Check if any verify-class tool_use happened in THIS turn(after last user msg)
-    VERIFY_RE='(npx tsc|bash packages/design-system/ds-canonical/hooks/tests|compile-stories|npm run build|npm run test|design-system-audit|visual-audit)'
+    # 2026-10-07(N14(b) 補完 / G2):裸 `npx tsc`(= `tsc -b`)不再算驗證 —— 本 repo 的 composite 設定下
+    # `tsc -b` 只看根目錄 src/,不檢查 DS 原始碼(AGENTS.md 失敗記憶索引;2026-09-06 實證漏 TS2741)。
+    # 型別證明 = `npm run build:lib`(或 `tsc -p <project>`);其餘真驗證:測試、閘、稽核、hook 測試。
+    VERIFY_RE='(npm run (build|test|typecheck|hooks:test|governance:check|check:|story-quality|a11y)|tsc -p |bash packages/design-system/ds-canonical/hooks/tests|compile-stories|design-system-audit|visual-audit)'
     if ! grep -qE "$VERIFY_RE" <<< "$THIS_TURN_TOOLS"; then
-      WARNINGS="${WARNINGS}\n  • Claim-verify gap:你說 verified / done / 完成 等,但本 turn 無 tsc / test / audit 真執行。下輪實跑驗證或撤回 claim。"
+      WARNINGS="${WARNINGS}\n  • Claim-verify gap:你說 verified / done / 完成 等,但本 turn 沒有任何真驗證(型別 = npm run build:lib;測試 / 閘 / 稽核;tsc -b 不算)。下輪實跑驗證或撤回 claim。"
       # 標記 CRITICAL — Mechanism 1 升 BLOCKER(2026-04-30 升級):AI claim done 但無驗證
       # = 100+ 次重複 failure mode。不再 silent log,exit `decision: block` 強制 turn 不結束。
       CRITICAL_CLAIM_VERIFY=1
@@ -271,8 +274,8 @@ done
 # 觸發 signal:本 turn 內任何 Read tool 命中 `<peer-reply-prefix>-*.md`
 # 必須 signal(任一):
 #   (a) Bash with `grep` against any file path(cite verify)
-#   (b) Bash with `npx tsc` /
-#       `bash packages/design-system/ds-canonical/hooks/tests`(regression-class verify)
+#   (b) Bash with `npm run build` / `tsc -p` /
+#       `bash packages/design-system/ds-canonical/hooks/tests`(regression-class verify;裸 tsc -b 不算,見 Mechanism 1)
 #   (c) Read against peer-cited code path(`packages/design-system/src/...`)
 #   (d) Explicit retract phrase(撤回 / 未採納 / 不採用 / skip peer)
 # 任一 missing → CRITICAL 通知;同 Mechanism 1 升 BLOCKER 阻 turn 結束。
@@ -282,7 +285,7 @@ if [ "$PEER_CONTEXT_PRESENT" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRAN
   PEER_REPLY_READ=${PEER_REPLY_READ:-0}
   if [ "$PEER_REPLY_READ" -gt 0 ]; then
     # Signal (a)/(b): grep / tsc / hook tests / src/ Read
-    VERIFY_SIG_RE='(Bash.*grep|Bash.*npx tsc|Bash.*bash packages/design-system/ds-canonical/hooks/tests|Read.*packages/design-system/src)'
+    VERIFY_SIG_RE='(Bash.*grep|Bash.*npm run build|Bash.*tsc -p |Bash.*bash packages/design-system/ds-canonical/hooks/tests|Read.*packages/design-system/src)'
     # Signal (d): retract phrase in last assistant message
     # 2026-05-17 expanded: cover all FP patterns(historical cite / pure git / pure verify / 0 peer)
     RETRACT_PEER_RE="(撤回採納|撤回 claim|未採納 ${PEER_PROVIDER}|不採用 ${PEER_PROVIDER}|skip peer|${PEER_PROVIDER}.*未 verify|0 條新 peer|0 peer|沒啟 peer|沒要啟 peer|純 git|純 verify|純文字|本 turn 純|本 turn 無 peer|引用 prior|cite previous|描述 prior|歷史 peer|historical reference)"
@@ -291,7 +294,7 @@ if [ "$PEER_CONTEXT_PRESENT" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRAN
     HAS_RETRACT=$(grep -cE "$RETRACT_PEER_RE" <<< "$LAST_ASSISTANT" 2>/dev/null)
     HAS_RETRACT=${HAS_RETRACT:-0}
     if [ "$HAS_VERIFY" -eq 0 ] && [ "$HAS_RETRACT" -eq 0 ]; then
-      WARNINGS="${WARNINGS}\n  • Peer-reply verify gap:本 turn 讀 ${PEER_DISPLAY_NAME} reply 但無 grep cite verify / tsc / hook tests / Read src/。下輪實 Step 4.5/4.6 verify 或撤回採納。"
+      WARNINGS="${WARNINGS}\n  • Peer-reply verify gap:本 turn 讀 ${PEER_DISPLAY_NAME} reply 但無 grep cite verify / build:lib / hook tests / Read src/。下輪實 Step 4.5/4.6 verify 或撤回採納。"
       CRITICAL_PEER_VERIFY=1
     fi
 
@@ -490,7 +493,7 @@ if [ -n "$LAST_ASSISTANT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PA
 fi
 
 # ── Mechanism 10: 自鎖後把動作推給 user(M36(b),2026-09-19)────────────────
-# SSOT = meta-patterns M36(b)/(b') + governance/memory/feedback_anti_self_lock_release_transport.md。
+# SSOT = meta-patterns M36(b)/(b') + governance/memory/reference_auto_mode_sandbox_boundaries.md(第三節分類器、第六節對照表)。
 #
 # 為什麼要機械化:這條規則 2026-08-08 就立了、2026-08-11 連環五鎖逐層拆完、2026-08-28 還特別
 # 寫下「**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機」—— 然後 2026-09-19 又犯:
@@ -633,21 +636,34 @@ fi
 # |------|---------------|-------------|
 # | Bugsnag | occurrence count = 5 before alerting | trigger ≥ 5 |
 # | PagerDuty | time-window dedup = 5 min | dedup window 30m(below) |
-# | Datadog Watchdog | mean + 2σ outlier detection | TODO: dynamic threshold(baseline) |
+# | Datadog Watchdog | mean + 2σ outlier detection | dynamic threshold(≥ 100 baseline samples) |
 # | ESLint | max-warnings = 10 | topic > 10 |
 # | Sentry | alert frequency = 10 events/hour | topic > 10 |
 # | SonarQube | cognitive complexity = 15(較寬)| topic upper bound reference |
 #
-# Current threshold(fixed,對齊 Bugsnag/ESLint/Sentry minimum 共識):
+# Threshold(共識下限,對齊 Bugsnag/ESLint/Sentry minimum):
 # - Trigger phrase: ≥ 5(對齊 Bugsnag occurrence count 5)
 # - Topic repeat: > 10(對齊 ESLint max-warnings 10 + Sentry alert freq 10)
 # - Dedup count: ≥ 5(對齊 Bugsnag occurrence count 5;同 warning fired
 #   ≥ 5 次 still 沒解 = 該 user 主動處理,inject 第 6 次仍無效)
 #
-# TODO: When neutral runtime `self-audit-baseline-counts.jsonl` 累積 ≥ 100 samples,
-# 改 dynamic threshold = baseline mean + 2σ(對齊 Datadog Watchdog 哲學)。
-# Baseline capture mechanism 在本檔結尾(每 turn 寫 trigger/topic count
-# 不論 fire 與否,讓 future analysis 有 ground truth distribution)。
+# 動態門檻(2026-10-07 收掉原 TODO):本機遙測(opt-in)的 `self-audit-baseline-counts.jsonl` 最近 10000 筆
+# 樣本 ≥ 100 時,門檻 = max(共識下限, ceil(baseline mean + 2σ))(Datadog Watchdog)—— 只會為了壓掉這位
+# user 平常就很高的基線而往上調,不會比共識下限更敏感。樣本不足 / 遙測沒開 / 資料壞掉(計算腳本 fail
+# closed)/ 腳本不在 → 共識下限。公式只有一份:`scripts/calc-self-audit-baseline.mjs --thresholds`(M17)。
+# Baseline capture mechanism 在本檔結尾(每 turn 寫 trigger/topic count 不論 fire 與否)。
+TRIGGER_THRESHOLD=5
+TOPIC_THRESHOLD=10
+BASELINE_CALC="$PROJECT_DIR/scripts/calc-self-audit-baseline.mjs"
+if [ "$STATE_WRITES" = "1" ] && [ -f "$STATE_DIR/self-audit-baseline-counts.jsonl" ] \
+  && [ -f "$BASELINE_CALC" ] && [ ! -L "$BASELINE_CALC" ]; then
+  BASELINE_DYNAMIC=$(GOVERNANCE_STATE_DIR="$STATE_DIR" node "$BASELINE_CALC" --thresholds 2>/dev/null || true)
+  if printf '%s' "$BASELINE_DYNAMIC" | grep -qE '^[0-9]+ [0-9]+ [0-9]+$'; then
+    read -r _BASELINE_SAMPLES _DYNAMIC_TRIGGER _DYNAMIC_TOPIC <<< "$BASELINE_DYNAMIC"
+    [ "$_DYNAMIC_TRIGGER" -gt "$TRIGGER_THRESHOLD" ] && TRIGGER_THRESHOLD="$_DYNAMIC_TRIGGER"
+    [ "$_DYNAMIC_TOPIC" -gt "$TOPIC_THRESHOLD" ] && TOPIC_THRESHOLD="$_DYNAMIC_TOPIC"
+  fi
+fi
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   # Extract user message texts from transcript(縮 500→200,只看最近 turns)
   USER_MSGS=$(tail -200 "$TRANSCRIPT_PATH" 2>/dev/null | \
@@ -658,8 +674,8 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   TRIGGER_COUNT=$(grep -ciE "$TRIGGER_RE" <<< "$USER_MSGS" 2>/dev/null)
   TRIGGER_COUNT=${TRIGGER_COUNT:-0}
 
-  if [ "$TRIGGER_COUNT" -ge 5 ]; then
-    WARNINGS="${WARNINGS}\n  • User trigger-phrase 累計 ${TRIGGER_COUNT} 次(M19 strong signal)。確認 /ensure-canonical 5-layer 全做完;若有任一 layer skip = 違反 M19。"
+  if [ "$TRIGGER_COUNT" -ge "$TRIGGER_THRESHOLD" ]; then
+    WARNINGS="${WARNINGS}\n  • User trigger-phrase 累計 ${TRIGGER_COUNT} 次(門檻 ${TRIGGER_THRESHOLD};M19 strong signal)。確認 /ensure-canonical 5-layer 全做完;若有任一 layer skip = 違反 M19。"
   fi
 
   # Same-topic repetition(quick keyword overlap heuristic)
@@ -668,7 +684,7 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
     sort | uniq -c | sort -rn | awk 'NR <= 3 { print }')
   TOP_COUNT=$(awk 'NR == 1 { print $1 }' <<< "$TOPIC_KEYWORDS")
 
-  if [ -n "$TOP_COUNT" ] && [ "$TOP_COUNT" -gt 10 ]; then
+  if [ -n "$TOP_COUNT" ] && [ "$TOP_COUNT" -gt "$TOPIC_THRESHOLD" ]; then
     TOP_TOPIC=$(awk 'NR == 1 { print $2 }' <<< "$TOPIC_KEYWORDS")
     WARNINGS="${WARNINGS}\n  • Topic「${TOP_TOPIC}」repeated ${TOP_COUNT}x — likely user 第 N 次提示同主題,可能 prior turns 落地不徹底。"
   fi
@@ -751,7 +767,7 @@ if [ "${CRITICAL_CLAIM_VERIFY:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
     # 第一次 block,記 hash 防 loop
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$CLAIM_HASH" > "$LAST_BLOCKED_FILE" 2>/dev/null || true; }
     REASON=$(printf '%s' \
-      "🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified / done / 完成」但本 turn 沒跑 tsc / test / audit / visual 真驗證。立刻 (a) 跑 npx tsc -b + 對應驗證指令,OR (b) 在本 turn 明確撤回 claim(打「撤回 claim」/「未驗證」)。否則 turn 不結束。" \
+      "🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified / done / 完成」但本 turn 沒跑任何真驗證(型別 / 測試 / 閘 / 稽核 / 視覺)。立刻 (a) 跑對應驗證(型別證明 = npm run build:lib;本 repo 的 tsc -b 不檢查 DS 原始碼,不算),OR (b) 在本 turn 明確撤回 claim(打「撤回 claim」/「未驗證」)。否則 turn 不結束。" \
       "本機制 = M20 100+ 次 failure mode 升 BLOCKER(原 silent inject → block)。")
     emit_governance_block "$REASON"
   fi

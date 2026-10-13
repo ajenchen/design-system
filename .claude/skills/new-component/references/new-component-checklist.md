@@ -49,7 +49,7 @@
 - [ ] Icon size 三層分層(row 走 RowSizeContext / Button 走 Button mapping / 一次性 inline size={n} 對齊 uiSize)
 - [ ] 無 shadcn compat alias(bg-popover 等)
 - [ ] 無硬色 / shadow-sm / 預設 typography class
-- [ ] `tsc --noEmit` 過
+- [ ] `npm run build:lib` 過(型別證明;根目錄 `tsc --noEmit` 一個檔都不檢查、`tsc -b` 不檢查 DS 原始碼,都不算)
 - [ ] cva defaultVariants 正確(Field 家族 default md;其他按 spec 明示)
 - [ ] cva defaultVariants 改動 → 三方同步(spec / docblock / anatomy story)
 

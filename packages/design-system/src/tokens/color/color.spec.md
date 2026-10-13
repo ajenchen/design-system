@@ -691,7 +691,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 - [ ] Dark mode `subtle` / `text` 沒亂加（primitives 已處理）
 - [ ] Tailwind bridge 五件套全部加齊
 - [ ] 命名遵循 `--{name}` / `--{name}-{role}` 模式（不混色相名）
-- [ ] 用 `npx tsc --noEmit` 檢查零錯誤
+- [ ] 用 `npm run build:lib` 檢查零型別錯誤（根目錄的 `npx tsc --noEmit` 一個檔都不檢查：根 `tsconfig.json` 是 `files: []`，見 AGENTS.md 失敗記憶索引）
 
 ## Neutral Interaction
 

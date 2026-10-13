@@ -516,17 +516,391 @@ export function normalizeProviderHookChildFailure({ status, outputMode, blocking
 
 /**
  * Decides how the adapter batch responds to ONE hook whose child result failed
- * integrity interpretation (crash exit, wrong channel, malformed envelope).
- * Fail-closed stays absolute for strict/CI lanes and for any child that emits
- * the reserved adapter marker (spoofing or truly broken). Otherwise the batch
- * degrades exactly one hook — a visible GOVERNANCE_WARNING with the hook name —
- * and keeps enforcing the rest, so a single crashed hook can no longer silence
- * its whole settings group (the cloud-crash amplifier, baton §7 item 8).
- * A degraded hook is never reported as successful enforcement.
+ * integrity interpretation (crash exit, wrong channel, malformed envelope, or the
+ * reserved integrity marker on its own stderr). Strict/CI lanes stay fail-closed
+ * (exit 70). The ordinary lane degrades exactly that hook — a GOVERNANCE_WARNING
+ * plus a model-visible degradation notice naming it — and keeps enforcing the rest,
+ * so a single crashed hook can no longer silence its whole settings group (the
+ * cloud-crash amplifier, baton §7 item 8). A degraded hook is never reported as
+ * successful enforcement.
+ *
+ * N34 複核(2026-10-07):the reserved marker used to force 'fail-closed' even in the
+ * ordinary lane, where "fail-closed" for the adapter means "skip the batch, exit 0" —
+ * so one hook that hit governance_hook_integrity_fail (the shared helper every
+ * canonical hook uses) or merely printed the marker silently switched off every other
+ * hook in its group. The marker therefore no longer changes the ordinary-lane outcome:
+ * that hook alone is degraded and named.
  */
-export function classifyProviderHookChildFailure({ strict = false, stderr = '' } = {}) {
-  if (typeof stderr === 'string' && stderr.includes(CHILD_INTEGRITY_MARKER)) return 'fail-closed'
+export function classifyProviderHookChildFailure({ strict = false } = {}) {
   return strict ? 'fail-closed' : 'degrade-hook'
+}
+
+// ── G4 複核二(2026-10-07):「寫入前把關」的閘因缺工具跑不起來時,到底要擋什麼 ──
+// 上一版:閘跑不起來 → 這次工具呼叫一律擋。結果缺 jq 時連 `ls`、`git status`、`brew install jq` 都被擋,
+// AI 沒辦法自己把工具裝回來,只能丟回給 user(M36(b) 自鎖)。要保證的性質是「閘要判的寫入,不會在閘看不見時
+// 通過」,上一版量的卻是「任何呼叫」(M37)。現在分三條路,判斷全在 node 裡做、不依賴缺的那個工具:
+//   1. 唯讀指令(下方白名單,逐段檢查;任何寫檔重導、命令替換、背景執行都不算)→ 放行;
+//   2. 只安裝「缺的那幾個宣告工具」的指令(下方固定文法)→ 放行;
+//   3. 其餘呼叫:落在那道閘自己的管轄範圍內才擋(BLIND_GATE_SCOPES);判不出範圍的閘一律當成在範圍內(保守)。
+// 1、2 放行時,那道閘仍記成「這次沒有跑」並告訴模型(降級通知),不會被當成通過。
+
+const SHELL_LEX_MAX_BYTES = 64 * 1024
+const SHELL_REDIRECT_OPERATORS = ['&>>', '&>', '<<<', '<<-', '<<', '>>', '>|', '>&', '<&', '<>', '>', '<']
+
+// 把一行 shell 拆成「指令段」:每段有字詞(已去引號)與重導;遇到命令替換、行程替換、子 shell 括號、
+// 背景執行、未閉合引號一律回 ok:false —— 判不出來的東西不得被當成唯讀。
+export function lexShellCommand(command) {
+  const source = String(command ?? '')
+  if (Buffer.byteLength(source, 'utf8') > SHELL_LEX_MAX_BYTES) return { ok: false, reason: 'too-long' }
+  const segments = []
+  let words = []
+  let redirects = []
+  let word = null
+  let index = 0
+  const pushWord = () => {
+    if (word !== null) words.push(word)
+    word = null
+  }
+  const endSegment = (separator) => {
+    pushWord()
+    if (words.length || redirects.length) segments.push({ words, redirects, separator })
+    else if (separator && separator !== ';') return false
+    words = []
+    redirects = []
+    return true
+  }
+  const readQuotedOrBare = () => {
+    // 讀一個重導目標字詞(可含引號)
+    let value = null
+    while (index < source.length) {
+      const character = source[index]
+      if (character === "'") {
+        const close = source.indexOf("'", index + 1)
+        if (close < 0) return null
+        value = (value ?? '') + source.slice(index + 1, close)
+        index = close + 1
+        continue
+      }
+      if (character === '"') {
+        let cursor = index + 1
+        let buffer = ''
+        while (cursor < source.length && source[cursor] !== '"') {
+          if (source[cursor] === '`' || (source[cursor] === '$' && source[cursor + 1] === '(')) return null
+          if (source[cursor] === '\\' && cursor + 1 < source.length) {
+            buffer += source[cursor + 1]
+            cursor += 2
+            continue
+          }
+          buffer += source[cursor]
+          cursor += 1
+        }
+        if (cursor >= source.length) return null
+        value = (value ?? '') + buffer
+        index = cursor + 1
+        continue
+      }
+      if (/[\s;&|<>()`]/u.test(character)) break
+      if (character === '$' && source[index + 1] === '(') return null
+      value = (value ?? '') + character
+      index += 1
+    }
+    return value
+  }
+  while (index < source.length) {
+    const character = source[index]
+    if (character === '#' && word === null) {
+      const newline = source.indexOf('\n', index)
+      index = newline < 0 ? source.length : newline
+      continue
+    }
+    if (character === "'" || character === '"') {
+      const value = readQuotedOrBare()
+      if (value === null) return { ok: false, reason: 'quote-or-substitution' }
+      word = (word ?? '') + value
+      continue
+    }
+    if (character === '\\') {
+      if (source[index + 1] === '\n') {
+        index += 2
+        continue
+      }
+      if (index + 1 < source.length) word = (word ?? '') + source[index + 1]
+      index += 2
+      continue
+    }
+    if (character === '`' || (character === '$' && source[index + 1] === '(')) {
+      return { ok: false, reason: 'command-substitution' }
+    }
+    if (character === '(' || character === ')') return { ok: false, reason: 'subshell' }
+    if (character === ' ' || character === '\t') {
+      pushWord()
+      index += 1
+      continue
+    }
+    if (character === '\n' || character === ';') {
+      if (source[index + 1] === ';' && character === ';') return { ok: false, reason: 'case-terminator' }
+      endSegment(';')
+      index += 1
+      continue
+    }
+    if (character === '|') {
+      const separator = source[index + 1] === '|' ? '||' : '|'
+      if (!endSegment(separator)) return { ok: false, reason: 'empty-segment' }
+      index += separator.length + (separator === '|' && source[index + 1] === '&' ? 1 : 0)
+      continue
+    }
+    if (character === '&' && source[index + 1] === '&') {
+      if (!endSegment('&&')) return { ok: false, reason: 'empty-segment' }
+      index += 2
+      continue
+    }
+    if (character === '<' || character === '>' || (character === '&' && source[index + 1] === '>')) {
+      if ((character === '<' || character === '>') && source[index + 1] === '(') {
+        return { ok: false, reason: 'process-substitution' }
+      }
+      let fd = null
+      if (word !== null && /^\d+$/u.test(word)) {
+        fd = word
+        word = null
+      }
+      pushWord()
+      const operator = SHELL_REDIRECT_OPERATORS.find((candidate) => source.startsWith(candidate, index))
+      index += operator.length
+      while (source[index] === ' ' || source[index] === '\t') index += 1
+      if (operator === '<<' || operator === '<<-') {
+        // heredoc 主體是否會被執行要看接收者;唯讀判斷一律不收 heredoc
+        return { ok: false, reason: 'heredoc' }
+      }
+      const target = readQuotedOrBare()
+      if (target === null || target === '') return { ok: false, reason: 'redirect-target' }
+      redirects.push({ fd, operator, target })
+      continue
+    }
+    if (character === '&') return { ok: false, reason: 'background' }
+    word = (word ?? '') + character
+    index += 1
+  }
+  pushWord()
+  if (words.length || redirects.length) segments.push({ words, redirects, separator: null })
+  return { ok: true, segments }
+}
+
+function redirectIsHarmless({ operator, target }) {
+  if (operator === '<' || operator === '<<<') return true
+  if ((operator === '>&' || operator === '<&') && /^(?:\d+|-)$/u.test(target)) return true
+  return ['>', '>>', '&>', '&>>', '>|'].includes(operator) && /^\/dev\/(?:null|stdout|stderr)$/u.test(target)
+}
+
+const anyArguments = () => true
+const FIND_ACTIONS = new Set(['-exec', '-execdir', '-ok', '-okdir', '-delete', '-fprint', '-fprint0', '-fprintf', '-fls'])
+const GIT_READ_ONLY_SUBCOMMANDS = new Set([
+  'status', 'log', 'diff', 'show', 'rev-parse', 'ls-files', 'ls-tree', 'cat-file', 'describe', 'blame',
+  'shortlog', 'grep', 'merge-base', 'for-each-ref', 'rev-list', 'count-objects', 'check-ignore', 'version',
+  'help', 'show-ref', 'name-rev', 'whatchanged', 'cherry', 'var',
+])
+const GIT_LISTING_FLAGS = new Set(['--list', '-l', '--contains', '--no-contains', '--merged', '--no-merged', '--points-at', '--show-current'])
+const GIT_BRANCH_WRITE_FLAGS = /^(?:-[dDmMcCfu]|--delete|--move|--copy|--force|--set-upstream-to|--unset-upstream|--edit-description|--track|--no-track)/u
+
+function gitReadOnly(args) {
+  let index = 0
+  while (index < args.length) {
+    if (args[index] === '-C') {
+      index += 2
+      continue
+    }
+    if (['--no-pager', '-P', '--no-optional-locks'].includes(args[index])) {
+      index += 1
+      continue
+    }
+    break
+  }
+  const subcommand = args[index]
+  const rest = args.slice(index + 1)
+  if (!subcommand) return true
+  // 會寫檔或執行外部程式的選項(diff/log --output、外部 diff、grep 開 pager、上傳 pack、單次設定)
+  if (rest.some((argument) => /^(?:--output|--ext-diff|--exec|--upload-pack|--receive-pack|--config-env|-O|--open-files-in-pager|-c$)/u.test(argument))) {
+    return false
+  }
+  if (GIT_READ_ONLY_SUBCOMMANDS.has(subcommand)) return true
+  const positional = rest.filter((argument) => !argument.startsWith('-'))
+  switch (subcommand) {
+    case 'branch':
+      return !rest.some((argument) => GIT_BRANCH_WRITE_FLAGS.test(argument))
+        && (positional.length === 0 || rest.some((argument) => GIT_LISTING_FLAGS.has(argument)))
+    case 'tag':
+      return !rest.some((argument) => /^(?:-[dafsmFu]|--delete|--annotate|--sign|--force|--message|--file)/u.test(argument))
+        && (positional.length === 0 || rest.some((argument) => GIT_LISTING_FLAGS.has(argument)))
+    case 'remote':
+      return rest.length === 0 || ['-v', '--verbose', 'show', 'get-url'].includes(rest[0])
+    case 'config':
+      return rest.some((argument) => ['--get', '--get-all', '--get-regexp', '--get-urlmatch', '--list', '-l'].includes(argument))
+        && !rest.some((argument) => /^(?:--unset|--add|--replace-all|--rename-section|--remove-section|-e$|--edit)/u.test(argument))
+    case 'stash':
+      return ['list', 'show'].includes(rest[0])
+    case 'worktree':
+      return rest[0] === 'list'
+    case 'reflog':
+      return rest.length === 0 || rest[0] === 'show'
+    default:
+      return false
+  }
+}
+
+// sed 只收「-n + 只印某幾行」(`sed -n '1,40p' 檔案`):sed 的 w / e 指令會寫檔或執行,不逐一解析,直接不收
+function sedPrintOnly(args) {
+  if (!args.includes('-n')) return false
+  const options = args.filter((argument) => argument.startsWith('-'))
+  if (options.some((argument) => argument !== '-n' && argument !== '-e')) return false
+  const scripts = []
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '-e') {
+      scripts.push(args[index + 1] ?? '')
+      index += 1
+    }
+  }
+  if (!scripts.length) {
+    const first = args.find((argument) => !argument.startsWith('-'))
+    if (first === undefined) return false
+    scripts.push(first)
+  }
+  return scripts.every((script) => /^\s*(?:\d+|\$)?\s*(?:,\s*(?:\d+|\$))?\s*p\s*$/u.test(script))
+}
+
+const READ_ONLY_COMMANDS = new Map([
+  ...[
+    'pwd', 'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'egrep', 'fgrep', 'stat', 'which', 'whoami', 'id',
+    'uname', 'echo', 'printf', 'true', 'false', 'test', '[', 'basename', 'dirname', 'realpath', 'readlink',
+    'du', 'df', 'ps', 'printenv', 'diff', 'cmp', 'comm', 'shasum', 'sha1sum', 'sha256sum', 'md5', 'md5sum',
+    'cksum', 'nl', 'cut', 'tr', 'column', 'sw_vers', 'locale', 'cd', 'pushd', 'popd', 'type', 'jq',
+  ].map((name) => [name, anyArguments]),
+  ['rg', (args) => !args.some((argument) => argument.startsWith('--pre'))],
+  ['file', (args) => !args.some((argument) => argument === '-C' || argument === '--compile')],
+  ['date', (args) => args.every((argument) => argument.startsWith('+') || argument === '-u' || argument === '-R')],
+  ['env', (args) => args.length === 0],
+  ['hostname', (args) => args.length === 0],
+  ['command', (args) => ['-v', '-V'].includes(args[0])],
+  ['sort', (args) => !args.some((argument) => argument.startsWith('-o') || argument.startsWith('--output'))],
+  ['uniq', (args) => args.filter((argument) => !argument.startsWith('-')).length <= 1],
+  ['tree', (args) => !args.some((argument) => argument.startsWith('-o'))],
+  ['find', (args) => !args.some((argument) => FIND_ACTIONS.has(argument))],
+  ['sed', sedPrintOnly],
+  ['git', gitReadOnly],
+  ['node', (args) => args.length === 1 && ['--version', '-v'].includes(args[0])],
+  ['npm', (args) => ['--version', '-v', 'ls', 'list', 'view'].includes(args[0])],
+  ['brew', (args) => ['list', 'ls', 'info', '--version', '--prefix', 'search', 'config'].includes(args[0])],
+  ['apt-cache', (args) => ['policy', 'show', 'search', 'depends', 'madison'].includes(args[0])],
+  ['dpkg', (args) => ['-l', '-s', '-L', '--list', '--status', '--listfiles'].includes(args[0])],
+  ['xcode-select', (args) => args.length === 1 && ['-p', '--print-path', '-v', '--version'].includes(args[0])],
+])
+
+export function shellCommandIsReadOnly(command) {
+  const lexed = lexShellCommand(command)
+  if (!lexed.ok || !lexed.segments.length) return false
+  return lexed.segments.every(({ words, redirects }) => {
+    if (!redirects.every(redirectIsHarmless)) return false
+    if (!words.length) return true
+    const [name, ...args] = words
+    // 只認裸指令名(經 PATH 找):帶路徑的執行檔、前置環境變數指派(`GIT_EXTERNAL_DIFF=… git diff`)都不收
+    if (name.includes('/') || name.includes('=')) return false
+    const accepts = READ_ONLY_COMMANDS.get(name)
+    return Boolean(accepts && accepts(args))
+  })
+}
+
+// 宣告工具 → 可接受的套件名(brew / apt / dnf / apk / port 的常見名稱)
+const HOOK_TOOL_PACKAGES = Object.freeze({
+  jq: ['jq'],
+  perl: ['perl'],
+  python3: ['python3', 'python', 'python@3', /^python@3\.\d+$/u],
+  git: ['git'],
+  bash: ['bash'],
+  node: ['node', 'nodejs'],
+})
+const INSTALL_COMMAND_FORMS = [
+  { manager: 'brew', verbs: ['install', 'reinstall'], flags: ['-q', '--quiet', '--formula'] },
+  { manager: 'apt-get', verbs: ['install'], flags: ['-y', '--yes', '--assume-yes', '-q', '--quiet', '--no-install-recommends'] },
+  { manager: 'apt', verbs: ['install'], flags: ['-y', '--yes', '--assume-yes', '-q', '--quiet', '--no-install-recommends'] },
+  { manager: 'dnf', verbs: ['install'], flags: ['-y', '--assumeyes', '-q', '--quiet'] },
+  { manager: 'yum', verbs: ['install'], flags: ['-y', '--assumeyes', '-q', '--quiet'] },
+  { manager: 'microdnf', verbs: ['install'], flags: ['-y', '--assumeyes'] },
+  { manager: 'apk', verbs: ['add'], flags: ['--no-cache', '-q', '--quiet'] },
+  { manager: 'port', verbs: ['install'], flags: [] },
+]
+const UPDATE_COMMAND_FORMS = [
+  { manager: 'apt-get', verbs: ['update'], flags: ['-y', '-q', '--quiet'] },
+  { manager: 'apt', verbs: ['update'], flags: ['-y', '-q', '--quiet'] },
+  { manager: 'brew', verbs: ['update'], flags: ['-q', '--quiet'] },
+]
+const INSTALL_ENVIRONMENT_ASSIGNMENT = /^(?:DEBIAN_FRONTEND|HOMEBREW_NO_AUTO_UPDATE|HOMEBREW_NO_INSTALL_CLEANUP|HOMEBREW_NO_ENV_HINTS)=[A-Za-z0-9_-]*$/u
+
+function hookToolForPackage(name) {
+  for (const [label, packages] of Object.entries(HOOK_TOOL_PACKAGES)) {
+    if (packages.some((candidate) => (typeof candidate === 'string' ? candidate === name : candidate.test(name)))) return label
+  }
+  return ''
+}
+
+function matchPackageCommand(words, forms) {
+  const [manager, verb, ...rest] = words
+  const form = forms.find((candidate) => candidate.manager === manager && candidate.verbs.includes(verb))
+  if (!form) return null
+  const flags = rest.filter((argument) => argument.startsWith('-'))
+  if (!flags.every((flag) => form.flags.includes(flag))) return null
+  return rest.filter((argument) => !argument.startsWith('-'))
+}
+
+// 「只安裝缺的那幾個宣告工具」:每段都必須是(可選 sudo 與少數安裝用環境變數)+ 套件管理員安裝 / 更新,
+// 安裝的每個套件都對得到一個**目前缺**的宣告工具;不得有管線、寫檔重導或其他指令夾帶。
+export function shellCommandRestoresHookTools(command, missingTools = []) {
+  const missing = new Set(missingTools)
+  if (!missing.size) return false
+  const lexed = lexShellCommand(command)
+  if (!lexed.ok || !lexed.segments.length) return false
+  let installs = 0
+  for (const segment of lexed.segments) {
+    if (segment.separator === '|') return false
+    if (!segment.redirects.every(redirectIsHarmless)) return false
+    let words = segment.words
+    while (words.length && INSTALL_ENVIRONMENT_ASSIGNMENT.test(words[0])) words = words.slice(1)
+    if (words[0] === 'sudo') words = words.slice(1)
+    while (words.length && INSTALL_ENVIRONMENT_ASSIGNMENT.test(words[0])) words = words.slice(1)
+    const updateOperands = matchPackageCommand(words, UPDATE_COMMAND_FORMS)
+    if (updateOperands && updateOperands.length === 0) continue
+    const packages = matchPackageCommand(words, INSTALL_COMMAND_FORMS)
+    if (!packages || !packages.length) return false
+    if (!packages.every((name) => missing.has(hookToolForPackage(name)))) return false
+    installs += 1
+  }
+  return installs > 0
+}
+
+// 各道「寫入前把關」閘自己的管轄範圍(閘看不見時,只有範圍內的呼叫要擋)。沒列在這裡的閘 = 判不出範圍,
+// 保守視為所有呼叫都在範圍內。key 必須是 hooks/registrations.json 裡 PreToolUse 的擋型 hook
+//(scripts/test-provider-hook-output-transport.mjs 機械檢查,改名 / 刪除時會紅)。
+const BLIND_GATE_SCOPES = Object.freeze({
+  // 核准閘只判「寫到受管產品檔」;受管與否由 hooks/lib/approval-evidence.mjs#isGovernedApprovalTarget 判
+  //(與 hook 內的 case 同一套規則,hook 測試 §18n 逐條比對)。算不出目標(null)→ 保守視為在範圍內。
+  'check_substantive_edit_approval_preflight.sh': ({ governedTargets }) =>
+    !Array.isArray(governedTargets) || governedTargets.length > 0,
+  // 一人一分支閘只判 Bash 的開分支(checkout -b / switch -c)與 push(hooks/check_solo_workflow.sh R1 / R2);
+  // 這裡放寬到「git 指令裡出現 push / checkout / switch」,只會多擋、不會漏擋。
+  'check_solo_workflow.sh': ({ tool, command }) =>
+    tool === 'Bash' && /\bgit\b[\s\S]*\b(?:push|checkout|switch)\b/u.test(String(command || '')),
+  // 同儕簡報閘只判呼叫同儕 CLI 的 Bash(hooks/check_codex_brief_invariants.sh);不知道 CLI 名稱 → 保守在範圍內
+  'check_codex_brief_invariants.sh': ({ tool, command, peerCli }) =>
+    tool === 'Bash' && (!peerCli || String(command || '').includes(peerCli)),
+})
+
+export const blindGateScopedHooks = Object.freeze(Object.keys(BLIND_GATE_SCOPES))
+
+export function classifyBlindHookCall({ hookName, tool, command = '', missingTools = [], scope = {} } = {}) {
+  if (tool === 'Bash') {
+    if (shellCommandRestoresHookTools(command, missingTools)) return { block: false, lane: 'restore' }
+    if (shellCommandIsReadOnly(command)) return { block: false, lane: 'read-only' }
+  }
+  const inScope = BLIND_GATE_SCOPES[hookName]
+  if (inScope && !inScope({ tool, command, ...scope })) return { block: false, lane: 'outside-gate-scope' }
+  return { block: true, lane: 'gate-scope' }
 }
 
 export const providerHookOutputContract = Object.freeze({

@@ -185,7 +185,7 @@ P0/P1/P2E 依 Standing Authorization surgical 修復；每批(Dim 1 / Dim 2 / ..
 
 ### Phase 4 — Verify
 
-- `npx tsc -b` 無錯(禁 `--noEmit` — root tsconfig `files: []` silent pass;動型別 surface 加跑 `npm run build:lib`,對齊 component-quality-gate + self-verify.md)
+- `npm run build:lib` 無錯(型別證明;設計系統本庫的 `tsc -b` 只看根目錄 `src/`、不檢查 DS 原始碼,不算 —— 對齊 component-quality-gate + self-verify.md)
 - re-run 本 skill(縮窄到原 findings)確認 zero regression
 
 ### Phase 5 — Visual audit(stakeholder-gate,mandatory on stakeholder-visible work)

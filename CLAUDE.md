@@ -2,7 +2,7 @@
 
 # Claude Code 專屬機制層(provider adapter)
 
-**跨模型 bootstrap 核心住在 `AGENTS.md`**(上方 import,launch 全載,內容零損失)——增刪改共同 bootstrap 原則**只改 AGENTS.md**,Claude 與 Codex 等所有 agent 自動同步；其他治理／infra 只改 `infra/governance/protected-root-classification.json` 指定的 canonical owner，再跑完整 governance build graph。當前機器可驗的 authority chain 是 `packages/governance/canonical/manifest.json` → `scripts/governance-build-graph.json` → `infra/governance/` 內的 evidence/release/rollout contracts；standard release machine SSOT 是 `infra/governance/release-workflow.json`，Claude 同樣只跑 `pr-checks → merge → publish → readback → consumer` 五步 AUTO。`governance/planning/2026-07-16-provider-neutral-governance.md` 只是歷史遷移紀錄。本檔只收 Claude Code 的 generated adapter 機制說明，不是另一份 authority。
+**跨模型 bootstrap 核心住在 `AGENTS.md`**(上方 import,launch 全載,內容零損失)——增刪改共同 bootstrap 原則**只改 AGENTS.md**,Claude 與 Codex 等所有 agent 自動同步；其他治理／infra 只改 `infra/governance/protected-root-classification.json` 指定的 canonical owner，再跑完整 governance build graph。當前機器可驗的 authority chain 是 `packages/governance/canonical/manifest.json` → `scripts/governance-build-graph.json` → `infra/governance/` 內的 evidence/release/rollout contracts；standard release machine SSOT 是 `infra/governance/release-workflow.json`，Claude 同樣只跑 `pr-checks → merge → publish → readback → consumer` 五步；`pr-checks` 之後、`merge` 之前有一道人類閘：user 看過預覽後說「發版」才落同意 receipt，缺 receipt 時 `release:auto` 停在預覽階段（AGENTS.md「Git / release canonical」1.5），其餘步驟 AUTO。`governance/planning/2026-07-16-provider-neutral-governance.md` 只是歷史遷移紀錄。本檔只收 Claude Code 的 generated adapter 機制說明，不是另一份 authority。
 
 ## Path-scoped rules(Claude 自動載入;2026 Anthropic 推薦)
 
@@ -16,7 +16,7 @@
 
 ## Hooks(write-time 加速器,非信任邊界)
 
-`.claude/hooks/` 於 Claude Code lifecycle(PreToolUse / PostToolUse / Stop / SessionStart / UserPromptSubmit)提供**最早的回饋**(寫入當下攔截)。它是 Claude 專屬加速器；最終判定來自 provider-neutral verifier、受保護 CI 與外部 required check，且只有遠端保護已驗證時才可宣稱不可繞過。Hook 計數/預算 SSOT = `session_start_governance_check.sh` Check 7。
+`.claude/settings.json` 只登記單一入口 `scripts/run-provider-hook.mjs`,由它依 `packages/design-system/ds-canonical/hooks/registrations.json` 執行 canonical hooks(`packages/design-system/ds-canonical/hooks/`;`.claude/hooks/` 鏡像 2026-08-04 已退役),於 Claude Code lifecycle(PreToolUse / PostToolUse / Stop / SessionStart / UserPromptSubmit)提供**最早的回饋**(寫入當下攔截)。它是 Claude 專屬加速器；最終判定來自 provider-neutral verifier、受保護 CI 與外部 required check，且只有遠端保護已驗證時才可宣稱不可繞過。Hook 計數/預算 SSOT = `session_start_governance_check.sh` Check 7。
 
 ## Skills / Commands / Memory(Claude 專屬 discovery)
 

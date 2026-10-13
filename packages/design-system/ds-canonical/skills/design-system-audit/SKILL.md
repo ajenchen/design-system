@@ -227,7 +227,7 @@ User 2026-05-15 verbatim 抓「DS 深度稽核漏 storybook content quality」+�
 
 1. Read `AGENTS.md` shared bootstrap + applicable canonical `packages/design-system/ds-canonical/{rules,references}/` fully + `git status --short`；若 provider instruction/view 存在，只驗其 projection freshness，不把它當 authority
 2. **Build baseline**(任一 fail → fail-closed engineering remediation；依既定 retry/evidence 仍重現才 technical blocker):
-   - `npx tsc -b` — 0 errors
+   - `npm run build:lib` — exit 0(型別證明;`tsc -b` 在設計系統本庫不檢查 DS 原始碼,不算)
    - `npx vite build` — `✓ built in`
    - `npm run build-storybook` — clean
 3. **Mechanical content-quality baseline**:
@@ -339,7 +339,7 @@ Consolidate into priority matrix:
 
 ### Phase 3 — Apply fixes (grouped commits)
 
-每 fix group:Edit(非 Write)→ `npx tsc -b` pass(禁 `--noEmit`,root tsconfig `files: []` silent pass)→ commit 描述性 message。Typical groups:cva drift / Spec Rule A / a11y / Anatomy / canonical governance contradiction。
+每 fix group:Edit(非 Write)→ `npm run build:lib` pass(設計系統本庫的 `tsc -b` 只看根目錄 `src/`,不算型別證明)→ commit 描述性 message。Typical groups:cva drift / Spec Rule A / a11y / Anatomy / canonical governance contradiction。
 
 ### Phase 3.5 — 進階 6 維稽核 D3-D6(對齊 canonical audit taxonomy)
 
