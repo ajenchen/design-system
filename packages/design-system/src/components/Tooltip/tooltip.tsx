@@ -101,8 +101,10 @@ const TooltipContent = React.forwardRef<
         // 「tooltip 擋住觸發點的點擊」本來就不會發生,穿透解決的不是這個問題。
         "z-50 overflow-hidden rounded-md px-3 py-2 text-body font-normal text-on-emphasis bg-tooltip max-w-[280px] break-words",
         overlayMotion,
-        // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
-        "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+        // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何。
+        // 進場幾何用「不是 closed」當打開判準:Radix Tooltip 打開時是 delayed-open / instant-open,從來不是 open
+        // (2026-10-13 前寫 data-[state=open],進場動畫一次都沒播過;判準的住所 = overlay-motion.ts 檔頭)
+        "not-data-[state=closed]:fade-in-0 not-data-[state=closed]:zoom-in-95 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         "origin-[var(--radix-tooltip-content-transform-origin)]",
         className

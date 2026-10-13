@@ -2,6 +2,8 @@ import * as React from 'react'
 import { Toaster as SonnerToaster, toast as sonnerToast } from 'sonner'
 import { Notice, useInverseTheme, type NoticeVariant } from '@/design-system/components/Notice/notice'
 import { Button } from '@/design-system/components/Button/button'
+import { useStageGeometry } from '@/design-system/lib/stage-geometry'
+import { stageOffsets } from './stage-offsets'
 
 /**
  * Toast — 非阻斷式浮動通知
@@ -15,6 +17,11 @@ import { Button } from '@/design-system/components/Button/button'
  * neutral/success(inverse): bg + theme 同層（bg-surface-raised 需要跟 data-theme 一起翻轉）
  * info/error(dark): bg 在 outer,theme 在 inner
  * warning(light always): bg 在 outer,theme="light" 在 inner
+ *
+ * ── 落點(toast.spec.md「落點」)──
+ * Toast 落在**舞台**上:舞台幾何只讀 `lib/stage-geometry.ts` 一條通道(並排的代理面板切走右緣、
+ * 在家的入口鈕佔右下角),距離量自 Toast 清單自己的定位框(下方量尺 span);翻成 sonner 參數的判定在 `./stage-offsets.ts`。
+ * 沒有任何佔用時不傳 offset / style,與 sonner 預設逐像素相同。
  */
 
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
@@ -162,17 +169,31 @@ export interface ToasterProps {
   position?: 'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
 }
 
+/**
+ * 量尺:跟 sonner 的清單 `<ol>` 同一個 `position: fixed` 包含塊、`inset: 0` 撐滿它 —— 它的盒子就是 Toast 清單的定位框。
+ * 一般 app 定位框 = 視窗(與 `documentElement.clientWidth / clientHeight` 相同,沒有代理的頁面逐像素不變);
+ * 祖先有 transform / filter / contain 時(例:Storybook docs 頁每則 story 的外框)定位框是那個祖先,
+ * 舞台距離要量自它,不能量自視窗(2026-10-13 複審:docs 頁 Toast 因此偏 221px)。
+ * 不可見、不吃指標、對輔助科技隱藏;`position: fixed` 不佔版面。用行內樣式不用 utility class:量尺的幾何就是它存在的意義,
+ * 不跟「consumer 的樣式表有沒有產生那幾個 class」掛鉤(沒產生 = 量尺掉回文件流、量錯而且零報錯)。
+ */
+const STAGE_ORIGIN_STYLE: React.CSSProperties = { position: 'fixed', inset: 0, visibility: 'hidden', pointerEvents: 'none' }
+
 // shadcn canonical:forwardRef + displayName 統一。SonnerToaster 不轉發 ref,
 // 故 ref 無實際 DOM 節點可接;viewport 為就地渲染的 <section>,以 CSS position:fixed
 // 覆蓋 viewport(非 portal — sonner 全庫 0 createPortal,2026-07-04 grep 驗證)。
 // 保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref)。
 const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
   ({ position = 'bottom-right', ...props }, _ref) => {
+    const originRef = React.useRef<HTMLSpanElement>(null)
+    const geometry = useStageGeometry(originRef)
     return (
       <>
+        <span ref={originRef} aria-hidden="true" data-toast-stage-origin="" style={STAGE_ORIGIN_STYLE} />
         <SonnerToaster
           position={position}
           toastOptions={{ unstyled: true, className: 'w-[360px]' }}
+          {...stageOffsets(position, geometry)}
           {...props}
         />
         <ToastLiveRegions />

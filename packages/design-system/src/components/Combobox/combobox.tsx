@@ -9,6 +9,7 @@ import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
+import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -931,7 +932,8 @@ function CustomCombobox({
   const chevronEl = (
     <>
       {loading && <CircularProgress size={iconSize} className="shrink-0" />}
-      <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+      {/* 旋轉跟它打開的選單同一個時長與曲線(overlayIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」) */}
+      <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted', overlayIndicatorMotion(open), open && 'rotate-180')} aria-hidden />
     </>
   )
 

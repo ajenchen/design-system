@@ -46,6 +46,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
+import { untransformedBox, useStageClaim, type StageClaim } from '@/design-system/lib/stage-geometry'
 import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
@@ -111,7 +112,8 @@ import {
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
-import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
+import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
+import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import './agent-panel.css'
 
@@ -318,6 +320,23 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
     useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
+
+    // 並排 = 把原本的畫面挪出一條給面板 → 登記「舞台右緣 = 面板左緣」,頁面層浮動訊息(Toast)據此留在舞台上
+    // (lib/stage-geometry.ts;user 2026-08-08「toast 一樣落在舞台上啊」,toast.spec.md「落點」)。
+    // 蓋板態不登記:蓋板沒有挪出空間,舞台仍是全寬。盒子扣掉自己的 transform —— 開啟時 slide-in 從右邊 16px 滑進來,
+    // 量到中間值之後沒有任何 resize 會再校正它。觀察面板(拖寬)與宿主(容器變寬 / 變窄)。
+    const claimsStageEdge = open && containerPx > 0 && !isOverlay && selfVisible
+    const stageClaim = React.useMemo<StageClaim | null>(
+      () => (claimsStageEdge
+        ? {
+            kind: 'edge',
+            box: () => (rootRef.current ? untransformedBox(rootRef.current) : null),
+            observe: () => [rootRef.current, hostRef.current].filter((el): el is HTMLElement => !!el),
+          }
+        : null),
+      [claimsStageEdge],
+    )
+    useStageClaim(stageClaim)
 
     // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」三條表,2026-09-07 訂):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
@@ -673,11 +692,12 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                     禁手刻 truncate span。 */}
                 <TruncatedText className="text-body-lg font-medium">{title}</TruncatedText>
                 {/* 指示 chevron 與 Select 觸發器逐字同款:同色 text-fg-muted、同線粗、同「字級↔icon tier」
-                    (標題 text-body-lg = Select lg → ICON_SIZE.lg 20)、開啟時 rotate-180。 */}
+                    (標題 text-body-lg = Select lg → ICON_SIZE.lg 20)、開啟時 rotate-180;旋轉跟它打開的歷史浮層
+                    同一個時長與曲線(overlayIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
                 <ChevronDown
                   size={ICON_SIZE.lg}
                   aria-hidden
-                  className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', historyOpen && 'rotate-180')}
+                  className={cn('shrink-0 text-fg-muted', overlayIndicatorMotion(historyOpen), historyOpen && 'rotate-180')}
                 />
               </button>
             </PopoverTrigger>
@@ -1070,11 +1090,12 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           <span className={cn(thinking && 'agent-shimmer')}>
             {thinking ? '思考中' : '思考過程'}
           </span>
-          {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。 */}
+          {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。
+              旋轉跟下方思考內容的高度動畫同一個時長與曲線(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
           <ChevronDown
             size={16}
             aria-hidden
-            className="shrink-0 text-fg-muted transition-transform duration-[var(--motion-duration-overlay)] motion-reduce:duration-0 group-data-[state=open]/agent-thinking:rotate-180"
+            className={cn('shrink-0 text-fg-muted', disclosureIndicatorMotion, 'group-data-[state=open]/agent-thinking:rotate-180')}
           />
         </CollapsiblePrimitive.Trigger>
         <CollapsiblePrimitive.Content className={disclosureMotion}>

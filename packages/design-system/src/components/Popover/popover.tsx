@@ -89,9 +89,14 @@ const PopoverContent = React.forwardRef<
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
   }, [ref])
+  // Provider 必須包在 Portal **外面**(2026-10-13,待辦總帳 T11):Radix PopoverPortal 自己有一層 Presence
+  // (@radix-ui/react-popover dist/index.mjs:110),它經 Slot 把 ref 交給 Portal 的**直接子元素**、靠那個 DOM 節點讀
+  // animation-name 決定「等收起動畫播完才卸載」。eff41482(2026-07-07)把 Provider 夾在 Portal 與 Content 之間,
+  // ref 落在 Provider 上拿不到節點 → 關閉當下整個卸載,收起動畫(overlayMotion 的 150ms 淡出)從來沒播過。
+  // React context 本來就穿得過 Portal,搬到外面 PopoverTitle 照樣讀得到,行為不變。
   return (
-    <PopoverPrimitive.Portal>
-      <PopoverTitleContext.Provider value={titleContext}>
+    <PopoverTitleContext.Provider value={titleContext}>
+      <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           ref={composedRef}
           align={align}
@@ -116,7 +121,7 @@ const PopoverContent = React.forwardRef<
             "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
             overlayMotion,
             // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0 data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             "origin-[var(--radix-popover-content-transform-origin)]",
             className
@@ -126,8 +131,8 @@ const PopoverContent = React.forwardRef<
           // 且在這一層裡面(面板裡改過的欄位 / 鍵盤拖曳中的條件)→ 留給控件、不關;控件在外面(可打字的 DatePicker 欄位 + 它自己的日曆)→ 照舊關這一層
           onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
         />
-      </PopoverTitleContext.Provider>
-    </PopoverPrimitive.Portal>
+      </PopoverPrimitive.Portal>
+    </PopoverTitleContext.Provider>
   )
 })
 PopoverContent.displayName = PopoverPrimitive.Content.displayName

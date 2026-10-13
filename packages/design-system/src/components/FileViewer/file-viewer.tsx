@@ -1041,7 +1041,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           className={cn(
             'fixed inset-0 z-50 bg-overlay',
             surfaceMotion,
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0',
           )}
         />
         <DialogPrimitive.Content
@@ -1054,8 +1054,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             // @focus-suppress E — E 浮層程式落點;承擔者:dialog 殼,開啟時程式聚焦;內部工具列/縮圖各自有指示
             'fixed inset-0 z-50 outline-none',
             surfaceMotion,
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95',
             className,
           )}
           // FileViewer 是 fullscreen content-consumption dialog：開啟即把焦點放到 shell，

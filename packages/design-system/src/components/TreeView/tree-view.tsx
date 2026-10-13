@@ -20,7 +20,7 @@ import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
-import { disclosureMotion } from '@/design-system/tokens/motion/disclosure-motion'
+import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // 步驟結果的圖示與顏色和 FileItem 同一份(user 2026-10-06 第 4 點「圖示與顏色沿用 FileItem」;tree-view.spec.md「步驟結果」)
 import { RESULT_STATUS_ICON } from '@/design-system/components/FileItem/file-item-status'
@@ -1650,8 +1650,9 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             aria-expanded={isExpanded}
             onClick={handleChevronClick}
             // 展開 / 收合的旋轉是狀態切換的動畫,不是滑過回饋 → 保留(motion.spec.md「hover 回饋不做過渡」只管滑過;
-            // 滑過底色與圖示色由 ItemInlineActionButton 瞬間切換)
-            iconClassName={cn('transition-transform duration-150 motion-reduce:duration-0', isExpanded && 'rotate-90')}
+            // 滑過底色與圖示色由 ItemInlineActionButton 瞬間切換)。時長與曲線跟子項的高度動畫同一份(disclosureIndicatorMotion,
+            // motion.spec.md「展開箭頭跟它打開的東西同步」):箭頭與子項一起開始、一起停
+            iconClassName={cn(disclosureIndicatorMotion, isExpanded && 'rotate-90')}
             className={disabled ? 'text-fg-disabled pointer-events-none' : undefined}
           />
         ) : (

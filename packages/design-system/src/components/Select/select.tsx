@@ -8,6 +8,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
@@ -785,7 +786,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         {/* 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):跟 Input 的 endAction 槽同義 —— 這個值在讀取 / 驗證 / 儲存,
             與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu),觸發點不為它轉圈 */}
         {loading && <CircularProgress size={iconSize} className="shrink-0" />}
-        <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+        {/* 旋轉跟它打開的選單同一個時長與曲線(overlayIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」) */}
+        <ChevronDown size={iconSize} className={cn('text-fg-muted', overlayIndicatorMotion(open), open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )
 

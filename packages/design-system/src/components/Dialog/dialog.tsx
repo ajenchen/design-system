@@ -73,7 +73,7 @@ const DialogOverlay = React.forwardRef<
       "fixed inset-0 z-50 bg-overlay",
       // 遮罩與內容同一組時長 / 曲線(dialog.spec.md「動畫」表;2026-09-09 Codex R13 抓到規格寫 250ms、遮罩實際吃 tw-animate 預設 150ms/ease)
       surfaceMotion,
-      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0",
       className,
     )}
     {...props}
@@ -302,8 +302,8 @@ const DialogContent = React.forwardRef<
         // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
         // 閘:scripts/dialog-coexistence-invariant.mjs「進場第一幀」(靜態禁同用 + 第一幀幾何 + 對照組)。
         surfaceMotion,
-        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0",
+        "data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
         className,
       )}
       style={{

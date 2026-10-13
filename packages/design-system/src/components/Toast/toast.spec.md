@@ -130,6 +130,28 @@ toast({
 - `action`（選填）：tertiary xs 按鈕
 - `duration`（選填）：自動關閉時間；預設依 `action` 而定——有 `action` → **10000ms**（鍵盤焦點不暫停 sonner 倒數，10 秒給鍵盤使用者足夠時間按到「復原 / 重試」，見「A11y 預設」段；2026-07-05 D4 user 拍板，對齊 Polaris toast with action ≥10s / Carbon actionable notification 預設 persistent），無 `action` → **4000ms**
 
+## 落點(落在舞台上)
+
+由來 —— user 2026-08-08 原話:
+
+> toast 一樣落在舞台上啊
+> 反正視覺和互動的結果就是把原本的畫面挪出了一個空間放 ai agent,而其他的元件都應該按照原本的規則在舞台運作得好好的才對吧？
+
+舞台 = 畫面扣掉代理面板之後的那一塊(`../AgentPanel/agent-panel.spec.md`「量的是容器不是視窗」)。Toast 照它自己原本的對齊規則(`<Toaster position>`,預設右下)落在舞台上:
+
+- **沒有代理**:離視窗右、下各 24px(sonner 預設)。不傳任何 offset / style,與改動前逐像素相同。
+- **代理面板並排**:靠右的 Toast 離**舞台**右緣 24px —— 跟沒有面板時離視窗右緣一樣;置中的對齊**舞台**中線 —— 跟沒有面板時對齊視窗中線一樣;上下不動。量的是舞台此刻的右緣(面板左緣),不是「24 + 面板寬」,所以面板拖寬時 Toast 跟著走、面板不貼視窗右邊時一樣對。
+- **代理面板蓋板**(容器 < 960):蓋板沒有挪出空間,舞台仍是全寬,Toast 位置不變。
+- **面板關著、入口鈕在家**(右下角,`../AgentPanel/agent-panel-fab.spec.md`「放置與互斥」):Toast 疊在入口鈕上方,底緣離入口鈕頂 = 入口鈕自己離舞台邊的 `--layout-space-loose`(md 16 / lg 24),左右不動;入口鈕整顆看得到、點得到。**入口鈕貼邊**時角落讓出來,Toast 回到原位。
+- 六種 `position` 都照自己的對齊落在舞台上:靠右的對齊舞台右緣、置中的對齊舞台中線、靠左的本來就在舞台左緣(不動)。疊在入口鈕上方只作用於右下(手機寬度 sonner 整列滿寬,所有靠下的位置都疊)。
+
+**機制**:舞台幾何只有一條通道 `../../lib/stage-geometry.ts` —— 並排的面板與在家的入口鈕登記自己佔掉的部分,`<Toaster />` 讀它,由 `./stage-offsets.ts`(純函式,判定表逐格驗)換算成 sonner 的 `offset` / `mobileOffset`,置中再加清單的行內 `left`(sonner 的置中規則寫死 `left: 50%`,不吃 offset)。`ToasterProps` 不加 prop、consumer 不必接線(`<Toaster />` 仍是 app-level-one,見下方「shadcn passthrough 例外說明」)。登記的是版面位置,不含進場滑入、懸停放大、飛回家等動畫的中間值。
+距離量自 **Toast 清單自己的定位框**(`<Toaster />` 旁一個 `position: fixed; inset: 0` 的隱形量尺,與清單同一個包含塊),不是視窗:一般 app 兩者相同;祖先有 transform 時(例:Storybook docs 頁每則 story 的外框)定位框是那個祖先。只算與定位框相交的佔用(docs 頁上別則 story 的面板不算);頁面捲動時重量(佔用者跟著內容捲、尺寸不變)。
+
+**尚未定案**(不是規則,待 user 決定):蓋板時 Toast 仍疊在面板的輸入盒上;Toast 疊在入口鈕上方時,入口鈕的提示「問我或推走我」大部分被 Toast 蓋住。
+
+閘:`scripts/toast-stage-placement-invariant.mjs`(判定表:六種 position × 四種佔用;真建置:沒有代理 / 並排 / 拖寬 / 蓋板 / 置中並排 / 入口鈕在家 / 頁面捲動 / 貼邊 / docs 頁;`--selftest` 注入改動前的落點、或擋掉捲動重量,必紅)。
+
 ## 寬度（元件級常數）
 
 Toast 使用單一元件級寬度，以維持穩定的訊息行長與頁面遮蔽上限；canonical 數值與 utility 由 `toast.tsx` 擁有，調整時連同對應 story baseline 驗證。
@@ -175,12 +197,15 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - `../Notice/notice.spec.md` — Toast 消費的 layout primitive（與 Alert 共用）
 - `../Alert/alert.spec.md` — 持久性通知（同一套視覺策略）
 - `../Dialog/dialog.spec.md` — 需要阻斷或確認的通知改用 Dialog
+- `../AgentPanel/agent-panel.spec.md` — 並排的代理面板切走舞台右緣(見「落點」)
+- `../AgentPanel/agent-panel-fab.spec.md` — 在家的入口鈕佔住舞台右下角(見「落點」)
 - [sonner](https://sonner.emilkowal.ski/) — 浮動管理 library
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `alert.spec.md`
 - `dialog.spec.md`
 - `form-validation.spec.md`

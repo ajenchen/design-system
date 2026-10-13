@@ -43,6 +43,7 @@ import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as F
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
+import { disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
@@ -3433,7 +3434,8 @@ function DataTableInner<TData>(
               size={size}
               aria-label={isExpanded ? '收合' : '展開'}
               aria-expanded={isExpanded}
-              iconClassName={cn('transition-transform motion-reduce:duration-0', isExpanded && 'rotate-90')}
+              // 旋轉的時長與曲線 = 原地展開那一檔(disclosureIndicatorMotion,與 TreeView 箭頭同一份;motion.spec.md「展開箭頭跟它打開的東西同步」)
+              iconClassName={cn(disclosureIndicatorMotion, isExpanded && 'rotate-90')}
               onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
             />
           ) : null}

@@ -35,7 +35,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/compon
 import { PageHeader } from '@/design-system/components/AppShell/_demo-helpers'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
-import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { Toaster, toast, type ToasterProps } from '@/design-system/components/Toast/toast'
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
@@ -1045,7 +1045,7 @@ type PendingNavigation = { navigate: () => void; target: 'page' | 'modal' }
 /** OpenSnapshot 用的初始狀態(M15):一開場就停在指定網址、任務對話框帶著未儲存的修改、代理的內部連結已被攔下等確認。 */
 type SceneInitial = { location: Location; taskDraft: Partial<TaskDraft>; pendingNavigation: 'mine' }
 
-function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
+function UrlRegistryScene({ initial, toasterPosition }: { initial?: SceneInitial; toasterPosition?: ToasterProps['position'] }) {
   const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
   const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
   const mainRef = React.useRef<HTMLElement | null>(null)
@@ -1259,7 +1259,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
         <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} onModeChange={setAgentMode} sessions={sessions} persistentElements={keepForPanel} />
       </SimulatedBrowser>
       {/* 任務存檔成功的 Toast:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個) */}
-      <Toaster />
+      <Toaster position={toasterPosition} />
     </div>
   )
 }
@@ -1268,8 +1268,19 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
  * 示意(假資料):v14 條 A–G 的互動一次演完。真正的註冊表(誰有 URL、由誰確認)在產品／導航層,
  * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
  */
-export const UrlRegistryDemo: Story = {
+/** Toast 的對齊是 app 層設定一次的 `<Toaster position>`;六種都要落在舞台上(toast.spec.md「落點」),用 Controls 切換,不另開 story。 */
+const TOASTER_POSITIONS = ['bottom-right', 'bottom-center', 'bottom-left', 'top-right', 'top-center', 'top-left'] as const satisfies ReadonlyArray<NonNullable<ToasterProps['position']>>
+
+export const UrlRegistryDemo: StoryObj<{ toasterPosition: NonNullable<ToasterProps['position']> }> = {
   name: '示意(假資料)— 網址註冊表:誰能與代理並存',
+  args: { toasterPosition: 'bottom-right' },
+  argTypes: {
+    toasterPosition: {
+      control: 'select',
+      options: TOASTER_POSITIONS,
+      description: '「任務已建立」Toast 的對齊(`<Toaster position>`,app 層設定一次)。代理並排時每一種都落在舞台上:靠右對齊舞台右緣、置中對齊舞台中線(toast.spec.md「落點」)。',
+    },
+  },
   parameters: {
     docs: {
       description: {
@@ -1277,7 +1288,7 @@ export const UrlRegistryDemo: Story = {
       },
     },
   },
-  render: () => <UrlRegistryScene />,
+  render: ({ toasterPosition }) => <UrlRegistryScene toasterPosition={toasterPosition} />,
 }
 
 /**

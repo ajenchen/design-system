@@ -517,7 +517,7 @@ variant=meta 把這三件事做成結構性保證:樣式自動退、selection �
 `<SidebarGroup collapsible>` 把整個 group 升級成可點擊收合。內部用 Radix Collapsible 實作,**三件事自動發生**:
 
 1. `SidebarGroupLabel` 本身仍是純裝飾 header(`div` `role="presentation"`),**只有尾端的 chevron** 是 trigger（`Collapsible.Trigger asChild` 包住 `ItemInlineActionButton`，帶 hover bg / `cursor-pointer`）——刻意不把整個 label 升格為 button，理由見下方 rationale
-2. Label 尾端自動渲染 `ChevronDown` icon(accordion 慣例),open 時旋轉 180°
+2. Label 尾端自動渲染 `ChevronDown` icon(accordion 慣例),open 時旋轉 180°;旋轉吃原地展開那一檔 `disclosureIndicatorMotion`(`--motion-duration-disclosure` 200ms、`ease-out`,與 TreeView / Accordion 箭頭同一份;群組內容本身沒有高度動畫)。角度看**這顆觸發鈕自己**的 `data-state`(`[[data-state=open]>&]`):原本寫成「任一層祖先打開」,窄螢幕側欄放在 Sheet(本身 `data-state="open"`)裡時,收合的群組箭頭也朝上(2026-10-13 實測並修正,寬螢幕畫面不變)。時長 2026-10-13 起改,原本 150ms(owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)
 3. `SidebarGroupContent` 被 `Collapsible.Content` 包起來,data-state 可驅動動畫
 
 Consumer 不需要任何額外 code——只要加一個 prop:

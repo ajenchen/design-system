@@ -538,7 +538,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 tableOptions={{ getSubRows, getRowCanExpand, state: { expanded }, onExpandedChange }}
 ```
 - Indent:`depth × var(--tree-indent-{sm,md,lg})` token SSOT(`tokens/uiSize/uiSize.css`,跨 TreeView)
-- Chevron:注入 first non-`__select__` content cell,rotate-90 展/收
+- Chevron:注入 first non-`__select__` content cell,rotate-90 展/收;旋轉吃原地展開那一檔 `disclosureIndicatorMotion`(`--motion-duration-disclosure` 200ms、`ease-out`,與 TreeView 箭頭同一份;2026-10-13 起,原本 150ms;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)
 - Click 分權:chevron stopPropagation 不 fire select
 - Leaf placeholder:同層 sibling 有 expandable 時 leaf 也佔位
 - a11y:`aria-expanded` 套在展開 chevron `<button>`(非 row);`aria-level` 尚未實作(row depth 目前僅以 `--tree-indent-*` 縮排視覺呈現)

@@ -9,6 +9,7 @@ import { ChevronDown, PanelLeft } from "lucide-react"
 
 import { useIsNarrowViewport } from "@/design-system/hooks/use-is-narrow-viewport"
 import { cn } from "@/lib/utils"
+import { disclosureIndicatorMotion } from "@/design-system/tokens/motion/disclosure-motion"
 import { Badge } from "@/design-system/components/Badge/badge"
 import { Button } from "@/design-system/components/Button/button"
 import { Input } from "@/design-system/components/Input/input"
@@ -831,7 +832,10 @@ const SidebarGroupLabel = React.forwardRef<
             icon={ChevronDown}
             aria-label={toggleAriaLabel}
             className="pointer-events-auto ml-auto"
-            iconClassName="transition-transform duration-150 motion-reduce:duration-0 [[data-state=open]_&]:rotate-180"
+            // 旋轉的時長與曲線 = 原地展開那一檔(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。
+            // 角度看**自己這顆觸發鈕**的 data-state(圖示是 <button> 的直接子元素):2026-10-13 前寫 `[[data-state=open]_&]`(任一層祖先),
+            // 窄螢幕側欄住在 SheetContent(data-state="open")裡,收合的群組箭頭也被轉成朝上
+            iconClassName={cn(disclosureIndicatorMotion, "[[data-state=open]>&]:rotate-180")}
           />
         </CollapsiblePrimitive.Trigger>
       </div>

@@ -45,6 +45,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { useStageClaim, type StageClaim } from '@/design-system/lib/stage-geometry'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -597,6 +598,32 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const inset = readPx(shellRef.current, '--layout-space-loose', 16)
     const stage: Stage = { w: size.w, h: size.h, inset }
     const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
+    // 在家 = 佔住舞台右下角 → 登記給頁面層浮動訊息(Toast)疊在上方,間距 = 自己離舞台邊的 loose
+    // (lib/stage-geometry.ts;toast.spec.md「落點」)。貼邊 = 角落讓出來,不登記。
+    // 盒子用家的**公式**(placementXY,與靜止時的 CSS 錨定同一組)而不是量鈕:鈕有懸停放大與飛回家 250ms 的位置過渡,
+    // 量到中間值之後不會再有 resize 來校正。
+    const atHome = placement.kind === 'home'
+    const stageClaim = React.useMemo<StageClaim | null>(
+      () => (atHome
+        ? {
+            kind: 'corner',
+            box: () => {
+              const shell = shellRef.current
+              const stageEl = shell?.offsetParent as HTMLElement | null | undefined
+              if (!shell || !stageEl) return null
+              const r = stageEl.getBoundingClientRect()
+              const home = placementXY({ w: stageEl.clientWidth, h: stageEl.clientHeight, inset: readPx(shell, '--layout-space-loose', 16) }, AGENT_FAB_HOME)
+              const left = r.left + stageEl.clientLeft + home.x
+              const top = r.top + stageEl.clientTop + home.y
+              return { left, top, right: left + FAB_PX, bottom: top + FAB_PX }
+            },
+            observe: () => [shellRef.current, shellRef.current?.offsetParent].filter((el): el is HTMLElement => el instanceof HTMLElement),
+            gap: () => readPx(shellRef.current, '--layout-space-loose', 16),
+          }
+        : null),
+      [atHome],
+    )
+    useStageClaim(stageClaim)
     const [menuOpen, setMenuOpen] = React.useState(false)
     // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):按 Esc、選了項目 → 回入口鈕;
     // 點外面 → 留在點的地方、Tab → 由 DropdownMenu 帶到下一站。舊版無條件搶回入口鈕(R8 實測點外面也搶)。

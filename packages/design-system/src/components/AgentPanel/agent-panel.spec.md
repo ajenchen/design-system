@@ -152,6 +152,11 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   斷點常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 有匯出,消費端不必自己抄一個 960。
   機械閘:`scripts/agent-panel-breakpoint.mjs`。
 
+  **舞台上的其他元件照原本的規則運作**(user 2026-08-08:「toast 一樣落在舞台上啊」,全文與規則在 `../Toast/toast.spec.md`「落點」):
+  並排時面板把「舞台右緣 = 面板左緣」登記到 `lib/stage-geometry.ts`(扣掉自己的進場滑入,量版面不量動畫中間值),
+  `<Toaster />` 據此讓 Toast 照自己的對齊落在舞台上(靠右對齊舞台右緣、置中對齊舞台中線)、不落進面板;面板拖寬時跟著走。蓋板態不登記(沒有挪出空間,舞台仍是全寬)。
+  閘:`scripts/toast-stage-placement-invariant.mjs`。
+
 ### 2. AgentPanelHeader(標題列)
 
 - chrome header 家族:消費 `<ChromeHeader>`(固定高 `--chrome-header-height`:md 48 / lg 56 隨 density);
@@ -170,7 +175,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     標題列):點標題或 chevron 都開歷史浮層;chevron 只是指示,**與 Select 觸發器 chevron 逐字同款**:
     色 `text-fg-muted`(neutral-7,`../Field/field-controls.spec.md` icon 純指示方向)、線粗同全域 1.75、
     尺寸走「字級↔icon tier」= 標題 text-body-lg 對應 `ICON_SIZE.lg` 20(select.tsx lg 同款)、
-    開啟時 `rotate-180`(select.tsx / AgentThinking 同款);第二輪覆核:禁用 Button 殼——會多出
+    開啟時 `rotate-180`(select.tsx / AgentThinking 同款;旋轉跟歷史浮層同一份時長與曲線 = `overlayIndicatorMotion`,見本檔「動畫總表」);第二輪覆核:禁用 Button 殼——會多出
     左 9 / 右 5 內距與 28 高懸停底,破壞品牌區間距;第三輪:16 改 20 是 tier 對齊,非新值。
   - 關閉=`<Button dismiss size="sm">`(header 專屬 sm);新對話=Button text sm iconOnly。
   - **固定 anatomy 恆渲染**:標題觸發、新對話 +、關閉 × 不因缺 callback 而消失——
@@ -207,7 +212,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
 - 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
-- Chevron=accordion 慣例(Suffix 位、rotate-180、motion-reduce 0);時長 `--motion-duration-overlay` 150ms(本檔「動畫總表」;Accordion 自己的箭頭是 200ms,兩者不同步是已回報的待決項,`tokens/motion/motion.spec.md`「開合動畫」同族另見 (3));色=`text-fg-muted`
+- Chevron=accordion 慣例(Suffix 位、rotate-180、減少動態下不轉);旋轉跟下方思考內容同一份時長與曲線 —— `disclosureIndicatorMotion`,`--motion-duration-disclosure` 200ms、`ease-out`(本檔「動畫總表」;2026-10-13 起,原本 150ms 與內容 200ms 不同步;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`);色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
 - 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°、
@@ -311,6 +316,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
 | 思考塊開合 | Radix Collapsible + disclosureMotion | `--motion-duration-disclosure` 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
+| 歷史 chevron | 旋轉,與歷史浮層一起開始、一起停(`overlayIndicatorMotion`) | `--motion-duration-overlay` 150ms;打開 enter、收起 exit 曲線 |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
 | 標誌思考旋轉 | 起步 0.25s(=半圈,exit)→ 0.5s/圈 linear | 一息/12、一息/6 |
 | 標誌思考洞形變 | 起步 0.25s 橢圓→圓(exit)/ 減速段圓→橢圓(0,0,0.7,1) | 與轉速同拍;等速持圓 |
@@ -318,7 +324,8 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 標誌思考減速停止 | 從當下角度以 exit 鏡像曲線續轉至正位 | 0.50–1.21s(Δ/(720°/s·0.7)) |
 | 標誌狀態切換 | 新狀態淡入 | `--motion-duration-overlay` 150ms |
 | 入口鈕吸邊 / 放回 | top / inset 位移 | `--motion-duration-surface` 250ms + enter |
-| 思考 chevron / 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |
+| 思考 chevron | 旋轉,與思考內容一起開始、一起停(`disclosureIndicatorMotion`) | `--motion-duration-disclosure` 200ms ease-out |
+| 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |
 | 減動作 | 互動觸發必可停;常駐 loop 全停、淡入停 | 見 AgentLogo 節 |
 
 ## 關閉不等於卸載(2026-09-07 G2)
@@ -417,6 +424,7 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
   / `components/Tag` / `components/OverflowIndicator` / `components/CircularProgress`
   / `components/Empty` / `components/RadioGroup` / `components/Dialog`
   / `tokens/motion/motion.css` / `tokens/uiSize/uiSize.css`。
+- `../Toast/toast.spec.md`「落點」—— 並排時 Toast 照自己的對齊落在舞台上、不落進面板;入口鈕在家時疊在它上方。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
@@ -428,3 +436,4 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
 - `dialog.spec.md`
 - `motion.spec.md`
 - `overflow-indicator.spec.md`
+- `toast.spec.md`

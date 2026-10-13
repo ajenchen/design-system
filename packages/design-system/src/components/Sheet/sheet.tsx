@@ -68,7 +68,7 @@ const SheetOverlay = React.forwardRef<
     className={cn(
       "fixed inset-0 z-50 bg-overlay",
       surfaceMotion,
-      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0",
       className
     )}
     {...props}
@@ -90,12 +90,12 @@ const sheetVariants = cva(
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b border-divider data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+        top: "inset-x-0 top-0 border-b border-divider data-[state=closed]:slide-out-to-top not-data-[state=closed]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t border-divider data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r border-divider data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-md",
+          "inset-x-0 bottom-0 border-t border-divider data-[state=closed]:slide-out-to-bottom not-data-[state=closed]:slide-in-from-bottom",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r border-divider data-[state=closed]:slide-out-to-left not-data-[state=closed]:slide-in-from-left sm:max-w-md",
         right:
-          "inset-y-0 right-0 h-full w-3/4 border-l border-divider data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-md",
+          "inset-y-0 right-0 h-full w-3/4 border-l border-divider data-[state=closed]:slide-out-to-right not-data-[state=closed]:slide-in-from-right sm:max-w-md",
       },
     },
     defaultVariants: {
