@@ -60,14 +60,14 @@ Steps 只解決「有順序、有進度、步數有限且明確」的場景。�
 | 分段表單佈局(不需進度感)| Form layout pattern + heading | 純分段不等於有進度順序 |
 | 無限 / 動態步數 | ProgressBar + 步驟計數文字 | Steps 需步數有限且已知 |
 | 使用者可自由跳步（非線性流程）| Tabs | Steps 強調線性順序,跳步破壞 mental model |
-| 巢狀步驟(步驟底下還有子步驟)| `TreeView`(user 2026-10-01 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」;單選導覽用法見 `../TreeView/tree-view.spec.md:130`「單選(預設,nav tree / stepper)」)| Steps 沒有巢狀 API;巢狀步驟一樣有「目前那一步」,所以列在這張表、不在下一張。TreeView 要怎麼表達父步點擊與灰色彙總等契約尚待 user 裁示(待辦總帳 N72),裁示前不改 TreeView |
+| 巢狀步驟(步驟底下還有子步驟)| `TreeView` 步驟導覽樹(user 2026-10-01 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」;用法見 `../TreeView/tree-view.spec.md`「步驟導覽樹」「步驟結果」)| Steps 沒有巢狀 API;巢狀步驟一樣有「目前那一步」,所以列在這張表、不在下一張。點大步驟會發生什麼、收起時灰底與結果怎麼代顯,user 2026-10-06 → 10-07 已給契約(待辦總帳 T1–T5),寫在 TreeView 規格那兩段 |
 
 ### 有編號,但沒有「目前那一步」(2026-09-30;來源見「內容跟著目前那一步」的「來源」)
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 說明 / 教學類的編號步驟(安裝指南、長篇旅程指南這類讀者自己讀、自己開合的內容)| `Accordion`(`../Accordion/accordion.spec.md:30` 何時用已列「使用教學」;要不要收合、單開或多開看它自己的定位 `:20` 與 type 判斷法 `:55`;編號寫進 trigger 文字,anatomy 固定見 `:123`)| 讀者自己決定看哪一段,沒有進度、也不會有「目前那一步」;Accordion 沒有進度語意,正好 |
-| 設定清單(帳號開通、工作區初始化的待辦:每一項獨立、可以跳著做、每項帶一顆動作鈕)| DS 目前沒有對應元件(待辦總帳 N71)| 不是一條有順序的流程,Steps 的 linear / 目前那一步都套不上 |
+| 設定清單(帳號開通、工作區初始化的待辦:每一項獨立、可以跳著做、每項帶一顆動作鈕;沒有巢狀)| 清單列(閱讀式)部件自己組:DS 還沒有單一的清單列元件,照 `../../patterns/element-anatomy/item-anatomy.spec.md:94-110` 判斷流程「閱讀式(頁面上…)」那一支,用它列的部件(`ItemIcon` / `ItemLabel` / `ItemSuffix` 等)照 Family 2 組 | 不是一條有順序的流程,Steps 的 linear / 目前那一步都套不上。本列只指出用哪一組部件,狀態放哪、圖示、按鈕大小這些畫面規則**不先訂**,等第一個真的要做這個畫面的產品出現再照正常流程定(待辦總帳 T9;user 2026-10-07「4.確保符合我們一致的設計語言且不違背世界級的設計就照你建議」—— 照的是 AI 第八輪的建議「只寫『用清單列(閱讀式)部件自己組』,不另外訂狀態、圖示、按鈕的畫面規則」)|
 
 ---
 
@@ -257,9 +257,9 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 ### 來源(2026-09-30「可同時打開多步」模式退役;2026-10-01 巢狀步驟改由 TreeView 承接)
 
-- **決定 —— AI 建議、user 採納(條件見原話)**:user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」。AI 的建議是:不把 GOV.UK step-by-step navigation 那種「讀者自己開合的學習步驟」納入 Steps 的範例,並退役 `expansion="multiple"` / `defaultExpanded` / controlled `expanded` + `onExpandedChange` 整組 API 與展示層「多重展開模式」story。這句採納只涵蓋退役本身;「何時不用」第二張表的兩列(說明 / 教學類編號步驟、設定清單)是退役後的工程落地,各列都引 owner spec 的行號,沒有新的 user 決定。
+- **決定 —— AI 建議、user 採納(條件見原話)**:user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」。AI 的建議是:不把 GOV.UK step-by-step navigation 那種「讀者自己開合的學習步驟」納入 Steps 的範例,並退役 `expansion="multiple"` / `defaultExpanded` / controlled `expanded` + `onExpandedChange` 整組 API 與展示層「多重展開模式」story。這句採納只涵蓋退役本身;「何時不用」第二張表的兩列(說明 / 教學類編號步驟、設定清單)是退役後的工程落地,各列都引 owner spec 的行號。設定清單那一列 2026-10-07 起改為「清單列(閱讀式)部件自己組」,來源是 user 對 AI 建議的同意(原話與建議全文見該列與待辦總帳 T9)。
 - **為什麼退役**:GOV.UK 自己把 step-by-step navigation 定位成「[this pattern is for use in your prototype only](https://design-system.service.gov.uk/patterns/step-by-step-navigation/)」、「step by step navigation is not for use within transactional services」—— 它是內容頁的導覽(每一步是一段可開合的連結清單,還有「show all」),不是交易流程的進度;而 Steps 是進度指示器,「目前那一步」只由導覽或系統進度設定。兩個模型綁在同一個元件上,就會出現 2026-09-25 user 問的那幾題(待辦總帳 N44:「哪裡有展開收合的範例？同時展開多步又是什麼？」)。
-- **巢狀步驟 —— user 的決定(2026-10-01)**:user 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」。落在「何時不用」第一張表(巢狀步驟有「目前那一步」,不屬於第二張表)。這句話決定的是 owner;TreeView 端的巢狀步驟契約(點父步會發生什麼、父步的灰色彙總怎麼算)仍待 user 裁示(待辦總帳 N72),裁示前不改 TreeView。
+- **巢狀步驟 —— user 的決定(2026-10-01)**:user 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」。落在「何時不用」第一張表(巢狀步驟有「目前那一步」,不屬於第二張表)。這句話決定的是 owner;TreeView 端的巢狀步驟契約(點父步會發生什麼、父步收起時灰底與結果怎麼代顯)user 已在 2026-10-06 → 10-07 給定(待辦總帳 T1–T5;2026-10-07 前這裡寫「仍待 user 裁示(待辦總帳 N72),裁示前不改 TreeView」),寫在 `../TreeView/tree-view.spec.md`「步驟導覽樹」「步驟結果」兩段,TreeView 已照它實作。
 - **一起退役的舊記錄**:2026-07-18 `5481e00b` 補上的 controlled `expanded` / `onExpandedChange`(該 commit 與本檔舊版都記為「user 拍板」,未留 user 原話)隨整個模式一起退役。
 - **根因**:2026-04-16 `cbbcc0b0` 首版的 `steps.spec.md:289` 寫的是 multiple 模式「點 step header 切換該 step 的展開(不切換 `value`)」,同日 `a6101d15` 把程式改成點 header 也更新 `value`(該 commit 在 `steps.tsx` 加的註解原文:「永遠更新 focus(value),multiple 模式額外 toggle 展開」)—— 從那天起 header 同時背著「導覽」與「開合」兩個語意;2026-07-05 `7e69aad7` 再給它 `aria-expanded`,讀屏從此把導覽念成開合(見「A11y 預設」)。
 

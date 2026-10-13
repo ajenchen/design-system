@@ -509,6 +509,9 @@ jobs:
           # TreeView 鍵盤路線的判定表(純函式;2026-09-25 待辦總帳 B9 路線乙):→ 收著先展開、展開後進列上按鈕、Tab 一下離開;
           # --selftest 以舊路線(→ 跳第一個子項、按鈕不在方向鍵路上)當對照組必須被抓到,並檢查 tree-view.tsx 真的呼叫這支判定。
           npm run test:tree-keyboard-route
+          # TreeView 步驟導覽樹的判定表(純函式;2026-10-07 待辦總帳 T1–T5):點大步驟的文字會換位置 → 去那裡並只展開、什麼都不會變 → 開合,
+          # 同一列的連點只處理選取、焦點與單擊相同;45 個序列 + 代顯算法 + 呼叫端真的呼叫判定;--selftest 12 個改壞版各自讓指定的格紅。不進瀏覽器。
+          npm run test:tree-step-navigation
           # 「列上有小按鈕的一串」共用鍵盤判定(純函式;2026-09-26 側欄 / 檔案清單 / 樹 / Command 四份合一,待辦總帳〇節「按鍵規則合併」):
           # 判定表 + 落點 / 停靠點 / 執行器 + 四個呼叫端真的呼叫它;--selftest 以合併前三處不一致(X4 / X6 / X7)當對照組必須被抓到。
           npm run test:roving-list-keyboard
@@ -546,7 +549,7 @@ jobs:
     #     「由子行程的 MAX_ATTEMPTS 推導」(根因見該檔:子行程依設計最多重試 5 次、每次約 38 秒,
     #     最壞 190 秒,父行程卻只給 120 秒)。放寬之後最壞情況會把原 job 推到 25 分鐘上限,
     #     所以把「把手 / 釘選 resize / dpr1 感知迴圈」整段搬出來,兩邊都留餘裕。
-    name: Verify browser(DataTable handles + dpr1 perception + searchable menu focus)
+    name: Verify browser(DataTable handles + dpr1 perception)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -735,6 +738,50 @@ jobs:
           # 這個 job CI 實測 5.8–7.7 分。同一份 storybook build、瀏覽器已在上一步裝好;步驟依序跑,不與上面的感知量測同時佔 CPU。
           npm run test:searchable-menu-focus
 
+  verify-browser-tree-navigation:
+    # 2026-10-07 拆出(照 overlay / perception / sweeps / select-all / field-edges / searchable-fields 的先例:照主題拆平行 job,不調高上限)。
+    # 起因:TreeView 步驟導覽閘(待辦總帳 T1–T5)原本要疊進 verify-browser-interaction,那個 job CI 實測已 21.4–22.8 分(b5757ee6 / 40b432da,上限 25),
+    # 再疊會重演 0464ba54 的 25.4 分被取消;同主題的 TreeView 鍵盤路線閘(B9)一起從 interaction 搬來,那邊鬆開約 1 分。
+    # 預估:建置 + 安裝約 4–5 分,兩支閘本機 32 秒 + 59 秒(CI 約本機 1.2–1.4 倍)→ 約 7 分,15 分上限。
+    name: Verify browser(TreeView keyboard + step navigation)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: TreeView keyboard route + step navigation (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
+          # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
+          npm run test:tree-view-keyboard-route
+          # TreeView 步驟導覽樹(2026-10-07 待辦總帳 T1–T5):真滑鼠 / 觸控 / 鍵盤量 A2(含捲動框裡捲到看得到)、D、連點保護(雙擊、三擊、觸控快點、
+          # 兩下都回報第 1 下、隔得久的兩下;焦點與單擊相同)、灰底代顯與 Tab 停靠點、列尾結果與讀屏說明;--selftest 9 個改壞版注入真建置必紅。
+          npm run test:tree-view-step-navigation
+
   verify-browser-overlay:
     name: Verify browser(overlay + theme gates)
     runs-on: ubuntu-24.04
@@ -900,9 +947,6 @@ jobs:
           # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)在 verify-browser-datatable-perception ——
           # 本 job CI 實測 10.8–13.0 分,疊上去貼近 25 分上限(ci-workflow-scope.test.mjs),照 virtual-cursor-modality 對照組的先例按預算放。
           node scripts/form-validation-contract-invariant.mjs
-          # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
-          # 改動前「工程團隊樹」從 Engineering 出發要按 5 下 Tab)。真按鍵、兩個主題;--selftest 注入舊路線,S1 / T1 / R1 / V1 必紅。
-          npm run test:tree-view-keyboard-route
           npm run test:shared-carrier-focus
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
@@ -1255,7 +1299,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1265,6 +1309,7 @@ jobs:
           BROWSER_DT3: ${{ needs.verify-browser-datatable-perception.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
           BROWSER_SEARCH_FIELDS: ${{ needs.verify-browser-searchable-fields.result }}
+          BROWSER_TREE_NAV: ${{ needs.verify-browser-tree-navigation.result }}
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
@@ -1277,8 +1322,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

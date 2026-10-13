@@ -40,7 +40,7 @@ export const Overview: Story = {
       </div>
 
       <div>
-        <H3>TreeView 的三項職責(不超出此範圍)</H3>
+        <H3>TreeView 的四項職責(不超出此範圍)</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>職責</Th><Th>說明</Th></tr></thead>
@@ -48,6 +48,7 @@ export const Overview: Story = {
               <tr><Td>1. 遞迴渲染 + indent</Td><Td mono>indentStep = chevronSize + gap-2(跟 item-layout 一致)</Td></tr>
               <tr><Td>2. 展開 / 收合狀態管理</Td><Td>TreeView 自管 expand state(受控 expandedIds / 非受控 defaultExpandedIds);Radix Collapsible 僅負責子節點高度動畫</Td></tr>
               <tr><Td>3. 鍵盤導覽 + ARIA 樹狀表格</Td><Td>整棵樹一個 Tab 停靠點 / ↑↓ 換列 / → 展開或進這一列的按鈕 / ← 收合或回上一層 / Enter 選取</Td></tr>
+              <tr><Td>4. 步驟導覽樹(單選 + expandOnSelect)</Td><Td>點大步驟的文字:會換位置就去那裡並只展開、什麼都不會變才開合(同一列的連點只算一下);收起的沒頁面大步驟替目前那一步代顯灰底與列尾結果</Td></tr>
             </tbody>
           </table>
         </div>
@@ -67,7 +68,7 @@ export const Overview: Story = {
                 ['  expandedIds / onExpandedChange', 'Set<string> / handler', '—', '展開狀態受控'],
                 ['  defaultExpandedIds', 'string[]', '—', '初始展開(uncontrolled)'],
                 ['  defaultSelectedIds', 'string[]', '—', '初始選取(uncontrolled)'],
-                ['  expandOnSelect', 'boolean', 'false', '點 label 同時 select + expand(stepper 適用;預設 chevron 是展開唯一控件)'],
+                ['  expandOnSelect', 'boolean', 'false', '點 label 會改變選取就 select + 只展開,不會改變才開合;單選 + 此 prop = 步驟導覽樹(預設 chevron 是展開唯一控件)'],
                 ['  draggable / onDragEnd', 'boolean / handler', 'false', '拖曳重排'],
                 ['  size', "'sm' | 'md' | 'lg'", "'md'", '尺寸 tier(node 高度 / icon 大小 / indent 寬度連動)'],
                 ['  context', "'sidebar' | 'menu'", "'sidebar'", '使用脈絡,決定水平 padding(sidebar=--layout-space-loose / menu=12px 對齊 MenuItem)'],
@@ -79,7 +80,9 @@ export const Overview: Story = {
                 ['  inlineActions', 'InlineActionConfig[]', '—', '右側 inline actions(宣告式 config,內部用 <ItemInlineAction> 渲染)'],
                 ['  inlineActionsSlot', 'ReactNode', '—', 'escape-hatch slot(放自訂元素,跟 inlineActions 互斥)'],
                 ['  actionsReveal', "false | 'hover'", "'hover'", 'inline actions 顯示時機(hover reveal;false=常駐)'],
-                ['  indicator', 'ReactNode', '—', '取代 icon 位置(chevron 永存);stepper 狀態視覺由此傳入'],
+                ['  indicator', 'ReactNode', '—', '取代 icon 位置(chevron 永存);步驟結果不走這裡(用 status)'],
+                ['  selectable', 'boolean', 'true', 'false = 不能被選;步驟導覽樹的「沒有自己頁面的大步驟」'],
+                ['  status', "'completed' | 'error'", '—', '步驟導覽樹:這一列自己那一頁的結果,畫在列尾'],
                 ['  disabled', 'boolean', 'false', '停用該 node'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -414,7 +417,7 @@ export const KeyboardMatrix: Story = {
               <tr><Td mono>↑ / ↓</Td><Td>在可見、未停用的列之間移動(跳過已收合的 children)</Td></tr>
               <tr><Td mono>→</Td><Td>收著的資料夾 → 展開;已展開的資料夾或葉節點 → 進這一列的第一顆按鈕;沒有按鈕 → 不動</Td></tr>
               <tr><Td mono>←</Td><Td>展開的資料夾 → 收合;收著的資料夾或葉節點 → 回上一層</Td></tr>
-              <tr><Td mono>Enter / Space</Td><Td>選取這一列</Td></tr>
+              <tr><Td mono>Enter / Space</Td><Td>選取這一列(= 到那一步;步驟導覽樹的沒有自己頁面的大步驟 → 到它底下第一個子步驟並展開,見 spec「步驟導覽樹」)</Td></tr>
               <tr><Td mono>Home / End</Td><Td>跳到第一個 / 最後一個可見列</Td></tr>
               <tr><Td mono>Tab / Shift+Tab</Td><Td>一下就離開整棵樹(別列、本列的按鈕都不在 Tab 路上)</Td></tr>
               <tr><Td mono>Cmd/Ctrl+Shift+↑ / ↓</Td><Td>重排:同層上移 / 下移(需 draggable;整個子樹一起動,結果經 SR live region 播報)</Td></tr>
@@ -452,7 +455,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"treegrid\"(樹狀表格;2026-09-25 由 tree 改,因為只有樹狀表格定義了「列上有按鈕時鍵盤怎麼走」),每個節點的那一列標記為 role=\"row\",列裡分成主格與放按鈕的動作格(role=\"gridcell\");列上逐一寫著展開狀態、是否選取、所在層級,列名只取標籤文字。多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Collapsible 元件,樹的角色、屬性、鍵盤導覽都是元件自己實作的。讀螢幕軟體會念成「樹狀表格」——尚未用讀螢幕軟體實測。\n\n  鍵盤操作(焦點在列上)  :\n\n- Tab — 進到樹,落在上次停的那一列(沒有就選中的列、再沒有就第一列);再按一下就離開整棵樹\n- 上 / 下 — 換到上 / 下一列\n- 右 — 收著的資料夾先展開;已展開的資料夾或葉節點,進到這一列的第一顆按鈕\n- 左 — 收合資料夾,收著或葉節點時回到上一層\n- Home / End — 跳到第一個 / 最後一個可見列\n- Enter / 空白鍵 — 選取這一列\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  鍵盤操作(焦點在列上的按鈕)  :右 / 左在按鈕之間走,第一顆再按左回到列;上 / 下換到上 / 下一列;Enter / 空白鍵執行按鈕;Tab 一下離開整棵樹,Shift+Tab 回到列。別列的按鈕永遠不在 Tab 路上。\n\n  焦點  :整棵樹只有一個 Tab 停靠點(那一列的 tabIndex 是 0,其他列與所有按鈕都是 -1),焦點是真的落在列或按鈕上。焦點在列上時,列畫一圈內描邊(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由瀏覽器的 :focus-visible 決定畫不畫——滑鼠點列不畫、鍵盤畫);焦點在按鈕上時由按鈕自己畫框。平常隱藏的列上按鈕,焦點在這一列裡時一定看得到。沒有焦點鎖定;唯一的「還焦點」是鍵盤重排後把焦點還給被移動的那一列。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含列上的按鈕與拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
+      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"treegrid\"(樹狀表格;2026-09-25 由 tree 改,因為只有樹狀表格定義了「列上有按鈕時鍵盤怎麼走」),每個節點的那一列標記為 role=\"row\",列裡分成主格與放按鈕的動作格(role=\"gridcell\");列上逐一寫著展開狀態、是否選取、所在層級,列名只取標籤文字;步驟導覽樹另外在「你在哪」那一列(含收起時替目前那一步代顯的大步驟)標 aria-current=\"step\",每一步的結果(已完成 / 錯誤,代顯時是全部已完成 / 其中有錯誤)掛在列的說明上。多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Collapsible 元件,樹的角色、屬性、鍵盤導覽都是元件自己實作的。讀螢幕軟體會念成「樹狀表格」——尚未用讀螢幕軟體實測。\n\n  鍵盤操作(焦點在列上)  :\n\n- Tab — 進到樹,落在上次停的那一列(沒有就選中的列、再沒有就第一列);再按一下就離開整棵樹\n- 上 / 下 — 換到上 / 下一列\n- 右 — 收著的資料夾先展開;已展開的資料夾或葉節點,進到這一列的第一顆按鈕\n- 左 — 收合資料夾,收著或葉節點時回到上一層\n- Home / End — 跳到第一個 / 最後一個可見列\n- Enter / 空白鍵 — 選取這一列(步驟導覽樹:沒有自己頁面的大步驟會到它底下第一個子步驟並展開,焦點跟過去)\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  鍵盤操作(焦點在列上的按鈕)  :右 / 左在按鈕之間走,第一顆再按左回到列;上 / 下換到上 / 下一列;Enter / 空白鍵執行按鈕;Tab 一下離開整棵樹,Shift+Tab 回到列。別列的按鈕永遠不在 Tab 路上。\n\n  焦點  :整棵樹只有一個 Tab 停靠點(那一列的 tabIndex 是 0,其他列與所有按鈕都是 -1),焦點是真的落在列或按鈕上。焦點在列上時,列畫一圈內描邊(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由瀏覽器的 :focus-visible 決定畫不畫——滑鼠點列不畫、鍵盤畫);焦點在按鈕上時由按鈕自己畫框。平常隱藏的列上按鈕,焦點在這一列裡時一定看得到。沒有焦點鎖定;唯一的「還焦點」是鍵盤重排後把焦點還給被移動的那一列。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含列上的按鈕與拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
     </div>
   ),
 }

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generatedAt": "2026-09-26",
-    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明。2026-09-26 重設:Sidebar 超出(43.0KB > 40.2KB)—— 來源是本分支已核准的鍵盤走法乙(↑↓ 項目、→ 進項目內按鈕、← 回來、Tab 一次離開)寫進 sidebar.tsx;共用判定已抽到 lib/roving-list-keyboard.js(6.1KB,不重複計)。其餘 7 項原本就在舊 budget 內,只是跟著重設。已檢查沒有 lucide 全庫或重複依賴。"
+    "generatedAt": "2026-10-07",
+    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明。2026-09-26 重設:Sidebar 超出(43.0KB > 40.2KB)—— 來源是本分支已核准的鍵盤走法乙(↑↓ 項目、→ 進項目內按鈕、← 回來、Tab 一次離開)寫進 sidebar.tsx;共用判定已抽到 lib/roving-list-keyboard.js(6.1KB,不重複計)。其餘 7 項原本就在舊 budget 內,只是跟著重設。已檢查沒有 lucide 全庫或重複依賴。2026-10-07 只調 TreeView 一項(45.8 → 59.5 = 現值 54.1KB × 1.10;其餘 7 項與 total 維持 09-26 的值,沒有跟著放寬):TreeView 步驟導覽樹(待辦總帳 T1–T5,user 10-06 / 10-07 已決)的點擊判斷、連點保護、灰底代顯、列尾結果、讀屏說明與開發模式誤用警告寫進 tree-view.tsx(+9.9KB;其中開發模式警告字串約 2KB,consumer 打包 production 時隨 process.env.NODE_ENV 判斷一起拿掉);純判定另抽到 components/TreeView/tree-step-navigation.js(4.4KB,不在 top-8)。新增 import 只有同 repo 的 file-item-status(lucide 單一圖示),沒有 lucide 全庫或重複依賴。同日複審修正(連點後焦點還給第一下帶到的子步驟、捲動框裡等展開動畫結束再捲一次)後現值 55.2KB,仍在 59.5 內,上限沒有再調。"
   },
   "totalKB": 1394.7,
   "entriesKB": {
@@ -9,7 +9,7 @@
     "components/AgentPanel/agent-panel.js": 53.6,
     "components/DatePicker/date-picker.js": 51.7,
     "components/Sidebar/sidebar.js": 47.3,
-    "components/TreeView/tree-view.js": 45.8,
+    "components/TreeView/tree-view.js": 59.5,
     "components/FileViewer/file-viewer.js": 35.7,
     "components/Select/select.js": 33.2,
     "components/AgentPanel/agent-panel-fab.js": 29.1

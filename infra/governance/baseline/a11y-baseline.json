@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-10-07T04:15:01.114Z",
-    "stories": 1060,
+    "generatedAt": "2026-10-13T02:51:48.652Z",
+    "stories": 1061,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -908,6 +908,7 @@
       "design-system-components-treeview-展示--file-browser",
       "design-system-components-treeview-展示--long-label",
       "design-system-components-treeview-展示--row-actions",
+      "design-system-components-treeview-展示--step-navigation-contract",
       "design-system-components-treeview-展示--stepper",
       "design-system-components-treeview-展示--with-checkbox",
       "design-system-components-treeview-設計原則--expand-select-separation-rule",
@@ -1065,8 +1066,8 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "a2e679ccc44f2b6b223e86b435c26dba8d3b827ed64650d720dd1d94407f152c",
-    "fingerprints": 744
+    "storyIdsSha256": "499c4ade65ef3c0681621000e9ad9fa7a8fd8c22f154b89cfe7c21ac31410e7a",
+    "fingerprints": 745
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1691,6 +1692,7 @@
     "design-system-components-treeview-展示--drag-and-drop|color-contrast": 3,
     "design-system-components-treeview-展示--long-label|color-contrast": 2,
     "design-system-components-treeview-展示--row-actions|color-contrast": 1,
+    "design-system-components-treeview-展示--stepper|color-contrast": 1,
     "design-system-components-treeview-設計原則--expand-select-separation-rule|color-contrast": 3,
     "design-system-components-treeview-設計原則--indent-rule|color-contrast": 5,
     "design-system-components-treeview-設計原則--usage-guidance|color-contrast": 5,

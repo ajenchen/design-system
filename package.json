@@ -53,6 +53,8 @@
     "test:tree-view-keyboard-route": "node scripts/tree-view-keyboard-route-invariant.mjs && node scripts/tree-view-keyboard-route-invariant.mjs --selftest",
     "test:range-preview": "node scripts/test-range-preview.mjs",
     "test:tree-keyboard-route": "node scripts/test-tree-keyboard-route.mjs && node scripts/test-tree-keyboard-route.mjs --selftest",
+    "test:tree-step-navigation": "node scripts/test-tree-step-navigation.mjs && node scripts/test-tree-step-navigation.mjs --selftest",
+    "test:tree-view-step-navigation": "node scripts/tree-view-step-navigation-invariant.mjs && node scripts/tree-view-step-navigation-invariant.mjs --selftest",
     "test:roving-list-keyboard": "node scripts/test-roving-list-keyboard.mjs && node scripts/test-roving-list-keyboard.mjs --selftest",
     "test:data-table-range-hover": "node scripts/test-data-table-range-hover.mjs",
     "test:authority-reaper": "node scripts/test-authority-generation-reaper.mjs",

@@ -50,7 +50,7 @@ TreeView、DataTable row 與 DataTable column 都使用 `@dnd-kit/core` 的
 > 補救路徑登記在 `data-table.spec.md`「列重排的鍵盤與單指標路徑」段:先補 WCAG 2.5.7 要求的
 > 「上移／下移」選單項(同時解本 invariant),再議是否加 modifier+arrow 加速器。
 > **加速器需要一個「目前在哪一列」的游標,而 DataTable 尚無 roving/virtual focus
-> (`data-table.spec.md:671`);勾選狀態不可充當該游標 —— 違反 `tree-view.spec.md:130`
+> (`data-table.spec.md:671`);勾選狀態不可充當該游標 —— 違反 `tree-view.spec.md:133`
 > 「焦點跟選取分離」。**
 
 7. **同一能力跨元件必進 SSOT;SSOT 不夠就以世界級方式擴充 SSOT,不得分岔**
