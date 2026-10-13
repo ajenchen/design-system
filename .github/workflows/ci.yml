@@ -110,6 +110,9 @@ jobs:
           # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
           # Field 內沒指定 size 的評分靜默變 24px 兩個月沒人看見(spec 三處都寫跟 Field);2026-09-27 查證抓到,先紅後綠。
           npm run test:rating-field-size
+          # 網址值的顯示(2026-10-13,待辦總帳 Q3e):LinkInput view / readonly / disabled / edit 與 DataTable 連結格,只有合法 http(s) 畫成連結,
+          # `javascript:` / 少了 https:// 等一律一般文字、沒有任何非 http(s) 的 href。純靜態(esbuild + react-dom/server),含 selftest 對照組。
+          npm run test:link-input-url-display
           # spec 之間的「被引用」段(reciprocal pointer):閘 2026-05 就有,但 `--check` 從沒有任何執行面呼叫過(只被
           # deep-audit plan 引用;待辦總帳 N61,2026-09-27 發版前全掃抓到 22 個 spec 漂移)—— 2026-09-27 接進來,漂移當場紅;
           # 修法是跑 `node scripts/add-reciprocal-pointers.mjs`(無 --check)重生後 commit。
@@ -495,6 +498,11 @@ jobs:
           # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
           # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),同上一支按預算放在這個約 7 分的 job。
           node scripts/form-validation-contract-invariant.mjs --selftest
+          # 網址欄 / 表格連結格(2026-10-13 user 拍板乙「照你建議做到完美並自行驗證到完美」,待辦總帳 Q3a–Q3f):連結只有網址文字那麼寬
+          # (LinkInput 各模式 + 三則表格)、連結格四個點擊區 × 一般 / 試算表的結果、Enter / F2 進格內控件 + F2 / Esc 出格、一般模式編輯結束
+          # 焦點、每種格的編輯器名字、鉛筆是行內小按鈕、不合法網址存進去是一般文字。對照組在頁面注入各組破法,對照列(沒改變的行為)全程綠。
+          # 本機 50 秒 + 對照組 55 秒(CI 估 2.5 分);照上面兩支「按預算放」的先例放在這個 job(判定與對照組同在)。
+          npm run test:data-table-link-cell
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
@@ -592,6 +600,12 @@ jobs:
           node scripts/data-table-handle-clip-invariant.mjs
           node scripts/data-table-pinned-resize-invariant.mjs --selftest
           node scripts/data-table-pinned-resize-invariant.mjs
+          # 表頭 / 表身捲到最右端對齊(2026-10-13 user:「…往後方捲動之後，欄位的header跟body也會發生沒有對齊起來的情況…」,待辦總帳 Q2a / Q2c):
+          # 根因是最後一欄的欄寬把手往外凸 3px,表頭多能捲 3px —— 跟上面兩支同一個把手,所以放這裡。兩種捲軸幾何(Playwright 預設的 overlay +
+          # 拿掉 --hide-scrollbars 的 classic)× 有欄寬調整的兩則 story,推表頭之後**每一個畫出來的影格**(rAF + screencast)表頭 = 表身;
+          # 另量 transform: scale() 祖先下操作欄寬 / 填滿高度 / 多區列高不變。對照組(--selftest)先證明會紅;7777b61c 實測紅 31 項。
+          # 本機 63 秒 + 對照組約 40 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分);本 job 拆出可搜尋選單焦點閘之後約 11 分 / 上限 25。
+          npm run test:data-table-header-scroll-sync
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。
@@ -871,9 +885,10 @@ jobs:
           # 「按了之後自己變停用」「關了之後焦點去哪」;待辦總帳 N68–N70 / N82–N84 / OE29 / OE30):每一個宣告了自己有一層的 DS 控件放進 Dialog / Popover
           # 用真鍵盤走 —— 剛好「層數 + 1」下關閉、焦點從不落 body;另含 Combobox 表單接線、開彈出層不算離開、選單項開的對話框還焦點、
           # 集合移除接力、Enter 提交不重開編輯、輸入盒附件、分頁到底、改名對話框;2026-10-07 加宣告了 Esc 層卻沒人處理不困住、
-          # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式)。
-          # 不需要 storybook(原始碼打包進空白頁),本機約 85 秒。
-          # 對照組(--selftest,二十五個突變)在 verify-browser-select-all:本 job CI 實測 11.9–14.6 分,疊上去貼近 25 分上限。
+          # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式);
+          # 2026-10-13 加試算表 DataTable 連結格 / 開關格的格內模式(Enter 進格裡的控件,Esc 先回格導覽、再清游標、才關)。
+          # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
+          # 對照組(--selftest,二十六個突變)在 verify-browser-select-all:本 job CI 實測 11.9–14.6 分,疊上去貼近 25 分上限。
           node scripts/escape-and-focus-contract-invariant.mjs
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
@@ -1226,11 +1241,12 @@ jobs:
 
       - name: Escape and focus contract — control group (browser)
         run: |
-          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):二十五個單一根因突變
+          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):二十六個單一根因突變
           # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
           # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
-          # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相)
-          # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機 10.8 分(2026-10-07 實測 650 秒、同時另有建置在跑;循序約 25 分);不需要 storybook,
+          # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
+          # 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層)
+          # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機約 11.5 分(2026-10-13 實測 690 秒、同時另有建置在跑;循序約 26 分);不需要 storybook,
           # 放這裡是按預算:本 job 拆分後實測 508 秒,overlay job 已 11.9–14.6 分(ci-workflow-scope.test.mjs 釘 25 分上限)。
           node scripts/escape-and-focus-contract-invariant.mjs --selftest
 

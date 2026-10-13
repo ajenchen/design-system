@@ -35,6 +35,12 @@ function formatHostname(url: string): string {
 // edit mode 內 link state(showLink branch)也共用此 helper,確保「編輯態的 link 顯示」與
 // view mode 的視覺完全一致(SSOT)。
 // 連結 hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
+// **連結的可點範圍 = 網址文字本身**(link-input.spec.md「Link 狀態」;2026-10-13 起所有模式適用,待辦總帳 Q3a):
+// `inline-block` 讓盒子只有文字那麼寬,`max-w-full` + truncate 讓太長時縮到外層寬並截斷,`align-top` 抵掉
+// inline-block + overflow 時基線落到下緣的那一截(靜止畫面 0 像素差,靠左 / 靠右 / 置中三種對齊不動)。
+// 2026-10-13 前是 `block`:block 盒子撐滿外層,文字右邊看起來空白的那一段點下去會開網頁 —— 09-26 只把編輯模式那一支的外層
+// 改成 flex 修掉,唯讀 / 檢視模式與表格連結格(用檢視模式)仍是整行連結。改這一處,全部模式一起好。
+// 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
 function renderLinkAnchor(value: string, label?: string) {
   const displayText = label || formatHostname(value)
   return (
@@ -42,14 +48,39 @@ function renderLinkAnchor(value: string, label?: string) {
       href={value}
       target="_blank"
       rel="noopener noreferrer"
-      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
+      className="inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
-          display="block":anchor 是 block container(對照 breadcrumb.tsx anchor 內同型消費)。 */}
+          display="block":anchor 是 inline-block 容器,裡面照樣是 block formatting context,截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
       <TruncatedText display="block">{displayText}</TruncatedText>
     </a>
   )
+}
+
+/** 站內路徑:以 `/` 開頭、解析後仍在同一個網站(擋掉 `//host`、`/\\host`、夾 tab 換行的那些被瀏覽器正規化成別的網站的寫法)。 */
+const SAME_SITE_PROBE = 'https://same-site.invalid'
+function isSameSitePath(value: string): boolean {
+  if (!value.startsWith('/')) return false
+  try {
+    return new URL(value, SAME_SITE_PROBE).origin === SAME_SITE_PROBE
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 顯示一個網址值:能安全點的才畫成連結,其他一律畫成一般文字(2026-10-13,待辦總帳 Q3e)。
+ * 能點 = 合法的 http(s) 網址(與編輯模式「只有合法才顯示成連結」同一支 `isValidUrl`,link-input.spec.md「驗證」)
+ * **或站內路徑**(`/projects/8821/tasks/4821` 這種同一個網站裡的位址 —— 修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;
+ * 它解析後一定是本站的 http(s),不是「不合法的字」,不在這次要修的範圍)。
+ * 唯讀 / 檢視模式與表格連結格(`DataTable/cell-registry.tsx` UrlCell 用檢視模式)都經這裡 ——
+ * 打字少了 https://、`javascript:` / `data:` 開頭、中間有空白的字,一律不會成為 `href`。編輯模式的驗證不變(只收 http(s))。
+ */
+function renderLinkValue(value: string, label?: string) {
+  if (isValidUrl(value) || isSameSitePath(value)) return renderLinkAnchor(value, label)
+  // 顯示原字串,不走 formatHostname:`javascript:alert(1)` 之類 URL 解析得動、hostname 卻是空的,會整格空白(2026-10-13 探針實測)
+  return <TruncatedText display="block">{label || value}</TruncatedText>
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -183,7 +214,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // — 對齊跨 Field family view 視覺尺寸統一。原無 font-size class → 用 browser default
         // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
-        return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkAnchor(value, label)}</span>
+        return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkValue(value, label)}</span>
       }
       return (
         <div
@@ -192,7 +223,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         >
           <span className="flex-1 min-w-0 truncate">
             {value
-              ? renderLinkAnchor(value, label)
+              ? renderLinkValue(value, label)
               : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
@@ -286,7 +317,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       settleKeys.onKeyDown(e)
     }
 
-    // readonly — 顯示藍色連結（可點擊）
+    // readonly — 顯示藍色連結（可點擊);值不是合法 http(s) 網址時畫成一般文字(renderLinkValue)
     // disabled — 顯示純文字 fg-disabled（不可點擊）
     if (!isEditable) {
       const displayText = value ? (label || formatHostname(value)) : null
@@ -304,7 +335,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
                   ? <span className="text-fg-disabled">{displayText}</span>
                   : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
               : (value
-                  ? renderLinkAnchor(value, label)
+                  ? renderLinkValue(value, label)
                   : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
             }
           </span>
@@ -325,9 +356,9 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           data-error={error ? '' : undefined}
           onClick={handleLinkChromeClick}
         >
-          {/* flex:連結是 flex item,寬度 = 文字本身、太長時縮到欄寬截斷(min-w-0 + truncate)。
-              不撐滿整行 —— 文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。
-              只改這個分支:view / readonly 的外框沒有第二個動作,連結維持原樣。 */}
+          {/* 連結的寬度 = 文字本身、太長時縮到欄寬截斷 —— 由連結自己保證(renderLinkAnchor 的 inline-block + max-w-full),
+              所有模式同一句(2026-10-13 起;此前只有這一支靠外層 flex 縮回文字寬,唯讀 / 檢視仍撐滿整行)。
+              文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。flex 外層保留:讓截斷吃得到外框扣掉鉛筆後的寬度。 */}
           <span className="flex-1 min-w-0 flex">
             {value && renderLinkAnchor(value, label)}
           </span>

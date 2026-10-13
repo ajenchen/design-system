@@ -652,7 +652,7 @@ export const InlineEdit: Story = {
       <div>
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
-          SKU 是唯讀的;開關欄位直接點即可切換;連結欄位 hover 才顯示鉛筆改值,直接點開連結;
+          SKU 是唯讀的;開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
@@ -683,10 +683,12 @@ export const InlineEdit: Story = {
  *
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
- *   - sku(readonly)/ inStock(boolean)/ url(openAction)→ 不出現 hover overlay(Contract 15)
+ *   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
+ *     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
  *   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
  *     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
- *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關 / 連結不進)
+ *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
+ *     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
  *   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
  *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
  *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
@@ -715,8 +717,9 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
       <div>
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
-          方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關 / 連結欄位沒有 hover 提示
-          (這些格子點第二次也不進編輯:開關直接點勾選框切換,連結點文字開啟)。
+          方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關欄位沒有 hover 提示
+          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣。
+          格游標停在連結或開關格時按 Enter / F2,焦點進到格裡的連結或勾選框;再按 F2 或 Esc 回到格導覽。
         </p>
         <DataTable
           columns={editableColumns}

@@ -10,8 +10,9 @@
  *        就地編輯按 Enter 提交後不會把編輯重開;AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
  *        可打字日期欄位收起日曆後焦點回輸入框;AgentPanel 改名對話框照表單可執行層(Esc 兩層、取消不落空、空白可按並報錯);
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
+ *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
  *        Combobox「+N」浮出清單也算同一個欄位;可聚焦的停用(忙碌 / 握著焦點時被停用)滑過、按住都與原生停用同色(2026-10-07,後三列用同一棵樹編出的 DS 樣式)。
- *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(二十五個,見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
+ *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(二十六個,見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
  *        (多紅少紅都算量具不可信),契約列每一條都要被某個突變弄紅過。`--root=<修改前的整棵原始碼>` 跑 = 天然對照組(修改前 2026-10-01 基準樹:
  *        除 F-remove / E-combobox-popup / E-unchained 外契約列全紅,兩條對照列綠。這三列守的是修好之後才可能出現的回歸,基準樹本來就綠:F-remove = 本批工作中途
  *        把三份接力收成一支時引入、獨立驗證抓到的那一版;E-combobox-popup = Combobox 接上表單之後「清單開著按 Esc 又關清單又回復」—— 基準樹的
@@ -48,6 +49,9 @@
  *   F-rename           AgentPanel 改名對話框:Esc 先回復名稱再關;清空後直接按「取消」這一下沒落空;清空時「儲存」可按、按了才報錯並移焦點
  *   E-datatable-hidden-col Dialog 裡試算表 DataTable:點「數量」格(格游標)→ 隱藏「數量」欄 → ↓ 重新放上游標(不懸空)→ Esc 清游標 → 第 2 下關
  *                      (2026-10-07 獨立驗證抓到:欄被隱藏後根節點仍宣告 Esc 層、handler 卻在 curColIdx < 0 提早 return,五下都關不掉)
+ *   E-datatable-cell-widget Dialog 裡試算表 DataTable(SKU / 連結 / 完成三欄):方向鍵把格游標移到連結格 / 開關格 → Enter 焦點進到格裡的
+ *                      連結 / 勾選框 → 第一下 Esc 回格導覽(游標停在原格、對話框不關)→ 第二下清游標 → 第三下關;兩種格各走一次
+ *                      (2026-10-13 待辦總帳 Q3c;獨立驗證抓到這一層沒有登記、也沒有閘。7777b61c 基準樹:Enter 按了沒反應、兩下就關,只有這一列紅)
  *   E-unchained        Dialog 裡 consumer 展開 getInputProps 後自己蓋掉 onKeyDown、沒轉呼叫(輸入框 + 可打字 DatePicker),欄位改過 → 第一下 Esc 就關
  *                      (沒有回復,但不困住;lib/overlay-escape.ts「宣告 ≠ 處理」)
  *   B-overflow         必填 Combobox(非搜尋型,窄欄位、四個 Tag)焦點在觸發區,用滑鼠按「+N」浮出清單裡的 ×(焦點搬進卡)→ consumer 的 onBlur 不跑;
@@ -59,7 +63,8 @@
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,這裡是人讀版)──
  *   LinkInput 只看 raw defaultPrevented(第一輪的寫法)→ E-link-edit / E-link-typed(困住,永遠關不掉)
  *   editSettleKeyProps 不宣告 Esc 層 → E-inline-edit / E-link-edit / E-link-typed;DatePicker 草稿不宣告 → E-datepicker-draft;DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft
- *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col;Calendar 方塊不宣告 → E-calendar-tile
+ *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile
+ *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
  *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow;不記選單的觸發鈕 → F-menu;FileUpload 不以被點的 × 為基準 → F-remove
@@ -72,7 +77,7 @@
  *
  * 用法:
  *   node scripts/escape-and-focus-contract-invariant.mjs                  判定(現行原始碼)
- *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(二十五個單一根因突變)
+ *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(二十六個單一根因突變)
  *   node scripts/escape-and-focus-contract-invariant.mjs --root=<dir>     改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import {
@@ -96,14 +101,14 @@ const SELFTEST = process.argv.includes('--selftest')
 const SOURCE_ROOT = resolveSourceRoot()
 /**
  * selftest 同時跑幾個突變(每條 lane 一個瀏覽器、一個分頁 —— 同 story-demo-focus:焦點與鍵盤事件不跨 lane 共用)。
- * 單一突變要把 25 列整趟走完(約 60 秒,大多是等版面 / 焦點靜止,CPU 約 20%),25 個變體循序要 25 分鐘;
+ * 單一突變要把 26 列整趟走完(約 60 秒,大多是等版面 / 焦點靜止,CPU 約 20%),26 個變體循序要 26 分鐘;
  * 判定(非 selftest)只跑一趟,不受影響。`--lanes=1` = 循序(除錯用)。
  */
 const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes='))?.slice('--lanes='.length) ?? 4) || 4)
 /** 除錯用:`--only=<突變 id>[,<id>…]` 只跑這幾個突變(不檢查覆蓋率 —— 這一趟不算 selftest 通過,結尾會明說) */
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null
 
-// ─── 二十五個單一根因突變(--selftest;file 相對 packages/design-system/src)──────────────────────
+// ─── 二十六個單一根因突變(--selftest;file 相對 packages/design-system/src)──────────────────────
 const MUTANTS = [
   {
     id: 'link-input-consumer-first-raw',
@@ -138,11 +143,21 @@ const MUTANTS = [
     id: 'datatable-no-self-layer',
     what: 'DataTable 表格根不宣告格游標 / 列選取那一層',
     file: 'components/DataTable/data-table.tsx',
-    // 隱藏欄之後重新放上的游標同樣靠這一層(E-datatable-hidden-col 的第一下 Esc 也會直接關),同一個根因連帶紅
-    expectRed: ['E-datatable-cursor', 'E-datatable-hidden-col'],
+    // 隱藏欄之後重新放上的游標同樣靠這一層(E-datatable-hidden-col 的第一下 Esc 也會直接關),同一個根因連帶紅;
+    // E-datatable-cell-widget 的第二下(回格導覽之後清游標)也是這一層 —— 拿掉它,第二下就直接關對話框,同一個根因連帶紅
+    expectRed: ['E-datatable-cell-widget', 'E-datatable-cursor', 'E-datatable-hidden-col'],
     apply: (src) => replaceOnce(src,
       /: escapeLayerProps\(\(hasCellCursor && editingCellId == null\) \|\| \(enabled && hasAnySelection\), 'self'\)\)\}/,
       ': {})}'),
+  },
+  {
+    id: 'datatable-cell-widget-no-layer',
+    what: 'DataTable 試算表模式的連結格 / 開關格不宣告格內那一層(焦點在格裡的連結 / 鉛筆 / 勾選框時按 Esc 連對話框一起關)',
+    file: 'components/DataTable/data-table.tsx',
+    expectRed: ['E-datatable-cell-widget'],
+    apply: (src) => replaceOnce(src,
+      /\n        \{\.\.\.escapeLayerProps\(spreadsheetMode && !isEditingThisCell && \(colType === 'url' \|\| colType === 'boolean'\), 'subtree'\)\}\n/,
+      '\n'),
   },
   {
     id: 'calendar-tile-no-layer',
@@ -365,6 +380,22 @@ function TableScene({ reorder }) {
     </Shell>
   )
 }
+// E-datatable-cell-widget:格裡裝的是控件的兩種格(連結格 = 連結 + 鉛筆、開關格 = 勾選框),試算表模式、可編輯
+const WROWS = [{ id: 'r1', sku: 'A-1', link: 'https://github.com/acme/web', ok: false }, { id: 'r2', sku: 'B-2', link: 'https://acme.com/docs', ok: true }]
+const WCOLS = [
+  { accessorKey: 'sku', header: 'SKU', meta: { type: 'string' } },
+  { accessorKey: 'link', header: '連結', meta: { type: 'url', editable: true, width: 260 } },
+  { accessorKey: 'ok', header: '完成', meta: { type: 'boolean', editable: true, width: 90 } },
+]
+function TableWidgetScene() {
+  const [rows, setRows] = React.useState(WROWS)
+  return (
+    <Shell title="表格">
+      <DataTable columns={WCOLS} data={rows} getRowId={(r) => r.id} height="auto" spreadsheetMode
+        onCellCommit={(rowId, columnId, value) => setRows((rs) => rs.map((r) => (r.id === rowId ? { ...r, [columnId]: value } : r)))} />
+    </Shell>
+  )
+}
 function CalendarScene() {
   return (
     <Shell title="月曆">
@@ -536,6 +567,7 @@ const SCENES = {
   date: () => <DateScene />,
   table: () => <TableScene reorder={false} />,
   tableDrag: () => <TableScene reorder />,
+  tableLink: () => <TableWidgetScene />,
   calendar: () => <CalendarScene />,
   drag: () => <DragScene />,
   combo: () => <ComboScene />,
@@ -563,7 +595,8 @@ window.__extra = {
   link: () => ({ url: q('[data-url]')?.textContent, input: !!q('#scene-dialog input[type=url]'), inputValue: q('#scene-dialog input[type=url]')?.value ?? null, invalid: q('#scene-dialog input[type=url]')?.getAttribute('aria-invalid') === 'true', calls: window.__calls.link ?? 0 }),
   inline: () => ({ value: q('[data-inline]')?.textContent, editing: !!q('#scene-dialog input'), calls: window.__calls.inline ?? 0 }),
   date: () => ({ draft: q('#scene-dialog input[role=combobox]')?.value ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), value: q('[data-date]')?.textContent }),
-  table: () => ({ cursor: !!q('[data-selected-cell-id]'), live: q('[data-drag-live-region]')?.textContent ?? '' }),
+  table: () => ({ cursor: !!q('[data-selected-cell-id]'), cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
+    focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, live: q('[data-drag-live-region]')?.textContent ?? '' }),
   cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false }),
   drag: () => ({ live: q('[data-drag-live-region]')?.textContent ?? '', handles: document.querySelectorAll('button[aria-label="拖曳重排"]').length }),
   combo: () => ({ tags: q('[data-tags]')?.textContent, listbox: !!q('[cmdk-root]') }),
@@ -741,6 +774,26 @@ async function runChecks(page) {
   s = await snap('table')
   check('E-drag-table', 'contract', 'Dialog 裡有格游標的 DataTable:表頭按空白鍵提起欄位 → Esc 只取消拖曳(播報「已取消」),格游標還在、對話框不關、焦點不落 body',
     s.dialog && s.cursor && /已取消/.test(s.live) && s.active !== 'BODY', s)
+
+  // ── E-datatable-cell-widget(試算表模式連結格 / 開關格的格內模式;2026-10-13 待辦總帳 Q3c)──
+  // 兩種格各走一次:點 SKU 格放上游標 → 方向鍵走到該格(鍵盤路徑,不點格 —— 點連結格的網址文字會開連結)→ Enter 進格內 → 連按 Esc。
+  // 「Enter 焦點進到格裡的控件」本身是契約(Q3c),寫進判定而不是前置條件:修前按了沒反應,這一列應讀成紅、不是儀器失效。
+  const widgetRuns = {}
+  for (const [col, hops] of [['link', 1], ['ok', 2]]) {
+    await scene('tableLink'); await openDialog()
+    await d.click(`${DIALOG} [data-cell-id="r1:sku"]`)
+    for (let i = 0; i < hops; i += 1) await d.press('ArrowRight')
+    before = await snap('table')
+    needs(before.cursorId === `r1:${col}`, `方向鍵沒把格游標移到 ${col} 格`, before)
+    await d.press('Enter')
+    const entered = await snap('table')
+    widgetRuns[col] = { entered, steps: await escapeUntilClosed('table') }
+  }
+  const widgetOk = ({ entered, steps: st }, col) => entered.dialog && entered.focusCell === `r1:${col}` && /^(A|BUTTON)/.test(entered.active)
+    && st.length === 3 && st[0].dialog && st[0].cursorId === `r1:${col}` && st[0].focusCell == null
+    && st[1].dialog && !st[1].cursor && !st[2].dialog && neverBody(st)
+  check('E-datatable-cell-widget', 'contract', 'Dialog 裡試算表 DataTable:格游標在連結格 / 開關格按 Enter → 焦點進到格裡的連結 / 勾選框 → 第一下 Esc 回格導覽(游標停在原格、焦點離開格內、對話框不關)→ 第二下清游標 → 第三下關;焦點從不落 body(兩種格各一次)',
+    widgetOk(widgetRuns.link, 'link') && widgetOk(widgetRuns.ok, 'ok'), widgetRuns)
 
   // ── E-calendar-tile ──
   await scene('calendar'); await openDialog()

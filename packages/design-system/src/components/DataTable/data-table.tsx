@@ -54,14 +54,32 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { resolveCellComponent, type CellComponentProps } from './cell-registry'
+import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { Button } from '@/design-system/components/Button/button'
+
+// ── 版面尺寸一律用不受 transform 影響的值(2026-10-13,待辦總帳 Q2c)────────────────────
+// `getBoundingClientRect()` 量的是**畫面上**的大小:祖先有 `transform: scale()` 時(Dialog / Popover 的 `zoom-in-95` 進場動畫、
+// Storybook 工具列縮放)量到的是縮放後的值,拿去寫成 CSS 的寬 / 高 / 上限就永遠差 1–10px(實測 scale 0.8:操作欄表頭 48 / 表身 38、
+// 填滿高度上限 690 → 552、多區自動行高三區 66 / 83 / 66)。凡是「量出來 → 寫回 CSS 長度」的地方一律量版面盒;
+// 要小數(列高三區比對)用 computed `height`(版面值、保留小數),只要整數用 `offsetWidth` / `offsetHeight`。
+// 同一個理由早寫在 data-table.spec.md 六之二「整數量測刻意用 offsetWidth/clientWidth,不可改用 getBoundingClientRect()」。
+// 閘:scripts/data-table-header-scroll-sync.mjs T1–T3(scale 0.8 / 1.25 祖先下量,與不縮放時相等)。
+/** 版面盒(border-box)高,CSS px、保留小數,不受祖先 transform 影響。 */
+function layoutBoxHeight(el: Element): number {
+  const cs = getComputedStyle(el)
+  const h = parseFloat(cs.height)
+  if (!Number.isFinite(h)) return el instanceof HTMLElement ? el.offsetHeight : 0
+  if (cs.boxSizing === 'border-box') return h
+  const px = (v: string) => parseFloat(v) || 0
+  return h + px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth)
+}
 
 // ── 填滿高度(height="100%" / "fill")的格子量法 ────────────────────────────────
 // outer 用 `maxHeight:100%` 而不是 `height:100%`(資料少要 hug),所以它自己的高度被 body 反向決定,不能量它;
@@ -78,7 +96,7 @@ function measureFillHeightSlot(outer: HTMLElement): { height: number } | null {
   if (!parent) return null
   const cs = getComputedStyle(parent)
   const px = (v: string) => parseFloat(v) || 0
-  let height = parent.getBoundingClientRect().height - px(cs.paddingTop) - px(cs.paddingBottom) - px(cs.borderTopWidth) - px(cs.borderBottomWidth)
+  let height = layoutBoxHeight(parent) - px(cs.paddingTop) - px(cs.paddingBottom) - px(cs.borderTopWidth) - px(cs.borderBottomWidth)
   const isFlex = cs.display.includes('flex')
   const stacked = isFlex ? cs.flexDirection.startsWith('column') : !cs.display.includes('grid')
   if (!stacked) return { height: Math.max(0, height) }
@@ -89,7 +107,7 @@ function measureFillHeightSlot(outer: HTMLElement): { height: number } | null {
     const ccs = getComputedStyle(child)
     if (ccs.display === 'none' || ccs.display === 'contents' || ccs.position === 'absolute' || ccs.position === 'fixed') continue
     if (isFlex && px(ccs.flexGrow) > 0) continue
-    height -= child.getBoundingClientRect().height + px(ccs.marginTop) + px(ccs.marginBottom)
+    height -= layoutBoxHeight(child) + px(ccs.marginTop) + px(ccs.marginBottom)
     siblings++
   }
   return { height: Math.max(0, height - rowGap * siblings) }
@@ -178,7 +196,7 @@ export interface DataTableProps<TData>
    * Enable 後 cell click 行為(**每一格都一樣**,含唯讀格、開關格與連結格的空白處;user 2026-09-26
    * 「點任何格,藍框都跟過去」):
    *   - Plain click → setSelectedCellId(格游標移到這一格),**不**進 edit mode
-   *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean / url 沒有可進的編輯,不動)
+   *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean 沒有可進的編輯,不動;url 點網址文字開連結、點格的其他地方進編輯)
    *   - Shift+click → extend range from anchor
    *   - Double-click / Enter / F2 / printable(deferred) → enter edit on selected
    *   - Click empty area → clear selection
@@ -327,7 +345,7 @@ export interface DataTablePaginationOptions {
 //   - string / number / currency:cell click → inline edit
 //   - date / time / select / multiSelect / person / multiPerson:cell click → 進 edit mode
 //   - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-//   - url:read = LinkInput view + hover Pencil button,click Pencil 才進 edit mode
+//   - url:read = LinkInput view(連結只有網址文字寬)+ 滑過 / 聚焦出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 edit
 //
 // Cell id format: `${rowId}__${columnId}`(編輯狀態 keying)
 // Commit: blur OR Enter OR overlay close → 呼叫 onCellCommit
@@ -337,6 +355,18 @@ export interface DataTablePaginationOptions {
 // `valueGetter + renderCell` / Notion property type registry。
 
 const cellEditId = (rowId: string, colId: string) => `${rowId}__${colId}`
+
+/** 欄的可讀名(欄標題字串;標題不是字串時用欄 id)—— 格內編輯器的 accessible name、表頭欄位選單的名字共用這一支。 */
+const columnAccessibleName = (column: { id: string; columnDef: { header?: unknown } }): string =>
+  typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id
+
+/**
+ * 格裡自己能操作的東西(試算表模式 Enter / F2 把焦點放進格裡時,落在第一個;2026-10-13 待辦總帳 Q3c):
+ * 連結格 = 網址連結 → 鉛筆;開關格 = 勾選框。W3C APG grid "Editing and Navigating Inside a Cell":
+ * Enter / F2 "If the cell contains one or more widgets, places focus on the first widget."
+ * (owner `ds-canonical/references/keyboard-model-canonical.md`「F2 恆為進到格裡的控件,再按一次回到格導覽」)。
+ */
+const CELL_WIDGET_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), [role="checkbox"]:not([aria-disabled="true"])'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -1404,11 +1434,13 @@ interface MemoCellSlotProps {
   onCancelCell: (rowId: string, colId: string) => void
   onCellCommitLive?: (rowId: string, colId: string, next: unknown) => void
   onEnterEdit: (rowId: string, colId: string) => void
+  /** 欄標題(`columnAccessibleName`)→ 格內編輯器的 accessible name(字串,不破壞 memo) */
+  ariaLabel: string
 }
 
 const MemoCellSlot = React.memo(function MemoCellSlot({
   Cell, rowId, colId, value, meta, mode, size, autoRowHeight,
-  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit,
+  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit, ariaLabel,
 }: MemoCellSlotProps) {
   const onCommit = React.useCallback((next: unknown) => onCommitCell(rowId, colId, next), [onCommitCell, rowId, colId])
   const onCommitLive = React.useCallback((next: unknown) => onCellCommitLive?.(rowId, colId, next), [onCellCommitLive, rowId, colId])
@@ -1426,6 +1458,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
       onCommitLive={onCommitLive}
       onCancel={onCancel}
       onRequestEdit={onRequestEdit}
+      ariaLabel={ariaLabel}
     />
   )
 })
@@ -1507,8 +1540,26 @@ function DataTableInner<TData>(
   // 掉到 body、selection 不還原 → 每次編輯後鍵盤導覽死巷(方向鍵全滅、必須滑鼠重點),違反
   // datatable-spreadsheet-rfc.md Contract 11「退出後還給 active cell」(對齊 Excel / AG Grid / Sheets)。
   const restoreCellSelection = React.useCallback((rowId: string, colId: string) => {
-    if (!spreadsheetMode) return
     const cellId = `${rowId}:${colId}`
+    if (!spreadsheetMode) {
+      // 一般模式(2026-10-13,待辦總帳 Q3d I):編輯結束後焦點回到**打開編輯的那個東西** —— 連結格回鉛筆(同 LinkInput
+      // 「Enter / Esc 後焦點給鉛筆」,link-input.spec.md「驗證」3、4)、其他格回那一格(可編輯格本來就是 Tab 停靠點)。
+      // 修前直接 return:編輯器卸載後焦點掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
+      // 只在結算當下焦點還在編輯器裡(鍵盤 Enter / Esc / F2、在浮層清單裡選值)才接手;失焦結算(點了別處、Tab 走了)
+      // 的那一刻焦點已經是 body(blur 期間)或別人,不搶 —— 同 LinkInput「只在焦點真的掉了才接手」。
+      const active = document.activeElement
+      if (!active || active === document.body) return
+      requestAnimationFrame(() => {
+        const now = document.activeElement
+        if (now && now !== document.body && now.isConnected) return
+        const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(cellId)}"]`)
+        if (!cellEl) return
+        const entry = cellEl.querySelector<HTMLElement>(`[${CELL_EDIT_ENTRY_ATTR}] button`)
+        const target = entry ?? (cellEl.tabIndex >= 0 ? cellEl : null)
+        target?.focus({ preventScroll: true })
+      })
+      return
+    }
     setSelectedCellId(cellId)
     setRangeAnchor(cellId)
     setRangeFocus(null)
@@ -2521,9 +2572,9 @@ function DataTableInner<TData>(
       if (!tableRef.current) return
       // ⭐ 量 outer 真正拿到的格子(父層內容盒 − 剛性兄弟 − gap;不受 child 反向影響),量不到父層才退回 outer 自己
       const slot = measureFillHeightSlot(tableRef.current)
-      const slotH = slot?.height ?? tableRef.current.getBoundingClientRect().height
+      const slotH = slot?.height ?? layoutBoxHeight(tableRef.current)
       const headerEl = tableRef.current.firstElementChild as HTMLElement | null
-      const headerH = headerEl?.getBoundingClientRect().height ?? 0
+      const headerH = headerEl ? layoutBoxHeight(headerEl) : 0
       // 2026-09-08 填滿高度(fill-height)的外框邊框預算修正:slotH 是 outer 所在 slot 的高,而
       // outer 帶 `border`(預設上下各 1px;`bordered={false}` 時 computed 為 0,不會多扣);header +
       // body 住在 outer 的 content box 裡,不扣的話三個區塊比可用高度多 2px,底部被外框
@@ -2708,10 +2759,16 @@ function DataTableInner<TData>(
     }
     if (axis === 'x') {
       if (el.scrollLeft !== cb.scrollLeft) cb.scrollLeft = el.scrollLeft
-    } else if (el.scrollTop !== cb.scrollTop) {
-      cb.scrollTop = el.scrollTop
+      // 保險(2026-10-13,待辦總帳 Q2a):center 被夾住(次要區的可捲範圍比 center 大,不論多出來的是凸出的把手、取整還是量錯)
+      // 時位置沒變 → 不發 scroll 事件 → 上面那條「等 center 的事件再校準」永遠不會來,次要區停在 center 到不了的位置。
+      // 當場把它拉回 center(writeScroll 記下寫入值,它接著送來的那一顆事件會被上面的 writtenRef 認出並吞掉,不會互相回打)。
+      // 根因那一層是表頭內層的 `overflow-x-clip`(兩邊範圍相等);單靠這條每推一下仍會閃一格,所以它只當保險。
+      if (el.scrollLeft !== cb.scrollLeft) writeScroll(el, 'x', cb.scrollLeft)
+    } else {
+      if (el.scrollTop !== cb.scrollTop) cb.scrollTop = el.scrollTop
+      if (el.scrollTop !== cb.scrollTop) writeScroll(el, 'y', cb.scrollTop)
     }
-  }, [])
+  }, [writeScroll])
 
   // ── Phase 9 Issue 1 fix(2026-05-10):range cells lifted compute + Set ────
   // 計算 spreadsheet range cell IDs(Shift+click rectangle from anchor↔focus),
@@ -2915,7 +2972,9 @@ function DataTableInner<TData>(
     const el = rightHeaderRef.current
     if (!el) return
     const measure = () => {
-      const w = Math.round(el.getBoundingClientRect().width)
+      // 版面寬(offsetWidth,整數),不是畫面寬:祖先縮放中量 getBoundingClientRect 會把縮放後的值寫給表身面板,
+      // 操作欄表頭 / 表身永久錯開(Dialog zoom-in-95 進場後差 1px、Storybook 縮放 1.25 時 48 / 60)。見檔頭 layoutBoxHeight 說明。
+      const w = el.offsetWidth
       setMeasuredRightWidth((prev) => (prev === w ? prev : w))
     }
     measure()
@@ -2981,9 +3040,9 @@ function DataTableInner<TData>(
     for (const el of els) {
       const idx = Number(el.dataset.rowIndex)
       if (!Number.isFinite(idx)) continue
-      // 用 getBoundingClientRect 而不是 offsetHeight:後者取整,三區各差 0.5px 時會被抹平成
-      // 「已經對齊」的假象(M32:量測要 pixel-quantified,不是四捨五入後的相等)。
-      const h = el.getBoundingClientRect().height
+      // 要小數(不用 offsetHeight:後者取整,三區各差 0.5px 時會被抹平成「已經對齊」的假象,M32),
+      // 也要版面值(不用 getBoundingClientRect:祖先縮放時量到縮放後的高,寫回 min-height 就三區錯開或整列變高 —— 檔頭 layoutBoxHeight)。
+      const h = layoutBoxHeight(el)
       const cur = next.get(idx)
       if (cur == null || h > cur) next.set(idx, h)
     }
@@ -3137,6 +3196,7 @@ function DataTableInner<TData>(
           onCancelCell={cancelCellEdit}
           onCellCommitLive={onCellCommit}
           onEnterEdit={enterCellEdit}
+          ariaLabel={columnAccessibleName(cell.column)}
         />
       )
     } else {
@@ -3318,17 +3378,34 @@ function DataTableInner<TData>(
     //   `showDisplayEndIcon` opt-in(per-picker `<ItemSuffix>` 渲 ChevronDown/Calendar/Clock)。
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
     //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
-    // Cell click → 進 edit mode(boolean 不需 — 自己 toggle;url 不需 — 走內部 Pencil button,Phase C 由 UrlCell 內處理)
+    // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
+    // url(2026-10-13 user 拍板乙「照你建議做到完美並自行驗證到完美」,待辦總帳 Q3f):跟其他可編輯格一樣 —— 滑過出淺框、
+    // 點格進編輯;只有點**網址文字**開連結(連結自己的行為,不進編輯)。與 LinkInput 09-26「點網址文字 = 開連結;
+    // 點外框裡其他地方 = 進編輯」同一句(link-input.spec.md「Link 狀態」)。07-14 寫進規格的「url 排除點格編輯與滑過淺框」撤回。
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
-    // 「點格即編輯」的格:滑過淺框、手形游標、非 spreadsheet 的 Tab 停靠都只跟著這一種(滑過樣式不因下方點擊改動而變)。
-    const cellClickEntersEdit = cellEditable && colType !== 'boolean' && colType !== 'url'
+    // 「點格即編輯」的格:滑過淺框、手形游標都只跟著這一種(滑過樣式不因下方點擊改動而變)。
+    const cellClickEntersEdit = cellEditable && colType !== 'boolean'
+    // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(連結格):是的話不進編輯 ——
+    // 點網址文字 = 開連結(瀏覽器照常);按在空白處拖過網址文字再放開 = 選字,不算點一下(link-input.spec.md「Link 狀態」;
+    // 判準同 LinkInput 外框,全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
+    const clickIsForCellContent = (e: React.MouseEvent<HTMLElement>): boolean => {
+      if (colType !== 'url') return false
+      const target = e.target
+      if (target instanceof Element && isOwnPointerTarget(e.currentTarget, target)) return true
+      const selection = window.getSelection()
+      return !!selection && !selection.isCollapsed && !!selection.anchorNode && e.currentTarget.contains(selection.anchorNode)
+    }
     const onEditableCellClick = cellClickEntersEdit && !isEditingThisCell
-      ? () => {
+      ? (e: React.MouseEvent<HTMLElement>) => {
+        if (clickIsForCellContent(e)) return
         // Default(non-spreadsheet)inline-edit behavior:click → enter edit
         setEditingCellId(cellEditId(cellRowId, cellColId))
       }
       : undefined
+    // 非 spreadsheet 的 Tab 停靠:點格即編輯的格,**連結格除外** —— 它的鍵盤入口是格裡的連結與鉛筆
+    // (同 link-input.spec.md「外框本身不是 tab stop,鍵盤走 Pencil」;否則一格三個停靠點)。
+    const cellIsTabStop = !!onEditableCellClick && !spreadsheetMode && colType !== 'url'
     // spreadsheet 模式:**點任何格,格游標都跟過去**(user 2026-09-26 同意 R21 第 5 題 (c))——
     // 唯讀格、開關格與連結格的空白處也一樣。原本只有「點格即編輯」的格掛點擊,於是滑鼠點不到、方向鍵卻走得到唯讀格,
     // 同一個開關格點勾選框會帶游標(經 commit → restoreCellSelection)、點旁邊空白卻不會。
@@ -3342,7 +3419,7 @@ function DataTableInner<TData>(
     // 格內自己處理點擊的控件照舊:勾選框切換值(commit 後游標本來就回到這一格)、連結開連結、
     // 鉛筆鈕 `stopPropagation` 進編輯 —— 這裡只負責「游標跟過去」。
     const onSpreadsheetCellClick = spreadsheetMode && !isEditingThisCell
-      ? (e: React.MouseEvent) => {
+      ? (e: React.MouseEvent<HTMLElement>) => {
         // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
         //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
         //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)
@@ -3357,8 +3434,8 @@ function DataTableInner<TData>(
           return
         }
         if (isSelectedCell) {
-          // 唯讀 / boolean / url 再點一次:沒有可進的編輯,游標留在原格
-          if (!cellClickEntersEdit) return
+          // 唯讀 / boolean 再點一次:沒有可進的編輯,游標留在原格;連結格點到網址文字(開連結)或在選字:也不進編輯
+          if (!cellClickEntersEdit || clickIsForCellContent(e)) return
           // 2nd click on already-selected → enter edit(Excel-like)
           setEditingCellId(cellEditId(cellRowId, cellColId))
           setSelectedCellId(null)
@@ -3466,6 +3543,9 @@ function DataTableInner<TData>(
         // Issue 9 cell error(2026-05-10):aria-describedby 接 error message id 給 AT 讀
         aria-describedby={cellErrorId}
         aria-invalid={hasCellError || undefined}
+        // 試算表模式:焦點進到連結格 / 開關格裡的控件時,那是「格內模式」—— 焦點所在控件自己的一層:Esc 先回到格導覽,
+        // 不關外面的 Dialog / Sheet(keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」;處理在 tableKeyboardHandler)
+        {...escapeLayerProps(spreadsheetMode && !isEditingThisCell && (colType === 'url' || colType === 'boolean'), 'subtree')}
         className={cn(
           // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
           //   - `self-stretch`: cell 永遠填 row 高
@@ -3505,7 +3585,7 @@ function DataTableInner<TData>(
           onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
-          onEditableCellClick && !spreadsheetMode && 'focus-visible:focus-ring-inset',
+          cellIsTabStop && 'focus-visible:focus-ring-inset',
           // z-10 raise inline-edit cell;portal mode 不需(layer z-3 already on top)。
           isEditingThisCell && !experimentalActiveEditorController && 'z-10',
         )}
@@ -3524,8 +3604,8 @@ function DataTableInner<TData>(
         // read-view-focusable idiom:editable view cell 可 Tab 聚焦,Enter / F2 進 edit。
         // spreadsheetMode 不加(該模式走 table-level selectedCellId 鍵盤導覽 SSOT,per-cell
         // tab stop 會跟 roving 模型衝突);cell 內 embedded 控件事件不攔(target guard)。
-        tabIndex={onEditableCellClick && !spreadsheetMode ? 0 : undefined}
-        onKeyDown={onEditableCellClick && !spreadsheetMode ? (e) => {
+        tabIndex={cellIsTabStop ? 0 : undefined}
+        onKeyDown={cellIsTabStop ? (e) => {
           if (e.target !== e.currentTarget) return
           if (e.key === 'Enter' || e.key === 'F2') {
             e.preventDefault()
@@ -3712,6 +3792,23 @@ function DataTableInner<TData>(
         }
         return
       }
+      // 格內模式 → 格導覽(2026-10-13,待辦總帳 Q3c):焦點在某一格裡的控件上(連結 / 鉛筆 / 勾選框)時,
+      // F2 或 Esc 把焦點收回表格根節點、格游標停在那一格。W3C APG grid:"A subsequent press of F2 restores grid navigation
+      // functions." / "Escape: restores grid navigation."(owner keyboard-model-canonical.md「出格一律 Escape,F2 亦可」)。
+      // 在編輯器裡(editingCellId)的 F2 / Esc 屬於編輯器(結算 / 取消),不走這裡。
+      if (spreadsheetMode && targetIsEmbeddedControl && editingCellId == null && (e.key === 'F2' || e.key === 'Escape')) {
+        const cellEl = spreadsheetKbTarget?.closest<HTMLElement>('[data-cell-id]')
+        const ownerId = cellEl?.getAttribute('data-cell-id')
+        if (cellEl && ownerId && tableRef.current?.contains(cellEl)) {
+          if (e.key === 'Escape' && !isEscapeForControl(e)) return
+          e.preventDefault()
+          setSelectedCellId(ownerId)
+          setRangeAnchor(ownerId)
+          setRangeFocus(null)
+          tableRef.current.focus({ preventScroll: true })
+          return
+        }
+      }
       if (spreadsheetMode && !targetIsEmbeddedControl && selectedCellId != null && editingCellId == null) {
         const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'F2', 'Escape']
         if (!navKeys.includes(e.key)) return
@@ -3751,12 +3848,25 @@ function DataTableInner<TData>(
         else if (e.key === 'ArrowLeft' && curColIdx > 0) { nextColIdx = curColIdx - 1 }
         else if (e.key === 'ArrowRight' && curColIdx < allCols.length - 1) { nextColIdx = curColIdx + 1 }
         else if (e.key === 'Enter' || e.key === 'F2') {
-          // Enter / F2 → 進 edit(若 cell editable + 非 boolean / url)。edit 入口統一走 canEditCell(= isCellEditable)。
           const row = table.getRowModel().rowsById[curRowId]
           const colDef = table.getAllLeafColumns().find((c) => c.id === curColId)
           // any-allow: column meta free-form
           const meta = (colDef?.columnDef as any)?.meta as Record<string, any> | undefined
-          if (meta?.type && meta.type !== 'boolean' && meta.type !== 'url' && row && canEditCell(meta, row.original)) {
+          // 格裡裝的是控件(連結格 = 連結 + 鉛筆、開關格 = 勾選框):Enter / F2 把焦點放到格裡第一個控件(2026-10-13,待辦總帳 Q3c;
+          // APG "If the cell contains one or more widgets, places focus on the first widget.",owner keyboard-model-canonical.md
+          // 「F2 恆為進到格裡的控件」)。之後 Tab 到鉛筆、F2 / Esc 回格導覽(上方「格內模式 → 格導覽」);Space 由控件自己處理
+          // (勾選框原生切換)—— 焦點在格上時 Space 沒有規定,不加。修前 :658 把這兩種格整個排除,按了沒反應。
+          if (meta?.type === 'boolean' || meta?.type === 'url') {
+            const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(selectedCellId)}"]`)
+            const widget = cellEl?.querySelector<HTMLElement>(CELL_WIDGET_SELECTOR)
+            if (widget) {
+              e.preventDefault()
+              widget.focus()
+            }
+            return
+          }
+          // 其餘可編輯格:Enter / F2 → 進 edit。edit 入口統一走 canEditCell(= isCellEditable)。
+          if (meta?.type && row && canEditCell(meta, row.original)) {
             e.preventDefault()
             setEditingCellId(cellEditId(curRowId, curColId))
             setSelectedCellId(null)
@@ -3957,7 +4067,7 @@ function DataTableInner<TData>(
               <ItemInlineActionButton
                 icon={ChevronDown}
                 size="md"
-                aria-label={`${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.column.id} 欄位選單`}
+                aria-label={`${columnAccessibleName(header.column)} 欄位選單`}
                 overlayTrigger
               />
             </DropdownMenuTrigger>
@@ -4602,11 +4712,14 @@ function DataTableInner<TData>(
     const cell = root.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(selectedCellId)}"]`)
     if (!cell) { if (useVirtual) virtualizer.scrollToIndex(cursorRowIndex, { align: 'auto' }); return }
     const c = cell.getBoundingClientRect(); const b = body.getBoundingClientRect()
-    if (c.top < b.top) body.scrollTop -= b.top - c.top
-    else if (c.bottom > b.bottom) body.scrollTop += c.bottom - b.bottom
+    // 畫面座標的差要換回 CSS px 才能當捲動量(祖先縮放時兩者差一個倍率;同檔頭 layoutBoxHeight 的理由,2026-10-13 Q2c 同族)
+    const ky = body.offsetHeight > 0 ? b.height / body.offsetHeight : 1
+    const kx = body.offsetWidth > 0 ? b.width / body.offsetWidth : 1
+    if (c.top < b.top) body.scrollTop -= (b.top - c.top) / ky
+    else if (c.bottom > b.bottom) body.scrollTop += (c.bottom - b.bottom) / ky
     if (body.contains(cell)) {
-      if (c.left < b.left) body.scrollLeft -= b.left - c.left
-      else if (c.right > b.right) body.scrollLeft += c.right - b.right
+      if (c.left < b.left) body.scrollLeft -= (b.left - c.left) / kx
+      else if (c.right > b.right) body.scrollLeft += (c.right - b.right) / kx
     }
   }, [spreadsheetMode, selectedCellId, cursorRowIndex, useVirtual, virtualizer])
   // 焦點此刻在不在「格線區」:表格根節點本身、某一格裡(含格內控件,例:勾選框)、或浮層編輯器裡。
@@ -4774,8 +4887,15 @@ function DataTableInner<TData>(
               跟 body inner wrapper 同 SSOT。前 `w-max` 讓 header content max-content(label 短)
               vs body content max-content(Note 長 break-words)diverge → header / row width 不對齊 76px。
               統一 minWidth 公式後兩者永遠等寬,cells flex 均分結果一致。 */}
-          {/* minWidth 加上 spacer:見 `vScrollbarSpacer` —— 讓 header 與 body 的水平捲動範圍相等。 */}
-          <div style={{ minWidth: centerColsWidth + vScrollbarSpacer }}>
+          {/* minWidth 加上 spacer:見 `vScrollbarSpacer` —— 讓 header 與 body 的水平捲動範圍相等。
+              `overflow-x: clip`(2026-10-13,待辦總帳 Q2a):表頭的可捲範圍 = 這個內層盒的寬,**不含**凸出去的東西。
+              最後一欄的欄寬把手刻意往外凸 3px(patterns/resize-handle/resize-handle.tsx HIT_OUTSET),沒裁的話表頭比表身
+              多能捲 3px —— 捲軸不佔版面的機器(觸控板 Mac、Win11 / Linux 的 Firefox、平板)、或沒有垂直捲軸的表
+              (spacer = 0),指標停在表頭上捲到最右,表頭就停在多出來的 3px,每一欄差 3px(實測 625 / 622、137 / 134)。
+              裁在這裡 = 裁在捲動容器的邊界:內層盒寬 = max(面板寬, 欄寬總和 + spacer),所以只會切到「超出可捲內容」的那段,
+              resize-handle.spec.md「面板 / 捲動容器的邊界把它裁掉是預期例外」;非邊界欄的把手外側照舊點得到。
+              用 clip 不用 hidden:clip 不建立捲動容器、不影響垂直方向。 */}
+          <div className="overflow-x-clip" style={{ minWidth: centerColsWidth + vScrollbarSpacer }}>
             {renderHeaderRow(centerCols, false)}
           </div>
         </div>
@@ -4948,7 +5068,8 @@ function DataTableInner<TData>(
           Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
           Step 1C-fix(2026-05-10):wire Contract 15 cellClickEntersEdit predicate 過濾 readonly /
-          boolean / url cells(per RFC + user 拍板 USER #15「checkbox/url no-hover」)。
+          boolean cells(per RFC + user 拍板 USER #15「checkbox/url no-hover」;url 那一半 2026-10-13 由 user 拍板乙推翻,
+          連結格滑過出淺框、點格進編輯,只有網址文字開連結 —— 待辦總帳 Q3f)。
           Step 4(2026-05-10):wire spreadsheetMode select / range cells。 */}
       <DataTableInteractionLayer
         enabled={experimentalSpreadsheetOverlay || spreadsheetMode}
@@ -4991,7 +5112,7 @@ function DataTableInner<TData>(
           // Phase B2 completion(2026-05-10 per codex Q-B2):Tab → commit + next editable + auto-edit。
           //   wrap Cell in div with onKeyDownCapture intercept Tab/Shift+Tab(capture mode 先抓
           //   不被 Field 內部 keydown 攔)。direction:Tab=next / Shift+Tab=prev。
-          //   findNext skip readonly / boolean / url(non-editable click types per Contract 15)。
+          //   findNext skip readonly / boolean(non-editable click types per Contract 15;url 2026-10-13 起是點格即編輯的格)。
           // Phase B3(2026-05-10 per codex Q-B3):IME composition guard。中文輸入法組字期間
           //   compositionstart event fire,組字結束後 compositionend fire。期間 keydown 的
           //   Enter / Tab / Esc 不該觸發 commit/exit/next 行為(因 user 還在組字)。
@@ -5010,8 +5131,8 @@ function DataTableInner<TData>(
             const curRowIdx = allRows.indexOf(rowId)
             const curColIdx = allCols.indexOf(colId)
             if (curRowIdx < 0 || curColIdx < 0) return
-            // Step row-by-row,each step check editable + non-boolean/url
-            const NON_EDIT_TYPES = ['boolean', 'url']
+            // Step row-by-row,each step check editable + non-boolean(url 2026-10-13 起跟其他可編輯格一樣,待辦總帳 Q3f)
+            const NON_EDIT_TYPES = ['boolean']
             let nextRowIdx = curRowIdx
             let nextColIdx = curColIdx
             const totalCells = allRows.length * allCols.length
@@ -5065,6 +5186,7 @@ function DataTableInner<TData>(
                 onCommitLive={(next) => onCellCommit?.(rowId, colId, next)}
                 onCancel={() => cancelCellEdit(rowId, colId)}  // 2026-07-05 D4:cancel 還原 selection(Contract 11)
                 onDraft={setEditingDraft}  // Phase 7:每 keystroke 寫 draft → preserve across virtualizer unmount
+                ariaLabel={colDef ? columnAccessibleName(colDef) : colId}  // 浮層編輯器同樣以欄標題為名(2026-10-13 Q3d J,兩條路同源)
               />
             </div>
           )
@@ -5089,8 +5211,9 @@ function DataTableInner<TData>(
           // any-allow: column meta 是 free-form bag
           const meta = (colDef?.columnDef as any)?.meta as Record<string, any> | undefined
           if (!meta) return false
-          // Allowlist editable types(per Contract 15;未知 / boolean / url / readonly default false)
-          const EDITABLE_CLICK_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox']
+          // Allowlist editable types(per Contract 15;未知 / boolean / readonly default false)。
+          // url 2026-10-13 加入(user 拍板乙,待辦總帳 Q3f):滑過出淺框,跟其他可編輯格同一套 —— 這張表與格上的點擊規則(cellClickEntersEdit)同步。
+          const EDITABLE_CLICK_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
           if (!EDITABLE_CLICK_TYPES.includes(meta.type)) return false
           // Row-level editable(row) function support(canonical per `isCellEditable` L720)
           // 2026-05-13:canEditCell helper consolidation(per V4)

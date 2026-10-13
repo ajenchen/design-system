@@ -349,6 +349,7 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 | LinkInput 正在編輯、或有打了還沒存的字 | 取消編輯 / 丟棄草稿,焦點給鉛筆 | `LinkInput/link-input.tsx`(經 `Field/field-edit-keys.ts`;同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層:先收它,consumer 的 Esc 下一下才輪到。LinkInput 不是 `getInputProps` 的支援對象,連結狀態下表單的回復到不了 —— 待辦總帳 N85) |
 | DatePicker 可打字欄位的草稿 ≠ 顯示值(或格式錯) | 還原草稿 | `DatePicker/date-picker.tsx` 可打字輸入框(日曆開著時日曆才是最內層:只關日曆、草稿不動) |
 | DataTable 有格游標 / 列選取 | 清游標 / 清選取(焦點留在表格上) | `DataTable/data-table.tsx` 表格根,`self`(焦點就在根上才算) |
+| DataTable 試算表模式格內模式(焦點在連結格 / 開關格的連結、鉛筆或勾選框,2026-10-13,待辦總帳 Q3c) | 回格導覽、格游標停在原格,浮層不關 | `DataTable/data-table.tsx` 每個 url / boolean 格(`subtree`;`spreadsheetMode` 且非編輯中) |
 | Calendar 月檢視格內模式(焦點在事件方塊) | 出格,回日期停靠點 | `Calendar/calendar.tsx` 每個事件方塊 |
 | **拖曳中**(dnd-kit 鍵盤 Space 提起、或指標拖曳中) | 只取消拖曳(dnd-kit 自己做),浮層與容器自己的 `Esc` 都不動 | `lib/drag-announcements.ts` useDragAccessibility.escapeLayer(排序面板 / 欄位面板 / DataTable / TreeView 四個 DndContext;`drag-canonical.md` invariant 8) |
 
@@ -420,6 +421,7 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 | 元件 | 焦點在 | `Enter` | `F2` | 出格 |
 |---|---|---|---|---|
 | `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape`(取消)/ `F2`(結算;2026-09-29 補上「再按一次回到格導覽」那一半,文字型編輯器) |
+| `DataTable` 試算表模式,連結格 / 開關格(2026-10-13)| **格**(格裡裝的是一個以上的控件:連結 + 鉛筆、勾選框)| 進格,焦點落到第一個控件(連結 / 勾選框)—— 格沒有主要動作,同上一列「進格」;進去之後 `Enter` 是那個控件自己的動作 | 進格(同左)| `Escape` / `F2`(回格導覽、格游標停在原格) |
 | `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 在這一天新增(`onDateClick`)| 進格,焦點落到第一個事件方塊 | `Escape` / `F2` |
 | `Calendar` 月檢視,日期格唯讀(`readOnlyDates`,2026-09-26)| **格**(日期數字不是按鈕,格裡沒有那一個控件)| 進格(格沒有主要動作)| 進格 | `Escape` / `F2` |
 

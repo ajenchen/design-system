@@ -126,3 +126,9 @@ Phase 3-4 需獨立 RFC + user 拍板(2026-09-10 盤點:Sidebar / AppShell Aside
 - ❌ 在 consumer 另寫拖拉算法(eg. `useColumnResize`)— 拖拉 / 鍵盤 / clamp 由本 primitive 擁有(value-driven),consumer 只接 `onValueChange` / `onValueCommit`
 - ❌ Phase 3/4 不走 RFC + user 拍板自動 migrate — Audit-vs-execute 分權違反
 - ❌ 消費端自己再補 `role="separator"` / `aria-*value*`——本 primitive 已完整實作 splitter 語意,重複宣告會讓讀屏念兩次
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `data-table-known-defects.spec.md`
