@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 47,
-      "hash": "sha256:907d1a5636a1076f83d53ab0e148c504501305da182463e140ce5a0ec678dbc3",
+      "hash": "sha256:586c6e351344b751947416fd650b4d0b86d7308b8e13d53679c88707c456eca9",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
