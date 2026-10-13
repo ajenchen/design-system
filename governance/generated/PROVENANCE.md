@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:fa7a23e473619c02e32f7d331e3bfdf6855671eea3279f06251fdfb87078e878` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:9e94612c43ec1fefff32559f643f83b73be98663d0ab25974047c83cac20f038` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:d6f9ceb234f80ba3b8e6b2a9f7f7819aed75f329150f6afcb5ffad316315ac07` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:1777b3f9d551adc329f476ed8a02e77e1768f07232e8e7698016b0bd3884aa37` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:f434f44d297aa280ad6a067f750407a24225f9f4b8be1e8b94a0c53fab3bf3d4` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:7f0c57816b6a1bcdadd7faecd8a2293b6822a2ce6bc7f6113e34cf5930e3ed67` |
@@ -305,8 +305,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
-| provider-neutral-memory | `governance/memory` | `sha256:9aa1f832f6257a4b4497de9a2da660b2e8f474939972a6aa7b97a77dc800a659` |
-| provider-neutral-planning-ledger | `governance/planning` | `sha256:a11f8af1b449cd1053996178c283af9b302bd7870f3a7a228849ecf82157a7a9` |
+| provider-neutral-memory | `governance/memory` | `sha256:9a0d754993109cd7e6052f5c107a8cada53b251cb623a1bc5a78728747e47c08` |
+| provider-neutral-planning-ledger | `governance/planning` | `sha256:fafec42f5beb1ba317b21e437cfc9d8c599c1f401787403191f8fbf56496e1da` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |
 | provider-review-binding-library | `packages/governance/src/provider-review-binding.mjs` | `sha256:00fd8e1f7193dc0d76b8c3d586889c51b8f8ff47e991a4682e6105937f3a3514` |
