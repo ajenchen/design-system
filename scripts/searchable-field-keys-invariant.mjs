@@ -18,6 +18,9 @@
  *        讓位不改欄寬(2026-10-07 驗證回報「hug 欄位一打開縮 69px」):依內容寬(width="hug")時打開、打的字沒超過值之前欄寬不變;
  *        只選「不限」依內容寬關著的欄寬、窄欄位長標籤的截斷寬都與不可搜尋的「不限」相同;多人 1 位窄欄位關著時名字與同寬單人欄位一樣完整
  *        (§C closed 列「= 單人 closed」;修前跟搜尋框那一格平分空間被切成「Alice C…」)。
+ *     K1b(2026-10-13)浮層內搜尋(Combobox / PeoplePicker 多選的預設):清單關著、焦點在欄位本身按 Backspace = 刪最後一個值(與 K1 同規則、同播報);
+ *        焦點在浮層裡的搜尋框按 Backspace 不刪值(對照列:(b) 不做)。
+ *     K7(2026-10-13)單選(Select、PeoplePicker 單人)依內容寬:打開、打一個比值短的字、收起,欄寬都與關著相同(修前打開就撐成搜尋框的固有寬,151 → 204px)。
  *   紅: 任一列不符 → 逐列點名(哪一格、量到什麼、應為什麼)、exit 1。story 沒渲染 / 互動後版面不靜止 / 焦點一直在跳 = 儀器失效(INSTRUMENT-FAIL,exit 1),
  *        不得被讀成產品不符,也不得在 --selftest 裡被算成「弄壞後有抓到」。
  *   綠: 全部列符合。--selftest 兩部分:(1) 判定表 —— 每一列餵「正確形狀」必綠、「修前形狀」必紅、缺量測必判儀器失效;
@@ -54,6 +57,7 @@ export const STORIES = Object.freeze({
   keys: 'design-system-components-combobox-展示--field-keys-contract',
   unr: 'design-system-components-combobox-展示--unrestricted-inline-search',
   ppMulti: 'design-system-components-peoplepicker-展示--multi-inline-search',
+  ppMultiDefault: 'design-system-components-peoplepicker-展示--multi',
   yieldWidth: 'design-system-components-field-展示--inline-search-yield-width-contract',
 })
 // 欄位的身分:aria-label、Field 標籤(aria-labelledby 指到的字)或該 story 裡第幾個觸發欄位(Select「搜尋」範例只有一個、沒有標籤)
@@ -74,6 +78,9 @@ export const FIELDS = Object.freeze({
   ppHug: { label: '審核人(依內容寬,欄位內搜尋)' },
   ppNarrow: { label: '審核人(窄欄位,欄位內搜尋)' },
   ppSingleNarrow: { label: '負責人(窄欄位,單人對照)' },
+  ppMultiDefault: { label: '專案協作者(edit multi demo)' },
+  ppSingleHug: { label: '負責人(依內容寬,單人)' },
+  selectHug: { label: '出貨國家(依內容寬,可搜尋)' },
 })
 const UNRESTRICTED_LABEL = '不限'
 const LONG_UNRESTRICTED_LABEL = '不限(全部商品類別都可以)'
@@ -84,7 +91,7 @@ const PERSON = 'Alice Chen'
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // 每一列 = { id, family, name, judge(m) → { ok, detail } };m 是該列的量測(缺 = 儀器失效,不判)。
-// 族:K1 / K2 / K3 / F1 / K4;GUARD = 對照列(修前修後都必須綠 —— 守 :384、點外面不搶、空白鍵只打開、組字中 / 連發不刪)。
+// 族:K1(含 K1b)/ K2 / K3 / F1 / K4 / K7;GUARD = 對照列(修前修後都必須綠 —— 守 :384、點外面不搶、空白鍵只打開、組字中 / 連發不刪)。
 const removedSay = (label) => `已移除『${label}』`
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const near = (a, b) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= EDGE_TOLERANCE_PX
@@ -197,6 +204,25 @@ export const ROWS = [
       `多人 1 位 ${JSON.stringify(m.multi)} 單人 ${JSON.stringify(m.single)}`) },
   { id: 'K4-people-closed', family: 'GUARD', name: 'PeoplePicker 多人 1 位,關著:頭像 + 名字(與修前同)',
     judge: (m) => check(m.closed.nameShown && m.closed.avatars === 1, `名字=${m.closed.nameShown} 頭像=${m.closed.avatars}`) },
+  // ── K1b 浮層內搜尋(兩者的預設)—— (a) 清單關著、焦點在欄位本身;(b) 焦點在浮層搜尋框不刪(對照列) ──
+  { id: 'K1b-popover-closed', family: 'K1', name: '浮層內搜尋 × 多選(Combobox 預設):清單關著、焦點在欄位本身按 Backspace → 刪最後一個 Tag,焦點留在欄位、清單仍關著,念「已移除『X』」',
+    judge: (m) => check(m.before.tags.length >= 1 && !m.before.open && eq(m.after.tags, m.before.tags.slice(0, -1)) && m.after.focus === 'field' && !m.after.open
+      && (m.after.status || '').includes(removedSay(m.before.tags[m.before.tags.length - 1])),
+      `Tag ${JSON.stringify(m.before.tags)}→${JSON.stringify(m.after.tags)} 焦點=${m.after.focus} 開著=${m.after.open} 播報=「${m.after.status ?? '(沒有播報區)'}」`) },
+  { id: 'K1b-popover-open', family: 'GUARD', name: '浮層內搜尋:清單開著、焦點在浮層裡的搜尋框(關鍵字空白)按 Backspace → 不刪值(K1b (b) 不做)',
+    judge: (m) => check(m.before.focus === 'popover-input' && eq(m.after.tags, m.before.tags) && m.after.open,
+      `焦點=${m.before.focus} Tag ${JSON.stringify(m.before.tags)}→${JSON.stringify(m.after.tags)} 開著=${m.after.open}`) },
+  { id: 'K1b-people-closed', family: 'K1', name: 'PeoplePicker 多人預設(浮層內搜尋、頭像堆疊):清單關著、焦點在欄位本身按 Backspace → 刪最後一位,焦點留在欄位,念「已移除『X』」',
+    judge: (m) => check(m.before.people >= 2 && m.after.people === m.before.people - 1 && m.after.focus === 'field' && !m.after.open
+      && (m.after.status || '').startsWith('已移除'),
+      `人數 ${m.before.people}→${m.after.people} 焦點=${m.after.focus} 開著=${m.after.open} 播報=「${m.after.status ?? '(沒有播報區)'}」`) },
+  // ── K7 單選 × 依內容寬:打開前後欄寬不變 ──
+  { id: 'K7-people-hug', family: 'K7', name: 'PeoplePicker 單人 × 依內容寬:打開、打「b」、收起,欄寬都與關著相同(搜尋框那一格留下頭像 + 名字的寬)',
+    judge: (m) => check(near(m.opened, m.closed) && near(m.typed, m.closed) && near(m.after, m.closed) && m.typedKeyword === 'b',
+      `關著 ${m.closed}px → 打開 ${m.opened}px → 打「${m.typedKeyword}」${m.typed}px → 收起 ${m.after}px`) },
+  { id: 'K7-select-hug', family: 'K7', name: 'Select 單選可搜尋 × 依內容寬:打開、打「b」、收起,欄寬都與關著相同',
+    judge: (m) => check(near(m.opened, m.closed) && near(m.typed, m.closed) && near(m.after, m.closed) && m.typedKeyword === 'b',
+      `關著 ${m.closed}px → 打開 ${m.opened}px → 打「${m.typedKeyword}」${m.typed}px → 收起 ${m.after}px`) },
 ]
 const ROW_BY_ID = Object.fromEntries(ROWS.map((r) => [r.id, r]))
 
@@ -279,6 +305,14 @@ export const SAMPLES = {
   'K4-people-narrow': { good: { multi: { left: 45, visibleTextWidth: 69.13, truncated: false }, single: { left: 45, visibleTextWidth: 69.13, truncated: false } },
     old: { multi: { left: 45, visibleTextWidth: 41.09, truncated: true }, single: { left: 45, visibleTextWidth: 69.13, truncated: false } } },
   'K4-people-closed': { good: { closed: { nameShown: true, avatars: 1 } }, old: { closed: { nameShown: false, avatars: 1 } } },
+  'K1b-popover-closed': { good: { before: st({ open: false, focus: 'field', tags: ['Electronics', 'Food'] }), after: st({ open: false, focus: 'field', tags: ['Electronics'], status: '已移除『Food』' }) },
+    old: { before: st({ open: false, focus: 'field', tags: ['Electronics', 'Food'] }), after: st({ open: false, focus: 'field', tags: ['Electronics', 'Food'] }) } },
+  'K1b-popover-open': { good: { before: st({ focus: 'popover-input', tags: ['Electronics', 'Food'] }), after: st({ focus: 'popover-input', tags: ['Electronics', 'Food'] }) },
+    old: { before: st({ focus: 'popover-input', tags: ['Electronics', 'Food'] }), after: st({ focus: 'popover-input', tags: ['Electronics'] }) } },
+  'K1b-people-closed': { good: { before: st({ open: false, focus: 'field', people: 4 }), after: st({ open: false, focus: 'field', people: 3, status: '已移除『David Hsu』' }) },
+    old: { before: st({ open: false, focus: 'field', people: 4 }), after: st({ open: false, focus: 'field', people: 4 }) } },
+  'K7-people-hug': { good: { closed: 151.02, opened: 151.02, typed: 151.02, after: 151.02, typedKeyword: 'b' }, old: { closed: 151.02, opened: 204.4, typed: 204.4, after: 151.02, typedKeyword: 'b' } },
+  'K7-select-hug': { good: { closed: 96, opened: 96, typed: 96, after: 96, typedKeyword: 'b' }, old: { closed: 96, opened: 204.4, typed: 204.4, after: 96, typedKeyword: 'b' } },
 }
 
 export function judgeTableSelftest() {
@@ -367,6 +401,8 @@ function pageRead({ spec, valueText }) {
     height: Math.round(box.height * 100) / 100,
     width: Math.round(box.width * 100) / 100,
     avatars: avatars.length,
+    // 欄位握著幾個人(頭像堆疊:看得見的頭像 + 「+N」的 N;K1b 量刪掉一位)
+    people: avatars.length + (() => { const o = [...el.querySelectorAll('[data-overflow-indicator]')].find((x) => x.getClientRects().length); const n = o ? parseInt((o.textContent || '').replace(/[^0-9]/g, ''), 10) : 0; return Number.isFinite(n) ? n : 0 })(),
     avatarLeft,
     mutedColor: searchInput ? getComputedStyle(searchInput, '::placeholder').color : null,
   }
@@ -480,6 +516,8 @@ export const CONTROLS = [
   { family: 'K4', title: '值的文字打開後不讓位(修前:「不限 fo」/「Alice Chen bo」)', init: controlValueStaysBesideKeyword },
   { family: 'K4', title: '讓位後留下寬的量尺被拿掉(修前:依內容寬的欄位一打開 / 一打字就縮)', init: controlNoYieldReserve, rows: ['K4-hug-unrestricted', 'K4-people-hug'] },
   { family: 'K4', title: '多人 1 位那一格又跟搜尋框平分空間(修前:窄欄位名字被切成「Alice C…」)', init: controlNameSplitsWithSearch, rows: ['K4-people-narrow', 'K4-people-hug', 'K4-people-open'] },
+  // K7:Select 搜尋框那一格裡的兩把量尺(關著時值的樣子、打的字)被拿掉 —— 與 K4 那一組同一支(拿掉搜尋框那一格裡看不見的字),只重跑 K7 那一段
+  { family: 'K7', title: '單選搜尋框那一格的量尺被拿掉(修前:依內容寬的欄位一打開就撐成搜尋框的固有寬)', init: controlNoYieldReserve, rows: ['K7-people-hug', 'K7-select-hug'] },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -832,6 +870,48 @@ const SEGMENTS = [
       out['K4-people-hug'] = { closed: closed.width, opened: opened.width, typed: typed.width, after: after.width, typedKeyword: typed.keyword, openedNameShown: opened.nameShown }
       return out
     } },
+  // K1b 浮層內搜尋:(a) 清單關著、焦點在欄位本身 Backspace 刪最後一個;(b) 焦點在浮層搜尋框 Backspace 不刪(對照列)
+  { id: 'popover-backspace', story: STORIES.keys, rows: ['K1b-popover-closed', 'K1b-popover-open'],
+    run: async (s) => {
+      const f = FIELDS.popover
+      const out = {}
+      await s.focusField(f, '焦點放在欄位本身(清單關著)')
+      let before = await s.read(f)
+      if (before.open) throw new ProbeError('清單一開始就開著')
+      await s.press('Backspace', '清單關著、欄位本身按 Backspace')
+      out['K1b-popover-closed'] = { before, after: await s.read(f) }
+      await s.clickField(f, '點開浮層內搜尋')
+      before = await s.read(f)
+      await s.press('Backspace', '浮層搜尋框(關鍵字空白)按 Backspace')
+      out['K1b-popover-open'] = { before, after: await s.read(f) }
+      return out
+    } },
+  { id: 'people-backspace', story: STORIES.ppMultiDefault, rows: ['K1b-people-closed'],
+    run: async (s) => {
+      const f = FIELDS.ppMultiDefault
+      await s.focusField(f, '焦點放在欄位本身(清單關著)')
+      const before = await s.read(f)
+      if (before.open) throw new ProbeError('清單一開始就開著')
+      await s.press('Backspace', '清單關著、欄位本身按 Backspace')
+      return { 'K1b-people-closed': { before, after: await s.read(f) } }
+    } },
+  // K7 單選 × 依內容寬:PeoplePicker 單人(Select 包裝)與 Select 可搜尋,各量關著 / 打開 / 打 b / 收起
+  { id: 'single-width', story: STORIES.yieldWidth, rows: ['K7-people-hug', 'K7-select-hug'],
+    run: async (s) => {
+      const out = {}
+      for (const [row, f] of [['K7-people-hug', FIELDS.ppSingleHug], ['K7-select-hug', FIELDS.selectHug]]) {
+        const closed = await s.read(f)
+        await s.clickField(f, `點開 ${row}`, 'end')
+        const opened = await s.read(f)
+        if (!opened.open) throw new ProbeError(`${row}:點了沒有打開`)
+        await s.type('b', '打 b')
+        const typed = await s.read(f)
+        await s.press('Escape', 'Esc 收起')
+        const after = await s.read(f)
+        out[row] = { closed: closed.width, opened: opened.width, typed: typed.width, after: after.width, typedKeyword: typed.keyword }
+      }
+      return out
+    } },
 ]
 // K1-unrestricted 由 unrestricted-backspace 段量(unrestricted 段在 × 之後值已清空)
 SEGMENTS.find((x) => x.id === 'unrestricted').rows = SEGMENTS.find((x) => x.id === 'unrestricted').rows.filter((r) => r !== 'K1-unrestricted')
@@ -880,7 +960,7 @@ async function main() {
     }
     if (!SELFTEST) {
       if (v.failures.length) { console.log(`\n✗ ${v.failures.length} 列不符(族:${[...new Set(v.failures.map((f) => f.family))].join(' / ')})`); return 1 }
-      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬)`)
+      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 / K1b Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬 / K7 單選依內容寬打開不變寬)`)
       return 0
     }
     if (v.failures.length) { console.error(`❌ selftest FAIL:沒動頁面時就紅了(先修產品,對照組才有意義)`); return 1 }

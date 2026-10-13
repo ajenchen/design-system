@@ -20,7 +20,7 @@
  * - 思考塊:Radix Collapsible+disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView / Accordion 同一份);chevron=accordion 慣例
  *   (裝飾指示、色同 Select 觸發器 chevron);微光僅標題+最新行(agent-panel.css);完成步驟 fg-secondary。
  * - 輸入盒:欄位家族內距(--field-control-py-md/--field-px/text-body;32 等高鐵律);
- *   附件列=Tag md 單列 + OverflowIndicator(+N,useOverflowIndices 量測);送出/停止=Button primary xs。
+ *   附件列=Tag md 單列 + 超寬 +N(OverflowTagList,與 Combobox 多選同一份量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
  *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay。
@@ -91,8 +91,7 @@ import {
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { useOverflowIndices } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
-import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
+import { OverflowTagList } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -1188,7 +1187,10 @@ export interface AgentPromptInputProps
   placeholder?: string
 }
 
-/** 附件單列 + 超寬 +N(useOverflowIndices 量測;Combobox 多選 Tag 區同族)。 */
+/**
+ * 附件單列 + 超寬 +N —— 放得下幾顆由 `OverflowTagList` 決定(與 Combobox 多選的 Tag 列同一份實作,2026-10-13)。
+ * 修前用 `useOverflowIndices` + 寫死 48px 給「+N」留位,而且全部放得下也照留:最後一顆放得下卻被收進「+1」(與 Combobox 標籤格「+2」同一個缺口)。
+ */
 function PromptAttachmentRow({
   attachments,
   onRemove,
@@ -1199,44 +1201,30 @@ function PromptAttachmentRow({
   /** 這個複合輸入控件的主人(textarea):移除後焦點接力的終點、按 +N 卡裡的零件時焦點不離開它 */
   owner: React.RefObject<HTMLTextAreaElement | null>
 }) {
-  const { containerRef, registerItem, overflowIndices } = useOverflowIndices<HTMLDivElement>({
-    reserveTriggerWidth: 48,
-  })
-  const hidden = new Set(overflowIndices)
-  const hiddenItems = attachments.filter((_, i) => hidden.has(i))
+  const rowRef = React.useRef<HTMLDivElement>(null)
+  const items = attachments.map((attachment) => ({ value: attachment.id, label: attachment.label }))
   // 移除後的焦點接力(2026-10-01,待辦總帳 OE30;combobox.spec.md「Tag 操作 › 個別移除」同一條,全 DS 一支 lib/collection-removal-focus.ts):
   // 焦點在某顆 × 上(鍵盤、或 textarea 沒握著焦點時滑鼠按下)→ 下一顆 × → 前一顆 → textarea;+N 卡裡的 × → 直接回 textarea。
-  // 修前焦點隨 × 卸載掉到 body,接著打的字不見(實測)。textarea 握著焦點時按 × 本來就不搬焦點(下方 onMouseDown / onContentMouseDown)。
-  const remove = (attachment: AgentPromptAttachment) => {
-    focusAfterCollectionRemoval(containerRef.current, { owner: owner.current })
+  // 修前焦點隨 × 卸載掉到 body,接著打的字不見(實測)。textarea 握著焦點時按 × 本來就不搬焦點(下方 onMouseDown / onOverflowMouseDown)。
+  const remove = (id: string) => {
+    const attachment = attachments.find((a) => a.id === id)
+    if (!attachment) return
+    focusAfterCollectionRemoval(rowRef.current, { owner: owner.current })
     onRemove(attachment)
   }
   return (
-    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。
-    // 被藏的 Tag 留在 flow 內、排到 +N 之後(order-last)並隱形:useOverflowIndices 每次重量都拿得到
-    // 真實位置(抽離 flow 會在放寬時被誤判「可見」而失去 +N,2026-09-02 實測)。
-    <div ref={containerRef} className="flex items-center gap-1 overflow-hidden px-1 pt-1">
-      {attachments.map((attachment, index) => (
-        <div
-          key={attachment.id}
-          ref={registerItem(index)}
-          className={cn('shrink-0', hidden.has(index) && 'invisible order-last')}
-        >
-          <Tag size="md" onRemove={() => remove(attachment)}>
-            {attachment.label}
-          </Tag>
-        </div>
-      ))}
-      {hiddenItems.length > 0 && (
+    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。`relative` = 「+N」量尺的定位容器(OverflowTagList)。
+    <div ref={rowRef} className="relative flex items-center gap-1 overflow-hidden px-1 pt-1">
+      <OverflowTagList
+        items={items}
+        size="md"
+        wrap={false}
+        renderTag={(item) => <Tag size="md" onRemove={() => remove(item.value)}>{item.label}</Tag>}
+        renderHiddenTag={(item, onRemoveHidden) => <Tag size="md" onRemove={onRemoveHidden}>{item.label}</Tag>}
+        onRemove={remove}
         // 浮出清單在另一個 portal,外框的 onMouseDown 看不到它 → 卡上掛同一支判準(同 Combobox `keepSearchFocus`;OverflowIndicator `onContentMouseDown`)
-        <OverflowIndicator count={hiddenItems.length} shape="tag" size="md" onContentMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, owner.current)}>
-          {hiddenItems.map((attachment) => (
-            <Tag key={attachment.id} size="md" onRemove={() => remove(attachment)}>
-              {attachment.label}
-            </Tag>
-          ))}
-        </OverflowIndicator>
-      )}
+        onOverflowMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, owner.current)}
+      />
     </div>
   )
 }

@@ -86,16 +86,33 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 ### 單行溢出
 
-- 以量測為基礎：計算可用寬度，依序放入 Tag，放不下的隱藏
+- 以量測為基礎:計算可用寬度,依序放入 Tag,放不下的隱藏。**每一個輸入都量真的,不猜**(2026-10-13,待辦 Q1 / K6;實作 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount`,AgentPanel 輸入盒附件列同一份):
+  - **「+N」一律渲染**:沒有東西要收時,它是看不見的量尺(不佔位、點不到、讀屏略過;`OverflowIndicatorMeasure`,外觀與指示器同一份 class)—— 第一次決定就有真的東西可量。
+  - **每個候選數量用它自己會顯示的那個「+N」的寬**:放 c 顆時顯示的是「+(總數 − c)」,就量那個字串(把「+N」那個文字節點暫時改成該數字、量、改回來,只在邊界附近多量一兩個數字)。數字的字寬不一樣(本 repo 實測「+1」33.02、「+2」34.97、「+10」41.69px),
+    拿任何一個數字的寬代表全部都會在邊界留下一段「明明放得下,卻顯示 +N」的寬度:2026-10-13 第一版用「全部收起時的 N」並且只增不減,填滿寬欄位「Electronics + Food」在容器 207.5–209.25px 顯示「+2」(其實「Electronics +1」放得下;收起數有兩位數時這段窗 6–8px,2026-10-13 獨立驗證)。
+    決定只依這一次量到的寬,沒有「上一次」可以來回跳,所以不需要取大值。
+  - **可用寬與 Tag 寬同一種單位**(小數 px)。
+  - **量「全部攤開」那一刻的版面**:先把 Tag 全部顯示、「+N」轉成量尺,再量 —— 量到的寬不受上一次決定影響。依內容寬(`width="hug"`)的欄位因此不會「收一顆 → 欄位變窄 → 再收一顆」一路縮到只剩「+N」(K6;與 PeoplePicker 頭像堆疊 2026-09-07 拆掉的棘輪同一類,原則相同:放幾顆只能由**不受這個決定本身影響**的寬決定)。攤開時欄位被父層(`max-w-full`)擋在哪裡,可用寬就是多少。填滿寬的欄位攤開與否寬度都一樣。
+  - **空間回來就放回去**:依內容寬的欄位,Tag 區的寬是自己的內容決定的,父層變寬時 Tag 區、Tag、「+N」一個都不變、沒有任何通知。所以 ResizeObserver 另外看**欄位外框(`[data-field-mode]`)的父層**,它的寬變了就重算(與 PeoplePicker 頭像堆疊看的是同一層,`../PeoplePicker/person-display.tsx` `containingBlock`)。
+    2026-10-13 第一版沒看這一層:窄容器 192 → 400px 仍是「Electronics +2」,縮到 120px(「+3」)再放大到 600px 也一直是「+3」(2026-10-13 獨立驗證)。
+  - **全部放得下就不替「+N」留位**;放不下時依序放,每放一顆都替「+N」留位。同一列裡不是 Tag 的東西(唯讀 / 停用欄位的箭頭)與欄位內搜尋框要的寬先扣掉。
+- **決定與「+N」的數字在同一次畫面更新前定案**:掛載與值變了的時候在 layout effect 裡量、收、改數字(layout effect 的 setState 在同一次畫面更新前同步重繪);之後的重算由 ResizeObserver 觸發(回呼在下一格畫面之前跑),以 `flushSync` 同步提交。任何一格畫面都不會是「Tag 收了、數字還沒變」或「數字對、Tag 還沒收」。
 - 溢出指示器 `+N` 顯示被隱藏的數量
-- Hover 溢出指示器時，popover 顯示完整的隱藏 Tag 清單
-- **一次掛載只量一次(2026-09-10)**:同步量一趟即定案;只有那一趟量到 0 寬(容器或任一標籤 —— 批次渲染時版面還沒算完的症狀)
-  才補跑雙 rAF 的第二趟。兩個 ResizeObserver 各自吞掉 `observe()` 必送的**初始觀測**(它回報的就是同步那趟剛量過的同一個版面),
-  之後每一發都是真的尺寸變了,照常重算。
+- Hover 溢出指示器時,popover 顯示完整的隱藏 Tag 清單
+- **一次掛載只量一次(2026-09-10 的效能目標;2026-10-13 換掉錯的前提)**:掛載時量一趟即定案。ResizeObserver 送來的每一發先跟這次決定用過的輸入比 —— 容器內容寬、每顆看得見的 Tag 寬、搜尋框量尺寬、欄位外框父層的寬都一樣,「+N」的寬等於這次決定量到的那一個,就不重算;`observe()` 必送的初始觀測回報的就是剛定案的版面,所以填滿寬的儲存格掛載只跑一趟。依內容寬而且有東西收進「+N」時多一趟(收起之後欄位本來就會變窄)。
   由來:虛擬捲動時每個新進視窗的儲存格都掛一次 Combobox,原本固定量兩趟 —— DataTable 全功能範例一次 40 步滾輪手勢跑 180 趟 calc、
   1,080 次幾何讀取,佔當時全表捲動幾何讀取的 45%,第二趟幾乎總是同結果。守法後同一手勢降到 540 次。
-  **不可改成「捲動中延後量測」**:`ready` 早已不是視覺閘(`combobox.tsx` 的 `void ready`),初始狀態是**全部標籤都顯示**,
-  延後會讓標籤在捲動中溢出儲存格。機械閘 = `scripts/overflow-indicator-containment.mjs`(11 個 story × 6 種容器寬度)。
+  2026-10-13 重寫後:每趟在開頭讀一次版面(攤開之後一次讀完容器、Tag、「+全部」),有東西要收時再量邊界附近一兩個「+N」(量的時候它是絕對定位的量尺,只重排它自己);
+  修前每趟三次(讀可用寬 → 設上限、攤開後讀「+N」→ 收完後的保險)。DataTable 全功能範例 40 步滾輪(2026-10-13 獨立驗證的量法,修前 / 修後各兩回):
+  量測趟數 107 / 105 → 104 / 105(一次掛載一趟保留)、強制版面 374 / 370 → 276 / 290 次、Tag 寬讀取 321 / 315 → 221 / 223 次。
+  **2026-09-10 版的前提是錯的**:它寫「兩個 ResizeObserver 各自吞掉初始觀測(它回報的就是同步那趟剛量過的同一個版面)」。但那一趟在畫完之後才跑(passive effect),
+  「+N」沒溢出時不渲染、寬度用猜的 60px(實際 33–35px);決定之後「+N」從 0 變 35px,版面變了,這一發卻照樣被吞掉,判斷「這次量測可不可信」時也沒把「+N 的寬是猜的」算進去。
+  改正的機會只剩「點擊和 React 補畫之間剛好插進一格畫面」—— Chromium 的「輸入之後先畫一格」預設政策會給,沒有這條政策的環境(遠端隔離改寫輸入事件的機器、Safari、Firefox)就停在錯的樣子:
+  DataTable「專案排程全功能整合」標籤格(backend + spike)一點就變「+2」(2026-10-13 user 回報「在某些機器是正常的在某些卻是有問題的」)。
+  同一個 60px 2026-05-15 就記在 `../PeoplePicker/avatar-stack-overflow.ts` 檔頭,當時只替頭像堆疊換成公式(M10:同族只修一處)。
+  **不可改成「捲動中延後量測」**:初始狀態是**全部標籤都顯示**,延後會讓標籤在捲動中溢出儲存格。
+- 世界級:rc-overflow(Ant Design 單行多選 responsive 用的就是它)—— 「+N」一律渲染以量真寬(<https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Overflow.tsx#L133-L138>),不顯示時 `opacity: 0` + 絕對定位、仍量得到(<https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Item.tsx#L74-L83>);最後兩顆放得下就不留「+N」的位、在 layout effect 裡定案(<https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Overflow.tsx#L247-L316>);「+N」寬取前後兩次的較大值以免閃動(<https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Overflow.tsx#L125-L126>)—— 這一條本元件**不跟**(AI 推導):取大值是為了跨畫格的兩次量測不來回跳,本元件每次決定都在畫面更新前一次做完、逐個候選量自己的「+N」,沒有跨畫格的前一次;跟了反而留下上面那段「放得下卻 +N」的窗。
+- 機械閘:`scripts/overflow-indicator-containment.mjs`(「+N」不出容器,只數畫出來的「+N」,看不見的量尺不算)、`scripts/tag-overflow-room-invariant.mjs`(**每一格畫面**都不能「還有空位卻顯示 +N」或數字對不上,「多放一顆」用那時真的會顯示的「+N」的寬判;一般時序與強制「點擊與 React 補畫之間沒有畫格」兩種都量,含 DataTable 標籤格 RDM-101 / RDM-105 點進編輯、填滿寬欄位每 0.25px 一步的寬度掃描、依內容寬欄位父層 192 → 400 → 120 → 400px;看哪些 story 由 import 圖走得到 OverflowTagList 的全部 story 決定,有 Tag 列卻沒列進清單就紅。修前 0fe34e2e 兩種時序都紅;2026-10-13 第一版修法在寬度掃描與父層來回兩段紅)。
 
 ---
 
@@ -107,7 +124,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒有下一個則前一個；最後一個移除後回 owner:`searchable` + `searchIn='trigger'` 時是欄位內的搜尋框(它恆在,見「邊界案例」Empty),其餘是 combobox 觸發區。焦點不可因 DOM unmount 掉到 `body`；PeoplePicker 的自訂 avatar Tag 亦走相同 `data-collection-remove` contract。**只在焦點會跟著被移除的東西一起消失時才接力**(焦點在某顆 × 或 Tag 區裡別的東西上);焦點不在 Tag 區(浮層內搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動焦點(實作全 DS 一支 `../../lib/collection-removal-focus.ts` `focusAfterCollectionRemoval`,2026-10-01 由本元件 `focusAfterTagRemoval`、FileUpload、AgentPanel 輸入盒附件列三份收成;2026-09-30 前不論焦點在哪一律搬到下一顆 × 或 owner,浮層內搜尋框握著焦點時會被拉回觸發區)。**「+N」浮出清單裡的 ×** 走同一條移除路徑:焦點在那顆 × 上(滑鼠按下、搜尋框沒握著焦點時)→ 移除後交回 owner(卡片裡的 × 不在欄位的接力序上),不掉到 `body`;consumer 自訂的隱藏項(`renderHiddenTag`)一律用它的第二個參數 `onRemove` 移除 —— 自己呼叫 `onChange` 會跳過焦點接力(PeoplePicker 2026-09-30 前就是這樣,焦點掉到 body,實測)。
 
-**`Backspace`**(`searchIn='trigger'`,關鍵字空白時):等於按最後一個 Tag 的 ×,刪掉它;只選「不限」時刪掉「不限」、回到未選。焦點在欄位內搜尋框或觸發區本身都算,刪完焦點不動、清單開關不變;按住連發不連刪、組字中不刪;讀屏念「已移除『X』」。規則、三家依據與哪幾項是 AI 推導住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard `Backspace` 列(2026-10-07 待辦總帳 K1)。浮層內搜尋框(`searchIn='menu'`,本元件與 PeoplePicker 多選的**預設**)不在這一條 —— 清單關著時焦點在觸發區按、與焦點在浮層搜尋框裡按兩格都還沒有定案(等 user 決定,同一列),定案前維持不刪值。
+**`Backspace`**(`searchIn='trigger'`,關鍵字空白時):等於按最後一個 Tag 的 ×,刪掉它;只選「不限」時刪掉「不限」、回到未選。焦點在欄位內搜尋框或觸發區本身都算,刪完焦點不動、清單開關不變;按住連發不連刪、組字中不刪;讀屏念「已移除『X』」。規則、三家依據與哪幾項是 AI 推導住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard `Backspace` 列(2026-10-07 待辦總帳 K1)。浮層內搜尋框(`searchIn='menu'`,本元件與 PeoplePicker 多選的**預設**;不可搜尋的欄位同一路):**清單關著、焦點在觸發區本身**按 `Backspace` 一樣刪最後一個值(2026-10-13 待辦 K1b (a):與上面那一格同一個情境 —— 焦點在握著值的欄位上、沒有關鍵字;規則與播報、連發、組字同上);**焦點在浮層裡的搜尋框**按 `Backspace` 只刪字、不刪值(K1b (b) 不做:三家都沒有「浮層裡的搜尋框刪欄位上的值」這種做法,搜尋框在另一個 portal、跟 Tag 不相鄰)。
 
 **搜尋框握著焦點時用滑鼠按 ×**(浮層開著、欄位內或浮層內的搜尋框都算):移除那一項,焦點與關鍵字都留在搜尋框、浮層不關 —— 觸發區 `onMouseDown` 擋預設、click 照常(判準共用 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`)。同一條也管一鍵清空 ×、Tag 本體、欄位空白處,以及「+N」浮出清單裡的 Tag ×(浮出清單在另一個 portal,本元件在那張卡上掛同一支判準:`../OverflowIndicator/overflow-indicator.tsx` `onContentMouseDown` ← `combobox.tsx` `keepSearchFocus`)。世界級同做法:rc-select 選取區按在輸入框以外就擋預設(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/SelectInput/index.tsx#L182-L209>)、MUI Autocomplete 根元素 `handleMouseDown` 同(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1316-L1329>)。四種搜尋框位置的完整焦點表住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段「按清單以外的地方」。2026-09-30 前:浮層開著、打了關鍵字,按 Tag × 焦點被搬到下一顆 ×(Chrome 按鈕在 mousedown 就拿到焦點),之後打的字全部丟掉(實測)。
 
@@ -285,6 +302,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `checkbox.spec.md`
 - `overflow-indicator.spec.md`
 - `people-picker.spec.md`

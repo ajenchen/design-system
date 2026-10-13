@@ -195,6 +195,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 **開啟時已選值怎麼顯示**(指標,不在這裡重寫):已選值讓位給搜尋輸入框 —— 打開還沒打字時,值以灰色提示疊在同一個位置(讀屏略過),一打字就消失,字從 `--field-px` 那條線開始,字刪光又回來(`select.tsx` `CustomSelectTriggerContent` 的 `showSelectedOverlay`)。規則住 `../PeoplePicker/people-picker.spec.md` §B「open + inline-search、選 1 人」列與 §E 提示字公式(:194),Combobox 只選「不限」× 欄位內搜尋同一條(`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」)。
 
+**searchable 開關前後欄寬不變(2026-10-13,待辦 K7)**:打開時框裡換成搜尋輸入框,那一格的寬 = 關著時那一段值的寬(值的圖示 / `selectedItemRenderer` / Tag / 提示字,同一支函式畫的看不見的量尺)與打的字取大 —— 依內容寬(`width="hug"`)的欄位打開前後欄寬一樣,打的字比值寬才跟著長;有起始圖示時圖示與輸入處的間距同關著時(欄位外框的 gap)。修前打開就撐成原生輸入框的固有寬(PeoplePicker 單人依內容寬 151 → 204px),有起始圖示時字往左跳 8px。規則 `../Field/field-controls.spec.md`「寬度軸」;閘 `scripts/searchable-field-keys-invariant.mjs` K7 兩列。
+
 **searchable × tag 模式的內距(2026-09-15 user 裁定)**:searchable 是單選、關閉時框裡仍是「輸入」語意,已選的 Tag 跟其他文字選項一樣貼 `--field-px`(12px),**不套** `fieldTagInsetX` 的四邊等距公式(那是非 searchable tag 模式與 Combobox 的);開啟時同一個框放搜尋輸入,套了會在開關之間跳 9px。code:`select.tsx` `!searchable && tagPadding[size]`。
 
 ### 主判準：label 性質

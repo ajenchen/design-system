@@ -6,6 +6,8 @@
  * Real root cause of Bug 3「same cell width but different overflow timing per total count」:
  *   1. `useOverflowCount` 在 Combobox 用 DOM `offsetWidth` 量測 + `overflowW = 60` fallback(實際 24px)
  *   2. `overflowEl` 不被 ResizeObserver observe,first calc 用 fallback 後不會 recalc
+ *   (1)(2) 在一般文字 Tag 那條路當時沒修,一直留到 2026-10-13 —— DataTable 標籤格一點就變「+2」(待辦 Q1)才在
+ *    `../OverflowIndicator/overflow-tag-list.tsx` 拆掉:「+N」恆渲染、量真的寬,也被觀察。頭像堆疊仍走本檔公式。
  *   3. `offsetWidth` 不減 overlap(當時 `-ml-0.5`) → measurement 偏保守
  *   4. **架構違反**:`MultiPersonDisplay` display path 用 canvas-based 算 / Combobox edit path 用 DOM offsetWidth
  *      → 同 cell width 兩 path 不同結果 → user verbatim「同寬 cell overflow 時間不一樣」SSOT 根本被違反

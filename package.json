@@ -60,6 +60,7 @@
     "test:authority-reaper": "node scripts/test-authority-generation-reaper.mjs",
     "test:virtual-scroll-stress": "node scripts/virtual-scroll-stress.mjs && node scripts/virtual-scroll-stress.mjs --selftest",
     "test:overflow-indicator": "node scripts/overflow-indicator-containment.mjs && node scripts/overflow-indicator-containment.mjs --selftest",
+    "test:tag-overflow-room": "node scripts/tag-overflow-room-invariant.mjs && node scripts/tag-overflow-room-invariant.mjs --selftest",
     "test:shared-carrier-focus": "node scripts/shared-carrier-and-selection-focus.mjs",
     "test:tag-field-inset": "node scripts/tag-field-vertical-inset.mjs && node scripts/tag-field-vertical-inset.mjs --selftest",
     "test:sidebar-menu-keyboard": "node scripts/sidebar-menu-keyboard-invariant.mjs && node scripts/sidebar-menu-keyboard-invariant.mjs --selftest",

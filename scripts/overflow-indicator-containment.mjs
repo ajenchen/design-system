@@ -78,7 +78,11 @@ const short = (id) => id.replace('design-system-components-', '').replace('desig
 const countPlus = () => {
   const root = document.querySelector('#storybook-root')
   if (!root) return 0
-  return [...root.querySelectorAll('*')].filter((e) => !e.children.length && /^\+\s*\d+$/.test((e.textContent || '').trim())).length
+  // 只數**畫出來、看得見**的「+N」(2026-10-13):Combobox 沒有東西要收時,「+N」以看不見的量尺留在 DOM 裡給元件量寬
+  // (overflow-tag-list.tsx `OVERFLOW_MEASURE_ATTR`,絕對定位、visibility:hidden)—— 那不是畫面上的指示器,數進來會讓兩段候選數對不上、
+  // 也會把量尺的位置當成「+N 溢出」。display:none 的同理。判準與下方第二段同一支(頁面端各自內嵌,序列化傳入不能共用變數)。
+  const shown = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility === 'visible'
+  return [...root.querySelectorAll('*')].filter((e) => !e.children.length && /^\+\s*\d+$/.test((e.textContent || '').trim()) && shown(e)).length
 }
 
 /**
@@ -157,9 +161,11 @@ for (const id of CANDIDATES) {
     const hits = await page.evaluate((selftest) => {
       const root = document.querySelector('#storybook-root') || document.body
       // 「+N」的載體:文字剛好是 +數字
+      // 只量畫出來、看得見的「+N」(同第一段 countPlus 的判準;看不見的量尺不是指示器)
+      const shown = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility === 'visible'
       const plus = [...root.querySelectorAll('*')].filter((e) => {
         if (e.children.length) return false
-        return /^\+\s*\d+$/.test((e.textContent || '').trim())
+        return /^\+\s*\d+$/.test((e.textContent || '').trim()) && shown(e)
       })
       if (selftest && plus.length) plus[0].style.transform = 'translateX(400px)'  // 對照組:硬推出去
       const clippingAncestor = (el) => {

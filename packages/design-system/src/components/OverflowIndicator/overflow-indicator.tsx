@@ -58,6 +58,40 @@ export interface OverflowIndicatorProps
   contentId?: string
 }
 
+/**
+ * 觸發點的外觀(形狀 × 尺寸)—— `OverflowIndicator` 與它的量尺 `OverflowIndicatorMeasure` 共用這一份,兩者寬度才會逐像素相同。
+ * 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;hit-area-canonical.md 滑過原則三-1)。
+ */
+function triggerClassName(shape: 'circle' | 'tag', size: 'sm' | 'md' | 'lg') {
+  return shape === 'tag'
+    ? cn(tagVariants({ color: 'neutral', size }), 'cursor-default')
+    : cn('relative shrink-0 rounded-full inline-grid place-content-center', 'text-foreground font-medium leading-none cursor-default', triggerText[size])
+}
+const circleSizeStyle = (size: 'sm' | 'md' | 'lg'): React.CSSProperties => ({ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size] })
+
+/**
+ * 「+N」的字(指示器與量尺共用)。整串是**一個**文字節點、外層帶 `data-overflow-count`:
+ * 量測端(`useOverflowCount`)要知道「+3」「+12」各多寬時,直接改這個節點的字、量、再改回來 —— 數字的字寬不一樣
+ *(本 repo 實測 +1 33.02 / +2 34.97 / +4 35.53 / +10 41.69px),不能拿一個數字的寬代表另一個(2026-10-13 獨立驗證抓到)。
+ */
+function OverflowCount({ count, className }: { count: number; className: string }) {
+  return <span className={className} data-overflow-count="">{`+${count}`}</span>
+}
+
+/**
+ * @internal「+N」的量尺(2026-10-13):與 `OverflowIndicator` 的觸發點同一套外觀、同一個字,但不能互動 —— 不可聚焦、沒有浮出清單、讀屏略過。
+ * 給「先量『+N』多寬、再決定收幾個」的呼叫端用(Combobox `useOverflowCount`):沒有東西要收的時候,它代替指示器留在 DOM 裡讓呼叫端量,
+ * 由呼叫端把它藏起來(不佔位、看不見)。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;combobox.spec.md「單行溢出」)。
+ * 不帶 `data-overflow-indicator`(那是「畫面上有一顆『+N』」的標記,閘與測試以它找指示器)。
+ */
+export function OverflowIndicatorMeasure({ count, shape = 'circle', size = 'md' }: { count: number; shape?: 'circle' | 'tag'; size?: 'sm' | 'md' | 'lg' }) {
+  return shape === 'tag' ? (
+    <span aria-hidden className={triggerClassName('tag', size)}><OverflowCount className="px-1" count={count} /></span>
+  ) : (
+    <span aria-hidden className={triggerClassName('circle', size)} style={circleSizeStyle(size)}><OverflowCount className="relative" count={count} /></span>
+  )
+}
+
 function ShrinkWrapList({ children }: { children: React.ReactNode }) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -126,11 +160,11 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         tabIndex={0}
         // 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;
         // hit-area-canonical.md 滑過原則三-1「不能讓人以為點下去會做事」)
-        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-default', className)}
+        className={cn(triggerClassName('tag', size), className)}
         style={style}
         {...props}
       >
-        <span className="px-1">+{count}</span>
+        <OverflowCount className="px-1" count={count} />
       </span>
     ) : (
       // circle = 頭像堆疊的尾端(avatar.spec.md「頭像堆疊(疊在一起時)」)。
@@ -145,13 +179,8 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         data-overflow-indicator=""
         data-avatar-stack=""
         tabIndex={0}
-        className={cn(
-          'relative shrink-0 rounded-full inline-grid place-content-center',
-          'text-foreground font-medium leading-none cursor-default', // 同上方 tag 形狀:只浮出名單,點了沒作用 → 不用手形
-          triggerText[size],
-          className,
-        )}
-        style={{ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size], ...style }}
+        className={cn(triggerClassName('circle', size), className)}
+        style={{ ...circleSizeStyle(size), ...style }}
         {...props}
       >
         <span
@@ -159,7 +188,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
           className={cn('absolute inset-0 rounded-full bg-secondary', AVATAR_STACK_CUTOUT_CLASS)}
           style={avatarStackCutoutStyle(OVERFLOW_INDICATOR_CIRCLE_PX[size])}
         />
-        <span className="relative">+{count}</span>
+        <OverflowCount className="relative" count={count} />
       </span>
     )
 

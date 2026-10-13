@@ -226,6 +226,33 @@ function checkStoryVisibility(file, content, exportedStories) {
   }
 }
 
+// 一個 title 只能有一個 CSF 檔(2026-10-13):Storybook 把同 title 的檔併成同一頁,而那一頁的文件頁(Autodocs)與側欄節點
+// 只從其中**一個**檔建 —— 挑到只放 test-only probe 的那一個時,整頁文件只剩 probe、側欄把它當 test-only 藏掉
+//(Field/展示 曾被 field-contracts.stories.tsx 這樣接管;獨立驗證從 index.json 的 docs entry importPath 與側欄抓到)。
+// probe 元件要搬出 story 檔時,搬到非 story 的 `_*.tsx`(AppShell/_demo-helpers.tsx 慣例),story 匯出留在原檔。
+const filesByTitle = new Map(); // title → file[]
+/** CSF 預設匯出(meta)的 title —— 讀語法樹,不靠排版(`export default meta` 或 `export default { … }`) */
+function csfMetaTitle(sourceFile) {
+  let metaNode = null;
+  for (const statement of sourceFile.statements) {
+    if (!ts.isExportAssignment(statement) || statement.isExportEquals) continue;
+    const expr = unwrapExpression(statement.expression);
+    if (expr && ts.isObjectLiteralExpression(expr)) metaNode = expr;
+    else if (expr && ts.isIdentifier(expr)) {
+      for (const st of sourceFile.statements) {
+        if (!ts.isVariableStatement(st)) continue;
+        for (const d of st.declarationList.declarations) {
+          const init = unwrapExpression(d.initializer);
+          if (ts.isIdentifier(d.name) && d.name.text === expr.text && init && ts.isObjectLiteralExpression(init)) metaNode = init;
+        }
+      }
+    }
+  }
+  const titleProperty = metaNode?.properties.find(property => ts.isPropertyAssignment(property) && propertyName(property) === 'title');
+  const value = titleProperty && unwrapExpression(titleProperty.initializer);
+  return value && (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) ? value.text : null;
+}
+
 for (const file of walk(STORIES_DIR)) {
   const isAnatomy = file.endsWith('.anatomy.stories.tsx');
   const isPrinciples = file.endsWith('.principles.stories.tsx');
@@ -234,6 +261,8 @@ for (const file of walk(STORIES_DIR)) {
   const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const exportedStories = exportedStoryDefinitions(sourceFile);
   checkStoryVisibility(file, content, exportedStories);
+  const csfTitle = csfMetaTitle(sourceFile);
+  if (csfTitle) filesByTitle.set(csfTitle, [...(filesByTitle.get(csfTitle) ?? []), file]);
 
   // === Check 1: Anatomy numbering — DEPRECATED 2026-04-26 ===
   // user 反饋:序號(`'1. 元件總覽'` 等)無價值且容易跳號。改成 anatomy story name
@@ -539,6 +568,14 @@ for (const file of walk(STORIES_DIR)) {
   }
 
   if (modified) writeFileSync(file, content);
+}
+
+for (const [title, files] of filesByTitle) {
+  if (files.length < 2) continue;
+  violations.storyVisibility.push({
+    file: files.join(' + '),
+    issue: `title "${title}" is shared by ${files.length} CSF files — Storybook builds that page's Autodocs and sidebar entry from only one of them; keep one story file per title and move probe components to a non-story _*.tsx module`,
+  });
 }
 
 // Consumer-template technical probes share the same Storybook runtime but are

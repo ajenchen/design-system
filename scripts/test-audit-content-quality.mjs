@@ -3,7 +3,7 @@
 // Gate 掃 packages/design-system/src/components/**/*.stories.tsx;無 --fix 時偵測到 violation 即 exit 1。
 // 注入:非 anatomy showcase story 加 deprecated 序號 name(`'1. …'`)→ trips Check 4a nonAnatomyNumbering。
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -155,6 +155,21 @@ try {
   else console.log('✓ shared Autodocs test-only filter 漂移被抓(exit ' + code + ')')
 } finally {
   writeFileSync(previewTarget, previewOrig)
+}
+
+// 11b) 一個 title 只能有一個 CSF 檔(2026-10-13):另開一個與 Button 展示頁同 title 的檔(裡面有一則給人看的範例,
+//      其他規則都不會紅)→ 必須以「title 被兩個檔共用」紅 —— 只看 exit code 會被別條規則掩護,所以比對那一條的訊息。
+const dupFile = join(repoRoot, 'packages/design-system/src/components/Button/button-injected-duplicate-title.stories.tsx')
+const buttonTitle = orig.match(/^\s*title:\s*['"]([^'"]+)['"]/m)?.[1]
+if (!buttonTitle) { console.error('✗ Button 展示檔讀不到 title — 注入基礎失效'); process.exit(1) }
+try {
+  writeFileSync(dupFile, `import type { Meta, StoryObj } from '@storybook/react'\nconst meta: Meta = { title: '${buttonTitle}' }\nexport default meta\nexport const InjectedDuplicateTitle: StoryObj = { name: '注入的同 title 檔' }\n`)
+  const r = spawnSync(process.execPath, ['--', 'scripts/audit-content-quality.mjs', '--check'], { stdio: 'pipe', encoding: 'utf8' })
+  const hit = (r.status ?? 1) !== 0 && /title "[^"]+" is shared by 2 CSF files/.test(r.stdout)
+  if (!hit) { console.error('✗ 兩個 CSF 檔共用同一個 title 未被抓(exit ' + r.status + ')'); ok = false }
+  else console.log('✓ 兩個 CSF 檔共用同一個 title 被抓(exit ' + r.status + ')')
+} finally {
+  try { unlinkSync(dupFile) } catch {}
 }
 
 // 12) 還原後必 PASS

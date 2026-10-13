@@ -249,30 +249,7 @@ function SelectClearButton({
 }
 SelectClearButton.displayName = 'SelectClearButton'
 
-/**
- * Trigger content for CustomSelect — 三種顯示模式分支(searchable+open / text / tag)
- * 抽出降低 `CustomSelect` forwardRef body 長度;邏輯本質是純展示分流,無 hook / ref。
- */
-function CustomSelectTriggerContent({
-  searchable,
-  open,
-  isTextDisplay,
-  size,
-  value,
-  selectedLabel,
-  selectedOpt,
-  SelectedIcon,
-  StartIcon,
-  iconSize,
-  placeholder,
-  search,
-  setSearch,
-  inputRef,
-  ariaLabel,
-  labelId,
-  selectedItemRenderer,
-  truncationRef,
-}: {
+type CustomSelectTriggerContentProps = {
   searchable: boolean
   open: boolean
   isTextDisplay: boolean
@@ -292,7 +269,32 @@ function CustomSelectTriggerContent({
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
   /** 截斷 tooltip 量測點(text display 的值 span;tooltip trigger 在外層 combobox host,見 CustomSelect triggerTruncationRef 註解)*/
   truncationRef?: React.Ref<HTMLSpanElement>
-}): React.ReactNode {
+}
+/**
+ * Trigger content for CustomSelect — 三種顯示模式分支(searchable+open / text / tag)
+ * 抽出降低 `CustomSelect` forwardRef body 長度;邏輯本質是純展示分流,無 hook / ref。
+ */
+function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): React.ReactNode {
+  const {
+    searchable,
+    open,
+    isTextDisplay,
+    size,
+    value,
+    selectedLabel,
+    selectedOpt,
+    SelectedIcon,
+    StartIcon,
+    iconSize,
+    placeholder,
+    search,
+    setSearch,
+    inputRef,
+    ariaLabel,
+    labelId,
+    selectedItemRenderer,
+    truncationRef,
+  } = props
   // Searchable + open: 顯示搜尋 input
   // 2026-05-15 Bug 2 fix(Claude+Codex Step 5 比稿 consensus,user verbatim「就 A」):
   // 撤掉 native `<input placeholder=selectedLabel>` 不可靠 ellipsis renderer(browser-specific
@@ -310,40 +312,56 @@ function CustomSelectTriggerContent({
   if (searchable && open) {
     const triggerEmptyPlaceholder = placeholder || '搜尋…' // i18n-allow: DS fallback
     const showSelectedOverlay = !search && selectedLabel
+    // 打開前後欄寬不變(2026-10-13,待辦 K7;field-controls.spec.md「寬度軸」user 定義:「hug 寬 = value 寬 + 其中各元素寬 + 彼此間距 + field 內部 padding」,
+    // 同節 K4 規則「hug 欄位打開前後、打的字沒超過那段值之前欄寬不變」):搜尋框所在的一格 = 一格 grid,裡面兩把看不見、高 0、讀屏略過的量尺 ——
+    // 關著時那一段值的樣子(值的圖示 / consumer renderer 例如 PeoplePicker 的頭像 + 名字 / Tag / 提示字),與打的字 + 插入點;
+    // 這一格的寬 = 兩者取大,輸入框填滿那一格、自己不帶寬(原生 input 的固有寬 —— size=20 約 150–200px —— 就是修前依內容寬的欄位一打開
+    // 從 151 撐到 204px 的原因)。與 Combobox 欄位內搜尋框同一招(combobox.tsx 欄位內搜尋框那一格、`yieldedTagText`)。填滿寬的欄位看不出差別。
+    // 關著時那一段值 = 關著的那一支本身(同一支函式、同一份 class,寬度逐像素相同);起始圖示在下面另外畫,量尺裡不再算一次
+    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, truncationRef: undefined })
+    // 起始圖示與搜尋框那一格直接當觸發欄位的子項(Fragment)—— 與關著時同一個結構,圖示與那一格之間就是欄位外框的 gap-2(fieldWrapperStyles)。
+    // 修前外面多包一層沒有間距的 span:有起始圖示時打開字往左跳 8px、依內容寬的欄位窄 8px,覆蓋的名字還壓在圖示上(K7 同一條:框線、互動、樣式不變)。
     return (
-      <span className="relative flex-1 min-w-0 inline-flex items-center">
+      <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        <input
-          ref={inputRef as React.RefObject<HTMLInputElement>}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          // aria-activedescendant / aria-controls 不寫在 JSX:由 useActiveDescendant(inputRef) 直接寫進這顆輸入框(反白 id 與清單 id 的唯一來源
-          // 在 Command 根,反白每移一格不重繪整個 Select;規則 select-menu.spec.md「A11y 預設」Focus 段)
-          // accessible name:aria-labelledby(Field label)> consumer aria-label > DS default(accname 優先序)
-          aria-label={ariaLabel ?? '搜尋選項'} // i18n-allow: DS default(對齊 combobox.tsx searchAriaLabel canonical)
-          aria-labelledby={ariaLabel ? undefined : labelId}
-          // 打字會過濾清單(與 Combobox 欄位內搜尋框、浮層內 [cmdk-input] 同宣告);aria-controls 同上,由 useActiveDescendant 寫
-          aria-autocomplete="list"
-          // Native placeholder 限 trigger empty hint(無 selectedLabel 時);若已 selected,留空交給 overlay span
-          placeholder={showSelectedOverlay ? '' : triggerEmptyPlaceholder}
-          className={cn(bareInputStyles, 'cursor-text')}
-          autoFocus
-        />
-        {showSelectedOverlay && (
-          // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
-          // 「修了一百次還沒好」+ codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
-          // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
-          // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
-          // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。
-          // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center text-fg-muted"
-          >
-            <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
-          </span>
-        )}
-      </span>
+        <span className="relative flex-1 min-w-0 grid grid-cols-[minmax(0,100%)] items-center">
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            // aria-activedescendant / aria-controls 不寫在 JSX:由 useActiveDescendant(inputRef) 直接寫進這顆輸入框(反白 id 與清單 id 的唯一來源
+            // 在 Command 根,反白每移一格不重繪整個 Select;規則 select-menu.spec.md「A11y 預設」Focus 段)
+            // accessible name:aria-labelledby(Field label)> consumer aria-label > DS default(accname 優先序)
+            aria-label={ariaLabel ?? '搜尋選項'} // i18n-allow: DS default(對齊 combobox.tsx searchAriaLabel canonical)
+            aria-labelledby={ariaLabel ? undefined : labelId}
+            // 打字會過濾清單(與 Combobox 欄位內搜尋框、浮層內 [cmdk-input] 同宣告);aria-controls 同上,由 useActiveDescendant 寫
+            aria-autocomplete="list"
+            // Native placeholder 限 trigger empty hint(無 selectedLabel 時);若已 selected,留空交給 overlay span
+            placeholder={showSelectedOverlay ? '' : triggerEmptyPlaceholder}
+            className={cn(bareInputStyles, 'cursor-text col-start-1 row-start-1 w-0 min-w-full')}
+            autoFocus
+          />
+          {/* 兩把量尺排在輸入框後面:同一格疊放,先後不影響畫面,但欄位(inline-flex)的基線取自這一格的第一個項目 ——
+              量尺在前時基線變成高 0 的量尺底緣,行內排版的欄位整個往下掉 2px(2026-10-13 逐像素比對抓到),輸入框在前就與修前同一條基線 */}
+          <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 overflow-hidden whitespace-nowrap pointer-events-none inline-flex items-center gap-2">{closedValue}</span>
+          <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${search} `}</span>
+          {showSelectedOverlay && (
+            // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
+            // 「修了一百次還沒好」+ codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
+            // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
+            // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
+            // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。
+            // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
+            // 2026-10-13:疊在搜尋框那一格(不是整段):有起始圖示時名字從輸入處開始,不再壓在圖示上。
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center text-fg-muted"
+            >
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+            </span>
+          )}
+        </span>
+      </>
     )
   }
   // **selectedItemRenderer slot**(2026-05-07 v15.5):consumer 客製 selected display(e.g.

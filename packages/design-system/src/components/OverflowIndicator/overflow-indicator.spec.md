@@ -84,6 +84,7 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 ## 邊界案例
 
 - **count ≤ 0**:元件自行不渲染(return `null`)——「無溢出」時 consumer 不需條件渲染
+- **量尺 `OverflowIndicatorMeasure`**(2026-10-13,@internal):與觸發點同一套外觀(同一支 class,寬度逐像素相同)、不能互動(不可聚焦、沒有浮出清單、讀屏略過、不帶 `data-overflow-indicator`)。給「先量『+N』多寬再決定收幾個」的呼叫端在沒有溢出時留在 DOM 裡量:單行 Tag 列 `./overflow-tag-list.tsx`(Combobox 多選、AgentPanel 附件列)沒有東西要收時渲染它、數字是全部收起時的 N,由呼叫端藏起來(絕對定位、看不見)。數字放在**一個**帶 `data-overflow-count` 的文字節點裡(指示器與量尺同一支 `OverflowCount`):呼叫端要知道別的數字多寬時,暫時改這個節點的字、量、改回來 —— 數字的字寬不一樣,不能拿一個數字的寬代表另一個。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;`../Combobox/combobox.spec.md`「單行溢出」)
 - **Loading**:OverflowIndicator 是同步 count + children primitive，API 無 loading prop；隱藏項目的資料生命週期由擁有資料的 host row / picker own。
 - **大數值**:`+N` 原樣顯示(無 `99+` 縮寫),trigger `min-w` 起步、隨位數自然加寬
 - **極窄容器 / 貼 viewport 邊**:浮層定位與翻邊由 HoverCard(Radix collision)處理,見 `hover-card.spec.md`

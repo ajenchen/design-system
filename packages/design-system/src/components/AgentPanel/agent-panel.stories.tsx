@@ -174,7 +174,7 @@ export const TaskAssistant: Story = {
 
 /**
  * 附件:送出後的氣泡附件 = Chip assist(相互間距 4);輸入中的附件 = Tag md 恆帶 ×,單列不換行、
- * 超寬以「+N」浮層列出被藏的 Tag(useOverflowIndices + OverflowIndicator)。
+ * 超寬以「+N」浮層列出被藏的 Tag(OverflowTagList,與 Combobox 多選同一份量測)。
  */
 export const Attachments: Story = {
   name: '附件:氣泡內與輸入盒溢出',

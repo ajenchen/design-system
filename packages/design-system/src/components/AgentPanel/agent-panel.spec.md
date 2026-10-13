@@ -236,7 +236,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 內距=欄位家族:上 `--field-control-py-md`、左右 `--field-px`、text-body;
   單行=32 等高鐵律。總高驗算:1+28(附件列)+32+40(工具列)+1=102=稿。
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
-  超寬=`useOverflowIndices` 量測 + `<OverflowIndicator shape="tag">`(+N,浮層列出被藏 Tag)。
+  超寬=`../OverflowIndicator/overflow-tag-list.tsx` `OverflowTagList`(+N,浮層列出被藏 Tag)—— 與 Combobox 多選的 Tag 列同一份量測
+  (規則 `../Combobox/combobox.spec.md`「單行溢出」:「+N」寬量真的、全部放得下就不留「+N」的位;2026-10-13 前用 `useOverflowIndices`
+  + 寫死 48px 給「+N」留位、全部放得下也照留,最後一顆放得下卻被收進「+1」)。
   分工:輸入中 Tag(可 dismiss)、送出後 Chip assist 視覺(2026-09-01 拍板之本家族分工)。
 - 鍵盤:`Enter` 送出、`Shift+Enter` 換行;**輸入法組字中的 `Enter` 是選字,不送出**(判準全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`;2026-09-30 前只看 `isComposing`,Safari 用注音按 Enter 選字的那一顆 `isComposing` 已是 false、只剩 `keyCode` 229,訊息會被直接送出)。
 - 工具列高 40、鈕 xs、內距 8;`+`(`onAddAttachment` 必填)恆渲染;送出=Button primary xs;

@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
-// code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 4 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
+// code-quality-allow: file-size — Combobox 含 CustomCombobox / ReadonlyMultiSelect / ComboboxTagStack + 共用 helpers(單行 Tag 列的量測 2026-10-13 已抽到 ../OverflowIndicator/overflow-tag-list.tsx);CustomCombobox 的觸發欄位、鍵盤與搜尋框共用同一組 state / ref,拆檔要把十幾個 ref 與 handler 跨檔傳遞。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
@@ -15,7 +15,7 @@ import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDispla
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
+import { OverflowTagList, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -24,7 +24,8 @@ import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── constants ───────────────────────────────────────────────────────────────
 
-const GAP = 4
+// Tag 列間距:與單行 Tag 列(overflow-tag-list.tsx)同一個值
+const GAP = TAG_ROW_GAP_PX
 
 // 非-wrap tag 列 clip SSOT(4-path 共用:OverflowTagList base / readonly / native edit / custom edit):
 // 2026-05-18 F2 以 overflow-hidden 修「窄容器 tags 水平越界蓋 chevron / +N」,但雙軸 hidden 副作用
@@ -75,353 +76,27 @@ export interface ComboboxOption extends SelectMenuOption {
   // (no wrapper-only fields yet — kept for future扩 + same-name SSOT cross-wrapper)
 }
 
-// ── useOverflowCount (unchanged) ────────────────────────────────────────────
-
-function useOverflowCount(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  tagEls: React.MutableRefObject<(HTMLDivElement | null)[]>,
-  overflowEl: React.RefObject<HTMLDivElement | null>,
-  totalCount: number,
-  enabled: boolean,
-  gap: number = GAP,  // (2026-05-07 v15.13)stack avatar 模式傳 0
-  visibleCountOverride?: number,  // 2026-05-15 Bug 3 fix:override DOM measurement(PeoplePicker stack 走 formula primitive)
-  // 2026-09-30:欄位內搜尋框在 Tag 後面要留的寬(見 findInlineSearchMirror)。量它、也觀察它 —— 打字變寬就重算,
-  // 放不下時把 Tag 收進 +N,讓打的字看得見(rc-overflow 把 suffix 的寬算進可見數,Ant 單行多選 responsive 就是這條,出處見 combobox.spec.md)
-  reserveRoot?: React.RefObject<HTMLElement | null>,
-): { visibleCount: number; ready: boolean } {
-  const [state, setState] = React.useState({ visibleCount: totalCount, ready: !enabled })
-  // 2026-05-18 Round 6 fix(per Codex M31 Round 6 H7 verdict + Step 5 共識):
-  // `ofEl.offsetWidth` 在 expanded state(visibleCount === totalCount → overflow=0 →
-  // `OverflowIndicator` count≤0 早退 `return null` → ofEl wrapper empty)= 0,fallback 60;
-  // 在 collapsed state(+N rendered)= 真實寬(~28-32px)。同 `available` 在兩 state 給
-  // 不同 verdict → 臨界值區 `max(B+g+Q, B+g+O) ≤ available < B+g+F` 振盪。Cache last
-  // non-zero measurement → measurement state-independent → oscillation 收斂。
-  // 初始 60 沿用舊 fallback(無 measure 史 ok-ish over-estimate)。
-  const lastOverflowWRef = React.useRef<number>(60)
-
-  // 2026-05-16 RACE FIX(user 抓「逐個 click 滿 6」vs「取消全選→再全選」same length 不同 visible):
-  //
-  // 原 useEffect + 雙 rAF 沒 capture rAF IDs → cleanup 不 cancel pending rAFs。
-  // Path B(length=6→0→6):length=0 時 override=undefined 走 internal calc 排 rAF,
-  // 然後 length=6 + override=N → deps change → cleanup 跑(disconnect ResizeObserver 但
-  // 不 cancel rAF)→ 新 useEffect 跑 override 寫 el.hidden → 舊 rAF 仍 fire → 跑舊
-  // internal calc → 覆寫 el.hidden 用 internal measurement(不一致於 override formula)。
-  //
-  // Fix:
-  // 1. useEffect → useLayoutEffect:tighter timing,measurement 在 paint 前 sync
-  // 2. Capture rAF IDs,cancel on cleanup
-  // 3. scheduleCalc 函式包裝,cancel in-flight rAF 才排新一輪(避免 ResizeObserver
-  //    re-fire 堆 rAF)
-  //
-  // 對齊 2026-05-14 I3 fix comment「user 抓『全選 vs 逐個勾 result 不同』」 — 當時 fix
-  // 只加 double-rAF 但漏 cancel,本次補完 race close。
-  // 2026-05-18 Round 5 fix(per visual test probe):useLayoutEffect 在 nested component 場景
-  // 會在 parent ref attach 前 fire(child layout effect 先於 parent ref attach)→ containerRef.current
-  // null → early return → calc never runs → setProperty never called → CSS var unset → tag overflow。
-  // 改 useEffect:fires AFTER paint,所有 refs 都 attach。double-rAF guard ensures layout done。
-  // Trade-off:可能 1-2 frame flicker,但 functional setState guard + paint target measurement 已 cover。
-  React.useEffect(() => {
-    /**
-     * 這次量測可不可信:容器與所有標籤都量到非零寬度才算數。
-     *
-     * 雙 rAF 的 fallback(2026-05-14 I3)當初是為了「批次渲染場景 tag 還 0-width」——
-     * 那個條件在同步這一趟就量得出來,不必無條件再跑一次。實測(2026-09-10,DataTable
-     * roadmap 全功能範例、40 步滾輪):每個掛載固定跑兩趟 calc,一次手勢 180 趟、
-     * 1080 次幾何讀取,其中第二趟幾乎總是得到相同結果。改成「不可信才補跑」。
-     */
-    let trustworthy = false
-    if (!enabled || totalCount === 0) { setState({ visibleCount: totalCount, ready: true }); return }
-    if (visibleCountOverride !== undefined) {
-      for (let i = 0; i < tagEls.current.length; i++) {
-        const el = tagEls.current[i]
-        if (el) el.hidden = i >= visibleCountOverride
-      }
-      const ofEl = overflowEl.current
-      if (ofEl) ofEl.hidden = visibleCountOverride >= totalCount
-      setState({ visibleCount: visibleCountOverride, ready: true }); return
-    }
-    // totalCount=1 fast path:single-tag case 直接 visible 不跑 measurement loop。
-    // (歷史:c90d029 曾移除此 bypass,後復原 — 移除會造成 narrow cell 1-selected 跑 unbounded Tag
-    // measurement 後 visibleCount=0 → 顯 +1 indicator 而非 single tag,違反 PeoplePicker length===1
-    // 走 PersonDisplay SSOT。)
-    // 2026-05-16 Round 5 codex edge case fix:explicit unhide DOM nodes(對齊 override branch)。
-    // 原 fast-path 只設 React state 不動 `el.hidden`,如 wrappers 之前 hidden 殘留(從 length>1 降到 1)
-    // 可能視覺漏顯。Override branch L78-80 同 contract 對齊。
-    if (totalCount === 1) {
-      for (let i = 0; i < tagEls.current.length; i++) {
-        const el = tagEls.current[i]
-        if (el) el.hidden = i >= 1
-      }
-      const ofEl = overflowEl.current
-      if (ofEl) ofEl.hidden = true
-      trustworthy = true
-      setState({ visibleCount: 1, ready: true }); return
-    }
-    const container = containerRef.current
-    if (!container) return
-
-    const calc = () => {
-      trustworthy = false
-      const cs = getComputedStyle(container)
-      const available = container.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
-      // 欄位內搜尋框的位(打的字 + 插入點 + 與前一格的間距);沒有欄位內搜尋框 → 0,算法與 2026-09-30 前逐位元相同
-      const reserveW = findInlineSearchMirror(reserveRoot?.current)?.getBoundingClientRect().width ?? 0
-      const reserve = reserveW > 0 ? gap + reserveW : 0
-      // 2026-05-18 Round 5 fix(per user 拍板「那就開始做」+ Codex M31 Round 5 verdict):
-      // inject available 成 CSS var,Tag 用 explicit length 而非 cyclic percentage(避 CSS Sizing 3
-      // §5.2.1 cyclic percentage 退化問題)。有欄位內搜尋框時扣掉它的位:一顆長 Tag 截斷在搜尋框前面,不把它擠出去。
-      container.style.setProperty('--combobox-tag-area-inline-size', `${Math.max(0, available - reserve)}px`)
-      for (const el of tagEls.current) if (el) el.hidden = false
-      const ofEl = overflowEl.current
-      if (ofEl) ofEl.hidden = false
-      // 2026-05-18 Round 6 fix:cache last non-zero ofEl width 破 expanded/collapsed state
-      // 量測二態(expanded → ofEl 空 offsetWidth=0 / collapsed → real ~28-32px)。沒 cache
-      // 之前同 `available` 在兩 state 給不同 verdict → 永動。詳本 hook 頂部 ref 註解。
-      const measuredOverflowW = ofEl?.offsetWidth || 0
-      if (measuredOverflowW > 0) lastOverflowWRef.current = measuredOverflowW
-      const overflowW = lastOverflowWRef.current
-      // **#3 fix(2026-05-04)**:width-check 先於 count++,並處理 i=0 邊界(1 tag 自身就太寬 → 全 hidden 顯 +N)
-      // 之前 bug:greedy `count++` 永遠至少 = 1,1-tag-too-wide case 視覺呈半個 tag clipped + +N(錯)
-      // 修後:1 tag 太寬時 count = 0,全 N tags 走 +N 顯 indicator
-      // 2026-05-18 Round 5:量 paint target `[data-tag-root]` 而非 wrapper(per codex Round 5 verdict)。
-      // wrapper basis:auto 自由 grow,offsetWidth ≠ Tag actual paint width。
-      let used = 0, count = 0
-      let anyZero = available <= 0
-      for (let i = 0; i < totalCount; i++) {
-        const el = tagEls.current[i]
-        if (!el) continue
-        const tagRoot = el.querySelector('[data-tag-root]') as HTMLElement | null
-        const w = tagRoot ? tagRoot.getBoundingClientRect().width : el.offsetWidth
-        if (w <= 0) anyZero = true
-        const next = used + (count > 0 ? gap : 0) + w
-        const remaining = totalCount - count - 1
-        // width check FIRST(無 `count > 0` 短路):任何超寬都 break,包含 i=0 case
-        if (remaining > 0 && next + gap + overflowW + reserve > available) break
-        if (remaining === 0 && next + reserve > available) break
-        used = next; count++
-      }
-      for (let i = 0; i < tagEls.current.length; i++) { const el = tagEls.current[i]; if (el) el.hidden = i >= count }
-      if (ofEl) ofEl.hidden = count >= totalCount
-      // 2026-05-18 Round 5 last guard(per Codex Round 5 verdict):safety net 防 measurement drift
-      // (sub-pixel / rounding)。verify last visible tag rect.right ≤ container right,超出遞減 count。
-      const containerRect = container.getBoundingClientRect()
-      while (count > 0) {
-        const lastEl = tagEls.current[count - 1]
-        const tagRoot = lastEl?.querySelector('[data-tag-root]') as HTMLElement | null
-        if (!tagRoot) break
-        const tagRect = tagRoot.getBoundingClientRect()
-        if (tagRect.right <= containerRect.right + 0.5) break
-        count--
-        if (lastEl) lastEl.hidden = true
-      }
-      if (ofEl) ofEl.hidden = count >= totalCount
-      // 2026-09-08:標籤列是 `flex-1 min-w-0`,容器夠窄時它會被壓到 clientWidth = 0,
-      // 而「+N」本身**在裁切容器內**,於是連它一起被裁掉 —— 使用者看不到「還有幾個」,
-      // 那正是空間不足時唯一還帶資訊的元素。(實測 DataTable 篩選面板:標籤區寬度隨容器
-      // 180 → 148 → 68 → 0;420px 時「+3」超出裁切祖先 28.4px,完全不可見。)
-      // 給容器一個等於「+N」寬度的下限:它是最後才被放棄的東西。
-      // 條件用 totalCount 而不是 `!ofEl.hidden`,是為了避免震盪 —— 後者會讓
-      // 「設下限 → 空間變夠 → 一個 tag 塞得下 → +N 收起 → 下限撤掉 → 空間又不夠」來回跑。
-      container.style.minInlineSize = totalCount > 0 ? `${overflowW}px` : ''
-      // 2026-05-18 A' fix functional setState value-equal guard(per Codex Round 3 verdict):
-      // effect 內 calc 直跑 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
-      // 觸發 re-render 即使值沒變,可能 cascade。回 prev 不更新 = avoid 抖動。
-      trustworthy = !anyZero
-      setState(prev => (prev.visibleCount === count && prev.ready) ? prev : { visibleCount: count, ready: true })
-    }
-
-    // 2026-05-14 I3 fix(per codex M31 verdict + user 抓「全選 vs 逐個勾 result 不同」):
-    // double-rAF ensures layout 完成 before measurement(原 single rAF 在 batched render
-    // 場景 tag 還 0-width)。Plus observe per-item ResizeObserver — 任何 tag width 變動
-    // 都 trigger recalc(deterministic regardless of commit order)。
-    //
-    // 2026-05-16 Race close:capture rAF IDs + cancel on cleanup(原版 race I3 沒 close
-    // 完;user 抓 path A 逐個 click vs path B 取消全選再全選 same length 不同 visible)。
-    // 2026-05-18 A' fix(per Codex Round 3 共識,user 拍板「執行」)— effect fire 時 calc() 直跑
-    // 完成 `el.hidden` 設定 + functional setState guard(value-equal 不更新 = 避免 ResizeObserver
-    // 抖動 cascade rerender)。double-rAF 為 fallback path(ResizeObserver / async update path)。
-    // 解 user verbatim「tag 過長 / 過多會先全顯再變 +N 閃動」root cause(per codex Round 3 cite
-    // 「render 沒設 hidden + calc imperative 寫 DOM」)。
-    // 註:Round 3 原以 useLayoutEffect sync calc(paint 前設 hidden)實作;2026-05-18 Round 5
-    // 已改 React.useEffect after-paint(nested 場景 parent ref attach 時序,詳上方 Round 5 註解)。
-    calc()
-    let rafId1 = 0, rafId2 = 0
-    const scheduleCalc = () => {
-      if (rafId1) { cancelAnimationFrame(rafId1); rafId1 = 0 }
-      if (rafId2) { cancelAnimationFrame(rafId2); rafId2 = 0 }
-      rafId1 = requestAnimationFrame(() => {
-        rafId1 = 0
-        rafId2 = requestAnimationFrame(() => {
-          rafId2 = 0
-          calc()
-        })
-      })
-    }
-    // 同步那趟量到 0 寬(批次渲染 / 尚未版面配置)才補跑雙 rAF;量得準就不再跑第二趟。
-    if (!trustworthy) scheduleCalc()
-    /**
-     * ResizeObserver 在 `observe()` 之後一定會先送一發「初始觀測」,那一發回報的尺寸
-     * 就是上面同步 calc 剛量過的同一個版面 —— 拿它再跑一次是純白工。每個 observer
-     * 各自吞掉自己的第一發,之後的每一發都是真的尺寸變了,照常重算。
-     */
-    const skipFirst = (fn: () => void) => { let primed = false; return () => { if (!primed) { primed = true; return } fn() } }
-    const containerObs = new ResizeObserver(skipFirst(scheduleCalc))
-    containerObs.observe(container)
-    const itemObs = new ResizeObserver(skipFirst(scheduleCalc))
-    for (const el of tagEls.current) {
-      if (el) itemObs.observe(el)
-    }
-    // 欄位內搜尋框的量尺:打字變寬 / 刪字變窄都重算(它的第一發初始觀測與上面同一批,一起被 skipFirst 吞掉)
-    const reserveEl = findInlineSearchMirror(reserveRoot?.current)
-    if (reserveEl) itemObs.observe(reserveEl)
-    return () => {
-      if (rafId1) cancelAnimationFrame(rafId1)
-      if (rafId2) cancelAnimationFrame(rafId2)
-      containerObs.disconnect()
-      itemObs.disconnect()
-    }
-  // 2026-05-15 Bug 3 fix:visibleCountOverride 入 deps,override 改 trigger recalc。
-  // 2026-09-29 exhaustive-deps:tagEls / overflowEl 是呼叫端 useRef 出來的 ref 物件(唯一呼叫端 OverflowTagList),
-  // 身分整個生命週期不變,列進來不會多跑 —— 跟 containerRef 同一種東西、同一種待遇;規則看不穿函式參數才要求明列。
-  }, [containerRef, tagEls, overflowEl, totalCount, enabled, gap, visibleCountOverride, reserveRoot])
-
-  return state
-}
-
-// ── OverflowTagList (unchanged) ──────────────────────────────────────────────
-
+/** 「+N」形狀(公開 prop `overflowShape` 的型別;與 overflow-tag-list.tsx `OverflowTagShape` 同一組值) */
 type ComboboxOverflowShape = 'circle' | 'tag'
-
-// 2026-05-16 fix:overflow chip wrapper 必能跟 tag wrapper 套同 overlap class
-// (per user 物理模型「avatar 和 +N 都是同尺寸圓形 + 同 step」)。原 chip wrapper
-// 只有 `shrink-0`,在 stack 模式 -ml-0.5 不 apply → chip 不 overlap → 視覺多 22px
-// 額外空間 → length=4→4 / length=5→2+3 saw bug 物理根因。
-// PeoplePicker stack mode pass `'-ml-0.5 first:ml-0 relative inline-flex'` 對齊。
-interface OverflowTagListProps {
-  containerRef: React.RefObject<HTMLDivElement | null>
-  items: { value: string; label: string }[]
-  size: 'sm' | 'md' | 'lg'
-  wrap: boolean
-  renderTag: (item: { value: string; label: string }, index: number) => React.ReactNode
-  /**
-   * 2026-05-14 I4 fix(per codex M31 verdict + user 抓「display overflow 有 avatar / edit 無」):
-   * Optional renderer for hidden items in `+N` overflow popover。Default fallback = `<Tag>{label}</Tag>`
-   * (純文字 chip,backward-compat)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
-   * (對齊 view path MultiPersonDisplay overflow popover Tag avatar SSOT)。
-   * 第二個參數 = 這一項的移除(與 `renderTag` 的 Tag 同一條移除路徑,見 CustomCombobox `handleRemove`)。
-   */
-  renderHiddenTag?: (item: { value: string; label: string }, onRemove: () => void) => React.ReactNode
-  onRemove?: (value: string) => void
-  /** 按在 +N 浮出清單上的 mousedown(portal;觸發欄位上的 onMouseDown 看不到它),見 CustomCombobox `keepSearchFocus` */
-  onOverflowMouseDown?: React.MouseEventHandler<HTMLDivElement>
-  /** +N 浮出清單的 id(portal;觸發欄位以它把這張卡算成同一個欄位的零件,見 CustomCombobox 觸發區的 onBlur) */
-  overflowContentId?: string
-  /** 單行模式要替欄位內搜尋框留位時,傳包住它的 Tag 區(量尺在裡面,見 findInlineSearchMirror);沒有欄位內搜尋框不傳 */
-  reserveRoot?: React.RefObject<HTMLElement | null>
-  /** Tag area gap in px(default 4)。Stack mode 傳 0 讓 negative margin 生效 */
-  gap?: number
-  /**
-   * Optional class merged into each tag's outer measurement wrapper `<div className="shrink-0">`.
-   * (2026-05-07 v15.13)為 PeoplePicker stack mode 提供 hook point — 讓 stack avatar 走
-   * `-ml-0.5 first:ml-0 relative inline-flex group/avatar` 達成 overlap + dismiss group selector,
-   * 同時保留 `useOverflowCount` 量測 wrapper(必要,不可移除)。
-   *
-   * **Caveat(Q2 known tradeoff)**:`-ml-0.5` 負 margin 不改 each wrapper 的 `offsetWidth` →
-   * `useOverflowCount` 累加按完整寬計算 → 視覺實際塞得進的 tag 數 > 量測判定能塞的數 →
-   * **+N indicator 偏保守**(視覺還有空間但已顯 `+N`)。當前 v1 接受此 tradeoff;若窄 trigger
-   * + 多人場景明顯不對,future 可加 `overlapPx` prop 讓量測補償。
-   */
-  tagWrapperClassName?: string
-  /** 2026-05-16 fix:overflow chip 圓形 wrapper 套此 class(stack 模式套 `-ml-0.5` overlap),
-   *  讓 chip 跟 avatar 同 step 物理 — 避免「chip 多 24px 額外空間」造成 saw transition。*/
-  overflowWrapperClassName?: string
-  /**
-   * Overflow indicator(+N)形狀(2026-05-12 Round 7 fix,user 抓 PeoplePicker stack +N 該圓形):
-   * - `'tag'`(default,backward-compat)— 矩形 chip(對齊 Combobox 文字 tag)
-   * - `'circle'`(opt-in for avatar stack consumers)— 圓形 avatar-shape +N(對齊 GitHub picker idiom)
-   * PeoplePicker stack mode pass `'circle'`,Combobox 文字 tag 自走 `'tag'`。
-   */
-  overflowShape?: ComboboxOverflowShape
-  /**
-   * 2026-05-15 Bug 3 fix:override visible count via formula-based primitive(PeoplePicker stack
-   * 用 `avatar-stack-overflow` primitive deterministic formula 計算 visible,bypass DOM offsetWidth
-   * measurement)。對齊 user SSOT「同 cell width 同 overflow 判斷」。
-   */
-  visibleCountOverride?: number
-}
-
-function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHiddenTag, onRemove, onOverflowMouseDown, overflowContentId, reserveRoot, tagWrapperClassName, overflowWrapperClassName, gap = GAP, overflowShape = 'tag', visibleCountOverride }: OverflowTagListProps) {
-  const tagEls = React.useRef<(HTMLDivElement | null)[]>([])
-  const overflowEl = React.useRef<HTMLDivElement>(null)
-  const { visibleCount, ready } = useOverflowCount(containerRef, tagEls, overflowEl, items.length, !wrap, gap, visibleCountOverride, reserveRoot)
-  tagEls.current.length = items.length
-
-  // key 用值(2026-09-30 補):renderTag 回傳的節點本身不帶 key,缺 key 時 React 以索引對應 —— 移除一個 Tag,後面那一顆會沿用它的 DOM
-  if (wrap) return <>{items.map((item, i) => <React.Fragment key={item.value}>{renderTag(item, i)}</React.Fragment>)}</>
-
-  const overflow = items.length - visibleCount
-  const hiddenItems = items.slice(visibleCount)
-
-  // 2026-05-18 A' fix(per Codex Round 3 共識,user 拍板「執行」)— 撤掉舊的 `style={{ opacity: ready ? 1 : 0 }}`
-  // gate(掛在 `<span className="contents">` 上,但 CSS Display 3 spec 規定 `display:contents` 元素不產生 box,
-  // parent opacity 對 children 無效 → gate 從沒生效是 dead code)。Flicker 由 `useOverflowCount` effect 內
-  // `calc()` 直跑(現 L190;2026-05-18 Round 5 改 useEffect after-paint + double-rAF guard,詳該 hook 註解)解。
-  // `ready` state 保留供未來 instrumentation / debug,不再當 visual gate。
-  // 保留 `<span className="contents">` 維持 fragment-like rendering(parent JSX 期望 single child)。
-  void ready  // intentional: ready 留供 future debug,目前無 consumer
-  // **量測 wrapper 必須是 flex 容器,不能是區塊盒**(2026-09-15 user 抓「sm 的 tag 沒垂直置中」,像素實測):
-  // 區塊盒的高度由繼承的字型行高決定(欄位 text-body = 21px),sm 的 Tag 只有 20px(h-5),行內的 Tag 對齊
-  // 行盒基線、沉到底部 → tag 區 21.8px、tag 上隙 3.9 / 下隙 2.1。md/lg 的 Tag 是 24px ≥ 21,盒子被撐滿才看不出來。
-  // flex 容器沒有行盒:高度 = Tag 高度,wrapper `items-center` 直接對 Tag 的盒子置中(sm 3/3、md 3/3、lg 5/5)。
-  // Select 的 tag 模式沒有這層 wrapper,一直是正的 —— 這層 wrapper 是 useOverflowCount 量寬用的,寬度量法不變
-  //(flex 容器在 flex row 裡 shrink-0 的 max-content 寬 = 內容寬,跟區塊盒相同)。閘:`scripts/tag-field-vertical-inset.mjs`。
-  return (
-    <span className="contents">
-      {items.map((item, i) => (
-        // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
-        // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
-        // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
-        // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話
-        // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)
-        <div key={item.value} ref={el => { tagEls.current[i] = el }}
-          className={cn('shrink-0 max-w-full flex z-[var(--tag-stack-z)] has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', tagWrapperClassName)}
-          style={{ ['--tag-stack-z' as string]: items.length - i, ['--tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>
-      ))}
-      <div ref={overflowEl}
-        className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', overflowWrapperClassName)}
-        style={{ ['--tag-stack-z-focus' as string]: items.length + 1 }}>
-        <OverflowIndicator count={overflow} shape={overflowShape} size={size} onContentMouseDown={onOverflowMouseDown} contentId={overflowContentId}>
-          {hiddenItems.map(item => (
-            renderHiddenTag
-              ? <React.Fragment key={item.value}>{renderHiddenTag(item, () => onRemove?.(item.value))}</React.Fragment>
-              : <Tag key={item.value} size="sm" onRemove={onRemove ? () => onRemove(item.value) : undefined}>
-                  {item.label}
-                </Tag>
-          ))}
-        </OverflowIndicator>
-      </div>
-    </span>
-  )
-}
 
 // ── Internal tag-stack renderer (consumed by ReadonlyMultiSelect / mode='view') ───
 //
 // Phase B2(2026-05-05):原 ComboboxDisplay sub-component 已 retire,改 inline `<Combobox mode="view">`。
 // 本 helper 只負責 tag-stack 內容渲染(OverflowTagList 消費),不包 Field wrapper。
 function ComboboxTagStack({
-  value, options, tagSize = 'md', wrap = false, containerRef: externalRef, disabled = false,
+  value, options, tagSize = 'md', wrap = false, bare = false, disabled = false,
 }: {
   value?: string[] | null; options?: ComboboxOption[]; tagSize?: 'sm' | 'md' | 'lg'
-  wrap?: boolean; containerRef?: React.RefObject<HTMLDivElement | null>; disabled?: boolean
+  /** true = 不自己包一層:呼叫端的欄位外框就是 Tag 列的容器(唯讀 / 停用欄位) */
+  wrap?: boolean; bare?: boolean; disabled?: boolean
 }) {
   const emptyDisplay = useFieldEmptyDisplay()
-  const ownRef = React.useRef<HTMLDivElement>(null)
   if (!value || value.length === 0) return <span className={fieldEmptyColorClass(disabled ? 'disabled' : 'view')}>{emptyDisplay}</span>
   const items = value.map(v => ({ value: v, label: options?.find(o => o.value === v)?.label ?? v }))
   const disabledClass = disabled ? 'bg-disabled text-fg-disabled' : undefined
 
   const content = (
-    <OverflowTagList containerRef={externalRef ?? ownRef} items={items} size={tagSize} wrap={wrap}
+    <OverflowTagList items={items} size={tagSize} wrap={wrap}
       // 2026-05-18 7B' fix(per user 拍板「執行」+ Codex Round 3 共識)— 移除 `unbounded`,Tag 回預設
       // `max-w-40` cap(160px)+ 內建 `[data-tag-text] truncate min-w-0` 自帶 ellipsis。原 unbounded 是
       // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:85-90`),但 generic Combobox tag display
@@ -432,7 +107,7 @@ function ComboboxTagStack({
       renderTag={(item) => <Tag size={tagSize} className={cn('shrink-0', disabledClass)}>{item.label}</Tag>} />
   )
 
-  if (externalRef) return content
+  if (bare) return content
   // 2026-05-05 v9 fix(Bug 4):view path 內 wrapper 必須 `flex-1 min-w-0`,否則在 cell flex
   // parent 下不認領完整可用寬度 → OverflowTagList 量得寬度小於 edit path → 顯 `+N` 多於 edit。
   // edit path tagAreaRef wrapper 已是 `flex-1 min-w-0`(CustomCombobox),
@@ -442,8 +117,9 @@ function ComboboxTagStack({
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
   // `data-table.spec.md:233`「禁硬裁無 ellipsis」+ MUI X / Ant Table column.ellipsis 共識。
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
+  // `relative`:「+N」量尺的定位容器(OverflowTagList)
   return (
-    <div ref={ownRef} className={cn('flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
+    <div className={cn('relative flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
       {content}
     </div>
   )
@@ -668,7 +344,6 @@ function ReadonlyMultiSelect({
   const sz = size ?? 'md'
   const iconSize = sz === 'lg' ? 20 : 16
   const tagHeight = TAG_HEIGHT_PX[sz]
-  const containerRef = React.useRef<HTMLDivElement>(null)
   // 只選了「不限」時不渲 Tag —— 走**一般已填值**那條純文字路徑(2026-09-18 user 拍板)。
   // 互斥保證它只會單獨存在,所以判斷就是「陣列裡只有它」。
   const isUnrestrictedOnly = unrestricted && (value?.length ?? 0) === 1 && value?.[0] === unrestrictedValue
@@ -715,8 +390,10 @@ function ReadonlyMultiSelect({
   }
 
   return (
-    <div ref={containerRef}
+    <div
       className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
+        // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):`relative` = 「+N」量尺的定位容器(OverflowTagList)
+        hasTags && !wrap && 'relative',
         // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
         // readonly/disabled path 對齊 L293 view wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
@@ -731,7 +408,7 @@ function ReadonlyMultiSelect({
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
-          containerRef={containerRef} disabled={resolvedMode === 'disabled'} />
+          bare disabled={resolvedMode === 'disabled'} />
       ) : (
         isUnrestrictedOnly
           ? <span className={fieldDisplayTextClass(sz)}>{unrestrictedLabel}</span>
@@ -754,7 +431,7 @@ function ReadonlyMultiSelect({
 // 公開 `Combobox.forwardRef` 之前用 `(props, _ref)` 把 ref drop,內部 `CustomCombobox`
 // 從未拿 ref → PeoplePicker `stackContainerRef.current` 永遠 null →
 // `useLayoutEffect` early return → `visibleCountOverride` 永遠 undefined →
-// Combobox 走原 internal `useOverflowCount` 60px chip fallback bug → drift。
+// Combobox 走原 internal `useOverflowCount` 60px chip fallback bug → drift。(那個 60px 頂替 2026-10-13 已拆:「+N」恆渲染、量真的寬,見 useOverflowCount。)
 // Fix:internal `__triggerRef` prop(underscore = internal-only)attach root div;
 // 公開 `Combobox.forwardRef` 把 `ref` forward 為 `__triggerRef`。對齊 codex DS-wide iceberg
 // audit:`SelectMenu` / `DateGrid` / `Toast` 的 `_ref` 是 intentional documented(no DOM
@@ -1012,10 +689,14 @@ function CustomCombobox({
         // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(select-menu.tsx forwardKeyToListbox)
         if (open && forwardKeyToListbox(listboxId, e)) return
         // 關鍵字空白時 Backspace = 按「最後一個值」的 ×(2026-10-07 待辦總帳 K1,user「可以跟」MUI / rc-select / react-select):
-        // 刪最後一個 Tag;只選「不限」時就是它 → 回到未選(select-menu-unrestricted.spec.md 互斥第 3 條)。焦點在欄位內搜尋框或欄位本身都算
-        // (欄位上的按鈕不算);焦點不動、清單開關不變;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」。
-        // 只在搜尋框在欄位內時:浮層內搜尋框在另一個 portal、跟 Tag 不相鄰,那一條沒有定案(待辦總帳 K1 列,2026-10-07 回報)
-        if (inlineSearch && value.length > 0 && (e.target === inputRef.current || e.target === e.currentTarget) && isRemoveLastValueKey(e, search)) {
+        // 刪最後一個 Tag;只選「不限」時就是它 → 回到未選(select-menu-unrestricted.spec.md 互斥第 3 條)。焦點不動、清單開關不變;
+        // 連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」。哪裡按算數:
+        // · 搜尋框在欄位內:欄位內搜尋框或欄位本身(欄位上的按鈕不算);
+        // · 其餘(浮層內搜尋框 —— 本元件與 PeoplePicker 多選的預設 —— 與不可搜尋):**清單關著、焦點在欄位本身**(2026-10-13 待辦 K1b (a),
+        //   與上一格同一個情境:焦點在握著值的欄位上、沒有關鍵字)。焦點在浮層裡的搜尋框按 Backspace 不刪值(K1b (b) 不做:沒有世界級前例,
+        //   搜尋框在另一個 portal、跟 Tag 不相鄰)—— 浮層開著時鍵盤事件本來就不經過這裡。
+        const onValueHolder = inlineSearch ? (e.target === inputRef.current || e.target === e.currentTarget) : (!open && e.target === e.currentTarget)
+        if (value.length > 0 && onValueHolder && isRemoveLastValueKey(e, search)) {
           e.preventDefault()
           const last = items[items.length - 1]
           const next = value.slice(0, -1)
@@ -1040,7 +721,7 @@ function CustomCombobox({
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (
-          <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
+          <OverflowTagList items={items} size={size} wrap={wrap}
             tagWrapperClassName={tagWrapperClassName}
             overflowWrapperClassName={overflowWrapperClassName}
             gap={tagAreaGap}
@@ -1056,7 +737,7 @@ function CustomCombobox({
             onRemove={handleRemove}
             onOverflowMouseDown={keepSearchFocus}
             overflowContentId={overflowCardId}
-            reserveRoot={inlineSearch ? tagAreaRef : undefined} />
+            getReserveEl={inlineSearch ? findInlineSearchMirror : undefined} />
         ) : isUnrestrictedOnly && !inlineSearch ? (
           /* 只選「不限」→ 一般已填值的純文字:與下面 placeholder **同一顆 span 的盒**,
              唯一差別是不套那層灰(對齊單選欄位 select.tsx `CustomSelectTriggerContent` 純文字那一支 `!value && 'text-fg-muted'`)。

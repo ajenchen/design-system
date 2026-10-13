@@ -303,7 +303,8 @@ const MUTANTS = [
     what: 'AgentPanel 輸入盒附件移除後不接力焦點',
     file: 'components/AgentPanel/agent-panel.tsx',
     expectRed: ['C-composer-keyboard'],
-    apply: (src) => replaceOnce(src, /    focusAfterCollectionRemoval\(containerRef\.current, \{ owner: owner\.current \}\)\n    onRemove\(attachment\)/, '    onRemove(attachment)'),
+    // 2026-10-13:附件列改用 OverflowTagList(與 Combobox 同一份可見數量測),容器 ref 改名 rowRef —— 突變錨點跟著改,拆掉的仍是同一件事
+    apply: (src) => replaceOnce(src, /    focusAfterCollectionRemoval\(rowRef\.current, \{ owner: owner\.current \}\)\n    onRemove\(attachment\)/, '    onRemove(attachment)'),
   },
 ]
 
