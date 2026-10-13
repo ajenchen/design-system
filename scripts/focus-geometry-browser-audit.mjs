@@ -157,10 +157,10 @@ function instrumentSelfCheck() {
 // 不算畫得出東西)所以綠 —— 綠或紅取決於量的那一刻落在動畫哪一格(M37:「Tab 完了」被當成「畫面到位了」)。
 // 靜止時 Tooltip 底緣離箭頭鈕 7.6px、焦點框只佔 4px,不是產品問題;把動畫釘在第 15ms 可 100% 重現誤紅。
 // 判準(與「量 focus 顏色先等過渡」同一條,M32):**量的是靜止畫面** —— 消費共用的 settleAfterInteraction
-//(lib/launch-browser.mjs,對照組在 scripts/test-open-story.mjs):連續 SETTLE_FRAMES 格沒有 DOM 變動、也沒有進行中的
+//(lib/launch-browser.mjs,對照組在 scripts/test-open-story.mjs):連續 TAB_SETTLE_QUIET_FRAMES 格沒有 DOM 變動、也沒有進行中的
 // 有限長度動畫 / CSS 過渡。無限動畫(微光、轉圈)不等;上限內等不到 → 這一站記成**儀器失效**,
 // 不拿未穩態的畫面當證據、也不默默放行。
-const SETTLE_FRAMES = 2
+const TAB_SETTLE_QUIET_FRAMES = 2
 const SETTLE_CAP_MS = 3000
 
 // 焦點站的名字(元素描述 + 尺寸)只有這一份寫法:DETECT 用它當列的身分,QUICK_KEY 用它在量之前判斷「這站已經量過」
@@ -366,14 +366,14 @@ try {
           await pg.keyboard.press('Tab')
           const quick = await pg.evaluate(QUICK_KEY)
           if (quick === '' || (quick && seen.has(quick))) continue
-          // 量靜止畫面:聚焦帶起的動畫(例:Tooltip 進場)播完、版面連續幾格不變之後才量(見 SETTLE_FRAMES 檔頭)
-          const settled = await settleAfterInteraction(pg, { frames: SETTLE_FRAMES, capMs: SETTLE_CAP_MS })
+          // 量靜止畫面:聚焦帶起的動畫(例:Tooltip 進場)播完、版面連續幾格不變之後才量(見 TAB_SETTLE_QUIET_FRAMES 檔頭)
+          const settled = await settleAfterInteraction(pg, { frames: TAB_SETTLE_QUIET_FRAMES, capMs: SETTLE_CAP_MS })
           const m = await pg.evaluate(DETECT)
           if (!m) continue
           const k = m.desc+'|'+m.size
           if (seen.has(k)) continue
           if (!settled.ok) {
-            unsettled.set(k, `${m.desc.slice(0, 46)}:${SETTLE_CAP_MS}ms 內沒有連續 ${SETTLE_FRAMES} 格靜止(DOM 變動或進行中的動畫打斷靜止 ${settled.lateChanges} 次)`)
+            unsettled.set(k, `${m.desc.slice(0, 46)}:${SETTLE_CAP_MS}ms 內沒有連續 ${TAB_SETTLE_QUIET_FRAMES} 格靜止(DOM 變動或進行中的動畫打斷靜止 ${settled.lateChanges} 次)`)
             // 同一站最多等兩次(繞回來再給一次機會);仍等不到就不再每圈各等 SETTLE_CAP_MS —— 它已記成儀器失效
             const tries = (settleTries.get(k) ?? 0) + 1
             settleTries.set(k, tries)
