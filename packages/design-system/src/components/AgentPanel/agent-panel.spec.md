@@ -152,10 +152,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   斷點常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 有匯出,消費端不必自己抄一個 960。
   機械閘:`scripts/agent-panel-breakpoint.mjs`。
 
-  **舞台上的其他元件照原本的規則運作**(user 2026-08-08:「toast 一樣落在舞台上啊」,全文與規則在 `../Toast/toast.spec.md`「落點」):
-  並排時面板把「舞台右緣 = 面板左緣」登記到 `lib/stage-geometry.ts`(扣掉自己的進場滑入,量版面不量動畫中間值),
-  `<Toaster />` 據此讓 Toast 照自己的對齊落在舞台上(靠右對齊舞台右緣、置中對齊舞台中線)、不落進面板;面板拖寬時跟著走。蓋板態不登記(沒有挪出空間,舞台仍是全寬)。
-  閘:`scripts/toast-stage-placement-invariant.mjs`。
+  **Toast 不為面板讓位**:並排或蓋板,Toast 都以整個視窗為準、落在套件預設角落,可能疊在面板上 —— 刻意如此,不是 bug
+  (user 2026-10-13 決定;規則、原話與理由只住 `../Toast/toast.spec.md`「落點」)。面板不向 Toast 登記或提供任何幾何。
 
 ### 2. AgentPanelHeader(標題列)
 
@@ -426,7 +424,6 @@ Esc 則是「關最內層的暫時性浮層」,面板不是暫時性浮層,所�
   / `components/Tag` / `components/OverflowIndicator` / `components/CircularProgress`
   / `components/Empty` / `components/RadioGroup` / `components/Dialog`
   / `tokens/motion/motion.css` / `tokens/uiSize/uiSize.css`。
-- `../Toast/toast.spec.md`「落點」—— 並排時 Toast 照自己的對齊落在舞台上、不落進面板;入口鈕在家時疊在它上方。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

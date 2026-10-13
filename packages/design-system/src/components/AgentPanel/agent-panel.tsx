@@ -46,7 +46,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
-import { untransformedBox, useStageClaim, type StageClaim } from '@/design-system/lib/stage-geometry'
 import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
@@ -319,23 +318,6 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
     useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
-
-    // 並排 = 把原本的畫面挪出一條給面板 → 登記「舞台右緣 = 面板左緣」,頁面層浮動訊息(Toast)據此留在舞台上
-    // (lib/stage-geometry.ts;user 2026-08-08「toast 一樣落在舞台上啊」,toast.spec.md「落點」)。
-    // 蓋板態不登記:蓋板沒有挪出空間,舞台仍是全寬。盒子扣掉自己的 transform —— 開啟時 slide-in 從右邊 16px 滑進來,
-    // 量到中間值之後沒有任何 resize 會再校正它。觀察面板(拖寬)與宿主(容器變寬 / 變窄)。
-    const claimsStageEdge = open && containerPx > 0 && !isOverlay && selfVisible
-    const stageClaim = React.useMemo<StageClaim | null>(
-      () => (claimsStageEdge
-        ? {
-            kind: 'edge',
-            box: () => (rootRef.current ? untransformedBox(rootRef.current) : null),
-            observe: () => [rootRef.current, hostRef.current].filter((el): el is HTMLElement => !!el),
-          }
-        : null),
-      [claimsStageEdge],
-    )
-    useStageClaim(stageClaim)
 
     // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」三條表,2026-09-07 訂):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動

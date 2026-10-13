@@ -770,7 +770,7 @@ jobs:
     # 起因:TreeView 步驟導覽閘(待辦總帳 T1–T5)原本要疊進 verify-browser-interaction,那個 job CI 實測已 21.4–22.8 分(b5757ee6 / 40b432da,上限 25),
     # 再疊會重演 0464ba54 的 25.4 分被取消;同主題的 TreeView 鍵盤路線閘(B9)一起從 interaction 搬來,那邊鬆開約 1 分。
     # 預估:建置 + 安裝約 4–5 分,兩支閘本機 32 秒 + 59 秒(CI 約本機 1.2–1.4 倍)→ 約 7 分,15 分上限。
-    # 2026-10-13 按預算加一支 Toast 落點閘(本機判定 + 對照組合計約 50 秒 —— 複審後多了置中 / 捲動 / docs 頁三個情境,CI 估 70 秒;照 form-validation / virtual-cursor-modality
+    # 2026-10-13 按預算加一支 Toast 落點閘(同日改為 toast-viewport-placement:本機判定 + 對照組合計約 38 秒,CI 估 55 秒;照 form-validation / virtual-cursor-modality
     # 對照組「按預算放」的先例):agent 示範那個 job(verify-browser-agent)手上沒有 CI 實測時間、上限 15 分,不往沒有證據的地方疊。
     name: Verify browser(TreeView keyboard + step navigation + toast placement)
     runs-on: ubuntu-24.04
@@ -801,7 +801,7 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
-      - name: TreeView keyboard route + step navigation + toast stage placement (browser)
+      - name: TreeView keyboard route + step navigation + toast viewport placement (browser)
         run: |
           npx --no-install playwright install chromium
           # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
@@ -810,11 +810,12 @@ jobs:
           # TreeView 步驟導覽樹(2026-10-07 待辦總帳 T1–T5):真滑鼠 / 觸控 / 鍵盤量 A2(含捲動框裡捲到看得到)、D、連點保護(雙擊、三擊、觸控快點、
           # 兩下都回報第 1 下、隔得久的兩下;焦點與單擊相同)、灰底代顯與 Tab 停靠點、列尾結果與讀屏說明;--selftest 9 個改壞版注入真建置必紅。
           npm run test:tree-view-step-navigation
-          # Toast 落在舞台上(user 2026-08-08「toast 一樣落在舞台上啊」;toast.spec.md「落點」):代理並排時不落進面板,靠右的右緣離面板左緣 24、
-          # 置中的對齊舞台中線,拖寬跟著走;入口鈕在家時疊在它上方(間距 loose)、入口鈕中心點得到、頁面捲動後仍如此;docs 頁量自 story 外框;
-          # 蓋板 / 貼邊 / 沒有代理與 sonner 預設逐像素相同。兩支純函式另有判定表(六種 position × 四種佔用)。
-          # --selftest:判定表換改壞版指定格必紅;toaster 落點釘回改動前,並排 / 拖寬 / 置中 / 入口鈕 / docs 頁都必須紅;擋掉捲動事件,捲動情境必須紅。
-          npm run test:toast-stage-placement
+          # Toast 一律以整個視窗為準、不避讓(user 2026-10-13 決定甲;toast.spec.md「落點」):沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 /
+          # docs 頁,Toast 離包含塊右、下都 = sonner 預設邊距,清單的落點自訂屬性全是預設;靜態:只有 toast.tsx import sonner、<SonnerToaster> 不收落點參數、
+          # toast.tsx 不量任何元素、沒有檔改寫 sonner 清單落點、<Toaster> 用法最多帶 position。
+          # --selftest:靜態對照組(a6976432 的舞台落點逐條寫回)各紅在指定那一條;頁面注入 a6976432 的舞台落點,並排 / 入口鈕在家 / 捲動 / docs 頁必紅、
+          # 沒有代理 / 蓋板 / 貼邊必維持綠。
+          npm run test:toast-viewport-placement
 
   verify-browser-overlay:
     name: Verify browser(overlay + theme gates)

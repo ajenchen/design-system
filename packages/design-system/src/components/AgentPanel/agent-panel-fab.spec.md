@@ -29,10 +29,8 @@
   都用它,不各自寫一份 `open ? panel : fab`(「入口鈕三態」那個 story 例外:它展示的是獨立 `AgentFab` 的三種標誌狀態,沒有面板可互斥)。
   **一個舞台一個 Dock**:家的座標只有一組(右下角離邊 loose),同一個 relative 容器內放兩個 `AgentPanelDock` 會像素級重疊;
   要在同一頁擺兩個代理入口,請各自給不同的 relative 舞台(2026-09-03 稽核補上的不變式)。
-  **Toast 疊在入口鈕上方**(規則與 user 原話在 `../Toast/toast.spec.md`「落點」):在家時入口鈕把「佔住舞台右下角」登記到
-  `lib/stage-geometry.ts`,Toast 底緣離入口鈕頂 = 同一顆 `--layout-space-loose`(md 16 / lg 24),入口鈕整顆看得到、點得到;
-  盒子用家的公式(`placementXY`,與靜止時的 CSS 錨定同一組)算,不量正在懸停放大或飛回家的鈕。**貼邊**時角落讓出來、不登記,Toast 回原位。
-  閘:`scripts/toast-stage-placement-invariant.mjs`。
+  **Toast 不為入口鈕讓位**:入口鈕在家時 Toast 仍落在套件預設角落,可能蓋住入口鈕 —— 刻意如此,不是 bug
+  (user 2026-10-13 決定;規則、原話與理由只住 `../Toast/toast.spec.md`「落點」)。入口鈕不向 Toast 登記或提供任何幾何。
 - **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),

@@ -532,7 +532,7 @@
       "scripts/test-sync-memory.mjs",
       "scripts/test-sync-plugin-aliases.mjs",
       "scripts/test-tag-overflow-room-invariant.mjs",
-      "scripts/test-toast-stage-placement-invariant.mjs",
+      "scripts/test-toast-viewport-placement-invariant.mjs",
       "scripts/test-token-creation-invariant.mjs",
       "scripts/test-token-twin-invariant.mjs",
       "scripts/test-tree-view-keyboard-route-invariant.mjs",

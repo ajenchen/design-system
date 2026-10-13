@@ -130,27 +130,42 @@ toast({
 - `action`（選填）：tertiary xs 按鈕
 - `duration`（選填）：自動關閉時間；預設依 `action` 而定——有 `action` → **10000ms**（鍵盤焦點不暫停 sonner 倒數，10 秒給鍵盤使用者足夠時間按到「復原 / 重試」，見「A11y 預設」段；2026-07-05 D4 user 拍板，對齊 Polaris toast with action ≥10s / Carbon actionable notification 預設 persistent），無 `action` → **4000ms**
 
-## 落點(落在舞台上)
+## 落點(以整個視窗為準,不避讓)
 
-由來 —— user 2026-08-08 原話:
+**規則**:Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓。
 
-> toast 一樣落在舞台上啊
-> 反正視覺和互動的結果就是把原本的畫面挪出了一個空間放 ai agent,而其他的元件都應該按照原本的規則在舞台運作得好好的才對吧？
+- 角落 = `<Toaster position>`(app 層設定一次,預設右下);邊距 = sonner 預設:桌機離視窗邊 24px,寬度 600px 以下(手機)16px 且整列滿寬(sonner `src/index.tsx` `VIEWPORT_OFFSET = '24px'` / `MOBILE_VIEWPORT_OFFSET = '16px'`,https://github.com/emilkowalski/sonner/blob/8e4662b39255120b62138312058f5d77c0139a5e/src/index.tsx#L25-L28)。
+- `<Toaster />` 不傳 `offset` / `mobileOffset` / `style`,DS 也不量任何元件的位置來推 Toast。代理面板並排或蓋板、入口鈕在家或貼邊、頁面捲動,Toast 都在同一個位置,可能疊在它們上面 —— 刻意如此,不是 bug(`../AgentPanel/agent-panel.spec.md`、`../AgentPanel/agent-panel-fab.spec.md` 各有一行指回本節)。
+- 疊在東西上面時,讓開的方法是 Toast 自己:(1) 畫面上可見的 × 隨時關掉(見「A11y 預設」關閉按鈕);(2) 自動消失,無 `action` 4 秒、有 `action` 10 秒(見「API」`duration`);(3) 滑鼠移上去暫停倒數,鍵盤 ⌥T 跳進 Toast 也暫停(見「A11y 預設」自動關閉計時器)。
 
-舞台 = 畫面扣掉代理面板之後的那一塊(`../AgentPanel/agent-panel.spec.md`「量的是容器不是視窗」)。Toast 照它自己原本的對齊規則(`<Toaster position>`,預設右下)落在舞台上:
+**由來 —— user 2026-10-13 決定(甲)**。user 先問:
 
-- **沒有代理**:離視窗右、下各 24px(sonner 預設)。不傳任何 offset / style,與改動前逐像素相同。
-- **代理面板並排**:靠右的 Toast 離**舞台**右緣 24px —— 跟沒有面板時離視窗右緣一樣;置中的對齊**舞台**中線 —— 跟沒有面板時對齊視窗中線一樣;上下不動。量的是舞台此刻的右緣(面板左緣),不是「24 + 面板寬」,所以面板拖寬時 Toast 跟著走、面板不貼視窗右邊時一樣對。
-- **代理面板蓋板**(容器 < 960):蓋板沒有挪出空間,舞台仍是全寬,Toast 位置不變。
-- **面板關著、入口鈕在家**(右下角,`../AgentPanel/agent-panel-fab.spec.md`「放置與互斥」):Toast 疊在入口鈕上方,底緣離入口鈕頂 = 入口鈕自己離舞台邊的 `--layout-space-loose`(md 16 / lg 24),左右不動;入口鈕整顆看得到、點得到。**入口鈕貼邊**時角落讓出來,Toast 回到原位。
-- 六種 `position` 都照自己的對齊落在舞台上:靠右的對齊舞台右緣、置中的對齊舞台中線、靠左的本來就在舞台左緣(不動)。疊在入口鈕上方只作用於右下(手機寬度 sonner 整列滿寬,所有靠下的位置都疊)。
+> 我想知道世界級的設計有沒有做甲的？因為就算這樣客製化了這些冰山一角還是有千千萬萬個情況可能會蓋到重要的東西啊，難道每個情況都要定義？而且又不是關不掉toast,仔細研究一下
 
-**機制**:舞台幾何只有一條通道 `../../lib/stage-geometry.ts` —— 並排的面板與在家的入口鈕登記自己佔掉的部分,`<Toaster />` 讀它,由 `./stage-offsets.ts`(純函式,判定表逐格驗)換算成 sonner 的 `offset` / `mobileOffset`,置中再加清單的行內 `left`(sonner 的置中規則寫死 `left: 50%`,不吃 offset)。`ToasterProps` 不加 prop、consumer 不必接線(`<Toaster />` 仍是 app-level-one,見下方「shadcn passthrough 例外說明」)。登記的是版面位置,不含進場滑入、懸停放大、飛回家等動畫的中間值。
-距離量自 **Toast 清單自己的定位框**(`<Toaster />` 旁一個 `position: fixed; inset: 0` 的隱形量尺,與清單同一個包含塊),不是視窗:一般 app 兩者相同;祖先有 transform 時(例:Storybook docs 頁每則 story 的外框)定位框是那個祖先。只算與定位框相交的佔用(docs 頁上別則 story 的面板不算);頁面捲動時重量(佔用者跟著內容捲、尺寸不變)。
+AI 查證後建議甲(「Toast 一律以整個視窗為準,不做任何避讓」),user 原話:
 
-**尚未定案**(不是規則,待 user 決定):蓋板時 Toast 仍疊在面板的輸入盒上;Toast 疊在入口鈕上方時,入口鈕的提示「問我或推走我」大部分被 Toast 蓋住。
+> 確保符合世界級的設計和我們一致的設計語言就甲
 
-閘:`scripts/toast-stage-placement-invariant.mjs`(判定表:六種 position × 四種佔用;真建置:沒有代理 / 並排 / 拖寬 / 蓋板 / 置中並排 / 入口鈕在家 / 頁面捲動 / 貼邊 / docs 頁;`--selftest` 注入改動前的落點、或擋掉捲動重量,必紅)。
+(兩句原話與查證經過記在 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` 待辦總帳 P6 列。)
+
+**理由**:
+
+1. **Toast 本來就讓得開**:可關、會自己消失、滑過暫停(上面三點)。被蓋住的東西只會被擋一下(4 / 10 秒),使用者也隨時能按 × 移開它。
+2. **要避讓的東西列不完**:畫面上可能被蓋住的重要元素沒有上限(user:「難道每個情況都要定義？」)。只讓開其中幾個,其餘照樣被蓋,還多出一套要跟著每個元件維護的幾何。
+3. **世界級的做法就是不避讓**(2026-10-13 查證):
+   - VS Code:Toast 以整個工作台為準(`.monaco-workbench > .notifications-toasts { position: absolute; right: 3px; bottom: 25px }`,https://github.com/microsoft/vscode/blob/7e092ca6c3cdaccb5e6bcabd0def62a8a84b6b37/src/vs/workbench/browser/parts/notifications/media/notificationsToasts.css#L6-L10),計算空間只扣狀態列與標題列(`notificationsToasts.ts#L645`、`#L649`),不扣側欄 —— Chat 在右側欄時,Toast 疊在 Chat 上。
+   - Atlassian Flag:「Flags appear at the bottom left of the screen and overlay any content.」(https://atlassian.design/components/flag/usage)
+   - Carbon:「Toast notifications cover content on the screen so they should always be easily dismissed.」(https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx,Dismissal 段)
+   - Ant Design notification:`bottom` 是「Distance from the bottom of the viewport」、`top` 是「Distance from the top of the viewport」,預設都是 24(https://github.com/ant-design/ant-design/blob/5a102fe28abc8624eb27c5e1365cdbb0a4dead73/components/notification/index.en-US.md)
+   - Fluent 2:「Toasts should always appear in a consistent location within your app, where they are least likely to block the main content.」(https://fluent2.microsoft.design/components/web/react/core/toast/usage)
+   - Sonner(本 DS 用的套件):`[data-sonner-toaster] { position: fixed }`,邊距固定(https://github.com/emilkowalski/sonner/blob/8e4662b39255120b62138312058f5d77c0139a5e/src/styles.css#L27-L28)。
+   - 會讓位的只有三家,讓的都是畫面框架的一部分,用的是固定的高度或距離:Material(Android / Compose)把 Snackbar 墊到 FAB / 底部導覽上方(`setAnchorView`,https://github.com/material-components/material-components-android/blob/60ff09436d5d477a4b9d02940f31eb01e1250620/docs/components/Snackbar.md);Polaris 墊到自家底部全域橫條上方(`.ToastManager { position: fixed; … bottom: var(--pc-frame-global-ribbon-height) }`,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/ToastManager/ToastManager.module.css#L15-L26);Atlassian 預設仍為舊版左側導覽列固定留 80px,原始碼自己寫「The 80px left offset was a legacy artefact from the old left-rail nav sidebar.」,正以功能旗標改成與下緣相同的 48px(https://cdn.jsdelivr.net/npm/@atlaskit/flag@19.0.1/dist/es2019/flag-group.js)。查到的系統裡,沒有一家讓 Toast 跟著可開關、可拖寬的側邊面板或聊天窗挪動。user 選甲 = 不做任何避讓,入口鈕也不例外。
+
+**不採用**:讓 Toast 跟著代理面板或入口鈕挪位(2026-10-13 曾合入、同日撤回 —— 依據出自已作廢的代理面板草案,不是現行規格,元件建好後 user 也從未確認過)。要讓 Toast 為任何東西讓位,先改本節並經 user 決定。
+
+**Storybook docs 頁**:每則 story 的外框有 transform,`position: fixed` 的包含塊變成那個外框,Toast 落在外框的角落。這是 Storybook 展示框造成的,不是 DS 行為;一般 app 的包含塊就是視窗。
+
+閘:`scripts/toast-viewport-placement-invariant.mjs`(真建置:沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 / docs 頁,Toast 離包含塊右、下兩邊都 = sonner 預設邊距;靜態:DS 原始碼沒有任何地方傳 Toast 落點參數、改寫 sonner 落點或量元件位置來推 Toast;`--selftest` 注入「跟著面板與入口鈕挪位」的舊做法,必紅)。
 
 ## 寬度（元件級常數）
 
@@ -197,8 +212,8 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - `../Notice/notice.spec.md` — Toast 消費的 layout primitive（與 Alert 共用）
 - `../Alert/alert.spec.md` — 持久性通知（同一套視覺策略）
 - `../Dialog/dialog.spec.md` — 需要阻斷或確認的通知改用 Dialog
-- `../AgentPanel/agent-panel.spec.md` — 並排的代理面板切走舞台右緣(見「落點」)
-- `../AgentPanel/agent-panel-fab.spec.md` — 在家的入口鈕佔住舞台右下角(見「落點」)
+- `../AgentPanel/agent-panel.spec.md` — Toast 不為代理面板讓位(見「落點」)
+- `../AgentPanel/agent-panel-fab.spec.md` — Toast 不為入口鈕讓位(見「落點」)
 - [sonner](https://sonner.emilkowal.ski/) — 浮動管理 library
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
