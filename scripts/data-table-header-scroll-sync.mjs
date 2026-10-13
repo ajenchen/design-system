@@ -3,7 +3,7 @@
  * @gate-contract
  *   保證: 捲軸不佔 / 佔版面兩種幾何下,指標停在表頭上把有欄寬調整的表捲到最右端,之後每一個畫出來的影格表頭與表身的 scrollLeft 相等、每欄左緣差 ≤ 0.5px;祖先有 transform: scale() 時操作欄寬、填滿高度、多區列高與不縮放時相等
  *   紅: 拿掉表頭內層的 overflow-x: clip、或表頭偏 3px、或在縮放下注入錯的面板寬 / 上限 / 列高(--selftest);7777b61c 的建置跑必須紅 31 項(overlay 1005 / 1002、137 / 134)
- *   綠: 修好的建置兩個 lane 全綠;rAF 逐格與 screencast 逐格兩種量法同時為 0 才綠,沒有水平溢出 / lane 幾何不對時以儀器失效紅而不是綠
+ *   綠: 修好的建置兩個 lane 全綠;rAF 逐格與 screencast 逐格兩種量法同時為 0 才綠,沒有水平溢出 / lane 幾何不對 / screencast 任一階段收不到幀時以儀器失效紅而不是綠
  * ─────
  * DataTable 表頭 / 表身水平捲動同步 + 版面量測不受 transform 影響(2026-10-13,待辦總帳 Q2a / Q2c)。
  *
@@ -23,6 +23,12 @@
  *     H2 指標在表身上把表身捲到底,再把指標移到表頭上往右推 6 下:**之後每一個畫出來的影格**
  *        —— (a) 頁內 rAF 逐影格讀 scrollLeft 與每欄左緣;(b) CDP screencast 逐影格量表頭紅條 / 表身藍條的位移 ——
  *        表頭 scrollLeft = 表身 scrollLeft、每欄左緣 |Δ| ≤ 0.5px;停手後再量一次
+ *        screencast 只在畫面有變動時才送幀:修好的建置推表頭時表頭表身都已在最右、畫面一個像素都不變 → Linux runner
+ *        整段只送 1 格(2026-10-13 CI 六格全 INSTRUMENT-FAIL);本機 mac 有 18 格是 mac 的彈性回彈(rubber-band)動畫
+ *        剛好在畫,不是儀器設計(M37:「本機有幀」被當成「儀器會送幀」)。所以在畫面角落掛一個每個 rAF 換色的心跳方塊
+ *        (不碰兩條掃描列,碰到 = INSTRUMENT-FAIL):每一格都有變動 → 合成器每一格都畫、screencast 才真的是逐格證人;
+ *        並以**收到的幀數**當條件等(推前 / 每一下之後 / 停手後各 ≥ 3 格,上限 5 秒,不足 = INSTRUMENT-FAIL),
+ *        不用固定時間猜機器多快(M32 第四題)。
  *     H3 從最左邊開始,指標一直停在表頭上一路捲到底(refute 第 3 條:觸控板在表頭列上滑到底就中),同樣逐影格
  *   對照組:`--build=<7777b61c 的建置>` overlay lane 的 H1 / H2 / H3 必紅(實測 625 / 622,12 欄全差 3px)。
  *
@@ -147,6 +153,46 @@ function finalState(index) {
 // ── screencast:逐影格量表頭紅條與表身藍條的相對位移 ─────────────────────────────────────────
 const MARKER_CSS = `[data-datatable-header-panel="center"] [role="columnheader"]{box-shadow: inset 2px 0 0 rgb(255,0,0) !important}
 [data-datatable-hscroll] [role="row"] > :is([role="cell"],[role="gridcell"]){box-shadow: inset 2px 0 0 rgb(0,0,255) !important}`
+// 心跳方塊:每個 rAF 換一次色,保證每一格都有畫面變動 → screencast 每一格都會送(而不是只在產品剛好有動的時候)。
+// 兩個顏色都不會被下面的紅條 / 藍條判準認成標記條(r、b 都 ≤ 128)。
+const HEARTBEAT_COLORS = [[64, 64, 128], [96, 64, 128]]
+const HEARTBEAT_SIZE = 8
+/** screencast 每個階段(推前 / 每一下之後 / 停手後)至少要收到的幀數:回 ack 之前最多只有一格在路上,收到 ≥ 3 格 = 至少 2 格是這個階段開始之後才畫的 */
+const FRAMES_PER_PHASE = 3
+const PHASE_FRAME_DEADLINE_MS = 5000
+function startHeartbeat({ size, colors }) {
+  const el = document.createElement('div')
+  el.setAttribute('data-screencast-heartbeat', '')
+  el.style.cssText = `position:fixed;left:0;bottom:0;width:${size}px;height:${size}px;z-index:2147483647;pointer-events:none;background:rgb(${colors[0].join(',')})`
+  document.body.appendChild(el)
+  let tick = 0
+  let stop = false
+  const beat = () => {
+    if (stop) return
+    tick += 1
+    el.style.background = `rgb(${colors[tick % 2].join(',')})`
+    requestAnimationFrame(beat)
+  }
+  requestAnimationFrame(beat)
+  window.__dtHeartbeat = { stop: () => { stop = true; el.remove(); return tick } }
+  const r = el.getBoundingClientRect()
+  return { x: r.x, y: r.y, w: r.width, h: r.height }
+}
+function heartbeatVisible(png, scale, hb) {
+  const x = Math.floor((hb.x + hb.w / 2) * scale), y = Math.floor((hb.y + hb.h / 2) * scale)
+  const i = (png.width * y + x) * 4
+  return HEARTBEAT_COLORS.some(([r, g, b]) => Math.abs(png.data[i] - r) <= 2 && Math.abs(png.data[i + 1] - g) <= 2 && Math.abs(png.data[i + 2] - b) <= 2)
+}
+
+/** [0,0,-3,-3,-3] → '0×2 -3×3'(心跳下一段有數十格,逐格列印讀不出重點) */
+const runLengths = (values) => {
+  const out = []
+  for (const v of values) {
+    if (out.length && out[out.length - 1][0] === v) out[out.length - 1][1] += 1
+    else out.push([v, 1])
+  }
+  return out.map(([v, n]) => `${v}×${n}`).join(' ')
+}
 function frameShift(png, scale, geo) {
   const scan = (yCss, pred) => {
     const y = Math.round(yCss * scale)
@@ -214,26 +260,50 @@ async function runSyncLane(context, page, lane) {
         try { await cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }) } catch { /* 停止後的最後一格 */ }
       })
       const geo = { x0: Math.max(t.head.x, t.body.x) + 2, x1: Math.min(t.head.x + t.head.w, t.body.x + t.body.w) - 6, hy: Math.round(t.head.y + t.head.h / 2), by: Math.round(t.body.y + Math.min(20, t.body.h / 4)) }
+      const hb = await page.evaluate(startHeartbeat, { size: HEARTBEAT_SIZE, colors: HEARTBEAT_COLORS })
+      // 心跳方塊要先真的畫進一格,screencast 開始時送的第一格(合成器手上最近的一格)才會帶著它
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
+      const hbOnScanRow = [geo.hy, geo.by].some((y) => y >= hb.y - 1 && y <= hb.y + hb.h + 1) && hb.x <= geo.x1 && hb.x + hb.w >= geo.x0
+      // 以「收到的幀數」當條件等,不用固定時間猜機器多快;固定的 150 / 90 / 500ms 仍保留為最短間隔(滾輪節奏不變)
+      const phases = []
+      const waitFrames = async (phase, since, minimumMs) => {
+        const started = Date.now()
+        await page.waitForTimeout(minimumMs)
+        while (frames.length - since < FRAMES_PER_PHASE && Date.now() - started < PHASE_FRAME_DEADLINE_MS) await page.waitForTimeout(10)
+        phases.push({ phase, frames: frames.length - since })
+      }
       await cdp.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 })
       await page.evaluate(startSampler, t.index)
-      await page.waitForTimeout(150)
+      await waitFrames('推前', 0, 150)
       for (let k = 0; k < 6; k++) {
+        const since = frames.length
         await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: headPt.x, y: headPt.y, deltaX: 40, deltaY: 0 })
-        await page.waitForTimeout(90)
+        await waitFrames(`推第 ${k + 1} 下後`, since, 90)
       }
-      await page.waitForTimeout(500)
+      await waitFrames('停手後', frames.length, 500)
       const samples = await page.evaluate(() => window.__dtSync.stop())
       await cdp.send('Page.stopScreencast')
       await cdp.detach().catch(() => {})
+      await page.evaluate(() => window.__dtHeartbeat.stop())
       const after = await page.evaluate(finalState, t.index)
       const badFrames = samples.filter((s) => Math.abs(s.h - s.b) > EDGE_TOL || s.edge > EDGE_TOL)
       if (samples.length < 10 || samples.some((s) => s.n < 2)) instrument(`H2 ${tag} rAF`, `取樣 ${samples.length} 格 / 欄數 ${Math.min(...samples.map((s) => s.n))}`)
       else check(`H2a ${tag}:推表頭之後每一個影格(rAF ${samples.length} 格)表頭 = 表身、每欄左緣 |Δ| ≤ ${EDGE_TOL}`, badFrames.length === 0, badFrames.length ? `${badFrames.length} 格錯開,例 ${JSON.stringify(badFrames.slice(0, 3))}` : '')
-      const pngs = frames.map((d) => PNG.sync.read(Buffer.from(d, 'base64')))
-      const shifts = pngs.map((png) => frameShift(png, png.width / VIEWPORT.width, geo))
+      // 逐格解碼、量完就丟(每格 900×800×4 ≈ 2.9MB,心跳下一段約數十格,不一次全留著)
+      const shifts = frames.map((d) => {
+        const png = PNG.sync.read(Buffer.from(d, 'base64'))
+        const scale = png.width / VIEWPORT.width
+        return { ...frameShift(png, scale, geo), heartbeat: heartbeatVisible(png, scale, hb) }
+      })
       const unreadable = shifts.filter((s) => s.shift === null)
-      if (frames.length < 3 || unreadable.length) instrument(`H2 ${tag} screencast`, `${frames.length} 格,${unreadable.length} 格讀不到標記條(例 ${JSON.stringify(unreadable.slice(0, 2))})`)
-      else check(`H2b ${tag}:推表頭之後每一個畫出來的影格(screencast ${frames.length} 格)紅條與藍條位移 0`, shifts.every((s) => s.shift === 0), `位移序列 ${JSON.stringify(shifts.map((s) => s.shift))}`)
+      const starved = phases.filter((p) => p.frames < FRAMES_PER_PHASE)
+      const noHeartbeat = shifts.filter((s) => !s.heartbeat).length
+      const coverage = phases.map((p) => `${p.phase} ${p.frames}`).join(' / ')
+      if (hbOnScanRow) instrument(`H2 ${tag} screencast`, `心跳方塊 ${JSON.stringify(hb)} 壓到掃描列(表頭 y=${geo.hy} / 表身 y=${geo.by})`)
+      else if (starved.length) instrument(`H2 ${tag} screencast`, `心跳每一格都在變,${PHASE_FRAME_DEADLINE_MS}ms 內仍收不到 ${FRAMES_PER_PHASE} 格:${starved.map((p) => `${p.phase} ${p.frames} 格`).join('、')}(各階段 ${coverage})`)
+      else if (noHeartbeat) instrument(`H2 ${tag} screencast`, `${noHeartbeat} / ${frames.length} 格看不到心跳方塊 —— 送來的幀不是這一頁畫出來的`)
+      else if (unreadable.length) instrument(`H2 ${tag} screencast`, `${frames.length} 格,${unreadable.length} 格讀不到標記條(例 ${JSON.stringify(unreadable.slice(0, 2))})`)
+      else check(`H2b ${tag}:推表頭之後每一個畫出來的影格(screencast ${frames.length} 格;各階段 ${coverage})紅條與藍條位移 0`, shifts.every((s) => s.shift === 0), `位移序列(值×連續格數)${runLengths(shifts.map((s) => s.shift))}`)
       check(`H2c ${tag}:停手後 表頭 scrollLeft = 表身 scrollLeft、每欄左緣 |Δ| ≤ ${EDGE_TOL}`, Math.abs(after.h - after.b) <= EDGE_TOL && after.deltas.every((d) => Math.abs(d) <= EDGE_TOL), `表頭 ${after.h} / 表身 ${after.b};左緣差 ${JSON.stringify(after.deltas)}`)
 
       // H3:從最左邊開始,指標一直停在表頭上一路捲到底

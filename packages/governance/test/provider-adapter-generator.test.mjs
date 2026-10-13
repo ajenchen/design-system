@@ -1688,6 +1688,38 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   assert.match(JSON.parse(triggered.stdout).hookSpecificOutput.additionalContext, /M26 Propose-without-benchmark/)
   await assertSnapshotCleaned()
 
+  // 2026-09-27 與 2026-10-13 CI 各紅一次(0 !== 70):「成長中的 transcript 必 70」只在 runner 的**每一次**
+  // 擷取(TRANSCRIPT_SNAPSHOT_ATTEMPTS 次,中間各退避 4ms)都看到成長時才成立 —— stable-required 用盡重試才擋。
+  // 09-27 的修法用了單發探針 `--test-transcript-transition-probe`:它只在第一次擷取等到變動,第二、三次
+  // 擷取完全沒有探針,仍然靠背景寫入器剛好在那 <1ms 的窗內追加;寫入器被共享 runner 延遲超過一次退避,
+  // runner 就拿到**合法的**靜止切面 → exit 0(暫停寫入器即可 100% 重現)。所以那次修法只把三個窗釘住一個,
+  // 「寫入器還活著 ⇒ runner 每次都看到變動」仍是時序代理(M37)。改法:用每次擷取都停的
+  // `--test-transcript-transition-probe-every-attempt`,並由**探針的就緒標記**驅動追加 —— 每一次擷取都在
+  // 兩次固定區段讀取之間被追加一筆,與寫入器的排程無關;背景寫入器照舊持續追加(真實的「邊寫邊驗」),
+  // 但判定不再依賴它。探針等不到變動會以 TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
+  const transcriptSnapshotAttempts = Number(runnerSource.match(/^const TRANSCRIPT_SNAPSHOT_ATTEMPTS = (\d+)$/m)?.[1])
+  assert.equal(Number.isInteger(transcriptSnapshotAttempts) && transcriptSnapshotAttempts > 0, true,
+    'the growing-transcript tests must know how many bounded snapshot attempts the runner makes')
+  const launchWithProbeDrivenGrowth = (transcriptPath, appendAtProbe) => {
+    const probe = { output: '', ready: 0, appended: 0, pending: [] }
+    const invocation = launch(
+      'claude',
+      'check_propose_without_benchmark.sh',
+      { hook_event_name: 'UserPromptSubmit', prompt: 'Hi', transcript_path: transcriptPath },
+      { NODE_ENV: 'test' },
+      ['--test-transcript-transition-probe-every-attempt'],
+      (chunk) => {
+        probe.output += chunk
+        const markers = probe.output.split('TRANSCRIPT_TEST_TRANSITION_PROBE_READY').length - 1
+        while (probe.ready < markers) {
+          probe.ready += 1
+          probe.pending.push(appendAtProbe().then(() => { probe.appended += 1 }))
+        }
+      },
+    )
+    return { probe, completion: invocation.completion }
+  }
+
   const liveAppendTranscript = resolve(fixture, 'live-append.jsonl')
   await writeFile(liveAppendTranscript, record.repeat(2600), { mode: 0o600 })
   const liveAppendHandle = await open(liveAppendTranscript, 'a')
@@ -1700,22 +1732,27 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
       await wait(1)
     }
   })()
-  await wait(8)
+  // 「開檔前已在追加」用條件等,不用固定睡眠猜寫入器跑了幾次
+  while (appendCount <= 2) await wait(1)
   let liveAppendResult
+  let liveAppendProbe
   try {
-    // 2026-09-27 CI 紅一次(0 !== 70;之前多次全綠):runner 的擷取窗只有一次讀取加兩次 stat(遠小於 1ms),
-    // 寫入器每 1–2ms 追加一筆 —— 只要事件迴圈或共享 runner 把寫入器延遲一下,runner 就拿到一個**合法的**
-    // 靜止切面而 exit 0。「寫入器還活著 ⇒ runner 必看到變動」是時序代理(M37),跟下面 optional-append
-    // 2026-09-23 那次同一種病。改用 runner 自己的測試探針:第一次讀取之後**等到真的觀察到 metadata 變動**
-    // 才做第二次讀取,於是「成長中的 transcript 必 70」不再靠排程運氣;探針等不到變動會以
-    // TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
-    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
+    const invocation = launchWithProbeDrivenGrowth(
+      liveAppendTranscript,
+      () => liveAppendHandle.appendFile(`${JSON.stringify({ type: 'system', probeAppend: true })}\n`),
+    )
+    liveAppendProbe = invocation.probe
+    liveAppendResult = await invocation.completion
+    await Promise.all(liveAppendProbe.pending)
   } finally {
     appendActive = false
     await appendLoop
     await liveAppendHandle.close()
   }
   assert.equal(appendCount > 2, true, 'writer must append before open and throughout bounded verification')
+  assert.equal(liveAppendProbe.ready, transcriptSnapshotAttempts,
+    `every bounded snapshot attempt must be probed and observe growth:${liveAppendResult.stderr}`)
+  assert.equal(liveAppendProbe.appended, liveAppendProbe.ready, 'each probed attempt must receive its append')
   assert.equal(liveAppendResult.status, 70)
   assert.equal(liveAppendResult.stdout, '')
   assert.match(liveAppendResult.stderr, /GOVERNANCE_INTEGRITY:/)
@@ -1738,17 +1775,27 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
       await wait(1)
     }
   })()
-  await wait(8)
+  while (partialAppendCount <= 2) await wait(1)
   let livePartialResult
+  let livePartialProbe
   try {
-    // 同上:成長中的半截記錄也要用探針把「變動落在兩次讀取之間」釘死,不靠排程運氣
-    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
+    // 同上:成長中的半截記錄,每一次擷取的兩次讀取之間都由探針標記驅動追加,不靠排程運氣
+    const invocation = launchWithProbeDrivenGrowth(
+      livePartialTranscript,
+      () => livePartialHandle.appendFile('x'.repeat(1024)),
+    )
+    livePartialProbe = invocation.probe
+    livePartialResult = await invocation.completion
+    await Promise.all(livePartialProbe.pending)
   } finally {
     partialActive = false
     await partialLoop
     await livePartialHandle.close()
   }
   assert.equal(partialAppendCount > 2, true, 'partial record writer must remain active during verification')
+  assert.equal(livePartialProbe.ready, transcriptSnapshotAttempts,
+    `every bounded snapshot attempt must be probed and observe partial-record growth:${livePartialResult.stderr}`)
+  assert.equal(livePartialProbe.appended, livePartialProbe.ready, 'each probed attempt must receive its append')
   assert.equal(livePartialResult.status, 70)
   assert.equal(livePartialResult.stdout, '')
   assert.match(livePartialResult.stderr, /GOVERNANCE_INTEGRITY:/)

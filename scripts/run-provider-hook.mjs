@@ -110,6 +110,14 @@ const PYTHON_ISOLATED_HOOK_BOOTSTRAP = [
 ].join('\n')
 const transcriptTestTransitionProbeEnabled = process.env.NODE_ENV === 'test'
   && process.argv.includes('--test-transcript-transition-probe')
+// Same test-only probe, applied to every snapshot attempt instead of the first one only. A growing
+// transcript is rejected (stable-required) only when every bounded attempt observes growth; with the
+// single-shot probe the later attempts were unprobed, so a writer the scheduler delayed past one
+// retry backoff handed the runner a legal quiescent cut and the "growing transcript ⇒ 70" test went
+// green-or-red on scheduling (CI 2026-09-27 and 2026-10-13, M37). Mutually exclusive with the
+// single-shot probe, whose poison tests need the retry after their one transition to run unprobed.
+const transcriptTestTransitionProbeEveryAttempt = process.env.NODE_ENV === 'test'
+  && process.argv.includes('--test-transcript-transition-probe-every-attempt')
 const transcriptTestSignalProbeEnabled = process.env.NODE_ENV === 'test'
   && process.argv.includes('--test-transcript-snapshot-signal-probe')
 const hookCorpusTestReleaseProbeEnabled = process.env.NODE_ENV === 'test'
@@ -816,8 +824,13 @@ function readExactAt(handle, length, position, descriptor) {
 }
 
 function awaitFailClosedTestTranscriptTransition(handle, captured, descriptor) {
-  if (!transcriptTestTransitionProbeEnabled || transcriptTestTransitionProbeConsumed) return
-  transcriptTestTransitionProbeConsumed = true
+  if (transcriptTestTransitionProbeEnabled && transcriptTestTransitionProbeEveryAttempt) {
+    fail(`provider hook adapter blocked:${descriptor.hook}:TRANSCRIPT_TEST_TRANSITION_PROBE_MODES_EXCLUSIVE`)
+  }
+  if (!transcriptTestTransitionProbeEveryAttempt) {
+    if (!transcriptTestTransitionProbeEnabled || transcriptTestTransitionProbeConsumed) return
+    transcriptTestTransitionProbeConsumed = true
+  }
   // This test-only scheduling probe cannot make a transcript acceptable. It waits for a real
   // metadata transition after the first fixed-range read and blocks if the bounded observation
   // window expires. The poison test uses the ready marker to place a rewrite deterministically

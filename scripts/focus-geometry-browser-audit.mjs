@@ -69,7 +69,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, settleAfterInteraction } from './lib/launch-browser.mjs'
 
 const ARGV = process.argv.slice(2)
 const SELFTEST = ARGV.includes('--selftest')
@@ -150,13 +150,41 @@ function instrumentSelfCheck() {
   return { problems, lines }
 }
 
+// ── 量之前先等穩態:聚焦帶起的進場動畫 / 過渡跑完、版面連續幾格不變 ──────────────────────
+// 2026-10-13(a6976432 起 Focus deep sweep 紅):Tooltip 的進場動畫真的開始播之後(淡入 + zoom-95 + 從觸發鈕那側滑 8px),
+// Tab 到 Carousel 的箭頭鈕、Tooltip 跟著打開,原本「Tab 完立刻量」在 CI 上量到**進場第 ~15ms** 的 Tooltip:
+// 它還沒滑到位,剛好壓在焦點框外 4px 那圈 → 「撞鄰居 ← div.z-50.overflow-hidden」。本機量得快(第 0ms 時透明度 0,
+// 不算畫得出東西)所以綠 —— 綠或紅取決於量的那一刻落在動畫哪一格(M37:「Tab 完了」被當成「畫面到位了」)。
+// 靜止時 Tooltip 底緣離箭頭鈕 7.6px、焦點框只佔 4px,不是產品問題;把動畫釘在第 15ms 可 100% 重現誤紅。
+// 判準(與「量 focus 顏色先等過渡」同一條,M32):**量的是靜止畫面** —— 消費共用的 settleAfterInteraction
+//(lib/launch-browser.mjs,對照組在 scripts/test-open-story.mjs):連續 SETTLE_FRAMES 格沒有 DOM 變動、也沒有進行中的
+// 有限長度動畫 / CSS 過渡。無限動畫(微光、轉圈)不等;上限內等不到 → 這一站記成**儀器失效**,
+// 不拿未穩態的畫面當證據、也不默默放行。
+const SETTLE_FRAMES = 2
+const SETTLE_CAP_MS = 3000
+
+// 焦點站的名字(元素描述 + 尺寸)只有這一份寫法:DETECT 用它當列的身分,QUICK_KEY 用它在量之前判斷「這站已經量過」
+const DESC_EXPR = "el.tagName.toLowerCase() + (el.getAttribute('role')?'['+el.getAttribute('role')+']':'') + '.' + String(el.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.')"
+const SIZE_EXPR = "r.width.toFixed(0)+'x'+r.height.toFixed(0)"
+// Tab 走訪會反覆經過同一站(小 story 一輪只有幾站,卻走 45 下);已經量過的站不必再等穩態、再全頁掃一次
+//(原本也是量完才因去重丟掉)。這裡算的是當下的名字,沒見過才等穩態(settleAfterInteraction)再跑 DETECT,量完仍以 DETECT 的名字去重。
+// 回 '' = 焦點不在任何元素上(document / body:Tab 繞完一圈時)→ 不是焦點站,不必等;
+// 回 null = 有元素但此刻量不到大小(可能正在長出來)→ 照樣等穩態再量,不當成「沒有」。
+const QUICK_KEY = `(() => {
+  const el = document.activeElement
+  if (!el || el === document.body || el === document.documentElement) return ''
+  const r = el.getBoundingClientRect()
+  if (r.width < 1 || r.height < 1) return null
+  return (${DESC_EXPR}) + '|' + (${SIZE_EXPR})
+})()`
+
 const DETECT = `(() => {
   const el = document.activeElement
   if (!el || el === document.body || el === document.documentElement) return null
   const r = el.getBoundingClientRect()
   if (r.width < 1 || r.height < 1) return null
   const cs = getComputedStyle(el)
-  const desc = el.tagName.toLowerCase() + (el.getAttribute('role')?'['+el.getAttribute('role')+']':'') + '.' + String(el.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.')
+  const desc = ${DESC_EXPR}
   const off = parseFloat(cs.outlineOffset) || 0
   const w = parseFloat(cs.outlineWidth) || 0
   const drawn = cs.outlineStyle !== 'none' && w > 0
@@ -190,10 +218,10 @@ const DETECT = `(() => {
   const insetSite = drawn && grow <= 0
   const exempt = inline || floating
   if (exempt) return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset,
-    color: cs.outlineColor, size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems: [],
+    color: cs.outlineColor, size: ${SIZE_EXPR}, problems: [],
     exempt: inline?'行內':'浮層', boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
   if (!drawn && !insetSite) return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset,
-    color: cs.outlineColor, size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems: [],
+    color: cs.outlineColor, size: ${SIZE_EXPR}, problems: [],
     boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
   // 內描邊的站點:改用**往外**的幾何(全域規則的 offset 2 + 寬 2)重算,問「如果往外畫會不會出事」
   if (insetSite) { const g = 4
@@ -253,7 +281,7 @@ const DETECT = `(() => {
     if (hit) { problems.push({ kind: '撞鄰居', by: o.tagName.toLowerCase()+'.'+String(o.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.'), detail: '' }); break }
   }
   return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset, color: cs.outlineColor,
-    size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems, insetSite, boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
+    size: ${SIZE_EXPR}, problems, insetSite, boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
 })()`
 
 const idx = JSON.parse(readFileSync(INDEX,'utf8'))
@@ -332,15 +360,32 @@ try {
         // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值)。
         await pg.waitForTimeout(400)
         const seen=new Set(), rows=[]
+        // 等不到穩態的站(名字 → 原因);之後繞回來同一站量到靜止就撤銷,只剩始終等不到的才算數
+        const unsettled=new Map(), settleTries=new Map()
         for (let i=0;i<45;i++) {
           await pg.keyboard.press('Tab')
+          const quick = await pg.evaluate(QUICK_KEY)
+          if (quick === '' || (quick && seen.has(quick))) continue
+          // 量靜止畫面:聚焦帶起的動畫(例:Tooltip 進場)播完、版面連續幾格不變之後才量(見 SETTLE_FRAMES 檔頭)
+          const settled = await settleAfterInteraction(pg, { frames: SETTLE_FRAMES, capMs: SETTLE_CAP_MS })
           const m = await pg.evaluate(DETECT)
           if (!m) continue
           const k = m.desc+'|'+m.size
           if (seen.has(k)) continue
+          if (!settled.ok) {
+            unsettled.set(k, `${m.desc.slice(0, 46)}:${SETTLE_CAP_MS}ms 內沒有連續 ${SETTLE_FRAMES} 格靜止(DOM 變動或進行中的動畫打斷靜止 ${settled.lateChanges} 次)`)
+            // 同一站最多等兩次(繞回來再給一次機會);仍等不到就不再每圈各等 SETTLE_CAP_MS —— 它已記成儀器失效
+            const tries = (settleTries.get(k) ?? 0) + 1
+            settleTries.set(k, tries)
+            if (tries >= 2) seen.add(k)
+            continue
+          }
+          unsettled.delete(k)
           seen.add(k); rows.push(m)
           if (rows.length>=14) break
         }
+        // 等不到穩態的站:量到的是過渡中的畫面,不能當證據(也不能默默略過)→ 儀器失效,點名該站
+        if (unsettled.size) failures.push({ label, theme, storyId, reason: `${unsettled.size} 站在量測前沒有靜止 —— ${[...unsettled.values()].slice(0, 3).join(';')}` })
         // ── 承擔者證明(非同步,等 transition 穩態)────────────────────────
         // 無框元素在原始碼裡宣告了「承擔者是誰」,但宣告是人寫的。這裡去現場證明:
         // 聚焦前後,自己或鄰域(往上 5 層 + 往下 30 個後代)的**可見**樣式差異必須非空。
