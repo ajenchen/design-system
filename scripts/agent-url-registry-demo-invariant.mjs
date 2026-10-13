@@ -18,6 +18,11 @@
  *   S6 tab 與背景位置模式:代理連結「我的任務」→ 切 tab、清單篩成自己的;再點任務 → modal 背景是「我的任務」;
  *      重新整理 = 直接以任務網址進入 → 背景是預設的「所有任務」;上一頁 / 下一頁維持
  *   S7 session:歷史列多個 session、當前有標記、可切換、「+」新 session 空狀態、送出後才進歷史、切回內容仍在
+ *   殘留抑制(2026-10-07 根因;lib/overlay-coexistence.ts `inertOutside`):S5 兩個對話框一起關掉後、S7 歷史浮層用完後,
+ *     清單連結不得還在 `inert` / `aria-hidden` 底下,整份文件 0 個 `[inert]`(舊碼:並存鎖與 Radix 共用一份計數 → `<main>` 永遠 inert);
+ *     並存對話框開著時(S5 取消確認框之後),頁面上每個**不在控件裡**的 `[aria-live]`(Toast 區、DS 播報區)都不得在 `inert` 底下(播報照常念),
+ *     清單連結則必須在 `inert` 底下(宿主仍被擋)。控件裡的播報區(例:欄位內常駐的「已移除」)跟著被擋住的控件一起 inert,不算靜音;
+ *     「被蓋住的宿主不得留下可聚焦控件」由 S9 與 scripts/agent-panel-invariants.mjs B 守。
  *   S8 關 agent → 遮罩仍在(根因錨:入口鈕 Dock 的 pointer-events-none 全舞台圖層曾被當成洞,遮罩整張被挖空)
  *   S10 入口鈕拖去貼邊再拖回家 → 遮罩只有一個洞、洞心 = 鈕心(2026-09-09 user 抓「拖回原本的地方會在遮罩上挖出另一個圓形的洞」:
  *       洞是飛回家的 250ms 過渡途中那一幀算的,過渡結束沒人重算 —— AD59)
@@ -108,6 +113,11 @@ export const menuItemActionKeepsDialog = (st) => !!st && st.moved === true && st
 /** S13 判定:歷史浮層開著時宿主不經指標把面板收起(display:none)→ 浮層關了、焦點不在浮層裡、面板再開時浮層仍關著、再點標題能正常開在觸發鈕下方(不是 (0,8))。 */
 export const popoverFollowsHiddenAnchor = (st) => !!st && st.popoverAfterHide === 0 && st.focusInPopover === false && st.popoverAfterReopen === 0 && st.reopenedAtTrigger === true
 
+/** 殘留抑制判定:沒有對話框開著時,清單連結不在 inert / aria-hidden 底下,且整份文件 0 個 [inert]。 */
+export const noResidualSuppression = (st) => !!st && st.dialogs === 0 && st.hostUnder === false && Array.isArray(st.inert) && st.inert.length === 0
+/** 並存時播報區判定:並存對話框開著(≥ 1)、宿主(清單連結)被擋在 inert 底下、而且沒有任何 [aria-live] 在 inert 底下。 */
+export const liveRegionsAudible = (st) => !!st && st.dialogs >= 1 && st.hostBlocked === true && Array.isArray(st.silencedLive) && st.silencedLive.length === 0
+
 if (process.argv.includes('--selftest')) {
   // 對照組:舊 build 2026-09-09 實測抓到的壞值(洞 = 外框)必須紅;修好後的值(只有入口鈕的洞)必須綠
   const bad = maskHoleRatio('path(evenodd, "M 0 0 H 1406 V 640 H 0 Z M 0 0 H 1406 V 640 H 0 Z")')
@@ -128,8 +138,19 @@ if (process.argv.includes('--selftest')) {
   const s12 = menuItemActionKeepsDialog({ moved: true, menu: false, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog({ moved: true, menu: false, dialogs: 0, mask: false }) && !menuItemActionKeepsDialog({ moved: false, menu: false, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog({ moved: true, menu: true, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog(null)
   // S13 對照組:2026-09-10 實測的壞值 —— 面板收起後浮層還在 (0,8) 且焦點留在搜尋框 → 必紅;全對 → 綠
   const s13 = popoverFollowsHiddenAnchor({ popoverAfterHide: 0, focusInPopover: false, popoverAfterReopen: 0, reopenedAtTrigger: true }) && !popoverFollowsHiddenAnchor({ popoverAfterHide: 1, focusInPopover: true, popoverAfterReopen: 1, reopenedAtTrigger: true }) && !popoverFollowsHiddenAnchor({ popoverAfterHide: 0, focusInPopover: false, popoverAfterReopen: 0, reopenedAtTrigger: false }) && !popoverFollowsHiddenAnchor(null)
-  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13
-  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅`)
+  // 殘留抑制對照組:2026-10-07 實測的壞值 —— 兩個對話框都關了,舞台仍 inert(#demo-stage-main、#storybook-docs)→ 必紅;
+  // 留下的是 aria-hidden(反向解鎖順序)→ 必紅;對話框還開著時不得判綠;乾淨 → 綠
+  const s14 = noResidualSuppression({ dialogs: 0, hostUnder: false, inert: [] })
+    && !noResidualSuppression({ dialogs: 0, hostUnder: true, inert: ['#demo-stage-main', '#storybook-docs'] })
+    && !noResidualSuppression({ dialogs: 0, hostUnder: true, inert: [] })
+    && !noResidualSuppression({ dialogs: 1, hostUnder: false, inert: [] })
+  // 播報區對照組:舊碼(suppressOthers 不保留 [aria-live])Toast 與欄位播報區在 inert 底下 → 必紅;宿主沒被擋 → 紅;沒有對話框 → 紅;正確 → 綠
+  const s15 = liveRegionsAudible({ dialogs: 1, hostBlocked: true, silencedLive: [] })
+    && !liveRegionsAudible({ dialogs: 1, hostBlocked: true, silencedLive: ['section[aria-label=Notifications]', 'span[role=status]'] })
+    && !liveRegionsAudible({ dialogs: 1, hostBlocked: false, silencedLive: [] })
+    && !liveRegionsAudible({ dialogs: 0, hostBlocked: true, silencedLive: [] })
+  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13 && s14 && s15
+  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅;殘留 inert / aria-hidden / 對話框未關判紅;播報區被靜音 / 宿主沒被擋 / 沒有對話框判紅`)
   process.exit(ok && ok2 ? 0 : 1)
 }
 
@@ -238,6 +259,22 @@ function bind(page) {
   const click = async (sel) => { await page.click(sel); await page.waitForTimeout(450) }
   const rows = () => page.evaluate(() => [...document.querySelectorAll('[role="row"] a[href*="/tasks/"]')].map((a) => a.closest('[role="row"]')?.textContent ?? ''))
   const panelTitle = () => page.evaluate(() => document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim() ?? '')
+  /** 殘留抑制量測:對話框數、清單連結是否在 inert / aria-hidden 底下、整份文件的 [inert] 清單。 */
+  const suppression = () => page.evaluate(() => {
+    const d = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : ''))
+    const link = document.querySelector('[role="row"] a[href*="/tasks/"]')
+    return { dialogs: document.querySelectorAll('[role="dialog"]').length, hostUnder: link ? !!link.closest('[inert], [aria-hidden="true"]') : null, inert: [...document.querySelectorAll('[inert]')].map(d) }
+  })
+  /** 並存時播報區量測:對話框數、清單連結是否被 inert 擋住、哪些 [aria-live] 在 inert 底下。 */
+  const liveAudit = () => page.evaluate(() => {
+    const d = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : '') + (el.getAttribute('aria-label') ? `[aria-label=${el.getAttribute('aria-label').slice(0, 24)}]` : ''))
+    const link = document.querySelector('[role="row"] a[href*="/tasks/"]')
+    // 播報區是否屬於某個控件:祖先(到 body 為止)可聚焦(tabIndex ≥ 0 或帶 tabindex)或是互動角色 → 屬於該控件,不列入「應該念得到」
+    const ROLES = ['button', 'link', 'combobox', 'textbox', 'searchbox', 'listbox', 'option', 'menuitem', 'checkbox', 'radio', 'switch', 'tab', 'slider', 'spinbutton', 'gridcell', 'treeitem']
+    const inControl = (el) => { for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) { if (n.tabIndex >= 0 || n.hasAttribute('tabindex') || ROLES.includes(n.getAttribute('role') ?? '')) return true } return false }
+    const live = [...document.querySelectorAll('[aria-live]')].filter((el) => !inControl(el))
+    return { dialogs: document.querySelectorAll('[role="dialog"]').length, hostBlocked: link ? !!link.closest('[inert]') : null, live: live.length, silencedLive: live.filter((el) => el.closest('[inert]')).map(d) }
+  })
   const inert = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? (!!el.closest('[inert]') || !!el.closest('[aria-hidden="true"]')) : null }, sel)
   const bg = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null }, sel)
   const mask = () => page.evaluate(() => { const m = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])'); return m ? { clip: m.style.clipPath, bg: getComputedStyle(m).backgroundColor } : null })
@@ -261,7 +298,7 @@ function bind(page) {
     await page.click(`[role="option"]:has-text("${optionText}")`); await page.waitForTimeout(350)
   }
   const shot = async (name) => { if (SHOTS) { const file = join(SHOTS, name); await page.screenshot({ path: file, fullPage: false }); console.log(`  📷 ${file}`) } }
-  return { $, location, selectedTab, dialogs, panelInput, panelOpen, typeIntoPanel, click, rows, panelTitle, inert, bg, mask, alpha, shape, history, pickOption, shot }
+  return { $, location, selectedTab, dialogs, panelInput, panelOpen, typeIntoPanel, click, rows, panelTitle, suppression, liveAudit, inert, bg, mask, alpha, shape, history, pickOption, shot }
 }
 
 /** story 開不起來的紀錄(儀器失效,不是產品裁決);結尾據此 exit 1。 */
@@ -420,8 +457,12 @@ for (const width of [1440, 1180]) {
   await h.click('#demo-confirm-cancel')
   await h.typeIntoPanel('!')
   check(`${W} S5 取消後任務 modal 還在、代理恢復並存、清單不變`, (await h.dialogs()) === 1 && (await h.panelInput())?.value === 'hello world!' && (await h.rows()).length === 4, JSON.stringify(await h.panelInput()))
+  const liveS5 = await h.liveAudit()
+  check(`${W} S5 並存對話框開著時播報區照常念(${liveS5.live} 個不在控件裡的 [aria-live] 全不在 inert 底下)、清單仍被擋`, liveRegionsAudible(liveS5), JSON.stringify(liveS5))
   await h.click('#demo-task-delete'); await h.click('#demo-confirm-delete')
   const rows3 = await h.rows()
+  const supS5 = await h.suppression()
+  check(`${W} S5 兩個對話框一起關掉後沒有殘留抑制(清單不在 inert / aria-hidden 底下、文件 0 個 [inert])`, noResidualSuppression(supS5), JSON.stringify(supS5))
   check(`${W} S5 確認刪除後 modal 全關、清單少一列、網址回清單`, (await h.dialogs()) === 0 && rows3.length === 3 && !rows3.some((r) => /#4836/.test(r)) && (await h.location()) === TASKS_URL, JSON.stringify(rows3))
 
   // ── S7 session:切換 / 新 session 空狀態 / 歷史當前標記 ──
@@ -444,6 +485,8 @@ for (const width of [1440, 1180]) {
   await h.click('[role="complementary"] button[aria-haspopup="dialog"]')
   await page.click('[role="dialog"][aria-label="歷史對話"] [cmdk-item]:has-text("登入逾時追蹤")'); await page.waitForTimeout(400)
   check(`${W} S7 切回舊 session,內容仍在(代理回覆裡的連結回來了)`, (await h.$('#demo-link-task-4821')) && /登入逾時追蹤/.test(await h.panelTitle()))
+  const supS7 = await h.suppression()
+  check(`${W} S7 歷史浮層用完後沒有殘留抑制(清單不在 inert / aria-hidden 底下、文件 0 個 [inert])`, noResidualSuppression(supS7), JSON.stringify(supS7))
 
   // ── S8 關 agent → 遮罩仍在(根因錨) ──
   await h.click('[role="row"] a[href$="/tasks/4821"]')

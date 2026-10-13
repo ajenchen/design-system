@@ -92,7 +92,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | ≥ 960 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器 × 3/8⌋)` |
   | < 960 | **蓋板** —— `absolute` 覆蓋宿主:上下右貼齊容器、**左留 `--layout-space-viewport-inset`(48px)**,底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組),底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**點擊關閉面板**;2026-09-17 裁示,取代 2026-09-16 的「點了不關」) | 寬 = 容器 − 48px,**不渲染拖曳把手**(寬度不再是可選的)|
 
-  蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
+  蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `inertOutside`:保留節點以外設 `inert`、頁面上不屬於任何控件的播報區 `[aria-live]`(Toast 區、DS 播報)照常保留,body portal 的浮層也被抑制;2026-10-07 前用 `aria-hidden` 套件的 `suppressOthers`,與 Radix 共用一份計數而在兩個對話框同時關閉時留下 `inert`,見該檔說明);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
   (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」—— 模擬瀏覽器的工具列不是宿主)。並排態不抑制任何東西。
 

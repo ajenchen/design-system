@@ -303,9 +303,9 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 用共用的並存 primitive 而不是「對兄弟節點設 inert」:兄弟迴圈只涵蓋宿主 DOM 裡的節點,
     // **body portal 出去的浮層(Dialog / FileViewer)完全不在裡面** ——
     // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
-    // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
+    // `inertOutside([面板])`(lib/overlay-coexistence.ts)是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
     // 保留集合 = 面板自己 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
-    // 蓋板態的遮罩也在保留集合裡:它必須**接住**留白處的指標(不被 suppressOthers 設成 inert),否則點擊會穿過去
+    // 蓋板態的遮罩也在保留集合裡:它必須**接住**留白處的指標(不被 inertOutside 設成 inert),否則點擊會穿過去
     // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「點擊露出的遮罩會關閉 agent panel 底下的 modal」)。
     // 它在算洞時不會把自己或別的遮罩當洞(overlay-coexistence.ts boxes():遮罩不是洞)。
     const scrimRef = React.useRef<HTMLDivElement | null>(null)

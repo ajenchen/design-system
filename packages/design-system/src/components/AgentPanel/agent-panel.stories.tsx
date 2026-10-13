@@ -1118,7 +1118,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   const onDirtyChange = React.useCallback((dirty: boolean) => { dirtyRef.current = dirty }, [])
   const [pendingNav, setPendingNav] = React.useState<PendingNavigation | null>(null)
   // OpenSnapshot 的「已被攔下」狀態要在任務對話框**掛上之後**才出現(與真實順序相同:對話框先開、連結後點)。
-  // 兩個一起在第一次 commit 掛上的話,並存對話框的 suppressOthers 會把同一批掛上的確認框也設成 inert
+  // 兩個一起在第一次 commit 掛上的話,並存對話框的 inertOutside(lib/overlay-coexistence.ts)會把同一批掛上的確認框也設成 inert
   // (它只在自己掛載時盤點一次「其餘」),確認框就點不到 —— 真實流程裡確認框永遠是後來的,不會遇到。
   const initialPending = initial?.pendingNavigation
   React.useEffect(() => {

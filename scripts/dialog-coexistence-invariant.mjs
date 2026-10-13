@@ -13,7 +13,7 @@
  * 只驗 (B) 的話,「把預設路徑一起弄壞」不會被發現 —— 那正是 user 說的「不要改壞既有東西」。
  *
  * 判準用「真的能不能聚焦」而不是「有沒有 aria-hidden 屬性」:
- * `suppressOthers` 在支援 inert 的瀏覽器用原生 inert、不支援才用 aria-hidden,
+ * `inertOutside`(lib/overlay-coexistence.ts)在支援 inert 的瀏覽器用原生 inert、不支援才退回 aria-hidden 套件的 hideOthers,
  * 驗屬性會綁死實作;驗行為才是驗契約(M32)。
  *
  * ── M 進場第一幀(2026-09-09,user 抓到「dialog 從左上角飛到中間」)──
@@ -200,7 +200,7 @@ const probe = (sel) => page.evaluate((s) => {
 if (!SELFTEST) {
   // ── (B) 並存路徑 ────────────────────────────────────────────────────────
   // 等 story 真的渲染(共享 runner 上固定 900ms 不夠:a646b6c2 讀回「找不到 #coexist-aside-input」;本機與前幾次 CI 都過)——
-  // 等被量的元素本身;對話框開啟後 suppressOthers 套上 inert 的那次重畫由靜止判定涵蓋(原本另睡 600ms)
+  // 等被量的元素本身;對話框開啟後 inertOutside 套上 inert 的那次重畫由靜止判定涵蓋(原本另睡 600ms)
   await open(story('design-system-components-dialog-展示--coexistence-poc'), { waitFor: '#coexist-aside-input' })
   const asideInput = await probe('#coexist-aside-input')
   const bgBtn = await probe('#coexist-background-btn')
