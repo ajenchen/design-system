@@ -237,4 +237,34 @@ try {
   const zero = runCli('0'.repeat(40))
   ok(/\[visual-audit\] scope=changed base=(origin\/main|main)\(/.test(zero.stdout), `全零 sha 視同沒指定 → 走預設鏈並印出 base(實得:${(zero.stdout.match(/scope=changed base=[^\n]*/) ?? ['沒印'])[0].slice(0, 80)})`)
 }
-console.log(`\n✅ test-visual-audit:${checks} 題全過(判定表 + 合成 DOM 讀值兩面 + CLI base 解析)`)
+// ── 截圖路徑不得有固定睡眠(2026-10-14):開完 story 與滑過之後一律走證據式等待 ──
+// 舊寫法「互動類開完固定睡 1200ms」「滑過後固定睡 250ms」是「延遲反應已經到點」的代理(M37):Tooltip 500ms 延遲開啟落在截圖前後,
+// 重拍後立刻再比就差 0.49%。現在 openStory 與滑過後的 waitForImages 都帶 pendingTimers: true(lib/launch-browser.mjs「計時器帳本」)。
+// 靜態查原始碼(去掉註解):沒有 waitForTimeout(;openStory 呼叫帶 pendingTimers: true;executeVisualInteraction 的 settle 走 waitForImages + pendingTimers: true。
+// 對照組:把舊寫法放回副本,每一種都要被抓到。
+{
+  const { readFileSync } = await import('node:fs')
+  const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const source = readFileSync(join(REPO, 'scripts/visual-audit.mjs'), 'utf-8')
+  const problems = (text) => {
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+    const found = []
+    if (/\bwaitForTimeout\s*\(/.test(code)) found.push('有 waitForTimeout(')
+    const openCall = code.slice(code.indexOf('await openStory(page, url, {')).split(/\n\s*\}\)\n/)[0]
+    if (!code.includes('await openStory(page, url, {') || !/\bpendingTimers:\s*true\b/.test(openCall)) found.push('openStory 沒帶 pendingTimers: true')
+    const hoverCall = code.slice(code.indexOf('executeVisualInteraction(page, scenario.interaction')).split(/\n\s*\}\)\n/)[0]
+    if (!code.includes('executeVisualInteraction(page, scenario.interaction') || !/settle:\s*\(p\)\s*=>\s*waitForImages\(p,\s*\{[^}]*\bpendingTimers:\s*true\b/.test(hoverCall)) found.push('滑過後的 settle 不是 waitForImages + pendingTimers: true')
+    return found
+  }
+  const current = problems(source)
+  ok(current.length === 0, `visual-audit 截圖路徑沒有固定睡眠,開完與滑過後都等排隊中的計時器(問題:${current.join('、') || '無'})`)
+  const mutants = {
+    '互動類開完固定睡 1200ms': source.replace('beforeSettle: isInteractive ? null :', 'beforeSettle: isInteractive ? (p) => p.waitForTimeout(1200) :'),
+    'openStory 拿掉 pendingTimers': source.replace(/\n\s*pendingTimers: true,\n/, '\n'),
+    '滑過後不等計時器': source.replace("settle: (p) => waitForImages(p, { ledger: imageLedger, label, pendingTimers: true })", 'settle: (p) => waitForImages(p, { ledger: imageLedger, label })'),
+  }
+  for (const [name, text] of Object.entries(mutants)) {
+    ok(text !== source && problems(text).length > 0, `對照組「${name}」被抓到(${problems(text).join('、') || '沒抓到 —— 查法壞了'})`)
+  }
+}
+console.log(`\n✅ test-visual-audit:${checks} 題全過(判定表 + 合成 DOM 讀值兩面 + CLI base 解析 + 截圖路徑無固定睡眠)`)

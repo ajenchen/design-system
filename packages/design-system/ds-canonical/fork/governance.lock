@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "afa79f6cf3e919615769468f13a104bf602360963ee28b998d5bdda565b9602f",
+      "sha256": "721ee1691c9a6df49dbbec6ef0ae6807d3f70793a83f04b9e541ebb3d380f020",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"

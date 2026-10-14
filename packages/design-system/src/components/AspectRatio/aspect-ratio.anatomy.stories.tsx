@@ -74,12 +74,13 @@ export const Overview: Story = {
 
 // ── Inspector ─────────────────────────────────────────────────────────────────
 
+// seed 與下方 STD_RATIOS 同寫法(「16-9」):比例標籤含「/」,直接接進 picsum 網址會多一段路徑 → 真站 404,預覽框一直是破圖(2026-10-14 修)
 const RATIO_PRESETS = [
-  { label: '16/9', value: 16 / 9 },
-  { label: '4/3', value: 4 / 3 },
-  { label: '1/1', value: 1 },
-  { label: '3/4', value: 3 / 4 },
-  { label: '21/9', value: 21 / 9 },
+  { label: '16/9', value: 16 / 9, seed: 'inspector-16-9' },
+  { label: '4/3', value: 4 / 3, seed: 'inspector-4-3' },
+  { label: '1/1', value: 1, seed: 'inspector-1-1' },
+  { label: '3/4', value: 3 / 4, seed: 'inspector-3-4' },
+  { label: '21/9', value: 21 / 9, seed: 'inspector-21-9' },
 ]
 
 const InspectorDemo = () => {
@@ -104,7 +105,7 @@ const InspectorDemo = () => {
           <div className="w-[420px]">
             <AspectRatio ratio={current.value} className="bg-muted rounded-md overflow-hidden">
               <img
-                src={`https://picsum.photos/seed/inspector-${current.label}/800/600`}
+                src={`https://picsum.photos/seed/${current.seed}/800/600`}
                 alt=""
                 className="w-full h-full object-cover"
               />

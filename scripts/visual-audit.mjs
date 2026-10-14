@@ -8,6 +8,11 @@
  *       `--scope=changed` 找不到可比對的 base(或明確給的 --base 不存在)→ INSTRUMENT-FAIL exit 1,不猜、不退回。
  *       畫面裡的圖(<img> / CSS 背景圖)載入失敗或等不到(遠端連不到、逾時)→ 該場景 INSTRUMENT-FAIL、點名網址、計入 render error
  *       (--update-baseline 時也 exit 1,且這張不寫進基準)—— 不拍灰底、不讓它變成假差異(2026-10-14,run 38502930713 FileViewer 68.7%)。
+ *       開完 story / 滑過之後 10 秒內等不到「沒有排隊中的短計時器(≤ 2 秒)、沒有進行中的有限動畫、連續 10 格靜止」→ 該場景 INSTRUMENT-FAIL、
+ *       點名場景與還在排隊的延遲,計入 render error(2026-10-14 起取代滑過後固定睡 250ms、互動類開完固定睡 1200ms:
+ *       Tooltip 500ms 延遲開啟落在截圖前後,重拍後立刻再比就差 0.49%;lib/launch-browser.mjs「計時器帳本」區塊)。
+ *       截圖前清不掉圖片解碼 / 光柵快取或之後等不到靜止 → 同樣 INSTRUMENT-FAIL(lib「截圖前的確定性」:無限動畫停在第 0 毫秒、
+ *       圖片在最終尺寸重新光柵 —— 同一個最終畫面拍兩次必須逐位元組相同,重拍 job 的穩定性那一步才有意義)。
  *       歷史紅燈:2026-09-12 前選擇器找不到會被吞成通過;2026-09-29 前 `git diff main...HEAD` 在沒有本地 main 的
  *       乾淨 checkout 裡靜默落回工作樹 → 算出 0 個元件 → exit 0 假綠(M37)。
  *   綠: 改到的元件全部場景渲染成功、斷言成立;沒改到任何元件時印出 base 與「無 scenario 可跑」後綠(base 已 rev-parse 驗證存在)。
@@ -57,7 +62,7 @@
  *   1 = 有 contrast / geometry violation(CI 可用此 gate commit)
  */
 
-import { describeDeterministicImageFailures, INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError, trackImageRequests, waitForImages } from './lib/launch-browser.mjs'
+import { describeDeterministicImageFailures, INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, prepareStableScreenshot, StoryRenderInstrumentError, trackImageRequests, waitForImages } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
@@ -414,21 +419,24 @@ async function auditScenario(browser, scenario, opts = {}) {
     // 現在由 openStory 證明:Storybook 回報這則 story 渲染完成 —— phase finished 已含 play 與 afterEach(示範收尾就在 afterEach 裡,
     // 章也是在那裡蓋的,所以不必再等章,舊建置沒有章也照樣成立)→ 畫面健康 → 字型載完 → 連續 10 影格無 DOM 變動、無進行中的有限動畫。
     // 等不到 = 儀器失效(點名 story、附 Storybook 錯誤原文與 404),計入 render error、exit 非零;壞掉的畫面不會被拍、也不會被寫成 baseline。
-    // 圖片(2026-10-14,待辦總帳 R1e / R3):openStory 預設在靜止判定前等畫面裡每張圖 complete + naturalWidth > 0 + decode(),
+    // 圖片(2026-10-14,待辦總帳 R1e / R3):openStory 預設在靜止判定前等畫面裡每張圖 complete + naturalWidth > 0(10-14 起不再 decode(),見 lib「截圖前的確定性」),
     // 載入失敗 / 等不到 = 儀器失效並點名網址(lib「圖片就緒」區塊)。起因:PR 分支重拍 run 38502930713 的穩定性複拍,
     // fileviewer-open-snapshot.png 差 68.7% —— 第二張拍到 FileViewer 灰底舞台(picsum 的圖還沒到,縮放停在 100%),
     // 舊的等待只看「DOM 連續 10 影格不動」,而圖片下載完成不改 DOM。
     // demoImages:見 DEMO_IMAGES(要比基準 / 寫基準 = 'network' 真圖;--no-diff = 'local')。
+    // pendingTimers(2026-10-14):靜止判定另要求「沒有排隊中的短計時器」(lib「計時器帳本」區塊)。取代互動類原本的「開完固定睡 1200ms」——
+    // play / 渲染排下的延遲顯示(TooltipProvider delayDuration 500ms 等)在計時器到點前 DOM 完全不動,只看影格的靜止判定看不到它;
+    // 固定睡 1200ms 是「計時器已經到點」的代理(M37),慢的機器上計時器晚到點照樣拍到一半。現在等的是計時器本身:到點、畫完、動畫跑完、
+    // 連續 10 格靜止才拍;等不到(輪詢式的短計時器永遠在排隊)= 儀器失效、點名排隊中的延遲,計入 render error。
     const opened = await openStory(page, url, {
       demoImages: DEMO_IMAGES,
       settleFrames: 10,
+      pendingTimers: true,
       notFound: ownedStaticServer?.notFound,
       navigationTimeoutMs: 45_000,
-      beforeSettle: isInteractive
-        // 互動類保留 1200ms:play 觸發的延遲顯示(TooltipProvider delayDuration 500ms 等計時器驅動)在計時器到點前
-        // DOM 完全不動,影格靜止判定看不到計時器 —— 這段是等「延遲開啟」本身,之後仍要過影格靜止判定
-        ? (p) => p.waitForTimeout(1200)
-        : (p) => p.mouse.move(0, 0), // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
+      // 互動類不動指標(play 建立的狀態、以及滑過場景之後要用的真實指標都不能被蓋掉);其餘把指標停到 (0,0),
+      // 免得指標剛好停在圖示鈕上自動打開 tooltip
+      beforeSettle: isInteractive ? null : (p) => p.mouse.move(0, 0),
     })
     images = opened.images
     renderHealth = createRenderHealthMonitor(page, { mode: scenario.url ? 'document' : 'storybook' })
@@ -447,16 +455,20 @@ async function auditScenario(browser, scenario, opts = {}) {
         action: scenario.interaction.action,
         selector: scenario.interaction.selector,
       }
-      // 滑過之後才掛上的圖(與 openStory 第 8b + 9 步同一份判定):互動前開帳本,互動後等畫面裡每張圖載完、解碼完、
-      // 圖觸發的版面變化落地(版面連續靜止)才拍;最後一格還有圖在路上(先預載再掛上)就回頭再等
+      // 滑過之後的等待(2026-10-14 起取代固定睡 250ms,lib/visual-audit-interaction.mjs):與 openStory 第 8b + 9 步同一份判定 ——
+      // 互動前開圖片帳本,滑過後等畫面裡每張圖載完、排隊中的短計時器到點(Tooltip 500ms 延遲開啟)、動畫跑完、
+      // 連續 10 格靜止才拍;最後一格還有圖在路上(先預載再掛上)就回頭再等。等不到 = StoryRenderInstrumentError(點名本場景)。
+      // 指標落點的證明在這之後才讀(拍照那一刻目標仍在受信任的指標下)。
       const imageLedger = trackImageRequests(page)
       try {
-        const executed = await executeVisualInteraction(page, scenario.interaction)
-        interactionResult = { status: 'passed', ...executed }
+        const label = scenario.id ?? scenario.url
+        const { settled: afterInteraction, ...executed } = await executeVisualInteraction(page, scenario.interaction, {
+          settle: (p) => waitForImages(p, { ledger: imageLedger, label, pendingTimers: true }),
+        })
+        interactionResult = { status: 'passed', ...executed, settle: afterInteraction.settle }
         // Interaction can trigger a render crash after the initial healthy frame. Re-check the
         // root, page exceptions, and critical assets before taking evidence.
-        await renderHealth.assertHealthy({ label: scenario.id ?? scenario.url })
-        const afterInteraction = await waitForImages(page, { ledger: imageLedger, label: scenario.id ?? scenario.url })
+        await renderHealth.assertHealthy({ label })
         const seen = new Map([...(images?.deterministicFailures ?? []), ...afterInteraction.deterministicFailures].map((f) => [f.url, f]))
         images = { ...(images ?? { checked: 0, loaded: 0 }), afterInteraction: { checked: afterInteraction.checked, loaded: afterInteraction.loaded }, deterministicFailures: [...seen.values()] }
       } catch (interactionError) {
@@ -477,6 +489,9 @@ async function auditScenario(browser, scenario, opts = {}) {
       explicitRoot: OUT_DIR,
       relativePath: scenario.file,
     })
+    // 截圖前的確定性(2026-10-14,lib「截圖前的確定性」):無限動畫(轉圈、Skeleton 微光)停在第 0 毫秒、清圖片解碼 / 光柵快取後重新光柵 ——
+    // 重拍後立刻再比的那一步要的是「同一個最終畫面 → 同一組像素」,不是「剛好在哪個相位 / 哪個解碼時序拍到」;做不到 = 儀器失效(點名本場景)
+    await prepareStableScreenshot(page, { label: scenario.id ?? scenario.url })
     await page.screenshot({ path: screenshotPath, fullPage: false })
 
     const contrast = await scanContrast(page)

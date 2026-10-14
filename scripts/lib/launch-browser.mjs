@@ -33,10 +33,13 @@
 //   await openStory(page, url, { … })                            // 開 story 並證明真的渲染完成(見下方 openStory 區塊;含圖片就緒)
 //   await openStory(page, url, { demoImages: 'network' })        // 要跟已提交基準圖比 / 寫基準 / 給人看的截圖:示範圖照常向遠端要真圖
 //   const ledger = trackImageRequests(page)                      // 互動之後要截圖:互動前開帳本 ……
-//   await waitForImages(page, { ledger }); ledger.dispose()       // …… 互動後等每張圖載完、解碼完,再等版面靜止(與 openStory 同一份判定)
+//   await waitForImages(page, { ledger }); ledger.dispose()       // …… 互動後等每張圖載完,再等版面靜止(與 openStory 同一份判定)
 //   describeDeterministicImageFailures(r.images.deterministicFailures, { label })   // 拍照 / 寫基準的程式:確定性破圖照拍,但一定印出來
 //   await waitForStoryRender(frame, { storyId })                 // 不是導覽觸發的切換(管理介面點側欄)也用同一份判定
 //   await settleAfterInteraction(page, { frames: 10 })           // 點開浮層 / 按鍵之後等版面真的停了(取代固定睡眠;ok:false = 儀器失效)
+//   await openStory(page, url, { pendingTimers: true })           // 另等「排隊中的短計時器」(Tooltip 500ms 延遲開啟等);之後的 waitForImages /
+//   await waitForImages(page, { ledger, pendingTimers: true })    //   settleAfterInteraction 也帶 pendingTimers: true(見「計時器帳本」區塊)
+//   await prepareStableScreenshot(page, { label }); await page.screenshot(…)   // 要逐位元組可重現的截圖:無限動畫停在第 0 毫秒、清圖片快取重新光柵(「截圖前的確定性」)
 //   await waitForDocsRender(frame, { docsId, timeoutMs })        // docs 頁真的渲染出來(docs 沒有 story 的 render phase,判定見該函式)
 //   const at = await ownSurfacePosition(handle)                  // 觸發欄位自己的表面(不在 Tag / 頭像 / 按鈕上);交給 handle.click({ position: at.position })
 //   await parkPointer(page)                                      // 開關浮層之後把指標停到中性位置(不留在會滑過開卡片的東西上)
@@ -210,7 +213,7 @@ export function requireFreshStorybookBuild(staticDir, sources, { hint = '先跑 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 圖片就緒 —— 「量到 / 拍到的畫面裡每張圖都載完、解碼完」的**唯一**實作(2026-10-14,待辦總帳 R1e / R3)
+// 圖片就緒 —— 「量到 / 拍到的畫面裡每張圖都載完」的**唯一**實作(2026-10-14,待辦總帳 R1e / R3;同日拿掉 decode(),見 awaitFrameImages)
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // **為什麼有這段**:openStory 原本的「渲染完成」只證明 Storybook 回報 finished、DOM 連續 N 影格沒變 —— 而圖片下載完成
@@ -222,7 +225,7 @@ export function requireFreshStorybookBuild(staticDir, sources, { hint = '先跑 
 // 「圖已經畫在畫面上」從沒被直接量過:一個用「DOM 不動」代理、一個用「請求結束」代理。
 //
 // 要保證的性質(逐字):**量測 / 截圖當下,畫面範圍內每一張 <img> 與 CSS 背景圖(含 ::before / ::after)都
-// complete、naturalWidth > 0、decode() 完成;本文件發出的每一個圖片請求都已有結果。** 等不到 → 儀器失效(image-timeout),
+// complete、naturalWidth > 0;本文件發出的每一個圖片請求都已有結果。** 等不到 → 儀器失效(image-timeout),
 // 載入失敗 → 儀器失效(image-failed),兩者都點名網址 —— 絕不靜默拍成灰底,也絕不變成假差異。
 // 「畫面範圍」= 與視窗相交、checkVisibility() 為真;載入中的 <img> 還沒有尺寸(0×0),只要左上角落在視窗內就算。
 // 帳本(trackImageRequests)補 DOM 看不到的兩種:載入失敗後元件自己把 <img> 拆掉(Avatar onError 退回縮寫)、
@@ -521,7 +524,7 @@ export function trackImageRequests(page, { accept = () => true } = {}) {
   })
 }
 
-// 頁面端:畫面範圍內的每張 <img> 與 CSS 背景圖都載完、解碼完(或確定失敗)。**以 evaluate 序列化傳入,不得引用外部變數。**
+// 頁面端:畫面範圍內的每張 <img> 與 CSS 背景圖都載完(或確定失敗)。**以 evaluate 序列化傳入,不得引用外部變數。**
 // 回 { checked, loaded, items: [{ url, state: 'loaded'|'broken'|'pending', why? }] };不丟例外(判定在節點端)。
 function awaitFrameImages({ capMs }) {
   const t0 = performance.now()
@@ -547,19 +550,19 @@ function awaitFrameImages({ capMs }) {
       if (outcome === 'timeout' && !img.complete) return { url, state: 'pending', why: `${capMs / 1000} 秒內沒載完` }
     }
     if (img.naturalWidth === 0 && !isSvg(url)) return { url, state: 'broken', why: '載入結束但沒有像素(naturalWidth 0)' }
-    try {
-      const decoded = await Promise.race([img.decode().then(() => 'ok'), later(remaining(), 'timeout')])
-      if (decoded === 'timeout') return { url, state: 'pending', why: '解碼逾時' }
-    } catch (error) { return { url, state: 'broken', why: `解碼失敗(${error?.name || 'EncodingError'})` } }
+    // 不呼叫 img.decode()(2026-10-14):它把原尺寸的解碼結果放進合成器的圖片快取並鎖一小段時間,之後的光柵拿到哪一份解碼
+    // (原尺寸再縮 / 直接縮尺解碼)取決於時序 —— 同一份位元組、同一個最終畫面,每次載入光柵出的像素不同(最大通道差 ≤ 11,
+    // 「截圖前的確定性」區塊)。載完 + naturalWidth > 0 已證明位元組到了、尺寸已知;解碼在光柵時發生,截圖那一格一定畫得出來。
     return { url, state: 'loaded' }
   }
   const settleBackground = async (url) => {
     const probe = new Image()
+    // 只等載入結果、不 decode()(理由同上)
+    const loaded = new Promise((resolve) => { probe.onload = () => resolve('load'); probe.onerror = () => resolve('error') })
     probe.src = url
-    try {
-      const decoded = await Promise.race([probe.decode().then(() => 'ok'), later(remaining(), 'timeout')])
-      if (decoded === 'timeout') return { url, state: 'pending', why: `背景圖 ${capMs / 1000} 秒內沒載完` }
-    } catch { return { url, state: 'broken', why: '背景圖載入 / 解碼失敗' } }
+    const outcome = await Promise.race([loaded, later(remaining(), 'timeout')])
+    if (outcome === 'timeout') return { url, state: 'pending', why: `背景圖 ${capMs / 1000} 秒內沒載完` }
+    if (outcome === 'error' || (probe.naturalWidth === 0 && !isSvg(url))) return { url, state: 'broken', why: '背景圖載入失敗(或沒有像素)' }
     return { url, state: 'loaded' }
   }
   return (async () => {
@@ -635,7 +638,7 @@ export function describeDeterministicImageFailures(failures, { label = '' } = {}
  * 不認識呼叫端:失敗一律以 fail(kind, reason) 造出的例外丟出(openStory 附 story / 404 / phase,waitForImages 附 label)。
  * @returns {Promise<{ verdict: object|null, settle: object|null, probe: unknown }>}
  */
-async function settleImagesAndFrames(target, { images, ledger, origin, imagesTimeoutMs, settleFrames, settleTimeoutMs, includeParent = false, probe = null, probeArg = null, stage, fail }) {
+async function settleImagesAndFrames(target, { images, ledger, origin, imagesTimeoutMs, settleFrames, settleTimeoutMs, includeParent = false, pendingTimers = false, probe = null, probeArg = null, stage, fail }) {
   const deadline = Date.now() + imagesTimeoutMs
   let verdict = null
   for (;;) {
@@ -647,7 +650,7 @@ async function settleImagesAndFrames(target, { images, ledger, origin, imagesTim
       if (verdict.pending.length) throw fail('image-timeout', `${imagesTimeoutMs / 1000} 秒內圖片等不到:${describeImages(verdict.pending)}`)
     }
     if (!(settleFrames > 0 || probe)) return { verdict, settle: null, probe: undefined }
-    const args = { frames: settleFrames, capMs: settleTimeoutMs, includeParent }
+    const args = { frames: settleFrames, capMs: settleTimeoutMs, includeParent, timers: pendingTimers ? PENDING_TIMER_LEDGER_KEY : null }
     // 把頁面函式接成同一個運算式,probe 才會在最後一個靜止影格的同一個 task 裡執行(Playwright 本身也是以原始碼序列化頁面函式)
     const pendingCheck = images ? `const pendingImages = (${framePendingImages.toString()})(); if (pendingImages.length) return { ...s, pendingImages };` : ''
     const finish = probe ? `{ ...s, probe: await (${probe.toString()})(${JSON.stringify(probeArg ?? null)}) }` : 's'
@@ -655,8 +658,9 @@ async function settleImagesAndFrames(target, { images, ledger, origin, imagesTim
     if (result.parentUnreadable) {
       throw fail('dom-not-settled', `讀不到 preview iframe 外層的管理介面文件(跨來源?)—— 證明不了管理介面已靜止,不能當成「它沒動」`)
     }
+    if (result.timerLedgerMissing) throw fail('timer-ledger', TIMER_LEDGER_MISSING_REASON)
     if (!result.ok) {
-      throw fail('dom-not-settled', `${stage} ${settleTimeoutMs / 1000} 秒內版面沒有連續靜止 ${settleFrames} 個影格(等了 ${result.framesWaited} 格,期間變動 ${result.lateChanges} 次)`)
+      throw fail('dom-not-settled', `${stage} ${settleTimeoutMs / 1000} 秒內版面沒有連續靜止 ${settleFrames} 個影格(等了 ${result.framesWaited} 格,期間變動 ${result.lateChanges} 次${describePendingTimers(result.pendingTimers)})`)
     }
     const stillLoading = images ? [...new Set([...(result.pendingImages ?? []), ...(ledger ? ledger.pending() : [])])] : []
     if (stillLoading.length) {
@@ -665,34 +669,40 @@ async function settleImagesAndFrames(target, { images, ledger, origin, imagesTim
       }
       continue
     }
-    const settle = settleFrames > 0 ? { framesWaited: result.framesWaited, lateChanges: result.lateChanges, longestBrokenQuiet: result.longestBrokenQuiet } : null
+    const settle = settleFrames > 0
+      ? { framesWaited: result.framesWaited, lateChanges: result.lateChanges, longestBrokenQuiet: result.longestBrokenQuiet, ...(pendingTimers ? { timerFrames: result.timerFrames } : {}) }
+      : null
     return { verdict, settle, probe: result.probe }
   }
 }
 
 /**
  * 互動之後(開浮層、滑過)要截圖 / 量測時用:與 openStory 第 8b + 9 步**同一份**判定(settleImagesAndFrames)——
- * 畫面範圍內每張圖載完、解碼完 → 連續 settleFrames 個影格靜止(圖到了才觸發的版面變化落在觀測窗裡)→
+ * 畫面範圍內每張圖載完 → 連續 settleFrames 個影格靜止(圖到了才觸發的版面變化落在觀測窗裡)→
  * 最後一格還有圖在路上(先預載再掛上、靜止期間才掛上)就回頭再等,共用同一個 timeoutMs 上限(語意見「圖片就緒」區塊)。
  * 失敗 / 逾時 → 丟 StoryRenderInstrumentError(kind image-failed / image-timeout / dom-not-settled),訊息點名網址。
- * 限制同 settleAfterInteraction:靠計時器延後超過 settleFrames 個影格才掛上的圖不在保證裡,那種要等元素本身。
+ * 限制同 settleAfterInteraction:靠計時器延後超過 settleFrames 個影格才掛上的圖不在保證裡,那種要等元素本身 ——
+ * 或帶 pendingTimers: true(「計時器帳本」區塊:排隊中的短計時器也算「還沒停」;帳本要在互動之前就裝上,openStory 帶 pendingTimers 開即是)。
  * @param {object} target  Playwright 的 Page 或 Frame
- * @param {{ ledger?: ReturnType<typeof trackImageRequests>, timeoutMs?: number, settleFrames?: number, settleTimeoutMs?: number, label?: string, url?: string }} [options]
+ * @param {{ ledger?: ReturnType<typeof trackImageRequests>, timeoutMs?: number, settleFrames?: number, settleTimeoutMs?: number, pendingTimers?: boolean, label?: string, url?: string }} [options]
  *   ledger:互動前開的帳本(沒給就只看畫面上的元素 —— 看不到「失敗後被拆掉的 <img>」與不掛進 DOM 的預載);
  *   settleFrames:預設 10(同 openStory);0 = 只判圖、不等版面靜止(呼叫端自己證明版面已停時才用)
+ *   pendingTimers:預設 false;true = 靜止判定另要求「沒有排隊中的短計時器」(文件裡沒有帳本 → 丟 kind 'timer-ledger',不當成沒有計時器)
  * @returns {Promise<{ checked: number, loaded: number, deterministicFailures: {url:string,why:string}[], settle: object|null }>}
  */
 export async function waitForImages(target, options = {}) {
-  const { ledger = null, timeoutMs = 30_000, settleFrames = 10, settleTimeoutMs = 10_000, url = '' } = options
+  const { ledger = null, timeoutMs = 30_000, settleFrames = 10, settleTimeoutMs = 10_000, pendingTimers = false, url = '' } = options
   if (!target || typeof target.evaluate !== 'function') throw new TypeError('waitForImages:target 必須是 Playwright 的 Page 或 Frame')
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) throw new TypeError(`waitForImages:timeoutMs 必須是正整數,實得 ${JSON.stringify(timeoutMs)}`)
   if (!Number.isInteger(settleFrames) || settleFrames < 0) throw new TypeError(`waitForImages:settleFrames 必須是 ≥ 0 的整數,實得 ${JSON.stringify(settleFrames)}`)
   if (!Number.isInteger(settleTimeoutMs) || settleTimeoutMs <= 0) throw new TypeError(`waitForImages:settleTimeoutMs 必須是正整數,實得 ${JSON.stringify(settleTimeoutMs)}`)
+  if (typeof pendingTimers !== 'boolean') throw new TypeError(`waitForImages:pendingTimers 必須是 true / false,實得 ${JSON.stringify(pendingTimers)}`)
+  if (pendingTimers && settleFrames === 0) throw new TypeError('waitForImages:pendingTimers 要搭配 settleFrames > 0(計時器是在靜止判定的每一格裡看的)')
   const pageUrl = typeof target.url === 'function' ? target.url() : url
   const origin = (() => { try { return new URL(pageUrl).origin } catch { return null } })()
   const label = options.label ?? (pageUrl || '(畫面)')
   const { verdict, settle } = await settleImagesAndFrames(target, {
-    images: true, ledger, origin, imagesTimeoutMs: timeoutMs, settleFrames, settleTimeoutMs, stage: '圖片就緒後',
+    images: true, ledger, origin, imagesTimeoutMs: timeoutMs, settleFrames, settleTimeoutMs, pendingTimers, stage: '圖片就緒後',
     fail: (kind, reason) => new StoryRenderInstrumentError({ storyId: label, url: pageUrl, kind, reason }),
   })
   return { checked: verdict.checked, loaded: verdict.loaded, deterministicFailures: verdict.deterministicFailures, settle }
@@ -719,7 +729,7 @@ export async function waitForImages(target, options = {}) {
 // 修一份其他三份不會跟著好 —— 正是 M17 禁止的平行實作。現在收成這一支,四支閘都呼叫它。
 //
 // 要保證的性質(M37,逐字):**被量的是「這則 story 在 Storybook 回報渲染完成(含 play / afterEach)之後」的畫面,
-// 而且那個畫面不是 Storybook 的錯誤頁、不是空的、沒有關鍵資源缺檔、沒有頁面例外,畫面裡每張圖都載完、解碼完。**
+// 而且那個畫面不是 Storybook 的錯誤頁、不是空的、沒有關鍵資源缺檔、沒有頁面例外,畫面裡每張圖都載完。**
 // (最後一句 2026-10-14 加,見上方「圖片就緒」區塊;opts.images = false 才不驗)
 // 任何一項等不到或不成立 → 丟 StoryRenderInstrumentError(儀器失效:沒量到,不是產品裁決),
 // 訊息點名 story id、附 Storybook 錯誤頁原文與同源 404 / 失敗請求。**絕不回「成功」、也絕不靜默略過。**
@@ -743,7 +753,7 @@ export async function waitForImages(target, options = {}) {
 //   6. waitFor:選擇器(attached)或頁面函式(回 truthy 為止)—— 等**被量的元素本身**
 //   7. beforeSettle(page):呼叫端在「靜止判定」之前要做的事(例:截圖前 blur)
 //   8. fonts:document.fonts.ready(字寬會改幾何)
-//   8b. images(預設 true):畫面範圍內每張 <img> / CSS 背景圖 complete、naturalWidth > 0、decode() 完成,且帳本裡的圖片請求
+//   8b. images(預設 true):畫面範圍內每張 <img> / CSS 背景圖 complete、naturalWidth > 0(不呼叫 decode(),理由見 awaitFrameImages),且帳本裡的圖片請求
 //      都有結果(上限 opts.imagesTimeoutMs,預設 = timeoutMs)。環境性失敗 → kind 'image-failed'、等不到 → 'image-timeout',
 //      都點名網址;確定性失敗(RFC 保留名稱、同源 404)照拍,列在回傳的 images.deterministicFailures。判定見「圖片就緒」區塊
 //   9. settleFrames:**連續 N 個影格**沒有任何 DOM 變動、也沒有進行中的有限長度動畫(無限動畫不算,它永遠不停)。
@@ -752,6 +762,8 @@ export async function waitForImages(target, options = {}) {
 //      images 開著時,最後一個靜止影格裡若還有畫面內的 <img> 沒載完(靜止期間才掛上的圖)或帳本又有新的圖片請求 →
 //      回到 8b 再等、再靜止一次(同一個 imagesTimeoutMs 上限),probe 只在「靜止 + 沒有圖在路上」的那一格執行。
 //      8b + 9 的本體 settleImagesAndFrames 也由 waitForImages 呼叫(互動之後才截圖用,同一份判定)
+//      opts.pendingTimers(預設 false):靜止另要求「沒有排隊中的短計時器」—— 導覽前以 init script 裝計時器帳本(第 1c 步),
+//      play / 渲染排下的延遲反應(Tooltip 500ms 延遲開啟等)到點、畫完、動畫跑完才算靜止;取代「開完固定睡 N 毫秒」(「計時器帳本」區塊)
 //  10. 有做 5–9 任一步時再驗一次 render-health(等待期間冒出的例外也要算)
 // 逾時(timeoutMs / settleTimeoutMs / navigationTimeoutMs)只是「等不到」的上限,不是「已渲染」的代理 ——
 // 成功一律由上面的訊號本身決定;慢的機器只會等久一點。
@@ -796,7 +808,7 @@ export class StoryRenderInstrumentError extends Error {
     this.name = 'StoryRenderInstrumentError'
     this.storyId = storyId
     this.url = url
-    /** navigation | preview-frame | render-timeout | render-wait-failed | storybook-error | no-preview | render-errored | not-story | render-health | requests-timeout | wait-for-timeout | dom-not-settled | demo-images | image-failed | image-timeout */
+    /** navigation | preview-frame | render-timeout | render-wait-failed | storybook-error | no-preview | render-errored | not-story | render-health | requests-timeout | wait-for-timeout | dom-not-settled | timer-ledger | capture-not-stable | demo-images | image-failed | image-timeout */
     this.kind = kind
     this.reason = reason
     /** 不含 story id 與「不是產品裁決」那句的原因全文(呼叫端自己點名 story 時用) */
@@ -862,12 +874,20 @@ function storybookErrorText() {
 // 頁面端:連續 frames 個影格沒有 DOM 變動、也沒有進行中的有限長度動畫。**以 page.evaluate 序列化傳入,不得引用外部變數。**
 // includeParent(previewFrame 模式):同時看外層的管理介面文件 —— 外掛面板收到結果後的重畫、版面位移(iframe 位置)也要停,
 // 兩份文件在**同一段**連續影格裡都沒動才算靜止;讀不到外層文件(跨來源)回 parentUnreadable,不得當成「外層沒動」。
-function waitForQuietFrames({ frames, capMs, includeParent = false }) {
+// timers(計時器帳本的全域名,見「計時器帳本」區塊;null = 不看):每一格另看帳本 —— 還有排隊中的短計時器 = 這一格不算靜止
+//(計時器到點前 DOM 完全不動,只看 DOM 與動畫的話,Tooltip 的 500ms 延遲開啟會被當成「已經停了」)。
+// 要求看帳本、文件裡卻沒有帳本 → timerLedgerMissing(證明不了沒有排隊中的反應,不得當成「沒有計時器」)。
+function waitForQuietFrames({ frames, capMs, includeParent = false, timers = null }) {
   const frame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()))
   const docs = [document]
   if (includeParent && window.parent !== window) {
     try { docs.push(window.parent.document) } catch { return Promise.resolve({ ok: false, parentUnreadable: true, framesWaited: 0, lateChanges: 0, longestBrokenQuiet: 0 }) }
   }
+  const ledgers = timers ? docs.map((doc) => doc.defaultView?.[timers]) : []
+  if (ledgers.some((ledger) => !ledger || typeof ledger.pending !== 'function')) {
+    return Promise.resolve({ ok: false, timerLedgerMissing: true, framesWaited: 0, lateChanges: 0, longestBrokenQuiet: 0 })
+  }
+  const pendingTimers = () => ledgers.flatMap((ledger) => ledger.pending())
   // 無限動畫(載入中轉圈)不算「還在動」—— 它永遠不會停,而且不改版面
   const finiteAnimationRunning = () => docs.some((doc) => doc.getAnimations().some((animation) => {
     if (animation.playState !== 'running') return false
@@ -875,22 +895,94 @@ function waitForQuietFrames({ frames, capMs, includeParent = false }) {
     return Number.isFinite(end)
   }))
   return (async () => {
-    let quiet = 0, longestBrokenQuiet = 0, lateChanges = 0, framesWaited = 0
-    if (frames <= 0) return { ok: true, framesWaited, lateChanges, longestBrokenQuiet }
+    let quiet = 0, longestBrokenQuiet = 0, lateChanges = 0, framesWaited = 0, timerFrames = 0
+    const done = (ok) => ({ ok, framesWaited, lateChanges, longestBrokenQuiet, ...(timers ? { timerFrames, ...(ok ? {} : { pendingTimers: pendingTimers() }) } : {}) })
+    if (frames <= 0) return done(true)
     const reset = () => { if (quiet > longestBrokenQuiet) longestBrokenQuiet = quiet; quiet = 0; lateChanges++ }
     const observer = new MutationObserver(reset)
     for (const doc of docs) observer.observe(doc.documentElement, { subtree: true, childList: true, characterData: true, attributes: true })
     const start = performance.now()
     try {
       while (quiet < frames) {
-        if (performance.now() - start > capMs) return { ok: false, framesWaited, lateChanges, longestBrokenQuiet }
+        if (performance.now() - start > capMs) return done(false)
         await frame()
         framesWaited++
-        if (finiteAnimationRunning()) reset(); else quiet++
+        if (finiteAnimationRunning()) reset()
+        // 排隊中的計時器:這一格不算靜止,但不是「版面變動」(不計 lateChanges,另記 timerFrames)
+        else if (timers && pendingTimers().length) { if (quiet > longestBrokenQuiet) longestBrokenQuiet = quiet; quiet = 0; timerFrames++ }
+        else quiet++
       }
     } finally { observer.disconnect() }
-    return { ok: true, framesWaited, lateChanges, longestBrokenQuiet }
+    return done(true)
   })()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 計時器帳本 —— 「這一下的反應還在計時器裡排隊」的證據(2026-10-14)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼有這個**:waitForQuietFrames 只看 DOM 變動與進行中的有限動畫;靠計時器延後的反應(Tooltip 的 delayDuration 500ms、
+// HoverCard openDelay 700ms)在計時器到點前 DOM 完全不動,靜止判定看不到 —— 呼叫端只能固定睡 N 毫秒去賭「計時器已經到點」(M37)。
+// visual-audit 原本(2026-10-14 前)就是這樣:滑過後固定睡 250ms、互動類 story 開完固定睡 1200ms。2026-10-14 實測(本機 CPU ×1):滑過之後約 450ms
+// 就截圖,而那一刻 5 個滑過場景(fileupload / button / tag 的 × 鈕、fileitem、inlineedit)的 Tooltip 500ms 計時器還剩約 100ms ——
+// 機器快一點拍到「還沒開」、慢一點拍到「淡入到一半」(T10 的 150ms 淡入 + 放大),重拍後立刻再比就差 0.49%(6317 像素)。
+//
+// 要保證的性質(逐字):**截圖 / 量測的那一格,這個頁面沒有排隊中的短計時器(延遲 ≤ PENDING_TIMER_HORIZON_MS、還沒到點也沒被取消)、
+// 沒有進行中的有限動畫、連續 N 格沒有 DOM 變動。** 機器慢只會等久一點(計時器晚到點、影格晚跑),不會提早拍。
+//
+// 帳本:以 init script 在文件的第一支腳本之前包住 setTimeout / clearTimeout / clearInterval,記下延遲 ≤ 門檻、還沒到點也沒被取消的計時器
+// (到點或取消就移出)。不改計時器的行為(同一個原生計時器、同一個 id、同一個延遲)。
+// **不追**:setInterval(週期性,同無限動畫 —— 永遠不停)、延遲超過門檻的計時器(Toast 自動關閉 ≥ 5 秒、FileViewer 閒置 2.5 秒收起工具列、
+// react-zoom-pan-pinch 初始化的 5 秒、本檔自己的 30 秒圖片上限)—— 那些是「之後才會發生的另一件事」,不是這一下的反應;等它們會改變拍到的時刻。
+// 門檻 2000ms:DS 所有滑過延遲 ≤ 700ms(tokens/motion/motion.ts 的 MOTION_DELAY_*),留約 3 倍餘裕。
+// 限制:在帳本裝上之前就建立的計時器看不到(所以由 openStory 在導覽前以 init script 裝;互動之後才要的,帳本也必須在互動之前就在);
+// 遞迴自我重排的短計時器(輪詢)會讓靜止永遠不成立 → 等滿上限回失敗(儀器失效、點名排隊中的延遲),不會被當成「已經停了」。
+
+/** 計時器帳本的門檻:延遲超過這個值的 setTimeout 不算「這一下的反應」(理由見「計時器帳本」區塊)。 */
+export const PENDING_TIMER_HORIZON_MS = 2000
+const PENDING_TIMER_LEDGER_KEY = '__dsPendingTimerLedger__'
+const TIMER_LEDGER_MISSING_REASON = '要求等排隊中的計時器,但這份文件裡沒有計時器帳本(沒用 openStory({ pendingTimers: true }) 開、或沒先 installPendingTimerLedger)—— 證明不了沒有排隊中的反應,不能當成「沒有計時器」'
+const describePendingTimers = (delays) => (Array.isArray(delays) && delays.length
+  ? `;仍有 ${delays.length} 個計時器在排隊(延遲 ${[...new Set(delays)].slice(0, 5).map((ms) => `${ms}ms`).join(' / ')})`
+  : '')
+
+// 頁面端:裝帳本(init script 與 evaluate 共用)。**序列化傳入,不得引用外部變數。** 同一份文件裝第二次不重包。
+function installTimerLedgerInPage({ key, horizonMs }) {
+  if (Object.prototype.hasOwnProperty.call(globalThis, key)) return
+  const nativeSetTimeout = globalThis.setTimeout
+  const nativeClearTimeout = globalThis.clearTimeout
+  const nativeClearInterval = globalThis.clearInterval
+  const pending = new Map()
+  globalThis.setTimeout = function setTimeout(handler, delay, ...args) {
+    const ms = Number(delay) > 0 ? Number(delay) : 0
+    if (typeof handler !== 'function' || ms > horizonMs) return nativeSetTimeout.call(globalThis, handler, delay, ...args)
+    let id = 0
+    id = nativeSetTimeout.call(globalThis, function (...callbackArgs) { pending.delete(id); return handler.apply(this, callbackArgs) }, delay, ...args)
+    pending.set(id, ms)
+    return id
+  }
+  // clearInterval 也清得掉 setTimeout 的 id(同一個 id 空間)
+  globalThis.clearTimeout = function clearTimeout(id) { pending.delete(id); return nativeClearTimeout.call(globalThis, id) }
+  globalThis.clearInterval = function clearInterval(id) { pending.delete(id); return nativeClearInterval.call(globalThis, id) }
+  Object.defineProperty(globalThis, key, { value: Object.freeze({ horizonMs, pending: () => [...pending.values()] }), enumerable: false })
+}
+
+const timerLedgerPages = new WeakSet()
+/**
+ * 在這個分頁之後載入的每一份文件(含 iframe)第一支腳本之前裝計時器帳本;currentDocument: true 另裝進目前的文件
+ * (只看得到裝上之後建立的計時器 —— 互動之前裝,互動的反應就看得到)。同一個分頁裝第二次只補目前文件。
+ * openStory({ pendingTimers: true }) 自己會呼叫;不用 openStory 開頁的呼叫端才需要直接呼叫。
+ * @param {object} page  Playwright 的 Page
+ * @param {{ currentDocument?: boolean }} [options]
+ */
+export async function installPendingTimerLedger(page, { currentDocument = false } = {}) {
+  if (!page || typeof page.addInitScript !== 'function') throw new TypeError('installPendingTimerLedger:page 必須是 Playwright 的 Page')
+  const arg = { key: PENDING_TIMER_LEDGER_KEY, horizonMs: PENDING_TIMER_HORIZON_MS }
+  if (!timerLedgerPages.has(page)) {
+    await page.addInitScript(installTimerLedgerInPage, arg)
+    timerLedgerPages.add(page)
+  }
+  if (currentDocument) await page.evaluate(installTimerLedgerInPage, arg)
 }
 
 /**
@@ -902,17 +994,81 @@ function waitForQuietFrames({ frames, capMs, includeParent = false }) {
  * dialog-height H5 的點開 dialog、focus-indicator 的點開檢視器都是這個形狀)。
  * 用影格不用毫秒:點擊觸發的 React 更新與開啟動畫是一格一格推進的,主執行緒忙時影格也不跑,所以機器慢只會等久一點;
  * 點擊若什麼都沒觸發,版面本來就靜止,等滿 frames 格就回來 —— 「這一下沒開出任何東西」因此也是可靠的結論,不是提早放棄。
- * 限制:靠計時器延後才開的東西(例:有 openDelay 的 HoverCard / Tooltip)不在這個保證裡,那種要等元素本身。
+ * 限制:靠計時器延後才開的東西(例:有 openDelay 的 HoverCard / Tooltip)預設不在這個保證裡 —— 帶 pendingTimers: true
+ * (「計時器帳本」區塊:排隊中的短計時器也算「還沒停」;帳本要在互動之前就裝上),或等元素本身。
  * 圖片也不在這個保證裡(下載完成不改 DOM):互動之後要截圖 / 量圖片的,互動前開 trackImageRequests、互動後再 waitForImages(「圖片就緒」區塊)。
  * @param {object} target  Playwright 的 Page 或 Frame
- * @param {{ frames?: number, capMs?: number }} [options]  capMs 只是「等不到」的天花板
- * @returns {Promise<{ ok: boolean, framesWaited: number, lateChanges: number, longestBrokenQuiet: number }>}
- *   ok:false = capMs 內等不到靜止 —— 呼叫端必須當**儀器失效**,不得當成「沒開」也不得當成「已開」
+ * @param {{ frames?: number, capMs?: number, pendingTimers?: boolean }} [options]  capMs 只是「等不到」的天花板
+ * @returns {Promise<{ ok: boolean, framesWaited: number, lateChanges: number, longestBrokenQuiet: number, timerFrames?: number, pendingTimers?: number[], timerLedgerMissing?: true }>}
+ *   ok:false = capMs 內等不到靜止(pendingTimers = 那一刻還在排隊的延遲)或要求看帳本卻沒有帳本(timerLedgerMissing)——
+ *   呼叫端必須當**儀器失效**,不得當成「沒開」也不得當成「已開」
  */
-export async function settleAfterInteraction(target, { frames = 10, capMs = 10_000 } = {}) {
+export async function settleAfterInteraction(target, { frames = 10, capMs = 10_000, pendingTimers = false } = {}) {
   if (!target || typeof target.evaluate !== 'function') throw new TypeError('settleAfterInteraction:target 必須是 Playwright 的 Page 或 Frame')
   if (!Number.isInteger(frames) || frames < 1) throw new TypeError(`settleAfterInteraction:frames 必須是 ≥ 1 的整數,實得 ${JSON.stringify(frames)}`)
-  return target.evaluate(waitForQuietFrames, { frames, capMs })
+  if (typeof pendingTimers !== 'boolean') throw new TypeError(`settleAfterInteraction:pendingTimers 必須是 true / false,實得 ${JSON.stringify(pendingTimers)}`)
+  return target.evaluate(waitForQuietFrames, { frames, capMs, timers: pendingTimers ? PENDING_TIMER_LEDGER_KEY : null })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 截圖前的確定性 —— 「同一個建置、同一台機器、同一個最終畫面,拍兩次逐位元組相同」(2026-10-14)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼有這個**:visual-regression 重拍 job 的穩定性那一步是「重拍寫基準 → 立刻再拍一次比」。本機照同一個跑法(--update-baseline
+// 再比、示範圖走真站位元組 + 0.05–1.5 秒隨機延遲)3 輪 × 132 場景,舊流程每輪 9–11 張不是逐位元組相同。計時器那一類由上方
+// 「計時器帳本」處理;剩下兩類都不是 story 的差別,是**截圖那一格的光柵狀態取決於走到最終畫面的時序**(M37:拿「拍的時候剛好是這樣」
+// 代替「畫面就是這樣」):
+//   (1) 無限動畫(載入中轉圈、Skeleton 微光):拍到的相位隨截圖時刻變 —— circularprogress-default 最大通道差 240、button-state-behavior 38;
+//   (2) 縮放顯示的圖片(頭像、FileViewer 的圖、Dialog 名單):同一份位元組,光柵出的像素隨「圖到達 / 解碼 / 光柵」的先後變
+//       (最大通道差 ≤ 11,pixelmatch 0.1 判不出來,但逐位元組不同):合成器的圖片解碼快取裡同時可能有原尺寸解碼(圖片就緒那一步原本
+//       呼叫的 img.decode() 放進去、鎖一小段時間)與光柵時的縮尺解碼、放大縮小動畫(Dialog 進場、FileViewer 置中縮放)期間別的尺寸的解碼,
+//       最後一次光柵拿到哪一份取決於時序;瓦片光柵完就不會再重畫,所以同一次載入之內穩定、跨載入不同。
+//
+// 要保證的性質(逐字):**截圖那一格的像素只由「畫面的最終狀態」決定,不由「怎麼走到這個狀態」的時序決定。**
+// 做法(都在靜止判定成立之後、截圖之前):
+//   (1) 每個無限動畫(document.getAnimations() 裡 endTime 無限、正在跑的)暫停在第 0 毫秒 —— 使用者看到的第一格;有限動畫此時已跑完(靜止判定);
+//   (2) 清掉這個分頁的圖片解碼 / 光柵快取(CDP Memory.simulatePressureNotification critical),再等 frames 格靜止 ——
+//       截圖那一格的圖一律從原始位元組、在最終尺寸重新解碼與光柵。圖片就緒那一步也不再呼叫 decode()(它鎖住的原尺寸解碼清不掉)。
+// 文字游標:Playwright 截圖預設 caret:'hide',不另處理。SMIL 與 rAF 驅動的動畫不在 (1) 裡(精選場景目前沒有;有了會在穩定性比對裡現形)。
+// 失敗(清不掉快取 / 等不到靜止)= 儀器失效(kind 'capture-not-stable'),不靜默照拍。
+// 實測(本機,真站位元組 + 隨機延遲):只拿掉 decode() → 8 則有圖的場景剩 2 則跨載入不同;拿掉 decode() + 清快取 → 全部與「圖立刻到」那一次逐位元組相同;
+// 保留 decode() + 清快取 → 更糟(Dialog 名單 6 次 6 種),所以兩步都要。
+
+/**
+ * 截圖之前呼叫(靜止判定已成立之後):無限動畫停在第 0 毫秒、清圖片解碼 / 光柵快取、再等 frames 格靜止(「截圖前的確定性」區塊)。
+ * @param {object} page  Playwright 的 Page(要開 CDP session)
+ * @param {{ frames?: number, capMs?: number, label?: string }} [options]
+ * @returns {Promise<{ frozenAnimations: number, framesWaited: number }>}
+ * @throws {StoryRenderInstrumentError} kind 'capture-not-stable':清不掉快取或等不到靜止
+ */
+export async function prepareStableScreenshot(page, { frames = 3, capMs = 10_000, label = '' } = {}) {
+  if (!page || typeof page.context !== 'function' || typeof page.evaluate !== 'function') throw new TypeError('prepareStableScreenshot:page 必須是 Playwright 的 Page')
+  if (!Number.isInteger(frames) || frames < 1) throw new TypeError(`prepareStableScreenshot:frames 必須是 ≥ 1 的整數,實得 ${JSON.stringify(frames)}`)
+  const pageUrl = page.url()
+  const fail = (reason, cause) => new StoryRenderInstrumentError({ storyId: label || pageUrl, url: pageUrl, kind: 'capture-not-stable', reason, cause })
+  const frozenAnimations = await page.evaluate(() => {
+    let n = 0
+    for (const animation of document.getAnimations()) {
+      const end = animation.effect?.getComputedTiming?.().endTime
+      if (Number.isFinite(end) || animation.playState !== 'running') continue
+      animation.pause()
+      animation.currentTime = 0
+      n++
+    }
+    return n
+  })
+  let cdp = null
+  try {
+    cdp = await page.context().newCDPSession(page)
+    await cdp.send('Memory.simulatePressureNotification', { level: 'critical' })
+  } catch (error) {
+    throw fail(`清不掉圖片解碼 / 光柵快取(CDP Memory.simulatePressureNotification):${firstLine(error)} —— 截到的像素會取決於走到這個畫面的時序`, error)
+  } finally {
+    await cdp?.detach().catch(() => {})
+  }
+  const settled = await page.evaluate(waitForQuietFrames, { frames, capMs })
+  if (!settled.ok) throw fail(`清快取後 ${capMs / 1000} 秒內版面沒有連續靜止 ${frames} 個影格(等了 ${settled.framesWaited} 格,期間變動 ${settled.lateChanges} 次)`)
+  return { frozenAnimations, framesWaited: settled.framesWaited }
 }
 
 // 頁面端:焦點連續 frames 個影格落在同一個元素上。**以 page.evaluate 序列化傳入,不得引用外部變數。**
@@ -1210,7 +1366,7 @@ export async function waitForStoryRender(target, options = {}) {
  * @param {boolean} [options.health]                跑 render-health(預設 true)
  * @param {boolean} [options.fonts]                 等 document.fonts.ready(預設 true)
  * @param {boolean} [options.requestsSettled]       等渲染期間發出的請求全部結束(預設 false;document 模式的資料請求用,圖片看 images)
- * @param {boolean} [options.images]                畫面內每張圖載完、解碼完、帳本裡的圖片請求都有結果(預設 true;見「圖片就緒」區塊)
+ * @param {boolean} [options.images]                畫面內每張圖載完、帳本裡的圖片請求都有結果(預設 true;見「圖片就緒」區塊)
  * @param {number} [options.imagesTimeoutMs]        等圖片的上限(預設 = timeoutMs)
  * @param {'local'|'network'} [options.demoImages]  示範圖主機的取法(預設 'local' = 本機同尺寸合成圖;'network' = 遠端真圖,給跟基準圖比 / 給人看的截圖)
  * @param {Function} [options.beforeSettle]         async (page) => {},在字型 / 靜止判定之前執行
@@ -1232,7 +1388,7 @@ export async function openStory(page, url, options = {}) {
     requireRenderFinished = true, health = true, fonts = true, requestsSettled = false,
     beforeSettle = null, previewFrame = null, storybook = previewFrame ? true : isStorybookIframe(url), notFound = null,
     timeoutMs = 30_000, navigationTimeoutMs = 60_000, settleTimeoutMs = 10_000,
-    images = true, imagesTimeoutMs = timeoutMs, demoImages = 'local',
+    images = true, imagesTimeoutMs = timeoutMs, demoImages = 'local', pendingTimers = false,
     // previewFrame 模式預設 30 秒(render-health 的上限):管理介面與 preview 同源、共用同一條主執行緒,story finished 之後
     // 管理介面自己的外掛面板重畫會把它塞住好幾秒 —— 2026-09-25 實測 CPU ×6 下 story 已 finished、根節點有內容,
     // 5 秒上限卻因為檢查本身排不到執行而被判成「empty story root」(誤紅);30 秒下同一趟通過、之後 0 次版面變動。
@@ -1245,6 +1401,8 @@ export async function openStory(page, url, options = {}) {
   if (typeof images !== 'boolean') throw new TypeError(`openStory:images 必須是 true / false,實得 ${JSON.stringify(images)}`)
   if (demoImages !== 'local' && demoImages !== 'network') throw new TypeError(`openStory:demoImages 只能是 'local' 或 'network',實得 ${JSON.stringify(demoImages)}`)
   if (!Number.isInteger(imagesTimeoutMs) || imagesTimeoutMs <= 0) throw new TypeError(`openStory:imagesTimeoutMs 必須是正整數,實得 ${JSON.stringify(imagesTimeoutMs)}`)
+  if (typeof pendingTimers !== 'boolean') throw new TypeError(`openStory:pendingTimers 必須是 true / false,實得 ${JSON.stringify(pendingTimers)}`)
+  if (pendingTimers && !(settleFrames > 0)) throw new TypeError('openStory:pendingTimers 要搭配 settleFrames > 0(計時器是在靜止判定的每一格裡看的)')
   const priorDemoImages = demoImageModes.get(page)
   if (priorDemoImages && priorDemoImages !== demoImages) {
     throw new TypeError(`openStory:這個分頁先前用 demoImages='${priorDemoImages}' 開過,不能改成 '${demoImages}'(本機代換裝上後整個分頁有效、HTTP 快取也會混進另一種圖)—— 換一個瀏覽器 / 分頁`)
@@ -1339,6 +1497,9 @@ export async function openStory(page, url, options = {}) {
       }
     }
 
+    // 1c. 計時器帳本(pendingTimers):導覽前以 init script 裝,新文件的第一支腳本之前就在記(「計時器帳本」區塊)
+    if (pendingTimers) await installPendingTimerLedger(page)
+
     // 2. 導覽
     try {
       await page.goto(url, { waitUntil: 'load', timeout: navigationTimeoutMs })
@@ -1392,7 +1553,7 @@ export async function openStory(page, url, options = {}) {
     // 8b + 9. 圖片就緒 → 版面靜止(影格)+ 同一個 task 裡的量測 —— 與 waitForImages 共用 settleImagesAndFrames(唯一實作):
     // 圖到了才會觸發的版面變動(FileViewer onLoad → fit-to-page)落在靜止判定的觀測窗裡;最後一格還有圖在路上就回頭再等。
     const { verdict: imagesVerdict, settle, probe: probed } = await settleImagesAndFrames(target, {
-      images, ledger: imageLedger, origin, imagesTimeoutMs, settleFrames, settleTimeoutMs,
+      images, ledger: imageLedger, origin, imagesTimeoutMs, settleFrames, settleTimeoutMs, pendingTimers,
       includeParent: Boolean(previewFrame), probe, probeArg, stage: '渲染完成後',
       fail: (kind, reason) => instrument(kind, reason, { phase }),
     })
