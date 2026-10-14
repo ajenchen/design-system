@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "a1f29c8992902db2df3f5d0c84e180e80da27f1467863d5585fe9e44de654ff5",
+      "sha256": "afa79f6cf3e919615769468f13a104bf602360963ee28b998d5bdda565b9602f",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -615,7 +615,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "648b65cedabb5a21538487da857c0398621f2a8ce5da53da7bce534499def467",
+      "sha256": "8ff8e74774dbe04ed69cbb18ecf5abd3d8b60d24527e7af751d74f9341a1d076",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"

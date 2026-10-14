@@ -206,7 +206,8 @@ async function run(browser, server) {
       // 等被量的每一格本身(9 種欄位的第 0 列)
       waitFor: (selectors) => selectors.every((s) => document.querySelector(s)),
       waitForArg: PICKER_TYPES.map((item) => cellSelectorOf(item, 0)),
-      requestsSettled: true, settleFrames: 10, notFound: server?.notFound ?? null,
+      // 圖片由 openStory 預設的圖片就緒步驟等(示範圖用本機同尺寸合成圖;2026-10-14 取代 requestsSettled)
+      settleFrames: 10, notFound: server?.notFound ?? null,
     })
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error

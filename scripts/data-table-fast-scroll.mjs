@@ -542,7 +542,11 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
     await page.addInitScript(INIT, { loaf: ATTRIBUTION })
     // 開 story 一律走共用的 openStory(lib/launch-browser.mjs,2026-09-25):Storybook 回報渲染完成、畫面健康、
-    // **被量的東西**(捲動區裡的列)出現、渲染期間的請求(遠端頭像)全部結束、版面連續靜止 30 個影格才開始取樣。
+    // **被量的東西**(捲動區裡的列)出現、畫面裡每張圖載完並解碼、版面連續靜止 30 個影格才開始取樣。
+    // 頭像(2026-10-14,待辦總帳 R1e):原本用 requestsSettled 等「渲染期間的請求全部結束」—— roadmap story 唯一的外部請求是
+    // 6 張 i.pravatar.cc 頭像,於是每趟跟著那台第三方主機的快慢走(CI 431 趟裡 229 趟多等約 30 秒)。現在示範圖主機由 openStory
+    // 預設在瀏覽器裡就地換成同尺寸的本機合成圖(CDP Fetch,只攔示範圖主機、不關快取),頭像照樣在、尺寸照樣是 128,
+    // 開始量之前已載完並解碼(lib「圖片就緒」區塊);量到的數字與頭像從遠端載到時相同(證據見 R1e)。
     // 取代舊的 gotoStory(回傳值被丟掉)+ 固定睡 1500ms:那 1500ms 是「頁面已進入穩態」的代理 —— 慢的 runner 上
     // 手勢會落在還沒載完 / 還在排版的頁面上,快的機器上則白等。story 開不起來 → 回 instrumentFail(呼叫端重試一次,
     // 仍失敗就以 INSTRUMENT-FAIL 點名並紅),不再印「story 崩潰或 build 壞了」指控一個沒被量到的東西。
@@ -550,7 +554,6 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     try {
       await openStory(page, build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, {
         waitFor: '[data-datatable-hscroll] [data-row-index]',
-        requestsSettled: true,
         // 消融實驗的 CSS 在靜止判定之前注入:量到的是注入後的穩態
         beforeSettle: CSS_INJECT ? (p) => p.addStyleTag({ content: CSS_INJECT }) : null,
         settleFrames: 30,

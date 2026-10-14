@@ -124,7 +124,7 @@ async function inspectStory(id, { sabotage = false, appearTimeout = APPEAR_MS } 
     if (error.kind !== 'wait-for-timeout') return { status: 'not-rendered', name, detail: error.detail }
     // story 已渲染完成,但被量的元素沒出現
     const r = await page.evaluate(PROBE, { kind })
-    const extra = error.failedRequests.length ? `;同源 404 / 載入失敗:${error.failedRequests.join(', ')}` : ''
+    const extra = error.failedRequests.length ? `;404 / 載入失敗的請求:${error.failedRequests.join(', ')}` : ''
     return { status: 'unmeasurable', name, detail: `story 已渲染,但 ${appearTimeout / 1000} 秒內沒等到 ${r.missing}${extra}` }
   }
   const r = await page.evaluate(PROBE, { kind, sabotage })
