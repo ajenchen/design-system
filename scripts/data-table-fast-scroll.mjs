@@ -10,7 +10,9 @@
  *            而門檻是 1.25× —— 噪音比門檻寬時紅綠都不帶資訊。
  *        (b) 兩邊沒有任何會進 bundle 的原始碼差異時,**明確跳過比值判定**並印出理由
  *            (那種情況下它量到的只有 runner 的排程雜訊)。絕對門檻與目的地判定不受影響,照跑。
- *        (c) 比值超過 1.25 ≠ 已證明變慢(2026-10-14):1.5 倍以上不看分布直接紅;1.25–1.5 的灰區先算單側精確
+ *        (c) 比值超過 1.25 ≠ 已證明變慢(2026-10-14):長工合計與幀距 1.5 倍以上要雜訊撐得住才紅(秩檢定分得開、或對數 Welch t
+ *            p ≤ 0.05、或兩邊都只有 1 趟;R1d,38346602 長工合計 5.96× 是快 runner 上的門檻統計量雜訊,同一份程式碼 21e25346 是 1.01×),
+ *            否則走灰區同一條路;中央區最長連續空白照舊超過 1.5 倍直接紅(放寬的證據不適用於它,見 `RATIO_CHECKS`);1.25–1.5 的灰區先算單側精確
  *            Mann–Whitney,分得開才紅,分不開才交錯加量再判(lib `refRatioDecision`;1ef86547 零個執行期檔案改動
  *            卻量到 1.38×)。≤ 1.25 與舊判準逐位元相同。要不要加量只問 lib `nextExtraRound`:每一輪(含第一輪)
  *            先用這種跑法最慢那趟估一輪、對**整個 job 共用**的預算檢查,這種跑法已有一項判紅就不加。
@@ -20,6 +22,10 @@
  *            連不到的頭像藏起來即重現舊指標 1.82×、新指標 0.98×,同建置自比 1.02×;合成回歸「每次判斷多忙等 2ms」
  *            新指標照樣紅)。gesture / mouse 幾乎每張呈現幀都推進,新指標 ≈ 舊指標,一起換只為同一個定義;
  *            676a298e 之後這兩種跑法幀距略高的原因不明,不是補畫幀,本次不宣稱修好。
+ *        (e) 長工歸因每次都印(R1d,lib/long-frame-attribution.mjs):Long Animation Frames API 記下超過 50ms 的影格裡,時間花在
+ *            哪個檔的哪個進入點(JS / JS 逼出的樣式版面 / 瀏覽器渲染 / 沒列為進入點的工作),各 build 並排。比值紅了先看這張表再決定
+ *            要不要消融產品程式碼(M32(h))。`--attribution=off` 只給對照組;`--attribution=cpu` 另開 1ms 取樣 profile 看長影格裡的
+ *            自身時間落在哪個檔(本機調查用,不在 CI 開)。
  */
 /**
  * DataTable 快速捲動「中間區空白」儀器 —— 2026-09-09
@@ -114,7 +120,8 @@ function runtimeSourceDiffers(ref) {
   if (run.status !== 0 || typeof run.stdout !== 'string') return true
   return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
-import { classifyRun, median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioDecision, advanceGapStats, nextExtraRound, estimateRoundMs, readExtraLedger, chargeExtraLedger, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS } from './lib/fast-scroll-gate-policy.mjs'
+import { attributeLongFrames, compareAttribution, cpuInLongFrames, licenseHint, longTaskCoverage } from './lib/long-frame-attribution.mjs'
+import { classifyRun, median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioDecision, ratioZoneText, advanceGapStats, nextExtraRound, estimateRoundMs, readExtraLedger, chargeExtraLedger, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -203,6 +210,12 @@ const SCROLL_BUSY_MS = Number(arg('busy-ms', 15))
 // 把 CI 的 DataTable 像素 job 從 20 分推到 25 分逾時被砍,當天拆掉。
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
+// 長工歸因(lib/long-frame-attribution.mjs):預設開。`--attribution=off` 只用在對照組(證明觀測器不改變被量的東西)。
+// `--attribution=cpu`:另外在量測趟裡開 1ms 取樣的 CPU profile,看長影格(與 long task)裡的自身時間落在哪個檔。本機調查用:
+// 取樣每 1ms 打斷一次主執行緒,開了之後的長工 / 幀距數字不能拿去跟沒開的比,只看檔與檔之間怎麼分,所以 CI 不開。
+const ATTRIBUTION_MODE = arg('attribution', 'on')
+if (!['on', 'off', 'cpu'].includes(ATTRIBUTION_MODE)) { console.error(`✗ --attribution 只接受 on / off / cpu(得 ${ATTRIBUTION_MODE})`); process.exit(1) }
+const ATTRIBUTION = ATTRIBUTION_MODE !== 'off'
 const CSS_INJECT = arg('css', '') // 消融實驗用:載入後注入一段 CSS(例:關掉某個動畫),同一個 build 比較有無
 const BUILDS = arg('builds', '')
   ? arg('builds', '').split(',').map((s) => { const i = s.indexOf('='); return { label: s.slice(0, i), dir: resolve(s.slice(i + 1)) } })
@@ -229,8 +242,8 @@ const serve = async (dir) => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // ── 頁內:最早期樁(commit 計數 / long task / scroll 與 wheel 事件計數)──
-const INIT = () => {
-  const S = (window.__fs = { commits: 0, scrollEvents: 0, wheelTs: [], longs: [], frames: [], on: false })
+const INIT = ({ loaf }) => {
+  const S = (window.__fs = { commits: 0, scrollEvents: 0, wheelTs: [], longs: [], loafs: [], frames: [], on: false })
   const renderers = new Map()
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
     supportsFiber: true, isDisabled: false, renderers,
@@ -239,6 +252,18 @@ const INIT = () => {
     on() {}, off() {}, emit() {}, sub() { return () => {} },
   }
   try { new PerformanceObserver((l) => { for (const e of l.getEntries()) S.longs.push({ start: e.startTime, dur: e.duration }) }).observe({ type: 'longtask', buffered: true }) } catch (e) { S.longtaskErr = String(e) }
+  // 長工歸因(2026-10-14,R1d):Long Animation Frames API,欄位形狀見 lib/long-frame-attribution.mjs 檔頭(頁內不能 import)。
+  // `--attribution=off` 時不掛觀測器 —— 用來證明掛上去不會改變被量的東西(對照組)。
+  if (loaf) {
+    try {
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) {
+          S.loafs.push({ s: e.startTime, d: e.duration, b: e.blockingDuration, r: e.renderStart, l: e.styleAndLayoutStart,
+            sc: (e.scripts || []).map((x) => ({ t: x.invokerType, i: x.invoker, u: x.sourceURL, f: x.sourceFunctionName, s: x.startTime, d: x.duration, fl: x.forcedStyleAndLayoutDuration })) })
+        }
+      }).observe({ type: 'long-animation-frame', buffered: true })
+    } catch (e) { S.loafErr = String(e) }
+  } else S.loafErr = 'off'
   window.addEventListener('scroll', () => { S.scrollEvents++ }, true)
   window.addEventListener('wheel', (e) => { S.wheelTs.push({ t: performance.now(), dy: e.deltaY, trusted: e.isTrusted }) }, { capture: true, passive: true })
 }
@@ -323,7 +348,7 @@ const RUN_TICKS = async ({ ticks, tickMs, deltas, target, busyAt, busyMs }) => {
   return { applied, forwarded, wallMs: performance.now() - t0 }
 }
 
-const STOP_SAMPLER = () => { const S = window.__fs; S.on = false; return { frames: S.frames, longs: S.longs.filter((l) => l.start + l.dur >= S.t0) /* 只算取樣視窗內;buffered 會含頁面載入 */, wheelTs: S.wheelTs, commits: S.commits, scrollEvents: S.scrollEvents, finalScroll: document.querySelector('[data-datatable-hscroll]')?.scrollTop ?? null } }
+const STOP_SAMPLER = () => { const S = window.__fs; S.on = false; return { frames: S.frames, longs: S.longs.filter((l) => l.start + l.dur >= S.t0) /* 只算取樣視窗內;buffered 會含頁面載入 */, loafs: S.loafs.filter((l) => l.s + l.d >= S.t0), loafErr: S.loafErr || null, wheelTs: S.wheelTs, commits: S.commits, scrollEvents: S.scrollEvents, finalScroll: document.querySelector('[data-datatable-hscroll]')?.scrollTop ?? null } }
 
 // ── 頁內:截圖近白像素比例(中間區 vs 左面板;PNG base64 → canvas)──
 const ANALYZE_SHOT = async ({ b64 }) => {
@@ -515,7 +540,7 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
-    await page.addInitScript(INIT)
+    await page.addInitScript(INIT, { loaf: ATTRIBUTION })
     // 開 story 一律走共用的 openStory(lib/launch-browser.mjs,2026-09-25):Storybook 回報渲染完成、畫面健康、
     // **被量的東西**(捲動區裡的列)出現、渲染期間的請求(遠端頭像)全部結束、版面連續靜止 30 個影格才開始取樣。
     // 取代舊的 gotoStory(回傳值被丟掉)+ 固定睡 1500ms:那 1500ms 是「頁面已進入穩態」的代理 —— 慢的 runner 上
@@ -546,6 +571,11 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     await page.waitForTimeout(200) // 起點就位、第一批列掛好
     const m0 = await metrics()
     if (profile) await cdp.send('Profiler.start')
+    let cpuAnchor = null
+    if (!profile && ATTRIBUTION_MODE === 'cpu') {
+      await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 1000 }); await cdp.send('Profiler.start')
+      cpuAnchor = await page.evaluate(() => performance.now())
+    }
     const shots = []
     let ticks
     let gesture = null
@@ -615,6 +645,8 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     if (SHOTS && mode === 'mouse') { const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }); shots.push({ afterTick: 0, b64: data }) } // 靜止基準:同一位置畫完後的近白比例
     let prof = null
     if (profile) { const { profile: p } = await cdp.send('Profiler.stop'); prof = p }
+    let cpuProf = null
+    if (cpuAnchor != null) { const { profile: p } = await cdp.send('Profiler.stop'); cpuProf = p }
     const m1 = await metrics()
     const raw = await page.evaluate(STOP_SAMPLER)
     const shotStats = []
@@ -658,6 +690,9 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     }).catch(() => null)
     return {
       build: build.label, mode, sabotage, busyUsed: sabotage ? busyMs : 0, forcedInk: hideContent, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
+      attribution: raw.loafErr ? null : { ...attributeLongFrames(raw.loafs), coverage: longTaskCoverage(raw.longs, raw.loafs) }, loafErr: raw.loafErr, loafs: raw.loafs,
+      // CPU 取樣的視窗 = 長影格 ∪ long task(瀏覽器沒給長影格的 long task 也要歸得到檔)
+      cpuAttribution: cpuProf ? cpuInLongFrames(cpuProf, cpuAnchor, [...raw.loafs, ...raw.longs.map((l) => ({ s: l.start, d: l.dur }))]) : null,
       longs: raw.longs, longCount: raw.longs.length, longMax: raw.longs.reduce((m, l) => Math.max(m, l.dur), 0), longSum: raw.longs.reduce((s, l) => s + l.dur, 0),
       commits: raw.commits, scrollEvents: raw.scrollEvents, finalScroll: raw.finalScroll, scrolled: (raw.finalScroll ?? 0) - START_PX,
       wheelSeen: raw.wheelTs.length, wheelTrusted: raw.wheelTs.filter((w) => w.trusted).length, wheelGapMean: gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : 0, wheelGapMax: gaps.reduce((m, g) => Math.max(m, g), 0),
@@ -709,20 +744,26 @@ if (INJECT_RUNS) {
 }
 
 // ── 對參考建置(--ref)的比值判定:**一份**指標清單與判定式,灰區加量的初判與終判共用(M17;2026-10-14)──
-// 同族三條(中央區最長連續空白 / 主執行緒長工合計 / 幀距平均)× 三種 CI 跑法全部經這裡,判準在 lib `refRatioDecision`
-// (≤ 1.25× 過、> 1.5× 紅、中間灰區看單側 Mann–Whitney)。M10:同族一起換,不留「另一條不變」。
+// 同族三條(中央區最長連續空白 / 主執行緒長工合計 / 幀距平均)× 三種 CI 跑法全部經這裡,判準在 lib `refRatioDecision`:
+// ≤ 1.25× 過;中間灰區看單側 Mann–Whitney;> 1.5× 時,長工合計與幀距要秩檢定分得開、或對數 Welch t p ≤ 0.05、或兩邊都只有 1 趟才紅,
+// 否則走灰區同一條路(能加量就加、不能就不指控),空白則照舊直接紅(`capNeedsNoiseSupport`)。M10:同族一起換,不留「另一條不變」。
 // 幀距那條量「畫面推進的幀」(捲動欄像素有變),不再量合成器送出的全部呈現幀(理由見 lib `advanceGapStats`)。
 const ASSERTING = ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '' || ASSERT_SHELL_FRAMES !== ''
 const isUsable = (r) => classifyRun({ g: r.g, frames: r.frames, scrolled: r.scrolled, gesturePx: GESTURE_PX }).usable
 let runtimeDiffMemo = null
 const runtimeDiffers = () => (runtimeDiffMemo ??= runtimeSourceDiffers(REF_LABEL))
 // needsRuntimeDiff:兩邊零個執行期檔案差異時跳過(理由見判定段 2026-09-19 那段);空白那條原本就不受此限,照舊。
+// capNeedsNoiseSupport(2026-10-14 R1d,lib `refRatioDecision` 必填):超過 1.5× 時要不要「雜訊撐得住」才紅。
+//   · 長工合計 / 幀距 = true:CI 72 個 job 的逐趟數字與置換重抽都在這兩項上做過(38346602 長工合計 5.96×、幀距 1.53×,
+//     同一份程式碼在 21e25346 是 1.01× / 0.99×)。
+//   · 空白 = false:放寬的理由(長工門檻統計量)不適用、置換重抽沒做、CI 上 110 次空白比值全是參考為 0 退回絕對門檻 ——
+//     沒有證據就不放寬,超過上限照舊直接紅。
 const RATIO_CHECKS = {
-  blank: { name: () => '中央區最長連續空白', rawLimit: ASSERT_BLANK_MS, needsRuntimeDiff: false, pick: (r) => r.g.blankLongestMs },
-  longSum: { name: () => '主執行緒長工合計', rawLimit: ASSERT_LONG_TASK_MS, needsRuntimeDiff: true, pick: (r) => r.longSum },
+  blank: { name: () => '中央區最長連續空白', rawLimit: ASSERT_BLANK_MS, needsRuntimeDiff: false, capNeedsNoiseSupport: false, pick: (r) => r.g.blankLongestMs },
+  longSum: { name: () => '主執行緒長工合計', rawLimit: ASSERT_LONG_TASK_MS, needsRuntimeDiff: true, capNeedsNoiseSupport: true, pick: (r) => r.longSum },
   frameGap: {
     name: () => '畫面推進的幀距平均',
-    rawLimit: ASSERT_FRAME_GAP_MS, needsRuntimeDiff: true,
+    rawLimit: ASSERT_FRAME_GAP_MS, needsRuntimeDiff: true, capNeedsNoiseSupport: true,
     pick: (r) => r.g?.advanceGapMean ?? NaN,
   },
 }
@@ -740,7 +781,7 @@ const ratioDecision = (check, label, mode, usable, canAddMore) => {
   if (!(refMedian > 0)) return { verdict: 'no-ref', refMedian }
   const mineVals = valsOf(usable.filter((r) => r.build === label && r.mode === mode), check.pick)
   if (!mineVals.length || !mineVals.every(Number.isFinite)) return { verdict: 'na' }
-  return { ...refRatioDecision(mineVals, refVals, { canAddMore }), mineVals, refVals }
+  return { ...refRatioDecision(mineVals, refVals, { canAddMore, capNeedsNoiseSupport: check.capNeedsNoiseSupport }), mineVals, refVals }
 }
 // 灰區加量的初判:目前這個模式已量到的可用趟,逐一受測 build × 啟用中的指標
 const ratioDecisions = (mode, canAddMore) => {
@@ -865,8 +906,9 @@ try {
         } finally { await ctrl.server.stop() }
       }
       for (let i = 1; i <= n; i++) for (const s of roundOrder(i)) await measureOne({ ...s, mode, i })
-      // **比值落在灰區 → 交錯加量再判**(2026-10-14,判準 lib `refRatioDecision`):1.25× 以下一趟都不多跑、1.5× 以上不看 p 直接紅;
-      // 中間那段先算單側 Mann–Whitney,分得開當場紅,分不開才延續 ABBA 多量。要不要再量一輪**只問 lib `nextExtraRound`**:
+      // **比值分不開 → 交錯加量再判**(2026-10-14,判準 lib `refRatioDecision`):1.25× 以下一趟都不多跑;1.25–1.5× 的灰區先算
+      // 單側 Mann–Whitney,分得開當場紅;超過 1.5× 時,長工合計 / 幀距要秩檢定分得開、或對數 Welch t p ≤ 0.05、或兩邊都只有 1 趟才紅,
+      // 都不成立就跟灰區分不開走同一條路(空白不放寬,超過 1.5× 直接紅)。分不開的才延續 ABBA 多量。要不要再量一輪**只問 lib `nextExtraRound`**:
       // 每一輪(含第一輪)開跑前都用這種跑法最慢那趟估一輪、對整個 job 共用的帳本檢查;這種跑法已經有一項判紅(比值判紅,
       // 或量測期已記失敗)就不加 —— 再量也翻不回來,只會把 job 推向逾時。絕對門檻(目的地 / 補齊)在終判才算,不在此列。
       // 注入模式(--inject-runs)沒有瀏覽器可加量:照原樣交給終判。
@@ -879,7 +921,8 @@ try {
           const estRoundMs = estimateRoundMs(tripMs.get(mode), served.length)
           const next = nextExtraRound({ extra, pendingCount: pending.length, anyFail, spentMs, estRoundMs })
           const sec = (ms) => (Number.isFinite(ms) ? (ms / 1000).toFixed(0) : '?')
-          const what = pending.map((x) => `${x.label} ${x.check.name(mode)} ${x.decision.ratio.toFixed(2)}×(${x.decision.n.mine} 對 ${x.decision.n.ref} 趟,p = ${x.decision.p.toFixed(3)})`).join('、')
+          // 每一項標它落在哪一段(lib `ratioZoneText`):超過 1.5× 但兩邊重疊的項目不得被印成「1.25–1.5× 灰區」
+          const what = pending.map((x) => `${x.label} ${x.check.name(mode)} ${x.decision.ratio.toFixed(2)}×,${ratioZoneText(x.decision)}(${x.decision.n.mine} 對 ${x.decision.n.ref} 趟,p = ${x.decision.p.toFixed(3)})`).join('、')
           const money = `一輪預估 ${sec(estRoundMs)} 秒(這種跑法最慢那趟 × ${served.length} 個 build);整個 job 加量已用 ${sec(spentMs)} / ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒`
           if (!next.go) {
             const why = {
@@ -888,10 +931,10 @@ try {
               'no-estimate': '估不出一輪要多久(沒有任何一趟的牆鐘)',
               budget: Number.isFinite(spentMs) ? `${money},放不進(預算的依據見 lib EXTRA_ROUNDS_JOB_BUDGET_MS)` : `加量帳本 ${EXTRA_LEDGER} 讀不到或解不開,不知道整個 job 還剩多少 = 不開`,
             }[next.why]
-            if (pending.length) console.log(`   ↷ ${mode}:灰區還分不開(${what}),不再加量 —— ${why};以現有趟數終判`)
+            if (pending.length) console.log(`   ↷ ${mode}:還分不開(${what}),不再加量 —— ${why};以現有趟數終判`)
             break
           }
-          console.log(`   ⟳ ${mode}:比值落在灰區(${BLANK_RATIO_LIMIT}–${RATIO_HARD_CAP}×)且分不開 —— ${what};交錯加量第 ${extra} 輪(${money})`)
+          console.log(`   ⟳ ${mode}:比值超過 ${BLANK_RATIO_LIMIT}× 但分不開 —— ${what};交錯加量第 ${extra} 輪(${money})`)
           const i = n + extra
           const r0 = Date.now()
           for (const s of roundOrder(i)) await measureOne({ ...s, mode, i })
@@ -914,6 +957,62 @@ try {
     }
 } finally { for (const { server } of served) await server.stop() }
 
+// ── 長工歸因(2026-10-14,R1d;lib/long-frame-attribution.mjs)──────────────────────────────────────────
+// 每次跑都印:長工裡的時間花在哪個檔的哪個進入點,各 build 並排(每格 = 各趟中位數 ms)。比值紅了之後先看這張表再決定
+// 要不要去消融產品程式碼(M32(h) 先歸因再消融):多出來的時間若落在我們的元件檔,是產品;若各格同比例一起漲、
+// 或落在「沒列為進入點的工作」,是機器狀態。泛用 chunk(index-*.js)附上檔案裡的授權標頭當線索,不宣稱進入點屬於哪個套件。
+const ATTR_KIND = { script: 'JS', forced: 'JS 逼出的樣式 / 版面', render: '', other: '', rest: '' }
+const hintCache = new Map()
+const chunkHint = (key) => {
+  if (!/^(index|chunk-)/.test(key)) return ''
+  if (!hintCache.has(key)) {
+    let names = []
+    for (const b of BUILDS) {
+      const f = [join(b.dir, 'assets', key), join(b.dir, key)].find((x) => existsSync(x))
+      if (f) { try { names = licenseHint(readFileSync(f, 'utf8')) } catch { /* 讀不到就不附線索 */ } break }
+    }
+    hintCache.set(key, names.length ? `(檔內授權標頭:${names.join(' / ')})` : '')
+  }
+  return hintCache.get(key)
+}
+function printAttribution() {
+  console.log('\n長工歸因(Long Animation Frames API:超過 50ms 的影格裡,時間花在哪個檔的哪個進入點;每格 = 各趟中位數 ms)')
+  for (const mode of MODES) {
+    const trips = Object.fromEntries(BUILDS.map((b) => [b.label, results.filter((r) => r.build === b.label && r.mode === mode && !r.control)]).filter(([, rs]) => rs.length))
+    const off = Object.values(trips).flat().filter((r) => !r.attribution)
+    if (off.length) console.log(`   ${mode}:${off.length} 趟沒有歸因(${[...new Set(off.map((r) => r.loafErr ?? '沒有資料'))].join('、')})—— 是量具沒開或瀏覽器不支援,不是沒有長工`)
+    const usable = Object.fromEntries(Object.entries(trips).map(([b, rs]) => [b, rs.filter((r) => r.attribution).map((r) => r.attribution)]).filter(([, a]) => a.length))
+    const labels = Object.keys(usable)
+    if (!labels.length) continue
+    const cmp = compareAttribution(usable, { top: 8 })
+    const pair = REF_LABEL && labels.length === 2 && labels.includes(REF_LABEL) ? labels.find((b) => b !== REF_LABEL) : null
+    const cells = (get) => {
+      const v = labels.map((b) => get(b))
+      const diff = pair ? `(${pair} − ${REF_LABEL} ${get(pair) - get(REF_LABEL) >= 0 ? '+' : ''}${(get(pair) - get(REF_LABEL)).toFixed(0)})` : ''
+      return `${v.map((x) => x.toFixed(0)).join(' / ')}${diff}`
+    }
+    console.log(`   ${mode}(依序 ${labels.map((b) => `${b} ${usable[b].length} 趟`).join(' / ')}):`)
+    console.log(`     長影格數 ${labels.map((b) => cmp.head[b].frames).join(' / ')};合計 ${cells((b) => cmp.head[b].totalMs)}ms;其中 blocking ${cells((b) => cmp.head[b].blockingMs)}ms`)
+    // 涵蓋率:long task 合計裡有多少落在長影格內(瀏覽器不保證每個 long task 都有長影格;沒蓋到的時間這張表歸不到檔)
+    const cov = (b) => { const xs = usable[b].map((a) => (a.coverage?.longMs > 0 ? a.coverage.coveredMs / a.coverage.longMs : NaN)).filter(Number.isFinite); return xs.length ? median(xs) : NaN }
+    const covText = labels.map((b) => (Number.isFinite(cov(b)) ? `${(cov(b) * 100).toFixed(0)}%` : '-')).join(' / ')
+    const low = labels.some((b) => cov(b) < 0.8)
+    console.log(`     long task 合計落在長影格裡的比例(各趟中位數):${covText}${low ? ' —— 不到 8 成:其餘 long task 瀏覽器沒有給長影格資料,下表解釋不到那一段(要看那一段請本機加 --attribution=cpu)' : ''}`)
+    for (const row of cmp.rows.filter((r) => Math.max(...Object.values(r.ms)) >= 1)) {
+      const kind = ATTR_KIND[row.kind] ? `${ATTR_KIND[row.kind]}|` : ''
+      console.log(`     ${kind}${row.key}${row.kind === 'script' || row.kind === 'forced' ? chunkHint(row.key.split(' ← ')[0]) : ''}:${cells((b) => row.ms[b])}`)
+    }
+    // --attribution=cpu:長影格期間 CPU 自身時間落在哪個檔(同樣各趟中位數)
+    const cpu = Object.fromEntries(Object.entries(trips).map(([b, rs]) => [b, rs.filter((r) => r.cpuAttribution).map((r) => r.cpuAttribution)]).filter(([, a]) => a.length))
+    if (Object.keys(cpu).length === labels.length) {
+      const asTrips = Object.fromEntries(labels.map((b) => [b, cpu[b].map((c) => ({ frames: 0, totalMs: c.inFramesMs, blockingMs: 0, buckets: Object.fromEntries(Object.entries(c.byFile).map(([k, ms]) => [k, { kind: 'cpu', key: k, ms }])) }))]))
+      const cc = compareAttribution(asTrips, { top: 10 })
+      console.log(`     ── 長影格期間 CPU 自身時間(1ms 取樣):合計 ${cells((b) => cc.head[b].totalMs)}ms`)
+      for (const row of cc.rows.filter((r) => Math.max(...Object.values(r.ms)) >= 1)) console.log(`       ${row.key}${chunkHint(row.key)}:${cells((b) => row.ms[b])}`)
+    }
+  }
+}
+
 // ── 時間序列摘要:每個 build×mode 取 paint 空白最嚴重的 run 印一條(0–9 = 空白率九分位,· = 0)──
 if (!SELFTEST) {
   console.log('\n每幀空白率時間序列(最嚴重的 run;每字一幀:· = 0,1–8 = 空白帶比例分箱(1 ≤ 11%…8 ≤ 89%),9 = 89% 以上;是比例不是帶數)')
@@ -932,6 +1031,7 @@ if (!SELFTEST) {
     if ((build === BUILDS[0] && mode === MODES[0]) || rs[0].g !== results[0].g) console.log('   ' + ['build/mode', ...cc.map((c) => c[0])].join(' | '))
     console.log('   ' + [`${build.label}/${mode}(n=${rs.length})`, ...cc.map(([, get, fmt]) => `${fmt(median(rs.map(get)))} / ${fmt(Math.max(...rs.map(get)))}`)].join(' | '))
   }
+  printAttribution()
 }
 if (JSON_OUT) { writeFileSync(JSON_OUT, JSON.stringify(results.map((r) => ({ ...r, profile: undefined })), null, 1)); console.log(`   原始資料 → ${JSON_OUT}`) }
 
@@ -1091,9 +1191,22 @@ if (ASSERTING) {
       const within = `${ref} × ${BLANK_RATIO_LIMIT}(= ${(d.refMedian * BLANK_RATIO_LIMIT).toFixed(0)}ms)`
       const runs = `${d.n.mine} 對 ${d.n.ref} 趟:${label} ${fmtVals(d.mineVals)};${REF_LABEL} ${fmtVals(d.refVals)}`
       const pText = Number.isFinite(d.p) ? `單側 Mann–Whitney p = ${d.p.toFixed(3)}` : ''
+      const tText = d.logT ? (d.logT.df >= 1 ? `對數 Welch t = ${d.logT.t.toFixed(2)}(自由度 ${d.logT.df.toFixed(1)})、p = ${d.logT.p.toFixed(3)}` : '兩邊都只有 1 趟,沒有跑間差異可估') : ''
+      const capped = `${ref} × ${RATIO_HARD_CAP}(= ${(d.refMedian * RATIO_HARD_CAP).toFixed(0)}ms,比值 ${d.ratio.toFixed(2)}×)`
       if (d.verdict === 'pass') console.log(`✓ ${head} ≤ ${within}`)
-      else if (d.verdict === 'fail-cap') { console.log(`✗ ${head} > ${ref} × ${RATIO_HARD_CAP}(= ${(d.refMedian * RATIO_HARD_CAP).toFixed(0)}ms,比值 ${d.ratio.toFixed(2)}×)—— 超過硬上限,不看分布一律紅(${runs};${pText})`); failed++ }
+      else if (d.verdict === 'fail-cap') {
+        // 紅的理由只看 lib 給的 `capBasis`(2026-10-14 R1d):長工合計 / 幀距要秩檢定分得開、或差距大於兩邊各自的跑間差異、或沒有雜訊可估;
+        // 空白這項不放寬(RATIO_CHECKS 的 capNeedsNoiseSupport)。秩檢定 p ≤ 0.05 在 5 對 5 時不代表完全分開,所以不寫「完全分開」。
+        const why = {
+          rank: `秩檢定分得開(p ≤ ${RATIO_ALPHA})`,
+          'log-t': `差距大於兩邊各自的跑間差異(${tText} ≤ ${RATIO_ALPHA})`,
+          'noise-unknown': '兩邊都只有 1 趟、沒有跑間差異可估,照倍數判',
+          'no-noise-allowance': '這一項是使用者看得到的空白,超過上限不看分布(放寬只給長工合計與幀距,證據見 RATIO_CHECKS)',
+        }[d.capBasis] ?? `判定依據不明(${d.capBasis})`
+        console.log(`✗ ${head} > ${capped}—— 超過硬上限,而且${why}(${runs};${pText})`); failed++
+      }
       else if (d.verdict === 'fail-separated') { console.log(`✗ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區而且分得開 —— 分支確實比較慢(${pText} ≤ ${RATIO_ALPHA};${runs})`); failed++ }
+      else if (d.overCapButNoisy) console.log(`✓ ${head} > ${capped},但兩邊分布重疊,而且這個倍數在這個 job 裡同一份程式碼自己的跑間差異內(${pText};${tText} > ${RATIO_ALPHA};${runs})—— ${d.n.mine} 對 ${d.n.ref} 趟分不出來,不指控;多出來的時間落在哪,看上方「長工歸因」`)
       else console.log(`✓ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區但分不開(${pText} > ${RATIO_ALPHA};${runs})—— 差距在這台機器的跑間雜訊內,不指控`)
     }
   }
