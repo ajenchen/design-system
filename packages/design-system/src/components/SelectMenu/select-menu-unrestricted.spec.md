@@ -158,7 +158,7 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 | `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
 | `scripts/searchable-field-keys-invariant.mjs` | 只選「不限」× 欄位內搜尋框:關著與不可搜尋的「不限」同位置同色(窄欄位長標籤截斷寬、依內容寬的欄寬也相同)、打開變灰色提示且讀屏略過、打字讓位、字刪光回來、換行模式欄高不變、依內容寬時打開與打字欄寬不變;Backspace 刪掉「不限」;一鍵清空後反白落在「不限」那一列(story `combobox.stories.tsx`「不限 × 欄位內搜尋」;依內容寬與窄欄位長標籤兩對在 `../Field/field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」;都是 test-only) | 在頁面上讓「不限」打開後仍是黑字、打字時仍並排,或拿掉讓位後留下寬的量尺,K4 那幾列必須紅(對修前建置實跑同樣紅) |
 
-前兩支在 CI 的 `verify-browser-select-all` job、第三支在 `verify-browser-field-edges` job、第四支在 `verify-browser-interaction` job 裡跑(各自用該 job 的 storybook build)。
+前兩支在 CI 的 `verify-browser-select-all` job、第三支在 `verify-browser-field-edges` job、第四支在 `verify-browser-searchable-fields` job 裡跑(各自用該 job 的 storybook build)。
 
 ---
 

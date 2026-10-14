@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:387c9c5d10783e03915f7b17e7f8a3bb40f4563be8364d896de26493f337779f",
+      "hash": "sha256:be829a5dbfb5f262f4fd1aad6ae7b66797d751cbb85ebf25efc3e2e425909ad7",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9cb8f4089e6dd06008917911c0189b201cda232d38d44b3e8454aba2b6b675ef",
+      "hash": "sha256:b4de40aa40eaa304fe2865f0a324afe3f354af92aa6414a8d2ac91fcc7fdc973",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139527,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:acb63bfaa97060568f9e0dbb053487b9ebb6fc8f221dcb4b1d7566a21dc96dd8",
+  "inputDigest": "sha256:12289a34b7124583dbea997c5457addd1ce258ba398aad07a5bb07df8d46315d",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:3f102a060efc525dffa29f9f61593ec8116a9c85c7ce1e14062f162003c17c90",
+  "snapshotDigest": "sha256:2754835c63a019e6c64340c3586c873a614d0e0a4ba1e5f52d73c2d669053fc9",
   "sources": [
     {
       "hash": "sha256:3c0ddad14d45e8c2606ae26a65d58c0358f76b4d8fecf6446ed54f0af77f812a",
@@ -1520,7 +1520,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:668ff1199e54ee1dab607c5b9f1891e07c8ef2601d79003df4cfb8a75c88d03b",
+      "hash": "sha256:3f8dffed1b0770c0f8f00935117d71bee0a1039e36af1b1f8f28755add5f00df",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:71a211772bab01b88e491563da962a0da2d436e919a6de3cf0d02c524cce760c",
+      "hash": "sha256:c67438056a93fc1ca6d5af27c9af6ca6bce888357d5712eb8e9e5cce57075c0b",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2271,7 +2271,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:d06760562737290351d5d4ad82e88a21f3cd9151a0621939c55bd1ad70124437",
+      "hash": "sha256:3e2e55d6995760fd55d7cc5700805d992df158c185f4fab34241811a10a26f9d",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2302,7 +2302,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:50bd978c1d7f831daf1fb7117a0c0b9a88b63773de4ff4b5d38d52bc9a7f5166",
+      "hash": "sha256:bc6217636609e15f9a4013f8346d9189de56a005876d3c7f01834b2218858e42",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3222,7 +3222,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 47,
-      "hash": "sha256:1544f314f57c85911be866ad461f73423ce4d55451361f4824b65b322385e8da",
+      "hash": "sha256:57b3b0517212a8127e93bf31f2eeb4673d77408c0e60004813833f0e587dc2a1",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3588,7 +3588,7 @@
         "scripts/generated/"
       ],
       "files": 619,
-      "hash": "sha256:c66784ff017cb4b072c874d5c8b3970e7e2b64cd3ae4c2236074372360367dd5",
+      "hash": "sha256:1ec1cb14b597831dd47f5187b1d177822753697632a6fa6e54f91643d4156239",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

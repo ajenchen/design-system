@@ -467,6 +467,9 @@ jobs:
     # 2026-09-15 拆自 verify-browser-datatable:感知 / 把手 / 釘選 resize / dpr1 感知迴圈這一段在 CI 逐支計時佔 10 分鐘,
     # 原 job 24 分鐘貼著 25 分鐘上限(8b1137c7 那次被砍掉)。照 2026-09-10 拆 dpr2 job 的先例再拆一個平行 job。
     # 這裡不需要參考建置(main):所有斷言都是絕對門檻或自帶對照組,不做「同 job 交錯比 main」。
+    # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 20.3 / p90 23.0 / 最大 23.9 分(上限 25,p90 佔 92%)。
+    # 逐支計時(job log 時間戳,289bce76 / 21e25346 / 38346602 / a91dfe7c 四次):兩支「按預算放」的對照組合計 513–583 秒、
+    # 其餘 DataTable 感知 327–623 秒 —— 對照組搬到 verify-browser-control-groups,兩邊各約 12–13 分。
     name: Verify browser(DataTable perception gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -499,15 +502,7 @@ jobs:
       - name: DataTable perception + handle gates (browser)
         run: |
           npx --no-install playwright install chromium
-          # 虛擬游標模態閘的**對照組**(2026-09-29,待辦總帳 G5):`test:virtual-cursor-modality` 只跑現況,它的 --selftest
-          # (把游標列釘回舊行為 → 100 條游標長相斷言必須全紅)在整個 repo 沒有任何執行面跑過 —— 夜間 harness 的 meta-test
-          # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過。現況那趟留在 verify-browser-agent(13 分 / 上限 15,
-          # ci-workflow-scope 釘死);對照組本機要 100 秒以上,放在這個 7 分鐘的 job(同樣先 build-storybook),照 2026-09-15 按預算拆 job 的先例。
-          node scripts/virtual-cursor-modality-invariant.mjs --selftest
-          # useFormValidation 契約的**對照組**(2026-10-01):判定留在 verify-browser-interaction(那個 job 已 10.8–13.0 分),
-          # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
-          # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),同上一支按預算放在這個約 7 分的 job。
-          node scripts/form-validation-contract-invariant.mjs --selftest
+          # 虛擬游標模態與 useFormValidation 契約兩支對照組(--selftest)2026-10-14 搬到 verify-browser-control-groups(待辦總帳 G10:本 job 最近 15 次 CI p90 23.0 分 / 上限 25)。
           # 網址欄 / 表格連結格(2026-10-13 user 拍板乙「照你建議做到完美並自行驗證到完美」,待辦總帳 Q3a–Q3f):連結只有網址文字那麼寬
           # (LinkInput 各模式 + 三則表格)、連結格四個點擊區 × 一般 / 試算表的結果、Enter / F2 進格內控件 + F2 / Esc 出格、一般模式編輯結束
           # 焦點、每種格的編輯器名字、鉛筆是行內小按鈕、不合法網址存進去是一般文字。對照組在頁面注入各組破法,對照列(沒改變的行為)全程綠。
@@ -561,6 +556,52 @@ jobs:
             tmp/datatable-handle-*/
           if-no-files-found: ignore
           retention-days: 14
+
+  verify-browser-control-groups:
+    # 2026-10-14 拆自 verify-browser-datatable-perception(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
+    # 兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
+    # useFormValidation 契約(判定在 verify-browser-interaction)。逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
+    name: Verify browser(virtual cursor + form validation control groups)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Virtual cursor modality + form validation contract control groups (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 虛擬游標模態閘的**對照組**(2026-09-29,待辦總帳 G5):`test:virtual-cursor-modality` 只跑現況,它的 --selftest
+          # (把游標列釘回舊行為 → 100 條游標長相斷言必須全紅)在整個 repo 沒有任何執行面跑過 —— 夜間 harness 的 meta-test
+          # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過。現況那趟在 verify-browser-cursor(上限 15);對照組 CI 逐支計時 102–139 秒,
+          # 照 2026-09-15 按預算拆 job 的先例放在這裡(原本在 verify-browser-datatable-perception,2026-10-14 拆出)。
+          node scripts/virtual-cursor-modality-invariant.mjs --selftest
+          # useFormValidation 契約的**對照組**(2026-10-01):判定在 verify-browser-interaction,
+          # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
+          # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),CI 逐支計時 411–444 秒;同上一支按預算放。
+          node scripts/form-validation-contract-invariant.mjs --selftest
 
   verify-browser-datatable-handles:
     # 2026-09-21 從 perception job 拆出來的第十一個 job,兩個理由:
@@ -709,7 +750,10 @@ jobs:
     # 起因:可搜尋欄位按鍵閘(K1–K4)疊進 verify-browser-interaction 後 0464ba54 跑到 25.4 分被取消(那個 job 平常已 20.9–22.8 分);
     # 同主題的「可搜尋選單焦點」閘原本放在 verify-browser-datatable-handles(18.9 分),一起搬來,兩個原 job 都鬆開。
     # 預估:建置 + 安裝約 4 分、按鍵閘本機 3.6 分、焦點閘本機掃描 159 秒 + 對照組 227 秒,CI 約本機 1.2–1.4 倍 → 約 15–18 分,列 SLOW_BROWSER_JOBS(25 分)。
-    name: Verify browser(searchable field keys + menu focus)
+    # 2026-10-14(待辦總帳 G10):實測比預估重 —— 最近 15 次 CI p50 21.4 / p90 24.1 / 最大 24.4 分(上限 25,p90 佔 96%),
+    # 之後又加了 Tag 列「+N」逐格閘(p90 261 秒)。可搜尋選單焦點閘(p50 657 / p90 684 秒)拆成自己的 job verify-browser-searchable-menu-focus,
+    # 本 job 留按鍵閘(p90 419 秒)+ Tag 列逐格閘,兩邊各約 13.5 分。
+    name: Verify browser(searchable field keys + tag overflow room)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -760,8 +804,41 @@ jobs:
           # 修前 0fe34e2e 兩種時序都紅(RDM-101 / RDM-105 編輯格,一般時序另有空白格與數字錯的格)。本機主跑 2.5–3 分、selftest 6 秒。
           npm run test:tag-overflow-room
 
+  verify-browser-searchable-menu-focus:
+    # 2026-10-14 拆自 verify-browser-searchable-fields(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
+    # 原 job 最近 15 次 CI p90 24.1 分 / 上限 25(96%);本 job 只跑可搜尋選單焦點閘(判定 + 對照組),估約 13.5 分。
+    name: Verify browser(searchable menu focus)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
       - name: Searchable menu keeps focus in its search box (browser)
         run: |
+          npx --no-install playwright install chromium
           # 可搜尋選單開著時,滑鼠點選項 = 按 Enter(user 2026-09-30 同意,原話「其他部分我覺得”可以”」;SSOT select-menu.spec.md
           #「A11y 預設」Focus 段 +「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「Tag 操作」與「邊界案例」Empty、command.spec.md「A11y 預設」)。
           # 量的(每一條點名型別 / story / 第幾個觸發點):挑選時與挑選後焦點留在搜尋框、點完打的字進得去、aria-activedescendant 指向反白那一列而且關聯得上、
@@ -770,9 +847,8 @@ jobs:
           # 連關鍵字一起清、鍵盤一鍵清空焦點留在欄位、組字中的 Enter 不選 / Esc 不關(一般 Esc 對照照樣關)、Combobox searchIn='trigger' 空值時仍有搜尋框。
           # 候選 story 從 index.json 依「SelectMenu + 宣告搜尋 prop 的包裝元件 + Command 的直接使用者(AgentPanel 歷史、CommandDialog)」家族推導,
           # 逐一真的點開判型,四型與直接使用者都要量到;--selftest 在頁面上把修法逐一拆掉(13 組),每一組都必須紅在指定的型與直接使用者。
-          # 放這個 job(2026-10-01 從 verify-browser-select-all 搬來):那邊 CI 實測 9.4–11.4 分(不含這支),這支本機單獨實測掃描 159 秒 + 對照組 227 秒,
-          # CI 上同類閘約本機的 1.2–1.4 倍(select-all-footer 本機 281–291 秒 / CI 330–417 秒)→ 估 8–9 分,疊上去 18–20 分、貼近 25 分上限;
-          # 這個 job CI 實測 5.8–7.7 分。同一份 storybook build、瀏覽器已在上一步裝好;步驟依序跑,不與上面的感知量測同時佔 CPU。
+          # 2026-10-01 從 verify-browser-select-all 搬到 datatable-handles、10-07 搬到 verify-browser-searchable-fields,10-14 拆成自己的 job
+          #(待辦總帳 G10:searchable-fields 最近 15 次 p90 24.1 分 / 上限 25);本步 CI 實測 p50 657 / p90 684 秒。
           npm run test:searchable-menu-focus
 
   verify-browser-tree-navigation:
@@ -933,7 +1009,7 @@ jobs:
           # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式);
           # 2026-10-13 加試算表 DataTable 連結格 / 開關格的格內模式(Enter 進格裡的控件,Esc 先回格導覽、再清游標、才關)。
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
-          # 對照組(--selftest,二十六個突變)在 verify-browser-select-all:本 job CI 實測 11.9–14.6 分,疊上去貼近 25 分上限。
+          # 對照組(--selftest,二十六個突變)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
           node scripts/escape-and-focus-contract-invariant.mjs
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
@@ -952,6 +1028,9 @@ jobs:
     # 等於一次機器變異就把已經合併好的版本卡住,還讓人去修一個不存在的問題。
     # timeout 不是正確性門檻,是執行時間預算;撞到它唯一的效果是毀掉裁決。依同檔既有的
     # SLOW_BROWSER_JOBS 慣例改 25(仍在硬上限內,真的卡死照樣抓得到)。
+    # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 21.1 / p90 22.6 / 最大 23.2 分(上限 25,p90 佔 90%)。
+    # 逐支計時(job log 時間戳,289bce76 / 21e25346 / 38346602 / a91dfe7c 四次)前半(AgentPanel 到共用承擔者焦點)合計 473–660 秒、
+    # 後半(Tag 內距到改到元件的視覺稽核)528–666 秒 —— 後半搬到 verify-browser-field-dialog-steps,兩邊各約 13 分。
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
@@ -1015,10 +1094,55 @@ jobs:
           # 2026-10-01 下午(待辦總帳 N64 / N68 / N69 / OE29)加十列:對話框裡的表單 Esc 一次一層、受控對話框關閉後焦點回開啟者、
           # 送出中 / 存檔後焦點留在送出鈕(可聚焦的停用)、更新表單存檔後重設比對基準、送出成功跳 Toast(三則 story 原始碼)。
           # 2026-10-07 加 T-dialog / T-sheet(放在浮層裡、送出成功就關的三則 story:Toast、關閉、再打開時 reset)。
-          # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)在 verify-browser-datatable-perception ——
-          # 本 job CI 實測 10.8–13.0 分,疊上去貼近 25 分上限(infra/governance/test/ci-workflow-scope.test.mjs),照 virtual-cursor-modality 對照組的先例按預算放。
+          # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)按預算放在 verify-browser-control-groups
+          #(2026-10-14 從 verify-browser-datatable-perception 拆出),照 virtual-cursor-modality 對照組的先例。
           node scripts/form-validation-contract-invariant.mjs
           npm run test:shared-carrier-focus
+      # Cloud sessions load the committed provider config as-is; the only two ways that config has
+      # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
+      # both merged without any gate exercising them. These two commands bind cloud survivability
+      # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
+      # 這 9 支都註冊成 `npm run test:*`(等於宣告「要被跑」),但沒有任何 workflow 呼叫它們。
+      # 本機逐一實跑確認全綠、合計約 21 秒才接上 —— 不是把紅燈接進 CI。
+      # 另有 4 支目前是紅的,理由寫在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE(總帳 AD13)。
+
+  verify-browser-field-dialog-steps:
+    # 2026-10-14 拆自 verify-browser-interaction(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
+    # 原 job 最近 15 次 CI p90 22.6 分 / 上限 25(90%)。本 job = 原步驟後半:Field 內 Tag 內距、側欄鍵盤、openStory 兩面對照、view 字級、
+    # Dialog 並存與捲動鎖、浮層快捷鍵作用域、虛擬捲動壓力、Devmode 幾何、Header Tabs 插槽、選單訊息列、Steps 兩支,與改到元件的視覺稽核;
+    # 逐支計時合計 528–666 秒,估約 13 分。
+    name: Verify browser(field, dialog and steps gates + changed-component visual audit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Field, dialog and steps invariants + changed-component visual audit (browser)
+        run: |
+          npx --no-install playwright install chromium
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
@@ -1067,18 +1191,15 @@ jobs:
           node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"
         env:
           VISUAL_AUDIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-      # Cloud sessions load the committed provider config as-is; the only two ways that config has
-      # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
-      # both merged without any gate exercising them. These two commands bind cloud survivability
-      # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
-      # 這 9 支都註冊成 `npm run test:*`(等於宣告「要被跑」),但沒有任何 workflow 呼叫它們。
-      # 本機逐一實跑確認全綠、合計約 21 秒才接上 —— 不是把紅燈接進 CI。
-      # 另有 4 支目前是紅的,理由寫在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE(總帳 AD13)。
 
   verify-browser-agent:
     # 2026-09-10 拆自 verify-browser-interaction(它加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後 13.1 分鐘被 15 分鐘預算取消)。
     # 這三支都是「整頁 / 整個管理介面」等級的閘(各 1–3 分鐘),自己一個 job。
-    name: Verify browser(agent demo + cursor gates)
+    # 2026-10-14 再拆(待辦總帳 G10;照主題拆平行 job、不調高上限):之後疊上資料工具列、Devmode、浮層錨點三支,最近 15 次 CI
+    # p50 12.7 / p90 14.1 / 最大 14.3 分(上限 15,p90 佔 94%)。Storybook 層(docs 競態、Devmode addon)與虛擬游標搬到 verify-browser-cursor;
+    # 本 job 留整頁示範三支(代理示範、資料工具列、浮層錨點)。逐支計時(289bce76 / 21e25346 / 38346602 / a91dfe7c)本 job 281–329 秒、
+    # 另一半 327–391 秒,各約 8–9 分。
+    name: Verify browser(agent demo + toolbar + detached anchor)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1107,16 +1228,9 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
-      - name: Agent demo, docs race and virtual cursor gates (browser)
+      - name: Agent demo, data toolbar and detached anchor gates (browser)
         run: |
           npx --no-install playwright install chromium
-          # Storybook docs 生命週期競態(2026-09-10 user:「剛進 storybook 時,點進範例裡,很常會出現此時不應該出現的選單在左上角」):
-          # 把 DocsRenderer chunk 延遲 3 秒、在 Docs 頁載入中點進 story → 不得留下殭屍 docs 與飄在 (0,8) 的歷史浮層;對照組把守衛關掉必須重現。
-          node scripts/storybook-docs-race-invariant.mjs --selftest
-          node scripts/storybook-docs-race-invariant.mjs
-          # 虛擬游標的框只在鍵盤模態下畫:滑鼠點開 Select 不得出現鍵盤焦點框(user 2026-09-08 抓到),
-          # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框;F 段(2026-09-10):在文字輸入框裡打字不算鍵盤搬游標。
-          npm run test:virtual-cursor-modality
           # 代理整頁示範(2026-09-09 合併原 modal-coexistence):S1–S9 —— DataTable 清單開有 URL 的 modal 與幾何、
           # header 垃圾桶 / footer 變體、四個 Field 存檔、新增、刪除確認框、背景位置模式、session 切換、
           # 關 agent 遮罩仍在(根因錨)、蓋板態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal)、
@@ -1127,13 +1241,57 @@ jobs:
           # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
           # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
           npm run test:action-bar-toolbar
+          # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
+          # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
+          npm run test:overlay-detached-anchor
+
+  verify-browser-cursor:
+    # 2026-10-14 拆自 verify-browser-agent(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
+    # Storybook 層的兩支(docs 生命週期競態、Devmode addon 視覺驗證)與虛擬游標模態;逐支計時合計 327–391 秒,估約 9 分。
+    name: Verify browser(docs race + virtual cursor + devmode)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Docs race, virtual cursor and Devmode gates (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # Storybook docs 生命週期競態(2026-09-10 user:「剛進 storybook 時,點進範例裡,很常會出現此時不應該出現的選單在左上角」):
+          # 把 DocsRenderer chunk 延遲 3 秒、在 Docs 頁載入中點進 story → 不得留下殭屍 docs 與飄在 (0,8) 的歷史浮層;對照組把守衛關掉必須重現。
+          node scripts/storybook-docs-race-invariant.mjs --selftest
+          node scripts/storybook-docs-race-invariant.mjs
+          # 虛擬游標的框只在鍵盤模態下畫:滑鼠點開 Select 不得出現鍵盤焦點框(user 2026-09-08 抓到),
+          # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框;F 段(2026-09-10):在文字輸入框裡打字不算鍵盤搬游標。
+          # 對照組(--selftest,把游標列釘回舊行為)按預算放在 verify-browser-control-groups。
+          npm run test:virtual-cursor-modality
           # DS Devmode addon 的視覺驗證(定位層 / 小距離紅線 / 緊湊標籤 / 兄弟距離,6 案例,本機 12 秒):
           # 2026-09-27 gate-reachability 把 package.json 從執行面拿掉(N33)後它成了孤兒 —— 只有 `npm run devmode:test` 提到它、
           # 從沒有 workflow 跑過。本機實跑全綠才接上(不是把紅燈接進 CI)。
           npm run devmode:test
-          # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
-          # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
-          npm run test:overlay-detached-anchor
 
   verify-browser-sweeps:
     # 2026-09-17 拆出來的第七個 job。這兩支是「全 1034 支 story 掃一遍」等級的閘(各約 5–6 分鐘),
@@ -1229,7 +1387,10 @@ jobs:
     # 2026-09-17 拆出來的第八個 job。它跟 sweeps 一樣是「全 1034 支 story 掃一遍」,但**還要開面板**
     # (每支 story 逐一點開 [role=combobox] 觸發點、按一下全選、再量一次),本機實測 6.6 分鐘 ——
     # 疊進 sweeps(那邊本機已經是 7.3 + 9 分)一定撞 25 分上限,所以自己一個 job 平行跑。
-    name: Verify browser(multi-select footer)   # 同 job 另跑 overlay footer gutter(共用同一份 storybook build)
+    # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):之後疊上 Tab 離開、「不限」列與 escape-and-focus 對照組,最近 15 次 CI
+    # p50 23.9 / p90 24.9 / 最大 25.3 分(上限 25,p90 佔 100%,一次撞上限被取消)。對照組(p90 776 秒)搬到 verify-browser-escape-focus-control;
+    # 本 job 留三支(合計 p90 約 629 秒),各約 12.5 / 15 分。
+    name: Verify browser(multi-select footer)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1284,15 +1445,48 @@ jobs:
           # 跟上面那支共用同一份 storybook build,放同一個 job。
           npm run test:unrestricted-option
 
+  verify-browser-escape-focus-control:
+    # 2026-10-14 拆自 verify-browser-select-all(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
+    # escape-and-focus 契約的對照組(判定在 verify-browser-overlay);原 job 最近 15 次 CI p90 24.9 分 / 上限 25,本 job 估約 15 分。
+    name: Verify browser(escape and focus contract control group)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
       - name: Escape and focus contract — control group (browser)
         run: |
+          npx --no-install playwright install chromium
           # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):二十六個單一根因突變
           # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
           # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
           # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
           # 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層)
-          # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機約 11.5 分(2026-10-13 實測 690 秒、同時另有建置在跑;循序約 26 分);不需要 storybook,
-          # 放這裡是按預算:本 job 拆分後實測 508 秒,overlay job 已 11.9–14.6 分(infra/governance/test/ci-workflow-scope.test.mjs 釘 25 分上限)。
+          # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機約 11.5 分(2026-10-13 實測 690 秒、同時另有建置在跑;循序約 26 分);不需要 storybook。
+          # CI 實測 p50 739 / p90 776 秒 —— 原本按預算放在 verify-browser-select-all,那個 job 因此貼到 25 分上限,2026-10-14 拆成自己的 job。
           node scripts/escape-and-focus-contract-invariant.mjs --selftest
 
   verify-browser-field-edges:
@@ -1301,7 +1495,10 @@ jobs:
     # 五支彼此獨立、只共用同一份 storybook build,拆成兩個平行 job 之後各自約 9-10 分鐘。
     # user 2026-09-20 原話:「你他媽發版到底是要發多久?」—— 一次 CI 20 分鐘裡,
     # 有一半是同一個 job 裡互不相關的掃描在排隊等前一支跑完。
-    name: Verify browser(field edges + combobox + footer gutter)
+    # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 14.5 / p90 14.9 / 最大 15.1 分(上限 15),
+    # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
+    # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
+    name: Verify browser(field edges + combobox single path)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1354,12 +1551,47 @@ jobs:
           # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
           npm run test:combobox-single-path
 
+  verify-browser-footer-gutter:
+    # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
+    # 原 job 最近 15 次 CI p90 14.9 分 / 上限 15,一次撞上限被取消;本 job 只跑浮層 footer 內距全 story 掃描(判定 + 兩組對照),估約 8.8 分。
+    name: Verify browser(overlay footer gutter)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Install Chromium
+        run: npx --no-install playwright install chromium
+
       - name: Overlay footer gutter (browser)
         run: |
           # 浮層底部那條 footer 的左右內距必須對齊「這個浮層的內容左邊界」
           #(選單→列、一般浮層→body/標題、日曆→第一格;欄位置中的挑選面板沒有可對齊對象,
           # 只檢查內距是既有 token)。量的是像素不是 class 字串;對照組把每個 footer 推 7px,這支必須紅。
-          # 跟上面那支共用同一份 storybook build,所以放同一個 job,不另開第九個。
+          # 2026-10-14 從 verify-browser-field-edges 拆成自己的 job(待辦總帳 G10):本步 CI 實測 p50 377 / p90 390 秒。
           npm run test:overlay-footer-gutter
 
   verify:
@@ -1371,7 +1603,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1390,12 +1622,18 @@ jobs:
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
           BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
           BROWSER_DT_HANDLES: ${{ needs.verify-browser-datatable-handles.result }}
+          BROWSER_CONTROL_GROUPS: ${{ needs.verify-browser-control-groups.result }}
+          BROWSER_SEARCH_MENU_FOCUS: ${{ needs.verify-browser-searchable-menu-focus.result }}
+          BROWSER_FIELD_DIALOG_STEPS: ${{ needs.verify-browser-field-dialog-steps.result }}
+          BROWSER_CURSOR: ${{ needs.verify-browser-cursor.result }}
+          BROWSER_ESCAPE_FOCUS_CONTROL: ${{ needs.verify-browser-escape-focus-control.result }}
+          BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

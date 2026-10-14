@@ -32,14 +32,19 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-09-20:第九個跑東西的 job `verify-browser-field-edges`。select-all 一個 job 序列跑五支
   // 全 story 掃描,實測 1076 秒(17.9 分)—— 是關鍵路徑第二長的,而那五支彼此獨立、只共用同一份
   // storybook build。拆一半出來平行跑,各自約 9-10 分。user 原話:「你他媽發版到底是要發多久?」
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  // 2026-10-14(待辦總帳 G10):最近 15 次 CI 逐 job 對上限的 p90 有六個超過 80%(select-all 100% / field-edges 99% / searchable-fields 96% /
+  // agent 94% / perception 92% / interaction 90%;field-edges 與 select-all 各有一次撞上限被取消)。照主題各拆成兩個平行 job、不調高上限,
+  // 新 job 沿用原 job 的上限:verify-browser-control-groups(自 perception)、verify-browser-searchable-menu-focus(自 searchable-fields)、
+  // verify-browser-field-dialog-steps(自 interaction)、verify-browser-cursor(自 agent)、verify-browser-escape-focus-control(自 select-all)、
+  // verify-browser-footer-gutter(自 field-edges)。逐 job / 逐步驟的實測與拆法記在 ci.yml 各 job 檔頭。
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
   // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
   // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
   // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -59,8 +64,12 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 同 interaction 的理由:逾時毀掉的是裁決,不是品質訊號。
   // verify-browser-searchable-fields 同列(2026-10-07):從 interaction 拆出的可搜尋欄位按鍵閘 + 從 datatable-handles 搬來的選單焦點閘,
   // 建置 + 安裝約 4 分、兩支閘本機合計約 10 分(CI 約 1.2–1.4 倍)→ 估 15–18 分,15 分上限會被取消。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
+  // 2026-10-14(待辦總帳 G10):從 25 分 job 拆出來的四個新 job 沿用原 job 的 25(不是調高 —— 原 job 本來就是 25):
+  // verify-browser-control-groups(自 perception)、verify-browser-searchable-menu-focus(自 searchable-fields)、
+  // verify-browser-field-dialog-steps(自 interaction)、verify-browser-escape-focus-control(自 select-all)。
+  // 從 15 分 job 拆出來的 verify-browser-cursor(自 agent)與 verify-browser-footer-gutter(自 field-edges)維持 15,不在此集合。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -158,8 +167,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 放寬後最壞情況會把原 job 推到 25 分鐘上限。
   // 13 → 14 / 11 → 12(2026-10-07):新增 verify-browser-searchable-fields(從 interaction / datatable-handles 拆出,同樣自己 build storybook 與裝 chromium)。
   // 14 → 15 / 12 → 13(2026-10-07):新增 verify-browser-tree-navigation(TreeView 步驟導覽閘 + 從 interaction 搬來的鍵盤路線閘)。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 15)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 13)
+  // 15 → 21 / 13 → 19(2026-10-14,待辦總帳 G10):六個貼著上限的瀏覽器 job 各拆成兩個平行 job(新 job 各自 build storybook 與裝 chromium,
+  // 準備步驟與原 job 逐字相同):control-groups / searchable-menu-focus / field-dialog-steps / cursor / escape-focus-control / footer-gutter。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 21)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 19)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
   // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
@@ -185,8 +196,30 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   }
   // 11 → 12(2026-10-07):新增 verify-browser-searchable-fields。
   // 12 → 13(2026-10-07):新增 verify-browser-tree-navigation。
-  assert.equal(browserJobs.length, 13, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  // 13 → 19(2026-10-14,待辦總帳 G10):六個貼著上限的瀏覽器 job 各拆出一個平行 job。
+  assert.equal(browserJobs.length, 19, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
   assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
+  // 2026-10-14(待辦總帳 G10):拆出來的 job 準備步驟(簽出 / Node / 安裝 / build:lib / build-storybook)必須與原 job 逐字相同 ——
+  // 量到的時間才能互相比較,拆完也不會有一半在不同的環境跑。比的是 steps 從開頭到 build-storybook 那一步(含)的原始文字。
+  const setupSteps = (id) => {
+    const block = jobBlock(id)
+    const from = block.indexOf('    steps:\n')
+    const marker = '        run: npm run build-storybook\n'
+    const to = block.indexOf(marker, from)
+    assert.ok(from >= 0 && to > from, `${id} 找不到準備步驟`)
+    return block.slice(from, to + marker.length)
+  }
+  for (const [child, parent] of [
+    ['verify-browser-control-groups', 'verify-browser-datatable-perception'],
+    ['verify-browser-searchable-menu-focus', 'verify-browser-searchable-fields'],
+    ['verify-browser-field-dialog-steps', 'verify-browser-interaction'],
+    ['verify-browser-cursor', 'verify-browser-agent'],
+    ['verify-browser-escape-focus-control', 'verify-browser-select-all'],
+    ['verify-browser-footer-gutter', 'verify-browser-field-edges'],
+  ]) {
+    assert.equal(setupSteps(child), setupSteps(parent), `${child} 的準備步驟必須與拆出它的 ${parent} 逐字相同`)
+    assert.equal(workflow.jobs[child].timeoutMinutes, workflow.jobs[parent].timeoutMinutes, `${child} 的上限沿用 ${parent}(拆 job 不是調高上限的路)`)
+  }
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',
