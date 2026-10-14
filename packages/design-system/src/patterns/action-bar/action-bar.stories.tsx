@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Action Bar',
@@ -22,23 +22,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label })
 
 /* 2026-07-14 Dim 90 修:Action Bar 無 production container,本檔 toolbar frame 是主要參考
    實作 — 水平內距原本 px-4 / px-3 hardcode(不隨 layout density 縮放且三處不一致),統一改
@@ -81,8 +69,8 @@ function ConfigurableDemo() {
 export const RoleIdentification: Story = {
   name: '角色識別',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="業務操作（Operations）— 使用者完成目標所需"
         note="判斷：移除這個操作，使用者是否無法完成他來這裡要做的事？是 → 業務操作。允許所有 variant（primary、secondary、tertiary、text），啟用態用 pressed prop 表達，決定位置與視覺重量"
       >
@@ -95,9 +83,9 @@ export const RoleIdentification: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>移除任一個，使用者就無法完成任務</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="工具操作（Utilities）— 服務環境，與任務本身無關"
         note="判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）,啟用中加 `pressed`（非換 variant）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label"
       >
@@ -110,9 +98,9 @@ export const RoleIdentification: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>與當前任務無關，一律 text icon-only，永遠在業務層右側末端</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="可配置資料操作（篩選 / 排序 / 分組）— 業務操作，Toolbar 全程 icon-only"
         note="篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後加 `pressed`（預設 emphasis tone）——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」"
       >
@@ -134,16 +122,16 @@ export const RoleIdentification: Story = {
             </ButtonGroup>
             <Label>tertiary — 有框，可操作感更強，適合較空曠的場景</Label>
           </div>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const Structure: Story = {
   name: '排列與結構',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="全局排序 — 先對全部業務按鈕排序，再決定功能分群"
         note="按視覺重量由高至低：primary > secondary > tertiary > text。靠右對齊時，primary 在業務層最右端（使用者視線最先落到的位置）。danger 是顏色疊加，不影響跨 variant 排序；同 variant 內 danger 排在非 danger 之後（遠離主要焦點，減少誤觸——NNGroup Fitts' Law：危險選項與安全選項之間要有空間距離）。排序完成後，再在功能域切換處加分隔線形成群組。不要先定義群組再各組內各自排序——這樣會讓多個 primary 彼此競爭焦點"
       >
@@ -156,9 +144,9 @@ export const Structure: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>靠右對齊 → primary 在業務層最右；刪除（低強調）在業務操作最左端，遠離主按鈕降低誤觸風險；工具操作收尾</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="靠右對齊（最常見）— 業務層由右至左，主按鈕最右；工具層在末端"
         note="使用者視線落在右側。主按鈕放最右，視覺重量依序向左遞減。工具操作集中在右側末端，與業務層形成自然的視覺分層"
       >
@@ -171,9 +159,9 @@ export const Structure: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>業務操作由右至左排列，primary 在最右 → 直接接工具操作，不加分隔線</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="無工具層 — 不加任何分隔線，溢出屬同層"
         note="操作列只有業務操作時，沒有角色邊界需要標記。末端溢出屬於業務層的一部分，直接接在末端，不加分隔線"
       >
@@ -185,16 +173,16 @@ export const Structure: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const Dividers: Story = {
   name: '分隔線',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="分隔線標記認知邊界，不是視覺裝飾"
         note="分隔線告訴使用者「這裡開始是不同性質的操作」。類別相同的操作靠間距（8px）聚合即可；只有在使用者需要明確感知「類別轉換」時才加分隔線"
       >
@@ -215,9 +203,9 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 不同類別（一般 vs 危險）— 分隔線標記邊界</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="關閉保護（必加）"
         note="關閉 / 解除按鈕排在群組最末，左側必加分隔線防止誤觸。這是唯一強制的業務層內分隔線"
       >
@@ -230,9 +218,9 @@ export const Dividers: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>關閉排最末，左側必加分隔線</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="同視覺類型功能分群（可選）"
         note="同為有框或同為無框時，若需要標記功能域的轉換，可加分隔線。danger 按鈕視同普通按鈕，功能域與其他操作有明顯差距時才加，不強制"
       >
@@ -255,9 +243,9 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>danger 是普通按鈕，功能域差距夠大時可選加分隔線</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="不觸發 — 有框 ↔ 無框接壤"
         note="有框接無框時邊界本來就看得見，「邊界看不見」這條理由不成立；若另有功能域切換等理由仍可加（見第五節）"
       >
@@ -269,9 +257,9 @@ export const Dividers: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>有框按鈕（primary）直接接無框按鈕（text）— 無對應理由，預設不加</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="角色邊界 — 群組溢出邊界：群組溢出（···）右側必加，覆蓋 角色接壤"
         note="群組溢出是某個業務群組的末端標記。右側必須加分隔線，無論右側是另一個業務群組還是工具層，也無論視覺類型為何。群組溢出邊界 優先於 角色接壤"
       >
@@ -285,9 +273,9 @@ export const Dividers: Story = {
           </ButtonGroup>
         </ToolbarFrame>
         <Label>···（群組溢出）右側必加分隔線，即使右側是同為無框的工具層</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="角色邊界 — 角色接壤：無群組溢出時，業務層以什麼結尾？"
         note="業務層直接以真實按鈕結尾（沒有群組溢出）時：有框結尾 → 預設不加（邊界看得見）；無框 text 結尾 → 必加（理由 2 邊界看不見）"
       >
@@ -310,9 +298,9 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>無框結尾 → 邊界不可見，必加分隔線</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="對齊方向影響業務層與工具層的距離，但不影響分隔線規則"
         note="工具層靠的是操作列的右端（位置記憶），不是業務層的右端。靠右對齊時業務層與工具層自然緊挨；靠左對齊時中間有空間，空間本身已足夠標記邊界。分隔線規則（角色接壤）只看按鈕接壤處，有空間隔開時不需要分隔線"
       >
@@ -337,9 +325,9 @@ export const Dividers: Story = {
             </ButtonGroup>
           </div>
           <Label>靠左對齊 — 工具層固定在操作列右端，空間本身已標記邊界</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="··· 本身不構成工具層 — 有固定工具才有角色邊界"
         note="工具層的存在取決於是否有固定工具按鈕（⚙ 設定、↺ 刷新、⤢ 全螢幕等）。沒有固定工具時，··· 是業務層末端，不存在角色邊界，不加角色邊界分隔線"
       >
@@ -363,9 +351,9 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>無固定工具 → ··· 是業務層末端；✕ 的關閉保護是唯一一條分隔線</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 常見錯誤：把 ··· 誤當成工具層而多加一條分隔線"
         note="沒有固定工具按鈕時，··· 是業務層末端，不存在角色邊界。在 ··· 左側加分隔線是把它誤當成工具層的結果，這條分隔線沒有語意，應移除"
       >
@@ -390,16 +378,16 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ ··· 是業務層末端，只有關閉保護這一條分隔線</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const Overflow: Story = {
   name: '溢出機制',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="末端溢出（預設）— 一個溢出在操作列末端，收納所有低頻操作"
         note="溢出按鈕（MoreVertical）永遠是 text 無框、排除在全局排序之外、放在所屬層末端。預設用末端溢出：只要低頻操作放進同一個選單不會讓使用者困惑，就用這種。若不確定要不要分開，就不要分開"
       >
@@ -423,9 +411,9 @@ export const Overflow: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>無框結尾 → 分隔線（業務接工具，同為無框）→ 固定工具 ↺ ···</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="群組溢出（例外）— 各群組各自管理，只在合併選單會讓使用者困惑時才用"
         note="當多個群組的低頻操作領域差異大到「放進同一個選單使用者會搞不清這是哪個群組的」時，才讓各群組各自管理溢出。每個群組溢出的右側必須加分隔線（群組溢出邊界）。以 Rich Text Editor 為例：文字格式、插入元素、歷史操作三個群組功能差異極大，合併選單語意混亂"
       >
@@ -451,16 +439,16 @@ export const Overflow: Story = {
           </ButtonGroup>
         </div>
         <Label>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const CommonMistakes: Story = {
   name: '常見錯誤',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="❌ 工具操作混入業務層（最常見錯誤）"
         note="重新載入是工具操作——與任何任務無關，任何頁面都可能有它。若把重新載入與儲存、複製、刪除等業務操作混在同一群，角色邊界與分隔線規則都會失效；應先分開業務層與工具層。"
       >
@@ -485,9 +473,9 @@ export const CommonMistakes: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 業務層放刪除；工具層放重新載入與設定，角色清楚分離</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 工具操作使用 primary 或 secondary"
         note="工具層必須是視覺重量最低的一層，不可搶業務操作的視覺主角地位"
       >
@@ -505,9 +493,9 @@ export const CommonMistakes: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 有框→無框，無對應理由，預設不加</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 工具層內多加分隔線造成孤立"
         note="業務層以 text 結尾，角色邊界已加一條分隔線（角色接壤）。若再在工具層內部加分隔線，固定工具按鈕兩側都有分隔線，形成孤立"
       >
@@ -530,9 +518,9 @@ export const CommonMistakes: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 一條分隔線標記角色邊界，工具層內不再加</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 無工具層卻在溢出前加分隔線"
         note="沒有角色邊界，分隔線沒有語意意義，反而讓溢出按鈕顯得像獨立的第二層"
       >
@@ -553,9 +541,9 @@ export const CommonMistakes: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 無工具層，溢出直接接在末端</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 同優先等級業務操作，icon 處理不一致"
         note="同為 text variant 的操作，一個有 startIcon 一個沒有，視覺節奏不均。同優先等級建議一致：同時有 startIcon 或同時沒有"
       >
@@ -573,16 +561,16 @@ export const CommonMistakes: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>✅ 同優先等級，icon 處理一致</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const DismissVsDanger: Story = {
   name: '取消 vs 危險動作 語意區分',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Dismiss(關閉 / 忽略) — 弱化 X close icon"
         note="`<Button iconOnly dismiss />` 表達「關閉此浮層 / 忽略此訊息」語意(對應 onClose / onDismiss callback)。視覺走 dismiss 弱化 treatment(fg-muted icon,低存在感),不搶走 body 主要內容焦點。Dialog / Sheet / Popover / Alert / Toast 的 corner close X 屬此類"
       >
@@ -590,9 +578,9 @@ export const DismissVsDanger: Story = {
             <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉通知" />
           </ToolbarFrame>
           <Label>✅ dismiss prop 弱化 X，語意是「關閉此訊息」</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Destructive(破壞性動作) — 紅色警示"
         note="Button iconOnly variant text + danger prop + Trash2 icon 表達「刪除資料 / 移除項目」語意(對應 onRemove / onDelete callback)。視覺走 danger treatment(error 色系),警示使用者此動作會破壞資料。Row actions / 批次刪除 / 永久移除按鈕屬此類"
       >
@@ -600,9 +588,9 @@ export const DismissVsDanger: Story = {
             <Button iconOnly variant="text" danger size="sm" startIcon={Trash2} aria-label="刪除專案" />
           </ToolbarFrame>
           <Label>✅ danger prop 紅色警示，語意是「破壞性動作」</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不可混用 — dismiss 語意不可用 danger，destructive 不可用 dismiss"
         note="兩者語意互斥:dismiss 是「關掉 surface」(資料不變),destructive 是「移除資料」(不可逆)。視覺也完全不同:dismiss 弱化、destructive 紅色警示。混用會讓 user 誤判點擊後果 — 原本以為只是關閉,結果刪了資料;或原本以為是刪除警示,結果只是關閉浮層"
       >
@@ -614,7 +602,7 @@ export const DismissVsDanger: Story = {
             <Button iconOnly variant="text" danger size="sm" startIcon={XIcon} aria-label="關閉" />
           </ToolbarFrame>
           <Label warn>❌ X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

@@ -538,6 +538,7 @@
       "scripts/test-token-twin-invariant.mjs",
       "scripts/test-tree-view-keyboard-route-invariant.mjs",
       "scripts/test-tree-view-step-navigation-invariant.mjs",
+      "scripts/test-tutorial-page-invariant.mjs",
       "scripts/test-unrestricted-option-invariant.mjs",
       "scripts/test-verify-deep-audit-coverage.mjs",
       "scripts/test-verify-mirror-evidence.mjs",

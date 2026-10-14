@@ -21,7 +21,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Breadcrumb/設計原則',
@@ -30,23 +31,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label })
 
 // ── 定位與分界 ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +49,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>Breadcrumb 顯示「目前頁面在資訊階層中的位置」,適合 ≥ 3 層的階層頁面。真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -83,8 +72,8 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* vs 近親 — VsTabsRule — 原 VsTabsRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="Breadcrumb — 「你在哪裡」的階層位置"
         note="表達 parent-child 關係,使用者看 breadcrumb 知道「我從哪一層走到這裡」,點前面任一層可回到上層"
       >
@@ -132,9 +121,9 @@ export const UsageGuidance: Story = {
             </BreadcrumbList>
           </Breadcrumb>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 用 Breadcrumb 做平行 view 切換 → 應該用 Tabs"
         note="若三者是「同一層級的不同 view」(訂單 / 顧客 / 產品都是 dashboard 的不同頁),那是 Tabs。Breadcrumb 表達「上下層」,不是「並列切換」"
       >
@@ -167,9 +156,9 @@ export const UsageGuidance: Story = {
             <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
           </Tabs>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 單層頁面加 Breadcrumb"
         note="只有一個 item 的 breadcrumb 沒導覽價值,只增加視覺噪音。單層頁面用 page title + 可選 back button 即可"
       >
@@ -181,17 +170,17 @@ export const UsageGuidance: Story = {
           </BreadcrumbList>
         </Breadcrumb>
         <Label warn>↑ 只有一層,不需要 breadcrumb。直接用 page title</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const LastItemRule: Story = {
   name: '最後一項是位置標示，不是連結',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="最後一項用 BreadcrumbPage — 目前頁面,無處可點"
         note="使用者已經在這一頁,點它去哪裡?世界級 DS(Material / Atlassian / Polaris)都把最後一項渲染成非互動文字。加上 aria-current='page' 給螢幕閱讀器"
       >
@@ -211,9 +200,9 @@ export const LastItemRule: Story = {
           </BreadcrumbList>
         </Breadcrumb>
         <Label>↑ 「元件庫」是目前頁,foreground 深色但不加粗、不可點</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 最後一項做成 link"
         note="點下去會導回同一頁造成困惑。使用者預期點 link 會去新頁面,違反預期就是 broken UX"
       >
@@ -229,8 +218,8 @@ export const LastItemRule: Story = {
           </BreadcrumbList>
         </Breadcrumb>
         <Label warn>↑ 最後一項永遠是 BreadcrumbPage,不是 BreadcrumbLink</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -239,8 +228,8 @@ export const LastItemRule: Story = {
 export const LongPathRule: Story = {
   name: '長路徑中段折疊（保首尾）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="> 4–5 層時中段折疊成 ⋯，首尾保留"
         note="使用者關心「我從哪裡出發」(第一層)和「我在哪裡」(最後 1–2 層),中段是 context 可以摺疊。Ellipsis 可包在 DropdownMenu 讓使用者展開折疊的中間項"
       >
@@ -276,9 +265,9 @@ export const LongPathRule: Story = {
           </BreadcrumbList>
         </Breadcrumb>
         <Label>↑ 組織 › ⋯ › 權限 › 編輯角色(⋯ 可展開看中間項)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不折疊、讓長路徑橫向撐破版面"
         note="Breadcrumb 單行不換行(flex-nowrap),窄容器或 mobile 上完整路徑會溢出邊界、被裁切或逼出橫向捲動,體驗比中段折疊還糟。折疊是主動的資訊階層處理"
       >
@@ -302,8 +291,8 @@ export const LongPathRule: Story = {
           </Breadcrumb>
         </div>
         <Label warn>↑ 窄容器塞不下六層,單行溢出邊界(需橫向捲動才看得完),不如折疊中段</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -312,8 +301,8 @@ export const LongPathRule: Story = {
 export const ScopeRule: Story = {
   name: '只放階層指示，不塞功能',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Breadcrumb 可容納 icon 強化首項（如 Home）"
         note="首項用 Home icon 是業界慣例(Material / Atlassian),視覺錨點明確。其他 item 通常純文字。圖示大小由設計系統統一控制(小 / 中尺寸 16px、大尺寸 20px),你只要用 `startIcon` 指定要哪個圖示,不用自己設大小。"
       >
@@ -332,9 +321,9 @@ export const ScopeRule: Story = {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 把 Breadcrumb 當 nav bar，塞搜尋 / 按鈕 / avatar"
         note="Breadcrumb 是「位置指示器」,不是 nav。塞功能會變成 nav bar,兩者職責混亂。頁面 header 的其他功能獨立擺放"
       >
@@ -352,7 +341,7 @@ export const ScopeRule: Story = {
           </ButtonGroup>
         </div>
         <Label warn>↑ 按鈕應該放 page header / action bar,不塞進 breadcrumb</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

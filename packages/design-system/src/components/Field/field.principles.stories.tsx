@@ -9,7 +9,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { Select } from '@/design-system/components/Select/select'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/設計原則',
@@ -18,38 +18,20 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-xl">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
-    {children}
-  </section>
-)
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-xl' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <div className="max-w-prose mb-[var(--layout-space-loose)]">
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <div className="max-w-prose">
           <p>適合 Field 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
@@ -60,17 +42,17 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代方案">
-        <Rule
+      <TutorialSection title="何時不用 + 替代方案">
+        <TutorialRule
           title="❌ Field 試圖承載資料型別邏輯"
           note="別把「格式化數字」「處理日期」「搜尋選項」塞進 Field——這些是 Field Controls(NumberInput / DatePicker / Combobox)的責任。Field 不 wrap、不代理、不轉換它們的行為"
         >
           <Label warn>Field 試圖自己處理 number formatting → 複製 NumberInput 邏輯 → 違反 SRP + 漂移風險</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 把 form submit button 包在 Field 內"
           note="破壞「Field = 資料容器」的心智模型。使用者掃 form 時看到每個 Field,submit 按鈕不該混入這個節奏"
         >
@@ -87,11 +69,11 @@ export const UsageGuidance: Story = {
             </FieldGroup>
           </div>
           <Label warn>↑ 「送出表單」不該是一個 Field,它是 form-level action,應該在 footer</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="Field — 表單輸入(可編輯)"
           note="使用者要輸入 / 修改 / 提交的 form 場景。含 required、error、focus、驗證等 form state 機制"
         >
@@ -112,9 +94,9 @@ export const UsageGuidance: Story = {
             </FieldGroup>
           </div>
           <Label>↑ 可編輯的 profile settings</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 唯讀展示:用 DescriptionList"
           note="「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 `dl / dt / dd` HTML 語義更適合唯讀屬性列表,a11y 也更清楚"
         >
@@ -132,16 +114,16 @@ export const UsageGuidance: Story = {
             </FieldGroup>
           </div>
           <Label warn>↑ 純展示用 Field + readonly → 浪費 Field 的 input 邏輯。改用 DescriptionList</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="判斷法:「使用者會編輯這些值嗎?」"
           note="會 → Field(含 readonly mode);永遠不會(純展示/唯讀資料)→ DescriptionList。完整對照見 field.spec.md「何時不用」+ description-list.spec.md「vs Field 系統」"
         >
           <Label>會編輯 → Field;只看 → DescriptionList</Label>
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
@@ -153,8 +135,8 @@ export const UsageGuidance: Story = {
 export const OrientationRule: Story = {
   name: '方向 選擇',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Vertical(預設)— 主要表單場景,label 在控件上方"
         note="建立 / 編輯表單、登入 / 註冊、精靈流程。每個 field 佔完整寬度,自然垂直堆疊"
       >
@@ -171,9 +153,9 @@ export const OrientationRule: Story = {
           </FieldGroup>
         </div>
         <Label>↑ Vertical 適合大多數表單場景</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Horizontal — Settings / 詳情頁,label 在控件左側"
         note="已知屬性的修改介面(account settings、使用者偏好)。label + control 並排節省垂直空間,讓多個設定一目了然。label 固定寬度對齊縱向軸"
       >
@@ -202,23 +184,23 @@ export const OrientationRule: Story = {
           </FieldGroup>
         </div>
         <Label>↑ Horizontal 適合 settings 頁 — label 縱向對齊、controls 並排</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="判斷法:「欄位數量 + 垂直空間預算」"
         note="表單 / 初次建立(空間充裕、引導性)→ vertical;settings / 修改(已知屬性、密集顯示)→ horizontal"
       >
         <Label>世界級 DS(Polaris / Material)的 settings 頁都用 horizontal,表單用 vertical</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const NotForFormActionsRule: Story = {
   name: '表單動作 不是 Field 控制元件',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Field 是資料輸入容器——不放 form submit / cancel"
         note="「儲存」「取消」「頁面導覽」這類 form-level action 應該在 form 底部的 footer / action bar,不是包在 Field 內"
       >
@@ -240,9 +222,9 @@ export const NotForFormActionsRule: Story = {
           </ButtonGroup>
         </div>
         <Label>↑ 儲存 / 取消在 form footer,不在 Field 內</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="✅ 合法情況 — 產生 value 的 Button"
         note="「上傳檔案」「選擇日期」「連接 OAuth」這類產生 field value 的動作 Button 可以當 control。判準:動作會產生這個 field 的 value → 合法;動作是 form 級別(submit / cancel / navigation)→ 不合法"
       >
@@ -254,7 +236,7 @@ export const NotForFormActionsRule: Story = {
           </Field>
         </div>
         <Label>↑ 上傳按鈕產生 avatar url value → 合法作為 Field control</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

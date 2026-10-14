@@ -8,7 +8,7 @@ import {
 import { Input } from './input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { Field, FieldError } from '@/design-system/components/Field/field'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Input/設計原則',
@@ -17,40 +17,20 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
-    {children}
-  </section>
-)
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <div className="max-w-prose mb-[var(--layout-space-loose)]">
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <div className="max-w-prose">
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
@@ -61,19 +41,19 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代方案">
-        <Rule
+      <TutorialSection title="何時不用 + 替代方案">
+        <TutorialRule
           title="❌ 不用 Input startIcon 表達狀態(有效 / 無效)"
           note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
         >
           <Label warn>startIcon = 欄位身份,狀態由邊框 + help text 傳達</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="❌ 不用 Input 顯示需要格式化的資料 → NumberInput / DatePicker"
           note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
         >
@@ -83,40 +63,40 @@ export const UsageGuidance: Story = {
           <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
           <Input defaultValue="1234567" placeholder="數量" aria-label="數量（不建議用 Input）" />
           <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ Input 只用於純文字——沒有格式化需求的 value"
           note="姓名、URL、搜尋字串、email。格式化邏輯是 identity(value → value)"
         >
           <Input placeholder="姓名" defaultValue="Ada Chen" aria-label="姓名" />
           <Input startIcon={Globe} defaultValue="https://example.com" aria-label="網址" />
           <Input startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
 export const ModeRule: Story = {
   name: '模式選擇',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="edit — 表單中可編輯的欄位(預設)"
         note="Focus 時邊框變 primary,使用者正在輸入或修改"
       >
         <Input defaultValue="Wireless Bluetooth Headphones" aria-label="商品名稱" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="readonly — 表單中顯示但當下不可編輯"
         note="同 edit 高度(neutral-2 底色、無邊框),確保與其他欄位並排對齊。常見場景:viewing mode、送出後鎖定但仍在表單脈絡"
       >
         <Input mode="readonly" value="alice@example.com" aria-label="Email（唯讀）" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="disabled — 外部條件造成無法編輯"
         note="停用原因不在 input 內放 info icon——由外部 Tooltip 或 Form help text 承擔。視覺:灰化文字 + cursor-not-allowed"
       >
@@ -128,24 +108,24 @@ export const ModeRule: Story = {
           </TooltipTrigger>
           <TooltipContent>此欄位在免費方案中不可編輯</TooltipContent>
         </Tooltip>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 readonly 作為 DataTable cell"
         note="readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 `<Input mode='view'>`(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)"
       >
         <Input mode="readonly" value="alice@example.com" aria-label="Email（資料表誤用示範）" />
         <Label warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const StartIconRule: Story = {
   name: 'startIcon 語意',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="startIcon 描述 input 的「用途」,不是 value 的類型"
         note="icon 幫助使用者一眼辨識這個欄位要填什麼——搜尋、Email、密碼、網址等。與 Button 的 startIcon 同理(描述動作),這裡描述欄位身份"
       >
@@ -153,17 +133,17 @@ export const StartIconRule: Story = {
         <Input startIcon={Mail} defaultValue="alice@example.com" aria-label="Email" />
         <Input startIcon={Lock} type="password" defaultValue="secret-123" aria-label="密碼" />
         <Input startIcon={Globe} placeholder="https://example.com" aria-label="網址" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ startIcon 不可隨 value 變化"
         note="icon 是「身份」不是「狀態」——value 變了但欄位用途沒變,icon 不該跟著跳動。狀態回饋用 error border 或 Form help text"
       >
         <Input startIcon={AlertCircle} defaultValue="invalid-email" aria-label="Email（錯誤圖示誤用）" />
         <Input startIcon={CheckCircle2} defaultValue="alice@example.com" aria-label="Email（成功圖示誤用）" />
         <Label warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text,不佔 startIcon 語意槽</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -173,8 +153,8 @@ export const EndActionRule: Story = {
     const [showPwd, setShowPwd] = React.useState(false)
     const [query, setQuery] = React.useState('Bluetooth')
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="endAction 是「可點擊的動作」——不是狀態指示"
           note="典型場景:顯示/隱藏密碼、清除內容。都是「使用者可以按下」的操作。狀態指示(error、loading、valid)不屬於這個槽位"
         >
@@ -195,9 +175,9 @@ export const EndActionRule: Story = {
             aria-label="搜尋商品"
             endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
           />
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="清除按鈕只在有值時出現,消失後不佔位"
           note="條件渲染 endAction,input 寬度自然擴展。避免永遠保留一個看起來可按但沒作用的 icon"
         >
@@ -214,9 +194,9 @@ export const EndActionRule: Story = {
             aria-label="搜尋商品（有值）"
             endAction={{ icon: X, label: '清除搜尋', onClick: () => {} }}
           />
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ endAction 不放狀態 / error icon"
           note="狀態資訊由邊框顏色 + Form help text 傳達。如果放 AlertCircle 在 endAction,使用者會以為可以點擊處理錯誤"
         >
@@ -227,8 +207,8 @@ export const EndActionRule: Story = {
             endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
           />
           <Label warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -236,8 +216,8 @@ export const EndActionRule: Story = {
 export const ErrorRule: Story = {
   name: '錯誤呈現',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Error 只用邊框 + 外部 help text"
         note="紅色邊框已足夠傳達「這個欄位有問題」,具體訊息由 Form 層的 help text 補充。Input 尾部不放 ⚠️ 狀態 icon"
       >
@@ -245,9 +225,9 @@ export const ErrorRule: Story = {
           <Input defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
           <FieldError>請輸入有效的 email 地址</FieldError>
         </Field>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不在 input 尾部放 ⚠️ / ✅ 狀態 icon"
         note="這個位置是 endAction(可點擊動作),放 icon 既無法點擊又稀釋了 action 槽的語意"
       >
@@ -258,7 +238,7 @@ export const ErrorRule: Story = {
           endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
         />
         <Label warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

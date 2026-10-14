@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/SelectionControl/設計原則',
@@ -8,6 +9,9 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
+
+// 規則的內容是一段文字 / 清單(不是範例區),不給 caption
+const TutorialRule = createTutorialRule()
 
 // ── WhenToUse — 何時使用 SelectionItem ──────────────────────
 
@@ -18,7 +22,7 @@ type Story = StoryObj
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 SelectionItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -49,7 +53,7 @@ export const UsageGuidance: Story = {
       </ul>
       <p className="text-fg-muted">判斷:row 是 page content(讀取/設定)→ Checkbox / RadioGroup 的 rich-row 形態(內部消費 SelectionItem,不裸用 &lt;SelectionItem&gt;);row 是 form input(submit value)→ Checkbox + Field。</p>
     </div>
-    </div>
+    </TutorialPage>
   ),
 }
 
@@ -58,22 +62,19 @@ export const UsageGuidance: Story = {
 export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
-    // 段落 ↔ 段落 = loose、段落標題 → 內容 = tight(與設計原則頁 Section / Rule 同一套;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
-    <div className="flex max-w-prose flex-col gap-[var(--layout-space-loose)]">
+    // 段落 / 規則之間與規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
+    <TutorialPage className="max-w-prose">
       <p>SelectionItem 是 Family 2 reading-mode row layout primitive,由 Checkbox / RadioGroup 兩個 consumer 在「list-as-page settings」場景消費,不直接放在 app code:</p>
-      <section className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h5 font-semibold text-foreground">Pattern 1 — Checkbox + SelectionItem(多選 settings list)</h3>
+      <TutorialRule title="Pattern 1 — Checkbox + SelectionItem(多選 settings list)">
         <p>多選 + 每個 row 大塊 description / icon → <LinkTo kind="Design System/Components/Checkbox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Checkbox</span></LinkTo> 內部消費 SelectionItem(control 放 Checkbox indicator / prefix 可選放 icon 或 avatar / content 放 label + description)。對齊 Notion 通知設定 / Slack notification preferences idiom。</p>
-      </section>
-      <section className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h5 font-semibold text-foreground">Pattern 2 — RadioGroup + SelectionItem(單選 plan picker)</h3>
+      </TutorialRule>
+      <TutorialRule title="Pattern 2 — RadioGroup + SelectionItem(單選 plan picker)">
         <p>單選 + 每個 row 大塊描述(plan tier / tier features)→ <LinkTo kind="Design System/Components/RadioGroup/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">RadioGroup</span></LinkTo> 內部消費 SelectionItem(control 放 Radio indicator / prefix 可選放 icon 或 avatar / content 多行)。對齊 Stripe plan picker / Linear pricing tier idiom。</p>
-      </section>
-      <section className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h5 font-semibold text-foreground">Field 包覆規則</h3>
+      </TutorialRule>
+      <TutorialRule title="Field 包覆規則">
         <p>Checkbox / RadioGroup 在 form context 內 → 外層用 <LinkTo kind="Design System/Components/Field/展示" name="垂直"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Field</span></LinkTo> 統一 label + helper + error(對齊 Field 4-Family Layout 慣例)。Field 處理 wrapper level 的 ARIA + error,SelectionItem 處理 row level 的 layout。</p>
-      </section>
+      </TutorialRule>
       <p className="text-fg-muted">禁止:在 app code 自刻 selection row(<code>&lt;label className="flex items-start gap-3 p-3"&gt;</code>)— 必消費 Checkbox / RadioGroup(對齊 M1 主檔消費準則 + Family 2 baseline)。</p>
-    </div>
+    </TutorialPage>
   ),
 }

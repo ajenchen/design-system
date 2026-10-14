@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Separator/設計原則',
@@ -21,23 +21,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -49,7 +37,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 Separator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -72,37 +60,37 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="❌ 不用 Separator 元件做元件固定結構的邊框"
         note="Dialog / Sidebar header-footer 的邊界用 CSS border，不用 Separator 元件。Separator 只用 consumer 手動放置的分隔。Notion dialog 的 header bottom 邊界是 CSS，不是 Separator"
       >
         <Label warn>固定結構邊界 → CSS border-divider，不用元件</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 --border token 做分隔線"
         note="分隔線一律用 --divider（較淡），--border 只用控件邊框。Jira menu 項目間的線用 --divider"
       >
         <Label warn>分隔線 → --divider，--border 只用容器邊框</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 Separator 做裝飾性邊框"
         note="輪廓邊框（Input / Card / DataTable 邊線）用 CSS border-border，不用 Separator。Separator 有 role 語意，裝飾邊不需要"
       >
         <Label warn>裝飾邊框 → CSS border-border，Separator 只用分隔內容</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const DecorativeSemanticRule: Story = {
   name: '裝飾性 vs 語意分隔（讀屏的差別）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="預設 decorative=true — 純視覺分隔,screen reader 跳過"
         note="大多數場景(settings panel 內的區塊分組、同一列 meta 資訊分組、menu 項目分組)屬視覺性分隔。讓 screen reader 跳過,避免語意噪音。toolbar / action region 的按鈕群分隔不走 Separator,用 ButtonGroup + ButtonDivider"
       >
@@ -118,9 +106,9 @@ export const DecorativeSemanticRule: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ DropdownMenu 的 separator 讓「編輯類」與「破壞類」視覺分組,a11y 已由 Radix 處理</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="明確結構性分組(語意分隔)→ decorative={false}"
         note={'當 Separator 真的代表內容層級的結構邊界(例如 profile page 的「個人」vs「團隊」兩個 section),設 decorative={false},讓 screen reader 讀出 role="separator"'}
       >
@@ -136,8 +124,8 @@ export const DecorativeSemanticRule: Story = {
           </div>
         </div>
         <Label>↑ 兩個 section 是頁面結構的主層級 → 需要 a11y 語意</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 

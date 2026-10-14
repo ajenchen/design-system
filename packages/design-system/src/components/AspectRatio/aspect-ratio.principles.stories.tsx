@@ -8,7 +8,8 @@ import LinkTo from '@storybook/addon-links/react'
 import { AspectRatio } from './aspect-ratio'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { Input } from '@/design-system/components/Input/input'
-import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 /**
  * AspectRatio 設計原則——何時用 / 不用 / 如何選 ratio / 與 Skeleton 分界。
@@ -22,31 +23,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
-    <div>{children}</div>
-  </section>
-)
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
 
 const Img = ({ seed, ratio }: { seed: string; ratio: number }) => {
   const h = Math.round(800 / ratio)
@@ -64,9 +45,9 @@ const Img = ({ seed, ratio }: { seed: string; ratio: number }) => {
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <Rule
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <TutorialRule
           title="✅ 使用 — 防止圖片未載入時的 layout 坍塌(CLS)"
           note="圖片 src 還沒 ready 時,若容器高度為 0,頁面 layout 會在載入後跳動(Cumulative Layout Shift 問題)。AspectRatio 鎖死比例 → 載入前後位置完全相同"
         >
@@ -80,9 +61,9 @@ export const UsageGuidance: Story = {
             <AspectRatio ratio={16 / 9} className="bg-muted rounded-md" />
             <Label>↑ 未載入狀態仍佔滿 16/9 空間</Label>
           </ExampleGroup>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ 使用 — 多張圖片需要統一比例(carousel / product grid)"
           note="輪播 / 產品列表各張圖原始比例不一,包 AspectRatio + object-cover 強制對齊,視覺整齊劃一"
         >
@@ -95,11 +76,11 @@ export const UsageGuidance: Story = {
             ))}
           </div>
           <Label>↑ 原圖比例不同,AspectRatio + object-cover 強制對齊成 1/1</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代">
-        <Rule
+      <TutorialSection title="何時不用 + 替代">
+        <TutorialRule
           title="❌ content 高度本該隨內容變"
           note="AspectRatio 鎖死比例,無法 hug content。文字 / 表單 / 按鈕等 content-driven 高度的區塊不包"
         >
@@ -110,9 +91,9 @@ export const UsageGuidance: Story = {
             </div>
           </div>
           <Label warn>↑ 此類 content 不該鎖比例</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 圖片已固定 width + height 屬性"
           note="AspectRatio 是給 responsive(width=100%)場景。若 img 已寫死 200×200,直接用 img 即可"
         >
@@ -126,9 +107,9 @@ export const UsageGuidance: Story = {
             />
           </div>
           <Label warn>↑ 固定尺寸 img 不需要 AspectRatio 包裝</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不用於 flex / grid layout"
           note="AspectRatio 是 container 鎖比例,不是佈局工具。多個元素並排用 flex / grid,不用 AspectRatio 排版"
         >
@@ -140,9 +121,9 @@ export const UsageGuidance: Story = {
             </AspectRatio>
           </div>
           <Label warn>↑ 用 AspectRatio 當橫排容器是誤用 → 用 flex gap-2</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不放不該鎖比例的 content"
           note="文字 / 表單 / 按鈕等隨內容高度的 content 放進 AspectRatio,會強制裁切或留大片空白,違背語意"
         >
@@ -154,9 +135,9 @@ export const UsageGuidance: Story = {
             </AspectRatio>
           </div>
           <Label warn>↑ 表單內容不該鎖 1/1 比例</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不重疊多層 AspectRatio"
           note="巢狀 AspectRatio 意義不明 — 外層比例與內層比例衝突時,結果無法預測"
         >
@@ -170,16 +151,16 @@ export const UsageGuidance: Story = {
             </AspectRatio>
           </div>
           <Label warn>↑ 巢狀 AspectRatio 語意混亂,一律只包一層</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親">
+      <TutorialSection title="vs 近親">
         <p className="text-caption text-fg-muted max-w-[720px]">
           AspectRatio 無直接近親元件。語意「鎖死容器比例」是獨立 concern,不與其他 layout primitive 重疊
           (Box / flex / grid 都不鎖比例)。與 Skeleton 是<strong>疊用</strong>關係(見「PlaceholderAndSkeleton」 story),不是替代關係。
         </p>
-      </Section>
-    </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
@@ -197,41 +178,44 @@ const RATIO_RULES = [
 export const RatioChoice: Story = {
   name: '如何選 ratio',
   render: () => (
-    <div>
-      <p className="text-caption text-fg-muted max-w-[720px] mb-[var(--layout-space-tight)]">
-        先看內容方向(橫 / 方 / 直),再對到下方的判斷準則即可選定。五個 ratio 的並排視覺對照見{' '}
-        <LinkTo kind="Design System/Components/AspectRatio/設計規格" name="標準 比例 視覺對照">
-          <span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 標準 比例 視覺對照</span>
-        </LinkTo>
-        ,此處只講「怎麼選」的決策邏輯,不重畫圖。
-      </p>
+    // 說明 → 準則列 → 附註 = tight(ExampleGroup:說明 / 附註都在替中間那組準則列命名);整頁外框 = 共用教學頁元件
+    <TutorialPage>
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted max-w-[720px]">
+          先看內容方向(橫 / 方 / 直),再對到下方的判斷準則即可選定。五個 ratio 的並排視覺對照見{' '}
+          <LinkTo kind="Design System/Components/AspectRatio/設計規格" name="標準 比例 視覺對照">
+            <span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 標準 比例 視覺對照</span>
+          </LinkTo>
+          ,此處只講「怎麼選」的決策邏輯,不重畫圖。
+        </p>
 
-      {/* @layout-space-magic-ok: 比例判斷準則同質列(.map)(layoutSpace.spec.md:165 同質清單列) */}
-      <div className="flex flex-col gap-5 max-w-[720px]">
-        {RATIO_RULES.map(r => (
-          // @layout-space-magic-ok: 準則列內 比例標籤 ↔ 說明(列幾何)(layoutSpace.spec.md:165 同質清單列)
-          <div key={r.label} className="flex gap-4 items-baseline">
-            <div className="w-[60px] shrink-0 text-body font-mono font-bold text-foreground">{r.label}</div>
-            <div className="flex-1">
-              <div className="text-body text-foreground">{r.when}</div>
-              <div className="text-caption text-fg-muted mt-[var(--item-gap-label-desc-reading)]">{r.example}</div>
+        {/* @layout-space-magic-ok: 比例判斷準則同質列(.map)(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="flex flex-col gap-5 max-w-[720px]">
+          {RATIO_RULES.map(r => (
+            // @layout-space-magic-ok: 準則列內 比例標籤 ↔ 說明(列幾何)(layoutSpace.spec.md:165 同質清單列)
+            <div key={r.label} className="flex gap-4 items-baseline">
+              <div className="w-[60px] shrink-0 text-body font-mono font-bold text-foreground">{r.label}</div>
+              <div className="flex-1">
+                <div className="text-body text-foreground">{r.when}</div>
+                <div className="text-caption text-fg-muted mt-[var(--item-gap-label-desc-reading)]">{r.example}</div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <p className="text-footnote text-fg-muted max-w-[720px] leading-normal mt-[var(--layout-space-tight)]">
-        偏離這五個標準 ratio 需提出理由——非標準比例會破壞 feed / grid 的視覺一致性。
-      </p>
-    </div>
+        <p className="text-footnote text-fg-muted max-w-[720px] leading-normal">
+          偏離這五個標準 ratio 需提出理由——非標準比例會破壞 feed / grid 的視覺一致性。
+        </p>
+      </ExampleGroup>
+    </TutorialPage>
   ),
 }
 
 export const ChildrenFillRule: Story = {
   name: 'children 要填滿容器',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ 正確 — children 加 w-full h-full object-cover"
         note="AspectRatio 本身不強制 children 尺寸;consumer 必須加 w-full h-full 讓 children 佔滿 + object-cover 防變形"
       >
@@ -245,9 +229,9 @@ export const ChildrenFillRule: Story = {
           </AspectRatio>
           <Label>圖片填滿容器,裁切超出部分</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 錯誤 — children 沒加 w-full h-full"
         note="img 預設 inline-size,不會撐滿容器 → AspectRatio 鎖的空間內出現空白"
       >
@@ -260,16 +244,16 @@ export const ChildrenFillRule: Story = {
           </AspectRatio>
           <Label warn>↑ 左上角小圖 + 大片空白</Label>
         </ExampleGroup>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const PlaceholderAndSkeleton: Story = {
   name: '背景-muted 占位 與 Skeleton 的分界',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="bg-muted — 簡單 placeholder 色(載入前的「空間佔位」)"
         note="AspectRatio 本身無色彩,consumer 慣例套 bg-muted 作為低成本 placeholder — 只表達「這裡會有圖」,無 loading 動態"
       >
@@ -277,9 +261,9 @@ export const PlaceholderAndSkeleton: Story = {
           <AspectRatio ratio={16 / 9} className="bg-muted rounded-md" />
           <Label>靜態灰底 — 圖片尚未載入的預設色</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Skeleton — 明確的 loading state(脈動動畫)"
         note="當需要明確告訴使用者「正在載入」,AspectRatio 疊 Skeleton:AspectRatio 負責鎖比例,Skeleton 負責表達 loading 狀態"
       >
@@ -289,9 +273,9 @@ export const PlaceholderAndSkeleton: Story = {
           </AspectRatio>
           <Label>AspectRatio(鎖比例)+ Skeleton(loading 動畫)</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="分界 — 兩者可疊用,職責不同"
         note="AspectRatio = container 鎖比例(解決 CLS);Skeleton = loading state 視覺。「鎖比例」與「標示 loading」是兩個獨立問題,疊用是 慣用組合"
       >
@@ -304,7 +288,7 @@ export const PlaceholderAndSkeleton: Story = {
           ))}
         </div>
         <Label>↑ Product grid loading state — 三格 1/1 + Skeleton</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

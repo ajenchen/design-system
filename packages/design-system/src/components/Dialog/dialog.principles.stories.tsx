@@ -15,7 +15,7 @@ import {
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/設計原則',
@@ -24,21 +24,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // ── WhenToUse — 何時使用 Dialog ──────────────────────
 
@@ -48,7 +38,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 Dialog 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -71,8 +61,8 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="Dialog 的 sweet spot — 需要使用者聚焦的操作流程、阻斷背景互動"
         note="建立 / 編輯複雜表單、破壞性動作確認、重要公告。Overlay + 居中 modal 強制使用者完成或取消才能回到頁面"
       >
@@ -103,9 +93,9 @@ export const UsageGuidance: Story = {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 操作結果短暫回饋：用 Toast"
         note="儲存成功 / 刪除失敗等結果回饋是「短暫非阻斷」的——使用者不需要按「確定」關閉，也不該被流程打斷。Dialog 會阻斷流程，Toast 自動消失"
       >
@@ -126,9 +116,9 @@ export const UsageGuidance: Story = {
           </DialogContent>
         </Dialog>
         <Label warn>↑ 儲存成功應該 Toast 閃一下就消失，不該打斷使用者再按「確定」</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 持久性頁面通知：用 Alert"
         note="「方案即將到期」「帳號未驗證」這類需要 persistent 顯示 + 使用者主動處理的訊息，Alert 嵌入在頁面中，不阻斷流程但持續可見"
       >
@@ -146,16 +136,16 @@ export const UsageGuidance: Story = {
           </DialogContent>
         </Dialog>
         <Label warn>↑ 到期提示每次進首頁都跳 Dialog → 反覆阻斷；應該用 Alert 持久 inline 通知</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 側邊工作流程：用 Sheet"
         note="檢視某項目詳情、側邊 filter panel、編輯 inspector——這類與主頁面平行的工作，使用者仍需看到主頁 context。Sheet 從邊緣滑入、較輕，不完全阻斷視線"
       >
         <div className="text-footnote text-fg-muted">（範例：task 詳情側邊編輯 — 應該用 Sheet，不用 Dialog 完全阻斷主清單）</div>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="✅ 破壞性動作確認（Dialog 的典型用途）"
         note="刪除、登出多裝置、放棄變更等動作必須 Dialog 確認——這種動作不該用 Toast（沒有確認流程）、不該用 Sheet（視覺不夠強調）、必須 modal 強制聚焦"
       >
@@ -176,45 +166,45 @@ export const UsageGuidance: Story = {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const HeightBehaviorRule: Story = {
   name: '高度行為選擇',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="內容會載入、展開或變化：使用預設高度"
         note="預先穩定 dialog 的可用高度，讓 body 獨立捲動，可避免異步資料或展開區塊使整個浮層上下跳動。設定面板、動態清單與未知長度的內容應保留預設值。"
       >
         <Label>判斷關鍵是「開啟後內容高度還會不會變」，不是當下看起來有幾行。</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="內容已知且穩定：使用 autoHeight"
         note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。若未來會加入異步 section，應回到預設高度，不要為當前快照選 autoHeight。"
       >
         <Label>「刪除專案？」這類單一決策適合 autoHeight；會增減區塊的設定流程不適合。</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="內容長度不只是高度問題"
         note="超過三步、需長時間停留，或使用者必須同時參照背景頁面的流程，應改用獨立頁面或 Sheet。Dialog 的 modal 阻斷成本不會因為可捲動就消失。"
       >
         <Label>高度 mode 只解決佈局穩定性；工作流載體仍要先在 Dialog、Sheet 與獨立頁面之間做選擇。</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const FooterActionRule: Story = {
   name: '頁尾按鈕配對',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Primary + Tertiary 是預設配對（儲存 + 取消 / 確認 + 取消）"
         note="確認類動作用 primary，取消類動作用 tertiary。按鈕靠右對齊（justify-end），primary 在最右（使用者動線終點）"
       >
@@ -235,9 +225,9 @@ export const FooterActionRule: Story = {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="破壞性動作：Primary + danger"
         note="刪除 / 永久移除等動作用 primary + danger（立即且不可逆）。必須搭配 Cancel button 讓使用者反悔"
       >
@@ -258,14 +248,14 @@ export const FooterActionRule: Story = {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 只有一顆「確定」按鈕的 Dialog 是反模式"
         note="單一「確定」按鈕的 Dialog 等於強迫使用者 acknowledge 訊息——這類訊息應該用 Toast（短暫非阻斷）或 Alert（持久顯示）。Dialog 的阻斷成本太高"
       >
         <Label warn>↑ 改用 Toast 或 Alert，Dialog 保留給有決策 / 動作選擇的場景</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

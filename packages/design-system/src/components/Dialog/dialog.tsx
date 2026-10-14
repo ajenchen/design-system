@@ -26,7 +26,7 @@ import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-ret
  * `--chrome-header-height` 48/56)。詳 dialog.spec.md「Density」節。
  *
  * ── Viewport Inset ──
- * Modal 與 viewport 四邊保持 layout-space-bottom (48px) 最小間距。
+ * Modal 與 viewport 四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。

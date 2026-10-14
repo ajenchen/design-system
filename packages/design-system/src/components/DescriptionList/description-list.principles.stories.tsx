@@ -10,7 +10,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/DescriptionList/設計原則',
@@ -19,23 +19,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label })
 
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={`border border-border rounded-lg p-[var(--layout-space-loose)] ${className ?? ''}`}>{children}</div>
@@ -64,7 +52,7 @@ const MEMBER_COLUMNS = [
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 DescriptionList 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -90,8 +78,8 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* vs 近親 — VsDataTableRule — 原 VsDataTableRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="DescriptionList — 單一實體的屬性列表(key-value 配對)"
         note="每一行是同一個對象(使用者 / 訂單 / 商品)的不同屬性(姓名 / email / 時區)。讀取模式,不支援排序、篩選、多選"
       >
@@ -104,9 +92,9 @@ export const UsageGuidance: Story = {
           </DescriptionList>
         </Frame>
         <Label>↑ 「一個使用者」的多個屬性 → DescriptionList(語意:dl/dt/dd)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="DataTable — 多個同結構實體的集合(多 row)"
         note="每一 row 是不同實體、同樣欄位結構。需要排序、篩選、分頁 → DataTable,不是 DescriptionList"
       >
@@ -115,9 +103,9 @@ export const UsageGuidance: Story = {
           <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} height="auto" />
         </div>
         <Label>↑ 「多個使用者」的同結構屬性 → DataTable(需要排序 / 篩選)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 用 DescriptionList 展示多筆同結構資料"
         note="DescriptionList 的 dt 重複 = 視覺噪音,且無法排序 / 篩選 / 分頁。使用者眼睛掃不到對齊點 → 難比較"
       >
@@ -132,17 +120,17 @@ export const UsageGuidance: Story = {
           </DescriptionList>
         </Frame>
         <Label warn>↑ 「姓名 / Email」重複三次 — table 式資料應改用 DataTable</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const LayoutRule: Story = {
   name: '直式 vs 橫式（欄數對照）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="cols=1(vertical stack)— 長清單、窄容器、mobile-friendly"
         note="label 在上、value 在下的垂直堆疊 → 適合 sidebar、ProfileCard、mobile detail view。Value 可以佔滿整行寬,長文字不壓迫"
       >
@@ -155,9 +143,9 @@ export const LayoutRule: Story = {
           </DescriptionList>
         </Frame>
         <Label>↑ 窄容器(320px)時垂直堆疊 — 不會因為兩欄而壓縮 value</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="cols=2 / 3(grid)— 短對比、desktop 寬容器、可快速掃視"
         note="多個屬性並排 → 適合 detail panel、訂單摘要、產品規格。使用者眼睛可以水平掃視比較 — 但 value 必須短(一行內),不然會破壞 grid 對齊"
       >
@@ -172,9 +160,9 @@ export const LayoutRule: Story = {
           </DescriptionList>
         </Frame>
         <Label>↑ 寬容器(700px+)並排展示 — 使用者可快速對照多個屬性</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 窄容器硬塞多欄 → value 被擠爆"
         note="cols 數量要配合容器寬度。窄容器(<400px)硬塞 2 欄會讓 value 斷行、視覺節奏亂掉"
       >
@@ -185,16 +173,16 @@ export const LayoutRule: Story = {
           </DescriptionList>
         </Frame>
         <Label warn>↑ 窄容器配 cols=2 → 職稱被迫斷行、email 擠壓貼邊,節奏亂、可讀性差</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const LabelAlignmentRule: Story = {
   name: '標籤 對齊 — 一律左對齊（堆疊）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="本系統採 stacked(label 在上、value 在下)— label 左對齊"
         note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 `orientation=&quot;horizontal&quot;` prop(見 spec「Orientation」段)"
       >
@@ -207,9 +195,9 @@ export const LabelAlignmentRule: Story = {
           </DescriptionList>
         </Frame>
         <Label>↑ 每一組:label(neutral-8)在上,value(neutral-9)在下,同左對齊</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="層級靠色彩,不靠字體大小"
         note="label 與 value 皆為 14px,視覺層級由 text-fg-secondary(label)和 text-foreground(value)的對比建立。這讓閱讀流暢,不會因字體大小落差讓 label 喧賓奪主"
       >
@@ -220,9 +208,9 @@ export const LabelAlignmentRule: Story = {
             </DescriptionItem>
           </DescriptionList>
         </Frame>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不要自己用 flex 改 horizontal layout"
         note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `orientation=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
       >
@@ -241,16 +229,16 @@ export const LabelAlignmentRule: Story = {
         <Label warn>
           ↑ 這是自訂 layout 模擬 label 左 / value 右(key-left-value-right)→ 不是 DescriptionList,也無 dl/dt/dd 語義
         </Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const NoInteractionRule: Story = {
   name: '唯讀:不放互動元件',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ value 可以是 ReactNode(Tag / Badge / Link),但必須是展示性質"
         note="Tag 顯示狀態、Badge 顯示計數、Link 指向相關資源——這些都是「讀完就知道」的展示元件,不需使用者操作 DescriptionList 本身"
       >
@@ -267,9 +255,9 @@ export const NoInteractionRule: Story = {
             <DescriptionItem label="預計送達">2026-04-20</DescriptionItem>
           </DescriptionList>
         </Frame>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 需要編輯 → 用 Field 系統,不是 DescriptionList"
         note="DescriptionList 是唯讀展示。若使用者要能改(Input / Select / DatePicker),改用 Field — 有明確的 label、input、validation、submit 語義"
       >
@@ -284,9 +272,9 @@ export const NoInteractionRule: Story = {
           </Field>
         </FieldGroup>
         <Label>↑ 可編輯欄位 → Field 系統;唯讀屬性 → DescriptionList</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 在 value 放 Button / Input 等互動元件"
         note="DescriptionList 的語義是唯讀屬性展示。放 Button 會讓 screen reader 在 dd 內讀到 button → 使用者混淆(這是一個屬性還是一個動作?)。若要「讀取為主 + 偶爾編輯」,改用 Field 的 read-only mode 或 inline-edit pattern"
       >
@@ -304,8 +292,8 @@ export const NoInteractionRule: Story = {
         <Label warn>
           ↑ dd 內放 Button 破壞「唯讀屬性」語義 → 改用 Field(read-only mode + inline edit)
         </Label>
-      </Rule>
+      </TutorialRule>
       {/* 「多筆同結構 → DataTable」的 ❌ 對照由「使用指引」story(vs DataTable 段)擁有,不在此重複 */}
-    </div>
+    </TutorialPage>
   ),
 }

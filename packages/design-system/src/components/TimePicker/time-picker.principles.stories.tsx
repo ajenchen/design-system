@@ -5,6 +5,8 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 /**
  * TimePicker 設計原則 stories — 讀 `time-picker.spec.md` 了解完整規則。
@@ -33,7 +35,7 @@ type Story = StoryObj<typeof TimePicker>
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 TimePicker 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -69,36 +71,39 @@ export const UsageGuidance: Story = {
         <li><strong>倒數計時或相對時間</strong> → 自訂計時器。TimePicker 是 wall-clock time（09:30），不是 duration</li>
       </ul>
     </div>
-    </div>
+    </TutorialPage>
   ),
 }
 
 export const RuleMinuteStepForMeetings: Story = {
   name: '會議時段用 15 分鐘間隔',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)]">
-      <p className="text-caption text-fg-secondary max-w-prose">
-        會議排程以 15 分鐘為粒度是世界級慣例(Google Calendar / Outlook / Notion Calendar
-        的時間選單預設都是 15)。用預設 minuteStep=1 會讓使用者困在挑「9:07 還是 9:08」,
-        失去會議排程的本質——這類情境一律設 minuteStep=15。
-      </p>
-      <div className="flex gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <h3 className="text-caption font-medium text-foreground">✅ minuteStep=15</h3>
-          <Field>
-            <FieldLabel>專案週會時間</FieldLabel>
-            <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
-          </Field>
+    // 說明 ↔ 它說的範例 = tight(ExampleGroup);整頁外框 = 共用教學頁元件
+    <TutorialPage>
+      <ExampleGroup>
+        <p className="text-caption text-fg-secondary max-w-prose">
+          會議排程以 15 分鐘為粒度是世界級慣例(Google Calendar / Outlook / Notion Calendar
+          的時間選單預設都是 15)。用預設 minuteStep=1 會讓使用者困在挑「9:07 還是 9:08」,
+          失去會議排程的本質——這類情境一律設 minuteStep=15。
+        </p>
+        <div className="flex gap-[var(--layout-space-loose)]">
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <h3 className="text-caption font-medium text-foreground">✅ minuteStep=15</h3>
+            <Field>
+              <FieldLabel>專案週會時間</FieldLabel>
+              <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
+            </Field>
+          </div>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <h3 className="text-caption font-medium text-fg-muted">❌ 預設 minuteStep=1(會議排程無意義)</h3>
+            <Field>
+              <FieldLabel>專案週會時間</FieldLabel>
+              <TimePicker value="09:07" onChange={() => {}} />
+            </Field>
+          </div>
         </div>
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <h3 className="text-caption font-medium text-fg-muted">❌ 預設 minuteStep=1(會議排程無意義)</h3>
-          <Field>
-            <FieldLabel>專案週會時間</FieldLabel>
-            <TimePicker value="09:07" onChange={() => {}} />
-          </Field>
-        </div>
-      </div>
-    </div>
+      </ExampleGroup>
+    </TutorialPage>
   ),
 }
 
@@ -115,19 +120,22 @@ export const RuleClearNoLabelButton: Story = {
   render: () => {
     const [t, setT] = React.useState<string>('14:30')
     return (
-      <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <p className="text-caption text-fg-secondary max-w-prose">
-          設定 clearable 後,TimePicker 會自動在欄位尾端渲染一個 X 行內動作來清空值,點擊即清空。
-          不要自己擺一顆「清除」文字按鈕——全站統一用 X 圖示表達「移除已填內容」,與其他欄位的清除慣例一致。
-        </p>
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <h3 className="text-caption font-medium text-foreground">✅ clearable=true(自動渲染 X 行內動作)</h3>
-          <Field>
-            <FieldLabel>提醒時間</FieldLabel>
-            <TimePicker value={t} onChange={setT} clearable />
-          </Field>
-        </div>
-      </div>
+      // 說明 ↔ 它說的範例 = tight(ExampleGroup);整頁外框 = 共用教學頁元件
+      <TutorialPage>
+        <ExampleGroup>
+          <p className="text-caption text-fg-secondary max-w-prose">
+            設定 clearable 後,TimePicker 會自動在欄位尾端渲染一個 X 行內動作來清空值,點擊即清空。
+            不要自己擺一顆「清除」文字按鈕——全站統一用 X 圖示表達「移除已填內容」,與其他欄位的清除慣例一致。
+          </p>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <h3 className="text-caption font-medium text-foreground">✅ clearable=true(自動渲染 X 行內動作)</h3>
+            <Field>
+              <FieldLabel>提醒時間</FieldLabel>
+              <TimePicker value={t} onChange={setT} clearable />
+            </Field>
+          </div>
+        </ExampleGroup>
+      </TutorialPage>
     )
   },
 }

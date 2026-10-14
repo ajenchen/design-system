@@ -9,7 +9,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/FileUpload/設計原則',
@@ -17,26 +17,6 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
-
-// ── Helpers (inline, follow button.principles.stories.tsx) ────────────────────
-
-const Rule = ({
-  title,
-  note,
-  children,
-}: {
-  title: string
-  note?: string
-  children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && (
-      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>
-    )}
-    <CaptionedExamples caption={Label} className="max-w-lg">{children}</CaptionedExamples>
-  </div>
-)
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p
@@ -47,6 +27,8 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
     {children}
   </p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-lg' })
 
 const noop = () => {}
 
@@ -60,7 +42,7 @@ const noop = () => {}
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 FileUpload 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -83,15 +65,15 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="❌ 不移除 dashed border(改成 solid)"
         note="dashed 是世界級 dropzone 共識(Ant / Polaris / GitHub / Figma 皆然),視覺語意是「暫時、可放下」。solid border 暗示「永久邊界」,使用者會猶豫是否能拖入。"
       >
         <Label warn>⚠️ dashed border 是 affordance,不是裝飾——不可換成 solid</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不加 scale / shadow 等裝飾性 drag-over 信號"
         note="drag-over 只用邊框顏色(border-primary-hover,底維持 surface 不變 bg)傳達狀態。加 scale 會讓區塊在拖放瞬間晃動、使用者滑鼠與 drop target 錯位;加 shadow 和元件 elevation 體系衝突。"
       >
@@ -104,19 +86,19 @@ export const UsageGuidance: Story = {
           </div>
         </div>
         <Label warn>⚠️ state 信號只走 color,不走 motion / elevation</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 FileUpload 做非檔案觸發"
         note="「點擊開啟浮層」是 Popover / Dialog 的職責,不是 FileUpload。FileUpload = 檔案專用,避免 semantic 錯位。"
       >
         <Label warn>⚠️ 需要點擊開浮層 → 改用 Popover / Dialog,不要把 FileUpload 客製成選單</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </>
 
       {/* vs 近親 — DropzoneVsButtonRule — 原 DropzoneVsButtonRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="✅ 獨立上傳頁 / 主要動作 — 用 FileUpload dropzone"
         note="拖放有價值(圖片、批次檔案、主要互動)且有足夠空間時才划算。對照:Figma 首頁 Import、Dropbox 上傳頁、Gmail compose 的附件區。"
       >
@@ -127,9 +109,9 @@ export const UsageGuidance: Story = {
           description="拖曳或點擊選取"
           onUpload={noop}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title='✅ 表單內 inline field — 用 FileUpload variant="button"'
         note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
       >
@@ -147,24 +129,24 @@ export const UsageGuidance: Story = {
           </Field>
         </FieldGroup>
         <Label>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ form 裡塞大 dropzone"
         note="上下欄位高度落差太大,使用者視覺節奏被打斷——這是 form field 不該出現的體積。"
       >
         <Label warn>⚠️ form 內 inline 上傳欄位,不要用大 dropzone(改 variant="button")</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const MultipleRule: Story = {
   name: '多選',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="單檔(預設)— 頭像 / 履歷 / 封面照"
         note="每個欄位只收一份檔案時用預設 multiple=false。世界級對照:LinkedIn 履歷上傳、Instagram 大頭貼、Notion page cover——使用者心智模型是「這個位置放一個檔案」。"
       >
@@ -176,9 +158,9 @@ export const MultipleRule: Story = {
           onUpload={noop}
         />
         <Label>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="multiple — 相簿 / 附件 / 批次匯入"
         note="一次要收多份檔案時才 opt-in。世界級對照:Google Photos 匯入、Slack message 附件、Figma import assets——使用者預期「一次拖一批進來」。"
       >
@@ -190,17 +172,17 @@ export const MultipleRule: Story = {
           maxSize={10_000_000}
           onUpload={noop}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不把 multiple 當 default"
         note="單檔場景(履歷 / 大頭貼 / 封面圖)才是 80% 的使用情境。預設多檔會讓 consumer 忘記限制、後端收到多份後再截斷,UX 破裂。"
       >
         <Label warn>
           ⚠️ 以為「multiple 比較彈性」就預設開,實際反而讓單檔情境出 bug。明確 opt-in 才正確
         </Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -212,8 +194,8 @@ export const DivisionOfLaborRule: Story = {
       { name: 'design-review.docx', description: '540 KB' },
     ])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ FileUpload 觸發 + FileItem 顯示"
           note="本範例走 consumer 自組清單:FileUpload 負責拖放偵測 + 觸發選檔,已上傳清單由 consumer 用 FileItem map 渲染。DS 同時支援第二條路——把清單交給 FileUpload 的 files prop 內建渲染(見下一則規則);兩條路都合法,差別只在觸發與清單狀態由誰持有,重點是都不重畫 FileItem 內部視覺。這正是 Notion / Slack / Figma 的附件 flow 做法。"
         >
@@ -256,15 +238,15 @@ export const DivisionOfLaborRule: Story = {
               </div>
             )}
           </div>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不在 FileUpload 裡自己重刻 FileItem primitives"
           note="DS 提供兩條清單管理路徑:一是把清單交給 FileUpload 的 files prop,由它內部組合 FileItem 渲染;二是 consumer 自己用 files.map 逐項渲染 FileItem。兩條路都合法,真正禁止的是「自己重畫 FileItem 的內部視覺規格」——狀態圖示、縮圖比例、進度條、列排版都屬 FileItem 的 SSOT。世界級(Material / Ant / Carbon)也都是自己擁有清單、組合自家的 FileItem primitive,不另刻一套。"
         >
           <Label warn>⚠️ 要顯示清單 → 傳 `files` prop(內建)或自組 FileItem map;但不要自己重畫 FileItem 內部結構</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -274,8 +256,8 @@ export const ErrorFeedbackRule: Story = {
   render: () => {
     const [errors, setErrors] = React.useState<string[]>([])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ 設 accept / maxSize 就一定要接 onReject"
           note="accept / maxSize 擋下的檔案 FileUpload 靜默忽略,不會自動提示使用者。consumer 必須接 onReject 並顯示 Toast / Alert——否則使用者拖了檔案什麼都沒發生,會以為是 bug。"
         >
@@ -305,17 +287,17 @@ export const ErrorFeedbackRule: Story = {
               ))}
             />
           )}
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 設了 accept / maxSize 卻不接 onReject"
           note="使用者拖入不合格檔案後畫面毫無反應,會反覆嘗試最後放棄——這是沉默失敗,比明白拒絕還傷 UX。"
         >
           <Label warn>
             ⚠️ 檔案限制必定配錯誤提示。onReject → Toast / 欄位下的 error message
           </Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }

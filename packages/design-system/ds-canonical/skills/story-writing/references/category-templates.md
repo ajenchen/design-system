@@ -167,13 +167,15 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 **禁止**:do/don't 對照放 showcase(屬 principles)/ token table 放 showcase(屬 anatomy)/ 純 variant grid 無 rule 放 principles(屬 showcase)。
 
-## 教學框的間距與標題(2026-10-01)
+## 教學框的間距與標題(2026-10-01;段落層級 2026-10-14)
 
-- **範例 ↔ 它的說明** = `--layout-space-tight`(`layoutSpace.spec.md` 規則 3 labeling);**範例組 ↔ 範例組** = `--layout-space-loose`。住所 `src/stories-helpers/examples/example-captions.tsx`:Rule helper 的範例區一律 `<CaptionedExamples caption={Label}>`(說明自動併進它說的範例),手寫的「樣本 + 說明」小格用 `<ExampleGroup>`;只有一則說明貼著一個樣本的單格,直接在說明上寫 `mb-` / `mt-[var(--layout-space-tight)]` 是同一個值。不在各頁自寫其他值或外框。
+- **教學頁的版面只有一個住所** `src/stories-helpers/examples/tutorial-page.tsx`(2026-10-14):每則教學 story 以 `<TutorialPage>` 起頭,段落用 `<TutorialSection title>`,規則用每頁一行 `createTutorialRule({ caption: Label, … })` 產出的 `<TutorialRule title note>`(規則的內容是範例 → 給 `caption`,走 `CaptionedExamples`;是一段文字 / 清單 → 不給)。不在各頁自定 Rule / Section(看結構不看名字:自己畫標題、再接內容的小元件就是,不論叫什麼)、不手寫 `<h2>` / `<section>`、不拿別的容器包規則或段落(包在下一層也一樣)、頁 / 段落裡的區塊不自帶上下 margin / padding、不放撐高度的空白塊(class 加 `sm:` / `[&>*+*]:` 前綴、寫成 `style` 都算)、不在 `TutorialPage` 放間距。範圍 = 全部設計原則頁(`*.principles.stories.tsx`)+ Patterns 文件頁的教學框;產品範例與展示頁不套用。
+- **規則 ↔ 規則 = 段落 ↔ 段落 = `--layout-space-loose` × 2**(md 32 / lg 48;`calc(var(--layout-space-loose) * 2)`,只寫在 tutorial-page.tsx):從 loose 推出,所以永遠是「範例組 ↔ 範例組」的兩倍、跟著密度走;**不借 `--layout-space-bottom`**(它的語意是 `layoutSpace.spec.md:13`「結論留白:內容到 action buttons」,值剛好可能一樣而已)。間距由外層 gap 一次給,各塊不留自己的下方 margin(頁尾不多空白)。出處:user 2026-10-07 原話「第一題照你建議」,採 AI 同日的建議 ②(規則之間 = 段落之間 = loose × 2、範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件;待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` P7 列)。
+- **範例 ↔ 它的說明** = `--layout-space-tight`(`layoutSpace.spec.md` 規則 3 labeling);**範例組 ↔ 範例組** = `--layout-space-loose`。住所 `src/stories-helpers/examples/example-captions.tsx`:規則的範例區一律 `<CaptionedExamples caption={Label}>`(`createTutorialRule({ caption })` 已內建)(說明自動併進它說的範例),手寫的「樣本 + 說明」小格用 `<ExampleGroup>`;只有一則說明貼著一個樣本的單格,直接在說明上寫 `mb-` / `mt-[var(--layout-space-tight)]` 是同一個值。不在各頁自寫其他值或外框。
 - **教學框說明文字(Rule 的 note)** = `text-caption`,行高用字級本身的 1.3,不疊 `leading-relaxed`(`typography.spec.md:50-53`「`text-caption`（12px）/ `text-footnote`（10px）：全部 lh 1.3 固定」)。
 - **卡片 / 列裡「標題 ↔ 說明」**(同一個文字塊)= `--item-gap-label-desc-*`(`item-anatomy.spec.md`「Label ↔ Desc 間距」),不是 tight、不是寫死 4 / 8px。
-- **標題**一律 `<h1>`–`<h6>` + `text-h5`(16px)/ `text-h6`(14px)(`typography.spec.md:85-88`):教學框標題 `font-semibold`、範例裡的產品標題 `font-medium`;chrome 標題沿用 `text-body-lg font-medium`(header-canonical)。
-- 機械:`scripts/story-layer-drift-invariant.mjs`((b) 寫死間距 / (c) div 當標題 / (d) 不存在的字級)。
+- **標題**一律 `<h1>`–`<h6>` + DS 字級:**教學頁段落標題 = `<h2>` `text-h3`(24px)`font-semibold` + `border-divider` 淺分隔線**(`typography.spec.md` Token 表 text-h3「子區塊標題」—— 教學頁的段落就是頁裡的子區塊;同一個 ② 拍板);**規則標題 = `<h3>` `text-h6`(14px)`font-semibold`**;其餘教學框小標用 `text-h5`(16px)/ `text-h6`(`typography.spec.md:85-88`);範例裡的產品標題 `font-medium`;chrome 標題沿用 `text-body-lg font-medium`(header-canonical)。段落 / 規則標題由 tutorial-page.tsx 畫,各頁不手寫。
+- 機械:`scripts/story-layer-drift-invariant.mjs`((b) 寫死間距 / (c) div 當標題 / (d) 不存在的字級);`scripts/tutorial-page-invariant.mjs`(教學頁繞過共用元件 —— 含 CSF2 函式 story、自抄 Rule / Section(看結構不看名字)、手寫段落 / 規則間距(margin / padding / 空白塊 / style,含前綴)、共用元件不再是 ② → 紅)。
 
 ## 強制機制
 

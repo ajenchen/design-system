@@ -6,7 +6,8 @@ import { Chip, ChipGroup } from './chip'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { Tag } from '@/design-system/components/Tag/tag'
-import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Chip/設計原則',
@@ -15,23 +16,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label })
 
 // ── 定位與分界 ───────────────────────────────────────────────────────────────
 
@@ -46,7 +35,7 @@ export const UsageGuidance: Story = {
     const [langs, setLangs] = React.useState<string[]>(['js', 'ts'])
     const [period, setPeriod] = React.useState('week')
     return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 Chip 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -66,8 +55,8 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* vs 近親元件 — 原 VsSegmentedRule */}
-      <div>
-        <Rule
+      <>
+        <TutorialRule
           title="vs 近親元件 — Chip 是多選濾鏡(可選任意數量)"
           note="Material Design Filter Chip 的實作:一排獨立 pill,可勾選任意組合。典型場景:技術文章列表的語言標籤濾鏡、商品列表的類別篩選、搜尋結果的多維度過濾"
         >
@@ -82,9 +71,9 @@ export const UsageGuidance: Story = {
             </ChipGroup>
             <Label>↑ 目前選了 {langs.length} 種語言</Label>
           </ExampleGroup>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="vs 近親元件 — 互斥單選(同時只能選一個)用 SegmentedControl"
           note="2–5 個互斥選項、視覺要表達「連體」關係,用 SegmentedControl。Chip 各自獨立的視覺反而模糊了「只能選一個」的語意"
         >
@@ -102,9 +91,9 @@ export const UsageGuidance: Story = {
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
           </ExampleGroup>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="vs 近親元件 — 純顯示、不可互動用 Tag"
           note="Chip 是 control(選擇 / 未選),Tag 是 label(資訊標記)。商品卡上「新品 / 熱銷」是 Tag 不是 Chip"
         >
@@ -114,26 +103,26 @@ export const UsageGuidance: Story = {
             <Tag color="blue">新品</Tag>
           </div>
           <Label>↑ 純顯示用 Tag,不要誤用 Chip</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="何時不用 / 替代元件 — 加 dismiss X(再點一次 deselect 就是 dismiss)"
         note="Filter chip 的「移除這個 filter」由 toggle(再點一次)承擔。加 X 等於同一動作有兩個 affordance,違反 Hicks's Law。Material 3 / Atlassian / Polaris filter chips 都不提供 X"
       >
         <Label warn>（範例省略）Chip 型別不提供 onRemove,設計上就擋住這個錯用</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="何時不用 / 替代元件 — Chip 單獨使用,沒有 ChipGroup 包覆"
         note="Chip 的選擇狀態由 Radix ToggleGroup 管理,沒 ChipGroup 會失去 keyboard navigation / a11y / state sync"
       >
         <Label warn>（範例省略）Chip 必須在 ChipGroup 內,對齊 RadioGroup / SegmentedControl 的結構</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
     )
   },
 }
@@ -152,8 +141,8 @@ export const LayoutRule: Story = {
       solid: 'Solid', qwik: 'Qwik', ember: 'Ember', backbone: 'Backbone', knockout: 'Knockout',
     }
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="wrap（預設）— filter panel / tag cloud"
           note="塞不下換行,預設選擇。垂直空間充足,filter panel / 設定頁 tag 選取等場景"
         >
@@ -163,9 +152,9 @@ export const LayoutRule: Story = {
             </ChipGroup>
           </div>
           <Label>↑ 設定頁的技術選取 — 換行展示所有選項</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="scroll — 單行 toolbar / header 必須固定高度"
           note="垂直空間受限(toolbar / card header),橫向捲動 + fade mask 指示溢出。搭配左右 scroll arrow 給鍵盤和滑鼠使用者"
         >
@@ -175,9 +164,9 @@ export const LayoutRule: Story = {
             </ChipGroup>
           </div>
           <Label>↑ 新聞網站的分類 toolbar — 固定高度,滑動看更多</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="menu — 單行但要完整選項可見"
           note="單行水平捲動,chip 全可見不隱藏;dropdown(ChevronDown)永遠列出全部 chip。對齊 Chrome tab dropdown / VS Code editor tabs 的「show all」pattern。menu 模式必須 controlled(value + onValueChange)"
         >
@@ -187,8 +176,8 @@ export const LayoutRule: Story = {
             </ChipGroup>
           </div>
           <Label>↑ ListView 工具列 — 單行 + ⋯ 展開全部選項</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -198,8 +187,8 @@ export const LayoutRule: Story = {
 export const SelectedStyleRule: Story = {
   name: '選中狀態：文字 + 邊框 同染，不用背景強調',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="選中 = primary text + border，底色不變"
         note="對齊 SegmentedControl / Tabs 的選中 canonical:primary 底色同時染文字和線條(瞬時 hover 用弱色、持續選中用強色)。用 bg 強調會讓 chip 看起來變成「按鈕」,混淆多選濾鏡的語意"
       >
@@ -210,9 +199,9 @@ export const SelectedStyleRule: Story = {
           <Chip value="js">JavaScript</Chip>
         </ChipGroup>
         <Label>↑ 選中(React / TypeScript)= primary 文字 + 邊框,底色仍 bg-surface</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="badge suffix — 計數指示"
         note="filter chip 常配計數:「React(24) / Vue(8)」,使用者看計數做決策。Badge 放在 chip 末端"
       >
@@ -222,8 +211,8 @@ export const SelectedStyleRule: Story = {
           <Chip value="svelte" badge={<Badge count={3} />}>Svelte</Chip>
         </ChipGroup>
         <Label>↑ 文章列表的語言濾鏡,顯示每種語言有幾篇</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 

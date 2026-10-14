@@ -33,7 +33,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { Separator } from '@/design-system/components/Separator/separator'
-import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/設計原則',
@@ -42,23 +43,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -70,7 +59,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 Popover 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -84,8 +73,8 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* vs 近親 — VsDialogRule — 原 VsDialogRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="Popover — non-modal 輕量浮層,使用者可 ignore 繼續主流程"
         note="篩選 / 設定 / 快速切換等補充 UI。背景仍可 scroll、可 click,使用者不需要「處理完」才能繼續工作。典型案例:Jira filter panel、Linear view settings、GitHub file tree 的 branch switcher"
       >
@@ -105,9 +94,9 @@ export const UsageGuidance: Story = {
           </PopoverContent>
         </Popover>
         <Label>↑ 篩選條件是輔助工具,使用者可選擇不用;不該阻斷背景的列表互動</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Dialog — modal 阻斷背景,使用者必須處理才能繼續"
         note="建立 / 編輯表單、破壞性確認、重要決策。Overlay 強制聚焦,使用者完成或取消才回到主頁。典型案例:Stripe 建立付款方式、Notion 永久刪除頁面確認、Linear 建立 issue form"
       >
@@ -129,20 +118,20 @@ export const UsageGuidance: Story = {
           </DialogContent>
         </Dialog>
         <Label>↑ 破壞性動作必須完整決策,不能讓使用者點旁邊就跳過</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="判準 — 問「使用者可以 ignore 這個浮層、繼續用主介面嗎?」"
         note="可以 ignore → Popover(filter / settings / quick switch)。不能 ignore,必須完成或取消才能繼續 → Dialog(confirm / 表單 wizard / 破壞性動作)"
       >
         <Label>Popover:filter 面板、Linear priority picker、Notion 字體設定</Label>
         <Label>Dialog:建立 project、刪除確認、付款資訊輸入、多步驟 wizard</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </>
 
       {/* vs 近親 — VsDropdownMenuRule — 原 VsDropdownMenuRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="DropdownMenu — 固定結構的操作選單(一排 item list)"
         note="語意是「從清單中選一個動作」。鍵盤可上下導覽、Enter 觸發,MenuItem 結構統一。典型案例:Gmail 右鍵選單、Figma layer context menu、GitHub 檔案的 ⋯ 選單"
       >
@@ -157,9 +146,9 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ 一排可點選的動作 → DropdownMenu,MenuItem 結構鍵盤可直接上下選</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Popover — 自由組合的 UI 面板(多欄、輸入、圖表皆可)"
         note="語意是「這裡給我一塊可組自訂內容的浮層」。內容完全由 consumer 決定,可放輸入框、多個 section、圖表。典型案例:Jira advanced filter、Notion 屬性編輯、Linear date range picker"
       >
@@ -186,27 +175,27 @@ export const UsageGuidance: Story = {
           </PopoverContent>
         </Popover>
         <Label>↑ 多種控制元件並存(checkbox + 說明 + 按鈕列)→ Popover</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 把 Popover 當 DropdownMenu 用"
         note="一排 MenuItem 塞進 Popover 會失去 menu 語意(鍵盤導覽不完整、role='menu' 缺失、screen reader 不知道這是選單)"
       >
         <Label warn>一排可點選動作應該用 DropdownMenu;Popover 的內容應該是自由組合不只單一 list</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </>
 
       {/* vs 近親 — VsTooltipRule — 原 VsTooltipRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="Tooltip — hover 觸發,純文字輔助說明"
         note="解釋 icon 按鈕含義、欄位說明、快捷鍵提示。使用者 hover 看到、移開就消失,內容不可互動。典型案例:Figma toolbar icon tooltip、Slack 按鈕功能提示、Gmail 的快捷鍵說明"
       >
         <FieldLabel info="此欄位只接受英文與數字">專案代碼</FieldLabel>{/* 只給資訊的 ⓘ 用 FieldLabel info(內部就是 Tooltip;平常淡、滑過深一階、一般箭頭),不用 Button:Button 會帶按鈕底色與手形,iconOnly 還會自己再掛一層提示 → 同時浮出兩個 */}
         <Label>↑ 純文字輔助 → Tooltip(hover 觸發,移開消失)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Popover — click 觸發,互動式內容面板"
         note="浮層內可放按鈕、輸入、選擇。使用者點擊才出現,點外部 / Esc 才關閉。典型案例:Linear priority picker、Jira filter panel、Notion 頁面設定"
       >
@@ -225,31 +214,31 @@ export const UsageGuidance: Story = {
           </PopoverContent>
         </Popover>
         <Label>↑ 需要互動 → Popover(click 觸發,內容可點擊)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 把 Tooltip 當 Popover 用"
         note="Tooltip 在 hover 離開時就消失,使用者無法把滑鼠移到浮層上點按鈕。放互動元素會失效"
       >
         <Label warn>浮層裡要放按鈕 / checkbox / link → 必須 Popover 或 HoverCard(不是 Tooltip)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 把 Popover 當 Tooltip 用"
         note="Popover 必須 click 觸發,「滑到 icon 上看說明」的場景用 Popover 使用者得先點一下才看得到,體驗變重"
       >
         <Label warn>純文字提示應該 hover 就出現 → 用 Tooltip(不要用 Popover)</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const VisualAlignmentRule: Story = {
   name: '視覺對齊 Dialog（浮層視覺語言共用）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Popover 與 Dialog 共用 overlay-surface 視覺語言"
         note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡);Dialog 不鎖 layout-space,全繼承 page(md page → 16 / lg page → 24)。兩者 ui-size 都繼承 page"
       >
@@ -299,14 +288,14 @@ export const VisualAlignmentRule: Story = {
           <Label>↑ 同一內容以 Dialog 呈現(modal 阻斷背景)</Label>
         </ExampleGroup>
         <Label>↑ 容器不同、chrome 視覺語言完全一致,consumer 切換不會產生視覺斷層</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="為什麼 layout-space 鎖 md"
         note="Popover 只鎖 layout-space=md(header / footer padding 永遠精簡),內部控件的 ui-size 繼承 page(對齊 trigger)。頁面 layout-space 大(lg)時,Popover 若 header / footer 跟著放大會失去「輕量補充 UI」的定位 — 使用者會誤以為是主 modal。鎖 layout-space=md 讓 Popover chrome 永遠比主頁面緊湊,保持「這是補充不是主流程」的視覺暗示"
       >
         <Label>頁面 layout-space = lg,Popover header / footer 仍是 md(內部控件 ui-size 繼承 page)— 輕量感不被放大破壞</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

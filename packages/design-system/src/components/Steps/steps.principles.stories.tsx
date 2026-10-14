@@ -4,6 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Steps, StepItem, StepLabel, StepDescription } from './steps'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/設計原則',
@@ -14,31 +15,9 @@ export default meta
 
 type Story = StoryObj<typeof Steps>
 
-// ── 標題 / 副標 / 範例註解的三層排版 ──
-// 間距(category-templates.md「教學框的間距與標題」;layoutSpace.spec.md 規則 3):標題 → 副標 → 範例 = tight(命名 / 描述它下面那一塊),
-// 範例 ↔ 範例 = loose(並列),範例 ↔ 它的註解 = tight(ExampleGroup)。
-
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="flex flex-col gap-[var(--layout-space-tight)]">
-      <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h3 text-foreground">{title}</h3>
-        {subtitle && (
-          <p className="text-caption text-fg-secondary max-w-[720px]">{subtitle}</p>
-        )}
-      </div>
-      {children}
-    </section>
-  )
-}
+// ── 規則外框 = 共用教學頁元件(標題 → 說明 → 範例 = tight;規則之間 loose × 2)──
+// 範例 ↔ 範例 = loose(ExamplePair 並列),範例 ↔ 它的註解 = tight(ExampleGroup)。說明字色沿用本頁原本的 fg-secondary。
+const TutorialRule = createTutorialRule({ noteTone: 'secondary' })
 
 function ExamplePair({
   children,
@@ -73,7 +52,7 @@ function Example({
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 Steps 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -106,41 +85,43 @@ export const UsageGuidance: Story = {
         <li><strong>說明 / 教學類的編號步驟</strong> → Accordion。讀者自己開合、沒有「目前那一步」,編號寫進每段標題</li>
       </ul>
     </div>
-    </div>
+    </TutorialPage>
   ),
 }
 
 export const ParentControlled: Story = {
   name: '規則:狀態由父層管理',
   render: () => (
-    <Section
-      title="狀態由 parent 單一來源管理"
-      subtitle="用 Steps root 的 value / completedValues / errorValues 自動推導每個 step 的 state——絕不在多個 StepItem 各自宣告 state,否則容易漂移、容易出現「多個 current」這種自我矛盾的組合。"
-    >
-      <ExamplePair>
-        <Example label="✅ 對:狀態集中在 Steps root">
-          <Steps
-            value="payment"
-            completedValues={['info', 'review']}
-            errorValues={['payment']}
-          >
-            <StepItem value="info">
-              <StepLabel>基本資料</StepLabel>
-            </StepItem>
-            <StepItem value="review">
-              <StepLabel>確認資料</StepLabel>
-            </StepItem>
-            <StepItem value="payment">
-              <StepLabel>付款</StepLabel>
-              <StepDescription>信用卡授權失敗,請確認卡號與有效期限後重新付款</StepDescription>
-            </StepItem>
-            <StepItem value="done">
-              <StepLabel>完成</StepLabel>
-            </StepItem>
-          </Steps>
-        </Example>
-      </ExamplePair>
-    </Section>
+    <TutorialPage>
+      <TutorialRule
+        title="狀態由 parent 單一來源管理"
+        note="用 Steps root 的 value / completedValues / errorValues 自動推導每個 step 的 state——絕不在多個 StepItem 各自宣告 state,否則容易漂移、容易出現「多個 current」這種自我矛盾的組合。"
+      >
+        <ExamplePair>
+          <Example label="✅ 對:狀態集中在 Steps root">
+            <Steps
+              value="payment"
+              completedValues={['info', 'review']}
+              errorValues={['payment']}
+            >
+              <StepItem value="info">
+                <StepLabel>基本資料</StepLabel>
+              </StepItem>
+              <StepItem value="review">
+                <StepLabel>確認資料</StepLabel>
+              </StepItem>
+              <StepItem value="payment">
+                <StepLabel>付款</StepLabel>
+                <StepDescription>信用卡授權失敗,請確認卡號與有效期限後重新付款</StepDescription>
+              </StepItem>
+              <StepItem value="done">
+                <StepLabel>完成</StepLabel>
+              </StepItem>
+            </Steps>
+          </Example>
+        </ExamplePair>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -149,33 +130,35 @@ export const ParentControlled: Story = {
 export const RingIsFocusMarker: Story = {
   name: '規則:環是聚焦標記,不是選取',
   render: () => (
-    <Section
-      title="Ring 表達「你現在在這步」,跟 step 本身的狀態正交"
-      subtitle="Ring 不是 selection marker——Steps 不是 SelectMenu / DropdownMenu。不要把 bg-neutral-selected、radio 圓圈等 selection 語義用到 Steps 上,ring 是唯一的 focus 表達。"
-    >
-      <ExamplePair>
-        <Example label="Value 指向 completed step → 藍底 ✓ + 藍 ring(可同時成立)">
-          <Steps value="a" completedValues={['a']} linear={false}>
-            <StepItem value="a">
-              <StepLabel>送貨地址</StepLabel>
-            </StepItem>
-            <StepItem value="b">
-              <StepLabel>確認送出</StepLabel>
-            </StepItem>
-          </Steps>
-        </Example>
-        <Example label="Value 指向 error step → 紅底 ✕ + 紅 ring">
-          <Steps value="a" errorValues={['a']} linear={false}>
-            <StepItem value="a">
-              <StepLabel>付款</StepLabel>
-            </StepItem>
-            <StepItem value="b">
-              <StepLabel>確認送出</StepLabel>
-            </StepItem>
-          </Steps>
-        </Example>
-      </ExamplePair>
-    </Section>
+    <TutorialPage>
+      <TutorialRule
+        title="Ring 表達「你現在在這步」,跟 step 本身的狀態正交"
+        note="Ring 不是 selection marker——Steps 不是 SelectMenu / DropdownMenu。不要把 bg-neutral-selected、radio 圓圈等 selection 語義用到 Steps 上,ring 是唯一的 focus 表達。"
+      >
+        <ExamplePair>
+          <Example label="Value 指向 completed step → 藍底 ✓ + 藍 ring(可同時成立)">
+            <Steps value="a" completedValues={['a']} linear={false}>
+              <StepItem value="a">
+                <StepLabel>送貨地址</StepLabel>
+              </StepItem>
+              <StepItem value="b">
+                <StepLabel>確認送出</StepLabel>
+              </StepItem>
+            </Steps>
+          </Example>
+          <Example label="Value 指向 error step → 紅底 ✕ + 紅 ring">
+            <Steps value="a" errorValues={['a']} linear={false}>
+              <StepItem value="a">
+                <StepLabel>付款</StepLabel>
+              </StepItem>
+              <StepItem value="b">
+                <StepLabel>確認送出</StepLabel>
+              </StepItem>
+            </Steps>
+          </Example>
+        </ExamplePair>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -184,37 +167,39 @@ export const RingIsFocusMarker: Story = {
 export const BlueConnectorLogic: Story = {
   name: '規則:藍色連線只跟已完成走',
   render: () => (
-    <Section
-      title="藍色代表實際走過的路徑,不是 focus 指向"
-      subtitle="即使使用者在非線性模式跳到未完成的 step,前面的 connector 也不會無中生有變藍——藍色跟 step 本身的 completed bg 一對一對應,避免「藍線連灰 step」的矛盾。"
-    >
-      <ExamplePair>
-        <Example label="✅ 對:value 在「確認送出」,但只有「基本資料」是 completed → 只有它底下的 connector 藍">
-          <Steps
-            value="step-4"
-            completedValues={['step-1']}
-            linear={false}
-          >
-            <StepItem value="step-1">
-              <StepLabel>基本資料</StepLabel>
-              <StepDescription>已完成</StepDescription>
-            </StepItem>
-            <StepItem value="step-2">
-              <StepLabel>帳號設定</StepLabel>
-              <StepDescription>待填寫</StepDescription>
-            </StepItem>
-            <StepItem value="step-3">
-              <StepLabel>付款方式</StepLabel>
-              <StepDescription>待填寫</StepDescription>
-            </StepItem>
-            <StepItem value="step-4">
-              <StepLabel>確認送出</StepLabel>
-              <StepDescription>當前聚焦</StepDescription>
-            </StepItem>
-          </Steps>
-        </Example>
-      </ExamplePair>
-    </Section>
+    <TutorialPage>
+      <TutorialRule
+        title="藍色代表實際走過的路徑,不是 focus 指向"
+        note="即使使用者在非線性模式跳到未完成的 step,前面的 connector 也不會無中生有變藍——藍色跟 step 本身的 completed bg 一對一對應,避免「藍線連灰 step」的矛盾。"
+      >
+        <ExamplePair>
+          <Example label="✅ 對:value 在「確認送出」,但只有「基本資料」是 completed → 只有它底下的 connector 藍">
+            <Steps
+              value="step-4"
+              completedValues={['step-1']}
+              linear={false}
+            >
+              <StepItem value="step-1">
+                <StepLabel>基本資料</StepLabel>
+                <StepDescription>已完成</StepDescription>
+              </StepItem>
+              <StepItem value="step-2">
+                <StepLabel>帳號設定</StepLabel>
+                <StepDescription>待填寫</StepDescription>
+              </StepItem>
+              <StepItem value="step-3">
+                <StepLabel>付款方式</StepLabel>
+                <StepDescription>待填寫</StepDescription>
+              </StepItem>
+              <StepItem value="step-4">
+                <StepLabel>確認送出</StepLabel>
+                <StepDescription>當前聚焦</StepDescription>
+              </StepItem>
+            </Steps>
+          </Example>
+        </ExamplePair>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -223,37 +208,39 @@ export const BlueConnectorLogic: Story = {
 export const ColumnRhythm: Story = {
   name: '規則:指示欄節奏一致',
   render: () => (
-    <Section
-      title="Indicator 永遠對齊 label 第一行——即使同一 Steps 內混用「有/無 description」"
-      subtitle="這是 Steps 刻意打破 item-layout 的 24px 閾值規則(block-align 對齊文字塊中心)的特例。如果照 item-layout 規則,lg size 的 indicator 會在有 description 的 item 下降到文字塊中間,column 垂直節奏崩潰。Material / Ant / GitHub / Linear 全部一致走 inline 對齊,這是 stepper 的視覺骨架本身。"
-    >
-      <ExamplePair>
-        <Example label="✅ 對:lg size,混用有/無 description,indicator 全部對齊第一行中線,column 垂直節奏一致">
-          <Steps
-            defaultValue="step-3"
-            completedValues={['step-1', 'step-2']}
-            size="lg"
-          >
-            <StepItem value="step-1">
-              <StepLabel>選擇商品</StepLabel>
-            </StepItem>
-            <StepItem value="step-2">
-              <StepLabel>填寫地址</StepLabel>
-              <StepDescription>收件人、地址、郵遞區號</StepDescription>
-            </StepItem>
-            <StepItem value="step-3">
-              <StepLabel>付款方式</StepLabel>
-              <StepDescription>
-                信用卡 / Apple Pay / 銀行轉帳(處理時間 1–2 個工作天)
-              </StepDescription>
-            </StepItem>
-            <StepItem value="step-4">
-              <StepLabel>完成訂單</StepLabel>
-            </StepItem>
-          </Steps>
-        </Example>
-      </ExamplePair>
-    </Section>
+    <TutorialPage>
+      <TutorialRule
+        title="Indicator 永遠對齊 label 第一行——即使同一 Steps 內混用「有/無 description」"
+        note="這是 Steps 刻意打破 item-layout 的 24px 閾值規則(block-align 對齊文字塊中心)的特例。如果照 item-layout 規則,lg size 的 indicator 會在有 description 的 item 下降到文字塊中間,column 垂直節奏崩潰。Material / Ant / GitHub / Linear 全部一致走 inline 對齊,這是 stepper 的視覺骨架本身。"
+      >
+        <ExamplePair>
+          <Example label="✅ 對:lg size,混用有/無 description,indicator 全部對齊第一行中線,column 垂直節奏一致">
+            <Steps
+              defaultValue="step-3"
+              completedValues={['step-1', 'step-2']}
+              size="lg"
+            >
+              <StepItem value="step-1">
+                <StepLabel>選擇商品</StepLabel>
+              </StepItem>
+              <StepItem value="step-2">
+                <StepLabel>填寫地址</StepLabel>
+                <StepDescription>收件人、地址、郵遞區號</StepDescription>
+              </StepItem>
+              <StepItem value="step-3">
+                <StepLabel>付款方式</StepLabel>
+                <StepDescription>
+                  信用卡 / Apple Pay / 銀行轉帳(處理時間 1–2 個工作天)
+                </StepDescription>
+              </StepItem>
+              <StepItem value="step-4">
+                <StepLabel>完成訂單</StepLabel>
+              </StepItem>
+            </Steps>
+          </Example>
+        </ExamplePair>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -265,38 +252,40 @@ export const LinearBackClickDoesNotMutate: Story = {
     const [value, setValue] = React.useState('review')
     const [completed] = React.useState(['info', 'account'])
     return (
-      <Section
-        title="點 completed step 只改 focus(value),不會自動取消完成狀態"
-        subtitle="Steps 的進度狀態由 parent own(value 為 controlled / uncontrolled defaultValue 雙模),從不偷偷 mutate parent 的 completedValues。若應用層需要「使用者改錯了就 block 後續」,應由應用層自己從 completedValues 移除,Steps 內部絕不 auto-remove。"
-      >
-        <ExampleGroup className="w-[360px]">
-          <p className="text-caption text-fg-secondary">
-            點 Step 1 或 Step 2(completed)看看——value 會跳回去,但 ✓ 完成標記
-            維持不變。
-          </p>
-          <Steps
-            value={value}
-            onValueChange={setValue}
-            completedValues={completed}
-          >
-            <StepItem value="info">
-              <StepLabel>基本資料</StepLabel>
-            </StepItem>
-            <StepItem value="account">
-              <StepLabel>帳號設定</StepLabel>
-            </StepItem>
-            <StepItem value="review">
-              <StepLabel>確認資料</StepLabel>
-            </StepItem>
-            <StepItem value="done">
-              <StepLabel>完成</StepLabel>
-            </StepItem>
-          </Steps>
-          <p className="text-footnote text-fg-muted">
-            Current value: <code>{value}</code>
-          </p>
-        </ExampleGroup>
-      </Section>
+      <TutorialPage>
+        <TutorialRule
+          title="點 completed step 只改 focus(value),不會自動取消完成狀態"
+          note="Steps 的進度狀態由 parent own(value 為 controlled / uncontrolled defaultValue 雙模),從不偷偷 mutate parent 的 completedValues。若應用層需要「使用者改錯了就 block 後續」,應由應用層自己從 completedValues 移除,Steps 內部絕不 auto-remove。"
+        >
+          <ExampleGroup className="w-[360px]">
+            <p className="text-caption text-fg-secondary">
+              點 Step 1 或 Step 2(completed)看看——value 會跳回去,但 ✓ 完成標記
+              維持不變。
+            </p>
+            <Steps
+              value={value}
+              onValueChange={setValue}
+              completedValues={completed}
+            >
+              <StepItem value="info">
+                <StepLabel>基本資料</StepLabel>
+              </StepItem>
+              <StepItem value="account">
+                <StepLabel>帳號設定</StepLabel>
+              </StepItem>
+              <StepItem value="review">
+                <StepLabel>確認資料</StepLabel>
+              </StepItem>
+              <StepItem value="done">
+                <StepLabel>完成</StepLabel>
+              </StepItem>
+            </Steps>
+            <p className="text-footnote text-fg-muted">
+              Current value: <code>{value}</code>
+            </p>
+          </ExampleGroup>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }

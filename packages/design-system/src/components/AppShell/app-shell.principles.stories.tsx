@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — 產品架構參照(Linear / Notion / Figma / GitHub / Slack / Gmail 等)為 usage 觀察,非逐句 URL-cited;視為 unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/AppShell/設計原則',
@@ -9,12 +10,14 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規則的內容是一段文字 / 清單(不是範例區),不給 caption
+const TutorialRule = createTutorialRule()
+
 export const UsageGuidance: Story = {
   name: '使用準則',
   render: () => (
-    <div className="max-w-2xl space-y-[var(--layout-space-loose)] px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">何時用 AppShell</h2>
+    <TutorialPage className="max-w-2xl">
+      <TutorialSection title="何時用 AppShell">
         {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-2">
           <li>
@@ -30,10 +33,9 @@ export const UsageGuidance: Story = {
             <LinkTo kind="Design System/Components/AppShell/設計規格" name="狀態行為"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 狀態行為(右側面板開合)</span></LinkTo>
           </li>
         </ul>
-      </section>
+      </TutorialSection>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">何時不用</h2>
+      <TutorialSection title="何時不用">
         {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-1">
           <li>• 單頁 landing / marketing site(產品官網、定價頁)→ `&lt;main&gt;` 直接展開,沒導覽不需要 shell</li>
@@ -41,28 +43,25 @@ export const UsageGuidance: Story = {
           <li>• Embedded widget / iframe(嵌進別人頁面的客服小視窗類)→ 已被 host shell 包住</li>
           <li>• 文件 reader(全螢幕閱讀)→ shell chrome 干擾閱讀</li>
         </ul>
-      </section>
+      </TutorialSection>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">Layout mode 怎麼選</h2>
+      <TutorialSection title="Layout mode 怎麼選">
         <p className="text-body">
           兩種佈局模式(primary-sidebar / primary-header)的選型決策樹獨立成「佈局模式怎麼選」story(含
           WorkspaceBrand 放置規則),見本頁側欄或{' '}
           <LinkTo kind="Design System/Components/AppShell/設計原則" name="佈局模式怎麼選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計原則 → 佈局模式怎麼選</span></LinkTo>
         </p>
-      </section>
+      </TutorialSection>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">vs Sidebar 規則</h2>
+      <TutorialSection title="vs Sidebar 規則">
         <p className="text-body">
           AppShell 只負責整體組合、版面模式、以及右側面板的響應式開合。Sidebar 的外觀、行為、行動裝置上的
           抽屜形式都由 Sidebar 元件自己定義,<strong>AppShell 不會去改 Sidebar 的樣式</strong>。
           多個 sidebar 的情境要等 Sidebar 元件本身支援後才提供。
         </p>
-      </section>
+      </TutorialSection>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">Consumer 紀律</h2>
+      <TutorialSection title="Consumer 紀律">
         {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-1">
           <li>❌ 禁:`&lt;AppShell&gt;` 內塞另一個 `&lt;AppShell&gt;`(整頁框架只能有一個)</li>
@@ -71,8 +70,8 @@ export const UsageGuidance: Story = {
           <li>❌ 禁:硬性撐開 Main 區域的內距 → Main 本身不加留白,由內容自己決定(自帶邊框的卡片、資料表各自帶內距)</li>
           <li>✅ 必:Main 內容的間距沿用既有版面間距原則——頁面標頭、卡片、資料表、純列表各按對應規則處理</li>
         </ul>
-      </section>
-    </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
@@ -82,10 +81,9 @@ export const UsageGuidance: Story = {
 export const LayoutModeRule: Story = {
   name: '佈局模式怎麼選',
   render: () => (
-    <div className="max-w-2xl space-y-[var(--layout-space-loose)] px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">唯一判準:頂部標頭服務的範圍</h2>
-        <p className="text-body mb-[var(--layout-space-tight)]">
+    <TutorialPage className="max-w-2xl">
+      <TutorialRule title="唯一判準:頂部標頭服務的範圍">
+        <p className="text-body">
           唯一的區分標準 = <strong>頂部標頭服務的是「目前這一頁」還是「整個產品」</strong>,
           <em>不是</em>工作區(workspace)的數量多寡(Notion / Gmail 都支援多工作區,卻分屬不同派)。
           問自己:頂部那條標頭列服務的是當前頁面,還是整個產品?
@@ -105,33 +103,30 @@ export const LayoutModeRule: Story = {
             <LinkTo kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示 → 主標頭佈局 — 全域+本地兩層</span></LinkTo>
           </li>
         </ul>
-        <p className="text-caption text-fg-secondary mt-[var(--layout-space-tight)]">
+        <p className="text-caption text-fg-secondary">
           兩種模式是產品的角色定位——啟動時就固定,不該在執行期切換。視覺對照圖見{' '}
           <LinkTo kind="Design System/Components/AppShell/設計規格" name="兩種布局模式對照圖"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 兩種布局模式對照圖</span></LinkTo>
         </p>
-      </section>
+      </TutorialRule>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">常見誤解:全域標頭會取代當前頁工具列</h2>
+      <TutorialRule title="常見誤解:全域標頭會取代當前頁工具列">
         <p className="text-body">
           錯。primary-header = primary-sidebar 的所有東西 + <strong>額外一條</strong>全域標頭在頂;
           當前頁工具列(`header` slot)<strong>仍然存在</strong>。GitHub / Slack / Gmail 全部同時保有兩層,
           不是二選一。
         </p>
-      </section>
+      </TutorialRule>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">WorkspaceBrand 跟著 mode 走(只能出現一次)</h2>
+      <TutorialRule title="WorkspaceBrand 跟著 mode 走(只能出現一次)">
         {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-1">
           <li>• <strong>primary-sidebar</strong>:WorkspaceBrand 放 Sidebar 頂部(`&lt;SidebarHeader&gt;` 內)— Linear / Notion / Figma file panel</li>
           <li>• <strong>primary-header</strong>:WorkspaceBrand 改放 globalHeader 左側(搭配 SidebarTrigger),SidebarHeader 留空 — GitHub / Gmail / Figma file editor</li>
           <li>❌ 禁:`primary-header` mode 同時在 globalHeader + SidebarHeader 各放一份 = 視覺冗餘 + 跨產品識別混淆(WorkspaceBrand 視覺 SSOT,只能出現一次)</li>
         </ul>
-      </section>
+      </TutorialRule>
 
-      <section>
-        <h2 className="text-h4 mb-[var(--layout-space-tight)]">帳號入口(個人設定)跟著 mode 走(只能出現一次)</h2>
+      <TutorialRule title="帳號入口(個人設定)跟著 mode 走(只能出現一次)">
         {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-1">
           <li>• <strong>primary-sidebar</strong>:帳號 / 個人設定放 Sidebar 底部(`&lt;SidebarFooter&gt;`)— Linear / Notion / Figma</li>
@@ -140,7 +135,7 @@ export const LayoutModeRule: Story = {
           <li>• 帳號 avatar = 24px,跟左側品牌 avatar 同尺寸(沿用標準標頭的頭像尺寸規範);右側邊距與品牌距分割線對稱</li>
           <li>❌ 禁:`primary-header` mode 同時在 globalHeader + sidebar footer 各放一份 = 入口混淆(帳號入口視覺 SSOT,只能出現一次)</li>
         </ul>
-      </section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

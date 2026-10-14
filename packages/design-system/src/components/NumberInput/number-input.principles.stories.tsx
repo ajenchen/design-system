@@ -8,7 +8,7 @@ import { NumberInput } from './number-input'
 import { Input } from '@/design-system/components/Input/input'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/NumberInput/設計原則',
@@ -17,40 +17,20 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
-    {children}
-  </section>
-)
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <div className="max-w-prose mb-[var(--layout-space-loose)]">
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <div className="max-w-prose">
           <p>適合 NumberInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
@@ -61,19 +41,19 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代方案">
-        <Rule
+      <TutorialSection title="何時不用 + 替代方案">
+        <TutorialRule
           title="❌ 不用 NumberInput 做 DataTable 列表展示"
           note="Table cell 用 `mode='view'` 渲染,不用 edit 模式輸入元件。DataTable 的 currency 欄位自動消費 `<NumberInput mode='view'>`"
         >
           <Label warn>Table cell 顯示值 → `mode='view'` 渲染,不用 edit Input</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="❌ 不用 NumberInput 做電話號碼或郵遞區號 → Input"
           note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。改用 Input + type='tel' / pattern(Stripe 的電話欄用 Input)。用 NumberInput 會錯誤套用千分位、吃掉前導零,且誤導 mobile 彈出數字鍵盤"
         >
@@ -81,33 +61,33 @@ export const UsageGuidance: Story = {
           <Label warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</Label>
           <Input defaultValue="0912-345-678" aria-label="電話號碼" />
           <Label>↑ 電話用 Input(可自訂 type=tel 或 pattern),保留 dash / 前導零</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不用 NumberInput 做音量 / 亮度滑動調整 → Slider"
           note="視覺調整用 Slider。NumberInput 是「輸入精確值」的 form field。Material 音量控制用 Slider"
         >
           <Label warn>音量 / 亮度 → Slider,使用者目標是「感受」而非「輸入精確值」</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ 數值資料一律 NumberInput,不用 Input type=number"
           note="NumberInput 提供:千分位格式化、locale 切換、prefix/suffix、precision、edit 左 / table 右 對齊、DataTable 自動整合。原生 input type=number 這些都沒有"
         >
           <NumberInput mode="readonly" value={1234567} prefix="$" aria-label="美元價格" />
           <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} aria-label="百分比" />
           <NumberInput mode="readonly" value={12500} aria-label="數量" />
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不用 Input 顯示數字"
           note="即使值看起來「就是數字字串」,缺少格式化會讓大數字不可讀(1234567 vs 1,234,567)。Edit 與 Display 分離是 Field 設計的基本前提——用 NumberInput 兩者都得到"
         >
           <Input defaultValue="1234567" aria-label="數值（Input 誤用）" />
           <Label warn>↑ 1234567 難讀、無貨幣前綴、無 locale、無右對齊</Label>
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
@@ -129,15 +109,15 @@ export const AlignmentRule: Story = {
       col.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 100 } }),
     ]
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="Edit 模式 — 靠左(input 打字由左往右)"
           note="使用者打字是由左到右的連續動作,數字從左邊出現最自然。Edit 模式不需要比較位數"
         >
           <NumberInput value={value} onChange={setValue} prefix="$" aria-label="價格" />
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="Table cell — 靠右(縱向比較位數)"
           note="表格中同欄的數字需要對齊小數點/個位數,右對齊讓使用者一眼比較大小。由 DataTable 的 column meta type=number / currency 自動套用,不需要手動設對齊"
         >
@@ -145,9 +125,9 @@ export const AlignmentRule: Story = {
             <DataTable columns={columns} data={data} height="auto" />
           </div>
           <Label>↑ price 和 stock 欄自動右對齊,小數點縱向對齊</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要手動改動對齊方向"
           note="edit 左、table 右是跨產業的共識(Excel、會計軟體、財務系統都是)。手動反向會讓使用者的掃視習慣被打破"
         >
@@ -159,8 +139,8 @@ export const AlignmentRule: Story = {
             className="text-right"
           />
           <Label warn>↑ Edit input 強制右對齊 → 打字時游標位置感變怪</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -168,39 +148,39 @@ export const AlignmentRule: Story = {
 export const FormatOptionsRule: Story = {
   name: '格式化選項使用',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="prefix — 置於數字前的符號(貨幣是最常見場景)"
         note="prefix 出現在 readonly / view / disabled 與 DataTable cell 的格式化值;edit 模式輸入 raw 純數字、不渲染 prefix——使用者不需要自己輸入 $"
       >
         <NumberInput mode="readonly" value={2490} prefix="$" aria-label="美元價格" />
         <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} aria-label="新台幣價格" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="suffix — 置於數字後的單位(百分比、度量)"
         note="suffix 標示「這個數字代表什麼」。%、°C、kg、ms 都是適合 suffix 的單位"
       >
         <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} aria-label="完成百分比" />
         <NumberInput mode="readonly" value={36.5} suffix="°C" precision={1} aria-label="溫度" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="precision — 固定小數位數"
         note="需要一致位數時才設——金融、科學、測量。整數欄位不需要 precision(預設就是不補零)"
       >
         <NumberInput mode="readonly" value={85} suffix="%" precision={2} aria-label="精確百分比" />
         <Label>↑ 85 → 85.00%(科學報告、金融報表場景)</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不要手動拼接格式化字串"
         note="手動用 toLocaleString() 或字串模板格式化會導致 edit / readonly / table cell 不一致——三個地方都要各自寫一遍格式化邏輯,且 locale 切換時全部要改"
       >
         <Input defaultValue="$2,490.00" aria-label="手動格式化價格（不建議）" />
         <Label warn>↑ 用 Input + 手動格式化字串 → 使用者打字時要 parse「$2,490.00」→ 脆且不 locale-aware</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 

@@ -5,7 +5,7 @@ import { Trash2, Archive } from 'lucide-react'
 import { BulkActionBar } from './bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/BulkActionBar/設計原則',
@@ -14,31 +14,17 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
-    <div>{children}</div>
-  </section>
-)
-
-const Rule = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label}>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-secondary'}`}>{children}</p>
 )
 
+const TutorialRule = createTutorialRule({ caption: Label, noteTone: 'secondary' })
+
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
+    <TutorialPage>
+      <TutorialSection title="何時用">
         <div className="max-w-prose">
           <p>BulkActionBar 是「選取狀態驅動」的批次操作列,跟 selection state 生命週期綁定。真實業務場景:</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
@@ -48,33 +34,33 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定:對照 spec.md「何時用 / 何時不用」段。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代">
-        <Rule
+      <TutorialSection title="何時不用 + 替代">
+        <TutorialRule
           title="❌ 對單一 item 操作不用 BulkActionBar"
           note="單項 inline action(編輯 / 刪除某一筆)應在 row 內 inline action region(item-anatomy)。BulkActionBar 是『multi 狀態浮現』語意,單項 action 升 toolbar 是過度反應"
         >
           <Label warn>單項操作 → row 內 InlineAction(MoreVertical / Edit / Delete icon button)</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ Page-level Submit / Save 不放 BulkActionBar"
           note="Page-level CTA 跟 selection 無關(沒選任何 row 也要 Submit)。耦合 BulkActionBar 生命週期會導致 selection 清空時 Submit 跟著消失,使用者卡關"
         >
           <Label warn>頁面主要按鈕放在頁尾或頁首,不與 BulkActionBar 耦合</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 永遠顯示的 toolbar(filter / sort / search)不用 BulkActionBar"
           note="filter / sort / search 不依賴 selection,沒選也要顯示。用 action-bar pattern 組 toolbar 即可"
         >
           <Label warn>常駐 toolbar → patterns/action-bar(Toolbar 變體)</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="BulkActionBar — selection-driven,length=0 自動藏"
           note="只在多選狀態浮現,清除選取就消失。生命週期跟 selection state 綁定。對齊 Linear / Notion / Polaris IndexTable / Material DataGrid"
         >
@@ -89,37 +75,37 @@ export const UsageGuidance: Story = {
             onClearSelection={() => {}}
           />
           <Label>↑ selection {`>`} 0 浮現,= 0 完全藏</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="Action Bar / Toolbar pattern — 永遠顯示,不依賴 selection"
           note="filter / sort / search / 新增按鈕等 page-level operations。詳見 patterns/action-bar/action-bar.spec.md"
         >
           <Label>常駐工具列,不隨 selection 變化</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="Notice / Toast — 系統訊息,不是批次操作"
           note="通知使用者某事發生(操作成功 / 失敗 / 系統公告)。可帶 1-2 個 action,但語意是『回應系統訊息』非『對選取項做事』"
         >
           <Label>系統訊息走 Notice / Toast,單純 ack 而非 batch operate</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="判斷法">
+      <TutorialSection title="判斷法">
         <p className="text-body text-fg-secondary max-w-prose">
           「沒選取就消失嗎?」是 → BulkActionBar;否 → Action Bar pattern / Toolbar / Notice。
         </p>
-      </Section>
-    </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
 export const VsToastRule: Story = {
   name: 'BulkActionBar vs Toast — 角色區分',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ BulkActionBar = 選取狀態下的批次操作;Toast = 事件後的短暫回饋"
         note="兩者都浮在底部,但語意完全不同。BulkActionBar 隨 selection state 決定顯示(state-driven),容納多 action,使用者主動操作;Toast 是事件後 transient 通知(event-driven),自動消失,僅 1-2 action(undo / dismiss)。對齊 Polaris BulkActions vs Toast / Material BulkActionsBar vs Snackbar 共識。"
       >
@@ -133,8 +119,8 @@ export const VsToastRule: Story = {
             </>
           }
         />
-      </Rule>
-      <Rule
+      </TutorialRule>
+      <TutorialRule
         title="❌ 不要用 BulkActionBar 顯示「3 個項目已封存,Undo」這類事件後通知"
         note="BulkActionBar 由目前 selection state 驅動;封存完成後 selection 已結束,再保留操作列會把『接下來能做什麼』與『剛才發生什麼』混在一起。事件後復原應交給短暫的 Toast。"
       >
@@ -143,16 +129,16 @@ export const VsToastRule: Story = {
           事件後通知 → 用 Toast(sonner Toaster)。
           BulkActionBar 是「選了 N 項要做什麼」的選取後 toolbar,不是「我做完了」的回饋。
         </p>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const ActionVariantRule: Story = {
   name: '動作 變體 規則（不用 主要）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ 批次 action 一律用 tertiary,包含 destructive"
         note="批次操作是『開啟下一步確認的入口』,不是最終不可逆動作;因此刪除也維持 tertiary,由 Trash icon + 動作文字辨識語意。primary 與 danger 紅色都留給確認視窗裡的最終按鈕。"
       >
@@ -167,9 +153,9 @@ export const ActionVariantRule: Story = {
           onClearSelection={() => {}}
         />
         <Label>↑ 一律 tertiary;破壞性由 Trash icon +「刪除」文字辨識</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 批次 action 用 primary"
         note="primary 視覺權重最高,留給 dialog 內最終確認。批次 toolbar 用 primary 會跟 page-level Submit 視覺衝突,user 認知混淆"
       >
@@ -184,16 +170,16 @@ export const ActionVariantRule: Story = {
           onClearSelection={() => {}}
         />
         <Label warn>↑ 兩顆都 primary → 視覺重量過高,跟 page Submit 競爭</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const HintBannerRule: Story = {
   name: '提示 橫幅 — 用 Alert 不自刻',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ 擴 dataset 提示用 Alert(variant=info, placement=fixed)+ ReactNode title 帶 inline link"
         note="不在 BulkActionBar 內部 hardcode hint banner。Alert 既有 placement=fixed 已支援(rounded-none border-none),title 接 ReactNode 後可塞 inline button 自然 inline 連結。banner 黏在 BulkActionBar 上方 / 下方,共浮起"
       >
@@ -220,9 +206,9 @@ export const HintBannerRule: Story = {
           </div>
         </div>
         <Label>↑ Alert + BulkActionBar 兩 bar 黏一起,inline link 流暢呈現</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 自刻 hint banner / 用 contrast 底色 div"
         note="banner 是 Alert 的職責(自帶 a11y role / aria-live / 視覺一致性)。自刻會破壞跟其他 Alert 的視覺一致性,也漏 a11y"
       >
@@ -239,9 +225,9 @@ export const HintBannerRule: Story = {
           </div>
         </div>
         <Label warn>↑ 手刻 div 當 banner:無 role=&quot;status&quot; / aria-live,SR 不會朗讀狀態變化;底色跟其他 Alert 不一致;「點此選取」是純文字非可操作連結</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="✅ Filter hidden 進主 bar count 區 inline,不開 hint banner"
         note="hint banner 唯一語意是「dataset 擴充入口」。filter hidden 是 minor status,inline 進 count 區即可,不該佔 banner 區域"
       >
@@ -252,7 +238,7 @@ export const HintBannerRule: Story = {
           onClearSelection={() => {}}
         />
         <Label>↑ count 文字 inline:「已選 3 項 · 2 個被 filter 隱藏」</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

@@ -6,7 +6,7 @@ import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/FileItem/設計原則',
@@ -15,21 +15,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-lg">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-lg' })
 
 // ── WhenToUse — 何時使用 FileItem ──────────────────────
 
@@ -39,7 +29,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
       <div className="max-w-prose">
       <p>適合 FileItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
@@ -65,44 +55,44 @@ export const UsageGuidance: Story = {
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="❌ 不用 FileItem 做純連結展示（已上傳檔案）"
         note="FileItem 承載上傳狀態、進度、錯誤。靜態檔名列表改用 LinkInput 或純 <a> 連結。Google Drive 的「最近開啟」是檔案卡片，不用 FileItem"
       >
         <Label warn>靜態檔名 → LinkInput / &lt;a&gt;，FileItem 只用上傳流程</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 FileItem 做下載進度"
         note="FileItem 專為上傳設計。下載進度改用自訂 progress component 或瀏覽器原生下載 UI。Figma 的資源下載不用 FileItem"
       >
         <Label warn>下載進度 → 自訂或瀏覽器原生，FileItem 只管上傳</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 FileItem 做相片 / 影片 gallery"
         note="Gallery 需要 grid 佈局、大圖縮圖。FileItem 是清單單行。改用 grid / Carousel。Instagram 的相簿是 grid，不是 FileItem"
       >
         <Label warn>Gallery → grid / Carousel，FileItem 是上傳清單</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 FileItem 表達資料夾階層"
         note="FileItem 是平面列表。資料夾樹改用 TreeView。OneDrive 的資料夾結構用 TreeView，檔案列表用 FileItem"
       >
         <Label warn>資料夾樹 → TreeView，FileItem 是平面清單</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const ModeRule: Story = {
   name: '模式 選擇（緊湊 vs 豐富）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="先問：使用者靠縮圖辨識，還是靠檔名快速掃視？"
         note="mode 是資訊策略，不是大小 variant。只在縮圖會改變判斷時選 rich；其餘批次上傳與附件清單預設 compact，讀者才能用一致節奏掃視。"
       >
@@ -117,23 +107,23 @@ export const ModeRule: Story = {
           </div>
         </div>
         <Label>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="同一清單不混用 rich 與 compact"
         note="兩種 mode 有不同列高與視覺錨點；混用會打斷掃視節奏，也讓使用者誤以為資料狀態不同。上傳中與已儲存附件可以共存，但應在同一 mode 內用 status 區分。"
       >
         <Label>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const StatusProgressRule: Story = {
   name: '上傳狀態與進度視覺',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="uploading — progress bar info 色 + 百分比 description"
         note="上傳中清楚展示進度,讓使用者知道「多久能好」而不是只看到一個等待狀態"
       >
@@ -144,9 +134,9 @@ export const StatusProgressRule: Story = {
           progress={42}
           mode="rich"
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="completed — 成功 icon + 100% 完成條"
         note="完成後保留 100% 綠色完成條(surface=upload-manager narrative —— 上傳狀態是重點,Dropbox / Google Drive 慣例),成功 icon 再加一層明確表達「完成」。檔案變可點擊(下載)"
       >
@@ -163,9 +153,9 @@ export const StatusProgressRule: Story = {
             />
           </SurfaceBody>
         </div>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="error — 錯誤 icon + error 訊息 description + 可重試"
         note="失敗必須清楚告知原因——不只顯示「失敗」,要有具體錯誤訊息讓使用者知道怎麼修。compact 模式下 error 會強制顯示 description"
       >
@@ -176,9 +166,9 @@ export const StatusProgressRule: Story = {
           mode="rich"
           actions={<Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" />}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="無 status — 已上傳的靜態檔案"
         note="上傳已完成且已保存,不需要進度 / 狀態標示。可傳 onClick 讓整個 item 變可點擊下載"
       >
@@ -189,16 +179,16 @@ export const StatusProgressRule: Story = {
           onClick={() => {}}
           actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />}
         />
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const ActionsRule: Story = {
   name: '動作 使用',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Uploading 時：Cancel action"
         note="上傳進行中使用者應該可以取消。用 X icon 表達「取消上傳」"
       >
@@ -210,9 +200,9 @@ export const ActionsRule: Story = {
           mode="rich"
           actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Error 時：Retry + Remove"
         note="失敗時使用者需要兩個選項——重試(可能只是暫時網路問題)或移除(放棄這個檔案)"
       >
@@ -229,9 +219,9 @@ export const ActionsRule: Story = {
             </>
           }
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Completed 時：Download / View"
         note="完成後使用者可以下載或查看。action 不必是 dismiss,重點在後續可能的動作"
       >
@@ -242,14 +232,14 @@ export const ActionsRule: Story = {
           mode="rich"
           actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 重要 action 只靠 hover 才出現"
         note="「移除」「取消」這類影響資料的 action 必須 persistent visible,不能 hover 才顯示。觸控裝置無法 hover,會錯過關鍵動作"
       >
         <Label warn>hover-only actions 只適合純便利功能(如「複製連結」),關鍵動作永遠 visible</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

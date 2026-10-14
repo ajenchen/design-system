@@ -9,7 +9,7 @@ import { ProgressBar } from './progress-bar'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/ProgressBar/設計原則',
@@ -18,33 +18,13 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h5 font-semibold text-foreground mb-[var(--layout-space-tight)] pb-1 border-b border-divider">{title}</h2>
-    <div>{children}</div>
-  </section>
-)
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} naturalWidth>{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>
     {children}
   </p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, naturalWidth: true })
 
 // 情境展示容器——讓例子有真實產品感
 const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: number }) => (
@@ -58,8 +38,8 @@ const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: n
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
+    <TutorialPage>
+      <TutorialSection title="何時用">
         <div className="max-w-prose">
           <p>適合 ProgressBar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
@@ -75,10 +55,10 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代">
-        <Rule
+      <TutorialSection title="何時不用 + 替代">
+        <TutorialRule
           title="❌ 未知進度不要用 ProgressBar(永遠卡 0% 或亂跳)"
           note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
         >
@@ -90,9 +70,9 @@ export const UsageGuidance: Story = {
             </div>
           </Frame>
           <Label>✅ 未知時長用 CircularProgress(indeterminate),不假裝有進度</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ < 1 秒的短暫操作不要用 ProgressBar"
           note="ProgressBar fill 有 300ms transition,在極短操作反而閃爍不自然。< 1 秒的非同步通常不需要任何 loading 視覺(結果直接呈現即可)。"
         >
@@ -104,9 +84,9 @@ export const UsageGuidance: Story = {
             </div>
           </Frame>
           <Label>✅ 極短操作完成後直接顯示結果,不插入進度視覺</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要在多檔上傳列表上方再加「總進度」bar"
           note="每個檔案一條 ProgressBar 已足夠表達整體狀態(使用者自然從完成數量推算),再加一條總 bar 會造成視覺重複與同步邏輯漂移。Dropbox / Google Drive 都只顯示每檔 bar。"
         >
@@ -121,9 +101,9 @@ export const UsageGuidance: Story = {
             </div>
           </Frame>
           <Label>✅ 每檔一條(FileItem 內建),整體進度由使用者自然感知(1 檔完成、2 檔進行中)</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要硬寫色值繞過 status"
           note="status 三選一是系統決定的語意。consumer 要紅、綠、藍以外的色 → 提到系統層討論是否新增 status,不要每個消費者自己用 className override fill 色。"
         >
@@ -131,11 +111,11 @@ export const UsageGuidance: Story = {
             <ProgressBar value={55} status="inProgress" aria-label="標準進度色示範" />
           </Frame>
           <Label>✅ 走 status token(info / success / error),不 override 色值</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親 — ProgressBar vs CircularProgress vs FileItem">
-        <Rule
+      <TutorialSection title="vs 近親 — ProgressBar vs CircularProgress vs FileItem">
+        <TutorialRule
           title="能告訴使用者「剩下 X%」嗎?能 + 大區塊 → ProgressBar;不能或小空間 → CircularProgress"
           note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
         >
@@ -171,9 +151,9 @@ export const UsageGuidance: Story = {
             <ProgressBar value={0} status="inProgress" aria-label="無法量化的報表產生進度（誤用）" />
           </Frame>
           <Label warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="檔案上傳 UI → 用 FileItem,不直接組 ProgressBar + 檔名 + icon"
           note="FileItem 是檔案情境的 標準消費端 primitive(檔名 / icon / 進度 / status / actions 一條龍),內部自己會消費 ProgressBar。自組 raw ProgressBar + 檔名 + Paperclip + 狀態 icon 會讓 consumer 每次重覆發明一套檔案列表 layout,視覺/行為漂移無可避免。世界級對照:Ant Design Upload 內部用 Progress,consumer 不直接拼裝。"
         >
@@ -199,17 +179,17 @@ export const UsageGuidance: Story = {
             <p className="text-footnote text-fg-muted mt-[var(--layout-space-tight)]">處理中,預計剩餘 28 秒</p>
           </Frame>
           <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
 export const StatusRule: Story = {
   name: '狀態語意',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="inProgress = 進行中 / 未完成;success = 完成;error = 失敗"
         note="三種 status 是進度的完整生命週期:在途(inProgress,fill 用 --info)→ 終態二選一(success / error)。不要用 status 表達「警示」或「接近上限」等中間語意——那是 Notice / Alert 的職責。"
       >
@@ -243,9 +223,9 @@ export const StatusRule: Story = {
           <ProgressBar value={68} status="error" affix="status-icon" aria-label="影片素材上傳失敗" />
         </Frame>
         <Label>✅ 失敗用 error + 叉 icon,旁邊可補上具體錯誤說明</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不要為了「配額快滿」之類的警示自創 warning status"
         note="ProgressBar 語意是進度三態(進行中 / 完成 / 失敗)。配額超標屬業務規則,由 consumer 決定在多少 % 切換到 error,不要在 ProgressBar 加中間色。上方若要提示,用 Notice / Alert。"
       >
@@ -258,16 +238,16 @@ export const StatusRule: Story = {
           <ProgressBar value={95} status="error" aria-label="儲存空間使用率" />
         </Frame>
         <Label>✅ 配額快滿:consumer 判斷「95% 以上顯示警示」後自行把 status 切成 error</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const AffixRule: Story = {
   name: 'Affix 選擇',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="affix=value 適合需持續更新的場景,status-icon 適合終態(完成 / 失敗)"
         note="value 讓使用者讀到確切數字,適合配額、完成比例等需要精確資訊的情境。status-icon 只在完成或失敗時呈現,讓終態一眼可辨。"
       >
@@ -288,9 +268,9 @@ export const AffixRule: Story = {
           <ProgressBar value={100} status="success" affix="status-icon" aria-label="提案書上傳完成" />
         </Frame>
         <Label>✅ 上傳完成:affix=status-icon,終態不需要再看百分比</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="ReactNode affix — 上傳中提供取消,或顯示 bytes 進度"
         note="Enum 涵蓋不了的客製需求用 ReactNode。例如上傳中提供「取消」按鈕,或顯示 2.3 / 5.0 MB 等具體 bytes(Dropbox / Google Drive 做法)。"
       >
@@ -323,9 +303,9 @@ export const AffixRule: Story = {
           />
         </Frame>
         <Label>✅ 顯示實際 bytes 進度,讓使用者判斷速度</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="in-flight 若上下文已有進度資訊,可不傳 affix"
         note="FileItem compact mode 檔名那行已經提供足夠情境,bar 本身不需再重複百分比,此時不傳 affix(純 bar)。"
       >
@@ -339,7 +319,7 @@ export const AffixRule: Story = {
           <ProgressBar value={55} status="inProgress" aria-label="附件上傳進度" />
         </Frame>
         <Label>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

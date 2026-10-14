@@ -123,8 +123,9 @@ export const MultiStepTour: Story = {
             })}
           </ButtonGroup>
         </div>
-        {/* @layout-space-magic-ok: 「重設 Tour」按鈕 ↔ 同列的進度狀態文字 8px(控件 ↔ 它的行內狀態)(layoutSpace.spec.md:166 micro)—— 與待辦總帳 N64 待決的「送出鈕 ↔ 已送出 ✓」同一種關係,N64 拍板後一起改 */}
-        <div className="flex gap-2">
+        {/* 「重設 Tour」↔ 同列的進度文字 = tight:按鈕驅動這段文字顯示的步數(跨範疇 + 直接 functional 交互「value 驅動 display」,
+            layoutSpace.spec.md:76 / :81 規則 3);按鈕前面沒有要它收尾的內容,不是規則 4 的「內容 → action button」(:127) */}
+        <div className="flex gap-[var(--layout-space-tight)]">
           <Button variant="tertiary" size="sm" onClick={() => { setStep(0); setOpen(true) }}>重設 Tour</Button>
           <span className="text-footnote text-fg-muted self-center">
             目前第 {step + 1} / {tourSteps.length} 步{isLast ? '(最後步 — Next 變 Done)' : ''}

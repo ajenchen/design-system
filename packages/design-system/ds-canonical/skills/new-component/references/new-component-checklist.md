@@ -57,7 +57,7 @@
 
 - [ ] `{name}.stories.tsx` 展示 3-5 真實業務情境(禁 Option A/B/C / 抽象代號 / 極端不現實)
 - [ ] `{name}.anatomy.stories.tsx` 含 Overview + SizeMatrix + ColorMatrix(若有) + StateBehavior + Inspector(或 subset + rationale)
-- [ ] `{name}.principles.stories.tsx` 含 do/don't Rule stories,每則 title + note + 範例
+- [ ] `{name}.principles.stories.tsx` 含 do/don't Rule stories,每則 title + note + 範例(版面一律用 `src/stories-helpers/examples/tutorial-page.tsx`:`TutorialPage` / `TutorialSection` / `createTutorialRule`,不自抄 Rule / Section —— category-templates.md「教學框的間距與標題」;閘 `scripts/tutorial-page-invariant.mjs`)
 - [ ] 「人」test 過:遮標題 5 秒能懂情境
 - [ ] 「舉一反三」test 過:讀者推得出自己產品怎用
 - [ ] hook `check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)未觸發 block(無手刻 list item / label Button dismiss / 自刻 overlay)

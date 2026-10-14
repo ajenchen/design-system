@@ -13,7 +13,8 @@ import {
 } from './carousel'
 import { Button } from '@/design-system/components/Button/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
-import { CaptionedExamples, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Carousel/設計原則',
@@ -22,31 +23,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers(對齊 button.principles.stories.tsx)─────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} layout="wrap">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
-    {children}
-  </section>
-)
+const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
 
 const Gradient = ({ label, gradient, height = 160 }: { label: string; gradient: string; height?: number }) => (
   <div
@@ -85,9 +66,9 @@ const DotsSample = ({ label, dotsClassName }: { label: string; dotsClassName?: s
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <div className="max-w-prose mb-[var(--layout-space-loose)]">
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <div className="max-w-prose">
           <p>適合 Carousel 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
@@ -96,37 +77,37 @@ export const UsageGuidance: Story = {
           </ul>
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
-      </Section>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代方案">
-        <Rule
+      <TutorialSection title="何時不用 + 替代方案">
+        <TutorialRule
           title="❌ 不用 Carousel 做命名視圖切換"
           note="『訂單 / 顧客 / 產品』每塊結構完全不同,該用 Tabs——Carousel 把它們壓成順序性的同類視覺,使用者會困惑為什麼要按順序看。"
         >
           <Label warn>
             電商後台「訂單 / 顧客 / 產品」→ 應使用 Tabs;carousel 的順序性暗示錯誤
           </Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不用 Carousel 做資料表格"
           note="表格需要 columns / sorting / filtering / row selection——這些全是 DataTable 的 affordance,carousel 提供不了。把 rows 包進 CarouselItem 是結構性誤用。"
         >
           <Label warn>
             訂單列表應該用 DataTable,不能用 carousel 讓使用者「一次看一筆」
           </Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不預設啟用 auto-play"
           note="違反 WCAG 2.2.2 Pause, Stop, Hide——超過 5 秒自動變動的內容必須可暫停。使用者常需要時間閱讀 testimonial 文字、看清產品細節,自動跳過打斷閱讀。Polaris / Material 皆建議不使用 auto-playing carousel。"
         >
           <Label warn>
             若專案必須 auto-play,consumer 自行引入 embla-autoplay 並同時提供暫停按鈕,spec 不預設處理
           </Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ Active dot 不要只靠顏色區分"
           note="色弱使用者無法靠色相辨識。本 DS 的 active dot 加寬至 24px(4 倍 inactive 寬度),是 Ant Design / Swiper 的世界級慣例——寬度變化更容易被感知。"
         >
@@ -145,11 +126,11 @@ export const UsageGuidance: Story = {
               <Label warn>只靠顏色</Label>
             </div>
           </div>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="✅ Carousel — 同類視覺的多張輪播"
           note="每張 slide 是同類內容(同為旅遊推薦目的地圖),無需命名。使用者按順序推進或點 dot 跳張,視覺階層是 content 不是 navigation。"
         >
@@ -168,9 +149,9 @@ export const UsageGuidance: Story = {
             </Carousel>
             <Label>4 張同類大圖 · 無個別命名 · 底部 dots 指示進度</Label>
           </ExampleGroup>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ Tabs — 互斥切換命名視圖"
           note="每個 tab 有獨立名稱(總覽 / 成員 / 設定),內容結構不同,使用者依名稱直接跳。Tabs 是 section header 等級的 navigation anchor。"
         >
@@ -193,9 +174,9 @@ export const UsageGuidance: Story = {
             </Tabs>
             <Label>3 個獨立命名視圖 · 每個 tab 結構與內容不同</Label>
           </ExampleGroup>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ ScrollArea / 列表捲動 — 自由瀏覽多項"
           note="使用者想同時看到多個項目、在任意位置停下、掃視後挑選——那是列表的 affordance。用水平 ScrollArea / flex + overflow-x-auto 更符合使用者直覺。"
         >
@@ -212,26 +193,26 @@ export const UsageGuidance: Story = {
             ))}
           </div>
           <Label>聊天室的「常用食物標籤」應用自由捲動,不用 carousel 逼使用者一次看一張</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="判斷法"
           note="每個項目都有獨立標題且內容結構不同 → Tabs;每個項目是同類視覺的多張 → Carousel;一眼要看到所有項目 → 都不是,用 Grid。"
         >
           <Label>
             商品 4 張角度照 = Carousel(同類視覺)· 電商後台「訂單 / 顧客 / 產品」= Tabs(命名視圖)· 20 張商品列表 = Grid(總覽)
           </Label>
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
 export const ArrowHoverOnly: Story = {
   name: '箭頭僅滑鼠移過時顯示',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ 預設 hover-only,不干擾主視覺"
         note="Carousel 內容(大圖 / 產品照)是主視覺,常駐箭頭會搶走讀者的視線焦點。Airbnb / Instagram / Netflix 皆採 hover-only——讓圖片自己說話。"
       >
@@ -250,9 +231,9 @@ export const ArrowHoverOnly: Story = {
           </Carousel>
           <Label>hover 圖片區域才顯示箭頭 · 不 hover 時視覺乾淨</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="✅ 鍵盤 focus 時強制顯示(a11y 例外)"
         note="鍵盤使用者不 hover。若 focus-visible 時仍 opacity-0,將無法得知元素位置——違反焦點可見原則。arrow wrapper 用 focus-within:opacity-100——後代 arrow 取得 focus 即強制顯示(機制掛在 wrapper,非 button 的 :focus-visible)。"
       >
@@ -270,9 +251,9 @@ export const ArrowHoverOnly: Story = {
           </Carousel>
           <Label>用 Tab 鍵 focus 到 arrow 時,即使未 hover 也會顯示(試試:按 Tab)</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不要讓 arrow 永遠可見"
         note="常駐 arrow 會把讀者的視覺重量往兩側分流,main content(圖片本身)的衝擊力被削弱。除非 carousel 內容是輔助性的(e.g., carousel 內都是抽象縮圖需要箭頭引導),否則應保留 hover-only。"
       >
@@ -293,16 +274,16 @@ export const ArrowHoverOnly: Story = {
           </div>
           <Label warn>↑ 箭頭永遠可見 · 分散主視覺焦點 · 違反 hover-only 慣例</Label>
         </ExampleGroup>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const ItemCountLimit: Story = {
   name: '項目數量上限 ~7',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="✅ 3–5 張是 carousel 的甜蜜點"
         note="世界級 SaaS 的 hero carousel 幾乎都 ≤ 5 張(Airbnb 4–5 / Netflix 3 / Stripe 3)。使用者能記住位置,能快速推進,dots 仍能清楚辨識。"
       >
@@ -321,9 +302,9 @@ export const ItemCountLimit: Story = {
           </Carousel>
           <Label>4 張推薦目的地 · 使用者記得住 · dots 清晰</Label>
         </ExampleGroup>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不要把 carousel 當 gallery 用"
         note="超過 7 張,使用者『找不到特定項』——不記得想看的那張在第幾張,要按多次才到。dots 也變得過密難以點擊。應改用 Grid(一眼看全)或 thumbnail + preview pattern。"
       >
@@ -345,7 +326,7 @@ export const ItemCountLimit: Story = {
           </div>
           <Label>8 張商品總覽用 Grid · 一眼看全 · 可直接點任一項</Label>
         </ExampleGroup>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

@@ -4,7 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Folder, FileText, Image, Users, User } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
-import { CaptionedExamples } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/設計原則',
@@ -13,38 +13,20 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-[var(--layout-space-loose)]">
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[720px]">{note}</p>}
-    <CaptionedExamples caption={Label} className="max-w-md">{children}</CaptionedExamples>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-[var(--layout-space-loose)]">
-    {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
-    <h2 className="text-h3 font-bold text-foreground mb-[var(--layout-space-tight)] pb-2 border-b border-border">{title}</h2>
-    {children}
-  </section>
-)
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div>
-      <Section title="何時用">
-        <div className="max-w-prose mb-[var(--layout-space-loose)]">
+    <TutorialPage>
+      <TutorialSection title="何時用">
+        <div className="max-w-prose">
           <p>適合 TreeView 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
@@ -57,7 +39,7 @@ export const UsageGuidance: Story = {
           <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
 
-        <Rule
+        <TutorialRule
           title="TreeView 的 sweet spot — 階層資料 + 任意多層 + 展開收合"
           note="檔案資料夾、組織架構、專案 / 子專案 / 任務。每個 node 有 children 就可展開,沒有就是 leaf"
         >
@@ -76,11 +58,11 @@ export const UsageGuidance: Story = {
               </TreeItem>
             </TreeView>
           </div>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="何時不用 + 替代方案">
-        <Rule
+      <TutorialSection title="何時不用 + 替代方案">
+        <TutorialRule
           title='❌ 互斥展開(同時只開一個):用 Accordion type="single"'
           note='TreeView 預設允許任意多個節點同時展開。平面設定分段若需要「展開一個、其他自動收合」的互斥語意,用 Accordion type="single"(非 TreeView)'
         >
@@ -101,11 +83,11 @@ export const UsageGuidance: Story = {
             </TreeView>
           </div>
           <Label warn>↑ 三個設定分段在 TreeView 裡可同時展開;要「展開一個自動收其他」的互斥手風琴,用 Accordion type="single"</Label>
-        </Rule>
-      </Section>
+        </TutorialRule>
+      </TutorialSection>
 
-      <Section title="vs 近親元件">
-        <Rule
+      <TutorialSection title="vs 近親元件">
+        <TutorialRule
           title="❌ 平面資料(無階層):用 DataTable / list"
           note="TreeView 為階層而設計——若資料本質是平面(使用者清單、訂單清單),用 DataTable 更自然,TreeView 的遞迴結構徒增 overhead"
         >
@@ -119,16 +101,16 @@ export const UsageGuidance: Story = {
             </TreeView>
           </div>
           <Label warn>↑ 平面的使用者清單用 TreeView → TreeView 的 chevron / indent 都用不上,用 DataTable 或 list</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 純視覺分段(設計時可列舉的固定選單):用 SidebarGroup 不用 TreeView"
           note="Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 sidebar.spec.md「判斷規則」)"
         >
           <Label warn>固定分段用 SidebarGroup 就夠,不需要 TreeView 的遞迴 overhead;user data 樹則一律 TreeView</Label>
-        </Rule>
-      </Section>
-    </div>
+        </TutorialRule>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 
@@ -137,8 +119,8 @@ export const ExpandSelectSeparationRule: Story = {
   render: () => {
     const [selected, setSelected] = React.useState<Set<string>>(new Set(['resume']))
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="Chevron = 展開 / 收合;Label = 選取 / 執行"
           note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。世界級 tree 元件的共識(VS Code、macOS Finder、Linear)"
         >
@@ -154,15 +136,15 @@ export const ExpandSelectSeparationRule: Story = {
             </TreeView>
           </div>
           <Label>↑ 點 chevron 展開資料夾,點檔名選取該檔。兩個動作獨立</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 混淆 expand 和 select 語意"
           note="點 node 同時展開 + 選取,使用者會困惑:「我只想展開看看,不想選它」。分離讓使用者有更細的控制"
         >
           <Label warn>若強制合併,變成「想展開必須選」,破壞檔案瀏覽的自然 pattern(想看裡面但不選起來)</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -170,8 +152,8 @@ export const ExpandSelectSeparationRule: Story = {
 export const IndentRule: Story = {
   name: '縮排與欄位節奏',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Indent 必須用 gap-2(8px)和 chevronSize 對齊"
         note="indentStep = chevronSize + gap-2,跟 item-layout 的 prefix-content gap 一致。讓 indent 視覺跟 item-layout 融為一體,而非獨立數字系統"
       >
@@ -190,9 +172,9 @@ export const IndentRule: Story = {
           </TreeView>
         </div>
         <Label>↑ 三層縮排節奏一致——每層 indent 剛好是 chevron + gap-2</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Chevron placeholder 保留對齊"
         note="同層 siblings 有展開 icon、有的沒有 → label 不對齊。TreeView 自動給葉節點留 chevron 位置(透明 placeholder),consumer 不需介入"
       >
@@ -208,9 +190,9 @@ export const IndentRule: Story = {
           </TreeView>
         </div>
         <Label>↑ 「活動主視覺.png」是葉,「社群貼文」可展開——兩者 label 依然垂直對齊</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 混用有 icon / 無 icon 的節點"
         note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳(見 spec「Icon 一致性原則」)"
       >
@@ -227,7 +209,7 @@ export const IndentRule: Story = {
           </TreeView>
         </div>
         <Label warn>↑ 「README.md」「public」沒傳 icon → label 起點比有 icon 的節點前移,視覺節奏錯開</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

@@ -155,6 +155,10 @@ jobs:
           # packages/design-system/src/)。四條規則(另含 DS 沒有的字級 class)只准往下,新增一筆就紅並印 file:line;
           # 既有數字鎖在 scripts/story-layer-drift-baseline.json。CI 只跑判定 + selftest,永遠不跑 --write-baseline。
           npm run test:story-layer-drift
+          # 教學頁共用元件(2026-10-14,user 2026-10-07 拍板段落層級 ②;待辦總帳 P7):設計原則頁與 Patterns 教學框一律由
+          # stories-helpers/examples/tutorial-page.tsx 組成 —— 自抄 Rule / Section、手寫 <h2> / <section>、規則被別的容器包著、
+          # 「loose × 2」寫在別處、共用元件被改成借 --layout-space-bottom 都紅。對照組 = c6c192a1 的真檔 + 合成違規。純靜態,約 1 秒。
+          npm run test:tutorial-page
 
       - name: Registered test scripts nothing was running
         run: |
