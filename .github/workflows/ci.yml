@@ -530,6 +530,12 @@ jobs:
           # 「列上有小按鈕的一串」共用鍵盤判定(純函式;2026-09-26 側欄 / 檔案清單 / 樹 / Command 四份合一,待辦總帳〇節「按鍵規則合併」):
           # 判定表 + 落點 / 停靠點 / 執行器 + 四個呼叫端真的呼叫它;--selftest 以合併前三處不一致(X4 / X6 / X7)當對照組必須被抓到。
           npm run test:roving-list-keyboard
+          # AppShell 四區版面模型的判定表(純函式;2026-10-14 user 規格六節 + 第二則核准清單,待辦總帳 Q5):user 寫的每一個數字例子
+          # (1100 / 1600 / 2200 / 320 / 600 → 430 → 600)、寬度紀錄、細列、浮層、Esc、焦點、整段縮放序列與兩條窮舉性質,
+          # 加上兩個呼叫端(app-shell.tsx、單獨使用的 agent-panel.tsx)真的呼叫模型、不是平行實作;
+          # --selftest 把模型原始碼逐一改壞(Right 放不下改浮層、浮層不留 48、連帶關閉不算細列…25 個),每一個都必須讓指定的格紅。不進瀏覽器。
+          # 頁面真的照模型排由 scripts/app-shell-layout-invariant.mjs 驗(verify-browser-interaction)。
+          npm run test:app-shell-layout-model
           # DataTable I31 區間格 × 列滑過的判定表(純函式;待辦總帳 C12⑦ / K16):產品沒釘住 / 儀器看不到 / 真的釘住三種分得開,
           # 判定表的像素全部來自實測;I31 本身在 data-table-invariants.mjs(同一支 lib,量之前先跑這張表)。
           npm run test:data-table-range-hover
@@ -898,16 +904,16 @@ jobs:
           # TreeView 步驟導覽樹(2026-10-07 待辦總帳 T1–T5):真滑鼠 / 觸控 / 鍵盤量 A2(含捲動框裡捲到看得到)、D、連點保護(雙擊、三擊、觸控快點、
           # 兩下都回報第 1 下、隔得久的兩下;焦點與單擊相同)、灰底代顯與 Tab 停靠點、列尾結果與讀屏說明;--selftest 9 個改壞版注入真建置必紅。
           npm run test:tree-view-step-navigation
-          # Toast 一律以整個視窗為準、不避讓(user 2026-10-13 決定甲;toast.spec.md「落點」):沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 /
+          # Toast 一律以整個視窗為準、不避讓(user 2026-10-13 決定甲;toast.spec.md「落點」):沒有代理 / 代理並排 / 代理浮層 / 入口鈕在家 / 貼邊 / 頁面捲動 /
           # docs 頁,Toast 離包含塊右、下都 = sonner 預設邊距,清單的落點自訂屬性全是預設;靜態:只有 toast.tsx import sonner、<SonnerToaster> 不收落點參數
           # (className 只准層級 utility `!z-[60]`)、toast.tsx 不量任何元素、沒有檔改寫 sonner 清單落點、<Toaster> 用法最多帶 position。
           # --selftest:靜態對照組(a6976432 的舞台落點逐條寫回,外加 className 夾帶落點 / 改成運算式)各紅在指定那一條;頁面注入 a6976432 的舞台落點,並排 / 入口鈕在家 / 捲動 / docs 頁必紅、
-          # 沒有代理 / 蓋板 / 貼邊必維持綠。
+          # 沒有代理 / 代理浮層 / 貼邊必維持綠。
           npm run test:toast-viewport-placement
           # 全 DS 疊放順序(user 2026-10-13 採納「所有提示都蓋在 Toast 上面,並把 Toast 和提示補進 DS 的層級表」;tokens/elevation/elevation.spec.md「疊放順序」):
           # 靜態 —— DS 每一處 z 值(utility、zIndex 物件鍵 / 簡寫 / JSX 屬性、style.zIndex、setProperty、字串與樣板裡的 CSS、沒寫 zIndex 的 <DragOverlay>)
-          # 都登記在層級表、表不過期、全域列遞增、局部列的數字 ≤ 20、局部列的變數值只能是閘 D 量過的,且(表上的值)拖曳影像 > Tooltip > Toast > 並存遮罩 / 並存 modal / 代理蓋板 / 一般 modal;
-          # 真建置 —— 入口鈕的提示(鍵盤聚焦打開;Toast 依「落點」甲疊在入口鈕上)與 Dialog 裡「關閉」的提示蓋在 Toast 上,Toast 蓋在一般 Dialog 的遮罩與本體、代理蓋板上;
+          # 都登記在層級表、表不過期、全域列遞增、局部列的數字 ≤ 20、局部列的變數值只能是閘 D 量過的,且(表上的值)拖曳影像 > Tooltip > Toast > 並存遮罩 / 並存 modal / AI agent 浮層 / 一般 modal;
+          # 真建置 —— 入口鈕的提示(鍵盤聚焦打開;Toast 依「落點」甲疊在入口鈕上)與 Dialog 裡「關閉」的提示蓋在 Toast 上,Toast 蓋在一般 Dialog 的遮罩與本體、AI agent 浮層上;
           # D 每一顆用變數疊放的頭像 / Tag(Combobox 四模式、DataTable、AgentPanel 附件列、PeoplePicker 頭像堆疊)所在那一列都自成疊放脈絡;E 並存 modal 本體(Dialog、FileViewer)z-40。
           # --selftest:八種表 / 程式改壞 + 同一個未登記值換六種非 utility 寫法 + 未登記檔裡沒寫 zIndex 的 <DragOverlay>,各紅在指定檢查(另一條反向:引號裡的 '70' 不誤紅);
           # Toast 釘回 sonner 的 999999999 時 A / B 必紅、壓到 44 時 C1 / C2 必紅、拿掉列的 isolation 時 D1–D5 必紅、本體 z 互換時 E1–E3 必紅。每一步都等元素本身(上限 30 秒)、
@@ -1064,6 +1070,14 @@ jobs:
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants
+          # AppShell 四區版面真頁面(2026-10-14 user 規格;取代已 retired 的 agent-panel-breakpoint.mjs 的 960 / 容器 × 3/8):設計規格「狀態行為」在真實視窗寬度、
+          # 真按鍵 / 點擊 / 拖曳下,每一步的顯示方式、寬度、可拉上限、Main 寬、水平捲動、Menu 開關 aria-expanded 都等於 layout-model.ts 對同一串動作算的;
+          # user 的數字例子(1100 要求 Right 關 AI agent、縮到 1100 變浮層不關、1600 / 2200 上限與 Main、320 → 272、600 → 430 → 600、卡住時拖 / 只點一下)、
+          # Esc 依形態、焦點後備,加上舊閘保留的浮層遮罩 / 宿主不可操作 / 把手外側命中 / 層級 40 < 45 < 50;
+          # 2026-10-14 審查補 S14–S22(點 Menu 浮層外收回、滑鼠點進再 Esc 焦點回入口鈕、寬 0 Menu 不可聚焦、浮層上面的層可操作、
+          # 要求的 Right 捲到看得到、Menu 兩份共用狀態、從 AI agent 導向 Main)。
+          # --selftest:9 個改壞的模型 + 11 種頁面破壞各自必紅(本機合計約 2 分 20 秒,含非 selftest 那一趟)。
+          npm run test:app-shell-layout
           # 選單鍵盤(2026-09-25 待辦總帳 B10 / B11):子選單 Esc 一次只關一層、焦點回上一層那一項;選單開著按 Tab 收起全部、
           # 焦點落在「關著時從觸發鈕按 Tab 會到的那一格」;AI 浮鈕選單只有 Esc / 選了項目才把焦點還給浮鈕(點外面不搶)。
           # 先跑純判定表(量不到必須回 instrument),再真按鍵;--selftest 把 Radix 的舊行為造回來必紅。
@@ -1233,13 +1247,14 @@ jobs:
           npx --no-install playwright install chromium
           # 代理整頁示範(2026-09-09 合併原 modal-coexistence):S1–S9 —— DataTable 清單開有 URL 的 modal 與幾何、
           # header 垃圾桶 / footer 變體、四個 Field 存檔、新增、刪除確認框、背景位置模式、session 切換、
-          # 關 agent 遮罩仍在(根因錨)、蓋板態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal)、
+          # 關 agent 遮罩仍在(根因錨)、浮層態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal;浮層時關的是 agent 自己)、
           # S10 入口鈕貼邊再拖回家洞跟著回家、S11 遮罩在時右鍵入口鈕選單留著、S12 滑鼠點選單項對話框不關、S13 面板收起關歷史浮層(2026-09-10)。
           # selftest = 對照組:洞 = 外框 / 洞停在過渡途中 / 兩個洞 / 選單消失 / 對話框關 / 浮層留在 (0,8) 都必須判紅。
           node scripts/agent-url-registry-demo-invariant.mjs --selftest
           npm run test:agent-url-registry-demo
           # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
-          # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
+          # 四支整頁示範 × 五個寬度(AppShell 那支改取 1024 / 1280 / 1600:Main 有最小寬 600 之後窄視窗是整個殼捲,工具列停在 Main 最小寬),
+          # 列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
           npm run test:action-bar-toolbar
           # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
           # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。

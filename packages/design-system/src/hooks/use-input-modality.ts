@@ -18,7 +18,7 @@ import { isTextEntryElement } from "@/design-system/lib/roving-list-keyboard"
  *    Radix `onPointerMove → item.focus()`),鍵盤方向鍵再搶回來;兩種畫法(滑鼠 → 底色、鍵盤 → 框)永遠不同時出現。
  *    所以這裡**滑鼠移過項目要算**(那就是搶),但**滑鼠停著不算**(只有移動才會觸發 pointermove)——
  *    這一點與瀏覽器的 `:focus-visible` 啟發式相反(那個只看按下,不看移動)。項目在 `onPointerMoveCapture` 呼叫 `markPointerGrab`,
- *    keydown 統一在 document 記成鍵盤 ——
+ *    keydown 統一在 window 捕獲階段記成鍵盤 ——
  *    **但在文字輸入框裡打字不算搬游標**(2026-09-10 user:「滑鼠點擊輸入框然後輸入 a,再點 backspace,選單上會出現鍵盤焦點的藍色邊框」):
  *    字元 / Backspace / Delete / 空白 是在編輯文字,反白跳到第一個符合項是函式庫的自動落點(cmdk `search` 一變就
  *    `schedule(1, selectFirstItem)`),沒有人「搬」它;只有方向鍵 / Home / End / PageUp / PageDown / Tab / Esc 才算鍵盤搬游標。
@@ -35,7 +35,11 @@ import { isTextEntryElement } from "@/design-system/lib/roving-list-keyboard"
  * 同款在 DropdownMenu / AgentPanel 歷史清單各一份,TreeView 自帶一份 `isKeyboardRef` ——
  * 四份各自實作 = 四份 SSOT(M17),收攏到這裡(TreeView 那一份之後已隨改真焦點退役,見上)。
  *
- * 監聽掛在 document 的 capture 階段,**模組載入即安裝**(有 `document` 才裝,SSR 安全)。
+ * 監聽掛在 **window** 的 capture 階段,**模組載入即安裝**(有 `window` 才裝,SSR 安全)。
+ * 為什麼是 window 不是 document(2026-10-14 審查抓到):捕獲順序是 window → document → …,同一層照掛上的先後。
+ * DS 有自己掛在 window 捕獲階段、而且**當場**讀 `getLastUserInput()` 的監聽(`lib/overlay-escape.ts` `useEscapeRegion` 收 Esc → AI agent 浮層關閉 →
+ * `AgentPanelDock` 判斷這次是不是鍵盤關的、要不要把焦點還給入口鈕)。掛在 document 時,那一下 Esc 還沒被記下來就被讀了,讀到的是上一次輸入:
+ * 先用滑鼠點進面板再按 Esc,焦點掉到 body。模組載入一定早於任何元件的 effect,所以掛在 window 就**結構上**先於所有 DS 的 window 監聽(不是靠運氣)。
  * 第一版是「第一個消費者掛載時才安裝」——實測會漏:鍵盤開啟選單時,Tab / ArrowDown 都發生在
  * 選單項目掛載**之前**,沒被觀察到,項目掛上時模態還是初始值 pointer,已選項就沒框
  * (2026-09-08 閘的 C 路徑當場紅)。WICG polyfill 也是載入即裝。
@@ -91,7 +95,7 @@ export function dispatchRelayedKey(target: EventTarget, key: string): KeyboardEv
 // DS 代發的鍵(dispatchRelayedKey)同樣不算,理由同上。
 type LastUserInput = { readonly kind: InputModality | null; readonly target: EventTarget | null }
 let lastUserInput: LastUserInput = { kind: null, target: null }
-/** 最近一次使用者輸入(keydown / pointerdown,都在 document capture 階段記;還沒有任何輸入 → kind null)。 */
+/** 最近一次使用者輸入(keydown / pointerdown,都在 window capture 階段、模組載入即掛的監聽裡記 —— 早於任何 DS 監聽;還沒有任何輸入 → kind null)。 */
 export function getLastUserInput(): LastUserInput {
   return lastUserInput
 }
@@ -128,9 +132,10 @@ function onPointerMove(e: PointerEvent) {
 // 真正貴的是 pointermove(隨滑鼠持續開火),而它只餵 `lastPointerMoveWasReal` 給 markPointerGrab;
 // 呼叫 markPointerGrab 的 command.tsx / dropdown-menu.tsx 都在同一棵樹裡呼叫 useCursorMover,
 // 所以它惰性掛是安全的 —— 指標搶得到反白時必定早已有訂閱者。掛上後不再卸載。
-if (typeof document !== "undefined") {
-  document.addEventListener("keydown", onKeyDown, { capture: true })
-  document.addEventListener("pointerdown", onPointerDown, { capture: true })
+// 掛在 window(不是 document):理由見檔頭「監聽掛在 window 的 capture 階段」—— 必須早於元件 effect 掛上的 window 捕獲監聽。
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", onKeyDown, { capture: true })
+  window.addEventListener("pointerdown", onPointerDown, { capture: true })
 }
 let _movingHooked = false
 function ensureListening() {

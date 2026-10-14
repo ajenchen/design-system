@@ -284,7 +284,7 @@ const DialogContent = React.forwardRef<
       onCloseAutoFocus={handleCloseAutoFocus}
       {...guardOutside}
       className={cn(
-        // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
+        // 並存面(有 persistentElements)降到 z-40:AI agent 浮層時常駐區(AgentPanel 浮層 z-[45])要蓋在
         // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
         persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
                            : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",

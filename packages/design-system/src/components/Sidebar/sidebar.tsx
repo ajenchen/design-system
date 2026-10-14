@@ -7,7 +7,6 @@ import { cva, type VariantProps } from "class-variance-authority"
 import type { LucideIcon } from "lucide-react"
 import { ChevronDown, PanelLeft } from "lucide-react"
 
-import { useIsNarrowViewport } from "@/design-system/hooks/use-is-narrow-viewport"
 import { cn } from "@/lib/utils"
 import { disclosureIndicatorMotion } from "@/design-system/tokens/motion/disclosure-motion"
 import { Badge } from "@/design-system/components/Badge/badge"
@@ -26,6 +25,14 @@ import { Skeleton } from "@/design-system/components/Skeleton/skeleton"
 import { ChromeHeader } from "@/design-system/patterns/header-canonical/chrome-header"
 import { isImeComposing } from "@/design-system/lib/ime-composition"
 import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
+import { ResizeHandle } from "@/design-system/patterns/resize-handle/resize-handle"
+import {
+  useAppShellPanel,
+  useAppShellPanelOpen,
+  useAppShellRegistry,
+  type PanelDisplay,
+  type PanelWidthRange,
+} from "@/design-system/components/AppShell/app-shell-context"
 import {
   Tooltip,
   TooltipContent,
@@ -84,13 +91,16 @@ const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 type SidebarSize = RowSize
 
 type SidebarContextProps = {
+  /**
+   * **畫面**上的 Menu:展開的 Menu 佔版面 = `"expanded"`;收成細列 / 收掉 = `"collapsed"`。
+   * 在 AppShell 裡跟著版面走,不等於開關紀錄 —— 暫藏時 `open` 是 true、`state` 是 `"collapsed"`(sidebar.spec.md「放不下時」;
+   * 2026-10-14 前直接等於 `open`)。單獨使用(不在 AppShell 裡)時一律並排,兩者相同。
+   */
   state: "expanded" | "collapsed"
+  /** 開關紀錄(只有使用者改得動;U:9)。 */
   open: boolean
   setOpen: (open: boolean) => void
-  openMobile: boolean
-  setOpenMobile: (open: boolean | ((current: boolean) => boolean), opener?: HTMLElement) => void
-  mobileOpenerRef: React.MutableRefObject<HTMLElement | null>
-  isMobile: boolean
+  /** = 按 Menu 開關(⌘B 同一條)。在 AppShell 裡由版面決定結果(並排 → 關;暫藏 → 左側浮層;浮層 → 收回暫藏;關閉 → 開,放不下時直接出浮層)。 */
   toggleSidebar: (opener?: HTMLElement) => void
   // 全 sidebar 共用的 size(sm/md/lg)——透過 SidebarProvider 一次設定,
   // 下游所有 SidebarMenuButton / SidebarGroupLabel / SidebarMenuSkeleton 自動繼承。
@@ -104,6 +114,40 @@ type SidebarContextProps = {
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+
+/**
+ * Provider 與 `<Sidebar>` 之間的內部接線(不在 `useSidebar()` 的公開欄位裡)。`SidebarProvider` 通常包在 AppShell **外面**,讀不到 AppShell;
+ * 所以住在 AppShell 裡的 `<Sidebar>` 把「版面怎麼處理開關」與「此刻畫面上的 Menu」登記回 Provider —— ⌘B 與 SidebarTrigger 才會照版面規則走。
+ */
+interface SidebarLayoutHost {
+  toggle: () => void
+  display: PanelDisplay
+}
+interface SidebarInternals {
+  /** 住在 AppShell 裡的 Sidebar 登記的版面接口;單獨使用時 null(一律並排,D:30 清單 N14)。 */
+  setHost: (host: SidebarLayoutHost | null) => void
+  /** Menu 浮層的開啟者(開關鈕 / 快捷鍵按下時的焦點),浮層收起時把焦點還給它。 */
+  overlayOpenerRef: React.MutableRefObject<HTMLElement | null>
+  /** 開關鈕 `aria-controls` 指向的 Menu id。 */
+  menuId: string
+  /** 此刻畫面上的 Menu 顯示方式(開關鈕的 `aria-expanded` 跟著它;單獨使用時 = 開關紀錄)。 */
+  display: PanelDisplay
+  /**
+   * 可收合群組(`<SidebarGroup collapsible value>`)非受控時的展開狀態,以 `value` 為鍵、住在 Provider。
+   * Menu 浮層開著時同一份 Sidebar 內容畫兩份(版面上的細列 + 浮層,見下方 `SidebarSurfaceContext`),狀態若住在各自的元件裡,
+   * 浮層裡展開的群組回到並排時又是收起的(2026-10-14 審查抓到)—— 住在這裡,兩份讀同一個值。
+   */
+  groupOpen: Readonly<Record<string, boolean>>
+  setGroupOpen: (value: string, open: boolean) => void
+}
+const SidebarInternalsContext = React.createContext<SidebarInternals | null>(null)
+
+/**
+ * 這一份 Sidebar 內容此刻畫在哪裡:版面上(`flow`,展開或細列)或 Menu 浮層裡(`overlay`)。Menu 浮層開著時,同一份內容同時畫在
+ * 細列(被浮層蓋住)與浮層裡(Material modal wide navigation rail「Keep this rail even when expanded so that screen layout doesn't change」);
+ * 收合時的 Tooltip 只給版面上的細列(浮層裡是展開的),選單的 Tab 停靠點跟著這一份的狀態重算。
+ */
+const SidebarSurfaceContext = React.createContext<{ state: "expanded" | "collapsed"; surface: "flow" | "overlay" } | null>(null)
 
 function useSidebar() {
   const context = React.useContext(SidebarContext)
@@ -153,7 +197,7 @@ const SidebarProvider = React.forwardRef<
     uniformPrefix?: boolean
   }
 >(
-  // code-quality-allow: long-function — SidebarProvider 整合 dual-state(open + activeId)+ mobile sync + keyboard handler + context memo + style binding。拆 sub-fn 會打斷 React state binding chain + Context provider 順序語意(M21 prop variant test:拆分降低可讀性,單 fn 內 state lifecycle 一目了然)。當前 97 < cap 200。
+  // code-quality-allow: long-function — SidebarProvider 整合 dual-state(open + activeId)+ AppShell 版面接口 + keyboard handler + context memo + style binding。拆 sub-fn 會打斷 React state binding chain + Context provider 順序語意(M21 prop variant test:拆分降低可讀性,單 fn 內 state lifecycle 一目了然)。當前 97 < cap 200。
   (
     {
       defaultOpen = true,
@@ -180,18 +224,21 @@ const SidebarProvider = React.forwardRef<
       },
       [activeIdProp, onActiveChange]
     )
-    const isMobile = useIsNarrowViewport()
-    const [openMobile, setOpenMobileState] = React.useState(false)
-    const openMobileRef = React.useRef(false)
-    const mobileOpenerRef = React.useRef<HTMLElement | null>(null)
-    const setOpenMobile = React.useCallback((value: boolean | ((current: boolean) => boolean), opener?: HTMLElement) => {
-      const current = openMobileRef.current
-      const next = typeof value === "function" ? value(current) : value
-      if (next && !current && typeof document !== "undefined") {
-        mobileOpenerRef.current = opener ?? captureFocusOrigin()
-      }
-      openMobileRef.current = next
-      setOpenMobileState(next)
+    const menuId = React.useId()
+    // Menu 浮層的開啟者(SidebarTrigger 傳自己;快捷鍵路徑記此刻的焦點)—— 浮層收起時還給它(lib/overlay-focus-return.ts)
+    const overlayOpenerRef = React.useRef<HTMLElement | null>(null)
+    // 住在 AppShell 裡的 <Sidebar> 登記的版面接口(單獨使用時 null)
+    const hostRef = React.useRef<SidebarLayoutHost | null>(null)
+    const [hostDisplay, setHostDisplay] = React.useState<PanelDisplay | null>(null)
+    const setHost = React.useCallback((host: SidebarLayoutHost | null) => {
+      hostRef.current = host
+      setHostDisplay(host ? host.display : null)
+    }, [])
+
+    // 可收合群組的展開狀態(非受控時;以 group `value` 為鍵,浮層與版面上的兩份共用 —— 見 SidebarInternals.groupOpen)
+    const [groupOpen, setGroupOpenState] = React.useState<Record<string, boolean>>({})
+    const setGroupOpen = React.useCallback((value: string, next: boolean) => {
+      setGroupOpenState((prev) => (prev[value] === next ? prev : { ...prev, [value]: next }))
     }, [])
 
     const [_open, _setOpen] = React.useState(defaultOpen)
@@ -210,10 +257,15 @@ const SidebarProvider = React.forwardRef<
     )
 
     const toggleSidebar = React.useCallback((opener?: HTMLElement) => {
-      return isMobile
-        ? setOpenMobile((o) => !o, opener)
-        : setOpen((o) => !o)
-    }, [isMobile, setOpen, setOpenMobile])
+      const host = hostRef.current
+      // 單獨使用(不在 AppShell 裡):一律並排,開關就是開 / 關(D:30 清單 N14)
+      if (!host) return setOpen((o) => !o)
+      // 在 AppShell 裡:結果由版面決定(app-shell.spec.md「版面規則」§3);會叫出 Menu 浮層時先記開啟者
+      if (host.display !== "side-by-side" && host.display !== "overlay" && typeof document !== "undefined") {
+        overlayOpenerRef.current = opener ?? captureFocusOrigin()
+      }
+      host.toggle()
+    }, [setOpen])
 
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -244,24 +296,26 @@ const SidebarProvider = React.forwardRef<
       return () => window.removeEventListener("keydown", handleKeyDown)
     }, [toggleSidebar])
 
-    // code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ mobile + handler refs + useMemo context 集中一處;拆 sub-fn 會打斷 useMemo dep stability + Context provider 順序。當前 97 < cap 200。Script naive heuristic 把 `const state = ?` 三元當 fn 起點誤報。
-    const state = open ? "expanded" : "collapsed"
+    // code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ 版面接口 + handler refs + useMemo context 集中一處;拆 sub-fn 會打斷 useMemo dep stability + Context provider 順序。當前 < cap 200。Script naive heuristic 把 `const state = ?` 三元當 fn 起點誤報。
+    // 畫面上的 Menu:在 AppShell 裡跟版面(展開的 Menu 佔版面才是 expanded);單獨使用時 = 開關紀錄
+    const display: PanelDisplay = hostDisplay ?? (open ? "side-by-side" : "closed")
+    const state = display === "side-by-side" ? "expanded" : "collapsed"
 
     const contextValue = React.useMemo<SidebarContextProps>(
       () => ({
         state,
         open,
         setOpen,
-        isMobile,
-        openMobile,
-        setOpenMobile,
-        mobileOpenerRef,
         toggleSidebar,
         size,
         activeId,
         setActiveId,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, size, activeId, setActiveId]
+      [state, open, setOpen, toggleSidebar, size, activeId, setActiveId]
+    )
+    const internals = React.useMemo<SidebarInternals>(
+      () => ({ setHost, overlayOpenerRef, menuId, display, groupOpen, setGroupOpen }),
+      [setHost, menuId, display, groupOpen, setGroupOpen]
     )
 
     // 不在此處包 TooltipProvider——shadcn 原版預設 delayDuration=0,會覆蓋
@@ -295,6 +349,7 @@ const SidebarProvider = React.forwardRef<
 
     return (
       <SidebarContext.Provider value={contextValue}>
+       <SidebarInternalsContext.Provider value={internals}>
         <RowSizeProvider value={size}>
           <div
             style={wrapperStyle}
@@ -314,6 +369,7 @@ const SidebarProvider = React.forwardRef<
             {children}
           </div>
         </RowSizeProvider>
+       </SidebarInternalsContext.Provider>
       </SidebarContext.Provider>
     )
   }
@@ -322,41 +378,85 @@ SidebarProvider.displayName = "SidebarProvider"
 
 // ── Sidebar container ──────────────────────────────────────────────────────
 
-const Sidebar = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    side?: "left" | "right"
-    collapsible?: "offcanvas" | "icon" | "none"
-    /**
-     * Viewport top inset(2026-05-20 ship per AppShell `primary-header` unblock)。
-     * 預設 undefined = sidebar 從 viewport top 起算(`top:0 / h:svh`,當前 default)。
-     * 提供 CSS value(eg. `'var(--chrome-header-height)'` 或 `'48px'`)時,sidebar 改
-     * 從該值起算(`top: viewportInsetTop / height: calc(100svh - viewportInsetTop)`),
-     * 讓 global header 不被覆蓋(AppShell primary-header mode 必傳)。
-     * 對齊 Mantine `layout="default"` navbar 高度扣 header 慣例。
-     *
-     * ⚠️ 作用範圍:**僅桌機 `offcanvas` / `icon` 分支**套用 insetStyle。
-     * `collapsible="none"`(於 isMobile 前提前 return 固定 div)與 mobile Sheet
-     * 兩分支不套此 inset —— 該兩模式下 global header 仍會被覆蓋(未接線)。
-     */
-    viewportInsetTop?: string
-  }
->(
+/** 一次調整 Menu 寬度的鍵盤步距(與 AgentPanel / Right panel 同一個值;resize-handle 預設)。 */
+const SIDEBAR_RESIZE_KEY_STEP = 16
+
+// inert 傳法依 React 主版本(peer range >=18):React 18 要空字串才落到 DOM、React 19 要 boolean true。
+// 理由與 WM 實證同 `../Menu/menu-item.tsx` 的 `INERT_SPREAD`(兩個使用者,未到 Rule-of-3 抽 lib 的門檻)。
+const INERT_SPREAD = (Number.parseInt(React.version, 10) >= 19 ? { inert: true } : { inert: "" }) as object
+
+type SidebarProps = React.ComponentProps<"div"> & {
+  side?: "left" | "right"
+  /** `offcanvas` 收起整個不見 / `icon` 收成細列 / `none` 不可收(不能用在 AppShell 的 Menu,app-shell.spec.md「版面規則」§12)。 */
+  collapsible?: "offcanvas" | "icon" | "none"
+  /**
+   * Viewport top inset(2026-05-20 ship per AppShell `primary-header` unblock)。**只對不在 AppShell 裡的 Sidebar 有作用**:
+   * 預設 undefined = sidebar 黏在 viewport top、最高 `100svh`;給值(eg. `'var(--chrome-header-height)'`)時從該值起算、最高扣掉它,
+   * 讓頁面自己的 global header 不被蓋住。在 AppShell 裡 Menu 是版面列的一員,高度由版面列給(primary-header 時自然在 globalHeader 下方),
+   * 這個 prop 不再需要(傳了也不影響);Menu 浮層一律從視窗頂端起、蓋住 globalHeader(「版面規則」§9)。
+   */
+  viewportInsetTop?: string
+  /** 在 AppShell 裡:目前 Menu 的內容類型(同一類型共用寬度設定與紀錄,「版面規則」§1)。省略 = `'default'`。 */
+  contentType?: string
+  /**
+   * 在 AppShell 裡:這種內容類型的最小 / 初始 / 最大寬(px)。**Menu 的最大寬 DS 沒有既有值,產品必給**(「版面規則」§1);
+   * 沒給時開發階段警告,並用 `--sidebar-width-min` / `--sidebar-width` / 最大 = 初始(不能拖寬)。不在 AppShell 裡時不用(單獨使用不拖寬)。
+   */
+  widthRange?: PanelWidthRange
+  /** 在 AppShell 裡:產品自存的寬度紀錄(重新整理後還原;只在這種內容類型還沒有紀錄時使用)。 */
+  defaultWidth?: number
+  /** 在 AppShell 裡:一次調整寬度結束時的新紀錄(拖曳放開且有位移、鍵盤每按一下;只點一下不發)。 */
+  onWidthCommit?: (width: number) => void
+}
+
+const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
   (
     {
       side = "left",
       collapsible = "offcanvas",
       viewportInsetTop,
+      contentType = "default",
+      widthRange,
+      defaultWidth,
+      onWidthCommit,
       className,
       children,
       ...props
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile, mobileOpenerRef } = useSidebar()
-    const insetStyle: React.CSSProperties | undefined = viewportInsetTop
-      ? { top: viewportInsetTop, height: `calc(100svh - ${viewportInsetTop})` }
-      : undefined
+    const sidebar = useSidebar()
+    const internals = React.useContext(SidebarInternalsContext)
+    const registry = useAppShellRegistry()
+    const inShell = !!registry
+
+    // 開發階段警告(掛上或條件改變時一次,不是每次 render)
+    const missingRange = !widthRange
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === "production" || !inShell) return
+      if (collapsible === "none") {
+        console.warn('[Sidebar] AppShell 的 Menu 不能用 collapsible="none" —— AppShell 的面板皆可開關(app-shell.spec.md「版面規則」§12)。')
+      }
+      if (missingRange) {
+        console.warn("[Sidebar] AppShell 的 Menu 需要 widthRange(最小 / 初始 / 最大);Menu 的最大寬 DS 沒有既有值,產品必給(app-shell.spec.md「版面規則」§1)。")
+      }
+    }, [inShell, collapsible, missingRange])
+
+    // ── 在 AppShell 裡:登記寬度設定、開關、細列;拿回此刻的顯示方式與寬度 ──
+    const range = widthRange ?? registry?.menuDefaultRange
+    const panel = useAppShellPanel("menu", inShell && range ? { contentType, widthRange: range, defaultWidth } : null, { onWidthCommit })
+    useAppShellPanelOpen("menu", sidebar.open, sidebar.setOpen)
+    React.useLayoutEffect(() => registry?.registerMenuRail(collapsible === "icon"), [registry, collapsible])
+    const display = panel?.display
+    const setHost = internals?.setHost
+    React.useLayoutEffect(() => {
+      if (!setHost || !registry || !display) return
+      setHost({ toggle: registry.toggleMenu, display })
+    }, [setHost, registry, display])
+    React.useLayoutEffect(() => {
+      if (!setHost || !registry) return
+      return () => setHost(null)
+    }, [setHost, registry])
 
     if (collapsible === "none") {
       return (
@@ -373,93 +473,186 @@ const Sidebar = React.forwardRef<
       )
     }
 
-    if (isMobile) {
-      return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            // 關閉後焦點還給開啟抽屜的元素(SidebarTrigger 不是 Radix SheetTrigger → Radix 沒有東西可還);
-            // 還法全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + modal,指標關閉不畫鍵盤框、焦點已被接走不搶)
-            onCloseAutoFocus={(event) => {
-              const opener = mobileOpenerRef.current
-              mobileOpenerRef.current = null
-              returnFocusToOpener(event, opener, { noTrigger: true, modal: true })
-            }}
-            className="w-[var(--sidebar-width)] bg-surface p-0 text-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": "var(--sidebar-width-mobile)",
-              } as React.CSSProperties
-            }
-            side={side}
-          >
-            <SheetHeader className="sr-only">
-              <SheetTitle>Sidebar</SheetTitle>
-              <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-            </SheetHeader>
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
-        </Sheet>
-      )
-    }
+    // 畫面上的 Menu(版面上那一份):在 AppShell 裡跟版面,單獨使用時跟開關紀錄
+    const expanded = inShell ? display === "side-by-side" : sidebar.open
+    const flowState: "expanded" | "collapsed" = expanded ? "expanded" : "collapsed"
+    const resizable = inShell && expanded && panel?.width !== undefined && !!panel.range
+    // 版面上那一份的寬:AppShell 給的 px(展開)/ 細列 token(收成細列)/ 0(offcanvas 收掉);單獨使用時走下方 class(token)
+    const flowWidth: React.CSSProperties["width"] = inShell
+      ? expanded ? panel?.width : collapsible === "icon" ? "var(--sidebar-width-icon)" : 0
+      : undefined
+    // 內層永遠是展開寬(收成細列時由外層 overflow-x 裁出左側 `--sidebar-width-icon`,圖示中心不跳)
+    const innerWidth = inShell && expanded && panel?.width !== undefined ? `${panel.width}px` : "var(--sidebar-width)"
+    const insetStyle: React.CSSProperties | undefined = !inShell && viewportInsetTop
+      ? { top: viewportInsetTop, maxHeight: `calc(100svh - ${viewportInsetTop})` }
+      : undefined
+    const overlayOpen = inShell && display === "overlay"
+    const menuId = internals?.menuId
+    // 版面上那一份寬 0(offcanvas 收掉 —— 關閉、暫藏或浮層開著時被蓋住的那一份)→ 裡面的選單項看不到,不得留在 Tab 順序與無障礙樹裡
+    // (WCAG 2.4.3 / 2.4.7;2026-10-14 審查抓到:沒細列時 Menu 暫藏,Tab 第 2、3 站落在寬 0 的 Dashboard / 帳號與設定)。
+    // 細列(`icon`)收起時仍看得到圖示,照常可操作;寬度過渡中就先 inert(收起是使用者 / 版面已經決定的事)。
+    const flowHidden = collapsible === "offcanvas" && !expanded
 
     return (
-      <div
-        ref={ref}
-        className="group peer hidden shrink-0 text-foreground md:block"
-        data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
-        data-side={side}
-      >
-        {/* Gap div:佔據 sidebar 實際寬度,推開主內容 */}
+      <>
         <div
+          ref={ref}
+          // 2026-10-14 起在正常排版裡(不再 `position: fixed` + 佔位 div):殼要能水平捲(「版面規則」§8),fixed 的東西不會跟著捲(D:30 清單 #69)。
           className={cn(
-            "relative w-[var(--sidebar-width)] min-w-[var(--sidebar-width-min)] bg-transparent transition-[width,min-width] duration-200 ease-linear motion-reduce:duration-0",
-            "group-data-[collapsible=offcanvas]:!w-0 group-data-[collapsible=offcanvas]:!min-w-0",
-            "group-data-[side=right]:rotate-180",
-            "group-data-[collapsible=icon]:!w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:!min-w-0"
+            "group peer relative shrink-0 text-foreground",
+            // 單獨使用:寬度走 token(展開 `--sidebar-width`、細列 `--sidebar-width-icon`、offcanvas 0);在 AppShell 裡由 style 給
+            !inShell && [
+              "w-[var(--sidebar-width)]",
+              "group-data-[collapsible=offcanvas]:!w-0",
+              "group-data-[collapsible=icon]:!w-[var(--sidebar-width-icon)]",
+            ],
+            // 展開 ↔ 收合的寬度過渡;拖拉中關掉(畫面要跟得上指標)
+            panel?.resizing ? "transition-none" : "transition-[width] duration-200 ease-linear motion-reduce:duration-0"
           )}
-        />
-        <div
-          style={insetStyle}
-          className={cn(
-            // 2026-05-20 v3:`inset-y-0 h-svh` → 可被 viewportInsetTop prop override(per AppShell primary-header)
-            !viewportInsetTop && "inset-y-0 h-svh",
-            // 2026-05-21 v9 fix(per user 「右側分隔線跑去哪 + sidebar 寬度沒正確變化」):
-            // 補 `overflow-x-hidden` — C* refactor 主機制(outer narrows to sidebar-width-icon
-            // 時 clip inner 272px overflow,visual right border 顯示,主內容不被遮)。原 C*
-            // commit 漏加 className 只 comment 提及。
-            "overflow-x-hidden",
-            "fixed z-10 hidden w-[var(--sidebar-width)] min-w-[var(--sidebar-width-min)] transition-[left,right,width,min-width] duration-200 ease-linear motion-reduce:duration-0 md:flex",
-            "group-data-[collapsible=icon]:!min-w-0",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
-            "group-data-[side=left]:border-r group-data-[side=left]:border-divider",
-            "group-data-[side=right]:border-l group-data-[side=right]:border-divider",
-            className
-          )}
-          {...props}
+          style={flowWidth !== undefined ? { width: flowWidth } : undefined}
+          data-state={flowState}
+          data-collapsible={flowState === "collapsed" ? collapsible : ""}
+          data-side={side}
+          data-app-shell-panel={inShell ? "menu" : undefined}
+          id={overlayOpen ? undefined : menuId}
         >
-          {/* SidebarInner:永遠 full sidebar-width via inline style(Tailwind JIT 沒 compile
-              `min-w-[var(--sidebar-width)]` arbitrary class — 只 generated min-w-sidebar-width-min)。
-              Inline style 繞 JIT 確保 272px。Collapsed mode 只是 outer overflow-x:hidden clip 出
-              左側 sidebar-width-icon = visible icon rail。 */}
           <div
-            data-sidebar="sidebar"
-            style={{ width: 'var(--sidebar-width)', minWidth: 'var(--sidebar-width)' }}
-            className="flex h-full shrink-0 flex-col bg-surface"
+            style={insetStyle}
+            className={cn(
+              // 在 AppShell 裡:高度 = 版面列;單獨使用:撐滿所在的列、最高一個視窗高並黏在視窗內(頁面比視窗長時跟著捲到的位置;或扣 viewportInsetTop)
+              inShell ? "h-full" : cn("sticky h-full", !viewportInsetTop && "top-0 max-h-svh"),
+              // 外層收成細列 / 0 時裁掉內層的展開寬(2026-05-21 v9:主機制,顯示細列右緣分隔線、主內容不被遮)
+              "flex w-full overflow-x-hidden",
+              // 分隔線只有一個 owner:可拖時由右緣把手的 1px line 擁有(AgentPanel / Right panel 同款),其餘由容器畫
+              !resizable && "group-data-[side=left]:border-r group-data-[side=left]:border-divider",
+              !resizable && "group-data-[side=right]:border-l group-data-[side=right]:border-divider",
+              className
+            )}
+            {...props}
+            {...(flowHidden ? { ...INERT_SPREAD, "aria-hidden": true } : {})}
+          >
+            {/* SidebarInner:永遠是展開寬;收成細列時由外層 overflow-x 裁出左側細列寬(圖示中心在展開 / 收合一致)。 */}
+            <div
+              data-sidebar="sidebar"
+              style={{ width: innerWidth, minWidth: innerWidth }}
+              className="flex h-full shrink-0 flex-col bg-surface"
+            >
+              <SidebarSurfaceContext.Provider value={{ state: flowState, surface: "flow" }}>
+                {children}
+              </SidebarSurfaceContext.Provider>
+            </div>
+          </div>
+          {resizable && panel?.range && panel.width !== undefined && (
+            // Menu 右緣拖寬(user 2026-10-14 規格 U:4);範圍 = [最小, 可拉上限](「版面規則」§5)
+            <ResizeHandle
+              direction="horizontal"
+              position="end"
+              value={panel.width}
+              min={panel.range.min}
+              max={panel.range.max}
+              step={SIDEBAR_RESIZE_KEY_STEP}
+              ariaLabel="調整選單寬度" // i18n-allow: DS 預設文案
+              ariaControls={menuId}
+              onValueChange={panel.onResize}
+              onValueCommit={panel.onResizeCommit}
+              onDraggingChange={panel.onDraggingChange}
+            />
+          )}
+        </div>
+        {inShell && panel && (
+          <SidebarOverlay
+            open={overlayOpen}
+            panel={panel}
+            side={side}
+            menuId={menuId}
+            onDismiss={registry.dismissMenuOverlay}
+            openerRef={internals?.overlayOpenerRef}
           >
             {children}
-          </div>
-        </div>
-      </div>
+          </SidebarOverlay>
+        )}
+      </>
     )
   }
 )
 Sidebar.displayName = "Sidebar"
+
+/**
+ * Menu 左側浮層(「版面規則」§9;Sheet 承載,z-50)。從版面左緣開始、蓋住細列,寬度照紀錄(與並排共用)、可拖,右側至少留
+ * `--layout-space-viewport-inset`(範圍由 AppShell 給);點外面或 Esc = 收回暫藏、開關紀錄仍是開(D:26)。
+ * 從視窗頂端起:`primary-header` 時蓋住 globalHeader(consumer 在浮層頂排補品牌 / 帳號,app-shell.spec.md 兩條「浮層精修」)。
+ */
+function SidebarOverlay({
+  open,
+  panel,
+  side,
+  menuId,
+  onDismiss,
+  openerRef,
+  children,
+}: {
+  open: boolean
+  panel: NonNullable<ReturnType<typeof useAppShellPanel>>
+  side: "left" | "right"
+  menuId: string | undefined
+  onDismiss: () => void
+  openerRef: React.MutableRefObject<HTMLElement | null> | undefined
+  children: React.ReactNode
+}) {
+  // 收起動畫期間寬度還要在(此刻的 panel.width 已是 undefined)
+  const lastWidthRef = React.useRef<number | undefined>(undefined)
+  if (open && panel.width !== undefined) lastWidthRef.current = panel.width
+  const width = open ? panel.width : lastWidthRef.current
+  return (
+    <Sheet open={open} onOpenChange={(next) => { if (!next) onDismiss() }}>
+      <SheetContent
+        id={open ? menuId : undefined}
+        data-sidebar="sidebar"
+        data-app-shell-panel="menu"
+        data-menu-overlay=""
+        // 關閉後焦點還給開啟浮層的元素(SidebarTrigger 不是 Radix SheetTrigger → Radix 沒有東西可還);
+        // 還法全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + modal,指標關閉不畫鍵盤框、焦點已被接走不搶)
+        onCloseAutoFocus={(event) => {
+          const opener = openerRef?.current ?? null
+          if (openerRef) openerRef.current = null
+          returnFocusToOpener(event, opener, { noTrigger: true, modal: true })
+        }}
+        // overflow-visible:右緣把手 7px 命中區有 3px 在浮層外側,不得被裁(resize-handle.spec.md「命中區」);內容的裁切交給內層
+        // border-r-0:分隔線由把手的 1px line 擁有(並排同款)
+        // @focus-suppress E — E 浮層程式落點;承擔者:Sheet 殼,開啟時沒有 body 標記 → 程式聚焦落在殼上(sheet.tsx handleSheetOpenAutoFocus);殼本身不可操作,選單項各自畫框(FileViewer 殼前例)
+        className="max-w-none overflow-visible border-r-0 bg-surface p-0 text-foreground outline-none [&>button]:hidden"
+        style={width !== undefined ? { width } : undefined}
+        side={side}
+      >
+        <SheetHeader className="sr-only">
+          <SheetTitle>Sidebar</SheetTitle>
+          <SheetDescription>Displays the sidebar as an overlay.</SheetDescription>
+        </SheetHeader>
+        <div className="flex h-full w-full flex-col overflow-hidden">
+          <SidebarSurfaceContext.Provider value={{ state: "expanded", surface: "overlay" }}>
+            {children}
+          </SidebarSurfaceContext.Provider>
+        </div>
+        {open && panel.range && panel.width !== undefined && (
+          // 浮層也可以拖曳調寬(U:55);範圍 = 最小 ~ min(最大, 版面寬 − 48)(U:56-59);放不下最小寬時只剩一個值、拖不動
+          <ResizeHandle
+            direction="horizontal"
+            position="end"
+            value={panel.width}
+            min={panel.range.min}
+            max={panel.range.max}
+            step={SIDEBAR_RESIZE_KEY_STEP}
+            ariaLabel="調整選單寬度" // i18n-allow: DS 預設文案
+            ariaControls={menuId}
+            onValueChange={panel.onResize}
+            onValueCommit={panel.onResizeCommit}
+            onDraggingChange={panel.onDraggingChange}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
+  )
+}
 
 // ── Trigger / Rail / Input ─────────────────────────────────────────────────
 
@@ -470,7 +663,11 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, open } = useSidebar()
+  const internals = React.useContext(SidebarInternalsContext)
+  // aria-expanded 跟**畫面**:展開的 Menu 此刻看得到(並排 / 浮層)= true;暫藏、關閉 = false(app-shell.spec.md「版面規則」§10;
+  // W3C APG Disclosure「content visible → true / hidden → false」)。2026-10-14 前沒有 aria-expanded(D:30 清單 N15)。
+  const display = internals?.display ?? (open ? "side-by-side" : "closed")
 
   return (
     <Button
@@ -481,6 +678,8 @@ const SidebarTrigger = React.forwardRef<
       iconOnly
       startIcon={PanelLeft}
       aria-label="切換側邊欄" /* i18n-allow: DS default;consumer 經 {...props} override */
+      aria-expanded={display === "side-by-side" || display === "overlay"}
+      aria-controls={internals?.menuId}
       className={className}
       onClick={(event) => {
         const opener = event.currentTarget
@@ -671,19 +870,49 @@ function useSidebarGroup() {
  * content 變 animated container)。把 prop 放在 label 上會讓 content 不知道自己該不該被包,
  * 形成跨元件的 prop drilling。放在 group 上用 context 傳遞是 React 的標準做法。
  */
-const SidebarGroup = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    collapsible?: boolean
-    defaultOpen?: boolean
-    open?: boolean
-    onOpenChange?: (open: boolean) => void
-  }
->(({ className, collapsible = false, defaultOpen = true, open, onOpenChange, children, ...props }, ref) => {
+type SidebarGroupProps = React.ComponentProps<"div"> &
+  (
+    | {
+        collapsible?: false
+        value?: undefined
+        defaultOpen?: undefined
+        open?: undefined
+        onOpenChange?: undefined
+      }
+    | {
+        /** 群組可收合(label 尾端 chevron 收合 / 展開)。 */
+        collapsible: true
+        /**
+         * 群組的穩定識別(**必填**)。非受控的展開狀態以它為鍵存在 `SidebarProvider`:AppShell 的 Menu 浮層開著時,同一份 Sidebar 內容
+         * 畫在版面上與浮層裡兩份,兩份讀同一個值 —— 浮層裡展開的群組,收回、放寬回並排時仍是展開的(sidebar.spec.md「SidebarGroup 收合」)。
+         * 同 Radix Accordion.Item 的 `value`(必填)。
+         */
+        value: string
+        defaultOpen?: boolean
+        /** 受控的展開狀態(傳了就以它為準,`value` 仍必填)。 */
+        open?: boolean
+        onOpenChange?: (open: boolean) => void
+      }
+  )
+
+const SidebarGroup = React.forwardRef<HTMLDivElement, SidebarGroupProps>(({ className, collapsible = false, value, defaultOpen = true, open, onOpenChange, children, ...props }, ref) => {
   const contextValue = React.useMemo<SidebarGroupContextValue>(
     () => ({ collapsible }),
     [collapsible]
   )
+  // 非受控的展開狀態:有 Provider 就住在 Provider(以 value 為鍵,兩份共用);沒有(不在 SidebarProvider 裡)才退回自己記
+  const internals = React.useContext(SidebarInternalsContext)
+  const [localOpen, setLocalOpen] = React.useState(defaultOpen)
+  const shared = !!internals && value !== undefined
+  const uncontrolledOpen = shared ? (internals.groupOpen[value] ?? defaultOpen) : localOpen
+  const isOpen = open ?? uncontrolledOpen
+  const handleOpenChange = React.useCallback((next: boolean) => {
+    if (open === undefined) {
+      if (shared) internals.setGroupOpen(value as string, next)
+      else setLocalOpen(next)
+    }
+    onOpenChange?.(next)
+  }, [open, shared, internals, value, onOpenChange])
 
   // 非 collapsible 就是 plain div,舊行為完全不變
   const baseClass = cn(
@@ -708,9 +937,8 @@ const SidebarGroup = React.forwardRef<
       <CollapsiblePrimitive.Root
         ref={ref}
         data-sidebar="group"
-        defaultOpen={defaultOpen}
-        open={open}
-        onOpenChange={onOpenChange}
+        open={isOpen}
+        onOpenChange={handleOpenChange}
         className={baseClass}
         // 註:此 Collapsible.Root 本身**不**自帶 icon 模式隱藏 class(baseClass 無
         // `group-data-[collapsible=icon]:hidden`),icon 模式下預設仍渲染。若要在 icon rail
@@ -971,11 +1199,12 @@ const SidebarMenu = React.forwardRef<
 >(({ className, onKeyDownCapture, onFocus, ...props }, ref) => {
   const menuRef = React.useRef<HTMLUListElement | null>(null)
   const rememberedRef = React.useRef<HTMLElement | null>(null)
-  // 收合 / 展開、手機抽屜切換時重算一次(可見性在這些時刻改變,但本串自己的 DOM 沒變)。
+  // 這一份收合 / 展開時重算一次(可見性在這些時刻改變,但本串自己的 DOM 沒變);Menu 浮層裡那一份永遠是展開的。
   // 用 useContext 而非 useSidebar():SidebarMenu 單獨渲染(沒有 Provider)時不該丟例外。
   const sidebarContext = React.useContext(SidebarContext)
-  const sidebarState = sidebarContext?.state
-  const sidebarIsMobile = sidebarContext?.isMobile
+  const surface = React.useContext(SidebarSurfaceContext)
+  const sidebarState = surface?.state ?? sidebarContext?.state
+  const sidebarSurface = surface?.surface
 
   const setRefs = React.useCallback(
     (el: HTMLUListElement | null) => {
@@ -986,10 +1215,10 @@ const SidebarMenu = React.forwardRef<
     [ref]
   )
 
-  // 掛上時、以及收合 / 展開 / 手機切換後同步一次;本串 DOM 的其他變化交給下方 MutationObserver
+  // 掛上時、以及收合 / 展開後同步一次;本串 DOM 的其他變化交給下方 MutationObserver
   React.useLayoutEffect(() => {
     if (menuRef.current) syncSidebarMenuTabStops(menuRef.current, rememberedRef.current)
-  }, [sidebarState, sidebarIsMobile])
+  }, [sidebarState, sidebarSurface])
 
   // 列新增 / 移除、disabled 改變、子層自己重繪而本串沒重繪(例:當前頁換了 → 列鈕的 aria-current 變,
   // 但 SidebarMenu 不訂閱 activeId)
@@ -1274,7 +1503,9 @@ const SidebarMenuButton = React.forwardRef<
   ) => {
     const Comp = asChild ? Slot : "button"
     // 沒傳 size 就從 SidebarProvider context 繼承(預設 md)
-    const { isMobile, state, size: contextSize, activeId, setActiveId } = useSidebar()
+    const { state: providerState, size: contextSize, activeId, setActiveId } = useSidebar()
+    // 這一顆畫在哪一份裡(版面上的細列 / 展開,或 Menu 浮層裡);沒有 Sidebar 包著時退回 Provider 的畫面狀態
+    const surface = React.useContext(SidebarSurfaceContext) ?? { state: providerState, surface: "flow" as const }
     const size = sizeProp ?? contextSize
 
     // Meta variant 永不參與 single-selection,即使誤傳 id / isActive
@@ -1407,7 +1638,8 @@ const SidebarMenuButton = React.forwardRef<
             <TooltipContent
               side="right"
               align="center"
-              hidden={state !== "collapsed" || isMobile}
+              // 只有版面上的細列出提示(收起來只剩圖示);展開的 Menu 與 Menu 浮層裡都看得到字,不出
+              hidden={!(surface.surface === "flow" && surface.state === "collapsed")}
               {...tooltipProps}
             />
           </Tooltip>

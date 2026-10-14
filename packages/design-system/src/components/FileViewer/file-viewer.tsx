@@ -1052,8 +1052,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           className={cn(
             // Edge-to-edge fullscreen,無 inset / 無 radius(與一般 Dialog 差別的所在)
             // @focus-suppress E — E 浮層程式落點;承擔者:dialog 殼,開啟時程式聚焦;內部工具列/縮圖各自有指示
-            // 並存(有 persistentElements)降到並存 modal 的 z-40,與 Dialog 同一格(dialog.spec.md「並存」層級句):窄版時代理蓋板 z-[45]
-            // 要蓋在它上面;一般(modal)維持 z-50。2026-10-14 前並存時仍是 z-50,窄版會蓋住代理蓋板(層級表記為已知不一致,本次對齊)。
+            // 並存(有 persistentElements)降到並存 modal 的 z-40,與 Dialog 同一格(dialog.spec.md「並存」層級句):AI agent 浮層 z-[45]
+            // 要蓋在它上面;一般(modal)維持 z-50。2026-10-14 前並存時仍是 z-50,會蓋住 AI agent 浮層(層級表記為已知不一致,本次對齊)。
             // 層級表 tokens/elevation/elevation.spec.md「疊放順序」第 4 / 6 列;閘 scripts/layer-order-invariant.mjs E(真建置量 z)。
             persistentElements ? 'fixed inset-0 z-40 outline-none' : 'fixed inset-0 z-50 outline-none',
             surfaceMotion,

@@ -322,7 +322,7 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
   Firefox "Pressing Escape hides one level of menus only."(<https://github.com/mozilla-firefox/firefox/blob/0a5c5bffebd796cedba281419efd2f8f3cc7c85d/layout/xul/nsXULPopupManager.cpp#L2642-L2648>)。
   唯一例外 Radix(子選單 Esc 關整棵,<https://github.com/radix-ui/primitives/blob/f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae/packages/react/menu/src/menu.tsx#L1262-L1266>),`DropdownMenu` 已改寫。Mac 與舊式 Windows 程式找不到官方文字。
 - DS 內部早已這樣寫:`components/Dialog/dialog.spec.md`(確認框「Esc 只關最上層」)、`components/Sheet/sheet.spec.md`(「關閉由上而下逐層」)、
-  `components/AgentPanel/agent-panel.spec.md`(「只關焦點所在那一區裡最內層」);機制是 Radix DismissableLayer 只讓最上層處理 Esc。
+  `components/AgentPanel/agent-panel.spec.md`(「只關焦點所在那一區裡最內層」;2026-10-14 起**浮層形態的 AI agent 本身算一層** —— 裡面沒有更內層時 Esc 關閉它,並排形態不算、永不被 Esc 關,`components/AppShell/app-shell.spec.md`「版面規則」§10);機制是 Radix DismissableLayer 只讓最上層處理 Esc(AgentPanel 不進那個疊,走 `lib/overlay-escape.ts` `useEscapeRegion`)。
 
 ### 關了之後焦點去哪
 

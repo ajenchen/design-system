@@ -111,9 +111,9 @@
      對齊 docs:`components/Sidebar/sidebar.spec.md` L613-614 token table
      Why uiSize.css:layout primitive widths 是 ui sizing semantic 範疇(對齊 --field-height / --chrome-header)
      */
-  --sidebar-width: 15rem;          /* 240px expanded sidebar */
-  --sidebar-width-min: 240px;      /* 最小寬,同時是 AppShell Aside floor(ASIDE_WIDTH_MIN) */
-  --sidebar-width-mobile: 18rem;   /* 288px mobile sheet 抽屜 */
+  --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
+  --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(user 2026-05-21「aside應該也要一起參照」);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
+  /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(「版面規則」§7、§9) */
   --sidebar-menu-icon-size: 1rem;   /* 16px sm/md row(per ICON_SIZE.sm/md);size=lg 罕見 case 下方 override 1.25rem(20px) */
   --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
 

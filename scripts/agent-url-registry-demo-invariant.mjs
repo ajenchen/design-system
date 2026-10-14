@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Agent 整頁示範閘(story `AgentPanel/展示/UrlRegistryDemo`)—— 2026-09-09 重寫(舞台改 AppShell 主內容 + 蓋板收成入口鈕)
+ * Agent 整頁示範閘(story `AgentPanel/展示/UrlRegistryDemo`)—— 2026-09-09 重寫(舞台改 AppShell 主內容 + 浮層收成入口鈕)
  *
  * v14 條 A/B:內容只要有自己的 URL 就能跟 agent 並存;沒有 URL 的(確認框)是純 modal,agent 被擋。
- * 本閘把示範真的走一遍,兩個並排寬度(1440 / 1180)+ 一個蓋板寬度(900,容器 866 < 960;2026-09-09 斷點 1080 → 960):
+ * 本閘把示範真的走一遍,兩個並排寬度(1440 / 1180)+ 一個浮層寬度(900,容器 866:舞台最小 600 + 面板最小 360 = 960 放不下;
+ * 2026-10-14 起沒有固定門檻,示意裡的面板不在 AppShell 裡、「只算自己」,舞台最小寬由 `hostMinWidth` 給 —— D:30 清單 N14):
  *   S0 舞台 = AppShell 主內容:page header(專案標題 h1)+ tabsSlot(所有任務 / 我的任務,W1 header 不畫 border、TabsList 畫;
  *      W2 tab 左緣 = 標題左緣)+ TabsContent mt-0 + toolbar(搜尋 + 新增任務 primary 在最右、右緣與表格齊)+ DataTable
  *      + 間距(tabs→toolbar 控件、toolbar→表格 = tight)+ 標題欄連結左緣 = 表頭「標題」左緣(C:Button link 內距根因)
@@ -22,22 +23,23 @@
  *     清單連結不得還在 `inert` / `aria-hidden` 底下,整份文件 0 個 `[inert]`(舊碼:並存鎖與 Radix 共用一份計數 → `<main>` 永遠 inert);
  *     並存對話框開著時(S5 取消確認框之後),頁面上每個**不在控件裡**的 `[aria-live]`(Toast 區、DS 播報區)都不得在 `inert` 底下(播報照常念),
  *     清單連結則必須在 `inert` 底下(宿主仍被擋)。控件裡的播報區(例:欄位內常駐的「已移除」)跟著被擋住的控件一起 inert,不算靜音;
- *     「被蓋住的宿主不得留下可聚焦控件」由 S9 與 scripts/agent-panel-invariants.mjs B 守。
+ *     「被蓋住的宿主不得留下可聚焦控件」由 S9 與 scripts/app-shell-layout-invariant.mjs(S10 宿主不可操作)守。
  *   S8 關 agent → 遮罩仍在(根因錨:入口鈕 Dock 的 pointer-events-none 全舞台圖層曾被當成洞,遮罩整張被挖空)
  *   S10 入口鈕拖去貼邊再拖回家 → 遮罩只有一個洞、洞心 = 鈕心(2026-09-09 user 抓「拖回原本的地方會在遮罩上挖出另一個圓形的洞」:
  *       洞是飛回家的 250ms 過渡途中那一幀算的,過渡結束沒人重算 —— AD59)
  *   S11 遮罩在時右鍵入口鈕 → 選單留著、並存對話框不關、遮罩仍在(2026-09-09 user 抓「遮罩上的 fab 右鍵無反應」:portal 出去的右鍵選單
  *       被並存守衛當成 focus-outside → 對話框關、遮罩卸載、選單跟著卸載 —— AD59)
- *   S9 蓋板態:工具列可點、宿主被抑制、上一頁 / 下一頁不收合 agent;**agent 點有 URL 的 modal → agent 收成入口鈕、
+ *   S9 浮層態:工具列可點、宿主被抑制、浮層寬 = 寬度紀錄(沒調過 = 初始 400)、右貼齊、另一側至少留 48、上一頁 / 下一頁不收合 agent;
+ *      **agent 點有 URL 的 modal → agent 收成入口鈕、
  *      modal 顯露可操作、焦點在 modal**(2026-09-09 user 推翻「抽屜保持開啟」);入口鈕重開 → 抽屜蓋回、modal 在後方被抑制、
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
  * `--static=<dir>`:讀哪個 storybook build(預設 storybook-static;並行工作者用自己的 build 目錄)
- * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 蓋板前 / 蓋板收成入口鈕後)
+ * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 浮層前 / 浮層收成入口鈕後)
  *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」:
  *       守衛只認開著時的 aria-controls,選單關閉中 Radix 還焦點給選單容器那一次被當成框外;鍵盤 Enter 是對照)
  *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
  *   S14 條 F「原分頁離開宿主後返回」:合成 pageshow(persisted:true)→ 代理關回、宿主畫面不動、重開是新對話;persisted:false 必不動(2026-09-29)
- *   S15 未存檔的修改 → 離開前先確認(story UnsavedChangesGuard,並排 + 蓋板):取消留在原地、確認才前往;沒有修改時連結直接走(2026-09-29)
+ *   S15 未存檔的修改 → 離開前先確認(story UnsavedChangesGuard,並排 + 浮層):取消留在原地、確認才前往;沒有修改時連結直接走(2026-09-29)
  *       (AD68 產品側變體:portal 浮層對 0×0 錨點只會定位到 (0,8) 還搶焦點;修法 = 觸發鈕失去版面就關)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
  *
@@ -626,20 +628,20 @@ for (const width of [1440, 1180]) {
   await browser.close()
 }
 
-// ── S9 蓋板態(容器 < 1080):工具列可點、從代理導向舞台 → 收成入口鈕、重開蓋回、× 顯露 ──
+// ── S9 浮層態(容器 866:舞台最小 600 + 面板最小 360 放不下):工具列可點、從代理導向舞台 → 收成入口鈕、重開蓋回、× 顯露 ──
 S9: {
   const width = 900
   const opened = await openDemo(width)
   if (!opened) break S9 // 已記成儀器失效(沒量到),結尾 exit 1
   const { browser, page } = opened
-  const W = `[${width}px 蓋板]`
+  const W = `[${width}px 浮層]`
   const h = bind(page)
   const mode = await page.evaluate(() => document.querySelector('[role="complementary"]')?.getAttribute('data-agent-panel-mode'))
-  check(`${W} S9 面板是蓋板態(data-agent-panel-mode=overlay)`, mode === 'overlay', String(mode))
-  check(`${W} S9 蓋板時瀏覽器工具列不被抑制(上一頁 / 網址列)`, (await h.inert('button[aria-label="上一頁"]')) === false && (await h.inert('#demo-location')) === false)
-  check(`${W} S9 蓋板時宿主被抑制(新增任務鈕 inert)`, (await h.inert('#demo-new-task')) === true)
-  // 蓋板左留 --layout-space-viewport-inset、右貼齊容器、底下鋪遮罩(2026-09-16 裁示);
-  // 點遮罩**關閉面板**(2026-09-17 user 改裁示,取代 09-16 的「點了不關」)。
+  check(`${W} S9 面板是浮層態(data-agent-panel-mode=overlay)`, mode === 'overlay', String(mode))
+  check(`${W} S9 浮層時瀏覽器工具列不被抑制(上一頁 / 網址列)`, (await h.inert('button[aria-label="上一頁"]')) === false && (await h.inert('#demo-location')) === false)
+  check(`${W} S9 浮層時宿主被抑制(新增任務鈕 inert)`, (await h.inert('#demo-new-task')) === true)
+  // 浮層:寬 = 寬度紀錄(沒調過 = 初始 400)、右貼齊容器、另一側至少留 --layout-space-viewport-inset(2026-10-14 user 規格 U:55-59;
+  // 2026-09-16 起的「左邊固定留 48、撐滿」退場)、底下鋪遮罩;點遮罩**關閉面板**(2026-09-17 user 改裁示,取代 09-16 的「點了不關」)。
   const scrimGeo = await page.evaluate(() => {
     const p = document.querySelector('[role="complementary"]'); const s = document.querySelector('[data-agent-panel-scrim]')
     if (!p || !s) return { p: !!p, s: !!s }
@@ -648,13 +650,13 @@ S9: {
     const H = host.getBoundingClientRect(), P = p.getBoundingClientRect(), S = s.getBoundingClientRect()
     const inset = parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
     const near = (a, b) => Math.abs(a - b) <= 1
-    return { p: true, s: true, inset, gapLeft: Math.round(P.left - H.left), gapRight: Math.round(H.right - P.right),
+    return { p: true, s: true, inset, width: Math.round(P.width), gapLeft: Math.round(P.left - H.left), gapRight: Math.round(H.right - P.right),
       scrimCoversHost: near(S.left, H.left) && near(S.right, H.right) && near(S.top, H.top) && near(S.bottom, H.bottom),
       pointer: getComputedStyle(s).pointerEvents, strip: { x: H.left + inset / 2, y: H.top + H.height / 2 } }
   })
   // 遮罩要**接住**指標(不是 pointer-events:none):第一版讓點擊穿透,打到底下 modal 的外部點擊偵測、把 modal 關掉(user 2026-09-16 第二次回報)
-  check(`${W} S9 蓋板左留 --layout-space-viewport-inset(${scrimGeo.inset}px)、右貼齊容器、底下鋪接住指標的遮罩(2026-09-16)`,
-    scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.gapLeft - scrimGeo.inset) <= 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer !== 'none',
+  check(`${W} S9 浮層寬 = 寬度紀錄 400、另一側至少留 --layout-space-viewport-inset(${scrimGeo.inset}px)、右貼齊容器、底下鋪接住指標的遮罩`,
+    scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.width - 400) <= 1 && scrimGeo.gapLeft >= scrimGeo.inset - 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer !== 'none',
     JSON.stringify(scrimGeo))
   if (scrimGeo.strip) { await page.mouse.click(scrimGeo.strip.x, scrimGeo.strip.y); await page.waitForTimeout(400) }
   check(`${W} S9 點遮罩(留白處)關閉面板 → 入口鈕接手(2026-09-17 裁示,取代 09-16 的「點了不關」)`,
@@ -662,18 +664,18 @@ S9: {
     JSON.stringify({ open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]') }))
   // 點入口鈕開回來,接著跑原本的流程(面板收起不是卸載,草稿等狀態都在)
   await h.click('button[aria-label="開啟智慧代理"]')
-  check(`${W} S9 入口鈕開回蓋板、網址列仍可點`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false,
+  check(`${W} S9 入口鈕開回浮層、網址列仍可點`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false,
     JSON.stringify({ open: await h.panelOpen(), locInert: await h.inert('#demo-location') }))
   await h.typeIntoPanel('draft')
   await h.shot('900-overlay-before.png')
   // 瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」:宿主依歷史導航、agent 維持開啟(v14 推導表「同分頁在宿主內按上一頁 / 下一頁」)
   await h.click('#demo-link-mine')
   const collapsedByPage = { open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]'), loc: await h.location(), tab: await h.selectedTab(), focusMain: await page.evaluate(() => document.activeElement?.id === 'demo-stage-main'), mainInert: await h.inert('#demo-stage-main') }
-  check(`${W} S9 agent 點內部另一頁(我的任務)→ agent 收成入口鈕、tab 切換、宿主解除抑制、焦點交給舞台 main(v14 推導表「窄螢幕(蓋板),agent 點內部另一頁」)`, !collapsedByPage.open && collapsedByPage.fab && collapsedByPage.loc === MINE_URL && collapsedByPage.tab === '我的任務' && collapsedByPage.focusMain && collapsedByPage.mainInert === false, JSON.stringify(collapsedByPage))
+  check(`${W} S9 agent 點內部另一頁(我的任務)→ agent 收成入口鈕、tab 切換、宿主解除抑制、焦點交給舞台 main(v14 推導表「窄螢幕(浮層),agent 點內部另一頁」)`, !collapsedByPage.open && collapsedByPage.fab && collapsedByPage.loc === MINE_URL && collapsedByPage.tab === '我的任務' && collapsedByPage.focusMain && collapsedByPage.mainInert === false, JSON.stringify(collapsedByPage))
   await h.click('button[aria-label="開啟智慧代理"]')
-  check(`${W} S9 入口鈕重開 → 蓋板回來、草稿還在(收成不是卸載)`, (await h.panelOpen()) && (await h.panelInput())?.value === 'draft' && (await page.evaluate(() => document.querySelector('[role="complementary"]')?.getAttribute('data-agent-panel-mode'))) === 'overlay', JSON.stringify(await h.panelInput()))
+  check(`${W} S9 入口鈕重開 → 浮層回來、草稿還在(收成不是卸載)`, (await h.panelOpen()) && (await h.panelInput())?.value === 'draft' && (await page.evaluate(() => document.querySelector('[role="complementary"]')?.getAttribute('data-agent-panel-mode'))) === 'overlay', JSON.stringify(await h.panelInput()))
   await h.click('button[aria-label="上一頁"]')
-  check(`${W} S9 蓋板時上一頁真的點得動(網址列回清單),且 agent 不因瀏覽器 chrome 導航收合`, (await h.location()) === TASKS_URL && (await h.panelOpen()), await h.location())
+  check(`${W} S9 浮層時上一頁真的點得動(網址列回清單),且 agent 不因瀏覽器 chrome 導航收合`, (await h.location()) === TASKS_URL && (await h.panelOpen()), await h.location())
   await h.click('#demo-link-task-4821')
   const collapsedByModal = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]'); const p = document.querySelector('[role="complementary"]')
@@ -689,9 +691,12 @@ S9: {
     const d = document.querySelector('[role="dialog"]'); const p = document.querySelector('[role="complementary"]')
     if (!d || !p) return { d: !!d, p: !!p }
     const r = d.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + 20)
-    return { d: true, p: true, inert: !!d.closest('[inert]'), hitInPanel: !!hit && p.contains(hit), panelZ: getComputedStyle(p).zIndex, dialogZ: getComputedStyle(d).zIndex, panelOpen: getComputedStyle(p).display !== 'none' }
+    const scrim = document.querySelector('[data-agent-panel-scrim]')
+    return { d: true, p: true, inert: !!d.closest('[inert]'), hitInPanel: !!hit && p.contains(hit), hitInScrim: !!hit && hit === scrim, hitInDialog: !!hit && d.contains(hit), panelZ: getComputedStyle(p).zIndex, dialogZ: getComputedStyle(d).zIndex, panelOpen: getComputedStyle(p).display !== 'none' }
   })
-  check(`${W} S9 入口鈕重開 → 抽屜蓋回舞台,modal 在後方(命中面板、z 面板 > modal)且被抑制;草稿還在(v14 推導表「接上題,點入口鈕重開 agent」)`, reopened.d && reopened.p && reopened.panelOpen && reopened.hitInPanel && reopened.inert && Number(reopened.panelZ) > Number(reopened.dialogZ) && (await h.panelInput())?.value === 'draft', JSON.stringify(reopened))
+  // 2026-10-14 起浮層寬 = 寬度紀錄(不再撐滿只留 48),modal 可能有一部分露在浮層左側:那一點命中的必須是面板或代理遮罩,
+  // 不是 modal 本身(modal 被抑制、指標落到代理遮罩 → 點了關 agent,與點遮罩同一個結果;dialog.spec.md「層級」)
+  check(`${W} S9 入口鈕重開 → 浮層蓋回舞台,modal 在後方(那一點命中面板或代理遮罩、不命中 modal;z 面板 > modal)且被抑制;草稿還在(v14 推導表「接上題,點入口鈕重開 agent」)`, reopened.d && reopened.p && reopened.panelOpen && (reopened.hitInPanel || reopened.hitInScrim) && !reopened.hitInDialog && reopened.inert && Number(reopened.panelZ) > Number(reopened.dialogZ) && (await h.panelInput())?.value === 'draft', JSON.stringify(reopened))
   // 2026-09-16 user 第二次回報:「點擊露出的遮罩會關閉 agent panel 底下的 modal」—— 留白處點一下,面板仍開、底下 modal 仍開
   //(遮罩接住指標、不穿透;modal 的外部點擊守衛把常駐殼子樹裡的遮罩視為不關)。
   const stripPt = await page.evaluate(() => {
@@ -705,10 +710,10 @@ S9: {
   const afterStrip = { panelOpen: await h.panelOpen(), dialogs: await h.dialogs() }
   // 2026-09-17 user 在 a / b 兩案中選 a:「只關代理面板,modal 留著」。遮罩仍然接住指標、不穿透 ——
   // 所以 modal 的外部點擊守衛不會被觸發,dialogs 必須還是 1。
-  check(`${W} S9 蓋板留白處點一下 → 只關面板、底下的 modal 留著(2026-09-17 a 案)`, !afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
+  check(`${W} S9 浮層留白處點一下 → 只關面板、底下的 modal 留著(2026-09-17 a 案)`, !afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
   // × 那條關閉路徑也要覆蓋:先用入口鈕把面板開回來
   await h.click('button[aria-label="開啟智慧代理"]')
-  check(`${W} S9 入口鈕開回蓋板,並存 modal 仍在後方`, (await h.panelOpen()) && (await h.dialogs()) === 1,
+  check(`${W} S9 入口鈕開回浮層,並存 modal 仍在後方`, (await h.panelOpen()) && (await h.dialogs()) === 1,
     JSON.stringify({ open: await h.panelOpen(), dialogs: await h.dialogs() }))
   await h.click('[role="complementary"] button[aria-label="關閉面板"]')
   const revealed = await page.evaluate(() => {
@@ -723,16 +728,17 @@ S9: {
 
 // ── S15 未存檔的修改 → 離開前先確認(v14 推導表「窄螢幕,內部導航觸發沒有 URL 的未存檔確認框」+ 取消 / 確認前往兩列;
 //    2026-09-29,待辦總帳 OE11;story `UnsavedChangesGuard` 一開場就停在確認框上)──
-//    並排 1440 與蓋板 900 各走一次:確認框蓋住代理(條 A)→ 取消:對話框、修改、代理都在原地 → 再從代理點「我的任務」又被攔 →
-//    確認:宿主到「我的任務」、對話框關;並排代理維持開啟、蓋板代理收成入口鈕(條 B·C·E)。
+//    並排 1440 與浮層 900 各走一次:確認框蓋住代理(條 A)→ 取消:對話框、修改、代理都在原地 → 再從代理點「我的任務」又被攔 →
+//    確認:宿主到「我的任務」、對話框關;並排代理維持開啟、浮層代理收成入口鈕(條 B·C·E)。
 const guardId = Object.values(index.entries).find((e) => e.type === 'story' && /agentpanel/i.test(e.id) && /unsaved-changes-guard/.test(e.id))?.id
 if (!guardId) { console.log('✗ 找不到 UnsavedChangesGuard story'); instrumentFails.push({ width: 0, detail: 'UnsavedChangesGuard story 不在 index.json' }) }
 for (const width of guardId ? [1440, 900] : []) {
   const opened = await openDemo(width, 900, guardId)
   if (!opened) continue
   const { browser, page } = opened
+  // 900 的畫布 866 放不下舞台最小 600 + 面板最小 360 → 浮層;1440 放得下 → 並排(沒有固定門檻,這兩個寬度落在兩邊)
   const overlay = width < 960
-  const W = `[${width}px ${overlay ? '蓋板' : '並排'}]`
+  const W = `[${width}px ${overlay ? '浮層' : '並排'}]`
   const h = bind(page)
   const DIRTY_TITLE = '修正登入逾時(含 SSO 逾時)'
   const FAB = 'button[aria-label="開啟智慧代理"]'
@@ -753,8 +759,8 @@ for (const width of guardId ? [1440, 900] : []) {
   check(`${W} S15 再從代理點「我的任務」:導航停下來等確認(確認框回來、網址不動、修改還在)`, s2.dialogs === 2 && s2.confirm && s2.loc === TASK_4821 && s2.title === DIRTY_TITLE, JSON.stringify(s2))
   await h.click('#demo-leave-confirm')
   const s3 = await state()
-  check(`${W} S15 不儲存並前往:宿主到「我的任務」、對話框關;${overlay ? '蓋板代理收成入口鈕' : '並排代理維持開啟'}(推導表「按確認前往」)`, s3.dialogs === 0 && s3.loc === MINE_URL && s3.tab === '我的任務' && (overlay ? (!s3.panelOpen && s3.fab) : s3.panelOpen), JSON.stringify(s3))
-  // 對照組:對話框剛開、沒有修改 → 代理的連結照舊直接走,不出確認框(蓋板態每次從代理導向舞台都會收成入口鈕,先點回來)
+  check(`${W} S15 不儲存並前往:宿主到「我的任務」、對話框關;${overlay ? '浮層代理收成入口鈕' : '並排代理維持開啟'}(推導表「按確認前往」)`, s3.dialogs === 0 && s3.loc === MINE_URL && s3.tab === '我的任務' && (overlay ? (!s3.panelOpen && s3.fab) : s3.panelOpen), JSON.stringify(s3))
+  // 對照組:對話框剛開、沒有修改 → 代理的連結照舊直接走,不出確認框(浮層態每次從代理導向舞台都會收成入口鈕,先點回來)
   if (overlay) await h.click(FAB)
   await h.click('#demo-link-task-4821')
   const s4 = await state()
@@ -775,5 +781,5 @@ if (instrumentFails.length) {
 }
 if (failed) { console.log(`✗ ${failed} 條失敗`); process.exit(1) }
 if (instrumentFails.length) process.exit(1)
-console.log(`✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 蓋板)`)
+console.log(`✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 浮層)`)
 process.exit(0)

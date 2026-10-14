@@ -49,7 +49,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21",
+        "sha256": "4056237ef5882c62cd5e7e698054aa2cfb6cac1c846429cd553f2aef479c981e",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
@@ -333,6 +333,7 @@
         "scripts/test-2-scenario-architecture.mjs",
         "scripts/test-action-divider-placement.mjs",
         "scripts/test-agent-fab-drag-zones.mjs",
+        "scripts/test-app-shell-layout-model.mjs",
         "scripts/test-audit-coverage-tier-sync.mjs",
         "scripts/test-authority-decision-evidence.mjs",
         "scripts/test-authority-generation-reaper.mjs",
@@ -408,6 +409,7 @@
       "scripts/test-agent-panel-dismissable-layer-invariant.mjs",
       "scripts/test-agent-panel-fixed-anatomy-invariant.mjs",
       "scripts/test-agent-url-registry-demo-invariant.mjs",
+      "scripts/test-app-shell-layout-invariant.mjs",
       "scripts/test-apply-approved-baselines.mjs",
       "scripts/test-audit-a11y.mjs",
       "scripts/test-audit-consumer-a11y.mjs",

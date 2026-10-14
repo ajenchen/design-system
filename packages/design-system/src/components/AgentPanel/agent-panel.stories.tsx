@@ -66,35 +66,21 @@ const noop = () => {}
 /**
  * 面板站右側全高(模擬 app 右欄環境)+ **面板 ↔ 入口鈕互斥外殼**:每個範例都能按 × 關閉,
  * 關閉後右下角出現入口鈕(標誌狀態跟著 `logoState` 走),點一下開回來。
+ * 這裡的面板不在 AppShell 裡、「只算自己」(D:30 清單 N14):畫布放得下面板最小寬就並排。並排 / 浮層由 AppShell 排的整頁樣子見
+ * AppShell 展示「四區版面」「任務助理放不下時 — 右側浮層」。
  */
 function PanelFrame({
   logoState = 'still',
   aside,
-  stage,
-  stageWidth,
   children,
 }: {
   logoState?: AgentLogoState
   /** 左側空白區的旁註(例如即時寬度讀數)。有需要旁註的範例照樣共用這個外殼,不另起一套版面。 */
   aside?: React.ReactNode
-  /** 舞台內容(宿主畫面)。與 `aside` 的差別:這個不置中、吃滿剩餘空間,用來讓遮罩底下真的有東西。 */
-  stage?: React.ReactNode
-  /**
-   * 把容器固定成這個寬度(容器 < 960 就翻成蓋板,見 spec「與 app 的推擠與斷點」)。
-   * 省略 = 吃滿畫布(絕大多數範例都是並排態)。
-   */
-  stageWidth?: number
   children: (props: { close: () => void; logoState: AgentLogoState }) => React.ReactNode
 }) {
   return (
-    <div
-      // `overflow-hidden` **只在釘寬度時**加:那一則要讓蓋板與遮罩貼齊這個假容器的邊。
-      // 不釘寬度的既有範例一律維持原樣 —— 入口鈕拖到右緣時本來就會半露在容器外,
-      // 加了裁切會把它切掉(2026-09-18 差點順手全加上去)。
-      className={`relative flex h-dvh justify-end bg-canvas${stageWidth ? ' overflow-hidden' : ''}`}
-      style={stageWidth ? { width: stageWidth } : undefined}
-    >
-      {stage && <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{stage}</div>}
+    <div className="relative flex h-dvh justify-end bg-canvas">
       {aside && (
         // 旁註 = 一行讀數 + 一行說明(同一個文字塊)→ 兩行之間用 item 文字塊的 label ↔ description 間距(item-anatomy.spec.md「Label ↔ Desc 間距」)
         <div className="flex flex-1 flex-col items-center justify-center gap-[var(--item-gap-label-desc-reading)] text-body text-fg-secondary">{aside}</div>
@@ -417,7 +403,8 @@ export const DecisionSummaryInFlow: Story = {
   ),
 }
 
-/** 拖拉寬度:左緣把手 360–640(且不超過視窗一半),鍵盤 ←/→ 每次 16;寬度由產品自存。
+/** 拖拉寬度:左緣把手 360–640(產品沒設時的預設範圍;在 AppShell 裡上限另受「全部拉滿時 Main 剛好剩最小寬」限制),鍵盤 ←/→ 每次 16;
+ *  寬度紀錄由產品自存(`onWidthCommit` 只在一次調整結束時發:拖曳放開且有位移、鍵盤每按一下;只點一下把手不發)。
  *  2026-09-04 補回:這支在 6804d2ea「story 重整」時被刪掉,但 `width` / `onWidthChange` /
  *  `onWidthCommit` / `resizable` 四個公開 prop 因此在整個家族**零 story 覆蓋**(M15:拖寬、鍵盤
  *  ←/→、360–640 夾值都沒有可截圖的狀態),而本檔檔頭仍宣稱「拖拉寬度…補齊」= 假宣稱。 */
@@ -434,7 +421,7 @@ export const ResizableWidth: Story = {
         aside={
           <>
             <span>目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)</span>
-            <span className="text-caption text-fg-muted">放開後落地:{committed}px —— 產品拿這個值去存</span>
+            <span className="text-caption text-fg-muted">寬度紀錄:{committed}px —— 放開後(有拖動才算)產品拿這個值去存</span>
           </>
         }
       >
@@ -442,7 +429,7 @@ export const ResizableWidth: Story = {
           <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted} onClose={close}>
             <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={close} {...headerWiring} />
             <AgentConversation>
-              <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
+              <AgentMessage role="agent">面板寬度 360 起跳、640 封頂;只點一下把手不算調整,寬度紀錄不變。</AgentMessage>
             </AgentConversation>
             <AgentPromptInput
               value=""
@@ -462,51 +449,9 @@ export const ResizableWidth: Story = {
   },
 }
 
-/**
- * 容器窄到並排放不下(< 960)時面板翻成蓋板:上下右貼齊容器、**左邊留 48px**,底下鋪遮罩,
- * 而且**點遮罩就關閉面板**(2026-09-17 裁示)—— 關掉之後入口鈕接手,點它開回來,對話與草稿都還在。
- *
- * 為什麼要有這一則:蓋板只在容器 < 960 時出現,而其他每一則都吃滿畫布 ——
- * 等於一般桌機視窗永遠看不到蓋板與遮罩,這個狀態一張可稽核的畫面都沒有(M15)。
- * 這裡把容器釘在 880,不用縮視窗就看得到。幾何與「點遮罩關面板」另有機械閘
- * `scripts/agent-panel-breakpoint.mjs`,整頁情境見「示意(假資料)— URL 註冊表」。
- */
-export const OverlayOnNarrowStage: Story = {
-  name: '窄畫布:蓋板與遮罩',
-  render: function OverlayOnNarrowStageStory() {
-    return (
-      <PanelFrame
-        stageWidth={880}
-        stage={
-          // 舞台只是「遮罩底下確實有東西」的背景,所以用最單純的標題 + 清單。
-          // 不用 `PageHeader`:那顆 demo helper 需要 SidebarProvider,單獨放進來會整則 story 渲不出來
-          //(2026-09-18 實測:`useSidebar must be used within a SidebarProvider`,tsc 不會擋)。
-          <div className="flex min-h-0 flex-1 flex-col gap-[var(--layout-space-tight)] p-[var(--layout-space-loose)]">
-            <h2 className="text-h4 font-medium text-foreground">Sprint 42 待辦</h2>
-            <ul className="flex flex-col gap-[var(--layout-space-tight)] text-body text-fg-secondary">
-              <li>TASK-4821 匯出報表逾時 —— 指派給 Betty Wu,週四到期</li>
-              <li>TASK-4835 登入頁 Safari 版面跑掉 —— 指派給 Alan Chen,週五到期</li>
-              <li>TASK-4842 訂單金額四捨五入不一致 —— 未指派</li>
-            </ul>
-          </div>
-        }
-      >
-        {({ close }) => (
-          <AgentPanel onClose={close}>
-            <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
-            <AgentConversation>
-              <AgentMessage role="user">這個衝刺有哪幾筆還沒指派?</AgentMessage>
-              <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-                只有 TASK-4842「訂單金額四捨五入不一致」還沒指派,其餘兩筆都有負責人且在本週到期。
-              </AgentMessage>
-            </AgentConversation>
-            <AgentPromptInput value="" onValueChange={noop} {...promptWiring} attachments={[]} placeholder="問我或指派工作…" />
-          </AgentPanel>
-        )}
-      </PanelFrame>
-    )
-  },
-}
+// 2026-10-14:「窄畫布:蓋板與遮罩」(OverlayOnNarrowStage,把容器釘在 880 演「容器 < 960 → 蓋板」)退場 ——
+// 960 門檻被 user 2026-10-14 規格取代(app-shell.spec.md「版面規則」;D:30 清單 #21):AI agent 何時變浮層由 AppShell 用各區最小寬現算。
+// 浮層、遮罩、點遮罩關閉的可截圖狀態改住 AppShell 展示「任務助理放不下時 — 右側浮層」(M15),機械閘 scripts/app-shell-layout-invariant.mjs。
 
 /** 入口鈕遮擋樣張的資料:滿版訂單表(DataTable 分頁 archetype 同 data-table.stories WithPagination)。 */
 type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
@@ -645,8 +590,9 @@ export const LogoThinkStop: Story = {
    `data-table.stories.tsx#WithBulkActions` 同款)+ DataTable;標題欄 = DS url 欄位同一支 primitive
    (`<LinkInput mode="view">`,與表頭齊 —— 2026-09-09 user 抓到 Button link 自帶內距把網址推歪)。
    有 URL 的 modal 傳送到「舞台」(並排時代理不被蓋),沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。
-   蓋板態(容器 < 960)下從代理導向舞台 → 代理收成入口鈕、舞台顯示目標(v14 條 B,2026-09-09 user 推翻 AI 推導)。
-   閘:`scripts/agent-url-registry-demo-invariant.mjs`(S0–S9,兩個並排寬度 + 一個蓋板寬度)。
+   浮層態下從代理導向舞台 → 代理收成入口鈕、舞台顯示目標(v14 條 B,2026-09-09 user 推翻 AI 推導;2026-10-14 D:23 保留)。
+   代理在這則示意裡不在 AppShell 裡,「只算自己」(D:30 清單 N14):舞台最小寬 600(`hostMinWidth`)+ 面板最小 360 放不下時變浮層,沒有固定門檻。
+   閘:`scripts/agent-url-registry-demo-invariant.mjs`(S0–S9,兩個並排寬度 + 一個浮層寬度)。
    ═══════════════════════════════════════════════════════════════════════════ */
 type TaskStatus = 'todo' | 'doing' | 'done'
 type Task = { id: string; num: number; title: string; assignee: string; status: TaskStatus; due: string }
@@ -702,7 +648,7 @@ function resolveView(loc: Location): View {
  * 舞台 = 宿主區(容器 − 面板),長相 = AppShell 主內容(`app-shell.tsx`:header 在 `flex-shrink-0` 殼裡、
  * `<main>` landmark `flex-1 min-h-0 overflow-y-auto`、padding=0,內容照 layoutSpace 六條規則走)。
  * 帶 transform 讓有 URL 的 modal 用 `portalContainer` 傳送進來後 fixed 以它為準。
- * `<main tabIndex={-1}>` 同 AppShell skip-to-main:蓋板態代理收成入口鈕、目標是頁面時,焦點交給這裡。
+ * `<main tabIndex={-1}>` 同 AppShell skip-to-main:浮層態代理收成入口鈕、目標是頁面時,焦點交給這裡。
  * `main` 多了 `flex flex-col`:TabsContent 要 `flex-1` 撐滿(app-shell.stories#PrimarySidebarWithTabs 的 TabsContent 同款
  * `mt-0 flex-1 min-h-0 flex flex-col`),父層必須是 flex 才生效。
  */
@@ -900,7 +846,7 @@ function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
  * 任務對話框裡改了還沒儲存,代理的內部連結要把宿主帶去別處 → 導航先停下來問。同一套破壞性動作範本(上方 ConfirmDeleteDialog):
  * header 一行問句、body 說是哪一筆與後果、footer 取消(tertiary)+ 不儲存並前往(primary danger —— 放棄修改是破壞性的)。
  * 傳送到畫布、不傳 persistentElements:蓋住一切含代理(條 A);取消 → 留在原內容、代理照舊;確認 → 宿主完成導航
- * (並排代理維持開啟、蓋板收成入口鈕,與其他從代理發起的導航同一條路)。
+ * (並排代理維持開啟、浮層收成入口鈕,與其他從代理發起的導航同一條路)。
  */
 function ConfirmLeaveDialog({ task, onStay, onLeave, portalContainer }: {
   task: Task; onStay: () => void; onLeave: () => void; portalContainer: HTMLElement
@@ -971,24 +917,28 @@ function useSessions(initial: Session[]) {
   }
 }
 
+/** 示意舞台(AppShell 主內容的樣子)的最小寬:任務表 4 欄的可讀下限(示意值;同 AppShell 展示的 Main 最小 600)。 */
+const DEMO_STAGE_MIN_WIDTH = 600
+
 function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, persistentElements }: {
   hostRef: React.Ref<HTMLDivElement>
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** 面板形態(並排 / 蓋板)回報 —— 宿主用它決定「從代理導向舞台」時要不要收成入口鈕。 */
+  /** 面板形態(並排 / 浮層)回報 —— 宿主用它決定「從代理導向舞台」時要不要收成入口鈕。 */
   onModeChange: (mode: AgentPanelMode) => void
   sessions: ReturnType<typeof useSessions>
-  /** 蓋板態仍要可用的宿主外節點(瀏覽器工具列)。 */
+  /** 浮層態仍要可用的宿主外節點(瀏覽器工具列)。 */
   persistentElements: () => Element[]
 }) {
   const { active } = sessions
   const empty = active.messages.length === 0
   return (
-    // 面板必須是畫布 flex 的**直接子節點**(它量的是自己的父層),所以殼用 display:contents
+    // 面板必須是畫布 flex 的**直接子節點**(它量的是自己的父層),所以殼用 display:contents;
+    // 這則示意不在 AppShell 裡:面板「只算自己」,舞台(宿主那一側)最小寬 600 由 `hostMinWidth` 告訴它(D:30 清單 N14)
     <div ref={hostRef} className="contents">
       <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
-          <AgentPanel persistentElements={persistentElements} onModeChange={onModeChange} onClose={close}>
+          <AgentPanel hostMinWidth={DEMO_STAGE_MIN_WIDTH} persistentElements={persistentElements} onModeChange={onModeChange} onClose={close}>
             <AgentPanelHeader
               title={empty ? '新對話' : active.title}
               conversations={sessions.history}
@@ -1031,7 +981,7 @@ function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, pers
 }
 
 /**
- * 等節點脫離 inert 再聚焦(最多等 10 影格)。代理收成入口鈕的那一刻,宿主還在蓋板的抑制裡
+ * 等節點脫離 inert 再聚焦(最多等 10 影格)。代理收成入口鈕的那一刻,宿主還在浮層的抑制裡
  * (解除要跨一次 ResizeObserver 與 effect),這時 Dialog 的掛載自動聚焦與 `main.focus()` 都會落空。
  */
 function focusWhenOperable(resolve: () => HTMLElement | null, frames = 10) {
@@ -1053,12 +1003,12 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   const toolbarRef = React.useRef<HTMLDivElement | null>(null)
   /** 並存 modal 的保留集合:代理殼(面板或入口鈕)+ 瀏覽器工具列。 */
   const keepForDialog = React.useCallback(() => [panelHostRef.current, toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
-  /** 代理蓋板的保留集合:瀏覽器工具列(面板自己由元件保留)。 */
+  /** 代理浮層的保留集合:瀏覽器工具列(面板自己由元件保留)。 */
   const keepForPanel = React.useCallback(() => [toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
   const [tasks, setTasks] = React.useState<Task[]>(TASKS)
   const [confirmDelete, setConfirmDelete] = React.useState<Task | null>(null)
   const [agentOpen, setAgentOpen] = React.useState(true)
-  /** 面板形態(並排 / 蓋板),由 AgentPanel `onModeChange` 回報;量到之前是 null。 */
+  /** 面板形態(並排 / 浮層),由 AgentPanel `onModeChange` 回報;量到之前是 null。 */
   const [agentMode, setAgentMode] = React.useState<AgentPanelMode | null>(null)
   const agentModeRef = React.useRef(agentMode)
   agentModeRef.current = agentMode
@@ -1078,7 +1028,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   const returnFocus = React.useCallback((e: Event) => {
     e.preventDefault()
     const el = openerRef.current
-    // 開啟元素可能在已收成的代理面板裡(display:none,蓋板讓位後):不可見或 .focus() 沒生效都退回舞台 main(Codex R14 反例)
+    // 開啟元素可能在已收成的代理面板裡(display:none,浮層讓位後):不可見或 .focus() 沒生效都退回舞台 main(Codex R14 反例)
     const visible = !!el && el.isConnected && el.getClientRects().length > 0 && !el.closest('[inert]') && !el.closest('[aria-hidden="true"]')
     if (visible) el!.focus()
     if (!visible || document.activeElement !== el) mainRef.current?.focus()
@@ -1091,10 +1041,10 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   const openNewTask = () => { rememberOpener(); go({ url: NEW_TASK_URL, backgroundLocation: view.tab.url }) }
   const closeModal = () => go({ url: view.tab.url })
   /**
-   * 從代理發起的內部導航(v14 條 C):並排態代理維持開啟;**蓋板態代理收成入口鈕、舞台顯示目標**(條 B,2026-09-09 user:
+   * 從代理發起的內部導航(v14 條 C):並排態代理維持開啟;**浮層態代理收成入口鈕、舞台顯示目標**(條 B,2026-09-09 user:
    * 「開啟 agent 點內部連結當然要有優先呈現該連結內容啊,怎麼可能讓 agent 還霸道佔位?」)。
    * 收成不是卸載 —— 對話、草稿、閱讀位置都留著(AgentPanelDock keep-mounted)。目標是頁面 → 焦點交給舞台 `<main>`;
-   * 目標是 modal → Dialog 開啟時自己聚焦。面板不知道連結,所以這段住在宿主,不在 DS(agent-panel.spec 蓋板小節)。
+   * 目標是 modal → Dialog 開啟時自己聚焦。面板不知道連結,所以這段住在宿主,不在 DS(agent-panel.spec「浮層時從代理導向 Main」)。
    */
   const stageRef = React.useRef<HTMLDivElement | null>(null)
   stageRef.current = stage
@@ -1273,7 +1223,7 @@ export const UrlRegistryDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板(左邊留 48px 內距、底下鋪遮罩,點遮罩關閉代理、底下的對話框留著):網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
+        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。畫布放不下舞台最小寬 600 + 代理最小寬 360 時代理改成右側浮層(寬度照紀錄、左邊至少留 48px、底下鋪遮罩,點遮罩或在代理裡按 Esc 關閉代理、底下的對話框留著):網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
       },
     },
   },
@@ -1290,7 +1240,7 @@ export const UnsavedChangesGuard: Story = {
     docs: {
       story: openOverlayDocsStory('720px'),
       description: {
-        story: '假資料示意,與「網址註冊表」同一個專案。任務 #4821 的對話框開著、標題已改成「修正登入逾時(含 SSO 逾時)」但還沒儲存;代理回覆裡的「我的任務」是內部導航,宿主先停下來開一個沒有網址的確認框「要放棄未儲存的修改?」—— 它蓋住一切,包含代理(v14 條 A)。按「取消」:確認框消失,對話框、修改、代理抽屜都還在原地;按「不儲存並前往」:宿主切到「我的任務」,並排時代理維持開啟,窄畫布(蓋板)時代理收成右下角入口鈕、目的內容顯露(v14 推導表「未存檔確認框」三列)。對話框裡沒有未儲存的修改時,連結照舊直接走。',
+        story: '假資料示意,與「網址註冊表」同一個專案。任務 #4821 的對話框開著、標題已改成「修正登入逾時(含 SSO 逾時)」但還沒儲存;代理回覆裡的「我的任務」是內部導航,宿主先停下來開一個沒有網址的確認框「要放棄未儲存的修改?」—— 它蓋住一切,包含代理(v14 條 A)。按「取消」:確認框消失,對話框、修改、代理抽屜都還在原地;按「不儲存並前往」:宿主切到「我的任務」,並排時代理維持開啟,窄畫布(浮層)時代理收成右下角入口鈕、目的內容顯露(v14 推導表「未存檔確認框」三列)。對話框裡沒有未儲存的修改時,連結照舊直接走。',
       },
     },
   },

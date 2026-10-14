@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-13T02:41:06.338Z"
+    "generatedAt": "2026-10-14T03:00:39.699Z"
   },
   "components": {
     "accordion": {
@@ -73,7 +73,6 @@
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
-          "design-system-components-agentpanel-展示--overlay-on-narrow-stage",
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
@@ -130,7 +129,10 @@
         "展示": [
           "design-system-components-appshell-展示--primary-sidebar",
           "design-system-components-appshell-展示--primary-sidebar-with-tabs",
-          "design-system-components-appshell-展示--primary-header"
+          "design-system-components-appshell-展示--primary-header",
+          "design-system-components-appshell-展示--four-regions",
+          "design-system-components-appshell-展示--agent-overlay",
+          "design-system-components-appshell-展示--menu-overlay"
         ],
         "設計規格": [
           "design-system-components-appshell-設計規格--overview",
@@ -1844,5 +1846,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1012
+  "totalStories": 1014
 }

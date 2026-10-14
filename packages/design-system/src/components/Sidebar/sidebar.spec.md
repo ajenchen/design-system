@@ -35,11 +35,11 @@ benchmark:
 # Sidebar 設計原則
 
 > **Foundational SSOT rationale**(2026-04-24 approved,cap 800):
-> Sidebar 有獨立 `sidebarMenuButtonVariants` cva(對齊 MenuItem 但獨立實作,同步風險見 item-anatomy.spec「SidebarMenuButton 獨立實作風險」)+ 20+ Sidebar-specific features SSOT(Chrome header/footer 高度 / Collapsible / Icon 模式 / SidebarTrigger 位置 / Mobile 行為 / 持久化 / 快捷鍵 / Group 收合 / Single selection / Inline actions / Keyboard shortcuts),scope > 單一 MenuItem consumer。Full cva consume 提案經二次評估 declined(2026-04-24,詳 `.claude/planning/row-primitive-consolidation.md.rejected.20260424.md`)— ROW_PADDING_BY_SIZE token SSOT 已是 practical best。
+> Sidebar 有獨立 `sidebarMenuButtonVariants` cva(對齊 MenuItem 但獨立實作,同步風險見 item-anatomy.spec「SidebarMenuButton 獨立實作風險」)+ 20+ Sidebar-specific features SSOT(Chrome header/footer 高度 / Collapsible / Icon 模式 / SidebarTrigger 位置 / 放不下時 / 持久化 / 快捷鍵 / Group 收合 / Single selection / Inline actions / Keyboard shortcuts),scope > 單一 MenuItem consumer。Full cva consume 提案經二次評估 declined(2026-04-24,詳 `.claude/planning/row-primitive-consolidation.md.rejected.20260424.md`)— ROW_PADDING_BY_SIZE token SSOT 已是 practical best。
 
 ## 定位
 
-**應用程式的主導覽外殼**——頁面固定的側邊導覽容器，支援展開 / 收合、桌機與行動裝置的不同形態、扁平選單與階層樹兩種內容。
+**應用程式的主導覽外殼**——頁面固定的側邊導覽容器，支援展開 / 收合、放得下並排 / 放不下暫藏或左側浮層(在 AppShell 裡照 `../AppShell/app-shell.spec.md`「版面規則」)、扁平選單與階層樹兩種內容。
 
 **實作基礎**：基於 Radix Collapsible + Radix Slot（shadcn Sidebar 模式改寫）+ 橋接 DS token。
 
@@ -54,7 +54,7 @@ benchmark:
 - **多頁 app 的主導覽**：Slack、Linear、Notion、Figma 的左側 workspace + channel / project 清單
 - **需要在所有頁面持續存在的次導覽**：settings 頁的分類、文件的章節跳轉
 - **workspace 切換 + 功能分組並存**：頂部 workspace switcher + 下方常用功能 + 底部 settings
-- **需要展開 / 收合但不消失**：小螢幕收合為 icon bar，大螢幕展開完整 label
+- **需要展開 / 收合但不消失**：放不下時收成細列（icon bar），放得下展開完整 label
 
 ## 何時不用
 
@@ -280,7 +280,7 @@ Modal header 用 **padding-based**（`py-3` + content），因為 modal 是 ephe
 |------|------|------|
 | **`offcanvas`** | 整個 sidebar 滑出畫面 | 內容優先、低頻導覽（Notion、Figma） |
 | **`icon`** | 收合為 icon-only 細列，頂層 icon 仍可見可點 | 扁平導覽、高頻跨頁切換（Gmail、Slack）。**前提：所有 SidebarMenuItem 必須有 icon + 可導覽** |
-| **`none`** | 不可收合 | 超簡單應用或 sidebar 是頁面核心（file explorer） |
+| **`none`** | 不可收合 | 超簡單應用或 sidebar 是頁面核心（file explorer）。**不能用在 AppShell 的 Menu 位置**（`../AppShell/app-shell.spec.md`「版面規則」§12） |
 
 ---
 
@@ -520,10 +520,10 @@ variant=meta 把這三件事做成結構性保證:樣式自動退、selection �
 2. Label 尾端自動渲染 `ChevronDown` icon(accordion 慣例),open 時旋轉 180°;旋轉吃原地展開那一檔 `disclosureIndicatorMotion`(`--motion-duration-disclosure` 200ms、`ease-out`,與 TreeView / Accordion 箭頭同一份;群組內容本身沒有高度動畫)。角度看**這顆觸發鈕自己**的 `data-state`(`[[data-state=open]>&]`):原本寫成「任一層祖先打開」,窄螢幕側欄放在 Sheet(本身 `data-state="open"`)裡時,收合的群組箭頭也朝上(2026-10-13 實測並修正,寬螢幕畫面不變)。時長 2026-10-13 起改,原本 150ms(owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)
 3. `SidebarGroupContent` 被 `Collapsible.Content` 包起來,data-state 可驅動動畫
 
-Consumer 不需要任何額外 code——只要加一個 prop:
+Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ```tsx
-<SidebarGroup collapsible defaultOpen={false}>
+<SidebarGroup collapsible value="projects" defaultOpen={false}>
   <SidebarGroupLabel>Projects</SidebarGroupLabel>
   <SidebarGroupContent><TreeView>...</TreeView></SidebarGroupContent>
 </SidebarGroup>
@@ -534,6 +534,8 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 - ✅ Group 內容可選(使用者可能根本沒加任何 project)
 - ❌ 主導覽 group(永遠要看見)
 - ❌ 只有 1-2 個 item 的 group(收合徒增互動成本)
+
+**`value` 必填、非受控的展開狀態住在 `SidebarProvider`**(2026-10-14 審查抓到):AppShell 的 Menu 浮層開著時,同一份 Sidebar 內容畫兩份 —— 版面上的細列(被浮層蓋住)與浮層裡的展開版(下方「放不下時」)。狀態若住在各自的元件裡,在浮層裡展開「專案」、收回、視窗放寬回並排時,版面上那一份仍是收起的,重開浮層也會重置。所以群組以 `value` 為鍵把展開狀態存在 Provider,兩份讀同一個值;受控(`open` + `onOpenChange`)時以 consumer 的值為準。`value` 型別層必填(沒有內建的替代識別;同 Radix `Accordion.Item` 的 `value` 必填),不在 `SidebarProvider` 裡時退回元件自己記。
 
 **為什麼 prop 放在 `SidebarGroup` 而非 `SidebarGroupLabel`**:「是否可收合」是結構層決定,影響 label 尾端 chevron button(是否為 `Collapsible.Trigger`)+ content(是否被 `Collapsible.Content` 包)兩個 primitive(label 本身維持 `role="presentation"` div,不升格為 button)。放在 label 上會讓 content 不知道該不該被 `Collapsible.Content` 包,形成 prop drilling。group 層用 React context 傳遞是標準做法。
 
@@ -654,15 +656,15 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 
 ---
 
-## Mobile 行為
+## 放不下時(AppShell 的 Menu)
 
-`md` breakpoint（768px）以下,`collapsible="offcanvas"`（預設）/ `"icon"` 自動切 **Sheet 抽屜**——從側邊滑入、覆蓋主內容、點外部或 Esc 關閉。Sheet 寬度用 `--sidebar-width-mobile`，**mobile 沒有 icon 模式**（細列在手機上既占空間又難點）。
-
-**例外 — `collapsible="none"`**:`none` 分支在 tsx 於 `isMobile` 判斷**之前**提前 return 固定寬度 `--sidebar-width` div,**不進 Sheet**。故 mobile + `collapsible="none"` 會維持固定 240px 側欄(第三種狀態),非「一律 Sheet」。需 mobile Sheet 行為請用 `offcanvas` 或 `icon`。
-
-Sheet 開啟狀態**不持久化**。
-
-**Sheet 蓋住 global top bar → primary-header consumer 須在 Sheet 內補品牌/帳號**:Sheet（z-50）打開時覆蓋整個左側含 global top bar。若你是 `AppShell` `primary-header` 派(品牌 logo + 帳號入口放在 globalHeader、sidebar 平常無 header/footer),小螢幕 Sheet 打開後 globalHeader 被蓋住 → 使用者看不到品牌也按不到帳號。解法:consumer 讀 `useSidebar().isMobile` + `useAppShell().layout`,**mobile 時才**在 `<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 鏡像進 Sheet 頂排(SidebarHeader 即 ChromeHeader 基底,結構 SSOT);**不放 `<SidebarFooter>`**(primary-header 帳號家在 header 區,footer 是 primary-sidebar 慣例)。**rule owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」的 Responsive 精修子句**(本處不重述,Rule-of-3)。reference:`AppShell/_demo-helpers.tsx` `AcmeSidebar`。
+放在 AppShell 裡時,Menu 何時並排、何時暫藏、何時變左側浮層,全部照 `../AppShell/app-shell.spec.md`「版面規則」(用各區最小寬現算,**沒有 768 斷點**;2026-10-14 user 規格)。本元件負責各形態的長相:
+- **並排**:展開的 Menu 佔版面(有細列時取代細列的位置),右緣 `ResizeHandle` 可拖寬(user 規格 U:4);寬度 = 內容類型的最小 / 初始 / 最大與寬度紀錄(「版面規則」§1、§7)。API:`<Sidebar contentType widthRange={{ min, initial, max }} defaultWidth? onWidthCommit?>`(只在 AppShell 裡有作用;Menu 最大寬產品必給,沒給時開發階段警告、最大 = 初始)。在 AppShell 裡 Menu 是版面列的一員(正常排版,不再 `position: fixed`;`viewportInsetTop` 只對單獨使用的 Sidebar 有作用)。
+- **暫藏 / 關閉**:有細列(`collapsible="icon"`)就只剩細列,再窄也不消失、細列上的圖示照常可換頁;沒細列就什麼都不剩。`data-state` / `data-collapsible` 與 `useSidebar().state` 跟**畫面**走(暫藏時開關紀錄 `open` 是 true、畫面是收起);`useSidebar()` 2026-10-14 起不再有 `isMobile` / `openMobile` / `setOpenMobile` / `mobileOpenerRef`(破壞性)—— 要知道 Menu 此刻的顯示方式讀 `useAppShell().display.menu`。
+- **左側浮層**:以 Sheet 承載(z-50),從版面左緣開始、蓋住細列;寬度照紀錄(與並排共用),可拖,右側至少留 `--layout-space-viewport-inset`;點外部或 Esc **收回暫藏**、開關紀錄仍是開(「版面規則」§3、§9;拖過浮層把手之後點外部照樣收回 —— 把手預設不擋 pointerdown,`../../patterns/resize-handle/resize-handle.spec.md` API)。
+- **同一份內容、畫兩份**:浮層開著時,Sidebar 的 children 同時畫在版面上的細列(被浮層蓋住)與浮層裡(細列在浮層開著時保留,版面不跳;依據與出處見 `../AppShell/app-shell.spec.md`「版面規則」§6 末條)。DS 自己的有狀態部分兩份共用:選取(`activeId`)、可收合群組的展開(`SidebarGroup` `value`,上方「SidebarGroup 收合」)都住在 `SidebarProvider`。**consumer 放進 Menu 的其他有狀態元件必須受控**(狀態放在 Menu 外,例:TreeView 的 `expandedIds` + `onExpandedChange`、搜尋框的 `value`),否則兩份各記各的 —— 浮層裡展開的樹節點,回到並排時又是收起的。
+- **寬 0 時不可操作**:沒有細列(`collapsible="offcanvas"`)的 Menu 收掉(關閉、暫藏,或浮層開著時版面上那一份)時寬 0,裡面的選單項設 `inert` + `aria-hidden`,不留在 Tab 順序與無障礙樹(WCAG 2.4.3 / 2.4.7;2026-10-14 審查抓到 Tab 落在寬 0 的選單項)。有細列時細列看得到,照常可操作。單獨使用的 offcanvas Sidebar 收起時同一條。浮層開啟狀態**不持久化**。垂直方向沿用 2026-10-14 前的窄版 Sheet:從視窗頂端起,`primary-header` 時**蓋住 global top bar** → consumer 在浮層頂排補品牌 / 帳號(讀 `useAppShell().display.menu` + `useAppShell().layout`;rule owner = `../AppShell/app-shell.spec.md`「WorkspaceBrand 放置 SSOT」與「帳號入口(Account entry)放置 SSOT」的浮層精修子句,本處不重述)。
+- `collapsible="none"` 不能用在 AppShell 的 Menu 位置(「版面規則」§12)。不在 AppShell 裡單獨使用時,Sidebar 一律並排(AI 建議,在 user 以 D:10 核准的 D:30 清單(新增項 N14);user 規格只管 AppShell)。
 
 ---
 
@@ -679,12 +681,11 @@ Sheet 開啟狀態**不持久化**。
 
 | Token | 預設值 | 用途 |
 |-------|--------|------|
-| `--sidebar-width` | `15rem` (240px) | 展開寬度(2026-05-21 v11 user 拍板 240px;對齊 Linear/Notion/Figma/Polaris/Material Drawer 主流 240–256,5/8 家 = 240。也是 `--sidebar-width-min` AppShell Aside floor 共識值)|
+| `--sidebar-width` | `15rem` (240px) | 產品沒設時 Menu 的初始寬;`--sidebar-width-min`(240px)= 產品沒設時 Menu 與 Right panel 的最小寬。user 2026-05-21 原話(commit `e58576a6`):「--sidebar-width: 15rem = 240px,然後--sidebar-width-min就先設成240px吧,讓drag resize有一個最小寬度,aside應該也要一起參照」。2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾(`../AppShell/app-shell.spec.md`「版面規則」§1)|
 | `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size))` | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致;**md = 2×16+16 = 48 / lg = 2×24+20 = 68**,跟 chrome-header-height 解耦)|
 | `--sidebar-menu-icon-size` | `1rem` (16px) | sidebar menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override `1.25rem` |
-| `--sidebar-width-mobile` | `18rem` | Mobile sheet 寬度 |
 
-**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem / 18rem** 對齊 Linear/Notion/Figma/Polaris/Material Drawer 240–288 主流寬度,`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
+**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 上表 user 2026-05-21 定的 240;浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
 
 ---
 
@@ -705,7 +706,7 @@ Sheet 開啟狀態**不持久化**。
 - ❌ **把 user data 塞 SidebarMenu**——即使只有 3 項，只要使用者可新增就是 tree
 - ❌ **在 Sidebar 內放路由邏輯**——路由是 consumer 的事，用 `asChild` 包自家 Link / router
 - ❌ **硬寫寬度到子元件**——子元件應完全自適應 Sidebar 寬度
-- ❌ **Mobile 保留 icon 模式**——只有全寬 sheet / 關閉兩種狀態
+- ❌ **AppShell 的 Menu 用 `collapsible="none"`**——AppShell 的面板皆可開關(`../AppShell/app-shell.spec.md`「版面規則」§12)
 
 ---
 
@@ -724,7 +725,7 @@ Sheet 開啟狀態**不持久化**。
 ```
 Variant：目前僅 sidebar（floating 刻意不做 / inset 規劃中未實作，見「Variant」段）
 
-Collapsible：內容優先低頻導覽 → offcanvas；扁平高頻切換 → icon；超簡單 → none
+Collapsible：內容優先低頻導覽 → offcanvas；扁平高頻切換 → icon；超簡單 → none（AppShell 的 Menu 不可）
 
 內容：
 ├─ designer 1 層固定導覽       → SidebarMenu
@@ -747,7 +748,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 - **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**選中 × 互動疊加(2026-08-11,owner = `item-anatomy.spec.md` 同名格)**:滑鼠 hover 當前項**釘住不變**(先前無規則、靠編譯順序,現為顯式 class);鍵盤焦點停在任何項目都**畫框**(`focus-visible:focus-ring-inset`,2px 內描邊,選單鈕撐滿側欄寬 → 內描邊;當前項 = 框疊在選中底色上),焦點**不改底色**(底色只屬於 hover 與 `data-active`)—— owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板「都要畫框,不上底色」。歷史:2026-09-07「A5畫框」只補了當前項,未選中項當時仍用 hover 同色底(AI 推導,已撤回);原本的深一階底色 token 已退役。**當前項同時設 `aria-current="page"`**(2026-09-24 補)—— 先前只有純樣式的 `data-active`,螢幕閱讀器讀不到「你現在人在這一頁」。三份一手來源一致這樣寫:W3C APG Disclosure Navigation 範例、GitHub repo 導覽、Primer TreeView。它與 `aria-selected` 是兩件事(WAI-ARIA 1.2 `aria-current` 的 Note 明文說可並存):current = 你現在人在這一頁;selected = 這個控件裡被挑中的那一項。側欄導覽要表達的是「你現在在這一頁」,而且 ARIA 角色維持 `ul` / `li` / `button`、沒有宣告 grid / tree 這類 composite 角色,所以用 current 不用 selected —— 2026-09-25 起一串只佔一個 Tab 停靠點、方向鍵在裡面走(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」),這條不變。**純 SR 語意,零視覺變化。**`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
 - **快捷鍵不衝突**:`Cmd+B` / `Ctrl+B` 與 shadcn/ui Sidebar 同一組鍵(`SIDEBAR_KEYBOARD_SHORTCUT = "b"`,<https://github.com/shadcn-ui/ui/blob/a9c1da49ec4eab488dc99c69ae20a7ffaa4897d4/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L33>;判斷 `key === "b" && (metaKey || ctrlKey)` 後 `preventDefault` + toggle,<https://github.com/shadcn-ui/ui/blob/a9c1da49ec4eab488dc99c69ae20a7ffaa4897d4/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L95-L109>),VS Code「Toggle Primary Side Bar Visibility」也是 `CtrlCmd+B`(<https://github.com/microsoft/vscode/blob/4d72ba07ae257c404a23781b2ee2275ada05017c/src/vs/workbench/browser/actions/layoutActions.ts#L307-L310>)。DS 內建在 `SidebarProvider` 的 `window` keydown handler,同樣 `preventDefault` + toggle,避免穿透到瀏覽器(`Cmd+B` 在 Safari 是 favorites)。**三道 guard(2026-07-05 D4 修)**:(1) `defaultPrevented`——app 層 editor 已處理同快捷鍵時不 double-fire;(2) IME 組字中不攔(判準全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`:`isComposing` 或 `keyCode === 229`,2026-09-30 補後者);(3) 可編輯 target——`<input>` / `<textarea>` / `contentEditable` 內按 `Cmd/Ctrl+B` 不 toggle。第 (3) 道是本 DS 自己的理由,不是抄來的:可編輯區裡這組鍵常是粗體等編輯指令,編輯語意優先(上面 shadcn 那段 handler 沒有這一道,任何地方都 toggle)。**目前無 opt-out prop**(無 `disableShortcut`)。
 - **Collapsed accessible name(2026-07-05 D4 修)**:icon 模式 label 以 `sr-only` 視覺隱藏(非 display:none),SidebarMenuButton 對 SR 保留 accessible name(WCAG 4.1.2);Tooltip 僅 hover 提示、不供名;badge / inline actions 仍 display:none(補充資訊,供名責任在 label)。
-- **Mobile sheet focus trap**:`md` breakpoint 以下切 Sheet 模式時,Radix Dialog 自帶 focus trap + Esc dismiss(詳 sheet.spec.md)。**關閉焦點還原**:mobile Sheet 無顯式 `<SheetTrigger>`，SidebarTrigger 會直接傳入自身作為 opener；快捷鍵路徑則在 `setOpenMobile(true)` 前記錄當下聚焦元素。Sheet 關閉時透過 `onCloseAutoFocus` 還原仍連線的 opener；若 opener 已卸載則不強搶焦。還法全 DS 一支 `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(沒有觸發點 + modal;指標關閉不畫鍵盤框、焦點已被別處接走不搶;2026-09-30 自本元件自建那份收成共用)。
+- **Menu 浮層 focus trap**:AppShell 判定 Menu 為浮層時以 Sheet 承載,Radix Dialog 自帶 focus trap + Esc dismiss(詳 sheet.spec.md;Esc / 點外部 = 收回暫藏)。開啟時焦點落點照 Sheet 預設(沒有 body 標記 → 落在浮層殼上),**殼不畫焦點框**(`ds-canonical/references/focus-canonical.md`「問題一之二」E 類,與 FileViewer 殼同一種;AI 推導,2026-10-14),選單項各自畫框。**開關鈕 `aria-expanded`** 跟畫面(展開的 Menu 看得到 = true,暫藏 / 關閉 = false)並以 `aria-controls` 指向 Menu(`../AppShell/app-shell.spec.md`「版面規則」§10)。**關閉焦點還原**:浮層 Sheet 無顯式 `<SheetTrigger>`，SidebarTrigger 會直接傳入自身作為 opener；快捷鍵路徑則在叫出浮層前記錄當下聚焦元素。Sheet 關閉時透過 `onCloseAutoFocus` 還原仍連線的 opener；若 opener 已卸載則不強搶焦。還法全 DS 一支 `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(沒有觸發點 + modal;指標關閉不畫鍵盤框、焦點已被別處接走不搶;2026-09-30 自本元件自建那份收成共用)。
 - **Provider cardinality**:每個 document／app shell 只掛一個 SidebarProvider。多 Provider 的 local trigger 仍各自隔離，但 document-level Cmd/Ctrl+B shortcut 沒有 active-provider arbitration，不屬支援拓撲。
 - **Collapsible group**:`<SidebarGroup collapsible>` 的**尾端 chevron button**(`Collapsible.Trigger asChild` 包 `ItemInlineActionButton`)帶 `aria-expanded` + `aria-controls` 指向 GroupContent id,SR 可朗讀展開狀態(label 本身維持 `role="presentation"`,不承載 aria-expanded)。
 - **Sticky header / footer focus order**:Tab 順序按 DOM 順序 — Header → Content → Footer,SidebarTrigger 在 Pattern A/B 都位於 page top-left,Tab 第一站即可達。Content 的捲動區本身不是停靠點;每一串 `SidebarMenu` 各佔一站、串內用方向鍵(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」);群組收合鈕、`SidebarGroupAction`、`TreeView` 各自一站。
@@ -772,7 +773,8 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 - `../Tabs/tabs.spec.md` — in-page secondary nav（不塞 sidebar 的子頁切換）
 - `../Menu/menu-item.spec.md` — SidebarMenuButton 的 item-layout 共用規則
 - `../Command/command.spec.md` — Command palette，icon 模式下的跳轉逃生艙
-- `../Sheet/sheet.spec.md` — Sheet，暫時性側邊面板的替代（mobile 模式實作基礎，詳「A11y 預設」）
+- `../Sheet/sheet.spec.md` — Sheet，暫時性側邊面板的替代（Menu 浮層的承載，詳「A11y 預設」）
+- `../AppShell/app-shell.spec.md` — 「版面規則」：Menu 何時並排 / 暫藏 / 浮層、可拉上限、細列、寬度紀錄
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

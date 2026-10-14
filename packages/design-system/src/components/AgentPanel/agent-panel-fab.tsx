@@ -45,6 +45,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
+import { AgentPanelDockContext, type AgentPanelDockLink } from './agent-panel-dock-context'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -899,7 +901,30 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
       },
       [placementProp, onPlacementChange],
     )
-    const close = React.useCallback(() => setOpen(false), [setOpen])
+    // 使用者用**鍵盤**關閉(浮層時 Esc、焦點在 × 上按 Enter / 空白鍵)→ 入口鈕重掛後把焦點交給它(agent-panel.spec.md「Esc 與關閉語意」
+    // 焦點段:入口鈕在面板開著時卸載、關閉時重掛,要還給新掛上的那一顆;WCAG 2.4.3 管的是鍵盤順序)。
+    // 指標關閉(點 ×、點遮罩)不搬:搬過去會讓入口鈕的提示在點完之後自己彈出來(Radix Tooltip 被程式聚焦就開),
+    // 指標使用者不需要焦點接力(機械閘 scripts/overlay-detached-anchor-invariant.mjs A)。
+    // 版面造成的關閉(AppShell §4 連帶關閉)走 `link.setOpen`,不搬焦點 —— 那由 AppShell 的後備處理(焦點回 Main,K7)。
+    const focusFabAfterCloseRef = React.useRef(false)
+    const fabShellRef = React.useRef<HTMLDivElement | null>(null)
+    const panelWrapRef = React.useRef<HTMLDivElement | null>(null)
+    const close = React.useCallback(() => {
+      // 「這次是不是鍵盤關的」讀最近一次使用者輸入。浮層時的 Esc 由 `useEscapeRegion`(window 捕獲)當場呼叫這裡,
+      // 那一下 Esc 必須已經被記下來 —— 記錄的監聽掛在 window 捕獲、模組載入即掛,結構上先於它(hooks/use-input-modality.ts 檔頭;
+      // 2026-10-14 前掛在 document,讀到的是上一次輸入:滑鼠點進面板再按 Esc,焦點掉到 body)
+      focusFabAfterCloseRef.current = getLastUserInput().kind === 'keyboard'
+      setOpen(false)
+    }, [setOpen])
+    React.useEffect(() => {
+      if (open || !focusFabAfterCloseRef.current) return
+      focusFabAfterCloseRef.current = false
+      const active = document.activeElement
+      // 焦點已被別的東西接走(不在 body、也不在剛藏起來的面板裡 —— display:none 之後瀏覽器要到下一次畫面更新才把焦點移走)→ 不搶
+      if (active && active !== document.body && !panelWrapRef.current?.contains(active)) return
+      fabShellRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    }, [open])
+    const link = React.useMemo<AgentPanelDockLink>(() => ({ open, setOpen }), [open, setOpen])
     // v14 條 F 的最後半句「**以及原分頁離開宿主後返回**,均重新初始化為關閉的新對話」(2026-09-29,待辦總帳 OE2):
     // 從網址列離開宿主再按上一頁回來,瀏覽器可能直接從 back/forward cache 還原整個舊畫面 —— JS 堆疊原封不動、
     // 元件不會重新掛載,`defaultOpen = false` 那條路不會再走一次,面板就帶著離開前的狀態繼續開著。
@@ -932,12 +957,18 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
     // 用 wrapper 而不是把 `hidden` 交給 render prop:交出去就會有人忘記套。
     return (
       <>
-        <div style={{ display: open ? 'contents' : 'none' }}>
-          {children({ close, logoState })}
+        <div ref={panelWrapRef} style={{ display: open ? 'contents' : 'none' }}>
+          <AgentPanelDockContext.Provider value={link}>
+            {children({ close, logoState })}
+          </AgentPanelDockContext.Provider>
         </div>
         {!open && (
           <AgentFabDock
-            ref={ref}
+            ref={(node) => {
+              fabShellRef.current = node
+              if (typeof ref === 'function') ref(node)
+              else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+            }}
             logoState={logoState}
             placement={placement}
             onPlacementChange={handlePlacementChange}

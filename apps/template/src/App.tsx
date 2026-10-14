@@ -19,6 +19,9 @@
 //   2. 替換 WorkspaceBrand 內 workspace 名 / Avatar 顏色
 //   3. 替換 DashboardPage 為真實業務 widgets(DataTable / Chart / Card 等 DS 元件)
 //   4. 替換 PageHeader rightSlot 的 primary action(若有)
+//   5. 替換版面寬度設定(MAIN_MIN_WIDTH / MENU_WIDTH)為產品的值:AppShell 的 Main 最小寬必填、Menu 的最大寬產品必給
+//      (DS `app-shell.spec.md`「版面規則」§1;§8 消費者指引:Main 最小寬 + 細列寬 + 每種 Right 內容最小寬 ≤ 要支援的最窄 desktop 版面寬,
+//      水平捲軸就幾乎不會出現)
 
 import { useState, type ReactElement } from 'react'
 import {
@@ -56,10 +59,16 @@ const NAV = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ] as const
 
+// ── 版面寬度設定(產品的值;DS `app-shell.spec.md`「版面規則」§1)──
+// Main 最小寬:AppShell 必填,DS 不替產品挑預設。600 = 範本起點(示範值,產品依自己最寬的主內容調整)。
+const MAIN_MIN_WIDTH = 600
+// Menu 最小 / 初始 / 最大:最小與初始 240 = DS 預設(`--sidebar-width-min` / `--sidebar-width`);最大 DS 沒有既有值,產品必給(範本示範 320)。
+const MENU_WIDTH = { min: 240, initial: 240, max: 320 }
+
 // ── Sidebar(對齊 DS IconCollapse baseline:collapsible="icon" + WorkspaceBrand + footer)──
 function AppSidebar() {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" widthRange={MENU_WIDTH}>
       <SidebarHeader>
         {/* Chrome header avatar canonical(per header-canonical.spec.md:57-72):chrome header 不是 row context → raw <Avatar size={24}>,禁用 <ItemAvatar>(會誤啟動 row anatomy lookup)*/}
         {/* @layout-space-magic-ok: Sidebar#IconCollapse chrome-header-brand baseline owns fixed 8px Avatar-to-label micro spacing; layout-space tokens govern macro spacing */}
@@ -170,6 +179,7 @@ export default function App() {
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
         <AppShell
           layout="primary-sidebar"
+          mainMinWidth={MAIN_MIN_WIDTH}
           sidebar={<AppSidebar />}
           header={
             <PageHeader

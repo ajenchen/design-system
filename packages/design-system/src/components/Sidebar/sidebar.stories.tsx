@@ -41,7 +41,7 @@ const meta: Meta = {
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: '應用程式主要導覽與工作區 chrome 的側欄結構，包含群組、項目、收合與行動版 Sheet。產品以 primary-sidebar 模式組織跨頁導覽時使用。' } },
+    docs: { description: { component: '應用程式主要導覽與工作區 chrome 的側欄結構，包含群組、項目與收合;放在 AppShell 裡時,放不下會收成細列、按開關叫出左側浮層。產品以 primary-sidebar 模式組織跨頁導覽時使用。' } },
   },
 }
 export default meta
@@ -382,7 +382,7 @@ export const MixedContent: Story = {
                 Collapsible.Trigger(label 本身維持 presentation div,不升格為 button),
                 content 用 Radix Collapsible 包起來。
                 群組之間的分隔線由 SidebarGroup 的 [&+&]:before 自動處理。 */}
-            <SidebarGroup collapsible className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroup collapsible value="projects" className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupLabel>Projects</SidebarGroupLabel>
               <SidebarGroupContent>
                 <TreeView

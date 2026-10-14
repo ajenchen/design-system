@@ -12,15 +12,16 @@
 #   V2) `layout="primary-header"` AppShell instance 內含 `<SidebarHeader>`
 #       → WorkspaceBrand 已該在 globalHeader,sidebar 內不該再有 SidebarHeader
 #         (per app-shell.spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 一致)
-#         例外:該 instance 的正向 isMobile branch 內 mobile-only 補品牌(豁免)；
+#         例外:該 instance 的正向「Menu 是浮層」branch 內補品牌(豁免;`display.menu === 'overlay'` / `menuIsOverlay`,
+#         app-shell.spec.md 浮層精修;2026-10-14 前是 768 斷點的 `isMobile`,隨斷點退場)；
 #         nested AppShell 是獨立 boundary。
 #
 #   V3) `layout="primary-header"` + 任何 `<SidebarFooter>...</SidebarFooter>` 在同 file(2026-06-18 beta.74)
-#       → primary-header 帳號入口家在 globalHeader 右(收成 Sheet 鏡像到 Sheet header 右),**不該**用
+#       → primary-header 帳號入口家在 globalHeader 右(Menu 浮層時鏡像到浮層 header 右),**不該**用
 #         sidebar footer〔那是 primary-sidebar 帳號家慣例〕→ 誤用 = 模式混淆
 #         (per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」+ Material modal nav drawer
-#         「account switcher 放 drawer header」)。與 V2 不同:primary-header 任何 breakpoint(含 mobile
-#         Sheet)帳號家都在 header 區 → V3 不設 isMobile 豁免;非帳號用途 footer 走 escape allowlist。
+#         「account switcher 放 drawer header」)。與 V2 不同:primary-header 任何顯示方式(含 Menu
+#         浮層)帳號家都在 header 區 → V3 不設浮層豁免;非帳號用途 footer 走 escape allowlist。
 #
 # 對齊 `packages/design-system/ds-canonical/rules/self-verify.md`「Pre-edit」階段 +
 # check_chrome_header_handcraft.sh /
@@ -85,7 +86,7 @@ fi
 FULL_CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.governance_write_state.content')
 
 # 用 TypeScript 自身的 TSX parser 做 per-AppShell 判斷；全檔 grep 會被 JSX
-# whitespace/multiline、comments、另一個 AppShell instance 的 prop 或 `isMobile`
+# whitespace/multiline、comments、另一個 AppShell instance 的 prop 或 `display.menu`
 # decoy 繞過。TypeScript 是本 repo/template 的 pinned dev dependency；缺失或 parse
 # diagnostics 都是治理 runtime integrity failure，不得假成功。
 NODE_PROJECT_ROOT="${GOVERNANCE_PROJECT_DIR:-}"
@@ -116,21 +117,21 @@ if [ "$V1_COUNT" -gt 0 ]; then
   VIOLATIONS+=("V1 缺 globalHeader prop:layout=\"primary-header\" 必傳 globalHeader 否則邏輯矛盾(per app-shell.spec.md「primary-header = primary-sidebar + 一條 global header」)")
 fi
 
-# V2 使用 AST instance boundary。只有正向 mobile branch：
-# `isMobile && <SidebarHeader>` RHS 或 `isMobile ? <SidebarHeader> : ...`
+# V2 使用 AST instance boundary。只有正向「Menu 是浮層」branch：
+# `display.menu === 'overlay' && <SidebarHeader>` RHS 或 `menuIsOverlay ? <SidebarHeader> : ...`
 # 才豁免；否定、OR、false branch 與 nested AppShell 都不會誤放行。
 if [ "$V2_COUNT" -gt 0 ]; then
-  VIOLATIONS+=("V2 Sidebar 內含 SidebarHeader:primary-header mode WorkspaceBrand 該在 globalHeader,sidebar 內不該重複(per spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 共識)。若是 mobile-only responsive 補品牌請用正向 isMobile 條件渲染;若 sidebar header 是其他內容,加檔頭 escape allowlist 並寫明 rationale")
+  VIOLATIONS+=("V2 Sidebar 內含 SidebarHeader:primary-header mode WorkspaceBrand 該在 globalHeader,sidebar 內不該重複(per spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 共識)。若是 Menu 浮層時補品牌請用正向「Menu 是浮層」條件渲染(display.menu === 'overlay');若 sidebar header 是其他內容,加檔頭 escape allowlist 並寫明 rationale")
 fi
 
 # V3:layout="primary-header" + <SidebarFooter> 同 file → 帳號入口家在 globalHeader 右,不該用 sidebar footer。
-# 與 V2 不同 — primary-header 收成 Sheet 時帳號鏡像到 Sheet **header** 右(非 footer),故任何 breakpoint 都不該
-# 有 SidebarFooter 放帳號 → V3 不設 isMobile 豁免(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」
-# Responsive 精修「不放 SidebarFooter」+ Material modal nav drawer「account switcher 放 drawer header」)。
+# 與 V2 不同 — primary-header 的 Menu 浮層時帳號鏡像到浮層 **header** 右(非 footer),故任何顯示方式都不該
+# 有 SidebarFooter 放帳號 → V3 不設浮層豁免(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」
+# 浮層精修「不在浮層底放 SidebarFooter」+ Material modal nav drawer「account switcher 放 drawer header」)。
 # demo 天然不誤觸:layout="primary-header" 在 stories,<SidebarFooter> 在 _demo-helpers.tsx,分檔。
 # 非帳號用途 footer(storage meter / collapse 等)→ escape allowlist 兜底。
 if [ "$V3_COUNT" -gt 0 ]; then
-  VIOLATIONS+=("V3 Sidebar 內含 SidebarFooter:primary-header mode 帳號入口家在 globalHeader 右(收成 Sheet 鏡像到 Sheet header 右),不該用 sidebar footer〔那是 primary-sidebar 慣例〕(per spec.md「帳號入口(Account entry)放置 SSOT」+ Material modal nav drawer)。若 footer 是非帳號用途,加 escape allowlist \`// @app-shell-primary-header-allow:\` 並說明 reason")
+  VIOLATIONS+=("V3 Sidebar 內含 SidebarFooter:primary-header mode 帳號入口家在 globalHeader 右(Menu 浮層時鏡像到浮層 header 右),不該用 sidebar footer〔那是 primary-sidebar 慣例〕(per spec.md「帳號入口(Account entry)放置 SSOT」+ Material modal nav drawer)。若 footer 是非帳號用途,加 escape allowlist \`// @app-shell-primary-header-allow:\` 並說明 reason")
 fi
 
 if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then

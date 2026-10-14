@@ -49,7 +49,7 @@ export type CoexistenceTargets = () => Element[]
  * ── 不屬於控件的播報區保留(同族,2026-10-07)──
  * `hideOthers` 刻意保留頁面上所有 `[aria-live]`(`aria-hidden` 1.2.6 `dist/es2015/index.js:131-133`:
  * 「we should not hide aria-live elements」),而它的 inert 版 `inertOthers` / `suppressOthers` 沒有保留 ——
- * 結果是一般 modal 開著時 Toast 照常念得到,**並存**浮層(並存對話框、代理面板蓋板、FileViewer)開著時卻全部靜音
+ * 結果是一般 modal 開著時 Toast 照常念得到,**並存**浮層(並存對話框、AI agent 浮層、FileViewer)開著時卻全部靜音
  * (inert = 從無障礙樹拿掉)。這裡保留播報區連同它到 body 的祖先鏈(鏈上其他兄弟照樣 inert)。
  * **但只保留不在任何控件裡的播報區**:`aria-hidden` 只影響讀屏,`inert` 還會擋鍵盤與指標 —— 保留一條祖先鏈就等於把鏈上每個節點
  * 都放出來,鏈上若有可操作的控件(例:可搜尋 Select 的欄位外框,裡面常駐「已移除『X』」播報區),那個被蓋住的控件就變回可聚焦,
@@ -59,7 +59,7 @@ export type CoexistenceTargets = () => Element[]
  *
  * ── 這份怎麼記 ──
  * 只數**本實作**自己的鎖(`inertLocks`),只控制 `inert`;Radix 的 `aria-hidden` 鎖由 `aria-hidden` 套件自己數,兩邊互不相干,
- * 解鎖順序怎麼交錯都各自歸零。同一個節點被多個並存浮層(並存對話框 + 代理蓋板)同時 inert 時,最後一個解開才拿掉。
+ * 解鎖順序怎麼交錯都各自歸零。同一個節點被多個並存浮層(並存對話框 + AI agent 浮層)同時 inert 時,最後一個解開才拿掉。
  * 第一次上鎖時節點**已經**是 inert(不是本實作設的)→ 記下來,歸零時不拿掉(不碰別人的屬性;與 `aria-hidden` 套件同一條)。
  * 回傳的解鎖函式**冪等**:呼叫第二次什麼都不做(不會把別的鎖的計數多減一次)。
  * 不支援 `inert` 時退回 `hideOthers`:那時控制的是同一個 `aria-hidden` 屬性,與 Radix 共用計數反而正確(同一個屬性、誰最後解誰拿掉)。
@@ -138,9 +138,9 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
     schedule()
     // **刻意不在之後的 DOM 變動時重套**(2026-09-09 實測撤回):`inertOutside` 只標記呼叫當下的節點,
     // 曾想用 MutationObserver 在有新節點 portal 到 body 時重套一次,結果保留區**自己開出來的浮層**
-    // (並存 modal 裡的 PeoplePicker / Select 選單、蓋板態面板的歷史浮層,都 portal 到 body)也被抑制,
-    // 選項點不到(閘 S3 當場紅)。「之後 portal 出來的 modal 在蓋板後方仍可鍵盤到達」這個缺口
-    // 由層級(蓋板 z-[45] > 並存面 z-40)與 portal 進被抑制的宿主容器承接,不在這裡硬補。
+    // (並存 modal 裡的 PeoplePicker / Select 選單、浮層態代理面板的歷史浮層,都 portal 到 body)也被抑制,
+    // 選項點不到(閘 S3 當場紅)。「之後 portal 出來的 modal 在 AI agent 浮層後方仍可鍵盤到達」這個缺口
+    // 由層級(AI agent 浮層 z-[45] > 並存面 z-40)與 portal 進被抑制的宿主容器承接,不在這裡硬補。
     // 解鎖綁在這次 effect 的生命週期上(浮層關閉 / 卸載 / 保留集合換了),而且只解這一次上的鎖 —— 別人的鎖(Radix 的 aria-hidden、
     // 另一個並存浮層的 inert)不受解鎖順序影響(inertOutside 的說明)
     return () => { if (frame) cancelAnimationFrame(frame); undo?.(); undo = undefined }
@@ -155,7 +155,7 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
  * 不用 z-index 把保留節點抬上來:保留節點常是 `display:contents` 的殼或 flex 子節點,改它們的定位會破版。
  * 洞的位置跟著 ResizeObserver / 視窗 resize / 捲動更新。
  */
-// forwardRef(2026-09-16):代理蓋板要把自家遮罩放進保留集合(讓它接住指標、不被設 inert),需要拿到節點;React 18 的函式元件不會把 ref 當 prop 傳。
+// forwardRef(2026-09-16):AI agent 浮層要把自家遮罩放進保留集合(讓它接住指標、不被設 inert),需要拿到節點;React 18 的函式元件不會把 ref 當 prop 傳。
 export const CoexistenceMask = React.forwardRef<HTMLDivElement, { keep: CoexistenceTargets } & React.HTMLAttributes<HTMLDivElement>>(
 function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
   const [clipPath, setClipPath] = React.useState<string>('none')
@@ -188,7 +188,7 @@ function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
         return parseFloat(v) || 0
       }
       const boxes = (el: Element): Hole[] => {
-        // 遮罩不是洞(2026-09-16):另一層的並存遮罩(代理蓋板態自家的遮罩住在常駐殼裡、與面板同級)雖然有盒子、
+        // 遮罩不是洞(2026-09-16):另一層的並存遮罩(AI agent 浮層自家的遮罩住在常駐殼裡、與面板同級)雖然有盒子、
         // 也接住指標(它要把點擊擋在自己身上,不讓點擊穿到底下的 modal / 宿主),但它是「遮住」不是「保留」——
         // 把它當洞會讓本遮罩整張被挖空;它自己算洞時更不能把自己挖掉。
         if (el.hasAttribute('data-coexistence-mask')) return []

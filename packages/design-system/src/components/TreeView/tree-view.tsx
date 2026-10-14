@@ -1206,7 +1206,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           )}
           {draggable && (
             // 拖曳影像 `999`(= dnd-kit 預設,寫明):全 DS 層級表的「拖曳影像」列。`<DragOverlay>` 就地渲染、不是 portal ——
-            // 樹的祖先都不形成疊放脈絡時才跟整頁比、在 Tooltip 與 Toast 之上;樹放在 Dialog / Sheet / FileViewer / Popover / 代理蓋板裡時
+            // 樹的祖先都不形成疊放脈絡時才跟整頁比、在 Tooltip 與 Toast 之上;樹放在 Dialog / Sheet / FileViewer / Popover / AI agent 浮層裡時
             // 被那一層封頂,Toast 與 Tooltip 畫在它上面 —— 層級表 tokens/elevation/elevation.spec.md「疊放順序」第 9 列。
             <DragOverlay dropAnimation={null} zIndex={999}>
               {draggingId ? (() => {

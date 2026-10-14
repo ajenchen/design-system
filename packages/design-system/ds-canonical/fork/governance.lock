@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "c3aa27661e55c8a2d0598262e596d3bce7e55ff7aabddd0f7e1fba31b9352d39",
+      "sha256": "9fc04797ee2430bf8da58a1a16e8a7b6801cb0f0440ddefd25e5473f0dc1b470",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -1439,7 +1439,7 @@
     {
       "schemaVersion": 1,
       "file": "references/story-baseline-registry.json",
-      "sha256": "cac3bbf5adff25302e78ac689c48204986c43ce41eb56161ccee1e14557ba56d",
+      "sha256": "f2e84184d26b19bfebae3d8724ac80c00e38db07b7e408179ec48a99d879abc5",
       "source": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
       "classification": null,
       "destination": null

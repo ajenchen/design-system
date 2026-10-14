@@ -7,7 +7,7 @@
  *            外加一個只含層級 utility 的 className 字串(`!z-[60]`,層級表 tokens/elevation/elevation.spec.md「疊放順序」—— 放不進任何落點)、
  *            ToasterProps 只有 position;toast.tsx 不量任何元素的位置;沒有任何非 story 檔碰 sonner 清單的 DOM
  *           (data-sonner-toaster)或寫它的落點自訂屬性(--offset-* / --mobile-offset-*);所有 <Toaster> 用法最多只帶 position。
- *        (2) 真建置:七個情境(沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 入口鈕貼邊 / 頁面捲動 / docs 頁)裡,
+ *        (2) 真建置:七個情境(沒有代理 / 代理並排 / 代理浮層 / 入口鈕在家 / 入口鈕貼邊 / 頁面捲動 / docs 頁)裡,
  *            Toast 右緣離包含塊右緣、底緣離包含塊下緣都 = sonner 預設邊距(從 sonner 建置讀出,不寫死),
  *            Toast 清單四邊的落點自訂屬性全是 sonner 預設、沒有行內 left;story 頁的包含塊 = 視窗。
  *   紅: 任一條不符 → exit 1。`--selftest` 兩種對照組,每一種都必須紅在它該紅的地方,少一個 = 量具沒在量它宣稱的東西 → exit 1:
@@ -15,7 +15,7 @@
  *           <Toaster> 帶 offset),每一種都必須紅在指定的那一條;
  *       (2) 真建置:在頁面裡注入 a6976432 的舞台落點(並排面板切走右緣 → Toast 對齊面板左緣 − 24、在家的入口鈕 → Toast 疊在它上方、
  *           每一格重量 = 捲動也跟著走、只算與包含塊相交的佔用):代理並排 / 入口鈕在家 / 頁面捲動 / docs 頁都必須紅;
- *           沒有代理 / 蓋板 / 貼邊那時本來就不動,必須維持綠(證明注入的是 a6976432 的行為,不是隨便推一下)。
+ *           沒有代理 / 代理浮層 / 貼邊那時本來就不動,必須維持綠(證明注入的是 a6976432 的行為,不是隨便推一下)。
  *       story / docs 頁開不起來、版面 10 秒內不靜止、Toast 沒出現、sonner 預設邊距讀不到 = 儀器失效(INSTRUMENT-FAIL,不是產品裁決,也不算通過)。
  *   綠: 沒改壞時全部綠;每個情境都等 Toast 元素本身出現、再等版面連續 10 個影格靜止(sonner 進場過渡也在 getAnimations 裡)才量,
  *       不用固定睡眠當「已出現」的代理;量的是幾何等式(±0.5px),重複跑不抽籤。
@@ -26,7 +26,7 @@
  * 一般頁面 = 視窗;Storybook docs 頁每則 story 的外框有 transform,包含塊是那個外框(Storybook 造成,不是 DS 行為)。
  *
  * 輸出的範圍代號:C = 靜態(C1–C7);真建置 N 沒有代理(Toast「點擊觸發通知」)/ D 代理並排(網址註冊表示意,1440×900,新增任務 → 建立)/
- * O 接 D 把視窗縮成 900(容器 < 960 → 蓋板)/ F 面板關著、入口鈕在家 / S 入口鈕鍵盤 → 貼邊 / K 入口鈕在家、整頁可捲、捲 60 /
+ * O 接 D 把視窗縮成 900(畫布放不下舞台最小 600 + 面板最小 360 → 代理浮層)/ F 面板關著、入口鈕在家 / S 入口鈕鍵盤 → 貼邊 / K 入口鈕在家、整頁可捲、捲 60 /
  * P AgentPanel「展示」docs 頁(包含塊是 story 外框)。每個情境另印「報告(不判定)」:Toast 與面板 / 輸入盒 / 入口鈕相交多少 —— 甲 = 疊在上面是刻意的。
  * 對照實測(2026-10-13):本閘對 6b5d8b61 的建置(a6976432 的舞台版)跑,D 離右 441 / F 離下 89 / K 離下 149 / P 離右 402 全紅、N / O / S 綠、
  * 靜態 C1 / C2 紅;--selftest 注入的舞台落點量到的是同一組數字。
@@ -201,7 +201,7 @@ const PROBE_ATTR = 'data-gate-toast-frame'
  * selftest 注入:a6976432 的舞台落點(lib/stage-geometry.ts + Toast/stage-offsets.ts 的行為,在頁面裡重現)。
  * 登記 = 並排的面板(edge:右緣切到面板左緣)、在家的入口鈕(corner:頂 − 自己的 loose);只算與該清單包含塊相交的佔用;
  * 換算 = 靠右 → --offset-right = 24 + 右緣佔用;靠下靠右且佔用 > 24 → --offset-bottom = 下緣佔用;手機同理(> 16)。
- * 每一格重量(a6976432 = ResizeObserver + 捲動重量),沒有佔用時拿掉 —— 沒有代理 / 蓋板 / 貼邊與 sonner 預設相同,跟 a6976432 一樣。
+ * 每一格重量(a6976432 = ResizeObserver + 捲動重量),沒有佔用時拿掉 —— 沒有代理 / 代理浮層 / 貼邊與 sonner 預設相同,跟 a6976432 一樣。
  */
 const STAGE_PLACEMENT = ({ PANEL, FAB, PROBE_ATTR, BASE, MOBILE_BASE }) => {
   const rectOf = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom } }
@@ -372,7 +372,7 @@ await scenario('N', TOAST, 'button', async () => {
   assertDefault(await measure(), '沒有代理')
 })
 
-// ── D / O 代理並排 → 蓋板 ───────────────────────────────────────────────
+// ── D / O 代理並排 → 浮層 ───────────────────────────────────────────────
 await scenario('D', DEMO, PANEL, async () => {
   await createTask('補 QA 環境資訊')
   const m = await measure()
@@ -385,8 +385,8 @@ await scenario('D', DEMO, PANEL, async () => {
   await page.waitForFunction((sel) => document.querySelector(sel)?.getAttribute('data-agent-panel-mode') === 'overlay', PANEL, { timeout: 10_000, polling: 'raf' })
   await settle()
   const o = await measure()
-  rec(o.panelMode === 'overlay' && !!o.panel, '前提:容器 < 960,代理蓋板', `mode=${o.panelMode}`)
-  assertDefault(o, '代理蓋板')
+  rec(o.panelMode === 'overlay' && !!o.panel, '前提:畫布放不下舞台最小 600 + 面板最小 360,代理浮層', `mode=${o.panelMode}`)
+  assertDefault(o, '代理浮層')
   report(o)
 })
 

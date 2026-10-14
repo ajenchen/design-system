@@ -8,7 +8,7 @@
  *          最低的全域列,局部列的非數字值只能是 CONTAINED_LOCAL 裡的(D 量過的變數,或已知有界的運算式);拖曳影像 > Tooltip > Toast > 第 3–6 列
  *         (表上的值;拖曳影像就地渲染、只在頁面層跟整頁比,條件寫在表的第 9 列)。
  *        R(真建置)A 入口鈕的提示「問我或推走我」與 Toast 重疊時整塊看得到(提示內多點 elementFromPoint 全命中提示);
- *          B Dialog 裡的提示「關閉」疊在 Toast 上;C Toast 蓋在一般 Dialog 的遮罩與本體(z-50)、代理蓋板(z-[45])之上;
+ *          B Dialog 裡的提示「關閉」疊在 Toast 上;C Toast 蓋在一般 Dialog 的遮罩與本體(z-50)、AI agent 浮層(z-[45])之上;
  *          D 每一顆用變數疊放的頭像 / Tag(值 = 項目數 + 1,沒有上限),所在那一列(最近的有盒子的祖先)自成疊放脈絡 ——
  *            Combobox 四模式(編輯 / 檢視 / 唯讀 / 停用)、Combobox 在 DataTable 裡、DataTable「專案排程全功能整合」、AgentPanel 附件列、
  *            PeoplePicker 頭像堆疊(寬度貼合內容 × 多人);CONTAINED_LOCAL 標 D 的每個變數都必須真的量到過;
@@ -22,7 +22,7 @@
  *         把並存本體改成 50、一般本體改成 40(E 每一則都必紅)。
  *       story 開不起來、30 秒內等不到該步的元素 / 版面不靜止、提示與 Toast 根本沒重疊 = 儀器失效(INSTRUMENT-FAIL,不是產品裁決,也不算通過);
  *       訊息點名是哪一步(A1…、B1…、C1.1…、C2.1…)、那一步等了多久,並附上那一刻的 Dialog / Toast / 浮層 / 焦點 / 代理面板狀態。
- *   綠: 沒改壞時全部綠;每一步都等**元素本身**(Toast 出現、提示出現、Dialog 卸載、面板換成蓋板、sonner 的暫停旗標),再等版面連續
+ *   綠: 沒改壞時全部綠;每一步都等**元素本身**(Toast 出現、提示出現、Dialog 卸載、面板換成浮層、sonner 的暫停旗標),再等版面連續
  *       10 個影格靜止才量,不用固定睡眠當「已出現」的代理;30 秒只是天花板。量測期間 Toast 用 sonner 自己的暫停條件留住
  *      (holdToast),不靠「機器夠快、4 秒內量完」。
  *
@@ -38,7 +38,7 @@
  * A 的提示用鍵盤聚焦打開:Toast 依 toast.spec.md「落點」甲不避讓,疊在入口鈕上(入口鈕的盒子 90% 在 Toast 底下),指標點不到;
  * Tab 到入口鈕是同一個 focus 事件,Radix Tooltip 聚焦即開。
  * C2 的示意把宿主畫在帶 transform 的「模擬瀏覽器畫布」裡(自成疊放脈絡 → 面板的 z-[45] 只在畫布裡比),量之前拿掉那個 transform、
- * 並確認面板到根之間再沒有疊放脈絡 —— 才是產品裡面板直接拿 z-[45] 跟整頁比的組合(agent-panel.tsx 蓋板註解)。
+ * 並確認面板到根之間再沒有疊放脈絡 —— 才是產品裡面板直接拿 z-[45] 跟整頁比的組合(agent-panel.tsx 浮層註解)。
  * 改動前實測:e8fb3635(Toast 疊在入口鈕上方的舊落點)A 提示本體 98/330 點看得到、重疊區 0/196,B 0/294;c6c192a1(視窗預設角落)
  * 用本版量法 A 0/330、B 0/294;兩者 C 都綠(順序沿用)。
  * Toast 留住的必要(2026-10-14 實測):本機閒置時從 Toast 出現到最後一次量測 A 約 1.1 秒、B + C1 約 2.1 秒、C2 約 0.7 秒;同一台機器滿載
@@ -262,7 +262,7 @@ export function checkRegistry(rows, { uses, files }) {
       }
     }
   }
-  // S5 裁示:拖曳影像 > Tooltip > Toast > 第 3–6 列(並存遮罩 / 並存 modal / 代理蓋板 / 一般 modal 與錨定浮層)與所有局部列
+  // S5 裁示:拖曳影像 > Tooltip > Toast > 第 3–6 列(並存遮罩 / 並存 modal / AI agent 浮層 / 一般 modal 與錨定浮層)與所有局部列
   const byName = (name) => rows.find((r) => r.name === name)
   const toastRow = byName('Toast')
   const tooltipRow = byName('Tooltip')
@@ -275,7 +275,7 @@ export function checkRegistry(rows, { uses, files }) {
     if (!(num(tooltipRow) > num(toastRow))) fail('S5', `Tooltip(${num(tooltipRow)})必須在 Toast(${num(toastRow)})之上(user 2026-10-13 採納)`)
     // 改動前 Tooltip(50)< 拖曳影像(999):沿用;拖曳影像 vs Toast 是被迫翻的那一對(表下「逐對裁示」)
     if (!(num(dragRow) > num(tooltipRow))) fail('S5', `拖曳影像(${num(dragRow)})必須在 Tooltip(${num(tooltipRow)})之上(沿用改動前的順序)`)
-    for (const name of ['並存遮罩', '並存 modal', '代理蓋板', '一般 modal 與錨定浮層']) {
+    for (const name of ['並存遮罩', '並存 modal', 'AI agent 浮層', '一般 modal 與錨定浮層']) {
       const r = byName(name)
       if (!r) fail('S5', `表上找不到「${name}」列`)
       else if (!(num(toastRow) > num(r))) fail('S5', `Toast(${num(toastRow)})必須在「${name}」(${num(r)})之上(沿用改動前的順序)`)
@@ -377,7 +377,7 @@ const TOAST = '[data-sonner-toast][data-mounted="true"]'
 const PANEL = '[role="complementary"][aria-label="智慧代理"]'
 const FAB = 'button[aria-label*="開啟智慧代理"]'
 /**
- * 對照組:改動前 —— sonner 內建的值;壓低 —— 低於代理蓋板(45)與一般 modal(50)。
+ * 對照組:改動前 —— sonner 內建的值;壓低 —— 低於 AI agent 浮層(45)與一般 modal(50)。
  * 用**行內 important**寫在清單上:DS 的 `!z-[60]` 是 layer 裡的 important,會贏過任何沒有 layer 的 important 樣式表
  *(cascade 對 important 反轉 layer 順序)—— 注入 `<style>` 改不動它,對照組就會假裝有在量(第一版就是這樣,全綠)。
  */
@@ -386,7 +386,7 @@ const CONTROL_Z = { old: '999999999', low: '44' }
 const HIT_CSS = '[data-sonner-toaster],[data-sonner-toaster] *,[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] *{pointer-events:auto!important}'
 /**
  * 每一個等待的天花板(30 秒 = openStory 每段等待的預設)。成功與否一律由**元素本身**決定(Toast 出現、提示出現、Dialog 卸載、
- * 面板換成蓋板、sonner 的暫停旗標、版面連續 10 個影格靜止),天花板只在訊號永遠不來時才用得到 —— 放寬不會造成假綠,
+ * 面板換成浮層、sonner 的暫停旗標、版面連續 10 個影格靜止),天花板只在訊號永遠不來時才用得到 —— 放寬不會造成假綠,
  * 只讓慢的機器多等一會兒(M32 第四題:機器慢不能讓閘紅)。
  */
 const WAIT_MS = 30_000
@@ -668,16 +668,16 @@ await scenario('B', DIALOG_FORM, 'button', async () => {
   if (SELFTEST) await setControl(null)
 })
 
-// ── C2 Toast vs 代理蓋板(z-[45]):寬畫面建任務 → 縮到 900(容器 < 960 → 蓋板)─────────────────────
+// ── C2 Toast vs AI agent 浮層(z-[45]):寬畫面建任務 → 縮到 900(畫布放不下舞台最小 600 + 面板最小 360 → 浮層)─────────────
 await scenario('C2', DEMO, PANEL, async () => {
   if (SELFTEST) await setControl('low')
   const since = await createTask('C2.1.')
   await step('C2.2 視窗縮到 900', () => page.setViewportSize({ width: 900, height: 900 }))
-  await step('C2.3 等代理面板換成蓋板', () => page.waitForFunction((sel) => document.querySelector(sel)?.getAttribute('data-agent-panel-mode') === 'overlay', PANEL, { timeout: WAIT_MS, polling: 'raf' }))
+  await step('C2.3 等代理面板換成浮層', () => page.waitForFunction((sel) => document.querySelector(sel)?.getAttribute('data-agent-panel-mode') === 'overlay', PANEL, { timeout: WAIT_MS, polling: 'raf' }))
   await settle('C2.4')
   // 這則示意把宿主畫在一個帶 transform 的「模擬瀏覽器畫布」裡 —— transform 自成疊放脈絡,整塊畫布在整頁脈絡裡是 0,
   // Toast 不論幾層都會在它上面(第一版在這裡對照組 44 也綠,就是量到了這個)。產品裡面板的祖先是 `position: relative; z-index: auto`
-  //(agent-panel.tsx 蓋板註解),面板直接拿 z-[45] 跟整頁比。所以量之前拿掉畫布的 transform,並確認面板到根之間再沒有任何疊放脈絡。
+  //(agent-panel.tsx 浮層註解),面板直接拿 z-[45] 跟整頁比。所以量之前拿掉畫布的 transform,並確認面板到根之間再沒有任何疊放脈絡。
   const chain = await step('C2.5 拿掉示意畫布的 transform', async () => {
     const chain = await page.evaluate((PANEL) => {
       const panel = document.querySelector(PANEL)
@@ -698,7 +698,7 @@ await scenario('C2', DEMO, PANEL, async () => {
   })
   rec(chain.neutralised.length > 0 && chain.z === '45', '前提:拿掉示意畫布的 transform 後,面板以 z-[45] 直接跟整頁比', `拿掉 ${chain.neutralised.length} 個 transform;面板 z ${chain.z}`)
   await settle('C2.6')
-  await measureTop('C2.7', 'Toast 蓋在代理蓋板上(重疊處全是 Toast)', { top: { kind: 'toast', text: '任務已建立' }, other: { selector: PANEL }, inset: 10, step: 6 })
+  await measureTop('C2.7', 'Toast 蓋在 AI agent 浮層上(重疊處全是 Toast)', { top: { kind: 'toast', text: '任務已建立' }, other: { selector: PANEL }, inset: 10, step: 6 })
   reportHeld('任務已建立', since)
   if (SELFTEST) await setControl(null)
 })
@@ -835,6 +835,6 @@ function finish() {
   const red = failed > 0 || instrumentFails.length > 0
   console.log(red
     ? `✗ layer-order ${failed} 條失敗、${instrumentFails.length} 個情境沒量到`
-    : `✅ layer-order PASS(全 DS z 值都在層級表上、表不過期且順序成立${STATIC_ONLY ? '' : ';提示蓋在 Toast 上、Toast 蓋在 Dialog 與代理蓋板上、用變數疊放的頭像 / Tag 都被那一列圈住、並存 modal 本體 z-40'})`)
+    : `✅ layer-order PASS(全 DS z 值都在層級表上、表不過期且順序成立${STATIC_ONLY ? '' : ';提示蓋在 Toast 上、Toast 蓋在 Dialog 與 AI agent 浮層上、用變數疊放的頭像 / Tag 都被那一列圈住、並存 modal 本體 z-40'})`)
   process.exit(red ? 1 : 0)
 }

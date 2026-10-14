@@ -135,7 +135,7 @@ toast({
 **規則**:Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓。
 
 - 角落 = `<Toaster position>`(app 層設定一次,預設右下);邊距 = sonner 預設:桌機離視窗邊 24px,寬度 600px 以下(手機)16px 且整列滿寬(sonner `src/index.tsx` `VIEWPORT_OFFSET = '24px'` / `MOBILE_VIEWPORT_OFFSET = '16px'`,https://github.com/emilkowalski/sonner/blob/8e4662b39255120b62138312058f5d77c0139a5e/src/index.tsx#L25-L28)。
-- `<Toaster />` 不傳 `offset` / `mobileOffset` / `style`,DS 也不量任何元件的位置來推 Toast。代理面板並排或蓋板、入口鈕在家或貼邊、頁面捲動,Toast 都在同一個位置,可能疊在它們上面 —— 刻意如此,不是 bug(`../AgentPanel/agent-panel.spec.md`、`../AgentPanel/agent-panel-fab.spec.md` 各有一行指回本節)。
+- `<Toaster />` 不傳 `offset` / `mobileOffset` / `style`,DS 也不量任何元件的位置來推 Toast。代理面板並排或浮層、入口鈕在家或貼邊、頁面捲動,Toast 都在同一個位置,可能疊在它們上面 —— 刻意如此,不是 bug(`../AgentPanel/agent-panel.spec.md`、`../AgentPanel/agent-panel-fab.spec.md` 各有一行指回本節)。
 - 疊在東西上面時,讓開的方法是 Toast 自己:(1) 畫面上可見的 × 隨時關掉(見「A11y 預設」關閉按鈕);(2) 自動消失,無 `action` 4 秒、有 `action` 10 秒(見「API」`duration`);(3) 滑鼠移上去暫停倒數,鍵盤 ⌥T 跳進 Toast 也暫停(見「A11y 預設」自動關閉計時器)。
 
 **由來 —— user 2026-10-13 決定(甲)**。user 先問:
@@ -165,11 +165,11 @@ AI 查證後建議甲(「Toast 一律以整個視窗為準,不做任何避讓」
 
 **Storybook docs 頁**:每則 story 的外框有 transform,`position: fixed` 的包含塊變成那個外框,Toast 落在外框的角落。這是 Storybook 展示框造成的,不是 DS 行為;一般 app 的包含塊就是視窗。
 
-閘:`scripts/toast-viewport-placement-invariant.mjs`(真建置:沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 / docs 頁,Toast 離包含塊右、下兩邊都 = sonner 預設邊距;靜態:DS 原始碼沒有任何地方傳 Toast 落點參數、改寫 sonner 落點或量元件位置來推 Toast;`--selftest` 注入「跟著面板與入口鈕挪位」的舊做法,必紅)。
+閘:`scripts/toast-viewport-placement-invariant.mjs`(真建置:沒有代理 / 代理並排 / 代理浮層 / 入口鈕在家 / 貼邊 / 頁面捲動 / docs 頁,Toast 離包含塊右、下兩邊都 = sonner 預設邊距;靜態:DS 原始碼沒有任何地方傳 Toast 落點參數、改寫 sonner 落點或量元件位置來推 Toast;`--selftest` 注入「跟著面板與入口鈕挪位」的舊做法,必紅)。
 
 ## 層級
 
-Toast 在所有 modal 與浮層(Dialog、Sheet、FileViewer、Popover、DropdownMenu、HoverCard,`z-50`)與代理蓋板之上,在 Tooltip 之下;頁面層的拖曳影像(拖曳元件不在任何疊放脈絡裡時;dnd-kit 的影像就地渲染、不是 portal,放進 modal / 浮層裡就被那一層封頂、在 Toast 之下)也在它上面:`<Toaster>` 以 `!z-[60]` 蓋掉 sonner 內建的 `999999999`(sonner 的樣式不在 cascade layer 裡,要 important 才蓋得過)。層級表、逐對裁示(含「所有提示都蓋在 Toast 上面」,user 2026-10-13 採納)與世界級對照 → `../../tokens/elevation/elevation.spec.md`「疊放順序」。
+Toast 在所有 modal 與浮層(Dialog、Sheet、FileViewer、Popover、DropdownMenu、HoverCard,`z-50`)與 AI agent 浮層之上,在 Tooltip 之下;頁面層的拖曳影像(拖曳元件不在任何疊放脈絡裡時;dnd-kit 的影像就地渲染、不是 portal,放進 modal / 浮層裡就被那一層封頂、在 Toast 之下)也在它上面:`<Toaster>` 以 `!z-[60]` 蓋掉 sonner 內建的 `999999999`(sonner 的樣式不在 cascade layer 裡,要 important 才蓋得過)。層級表、逐對裁示(含「所有提示都蓋在 Toast 上面」,user 2026-10-13 採納)與世界級對照 → `../../tokens/elevation/elevation.spec.md`「疊放順序」。
 
 層級只管「誰畫在上面」,不動落點:入口鈕在家時 Toast 照上方「落點」疊在入口鈕上(不避讓);入口鈕的提示「問我或推走我」(鍵盤聚焦入口鈕,或指標指到入口鈕露在 Toast 外的那一小塊時打開)與 Toast 重疊時,提示在上、整塊看得到。閘:`scripts/layer-order-invariant.mjs`(A 入口鈕的提示、B Dialog 裡的提示蓋在 Toast 上;C Toast 蓋在一般 Dialog 與代理蓋板上)。
 
@@ -227,7 +227,6 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
-- `agent-panel.spec.md`
 - `alert.spec.md`
 - `dialog.spec.md`
 - `form-validation.spec.md`

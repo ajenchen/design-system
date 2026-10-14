@@ -26,7 +26,7 @@ import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
  * padding token SSOT 在 `patterns/overlay-surface/`)。side="right" 是 defaultVariants,消費者不傳 side。
  *
  * ── 其他 side(top / bottom / left)——**非消費者 API**,內部基建用 ──
- * top / bottom / left 變體保留給 DS 內部基建(例:Sidebar 在小尺寸視口時從 left 滑入)。
+ * top / bottom / left 變體保留給 DS 內部基建(例:AppShell 的 Menu 浮層 —— Sidebar 放不下時從 left 滑入)。
  * 消費者 code **禁止** 傳 `side="top" | "bottom" | "left"` — 這些用途需 user 授權。
  *
  * ── 跟 Dialog 的差異 ──
@@ -78,8 +78,8 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 // ── sheetVariants ─────────────────────────────────────────────────────────
-// side="right" 給**消費者**。top/bottom/left 給 **DS 內部基建**用(如 Sidebar 在
-// narrow viewport 時切 side="left")。消費者 code 不傳 side,用 default。
+// side="right" 給**消費者**。top/bottom/left 給 **DS 內部基建**用(如 AppShell 的 Menu 浮層
+// 用 side="left")。消費者 code 不傳 side,用 default。
 const sheetVariants = cva(
   // 核心容器 — 無 padding(由 SheetBody / SheetHeader / SheetFooter 自理 padding,
   // 對齊 overlay-surface pattern + Dialog canonical)
@@ -113,7 +113,7 @@ interface SheetContentProps
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
 /** @internal DS 預設 open-focus(首個 body 互動元素)。2026-10-01 起 SheetContent 會**組合** consumer 的 onOpenAutoFocus(consumer 先跑、
- *  沒擋預設才走這支),不再被 `{...props}` 整支蓋掉;自訂前置行為(如 AppShellAside opener snapshot)後仍可 import 接力呼叫。
+ *  沒擋預設才走這支),不再被 `{...props}` 整支蓋掉;自訂前置行為(記下開啟者等)後仍可 import 接力呼叫。
  *  選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx),不該成為開啟時的落點。 */
 export const handleSheetOpenAutoFocus = (e: Event) => {
   e.preventDefault()
@@ -132,7 +132,7 @@ const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
-  // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 窄版抽屜 / AppShell 窄版側欄)照舊先跑、擋了預設就不接。
+  // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
   const focusReturn = useTriggerlessFocusReturn(React.useContext(SheetModalContext))
   // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
   const contentRef = React.useRef<HTMLDivElement | null>(null)

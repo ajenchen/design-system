@@ -10,7 +10,7 @@
  * 一支判斷,三種浮層(呼叫端只宣告自己是哪一種):
  * - **Radix 有觸發點**(預設;SelectMenu、AgentPanel 歷史浮層):Radix 自己會還,這裡只接手「指標造成的收起」,
  *   還的時候明說 `focusVisible: false`(下方「為什麼」);鍵盤收起、按在外面收起都照 Radix 原樣。
- * - **沒有觸發點 + modal**(`noTrigger` + `modal`;CommandDialog、Sidebar 窄版抽屜、AppShell 窄版側欄、FileViewer):一律還,
+ * - **沒有觸發點 + modal**(`noTrigger` + `modal`;CommandDialog、Sidebar 的 Menu 浮層、FileViewer):一律還,
  *   按遮罩收起也還(Radix modal 對自己的觸發點也是這樣)。
  * - **沒有觸發點 + 非 modal**(`noTrigger`;DatePicker 區間、AgentPanel 入口鈕右鍵選單):一律還,**除了**指標按在浮層與開啟者以外的地方
  *   收起 —— 那是使用者把注意力移到別處,不搶(Radix 非 modal Popover `hasInteractedOutside` 同一條)。
@@ -25,7 +25,7 @@
  * (https://html.spec.whatwg.org/multipage/interaction.html#dom-focus);Chrome / Edge 145、Firefox 104、Safari 18.4 起支援
  * (MDN browser-compat-data `focus.options_focusVisible_parameter`,https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json),
  * 更舊的引擎忽略這個鍵 → 開啟者畫上鍵盤框(與鍵盤收起同長相,操作不受影響)。
- * 「指標造成的」= 最近一次使用者輸入是 pointerdown(`hooks/use-input-modality.ts` `getLastUserInput`,document capture 階段記)。
+ * 「指標造成的」= 最近一次使用者輸入是 pointerdown(`hooks/use-input-modality.ts` `getLastUserInput`,window capture 階段、模組載入即掛的監聽記)。
  * 指標收起不捲動頁面(`preventScroll`,指標就在那裡);鍵盤收起讓瀏覽器照常把開啟者捲進視窗(焦點不可被遮住)。
  *
  * 2026-09-30 之前的五份:Command `returnFocusAfterCommandClose`(SelectMenu / AgentPanel 歷史 / CommandDialog)、Sidebar 窄版抽屜、

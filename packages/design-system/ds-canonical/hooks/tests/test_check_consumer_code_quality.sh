@@ -36,7 +36,7 @@ ACCT_HEADER_MENU='<SidebarHeader><DropdownMenu><DropdownMenuTrigger asChild><but
 ACCT_FOOTER_USER='<SidebarFooter><SidebarMenu><SidebarMenuItem><ItemAvatar alt="Me" /></SidebarMenuItem></SidebarMenu></SidebarFooter>'
 printf '<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 2 account-entry-dup
 printf '<Sidebar><SidebarHeader><WorkspaceBrand /></SidebarHeader>%s</Sidebar>\n' "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-footer-only
-printf '<Sidebar><SidebarHeader><WorkspaceBrand /><div className="flex-1" /><AccountMenu /></SidebarHeader><SidebarContent /></Sidebar>\n' > "$FILE"; expect 0 account-entry-mobile-mirror
+printf '<Sidebar><SidebarHeader><WorkspaceBrand /><div className="flex-1" /><AccountMenu /></SidebarHeader><SidebarContent /></Sidebar>\n' > "$FILE"; expect 0 account-entry-overlay-mirror
 printf '<Sidebar><SidebarHeader><DropdownMenu><DropdownMenuTrigger asChild><button aria-label="Switch workspace"><Avatar alt="Acme" /></button></DropdownMenuTrigger></DropdownMenu></SidebarHeader>%s</Sidebar>\n' "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-workspace-switcher
 printf 'const layouts = ["primary-header", "primary-sidebar"]\n<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-multi-mode-demo-skip
 printf '// @account-entry-allow: migration 過渡期刻意雙入口\n<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-escape

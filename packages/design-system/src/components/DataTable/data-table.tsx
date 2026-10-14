@@ -4181,6 +4181,8 @@ function DataTableInner<TData>(
               showLine={showDivider}
               lineInsetStart="var(--table-cell-py)"
               lineInsetEnd="var(--table-cell-py)"
+              // 表頭格掛著 dnd-kit 欄位拖曳:按下把手的那一下不得冒泡上去,否則拉欄寬會變成拖欄位(resize-handle.spec.md API「isolatePointerDown」)
+              isolatePointerDown
               onValueChange={(next) => {
                 liveColumnResizeRef.current = true
                 table.setColumnSizing((prev) => ({ ...prev, [colId]: next }))
@@ -4190,6 +4192,9 @@ function DataTableInner<TData>(
                 prevColumnSizingRef.current = { ...prevColumnSizingRef.current, [colId]: final }
                 onColumnResize?.(colId, final)
               }}
+              // 只點一下(或拖回原點)不 commit(resize-handle.spec.md API 段,2026-10-14):拖拉結束一律解除「拖拉中」標記,
+              // 否則下方 effect 會一直以為還在拖、之後「自動調整寬度」選單的寬度變化永遠不回報
+              onDraggingChange={(dragging) => { if (!dragging) liveColumnResizeRef.current = false }}
             />
           )
         })()}
@@ -5617,7 +5622,7 @@ function DataTableInner<TData>(
         {/* DragOverlay 就地渲染(dnd-kit 的 `<DragOverlay>` 不是 portal:@dnd-kit/core `const DragOverlay` 沒有 createPortal)—— row 跟 column
             都用同一個 overlay state(dragOverlayHtml / dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。
             拖曳影像 `999`(= dnd-kit 預設,寫明;與 TreeView 同一列):全 DS 層級表的「拖曳影像」列。表格的祖先都不形成疊放脈絡時才跟整頁比、
-            在 Tooltip 與 Toast 之上;表格放在 Dialog / Sheet / FileViewer / Popover / 代理蓋板裡時被那一層封頂,Toast 與 Tooltip 畫在它上面 ——
+            在 Tooltip 與 Toast 之上;表格放在 Dialog / Sheet / FileViewer / Popover / AI agent 浮層裡時被那一層封頂,Toast 與 Tooltip 畫在它上面 ——
             層級表 tokens/elevation/elevation.spec.md「疊放順序」第 9 列。 */}
         <DragOverlay dropAnimation={null} zIndex={999}>
           {dragOverlayHtml ? (

@@ -38,8 +38,9 @@
  *   - **控件宣告** `escapeLayerProps` + `isEscapeForControl`:`useFormValidation`(欄位改過)、`Field/field-edit-keys.ts`(就地編輯中)、LinkInput、
  *     DatePicker 可打字欄位(草稿 ≠ 顯示值)、DataTable 表格根(格游標 / 列選取,`self`)、Calendar 格內事件方塊、拖曳中(`lib/drag-announcements.ts`)。
  *     只需 `isEscapeForControl`、不掛標記(彈出層本身就是 Radix 的一層):Select / Combobox / DatePicker / TimePicker 的觸發欄位。
- *   - **分區判定** `useEscapeRegion`:AgentPanel(焦點在面板內、面板內沒有浮層 → `Esc` 什麼都不關,不跨區碰舞台的 modal;
- *     `agent-panel.spec.md`「Esc 與關閉語意」)。2026-10-01 從 agent-panel.tsx 的 window 捕獲監聽搬來 —— 全 DS 只准有一個「這一下 Esc 該不該關浮層」的判定點。
+ *   - **分區判定** `useEscapeRegion`:AgentPanel(焦點在面板內、面板內沒有浮層 → **並排**時 `Esc` 什麼都不關、**浮層**時關閉面板本身;
+ *     兩種都不跨區碰 Main 的 modal;`agent-panel.spec.md`「Esc 與關閉語意」,2026-10-14 依形態分開)。2026-10-01 從 agent-panel.tsx 的
+ *     window 捕獲監聽搬來 —— 全 DS 只准有一個「這一下 Esc 該不該關浮層」的判定點。
  */
 import * as React from 'react'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
@@ -176,12 +177,25 @@ export function withOverlayEscape<E extends KeyboardEvent>(
 }
 
 /**
- * 分區判定:焦點在 `rootRef` 這一區裡、區裡沒有任何浮層時,`Esc` 什麼都不關 —— 不讓 Radix 把焦點所在區以外的浮層(舞台上的 modal)關掉。
+ * 分區判定:焦點在 `rootRef` 這一區裡、區裡沒有任何浮層時,`Esc` 不讓 Radix 把焦點所在區以外的浮層(Main 上的 modal)關掉。
  * 掛在 **window** 的捕獲階段:捕獲順序是 window → document → …,所以它**結構上**一定跑在 Radix 的 document 捕獲監聽之前(不是靠掛載順序)。
  * 區裡若正開著 Tooltip(不搶焦點的浮層),這一下該關它,不攔;會搶焦點的浮層(Popover / Dialog)開著時焦點不在區裡,條件不成立、照 Radix 原樣。
  * 留住的那一下記成「已交給控件」(不是直接 `preventDefault`):區裡若有自帶 `Esc` 層的控件(改過的欄位),它的 `isEscapeForControl` 才讀得到這一下是給它的。
+ *
+ * `onEscapeClose`(2026-10-14,`agent-panel.spec.md`「Esc 與關閉語意」浮層列):這一區本身是一層暫時性浮層時(AI agent 浮層)傳入。
+ * 區裡沒有更內層時,這一下 Esc 關閉這一區(= 按 ×);仍然先留住這一下,不讓它穿出去關到 Main 的 modal。順序:
+ *   1. 輸入法組字中 → 只取消組字,什麼都不關;
+ *   2. 區裡開著 Tooltip → 交給 Radix 關 Tooltip(上面那條);
+ *   3. 焦點所在控件宣告了自己還有一層(改過、還沒存的欄位)→ 先給控件;派送完沒有控件認領 → 照常關這一區(不困住使用者,同 `withOverlayEscape` 的重新派);
+ *   4. 其餘 → 關這一區。
+ * 不傳 = 並排(常駐 app UI):Esc 永遠不關這一區。
  */
-export function useEscapeRegion(rootRef: React.RefObject<HTMLElement | null>): void {
+export function useEscapeRegion(
+  rootRef: React.RefObject<HTMLElement | null>,
+  options: { onEscapeClose?: () => void } = {},
+): void {
+  const closeRef = React.useRef(options.onEscapeClose)
+  closeRef.current = options.onEscapeClose
   React.useEffect(() => {
     const onKeyDownCapture = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -190,6 +204,18 @@ export function useEscapeRegion(rootRef: React.RefObject<HTMLElement | null>): v
       if (!region || !active || !region.contains(active)) return
       if (document.querySelector('[role="tooltip"]')) return
       markEscapeHandled(event)
+      const close = closeRef.current
+      if (!close || isImeComposing(event)) return
+      const layer = escapeLayerOf(event.target)
+      if (layer && region.contains(layer)) {
+        // 控件宣告了自己還有一層:這一下先給它;派送完沒人認領 → 照常關這一區
+        setTimeout(() => {
+          if (claimedByControl.has(event)) return
+          if (region.isConnected) closeRef.current?.()
+        }, 0)
+        return
+      }
+      close()
     }
     window.addEventListener('keydown', onKeyDownCapture, { capture: true })
     return () => window.removeEventListener('keydown', onKeyDownCapture, { capture: true })
