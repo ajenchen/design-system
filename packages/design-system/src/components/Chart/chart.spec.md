@@ -197,3 +197,9 @@ Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
 - `../../../ds-canonical/references/hit-area-canonical.md` — 滑過原則(為什麼圖表可以有滑過指示帶)
 - Recharts v3 官方文件 — `https://recharts.org`
 - shadcn chart 原始參考 — `https://ui.shadcn.com/docs/components/chart`
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `elevation.spec.md`

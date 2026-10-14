@@ -772,6 +772,8 @@ jobs:
     # 預估:建置 + 安裝約 4–5 分,兩支閘本機 32 秒 + 59 秒(CI 約本機 1.2–1.4 倍)→ 約 7 分,15 分上限。
     # 2026-10-13 按預算加一支 Toast 落點閘(同日改為 toast-viewport-placement:本機判定 + 對照組合計約 38 秒,CI 估 55 秒;照 form-validation / virtual-cursor-modality
     # 對照組「按預算放」的先例):agent 示範那個 job(verify-browser-agent)手上沒有 CI 實測時間、上限 15 分,不往沒有證據的地方疊。
+    # 2026-10-14 同理再加全 DS 疊放順序閘(test:layer-order:本機判定 + 對照組合計約 50 秒(load 約 10;load 15–27 時 1.5–3 分),CI 估 70 秒)—— 它量的也是 Toast,
+    # 跟落點閘放一起;四支合計約 8 分,仍在 15 分上限內。
     name: Verify browser(TreeView keyboard + step navigation + toast placement)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -801,7 +803,7 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
-      - name: TreeView keyboard route + step navigation + toast viewport placement (browser)
+      - name: TreeView keyboard route + step navigation + toast viewport placement + layer order (browser)
         run: |
           npx --no-install playwright install chromium
           # TreeView 整棵樹一個 Tab 停靠點 + 列上按鈕用 → / ← 走到、Tab 一下離開(2026-09-25 待辦總帳 B9 路線乙;
@@ -811,11 +813,20 @@ jobs:
           # 兩下都回報第 1 下、隔得久的兩下;焦點與單擊相同)、灰底代顯與 Tab 停靠點、列尾結果與讀屏說明;--selftest 9 個改壞版注入真建置必紅。
           npm run test:tree-view-step-navigation
           # Toast 一律以整個視窗為準、不避讓(user 2026-10-13 決定甲;toast.spec.md「落點」):沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 /
-          # docs 頁,Toast 離包含塊右、下都 = sonner 預設邊距,清單的落點自訂屬性全是預設;靜態:只有 toast.tsx import sonner、<SonnerToaster> 不收落點參數、
-          # toast.tsx 不量任何元素、沒有檔改寫 sonner 清單落點、<Toaster> 用法最多帶 position。
-          # --selftest:靜態對照組(a6976432 的舞台落點逐條寫回)各紅在指定那一條;頁面注入 a6976432 的舞台落點,並排 / 入口鈕在家 / 捲動 / docs 頁必紅、
+          # docs 頁,Toast 離包含塊右、下都 = sonner 預設邊距,清單的落點自訂屬性全是預設;靜態:只有 toast.tsx import sonner、<SonnerToaster> 不收落點參數
+          # (className 只准層級 utility `!z-[60]`)、toast.tsx 不量任何元素、沒有檔改寫 sonner 清單落點、<Toaster> 用法最多帶 position。
+          # --selftest:靜態對照組(a6976432 的舞台落點逐條寫回,外加 className 夾帶落點 / 改成運算式)各紅在指定那一條;頁面注入 a6976432 的舞台落點,並排 / 入口鈕在家 / 捲動 / docs 頁必紅、
           # 沒有代理 / 蓋板 / 貼邊必維持綠。
           npm run test:toast-viewport-placement
+          # 全 DS 疊放順序(user 2026-10-13 採納「所有提示都蓋在 Toast 上面,並把 Toast 和提示補進 DS 的層級表」;tokens/elevation/elevation.spec.md「疊放順序」):
+          # 靜態 —— DS 每一處 z 值(utility、zIndex 物件鍵 / 簡寫 / JSX 屬性、style.zIndex、setProperty、字串與樣板裡的 CSS、沒寫 zIndex 的 <DragOverlay>)
+          # 都登記在層級表、表不過期、全域列遞增、局部列的數字 ≤ 20、局部列的變數值只能是閘 D 量過的,且(表上的值)拖曳影像 > Tooltip > Toast > 並存遮罩 / 並存 modal / 代理蓋板 / 一般 modal;
+          # 真建置 —— 入口鈕的提示(鍵盤聚焦打開;Toast 依「落點」甲疊在入口鈕上)與 Dialog 裡「關閉」的提示蓋在 Toast 上,Toast 蓋在一般 Dialog 的遮罩與本體、代理蓋板上;
+          # D 每一顆用變數疊放的頭像 / Tag(Combobox 四模式、DataTable、AgentPanel 附件列、PeoplePicker 頭像堆疊)所在那一列都自成疊放脈絡;E 並存 modal 本體(Dialog、FileViewer)z-40。
+          # --selftest:八種表 / 程式改壞 + 同一個未登記值換六種非 utility 寫法 + 未登記檔裡沒寫 zIndex 的 <DragOverlay>,各紅在指定檢查(另一條反向:引號裡的 '70' 不誤紅);
+          # Toast 釘回 sonner 的 999999999 時 A / B 必紅、壓到 44 時 C1 / C2 必紅、拿掉列的 isolation 時 D1–D5 必紅、本體 z 互換時 E1–E3 必紅。每一步都等元素本身(上限 30 秒)、
+          # 逾時點名是哪一步並印出當下頁面狀態;量測期間用 sonner 自己的暫停條件留住 Toast(否則 4 秒自動關閉,慢的機器會變成「找不到 Toast」)。本機判定 + 對照組合計約 50 秒。
+          npm run test:layer-order
 
   verify-browser-overlay:
     name: Verify browser(overlay + theme gates)

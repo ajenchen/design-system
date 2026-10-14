@@ -296,7 +296,7 @@ export interface DataTableProps<TData>
   onColumnResize?: (columnId: string, width: number) => void
   /**
    * 啟用全表 column reorder(2026-05-06 v11):
-   * - `true`: 所有 data column header 可拖曳重排,DragOverlay portal 顯示 ghost
+   * - `true`: 所有 data column header 可拖曳重排,DragOverlay 顯示 ghost(就地渲染在 DndContext 底下,不是 portal)
    * - `false`(default): 不啟用
    *
    * 使用 `columnDef.meta.locked = true` 標示鎖定欄(無 grab cursor、不啟動 drag、被拖過不顯
@@ -1989,7 +1989,7 @@ function DataTableInner<TData>(
   }, [estimateRowHeight, size])
   const resolvedEstimate = estimateRowHeight ?? tokenEstimate ?? estimateFallback
   // 2026-05-06 v10 DragOverlay canonical:retire windowed sticky range extractor (v4-v9 workaround)。
-  // 改用 `<DragOverlay>` portal 把 source row 視覺解耦 — source 即使 unmount(virtual scroll out)
+  // 改用 `<DragOverlay>`(就地渲染在 DndContext 底下、不在任何一列裡,不是 portal)把 source row 視覺解耦 — source 即使 unmount(virtual scroll out)
   // overlay 仍 render 由 cloned outerHTML 提供視覺。dnd-kit transform / collision 走 active item id
   // (DndContext store 以 active id 追蹤,跟 hook instance mount 狀態無關;v15 無 SortableContext)。
   // 對齊 dnd-kit GitHub #1674 + drag-overlay docs canonical「virtualized list MUST use DragOverlay」。
@@ -5340,7 +5340,7 @@ function DataTableInner<TData>(
 
   // 2026-05-06 v10 DragOverlay canonical:drag start 時 snapshot source row outerHTML(strip
   // absolute / transform / opacity / data-* + reset width to natural width)→ render in
-  // DragOverlay portal。Source row scroll out-of-viewport unmount 也不影響(canvas 視覺已 detach)。
+  // DragOverlay(就地渲染,不是 portal)。Source row scroll out-of-viewport unmount 也不影響(canvas 視覺已 detach)。
   // 移除 windowed sticky range extractor — 不再需要 mount-pin source row,DragOverlay decoupled。
   // Atlassian / dnd-kit canonical:「If your useDraggable items are within a virtualized list,
   // you will absolutely want to use a drag overlay, since the original drag source can unmount
@@ -5614,9 +5614,12 @@ function DataTableInner<TData>(
         {node}
         {/* 拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility)—— 沒渲染 = 整趟拖曳無聲 */}
         {drag.liveRegion}
-        {/* DragOverlay portal — row 跟 column 都用同一個 overlay state(dragOverlayHtml /
-            dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。 */}
-        <DragOverlay dropAnimation={null}>
+        {/* DragOverlay 就地渲染(dnd-kit 的 `<DragOverlay>` 不是 portal:@dnd-kit/core `const DragOverlay` 沒有 createPortal)—— row 跟 column
+            都用同一個 overlay state(dragOverlayHtml / dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。
+            拖曳影像 `999`(= dnd-kit 預設,寫明;與 TreeView 同一列):全 DS 層級表的「拖曳影像」列。表格的祖先都不形成疊放脈絡時才跟整頁比、
+            在 Tooltip 與 Toast 之上;表格放在 Dialog / Sheet / FileViewer / Popover / 代理蓋板裡時被那一層封頂,Toast 與 Tooltip 畫在它上面 ——
+            層級表 tokens/elevation/elevation.spec.md「疊放順序」第 9 列。 */}
+        <DragOverlay dropAnimation={null} zIndex={999}>
           {dragOverlayHtml ? (
             <div
               // 2026-09-07 C5:overlay 是**純視覺** ghost,內容是 source 的 outerHTML 完整複製 ——

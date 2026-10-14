@@ -99,7 +99,9 @@ const TooltipContent = React.forwardRef<
         // - Bootstrap / Ant / Radix / Carbon / shadcn / Floating UI 完全不設。
         // 註:tooltip 與觸發點恆距 8px(`OVERLAY_SIDE_OFFSET`),兩者不重疊 ——
         // 「tooltip 擋住觸發點的點擊」本來就不會發生,穿透解決的不是這個問題。
-        "z-50 overflow-hidden rounded-md px-3 py-2 text-body font-normal text-on-emphasis bg-tooltip max-w-[280px] break-words",
+        // `z-[70]`:蓋在 Toast(`z-[60]`)與所有 modal / 浮層(`z-50`)之上(其上只有頁面層的拖曳影像:拖曳元件放在 modal / 浮層裡時,拖曳影像被那一層封頂、在提示之下);
+        // 層級表與理由的唯一住所 → tokens/elevation/elevation.spec.md「疊放順序」(user 2026-10-13 採納「所有提示都蓋在 Toast 上面」)。
+        "z-[70] overflow-hidden rounded-md px-3 py-2 text-body font-normal text-on-emphasis bg-tooltip max-w-[280px] break-words",
         overlayMotion,
         // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何。
         // 進場幾何用「不是 closed」當打開判準:Radix Tooltip 打開時是 delayed-open / instant-open,從來不是 open

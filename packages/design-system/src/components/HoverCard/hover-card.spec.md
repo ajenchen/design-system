@@ -65,7 +65,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 ## 純行為 primitive
 
 HoverCardContent 只提供：
-- `z-50`（浮層層級）
+- `z-50`（浮層層級;與 Popover 同一列、在 Toast 之下 —— HoverCard 不是 Tooltip,不跟 Tooltip 升到 Toast 之上。全 DS 層級表 → `../../tokens/elevation/elevation.spec.md`「疊放順序」）
 - 進出場動畫（fade + zoom + slide，方向感知）
 - `sideOffset`（與 trigger 的間距）
 
@@ -160,6 +160,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 - `avatar.spec.md`
 - `carousel.spec.md`
 - `coachmark.spec.md`
+- `elevation.spec.md`
 - `motion.spec.md`
 - `overflow-indicator.spec.md`
 - `popover.spec.md`

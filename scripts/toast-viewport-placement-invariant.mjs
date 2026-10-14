@@ -3,7 +3,8 @@
  * @gate-contract
  *   保證: Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓 —— toast.spec.md「落點」。
  *        (1) 靜態:DS 原始碼(packages/design-system/src)沒有任何地方算或傳 Toast 的落點 ——
- *            只有 Toast/toast.tsx import sonner;它的 <SonnerToaster> 只收 position / toastOptions / {...props}、
+ *            只有 Toast/toast.tsx import sonner;它的 <SonnerToaster> 只收 position / toastOptions / {...props},
+ *            外加一個只含層級 utility 的 className 字串(`!z-[60]`,層級表 tokens/elevation/elevation.spec.md「疊放順序」—— 放不進任何落點)、
  *            ToasterProps 只有 position;toast.tsx 不量任何元素的位置;沒有任何非 story 檔碰 sonner 清單的 DOM
  *           (data-sonner-toaster)或寫它的落點自訂屬性(--offset-* / --mobile-offset-*);所有 <Toaster> 用法最多只帶 position。
  *        (2) 真建置:七個情境(沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 入口鈕貼邊 / 頁面捲動 / docs 頁)裡,
@@ -87,6 +88,18 @@ const JSX_ATTRS = String.raw`((?:[^<>{}]|\{(?:[^{}]|\{[^{}]*\})*\})*?)`
 const jsxElements = (src, name) => [...stripComments(src).matchAll(new RegExp(String.raw`<${name}\b` + JSX_ATTRS + String.raw`\/>`, 'g'))].map((m) => m[1])
 const attrNames = (attrs) => [...attrs.matchAll(/(?:^|\s)([A-Za-z][\w-]*)\s*=/g)].map((m) => m[1])
 const spreads = (attrs) => [...attrs.matchAll(/\{\s*\.\.\.\s*([^}]+?)\s*\}/g)].map((m) => m[1])
+/**
+ * `className` 只准是**純字串**、而且每個 class 都是層級 utility(`z-60` / `z-[60]`,可帶 `!`)—— 層級(疊放順序)不是落點;
+ * 任何別的 class(`!right-[424px]`、`!bottom-24`、`translate-*`…)或運算式(`className={cls}`)都可能帶進落點 → 不准。
+ * 回 null = 這個元素沒有 className;回 { ok, raw }。
+ */
+const Z_ONLY_CLASS = /^!?z-(?:\d+|\[\d+\])$/
+const classNameAttr = (attrs) => {
+  const m = attrs.match(/(?:^|\s)className\s*=\s*(?:"([^"]*)"|'([^']*)'|(\{[\s\S]*?\}))/)
+  if (!m) return null
+  const literal = m[1] ?? m[2]
+  return { ok: literal != null && literal.trim() !== '' && literal.trim().split(/\s+/).every((c) => Z_ONLY_CLASS.test(c)), raw: m[0].trim() }
+}
 /** 會讀到元素位置 / 尺寸的 API —— toast.tsx 一個都不該用(Toast 不量任何東西) */
 const GEOMETRY_READS = /\b(getBoundingClientRect|getClientRects|ResizeObserver|IntersectionObserver|offsetParent|offset(?:Width|Height|Left|Top)|client(?:Width|Height|Left|Top)|inner(?:Width|Height)|elementFromPoint|scroll(?:X|Y|Top|Left))\b|addEventListener\(\s*['"](?:scroll|resize)['"]/
 
@@ -100,9 +113,10 @@ function runStatic(files, { quiet = false } = {}) {
   const sonnerEls = jsxElements(toast, 'SonnerToaster')
   const attrs = sonnerEls.flatMap(attrNames)
   const spreadArgs = sonnerEls.flatMap(spreads)
-  check('C2 <SonnerToaster> 只收 position / toastOptions / {...props}(不傳 offset / mobileOffset / style、不展開算出來的落點)',
-    sonnerEls.length === 1 && attrs.every((a) => a === 'position' || a === 'toastOptions') && spreadArgs.every((s) => s === 'props'),
-    `${sonnerEls.length} 個元素;屬性 ${attrs.join(', ') || '-'};展開 ${spreadArgs.map((s) => `{...${s}}`).join(', ') || '-'}`)
+  const classes = sonnerEls.map(classNameAttr).filter(Boolean)
+  check('C2 <SonnerToaster> 只收 position / toastOptions / {...props} 與只含層級 utility 的 className(不傳 offset / mobileOffset / style、不展開算出來的落點)',
+    sonnerEls.length === 1 && attrs.every((a) => a === 'position' || a === 'toastOptions' || a === 'className') && classes.every((c) => c.ok) && spreadArgs.every((s) => s === 'props'),
+    `${sonnerEls.length} 個元素;屬性 ${attrs.join(', ') || '-'};className ${classes.map((c) => `${c.raw}${c.ok ? '' : '(不是只有層級 utility)'}`).join(', ') || '-'};展開 ${spreadArgs.map((s) => `{...${s}}`).join(', ') || '-'}`)
   const propsBody = stripComments(toast).match(/export interface ToasterProps\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
   const propKeys = [...propsBody.matchAll(/^\s*([A-Za-z]\w*)\??\s*:/gm)].map((m) => m[1])
   check('C3 ToasterProps 只有 position({...props} 帶不進落點參數)', propKeys.length === 1 && propKeys[0] === 'position', `鍵:${propKeys.join(', ') || '(讀不到)'}`)
@@ -136,6 +150,8 @@ if (!SELFTEST) {
     ['a6976432:展開 stageOffsets(position, geometry)', with_(TOAST_TSX, injectAttr('{...stageOffsets(position, geometry)}')), 'C2'],
     ['直接傳 offset', with_(TOAST_TSX, injectAttr('offset={{ right: 424 }}')), 'C2'],
     ['a6976432:置中寫行內 left', with_(TOAST_TSX, injectAttr("style={{ left: 'calc(50% - 200px)' }}")), 'C2'],
+    ['className 夾帶落點 utility', with_(TOAST_TSX, toast.replace(/className="!z-\[60\]"/, 'className="!z-[60] !right-[424px]"')), 'C2'],
+    ['className 改成運算式', with_(TOAST_TSX, toast.replace(/className="!z-\[60\]"/, 'className={stageClass(position)}')), 'C2'],
     ['ToasterProps 開放 offset', with_(TOAST_TSX, toast.replace(/(export interface ToasterProps\s*\{)/, '$1\n  offset?: number')), 'C3'],
     ['a6976432:量尺量自己的定位框', with_(TOAST_TSX, toast.replace(/(const Toaster = )/, 'const measureOrigin = (el: Element) => el.getBoundingClientRect()\n$1')), 'C4'],
     ['a6976432:捲動後重量', with_(TOAST_TSX, toast.replace(/(const Toaster = )/, "const listen = () => window.addEventListener('scroll', () => {})\n$1")), 'C4'],

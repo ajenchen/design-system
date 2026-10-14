@@ -488,6 +488,7 @@
       "scripts/test-install-candidate-dependencies.mjs",
       "scripts/test-interaction-ladder-invariant.mjs",
       "scripts/test-item-content-leading-coherence.mjs",
+      "scripts/test-layer-order-invariant.mjs",
       "scripts/test-layout-space-story-coherence.mjs",
       "scripts/test-layout-space-utility-invariant.mjs",
       "scripts/test-link-input-url-display-invariant.mjs",

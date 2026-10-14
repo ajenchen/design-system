@@ -15,6 +15,17 @@ import { OverflowIndicator, OverflowIndicatorMeasure } from './overflow-indicato
 /** Tag 列的預設間距(px;Combobox 的 Tag 區、唯讀欄位外框與 AgentPanel 附件列都是 4) */
 export const TAG_ROW_GAP_PX = 4
 
+/**
+ * 單行 Tag 列的容器(`OverflowTagList` 的父元素)必掛的 class —— 四個容器(Combobox 檢視態的 Tag 列、唯讀 / 停用欄位外框、
+ * 編輯態的 Tag 區、AgentPanel 輸入盒的附件列)同一份:
+ * - `relative`:「+N」量尺(`OVERFLOW_MEASURE_ATTR`,絕對定位在左上)的定位容器,量尺才待在被裁切的容器裡;
+ * - `isolate`:每顆 Tag 的疊放值 `--tag-stack-z` = 項目數 − 索引、聚焦時 = 項目數 + 1,**沒有上限**(四十幾顆 Tag 的表格格就是四十幾)——
+ *   只能在這一列裡比,不能漏到外層去跟黏住的表頭、浮層比。與 `../Avatar/avatar.tsx` `AVATAR_STACK_CLASS`(頭像堆疊列)同一件事,
+ *   對齊 Primer `.AvatarStack { isolation: isolate }`。全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」第 1 列;
+ *   閘 `scripts/layer-order-invariant.mjs` D(真建置逐項量:每一顆用變數疊放的項目,所在那一列都自成疊放脈絡)。
+ */
+export const TAG_ROW_CONTAINER_CLASS = 'relative isolate'
+
 // ── useOverflowCount ────────────────────────────────────────────────────────
 
 /**
@@ -305,8 +316,8 @@ export interface OverflowTagListProps {
 
 /**
  * @internal 單行(+N)/ 換行兩種 Tag 列。單行時的可見數見 `useOverflowCount`。
- * 容器 = 這個列表的父元素(呼叫端把它放在要量寬的那一層裡,而且那一層要是定位容器:Combobox 觸發欄位的 Tag 區、唯讀欄位外框、
- * 檢視態的 Tag 列,AgentPanel 輸入盒的附件列)。
+ * 容器 = 這個列表的父元素(呼叫端把它放在要量寬的那一層裡,而且那一層要掛 `TAG_ROW_CONTAINER_CLASS`:定位容器 + 自成疊放脈絡 ——
+ * Combobox 觸發欄位的 Tag 區、唯讀欄位外框、檢視態的 Tag 列,AgentPanel 輸入盒的附件列)。
  */
 export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag, onRemove, onOverflowMouseDown, overflowContentId, getReserveEl, tagWrapperClassName, overflowWrapperClassName, gap = TAG_ROW_GAP_PX, overflowShape = 'tag', visibleCountOverride }: OverflowTagListProps) {
   const listRef = React.useRef<HTMLSpanElement>(null)
@@ -336,7 +347,8 @@ export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag,
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
         // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話
-        // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)
+        // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)。
+        // 這兩個值沒有上限,只在容器那一列裡比 —— 容器必掛 TAG_ROW_CONTAINER_CLASS(`isolate`,見檔頭)。
         <div key={item.value} ref={el => { tagEls.current[i] = el }}
           className={cn('shrink-0 max-w-full flex z-[var(--tag-stack-z)] has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', tagWrapperClassName)}
           style={{ ['--tag-stack-z' as string]: items.length - i, ['--tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>

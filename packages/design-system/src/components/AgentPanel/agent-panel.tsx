@@ -90,7 +90,7 @@ import {
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { OverflowTagList } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
+import { OverflowTagList, TAG_ROW_CONTAINER_CLASS } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -1195,8 +1195,9 @@ function PromptAttachmentRow({
     onRemove(attachment)
   }
   return (
-    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。`relative` = 「+N」量尺的定位容器(OverflowTagList)。
-    <div ref={rowRef} className="relative flex items-center gap-1 overflow-hidden px-1 pt-1">
+    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、
+    // `isolate` = 附件 Tag 的疊放值只在這一列裡比(與 Combobox 的 Tag 列同一個常數;OverflowTagList 檔頭)。
+    <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-hidden px-1 pt-1')}>
       <OverflowTagList
         items={items}
         size="md"

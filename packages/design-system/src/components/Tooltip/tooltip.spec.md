@@ -123,6 +123,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 
 - `../HoverCard/hover-card.spec.md` — hover 觸發的可互動浮層（**Tooltip vs HoverCard 的分界 SSOT 在 HoverCard spec**「與 Tooltip 的分界」段落）
 - `../Button/button.spec.md` — `iconOnly` 模式自動產生 tooltip（由 aria-label 驅動）
+- `../../tokens/elevation/elevation.spec.md`「疊放順序」— Tooltip `z-[70]`,蓋在 Toast(`z-[60]`)與所有 modal / 浮層之上;唯一可能在它上面的是頁面層的拖曳影像(拖曳元件放在 modal / 浮層裡時,影像被那一層封頂、在提示之下)(user 2026-10-13 採納;理由、世界級對照與閘都在該節)
 
 ## A11y 預設
 

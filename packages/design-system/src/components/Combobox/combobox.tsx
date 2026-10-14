@@ -15,7 +15,7 @@ import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDispla
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { OverflowTagList, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
+import { OverflowTagList, TAG_ROW_CONTAINER_CLASS, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -117,9 +117,9 @@ function ComboboxTagStack({
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
   // `data-table.spec.md:233`「禁硬裁無 ellipsis」+ MUI X / Ant Table column.ellipsis 共識。
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
-  // `relative`:「+N」量尺的定位容器(OverflowTagList)
+  // TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、`isolate` = Tag 的疊放值只在這一列裡比(OverflowTagList 檔頭)
   return (
-    <div className={cn('relative flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
+    <div className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
       {content}
     </div>
   )
@@ -392,8 +392,9 @@ function ReadonlyMultiSelect({
   return (
     <div
       className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
-        // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):`relative` = 「+N」量尺的定位容器(OverflowTagList)
-        hasTags && !wrap && 'relative',
+        // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):TAG_ROW_CONTAINER_CLASS(`relative` =「+N」量尺的定位容器、
+        // `isolate` = Tag 的疊放值只在這一列裡比;OverflowTagList 檔頭)。換行時不經 OverflowTagList 的單行路徑,沒有疊放值也沒有量尺
+        hasTags && !wrap && TAG_ROW_CONTAINER_CLASS,
         // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
         // readonly/disabled path 對齊 L293 view wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
@@ -715,9 +716,9 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
-      {/* `isolate`:標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
-          與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17) */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative isolate', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
+          與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17;2026-10-14 四個 Tag 列容器收成同一個常數) */}
+      <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (

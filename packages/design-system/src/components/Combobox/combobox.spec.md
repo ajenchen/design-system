@@ -99,6 +99,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 - **決定與「+N」的數字在同一次畫面更新前定案**:掛載與值變了的時候在 layout effect 裡量、收、改數字(layout effect 的 setState 在同一次畫面更新前同步重繪);之後的重算由 ResizeObserver 觸發(回呼在下一格畫面之前跑),以 `flushSync` 同步提交。任何一格畫面都不會是「Tag 收了、數字還沒變」或「數字對、Tag 還沒收」。
 - 溢出指示器 `+N` 顯示被隱藏的數量
 - Hover 溢出指示器時,popover 顯示完整的隱藏 Tag 清單
+- **Tag 列的容器**一律掛 `../OverflowIndicator/overflow-tag-list.tsx` `TAG_ROW_CONTAINER_CLASS`(`relative isolate`;檢視態的 Tag 列、唯讀 / 停用欄位外框、編輯態的 Tag 區、AgentPanel 輸入盒附件列四個容器共用):`relative` 讓「+N」量尺待在被裁切的容器裡;`isolate` 讓每顆 Tag 的疊放值(= 項目數 − 索引,聚焦時 = 項目數 + 1,沒有上限)只在這一列裡比,不漏到外層去跟黏住的表頭、浮層比。2026-10-14 前只有編輯態那一列 `isolate`(層級表複驗抓到)。層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」第 1 列;閘 `scripts/layer-order-invariant.mjs` D(真建置逐項量:每一顆用變數疊放的 Tag,所在那一列都自成疊放脈絡)
 - **一次掛載只量一次(2026-09-10 的效能目標;2026-10-13 換掉錯的前提)**:掛載時量一趟即定案。ResizeObserver 送來的每一發先跟這次決定用過的輸入比 —— 容器內容寬、每顆看得見的 Tag 寬、搜尋框量尺寬、欄位外框父層的寬都一樣,「+N」的寬等於這次決定量到的那一個,就不重算;`observe()` 必送的初始觀測回報的就是剛定案的版面,所以填滿寬的儲存格掛載只跑一趟。依內容寬而且有東西收進「+N」時多一趟(收起之後欄位本來就會變窄)。
   由來:虛擬捲動時每個新進視窗的儲存格都掛一次 Combobox,原本固定量兩趟 —— DataTable 全功能範例一次 40 步滾輪手勢跑 180 趟 calc、
   1,080 次幾何讀取,佔當時全表捲動幾何讀取的 45%,第二趟幾乎總是同結果。守法後同一手勢降到 540 次。

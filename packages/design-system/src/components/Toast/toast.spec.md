@@ -167,6 +167,12 @@ AI 查證後建議甲(「Toast 一律以整個視窗為準,不做任何避讓」
 
 閘:`scripts/toast-viewport-placement-invariant.mjs`(真建置:沒有代理 / 代理並排 / 蓋板 / 入口鈕在家 / 貼邊 / 頁面捲動 / docs 頁,Toast 離包含塊右、下兩邊都 = sonner 預設邊距;靜態:DS 原始碼沒有任何地方傳 Toast 落點參數、改寫 sonner 落點或量元件位置來推 Toast;`--selftest` 注入「跟著面板與入口鈕挪位」的舊做法,必紅)。
 
+## 層級
+
+Toast 在所有 modal 與浮層(Dialog、Sheet、FileViewer、Popover、DropdownMenu、HoverCard,`z-50`)與代理蓋板之上,在 Tooltip 之下;頁面層的拖曳影像(拖曳元件不在任何疊放脈絡裡時;dnd-kit 的影像就地渲染、不是 portal,放進 modal / 浮層裡就被那一層封頂、在 Toast 之下)也在它上面:`<Toaster>` 以 `!z-[60]` 蓋掉 sonner 內建的 `999999999`(sonner 的樣式不在 cascade layer 裡,要 important 才蓋得過)。層級表、逐對裁示(含「所有提示都蓋在 Toast 上面」,user 2026-10-13 採納)與世界級對照 → `../../tokens/elevation/elevation.spec.md`「疊放順序」。
+
+層級只管「誰畫在上面」,不動落點:入口鈕在家時 Toast 照上方「落點」疊在入口鈕上(不避讓);入口鈕的提示「問我或推走我」(鍵盤聚焦入口鈕,或指標指到入口鈕露在 Toast 外的那一小塊時打開)與 Toast 重疊時,提示在上、整塊看得到。閘:`scripts/layer-order-invariant.mjs`(A 入口鈕的提示、B Dialog 裡的提示蓋在 Toast 上;C Toast 蓋在一般 Dialog 與代理蓋板上)。
+
 ## 寬度（元件級常數）
 
 Toast 使用單一元件級寬度，以維持穩定的訊息行長與頁面遮蔽上限；canonical 數值與 utility 由 `toast.tsx` 擁有，調整時連同對應 story baseline 驗證。
@@ -214,6 +220,7 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - `../Dialog/dialog.spec.md` — 需要阻斷或確認的通知改用 Dialog
 - `../AgentPanel/agent-panel.spec.md` — Toast 不為代理面板讓位(見「落點」)
 - `../AgentPanel/agent-panel-fab.spec.md` — Toast 不為入口鈕讓位(見「落點」)
+- `../../tokens/elevation/elevation.spec.md` — 疊放順序(層級表;見「層級」)
 - [sonner](https://sonner.emilkowal.ski/) — 浮動管理 library
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)

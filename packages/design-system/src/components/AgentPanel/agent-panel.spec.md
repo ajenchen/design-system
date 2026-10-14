@@ -113,7 +113,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     面板自己關不了(`open` 住在 `AgentPanelDock`)= 沒有內建 fallback,依 §2「固定 anatomy 恆渲染」與
     M23(f)「無內建行為的 callback 一律必填 prop(型別層擋)」必為必填。鍵盤路徑不變(Esc 照舊)。
   - **遮罩** = `lib/overlay-coexistence.ts` 的 `CoexistenceMask`,與並存 Dialog 同一層 `z-30`、同一顆 `--overlay`、同樣替 `persistentElements` 挖洞
-    (層級句見 `../Dialog/dialog.spec.md`「並存」段:遮罩 z-30 < 並存 modal z-40 < 代理蓋板 z-[45] < 一般 modal z-50);它是面板根節點的**兄弟**,
+    (蓋板 `z-[45]`、遮罩 `z-30`;整張表 → `../../tokens/elevation/elevation.spec.md`「疊放順序」);它是面板根節點的**兄弟**,
     **接住**留白處的指標:**點它會關閉面板**(2026-09-17 裁示,見上方「與 app 的推擠與斷點」),但不會穿到底下去關掉並存的 modal 或碰到宿主
     (2026-09-16 user 第二次回報:第一版遮罩 `pointer-events:none`,點擊穿過去打到 modal 的外部點擊偵測、把 modal 關掉;修法 = 遮罩在面板的保留集合裡、
     modal 的外部點擊守衛把常駐殼子樹裡的目標視為不關,Dialog 遮罩算洞時「遮罩不是洞」);面板的關閉有三條路(× / 入口鈕 / 蓋板態點遮罩,見「Esc 與關閉語意」);
