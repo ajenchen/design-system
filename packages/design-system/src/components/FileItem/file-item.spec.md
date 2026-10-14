@@ -381,6 +381,8 @@ Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Pr
 | `error` | `XCircle` 紅 ✗ | `RotateCw ⟲` | `onRetry` |
 | `uploading` | *(progress %)* | *(無 swap)* | — |
 
+**Passive icon 的唯一來源**:`./file-item-status.ts` `RESULT_STATUS_ICON`(completed `CircleCheck` + `text-success` / error `XCircle` + `text-error`)。TreeView 步驟導覽樹的列尾步驟結果沿用同一份(user 2026-10-06 決定「圖示與顏色沿用 FileItem」,見 `../TreeView/tree-view.spec.md`「步驟結果」)—— 改這裡的圖示或顏色,兩個元件會一起變。
+
 **幾何一致性(2026-04-23 統一 canonical · row action ≤ 24 cap)**:status slot 容器大小 **= consumer 的 delete action 尺寸**,兩 mode 統一:
 - `mode="rich"` → `var(--field-height-xs)`(24 固定,與 Button xs iconOnly 同)
 - `mode="compact"` → `var(--field-height-xs)`(24,同 rich;compact 靠 status slot wrapper 的 `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]` 把 24 footprint 收斂到 1lh,不撐高 row,視覺與命中區仍 24 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把本檔兩處原文的「touch target」正名為命中區,本 DS 以滑鼠指標的精度為前提,尺寸不以觸控門檻推導)

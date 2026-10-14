@@ -1,5 +1,5 @@
 {
-  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名,必唯一:基準圖與歸因報告都以檔名為鍵) / 可選 globals({theme:'light'|'dark', density:'md'|'lg'}:同一則 story 用 Storybook 全域 toolbar 的另一組值再拍一張,值域封閉在 scripts/lib/visual-audit-geometry.mjs,寫錯在載入時就停) / 可選 interaction({action:'hover',selector}:截圖前由 Playwright locator.hover() 維持真實 CSS :hover,selector 必唯一且缺失/重複 fail-closed) / 可選 assertions[](DOM 幾何 / 顏色測量陣列;type = equalHeight | padding4Sided{symmetric?: all|horizontal|vertical, expected?} | gap{expected, axis?: both|row|column} | color{property, expected};每條對選到的全部元素判,選不到 = selectorMissing;契約 SSOT = scripts/lib/visual-audit-geometry.mjs 檔頭) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。新場景沒有 Ubuntu 基準圖:一般模式會記 diff error(fail-closed),要照 .github/workflows/visual-regression.yml 檔頭的 update_baseline 流程補拍。",
+  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名,必唯一:基準圖與歸因報告都以檔名為鍵) / 可選 globals({theme:'light'|'dark', density:'md'|'lg'}:同一則 story 用 Storybook 全域 toolbar 的另一組值再拍一張,值域封閉在 scripts/lib/visual-audit-geometry.mjs,寫錯在載入時就停) / 可選 interaction({action:'hover',selector}:截圖前由 Playwright locator.hover() 維持真實 CSS :hover,selector 必唯一且缺失/重複 fail-closed) / 可選 assertions[](DOM 幾何 / 顏色測量陣列;type = equalHeight | padding4Sided{symmetric?: all|horizontal|vertical, expected?} | gap{expected, axis?: both|row|column} | color{property, expected} | sharesRow{peers, scope?};每條對選到的全部元素判,選不到 = selectorMissing;契約 SSOT = scripts/lib/visual-audit-geometry.mjs 檔頭) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。新場景沒有 Ubuntu 基準圖:一般模式會記 diff error(fail-closed),要照 .github/workflows/visual-regression.yml 檔頭的 update_baseline 流程補拍。",
   "scenarios": [
     {
       "id": "design-system-components-datepicker-展示--default",
@@ -108,10 +108,6 @@
       "id": "design-system-components-fileviewer-展示--open-snapshot",
       "file": "fileviewer-open-snapshot.png",
       "rationale": "visual-audit canonical open state — full toolbar + renderer + action-bar;對齊 Dialog / Sheet / Popover OpenSnapshot pattern"
-    },
-    {
-      "id": "design-system-components-rating-展示--interactive-review",
-      "file": "rating-interactive.png"
     },
     {
       "id": "design-system-components-rating-展示--in-field",
@@ -358,6 +354,47 @@
     {
       "id": "design-system-components-combobox-展示--searchable",
       "file": "combobox-searchable.png"
+    },
+    {
+      "id": "design-system-components-combobox-展示--searchable-inline-wrap",
+      "file": "combobox-searchable-inline-wrap.png",
+      "assertions": [
+        {
+          "name": "欄位內搜尋框與 Tag 等高(一列 Tag 高)",
+          "type": "equalHeight",
+          "selector": "[data-visual-inline-wrap] [data-tag-root], [data-visual-inline-wrap] [role=\"combobox\"] input:not([type=\"hidden\"])",
+          "rationale": "field-controls.spec.md「wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px」:搜尋框所在那一列也是一列 Tag 高(combobox.spec.md「欄位內搜尋框的寬度」)。選擇器刻意不用 2026-09-30 才加的 aria-autocomplete —— 修前的建置上也選得到,斷言才驗得到修前的形狀(不是 selectorMissing)。實測 2026-10-01:三顆 Tag + 搜尋框全 24px、欄位 320×32(一列);修前的元件程式配同一則範例:搜尋框 18.19px(紅)。"
+        },
+        {
+          "name": "Tag 區列距與欄距 = 4px",
+          "type": "gap",
+          "selector": "[data-visual-inline-wrap] [role=\"combobox\"] > div:first-child",
+          "expected": 4,
+          "rationale": "Tag 間距固定 4px(combobox.tsx GAP;combobox.anatomy「每個 size 對應的 token」);wrap 時同一個 gap 就是列距 —— 公式裡的 (列數−1)×4px。"
+        },
+        {
+          "name": "關著的欄位、關鍵字空:搜尋框不單獨佔一列",
+          "type": "sharesRow",
+          "selector": "[data-visual-inline-wrap] [role=\"combobox\"] input:not([type=\"hidden\"])",
+          "peers": "[data-tag-root]",
+          "scope": "[role=\"combobox\"]",
+          "rationale": "combobox.spec.md「欄位內搜尋框的寬度」:最小寬 = 打的字 + 插入點,空的時候接在最後一顆 Tag 後面、不換到空白的一列。範例一開始三顆 Tag 排滿第一列(剩不到 60px)—— 正是修前會多一列空白的版面。實測 2026-10-01:搜尋框與三顆 Tag 同在第一列;修前的元件程式(60px 固定下限)配同一則範例,同一個斷言紅(同列 0 顆,搜尋框單獨在第二列)。2026-09-30 這裡寫的「修前同一個斷言紅」不成立:當時範例是四顆 Tag(修前修後一樣兩列),選擇器又用了修前沒有的 aria-autocomplete,在修前只會 selectorMissing。"
+        }
+      ]
+    },
+    {
+      "id": "design-system-components-peoplepicker-展示--multi-inline-search",
+      "file": "peoplepicker-multi-inline-search.png",
+      "assertions": [
+        {
+          "name": "有人的欄位、關鍵字空:搜尋框不單獨佔一列",
+          "type": "sharesRow",
+          "selector": "[role=\"combobox\"]:has([data-collection-remove]) input:not([type=\"hidden\"])",
+          "peers": "[data-collection-remove], [data-tag-root], [data-overflow-indicator]",
+          "scope": "[role=\"combobox\"]",
+          "rationale": "combobox.spec.md「欄位內搜尋框的寬度」(PeoplePicker 多選包 Combobox):頭像堆疊與每人一顆標籤兩格,搜尋框都接在最後一位後面。選擇器不用 2026-09-30 才加的 aria-autocomplete(修前的建置上也選得到)。實測 2026-09-30 兩格都同列;修前的元件程式配同一則範例,「會議記錄寄給」(兩顆標籤)那格紅 —— 搜尋框自己換到第二列、欄位多一列空白(同列 0 顆)。"
+        }
+      ]
     },
     {
       "id": "design-system-components-accordion-展示--faq",

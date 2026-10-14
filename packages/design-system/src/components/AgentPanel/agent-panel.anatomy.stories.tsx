@@ -28,7 +28,7 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="flex h-dvh justify-end bg-canvas">
-      {/* 解剖圖是並排態(容器滿版),不會出現蓋板遮罩 —— `onClose` 在這裡恆不觸發,
+      {/* 解剖圖是並排態(容器滿版),不會出現浮層遮罩 —— `onClose` 在這裡恆不觸發,
           但它是必填的(M23(f):沒有內建行為的固定行為不得靠 callback 有無決定),同標題列的 × 寫法。 */}
       <AgentPanel onClose={() => {}}>
         <AgentPanelHeader title="智慧代理" onNewConversation={() => {}} onClose={() => {}} />
@@ -74,7 +74,7 @@ const InspectorView = () => {
             <H3>即時預覽</H3>
             <Desc>
               拉下面的滑桿改寬度,看三段怎麼分配:標題列與輸入盒是固定高,訊息區吃掉剩下的全部。
-              寬度夾在 360 ~ 640 之間,且永遠不超過容器寬的 3/8(較小者勝);容器窄於 960 就翻成蓋板。
+              寬度是這種內容的最小 / 初始 / 最大(預設 360 / 400 / 640)加上使用者的寬度紀錄;放在 AppShell 裡時,可拉上限再受「所有並排面板拉滿時 Main 剛好剩最小寬」限制,放不下最小寬就變右側浮層 —— 沒有固定斷點(AppShell「版面規則」)。
             </Desc>
             <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
               <div className="flex h-full justify-end bg-canvas">
@@ -144,9 +144,9 @@ const InspectorView = () => {
               <p className="font-mono text-fg-muted mb-2">WIDTH</p>
               <ul className="flex flex-col gap-1">
                 <li><span className="font-mono">--agent-panel-width</span> · 400(預設)</li>
-                <li><span className="font-mono">PANEL_WIDTH_MIN</span> · 360(TS 常數,非 token)</li>
-                <li><span className="font-mono">PANEL_WIDTH_MAX</span> · 640(TS 常數,非 token)</li>
-                <li><span className="font-mono">視窗上限</span> · 50vw(與 max 取較小者)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_MIN</span> · 360(產品沒設時的最小寬;TS 常數,非 token)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_MAX</span> · 640(產品沒設時的最大寬;TS 常數,非 token)</li>
+                <li><span className="font-mono">可拉上限</span> · 由 AppShell 現算(剩餘均分;浮層 = min(最大, 版面寬 − 48))</li>
                 <li><span className="font-mono">鍵盤步進</span> · ←/→ 16 · Home 最窄 · End 最寬</li>
               </ul>
             </section>
@@ -163,10 +163,11 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">PUBLIC PROPS(容器)</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">width</span> · number — 受控寬度</li>
-                <li><span className="font-mono">defaultWidth</span> · number — 非受控起始寬</li>
+                <li><span className="font-mono">widthRange</span> · {'{'} min, initial, max {'}'} — 這種內容類型的寬度設定</li>
+                <li><span className="font-mono">width</span> · number — 受控寬度紀錄</li>
+                <li><span className="font-mono">defaultWidth</span> · number — 非受控起始紀錄(產品自存的值)</li>
                 <li><span className="font-mono">onWidthChange</span> · 拖曳中每格都發(即時回饋)</li>
-                <li><span className="font-mono">onWidthCommit</span> · 放開/鍵盤一步發一次(要存這個)</li>
+                <li><span className="font-mono">onWidthCommit</span> · 一次調整結束發一次:放開且有拖動 / 鍵盤一步;只點一下不發(要存這個)</li>
                 <li><span className="font-mono">resizable</span> · boolean,預設 true</li>
               </ul>
             </section>
@@ -351,7 +352,7 @@ export const Accessibility: Story = {
     <table className="w-full text-body">
       <thead><tr><Th>元件</Th><Th>角色 / 屬性</Th><Th>鍵盤</Th></tr></thead>
       <tbody>
-        <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>無自動移焦;改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
+        <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>並排:不移焦、Esc 不關面板;浮層:開啟時焦點進面板、面板裡沒有更內層時 Esc 關閉面板(焦點回入口鈕);改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
         <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;搜尋框 ↑↓ 走列,插入點在字尾時 → 進該列的改名 / 刪除、← 回;兩顆鈕不在 Tab 路上(B9)</Td></tr>
         <tr><Td>AgentConversation</Td><Td>role=log + aria-live=polite</Td><Td>—</Td></tr>
         <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>

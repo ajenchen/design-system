@@ -2,7 +2,7 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
-import { Field, FieldLabel, FieldDescription, FieldError } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from '@/design-system/components/Field/field'
 
 const meta: Meta<typeof Textarea> = {
   title: 'Design System/Components/Textarea/展示',
@@ -35,7 +35,7 @@ export const Default: Story = {
 export const InField: Story = {
   name: '在 Field 內',
   render: () => (
-    <div className="max-w-md flex flex-col gap-4">
+    <FieldGroup className="max-w-md">
       <Field required>
         <FieldLabel>專案說明</FieldLabel>
         <Textarea placeholder="描述這個專案的目的、時程、關鍵議題..." rows={5} />
@@ -52,6 +52,6 @@ export const InField: Story = {
         <FieldLabel>補充說明</FieldLabel>
         <Textarea placeholder="橫式 field 內的 textarea" rows={4} />
       </Field>
-    </div>
+    </FieldGroup>
   ),
 }

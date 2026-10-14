@@ -162,6 +162,7 @@ Q3. Row 多大?
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
+| **Accordion 標題列 ChevronDown**(`accordion.tsx:70-74`,`aria-hidden`)| 整條標題列就是開合按鈕(Radix `AccordionPrimitive.Trigger`)| **Decorative**(不是 action)| 決策樹 Q1「icon 點了要做事嗎?」否(`:133-134`):點 chevron 等於點標題列,host 是 click target(`:126`);對照 SidebarGroup header chevron —— 那顆自己是可點的 toggle,所以是 Inline Action(2026-10-01 補列,待辦總帳 N81)|
 | Select ChevronDown / DatePicker Calendar / Combobox ChevronDown | Field chrome(裝飾)| **Decorative**(不是 action)| Click falls through;host 是 trigger |
 | **FileItem compact**(row 24)| Row slot | Button xs iconOnly(`var(--field-height-xs)` 容器 + data-unbounded 收斂到 1lh)| 2026-04-23 user 統一 rich + compact 同 primitive,不撐高 row(見 file-item.tsx 註解)|
 | **FileItem rich**(row 56 sm/md rich)| Row slot | Button xs iconOnly(24 固定)| ≤ 24 cap,不放大 |

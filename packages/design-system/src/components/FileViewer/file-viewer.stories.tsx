@@ -91,7 +91,7 @@ export const JiraAttachments: Story = {
     }
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
         <Button
           variant="tertiary"
           startIcon={Paperclip}
@@ -102,7 +102,7 @@ export const JiraAttachments: Story = {
         >
           開啟 3 張附件檢視器
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:PM 在 Jira bug ticket 中點開附件,逐張檢視 QA 上傳的截圖 + 閱讀回報人說明。
           支援 ← → 切換 / I 切換說明欄 / 編輯說明後 onBlur 持久化。
         </p>
@@ -164,7 +164,8 @@ export const NotionGallery: Story = {
     const [startIdx, setStartIdx] = React.useState(0)
 
     return (
-      <div className="flex flex-col gap-4 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
+        {/* @layout-space-magic-ok: 相簿 grid 同質縮圖格距 gap 8px(一串同類縮圖 = 同質 list;layoutSpace.spec.md:165 同質清單列) */}
         <div className="grid grid-cols-4 gap-2 max-w-[640px]">
           {notionInlinePics.map((f, i) => (
             <button
@@ -174,7 +175,7 @@ export const NotionGallery: Story = {
                 setStartIdx(i)
                 setOpen(true)
               }}
-              className="aspect-[4/3] rounded-md overflow-hidden ring-1 ring-border hover:ring-border-hover transition-all"
+              className="aspect-[4/3] rounded-md overflow-hidden ring-1 ring-border hover:ring-border-hover"
             >
               <img
                 src={f.url}
@@ -184,7 +185,7 @@ export const NotionGallery: Story = {
             </button>
           ))}
         </div>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:Notion 文件內點擊任一配圖 → lightbox 開啟,可用 filmstrip 或 ← → 切換。
           預設 readOnly(文件作者控制說明),viewer 只呈現不能改。
         </p>
@@ -227,11 +228,11 @@ export const FigmaDesignReview: Story = {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
         <Button variant="tertiary" startIcon={Figma} onClick={() => setOpen(true)}>
           開啟 Dashboard v2 設計稿
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:設計 review 中,engineer 需要 zoom 看 spacing / color / font 細節。
           用滾輪或 +/- 縮放,拖曳 pan。`0` 重設為 100%,`F` Fit to page。
         </p>
@@ -281,11 +282,11 @@ export const GmailAttachmentPreview: Story = {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
         <Button variant="primary" startIcon={Paperclip} onClick={() => setOpen(true)}>
           預覽 3 個附件
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:收到寄來帶多個附件的 email,快速預覽哪個需要下載存檔。
           readOnly(使用者不能改寄件人寫的說明),filmstrip 顯示全部附件方便切換。
         </p>
@@ -327,7 +328,7 @@ export const EventPhotosCollection: Story = {
     const [files, setFiles] = React.useState(eventPhotos)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
         <Button
           variant="tertiary"
           startIcon={Camera}
@@ -338,7 +339,7 @@ export const EventPhotosCollection: Story = {
         >
           檢視活動相集
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:行銷團隊上傳活動當天 6 張照片,PM 逐張檢視並補充說明(可編輯)。
           filmstrip 顯示 6 張 thumbnail,scroll 時顯示 fade mask + arrows。
         </p>
@@ -377,11 +378,11 @@ export const FallbackUnknownType: Story = {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] items-center">
         <Button variant="tertiary" startIcon={ImageIcon} onClick={() => setOpen(true)}>
           開啟無 renderer 支援的檔案
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
+        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:zip 等無法預覽的檔案,改顯示檔名和「請下載檢視」提示,工具列會自動隱藏縮放按鈕。
         </p>
         <FileViewer files={unknownFile} open={open} onOpenChange={setOpen} />

@@ -155,7 +155,15 @@ function PersonAvatar({
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
 // 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
-function PersonDisplay({ value, size = 'md', disabled = false, onRemove }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void }) {
+function PersonDisplay({ value, size = 'md', disabled = false, onRemove, nameYielded = false }: {
+  value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void
+  /**
+   * @internal PeoplePicker 多人只選 1 位 × 欄位內搜尋框開著時用(people-picker.spec.md §C open + inline-search 列,2026-10-07 待辦總帳 K4):
+   * 名字讓位給搜尋框 —— 頭像留在原位,名字的位置空出來給插入點。名字那一格換成零寬的佔位,頭像到它之間仍是同一個 `gap-2`,
+   * 所以接在後面的搜尋框剛好從原本名字的那條線開始(打開前後字不跳位);整顆不撐滿(不帶 `w-full`),搜尋框才排得進同一列。
+   */
+  nameYielded?: boolean
+}) {
 const emptyDisplay = useFieldEmptyDisplay()
   if (!value) return <span className="text-foreground">{emptyDisplay}</span>
 
@@ -167,14 +175,14 @@ const emptyDisplay = useFieldEmptyDisplay()
   // + inner name span `flex-1 min-w-0 truncate` 真實 truncate-with-ellipsis 顯示。
   // 對齊 GitHub Primer ActionList / Slack users_select / Atlassian UserPicker truncation canonical。
   return (
-    <span className="flex items-start gap-2 min-w-0 w-full">
+    <span className={cn('flex items-start gap-2 min-w-0', !nameYielded && 'w-full')}>
       <ItemPrefix>
         <span className="relative inline-flex group/avatar">
           <PersonAvatar person={person} size={size} disabled={disabled} />
           {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
         </span>
       </ItemPrefix>
-      <span className="truncate flex-1 min-w-0">{person.name}</span>
+      {nameYielded ? <span aria-hidden className="w-0" /> : <span className="truncate flex-1 min-w-0">{person.name}</span>}
     </span>
   )
 }

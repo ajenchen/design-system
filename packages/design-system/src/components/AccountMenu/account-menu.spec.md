@@ -27,7 +27,7 @@ benchmark:
 ## 何時用
 
 - **`primary-header` 派 globalHeader 右側**(desktop):品牌在左、自己的帳號在右(GitHub / Gmail / Slack / Atlassian global top bar 慣例)
-- **`primary-header` 派 mobile Sheet `<SidebarHeader>` 右側**:Sheet 蓋住 globalHeader 時鏡像桌面帳號家搬進 Sheet 頂排
+- **`primary-header` 派 Menu 浮層的 `<SidebarHeader>` 右側**:Menu 浮層(Sheet)蓋住 globalHeader 時鏡像桌面帳號家搬進浮層頂排(AppShell「版面規則」§9;2026-10-14 前的觸發條件是 768 以下的 Sheet)
 - 任何「目前登入使用者的個人設定入口」需求(開 navigation 選單,非展示他人資訊)
 
 ## 何時不用
@@ -41,7 +41,7 @@ benchmark:
 
 ## 放置 SSOT(pointer,不重述)
 
-**Owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段**(mode-dependent 放置表 + 「只能出現一次」rule + Responsive mobile-Sheet 精修)。本元件 **placement-agnostic**:不收 `mode` / `layout` prop,放哪裡由 consumer 讀 `useAppShell().layout` + `useSidebar().isMobile` 決定(recipe:`_demo-helpers.tsx` `AcmeSidebar` `headerHasAccount`)。複製放置邏輯進元件 = 第二份 SSOT(Rule-of-3 違反),故意不做。
+**Owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段**(mode-dependent 放置表 + 「只能出現一次」rule + 浮層精修)。本元件 **placement-agnostic**:不收 `mode` / `layout` prop,放哪裡由 consumer 讀 `useAppShell().layout` + Menu 的顯示方式(`useAppShell().display.menu`;2026-10-14 前是 `useSidebar().isMobile`)決定(recipe:`_demo-helpers.tsx` `AcmeSidebar` `headerHasAccount`)。複製放置邏輯進元件 = 第二份 SSOT(Rule-of-3 違反),故意不做。
 
 ## 近親職責分界
 

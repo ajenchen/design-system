@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-29T06:35:03.111Z"
+    "generatedAt": "2026-10-14T03:00:39.699Z"
   },
   "components": {
     "accordion": {
@@ -73,7 +73,6 @@
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
-          "design-system-components-agentpanel-展示--overlay-on-narrow-stage",
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
@@ -130,7 +129,10 @@
         "展示": [
           "design-system-components-appshell-展示--primary-sidebar",
           "design-system-components-appshell-展示--primary-sidebar-with-tabs",
-          "design-system-components-appshell-展示--primary-header"
+          "design-system-components-appshell-展示--primary-header",
+          "design-system-components-appshell-展示--four-regions",
+          "design-system-components-appshell-展示--agent-overlay",
+          "design-system-components-appshell-展示--menu-overlay"
         ],
         "設計規格": [
           "design-system-components-appshell-設計規格--overview",
@@ -490,6 +492,9 @@
           "design-system-components-combobox-展示--with-error",
           "design-system-components-combobox-展示--size-alignment",
           "design-system-components-combobox-展示--searchable",
+          "design-system-components-combobox-展示--searchable-inline-wrap",
+          "design-system-components-combobox-展示--inline-search-focus-contract",
+          "design-system-components-combobox-展示--field-keys-contract",
           "design-system-components-combobox-展示--loading-first-open",
           "design-system-components-combobox-展示--value-loading",
           "design-system-components-combobox-展示--remote-search-hint",
@@ -497,6 +502,7 @@
           "design-system-components-combobox-展示--unrestricted-option",
           "design-system-components-combobox-展示--unrestricted-contract",
           "design-system-components-combobox-展示--unrestricted-search",
+          "design-system-components-combobox-展示--unrestricted-inline-search",
           "design-system-components-combobox-展示--unrestricted-message-states",
           "design-system-components-combobox-展示--unrestricted-off-inert",
           "design-system-components-combobox-展示--in-data-table"
@@ -805,7 +811,8 @@
           "design-system-components-field-展示--with-slider",
           "design-system-components-field-展示--slider-aligns-with-other-fields",
           "design-system-components-field-展示--slider-with-live-number-input",
-          "design-system-components-field-展示--form-validation"
+          "design-system-components-field-展示--form-validation",
+          "design-system-components-field-展示--inline-search-yield-width-contract"
         ],
         "設計規格": [
           "design-system-components-field-設計規格--overview",
@@ -1180,9 +1187,11 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
+          "design-system-components-peoplepicker-展示--multi-inline-search",
           "design-system-components-peoplepicker-展示--hug-width-multi-stack",
           "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
           "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
+          "design-system-components-peoplepicker-展示--overflow-remove-focus-contract",
           "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load",
@@ -1312,7 +1321,6 @@
       "tiers": {
         "展示": [
           "design-system-components-rating-展示--read-only-product-rating",
-          "design-system-components-rating-展示--interactive-review",
           "design-system-components-rating-展示--in-field"
         ],
         "設計規格": [
@@ -1602,8 +1610,7 @@
         "展示": [
           "design-system-components-steps-展示--default",
           "design-system-components-steps-展示--non-linear",
-          "design-system-components-steps-展示--horizontal",
-          "design-system-components-steps-展示--multiple-expansion"
+          "design-system-components-steps-展示--horizontal"
         ],
         "設計規格": [
           "design-system-components-steps-設計規格--overview",
@@ -1811,6 +1818,7 @@
           "design-system-components-treeview-展示--file-browser",
           "design-system-components-treeview-展示--action-hover-state",
           "design-system-components-treeview-展示--stepper",
+          "design-system-components-treeview-展示--step-navigation-contract",
           "design-system-components-treeview-展示--with-checkbox",
           "design-system-components-treeview-展示--row-actions",
           "design-system-components-treeview-展示--delete-handoff",
@@ -1838,5 +1846,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1006
+  "totalStories": 1014
 }

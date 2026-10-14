@@ -81,7 +81,7 @@ Per layer 一個 commit:
 5. Memory + final verify commit
 
 每 commit 後跑:
-- `npx tsc -b`
+- `npm run build:lib`(型別證明;`tsc -b` 在設計系統本庫不算)
 - 新 hook test
 - `node scripts/audit-content-quality.mjs --check`(防 content drift)
 

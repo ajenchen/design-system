@@ -14,7 +14,7 @@ paths:
 |---|------|-----------|------|-----------|
 | 1 展示 | `*.stories.tsx` | trait-based v2 | `check_story_invariants.sh` R3 category | 29 |
 | 2 設計規格 | `*.anatomy.stories.tsx` | 6-canonical(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility)| —(6-canonical 由 Dim 13 batch verify + `compile-stories.mjs --check` 兜底;`check_story_invariants.sh` R1 = 展示層 hand-craft 偵測,2026-06-11 起豁免 anatomy 檔)| 13 |
-| 3 設計原則 | `*.principles.stories.tsx` | ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions；額外 story 必須 earn existence | `check_canonical_propagation.sh` E.1 principles | 30 |
+| 3 設計原則 | `*.principles.stories.tsx` | ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions；額外 story 必須 earn existence；版面一律用 `src/stories-helpers/examples/tutorial-page.tsx`(category-templates.md「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`) | `check_canonical_propagation.sh` E.1 principles | 30 |
 
 ## Title 命名
 

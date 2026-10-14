@@ -6,8 +6,10 @@ import { X } from 'lucide-react'
 import { FileUpload } from './file-upload'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Alert } from '@/design-system/components/Alert/alert'
+import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/FileUpload/設計原則',
@@ -15,26 +17,6 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
-
-// ── Helpers (inline, follow button.principles.stories.tsx) ────────────────────
-
-const Rule = ({
-  title,
-  note,
-  children,
-}: {
-  title: string
-  note?: string
-  children: React.ReactNode
-}) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>
-    )}
-    <div className="flex flex-col gap-3 max-w-lg">{children}</div>
-  </div>
-)
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p
@@ -45,6 +27,8 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
     {children}
   </p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-lg' })
 
 const noop = () => {}
 
@@ -58,10 +42,11 @@ const noop = () => {}
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 FileUpload 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/FileUpload/展示" name="單檔上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">履歷 / 大頭貼等單檔上傳</span></LinkTo>
@@ -76,23 +61,23 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/FileUpload/展示" name="自訂內容"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">品牌化上傳區 — 自訂 dropzone 內容</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁 <code>UsageGuidance</code>「vs 近親」段)。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁 <code>UsageGuidance</code>「vs 近親」段)。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="❌ 不移除 dashed border(改成 solid)"
         note="dashed 是世界級 dropzone 共識(Ant / Polaris / GitHub / Figma 皆然),視覺語意是「暫時、可放下」。solid border 暗示「永久邊界」,使用者會猶豫是否能拖入。"
       >
         <Label warn>⚠️ dashed border 是 affordance,不是裝飾——不可換成 solid</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不加 scale / shadow 等裝飾性 drag-over 信號"
         note="drag-over 只用邊框顏色(border-primary-hover,底維持 surface 不變 bg)傳達狀態。加 scale 會讓區塊在拖放瞬間晃動、使用者滑鼠與 drop target 錯位;加 shadow 和元件 elevation 體系衝突。"
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted">
             ✓ 僅改邊框顏色(dashed primary-hover,底維持 surface)
           </div>
@@ -101,19 +86,19 @@ export const UsageGuidance: Story = {
           </div>
         </div>
         <Label warn>⚠️ state 信號只走 color,不走 motion / elevation</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不用 FileUpload 做非檔案觸發"
         note="「點擊開啟浮層」是 Popover / Dialog 的職責,不是 FileUpload。FileUpload = 檔案專用,避免 semantic 錯位。"
       >
         <Label warn>⚠️ 需要點擊開浮層 → 改用 Popover / Dialog,不要把 FileUpload 客製成選單</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </>
 
       {/* vs 近親 — DropzoneVsButtonRule — 原 DropzoneVsButtonRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="✅ 獨立上傳頁 / 主要動作 — 用 FileUpload dropzone"
         note="拖放有價值(圖片、批次檔案、主要互動)且有足夠空間時才划算。對照:Figma 首頁 Import、Dropbox 上傳頁、Gmail compose 的附件區。"
       >
@@ -124,44 +109,44 @@ export const UsageGuidance: Story = {
           description="拖曳或點擊選取"
           onUpload={noop}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title='✅ 表單內 inline field — 用 FileUpload variant="button"'
         note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
       >
-        <div className="flex flex-col gap-3 w-full">
+        <FieldGroup className="w-full">
           <Field>
             <FieldLabel>申請人姓名</FieldLabel>
             <Input placeholder="王小明" />
           </Field>
           <Field>
             <FieldLabel>申請人身分證</FieldLabel>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-[var(--layout-space-tight)]">
               <Input className="flex-1" placeholder="A123456789" />
               <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
             </div>
           </Field>
-        </div>
+        </FieldGroup>
         <Label>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ form 裡塞大 dropzone"
         note="上下欄位高度落差太大,使用者視覺節奏被打斷——這是 form field 不該出現的體積。"
       >
         <Label warn>⚠️ form 內 inline 上傳欄位,不要用大 dropzone(改 variant="button")</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
 export const MultipleRule: Story = {
   name: '多選',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="單檔(預設)— 頭像 / 履歷 / 封面照"
         note="每個欄位只收一份檔案時用預設 multiple=false。世界級對照:LinkedIn 履歷上傳、Instagram 大頭貼、Notion page cover——使用者心智模型是「這個位置放一個檔案」。"
       >
@@ -173,9 +158,9 @@ export const MultipleRule: Story = {
           onUpload={noop}
         />
         <Label>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="multiple — 相簿 / 附件 / 批次匯入"
         note="一次要收多份檔案時才 opt-in。世界級對照:Google Photos 匯入、Slack message 附件、Figma import assets——使用者預期「一次拖一批進來」。"
       >
@@ -187,17 +172,17 @@ export const MultipleRule: Story = {
           maxSize={10_000_000}
           onUpload={noop}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 不把 multiple 當 default"
         note="單檔場景(履歷 / 大頭貼 / 封面圖)才是 80% 的使用情境。預設多檔會讓 consumer 忘記限制、後端收到多份後再截斷,UX 破裂。"
       >
         <Label warn>
           ⚠️ 以為「multiple 比較彈性」就預設開,實際反而讓單檔情境出 bug。明確 opt-in 才正確
         </Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -209,55 +194,59 @@ export const DivisionOfLaborRule: Story = {
       { name: 'design-review.docx', description: '540 KB' },
     ])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ FileUpload 觸發 + FileItem 顯示"
           note="本範例走 consumer 自組清單:FileUpload 負責拖放偵測 + 觸發選檔,已上傳清單由 consumer 用 FileItem map 渲染。DS 同時支援第二條路——把清單交給 FileUpload 的 files prop 內建渲染(見下一則規則);兩條路都合法,差別只在觸發與清單狀態由誰持有,重點是都不重畫 FileItem 內部視覺。這正是 Notion / Slack / Figma 的附件 flow 做法。"
         >
-          <FileUpload
-            multiple
-            title="加入附件"
-            description="任何檔案類型"
-            onUpload={(accepted) =>
-              setFiles((prev) => [
-                ...prev,
-                ...accepted.map((f) => ({
-                  name: f.name,
-                  description: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
-                })),
-              ])
-            }
-          />
-          {files.length > 0 && (
-            <div className="flex flex-col gap-1">
-              {files.map((f, i) => (
-                <FileItem
-                  key={`${f.name}-${i}`}
-                  mode="compact"
-                  name={f.name}
-                  actions={
-                    <Button
-                      variant="text"
-                      size="xs"
-                      iconOnly
-                      startIcon={X}
-                      aria-label={`移除 ${f.name}`}
-                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                    />
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </Rule>
+          {/* @layout-space-magic-ok: FileUpload → consumer 自組的 compact FileItem 清單 4px,與內建 files 清單同值(file-upload.tsx fileListClassName compact 模式 gap 4px / mt 4px;file-item.spec.md:264 List wrapper canonical) */}
+          <div className="flex flex-col gap-1">
+            <FileUpload
+              multiple
+              title="加入附件"
+              description="任何檔案類型"
+              onUpload={(accepted) =>
+                setFiles((prev) => [
+                  ...prev,
+                  ...accepted.map((f) => ({
+                    name: f.name,
+                    description: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
+                  })),
+                ])
+              }
+            />
+            {files.length > 0 && (
+              // @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:264 List wrapper canonical;layoutSpace.spec.md:113 同範疇 spec-own)
+              <div className="flex flex-col gap-1">
+                {files.map((f, i) => (
+                  <FileItem
+                    key={`${f.name}-${i}`}
+                    mode="compact"
+                    name={f.name}
+                    actions={
+                      <Button
+                        variant="text"
+                        size="xs"
+                        iconOnly
+                        startIcon={X}
+                        aria-label={`移除 ${f.name}`}
+                        onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                      />
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不在 FileUpload 裡自己重刻 FileItem primitives"
           note="DS 提供兩條清單管理路徑:一是把清單交給 FileUpload 的 files prop,由它內部組合 FileItem 渲染;二是 consumer 自己用 files.map 逐項渲染 FileItem。兩條路都合法,真正禁止的是「自己重畫 FileItem 的內部視覺規格」——狀態圖示、縮圖比例、進度條、列排版都屬 FileItem 的 SSOT。世界級(Material / Ant / Carbon)也都是自己擁有清單、組合自家的 FileItem primitive,不另刻一套。"
         >
           <Label warn>⚠️ 要顯示清單 → 傳 `files` prop(內建)或自組 FileItem map;但不要自己重畫 FileItem 內部結構</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -267,8 +256,8 @@ export const ErrorFeedbackRule: Story = {
   render: () => {
     const [errors, setErrors] = React.useState<string[]>([])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ 設 accept / maxSize 就一定要接 onReject"
           note="accept / maxSize 擋下的檔案 FileUpload 靜默忽略,不會自動提示使用者。consumer 必須接 onReject 並顯示 Toast / Alert——否則使用者拖了檔案什麼都沒發生,會以為是 bug。"
         >
@@ -289,23 +278,26 @@ export const ErrorFeedbackRule: Story = {
             }}
           />
           {errors.length > 0 && (
-            <div className="rounded-md border border-error bg-error-subtle px-3 py-2 text-caption text-error-text">
-              {errors.map((msg, i) => (
-                <div key={i}>{msg}</div>
+            <Alert
+              variant="error"
+              appearance="subtle"
+              title="以下檔案無法上傳"
+              description={errors.map((msg, i) => (
+                <span key={i} className="block">{msg}</span>
               ))}
-            </div>
+            />
           )}
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 設了 accept / maxSize 卻不接 onReject"
           note="使用者拖入不合格檔案後畫面毫無反應,會反覆嘗試最後放棄——這是沉默失敗,比明白拒絕還傷 UX。"
         >
           <Label warn>
             ⚠️ 檔案限制必定配錯誤提示。onReject → Toast / 欄位下的 error message
           </Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }

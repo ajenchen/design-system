@@ -254,7 +254,7 @@ export const SizeMatrix: Story = {
         </div>
         <p className="text-footnote text-fg-muted mt-3">
           Dialog 在 viewport 小於 `maxWidth + 96px` 時自動縮到 inset 內——48px 四邊 viewport padding
-          是硬上限(token: `--layout-space-bottom`)。
+          是硬上限(token: `--layout-space-viewport-inset`)。
         </p>
       </div>
     </div>
@@ -379,7 +379,7 @@ export const ColorMatrix: Story = {
               <tr><Td>Header / Footer 垂直 padding</Td><Td mono>--layout-space-tight</Td><Td>12/16 px</Td></tr>
               <tr><Td>Body 垂直 padding(top)</Td><Td mono>--layout-space-tight</Td><Td>12/16 px</Td></tr>
               <tr><Td>Body 垂直 padding(bottom)</Td><Td mono>--layout-space-bottom</Td><Td>48 px(固定)</Td></tr>
-              <tr><Td>Viewport inset(四邊)</Td><Td mono>--layout-space-bottom</Td><Td>48 px(四邊統一)</Td></tr>
+              <tr><Td>Viewport inset(四邊)</Td><Td mono>--layout-space-viewport-inset</Td><Td>48 px(四邊統一)</Td></tr>
               <tr><Td>Footer 按鈕間距</Td><Td mono>gap-2</Td><Td>8 px</Td></tr>
             </tbody>
           </table>
@@ -412,7 +412,7 @@ export const ColorMatrix: Story = {
             <tbody>
               <tr><Td>進場</Td><Td mono>fade-in-0 + zoom-in-95(從中心淡入 + 輕微縮放,不位移)</Td><Td mono>--motion-duration-surface / --motion-easing-enter</Td></tr>
               <tr><Td>離場</Td><Td mono>fade-out-0 + zoom-out-95</Td><Td mono>--motion-duration-surface / --motion-easing-exit</Td></tr>
-              <tr><Td>reduced-motion</Td><Td mono>motion-reduce:animate-none</Td><Td>—</Td></tr>
+              <tr><Td>reduced-motion</Td><Td mono>不播(surfaceMotion 只在 motion-safe 下宣告動畫)</Td><Td>—</Td></tr>
             </tbody>
           </table>
         </div>

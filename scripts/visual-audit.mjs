@@ -6,6 +6,13 @@
  *         全部成立、選擇器都找得到元素 —— 不會有「斷言的元素改名後靜默變綠」。
  *   紅: 任一場景 render error、任一斷言不成立、任一選擇器找不到元素 → 印場景 id 與數字並 exit 1;
  *       `--scope=changed` 找不到可比對的 base(或明確給的 --base 不存在)→ INSTRUMENT-FAIL exit 1,不猜、不退回。
+ *       畫面裡的圖(<img> / CSS 背景圖)載入失敗或等不到(遠端連不到、逾時)→ 該場景 INSTRUMENT-FAIL、點名網址、計入 render error
+ *       (--update-baseline 時也 exit 1,且這張不寫進基準)—— 不拍灰底、不讓它變成假差異(2026-10-14,run 38502930713 FileViewer 68.7%)。
+ *       開完 story / 滑過之後 10 秒內等不到「沒有排隊中的短計時器(≤ 2 秒)、沒有進行中的有限動畫、連續 10 格靜止」→ 該場景 INSTRUMENT-FAIL、
+ *       點名場景與還在排隊的延遲,計入 render error(2026-10-14 起取代滑過後固定睡 250ms、互動類開完固定睡 1200ms:
+ *       Tooltip 500ms 延遲開啟落在截圖前後,重拍後立刻再比就差 0.49%;lib/launch-browser.mjs「計時器帳本」區塊)。
+ *       截圖前清不掉圖片解碼 / 光柵快取或之後等不到靜止 → 同樣 INSTRUMENT-FAIL(lib「截圖前的確定性」:無限動畫停在第 0 毫秒、
+ *       圖片在最終尺寸重新光柵 —— 同一個最終畫面拍兩次必須逐位元組相同,重拍 job 的穩定性那一步才有意義)。
  *       歷史紅燈:2026-09-12 前選擇器找不到會被吞成通過;2026-09-29 前 `git diff main...HEAD` 在沒有本地 main 的
  *       乾淨 checkout 裡靜默落回工作樹 → 算出 0 個元件 → exit 0 假綠(M37)。
  *   綠: 改到的元件全部場景渲染成功、斷言成立;沒改到任何元件時印出 base 與「無 scenario 可跑」後綠(base 已 rev-parse 驗證存在)。
@@ -55,7 +62,7 @@
  *   1 = 有 contrast / geometry violation(CI 可用此 gate commit)
  */
 
-import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { describeDeterministicImageFailures, INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, prepareStableScreenshot, StoryRenderInstrumentError, trackImageRequests, waitForImages } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
@@ -115,6 +122,10 @@ const URLS = ARGS_KV['--urls'] // CSV of URLs,overrides scenario mode
 const NO_A11Y = ARGS_SET.has('--no-a11y') // skip @axe-core/playwright(default runs)
 const NO_DIFF = ARGS_SET.has('--no-diff') // skip baseline pixel diff
 const UPDATE_BASELINE = ARGS_SET.has('--update-baseline') // copy new snapshots as baseline
+// 示範圖(picsum / pravatar)的取法(2026-10-14,lib/launch-browser.mjs「圖片就緒」):截圖要跟已提交基準圖比、或要寫成基準圖時
+// 一律 'network'(基準圖裡是真圖,換成合成圖等於改基準 —— R3 要 user 逐張核准);--no-diff 且不寫基準(PR 的 scope=changed 那一跑:
+// 只看對比 / 幾何斷言)用 'local'(同尺寸本機合成圖),那一跑的結果就不取決於第三方主機連不連得到。
+const DEMO_IMAGES = NO_DIFF && !UPDATE_BASELINE ? 'local' : 'network'
 let storybookUrl = ARGS_KV['--storybook-url'] ?? DEFAULT_STORYBOOK_URL
 if (AUTO_START && STATIC_STORYBOOK) {
   console.error('[visual-audit] --auto-start 與 --static 二擇一')
@@ -367,6 +378,8 @@ async function auditScenario(browser, scenario, opts = {}) {
   const page = sharedPage
   // 互動之後的 render-health 複驗用(openStory 回傳前已驗過一次;這支在 openStory 之後才掛,只看互動期間的例外 / 缺檔)
   let renderHealth = null
+  // 確定性破圖(RFC 保留名稱、同源 404、示範圖主機上真站沒有的網址):照拍、不擋,但寫進 report.json 並印出來 —— 照拍 ≠ 靜默拍下
+  let images = null
   let interactionResult = scenario.interaction
     ? { status: 'not-run', action: scenario.interaction.action, selector: scenario.interaction.selector }
     : null
@@ -406,16 +419,26 @@ async function auditScenario(browser, scenario, opts = {}) {
     // 現在由 openStory 證明:Storybook 回報這則 story 渲染完成 —— phase finished 已含 play 與 afterEach(示範收尾就在 afterEach 裡,
     // 章也是在那裡蓋的,所以不必再等章,舊建置沒有章也照樣成立)→ 畫面健康 → 字型載完 → 連續 10 影格無 DOM 變動、無進行中的有限動畫。
     // 等不到 = 儀器失效(點名 story、附 Storybook 錯誤原文與 404),計入 render error、exit 非零;壞掉的畫面不會被拍、也不會被寫成 baseline。
-    await openStory(page, url, {
+    // 圖片(2026-10-14,待辦總帳 R1e / R3):openStory 預設在靜止判定前等畫面裡每張圖 complete + naturalWidth > 0(10-14 起不再 decode(),見 lib「截圖前的確定性」),
+    // 載入失敗 / 等不到 = 儀器失效並點名網址(lib「圖片就緒」區塊)。起因:PR 分支重拍 run 38502930713 的穩定性複拍,
+    // fileviewer-open-snapshot.png 差 68.7% —— 第二張拍到 FileViewer 灰底舞台(picsum 的圖還沒到,縮放停在 100%),
+    // 舊的等待只看「DOM 連續 10 影格不動」,而圖片下載完成不改 DOM。
+    // demoImages:見 DEMO_IMAGES(要比基準 / 寫基準 = 'network' 真圖;--no-diff = 'local')。
+    // pendingTimers(2026-10-14):靜止判定另要求「沒有排隊中的短計時器」(lib「計時器帳本」區塊)。取代互動類原本的「開完固定睡 1200ms」——
+    // play / 渲染排下的延遲顯示(TooltipProvider delayDuration 500ms 等)在計時器到點前 DOM 完全不動,只看影格的靜止判定看不到它;
+    // 固定睡 1200ms 是「計時器已經到點」的代理(M37),慢的機器上計時器晚到點照樣拍到一半。現在等的是計時器本身:到點、畫完、動畫跑完、
+    // 連續 10 格靜止才拍;等不到(輪詢式的短計時器永遠在排隊)= 儀器失效、點名排隊中的延遲,計入 render error。
+    const opened = await openStory(page, url, {
+      demoImages: DEMO_IMAGES,
       settleFrames: 10,
+      pendingTimers: true,
       notFound: ownedStaticServer?.notFound,
       navigationTimeoutMs: 45_000,
-      beforeSettle: isInteractive
-        // 互動類保留 1200ms:play 觸發的延遲顯示(TooltipProvider delayDuration 500ms 等計時器驅動)在計時器到點前
-        // DOM 完全不動,影格靜止判定看不到計時器 —— 這段是等「延遲開啟」本身,之後仍要過影格靜止判定
-        ? (p) => p.waitForTimeout(1200)
-        : (p) => p.mouse.move(0, 0), // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
+      // 互動類不動指標(play 建立的狀態、以及滑過場景之後要用的真實指標都不能被蓋掉);其餘把指標停到 (0,0),
+      // 免得指標剛好停在圖示鈕上自動打開 tooltip
+      beforeSettle: isInteractive ? null : (p) => p.mouse.move(0, 0),
     })
+    images = opened.images
     renderHealth = createRenderHealthMonitor(page, { mode: scenario.url ? 'document' : 'storybook' })
 
     // 2026-09-23 前這裡會把非 interactive story 的焦點 blur 掉(浮層 autoFocus 的關閉鈕框、圖示鈕的焦點 tooltip)。
@@ -432,12 +455,22 @@ async function auditScenario(browser, scenario, opts = {}) {
         action: scenario.interaction.action,
         selector: scenario.interaction.selector,
       }
+      // 滑過之後的等待(2026-10-14 起取代固定睡 250ms,lib/visual-audit-interaction.mjs):與 openStory 第 8b + 9 步同一份判定 ——
+      // 互動前開圖片帳本,滑過後等畫面裡每張圖載完、排隊中的短計時器到點(Tooltip 500ms 延遲開啟)、動畫跑完、
+      // 連續 10 格靜止才拍;最後一格還有圖在路上(先預載再掛上)就回頭再等。等不到 = StoryRenderInstrumentError(點名本場景)。
+      // 指標落點的證明在這之後才讀(拍照那一刻目標仍在受信任的指標下)。
+      const imageLedger = trackImageRequests(page)
       try {
-        const executed = await executeVisualInteraction(page, scenario.interaction)
-        interactionResult = { status: 'passed', ...executed }
+        const label = scenario.id ?? scenario.url
+        const { settled: afterInteraction, ...executed } = await executeVisualInteraction(page, scenario.interaction, {
+          settle: (p) => waitForImages(p, { ledger: imageLedger, label, pendingTimers: true }),
+        })
+        interactionResult = { status: 'passed', ...executed, settle: afterInteraction.settle }
         // Interaction can trigger a render crash after the initial healthy frame. Re-check the
         // root, page exceptions, and critical assets before taking evidence.
-        await renderHealth.assertHealthy({ label: scenario.id ?? scenario.url })
+        await renderHealth.assertHealthy({ label })
+        const seen = new Map([...(images?.deterministicFailures ?? []), ...afterInteraction.deterministicFailures].map((f) => [f.url, f]))
+        images = { ...(images ?? { checked: 0, loaded: 0 }), afterInteraction: { checked: afterInteraction.checked, loaded: afterInteraction.loaded }, deterministicFailures: [...seen.values()] }
       } catch (interactionError) {
         interactionResult = {
           status: 'failed',
@@ -446,6 +479,8 @@ async function auditScenario(browser, scenario, opts = {}) {
           error: interactionError.message,
         }
         throw interactionError
+      } finally {
+        imageLedger.dispose()
       }
     }
 
@@ -454,6 +489,9 @@ async function auditScenario(browser, scenario, opts = {}) {
       explicitRoot: OUT_DIR,
       relativePath: scenario.file,
     })
+    // 截圖前的確定性(2026-10-14,lib「截圖前的確定性」):無限動畫(轉圈、Skeleton 微光)停在第 0 毫秒、清圖片解碼 / 光柵快取後重新光柵 ——
+    // 重拍後立刻再比的那一步要的是「同一個最終畫面 → 同一組像素」,不是「剛好在哪個相位 / 哪個解碼時序拍到」;做不到 = 儀器失效(點名本場景)
+    await prepareStableScreenshot(page, { label: scenario.id ?? scenario.url })
     await page.screenshot({ path: screenshotPath, fullPage: false })
 
     const contrast = await scanContrast(page)
@@ -536,6 +574,7 @@ async function auditScenario(browser, scenario, opts = {}) {
       id: scenario.id ?? scenario.url,
       file: scenario.file,
       interaction: interactionResult,
+      images,
       contrast,
       geometryViolations: geometry,
       a11yViolations,
@@ -546,6 +585,7 @@ async function auditScenario(browser, scenario, opts = {}) {
       id: scenario.id ?? scenario.url,
       file: scenario.file,
       interaction: interactionResult,
+      ...(images ? { images } : {}),
       error: err.message,
       // 儀器失效(沒量到,不是產品裁決)的種類:navigation / storybook-error / render-timeout / render-health / dom-not-settled …
       ...(err instanceof StoryRenderInstrumentError ? { instrumentKind: err.kind } : {}),
@@ -758,6 +798,8 @@ async function main() {
   // 壞掉的 story 照樣綠燈。fail-closed:兩者皆計數 + 進 exit gate。
   let totalRenderErrors = 0
   let totalDiffErrors = 0
+  // 確定性破圖的場景數(不進 exit gate:每個環境都一樣破,不是這台機器的網路;但一定點名,不靜默拍下)
+  let totalDeterministicImageScenarios = 0
 
   for (const scenario of scopedScenarios) {
     // 2026-06-11 dim 51:matrix mode = 每 scenario × cell 全跑 violation scan(contrast/geometry/axe)。
@@ -784,6 +826,11 @@ async function main() {
       if (r.error) {
         totalRenderErrors++
         console.error(`  ✗ ${r.error}`)
+      }
+      const brokenImages = describeDeterministicImageFailures(r.images?.deterministicFailures)
+      if (brokenImages) {
+        totalDeterministicImageScenarios++
+        console.warn(`  ${brokenImages}`)
       }
     }
   }
@@ -816,6 +863,7 @@ async function main() {
     totalDiffBudgetBreached,
     totalRenderErrors,
     totalDiffErrors,
+    totalDeterministicImageScenarios,
     scenarios: results,
   }
   const reportPath = prepareRuntimeEvidenceFile({ repoRoot: PROJECT_ROOT, explicitRoot: OUT_DIR, relativePath: 'report.json' })
@@ -837,8 +885,9 @@ async function main() {
       console.log('    要判斷是不是真的退步,看 Visual Regression workflow(ubuntu-24.04)的結果,或並排比對圖片。')
     }
   }
-  console.log(`  Render errors(story 404 / error display): ${totalRenderErrors}`)
+  console.log(`  Render errors(story 404 / error display / 圖片載入失敗或等不到): ${totalRenderErrors}`)
   if (!NO_DIFF) console.log(`  Diff errors(baseline missing / dimension mismatch): ${totalDiffErrors}`)
+  if (totalDeterministicImageScenarios) console.log(`  ⚠ 有確定性破圖的場景(照拍、不擋;網址見上方 ⚠ 與 report.json 的 images.deterministicFailures): ${totalDeterministicImageScenarios}`)
   console.log(`  Report: ${reportPath}`)
   console.log(`  Screenshots: ${OUT_DIR}/*.png`)
   console.log(`\n[Layer B:invoke /visual-audit 讀 ${OUT_DIR}/ 做 AI 設計合理性判斷]`)

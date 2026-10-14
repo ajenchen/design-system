@@ -57,7 +57,8 @@ const REGISTRY = [
   {
     label: 'DataTable url cell 編輯連結',
     file: 'packages/design-system/src/components/DataTable/cell-registry.tsx',
-    anchor: "aria-label=\"編輯連結\"",
+    // 2026-10-13 鉛筆改成行內小按鈕 ItemInlineAction(待辦總帳 Q3b),揭示 class 掛在包住它的那層 span(帶編輯入口標記)
+    anchor: "[CELL_EDIT_ENTRY_ATTR]: ''",
     scope: 'cell',
   },
 ]

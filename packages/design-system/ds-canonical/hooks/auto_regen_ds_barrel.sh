@@ -11,6 +11,7 @@
 #     OR 改動 component primary tsx(可能 export 名 change)
 #   - Write/Edit 創建 / 改動 `index.ts` in components/<Dir>/ or patterns/<dir>/
 #   - 新增 / 移除 hooks/*.ts or lib/*.ts(barrel 也 include 這些)
+#   - 改動 tokens/**/*.ts(2026-07-08 起 barrel 收 tokens JS mirror;2026-10-07 起其 @internal 標記也決定 root 出不出口)
 #
 # Action:silent fire `node scripts/gen-component-indexes.mjs` + `node scripts/gen-design-system-barrel.mjs`
 # 不 BLOCKER — auto fix-up,不打斷 workflow。emit message 告訴 AI「已 auto regen barrel」
@@ -35,8 +36,9 @@ FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""') \
 
 if [ -z "$FILE_PATH" ]; then exit 0; fi
 
-# Scope filter:必 packages/design-system/src/{components,patterns,hooks,lib}/**
-if ! grep -qE 'packages/design-system/src/(components|patterns|hooks|lib)/' <<<"$FILE_PATH"; then
+# Scope filter:必 packages/design-system/src/{components,patterns,hooks,lib}/** 或 tokens/**/*.ts
+# (tokens 只收 .ts:barrel 只讀 tokens 的 JS mirror,tokens 的 .css / .md 與 barrel 無關)
+if ! grep -qE 'packages/design-system/src/((components|patterns|hooks|lib)/|tokens/.*\.ts$)' <<<"$FILE_PATH"; then
   exit 0
 fi
 

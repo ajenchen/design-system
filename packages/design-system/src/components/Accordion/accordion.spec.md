@@ -42,6 +42,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 | 複雜 sidebar 導航（深度 tree）| `TreeView` / `Sidebar` | Accordion 無 nested 結構 |
 | 收合整個浮層/側欄 | `Dialog` / `Sheet` / `Popover` | 那是浮層控制不是 inline 收合 |
 | 長列表只顯示 N 個 | 自組 「顯示更多」按鈕 | Accordion 不是「more / less」pattern |
+| 走完一條流程、要標出目前在哪一步 | `Steps`(`../Steps/steps.spec.md:49` 判斷準則) | Accordion 沒有「目前那一步」,開合不是進度 |
 
 ---
 
@@ -69,7 +70,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **AccordionItem 底線**:相鄰 item 以底 divider 分隔(視覺界定每一段)
 - **Trigger 文字**:正常閱讀色 + medium 字重(可掃視的 section heading 等級)
 - **Trigger hover**:文字色 tint 弱化,**不用 underline**
-- **Chevron**:朝下 → data-state=open 旋轉 180° → 朝上,transition 帶平滑
+- **Chevron**:朝下 → data-state=open 旋轉 180° → 朝上;旋轉跟內容展開同一份時長與曲線(`disclosureIndicatorMotion`:`--motion-duration-disclosure` 200ms、`ease-out`),兩者一起開始、一起停;減少動態下直接換角度不轉(2026-10-13 起,原本 200ms 但曲線是 Tailwind 預設;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)
 - **Content 文字**:次要閱讀色—— 主資訊在 trigger,展開內容是補充
 - **焦點框**:鍵盤 focus 畫內描邊(`focus-visible:focus-ring-inset`,往內 2px)—— trigger 撐滿標題列高,往外 +2px 會壓到下方內容區;幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(2026-09-24 訂正,原「用 ring token(非自訂 outline)」方向相反且指已退役的機制)
 

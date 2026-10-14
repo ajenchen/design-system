@@ -211,7 +211,7 @@ fi
 if grep -q "Claim-verify gap" <<<"${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}"; then
   DIRECTIVE="${DIRECTIVE}
 🚨 **DIRECTIVE — Claim-verify gap**:
-  你說 done / verified / 通過 但本 turn 沒跑 \`tsc -b\` / hook test / score script。**現在立刻跑驗證**或在回答中明撤回 claim。"
+  你說 done / verified / 通過 但本 turn 沒跑真驗證(型別證明 = \`npm run build:lib\`,本 repo 的 \`tsc -b\` 不算;hook test / 閘 / 稽核)。**現在立刻跑驗證**或在回答中明撤回 claim。"
 fi
 if [ "$PRUNE_CHAIN_TRIGGER" -eq 1 ]; then
   DIRECTIVE="${DIRECTIVE}

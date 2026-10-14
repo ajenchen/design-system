@@ -51,7 +51,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 有合法 URL 且未在編輯中時：
 - value 以 `text-primary` 藍色顯示，hover 加底線，點擊開啟連結
-- **連結的可點範圍 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行
+- **連結的可點範圍 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行。**所有模式都適用**(2026-10-13 起;編輯模式的連結狀態、readonly、view、DataTable 連結格(用 view 模式)):由連結自己保證(`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`),不靠外層排版;2026-10-13 前是 `block`,唯讀 / 檢視模式與表格連結格文字右邊看起來空白的那一段點下去會開網頁(待辦總帳 Q3a)
 - 右側 Pencil inline action 觸發編輯模式
 - **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`
 - 按在空白處、拖過網址文字再放開(選字)不算點一下，不進入編輯
@@ -81,8 +81,10 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 1. **blur 時驗證**——使用者離開 field 時才檢查格式
 2. **開始打字時清除 error**——輸入任一字元即移除錯誤狀態(Escape 還原原值亦清除);單純重新 focus 不清除
-3. **Enter 觸發 blur**——等同離開 field
-4. **Escape 取消編輯**——回復原值，不觸發驗證
+3. **Enter 提交**——結算草稿(等同離開 field 的驗證):合法 → 提交、切回連結狀態,焦點給鉛筆;網址無效 → 紅框、**焦點留在輸入框**;清空 → 清值、留在輸入框。2026-10-01 前 Enter 走 `blur()`,網址無效 / 清空時焦點掉到 `<body>`(實測);同日第一版在 keydown 當下同步聚焦鉛筆又沒 preventDefault,同一下 Enter 的 keypress 落到鉛筆上把編輯重開 —— 現改走 `../Field/field-edit-keys.ts` `editSettleKeyProps`(全 DS 就地編輯鍵盤結算 SSOT:IME guard + preventDefault),焦點在 commit 之後、只在真的掉了才搬
+4. **Escape 取消編輯**——回復原值，不觸發驗證;焦點給鉛筆(同 `../InlineEdit/inline-edit.spec.md`「退出 edit 態(focus 分流)」)。**正在編輯、或有打了還沒存的字,是焦點所在控件自己的一層**(2026-10-01;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):放在 Dialog / Sheet 裡第一下 Esc 只取消、浮層不關,第二下才關;它是同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層的一層 —— 先收它,consumer 的 Esc 下一下才輪到(表單引擎目前接不上 LinkInput,見下段)
+
+**不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
 
 URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 
@@ -106,6 +108,7 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 
 與其他 Field 一致：
 - readonly：顯示藍色連結（可點擊），無 Pencil action
+- **值不是合法網址時(readonly / view,含 DataTable 連結格)畫成一般文字、不給連結**(2026-10-13,待辦總帳 Q3e):判準與編輯模式「只有合法才顯示成連結」同一支 `isValidUrl`(本檔「驗證」:必須包含 `http://` 或 `https://`),`javascript:`、`data:`、少了 `https://` 的字永遠不會變成 `href`。**唯一另外放行的是站內路徑**(以 `/` 開頭、解析後仍在同一個網站,例:`/projects/8821/tasks/4821`):它解析後就是本站的 http(s),修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;`//host`、`/\host` 這類會被瀏覽器正規化成別的網站的寫法不算。編輯模式的驗證不變(只收 http(s);上方「不適用場景」站內路由請用 Input)。DataTable 存檔時的驗證仍由 consumer 做(`../DataTable/data-table.spec.md` cellErrors),表格不另加
 - disabled：連結灰化，不可點擊
 
 ---
@@ -142,8 +145,8 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 
 - Tab — focus
 - 字母鍵 — 輸入
-- Enter — 提交,觸發 blur 驗證
-- Esc — 取消編輯,回復原值,不觸發驗證
+- Enter — 提交(見「驗證」3:合法 → 連結狀態、焦點給鉛筆;無效 / 清空 → 留在輸入框)
+- Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(見「驗證」4:浮層裡第一下只取消、第二下才關浮層)
 - Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。「點外框空白處 = 按 Pencil」是滑鼠的捷徑,外框本身不是 tab stop,鍵盤走 Pencil
 
 **Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。
@@ -154,6 +157,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `data-table.spec.md`
 - `file-item.spec.md`
 - `input.spec.md`
 - `textarea.spec.md`

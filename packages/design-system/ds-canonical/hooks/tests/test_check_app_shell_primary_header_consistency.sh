@@ -155,12 +155,12 @@ expect_pass_silent "6. proposed escape marker → silent"
 
 run_hook "src/responsive.tsx" Edit '
 export const Responsive = () => {
-  const { isMobile } = useSidebar()
+  const { display } = useAppShell()
   return <AppShell layout="primary-header" globalHeader={<GH />}>
-    {isMobile && <SidebarHeader>brand</SidebarHeader>}
+    {display.menu === "overlay" && <SidebarHeader>brand</SidebarHeader>}
   </AppShell>
 }'
-expect_pass_silent "7. proposed responsive mobile fork remains allowed"
+expect_pass_silent "7. proposed Menu-overlay brand mirror remains allowed"
 
 run_hook "src/single-quote.tsx" Edit "
 <AppShell layout={'primary-header'}><Sidebar /></AppShell>"
@@ -223,11 +223,11 @@ run_hook "src/instance-decoy.tsx" Edit '
 expect_block "21. another compliant AppShell cannot hide violating instance" "V1 缺 globalHeader prop"
 
 run_hook "src/mobile-decoy.tsx" Edit '
-// isMobile
+// display.menu === "overlay"
 <AppShell layout="primary-header" globalHeader={<GH />}>
   <SidebarHeader>unguarded brand</SidebarHeader>
 </AppShell>'
-expect_block "22. isMobile comment cannot exempt unguarded SidebarHeader" "V2 Sidebar 內含 SidebarHeader"
+expect_block "22. Menu-overlay comment cannot exempt unguarded SidebarHeader" "V2 Sidebar 內含 SidebarHeader"
 
 run_hook "src/malformed-tsx.tsx" Edit '<AppShell layout="primary-header">' clean
 expect_integrity "23. malformed proposed TSX is integrity failure" "parser unavailable or proposed content malformed"
@@ -251,39 +251,48 @@ expect_block "27. block-comment escape decoy cannot bypass" "V1 缺 globalHeader
 
 run_hook "src/mobile-ternary.tsx" Edit '
 export const Responsive = () => {
-  const { isMobile } = useSidebar()
+  const menuIsOverlay = useAppShell().display.menu === "overlay"
   return <AppShell layout="primary-header" globalHeader={<GH />}>
-    {isMobile ? <SidebarHeader>brand</SidebarHeader> : null}
+    {menuIsOverlay ? <SidebarHeader>brand</SidebarHeader> : null}
   </AppShell>
 }'
-expect_pass_silent "28. positive isMobile ternary true branch is exempt"
+expect_pass_silent "28. positive Menu-overlay ternary true branch is exempt"
 
 run_hook "src/mobile-parentheses.tsx" Edit '
 export const Responsive = () => {
-  const { isMobile } = useSidebar()
+  const { display } = useAppShell()
   return <AppShell layout="primary-header" globalHeader={<GH />}>
-    {((isMobile)) && <SidebarHeader>brand</SidebarHeader>}
+    {(("overlay" === display.menu)) && <SidebarHeader>brand</SidebarHeader>}
   </AppShell>
 }'
-expect_pass_silent "29. safely parenthesized positive isMobile RHS is exempt"
+expect_pass_silent "29. safely parenthesized positive Menu-overlay RHS is exempt"
 
 run_hook "src/mobile-negated.tsx" Edit '
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  {!isMobile && <SidebarHeader>desktop brand</SidebarHeader>}
+  {!menuIsOverlay && <SidebarHeader>desktop brand</SidebarHeader>}
 </AppShell>'
-expect_block "30. negated isMobile branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
+expect_block "30. negated Menu-overlay branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
 
 run_hook "src/mobile-false-branch.tsx" Edit '
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  {isMobile ? null : <SidebarHeader>desktop brand</SidebarHeader>}
+  {menuIsOverlay ? null : <SidebarHeader>desktop brand</SidebarHeader>}
 </AppShell>'
-expect_block "31. isMobile false branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
+expect_block "31. Menu-overlay false branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
 
 run_hook "src/mobile-or.tsx" Edit '
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  {isMobile || <SidebarHeader>desktop brand</SidebarHeader>}
+  {menuIsOverlay || <SidebarHeader>desktop brand</SidebarHeader>}
 </AppShell>'
-expect_block "32. OR expression is not a positive mobile guard" "V2 Sidebar 內含 SidebarHeader"
+expect_block "32. OR expression is not a positive Menu-overlay guard" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/retired-is-mobile.tsx" Edit '
+export const Responsive = () => {
+  const { isMobile } = useLegacyViewport()
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {isMobile && <SidebarHeader>brand</SidebarHeader>}
+  </AppShell>
+}'
+expect_block "32a. retired isMobile (768 breakpoint) is no longer an exemption" "V2 Sidebar 內含 SidebarHeader"
 
 run_hook "src/nested-boundary.tsx" Edit '
 <AppShell layout="primary-header" globalHeader={<GH />}>

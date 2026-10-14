@@ -107,6 +107,52 @@ try {
     writeFileSync(registrationsPath, `${JSON.stringify(registrations, null, 2)}\n`)
   }
 
+  // 擋 / 只提醒(2026-10-07,原 TODO queued #9):每個 HOOK-ENFORCED 維度都要有機械產出的 enforcement,
+  // 而且宣稱不得超過 registrations outputMode 在 adapter 契約下做得到的事。
+  const hookDims = Object.entries(canonical.coverage_by_dim).filter(([, entry]) => entry.tier === 'HOOK-ENFORCED')
+  assert.ok(hookDims.length > 0, 'HOOK-ENFORCED 維度推導數必須非零,否則下面全是空斷言')
+  for (const [dim, entry] of hookDims) {
+    assert.ok(['block', 'warn', 'block-and-warn'].includes(entry.enforcement), `dim ${dim} 缺 enforcement`)
+    assert.equal(typeof entry.prevents_landing, 'boolean', `dim ${dim} 缺 prevents_landing`)
+    assert.ok(Array.isArray(entry.hook_events) && entry.hook_events.length > 0, `dim ${dim} 缺 hook_events`)
+    if (entry.prevents_landing) assert.ok(entry.hook_events.includes('PreToolUse') && entry.enforcement === 'block')
+  }
+  const enforcementMutations = [
+    {
+      name: '原本只能提醒的 hook 改成可擋可不擋,沒有規則出處就不准算',
+      hook: 'check_item_list_gap.sh',
+      outputMode: 'governance-context-or-block',
+      expect: /HOOK_RULE_ENFORCEMENT 缺這一維的規則出處/,
+    },
+    {
+      name: '規則宣稱會擋,但 hook 被登記成只能提醒 → 宣稱超出 adapter 契約,且規則表變成第二份 SSOT',
+      hook: 'check_ds_anchor_preflight.sh',
+      outputMode: 'governance-context',
+      expect: /outputMode 已決定 warn,HOOK_RULE_ENFORCEMENT 不得再列/,
+    },
+  ]
+  for (const mutation of enforcementMutations) {
+    try {
+      const mutated = structuredClone(registrations)
+      let touched = 0
+      for (const groups of Object.values(mutated.hooks)) {
+        for (const group of groups) {
+          for (const descriptor of group.hooks) {
+            if (descriptor.hook === mutation.hook) { descriptor.outputMode = mutation.outputMode; touched += 1 }
+          }
+        }
+      }
+      assert.ok(touched > 0, `mutation 必須真的改到 ${mutation.hook}`)
+      writeFileSync(registrationsPath, `${JSON.stringify(mutated, null, 2)}\n`)
+      const result = run('--check')
+      assert.equal(result.status, 1, `${mutation.name}:必須紅`)
+      assert.match(result.stderr, mutation.expect, mutation.name)
+    } finally {
+      writeFileSync(registrationsPath, `${JSON.stringify(registrations, null, 2)}\n`)
+    }
+  }
+  assert.equal(run('--check').status, 0, '還原 registrations 後必須回綠')
+
   const dispatcherPath = join(fixture, 'packages/design-system/ds-canonical/hooks/post_edit_dispatcher.sh')
   const dispatcherSource = readFileSync(dispatcherPath, 'utf8')
   try {

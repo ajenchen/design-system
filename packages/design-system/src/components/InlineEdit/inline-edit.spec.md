@@ -43,7 +43,7 @@ benchmark:
 **退出 edit 態(focus 分流)**:
 - **滑鼠 blur**(點外面)→ `commit`(草稿有變更才觸發 `onCommit`),**焦點刻意不送回**——回到純 view,不搶焦
 - **Enter**(鍵盤)→ `commit`,**焦點送回 view 按鈕** + focus-visible 顯藍框(鍵盤焦點不遺失)
-- **Esc**(鍵盤)→ `cancel`(放棄草稿還原 view 態,不 commit),焦點同送回 view 按鈕
+- **Esc**(鍵盤)→ `cancel`(放棄草稿還原 view 態,不 commit),焦點同送回 view 按鈕。**編輯中是焦點所在控件自己的一層**(2026-10-01):放在 Dialog / Sheet / Popover 裡第一下 Esc 只取消編輯、浮層不關,第二下才關(`../Field/field-edit-keys.ts` `editSettleKeyProps` 掛 `data-escape-layer`;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)。LinkInput 2026-10-01 起同一支結算 helper(Enter / Esc 後焦點給鉛筆,同本條分流)
 - 分流理由:鍵盤路徑需焦點連續(a11y);滑鼠 blur = 使用者意圖已在別處,強拉焦點回來是搶焦。`focus-visible` 保證只有鍵盤路徑顯藍框。
 - **exit 由 InlineEdit 保證、不靠 consumer 自接(2026-07-17 root cause 修:blur 後 chrome 殘留)**:自訂 `renderEdit`(Select/DatePicker 等 overlay 控件)若只接 `onChange→commit`、不接 dismiss,**不選直接點外面**時舊設計卡 `editing=true`(edit chrome 殘留)。修:InlineEdit 用 **document-level pointerdown-outside**(對齊 [Radix DismissableLayer](https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer) + [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx) click-outside)—— editing 時點在 edit 子樹外且不在本 edit popover 內 → `commit` 回 view;+ `onBlur` focusout 補 tab-out 路徑。**任何控件(含 overlay)blur/點外面都保證回 display**,pixel 驗證 `probe-inline-edit-align.mjs`(點 Status 進 edit→blur→`editing=0`)。
 
@@ -186,3 +186,4 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `field.spec.md`
+- `link-input.spec.md`

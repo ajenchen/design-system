@@ -11,12 +11,16 @@
 //      點名 story、附 404,exit 1,而且**一張都不寫**(全部拍成功才寫入,不留半套基準)。
 //   4. 原本寫死 http://localhost:6006(dev server)。預設改成跟全部瀏覽器閘一樣,從本次獨佔的 storybook-static 快照供檔
 //      (lib/a11y-static-server.mjs,有 404 帳本);仍要對 dev server 拍的話傳 --storybook-url=http://localhost:6006。
+// 2026-10-14:這支寫的是**已提交的基準圖**(infra/governance/baseline/visual/targeted/people-picker/*.png),所以示範圖
+//   (i.pravatar.cc 頭像)一律 demoImages 'network' 向遠端要真圖 —— openStory 預設的本機合成圖(棋盤格)只給不寫、不比基準的閘,
+//   用預設會把棋盤格頭像寫進已提交的基準(lib/launch-browser.mjs「圖片就緒」區塊)。頭像連不到 / 等不到 = 儀器失效,一張都不寫。
+//   現有那組是舊量具拍的(頭像沒等到,畫面上只有字母縮寫);下次重拍會拿到真頭像,與現有那組不同是預期的。
 //
 // Run: `node scripts/peoplepicker-baseline.mjs --update-baseline [--storybook-url=<origin>]`
 import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { describeDeterministicImageFailures, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { ensureVisualBaselineDirectory, prepareVisualBaselineFile } from './lib/governance-visual-baselines.mjs'
 
@@ -50,10 +54,13 @@ const shots = []
 const instrumentFailures = []
 for (const [id, label] of STORIES) {
   try {
-    // 渲染完成(含 play)→ 畫面健康 → 字型 → 連續 10 影格靜止,才截圖(取代 networkidle + 固定睡 800ms)
-    await openStory(page, `${BASE}/iframe.html?id=${id}&viewMode=story`, { settleFrames: 10, notFound: server?.notFound })
+    // 渲染完成(含 play)→ 畫面健康 → 字型 → 每張圖載完並解碼(頭像向遠端要真圖)→ 連續 10 影格靜止,才截圖
+    //(取代 networkidle + 固定睡 800ms)
+    const opened = await openStory(page, `${BASE}/iframe.html?id=${id}&viewMode=story`, { demoImages: 'network', settleFrames: 10, notFound: server?.notFound })
     shots.push([label, await page.screenshot({ fullPage: false })])
     console.log(`✓ ${label}`)
+    const brokenImages = describeDeterministicImageFailures(opened.images?.deterministicFailures)
+    if (brokenImages) console.warn(`  ${brokenImages}`)
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     instrumentFailures.push(label)

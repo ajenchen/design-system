@@ -120,6 +120,17 @@ PY
 
 log_hook_fire() {
   local hook_name="${1:-$(basename "${BASH_SOURCE[1]:-$0}")}"
+  # 紀錄是旁路(本檔規則:失敗不影響 hook)。在子 shell 裡標 GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1,
+  # 讓 scripts/run-provider-hook.mjs 的缺工具探針不把這裡的 python3 呼叫算成「這支 hook 需要 python3」——
+  # 否則開了紀錄又缺 python3 時,只是紀錄寫不成,核准閘就被當成跑不起來而擋下工程改動(G4 複核二,2026-10-07)。
+  ( GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1
+    export GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL
+    _governance_log_hook_fire "$hook_name" )
+  return 0
+}
+
+_governance_log_hook_fire() {
+  local hook_name="$1"
   local log_dir log_file archive_file
   log_dir="$(governance_prepare_runtime_state_dir 2>/dev/null)" || return 0
   log_file="$(governance_runtime_file_path hook-fires-per-hook.jsonl "$log_dir" 2>/dev/null)" || return 0

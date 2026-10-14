@@ -49,7 +49,7 @@ export const HomepageHeroBanner = {
   name: '首頁主視覺橫幅',
   render: () => (
     <div className="max-w-[960px]">
-      <p className="text-caption text-fg-muted mb-3">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         Airbnb / Booking 首頁風格 · 4 張城市主題大圖 · hover 顯示箭頭 · 底部白點指示
       </p>
       <Carousel opts={{ loop: true }}>
@@ -57,12 +57,14 @@ export const HomepageHeroBanner = {
           {heroBanners.map((b) => (
             <CarouselItem key={b.city}>
               <div
+                // @layout-space-magic-ok: 360px 高主視覺圖上文字離圖邊 32px 是構圖留白(視覺平衡),不是容器 macro 間距(layoutSpace.spec.md:167 視覺平衡)
                 className="relative h-[360px] rounded-lg overflow-hidden flex items-end p-8 bg-cover bg-center"
                 style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${b.image})` }}
               >
-                <div className="text-white relative z-10">
-                  <div className="text-caption font-medium opacity-90 mb-1">推薦目的地</div>
-                  <div className="text-h2 font-bold mb-1">{b.city}</div>
+                {/* @layout-space-magic-ok: 大字級主視覺的構圖節奏:小字 eyebrow ↔ text-h2 城市名 ↔ 標語各 4px,是圖上大字排版的視覺平衡,不是卡片「標題 ↔ 說明」(那一種用 --item-gap-label-desc-*)(layoutSpace.spec.md:167 視覺平衡) */}
+                <div className="text-white relative z-10 flex flex-col gap-1">
+                  <div className="text-caption font-medium opacity-90">推薦目的地</div>
+                  <div className="text-h2 font-bold">{b.city}</div>
                   <div className="text-body-lg opacity-95">{b.tagline}</div>
                 </div>
               </div>
@@ -81,7 +83,7 @@ export const ProductImageGallery = {
   name: '商品圖片輪播',
   render: () => (
     <div className="max-w-[480px]">
-      <p className="text-caption text-fg-muted mb-3">
+      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         單一商品 4 張角度照 · dots 顯示共有幾張 · 適合電商 / B2B SaaS marketing site
       </p>
       <Carousel>
@@ -93,6 +95,7 @@ export const ProductImageGallery = {
                 className="relative rounded-lg overflow-hidden bg-cover bg-center"
                 style={{ backgroundImage: `url(${img.image})` }}
               >
+                {/* @layout-space-magic-ok: 圖上角度標籤膠囊的內距(膠囊自身微幾何)(layoutSpace.spec.md:168 元件自身微幾何) */}
                 <div className="absolute bottom-2 right-2 text-caption text-white px-2 py-0.5 rounded bg-black/40">{img.label}</div>
               </AspectRatio>
             </CarouselItem>
@@ -102,7 +105,7 @@ export const ProductImageGallery = {
         <CarouselNext />
         <CarouselDots />
       </Carousel>
-      <div className="mt-4 flex items-baseline justify-between">
+      <div className="mt-[var(--layout-space-tight)] flex items-baseline justify-between">
         <div>
           <div className="text-body font-medium">無線降噪耳機 Pro</div>
           <div className="text-caption text-fg-muted">NT$ 8,990</div>

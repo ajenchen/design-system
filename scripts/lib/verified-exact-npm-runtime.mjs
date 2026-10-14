@@ -40,9 +40,9 @@ const MAX_ARCHIVE_ENTRIES = 5_000
 const MAX_ARCHIVE_PATH_BYTES = 256
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 const NPM_RUNTIME_OVERLAY_ALIAS = 'npm-runtime-brace-expansion-patch'
-const NPM_RUNTIME_OVERLAY_SPEC = 'npm:brace-expansion@5.0.9'
+const NPM_RUNTIME_OVERLAY_SPEC = 'npm:brace-expansion@5.0.12'
 const NPM_RUNTIME_OVERLAY_PACKAGE = 'brace-expansion'
-const NPM_RUNTIME_OVERLAY_VERSION = '5.0.9'
+const NPM_RUNTIME_OVERLAY_VERSION = '5.0.12'
 const NPM_RUNTIME_OVERLAY_REPLACED_VERSION = '5.0.7'
 const NPM_RUNTIME_OVERLAY_TARGET = 'node_modules/brace-expansion'
 const NPM_RUNTIME_OVERLAY_CONSUMER = 'node_modules/minimatch'
@@ -54,6 +54,13 @@ const NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE = 'tar'
 const NPM_RUNTIME_SECONDARY_OVERLAY_VERSION = '7.5.22'
 const NPM_RUNTIME_SECONDARY_OVERLAY_REPLACED_VERSION = '7.5.19'
 const NPM_RUNTIME_SECONDARY_OVERLAY_TARGET = 'node_modules/tar'
+// 2026-09-30:歷史上認證過、現已被取代的主修補層版本。只給「渲染用參考樹」用(vulnerabilityPolicy =
+// report-render-only-reference:無憑證、用完即丟,只為建一份 Storybook 當比較基準)。那棵樹是舊 commit,
+// package.json 釘的是它當時的修補層;候選的治理程式若只認現行版本,修補層一升版(5.0.9 → 5.0.12),
+// DataTable 比值 job 的 main 參考樹與視覺回歸重拍的「上一個已發布版」參考樹就結構性地裝不起來(PR #169 首跑)。
+// 一般安裝、發版安裝、consumer 同步一律只接受現行版本;下載白名單與 lock 完整性檢查照舊。
+const NPM_RUNTIME_OVERLAY_HISTORICAL_VERSIONS = Object.freeze(['5.0.9'])
+const overlaySpecFor = (version) => `npm:${NPM_RUNTIME_OVERLAY_PACKAGE}@${version}`
 
 const invariant = (condition, message) => {
   if (!condition) throw new Error(`GOV-NPM-RUNTIME-001:${message}`)
@@ -142,14 +149,19 @@ export function resolveExactNpmArtifact(repositoryRoot) {
   return Object.freeze({ integrity: entry.integrity, resolved, version })
 }
 
-export function resolveExactNpmRuntimeContract(repositoryRoot) {
+export function resolveExactNpmRuntimeContract(repositoryRoot, { historicalOverlay = false } = {}) {
   const root = realpathSync(resolve(repositoryRoot))
   const npmArtifact = resolveExactNpmArtifact(root)
   invariant(npmArtifact.version === '11.19.0', 'npm security overlay is not certified for this exact npm version')
   const manifest = readJson(join(root, 'package.json'), 'package.json')
   const lock = readJson(join(root, 'package-lock.json'), 'package-lock.json')
+  const declaredOverlaySpec = manifest?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS]
+  const overlayVersion = declaredOverlaySpec === NPM_RUNTIME_OVERLAY_SPEC
+    ? NPM_RUNTIME_OVERLAY_VERSION
+    : (historicalOverlay && NPM_RUNTIME_OVERLAY_HISTORICAL_VERSIONS.find((version) => declaredOverlaySpec === overlaySpecFor(version))) || null
+  const overlaySpec = overlayVersion ? overlaySpecFor(overlayVersion) : NPM_RUNTIME_OVERLAY_SPEC
   invariant(
-    manifest?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === NPM_RUNTIME_OVERLAY_SPEC
+    manifest?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === overlaySpec
       && manifest?.devDependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === NPM_RUNTIME_SECONDARY_OVERLAY_SPEC
       && manifest?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined
       && manifest?.dependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === undefined,
@@ -157,18 +169,18 @@ export function resolveExactNpmRuntimeContract(repositoryRoot) {
   )
   const lockedRoot = lock.packages?.['']
   invariant(
-    lockedRoot?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === NPM_RUNTIME_OVERLAY_SPEC
+    lockedRoot?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === overlaySpec
       && lockedRoot?.devDependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === NPM_RUNTIME_SECONDARY_OVERLAY_SPEC
       && lockedRoot?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined
       && lockedRoot?.dependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === undefined,
     `package-lock.json root must pin the exact dev-only npm security overlay aliases`,
   )
   const entry = lock.packages?.[`node_modules/${NPM_RUNTIME_OVERLAY_ALIAS}`]
-  const resolved = `${NPM_REGISTRY_ORIGIN}/${NPM_RUNTIME_OVERLAY_PACKAGE}/-/${NPM_RUNTIME_OVERLAY_PACKAGE}-${NPM_RUNTIME_OVERLAY_VERSION}.tgz`
+  const resolved = `${NPM_REGISTRY_ORIGIN}/${NPM_RUNTIME_OVERLAY_PACKAGE}/-/${NPM_RUNTIME_OVERLAY_PACKAGE}-${overlayVersion}.tgz`
   invariant(
     entry?.link !== true
       && entry?.name === NPM_RUNTIME_OVERLAY_PACKAGE
-      && entry?.version === NPM_RUNTIME_OVERLAY_VERSION
+      && entry?.version === overlayVersion
       && entry?.resolved === resolved,
     'package-lock.json npm security overlay artifact is missing or not the canonical registry tarball',
   )
@@ -186,7 +198,7 @@ export function resolveExactNpmRuntimeContract(repositoryRoot) {
   const securityOverlay = {
     alias: NPM_RUNTIME_OVERLAY_ALIAS,
     package: NPM_RUNTIME_OVERLAY_PACKAGE,
-    version: NPM_RUNTIME_OVERLAY_VERSION,
+    version: overlayVersion,
     resolved,
     integrity: entry.integrity,
     npmVersion: npmArtifact.version,
@@ -341,7 +353,7 @@ export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000, ret
 export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report } = {}) {
   return downloadWithTransientRetry(() => downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm security overlay',
-    pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.9|tar\/-\/tar-7\.5\.22)\.tgz$/,
+    pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.(?:12|9)|tar\/-\/tar-7\.5\.22)\.tgz$/,
     timeoutMs,
   }), { label: 'canonical npm security overlay', retryLimit, backoffMs, sleep, report })
 }
@@ -604,7 +616,7 @@ function applyNpmRuntimeSecurityOverlay({
     securityOverlay
       && securityOverlay.identityDigest === npmRuntimeOverlayIdentity(securityOverlay)
       && securityOverlay.package === NPM_RUNTIME_OVERLAY_PACKAGE
-      && securityOverlay.version === NPM_RUNTIME_OVERLAY_VERSION
+      && (securityOverlay.version === NPM_RUNTIME_OVERLAY_VERSION || NPM_RUNTIME_OVERLAY_HISTORICAL_VERSIONS.includes(securityOverlay.version))
       && securityOverlay.target === NPM_RUNTIME_OVERLAY_TARGET
       && securityOverlay.replacedVersion === NPM_RUNTIME_OVERLAY_REPLACED_VERSION
       && securityOverlay.consumer === NPM_RUNTIME_OVERLAY_CONSUMER
@@ -896,8 +908,9 @@ export async function prepareVerifiedExactNpmRuntime({
   downloadSecurityOverlay = downloadCanonicalNpmSecurityOverlayTarball,
   env = process.env,
   runner = spawnSync,
+  historicalOverlay = false,
 } = {}) {
-  const artifact = resolveExactNpmRuntimeContract(repositoryRoot)
+  const artifact = resolveExactNpmRuntimeContract(repositoryRoot, { historicalOverlay })
   const tarballBytes = await download(artifact.resolved)
   const securityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.resolved)
   const secondarySecurityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.secondaryResolved)

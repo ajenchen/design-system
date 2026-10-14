@@ -1,7 +1,17 @@
 #!/usr/bin/env node
-// Calculate dynamic self-audit thresholds from read-only Git-owned telemetry.
-// Aligns with Datadog Watchdog's mean + 2σ outlier-detection philosophy.
-// Usage: node scripts/calc-self-audit-baseline.mjs
+// Dynamic self-audit thresholds from read-only Git-owned telemetry — the ONE implementation.
+// Aligns with Datadog Watchdog's mean + 2σ outlier-detection philosophy, over the latest 10000
+// samples once ≥ 100 exist. stop_self_audit.sh calls `--thresholds` and applies
+// max(consensus floor, value); the report mode below is for humans.
+// Usage: node scripts/calc-self-audit-baseline.mjs [--thresholds]
+//   --thresholds  print "<samples> <trigger> <topic>" (dynamic mean + 2σ, ceiled) or nothing when
+//                 fewer than 100 samples / no telemetry; malformed data still fails closed (exit 2).
+
+const SAMPLE_WINDOW = 10000
+const MINIMUM_SAMPLES = 100
+const TRIGGER_FLOOR = 5
+const TOPIC_FLOOR = 10
+const MACHINE_THRESHOLDS = process.argv.includes('--thresholds')
 
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -28,7 +38,7 @@ function main() {
   })
 
   if (!existsSync(file)) {
-    console.log('No baseline file. Hook will use fixed threshold (Bugsnag/ESLint-aligned).')
+    if (!MACHINE_THRESHOLDS) console.log('No baseline file. Hook will use fixed threshold (Bugsnag/ESLint-aligned).')
     return 0
   }
 
@@ -49,22 +59,31 @@ function main() {
     return value
   })
 
-  if (samples.length < 100) {
-    console.log(`Baseline samples: ${samples.length} / 100 (need ≥ 100 for dynamic threshold). Hook still uses fixed.`)
+  const windowed = samples.slice(-SAMPLE_WINDOW)
+  if (windowed.length < MINIMUM_SAMPLES) {
+    if (!MACHINE_THRESHOLDS) console.log(`Baseline samples: ${windowed.length} / ${MINIMUM_SAMPLES} (need ≥ ${MINIMUM_SAMPLES} for dynamic threshold). Hook still uses fixed.`)
     return 0
   }
 
-  const triggerStats = stats(samples.map((sample) => sample.trigger))
-  const topicStats = stats(samples.map((sample) => sample.topic))
+  const triggerStats = stats(windowed.map((sample) => sample.trigger))
+  const topicStats = stats(windowed.map((sample) => sample.topic))
+  const dynamicTrigger = Math.ceil(triggerStats.mean_plus_2sigma)
+  const dynamicTopic = Math.ceil(topicStats.mean_plus_2sigma)
+  if (MACHINE_THRESHOLDS) {
+    console.log(`${windowed.length} ${dynamicTrigger} ${dynamicTopic}`)
+    return 0
+  }
 
   console.log('Trigger phrase baseline:')
   console.log(triggerStats)
   console.log('\nTopic repeat baseline:')
   console.log(topicStats)
-  console.log('\n→ Recommended dynamic thresholds(mean + 2σ outlier detection):')
-  console.log(`  Trigger ≥ ${Math.ceil(triggerStats.mean_plus_2sigma)}`)
-  console.log(`  Topic > ${Math.ceil(topicStats.mean_plus_2sigma)}`)
-  console.log('\nApply: edit packages/design-system/ds-canonical/hooks/stop_self_audit.sh thresholds.')
+  console.log(`\n→ Dynamic thresholds over the latest ${windowed.length} samples(mean + 2σ outlier detection):`)
+  console.log(`  Trigger ≥ ${dynamicTrigger}`)
+  console.log(`  Topic > ${dynamicTopic}`)
+  console.log('\n→ Applied automatically by packages/design-system/ds-canonical/hooks/stop_self_audit.sh(never below the consensus floor):')
+  console.log(`  Trigger ≥ ${Math.max(TRIGGER_FLOOR, dynamicTrigger)}`)
+  console.log(`  Topic > ${Math.max(TOPIC_FLOOR, dynamicTopic)}`)
   return 0
 }
 

@@ -1,9 +1,16 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Steps, StepItem, StepLabel, StepDescription } from './steps'
+import { Steps, StepItem, StepLabel, StepDescription, StepContent } from './steps'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { Button } from '@/design-system/components/Button/button'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
+
+// DKIM 公開金鑰的 TXT 記錄值(Google Workspace / Postmark 這類「自訂網域寄件」設定精靈會原樣給使用者複製;2048-bit RSA 的 p= 約 400 字元)
+const DKIM_TXT_RECORD =
+  'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx7WqF0dJq2vN8kLm3Zs1pYt6RcHbE4uV9wXaD2fGhJ5kMnO7PqRsTuVwXyZ0a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2w3X4y5Z6a7B8c9D0e1F2g3H4i5J6k7L8m9N0o1P2q3R4s5T6u7V8w9X0y1Z2a3B4c5D6e7F8g9H0i1J2k3L4m5N6o7P8q9R0s1T2u3V4w5X6y7Z8a9B0c1D2e3F4g5H6i7J8k9L0m1N2o3P4q5R6s7T8u9V0w1X2y3Z4a5B6c7D8e9F0g1H2i3J4k5L6m7N8o9P0q1R2s3T4u5V6w7X8y9Z0QIDAQAB'
 
 const meta: Meta = {
   title: 'Design System/Components/Steps/設計規格',
@@ -89,7 +96,6 @@ export const Inspector: Story = {
     size: 'md',
     orientation: 'vertical',
     linear: true,
-    expansion: 'follow-active',
   },
   argTypes: {
     value: {
@@ -111,7 +117,6 @@ export const Inspector: Story = {
       control: 'boolean',
       description: 'true=僅能順序前進 / false=任意跳步',
     },
-    expansion: { control: 'radio', options: ['follow-active', 'multiple'] },
   },
   render: (args) => (
     <div className="border border-border rounded-lg p-4 max-w-2xl">
@@ -145,12 +150,27 @@ export const OrientationMatrix: Story = {
 
       <div>
         <H3>Vertical(預設)</H3>
-        <Desc>步驟垂直排列,支援 description(多行描述)。常見於 onboarding / 安裝引導 / 複雜流程。</Desc>
+        <Desc>步驟垂直排列,支援 description 與 content 區 —— 只有目前那一步底下放這一步要做的事(這裡是自訂網域寄件的 DKIM 設定精靈:要貼進 DNS 的兩個值用唯讀欄位給使用者複製)。常見於 onboarding / 設定精靈 / 複雜流程。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <Steps orientation="vertical" value="config" completedValues={['install']}>
-            <StepItem value="install"><StepLabel>安裝套件</StepLabel><StepDescription>npm install @acme/cli</StepDescription></StepItem>
-            <StepItem value="config"><StepLabel>設定環境</StepLabel><StepDescription>修改 .env.local 加入 API key</StepDescription></StepItem>
-            <StepItem value="deploy"><StepLabel>部署上線</StepLabel><StepDescription>執行 acme deploy</StepDescription></StepItem>
+          <Steps orientation="vertical" value="dns" completedValues={['keys']} aria-label="DKIM 設定進度">
+            <StepItem value="keys"><StepLabel>產生 DKIM 金鑰</StepLabel><StepDescription>為 mail.acme.example 產生 2048-bit 金鑰對</StepDescription></StepItem>
+            <StepItem value="dns">
+              <StepLabel>在 DNS 新增 TXT 記錄</StepLabel>
+              <StepDescription>到網域代管商貼上主機名稱與記錄值</StepDescription>
+              <StepContent>
+                <FieldGroup>
+                  <Field mode="readonly">
+                    <FieldLabel>主機名稱</FieldLabel>
+                    <Input value="acme._domainkey" />
+                  </Field>
+                  <Field mode="readonly">
+                    <FieldLabel>TXT 記錄值</FieldLabel>
+                    <Textarea value={DKIM_TXT_RECORD} />
+                  </Field>
+                </FieldGroup>
+              </StepContent>
+            </StepItem>
+            <StepItem value="verify"><StepLabel>開始驗證</StepLabel><StepDescription>DNS 生效(最長 48 小時)後回來按驗證</StepDescription></StepItem>
           </Steps>
         </div>
       </div>
@@ -405,7 +425,7 @@ export const StateBehavior: Story = {
           <li>`error` 優先於 `completed`——同一 step 若同時在 completedValues + errorValues,一律渲染 error(紅底 X)。</li>
           <li>Focus ring 顏色自動切換:current 走 `--info-hover`(linear=false 時走 `--border-hover`)、error 走 `--error-hover`。</li>
           <li>upcoming step 不可點(linear)或 reachable 判定為 false 時 cursor:not-allowed,鍵盤 Tab 跳過。</li>
-          <li>預設展開模式(follow-active)下,current 那一步點了不會發生任何事 → 不是按鈕、鍵盤 Tab 跳過、游標是一般箭頭(它不是被禁止,只是「你就在這裡」);multiple 模式下點它會收合 / 展開內容,照舊可點(steps.spec.md「目前那一步可不可以點」)。</li>
+          <li>current 那一步點了不會發生任何事 → 不是按鈕、鍵盤 Tab 跳過、游標是一般箭頭(它不是被禁止,只是「你就在這裡」);它的 content 區跟著 value 走,沒有東西可收(steps.spec.md「內容跟著目前那一步」的「目前那一步可不可以點」)。</li>
           <li>sm size(8px dot)無 indicator icon——太小畫不出 check / X;大 tier(md/lg)才有 icon 反饋。</li>
         </ul>
       </div>

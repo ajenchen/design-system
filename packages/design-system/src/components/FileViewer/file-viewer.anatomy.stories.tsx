@@ -353,7 +353,7 @@ export const Inspector: Story = {
             readOnly={readOnly}
             allowDownload={allowDownload}
           />
-          <p className="text-footnote text-fg-muted mt-2 leading-relaxed">
+          <p className="text-footnote text-fg-muted mt-2 leading-normal">
             提醒:filmstrip 需 `showFilmstrip && files.length &gt; 1` 才顯示;
             prev/next arrow 需 `files.length &gt; 1`;切換 files 時 shell 不重設 zoom,由 renderer onLoad 重新 fit-page。
           </p>
@@ -1075,7 +1075,7 @@ registerFileRenderer({
   component: PDFRenderer, // 消費 react-pdf,emit pageNumber capability
 })`}</code>
         </pre>
-        <p className="text-footnote text-fg-muted mt-2 leading-relaxed">
+        <p className="text-footnote text-fg-muted mt-2 leading-normal">
           {'Renderer 透過 `onCapabilitiesChange({ zoom, rotate, pageNumber })` 告訴 shell 當前支援什麼 affordance。Shell 據此動態顯示 toolbar 內容。'}
         </p>
       </div>

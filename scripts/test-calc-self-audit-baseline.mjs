@@ -24,8 +24,8 @@ const runtimeRoot = join(gitDirectory, 'governance-runtime')
 const stateRoot = join(runtimeRoot, 'state')
 const baselineFile = join(stateRoot, 'self-audit-baseline-counts.jsonl')
 
-function run(extraEnv = {}) {
-  return spawnSync(process.execPath, ['--', SCRIPT], {
+function run(extraEnv = {}, extraArgs = []) {
+  return spawnSync(process.execPath, ['--', SCRIPT, ...extraArgs], {
     encoding: 'utf8',
     env: {
       ...process.env,
@@ -71,14 +71,40 @@ try {
   assert.match(canonical.stdout, /Trigger ≥ 2/)
   assert.match(canonical.stdout, /Topic > 3/)
   assert.match(canonical.stdout, /packages\/design-system\/ds-canonical\/hooks\/stop_self_audit\.sh/)
+  // stop_self_audit.sh 讀的機器格式(唯一實作,M17):常數樣本 → σ 0 → mean 本身
+  const machine = run({ GOVERNANCE_READ_ONLY: '1' }, ['--thresholds'])
+  assert.equal(machine.status, 0, machine.stderr)
+  assert.equal(machine.stdout, '100 2 3\n')
   assert.doesNotMatch(canonical.stdout, /\.claude\/hooks/)
   assert.equal(existsSync(join(fixture, 'infra/governance/runtime')), false)
   console.log('✓ canonical Git telemetry is read without provider or workspace authority')
+
+  // 混合樣本:mean + 2σ 取整,只看最近 10000 筆;報表同時印出 hook 實際套用的值(不低於共識下限)
+  writeFileSync(
+    baselineFile,
+    Array.from({ length: 120 }, (_, index) => JSON.stringify({ trigger: index % 2 ? 8 : 4, topic: 2, fired: false })).join('\n') + '\n',
+  )
+  const dynamic = run({ GOVERNANCE_READ_ONLY: '1' }, ['--thresholds'])
+  assert.equal(dynamic.status, 0, dynamic.stderr)
+  assert.equal(dynamic.stdout, '120 10 2\n', 'trigger mean 6 / σ 2 → 10;topic 常數 2 → 2')
+  const applied = run({ GOVERNANCE_READ_ONLY: '1' })
+  assert.match(applied.stdout, /Trigger ≥ 10[\s\S]*Topic > 10/, 'hook 套用值:trigger 10、topic 不低於下限 10')
+  writeFileSync(
+    baselineFile,
+    Array.from({ length: 99 }, () => '{"trigger":8,"topic":2}').join('\n') + '\n',
+  )
+  const sparse = run({ GOVERNANCE_READ_ONLY: '1' }, ['--thresholds'])
+  assert.equal(sparse.status, 0, sparse.stderr)
+  assert.equal(sparse.stdout, '', 'fewer than 100 samples → no dynamic value, the hook keeps its floor')
+  console.log('✓ --thresholds is the machine contract stop_self_audit.sh applies(≥ 100 samples, latest 10000)')
 
   writeFileSync(baselineFile, '{"trigger":"bad","topic":3}\n')
   const malformed = run()
   assert.equal(malformed.status, 2)
   assert.match(malformed.stderr, /invalid baseline sample/)
+  const malformedMachine = run({}, ['--thresholds'])
+  assert.equal(malformedMachine.status, 2, 'machine mode fails closed too(the hook then keeps its floor)')
+  assert.equal(malformedMachine.stdout, '')
   console.log('✓ malformed baseline data fails closed')
 
   rmSync(stateRoot, { recursive: true, force: true })

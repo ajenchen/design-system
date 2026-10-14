@@ -2,6 +2,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DatePicker } from './date-picker'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta<typeof DatePicker> = {
@@ -26,7 +27,7 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = React.useState('2026-04-02')
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <DatePicker value={value} onChange={setValue} />
         <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
       </div>
@@ -44,21 +45,21 @@ export const TypedInput: Story = {
     const [value, setValue] = React.useState('2026-04-02')
     const [showTimeValue, setShowTimeValue] = React.useState('2026-04-02T14:30:00')
     return (
-      <div className="flex flex-col gap-6 max-w-md">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
         <div>
-          <p className="text-caption text-fg-secondary mb-3">
+          <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
             日期:支援 <code>2026-04-02</code> / <code>2026/04/02</code> 等格式,Enter / Blur 解析,
             不合法輸入標 <code>aria-invalid</code>。
           </p>
           <DatePicker typeable value={value} onChange={setValue} />
-          <p className="text-caption text-fg-secondary mt-2">目前值:<code>{value || '(空)'}</code></p>
+          <p className="text-caption text-fg-secondary mt-[var(--layout-space-tight)]">目前值:<code>{value || '(空)'}</code></p>
         </div>
         <div>
-          <p className="text-caption text-fg-secondary mb-3">
+          <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
             日期 + 時間(showTime):支援 <code>2026-04-02 14:30</code> 這類輸入,月曆與時間欄仍可用。
           </p>
           <DatePicker typeable showTime value={showTimeValue} onChange={setShowTimeValue} />
-          <p className="text-caption text-fg-secondary mt-2">目前值:<code>{showTimeValue || '(空)'}</code></p>
+          <p className="text-caption text-fg-secondary mt-[var(--layout-space-tight)]">目前值:<code>{showTimeValue || '(空)'}</code></p>
         </div>
       </div>
     )
@@ -86,21 +87,21 @@ export const TypedInput: Story = {
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
         <DatePicker value="2026-04-02" onChange={() => {}} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <DatePicker mode="view" value="2026-04-02" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <DatePicker mode="readonly" value="2026-04-02" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <DatePicker mode="disabled" value="2026-04-02" />
       </div>
       {/* 空值(null)與完整 state 矩陣由 anatomy 的 StateBehavior / ColorMatrix 擁有,不在此重複 */}
@@ -114,7 +115,7 @@ export const Clearable: Story = {
   render: () => {
     const [value, setValue] = React.useState('2026-04-02')
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">有值時右側出現清除按鈕</p>
         <DatePicker value={value} onChange={setValue} clearable />
       </div>
@@ -131,9 +132,9 @@ export const SizeAlignment: Story = {
     const [lg, setLg] = React.useState('2026-04-02')
     const states: Record<string, [string, (v: string) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
+          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
             <DatePicker size={size} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -150,21 +151,25 @@ export const RangePicker: Story = {
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-04-15', '2026-04-20'])
     return (
-      <div className="flex flex-col gap-4 max-w-md">
-        <p className="text-caption text-fg-muted">
-          兩個輸入框加中間箭頭:點開始欄開月曆選起日,選完自動跳到結束欄選迄日;有值時右側出現清除鈕。
-        </p>
-        <DatePicker.Range value={range} onChange={setRange} clearable />
-        <p className="text-caption text-fg-muted">
-          目前值:from={range[0] ?? '(空)'} / to={range[1] ?? '(空)'}
-        </p>
-        <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
-        <DatePicker.Range
-          value={[null, null]}
-          onChange={() => {}}
-          placeholder={['入住日期', '退房日期']}
-          clearable
-        />
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <p className="text-caption text-fg-muted">
+            兩個輸入框加中間箭頭:點開始欄開月曆選起日,選完自動跳到結束欄選迄日;有值時右側出現清除鈕。
+          </p>
+          <DatePicker.Range value={range} onChange={setRange} clearable />
+          <p className="text-caption text-fg-muted">
+            目前值:from={range[0] ?? '(空)'} / to={range[1] ?? '(空)'}
+          </p>
+        </div>
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
+          <DatePicker.Range
+            value={[null, null]}
+            onChange={() => {}}
+            placeholder={['入住日期', '退房日期']}
+            clearable
+          />
+        </div>
       </div>
     )
   },
@@ -174,11 +179,13 @@ export const RangePicker: Story = {
 export const WithError: Story = {
   name: '錯誤狀態',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-xs">
-      <p className="text-caption text-fg-muted">
-        驗證失敗時外框轉紅色,滑過或聚焦時同步用較深的紅。
-      </p>
-      <DatePicker error value="2026-04-02" onChange={() => {}} />
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p className="text-caption text-fg-muted">
+          驗證失敗時外框轉紅色,滑過或聚焦時同步用較深的紅。
+        </p>
+        <DatePicker error value="2026-04-02" onChange={() => {}} />
+      </div>
       <DatePicker error value={null} onChange={() => {}} placeholder="必填日期" />
     </div>
   ),
@@ -190,14 +197,18 @@ export const ShowTime: Story = {
   render: () => {
     const [single, setSingle] = React.useState<string>('2026-04-15T14:30:00')
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
-        <p className="text-caption text-fg-muted">
-          showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。
-        </p>
-        <DatePicker showTime value={single} onChange={setSingle} clearable />
-        <p className="text-caption text-fg-muted">目前值:{single || '(空)'}</p>
-        <p className="text-caption text-fg-muted mt-4">會議常用 minuteStep=15:</p>
-        <DatePicker showTime minuteStep={15} value={single} onChange={setSingle} />
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <p className="text-caption text-fg-muted">
+            showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。
+          </p>
+          <DatePicker showTime value={single} onChange={setSingle} clearable />
+          <p className="text-caption text-fg-muted">目前值:{single || '(空)'}</p>
+        </div>
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <p className="text-caption text-fg-muted">會議常用 minuteStep=15:</p>
+          <DatePicker showTime minuteStep={15} value={single} onChange={setSingle} />
+        </div>
       </div>
     )
   },
@@ -216,7 +227,8 @@ export const RangePopoverOpen: Story = {
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (
-      <div style={{ paddingBottom: 480 }}>
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      <div className="pb-[480px]">
         <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
       </div>
     )
@@ -231,7 +243,8 @@ export const ShowTimePopoverOpen: Story = {
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (
-      <div style={{ paddingBottom: 480 }}>
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      <div className="pb-[480px]">
         <DatePicker showTime value={v} onChange={setV} className="max-w-xs" />
       </div>
     )
@@ -246,7 +259,8 @@ export const NeedConfirmDateOnlyOpen: Story = {
   render: () => {
     const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
     return (
-      <div className="flex flex-col gap-4 max-w-xs" style={{ paddingBottom: 420 }}>
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs pb-[420px]">
         <p className="text-caption text-fg-muted">
           合約生效日選錯成本高:點日期先暫存,按「確定」才真正寫入。
         </p>
@@ -268,7 +282,8 @@ export const ShowTimeRangePopoverOpen: Story = {
       '2026-04-20T18:00:00',
     ])
     return (
-      <div style={{ paddingBottom: 480 }}>
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      <div className="pb-[480px]">
         <DatePicker.Range showTime value={range} onChange={setRange} className="max-w-md" />
       </div>
     )
@@ -306,7 +321,8 @@ const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ 
 const RangePreviewCanvas = () => {
   const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
   return (
-    <div style={{ paddingBottom: 480 }}>
+    // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+    <div className="pb-[480px]">
       <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
     </div>
   )
@@ -342,7 +358,7 @@ export const ShowTimeRange: Story = {
       '2026-04-15T18:00:00',
     ])
     return (
-      <div className="flex flex-col gap-4 max-w-lg">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-lg">
         <p className="text-caption text-fg-muted">
           範圍 + 時間:點開始欄選起始日期與時間,點結束欄選結束的日期與時間;兩端都選好、按下方「確定」才會套用。
         </p>
@@ -366,23 +382,20 @@ export const ShowTimeRange: Story = {
 export const View: Story = {
   name: '檢視樣式',
   render: () => (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        <span className="text-caption text-fg-muted w-20">預設</span>
+    // 「標籤 → 唯讀值」一列一組 = DescriptionList(story-rules.md:84「key/value 用 DescriptionList」);列距與標籤 ↔ 值的距離都由它擁有
+    <DescriptionList orientation="horizontal" className="max-w-sm">
+      <DescriptionItem label="預設">
         <DatePicker mode="view" value="2026-04-02" />
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-caption text-fg-muted w-20">完整月份</span>
+      </DescriptionItem>
+      <DescriptionItem label="完整月份">
         <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-caption text-fg-muted w-20">zh-TW</span>
+      </DescriptionItem>
+      <DescriptionItem label="zh-TW">
         <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-caption text-fg-muted w-20">null</span>
+      </DescriptionItem>
+      <DescriptionItem label="null">
         <DatePicker mode="view" value={null} />
-      </div>
-    </div>
+      </DescriptionItem>
+    </DescriptionList>
   ),
 }

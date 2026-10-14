@@ -59,7 +59,7 @@ export const Default: Story = {
 export const InteractiveEllipsis: Story = {
   name: '可互動省略',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       {/* 內部實作(對 consumer 不可見):BreadcrumbEllipsis 永遠 render <button> + DropdownMenuTrigger
           asChild 注入 dropdown 行為;hover 走 neutral(fg-muted → foreground + neutral hover bg,消費
           ItemInlineActionButton),刻意與 BreadcrumbLink 的 primary-hover 語言區隔。 */}
@@ -117,12 +117,12 @@ export const InteractiveEllipsis: Story = {
 export const DeclarativeAutoCollapse: Story = {
   name: '宣告式 API + 自動收合',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">
           ≤ maxItems(4)— 全顯
         </h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           3 items 不超 maxItems=4,所有 item 自然 render。
         </p>
         <Breadcrumb>
@@ -137,10 +137,10 @@ export const DeclarativeAutoCollapse: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">
           5 items 超 maxItems(4)— auto-collapse 中段
         </h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           itemsBeforeCollapse=1 + itemsAfterCollapse=1 → 首 + ⋯ + 末。
           中段 [專案, Q1, 行銷活動] 全進 DropdownMenu(點 ⋯ 看)。
         </p>
@@ -158,10 +158,10 @@ export const DeclarativeAutoCollapse: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">
           自訂 maxItems / itemsAfterCollapse
         </h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           maxItems=6 + itemsAfterCollapse=2 → 首 1 + ⋯ + 末 2(parent + current)。
         </p>
         <Breadcrumb>
@@ -182,15 +182,15 @@ export const DeclarativeAutoCollapse: Story = {
       </div>
 
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">
           窄容器 + 長 label — flex-shrink hierarchy + truncate + tooltip
         </h3>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           縮放瀏覽器寬度可觀察:容器變窄時,首項最先被壓縮、中段次之、當前頁最後才縮。
           每一項文字被截斷時自動顯示 ...,滑鼠移上去會用 tooltip 顯示完整文字;沒被截斷則不顯示 tooltip。
         </p>
         {/* @story-history: 2026-05-14 per user 拍板「拿掉 fixed 320px 讓 resize window 測 RWD」— Breadcrumb 是純結構導覽,disabled/states 由 BreadcrumbLink :focus-visible/:hover/:active 處理(spec.md 互動狀態 > Disabled 段),trait check 沿用 file header rationale */}
-        <div className="border border-dashed border-divider rounded-md p-2">
+        <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
           <Breadcrumb>
             <BreadcrumbList
               items={[
@@ -226,7 +226,9 @@ export const PairedWithPageTitle: Story = {
     },
   },
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      {/* 麵包屑 → 它所在頁的標題 = tight:兩個不同元件,麵包屑替標題提供所在位置(layoutSpace 規則 3「跨範疇 + 直接 functional 交互 / 依賴」,
+          layoutSpace.spec.md:76 / :81 的 context dependency);不是同一個元件內部的 micro */}
       <section>
         <Breadcrumb>
           <BreadcrumbList size="sm">
@@ -237,8 +239,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>個人偏好</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h4 className="text-h4 text-foreground mt-2">個人偏好</h4>
-        <p className="text-caption text-fg-muted mt-1">size="sm" 配 text-h4 — Dialog / Panel / Drawer header</p>
+        <h4 className="text-h4 text-foreground mt-[var(--layout-space-tight)]">個人偏好</h4>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="sm" 配 text-h4 — Dialog / Panel / Drawer header</p>
       </section>
 
       <section>
@@ -251,8 +253,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>Q1 行銷活動</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h3 className="text-h3 text-foreground mt-2">Q1 行銷活動</h3>
-        <p className="text-caption text-fg-muted mt-1">size="md"(預設)配 text-h3 — 一般頁面 header</p>
+        <h3 className="text-h3 text-foreground mt-[var(--layout-space-tight)]">Q1 行銷活動</h3>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="md"(預設)配 text-h3 — 一般頁面 header</p>
       </section>
 
       <section>
@@ -265,8 +267,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>2026 春季新品</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h2 className="text-h2 text-foreground mt-2">2026 春季新品</h2>
-        <p className="text-caption text-fg-muted mt-1">size="lg" 配 text-h2 — Detail page hero / Landing</p>
+        <h2 className="text-h2 text-foreground mt-[var(--layout-space-tight)]">2026 春季新品</h2>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="lg" 配 text-h2 — Detail page hero / Landing</p>
       </section>
     </div>
   ),
@@ -284,7 +286,7 @@ export const IntegrateRouterLink: Story = {
     },
   },
   render: () => (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <div className="text-caption text-fg-muted">
         以下用 native &lt;a onClick prevent&gt; 模擬 router Link 行為:
       </div>

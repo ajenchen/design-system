@@ -126,11 +126,12 @@ if grep -Eq 'layout="primary-header"|layout=\{('\''|")primary-header('\''|")\}' 
   if ! grep -qE 'globalHeader[[:space:]]*=' <<<"$BODY"; then
     PRIMARY="${PRIMARY}\n- AppShell primary-header layout requires globalHeader"
   fi
-  if grep -Eq '<SidebarHeader([^A-Za-z]|$)' <<<"$BODY" && ! grep -qE 'useSidebar|isMobile' <<<"$BODY"; then
+  # Menu 浮層時補品牌的豁免(app-shell.spec.md 浮層精修;觸發條件 = useAppShell().display.menu,2026-10-14 前是 768 斷點的 isMobile)
+  if grep -Eq '<SidebarHeader([^A-Za-z]|$)' <<<"$BODY" && ! grep -qE "display\.menu|menuIsOverlay" <<<"$BODY"; then
     PRIMARY="${PRIMARY}\n- primary-header layout must not duplicate an unguarded SidebarHeader"
   fi
   if grep -Eq '<SidebarFooter([^A-Za-z]|$)' <<<"$BODY"; then
-    PRIMARY="${PRIMARY}\n- primary-header account entry belongs in the global/sheet header, not SidebarFooter"
+    PRIMARY="${PRIMARY}\n- primary-header account entry belongs in the global header (or the Menu overlay header), not SidebarFooter"
   fi
   if [ -n "$PRIMARY" ] && ! has_rationale '@app-shell-primary-header-allow'; then VIOLATIONS="${VIOLATIONS}${PRIMARY}"; fi
 fi
@@ -142,7 +143,7 @@ fi
 #   + account/logout 語彙);footer user 簽名 = SidebarFooter block 內 <Avatar>/<ItemAvatar>/<AccountMenu>。
 # 零誤判 bound(M23 R9 零誤判簽名 precedent;DS apps/template/src + WM 全 corpus 實測 0 hit、錨例 fire):
 #   - workspace switcher in header(trigger+avatar、無 account/logout 語彙)不中 — 語彙 conjunction;
-#   - mobile Sheet 鏡像(header AccountMenu、footer 無 user 區,app-shell.spec.md Responsive 子句)不中;
+#   - Menu 浮層鏡像(header AccountMenu、footer 無 user 區,app-shell.spec.md 浮層精修子句)不中;
 #   - 多 mode demo 檔(primary-header + primary-sidebar 字面並存)skip → 跨 story 誤攔防護,歸 product-ui-audit;
 #   - BODY 已 strip 註解(WM 修復檔 SidebarHeader 註解即含「帳號入口」字樣);local 同名元件不中和 —
 #     duplicate 語義違規與 primitive 來源無關。

@@ -36,6 +36,7 @@ function SwatchBg({
   bordered?: boolean
 }) {
   return (
+    // @layout-space-magic-ok: 色票方塊 ↔ token 名 ↔ 值三行(同一個色票格)(layoutSpace.spec.md:166 micro)
     <div className="space-y-1.5">
       <div
         className={`h-14 w-full rounded-md ${bordered ? 'border border-border' : ''}`}
@@ -57,10 +58,13 @@ function SwatchText({
   desc: string
 }) {
   return (
+    // @layout-space-magic-ok: 文字色票同質列(layoutSpace.spec.md:165 同質清單列)
     <div className="border-b border-border py-3 last:border-0">
+      {/* @layout-space-magic-ok: 列內 範例句 ↔ token 名(layoutSpace.spec.md:166 micro) */}
       <p className={`text-body mb-1 ${className}`}>
         此操作將永久刪除該筆資料，確認後無法復原。
       </p>
+      {/* @layout-space-magic-ok: 列內 token 名 ↔ 說明 12px(layoutSpace.spec.md:166 micro) */}
       <div className="flex gap-3">
         <code className="text-caption font-medium">{label}</code>
         <span className="text-caption text-fg-muted">{desc}</span>
@@ -127,33 +131,39 @@ export const Primitives: Story = {
       { name: 'red' },
     ]
     return (
-      <div className="space-y-1 max-w-2xl">
-        <div className="grid pb-2 border-b border-border mb-2" style={{ gridTemplateColumns: '160px repeat(9, 1fr)' }}>
-          <span className="text-caption text-fg-muted">hue</span>
-          {[1,2,3,4,5,6,7,8,9].map(n => (
-            <span key={n} className="text-caption text-fg-muted text-center">{n}</span>
-          ))}
-        </div>
-        {HUES.map(({ name, suffix = '' }) => {
-          const semantic = SEMANTIC_MAP[name]
-          return (
-            <div key={name} className="grid items-center gap-x-1 py-0.5" style={{ gridTemplateColumns: '160px repeat(9, 1fr)' }}>
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="text-caption text-fg-muted">{name}</span>
-                {semantic && <span className="text-footnote text-[var(--primary)] font-medium">→ {semantic}</span>}
+      <div className="max-w-2xl space-y-[var(--layout-space-tight)]">
+        {/* @layout-space-magic-ok: primitive 色階表同質列距(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="space-y-1">
+          {/* @layout-space-magic-ok: 色階表表頭列幾何(layoutSpace.spec.md:165 同質清單列) */}
+          <div className="grid pb-2 border-b border-border mb-2" style={{ gridTemplateColumns: '160px repeat(9, 1fr)' }}>
+            <span className="text-caption text-fg-muted">hue</span>
+            {[1,2,3,4,5,6,7,8,9].map(n => (
+              <span key={n} className="text-caption text-fg-muted text-center">{n}</span>
+            ))}
+          </div>
+          {HUES.map(({ name, suffix = '' }) => {
+            const semantic = SEMANTIC_MAP[name]
+            return (
+              // @layout-space-magic-ok: 色階表同質列(欄距 / 列內距)(layoutSpace.spec.md:165 同質清單列)
+              <div key={name} className="grid items-center gap-x-1 py-0.5" style={{ gridTemplateColumns: '160px repeat(9, 1fr)' }}>
+                {/* @layout-space-magic-ok: 色階名 ↔ 「→ 語義 token」行內註記(layoutSpace.spec.md:166 micro) */}
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-caption text-fg-muted">{name}</span>
+                  {semantic && <span className="text-footnote text-[var(--primary)] font-medium">→ {semantic}</span>}
+                </div>
+                {[1,2,3,4,5,6,7,8,9].map(n => (
+                  <div
+                    key={n}
+                    className="h-6 rounded-md border border-[var(--black-a06)]"
+                    style={{ background: `var(--color-${name}-${n}${suffix})` }}
+                    title={`--color-${name}-${n}${suffix}`}
+                  />
+                ))}
               </div>
-              {[1,2,3,4,5,6,7,8,9].map(n => (
-                <div
-                  key={n}
-                  className="h-6 rounded-md border border-[var(--black-a06)]"
-                  style={{ background: `var(--color-${name}-${n}${suffix})` }}
-                  title={`--color-${name}-${n}${suffix}`}
-                />
-              ))}
-            </div>
-          )
-        })}
-        <p className="pt-3 text-caption text-fg-muted">
+            )
+          })}
+        </div>
+        <p className="text-caption text-fg-muted">
           neutral 顯示 opaque 版本。-6 為基底色，其餘由相對色語法推導。無 → 標記的色相保留給 data visualization / categorization。
         </p>
       </div>
@@ -176,18 +186,20 @@ export const Surface: Story = {
     },
   },
   render: () => (
-    <div className="max-w-xl space-y-4">
-      <div className="grid grid-cols-3 gap-4">
+    <div className="max-w-xl space-y-[var(--layout-space-loose)]">
+      <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
         <SwatchBg bg="var(--canvas)"         bordered label="bg-canvas"         desc="頁面最底層背景" />
         <SwatchBg bg="var(--surface)"        bordered label="bg-surface"        desc="card、sidebar、table" />
         <SwatchBg bg="var(--surface-raised)" bordered label="bg-surface-raised" desc="modal、popover、dropdown" />
       </div>
-      <div className="grid grid-cols-2 gap-4 max-w-sm">
+      <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-sm">
+        {/* @layout-space-magic-ok: 色票方塊 ↔ token 名 ↔ 值三行(同一個色票格)(layoutSpace.spec.md:166 micro) */}
         <div className="space-y-1.5">
           <div className="h-14 w-full rounded-md border border-border" style={{ background: 'var(--overlay)' }} />
           <code className="block text-caption font-medium">bg-overlay</code>
           <span className="block text-caption text-fg-muted">dialog backdrop 遮罩</span>
         </div>
+        {/* @layout-space-magic-ok: 色票方塊 ↔ token 名 ↔ 值三行(同一個色票格)(layoutSpace.spec.md:166 micro) */}
         <div className="space-y-1.5">
           <div className="h-14 w-full rounded-md flex items-center justify-center" style={{ background: 'var(--tooltip)' }}>
             <span className="text-caption text-white">tooltip</span>
@@ -219,7 +231,8 @@ export const Text: Story = {
       <SwatchText className="text-fg-secondary" label="text-fg-secondary" desc="次要資訊、helper text" />
       <SwatchText className="text-fg-muted"     label="text-fg-muted"     desc="placeholder、caption、弱化 icon" />
       <SwatchText className="text-fg-disabled"  label="text-fg-disabled"  desc="disabled 文字" />
-      <div className="mt-4 flex items-center gap-3 px-3 py-2 rounded-md" style={{ backgroundColor: 'var(--primary)' }}>
+      {/* @layout-space-magic-ok: 反白文字示範條自身內距 / 槽距(樣本微幾何)(layoutSpace.spec.md:168 元件自身微幾何) */}
+      <div className="mt-[var(--layout-space-loose)] flex items-center gap-3 px-3 py-2 rounded-md" style={{ backgroundColor: 'var(--primary)' }}>
         <span style={{ color: 'var(--on-emphasis)' }} className="text-body font-medium">text-on-emphasis</span>
         <span style={{ color: 'var(--on-emphasis)' }} className="text-caption opacity-80">Avatar color variant / Steps filled indicator 等飽和色底的對比文字</span>
       </div>
@@ -241,12 +254,12 @@ export const Semantic: Story = {
     },
   },
   render: () => (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-[var(--layout-space-loose)]">
 
       {/* Action */}
       <div>
         <SectionLabel>Action — Primary</SectionLabel>
-        <div className="mt-3 grid grid-cols-2 gap-3 max-w-xs">
+        <div className="mt-[var(--layout-space-tight)] grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
           <SwatchBg bg="var(--primary)"        label="bg-primary"        desc="按鈕、連結、focus ring" />
           <SwatchBg bg="var(--primary-subtle)" bordered label="bg-primary-subtle" desc="淡底 / checked 底" />
         </div>
@@ -255,7 +268,8 @@ export const Semantic: Story = {
       {/* Status */}
       <div>
         <SectionLabel>Status</SectionLabel>
-        <div className="mt-3" style={{ display: 'grid', gridTemplateColumns: '44px 1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'start' }}>
+        {/* 並列色票格之間與上方 Primary / 下方各段的色票格同一個 loose(原本 inline style 寫死 8px,閘看不到、畫面上比其他段擠一半) */}
+        <div className="mt-[var(--layout-space-tight)] grid items-start gap-[var(--layout-space-loose)]" style={{ gridTemplateColumns: '44px 1fr 1fr 1fr 1fr' }}>
           <div />
           {['Info', 'Error', 'Success', 'Warning'].map(n => (
             <span key={n} className="text-caption text-fg-muted text-center block">{n}</span>
@@ -276,7 +290,7 @@ export const Semantic: Story = {
       {/* Other */}
       <div>
         <SectionLabel>Other</SectionLabel>
-        <div className="mt-3 grid grid-cols-2 gap-3 max-w-xs">
+        <div className="mt-[var(--layout-space-tight)] grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
           <SwatchBg bg="var(--notification)" label="bg-notification" desc="未讀計數 / 通知紅點" />
           <SwatchBg bg="var(--brand)"        label="bg-brand"        desc="品牌色，固定色" />
         </div>
@@ -285,15 +299,18 @@ export const Semantic: Story = {
       {/* Border */}
       <div>
         <SectionLabel>Border</SectionLabel>
-        <div className="mt-3 space-y-2.5">
+        {/* @layout-space-magic-ok: 邊框樣本兩列同質列距 10px(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="mt-[var(--layout-space-tight)] space-y-2.5">
           {[
             { label: 'border-border',  desc: '元件標準邊框',   style: { border: '2px solid var(--border)' } },
             { label: 'border-divider', desc: '分隔線（比 border 更淡）', style: { borderBottom: '2px solid var(--divider)' } },
           ].map(({ label, desc, style }) => (
+            // @layout-space-magic-ok: 邊框樣本列列內(樣本 ↔ 名稱)(layoutSpace.spec.md:165 同質清單列)
             <div key={label} className="flex items-center gap-4">
               <div className="h-10 w-24 rounded-md bg-surface" style={style} />
               <div>
                 <code className="text-caption font-medium">{label}</code>
+                {/* @layout-space-magic-ok: 行內 token 名 ↔ 說明 8px,與 radius.stories 各段標頭同值(layoutSpace.spec.md:166 micro) */}
                 <span className="ml-2 text-caption text-fg-muted">{desc}</span>
               </div>
             </div>
@@ -332,7 +349,7 @@ export const Interactive: Story = {
     },
   },
   render: () => (
-    <div className="max-w-lg space-y-8">
+    <div className="max-w-lg space-y-[var(--layout-space-loose)]">
       {/* Colored interactive states */}
       {[
         { name: 'Primary', prefix: 'primary', hover: '--primary-hover', base: '--primary', active: '--primary-active' },
@@ -342,8 +359,8 @@ export const Interactive: Story = {
         { name: 'Warning', prefix: 'warning', hover: '--warning-hover', base: '--warning', active: '--warning-active' },
       ].map(({ name, prefix, hover, base, active }) => (
         <div key={name}>
-          <span className="text-caption text-fg-muted mb-1.5 block">{name}</span>
-          <div className="grid grid-cols-3 gap-2">
+          <span className="text-caption text-fg-muted mb-[var(--layout-space-tight)] block">{name}</span>
+          <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
             <SwatchBg bg={`var(${hover})`}  label="hover"  desc={`bg-${prefix}-hover`} />
             <SwatchBg bg={`var(${base})`}   label="base"   desc={`bg-${prefix}`} />
             <SwatchBg bg={`var(${active})`} label="active" desc={`bg-${prefix}-active`} />
@@ -354,7 +371,8 @@ export const Interactive: Story = {
       {/* Ghost */}
       <div>
         <SectionLabel>Neutral Interaction — Default family（hover/active）+ Selected family（持續選中）</SectionLabel>
-        <div className="mt-3 space-y-1">
+        {/* @layout-space-magic-ok: Neutral Interaction 同質示範列列距(layoutSpace.spec.md:165 同質清單列) */}
+        <div className="mt-[var(--layout-space-tight)] space-y-1">
           {[
             { label: '正常狀態（無背景）', bg: 'transparent',                    token: '' },
             { label: 'Hover 回饋',         bg: 'var(--neutral-hover)',        token: 'bg-neutral-hover' },
@@ -366,6 +384,7 @@ export const Interactive: Story = {
           ].map(({ label, bg, token }) => (
             <div
               key={label}
+              // @layout-space-magic-ok: 同質互動示範列(列內距 / 槽距)(layoutSpace.spec.md:165 同質清單列)
               className="flex items-center gap-3 rounded-md px-3 py-2 text-body"
               style={{ background: bg }}
             >
@@ -381,17 +400,22 @@ export const Interactive: Story = {
           不放「只會亮、點了沒反應」的示範卡 —— B12「要點了會有反應的才加」 */}
       <div>
         <SectionLabel>「底」的滑過 / 按住 — 底色不換,疊一層(bg-interaction-hover / -active)</SectionLabel>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-[var(--layout-space-tight)] grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {BASE_SURFACE_DEMOS.map(({ base, name }) => (
+            // @layout-space-magic-ok: 同一底色的三個狀態示範條(平常 / 滑過 / 按住)同質列距(layoutSpace.spec.md:165 同質清單列)
             <div key={name} className="space-y-1">
               {BASE_STATE_DEMOS.map(({ state, layer }) => (
                 <div
                   key={state}
                   data-color-demo={`${name}-${state}`}
-                  className={`${base} ${layer} flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-body`}
+                  // 狀態名 / token 名上下兩行(同本頁色票格 SwatchBg「名稱 → 說明」的堆疊),token 名拿整條寬、只在「-」處換行;
+                  // 兩行之間 = 同一個文字塊的 label ↔ desc(body + caption = scanning,item-anatomy.spec.md「Label ↔ Desc 間距」)。
+                  // 2026-10-01 前是同一行左右排 + break-all:欄寬 160px 時 token 名被切在字中間(bg-interactio|n-hover)。
+                  // @layout-space-magic-ok: 疊層示範條自身內距(樣本微幾何)(layoutSpace.spec.md:168 元件自身微幾何)
+                  className={`${base} ${layer} flex flex-col items-start gap-[var(--item-gap-label-desc-scanning)] rounded-md border border-border px-3 py-2 text-body`}
                 >
-                  <span className="shrink-0">{state}</span>
-                  <code className="min-w-0 break-all text-right text-caption text-fg-muted">{layer || base}</code>
+                  <span>{state}</span>
+                  <code className="text-caption text-fg-muted">{layer || base}</code>
                 </div>
               ))}
             </div>
@@ -401,7 +425,7 @@ export const Interactive: Story = {
 
       <div>
         <SectionLabel>元件自己的填色 — 換成自己的下一階(以 secondary 為例)</SectionLabel>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-[var(--layout-space-tight)] grid grid-cols-3 gap-[var(--layout-space-loose)]">
           <SwatchBg bg="var(--secondary)"        label="平常" desc="bg-secondary(neutral-3)" />
           <SwatchBg bg="var(--secondary-hover)"  label="滑過" desc="bg-secondary-hover(neutral-4)" />
           <SwatchBg bg="var(--secondary-active)" label="按住" desc="bg-secondary-active(neutral-5)" />
@@ -413,19 +437,19 @@ export const Interactive: Story = {
 export const FunctionalHighlight: Story = {
   name: '反白與搜尋配對',
   render: () => (
-    <div className="max-w-xl space-y-6">
-      <section className="space-y-2">
-        <h3 className="text-body font-medium">文字反白(::selection)</h3>
-        <p data-selection-demo className="rounded-md border border-border bg-surface p-4 text-body">
+    <div className="max-w-xl space-y-[var(--layout-space-loose)]">
+      <section className="space-y-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold">文字反白(::selection)</h3>
+        <p data-selection-demo className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           第三季營收報告已於 10 月 14 日送交財務委員會審閱,附件包含分區銷售明細與年度預測修正。
         </p>
         <span className="block text-caption text-fg-muted">
           此段由 play 自動反白 — 底色 <code>--text-selection</code>(blue-5 @ 30% 半透明,字色不變)
         </span>
       </section>
-      <section className="space-y-2">
-        <h3 className="text-body font-medium">頁內搜尋配對(Ctrl+F)</h3>
-        <p className="rounded-md border border-border bg-surface p-4 text-body">
+      <section className="space-y-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold">頁內搜尋配對(Ctrl+F)</h3>
+        <p className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
           已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
           為目前所在配對,尚待審核;年度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>

@@ -995,6 +995,31 @@ run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
   "import * as React from 'react' // 純加註解:old 無註解、new 有,剝掉後相同"
 expect_pass_silent "15e. 在程式碼行尾加註解(剝掉後相同、轉譯相同)→ pass"
 
+# 15-adapter(2026-10-07,N47 同族):經 run-provider-hook.mjs 正規化的 Edit 形狀是 {old_string, content}(沒有 new_string)。
+#   舊判定把缺的 new_string 當空字串 →「舊註解換成註解 + UI 程式碼」被讀成「刪掉那行註解」→ 純註解放行。
+run_hook_adapter_edit() {
+  local file_path="$1"; local transcript="$2"; local old_string="$3"; local content="$4"
+  local payload
+  payload=$(jq -n --arg fp "$file_path" --arg tp "$transcript" --arg o "$old_string" --arg c "$content" \
+    '{hook_event_name:"PreToolUse",tool_name:"Edit",tool_input:{file_path:$fp,path:$fp,old_string:$o,content:$c},transcript_path:$tp}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+run_hook_adapter_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 舊註解:padding 公式 (field-height - icon-size) / 2" \
+  "// 舊註解:padding 公式 (field-height - icon-size) / 2
+export const Injected = () => <div className=\"p-8 hover:bg-primary\" />"
+expect_block "15-adapter. adapter 形狀:舊註解 → 註解 + UI 程式碼,不得當成純註解 → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+run_hook_adapter_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 舊註解:padding 公式 (field-height - icon-size) / 2" \
+  "// 註解已對齊:padding 公式 (field-height − 2px − tag-height) / 2,SSOT field-wrapper.tsx"
+expect_pass_silent "15-adapter2. 對照組:adapter 形狀的真純註解改動 → 仍 pass"
+
 run_hook_edit "$COMMENT_CSS" "$TX_CLOSURE" \
   "/* 舊說明:tag 高度 h-5 */" \
   "/* 說明已對齊:tag 高度 h-tag-sm(--tag-height-sm) */"
@@ -1267,14 +1292,54 @@ for write_cmd in \
   expect_block "18f2. N20 修後真重導仍擋(含第一個是 /dev/null 的): $write_cmd" "BLOCKER"
 done
 
-# 18g. N47 已知漏擋(釘住現況;修好後改成 expect_block):
-#   先 cd 進去再用相對路徑寫,命令字串裡沒有 packages/design-system/src/ 這串字 → 快速退出放行。heredoc 版同樣漏。
+# 18g. N47 ①(2026-10-07 已修):先 cd 進去再用相對路徑寫,命令字串裡沒有 packages/design-system/src/ 這串字,
+#   原本快速退出放行;現在每個 .tsx/.ts/.css token 依 cwd + 命令裡的 cd / pushd 解析成絕對路徑再判受管。
 run_hook_bash "cd packages/design-system && sed -i '' 's/a/b/' src/components/Button/button.tsx" "$TX_NEUTRAL"
-expect_pass_silent "18g. N47 已知漏擋:cd + 相對路徑寫入(現況 PASS,修好後改 expect_block)"
+expect_block "18g. N47 ① cd + 相對路徑寫入 → BLOCK" "BLOCKER"
 run_hook_bash "cd packages/design-system && cat > src/components/Button/button.tsx <<'EOF'
 export const x = 1
 EOF" "$TX_NEUTRAL"
-expect_pass_silent "18g2. N47 已知漏擋:cd + 相對路徑 heredoc(現況 PASS,修好後改 expect_block)"
+expect_block "18g2. N47 ① cd + 相對路徑 heredoc → BLOCK" "BLOCKER"
+run_hook_bash "(cd packages/design-system/src/components/Button && printf x > button.tsx)" "$TX_NEUTRAL"
+expect_block "18g3. N47 ① 子 shell 裡 cd + 重導寫入 → BLOCK" "BLOCKER"
+# cwd 本來就在受管目錄底下(payload cwd;Bash 工具的工作目錄會延續),命令裡完全沒有路徑前綴
+run_hook_bash_cwd() {
+  local command="$1"; local transcript="$2"; local cwd="$3"
+  local payload
+  payload=$(jq -n --arg c "$command" --arg tp "$transcript" --arg cwd "$cwd" \
+    '{hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$c},transcript_path:$tp,cwd:$cwd}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+run_hook_bash_cwd "sed -i '' 's/a/b/' button.tsx" "$TX_NEUTRAL" "/foo/my-project/packages/design-system/src/components/Button"
+expect_block "18g4. N47 ① cwd 在 src 底下 + 裸檔名寫入 → BLOCK" "BLOCKER"
+run_hook_bash_cwd "grep -n className button.tsx 2>/dev/null" "$TX_NEUTRAL" "/foo/my-project/packages/design-system/src/components/Button"
+expect_pass_silent "18g5. N47 ① cwd 在 src 底下 + 純讀取 → 放行"
+run_hook_bash_cwd "sed -i '' 's/a/b/' notes.ts" "$TX_NEUTRAL" "/foo/my-project/scripts"
+expect_pass_silent "18g6. N47 ① cwd 在受管目錄外 + 寫入非受管檔 → 放行"
+# 旗標組合:perl -0pi / perl -i.bak / sed -E -i / sed -e … -i 都是原地改寫;perl -Ilib 不是
+for write_cmd in \
+  "perl -0pi -e 's/a/b/' $BASH_DS_TSX" \
+  "perl -i.bak -pe 's/a/b/' $BASH_DS_TSX" \
+  "sed -E -i '' 's/a/b/' $BASH_DS_TSX" \
+  "sed -e 's/a/b/' -i $BASH_DS_TSX"; do
+  run_hook_bash "$write_cmd" "$TX_NEUTRAL"
+  expect_block "18g7. N47 ① 原地改寫旗標組合: $write_cmd" "BLOCKER"
+done
+run_hook_bash "perl -Ilib scripts/check.pl $BASH_DS_TSX" "$TX_NEUTRAL"
+expect_pass_silent "18g8. N47 ① perl -Ilib(-I 吃掉同 token 其餘字元)不是原地改寫 → 放行"
+# ④ 唯讀指令帶絕對路徑(09-27 曾被擋 3 次,N20 修好後不再擋):釘住放行
+for read_cmd in \
+  "grep -n 'className' /foo/my-project/$BASH_DS_TSX" \
+  "sed -n '1,40p' /foo/my-project/$BASH_DS_TSX 2>/dev/null"; do
+  run_hook_bash "$read_cmd" "$TX_NEUTRAL"
+  expect_pass_silent "18g9. N47 ④ 唯讀 + 絕對路徑 → 放行: $read_cmd"
+done
 
 # 18h. 命令不含受管路徑 → 放行(絕大多數 Bash 呼叫走這條)
 run_hook_bash "npm test" "$TX_NEUTRAL"
@@ -1291,6 +1356,196 @@ expect_pass_silent "18i2. Bash 寫 src 內 .spec.md → 不在 tsx/ts/css 範圍
 # 18j. 無 transcript → 沒有任何 operation 證據,fail closed
 run_hook_bash "sed -i '' 's/a/b/' $BASH_DS_TSX" ""
 expect_block "18j. Bash 寫受管 tsx + 無 transcript → BLOCK" "NO_OPERATION_EVIDENCE"
+
+# 18m. N47 ① 複核(2026-10-07):同族寫法逐一釘住。改前全部放行(scratchpad family-probe 紅面紀錄);
+#   路徑解析在 lib/approval-evidence.mjs#bashCommandWriteTargets(cwd / cd / bash -c / 目錄參數)。
+M_ROOT="/foo/my-project"
+M_DS="$M_ROOT/packages/design-system"
+for case_line in \
+  "18m1. bash -c 內層 cd + sed -i|$M_ROOT|bash -c \"cd packages/design-system && sed -i '' 's/a/b/' src/components/Button/button.tsx\"" \
+  "18m2. sh -c 內層 cd + 重導|$M_ROOT|sh -c 'cd packages/design-system/src/components/Button && printf x > button.tsx'" \
+  "18m3. cd + find src -exec sed -i|$M_ROOT|cd packages/design-system && find src -name '*.tsx' -exec sed -i '' 's/a/b/' {} +" \
+  "18m4. git ls-files 的目錄參數餵給 xargs sed -i|$M_DS|git ls-files src | xargs sed -i '' 's/a/b/'" \
+  "18m5. python pathlib write_text|$M_ROOT|python3 -c \"import pathlib;pathlib.Path('$BASH_DS_TSX').write_text('x')\"" \
+  "18m6. python write_bytes + cwd 相對路徑|$M_DS|python3 -c \"import pathlib;pathlib.Path('src/components/Button/button.tsx').write_bytes(b'x')\"" \
+  "18m7. git checkout <rev> -- 路徑|$M_ROOT|git checkout HEAD~1 -- $BASH_DS_TSX" \
+  "18m8. git restore 目錄|$M_DS|git restore src/components/Button" \
+  "18m9. git -C 目錄 + 相對路徑|$M_ROOT|git -C packages/design-system checkout HEAD -- src/components/Button/button.tsx" \
+  "18m10. rsync 檔案|$M_ROOT|rsync /tmp/x.tsx $BASH_DS_TSX" \
+  "18m11. rsync 進目錄|$M_ROOT|rsync -a /tmp/new/ packages/design-system/src/components/Button/" \
+  "18m12. install|$M_ROOT|install -m 644 /tmp/x.tsx $BASH_DS_TSX" \
+  "18m13. npx prettier --write 目錄|$M_DS|npx prettier --write src" \
+  "18m14. npx eslint --fix 目錄|$M_DS|npx eslint --fix src/components" \
+  "18m15. 子 shell 裡 cd 走開,外面仍在原處寫|$M_DS|(cd /tmp) && sed -i '' 's/a/b/' src/components/Button/button.tsx"; do
+  # 欄位以 | 分隔:名稱與 cwd 不可含 |;指令放最後一欄,可以含 |(read 把其餘整段給最後一個變數)
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_block "$case_name → BLOCK" "BLOCKER"
+done
+# 祖先目錄:從專案根目錄 find .(要真的有受管目錄才算,所以用實際存在的暫存專案)
+M_REAL="$TMP_DIR/m-project"
+mkdir -p "$M_REAL/packages/design-system/src/components/Button" "$M_REAL/docs"
+run_hook_bash_cwd "find . -name '*.tsx' -exec sed -i '' 's/a/b/' {} +" "$TX_NEUTRAL" "$M_REAL"
+expect_block "18m16. 從專案根目錄 find . -exec sed -i(受管目錄的祖先)→ BLOCK" "BLOCKER"
+# 對照組:寫入對象碰不到受管檔 → 放行(不因補洞而誤擋一般工程指令)
+for case_line in \
+  "18m17. find . 只找 .md|$M_REAL|find . -name '*.md' -exec sed -i '' 's/a/b/' {} +" \
+  "18m18. npm install|$M_ROOT|npm install" \
+  "18m19. git checkout -b 開分支|$M_ROOT|git checkout -b feat/x" \
+  "18m20. prettier --write 非受管檔|$M_ROOT|npx prettier --write scripts/foo.mjs" \
+  "18m21. eslint --fix 只碰 stories|$M_DS|npx eslint --fix src/components/Button/button.stories.tsx" \
+  "18m22. 唯讀 find|$M_DS|find src -name '*.tsx'" \
+  "18m23. cp 非受管檔|$M_ROOT|cp /tmp/a.md docs/a.md"; do
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_pass_silent "$case_name → 放行"
+done
+
+# 18n. G4 複核二(2026-10-07):runner 在本閘缺工具、自己跑不起來時,用 approval-evidence.mjs#isGovernedApprovalTarget
+#   判「這次寫入在不在本閘範圍」。那是本閘 GOVERNED_PATHS case 的第二份寫法(為了不讓每次 Edit 多一個 node 行程),
+#   兩者必須逐條一致:同一批路徑,hook 實際擋不擋 == 函式回不回 true。任何一邊改了而另一邊沒跟上就紅。
+for parity_path in \
+  "/foo/my-project/packages/design-system/src/components/Button/button.tsx" \
+  "packages/design-system/src/lib/utils.ts" \
+  "/foo/my-project/packages/design-system/src/tokens/base.css" \
+  "/foo/my-project/packages/design-system/src/components/Button/button.stories.tsx" \
+  "/foo/my-project/packages/design-system/src/stories-helpers/scene/data-toolbar.tsx" \
+  "/foo/my-project/packages/design-system/src/components/Button/button.test.tsx" \
+  "/foo/my-project/packages/design-system/src/lib/x.spec.ts" \
+  "/foo/my-project/packages/design-system/src/components/Button/button.spec.md" \
+  "/foo/my-project/apps/demo/src/App.tsx" \
+  "apps/demo/src/App.tsx" \
+  "/foo/my-project/apps/demo/scripts/build.ts" \
+  "/foo/my-project/node_modules/@qijenchen/design-system/dist/index.js" \
+  "/foo/my-project/scripts/foo.mjs" \
+  "/foo/my-project/packages/governance/src/x.ts" \
+  "/foo/my-project/docs/apps/x.md" \
+  "/foo/my-project/packages/design-system/ds-canonical/hooks/lib/x.mjs"; do
+  run_hook "Edit" "$parity_path" "$TX_NEUTRAL" 'const a = 1'
+  HOOK_GOVERNED=false
+  [ "$EXIT" = "2" ] && HOOK_GOVERNED=true
+  JS_GOVERNED=$(node "$AUTH_HELPER" --governed-target "$parity_path")
+  if [ "$HOOK_GOVERNED" = "$JS_GOVERNED" ] && { [ "$EXIT" = "2" ] || [ -z "$STDERR_TEXT" ]; }; then
+    echo "  PASS  18n. 受管判斷兩份寫法一致($HOOK_GOVERNED): $parity_path"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  18n. hook 擋=$HOOK_GOVERNED(exit=$EXIT)、isGovernedApprovalTarget=$JS_GOVERNED: $parity_path"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 18n parity: $parity_path"
+  fi
+done
+
+# 18o. N47 ① 複核二(2026-10-07):套補丁的指令。指令字串裡沒有 .tsx 字樣(`git apply fix.patch`),改前算不出目標而
+#   放行 —— 先把補丁寫到不受管的暫存檔、再套用,就繞過本閘。現在讀補丁標頭算目標;讀不到就保守擋受管根目錄。
+O_REAL="$TMP_DIR/o-project"
+mkdir -p "$O_REAL/.git" "$O_REAL/packages/design-system/src/components/Button" "$O_REAL/docs"
+O_PATCH="$TMP_DIR/o-fix.patch"
+printf '%s\n' 'diff --git a/packages/design-system/src/components/Button/button.tsx b/packages/design-system/src/components/Button/button.tsx' \
+  '--- a/packages/design-system/src/components/Button/button.tsx' '+++ b/packages/design-system/src/components/Button/button.tsx' \
+  '@@ -1 +1 @@' '-a' '+b' > "$O_PATCH"
+O_MBOX="$TMP_DIR/o-fix.mbox"
+{ printf '%s\n' 'From 0123456789abcdef0123456789abcdef01234567 Mon Sep 17 00:00:00 2001' 'Subject: [PATCH] x' '' '---'; cat "$O_PATCH"; } > "$O_MBOX"
+O_RELATIVE="$TMP_DIR/o-relative.patch"
+printf '%s\n' '--- a/src/components/Button/button.tsx' '+++ b/src/components/Button/button.tsx' '@@ -1 +1 @@' '-a' '+b' > "$O_RELATIVE"
+O_DOCS="$TMP_DIR/o-docs.patch"
+printf '%s\n' 'diff --git a/docs/notes.md b/docs/notes.md' '--- a/docs/notes.md' '+++ b/docs/notes.md' '@@ -1 +1 @@' '-a' '+b' > "$O_DOCS"
+O_STORIES="$TMP_DIR/o-stories.patch"
+printf '%s\n' 'diff --git a/packages/design-system/src/components/Button/button.stories.tsx b/packages/design-system/src/components/Button/button.stories.tsx' \
+  '--- a/packages/design-system/src/components/Button/button.stories.tsx' '+++ b/packages/design-system/src/components/Button/button.stories.tsx' \
+  '@@ -1 +1 @@' '-a' '+b' > "$O_STORIES"
+for case_line in \
+  "18o1. git apply 補丁檔(標頭指向受管 tsx)|$O_REAL|git apply $O_PATCH" \
+  "18o2. patch -p1 < 補丁檔|$O_REAL|patch -p1 < $O_PATCH" \
+  "18o3. git am 信件格式補丁|$O_REAL|git am $O_MBOX" \
+  "18o4. cat 補丁檔再用管線交給 git apply|$O_REAL|cat $O_PATCH | git apply" \
+  "18o5. 子目錄 cwd + git apply(補丁路徑相對於 git 根目錄)|$O_REAL/docs|git apply $O_PATCH" \
+  "18o6. git apply 從 stdin 讀、看不到補丁檔 → 保守擋受管根目錄|$O_REAL|git apply" \
+  "18o7. git apply --directory= 前綴|$O_REAL|git apply --directory=packages/design-system $O_RELATIVE" \
+  "18o8. git -C 目錄 apply|$TMP_DIR|git -C $O_REAL apply $O_PATCH" \
+  "18o18. patch -d 目錄(先切目錄再套)|$O_REAL|patch -d packages/design-system -p1 < $O_RELATIVE"; do
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_block "$case_name → BLOCK" "BLOCKER"
+done
+for case_line in \
+  "18o9. git apply --check 只檢查、不寫檔|$O_REAL|git apply --check $O_PATCH" \
+  "18o10. git apply --stat 只統計|$O_REAL|git apply --stat $O_PATCH" \
+  "18o11. 補丁只碰非受管檔(docs/*.md)|$O_REAL|git apply $O_DOCS" \
+  "18o12. 補丁只碰 stories(allowlist)|$O_REAL|git apply $O_STORIES"; do
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_pass_silent "$case_name → 放行"
+done
+# heredoc:給 cat / tee 寫進筆記的資料 → 裡面提到的受管路徑不是寫入目標(N47 ④ 同族);給 shell / 直譯器的 → 照舊擋
+# 補丁直接寫在 heredoc 裡交給 git apply:用主體裡的標頭判(碰受管 tsx → 擋;只碰 docs → 放行)
+run_hook_bash_cwd "git apply <<'EOF'
+diff --git a/packages/design-system/src/components/Button/button.tsx b/packages/design-system/src/components/Button/button.tsx
+--- a/packages/design-system/src/components/Button/button.tsx
++++ b/packages/design-system/src/components/Button/button.tsx
+@@ -1 +1 @@
+-a
++b
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_block "18o19. heredoc 補丁交給 git apply、標頭指向受管 tsx → BLOCK" "BLOCKER"
+run_hook_bash_cwd "git apply <<'EOF'
+diff --git a/docs/notes.md b/docs/notes.md
+--- a/docs/notes.md
++++ b/docs/notes.md
+@@ -1 +1 @@
+-a
++b
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_pass_silent "18o20. heredoc 補丁交給 git apply、只碰 docs → 放行"
+run_hook_bash_cwd "cat > $TMP_DIR/o-notes.md <<'EOF'
+這次改了 packages/design-system/src/components/Button/button.tsx 的焦點框,
+下一步看 $O_REAL/packages/design-system/src/components/Button/button.tsx 的 hover。
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_pass_silent "18o13. heredoc 寫筆記 .md、內容提到受管 tsx → 放行"
+run_hook_bash_cwd "tee $TMP_DIR/o-notes.md >/dev/null <<'EOF'
+packages/design-system/src/components/Button/button.tsx
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_pass_silent "18o14. tee + heredoc 寫筆記、內容提到受管 tsx → 放行"
+run_hook_bash_cwd "bash <<'EOF'
+sed -i '' 's/a/b/' packages/design-system/src/components/Button/button.tsx
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_block "18o15. heredoc 交給 bash 執行、內含 sed -i 受管檔 → BLOCK" "BLOCKER"
+run_hook_bash_cwd "cat <<'EOF' | sh
+sed -i '' 's/a/b/' packages/design-system/src/components/Button/button.tsx
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_block "18o16. cat heredoc 再接 | sh → 照舊掃主體 → BLOCK" "BLOCKER"
+run_hook_bash_cwd "python3 - <<'EOF'
+open('packages/design-system/src/components/Button/button.tsx', 'w').write('x')
+EOF" "$TX_NEUTRAL" "$O_REAL"
+expect_block "18o17. heredoc 交給 python 寫受管檔 → BLOCK" "BLOCKER"
+
+# 18l. N47 ②(2026-10-07):判 UI 的文字必須是解碼後的程式碼。operationText 是一行 JSON,新內容裡先出現一行
+#   `//` 註解時,舊的剝註解 regex 會把同一行後面整筆操作吃掉 → className 改動被判成工程放行。
+run_hook "Edit" "$PROD_TSX" "$TX_STANDING_ENGINEERING" '// 調整按鈕
+return <button className="bg-blue-500 hover:bg-blue-600" />'
+expect_block "18l. N47 ② 註解在前 + UI 改動 + 只有工程授權 → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+run_hook "Edit" "$PROD_TSX" "$TX_STANDING_ENGINEERING" 'const nextValue = normalizeValue(value) // hover 狀態不在這裡處理'
+expect_pass_silent "18l2. N47 ② 對照組:註解裡的 UI 字眼不算(2026-09-12 規則保留)→ 放行"
+# 18l3–18l6. N47 ② 複核(2026-10-07):只換成「逐欄解回原文」的視圖時,換行變成真的換行,標籤之間的文字
+#   規則不能跨行 → 多行 JSX 文案改動被判成工程放行(改前擋、改後放行)。現在 = 兩種視圖聯集 + 該規則可跨行。
+run_hook_edit "$PROD_TSX" "$TX_STANDING_ENGINEERING" '<Button>
+  儲存
+</Button>' '<Button>
+  儲存變更
+</Button>'
+expect_block "18l3. N47 ② 多行 JSX 中文文案 + 只有工程授權 → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+run_hook_edit "$PROD_TSX" "$TX_STANDING_ENGINEERING" '<span>
+  Save
+</span>' '<span>
+  Save changes
+</span>'
+expect_block "18l4. N47 ② 多行 JSX 英文文案 + 只有工程授權 → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+run_hook_edit "$PROD_TSX" "$TX_STANDING_ENGINEERING" 'const a = 1' '// 文案調整
+const a = (
+  <Button>
+    儲存變更
+  </Button>
+)'
+expect_block "18l5. N47 ② 註解在前 + 多行 JSX 文案(兩種視圖各缺一半)→ BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+run_hook_edit "$PROD_TSX" "$TX_STANDING_ENGINEERING" 'const a = 1' 'const a = 2'
+expect_pass_silent "18l6. N47 ② 對照組:同一份工程授權 + 純邏輯改動 → 放行"
 
 # 18k. 釘住現況(待裁決,見回報):Bash 事件沒有 operation bytes(operationEvidenceSha256 = 空字串的 sha),
 #   分類器判不出工程 vs UI → 工程 standing 授權也擋;同一份 transcript 走 Edit(7b)是放行的。

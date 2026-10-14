@@ -7,6 +7,7 @@ import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_T
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -197,7 +198,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           // blur / Enter = commit(清 draft,顯示回 committed value);Escape 棄 draft
           onBlur={(e) => { setDraft(null); onBlurProp?.(e) }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === 'Escape') setDraft(null)
+            // 輸入法選字的 Enter / Esc 不結算草稿(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
+            if ((e.key === 'Enter' || e.key === 'Escape') && !isImeComposing(e)) setDraft(null)
             onKeyDownProp?.(e)
           }}
           aria-invalid={error || undefined}

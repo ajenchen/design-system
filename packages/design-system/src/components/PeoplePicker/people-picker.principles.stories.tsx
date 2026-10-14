@@ -6,6 +6,8 @@ import { PeoplePicker } from './people-picker'
 import type { PersonValue } from './person-display'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/設計原則',
@@ -14,23 +16,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // 對齊 ProfileCard 預設呈現:name + subtitle + status + statusMessage + fields
 // avatar.spec.md DS-wide canonical:所有 person avatar hover 必出 ProfileCard,展示資訊不可精簡
@@ -51,11 +41,12 @@ export const UsageGuidance: Story = {
     const [category, setCategory] = React.useState('design')
     const [tags, setTags] = React.useState<string[]>(['design', 'typescript'])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="何時用 — 真實業務場景"
           note="PeoplePicker 用於「選擇 user 為值」場景 — 資料本質是「人」,需要 avatar 視覺輔助辨識(對比一般 Combobox 純字串)。Avatar-first display 對齊 Linear assignee picker / Asana people field / Slack mention picker 共識,讓使用者「掃 avatar 而非讀名字」更快。"
         >
+          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單人</span></LinkTo>
@@ -67,13 +58,13 @@ export const UsageGuidance: Story = {
               <LinkTo kind="Design System/Components/PeoplePicker/展示" name="尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸</span></LinkTo>
             </li>
           </ul>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="vs Select — PeoplePicker 是選人員(選項有 avatar 視覺)"
           note="assign task、email 收件人、PR reviewer、文章作者等場景:資料本質是人,使用者靠 avatar + 名字識別(不是純文字 label)。對齊 Slack people picker / Jira assignee dropdown 的 avatar-first 模式"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 指派 task 給某人（單選）</Label>
             <PeoplePicker
               value={assignee}
@@ -81,14 +72,14 @@ export const UsageGuidance: Story = {
               people={team}
               aria-label="task 負責人"
             />
-          </div>
-        </Rule>
+          </ExampleGroup>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 選非人員(分類 / 狀態)用 PeoplePicker"
           note="Avatar 視覺是「選人」的獨有語意——選「優先級」、「產品類別」、「訂單狀態」這些非人員的分類用 Select / Combobox,否則 avatar 會變成無意義裝飾"
         >
-          <div>
+          <ExampleGroup>
             <Label>✅ 選產品分類用 Select（沒有 avatar 概念）</Label>
             <Select
               options={[
@@ -99,11 +90,11 @@ export const UsageGuidance: Story = {
               value={category}
               onChange={setCategory}
             />
-          </div>
+          </ExampleGroup>
           <Label warn>↑ 非人員不要用 PeoplePicker</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="vs Combobox — 多選非人員 → Combobox(不是 PeoplePicker)"
           note="Combobox 是通用多選,沒 avatar 假設。「產品標籤」、「技術 stack」這類非人員多選用 Combobox;人員多選才用 PeoplePicker"
         >
@@ -119,8 +110,8 @@ export const UsageGuidance: Story = {
             aria-label="技術 stack(多選 Combobox)"
           />
           <Label>↑ 技術 stack 是分類多選,不是人員,用 Combobox</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -133,8 +124,8 @@ export const SingleVsMultiRule: Story = {
     const [assignee, setAssignee] = React.useState<PersonValue | null>(team[0])
     const [reviewers, setReviewers] = React.useState<PersonValue[]>([team[1], team[2]])
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="單選 — 一個 task 的 assignee、文章作者"
           note="value 是單一 PersonValue 或 null。value 類型決定 UI 行為（單選 trigger 只顯示一個 avatar + name）"
         >
@@ -145,9 +136,9 @@ export const SingleVsMultiRule: Story = {
             aria-label="task 負責人(單選)"
           />
           <Label>↑ 指派 task：assignee 通常一人</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="多選 — PR reviewers、email 收件人、channel 成員"
           note="value 是 PersonValue[]。多人堆疊 avatar + 溢出時 +N 指示器,hover 可看完整名單"
         >
@@ -158,15 +149,15 @@ export const SingleVsMultiRule: Story = {
             aria-label="PR reviewers(多選)"
           />
           <Label>↑ PR reviewers：可選多人,已選 {reviewers.length} 人</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 在多選語意下強制只能選一人"
           note="若業務規則是「只能選一人」,直接用單選。用 multi + 限制 length === 1 等於用錯元件"
         >
           <Label warn>（設計規則）單多選由 value 類型決定,不做混合或限制</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -176,21 +167,21 @@ export const SingleVsMultiRule: Story = {
 export const EmptyStateRule: Story = {
   name: '空值呈現',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="edit 模式 — 未選時顯示「請選擇人員」佔位提示"
         note="跟 Select / Combobox 的 placeholder 行為一致。不用半形連字號,因為 edit mode 是可操作的"
       >
         <PeoplePicker value={null} onChange={() => {}} people={team} aria-label="指派人員(空值 placeholder demo)" />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="readonly — 未填時顯示半形連字號（-）"
         note="跟所有 Field readonly 空值呈現一致。table cell 場景特別常見(未指派 assignee)"
       >
         <PeoplePicker mode="readonly" value={null} />
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 

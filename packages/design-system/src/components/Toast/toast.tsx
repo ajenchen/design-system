@@ -15,6 +15,10 @@ import { Button } from '@/design-system/components/Button/button'
  * neutral/success(inverse): bg + theme 同層（bg-surface-raised 需要跟 data-theme 一起翻轉）
  * info/error(dark): bg 在 outer,theme 在 inner
  * warning(light always): bg 在 outer,theme="light" 在 inner
+ *
+ * ── 落點(toast.spec.md「落點」)──
+ * 一律以整個視窗為準:sonner 預設角落與邊距,不為側欄、代理面板、入口鈕或輸入框讓位 —— 不傳 offset / mobileOffset / style,
+ * 也不量任何元件的位置。閘:`scripts/toast-viewport-placement-invariant.mjs`。
  */
 
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
@@ -172,6 +176,13 @@ const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
       <>
         <SonnerToaster
           position={position}
+          // 疊放順序:Toast 在所有 modal / 浮層(`z-50`)之上、Tooltip(`z-[70]`)之下;頁面層的拖曳影像(拖曳元件不在任何疊放脈絡裡時)也在它上面 ——
+          // 層級表 tokens/elevation/elevation.spec.md「疊放順序」。sonner 不經 portal,清單就地渲染在 `<Toaster>` 掛的地方 → 依「app root 掛一次」的合約在頁面層。
+          // sonner 自己注入的樣式寫死 `[data-sonner-toaster]{z-index:999999999}`,而且**不在任何 cascade layer 裡**;
+          // Tailwind 的 utility 住在 `@layer utilities`,一般權重一律輸給沒有 layer 的樣式 → 必須用 important(`!`)才蓋得過。
+          // className 落在清單 `<ol data-sonner-toaster>` 本身(sonner 2.0.7 dist/index.mjs 的 `className: className`)。
+          // 這裡只放層級、不放任何落點:不傳 offset / mobileOffset / style,落點一律 sonner 預設(toast.spec.md「落點」)。
+          className="!z-[60]"
           toastOptions={{ unstyled: true, className: 'w-[360px]' }}
           {...props}
         />

@@ -12,6 +12,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
+import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -35,8 +36,7 @@ export const Overview: Story = {
             </HoverCardTrigger>
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
               <div className="flex flex-col gap-2 w-56">
-                <div className="text-body font-medium">Ada Chen</div>
-                <div className="text-caption text-fg-muted">Design Engineer · 台北</div>
+                <ItemContent label="Ada Chen" description="Design Engineer · 台北" mode="scanning" labelClassName="text-body font-medium" descriptionTone="muted" />
                 <Button variant="tertiary" size="sm">傳訊息</Button>
               </div>
             </HoverCardContent>
@@ -93,8 +93,7 @@ export const VisualVariants: Story = {
             </HoverCardTrigger>
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
               <div className="w-56">
-                <div className="text-body font-medium mb-1">Ada Chen</div>
-                <div className="text-caption text-fg-muted mb-3">Design Engineer · 台北</div>
+                <ItemContent className="mb-3" label="Ada Chen" description="Design Engineer · 台北" mode="scanning" labelClassName="text-body font-medium" descriptionTone="muted" />
                 <Button variant="tertiary" size="sm">傳訊息</Button>
               </div>
             </HoverCardContent>

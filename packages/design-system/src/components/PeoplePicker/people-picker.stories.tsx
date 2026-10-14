@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
@@ -66,21 +66,21 @@ const samplePeople = [
 const SinglePicker = () => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit（可互動）</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} aria-label="負責人(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <PeoplePicker mode="view" value={samplePeople[0]} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <PeoplePicker mode="readonly" value={samplePeople[0]} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <PeoplePicker mode="disabled" value={samplePeople[0]} />
       </div>
     </div>
@@ -118,13 +118,13 @@ const MultiPicker = () => {
   const [val, setVal] = React.useState<PersonValue[]>(samplePeople.slice(0, 4))
   const readonlyVal = samplePeople.slice(0, 4)
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit（可互動,多選）</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動,多選）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <PeoplePicker mode="readonly" value={readonlyVal} />
       </div>
     </div>
@@ -134,6 +134,56 @@ const MultiPicker = () => {
 export const Multi: Story = {
   name: '多人',
   render: () => <MultiPicker />,
+}
+
+/* ── 多人 × 欄位內搜尋(searchIn='trigger')──
+   Outlook 排會議:出席者欄位直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位;
+   頭像堆疊(預設)與每人一顆標籤(`multiDisplay='pill'`)兩種顯示,各放「已有人」與「還沒選」一格(選填那一格可一鍵清空)——
+   欄位內搜尋框空值也在(people-picker.spec.md §D / §E:有頭像 → 純插入點,空 → 欄位 placeholder);
+   它的寬度 = 打的字(combobox.spec.md「欄位內搜尋框的寬度」):接在最後一位後面,空的時候不自己佔一列 ——
+   「會議記錄寄給」兩顆標籤排在同一列,關著的欄位沒有多一列空白(2026-09-30 前 60px 固定下限讓搜尋框自己換到第二列)。 */
+const InlineSearchAttendees = () => {
+  const [required, setRequired] = React.useState<PersonValue[]>(samplePeople.slice(0, 3))
+  const [optional, setOptional] = React.useState<PersonValue[]>([])
+  const [notify, setNotify] = React.useState<PersonValue[]>(samplePeople.slice(3, 5))
+  const [cc, setCc] = React.useState<PersonValue[]>([])
+  return (
+    // 版面消費 field.stories.tsx FormValidation 同一組:區塊之間 layout-space-loose、標題 → 內容 layout-space-tight、多個欄位走 FieldGroup
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">頭像堆疊(預設)</h3>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>必要出席者</FieldLabel>
+            <PeoplePicker searchIn="trigger" value={required} people={samplePeople} onChange={setRequired} />
+          </Field>
+          <Field>
+            <FieldLabel>選擇性出席者</FieldLabel>
+            <PeoplePicker searchIn="trigger" clearable value={optional} people={samplePeople} onChange={setOptional} />
+          </Field>
+        </FieldGroup>
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">每人一顆標籤(multiDisplay=&quot;pill&quot;)</h3>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>會議記錄寄給</FieldLabel>
+            <PeoplePicker searchIn="trigger" multiDisplay="pill" value={notify} people={samplePeople} onChange={setNotify} />
+          </Field>
+          <Field>
+            <FieldLabel>副本</FieldLabel>
+            <PeoplePicker searchIn="trigger" multiDisplay="pill" clearable value={cc} people={samplePeople} onChange={setCc} />
+          </Field>
+        </FieldGroup>
+      </div>
+    </div>
+  )
+}
+
+export const MultiInlineSearch: Story = {
+  name: '多人 × 欄位內搜尋',
+  parameters: { docs: { description: { story: 'Outlook 排會議:在欄位裡直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位。頭像堆疊與每人一顆標籤兩種顯示,各放已有人與還沒選的一格。' } } },
+  render: () => <InlineSearchAttendees />,
 }
 
 /* ── hug 寬度 × 多人頭像串 ────────────────────────────────────────────────
@@ -146,23 +196,25 @@ export const Multi: Story = {
 export const HugWidthMultiStack: Story = {
   name: '寬度貼合內容 × 多人',
   render: () => (
-    <div className="flex flex-col gap-4" style={{ width: 720 }}>
+    <div className="flex flex-col gap-[var(--layout-space-tight)]" style={{ width: 720 }}>
       <p className="text-caption text-fg-muted">
         容器 720px。<code>width=&quot;hug&quot;</code> 的欄位寬度由內容決定,頭像串可畫幾顆則由
         「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
       </p>
-      <PeoplePicker
-        width="hug"
-        mode="readonly"
-        value={samplePeople.slice(0, 6)}
-        aria-label="協作者(hug 寬度)"
-      />
-      <PeoplePicker
-        width="fill"
-        mode="readonly"
-        value={samplePeople.slice(0, 6)}
-        aria-label="協作者(fill 寬度,對照組)"
-      />
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <PeoplePicker
+          width="hug"
+          mode="readonly"
+          value={samplePeople.slice(0, 6)}
+          aria-label="協作者(hug 寬度)"
+        />
+        <PeoplePicker
+          width="fill"
+          mode="readonly"
+          value={samplePeople.slice(0, 6)}
+          aria-label="協作者(fill 寬度,對照組)"
+        />
+      </div>
     </div>
   ),
 }
@@ -208,6 +260,27 @@ export const StackRemoveOverlayProbe: Story = {
   },
 }
 
+// 「+N」浮出清單的移除契約 probe(2026-09-30):窄欄位裡頭像堆疊溢出成 +N,浮出清單裡的人員 Tag × 走 Combobox 同一條移除路徑
+// —— 焦點接力不掉到 body、搜尋框握著焦點時不搬焦點(規則 select-menu.spec.md「A11y 預設」Focus 段、combobox.spec.md「Tag 操作」)。
+// 兩格:浮層內搜尋(預設)與欄位內搜尋(`searchIn='trigger'`)。瀏覽器閘 searchable-menu-focus-invariant.mjs 從 index 讀到它、量 +N 卡片裡的 ×。
+// 其餘人員 story 的欄位夠寬、六個人放得下,沒有 +N;DataTable 窄格有 +N 但不在該閘的家族裡。
+// 同 MultiRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,自 sidebar / Autodocs 排除。
+const OverflowRemovePickers = () => {
+  const [inMenu, setInMenu] = React.useState<PersonValue[]>(samplePeople)
+  const [inField, setInField] = React.useState<PersonValue[]>(samplePeople)
+  return (
+    <div className="flex flex-col gap-6 w-40">
+      <PeoplePicker value={inMenu} people={samplePeople} onChange={setInMenu} clearable aria-label="審核人(窄欄位,浮層內搜尋)" />
+      <PeoplePicker searchIn="trigger" value={inField} people={samplePeople} onChange={setInField} clearable aria-label="審核人(窄欄位,欄位內搜尋)" />
+    </div>
+  )
+}
+export const OverflowRemoveFocusContract: Story = {
+  name: '+N 浮出清單移除驗證',
+  tags: ['test-only'],
+  render: () => <OverflowRemovePickers />,
+}
+
 /* ── 一鍵清空(選填欄位) ── */
 // X 在 ChevronDown 左(family SSOT field-controls.spec.md「下拉箭頭」段)。「無選擇是有效
 // 狀態」的選填欄位才開 clearable(select.spec.md「何時開」)——代理人 / 觀察者是典型選填人員欄位。
@@ -215,13 +288,13 @@ const ClearablePicker = () => {
   const [delegate, setDelegate] = React.useState<PersonValue | null>(samplePeople[1])
   const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
   return (
-    <div className="flex flex-col gap-6 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">單人(代理人,選填)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">單人(代理人,選填)</h3>
         <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">多人(觀察者,選填)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">多人(觀察者,選填)</h3>
         <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
       </div>
     </div>
@@ -237,7 +310,7 @@ export const Clearable: Story = {
 const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-[var(--layout-space-tight)]">
       <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" aria-label={`負責人(size=${size})`} />
       <Button variant="primary" size={size}>送出</Button>
       <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -248,7 +321,7 @@ const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
 export const SizeAlignment: Story = {
   name: '尺寸',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <SizePicker key={size} size={size} />
       ))}

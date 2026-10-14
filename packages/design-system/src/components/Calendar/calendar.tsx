@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+import { escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import {
   startOfMonth,
@@ -212,6 +213,7 @@ function MonthEventTile({
             // tile 改由格內導覽抵達(F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
             tabIndex={-1}
             data-calendar-tile=""
+            {...escapeLayerProps(true)}
             onClick={(e) => {
               e.stopPropagation()
               onEventClick(event)
@@ -432,6 +434,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       let nextNode: HTMLElement | null | undefined
       switch (event.key) {
         case 'Escape':
+          // 格內模式是焦點所在控件自己的一層(方塊帶 data-escape-layer):放在 Dialog 裡第一下 Esc 只出格、不關對話框;
+          // 這一下若已被 Radix 用來關掉別的浮層就不動(lib/overlay-escape.ts)
+          if (!isEscapeForControl(event)) return
+          nextNode = dayStopOf(cell)
+          break
         case 'F2':
           nextNode = dayStopOf(cell)
           break
@@ -728,6 +735,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 與內建 tile 同一條:grid 單一 Tab 停靠點,自訂 tile 也不得自己是停靠點
                         tabIndex={-1}
                         data-calendar-tile=""
+                        {...escapeLayerProps(true)}
                         aria-label={`事件:${event.title}`}
                         onClick={(e) => {
                           e.stopPropagation()

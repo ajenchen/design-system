@@ -23,6 +23,8 @@ import {
 } from './sidebar'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計原則',
@@ -34,9 +36,6 @@ type Story = StoryObj
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
 const Desc = ({ children }: { children: React.ReactNode }) => (
   <p className="text-caption text-fg-secondary max-w-[720px]">{children}</p>
 )
@@ -44,23 +43,9 @@ const Label = ({ children }: { children: React.ReactNode }) => (
   <span className="text-footnote font-medium text-fg-muted">{children}</span>
 )
 
-const Section = ({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description?: React.ReactNode
-  children?: React.ReactNode
-}) => (
-  <section className="flex flex-col gap-4 pb-10 border-b border-divider last:border-b-0">
-    <div className="flex flex-col gap-1">
-      <H3>{title}</H3>
-      {description && <Desc>{description}</Desc>}
-    </div>
-    {children}
-  </section>
-)
+// 規則外框(標題 / 說明 / 規則之間的間距)= 共用教學頁元件;規則的內容是 Do / Don't 與迷你側欄示範,照順序以 tight 排。
+// 說明字色沿用本頁原本的 fg-secondary。
+const TutorialRule = createTutorialRule({ noteTone: 'secondary' })
 
 const DoDont = ({
   type,
@@ -71,7 +56,8 @@ const DoDont = ({
   title: string
   children: React.ReactNode
 }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col gap-[var(--layout-space-tight)]">
+    {/* @layout-space-magic-ok: ✓ / ✕ 圓標 ↔ 標題(同一列行內 micro)(layoutSpace.spec.md:166 micro) */}
     <div className="flex items-center gap-2">
       <span
         className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold ${
@@ -138,10 +124,11 @@ const renderMainNav = (_activeId?: string) => (
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 Sidebar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Sidebar/展示" name="完整佈局"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Linear 式議題追蹤主導覽(完整佈局)</span></LinkTo>
@@ -156,12 +143,13 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Sidebar/展示" name="混合前綴"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">icon 導覽與 GitHub / Slack / Figma 整合並列對齊（混合前綴）</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照下方「何時不用 / 替代元件」清單;若情境不屬於垂直持久導覽,改用對應的近親元件。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照下方「何時不用 / 替代元件」清單;若情境不屬於垂直持久導覽,改用對應的近親元件。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div className="prose prose-sm max-w-prose space-y-4">
+      <div className="max-w-prose space-y-[var(--layout-space-tight)]">
       <p>Sidebar 是垂直持久導覽,以下情境改用其他元件:</p>
+      {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 / 項目符號縮排(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="list-disc list-inside space-y-1 text-fg-secondary">
         <li><strong>頁面頂部水平導覽</strong> → 自訂 Nav / NavigationMenu。Netflix 的頂部導覽用自訂組件</li>
         <li><strong>同層內容切換</strong> → Tabs。Slack 的 channel 內容切換用 Tabs，不用 Sidebar</li>
@@ -170,28 +158,29 @@ export const UsageGuidance: Story = {
         <li><strong>少於 3 項導覽</strong> → 頂部 tab bar。Sidebar 視覺成本對小 app 過高</li>
       </ul>
     </div>
-    </div>
+    </TutorialPage>
   ),
 }
 
 export const ContentTypeChoice: Story = {
   name: 'SidebarMenu vs TreeView 的選擇',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="判斷規則"
-        description={
+        note={
           <>
             <strong>SidebarMenu</strong> 只接受「<strong>1 層 + designer 能在設計時列舉所有項目</strong>」。
             任何不符合的情況——深度 &gt; 1、數量不可列舉、使用者可 runtime 新增——一律用 <strong>TreeView</strong>。
           </>
         }
       >
-        <div className="flex gap-6 items-start flex-wrap">
+        <div className="flex gap-[var(--layout-space-loose)] items-start flex-wrap">
           <DoDont type="do" title="設計好的 app 主導覽 → SidebarMenu">
             <MiniSidebar activeId="dashboard">
               <SidebarHeader>
                 {/* Chrome header canonical:raw <Avatar size={24}> per header-canonical.spec.md:57-72 + text-body-lg per chrome typography */}
+                {/* @layout-space-magic-ok: 頭像 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
                 <div className="flex items-center gap-2">
                   <Avatar size={24} shape="square" color="blue" solid alt="Acme" />
                   <span className="text-body-lg font-medium">Acme Inc</span>
@@ -237,11 +226,11 @@ export const ContentTypeChoice: Story = {
             如果使用者可以自己新增 project,一律當 user data 處理用 TreeView。強塞 SidebarMenu 會在數量膨脹時爆版。
           </Desc>
         </DoDont>
-      </Section>
+      </TutorialRule>
 
-      <Section
+      <TutorialRule
         title="混用:SidebarMenu + TreeView"
-        description="Gmail / Linear 的標準版型——上方扁平主導覽(SidebarMenu),下方使用者資料(TreeView)。群組間自動分隔線(由 SidebarGroup 的 ::before 處理,不用手動放 separator)。"
+        note="Gmail / Linear 的標準版型——上方扁平主導覽(SidebarMenu),下方使用者資料(TreeView)。群組間自動分隔線(由 SidebarGroup 的 ::before 處理,不用手動放 separator)。"
       >
         <MiniSidebar activeId="inbox">
           <SidebarContent>
@@ -262,8 +251,8 @@ export const ContentTypeChoice: Story = {
             </SidebarGroup>
           </SidebarContent>
         </MiniSidebar>
-      </Section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -272,17 +261,17 @@ export const ContentTypeChoice: Story = {
 export const GroupHeaderRules: Story = {
   name: '群組 / 標籤使用原則',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="Label 必須在 group 內,且共用 item-layout row height"
-        description={
+        note={
           <>
             SidebarGroupLabel 和 SidebarMenuButton 用<strong>完全相同的 py 公式</strong>(`py-[calc((field-height-md-1lh)/2)]`),
             差別只在 font-muted + pointer-events-none。Label 和 first item 以自然的 item-layout 間距相鄰,<strong>沒有額外 gap</strong>。
           </>
         }
       >
-        <div className="flex gap-6 items-start flex-wrap">
+        <div className="flex gap-[var(--layout-space-loose)] items-start flex-wrap">
           <DoDont type="do" title="Label 和 items 緊貼,無額外 gap">
             <MiniSidebar>
               <SidebarContent>
@@ -301,18 +290,19 @@ export const GroupHeaderRules: Story = {
             </Desc>
           </DoDont>
         </div>
-      </Section>
+      </TutorialRule>
 
-      <Section
+      <TutorialRule
         title="群組之間的分隔線:由 SidebarGroup 自動處理"
-        description={
+        note={
           <>
+            {/* @layout-space-magic-ok: 說明文字行內 code 左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
             相鄰的 SidebarGroup 會透過 <code className="text-caption bg-neutral-hover px-1 rounded">::before</code> pseudo-element
             自動產生loose token 內縮的分隔線。Consumer 不需要手動放 SidebarSeparator。
           </>
         }
       >
-        <div className="flex gap-6 items-start flex-wrap">
+        <div className="flex gap-[var(--layout-space-loose)] items-start flex-wrap">
           <DoDont type="do" title="直接放兩個 SidebarGroup——分隔線自動出現">
             <MiniSidebar>
               <SidebarContent>
@@ -343,8 +333,8 @@ export const GroupHeaderRules: Story = {
             </Desc>
           </DoDont>
         </div>
-      </Section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -353,21 +343,21 @@ export const GroupHeaderRules: Story = {
 export const SettingsScenario: Story = {
   name: '設定類有子頁的頁面',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="三條正確路徑,全部不用 SidebarMenuSub"
-        description="Settings > General/Profile/Billing 是最常見的嘗試塞 2 層的誘惑。本 design system 不支援 SidebarMenuSub——強制 consumer 走以下三條路徑之一。"
+        note="Settings > General/Profile/Billing 是最常見的嘗試塞 2 層的誘惑。本 design system 不支援 SidebarMenuSub——強制 consumer 走以下三條路徑之一。"
       >
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
+          <ExampleGroup>
             <Label>A. In-page secondary nav(推薦,最世界級)</Label>
             <Desc>
               Sidebar 只放一顆 `Settings`,點進去後在 Settings 頁面內部用 Tabs / 左側 rail 呈現子頁。
               代表:Linear、Notion、GitHub。<strong>子頁屬於 Settings 頁面的內部狀態,不佔 sidebar 位置。</strong>
             </Desc>
-          </div>
+          </ExampleGroup>
 
-          <div className="flex flex-col gap-2">
+          <ExampleGroup>
             <Label>B. SidebarGroup 扁平化</Label>
             <Desc>
               若子頁等重要且需一鍵直達,用 SidebarGroupLabel 當純視覺分段標題,子項全部是獨立頂層 SidebarMenuItem。
@@ -397,15 +387,15 @@ export const SettingsScenario: Story = {
                 </SidebarGroup>
               </SidebarContent>
             </MiniSidebar>
-          </div>
+          </ExampleGroup>
 
-          <div className="flex flex-col gap-2">
+          <ExampleGroup>
             <Label>C. User menu modal</Label>
             <Desc>
               Settings 不在 sidebar,從 footer 的 user menu / avatar dropdown 觸發 modal 或快捷鍵(`Cmd+,`)。
               適合低頻操作。代表:Linear、Slack、Discord。
             </Desc>
-          </div>
+          </ExampleGroup>
         </div>
 
         <DoDont type="dont" title="不要用 SidebarMenuSub 做巢狀 menu">
@@ -414,8 +404,8 @@ export const SettingsScenario: Story = {
             需要「父項 + 多個子項」結構 → 用 path A(in-page nav)或 TreeView。
           </Desc>
         </DoDont>
-      </Section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -424,15 +414,15 @@ export const SettingsScenario: Story = {
 export const IconModeRules: Story = {
   name: '圖示模式的 4 條鐵律',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="規則 1:icon rail 上的每顆 icon 必須可導覽"
-        description="絕對不可有「點了沒反應」或「點了只是展開選單」的 icon。icon 列是收合狀態下唯一的導覽介面。"
+        note="絕對不可有「點了沒反應」或「點了只是展開選單」的 icon。icon 列是收合狀態下唯一的導覽介面。"
       />
 
-      <Section
+      <TutorialRule
         title="規則 2:純分組 header 不可用 SidebarMenuItem"
-        description={
+        note={
           <>
             只是用來分組下方 children 的項目(沒有自己的頁面),<strong>必須用 SidebarGroup + SidebarGroupLabel</strong>。
             SidebarGroupLabel 在 icon 模式自動隱藏(display:none),子 items 照常顯示;SidebarMenuItem 則會變成死 icon。
@@ -440,14 +430,14 @@ export const IconModeRules: Story = {
         }
       />
 
-      <Section
+      <TutorialRule
         title="規則 3:TreeView 在 icon 模式整個隱藏"
-        description="不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon,Gmail / Linear / Notion 一致採「隱藏」策略。"
+        note="不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon,Gmail / Linear / Notion 一致採「隱藏」策略。"
       />
 
-      <Section
+      <TutorialRule
         title="規則 4:重新看階層資料的唯一路徑 = 展開 sidebar"
-        description={
+        note={
           <>
             Sidebar 收合時若使用者想瀏覽隱藏的 tree,<strong>唯一方法是重新展開 sidebar</strong>(點 Trigger 或按 ⌘B)。
             不提供「點 icon 順便展開」的隱式副作用——那會讓 icon rail 的行為不可預測。
@@ -456,16 +446,16 @@ export const IconModeRules: Story = {
         }
       />
 
-      <Section
+      <TutorialRule
         title="❌ 反模式:Hover 浮出 cascading menu"
-        description={
+        note={
           <>
             不要讓 icon hover 秀出完整的子項 flyout / popover menu——這是 2000 年代 cascading menu 的反模式,
             對 touch / 鍵盤 / accessibility 都失敗。NN/g 多年警告。
           </>
         }
       />
-    </div>
+    </TutorialPage>
   ),
 }
 
@@ -474,10 +464,10 @@ export const IconModeRules: Story = {
 export const ActiveState: Story = {
   name: '啟用狀態跨群組單一',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="整個 sidebar 同時只有一個 active item"
-        description={
+        note={
           <>
             跨 SidebarMenu 和 TreeView 都是。選中 tree node 時 menu 的 active 要取消,反之亦然。
             Consumer 用單一 `activeId` state 管理,不要各自維護。
@@ -489,18 +479,18 @@ export const ActiveState: Story = {
             使用 `React.useState&lt;string&gt;()` 管理當前 active id,SidebarMenuButton 和 TreeView 都讀這個 state。
           </Desc>
         </DoDont>
-      </Section>
+      </TutorialRule>
 
-      <Section
+      <TutorialRule
         title="Active 視覺:bg-neutral-selected,字重不變"
-        description={
+        note={
           <>
             Selected 只變 background(`bg-neutral-selected`)和文字色(`fg-secondary` → `foreground`),
             <strong>字重維持 font-medium(500)</strong>——不加重以避免選中時文字突然跳動。
           </>
         }
       />
-    </div>
+    </TutorialPage>
   ),
 }
 

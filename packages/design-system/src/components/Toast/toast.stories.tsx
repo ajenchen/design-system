@@ -1,6 +1,8 @@
 import type { Meta } from '@storybook/react'
 import { Notice, type NoticeVariant } from '@/design-system/components/Notice/notice'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { Toaster, toast } from './toast'
 
 const meta: Meta = {
@@ -92,29 +94,33 @@ function modeLabel(variant: NoticeVariant, pageTheme: 'light' | 'dark') {
 export const WithDescription = {
   name: '有標題與描述',
   render: () => (
-    <div className="flex gap-16">
-      <div className="flex flex-col gap-4">
+    // 間距(layoutSpace.spec.md 規則 3):淺深兩欄並列 = loose;欄標 → 它的示範框 = tight(ExampleGroup);
+    // 框內五個變體並列 = loose;列標 ↔ 它標的那一則 Toast = tight;示範框內距見下方標記(陰影留白)
+    <div className="flex gap-[var(--layout-space-loose)]">
+      <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">light mode</span>
-        <div className="flex flex-col gap-3 p-8 rounded-lg bg-canvas border border-divider">
+        {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
+        <div className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas border border-divider">
           {VARIANTS.map((v) => (
-            <div key={v} className="flex items-center gap-4">
+            <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'light')} theme</span>
               <StaticToast variant={v} title={LABELS[v]} description={DESCRIPTIONS[v]} pageTheme="light" />
             </div>
           ))}
         </div>
-      </div>
-      <div className="flex flex-col gap-4" data-theme="dark">
+      </ExampleGroup>
+      <ExampleGroup data-theme="dark">
         <span className="text-caption text-fg-secondary font-medium">dark mode</span>
-        <div className="flex flex-col gap-3 p-8 rounded-lg bg-canvas border border-divider">
+        {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
+        <div className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas border border-divider">
           {VARIANTS.map((v) => (
-            <div key={v} className="flex items-center gap-4">
+            <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'dark')} theme</span>
               <StaticToast variant={v} title={LABELS[v]} description={DESCRIPTIONS[v]} pageTheme="dark" />
             </div>
           ))}
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -122,16 +128,16 @@ export const WithDescription = {
 export const Interactive = {
   name: '點擊觸發通知',
   render: () => (
-    <div className="flex flex-col gap-4">
+    <ExampleGroup>
       <span className="text-caption text-fg-muted">點按鈕觸發 Toast</span>
-      <div className="flex flex-wrap gap-2">
+      <ButtonGroup>
         <Button variant="tertiary" onClick={() => toast({ title: '檔案已複製到剪貼簿', action: { label: '復原', onClick: () => {} } })}>複製檔案</Button>
         <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '專案已儲存', description: '變更已同步到所有成員', action: { label: '查看', onClick: () => {} } })}>儲存專案</Button>
         <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '匯入部分完成', description: '120 筆已匯入,3 筆格式錯誤被略過', action: { label: '查看', onClick: () => {} } })}>匯入資料</Button>
         <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '無法連線伺服器', description: '請檢查網路後再試一次', action: { label: '重試', onClick: () => {} } })}>斷線示範</Button>
-      </div>
+      </ButtonGroup>
       <Toaster />
-    </div>
+    </ExampleGroup>
   ),
 }
 

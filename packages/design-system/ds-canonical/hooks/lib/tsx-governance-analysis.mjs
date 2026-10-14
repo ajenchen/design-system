@@ -195,9 +195,20 @@ function analyzeAppShellPrimaryHeader() {
     ) return true
     return false
   }
-  const positiveIsMobile = (expression) => {
+  // 正向「Menu 是浮層」條件(2026-10-14 起;app-shell.spec.md 兩條「浮層精修」的觸發條件 = Menu 顯示為浮層,
+  // 讀 `useAppShell().display.menu`):`<x>.menu === 'overlay'`(或 'overlay' === <x>.menu),或已命名的 `menuIsOverlay`。
+  // 2026-10-14 前的 `isMobile`(768 斷點)隨斷點退場,不再豁免。
+  const isOverlayLiteral = (node) => ts.isStringLiteral(unwrap(node)) && unwrap(node).text === 'overlay'
+  const isMenuDisplay = (node) => {
+    const current = unwrap(node)
+    return ts.isPropertyAccessExpression(current) && current.name.text === 'menu'
+  }
+  const positiveMenuOverlay = (expression) => {
     const current = unwrap(expression)
-    return ts.isIdentifier(current) && current.text === 'isMobile'
+    if (ts.isIdentifier(current) && current.text === 'menuIsOverlay') return true
+    return ts.isBinaryExpression(current)
+      && current.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+      && ((isMenuDisplay(current.left) && isOverlayLiteral(current.right)) || (isOverlayLiteral(current.left) && isMenuDisplay(current.right)))
   }
   const isWithin = (node, container) => (
     node.pos >= container.pos && node.end <= container.end
@@ -206,17 +217,17 @@ function analyzeAppShellPrimaryHeader() {
     const opening = openingOf(node)
     return Boolean(opening && named(opening.tagName, 'AppShell'))
   }
-  const mobileGuarded = (node, boundary) => {
+  const menuOverlayGuarded = (node, boundary) => {
     for (let current = node.parent; current && current !== boundary; current = current.parent) {
       if (
         ts.isBinaryExpression(current)
         && current.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
-        && positiveIsMobile(current.left)
+        && positiveMenuOverlay(current.left)
         && isWithin(node, current.right)
       ) return true
       if (
         ts.isConditionalExpression(current)
-        && positiveIsMobile(current.condition)
+        && positiveMenuOverlay(current.condition)
         && isWithin(node, current.whenTrue)
       ) return true
     }
@@ -239,7 +250,7 @@ function analyzeAppShellPrimaryHeader() {
         if (
           childOpening
           && named(childOpening.tagName, 'SidebarHeader')
-          && !mobileGuarded(node, appShell)
+          && !menuOverlayGuarded(node, appShell)
         ) v2 += 1
         if (childOpening && named(childOpening.tagName, 'SidebarFooter')) v3 += 1
       }

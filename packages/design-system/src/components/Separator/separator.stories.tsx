@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { User, Bell, Shield } from 'lucide-react'
 import { Separator } from './separator'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
-import { Button } from '@/design-system/components/Button/button'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 
 const meta: Meta<typeof Separator> = {
@@ -53,18 +52,23 @@ export const Horizontal: Story = {
   ),
 }
 
-/* ── Vertical（垂直分隔，toolbar 間隔）──────────────────────────────────── */
+/* ── Vertical（垂直分隔，同一列內的內容群組）──────────────────────────────── */
+// 文件頁首的 meta 列:作者與更新時間 / 頁數 / 檔案大小三組資訊,
+// consumer 手動放 vertical Separator 分組。父層給確定高度(h-4),Separator 的 h-full 才有長度
+// (separator.spec.md「邊界案例」Vertical 方向)。
+// 2026-10-01:原本示範 toolbar 按鈕群之間放 Separator —— 那正是 separator.spec.md「邊界案例」明文排除的
+// 情境(toolbar / action region 群組分隔不走 Separator,唯一實作是 ButtonGroup + ButtonDivider),改成合法的內容分組。
+// 文字用 text-fg-secondary:這列是可讀的資訊,不是裝飾說明(a11y 對比 ≥ 4.5:1)。
 export const Vertical: Story = {
   name: '垂直',
   render: () => (
-    <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-2 w-fit">
-      <Button variant="text" size="sm">編輯</Button>
-      <Button variant="text" size="sm">複製</Button>
-      <Separator orientation="vertical" className="h-5" />
-      <Button variant="text" size="sm">分享</Button>
-      <Button variant="text" size="sm">下載</Button>
-      <Separator orientation="vertical" className="h-5" />
-      <Button variant="text" size="sm" danger>刪除</Button>
+    // @layout-space-magic-ok: 同一行 meta 文字 ↔ 分隔線的行內微間距(layoutSpace.spec.md:166 micro 間距)
+    <div className="flex h-4 items-center gap-2 text-caption text-fg-secondary">
+      <span>陳雅婷 更新於 2026/04/18</span>
+      <Separator orientation="vertical" />
+      <span>12 頁</span>
+      <Separator orientation="vertical" />
+      <span>2.4 MB</span>
     </div>
   ),
 }
@@ -79,7 +83,7 @@ export const Vertical: Story = {
 export const BetweenSections: Story = {
   name: '在 DescriptionList 區塊之間',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-md flex flex-col gap-4">
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
       {/*
        * heading → first-item gap 對齊 item → item gap(都是 layout-space-tight):
        * Gestalt proximity canonical —— 相同距離代表 heading 擁有下方 items;
@@ -87,7 +91,7 @@ export const BetweenSections: Story = {
        * iOS Settings / Notion properties / Ant Descriptions 皆採相等 gap。
        */}
       <div>
-        <div className="text-body font-medium mb-[var(--layout-space-tight)]">基本資料</div>
+        <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">基本資料</h3>
         <DescriptionList cols={1}>
           <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
           <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -95,7 +99,7 @@ export const BetweenSections: Story = {
       </div>
       <Separator />
       <div>
-        <div className="text-body font-medium mb-[var(--layout-space-tight)]">團隊資訊</div>
+        <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">團隊資訊</h3>
         <DescriptionList cols={1}>
           <DescriptionItem label="團隊">Design Systems</DescriptionItem>
           <DescriptionItem label="職稱">Design Engineer</DescriptionItem>

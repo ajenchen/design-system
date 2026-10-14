@@ -49,7 +49,7 @@ export const Overview: Story = {
           >
             <Button variant="primary" startIcon={Bot}>AI 助理</Button>
           </Coachmark>
-          <div className="text-caption text-fg-secondary max-w-[280px] leading-relaxed">
+          <div className="text-caption text-fg-secondary max-w-[280px]">
             <ul className="list-disc pl-4 space-y-1.5">
               <li><b>Media</b> — 可選,預設 16:9 比例,邊緣切齊靠外殼 p-0 overflow-hidden 裁切</li>
               <li><b>Body</b> — Title(text-body-lg font-medium) + Description(text-body text-fg-secondary)</li>
@@ -313,7 +313,7 @@ export const StateBehavior: Story = {
             <div className="flex flex-col gap-2 text-caption">
               <span>目前:step {tourStep + 1} / {tourTotal}</span>
               <span className="text-fg-muted">{isLast ? 'isLastStep = true → Next 變 Done' : 'isLastStep = false → Next'}</span>
-              <Button variant="tertiary" size="sm" onClick={() => { setTourStep(0); setTourOpen(true) }}>重設</Button>
+              <Button className="self-start" variant="tertiary" size="sm" onClick={() => { setTourStep(0); setTourOpen(true) }}>重設</Button>
             </div>
           </div>
         </div>

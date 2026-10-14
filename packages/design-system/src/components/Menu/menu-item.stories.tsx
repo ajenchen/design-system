@@ -210,7 +210,7 @@ export const Messages: Story = {
   render: () => (
     // Jira 議題「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
     // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
-    <div className="flex gap-4">
+    <div className="flex gap-[var(--layout-space-loose)]">
       <MenuContainer width={240} role="group"><MenuGroup>
         <MenuItem role="presentation" message>沒有人員</MenuItem>
       </MenuGroup></MenuContainer>

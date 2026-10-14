@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils'
  * 裡面完全是擬真的樣子;畫布外的上方再呈現模擬網址列甚至上下頁按鈕,讓讀者明確知道哪邊是模擬、哪邊是說明」)。
  *
  * - 上方工具列(上一頁 / 下一頁 / 重新整理 / 網址列)= **說明用**,用 DS Button / Input 畫,不是產品 UI。
- *   它與畫布是**兄弟節點**、不在畫布 / 宿主容器裡(2026-09-09):代理蓋板態抑制的是宿主,瀏覽器 chrome 不是宿主,
- *   story 把 `toolbarRef` 傳進 AgentPanel / Dialog 的 `persistentElements`,蓋板與並存 modal 開著時都仍可點。
+ *   它與畫布是**兄弟節點**、不在畫布 / 宿主容器裡(2026-09-09):AI agent 浮層抑制的是宿主,瀏覽器 chrome 不是宿主,
+ *   story 把 `toolbarRef` 傳進 AgentPanel / Dialog 的 `persistentElements`,AI agent 浮層與並存 modal 開著時都仍可點。
  * - 下方畫布 = **擬真的產品畫面**,裡面只准放 DS 元件與真實業務內容。
  * - **有 URL 的 modal 傳送到「舞台」**(story 自己建的左欄,帶 transform):modal 與遮罩只佔宿主面積,代理面板在舞台外、
- *   完全不被蓋(v14 條 B「並列可操作」+ agent-panel.spec「並排時 舞台 = 容器 − 面板」);
+ *   完全不被蓋(v14 條 B「並列可操作」;並排時舞台 = 畫布扣掉並排的代理面板,誰並排由 app-shell.spec.md「版面規則」決定);
  *   **沒有 URL 的確認框傳送到畫布**(`canvasRef`),蓋住整個 app 含代理(v14 條 A)。
  * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡;**整頁示範不放備註**(2026-09-09 user:「拿掉下方備註」),
  *   說明寫在 `docs.description`,畫布用 `height="fill"` 撐滿 story(與 story 邊界四周留 `--layout-space-loose`,由外層 wrapper 給)。

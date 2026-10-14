@@ -125,8 +125,8 @@ const DANGER_LABEL: Record<VariantKey, string> = {
 
    NOTE: This file keeps local H3 / Desc / Th / Td / Swatch because its visual
    style diverges from the 通用設計準則 in `@/design-system/stories-helpers/anatomy/anatomy-utils`:
-   - H3 uses `text-h6 font-semibold` (shared: `text-body font-bold mb-2`)
-   - Desc has no bottom margin / `leading-relaxed` (shared adds both)
+   - H3 has no bottom margin (shared: `text-h6 font-semibold … mb-2`)
+   - Desc has no bottom margin (shared: `mb-4`)
    - Th/Td use `p-2 border-b border-divider` row style (shared: boxed cells)
    - Swatch defaults to `size="md"` and is consumed without explicit size in
      `TokenValue` below — changing default to `sm` would shrink inspector swatches

@@ -119,7 +119,7 @@ export const EmptySelectionHidden: Story = {
   render: () => (
     <div className="text-caption text-fg-muted">
       selection=[] → BulkActionBar 回傳 null,<strong>不佔 layout</strong>(對齊禁止事項 #3)
-      <div className="mt-3 border border-dashed border-border-muted p-3">
+      <div className="mt-[var(--layout-space-tight)] border border-dashed border-border-muted p-[var(--layout-space-loose)]">
         <BulkActionBar selection={[]} actions={<Button variant="tertiary" size="md">封存</Button>} />
         ↑ 這裡 BulkActionBar 完全不渲染
       </div>

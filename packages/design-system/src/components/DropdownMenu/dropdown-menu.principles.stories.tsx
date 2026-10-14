@@ -22,6 +22,7 @@ import {
   DropdownMenuLabel,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/設計原則',
@@ -30,21 +31,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-md">{children}</div>
-  </div>
-)
-
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
+
+const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
 
 // ── WhenToUse — 何時使用 DropdownMenu ──────────────────────
 
@@ -54,10 +45,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
+    <TutorialPage>
       {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
+      <div className="max-w-prose">
       <p>適合 DropdownMenu 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/DropdownMenu/展示" name="群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">群組 — 帳號選單(個人資料 / 設定 / 登出分組)</span></LinkTo>
@@ -75,18 +67,18 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/DropdownMenu/展示" name="單選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單選 — 檔案清單排序方式</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:先看「選完之後畫面是否需要保留選中狀態」——需要就改用 Select / SelectMenu。下方的「DropdownMenu vs 選值元件」與「群組 vs 分隔線」範例提供更完整的對照。</p>
+      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先看「選完之後畫面是否需要保留選中狀態」——需要就改用 Select / SelectMenu。下方的「DropdownMenu vs 選值元件」與「群組 vs 分隔線」範例提供更完整的對照。</p>
     </div>
 
       {/* vs 近親 — VsSelectMenuRule — 原 VsSelectMenuRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="DropdownMenu — 執行動作，選完即關閉"
         note="典型場景：卡片右上角 ⋮ 三點選單（複製、刪除、分享）。使用者選一個動作、立即執行、選單消失。value 不保留（沒有「選中狀態」）"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            <Button className="self-start" variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem startIcon={Copy}>複製</DropdownMenuItem>
@@ -97,15 +89,15 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ 執行動作：複製 / 分享 / 刪除，選完關閉，畫面沒有「選中狀態」</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 選值（值要留下）：用 Select / SelectMenu"
         note="「使用者選某個狀態」「選某個類別」這類選完後值留在 field 裡的場景是選值，用 Select。DropdownMenu 點完就關閉沒有 value 可留"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">選擇狀態</Button>
+            <Button className="self-start" variant="tertiary">選擇狀態</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem>待處理</DropdownMenuItem>
@@ -114,25 +106,25 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label warn>↑ 點完選單就關，但「目前選了什麼狀態」沒有視覺保留 → 用 Select</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="判斷法：「選完之後畫面需要保留選中狀態嗎？」"
         note="需要 → Select / SelectMenu；不需要（點完即執行動作）→ DropdownMenu"
       >
         <Label>一句話判斷:點完後使用者還需要看到「目前選了什麼」就用 Select / SelectMenu;只是觸發一個動作、選完即關閉就用 DropdownMenu。</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </>
 
       {/* vs 近親 — GroupVsSeparatorRule — 原 GroupVsSeparatorRule */}
-      <div>
-      <Rule
+      <>
+      <TutorialRule
         title="DropdownMenuGroup — 包裝同類 items 自動分隔（推薦 default）"
         note="相鄰 Group 之間自動出現 border-divider 分隔線,不需手動加 Separator。對齊 MenuGroup 的 auto-separation 理念,consumer 零手動"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">帳號選單</Button>
+            <Button className="self-start" variant="tertiary">帳號選單</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
@@ -151,15 +143,15 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ 三個 DropdownMenuGroup 自動透過 border-divider 分隔,無需手動 Separator</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="DropdownMenuSeparator — 明確手動插入分隔（特殊強調場景）"
         note="Group 內部需要子分組、或強調某個分隔位置時使用。例:單一 Group 內最後一個破壞性動作前想明確加視覺分隔"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">檔案操作</Button>
+            <Button className="self-start" variant="tertiary">檔案操作</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
@@ -172,15 +164,15 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ 同一 Group 內,手動 Separator 在刪除前強調視覺切分</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 用多個 Separator 手動模擬 Group"
         note="既然 DropdownMenuGroup 自動處理,寫多個 Separator 就是重複勞動 + 容易漏掉或放錯位置"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">❌ 手動 Separator</Button>
+            <Button className="self-start" variant="tertiary">❌ 手動 Separator</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuLabel>我的帳號</DropdownMenuLabel>
@@ -195,9 +187,9 @@ export const UsageGuidance: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label warn>↑ 功能等價但每個分隔都要手寫 → 用 Group 更精確表達「語意分組」</Label>
-      </Rule>
-    </div>
-    </div>
+      </TutorialRule>
+    </>
+    </TutorialPage>
   ),
 }
 
@@ -209,14 +201,14 @@ export const ItemTypeRule: Story = {
     const [showDue, setShowDue] = React.useState(false)
     const [sortBy, setSortBy] = React.useState('created')
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="Item — 執行一次性動作（選完關閉）"
           note="複製、刪除、分享、開啟連結等動作。破壞性動作的 prefix icon 和 label 都用 text-error"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary">檔案操作</Button>
+              <Button className="self-start" variant="tertiary">檔案操作</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem startIcon={Copy} shortcut="⌘C">複製連結</DropdownMenuItem>
@@ -225,15 +217,15 @@ export const ItemTypeRule: Story = {
               <DropdownMenuItem startIcon={Trash2} shortcut="⌫" className="text-error">刪除</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="CheckboxItem — 即時生效的 on/off toggle（選單保持開啟）"
           note="顯示 / 隱藏欄位、篩選條件等。選了不關閉選單，讓使用者可一次切多個"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary" startIcon={Filter}>顯示欄位</Button>
+              <Button className="self-start" variant="tertiary" startIcon={Filter}>顯示欄位</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>表格欄位</DropdownMenuLabel>
@@ -243,15 +235,15 @@ export const ItemTypeRule: Story = {
             </DropdownMenuContent>
           </DropdownMenu>
           <Label>↑ 即時套用的設定——改了立刻生效,選單保持開啟可繼續切</Label>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="RadioItem — 從互斥選項選一（選中後選單保持開啟）"
           note="排序方式、檢視模式等只能選一個的設定。選中的那一項以選取底色（neutral-selected 背景）標示，不另畫圓點指示器"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="tertiary" startIcon={ArrowUp}>排序方式</Button>
+              <Button className="self-start" variant="tertiary" startIcon={ArrowUp}>排序方式</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>依以下排序</DropdownMenuLabel>
@@ -263,8 +255,8 @@ export const ItemTypeRule: Story = {
             </DropdownMenuContent>
           </DropdownMenu>
           <Label>↑ 互斥選一——目前選中的項目以選取底色標示</Label>
-        </Rule>
-      </div>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -272,14 +264,14 @@ export const ItemTypeRule: Story = {
 export const DestructiveRule: Story = {
   name: '破壞性動作規則',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="刪除等不可逆動作：prefix icon + label 都用 text-error"
         note="prefix icon 是 label 的視覺延伸，與 label 同色才是一體。suffix shortcut 維持 fg-muted（提示性資訊不需跟 error 同色）"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+            <Button className="self-start" variant="tertiary" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem startIcon={Copy}>複製</DropdownMenuItem>
@@ -291,36 +283,36 @@ export const DestructiveRule: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
         <Label>↑ Trash icon + 「永久刪除」都 text-error；shortcut ⌫ 維持 fg-muted</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 只有 label 變紅，icon 保持 foreground"
         note="icon 和 label 不同色 → 視覺上像兩個東西，破壞 item 的一體感。prefix icon 永遠跟 label 同色"
       >
         <Label warn>（錯誤範例）Trash icon 黑色 + 「刪除」紅色 → 視覺分裂</Label>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="不可逆動作用 Separator 跟一般動作隔開"
         note="刪除 / 取消訂閱等放在選單底部、用 separator 隔開——減少使用者誤觸的可能"
       >
         <Label>見上方範例的 Separator 位置（刪除與其他動作中間）</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const SuffixRule: Story = {
   name: '後綴使用規則',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="鍵盤快捷鍵 — canonical shortcut prop（靠右對齊列尾）"
         note="使用者熟悉快捷鍵後可跳過選單直接按快捷鍵。shortcut 用 fg-muted 作為輔助資訊色,不搶 label 注意力。標準場景用 `shortcut` prop（走 MenuItem endContent flex slot,真正靠右對齊列尾);`<DropdownMenuShortcut>` child 僅為相容 shadcn 的 escape-hatch,會 inline 附加在 label 尾、不會靠右。"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">檔案</Button>
+            <Button className="self-start" variant="tertiary">檔案</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem shortcut="⌘N">新增</DropdownMenuItem>
@@ -328,14 +320,14 @@ export const SuffixRule: Story = {
             <DropdownMenuItem shortcut="⌘S">儲存</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ Shortcut 和自訂後綴不混用（同一個 item 只用一種）"
         note="同一個 item 既有 ⌘S 又有 badge 數量 → 視覺負擔過重，使用者無法一眼判斷哪個是重要資訊"
       >
         <Label warn>（錯誤範例）「儲存 [未儲存 3 項] ⌘S」→ 混用造成視覺衝突</Label>
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
