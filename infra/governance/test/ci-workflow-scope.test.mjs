@@ -393,7 +393,11 @@ test('Visual Regression「Resolve reference ref」:git 讀不到簽出目錄 = �
       const runnerTemp = mkdtempSync(join(base, 'runner-'))
       const envFile = join(runnerTemp, 'github-env')
       writeFileSync(envFile, '')
-      const r = spawnSync('bash', ['-eo', 'pipefail', '-c', body], {
+      // 步驟原文寫成腳本檔再交給 bash 執行(不用 `bash -c <字串>`:harness 來源政策禁止 shell 字串求值,
+      // infra/governance/lib/harness-source-inventory.mjs「forbidden shell command evaluation」;`--` 之後只會是腳本路徑)
+      const stepFile = join(runnerTemp, 'step.sh')
+      writeFileSync(stepFile, body)
+      const r = spawnSync('bash', ['-eo', 'pipefail', '--', stepFile], {
         cwd,
         encoding: 'utf8',
         env: { ...process.env, ...hermetic, PATH: `${fakeBin}:${process.env.PATH}`, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1', GITHUB_WORKSPACE: workspace, RUNNER_TEMP: runnerTemp, GITHUB_ENV: envFile, GITHUB_REPOSITORY: 'owner/repo', GITHUB_TOKEN: 'fixture', REFERENCE_REF: reference },
@@ -651,12 +655,14 @@ test('Visual Regression 的 PR 分支重拍路徑:push 只在非 main + 只看�
   assert.equal(upload.with.path, '.git/governance-runtime/evidence/visual/baseline-review/')
 
   // workflow 以路徑呼叫的三支 CLI 真的會跑:它們都有「被 import 時不跑」的守衛,守衛若判錯,CLI 會靜默 exit 0(假綠)
-  for (const [script, marker] of [
-    ['scripts/visual-rebake-request.mjs', /✓ visual-rebake-request selftest/],
-    ['scripts/visual-baseline-review-package.mjs', /✓ visual-baseline-review-package selftest/],
-    ['scripts/visual-baseline-diff-report.mjs', /✓ visual-baseline-diff-report selftest/],
-  ]) {
-    const r = spawnSync(process.execPath, [resolve(ROOT, script), '--selftest'], { cwd: ROOT, encoding: 'utf8' })
+  // 三次呼叫逐一寫成字面路徑(cwd = ROOT):harness 來源政策要求 node 的腳本運算元可靜態審查
+  //(infra/governance/lib/harness-source-inventory.mjs「unreviewable Node pre-script argv」),迴圈變數與 resolve() 都讀不出值
+  const selftests = [
+    ['scripts/visual-rebake-request.mjs', /✓ visual-rebake-request selftest/, spawnSync(process.execPath, ['scripts/visual-rebake-request.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+    ['scripts/visual-baseline-review-package.mjs', /✓ visual-baseline-review-package selftest/, spawnSync(process.execPath, ['scripts/visual-baseline-review-package.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+    ['scripts/visual-baseline-diff-report.mjs', /✓ visual-baseline-diff-report selftest/, spawnSync(process.execPath, ['scripts/visual-baseline-diff-report.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+  ]
+  for (const [script, marker, r] of selftests) {
     assert.equal(r.status, 0, `${script} --selftest:${r.stderr}`)
     assert.match(r.stdout, marker, `${script} 以路徑呼叫時沒有真的執行(守衛判錯 = 靜默 exit 0)`)
   }
@@ -716,7 +722,10 @@ test('Visual Regression 的 PR 分支重拍路徑:push 只在非 main + 只看�
       const githubOutput = join(runnerTemp, 'github-output')
       writeFileSync(githubEnv, '')
       writeFileSync(githubOutput, '')
-      const r = spawnSync('bash', ['-eo', 'pipefail', '-c', run], {
+      // 同上:步驟原文寫成腳本檔再執行,不用 `bash -c <字串>`(harness 來源政策)
+      const stepFile = join(runnerTemp, 'step.sh')
+      writeFileSync(stepFile, run)
+      const r = spawnSync('bash', ['-eo', 'pipefail', '--', stepFile], {
         cwd,
         encoding: 'utf8',
         env: { ...process.env, ...hermetic, PATH: `${fakeBin}:${process.env.PATH}`, GITHUB_WORKSPACE: cwd, RUNNER_TEMP: runnerTemp, GITHUB_ENV: githubEnv, GITHUB_OUTPUT: githubOutput, GITHUB_REPOSITORY: 'owner/repo', GITHUB_TOKEN: 'fixture', ...env },

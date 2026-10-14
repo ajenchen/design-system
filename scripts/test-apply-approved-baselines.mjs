@@ -214,7 +214,7 @@ try {
 
   // ── CLI 真的會跑(被 import 時不跑的守衛若失效,CLI 會靜默 exit 0 —— 那是假綠)────────────────
   face('CLI:以路徑呼叫時真的執行,缺檔 → exit 1 並指名', () => {
-    const r = spawnSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'apply-approved-baselines.mjs'), '--package', join(base, 'nope'), '--approvals', join(base, 'nope.json')], { encoding: 'utf8' })
+    const r = spawnSync(process.execPath, ['--', 'scripts/apply-approved-baselines.mjs', '--package', join(base, 'nope'), '--approvals', join(base, 'nope.json')], { cwd: join(dirname(fileURLToPath(import.meta.url)), '..'), encoding: 'utf8' })
     assert.equal(r.status, 1, `CLI 應 exit 1,得到 ${r.status}:${r.stdout}${r.stderr}`)
     assert.match(r.stderr, /核准清單 不在/)
   }, 'cli')
