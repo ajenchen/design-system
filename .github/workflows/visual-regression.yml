@@ -2,7 +2,8 @@ name: Visual Regression
 
 # Scheduled/manual monitor for curated Ubuntu pixel baselines. It is not a
 # required PR check, so a truthful red result does not block the five-step
-# release path.
+# release path. Non-main branches can also request a rebake with their own
+# copy of this file by changing the rebake request (see the push trigger).
 
 on:
   workflow_dispatch:
@@ -29,19 +30,74 @@ on:
   # 拍哪棵樹是輸入,不是「觸發當下 main 是哪一版」這個代理(M37)。
   repository_dispatch:
     types: [visual-regression-run]
+  # 2026-10-14(待辦總帳 R3):**PR 分支用自己的這份 workflow 重拍**。repository_dispatch 永遠拿預設分支(main)的 workflow 檔跑,
+  # 而 main 那份的「Resolve reference ref」在合併前是壞的(SM7 只在 PR 分支修好)→ 合併前沒有任何路徑能重拍;R3 的圖組偏偏要
+  # 在合併前讓 user 逐張說「可以改」。push 事件跑的是**被推上去那個 commit 自己的** workflow 檔,所以:
+  #   · push 只聽非 main 分支,paths 只列重拍請求檔。但「這次推送觸發了」**不等於**「這是給這條分支的請求」(M37):
+  #     請求檔若留在 main,之後任何建在合併前的分支一合併或 rebase main 再推,那次推送的差異裡就有它;而 GitHub 對一次推送
+  #     超過 1,000 個 commit 或差異計算逾時的情況一律觸發、不看 paths(差異超過 3,000 個檔時只看前 3,000 個)。
+  #     → 真正的判定在下方 job `rebake-gate`:請求檔的 branch 必須等於這次推送的分支才重拍;檔案已刪或分支不符 = 略過、不紅;
+  #       形狀不合格 = 紅。交接在合併前最後一個 commit 刪掉請求檔(閘略過),main 上不殘留。
+  #   · 請求檔欄位封閉:schemaVersion / branch / update_baseline(JSON 布林)/ reference_ref(留空 / 完整 40 碼 / release tag)/
+  #     reason / requestedAt,由 scripts/visual-rebake-request.mjs 驗證後寫進 GITHUB_ENV(見下方 job env 的優先序說明);
+  #     拍的樹永遠是被推上去的那個 commit。
+  #   · 信任與 repository_dispatch 同一層:能推分支的人本來就有 contents 寫入權;permissions 仍只有 contents: read,沒有 secret。
+  #   · 套用:審核包 → user 逐張「可以改」→ scripts/apply-approved-baselines.mjs(只換核准且 sha256 對得上的那幾張)。
+  push:
+    branches-ignore: [main]
+    paths:
+      - infra/governance/baseline/visual/rebake-request.json
   schedule:
     - cron: '23 3 * * 3'
 
 permissions:
   contents: read
 
+# 只有 push 互相取代:同一條分支連推兩次請求 → 後一次取代前一次(審核包綁的是被推上去的那個 commit,舊的那次拍完也沒人要看;
+# 合併前刪掉請求檔的那次推送也會取消同分支還在跑的重拍 —— 刪除排在套用之後,那時已經沒有要等的 run)。
+# 其他事件(按鈕 / repository_dispatch / 排程)每個 run 自成一組(group 帶 run_id):不排隊、不互砍,與加 concurrency 之前相同。
+# 不能讓它們共用一組:repository_dispatch 的 github.ref 永遠是預設分支,不論 target_ref 拍哪條分支都會擠在同一組,而 GitHub 在
+# 同一組裡會取消任何已在等待中的 run、由新排進來的取代(不看 cancel-in-progress)—— 連發三個 dispatch,第二個會被砍。
+concurrency:
+  group: ${{ github.event_name == 'push' && format('visual-regression-push-{0}', github.ref) || format('visual-regression-{0}-{1}', github.event_name, github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 defaults:
   run:
     shell: bash -eo pipefail {0}
 
 jobs:
+  # push 觸發只代表「可能有請求」;這個輕量 job 判定這次推送是不是給**這條分支**的重拍請求(見檔頭 push 的說明)。
+  # 不用容器、只稀疏簽出請求檔與判定腳本(腳本只用 node 內建模組),權限沿用 workflow 的 contents: read。
+  # 請求檔已刪 / branch ≠ 這次推送的分支 → rebake=false、這個 job 綠、下面的重拍 job 略過;形狀不合格 → 紅。
+  # 其他事件不跑這個 job(下面的重拍 job 以 !cancelled() 接住「被略過的 needs」照常跑)。
+  rebake-gate:
+    name: Rebake request gate(只在 push)
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      rebake: ${{ steps.gate.outputs.rebake }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            infra/governance/baseline/visual/rebake-request.json
+            scripts/visual-rebake-request.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+      - name: Decide whether this push is a rebake request for this branch
+        id: gate
+        run: node scripts/visual-rebake-request.mjs --gate --file infra/governance/baseline/visual/rebake-request.json --github-output "$GITHUB_OUTPUT"
+
   visual-regression:
     name: Monitor visual regression drift(curated scenarios)
+    needs: [rebake-gate]
+    # push 只在閘判「重拍」時跑;其他事件閘被略過,!cancelled() 讓這個 job 照常跑(沒有它,needs 被略過時這裡也會被略過)
+    if: ${{ !cancelled() && (github.event_name != 'push' || needs.rebake-gate.outputs.rebake == 'true') }}
     runs-on: ubuntu-24.04
     # 2026-09-22:渲染器必須釘死,否則 baseline 比的是「runner 今天裝哪個字型版本」而不是產品。
     # 實證:8/5 最後一次綠(runner 映像 20260720.247.2)→ 8/12 起連續六週紅(映像 20260810.271.1 →
@@ -56,6 +112,11 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: '0'
       # 三種觸發的輸入收斂到這兩個變數,步驟只讀這裡(SSOT):按鈕 → inputs;API → client_payload;排程 → 兩邊都空
       # = 只比對、不重拍。布林用 == true 比(payload 必須送 JSON 布林,字串 'true' 另外接住),不用 truthy 猜。
+      # 第四種(push,2026-10-14 R3):inputs 與 client_payload 都是空的,這裡兩個值先落到預設(不重拍 / 參考留空),
+      # 再由「Read the rebake request」步驟把請求檔的值寫進 GITHUB_ENV。**優先序**:每種事件只有一個來源、互斥
+      #(按鈕 → inputs / API → client_payload / push → 請求檔 / 排程 → 預設),不會兩個來源同時有值;
+      # GITHUB_ENV 寫入後對後面的步驟**蓋過** job env(下面「Resolve reference ref」寫回解析後的 SHA 也是靠這條),
+      # 但**步驟層 env 會再蓋過 GITHUB_ENV** —— 所以任何步驟都不得自己設 UPDATE_BASELINE / REFERENCE_REF(ci-workflow-scope 斷言)。
       UPDATE_BASELINE: ${{ (inputs.update_baseline == true || github.event.client_payload.update_baseline == true || github.event.client_payload.update_baseline == 'true') && 'true' || 'false' }}
       # 2026-09-29(待辦總帳 C4):預設參考 commit 原本寫死在這裡(2026-08-05 最後一次週跑綠的 commit)—— 每發一版就過期一次,
       # 而那棵樹的 build-storybook 還不產 build-info.json(09-27 實跑 INSTRUMENT-FAIL)。「上次發版的樹」不是常數,
@@ -93,6 +154,14 @@ jobs:
           for tool in bash git jq node perl python3; do
             command -v "$tool" >/dev/null || { echo "missing closed-profile interpreter: $tool" >&2; exit 1; }
           done
+
+      # push 事件(R3):把重拍請求檔的兩個值寫進 GITHUB_ENV,蓋過 job env 的預設(優先序見 job env 的說明)。
+      # 其他事件不碰這個檔 —— 按鈕 / API / 排程的值已經在 job env 裡。請求不合格 = 紅,不退回「只比對」。
+      # 走到這裡代表 rebake-gate 已判「給這條分支的請求」;這一步再驗一次 branch(第二道),閘被改壞時不拿別條分支的請求重拍。
+      # 必須排在「Resolve reference ref」之前:那一步讀的 REFERENCE_REF 要是請求檔給的值。
+      - name: Read the rebake request(只在 push 事件)
+        if: ${{ github.event_name == 'push' }}
+        run: node scripts/visual-rebake-request.mjs --file infra/governance/baseline/visual/rebake-request.json --github-env "$GITHUB_ENV"
 
       # 參考 commit 的兩條路都收斂成「完整 40 碼 SHA 寫進 GITHUB_ENV」,後面的步驟只讀 env.REFERENCE_REF:
       #   · 明確輸入(按鈕 / API):解析成 commit,解不到就紅(09-27 實跑:短 SHA 當 ref → checkout 直接死;識別字串要完整 40 碼,M32)。
@@ -226,6 +295,7 @@ jobs:
           # 剛寫入的 baseline vs 立刻再拍一次:必須 0 張超標,否則渲染器仍在浮動,這批 baseline 不可信
           npm run visual-audit -- --scope=all 2>&1 | tail -12
       - name: Attribute recaptured baselines against the reference(same renderer)
+        id: attribution
         if: ${{ env.UPDATE_BASELINE == 'true' }}
         run: |
           node scripts/visual-baseline-diff-report.mjs --selftest
@@ -234,14 +304,28 @@ jobs:
             --since-ref "$REFERENCE_REF" \
             --out .git/governance-runtime/evidence/visual/baseline-diff
           cat .git/governance-runtime/evidence/visual/baseline-diff/summary.md | head -60
-      - name: Upload recaptured baselines + attribution report
-        if: ${{ env.UPDATE_BASELINE == 'true' }}
+      # 審核包(2026-10-14 R3):user 拍板的對象是「已提交的基準 → 新圖」,不是「參考 commit 重拍 → 新圖」。
+      # 歸因(上一步)回答「為什麼變」;這一步回答「換下去會變哪幾張」,逐張附 before / after / diff 與前後 sha256。
+      # 歸因紅了(suspicious / unmapped …)也照樣建包上傳 —— 否則 user 連要查哪幾張都看不到;job 仍然是紅的,
+      # 而套用腳本對那幾張要求寫出查到的原因(量不到的 dimension-mismatch / missing-new 一律不收)。
+      # 重拍或穩定性那兩步紅了 → 歸因被略過 → 這一步也略過:不穩的儀器不產生審核包。
+      # artifact 版面(根目錄 = 審核包):README.md / manifest.json / new/<檔名>.png(全部新圖)/
+      #   changes/<主檔名>/{before,after,diff}.png(只有 changed / added)/ attribution/(歸因報告原樣)。
+      #   詳細欄位見 scripts/visual-baseline-review-package.mjs 檔頭。
+      - name: Assemble the review package(相對已提交基準的前 / 後 / 差異 + 歸因)
+        id: review-package
+        if: ${{ !cancelled() && env.UPDATE_BASELINE == 'true' && (steps.attribution.outcome == 'success' || steps.attribution.outcome == 'failure') }}
+        run: |
+          node scripts/visual-baseline-review-package.mjs --selftest
+          node scripts/visual-baseline-review-package.mjs \
+            --attribution .git/governance-runtime/evidence/visual/baseline-diff \
+            --out .git/governance-runtime/evidence/visual/baseline-review
+      - name: Upload the review package(新圖 + 前後差異 + 歸因)
+        if: ${{ !cancelled() && env.UPDATE_BASELINE == 'true' && steps.review-package.outcome == 'success' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: visual-baselines-recaptured
-          path: |
-            infra/governance/baseline/visual/curated/
-            .git/governance-runtime/evidence/visual/baseline-diff/
+          path: .git/governance-runtime/evidence/visual/baseline-review/
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 14

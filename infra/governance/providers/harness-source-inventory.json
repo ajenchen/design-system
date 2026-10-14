@@ -408,6 +408,7 @@
       "scripts/test-agent-panel-dismissable-layer-invariant.mjs",
       "scripts/test-agent-panel-fixed-anatomy-invariant.mjs",
       "scripts/test-agent-url-registry-demo-invariant.mjs",
+      "scripts/test-apply-approved-baselines.mjs",
       "scripts/test-audit-a11y.mjs",
       "scripts/test-audit-consumer-a11y.mjs",
       "scripts/test-audit-content-quality.mjs",

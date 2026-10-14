@@ -1556,3 +1556,14 @@ jobs:
       # run #297:參考樹重拍前用它自己的 index.json 過濾今天的場景清單(HEAD 新增的 story 在參考樹是 404);對照組在這裡跑
       - name: Reference-tree scenario filter selftest
         run: node scripts/visual-manifest-intersect.mjs --selftest
+
+      # 2026-10-14(待辦總帳 R3):PR 分支自己重拍的那條路(Visual Regression 的 push 觸發)用到的三支,在同一個映像裡先過對照組 ——
+      # 那條 workflow 只在分支推送改到重拍請求檔、而且 rebake-gate 判定是給這條分支的請求時才重拍,不在 PR 閘裡驗,
+      # 壞掉要等真的請求重拍才紅(#288 / #289 同一種病)。
+      #   請求檔解析與閘(壞形狀一律拒、分支不符 / 已刪除 → 略過、GITHUB_ENV 只寫兩行)/ 審核包(相對已提交基準逐張判 + 版面)/
+      #   套用腳本(只換 user 說「可以改」且 sha256 對得上的那幾張;隔離 git 夾具逐面驗,任一面壞 curated/ 零變動)
+      - name: Rebake request + review package + apply-approved selftests
+        run: |
+          node scripts/visual-rebake-request.mjs --selftest
+          node scripts/visual-baseline-review-package.mjs --selftest
+          node scripts/test-apply-approved-baselines.mjs

@@ -885,6 +885,10 @@ test('排程監看的紅燈要有觀眾 —— 發布報告必須印出最新一
   assert.match(reportBlock, /classifyScheduledMonitorRun\(latestScheduledMonitorRun\(observation\.repository, 'visual-regression\.yml'\)\)/,
     'printReport 必須真的去讀最新一次週跑')
   assert.match(reportBlock, /每週視覺回歸監看/, '而且必須印給人看')
+  // 2026-10-14:visual-regression.yml 也接 PR 分支的重拍請求(push)與 dispatch —— 「最新的一次」必須篩成排程那一次,
+  // 否則 PR 分支上一次重拍的結論會被印成「每週監看」(M37:拿「這支 workflow 最新一次」代替「週跑最新一次」)
+  const monitorRead = src.slice(src.indexOf('function latestScheduledMonitorRun('), src.indexOf('function releaseRepository('))
+  assert.match(monitorRead, /\/runs\?event=schedule&per_page=1`/, '週跑結論只能讀 event=schedule 的那一次')
   // 只講不擋:五步 status 表不得含它,runner 也不得因它 invariant
   const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
   assert.doesNotMatch(statusBlock, /visual-regression|ScheduledMonitor/, '排程監看不得進五步判定(canonical:preview/canary/監看一律 non-blocking)')

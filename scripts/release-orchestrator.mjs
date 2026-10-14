@@ -945,7 +945,9 @@ export function classifyScheduledMonitorRun(run) {
 }
 
 function latestScheduledMonitorRun(repository, workflowFile) {
-  const response = curlGitHub('GET', `repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?per_page=1`)
+  // 只取排程那一次(event=schedule):2026-10-14 起 visual-regression.yml 也接 PR 分支的重拍請求(push)與 dispatch,
+  // 「這支 workflow 最新的一次」已經不等於「每週監看最新的一次」—— 不篩事件,PR 分支上一次重拍的紅綠會被印成週跑結論(M37)。
+  const response = curlGitHub('GET', `repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?event=schedule&per_page=1`)
   if (!response.ok) return null
   try { return JSON.parse(response.text).workflow_runs?.[0] || null } catch { return null }
 }
