@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { parseWorkflowSemantics } from '../lib/workflow-trust.mjs'
@@ -304,6 +306,118 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.match(firstCheckout, /fetch-depth: 0/, 'HEAD 的簽出必須 fetch-depth: 0,否則 reference..HEAD 的歸因區間拿不到歷史')
   assert.match(firstCheckout, /ref: \$\{\{ env\.TARGET_REF \}\}/, 'HEAD 的簽出必須拍 TARGET_REF 那棵樹(否則 PR 分支永遠拍不到)')
   assert.equal((source.match(/\bTARGET_REF\b/g) ?? []).length, 3, 'TARGET_REF 只有三處:env 宣告、註解裡的說明、第一個 checkout 的 ref(不得散到別的步驟)')
+})
+
+// 2026-10-14(待辦總帳 SM7):Visual Regression 的「Resolve reference ref」09-30 進 main 後兩次週跑(09-30 job 109831972793、
+// 10-07 job 112744821910)都死在 `fatal: detected dubious ownership` —— 容器裡 root 讀 uid 1001 的簽出目錄,裸 git 拒讀;
+// `for tag in $(git tag …)` 的命令替換失敗不觸發 bash -e,迴圈 0 圈 → 被印成「找不到任何有已發布 release 的 v* tag」。
+// 這一條測兩件事:(1) PR 階段的容器 job 逐字跑同一步(上面那條只照搬了開頭幾步,所以 PR 抓不到);(2) 這一步本身的行為 ——
+// 用 git 自己的測試開關 GIT_TEST_ASSUME_DIFFERENT_OWNER 造出「執行者 ≠ 擁有者」(不需要 root),四面:
+//   A 對照組:裸 git 在這個條件下必拒(條件真的重現);B 簽出目錄 = 指名的 safe.directory → 解析出最新 release tag 的 40 碼;
+//   C 簽出目錄不在信任範圍 → 儀器失效、印出 git 原話(dubious ownership),不得印成「沒有 tag / 沒有 release」;
+//   D 明確輸入 reference_ref 時 git 讀不到 → 同樣是儀器失效 + git 原話,不得印成「解析不到 commit」;E 0 個 v* tag → 儀器失效。
+// Releases API 以假的 curl 回 200 / draft:false 代替(這條測的是 git 那一半;API 那一半的 404 / 非 200 分支照原文不動)。
+test('Visual Regression「Resolve reference ref」:git 讀不到簽出目錄 = 儀器失效並印 git 原話;PR 容器 job 逐字跑同一步', () => {
+  const STEP = /- name: Resolve reference ref\(留空 = origin\/main 上最近一次已發布的 release tag\)\n\s+env:\n\s+GITHUB_TOKEN: \$\{\{ github\.token \}\}\n\s+run: \|\n((?: {10}.*\n)+)/
+  const visualSource = readWorkflow('visual-regression.yml')
+  const ciSource = readWorkflow('ci.yml')
+  const containerSource = ciSource.slice(ciSource.indexOf('\n  container-closed-git:\n'))
+  const visualStep = visualSource.match(STEP)?.[1]
+  const containerStep = containerSource.match(STEP)?.[1]
+  assert.ok(visualStep, 'visual-regression.yml 找不到「Resolve reference ref」步驟')
+  assert.ok(containerStep, 'ci.yml container-closed-git 必須逐字跑 Visual Regression 的「Resolve reference ref」(PR 階段才抓得到容器裡的 git 問題)')
+  assert.equal(containerStep, visualStep, '兩邊的「Resolve reference ref」run 內容必須逐字相同')
+  assert.ok(containerSource.indexOf('Resolve reference ref') < containerSource.indexOf('npm run --silent setup:dependencies'), '容器 job 的順序要跟 Visual Regression 一樣:解析參考 commit 在安裝依賴之前')
+  const containerCheckout = containerSource.slice(containerSource.indexOf('- name: Checkout reviewed source'), containerSource.indexOf('- name: Setup Node'))
+  assert.match(containerCheckout, /fetch-depth: 0/, '容器 job 的簽出必須帶完整歷史與 tag(同 Visual Regression),否則預設路徑讀不到 origin/main 與 v* tag')
+  const body = visualStep.split('\n').map((line) => line.slice(10)).join('\n')
+  assert.doesNotMatch(body, /for tag in \$\(/, 'tag 清單不得寫在 for 的命令替換裡(失敗會被吞成 0 圈)')
+  // 只看命令位置(引號裡的訊息文字不算):剝掉雙引號字串後,行首或 ; | & ( $ 之後出現的 `git ` 才是一次呼叫
+  const bareGit = body.split('\n')
+    .filter((line) => !/^ws_git\(\) \{ git -c safe\.directory="\$GITHUB_WORKSPACE" "\$@"; \}$/.test(line))
+    .filter((line) => /(^|[\s;|&($])git\s/.test(line.replace(/"(?:[^"\\]|\\.)*"/g, '""')))
+  assert.deepEqual(bareGit, [], '這一步的每一次 git 呼叫都必須經 ws_git(只信任簽出目錄本身)')
+  // Releases API 的每一次 curl 都要帶重試與逾時:container-closed-git 在必過 Verify 裡,一次暫時性 5xx / 斷線就判儀器失效
+  // 會擋住合併,而 PAT 沒有 actions:write、不能重跑(#163 / 09d2eaa2 的前例)。404 不在 curl 的重試清單裡,行為不變。
+  const curlCalls = body.split('\n').filter((line) => /\bcurl\s/.test(line))
+  assert.ok(curlCalls.length > 0, '對照組失效:這一步找不到任何 curl 呼叫(步驟改寫了?這條斷言要跟著改,不能讓它空轉成綠)')
+  for (const line of curlCalls) {
+    assert.match(line, /\s--retry [1-9]\d*\s/, `Releases API 的 curl 必須帶 --retry:${line.trim()}`)
+    assert.match(line, /\s--max-time [1-9]\d*\s/, `Releases API 的 curl 必須帶 --max-time(重試要有每次的上限):${line.trim()}`)
+  }
+
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'resolve-reference-ref-')))
+  try {
+    const hermetic = { HOME: join(base, 'home'), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', LC_ALL: 'C' }
+    mkdirSync(hermetic.HOME)
+    const git = (cwd, args) => {
+      const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...hermetic, GIT_AUTHOR_NAME: 'f', GIT_AUTHOR_EMAIL: 'f@example.invalid', GIT_COMMITTER_NAME: 'f', GIT_COMMITTER_EMAIL: 'f@example.invalid' } })
+      assert.equal(r.status, 0, `fixture git ${args.join(' ')}:${r.stderr}`)
+      return r.stdout.trim()
+    }
+    const makeRepo = (name, tags) => {
+      const repo = join(base, name)
+      mkdirSync(repo)
+      git(repo, ['init', '-q'])
+      for (const [i, tag] of tags.entries()) {
+        writeFileSync(join(repo, 'f.txt'), `${i}\n`)
+        git(repo, ['add', 'f.txt'])
+        git(repo, ['commit', '-q', '-m', `c${i}`])
+        git(repo, ['tag', tag])
+      }
+      if (!tags.length) { writeFileSync(join(repo, 'f.txt'), 'x\n'); git(repo, ['add', 'f.txt']); git(repo, ['commit', '-q', '-m', 'c']) }
+      git(repo, ['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+      return repo
+    }
+    const tagged = makeRepo('tagged', ['v0.1.0-beta.1', 'v0.1.0-beta.2'])
+    const untagged = makeRepo('untagged', [])
+    const fakeBin = join(base, 'bin')
+    mkdirSync(fakeBin)
+    // 假 curl:把 {"draft":false} 寫到 -o 指定的檔、回 200(只代 Releases API;git 那一半全是真的)
+    writeFileSync(join(fakeBin, 'curl'), '#!/bin/sh\nout=""\nwhile [ $# -gt 0 ]; do [ "$1" = "-o" ] && { out="$2"; shift; }; shift; done\nprintf \'{"draft":false}\' > "$out"\nprintf 200\n')
+    chmodSync(join(fakeBin, 'curl'), 0o755)
+    const run = ({ cwd, workspace, reference = '' }) => {
+      const runnerTemp = mkdtempSync(join(base, 'runner-'))
+      const envFile = join(runnerTemp, 'github-env')
+      writeFileSync(envFile, '')
+      const r = spawnSync('bash', ['-eo', 'pipefail', '-c', body], {
+        cwd,
+        encoding: 'utf8',
+        env: { ...process.env, ...hermetic, PATH: `${fakeBin}:${process.env.PATH}`, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1', GITHUB_WORKSPACE: workspace, RUNNER_TEMP: runnerTemp, GITHUB_ENV: envFile, GITHUB_REPOSITORY: 'owner/repo', GITHUB_TOKEN: 'fixture', REFERENCE_REF: reference },
+      })
+      return { status: r.status, stderr: r.stderr ?? '', stdout: r.stdout ?? '', env: readFileSync(envFile, 'utf8') }
+    }
+    // A 對照組:條件真的重現 —— 裸 git 在「執行者 ≠ 擁有者」下必拒
+    const raw = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: tagged, encoding: 'utf8', env: { ...process.env, ...hermetic, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1' } })
+    assert.equal(raw.status, 128, `對照組失效:裸 git 在 GIT_TEST_ASSUME_DIFFERENT_OWNER=1 下沒有拒絕(git ${spawnSync('git', ['--version'], { encoding: 'utf8' }).stdout.trim()} 不認這個開關?)`)
+    assert.match(raw.stderr, /dubious ownership/)
+    // B 修法生效:簽出目錄就是指名的 safe.directory → 解析出最新那個 release tag 的 40 碼並寫進 GITHUB_ENV
+    const ok = run({ cwd: tagged, workspace: tagged })
+    assert.equal(ok.status, 0, `B 應解析成功:${ok.stderr}`)
+    assert.equal(ok.env.trim(), `REFERENCE_REF=${git(tagged, ['rev-parse', 'v0.1.0-beta.2^{commit}'])}`)
+    // C 簽出目錄不在信任範圍 → 儀器失效 + git 原話;不得被讀成「沒有 tag / 沒有 release」
+    const other = mkdtempSync(join(base, 'elsewhere-'))
+    const broken = run({ cwd: tagged, workspace: other })
+    assert.notEqual(broken.status, 0)
+    assert.match(broken.stderr, /INSTRUMENT-FAIL/)
+    assert.match(broken.stderr, /dubious ownership/, 'git 讀不到時必須印出 git 自己的原話')
+    assert.doesNotMatch(broken.stderr, /沒有一個有已發布的 release|0 個 v\* tag/, 'git 讀不到不得被印成「沒有 tag / 沒有 release」')
+    assert.equal(broken.env, '', '儀器失效時不得寫出參考 commit')
+    // D 明確輸入 reference_ref + git 讀不到 → 同樣是儀器失效 + git 原話,不得印成「解析不到 commit」
+    const explicit = run({ cwd: tagged, workspace: other, reference: 'v0.1.0-beta.1' })
+    assert.notEqual(explicit.status, 0)
+    assert.match(explicit.stderr, /dubious ownership/)
+    assert.doesNotMatch(explicit.stderr, /解析不到 commit/)
+    // 同一個明確輸入,git 讀得到時照常解析(對照)
+    const explicitOk = run({ cwd: tagged, workspace: tagged, reference: 'v0.1.0-beta.1' })
+    assert.equal(explicitOk.env.trim(), `REFERENCE_REF=${git(tagged, ['rev-parse', 'v0.1.0-beta.1^{commit}'])}`)
+    // E 讀得到、但 0 個 v* tag → 儀器失效(簽出沒帶 tag),不是「沒有 release」
+    const empty = run({ cwd: untagged, workspace: untagged })
+    assert.notEqual(empty.status, 0)
+    assert.match(empty.stderr, /INSTRUMENT-FAIL:git 讀得到 origin\/main,但上面 0 個 v\* tag/)
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
 })
 
 test('Pages deployment binds and reads back the exact Storybook source', () => {

@@ -14,8 +14,9 @@
 // Run: `node scripts/category-classification-invariant.mjs`(deterministic audit chain)。fail → exit 1。
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveUnitOwnSpec } from './lib/unit-own-spec.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC = join(ROOT, 'packages/design-system/src')
@@ -83,8 +84,17 @@ for (const base of ['components', 'patterns', 'tokens']) {
 for (const relDir of unitDirs) {
   const absDir = join(SRC, relDir)
   const files = readdirSync(absDir)
-  const specFile = files.find((f) => f.endsWith('.spec.md'))
+  // 讀「這個單元自己的 spec」,不是「資料夾裡第一個 spec」(2026-10-14:SelectMenu 拆出 select-menu-unrestricted.spec.md
+  // 之後,第一個 spec 變成沒有 frontmatter 的那份,isInternal 讀不到 → 7 處假的分類不一致;判準與理由見 lib/unit-own-spec.mjs)
+  const own = resolveUnitOwnSpec(basename(relDir), files)
+  const specFile = own.spec
   const storyFiles = files.filter((f) => f.endsWith('.stories.tsx'))
+  if (own.reason === 'ambiguous') {
+    // 判不了自己的 spec 是哪一份 → 紅,不挑一份猜(猜錯就是上面那 7 處的形狀)
+    failures.push(`✗ ${relDir}: 有 ${own.candidates.length} 份 spec(${own.candidates.join(' / ')})卻沒有一份與資料夾同名 —— 判不了這個單元自己的 spec,isInternal 無從讀起(把主 spec 命名成 <資料夾 kebab>.spec.md)`)
+    seen.push(`${relDir} (ambiguous spec)`)
+    continue
+  }
   if (!specFile && storyFiles.length === 0) continue // 非 unit(helper 等)
 
   const specSrc = specFile ? readFileSync(join(absDir, specFile), 'utf8') : ''

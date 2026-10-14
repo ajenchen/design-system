@@ -639,6 +639,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 // (2026-10-01 前 `{...props}` 在後 → `useFormValidation` getInputProps 帶來的 onKeyDown 整支蓋掉元件的,鍵盤打不開日曆)
                 {...props}
                 // 表單欄位名稱掛在可聚焦的那一個(規則 8 以 name 定位、聚焦):不可打字時是這個觸發欄位(tabIndex 0)
+                // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
                 {...(!typeable && name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}
                 // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
                 // native Enter/Space→click → 自建 onKeyDown 開 popover(對齊 select.tsx desktop

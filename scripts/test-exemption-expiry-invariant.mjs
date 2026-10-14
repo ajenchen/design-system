@@ -29,7 +29,7 @@ const NOW = new Date(`${baseline.recordedAt}T00:00:00Z`)
 let passed = 0
 const check = (label, fn) => { fn(); passed++; console.log(`✓ ${label}`) }
 
-check('閘的 selftest 正反例全過(無主 / 過期紅、合法 / 有主放、長得像的不算、棘輪、時間輸入、0 檔 INSTRUMENT-FAIL)', () => {
+check('閘的 selftest 正反例全過(無主 / 過期紅、合法 / 有主放、長得像的不算、棘輪、時間輸入、0 檔判為儀器失效)', () => {
   const lines = []
   assert.equal(selftest(NOW, (l) => lines.push(l)), true, lines.filter((l) => l.startsWith('✗')).join('\n'))
 })
@@ -91,7 +91,7 @@ check('時間是輸入:同一份輸入把 now 往前推 30 天,違規只會變�
   assert.deepEqual(earlier.fresh, [])
 })
 
-check('0 檔 → INSTRUMENT-FAIL(沒量到 ≠ 沒有豁免)', () => {
+check('0 檔 → 判為儀器失效(沒量到 ≠ 沒有豁免)', () => {
   assert.equal(verdictOf(evaluate({ now: NOW, files: [], registries: [], baseline })).status, 'INSTRUMENT-FAIL')
 })
 

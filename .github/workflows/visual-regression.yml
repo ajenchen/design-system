@@ -101,18 +101,36 @@ jobs:
       #     `git describe` 會挑到它。API 回 404 = 這個 tag 沒有 release(往下找);回其他非 200 = 判不了,以儀器失效紅,不猜。
       #     `releases/latest` 不能用:它只認非 prerelease,實測回的是 2026 年初的 beta.96。
       #   簽出用 fetch-depth: 0(上面的 checkout),tags 與 origin/main 都在本地,這一步除了 Releases API 不再碰網路。
+      # 2026-10-14(待辦總帳 SM7):這一步 09-30 進 main 後兩次週跑(09-30、10-07)都死在 `fatal: detected dubious ownership`
+      #   —— 容器裡執行者是 root、簽出目錄屬 uid 1001,裸 git 拒讀;`for tag in $(git tag …)` 的命令替換失敗不會觸發 bash -e,
+      #   迴圈跑 0 圈,於是被印成「找不到任何有已發布 release 的 v* tag」(M37 第八種形狀:沒量到被讀成沒有)。現在:
+      #   (1) git 只信任簽出目錄本身(`-c safe.directory="$GITHUB_WORKSPACE"`,同 closed git 的做法:只列指名的 repo,不是 *);
+      #   (2) 先證明 git 讀得到這棵樹,讀不到 = 儀器失效並印出 git 自己的話;tag 清單先存進變數,列不出來同樣印 git 原話;
+      #       0 個 v* tag 也是儀器失效(簽出沒帶 tag / origin/main),不是「沒有 release」。
+      #   ci.yml 的 container-closed-git 用同一個映像逐字跑這一步(infra/governance/test/ci-workflow-scope.test.mjs 斷言兩邊相同),
+      #   PR 階段就會紅,不必等週跑。
+      #   (3) Releases API 的 curl 帶 `--retry 3 --retry-delay 2 --retry-connrefused --max-time 30`:暫時性的 5xx / 408 / 429、
+      #       斷線、逾時會重試,404 不重試(照舊 = 這個 tag 沒有 release)。container-closed-git 是必過 Verify 的一支,
+      #       一次網路抖動就判儀器失效會擋住合併 —— PAT 沒有 actions:write、不能重跑(#163 / 09d2eaa2 的前例)。
       - name: Resolve reference ref(留空 = origin/main 上最近一次已發布的 release tag)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          ws_git() { git -c safe.directory="$GITHUB_WORKSPACE" "$@"; }
+          git_err="$RUNNER_TEMP/resolve-reference-ref.git.err"
+          ws_git rev-parse --verify HEAD >/dev/null 2>"$git_err" \
+            || { echo "✗ INSTRUMENT-FAIL:git 讀不到簽出目錄 $GITHUB_WORKSPACE,判不了參考 commit(這不是「沒有 tag」)。git 原話:" >&2; cat "$git_err" >&2; exit 1; }
           if [ -n "$REFERENCE_REF" ]; then
-            resolved="$(git rev-parse --verify --quiet "${REFERENCE_REF}^{commit}")" \
+            resolved="$(ws_git rev-parse --verify --quiet "${REFERENCE_REF}^{commit}")" \
               || { echo "✗ INSTRUMENT-FAIL:reference_ref「${REFERENCE_REF}」在這棵樹裡解析不到 commit(要完整 40 碼 SHA、tag 或分支名)" >&2; exit 1; }
             echo "參考 commit(明確輸入):${REFERENCE_REF} → ${resolved}"
           else
+            tags="$(ws_git tag --merged origin/main --sort=-v:refname 'v*' 2>"$git_err")" \
+              || { echo "✗ INSTRUMENT-FAIL:git 列不出 origin/main 上的 v* tag —— 讀取失敗,不是「沒有 tag」。git 原話:" >&2; cat "$git_err" >&2; exit 1; }
+            [ -n "$tags" ] || { echo "✗ INSTRUMENT-FAIL:git 讀得到 origin/main,但上面 0 個 v* tag —— 簽出沒帶 tag(要 fetch-depth: 0),不是「沒有 release」" >&2; exit 1; }
             chosen=""
-            for tag in $(git tag --merged origin/main --sort=-v:refname 'v*'); do
-              code="$(curl -sS -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
+            for tag in $tags; do
+              code="$(curl -sS --retry 3 --retry-delay 2 --retry-connrefused --max-time 30 -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
                 -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' \
                 "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$tag")" || code="curl-failed"
               if [ "$code" = "200" ] && [ "$(jq -r '.draft' "$RUNNER_TEMP/release.json")" = "false" ]; then chosen="$tag"; break; fi
@@ -121,8 +139,8 @@ jobs:
               fi
               echo "· $tag:沒有已發布的 release(API $code),往前找"
             done
-            [ -n "$chosen" ] || { echo "✗ INSTRUMENT-FAIL:origin/main 上找不到任何有已發布 release 的 v* tag" >&2; exit 1; }
-            resolved="$(git rev-parse --verify "refs/tags/${chosen}^{commit}")"
+            [ -n "$chosen" ] || { echo "✗ INSTRUMENT-FAIL:origin/main 上 $(printf '%s\n' $tags | wc -l | tr -d ' ') 個 v* tag 逐一問過 Releases API,沒有一個有已發布的 release —— 沒有參考 commit 可比" >&2; exit 1; }
+            resolved="$(ws_git rev-parse --verify "refs/tags/${chosen}^{commit}")"
             echo "參考 commit(預設 = 最近一次已發布的 release):$chosen → $resolved"
           fi
           case "$resolved" in

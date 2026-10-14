@@ -2,10 +2,10 @@
   "note": "豁免標記到期複查的棘輪。這裡記的是「目前已知的無主(無日期無指標)/ 過期(日期超過 N 天)」標記。數字只准往下 —— 新增的無主、新過期的會讓 exemption-expiry-invariant.mjs 變紅。修好(補日期 / 指標、或拿掉豁免)之後跑 --update-baseline 重記。key 不含行號;改了標記的字仍沒補日期會以新 key 變紅,那是刻意的。",
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
-  "recordedAt": "2026-09-29",
-  "count": 295,
+  "recordedAt": "2026-10-14",
+  "count": 288,
   "byKind": {
-    "unanchored": 295,
+    "unanchored": 288,
     "expired": 0
   },
   "entries": [
@@ -88,22 +88,6 @@
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon) // 與 s"
-    },
-    {
-      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030",
-      "family": "escape",
-      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
-      "marker": "@anatomy-exempt-next",
-      "kind": "unanchored",
-      "hint": "{/* @anatomy-exempt-next */}"
-    },
-    {
-      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030#2",
-      "family": "escape",
-      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
-      "marker": "@anatomy-exempt-next",
-      "kind": "unanchored",
-      "hint": "{/* @anatomy-exempt-next */}"
     },
     {
       "key": "cq|packages/design-system/src/components/Avatar/avatar.tsx|code-quality-allow|a4287fe8160c",
@@ -352,14 +336,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Combobox/combobox.tsx|code-quality-allow|c8995834c17a",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Combobox/combobox.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/Combob"
     },
     {
       "key": "cq|packages/design-system/src/components/DataTable/active-editor-controller.ts|code-quality-allow|110f37eaca0d",
@@ -2280,38 +2256,6 @@
       "marker": "@layout-space-magic-ok",
       "kind": "unanchored",
       "hint": "{/* @layout-space-magic-ok: Sidebar#IconCollapse PageContent metric-card baseline owns fixed 4px lab"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|b54fe04e8ff3",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 16px outer story rh"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#2",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#3",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
     },
     {
       "key": "eslint|scripts/agent-logo-brand-scale-invariant.mjs|eslint-disable-next-line|911d91cb172c",

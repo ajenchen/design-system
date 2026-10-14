@@ -817,7 +817,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   React.useEffect(() => {
     for (const [key, value] of Object.entries(initialDraft ?? {})) setFieldValue(key as keyof TaskDraft, value)
     // 只在掛上時套一次(OpenSnapshot 的初始草稿)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 掛上時套一次 OpenSnapshot 初始草稿(M15),依賴刻意留空;68d7860d 加,2026-10-14 複查
   }, [])
   React.useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
   React.useEffect(() => () => onDirtyChange(false), [onDirtyChange])

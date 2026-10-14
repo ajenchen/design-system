@@ -618,6 +618,7 @@ function CustomCombobox({
   const trigger = (
     <div
       // 表單接線(見 ComboboxProps 檔頭):consumer 的 data-* 與 name 先 spread,元件自己的屬性 / handler 在後(handler 內先呼叫 consumer 的)
+      // 轉型:div 的型別沒有 name,而 form-validation.spec.md 規則 8 以 DOM name 定位可聚焦的觸發欄位(68d7860d 加,2026-10-14 複查)
       {...(({ ...dataAttrs, name }) as unknown as React.HTMLAttributes<HTMLDivElement>)}
       ref={__triggerRef}
       id={idProp ?? fieldCtx?.id}

@@ -49,6 +49,7 @@ import {
   LAYERS,
   layerOf,
   resolveBase,
+  ruleApplies,
   scanTree,
   selftest,
   treeAtCommit,
@@ -57,6 +58,11 @@ import {
 
 let passed = 0
 const check = (label, fn) => { fn(); passed++; console.log(`✓ ${label}`) }
+// 掃描量下限取 2026-10-01 實測(213 檔:展示 81 / 原則 66 / 規格 66)往下留餘裕;glob 或分層壞掉時會掉到遠低於這裡。
+// 「0 筆漂移」只有在這一關過了之後才是事實 —— 否則是儀器把東西漏光了(M37 第八種形狀:沒量到 ≠ 沒有)。
+const assertRealScan = (stats, where) => {
+  assert.ok(stats.files >= 150 && stats.buttons >= 300 && stats.classStrings >= 3000, `${where}掃描量太少,儀器可能壞了:${JSON.stringify(stats)}`)
+}
 const instruments = loadInstruments()
 const quiet = []
 const keys = (hits) => hits.map((h) => `${h.rule}@${h.line}`)
@@ -100,13 +106,25 @@ check('「基準不得比 base 寬」用真資料走一遍:git 讀得到 HEAD �
   const sample = tree.files.find((f) => f.endsWith('rating.stories.tsx'))
   assert.equal(tree.read(sample), spawnSync('git', ['show', `${head.mergeBase}:${sample}`], { cwd: REPO, encoding: 'utf8' }).stdout)
   const measured = scanTree({ instruments, files: tree.files, read: tree.read })
+  // 「HEAD 沒有任何漂移」與「儀器壞了掃出空集合」在 perFile 上長得一樣(都是空的)—— 先證明真的掃到東西,空集合才算數。
+  // 2026-10-14(SM2b ③):903ef551 把漂移掃到 0 之後 perFile 是空的,下面原本直接取第一筆 → TypeError 崩在這裡(夜間才跑到)。
+  assertRealScan(measured.stats, 'HEAD 那棵樹')
+  assert.throws(() => assertRealScan(scanTree({ instruments, files: [], read: tree.read }).stats, '對照組'), /掃描量太少/, '對照組:0 個檔的掃描必須被判成儀器壞了,不得當成「沒有漂移」')
   // 從 HEAD 實測直接建出來的基準:剛好不寬 → 0 筆
   const exact = JSON.parse(JSON.stringify({ files: Object.fromEntries([...measured.perFile].map(([rel, hs]) => [rel, Object.fromEntries(Object.keys(RULES).map((r) => [r, { count: hs.filter((h) => h.rule === r).length }]).filter(([, v]) => v.count))])) }))
   assert.deepEqual(auditBaselineAgainstBase(exact, measured).problems, [])
-  // 突變 1:同一份多記一筆(數字一致的手改)→ 紅,指名那一檔
-  const [rel, entry] = Object.entries(exact.files)[0]
-  const rule = Object.keys(entry)[0]
+  // 突變 1:同一份多記一筆(數字一致的手改)→ 紅,指名那一檔。
+  // HEAD 有漂移時拿第一筆加 1;HEAD 0 漂移時(現況)挑 HEAD 裡一個真的存在、該規則適用的檔記 1 筆(實測 0)—— 同一個性質:基準比 base 寬。
+  const [rel, rule] = (() => {
+    const first = Object.entries(exact.files)[0]
+    if (first) return [first[0], Object.keys(first[1])[0]]
+    const target = [...tree.files].sort().find((f) => ruleApplies(f, 'hardcoded-spacing'))
+    assert.ok(target, 'HEAD 那棵樹找不到任何適用 hardcoded-spacing 的 story —— 範圍壞了')
+    return [target, 'hardcoded-spacing']
+  })()
   const plus = structuredClone(exact)
+  plus.files[rel] ??= {}
+  plus.files[rel][rule] ??= { count: 0 }
   plus.files[rel][rule].count += 1
   assert.deepEqual(auditBaselineAgainstBase(plus, measured).problems.map((pr) => `${pr.file} ${pr.key}`), [`${rel} ${rule}`])
   // 突變 2:替 HEAD 沒有的檔預留額度 → 紅

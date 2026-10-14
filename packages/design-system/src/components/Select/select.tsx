@@ -926,6 +926,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // 真的離開欄位(觸發欄位與浮層都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
         onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, (event: React.FocusEvent<HTMLDivElement>) => {
           clearRemoval()
+          // 轉型:SelectProps 的 onBlur 沿用 <select> 的事件型別(手機原生分支共用),桌機觸發欄位是 div;只在真的離開欄位時轉給 consumer(待辦總帳 N83;68d7860d 加,2026-10-14 複查)
           ;(onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)?.(event)
         })}
         onKeyDown={(e) => {

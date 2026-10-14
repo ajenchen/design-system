@@ -20,15 +20,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { prepareRuntimeEvidenceFile } from './lib/governance-runtime-evidence.mjs'
+import { resolveUnitOwnSpec } from './lib/unit-own-spec.mjs'
 
 const ROOT = process.cwd()
 const CHECK = process.argv.includes('--check')
 const COMPONENTS_DIR = path.join(ROOT, 'packages/design-system/src/components')
 
+// 讀「這個元件自己的 spec」,不是資料夾裡第一個 spec(2026-10-14 同族修正:SelectMenu 第一個 spec 是沒有 frontmatter 的
+// select-menu-unrestricted.spec.md,這裡因此把 internal 的 SelectMenu 當成 public 掃;判準 lib/unit-own-spec.mjs)。
+// 判不了(兩份以上 spec、沒有一份同名)→ 回 null,由主迴圈記成缺陷,不猜。
 const isInternal = (dir) => {
-  const spec = fs.readdirSync(dir).find((f) => f.endsWith('.spec.md'))
-  if (!spec) return false
-  const src = fs.readFileSync(path.join(dir, spec), 'utf8')
+  const own = resolveUnitOwnSpec(path.basename(dir), fs.readdirSync(dir))
+  if (own.reason === 'ambiguous') return null
+  if (!own.spec) return false
+  const src = fs.readFileSync(path.join(dir, own.spec), 'utf8')
   // frontmatter internal marker(spec-rules.md canonical:`internal: true` 或 `- isInternal`)
   return /^\s*internal:\s*true/m.test(src) || /^\s*-\s*isInternal/m.test(src)
 }
@@ -42,7 +47,9 @@ for (const name of fs.readdirSync(COMPONENTS_DIR).sort()) {
   const files = fs.readdirSync(dir)
   const hasShowcase = files.some((f) => f.endsWith('.stories.tsx') && !f.includes('.anatomy.') && !f.includes('.principles.'))
   if (!hasShowcase) continue // 無展示層 = 非公開展示元件(純 util / 型別 dir),跳過
-  if (isInternal(dir)) continue // internal primitive 豁免三層
+  const internal = isInternal(dir)
+  if (internal === null) { missing.push({ component: name, missing: ['判不了自己的 spec(多份 spec、沒有與資料夾同名的)'] }); continue }
+  if (internal) continue // internal primitive 豁免三層
   scanned++
   const hasAnatomy = files.some((f) => f.endsWith('.anatomy.stories.tsx'))
   const hasPrinciples = files.some((f) => f.endsWith('.principles.stories.tsx'))

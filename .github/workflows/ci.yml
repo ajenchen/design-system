@@ -168,7 +168,7 @@ jobs:
           # `bad = runs.filter(未綠); if (bad.length) 退出`,清單為空時 bad 也是空的,
           # 零筆 check 被當成全綠(某些 repo/token 組合下 check-runs 就是回空陣列)。
           npm run test:consumer-pr-merge-evidence
-          # 寫了閘就要有人跑它。本 repo 反覆踩同一個病:spec 寫「由 xxx.mjs 機械強制」、腳本存在、
+          # 寫了閘就要有人跑它。本 repo 反覆踩同一個病:spec 寫「由某支腳本機械強制」、腳本存在、
           # 甚至有包裝測試,但沒有任何 CI / npm script / hook 會呼叫它 —— 那條保護是假的且零訊號。
           # 2026-09-18 盤點:大量閘/測試腳本沒有任何執行面。棘輪鎖 baseline,新增孤兒立刻紅。
           # 數字以 scripts/gate-reachability-baseline.json 為準,不在註解硬寫(會隨棘輪往下走)。
@@ -260,6 +260,12 @@ jobs:
           # 於是那把鎖永遠清不掉 —— 2026-09-08 連兩次提交被自己的機制擋住。
           node scripts/test-authority-generation-reaper.mjs
           node scripts/governance-build-graph.mjs --check
+          # 治理文件(skills / rules / references / memory / workflows / AGENTS.md)引用的 hook / 腳本必須真的在(2026-10-14 SM5):
+          # 這支原本只在每週一的 packaging canary 跑,PR #169 寫進 historical-bugs.md 的裸檔名 PR CI 沒有這道閘、抓不到,合併後隔週才會紅。
+          # 本機 < 1 秒;meta-test 逐面驗:裸檔名指到 scripts / hooks / 根目錄以外、完整路徑檔案不在、workflow 呼叫不存在的腳本 → 紅;
+          # 完整路徑或帶簽出前綴(`$GITHUB_WORKSPACE/`、`trusted/`)而檔案在 → 綠;宣告要掃的目錄 0 份收進來 → 儀器失效。
+          node scripts/check-dangling-infra-ref.mjs --check
+          node scripts/test-check-dangling-infra-ref.mjs
 
       - name: Build React 19 consumer template
         working-directory: apps/template
@@ -828,18 +834,30 @@ jobs:
           # 逾時點名是哪一步並印出當下頁面狀態;量測期間用 sonner 自己的暫停條件留住 Toast(否則 4 秒自動關閉,慢的機器會變成「找不到 Toast」)。本機判定 + 對照組合計約 50 秒。
           npm run test:layer-order
 
+      # 2026-10-14(SM6):產品樣板裡的 Button「純圖示」忠實複製品 vs DS 正式 story,像素 + DOM 雙軌比對。原本只在每週四的
+      # Composition Fidelity 排程跑 —— 903ef551 改了 DS story 的版面、樣板複製品沒跟上,這個比對不在 PR CI 裡,合併後隔週才會紅。
+      # 指令與排程逐字相同(同一份 storybook build 已含樣板 story);本機約 5 秒,這個 job 預估 7–8 分(上限 15)。
+      - name: Composition fidelity —— 樣板複製品 vs DS canonical(像素 + DOM)
+        run: |
+          node scripts/composition-fidelity-visual-diff.mjs \
+            --ds-static=storybook-static \
+            --consumer-static=storybook-static \
+            --consumer-root=apps/template \
+            --require-mappings \
+            --threshold-pct=0.5
+
   verify-browser-overlay:
     name: Verify browser(overlay + theme gates)
     runs-on: ubuntu-24.04
     # 2026-09-12 拆出來的第六個 job。原因照 2026-09-08 的先例:interaction job 連兩次跑滿 15 分被 cancel,
     # 實測(CI 逐支計時)這幾支浮層 / 主題閘合計 437 秒 = 整步的 54%,而 job 的 15 分鐘是
-    # `ci-workflow-scope.test.mjs` 釘住的契約。**調高上限是錯的解**(我試過,撞測試);
+    # `infra/governance/test/ci-workflow-scope.test.mjs` 釘住的契約。**調高上限是錯的解**(我試過,撞測試);
     # 搬到排程的 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 都跑。
     # 所以照既有做法拆成平行 job:兩邊各約 7-9 分鐘,都在 15 分鐘內。
     # 2026-09-27:拆出來之後閘又長了(form-gap-token 等),本分支 8 筆 CI 實測 11.9 / 12.7 / 12.8 / 13.2 / 14.6 分成功,
     # 15.1 / 15.1 / 15.2 分三次撞 15 分預算被取消 —— 每一次被砍的那輪,砍掉前的判定全是綠的,砍掉之後 verify 紅、
     # 發布閘 fail closed。依 2026-09-21 interaction job 的先例(timeout 是執行時間預算不是正確性門檻)改 25,
-    # 並列入 ci-workflow-scope.test.mjs 的 SLOW_BROWSER_JOBS(仍在 25 分硬上限內,真的卡死照樣抓得到)。
+    # 並列入 infra/governance/test/ci-workflow-scope.test.mjs 的 SLOW_BROWSER_JOBS(仍在 25 分硬上限內,真的卡死照樣抓得到)。
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
@@ -979,7 +997,7 @@ jobs:
           # 併在這一步是因為 storybook 與 chromium 已經備好,不必再裝一次。
           # 焦點幾何全掃(58 元件 × 2 主題)與「+N」溢出全寬度掃描**不在這裡** ——
           # 兩支合計約 7.5 分鐘,會把 15 分鐘的 PR 閘撐爆(2026-09-08 實際撞過兩次逾時),
-          # 而 ci-workflow-scope.test.mjs 把這個 15 分鐘釘成不變式。
+          # 而 infra/governance/test/ci-workflow-scope.test.mjs 把這個 15 分鐘釘成不變式。
           # 它們搬到 focus-deep-gates.yml(排程 + 手動),對應 AGENTS.md 的 Tier 3 週期性 deep audit。
           npm run test:focus-indicator-invariants
           npm run test:drag-runtime
@@ -994,7 +1012,7 @@ jobs:
           # 送出中 / 存檔後焦點留在送出鈕(可聚焦的停用)、更新表單存檔後重設比對基準、送出成功跳 Toast(三則 story 原始碼)。
           # 2026-10-07 加 T-dialog / T-sheet(放在浮層裡、送出成功就關的三則 story:Toast、關閉、再打開時 reset)。
           # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)在 verify-browser-datatable-perception ——
-          # 本 job CI 實測 10.8–13.0 分,疊上去貼近 25 分上限(ci-workflow-scope.test.mjs),照 virtual-cursor-modality 對照組的先例按預算放。
+          # 本 job CI 實測 10.8–13.0 分,疊上去貼近 25 分上限(infra/governance/test/ci-workflow-scope.test.mjs),照 virtual-cursor-modality 對照組的先例按預算放。
           node scripts/form-validation-contract-invariant.mjs
           npm run test:shared-carrier-focus
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
@@ -1270,7 +1288,7 @@ jobs:
           # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
           # 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層)
           # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機約 11.5 分(2026-10-13 實測 690 秒、同時另有建置在跑;循序約 26 分);不需要 storybook,
-          # 放這裡是按預算:本 job 拆分後實測 508 秒,overlay job 已 11.9–14.6 分(ci-workflow-scope.test.mjs 釘 25 分上限)。
+          # 放這裡是按預算:本 job 拆分後實測 508 秒,overlay job 已 11.9–14.6 分(infra/governance/test/ci-workflow-scope.test.mjs 釘 25 分上限)。
           node scripts/escape-and-focus-contract-invariant.mjs --selftest
 
   verify-browser-field-edges:
@@ -1457,6 +1475,8 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
+          # 2026-10-14:下面逐字照搬 Visual Regression 的「Resolve reference ref」,它要讀 origin/main 與 v* tag(同那邊的 fetch-depth: 0)
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -1478,6 +1498,50 @@ jobs:
 
       - name: Closed git ownership —— 三面對照組(root 對他人擁有的 repo)+ 真實簽出目錄
         run: node scripts/closed-git-foreign-owner-invariant.mjs --require --workspace="$GITHUB_WORKSPACE"
+
+      # 2026-10-14(待辦總帳 SM7):Visual Regression 的「Resolve reference ref」09-30 進 main 後兩次週跑都死在 dubious ownership
+      # (裸 git、root 對 uid 1001 的簽出目錄),而且被印成「找不到 tag」—— 上面的 closed git 對照組驗的是 closed git,
+      # 驗不到那一步自己叫的裸 git;這個 job 當時只照搬了那條 workflow 開頭幾步。現在**逐字**照搬那一步
+      # (infra/governance/test/ci-workflow-scope.test.mjs 斷言兩邊 run 內容相同),每支 PR 在同一個映像裡真的解析一次參考 commit。
+      # 這裡沒有 reference_ref 輸入,走的就是出事的那條預設路徑(掃 origin/main 的 v* tag + Releases API);寫進 GITHUB_ENV 的值本 job 不用。
+      # Releases API 的 curl 帶重試(暫時性 5xx / 408 / 429 / 斷線 / 逾時;404 不重試):這個 job 是必過 Verify 的一支,
+      # PAT 沒有 actions:write、不能重跑(#163 / 09d2eaa2 的前例),一次網路抖動不該擋住合併。測試斷言帶 --retry 與 --max-time。
+      - name: Resolve reference ref(留空 = origin/main 上最近一次已發布的 release tag)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ws_git() { git -c safe.directory="$GITHUB_WORKSPACE" "$@"; }
+          git_err="$RUNNER_TEMP/resolve-reference-ref.git.err"
+          ws_git rev-parse --verify HEAD >/dev/null 2>"$git_err" \
+            || { echo "✗ INSTRUMENT-FAIL:git 讀不到簽出目錄 $GITHUB_WORKSPACE,判不了參考 commit(這不是「沒有 tag」)。git 原話:" >&2; cat "$git_err" >&2; exit 1; }
+          if [ -n "$REFERENCE_REF" ]; then
+            resolved="$(ws_git rev-parse --verify --quiet "${REFERENCE_REF}^{commit}")" \
+              || { echo "✗ INSTRUMENT-FAIL:reference_ref「${REFERENCE_REF}」在這棵樹裡解析不到 commit(要完整 40 碼 SHA、tag 或分支名)" >&2; exit 1; }
+            echo "參考 commit(明確輸入):${REFERENCE_REF} → ${resolved}"
+          else
+            tags="$(ws_git tag --merged origin/main --sort=-v:refname 'v*' 2>"$git_err")" \
+              || { echo "✗ INSTRUMENT-FAIL:git 列不出 origin/main 上的 v* tag —— 讀取失敗,不是「沒有 tag」。git 原話:" >&2; cat "$git_err" >&2; exit 1; }
+            [ -n "$tags" ] || { echo "✗ INSTRUMENT-FAIL:git 讀得到 origin/main,但上面 0 個 v* tag —— 簽出沒帶 tag(要 fetch-depth: 0),不是「沒有 release」" >&2; exit 1; }
+            chosen=""
+            for tag in $tags; do
+              code="$(curl -sS --retry 3 --retry-delay 2 --retry-connrefused --max-time 30 -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
+                -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' \
+                "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$tag")" || code="curl-failed"
+              if [ "$code" = "200" ] && [ "$(jq -r '.draft' "$RUNNER_TEMP/release.json")" = "false" ]; then chosen="$tag"; break; fi
+              if [ "$code" != "200" ] && [ "$code" != "404" ]; then
+                echo "✗ INSTRUMENT-FAIL:GitHub Releases API 對 $tag 回 $code,判不了它有沒有發布(這不是「沒有 release」)" >&2; exit 1
+              fi
+              echo "· $tag:沒有已發布的 release(API $code),往前找"
+            done
+            [ -n "$chosen" ] || { echo "✗ INSTRUMENT-FAIL:origin/main 上 $(printf '%s\n' $tags | wc -l | tr -d ' ') 個 v* tag 逐一問過 Releases API,沒有一個有已發布的 release —— 沒有參考 commit 可比" >&2; exit 1; }
+            resolved="$(ws_git rev-parse --verify "refs/tags/${chosen}^{commit}")"
+            echo "參考 commit(預設 = 最近一次已發布的 release):$chosen → $resolved"
+          fi
+          case "$resolved" in
+            *[!0-9a-f]*|"") echo "✗ INSTRUMENT-FAIL:解析結果不是十六進位 SHA:$resolved" >&2; exit 1 ;;
+          esac
+          [ "${#resolved}" -eq 40 ] || { echo "✗ INSTRUMENT-FAIL:解析結果不是 40 碼:$resolved" >&2; exit 1; }
+          echo "REFERENCE_REF=$resolved" >> "$GITHUB_ENV"
 
       - name: Install and audit with the lock-verified npm runtime(run #289 死在這一步)
         run: npm run --silent setup:dependencies

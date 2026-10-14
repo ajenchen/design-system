@@ -346,6 +346,7 @@ function StepFixtureTree({ name, label, initial, expandOnSelect = true, children
   const [selected, setSelected] = React.useState(initial.selected)
   const [expanded, setExpanded] = React.useState(() => new Set(initial.expanded))
   React.useEffect(() => {
+    // 閘用的掛鉤:scripts/tree-view-step-navigation-invariant.mjs 經 window.__treeStepFixture 把狀態重設成起點(f0dbaf5a 加,2026-10-14 複查)
     const w = window as unknown as { __treeStepFixture?: Record<string, (s: StepFixtureState) => void> }
     w.__treeStepFixture = { ...w.__treeStepFixture, [name]: (s) => { setSelected(s.selected); setExpanded(new Set(s.expanded)) } }
   }, [name])

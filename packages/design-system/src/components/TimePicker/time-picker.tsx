@@ -379,6 +379,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             // (2026-10-01 前 `{...props}` 在後 → `useFormValidation` getInputProps 帶來的 onKeyDown 整支蓋掉元件的,鍵盤打不開面板)
             {...props}
             // 表單欄位名稱掛在可聚焦的觸發欄位(規則 8 以 name 定位、聚焦)
+            // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
             {...(name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}
             onKeyDown={(e) => {
               if (disabled) return
