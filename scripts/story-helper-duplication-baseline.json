@@ -56,15 +56,6 @@
       ]
     },
     {
-      "key": "cd08f9e02e914028",
-      "name": "personHover",
-      "lines": 15,
-      "files": [
-        "packages/design-system/src/components/Menu/menu-item.stories.tsx",
-        "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx"
-      ]
-    },
-    {
       "key": "6afddaf8e744c3d7",
       "name": "Product",
       "lines": 8,
