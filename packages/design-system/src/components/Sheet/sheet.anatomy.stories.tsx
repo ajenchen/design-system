@@ -141,7 +141,7 @@ export const SideMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Side 方向（消費者 API = right；其餘為 DS 內部基建）</H3>
-        <Desc>消費者 code 只能用 side=&quot;right&quot;。top / bottom / left 變體保留 DS 內部基建用（例：AppShell 的 Menu 放不下時的左側浮層），消費者禁止直接傳、需授權（canonical 見 sheet.tsx L23-27 + showcase AR35）。下表後三列為內部能力 + 世界級對照，供 DS contributor 參考。</Desc>
+        <Desc>消費者 code 只能用 side=&quot;right&quot;。top / bottom / left 變體保留 DS 內部基建用（例：AppShell 的 Menu 放不下時的左側浮層），消費者禁止直接傳、需授權（canonical 見 sheet.tsx 檔頭「其他 side」段 + showcase AR35）。下表後三列為內部能力 + 世界級對照，供 DS contributor 參考。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Side</Th><Th>滑入方向</Th><Th>典型用途</Th><Th>世界級對照</Th></tr></thead>

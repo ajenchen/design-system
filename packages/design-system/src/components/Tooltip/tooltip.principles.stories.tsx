@@ -4,7 +4,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Settings, Save, AlertCircle } from 'lucide-react'
+import { Settings, Save, Share2 } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
 import { Button } from '@/design-system/components/Button/button'
 import { FieldLabel } from '@/design-system/components/Field/field'
@@ -143,7 +143,7 @@ export const NeedsTooltipRule: Story = {
         <ButtonGroup>
           <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           <Button variant="tertiary" size="sm" iconOnly startIcon={Save} aria-label="儲存" />
-          <Button variant="tertiary" size="sm" iconOnly startIcon={AlertCircle} aria-label="警告" />
+          <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
         </ButtonGroup>
         <Label>↑ hover 每顆會跳出 aria-label 對應的 tooltip(自動,不需手動包)</Label>
       </TutorialRule>

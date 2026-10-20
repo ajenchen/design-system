@@ -52,7 +52,7 @@ import type {
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { isImeComposing } from "@/design-system/lib/ime-composition"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
-import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
+import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
 
 /**
  * FileViewer — 可延伸的網頁檔案 preview shell(modal fullscreen)
@@ -155,10 +155,11 @@ function resolveRenderer(file: FileInfo): FileRenderer {
 type ZoomFit = 'fit-width' | 'fit-page'
 
 const ZOOM_PRESETS: number[] = [10, 25, 50, 75, 100, 125, 150, 200, 400]
-// i18n-allow-block: DS defaults for zoom fit menu;consumer override via `labels.zoomFitOptions` (future) or fork
-const ZOOM_FIT_OPTIONS: { value: ZoomFit; label: string }[] = [
-  { value: 'fit-width', label: 'Fit to width' },
-  { value: 'fit-page', label: 'Fit to page' },
+// 文字走 `labels.fitWidth` / `labels.fitPage`(DS 預設中文,consumer 經 `labels` 覆寫);2026-10-20 前寫死英文 Fit to width / Fit to page、
+// 不能覆寫(獨立驗證 OV-10 同族:DS 預設文案語言,lib/i18n/README.md「Fallback chain」)
+const ZOOM_FIT_OPTIONS: { value: ZoomFit; labelKey: 'fitWidth' | 'fitPage' }[] = [
+  { value: 'fit-width', labelKey: 'fitWidth' },
+  { value: 'fit-page', labelKey: 'fitPage' },
 ]
 
 function nextZoomIn(current: number): number {
@@ -180,7 +181,7 @@ interface ZoomInputProps {
   value: number
   onChange: (next: number) => void
   onFit: (fit: ZoomFit) => void
-  labels: Pick<Required<FileViewerLabels>, 'zoomInput' | 'zoomMenu'>
+  labels: Pick<Required<FileViewerLabels>, 'zoomOut' | 'zoomIn' | 'zoomInput' | 'zoomMenu' | 'fitWidth' | 'fitPage'>
 }
 
 /**
@@ -227,7 +228,7 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
         size="sm"
         iconOnly
         startIcon={Minus}
-        aria-label="縮小"
+        aria-label={labels.zoomOut}
         disabled={value <= 10}
         onClick={() => onChange(nextZoomOut(value))}
       />
@@ -281,13 +282,14 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           data-theme="dark"
         >
           {/* 內層 data-theme 再覆蓋一次 — 確保 DropdownMenuItem children 都 resolve dark token */}
+          {/* @theme-boundary-ok: 外層 DropdownMenuContent 已是同一個 dark 主題並宣告 text-foreground,這層不換主題 */}
           <div data-theme="dark" className="contents">
             {ZOOM_FIT_OPTIONS.map((opt) => (
               <DropdownMenuItem
                 key={opt.value}
                 onSelect={() => onFit(opt.value)}
               >
-                {opt.label}
+                {labels[opt.labelKey]}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
@@ -317,7 +319,7 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
         size="sm"
         iconOnly
         startIcon={Plus}
-        aria-label="放大"
+        aria-label={labels.zoomIn}
         disabled={value >= 400}
         onClick={() => onChange(nextZoomIn(value))}
       />
@@ -703,10 +705,18 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
  */
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
 export interface FileViewerLabels {
+  /** 工具列「縮小」鈕(−)ARIA label —— 2026-10-20 前寫死在 ZoomInput、不能覆寫(獨立驗證 OV-10 同族) */
+  zoomOut?: string
+  /** 工具列「放大」鈕(+)ARIA label */
+  zoomIn?: string
   /** Zoom input ARIA label */
   zoomInput?: string
   /** Zoom menu trigger ARIA label */
   zoomMenu?: string
+  /** 縮放選單「符合寬度」 */
+  fitWidth?: string
+  /** 縮放選單「符合頁面」(快捷鍵 F 同一件事) */
+  fitPage?: string
   /** Info panel toggle button — shown when panel is OPEN */
   infoToggleCollapse?: string
   /** Info panel toggle button — shown when panel is CLOSED */
@@ -737,8 +747,12 @@ export interface FileViewerLabels {
 
 // i18n-allow: DS defaults;consumer override via `labels` prop
 const DEFAULT_LABELS: Required<FileViewerLabels> = {
+  zoomOut: '縮小',
+  zoomIn: '放大',
   zoomInput: '縮放比例',
   zoomMenu: '開啟縮放選單',
+  fitWidth: '符合寬度',
+  fitPage: '符合頁面',
   infoToggleCollapse: '收合詳細資訊面板',
   infoToggleExpand: '展開詳細資訊面板',
   download: '下載檔案',
@@ -834,9 +848,12 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     onChange: onOpenChange,
   })
   const contentRef = React.useRef<HTMLDivElement | null>(null)
-  // 開啟當下握著焦點的元素(縮圖 / 「預覽」鈕…):關閉後還給它。FileViewer 由受控 `open` 開、沒有 Radix 觸發點,
-  // Radix 沒有東西可還 → 2026-09-30 前關閉後焦點掉到 body(實測)。記 / 還都走 lib/overlay-focus-return.ts(全 DS 一支)
-  const openerRef = React.useRef<HTMLElement | null>(null)
+  // 開啟當下握著焦點的元素(縮圖 / 「預覽」鈕 / 選單項…):關閉後還給它。FileViewer 由受控 `open` 開、沒有 Radix 觸發點,
+  // Radix 沒有東西可還 → 2026-09-30 前關閉後焦點掉到 body(實測)。記 / 還都走 DialogContent / SheetContent 同一支預設
+  // (lib/overlay-focus-return.ts useTriggerlessFocusReturn):開啟者住在會跟著關掉的選單裡(附件列「⋯」→ 預覽)時改記那個選單的觸發鈕
+  // (persistentOpenerOf)。2026-10-20 前本元件自己記 captureFocusOrigin、少了這一步 → 從選單項開、關閉後焦點掉到 body(獨立驗證 OV-01 實測)。
+  // 並存(persistentElements)時 Radix Root 走 modal={false} → 非 modal:按在常駐區收起不搶。
+  const focusReturn = useTriggerlessFocusReturn(!persistentElements)
   const setContentRef = React.useCallback(
     (node: HTMLDivElement | null) => {
       contentRef.current = node
@@ -1030,12 +1047,14 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={!persistentElements}>
       <DialogPrimitive.Portal container={portalContainer ?? undefined}>
+        {/* @theme-boundary-ok: 並存遮罩沒有文字,data-theme 只讓遮罩色解析成深色 */}
         {persistentElements ? <CoexistenceMask keep={persistentElements} data-theme="dark" /> : null}
         {/* Overlay — FileViewer 固定深色氛圍,與 Dialog 共用 bg-overlay。
             **data-theme="dark"**(2026-04-30):Overlay 在 Portal 內、是 Content 的 sibling,
             不繼承 Content 內層的 dark 主題 → `--overlay` 默認 resolve 成 light theme α45 黑。
             FileViewer 永遠 dark(line 899 outer),mask 也須 dark token = α65 黑(更深)
             才語意一致。同 DropdownMenuContent Portal 處理(line 245)。 */}
+        {/* @theme-boundary-ok: 遮罩沒有文字,data-theme 只讓 --overlay 解析成深色 */}
         <DialogPrimitive.Overlay
           data-theme="dark"
           className={cn(
@@ -1047,6 +1066,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
         <DialogPrimitive.Content
           {...coexistGuards}
           ref={setContentRef}
+          // 檢視器沒有說明元件(只有 sr-only 標題)→ 不寫 aria-describedby;Radix 預設會指向一個不存在的 id
+          // (lib/overlay-description.ts;獨立驗證 OV-15)。consumer 自己傳了就照 consumer 的(下方 {...props} 蓋過)
+          aria-describedby={undefined}
           {...props}
           tabIndex={-1}
           className={cn(
@@ -1065,8 +1087,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           // 讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar control/Tooltip。
           // Consumer handler 可先取消；未取消時由本元件阻止 Radix default 並聚焦 Content。
           onOpenAutoFocus={(event) => {
-            // 先記開啟者(FocusScope 派發這個事件時焦點還沒搬進來)
-            openerRef.current = captureFocusOrigin()
+            // 先記開啟者(FocusScope 派發這個事件時焦點還沒搬進來;住在選單裡的開啟者改記選單的觸發鈕)
+            focusReturn.onOpenAutoFocus(event)
             onOpenAutoFocus?.(event)
             if (event.defaultPrevented) return
             event.preventDefault()
@@ -1075,9 +1097,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           // 關閉 → 焦點還給開啟者(consumer 的 handler 先跑、擋了預設就不接;並存模式非 modal:按在常駐區收起不搶)
           onCloseAutoFocus={(event) => {
             onCloseAutoFocus?.(event)
-            const opener = openerRef.current
-            openerRef.current = null
-            returnFocusToOpener(event, opener, { noTrigger: true, modal: !persistentElements })
+            focusReturn.onCloseAutoFocus(event)
           }}
           // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):縮放比例輸入框用輸入法組字中不關;
           // 焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉

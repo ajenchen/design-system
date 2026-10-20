@@ -115,6 +115,8 @@ export const CreateProjectRight: Story = {
  */
 function EditUserSheet() {
   const [open, setOpen] = useState(false)
+  // 標題 = 存下的顯示名稱(2026-10-20 前寫死「Ada Chen」:改名存檔後再打開,欄位是新名字、標題還是舊名字;獨立驗證 OV-V04)
+  const [savedName, setSavedName] = useState('Ada Chen')
   const form = useFormValidation({
     initialValues: { displayName: 'Ada Chen', title: 'Design Engineer', email: 'ada.chen@example.com' },
     intent: 'update',
@@ -122,7 +124,8 @@ function EditUserSheet() {
       displayName: (v) => (String(v).trim() ? undefined : '顯示名稱必填'),
       email: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
     },
-    onSubmit: () => {
+    onSubmit: (values) => {
+      setSavedName(String(values.displayName).trim())
       toast({ variant: 'success', title: '成員資料已儲存' })
       setOpen(false)
     },
@@ -134,11 +137,12 @@ function EditUserSheet() {
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="tertiary">檢視成員詳情</Button>
+        {/* 觸發鈕說的是它會打開什麼:編輯表單(2026-10-20 前寫「檢視成員詳情」,打開的卻是編輯表單;獨立驗證 OV-V04) */}
+        <Button variant="tertiary">編輯 {savedName}</Button>
       </SheetTrigger>
       <SheetContent side="right" className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>Ada Chen</SheetTitle>
+          <SheetTitle>{savedName}</SheetTitle>
         </SheetHeader>
         {/* Field-to-field gap = `--layout-space-loose`:form 用 `flex-col gap-*` 單值,保守選 loose
             讓「非 fw ↔ 非 fw」Input↔Input 合規(規則 3 per-transition 原意 loose);
@@ -191,7 +195,7 @@ export const EditUserRight: Story = {
 }
 
 // LeftNavigation 範例移除(AR35):消費者 Sheet API **只能用 side="right"**。
-// 左側 / 頂部 / 底部為 DS 內部基建用(如 Sidebar 在 narrow viewport 時切 left 滑入),
+// 左側 / 頂部 / 底部為 DS 內部基建用(如 AppShell 的 Menu 浮層:Sidebar 放不下並排時從 left 滑入),
 // 需 user 明示授權。本 stories 檔不提供未授權用法示範。
 
 /**
@@ -209,7 +213,7 @@ export const OpenSnapshot: Story = {
       </SheetTrigger>
       <SheetContent className="flex flex-col sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>編輯使用者 profile</SheetTitle>
+          <SheetTitle>編輯個人資料</SheetTitle>
         </SheetHeader>
         <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
           <Field>

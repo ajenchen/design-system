@@ -9,10 +9,10 @@
 //   會讓多張浮層互疊蓋住規格表;open-state 視覺快照由 consumer canonical(ProfileCard /
 //   OverflowIndicator)各自的 OpenSnapshot 涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from './hover-card'
+import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { Button } from '@/design-system/components/Button/button'
-import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -29,18 +29,27 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy(純行為 primitive)</H3>
         <Desc>HoverCard 基於 Radix HoverCard,不含視覺樣式——只提供觸發邏輯、定位、動畫。Bg / border / shadow / padding 由 consumer 決定,符合不同場景的視覺語言。</Desc>
+        {/* 人員頭像一律走 Avatar 的 hoverCard(avatar.spec.md「Avatar HoverCard 原則」;頭像因此可用 Tab 聚焦開卡),
+            內容是真的 ProfileCard(預設動作 + 查看更多,avatar.spec.md「onViewMore 為 hover context 必含」)—— 2026-10-20 前這裡是手刻的
+            ItemContent 卡、頭像不可聚焦(獨立驗證 OV-06 / OV-V02) */}
         <div className="flex items-center gap-6">
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} />
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
-              <div className="flex flex-col gap-2 w-56">
-                <ItemContent label="Ada Chen" description="Design Engineer · 台北" mode="scanning" labelClassName="text-body font-medium" descriptionTone="muted" />
-                <Button variant="tertiary" size="sm">傳訊息</Button>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          <Avatar
+            src="https://i.pravatar.cc/80?u=ada-chen"
+            alt="Ada Chen"
+            size={40}
+            hoverCard={
+              <ProfileCard
+                name="Ada Chen"
+                avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
+                subtitle="Design Engineer · 台北"
+                status="online"
+                statusMessage="本週在台北辦公室"
+                actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+                defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
+                onViewMore={() => {}}
+              />
+            }
+          />
           <span className="text-caption text-fg-muted">← hover Avatar 彈出 ProfileCard(可點按鈕)</span>
         </div>
       </div>
@@ -85,38 +94,55 @@ export const VisualVariants: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>亮色 Card 樣式(ProfileCard pattern)</H3>
-        <Desc>人員資訊卡、內容預覽等可互動浮層。使用 `bg-surface-raised + elevation-200 + rounded-lg + border`。</Desc>
+        <Desc>人員資訊卡、內容預覽等可互動浮層。外殼 = HOVER_CARD_SURFACE_CLASS(bg-surface-raised + text-foreground + border + rounded-lg + elevation-200,不含內距 —— ProfileCard 自帶內距)。</Desc>
         <div className="flex items-center gap-6">
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">Ada Chen</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
-              <div className="w-56">
-                <ItemContent className="mb-3" label="Ada Chen" description="Design Engineer · 台北" mode="scanning" labelClassName="text-body font-medium" descriptionTone="muted" />
-                <Button variant="tertiary" size="sm">傳訊息</Button>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          <p className="text-body">
+            設計稿請找
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                {/* 行內 @mention 用可聚焦的連結(hover-card.spec.md A11y「Trigger 的可聚焦性需 consumer 自補」;Tab 到它就開卡) */}
+                <a
+                  href="#member-ada-chen"
+                  onClick={(e) => e.preventDefault()}
+                  // @layout-space-magic-ok: 句子裡的行內人名連結左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro)
+                  className="text-primary underline underline-offset-2 mx-1 cursor-pointer"
+                >
+                  @Ada Chen
+                </a>
+              </HoverCardTrigger>
+              <HoverCardContent align="start" className={HOVER_CARD_SURFACE_CLASS}>
+                <ProfileCard
+                  name="Ada Chen"
+                  avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
+                  subtitle="Design Engineer · 台北"
+                  status="online"
+                  statusMessage="本週在台北辦公室"
+                  actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+                  defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
+                  onViewMore={() => {}}
+                />
+              </HoverCardContent>
+            </HoverCard>
+            確認。
+          </p>
         </div>
       </div>
 
       <div>
         <H3>深色 Tooltip 樣式(OverflowIndicator pattern)</H3>
-        <Desc>溢出清單 / 快速預覽。使用 `bg-tooltip + data-theme="dark" + compact padding`。</Desc>
+        <Desc>溢出清單。外殼 = HOVER_CARD_TOOLTIP_SURFACE_CLASS + data-theme=&quot;dark&quot;(bg-tooltip + text-foreground + rounded-lg;字色一定要在換主題的那一層重新解析,否則淺色頁上是黑字配深底)。下方是 OverflowIndicator 本身,不另仿一份。</Desc>
+        {/* 消費元件本身(M23(d) 最相近的同目的 canonical):2026-10-20 前這裡手仿一張深色卡,連同 OverflowIndicator 一起漏了字色,
+            淺色頁上清單 1.92:1(獨立驗證 OV-02) */}
         <div className="flex items-center gap-6">
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">+3 位協作者</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-tooltip rounded-md px-3 py-2" data-theme="dark">
-              <div className="text-caption w-56 flex flex-col gap-1">
-                <span>林思妤</span>
-                <span>陳柏宇</span>
-                <span>Aisha Khan</span>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          <OverflowIndicator count={3} shape="tag" size="md">
+            {/* 清單內容照正規用法直排、每人一列(hover-card.stories.tsx「溢出清單」、overflow-indicator.stories.tsx 頭像堆疊同一個寫法) */}
+            {/* @layout-space-magic-ok: +N 浮層內的同質人員列(layoutSpace.spec.md:165 同質清單列) */}
+            <div className="flex flex-col gap-1 min-w-[160px] text-caption">
+              {['林思妤', '陳柏宇', 'Aisha Khan'].map((name) => (
+                <span key={name}>{name}</span>
+              ))}
+            </div>
+          </OverflowIndicator>
         </div>
       </div>
 
@@ -126,8 +152,8 @@ export const VisualVariants: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Consumer</Th><Th>視覺風格</Th><Th>典型用途</Th></tr></thead>
             <tbody>
-              <tr><Td>ProfileCard</Td><Td mono>亮色 Card(bg-surface-raised + elevation-200)</Td><Td>人員 / 組織 / 文件預覽</Td></tr>
-              <tr><Td>OverflowIndicator</Td><Td mono>深色 Tooltip(bg-tooltip + data-theme dark)</Td><Td>+N 溢出清單</Td></tr>
+              <tr><Td>ProfileCard</Td><Td mono>HOVER_CARD_SURFACE_CLASS(亮色 Card)</Td><Td>人員 / 組織 / 文件預覽</Td></tr>
+              <tr><Td>OverflowIndicator</Td><Td mono>HOVER_CARD_TOOLTIP_SURFACE_CLASS + data-theme dark(深色 Tooltip)</Td><Td>+N 溢出清單</Td></tr>
               <tr><Td>Custom</Td><Td>Consumer 自訂</Td><Td>任何需要可互動 hover 浮層的場景</Td></tr>
             </tbody>
           </table>

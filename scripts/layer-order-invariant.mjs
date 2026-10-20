@@ -634,7 +634,8 @@ await scenario('A', DEMO, PANEL, async () => {
 
 // ── B / C1 Dialog 裡的提示 vs Toast;Toast vs 一般 Dialog(z-50)的遮罩與本體 ─────────────────────
 await scenario('B', DIALOG_FORM, 'button', async () => {
-  await step('B1 點「開啟 Modal」', () => page.getByRole('button', { name: '開啟 Modal' }).click({ timeout: WAIT_MS }))
+  // 觸發鈕 2026-10-20 由「開啟 Modal」改為使用者會按的動作「建立專案」(獨立驗證 OV-14;dialog.stories WithForm)
+  await step('B1 點「建立專案」', () => page.getByRole('button', { name: '建立專案', exact: true }).click({ timeout: WAIT_MS }))
   await step('B2 等 Dialog 出現', () => page.waitForSelector('[role="dialog"]', { timeout: WAIT_MS }))
   await settle('B3')
   await step('B4 填專案名稱', () => page.locator('[role="dialog"] input').first().fill('Q4 設計系統升級', { timeout: WAIT_MS }))
@@ -642,7 +643,7 @@ await scenario('B', DIALOG_FORM, 'button', async () => {
   await waitToast('B6', '專案已建立')
   const since = await holdToast('B7', '專案已建立')
   await step('B8 等送出後的 Dialog 卸載', () => page.waitForFunction(() => !document.querySelector('[role="dialog"]'), null, { timeout: WAIT_MS, polling: 'raf' }))
-  await step('B9 再點「開啟 Modal」', () => page.getByRole('button', { name: '開啟 Modal' }).click({ timeout: WAIT_MS }))
+  await step('B9 再點「建立專案」', () => page.getByRole('button', { name: '建立專案', exact: true }).click({ timeout: WAIT_MS }))
   await step('B10 等 Dialog 出現', () => page.waitForSelector('[role="dialog"]', { timeout: WAIT_MS }))
   await settle('B11')
   const cb = await boxOf('B12 量 Dialog 的關閉鈕', page.locator('[role="dialog"] button[aria-label="關閉"]').first())

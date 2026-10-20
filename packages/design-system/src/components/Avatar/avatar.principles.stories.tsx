@@ -5,7 +5,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Bell, Home } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -193,22 +194,10 @@ export const HoverCardIntegrationRule: Story = {
           alt="Ada Chen"
           size={40}
           hoverCard={
-            <ProfileCard
-              name="Ada Chen"
-              subtitle="Design Engineer · 台北"
-              avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
-              status="online"
-              statusMessage="Out of Office: Back on Monday!"
-              actions={<ProfileCardDefaultActions />}
-              fields={[
-                { label: 'ID', value: 'YHANAX' },
-                { label: 'Employee number', value: '1234567' },
-              ]}
-              onViewMore={() => {}}
-            />
+            samplePersonCard({ name: 'Ada Chen', subtitle: 'Design Engineer · 台北', avatarSrc: 'https://i.pravatar.cc/80?u=ada-chen', id: 'ADACHEN', employeeNumber: '1048217' })
           }
         />
-        <Label>↑ hover avatar 彈出 ProfileCard(action 列:Chat + Audio call 設計準則)</Label>
+        <Label>↑ hover avatar 彈出 ProfileCard(action 列:傳訊息 + 語音通話 設計準則)</Label>
       </TutorialRule>
 
       <TutorialRule

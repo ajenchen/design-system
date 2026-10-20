@@ -284,12 +284,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   今天/昨天/更早)+ CommandSeparator;無結果=`<Empty>`(CommandEmpty);搜尋列 `h-8 py-0`(列高 40 守 SelectMenu)。
 - 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,**瞬間出現、不淡入** —— 2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,規則住 ItemSuffix;2026-09-26 前 150ms 淡入);**鍵盤(2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)**:改名/刪除**不在 Tab 路上**(09-25 前 4 列 = 8 站);搜尋框 ↑↓ 移反白,插入點在字尾時 `→` 進反白列的「改名」、再 `→`「刪除」(停住),`←` 退一顆、第一顆 `←` 回搜尋框;鈕上 ↑↓ / Home / End = 回搜尋框並移反白;鈕上 Tab / Shift+Tab 一下離開這一串(浮層照舊在面板裡繞圈);鍵盤反白的那一列浮出改名/刪除,焦點進到鈕上時反白列的框讓給那顆鈕(一個項目一個指示器)——「插入點在字尾」條件(搜尋框的 `→` 仍要能移插入點)與「鍵盤反白列浮出」是 AI 推導;Esc 不規定(照舊關浮層)。
   **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
-- 改名=Dialog(`autoHeight` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
+- 改名=Dialog(`height="hug"` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
   **驗證走 `useFormValidation`**(2026-10-01,待辦總帳 N70;`../Field/form-validation.spec.md` 更新類):沒改停用、改了亮、還原再停;焦點在欄位裡不報錯(規則 1)、
   清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」可按**,按了才顯示 FieldError「名稱不可空白」並把焦點移到欄位(規則 7 / 8;
   原「空白時停用」查無 user 原話且與 hook 的 submitDisabled 衝突,AI 推導改寫);Enter=儲存;**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
   (`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」),沒改直接關);
-  刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
+  刪除=Dialog 危險樣式(`primary + danger`,同 hug/440)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
 - 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發(開啟時 `captureFocusOrigin` 記下行內動作鈕、關閉時 `returnFocusToOpener` 還,找不到就走標題觸發這條 fallback;2026-09-30 前是關閉後 `setTimeout 0` 聚焦標題的另一份實作)。
 - 所有 callback(`onSelectConversation` / `onRenameConversation` / `onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。

@@ -505,6 +505,7 @@
       "scripts/test-overlay-footer-gutter-invariant.mjs",
       "scripts/test-overlay-list-as-region-invariant.mjs",
       "scripts/test-overlay-shortcut-scope-invariant.mjs",
+      "scripts/test-overlay-story-contract-invariant.mjs",
       "scripts/test-pagination-narrow-ladder-invariant.mjs",
       "scripts/test-produce-hook-enforced-evidence.mjs",
       "scripts/test-product-template-scaffold-lock.mjs",

@@ -1,7 +1,7 @@
 // @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText, FolderInput, Link, Share2, UserPlus } from 'lucide-react'
+import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText, FolderInput, Link, Share2, UserPlus, Eye } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -212,7 +212,8 @@ const CheckboxDemo = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="tertiary" endIcon={ChevronDown}>顯示欄位</Button>
+        {/* 同 DataTable 正式元件的「欄位顯示」(Eye 圖示、同一個詞;獨立驗證 OV-V07) */}
+        <Button variant="tertiary" startIcon={Eye} endIcon={ChevronDown}>欄位顯示</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel>可見欄位</DropdownMenuLabel>

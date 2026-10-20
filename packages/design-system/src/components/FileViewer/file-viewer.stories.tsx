@@ -234,7 +234,7 @@ export const FigmaDesignReview: Story = {
         </Button>
         <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-normal">
           情境:設計 review 中,engineer 需要 zoom 看 spacing / color / font 細節。
-          用滾輪或 +/- 縮放,拖曳 pan。`0` 重設為 100%,`F` Fit to page。
+          用滾輪或 +/- 縮放,拖曳 pan。`0` 重設為 100%,`F` 符合頁面。
         </p>
         <FileViewer
           files={figmaDesignFile}

@@ -2,11 +2,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Download } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
-import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
+import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import {
   HoverCard,
   HoverCardTrigger,
   HoverCardContent,
+  HOVER_CARD_SURFACE_CLASS,
 } from '@/design-system/components/HoverCard/hover-card'
 
 const meta: Meta = {
@@ -86,7 +87,7 @@ export const Overview: Story = {
 
       {/* 2026-07-14 Dim 68 修:補 (B) 進出場動畫 sub-family 展示 — 原頁只列 delay,
           與 motion.css / motion.spec.md 兩 sub-family 現況 drift(「系統無 duration/easing token」已過時)。
-          世界級對照值 cite:tokens/motion/motion.spec.md#L113-L116 表(m3.material.io/styles/motion/easing-and-duration
+          世界級對照值 cite:tokens/motion/motion.spec.md「進出場動畫 token」表(m3.material.io/styles/motion/easing-and-duration
           + carbondesignsystem.com/guidelines/motion/overview,spec frontmatter benchmark 段)。 */}
       <h2 className="text-h3 mb-[var(--layout-space-tight)] mt-[var(--layout-space-loose)]">進出場動畫 Tokens</h2>
       <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
@@ -100,13 +101,13 @@ export const Overview: Story = {
       <DelayRow
         token="--motion-duration-overlay"
         value="150ms"
-        usage="輕量浮層進出場(對照表 cite: motion.spec.md#L113)"
+        usage="輕量浮層進出場(對照表 cite: motion.spec.md「進出場動畫 token」)"
         consumers="Tooltip / Popover / HoverCard / DropdownMenu"
       />
       <DelayRow
         token="--motion-duration-surface"
         value="250ms"
-        usage="模態面板進出場——面積大、位移遠,慢一階(對照表 cite: motion.spec.md#L114)"
+        usage="模態面板進出場——面積大、位移遠,慢一階(對照表 cite: motion.spec.md「進出場動畫 token」)"
         consumers="Dialog / Sheet / FileViewer"
       />
       <DelayRow
@@ -118,25 +119,25 @@ export const Overview: Story = {
       <DelayRow
         token="--motion-easing-enter"
         value="0,0,0,1"
-        usage="進場減速曲線——快起、平滑落定(對照表 cite: motion.spec.md#L115)"
+        usage="進場減速曲線——快起、平滑落定(對照表 cite: motion.spec.md「進出場動畫 token」)"
         consumers="所有 overlay 進場"
       />
       <DelayRow
         token="--motion-easing-exit"
         value="0.3,0,1,1"
-        usage="出場加速曲線(對照表 cite: motion.spec.md#L116)"
+        usage="出場加速曲線(對照表 cite: motion.spec.md「進出場動畫 token」)"
         consumers="所有 overlay 出場"
       />
       <DelayRow
         token="--motion-enter-distance"
         value="0.5rem"
-        usage="slide 進場位移(沿用現行 slide-*-2 幾何,cite: motion.css#L24)"
+        usage="slide 進場位移(沿用現行 slide-*-2 幾何,cite: motion.css --motion-enter-distance)"
         consumers="slide 型進場 overlay"
       />
       <DelayRow
         token="--motion-enter-scale"
         value="0.95"
-        usage="zoom 進場 scale(沿用現行 zoom-95 幾何,cite: motion.css#L25)"
+        usage="zoom 進場 scale(沿用現行 zoom-95 幾何,cite: motion.css --motion-enter-scale)"
         consumers="zoom 型進場 overlay"
       />
 
@@ -187,15 +188,15 @@ export const DelayFeel: Story = {
                 陳美惠
               </a>
             </HoverCardTrigger>
-            {/* 人員預覽卡一律 ProfileCard(hover-card.spec.md:33「人員資訊卡：Avatar hover 顯示 ProfileCard」;內容與 chrome 的 owner)。
-                外殼照 Avatar hoverCard 內建那一層(avatar.tsx「HoverCardContent canonical」):不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定 */}
-            <HoverCardContent
-              className="bg-surface-raised border border-border rounded-lg overflow-hidden"
-              style={{ boxShadow: 'var(--elevation-200)' }}
-            >
+            {/* 人員預覽卡一律 ProfileCard(hover-card.spec.md「用途」:人員 Avatar hover 顯示詳細資訊;內容與 chrome 的 owner),
+                帶預設動作與查看更多(avatar.spec.md「onViewMore 為 hover context 必含」;2026-10-20 前這張卡沒有任何按鈕,獨立驗證 OV-06)。
+                外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS(與 Avatar hoverCard 內建同一份):不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定 */}
+            <HoverCardContent className={HOVER_CARD_SURFACE_CLASS}>
               <ProfileCard
                 name="陳美惠"
                 subtitle="產品設計師 · Design Platform"
+                actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+                onViewMore={() => {}}
                 defaultFieldValues={{ id: 'MEIHUI', employeeNumber: '2048731' }}
                 fields={[
                   { label: '所在地', value: '台北 · GMT+8' },

@@ -69,12 +69,14 @@ HoverCardContent 只提供：
 - 進出場動畫（fade + zoom + slide，方向感知）
 - `sideOffset`（與 trigger 的間距）
 
-**不提供** `bg`、`border`、`shadow`、`padding`、`rounded`——consumer 根據場景自行決定：
+**不提供** `bg`、`border`、`shadow`、`padding`、`rounded`——consumer 根據場景自行決定。兩種常見外殼各有**一份常數**(`hover-card.tsx`),所有使用方消費它、不另抄(2026-10-20 前手抄 14 處,6 處漏了陰影、1 處連底色都沒有;深色殼漏了字色 —— 獨立驗證 OV-V03 / OV-06 / OV-02):
 
-| Consumer | 視覺風格 |
-|---|---|
-| ProfileCard | 亮色 card（`bg-surface-raised` + `elevation-200` + `rounded-lg` + `border`） |
-| OverflowIndicator | 深色 tooltip 風格（`bg-tooltip` + `data-theme="dark"`） |
+| Consumer | 視覺風格 | 外殼常數(唯一住所) |
+|---|---|---|
+| ProfileCard(Avatar `hoverCard` 內建)/ 連結、儲存庫等內容預覽 | 亮色 card(`bg-surface-raised` + `text-foreground` + `border` + `rounded-lg` + `elevation-200`;跟隨頁面主題,不含內距) | `HOVER_CARD_SURFACE_CLASS` |
+| OverflowIndicator 溢出清單 | 深色 tooltip 風格(`bg-tooltip` + `text-foreground` + `rounded-lg`,**與 `data-theme="dark"` 寫在同一個元素**) | `HOVER_CARD_TOOLTIP_SURFACE_CLASS` |
+
+**深色殼必含字色**:CSS 的 `color` 繼承的是外層**已解析**的值,`data-theme="dark"` 只換變數、不換 color —— 只寫 data-theme 的深色殼在淺色頁上是黑字配深底(2026-10-20 前量到 1.92:1,違反下方 A11y「WCAG AA ≥ 4.5:1」)。規則同 `../Alert/alert.tsx` 檔頭「data-theme 必須搭配 text-foreground」與 M3;閘 `scripts/overlay-story-contract-invariant.mjs`(S1 換主題的元素都宣告字色、R1 深色清單在淺 / 深兩種頁面的實測對比)。
 
 ## sideOffset
 

@@ -91,7 +91,9 @@ export const UsageGuidance: Story = {
           title="❌ 達 100% 不 swap,留在 value=100"
           note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。世界級慣例(Gmail / Dropbox / Google Drive):上傳完成即消失,swap 為 ✓ icon / 實際內容 / Empty。本 DS 不提供 success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
         >
-          <div className="flex items-center gap-[var(--layout-space-loose)]">
+          {/* 兩組「範例在上、說明在下」並排:靠下對齊,兩則說明才在同一條線(範例高度不同:圓環 24px、Check + 文字一行;
+              2026-10-20 前 items-center → 兩則說明差 1.5px,同 HoverCard 原則「判斷法」那一列,獨立驗證 OV-13 同族) */}
+          <div className="flex items-end gap-[var(--layout-space-loose)]">
             <ExampleGroup align="center">
               <CircularProgress value={100} size={24} aria-label="進度 100%（穩態誤用）" />
               <Label warn>❌ 穩態停留 100% → 使用者困惑</Label>

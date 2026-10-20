@@ -21,44 +21,45 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// PersonData sample 含 ProfileCard 重要資訊(status / statusMessage / fields)—
+// PersonData sample 含 ProfileCard 重要資訊(status / statusMessage / id / employeeNumber;兩個預設欄位走 PersonData 自己的 id / employeeNumber,不用 fields 傳同名欄 —— 預設欄名 2026-10-20 改中文「員工編號」後舊寫法會兩列重複)—
 // canonical:所有 person avatar hover 都應 render 完整資訊(profile-card.spec.md)。
 const samplePeople = [
   {
     name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design｜D-0042｜EMP-1001',
-    status: 'online' as const,
+    // 休假訊息配「離開」(原為「線上」配 Out of Office,自相矛盾;獨立驗證 OV-V01 同族)
+    status: 'away' as const,
     statusMessage: 'Out of Office: Back on Monday! For urgent matters please contact @Wei-Lun Cheng in the meantime.',
-    fields: [{ label: 'ID', value: 'YHANAX' }, { label: 'Employee number', value: 'EMP-1001' }],
+    id: 'YHANAX', employeeNumber: 'EMP-1001',
   },
   {
     name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering｜E-0087｜EMP-1002',
     status: 'busy' as const,
     statusMessage: '正在處理 Q2 release,優先處理 P0 issues',
-    fields: [{ label: 'ID', value: 'BLIN01' }, { label: 'Employee number', value: 'EMP-1002' }],
+    id: 'BLIN01', employeeNumber: 'EMP-1002',
   },
   {
     name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product｜P-0015｜EMP-1003',
     status: 'away' as const,
     statusMessage: '外出開會,下午 3 點後回覆',
-    fields: [{ label: 'ID', value: 'CWU003' }, { label: 'Employee number', value: 'EMP-1003' }],
+    id: 'CWU003', employeeNumber: 'EMP-1003',
   },
   {
     name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing｜M-0023｜EMP-1004',
     status: 'online' as const,
     statusMessage: 'Welcome pings! 我下午在 campaign review meeting',
-    fields: [{ label: 'ID', value: 'DHUANG' }, { label: 'Employee number', value: 'EMP-1004' }],
+    id: 'DHUANG', employeeNumber: 'EMP-1004',
   },
   {
     name: 'Eric Tsai', avatarUrl: 'https://i.pravatar.cc/48?u=eric', description: 'Engineering｜E-0091｜EMP-1005',
     status: 'offline' as const,
     statusMessage: 'PTO until next Tuesday',
-    fields: [{ label: 'ID', value: 'ETSAI' }, { label: 'Employee number', value: 'EMP-1005' }],
+    id: 'ETSAI', employeeNumber: 'EMP-1005',
   },
   {
     name: 'Fiona Lee', avatarUrl: 'https://i.pravatar.cc/48?u=fiona', description: 'Design｜D-0056｜EMP-1006',
     status: 'online' as const,
     statusMessage: 'Working on ProfileCard v3 refactor',
-    fields: [{ label: 'ID', value: 'FLEE' }, { label: 'Employee number', value: 'EMP-1006' }],
+    id: 'FLEE', employeeNumber: 'EMP-1006',
   },
 ]
 

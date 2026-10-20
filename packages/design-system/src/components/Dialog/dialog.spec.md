@@ -111,7 +111,7 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 會 → `fill`;不會 → `hug`。理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 ——
 先把可用高度穩定下來、讓 body 自己捲,外框就不動了。**現在預期不會變、但未來會加入異步 section 的,選 `fill`。**
 
-`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。
+`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。**DS 內部(元件、story、閘的夾具)一律不再使用**(2026-10-20 把 30 處用法遷完 —— 27 處在 DS 原始碼(CommandDialog、AgentPanel 改名 / 刪除對話框、各頁 story)、3 處在閘的夾具;獨立驗證 OV-09:設計原則頁還在教舊名);保留這個 prop 只為了既有 consumer 不壞。閘 `scripts/overlay-story-contract-invariant.mjs` S3(DS 原始碼與閘夾具裡任何 `<DialogContent autoHeight>` 都紅)。
 
 **世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`)、
 Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
@@ -254,7 +254,7 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 | 誤解 | 正解 |
 |------|------|
 | 「側邊 / 長停留面板也用 Dialog」 | 視覺重量不同——Dialog 是中央阻斷 modal,Sheet 側滑較輕(見「何時不用」+ 禁止事項「長 form wizard」條) |
-| 「autoHeight 是預設」 | 預設採 viewport-bounded 固定高度以維持穩定外框；autoHeight 只給內容量已知且穩定的短 dialog(見「高度行為」) |
+| 「hug 是預設」 | 預設採 viewport-bounded 固定高度(`height="fill"`)以維持穩定外框;`height="hug"` 只給內容量已知且穩定的短 dialog(見「高度行為」) |
 | 「maxWidth 想設多寬都行」 | 受 viewport inset 公式截斷(見「maxWidth」邊界) |
 | 「視覺不顯示標題就可拿掉 DialogTitle」 | 必須保留,用 VisuallyHidden 包裹給 screen reader(見「A11y 預設」) |
 
@@ -279,9 +279,10 @@ Radix Dialog 自動處理：
 
 - **Modal 語意**：`role="dialog"`(Radix 刻意**不**設 `aria-modal="true"`,改用 aria-hidden 的 `hideOthers()` 把背景兄弟節點設 `aria-hidden` + FocusScope trap 達成隔離,避免 `aria-modal` 在部分 screen reader 隱藏整頁的已知 bug）
 - **標題綁定**：`<DialogTitle>` 自動成為 `aria-labelledby` 指向對象，screen reader 開啟時讀出標題
+- **說明綁定(DS 補的)**:有 `<DialogDescription>` 時 `aria-describedby` 指向它;**沒有說明(只有標題的對話框,DS 允許)時不寫 `aria-describedby`**。Radix 不論有沒有說明都寫一個指向說明 id 的 `aria-describedby`,沒寫說明時就指向不存在的元素(壞掉的 IDREF),開發模式還印「Missing `Description`」警告 —— 2026-10-20 前 Dialog / Sheet / FileViewer 都是(獨立驗證 OV-15)。機制:`DialogDescription` 掛上時向 `DialogContent` 登記,沒有登記、consumer 也沒自己指定 `aria-describedby` 時拿掉(`../../lib/overlay-description.ts`,Sheet 同一支、FileViewer 沒有說明元件直接不寫);consumer 不必再傳 `aria-describedby={undefined}`。閘 `scripts/overlay-story-contract-invariant.mjs` R7。
 - **Focus trap**：焦點鎖在 Dialog 內，Tab 循環不逃出
 - **Esc 關閉**：按 Esc 自動關閉 —— **一次只少一層,而焦點所在的控件自己那一層也算一層**(2026-10-01;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):對話框裡改過的欄位(接 `useFormValidation`)/ 就地編輯中 / 表格的格游標 / 拖曳中 → 第一下 Esc 由控件撤銷(回復欄位 / 取消編輯 / 清游標 / 取消拖曳),對話框不關,第二下才關;乾淨的控件按 Esc 直接關。**輸入法組字中的 Esc 不關**(那一下是在取消選字,例:改名對話框用注音打字時按 Esc 取消選字,不該把對話框連同打到一半的名字一起關掉)。機制:`DialogContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape`(2026-10-01 取代 ime-composition.ts 的 `withImeSafeEscape`)—— 焦點所在控件在這一層裡宣告了 `data-escape-layer` 就把那一下留給它,consumer 的 `onEscapeKeyDown` 在那一下不會被呼叫;沒有表單引擎的 `<Input>` 沒有「原值」可回復,Esc 直接關
-- **Focus return**：關閉時焦點返回開啟它的元素。Radix 只還給 `DialogTrigger`;**受控 `open`、沒有 `DialogTrigger`(普通按鈕 / 列上動作 / 快捷鍵開的)→ `DialogContent` 預設就記下開啟者、關閉時還給它**(2026-10-01,待辦總帳 OE29;`../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn`:內容掛上時記開啟者、沒有 Radix 觸發點就經 `returnFocusToOpener` 還,modal 按遮罩收起也還)。開啟者住在一個會跟著關掉的選單 / 浮層裡(列上的 ⋯ 選單項開了對話框)→ 還給那個選單的觸發鈕(`persistentOpenerOf`;W3C dialog 關閉後焦點「回到打開它的那個元素,或在它消失時合理的替代」,<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L96-L101>)。consumer 要送去別處就在 `onCloseAutoFocus` 先 `preventDefault()` 再自己 focus(`CommandDialog` 2026-10-01 已改用預設;AgentPanel 改名 / 刪除對話框、FileViewer 自己接線的照舊勝出)。2026-10-01 前這種開法焦點掉到 body(實測 Dialog 並存夾具、AgentPanel 刪除確認框)
+- **Focus return**：關閉時焦點返回開啟它的元素。Radix 只還給 `DialogTrigger`;**受控 `open`、沒有 `DialogTrigger`(普通按鈕 / 列上動作 / 快捷鍵開的)→ `DialogContent` 預設就記下開啟者、關閉時還給它**(2026-10-01,待辦總帳 OE29;`../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn`:內容掛上時記開啟者、沒有 Radix 觸發點就經 `returnFocusToOpener` 還,modal 按遮罩收起也還)。開啟者住在一個會跟著關掉的選單 / 浮層裡(列上的 ⋯ 選單項開了對話框)→ 還給那個選單的觸發鈕(`persistentOpenerOf`;W3C dialog 關閉後焦點「回到打開它的那個元素,或在它消失時合理的替代」,<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L96-L101>)。consumer 要送去別處就在 `onCloseAutoFocus` 先 `preventDefault()` 再自己 focus(`CommandDialog` 2026-10-01 已改用預設;AgentPanel 改名 / 刪除對話框自己接線的照舊勝出)。FileViewer 不經 `DialogContent`(直接用 Radix Dialog),2026-10-20 起同樣消費 `useTriggerlessFocusReturn`(此前自己記開啟者、少了 `persistentOpenerOf` → 從選單項開的檢視器關閉後焦點掉到 body;閘 `scripts/escape-and-focus-contract-invariant.mjs` F-menu-fileviewer)。2026-10-01 前這種開法焦點掉到 body(實測 Dialog 並存夾具、AgentPanel 刪除確認框)
 - **Overlay click**：點擊 overlay 關閉（可透過 `onPointerDownOutside` 阻止）
 
 Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `VisuallyHidden` 包裹提供給 screen reader。
@@ -290,7 +291,7 @@ Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `Vi
 
 ## anatomy story 結構
 
-Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/720)× `autoHeight` × `destructive` × open/close 行為。互動 `Inspector`(右側 Controls 即時切 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異)搭配結構性矩陣 side-by-side 比對,完整呈現「照情境選 size / 選 autoHeight」的決策。
+Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/720)× `height`(fill / hug)× `destructive` × open/close 行為。互動 `Inspector`(右側 Controls 即時切 `maxWidth` / `height` 看寬度 tier 與高度模式差異)搭配結構性矩陣 side-by-side 比對,完整呈現「照情境選 size / 選高度模式」的決策。
 
 對應 anatomy story:`Overview` + `Inspector` + 元件特有 `HeightBehavior` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + `Accessibility`。
 

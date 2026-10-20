@@ -832,8 +832,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               if (!next) setDeleteTarget(null)
             }}
           >
-            {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-            <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={returnFocusFromDialog}>
+            {/* 確認框/短表單:height="hug" 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+            <DialogContent height="hug" maxWidth={440} onCloseAutoFocus={returnFocusFromDialog}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
@@ -897,8 +897,8 @@ function AgentRenameDialog({
   const titleProps = form.getInputProps('title')
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-      <DialogContent autoHeight maxWidth={440} onCloseAutoFocus={onCloseAutoFocus}>
+      {/* 確認框/短表單:height="hug" 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+      <DialogContent height="hug" maxWidth={440} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>改名對話</DialogTitle>
         </DialogHeader>

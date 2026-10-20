@@ -7,7 +7,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   MoreVertical, Copy, Trash2, Share2, Download,
-  ArrowUp, Filter,
+  ArrowUp, Eye,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -225,7 +225,9 @@ export const ItemTypeRule: Story = {
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="self-start" variant="tertiary" startIcon={Filter}>顯示欄位</Button>
+              {/* 欄位顯示 = DataTable 正式元件的同一個動作(data-table-column-visibility-panel.tsx 標題「欄位顯示」、Eye 圖示);
+                  2026-10-20 前用漏斗(Filter = 篩選列,不是選欄位)且字是「顯示欄位」(獨立驗證 OV-V07) */}
+              <Button className="self-start" variant="tertiary" startIcon={Eye}>欄位顯示</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>表格欄位</DropdownMenuLabel>

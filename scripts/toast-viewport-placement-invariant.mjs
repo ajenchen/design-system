@@ -3,10 +3,12 @@
  * @gate-contract
  *   保證: Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓 —— toast.spec.md「落點」。
  *        (1) 靜態:DS 原始碼(packages/design-system/src)沒有任何地方算或傳 Toast 的落點 ——
- *            只有 Toast/toast.tsx import sonner;它的 <SonnerToaster> 只收 position / toastOptions / {...props},
+ *            只有 Toast/toast.tsx import sonner;它的 <SonnerToaster> 只收 position / toastOptions / {...props} / containerAriaLabel(地標名稱,字串,放不進落點),
  *            外加一個只含層級 utility 的 className 字串(`!z-[60]`,層級表 tokens/elevation/elevation.spec.md「疊放順序」—— 放不進任何落點)、
- *            ToasterProps 只有 position;toast.tsx 不量任何元素的位置;沒有任何非 story 檔碰 sonner 清單的 DOM
- *           (data-sonner-toaster)或寫它的落點自訂屬性(--offset-* / --mobile-offset-*);所有 <Toaster> 用法最多只帶 position。
+ *            ToasterProps 只有 position 與 containerAriaLabel;toast.tsx 不量任何元素的位置;沒有任何非 story 檔碰 sonner 清單的 DOM
+ *           (data-sonner-toaster)或寫它的落點自訂屬性(--offset-* / --mobile-offset-*);所有 <Toaster> 用法最多只帶 position / containerAriaLabel。
+ *           (containerAriaLabel = 通知清單地標的名稱,DS 預設「通知」—— 2026-10-20 加,獨立驗證 OV-V05;它是無障礙名稱,不是落點參數,
+ *            所以明列在「不是落點」的白名單裡,其餘一律照舊紅)
  *        (2) 真建置:七個情境(沒有代理 / 代理並排 / 代理浮層 / 入口鈕在家 / 入口鈕貼邊 / 頁面捲動 / docs 頁)裡,
  *            Toast 右緣離包含塊右緣、底緣離包含塊下緣都 = sonner 預設邊距(從 sonner 建置讀出,不寫死),
  *            Toast 清單四邊的落點自訂屬性全是 sonner 預設、沒有行內 left;story 頁的包含塊 = 視窗。
@@ -94,6 +96,8 @@ const spreads = (attrs) => [...attrs.matchAll(/\{\s*\.\.\.\s*([^}]+?)\s*\}/g)].m
  * 回 null = 這個元素沒有 className;回 { ok, raw }。
  */
 const Z_ONLY_CLASS = /^!?z-(?:\d+|\[\d+\])$/
+/** Toaster 上「不是落點」的參數白名單:地標名稱(字串,toast.spec.md「A11y 預設」通知清單的名稱)。其餘任何屬性都當成可能夾帶落點 */
+const NON_PLACEMENT_PROPS = new Set(['containerAriaLabel'])
 const classNameAttr = (attrs) => {
   const m = attrs.match(/(?:^|\s)className\s*=\s*(?:"([^"]*)"|'([^']*)'|(\{[\s\S]*?\}))/)
   if (!m) return null
@@ -115,19 +119,19 @@ function runStatic(files, { quiet = false } = {}) {
   const spreadArgs = sonnerEls.flatMap(spreads)
   const classes = sonnerEls.map(classNameAttr).filter(Boolean)
   check('C2 <SonnerToaster> 只收 position / toastOptions / {...props} 與只含層級 utility 的 className(不傳 offset / mobileOffset / style、不展開算出來的落點)',
-    sonnerEls.length === 1 && attrs.every((a) => a === 'position' || a === 'toastOptions' || a === 'className') && classes.every((c) => c.ok) && spreadArgs.every((s) => s === 'props'),
+    sonnerEls.length === 1 && attrs.every((a) => a === 'position' || a === 'toastOptions' || a === 'className' || NON_PLACEMENT_PROPS.has(a)) && classes.every((c) => c.ok) && spreadArgs.every((s) => s === 'props'),
     `${sonnerEls.length} 個元素;屬性 ${attrs.join(', ') || '-'};className ${classes.map((c) => `${c.raw}${c.ok ? '' : '(不是只有層級 utility)'}`).join(', ') || '-'};展開 ${spreadArgs.map((s) => `{...${s}}`).join(', ') || '-'}`)
   const propsBody = stripComments(toast).match(/export interface ToasterProps\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
   const propKeys = [...propsBody.matchAll(/^\s*([A-Za-z]\w*)\??\s*:/gm)].map((m) => m[1])
-  check('C3 ToasterProps 只有 position({...props} 帶不進落點參數)', propKeys.length === 1 && propKeys[0] === 'position', `鍵:${propKeys.join(', ') || '(讀不到)'}`)
+  check('C3 ToasterProps 只有 position 與不是落點的地標名稱({...props} 帶不進落點參數)', propKeys.includes('position') && propKeys.every((k) => k === 'position' || NON_PLACEMENT_PROPS.has(k)), `鍵:${propKeys.join(', ') || '(讀不到)'}`)
   const geometry = stripComments(toast).match(GEOMETRY_READS)?.[0]
   check('C4 toast.tsx 不量任何元素的位置 / 尺寸 / 捲動', !geometry, `用到 ${geometry}`)
   const offsetWriters = [...files].filter(([, src]) => /--(?:mobile-)?offset-(?:top|right|bottom|left)\b/.test(stripComments(src))).map(([rel]) => rel)
   check('C5 沒有任何檔寫 sonner 清單的落點自訂屬性(--offset-* / --mobile-offset-*)', offsetWriters.length === 0, offsetWriters.join('、'))
   const toasterTouchers = [...files].filter(([rel, src]) => !isStory(rel) && /data-sonner-toaster/.test(stripComments(src))).map(([rel]) => rel)
   check('C6 沒有任何非 story 檔碰 sonner 清單的 DOM([data-sonner-toaster])', toasterTouchers.length === 0, toasterTouchers.join('、'))
-  const badUsages = [...files].flatMap(([rel, src]) => jsxElements(src, 'Toaster').filter((a) => attrNames(a).some((n) => n !== 'position') || spreads(a).length > 0).map((a) => `${rel}:<Toaster${a.replace(/\s+/g, ' ')}/>`))
-  check('C7 所有 <Toaster> 用法最多只帶 position(app 層設定一次角落,不帶落點)', badUsages.length === 0, badUsages.join('、'))
+  const badUsages = [...files].flatMap(([rel, src]) => jsxElements(src, 'Toaster').filter((a) => attrNames(a).some((n) => n !== 'position' && !NON_PLACEMENT_PROPS.has(n)) || spreads(a).length > 0).map((a) => `${rel}:<Toaster${a.replace(/\s+/g, ' ')}/>`))
+  check('C7 所有 <Toaster> 用法最多只帶 position 與地標名稱(app 層設定一次角落,不帶落點)', badUsages.length === 0, badUsages.join('、'))
   return red
 }
 

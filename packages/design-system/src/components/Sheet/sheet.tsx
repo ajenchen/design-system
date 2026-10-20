@@ -7,6 +7,7 @@ import { X as XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -141,6 +142,8 @@ const SheetContent = React.forwardRef<
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
   // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
   const focusReturn = useTriggerlessFocusReturn(React.useContext(SheetModalContext))
+  // 沒有 SheetDescription 時不寫 aria-describedby —— Radix 預設指向一個不存在的 id(lib/overlay-description.ts;獨立驗證 OV-15)
+  const descriptionPresence = useDescriptionPresence('aria-describedby' in props)
   // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
   const contentRef = React.useRef<HTMLDivElement | null>(null)
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
@@ -164,11 +167,12 @@ const SheetContent = React.forwardRef<
         }}
         // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
         className={cn(sheetVariants({ side }), className)}
+        {...descriptionPresence.descriptionPresenceProps}
         {...props}
         // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
         onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
       >
-        {children}
+        <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
       </SheetPrimitive.Content>
     </SheetPortal>
   )
@@ -249,15 +253,19 @@ SheetTitle.displayName = SheetPrimitive.Title.displayName
 const SheetDescription = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Description
-    ref={ref}
-    // title → description 間距 canonical:SheetTitle body-lg(16)+ desc body(14)→ reading-lg token
-    // (label tier 決定;對齊 Dialog canonical。Tailwind preflight reset h2/p margin=0 → 必顯式 mt)
-    className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  // 向 SheetContent 登記「有說明」:沒有任何說明時 SheetContent 不寫 aria-describedby(lib/overlay-description.ts)
+  useRegisterDescription()
+  return (
+    <SheetPrimitive.Description
+      ref={ref}
+      // title → description 間距 canonical:SheetTitle body-lg(16)+ desc body(14)→ reading-lg token
+      // (label tier 決定;對齊 Dialog canonical。Tailwind preflight reset h2/p margin=0 → 必顯式 mt)
+      className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
+      {...props}
+    />
+  )
+})
 SheetDescription.displayName = SheetPrimitive.Description.displayName
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

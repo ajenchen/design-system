@@ -487,6 +487,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `bulk-action-bar.spec.md`
 - `button.spec.md`
 - `calendar.spec.md`
+- `coachmark.spec.md`
 - `data-table.spec.md`
 - `file-viewer.spec.md`
 - `popover.spec.md`

@@ -32,7 +32,7 @@ export interface PersonData {
    *  不是「user 沒設定」。ProfileCard 在 undefined 期間隱藏整 status block,**禁** render「Status not set」
    *  placeholder 文字。 */
   status?: 'online' | 'away' | 'busy' | 'offline'
-  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯 `—` placeholder。
+  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯半形 `-` placeholder(同 profile-card.tsx `FIELD_PLACEHOLDER`)。
    *  Status undefined 整 block skip(無 statusMessage 也跟著 skip)。 */
   statusMessage?: React.ReactNode
   /** **2026-05-07 v15.7 user directive**:ProfileCard default 只 render `id` + `employeeNumber`,

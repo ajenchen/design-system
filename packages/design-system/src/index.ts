@@ -195,6 +195,7 @@ export {
   Coachmark,
 } from './components/Coachmark/index'
 export type {
+  CoachmarkLabels,
   CoachmarkProps,
 } from './components/Coachmark/index'
 export {
@@ -411,6 +412,8 @@ export {
   ProfileCardDefaultActions,
 } from './components/ProfileCard/index'
 export type {
+  ProfileCardDefaultActionsLabels,
+  ProfileCardLabels,
   ProfileCardProps,
 } from './components/ProfileCard/index'
 export {
@@ -690,6 +693,7 @@ export type {
 //   - patterns/element-anatomy:TruncatedTextProps
 // 出口全部是 @internal 的 tokens / hooks / lib 模組整個不進 front-door(2026-10-07;檔頭標模組層 @internal,或每個出口都標):
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/roving-list-keyboard.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - tokens/motion/closed-end-state.ts(每個出口都標 @internal;subpath 仍有)
 

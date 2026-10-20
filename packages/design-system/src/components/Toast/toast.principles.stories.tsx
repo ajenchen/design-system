@@ -154,10 +154,12 @@ export const VariantRule: Story = {
       >
         {/* 直排的一組觸發鈕 = 垂直 ButtonGroup(鈕與鈕之間由群組擁有,button-group.tsx;直排時撐滿欄寬是群組的正規行為) */}
         <ButtonGroup orientation="vertical">
-          <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>success</Button>
-          <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結' })}>info</Button>
-          <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '空間即將用完' })}>warning</Button>
-          <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '操作失敗' })}>error</Button>
+          {/* 觸發鈕寫使用者真的會按的動作(story-rules「範例必真實業務場景」);各自觸發的 Toast 就是該 variant 的樣子。
+              2026-10-20 前四顆鈕直接寫 success / info / warning / error(獨立驗證 OV-14) */}
+          <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>儲存變更</Button>
+          <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結' })}>複製連結</Button>
+          <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '空間即將用完' })}>上傳大型檔案</Button>
+          <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '上傳失敗' })}>上傳檔案</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -165,7 +167,7 @@ export const VariantRule: Story = {
         title="neutral — 無特定語意的資訊"
         note="公告、系統訊息、無明確 good/bad 的通知"
       >
-        <Button variant="tertiary" className="self-start" onClick={() => toast({ variant: 'neutral', title: '檔案已下載' })}>neutral 範例</Button>
+        <Button variant="tertiary" className="self-start" onClick={() => toast({ variant: 'neutral', title: '檔案已下載' })}>下載檔案</Button>
       </TutorialRule>
     </TutorialPage>
   ),

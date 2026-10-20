@@ -4,7 +4,7 @@ import { User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CAT_SUBTLE_TOKENS, CAT_SOLID_TOKENS, type CategoricalColor } from '@/design-system/tokens/categorical-color'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
+import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from '@/design-system/components/HoverCard/hover-card'
 import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { useResolvedFieldDisabled, useTableIsScrolling } from '@/design-system/components/Field/field-context'
@@ -57,6 +57,12 @@ function getIconSize(avatarSize: number): number {
 function getInitial(text: string): string {
   return text.trim().charAt(0).toUpperCase()
 }
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— 未讀數走 `badgeAriaLabel`、名字走 `alt` 覆寫。
+// 2026-10-20 前是英文 `N unread` / `View profile`(獨立驗證 OV-10 同族:DS 預設文案語言)。
+const defaultBadgeLabel = (count: number) => `${count} 則未讀`
+/** 帶 hoverCard 但沒給 alt 時,可聚焦頭像的讀屏名稱 */
+const DEFAULT_HOVER_TRIGGER_LABEL = '查看個人資訊'
 
 // Semantic presence tokens — 見 color/semantic.css
 // Module-level constant(2026-04-22 D3 perf audit):從 render body 移到 module scope,
@@ -289,8 +295,8 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
    */
   badgeCount?: number
   /**
-   * badgeCount overlay 的 aria-label override(i18n)。預設英文 `${badgeCount} unread`;
-   * consumer 傳此 prop 本地化(對齊 `Notice` dismissAriaLabel pattern,a11y/i18n)。
+   * badgeCount overlay 的 aria-label override(i18n)。預設 `${badgeCount} 則未讀`(DS 預設文案 = 中文,lib/i18n/README.md「Fallback chain」3;
+   * 2026-10-20 前是英文 `N unread`,獨立驗證 OV-10 同族);consumer 傳此 prop 換語言(對齊 `Notice` dismissAriaLabel pattern,a11y/i18n)。
    */
   badgeAriaLabel?: string
   /**
@@ -468,8 +474,8 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
           role: 'img',
           'aria-label':
             typeof badgeCount === 'number' && badgeCount > 0
-              ? `${alt ?? 'View profile'}, ${badgeAriaLabel ?? `${badgeCount} unread`}`
-              : (alt ?? 'View profile'),
+              ? `${alt ?? DEFAULT_HOVER_TRIGGER_LABEL}, ${badgeAriaLabel ?? defaultBadgeLabel(badgeCount)}`
+              : (alt ?? DEFAULT_HOVER_TRIGGER_LABEL),
         }
       : {}
     // 2026-05-31:focus ring 圓角跟隨 shape(circle→rounded-full / square→rounded-md,對齊 body 的 `radius` 變數 var(--radius-full)/var(--radius-md)),
@@ -518,7 +524,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
                 variant="critical"
                 count={badgeCount}
                 max={99}
-                aria-label={badgeAriaLabel ?? `${badgeCount} unread`} // i18n-allow: DS default 英文(consumer 可傳 badgeAriaLabel i18n)
+                aria-label={badgeAriaLabel ?? defaultBadgeLabel(badgeCount)}
               />
             </span>
           )}
@@ -545,11 +551,12 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
             - `data-theme={documentTheme}`:ProfileCard 永遠跟隨 **app-level theme**(從 `<html data-theme>`
               動態讀),不受 trigger subtree theme 污染。範例:Avatar 位於 OverflowIndicator 的 dark
               tooltip 內,其 Portal 會繼承該 subtree dark theme → ProfileCard 變全黑。顯式設回 app theme
-              確保 ProfileCard 永遠 light-in-light-app / dark-in-dark-app。 */}
+              確保 ProfileCard 永遠 light-in-light-app / dark-in-dark-app。
+            - 外殼 = hover-card.tsx `HOVER_CARD_SURFACE_CLASS`(亮色卡片殼的唯一住所;含字色 —— 換了 data-theme 的那一層要重新解析 color,
+              同 alert.tsx「data-theme 必須搭配 text-foreground」;裁切圓角由 HoverCardContent 本身的 overflow-hidden 負責)。 */}
         <HoverCardContent
           data-theme={documentTheme ?? undefined}
-          className="bg-surface-raised rounded-lg border border-border overflow-hidden"
-          style={{ boxShadow: 'var(--elevation-200)' }}
+          className={HOVER_CARD_SURFACE_CLASS}
         >
           {hoverCard}
         </HoverCardContent>

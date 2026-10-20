@@ -2,10 +2,8 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
-import { MessageCircle, Phone, ChevronDown } from 'lucide-react'
-import { ProfileCard } from './profile-card'
+import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { Button } from '@/design-system/components/Button/button'
 import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -23,12 +21,9 @@ const TutorialRule = createTutorialRule({ caption: Label })
 
 const AVATAR_URL = 'https://i.pravatar.cc/128?u=alice-designsys'
 
-const sampleActions = (
-  <>
-    <Button variant="tertiary" size="sm" startIcon={MessageCircle} className="flex-1">Chat</Button>
-    <Button variant="tertiary" size="sm" startIcon={Phone} endIcon={ChevronDown} className="flex-1">Call</Button>
-  </>
-)
+// 預設動作一律消費 ProfileCardDefaultActions(profile-card.spec.md「Consumer 跨 story / 跨 consumer 必須用同一組 canonical actions」);
+// 2026-10-20 前這裡手刻「Chat / Call」—— 名字還跟元件預設的「Audio call」不一樣(獨立驗證 OV-10 同族)
+const sampleActions = <ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />
 
 // Canonical path(avatar.spec.md DS-wide rule;抄 profile-card.stories.tsx ProfileCardHover baseline):
 // 透過 <Avatar hoverCard={...}> — Avatar 內部處理 HoverCardTrigger / Content / keyboard focus /
@@ -87,7 +82,7 @@ export const UsageGuidance: Story = {
       <>
       <TutorialRule
         title="ProfileCard — 「hover 展開詳情」的人員資訊卡"
-        note="@mention、PR reviewer、留言者 avatar 等場景:使用者看到頭像想知道「這人是誰」,hover 彈出 ProfileCard。卡內有 status、action button（Chat / Call）、結構化欄位、View more"
+        note="@mention、PR reviewer、留言者 avatar 等場景:使用者看到頭像想知道「這人是誰」,hover 彈出 ProfileCard。卡內有 status、動作鍵(傳訊息 / 語音通話)、結構化欄位、查看更多"
       >
         <InlineHoverExample />
         <Label>↑ hover avatar 彈出 ProfileCard（典型 @mention 互動）</Label>
@@ -193,7 +188,7 @@ export const SectionRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="每個 section 各有渲染規則"
-        note="Profile header + Info fields 永遠顯示（fields 為 always-render：缺值顯 — 佔位，固定結構防漂移）;status / actions / viewMore 則各自按有無資料決定渲染。不強制全部塞滿——不同情境（basic contact / full profile）自然長出不同形狀"
+        note="Profile header + Info fields 永遠顯示（fields 為 always-render：缺值顯「-」佔位，固定結構防漂移）;status / actions / viewMore 則各自按有無資料決定渲染。不強制全部塞滿——不同情境（basic contact / full profile）自然長出不同形狀"
       >
         <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
           <div className="border border-border rounded-lg">

@@ -253,7 +253,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 觸發區宣告 `aria-haspopup="dialog"`;`searchIn='trigger'` 時焦點留在觸發區(可搜尋時在欄位內的搜尋框;它恆在,空值也一樣)、清單靠該輸入框上的 `aria-activedescendant`,
 宣告 `aria-haspopup="listbox"`;Tab 照 DOM 順序走 —— 頁面上觸發區後面還有可 Tab 的元素就走到那裡、浮層隨之收起,觸發區已是頁面最後一格時會走進掛在 body 最後的浮層(清單捲動區、全選鈕)並在裡面繞圈(2026-09-30 實測;完整說明與已登記的結構工作見 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 多選 Tab 列)。宣告與 `onOpenAutoFocus` 用同一個條件(`combobox.tsx`)。
 滑鼠點選與 `Enter` 選完,焦點都不離開開啟時的落點(兩種 `searchIn` 皆同)。
-輸入法組字中的 `Enter` / 空白 / 方向鍵 / `Esc` 是在選字:觸發區 `onKeyDown` 開頭先問 `../../lib/ime-composition.ts` `isImeComposing`,不開關選單、不轉送給清單;`Esc` 另有 Radix 在 document 捕獲階段那一條(只看 `event.key`,<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/use-escape-keydown/src/use-escape-keydown.tsx#L14-L19>),由浮層 `PopoverContent` 的 `onEscapeKeyDown` 經同一支模組的 `withImeSafeEscape` 擋掉(2026-10-01 前組字中按 `Esc` 仍會把選單連同關鍵字一起關掉,實測)。
+輸入法組字中的 `Enter` / 空白 / 方向鍵 / `Esc` 是在選字:觸發區 `onKeyDown` 開頭先問 `../../lib/ime-composition.ts` `isImeComposing`,不開關選單、不轉送給清單;`Esc` 另有 Radix 在 document 捕獲階段那一條(只看 `event.key`,<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/use-escape-keydown/src/use-escape-keydown.tsx#L14-L19>),由浮層 `PopoverContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape` 擋掉(組字判斷是它的第一步;2026-10-01 前組字中按 `Esc` 仍會把選單連同關鍵字一起關掉,實測)。
 以上規則與 W3C 出處的單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(Focus 段)。
 
 #### 為什麼移除原本的觸控分支

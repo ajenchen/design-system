@@ -12,28 +12,15 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
  *  真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)*/
 const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
-const personHover = (name: string, subtitle?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ src: avatarSrc(name), alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday!"
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'

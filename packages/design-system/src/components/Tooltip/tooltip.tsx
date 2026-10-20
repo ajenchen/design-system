@@ -114,6 +114,7 @@ const TooltipContent = React.forwardRef<
       style={{ boxShadow: 'var(--elevation-200)', ...style }}
       {...props}
     >
+      {/* @theme-boundary-ok: 外層 Content 已宣告 text-on-emphasis,這層只讓子元件的 token 解析成深色,字色照外層 */}
       <div data-theme="dark" className="contents">{children}</div>
     </TooltipPrimitive.Content>
   </TooltipPrimitive.Portal>

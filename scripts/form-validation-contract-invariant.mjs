@@ -453,7 +453,7 @@ function DialogForm() {
     <section aria-label="對話框表單" data-submits={submits} data-submit-clicks={clicks}>
       <button type="button" data-open-dialog onClick={() => setOpen(true)}>開啟設定</button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="form-dialog" autoHeight maxWidth={480}>
+        <DialogContent id="form-dialog" height="hug" maxWidth={480}>
           <DialogHeader><DialogTitle>專案設定</DialogTitle></DialogHeader>
           <DialogBody>
             <form aria-label="對話框設定" onSubmit={form.handleSubmit}>
@@ -1089,12 +1089,13 @@ async function runChecks(page) {
     await closeOverlay()
     return { blank, before, after, reopened }
   }
-  const tDialog = await overlayForm({ name: 'story-dialog', trigger: '開啟 Modal', submit: '建立', title: '專案已建立', fill: 'Checkout revamp', blankSubmit: true })
+  // 觸發鈕 2026-10-20 改成使用者會按的動作(「開啟 Modal」→「建立專案」、「檢視成員詳情」→「編輯 <存下的名字>」;獨立驗證 OV-14 / OV-V04)
+  const tDialog = await overlayForm({ name: 'story-dialog', trigger: '建立專案', submit: '建立', title: '專案已建立', fill: 'Checkout revamp', blankSubmit: true })
   check('T-dialog', 'contract', 'Dialog「表單」:空白送出 → 報「專案名稱必填」、不關、沒有 Toast;填好送出 → 多一則「專案已建立」Toast、對話框關閉;再打開 → 欄位是空白(建立表單打開時 reset)',
     tDialog.blank?.open && tDialog.blank.alert === '專案名稱必填' && tDialog.blank.toasts === 0
     && !tDialog.after.open && tDialog.after.toasts === tDialog.before.toasts + 1 && tDialog.reopened.first === '', tDialog)
   const tSheetCreate = await overlayForm({ name: 'story-sheet-create', trigger: '建立新專案', submit: '建立專案', title: '專案已建立', fill: 'Q2 產品路線圖', blankSubmit: true })
-  const tSheetEdit = await overlayForm({ name: 'story-sheet-edit', trigger: '檢視成員詳情', submit: '儲存變更', title: '成員資料已儲存', fill: 'Ada Chen-Wu', blankSubmit: false })
+  const tSheetEdit = await overlayForm({ name: 'story-sheet-edit', trigger: '編輯 Ada Chen', submit: '儲存變更', title: '成員資料已儲存', fill: 'Ada Chen-Wu', blankSubmit: false })
   check('T-sheet', 'contract', 'Sheet「建立新專案」同 T-dialog(空白報錯不關、送出成功多一則「專案已建立」並關閉、再打開是空白);「編輯成員詳情」改名送出 → 多一則「成員資料已儲存」並關閉、再打開是剛存的「Ada Chen-Wu」',
     tSheetCreate.blank?.open && tSheetCreate.blank.alert === '專案名稱必填' && tSheetCreate.blank.toasts === 0
     && !tSheetCreate.after.open && tSheetCreate.after.toasts === tSheetCreate.before.toasts + 1 && tSheetCreate.reopened.first === ''

@@ -32,17 +32,34 @@ import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anato
  * - 特定情境的 action(管理員「撤銷邀請」/ HR「離職管理」)→ consumer 自訂
  * - 非人員關係動作(「訂購此商品」)→ 根本不應該用 ProfileCard
  *
- * Chat + Audio call 是 **default**,不是 **only**——consumer 可覆寫,但需有明確理由。
+ * 傳訊息 + 語音通話 是 **default**,不是 **only**——consumer 可覆寫,但需有明確理由。
  */
+/** 預設動作的文案(Partial 傳入、與 DS 預設合併 —— 同 FileViewer `labels` 先例)。 */
+export interface ProfileCardDefaultActionsLabels {
+  chat: string
+  audioCall: string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫。
+// 2026-10-20 前寫死英文 Chat / Audio call、不能覆寫(獨立驗證 OV-10)。
+const DEFAULT_ACTION_LABELS: ProfileCardDefaultActionsLabels = {
+  chat: '傳訊息',
+  audioCall: '語音通話',
+}
+
 export const ProfileCardDefaultActions = ({
   onChat,
   onCall,
+  labels: labelsOverride,
 }: {
-  /** Chat 按鈕 handler(2026-07-06 user 拍板:預設鈕必可接線,未傳 = dev-warn;PersonData.onChat 自動 forward) */
+  /** 傳訊息按鈕 handler(2026-07-06 user 拍板:預設鈕必可接線,未傳 = dev-warn;PersonData.onChat 自動 forward) */
   onChat?: () => void
-  /** Audio call 按鈕 handler(ChevronDown 下拉行為留 v2,先接主 callback) */
+  /** 語音通話按鈕 handler(ChevronDown 下拉行為留 v2,先接主 callback) */
   onCall?: () => void
+  /** 文案覆寫(傳訊息 / 語音通話) */
+  labels?: Partial<ProfileCardDefaultActionsLabels>
 }) => {
+  const labels = { ...DEFAULT_ACTION_LABELS, ...labelsOverride }
   // Dev-mode warning(對齊本檔 defaultFieldValues dev-warn 先例):預設 actions 沒接 handler
   // = 按鈕點了永遠沒反應(2026-07-06 D4 finding);production 必傳 callback 或自組 actions。
   if (process.env.NODE_ENV !== 'production' && !onChat && !onCall) {
@@ -52,8 +69,8 @@ export const ProfileCardDefaultActions = ({
   }
   return (
     <>
-      <Button variant="tertiary" size="sm" startIcon={MessageCircle} onClick={onChat}>Chat</Button>
-      <Button variant="tertiary" size="sm" startIcon={Phone} endIcon={ChevronDown} onClick={onCall}>Audio call</Button>
+      <Button variant="tertiary" size="sm" startIcon={MessageCircle} onClick={onChat}>{labels.chat}</Button>
+      <Button variant="tertiary" size="sm" startIcon={Phone} endIcon={ChevronDown} onClick={onCall}>{labels.audioCall}</Button>
     </>
   )
 }
@@ -71,7 +88,7 @@ export const ProfileCardDefaultActions = ({
  * 短文字置中於 avatar,長文字(多行名字)自然撐高。
  *
  * ── Info fields ──
- * Status message / ID / Employee number 等唯讀屬性全部用 DescriptionList 家族
+ * 狀態訊息 / ID / 員工編號 等唯讀屬性全部用 DescriptionList 家族
  * 承載(不手刻 dt/dd),canonical 由 DS primitive own。
  */
 
@@ -87,11 +104,22 @@ const STATUS_DOT_COLOR: Record<StatusType, string> = {
   offline: 'var(--status-offline)',
 }
 
-const STATUS_LABEL: Record<StatusType, string> = {
-  online: 'Online',
-  away: 'Away',
-  busy: 'Busy',
-  offline: 'Offline',
+/** ProfileCard 自己的文案(狀態 / 狀態訊息 / 兩個預設欄位);Partial 傳入、與 DS 預設合併。「查看更多」沿用既有的 `viewMoreLabel`。 */
+export interface ProfileCardLabels {
+  status: Record<StatusType, string>
+  statusMessage: string
+  id: string
+  employeeNumber: string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫。
+// 狀態四個字與 Avatar 設計規格「Status presence dot(線上 / 離開 / 忙碌 / 離線)」同一組;「ID」是通用縮寫,不翻。
+// 2026-10-20 前寫死英文 Online / Away / Busy / Offline / Status message / Employee number / View more、不能覆寫(獨立驗證 OV-10)。
+const DEFAULT_LABELS: ProfileCardLabels = {
+  status: { online: '線上', away: '離開', busy: '忙碌', offline: '離線' },
+  statusMessage: '狀態訊息',
+  id: 'ID',
+  employeeNumber: '員工編號',
 }
 
 /**
@@ -122,11 +150,6 @@ const STATUS_LABEL: Record<StatusType, string> = {
 export const NAMECARD_DEFAULT_FIELD_KEYS = ['id', 'employeeNumber'] as const
 type ProfileCardDefaultFieldKey = typeof NAMECARD_DEFAULT_FIELD_KEYS[number]
 
-const DEFAULT_FIELD_LABEL: Record<ProfileCardDefaultFieldKey, string> = {
-  id: 'ID',
-  employeeNumber: 'Employee number',
-}
-
 const FIELD_PLACEHOLDER = '-'
 
 export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -149,7 +172,10 @@ export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
    */
   defaultFieldValues?: Partial<Record<ProfileCardDefaultFieldKey, React.ReactNode>>
   onViewMore?: () => void
+  /** 「查看更多」鍵的文字(預設「查看更多」) */
   viewMoreLabel?: string
+  /** 文案覆寫(狀態 / 狀態訊息 / ID / 員工編號);Partial,與 DS 預設合併。`status` 可只給部分狀態 */
+  labels?: Partial<Omit<ProfileCardLabels, 'status'>> & { status?: Partial<ProfileCardLabels['status']> }
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -165,7 +191,8 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       fields,
       defaultFieldValues,
       onViewMore,
-      viewMoreLabel = 'View more',
+      viewMoreLabel = '查看更多', // i18n-allow: DS default; consumer override via viewMoreLabel prop
+      labels: labelsOverride,
       className,
       ...props
     },
@@ -176,27 +203,33 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     // 整 block 隱藏,見下方 render 處)— v11「永遠 render + placeholder」已退役。
     //
     // **Dedup canonical(2026-05-07 v15.8 fix Bug E)**:consumer 的 `fields` array 若含
-    // label 撞 default(eg. 「ID」「Employee number」),consumer 值 win — defaults 那一行
+    // label 撞 default(eg. 「ID」「員工編號」),consumer 值 win — defaults 那一行
     // 跳過(否則 same label 連 render 兩次,如 default placeholder `-` + consumer 真值)。
     // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
     // 不破壞既有 consumer。對齊 React `key` 唯一性 + Linear / Slack profile card 一 label
     // 一 row idiom。
+    const labels = {
+      ...DEFAULT_LABELS,
+      ...labelsOverride,
+      status: { ...DEFAULT_LABELS.status, ...labelsOverride?.status },
+    }
+    const idLabel = labels.id
+    const employeeNumberLabel = labels.employeeNumber
     const allFields = React.useMemo(() => {
+      const fieldLabel: Record<ProfileCardDefaultFieldKey, string> = { id: idLabel, employeeNumber: employeeNumberLabel }
       const consumerLabels = new Set((fields ?? []).map((f) => f.label))
       const defaults = NAMECARD_DEFAULT_FIELD_KEYS
         .map((key) => ({
-          label: DEFAULT_FIELD_LABEL[key],
+          label: fieldLabel[key],
           value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
         }))
         .filter((d) => !consumerLabels.has(d.label))
       return fields && fields.length > 0 ? [...defaults, ...fields] : defaults
-    }, [defaultFieldValues, fields])
+    }, [defaultFieldValues, fields, idLabel, employeeNumberLabel])
 
     // Dev warn:consumer 透過 `fields` 傳 default key label(legacy pattern)→ 應改 `defaultFieldValues`
     if (process.env.NODE_ENV !== 'production' && fields) {
-      const legacyEntry = fields.find((f) =>
-        Object.values(DEFAULT_FIELD_LABEL).includes(f.label as string),
-      )
+      const legacyEntry = fields.find((f) => f.label === idLabel || f.label === employeeNumberLabel)
       if (legacyEntry) {
         console.warn(
           `[ProfileCard] "${name}":legacy pattern — fields[].label="${legacyEntry.label}" ` +
@@ -283,12 +316,12 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: STATUS_DOT_COLOR[status] }}
                 />
-                <span className="text-body">{STATUS_LABEL[status]}</span>
+                <span className="text-body">{labels.status[status]}</span>
               </div>
               {/* Status message — 只在 status defined 才 render(語意配對:status badge + status
                   message 是一組;沒 status 就沒 status message)。缺 statusMessage 顯 placeholder。 */}
               <DescriptionList>
-                <DescriptionItem label="Status message">
+                <DescriptionItem label={labels.statusMessage}>
                   {statusMessage ?? <span className="text-foreground">{FIELD_PLACEHOLDER}</span>}
                 </DescriptionItem>
               </DescriptionList>
@@ -297,12 +330,17 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
 
           {/* Fields section:status defined 才有 border-t separator;無 status section 時去除 border-t(因 ScrollArea 起點已有上方 border-t,不重疊) */}
           <div className={cn('px-4 py-3', status && 'border-t border-divider')}>
+            {/* 欄位值加 break-words:兩欄並排、每欄約 136px(320 − 左右內距 32 − 欄距 16,除以 2)。description-list.spec.md:177 直式的兩條規則同時要守 ——
+                自然流文字依字詞換行(「Engineering / Platform」在空白處斷),沒有空白的長字串(email / URL)由 consumer 讓它能斷、不畫進右邊那一欄。
+                ProfileCard 的欄位值兩種都有,所以用 break-words(overflow-wrap: break-word:一個字放不下才在字中斷,同 item-anatomy.tsx / tooltip.tsx / inline-edit.tsx);
+                break-all 會讓多字值從字中間斷(「Engineering / Platfor」+「m」)。2026-10-20 前沒加 → 設計規格頁的 ada.chen@example.com 疊在「團隊」那欄上。
+                閘:overlay-story-contract R13(不畫進旁欄)+ R14(多字值只在空白處斷) */}
             <DescriptionList cols={2}>
               {allFields.map((f) => (
                 <DescriptionItem key={f.label} label={f.label}>
                   {f.value === FIELD_PLACEHOLDER
                     ? <span className="text-foreground">{FIELD_PLACEHOLDER}</span>
-                    : f.value}
+                    : <span className="break-words">{f.value}</span>}
                 </DescriptionItem>
               ))}
             </DescriptionList>

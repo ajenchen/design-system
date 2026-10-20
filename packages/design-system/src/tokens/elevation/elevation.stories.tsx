@@ -90,8 +90,10 @@ export const Overview: Story = {
           >
             <span className="text-caption text-fg-muted">Card（100）</span>
           </div>
+          {/* Popover 疊在 Card 右下角上(左上角落在 Card 內 64 × 64px),才看得出「浮在上」:陰影落在 Card 上、邊框蓋過 Card 的邊。
+              2026-10-20 前兩張卡水平相距 120px、完全不重疊,標題說的「浮在上」看不到(獨立驗證 OV-V06) */}
           <div
-            className="absolute bottom-6 right-6 h-28 w-44 rounded-lg border border-border bg-surface-raised p-[var(--layout-space-loose)]"
+            className="absolute left-32 top-20 h-28 w-44 rounded-lg border border-border bg-surface-raised p-[var(--layout-space-loose)]"
             style={{ boxShadow: 'var(--elevation-200)' }}
           >
             <span className="text-caption text-fg-muted">Popover（200）</span>

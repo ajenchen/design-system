@@ -4,26 +4,19 @@ import { OverflowIndicator } from './overflow-indicator'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 /** Person avatar hover canonical helper — 對齊 avatar.spec.md DS-wide rule:
  *  person avatar 必 hover → ProfileCard,必含 status / statusMessage / fields / actions / onViewMore
  *  (profile-card.spec.md 重要資訊 canonical;consumer 的 person 資料全備則全 render) */
-const personHoverCard = (p: { name: string; role?: string; empId?: string; avatarUrl?: string }) => (
-  <ProfileCard
-    name={p.name}
-    subtitle={p.role ? `${p.role}｜${p.empId ?? 'EMP-0000'}` : 'Design｜D-0042｜EMP-1001'}
-    avatar={{ src: p.avatarUrl, alt: p.name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday! For urgent matters please contact @Wei-Lun Cheng in the meantime."
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+const personHoverCard = (p: { name: string; role?: string; empId?: string; avatarUrl?: string }) =>
+  // 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份);有員工編號就讓副標與欄位用同一個值
+  samplePersonCard({
+    name: p.name,
+    avatarSrc: p.avatarUrl,
+    employeeNumber: p.empId,
+    subtitle: p.role ? `${p.role}｜${p.empId ?? 'EMP-0000'}` : undefined,
+  })
 
 const meta: Meta<typeof OverflowIndicator> = {
   title: 'Design System/Internal/OverflowIndicator/展示',

@@ -3,7 +3,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Trash2, Filter } from 'lucide-react'
+import { Trash2, Filter, Menu } from 'lucide-react'
 import {
   Sheet,
   SheetTrigger,
@@ -131,7 +131,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth="440px">
+          <DialogContent height="hug" maxWidth="440px">
             <DialogHeader>
               <DialogTitle>確定要永久刪除此專案?</DialogTitle>
             </DialogHeader>
@@ -213,7 +213,7 @@ export const SidePropRule: Story = {
       >
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="tertiary">右側編輯</Button>
+            <Button variant="tertiary">查看任務詳情</Button>
           </SheetTrigger>
           <SheetContent side="right">
             <SheetHeader>
@@ -225,7 +225,7 @@ export const SidePropRule: Story = {
             </SheetBody>
           </SheetContent>
         </Sheet>
-        <Label>↑ 列表點 row → 右側滑入編輯,左側列表仍可見</Label>
+        <Label>↑ 列表點 row → 右側滑入詳情,左側列表仍可見</Label>
       </TutorialRule>
 
       <TutorialRule
@@ -234,7 +234,7 @@ export const SidePropRule: Story = {
       >
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="tertiary">☰ 左側目錄</Button>
+            <Button variant="tertiary" startIcon={Menu}>目錄</Button>
           </SheetTrigger>
           <SheetContent side="left">
             <SheetHeader>

@@ -98,6 +98,7 @@
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",
     "test:toast-viewport-placement": "node scripts/toast-viewport-placement-invariant.mjs && node scripts/toast-viewport-placement-invariant.mjs --selftest",
     "test:layer-order": "node scripts/layer-order-invariant.mjs && node scripts/layer-order-invariant.mjs --selftest",
+    "test:overlay-story-contract": "node scripts/overlay-story-contract-invariant.mjs --selftest",
     "test:overlay-shortcut-scope": "node scripts/overlay-shortcut-scope-invariant.mjs && node scripts/overlay-shortcut-scope-invariant.mjs --selftest",
     "test:dialog-coexistence": "node scripts/dialog-coexistence-invariant.mjs && node scripts/dialog-coexistence-invariant.mjs --selftest",
     "test:dialog-coexist-scroll-lock": "node scripts/dialog-coexist-scroll-lock-invariant.mjs && node scripts/dialog-coexist-scroll-lock-invariant.mjs --selftest",

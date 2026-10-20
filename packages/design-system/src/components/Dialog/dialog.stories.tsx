@@ -48,9 +48,9 @@ function NotificationSettings() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="tertiary">開啟通知設定(中 item:title+desc+Switch)</Button>
+        <Button variant="tertiary">通知設定</Button>
       </DialogTrigger>
-      <DialogContent autoHeight maxWidth={480}>
+      <DialogContent height="hug" maxWidth={480}>
         <DialogHeader>
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
@@ -132,8 +132,17 @@ const MEMBERS = [
   { name: 'Elena Xu', empId: 'E-0318', empNum: 'EMP-1030' },
 ]
 
+// 名片的狀態與狀態訊息成對(線上卻寫「休假中」是自相矛盾,profile-card.spec.md「Status 區」;2026-10-20 前四種狀態全用同一句 OOO,獨立驗證 OV-V01)
+const MEMBER_PRESENCE = [
+  { status: 'online', message: '今天在台北辦公室' },
+  { status: 'busy', message: '會議中,15:00 後回覆' },
+  { status: 'away', message: '休假中,週一回來' },
+  { status: 'offline', message: '已下線,明早 9:00 上線' },
+] as const
+
 function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
   const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
+  const presence = MEMBER_PRESENCE[index % MEMBER_PRESENCE.length]
   return (
     // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用:成員名單這種展示列」走 Family 2 手組)
@@ -151,13 +160,12 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
             name={member.name}
             avatar={{ src: `https://i.pravatar.cc/80?u=${member.empNum}`, alt: member.name }}
             subtitle={`${role}｜${member.empId}`}
-            status={(['online', 'busy', 'away', 'offline'] as const)[index % 4]}
-            statusMessage="Out of Office: Back on Monday!"
-            actions={<ProfileCardDefaultActions />}
-            fields={[
-              { label: 'ID', value: member.empNum },
-              { label: 'Employee number', value: member.empId },
-            ]}
+            status={presence.status}
+            statusMessage={presence.message}
+            actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+            // 預設欄位走 defaultFieldValues(ProfileCard 的正規入口;用 fields 傳同名欄位是舊寫法)。
+            // 2026-10-20 前用 fields 傳、兩個值還對調了:ID 欄顯示員工編號 EMP-1001、員工編號欄顯示 D-0042(獨立驗證 OV-V01)
+            defaultFieldValues={{ id: member.empId, employeeNumber: member.empNum }}
             onViewMore={() => {}}
           />
         }
@@ -234,7 +242,7 @@ function CreateProjectDialogForm() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>開啟 Modal</Button>
+        <Button>建立專案</Button>
       </DialogTrigger>
       {/* 建立專案:兩個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
       <DialogContent height="hug">
@@ -347,15 +355,22 @@ export const Destructive = {
  */
 export const ListBody = {
   name: '主體放清單',
-  parameters: openOverlayParameters('560px'),
+  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14)
+  parameters: {
+    ...openOverlayParameters('560px'),
+    docs: {
+      ...openOverlayParameters('560px').docs,
+      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列)。' },
+    },
+  },
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
       <Dialog defaultOpen>
         <DialogTrigger asChild>
-          <Button variant="tertiary">開啟成員列表(大 item:avatar+desc)</Button>
+          <Button variant="tertiary">查看成員</Button>
         </DialogTrigger>
-        <DialogContent autoHeight maxWidth={520}>
+        <DialogContent height="hug" maxWidth={520}>
           <DialogHeader>
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
@@ -383,9 +398,9 @@ export const ListBody = {
       {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集) */}
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="tertiary">開啟標籤選擇(小 item:text only)</Button>
+          <Button variant="tertiary">選擇標籤</Button>
         </DialogTrigger>
-        <DialogContent autoHeight maxWidth={360}>
+        <DialogContent height="hug" maxWidth={360}>
           <DialogHeader>
             <DialogTitle>選擇標籤</DialogTitle>
           </DialogHeader>
@@ -443,7 +458,7 @@ export const HeaderActions = {
       <DialogTrigger asChild>
         <Button variant="tertiary">開啟任務詳情</Button>
       </DialogTrigger>
-      <DialogContent autoHeight maxWidth={520}>
+      <DialogContent height="hug" maxWidth={520}>
         <DialogHeader
           actions={
             <>
@@ -586,7 +601,7 @@ export const OpenSnapshot = {
       <DialogTrigger asChild>
         <Button>打開 Dialog</Button>
       </DialogTrigger>
-      <DialogContent autoHeight maxWidth={480}>
+      <DialogContent height="hug" maxWidth={480}>
         <DialogHeader>
           <DialogTitle>確認刪除專案</DialogTitle>
         </DialogHeader>
@@ -704,7 +719,7 @@ export const CoexistencePoc: Story = {
             <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟</Button>
             {stage && (
               <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
-                <DialogContent maxWidth={480} autoHeight portalContainer={stage}>
+                <DialogContent maxWidth={480} height="hug" portalContainer={stage}>
                   <DialogHeader>
                     <DialogTitle>任務 #4821</DialogTitle>
                     <DialogDescription>並存契約夾具</DialogDescription>

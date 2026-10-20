@@ -34,13 +34,14 @@ type Story = StoryObj
 // 快捷鍵 ↔ 對應 button 對照表(「快捷鍵總覽」Rule 的資料;資料驅動讓每一欄的儲存格幾何只寫一次)
 const SHORTCUT_TABLE_HEADERS = ['鍵', '行為', '對應 button'] as const
 const SHORTCUT_TABLE_ROWS: ReadonlyArray<readonly [key: string, action: string, button: string]> = [
-  ['Esc', '關閉 viewer', 'toolbar X'],
-  ['← / →', '上 / 下一個檔案', 'viewport prev/next arrow + filmstrip 點擊'],
-  ['+ / =', 'Zoom in', 'ZoomInput dropdown preset'],
-  ['-', 'Zoom out', 'ZoomInput dropdown preset'],
-  ['0', '重設為 100%', 'ZoomInput 輸入 100%'],
-  ['F', 'Fit to page', 'ZoomInput dropdown「Fit to page」'],
-  ['I', 'Toggle Info panel', 'toolbar Info button'],
+  // 動作欄寫使用者看得懂的中文、按鈕欄寫畫面上那顆鈕的名字(與元件的 aria-label / 選單文字同一組字;2026-10-20 前中英混寫,獨立驗證 OV-10 同族)
+  ['Esc', '關閉檢視器', '工具列「關閉檢視器」'],
+  ['← / →', '上 / 下一個檔案', '畫面兩側的「上一個 / 下一個檔案」+ 點縮圖列'],
+  ['+ / =', '放大', '工具列「放大」、縮放選單的百分比'],
+  ['-', '縮小', '工具列「縮小」、縮放選單的百分比'],
+  ['0', '重設為 100%', '縮放比例輸入 100%'],
+  ['F', '符合頁面', '縮放選單「符合頁面」'],
+  ['I', '展開 / 收合詳細資訊面板', '工具列「展開 / 收合詳細資訊面板」'],
 ]
 
 const Label = ({
@@ -148,7 +149,7 @@ export const UsageGuidance: Story = {
                 永久刪除專案
               </Button>
             </DialogTrigger>
-            <DialogContent autoHeight maxWidth={440}>
+            <DialogContent height="hug" maxWidth={440}>
               <DialogHeader>
                 <DialogTitle>確定要永久刪除此專案?</DialogTitle>
               </DialogHeader>

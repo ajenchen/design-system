@@ -12,11 +12,12 @@ type Story = StoryObj
 
 // Person sample data canonical:對齊 ProfileCard 預設呈現(name + subtitle + status + statusMessage + fields)
 // avatar.spec.md DS-wide canonical:所有 person avatar hover 必出 ProfileCard,展示資訊不可精簡
+// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「defaultFieldValues 優於 fields 同名 label」;閘 overlay-story-contract S8)
 const SAMPLE_PEOPLE: PersonData[] = [
-  { name: 'Ada Chen', avatarUrl: 'https://i.pravatar.cc/128?img=1', description: 'Engineering｜Taipei｜EMP-2001', status: 'online', statusMessage: '今日 OnCall。', fields: [{ label: 'ID', value: 'ADA001' }, { label: '部門', value: 'Platform' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/128?img=5', description: 'Engineering｜Tokyo｜EMP-2002', status: 'busy', statusMessage: '深度工作中,12:00 後可聊。', fields: [{ label: 'ID', value: 'AW002' }, { label: '部門', value: 'Platform' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Chen', avatarUrl: 'https://i.pravatar.cc/128?img=12', description: 'Engineering｜Singapore｜EMP-2003', status: 'online', statusMessage: '可線上協助。', fields: [{ label: 'ID', value: 'BC003' }, { label: '部門', value: 'Infrastructure' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Diana Lin', avatarUrl: 'https://i.pravatar.cc/128?img=20', description: 'Engineering｜Sydney｜EMP-2004', status: 'away', statusMessage: '已離開辦公室,週一回。', fields: [{ label: 'ID', value: 'DL004' }, { label: '部門', value: 'Mobile' }, { label: '時區', value: 'AEST (GMT+10)' }] },
+  { name: 'Ada Chen', avatarUrl: 'https://i.pravatar.cc/128?img=1', description: 'Engineering｜Taipei｜EMP-2001', status: 'online', statusMessage: '今日 OnCall。', id: 'ADA001', employeeNumber: 'EMP-2001', fields: [{ label: '部門', value: 'Platform' }, { label: '時區', value: 'TST (GMT+8)' }] },
+  { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/128?img=5', description: 'Engineering｜Tokyo｜EMP-2002', status: 'busy', statusMessage: '深度工作中,12:00 後可聊。', id: 'AW002', employeeNumber: 'EMP-2002', fields: [{ label: '部門', value: 'Platform' }, { label: '時區', value: 'JST (GMT+9)' }] },
+  { name: 'Bob Chen', avatarUrl: 'https://i.pravatar.cc/128?img=12', description: 'Engineering｜Singapore｜EMP-2003', status: 'online', statusMessage: '可線上協助。', id: 'BC003', employeeNumber: 'EMP-2003', fields: [{ label: '部門', value: 'Infrastructure' }, { label: '時區', value: 'SGT (GMT+8)' }] },
+  { name: 'Diana Lin', avatarUrl: 'https://i.pravatar.cc/128?img=20', description: 'Engineering｜Sydney｜EMP-2004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'DL004', employeeNumber: 'EMP-2004', fields: [{ label: '部門', value: 'Mobile' }, { label: '時區', value: 'AEST (GMT+10)' }] },
 ]
 
 export const Overview: Story = {

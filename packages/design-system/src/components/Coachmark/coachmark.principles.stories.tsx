@@ -5,7 +5,8 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2 } from 'lucide-react'
+import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2, Download } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import {
@@ -26,6 +27,7 @@ import {
   DialogFooter,
 } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { Alert } from '@/design-system/components/Alert/alert'
@@ -43,6 +45,100 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 )
 
 const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+
+// ── 範例卡一律受控、按鈕真的有作用(2026-10-20,獨立驗證 OV-08)────────────────────────────────
+// 2026-10-20 前本頁每張卡都是非受控 + 空的 callback:知道了 / 略過 / 下一步 / 上一步按了卡片都不動 ——
+// 連寫著「使用者可按略過退出 tour」的那張,略過也沒反應(範例反證自己的規則)。
+// 這裡照展示頁「多步 新手導覽」的寫法(coachmark.stories.tsx MultiStepTour):只有目前那一步的錨點包 Coachmark,
+// 知道了 / 略過 / 完成 → 關卡片;下一步 / 上一步 → 換到那一步的錨點。卡片預設不開(本檔 @overlay-open-skip)。
+
+/** 單步驟範例:按錨點打開,「知道了」關閉。 */
+function SingleCoachmarkExample({ image, title, description, anchor }: {
+  image: React.ReactNode
+  title: string
+  description: string
+  anchor: React.ReactElement
+}) {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <Coachmark
+      open={open}
+      onOpenChange={setOpen}
+      image={image}
+      title={title}
+      description={description}
+      isLastStep
+      onNext={() => setOpen(false)}
+      side="bottom"
+      align="start"
+    >
+      {anchor}
+    </Coachmark>
+  )
+}
+
+/** 三步新手導覽(同展示頁的三步):每步錨定在自己的功能上。`startAt` = 範例要講的那一步(按該步的錨點打開)。 */
+const TOUR: { anchor: string; icon: LucideIcon; media: { from: string; to: string; label: string }; title: string; description: string }[] = [
+  {
+    anchor: '建立 Workspace',
+    icon: FolderPlus,
+    // 2026-07-14 Dim 55:--color-cyan-6 不存在(12 hue 無 cyan)→ 改既有 turquoise
+    media: { from: 'var(--color-blue-6)', to: 'var(--color-turquoise-6)', label: 'Workspace' },
+    title: '建立你的第一個 Workspace',
+    description: 'Workspace 是團隊協作的主要空間,所有專案、文件、成員都在這裡集中管理。',
+  },
+  {
+    anchor: '邀請成員',
+    icon: Users,
+    media: { from: 'var(--color-yellow-6)', to: 'var(--color-deep-orange-6)', label: '團隊' },
+    title: '邀請成員',
+    description: '輸入 email 寄送邀請,新成員自動加入這個 Workspace。',
+  },
+  {
+    anchor: '建立專案',
+    icon: Sparkles,
+    media: { from: 'var(--color-green-6)', to: 'var(--color-green-7)', label: '專案' },
+    title: '建立你的第一個專案',
+    description: '專案用來組織相關的任務、文件和討論。',
+  },
+]
+
+function TourExample({ startAt }: { startAt: number }) {
+  const [step, setStep] = React.useState(startAt)
+  const [open, setOpen] = React.useState(false)
+  return (
+    <ButtonGroup>
+      {TOUR.map((s, i) => {
+        const trigger = (
+          // 錨點一律同一個 variant(同 coachmark.stories.tsx 展示頁):「目前那一步」由浮出的卡指出,不換成 primary(action-bar.spec.md「業務操作」)
+          <Button variant="tertiary" size="sm" startIcon={s.icon}>
+            {s.anchor}
+          </Button>
+        )
+        if (step !== i) return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
+        return (
+          <Coachmark
+            key={s.anchor}
+            open={open}
+            onOpenChange={setOpen}
+            image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
+            title={s.title}
+            description={s.description}
+            step={{ current: i + 1, total: TOUR.length }}
+            onPrev={i > 0 ? () => setStep(i - 1) : undefined}
+            onSkip={() => setOpen(false)}
+            onNext={() => (i === TOUR.length - 1 ? setOpen(false) : setStep(i + 1))}
+            isLastStep={i === TOUR.length - 1}
+            side="bottom"
+            align="start"
+          >
+            {trigger}
+          </Coachmark>
+        )
+      })}
+    </ButtonGroup>
+  )
+}
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -71,8 +167,8 @@ export const UsageGuidance: Story = {
           <Alert
             variant="error"
             appearance="subtle"
-            title="這是錯誤訊息的樣子"
-            description="使用者動作的回饋應該用 Notice / Alert / Toast 呈現,不是 Coachmark"
+            title="付款失敗:信用卡已過期"
+            description="請更新付款方式後再試一次;訂閱會在 3 天後暫停。"
             className="max-w-md"
           />
           <Label warn>錯誤 → Notice / Alert / Toast;Coachmark 只用於主動推送教學</Label>
@@ -87,16 +183,16 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 不強迫完成 tour(拿掉退出機制)"
-          note="使用者的本能是「我想自己試試」。沒退出 = 綁架,使用者找關閉方式或直接關閉整個頁面。永遠提供退出機制(第一步 Skip;step 2+ 走 Esc / header Close,有 Prev 時 Skip 自動隱藏,見 CTA 語義表)反而提升完成率 — 信任使用者會選擇"
+          note="使用者的本能是「我想自己試試」。沒退出 = 綁架,使用者找關閉方式或直接關閉整個頁面。永遠提供退出機制(第一步略過;step 2+ 走 Esc / header Close,有上一步時略過自動隱藏,見 CTA 語義表)反而提升完成率 — 信任使用者會選擇"
         >
-          <Label warn>❌ 拿掉所有退出路徑(無 Skip / Esc / header Close)— 使用者 frustration 增加,產品印象變差</Label>
+          <Label warn>❌ 拿掉所有退出路徑(無略過 / Esc / header Close)— 使用者 frustration 增加,產品印象變差</Label>
         </TutorialRule>
 
         <TutorialRule
           title="❌ Description 塞超過 3 行"
           note="Coachmark 是快速提示不是完整教學。長文案使用者不讀,反而浪費了「主動彈出」的機會。長內容:拆多步 / 改 Dialog / 連結到文件"
         >
-          <Label warn>❌ 5+ 行 description — 使用者掃一眼就點 Skip</Label>
+          <Label warn>❌ 5+ 行 description — 使用者掃一眼就點略過</Label>
           <Label>✅ 2-3 行精準說明,需要深入 → 「了解更多」連結到 help doc</Label>
         </TutorialRule>
 
@@ -141,17 +237,12 @@ export const UsageGuidance: Story = {
           title="Coachmark — 系統主動推送的功能介紹,anchor 到某個 UI 元素"
           note="使用者不知道新功能存在、不會主動點擊。系統判斷時機(首次進入 / 新版上線)主動出現 Coachmark,anchor 到要介紹的 feature 上。典型案例:Intercom feature discovery、Linear onboarding tour、Slack 新功能提示"
         >
-          <Coachmark
+          <SingleCoachmarkExample
             image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
             title="試試新的 AI 助理"
             description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
-            isLastStep
-            onNext={() => {}}
-            side="bottom"
-            align="start"
-          >
-            <Button variant="primary" startIcon={Bot}>AI 助理</Button>
-          </Coachmark>
+            anchor={<Button variant="primary" startIcon={Bot}>AI 助理</Button>}
+          />
           <Label>↑ 點按鈕看卡片。實際產品裡由系統主動打開,使用者不需事先知道有這個功能</Label>
         </TutorialRule>
 
@@ -163,7 +254,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent autoHeight maxWidth="440px">
+            <DialogContent height="hug" maxWidth="440px">
               <DialogHeader><DialogTitle>確定要永久刪除此專案?</DialogTitle></DialogHeader>
               <DialogBody><p className="text-body">此動作無法復原,所有相關任務、評論、附件都會一併刪除。</p></DialogBody>
               <DialogFooter>
@@ -195,20 +286,8 @@ export const MultiStepBestPracticesRule: Story = {
         title="每步 anchor 到對應 feature"
         note="Coachmark 的核心價值是「在 UI 元素旁邊介紹它」。anchor 到無關位置 = 失去精準性,變成一般 onboarding modal。使用者看完要能「記得這個功能在畫面的哪裡」"
       >
-        <Coachmark
-          image={<MediaGradient from="var(--color-yellow-6)" to="var(--color-deep-orange-6)" icon={Users} label="團隊" />}
-          title="邀請成員"
-          description="輸入 email 寄送邀請,新成員自動加入這個 Workspace。"
-          step={{ current: 2, total: 3 }}
-          onPrev={() => {}}
-          onSkip={() => {}}
-          onNext={() => {}}
-          side="bottom"
-          align="start"
-        >
-          <Button variant="tertiary" size="sm" startIcon={Users}>邀請成員</Button>
-        </Coachmark>
-        <Label>↑ 點「邀請成員」看卡片:Coachmark anchor 到這顆按鈕,使用者看完就知道去哪找</Label>
+        <TourExample startAt={1} />
+        <Label>↑ 點「邀請成員」看卡片:Coachmark anchor 到這顆按鈕,使用者看完就知道去哪找;按「上一步 / 下一步」卡片跟著換到那一步的按鈕</Label>
       </TutorialRule>
 
       <TutorialRule
@@ -217,7 +296,7 @@ export const MultiStepBestPracticesRule: Story = {
       >
         <Label>✅ 3 步:建立 workspace → 邀請成員 → 建立專案(Notion)</Label>
         <Label>✅ 4 步:選模板 → 命名 → 邀協作 → 開始編輯(Figma)</Label>
-        <Label warn>❌ 8+ 步 — 使用者 Skip 率 &gt; 60%</Label>
+        <Label warn>❌ 8+ 步 — 使用者略過率 &gt; 60%</Label>
       </TutorialRule>
 
       <TutorialRule
@@ -225,57 +304,30 @@ export const MultiStepBestPracticesRule: Story = {
         note="沒退出機制的 onboarding = 綁架使用者。使用者的本能是「我想自己試試」,強迫看完反而留下負面印象。退出機制是對自主權的尊重,真正有用的 tour 使用者會主動看完"
       >
         <Label warn>❌ 完全拿掉退出路徑(連 Esc / header Close 都禁用)— user 會直接離開產品</Label>
-        <Label>✅ 第一步提供 Skip(tertiary 不搶焦點);step 2+ 退出走 Esc / header Close(有 onPrev 時 Skip 自動隱藏,見 CTA 語義表)</Label>
+        <Label>✅ 第一步提供略過(tertiary 不搶焦點);step 2+ 退出走 Esc / header Close(有 onPrev 時略過自動隱藏,見 CTA 語義表)</Label>
       </TutorialRule>
 
       <TutorialRule
-        title="最後一步 isLastStep = Next 變 Done"
-        note="語意切換告訴使用者「這是最後一步」。如果最後步仍寫 Next,使用者不知道 tour 是否結束,體驗斷裂。Done 的語意收斂明確,讓使用者知道「我完成了」"
+        title="最後一步 isLastStep:「下一步」變「完成」"
+        note="語意切換告訴使用者「這是最後一步」。如果最後步仍寫「下一步」,使用者不知道 tour 是否結束,體驗斷裂。「完成」的語意收斂明確,讓使用者知道「我完成了」"
       >
-        <div className="flex">
-          <Coachmark
-            image={<MediaGradient from="var(--color-green-6)" to="var(--color-green-7)" icon={Sparkles} label="完成" />}
-            title="建立你的第一個專案"
-            description="專案用來組織相關的任務、文件和討論。"
-            step={{ current: 3, total: 3 }}
-            isLastStep
-            onPrev={() => {}}
-            onSkip={() => {}}
-            onNext={() => {}}
-            side="bottom"
-            align="start"
-          >
-            <Button variant="primary" size="sm" startIcon={Sparkles}>建立專案</Button>
-          </Coachmark>
-        </div>
-        <Label>↑ 點按鈕看卡片:最後步 Next 文字 → Done,使用者知道「完成了」</Label>
+        <TourExample startAt={2} />
+        <Label>↑ 點「建立專案」看卡片:最後一步推進鍵是「完成」,按了卡片關閉 —— 使用者知道「完成了」</Label>
       </TutorialRule>
 
       <TutorialRule
-        title="Footer 順序 — Previous / Skip / Next"
-        note="對齊 Ant Tour / Intercom convention 的左→右位置順序:Previous 最左(回退,視覺權重低)、Skip 中間(退出,tertiary)、Next 最右(推進,primary)。此為各按鈕『出現時』的排列位置,非三鍵同時 render — Skip 僅第一步顯示、Previous 第 2+ 步顯示,兩者永不共存(見 CTA 語義表)"
+        title="Footer 順序 — 上一步 / 略過 / 下一步"
+        note="對齊與順序都不是 Coachmark 自訂的:浮層頁腳一律靠右(overlay-surface.spec.md「底部區域:按鈕列 vs 列式」SurfaceFooter 排版:justify-end,左側有步驟計數時 justify-between —— 單步卡沒有計數也一樣靠右);靠右時照全 DS 的全局排序(action-bar.spec.md「全局排序」:primary > secondary > tertiary,靠右對齊 primary 在最右),所以推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。頁面裡沒有標題的步驟列是另一種情形:靠左、primary「下一步」在最左(action-bar.spec.md「對齊方向的決定」),不套這裡。此為各按鈕『出現時』的排列位置,非三鍵同時 render — 略過僅第一步顯示、上一步第 2+ 步顯示,兩者永不共存(見 CTA 語義表)"
       >
-        <Label>Previous 第 2+ 步才出現;第 1 步只有 Skip / Next</Label>
+        <Label>上一步 第 2+ 步才出現;第 1 步只有 略過 / 下一步</Label>
       </TutorialRule>
 
       <TutorialRule
         title="non-modal 設計尊重使用者自主探索"
-        note="onboarding 的精神是「幫忙介紹但不強迫」。使用者點 Skip / 按 Esc / 點擊別處都能關閉,不影響主流程。把 onboarding 包在 Dialog 裡 — 使用者第一反應是找 X 關掉,根本沒讀內容"
+        note="onboarding 的精神是「幫忙介紹但不強迫」。使用者點略過 / 按 Esc / 點擊別處都能關閉,不影響主流程。把 onboarding 包在 Dialog 裡 — 使用者第一反應是找 X 關掉,根本沒讀內容"
       >
-        <Coachmark
-          // 2026-07-14 Dim 55:--color-cyan-6 不存在(12 hue 無 cyan)→ 改既有 turquoise
-          image={<MediaGradient from="var(--color-blue-6)" to="var(--color-turquoise-6)" icon={FolderPlus} label="Workspace" />}
-          title="建立你的第一個 Workspace"
-          description="Workspace 是團隊協作的主要空間,所有專案、文件、成員都在這裡集中管理。"
-          step={{ current: 1, total: 3 }}
-          onSkip={() => {}}
-          onNext={() => {}}
-          side="bottom"
-          align="start"
-        >
-          <Button variant="primary" startIcon={FolderPlus}>建立 Workspace</Button>
-        </Coachmark>
-        <Label>↑ 點按鈕看卡片:使用者可按 Skip 退出 tour,繼續自己探索 — 不強迫完成</Label>
+        <TourExample startAt={0} />
+        <Label>↑ 點「建立 Workspace」看卡片:使用者可按「略過」退出 tour,繼續自己探索 — 不強迫完成</Label>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -289,16 +341,12 @@ export const MediaContentRule: Story = {
         title="Media = 純視覺說明,幫助理解功能價值"
         note="最佳內容:(1) Illustration / 概念圖(抽象功能最適合)、(2) Screenshot 功能畫面、(3) Animated GIF / Lottie 示範操作。目的是讓使用者「一眼看懂這個功能在做什麼」"
       >
-        <Coachmark
-          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI Illustration" />}
-          title="AI 助理"
-          description="illustration 傳達概念,比純文字更快被理解"
-          onNext={() => {}}
-          side="bottom"
-          align="start"
-        >
-          <Button variant="primary" size="sm">Anchor</Button>
-        </Coachmark>
+        <SingleCoachmarkExample
+          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 摘要" />}
+          title="AI 摘要"
+          description="選取任一段文字,AI 會整理成三個重點。"
+          anchor={<Button variant="primary" size="sm" startIcon={Bot}>AI 摘要</Button>}
+        />
         <Label>↑ 點按鈕看卡片:Illustration 適合抽象功能(AI / 協作 / 自動化)</Label>
       </TutorialRule>
 
@@ -307,23 +355,19 @@ export const MediaContentRule: Story = {
         note="按鈕 / 輸入 / checkbox 一律走 footer。Media 是「看」的區塊不是「做」的區塊。放互動元素會讓使用者搞不清楚「這個按鈕是示範還是真的能點」,破壞 Coachmark 的教學角色"
       >
         <Label warn>❌ Media 區放 &lt;Button onClick=...&gt; — 使用者分不清示範 vs 實際操作</Label>
-        <Label>✅ Media 顯示 static screenshot / illustration,互動一律透過 footer 的 Next 推進</Label>
+        <Label>✅ Media 顯示 static screenshot / illustration,互動一律透過 footer 的推進鍵</Label>
       </TutorialRule>
 
       <TutorialRule
         title="Description 不超過 3 行"
         note="Coachmark 是快速說明不是完整教學。超過 3 行使用者沒耐心讀,體驗反而變差。需要詳細說明:(a) 連結到 help doc,(b) 改用 Dialog + scrollable body,(c) 拆成多步 tour"
       >
-        <Coachmark
-          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Sparkles} label="簡潔" />}
-          title="簡潔的 description"
-          description="兩行說明足以傳達核心價值 — 使用者能快速掃完並理解功能用途。"
-          onNext={() => {}}
-          side="bottom"
-          align="start"
-        >
-          <Button variant="tertiary" size="sm">Anchor</Button>
-        </Coachmark>
+        <SingleCoachmarkExample
+          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Download} label="匯出" />}
+          title="一鍵匯出報表"
+          description="把目前篩選後的結果匯出成 Excel,欄位順序與排序都會保留。"
+          anchor={<Button variant="tertiary" size="sm" startIcon={Download}>匯出報表</Button>}
+        />
         <Label>↑ 點按鈕看卡片:2 行精準說明,不超過 3 行</Label>
       </TutorialRule>
 

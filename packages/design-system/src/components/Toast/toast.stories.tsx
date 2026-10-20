@@ -96,11 +96,15 @@ export const WithDescription = {
   render: () => (
     // 間距(layoutSpace.spec.md 規則 3):淺深兩欄並列 = loose;欄標 → 它的示範框 = tight(ExampleGroup);
     // 框內五個變體並列 = loose;列標 ↔ 它標的那一則 Toast = tight;示範框內距見下方標記(陰影留白)
+    // 每一欄的示範框自己鎖主題(data-theme + text-foreground,同 alert.tsx「data-theme 必須搭配 text-foreground」):不論頁面是淺是深,
+    // 左欄永遠畫淺色頁上的 Toast、右欄永遠畫深色頁上的 Toast;欄標在框外、跟著頁面主題(頁面上看得清楚)。
+    // 2026-10-20 前只有右欄整組(連欄標)設 dark、左欄沒鎖:淺色頁上「dark mode」欄標白字白底 1:1,深色頁上「light mode」欄整欄是深底
+    // (獨立驗證 OV-03)。
     <div className="flex gap-[var(--layout-space-loose)]">
       <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">light mode</span>
         {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
-        <div className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas border border-divider">
+        <div data-theme="light" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'light')} theme</span>
@@ -109,10 +113,10 @@ export const WithDescription = {
           ))}
         </div>
       </ExampleGroup>
-      <ExampleGroup data-theme="dark">
+      <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">dark mode</span>
         {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
-        <div className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas border border-divider">
+        <div data-theme="dark" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'dark')} theme</span>

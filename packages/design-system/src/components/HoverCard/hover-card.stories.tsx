@@ -7,7 +7,8 @@
 // @story-trait-allow: missing-default missing-opensnapshot
 import type { Meta, StoryObj } from '@storybook/react'
 import { ExternalLink, Github, Calendar, MapPin } from 'lucide-react'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from './hover-card'
+import { cn } from '@/lib/utils'
+import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
@@ -47,30 +48,28 @@ export const PersonProfileCard: Story = {
       {/* @layout-space-magic-ok: 行內「Reviewer:」標籤 ↔ 頭像值(同一組 label / value)(layoutSpace.spec.md:166 micro) */}
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted">Reviewer:</span>
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-default rounded-full">
-              <Avatar src="https://i.pravatar.cc/56?u=ada-chen" alt="Ada Chen" color="indigo" size={28} />
-            </button>
-          </HoverCardTrigger>
-          {/* 外殼照 Avatar hoverCard 內建那一層(avatar.tsx「HoverCardContent canonical」):不設內距、不設寬度 ——
-              寬度由 ProfileCard 自己決定(profile-card.spec.md「寬度(元件級常數)」);原本外殼寫死 280 會把 320 寬的卡片右側裁掉 41px */}
-          <HoverCardContent
-            className="bg-surface-raised border border-border rounded-lg"
-            style={{ boxShadow: 'var(--elevation-200)' }}
-          >
+        {/* 人員頭像一律走 Avatar 的 hoverCard(avatar.spec.md「Avatar HoverCard 原則」;外殼 / 可聚焦 / 主題由 Avatar 內建,
+            外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS)。卡片帶預設動作(傳訊息 / 語音通話)與查看更多 —— 說明寫「可點『傳訊息』」,
+            2026-10-20 前卡上卻沒有動作列(獨立驗證 OV-06 同族) */}
+        <Avatar
+          src="https://i.pravatar.cc/56?u=ada-chen"
+          alt="Ada Chen"
+          color="indigo"
+          size={28}
+          hoverCard={
             <ProfileCard
               name="Ada Chen"
               avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
               subtitle="Design Engineer · Frontend"
               status="online"
               statusMessage="正在處理 login 頁重構"
-              defaultFieldValues={{ id: 'ADACHEN', employeeNumber: 'E-4821' }}
-              fields={[{ label: 'Timezone', value: 'UTC+8 台北' }]}
+              actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+              defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
+              fields={[{ label: '時區', value: 'UTC+8 台北' }]}
               onViewMore={() => {}}
             />
-          </HoverCardContent>
-        </HoverCard>
+          }
+        />
       </div>
     </div>
   ),
@@ -101,8 +100,8 @@ export const LinkPreview: Story = {
             </a>
           </HoverCardTrigger>
           <HoverCardContent
-            className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]"
-            style={{ boxShadow: 'var(--elevation-200)', width: 320 }}
+            className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}
+            style={{ width: 320 }}
           >
             {/* 預覽卡三段(來源 / 標題 + 摘要 / meta)之間 = tight(layoutSpace 規則 3:來源與 meta 都在說明同一則標題);
                 標題 ↔ 摘要是同一個文字塊 = --item-gap-label-desc-scanning(item-anatomy.spec.md「Label ↔ Desc 間距」;body 14 + caption 12 = scanning) */}
@@ -123,7 +122,7 @@ export const LinkPreview: Story = {
                 <span className="inline-flex items-center gap-1">
                   <Calendar size={12} /> 更新於 2 天前
                 </span>
-                <span>· 5 min read</span>
+                <span>· 閱讀約 5 分鐘</span>
               </div>
             </div>
           </HoverCardContent>
@@ -222,8 +221,8 @@ export const RepoCard: Story = {
             </a>
           </HoverCardTrigger>
           <HoverCardContent
-            className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]"
-            style={{ boxShadow: 'var(--elevation-200)', width: 320 }}
+            className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}
+            style={{ width: 320 }}
           >
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
               {/* 40px 圖示方塊 > 24px 閾值 → item-anatomy「Card header 大 prefix 對齊」(同 ProfileCard 標頭):
@@ -280,19 +279,31 @@ export const TriggerShowcase: Story = {
         closeDelay 控制 hover 節奏。
       </p>
 
-      <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
+      {/* 三組「說明在上、觸發點在下」並排:靠上對齊,三則說明才在同一條線上(DS 範例並排的 canonical = example-captions.tsx
+          containerClass 的 items-start;2026-10-20 前 items-center → 三則說明高度差 2–8px,獨立驗證 OV-13) */}
+      <div className="flex items-start gap-[var(--layout-space-loose)] flex-wrap">
         <ExampleGroup align="start">
           <span className="text-footnote text-fg-muted font-mono">trigger: Avatar</span>
-          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
-            <HoverCardTrigger asChild>
-              <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-default rounded-full">
-                <Avatar src="https://i.pravatar.cc/64?u=ada-chen" alt="Ada Chen" color="indigo" size={32} />
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]">
-              <div className="text-caption">Ada Chen · Design Engineer</div>
-            </HoverCardContent>
-          </HoverCard>
+          {/* 人員頭像一律 ProfileCard(avatar.spec.md「Avatar HoverCard 原則」)—— 走 Avatar 的 hoverCard,延遲即 Avatar 內建的 rich / close;
+              2026-10-20 前這裡是手包按鈕 + 一行純文字卡(獨立驗證 OV-06) */}
+          <Avatar
+            src="https://i.pravatar.cc/64?u=ada-chen"
+            alt="Ada Chen"
+            color="indigo"
+            size={32}
+            hoverCard={
+              <ProfileCard
+                name="Ada Chen"
+                avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
+                subtitle="Design Engineer"
+                status="online"
+                statusMessage="本週在台北辦公室"
+                actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
+                defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
+                onViewMore={() => {}}
+              />
+            }
+          />
         </ExampleGroup>
 
         <ExampleGroup align="start">
@@ -303,7 +314,7 @@ export const TriggerShowcase: Story = {
                 查看位置
               </Button>
             </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]">
+            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}>
               {/* @layout-space-magic-ok: 位置提示卡內 圖示 ↔ 地址文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
               <div className="flex items-center gap-2 text-caption">
                 <MapPin size={14} className="text-fg-muted" />
@@ -325,7 +336,7 @@ export const TriggerShowcase: Story = {
                 PR #1,234
               </a>
             </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]">
+            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}>
               <div className="text-caption">feat: 支援多工作區切換</div>
             </HoverCardContent>
           </HoverCard>

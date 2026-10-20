@@ -16,7 +16,7 @@ benchmark:
 
 ## 定位
 
-Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer，對齊 Jira / Linear / Notion 右側 detail drawer 慣例）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：AppShell 的 Menu 放不下時從 left 滑入的左側浮層,`../AppShell/app-shell.spec.md`「版面規則」§9;2026-10-14 前是 Sidebar 小視口抽屜），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權（canonical 見 `sheet.tsx` L23-27 + showcase `AR35`）。
+Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer，對齊 Jira / Linear / Notion 右側 detail drawer 慣例）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：AppShell 的 Menu 放不下時從 left 滑入的左側浮層,`../AppShell/app-shell.spec.md`「版面規則」§9;2026-10-14 前是 Sidebar 小視口抽屜），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權（canonical 見 `sheet.tsx` 檔頭「其他 side」段 + showcase `AR35`）。
 
 **實作基礎**：shadcn passthrough——基於 Radix Dialog（`side` variant，非居中 modal）。本 DS 保留 shadcn 原結構 + 橋接 DS token。
 
@@ -130,7 +130,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 
 ## A11y 預設
 
-**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
+**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
 
 **Keyboard 行為**:
 
@@ -138,7 +138,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 - Esc — 關閉;**一次只少一層,焦點所在的控件自己那一層也算一層**(2026-10-01;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):側板裡改過的欄位(接 `useFormValidation`)/ 就地編輯中 / 格游標 / 拖曳中 → 第一下 Esc 由控件撤銷、側板不關,第二下才關;**輸入法組字中的 Esc 不關**(那一下是在取消選字)。機制:`SheetContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape`(取代 ime-composition.ts 的 `withImeSafeEscape`),規則同 `../Dialog/dialog.spec.md`「A11y 預設」Esc 條
 - Shift+Tab — 反向 focus 循環
 
-**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration(2026-10-01 起 DS 預設)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShell 的 Menu 左側浮層:由 SidebarTrigger / ⌘B 打開,不是 SheetTrigger)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>`(WCAG 2.4.3)—— `SheetContent` 現在**預設**在內容掛上時記下開啟者、關閉時沒有 Radix 觸發點就經 `../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn` 還回去(待辦總帳 OE29;規則同 `../Dialog/dialog.spec.md`「Focus return」條);consumer 自己接了 `onOpenAutoFocus` / `onCloseAutoFocus` 的(Sidebar 的 Menu 左側浮層:帶 fallback)照舊先跑、擋了預設就勝出。`Sheet`(Root)的 `modal` 經 context 交給 Content(非 modal 點外面收起不搶焦點)。
+**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration(2026-10-01 起 DS 預設)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(受控 `open`、沒有 `SheetTrigger` 開的側板,如 AppShell 的 Menu 左側浮層:由 SidebarTrigger / ⌘B 打開)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>`(WCAG 2.4.3)—— `SheetContent` 現在**預設**在內容掛上時記下開啟者、關閉時沒有 Radix 觸發點就經 `../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn` 還回去(待辦總帳 OE29;規則同 `../Dialog/dialog.spec.md`「Focus return」條);consumer 自己接了 `onOpenAutoFocus` / `onCloseAutoFocus` 的(Sidebar 的 Menu 左側浮層 `../Sidebar/sidebar.tsx`:開啟者 = SidebarTrigger 或快捷鍵當下的焦點,沒有 fallback)照舊先跑、擋了預設就勝出。2026-10-14 前這裡列的「AppShellAside 手機模式」「Sidebar 窄版抽屜:帶 fallback」已隨 768 斷點退場(AppShellAside 只剩並排一種形態,`../AppShell/app-shell.tsx` AppShellAside 檔頭)。`Sheet`(Root)的 `modal` 經 context 交給 Content(非 modal 點外面收起不搶焦點)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

@@ -12,7 +12,7 @@
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
  *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
  *        Combobox「+N」浮出清單也算同一個欄位;可聚焦的停用(忙碌 / 握著焦點時被停用)滑過、按住都與原生停用同色(2026-10-07,後三列用同一棵樹編出的 DS 樣式)。
- *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(二十六個,見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
+ *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(二十七個,見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
  *        (多紅少紅都算量具不可信),契約列每一條都要被某個突變弄紅過。`--root=<修改前的整棵原始碼>` 跑 = 天然對照組(修改前 2026-10-01 基準樹:
  *        除 F-remove / E-combobox-popup / E-unchained 外契約列全紅,兩條對照列綠。這三列守的是修好之後才可能出現的回歸,基準樹本來就綠:F-remove = 本批工作中途
  *        把三份接力收成一支時引入、獨立驗證抓到的那一版;E-combobox-popup = Combobox 接上表單之後「清單開著按 Esc 又關清單又回復」—— 基準樹的
@@ -39,6 +39,8 @@
  *   C-combobox-focus   必填的 Combobox 空著送出 → 焦點落在它的觸發區(name 掛在可聚焦的元素上)
  *   B-popup            必填的 Select / Combobox / DatePicker / TimePicker 經 getInputProps 接線:打開彈出層時沒有錯誤;Esc 關掉後 Tab 離開才有
  *   F-menu             DropdownMenu 的項目開了受控 Dialog → Esc → 焦點回選單的觸發鈕(不是 body)
+ *   F-menu-fileviewer  DropdownMenu 的項目開了受控 FileViewer(不經 DialogContent、直接用 Radix Dialog)→ Esc → 焦點回選單的觸發鈕
+ *                      (2026-10-20 獨立驗證 OV-01:FileViewer 自己記開啟者、少了 persistentOpenerOf,修前掉到 body;只有這一列紅)
  *   F-remove           FileUpload 焦點在列上、點第一項的 ×(按鈕不拿焦點,同 Safari)→ 焦點接到下一顆 ×(不是上傳鈕)
  *   F-enter-commit     Dialog 裡的 LinkInput 編輯後按 Enter → 回連結狀態、onChange 一次、焦點在鉛筆;InlineEdit 同(回檢視、onCommit 一次、焦點在檢視鈕)
  *   F-link-enter-stay  LinkInput 打了不合法網址按 Enter → 留在輸入框、紅框、焦點在輸入框;清空按 Enter → onChange('')、焦點仍在輸入框
@@ -67,7 +69,8 @@
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
- *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow;不記選單的觸發鈕 → F-menu;FileUpload 不以被點的 × 為基準 → F-remove
+ *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow;不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
+ *   FileViewer 自己記開啟者(不經 useTriggerlessFocusReturn,2026-10-20 前的寫法)→ F-menu-fileviewer;FileUpload 不以被點的 × 為基準 → F-remove
  *   結算 Enter 不 preventDefault → F-enter-commit;LinkInput Enter 一律 blur → F-link-enter-stay
  *   輸入盒外框不留焦點 → C-composer-mouse;輸入盒不接力 → C-composer-keyboard
  *   DatePicker 收起日曆不還焦點給輸入框 → F-date-return;Button 握著焦點時仍轉原生 disabled → F-pagination / F-look;改名「儲存」空白時停用 → F-rename
@@ -77,7 +80,7 @@
  *
  * 用法:
  *   node scripts/escape-and-focus-contract-invariant.mjs                  判定(現行原始碼)
- *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(二十六個單一根因突變)
+ *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(二十七個單一根因突變)
  *   node scripts/escape-and-focus-contract-invariant.mjs --root=<dir>     改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import {
@@ -108,7 +111,7 @@ const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes=
 /** 除錯用:`--only=<突變 id>[,<id>…]` 只跑這幾個突變(不檢查覆蓋率 —— 這一趟不算 selftest 通過,結尾會明說) */
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null
 
-// ─── 二十六個單一根因突變(--selftest;file 相對 packages/design-system/src)──────────────────────
+// ─── 二十七個單一根因突變(--selftest;file 相對 packages/design-system/src)──────────────────────
 const MUTANTS = [
   {
     id: 'link-input-consumer-first-raw',
@@ -209,8 +212,20 @@ const MUTANTS = [
     id: 'no-persistent-opener',
     what: '開啟者住在選單裡時不改記選單的觸發鈕',
     file: 'lib/overlay-focus-return.ts',
-    expectRed: ['F-menu'],
+    // FileViewer 2026-10-20 起消費同一支 hook(useTriggerlessFocusReturn)→ 兩列一起紅,證明它們吃的是同一份
+    expectRed: ['F-menu', 'F-menu-fileviewer'],
     apply: (src) => replaceOnce(src, /openerRef\.current = persistentOpenerOf\(captureFocusOrigin\(\)\)/, 'openerRef.current = captureFocusOrigin()'),
+  },
+  {
+    id: 'fileviewer-private-opener',
+    what: 'FileViewer 自己記開啟者(captureFocusOrigin)、不經 useTriggerlessFocusReturn —— 2026-09-30 → 2026-10-20 的寫法(獨立驗證 OV-01)',
+    file: 'components/FileViewer/file-viewer.tsx',
+    expectRed: ['F-menu-fileviewer'],
+    apply: (src) => replaceOnce(
+      replaceOnce(src, /import \{ useTriggerlessFocusReturn \} from "@\/design-system\/lib\/overlay-focus-return"/,
+        'import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"'),
+      /const focusReturn = useTriggerlessFocusReturn\(!persistentElements\)/,
+      'const privateOpenerRef = React.useRef<HTMLElement | null>(null)\n  const focusReturn = { onOpenAutoFocus: () => { privateOpenerRef.current = captureFocusOrigin() }, onCloseAutoFocus: (event: Event) => { const opener = privateOpenerRef.current; privateOpenerRef.current = null; returnFocusToOpener(event, opener, { noTrigger: true, modal: !persistentElements }) } }'),
   },
   {
     id: 'fileupload-no-removed-basis',
@@ -317,6 +332,7 @@ import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { FileViewer } from '@/design-system/components/FileViewer/file-viewer'
 import { Button } from '@/design-system/components/Button/button'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
@@ -342,7 +358,7 @@ function Shell({ title, children, footer }) {
     <div>
       <button type="button" data-open onClick={() => setOpen(true)}>開啟 {title}</button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="scene-dialog" autoHeight maxWidth={720}>
+        <DialogContent id="scene-dialog" height="hug" maxWidth={720}>
           <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
           <DialogBody>{children}</DialogBody>
           {footer ? <DialogFooter>{footer}</DialogFooter> : null}
@@ -464,11 +480,29 @@ function MenuScene() {
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="scene-dialog" autoHeight maxWidth={440}>
+        <DialogContent id="scene-dialog" height="hug" maxWidth={440}>
           <DialogHeader><DialogTitle>重新命名</DialogTitle></DialogHeader>
           <DialogBody><label>名稱<input defaultValue="發布公告草稿" /></label></DialogBody>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+// 附件列「⋯」→ 預覽:FileViewer 由受控 open 開、沒有觸發點,開啟者是會跟著關掉的選單項
+function MenuFileViewerScene() {
+  const [open, setOpen] = React.useState(false)
+  window.__closeScene = () => setOpen(false)
+  return (
+    <div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button data-menu-trigger>附件動作</Button></DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onSelect={() => setOpen(true)}>預覽</DropdownMenuItem>
+          <DropdownMenuItem>下載</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <FileViewer id="scene-dialog" open={open} onOpenChange={setOpen}
+        files={[{ id: 'f1', url: 'about:blank', name: '2026-Q3-合約.zip', mimeType: 'application/zip', size: 2048 }]} />
     </div>
   )
 }
@@ -574,6 +608,7 @@ const SCENES = {
   combo: () => <ComboScene />,
   popup: () => <PopupScene />,
   menu: () => <MenuScene />,
+  menuFileViewer: () => <MenuFileViewerScene />,
   remove: () => <RemoveScene />,
   composer: () => <ComposerScene />,
   rename: () => <RenameScene />,
@@ -879,6 +914,17 @@ async function runChecks(page) {
   s = await snap()
   check('F-menu', 'contract', 'DropdownMenu 的項目開了受控 Dialog(沒有 DialogTrigger)→ Esc 關閉後焦點回選單的觸發鈕「更多動作」(修前 body)',
     !s.dialog && s.active === 'BUTTON:更多動作', s)
+
+  // ── F-menu-fileviewer ──(2026-10-20 OV-01:FileViewer 直接用 Radix Dialog、不經 DialogContent —— 預設那支 hook 要它自己消費)
+  await scene('menuFileViewer')
+  await d.click('[data-menu-trigger]')
+  await waitSel('[role="menuitem"]', '選單沒開')
+  await page.click('[role="menuitem"]:first-child'); await d.settle()
+  await waitSel(`${DIALOG}[data-state="open"]`, '選單項沒開檔案檢視器')
+  await d.press('Escape')
+  s = await snap()
+  check('F-menu-fileviewer', 'contract', 'DropdownMenu 的項目開了受控 FileViewer(沒有觸發點、不經 DialogContent)→ Esc 關閉後焦點回選單的觸發鈕「附件動作」(修前 body)',
+    !s.dialog && s.active === 'BUTTON:附件動作', s)
 
   // ── F-remove ──
   // 焦點在列上、按 × 時按鈕不拿焦點(Safari / macOS 點按鈕的行為;Chromium 的真滑鼠會在 mousedown 把焦點給那顆 ×,量不到「基準是誰」)

@@ -15,12 +15,29 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
  *
  * 跟 Tooltip 的差異：內容可互動（按鈕、連結、hover 子元素）。
  *
- * **不含視覺樣式**——bg、border、shadow、padding 由 consumer 決定：
- * - OverflowIndicator：深色 Tooltip 樣式（bg-tooltip + data-theme="dark"）
- * - ProfileCard：亮色 Card 樣式（bg-surface-raised + elevation-200）
+ * **不含視覺樣式**——bg、border、shadow、padding 由 consumer 決定。兩種常見外殼各有一份常數(下方),所有使用方消費它、不另抄:
+ * - ProfileCard / 內容預覽:`HOVER_CARD_SURFACE_CLASS`(亮色卡片殼,跟隨頁面主題)
+ * - OverflowIndicator 溢出清單:`HOVER_CARD_TOOLTIP_SURFACE_CLASS` + `data-theme="dark"`(深色 tooltip 殼)
  *
  * 只提供：z-index、動畫、sideOffset。
  */
+
+/**
+ * 亮色卡片殼(人員卡、連結 / 儲存庫預覽):跟隨頁面主題的浮起面 —— 底色 / 字色 / 邊框 / 圓角 / elevation-200 同 Popover 殼
+ * (popover.tsx PopoverContent;tokens/elevation/elevation.spec.md 配對規則)。**不含內距**:ProfileCard 自帶內距,自訂內容自己加。
+ * hover-card.spec.md「純行為 primitive」表第 1 列的唯一住所:Avatar hoverCard 內建外殼(avatar.tsx)與所有 story 都消費這一份。
+ * 2026-10-20 前這個殼在 DS 裡手抄 14 處、寫法各異(陰影寫在 class / style、有無字色),其中 6 處沒有陰影、1 處連底色邊框都沒有
+ * (獨立驗證 OV-V03 / OV-06;M17)。閘:scripts/overlay-story-contract-invariant.mjs S2(HoverCardContent 一律消費這兩份常數)。
+ */
+export const HOVER_CARD_SURFACE_CLASS = 'bg-surface-raised text-foreground border border-border rounded-lg shadow-[var(--elevation-200)]'
+
+/**
+ * 深色 tooltip 殼(+N 溢出清單):**一定要跟 `data-theme="dark"` 寫在同一個元素上**,而且字色在這一層重新解析(`text-foreground`)——
+ * CSS 的 `color` 從外面繼承的是**已解析的值**,`data-theme` 只換變數不換 color;只寫 data-theme 的深色殼,文字是頁面主題的黑字
+ * (2026-10-20 前淺色頁量到 1.92:1,獨立驗證 OV-02;規則同 alert.tsx 檔頭「data-theme 必須搭配 text-foreground」與 M3)。
+ * hover-card.spec.md「純行為 primitive」表第 2 列的唯一住所:OverflowIndicator 與設計規格頁都消費這一份。
+ */
+export const HOVER_CARD_TOOLTIP_SURFACE_CLASS = 'bg-tooltip text-foreground rounded-lg'
 
 // 2026-06-11 user 拍板 A 案(「確保所有 hover 延遲都有按照設計原則」):Root 預設接 motion token SSOT
 // (rich 700ms open / close 200ms)— 對齊 tooltip.tsx 同 pattern(2026-05-18 拍板 #3A)。

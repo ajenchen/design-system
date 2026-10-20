@@ -15,6 +15,7 @@ import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -30,7 +31,7 @@ import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-ret
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
- * autoHeight（boolean）：高度隨內容，超過 viewport 時 max-height 安全帽。
+ * height="hug"：高度隨內容，超過 viewport 時 max-height 安全帽(舊名 autoHeight 已停用,見 dialog.spec.md「高度軸」)。
  */
 
 // 並存設定**一次到位**:在 Root 傳 `persistentElements`,Root 自動走 `modal={false}`,
@@ -147,8 +148,11 @@ const DialogContent = React.forwardRef<
   const modal = React.useContext(DialogModalContext) && !persistentElementsProp
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29):受控 `open`、沒有 DialogTrigger 開的對話框,Radix 沒有東西可還 → 焦點掉到 body。
   // 內容掛上時記下開啟者(住在選單裡的開啟者改記選單的觸發鈕),關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;
-  // consumer 自己接了 onOpenAutoFocus / onCloseAutoFocus 的(CommandDialog / AgentPanel / FileViewer)照舊先跑、擋了預設就不接。
+  // consumer 自己接了 onOpenAutoFocus / onCloseAutoFocus 的(AgentPanel 改名 / 刪除對話框)照舊先跑、擋了預設就不接。
+  // FileViewer 不經 DialogContent(直接用 Radix Dialog),2026-10-20 起同樣消費這支 hook。
   const focusReturn = useTriggerlessFocusReturn(modal)
+  // 沒有 DialogDescription(DS 允許只有標題)時不寫 aria-describedby —— Radix 預設指向一個不存在的 id(lib/overlay-description.ts;獨立驗證 OV-15)
+  const descriptionPresence = useDescriptionPresence('aria-describedby' in props)
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
   // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
   // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
@@ -264,7 +268,7 @@ const DialogContent = React.forwardRef<
     )
     ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
   }
-  // consumer 的先跑、擋了預設就不接(AgentPanel / CommandDialog / FileViewer 自己的接線勝出);沒擋 → DS 預設還給開啟者
+  // consumer 的先跑、擋了預設就不接(AgentPanel 改名 / 刪除對話框自己的接線勝出);沒擋 → DS 預設還給開啟者
   const handleCloseAutoFocus = (e: Event) => {
     onCloseAutoFocus?.(e)
     focusReturn.onCloseAutoFocus(e)
@@ -312,12 +316,13 @@ const DialogContent = React.forwardRef<
         ...heightStyle,
         ...style,
       }}
+      {...descriptionPresence.descriptionPresenceProps}
       {...props}
       // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
       //(改過的欄位 / 就地編輯中 / 格游標 / 拖曳中)且在這一層裡面 → 留給控件、不關;其餘照舊關閉
       onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentEl)}
     >
-      {children}
+      <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
     </DialogPrimitive.Content>
   )
 
@@ -471,15 +476,19 @@ DialogTitle.displayName = DialogPrimitive.Title.displayName
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    // title → description 間距 canonical:DialogTitle 是 body-lg(16)+ desc body(14)→ reading-lg token
-    // (label tier 決定 token 選擇;item-anatomy Family 2 reading-family token 對照表)
-    className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  // 向 DialogContent 登記「有說明」:沒有任何說明時 DialogContent 不寫 aria-describedby(lib/overlay-description.ts)
+  useRegisterDescription()
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      // title → description 間距 canonical:DialogTitle 是 body-lg(16)+ desc body(14)→ reading-lg token
+      // (label tier 決定 token 選擇;item-anatomy Family 2 reading-family token 對照表)
+      className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
+      {...props}
+    />
+  )
+})
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

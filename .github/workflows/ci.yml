@@ -565,8 +565,9 @@ jobs:
 
   verify-browser-control-groups:
     # 2026-10-14 拆自 verify-browser-datatable-perception(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
-    # 兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
+    # 前兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
     # useFormValidation 契約(判定在 verify-browser-interaction)。逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
+    # 第三支浮層家族範例契約(2026-10-21 由 verify-browser-overlay 移來,判定與對照組同一趟):本機 125–281 秒 → 估約 14–17 分。
     name: Verify browser(virtual cursor + form validation control groups)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -608,6 +609,19 @@ jobs:
           # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
           # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),CI 逐支計時 411–444 秒;同上一支按預算放。
           node scripts/form-validation-contract-invariant.mjs --selftest
+
+      - name: Overlay story contract — judgment + control groups (browser)
+        run: |
+          # 浮層家族範例契約(2026-10-20,r1b overlays 獨立驗證 22 條裡沒有別的閘看得到的那幾條):靜態 S 列(換主題的元素宣告字色、
+          # HoverCard 外殼只用兩份殼常數、沒有 <DialogContent autoHeight>、按鈕不用文字符號當圖示、退役名稱只以歷史出現、觸發鈕不寫實作註記、
+          # 「欄位顯示」同字同圖示、ProfileCard 預設欄位走 defaultFieldValues、有文案物件的元件不寫死讀屏名稱、設計規格 Props 表列出 labels、
+          # story 的按鈕 variant 不隨狀態切換、同檔同人一組編號、Coachmark 頁腳靠右的理由指向 overlay-surface、人員名片只有一個建構器)+ 真建置 R 列(深色溢出清單對比與每人一列、亮色卡陰影、並排說明對齊、HoverCard 觸發點可 Tab、
+          # Coachmark 原則頁 CTA 真的有作用、Toast 淺深兩欄、aria-describedby 不懸空、Elevation 卡片重疊、Sheet 改名存檔、通知清單名稱、
+          # 預設文案沒有英文、成員名片資料一致、ProfileCard 欄位值不畫進旁欄且多字值只在空白處斷、Coachmark 頁腳靠右且 primary 最右)。
+          # --selftest 一趟含判定:現行原始碼與建置必須全綠(基準),再看靜態注入修前片段各紅自己那一列、頁面上拆掉修法各列都紅;
+          # 找不到要量的東西 = 儀器失效 exit 2。放這個 job 而不是「overlay + theme gates」:那個 job 近 5 次 13.3–18.7 分 / 上限 25、
+          # p90 已佔 75%(G10 記錄),這個 job 10.9–11.3 分;本機實測本支 125 秒(機器另有重負載時 281 秒),加進來仍有餘裕(M32 第四題:機器慢時還會綠)。
+          npm run test:overlay-story-contract
 
   verify-browser-datatable-handles:
     # 2026-09-21 從 perception job 拆出來的第十一個 job,兩個理由:

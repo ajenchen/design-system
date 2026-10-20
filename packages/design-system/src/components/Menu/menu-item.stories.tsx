@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Rocket } from 'lucide-react'
 import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
 import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -12,21 +12,8 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 // / actions / onViewMore,profile-card.spec.md 重要資訊)。demo helper:
 // 真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)
 const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
-const personHover = (name: string, subtitle?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ src: avatarSrc(name), alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday!"
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 
 const meta: Meta<typeof MenuItem> = {
   title: 'Design System/Internal/Menu/展示',

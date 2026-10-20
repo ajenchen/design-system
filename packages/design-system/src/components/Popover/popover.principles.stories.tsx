@@ -3,7 +3,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Filter, Copy, Edit, Trash2 } from 'lucide-react'
+import { Filter, Copy, Edit, Trash2, ChevronDown } from 'lucide-react'
 import {
   Popover,
   PopoverTrigger,
@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth="440px">
+          <DialogContent height="hug" maxWidth="440px">
             <DialogHeader>
               <DialogTitle>確定要永久刪除此專案?</DialogTitle>
             </DialogHeader>
@@ -137,7 +137,7 @@ export const UsageGuidance: Story = {
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="tertiary">檔案操作 ▾</Button>
+            <Button variant="tertiary" endIcon={ChevronDown}>檔案操作</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem startIcon={Copy}>複製連結</DropdownMenuItem>
@@ -242,14 +242,14 @@ export const VisualAlignmentRule: Story = {
         title="Popover 與 Dialog 共用 overlay-surface 視覺語言"
         note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡);Dialog 不鎖 layout-space,全繼承 page(md page → 16 / lg page → 24)。兩者 ui-size 都繼承 page"
       >
-        {/* @overlay-open-skip:視覺語言比較卡片——同一「顯示欄位」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見檔頭 escape),開啟態覆蓋於展示 / anatomy */}
+        {/* @overlay-open-skip:視覺語言比較卡片——同一「欄位顯示」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見檔頭 escape),開啟態覆蓋於展示 / anatomy */}
         <ExampleGroup align="start">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="tertiary">顯示欄位</Button>
+              <Button variant="tertiary">欄位顯示</Button>
             </PopoverTrigger>
             <PopoverContent align="start">
-              <PopoverHeader><PopoverTitle>顯示欄位</PopoverTitle></PopoverHeader>
+              <PopoverHeader><PopoverTitle>欄位顯示</PopoverTitle></PopoverHeader>
               <PopoverBody>
                 <CheckboxGroup>
                   <Checkbox defaultChecked label="狀態" />
@@ -268,10 +268,10 @@ export const VisualAlignmentRule: Story = {
         <ExampleGroup align="start">
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="tertiary">顯示欄位</Button>
+              <Button variant="tertiary">欄位顯示</Button>
             </DialogTrigger>
-            <DialogContent autoHeight maxWidth="360px">
-              <DialogHeader><DialogTitle>顯示欄位</DialogTitle></DialogHeader>
+            <DialogContent height="hug" maxWidth="360px">
+              <DialogHeader><DialogTitle>欄位顯示</DialogTitle></DialogHeader>
               <DialogBody>
                 <CheckboxGroup>
                   <Checkbox defaultChecked label="狀態" />

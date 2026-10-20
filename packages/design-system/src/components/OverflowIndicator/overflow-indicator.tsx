@@ -4,7 +4,7 @@
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
+import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_TOOLTIP_SURFACE_CLASS } from '@/design-system/components/HoverCard/hover-card'
 import { tagVariants } from '@/design-system/components/Tag/tag'
 import { AVATAR_STACK_CUTOUT_CLASS, avatarStackCutoutStyle } from '@/design-system/components/Avatar/avatar'
 import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
@@ -201,7 +201,9 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>
-        <HoverCardContent id={contentId} className="bg-tooltip rounded-lg" data-theme="dark" onMouseDown={onContentMouseDown}>
+        {/* 深色 tooltip 殼 = hover-card.tsx HOVER_CARD_TOOLTIP_SURFACE_CLASS(含 text-foreground:data-theme 只換變數不換已繼承的 color,
+            2026-10-20 前只寫 data-theme → 淺色頁上清單是黑字配深底 1.92:1,獨立驗證 OV-02) */}
+        <HoverCardContent id={contentId} className={HOVER_CARD_TOOLTIP_SURFACE_CLASS} data-theme="dark" onMouseDown={onContentMouseDown}>
           <ShrinkWrapList>{children}</ShrinkWrapList>
         </HoverCardContent>
       </HoverCard>

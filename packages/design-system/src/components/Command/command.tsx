@@ -368,7 +368,7 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
   // lib/overlay-focus-return.ts 還,指標挑選不畫鍵盤框),本檔那份 RememberFocusOrigin 收掉,不留第二份。
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
+      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" height="hug">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
             第一個 input)。2026-09-09 實測:沒有這個標記時焦點停在 dialog 殼上 —— 方向鍵到不了 cmdk(開了就是鍵盤死路,

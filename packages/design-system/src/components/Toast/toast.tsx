@@ -164,6 +164,12 @@ export function toast(options: ToastOptions) {
 
 export interface ToasterProps {
   position?: 'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
+  /**
+   * 通知清單(sonner 的 `<section>` 地標)的無障礙名稱,預設「通知」。sonner 會在後面接上跳進清單的快捷鍵(「通知 alt+T」)。
+   * DS 預設文案 = 中文(lib/i18n/README.md「Fallback chain」3);2026-10-20 前沒傳,地標名稱是 sonner 預設英文「Notifications alt+T」,
+   * 同一則 Toast 的關閉鈕卻是「關閉通知」(獨立驗證 OV-V05)。
+   */
+  containerAriaLabel?: string
 }
 
 // shadcn canonical:forwardRef + displayName 統一。SonnerToaster 不轉發 ref,
@@ -171,7 +177,7 @@ export interface ToasterProps {
 // 覆蓋 viewport(非 portal — sonner 全庫 0 createPortal,2026-07-04 grep 驗證)。
 // 保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref)。
 const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
-  ({ position = 'bottom-right', ...props }, _ref) => {
+  ({ position = 'bottom-right', containerAriaLabel = '通知', ...props }, _ref) => { // i18n-allow: DS default; consumer override via containerAriaLabel prop
     return (
       <>
         <SonnerToaster
@@ -183,6 +189,7 @@ const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
           // className 落在清單 `<ol data-sonner-toaster>` 本身(sonner 2.0.7 dist/index.mjs 的 `className: className`)。
           // 這裡只放層級、不放任何落點:不傳 offset / mobileOffset / style,落點一律 sonner 預設(toast.spec.md「落點」)。
           className="!z-[60]"
+          containerAriaLabel={containerAriaLabel}
           toastOptions={{ unstyled: true, className: 'w-[360px]' }}
           {...props}
         />

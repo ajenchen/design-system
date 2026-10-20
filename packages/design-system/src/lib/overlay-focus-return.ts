@@ -81,7 +81,9 @@ export function radixTriggerOf(content: Element | null): HTMLElement | null {
 /**
  * DialogContent / SheetContent 的預設(2026-10-01,待辦總帳 OE29):內容掛上時記下開啟者,關閉時沒有 Radix 觸發點就還給它。
  * 回傳的兩個 handler 由 DS 的 Content **組合**(consumer 的 `onOpenAutoFocus` / `onCloseAutoFocus` 先跑;consumer 已 `preventDefault` 就不接 ——
- * CommandDialog / AgentPanel / FileViewer 這類自己接線的照舊由自己勝出)。`modal` 照 Radix 的 modal 狀態(並存 `persistentElements` 時為 false)。
+ * AgentPanel 改名 / 刪除對話框這類自己接線的照舊由自己勝出)。`modal` 照 Radix 的 modal 狀態(並存 `persistentElements` 時為 false)。
+ * 消費者:DialogContent、SheetContent、FileViewer(不經 DialogContent、直接用 Radix Dialog;2026-10-20 前自己記 `captureFocusOrigin`、少了
+ * `persistentOpenerOf` 那一步 → 從選單項開、關閉後焦點掉到 body,獨立驗證 OV-01)。
  */
 export function useTriggerlessFocusReturn(modal: boolean): {
   onOpenAutoFocus: (event: Event) => void

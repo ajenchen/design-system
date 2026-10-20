@@ -16,13 +16,16 @@
  *             (過渡跟旋轉分住兩個元素,閘就看不到它們是不是同一份),而且角度看自己那顆觸發鈕的狀態 —— 不用「任一層祖先」
  *             (`[[data-state=open]_&]`、`in-*`、不具名 `group-*`;Sidebar 群組箭頭原本這樣寫,住進 SheetContent 就被轉成朝上);M6d SSOT 裡箭頭常數的時長 / 曲線與內容常數逐項相等
  *             (原地展開:disclosureIndicatorMotion ≡ disclosureMotion;浮層:overlayIndicatorMotion 打開 / 收起 ≡ overlayMotion 進場 / 出場);
- *             M6e 每處箭頭用的是 motion.spec.md 該段消費者表替它登記的那一組(表上每列一組常數 + 各消費者的 `file:line`;以檔案對應,
- *             同一檔登記在兩列時取離旋轉最近的那一行)—— 用了另一組、檔案不在表上(未登記的新箭頭)、表上登記的那一行附近找不到箭頭(登記過期)都紅
+ *             M6e 每處箭頭用的是 motion.spec.md 該段消費者表替它登記的那一組(表上每列一組常數 + 各消費者的 `檔案#頂層宣告名`;
+ *             以「檔案 + 箭頭所在的頂層宣告(元件 / 函式)」對應 —— 2026-10-20 前用 `file:line`、同一檔取最近一行不比距離,8 筆登記 7 筆過期
+ *             照樣綠(獨立驗證 OV-05,M37:用「這個檔有箭頭」代替「登記的那一行是箭頭」))—— 用了另一組、沒登記(新箭頭或宣告改名)、
+ *             登記的宣告裡沒有箭頭(登記過期)、用行號登記,都紅
  *   紅: --selftest 對 M1–M6 各注入一個舊形狀(TreeView 修前那串 `data-[state=closed]:animate-collapsible-up … motion-reduce:animate-none`、
  *       少了 holdClosedEndState 的 SSOT 常數、舊 base.css 的 `@utility animate-collapsible-up { … 150ms … }`、不綁時長的 SSOT 常數、
  *       規格寫錯的毫秒數、Tooltip 修前的 `data-[state=open]:fade-in-0`、1ef86547 的三種箭頭寫法(TreeView `transition-transform duration-150`、
  *       Select 裸 `transition-transform`、Accordion 父層 `[&[data-state=open]>svg]:rotate-180`)、時長 150ms 的箭頭常數、
- *       側欄群組形狀的箭頭登記在原地展開那一列卻吃 `overlayIndicatorMotion(true)`、未登記的新箭頭、登記了卻沒有箭頭的一行),每條各自必須紅在注入的那一筆;
+ *       側欄群組形狀的箭頭登記在原地展開那一列卻吃 `overlayIndicatorMotion(true)`、未登記的新箭頭、登記了卻沒有箭頭的宣告、用行號登記的一筆、
+ *       宣告改名後還用舊名登記),每條各自必須紅在注入的那一筆;
  *       少一條沒紅 → exit 1。`--root=<修前的樹>` 直接跑:M1 / M2 / M3 / M4 紅(待辦總帳 T6–T8);`--root=<1ef86547>`:M1c / M6a / M6b / M6c / M6d / M6e 紅
  *   綠: 沒弄壞時必須綠;每一條都要先證明有東西可驗(掃到的檔案數、SSOT 常數數、外掛動畫名數、規格裡的 token 引用數、旋轉箭頭數都 > 0),
  *       掃到 0 = 儀器失效(exit 2),不是通過
@@ -98,11 +101,14 @@ if (SELFTEST) {
   //      (2)未登記的新箭頭;(3)表上登記了、程式裡卻沒有箭頭的一行(登記過期)。登記是改表的文字,判定照常從表讀
   codeFiles.push({ path: '__selftest__/sidebar-chevron-wrong-set.tsx', text: 'const g = <ItemInlineActionButton icon={ChevronDown} iconClassName={cn(overlayIndicatorMotion(true), "[[data-state=open]>&]:rotate-180")} />' })
   codeFiles.push({ path: '__selftest__/unregistered-chevron.tsx', text: "const h = <ChevronDown className={cn(disclosureIndicatorMotion, expanded && 'rotate-180')} aria-hidden />" })
+  //      (4)用行號登記(2026-10-20 前的寫法,行號一改檔就過期);(5)宣告改名後表上還是舊名(舊名 = 登記過期、新名 = 未登記)
+  codeFiles.push({ path: '__selftest__/line-registered.tsx', text: "const k = <ChevronDown className={cn(disclosureIndicatorMotion, expanded && 'rotate-180')} aria-hidden />" })
+  codeFiles.push({ path: '__selftest__/renamed-chevron.tsx', text: "const renamedRow = <ChevronDown className={cn(disclosureIndicatorMotion, expanded && 'rotate-180')} aria-hidden />" })
   const spec = specFiles.find((f) => f.path === MOTION_SPEC)
   if (spec) {
     spec.text = spec.text
-      .replace(/^(\|[^|\n]*\|[^|\n]*`disclosureIndicatorMotion`[^\n]*?)(\s*\|\s*)$/m, '$1、selftest(`__selftest__/sidebar-chevron-wrong-set.tsx:1`)$2')
-      .replace(/^(\|[^|\n]*\|[^|\n]*`overlayIndicatorMotion\(open\)`[^\n]*?)(\s*\|\s*)$/m, '$1、selftest(`__selftest__/removed-chevron.tsx:1`)$2')
+      .replace(/^(\|[^|\n]*\|[^|\n]*`disclosureIndicatorMotion`[^\n]*?)(\s*\|\s*)$/m, '$1、selftest(`__selftest__/sidebar-chevron-wrong-set.tsx#g`、`__selftest__/line-registered.tsx:1`、`__selftest__/renamed-chevron.tsx#oldRow`)$2')
+      .replace(/^(\|[^|\n]*\|[^|\n]*`overlayIndicatorMotion\(open\)`[^\n]*?)(\s*\|\s*)$/m, '$1、selftest(`__selftest__/removed-chevron.tsx#removed`)$2')
   }
 }
 
@@ -290,6 +296,12 @@ const tokenValues = new Map([...motionCss.matchAll(/(--motion-[\w-]+)\s*:\s*([^;
   }
   const a = [], b = [], c = []
   const chevrons = []
+  /** 箭頭所在的頂層宣告名(行首的 `const X` / `function X` / `class X`,可帶 export / default)—— M6e 的登記身分 */
+  const enclosingSymbol = (text, idx) => {
+    let found = null
+    for (const m of text.slice(0, idx).matchAll(/^(?:export\s+)?(?:default\s+)?(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) found = m[1]
+    return found
+  }
   let rotating = 0
   for (const f of codeFiles) {
     if (/^packages\/design-system\/src\/tokens\/motion\//.test(f.path)) continue
@@ -307,7 +319,7 @@ const tokenValues = new Map([...motionCss.matchAll(/(--motion-[\w-]+)\s*:\s*([^;
       const where = `${f.path}:${lineOf(m.index)}`
       const unit = unitAt(text, m.index)
       if (!INDICATORS.test(unit)) a.push(`${where} ${token}(沒有消費 disclosureIndicatorMotion / overlayIndicatorMotion)`)
-      chevrons.push({ file: f.path, line: lineOf(m.index), where, token, used: new Set([...unit.matchAll(new RegExp(INDICATORS.source, 'g'))].map((x) => x[1])) })
+      chevrons.push({ file: f.path, line: lineOf(m.index), symbol: enclosingSymbol(text, m.index), where, token, used: new Set([...unit.matchAll(new RegExp(INDICATORS.source, 'g'))].map((x) => x[1])) })
       const literal = [...unit.matchAll(LITERAL_TIMING)].map((x) => x[1])
       if (literal.length) b.push(`${where} ${token} 旁邊寫了字面的 ${literal.join(' ')}`)
       // 變體裡的 arbitrary 選擇器若 & 後面還有東西(`[&[data-state=open]>svg]`、`[&_svg]`)或用 `*:` → 轉的是別的元素
@@ -347,8 +359,10 @@ const tokenValues = new Map([...motionCss.matchAll(/(--motion-[\w-]+)\s*:\s*([^;
   ck('M6d', d.length === 0, 'SSOT 的箭頭常數與它打開的東西同一個時長與曲線(原地展開 ≡ disclosureMotion;浮層打開 / 收起 ≡ overlayMotion 進場 / 出場)', d)
 
   // M6e:每處箭頭用的是消費者表替它登記的那一組。M6a 只問「有沒有消費箭頭常數」,原地展開的箭頭吃浮層常數(150ms)它照樣綠;
-  // 哪一處屬於哪一組,住在 motion.spec.md 那張表(每列一組常數 + 消費者的 `file:line`),閘從表讀,不在這裡另抄一份清單。
-  // 表上的路徑以 packages/design-system/src 為根(也接受 repo 根相對路徑);同一檔登記在兩列(AgentPanel 歷史 + 思考塊)時取離旋轉最近的那一行。
+  // 哪一處屬於哪一組,住在 motion.spec.md 那張表(每列一組常數 + 消費者的 `檔案#頂層宣告名`),閘從表讀,不在這裡另抄一份清單。
+  // 身分 = 檔案 + 箭頭所在的頂層宣告(元件 / 函式名,行首的 const / function / class);同一檔兩種箭頭(AgentPanel 歷史 vs 思考塊)靠宣告名分開。
+  // **不收行號**(2026-10-20,獨立驗證 OV-05):行號一改檔就過期,舊判定「同一檔取最近的一行、不比距離」讓 8 筆裡 7 筆過期的登記照樣綠。
+  // 表上的路徑以 packages/design-system/src 為根(也接受 repo 根相對路徑)。
   // 空表不算儀器失效而是紅:上面已確保旋轉箭頭數 > 0,登記簿讀不到 → 每一處都「未登記」,不可能假綠。
   const e = []
   const reg = []
@@ -360,6 +374,7 @@ const tokenValues = new Map([...motionCss.matchAll(/(--motion-[\w-]+)\s*:\s*([^;
   const sec = secStart < 0 ? [] : specLines.slice(secStart, secEnd < 0 ? undefined : secEnd)
   const cells = (l) => l.split('|').slice(1, -1).map((x) => x.trim())
   const hi = sec.findIndex((l) => l.startsWith('|') && l.includes('箭頭常數') && l.includes('消費者'))
+  const resolveFile = (f) => [f, `packages/design-system/src/${f}`].find((p) => known.has(p)) ?? `packages/design-system/src/${f}`
   if (hi < 0) e.push(`${MOTION_SPEC} 找不到「展開箭頭跟它打開的東西同步」的消費者表(表頭含「箭頭常數」「消費者」)—— 箭頭該用哪一組沒有登記簿`)
   else {
     const head = cells(sec[hi])
@@ -371,21 +386,25 @@ const tokenValues = new Map([...motionCss.matchAll(/(--motion-[\w-]+)\s*:\s*([^;
       const family = row[colConst]?.match(new RegExp(`\\b(${FAMILIES.join('|')})\\b`))?.[1]
       if (!family) { e.push(`${MOTION_SPEC}:${secStart + i + 1} 消費者表這一列沒寫它是哪一組箭頭常數`); continue }
       for (const m of (row[colUse] ?? '').matchAll(/`([\w./-]+\.(?:tsx?|jsx?)):(\d+)`/g)) {
-        const file = [m[1], `packages/design-system/src/${m[1]}`].find((p) => known.has(p)) ?? `packages/design-system/src/${m[1]}`
-        reg.push({ file, line: Number(m[2]), family, claimed: false })
+        e.push(`${m[1]}:${m[2]} 用行號登記:行號一改檔就過期(2026-10-20 前 8 筆裡 7 筆過期),改成 \`檔案#頂層宣告名\``)
+      }
+      for (const m of (row[colUse] ?? '').matchAll(/`([\w./-]+\.(?:tsx?|jsx?))#([A-Za-z_$][\w$]*)`/g)) {
+        reg.push({ file: resolveFile(m[1]), symbol: m[2], family, claimed: false })
       }
     }
   }
   for (const ch of chevrons) {
-    const mine = reg.filter((r) => r.file === ch.file)
-    if (mine.length === 0) { e.push(`${ch.where} 未登記:${ch.token} 所在的檔案不在 motion.spec.md「展開箭頭跟它打開的東西同步」的消費者表 —— 新的旋轉箭頭先登記它打開的是原地展開還是浮層`); continue }
-    const near = mine.reduce((p, r) => (Math.abs(r.line - ch.line) < Math.abs(p.line - ch.line) ? r : p))
-    near.claimed = true
-    const wrong = [...ch.used].filter((n) => n !== near.family)
-    if (wrong.length) e.push(`${ch.where} 用錯箭頭常數:消費者表登記為 ${near.family}(${near.file}:${near.line}),這裡用的是 ${wrong.join(' / ')}`)
+    const mine = reg.filter((r) => r.file === ch.file && r.symbol === ch.symbol)
+    if (mine.length === 0) { e.push(`${ch.where} 未登記:${ch.token} 所在的 ${ch.file}#${ch.symbol ?? '(找不到頂層宣告)'} 不在 motion.spec.md「展開箭頭跟它打開的東西同步」的消費者表 —— 新的旋轉箭頭(或宣告改了名)先登記它打開的是原地展開還是浮層`); continue }
+    const families = new Set(mine.map((r) => r.family))
+    for (const r of mine) r.claimed = true
+    if (families.size > 1) { e.push(`${ch.where} 登記衝突:${ch.file}#${ch.symbol} 同時登記在兩組(${[...families].join(' / ')})`); continue }
+    const family = mine[0].family
+    const wrong = [...ch.used].filter((n) => n !== family)
+    if (wrong.length) e.push(`${ch.where} 用錯箭頭常數:消費者表登記為 ${family}(${ch.file}#${ch.symbol}),這裡用的是 ${wrong.join(' / ')}`)
   }
-  for (const r of reg) if (!r.claimed) e.push(`${r.file}:${r.line} 登記過期:消費者表登記了這一行(${r.family}),這個檔案裡卻沒有任何跟著開合狀態旋轉的箭頭以它為最近的登記`)
-  ck('M6e', e.length === 0, `每處旋轉箭頭用的是 motion.spec.md 消費者表替它登記的那一組(原地展開 → disclosureIndicatorMotion、浮層 → overlayIndicatorMotion;登記 ${reg.length} 處,未登記的新箭頭與登記過期都紅)`, e)
+  for (const r of reg) if (!r.claimed) e.push(`${r.file}#${r.symbol} 登記過期:消費者表登記了這個宣告(${r.family}),它裡面卻沒有任何跟著開合狀態旋轉的箭頭`)
+  ck('M6e', e.length === 0, `每處旋轉箭頭用的是 motion.spec.md 消費者表替它登記的那一組(原地展開 → disclosureIndicatorMotion、浮層 → overlayIndicatorMotion;以 檔案#頂層宣告 登記 ${reg.length} 處,未登記、登記過期、用行號登記都紅)`, e)
 }
 
 // ── 判定 ─────────────────────────────────────────────────────────────────────
@@ -401,7 +420,7 @@ if (instrument.length) {
 if (SELFTEST) {
   // 每一條都要紅在**注入的那一筆**上(__selftest__/…),不是紅在 repo 本來就有的問題上 —— 後者證明不了量具抓得到這個形狀
   // 同一條注入了好幾種舊形狀的,每一種都要點名到(只紅其中一種 = 另一種量具沒在量)
-  const REQUIRED = { M6a: ['tree-chevron-before', 'select-chevron-before', 'accordion-trigger-before'], M6b: ['tree-chevron-before', 'select-chevron-before'], M6c: ['accordion-trigger-before', 'sidebar-chevron-ancestor'], M6e: ['sidebar-chevron-wrong-set.tsx:1 用錯箭頭常數', 'unregistered-chevron.tsx:1 未登記', 'removed-chevron.tsx:1 登記過期'] }
+  const REQUIRED = { M6a: ['tree-chevron-before', 'select-chevron-before', 'accordion-trigger-before'], M6b: ['tree-chevron-before', 'select-chevron-before'], M6c: ['accordion-trigger-before', 'sidebar-chevron-ancestor'], M6e: ['sidebar-chevron-wrong-set.tsx:1 用錯箭頭常數', 'unregistered-chevron.tsx:1 未登記', 'removed-chevron.tsx#removed 登記過期', 'line-registered.tsx:1 用行號登記', 'renamed-chevron.tsx#oldRow 登記過期', 'renamed-chevron.tsx:1 未登記'] }
   const missed = ['M1a', 'M1b', 'M1c', 'M2', 'M3', 'M4', 'M5', 'M6a', 'M6b', 'M6c', 'M6d', 'M6e'].filter((id) => {
     const r = results.find((x) => x.id === id)
     return !r || r.ok || !r.detail.some((d) => d.includes('__selftest__/')) || (REQUIRED[id] ?? []).some((k) => !r.detail.some((d) => d.includes(`__selftest__/${k}`)))

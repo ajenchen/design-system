@@ -70,7 +70,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="primary">建立新專案</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={480}>
+          <DialogContent height="hug" maxWidth={480}>
             <DialogHeader>
               <DialogTitle>建立新專案</DialogTitle>
             </DialogHeader>
@@ -103,7 +103,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="primary">❌ 「儲存成功」用 Dialog</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={400}>
+          <DialogContent height="hug" maxWidth={400}>
             <DialogHeader>
               <DialogTitle>儲存成功</DialogTitle>
             </DialogHeader>
@@ -126,7 +126,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="primary">❌ 方案到期提示用 Dialog</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={420}>
+          <DialogContent height="hug" maxWidth={420}>
             <DialogHeader>
               <DialogTitle>方案即將到期</DialogTitle>
             </DialogHeader>
@@ -153,7 +153,7 @@ export const UsageGuidance: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
+          <DialogContent height="hug" maxWidth={440}>
             <DialogHeader>
               <DialogTitle>確定要永久刪除此專案？</DialogTitle>
             </DialogHeader>
@@ -184,10 +184,10 @@ export const HeightBehaviorRule: Story = {
       </TutorialRule>
 
       <TutorialRule
-        title="內容已知且穩定：使用 autoHeight"
-        note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。若未來會加入異步 section，應回到預設高度，不要為當前快照選 autoHeight。"
+        title='內容已知且穩定：使用 height="hug"'
+        note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。若未來會加入異步 section，應回到預設高度，不要為當前快照選 hug。（舊名 autoHeight 已停用，見 dialog.spec.md「高度軸」）"
       >
-        <Label>「刪除專案？」這類單一決策適合 autoHeight；會增減區塊的設定流程不適合。</Label>
+        <Label>「刪除專案？」這類單一決策適合 hug；會增減區塊的設定流程不適合。</Label>
       </TutorialRule>
 
       <TutorialRule
@@ -212,7 +212,7 @@ export const FooterActionRule: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="tertiary">標準配對</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={420}>
+          <DialogContent height="hug" maxWidth={420}>
             <DialogHeader>
               <DialogTitle>儲存變更</DialogTitle>
             </DialogHeader>
@@ -235,7 +235,7 @@ export const FooterActionRule: Story = {
           <DialogTrigger asChild>
             <Button className="self-start" variant="tertiary" startIcon={AlertTriangle}>刪除動作確認</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={420}>
+          <DialogContent height="hug" maxWidth={420}>
             <DialogHeader>
               <DialogTitle>確定要刪除？</DialogTitle>
             </DialogHeader>
