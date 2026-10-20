@@ -143,7 +143,7 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">WIDTH</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">--agent-panel-width</span> · 400(預設)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_DEFAULT</span> · 400(產品沒設時的初始寬;TS 常數,非 token)</li>
                 <li><span className="font-mono">AGENT_PANEL_WIDTH_MIN</span> · 360(產品沒設時的最小寬;TS 常數,非 token)</li>
                 <li><span className="font-mono">AGENT_PANEL_WIDTH_MAX</span> · 640(產品沒設時的最大寬;TS 常數,非 token)</li>
                 <li><span className="font-mono">可拉上限</span> · 由 AppShell 現算(剩餘均分;浮層 = min(最大, 版面寬 − 48))</li>
@@ -213,7 +213,7 @@ export const SizeMatrix: Story = {
             <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
             <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
             <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
-            <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td><TokenCell token="--agent-panel-width" display="--agent-panel-width / -min / -max" /></Td></tr>
+            <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td>AGENT_PANEL_WIDTH_DEFAULT / MIN / MAX(TS 常數,非 token)</Td></tr>
             <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
             <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
             <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>

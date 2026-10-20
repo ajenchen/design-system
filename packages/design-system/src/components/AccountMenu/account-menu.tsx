@@ -7,7 +7,8 @@
  * 是「自己」的入口,不是看「別人」的 ProfileCard(後者預設動作 Chat/通話,語義是聯絡某人)。
  * **Placement-agnostic**:哪個 mode 放哪裡是 consumer 職責,放置 canonical owner =
  * `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」(本元件不收 mode prop,
- * 不複製該 SSOT;consumer 讀 `useAppShell().layout` + `useAppShell().display.menu` 決定放置;2026-10-14 前是 `useSidebar().isMobile`)。
+ * 不複製該 SSOT;consumer 讀 `useAppShell().layout` + `useSidebarSurface()`(這一份 Menu 是不是畫在浮層裡)決定放置;
+ * 2026-10-14 前是 `useSidebar().isMobile`,2026-10-14 版的 `useAppShell().display.menu` 兩份同時成立、會連細列一起補,2026-10-15 改)。
  *
  * ── 實作基礎 ──
  * 消費:Avatar(raw size=24 trigger)+ DropdownMenu(Trigger asChild / Content / Group / Label / Item)

@@ -28,6 +28,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
+  useSidebarSurface,
 } from '@/design-system/components/Sidebar/sidebar'
 import { useAppShell, type PanelWidthRange } from '@/design-system/components/AppShell/app-shell'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
@@ -132,15 +133,46 @@ export const UserFooter = () => (
  */
 export const ACME_MENU_WIDTH: PanelWidthRange = { min: 240, initial: 240, max: 320 }
 
+/**
+ * Acme 側欄頂排 —— **每一份自己判斷**(Menu 浮層開著時 Sidebar 的 children 畫兩份:版面上的細列 + 浮層;`sidebar.spec.md`「同一份內容、畫兩份」)。
+ * 浮層精修(2026-06-18 v2;2026-10-14 改條件;2026-10-15 改成每一份自己判斷):Menu 浮層(Sheet,z-50)從視窗頂端起、蓋住 globalHeader →
+ * primary-header 把品牌 + 帳號放 globalHeader,浮層內就看不到、浮層變孤兒,故在**浮層那一份**補回。
+ * **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」浮層精修):
+ *   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ 浮層把整條 globalHeader 搬進 SidebarHeader
+ *     (brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive** = 結構 SSOT,非手刻對齊),
+ *     **不放 SidebarFooter**(footer 是 primary-sidebar 慣例;對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
+ *   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ 頂排 = brand(兩份都有,細列只露出品牌方塊)。
+ * 被浮層蓋住的細列那一份**不補**(細列在浮層開著時保留、版面不跳,sidebar.spec.md「放不下時」)。判斷讀 `useSidebarSurface()`(這一份畫在哪),
+ * 不讀 `useAppShell().display.menu`(整個 Menu 的顯示方式,兩份同時是 "overlay")—— 2026-10-14 版讀後者,primary-header 叫出浮層時細列那一份
+ * 也長出標頭:細列圖示下跳 48px、品牌與帳號各 3 份(2026-10-15 r1b 複驗 F4)。「只能出現一次」= 同一時間看得到的只有一份。
+ */
+function AcmeSidebarHeader({ includeWorkspaceBrand }: { includeWorkspaceBrand: boolean }) {
+  const { layout } = useAppShell()
+  const menuIsOverlay = useSidebarSurface() === 'overlay'
+  if (!includeWorkspaceBrand && !menuIsOverlay) return null
+  // primary-header 的 Menu 浮層:帳號入口鏡像 globalHeader 放 SidebarHeader 右(SidebarHeader = ChromeHeader 基底,
+  // 與 GlobalHeader「brand 左 + flex-1 + account 右」完全同結構 → avatar 24px + 右緣距 px-loose 由 construction 保證)。
+  const headerHasAccount = layout === 'primary-header' && menuIsOverlay
+  return (
+    <SidebarHeader>
+      <WorkspaceBrand />
+      {headerHasAccount && (
+        <>
+          <div className="flex-1" />
+          <AccountMenu />
+        </>
+      )}
+    </SidebarHeader>
+  )
+}
+
 export function AcmeSidebar({
-  viewportInsetTop,
   includeWorkspaceBrand = true,
   includeUserFooter = true,
   widthRange = ACME_MENU_WIDTH,
   collapsible = 'icon',
   includeProjects = false,
 }: {
-  viewportInsetTop?: string
   includeWorkspaceBrand?: boolean
   includeUserFooter?: boolean
   /** Menu 寬度設定(預設 = Acme 示範產品的值;「版面規則」示範頁換成 user 例子的數字)。 */
@@ -153,34 +185,9 @@ export function AcmeSidebar({
    */
   includeProjects?: boolean
 } = {}) {
-  // 浮層精修(2026-06-18 v2;2026-10-14 改條件):Menu 浮層(Sheet,z-50)從視窗頂端起、蓋住 globalHeader →
-  // primary-header 把品牌+帳號放 globalHeader,浮層內就看不到、浮層變孤兒。故 Menu 是浮層時在浮層內補回。
-  // **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」浮層精修):
-  //   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ 浮層把整條 globalHeader 搬進
-  //     SidebarHeader(brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同
-  //     primitive** = 結構 SSOT,非手刻對齊),**不放 SidebarFooter**(footer 是 primary-sidebar 慣例;
-  //     對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
-  //   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ 浮層維持 header=brand / footer=UserFooter(不變)。
-  // Menu 不是浮層(globalHeader 可見)時維持 headerless/footerless,不重複。「只能出現一次」= 同一時間一次。
-  // 觸發條件 = Menu 顯示為浮層(`useAppShell().display.menu`;2026-10-14 前是 768 以下的 `useSidebar().isMobile`)。
-  const { layout, display } = useAppShell()
-  const menuIsOverlay = display.menu === 'overlay'
-  // primary-header 的 Menu 浮層:帳號入口鏡像 globalHeader 放 SidebarHeader 右(SidebarHeader = ChromeHeader 基底,
-  // 與 GlobalHeader「brand 左 + flex-1 + account 右」完全同結構 → avatar 24px + 右緣距 px-loose 由 construction 保證)。
-  const headerHasAccount = layout === 'primary-header' && menuIsOverlay
   return (
-    <Sidebar collapsible={collapsible} viewportInsetTop={viewportInsetTop} widthRange={widthRange}>
-      {(includeWorkspaceBrand || menuIsOverlay) && (
-        <SidebarHeader>
-          <WorkspaceBrand />
-          {headerHasAccount && (
-            <>
-              <div className="flex-1" />
-              <AccountMenu />
-            </>
-          )}
-        </SidebarHeader>
-      )}
+    <Sidebar collapsible={collapsible} widthRange={widthRange}>
+      <AcmeSidebarHeader includeWorkspaceBrand={includeWorkspaceBrand} />
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>

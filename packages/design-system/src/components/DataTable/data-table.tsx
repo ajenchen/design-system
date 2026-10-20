@@ -360,6 +360,10 @@ const cellEditId = (rowId: string, colId: string) => `${rowId}__${colId}`
 const columnAccessibleName = (column: { id: string; columnDef: { header?: unknown } }): string =>
   typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id
 
+/** 欄頭的 DOM id(欄寬把手 `aria-controls` 指向它)。`base` = 表格自己的 `useId()`(同頁兩張表欄 id 相同也不撞);
+ *  欄 id 可能含空白(IDREF 以空白分隔)→ encodeURIComponent,一對一不撞名。欄頭與把手只從這一支取,不各寫一份。 */
+const columnHeaderDomId = (base: string, columnId: string): string => `${base}col-${encodeURIComponent(columnId)}`
+
 /**
  * 格裡自己能操作的東西(試算表模式 Enter / F2 把焦點放進格裡時,落在第一個;2026-10-13 待辦總帳 Q3c):
  * 連結格 = 網址連結 → 鉛筆;開關格 = 勾選框。W3C APG grid "Editing and Navigating Inside a Cell":
@@ -1813,6 +1817,9 @@ function DataTableInner<TData>(
   // L5 分頁互斥:分頁後每頁 rows ≤ pageSize,虛擬化無效益(TanStack 官方:兩者為互斥替代策略)
   const useVirtual = !paginationEnabled && hasHeightConstraint && !isEmpty && rows.length > VIRTUAL_THRESHOLD
   const hasRowActions = !!rowActions
+
+  // 欄頭 id 的前綴:欄寬把手以 `aria-controls` 指向自己那一欄的欄頭(APG Window Splitter;同頁兩張表欄 id 相同也不撞)
+  const headerIdBase = React.useId()
 
   // Refs
   const tableRef = React.useRef<HTMLDivElement | null>(null)
@@ -3982,6 +3989,8 @@ function DataTableInner<TData>(
       <div
         key={header.id}
         role="columnheader"
+        // 欄寬把手的 `aria-controls` 指向這裡(見下方 ResizeHandle)
+        id={columnHeaderDomId(headerIdBase, header.column.id)}
         // `data-column-id` 不在這裡寫:唯一的呼叫點 `DraggableHeaderCell`(見下方 renderHeaderRow)
         // 的 `cloneElement` 已經**無條件**注入它(不在 disabled 三元運算內),不論有沒有啟用欄位拖曳。
         // 2026-09-04 稽核抓到我先前在這裡重複寫了一次(值相同、行為零差異,但屬多餘),已移除。
@@ -4176,7 +4185,10 @@ function DataTableInner<TData>(
               value={Math.round(header.column.getSize())}
               min={effectiveMinWidth}
               max={colMeta?.maxWidth}
-              ariaLabel="調整欄寬" // i18n-allow: DS 預設文案
+              // 名稱帶欄名、aria-controls 指向自己那一欄的欄頭(2026-10-20 r1b 複核 D2:原本每顆都叫「調整欄寬」、沒有 aria-controls,
+              // 讀屏器在一排把手之間分不出誰是誰 —— WCAG 2.4.6、APG Window Splitter;句型同 AppShell「調整 {title} 寬度」與「{欄名} 欄位選單」)
+              ariaLabel={`調整 ${columnAccessibleName(header.column)} 欄寬`} // i18n-allow: DS 預設文案(插入的是欄標題)
+              ariaControls={columnHeaderDomId(headerIdBase, colId)}
               disabled={!isResizable}
               showLine={showDivider}
               lineInsetStart="var(--table-cell-py)"

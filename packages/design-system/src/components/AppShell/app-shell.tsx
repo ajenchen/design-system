@@ -90,6 +90,13 @@ export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
   agent?: React.ReactNode
   /** Main content;`<main>` landmark + padding=0 */
   children: React.ReactNode
+  /**
+   * Menu 浮層(Sheet)的 portal 目的地;省略 = document.body。AppShell 撐滿視窗(正常用法)時兩者是同一個範圍,不用傳。
+   * AppShell 放在帶 transform、比視窗小的容器裡(story 的「模擬瀏覽器畫布」、嵌入式預覽)時傳那個容器:Menu 浮層與它的遮罩以容器為準,
+   * 不會跑出畫布 —— AI agent 浮層本來就以 AppShell 根節點定位(「版面規則」§9)。同 `DialogContent` / `SheetContent` 的 `portalContainer`
+   * (2026-10-15 r1b 複驗 F10)。
+   */
+  portalContainer?: HTMLElement | null
 }
 
 export interface AppShellAsideProps {
@@ -612,6 +619,7 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
       onAsideOpenChange,
       agent,
       children,
+      portalContainer,
       className,
       style,
       ...props
@@ -636,7 +644,12 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
     )
 
     const engine = useAppShellLayoutEngine({ mainMinWidth, asideOpen, setAsideOpenOwner })
-    const { layout: result, registry, panels, requestAside, navigateFromAgent, rootRef, probeRef } = engine
+    const { layout: result, registry: engineRegistry, panels, requestAside, navigateFromAgent, rootRef, probeRef } = engine
+    // Menu 浮層的 portal 目的地跟著登記接口交給 Sidebar(Sidebar 讀不到 AppShell 的 props;同 railWidth / menuDefaultRange 的接法)
+    const registry = React.useMemo<AppShellRegistry>(
+      () => ({ ...engineRegistry, portalContainer: portalContainer ?? null }),
+      [engineRegistry, portalContainer]
+    )
 
     const setAsideOpen = React.useCallback(
       (open: boolean) => {
@@ -764,11 +777,14 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
       max: ASIDE_WIDTH_MAX,
     }
     const panel = useAppShellPanel('right', { contentType, widthRange: range, defaultWidth }, { onWidthCommit })
+    // 把手以 aria-controls 指向自己調整的這一欄(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`;Menu 的把手早已如此)
+    const asideId = React.useId()
     if (!panel || panel.display !== 'side-by-side' || panel.width === undefined || !panel.range) return null
 
     return (
       <aside
         ref={ref}
+        id={asideId}
         aria-label={title}
         data-app-shell-panel="right"
         className={cn(
@@ -788,7 +804,9 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
           min={panel.range.min}
           max={panel.range.max}
           step={PANEL_RESIZE_KEY_STEP}
-          ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
+          // 名稱帶出這一欄自己的名字(= aside 的 aria-label):AI agent 的把手原本同名「調整面板寬度」,兩顆分不出來(WCAG 2.4.6;2026-10-15 r1b 複驗 F9)
+          ariaLabel={`調整 ${title} 寬度`} // i18n-allow: DS 預設文案(插入的是 consumer 的 title)
+          ariaControls={asideId}
           onValueChange={panel.onResize}
           onValueCommit={panel.onResizeCommit}
           onDraggingChange={panel.onDraggingChange}
@@ -830,7 +848,8 @@ export const appShellMeta = {
   tokens: {
     bg: ['bg-canvas', 'bg-surface'],
     fg: ['text-foreground'],
-    border: ['border-divider'],
+    // 2026-10-14 起 AppShell 自己不畫邊線:Right panel 的分隔線由左緣 ResizeHandle 的 1px line 擁有(resize-handle 消費 --divider),
+    // 原本這裡的 `border-divider` 已無使用(2026-10-15 r1b 複驗 F8)
     ring: ['focus-ring-inset', '--ring'],
   },
   defaultVariant: undefined,

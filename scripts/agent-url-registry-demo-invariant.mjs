@@ -753,7 +753,7 @@ for (const width of guardId ? [1440, 900] : []) {
   const s1 = await state()
   await h.typeIntoPanel('y')
   const s1typed = (await h.panelInput())?.value ?? null
-  check(`${W} S15 取消:確認框消失,對話框與修改都還在、網址不動、代理抽屜仍開著且可用(打得進字;推導表「按取消」)`, s1.dialogs === 1 && !s1.confirm && s1.title === DIRTY_TITLE && s1.loc === TASK_4821 && s1.panelOpen && s1typed === 'y', JSON.stringify({ ...s1, typed: s1typed }))
+  check(`${W} S15 取消:確認框消失,對話框與修改都還在、網址不動、代理面板仍開著且可用(打得進字;推導表「按取消」)`, s1.dialogs === 1 && !s1.confirm && s1.title === DIRTY_TITLE && s1.loc === TASK_4821 && s1.panelOpen && s1typed === 'y', JSON.stringify({ ...s1, typed: s1typed }))
   await h.click('#demo-link-mine')
   const s2 = await state()
   check(`${W} S15 再從代理點「我的任務」:導航停下來等確認(確認框回來、網址不動、修改還在)`, s2.dialogs === 2 && s2.confirm && s2.loc === TASK_4821 && s2.title === DIRTY_TITLE, JSON.stringify(s2))

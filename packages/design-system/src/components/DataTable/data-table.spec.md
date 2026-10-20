@@ -638,6 +638,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - Column headers:以 `<div role="columnheader">` 顯式標記(本元件用 div + ARIA role,非語義 `<table>` — 見定位段;不渲染 `<th>` / `scope`)
 - Row headers:目前無對應(平面 row,無 row header 語意;未渲染 `role="rowheader"`)
 - Sortable column:`aria-sort="none" | "ascending" | "descending"` on 該 column header `<div role="columnheader">`
+- 欄寬把手(`enableColumnResize`):`role="separator"`(`../../patterns/resize-handle/resize-handle.spec.md`),名稱「調整 {欄標題} 欄寬」(欄標題不是字串時用欄 id,同「{欄名} 欄位選單」那一支 `columnAccessibleName`),`aria-controls` 指向自己那一欄的 columnheader(欄頭帶 `id`,前綴是表格自己的 `useId()`)—— 一排把手讀得出各自調哪一欄(WCAG 2.4.6;[APG Window Splitter](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/) 以 `aria-controls` 指向被調整的窗格)。2026-10-20 前每顆都叫「調整欄寬」、沒有 `aria-controls`(r1b 複核 D2)。閘:`scripts/data-table-pinned-resize-invariant.mjs` R5
 - Selection state(若啟用 selection mode):視覺**僅由 `__select__` 欄的 selection control(`multi`→Checkbox / `single`→Radio)呈現,不套 selected-row 底色**;control 自帶 `aria-checked` 傳達狀態(row 本身目前**未**套 `aria-selected`,`grid` root 亦未套 `aria-multiselectable` — 留待 `role="grid"` future tier)
 - 字 cell hover overlay action:overlay 為 absolute/fixed paint layer(`DataTableInteractionLayer`),trigger 目前**未**套 `aria-haspopup` / `aria-controls`(留待 future tier)
 

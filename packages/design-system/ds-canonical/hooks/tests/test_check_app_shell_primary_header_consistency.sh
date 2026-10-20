@@ -155,12 +155,20 @@ expect_pass_silent "6. proposed escape marker → silent"
 
 run_hook "src/responsive.tsx" Edit '
 export const Responsive = () => {
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {useSidebarSurface() === "overlay" && <SidebarHeader>brand</SidebarHeader>}
+  </AppShell>
+}'
+expect_pass_silent "7. proposed overlay-copy brand mirror (useSidebarSurface) remains allowed"
+
+run_hook "src/whole-menu-display.tsx" Edit '
+export const Responsive = () => {
   const { display } = useAppShell()
   return <AppShell layout="primary-header" globalHeader={<GH />}>
     {display.menu === "overlay" && <SidebarHeader>brand</SidebarHeader>}
   </AppShell>
 }'
-expect_pass_silent "7. proposed Menu-overlay brand mirror remains allowed"
+expect_block "7a. whole-Menu display.menu is true in both copies (rail grows a header) — no longer exempt" "V2 Sidebar 內含 SidebarHeader"
 
 run_hook "src/single-quote.tsx" Edit "
 <AppShell layout={'primary-header'}><Sidebar /></AppShell>"
@@ -223,7 +231,7 @@ run_hook "src/instance-decoy.tsx" Edit '
 expect_block "21. another compliant AppShell cannot hide violating instance" "V1 缺 globalHeader prop"
 
 run_hook "src/mobile-decoy.tsx" Edit '
-// display.menu === "overlay"
+// useSidebarSurface() === "overlay"
 <AppShell layout="primary-header" globalHeader={<GH />}>
   <SidebarHeader>unguarded brand</SidebarHeader>
 </AppShell>'
@@ -251,21 +259,39 @@ expect_block "27. block-comment escape decoy cannot bypass" "V1 缺 globalHeader
 
 run_hook "src/mobile-ternary.tsx" Edit '
 export const Responsive = () => {
+  const menuIsOverlay = useSidebarSurface() === "overlay"
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {menuIsOverlay ? <SidebarHeader>brand</SidebarHeader> : null}
+  </AppShell>
+}'
+expect_pass_silent "28. positive overlay-copy ternary true branch is exempt"
+
+run_hook "src/name-only.tsx" Edit '
+export const Responsive = () => {
   const menuIsOverlay = useAppShell().display.menu === "overlay"
   return <AppShell layout="primary-header" globalHeader={<GH />}>
     {menuIsOverlay ? <SidebarHeader>brand</SidebarHeader> : null}
   </AppShell>
 }'
-expect_pass_silent "28. positive Menu-overlay ternary true branch is exempt"
+expect_block "28a. the name menuIsOverlay alone is not an exemption — its value must be the overlay-copy check" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/surface-const.tsx" Edit '
+export const Responsive = () => {
+  const surface = useSidebarSurface()
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {surface === "overlay" && <SidebarHeader>brand</SidebarHeader>}
+  </AppShell>
+}'
+expect_pass_silent "28b. const holding useSidebarSurface() compared to overlay is exempt"
 
 run_hook "src/mobile-parentheses.tsx" Edit '
 export const Responsive = () => {
   const { display } = useAppShell()
   return <AppShell layout="primary-header" globalHeader={<GH />}>
-    {(("overlay" === display.menu)) && <SidebarHeader>brand</SidebarHeader>}
+    {(("overlay" === useSidebarSurface())) && <SidebarHeader>brand</SidebarHeader>}
   </AppShell>
 }'
-expect_pass_silent "29. safely parenthesized positive Menu-overlay RHS is exempt"
+expect_pass_silent "29. safely parenthesized positive overlay-copy RHS is exempt"
 
 run_hook "src/mobile-negated.tsx" Edit '
 <AppShell layout="primary-header" globalHeader={<GH />}>

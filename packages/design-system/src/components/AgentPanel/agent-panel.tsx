@@ -5,7 +5,7 @@
  * ── 消費的 SSOT ──
  * - 容器:右側欄=bg-surface + 左緣分隔線(可拖時 = ResizeHandle 的 1px line);形態(並排 / 浮層)、可拉範圍、寬度紀錄
  *   = AppShell「版面規則」(app-shell.spec.md;在 AppShell 裡由 AppShell 算,單獨使用時同一支 layout-model 只算自己);
- *   初始寬 --agent-panel-width 400(uiSize.css),預設範圍 360–640;把手=ResizeHandle pattern,
+ *   預設寬 360 / 400 / 640(本檔 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX,沒有 CSS token);把手=ResizeHandle pattern,
  *   鍵盤等價=WAI-ARIA separator 同 DataTable 欄寬慣例;開合 --motion-duration-surface。
  * - 標題列:ChromeHeader(header-canonical;chrome 內控件一律 sm);品牌區=gap-2+24 標誌;
  *   標題+chevron=單一複合觸發鈕:**原生 `<button>`,不包 Button 殼**(Button 會多出左 9 / 右 5 內距
@@ -132,7 +132,7 @@ import './agent-panel.css'
  * 1. AgentPanel(容器;可拖拉寬度)
  * ──────────────────────────────────────────────────────────────────────── */
 
-/** 產品沒設時的寬度設定(spec「AgentPanel」節;`--agent-panel-width` 400 = 初始寬)。範圍 / 紀錄 / 實際顯示寬的規則住 app-shell.spec.md「版面規則」§1、§5、§7、§9。 */
+/** 產品沒設時的寬度設定(spec「Token」節:面板寬只住這裡,2026-10-15 退役 `--agent-panel-width`)。範圍 / 紀錄 / 實際顯示寬的規則住 app-shell.spec.md「版面規則」§1、§5、§7、§9。 */
 const PANEL_WIDTH_DEFAULT = 400
 const PANEL_WIDTH_MIN = 360
 const PANEL_WIDTH_MAX = 640
@@ -278,6 +278,9 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   ) => {
     const dock = React.useContext(AgentPanelDockContext)
     const rootRef = React.useRef<HTMLDivElement | null>(null)
+    // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的
+    const autoId = React.useId()
+    const panelId = props.id ?? autoId
 
     // ── 在 AppShell 裡:登記寬度設定與開關,版面(形態、可拉範圍、顯示寬)由 AppShell 算(「版面規則」;面板自己不算)──
     const registry = useAppShellRegistry()
@@ -456,6 +459,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             if (typeof ref === 'function') ref(node)
             else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
           }}
+          id={panelId}
           role="complementary"
           aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
           // 浮層要讓 AT 與閘知道它現在是蓋在內容上的一層,不是並排的一欄
@@ -495,7 +499,9 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
               min={range.min}
               max={range.max}
               step={PANEL_RESIZE_KEY_STEP}
-              ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
+              // 名稱帶出面板自己的名字(= 上方 aria-label 預設「智慧代理」):Right panel 的把手原本同名「調整面板寬度」,兩顆分不出來(WCAG 2.4.6;2026-10-15 r1b 複驗 F9)
+              ariaLabel="調整智慧代理寬度" // i18n-allow: DS 預設文案
+              ariaControls={panelId}
               className="z-10"
               onValueChange={resize.onResize}
               onValueCommit={resize.onResizeCommit}

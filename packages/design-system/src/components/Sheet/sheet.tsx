@@ -109,7 +109,14 @@ const sheetVariants = cva(
 // Radix Slot React.Children.only crash。children 保留(consumer body)。同 Dialog 收窄。
 interface SheetContentProps
   extends Omit<React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, 'asChild'>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  /**
+   * Portal 目的地(與 `DialogContent` 同名同義,`../Dialog/dialog.spec.md`「`portalContainer`」)。預設 document.body;
+   * 「模擬瀏覽器畫布」或嵌入式畫布可傳一個帶 transform 的容器,`fixed` 定位以它為準,側板與遮罩不會跑出畫布。
+   * 消費者:AppShell 的 Menu 浮層(`<AppShell portalContainer>` 一路帶到這裡;2026-10-15 r1b 複驗 F10)。
+   */
+  portalContainer?: HTMLElement | null
+}
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
 /** @internal DS 預設 open-focus(首個 body 互動元素)。2026-10-01 起 SheetContent 會**組合** consumer 的 onOpenAutoFocus(consumer 先跑、
@@ -130,7 +137,7 @@ export const handleSheetOpenAutoFocus = (e: Event) => {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+>(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
   // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
   const focusReturn = useTriggerlessFocusReturn(React.useContext(SheetModalContext))
@@ -142,7 +149,7 @@ const SheetContent = React.forwardRef<
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
   }, [ref])
   return (
-    <SheetPortal>
+    <SheetPortal container={portalContainer ?? undefined}>
       <SheetOverlay />
       <SheetPrimitive.Content
         ref={composedRef}

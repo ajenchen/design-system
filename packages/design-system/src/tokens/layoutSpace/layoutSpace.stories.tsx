@@ -61,7 +61,7 @@ export const Overview: Story = {
       <SpaceRow utility="--layout-space-tight" mdValue="12px" lgValue="16px" usage="header / footer 上下 padding;緊密 inline gap" />
       <SpaceRow utility="--layout-space-loose" mdValue="16px" lgValue="24px" usage="surface 左右 padding;tabs trigger gap;form field 間距" />
       <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="最後內容 → action buttons 的結論留白(Dialog / Sheet body 底部;固定,不隨 density)" />
-      <SpaceRow utility="--layout-space-viewport-inset" mdValue="48px" lgValue="48px" usage="浮層外殼 → 視窗邊的安全距離(Dialog 高度上限與最大寬度;固定,不隨 density)" />
+      <SpaceRow utility="--layout-space-viewport-inset" mdValue="48px" lgValue="48px" usage="浮層外殼 → 視窗邊的安全距離(Dialog 高度上限與最大寬度;AppShell 的 AI agent 浮層左側、Menu 浮層右側至少留這麼多;固定,不隨 density)" />
 
       <h3 className="text-h5 mt-[var(--layout-space-loose)] mb-[var(--layout-space-tight)]">使用規則</h3>
       {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 24px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}

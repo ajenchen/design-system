@@ -620,10 +620,11 @@ type TaskTab = (typeof TASK_TABS)[number]
 const NEW_TASK_URL = `${PROJECT}/tasks/new`
 const taskUrl = (num: number) => `${PROJECT}/tasks/${num}`
 const taskLabel = (t: Task) => `任務 #${t.num} ${t.title}`
+// 截止日都落在工作日(2026-10-20 r1b 複核 D7:原本 09-12、09-19 是週六,同 AppShell 示範 ENG-1038 週日那一題;AGENTS.md mindset #4 真實業務場景)
 const TASKS: Task[] = [
-  { id: 't4821', num: 4821, title: '修正登入逾時', assignee: 'Betty Wu', status: 'todo', due: '2026-09-12' },
+  { id: 't4821', num: 4821, title: '修正登入逾時', assignee: 'Betty Wu', status: 'todo', due: '2026-09-11' },
   { id: 't4830', num: 4830, title: '對帳批次逾時重試', assignee: 'Alan Chen', status: 'doing', due: '2026-09-15' },
-  { id: 't4835', num: 4835, title: '支付失敗通知信', assignee: 'Betty Wu', status: 'todo', due: '2026-09-19' },
+  { id: 't4835', num: 4835, title: '支付失敗通知信', assignee: 'Betty Wu', status: 'todo', due: '2026-09-18' },
 ]
 
 /**
@@ -1061,7 +1062,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   /**
    * 未存檔的修改 → 離開前先確認(v14 推導表「窄螢幕,內部導航觸發沒有 URL 的未存檔確認框」+ 接下來的取消 / 確認前往兩列;
    * 條 A·D·E)。任務對話框回報它有未儲存的修改(`onDirtyChange`),代理的內部連結就先停下來,把要走的導航記著、開沒有網址的
-   * 確認框(蓋住一切含代理);取消 → 什麼都不動(對話框、修改、代理抽屜都還在);確認 → 才真的走原本那條 `runFromAgent`。
+   * 確認框(蓋住一切含代理);取消 → 什麼都不動(對話框、修改、代理面板都還在);確認 → 才真的走原本那條 `runFromAgent`。
    * 對話框裡沒有未儲存的修改時,連結照舊直接走。這是宿主的事(DS 的面板不知道連結、也不知道對話框裡改了什麼)。
    */
   const dirtyRef = React.useRef(false)
@@ -1240,7 +1241,7 @@ export const UnsavedChangesGuard: Story = {
     docs: {
       story: openOverlayDocsStory('720px'),
       description: {
-        story: '假資料示意,與「網址註冊表」同一個專案。任務 #4821 的對話框開著、標題已改成「修正登入逾時(含 SSO 逾時)」但還沒儲存;代理回覆裡的「我的任務」是內部導航,宿主先停下來開一個沒有網址的確認框「要放棄未儲存的修改?」—— 它蓋住一切,包含代理(v14 條 A)。按「取消」:確認框消失,對話框、修改、代理抽屜都還在原地;按「不儲存並前往」:宿主切到「我的任務」,並排時代理維持開啟,窄畫布(浮層)時代理收成右下角入口鈕、目的內容顯露(v14 推導表「未存檔確認框」三列)。對話框裡沒有未儲存的修改時,連結照舊直接走。',
+        story: '假資料示意,與「網址註冊表」同一個專案。任務 #4821 的對話框開著、標題已改成「修正登入逾時(含 SSO 逾時)」但還沒儲存;代理回覆裡的「我的任務」是內部導航,宿主先停下來開一個沒有網址的確認框「要放棄未儲存的修改?」—— 它蓋住一切,包含代理(v14 條 A)。按「取消」:確認框消失,對話框、修改、代理面板都還在原地;按「不儲存並前往」:宿主切到「我的任務」,並排時代理維持開啟,代理放不下而成為浮層時收成右下角入口鈕、目的內容顯露(v14 推導表「未存檔確認框」三列)。對話框裡沒有未儲存的修改時,連結照舊直接走。',
       },
     },
   },

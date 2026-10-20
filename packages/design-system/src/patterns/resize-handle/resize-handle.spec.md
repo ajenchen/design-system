@@ -41,8 +41,8 @@ benchmark:
   min={number}
   max={number}              // 省略 = 無上限:不輸出 aria-valuemax、End 停用
   step={16}                 // 鍵盤每步,預設 16
-  ariaLabel="調整欄寬"       // 必填(APG separator 必有 aria-label / aria-labelledby)
-  ariaControls?: string     // 指向被調整的 pane
+  ariaLabel={`調整 ${欄名} 欄寬`}  // 必填(APG separator 必有 aria-label / aria-labelledby);同一頁有多顆時名稱必須分得出來 —— 帶入欄名 / 面板標題(WCAG 2.4.6)
+  ariaControls?: string     // 指向被調整的 pane(欄寬把手 = 自己那一欄的 columnheader;面板把手 = 面板根節點)
   disabled?: boolean        // 只畫線;無 role / tabIndex / cursor / 拖拉
   showLine?: boolean        // default true,false = consumer 已自己畫 idle 線;hover / 拖拉的狀態色仍由本元件畫
   lineInsetStart?: string   // line 起點 inset(eg. var(--table-cell-py))

@@ -25,14 +25,17 @@ traits:
 - **世界級對照**:GitHub Copilot Chat panel(VS Code 右側欄)/ Notion AI side panel /
   Intercom Fin 面板同型:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入。
 
-## Token(本家族新增 4 個)
+## Token(本家族新增 3 個)
 
 | Token | 值 | 家 | 出處 |
 |---|---|---|---|
-| `--agent-panel-width` | 25rem(400) | uiSize.css「Sidebar / Layout primitive sizing」段 | 稿全六畫面 rightSider 實測 400;命名同 `--sidebar-width` L4 layout 前例 |
 | `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考 |
 | `--motion-easing-settle` | cubic-bezier(0.2,0,0.38,0.9) | motion.css (C) 循環動態 | 循環「收」;Carbon productive 參考 |
 | `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+
+面板寬**沒有 CSS token**:預設 360 / 400 / 640 只住 `agent-panel.tsx` `AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`(與 `../AppShell/app-shell.spec.md`「版面規則」§1 同一份;400 = 稿全六畫面 rightSider 實測)。
+`--agent-panel-width`(2026-09-02 立)**2026-10-15 退役**:執行期從來沒有任何讀取者(元件一直用 JS 常數 400),同一個值兩個住所(M17;r1b 複驗 F8)——
+與 2026-09-21 退役 `-min` / `-max` 同一個理由;寬度一律經 `widthRange` / `width` / `defaultWidth` 設定。
 
 標誌/FAB 環的漸層停駐色=**品牌資產常數**(oklch 內嵌,色相落於 DS 藍 252-268 /
 紫家族(2026-09-02 user 拍板由藍→土耳其藍改為藍→紫,再依「所有顏色都要根據我們的設計語言」改為
@@ -63,7 +66,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 1. AgentPanel(容器)
 
-- 寬 `--agent-panel-width`、全高;面=`bg-surface`;左緣分隔線**只有一個 owner**:可拖時由
+- 寬 = 這種內容類型的寬度設定(預設初始 400,`AGENT_PANEL_WIDTH_DEFAULT`)、全高;面=`bg-surface`;左緣分隔線**只有一個 owner**:可拖時由
   ResizeHandle 的 1px line 擁有(idle divider / hover border-hover / 拖曳中 primary;DataTable 欄間同款),
   `resizable=false` 才由容器畫 `border-l border-divider`(app-shell aside 前例)。兩者並存 = 2px 粗線
   (2026-09-02 user 抓到「比 aside 粗」;第二輪雙層 -3px 偏移已由單一元件收斂)。
@@ -72,7 +75,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
 - **可調寬**(`resizable`,預設開):左緣 `<ResizeHandle direction="horizontal" position="start">`
   (`patterns/resize-handle` 視覺 primitive:熱區 7、線 1、idle divider / hover border-hover / 拖曳中 primary,
-  與 DataTable 欄寬把手同一顆 primitive,2026-09-02 起兩邊同元件);**並排與浮層都可拖**(user 2026-10-14 規格 U:4、U:55)。寬度 = 這種內容類型的最小 / 初始 / 最大(`contentType` + `widthRange={{ min, initial, max }}`),預設 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX` + `--agent-panel-width`;CSS 不另設界限 token);
+  與 DataTable 欄寬把手同一顆 primitive,2026-09-02 起兩邊同元件);**並排與浮層都可拖**(user 2026-10-14 規格 U:4、U:55)。寬度 = 這種內容類型的最小 / 初始 / 最大(`contentType` + `widthRange={{ min, initial, max }}`),預設 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`,只住 `agent-panel.tsx`;CSS 沒有面板寬 token);
   可拉範圍、寬度紀錄與實際顯示寬的規則只住 `../AppShell/app-shell.spec.md`「版面規則」§5、§7、§9(本檔不重述)。受控 `width` +`onWidthChange`(拖曳中每格都發,
   受控端才有即時回饋)/ `onWidthCommit`(一次調整結束發一次:拖曳放開且有位移、鍵盤每按一下;只點一下不發 —— 「版面規則」§7;要落地儲存接這個);或
   非受控 `defaultWidth`。**無雙擊重設**(2026-09-02 拍板)。
@@ -401,7 +404,7 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 - ❌ 標誌動畫另立第三種本體語言(蓄勢=招喚態同款;「變淡」已於 2026-09-02 收斂棄用)。
 - ❌ 附件在氣泡內用 Tag 或 FileItem(送出後=Chip assist 視覺;輸入中才是 Tag)。
 - ❌ 思考塊微光套到已完成步驟(僅標題+最新一行)。
-- ❌ 繞過 `--agent-panel-width` 寫死面板寬。
+- ❌ 寫死面板寬(`style={{ width }}` / 寬度 class):寬度一律經 `widthRange` / `width` / `defaultWidth`,實際顯示寬與範圍由「版面規則」§5、§7、§9 算。
 - ❌ 讓 AgentPanel 進入 Radix 的 DismissableLayer 疊(見上節負向鐵律;機械閘
   `scripts/agent-panel-dismissable-layer-invariant.mjs`)。
 - ❌ 並排時用 Esc 關閉面板本身(並排是常駐 app UI;只有浮層時 Esc 才關,見「Esc 與關閉語意」)。

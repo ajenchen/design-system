@@ -126,8 +126,9 @@ if grep -Eq 'layout="primary-header"|layout=\{('\''|")primary-header('\''|")\}' 
   if ! grep -qE 'globalHeader[[:space:]]*=' <<<"$BODY"; then
     PRIMARY="${PRIMARY}\n- AppShell primary-header layout requires globalHeader"
   fi
-  # Menu 浮層時補品牌的豁免(app-shell.spec.md 浮層精修;觸發條件 = useAppShell().display.menu,2026-10-14 前是 768 斷點的 isMobile)
-  if grep -Eq '<SidebarHeader([^A-Za-z]|$)' <<<"$BODY" && ! grep -qE "display\.menu|menuIsOverlay" <<<"$BODY"; then
+  # Menu 浮層時補品牌的豁免(app-shell.spec.md 浮層精修;觸發條件 = 這一份畫在浮層裡 useSidebarSurface(),
+  # 2026-10-14 前是 768 斷點的 isMobile;2026-10-14 版的 useAppShell().display.menu 兩份同時成立、細列也長出標頭,2026-10-15 起不豁免)
+  if grep -Eq '<SidebarHeader([^A-Za-z]|$)' <<<"$BODY" && ! grep -qE "useSidebarSurface" <<<"$BODY"; then
     PRIMARY="${PRIMARY}\n- primary-header layout must not duplicate an unguarded SidebarHeader"
   fi
   if grep -Eq '<SidebarFooter([^A-Za-z]|$)' <<<"$BODY"; then

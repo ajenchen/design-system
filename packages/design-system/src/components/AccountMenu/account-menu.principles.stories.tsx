@@ -29,7 +29,7 @@ export const UsageGuidance: Story = {
     <TutorialPage className="max-w-3xl">
       <TutorialRule
         title="用在目前登入者的帳號入口"
-        note="AccountMenu 表示「我自己的個人資料、設定與登出」；primary-header 桌面模式放 global header 右側，行動裝置 global header 被 Sheet 取代時搬到 SidebarHeader。"
+        note="AccountMenu 表示「我自己的個人資料、設定與登出」；primary-header 放 global header 右側；Menu 放不下、叫出的左側浮層蓋住 global header 時，鏡像到浮層頂排的 SidebarHeader 右側。"
       >
         {/* 包一層段落:連結維持行內寬度(規則的內容是直排區塊,裸連結會被拉滿整列、整列都變成可點) */}
         <p>
@@ -61,7 +61,7 @@ export const PlacementRule: Story = {
         <ul className="list-disc space-y-2 pl-5 text-fg-secondary">
           <li><strong>primary-header：</strong>global header 右側使用 AccountMenu。</li>
           <li><strong>primary-sidebar：</strong>帳號入口留在 SidebarFooter，不另放 AccountMenu。</li>
-          <li><strong>mobile Sheet：</strong>global header 不可見時，入口鏡像到 Sheet 的 SidebarHeader。</li>
+          <li><strong>Menu 左側浮層：</strong>浮層蓋住 global header 時，入口鏡像到浮層頂排的 SidebarHeader 右側（只在浮層那一份）。</li>
           <li><strong>禁止：</strong>global header 與 sidebar footer 同時各放一份。</li>
         </ul>
       </TutorialRule>

@@ -30,6 +30,9 @@ printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:!bg-[var
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:opacity-80 rounded-md" />\n' > "$FILE"; expect 0 raw-row-no-hover-pair-token
 printf '<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"; expect 2 overlay
 printf '<AppShell layout="primary-header"><SidebarFooter /></AppShell>\n' > "$FILE"; expect 2 primary-header
+# Menu 浮層補品牌的豁免(2026-10-15):只認「這一份畫在浮層裡」useSidebarSurface();整個 Menu 的 display.menu 兩份同時成立、細列也長出標頭 → 不豁免
+printf 'const { display } = useAppShell()\n<AppShell layout="primary-header" globalHeader={<GH />}>{display.menu === "overlay" && <SidebarHeader>brand</SidebarHeader>}</AppShell>\n' > "$FILE"; expect 2 primary-header-display-menu-not-exempt
+printf 'const onOverlay = useSidebarSurface() === "overlay"\n<AppShell layout="primary-header" globalHeader={<GH />}>{onOverlay && <SidebarHeader>brand</SidebarHeader>}</AppShell>\n' > "$FILE"; expect 0 primary-header-surface-exempt
 
 # 帳號入口 duplicate(2026-07-30 WM F9 layer 3;dual-entry conjunction,mode 字面不在檔內)
 ACCT_HEADER_MENU='<SidebarHeader><DropdownMenu><DropdownMenuTrigger asChild><button aria-label="Open account menu"><Avatar alt="Me" size={24} /></button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem>Logout</DropdownMenuItem></DropdownMenuContent></DropdownMenu></SidebarHeader>'

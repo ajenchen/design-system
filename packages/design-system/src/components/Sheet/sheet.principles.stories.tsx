@@ -229,8 +229,8 @@ export const SidePropRule: Story = {
       </TutorialRule>
 
       <TutorialRule
-        title="left（DS 內部基建，非消費者 API）— Sidebar 小視口 left-slide"
-        note="left 保留 DS 內部基建用（例:Sidebar 在小視口從 left 滑入）,消費者 code 禁止傳 side=&quot;left&quot;,需 user 授權。世界級 mobile nav convention(Slack / Gmail hamburger / Material navigation drawer 在左)是此變體的設計來源,但本 DS 的 mobile navigation 應走專屬 navigation 元件,不混在消費者 Sheet。以下為內部能力示範。"
+        title="left（DS 內部基建，非消費者 API）— AppShell 的 Menu 左側浮層"
+        note="left 保留 DS 內部基建用（例:AppShell 的 Menu 放不下時從 left 滑入的左側浮層）,消費者 code 禁止傳 side=&quot;left&quot;,需 user 授權。世界級 mobile nav convention(Slack / Gmail hamburger / Material navigation drawer 在左)是此變體的設計來源,但本 DS 的 mobile navigation 應走專屬 navigation 元件,不混在消費者 Sheet。以下為內部能力示範。"
       >
         <Sheet>
           <SheetTrigger asChild>
@@ -241,7 +241,7 @@ export const SidePropRule: Story = {
               <SheetTitle>目錄</SheetTitle>
             </SheetHeader>
             {/* 目錄 = 側欄導覽列 → 消費 SidebarMenuButton,不手刻 <button>(ui-development.md「既有 primitive 優先消費」;
-                M23(e):說得出「它是 Sidebar」就照 sidebar.spec.md —— left 側滑本身就是 Sidebar 小視口的內部基建)。
+                M23(e):說得出「它是 Sidebar」就照 sidebar.spec.md —— left 側滑本身就是 AppShell Menu 左側浮層的內部基建)。
                 hover = neutral-hover + 字升 foreground、當前項 neutral-selected 且滑過釘住、鍵盤焦點畫內描邊,全由元件負責。
                 SidebarProvider minHeight:auto 取消 min-h-svh(先例 sidebar.stories.tsx ActionHoverState)。
                 列集合上下的呼吸由 SidebarGroup 擁有(item-anatomy.spec.md「垂直 padding 歸屬」:SidebarMenu 的外層容器 = SidebarGroup),不在外殼手寫 */}

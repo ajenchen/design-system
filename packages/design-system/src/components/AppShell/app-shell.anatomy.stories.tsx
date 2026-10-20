@@ -308,7 +308,7 @@ export const Accessibility: Story = {
         <li><strong>開關的展開狀態</strong>:Menu 開關帶 `aria-expanded`(展開的 Menu 看得到 = true,只剩細列或收掉 = false)與 `aria-controls` 指向 Menu</li>
         <li><strong>Esc</strong>:Menu 浮層 → 收回細列;AI agent 是浮層時,焦點在面板裡按 Esc 先關面板裡最內層的選單,沒有了就關閉面板;並排的 AI agent 不因 Esc 關閉</li>
         <li><strong>焦點後備</strong>:焦點所在的面板因為版面被收起、或被「要求詳情」連帶關閉 → 焦點回 `#app-shell-main`</li>
-        <li><strong>拖寬把手</strong>:Menu 右緣、Right panel 與 AI agent 左緣都是 `role=separator`,←/→ 每步 16、Home / End 到最窄 / 最寬;`aria-valuemax` = 此刻真的拉得到的上限</li>
+        <li><strong>拖寬把手</strong>:Menu 右緣、Right panel 與 AI agent 左緣都是 `role=separator`,←/→ 每步 16、Home / End 到最窄 / 最寬;`aria-valuemax` = 此刻真的拉得到的上限;名稱分得出是哪一區(「調整選單寬度」/「調整 Right panel 的標題 寬度」,例:調整 ENG-1042 寬度/「調整智慧代理寬度」),並以 `aria-controls` 指向自己調整的那一區</li>
         <li><strong>Right panel 標題</strong>:`title` 必填 → `&lt;aside aria-label&gt;`,讓螢幕報讀器讀得到面板名稱</li>
       </ul>
     </div>

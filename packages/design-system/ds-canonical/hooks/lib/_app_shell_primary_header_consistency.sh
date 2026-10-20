@@ -12,8 +12,9 @@
 #   V2) `layout="primary-header"` AppShell instance 內含 `<SidebarHeader>`
 #       → WorkspaceBrand 已該在 globalHeader,sidebar 內不該再有 SidebarHeader
 #         (per app-shell.spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 一致)
-#         例外:該 instance 的正向「Menu 是浮層」branch 內補品牌(豁免;`display.menu === 'overlay'` / `menuIsOverlay`,
-#         app-shell.spec.md 浮層精修;2026-10-14 前是 768 斷點的 `isMobile`,隨斷點退場)；
+#         例外:該 instance 的正向「這一份畫在 Menu 浮層裡」branch 內補品牌(豁免;`useSidebarSurface() === 'overlay'`
+#         或初始值是它的 const,app-shell.spec.md 浮層精修;2026-10-14 前是 768 斷點的 `isMobile`,2026-10-14 版的
+#         `display.menu === 'overlay'` 兩份同時成立、細列也會長出標頭,2026-10-15 起都不再豁免)；
 #         nested AppShell 是獨立 boundary。
 #
 #   V3) `layout="primary-header"` + 任何 `<SidebarFooter>...</SidebarFooter>` 在同 file(2026-06-18 beta.74)
@@ -86,7 +87,7 @@ fi
 FULL_CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.governance_write_state.content')
 
 # 用 TypeScript 自身的 TSX parser 做 per-AppShell 判斷；全檔 grep 會被 JSX
-# whitespace/multiline、comments、另一個 AppShell instance 的 prop 或 `display.menu`
+# whitespace/multiline、comments、另一個 AppShell instance 的 prop 或 `useSidebarSurface`
 # decoy 繞過。TypeScript 是本 repo/template 的 pinned dev dependency；缺失或 parse
 # diagnostics 都是治理 runtime integrity failure，不得假成功。
 NODE_PROJECT_ROOT="${GOVERNANCE_PROJECT_DIR:-}"
@@ -118,10 +119,10 @@ if [ "$V1_COUNT" -gt 0 ]; then
 fi
 
 # V2 使用 AST instance boundary。只有正向「Menu 是浮層」branch：
-# `display.menu === 'overlay' && <SidebarHeader>` RHS 或 `menuIsOverlay ? <SidebarHeader> : ...`
+# `useSidebarSurface() === 'overlay' && <SidebarHeader>` RHS 或 `onOverlay ? <SidebarHeader> : ...`(onOverlay 的 const 初始值就是該判斷式)
 # 才豁免；否定、OR、false branch 與 nested AppShell 都不會誤放行。
 if [ "$V2_COUNT" -gt 0 ]; then
-  VIOLATIONS+=("V2 Sidebar 內含 SidebarHeader:primary-header mode WorkspaceBrand 該在 globalHeader,sidebar 內不該重複(per spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 共識)。若是 Menu 浮層時補品牌請用正向「Menu 是浮層」條件渲染(display.menu === 'overlay');若 sidebar header 是其他內容,加檔頭 escape allowlist 並寫明 rationale")
+  VIOLATIONS+=("V2 Sidebar 內含 SidebarHeader:primary-header mode WorkspaceBrand 該在 globalHeader,sidebar 內不該重複(per spec.md「WorkspaceBrand 放置 SSOT」+ world-class GitHub/Gmail/Figma 共識)。若是 Menu 浮層時補品牌請用正向「這一份畫在浮層裡」條件渲染(useSidebarSurface() === 'overlay';只補浮層那一份);若 sidebar header 是其他內容,加檔頭 escape allowlist 並寫明 rationale")
 fi
 
 # V3:layout="primary-header" + <SidebarFooter> 同 file → 帳號入口家在 globalHeader 右,不該用 sidebar footer。

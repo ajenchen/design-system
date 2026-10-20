@@ -41,7 +41,7 @@ benchmark:
 
 ## 放置 SSOT(pointer,不重述)
 
-**Owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段**(mode-dependent 放置表 + 「只能出現一次」rule + 浮層精修)。本元件 **placement-agnostic**:不收 `mode` / `layout` prop,放哪裡由 consumer 讀 `useAppShell().layout` + Menu 的顯示方式(`useAppShell().display.menu`;2026-10-14 前是 `useSidebar().isMobile`)決定(recipe:`_demo-helpers.tsx` `AcmeSidebar` `headerHasAccount`)。複製放置邏輯進元件 = 第二份 SSOT(Rule-of-3 違反),故意不做。
+**Owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段**(mode-dependent 放置表 + 「只能出現一次」rule + 浮層精修)。本元件 **placement-agnostic**:不收 `mode` / `layout` prop,放哪裡由 consumer 讀 `useAppShell().layout` + 這一份 Menu 畫在哪(`useSidebarSurface()`,浮層那一份才補;2026-10-14 前是 `useSidebar().isMobile`,2026-10-14 版讀整個 Menu 的 `useAppShell().display.menu` 會連被蓋住的細列一起補)決定(recipe:`_demo-helpers.tsx` `AcmeSidebarHeader` `headerHasAccount`)。複製放置邏輯進元件 = 第二份 SSOT(Rule-of-3 違反),故意不做。
 
 ## 近親職責分界
 

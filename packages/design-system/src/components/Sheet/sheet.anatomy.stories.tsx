@@ -141,13 +141,13 @@ export const SideMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Side 方向（消費者 API = right；其餘為 DS 內部基建）</H3>
-        <Desc>消費者 code 只能用 side=&quot;right&quot;。top / bottom / left 變體保留 DS 內部基建用（例：Sidebar 小視口 left-slide），消費者禁止直接傳、需授權（canonical 見 sheet.tsx L23-27 + showcase AR35）。下表後三列為內部能力 + 世界級對照，供 DS contributor 參考。</Desc>
+        <Desc>消費者 code 只能用 side=&quot;right&quot;。top / bottom / left 變體保留 DS 內部基建用（例：AppShell 的 Menu 放不下時的左側浮層），消費者禁止直接傳、需授權（canonical 見 sheet.tsx L23-27 + showcase AR35）。下表後三列為內部能力 + 世界級對照，供 DS contributor 參考。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Side</Th><Th>滑入方向</Th><Th>典型用途</Th><Th>世界級對照</Th></tr></thead>
             <tbody>
               <tr><Td mono>right ★消費者 default</Td><Td>從右邊</Td><Td>消費者 API：Detail panel（Jira task drawer、Linear issue detail、GitHub PR file diff drawer）、filter panel</Td><Td>Jira / Linear / Notion side panel</Td></tr>
-              <tr><Td mono>left（內部）</Td><Td>從左邊</Td><Td>DS 內部基建：Sidebar 小視口 left-slide（非消費者 API）</Td><Td>Material mobile drawer、Slack mobile nav</Td></tr>
+              <tr><Td mono>left（內部）</Td><Td>從左邊</Td><Td>DS 內部基建：AppShell 的 Menu 左側浮層（放不下時;非消費者 API）</Td><Td>Material mobile drawer、Slack mobile nav</Td></tr>
               <tr><Td mono>top（內部）</Td><Td>從上方</Td><Td>DS 內部基建保留（非消費者 API，notification center 類）</Td><Td>iOS Control Center top pull-down</Td></tr>
               <tr><Td mono>bottom（內部）</Td><Td>從下方</Td><Td>DS 內部基建保留（非消費者 API；mobile bottom sheet 另用專屬元件）</Td><Td>iOS Bottom Sheet、Material Bottom Sheet</Td></tr>
             </tbody>

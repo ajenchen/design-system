@@ -63,12 +63,14 @@ benchmark:
   header={<ChromeHeader>...</ChromeHeader>}     // SSOT in patterns/header-canonical/header-canonical.spec.md
   aside={<AppShellAside title="Detail" contentType="issue-detail" widthRange={{ min: 250, initial: 320, max: 500 }}>...</AppShellAside>}   // Right panel
   agent={<AgentPanelDock>{({ close }) => <AgentPanel onClose={close}>...</AgentPanel>}</AgentPanelDock>}   // AI agent;SSOT in components/AgentPanel/agent-panel.spec.md
+  portalContainer={canvas}   // 選填:AppShell 不撐滿視窗(放在帶 transform 的畫布裡)時,Menu 浮層傳送到這裡;省略 = document.body
 >
   {children}    {/* <main> landmark, padding=0,內容遵循 layoutSpace 6 條規則 */}
 </AppShell>
 ```
 
 Sub-component:`<AppShellAside title={...} contentType={...} widthRange={{ min, initial, max }} defaultWidth? onWidthCommit?>` —— 寬度 = 這種內容類型的最小 / 初始 / 最大(「版面規則」§1;同一 `contentType` 的不同資料共用設定與寬度紀錄)。**title prop required**(= `<aside aria-label>`)。2026-10-14 前的 `width: number | { md, xl }` 依視窗挑寬與 240 / 640 硬夾隨「版面規則」退場(破壞性)。Menu(`<Sidebar widthRange contentType>`)與 AI agent(`<AgentPanel widthRange contentType>`)的寬度設定同一形狀、同一個名字 `widthRange`(不叫 `width`:AgentPanel 的 `width` 早已是「受控寬度紀錄」);`defaultWidth` / `onWidthCommit` = 產品自存紀錄的還原與接收(§7)。`mainMinWidth`、`contentType`、`widthRange`、`agent` slot、`requestAside`、`navigateFromAgent` 是 2026-10-14 為落地「版面規則」新增的 API(AI 建議的形狀,工程決定)。
+`portalContainer`(2026-10-15,工程決定;r1b 複驗 F10):AppShell 的正常用法是撐滿視窗,這時省略、Menu 浮層照 Sheet 預設傳送到 body;AppShell 放在比視窗小、帶 transform 的容器裡(story 的模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,Menu 浮層與遮罩以它為準、不跑出容器 —— AI agent 浮層本來就以 AppShell 根節點定位(§9)。與 `DialogContent` / `SheetContent` 的 `portalContainer` 同名同義(`../Dialog/dialog.spec.md`)。
 
 **Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose py-tight` 的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`(範例 `app-shell.stories.tsx` 即如此)。
 
@@ -126,7 +128,7 @@ function CustomAside() {
 
 **Rule:WorkspaceBrand 只能出現一次**(視覺 SSOT)。`primary-header` mode 重複放(同時在 globalHeader + SidebarHeader)= 視覺冗餘 + 跨產品識別混淆 → **禁止**。
 
-**浮層精修(2026-06-18 立,2026-10-14 改條件)**:「只能出現一次」= **同一時間一次**。`primary-header` 的 Menu 浮層(Sheet,z-50)從視窗頂端起、**蓋住 globalHeader**(「版面規則」§9)→ 品牌看不到、浮層變孤兒 → 此時在浮層內補 `<SidebarHeader><WorkspaceBrand/>`(globalHeader 既被蓋住,仍「同一時間一次」,非重複),用**同一組 primitive**(style SSOT,與 primary-sidebar 外觀一致,非手刻對齊)。觸發條件 = Menu 顯示為浮層(consumer 讀 `useAppShell().display.menu`);2026-10-14 前是「768 以下 Sidebar 收成 Sheet」(`useSidebar().isMobile`),隨 768 斷點退場、規則內容不變(D:30 清單 #23)。Reference:`_demo-helpers.tsx` `AcmeSidebar`。**禁止**:primary-header 同時 globalHeader + SidebarHeader 放 brand(那才是真重複)。
+**浮層精修(2026-06-18 立,2026-10-14 改條件)**:「只能出現一次」= **同一時間一次**。`primary-header` 的 Menu 浮層(Sheet,z-50)從視窗頂端起、**蓋住 globalHeader**(「版面規則」§9)→ 品牌看不到、浮層變孤兒 → 此時在浮層內補 `<SidebarHeader><WorkspaceBrand/>`(globalHeader 既被蓋住,仍「同一時間一次」,非重複),用**同一組 primitive**(style SSOT,與 primary-sidebar 外觀一致,非手刻對齊)。觸發條件 = **這一份 Menu 內容畫在浮層裡**(consumer 在 Sidebar 的 children 裡讀 `useSidebarSurface() === 'overlay'`,`../Sidebar/sidebar.spec.md`「同一份內容、畫兩份」):浮層開著時 children 畫兩份,被浮層蓋住的細列那一份**不補**(細列保留、版面不跳)。2026-10-14 前是「768 以下 Sidebar 收成 Sheet」(`useSidebar().isMobile`),隨 768 斷點退場、規則內容不變(D:30 清單 #23);2026-10-14 版讀整個 Menu 的 `useAppShell().display.menu`,兩份同時成立 → 細列那一份也長出標頭、圖示下跳 48px、品牌 3 份(2026-10-15 r1b 複驗 F4),改成每一份自己判斷。Reference:`_demo-helpers.tsx` `AcmeSidebarHeader`。**禁止**:primary-header 同時 globalHeader + SidebarHeader 放 brand(那才是真重複)。
 
 **Slack 為 mixed pattern 例外**(thin workspace rail + channels sidebar 有 workspace name)— 不採用此分類,DS 採 **GitHub / Gmail / Figma** 共識(globalHeader 存在 → sidebar 內無 header)。
 
@@ -140,7 +142,7 @@ function CustomAside() {
 // primary-header 派(GitHub/Gmail/Figma):
 <AppShell layout="primary-header"
   globalHeader={<GlobalHeader>... <WorkspaceBrand /> ...</GlobalHeader>}  {/* brand 在這 */}
-  sidebar={<Sidebar viewportInsetTop="..."> {/* 無 SidebarHeader */} ...</Sidebar>}
+  sidebar={<Sidebar> {/* 無 SidebarHeader(Menu 浮層那一份才補,見上方「浮層精修」)*/} ...</Sidebar>}
   header={<PageHeader title="..." />}>...
 ```
 
@@ -157,7 +159,7 @@ function CustomAside() {
 
 **機械強制(2026-07-30 codify per WM F9 layer 3「無機械攔」)**:consumer 層 `packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh`(GOV-CONSUMER-QUALITY-001,fork corpus 隨附)兩段互補 — (a) 既有 primary-header 段:檔內宣告 `layout="primary-header"` + `<SidebarFooter>` → BLOCK;(b) 帳號入口 duplicate 段:mode 字面不在檔內時,SidebarHeader block 帳號選單簽名(AccountMenu / DropdownMenuTrigger+Avatar+account 語彙)與 SidebarFooter user 區同檔並存 → BLOCK(escape `@account-entry-allow: <rationale>`)。story 層 early-warn = `story-baseline-registry.json#sidebar-handbuilt-account-trigger`。跨檔組合(layout 宣告與 sidebar 分檔)機械不可及 → 歸 `/product-ui-audit` judgment。
 
-**浮層精修(帳號入口,同上條件)**:Menu 浮層若蓋住 globalHeader(桌面帳號入口也在 globalHeader 右)→ **帳號入口鏡像桌面位置搬進浮層頂排右**:`<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 原封搬進浮層頂排(SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive → 帳號 avatar 24px + 右緣距 `--layout-space-loose` 由 construction 保證,**非手刻對齊**);**不在浮層底放 `<SidebarFooter>`**(primary-header 帳號家在 header 區,footer 是 primary-sidebar 慣例)。對齊 Material modal navigation drawer「account switcher 放 drawer header 區,footer 區放 settings/support 次要項」(<https://m3.material.io/components/navigation-drawer>)。觸發條件同上(Menu 顯示為浮層,`useAppShell().display.menu`);2026-10-14 前以 `useSidebar().isMobile`(768)判斷,隨斷點退場、規則內容不變(D:30 清單 #23)。Reference:`_demo-helpers.tsx` `AcmeSidebar`。
+**浮層精修(帳號入口,同上條件)**:Menu 浮層若蓋住 globalHeader(桌面帳號入口也在 globalHeader 右)→ **帳號入口鏡像桌面位置搬進浮層頂排右**:`<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 原封搬進浮層頂排(SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive → 帳號 avatar 24px + 右緣距 `--layout-space-loose` 由 construction 保證,**非手刻對齊**);**不在浮層底放 `<SidebarFooter>`**(primary-header 帳號家在 header 區,footer 是 primary-sidebar 慣例)。對齊 Material modal navigation drawer「account switcher 放 drawer header 區,footer 區放 settings/support 次要項」(<https://m3.material.io/components/navigation-drawer>)。觸發條件同上(這一份畫在浮層裡,`useSidebarSurface() === 'overlay'`);2026-10-14 前以 `useSidebar().isMobile`(768)判斷,隨斷點退場、規則內容不變(D:30 清單 #23)。Reference:`_demo-helpers.tsx` `AcmeSidebarHeader`。
 
 **為什麼 primary-header 帳號入口在「右上」**:GitHub / Gmail / Slack / Atlassian 的全域標頭一律把「自己的帳號」放右上(品牌在左、帳號在右,左右對稱)= global chrome 標準位置,不是 sidebar footer。
 
@@ -218,7 +220,7 @@ function CustomAside() {
 - 三值皆正數、最小 ≤ 初始 ≤ 最大;同一內容類型的不同資料共用設定(U:6);不合法時開發階段報錯(AI 推導)。DS 不再硬夾任何寬度,產品設的值為準。
 - Main 最小寬由產品給(U:5 只寫「始終保留最小寬度」,沒寫值誰給 → AI 建議:必填、DS 不替產品挑預設;user 兩個例子都用 600,U:13、U:35)。
 - 「視窗寬度」= 視窗內可供 App 排版的寬度(U:7)= AppShell 根節點**看得到**的寬(ResizeObserver 量,不量 `window`;不含水平捲出去的部分,U:27)—— 量法是 AI 推導。
-- 產品沒設時的 DS 預設(沿用既有值,AI 建議):AI agent 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`)、Right panel 240 / 320 / 640(現行 `ASIDE_WIDTH_MIN / DEFAULT / MAX`)、Menu 最小 240 / 初始 240(`--sidebar-width-min` / `--sidebar-width`,出處見 `../Sidebar/sidebar.spec.md`「尺寸規範」);Menu 最大 DS 沒有既有值 → 產品必給。
+- 產品沒設時的 DS 預設(沿用既有值,AI 建議):AI agent 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`)、Right panel 240 / 320 / 640(最小 = `--sidebar-width-min` 的實際值,與 Menu 同一顆;初始 / 最大 = `app-shell.tsx` `ASIDE_WIDTH_DEFAULT / MAX`)、Menu 最小 240 / 初始 240(`--sidebar-width-min` / `--sidebar-width`,出處見 `../Sidebar/sidebar.spec.md`「尺寸規範」);Menu 最大 DS 沒有既有值 → 產品必給。
 
 ### 2. 開關紀錄、顯示方式、寬度紀錄分開管
 
@@ -240,7 +242,7 @@ function CustomAside() {
 
 - Menu 暫藏時按開關(或 ⌘B)→ 左側浮層;已開啟的面板重新放得下 → 恢復並排(U:26)。Menu 並排時按開關 → 關閉(U:9)。
 - Menu 原本**關閉**、放不下時按一下開關 → **直接出左側浮層**(開關紀錄 = 開),不先變成看不到的暫藏、要再按第二次(AI 建議,D:25 核准)。
-- Menu 浮層開著時再按開關、按 Esc 或點浮層外 → **收回暫藏**,開關紀錄仍是開;之後放得下自己回來並排(AI 建議,D:26 核准;與現行 Sidebar 窄版抽屜「開收另外存、不動開關紀錄」同一個做法)。
+- Menu 浮層開著時再按開關、按 Esc 或點浮層外 → **收回暫藏**,開關紀錄仍是開;之後放得下自己回來並排(AI 建議,D:26 核准;與 2026-10-14 前 Sidebar 窄版抽屜「開收另外存、不動開關紀錄」同一個做法)。
 - AI agent 何時變浮層是當下算出來的,不是門檻:Main 600 + AI agent 最小 360 → 960;多開最小 250 的 Right → 1210;AI agent 最小改 350 → 950。768 / 960 / 1280 固定門檻全部退場(U:21 只看最小寬,本來就沒有門檻;user U:84 問句「這個門檻難道不用拿掉嗎？」;清單 D:30)。
 - **知情**(AI 推導,判定表 A7):沒細列時視窗 1050–1199、三個都開 → AI agent 先變浮層讓出空間,Menu 反而回來並排(U:26);這時 AI agent 浮層讓底下不能操作(第 9 點),Menu 看得到、要等 AI agent 關掉才能點。
 
@@ -289,6 +291,7 @@ Main 與已決定並排面板的最小寬(+ 細列)合計超過視窗寬 → 各
 - 可拖範圍:最小寬 ~ min(設定最大寬, 視窗寬 − 48)(U:56-59)。視窗 − 48 連最小寬都放不下 → 優先保留留白,暫時顯示「視窗 − 48」、不改紀錄;例:視窗 320、最小 300 → 272(U:61-62)。此時把手照常顯示、拖不動(AI 推導:U:55 浮層可拖 → 把手照常;U:56-61 的範圍只剩一個值 → 拖不動)。
 - 位置(規格沒寫,沿用 DS 既有):AI agent 浮層貼右、上下貼齊 AppShell 根節點(沿用 2026-10-14 前「上下右貼齊容器」,容器 = 根節點;`primary-header` 時也蓋住 globalHeader),入口鈕的家在根節點右下(AI 推導)。Menu 浮層從版面左緣開始、蓋住細列(DS 的細列就是收起來的 Menu,圖示中心不跳;浮層與被蓋住的細列畫的是同一份 Menu 內容,兩份共用選取與群組展開狀態 —— `../Sidebar/sidebar.spec.md`「同一份內容、畫兩份」,機械閘 `scripts/app-shell-layout-invariant.mjs` S20);垂直方向沿用 Sidebar 現行的 Sheet 抽屜 —— 從視窗頂端起,`primary-header` 時**蓋住 globalHeader**,品牌與帳號照上方兩條「浮層精修」鏡像進浮層頂排(user 以 D:10 核准的 D:30 舊設計清單 #23 / #111:觸發條件改成「Menu 是浮層」,規則內容不變)。開關(Pattern A 在 Main 頁首最左、Pattern B 在 globalHeader 最左)會被 Menu 浮層蓋住 —— 收回用 Esc、點浮層外或 ⌘B。
 - 遮罩與關閉(規格沒寫,沿用 DS 既有):AI agent 浮層底下鋪並存遮罩、點遮罩關閉 AI agent、底下其餘區域不可操作(`../AgentPanel/agent-panel.spec.md`);Menu 浮層沿用 Sidebar 現行的 Sheet 承載,點外面或 Esc 收回暫藏(第 3 點)。
+- 底色(沿用 DS 既有):兩種浮層都是遮蓋型浮層,底色 = `--surface-raised`(`../../tokens/color/semantic.css`:`--surface` 是非遮蓋型容器色,深色模式半透明;Sheet 預設、AI agent 浮層同一組)。Menu 浮層 2026-10-14 曾覆寫成 `bg-surface`,深色模式底下的頁首與表格整片透出(2026-10-15 r1b 複驗 F2);機械閘 `scripts/app-shell-layout-invariant.mjs`(深色模式量浮層底色 alpha = 1)。
 - **疊在 AI agent 浮層上面的層照樣能操作**(AI 推導,依 D:27 與層級表):AI agent 浮層讓底下的宿主不能操作(遮罩 + inert),但「底下」只指層級表上比它低的 —— 視窗變窄、AI agent 變浮層的那一刻已經開著的 Menu 浮層、確認框(第 6 列 `z-50`)畫在它上面,不是被蓋住的宿主,照樣可點、可聚焦(2026-10-14 審查抓到:原本連它們一起 inert,畫在最上面卻點不到、焦點掉到 body)。並存 modal(第 4 列 `z-40`)照舊在它底下、暫時不能操作。判定住 `../AgentPanel/agent-panel.tsx` `openLayersAbove`;機械閘 `scripts/app-shell-layout-invariant.mjs` S17、S18。
 - **浮層可以同時存在多個**,沒有「同時只能一個」(user U:81 問句;AI 建議,D:27 核准;DS 本來就允許疊,`../Dialog/dialog.spec.md` 確認框可疊在 Dialog 上)。誰在上面照 `../../tokens/elevation/elevation.spec.md`「疊放順序」:AI agent 浮層第 5 列、Menu 浮層(Sheet)第 6 列;同一列時後掛上的在上。D:27 括號「後開的在上」是 AI 整理時對層級表的簡述(AI 原提案是「照 DS 現有層級」,D:30 清單保留項 K3 寫明 Menu 浮層 z-50 蓋在 AI agent 浮層上):AppShell 裡兩者並存時,AI agent 一定先開著(並排或浮層),Menu 浮層後叫出(AI agent 浮層讓底下不能點、只剩 ⌘B;Menu 浮層是 modal Sheet,開著時點不到 AI agent 入口鈕,AI agent 也沒有快捷鍵),所以後開的 Menu 浮層在上,兩種說法結果相同;若產品在 Menu 浮層開著時用程式打開 AI agent,照層級表 Menu 浮層仍在上(AI 推導)。
 
@@ -301,6 +304,7 @@ Main 與已決定並排面板的最小寬(+ 細列)合計超過視窗寬 → 各
 | Esc,焦點在 AI agent 裡 | 一次只關一層:裡面開著選單 / 歷史浮層 / 確認框先關那個;沒有了,**浮層**的 AI agent 關閉(= ×,開關紀錄變關,對話與草稿保留);**並排**的永遠不因 Esc 關閉 | AI 建議,D:22 核准;細節 `../AgentPanel/agent-panel.spec.md`「Esc 與關閉語意」 |
 | Esc,焦點在 Menu 浮層 | 收回暫藏 | AI 建議,D:26 核准 |
 | 拖曳把手的鍵盤 | ←/→ 每步 16、Home / End;每按一下 = 一次調整(第 7 點) | `../../patterns/resize-handle/resize-handle.spec.md`「a11y」 |
+| 拖曳把手的名稱與 `aria-controls` | 三顆把手名稱分得出是哪一區:「調整選單寬度」/「調整 {Right panel 的 title} 寬度」/「調整智慧代理寬度」;各自以 `aria-controls` 指向自己調整的那一區(2026-10-14 前 Right 與 AI agent 同名「調整面板寬度」且沒有 `aria-controls`,2026-10-15 r1b 複驗 F9) | W3C APG Window Splitter <https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/>;WCAG 2.4.6;`../../patterns/resize-handle/resize-handle.spec.md` API `ariaControls` |
 | 把手上按 Enter 收合 / 還原 | 本次不做:DS 既有缺口,記待辦總帳 Q5 | AI 建議,D:29 核准 |
 | 焦點所在的面板被版面暫藏、被第 4 點連帶關閉、或因「從 AI agent 導向 Main」收起 | 回 `#app-shell-main`(焦點已經被別的東西接走時不搶 —— 例:導向的目標是 modal) | 沿用 DS 既有後備「開啟者不在了 → `#app-shell-main`」(`../../lib/overlay-focus-return.ts`,WCAG 2.4.3);延伸到「被版面收掉」是 AI 推導,在 D:30 清單(保留項 K7) |
 | 開關鈕 `aria-expanded` | 跟畫面:展開的內容看得到(並排 / 浮層)= true;暫藏、關閉 = false;Menu 開關另帶 `aria-controls` 指向 Menu | AI 推導、在 D:30 清單(新增項 N15)(W3C APG Disclosure <https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/>) |
@@ -484,4 +488,5 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 - `dialog.spec.md`
 - `header-canonical.spec.md`
 - `resize-handle.spec.md`
+- `sheet.spec.md`
 - `sidebar.spec.md`

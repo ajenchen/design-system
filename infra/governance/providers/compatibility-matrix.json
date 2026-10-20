@@ -17,7 +17,7 @@
         "registryPath": "infra/governance/providers/harness-registry.json",
         "registrySchemaVersion": 2,
         "registryKind": "provider-neutral-governance-harness-registry",
-        "registrySha256": "6cb809758edda51c3042fcff000ce30167dc9f73c4cb7f4f55a108d076cc2b53",
+        "registrySha256": "c00f8efb23af9bf528b788a2e692594b2e2e609324afbc904080197bc972955b",
         "runnerCommand": [
           "node",
           "infra/governance/bin/run-harnesses.mjs"

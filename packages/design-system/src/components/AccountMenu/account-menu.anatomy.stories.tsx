@@ -30,7 +30,7 @@ export const Overview: Story = {
         <Desc>
           AccountMenu 是固定的帳號入口組合：24px Avatar button 作 Trigger，
           DropdownMenu Content 先顯示 identity Label，再放個人資料、設定與獨立分區的登出動作。
-          元件只負責這個同構組合；放在 global header 或 mobile Sheet 由 AppShell placement SSOT 決定。
+          元件只負責這個同構組合；放在 global header 或 Menu 左側浮層的頂排，由 AppShell placement SSOT 決定。
         </Desc>
         <div className="mt-4 inline-flex items-center gap-4 rounded-md border border-dashed border-divider p-4">
           <AccountMenu

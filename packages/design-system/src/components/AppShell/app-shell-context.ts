@@ -67,6 +67,8 @@ export interface AppShellRegistry {
   railWidth: number
   /** 產品沒給 Menu 寬度設定時的 DS 預設(量 `--sidebar-width-min` / `--sidebar-width`;§1)。 */
   menuDefaultRange: PanelWidthRange
+  /** Menu 浮層的 portal 目的地(`<AppShell portalContainer>`;省略 = document.body)。 */
+  portalContainer?: HTMLElement | null
 }
 
 export const AppShellRegistryContext = React.createContext<AppShellRegistry | null>(null)

@@ -49,7 +49,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "4056237ef5882c62cd5e7e698054aa2cfb6cac1c846429cd553f2aef479c981e",
+        "sha256": "f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
@@ -526,6 +526,7 @@
       "scripts/test-setup-provider-cli-toolchain.mjs",
       "scripts/test-setup-workspace.mjs",
       "scripts/test-sidebar-menu-keyboard-invariant.mjs",
+      "scripts/test-sidebar-standalone-collapse-invariant.mjs",
       "scripts/test-status-color-invariant.mjs",
       "scripts/test-steps-connector-geometry-invariant.mjs",
       "scripts/test-steps-content-follows-current-invariant.mjs",

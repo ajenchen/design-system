@@ -494,6 +494,7 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useSidebarSurface,
 } from './components/Sidebar/index'
 export {
   Skeleton,

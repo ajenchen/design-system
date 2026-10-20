@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "9fc04797ee2430bf8da58a1a16e8a7b6801cb0f0440ddefd25e5473f0dc1b470",
+      "sha256": "23b0e3ca1993cb2f10f5d030f6de1063ed91ba5f3e98fa9208030cba809feb45",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null

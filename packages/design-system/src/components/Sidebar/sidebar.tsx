@@ -17,8 +17,6 @@ import { Separator } from "@/design-system/components/Separator/separator"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
   SheetTitle,
 } from "@/design-system/components/Sheet/sheet"
 import { Skeleton } from "@/design-system/components/Skeleton/skeleton"
@@ -155,6 +153,17 @@ function useSidebar() {
     throw new Error("useSidebar must be used within a SidebarProvider.")
   }
   return context
+}
+
+/**
+ * 呼叫它的這一份 Sidebar 內容畫在哪裡:`"overlay"` = Menu 浮層裡;`"flow"` = 版面上(展開或細列;單獨使用、`collapsible="none"`、
+ * 不在 Sidebar 裡時一律是這個)。Menu 浮層開著時 children 同時畫兩份(細列被浮層蓋住),**只該出現在浮層那一份**的東西
+ * —— `primary-header` 浮層頂排補回的品牌與帳號(`../AppShell/app-shell.spec.md` 兩條「浮層精修」)—— 用這支判斷,
+ * 不用 `useAppShell().display.menu`:後者是整個 Menu 的顯示方式,兩份同時讀到 `"overlay"`,被蓋住的細列也會長出標頭、圖示下跳一列
+ * (2026-10-15 r1b 複驗 F4;M37 以「Menu 是浮層」代替「我畫在浮層那一份」)。規則:`sidebar.spec.md`「同一份內容、畫兩份」。
+ */
+function useSidebarSurface(): "flow" | "overlay" {
+  return React.useContext(SidebarSurfaceContext)?.surface ?? "flow"
 }
 
 // ── Provider ───────────────────────────────────────────────────────────────
@@ -477,10 +486,14 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const expanded = inShell ? display === "side-by-side" : sidebar.open
     const flowState: "expanded" | "collapsed" = expanded ? "expanded" : "collapsed"
     const resizable = inShell && expanded && panel?.width !== undefined && !!panel.range
-    // 版面上那一份的寬:AppShell 給的 px(展開)/ 細列 token(收成細列)/ 0(offcanvas 收掉);單獨使用時走下方 class(token)
-    const flowWidth: React.CSSProperties["width"] = inShell
-      ? expanded ? panel?.width : collapsible === "icon" ? "var(--sidebar-width-icon)" : 0
-      : undefined
+    // 版面上那一份的寬 —— 唯一的判斷式,在 AppShell 裡與單獨使用同一條:展開 = AppShell 給的 px(單獨使用 `--sidebar-width`)/
+    // 收成細列 = `--sidebar-width-icon` / offcanvas 收掉 = 0。下方「寬 0 時不可操作」也從這個值導出,不另寫一份條件。
+    // 2026-10-14 起單獨使用曾改走 `group-data-[collapsible=…]:!w-…` class,但它寫在帶 `group` 的元素**自己**身上:
+    // `group-data-*` 編譯成後代選擇器(`:where(.group)[data-collapsible=…] *`),比不到 group 本身 → 收起後仍 240 寬
+    // (2026-10-15 r1b 複驗 F1;sidebar.spec.md「Collapsible」)。機械閘 `scripts/sidebar-standalone-collapse-invariant.mjs`。
+    const flowWidth: React.CSSProperties["width"] = expanded
+      ? (inShell ? panel?.width : "var(--sidebar-width)")
+      : collapsible === "icon" ? "var(--sidebar-width-icon)" : 0
     // 內層永遠是展開寬(收成細列時由外層 overflow-x 裁出左側 `--sidebar-width-icon`,圖示中心不跳)
     const innerWidth = inShell && expanded && panel?.width !== undefined ? `${panel.width}px` : "var(--sidebar-width)"
     const insetStyle: React.CSSProperties | undefined = !inShell && viewportInsetTop
@@ -491,7 +504,8 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     // 版面上那一份寬 0(offcanvas 收掉 —— 關閉、暫藏或浮層開著時被蓋住的那一份)→ 裡面的選單項看不到,不得留在 Tab 順序與無障礙樹裡
     // (WCAG 2.4.3 / 2.4.7;2026-10-14 審查抓到:沒細列時 Menu 暫藏,Tab 第 2、3 站落在寬 0 的 Dashboard / 帳號與設定)。
     // 細列(`icon`)收起時仍看得到圖示,照常可操作;寬度過渡中就先 inert(收起是使用者 / 版面已經決定的事)。
-    const flowHidden = collapsible === "offcanvas" && !expanded
+    // 判準 = 上方 flowWidth 本身是 0(M37:不拿「應該已經 0 寬」的另一份條件代替「這一份的寬」)。
+    const flowHidden = flowWidth === 0
 
     return (
       <>
@@ -500,13 +514,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           // 2026-10-14 起在正常排版裡(不再 `position: fixed` + 佔位 div):殼要能水平捲(「版面規則」§8),fixed 的東西不會跟著捲(D:30 清單 #69)。
           className={cn(
             "group peer relative shrink-0 text-foreground",
-            // 單獨使用:寬度走 token(展開 `--sidebar-width`、細列 `--sidebar-width-icon`、offcanvas 0);在 AppShell 裡由 style 給
-            !inShell && [
-              "w-[var(--sidebar-width)]",
-              "group-data-[collapsible=offcanvas]:!w-0",
-              "group-data-[collapsible=icon]:!w-[var(--sidebar-width-icon)]",
-            ],
-            // 展開 ↔ 收合的寬度過渡;拖拉中關掉(畫面要跟得上指標)
+            // 展開 ↔ 收合的寬度過渡;拖拉中關掉(畫面要跟得上指標)。寬度一律由 style 給(上方 flowWidth)
             panel?.resizing ? "transition-none" : "transition-[width] duration-200 ease-linear motion-reduce:duration-0"
           )}
           style={flowWidth !== undefined ? { width: flowWidth } : undefined}
@@ -567,6 +575,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             menuId={menuId}
             onDismiss={registry.dismissMenuOverlay}
             openerRef={internals?.overlayOpenerRef}
+            portalContainer={registry.portalContainer}
           >
             {children}
           </SidebarOverlay>
@@ -589,6 +598,7 @@ function SidebarOverlay({
   menuId,
   onDismiss,
   openerRef,
+  portalContainer,
   children,
 }: {
   open: boolean
@@ -597,6 +607,8 @@ function SidebarOverlay({
   menuId: string | undefined
   onDismiss: () => void
   openerRef: React.MutableRefObject<HTMLElement | null> | undefined
+  /** `<AppShell portalContainer>`(AppShell 不撐滿視窗時,浮層與遮罩以那個容器為準;省略 = document.body) */
+  portalContainer: HTMLElement | null | undefined
   children: React.ReactNode
 }) {
   // 收起動畫期間寬度還要在(此刻的 panel.width 已是 undefined)
@@ -610,6 +622,7 @@ function SidebarOverlay({
         data-sidebar="sidebar"
         data-app-shell-panel="menu"
         data-menu-overlay=""
+        portalContainer={portalContainer}
         // 關閉後焦點還給開啟浮層的元素(SidebarTrigger 不是 Radix SheetTrigger → Radix 沒有東西可還);
         // 還法全 DS 一支(lib/overlay-focus-return.ts:沒有觸發點 + modal,指標關閉不畫鍵盤框、焦點已被接走不搶)
         onCloseAutoFocus={(event) => {
@@ -617,17 +630,22 @@ function SidebarOverlay({
           if (openerRef) openerRef.current = null
           returnFocusToOpener(event, opener, { noTrigger: true, modal: true })
         }}
+        // 只有標題沒有描述(見下方 SheetTitle):照 Radix 的寫法明示 aria-describedby={undefined}
+        aria-describedby={undefined}
         // overflow-visible:右緣把手 7px 命中區有 3px 在浮層外側,不得被裁(resize-handle.spec.md「命中區」);內容的裁切交給內層
         // border-r-0:分隔線由把手的 1px line 擁有(並排同款)
+        // 底色不覆寫:沿用 Sheet 的遮蓋型浮層底色 `bg-surface-raised`(sheet.tsx sheetVariants)。2026-10-14 前寫 `bg-surface` 蓋掉它 ——
+        // `--surface` 是非遮蓋型容器色(semantic.css),深色模式半透明,浮層底下的頁首與表格整片透出(2026-10-15 r1b 複驗 F2;AI agent 浮層同一條,agent-panel.tsx)。
         // @focus-suppress E — E 浮層程式落點;承擔者:Sheet 殼,開啟時沒有 body 標記 → 程式聚焦落在殼上(sheet.tsx handleSheetOpenAutoFocus);殼本身不可操作,選單項各自畫框(FileViewer 殼前例)
-        className="max-w-none overflow-visible border-r-0 bg-surface p-0 text-foreground outline-none [&>button]:hidden"
+        className="max-w-none overflow-visible border-r-0 p-0 text-foreground outline-none [&>button]:hidden"
         style={width !== undefined ? { width } : undefined}
         side={side}
       >
-        <SheetHeader className="sr-only">
-          <SheetTitle>Sidebar</SheetTitle>
-          <SheetDescription>Displays the sidebar as an overlay.</SheetDescription>
-        </SheetHeader>
+        {/* 無障礙名稱只給讀屏器(Radix 要求 Sheet 有 Title;沒有描述 → SheetContent 傳 aria-describedby={undefined},同 agent-panel 展示的任務對話框)。
+            不包 SheetHeader:它內建「關閉」×,包在 sr-only 裡只是被裁小、仍在 Tab 順序 —— 2026-10-14 前浮層第一個 Tab 停在看不見的「關閉」、
+            還在 Dashboard 上浮出「關閉」提示(2026-10-15 r1b 複驗 N2;WCAG 2.4.3 / 2.4.7)。收回用 Esc、點浮層外或 ⌘B(app-shell.spec.md「版面規則」§9)。
+            名稱用中文「選單」(同一元件的把手「調整選單寬度」;N4,AGENTS.md「命名與語言一致性」)。 */}
+        <SheetTitle className="sr-only">選單</SheetTitle>{/* i18n-allow: DS 預設文案 */}
         <div className="flex h-full w-full flex-col overflow-hidden">
           <SidebarSurfaceContext.Provider value={{ state: "expanded", surface: "overlay" }}>
             {children}
@@ -1632,14 +1650,18 @@ const SidebarMenuButton = React.forwardRef<
       (() => {
         const tooltipProps =
           typeof tooltip === "string" ? { children: tooltip } : tooltip
+        // 只有版面上的細列出提示(收起來只剩圖示);展開的 Menu 與 Menu 浮層裡都看得到字,不出。
+        // 「不出」= 不讓它開(`open={false}`),不是開了再藏:2026-10-14 前寫 TooltipContent `hidden`,Radix 照樣進 open 狀態 →
+        // 登記 DismissableLayer(Menu 浮層裡第一下 Esc 被它吃掉、要按兩下才收回)+ aria-describedby 指向跟標籤同字的提示(報讀念兩次)
+        // (2026-10-15 r1b 複驗 N3)。永遠包著 Tooltip、只切 `open`:元素樹不換,收合 / 展開時列鈕不重掛、焦點不掉 ——
+        // 全 DS 同一條寫法(`../../patterns/element-anatomy/truncated-text.spec.md`「永遠 wrap Tooltip、`open={… ? undefined : false}`」)。
+        const railTooltip = surface.surface === "flow" && surface.state === "collapsed"
         return (
-          <Tooltip>
+          <Tooltip open={railTooltip ? undefined : false}>
             <TooltipTrigger asChild>{button}</TooltipTrigger>
             <TooltipContent
               side="right"
               align="center"
-              // 只有版面上的細列出提示(收起來只剩圖示);展開的 Menu 與 Menu 浮層裡都看得到字,不出
-              hidden={!(surface.surface === "flow" && surface.state === "collapsed")}
               {...tooltipProps}
             />
           </Tooltip>
@@ -1812,4 +1834,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useSidebarSurface,
 }

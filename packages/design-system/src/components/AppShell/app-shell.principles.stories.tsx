@@ -30,7 +30,7 @@ export const UsageGuidance: Story = {
           </li>
           <li>
             • 需要右側詳情面板(議題詳情 / inspector / 成員資料)跟 main 並存——如 Linear 點選議題後右側展開詳情。開合行為見{' '}
-            <LinkTo kind="Design System/Components/AppShell/設計規格" name="狀態行為"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 狀態行為(右側面板開合)</span></LinkTo>
+            <LinkTo kind="Design System/Components/AppShell/設計規格" name="狀態行為"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 狀態行為(四區版面)</span></LinkTo>
           </li>
         </ul>
       </TutorialSection>
@@ -55,9 +55,9 @@ export const UsageGuidance: Story = {
 
       <TutorialSection title="vs Sidebar 規則">
         <p className="text-body">
-          AppShell 只負責整體組合、版面模式、以及右側面板的響應式開合。Sidebar 的外觀、行為、行動裝置上的
-          抽屜形式都由 Sidebar 元件自己定義,<strong>AppShell 不會去改 Sidebar 的樣式</strong>。
-          多個 sidebar 的情境要等 Sidebar 元件本身支援後才提供。
+          AppShell 決定版面:Menu(側欄)此刻是並排、暫藏(只剩細列)還是左側浮層,以及 Menu、Right panel(詳情面板)、AI agent 各區的寬度
+          (用各區最小寬現算,沒有固定斷點)。Sidebar 決定 Menu 的長相 —— 外觀、選單項、細列與浮層裡的樣子都由 Sidebar 元件自己定義,
+          <strong>AppShell 不會去改 Sidebar 的樣式</strong>。多個 sidebar 的情境要等 Sidebar 元件本身支援後才提供。
         </p>
       </TutorialSection>
 
@@ -65,9 +65,13 @@ export const UsageGuidance: Story = {
         {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
         <ul className="text-body space-y-1">
           <li>❌ 禁:`&lt;AppShell&gt;` 內塞另一個 `&lt;AppShell&gt;`(整頁框架只能有一個)</li>
-          <li>❌ 禁:`sidebar` 傳裸 `&lt;div&gt;` → 必傳 `&lt;Sidebar&gt;`,才能維持一致的展開／收合、行動裝置抽屜、鍵盤操作與視覺;傳其他容器雖然型別過得了,卻會失去這些導覽行為</li>
+          <li>❌ 禁:`sidebar` 傳裸 `&lt;div&gt;` → 必傳 `&lt;Sidebar&gt;`,才能維持一致的展開／收合、放不下時的左側浮層、鍵盤操作與視覺;傳其他容器雖然型別過得了,卻會失去這些導覽行為</li>
           <li>❌ 禁:`header` 傳裸 `&lt;header&gt;` → 應傳 `&lt;ChromeHeader&gt;`(或沿用同一套標準標頭結構自訂),才能得到一致的標頭高度、內距與對齊</li>
           <li>❌ 禁:硬性撐開 Main 區域的內距 → Main 本身不加留白,由內容自己決定(自帶邊框的卡片、資料表各自帶內距)</li>
+          <li>❌ 禁:AppShell 的 Menu 用 `collapsible=&quot;none&quot;` → AppShell 的面板都要能開關;不收合的側欄只用在 AppShell 以外</li>
+          <li>✅ 應:各區最小寬照版面規則的消費者指引設定 —— Main 最小寬 + 細列寬 + 每一種詳情內容的最小寬,不超過產品要支援的最窄桌機版面寬,水平捲軸就幾乎不會出現</li>
+          <li>❌ 禁:詳情面板(`AppShellAside`)的標題列加第二行或動作鈕 → 標題列只放單行標題與關閉鈕,說明文字放在面板內容裡</li>
+          <li>✅ 必:版面模式(`layout`)在產品啟動時就固定,使用中不切換 —— 切換等於產品角色改變,應重新載入整個 app</li>
           <li>✅ 必:Main 內容的間距沿用既有版面間距原則——頁面標頭、卡片、資料表、純列表各按對應規則處理</li>
         </ul>
       </TutorialSection>
@@ -76,7 +80,7 @@ export const UsageGuidance: Story = {
 }
 
 // 佈局模式選型 deep-dive — 內容錨定 app-shell.spec.md 的「Layout mode 兩 mode 差異」+「WorkspaceBrand 放置 SSOT」
-// +「帳號入口(Account entry)放置 SSOT」段(均含 Responsive 精修子句;用段名錨定不寫死行號避免 drift)。
+// +「帳號入口(Account entry)放置 SSOT」段(均含「浮層精修」子句 —— 2026-10-14 前叫 Responsive 精修;用段名錨定不寫死行號避免 drift)。
 // category-templates.md component-specific `{Topic}Rule` idiom
 export const LayoutModeRule: Story = {
   name: '佈局模式怎麼選',

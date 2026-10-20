@@ -6,18 +6,33 @@
  *         user 2026-10-14 規格裡的數字例子(1100 要求 Right 關 AI agent、縮到 1100 變浮層不關、1600 上限 240/330/430 全拉滿 Main 600、
  *         2200 → 240/500/700 Main 760、320 浮層 272、600 → 430 → 600、卡住時拖 / 只點一下)在真頁面上逐一成立;另守 AI agent 浮層的遮罩、
  *         另一側 ≥ 48、水平捲動時浮層釘在看得到的範圍、浮層時宿主不可操作、把手外側命中、Esc 依形態、焦點後備與層級 40 < 45 < 50。
+ *         另守 S14–S28 的保留斷言(逐條見下方「保留斷言」)。
+ *   紅: 任一步頁面與模型不符、任一個數字例子不成立、任一條保留斷言不成立 → exit 1。`--selftest` 兩種對照組:
+ *       (a) 用同一批量到的頁面快照,改用 9 個改壞的模型(Right 放不下改浮層、固定 960 門檻、上限不均分、浮層不留 48、細列不先扣、拿掉連帶關閉、
+ *           只點一下也寫紀錄、關閉的 Menu 照字面暫藏、捲動時 Main 不守最小寬)重算期望 —— 每一個都必須至少一格不符;
+ *       (b) 對頁面注入 21 種破壞(逐條見下方「頁面破壞」)—— 每一種都必須讓指定的斷言紅。
+ *       story 開不起來 = 儀器失效,點名 story、exit 1(不當通過)。
+ *   綠: 頁面每一步都等於模型、數字例子與保留斷言全部成立時綠;期望值由模型對同一串動作算出,寬度比到 0.75px(瀏覽器以小數 px 排版)。
+ *
+ * 保留斷言(@gate-contract「保證」的細目):
  *         2026-10-14 審查補(S14–S22):拖過 / 只按過 Menu 浮層的把手之後點浮層外照樣收回暫藏;用滑鼠點進 AI agent 浮層再按 Esc、
  *         載入就是浮層時直接按 Esc,焦點都回入口鈕;沒細列的 Menu 寬 0 時裡面沒有可聚焦的東西;AI agent 變浮層那一刻已開著的 Menu 浮層 /
  *         確認框照樣可點、焦點留在裡面;殼水平捲時按「顯示詳情」打開的 Right 整個在看得到的範圍裡;浮層裡展開的 Menu 群組回到並排仍展開;
  *         AI agent 裡的連結導向 Main 時,浮層收起、焦點回 Main,並排不動(四區版面 story)。
- *   紅: 任一步頁面與模型不符、任一個數字例子不成立、任一條保留斷言不成立 → exit 1。`--selftest` 兩種對照組:
- *       (a) 用同一批量到的頁面快照,改用 9 個改壞的模型(Right 放不下改浮層、固定 960 門檻、上限不均分、浮層不留 48、細列不先扣、拿掉連帶關閉、
- *           只點一下也寫紀錄、關閉的 Menu 照字面暫藏、捲動時 Main 不守最小寬)重算期望 —— 每一個都必須至少一格不符;
- *       (b) 對頁面注入破壞(CSS:浮層貼左、藏遮罩、面板根節點 overflow:hidden、捲動容器不准捲、版面上那份 Menu 的群組內容藏起來;
+ *         2026-10-15 r1b 複驗補(S23–S25):Menu 浮層深色模式底色不透明(= `--surface-raised`,F2);浮層裡第一個 Tab 停點看得到(不是 sr-only 裡的
+ *         「關閉」,N2);焦點在浮層選單項上按一下 Esc 就收回、展開的選單項沒有 aria-describedby / 不開提示(N3);primary-header 叫出 Menu 浮層時
+ *         被蓋住的細列不長出標頭、圖示不跳、品牌只在浮層那一份(F4);三顆拖寬把手名稱分得出來、各自以 aria-controls 指向自己那一區(F9)。
+ *         2026-10-20 r1b 複核補(S26–S28 + 既有格加斷言):AI agent 浮層開著時,模擬瀏覽器的工具列(不是宿主)不在 inert 裡、網址列聚焦得到也點得到(D3);
+ *         兩則「放不下時」示範的殼 = 模擬瀏覽器畫布、浮層與遮罩都在畫布裡(F10);從 AI agent 導到 Insights 時右側詳情一起收起(S21 / S22,F11);
+ *         Menu 浮層的無障礙名稱 = 「選單」、不掛描述(S23,N4)。
+ *
+ * 頁面破壞(@gate-contract「紅」(b) 的細目):
+ *       (CSS:浮層貼左、藏遮罩、面板根節點 overflow:hidden、捲動容器不准捲、版面上那份 Menu 的群組內容藏起來;
  *           腳本:Menu 浮層把手擋下 pointerdown、入口鈕一拿到焦點就丟掉、拿掉寬 0 Menu 的 inert、浮層時把上面那層設 inert、
- *           殼一捲就捲回 0、AI agent 裡的連結點了沒反應)—— 每一個都必須讓指定的斷言紅。
- *       story 開不起來 = 儀器失效,點名 story、exit 1(不當通過)。
- *   綠: 頁面每一步都等於模型、數字例子與保留斷言全部成立時綠;期望值由模型對同一串動作算出,寬度比到 0.75px(瀏覽器以小數 px 排版)。
+ *           殼一捲就捲回 0、AI agent 裡的連結點了沒反應;2026-10-15 補:Menu 浮層底色改回 `--surface`、浮層頂端塞一顆 sr-only「關閉」、
+ *           選單項聚焦時吞掉第一下 Esc 並掛 describedby、浮層開著時細列那份長出 48px 標頭、把手拿掉 aria-controls 並改回同名;
+ *           2026-10-20 補:AI agent 浮層把模擬瀏覽器工具列也設 inert、畫布拿掉 transform(浮層改以視窗定位、蓋出畫布)、殼縮成畫布的 70%、
+ *           導到 Insights 後又把詳情打開、Menu 浮層名稱改回「Sidebar」並掛描述)—— 每一個都必須讓指定的斷言紅(檔尾 DOM_SABOTAGE)。
  *
  * 為什麼要有這支(取代 2026-10-14 前的 scripts/agent-panel-breakpoint.mjs):舊閘驗「容器 ≥ 960 才並排」「上限 = 容器 × 3/8」「浮層左留 48、不畫把手」,
  * 那套規則被 user 2026-10-14 規格整套取代(app-shell.spec.md「版面規則」;D:30 清單 #38 / #43 / #104)。純函式判定表
@@ -57,6 +72,8 @@ requireFreshStorybookBuild(S, [
   'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
   'packages/design-system/src/patterns/resize-handle/resize-handle.tsx',
   'packages/design-system/src/hooks/use-input-modality.ts',
+  'packages/design-system/src/components/Sheet/sheet.tsx',
+  'packages/design-system/src/components/Tooltip/tooltip.tsx',
 ])
 
 const STORY = 'design-system-components-appshell-設計規格--state-behavior'
@@ -160,6 +177,26 @@ const SCENARIOS = [
   { id: 'S22', title: 'D:23 並排時不收(審查缺陷 7):四區版面 2200(AI agent 並排)→ 點「Insights」→ Main 換到 Insights、AI agent 維持開著',
     story: 'design-system-components-appshell-展示--four-regions', expectAgentAfterLink: true,
     steps: [{ W: 2200 }, { agentLink: true, retained: 'navigated' }] },
+  // ── 2026-10-15 r1b 複驗補(對照組見檔尾 DOM_SABOTAGE 最後五種)──
+  { id: 'S23', title: 'F2 / N2 / N3:1300 按開關出 Menu 浮層 → Tab 進選單(第一站看得到、深色底不透明、沒開提示)→ 一下 Esc 收回暫藏 → 2200 並排,聚焦選單項不掛 describedby',
+    cfg: A, rail: true, open: { menu: false, right: true, agent: true },
+    steps: [{ W: 1300 }, { trigger: true }, { tabInto: true, retained: 'menuOverlay' }, { key: 'Escape' }, { W: 2200 }, { focusMenu: true, retained: 'menuSideBySide' }] },
+  { id: 'S24', title: 'F4:主標頭佈局 1000(Menu 暫藏只剩細列)→ 按 globalHeader 的開關叫出 Menu 浮層 → 細列不長出標頭、第一項不跳;品牌與帳號只在浮層那一份',
+    story: 'design-system-components-appshell-展示--primary-header',
+    steps: [{ W: 1000, retained: 'rail' }, { trigger: true, retained: 'rail' }] },
+  { id: 'S25', title: 'F9:2200 三個都開 → Menu / Right / AI agent 三顆拖寬把手名稱分得出來、各自 aria-controls 指向自己那一區',
+    cfg: A, rail: true, open: { menu: true, right: true, agent: true },
+    steps: [{ W: 2200, retained: 'handles' }] },
+  // ── 2026-10-20 r1b 複核補(對照組見檔尾 DOM_SABOTAGE 最後一種)──
+  { id: 'S26', title: 'D3:「任務助理放不下時」(畫布 1100,載入就是 AI agent 浮層)→ 模擬瀏覽器工具列不是宿主:不在 inert 裡、網址列聚焦得到、點得到',
+    story: 'design-system-components-appshell-展示--agent-overlay',
+    steps: [{ W: 1440, retained: 'toolbar' }] },
+  { id: 'S27', title: 'F10:「任務助理放不下時」→ 殼 = 模擬瀏覽器畫布(story-rules「整頁情境」),AI agent 浮層與遮罩都在畫布裡',
+    story: 'design-system-components-appshell-展示--agent-overlay',
+    steps: [{ W: 1440, retained: 'frame' }] },
+  { id: 'S28', title: 'F10:「Menu 放不下時」(畫布 1000,play 按開關)→ 殼 = 模擬瀏覽器畫布,Menu 浮層與它的遮罩都在畫布裡(Sheet portalContainer)',
+    story: 'design-system-components-appshell-展示--menu-overlay',
+    steps: [{ W: 1440, retained: 'frame' }] },
 ]
 
 // ── 模型這一側:同一串動作 → 期望 ──
@@ -425,7 +462,129 @@ function retainedNavigated() {
   const agentVisible = !!agent && getComputedStyle(agent).display !== 'none' && agent.getBoundingClientRect().width > 0
   const title = document.querySelector('[data-app-shell-main-column] header h1')?.textContent?.trim() ?? null
   const active = document.activeElement
-  return { agentVisible, title, focus: !active || active === document.body ? 'body' : active.id === 'app-shell-main' ? 'main' : agent?.contains(active) ? 'agent' : active.tagName.toLowerCase() }
+  // F11(示範產品的導航邏輯):Insights 是自己的一頁,右側的議題詳情跟它無關 → 換過去時一起收起
+  const aside = document.querySelector('aside[data-app-shell-panel="right"]')
+  const asideVisible = !!aside && aside.getBoundingClientRect().width > 0
+  return { agentVisible, asideVisible, title, focus: !active || active === document.body ? 'body' : active.id === 'app-shell-main' ? 'main' : agent?.contains(active) ? 'agent' : active.tagName.toLowerCase() }
+}
+
+/** 一個焦點停點的樣子(Tab 走查用):看得到 = 盒子至少 1×1 且不在 .sr-only 裡 */
+function describeFocus() {
+  const a = document.activeElement
+  if (!a || a === document.body) return { tag: 'body' }
+  const r = a.getBoundingClientRect()
+  return {
+    tag: a.tagName.toLowerCase(),
+    label: (a.getAttribute('aria-label') || a.textContent || '').trim().slice(0, 20),
+    inOverlay: !!a.closest('[data-menu-overlay]'),
+    menuButton: a.matches('[data-sidebar="menu-button"]'),
+    visible: r.width >= 1 && r.height >= 1 && !a.closest('.sr-only'),
+  }
+}
+
+/** 2026-10-15(F2 / N3):Menu 浮層開著、焦點在浮層的選單項上 —— 深色模式底色、提示、describedby */
+function retainedMenuOverlay() {
+  const overlay = document.querySelector('[data-menu-overlay][data-state="open"]')
+  if (!overlay) return { err: '找不到開著的 Menu 浮層' }
+  const html = document.documentElement
+  const prev = html.getAttribute('data-theme')
+  // 換主題會觸發底色的 CSS 過渡(Sheet 帶 `transition`):不等過渡就量 = 量到過渡起點(AGENTS.md 失敗記憶索引「量 focus 顏色不等 transition」)→ 先讓過渡跑完再量
+  const finishTransitions = () => { getComputedStyle(overlay).backgroundColor; for (const an of overlay.getAnimations()) an.finish() }
+  html.setAttribute('data-theme', 'dark')
+  finishTransitions()
+  const probe = document.createElement('div'); probe.className = 'bg-surface-raised'; document.body.appendChild(probe)
+  const bg = getComputedStyle(overlay).backgroundColor
+  const raised = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  if (prev === null) html.removeAttribute('data-theme'); else html.setAttribute('data-theme', prev)
+  finishTransitions()
+  const alpha = (c) => { const m = c.match(/\/\s*([\d.]+%?)\s*\)$/) || c.match(/^rgba\([^)]*,\s*([\d.]+)\s*\)$/); if (!m) return 1; return m[1].endsWith('%') ? parseFloat(m[1]) / 100 : parseFloat(m[1]) }
+  const a = document.activeElement
+  const describedby = a?.getAttribute('aria-describedby') ?? null
+  // N4:浮層 dialog 的無障礙名稱(aria-labelledby 指向的文字;沒有就看 aria-label)與描述
+  const labelledby = overlay.getAttribute('aria-labelledby')
+  const dialogName = (labelledby ? labelledby.split(/\s+/).map((id) => document.getElementById(id)?.textContent ?? '').join(' ') : overlay.getAttribute('aria-label') ?? '').trim()
+  return {
+    dialogName, dialogDescribedby: overlay.getAttribute('aria-describedby'),
+    darkBg: bg, darkRaised: raised, darkAlpha: alpha(bg),
+    focusOnOverlayItem: !!a?.closest('[data-menu-overlay]') && a.matches('[data-sidebar="menu-button"]'),
+    describedby,
+    tooltips: document.querySelectorAll('[role="tooltip"]').length,
+  }
+}
+
+/** 2026-10-15(N3):並排展開的 Menu,焦點在選單項上 —— 不開提示、不掛 describedby(展開看得到字) */
+function retainedMenuSideBySide() {
+  const a = document.activeElement
+  const flow = document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
+  return {
+    flowState: flow?.getAttribute('data-state') ?? null,
+    focusOnFlowItem: !!a && !!flow?.contains(a) && a.matches('[data-sidebar="menu-button"]'),
+    describedby: a?.getAttribute('aria-describedby') ?? null,
+    tooltips: document.querySelectorAll('[role="tooltip"]').length,
+  }
+}
+
+/** 2026-10-15(F4):細列(版面上那一份)第一項的位置、細列有沒有標頭 / 品牌;浮層那一份有沒有品牌與帳號入口 */
+function retainedRail() {
+  const flow = document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
+  const overlay = document.querySelector('[data-menu-overlay][data-state="open"]')
+  const first = flow?.querySelector('[data-sidebar="menu-button"]')
+  const brandIn = (root) => root ? [...root.querySelectorAll('span')].filter((el) => el.textContent.trim() === 'Acme Inc').length : 0
+  return {
+    flowState: flow?.getAttribute('data-state') ?? null,
+    firstY: first ? Math.round(first.getBoundingClientRect().top * 100) / 100 : null,
+    flowHeader: !!flow?.querySelector('[data-sidebar="header"]'),
+    flowBrand: brandIn(flow),
+    overlayOpen: !!overlay,
+    overlayBrand: brandIn(overlay),
+    overlayAccount: !!overlay?.querySelector('[data-sidebar="header"] button[aria-haspopup="menu"]'),
+  }
+}
+
+/** 2026-10-15(F9):三顆拖寬把手 —— 名稱、aria-controls 指向的元素存在且就是那一區 */
+function retainedHandles() {
+  const handles = [...document.querySelectorAll('[data-app-shell] [role="separator"]')]
+  return handles.map((h) => {
+    const id = h.getAttribute('aria-controls')
+    const target = id ? document.getElementById(id) : null
+    const panel = h.closest('[data-app-shell-panel]')
+    const region = panel?.getAttribute('data-app-shell-panel') ?? null
+    // 指向的就是那一區:Menu 的把手指向 Menu(版面上那一份,id 在外框);Right / AI agent 的把手指向它所在的面板根節點
+    const targetsOwnRegion = !!target && (target === panel || target.contains(h) || target.getAttribute('data-app-shell-panel') === region)
+    return { region, name: h.getAttribute('aria-label'), controls: id, targetsOwnRegion }
+  })
+}
+
+/** S27 / S28(F10):殼撐滿模擬瀏覽器畫布(畫布 = 這個示範的「視窗」),浮層與遮罩都畫在畫布範圍裡 */
+function retainedFrame() {
+  const canvas = document.querySelector('[data-simulated-canvas]')
+  const shell = document.querySelector('[data-app-shell]')
+  if (!canvas || !shell) return { err: !canvas ? '沒有模擬瀏覽器畫布([data-simulated-canvas])' : '找不到 AppShell' }
+  const c = canvas.getBoundingClientRect()
+  const inner = { left: c.left + canvas.clientLeft, top: c.top + canvas.clientTop, right: c.left + canvas.clientLeft + canvas.clientWidth, bottom: c.top + canvas.clientTop + canvas.clientHeight }
+  const r = (b) => ({ left: Math.round(b.left), top: Math.round(b.top), right: Math.round(b.right), bottom: Math.round(b.bottom) })
+  const s = shell.getBoundingClientRect()
+  const menuOverlay = document.querySelector('[data-menu-overlay][data-state="open"]')
+  const sheetScrim = menuOverlay?.previousElementSibling?.getAttribute('data-state') === 'open' ? menuOverlay.previousElementSibling : null
+  const layers = [
+    ['Menu 浮層', menuOverlay], ['Menu 浮層的遮罩', sheetScrim],
+    ['AI agent 浮層', document.querySelector('[data-app-shell-panel="agent"][data-agent-panel-mode="overlay"]')], ['AI agent 遮罩', document.querySelector('[data-agent-panel-scrim]')],
+  ].filter(([, el]) => !!el).map(([name, el]) => { const b = el.getBoundingClientRect(); return { name, ...r(b), inside: b.left >= inner.left - 1 && b.top >= inner.top - 1 && b.right <= inner.right + 1 && b.bottom <= inner.bottom + 1 } })
+  const fills = Math.abs(s.left - inner.left) <= 1 && Math.abs(s.top - inner.top) <= 1 && Math.abs(s.right - inner.right) <= 1 && Math.abs(s.bottom - inner.bottom) <= 1
+  return { canvas: r(inner), shell: r(s), fills, layers }
+}
+
+/** S26:模擬瀏覽器工具列(`stories-helpers/scene/simulated-browser.tsx`)不是宿主 —— AI agent 浮層開著時仍可操作(檔頭契約:story 把 toolbarRef 傳進 persistentElements) */
+function retainedToolbar() {
+  const bar = document.querySelector('[role="group"][aria-label^="模擬瀏覽器工具列"]')
+  const url = bar?.querySelector('input')
+  const agentMode = document.querySelector('[data-app-shell-panel="agent"][role="complementary"]')?.getAttribute('data-agent-panel-mode') ?? null
+  if (!bar || !url) return { err: '找不到模擬瀏覽器工具列 / 網址列', agentMode }
+  const r = url.getBoundingClientRect()
+  const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+  url.focus()
+  return { agentMode, inert: !!bar.closest('[inert]'), focused: document.activeElement === url, hit: !!at && (at === url || url.contains(at)) }
 }
 
 // ── 跑真頁面 ──
@@ -506,6 +665,18 @@ async function perform(step, label) {
     await page.click('[data-menu-overlay] [data-sidebar="group-label"] button', { timeout: ACTION_TIMEOUT })
   } else if (step.agentLink) {
     await page.click('[data-app-shell-panel="agent"] [data-agent-link="insights"]', { timeout: ACTION_TIMEOUT })
+  } else if (step.tabInto) {
+    // 浮層剛開:從浮層殼一路按 Tab,記下每一站,直到停在浮層的選單項(最多 6 下)
+    lastTabStops = []
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press('Tab')
+      await waitForFocusStable(page, { frames: SETTLE_FRAMES })
+      const d = await page.evaluate(describeFocus)
+      lastTabStops.push(d)
+      if (d.menuButton && d.inOverlay) break
+    }
+  } else if (step.focusMenu) {
+    await page.focus('[data-app-shell-panel="menu"]:not([data-menu-overlay]) [data-sidebar="menu-button"]', { timeout: ACTION_TIMEOUT })
   } else if (step.scrim) {
     const strip = await page.evaluate(() => {
       const R = document.querySelector('[data-app-shell]').getBoundingClientRect()
@@ -517,6 +688,9 @@ async function perform(step, label) {
   await settle(label)
   if (step.expectFocus) await waitForFocusStable(page, { frames: SETTLE_FRAMES })
 }
+
+/** S23 Tab 走查記下的停點(perform 寫、capture 讀) */
+let lastTabStops = []
 
 /** 跑完情境(預設全部;頁面破壞只跑會碰到那條斷言的情境),回每一步量到的頁面快照(之後用真模型與改壞的模型分別算期望) */
 async function capture(sabotage = null, only = null) {
@@ -546,6 +720,12 @@ async function capture(sabotage = null, only = null) {
       if (step.retained === 'rightVisible') extra.rightVisible = await page.evaluate(retainedRightVisible)
       if (step.retained === 'groupShared') extra.groupShared = await page.evaluate(retainedGroupShared)
       if (step.retained === 'navigated') extra.navigated = await page.evaluate(retainedNavigated)
+      if (step.retained === 'menuOverlay') extra.menuOverlay = { ...(await page.evaluate(retainedMenuOverlay)), tabStops: lastTabStops }
+      if (step.retained === 'menuSideBySide') extra.menuSideBySide = await page.evaluate(retainedMenuSideBySide)
+      if (step.retained === 'rail') extra.rail = await page.evaluate(retainedRail)
+      if (step.retained === 'handles') extra.handles = await page.evaluate(retainedHandles)
+      if (step.retained === 'toolbar') extra.toolbar = await page.evaluate(retainedToolbar)
+      if (step.retained === 'frame') extra.frame = await page.evaluate(retainedFrame)
       snaps.push({ sc, i, step, m, extra })
       prevFocus = step.focus ?? m.focus
     }
@@ -576,8 +756,49 @@ function evaluate(snaps, model) {
 
 function retainedResults(snaps) {
   const out = []
+  const railBefore = new Map()
   for (const { sc, i, extra } of snaps) {
     const code = `${sc.id}.${i + 1}`
+    if (extra.menuOverlay) {
+      const x = extra.menuOverlay
+      const first = x.tabStops?.[0]
+      out.push({ code, key: 'overlayBg', name: 'Menu 浮層深色模式底色不透明、= --surface-raised(遮蓋型浮層;F2)', ok: !x.err && x.darkAlpha === 1 && x.darkBg === x.darkRaised, detail: JSON.stringify({ err: x.err, bg: x.darkBg, raised: x.darkRaised, alpha: x.darkAlpha }) })
+      out.push({ code, key: 'overlayFirstTab', name: 'Menu 浮層裡第一個 Tab 停點看得到(不是 sr-only 裡的「關閉」;N2)', ok: !x.err && !!first && first.visible === true && first.inOverlay === true, detail: JSON.stringify(x.tabStops) })
+      out.push({ code, key: 'overlayName', name: 'Menu 浮層的無障礙名稱 = 「選單」、不掛描述(N4)', ok: !x.err && x.dialogName === '選單' && !x.dialogDescribedby, detail: JSON.stringify({ name: x.dialogName, describedby: x.dialogDescribedby }) })
+      out.push({ code, key: 'overlayNoTooltip', name: '浮層選單項聚焦時不開提示、不掛 aria-describedby(展開看得到字;N3)', ok: !x.err && x.focusOnOverlayItem && x.describedby === null && x.tooltips === 0, detail: JSON.stringify({ focus: x.focusOnOverlayItem, describedby: x.describedby, tooltips: x.tooltips }) })
+    }
+    if (extra.menuSideBySide) {
+      const x = extra.menuSideBySide
+      out.push({ code, key: 'sideBySideNoTooltip', name: '並排展開的 Menu 聚焦選單項:不開提示、不掛 aria-describedby(N3)', ok: x.flowState === 'expanded' && x.focusOnFlowItem && x.describedby === null && x.tooltips === 0, detail: JSON.stringify(x) })
+    }
+    if (extra.rail) {
+      const x = extra.rail
+      if (!x.overlayOpen) railBefore.set(sc.id, x)
+      else {
+        const before = railBefore.get(sc.id)
+        out.push({ code, key: 'railStable', name: 'primary-header 叫出 Menu 浮層:細列第一項不跳、細列不長出標頭 / 品牌;品牌與帳號只在浮層那一份(F4)',
+          ok: !!before && before.firstY !== null && Math.abs(x.firstY - before.firstY) <= 0.5 && !x.flowHeader && x.flowBrand === 0 && x.overlayBrand === 1 && x.overlayAccount,
+          detail: JSON.stringify({ before, after: x }) })
+      }
+    }
+    if (extra.handles) {
+      const hs = extra.handles
+      const names = hs.map((h) => h.name)
+      const regions = hs.map((h) => h.region).sort().join(',')
+      out.push({ code, key: 'handles', name: '三顆拖寬把手名稱分得出來、各自 aria-controls 指向自己那一區(F9)',
+        ok: regions === 'agent,menu,right' && new Set(names).size === names.length && hs.every((h) => h.controls && h.targetsOwnRegion),
+        detail: JSON.stringify(hs) })
+    }
+    if (extra.frame) {
+      const x = extra.frame
+      out.push({ code, key: 'frame', name: '「放不下時」示範:殼 = 模擬瀏覽器畫布,浮層與遮罩都在畫布裡(F10;story-rules「整頁情境」)',
+        ok: !x.err && x.fills && x.layers.length >= 2 && x.layers.every((l) => l.inside), detail: JSON.stringify(x) })
+    }
+    if (extra.toolbar) {
+      const x = extra.toolbar
+      out.push({ code, key: 'toolbar', name: 'AI agent 浮層開著時,模擬瀏覽器工具列(不是宿主)不在 inert 裡、網址列聚焦得到、點得到(D3)',
+        ok: !x.err && x.agentMode === 'overlay' && !x.inert && x.focused && x.hit, detail: JSON.stringify(x) })
+    }
     if (extra.overlay) {
       const o = extra.overlay
       out.push({ code, key: 'scrim', name: '浮層底下有遮罩:蓋住整個殼、底色 = --overlay、z-30、留白處命中的是遮罩本身', ok: o.scrim && o.covers && o.bg === o.overlayBg && o.z === '30' && o.stripHitsScrim, detail: JSON.stringify(o) })
@@ -607,6 +828,7 @@ function retainedResults(snaps) {
       const x = extra.navigated
       const wantAgent = sc.expectAgentAfterLink
       out.push({ code, key: 'navigated', name: wantAgent ? '並排時從 AI agent 導向 Main:Main 換到 Insights、AI agent 維持開著' : '浮層時從 AI agent 導向 Main:AI agent 收起、Main 換到 Insights、焦點回 Main', ok: x.title === 'Insights' && x.agentVisible === wantAgent && (wantAgent || x.focus === 'main'), detail: JSON.stringify(x) })
+      out.push({ code, key: 'insightsAside', name: '換到 Insights 時右側議題詳情一起收起(示範產品的導航;F11)', ok: x.title === 'Insights' && x.asideVisible === false, detail: JSON.stringify(x) })
     }
     if (extra.scrolled) {
       const s = extra.scrolled
@@ -674,6 +896,47 @@ const DOM_SABOTAGE = [
   ['AI agent 裡的連結點了沒反應(審查缺陷 7 的症狀)', { script: `document.addEventListener('click', (e) => {
       if (e.target instanceof Element && e.target.closest('[data-agent-link]')) { e.preventDefault(); e.stopImmediatePropagation() }
     }, true)` }, ['S21', 'S22'], (res, ret) => ret.filter((r) => r.key === 'navigated' && !r.ok).length === 2],
+  // ── 2026-10-15 r1b 複驗補:每一種都把當天的缺陷造回來 ──
+  // F2 的原因:浮層底色寫回 --surface(深色半透明)
+  ['Menu 浮層底色改回 --surface(F2 的原因)', { css: '[data-menu-overlay]{background-color:var(--surface)!important}' }, ['S23'], (res, ret) => ret.some((r) => r.key === 'overlayBg' && !r.ok)],
+  // N2 的原因:浮層頂端有一顆包在 sr-only 裡的「關閉」(SheetHeader 內建的 ×)
+  ['浮層頂端塞一顆 sr-only「關閉」(N2 的原因)', { script: `new MutationObserver(() => {
+      const o = document.querySelector('[data-menu-overlay][data-state="open"]')
+      if (o && !o.querySelector('[data-sabotage-close]')) { const w = document.createElement('div'); w.className = 'sr-only'; w.innerHTML = '<button type="button" data-sabotage-close aria-label="關閉">×</button>'; o.prepend(w) }
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] })` }, ['S23'], (res, ret) => ret.some((r) => r.key === 'overlayFirstTab' && !r.ok)],
+  // N3 的症狀:選單項聚焦就掛 describedby(隱藏提示)、而且第一下 Esc 被吃掉
+  ['選單項聚焦時掛 describedby 並吞掉第一下 Esc(N3 的症狀)', { script: `let eaten = false
+    document.addEventListener('focusin', (e) => { if (e.target instanceof Element && e.target.matches('[data-sidebar="menu-button"]')) { e.target.setAttribute('aria-describedby', 'sabotage-tip'); eaten = false } }, true)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !eaten && document.activeElement?.matches?.('[data-menu-overlay] [data-sidebar="menu-button"]')) { eaten = true; e.stopImmediatePropagation(); e.preventDefault() }
+    }, true)` }, ['S23'], (res, ret) => ret.some((r) => r.key === 'overlayNoTooltip' && !r.ok) && ret.some((r) => r.key === 'sideBySideNoTooltip' && !r.ok) && res.some((r) => !r.ok && /menu 顯示方式/.test(r.detail))],
+  // F4 的症狀:浮層開著時,細列那一份也長出一列標頭(48px)
+  ['浮層開著時細列那份長出 48px 標頭(F4 的症狀)', { script: `new MutationObserver(() => {
+      const open = document.querySelector('[data-menu-overlay][data-state="open"]')
+      const rail = document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay]) [data-sidebar="sidebar"]')
+      if (open && rail && !rail.querySelector('[data-sabotage-header]')) { const h = document.createElement('div'); h.setAttribute('data-sabotage-header', ''); h.setAttribute('data-sidebar', 'header'); h.style.height = '48px'; h.style.flexShrink = '0'; rail.prepend(h) }
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] })` }, ['S24'], (res, ret) => ret.some((r) => r.key === 'railStable' && !r.ok)],
+  // F9 的原因:Right 與 AI agent 的把手同名、沒有 aria-controls
+  ['把手拿掉 aria-controls、Right / AI agent 改回同名(F9 的原因)', { script: `const strip = () => document.querySelectorAll('[data-app-shell-panel="right"] [role="separator"], [data-app-shell-panel="agent"] [role="separator"]').forEach((h) => { if (h.hasAttribute('aria-controls')) h.removeAttribute('aria-controls'); if (h.getAttribute('aria-label') !== '調整面板寬度') h.setAttribute('aria-label', '調整面板寬度') })
+    strip(); new MutationObserver(strip).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-controls', 'aria-label'] })` }, ['S25'], (res, ret) => ret.some((r) => r.key === 'handles' && !r.ok)],
+  // ── 2026-10-20 r1b 複核補 ──
+  // D3 的症狀:AI agent 浮層把模擬瀏覽器工具列也一起設 inert(story 沒把 toolbarRef 傳進 persistentElements 時就是這樣)
+  ['AI agent 浮層把模擬瀏覽器工具列也設 inert(D3 的症狀)', { script: `const lock = () => { if (!document.querySelector('[data-agent-panel-mode="overlay"]')) return
+      const t = document.querySelector('[role="group"][aria-label^="模擬瀏覽器工具列"]'); if (t && !t.hasAttribute('inert')) t.setAttribute('inert', '') }
+    lock(); new MutationObserver(lock).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-agent-panel-mode', 'inert'] })` }, ['S26'], (res, ret) => ret.some((r) => r.key === 'toolbar' && !r.ok)],
+  // F10 的原因:Menu 浮層沒有傳送進畫布(畫布拿掉 transform 時 fixed 的 Sheet 與遮罩改以整個視窗定位 = 2026-10-14 傳送到 body 的樣子)
+  ['畫布拿掉 transform:Menu 浮層與遮罩改以視窗定位(F10 的原因)', { css: '[data-simulated-canvas]{transform:none!important}' }, ['S28'], (res, ret) => ret.some((r) => r.key === 'frame' && !r.ok)],
+  // F10 的症狀:殼沒有撐滿畫布(2026-10-14 裸 div 釘寬時右側一大片空白)
+  ['殼縮成畫布的 70%(F10 的症狀)', { css: '[data-simulated-canvas] [data-app-shell]{width:70%!important;flex:none!important}' }, ['S27'], (res, ret) => ret.some((r) => r.key === 'frame' && !r.ok)],
+  // F11 的症狀:導到 Insights 之後右側詳情還開著(連結點下去後再按一次 ⌘. 把詳情打開)
+  ['導到 Insights 後詳情又打開(F11 的症狀)', { script: `document.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('[data-agent-link="insights"]')) setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '.', ctrlKey: true, bubbles: true })), 50)
+    }, true)` }, ['S21', 'S22'], (res, ret) => ret.filter((r) => r.key === 'insightsAside' && !r.ok).length === 2],
+  // N4 的原因:浮層名稱「Sidebar」、掛英文描述(照抄舊窄版 Sheet)
+  ['Menu 浮層名稱改回「Sidebar」並掛描述(N4 的原因)', { script: `new MutationObserver(() => {
+      const o = document.querySelector('[data-menu-overlay][data-state="open"]'); if (!o || o.hasAttribute('data-sabotage-name')) return
+      o.setAttribute('data-sabotage-name', ''); o.removeAttribute('aria-labelledby'); o.setAttribute('aria-label', 'Sidebar'); o.setAttribute('aria-describedby', 'sabotage-desc')
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] })` }, ['S23'], (res, ret) => ret.some((r) => r.key === 'overlayName' && !r.ok)],
 ]
 
 const snaps = await capture()
