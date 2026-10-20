@@ -1,6 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { X } from 'lucide-react'
 import { FileUpload } from './file-upload'
@@ -9,7 +8,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/FileUpload/設計原則',
@@ -18,17 +18,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p
-    className={`text-footnote leading-normal ${
-      warn ? 'text-error font-medium' : 'text-fg-muted'
-    }`}
-  >
-    {children}
-  </p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-lg' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-lg' })
 
 const noop = () => {}
 
@@ -43,34 +34,95 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 FileUpload 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="單檔上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">履歷 / 大頭貼等單檔上傳</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="批次上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">相簿照片 / 多檔附件批次上傳</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="內建 files 屬性"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">上傳後直接顯示進度清單(內建 files 屬性)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="自訂內容"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">品牌化上傳區 — 自訂 dropzone 內容</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁 <code>UsageGuidance</code>「vs 近親」段)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>上傳檔案的入口:單檔(頭像、PDF 履歷)、批次(相簿、多個附件、批次匯入);圖片與檔案這類「拖進來」有價值的情境,滑鼠與觸控都能用。上傳後以 FileItem 清單列出。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/FileUpload/展示" name="單檔上傳">履歷 / 大頭貼等單檔上傳</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileUpload/展示" name="批次上傳">相簿照片 / 多檔附件批次上傳</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileUpload/展示" name="內建 files 屬性">上傳後直接顯示進度清單(內建 files 屬性)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileUpload/展示" name="自訂內容">品牌化上傳區 — 自訂 dropzone 內容</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 不用 FileUpload 做非檔案觸發"
+          note="「點擊開啟浮層」是 Popover / Dialog 的職責,不是 FileUpload。FileUpload = 檔案專用,避免 semantic 錯位。"
+        >
+          <ExampleCaption warn>❌ 需要點擊開浮層 → 改用 Popover / Dialog,不要把 FileUpload 客製成選單</ExampleCaption>
+        </TutorialRule>
+
+        <TutorialRule
+          title="❌ form 裡塞大 dropzone"
+          note="上下欄位高度落差太大,使用者視覺節奏被打斷——這是 form field 不該出現的體積。"
+        >
+          <ExampleCaption warn>❌ form 內 inline 上傳欄位,不要用大 dropzone(改 variant="button")</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li>純文字輸入(沒有檔案)→ Input / Textarea</li>
+          <li>只需要點擊選檔、拖放沒有加分 → <code>variant="button"</code>:大拖放區只在「拖進來有價值」時才划算</li>
+          <li>大量並列的上傳欄位(例如 10 個頭像)→ FileItem 搭配行內上傳按鈕:拖放區太大,不適合密集並列</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialRule
+          title="✅ 獨立上傳頁 / 主要動作 — 用 FileUpload dropzone"
+          note="拖放有價值(圖片、批次檔案、主要互動)且有足夠空間時才划算。對照:Figma 首頁 Import、Dropbox 上傳頁、Gmail compose 的附件區。"
+        >
+          <FileUpload
+            multiple
+            accept="image/*"
+            title="匯入設計檔案"
+            description="拖曳或點擊選取"
+            onUpload={noop}
+          />
+        </TutorialRule>
+
+        <TutorialRule
+          title='✅ 表單內 inline field — 用 FileUpload variant="button"'
+          note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
+        >
+          <FieldGroup className="w-full">
+            <Field>
+              <FieldLabel>申請人姓名</FieldLabel>
+              <Input placeholder="王小明" />
+            </Field>
+            <Field>
+              <FieldLabel>申請人身分證</FieldLabel>
+              <div className="flex items-center gap-[var(--layout-space-tight)]">
+                <Input className="flex-1" placeholder="A123456789" />
+                <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
+              </div>
+            </Field>
+          </FieldGroup>
+          <ExampleCaption>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li><strong>FileItem</strong> —— 清單裡的一個檔案(狀態、進度、操作);FileUpload 是上傳入口,裡面的清單由 FileItem 組成</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
+  ),
+}
+
+export const DropzoneVisualRule: Story = {
+  name: '拖放區外觀',
+  render: () => (
+    <TutorialPage>
       <TutorialRule
         title="❌ 不移除 dashed border(改成 solid)"
         note="dashed 是世界級 dropzone 共識(Ant / Polaris / GitHub / Figma 皆然),視覺語意是「暫時、可放下」。solid border 暗示「永久邊界」,使用者會猶豫是否能拖入。"
       >
-        <Label warn>⚠️ dashed border 是 affordance,不是裝飾——不可換成 solid</Label>
+        <ExampleCaption warn>❌ dashed border 是 affordance,不是裝飾——不可換成 solid</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -79,65 +131,14 @@ export const UsageGuidance: Story = {
       >
         <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted">
-            ✓ 僅改邊框顏色(dashed primary-hover,底維持 surface)
+            ✅ 僅改邊框顏色(dashed primary-hover,底維持 surface)
           </div>
           <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted scale-105 shadow-[var(--elevation-200)]">
-            ✗ scale + shadow — 視覺噪音,與 elevation 系統衝突
+            ❌ scale + shadow — 視覺噪音,與 elevation 系統衝突
           </div>
         </div>
-        <Label warn>⚠️ state 信號只走 color,不走 motion / elevation</Label>
+        <ExampleCaption warn>❌ state 信號只走 color,不走 motion / elevation</ExampleCaption>
       </TutorialRule>
-
-      <TutorialRule
-        title="❌ 不用 FileUpload 做非檔案觸發"
-        note="「點擊開啟浮層」是 Popover / Dialog 的職責,不是 FileUpload。FileUpload = 檔案專用,避免 semantic 錯位。"
-      >
-        <Label warn>⚠️ 需要點擊開浮層 → 改用 Popover / Dialog,不要把 FileUpload 客製成選單</Label>
-      </TutorialRule>
-    </>
-
-      {/* vs 近親 — DropzoneVsButtonRule — 原 DropzoneVsButtonRule */}
-      <>
-      <TutorialRule
-        title="✅ 獨立上傳頁 / 主要動作 — 用 FileUpload dropzone"
-        note="拖放有價值(圖片、批次檔案、主要互動)且有足夠空間時才划算。對照:Figma 首頁 Import、Dropbox 上傳頁、Gmail compose 的附件區。"
-      >
-        <FileUpload
-          multiple
-          accept="image/*"
-          title="匯入設計檔案"
-          description="拖曳或點擊選取"
-          onUpload={noop}
-        />
-      </TutorialRule>
-
-      <TutorialRule
-        title='✅ 表單內 inline field — 用 FileUpload variant="button"'
-        note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
-      >
-        <FieldGroup className="w-full">
-          <Field>
-            <FieldLabel>申請人姓名</FieldLabel>
-            <Input placeholder="王小明" />
-          </Field>
-          <Field>
-            <FieldLabel>申請人身分證</FieldLabel>
-            <div className="flex items-center gap-[var(--layout-space-tight)]">
-              <Input className="flex-1" placeholder="A123456789" />
-              <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
-            </div>
-          </Field>
-        </FieldGroup>
-        <Label>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</Label>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ form 裡塞大 dropzone"
-        note="上下欄位高度落差太大,使用者視覺節奏被打斷——這是 form field 不該出現的體積。"
-      >
-        <Label warn>⚠️ form 內 inline 上傳欄位,不要用大 dropzone(改 variant="button")</Label>
-      </TutorialRule>
-    </>
     </TutorialPage>
   ),
 }
@@ -157,7 +158,7 @@ export const MultipleRule: Story = {
           description="PNG / JPG,最大 2 MB"
           onUpload={noop}
         />
-        <Label>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</Label>
+        <ExampleCaption>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -178,9 +179,9 @@ export const MultipleRule: Story = {
         title="❌ 不把 multiple 當 default"
         note="單檔場景(履歷 / 大頭貼 / 封面圖)才是 80% 的使用情境。預設多檔會讓 consumer 忘記限制、後端收到多份後再截斷,UX 破裂。"
       >
-        <Label warn>
-          ⚠️ 以為「multiple 比較彈性」就預設開,實際反而讓單檔情境出 bug。明確 opt-in 才正確
-        </Label>
+        <ExampleCaption warn>
+          ❌ 以為「multiple 比較彈性」就預設開,實際反而讓單檔情境出 bug。明確 opt-in 才正確
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -244,7 +245,7 @@ export const DivisionOfLaborRule: Story = {
           title="❌ 不在 FileUpload 裡自己重刻 FileItem primitives"
           note="DS 提供兩條清單管理路徑:一是把清單交給 FileUpload 的 files prop,由它內部組合 FileItem 渲染;二是 consumer 自己用 files.map 逐項渲染 FileItem。兩條路都合法,真正禁止的是「自己重畫 FileItem 的內部視覺規格」——狀態圖示、縮圖比例、進度條、列排版都屬 FileItem 的 SSOT。世界級(Material / Ant / Carbon)也都是自己擁有清單、組合自家的 FileItem primitive,不另刻一套。"
         >
-          <Label warn>⚠️ 要顯示清單 → 傳 `files` prop(內建)或自組 FileItem map;但不要自己重畫 FileItem 內部結構</Label>
+          <ExampleCaption warn>❌ 要顯示清單 → 傳 <code>files</code> prop(內建)或自組 FileItem map;但不要自己重畫 FileItem 內部結構</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -293,9 +294,9 @@ export const ErrorFeedbackRule: Story = {
           title="❌ 設了 accept / maxSize 卻不接 onReject"
           note="使用者拖入不合格檔案後畫面毫無反應,會反覆嘗試最後放棄——這是沉默失敗,比明白拒絕還傷 UX。"
         >
-          <Label warn>
-            ⚠️ 檔案限制必定配錯誤提示。onReject → Toast / 欄位下的 error message
-          </Label>
+          <ExampleCaption warn>
+            ❌ 檔案限制必定配錯誤提示。onReject → Toast / 欄位下的 error message
+          </ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

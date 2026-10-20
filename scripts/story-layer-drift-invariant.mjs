@@ -2,7 +2,7 @@
 /**
  * @gate-contract
  *   保證: DS 的 story 三層(展示 / 設計規格 / 設計原則,不含 test-only 夾具)不會「新增」四種範例層漂移 ——
- *         (a) 新建表單停用主送出鈕、(b) 寫死間距、(c) 用 div / p 做標題、(d) DS 沒有的字級 class;
+ *         (a) 新建表單停用主送出鈕、(b) 寫死間距、(c) 用 div / p 做標題、(d) DS 沒有的字級 / 顏色 class(含任意字級 text-[Npx]);
  *         每檔每條規則的命中數(含兩種放行標記本身)不得高於 scripts/story-layer-drift-baseline.json(棘輪)。
  *   紅: 任一檔任一規則比基準多、新檔有命中、基準比 merge-base 實測寬或格式不合、CI 裡數字變少卻沒收緊基準 → 指名 file:line 並 exit 1;
  *       --selftest 以 82f24938 原版 Rating 與合成新檔證明四條規則各自在指定行紅(細則見下)。
@@ -28,7 +28,10 @@
  *             分隔線與 `@layout-space-magic-ok:` 照舊放行;
  *         (c) 用 <div> / <p> 做標題(標題字級 + 加粗字重、只有文字、沒被截斷,而且後面接著它要當標題的區塊;不論排成幾行),
  *             typography.spec.md:43「視覺標題 ≠ 語義標題(一律用 h1–h6)」;
- *         (d) DS 字級 token 裡沒有的 text-* 字級 class —— 允許集合從 typography.css 的 @utility 讀,Tailwind 預設字級從 tailwindcss/theme.css 讀。
+ *         (d) DS 字級 token 裡沒有的 text-* 字級 class —— 允許集合從 typography.css 的 @utility 讀,Tailwind 預設字級從 tailwindcss/theme.css 讀;
+ *             2026-10-20 起另收:設計原則層寫死的任意字級 text-[Npx|rem|em](typography.spec.md:13「font-size 由 text-{role} token 決定,
+ *             不可繞過」;展示層 / 設計規格層的量測藍圖與 Inspector 表格另屬他題,不收)與 DS 顏色家族裡不存在的顏色 class(例 text-fg-primary:字幹是 DS 顏色家族、全名卻不是
+ *             任何 @theme --color-*,不產生 CSS,畫面靜默落回繼承色)—— 顏色集合從 tokens 的 @theme 讀,不寫死清單。
  *   紅細則: 任一檔任一規則的命中數高於基準、或新檔有命中 → 印出新增命中的 file:line 並 exit 1;基準本身比 merge-base 寬
  *       (用同一支儀器量 base 那棵樹,任一檔任一規則基準記的數字高於 base 實測:數字一致的手改加額度、替新檔預留)→ exit 1;
  *       基準格式不合(count ≠ hits、指紋不是 12 碼十六進位、替不在範圍的檔記數字)→ exit 1;CI 找不到可比對的 base → 儀器失效;
@@ -121,6 +124,13 @@
 //   (d) class 字串裡的 text-<名> 若「長得像字級」卻不在 typography.css 的 @utility text-* 裡 → 命中。「長得像字級」= 名字以 DS 字級的
 //       字幹開頭(h<數字> / body / caption / footnote,從 @utility 名字推出來)或是 Tailwind 預設字級(tailwindcss/theme.css 的 --text-*)。
 //       顏色(text-fg-muted)、對齊(text-left)等不是字級,不會被誤判。
+//       2026-10-20 擴充(教學頁稽核 T8 / T14):(d) 另收兩種「不產生 DS 該有的 CSS」——
+//         · 任意字級 text-[13px] / text-[0.8rem](只收設計原則層 —— 教學頁的內文 / 說明 / 標籤;展示層與設計規格層裡的任意字級
+//           幾乎全是量測藍圖與 Inspector 表格的標註(item-anatomy 的區塊圖、各元件 Inspector),理由同 (b),另屬他題、不收);
+//           text-[var(--x)] 這類任意顏色不算(那是顏色,不是字級);
+//         · DS 顏色家族裡不存在的顏色:text- / bg- / border- / ring- / outline- / fill- / stroke- / divide- 後面的名字,字幹(第一段)
+//           是 DS @theme --color-* 的字幹(fg / primary / error / surface …,從 tokens 的 css 讀),全名(去掉 /透明度)卻不是任何
+//           --color-*。錨例:tabs.principles 的 text-fg-primary(4 處,be2f1324),border-border-muted(bulk-action-bar 兩處)。
 //   反例標記(設計原則層):四條規則的命中都先看「該行,或正上方只有註解的一行」有沒有 `@story-counter-example: 理由`
 //       (與 @layout-space-magic-ok 同一種位置語意;理由 ≥ 6 字)。原則層 + 合法 → 不算命中(統計列為「放行的反例」);
 //       不在原則層、或理由太短 → 照算命中,並在說明裡講為什麼標記不算數。
@@ -142,7 +152,7 @@
 import ts from 'typescript'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { existsSync, globSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, globSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -155,6 +165,10 @@ export const SCOPE_GLOB = 'packages/design-system/src/**/*.stories.tsx'
 export const RATING_STORY = 'packages/design-system/src/components/Rating/rating.stories.tsx'
 /** 82f24938 的原版 rating.stories.tsx(「送出評分流程」還在的那一版),逐位元組 = git blob 2ace2c8f。 */
 export const RATING_BEFORE_FIXTURE = 'scripts/test-fixtures/story-layer-drift/rating.stories.82f24938.tsx.txt'
+/** be2f1324 的 tabs.principles(2026-10-20 教學頁稽核 T14:text-fg-primary 四處,不是 DS 顏色、不產生 CSS) */
+export const TABS_STORY = 'packages/design-system/src/components/Tabs/tabs.principles.stories.tsx'
+export const TABS_BEFORE_FIXTURE = 'scripts/test-fixtures/story-layer-drift/tabs.principles.be2f1324.tsx.txt'
+export const TABS_BEFORE_BLOB = '559fbae8de8859a0ee79aa7ec4b8f9ebfe35c828'
 export const RATING_BEFORE_BLOB = '2ace2c8f1a8710c8d215f7602c7feb7a3ff518d7'
 /** 重建後 Rating 唯一剩下的 (b) 命中:與 CreateProjectForm 逐字相同的表單底列(待拍板,見待辦總帳)。 */
 export const CANONICAL_FORM_FOOTER = 'packages/design-system/src/components/Field/field.stories.tsx'
@@ -195,8 +209,8 @@ export const RULES = Object.freeze({
     fix: '改用 <h1>–<h6>,字級與字重 class 照舊(它若其實是列的名稱 / chrome 的文字,就用 span 或對應的 DS 元件,不是標題)',
   },
   'unknown-typography': {
-    label: '(d) DS 沒有的字級 class',
-    owner: 'packages/design-system/src/tokens/typography/typography.css(@utility text-*)',
+    label: '(d) DS 沒有的字級 / 顏色 class',
+    owner: 'packages/design-system/src/tokens/typography/typography.css(@utility text-*)+ typography.spec.md:13(不可繞過 text-{role})+ tokens 的 @theme --color-*',
     fix: null, // 由載入的字級集合動態產生(不手寫清單)
   },
 })
@@ -296,12 +310,33 @@ export function loadTypography(repo = REPO) {
   const tailwindScale = new Set([...readFileSync(themePath, 'utf8').matchAll(/--text-([a-z0-9]+):/g)].map((m) => `text-${m[1]}`))
   if (tailwindScale.size === 0) throw new InstrumentError('tailwindcss/theme.css 裡沒有任何 --text-* 字級')
   const shape = new RegExp(`^text-(?:${stems.join('|')})(?:-[a-z0-9]+)*$`)
+  // DS 顏色(2026-10-20):tokens 底下所有 css 的 @theme 區塊裡的 --color-*(Tailwind 由它產生 text- / bg- / border-… 顏色 class)
+  const colors = new Set()
+  const walkCss = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) walkCss(p)
+      else if (name.endsWith('.css')) for (const m of readFileSync(p, 'utf8').matchAll(/@theme(?:\s+inline)?\s*\{([\s\S]*?)\n\}/g)) for (const c of m[1].matchAll(/--color-([a-z0-9-]+)\s*:/g)) colors.add(c[1])
+    }
+  }
+  walkCss(join(repo, 'packages/design-system/src/tokens'))
+  if (colors.size < 20 || !colors.has('fg-muted') || !colors.has('border')) throw new InstrumentError(`tokens 的 @theme --color-* 解析失敗(${colors.size} 個)`)
+  const colorStems = new Set([...colors].map((c) => c.split('-')[0]))
   return {
     allowed,
     headingSizes,
     tailwindScale,
     stems,
+    colors,
     isTypographyShaped: (word) => shape.test(word) || tailwindScale.has(word),
+    /** 寫死的任意字級:text-[13px] / text-[0.8rem](text-[var(--x)] 是顏色,不算) */
+    isArbitraryFontSize: (word) => /^text-\[\d+(?:\.\d+)?(?:px|rem|em)\]$/.test(word),
+    /** DS 顏色家族的字幹、全名卻不是任何 --color-*(不產生 CSS) */
+    isUnknownColor: (word) => {
+      const m = word.match(/^(?:text|bg|border|ring|outline|fill|stroke|divide)-([a-z][a-z0-9-]*?)(?:\/\d+)?$/)
+      if (!m) return false
+      return colorStems.has(m[1].split('-')[0]) && !colors.has(m[1])
+    },
   }
 }
 
@@ -827,6 +862,9 @@ function collect(rel, text, instruments) {
       spacingByLine.get(w.line).push(w.base)
     }
     if (w.base.startsWith('text-') && typography.isTypographyShaped(w.base) && !typography.allowed.has(w.base)) hit('unknown-typography', w.line, w.base)
+    // 2026-10-20:任意字級(只收設計原則層)與不存在的 DS 顏色
+    else if (layer === 'principles' && typography.isArbitraryFontSize(w.base)) hit('unknown-typography', w.line, w.base)
+    else if (typography.isUnknownColor(w.base)) hit('unknown-typography', w.line, w.base)
   }
   if (spacingInScope) {
     for (const st of styleSpacing) {
@@ -1080,11 +1118,12 @@ export function gitBlobId(buffer) {
   return createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${buffer.length}\0`), buffer])).digest('hex')
 }
 
-function typographyFix(typography) {
+function typographyFix(typography, token = '') {
+  if (typography.isUnknownColor?.(token)) return `${token} 不是 DS 顏色(tokens 的 @theme 沒有 --color-${token.replace(/^[a-z]+-/, '').replace(/\/\d+$/, '')})—— 改用既有的顏色 token(color.spec.md「文字 / Icon 層級」等),或刪掉(繼承色)`
   return `改用 DS 字級:${[...typography.allowed].join(' / ')}(typography.css @utility)`
 }
 const describeHit = (h, typography) => {
-  const fix = RULES[h.rule].fix ?? typographyFix(typography)
+  const fix = RULES[h.rule].fix ?? typographyFix(typography, h.token)
   const layer = layerOf(h.file)
   const counter = LAYERS[layer].counterExample
     ? '\n      反例:這一行若正是本則要示範的 ❌ 寫法本身,在該行正上方寫 {/* @story-counter-example: 理由 */}(只在設計原則層有效)'
@@ -1261,6 +1300,30 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   // 3. 乾淨的合成檔 0 筆
   const clean = analyzeSource(SYNTHETIC_CLEAN, SYNTHETIC_CLEAN_SOURCE, instruments).hits
   expect(clean.length === 0, `乾淨合成檔應 0 筆,實得 ${keysOf(clean).join(' / ')}`)
+
+  // 3b. (d) 2026-10-20 擴充:不存在的 DS 顏色(T14 text-fg-primary、border-border-muted)與任意字級 text-[Npx](T8;設計規格層不收)
+  expect(typography.isUnknownColor('text-fg-primary') && typography.isUnknownColor('border-border-muted') && !typography.isUnknownColor('text-fg-muted') && !typography.isUnknownColor('bg-primary/10') && !typography.isUnknownColor('border-t') && !typography.isUnknownColor('text-left'), '顏色判斷應抓 text-fg-primary / border-border-muted、不抓 text-fg-muted / bg-primary/10 / border-t / text-left')
+  const dExtSource = [
+    'export const Demo = () => (<div>',
+    '  <p className="text-caption text-fg-primary">說明</p>',
+    '  <span className="text-[11px] font-mono text-fg-muted">移動紀錄</span>',
+    '  <div className="border border-dashed border-border-muted" />',
+    '  <span className="text-[var(--primary)] text-fg-muted bg-surface-raised border-divider">ok</span>',
+    '  <span className="hover:text-primary-hover text-error-text bg-primary/10 ring-ring">ok</span>',
+    '</div>)',
+    '',
+  ].join('\n')
+  const dKeys = (rel) => keysOf(analyzeSource(rel, dExtSource, instruments).hits.filter((h) => h.rule === 'unknown-typography')).join(' / ')
+  const principlesRel = 'packages/design-system/src/components/SelftestDrift/selftest-drift.principles.stories.tsx'
+  const wantPrinciples = 'unknown-typography@2:text-fg-primary / unknown-typography@3:text-[11px] / unknown-typography@4:border-border-muted'
+  expect(dKeys(principlesRel) === wantPrinciples, `(d) 擴充:設計原則層應恰好 ${wantPrinciples},實得 ${dKeys(principlesRel)}`)
+  const colorsOnly = 'unknown-typography@2:text-fg-primary / unknown-typography@4:border-border-muted'
+  const anatomyRel = 'packages/design-system/src/components/SelftestDrift/selftest-drift.anatomy.stories.tsx'
+  expect(dKeys(SYNTHETIC_DRIFT) === colorsOnly && dKeys(anatomyRel) === colorsOnly, `(d) 擴充:展示層 / 設計規格層只收不存在的顏色、不收任意字級,實得 ${dKeys(SYNTHETIC_DRIFT)} | ${dKeys(anatomyRel)}`)
+  const tabsBefore = readFileSync(join(repo, TABS_BEFORE_FIXTURE))
+  expect(gitBlobId(tabsBefore) === TABS_BEFORE_BLOB, `對照組 fixture 不是 be2f1324 的 tabs.principles(blob ${gitBlobId(tabsBefore)} ≠ ${TABS_BEFORE_BLOB})`)
+  const tabsHits = analyzeSource(TABS_STORY, tabsBefore.toString('utf8'), instruments).hits.filter((h) => h.token === 'text-fg-primary').map((h) => h.line).join(',')
+  expect(tabsHits === '62,91,92,93', `be2f1324 tabs.principles 的 text-fg-primary 應在 :62 / :91 / :92 / :93 紅,實得 ${tabsHits}`)
 
   // 4. 註記 / 出處不合法 → 仍紅
   const bad = analyzeSource(SYNTHETIC_DRIFT, SYNTHETIC_BAD_ANNOTATIONS_SOURCE, instruments).hits
@@ -1603,6 +1666,7 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   log(`  · 原版 Rating(blob ${RATING_BEFORE_BLOB.slice(0, 8)}):(a) :78 / (b) :28 :35 :43 :61 :66 :77 / (c) :62 全紅,對基準比三條都是新增`)
   log(`  · 合成新檔四條各一筆:${SYNTHETIC_DRIFT_EXPECTED.join(' / ')}`)
   log('  · 乾淨合成檔 0 筆(含 chrome brand span、名稱 + 說明、截斷列標籤、批次操作鈕);不合法註記 4 筆全紅(同行逃生口照 hook 語意放行);整檔註記:檔頭合法放行、不合法仍紅、檔尾不算')
+  log('  · (d) 2026-10-20 擴充兩面:text-fg-primary / border-border-muted 三層都紅、text-[11px] 只在設計原則層紅;text-[var(--x)]、text-fg-muted、bg-primary/10、border-t 0 筆;be2f1324 tabs.principles 的 text-fg-primary 在 :62 :91 :92 :93 紅')
   log('  · 兩面對照:(a) 批次操作鈕 0 筆 / 加 type=submit、包 <form>、讀控件 value 各 1 筆;(c) 名稱 + 說明、span、truncate 0 筆 / 後接元件、<section> 開頭各 1 筆;test-only 0 筆 / 拿掉標記、被給人看的 story 共用 各 4 筆')
   log('  · 棘輪:變少綠、手改基準拒收(含替設計規格層記 (b))、同檔多一筆只指出新的那行;空範圍 = 儀器失效;分層計數照檔名分')
   log('  · 分層兩面:同一段漂移在設計原則層四條紅、在設計規格層只紅 (a)(c)(d);對基準比各是 4 / 3 條新增')

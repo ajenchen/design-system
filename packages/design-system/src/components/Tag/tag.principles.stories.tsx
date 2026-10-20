@@ -1,13 +1,13 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Tag as TagIcon } from 'lucide-react'
 import { Tag } from './tag'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { Button } from '@/design-system/components/Button/button'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Tag/設計原則',
@@ -16,11 +16,10 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
+// 範例是一顆觸發按鈕 / 掛著標記的按鈕:範例維持自然寬度(naturalWidth),不逐顆寫 self-start(T15)
+const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -28,43 +27,40 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Tag 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Tag/展示" name="頭像"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">頭像</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Tag/展示" name="可移除"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">可移除</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Tag/展示" name="截斷 + Tooltip"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">截斷 + Tooltip</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/Tag/展示" name="頭像">頭像</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Tag/展示" name="可移除">可移除</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Tag/展示" name="截斷 + Tooltip">截斷 + Tooltip</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
-        <TutorialRule
+      <UsageSection kind="whenNot">
+        <TriggerRule
           title="❌ 用 Tag 做 overlay 通知圓點"
           note="Tag 太大,放在角落會蓋住主元件;且 Tag 承載語意內容,用來單純計數太重 — 改用 Badge"
         >
-          {/* self-start:Rule 的範例欄是直排 flex,不縮回按鈕寬的話外框會被拉滿,Tag 就掛不到按鈕角落 */}
-          <div className="relative inline-flex self-start">
+          <div className="relative inline-flex">
             <Button variant="tertiary">通知</Button>
             <Tag color="red" className="absolute -top-2 -right-2">3</Tag>
           </div>
-          <Label warn>↑ Tag 太大,疊在 button 角落違和 → 用 Badge</Label>
-        </TutorialRule>
+          <ExampleCaption warn>↑ Tag 太大,疊在 button 角落違和 → 用 Badge</ExampleCaption>
+        </TriggerRule>
 
-        <TutorialRule
+        <TriggerRule
           title="❌ 用 Badge 做分類標籤"
           note="Badge 不承載語意,單純數字/dot。「Electronics」這類分類必須用 Tag 才有 variant 色 + 可讀文字"
         >
           {/* @story-counter-example: ❌ 反例:強撐 Badge 放分類文字(!w-auto 與加寬內距正是本則要示範的誤用) */}
-          <Badge count={0} variant="high" className="!w-auto !px-2 self-start" />
-          <Label warn>↑ Badge 不設計來放文字 label 做分類 → 用 Tag</Label>
-        </TutorialRule>
-      </TutorialSection>
+          <Badge count={0} variant="high" className="!w-auto !px-2" />
+          <ExampleCaption warn>↑ Badge 不設計來放文字 label 做分類 → 用 Tag</ExampleCaption>
+        </TriggerRule>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Tag — 分類標籤、狀態標記、多選已選值"
           note="承載語意(類別 / 狀態),通常有 variant 色彩區分。較大、可含 icon / dismiss button、適合放語意內容"
@@ -76,7 +72,7 @@ export const UsageGuidance: Story = {
             <Tag color="yellow">待審核</Tag>
             <Tag color="red">已封鎖</Tag>
           </div>
-          <Label>↑ 訂單狀態 / 專案狀態 — variant 色彩加速掃視</Label>
+          <ExampleCaption>↑ 訂單狀態 / 專案狀態 — variant 色彩加速掃視</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -88,9 +84,9 @@ export const UsageGuidance: Story = {
             <Badge count={12} variant="high" />
             <Badge dot variant="critical" aria-label="有新訊息" />
           </div>
-          <Label>↑ 數字計數或純 dot,通常疊在 button / avatar 右上角</Label>
+          <ExampleCaption>↑ 數字計數或純 dot,通常疊在 button / avatar 右上角</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -113,7 +109,7 @@ export const VariantNotSemanticRule: Story = {
           <Tag color="magenta">洋紅</Tag>
           <Tag color="indigo">靛藍</Tag>
         </div>
-        <Label>↑ 13 種 color variant(neutral + 12 categorical 色相,此處節選),色彩意義由 consumer 上下文決定</Label>
+        <ExampleCaption>↑ 13 種 color variant(neutral + 12 categorical 色相,此處節選),色彩意義由 consumer 上下文決定</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -126,7 +122,7 @@ export const VariantNotSemanticRule: Story = {
           <Tag color="green" />
           <Tag color="yellow" />
         </div>
-        <Label warn>↑ 沒 label 的純色 Tag → color-blind 看不出差異。必須寫文字「已封鎖 / 已完成 / 待審核」</Label>
+        <ExampleCaption warn>↑ 沒 label 的純色 Tag → color-blind 看不出差異。必須寫文字「已封鎖 / 已完成 / 待審核」</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -147,7 +143,7 @@ export const SubtleVsSolidRule: Story = {
           <Tag color="yellow">Under Review</Tag>
           <Tag color="neutral">Archived</Tag>
         </div>
-        <Label>↑ 部落格文章狀態,subtle 不干擾文章清單主內容</Label>
+        <ExampleCaption>↑ 部落格文章狀態,subtle 不干擾文章清單主內容</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -160,7 +156,7 @@ export const SubtleVsSolidRule: Story = {
           <Tag color="blue" solid>VIP</Tag>
           <Tag color="yellow" solid>精選</Tag>
         </div>
-        <Label>↑ 需要在清單裡跳出的「緊急」/「VIP」標記</Label>
+        <ExampleCaption>↑ 需要在清單裡跳出的「緊急」/「VIP」標記</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -175,7 +171,7 @@ export const SubtleVsSolidRule: Story = {
           <Tag color="yellow" solid>書籍</Tag>
           <Tag color="purple" solid>家具</Tag>
         </div>
-        <Label warn>↑ 所有 Tag solid → 互相爭奪注意力 → 都不重要</Label>
+        <ExampleCaption warn>↑ 所有 Tag solid → 互相爭奪注意力 → 都不重要</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -199,7 +195,7 @@ export const DismissRule: Story = {
               </Tag>
             ))}
           </div>
-          <Label>↑ 點 X 移除該 tag,自動重渲染</Label>
+          <ExampleCaption>↑ 點 X 移除該 tag,自動重渲染</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -213,14 +209,14 @@ export const DismissRule: Story = {
             <Tag color="red" onRemove={() => {}}>Storybook</Tag>
             <Tag color="neutral" onRemove={() => {}}>Design System</Tag>
           </div>
-          <Label>↑ X icon 跟 Tag 文字同色,融入 Tag 視覺</Label>
+          <ExampleCaption>↑ X icon 跟 Tag 文字同色,融入 Tag 視覺</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 用 prefix / suffix / 自訂 button 放 dismiss"
           note="會失去 Tag 內建的尺寸 / hover / a11y 規則。統一走 onRemove callback pattern"
         >
-          <Label warn>(範例省略)consumer 自組 dismiss = 漂移風險</Label>
+          <ExampleCaption warn>(範例省略)consumer 自組 dismiss = 漂移風險</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -261,7 +257,7 @@ export const IconRule: Story = {
         title="❌ icon + avatar 同時用(互斥)"
         note="icon 和 avatar 都是 prefix slot,設計慣例上互斥(非型別強制;dev mode 同時傳會 console.warn 提醒 — 對齊 Button overlayBadge dev-warn 先例)。若同時傳,icon 與 avatar 仍會並列渲染,破壞 Tag 內部結構"
       >
-        <Label warn>(範例省略)設計慣例上互斥——同時傳會並列渲染,請只擇一</Label>
+        <ExampleCaption warn>(範例省略)設計慣例上互斥——同時傳會並列渲染,請只擇一</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

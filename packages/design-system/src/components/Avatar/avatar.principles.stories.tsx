@@ -1,14 +1,12 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Bell, Home } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
 import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
 import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Avatar/設計原則',
@@ -17,11 +15,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -29,20 +24,18 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>Avatar 代表「誰」——人、團隊、組織、專案的視覺身份。適合的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li>留言者、指派者、團隊成員列表的人員識別;workspace / 組織 / App 的身份標識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo></li>
-            <li>成員沒上傳照片、或頭像圖片載入失敗時,以名字首字 + 色彩維持可辨識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="備援顯示"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">備援顯示</span></LinkTo></li>
-            <li>通訊錄、成員選單、chat 列表等列表項目的主視覺 prefix —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="情境用例"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">情境用例</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li>留言者、指派者、團隊成員列表的人員識別;workspace / 組織 / App 的身份標識 —— 見 <StoryLink kind="Design System/Components/Avatar/展示" name="四模式">四模式</StoryLink></li>
+            <li>成員沒上傳照片、或頭像圖片載入失敗時,以名字首字 + 色彩維持可辨識 —— 見 <StoryLink kind="Design System/Components/Avatar/展示" name="備援顯示">備援顯示</StoryLink></li>
+            <li>通訊錄、成員選單、chat 列表等列表項目的主視覺 prefix —— 見 <StoryLink kind="Design System/Components/Avatar/展示" name="情境用例">情境用例</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
@@ -53,13 +46,13 @@ export const UsageGuidance: Story = {
               <MenuItem role="presentation" avatar={{ alt: '設定' }}>設定</MenuItem>
             </MenuGroup>
           </div>
-          <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</Label>
+          <ExampleCaption warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</ExampleCaption>
           <div className="border border-divider rounded-lg bg-surface">
             <MenuGroup aria-label="功能圖示正確用法">
               <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
             </MenuGroup>
           </div>
-          <Label>↑ ✓ 功能 / 動作 / 概念用 Lucide icon,語義清楚不會誤認身份</Label>
+          <ExampleCaption>↑ ✅ 功能 / 動作 / 概念用 Lucide icon,語義清楚不會誤認身份</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -67,11 +60,11 @@ export const UsageGuidance: Story = {
           note="Avatar 的核心是識別身份,沒 name 又沒 src 等於失去意義。必須至少有 name"
         >
           <Avatar alt="" size={40} src="https://invalid-url.example/fail.jpg" />
-          <Label warn>↑ 空 avatar → 使用者不知道是誰</Label>
+          <ExampleCaption warn>↑ 空 avatar → 使用者不知道是誰</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Avatar 代表身份,Icon 代表概念"
           note="判斷法:「這代表『誰』還是『做什麼』?」誰 / 什麼實體 → Avatar;做什麼 / 某個概念 → Icon"
@@ -110,7 +103,7 @@ export const UsageGuidance: Story = {
             </div>
           </div>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -121,7 +114,7 @@ export const FallbackRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="有 src → 顯示圖片;沒有 src / 圖片載入失敗 → 顯示 initials"
-        note="Fallback 用 `alt` 取首字母(一律取第一個字元並轉大寫,不分中英)。背景色由 `color` prop 決定"
+        note={<>Fallback 用 <code>alt</code> 取首字母(一律取第一個字元並轉大寫,不分中英)。背景色由 <code>color</code> prop 決定</>}
       >
         {/* 刻意示範 initials fallback:後三顆**必須**無 src(fallback 順序示範,
             2026-07-08 demo 人像真實化 sweep 豁免保留) */}
@@ -131,7 +124,7 @@ export const FallbackRule: Story = {
           <Avatar alt="Alice Wang" size={40} />
           <Avatar alt="ABC Corp" size={40} color="blue" />
         </div>
-        <Label>↑ 依序:有圖 / 無 src 取首字母 / 英文取首字母 / 組織首字 + 色彩</Label>
+        <ExampleCaption>↑ 依序:有圖 / 無 src 取首字母 / 英文取首字母 / 組織首字 + 色彩</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -143,7 +136,7 @@ export const WithBadgeOverlayRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="Avatar 右下角 status dot — presence(在線 / 忙碌 / 離開 / 離線)"
-        note="用 Avatar 的 `status` prop(不是手刻 `<Badge dot>`)—— 顏色走 presence semantic token(`--status-online` 等,獨立於 success / error / warning),位置固定 avatar 右下角,尺寸程式化 28%"
+        note={<>用 Avatar 的 <code>status</code> prop(不是手刻 <code>&lt;Badge dot&gt;</code>)—— 顏色走 presence semantic token(<code>--status-online</code> 等,獨立於 success / error / warning),位置固定 avatar 右下角,尺寸程式化 28%</>}
       >
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" />
@@ -151,31 +144,31 @@ export const WithBadgeOverlayRule: Story = {
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} status="away" />
           <Avatar src="https://i.pravatar.cc/80?u=bella-wu" alt="Bella" size={40} status="offline" />
         </div>
-        <Label>↑ online / busy / away / offline ── 狀態點本身不另發語音標籤,在線狀態整合進頭像的 alt 文字(例 alt="Ada(在線)"),避免一長串成員名單同時朗讀造成讀屏洪水</Label>
+        <ExampleCaption>↑ online / busy / away / offline ── 狀態點本身不另發語音標籤,在線狀態整合進頭像的 alt 文字(例 alt="Ada(在線)"),避免一長串成員名單同時朗讀造成讀屏洪水</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="Avatar 右上角 count badge — 未讀訊息(chat / messenger 場景)"
-        note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant,與頭像之間的縫從圓上挖出來(不畫外圈),max=99 自動處理 99+"
+        note={<>用 Avatar 的 <code>badgeCount</code> prop(不是手刻 <code>&lt;Badge count&gt;</code>)—— 內部消費 DS Badge critical variant,與頭像之間的縫從圓上挖出來(不畫外圈),max=99 自動處理 99+</>}
       >
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} badgeCount={3} />
           <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} badgeCount={12} />
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={128} />
         </div>
-        <Label>↑ count 3 / 12 / 128(超過 99 顯示 "99+")</Label>
+        <ExampleCaption>↑ count 3 / 12 / 128(超過 99 顯示 "99+")</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="✅ status(右下 presence)+ badgeCount(右上 count)可並存"
-        note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
+        note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),與 Badge 的「Avatar 可疊狀態點 + 計數」一致,也是 Slack / Teams / iMessage / LINE 標配。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" badgeCount={3} />
           <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} status="busy" />
           <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={12} />
         </div>
-        <Label>↑ Ada 同時 presence(右下)+ count(右上)並存;Alex 只 presence;Ben 只 count</Label>
+        <ExampleCaption>↑ Ada 同時 presence(右下)+ count(右上)並存;Alex 只 presence;Ben 只 count</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -197,7 +190,7 @@ export const HoverCardIntegrationRule: Story = {
             samplePersonCard({ name: 'Ada Chen', subtitle: 'Design Engineer · 台北', avatarSrc: 'https://i.pravatar.cc/80?u=ada-chen', id: 'ADACHEN', employeeNumber: '1048217' })
           }
         />
-        <Label>↑ hover avatar 彈出 ProfileCard(action 列:傳訊息 + 語音通話 設計準則)</Label>
+        <ExampleCaption>↑ hover avatar 彈出 ProfileCard(action 列:傳訊息 + 語音通話 設計準則)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -211,7 +204,7 @@ export const HoverCardIntegrationRule: Story = {
                 <ProfileCard name="Alex Wang" subtitle="Engineer · 已離職" onViewMore={() => {}} />
               }
             />
-            <Label warn>❌ 「已離職」只出現在 hover 內 — 觸控使用者看不到,可能誤發訊息給已離職成員</Label>
+            <ExampleCaption warn>❌ 「已離職」只出現在 hover 內 — 觸控使用者看不到,可能誤發訊息給已離職成員</ExampleCaption>
           </ExampleGroup>
           <ExampleGroup>
             {/* 主畫面呈現關鍵狀態:Family 2 row 結構(avatar + label + description)由 MenuItem
@@ -228,7 +221,7 @@ export const HoverCardIntegrationRule: Story = {
                 </MenuItem>
               </MenuGroup>
             </div>
-            <Label>✅ 關鍵狀態直接在主畫面呈現(Family 2 MenuItem 的 description slot 標示),hover 只補充細節</Label>
+            <ExampleCaption>✅ 關鍵狀態直接在主畫面呈現(Family 2 MenuItem 的 description slot 標示),hover 只補充細節</ExampleCaption>
           </ExampleGroup>
         </div>
       </TutorialRule>

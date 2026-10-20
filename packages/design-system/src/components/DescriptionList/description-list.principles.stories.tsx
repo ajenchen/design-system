@@ -1,6 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Input } from '@/design-system/components/Input/input'
@@ -10,7 +9,8 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/DescriptionList/設計原則',
@@ -19,11 +19,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
 
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={`border border-border rounded-lg p-[var(--layout-space-loose)] ${className ?? ''}`}>{children}</div>
@@ -53,75 +50,79 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 DescriptionList 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/DescriptionList/展示" name="使用者個資"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">使用者個資</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DescriptionList/展示" name="產品規格"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">產品規格</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DescriptionList/展示" name="訂單明細"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">訂單明細</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DescriptionList/展示" name="詳情面板"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">詳情面板</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DescriptionList/展示" name="水平佈局"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平佈局</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>唯讀的「屬性 — 值」展示:使用者資料、產品規格、訂單明細、詳情面板裡的屬性列表(語意是 dl / dt / dd,螢幕報讀能明確讀出屬性與值的關係)。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/DescriptionList/展示" name="使用者個資">使用者個資</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DescriptionList/展示" name="產品規格">產品規格</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DescriptionList/展示" name="訂單明細">訂單明細</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DescriptionList/展示" name="詳情面板">詳情面板</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DescriptionList/展示" name="水平佈局">水平佈局</StoryLink>
+          </li>
+        </TutorialList>
+        <TutorialRule
+          title="DescriptionList — 單一實體的屬性列表(key-value 配對)"
+          note="每一行是同一個對象(使用者 / 訂單 / 商品)的不同屬性(姓名 / email / 時區)。讀取模式,不支援排序、篩選、多選"
+        >
+          <Frame className="max-w-md">
+            <h4 className="text-h6 font-medium mb-[var(--layout-space-tight)]">使用者資料</h4>
+            <DescriptionList cols={1}>
+              <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
+              <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
+              <DescriptionItem label="職稱">Design Engineer</DescriptionItem>
+            </DescriptionList>
+          </Frame>
+          <ExampleCaption>↑ 「一個使用者」的多個屬性 → DescriptionList(語意:dl/dt/dd)</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
 
-      {/* vs 近親 — VsDataTableRule — 原 VsDataTableRule */}
-      <>
-      <TutorialRule
-        title="DescriptionList — 單一實體的屬性列表(key-value 配對)"
-        note="每一行是同一個對象(使用者 / 訂單 / 商品)的不同屬性(姓名 / email / 時區)。讀取模式,不支援排序、篩選、多選"
-      >
-        <Frame className="max-w-md">
-          <h4 className="text-h6 font-medium mb-[var(--layout-space-tight)]">使用者資料</h4>
-          <DescriptionList cols={1}>
-            <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
-            <DescriptionItem label="職稱">Design Engineer</DescriptionItem>
-          </DescriptionList>
-        </Frame>
-        <Label>↑ 「一個使用者」的多個屬性 → DescriptionList(語意:dl/dt/dd)</Label>
-      </TutorialRule>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 用 DescriptionList 展示多筆同結構資料"
+          note="DescriptionList 的 dt 重複 = 視覺噪音,且無法排序 / 篩選 / 分頁。使用者眼睛掃不到對齊點 → 難比較"
+        >
+          <Frame className="max-w-md">
+            <DescriptionList cols={1}>
+              <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
+              <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
+              <DescriptionItem label="姓名">王小明</DescriptionItem>
+              <DescriptionItem label="Email">ming@example.com</DescriptionItem>
+              <DescriptionItem label="姓名">林大華</DescriptionItem>
+              <DescriptionItem label="Email">dahua@example.com</DescriptionItem>
+            </DescriptionList>
+          </Frame>
+          <ExampleCaption warn>↑ 「姓名 / Email」重複三次 — table 式資料應改用 DataTable</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li>要編輯的「標籤 + 值」→ Field 系統(Input / Select / DatePicker):DescriptionList 只做唯讀展示</li>
+          <li>只有一組「標籤 + 值」→ 直接排版即可,不需要整個清單</li>
+        </TutorialList>
+      </UsageSection>
 
-      <TutorialRule
-        title="DataTable — 多個同結構實體的集合(多 row)"
-        note="每一 row 是不同實體、同樣欄位結構。需要排序、篩選、分頁 → DataTable,不是 DescriptionList"
-      >
-        {/* 範例消費它要讀者去用的那個元件(M23):最小的 DataTable —— 兩列、無虛擬捲動 / 拖曳 / 篩選 */}
-        <div className="w-full max-w-xl">
-          <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} height="auto" />
-        </div>
-        <Label>↑ 「多個使用者」的同結構屬性 → DataTable(需要排序 / 篩選)</Label>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 用 DescriptionList 展示多筆同結構資料"
-        note="DescriptionList 的 dt 重複 = 視覺噪音,且無法排序 / 篩選 / 分頁。使用者眼睛掃不到對齊點 → 難比較"
-      >
-        <Frame className="max-w-md">
-          <DescriptionList cols={1}>
-            <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
-            <DescriptionItem label="姓名">王小明</DescriptionItem>
-            <DescriptionItem label="Email">ming@example.com</DescriptionItem>
-            <DescriptionItem label="姓名">林大華</DescriptionItem>
-            <DescriptionItem label="Email">dahua@example.com</DescriptionItem>
-          </DescriptionList>
-        </Frame>
-        <Label warn>↑ 「姓名 / Email」重複三次 — table 式資料應改用 DataTable</Label>
-      </TutorialRule>
-    </>
+      <UsageSection kind="siblings">
+        <TutorialRule
+          title="DataTable — 多個同結構實體的集合(多 row)"
+          note="每一 row 是不同實體、同樣欄位結構。需要排序、篩選、分頁 → DataTable,不是 DescriptionList"
+        >
+          {/* 範例消費它要讀者去用的那個元件(M23):最小的 DataTable —— 兩列、無虛擬捲動 / 拖曳 / 篩選 */}
+          <div className="w-full max-w-xl">
+            <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} height="auto" />
+          </div>
+          <ExampleCaption>↑ 「多個使用者」的同結構屬性 → DataTable(需要排序 / 篩選)</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li><strong>Field</strong> —— 表單輸入(可輸入、驗證、送出);DescriptionList 只顯示,沒有互動</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -142,7 +143,7 @@ export const LayoutRule: Story = {
             <DescriptionItem label="時區">UTC+8(台北)</DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label>↑ 窄容器(320px)時垂直堆疊 — 不會因為兩欄而壓縮 value</Label>
+        <ExampleCaption>↑ 窄容器(320px)時垂直堆疊 — 不會因為兩欄而壓縮 value</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -159,7 +160,7 @@ export const LayoutRule: Story = {
             <DescriptionItem label="總金額">NT$ 10,080</DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label>↑ 寬容器(700px+)並排展示 — 使用者可快速對照多個屬性</Label>
+        <ExampleCaption>↑ 寬容器(700px+)並排展示 — 使用者可快速對照多個屬性</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -172,7 +173,7 @@ export const LayoutRule: Story = {
             <DescriptionItem label="職稱">Senior Design Engineer</DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label warn>↑ 窄容器配 cols=2 → 職稱被迫斷行、email 擠壓貼邊,節奏亂、可讀性差</Label>
+        <ExampleCaption warn>↑ 窄容器配 cols=2 → 職稱被迫斷行、email 擠壓貼邊,節奏亂、可讀性差</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -184,7 +185,7 @@ export const LabelAlignmentRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="本系統採 stacked(label 在上、value 在下)— label 左對齊"
-        note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 `orientation=&quot;horizontal&quot;` prop(見 spec「Orientation」段)"
+        note={<>對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 <code>orientation=&quot;horizontal&quot;</code> prop</>}
       >
         <Frame className="max-w-md">
           <DescriptionList cols={2}>
@@ -194,7 +195,7 @@ export const LabelAlignmentRule: Story = {
             <DescriptionItem label="電話">0912-345-678</DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label>↑ 每一組:label(neutral-8)在上,value(neutral-9)在下,同左對齊</Label>
+        <ExampleCaption>↑ 每一組:label(neutral-8)在上,value(neutral-9)在下,同左對齊</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -212,7 +213,7 @@ export const LabelAlignmentRule: Story = {
 
       <TutorialRule
         title="❌ 不要自己用 flex 改 horizontal layout"
-        note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `orientation=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
+        note={<>手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 <code>orientation=&quot;horizontal&quot;</code> prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout</>}
       >
         <Frame className="max-w-md">
           {/* @story-counter-example: ❌ 反例:手刻 flex 模擬 label / value 列(本則教的正是「不要自己用 flex 排」,py 4px 是反例本身) */}
@@ -226,9 +227,9 @@ export const LabelAlignmentRule: Story = {
             <span className="text-body">ada.chen@example.com</span>
           </div>
         </Frame>
-        <Label warn>
+        <ExampleCaption warn>
           ↑ 這是自訂 layout 模擬 label 左 / value 右(key-left-value-right)→ 不是 DescriptionList,也無 dl/dt/dd 語義
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -271,7 +272,7 @@ export const NoInteractionRule: Story = {
             <Input defaultValue="Design Engineer" />
           </Field>
         </FieldGroup>
-        <Label>↑ 可編輯欄位 → Field 系統;唯讀屬性 → DescriptionList</Label>
+        <ExampleCaption>↑ 可編輯欄位 → Field 系統;唯讀屬性 → DescriptionList</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -289,9 +290,9 @@ export const NoInteractionRule: Story = {
             </DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label warn>
+        <ExampleCaption warn>
           ↑ dd 內放 Button 破壞「唯讀屬性」語義 → 改用 Field(read-only mode + inline edit)
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
       {/* 「多筆同結構 → DataTable」的 ❌ 對照由「使用指引」story(vs DataTable 段)擁有,不在此重複 */}
     </TutorialPage>

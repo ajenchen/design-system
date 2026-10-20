@@ -2,7 +2,6 @@
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 / vs 近親) per 2026-04-26 user
 // mandate. IndeterminateVsDeterminateRule / ConsumptionScenarioRule / SizeMatchContextRule
 // kept as separate principles.
-import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Check } from 'lucide-react'
 import { CircularProgress } from './circular-progress'
@@ -10,8 +9,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ItemContent, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta = {
@@ -21,11 +20,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -33,14 +29,14 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <p className="text-caption text-fg-muted max-w-[720px]">
           CircularProgress 用於「使用者觸發 async 動作後的即時回饋」與「全頁 / 浮層的 loading 訊號」。
           詳細情境 → 「常見消費場景」story(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
         </p>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 CircularProgress 當常駐視覺裝飾"
           note="語意鎖「正在載入、正在處理」。永遠旋轉的裝飾會讓 a11y 使用者(螢幕閱讀器)持續收到 loading 通知,也讓視覺使用者無法判斷何時結束"
@@ -50,7 +46,7 @@ export const UsageGuidance: Story = {
             <CircularProgress aria-label="載入中（裝飾誤用示範）" />
             <span className="text-body">歡迎使用本系統</span>
           </div>
-          <Label warn>Welcome banner 裡無限轉的 CircularProgress → 使用者以為系統卡住</Label>
+          <ExampleCaption warn>Welcome banner 裡無限轉的 CircularProgress → 使用者以為系統卡住</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -70,21 +66,21 @@ export const UsageGuidance: Story = {
               </li>
             ))}
           </ul>
-          <Label warn>四個同時轉 → 改用 Skeleton 做整個列表佔位</Label>
+          <ExampleCaption warn>四個同時轉 → 改用 Skeleton 做整個列表佔位</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不要在本元件外包 overlay 容器做全頁遮罩"
           note="CircularProgress 是純 primitive,不管 overlay / centering / 背景。全頁 loading 一律走 <Empty icon={<CircularProgress/>}/> compose,不要手刻 absolute inset-0 + flex center"
         >
-          <Label warn>不要加 color / variant / speed / thickness prop — 本元件單一職責</Label>
+          <ExampleCaption warn>不要加 color / variant / speed / thickness prop — 本元件單一職責</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不要 inline copy Loader2"
-          note={'設計系統裡任何 loading 視覺都從 CircularProgress import。自己寫 `<Loader2 className="animate-spin" />` 會造成 icon / animation / a11y 漂移'}
+          note={<>設計系統裡任何 loading 視覺都從 CircularProgress import。自己寫 <code>{'<Loader2 className="animate-spin" />'}</code> 會造成 icon / animation / a11y 漂移</>}
         >
-          <Label warn>所有 loading 都走 CircularProgress,不要 inline Loader2</Label>
+          <ExampleCaption warn>所有 loading 都走 CircularProgress,不要 inline Loader2</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -96,7 +92,7 @@ export const UsageGuidance: Story = {
           <div className="flex items-end gap-[var(--layout-space-loose)]">
             <ExampleGroup align="center">
               <CircularProgress value={100} size={24} aria-label="進度 100%（穩態誤用）" />
-              <Label warn>❌ 穩態停留 100% → 使用者困惑</Label>
+              <ExampleCaption warn>❌ 穩態停留 100% → 使用者困惑</ExampleCaption>
             </ExampleGroup>
             <ExampleGroup align="center">
               {/* @layout-space-magic-ok: 完成態 圖示 ↔ 文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -104,19 +100,19 @@ export const UsageGuidance: Story = {
                 <Check size={16} aria-hidden />
                 <span className="text-body">已完成</span>
               </div>
-              <Label>✅ Swap 為 Check icon + label / 直接呈現該呈現的內容</Label>
+              <ExampleCaption>✅ Swap 為 Check icon + label / 直接呈現該呈現的內容</ExampleCaption>
             </ExampleGroup>
           </div>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — CircularProgress vs Skeleton">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="CircularProgress — 行為回饋(不可預期時長、不知佈局)"
           note="Button 送出中、API 等待、upload 進行中——沒有「資料形狀」可以佔位,只是告訴使用者「正在處理,請稍候」"
         >
           <Button variant="primary" loading>處理付款中</Button>
-          <Label>Stripe 結帳:只需要「在做事」的訊號,不需要佔位</Label>
+          <ExampleCaption>Stripe 結帳:只需要「在做事」的訊號,不需要佔位</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -132,17 +128,17 @@ export const UsageGuidance: Story = {
               <Skeleton className="h-3 w-1/3" />
             </div>
           </div>
-          <Label>Linear 成員列表:佈局已定,等資料填入</Label>
+          <ExampleCaption>Linear 成員列表:佈局已定,等資料填入</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="判準"
           note="要描述「佈局」還是「行為」?描述佈局 → Skeleton;描述行為 → CircularProgress"
         >
-          <Label>能畫出最終樣貌 → Skeleton</Label>
-          <Label>只知道「在進行」 → CircularProgress(indeterminate)</Label>
+          <ExampleCaption>能畫出最終樣貌 → Skeleton</ExampleCaption>
+          <ExampleCaption>只知道「在進行」 → CircularProgress(indeterminate)</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -157,11 +153,11 @@ export const IndeterminateVsDeterminateRule: Story = {
       >
         <ExampleGroup align="center">
           <CircularProgress aria-label="等待第三方驗證" />
-          <Label>✅ 第三方金流驗證:不知道要多久 → 不傳 value</Label>
+          <ExampleCaption>✅ 第三方金流驗證:不知道要多久 → 不傳 value</ExampleCaption>
         </ExampleGroup>
         <ExampleGroup align="center">
           <CircularProgress value={65} affix="value" aria-label="檔案上傳進度 65%" />
-          <Label>✅ 檔案上傳:bytes 已知 → 傳 value={'{N}'}</Label>
+          <ExampleCaption>✅ 檔案上傳:bytes 已知 → 傳 value={'{N}'}</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -171,7 +167,7 @@ export const IndeterminateVsDeterminateRule: Story = {
       >
         <ExampleGroup align="center">
           <CircularProgress value={0} aria-label="報表產生進度 0%（假進度誤用）" />
-          <Label warn>❌ 生成報表中卻永遠卡 0% → 改用 indeterminate(不傳 value)</Label>
+          <ExampleCaption warn>❌ 生成報表中卻永遠卡 0% → 改用 indeterminate(不傳 value)</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
@@ -191,7 +187,7 @@ export const ConsumptionScenarioRule: Story = {
       >
         <Button variant="primary" loading>送出訂單</Button>
         <Button variant="tertiary" loading>儲存變更</Button>
-        <Label>按鈕按下後的即時回饋,告訴使用者「已收到,在處理」</Label>
+        <ExampleCaption>按鈕按下後的即時回饋,告訴使用者「已收到,在處理」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -206,7 +202,7 @@ export const ConsumptionScenarioRule: Story = {
           aria-label="Email"
           className="w-72"
         />
-        <Label>驗證 email 唯一性(GitHub 註冊場景)</Label>
+        <ExampleCaption>驗證 email 唯一性(GitHub 註冊場景)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -253,7 +249,7 @@ export const SizeMatchContextRule: Story = {
           <CircularProgress size={24} aria-label="載入更多留言" />
           <span className="text-body text-fg-muted">載入更多留言...</span>
         </div>
-        <Label>Slack channel 載入更多訊息的 footer</Label>
+        <ExampleCaption>Slack channel 載入更多訊息的 footer</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

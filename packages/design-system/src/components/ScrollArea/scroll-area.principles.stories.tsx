@@ -1,13 +1,12 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/設計原則',
@@ -16,11 +15,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 
@@ -78,105 +74,111 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 ScrollArea 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/ScrollArea/展示" name="垂直捲動 — Linear 議題清單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">垂直捲動 — Linear issue 清單</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/ScrollArea/展示" name="垂直捲動 — Notion 側欄 導覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">垂直捲動 — Notion sidebar 導覽</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/ScrollArea/展示" name="水平捲動 — Stripe 寬欄位商品表"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平捲動 — Stripe 寬欄位商品表</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/ScrollArea/展示" name="雙向捲動 — GitHub PR 大型檢閱表"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">雙向捲動 — GitHub PR 大型檢閱表</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-
-      {/* vs Native scroll — 原 ScrollAreaVsNative */}
-      <>
-      <TutorialRule
-        title="vs Native scroll — 整頁捲動保持 native document scroll"
-        note="瀏覽器的 document 層級捲動是 OS 慣例——保留 native 讓使用者得到 reader mode / pull-to-refresh / 鍵盤快速鍵等原生能力。ScrollArea 是 sub-region 工具,不為整頁服務。"
-      >
-        <ExampleGroup className="w-[320px]">
-          <div className="border border-border rounded-md bg-surface p-[var(--layout-space-loose)]">
-            <div className="text-body font-medium mb-[var(--item-gap-label-desc-reading)]">Stripe Dashboard</div>
-            <div className="text-caption text-fg-muted">整個頁面長內容,交給瀏覽器 document scroll</div>
-          </div>
-          <Label>✅ 整頁:不包 ScrollArea,保留 native scrollbar + 瀏覽器能力</Label>
-        </ExampleGroup>
-      </TutorialRule>
-
-      <TutorialRule
-        title="子區塊捲動 + 跨 OS 視覺一致 → 用 ScrollArea"
-        note="DataTable 橫向捲動 / Sheet body 垂直捲動 / Sidebar nav——這些 sub-region 若用 native scrollbar,Windows 會吃 17px 寬度造成跑版,ScrollArea 的 overlay 捲軸跨 OS 一致不吃寬度。"
-      >
-        <ExampleGroup className="w-[320px]">
-          <ScrollArea className="h-[180px] border border-border rounded-md bg-surface">
-            {/* @layout-space-magic-ok: 有框捲動區裡列集合外層呼吸(item-anatomy.spec.md:351 / :367)(layoutSpace.spec.md:165 同質清單列) */}
-            <div className="p-2">
-              {/* 靜態示意列(無 onClick、不能聚焦)不給 hover 底色(item-anatomy.spec.md「選中 × 互動疊加」:hover 要誠實回答「再點會發生什麼」) */}
-              {NOTION_PAGES.map((p) => (
-                // @layout-space-magic-ok: 同質列列內距(.map)(layoutSpace.spec.md:165 同質清單列)
-                <div key={p} className="px-3 py-1.5 text-body">{p}</div>
-              ))}
-            </div>
-          </ScrollArea>
-          <Label>✅ Sidebar nav(sub-region):ScrollArea 跨 OS 一致</Label>
-        </ExampleGroup>
-      </TutorialRule>
-
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <TutorialRule
-        title="❌ 錯誤 — 巢狀 ScrollArea,使用者分不清在捲哪一層"
-        note="當外層與內層都是 ScrollArea 時,滑鼠滾輪捲動的目標不明確(外層?內層?),焦點管理也會崩壞——使用者體驗破碎,a11y 使用者尤其混亂。"
-      >
-        <ExampleGroup className="w-[320px]">
-          <ScrollArea className="h-[220px] border border-error/40 rounded-md bg-surface p-[var(--layout-space-loose)]">
-            <h4 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">外層 ScrollArea</h4>
-            <ScrollArea className="h-[120px] border border-error/40 rounded-md bg-canvas">
+      <UsageSection kind="when">
+        <p>內容可能超出容器、而且捲軸在各作業系統要長得一樣的子區塊:Sheet / Dialog 內文、側欄的長導覽、寬內容的橫向捲動。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/ScrollArea/展示" name="垂直捲動 — Linear 議題清單">垂直捲動 — Linear issue 清單</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/ScrollArea/展示" name="垂直捲動 — Notion 側欄 導覽">垂直捲動 — Notion sidebar 導覽</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/ScrollArea/展示" name="水平捲動 — Stripe 寬欄位商品表">水平捲動 — Stripe 寬欄位商品表</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/ScrollArea/展示" name="雙向捲動 — GitHub PR 大型檢閱表">雙向捲動 — GitHub PR 大型檢閱表</StoryLink>
+          </li>
+        </TutorialList>
+        <TutorialRule
+          title="子區塊捲動 + 跨 OS 視覺一致 → 用 ScrollArea"
+          note="DataTable 橫向捲動 / Sheet body 垂直捲動 / Sidebar nav——這些 sub-region 若用 native scrollbar,Windows 會吃 17px 寬度造成跑版,ScrollArea 的 overlay 捲軸跨 OS 一致不吃寬度。"
+        >
+          <ExampleGroup className="w-[320px]">
+            <ScrollArea className="h-[180px] border border-border rounded-md bg-surface">
               {/* @layout-space-magic-ok: 有框捲動區裡列集合外層呼吸(item-anatomy.spec.md:351 / :367)(layoutSpace.spec.md:165 同質清單列) */}
               <div className="p-2">
-                {NOTION_PAGES.slice(0, 8).map((p) => (
+                {/* 靜態示意列(無 onClick、不能聚焦)不給 hover 底色(item-anatomy.spec.md「選中 × 互動疊加」:hover 要誠實回答「再點會發生什麼」) */}
+                {NOTION_PAGES.map((p) => (
                   // @layout-space-magic-ok: 同質列列內距(.map)(layoutSpace.spec.md:165 同質清單列)
-                  <div key={p} className="px-2 py-1 text-caption">{p}</div>
+                  <div key={p} className="px-3 py-1.5 text-body">{p}</div>
                 ))}
               </div>
             </ScrollArea>
-            <div className="mt-[var(--layout-space-tight)] text-caption">外層繼續內容...</div>
-            {/* @layout-space-magic-ok: 同質頁名列的列內距 4px(.map 列,與內層捲動區的頁名列同一種列)(layoutSpace.spec.md:165 同質清單列) */}
-            {NOTION_PAGES.map((p) => <div key={p} className="text-caption py-1">{p}</div>)}
-          </ScrollArea>
-          <Label warn>滾輪捲動哪一層? 焦點跳到哪? 混亂</Label>
-        </ExampleGroup>
-      </TutorialRule>
+            <ExampleCaption>✅ Sidebar nav(sub-region):ScrollArea 跨 OS 一致</ExampleCaption>
+          </ExampleGroup>
+        </TutorialRule>
+      </UsageSection>
 
-      <TutorialRule
-        title="✅ 正確 — 需要巢狀結構時拆成 Tabs / Accordion / Sheet"
-        note="把第二層內容換成展開/收合的 Tabs 或 Accordion,或推進新的 Sheet / Dialog 呈現——同一個視覺層級只有一個捲動軸,使用者心智清晰。"
-      >
-        <ExampleGroup className="w-[320px]">
-          <ScrollArea className="h-[220px] border border-success/40 rounded-md bg-surface">
-            <div className="p-[var(--layout-space-loose)]">
-              <h4 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">單層 ScrollArea</h4>
-              {/* 靜態示意列不給 hover 底色(同上) */}
-              {NOTION_PAGES.map((p) => (
-                // @layout-space-magic-ok: 同質列列內距(.map)(layoutSpace.spec.md:165 同質清單列)
-                <div key={p} className="px-2 py-1.5 text-body">{p}</div>
-              ))}
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 整頁捲動:保留瀏覽器原生捲動"
+          note="瀏覽器的 document 層級捲動是 OS 慣例——保留 native 讓使用者得到 reader mode / pull-to-refresh / 鍵盤快速鍵等原生能力。ScrollArea 是 sub-region 工具,不為整頁服務。"
+        >
+          <ExampleGroup className="w-[320px]">
+            <div className="border border-border rounded-md bg-surface p-[var(--layout-space-loose)]">
+              <div className="text-body font-medium mb-[var(--item-gap-label-desc-reading)]">Stripe Dashboard</div>
+              <div className="text-caption text-fg-muted">整個頁面長內容,交給瀏覽器 document scroll</div>
             </div>
-          </ScrollArea>
-          <Label>單一捲動軸,心智清晰</Label>
-        </ExampleGroup>
-      </TutorialRule>
-    </>
+            <ExampleCaption>✅ 整頁:不包 ScrollArea,保留 native scrollbar + 瀏覽器能力</ExampleCaption>
+          </ExampleGroup>
+        </TutorialRule>
+
+        <TutorialRule
+          title="❌ 錯誤 — 巢狀 ScrollArea,使用者分不清在捲哪一層"
+          note="當外層與內層都是 ScrollArea 時,滑鼠滾輪捲動的目標不明確(外層?內層?),焦點管理也會崩壞——使用者體驗破碎,a11y 使用者尤其混亂。"
+        >
+          <ExampleGroup className="w-[320px]">
+            <ScrollArea className="h-[220px] border border-error/40 rounded-md bg-surface p-[var(--layout-space-loose)]">
+              <h4 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">外層 ScrollArea</h4>
+              <ScrollArea className="h-[120px] border border-error/40 rounded-md bg-canvas">
+                {/* @layout-space-magic-ok: 有框捲動區裡列集合外層呼吸(item-anatomy.spec.md:351 / :367)(layoutSpace.spec.md:165 同質清單列) */}
+                <div className="p-2">
+                  {NOTION_PAGES.slice(0, 8).map((p) => (
+                    // @layout-space-magic-ok: 同質列列內距(.map)(layoutSpace.spec.md:165 同質清單列)
+                    <div key={p} className="px-2 py-1 text-caption">{p}</div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="mt-[var(--layout-space-tight)] text-caption">外層繼續內容...</div>
+              {/* @layout-space-magic-ok: 同質頁名列的列內距 4px(.map 列,與內層捲動區的頁名列同一種列)(layoutSpace.spec.md:165 同質清單列) */}
+              {NOTION_PAGES.map((p) => <div key={p} className="text-caption py-1">{p}</div>)}
+            </ScrollArea>
+            <ExampleCaption warn>滾輪捲動哪一層? 焦點跳到哪? 混亂</ExampleCaption>
+          </ExampleGroup>
+        </TutorialRule>
+
+        <TutorialRule
+          title="✅ 正確 — 需要巢狀結構時拆成 Tabs / Accordion / Sheet"
+          note="把第二層內容換成展開/收合的 Tabs 或 Accordion,或推進新的 Sheet / Dialog 呈現——同一個視覺層級只有一個捲動軸,使用者心智清晰。"
+        >
+          <ExampleGroup className="w-[320px]">
+            <ScrollArea className="h-[220px] border border-success/40 rounded-md bg-surface">
+              <div className="p-[var(--layout-space-loose)]">
+                <h4 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">單層 ScrollArea</h4>
+                {/* 靜態示意列不給 hover 底色(同上) */}
+                {NOTION_PAGES.map((p) => (
+                  // @layout-space-magic-ok: 同質列列內距(.map)(layoutSpace.spec.md:165 同質清單列)
+                  <div key={p} className="px-2 py-1.5 text-body">{p}</div>
+                ))}
+              </div>
+            </ScrollArea>
+            <ExampleCaption>單一捲動軸,心智清晰</ExampleCaption>
+          </ExampleGroup>
+        </TutorialRule>
+        <TutorialList>
+          <li>單行文字放不下 → 用省略號截斷,不需要捲動</li>
+          <li>內容很短、或容器永遠不會溢出 → 一般容器就好,ScrollArea 只會多一層</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>OverflowIndicator</strong> —— 一列項目放不下時折成 +N;ScrollArea 是讓內容可以捲動、捲軸跨系統一致</li>
+          <li><strong>瀏覽器原生捲動</strong> —— 整頁用原生;只有邊界明確的子區塊才用 ScrollArea</li>
+          <li><strong>AspectRatio</strong> —— 鎖住比例、不捲動;內容可能溢出才用 ScrollArea</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -200,7 +202,7 @@ export const OrientationChoice: Story = {
               ))}
             </div>
           </ScrollArea>
-          <Label>Notion sidebar — 垂直捲動 12 個頁面項目</Label>
+          <ExampleCaption>Notion sidebar — 垂直捲動 12 個頁面項目</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -215,7 +217,7 @@ export const OrientationChoice: Story = {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <Label>Stripe 商品表 — 8 欄超出 440px 容器,水平 scrollbar</Label>
+          <ExampleCaption>Stripe 商品表 — 8 欄超出 440px 容器,水平 scrollbar</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -230,7 +232,7 @@ export const OrientationChoice: Story = {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <Label>大型商品網格 — 12 列 × 8 欄,雙向 scrollbar + corner</Label>
+          <ExampleCaption>大型商品網格 — 12 列 × 8 欄,雙向 scrollbar + corner</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
@@ -251,13 +253,13 @@ export const SolvesDataTableBug: Story = {
               <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} height="auto" bordered={false} />
             </div>
           </div>
-          <Label warn>❌ Native overflow-x-auto — Windows 右側 Status 欄被 scrollbar 吃掉</Label>
+          <ExampleCaption warn>❌ Native overflow-x-auto — Windows 右側 Status 欄被 scrollbar 吃掉</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
       <TutorialRule
         title="解法 — ScrollArea overlay 捲軸,跨 OS 一致不吃寬度"
-        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。此組合限外層包 height='auto' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(pinned column 結構需求,見 scroll-area.spec.md「何時用」例外 + data-table.spec.md「捲軸 canonical」)。"
+        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。此組合限外層包 height='auto' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(釘選欄的結構需求)。"
       >
         <ExampleGroup className="w-[560px]">
           <ScrollArea className="border border-success/40 rounded-md bg-surface">
@@ -266,7 +268,7 @@ export const SolvesDataTableBug: Story = {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <Label>✅ ScrollArea + horizontal ScrollBar — 跨 OS 一致</Label>
+          <ExampleCaption>✅ ScrollArea + horizontal ScrollBar — 跨 OS 一致</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
@@ -286,7 +288,7 @@ export const OutOfScopeRule: Story = {
             <div className="border border-success/40 rounded-md px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] bg-surface">
               <div className="text-body truncate">Stripe Atlas 新創設立方案 — 一次搞定公司設立、銀行帳戶、稅務與股權</div>
             </div>
-            <Label>✅ 用 truncate,一行顯示,超出省略號</Label>
+            <ExampleCaption>✅ 用 truncate,一行顯示,超出省略號</ExampleCaption>
           </ExampleGroup>
           <ExampleGroup>
             <div className="border border-error/40 rounded-md bg-surface">
@@ -297,7 +299,7 @@ export const OutOfScopeRule: Story = {
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             </div>
-            <Label warn>❌ 用 ScrollArea 讓使用者水平捲動看一行字,UX 扭曲</Label>
+            <ExampleCaption warn>❌ 用 ScrollArea 讓使用者水平捲動看一行字,UX 扭曲</ExampleCaption>
           </ExampleGroup>
         </div>
       </TutorialRule>
@@ -307,8 +309,8 @@ export const OutOfScopeRule: Story = {
         note="整個頁面的捲動交給瀏覽器 document scroll——保留 OS 原生體驗(pull-to-refresh / reader mode / 捲動位置記憶)。ScrollArea 只用於 sub-region。"
       >
         <ExampleGroup className="w-[320px]">
-          <Label warn>❌ 禁止:在 &lt;body&gt; 或 &lt;html&gt; 外層包 ScrollArea</Label>
-          <Label>✅ 正確:頁面內容直接放,交給瀏覽器 document scroll</Label>
+          <ExampleCaption warn>❌ 禁止:在 &lt;body&gt; 或 &lt;html&gt; 外層包 ScrollArea</ExampleCaption>
+          <ExampleCaption>✅ 正確:頁面內容直接放,交給瀏覽器 document scroll</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -330,7 +332,7 @@ export const OutOfScopeRule: Story = {
                 </div>
               </ScrollArea>
             </div>
-            <Label warn>❌ 內容不會溢出還包,純視覺噪音</Label>
+            <ExampleCaption warn>❌ 內容不會溢出還包,純視覺噪音</ExampleCaption>
           </ExampleGroup>
         </div>
       </TutorialRule>

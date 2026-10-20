@@ -1,6 +1,4 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Home } from 'lucide-react'
 import {
@@ -21,8 +19,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Breadcrumb/設計原則',
@@ -31,11 +29,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
 
 // ── 定位與分界 ─────────────────────────────────────────────────────────────────
 
@@ -50,128 +45,131 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>Breadcrumb 顯示「目前頁面在資訊階層中的位置」,適合 ≥ 3 層的階層頁面。真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          電商多層分類、檔案管理器等深層頁面,路徑過長時中段折疊、點 ⋯ 可展開中間層 —— 見{' '}
-          <LinkTo kind="Design System/Components/Breadcrumb/展示" name="可互動省略"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">可互動省略</span></LinkTo>
-        </li>
-        <li>
-          路徑由路由 / CMS 資料動態產生,直接傳資料陣列、超過層數自動收合中段 —— 見{' '}
-          <LinkTo kind="Design System/Components/Breadcrumb/展示" name="宣告式 API + 自動收合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">宣告式 API + 自動收合</span></LinkTo>
-        </li>
-        <li>
-          SPA 內點麵包屑要走前端路由、不整頁重載 —— 見{' '}
-          <LinkTo kind="Design System/Components/Breadcrumb/展示" name="整合 React Router / Next.js Link"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">整合 React Router / Next.js Link</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用相近的其他元件(見下方「跟相近元件怎麼分」的範例)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>顯示「目前頁面在資訊階層中的位置」,並提供回到上層的捷徑;適合 3 層以上的階層頁面(專案 / 子專案 / 任務、資料夾路徑、電商多層分類)。</p>
+        <TutorialList>
+          <li>
+            電商多層分類、檔案管理器等深層頁面,路徑過長時中段折疊、點 ⋯ 可展開中間層 —— 見{' '}
+            <StoryLink kind="Design System/Components/Breadcrumb/展示" name="可互動省略">可互動省略</StoryLink>
+          </li>
+          <li>
+            路徑由路由 / CMS 資料動態產生,直接傳資料陣列、超過層數自動收合中段 —— 見{' '}
+            <StoryLink kind="Design System/Components/Breadcrumb/展示" name="宣告式 API + 自動收合">宣告式 API + 自動收合</StoryLink>
+          </li>
+          <li>
+            SPA 內點麵包屑要走前端路由、不整頁重載 —— 見{' '}
+            <StoryLink kind="Design System/Components/Breadcrumb/展示" name="整合 React Router / Next.js Link">整合 React Router / Next.js Link</StoryLink>
+          </li>
+        </TutorialList>
+        <TutorialRule
+          title="Breadcrumb — 「你在哪裡」的階層位置"
+          note="表達 parent-child 關係,使用者看 breadcrumb 知道「我從哪一層走到這裡」,點前面任一層可回到上層"
+        >
+          <ExampleGroup>
+            <ExampleCaption>✅ 電商產品頁：顯示目前商品在分類樹的位置</ExampleCaption>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">首頁</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">家電</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">手機</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>iPhone 15 Pro</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </ExampleGroup>
+          <ExampleGroup>
+            <ExampleCaption>✅ 文件系統：檔案深在多層資料夾裡</ExampleCaption>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">我的雲端硬碟</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">專案</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">2026 Q2</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>產品規格書.pdf</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </ExampleGroup>
+        </TutorialRule>
+      </UsageSection>
 
-      {/* vs 近親 — VsTabsRule — 原 VsTabsRule */}
-      <>
-      <TutorialRule
-        title="Breadcrumb — 「你在哪裡」的階層位置"
-        note="表達 parent-child 關係,使用者看 breadcrumb 知道「我從哪一層走到這裡」,點前面任一層可回到上層"
-      >
-        <ExampleGroup>
-          <Label>✅ 電商產品頁：顯示目前商品在分類樹的位置</Label>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 單層頁面加 Breadcrumb"
+          note="只有一個 item 的 breadcrumb 沒導覽價值,只增加視覺噪音。單層頁面用 page title + 可選 back button 即可"
+        >
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="#">首頁</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">家電</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">手機</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>iPhone 15 Pro</BreadcrumbPage>
+                <BreadcrumbPage>設定</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-        </ExampleGroup>
-        <ExampleGroup>
-          <Label>✅ 文件系統：檔案深在多層資料夾裡</Label>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">我的雲端硬碟</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">專案</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">2026 Q2</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>產品規格書.pdf</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </ExampleGroup>
-      </TutorialRule>
+          <ExampleCaption warn>↑ 只有一層,不需要 breadcrumb。直接用 page title</ExampleCaption>
+        </TutorialRule>
+        <TutorialRule title="❌ 當主導覽用" note="主導覽用 Sidebar 或頂部導覽;Breadcrumb 只反映目前位置,不是全域選單" />
+      </UsageSection>
 
-      <TutorialRule
-        title="❌ 用 Breadcrumb 做平行 view 切換 → 應該用 Tabs"
-        note="若三者是「同一層級的不同 view」(訂單 / 顧客 / 產品都是 dashboard 的不同頁),那是 Tabs。Breadcrumb 表達「上下層」,不是「並列切換」"
-      >
-        <ExampleGroup>
-          <Label>❌ 錯用：這三者是平行 view,沒有 parent-child 關係</Label>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">訂單</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">顧客</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>產品</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <Label warn>↑ 改用 Tabs</Label>
-          <Tabs defaultValue="products">
-            <TabsList>
-              <TabsTrigger value="orders">訂單</TabsTrigger>
-              <TabsTrigger value="customers">顧客</TabsTrigger>
-              <TabsTrigger value="products">產品</TabsTrigger>
-            </TabsList>
-            <TabsContent value="orders" className="text-body text-fg-muted">訂單列表、篩選與批次出貨</TabsContent>
-            <TabsContent value="customers" className="text-body text-fg-muted">顧客名單、分群與生命週期價值</TabsContent>
-            <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
-          </Tabs>
-        </ExampleGroup>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 單層頁面加 Breadcrumb"
-        note="只有一個 item 的 breadcrumb 沒導覽價值,只增加視覺噪音。單層頁面用 page title + 可選 back button 即可"
-      >
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage>設定</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <Label warn>↑ 只有一層,不需要 breadcrumb。直接用 page title</Label>
-      </TutorialRule>
-    </>
+      <UsageSection kind="siblings">
+        <TutorialRule
+          title="❌ 用 Breadcrumb 做平行 view 切換 → 應該用 Tabs"
+          note="若三者是「同一層級的不同 view」(訂單 / 顧客 / 產品都是 dashboard 的不同頁),那是 Tabs。Breadcrumb 表達「上下層」,不是「並列切換」"
+        >
+          <ExampleGroup>
+            <ExampleCaption>❌ 錯用：這三者是平行 view,沒有 parent-child 關係</ExampleCaption>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">訂單</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">顧客</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>產品</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <ExampleCaption warn>↑ 改用 Tabs</ExampleCaption>
+            <Tabs defaultValue="products">
+              <TabsList>
+                <TabsTrigger value="orders">訂單</TabsTrigger>
+                <TabsTrigger value="customers">顧客</TabsTrigger>
+                <TabsTrigger value="products">產品</TabsTrigger>
+              </TabsList>
+              <TabsContent value="orders" className="text-body text-fg-muted">訂單列表、篩選與批次出貨</TabsContent>
+              <TabsContent value="customers" className="text-body text-fg-muted">顧客名單、分群與生命週期價值</TabsContent>
+              <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
+            </Tabs>
+          </ExampleGroup>
+        </TutorialRule>
+        <TutorialList>
+          <li><strong>Steps</strong> —— 流程進度(第幾步);Breadcrumb 是樹狀階層裡的位置,不是進度</li>
+          <li><strong>Sidebar</strong> —— 全域導覽;Breadcrumb 是內容標頭裡的局部位置,不取代全域導覽</li>
+          <li><strong>連結 / 返回鈕</strong> —— 單一導覽動作;路徑 3 層以上、需要逐層回上時才用 Breadcrumb</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -199,7 +197,7 @@ export const LastItemRule: Story = {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <Label>↑ 「元件庫」是目前頁,foreground 深色但不加粗、不可點</Label>
+        <ExampleCaption>↑ 「元件庫」是目前頁,foreground 深色但不加粗、不可點</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -217,7 +215,7 @@ export const LastItemRule: Story = {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <Label warn>↑ 最後一項永遠是 BreadcrumbPage,不是 BreadcrumbLink</Label>
+        <ExampleCaption warn>↑ 最後一項永遠是 BreadcrumbPage,不是 BreadcrumbLink</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -264,7 +262,7 @@ export const LongPathRule: Story = {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <Label>↑ 組織 › ⋯ › 權限 › 編輯角色(⋯ 可展開看中間項)</Label>
+        <ExampleCaption>↑ 組織 › ⋯ › 權限 › 編輯角色(⋯ 可展開看中間項)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -290,7 +288,7 @@ export const LongPathRule: Story = {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <Label warn>↑ 窄容器塞不下六層,單行溢出邊界(需橫向捲動才看得完),不如折疊中段</Label>
+        <ExampleCaption warn>↑ 窄容器塞不下六層,單行溢出邊界(需橫向捲動才看得完),不如折疊中段</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -304,7 +302,7 @@ export const ScopeRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="Breadcrumb 可容納 icon 強化首項（如 Home）"
-        note="首項用 Home icon 是業界慣例(Material / Atlassian),視覺錨點明確。其他 item 通常純文字。圖示大小由設計系統統一控制(小 / 中尺寸 16px、大尺寸 20px),你只要用 `startIcon` 指定要哪個圖示,不用自己設大小。"
+        note={<>首項用 Home icon 是業界慣例(Material / Atlassian),視覺錨點明確。其他 item 通常純文字。圖示大小由設計系統統一控制(小 / 中尺寸 16px、大尺寸 20px),你只要用 <code>startIcon</code> 指定要哪個圖示,不用自己設大小。</>}
       >
         <Breadcrumb>
           <BreadcrumbList>
@@ -335,12 +333,13 @@ export const ScopeRule: Story = {
               <BreadcrumbItem><BreadcrumbPage>Design System</BreadcrumbPage></BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          {/* 反例要教的只有「按鈕塞進麵包屑」這一件事;按鈕本身照 action-bar.spec.md:121 排(靠左 → primary 最左,2026-10-20 XF-01) */}
           <ButtonGroup>
-            <Button variant="tertiary" size="sm">邀請成員</Button>
             <Button variant="primary" size="sm">新增元件</Button>
+            <Button variant="tertiary" size="sm">邀請成員</Button>
           </ButtonGroup>
         </div>
-        <Label warn>↑ 按鈕應該放 page header / action bar,不塞進 breadcrumb</Label>
+        <ExampleCaption warn>↑ 按鈕應該放 page header / action bar,不塞進 breadcrumb</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

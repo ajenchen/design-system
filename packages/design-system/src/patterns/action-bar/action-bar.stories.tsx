@@ -9,7 +9,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
+import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Action Bar',
@@ -22,19 +24,20 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
 
-/* 2026-07-14 Dim 90 修:Action Bar 無 production container,本檔 toolbar frame 是主要參考
-   實作 — 水平內距原本 px-4 / px-3 hardcode(不隨 layout density 縮放且三處不一致),統一改
-   chrome 水平內距 canonical `px-[var(--layout-space-loose)]`(對齊 chrome-header.tsx 同 token)。 */
-const ToolbarFrame = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="flex items-center justify-between w-full px-[var(--layout-space-loose)] min-h-[52px] border border-border rounded-lg bg-surface">
-    <span className="text-body font-bold text-foreground shrink-0 mr-[var(--layout-space-loose)]">{title}</span>
-    {children}
+/* 操作列示範框 = ChromeHeader(2026-10-20 T9;header-canonical.spec.md 決策表「固定在版面上的工具列 → ChromeHeader」):
+   高度 --chrome-header-height(md 48 / lg 56)與左右 px-loose 由 ChromeHeader 擁有;標題 text-body-lg font-medium
+   (header-canonical.spec.md「Title typography」)。外層圓角邊框只是示範框(把工具列放在一塊面上看),工具列下方沒有內容,
+   所以不畫 ChromeHeader 自己的下框線(外框的下緣就是邊界)。沒有標題 = 靠左對齊的操作列(action-bar.spec.md:109)。
+   原本手寫 min-h-[52px] + text-body font-bold:兩種密度都是 52px,不等於 chrome header 的 48 / 56;標題是 14px 粗體。 */
+const ToolbarFrame = ({ title, children }: { title?: string; children: React.ReactNode }) => (
+  <div className="w-full overflow-hidden rounded-lg border border-border bg-surface">
+    <ChromeHeader className="justify-between border-b-0">
+      {title && <span className="shrink-0 mr-[var(--layout-space-loose)] text-body-lg font-medium text-foreground">{title}</span>}
+      {children}
+    </ChromeHeader>
   </div>
 )
 
@@ -82,12 +85,12 @@ export const RoleIdentification: Story = {
             <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>移除任一個，使用者就無法完成任務</Label>
+        <ExampleCaption>移除任一個，使用者就無法完成任務</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="工具操作（Utilities）— 服務環境，與任務本身無關"
-        note="判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）,啟用中加 `pressed`（非換 variant）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label"
+        note={<>判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）,啟用中加 <code>pressed</code>（非換 variant）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label</>}
       >
         <ToolbarFrame title="文件管理">
           <ButtonGroup>
@@ -97,31 +100,32 @@ export const RoleIdentification: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={HelpCircle} aria-label="說明" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>與當前任務無關，一律 text icon-only，永遠在業務層右側末端</Label>
+        <ExampleCaption>與當前任務無關，一律 text icon-only，永遠在業務層右側末端</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="可配置資料操作（篩選 / 排序 / 分組）— 業務操作，Toolbar 全程 icon-only"
-        note="篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後加 `pressed`（預設 emphasis tone）——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」"
+        note={<>篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後加 <code>pressed</code>（預設 emphasis tone）——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」</>}
       >
-          <div className="flex items-center gap-[var(--layout-space-tight)]">
-            <ConfigurableDemo />
-            <Label>點擊切換配置狀態</Label>
-          </div>
-          <div className="flex items-center gap-[var(--layout-space-tight)]">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
-            </ButtonGroup>
-            <Label>text — 預設，適合密集表格 toolbar</Label>
-          </div>
-          <div className="flex items-center gap-[var(--layout-space-tight)]">
-            <ButtonGroup>
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="tertiary" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
-            </ButtonGroup>
-            <Label>tertiary — 有框，可操作感更強，適合較空曠的場景</Label>
-          </div>
+        {/* 2026-10-20 N2:工具列範例一律放進 ToolbarFrame(example-selection.md:65),說明放在範例下方由 CaptionedExamples 併組 */}
+        <ToolbarFrame title="訂單">
+          <ConfigurableDemo />
+        </ToolbarFrame>
+        <ExampleCaption>↑ 點擊切換配置狀態</ExampleCaption>
+        <ToolbarFrame title="客戶">
+          <ButtonGroup>
+            <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
+            <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+          </ButtonGroup>
+        </ToolbarFrame>
+        <ExampleCaption>↑ text — 預設，適合密集表格 toolbar</ExampleCaption>
+        <ToolbarFrame title="商品">
+          <ButtonGroup>
+            <Button variant="tertiary" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
+            <Button variant="tertiary" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+          </ButtonGroup>
+        </ToolbarFrame>
+        <ExampleCaption>↑ tertiary — 有框，可操作感更強，適合較空曠的場景</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -143,12 +147,12 @@ export const Structure: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>靠右對齊 → primary 在業務層最右；刪除（低強調）在業務操作最左端，遠離主按鈕降低誤觸風險；工具操作收尾</Label>
+          <ExampleCaption>靠右對齊 → primary 在業務層最右；刪除（低強調）在業務操作最左端，遠離主按鈕降低誤觸風險；工具操作收尾</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="靠右對齊（最常見）— 業務層由右至左，主按鈕最右；工具層在末端"
-        note="使用者視線落在右側。主按鈕放最右，視覺重量依序向左遞減。工具操作集中在右側末端，與業務層形成自然的視覺分層"
+        note="對齊方向看這一列有沒有標題：有標題時標題在左、按鈕靠右（最常見）；沒有標題時按鈕靠左、primary 最左 —— 空白放在右邊不會造成視覺斷裂，放在左邊會讓按鈕群組像是漂在半空。靠右時使用者視線落在右側：主按鈕放最右，視覺重量依序向左遞減。工具操作集中在右側末端，與業務層形成自然的視覺分層"
       >
         <ToolbarFrame title="專案列表">
           <ButtonGroup>
@@ -158,7 +162,7 @@ export const Structure: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>業務操作由右至左排列，primary 在最右 → 直接接工具操作，不加分隔線</Label>
+        <ExampleCaption>業務操作由右至左排列，primary 在最右 → 直接接工具操作，不加分隔線</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -172,7 +176,7 @@ export const Structure: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</Label>
+        <ExampleCaption>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -193,7 +197,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 同類別操作 — 間距即可，不加分隔線</Label>
+          <ExampleCaption>✅ 同類別操作 — 間距即可，不加分隔線</ExampleCaption>
           <ToolbarFrame title="檔案操作">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
@@ -202,7 +206,7 @@ export const Dividers: Story = {
               <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 不同類別（一般 vs 危險）— 分隔線標記邊界</Label>
+          <ExampleCaption>✅ 不同類別（一般 vs 危險）— 分隔線標記邊界</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -217,7 +221,7 @@ export const Dividers: Story = {
             <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>關閉排最末，左側必加分隔線</Label>
+        <ExampleCaption>關閉排最末，左側必加分隔線</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -233,7 +237,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>編輯操作 vs 協作操作，功能域不同，分隔線可選</Label>
+          <ExampleCaption>編輯操作 vs 協作操作，功能域不同，分隔線可選</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
@@ -242,7 +246,7 @@ export const Dividers: Story = {
               <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>danger 是普通按鈕，功能域差距夠大時可選加分隔線</Label>
+          <ExampleCaption>danger 是普通按鈕，功能域差距夠大時可選加分隔線</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -256,7 +260,7 @@ export const Dividers: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>有框按鈕（primary）直接接無框按鈕（text）— 無對應理由，預設不加</Label>
+        <ExampleCaption>有框按鈕（primary）直接接無框按鈕（text）— 無對應理由，預設不加</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -272,7 +276,7 @@ export const Dividers: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>···（群組溢出）右側必加分隔線，即使右側是同為無框的工具層</Label>
+        <ExampleCaption>···（群組溢出）右側必加分隔線，即使右側是同為無框的工具層</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -287,7 +291,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>有框結尾 → 無對應理由，預設不加</Label>
+          <ExampleCaption>有框結尾 → 無對應理由，預設不加</ExampleCaption>
           <ToolbarFrame title="資料表">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
@@ -297,7 +301,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>無框結尾 → 邊界不可見，必加分隔線</Label>
+          <ExampleCaption>無框結尾 → 邊界不可見，必加分隔線</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -312,19 +316,18 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>靠右對齊 — 有框業務操作接無框工具操作，無對應理由，預設不加</Label>
-          <div className="flex items-center w-full px-[var(--layout-space-loose)] h-[52px] border border-border rounded-lg bg-surface">
+          <ExampleCaption>靠右對齊 — 有框業務操作接無框工具操作，無對應理由，預設不加</ExampleCaption>
+          <ToolbarFrame>
             <ButtonGroup>
               <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
               <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
             </ButtonGroup>
-            <div className="flex-1" />
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
-          </div>
-          <Label>靠左對齊 — 工具層固定在操作列右端，空間本身已標記邊界</Label>
+          </ToolbarFrame>
+          <ExampleCaption>靠左對齊 — 工具層固定在操作列右端，空間本身已標記邊界</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -340,7 +343,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>有固定工具 → 業務操作（無框）接工具操作（無框），邊界不可見 → 在第一個工具按鈕 ↺ 左側加分隔線</Label>
+          <ExampleCaption>有固定工具 → 業務操作（無框）接工具操作（無框），邊界不可見 → 在第一個工具按鈕 ↺ 左側加分隔線</ExampleCaption>
           <ToolbarFrame title="篩選列">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
@@ -350,7 +353,7 @@ export const Dividers: Story = {
               <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>無固定工具 → ··· 是業務層末端；✕ 的關閉保護是唯一一條分隔線</Label>
+          <ExampleCaption>無固定工具 → ··· 是業務層末端；✕ 的關閉保護是唯一一條分隔線</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -367,7 +370,7 @@ export const Dividers: Story = {
               <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ ··· 左側的分隔線沒有語意（沒有工具層），移除它</Label>
+          <ExampleCaption warn>❌ ··· 左側的分隔線沒有語意（沒有工具層），移除它</ExampleCaption>
           <ToolbarFrame title="篩選列">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
@@ -377,7 +380,7 @@ export const Dividers: Story = {
               <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ ··· 是業務層末端，只有關閉保護這一條分隔線</Label>
+          <ExampleCaption>✅ ··· 是業務層末端，只有關閉保護這一條分隔線</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -400,7 +403,7 @@ export const Overflow: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>有框結尾 → 無分隔 → 工具 ↺ ⚙ ···</Label>
+          <ExampleCaption>有框結尾 → 無分隔 → 工具 ↺ ⚙ ···</ExampleCaption>
           <ToolbarFrame title="資料表">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
@@ -410,14 +413,14 @@ export const Overflow: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>無框結尾 → 分隔線（業務接工具，同為無框）→ 固定工具 ↺ ···</Label>
+          <ExampleCaption>無框結尾 → 分隔線（業務接工具，同為無框）→ 固定工具 ↺ ···</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="群組溢出（例外）— 各群組各自管理，只在合併選單會讓使用者困惑時才用"
         note="當多個群組的低頻操作領域差異大到「放進同一個選單使用者會搞不清這是哪個群組的」時，才讓各群組各自管理溢出。每個群組溢出的右側必須加分隔線（群組溢出邊界）。以 Rich Text Editor 為例：文字格式、插入元素、歷史操作三個群組功能差異極大，合併選單語意混亂"
       >
-        <div className="flex items-center w-full px-[var(--layout-space-loose)] h-[52px] border border-border rounded-lg bg-surface">
+        <ToolbarFrame>
           <ButtonGroup>
             {/* 群組 A：文字格式 + 溢出 */}
             <Button variant="text" size="sm" iconOnly startIcon={Bold} aria-label="粗體" />
@@ -437,8 +440,8 @@ export const Overflow: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={Undo2} aria-label="復原" />
             <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" />
           </ButtonGroup>
-        </div>
-        <Label>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</Label>
+        </ToolbarFrame>
+        <ExampleCaption>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -452,7 +455,7 @@ export const CommonMistakes: Story = {
         title="❌ 工具操作混入業務層（最常見錯誤）"
         note="重新載入是工具操作——與任何任務無關，任何頁面都可能有它。若把重新載入與儲存、複製、刪除等業務操作混在同一群，角色邊界與分隔線規則都會失效；應先分開業務層與工具層。"
       >
-          <ToolbarFrame title="工具列">
+          <ToolbarFrame title="文件">
             <ButtonGroup>
               {/* ↺ 是工具操作，放在業務層是錯的 */}
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
@@ -461,8 +464,8 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ ↺（工具）與 🗑（業務）混在業務層，角色邊界失效</Label>
-          <ToolbarFrame title="工具列">
+          <ExampleCaption warn>❌ ↺（工具）與 🗑（業務）混在業務層，角色邊界失效</ExampleCaption>
+          <ToolbarFrame title="文件">
             <ButtonGroup>
               {/* 業務層：危險操作在 text 群組末尾 */}
               <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
@@ -472,7 +475,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 業務層放刪除；工具層放重新載入與設定，角色清楚分離</Label>
+          <ExampleCaption>✅ 業務層放刪除；工具層放重新載入與設定，角色清楚分離</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -485,21 +488,21 @@ export const CommonMistakes: Story = {
               <Button variant="primary" size="sm" startIcon={Settings}>設定</Button>
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ 設定是工具操作，不應搶 primary 視覺重量</Label>
+          <ExampleCaption warn>❌ 設定是工具操作，不應搶 primary 視覺重量</ExampleCaption>
           <ToolbarFrame title="專案">
             <ButtonGroup>
               <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 有框→無框，無對應理由，預設不加</Label>
+          <ExampleCaption>✅ 有框→無框，無對應理由，預設不加</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 工具層內多加分隔線造成孤立"
         note="業務層以 text 結尾，角色邊界已加一條分隔線（角色接壤）。若再在工具層內部加分隔線，固定工具按鈕兩側都有分隔線，形成孤立"
       >
-          <ToolbarFrame title="工具列">
+          <ToolbarFrame title="任務">
             <ButtonGroup>
               <Button variant="text" size="sm" startIcon={Plus}>新增</Button>
               <ButtonDivider />
@@ -508,8 +511,8 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ ⚙ 兩側都有分隔線，被孤立</Label>
-          <ToolbarFrame title="工具列">
+          <ExampleCaption warn>❌ ⚙ 兩側都有分隔線，被孤立</ExampleCaption>
+          <ToolbarFrame title="任務">
             <ButtonGroup>
               <Button variant="text" size="sm" startIcon={Plus}>新增</Button>
               <ButtonDivider />
@@ -517,7 +520,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 一條分隔線標記角色邊界，工具層內不再加</Label>
+          <ExampleCaption>✅ 一條分隔線標記角色邊界，工具層內不再加</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -532,7 +535,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ 無角色邊界，分隔線無意義</Label>
+          <ExampleCaption warn>❌ 無角色邊界，分隔線無意義</ExampleCaption>
           <ToolbarFrame title="文件">
             <ButtonGroup>
               <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
@@ -540,7 +543,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 無工具層，溢出直接接在末端</Label>
+          <ExampleCaption>✅ 無工具層，溢出直接接在末端</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -553,14 +556,14 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm">匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>
-          <Label warn>❌ 同優先等級，一個有 icon 一個沒有</Label>
+          <ExampleCaption warn>❌ 同優先等級，一個有 icon 一個沒有</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
               <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download}>匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 同優先等級，icon 處理一致</Label>
+          <ExampleCaption>✅ 同優先等級，icon 處理一致</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -572,12 +575,12 @@ export const DismissVsDanger: Story = {
     <TutorialPage>
       <TutorialRule
         title="Dismiss(關閉 / 忽略) — 弱化 X close icon"
-        note="`<Button iconOnly dismiss />` 表達「關閉此浮層 / 忽略此訊息」語意(對應 onClose / onDismiss callback)。視覺走 dismiss 弱化 treatment(fg-muted icon,低存在感),不搶走 body 主要內容焦點。Dialog / Sheet / Popover / Alert / Toast 的 corner close X 屬此類"
+        note={<><code>&lt;Button iconOnly dismiss /&gt;</code> 表達「關閉此浮層 / 忽略此訊息」語意(對應 onClose / onDismiss callback)。視覺走 dismiss 弱化 treatment(fg-muted icon,低存在感),不搶走 body 主要內容焦點。Dialog / Sheet / Popover / Alert / Toast 的 corner close X 屬此類</>}
       >
           <ToolbarFrame title="通知訊息">
             <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉通知" />
           </ToolbarFrame>
-          <Label>✅ dismiss prop 弱化 X，語意是「關閉此訊息」</Label>
+          <ExampleCaption>✅ dismiss prop 弱化 X，語意是「關閉此訊息」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -587,21 +590,21 @@ export const DismissVsDanger: Story = {
           <ToolbarFrame title="專案 ACME-1234">
             <Button iconOnly variant="text" danger size="sm" startIcon={Trash2} aria-label="刪除專案" />
           </ToolbarFrame>
-          <Label>✅ danger prop 紅色警示，語意是「破壞性動作」</Label>
+          <ExampleCaption>✅ danger prop 紅色警示，語意是「破壞性動作」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 不可混用 — dismiss 語意不可用 danger，destructive 不可用 dismiss"
         note="兩者語意互斥:dismiss 是「關掉 surface」(資料不變),destructive 是「移除資料」(不可逆)。視覺也完全不同:dismiss 弱化、destructive 紅色警示。混用會讓 user 誤判點擊後果 — 原本以為只是關閉,結果刪了資料;或原本以為是刪除警示,結果只是關閉浮層"
       >
-          <ToolbarFrame title="❌ 錯用 1:刪除按鈕套 dismiss prop">
+          <ToolbarFrame title="專案 ACME-1234">
             <Button iconOnly dismiss size="sm" startIcon={Trash2} aria-label="刪除" />
           </ToolbarFrame>
-          <Label warn>❌ Trash2 是破壞性動作，不可用 dismiss 弱化(應 variant="text" danger)</Label>
-          <ToolbarFrame title="❌ 錯用 2:關閉 X 套 danger">
+          <ExampleCaption warn>❌ 錯用 1:刪除按鈕套 dismiss —— Trash2 是破壞性動作，不可用 dismiss 弱化(應 variant="text" danger)</ExampleCaption>
+          <ToolbarFrame title="通知訊息">
             <Button iconOnly variant="text" danger size="sm" startIcon={XIcon} aria-label="關閉" />
           </ToolbarFrame>
-          <Label warn>❌ X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</Label>
+          <ExampleCaption warn>❌ 錯用 2:關閉 X 套 danger —— X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

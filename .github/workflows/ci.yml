@@ -159,6 +159,19 @@ jobs:
           # stories-helpers/examples/tutorial-page.tsx 組成 —— 自抄 Rule / Section、手寫 <h2> / <section>、規則被別的容器包著、
           # 「loose × 2」寫在別處、共用元件被改成借 --layout-space-bottom 都紅。對照組 = c6c192a1 的真檔 + 合成違規。純靜態,約 1 秒。
           npm run test:tutorial-page
+          # 按鈕列的順序與對齊(2026-10-20,教學頁稽核 XF-01):SSOT = action-bar.spec.md:109(列裡有標題 → 按鈕靠右;沒標題 → 靠左)
+          # + :121(靠右 primary 最右、靠左 primary 最左)。TreeView 引導頁 / Steps 結構頁把「上一步」放在主按鈕前面,
+          # 而稽核只讀了 coachmark 的頁腳(那是 justify-between、計數在左),沒有任何機械面看得到故事裡的按鈕列。
+          # 對照組 = 六個修正前的真檔(scripts/test-fixtures/action-row-order/)+ 合成正反例(含包在 DialogClose / Tooltip 裡的按鈕、
+          # 用 fragment 傳進元件槽的列 —— 同日獨立複核抓到這兩種原本看不到)。純靜態,約 2 秒。
+          npm run test:action-row-order
+          # story 不用亂數產生畫面資料(2026-10-20,教學頁稽核 N3):DataTable 範例用 Math.random 價格,同一份建置兩次載入畫面不同,
+          # 截圖 / 像素比對 / 視覺基準圖都無法重現。對照組 = be2f1324 的 data-table.principles 原檔 + 合成正反例。純靜態,約 1 秒。
+          npm run test:story-determinism
+          # story 檔之間不准再抄同一段宣告(2026-10-20,教學頁修正的獨立複核 R1b-T7):N3 的決定性產生器被逐字抄進 DataTable
+          # 設計原則頁與設計規格頁兩個檔。跨檔逐字相同的頂層宣告(6 行以上)鎖在 scripts/story-helper-duplication-baseline.json,
+          # 只准減少;要共用就放進 stories-helpers/。對照組 = 那次的真實抄本 + 合成正反例。純靜態,約 1 秒。
+          npm run test:story-helper-duplication
 
       - name: Registered test scripts nothing was running
         run: |

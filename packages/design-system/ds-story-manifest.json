@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-14T03:00:39.699Z"
+    "generatedAt": "2026-10-20T06:43:04.374Z"
   },
   "components": {
     "accordion": {
@@ -89,7 +89,9 @@
           "design-system-components-agentpanel-設計規格--accessibility"
         ],
         "設計原則": [
-          "design-system-components-agentpanel-設計原則--usage-guidance"
+          "design-system-components-agentpanel-設計原則--usage-guidance",
+          "design-system-components-agentpanel-設計原則--content-guidelines",
+          "design-system-components-agentpanel-設計原則--motion-rule"
         ]
       },
       "openSnapshotIds": [
@@ -143,6 +145,7 @@
         ],
         "設計原則": [
           "design-system-components-appshell-設計原則--usage-guidance",
+          "design-system-components-appshell-設計原則--composition-rules",
           "design-system-components-appshell-設計原則--layout-mode-rule"
         ]
       },
@@ -212,6 +215,7 @@
         ],
         "設計原則": [
           "design-system-components-badge-設計原則--usage-guidance",
+          "design-system-components-badge-設計原則--dot-vs-count-rule",
           "design-system-components-badge-設計原則--default-low-rule",
           "design-system-components-badge-設計原則--contrast-floor-rule",
           "design-system-components-badge-設計原則--accessibility-rule",
@@ -375,6 +379,7 @@
         ],
         "設計原則": [
           "design-system-components-chart-設計原則--usage-guidance",
+          "design-system-components-chart-設計原則--implementation-rule",
           "design-system-components-chart-設計原則--chart-type-rule",
           "design-system-components-chart-設計原則--category-token-rule",
           "design-system-components-chart-設計原則--five-category-limit-rule",
@@ -761,6 +766,7 @@
         ],
         "設計原則": [
           "design-system-components-dropdownmenu-設計原則--usage-guidance",
+          "design-system-components-dropdownmenu-設計原則--group-vs-separator-rule",
           "design-system-components-dropdownmenu-設計原則--item-type-rule",
           "design-system-components-dropdownmenu-設計原則--destructive-rule",
           "design-system-components-dropdownmenu-設計原則--suffix-rule"
@@ -848,7 +854,9 @@
           "design-system-components-fieldcontrolgroup-設計規格--accessibility"
         ],
         "設計原則": [
-          "design-system-components-fieldcontrolgroup-設計原則--usage-guidance"
+          "design-system-components-fieldcontrolgroup-設計原則--usage-guidance",
+          "design-system-components-fieldcontrolgroup-設計原則--content-guidelines",
+          "design-system-components-fieldcontrolgroup-設計原則--size-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -906,6 +914,7 @@
         ],
         "設計原則": [
           "design-system-components-fileupload-設計原則--usage-guidance",
+          "design-system-components-fileupload-設計原則--dropzone-visual-rule",
           "design-system-components-fileupload-設計原則--multiple-rule",
           "design-system-components-fileupload-設計原則--division-of-labor-rule",
           "design-system-components-fileupload-設計原則--error-feedback-rule"
@@ -1333,6 +1342,7 @@
         ],
         "設計原則": [
           "design-system-components-rating-設計原則--usage-guidance",
+          "design-system-components-rating-設計原則--interactive-vs-read-only-rule",
           "design-system-components-rating-設計原則--whole-stars-and-compact",
           "design-system-components-rating-設計原則--yellow-star-convention"
         ]
@@ -1651,6 +1661,7 @@
         ],
         "設計原則": [
           "design-system-components-switch-設計原則--usage-guidance",
+          "design-system-components-switch-設計原則--readonly-vs-disabled-rule",
           "design-system-components-switch-設計原則--disabled-opacity-rule"
         ]
       },
@@ -1846,5 +1857,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1014
+  "totalStories": 1025
 }

@@ -3,13 +3,13 @@
 // + FileItemBoundaryRule into a single `UsageGuidance` story (3 sections — 何時用 /
 // 何時不用 + 替代 / vs 近親) per 2026-04-26 user mandate. StatusRule + AffixRule kept.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { Paperclip, X, FileText, Table as TableIcon } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/ProgressBar/設計原則',
@@ -18,13 +18,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>
-    {children}
-  </p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, naturalWidth: true })
+const TutorialRule = createTutorialRule({ examples: true, naturalWidth: true })
 
 // 情境展示容器——讓例子有真實產品感
 const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: number }) => (
@@ -39,25 +34,23 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 ProgressBar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/ProgressBar/展示" name="批次任務進度"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">批次任務進度</span></LinkTo>
+              <StoryLink kind="Design System/Components/ProgressBar/展示" name="批次任務進度">批次任務進度</StoryLink>
               <span className="text-fg-secondary"> — CSV 匯入 1,250 筆客戶資料、批次寄送:總量已知,單一 prominent 進度條讓使用者掌握整體完成比例</span>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/ProgressBar/展示" name="DataTable 儲存格內進度"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 儲存格內進度</span></LinkTo>
+              <StoryLink kind="Design System/Components/ProgressBar/展示" name="DataTable 儲存格內進度">DataTable 儲存格內進度</StoryLink>
               <span className="text-fg-secondary"> — 列表中每列各自的配額使用率 / 任務完成度,4px 細線不搶走主要欄位的閱讀重量</span>
             </li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 未知進度不要用 ProgressBar(永遠卡 0% 或亂跳)"
           note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
@@ -69,7 +62,7 @@ export const UsageGuidance: Story = {
               <span className="text-body">計算統計報表中...</span>
             </div>
           </Frame>
-          <Label>✅ 未知時長用 CircularProgress(indeterminate),不假裝有進度</Label>
+          <ExampleCaption>✅ 未知時長用 CircularProgress(indeterminate),不假裝有進度</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -83,7 +76,7 @@ export const UsageGuidance: Story = {
               <span className="text-footnote text-fg-muted">· 剛才</span>
             </div>
           </Frame>
-          <Label>✅ 極短操作完成後直接顯示結果,不插入進度視覺</Label>
+          <ExampleCaption>✅ 極短操作完成後直接顯示結果,不插入進度視覺</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -100,7 +93,7 @@ export const UsageGuidance: Story = {
               <FileItem mode="compact" name="截圖.png" status="uploading" progress={0} />
             </div>
           </Frame>
-          <Label>✅ 每檔一條(FileItem 內建),整體進度由使用者自然感知(1 檔完成、2 檔進行中)</Label>
+          <ExampleCaption>✅ 每檔一條(FileItem 內建),整體進度由使用者自然感知(1 檔完成、2 檔進行中)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -110,11 +103,11 @@ export const UsageGuidance: Story = {
           <Frame>
             <ProgressBar value={55} status="inProgress" aria-label="標準進度色示範" />
           </Frame>
-          <Label>✅ 走 status token(info / success / error),不 override 色值</Label>
+          <ExampleCaption>✅ 走 status token(info / success / error),不 override 色值</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — ProgressBar vs CircularProgress vs FileItem">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="能告訴使用者「剩下 X%」嗎?能 + 大區塊 → ProgressBar;不能或小空間 → CircularProgress"
           note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
@@ -128,7 +121,7 @@ export const UsageGuidance: Story = {
             </div>
             <ProgressBar value={65} status="inProgress" aria-label="匯出客戶名單進度" />
           </Frame>
-          <Label>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</Label>
+          <ExampleCaption>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</ExampleCaption>
 
           <Frame>
             {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
@@ -140,7 +133,7 @@ export const UsageGuidance: Story = {
               </div>
             </div>
           </Frame>
-          <Label>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</Label>
+          <ExampleCaption>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</ExampleCaption>
 
           <Frame>
             {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -150,7 +143,7 @@ export const UsageGuidance: Story = {
             </div>
             <ProgressBar value={0} status="inProgress" aria-label="無法量化的報表產生進度（誤用）" />
           </Frame>
-          <Label warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</Label>
+          <ExampleCaption warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -166,7 +159,7 @@ export const UsageGuidance: Story = {
             </div>
             <ProgressBar value={58} status="inProgress" aria-label="附件上傳進度（自組誤用）" />
           </Frame>
-          <Label warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</Label>
+          <ExampleCaption warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</ExampleCaption>
 
           <Frame width={440}>
             {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -178,9 +171,9 @@ export const UsageGuidance: Story = {
             <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
             <p className="text-footnote text-fg-muted mt-[var(--layout-space-tight)]">處理中,預計剩餘 28 秒</p>
           </Frame>
-          <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
+          <ExampleCaption>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -201,7 +194,7 @@ export const StatusRule: Story = {
           </div>
           <ProgressBar value={42} status="inProgress" affix="value" aria-label="Q1 財報上傳進度" />
         </Frame>
-        <Label>✅ 上傳中用 inProgress,affix 顯示進度百分比</Label>
+        <ExampleCaption>✅ 上傳中用 inProgress,affix 顯示進度百分比</ExampleCaption>
 
         <Frame>
           {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -211,7 +204,7 @@ export const StatusRule: Story = {
           </div>
           <ProgressBar value={100} status="success" affix="status-icon" aria-label="簡報上傳完成" />
         </Frame>
-        <Label>✅ 完成用 success + 勾 icon(終態指示)</Label>
+        <ExampleCaption>✅ 完成用 success + 勾 icon(終態指示)</ExampleCaption>
 
         <Frame>
           {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -222,7 +215,7 @@ export const StatusRule: Story = {
           </div>
           <ProgressBar value={68} status="error" affix="status-icon" aria-label="影片素材上傳失敗" />
         </Frame>
-        <Label>✅ 失敗用 error + 叉 icon,旁邊可補上具體錯誤說明</Label>
+        <ExampleCaption>✅ 失敗用 error + 叉 icon,旁邊可補上具體錯誤說明</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -237,7 +230,7 @@ export const StatusRule: Story = {
           </div>
           <ProgressBar value={95} status="error" aria-label="儲存空間使用率" />
         </Frame>
-        <Label>✅ 配額快滿:consumer 判斷「95% 以上顯示警示」後自行把 status 切成 error</Label>
+        <ExampleCaption>✅ 配額快滿:consumer 判斷「95% 以上顯示警示」後自行把 status 切成 error</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -257,7 +250,7 @@ export const AffixRule: Story = {
           </div>
           <ProgressBar value={78} status="inProgress" affix="value" aria-label="儲存空間使用率" />
         </Frame>
-        <Label>✅ 配額顯示:affix=value,使用者要知道確切百分比</Label>
+        <ExampleCaption>✅ 配額顯示:affix=value,使用者要知道確切百分比</ExampleCaption>
 
         <Frame>
           {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -267,7 +260,7 @@ export const AffixRule: Story = {
           </div>
           <ProgressBar value={100} status="success" affix="status-icon" aria-label="提案書上傳完成" />
         </Frame>
-        <Label>✅ 上傳完成:affix=status-icon,終態不需要再看百分比</Label>
+        <ExampleCaption>✅ 上傳完成:affix=status-icon,終態不需要再看百分比</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -287,7 +280,7 @@ export const AffixRule: Story = {
             affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
           />
         </Frame>
-        <Label>✅ 上傳中附取消按鈕,使用者可中斷</Label>
+        <ExampleCaption>✅ 上傳中附取消按鈕,使用者可中斷</ExampleCaption>
 
         <Frame>
           {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
@@ -302,7 +295,7 @@ export const AffixRule: Story = {
             affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
           />
         </Frame>
-        <Label>✅ 顯示實際 bytes 進度,讓使用者判斷速度</Label>
+        <ExampleCaption>✅ 顯示實際 bytes 進度,讓使用者判斷速度</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -318,7 +311,7 @@ export const AffixRule: Story = {
           </div>
           <ProgressBar value={55} status="inProgress" aria-label="附件上傳進度" />
         </Frame>
-        <Label>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</Label>
+        <ExampleCaption>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

@@ -1,12 +1,12 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
 import { Empty } from '@/design-system/components/Empty/empty'
 import './column-types'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
 
 const meta: Meta = {
   title: 'Design System/Components/DataTable/設計原則',
@@ -15,11 +15,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-4xl' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-4xl' })
 
 interface Product {
   name: string
@@ -58,54 +55,62 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 DataTable 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/DataTable/設計規格" name="對齊規則（跨產業共識）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品庫存後台 — 單價 / 金額數字靠右對齊</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DataTable/展示" name="自動行高"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品備註長短不一 — 自動行高撐開列高</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DataTable/展示" name="空狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">目錄尚無商品 — 空狀態引導新增</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>結構化的資料列表(專案、使用者、訂單、商品、報表):要排序 / 篩選 / 分頁、要多欄對齊掃視(數字靠右縱向比較)、或要在儲存格裡直接編輯;簡單展示也用 DataTable,不另外維護一個靜態表格。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/DataTable/設計規格" name="對齊規則（跨產業共識）">商品庫存後台 — 單價 / 金額數字靠右對齊</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DataTable/展示" name="自動行高">商品備註長短不一 — 自動行高撐開列高</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DataTable/展示" name="空狀態">目錄尚無商品 — 空狀態引導新增</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
-      <TutorialRule
-        title="❌ 不用 DataTable 顯示 key-value 屬性列表"
-        note="DataTable 是多 row 集合語義。單一實體的屬性應用 DescriptionList（如用戶詳情頁面）。Jira issue detail page 的 5 個屬性用 DescriptionList，不用 Table"
-      >
-        <Label warn>改用 DescriptionList：項目名 / 狀態 / 優先級 / 指派人 / 建立日期</Label>
-      </TutorialRule>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 不用 DataTable 顯示 key-value 屬性列表"
+          note="DataTable 是多 row 集合語義。單一實體的屬性應用 DescriptionList（如用戶詳情頁面）。Jira issue detail page 的 5 個屬性用 DescriptionList，不用 Table"
+        >
+          <ExampleCaption warn>改用 DescriptionList：項目名 / 狀態 / 優先級 / 指派人 / 建立日期</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 DataTable 表達深層階層結構（部門 / 資料夾 tree）"
-        note="DataTable 支援淺層 nested-rows（展開子列，如任務 / 子任務）；但深層多階縮排 + 大量節點的 folder / dept tree 語意仍屬 TreeView。Notion 的資料庫可以 expand row，但側欄階層樹用 TreeView"
-      >
-        <Label warn>深層階層樹用 TreeView（無限深度展開 / 收合）；淺層子列 DataTable 可用</Label>
-      </TutorialRule>
+        <TutorialRule
+          title="❌ 不用 DataTable 表達深層階層結構（部門 / 資料夾 tree）"
+          note="DataTable 支援淺層 nested-rows（展開子列，如任務 / 子任務）；但深層多階縮排 + 大量節點的 folder / dept tree 語意仍屬 TreeView。Notion 的資料庫可以 expand row，但側欄階層樹用 TreeView"
+        >
+          <ExampleCaption warn>深層階層樹用 TreeView（無限深度展開 / 收合）；淺層子列 DataTable 可用</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 DataTable 做超過 3 層的巢狀分組"
-        note="DataTable 的分組能力有限。需要複雜群組 header + 合併 cell → 用自訂 grid 或引入 AG Grid。Stripe billing 的 invoices 表最多 2 層分組"
-      >
-        <Label warn>複雜分組用自訂 layout 或專門 grid library</Label>
-      </TutorialRule>
+        <TutorialRule
+          title="❌ 不用 DataTable 做超過 3 層的巢狀分組"
+          note="DataTable 的分組能力有限。需要複雜群組 header + 合併 cell → 用自訂 grid 或引入 AG Grid。Stripe billing 的 invoices 表最多 2 層分組"
+        >
+          <ExampleCaption warn>複雜分組用自訂 layout 或專門 grid library</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 DataTable 做公式 / cell-level 計算"
-        note="DataTable 的 spreadsheetMode 支援跨 cell 選取 / Shift 矩形範圍 / 方向鍵導覽 / cell 編輯；但公式與 cell-level 計算超出範圍 → AG Grid Enterprise / Handsontable。Airtable 確實像表，但 DataTable 不是設計來做這個"
-      >
-        <Label warn>公式 / 計算用專門 library，不往 DataTable 塞；跨 cell 選取 / 編輯用 spreadsheetMode</Label>
-      </TutorialRule>
-    </>
+        <TutorialRule
+          title="❌ 不用 DataTable 做公式 / cell-level 計算"
+          note="DataTable 的 spreadsheetMode 支援跨 cell 選取 / Shift 矩形範圍 / 方向鍵導覽 / cell 編輯；但公式與 cell-level 計算超出範圍 → AG Grid Enterprise / Handsontable。Airtable 確實像表，但 DataTable 不是設計來做這個"
+        >
+          <ExampleCaption warn>公式 / 計算用專門 library，不往 DataTable 塞；跨 cell 選取 / 編輯用 spreadsheetMode</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li>圖文並列的卡片瀏覽 → 自訂卡片格線或清單:表格是密集的列,不適合大圖</li>
+          <li>只有 2–3 筆、不需要互動 → 描述清單或自訂版面:用整張表格太重</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>DescriptionList</strong> —— 單一實體的屬性(標籤 + 值);DataTable 是多筆資料的集合</li>
+          <li><strong>TreeView</strong> —— 深層、多階的樹(部門、資料夾);DataTable 只支援淺層展開子列(任務 / 子任務)</li>
+          <li><strong>Chart</strong> —— 看整體趨勢、比例、分布;DataTable 是逐列查看與操作</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -125,24 +130,24 @@ export const ColumnTypeRule: Story = {
     return (
       <TutorialPage>
         <TutorialRule
-          title="✅ 宣告 `meta.type`,DataTable 自動選對應 view 渲染"
-          note="每個 Field Control 的 `mode='view'` 渲染(`<Input mode='view'>` / `<NumberInput mode='view'>` / `<Checkbox mode='view'>` 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子"
+          title={<>✅ 宣告 <code>meta.type</code>,DataTable 自動選對應 view 渲染</>}
+          note={<>每個 Field Control 的 <code>mode='view'</code> 渲染(<code>&lt;Input mode='view'&gt;</code> / <code>&lt;NumberInput mode='view'&gt;</code> / <code>&lt;Checkbox mode='view'&gt;</code> 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子</>}
         >
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </TutorialRule>
 
         <TutorialRule
           title="❌ 手寫 cell render 自訂格式化"
-          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='view'` 系統——格式化邏輯會漂移。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
+          note={<>每 column 自己寫 <code>cell: (info) =&gt; ...</code> 會繞過 <code>mode='view'</code> 系統——格式化邏輯會漂移。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性</>}
         >
-          <Label warn>除非真的需要 `mode='view'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 view 渲染不要干預</Label>
+          <ExampleCaption warn>除非真的需要 <code>mode='view'</code> 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 view 渲染不要干預</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="擴充新 type：在 DataTable 的類型登錄處統一定義"
-          note="新增資料類型（如 `percentage`、`relative-time`）時，應一次定義檢視、編輯、對齊與預設設定。完成後所有 DataTable 會共用同一套行為，不需在單一表格重複格式化"
+          note={<>新增資料類型（如 <code>percentage</code>、<code>relative-time</code>）時，應一次定義檢視、編輯、對齊與預設設定。完成後所有 DataTable 會共用同一套行為，不需在單一表格重複格式化</>}
         >
-          <Label>讓 column type 系統成為 single source of truth,所有 table 受惠同一次更新</Label>
+          <ExampleCaption>讓 column type 系統成為 single source of truth,所有 table 受惠同一次更新</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -162,12 +167,14 @@ export const VirtualScrollRule: Story = {
       col.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, width: 140 } }),
       col.accessor('price', { header: 'Price', meta: { type: 'currency', prefix: '$', width: 120 } }),
     ]
-    const bigData = Array.from({ length: 500 }, (_, i) => ({
-      name: `Product ${String(i + 1).padStart(4, '0')}`,
-      category: CATEGORY_OPTIONS[i % CATEGORY_OPTIONS.length].value,
+    // 500 筆商品:商品目錄的單一住所 = stories-helpers/data/product-catalog.ts(確定性 —— 每次載入、每次截圖都是同一份資料)。
+    // 2026-10-20 N3:原本 `Product 0001…0500` 佔位名稱 + Math.random 價格。類別只取本頁 select 選項有的三類,值對應選項的 value。
+    const bigData: Product[] = productCatalog(500, { categories: ['Electronics', 'Furniture', 'Food'] }).map((c) => ({
+      name: c.name,
+      category: c.category.toLowerCase(),
       stock: 'in_stock',
-      price: Math.round(Math.random() * 10000),
-      available: i % 3 !== 0,
+      price: c.price,
+      available: c.index % 3 !== 0,
       launchDate: '2026-04-18',
     }))
     return (
@@ -177,7 +184,7 @@ export const VirtualScrollRule: Story = {
           note="資料量小,全渲染比 virtualizer 簡單。沒有固定高度,table 自然撐開,頁面捲動即可"
         >
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
-          <Label>↑ 4 筆資料無需虛擬捲動</Label>
+          <ExampleCaption>↑ 4 筆資料無需虛擬捲動</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -185,14 +192,14 @@ export const VirtualScrollRule: Story = {
           note="傳固定高度時 TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
         >
           <DataTable columns={columns} data={bigData} height="400px" />
-          <Label>↑ 500 筆資料,固定 400px 高度 → virtualizer 只渲染畫面中的 ~20 rows</Label>
+          <ExampleCaption>↑ 500 筆資料,固定 400px 高度 → virtualizer 只渲染畫面中的 ~20 rows</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 100+ 筆資料用 height='auto'"
           note="全部 DOM 渲染 → 初始 render 慢、滾動 janky、記憶體吃緊。當資料規模會大時用固定 height 啟用 virtualization"
         >
-          <Label warn>判斷法:資料筆數會穩定超過 50 就用固定 height</Label>
+          <ExampleCaption warn>判斷法:資料筆數會穩定超過 50 就用固定 height</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -211,7 +218,7 @@ export const EmptyStateRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="✅ 無資料 → 消費 Empty primitive(跟系統統一)"
-          note="DataTable empty state 走共用 `Empty` 元件——保持跟 SelectMenu / Combobox / Page section 視覺一致。「不自訂」指不手刻自家 empty 視覺,不是省略文案:正式產品應傳 `emptyState` 以業務語言說明「缺什麼資料 + 下一步」(對齊 Empty 文案準則);未傳時才落回抽象 fallback「沒有資料」"
+          note={<>DataTable empty state 走共用 <code>Empty</code> 元件——保持跟 SelectMenu / Combobox / Page section 視覺一致。「不自訂」指不手刻自家 empty 視覺,不是省略文案:正式產品應傳 <code>emptyState</code> 以業務語言說明「缺什麼資料 + 下一步」(對齊 Empty 文案準則);未傳時才落回抽象 fallback「沒有資料」</>}
         >
           <DataTable
             columns={columns}
@@ -219,21 +226,21 @@ export const EmptyStateRule: Story = {
             height="auto"
             emptyState={<Empty title="尚無商品" description="點擊上方「新增商品」開始建立第一筆" />}
           />
-          <Label>↑ 傳 `emptyState` 消費 Empty primitive,並以業務語言描述缺什麼資料</Label>
+          <ExampleCaption>↑ 傳 <code>emptyState</code> 消費 Empty primitive,並以業務語言描述缺什麼資料</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 自訂 empty 視覺"
           note="每個 table 各自寫「沒有資料」的 UI → 系統內空狀態視覺漂移(一個 table icon、一個 table 純文字、一個 table 大紫色插畫)。統一走 Empty primitive"
         >
-          <Label warn>Empty primitive 有 icon / title / description / action 4 個 slot 可客製,足夠各種空狀態需求</Label>
+          <ExampleCaption warn>Empty primitive 有 icon / title / description / action 4 個 slot 可客製,足夠各種空狀態需求</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="Loading / Error 不是 DataTable 的職責"
           note="載入中 → consumer 在 table 外層顯示 CircularProgress / Skeleton。載入失敗 → consumer 顯示 Alert。DataTable 只處理「確定有 column + 有 data(或沒 data)」的情境,不處理生命週期"
         >
-          <Label>判斷法:「我知道 data 是什麼嗎?」知道 → 傳給 DataTable;還在載 → 外面 Skeleton;載失敗 → 外面 Alert</Label>
+          <ExampleCaption>判斷法:「我知道 data 是什麼嗎?」知道 → 傳給 DataTable;還在載 → 外面 Skeleton;載失敗 → 外面 Alert</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -246,16 +253,16 @@ export const NotSpreadsheetRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="DataTable 預設不做公式計算、不做跨 cell 選取"
-        note="DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。逃生門:確需 Excel-like 編輯可 opt-in `spreadsheetMode` prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。"
+        note={<>DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。逃生門:確需 Excel-like 編輯可 opt-in <code>spreadsheetMode</code> prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。</>}
       >
-        <Label>需要試算表能力 → 用專門 library(AG Grid Enterprise / Handsontable / Luckysheet),不往 DataTable 塞</Label>
+        <ExampleCaption>需要試算表能力 → 用專門 library(AG Grid Enterprise / Handsontable / Luckysheet),不往 DataTable 塞</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 強行在 DataTable 加試算表功能"
         note="使用者看到 table UI 會建立「這是 spreadsheet」的預期,結果發現不能 Ctrl+click 多選、沒有 formula bar——預期落空,體驗差。DataTable 視覺刻意不像 spreadsheet(圓角、捨棄格線),避免這個誤解"
       >
-        <Label warn>邊界清楚比功能多重要——DataTable 做資料展示做到 100 分,試算表交給其他 library</Label>
+        <ExampleCaption warn>邊界清楚比功能多重要——DataTable 做資料展示做到 100 分,試算表交給其他 library</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

@@ -16,47 +16,15 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 5,
-    "layout-space-magic-ok": 475
+    "layout-space-magic-ok": 382
   },
   "files": {
-    "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/AccountMenu/account-menu.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "96a5acaecebb",
-          "c18068b9e734"
-        ]
-      }
-    },
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 2,
         "hits": [
           "0120f2b23f62",
           "580f866cc11a"
-        ]
-      }
-    },
-    "packages/design-system/src/components/AgentPanel/agent-panel.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 8,
-        "hits": [
-          "bf4810a73a7a",
-          "bf4810a73a7a",
-          "bf4810a73a7a",
-          "bf4810a73a7a",
-          "c9a0e013ded1",
-          "c9a0e013ded1",
-          "c9a0e013ded1",
-          "c9a0e013ded1"
         ]
       }
     },
@@ -72,27 +40,6 @@
           "c839fbfeaba9",
           "dd598861dfd3",
           "f3ceec75d331"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Alert/alert.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 6,
-        "hits": [
-          "0eda60aa688c",
-          "0eda60aa688c",
-          "0eda60aa688c",
-          "0eda60aa688c",
-          "0eda60aa688c",
-          "329c532d568b"
         ]
       }
     },
@@ -117,9 +64,8 @@
     },
     "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 5,
+        "count": 4,
         "hits": [
-          "a2ad742a6759",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
@@ -129,9 +75,8 @@
     },
     "packages/design-system/src/components/Badge/badge.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 8,
+        "count": 7,
         "hits": [
-          "a2ad742a6759",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
@@ -142,28 +87,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Button/button.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 2,
         "hits": [
           "352a30033899",
-          "a2ad742a6759",
           "ed0d4093a9b6"
         ]
       }
@@ -174,16 +102,6 @@
         "hits": [
           "839bb2dc540f",
           "a11f8d426767"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 3,
-        "hits": [
-          "0776d203bb37",
-          "a2ad742a6759",
-          "f020951d4443"
         ]
       }
     },
@@ -198,11 +116,10 @@
     },
     "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 8,
+        "count": 7,
         "hits": [
           "04a30a3c1324",
           "26799ec616eb",
-          "a2ad742a6759",
           "de5d6f1a74dd",
           "e18dbca74007",
           "e7035f58379d",
@@ -222,28 +139,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Chart/chart.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Chip/chip.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "38747646988d",
-          "a2ad742a6759"
+          "38747646988d"
         ]
       }
     },
@@ -271,59 +171,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Command/command.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/DateGrid/date-grid.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
           "757fb04786b7"
-        ]
-      }
-    },
-    "packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
         ]
       }
     },
@@ -348,18 +200,9 @@
         ]
       },
       "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "a2ad742a6759",
-          "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx": {
-      "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "a2ad742a6759"
+          "ed0d4093a9b6"
         ]
       }
     },
@@ -379,21 +222,12 @@
         ]
       }
     },
-    "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Empty/empty.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 2,
         "hits": [
           "087d8635074b",
-          "39456e13412a",
-          "a2ad742a6759"
+          "39456e13412a"
         ]
       }
     },
@@ -407,40 +241,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Field/field.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Field/field.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
           "a5ae4d8e225c"
-        ]
-      }
-    },
-    "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 6,
-        "hits": [
-          "158ffb264990",
-          "158ffb264990",
-          "26126b332403",
-          "26126b332403",
-          "ad0d4eecc09b",
-          "ad0d4eecc09b"
-        ]
-      }
-    },
-    "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
         ]
       }
     },
@@ -460,22 +265,20 @@
     },
     "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 2,
         "hits": [
           "8a0296678df5",
-          "8a0296678df5",
-          "a2ad742a6759"
+          "8a0296678df5"
         ]
       }
     },
     "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 5,
+        "count": 4,
         "hits": [
           "2795d1fb3659",
           "2b48009b3d5c",
           "75bfa413bc1f",
-          "a2ad742a6759",
           "a6ff3f6579e0"
         ]
       }
@@ -490,10 +293,9 @@
     },
     "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "7257f09b0745",
-          "a2ad742a6759"
+          "7257f09b0745"
         ]
       }
     },
@@ -526,54 +328,6 @@
         ]
       }
     },
-    "packages/design-system/src/components/Input/input.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Menu/menu-item.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Notice/notice.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 4,
@@ -593,27 +347,10 @@
         ]
       }
     },
-    "packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Popover/popover.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "a2ad742a6759",
           "ed0d4093a9b6"
         ]
       }
@@ -628,7 +365,7 @@
     },
     "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 17,
+        "count": 16,
         "hits": [
           "147ea1c2c406",
           "147ea1c2c406",
@@ -645,7 +382,6 @@
           "7257f09b0745",
           "7257f09b0745",
           "8a0296678df5",
-          "a2ad742a6759",
           "ed0d4093a9b6"
         ]
       }
@@ -656,14 +392,6 @@
         "hits": [
           "ed0d4093a9b6",
           "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
         ]
       }
     },
@@ -683,16 +411,15 @@
         ]
       },
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "38747646988d",
-          "a2ad742a6759"
+          "38747646988d"
         ]
       }
     },
     "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 13,
+        "count": 12,
         "hits": [
           "15ec386db7bc",
           "15ec386db7bc",
@@ -705,7 +432,6 @@
           "6f36c142aedc",
           "9d9a1c16c5f4",
           "9d9a1c16c5f4",
-          "a2ad742a6759",
           "aa3157744842"
         ]
       }
@@ -725,38 +451,6 @@
         ]
       }
     },
-    "packages/design-system/src/components/Select/select.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Separator/separator.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Separator/separator.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
@@ -765,22 +459,10 @@
         ]
       }
     },
-    "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx": {
+    "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 5,
-        "hits": [
-          "491a6dd9b5e7",
-          "a2ad742a6759",
-          "e3eefbc801b9",
-          "ed0d4093a9b6",
           "ed0d4093a9b6"
         ]
       }
@@ -809,7 +491,7 @@
         ]
       },
       "layout-space-magic-ok": {
-        "count": 13,
+        "count": 12,
         "hits": [
           "2eb690f8e049",
           "2eb690f8e049",
@@ -822,8 +504,7 @@
           "9027e2e5ea66",
           "9027e2e5ea66",
           "9027e2e5ea66",
-          "9027e2e5ea66",
-          "a2ad742a6759"
+          "9027e2e5ea66"
         ]
       }
     },
@@ -845,9 +526,8 @@
     },
     "packages/design-system/src/components/Slider/slider.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 5,
+        "count": 4,
         "hits": [
-          "a2ad742a6759",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
@@ -864,28 +544,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Steps/steps.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "a2ad742a6759",
-          "e3eefbc801b9"
-        ]
-      }
-    },
     "packages/design-system/src/components/Steps/steps.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
           "7257f09b0745"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Switch/switch.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
         ]
       }
     },
@@ -897,26 +560,17 @@
         ]
       }
     },
-    "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
     "packages/design-system/src/components/Tag/tag.principles.stories.tsx": {
       "story-counter-example": {
         "count": 1,
         "hits": [
-          "b640bf54c588"
+          "7e690a6c850d"
         ]
       },
       "layout-space-magic-ok": {
-        "count": 11,
+        "count": 10,
         "hits": [
           "38747646988d",
-          "a2ad742a6759",
           "f65f7d181a68",
           "f65f7d181a68",
           "f65f7d181a68",
@@ -938,36 +592,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
-        ]
-      }
-    },
-    "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "a2ad742a6759",
-          "e3eefbc801b9"
-        ]
-      }
-    },
     "packages/design-system/src/components/TimePicker/time-picker.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
           "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Toast/toast.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "a2ad742a6759"
         ]
       }
     },
@@ -982,12 +611,11 @@
     },
     "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 4,
+        "count": 3,
         "hits": [
           "39987fdb7aa5",
           "8a0296678df5",
-          "983b08ad0532",
-          "a2ad742a6759"
+          "983b08ad0532"
         ]
       }
     },
@@ -1001,9 +629,8 @@
     },
     "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 8,
+        "count": 7,
         "hits": [
-          "a2ad742a6759",
           "f1d9e4225ce4",
           "f1d9e4225ce4",
           "f1d9e4225ce4",
@@ -1037,8 +664,6 @@
           "03b4e19cbe41",
           "087d8635074b",
           "0bce48f677f7",
-          "0c9cf52967e5",
-          "0c9cf52967e5",
           "0f8b16603ad4",
           "0f8b16603ad4",
           "163e399b1fc2",
@@ -1079,6 +704,8 @@
           "6d656e3e3e43",
           "77b99a1c58e3",
           "77b99a1c58e3",
+          "8017d9c053be",
+          "8017d9c053be",
           "807e7d3bb026",
           "82e71acae916",
           "83dc1b631a1b",
@@ -1153,6 +780,8 @@
         "count": 25,
         "hits": [
           "443bd92dcede",
+          "443bd92dcede",
+          "494cf51f5c1e",
           "6f6c02a5d6e5",
           "70d4d558d2e5",
           "844421913907",
@@ -1162,9 +791,7 @@
           "8b4dc944e7fb",
           "8bc05710d959",
           "924bef2ce598",
-          "92c085b15262",
           "9b3abc7a54f8",
-          "9d0ab6bc85f0",
           "a8236a0a64ee",
           "b0d45d326249",
           "bc33784e6030",
@@ -1203,21 +830,18 @@
     },
     "packages/design-system/src/tokens/elevation/elevation.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 2,
         "hits": [
           "074f90cb5eee",
-          "074f90cb5eee",
-          "7072bae7fd91"
+          "074f90cb5eee"
         ]
       }
     },
     "packages/design-system/src/tokens/layoutSpace/layoutSpace.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 5,
+        "count": 3,
         "hits": [
-          "88e6d19cb16f",
           "9f35d4d3e58c",
-          "ab0b2197a540",
           "d8b5f4ec45d9",
           "dcb4041b33e0"
         ]
@@ -1242,17 +866,6 @@
           "d8b5f4ec45d9",
           "dcb4041b33e0",
           "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/tokens/radius/radius.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 4,
-        "hits": [
-          "41f9bbc5b776",
-          "41f9bbc5b776",
-          "41f9bbc5b776",
-          "41f9bbc5b776"
         ]
       }
     },

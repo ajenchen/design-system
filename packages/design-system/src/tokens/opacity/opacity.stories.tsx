@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Opacity',
@@ -50,19 +51,22 @@ function OpacityRow({ utility, value, usage }: { utility: string; value: string;
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <div className="max-w-4xl">
-      <h2 className="text-h3 mb-[var(--layout-space-tight)]">Opacity Tokens</h2>
-      <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
-        本系統只定義 1 個 opacity token——<code>--opacity-disabled</code>(0.45,系統內唯一)。
-        其他透明度需求走 alpha 色階(<code>--white-aN</code> / <code>--black-aN</code>),不另開 opacity token;
-        值不隨 dark mode 切換(light / dark 共用 0.45)。
-      </p>
+    <TutorialPage className="max-w-4xl">
+      <TutorialSection title="Opacity Tokens">
+        <div>
+          <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
+            本系統只定義 1 個 opacity token——<code>--opacity-disabled</code>(0.45,系統內唯一)。
+            其他透明度需求走 alpha 色階(<code>--white-aN</code> / <code>--black-aN</code>),不另開 opacity token;
+            值不隨 dark mode 切換(light / dark 共用 0.45)。
+          </p>
 
-      <OpacityRow utility="opacity-disabled" value="0.45" usage="所有元件的 disabled 狀態(token swap 為主、opacity blanket 為輔,詳 spec「使用規則」)" />
+          <OpacityRow utility="opacity-disabled" value="0.45" usage="所有元件的 disabled 狀態(token swap 為主、opacity blanket 為輔,詳 spec「使用規則」)" />
 
-      <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">
-        實際 CSS 值見 <code>packages/design-system/src/tokens/opacity/opacity.css</code>;雙策略(token swap vs opacity blanket)與消費者清單見同目錄 <code>opacity.spec.md</code>。
-      </p>
-    </div>
+          <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">
+            實際 CSS 值見 <code>packages/design-system/src/tokens/opacity/opacity.css</code>;雙策略(token swap vs opacity blanket)與消費者清單見同目錄 <code>opacity.spec.md</code>。
+          </p>
+        </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }

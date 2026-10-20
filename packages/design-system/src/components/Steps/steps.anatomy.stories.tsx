@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Steps, StepItem, StepLabel, StepDescription, StepContent } from './steps'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
@@ -310,14 +311,16 @@ const ProgressFlow = () => {
           ))}
         </Steps>
       </div>
-      <div className="flex gap-2">
-        <Button variant="tertiary" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
-          上一步
-        </Button>
+      {/* 2026-10-20 XF-01:同一組動作 = ButtonGroup(鈕距由群組擁有,原本手寫 flex gap-2);這一列沒有標題 → 靠左、primary 最左
+          (action-bar.spec.md:109 / :121,與 Steps 展示同一個排法;原本上一步在左) */}
+      <ButtonGroup>
         <Button variant="primary" size="sm" disabled={idx >= CHECKOUT_STEPS.length - 1} onClick={() => setIdx((i) => Math.min(CHECKOUT_STEPS.length - 1, i + 1))}>
           下一步
         </Button>
-      </div>
+        <Button variant="tertiary" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
+          上一步
+        </Button>
+      </ButtonGroup>
       <div className="text-[11px] text-fg-muted">observed:current = <span className="font-mono">{current}</span> · completed = <span className="font-mono">[{completed.join(', ')}]</span></div>
     </div>
   )

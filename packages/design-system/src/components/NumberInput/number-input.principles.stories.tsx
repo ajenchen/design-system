@@ -1,14 +1,14 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { NumberInput } from './number-input'
 import { Input } from '@/design-system/components/Input/input'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/NumberInput/設計原則',
@@ -17,11 +17,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -29,45 +26,43 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 NumberInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="格式化選項"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">格式化選項</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="DataTable 整合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 整合</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/NumberInput/展示" name="四模式">四模式</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/NumberInput/展示" name="三種尺寸">尺寸與 Button 對齊</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/NumberInput/展示" name="格式化選項">格式化選項</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/NumberInput/展示" name="DataTable 整合">DataTable 整合</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 NumberInput 做 DataTable 列表展示"
-          note="Table cell 用 `mode='view'` 渲染,不用 edit 模式輸入元件。DataTable 的 currency 欄位自動消費 `<NumberInput mode='view'>`"
+          note={<>Table cell 用 <code>mode='view'</code> 渲染,不用 edit 模式輸入元件。DataTable 的 currency 欄位自動消費 <code>&lt;NumberInput mode='view'&gt;</code></>}
         >
-          <Label warn>Table cell 顯示值 → `mode='view'` 渲染,不用 edit Input</Label>
+          <ExampleCaption warn>Table cell 顯示值 → <code>mode='view'</code> 渲染,不用 edit Input</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="❌ 不用 NumberInput 做電話號碼或郵遞區號 → Input"
           note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。改用 Input + type='tel' / pattern(Stripe 的電話欄用 Input)。用 NumberInput 會錯誤套用千分位、吃掉前導零,且誤導 mobile 彈出數字鍵盤"
         >
           <NumberInput mode="readonly" value={912345678} aria-label="電話號碼（NumberInput 誤用）" />
-          <Label warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</Label>
+          <ExampleCaption warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</ExampleCaption>
           <Input defaultValue="0912-345-678" aria-label="電話號碼" />
-          <Label>↑ 電話用 Input(可自訂 type=tel 或 pattern),保留 dash / 前導零</Label>
+          <ExampleCaption>↑ 電話用 Input(可自訂 type=tel 或 pattern),保留 dash / 前導零</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不用 NumberInput 做音量 / 亮度滑動調整 → Slider"
           note="視覺調整用 Slider。NumberInput 是「輸入精確值」的 form field。Material 音量控制用 Slider"
         >
-          <Label warn>音量 / 亮度 → Slider,使用者目標是「感受」而非「輸入精確值」</Label>
+          <ExampleCaption warn>音量 / 亮度 → Slider,使用者目標是「感受」而非「輸入精確值」</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -84,9 +79,9 @@ export const UsageGuidance: Story = {
           note="即使值看起來「就是數字字串」,缺少格式化會讓大數字不可讀(1234567 vs 1,234,567)。Edit 與 Display 分離是 Field 設計的基本前提——用 NumberInput 兩者都得到"
         >
           <Input defaultValue="1234567" aria-label="數值（Input 誤用）" />
-          <Label warn>↑ 1234567 難讀、無貨幣前綴、無 locale、無右對齊</Label>
+          <ExampleCaption warn>↑ 1234567 難讀、無貨幣前綴、無 locale、無右對齊</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -124,7 +119,7 @@ export const AlignmentRule: Story = {
           <div className="w-full max-w-lg">
             <DataTable columns={columns} data={data} height="auto" />
           </div>
-          <Label>↑ price 和 stock 欄自動右對齊,小數點縱向對齊</Label>
+          <ExampleCaption>↑ price 和 stock 欄自動右對齊,小數點縱向對齊</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -138,7 +133,7 @@ export const AlignmentRule: Story = {
             aria-label="價格（錯誤右對齊示範）"
             className="text-right"
           />
-          <Label warn>↑ Edit input 強制右對齊 → 打字時游標位置感變怪</Label>
+          <ExampleCaption warn>↑ Edit input 強制右對齊 → 打字時游標位置感變怪</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -170,7 +165,7 @@ export const FormatOptionsRule: Story = {
         note="需要一致位數時才設——金融、科學、測量。整數欄位不需要 precision(預設就是不補零)"
       >
         <NumberInput mode="readonly" value={85} suffix="%" precision={2} aria-label="精確百分比" />
-        <Label>↑ 85 → 85.00%(科學報告、金融報表場景)</Label>
+        <ExampleCaption>↑ 85 → 85.00%(科學報告、金融報表場景)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -178,7 +173,7 @@ export const FormatOptionsRule: Story = {
         note="手動用 toLocaleString() 或字串模板格式化會導致 edit / readonly / table cell 不一致——三個地方都要各自寫一遍格式化邏輯,且 locale 切換時全部要改"
       >
         <Input defaultValue="$2,490.00" aria-label="手動格式化價格（不建議）" />
-        <Label warn>↑ 用 Input + 手動格式化字串 → 使用者打字時要 parse「$2,490.00」→ 脆且不 locale-aware</Label>
+        <ExampleCaption warn>↑ 用 Input + 手動格式化字串 → 使用者打字時要 parse「$2,490.00」→ 脆且不 locale-aware</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

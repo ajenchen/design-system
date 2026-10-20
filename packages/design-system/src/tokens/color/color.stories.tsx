@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import React from 'react'
+import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Color',
@@ -23,6 +23,9 @@ type Story = StoryObj
 
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+// 規則的內容是示範 + 它的 token 註記,子節點照順序以 tight 排
+const TutorialRule = createTutorialRule()
 
 function SwatchBg({
   bg,
@@ -73,13 +76,6 @@ function SwatchText({
   )
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-caption font-medium uppercase tracking-wider text-fg-muted">
-      {children}
-    </p>
-  )
-}
 
 /** 「底」三種層色 × 三個狀態(互動色 story 用;color.spec.md「Hover 換色配對總則」「底」列,待辦總帳 B8) */
 const BASE_SURFACE_DEMOS = [
@@ -254,22 +250,21 @@ export const Semantic: Story = {
     },
   },
   render: () => (
-    <div className="max-w-2xl space-y-[var(--layout-space-loose)]">
+    // 段落 = 共用教學頁元件的 TutorialSection(2026-10-20 T7 甲:Tokens / Patterns 文件頁與教學頁同一層段落;原本 space-y-loose 讓段落之間與段落內一樣 16px)
+    <TutorialPage className="max-w-2xl">
 
       {/* Action */}
-      <div>
-        <SectionLabel>Action — Primary</SectionLabel>
-        <div className="mt-[var(--layout-space-tight)] grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
+      <TutorialSection title="Action — Primary">
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
           <SwatchBg bg="var(--primary)"        label="bg-primary"        desc="按鈕、連結、focus ring" />
           <SwatchBg bg="var(--primary-subtle)" bordered label="bg-primary-subtle" desc="淡底 / checked 底" />
         </div>
-      </div>
+      </TutorialSection>
 
       {/* Status */}
-      <div>
-        <SectionLabel>Status</SectionLabel>
+      <TutorialSection title="Status">
         {/* 並列色票格之間與上方 Primary / 下方各段的色票格同一個 loose(原本 inline style 寫死 8px,閘看不到、畫面上比其他段擠一半) */}
-        <div className="mt-[var(--layout-space-tight)] grid items-start gap-[var(--layout-space-loose)]" style={{ gridTemplateColumns: '44px 1fr 1fr 1fr 1fr' }}>
+        <div className="grid items-start gap-[var(--layout-space-loose)]" style={{ gridTemplateColumns: '44px 1fr 1fr 1fr 1fr' }}>
           <div />
           {['Info', 'Error', 'Success', 'Warning'].map(n => (
             <span key={n} className="text-caption text-fg-muted text-center block">{n}</span>
@@ -285,22 +280,20 @@ export const Semantic: Story = {
           <SwatchBg bg="var(--success-subtle)" bordered label="bg-success-subtle" desc="淡底" />
           <SwatchBg bg="var(--warning-subtle)" bordered label="bg-warning-subtle" desc="淡底" />
         </div>
-      </div>
+      </TutorialSection>
 
       {/* Other */}
-      <div>
-        <SectionLabel>Other</SectionLabel>
-        <div className="mt-[var(--layout-space-tight)] grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
+      <TutorialSection title="Other">
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xs">
           <SwatchBg bg="var(--notification)" label="bg-notification" desc="未讀計數 / 通知紅點" />
           <SwatchBg bg="var(--brand)"        label="bg-brand"        desc="品牌色，固定色" />
         </div>
-      </div>
+      </TutorialSection>
 
       {/* Border */}
-      <div>
-        <SectionLabel>Border</SectionLabel>
+      <TutorialSection title="Border">
         {/* @layout-space-magic-ok: 邊框樣本兩列同質列距 10px(layoutSpace.spec.md:165 同質清單列) */}
-        <div className="mt-[var(--layout-space-tight)] space-y-2.5">
+        <div className="space-y-2.5">
           {[
             { label: 'border-border',  desc: '元件標準邊框',   style: { border: '2px solid var(--border)' } },
             { label: 'border-divider', desc: '分隔線（比 border 更淡）', style: { borderBottom: '2px solid var(--divider)' } },
@@ -316,9 +309,9 @@ export const Semantic: Story = {
             </div>
           ))}
         </div>
-      </div>
+      </TutorialSection>
 
-    </div>
+    </TutorialPage>
   ),
 }
 
@@ -349,30 +342,31 @@ export const Interactive: Story = {
     },
   },
   render: () => (
-    <div className="max-w-lg space-y-[var(--layout-space-loose)]">
-      {/* Colored interactive states */}
-      {[
-        { name: 'Primary', prefix: 'primary', hover: '--primary-hover', base: '--primary', active: '--primary-active' },
-        { name: 'Info',    prefix: 'info',    hover: '--info-hover',    base: '--info',    active: '--info-active' },
-        { name: 'Error',   prefix: 'error',   hover: '--error-hover',   base: '--error',   active: '--error-active' },
-        { name: 'Success', prefix: 'success', hover: '--success-hover', base: '--success', active: '--success-active' },
-        { name: 'Warning', prefix: 'warning', hover: '--warning-hover', base: '--warning', active: '--warning-active' },
-      ].map(({ name, prefix, hover, base, active }) => (
-        <div key={name}>
-          <span className="text-caption text-fg-muted mb-[var(--layout-space-tight)] block">{name}</span>
-          <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
-            <SwatchBg bg={`var(${hover})`}  label="hover"  desc={`bg-${prefix}-hover`} />
-            <SwatchBg bg={`var(${base})`}   label="base"   desc={`bg-${prefix}`} />
-            <SwatchBg bg={`var(${active})`} label="active" desc={`bg-${prefix}-active`} />
+    // 段落 = TutorialSection(2026-10-20 T7 甲);開頭五組語義色互動狀態沒有段名,是頁裡的第一塊,五組之間照舊 loose
+    <TutorialPage className="max-w-lg">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        {[
+          { name: 'Primary', prefix: 'primary', hover: '--primary-hover', base: '--primary', active: '--primary-active' },
+          { name: 'Info',    prefix: 'info',    hover: '--info-hover',    base: '--info',    active: '--info-active' },
+          { name: 'Error',   prefix: 'error',   hover: '--error-hover',   base: '--error',   active: '--error-active' },
+          { name: 'Success', prefix: 'success', hover: '--success-hover', base: '--success', active: '--success-active' },
+          { name: 'Warning', prefix: 'warning', hover: '--warning-hover', base: '--warning', active: '--warning-active' },
+        ].map(({ name, prefix, hover, base, active }) => (
+          <div key={name}>
+            <span className="text-caption text-fg-muted mb-[var(--layout-space-tight)] block">{name}</span>
+            <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+              <SwatchBg bg={`var(${hover})`}  label="hover"  desc={`bg-${prefix}-hover`} />
+              <SwatchBg bg={`var(${base})`}   label="base"   desc={`bg-${prefix}`} />
+              <SwatchBg bg={`var(${active})`} label="active" desc={`bg-${prefix}-active`} />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* Ghost */}
-      <div>
-        <SectionLabel>Neutral Interaction — Default family（hover/active）+ Selected family（持續選中）</SectionLabel>
+      <TutorialSection title="Neutral Interaction — Default family（hover/active）+ Selected family（持續選中）">
         {/* @layout-space-magic-ok: Neutral Interaction 同質示範列列距(layoutSpace.spec.md:165 同質清單列) */}
-        <div className="mt-[var(--layout-space-tight)] space-y-1">
+        <div className="space-y-1">
           {[
             { label: '正常狀態（無背景）', bg: 'transparent',                    token: '' },
             { label: 'Hover 回饋',         bg: 'var(--neutral-hover)',        token: 'bg-neutral-hover' },
@@ -394,13 +388,12 @@ export const Interactive: Story = {
             </div>
           ))}
         </div>
-      </div>
+      </TutorialSection>
 
       {/* 2026-09-25 待辦總帳 B8:依平常底色決定滑過 / 按住。靜態列直接把狀態 class 疊上去畫出來(M15:不必真人滑過也截得到);
           不放「只會亮、點了沒反應」的示範卡 —— B12「要點了會有反應的才加」 */}
-      <div>
-        <SectionLabel>「底」的滑過 / 按住 — 底色不換,疊一層(bg-interaction-hover / -active)</SectionLabel>
-        <div className="mt-[var(--layout-space-tight)] grid grid-cols-3 gap-[var(--layout-space-loose)]">
+      <TutorialSection title="「底」的滑過 / 按住 — 底色不換,疊一層(bg-interaction-hover / -active)">
+        <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {BASE_SURFACE_DEMOS.map(({ base, name }) => (
             // @layout-space-magic-ok: 同一底色的三個狀態示範條(平常 / 滑過 / 按住)同質列距(layoutSpace.spec.md:165 同質清單列)
             <div key={name} className="space-y-1">
@@ -421,34 +414,32 @@ export const Interactive: Story = {
             </div>
           ))}
         </div>
-      </div>
+      </TutorialSection>
 
-      <div>
-        <SectionLabel>元件自己的填色 — 換成自己的下一階(以 secondary 為例)</SectionLabel>
-        <div className="mt-[var(--layout-space-tight)] grid grid-cols-3 gap-[var(--layout-space-loose)]">
+      <TutorialSection title="元件自己的填色 — 換成自己的下一階(以 secondary 為例)">
+        <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           <SwatchBg bg="var(--secondary)"        label="平常" desc="bg-secondary(neutral-3)" />
           <SwatchBg bg="var(--secondary-hover)"  label="滑過" desc="bg-secondary-hover(neutral-4)" />
           <SwatchBg bg="var(--secondary-active)" label="按住" desc="bg-secondary-active(neutral-5)" />
         </div>
-      </div>
-    </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 export const FunctionalHighlight: Story = {
   name: '反白與搜尋配對',
   render: () => (
-    <div className="max-w-xl space-y-[var(--layout-space-loose)]">
-      <section className="space-y-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold">文字反白(::selection)</h3>
+    // 規則外框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 教學框)
+    <TutorialPage className="max-w-xl">
+      <TutorialRule title="文字反白(::selection)">
         <p data-selection-demo className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           第三季營收報告已於 10 月 14 日送交財務委員會審閱,附件包含分區銷售明細與年度預測修正。
         </p>
         <span className="block text-caption text-fg-muted">
           此段由 play 自動反白 — 底色 <code>--text-selection</code>(blue-5 @ 30% 半透明,字色不變)
         </span>
-      </section>
-      <section className="space-y-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold">頁內搜尋配對(Ctrl+F)</h3>
+      </TutorialRule>
+      <TutorialRule title="頁內搜尋配對(Ctrl+F)">
         <p className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
           已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
@@ -458,8 +449,8 @@ export const FunctionalHighlight: Story = {
         <span className="block text-caption text-fg-muted">
           全部配對 <code>bg-search-match</code>(amber-3)/ 目前這一筆 <code>bg-search-match-current</code>(淺色 amber-5;深色 amber 基準色 45% 半透明)— 雙檔制對齊 VS Code find 與瀏覽器原生慣例
         </span>
-      </section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
   play: async ({ canvasElement }) => {
     const target = canvasElement.querySelector('[data-selection-demo]')

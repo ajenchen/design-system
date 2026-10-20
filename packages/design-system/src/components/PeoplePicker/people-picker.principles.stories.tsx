@@ -1,13 +1,12 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { PeoplePicker } from './people-picker'
 import type { PersonValue } from './person-display'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/設計原則',
@@ -16,11 +15,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // 對齊 ProfileCard 預設呈現:name + subtitle + status + statusMessage + fields
 // avatar.spec.md DS-wide canonical:所有 person avatar hover 必出 ProfileCard,展示資訊不可精簡
@@ -43,79 +39,85 @@ export const UsageGuidance: Story = {
     const [tags, setTags] = React.useState<string[]>(['design', 'typescript'])
     return (
       <TutorialPage>
-        <TutorialRule
-          title="何時用 — 真實業務場景"
-          note="PeoplePicker 用於「選擇 user 為值」場景 — 資料本質是「人」,需要 avatar 視覺輔助辨識(對比一般 Combobox 純字串)。Avatar-first display 對齊 Linear assignee picker / Asana people field / Slack mention picker 共識,讓使用者「掃 avatar 而非讀名字」更快。"
-        >
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+        <UsageSection kind="when">
+          <p>選的值本質上是「人」:指派負責人、加入成員、@提及、PR 審核者;選項前有頭像,使用者靠頭像掃視比讀名字快(Linear 指派、Asana 人員欄、Slack 提及同樣的做法)。</p>
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單人</span></LinkTo>
+              <StoryLink kind="Design System/Components/PeoplePicker/展示" name="單人">單人</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/PeoplePicker/展示" name="多人"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">多人</span></LinkTo>
+              <StoryLink kind="Design System/Components/PeoplePicker/展示" name="多人">多人</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/PeoplePicker/展示" name="尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸</span></LinkTo>
+              <StoryLink kind="Design System/Components/PeoplePicker/展示" name="尺寸">尺寸</StoryLink>
             </li>
-          </ul>
-        </TutorialRule>
+          </TutorialList>
+        </UsageSection>
 
-        <TutorialRule
-          title="vs Select — PeoplePicker 是選人員(選項有 avatar 視覺)"
-          note="assign task、email 收件人、PR reviewer、文章作者等場景:資料本質是人,使用者靠 avatar + 名字識別(不是純文字 label)。對齊 Slack people picker / Jira assignee dropdown 的 avatar-first 模式"
-        >
-          <ExampleGroup>
-            <Label>✅ 指派 task 給某人（單選）</Label>
-            <PeoplePicker
-              value={assignee}
-              onChange={(v) => setAssignee(Array.isArray(v) ? v[0] : v)}
-              people={team}
-              aria-label="task 負責人"
-            />
-          </ExampleGroup>
-        </TutorialRule>
+        <UsageSection kind="whenNot">
+          <TutorialRule
+            title="❌ 選非人員(分類 / 狀態)用 PeoplePicker"
+            note="Avatar 視覺是「選人」的獨有語意——選「優先級」、「產品類別」、「訂單狀態」這些非人員的分類用 Select / Combobox,否則 avatar 會變成無意義裝飾"
+          >
+            <ExampleGroup>
+              <ExampleCaption>✅ 選產品分類用 Select（沒有 avatar 概念）</ExampleCaption>
+              <Select
+                options={[
+                  { value: 'design', label: '設計' },
+                  { value: 'engineering', label: '工程' },
+                  { value: 'product', label: '產品' },
+                ]}
+                value={category}
+                onChange={setCategory}
+              />
+            </ExampleGroup>
+            <ExampleCaption warn>↑ 非人員不要用 PeoplePicker</ExampleCaption>
+          </TutorialRule>
+          <TutorialList>
+            <li>只顯示某個人、不需要選 → ProfileCard + Avatar</li>
+            <li>顯示整個團隊的成員列表 → 頭像堆疊或自訂清單:PeoplePicker 是「選人」,不是「展示團隊」</li>
+          </TutorialList>
+        </UsageSection>
 
-        <TutorialRule
-          title="❌ 選非人員(分類 / 狀態)用 PeoplePicker"
-          note="Avatar 視覺是「選人」的獨有語意——選「優先級」、「產品類別」、「訂單狀態」這些非人員的分類用 Select / Combobox,否則 avatar 會變成無意義裝飾"
-        >
-          <ExampleGroup>
-            <Label>✅ 選產品分類用 Select（沒有 avatar 概念）</Label>
-            <Select
+        <UsageSection kind="siblings">
+          <TutorialRule
+            title="PeoplePicker vs Select:選的是人(選項有頭像)"
+            note="assign task、email 收件人、PR reviewer、文章作者等場景:資料本質是人,使用者靠 avatar + 名字識別(不是純文字 label)。對齊 Slack people picker / Jira assignee dropdown 的 avatar-first 模式"
+          >
+            <ExampleGroup>
+              <ExampleCaption>✅ 指派 task 給某人（單選）</ExampleCaption>
+              <PeoplePicker
+                value={assignee}
+                onChange={(v) => setAssignee(Array.isArray(v) ? v[0] : v)}
+                people={team}
+                aria-label="task 負責人"
+              />
+            </ExampleGroup>
+          </TutorialRule>
+
+          <TutorialRule
+            title="PeoplePicker vs Combobox:多選的不是人 → Combobox"
+            note="Combobox 是通用多選,沒 avatar 假設。「產品標籤」、「技術 stack」這類非人員多選用 Combobox;人員多選才用 PeoplePicker"
+          >
+            <Combobox
               options={[
                 { value: 'design', label: '設計' },
-                { value: 'engineering', label: '工程' },
-                { value: 'product', label: '產品' },
+                { value: 'typescript', label: 'TypeScript' },
+                { value: 'react', label: 'React' },
+                { value: 'figma', label: 'Figma' },
               ]}
-              value={category}
-              onChange={setCategory}
+              value={tags}
+              onChange={setTags}
+              aria-label="技術 stack(多選 Combobox)"
             />
-          </ExampleGroup>
-          <Label warn>↑ 非人員不要用 PeoplePicker</Label>
-        </TutorialRule>
-
-        <TutorialRule
-          title="vs Combobox — 多選非人員 → Combobox(不是 PeoplePicker)"
-          note="Combobox 是通用多選,沒 avatar 假設。「產品標籤」、「技術 stack」這類非人員多選用 Combobox;人員多選才用 PeoplePicker"
-        >
-          <Combobox
-            options={[
-              { value: 'design', label: '設計' },
-              { value: 'typescript', label: 'TypeScript' },
-              { value: 'react', label: 'React' },
-              { value: 'figma', label: 'Figma' },
-            ]}
-            value={tags}
-            onChange={setTags}
-            aria-label="技術 stack(多選 Combobox)"
-          />
-          <Label>↑ 技術 stack 是分類多選,不是人員,用 Combobox</Label>
-        </TutorialRule>
+            <ExampleCaption>↑ 技術 stack 是分類多選,不是人員,用 Combobox</ExampleCaption>
+          </TutorialRule>
+        </UsageSection>
       </TutorialPage>
     )
   },
 }
+
 
 // ── 單選 vs 多選 ──────────────────────────────────────────────────────────
 
@@ -136,7 +138,7 @@ export const SingleVsMultiRule: Story = {
             people={team}
             aria-label="task 負責人(單選)"
           />
-          <Label>↑ 指派 task：assignee 通常一人</Label>
+          <ExampleCaption>↑ 指派 task：assignee 通常一人</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -149,14 +151,14 @@ export const SingleVsMultiRule: Story = {
             people={team}
             aria-label="PR reviewers(多選)"
           />
-          <Label>↑ PR reviewers：可選多人,已選 {reviewers.length} 人</Label>
+          <ExampleCaption>↑ PR reviewers：可選多人,已選 {reviewers.length} 人</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 在多選語意下強制只能選一人"
           note="若業務規則是「只能選一人」,直接用單選。用 multi + 限制 length === 1 等於用錯元件"
         >
-          <Label warn>（設計規則）單多選由 value 類型決定,不做混合或限制</Label>
+          <ExampleCaption warn>（設計規則）單多選由 value 類型決定,不做混合或限制</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

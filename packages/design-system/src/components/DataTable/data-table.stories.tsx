@@ -37,6 +37,7 @@ import './column-types' // ColumnMeta declaration merging
 // avatar.spec.md DS-wide:所有 person avatar hover 必出現 ProfileCard,展示資訊一致(不可精簡)
 // 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「defaultFieldValues 優於 fields 同名 label」;閘 overlay-story-contract S8)
 import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
 
 const SELLERS: PersonData[] = [
   { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
@@ -74,33 +75,19 @@ const dataWithNotes: Product[] = sampleData.map((p, i) => ({
     : 'Standard delivery.',
 }))
 
-// 真實商品名池（品名 × 規格版本組合，避免 "Product item N" 佔位符）
-const PRODUCT_NAMES: Record<string, string[]> = {
-  Electronics: ['Wireless Bluetooth Headphones', 'USB-C 7-in-1 Hub', 'Mechanical Keyboard', '4K Webcam', 'Portable SSD 1TB', '65W GaN Charger', 'Noise-Cancelling Earbuds', 'Ergonomic Wireless Mouse'],
-  Furniture: ['Ergonomic Office Chair', 'Standing Desk Converter', '5-Tier Bookshelf', 'Storage Cabinet', '3-Seat Fabric Sofa', 'Bedside Table', 'Coat Rack Stand', 'Adjustable Monitor Arm'],
-  Food: ['Organic Green Tea 100 Bags', 'Single-Origin Coffee Beans', 'Mixed Nuts Gift Box', 'Dark Chocolate Bar', 'Rolled Oats 1kg', 'Manuka Honey Jar', 'Herbal Tea Sampler', 'Cold-Pressed Olive Oil'],
-  Lifestyle: ['Stainless Steel Water Bottle', 'Scented Candle Set', 'Cordless Vacuum Cleaner', 'HEPA Air Purifier', 'Leather Notebook A5', 'Non-Slip Yoga Mat', 'Aroma Diffuser', 'Weighted Blanket'],
-}
-const PRODUCT_EDITIONS = ['Standard', 'Pro', 'Lite', 'Max', 'Mini', '2-Pack', 'Bundle', 'Refill']
-
+// 大量資料(虛擬捲動 / 分頁 / 排序示範):商品目錄的單一住所 = stories-helpers/data/product-catalog.ts
+//(2026-10-20 R1b-T7:原本本檔、設計原則頁、設計規格頁各寫一支產生器;本檔原本的品名池與算法原樣搬過去,輸出逐筆相同)。
+// 本檔只再對應賣家欄。
 function generateLargeData(count: number): Product[] {
-  const categories = ['Electronics', 'Furniture', 'Food', 'Lifestyle']
-  const stocks = ['In stock', 'Low stock', 'Out of stock', 'Pre-order']
-  return Array.from({ length: count }, (_, i) => {
-    const category = categories[i % 4]
-    const names = PRODUCT_NAMES[category]
-    const baseName = names[i % names.length]
-    const edition = PRODUCT_EDITIONS[Math.floor(i / names.length) % PRODUCT_EDITIONS.length]
-    return {
-      sku: `PRD-${String(i + 1).padStart(4, '0')}`,
-      name: `${baseName} (${edition})`,
-      category,
-      stock: stocks[i % 4],
-      seller: SELLERS[i % SELLERS.length],
-      updatedAt: `2025/03/${String(1 + (i % 28)).padStart(2, '0')}`,
-      price: Math.round(100 + Math.random() * 9900),
-    }
-  })
+  return productCatalog(count).map((c) => ({
+    sku: c.sku,
+    name: c.name,
+    category: c.category,
+    stock: c.stock,
+    seller: SELLERS[c.index % SELLERS.length],
+    updatedAt: c.updatedAt,
+    price: c.price,
+  }))
 }
 
 // ── Column Definitions ───────────────────────────────────────────────────────

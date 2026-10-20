@@ -1,6 +1,4 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Pencil, Copy, Trash2 } from 'lucide-react'
 import { Separator } from './separator'
@@ -12,7 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Separator/設計原則',
@@ -21,11 +20,10 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
+// 範例只有一顆打開選單的按鈕:範例維持自然寬度(naturalWidth),不逐顆寫 self-start(T15)
+const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -38,50 +36,54 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 Separator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="水平"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平分隔</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="垂直"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">垂直分隔</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DropdownMenu/展示" name="基本"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DropdownMenu 內(DropdownMenuSeparator,見 DropdownMenu 展示「基本」)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="在 DescriptionList 區塊之間"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DescriptionList 區塊之間</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>由你(使用元件的人)自己決定「這裡要分隔」的地方:側欄群組之間、描述清單的區塊之間、一段內容裡要明確切開的兩部分。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/Separator/展示" name="水平">水平分隔</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Separator/展示" name="垂直">垂直分隔</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="基本">在 DropdownMenu 內(DropdownMenuSeparator,見 DropdownMenu 展示「基本」)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Separator/展示" name="在 DescriptionList 區塊之間">在 DescriptionList 區塊之間</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
-      <TutorialRule
-        title="❌ 不用 Separator 元件做元件固定結構的邊框"
-        note="Dialog / Sidebar header-footer 的邊界用 CSS border，不用 Separator 元件。Separator 只用 consumer 手動放置的分隔。Notion dialog 的 header bottom 邊界是 CSS，不是 Separator"
-      >
-        <Label warn>固定結構邊界 → CSS border-divider，不用元件</Label>
-      </TutorialRule>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 不用 Separator 元件做元件固定結構的邊框"
+          note="Dialog / Sidebar header-footer 的邊界用 CSS border，不用 Separator 元件。Separator 只用 consumer 手動放置的分隔。Notion dialog 的 header bottom 邊界是 CSS，不是 Separator"
+        >
+          <ExampleCaption warn>固定結構邊界 → CSS border-divider，不用元件</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 --border token 做分隔線"
-        note="分隔線一律用 --divider（較淡），--border 只用控件邊框。Jira menu 項目間的線用 --divider"
-      >
-        <Label warn>分隔線 → --divider，--border 只用容器邊框</Label>
-      </TutorialRule>
+        <TutorialRule
+          title="❌ 不用 --border token 做分隔線"
+          note="分隔線一律用 --divider（較淡），--border 只用控件邊框。Jira menu 項目間的線用 --divider"
+        >
+          <ExampleCaption warn>分隔線 → --divider，--border 只用容器邊框</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 Separator 做裝飾性邊框"
-        note="輪廓邊框（Input / Card / DataTable 邊線）用 CSS border-border，不用 Separator。Separator 有 role 語意，裝飾邊不需要"
-      >
-        <Label warn>裝飾邊框 → CSS border-border，Separator 只用分隔內容</Label>
-      </TutorialRule>
-    </>
+        <TutorialRule
+          title="❌ 不用 Separator 做裝飾性邊框"
+          note="輪廓邊框（Input / Card / DataTable 邊線）用 CSS border-border，不用 Separator。Separator 有 role 語意，裝飾邊不需要"
+        >
+          <ExampleCaption warn>裝飾邊框 → CSS border-border，Separator 只用分隔內容</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>群組自動分隔(MenuGroup / SidebarGroup)</strong> —— 相鄰群組之間元件自己畫線,只要分好組,不用手放 Separator</li>
+          <li><strong>ButtonDivider</strong> —— 按鈕群組裡的分隔線(長度跟著同列最高的控件),不用 Separator 畫</li>
+          <li><strong>DropdownMenuSeparator</strong> —— 選單項目之間的分隔線,用選單自己的分隔元件</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -90,13 +92,13 @@ export const DecorativeSemanticRule: Story = {
   name: '裝飾性 vs 語意分隔（讀屏的差別）',
   render: () => (
     <TutorialPage>
-      <TutorialRule
+      <TriggerRule
         title="預設 decorative=true — 純視覺分隔,screen reader 跳過"
         note="大多數場景(settings panel 內的區塊分組、同一列 meta 資訊分組、menu 項目分組)屬視覺性分隔。讓 screen reader 跳過,避免語意噪音。toolbar / action region 的按鈕群分隔不走 Separator,用 ButtonGroup + ButtonDivider"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="self-start" variant="tertiary" size="sm">更多操作</Button>
+            <Button variant="tertiary" size="sm">更多操作</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem startIcon={Pencil}>重新命名</DropdownMenuItem>
@@ -105,8 +107,8 @@ export const DecorativeSemanticRule: Story = {
             <DropdownMenuItem startIcon={Trash2}>刪除</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Label>↑ DropdownMenu 的 separator 讓「編輯類」與「破壞類」視覺分組,a11y 已由 Radix 處理</Label>
-      </TutorialRule>
+        <ExampleCaption>↑ DropdownMenu 的 separator 讓「編輯類」與「破壞類」視覺分組,a11y 已由 Radix 處理</ExampleCaption>
+      </TriggerRule>
 
       <TutorialRule
         title="明確結構性分組(語意分隔)→ decorative={false}"
@@ -123,7 +125,7 @@ export const DecorativeSemanticRule: Story = {
             <p className="text-caption text-fg-muted">所屬團隊、職稱</p>
           </div>
         </div>
-        <Label>↑ 兩個 section 是頁面結構的主層級 → 需要 a11y 語意</Label>
+        <ExampleCaption>↑ 兩個 section 是頁面結構的主層級 → 需要 a11y 語意</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

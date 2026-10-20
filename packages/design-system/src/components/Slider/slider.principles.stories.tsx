@@ -1,14 +1,13 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Slider/設計原則',
@@ -17,11 +16,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
 // 合併自舊 WhenToUse / WhenNotToUse(2026-04-26 v3 canonical)
@@ -33,26 +29,19 @@ export const UsageGuidance: Story = {
     const [price, setPrice] = React.useState([500, 3500])
     return (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 Slider 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Slider/展示" name="容器尺寸對齊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">表單內與 Input / NumberInput 並排的數值調整（容器尺寸對齊）</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Slider/展示" name="最小 / 最大 / 步階"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">價格 / 數量等有上下限與步階的調整（最小 / 最大 / 步階）</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Slider/展示" name="提交數值回呼"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">拖曳即時預覽、放開才送出查詢（提交數值回呼）</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
+      <UsageSection kind="when">
+        <p>使用者在意「相對位置」勝過「精確數字」的數值:亮度、音量、縮放、透明度;或用兩個把手選一段範圍(價格、日期、分數)。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/Slider/展示" name="容器尺寸對齊">表單內與 Input / NumberInput 並排的數值調整（容器尺寸對齊）</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Slider/展示" name="最小 / 最大 / 步階">價格 / 數量等有上下限與步階的調整（最小 / 最大 / 步階）</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Slider/展示" name="提交數值回呼">拖曳即時預覽、放開才送出查詢（提交數值回呼）</StoryLink>
+          </li>
+        </TutorialList>
         <TutorialRule
           title="Slider 的 sweet spot — 連續感受值 + 使用者在意「相對位置」勝過「精確數字」"
           note="亮度 / 音量 / 縮放 / 透明度。拖曳 thumb 的觸感就是在「感受」這個值,不是輸入精確數字"
@@ -76,7 +65,9 @@ export const UsageGuidance: Story = {
             <FieldDescription>${price[0]} – ${price[1]}</FieldDescription>
           </Field>
         </TutorialRule>
+      </UsageSection>
 
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 離散少量選項(3-5 個):用 SegmentedControl / RadioGroup"
           note="Slider 是連續軌道,設 step 強制 3 個離散點是反模式——使用者必須精準拖到對齊點。用分段控件更精確且直觀"
@@ -88,7 +79,7 @@ export const UsageGuidance: Story = {
               <Slider defaultValue={[50]} step={50} min={0} max={100} />
               <FieldDescription>目前:中</FieldDescription>
             </Field>
-            <Label warn>↑ 強制拖到 0 / 50 / 100 的 Slider = 反模式。改 SegmentedControl:</Label>
+            <ExampleCaption warn>↑ 強制拖到 0 / 50 / 100 的 Slider = 反模式。改 SegmentedControl:</ExampleCaption>
             <SegmentedControl defaultValue="md">
               <SegmentedControlItem value="sm">小</SegmentedControlItem>
               <SegmentedControlItem value="md">中</SegmentedControlItem>
@@ -105,7 +96,7 @@ export const UsageGuidance: Story = {
             <FieldLabel>商品價格</FieldLabel>
             <NumberInput value={2490} prefix="$" onChange={() => {}} />
           </Field>
-          <Label>↑ 金額不用 Slider,直接 NumberInput 輸入</Label>
+          <ExampleCaption>↑ 金額不用 Slider,直接 NumberInput 輸入</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -115,11 +106,20 @@ export const UsageGuidance: Story = {
           {/* 獨立開關消費 Switch 自帶的 label(switch.spec.md「label / description 整合」:label 左 / 開關右) */}
           <Switch defaultChecked label="啟用" />
         </TutorialRule>
-      </>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>NumberInput</strong> —— 要精確數字或計數(「多少」):打字或 ± 調整;Slider 傳達的是位置。兩者可以並用:Slider 粗調、NumberInput 精調</li>
+          <li><strong>SegmentedControl / RadioGroup</strong> —— 3–5 個離散選項;Slider 是連續值</li>
+          <li><strong>Rating</strong> —— 1–5 分的評價;Slider 是連續數值(音量、價格)</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
     )
   },
 }
+
 
 export const PositionAsStateRule: Story = {
   name: '位置/長度是狀態,不是顏色',
@@ -141,7 +141,7 @@ export const PositionAsStateRule: Story = {
             <Slider defaultValue={[60]} disabled aria-label="亮度" />
           </div>
         </div>
-        <Label>↑ 灰階後 thumb 位置(60%)+ range 填滿長度(0-60%)仍然清楚。不需要保留藍色</Label>
+        <ExampleCaption>↑ 灰階後 thumb 位置(60%)+ range 填滿長度(0-60%)仍然清楚。不需要保留藍色</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -172,15 +172,13 @@ export const PositionAsStateRule: Story = {
             <Switch disabled aria-label="啟用（停用、關）" />
           </div>
         </div>
-        <Label>↑ Switch disabled 保留顏色(opacity),所以仍能分辨 ON/OFF</Label>
+        <ExampleCaption>↑ Switch disabled 保留顏色(opacity),所以仍能分辨 ON/OFF</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="判斷法:「什麼視覺載體承載 state?」"
         note="位置 / 形狀 → 灰階 swap(Slider/Checkbox/Button);純顏色 → opacity(Switch)。選錯讓使用者看不懂當前狀態"
-      >
-        <Label>完整對照見 slider.spec.md「Disabled 策略」</Label>
-      </TutorialRule>
+      />
     </TutorialPage>
   ),
 }
@@ -197,14 +195,14 @@ export const HoverUsesShadowRule: Story = {
           <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Hover thumb → 陰影 elevation-100</div>
           <Slider defaultValue={[50]} aria-label="音量" />
         </div>
-        <Label>↑ hover 時 thumb 加 elevation-100,不改底色。對齊 Material 3 / iOS / Linear 共識</Label>
+        <ExampleCaption>↑ hover 時 thumb 加 elevation-100,不改底色。對齊 Material 3 / iOS / Linear 共識</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 若改成 hover 時 thumb 變深色"
         note="thumb 看起來像按鈕,使用者可能以為要「按下」才會生效——但 Slider 的互動是拖曳不是點擊。破壞 mental model"
       >
-        <Label warn>範例省略——設計上禁止此做法</Label>
+        <ExampleCaption warn>範例省略——設計上禁止此做法</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -222,7 +220,7 @@ export const ThumbBindingRule: Story = {
           <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Range mode(兩個 thumb)</div>
           <Slider defaultValue={[30, 70]} aria-label="價格範圍" />
         </div>
-        <Label>↑ 兩個 thumb 清楚浮在 range 上,邊界分明</Label>
+        <ExampleCaption>↑ 兩個 thumb 清楚浮在 range 上,邊界分明</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -237,14 +235,14 @@ export const ThumbBindingRule: Story = {
           <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Disabled:range = border + thumb border = border(同步降級)</div>
           <Slider defaultValue={[60]} disabled aria-label="亮度（停用）" />
         </div>
-        <Label>↑ 兩個 state 下 range 和 thumb border 永遠同一個 token,不讓兩者漂移</Label>
+        <ExampleCaption>↑ 兩個 state 下 range 和 thumb border 永遠同一個 token,不讓兩者漂移</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 實心 primary thumb(融色)"
         note="實心 thumb 跟 primary range 同色,邊界看不清楚,range mode 下兩個 thumb 完全融入 range"
       >
-        <Label warn>設計上禁止——對齊 Material 3 / iOS / Linear 的空心 thumb 共識</Label>
+        <ExampleCaption warn>設計上禁止——對齊 Material 3 / iOS / Linear 的空心 thumb 共識</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

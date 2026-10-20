@@ -12,6 +12,8 @@
 //   3. Auto-generated stub patterns(`<X> 場景` CamelCase split without real content)
 //   4. Missing `name:` zh-CN on stories(showcase / principles)
 //   5. Storybook technical-probe visibility drift(`test-only` semantics)
+//   6. Literal Markdown in JSX canvas: **emphasis** everywhere; `code` backticks on teaching pages
+//      (principles + Tokens / Patterns doc pages; 2026-10-20 teaching audit T12 —— the canvas shows the backticks as-is)
 //
 // Usage from Stop hook: `node scripts/audit-content-quality.mjs --check` (silent if OK, warn if drift).
 
@@ -34,6 +36,10 @@ function* walk(dir) {
 }
 
 const markdownEmphasisPattern = /\*\*[^*\s](?:(?!\*\*)[\s\S])*?\*\*/g;
+// 2026-10-20(T12):Markdown 反引號在 canvas 一樣原樣顯示。範圍 = 教學頁(設計原則頁 + Tokens / Patterns 文件頁),
+// 與 CI 的 scripts/tutorial-page-invariant.mjs R10 同一個範圍;規格頁 / 展示頁的同類字樣另由各自的稽核處理(見 report)。
+const markdownCodePattern = /`[^`\n]+`/g;
+const isTeachingPage = file => /\.principles\.stories\.tsx$/.test(file) || /\/src\/(?:tokens|patterns)\//.test(file);
 
 function propertyName(node) {
   if (!node.name) return null;
@@ -51,11 +57,11 @@ function isDocsDescriptionMarkdown(node) {
     && ancestorProperties.includes('docs');
 }
 
-function findLiteralMarkdownEmphasis(file, content) {
+function findLiteralMarkdownEmphasis(file, content, pattern = markdownEmphasisPattern) {
   const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const samples = new Set();
   const addSample = value => {
-    for (const match of value.matchAll(markdownEmphasisPattern)) {
+    for (const match of value.matchAll(pattern)) {
       samples.add(match[0].replace(/\s+/g, ' ').trim().slice(0, 100));
     }
   };
@@ -95,6 +101,33 @@ function findLiteralMarkdownEmphasis(file, content) {
     } else if (ts.isTemplateExpression(node) && !isDocsDescriptionMarkdown(node)) {
       addSample(node.getText(sourceFile));
     }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return [...samples];
+}
+
+/**
+ * 教學頁畫面上的 Markdown 反引號(T12):只看「會顯示的文字」—— JSX 文字、JSX 屬性與 {字串} 子節點的字串內容;
+ * 樣板字串的分隔符本身是程式碼(不算),<code> / <pre> 裡的反引號是程式碼字樣(不算),docs description 走 Markdown(不算)。
+ */
+function findLiteralMarkdownCode(file, content) {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const samples = new Set();
+  const inCode = node => {
+    for (let p = node.parent; p; p = p.parent) {
+      if (ts.isJsxElement(p) && /^(?:code|pre)$/.test(p.openingElement.tagName.getText(sourceFile))) return true;
+    }
+    return false;
+  };
+  const add = (node, value) => {
+    if (isDocsDescriptionMarkdown(node) || inCode(node)) return;
+    for (const match of value.matchAll(markdownCodePattern)) samples.add(match[0].slice(0, 100));
+  };
+  const visit = node => {
+    if (ts.isJsxText(node)) add(node, node.text);
+    else if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer) && !/^(?:className|class|style|data-.*)$/.test(node.name.getText(sourceFile))) add(node, node.initializer.text);
+    else if (ts.isJsxExpression(node) && node.expression && (ts.isStringLiteral(node.expression) || ts.isNoSubstitutionTemplateLiteral(node.expression)) && (ts.isJsxElement(node.parent) || ts.isJsxAttribute(node.parent))) add(node, node.expression.text);
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
@@ -207,6 +240,7 @@ const violations = {
   thinDescription: [],      // parameters.docs.description.{component,story} stub / 太短 / 缺
   abstractName: [],         // story name 抽象代號(無描述性)
   literalMarkdownEmphasis: [], // JSX canvas 會原樣顯示 **星號**,不是 Markdown renderer
+  literalMarkdownCode: [],  // 教學頁 JSX canvas 會原樣顯示 `反引號`(2026-10-20 T12)
   storyVisibility: [],     // technical probes 必保留 index/test 但退出 sidebar + Autodocs
 };
 let autoFixed = 0;
@@ -287,7 +321,8 @@ for (const file of walk(STORIES_DIR)) {
 
   // === Check 2: Cross-reference plain text without LinkTo(only principles)===
   if (isPrinciples) {
-    const linkToImported = /from\s+['"]@storybook\/addon-links/.test(content);
+    // 2026-10-20:教學頁的 story 連結收成 StoryLink(tutorial-page.tsx 包 LinkTo),各頁不再直接 import addon-links
+    const linkToImported = /from\s+['"]@storybook\/addon-links/.test(content) || /<StoryLink\b/.test(content);
     const refPatterns = [
       /對照「展示」頁/g,
       /對照展示頁/g,
@@ -343,6 +378,13 @@ for (const file of walk(STORIES_DIR)) {
       count: markdownEmphasisSamples.length,
       samples: markdownEmphasisSamples.slice(0, 3),
     });
+  }
+  // === Check 4f: 教學頁 JSX canvas 中的 literal Markdown 反引號(T12)===
+  if (isTeachingPage(file)) {
+    const markdownCodeSamples = findLiteralMarkdownCode(file, content);
+    if (markdownCodeSamples.length > 0) {
+      violations.literalMarkdownCode.push({ file: basename(file), count: markdownCodeSamples.length, samples: markdownCodeSamples.slice(0, 3) });
+    }
   }
 
   const forbiddenPatterns = [
@@ -684,6 +726,13 @@ if (violations.abstractName.length > 0) {
 if (violations.literalMarkdownEmphasis.length > 0) {
   console.log(`\n[P1] Literal Markdown emphasis visible in JSX canvas: ${violations.literalMarkdownEmphasis.length} files`);
   violations.literalMarkdownEmphasis.slice(0, 10).forEach(v =>
+    console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
+  );
+}
+
+if (violations.literalMarkdownCode.length > 0) {
+  console.log(`\n[P1] Literal Markdown backticks visible on teaching pages(use <code>): ${violations.literalMarkdownCode.length} files`);
+  violations.literalMarkdownCode.slice(0, 10).forEach(v =>
     console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
   );
 }

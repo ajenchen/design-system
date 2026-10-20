@@ -1,7 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Upload } from 'lucide-react'
 import { Field, FieldLabel, FieldDescription, FieldGroup } from './field'
@@ -9,7 +7,8 @@ import { Input } from '@/design-system/components/Input/input'
 import { Select } from '@/design-system/components/Select/select'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/設計原則',
@@ -18,11 +17,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-xl' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-xl' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -30,26 +26,24 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Field 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Field/展示" name="垂直"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">註冊 / 建立專案表單 — 引導式逐欄輸入(垂直佈局)</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="水平"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">帳號設定 / 偏好設定頁 — 修改已知屬性(水平佈局)</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="混合控制元件的高度對齊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">同一表單混用 Input / Select / DatePicker 等控制元件</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="SegmentedControl 作為 Field 控制元件"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">少量互斥選項(計費週期、版面密度)用 SegmentedControl 當控制元件</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/Field/展示" name="垂直">註冊 / 建立專案表單 — 引導式逐欄輸入(垂直佈局)</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Field/展示" name="水平">帳號設定 / 偏好設定頁 — 修改已知屬性(水平佈局)</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Field/展示" name="混合控制元件的高度對齊">同一表單混用 Input / Select / DatePicker 等控制元件</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Field/展示" name="SegmentedControl 作為 Field 控制元件">少量互斥選項(計費週期、版面密度)用 SegmentedControl 當控制元件</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ Field 試圖承載資料型別邏輯"
           note="別把「格式化數字」「處理日期」「搜尋選項」塞進 Field——這些是 Field Controls(NumberInput / DatePicker / Combobox)的責任。Field 不 wrap、不代理、不轉換它們的行為"
         >
-          <Label warn>Field 試圖自己處理 number formatting → 複製 NumberInput 邏輯 → 違反 SRP + 漂移風險</Label>
+          <ExampleCaption warn>Field 試圖自己處理 number formatting → 複製 NumberInput 邏輯 → 違反 SRP + 漂移風險</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -68,11 +62,11 @@ export const UsageGuidance: Story = {
               </Field>
             </FieldGroup>
           </div>
-          <Label warn>↑ 「送出表單」不該是一個 Field,它是 form-level action,應該在 footer</Label>
+          <ExampleCaption warn>↑ 「送出表單」不該是一個 Field,它是 form-level action,應該在 footer</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Field — 表單輸入(可編輯)"
           note="使用者要輸入 / 修改 / 提交的 form 場景。含 required、error、focus、驗證等 form state 機制"
@@ -93,12 +87,12 @@ export const UsageGuidance: Story = {
               </Field>
             </FieldGroup>
           </div>
-          <Label>↑ 可編輯的 profile settings</Label>
+          <ExampleCaption>↑ 可編輯的 profile settings</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 唯讀展示:用 DescriptionList"
-          note="「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 `dl / dt / dd` HTML 語義更適合唯讀屬性列表,a11y 也更清楚"
+          note={<>「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 <code>dl / dt / dd</code> HTML 語義更適合唯讀屬性列表,a11y 也更清楚</>}
         >
           <div className="max-w-sm">
             {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」)*/}
@@ -113,16 +107,16 @@ export const UsageGuidance: Story = {
               </Field>
             </FieldGroup>
           </div>
-          <Label warn>↑ 純展示用 Field + readonly → 浪費 Field 的 input 邏輯。改用 DescriptionList</Label>
+          <ExampleCaption warn>↑ 純展示用 Field + readonly → 浪費 Field 的 input 邏輯。改用 DescriptionList</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="判斷法:「使用者會編輯這些值嗎?」"
-          note="會 → Field(含 readonly mode);永遠不會(純展示/唯讀資料)→ DescriptionList。完整對照見 field.spec.md「何時不用」+ description-list.spec.md「vs Field 系統」"
+          note="會 → Field(含 readonly mode);永遠不會(純展示/唯讀資料)→ DescriptionList"
         >
-          <Label>會編輯 → Field;只看 → DescriptionList</Label>
+          <ExampleCaption>會編輯 → Field;只看 → DescriptionList</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -152,7 +146,7 @@ export const OrientationRule: Story = {
             </Field>
           </FieldGroup>
         </div>
-        <Label>↑ Vertical 適合大多數表單場景</Label>
+        <ExampleCaption>↑ Vertical 適合大多數表單場景</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -183,14 +177,14 @@ export const OrientationRule: Story = {
             </Field>
           </FieldGroup>
         </div>
-        <Label>↑ Horizontal 適合 settings 頁 — label 縱向對齊、controls 並排</Label>
+        <ExampleCaption>↑ Horizontal 適合 settings 頁 — label 縱向對齊、controls 並排</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="判斷法:「欄位數量 + 垂直空間預算」"
         note="表單 / 初次建立(空間充裕、引導性)→ vertical;settings / 修改(已知屬性、密集顯示)→ horizontal"
       >
-        <Label>世界級 DS(Polaris / Material)的 settings 頁都用 horizontal,表單用 vertical</Label>
+        <ExampleCaption>世界級 DS(Polaris / Material)的 settings 頁都用 horizontal,表單用 vertical</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -215,13 +209,14 @@ export const NotForFormActionsRule: Story = {
               <Input />
             </Field>
           </FieldGroup>
-          {/* 規則 4:最後一個欄位 → 表單底的動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有 */}
-          <ButtonGroup align="end" className="mt-[var(--layout-space-bottom)]">
-            <Button variant="tertiary">取消</Button>
+          {/* 規則 4:最後一個欄位 → 表單底的動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有。
+              表單底這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md:109 / :121;2026-10-20 XF-01:原本 align="end" 靠右) */}
+          <ButtonGroup className="mt-[var(--layout-space-bottom)]">
             <Button variant="primary">儲存</Button>
+            <Button variant="tertiary">取消</Button>
           </ButtonGroup>
         </div>
-        <Label>↑ 儲存 / 取消在 form footer,不在 Field 內</Label>
+        <ExampleCaption>↑ 儲存 / 取消在 form footer,不在 Field 內</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -235,7 +230,7 @@ export const NotForFormActionsRule: Story = {
             <FieldDescription>支援 JPG / PNG,最大 2 MB</FieldDescription>
           </Field>
         </div>
-        <Label>↑ 上傳按鈕產生 avatar url value → 合法作為 Field control</Label>
+        <ExampleCaption>↑ 上傳按鈕產生 avatar url value → 合法作為 Field control</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

@@ -1,11 +1,10 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
 import { Input } from '@/design-system/components/Input/input'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/LinkInput/設計原則',
@@ -14,11 +13,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── 定位與分界 ─────────────────────────────────────────────────────────────
 
@@ -32,61 +28,70 @@ export const UsageGuidance: Story = {
     const [slug, setSlug] = React.useState('my-design-system')
     return (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 LinkInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="空值"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">空值</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="失焦驗證"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Blur 驗證</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="檢視樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示樣式</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先確認這個值是不是「儲存後使用者會想直接點開的完整網址」。若不是(例如純字串代號、email、內部路徑),改用 Input。下方「vs 近親」段有正反對照範例。</p>
-    </div>
-
-      {/* vs 近親 — 原 VsInputRule */}
-      <>
+      <UsageSection kind="when">
+        <p>要儲存的完整外部網址,而且儲存後使用者會想直接點開:個人網站、文件連結、專案 repo、社群連結;需要網址格式驗證(離開欄位時檢查)。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="空值">空值</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="失焦驗證">Blur 驗證</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="尺寸">尺寸</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="四模式">四模式</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="檢視樣式">展示樣式</StoryLink>
+          </li>
+        </TutorialList>
         <TutorialRule
           title="LinkInput — 有合法 URL 時變藍色連結，點擊開啟新分頁"
           note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。點網址文字永遠是開連結;要改就按右側 Pencil,或點欄位裡文字以外的空白處"
         >
           <ExampleGroup>
-            <Label>✅ 個人資料：Website（儲存後可直接點擊開啟）</Label>
+            <ExampleCaption>✅ 個人資料：Website（儲存後可直接點擊開啟）</ExampleCaption>
             <LinkInput value={website} onChange={setWebsite} aria-label="Website" />
           </ExampleGroup>
         </TutorialRule>
+      </UsageSection>
 
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 用 LinkInput 存非 URL 的字串"
           note="slug / 代號 / email / 內部 route 路徑沒有 protocol(http/https),LinkInput 的 blur 驗證會 false reject。用 Input 搭配適合的驗證"
         >
           <ExampleGroup>
-            <Label>✅ 專案 slug 用 Input（純字串,不是 URL）</Label>
+            <ExampleCaption>✅ 專案 slug 用 Input（純字串,不是 URL）</ExampleCaption>
             <Input value={slug} onChange={(e) => setSlug(e.target.value)} aria-label="專案 slug" />
           </ExampleGroup>
           <ExampleGroup>
-            <Label warn>❌ 錯用：把 slug 塞進 LinkInput</Label>
+            <ExampleCaption warn>❌ 錯用：把 slug 塞進 LinkInput</ExampleCaption>
             <LinkInput value="my-design-system" onChange={() => {}} aria-label="專案 slug（LinkInput 誤用）" />
-            <Label warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</Label>
+            <ExampleCaption warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
-      </>
+        <TutorialList>
+          <li>Email 地址 → Input(<code>type="email"</code>):Email 不是網址</li>
+          <li>產品內部的路由路徑 → Input:不是完整網址,格式驗證會誤判</li>
+          <li>Markdown 連結(顯示文字 + 網址)→ 自訂編輯器:LinkInput 只處理網址本身</li>
+          <li>多個網址的清單 → 多個 LinkInput 或自訂清單:一個 LinkInput 一次一個網址</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>Input</strong> —— 一般文字;值不是「存完要點開的完整網址」就用 Input</li>
+          <li><strong>LinkInput</strong> —— 外觀同 Input,但有合法網址時顯示成藍色連結,點網址是開啟、不是進入編輯(要改按右側鉛筆)</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
     )
   },
 }
+
 
 // ── 兩種顯示狀態 ───────────────────────────────────────────────────────────
 
@@ -99,7 +104,7 @@ export const DisplayStateRule: Story = {
         note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil(或點欄位空白處)。對照 Notion 的 URL 屬性——點網址開啟、不進入編輯,編輯另有按鈕(https://www.notion.com/releases/2021-09-08)"
       >
         <LinkInput value="https://react.dev/reference" onChange={() => {}} aria-label="參考連結" />
-        <Label>↑ 點網址文字開啟;Pencil 或欄位裡文字以外的空白處進入編輯</Label>
+        <ExampleCaption>↑ 點網址文字開啟;Pencil 或欄位裡文字以外的空白處進入編輯</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -107,7 +112,7 @@ export const DisplayStateRule: Story = {
         note="這三種場景沒有「可點擊的連結」可以展示,退回 input 形式接受輸入"
       >
         <ExampleGroup>
-          <Label>✅ 空值：直接顯示輸入框,不需要先按 Pencil</Label>
+          <ExampleCaption>✅ 空值：直接顯示輸入框,不需要先按 Pencil</ExampleCaption>
           <LinkInput value="" onChange={() => {}} aria-label="Website" />
         </ExampleGroup>
       </TutorialRule>
@@ -116,7 +121,7 @@ export const DisplayStateRule: Story = {
         title="❌ 點 value 進入編輯（而不是開連結）"
         note="LinkInput 跟 Input 的核心互動差異就在這——點 value 永遠是開連結。若使用者預期點 value 進入編輯,那該用 Input 不用 LinkInput"
       >
-        <Label warn>（設計規則）點網址文字 = 開啟連結,編輯 = 按 Pencil 或點欄位空白處。兩者動作路徑分離</Label>
+        <ExampleCaption warn>（設計規則）點網址文字 = 開啟連結,編輯 = 按 Pencil 或點欄位空白處。兩者動作路徑分離</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -135,14 +140,14 @@ export const ValidationRule: Story = {
           note="使用者還在輸入時就抱怨「格式錯」= 打擾體驗。blur(離開欄位 / 按 Enter)才檢查。開始打字時清除 error,讓使用者無壓力重試。對齊 Field 系統的共用驗證規則"
         >
           <LinkInput value={url} onChange={setUrl} placeholder="輸入 URL（需含 https://）" aria-label="Website" />
-          <Label>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。開始打字自動清除 error</Label>
+          <ExampleCaption>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。開始打字自動清除 error</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="Enter 等同 blur，Escape 取消"
           note="鍵盤操作慣例:Enter 提交(觸發 blur 驗證)、Escape 回復原值。跟瀏覽器 form / 原生 input 行為一致"
         >
-          <Label>Enter → 提交觸發驗證 · Escape → 回復原值不觸發驗證</Label>
+          <ExampleCaption>Enter → 提交觸發驗證 · Escape → 回復原值不觸發驗證</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

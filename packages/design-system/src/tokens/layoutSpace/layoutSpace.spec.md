@@ -114,7 +114,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | **跨範疇 + functional 交互** | `tight` |
 | **跨範疇 + parallel** | `loose` |
 
-**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只定義在教學頁,2026-10-14)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(:13 結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。
+**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只定義在教學頁,2026-10-14)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(:13 結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。
 
 世界級對齊:Material 3 / Polaris / Apple HIG / Atlassian 都按「relationship not type」決定 spacing。 <!-- @benchmark-unverified -->
 

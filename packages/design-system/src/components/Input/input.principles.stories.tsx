@@ -1,6 +1,5 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Search, Mail, Lock, Globe, X, Eye, EyeOff, AlertCircle, CheckCircle2,
@@ -8,7 +7,8 @@ import {
 import { Input } from './input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { Field, FieldError } from '@/design-system/components/Field/field'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Input/設計原則',
@@ -17,11 +17,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -29,40 +26,38 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Input/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋列 — 輸入框與按鈕並排等高</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="尾端操作"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">密碼顯示切換 / 搜尋清除等尾端操作</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="錯誤狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Email 格式錯誤的驗證回饋</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/Input/展示" name="四模式">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Input/展示" name="三種尺寸">搜尋列 — 輸入框與按鈕並排等高</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Input/展示" name="尾端操作">密碼顯示切換 / 搜尋清除等尾端操作</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Input/展示" name="錯誤狀態">Email 格式錯誤的驗證回饋</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 Input startIcon 表達狀態(有效 / 無效)"
           note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
         >
-          <Label warn>startIcon = 欄位身份,狀態由邊框 + help text 傳達</Label>
+          <ExampleCaption warn>startIcon = 欄位身份,狀態由邊框 + help text 傳達</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="❌ 不用 Input 顯示需要格式化的資料 → NumberInput / DatePicker"
           note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
         >
           <Input defaultValue="1234567" placeholder="金額" aria-label="金額（不建議用 Input）" />
-          <Label warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</Label>
+          <ExampleCaption warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</ExampleCaption>
           <Input defaultValue="2026-04-18" placeholder="日期" aria-label="日期（不建議用 Input）" />
-          <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
+          <ExampleCaption warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</ExampleCaption>
           <Input defaultValue="1234567" placeholder="數量" aria-label="數量（不建議用 Input）" />
-          <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
+          <ExampleCaption warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -73,7 +68,7 @@ export const UsageGuidance: Story = {
           <Input startIcon={Globe} defaultValue="https://example.com" aria-label="網址" />
           <Input startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -112,10 +107,10 @@ export const ModeRule: Story = {
 
       <TutorialRule
         title="❌ 不用 readonly 作為 DataTable cell"
-        note="readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 `<Input mode='view'>`(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)"
+        note={<>readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 <code>&lt;Input mode='view'&gt;</code>(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)</>}
       >
         <Input mode="readonly" value="alice@example.com" aria-label="Email（資料表誤用示範）" />
-        <Label warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</Label>
+        <ExampleCaption warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -141,7 +136,7 @@ export const StartIconRule: Story = {
       >
         <Input startIcon={AlertCircle} defaultValue="invalid-email" aria-label="Email（錯誤圖示誤用）" />
         <Input startIcon={CheckCircle2} defaultValue="alice@example.com" aria-label="Email（成功圖示誤用）" />
-        <Label warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text,不佔 startIcon 語意槽</Label>
+        <ExampleCaption warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text,不佔 startIcon 語意槽</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -206,7 +201,7 @@ export const EndActionRule: Story = {
             aria-label="Email（錯誤狀態圖示誤用）"
             endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
           />
-          <Label warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</Label>
+          <ExampleCaption warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -237,7 +232,7 @@ export const ErrorRule: Story = {
           aria-label="Email（錯誤狀態圖示誤用）"
           endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
         />
-        <Label warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</Label>
+        <ExampleCaption warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

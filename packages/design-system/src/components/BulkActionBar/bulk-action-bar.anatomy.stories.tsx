@@ -107,7 +107,7 @@ function SelectionStateDemo() {
         <Button variant="tertiary" size="sm" onClick={() => setCount(3)}>3</Button>
         <Button variant="tertiary" size="sm" onClick={() => setCount(15)}>15</Button>
       </div>
-      <div className="border border-dashed border-border-muted rounded-md min-h-[60px]">
+      <div className="border border-dashed border-border rounded-md min-h-[60px]">
         <BulkActionBar
           selection={Array.from({ length: count }, (_, i) => `x-${i}`)}
           actions={

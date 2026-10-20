@@ -1,6 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import {
   Bar,
   BarChart,
@@ -20,8 +19,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from './chart'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/設計原則',
@@ -30,15 +29,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p
-    className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-secondary'}`}
-  >
-    {children}
-  </p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap', noteTone: 'secondary' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // ── Sample data (reused across rules) ────────────────────────────────────────
 
@@ -128,67 +120,77 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 Chart 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Chart/展示" name="長條 Chart — 月營收"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長條 Chart — 月營收</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Chart/展示" name="折線 Chart — 伺服器回應時間"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">折線 Chart — 伺服器回應時間</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Chart/展示" name="環圈 Chart — 流量來源分布"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">環圈 Chart — 流量來源分布</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Chart/展示" name="堆疊 面積 — 部門支出"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">堆疊 面積 — 部門支出</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">不確定該不該用 Chart 時:先確認資料是否真的需要視覺化(單一數字、2-3 個小數字或可排序篩選的清單,通常用文字、描述清單或表格更清楚);若資料量夠多且要看趨勢、比例或分布,才用 Chart。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>資料量夠多、要看出趨勢 / 比較 / 比例 / 分布時:月營收趨勢(折線)、各部門預算比較(長條)、流量來源組成(環圈)、部門支出累積(堆疊面積)。</p>
+        <TutorialList>
+          <li><StoryLink kind="Design System/Components/Chart/展示" name="長條 Chart — 月營收">長條 Chart — 月營收</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Chart/展示" name="折線 Chart — 伺服器回應時間">折線 Chart — 伺服器回應時間</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Chart/展示" name="環圈 Chart — 流量來源分布">環圈 Chart — 流量來源分布</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Chart/展示" name="堆疊 面積 — 部門支出">堆疊 面積 — 部門支出</StoryLink></li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
+      <UsageSection kind="whenNot">
+        <TutorialList>
+          <li>單一大數字(今日營收 $12,345)→ 純文字或 KPI 區塊:單一數值不需要視覺化</li>
+          <li>2–3 個小數字對照 → DescriptionList 或表格:數字本身就夠清楚,圖反而多餘</li>
+          <li>要逐筆查看、排序、篩選的清單 → DataTable:圖看不到細節</li>
+          <li>即時系統狀態(上線 / 離線)→ Badge 或 CircularProgress:那是狀態,不是數據</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>DataTable</strong> —— 逐列掃讀、排序、篩選;Chart 看整體的趨勢、分布、比例</li>
+          <li><strong>ProgressBar / CircularProgress</strong> —— 單一數值 0–100%;Chart 是跨時間或跨類別的多個數值</li>
+          <li><strong>DescriptionList</strong> —— 少量、分散的「標籤 + 數值」;資料點 5 個以上、要看出規律才用 Chart</li>
+          <li><strong>Badge / Tag</strong> —— 單一數值或狀態的指示;Chart 是多個資料點</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
+  ),
+}
+
+export const ImplementationRule: Story = {
+  name: '實作準則',
+  render: () => (
+    <TutorialPage>
       <TutorialRule
         title="❌ 硬寫色值:<Bar fill='#3b82f6' />"
         note="繞過 ChartConfig + --chart-* token 系統,dark mode 切換時不跟著反轉,brand 色改動時也無法一次更新。"
       >
-        <Label warn>
-          ✗ &lt;Bar fill="#3b82f6" /&gt; &nbsp;&nbsp; ✓ &lt;Bar fill="var(--color-{'{key}'})" /&gt; (搭配 ChartConfig)
-        </Label>
+        <ExampleCaption warn>
+          ❌ &lt;Bar fill="#3b82f6" /&gt; &nbsp;&nbsp; ✅ &lt;Bar fill="var(--color-{'{key}'})" /&gt; (搭配 ChartConfig)
+        </ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 自訂 Tooltip / Legend 視覺"
         note="一律用 ChartTooltipContent / ChartLegendContent,確保跨圖表視覺一致。需要微調格式化(數字千分位、單位)時用 formatter prop,不要自己寫一份 tooltip 元件。"
       >
-        <Label warn>
-          ✗ content={'{'}(props) ={'>'} &lt;div className="bg-white shadow-xl"&gt;...&lt;/div&gt;{'}'} &nbsp;&nbsp;
-          ✓ content={'{'}&lt;ChartTooltipContent formatter={'{'}(v) ={'>'} `${'$'}{'{'}v{'}'}`{'}'} /&gt;{'}'}
-        </Label>
+        {/* 2026-10-20 T12:原本 ❌ / ✅ 兩段程式碼擠在同一則紅色說明裡(✅ 那段也是紅字),程式碼是一般文字、樣板字串的反引號原樣顯示;拆成兩則、程式碼放進 <code> */}
+        <ExampleCaption warn>❌ <code>{'content={(props) => <div className="bg-white shadow-xl">…</div>}'}</code></ExampleCaption>
+        <ExampleCaption>✅ <code>{'content={<ChartTooltipContent formatter={(v) => `$${v}`} />}'}</code></ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 在 chart 裡放 Button / Input 等互動元件"
         note="Chart 是 passive 視覺化層,互動(篩選、時間範圍切換)屬於 chart 外的 toolbar — 用 action-bar pattern + SegmentedControl / Select / DatePicker 建構。Chart 內部只有 tooltip / legend 這類 hover 級的 passive 互動。"
       >
-        <Label warn>
-          ✗ 在 BarChart 裡疊加 &lt;Button&gt;篩選&lt;/Button&gt; &nbsp;&nbsp;
-          ✓ Chart 上方用 action-bar pattern 放置控制項
-        </Label>
+        <ExampleCaption warn>
+          ❌ 在 BarChart 裡疊加 &lt;Button&gt;篩選&lt;/Button&gt; &nbsp;&nbsp;
+          ✅ Chart 上方用 action-bar pattern 放置控制項
+        </ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 使用 shadcn 預設的 HSL chart token"
         note="shadcn 預設的 --chart-1..5 用的是另一套色彩演算法,本 DS 改用與其他元件一致的色彩系統(blue-6 / purple-6 / green-6 / yellow-7 / deep-orange-6)。若沿用 shadcn 預設值會與本 DS 其他色彩不同調。"
       >
-        <Label warn>
+        <ExampleCaption warn>
           本 DS 的 --chart-1..5 定義在 tokens/color/semantic.css,不要覆寫為 shadcn 範例程式碼內的 HSL 值。
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
-    </>
     </TutorialPage>
   ),
 }
@@ -211,7 +213,7 @@ export const ChartTypeRule: Story = {
               <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
             </BarChart>
           </ChartContainer>
-          <Label>各國銷量對比 — 觀看者一眼看出「美國最高、法國最低」</Label>
+          <ExampleCaption>各國銷量對比 — 觀看者一眼看出「美國最高、法國最低」</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -235,7 +237,7 @@ export const ChartTypeRule: Story = {
               />
             </LineChart>
           </ChartContainer>
-          <Label>一週日活躍使用者 — 觀看者看到「週末上升」的趨勢</Label>
+          <ExampleCaption>一週日活躍使用者 — 觀看者看到「週末上升」的趨勢</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -257,7 +259,7 @@ export const ChartTypeRule: Story = {
               <ChartLegend content={<ChartLegendContent nameKey="os" />} />
             </PieChart>
           </ChartContainer>
-          <Label>使用者裝置 OS 分布 — 3 類,適合 Pie</Label>
+          <ExampleCaption>使用者裝置 OS 分布 — 3 類,適合 Pie</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -265,7 +267,7 @@ export const ChartTypeRule: Story = {
         title="❌ 錯誤:時間序列用 Pie"
         note="Pie 無法表達「隨時間變化」;想同時看趨勢 + 組成 → Stacked Area / Stacked Bar。"
       >
-        <Label warn>「過去 12 個月每月營收用 Pie」→ 看不到成長曲線,改用 Line 或 Bar</Label>
+        <ExampleCaption warn>「過去 12 個月每月營收用 Pie」→ 看不到成長曲線,改用 Line 或 Bar</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -289,10 +291,10 @@ export const CategoryTokenRule: Story = {
               <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
             </BarChart>
           </ChartContainer>
-          <Label>
+          <ExampleCaption>
             ChartConfig:{'{ sales: { label: "銷量", color: "var(--chart-1)" } }'} →
             Recharts Bar 用 fill="var(--color-sales)"
-          </Label>
+          </ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
@@ -306,9 +308,7 @@ export const FiveCategoryLimitRule: Story = {
       <TutorialRule
         title="原則:不超過 5 類別(Miller's law 的 data viz 應用)"
         note="人類短期記憶容量約為 5-7 項;當分類超過 5 個,觀看者需要頻繁掃 legend 對照色彩,認知負擔陡增。本 DS 只定義 --chart-1..5 五色,強制此上限。"
-      >
-        <div />
-      </TutorialRule>
+      />
 
       <TutorialRule
         title="❌ 錯誤 — 7 類別,第 6、7 類只能 reuse 顏色導致視覺衝突"
@@ -328,7 +328,7 @@ export const FiveCategoryLimitRule: Story = {
               <ChartLegend content={<ChartLegendContent nameKey="team" />} />
             </PieChart>
           </ChartContainer>
-          <Label warn>「客服」與「工程」同色 / 「HR」與「設計」同色 → 無法分辨</Label>
+          <ExampleCaption warn>「客服」與「工程」同色 / 「HR」與「設計」同色 → 無法分辨</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -350,7 +350,7 @@ export const FiveCategoryLimitRule: Story = {
               <ChartLegend content={<ChartLegendContent nameKey="team" />} />
             </PieChart>
           </ChartContainer>
-          <Label>Top 4 部門 + 其他(PM / 客服 / HR)= 5 類,每類可辨</Label>
+          <ExampleCaption>Top 4 部門 + 其他(PM / 客服 / HR)= 5 類,每類可辨</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
@@ -403,9 +403,9 @@ export const A11yRule: Story = {
               />
             </LineChart>
           </ChartContainer>
-          <Label>
+          <ExampleCaption>
             iOS 實線、Android 虛線(strokeDasharray="4 4")— 色盲 / 黑白列印仍可分辨
-          </Label>
+          </ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
@@ -413,9 +413,9 @@ export const A11yRule: Story = {
         title="Recharts accessibilityLayer prop"
         note="長條、折線、面積圖加上 accessibilityLayer,啟用鍵盤焦點與讀屏器朗讀。圓餅 / 環圈圖經 Recharts 預設一樣啟用 accessibilityLayer(可聚焦),但方向鍵導覽建立在軸刻度數值索引上,無數值軸的圓餅圖無法逐片導覽。"
       >
-        <Label>
+        <ExampleCaption>
           &lt;BarChart accessibilityLayer ...&gt; — 方向鍵可瀏覽資料點,讀屏器讀出當前值
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

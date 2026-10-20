@@ -2,10 +2,9 @@
 // Atlassian / shadcn / Primer / Material primary sources 收斂；本檔只投影 canonical，
 // 不新增 email、account switcher 或其他 aspirational contract。
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { AccountMenu } from './account-menu'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/AccountMenu/設計原則',
@@ -20,34 +19,43 @@ const DEMO_USER = {
   avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' as const },
 }
 
-// 規則的內容是一段連結 / 說明(不是範例區),不給 caption;說明字色沿用本頁原本的 fg-secondary
-const TutorialRule = createTutorialRule({ noteTone: 'secondary' })
+// 規則的內容是一段說明(不是範例區)
+const TutorialRule = createTutorialRule()
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage className="max-w-3xl">
-      <TutorialRule
-        title="用在目前登入者的帳號入口"
-        note="AccountMenu 表示「我自己的個人資料、設定與登出」；primary-header 放 global header 右側；Menu 放不下、叫出的左側浮層蓋住 global header 時，鏡像到浮層頂排的 SidebarHeader 右側。"
-      >
-        {/* 包一層段落:連結維持行內寬度(規則的內容是直排區塊,裸連結會被拉滿整列、整列都變成可點) */}
-        <p>
-          <LinkTo kind="Design System/Components/AccountMenu/展示" name="全域標頭帳號入口">
-            <span className="cursor-pointer text-primary hover:text-primary-hover">查看展示 → 全域標頭帳號入口</span>
-          </LinkTo>
-        </p>
-      </TutorialRule>
+      <UsageSection kind="when">
+        <p>目前登入者「自己」的帳號入口:個人資料、設定與登出。</p>
+        <TutorialList>
+          <li>上方有全域標頭的版面(primary-header):放在全域標頭右側,品牌在左、自己的帳號在右(GitHub / Gmail / Slack 的慣例)—— <StoryLink kind="Design System/Components/AccountMenu/展示" name="全域標頭帳號入口">全域標頭帳號入口</StoryLink></li>
+          <li>Menu 放不下、叫出的左側浮層蓋住全域標頭時:入口鏡像到浮層頂排(SidebarHeader 右側)</li>
+        </TutorialList>
+      </UsageSection>
 
-      <TutorialRule
-        title="不要拿來展示別人的人員資訊"
-        note="同事、留言者或 reviewer 的 hover 詳情屬於 ProfileCard；AccountMenu 綁定 navigation callbacks，語義不是聯絡某人。"
-      />
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="不要拿來展示別人的人員資訊"
+          note="同事、留言者或審核者的詳細資料用 ProfileCard;AccountMenu 開的是「自己」的設定與登出,不是聯絡某人。"
+        />
+        <TutorialRule
+          title="不要當成一般動作選單"
+          note="排序、匯出、列操作直接用 DropdownMenu。只有「頭像觸發 + 固定的帳號項目」才用 AccountMenu。"
+        />
+        <TutorialRule
+          title="側欄版面(primary-sidebar)的帳號入口不用 AccountMenu"
+          note="那種版面帳號放在側欄底部(SidebarFooter 的帳號列,整列開帳號選單),不放在標頭。"
+        />
+      </UsageSection>
 
-      <TutorialRule
-        title="不要當成一般動作選單"
-        note="排序、匯出與 row actions 直接使用 DropdownMenu。只有 identity trigger + canonical 帳號集合才使用 AccountMenu。"
-      />
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>ProfileCard</strong> —— 看「別人」的人員卡(滑過展開,可聊天 / 通話);AccountMenu 是「自己」的入口,兩者不互換</li>
+          <li><strong>側欄底部的帳號列</strong> —— 同樣是「自己」,但屬於側欄版面;標頭版面才用 AccountMenu</li>
+          <li><strong>DropdownMenu</strong> —— 一般選單;AccountMenu 是它固定成帳號用途的版本(頭像觸發 + 固定項目)</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -55,15 +63,14 @@ export const UsageGuidance: Story = {
 export const PlacementRule: Story = {
   name: '放置規則:每個畫面只出現一次',
   render: () => (
-    <TutorialPage className="max-w-3xl text-body">
-      <TutorialRule title="Placement owner = AppShell spec">
-        {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 / 項目符號縮排(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
-        <ul className="list-disc space-y-2 pl-5 text-fg-secondary">
+    <TutorialPage className="max-w-3xl">
+      <TutorialRule title="帳號入口放在哪裡,由版面模式決定">
+        <TutorialList>
           <li><strong>primary-header：</strong>global header 右側使用 AccountMenu。</li>
           <li><strong>primary-sidebar：</strong>帳號入口留在 SidebarFooter，不另放 AccountMenu。</li>
           <li><strong>Menu 左側浮層：</strong>浮層蓋住 global header 時，入口鏡像到浮層頂排的 SidebarHeader 右側（只在浮層那一份）。</li>
           <li><strong>禁止：</strong>global header 與 sidebar footer 同時各放一份。</li>
-        </ul>
+        </TutorialList>
       </TutorialRule>
     </TutorialPage>
   ),

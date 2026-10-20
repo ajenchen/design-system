@@ -3,7 +3,6 @@
 // @anatomy-exempt: Dialog footer Cancel/Delete buttons are action cancel (not overlay dismiss); preserved verbatim from pre-refactor structure
 // @overlay-open-skip: 本檔為設計原則頁 —— 範例的 Coachmark 卡片不預設打開、點錨點才出現(與 Popover / Sheet / HoverCard / DropdownMenu 設計原則頁同一個慣例)。打開的卡片 portal 到 body、320 寬約 300 高,畫在範例框外,靜止時就蓋住相鄰規則的標題與說明,捲動時還會翻到另一側蓋住別段(待辦總帳 P7b,2026-10-14 量到 6 張卡片在 18 個捲動位置全部蓋字);開著的樣子由 coachmark.stories.tsx(單步驟新功能介紹 / 多步新手導覽 / 多步提示,useState(true))與 coachmark.anatomy.stories.tsx Overview 負責。
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2, Download } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -31,7 +30,8 @@ import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { Alert } from '@/design-system/components/Alert/alert'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Coachmark/設計原則',
@@ -40,11 +40,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // ── 範例卡一律受控、按鈕真的有作用(2026-10-20,獨立驗證 OV-08)────────────────────────────────
 // 2026-10-20 前本頁每張卡都是非受控 + 空的 callback:知道了 / 略過 / 下一步 / 上一步按了卡片都不動 ——
@@ -146,20 +143,18 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Coachmark 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">首次推出 AI 助理時 anchor 到入口按鈕介紹(單步驟)</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步 新手導覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">新用戶首登的三步功能導覽(多步 Onboarding)</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步提示"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">進階快捷鍵的漸進式提示(多步 Tips)</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹">首次推出 AI 助理時 anchor 到入口按鈕介紹(單步驟)</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Coachmark/展示" name="多步 新手導覽">新用戶首登的三步功能導覽(多步 Onboarding)</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Coachmark/展示" name="多步提示">進階快捷鍵的漸進式提示(多步 Tips)</StoryLink></li>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 Coachmark 做錯誤提示"
           note="錯誤訊息是使用者動作的回饋(表單驗證失敗、API 錯誤、權限不足)— 應該用 Notice / Alert / Toast 呈現事件。Coachmark 是主動推送教學,語意完全相反"
@@ -171,47 +166,47 @@ export const UsageGuidance: Story = {
             description="請更新付款方式後再試一次;訂閱會在 3 天後暫停。"
             className="max-w-md"
           />
-          <Label warn>錯誤 → Notice / Alert / Toast;Coachmark 只用於主動推送教學</Label>
+          <ExampleCaption warn>錯誤 → Notice / Alert / Toast;Coachmark 只用於主動推送教學</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不用 Coachmark 做確認框"
           note="確認破壞性動作必須阻斷流程(Dialog)。Coachmark 是 non-modal,使用者可忽略 — 讓破壞性動作變成「可忽略」等於沒確認"
         >
-          <Label warn>刪除 / 取消訂閱 / 重置資料 → Dialog(必須阻斷),不用 Coachmark</Label>
+          <ExampleCaption warn>刪除 / 取消訂閱 / 重置資料 → Dialog(必須阻斷),不用 Coachmark</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不強迫完成 tour(拿掉退出機制)"
           note="使用者的本能是「我想自己試試」。沒退出 = 綁架,使用者找關閉方式或直接關閉整個頁面。永遠提供退出機制(第一步略過;step 2+ 走 Esc / header Close,有上一步時略過自動隱藏,見 CTA 語義表)反而提升完成率 — 信任使用者會選擇"
         >
-          <Label warn>❌ 拿掉所有退出路徑(無略過 / Esc / header Close)— 使用者 frustration 增加,產品印象變差</Label>
+          <ExampleCaption warn>❌ 拿掉所有退出路徑(無略過 / Esc / header Close)— 使用者 frustration 增加,產品印象變差</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ Description 塞超過 3 行"
           note="Coachmark 是快速提示不是完整教學。長文案使用者不讀,反而浪費了「主動彈出」的機會。長內容:拆多步 / 改 Dialog / 連結到文件"
         >
-          <Label warn>❌ 5+ 行 description — 使用者掃一眼就點略過</Label>
-          <Label>✅ 2-3 行精準說明,需要深入 → 「了解更多」連結到 help doc</Label>
+          <ExampleCaption warn>❌ 5+ 行 description — 使用者掃一眼就點略過</ExampleCaption>
+          <ExampleCaption>✅ 2-3 行精準說明,需要深入 → 「了解更多」連結到 help doc</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 在 Coachmark 內放 nested Popover / Dialog"
           note="浮層嵌套浮層 = 層級混亂 + 焦點管理崩壞 + Esc 不知道關哪個。複雜互動結束 tour 後再開啟;tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」"
         >
-          <Label warn>❌ Coachmark 內放 Popover / Dialog — 焦點管理崩壞</Label>
+          <ExampleCaption warn>❌ Coachmark 內放 Popover / Dialog — 焦點管理崩壞</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 自包視覺 token(bg / shadow / radius)"
           note="Coachmark 是 Popover 的 composition — 浮層視覺完全繼承 Popover。自己寫 bg-* / shadow-* 會讓 Coachmark 和其他浮層漂移,改 Popover 視覺時 Coachmark 不跟進"
         >
-          <Label warn>❌ 在 Coachmark 外殼加 className=&quot;bg-*&quot; / shadow-*;視覺改動一律改 Popover</Label>
+          <ExampleCaption warn>❌ 在 Coachmark 外殼加 className=&quot;bg-*&quot; / shadow-*;視覺改動一律改 Popover</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Popover — 使用者主動點擊才出現的互動面板"
           note="filter、設定、快速切換等補充 UI。使用者知道自己要什麼、主動點擊 trigger。典型案例:Jira filter、Linear view settings、Notion 頁面設定"
@@ -230,7 +225,7 @@ export const UsageGuidance: Story = {
               </PopoverBody>
             </PopoverContent>
           </Popover>
-          <Label>↑ 使用者主動點擊 trigger,面板才出現——這是 Popover 的觸發模型</Label>
+          <ExampleCaption>↑ 使用者主動點擊 trigger,面板才出現——這是 Popover 的觸發模型</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -243,7 +238,7 @@ export const UsageGuidance: Story = {
             description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
             anchor={<Button variant="primary" startIcon={Bot}>AI 助理</Button>}
           />
-          <Label>↑ 點按鈕看卡片。實際產品裡由系統主動打開,使用者不需事先知道有這個功能</Label>
+          <ExampleCaption>↑ 點按鈕看卡片。實際產品裡由系統主動打開,使用者不需事先知道有這個功能</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -263,17 +258,17 @@ export const UsageGuidance: Story = {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Label>↑ 破壞性決策必須完整處理,不能讓使用者點旁邊跳過</Label>
+          <ExampleCaption>↑ 破壞性決策必須完整處理,不能讓使用者點旁邊跳過</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="判準 — 問「不看這個資訊會怎樣?」"
           note="不看也能用 → Coachmark(介紹 / 提示 / onboarding)。不看就做不下去(破壞性動作、必要資訊輸入、多步表單)→ Dialog。視覺上 Coachmark 共用 overlay-surface(bg / border / shadow / radius 完全繼承 Popover),差別僅:觸發模型(主動 vs 被動)+ 結構(Coachmark Header 可選 kind / 有 Media / Footer 是 justify-between)"
         >
-          <Label>Coachmark:新功能介紹、onboarding tour、版本更新提示</Label>
-          <Label>Dialog:刪除確認、建立 project 表單、付款資訊輸入、多步 wizard</Label>
+          <ExampleCaption>Coachmark:新功能介紹、onboarding tour、版本更新提示</ExampleCaption>
+          <ExampleCaption>Dialog:刪除確認、建立 project 表單、付款資訊輸入、多步 wizard</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -287,24 +282,24 @@ export const MultiStepBestPracticesRule: Story = {
         note="Coachmark 的核心價值是「在 UI 元素旁邊介紹它」。anchor 到無關位置 = 失去精準性,變成一般 onboarding modal。使用者看完要能「記得這個功能在畫面的哪裡」"
       >
         <TourExample startAt={1} />
-        <Label>↑ 點「邀請成員」看卡片:Coachmark anchor 到這顆按鈕,使用者看完就知道去哪找;按「上一步 / 下一步」卡片跟著換到那一步的按鈕</Label>
+        <ExampleCaption>↑ 點「邀請成員」看卡片:Coachmark anchor 到這顆按鈕,使用者看完就知道去哪找;按「上一步 / 下一步」卡片跟著換到那一步的按鈕</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="≤ 5 步 — 超過使用者疲勞"
         note="onboarding 的黃金比例是 3 步(Linear / Notion / Figma 都是 3 步)。超過 5 步使用者流失率大幅上升。內容多就拆多次 tour(首次 / 進階 / 專家)而非一次塞完"
       >
-        <Label>✅ 3 步:建立 workspace → 邀請成員 → 建立專案(Notion)</Label>
-        <Label>✅ 4 步:選模板 → 命名 → 邀協作 → 開始編輯(Figma)</Label>
-        <Label warn>❌ 8+ 步 — 使用者略過率 &gt; 60%</Label>
+        <ExampleCaption>✅ 3 步:建立 workspace → 邀請成員 → 建立專案(Notion)</ExampleCaption>
+        <ExampleCaption>✅ 4 步:選模板 → 命名 → 邀協作 → 開始編輯(Figma)</ExampleCaption>
+        <ExampleCaption warn>❌ 8+ 步 — 使用者略過率 &gt; 60%</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="永遠提供退出機制 — 尊重退出意願"
         note="沒退出機制的 onboarding = 綁架使用者。使用者的本能是「我想自己試試」,強迫看完反而留下負面印象。退出機制是對自主權的尊重,真正有用的 tour 使用者會主動看完"
       >
-        <Label warn>❌ 完全拿掉退出路徑(連 Esc / header Close 都禁用)— user 會直接離開產品</Label>
-        <Label>✅ 第一步提供略過(tertiary 不搶焦點);step 2+ 退出走 Esc / header Close(有 onPrev 時略過自動隱藏,見 CTA 語義表)</Label>
+        <ExampleCaption warn>❌ 完全拿掉退出路徑(連 Esc / header Close 都禁用)— user 會直接離開產品</ExampleCaption>
+        <ExampleCaption>✅ 第一步提供略過(tertiary 不搶焦點);step 2+ 退出走 Esc / header Close(有 onPrev 時略過自動隱藏,見 CTA 語義表)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -312,14 +307,14 @@ export const MultiStepBestPracticesRule: Story = {
         note="語意切換告訴使用者「這是最後一步」。如果最後步仍寫「下一步」,使用者不知道 tour 是否結束,體驗斷裂。「完成」的語意收斂明確,讓使用者知道「我完成了」"
       >
         <TourExample startAt={2} />
-        <Label>↑ 點「建立專案」看卡片:最後一步推進鍵是「完成」,按了卡片關閉 —— 使用者知道「完成了」</Label>
+        <ExampleCaption>↑ 點「建立專案」看卡片:最後一步推進鍵是「完成」,按了卡片關閉 —— 使用者知道「完成了」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="Footer 順序 — 上一步 / 略過 / 下一步"
         note="對齊與順序都不是 Coachmark 自訂的:浮層頁腳一律靠右(overlay-surface.spec.md「底部區域:按鈕列 vs 列式」SurfaceFooter 排版:justify-end,左側有步驟計數時 justify-between —— 單步卡沒有計數也一樣靠右);靠右時照全 DS 的全局排序(action-bar.spec.md「全局排序」:primary > secondary > tertiary,靠右對齊 primary 在最右),所以推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。頁面裡沒有標題的步驟列是另一種情形:靠左、primary「下一步」在最左(action-bar.spec.md「對齊方向的決定」),不套這裡。此為各按鈕『出現時』的排列位置,非三鍵同時 render — 略過僅第一步顯示、上一步第 2+ 步顯示,兩者永不共存(見 CTA 語義表)"
       >
-        <Label>上一步 第 2+ 步才出現;第 1 步只有 略過 / 下一步</Label>
+        <ExampleCaption>上一步 第 2+ 步才出現;第 1 步只有 略過 / 下一步</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -327,7 +322,7 @@ export const MultiStepBestPracticesRule: Story = {
         note="onboarding 的精神是「幫忙介紹但不強迫」。使用者點略過 / 按 Esc / 點擊別處都能關閉,不影響主流程。把 onboarding 包在 Dialog 裡 — 使用者第一反應是找 X 關掉,根本沒讀內容"
       >
         <TourExample startAt={0} />
-        <Label>↑ 點「建立 Workspace」看卡片:使用者可按「略過」退出 tour,繼續自己探索 — 不強迫完成</Label>
+        <ExampleCaption>↑ 點「建立 Workspace」看卡片:使用者可按「略過」退出 tour,繼續自己探索 — 不強迫完成</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -347,15 +342,15 @@ export const MediaContentRule: Story = {
           description="選取任一段文字,AI 會整理成三個重點。"
           anchor={<Button variant="primary" size="sm" startIcon={Bot}>AI 摘要</Button>}
         />
-        <Label>↑ 點按鈕看卡片:Illustration 適合抽象功能(AI / 協作 / 自動化)</Label>
+        <ExampleCaption>↑ 點按鈕看卡片:Illustration 適合抽象功能(AI / 協作 / 自動化)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ Media 區不放互動元件"
         note="按鈕 / 輸入 / checkbox 一律走 footer。Media 是「看」的區塊不是「做」的區塊。放互動元素會讓使用者搞不清楚「這個按鈕是示範還是真的能點」,破壞 Coachmark 的教學角色"
       >
-        <Label warn>❌ Media 區放 &lt;Button onClick=...&gt; — 使用者分不清示範 vs 實際操作</Label>
-        <Label>✅ Media 顯示 static screenshot / illustration,互動一律透過 footer 的推進鍵</Label>
+        <ExampleCaption warn>❌ Media 區放 &lt;Button onClick=...&gt; — 使用者分不清示範 vs 實際操作</ExampleCaption>
+        <ExampleCaption>✅ Media 顯示 static screenshot / illustration,互動一律透過 footer 的推進鍵</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -368,14 +363,14 @@ export const MediaContentRule: Story = {
           description="把目前篩選後的結果匯出成 Excel,欄位順序與排序都會保留。"
           anchor={<Button variant="tertiary" size="sm" startIcon={Download}>匯出報表</Button>}
         />
-        <Label>↑ 點按鈕看卡片:2 行精準說明,不超過 3 行</Label>
+        <ExampleCaption>↑ 點按鈕看卡片:2 行精準說明,不超過 3 行</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="同一段 tour 維持一致比例 — 視覺節奏穩定"
         note="media 比例由 mediaRatio 控制(預設 16:9)。同一段 tour 各步驟用同一個比例,確保視覺節奏一致 — 使用者看第二步不會因為 media 變高/變矮而分心。需要時 consumer 可傳 mediaRatio(4/3 / 1/1 / 3/4)覆寫"
       >
-        <Label>預設 16:9;一段 tour 內各步驟沿用同一比例,consumer 準備素材時遵守該比例</Label>
+        <ExampleCaption>預設 16:9;一段 tour 內各步驟沿用同一比例,consumer 準備素材時遵守該比例</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

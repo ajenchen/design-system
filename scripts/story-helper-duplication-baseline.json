@@ -1,0 +1,228 @@
+{
+  "note": "story 檔之間逐字相同的頂層宣告(6 行以上)的棘輪基準(scripts/story-helper-duplication-invariant.mjs)。每一組只准減少:新的一組 / 一組多了檔 = 紅;少了檔要在同一個 PR 本機跑 --write-baseline 收緊(CI 永遠不跑 --write-baseline)。2026-10-20 建閘時鎖進的 20 組是既有的抄本(收斂另排,見待辦總帳 R1b-T10);同一個用途要共用就放進 packages/design-system/src/stories-helpers/。",
+  "generatedBy": "node scripts/story-helper-duplication-invariant.mjs --write-baseline",
+  "groups": [
+    {
+      "key": "40ff42c0e4dcd2e8",
+      "name": "BpZone",
+      "lines": 7,
+      "files": [
+        "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+        "packages/design-system/src/components/Button/button.anatomy.stories.tsx",
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+        "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx",
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/Select/select.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "2dc20b88e71b9165",
+      "name": "categoryOptions",
+      "lines": 7,
+      "files": [
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/Combobox/combobox.stories.tsx"
+      ]
+    },
+    {
+      "key": "97116b41c81d9611",
+      "name": "categoryOptions",
+      "lines": 6,
+      "files": [
+        "packages/design-system/src/components/Select/select.stories.tsx",
+        "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx"
+      ]
+    },
+    {
+      "key": "4fe5743788f33f40",
+      "name": "MAIN_NAV",
+      "lines": 7,
+      "files": [
+        "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx",
+        "packages/design-system/src/components/Sidebar/sidebar.stories.tsx"
+      ]
+    },
+    {
+      "key": "08474a67f4af3660",
+      "name": "orderColumns",
+      "lines": 6,
+      "files": [
+        "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx",
+        "packages/design-system/src/components/DataTable/data-table.stories.tsx"
+      ]
+    },
+    {
+      "key": "cd08f9e02e914028",
+      "name": "personHover",
+      "lines": 15,
+      "files": [
+        "packages/design-system/src/components/Menu/menu-item.stories.tsx",
+        "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "6afddaf8e744c3d7",
+      "name": "Product",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx",
+        "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx"
+      ]
+    },
+    {
+      "key": "2f127eaf59eae719",
+      "name": "PRODUCT_COLUMNS",
+      "lines": 10,
+      "files": [
+        "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx",
+        "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx"
+      ]
+    },
+    {
+      "key": "b60f5b632884fb35",
+      "name": "PropRow",
+      "lines": 9,
+      "files": [
+        "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx",
+        "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+        "packages/design-system/src/components/Button/button.anatomy.stories.tsx",
+        "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx",
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+        "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx",
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx",
+        "packages/design-system/src/components/Select/select.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "d9f6b20938eb94bf",
+      "name": "PropRow",
+      "lines": 9,
+      "files": [
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "6c9de24e35ea762a",
+      "name": "SizeSpec",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "c3412f86320e4db0",
+      "name": "STRIPE_PRODUCTS",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx",
+        "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx"
+      ]
+    },
+    {
+      "key": "e70c0ab038203bf8",
+      "name": "SUBTLE_CONTAINER",
+      "lines": 7,
+      "files": [
+        "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx",
+        "packages/design-system/src/components/Notice/notice.stories.tsx"
+      ]
+    },
+    {
+      "key": "763d7ad1ff8e8cee",
+      "name": "Swatch",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+        "packages/design-system/src/components/Button/button.anatomy.stories.tsx",
+        "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "9aa041932def5a1e",
+      "name": "Swatch",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx",
+        "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx",
+        "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx",
+        "packages/design-system/src/components/Select/select.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx",
+        "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "d73531d89e5f499b",
+      "name": "Swatch",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "26f47b239a0aa137",
+      "name": "TkVal",
+      "lines": 6,
+      "files": [
+        "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx",
+        "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx",
+        "packages/design-system/src/components/Button/button.anatomy.stories.tsx",
+        "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx",
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+        "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx",
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx",
+        "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx",
+        "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx",
+        "packages/design-system/src/components/Select/select.anatomy.stories.tsx",
+        "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx",
+        "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "2af1c3456cda2881",
+      "name": "TokenAnnotation",
+      "lines": 11,
+      "files": [
+        "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx",
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "ef7fa8ad099df0f9",
+      "name": "TokenAnnotation",
+      "lines": 11,
+      "files": [
+        "packages/design-system/src/components/Button/button.anatomy.stories.tsx",
+        "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx",
+        "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx"
+      ]
+    },
+    {
+      "key": "21911810a11b4cc5",
+      "name": "Z",
+      "lines": 8,
+      "files": [
+        "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx",
+        "packages/design-system/src/components/Input/input.anatomy.stories.tsx"
+      ]
+    }
+  ]
+}

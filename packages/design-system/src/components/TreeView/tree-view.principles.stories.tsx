@@ -1,10 +1,10 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse(含近親對照)into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Folder, FileText, Image, Users, User } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/設計原則',
@@ -13,11 +13,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -25,18 +22,16 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 TreeView 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="檔案瀏覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">檔案瀏覽</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="步驟引導"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">步驟引導</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="多選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">多選</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="長標籤"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長標籤</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="拖曳重排"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">拖曳重排</span></LinkTo></li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          <TutorialList>
+            <li><StoryLink kind="Design System/Components/TreeView/展示" name="檔案瀏覽">檔案瀏覽</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/TreeView/展示" name="步驟引導">步驟引導</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/TreeView/展示" name="多選">多選</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/TreeView/展示" name="長標籤">長標籤</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/TreeView/展示" name="拖曳重排">拖曳重排</StoryLink></li>
+          </TutorialList>
         </div>
 
         <TutorialRule
@@ -59,9 +54,9 @@ export const UsageGuidance: Story = {
             </TreeView>
           </div>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代方案">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title='❌ 互斥展開(同時只開一個):用 Accordion type="single"'
           note='TreeView 預設允許任意多個節點同時展開。平面設定分段若需要「展開一個、其他自動收合」的互斥語意,用 Accordion type="single"(非 TreeView)'
@@ -82,11 +77,11 @@ export const UsageGuidance: Story = {
               </TreeItem>
             </TreeView>
           </div>
-          <Label warn>↑ 三個設定分段在 TreeView 裡可同時展開;要「展開一個自動收其他」的互斥手風琴,用 Accordion type="single"</Label>
+          <ExampleCaption warn>↑ 三個設定分段在 TreeView 裡可同時展開;要「展開一個自動收其他」的互斥手風琴,用 Accordion type="single"</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親元件">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="❌ 平面資料(無階層):用 DataTable / list"
           note="TreeView 為階層而設計——若資料本質是平面(使用者清單、訂單清單),用 DataTable 更自然,TreeView 的遞迴結構徒增 overhead"
@@ -100,16 +95,16 @@ export const UsageGuidance: Story = {
               <TreeItem id="diana" label="Diana" icon={User} />
             </TreeView>
           </div>
-          <Label warn>↑ 平面的使用者清單用 TreeView → TreeView 的 chevron / indent 都用不上,用 DataTable 或 list</Label>
+          <ExampleCaption warn>↑ 平面的使用者清單用 TreeView → TreeView 的 chevron / indent 都用不上,用 DataTable 或 list</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 純視覺分段(設計時可列舉的固定選單):用 SidebarGroup 不用 TreeView"
-          note="Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 sidebar.spec.md「判斷規則」)"
+          note="Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 Sidebar 設計原則「SidebarMenu vs TreeView 的選擇」)"
         >
-          <Label warn>固定分段用 SidebarGroup 就夠,不需要 TreeView 的遞迴 overhead;user data 樹則一律 TreeView</Label>
+          <ExampleCaption warn>固定分段用 SidebarGroup 就夠,不需要 TreeView 的遞迴 overhead;user data 樹則一律 TreeView</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -135,14 +130,14 @@ export const ExpandSelectSeparationRule: Story = {
               </TreeItem>
             </TreeView>
           </div>
-          <Label>↑ 點 chevron 展開資料夾,點檔名選取該檔。兩個動作獨立</Label>
+          <ExampleCaption>↑ 點 chevron 展開資料夾,點檔名選取該檔。兩個動作獨立</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 混淆 expand 和 select 語意"
           note="點 node 同時展開 + 選取,使用者會困惑:「我只想展開看看,不想選它」。分離讓使用者有更細的控制"
         >
-          <Label warn>若強制合併,變成「想展開必須選」,破壞檔案瀏覽的自然 pattern(想看裡面但不選起來)</Label>
+          <ExampleCaption warn>若強制合併,變成「想展開必須選」,破壞檔案瀏覽的自然 pattern(想看裡面但不選起來)</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -171,7 +166,7 @@ export const IndentRule: Story = {
             </TreeItem>
           </TreeView>
         </div>
-        <Label>↑ 三層縮排節奏一致——每層 indent 剛好是 chevron + gap-2</Label>
+        <ExampleCaption>↑ 三層縮排節奏一致——每層 indent 剛好是 chevron + gap-2</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -189,12 +184,12 @@ export const IndentRule: Story = {
             </TreeItem>
           </TreeView>
         </div>
-        <Label>↑ 「活動主視覺.png」是葉,「社群貼文」可展開——兩者 label 依然垂直對齊</Label>
+        <ExampleCaption>↑ 「活動主視覺.png」是葉,「社群貼文」可展開——兩者 label 依然垂直對齊</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 混用有 icon / 無 icon 的節點"
-        note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳(見 spec「Icon 一致性原則」)"
+        note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳"
       >
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:384 / :391 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="border border-border rounded-lg py-2 w-80">
@@ -208,7 +203,7 @@ export const IndentRule: Story = {
             </TreeItem>
           </TreeView>
         </div>
-        <Label warn>↑ 「README.md」「public」沒傳 icon → label 起點比有 icon 的節點前移,視覺節奏錯開</Label>
+        <ExampleCaption warn>↑ 「README.md」「public」沒傳 icon → label 起點比有 icon 的節點前移,視覺節奏錯開</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

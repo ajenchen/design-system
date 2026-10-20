@@ -4,15 +4,15 @@
 // per 2026-04-26 user mandate. NextActionRule / StructureRule / CopyRule kept as
 // separate principles.
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { SearchX, FolderOpen, Inbox, WifiOff } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Empty/設計原則',
@@ -21,11 +21,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
 
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   // @layout-space-magic-ok: Empty 外框留白由容器決定且刻意不隨 density(empty.spec.md:69 / :183)(layoutSpace.spec.md:113 同範疇 spec-own)
@@ -38,28 +35,26 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Empty 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/Empty/展示" name="搜尋無結果"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋無結果</span></LinkTo>
+              <StoryLink kind="Design System/Components/Empty/展示" name="搜尋無結果">搜尋無結果</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">空清單</span></LinkTo>
+              <StoryLink kind="Design System/Components/Empty/展示" name="空清單">空清單</StoryLink>
             </li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 Empty 做載入中狀態"
           note="Empty 是「確定沒有」。載入中 → Skeleton / CircularProgress。Notion 首次開啟資料庫時先 Skeleton,載完才變 Empty 或有資料"
         >
-          <Label warn>載入中 → Skeleton / CircularProgress,不是 Empty</Label>
+          <ExampleCaption warn>載入中 → Skeleton / CircularProgress,不是 Empty</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -74,25 +69,25 @@ export const UsageGuidance: Story = {
               action={<Button variant="tertiary">重新載入</Button>}
             />
           </Frame>
-          <Label warn>↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error</Label>
+          <ExampleCaption warn>↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不用 Empty 做整頁級 404 / 無權限"
           note="整頁錯誤需要完整頁面佈局(navigation + hero 錯誤訊息)。Empty 是容器內提示。GitHub 的 404 頁是整頁設計"
         >
-          <Label warn>整頁 404 → 專屬錯誤頁面設計,Empty 只用容器內</Label>
+          <ExampleCaption warn>整頁 404 → 專屬錯誤頁面設計,Empty 只用容器內</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不用 Empty 表達 disabled 狀態"
           note="Disabled 是「禁用元件」的視覺,不是「沒內容」的提示。改用禁用該元件本身。Toggle off 的搜尋結果不用 Empty,而是禁用 SearchInput"
         >
-          <Label warn>禁用 → disable 元件本身,不用 Empty</Label>
+          <ExampleCaption warn>禁用 → disable 元件本身,不用 Empty</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — Empty / Skeleton / Alert">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Skeleton — 短暫 loading,不是 Empty"
           note="Empty 代表「已經查過、確定沒有」;loading 是「還沒查完、不確定有沒有」。直接顯示 Empty 會讓使用者以為資料真的沒有,然後一秒後內容跳出來,視覺跳動破壞信任"
@@ -105,7 +100,7 @@ export const UsageGuidance: Story = {
               <Skeleton className="h-4 w-5/6" />
             </div>
           </Frame>
-          <Label>↑ 資料還在載入 → Skeleton 保留版面輪廓,不誤導「這裡沒東西」</Label>
+          <ExampleCaption>↑ 資料還在載入 → Skeleton 保留版面輪廓,不誤導「這裡沒東西」</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -119,7 +114,7 @@ export const UsageGuidance: Story = {
               description="請檢查網路連線後重試。你看到的是快取資料。"
             />
           </div>
-          <Label>↑ 錯誤用 Alert (variant=error) 明確標示問題 + 解決路徑</Label>
+          <ExampleCaption>↑ 錯誤用 Alert (variant=error) 明確標示問題 + 解決路徑</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -134,9 +129,9 @@ export const UsageGuidance: Story = {
               action={<Button variant="tertiary">清除所有篩選</Button>}
             />
           </Frame>
-          <Label>↑ Empty 的代表案例:有結果預期、沒有結果、需要明確下一步</Label>
+          <ExampleCaption>↑ Empty 的代表案例:有結果預期、沒有結果、需要明確下一步</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -157,7 +152,7 @@ export const NextActionRule: Story = {
             action={<Button variant="primary">建立專案</Button>}
           />
         </Frame>
-        <Label>↑ 「建立專案」是明確下一步,使用者不會卡住</Label>
+        <ExampleCaption>↑ 「建立專案」是明確下一步,使用者不會卡住</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -181,9 +176,9 @@ export const NextActionRule: Story = {
         <Frame>
           <Empty icon={Inbox} description="沒有任何資料" />
         </Frame>
-        <Label warn>
+        <ExampleCaption warn>
           ↑ 「沒有資料」後沒有下一步 — 使用者不知道該做什麼
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -224,7 +219,7 @@ export const StructureRule: Story = {
             }
           />
         </Frame>
-        <Label>↑ 兩個動作時,主要路徑仍只有一個 primary,次要用 tertiary</Label>
+        <ExampleCaption>↑ 兩個動作時,主要路徑仍只有一個 primary,次要用 tertiary</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -244,7 +239,7 @@ export const StructureRule: Story = {
             }
           />
         </Frame>
-        <Label warn>↑ 兩個 primary 視覺重量相同,使用者無從判斷</Label>
+        <ExampleCaption warn>↑ 兩個 primary 視覺重量相同,使用者無從判斷</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -288,12 +283,12 @@ export const CopyRule: Story = {
         <Frame>
           <Empty description="No data" />
         </Frame>
-        <Label warn>↑ 使用者看不懂「No data」代表什麼——沒有哪個資料?要怎麼補?</Label>
+        <ExampleCaption warn>↑ 使用者看不懂「No data」代表什麼——沒有哪個資料?要怎麼補?</ExampleCaption>
 
         <Frame>
           <Empty icon={Inbox} title="Empty" description="No records found" />
         </Frame>
-        <Label warn>↑ 「Empty / No records found」純技術語,不傳達使用者情境</Label>
+        <ExampleCaption warn>↑ 「Empty / No records found」純技術語,不傳達使用者情境</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

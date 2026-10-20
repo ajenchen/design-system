@@ -402,6 +402,7 @@
     ],
     "members": [
       "scripts/test-action-bar-toolbar-invariant.mjs",
+      "scripts/test-action-row-order-invariant.mjs",
       "scripts/test-agent-fab-drag-click-invariant.mjs",
       "scripts/test-agent-fab-hit-area-invariant.mjs",
       "scripts/test-agent-logo-brand-scale-invariant.mjs",
@@ -532,6 +533,8 @@
       "scripts/test-steps-connector-geometry-invariant.mjs",
       "scripts/test-steps-content-follows-current-invariant.mjs",
       "scripts/test-story-demo-focus-invariant.mjs",
+      "scripts/test-story-determinism-invariant.mjs",
+      "scripts/test-story-helper-duplication-invariant.mjs",
       "scripts/test-story-layer-drift-invariant.mjs",
       "scripts/test-storybook-docs-race-invariant.mjs",
       "scripts/test-switch-thumb-ring-invariant.mjs",

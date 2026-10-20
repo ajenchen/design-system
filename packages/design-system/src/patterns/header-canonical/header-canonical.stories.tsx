@@ -24,6 +24,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from '@/design-system/components/Tabs/tabs'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Header Anatomy',
@@ -46,6 +47,9 @@ export default meta
 
    consumer:Sidebar header / FileViewer Toolbar+InfoPanel / AppShell header slot / 未來 Drawer
    ═══════════════════════════════════════════════════════════════════════════ */
+
+// 總覽的教學框:規則的內容是一則 header 示範,子節點照順序以 tight 排
+const TutorialRule = createTutorialRule()
 
 /** 容器:把 header 放進一個有邊界的面板裡看(模擬實際 chrome 嵌在 surface 上)*/
 function Panel({ children }: { children: ReactNode }) {
@@ -218,28 +222,24 @@ WithTabsOverflowMenu.storyName = '含分頁列 — 溢出 ⌄ 導覽選單'
  *  只在有 sidebar 時有意義 → canonical demo 放 AppShell primary-header(leadingRail = <SidebarTrigger />),
  *  不在此 generic header anatomy 孤立展示(2026-06-08 per user:孤立 demo 會誤導成通用 slot,且 icon 易被亂換)。*/
 export const Overview = () => (
-  <div className="flex flex-col gap-[var(--layout-space-loose)]">
-    <section className="flex flex-col gap-[var(--layout-space-tight)]">
-      <h3 className="text-h6 font-semibold text-foreground">Single-row(標題 + 動作列)</h3>
-      <p className="text-caption text-fg-secondary">
-        最常見的 chrome header。對標 FileViewer Toolbar / Sidebar header。border-b 自畫、px-loose、dismiss size=sm。
-      </p>
+  // 教學框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 + 說明段落,規則之間只有 loose)
+  <TutorialPage>
+    <TutorialRule
+      title="Single-row(標題 + 動作列)"
+      note="最常見的 chrome header。對標 FileViewer Toolbar / Sidebar header。border-b 自畫、px-loose、dismiss size=sm。"
+    >
       <SingleRow />
-    </section>
-    <section className="flex flex-col gap-[var(--layout-space-tight)]">
-      <h3 className="text-h6 font-semibold text-foreground">withTabs(標題列 + 分頁列)</h3>
-      <p className="text-caption text-fg-secondary">
-        header 內含分頁。對標 FileViewer InfoPanel。傳 tabsSlot,border 改由 TabsList 全寬畫一條線。
-      </p>
+    </TutorialRule>
+    <TutorialRule
+      title="withTabs(標題列 + 分頁列)"
+      note="header 內含分頁。對標 FileViewer InfoPanel。傳 tabsSlot,border 改由 TabsList 全寬畫一條線。"
+    >
       <WithTabs />
-    </section>
-    <section className="flex flex-col gap-[var(--layout-space-tight)]">
-      <h3 className="text-h6 font-semibold text-foreground">A 家族 overlay(SurfaceHeader)— 浮層標題列</h3>
-      <p className="text-caption text-fg-secondary">
-        Dialog / Sheet / Popover / Coachmark 的頂部標題列。高度 padding-based(由內容撐、對齊 chrome-header-height),跟
-        chrome 家族共用同一組契約:border-b、px-loose、dismiss size=sm、tabs 連動。consumer 多用 DialogHeader /
-        SheetHeader / PopoverHeader wrapper,此處用底層 SurfaceHeader 展示 anatomy。
-      </p>
+    </TutorialRule>
+    <TutorialRule
+      title="A 家族 overlay(SurfaceHeader)— 浮層標題列"
+      note="Dialog / Sheet / Popover / Coachmark 的頂部標題列。高度 padding-based(由內容撐、對齊 chrome-header-height),跟 chrome 家族共用同一組契約:border-b、px-loose、dismiss size=sm、tabs 連動。consumer 多用 DialogHeader / SheetHeader / PopoverHeader wrapper,此處用底層 SurfaceHeader 展示 anatomy。"
+    >
       <div className="overflow-hidden rounded-md border border-divider bg-surface-raised shadow-[var(--elevation-200)]">
         <SurfaceHeader>
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">編輯專案設定</h2>
@@ -253,14 +253,11 @@ export const Overview = () => (
           </DescriptionList>
         </SurfaceBody>
       </div>
-    </section>
-    <section className="flex flex-col gap-[var(--layout-space-tight)]">
-      <h3 className="text-h6 font-semibold text-foreground">leadingRail — 見 AppShell（非此處）</h3>
-      <p className="text-caption text-fg-secondary">
-        ChromeHeader 另有 leadingRail slot(寬 = sidebar 收合寬,專為跟 sidebar 收合 icon 對齊)。因它只在「有
-        sidebar」時有意義,canonical demo 放在 AppShell primary-header（leadingRail = SidebarTrigger）,不在此孤立展示。
-      </p>
-    </section>
-  </div>
+    </TutorialRule>
+    <TutorialRule
+      title="leadingRail — 見 AppShell（非此處）"
+      note="ChromeHeader 另有 leadingRail slot(寬 = sidebar 收合寬,專為跟 sidebar 收合 icon 對齊)。因它只在「有 sidebar」時有意義,canonical demo 放在 AppShell primary-header（leadingRail = SidebarTrigger）,不在此孤立展示。"
+    />
+  </TutorialPage>
 )
 Overview.storyName = '總覽'

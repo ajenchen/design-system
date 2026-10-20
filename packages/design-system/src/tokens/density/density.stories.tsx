@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Button } from '@/design-system/components/Button/button'
+import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Density',
@@ -114,8 +115,9 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
       className="flex items-center justify-center">
       <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
     </div>
+    {/* 動作列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
     <div
-      className="flex justify-end"
+      className="flex"
       style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
     >
       <Button variant="primary">儲存變更</Button>
@@ -195,23 +197,26 @@ export const UISize: Story = {
     },
   },
   render: () => (
-    <div className="max-w-2xl space-y-[var(--layout-space-loose)]">
-      <div>
-        <p className="mb-[var(--layout-space-tight)] text-caption font-medium text-fg-muted">Field Height（Button、Input、SelectionItem）</p>
-        <ColHeader />
-        <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
-        <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
-        <TokenRow attr="data-ui-size" token="--field-height-md" md="32px" lg="36px" />
-        <TokenRow attr="data-ui-size" token="--field-height-lg" md="36px" lg="40px" />
-      </div>
-      <div>
-        <p className="mb-[var(--layout-space-tight)] text-caption font-medium text-fg-muted">Table Row（DataTable）</p>
-        <ColHeader />
-        <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
-        <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />
-        <TokenRow attr="data-ui-size" token="--table-row-lg" md="48px" lg="56px" />
-      </div>
-    </div>
+    // 段落 = 共用教學頁元件的 TutorialSection(2026-10-20 T7 甲:原本兩組表格之間只有 loose,與組內「標題 → 表格」同一個量級)
+    <TutorialPage className="max-w-2xl">
+      <TutorialSection title="Field Height（Button、Input、SelectionItem）">
+        <div>
+          <ColHeader />
+          <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
+          <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
+          <TokenRow attr="data-ui-size" token="--field-height-md" md="32px" lg="36px" />
+          <TokenRow attr="data-ui-size" token="--field-height-lg" md="36px" lg="40px" />
+        </div>
+      </TutorialSection>
+      <TutorialSection title="Table Row（DataTable）">
+        <div>
+          <ColHeader />
+          <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
+          <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />
+          <TokenRow attr="data-ui-size" token="--table-row-lg" md="48px" lg="56px" />
+        </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 

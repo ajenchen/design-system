@@ -1,6 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { Heart, ThumbsUp, Star } from 'lucide-react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
@@ -8,8 +7,8 @@ import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Slider } from '@/design-system/components/Slider/slider'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Rating/設計原則',
@@ -18,18 +17,16 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // 一個範例 = 一欄(固定寬、內容靠左,同一條 Rule 的範例並排比較)。範例直接放在 Rule 裡 —— 同 DS 其他設計原則頁的
-// Rule + Label 寫法,不包卡片、不拿 caption 當標題(2026-09-30,AI 依 DS 其他設計原則頁收斂,全頁一致):
+// Rule + ExampleCaption 寫法,不包卡片、不拿 caption 當標題(2026-09-30,AI 依 DS 其他設計原則頁收斂,全頁一致):
 //   · 範例要有名字時,名字由 FieldLabel 承擔:可以點的放 <Field>,唯讀的放 <Field mode="readonly">
 //     (rating.spec.md「放入 Field 的可組合性」「Interactive vs ReadOnly」);
-//   · 不需要名字的範例(standalone 唯讀、誤用示範)自帶 aria-label,說明寫在 Label。
-// 範例 ↔ 它的 Label = tight,由共用的 ExampleGroup 擁有(category-templates.md「教學框的間距與標題」),Label 自己不帶 margin。
+//   · 不需要名字的範例(standalone 唯讀、誤用示範)自帶 aria-label,說明寫在 ExampleCaption(範例說明的唯一住所 =
+//     stories-helpers/examples/example-captions.tsx;2026-10-20 前本頁自抄一份 Label,已拿掉)。
+// 範例 ↔ 它的說明 = tight,由共用的 ExampleGroup 擁有(category-templates.md「教學框的間距與標題」),ExampleCaption 自己不帶 margin。
 const Example = ({ children }: { children: React.ReactNode }) => (
   <ExampleGroup align="start" className="w-80">{children}</ExampleGroup>
 )
@@ -43,123 +40,63 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 Rating 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Rating/展示" name="商品列表平均分"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品列表平均分</span></LinkTo>
-          <span className="text-fg-secondary"> — 商品列表每一列的唯讀精簡版「★ 4.7 (12,843)」:一顆實心星 + 平均分 + 評論數</span>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Rating/展示" name="包在 Field 內"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">包在 Field 內</span></LinkTo>
-          <span className="text-fg-secondary"> — 訂單完成後幫這次服務評分:只有整顆,hover 預覽、click 給分;離開評分或按送出時驗證,送出後同一欄變唯讀精簡版(interactive → readOnly)</span>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>離散的 1–5 分評價:使用者替商品 / 服務給分,或顯示別人給的分數與平均分。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/Rating/展示" name="商品列表平均分">商品列表平均分</StoryLink>
+            <span className="text-fg-secondary"> — 商品列表每一列的唯讀精簡版「★ 4.7 (12,843)」:一顆實心星 + 平均分 + 評論數</span>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Rating/展示" name="包在 Field 內">包在 Field 內</StoryLink>
+            <span className="text-fg-secondary"> — 訂單完成後幫這次服務評分:只有整顆,hover 預覽、click 給分;離開評分或按送出時驗證,送出後同一欄變唯讀精簡版(interactive → readOnly)</span>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
-      <TutorialRule
-        title="❌ standalone readOnly 不給可存取名稱"
-        note="唯讀精簡版畫面上的「4.5」對螢幕閱讀器是隱藏的,它只讀可存取名稱。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
-      >
-        <Example>
-          <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
-          <Label>✅ `aria-label=&quot;平均評分 4.5 星，共 5 星&quot;`</Label>
-        </Example>
-        <Example>
-          <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
-          <Label warn>❌ 若省略 aria-label，螢幕閱讀器會讀不出分數；此可執行示範仍保留名稱，避免 demo 本身成為違規來源</Label>
-        </Example>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 換成 Heart / ThumbsUp 做愛心 / like"
-        note="愛心是 binary（喜歡 / 不喜歡），不是 graded 1–5。使用者對「五顆愛心」的期待是『有 5 顆愛心那麼喜歡』= 量化——但 like 本身就是二元，語意衝突。"
-      >
-        <Example>
-          <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
-          <Label>✅ binary like → Button + pressed</Label>
-        </Example>
-        <Example>
-          <Rating defaultValue={3} max={5} icon={Heart} aria-label="誤用 Heart" />
-          <Label warn>❌ Rating 換 Heart → 把 binary 變成 graded，語意衝突</Label>
-        </Example>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 用 Rating 做 progress bar"
-        note="Rating 的語意是『給分』,用『填了 4 顆星』表達『完成 4/5 步』會讓使用者誤以為是評分而非進度。進度有具體 % 用 ProgressBar(linear)或 CircularProgress(circular,有 value),不定進度用 CircularProgress(無 value,indeterminate)。"
-      >
-        <Example>
-          <Field mode="readonly">
-            <FieldLabel>任務進度</FieldLabel>
-            <Rating value={4} />
-          </Field>
-          <Label warn>❌ 想表達「完成 4/5 步」卻畫成星星，使用者會以為「這個任務被評 4 星」→ 改 ProgressBar</Label>
-        </Example>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ max 超過 7"
-        note="超過 7 顆使用者無法「一眼看出是幾星」——必須一顆顆數。這違背 Rating 快速掃視的本質。若需要更細分度（0–100），改用 Slider。（唯讀精簡版不畫整排星星，所以這條只管可以點的評分；下方示範可以點。）"
-      >
-        <Example>
-          <Field>
-            <FieldLabel>為這堂線上課程評分</FieldLabel>
-            <Rating defaultValue={7} max={10} />
-          </Field>
-          <Label warn>❌ 送出評分給 10 顆星，使用者要一顆顆數 → 超過 7 改用 Slider</Label>
-        </Example>
-      </TutorialRule>
-    </>
-
-      {/* vs 近親 — 原 InteractiveVsReadOnly + RatingVsAlternatives */}
-      <>
+      <UsageSection kind="whenNot">
         <TutorialRule
-          title="送出前 → interactive，送出後 / 他人評分 → readOnly"
-          note="Rating 既可編輯也可展示，最常見的錯誤是「讓使用者以為可以改別人的分數」。一條清楚的分界：自己正在給分 = interactive；看別人給的分或平均分 = readOnly。"
+          title="❌ 換成 Heart / ThumbsUp 做愛心 / like"
+          note="愛心是 binary（喜歡 / 不喜歡），不是 graded 1–5。使用者對「五顆愛心」的期待是『有 5 顆愛心那麼喜歡』= 量化——但 like 本身就是二元，語意衝突。"
         >
           <Example>
-            {/* 給分中的評分放進 Field:標籤由 FieldLabel 承擔(rating.spec.md「放入 Field 的可組合性」),尺寸跟 Field */}
-            <Field>
-              <FieldLabel>為這次用餐評分</FieldLabel>
-              <Rating defaultValue={0} />
-            </Field>
-            <Label>✅ 自己正在給分 → interactive：hover 預覽、click 給分；送出由表單的送出鈕負責</Label>
+            <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
+            <ExampleCaption>✅ binary like → Button + pressed</ExampleCaption>
           </Example>
           <Example>
-            <Field mode="readonly">
-              <FieldLabel>王小明的評分</FieldLabel>
-              <Rating value={5} />
-            </Field>
-            <Label>✅ 評論列表裡他人給的分 → readOnly，純顯示</Label>
-          </Example>
-          <Example>
-            <Field mode="readonly">
-              <FieldLabel>商品平均分</FieldLabel>
-              <Rating value={4.7} count={12843} />
-            </Field>
-            <Label>✅ 平均分 → readOnly，使用者無法改</Label>
+            <Rating defaultValue={3} max={5} icon={Heart} aria-label="誤用 Heart" />
+            <ExampleCaption warn>❌ Rating 換 Heart → 把 binary 變成 graded，語意衝突</ExampleCaption>
           </Example>
         </TutorialRule>
 
         <TutorialRule
-          title="❌ 展示平均分時用 interactive"
-          note="使用者以為自己可以改變商品平均分；而且可以點的評分只有整顆，4.7 會被四捨五入畫成 5 顆，平均分失真。所有展示用途必須 readOnly。"
+          title="❌ 用 Rating 做 progress bar"
+          note="Rating 的語意是『給分』,用『填了 4 顆星』表達『完成 4/5 步』會讓使用者誤以為是評分而非進度。進度有具體 % 用 ProgressBar(linear)或 CircularProgress(circular,有 value),不定進度用 CircularProgress(無 value,indeterminate)。"
         >
           <Example>
-            <Field>
-              <FieldLabel>商品平均分</FieldLabel>
-              <Rating defaultValue={4.7} />
+            <Field mode="readonly">
+              <FieldLabel>任務進度</FieldLabel>
+              <Rating value={4} />
             </Field>
-            <Label warn>平均分 4.7 畫成 5 顆，使用者還會以為點下去能改平均分 → 改 readOnly</Label>
+            <ExampleCaption warn>❌ 想表達「完成 4/5 步」卻畫成星星，使用者會以為「這個任務被評 4 星」→ 改 ProgressBar</ExampleCaption>
           </Example>
         </TutorialRule>
 
+        <TutorialRule
+          title="❌ max 超過 7"
+          note="超過 7 顆使用者無法「一眼看出是幾星」——必須一顆顆數。這違背 Rating 快速掃視的本質。若需要更細分度（0–100），改用 Slider。（唯讀精簡版不畫整排星星，所以這條只管可以點的評分；下方示範可以點。）"
+        >
+          <Example>
+            <Field>
+              <FieldLabel>為這堂線上課程評分</FieldLabel>
+              <Rating defaultValue={7} max={10} />
+            </Field>
+            <ExampleCaption warn>❌ 送出評分給 10 顆星，使用者要一顆顆數 → 超過 7 改用 Slider</ExampleCaption>
+          </Example>
+        </TutorialRule>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Rating — 離散 1–5 分評分"
           note="星等是使用者對商品 / 服務的 graded 量化評價。5 顆是世界級共識（超過 7 使用者無法快速掃視）。"
@@ -169,7 +106,7 @@ export const UsageGuidance: Story = {
               <FieldLabel>為這次購物評分</FieldLabel>
               <Rating defaultValue={4} />
             </Field>
-            <Label>離散 tier:只有整顆，1 / 2 / 3 / 4 / 5</Label>
+            <ExampleCaption>離散 tier:只有整顆，1 / 2 / 3 / 4 / 5</ExampleCaption>
           </Example>
         </TutorialRule>
 
@@ -183,13 +120,13 @@ export const UsageGuidance: Story = {
               <FieldLabel>音量</FieldLabel>
               <Slider defaultValue={[65]} max={100} />
             </Field>
-            <Label>音量是連續值，0–100 任何值都合理 → 用 Slider，不是 Rating</Label>
+            <ExampleCaption>音量是連續值，0–100 任何值都合理 → 用 Slider，不是 Rating</ExampleCaption>
           </Example>
         </TutorialRule>
 
         <TutorialRule
           title="Tag — 靜態分類標記（非量化）"
-          note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器（badge.spec：不用 Badge 做分類標籤）。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
+          note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器，不用來做分類標籤。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
         >
           <Example>
             {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
@@ -197,7 +134,7 @@ export const UsageGuidance: Story = {
               <Tag color="blue">熱門</Tag>
               <Tag color="neutral">Beta</Tag>
             </div>
-            <Label>商品標記是分類 / 狀態標記 → Tag（通知計數才用 Badge），不是 Rating</Label>
+            <ExampleCaption>商品標記是分類 / 狀態標記 → Tag（通知計數才用 Badge），不是 Rating</ExampleCaption>
           </Example>
         </TutorialRule>
 
@@ -210,10 +147,72 @@ export const UsageGuidance: Story = {
               <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
               <Button variant="text" iconOnly startIcon={ThumbsUp} aria-label="喜歡" />
             </ButtonGroup>
-            <Label>收藏 / 喜歡是二元切換 → Button + pressed，不是 Rating 換 Heart icon</Label>
+            <ExampleCaption>收藏 / 喜歡是二元切換 → Button + pressed，不是 Rating 換 Heart icon</ExampleCaption>
           </Example>
         </TutorialRule>
-      </>
+      </UsageSection>
+    </TutorialPage>
+  ),
+}
+
+export const InteractiveVsReadOnlyRule: Story = {
+  name: '可給分 vs 唯讀',
+  render: () => (
+    <TutorialPage>
+      <TutorialRule
+        title="送出前 → interactive，送出後 / 他人評分 → readOnly"
+        note="Rating 既可編輯也可展示，最常見的錯誤是「讓使用者以為可以改別人的分數」。一條清楚的分界：自己正在給分 = interactive；看別人給的分或平均分 = readOnly。"
+      >
+        <Example>
+          {/* 給分中的評分放進 Field:標籤由 FieldLabel 承擔(rating.spec.md「放入 Field 的可組合性」),尺寸跟 Field */}
+          <Field>
+            <FieldLabel>為這次用餐評分</FieldLabel>
+            <Rating defaultValue={0} />
+          </Field>
+          <ExampleCaption>✅ 自己正在給分 → interactive：hover 預覽、click 給分；送出由表單的送出鈕負責</ExampleCaption>
+        </Example>
+        <Example>
+          <Field mode="readonly">
+            <FieldLabel>王小明的評分</FieldLabel>
+            <Rating value={5} />
+          </Field>
+          <ExampleCaption>✅ 評論列表裡他人給的分 → readOnly，純顯示</ExampleCaption>
+        </Example>
+        <Example>
+          <Field mode="readonly">
+            <FieldLabel>商品平均分</FieldLabel>
+            <Rating value={4.7} count={12843} />
+          </Field>
+          <ExampleCaption>✅ 平均分 → readOnly，使用者無法改</ExampleCaption>
+        </Example>
+      </TutorialRule>
+
+      <TutorialRule
+        title="❌ 展示平均分時用 interactive"
+        note="使用者以為自己可以改變商品平均分；而且可以點的評分只有整顆，4.7 會被四捨五入畫成 5 顆，平均分失真。所有展示用途必須 readOnly。"
+      >
+        <Example>
+          <Field>
+            <FieldLabel>商品平均分</FieldLabel>
+            <Rating defaultValue={4.7} />
+          </Field>
+          <ExampleCaption warn>平均分 4.7 畫成 5 顆，使用者還會以為點下去能改平均分 → 改 readOnly</ExampleCaption>
+        </Example>
+      </TutorialRule>
+
+      <TutorialRule
+        title="❌ standalone readOnly 不給可存取名稱"
+        note="唯讀精簡版畫面上的「4.5」對螢幕閱讀器是隱藏的,它只讀可存取名稱。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
+      >
+        <Example>
+          <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
+          <ExampleCaption>✅ <code>aria-label=&quot;平均評分 4.5 星，共 5 星&quot;</code></ExampleCaption>
+        </Example>
+        <Example>
+          <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
+          <ExampleCaption warn>❌ 若省略 aria-label，螢幕閱讀器會讀不出分數；此可執行示範仍保留名稱，避免 demo 本身成為違規來源</ExampleCaption>
+        </Example>
+      </TutorialRule>
     </TutorialPage>
   ),
 }
@@ -231,7 +230,7 @@ export const WholeStarsAndCompact: Story = {
             <FieldLabel>為這次外送評分</FieldLabel>
             <Rating defaultValue={0} />
           </Field>
-          <Label>可選值：1 / 2 / 3 / 4 / 5</Label>
+          <ExampleCaption>可選值：1 / 2 / 3 / 4 / 5</ExampleCaption>
         </Example>
       </TutorialRule>
 
@@ -244,21 +243,21 @@ export const WholeStarsAndCompact: Story = {
             <FieldLabel>AirPods Pro（第二代）平均分</FieldLabel>
             <Rating value={4.7} count={12843} />
           </Field>
-          <Label>value=4.7、count=12843 → 評論數自動加千分位</Label>
+          <ExampleCaption>value=4.7、count=12843 → 評論數自動加千分位</ExampleCaption>
         </Example>
         <Example>
           <Field mode="readonly">
             <FieldLabel>王小明的評分</FieldLabel>
             <Rating value={5} />
           </Field>
-          <Label>評論列表的單則評論沒有評論數 → 不傳 count，不顯示括號</Label>
+          <ExampleCaption>評論列表的單則評論沒有評論數 → 不傳 count，不顯示括號</ExampleCaption>
         </Example>
         <Example>
           <Field mode="readonly">
             <FieldLabel>民宿房源總分</FieldLabel>
             <Rating value={4.92} count={318} />
           </Field>
-          <Label>4.92 → 顯示 4.9（取一位小數）</Label>
+          <ExampleCaption>4.92 → 顯示 4.9（取一位小數）</ExampleCaption>
         </Example>
       </TutorialRule>
 
@@ -271,7 +270,7 @@ export const WholeStarsAndCompact: Story = {
             <FieldLabel>Kindle Paperwhite 平均分</FieldLabel>
             <Rating value={4.5} count={8921} />
           </Field>
-          <Label>✅ 評論數交給 count</Label>
+          <ExampleCaption>✅ 評論數交給 count</ExampleCaption>
         </Example>
         <Example>
           <Field mode="readonly">
@@ -283,7 +282,7 @@ export const WholeStarsAndCompact: Story = {
               <span className="text-caption text-fg-muted">(8,921)</span>
             </div>
           </Field>
-          <Label warn>❌ 4.5 出現兩次 → 拿掉手寫的 span，改傳 count</Label>
+          <ExampleCaption warn>❌ 4.5 出現兩次 → 拿掉手寫的 span，改傳 count</ExampleCaption>
         </Example>
       </TutorialRule>
     </TutorialPage>
@@ -312,31 +311,31 @@ export const YellowStarConvention: Story = {
             <Rating value={4.5} count={2318} />
           </Field>
         </Example>
-        <Label>✅ 兩種呈現（可以點的評分 / 唯讀精簡版）的星都是 `var(--warning)` = yellow-6 — 世界級 convention</Label>
+        <ExampleCaption>✅ 兩種呈現（可以點的評分 / 唯讀精簡版）的星都是 <code>var(--warning)</code> = yellow-6 — 世界級 convention</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="填色 = 黃，空色 = 灰"
-        note="空星用灰（`--divider`，= `--color-neutral-4`）不用黃的淺色（yellow-2）——空星要表達「未選」不是「弱黃選」。灰色是跨系統的「empty / disabled」通用語。空星只出現在可以點的評分（唯讀精簡版只有一顆實心星），所以下方用可以點的評分示範。"
+        note={<>空星用灰（<code>--divider</code>，= <code>--color-neutral-4</code>）不用黃的淺色（yellow-2）——空星要表達「未選」不是「弱黃選」。灰色是跨系統的「empty / disabled」通用語。空星只出現在可以點的評分（唯讀精簡版只有一顆實心星），所以下方用可以點的評分示範。</>}
       >
         <Example>
           <Field>
             <FieldLabel>為這次客服評分</FieldLabel>
             <Rating defaultValue={3} />
           </Field>
-          <Label>✅ filled = `--warning`，empty = `--divider`（= `--color-neutral-4`）</Label>
+          <ExampleCaption>✅ filled = <code>--warning</code>，empty = <code>--divider</code>（= <code>--color-neutral-4</code>）</ExampleCaption>
         </Example>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 不要換成品牌 primary 色"
-        note="Rating 是 evaluation convention color，跟 status color 共用 `--warning` 色相但語境不同——這是 documented 例外（見 color.spec.md）。不要為了『跟品牌一致』把 Rating 改藍 / 改綠，使用者不會認得。"
+        note={<>Rating 是 evaluation convention color，跟 status color 共用 <code>--warning</code> 色相但語境不同——這是規格明文的例外。不要為了『跟品牌一致』把 Rating 改藍 / 改綠，使用者不會認得。</>}
       >
         <Example>
           <div style={{ color: 'var(--primary)' }} className="inline-flex">
             <Rating defaultValue={4} aria-label="誤用範例" icon={Star} />
           </div>
-          <Label warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例是可以點的評分，外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來；唯讀精簡版那一顆星同樣硬綁）</Label>
+          <ExampleCaption warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例是可以點的評分，外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來；唯讀精簡版那一顆星同樣硬綁）</ExampleCaption>
         </Example>
       </TutorialRule>
     </TutorialPage>

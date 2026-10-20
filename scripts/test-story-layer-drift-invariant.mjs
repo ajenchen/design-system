@@ -274,6 +274,8 @@ const FIXTURE_FILES = [
   'packages/design-system/ds-canonical/hooks/lib/_micro_geometry.sh',
   'packages/design-system/src/tokens/utility-registry.json',
   'packages/design-system/src/tokens/typography/typography.css',
+  // (d) 2026-10-20 擴充:DS 顏色集合從 tokens 的 @theme --color-* 讀
+  ...globSync('packages/design-system/src/tokens/**/*.css', { cwd: REPO }).filter((f) => /@theme/.test(readFileSync(join(REPO, f), 'utf8'))),
   ...new Set([...Object.values(SUBMIT_INTENTS).map((d) => d.spec), ...COUNTER_EXAMPLE_SOURCES.map((d) => d.spec)]),
 ]
 const FX = {

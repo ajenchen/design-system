@@ -1,0 +1,125 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import type { Meta, StoryObj } from '@storybook/react'
+import { Search } from 'lucide-react'
+import { FieldControlGroup } from './field-control-group'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Select } from '@/design-system/components/Select/select'
+import { Input } from '@/design-system/components/Input/input'
+import { Button } from '@/design-system/components/Button/button'
+import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+
+const meta: Meta<typeof FieldControlGroup> = {
+  title: 'Design System/Components/FieldControlGroup/設計原則',
+  component: FieldControlGroup,
+  parameters: { layout: 'padded' },
+}
+export default meta
+type Story = StoryObj<typeof FieldControlGroup>
+
+const CODES = [{ value: '+886', label: '+886' }, { value: '+1', label: '+1' }]
+const FIELDS = [{ value: 'sku', label: 'SKU' }, { value: 'name', label: '名稱' }]
+// op 選項消費 OPERATOR_REGISTRY SSOT(audit dim 32 — 禁 hardcode op 字串)
+const OPS = OPERATOR_REGISTRY.string
+  .filter((o) => ['is', 'contains'].includes(o.op))
+  .map((o) => ({ value: o.op, label: o.label }))
+
+/* WhenToUse + WhenNotToUse + VsRule + ContentGuidelines = single UsageGuidance */
+export const UsageGuidance: Story = {
+  name: '使用準則',
+  render: () => (
+    <TutorialPage className="w-[640px]">
+      <TutorialSection title="何時用 ✓">
+        {/* 清單說的就是下面這個示範:說明 ↔ 範例 tight(ExampleGroup) */}
+        <ExampleGroup>
+          {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
+          <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
+            <li>兩個語意連動的 control 視覺一體(電話 = 國碼 + 號碼)</li>
+            <li>Filter row(field + op + value)</li>
+            <li>Search input + Submit button</li>
+            <li>Range input(start + end + 中介符號)</li>
+          </ul>
+          <FieldControlGroup block>
+            <Input className="flex-1" startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
+            <Button variant="primary">搜尋</Button>
+          </FieldControlGroup>
+        </ExampleGroup>
+      </TutorialSection>
+
+      <TutorialSection title="何時不用 ✗">
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+          <div>
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 多 fields 垂直排列</h3>
+            <FieldGroup>
+              <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
+              <Field><FieldLabel>Email</FieldLabel><Input /></Field>
+            </FieldGroup>
+            <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">→ 用 FieldGroup,不是 FieldControlGroup</p>
+          </div>
+          <div>
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 不相關 controls 強行接合</h3>
+            <p className="text-caption text-fg-muted">姓名 + 公司電話放同一 group 語意混亂 — 用 separate Field</p>
+          </div>
+        </div>
+      </TutorialSection>
+
+      <TutorialSection title="FieldControlGroup vs FieldGroup">
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldGroup(垂直堆疊)</h3>
+            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
+            <ul className="text-body text-fg-secondary space-y-1">
+              <li>Scope:多個 Field</li>
+              <li>Direction:vertical</li>
+              <li>視覺:gap 分離</li>
+              <li>語意:表單 section</li>
+            </ul>
+          </div>
+          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
+            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldControlGroup(橫向接合)</h3>
+            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
+            <ul className="text-body text-fg-secondary space-y-1">
+              <li>Scope:多個 control(1 Field 內)</li>
+              <li>Direction:horizontal</li>
+              <li>視覺:border collapse 接合</li>
+              <li>語意:複合 input(視覺一體)</li>
+            </ul>
+          </div>
+        </div>
+      </TutorialSection>
+
+      <TutorialSection title="內容準則">
+        {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
+        <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
+          <li>Children 同 size — 不混用 sm/md/lg(視覺高度需一致)</li>
+          <li>Children 自管 width — fixed selects + flex input 是典型 pattern</li>
+          <li>繼承 Field 尺寸(包進 Field):size 從 Field context 自動繼承,children 不傳 size</li>
+          <li>Children scope:Input / NumberInput / Select / Combobox / DatePicker / Button(對齊 Ant 限定 list)</li>
+        </ul>
+      </TutorialSection>
+
+      <TutorialSection title="繼承 Field 尺寸 — 包進 Field 當 control slot">
+        {/* 範例 ↔ 它的說明 tight(ExampleGroup) */}
+        <ExampleGroup>
+          <Field>
+            <FieldLabel>聯絡電話</FieldLabel>
+            <FieldControlGroup block>
+              <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} aria-label="國碼" />
+              <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
+            </FieldControlGroup>
+          </Field>
+          <p className="text-caption text-fg-muted">Field label / description / error 對 group 整體生效;children 的 size 各自從外層 Field context 繼承(FCG 不傳遞 size)。</p>
+        </ExampleGroup>
+      </TutorialSection>
+
+      <TutorialSection title="Standalone 逐一設尺寸 — Filter row 場景">
+        <FieldControlGroup block>
+          <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
+          <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />
+          <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
+        </FieldControlGroup>
+      </TutorialSection>
+    </TutorialPage>
+  ),
+}

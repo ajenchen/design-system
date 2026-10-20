@@ -1,5 +1,3 @@
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Accordion,
@@ -11,7 +9,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/compon
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計原則',
@@ -20,114 +19,103 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({
-  children,
-  warn,
-}: {
-  children: React.ReactNode
-  warn?: boolean
-}) => (
-  <p
-    className={`text-footnote leading-normal ${
-      warn ? 'text-error font-medium' : 'text-fg-muted'
-    }`}
-  >
-    {children}
-  </p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-[640px]' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-[640px]' })
 
 // ── Stories ──────────────────────────────────────────────────────
 
-// ── UsageGuidance — 何時用 / 何時不用 / vs 近親元件(合併 WhenToUse + AccordionVsTabsRule) ──
+// ── UsageGuidance — 何時用 / 何時不用 / 和相近元件怎麼選(固定三段,tutorial-page.tsx USAGE_SECTION_TITLES)──
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialRule
-        title="何時用 — 真實業務場景"
-        note="Accordion 適合「多個獨立主題、使用者依興趣或當下需要展開單一段」的內容(非互斥可同時展開,Radix Accordion type='multiple');每段內容 self-contained,不展開不影響上下脈絡。對齊 Material 3 Expansion panel / Polaris Disclosure 共識。"
-      >
-        {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-        <ul className="space-y-1">
-          <li>
-            <LinkTo kind="Design System/Components/Accordion/展示" name="FAQ 常見問題"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">FAQ 常見問題</span></LinkTo>
-          </li>
-          <li>
-            <LinkTo kind="Design System/Components/Accordion/展示" name="設定分組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設定分組</span></LinkTo>
-          </li>
-          <li>
-            <LinkTo kind="Design System/Components/Accordion/展示" name="進階選項可隱藏"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">進階選項可隱藏</span></LinkTo>
-          </li>
-        </ul>
-      </TutorialRule>
+      <UsageSection kind="when">
+        <p>多個獨立主題、使用者依當下需要展開其中一段的內容:每段自成一體,不展開也不影響上下文(Material 3 Expansion panel / Polaris Disclosure 同樣定位)。</p>
+        <TutorialList>
+          <li><StoryLink kind="Design System/Components/Accordion/展示" name="FAQ 常見問題">FAQ 常見問題</StoryLink> —— 預設全部收合,讀者展開有興趣的那一題</li>
+          <li><StoryLink kind="Design System/Components/Accordion/展示" name="設定分組">設定分組</StoryLink> —— 一般 / 通知 / 安全等多段設定,長表單拆段</li>
+          <li><StoryLink kind="Design System/Components/Accordion/展示" name="進階選項可隱藏">進階選項可隱藏</StoryLink> —— 主要欄位攤開,進階選項收起來減輕負擔</li>
+        </TutorialList>
+      </UsageSection>
 
-      <TutorialRule
-        title="vs Tabs — Tabs 是互斥平行視圖(看 A 就不看 B)"
-        note='三個 tab 是「同一層級的平行視角」,使用者每次只需一個。切換等於「換視角」,兩個視角不會同時需要。'
-      >
-        <div className='border border-border rounded-lg p-[var(--layout-space-loose)]'>
-          <Tabs defaultValue='overview'>
-            <TabsList>
-              <TabsTrigger value='overview'>總覽</TabsTrigger>
-              <TabsTrigger value='members'>成員</TabsTrigger>
-              <TabsTrigger value='settings'>設定</TabsTrigger>
-            </TabsList>
-            <TabsContent value='overview'>
-              <p className='text-body text-fg-secondary'>專案總覽資訊</p>
-            </TabsContent>
-            <TabsContent value='members'>
-              <p className='text-body text-fg-secondary'>成員列表</p>
-            </TabsContent>
-            <TabsContent value='settings'>
-              <p className='text-body text-fg-secondary'>專案設定</p>
-            </TabsContent>
-          </Tabs>
-        </div>
-        <Label>✅ Tabs:視角切換,使用者「不會想同時看總覽和成員」</Label>
-      </TutorialRule>
+      <UsageSection kind="whenNot">
+        <TutorialList>
+          <li>只有一個區塊要收合 → 改用原生 <code>&lt;details&gt;</code> 或自組開合按鈕(見「<StoryLink kind="Design System/Components/Accordion/設計原則" name="單一 項目 不用 Accordion">單一項目不用 Accordion</StoryLink>」)</li>
+          <li>同一塊空間切換平行視圖(三選一)→ 改用 Tabs:Tabs 是互斥切換,Accordion 是各段獨立收合</li>
+          <li>多層的導覽 / 檔案樹 → 改用 TreeView 或 Sidebar:Accordion 沒有巢狀層級</li>
+          <li>收合整個浮層或側欄 → 改用 Dialog / Sheet / Popover:那是浮層開關,不是內文收合</li>
+          <li>長清單只先顯示幾筆 → 改用「顯示更多」按鈕:Accordion 不是「更多 / 更少」</li>
+          <li>走完一條流程、要標出目前在哪一步 → 改用 Steps:Accordion 沒有「目前這一步」,開合不代表進度</li>
+        </TutorialList>
+      </UsageSection>
 
-      <TutorialRule
-        title='Accordion — 獨立收合多段(每段各自是否展開)'
-        note='每個 item 是獨立主題,使用者依興趣選擇展開。不是互斥,而是「多段內容,多數時間只想看其中一段」。'
-      >
-        <Accordion type='multiple'>
-          <AccordionItem value='pricing'>
-            <AccordionTrigger>付款週期與折扣</AccordionTrigger>
-            <AccordionContent>年付享 20% 折扣。</AccordionContent>
-          </AccordionItem>
-          <AccordionItem value='refund'>
-            <AccordionTrigger>退款政策</AccordionTrigger>
-            <AccordionContent>14 天內可全額退款。</AccordionContent>
-          </AccordionItem>
-          <AccordionItem value='support'>
-            <AccordionTrigger>技術支援範圍</AccordionTrigger>
-            <AccordionContent>企業方案提供 24/7 專屬窗口。</AccordionContent>
-          </AccordionItem>
-        </Accordion>
-        <Label>✅ Accordion:各段主題獨立,使用者只想看其中 1-2 段</Label>
-      </TutorialRule>
+      <UsageSection kind="siblings">
+        <TutorialRule
+          title="vs Tabs — Tabs 是互斥平行視圖(看 A 就不看 B)"
+          note='三個 tab 是「同一層級的平行視角」,使用者每次只需一個。切換等於「換視角」,兩個視角不會同時需要。'
+        >
+          <div className='border border-border rounded-lg p-[var(--layout-space-loose)]'>
+            <Tabs defaultValue='overview'>
+              <TabsList>
+                <TabsTrigger value='overview'>總覽</TabsTrigger>
+                <TabsTrigger value='members'>成員</TabsTrigger>
+                <TabsTrigger value='settings'>設定</TabsTrigger>
+              </TabsList>
+              <TabsContent value='overview'>
+                <p className='text-body text-fg-secondary'>專案總覽資訊</p>
+              </TabsContent>
+              <TabsContent value='members'>
+                <p className='text-body text-fg-secondary'>成員列表</p>
+              </TabsContent>
+              <TabsContent value='settings'>
+                <p className='text-body text-fg-secondary'>專案設定</p>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <ExampleCaption>✅ Tabs:視角切換,使用者「不會想同時看總覽和成員」</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title='❌ 錯誤 — 用 Accordion 做平行視圖切換'
-        note='三段內容結構相似、使用者只需其一——這是 Tabs 的情境。用 Accordion 會讓使用者困惑「為什麼要收合?」。'
-      >
-        <Accordion type='single' collapsible defaultValue='overview'>
-          <AccordionItem value='overview'>
-            <AccordionTrigger>總覽</AccordionTrigger>
-            <AccordionContent>專案總覽資訊</AccordionContent>
-          </AccordionItem>
-          <AccordionItem value='members'>
-            <AccordionTrigger>成員</AccordionTrigger>
-            <AccordionContent>成員列表</AccordionContent>
-          </AccordionItem>
-        </Accordion>
-        <Label warn>
-          ⚠️ 平行視圖應該用 Tabs——Accordion 是「多段獨立內容」,不是「多個視角」
-        </Label>
-      </TutorialRule>
+        <TutorialRule
+          title='Accordion — 獨立收合多段(每段各自是否展開)'
+          note='每個 item 是獨立主題,使用者依興趣選擇展開。不是互斥,而是「多段內容,多數時間只想看其中一段」。'
+        >
+          <Accordion type='multiple'>
+            <AccordionItem value='pricing'>
+              <AccordionTrigger>付款週期與折扣</AccordionTrigger>
+              <AccordionContent>年付享 20% 折扣。</AccordionContent>
+            </AccordionItem>
+            <AccordionItem value='refund'>
+              <AccordionTrigger>退款政策</AccordionTrigger>
+              <AccordionContent>14 天內可全額退款。</AccordionContent>
+            </AccordionItem>
+            <AccordionItem value='support'>
+              <AccordionTrigger>技術支援範圍</AccordionTrigger>
+              <AccordionContent>企業方案提供 24/7 專屬窗口。</AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          <ExampleCaption>✅ Accordion:各段主題獨立,使用者只想看其中 1-2 段</ExampleCaption>
+        </TutorialRule>
+
+        <TutorialRule
+          title='❌ 錯誤 — 用 Accordion 做平行視圖切換'
+          note='三段內容結構相似、使用者只需其一——這是 Tabs 的情境。用 Accordion 會讓使用者困惑「為什麼要收合?」。'
+        >
+          <Accordion type='single' collapsible defaultValue='overview'>
+            <AccordionItem value='overview'>
+              <AccordionTrigger>總覽</AccordionTrigger>
+              <AccordionContent>專案總覽資訊</AccordionContent>
+            </AccordionItem>
+            <AccordionItem value='members'>
+              <AccordionTrigger>成員</AccordionTrigger>
+              <AccordionContent>成員列表</AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          <ExampleCaption warn>
+            ❌ 平行視圖應該用 Tabs——Accordion 是「多段獨立內容」,不是「多個視角」
+          </ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -154,7 +142,7 @@ export const TypeRule: Story = {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        <Label>參考:Stripe Pricing FAQ、Notion Help Center</Label>
+        <ExampleCaption>參考:Stripe Pricing FAQ、Notion Help Center</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -171,15 +159,15 @@ export const TypeRule: Story = {
             <AccordionContent>兩步驟驗證:已啟用。</AccordionContent>
           </AccordionItem>
         </Accordion>
-        <Label>參考:Jira Project Settings、Linear Workspace Settings</Label>
+        <ExampleCaption>參考:Jira Project Settings、Linear Workspace Settings</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title='判斷法 — 「使用者會不會想同時看兩段?」'
         note='會 → multiple;不會 / 同時看反而混亂 → single。不確定時預設 single + collapsible(較保守,視覺負擔小)。'
       >
-        <Label>single(推薦預設):FAQ、教學、說明文件</Label>
-        <Label>multiple:Settings、多段 form、工作 context panel</Label>
+        <ExampleCaption>single(推薦預設):FAQ、教學、說明文件</ExampleCaption>
+        <ExampleCaption>multiple:Settings、多段 form、工作 context panel</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -210,9 +198,9 @@ export const NoNestingRule: Story = {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        <Label warn>
-          ⚠️ 使用者收起「顯示偏好」後,外層仍在展開狀態——容易讓人失去位置感
-        </Label>
+        <ExampleCaption warn>
+          ❌ 使用者收起「顯示偏好」後,外層仍在展開狀態——容易讓人失去位置感
+        </ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -239,9 +227,9 @@ export const NoNestingRule: Story = {
         title='✅ 真的有層級需求 — 改用 TreeView'
         note='TreeView 提供明確的縮排與展開 icon,使用者從視覺就能判斷自己在第幾層。'
       >
-        <Label>
-          檔案樹、Notion-style 工作區 sidebar、深度分類頁面 → `../TreeView`
-        </Label>
+        <ExampleCaption>
+          檔案樹、Notion 式工作區側欄、深層分類頁面 → 改用 TreeView
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -297,17 +285,17 @@ export const ContentRule: Story = {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        <Label warn>
-          ⚠️ 刪除確認這種不可逆操作應該有獨立區塊 + Dialog 確認,不該藏在可收合 Accordion 裡
-        </Label>
+        <ExampleCaption warn>
+          ❌ 刪除確認這種不可逆操作應該有獨立區塊 + Dialog 確認,不該藏在可收合 Accordion 裡
+        </ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title='判斷法 — 「收合時使用者會不會正在操作 content 內的元素?」'
         note='會 → 不適合放 Accordion;不會(純閱讀 / 輕量輸入) → OK。'
       >
-        <Label>✅ OK:FAQ 說明、設定欄位、進階選項 text input</Label>
-        <Label>❌ 不行:Dialog trigger、複雜多步驟 form、需要焦點持續的互動</Label>
+        <ExampleCaption>✅ OK:FAQ 說明、設定欄位、進階選項 text input</ExampleCaption>
+        <ExampleCaption>❌ 不行:Dialog trigger、複雜多步驟 form、需要焦點持續的互動</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -327,12 +315,12 @@ export const SingleItemRule: Story = {
             <AccordionContent>單一可收合內容。</AccordionContent>
           </AccordionItem>
         </Accordion>
-        <Label warn>⚠️ 單 item Accordion = 過度使用元件</Label>
+        <ExampleCaption warn>❌ 單 item Accordion = 過度使用元件</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
-        title='✅ 改用 `<details>` 或自組 toggle 按鈕'
-        note='原生 `<details>` 是單區塊展開的 HTML 原語;若需要自訂視覺可做一個「顯示更多 ↓」按鈕。'
+        title={<>✅ 改用 <code>&lt;details&gt;</code> 或自組 toggle 按鈕</>}
+        note={<>原生 <code>&lt;details&gt;</code> 是單區塊展開的 HTML 原語;若需要自訂視覺可做一個「顯示更多 ↓」按鈕。</>}
       >
         {/* 原生 details 不抄 Accordion 的整條分隔線 / 列內距(accordion.tsx 的 AccordionTrigger 上下 16px、AccordionContent 底部 16px)——
             那正是上一則說的「過重」;摘要 ↔ 展開內容 = 標題 → 它標示的內容(layoutSpace.spec.md 規則 3 functional = tight) */}
@@ -342,7 +330,7 @@ export const SingleItemRule: Story = {
           </summary>
           <p className='mt-[var(--layout-space-tight)] text-body text-fg-secondary'>單一區塊用 details 即可。</p>
         </details>
-        <Label>原生 HTML 簡潔,無須額外 JS</Label>
+        <ExampleCaption>原生 HTML 簡潔,無須額外 JS</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

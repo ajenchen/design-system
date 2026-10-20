@@ -1,11 +1,10 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Bell, Inbox, Archive, FileText, MessageSquare, Settings } from 'lucide-react'
 import { Badge } from './badge'
 import { Button } from '@/design-system/components/Button/button'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Badge/設計原則',
@@ -14,12 +13,9 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
 // naturalWidth 讓 direct children 保持自然寬度(避免 iconOnly Button 等在 flex-col 被 stretch 撐滿 max-w-md 的 bug)。需要 full-width row 的 child 自己 w-full / self-stretch
-const TutorialRule = createTutorialRule({ caption: Label, naturalWidth: true, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, naturalWidth: true, examplesClassName: 'max-w-md' })
 
 // ── WhenToUse — 何時使用 Badge ──────────────────────
 
@@ -30,26 +26,39 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 Badge 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Badge/展示" name="正圓 vs 膠囊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">正圓 vs 膠囊</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Badge/展示" name="圓點模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Dot 模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Badge/展示" name="數量上限"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Max 上限</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:先確認使用者真正需要的是「有沒有新東西」(用 Dot)還是「有多少」(用數字)。若兩者都不貼切,代表這裡可能不該放 Badge——改用文字標籤或其他狀態指示。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>通知計數與狀態紅點:收件匣未讀數、待辦數、「有新內容」的提示點,通常疊在圖示按鈕或頭像右上角。</p>
+        <TutorialList>
+          <li><StoryLink kind="Design System/Components/Badge/展示" name="正圓 vs 膠囊">正圓 vs 膠囊</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Badge/展示" name="圓點模式">Dot 模式</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Badge/展示" name="數量上限">Max 上限</StoryLink></li>
+        </TutorialList>
+        <p>要顯示數字還是圓點,見「<StoryLink kind="Design System/Components/Badge/設計原則" name="數字 vs 圓點">數字 vs 圓點</StoryLink>」。</p>
+      </UsageSection>
 
-      {/* vs 近親 — DotVsCountRule — 原 DotVsCountRule */}
-      <>
+      <UsageSection kind="whenNot">
+        <TutorialList>
+          <li>分類標籤(產品類別、角色)、狀態描述(有貨 / 缺貨)→ 改用 Tag:Tag 承載語意文字與狀態色,Badge 只是計數指示</li>
+          <li>版本 / 角色標記(「Beta」「Pro」「Admin」)→ 改用 Tag:Badge 只有數字與圓點兩種模式,不承載文字</li>
+          <li>篩選 / 選擇 → 改用 Chip:Badge 不可互動</li>
+          <li>載入中 → 改用 CircularProgress:Badge 是數字或圓點,載入用轉圈動畫</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>Tag</strong> —— 分類、狀態、已選值,承載語意文字,可含圖示 / 移除鈕;Badge 只表達「有多少」或「有沒有新東西」</li>
+          <li><strong>Chip</strong> —— 可點的篩選 / 選擇;Badge 不可互動</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
+  ),
+}
+
+export const DotVsCountRule: Story = {
+  name: '數字 vs 圓點',
+  render: () => (
+    <TutorialPage>
       <TutorialRule
         title="Count — 數字本身有意義（3 vs 30 觸發不同 urgency）"
         note="未讀訊息 / 錯誤數 / 購物車品項——使用者會根據數字決定行動優先序"
@@ -81,7 +90,7 @@ export const UsageGuidance: Story = {
               overlayBadge={<Badge count={150} max={99} variant="critical" />}
             />
           </div>
-          <Label>3 vs 42 vs 99+ 觸發不同 urgency 感</Label>
+          <ExampleCaption>3 vs 42 vs 99+ 觸發不同 urgency 感</ExampleCaption>
         </div>
       </TutorialRule>
 
@@ -98,7 +107,7 @@ export const UsageGuidance: Story = {
             aria-label="設定(有新功能)"
             overlayBadge={<Badge dot variant="critical" aria-label="有新功能" />}
           />
-          <Label>「設定有新功能」—— iconOnly Button `overlayBadge` prop,dot 中心貼齒輪 icon 的 top-right corner(不是按鈕角)</Label>
+          <ExampleCaption>「設定有新功能」—— iconOnly Button <code>overlayBadge</code> prop,dot 中心貼齒輪 icon 的 top-right corner(不是按鈕角)</ExampleCaption>
         </div>
       </TutorialRule>
 
@@ -114,18 +123,17 @@ export const UsageGuidance: Story = {
             <Button variant="tertiary" size="sm" startIcon={Settings}>設定</Button>
             <Badge dot variant="critical" className="absolute -top-1 -right-1" aria-label="有新功能" />
           </div>
-          <Label warn>← dot 飄在「設定」文字右上角的空處,跟齒輪 icon 毫無視覺連結</Label>
+          <ExampleCaption warn>← dot 飄在「設定」文字右上角的空處,跟齒輪 icon 毫無視覺連結</ExampleCaption>
         </div>
-        <Label>改法:(a) 按鈕改 iconOnly + dot 疊 icon 角落、(b) 移除 dot 改用內部文字 badge(目前 DS 無 text-only badge,屬 tech debt)、(c) 移到 text 後 inline 小字「設定(新)」</Label>
+        <ExampleCaption>改法:(a) 按鈕改 iconOnly + dot 疊 icon 角落、(b) 移除 dot 改用內部文字 badge(目前 DS 無 text-only badge,屬 tech debt)、(c) 移到 text 後 inline 小字「設定(新)」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="判斷法：「使用者想知道『有沒有』還是『多少』？」"
         note="知道有就夠 → dot / 需要數量判斷 urgency → count"
       >
-        <Label>若 count 永遠顯示 99+(threshold 失去區別力),改用 dot 或升高 max</Label>
+        <ExampleCaption>若 count 永遠顯示 99+(threshold 失去區別力),改用 dot 或升高 max</ExampleCaption>
       </TutorialRule>
-    </>
     </TutorialPage>
   ),
 }
@@ -145,7 +153,7 @@ export const DefaultLowRule: Story = {
             <span className="text-body">Archive</span>
             <Badge count={128} variant="low" />
           </div>
-          <Label>low — 錯過無影響（被動計數）</Label>
+          <ExampleCaption>low — 錯過無影響（被動計數）</ExampleCaption>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           {/* @layout-space-magic-ok: 行內 圖示 ↔ 文字 ↔ Badge 樣本群(同一列 micro)(layoutSpace.spec.md:166 micro) */}
@@ -154,7 +162,7 @@ export const DefaultLowRule: Story = {
             <span className="text-body">留言</span>
             <Badge count={12} variant="medium" />
           </div>
-          <Label>medium — 輕微不便（可延後看）</Label>
+          <ExampleCaption>medium — 輕微不便（可延後看）</ExampleCaption>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           {/* @layout-space-magic-ok: 行內 圖示 ↔ 文字 ↔ Badge 樣本群(同一列 micro)(layoutSpace.spec.md:166 micro) */}
@@ -163,7 +171,7 @@ export const DefaultLowRule: Story = {
             <span className="text-body">待辦</span>
             <Badge count={7} variant="high" />
           </div>
-          <Label>high — 有感影響（工作堆積）</Label>
+          <ExampleCaption>high — 有感影響（工作堆積）</ExampleCaption>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           {/* @layout-space-magic-ok: 行內 圖示 ↔ 文字 ↔ Badge 樣本群(同一列 micro)(layoutSpace.spec.md:166 micro) */}
@@ -172,7 +180,7 @@ export const DefaultLowRule: Story = {
             <span className="text-body">未讀私訊</span>
             <Badge count={3} variant="critical" />
           </div>
-          <Label>critical — 直接傷害（錯過溝通）</Label>
+          <ExampleCaption>critical — 直接傷害（錯過溝通）</ExampleCaption>
         </div>
       </TutorialRule>
 
@@ -186,14 +194,14 @@ export const DefaultLowRule: Story = {
           <span className="text-body">Archive</span>
           <Badge count={128} variant="critical" />
         </div>
-        <Label warn>↑ Archive 有多少郵件不需要 critical 紅色觸發 action——使用者只在整理時才看,用 low 即可</Label>
+        <ExampleCaption warn>↑ Archive 有多少郵件不需要 critical 紅色觸發 action——使用者只在整理時才看,用 low 即可</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="自我檢查：一個畫面最多 1-2 個 critical badge"
         note="超過代表把不急迫的事標成 critical。紅色稀缺性才有信號價值"
       >
-        <Label>打開任何 app 的主頁面,數一下紅色 badge——超過 2 個就該降級</Label>
+        <ExampleCaption>打開任何 app 的主頁面,數一下紅色 badge——超過 2 個就該降級</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -217,7 +225,7 @@ export const ContrastFloorRule: Story = {
             aria-label="通知 (3)"
             overlayBadge={<Badge count={3} variant="high" />}
           />
-          <Label>內容急迫度=high,容器要求只到 low → 用 high(內容急迫度已經高於容器最低需求)</Label>
+          <ExampleCaption>內容急迫度=high,容器要求只到 low → 用 high(內容急迫度已經高於容器最低需求)</ExampleCaption>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           <span className="text-footnote text-fg-muted w-20">Case 2:</span>
@@ -228,7 +236,7 @@ export const ContrastFloorRule: Story = {
             <Button variant="primary" startIcon={Bell}>通知</Button>
             <Badge count={3} variant="critical" className="absolute -top-1 -right-1" />
           </div>
-          <Label warn>內容急迫度=low(被動計數),但 primary 按鈕底色深,容器要求逼到 high/critical → 被迫升級(這代表設計擺錯位置)</Label>
+          <ExampleCaption warn>內容急迫度=low(被動計數),但 primary 按鈕底色深,容器要求逼到 high/critical → 被迫升級(這代表設計擺錯位置)</ExampleCaption>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           <span className="text-footnote text-fg-muted w-20">Case 3:</span>
@@ -240,7 +248,7 @@ export const ContrastFloorRule: Story = {
             aria-label="錯誤 (5)"
             overlayBadge={<Badge count={5} variant="critical" />}
           />
-          <Label>內容急迫度=critical 業務需求本身就急 → 用 critical,容器最低需求不會把它往下壓</Label>
+          <ExampleCaption>內容急迫度=critical 業務需求本身就急 → 用 critical,容器最低需求不會把它往下壓</ExampleCaption>
         </div>
       </TutorialRule>
 
@@ -248,7 +256,7 @@ export const ContrastFloorRule: Story = {
         title="Case 2 是設計錯配訊號——重新考慮放置"
         note="passive count 被 primary button 逼到 high/critical,semantic 跟 visual 不搭。解決不是一直升 level,是重新思考這 badge 該不該在這裡"
       >
-        <Label>改用 dot 模式 / 移到外部 label / 乾脆不放 badge</Label>
+        <ExampleCaption>改用 dot 模式 / 移到外部 label / 乾脆不放 badge</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -262,11 +270,11 @@ export const ContrastFloorRule: Story = {
           <Button variant="primary" startIcon={Archive}>Archive</Button>
           <Badge count={128} variant="critical" className="absolute -top-1 -right-1" />
         </div>
-        <Label warn>↑ Archive 的 128 被強制 critical 紅色 → 使用者誤以為「要去看」,實際只是總數</Label>
+        <ExampleCaption warn>↑ Archive 的 128 被強制 critical 紅色 → 使用者誤以為「要去看」,實際只是總數</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
-        title="✓ 正確做法:按鈕降級 + badge 回歸 low"
+        title="✅ 正確做法:按鈕降級 + badge 回歸 low"
         note="Archive 是歸檔/整理動作,不是 primary CTA——本來就該是 tertiary。按鈕降級後容器 contrast floor 放寬,badge 可以用 passive 原本的 low level,semantic 跟 visual 一致,訊號清楚。「想要 primary 按鈕 + critical badge」通常是資訊架構設定錯——重看:這顆按鈕真的是頁面主 CTA 嗎?"
       >
         {/* Note: 本 story 聚焦 level semantic 對照(critical → low);幾何仍是
@@ -276,7 +284,7 @@ export const ContrastFloorRule: Story = {
           <Button variant="tertiary" startIcon={Archive}>Archive</Button>
           <Badge count={128} variant="low" className="absolute -top-1 -right-1" />
         </div>
-        <Label>↑ tertiary Archive + low badge(灰底灰字)—— 「有 128 筆被歸檔」passive 展示,不誘導 click</Label>
+        <ExampleCaption>↑ tertiary Archive + low badge(灰底灰字)—— 「有 128 筆被歸檔」passive 展示,不誘導 click</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -298,7 +306,7 @@ export const AccessibilityRule: Story = {
           aria-label="通知 (3 則未讀)"
           overlayBadge={<Badge count={3} variant="critical" />}
         />
-        <Label>✓ aria-label="通知 (3 則未讀)" — screen reader 一次讀出完整資訊</Label>
+        <ExampleCaption>✅ aria-label="通知 (3 則未讀)" — screen reader 一次讀出完整資訊</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -307,13 +315,13 @@ export const AccessibilityRule: Story = {
       >
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           <Badge dot variant="critical" aria-label="有新訊息" />
-          <span className="text-body">✓ 有 aria-label</span>
+          <span className="text-body">✅ 有 aria-label</span>
         </div>
         <div className="flex items-center gap-[var(--layout-space-tight)]">
           <Badge dot variant="critical" />
           <span className="text-body">❌ 沒 aria-label</span>
         </div>
-        <Label warn>↑ 沒 aria-label 的 dot → screen reader 使用者不知道「有東西」</Label>
+        <ExampleCaption warn>↑ 沒 aria-label 的 dot → screen reader 使用者不知道「有東西」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -324,7 +332,7 @@ export const AccessibilityRule: Story = {
           <Badge dot variant="critical" aria-label="緊急" />
           <Badge dot variant="high" aria-label="重要" />
         </div>
-        <Label>↑ critical(橘)vs high(藍)只靠顏色——color-blind 使用者分不清,必須靠 aria-label 明確語意,不能只靠顏色</Label>
+        <ExampleCaption>↑ critical(橘)vs high(藍)只靠顏色——color-blind 使用者分不清,必須靠 aria-label 明確語意,不能只靠顏色</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -336,7 +344,7 @@ export const PlacementRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="Overlay — 疊加在視覺重心（iconOnly / avatar / 純 icon）"
-        note="標準 API:`<Button overlayBadge={...}>` — badge 中心對齊 icon 的 top-right corner(Material BadgedBox / iOS App Icon)。不手刻 relative + absolute,避免 badge 飄到 button chrome 邊緣"
+        note={<>標準 API:<code>&lt;Button overlayBadge={'{'}...{'}'}&gt;</code> — badge 中心對齊 icon 的 top-right corner(Material BadgedBox / iOS App Icon)。不手刻 relative + absolute,避免 badge 飄到 button chrome 邊緣</>}
       >
         <Button
           variant="tertiary"
@@ -358,7 +366,7 @@ export const PlacementRule: Story = {
           <span className="text-body">文件</span>
           <Badge count={12} variant="low" />
         </div>
-        <Label>↑ 「文件 (12)」一體展示,不是 overlay</Label>
+        <ExampleCaption>↑ 「文件 (12)」一體展示,不是 overlay</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -384,7 +392,7 @@ export const PlacementRule: Story = {
           <Badge count={3} variant="critical" className="absolute -top-1 -right-1" />
           <Badge dot variant="high" className="absolute -bottom-1 -right-1" />
         </div>
-        <Label warn>↑ 同一顆 Bell 按鈕同時表達「未讀 3」和「有更新(dot)」—— 兩個都是通知訊號,語義重疊 → 使用者混淆</Label>
+        <ExampleCaption warn>↑ 同一顆 Bell 按鈕同時表達「未讀 3」和「有更新(dot)」—— 兩個都是通知訊號,語義重疊 → 使用者混淆</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

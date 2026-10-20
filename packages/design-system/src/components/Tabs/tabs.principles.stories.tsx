@@ -2,15 +2,14 @@
 // into a single `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親)
 // per 2026-04-26 user mandate. SizeSelection + TriggerSlots kept as separate principles.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { Users, Settings, Bell } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Tabs/設計原則',
@@ -19,11 +18,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label })
+const TutorialRule = createTutorialRule({ examples: true })
 
 // ── UsageGuidance ────────────────────────────────────────────────────────────
 
@@ -31,26 +27,24 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Tabs 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/Tabs/展示" name="帶後綴"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">帶後綴</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tabs/展示" name="帶後綴">帶後綴</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tabs/展示" name="溢出處理 — 水平捲動"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">溢出處理 — 水平捲動</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tabs/展示" name="溢出處理 — 水平捲動">溢出處理 — 水平捲動</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tabs/展示" name="溢出處理 — ⌄ 導覽選單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">溢出處理 — ⌄ 導覽選單</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tabs/展示" name="溢出處理 — ⌄ 導覽選單">溢出處理 — ⌄ 導覽選單</StoryLink>
             </li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
+      <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 單一 tab 的 Tabs"
           note="只有一個 trigger 沒有切換語意——應該直接顯示內容,不需要 tabs"
@@ -59,9 +53,9 @@ export const UsageGuidance: Story = {
             <TabsList>
               <TabsTrigger value="a">唯一選項</TabsTrigger>
             </TabsList>
-            <TabsContent value="a" className="text-body text-fg-primary">唯一內容區沒有切換價值,應直接顯示。</TabsContent>
+            <TabsContent value="a" className="text-body">唯一內容區沒有切換價值,應直接顯示。</TabsContent>
           </Tabs>
-          <Label warn>↑ 這個 Tabs 沒有意義,直接顯示內容</Label>
+          <ExampleCaption warn>↑ 這個 Tabs 沒有意義,直接顯示內容</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -74,7 +68,7 @@ export const UsageGuidance: Story = {
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
-            <Label>↑ 需要等分?改用 SegmentedControl</Label>
+            <ExampleCaption>↑ 需要等分?改用 SegmentedControl</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
 
@@ -88,21 +82,21 @@ export const UsageGuidance: Story = {
               <TabsTrigger value="products">產品列表</TabsTrigger>
               <TabsTrigger value="about">關於我們</TabsTrigger>
             </TabsList>
-            <TabsContent value="home" className="text-body text-fg-primary">首頁是獨立路由,不應由 Tabs 承載。</TabsContent>
-            <TabsContent value="products" className="text-body text-fg-primary">產品列表是獨立路由,不應由 Tabs 承載。</TabsContent>
-            <TabsContent value="about" className="text-body text-fg-primary">關於我們是獨立路由,不應由 Tabs 承載。</TabsContent>
+            <TabsContent value="home" className="text-body">首頁是獨立路由,不應由 Tabs 承載。</TabsContent>
+            <TabsContent value="products" className="text-body">產品列表是獨立路由,不應由 Tabs 承載。</TabsContent>
+            <TabsContent value="about" className="text-body">關於我們是獨立路由,不應由 Tabs 承載。</TabsContent>
           </Tabs>
-          <Label warn>↑ 這些是獨立頁面,不該用 Tabs</Label>
+          <ExampleCaption warn>↑ 這些是獨立頁面,不該用 Tabs</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — Tabs vs SegmentedControl">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="規模:一整塊 container vs 局部變體"
           note="Tabs 切換的是一整塊 container(可能有自己的 header / toolbar / 多個 section),每個 view 是獨立的子頁規模。SegmentedControl 切換的是局部內容的變體——單一 chart 的維度、單一 list 的排序、單一 form section 的條件欄位。兩者都能『切換下方內容』,但前者是結構、後者是 control"
         >
           <ExampleGroup>
-            <Label>✅ Tabs:電商後台,每個 view 是獨立子頁(各自有 filters / table / actions)</Label>
+            <ExampleCaption>✅ Tabs:電商後台,每個 view 是獨立子頁(各自有 filters / table / actions)</ExampleCaption>
             <Tabs defaultValue="orders">
               <TabsList>
                 {/* 2026-07-04:同組 startIcon 全有或全無(spec 禁止事項)— 原 顧客/設定 混用 icon 已移除 */}
@@ -118,14 +112,14 @@ export const UsageGuidance: Story = {
             </Tabs>
           </ExampleGroup>
           <ExampleGroup>
-            <Label>✅ SegmentedControl:Dashboard chart 的時間維度切換(局部變體,不是結構)</Label>
+            <ExampleCaption>✅ SegmentedControl:Dashboard chart 的時間維度切換(局部變體,不是結構)</ExampleCaption>
             <SegmentedControl defaultValue="week">
               <SegmentedControlItem value="day">日</SegmentedControlItem>
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>
               <SegmentedControlItem value="quarter">季</SegmentedControlItem>
             </SegmentedControl>
-            <Label>↑ 切換會讓下方 chart 重新載入,但切的是 chart 的一個維度,不是整個 container</Label>
+            <ExampleCaption>↑ 切換會讓下方 chart 重新載入,但切的是 chart 的一個維度,不是整個 container</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
 
@@ -134,7 +128,7 @@ export const UsageGuidance: Story = {
           note="Tabs 佔整行、與父容器 header border 對齊,是 section 的 anchor。SegmentedControl 是 pill 尺寸,能跟 Button / Input 並排而不違和。判斷 fallback:放進 toolbar 或 Field 感覺自然 → SegmentedControl;必須自己獨佔一行 → Tabs"
         >
           <ExampleGroup>
-            <Label>✅ SegmentedControl 在 toolbar 裡跟 Button / Input 並排</Label>
+            <ExampleCaption>✅ SegmentedControl 在 toolbar 裡跟 Button / Input 並排</ExampleCaption>
             {/* 工具列外框(chrome 內距)+ 控件 / 分隔線之間交給 ButtonGroup(action region 8px 槽距的主人,action-bar.spec.md:288-292),不手刻槽距 */}
             <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-md w-fit">
               <ButtonGroup>
@@ -146,7 +140,7 @@ export const UsageGuidance: Story = {
                 <span className="text-body text-fg-muted">工具列其他控制項…</span>
               </ButtonGroup>
             </div>
-            <Label>↑ 同 toolbar 尺度,跟其他 control 並排。換成 Tabs 在這個位置會違和</Label>
+            <ExampleCaption>↑ 同 toolbar 尺度,跟其他 control 並排。換成 Tabs 在這個位置會違和</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
 
@@ -155,7 +149,7 @@ export const UsageGuidance: Story = {
           note="付款方式 / 配送方式這類「選一個、下方欄位跟著變」的 form section 看起來像 Tabs(切換內容),但它是表單內的一個 field(值會送出、跟其他 form field 同行文化),應該用 SegmentedControl。Tabs 不能塞進 Field、也不參與表單狀態"
         >
           <ExampleGroup>
-            <Label>✅ 付款方式(SegmentedControl + 下方條件欄位)</Label>
+            <ExampleCaption>✅ 付款方式(SegmentedControl + 下方條件欄位)</ExampleCaption>
             {/* 本則教的就是「它是表單欄位」:欄位必用 Field(標籤 / 說明與控件的間距由 Field 擁有),不手刻 span 標籤 */}
             <Field className="w-[400px]">
               <FieldLabel>付款方式</FieldLabel>
@@ -168,7 +162,7 @@ export const UsageGuidance: Story = {
             </Field>
           </ExampleGroup>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
   play: async ({ canvasElement }) => {

@@ -1,9 +1,9 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/RadioGroup/設計原則',
@@ -12,11 +12,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -26,19 +23,17 @@ export const UsageGuidance: Story = {
     const [status, setStatus] = React.useState('in_stock')
     return (
       <TutorialPage>
-        <TutorialSection title="何時用">
+        <UsageSection kind="when">
           <div className="max-w-prose">
             <p>適合 RadioGroup 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-            {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-            <ul className="space-y-1">
-              <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="直式群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">直式群組</span></LinkTo><span className="text-fg-secondary"> — 訂閱方案選擇(月付 / 年付 / 終身):需要對比價格與說明的決策節點,直式 + description 完整閱讀</span></li>
-              <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="水平排列"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">水平排列</span></LinkTo><span className="text-fg-secondary"> — 外觀主題切換(淺色 / 深色 / 系統):2-3 個短 label、不需描述文字,橫排省垂直空間</span></li>
-            </ul>
-            <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:回頭看「何時用 / 何時不用」;若仍不符,改用近親元件(見下方「vs 近親元件」)。</p>
+            <TutorialList>
+              <li><StoryLink kind="Design System/Components/RadioGroup/展示" name="直式群組">直式群組</StoryLink><span className="text-fg-secondary"> — 訂閱方案選擇(月付 / 年付 / 終身):需要對比價格與說明的決策節點,直式 + description 完整閱讀</span></li>
+              <li><StoryLink kind="Design System/Components/RadioGroup/展示" name="水平排列">水平排列</StoryLink><span className="text-fg-secondary"> — 外觀主題切換(淺色 / 深色 / 系統):2-3 個短 label、不需描述文字,橫排省垂直空間</span></li>
+            </TutorialList>
           </div>
-        </TutorialSection>
+        </UsageSection>
 
-        <TutorialSection title="何時不用 + 替代方案">
+        <UsageSection kind="whenNot">
           <TutorialRule
             title="❌ label 自帶語意 + 空間受限:用 Select"
             note="「庫存狀態」「類別」這類 label 本身夠清楚、使用者知道要選什麼 → Select 下拉節省空間。RadioGroup 全露反而浪費垂直空間"
@@ -48,25 +43,25 @@ export const UsageGuidance: Story = {
               <RadioGroupItem value="low_stock" label="Low stock" />
               <RadioGroupItem value="out_of_stock" label="Out of stock" />
             </RadioGroup>
-            <Label warn>↑ 庫存狀態 label 自帶語意 → 用 Select 一格就夠,不需要 3 行 RadioGroup</Label>
+            <ExampleCaption warn>↑ 庫存狀態 label 自帶語意 → 用 Select 一格就夠,不需要 3 行 RadioGroup</ExampleCaption>
           </TutorialRule>
 
           <TutorialRule
             title="❌ 單個 Radio 假裝 Checkbox"
             note="想用「radio 形狀」當勾選提示 → 錯。Radio 的視覺是「從多選一」的承諾,單個不符合這個語意。yes/no 用 Checkbox 或 Switch"
           >
-            <Label warn>單個同意框用 Checkbox,不用 Radio 假裝</Label>
+            <ExampleCaption warn>單個同意框用 Checkbox,不用 Radio 假裝</ExampleCaption>
           </TutorialRule>
-        </TutorialSection>
+        </UsageSection>
 
-        <TutorialSection title="vs 近親元件">
+        <UsageSection kind="siblings">
           <TutorialRule
             title="從三個角度判斷該用哪個"
             note="1. 展開成本:Select 把選項藏進下拉、RadioGroup 全部攤開 2. 視覺份量:Select 只佔一行、RadioGroup 佔 N 行 3. 評估深度:使用者需要逐項對比才能決定嗎?需要對比 → RadioGroup;不需要 → Select。灰色地帶的一句話判斷:「使用者看一眼 label 就能下決定嗎?」能 → Select;不能、需要閱讀 description → RadioGroup"
           >
-            <Label>選項一眼就懂、不需對比時,優先用 Select 省空間;拿不定主意用「看一眼 label 能否下決定」快速判斷</Label>
+            <ExampleCaption>選項一眼就懂、不需對比時,優先用 Select 省空間;拿不定主意用「看一眼 label 能否下決定」快速判斷</ExampleCaption>
           </TutorialRule>
-        </TutorialSection>
+        </UsageSection>
       </TutorialPage>
     )
   },
@@ -88,7 +83,7 @@ export const DecisionNodeRule: Story = {
             <RadioGroupItem value="bank" label="銀行轉帳" description="無手續費,1-2 個工作日" />
             <RadioGroupItem value="cash" label="貨到付款" description="手續費 NT$30,到貨時付" />
           </RadioGroup>
-          <Label>↑ 付款方式必須看完手續費 / 處理時間才能決定 → 全露選項</Label>
+          <ExampleCaption>↑ 付款方式必須看完手續費 / 處理時間才能決定 → 全露選項</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -112,7 +107,7 @@ export const DecisionNodeRule: Story = {
               description="客製化配額、專屬客戶經理、SSO / SAML 整合"
             />
           </RadioGroup>
-          <Label>↑ 方案比較必須看 features 才能決策 → RadioGroup 全露 + description</Label>
+          <ExampleCaption>↑ 方案比較必須看 features 才能決策 → RadioGroup 全露 + description</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -133,14 +128,14 @@ export const MustBeInGroupRule: Story = {
             <RadioGroupItem value="yes" label="我同意" />
             <RadioGroupItem value="no" label="我不同意" />
           </RadioGroup>
-          <Label>↑ yes/no 的 RadioGroup 是合法的(兩個互斥選項),但常見場景用 Checkbox(「我同意」)更輕</Label>
+          <ExampleCaption>↑ yes/no 的 RadioGroup 是合法的(兩個互斥選項),但常見場景用 Checkbox(「我同意」)更輕</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="RadioGroup 預設建議給 default value"
           note="一組全空的 radio 會讓使用者困惑「我要選什麼」——通常應指定 defaultValue 或 value。例外:表單要求使用者主動表態時,value=null 為合法 initial state(見 spec「邊界案例」),由 Field required 驗證引導選擇"
         >
-          <Label>若真的「可以不選」(選填)→ 用 Select + clearable 或 Checkbox stack</Label>
+          <ExampleCaption>若真的「可以不選」(選填)→ 用 Select + clearable 或 Checkbox stack</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

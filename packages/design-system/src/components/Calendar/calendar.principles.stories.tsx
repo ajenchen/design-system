@@ -2,11 +2,10 @@
 // `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to consolidate
 // decision-related stories. ColorSemantic + MonthViewOnlyRule + ReadOnlyRule kept as separate principles.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { Calendar, type CalendarEvent } from './calendar'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Calendar/設計原則',
@@ -26,8 +25,9 @@ const demoOpenEvent = (event: CalendarEvent) => alert(`點了事件:${event.titl
 const demoCreateEvent = () => alert('開啟新事件對話框')
 
 // 規則外框(標題 / 說明 / 間距)= 共用教學頁元件;本頁的範例是整塊行事曆,放進一個有邊框的展示框(原本寫在本頁 Rule 裡的同一個框)。
-// 說明字色沿用本頁原本的 fg-secondary;說明字級照 category-templates.md「教學框的間距與標題」用 text-caption。
-const TutorialRule = createTutorialRule({ noteTone: 'secondary' })
+// 說明的字級 / 字色由共用元件擁有(text-caption + text-fg-muted,tutorial-page.tsx 檔頭;字色 = color.spec.md:96 caption 列),本頁不另選
+//(2026-10-20 前本頁傳 noteTone 選 fg-secondary,同一層說明全 DS 兩種字色,已收成一種)。
+const TutorialRule = createTutorialRule()
 
 const ExampleFrame = ({ children }: { children: React.ReactNode }) => (
   <div className="max-w-5xl rounded-md border border-divider p-[var(--layout-space-loose)] bg-surface">{children}</div>
@@ -37,39 +37,36 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Calendar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/Calendar/展示" name="團隊行事曆"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">團隊行事曆</span></LinkTo>
+              <StoryLink kind="Design System/Components/Calendar/展示" name="團隊行事曆">團隊行事曆</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Calendar/展示" name="內容發佈月曆"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">內容發佈月曆</span></LinkTo>
+              <StoryLink kind="Design System/Components/Calendar/展示" name="內容發佈月曆">內容發佈月曆</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Calendar/展示" name="空行事曆"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">空行事曆</span></LinkTo>
+              <StoryLink kind="Design System/Components/Calendar/展示" name="空行事曆">空行事曆</StoryLink>
             </li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
+      <UsageSection kind="whenNot">
         <div className="text-body text-fg-secondary max-w-3xl">
-          {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 8px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="list-disc pl-5 space-y-2">
+          <TutorialList>
             <li><b>選單一日期</b>(Due date / Birthday)→ 用 <code>DatePicker</code></li>
             <li><b>選日期範圍</b>(訂單 from-to)→ 用 <code>{'<DatePicker.Range>'}</code></li>
             <li><b>任務看板</b>(非時間軸 view)→ 用 <code>DataTable</code> + status column</li>
             <li><b>時段可用性</b>(會議訂房 slot picker)→ 獨立 time-slot picker(未來 primitive)</li>
             <li><b>Mini month widget</b>(sidebar 小月曆)→ 用 <code>DateGrid</code>(不 fullscreen)</li>
-          </ul>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — Calendar vs DatePicker">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Calendar 是「看事件」的 page canvas,DatePicker 是「選日期」的 form control"
           note="名字相近,職責完全不同。Calendar 是月行事曆事件 canvas;DatePicker 是欄位,選單一日期寫入 form state。"
@@ -101,7 +98,7 @@ export const UsageGuidance: Story = {
             </div>
           </ExampleFrame>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }

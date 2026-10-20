@@ -7,8 +7,8 @@ import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
 import { Button } from '@/design-system/components/Button/button'
 import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { TutorialPage, UsageSection, TutorialList, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof FieldControlGroup> = {
   title: 'Design System/Components/FieldControlGroup/設計原則',
@@ -25,101 +25,87 @@ const OPS = OPERATOR_REGISTRY.string
   .filter((o) => ['is', 'contains'].includes(o.op))
   .map((o) => ({ value: o.op, label: o.label }))
 
-/* WhenToUse + WhenNotToUse + VsRule + ContentGuidelines = single UsageGuidance */
+// 範例的說明一律 ExampleCaption(CaptionedExamples 自動併組);規則標題由共用元件畫(2026-10-20 T5:原本兩則「❌」是手寫的紅色 h3)
+const TutorialRule = createTutorialRule({ examples: true })
+
+/* 使用指引固定三段;內容準則與尺寸規則各自一則(2026-10-20 T4:原本六段全擠在使用指引裡) */
 export const UsageGuidance: Story = {
-  name: '使用準則',
+  name: '使用指引',
   render: () => (
     <TutorialPage className="w-[640px]">
-      <TutorialSection title="何時用 ✓">
+      <UsageSection kind="when">
         {/* 清單說的就是下面這個示範:說明 ↔ 範例 tight(ExampleGroup) */}
         <ExampleGroup>
-          {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
-            <li>兩個語意連動的 control 視覺一體(電話 = 國碼 + 號碼)</li>
-            <li>Filter row(field + op + value)</li>
-            <li>Search input + Submit button</li>
-            <li>Range input(start + end + 中介符號)</li>
-          </ul>
+          <TutorialList>
+            <li>兩個語意連動的控件要看起來是一體(電話 = 國碼 + 號碼)</li>
+            <li>篩選列(欄位 + 運算子 + 值)</li>
+            <li>搜尋框 + 搜尋按鈕</li>
+            <li>範圍輸入(起 + 迄 + 中間的符號)</li>
+          </TutorialList>
           <FieldControlGroup block>
             <Input className="flex-1" startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
             <Button variant="primary">搜尋</Button>
           </FieldControlGroup>
         </ExampleGroup>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 ✗">
-        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-          <div>
-            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 多 fields 垂直排列</h3>
-            <FieldGroup>
-              <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
-              <Field><FieldLabel>Email</FieldLabel><Input /></Field>
-            </FieldGroup>
-            <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">→ 用 FieldGroup,不是 FieldControlGroup</p>
-          </div>
-          <div>
-            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)] text-error-text">❌ 不相關 controls 強行接合</h3>
-            <p className="text-caption text-fg-muted">姓名 + 公司電話放同一 group 語意混亂 — 用 separate Field</p>
-          </div>
-        </div>
-      </TutorialSection>
+      <UsageSection kind="whenNot">
+        <TutorialRule title="❌ 多個欄位上下排列:用 FieldGroup">
+          <FieldGroup>
+            <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
+            <Field><FieldLabel>Email</FieldLabel><Input /></Field>
+          </FieldGroup>
+          <ExampleCaption>↑ 多個欄位上下排列是 FieldGroup 的工作,不是 FieldControlGroup</ExampleCaption>
+        </TutorialRule>
+        <TutorialRule title="❌ 把不相關的控件硬接在一起" note="姓名 + 公司電話放同一組,語意混亂 —— 各自用獨立的 Field" />
+      </UsageSection>
 
-      <TutorialSection title="FieldControlGroup vs FieldGroup">
-        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
-            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldGroup(垂直堆疊)</h3>
-            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-            <ul className="text-body text-fg-secondary space-y-1">
-              <li>Scope:多個 Field</li>
-              <li>Direction:vertical</li>
-              <li>視覺:gap 分離</li>
-              <li>語意:表單 section</li>
-            </ul>
-          </div>
-          <div className="border border-divider rounded-md p-[var(--layout-space-loose)]">
-            <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">FieldControlGroup(橫向接合)</h3>
-            {/* @layout-space-magic-ok: 清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-            <ul className="text-body text-fg-secondary space-y-1">
-              <li>Scope:多個 control(1 Field 內)</li>
-              <li>Direction:horizontal</li>
-              <li>視覺:border collapse 接合</li>
-              <li>語意:複合 input(視覺一體)</li>
-            </ul>
-          </div>
-        </div>
-      </TutorialSection>
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>FieldGroup</strong> —— 多個 Field 上下堆疊、以間距分開;語意是表單裡的一段</li>
+          <li><strong>FieldControlGroup</strong> —— 同一個 Field 裡的多個控件橫向接合(邊框相接);語意是一個複合輸入,看起來是一體</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
+  ),
+}
 
-      <TutorialSection title="內容準則">
-        {/* @layout-space-magic-ok: 項目符號清單:同質清單項列距 space-y 4px / 項目符號縮排 pl 20px(清單自身幾何)(layoutSpace.spec.md:165 同質清單列) */}
-        <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
-          <li>Children 同 size — 不混用 sm/md/lg(視覺高度需一致)</li>
-          <li>Children 自管 width — fixed selects + flex input 是典型 pattern</li>
-          <li>繼承 Field 尺寸(包進 Field):size 從 Field context 自動繼承,children 不傳 size</li>
-          <li>Children scope:Input / NumberInput / Select / Combobox / DatePicker / Button(對齊 Ant 限定 list)</li>
-        </ul>
-      </TutorialSection>
+export const ContentGuidelines: Story = {
+  name: '內容準則',
+  render: () => (
+    <TutorialPage className="w-[640px]">
+      <TutorialList>
+        <li>裡面的控件同一個尺寸 —— 不混用 sm / md / lg(高度要一致)</li>
+        <li>控件各自管寬度 —— 固定寬的下拉 + 撐滿的輸入框是典型組合</li>
+        <li>包進 Field 時,尺寸從 Field 自動繼承,控件不另外傳 size</li>
+        <li>可以放的控件:Input / NumberInput / Select / Combobox / DatePicker / Button(對齊 Ant 的限定清單)</li>
+      </TutorialList>
+    </TutorialPage>
+  ),
+}
 
-      <TutorialSection title="繼承 Field 尺寸 — 包進 Field 當 control slot">
-        {/* 範例 ↔ 它的說明 tight(ExampleGroup) */}
-        <ExampleGroup>
-          <Field>
-            <FieldLabel>聯絡電話</FieldLabel>
-            <FieldControlGroup block>
-              <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} aria-label="國碼" />
-              <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
-            </FieldControlGroup>
-          </Field>
-          <p className="text-caption text-fg-muted">Field label / description / error 對 group 整體生效;children 的 size 各自從外層 Field context 繼承(FCG 不傳遞 size)。</p>
-        </ExampleGroup>
-      </TutorialSection>
+export const SizeRule: Story = {
+  name: '尺寸怎麼給',
+  render: () => (
+    <TutorialPage className="w-[640px]">
+      <TutorialRule title="繼承 Field 尺寸 — 包進 Field 當控件">
+        <Field>
+          <FieldLabel>聯絡電話</FieldLabel>
+          <FieldControlGroup block>
+            <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} aria-label="國碼" />
+            <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
+          </FieldControlGroup>
+        </Field>
+        <ExampleCaption>↑ Field 的標籤 / 說明 / 錯誤訊息對整組生效;裡面控件的尺寸各自從外層 Field 繼承(FieldControlGroup 不傳遞 size)</ExampleCaption>
+      </TutorialRule>
 
-      <TutorialSection title="Standalone 逐一設尺寸 — Filter row 場景">
+      <TutorialRule title="單獨使用時逐一設尺寸 — 篩選列">
         <FieldControlGroup block>
           <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
           <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />
           <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
-      </TutorialSection>
+      </TutorialRule>
     </TutorialPage>
   ),
 }

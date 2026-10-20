@@ -1,12 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
-import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/FileItem/設計原則',
@@ -15,11 +14,8 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-lg' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-lg' })
 
 // ── WhenToUse — 何時使用 FileItem ──────────────────────
 
@@ -30,60 +26,63 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="max-w-prose">
-      <p>適合 FileItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="豐富樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">CSV / JSON 批次匯入的密集清單(緊湊樣式)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="懸停替換"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">上傳完成後滑入整列、狀態 icon 換成下載鈕(懸停替換)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="已上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">工單 / 訊息附件的已上傳靜態檔案</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊 混合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">同一批次混合上傳中 / 完成 / 失敗狀態的清單</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+      <UsageSection kind="when">
+        <p>上傳流程裡的一個檔案:上傳清單、附件列表、批次匯入的逐檔進度、哪些檔案失敗 + 重試。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="豐富樣式">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="緊湊樣式">CSV / JSON 批次匯入的密集清單(緊湊樣式)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="懸停替換">上傳完成後滑入整列、狀態 icon 換成下載鈕(懸停替換)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="已上傳">工單 / 訊息附件的已上傳靜態檔案</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="緊湊 混合">同一批次混合上傳中 / 完成 / 失敗狀態的清單</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <>
-      <TutorialRule
-        title="❌ 不用 FileItem 做純連結展示（已上傳檔案）"
-        note="FileItem 承載上傳狀態、進度、錯誤。靜態檔名列表改用 LinkInput 或純 <a> 連結。Google Drive 的「最近開啟」是檔案卡片，不用 FileItem"
-      >
-        <Label warn>靜態檔名 → LinkInput / &lt;a&gt;，FileItem 只用上傳流程</Label>
-      </TutorialRule>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 不用 FileItem 做純連結展示（已上傳檔案）"
+          note="FileItem 承載上傳狀態、進度、錯誤。靜態檔名列表改用 LinkInput 或純 <a> 連結。Google Drive 的「最近開啟」是檔案卡片，不用 FileItem"
+        >
+          <ExampleCaption warn>靜態檔名 → LinkInput / &lt;a&gt;，FileItem 只用上傳流程</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 FileItem 做下載進度"
-        note="FileItem 專為上傳設計。下載進度改用自訂 progress component 或瀏覽器原生下載 UI。Figma 的資源下載不用 FileItem"
-      >
-        <Label warn>下載進度 → 自訂或瀏覽器原生，FileItem 只管上傳</Label>
-      </TutorialRule>
+        <TutorialRule
+          title="❌ 不用 FileItem 做下載進度"
+          note="FileItem 專為上傳設計。下載進度改用自訂 progress component 或瀏覽器原生下載 UI。Figma 的資源下載不用 FileItem"
+        >
+          <ExampleCaption warn>下載進度 → 自訂或瀏覽器原生，FileItem 只管上傳</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 FileItem 做相片 / 影片 gallery"
-        note="Gallery 需要 grid 佈局、大圖縮圖。FileItem 是清單單行。改用 grid / Carousel。Instagram 的相簿是 grid，不是 FileItem"
-      >
-        <Label warn>Gallery → grid / Carousel，FileItem 是上傳清單</Label>
-      </TutorialRule>
+        <TutorialRule
+          title="❌ 不用 FileItem 做相片 / 影片 gallery"
+          note="Gallery 需要 grid 佈局、大圖縮圖。FileItem 是清單單行。改用 grid / Carousel。Instagram 的相簿是 grid，不是 FileItem"
+        >
+          <ExampleCaption warn>Gallery → grid / Carousel，FileItem 是上傳清單</ExampleCaption>
+        </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不用 FileItem 表達資料夾階層"
-        note="FileItem 是平面列表。資料夾樹改用 TreeView。OneDrive 的資料夾結構用 TreeView，檔案列表用 FileItem"
-      >
-        <Label warn>資料夾樹 → TreeView，FileItem 是平面清單</Label>
-      </TutorialRule>
-    </>
+        <TutorialRule
+          title="❌ 不用 FileItem 表達資料夾階層"
+          note="FileItem 是平面列表。資料夾樹改用 TreeView。OneDrive 的資料夾結構用 TreeView，檔案列表用 FileItem"
+        >
+          <ExampleCaption warn>資料夾樹 → TreeView，FileItem 是平面清單</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>FileUpload</strong> —— 整個上傳入口:拖放區 + 多個 FileItem 的排列 + 上傳狀態管理;FileItem 只是其中一列檔案。簡單記:有拖放區用 FileUpload,沒有拖放區用 FileItem</li>
+          <li><strong>FileViewer</strong> —— 打開檔案看內容(預覽、縮放、翻頁);點 FileItem 的列通常就是打開 FileViewer</li>
+        </TutorialList>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -106,14 +105,14 @@ export const ModeRule: Story = {
             <p className="mt-[var(--item-gap-label-desc-reading)] text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
           </div>
         </div>
-        <Label>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</Label>
+        <ExampleCaption>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="同一清單不混用 rich 與 compact"
         note="兩種 mode 有不同列高與視覺錨點；混用會打斷掃視節奏，也讓使用者誤以為資料狀態不同。上傳中與已儲存附件可以共存，但應在同一 mode 內用 status 區分。"
       >
-        <Label>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</Label>
+        <ExampleCaption>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -238,7 +237,7 @@ export const ActionsRule: Story = {
         title="❌ 重要 action 只靠 hover 才出現"
         note="「移除」「取消」這類影響資料的 action 必須 persistent visible,不能 hover 才顯示。觸控裝置無法 hover,會錯過關鍵動作"
       >
-        <Label warn>hover-only actions 只適合純便利功能(如「複製連結」),關鍵動作永遠 visible</Label>
+        <ExampleCaption warn>hover-only actions 只適合純便利功能(如「複製連結」),關鍵動作永遠 visible</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

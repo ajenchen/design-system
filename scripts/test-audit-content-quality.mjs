@@ -42,6 +42,22 @@ try {
   writeFileSync(target, orig)
 }
 
+// 3b) 教學頁 canvas 的 Markdown 反引號會原樣顯示(2026-10-20 T12),gate 必抓;<code> 裡的反引號是程式碼字樣,不算。
+const teachingTarget = join(repoRoot, 'packages/design-system/src/components/Tabs/tabs.principles.stories.tsx')
+const teachingOrig = readFileSync(teachingTarget, 'utf8')
+try {
+  writeFileSync(teachingTarget, teachingOrig + `\nexport const InjectedBacktickViolation = {\n  name: '注入反引號違規測試',\n  render: () => <p>啟用中加 \`pressed\`(不換 variant)</p>,\n};\n`)
+  const code = run()
+  if (code === 0) { console.error('✗ 教學頁注入 literal 反引號後 gate 未 FAIL'); ok = false }
+  else console.log('✓ 教學頁 literal 反引號被抓(exit ' + code + ')')
+  writeFileSync(teachingTarget, teachingOrig + `\nexport const InjectedBacktickInCode = {\n  name: '程式碼字樣不算',\n  render: () => <p><code>{'formatter={(v) => \`$\${v}\`}'}</code></p>,\n};\n`)
+  const codeInCode = run()
+  if (codeInCode !== 0) { console.error('✗ <code> 裡的樣板字串反引號被誤判'); ok = false }
+  else console.log('✓ <code> 裡的反引號不算(exit 0)')
+} finally {
+  writeFileSync(teachingTarget, teachingOrig)
+}
+
 // 4) Reader-facing Autodocs 缺 component 導讀時必 FAIL。
 const docsDescriptionBlock = /\n  parameters: \{\n    docs: \{\n      description: \{\n        component: [^\n]+\n      \},\n    \},\n  \},/
 if (!docsDescriptionBlock.test(orig)) {

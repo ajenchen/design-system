@@ -2,13 +2,13 @@
 // into a single `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to
 // consolidate decision-related stories. ModeRule / VisualTokenRule / LocaleRule kept.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
 import { useState } from 'react'
 import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/設計原則',
@@ -22,22 +22,16 @@ const STORY_TODAY = new Date(2026, 6, 15)
 const storyDate = (day: number) =>
   new Date(STORY_TODAY.getFullYear(), STORY_TODAY.getMonth(), day)
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p
-    className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}
-  >
-    {children}
-  </p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, layout: 'wrap' })
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
+// 一則範例 + 它的說明(說明在上):組內 tight 由 ExampleGroup 擁有,說明一律 ExampleCaption(2026-10-20 T6:原本是本頁自抄的 span 說明)
 const Demo = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-0">
-    <span className="text-footnote text-fg-secondary font-medium">{title}</span>
+  <ExampleGroup className="min-w-0">
+    <ExampleCaption>{title}</ExampleCaption>
     {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner */}
     <div className="bg-surface-raised border border-border rounded-lg w-fit">{children}</div>
-  </div>
+  </ExampleGroup>
 )
 
 // ── Stories ──────────────────────────────────────────────────────────────────
@@ -50,29 +44,27 @@ export const UsageGuidance: Story = {
 
     return (
       <TutorialPage>
-        <TutorialSection title="何時用">
+        <UsageSection kind="when">
           <div className="max-w-prose">
             <p>適合 DateGrid 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-            {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-            <ul className="space-y-1">
+            <TutorialList>
               <li>
-                <LinkTo kind="Design System/Internal/DateGrid/展示" name="單日 — 生日 / 到期日"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Single — 生日 / 到期日</span></LinkTo>
+                <StoryLink kind="Design System/Internal/DateGrid/展示" name="單日 — 生日 / 到期日">Single — 生日 / 到期日</StoryLink>
               </li>
               <li>
-                <LinkTo kind="Design System/Internal/DateGrid/展示" name="多日 — 活動可參加日期"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Multiple — 活動可參加日期</span></LinkTo>
+                <StoryLink kind="Design System/Internal/DateGrid/展示" name="多日 — 活動可參加日期">Multiple — 活動可參加日期</StoryLink>
               </li>
               <li>
-                <LinkTo kind="Design System/Internal/DateGrid/展示" name="範圍 — 分析時段 / 訂單範圍"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Range — 分析時段 / 訂單範圍</span></LinkTo>
+                <StoryLink kind="Design System/Internal/DateGrid/展示" name="範圍 — 分析時段 / 訂單範圍">Range — 分析時段 / 訂單範圍</StoryLink>
               </li>
               <li>
-                <LinkTo kind="Design System/Internal/DateGrid/展示" name="行內 — 儀表板小卡"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">行內 — Linear 專案截止日小卡</span></LinkTo>
+                <StoryLink kind="Design System/Internal/DateGrid/展示" name="行內 — 儀表板小卡">行內 — Linear 專案截止日小卡</StoryLink>
               </li>
-            </ul>
-            <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+            </TutorialList>
           </div>
-        </TutorialSection>
+        </UsageSection>
 
-        <TutorialSection title="何時不用 + 替代">
+        <UsageSection kind="whenNot">
           <TutorialRule
             title="DateGrid 是「日期 picker」,不是「事件日曆」"
             note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆,需要專用元件(Google Calendar / Outlook 類),不屬於本元件範疇。"
@@ -86,26 +78,26 @@ export const UsageGuidance: Story = {
             title="事件行事曆需要的能力(本元件沒有)"
             note="判斷需求時看這幾個指標:一格日內要顯示多個事件、事件可拖曳移動、需要 week / day / agenda 視圖切換、事件跨多日的視覺連線。任一命中 → 需要專用行事曆元件。"
           >
-            <Label warn>
+            <ExampleCaption warn>
               ❌ 事件 overlay(一格顯示「09:00 Standup · 14:00 Design review」)<br />
               ❌ Week / Day 視圖切換<br />
               ❌ 拖曳事件改時間<br />
               ❌ 跨日事件的連線 bar
-            </Label>
+            </ExampleCaption>
           </TutorialRule>
 
           <TutorialRule
             title="判斷法 — 問「使用者產生的輸出是什麼」"
             note="輸出是「一個日期值 / 多個日期值 / 一段日期範圍」→ DateGrid;輸出是「操作了某個事件(建立 / 移動 / 編輯)」→ 事件行事曆。"
           >
-            <Label>
+            <ExampleCaption>
               報表查詢時段、活動 RSVP 日、個資生日、訂房日期 → DateGrid<br />
               會議日程、任務日曆、月曆視圖瀏覽 → 事件行事曆(專用元件)
-            </Label>
+            </ExampleCaption>
           </TutorialRule>
-        </TutorialSection>
+        </UsageSection>
 
-        <TutorialSection title="vs 近親 — DateGrid(inline)vs DatePicker(field trigger)">
+        <UsageSection kind="siblings">
           <TutorialRule
             title="DateGrid — inline 月曆,頁面上常駐可見"
             note="dashboard 小卡、側欄 widget、日期 filter bar。使用者一眼就看到整月,不需點開。DateGrid 是純 primitive,不自包 Popover。"
@@ -141,12 +133,12 @@ export const UsageGuidance: Story = {
             title="判斷法 — 看「頁面是否常駐顯示整月」"
             note="常駐(月曆是主要內容)→ DateGrid;輔助(主要是一個欄位,偶爾改)→ DatePicker。空間有限的表單永遠用 DatePicker,不要塞整個月曆進表單。"
           >
-            <Label>
+            <ExampleCaption>
               常駐月曆 = 使用者「在選日的脈絡中」(排班、活動、分析時段篩選);
               DatePicker = 使用者「順手填一個日」(個資、發票、提醒)
-            </Label>
+            </ExampleCaption>
           </TutorialRule>
-        </TutorialSection>
+        </UsageSection>
       </TutorialPage>
     )
   },
@@ -223,11 +215,11 @@ export const ModeRule: Story = {
             title="❌ 用錯 mode 的常見誤用"
             note="mode 決定值的型別與鍵盤行為。用錯會讓 onSelect 收到不符預期的值型,也會誤導使用者對「可以選多少」的預期。"
           >
-            <Label warn>
+            <ExampleCaption warn>
               ❌ 連續範圍用 multiple(使用者要點滿每一天)<br />
               ❌ 單一到期日用 range(使用者不知道要點第二次做什麼)<br />
               ❌ 不連續多日用 range(中間日期會被強制填入)
-            </Label>
+            </ExampleCaption>
           </TutorialRule>
         </TutorialPage>
       )
@@ -257,7 +249,7 @@ export const VisualTokenRule: Story = {
 
       <TutorialRule
         title="前後月日期 = text-fg-muted(淡化,比 disabled 弱),禁用日 = text-fg-disabled(semantic)"
-        note="前後月的補格讓使用者認得「跨月邊界」但不搶主要月份的閱讀焦點;disabled 日期保留可見(告訴使用者「這天存在但不能選」),套 `bg-disabled` + `text-fg-disabled` + `cursor-not-allowed`,點擊阻擋靠 react-day-picker 給 button 的 native `disabled` 屬性(對齊 Button disabled 設計準則,非 opacity)。"
+        note={<>前後月的補格讓使用者認得「跨月邊界」但不搶主要月份的閱讀焦點;disabled 日期保留可見(告訴使用者「這天存在但不能選」),套 <code>bg-disabled</code> + <code>text-fg-disabled</code> + <code>cursor-not-allowed</code>,點擊阻擋靠 react-day-picker 給 button 的 native <code>disabled</code> 屬性(對齊 Button disabled 設計準則,非 opacity)。</>}
       >
         <Demo title="showOutsideDays + disabled 過去日期">
           <DateGrid
@@ -274,12 +266,12 @@ export const VisualTokenRule: Story = {
         title="❌ 禁止硬寫色值繞過 token"
         note="bg-primary / text-fg-disabled / ring-primary 等全部來自 DS semantic token。dark mode / brand swap 會自動聯動,若改用 bg-blue-500 / text-gray-400 會在 dark mode 顯示錯誤顏色。"
       >
-        <Label warn>
+        <ExampleCaption warn>
           ❌ bg-blue-500(硬色) → ✅ bg-primary(semantic)<br />
           ❌ text-gray-400 → ✅ text-fg-disabled<br />
           ❌ 自寫 box-shadow → ✅ ring-1 ring-primary<br />
           ❌ 直接操作 .rdp-* 原生 class → ✅ 透過 classNames prop 覆寫
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -305,20 +297,20 @@ export const LocaleRule: Story = {
         title="不自訂 i18n layer"
         note="DateGrid 不包 i18n context、不讀 app-level locale 設定。原因:date-fns locale 已是事實標準(Vercel / Stripe / Linear 都用),重新發明會綁架消費端的國際化策略。想全站同步週首日 → app 層統一傳 locale prop。"
       >
-        <Label>
+        <ExampleCaption>
           ✅ 全站統一:app 層 createContext(locale) → 所有 DateGrid 消費端讀 context → 傳 locale prop<br />
           ❌ DateGrid 自包 i18nProvider(劫持 app-level 配置,違反「元件不自包 Provider」原則)
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="週首日不可在元件內硬寫"
         note="若需要強制週一起(德法慣例),從 locale 來,不用 weekStartsOn prop 硬覆蓋(會讓同一 locale 在不同頁不一致)。"
       >
-        <Label warn>
+        <ExampleCaption warn>
           ❌ 元件內寫死 weekStartsOn={'{1}'}(破壞 locale 一致性)<br />
           ✅ 傳 locale={'{de}'} → 週首自動從 locale 決定
-        </Label>
+        </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

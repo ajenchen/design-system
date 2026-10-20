@@ -1,8 +1,6 @@
 // @principles-rationale: Merged WhenToUse + VsHoverCardRule + NotForEssentialInfoRule
 // into a single `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to
 // consolidate decision-related stories. NeedsTooltipRule kept as separate principle.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Save, Share2 } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
@@ -10,7 +8,8 @@ import { Button } from '@/design-system/components/Button/button'
 import { FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Tooltip/設計原則',
@@ -19,11 +18,10 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
-)
 
-const TutorialRule = createTutorialRule({ caption: Label, examplesClassName: 'max-w-md' })
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
+// 範例是一顆觸發按鈕 / 掛著標記的按鈕:範例維持自然寬度(naturalWidth),不逐顆寫 self-start(T15)
+const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true, examplesClassName: 'max-w-md' })
 
 // ── UsageGuidance — 使用指引(何時用 / 何時不用 + 替代 / vs 近親) ──
 
@@ -31,38 +29,36 @@ export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="何時用">
+      <UsageSection kind="when">
         <div className="max-w-prose">
           <p>適合 Tooltip 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-          {/* @layout-space-magic-ok: 連結清單:同質清單項列距(layoutSpace.spec.md:165 同質清單列) */}
-          <ul className="space-y-1">
+          <TutorialList>
             <li>
-              <LinkTo kind="Design System/Components/Tooltip/展示" name="非 Button 元素"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">非 Button 元素</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tooltip/展示" name="非 Button 元素">非 Button 元素</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tooltip/展示" name="基本用法"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">基本用法</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tooltip/展示" name="基本用法">基本用法</StoryLink>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tooltip/展示" name="長文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長文字</span></LinkTo>
+              <StoryLink kind="Design System/Components/Tooltip/展示" name="長文字">長文字</StoryLink>
             </li>
-          </ul>
-          <p className="text-fg-muted mt-[var(--layout-space-tight)]">判斷不確定時:回到「畫面上的資訊是否已足夠」這個核心問題;若提示需要被點擊或停留互動,改用近親元件(見下方「vs 近親」)。</p>
+          </TutorialList>
         </div>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="何時不用 + 替代">
-        <TutorialRule
+      <UsageSection kind="whenNot">
+        <TriggerRule
           title="❌ 不把關鍵資訊只放在 tooltip"
           note="Tooltip 需要 hover 才能看到——觸控裝置(手機 / 平板)根本無法觸發。關鍵資訊(錯誤、必填標示、操作後果)如果只靠 tooltip,觸控使用者會完全看不到"
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button className="self-start" variant="primary" danger>刪除帳號</Button>
+              <Button variant="primary" danger>刪除帳號</Button>
             </TooltipTrigger>
             <TooltipContent>此動作會永久刪除所有資料且無法復原</TooltipContent>
           </Tooltip>
-          <Label warn>↑「永久刪除無法復原」是必要警告 → 必須顯示在畫面上(例如 Dialog 確認時),不能只靠 tooltip hover 才看到</Label>
-        </TutorialRule>
+          <ExampleCaption warn>↑「永久刪除無法復原」是必要警告 → 必須顯示在畫面上(例如 Dialog 確認時),不能只靠 tooltip hover 才看到</ExampleCaption>
+        </TriggerRule>
 
         <TutorialRule
           title="❌ 欄位驗證錯誤不放 tooltip"
@@ -74,7 +70,7 @@ export const UsageGuidance: Story = {
             </TooltipTrigger>
             <TooltipContent>Email 格式不正確</TooltipContent>
           </Tooltip>
-          <Label warn>↑ 錯誤訊息用 tooltip → 使用者需要 hover 才看到;應該直接顯示在 Field 下方</Label>
+          <ExampleCaption warn>↑ 錯誤訊息用 tooltip → 使用者需要 hover 才看到;應該直接顯示在 Field 下方</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -82,26 +78,26 @@ export const UsageGuidance: Story = {
           note="「這個設定是什麼意思」「shortcut key 是什麼」等對主流程非必要的補充可以用 tooltip——看到更好,沒看到也無傷大雅"
         >
           <FieldLabel info="影響 Button / Input / row 的垂直空間">密度設定</FieldLabel>
-          <Label>↑ info icon 的補充說明,錯過不影響使用</Label>
+          <ExampleCaption>↑ info icon 的補充說明,錯過不影響使用</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
 
-      <TutorialSection title="vs 近親 — Tooltip vs HoverCard">
+      <UsageSection kind="siblings">
         <TutorialRule
           title="Tooltip — 純文字、語意為描述、不放互動元素"
           note="適合一句話的提示。語意是純描述（role=tooltip / aria-describedby），不該放可點擊元素。離開 trigger 往浮層移動時，靠 Radix 的 grace 區維持開啟（讓滑鼠可移入），非計時延遲。"
         >
           <FieldLabel info="這個設定會影響所有專案的預設值">預設時區</FieldLabel>{/* 只給資訊的 ⓘ 用 FieldLabel info(平常淡、滑過深一階、一般箭頭),不用 Button:Button 會帶按鈕底色與手形,iconOnly 還會自己再掛一層提示 → 同時浮出兩個 */}
-          <Label>↑ 純文字說明；滑鼠離開觸發器即關閉（移入浮層內容則保持開啟）</Label>
+          <ExampleCaption>↑ 純文字說明；滑鼠離開觸發器即關閉（移入浮層內容則保持開啟）</ExampleCaption>
         </TutorialRule>
 
-        <TutorialRule
+        <TriggerRule
           title="❌ 需要放互動元素(按鈕 / 連結):用 HoverCard"
           note="Tooltip 語意是純描述（role=tooltip）,不該包含可點擊元素——即使 Radix 浮層技術上可 hover,語意上互動內容（人物名片、連結預覽、操作按鈕）屬 HoverCard。需要互動內容必須改用 HoverCard。"
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button className="self-start" variant="tertiary" size="sm">Ada Chen</Button>
+              <Button variant="tertiary" size="sm">Ada Chen</Button>
             </TooltipTrigger>
             <TooltipContent>
               {/* @layout-space-magic-ok: 反例 tooltip 內 名稱 ↔ 連結(反例主題是 tooltip 放互動元素)(layoutSpace.spec.md:166 micro) */}
@@ -111,16 +107,16 @@ export const UsageGuidance: Story = {
               </div>
             </TooltipContent>
           </Tooltip>
-          <Label warn>↑ tooltip 裡放「查看 profile」按鈕 → 語意是純描述（role=tooltip）不該含可點擊元素 → 改用 HoverCard</Label>
-        </TutorialRule>
+          <ExampleCaption warn>↑ tooltip 裡放「查看 profile」按鈕 → 語意是純描述（role=tooltip）不該含可點擊元素 → 改用 HoverCard</ExampleCaption>
+        </TriggerRule>
 
         <TutorialRule
           title="判斷法:「使用者會想移到浮層上做事嗎?」"
           note="需要 → HoverCard(停留行為可互動);不需要,純看一句話 → Tooltip"
         >
-          <Label>完整對照見 HoverCard 的「與 Tooltip 的分界」說明</Label>
+          <ExampleCaption>完整對照見 HoverCard 的「與 Tooltip 的分界」說明</ExampleCaption>
         </TutorialRule>
-      </TutorialSection>
+      </UsageSection>
     </TutorialPage>
   ),
 }
@@ -133,7 +129,7 @@ export const NeedsTooltipRule: Story = {
         title="判斷核心:畫面上的資訊是否已足夠?"
         note="Tooltip 是「補救機制」——當使用者看畫面還不夠理解時才補上。不夠 → 加 tooltip;已足夠 → 不加 tooltip(重複資訊是雜訊)"
       >
-        <Label>公式:畫面已清楚 → 不用 / 畫面不清楚 → 補 tooltip</Label>
+        <ExampleCaption>公式:畫面已清楚 → 不用 / 畫面不清楚 → 補 tooltip</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -145,21 +141,21 @@ export const NeedsTooltipRule: Story = {
           <Button variant="tertiary" size="sm" iconOnly startIcon={Save} aria-label="儲存" />
           <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
         </ButtonGroup>
-        <Label>↑ hover 每顆會跳出 aria-label 對應的 tooltip(自動,不需手動包)</Label>
+        <ExampleCaption>↑ hover 每顆會跳出 aria-label 對應的 tooltip(自動,不需手動包)</ExampleCaption>
       </TutorialRule>
 
-      <TutorialRule
+      <TriggerRule
         title="❌ 已有完整 label 的按鈕加 tooltip 重複文字"
         note="Button 上已有「儲存」文字 label,再加一個 tooltip 寫「儲存」是重複無價值。Tooltip 重複時完全沒有資訊增量"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button className="self-start" variant="primary">儲存</Button>
+            <Button variant="primary">儲存</Button>
           </TooltipTrigger>
           <TooltipContent>儲存</TooltipContent>
         </Tooltip>
-        <Label warn>↑ label 已寫「儲存」,tooltip 又寫「儲存」→ 重複,去掉 tooltip</Label>
-      </TutorialRule>
+        <ExampleCaption warn>↑ label 已寫「儲存」,tooltip 又寫「儲存」→ 重複,去掉 tooltip</ExampleCaption>
+      </TriggerRule>
 
       <TutorialRule
         title="✅ 截斷文字用 tooltip 顯示完整內容(僅當實際被截斷時)"
@@ -175,7 +171,7 @@ export const NeedsTooltipRule: Story = {
           {/* 打開的提示放在截斷框右側(框右邊是空的):放預設的上方會蓋住本規則的標題與說明(待辦總帳 P7b) */}
           <TooltipContent side="right">2026 亞洲市場品牌改版與官網重構</TooltipContent>
         </Tooltip>
-        <Label>↑ 模式示意（此靜態範例恆顯示；實務上應偵測文字真被截斷 `scrollWidth &gt; clientWidth` 時才掛 tooltip）</Label>
+        <ExampleCaption>↑ 模式示意（此靜態範例恆顯示；實務上應偵測文字真被截斷 <code>scrollWidth &gt; clientWidth</code> 時才掛 tooltip）</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

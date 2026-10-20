@@ -120,8 +120,11 @@ const INITIAL_DRAFT: MerchantDraft = {
 }
 const required = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
 
-/** 一頁的版面:標題、說明、欄位、上一步 / 下一步。
- *  - 按鈕順序照 DS 的步驟流程正本 coachmark.spec.md「Footer 按鈕順序」:上一步在左(回頭,tertiary)、往前推進的主要動作在右(primary);
+/** 一頁的版面:標題、說明、欄位、下一步 / 上一步。
+ *  - 按鈕順序與對齊照 patterns/action-bar/action-bar.spec.md:109 / :121:這一列沒有標題 → 靠左;靠左時 primary 在最左,
+ *    依 primary > tertiary 往右排 —— 所以「下一步」(primary)在左、「上一步」(tertiary)在右,與 Steps 展示的步驟頁同一個排法。
+ *    (2026-10-20 XF-01:原本引 coachmark.spec.md「Footer 按鈕順序」把上一步放左 —— 那條是 Coachmark 浮層 footer 的規則,
+ *    footer 靠右、左邊有步數當標題,primary 在最右才對;搬到沒有標題、靠左的表單頁底就正好反了。)
  *    按鈕之間的間距交給 ButtonGroup(元件自己擁有,不在範例寫死)
  *  - 間距照 layoutSpace.spec.md:標題 → 欄位 = 規則 3「form section heading → fields」tight;最後的內容 → 按鈕 = 規則 4「Commitment 前留白」bottom
  *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`);標題與說明之間同 field.stories.tsx「表單驗證」的 h3 + 說明 */
@@ -137,8 +140,8 @@ function OnboardingPage({ title, description, children, onSubmit, onBack, submit
       </div>
       <div className="mt-[var(--layout-space-tight)]">{children}</div>
       <ButtonGroup className="mt-[var(--layout-space-bottom)]">
-        {onBack && <Button type="button" variant="tertiary" onClick={onBack}>上一步</Button>}
         <Button type="submit" variant="primary" loading={submitting}>{submitLabel}</Button>
+        {onBack && <Button type="button" variant="tertiary" onClick={onBack}>上一步</Button>}
       </ButtonGroup>
     </form>
   )
