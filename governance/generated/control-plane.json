@@ -2056,7 +2056,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:adb6c8deb7a2a69f48f83e426a84cc3c64b2e201d56ed5fc922d5cd4deab5810",
+      "hash": "sha256:6974ee5a62f0a8a5368b050bb2a83a362fc23de7ef7a074df6939d7210ebfecb",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2413,7 +2413,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bf13abd67f71d1582c803b9fa91a33c44f377d301640397ed8a1a99e09f0a58c",
+      "hash": "sha256:f4641f90ff1d6efbf899e3a7f677064bce1f249e75453766d66295b5db3c696d",
       "id": "product-seed-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2469,7 +2469,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:42706131dd9a8aa6e91de88006113409f725fb6173240e672a4441744ca2e53a",
+      "hash": "sha256:f239f1481656b05a87c08486c0852a1edb8dcb58700479e1392790defcf6f1ff",
       "id": "product-template-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3256,7 +3256,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8bbeb47c47143e882d01b3b35b499d9982db0e86c59774403002aa5fb7d084bb",
+      "hash": "sha256:b5d34aaeb69dde21f8fea5c390697b017d1de788521eaa22fef81e0cda34922c",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",

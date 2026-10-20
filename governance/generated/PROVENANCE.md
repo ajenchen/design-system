@@ -235,7 +235,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
 | governance-precommit-entrypoint | `.husky/pre-commit` | `sha256:1f30cc0a2adbe919ed785e2fcb0f5c2adbf4d86fdffbde081ea67a3978b579cc` |
-| governance-root-script-registry | `package.json` | `sha256:adb6c8deb7a2a69f48f83e426a84cc3c64b2e201d56ed5fc922d5cd4deab5810` |
+| governance-root-script-registry | `package.json` | `sha256:6974ee5a62f0a8a5368b050bb2a83a362fc23de7ef7a074df6939d7210ebfecb` |
 | governance-runtime-dependency-closure-library | `scripts/lib/runtime-dependency-closure.mjs` | `sha256:7b62005925db6916b43bfb7238e1cec3721848332e641ff0614f75176f621ca6` |
 | governance-runtime-ignore-policy | `infra/governance/runtime/.gitignore` | `sha256:240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d` |
 | governance-trust-registry-corpus | `infra/governance/trust/` | `sha256:7ca35caafa680838f9aac85754f08d5ac6f87192cb84157cbbfe9040e3b5ad0c` |
@@ -274,13 +274,13 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | privileged-trust-root-policy | `infra/governance/privileged-trust-roots.json` | `sha256:24268377676e2fb73f4398a39d074315f874038427fbc64df00b468040011dcc` |
 | privileged-trust-root-schema | `infra/governance/schemas/privileged-trust-roots.schema.json` | `sha256:b5df3c7a3e1c0deafb04bd4d585159d6d8eaf47b661e32c395c507122102bbc1` |
 | product-independent-review-launcher | `packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs` | `sha256:94a6c891efccf389dbc5cf9f6505b8b85bfc759fe500e81589d934fbf16dc9cc` |
-| product-seed-package-contract | `apps/template/package.json` | `sha256:bf13abd67f71d1582c803b9fa91a33c44f377d301640397ed8a1a99e09f0a58c` |
+| product-seed-package-contract | `apps/template/package.json` | `sha256:f4641f90ff1d6efbf899e3a7f677064bce1f249e75453766d66295b5db3c696d` |
 | product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:7f310a4cad9f3741f3da721b021531dbceb7d0a0c3c7d35632b3acc874f6e5b0` |
 | product-template-audit-workflow | `template/ds-product-template/.github/workflows/audit.yml` | `sha256:3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726` |
 | product-template-documentation | `template/ds-product-template/docs` | `sha256:16c2f892a9e5e47aac784a3c5f8970fc7890147d44befe3f6ae0fbed1203721a` |
 | product-template-npm-policy | `template/ds-product-template/.npmrc` | `sha256:79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63` |
 | product-template-onboarding-banner | `template/ds-product-template/.devcontainer/onboard-banner.sh` | `sha256:fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75` |
-| product-template-package-contract | `template/ds-product-template/package.json` | `sha256:42706131dd9a8aa6e91de88006113409f725fb6173240e672a4441744ca2e53a` |
+| product-template-package-contract | `template/ds-product-template/package.json` | `sha256:f239f1481656b05a87c08486c0852a1edb8dcb58700479e1392790defcf6f1ff` |
 | product-template-post-create | `template/ds-product-template/.devcontainer/post-create.mjs` | `sha256:6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b` |
 | product-template-readme | `template/ds-product-template/README.md` | `sha256:f37e8f76616cd438206023d162dff08a98b20194c0680760d556dcae64037004` |
 | protected-root-classification-inventory | `infra/governance/protected-root-classification.json` | `sha256:d1f5bd6b2fdc114c9f58c95c0d5e0228b428eff3cd98f53ac230c322e327d0b8` |
@@ -366,7 +366,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | workflow-identity-manager | `infra/governance/bin/sync-workflow-identities.mjs` | `sha256:8b8ffc42c6d8946981605d66d72295f3ecd702087453f1236a69bcf4c24b7a30` |
 | workflow-identity-proposal-schema | `infra/governance/schemas/workflow-identity-proposal.schema.json` | `sha256:b661ebc3db93c72357f0e73e25b63da827a5e7b1ef6c5163e8cbe12e470c2a84` |
 | workflow-static-validation-helper | `scripts/workflow-static-validation.mjs` | `sha256:8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305` |
-| workspace-lockfile | `package-lock.json` | `sha256:8bbeb47c47143e882d01b3b35b499d9982db0e86c59774403002aa5fb7d084bb` |
+| workspace-lockfile | `package-lock.json` | `sha256:b5d34aaeb69dde21f8fea5c390697b017d1de788521eaa22fef81e0cda34922c` |
 
 ## Provider skill parity
 

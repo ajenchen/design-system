@@ -50,7 +50,7 @@
     "storybook": "8.6.18",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
-    "vite": "6.4.3"
+    "vite": "6.4.4"
   },
   "overrides": {
     "@storybook/addon-actions": {
