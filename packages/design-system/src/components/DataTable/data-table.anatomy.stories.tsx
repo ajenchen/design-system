@@ -13,6 +13,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
 import './column-types'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
 
 const meta: Meta = {
   title: 'Design System/Components/DataTable/設計規格',
@@ -297,12 +298,14 @@ export const Features: Story = {
       col.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, width: 140 } }),
       col.accessor('price', { header: 'Price', meta: { type: 'currency', prefix: '$', width: 120 }, enableSorting: true }),
     ]
-    const virtualData = Array.from({ length: 500 }, (_, i) => ({
-      name: `Product ${String(i + 1).padStart(4, '0')}`,
-      category: CATEGORY_OPTIONS[i % CATEGORY_OPTIONS.length].value,
+    // 500 筆商品:商品目錄的單一住所 = stories-helpers/data/product-catalog.ts(確定性 —— 每次載入、每次截圖都是同一份資料)。
+    // 2026-10-20 N3:原本 `Product 0001…0500` 佔位名稱 + Math.random 價格。類別只取本頁 select 選項有的三類,值對應選項的 value。
+    const virtualData: Product[] = productCatalog(500, { categories: ['Electronics', 'Furniture', 'Food'] }).map((c) => ({
+      name: c.name,
+      category: c.category.toLowerCase(),
       stock: 'in_stock',
-      price: Math.round(Math.random() * 10000),
-      available: i % 3 !== 0,
+      price: c.price,
+      available: c.index % 3 !== 0,
       launchDate: '2026-04-18',
     }))
     return (

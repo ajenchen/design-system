@@ -15,10 +15,10 @@ const exactNpm = {
 }
 const exactOverlay = {
   alias: 'npm-runtime-brace-expansion-patch',
-  spec: 'npm:brace-expansion@5.0.9',
+  spec: 'npm:brace-expansion@5.0.12',
   package: 'brace-expansion',
-  version: '5.0.9',
-  resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
+  version: '5.0.12',
+  resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz',
   integrity: 'sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==',
 }
 const exactSecondaryOverlay = {
@@ -162,10 +162,10 @@ test('candidate dependency install applies and verifies the exact runtime overla
     treeDigest: runtimeOverlay.treeDigest,
     auditClosureDigest: 'b'.repeat(64),
     auditClosure: Object.freeze([
-      Object.freeze({ path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null }),
+      Object.freeze({ path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.12', dependency: null }),
       Object.freeze({ path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: Object.freeze({ name: 'brace-expansion', range: '^5.0.5' }) }),
       Object.freeze({ path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null }),
-      Object.freeze({ path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null }),
+      Object.freeze({ path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.12', dependency: null }),
       Object.freeze({ path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null }),
     ]),
   })
@@ -176,7 +176,7 @@ test('candidate dependency install applies and verifies the exact runtime overla
         name: 'brace-expansion',
         severity: 'high',
         isDirect: false,
-        range: '4.0.0 - 5.0.8',
+        range: '4.0.0 - 5.0.11',
         nodes: ['node_modules/npm/node_modules/brace-expansion'],
         effects: [],
         via: [{
@@ -193,6 +193,27 @@ test('candidate dependency install applies and verifies the exact runtime overla
           url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
           severity: 'high',
           range: '>=4.0.0 <5.0.9',
+        }, {
+          source: 1240103,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+          severity: 'moderate',
+          range: '>=4.0.0 <5.0.12',
+        }, {
+          source: 1240107,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+          severity: 'high',
+          range: '>=4.0.0 <5.0.11',
+        }, {
+          source: 1240111,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+          severity: 'high',
+          range: '>=4.0.0 <5.0.10',
         }],
       },
       npm: {
@@ -634,7 +655,7 @@ test('verified npm high audit verifies the installed overlay and uses the exact 
         name: 'brace-expansion',
         severity: 'high',
         isDirect: false,
-        range: '4.0.0 - 5.0.8',
+        range: '4.0.0 - 5.0.11',
         nodes: ['node_modules/npm/node_modules/brace-expansion'],
         effects: [],
         via: [{
@@ -651,6 +672,27 @@ test('verified npm high audit verifies the installed overlay and uses the exact 
           url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
           severity: 'high',
           range: '>=4.0.0 <5.0.9',
+        }, {
+          source: 1240103,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+          severity: 'moderate',
+          range: '>=4.0.0 <5.0.12',
+        }, {
+          source: 1240107,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+          severity: 'high',
+          range: '>=4.0.0 <5.0.11',
+        }, {
+          source: 1240111,
+          name: 'brace-expansion',
+          dependency: 'brace-expansion',
+          url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+          severity: 'high',
+          range: '>=4.0.0 <5.0.10',
         }],
       },
     },

@@ -1,6 +1,6 @@
 // ── 消費的 SSOT ──
 // - components/Field/field-controls.spec.md(「軸二 就地編輯 host」段:InlineEdit = view↔edit 二態疊在 Field 之上;edit-in-place + editable 閘)
-// - components/Field/field-edit-keys.ts(makeEditSettleKeyHandler = Enter/Esc + 中文 IME guard 結算 SSOT,與 DataTable cell 同源)
+// - components/Field/field-edit-keys.ts(editSettleKeyProps = Enter/Esc + 中文 IME guard 結算 SSOT + Esc 層宣告,與 DataTable cell 同源)
 // - components/Field/field-wrapper.tsx(fieldViewGeometry = view 幾何 class SSOT〔純值/標題路徑〕;fieldDisplayTextClass = view 字級)
 // - components/Input/input.tsx / Textarea/textarea.tsx(預設 renderEdit;不重刻 input chrome)
 // - components/Field/field-context.ts(useFieldContext / useResolvedFieldSize;接 size/orientation/labelId cascade)
@@ -28,7 +28,7 @@ import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
-import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -316,8 +316,9 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 makeEditSettleKeyHandler SSOT。
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
+        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 editSettleKeyProps SSOT(含 Esc 層宣告:
+        // 編輯中是焦點所在控件自己的一層,放在 Dialog / Sheet 裡第一下 Esc 只取消編輯、不關浮層;lib/overlay-escape.ts)。
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
       />
     ) : (
       <Input
@@ -328,7 +329,7 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel })}
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel })}
       />
     )
     const editNode = renderEdit ? renderEdit(editProps) : defaultEditNode

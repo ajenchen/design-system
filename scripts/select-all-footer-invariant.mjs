@@ -27,7 +27,7 @@
  * 量的是勾選框的 `data-state` 與按鈕文字,不是 class 字串(M32)。全 story 掃,不抽樣。
  *
  * **「不限」那列不算選項**(2026-09-18):多選選單可以由消費端打開一列「不限」,它表達的是「不設限」,
- * 不是一個可被全選涵蓋的選項(select-menu.spec.md「「不限」選項」段)。所以「有幾個選項 / 是不是
+ * 不是一個可被全選涵蓋的選項(select-menu-unrestricted.spec.md「「不限」選項」段)。所以「有幾個選項 / 是不是
  * 全選了」一律把它排除掉;判準用它身上的結構記號 `data-unrestricted`,**不是**比對值字串
  *(`unrestrictedValue` 是消費端可改的 prop,拿它當判準等於把判準交給呼叫端)。
  * 不排除的話這支會誤判:按下全選後勾選數 1→5、選項數 6,`已全選` 恆 false,於是判成
@@ -48,7 +48,7 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, ownSurfacePosition, parkPointer, StoryRenderInstrumentError, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -160,6 +160,7 @@ const bad = []
 let scanned = 0
 let footersChecked = 0
 let coveredSkipped = 0 // 被 modal 遮罩蓋住、點不到的觸發點(2026-09-29;不靜默,印進摘要)
+const coveredWhere = [] // 哪幾個(2026-10-01:逐一點名,不只一個數字 —— 數字變了才看得出是哪一格被蓋住)
 let liveFlips = 0
 let unrestrictedSeen = 0
 /** 儀器失效:沒量到的 story(不是產品裁決)。 */
@@ -203,6 +204,9 @@ try {
         const r = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
         if (!r.ok) throw new Error(`${what}之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`)
       }
+      // 導覽不會移動指標:上一則最後停的位置,在這一則上可能正好是會滑過開卡片的東西 —— 先停到中性位置(lib/launch-browser.mjs parkPointer)
+      await parkPointer(page)
+      await settleOr('開 story 後把指標移開')
       const handles = await page.locator('[role="combobox"]:visible').elementHandles()
       for (let i = 0; i < handles.length; i += 1) {
         const state = await handles[i].evaluate((el) => {
@@ -215,10 +219,17 @@ try {
         // click 會等到逾時 → 整支 story 被記成儀器失效。先用 Playwright 自己的可操作性檢查(trial:捲進視窗、可見、穩定、
         // 點擊點命中自己)試一次,過不了 = 被蓋住,略過並計數(不靜默)。第一版自己算 elementFromPoint 沒先捲進視窗,
         // 把 35 個在視窗外的觸發點誤判成被蓋住(本機重跑抓到),改用與真正點擊同一份判準。
-        const covered = await handles[i].click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
-        if (covered) { coveredSkipped += 1; continue }
-        await handles[i].click({ timeout: 10_000 })
+        // 2026-10-01:點「觸發欄位自己的表面」、開關之後把指標停到中性位置(lib/launch-browser.mjs ownSurfacePosition / parkPointer)。
+        // 原本點正中央、點完指標停在原地:正中央落在 Tag 頭像 / 「+N」上時開的是名片卡 / 名單卡,卡片蓋住下一個觸發點 →
+        // PeoplePicker「多人 × 欄位內搜尋」第 4 格點不到(這支 9 次紅 4 次)、「+N 浮出清單移除驗證」第 2 格被默默算成被蓋住。
+        // 找不到自己的表面(被 modal 遮罩蓋住,或整格被 Tag / 頭像佔滿)照「被蓋住」計數、印出,不退回點正中央。
+        const at = await ownSurfacePosition(handles[i])
+        const covered = !at.ok || await handles[i].click({ trial: true, timeout: 2_000, position: at.position }).then(() => false, () => true)
+        if (covered) { coveredSkipped += 1; coveredWhere.push(`${s.id} 第 ${i + 1} 個觸發點${at.ok ? '' : `(${at.why})`}`); continue }
+        await handles[i].click({ timeout: 10_000, position: at.position })
         await settleOr(`點開第 ${i + 1} 個下拉`) // 量左緣,不能量到縮放進場的中間值
+        await parkPointer(page)
+        await settleOr(`點開第 ${i + 1} 個下拉後把指標移開`)
         // 對照組要在**量之前**就把東西弄壞(幾何那條量的是 before),不然推了也量不到
         // 對照組:注入後等 40ms 讓樣式 / 屬性生效(量測本身的 getBoundingClientRect 也會強制同步排版,這步只是保險)
         if (SELFTEST) { await page.evaluate(FREEZE_LABEL); await page.evaluate(SHIFT_FOOTER); await page.waitForTimeout(40) }
@@ -256,6 +267,8 @@ try {
         }
         await page.keyboard.press('Escape')
         await settleOr(`關閉第 ${i + 1} 個下拉`) // 等關閉動畫跑完,不擋下一個觸發點
+        await parkPointer(page)
+        await settleOr(`關閉第 ${i + 1} 個下拉後把指標移開`)
       }
     } catch (error) {
       // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)
@@ -285,6 +298,7 @@ try {
 
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`開到帶全選 footer 的面板:${footersChecked} 次;被遮罩蓋住而略過的觸發點:${coveredSkipped} 個`)
+for (const c of coveredWhere) console.log(`  · 被蓋住:${c}`)
 console.log(`按下去真的把全選狀態翻面:${liveFlips} 次`)
 console.log(`開到帶「不限」列的面板(那列已排除在分母外):${unrestrictedSeen} 次`)
 console.log(`標籤 / 狀態 / a11y 不符:${bad.length} 筆`)

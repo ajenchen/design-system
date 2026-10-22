@@ -44,6 +44,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
+import { AgentPanelDockContext, type AgentPanelDockLink } from './agent-panel-dock-context'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -597,13 +600,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const stage: Stage = { w: size.w, h: size.h, inset }
     const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
     const [menuOpen, setMenuOpen] = React.useState(false)
-    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):只有按 Esc 或選了項目才回入口鈕;
+    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):按 Esc、選了項目 → 回入口鈕;
     // 點外面 → 留在點的地方、Tab → 由 DropdownMenu 帶到下一站。舊版無條件搶回入口鈕(R8 實測點外面也搶)。
-    const returnFocusOnCloseRef = React.useRef(false)
-    const openMenu = () => {
-      returnFocusOnCloseRef.current = false
-      setMenuOpen(true)
-    }
+    // 判斷住 lib/overlay-focus-return.ts(沒有觸發點 + 非 modal;2026-09-30 前這裡用一個 ref 記「是不是 Esc / 選了項目」)
+    const openMenu = () => setMenuOpen(true)
     // 真正的開啟者是入口鈕(選單錨點是蓋在鈕上、aria-hidden 的透明 span):鈕以 aria-controls 宣告它開的是這個選單,
     // DropdownMenu 據此從鈕算 Tab 的下一站(dropdown-menu.tsx menuOpener)。
     const menuId = React.useId()
@@ -717,21 +717,14 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             <DropdownMenuContent
               id={menuId}
               align="end"
-              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」)
-              onEscapeKeyDown={() => {
-                returnFocusOnCloseRef.current = true
-              }}
-              onCloseAutoFocus={(e) => {
-                // 一律擋掉 Radix 還給透明錨點(聚焦不了 → 焦點會掉到 body);只有 Esc / 選了項目才回入口鈕(B11)
-                e.preventDefault()
-                if (returnFocusOnCloseRef.current) buttonRef.current?.focus()
-                returnFocusOnCloseRef.current = false
-              }}
+              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」);
+              // Radix 的觸發點是透明錨點(聚焦不了 → 焦點會掉到 body),所以開啟者 = 入口鈕、由這裡還(按在外面收起不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, buttonRef.current, { noTrigger: true })}
             >
               {placement.kind === 'home' ? (
-                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement({ kind: 'dock', y: dockMaxY(stage) }) }}>{text.dock}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
               ) : (
-                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement(AGENT_FAB_HOME) }}>{text.home}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -908,7 +901,30 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
       },
       [placementProp, onPlacementChange],
     )
-    const close = React.useCallback(() => setOpen(false), [setOpen])
+    // 使用者用**鍵盤**關閉(浮層時 Esc、焦點在 × 上按 Enter / 空白鍵)→ 入口鈕重掛後把焦點交給它(agent-panel.spec.md「Esc 與關閉語意」
+    // 焦點段:入口鈕在面板開著時卸載、關閉時重掛,要還給新掛上的那一顆;WCAG 2.4.3 管的是鍵盤順序)。
+    // 指標關閉(點 ×、點遮罩)不搬:搬過去會讓入口鈕的提示在點完之後自己彈出來(Radix Tooltip 被程式聚焦就開),
+    // 指標使用者不需要焦點接力(機械閘 scripts/overlay-detached-anchor-invariant.mjs A)。
+    // 版面造成的關閉(AppShell §4 連帶關閉)走 `link.setOpen`,不搬焦點 —— 那由 AppShell 的後備處理(焦點回 Main,K7)。
+    const focusFabAfterCloseRef = React.useRef(false)
+    const fabShellRef = React.useRef<HTMLDivElement | null>(null)
+    const panelWrapRef = React.useRef<HTMLDivElement | null>(null)
+    const close = React.useCallback(() => {
+      // 「這次是不是鍵盤關的」讀最近一次使用者輸入。浮層時的 Esc 由 `useEscapeRegion`(window 捕獲)當場呼叫這裡,
+      // 那一下 Esc 必須已經被記下來 —— 記錄的監聽掛在 window 捕獲、模組載入即掛,結構上先於它(hooks/use-input-modality.ts 檔頭;
+      // 2026-10-14 前掛在 document,讀到的是上一次輸入:滑鼠點進面板再按 Esc,焦點掉到 body)
+      focusFabAfterCloseRef.current = getLastUserInput().kind === 'keyboard'
+      setOpen(false)
+    }, [setOpen])
+    React.useEffect(() => {
+      if (open || !focusFabAfterCloseRef.current) return
+      focusFabAfterCloseRef.current = false
+      const active = document.activeElement
+      // 焦點已被別的東西接走(不在 body、也不在剛藏起來的面板裡 —— display:none 之後瀏覽器要到下一次畫面更新才把焦點移走)→ 不搶
+      if (active && active !== document.body && !panelWrapRef.current?.contains(active)) return
+      fabShellRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    }, [open])
+    const link = React.useMemo<AgentPanelDockLink>(() => ({ open, setOpen }), [open, setOpen])
     // v14 條 F 的最後半句「**以及原分頁離開宿主後返回**,均重新初始化為關閉的新對話」(2026-09-29,待辦總帳 OE2):
     // 從網址列離開宿主再按上一頁回來,瀏覽器可能直接從 back/forward cache 還原整個舊畫面 —— JS 堆疊原封不動、
     // 元件不會重新掛載,`defaultOpen = false` 那條路不會再走一次,面板就帶著離開前的狀態繼續開著。
@@ -941,12 +957,18 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
     // 用 wrapper 而不是把 `hidden` 交給 render prop:交出去就會有人忘記套。
     return (
       <>
-        <div style={{ display: open ? 'contents' : 'none' }}>
-          {children({ close, logoState })}
+        <div ref={panelWrapRef} style={{ display: open ? 'contents' : 'none' }}>
+          <AgentPanelDockContext.Provider value={link}>
+            {children({ close, logoState })}
+          </AgentPanelDockContext.Provider>
         </div>
         {!open && (
           <AgentFabDock
-            ref={ref}
+            ref={(node) => {
+              fabShellRef.current = node
+              if (typeof ref === 'function') ref(node)
+              else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+            }}
             logoState={logoState}
             placement={placement}
             onPlacementChange={handlePlacementChange}

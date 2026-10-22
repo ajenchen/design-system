@@ -29,16 +29,18 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
  *
  * ── 單 vs 多步驟 canonical(世界級行為規則) ──
  *   1. **Single step**(無 `onPrev` 且 `isLastStep`):CTA 文字 = `doneLabel ?? '知道了'`
- *      (Apple HIG / Intercom 慣例;不用 "Next" 因為沒有下一步)
- *   2. **Multi step 第一步**(無 `onPrev`,有 `onNext`):CTA = "Next",Skip 顯示
- *   3. **Multi step 中間 / 最後步**(有 `onPrev`):**Skip 不顯示**(使用者已投入進度,
- *      再給 Skip 會讓「放棄」入口與「回上一步」衝突 — Linear / Pendo / Shepherd.js
- *      同樣規則)。CTA = `isLastStep ? 'Done' : 'Next'`
+ *      (Apple HIG / Intercom 慣例;不用「下一步」因為沒有下一步)
+ *   2. **Multi step 第一步**(無 `onPrev`,有 `onNext`):CTA =「下一步」,「略過」顯示
+ *   3. **Multi step 中間 / 最後步**(有 `onPrev`):**「略過」不顯示**(使用者已投入進度,
+ *      再給略過會讓「放棄」入口與「回上一步」衝突 — Linear / Pendo / Shepherd.js
+ *      同樣規則)。CTA = `isLastStep ? '完成' : '下一步'`
+ *   (預設文案照 DS 的語言 SSOT = 中文(lib/i18n/README.md「Fallback chain」3);consumer 經 `labels` 覆寫 —— 同 FileViewer `labels` 先例。
+ *    2026-10-20 前是寫死的英文 Previous / Skip / Next / Done / `N of M`,連覆寫的 prop 都沒有(獨立驗證 OV-10)。)
  *   4. **抑制 CTA 自動 focus,焦點落在 content 容器** — `onOpenAutoFocus` preventDefault
  *      後 focus content 容器本身(非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;
  *      按 Tab 才移到 content 內按鈕:**單步無 header** 時第一個 tabbable 即推進 CTA;**有 header
  *      (kind / headerTitle 會渲 PopoverHeader 右上 Close X)或多步** 時 DOM 順序上 Close X /
- *      Previous / Skip 在推進 CTA 之前,需多按幾下 Tab。焦點不可停在 trigger:non-modal Popover 下
+ *      上一步 / 略過 在推進 CTA 之前,需多按幾下 Tab。焦點不可停在 trigger:non-modal Popover 下
  *      焦點在 DismissableLayer 外按 Tab 會觸發 focus-outside dismiss 誤關閉
  *      (2026-07-05 D4;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback,見 spec「A11y 預設」)。
  *
@@ -50,6 +52,30 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
 interface CoachmarkStep {
   current: number
   total: number
+}
+
+/** Footer 文案(全部可覆寫;Partial 傳入、與 DS 預設合併 —— 同 FileViewer `labels`)。單步驟完成鍵另由 `doneLabel` 決定(既有 prop)。 */
+export interface CoachmarkLabels {
+  /** 回上一步(多步驟第 2 步起) */
+  previous: string
+  /** 略過整段導覽(多步驟第一步) */
+  skip: string
+  /** 推進到下一步 */
+  next: string
+  /** 多步驟最後一步的完成鍵 */
+  finish: string
+  /** 步驟計數(footer 左側) */
+  step: (current: number, total: number) => string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫。
+// 步驟計數沿用 Steps 的同一句話(steps.tsx 讀屏文字「第 N 步,共 M 步」),全 DS 一種說法。
+const DEFAULT_LABELS: CoachmarkLabels = {
+  previous: '上一步',
+  skip: '略過',
+  next: '下一步',
+  finish: '完成',
+  step: (current, total) => `第 ${current} 步,共 ${total} 步`,
 }
 
 export interface CoachmarkProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children' | 'title'> {
@@ -85,23 +111,25 @@ export interface CoachmarkProps extends Omit<React.HTMLAttributes<HTMLDivElement
   title?: React.ReactNode
   /** 說明文字(normal weight,多行 OK) */
   description?: React.ReactNode
-  /** 步驟計數(2 of 3);若需多步導覽 consumer 自行管理 current */
+  /** 步驟計數(預設顯示「第 2 步,共 3 步」);若需多步導覽 consumer 自行管理 current */
   step?: CoachmarkStep
-  /** Skip 按鈕 callback;不傳則不顯示 Skip。多步驟中間 / 最後步自動隱藏(有 onPrev 時) */
+  /** 略過鍵 callback;不傳則不顯示略過鍵。多步驟中間 / 最後步自動隱藏(有 onPrev 時) */
   onSkip?: () => void
-  /** Next 按鈕 callback;不傳則不顯示 Next */
+  /** 推進鍵(下一步 / 完成)callback;不傳則不顯示 */
   onNext?: () => void
-  /** Previous 按鈕 callback(多步 tour 第 2+ 步顯示);不傳則不顯示 */
+  /** 上一步 callback(多步 tour 第 2+ 步顯示);不傳則不顯示 */
   onPrev?: () => void
   /**
    * 最後一步 flag。影響 primary CTA 文字:
    * - single step(無 onPrev 且 isLastStep):CTA = `doneLabel ?? '知道了'`
-   * - multi-step 最後步(有 onPrev 且 isLastStep):CTA = 'Done'
-   * - 其他:CTA = 'Next'
+   * - multi-step 最後步(有 onPrev 且 isLastStep):CTA = `labels.finish`(預設「完成」)
+   * - 其他:CTA = `labels.next`(預設「下一步」)
    */
   isLastStep?: boolean
   /** 自訂單步驟完成 CTA 文字(預設 `'知道了'`)。僅 single-step 使用 */
   doneLabel?: string
+  /** Footer 文案覆寫(上一步 / 略過 / 下一步 / 完成 / 步驟計數);Partial,與 DS 預設合併 */
+  labels?: Partial<CoachmarkLabels>
   /** 浮層定位(對齊 Popover props) */
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
@@ -135,6 +163,7 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
       onPrev,
       isLastStep = false,
       doneLabel = '知道了', // i18n-allow: DS default; consumer override via doneLabel prop
+      labels: labelsOverride,
       side = 'bottom',
       align = 'center',
       sideOffset = OVERLAY_SIDE_OFFSET,
@@ -145,13 +174,14 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
   ) => {
     // 單/多步驟行為推導
     const isSingleStep = isLastStep && !onPrev
-    // canonical(spec.md CTA 語義表 L116):有 onPrev → 不顯示 Skip;**單步驟也不顯示 Skip**
+    // canonical(spec.md「CTA 語義表」):有 onPrev → 不顯示略過鍵;**單步驟也不顯示略過鍵**
     // (單步「skip」與「知道了」語義重複 = 同一個關閉動作,雙關閉鍵造成困惑;對齊 Apple HIG / Intercom / Pendo 單步 tip 僅一個完成鍵)
     const showSkip = Boolean(onSkip) && !onPrev && !isSingleStep
-    const nextLabel = isSingleStep ? doneLabel : isLastStep ? 'Done' : 'Next'
+    const labels = { ...DEFAULT_LABELS, ...labelsOverride }
+    const nextLabel = isSingleStep ? doneLabel : isLastStep ? labels.finish : labels.next
 
     const hasFooterContent = Boolean(step || showSkip || onNext || onPrev)
-    const stepText = step ? `${step.current} of ${step.total}` : null
+    const stepText = step ? labels.step(step.current, step.total) : null
 
     // Header title 解析
     const headerTitle =
@@ -175,7 +205,7 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
           align={align}
           sideOffset={sideOffset}
           className={cn('w-80 p-0 overflow-hidden', className)}
-          // 禁止 Radix 開啟時自動 focus 第一個 focusable(預設會 focus Prev / Skip / Next),
+          // 禁止 Radix 開啟時自動 focus 第一個 focusable(預設會 focus 上一步 / 略過 / 下一步),
           // Coachmark 的 CTA 不該被 auto-focus 偷觸發(user 可能還在讀 body,按 Enter 就推進)。
           // 2026-07-05 D4:preventDefault 後必 focus content 容器本身(FocusScope 容器自帶 tabIndex=-1)——
           // 焦點若停在 trigger(DismissableLayer 外),non-modal Popover 按 Tab 即觸發 focus-outside
@@ -192,7 +222,7 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
           {headerTitle && (
             // Header title 走 `<PopoverTitle>` 共用 Popover typography canonical(text-body font-medium)。
             // **不 hideClose** — 對齊 Popover / Dialog / 所有 overlay 家族 canonical:header 必有 dismiss X
-            // (user 可隨時關閉,跟 Skip / Done 是不同入口,canonical 重複不冗)
+            // (user 可隨時關閉,跟略過 / 完成是不同入口,canonical 重複不冗)
             <PopoverHeader>
               <PopoverTitle>{headerTitle}</PopoverTitle>
             </PopoverHeader>
@@ -236,12 +266,12 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
               <div className="flex items-center gap-2">
                 {onPrev && (
                   <Button variant="tertiary" size="sm" onClick={onPrev}>
-                    Previous
+                    {labels.previous}
                   </Button>
                 )}
                 {showSkip && (
                   <Button variant="tertiary" size="sm" onClick={onSkip}>
-                    Skip
+                    {labels.skip}
                   </Button>
                 )}
                 {onNext && (

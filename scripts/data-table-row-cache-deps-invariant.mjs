@@ -56,6 +56,7 @@ const ALLOW_HEADER = {
   liveColumnResizeRef: 'useRef;只在事件當下讀寫',
   prevColumnSizingRef: 'useRef;只在事件當下讀寫',
   tableRef: 'useRef;只在事件當下讀 .current',
+  headerIdBase: 'React.useId() 回傳值,元件生命週期內恆定(欄頭 id / 欄寬把手 aria-controls 的前綴)',
   table: ALLOW_ROW.table,
 }
 const TARGETS = [

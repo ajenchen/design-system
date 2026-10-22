@@ -44,6 +44,7 @@
 // 四個 DndContext 先前全部唸英文。
 
 import * as React from 'react'
+import { claimEscape, escapeLayerProps, type EscapeLayerProps } from '@/design-system/lib/overlay-escape'
 
 /** 拖曳結果。`null` = 沒有真的重排(被守衛擋下 / 使用者放在原位)。 */
 export interface DragOutcome {
@@ -130,12 +131,25 @@ type DragAnnouncements = ReturnType<typeof createDragAnnouncements>
  * **回傳空字串**:dnd-kit 只在回傳值非 null 時寫進它自己的 assertive 區域,空字串寫進去也沒有東西可唸。
  * `liveRegion` 必須渲染在 DOM 裡(放在 DndContext 內外都可以);沒渲染 = 螢幕閱讀器整趟拖曳無聲,
  * 靜態閘 `scripts/drag-announcement-invariant.mjs` 會抓。
+ *
+ * **拖曳中的 `Esc` 只取消拖曳**(2026-10-01;規則 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」
+ * 表的「拖曳中」列,`drag-canonical.md` invariant 8):dnd-kit 的 KeyboardSensor 把 `Esc` 當取消鍵(`@dnd-kit/core` 6.3.1 `defaultKeyboardCodes.cancel`)、
+ * PointerSensor 在 document 上聽 `Esc` 取消指標拖曳 —— 它們**都不看 `defaultPrevented`**,所以拖曳一定會被取消;問題是同一下還會被外層的
+ * Popover / Dialog 關掉(排序面板 / 欄位面板裡鍵盤搬條件時按 `Esc`,2026-10-01 實測一下少兩層),DataTable 自己的 `Esc`(清格游標)也會跟著動。
+ * 把 `escapeLayer` spread 到裝著可拖項目的容器(排序面板的清單、欄位面板的清單、DataTable 表格根、TreeView 根):
+ *   - 拖曳中(onDragStart → onDragEnd / onDragCancel 之間)它掛上 `data-escape-layer`,浮層守門(`lib/overlay-escape.ts`)看到就把這一下留住、不關;
+ *   - 同時在捕獲階段把這一下標成**獨占**(`claimEscape`):容器自己的 `Esc` handler 與其他控件的 `isEscapeForControl` 都讀到 false,只有 dnd-kit 取消拖曳。
  */
 export function useDragAccessibility(args: DragAnnouncementArgs): {
   accessibility: { announcements: DragAnnouncements; screenReaderInstructions: typeof DRAG_SCREEN_READER_INSTRUCTIONS }
   liveRegion: React.ReactElement
+  /** 拖曳中才有東西:spread 到裝著可拖項目的容器(見上方「拖曳中的 `Esc` 只取消拖曳」)。 */
+  escapeLayer: EscapeLayerProps & { onKeyDownCapture?: (event: React.KeyboardEvent) => void }
+  /** 此刻是否有一趟拖曳在進行(onDragStart 之後、onDragEnd / onDragCancel 之前)。 */
+  dragging: boolean
 } {
   const [text, setText] = React.useState('')
+  const [dragging, setDragging] = React.useState(false)
   // 呼叫端幾乎都傳 inline 箭頭函式;拿它們當 memo 依賴會每次 render 重建 announcements、DndContext 也跟著拿到新物件。
   // 所以 announcements 只建一份,讀取時再經 ref 取最新的 getOutcome / kind。
   const argsRef = React.useRef(args)
@@ -148,11 +162,12 @@ export function useDragAccessibility(args: DragAnnouncementArgs): {
     // 同一句連續兩次(例:拖曳中一直停在同一個落點)不重寫 —— 文字沒變,polite 區域本來就不會再唸;
     // 換成別句再回來則會唸(狀態真的變了)。
     const speak = (s: string) => { setText(s); return '' }
+    // 播報的四個鈎子就是 dnd-kit 每趟拖曳的生命週期(鍵盤與指標都走):順手記下「拖曳中」,不另掛一份 onDragStart / onDragEnd
     const announcements: DragAnnouncements = {
-      onDragStart: (e) => speak(inner.onDragStart(e)),
+      onDragStart: (e) => { setDragging(true); return speak(inner.onDragStart(e)) },
       onDragOver: (e) => speak(inner.onDragOver(e)),
-      onDragEnd: () => speak(inner.onDragEnd()),
-      onDragCancel: (e) => speak(inner.onDragCancel(e)),
+      onDragEnd: () => { setDragging(false); return speak(inner.onDragEnd()) },
+      onDragCancel: (e) => { setDragging(false); return speak(inner.onDragCancel(e)) },
     }
     return { announcements, screenReaderInstructions: DRAG_SCREEN_READER_INSTRUCTIONS }
   }, [])
@@ -161,5 +176,11 @@ export function useDragAccessibility(args: DragAnnouncementArgs): {
     { role: 'status', 'aria-live': 'polite', 'aria-atomic': true, className: 'sr-only', 'data-drag-live-region': '' },
     text,
   )
-  return { accessibility, liveRegion }
+  const escapeLayer = React.useMemo(
+    () => (dragging
+      ? { ...escapeLayerProps(true), onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === 'Escape') claimEscape(event) } }
+      : {}),
+    [dragging],
+  )
+  return { accessibility, liveRegion, escapeLayer, dragging }
 }

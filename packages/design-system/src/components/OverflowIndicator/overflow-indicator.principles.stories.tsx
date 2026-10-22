@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import LinkTo from '@storybook/addon-links/react'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/OverflowIndicator/設計原則',
@@ -8,6 +8,9 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
+
+// 規則的內容是一段文字(不是範例區),不給 caption
+const TutorialRule = createTutorialRule()
 
 // ── WhenToUse — 何時使用 OverflowIndicator ──────────────────────
 
@@ -18,59 +21,63 @@ type Story = StoryObj
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 OverflowIndicator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="Combobox 標籤溢出"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Combobox 標籤溢出</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">PR reviewer 頭像疊合 +N(只顯前 3 位)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 人員欄位</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
-    </div>
+    <TutorialPage className="max-w-prose">
+      <UsageSection kind="when">
+        <p>一列放不下全部項目時,顯示前幾個、其餘折成 <code>+N</code>,滑過展開完整清單。它是內部元件,一般由 Combobox、PeoplePicker 這類元件內建使用。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="Combobox 標籤溢出">Combobox 標籤溢出</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N">PR reviewer 頭像疊合 +N(只顯前 3 位)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位">DataTable 人員欄位</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* vs 近親 — VsScrollAreaRule — 原 VsScrollAreaRule */}
-      <div className="prose prose-sm max-w-prose">
-      <p>處理超出空間的 2 種策略:</p>
-      <ul>
-        <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,hover 展開看完整清單</li>
-        <li><strong>ScrollArea</strong>—項目數量未知或極多時,讓使用者捲動瀏覽全部</li>
-      </ul>
-      <p className="text-fg-muted">判斷:項目少量、已知、適合一次預覽 → OverflowIndicator;數量大、未知或需連續瀏覽 → ScrollArea。</p>
-    </div>
-    </div>
+      <UsageSection kind="whenNot">
+        <TutorialList>
+          <li>分頁籤 / 一整列 chip 放不下 → 用「更多」選單按鈕(點開選單),不是 +N 滑過展開</li>
+          <li>項目數量未知或非常多、需要連續瀏覽 → ScrollArea</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>OverflowIndicator</strong> —— 項目數量已知且不多:顯示前幾個,其餘折成 <code>+N</code>,滑過看完整清單</li>
+          <li><strong>ScrollArea</strong> —— 數量未知或極多:讓使用者捲動瀏覽全部</li>
+        </TutorialList>
+        <p>判斷:少量、已知、適合一次預覽 → OverflowIndicator;數量大、未知或需要連續瀏覽 → ScrollArea。</p>
+      </UsageSection>
+    </TutorialPage>
   ),
 }
-
-// ── CompositionRules — OverflowIndicator 三個 consumer pattern ──────
 
 export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
-    <div className="flex flex-col gap-12">
-      <div className="prose prose-sm max-w-prose">
-        <p>OverflowIndicator 是顯示「還有 N 個沒列出來」的 `+N` 小標籤,由下列幾種元件在內部使用(顯示前幾項 + 把剩下的折成 `+N`),不直接放在頁面程式碼裡:</p>
+    // 規則之間 / 規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本的 <h4> 沒有任何樣式 —— 靠沒有安裝的 prose 外掛)
+    <TutorialPage className="max-w-prose">
+      <p>OverflowIndicator 是顯示「還有 N 個沒列出來」的 <code>+N</code> 小標籤,由下列幾種元件在內部使用(顯示前幾項 + 把剩下的折成 <code>+N</code>),不直接放在頁面程式碼裡:</p>
 
-        <h4>Pattern 1 — Combobox 標籤溢出(單行模式)</h4>
-        <p>多選標籤太多、單行放不下 → <LinkTo kind="Design System/Components/Combobox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Combobox</span></LinkTo> 內部使用 OverflowIndicator;hover `+N` 展開完整清單。對齊 GitHub 多標籤 / Linear 多指派人的做法。</p>
+      <TutorialRule title="Pattern 1 — Combobox 標籤溢出(單行模式)">
+        <p>多選標籤太多、單行放不下 → <StoryLink kind="Design System/Components/Combobox/展示" name="四模式">Combobox</StoryLink> 內部使用 OverflowIndicator;hover <code>+N</code> 展開完整清單。對齊 GitHub 多標籤 / Linear 多指派人的做法。</p>
+      </TutorialRule>
 
-        <h4>Pattern 2 — 人員頭像疊合 +N</h4>
-        <p>一群人只顯示前幾位、其餘折成 `+M`。目前由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像);未來規劃中的 Avatar 群組元件會把這段組合收進去。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
+      <TutorialRule title="Pattern 2 — 人員頭像疊合 +N">
+        <p>一群人只顯示前幾位、其餘折成 <code>+M</code>。目前由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像);未來規劃中的 Avatar 群組元件會把這段組合收進去。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
+      </TutorialRule>
 
-        <h4>Pattern 3 — PeoplePicker 人員選擇欄位 +N</h4>
-        <p>人員選擇欄位選了多位、單行放不下 → PeoplePicker(<code>PersonDisplay</code>)內部使用 OverflowIndicator(圓形對齊頭像),hover `+N` 展開完整名單。對齊 Linear 多指派人 / Jira watchers 的做法。</p>
+      <TutorialRule title="Pattern 3 — PeoplePicker 人員選擇欄位 +N">
+        <p>人員選擇欄位選了多位、單行放不下 → PeoplePicker(<code>PersonDisplay</code>)內部使用 OverflowIndicator(圓形對齊頭像),hover <code>+N</code> 展開完整名單。對齊 Linear 多指派人 / Jira watchers 的做法。</p>
+      </TutorialRule>
 
-        <p className="text-fg-muted">水平容器(Tabs / 單行 chip 列)寬度不夠時<strong className="font-medium">不用本元件</strong>——DS canonical 是 <code>horizontal-overflow</code> 的 <code>OverflowMenuTriggerButton</code> + DropdownMenu(click 開選單,見 horizontal-overflow.spec.md);Breadcrumb 中段收合走 BreadcrumbEllipsis + DropdownMenu(見 breadcrumb.spec.md)。兩者皆 click 開選單,與本元件 hover 展開語義不同。</p>
-
-        <p className="text-fg-muted">禁止:在頁面程式碼裡自己手刻 `+N` <code>&lt;span&gt;</code>(會失去 hover 展開浮層與一致的形狀樣式)— 一律使用 OverflowIndicator。</p>
+      <div>
+        <p className="text-fg-muted">水平容器(Tabs / 單行 chip 列)寬度不夠時<strong className="font-medium">不用本元件</strong>——DS canonical 是 <code>horizontal-overflow</code> 的 <code>OverflowMenuTriggerButton</code> + DropdownMenu(click 開選單);Breadcrumb 中段收合走 BreadcrumbEllipsis + DropdownMenu。兩者皆 click 開選單,與本元件 hover 展開語義不同。</p>
+        <p className="text-fg-muted">禁止:在頁面程式碼裡自己手刻 <code>+N</code> <code>&lt;span&gt;</code>(會失去 hover 展開浮層與一致的形狀樣式)— 一律使用 OverflowIndicator。</p>
       </div>
-    </div>
+    </TutorialPage>
   ),
 }

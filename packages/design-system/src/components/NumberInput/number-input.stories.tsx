@@ -27,21 +27,21 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState<number | null>(2490)
     return (
-      <div className="flex flex-col gap-6 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
           <NumberInput value={value} onChange={setValue} prefix="$" aria-label="價格(edit mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
           <NumberInput mode="view" value={value} prefix="$" aria-label="價格(view 模式示範)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
           <NumberInput mode="readonly" value={value} prefix="$" aria-label="價格(readonly mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
           <NumberInput mode="disabled" value={value} prefix="$" aria-label="價格(disabled mode demo)" />
         </div>
       </div>
@@ -74,9 +74,9 @@ export const SizeAlignment: Story = {
     const [lg, setLg] = React.useState<number | null>(2490)
     const states: Record<string, [number | null, (v: number | null) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
+          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
             <NumberInput
               size={size}
               value={states[size][0]}
@@ -98,21 +98,21 @@ export const SizeAlignment: Story = {
 export const FormatOptions: Story = {
   name: '格式化選項',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <p className="text-caption text-fg-muted mb-1">prefix="$"</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">prefix="$"</p>
         <NumberInput mode="readonly" value={2490} prefix="$" aria-label="美元價格" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">suffix="%" precision={1}</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">suffix="%" precision={1}</p>
         <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} aria-label="百分比" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">prefix="NT$" precision={0}</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">prefix="NT$" precision={0}</p>
         <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} aria-label="新台幣價格" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">null value</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">null value</p>
         <NumberInput mode="readonly" value={null} prefix="$" aria-label="空白美元價格" />
       </div>
     </div>
@@ -157,7 +157,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           不需要手寫 cell renderer——meta.type + 格式化參數自動套用 Display 元件
         </p>
         <DataTable columns={columns} data={data} height="auto" />

@@ -311,7 +311,7 @@ const InspectorInner = () => {
               <TkVal token="--elevation-200" />
             </PropRow>
             <PropRow label="z-index">
-              <TkVal token="z-50" value="50" />
+              <TkVal token="z-[70]" value="70" />
             </PropRow>
             <PropRow label="theme">
               <span>data-theme="dark" (inner wrapper)</span>

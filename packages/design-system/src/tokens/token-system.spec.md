@@ -33,7 +33,7 @@
 | **L1 Primitive** | 原始 raw value(無 mode 知識 / 無 component 知識) | `--color-blue-6` / `--color-neutral-9-opaque` / `--black-a45` / `--elevation-100` | `color/primitives.css` | **Internal**——只供 semantic 層 alias,或 Tag/Avatar 等「按色分類」元件直接消費(per `color.spec.md` 流派定位) |
 | **L2 Semantic** | 表達**意圖** / 封裝 mode swap | `--primary` / `--error` / `--canvas` / `--surface` / `--foreground` / `--fg-disabled` / `--bg-disabled` | `color/semantic.css` | **Public**——consumer 直接 `bg-primary` / `text-foreground` |
 | **L3 Family**(cross-component 共用尺寸) | family-scoped semantic value | `--field-height-md` / `--table-row-md` / `--tab-height-md` / `--tree-indent-md` | `uiSize/uiSize.css` | **Internal**——DS 內部 primitive 消費,consumer 用 `<Button size="sm">` 不直接寫 token |
-| **L4 Layout**(全 app 結構常數) | 全域 layout primitive 尺寸 | `--sidebar-width` / `--sidebar-width-mobile` / `--chrome-header-height` / `--layout-space-loose` | `uiSize/uiSize.css` + `layoutSpace/layoutSpace.css` | **Public**——AppShell / Sidebar / ChromeHeader 等 layout primitive 元件直接消費 |
+| **L4 Layout**(全 app 結構常數) | 全域 layout primitive 尺寸 | `--sidebar-width` / `--sidebar-width-icon` / `--chrome-header-height` / `--layout-space-loose` | `uiSize/uiSize.css` + `layoutSpace/layoutSpace.css` | **Public**——AppShell / Sidebar / ChromeHeader 等 layout primitive 元件直接消費 |
 | **L5 Internal**(單元件內部) | 單元件 only | (目前 0 個) | — | 不開——若只 1 個 consumer hardcode in tsx 即可,2+ consumer 才升 L3/L4 |
 
 **Layer 判斷流程**:

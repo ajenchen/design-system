@@ -157,7 +157,7 @@ declare module '@tanstack/react-table' {
      * - string / number / currency:click cell → inline `<Input>` autoFocus + selected
      * - date / select / multiSelect / person / multiPerson:click cell → 進 edit mode 的 Field control(用戶按 trigger 開 picker)
      * - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-     * - url:read = 連結;**hover cell** 右側出 Pencil 按鈕,click 才進 `<Input>` edit mode(保留 click 連結語意)
+     * - url:read = 連結(只有網址文字寬)+ 滑過格 / 鍵盤聚焦時出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 `<Input>` edit mode
      *
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。
      */

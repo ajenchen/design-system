@@ -22,7 +22,7 @@ const statusOptions = [
 const SingleSelectDemo = () => {
   const [value, setValue] = useState<string>('in_stock')
   return (
-    <div className="flex flex-col gap-4 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
       <p className="text-caption text-fg-muted">Select 作為觸發點，點擊開啟 SelectMenu</p>
       <Select options={statusOptions} value={value} onChange={setValue} aria-label="狀態(SelectMenu single-select demo)" />
     </div>
@@ -47,7 +47,7 @@ const countries = [
 const SearchableDemo = () => {
   const [value, setValue] = useState<string>('')
   return (
-    <div className="flex flex-col gap-4 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
       <p className="text-caption text-fg-muted">searchable — 觸發點變 input，打字即篩選</p>
       <Select options={countries} value={value} onChange={setValue} searchable clearable placeholder="選擇國家…" />
     </div>
@@ -71,7 +71,7 @@ const categoryOptions = [
 const MultiSelectDemo = () => {
   const [value, setValue] = useState<string[]>(['electronics'])
   return (
-    <div className="flex flex-col gap-4 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
       <p className="text-caption text-fg-muted">Combobox — checkbox 多選，浮層不關閉</p>
       <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="商品分類(SelectMenu multi-select demo)" />
     </div>
@@ -88,7 +88,7 @@ export const MultiSelect: StoryObj = {
 const MultiSearchDemo = () => {
   const [value, setValue] = useState<string[]>([])
   return (
-    <div className="flex flex-col gap-4 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
       <p className="text-caption text-fg-muted">searchable — 浮層內搜尋框，關鍵字保留可連續勾選</p>
       <Combobox options={countries} value={value} onChange={setValue} searchable aria-label="國家(SelectMenu multi-select + search demo)" />
     </div>
@@ -121,7 +121,7 @@ const assigneeOptions = [
 const OptionStatesDemo = () => {
   const [value, setValue] = React.useState<string>('ada')
   return (
-    <div className="flex flex-col gap-4 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
       <p className="text-caption text-fg-secondary">
         浮層內選項狀態 — 已選中(勾選標記)、disabled(休假成員不可選)、搜尋無結果(輸入不存在的名字)
       </p>

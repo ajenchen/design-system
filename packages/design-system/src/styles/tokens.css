@@ -25,7 +25,7 @@
 
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費)*/
+/* 開合動畫 utilities(tw-animate-css;7 浮層進出場 + 3 個原地展開收合消費,SSOT = tokens/motion/overlay-motion.ts、disclosure-motion.ts)*/
 @import "tw-animate-css";
 
 @import './../tokens/color/primitives.css';

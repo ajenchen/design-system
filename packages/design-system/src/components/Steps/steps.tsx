@@ -1,10 +1,10 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(Steps + StepItem + orientation/state/connector 邏輯緊密耦合,拆檔會讓 props drilling 複雜化超過可讀 gain)
 import * as React from 'react'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import { ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -12,7 +12,6 @@ import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 export type StepsSize = 'sm' | 'md' | 'lg'
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
 export type StepsOrientation = 'vertical' | 'horizontal'
-export type StepsExpansion = 'follow-active' | 'multiple'
 export type StepContentState = 'upcoming' | 'reachable' | 'current' | 'completed' | 'error'
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -97,10 +96,7 @@ interface StepsContextValue {
   linear: boolean
   size: StepsSize
   orientation: StepsOrientation
-  expansion: StepsExpansion
-  expandedSet: Set<string>
   setValue: (value: string) => void
-  toggleExpanded: (value: string) => void
   total: number
 }
 
@@ -117,11 +113,10 @@ interface StepItemContextValue {
   state: StepContentState
   focused: boolean
   disabled: boolean
-  /** 點下去會發生事(跳到這一步 / 切換展開)→ 是按鈕、進 Tab 序、手形游標 */
+  /** 點下去會發生事(跳到這一步)→ 是按鈕、進 Tab 序、手形游標 */
   clickable: boolean
   /** 還到不了(linear 未解鎖)或停用 → 禁止游標;「目前那一步」不可點但**不是**鎖住,見 isLocked */
   locked: boolean
-  expanded: boolean
   isLast: boolean
   activate: () => void
 }
@@ -167,28 +162,17 @@ function isLocked(
 }
 
 // 可點 = 點下去真的會發生事。除了鎖住的,還有一種不會發生事:
-// 預設展開模式(follow-active)下 value 指到的那一步 —— 點它只會 setValue(同一個值),展開又綁在 value 上,
+// value 指到的那一步 —— 點它只會 setValue(同一個值),內容又只跟著 value 走(2026-09-30 起內容區沒有自己的開合狀態),
 // 畫面 0 變化(待辦總帳 N44 實測:點了 DOM 0 變化)。它不可點,但也**不是鎖住**:游標是一般箭頭、不是禁止符號。
-// multiple 模式下點它會收合 / 展開自己的內容(activate 裡的 toggleExpanded),照舊可點。
-// 規則 owner:steps.spec.md「Expansion」表下方「目前那一步可不可以點」。
+// 規則 owner:steps.spec.md「內容跟著目前那一步」的「目前那一步可不可以點」。
 function isClickable(
   state: StepContentState,
   linear: boolean,
   disabled: boolean,
   focused: boolean,
-  expansion: StepsExpansion,
 ): boolean {
   if (isLocked(state, linear, disabled)) return false
-  return !(focused && expansion === 'follow-active')
-}
-
-function normalizeExpanded(
-  defaultExpanded: 'all' | 'none' | string[] | undefined,
-  allValues: string[],
-): Set<string> {
-  if (defaultExpanded === 'all') return new Set(allValues)
-  if (!defaultExpanded || defaultExpanded === 'none') return new Set()
-  return new Set(defaultExpanded)
+  return !focused
 }
 
 function computeReachableValues(
@@ -229,13 +213,6 @@ export interface StepsProps
   linear?: boolean
   size?: StepsSize
   orientation?: StepsOrientation
-  expansion?: StepsExpansion
-  defaultExpanded?: 'all' | 'none' | string[]
-  /** Controlled 展開集合(2026-07-18 user 拍板補完整雙向控制,對齊 TreeView expandedIds + Radix/MUI/Ant Accordion)。
-   *  傳入則由 consumer 掌控展開狀態(與 `defaultExpanded` 二選一);toggle 時經 `onExpandedChange` 回寫。 */
-  expanded?: string[]
-  /** Controlled 展開變更回呼(展開/收合 step 時觸發,回傳新的展開值陣列)。 */
-  onExpandedChange?: (expanded: string[]) => void
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -250,10 +227,6 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       linear = true,
       size = 'md',
       orientation = 'vertical',
-      expansion = 'follow-active',
-      defaultExpanded,
-      expanded: expandedProp,
-      onExpandedChange,
       className,
       children,
       ...props
@@ -292,36 +265,6 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       [childValues, completedValues],
     )
 
-    // Controlled(expandedProp 傳入)/ uncontrolled(defaultExpanded 初值)dual-mode(2026-07-18)。
-    const isExpandedControlled = expandedProp !== undefined
-    const [expandedInternal, setExpandedInternal] = React.useState<Set<string>>(() =>
-      normalizeExpanded(defaultExpanded, childValues),
-    )
-    // Controlled 時 `new Set(expandedProp)` 每 render 都是新參照,會讓下方 ctxValue 的 useMemo 每次都重算 → 包進 useMemo,
-    // 只在 expandedProp / expandedInternal 真的換了才建新 Set(2026-09-29,eslint exhaustive-deps)。
-    const expandedSet = React.useMemo(
-      () => (isExpandedControlled ? new Set(expandedProp) : expandedInternal),
-      [isExpandedControlled, expandedProp, expandedInternal],
-    )
-
-    const toggleExpanded = React.useCallback((itemValue: string) => {
-      const compute = (prev: Set<string>) => {
-        const next = new Set(prev)
-        if (next.has(itemValue)) next.delete(itemValue)
-        else next.add(itemValue)
-        return next
-      }
-      if (isExpandedControlled) {
-        onExpandedChange?.([...compute(new Set(expandedProp))])
-      } else {
-        setExpandedInternal(prev => {
-          const next = compute(prev)
-          onExpandedChange?.([...next])
-          return next
-        })
-      }
-    }, [isExpandedControlled, expandedProp, onExpandedChange])
-
     const stepCount = React.Children.count(children)
 
     const ctxValue = React.useMemo<StepsContextValue>(
@@ -333,13 +276,10 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
         linear,
         size,
         orientation,
-        expansion,
-        expandedSet,
         setValue,
-        toggleExpanded,
         total: stepCount,
       }),
-      [value, completedValues, errorValues, reachableValues, linear, size, orientation, expansion, expandedSet, setValue, toggleExpanded, stepCount],
+      [value, completedValues, errorValues, reachableValues, linear, size, orientation, setValue, stepCount],
     )
 
     // Interleave horizontal connectors between items
@@ -435,17 +375,12 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
     )
     const focused = value === steps.value
     const locked = isLocked(state, steps.linear, disabled)
-    const clickable = isClickable(state, steps.linear, disabled, focused, steps.expansion)
-    const expanded =
-      steps.expansion === 'follow-active' ? focused : steps.expandedSet.has(value)
+    const clickable = isClickable(state, steps.linear, disabled, focused)
 
     const activate = React.useCallback(() => {
       if (!clickable) return
-      // 永遠更新 focus(value),multiple 模式額外 toggle 展開
+      // 點 header 只做一件事:把 value 移到這一步;內容區跟著 value 走,沒有第二個狀態要切
       steps.setValue(value)
-      if (steps.expansion === 'multiple') {
-        steps.toggleExpanded(value)
-      }
     }, [clickable, steps, value])
 
     const itemCtx = React.useMemo<StepItemContextValue>(() => ({
@@ -455,10 +390,9 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
       disabled,
       clickable,
       locked,
-      expanded,
       isLast: __isLast,
       activate,
-    }), [value, state, focused, disabled, clickable, locked, expanded, __isLast, activate])
+    }), [value, state, focused, disabled, clickable, locked, __isLast, activate])
 
     const isVertical = steps.orientation === 'vertical'
 
@@ -475,7 +409,7 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
           className={cn(
             stepItemVariants({ orientation: steps.orientation, size: steps.size }),
             isVertical && !__isLast && 'pb-6',
-            // 禁止游標只給「鎖住」的步;目前那一步不可點但不是鎖住(isClickable 註解),而且它的展開內容就在這個 li 裡,
+            // 禁止游標只給「鎖住」的步;目前那一步不可點但不是鎖住(isClickable 註解),而且它的內容區就在這個 li 裡,
             // 若用 !clickable 判,表單欄位上方會出現禁止符號(待辦總帳 N44)
             locked && 'cursor-not-allowed',
             className,
@@ -530,11 +464,11 @@ const STEP_STATUS_TEXT: Record<StepContentState, string> = {
   upcoming: '未開始',
 }
 
-function StepItemHeader({ children, className, style, contentId }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; contentId?: string }) {
+function StepItemHeader({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const item = useStepItemContext()
   const steps = useStepsContext()
   const index = React.useContext(StepIndexContext)
-  // 「你就在這裡」= 不可點但不是鎖住(follow-active 的目前那一步;見 isClickable)
+  // 「你就在這裡」= 不可點但不是鎖住(目前那一步;見 isClickable)
   const isHere = !item.clickable && !item.locked
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!item.clickable) return
@@ -554,16 +488,14 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
       onClick={item.clickable ? item.activate : undefined}
       onKeyDown={item.clickable ? onKeyDown : undefined}
       aria-disabled={item.disabled || undefined}
-      // 2026-07-05 D4 修:step 有 content 的可點 header(role=button)必帶 aria-expanded —
-      // WAI-ARIA disclosure pattern trigger 最低要求(multiple 模式 toggle;follow-active 亦
-      // 同步反映展開狀態)。aria-controls 只在 content 實際 render(展開)時輸出,避免
-      // dangling id reference(content 收合時不在 DOM)。
-      aria-expanded={item.clickable && contentId ? item.expanded : undefined}
-      aria-controls={item.clickable && contentId && item.expanded ? contentId : undefined}
+      // 沒有 aria-expanded / aria-controls(2026-09-30 拿掉,2026-07-05 `7e69aad7` 加的):header 不是開合鈕 ——
+      // 點它是「跳到那一步」(value 移過去、內容跟著 value 走),不是切換一塊內容的顯示;WAI-ARIA disclosure 的
+      // trigger 語意套在它身上會讓讀屏把導覽念成開合。目前那一步由 li 的 aria-current="step" 說出來(Carbon ProgressIndicator /
+      // Cloudscape Wizard 同款,出處在 steps.spec.md「A11y 預設」)。
       className={cn(
         // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:776 掃描模式 label 行高)。
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
-        // 全用 1.3 對齊;li 根 text-body(1.5,steps.tsx:329-331)留給展開 content 的 reading 行高,不被
+        // 全用 1.3 對齊;li 根 text-body(1.5,`stepItemVariants` 的 size 變體)留給 StepContent 的 reading 行高,不被
         // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx:144-146)。
         'leading-compact',
         // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
@@ -577,7 +509,7 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
         item.clickable
           ? 'cursor-pointer rounded-md'
           : isHere
-            // 目前那一步(follow-active):一般箭頭游標 —— 它不是被禁止,只是「你就在這裡」
+            // 目前那一步:一般箭頭游標 —— 它不是被禁止,只是「你就在這裡」
             //(待辦總帳 N44;Carbon 目前那一步同為 `cursor: default`,出處在 steps.spec.md「目前那一步可不可以點」)。
             // 不抑制焦點框:鍵盤跳過來時焦點停在這一列(見上方 tabIndex 註解),框照全域 :focus-visible 畫、rounded-md 給框圓角。
             ? 'rounded-md'
@@ -608,41 +540,26 @@ function VerticalLayout({
 }) {
   const steps = useStepsContext()
   const item = useStepItemContext()
-  const showContent = !!content && item.expanded
+  // 內容區只跟著目前那一步(steps.spec.md「內容跟著目前那一步」):寫了 <StepContent> 的其他步不渲染,
+  // header 也沒有任何開合狀態可切(沒有 chevron、沒有 aria-expanded)。
+  const showContent = !!content && item.focused
   const indicatorBox = INDICATOR_BOX_WIDTH[steps.size]
-  // 2026-07-05 D4 修:content 區 id 供 header aria-controls 指向(disclosure 配線)
-  const contentId = React.useId()
 
   return (
     <>
-      <StepItemHeader className="flex items-start gap-3" contentId={content ? contentId : undefined}>
+      <StepItemHeader className="flex items-start gap-3">
         {/* Row prefix slot — 消費 item-anatomy <ItemPrefix>(h-[1lh] 對齊 label 第一行 SSOT);
             width = INDICATOR_BOX_WIDTH 固定欄寬,base justify-center 讓 sm dot 在欄內置中 */}
         <ItemPrefix style={{ width: indicatorBox }}>
           <StepIndicator />
         </ItemPrefix>
-        <div className="flex-1 min-w-0 flex items-start gap-2">
-          <div className="flex-1 min-w-0 flex flex-col">
-            {label}
-            {description}
-          </div>
-          {/* Row suffix slot — 消費 item-anatomy <ItemSuffix>(h-[1lh] 對齊 label 第一行);
-              text col 是 flex-1 → base ml-auto 惰性,8px 間距由父層 gap-2 提供(= MenuItem 父層 gap idiom)*/}
-          {steps.expansion === 'multiple' && !!content && (
-            <ItemSuffix aria-hidden>
-              <ChevronDown
-                size={16}
-                className={cn(
-                  'text-fg-muted transition-transform duration-150 motion-reduce:duration-0',
-                  item.expanded && 'rotate-180',
-                )}
-              />
-            </ItemSuffix>
-          )}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {label}
+          {description}
         </div>
       </StepItemHeader>
       {showContent && (
-        <div id={contentId} className="flex items-start gap-3 mt-3">
+        <div className="flex items-start gap-3 mt-3">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>
         </div>
@@ -1006,7 +923,7 @@ export const stepsMeta = {
   states: ['upcoming', 'reachable', 'current', 'completed', 'error'], // 2026-06-11 R2:content-state 模型(spec 狀態表),非 Phase-1 boilerplate 互動 states,
   tokens: {
     bg: ['bg-info'],
-    fg: ['--fg-disabled', '--foreground', '--on-emphasis', 'text-error-text', 'text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
+    fg: ['--fg-disabled', '--foreground', '--on-emphasis', 'text-error-text', 'text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
     ring: [],
   },
 } as const

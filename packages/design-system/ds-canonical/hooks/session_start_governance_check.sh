@@ -360,8 +360,8 @@ elif [ -n "$PRUNE_TRIGGERS" ]; then
 else
   MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
 fi
-# fail-open:無 jq(eg. 殘缺 PATH / minimal cloud sandbox)→ 靜默 exit 0,不吐 malformed JSON(2026-05-30 硬化)
-command -v jq >/dev/null 2>&1 || exit 0
+# jq 不在時不再由各 hook 自己靜默 exit 0(G4,2026-10-07):唯一入口 scripts/run-provider-hook.mjs 在 hook 的
+# PATH 放探針(CLOSED_HOOK_TOOL_LABELS),本 hook 一呼叫 jq 就被標成「沒有跑完」並列名給模型,同組其他 hook 照常。
 ESCAPED=$(printf '%b' "$MSG" | jq -Rs .)
 printf '{"governanceContext":{"hookEventName":"SessionStart","message":%s}}\n' "$ESCAPED"
 exit 0

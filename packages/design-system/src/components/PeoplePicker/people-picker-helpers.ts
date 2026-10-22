@@ -42,15 +42,23 @@ import { buildPersonProfileCard, resolvePerson, type PersonValue } from './perso
 // code-quality-allow: dead-export — SSOT primitive 公開供 future cross-file 消費 + hook
 // `check_peoplepicker_ssot_drift.sh` enforce wrapper class literal pattern
 export const PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS = `flex-1 min-w-0 inline-flex items-center ${nakedCellRowModeAlign}`
+// 同一份、但只拿自己要的寬(`flex: 0 1 auto`,不撐 flex-1):旁邊有欄位內搜尋框時(getPeoplePickerTagWrapperClass 第二個參數)用。
+// 單選欄位那一格是這一列唯一會長的東西,flex-1 = 吃滿;多人 1 位 × 欄位內搜尋時同一列還有搜尋框那一格(Combobox `flex-auto`,恆在),
+// flex-1(基準寬 0)會跟它**平分**剩下的空間 —— 欄位稍窄名字就被切成「Alice C…」,旁邊明明還空著一大段(2026-10-07 實測:192px 欄位名字只拿到 37px,要 69px);
+// 依內容寬時更只剩「A…」。只拿自己要的寬:放得下就整個名字、放不下才省略(= 單人關著的樣子,spec.md §C closed 列),剩下的給搜尋框。
+// 名字讓位給搜尋框時(打開)這一格只剩頭像 + 原本名字前的間距,同一個 class 照樣成立;讓位後名字的寬由 Combobox `yieldedTagText` 併進搜尋框那一格。
+const PEOPLE_PICKER_LENGTH1_BESIDE_SEARCH_WRAPPER_CLASS = `flex-initial min-w-0 inline-flex items-center ${nakedCellRowModeAlign}`
 
 // code-quality-allow: dead-export — paired helper for SSOT primitive(同上 hook + future use rationale)
-export function getPeoplePickerTagWrapperClass(selectedCount: number): string {
+export function getPeoplePickerTagWrapperClass(selectedCount: number, besideInlineSearch = false): string {
+  // 多人只選 1 位、搜尋框在欄位內(`searchIn='trigger'`)→ 名字那一格只拿自己要的寬(spec.md §C closed / open + inline-search 列,2026-10-07 待辦總帳 K4)
+  if (selectedCount === 1 && besideInlineSearch) return PEOPLE_PICKER_LENGTH1_BESIDE_SEARCH_WRAPPER_CLASS
   return selectedCount === 1
     ? PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS  // SSOT aligned to single picker wrapper(select.tsx:244 selectedItemRenderer wrapper)
     // length>=2 stack 視覺(spec.md §D row 1):圓形 avatar overlap + group/avatar selector for dismiss overlay。
     // 疊的量走 token `--avatar-stack-overlap`(tokens/uiSize/uiSize.css;JS 雙生 avatar.tsx `AVATAR_STACK_OVERLAP_PX`),
     // 這裡不再寫字面值(2026-09-26 前是 `-ml-0.5`,與常數各寫一份、註解要求「兩處同改」= 假 SSOT)。
-    // 疊放順序與「聚焦時升到最上層」由 Combobox 的 tag wrapper 負責(combobox.tsx `--tag-stack-z`)。
+    // 疊放順序與「聚焦時升到最上層」由 Tag 列的 wrapper 負責(OverflowIndicator/overflow-tag-list.tsx `--tag-stack-z`;列容器 `TAG_ROW_CONTAINER_CLASS` 圈住)。
     : '-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex group/avatar'
 }
 

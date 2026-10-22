@@ -8,7 +8,7 @@
 | 維度 | Skill | Audit scope |
 |------|-------|-------------|
 | **D1 設計語言一致** | `/product-ui-audit` | 6 dim(token 紀律 / layout primitive / 元件使用 / mindset / 幾何 / a11y) |
-| **D2 程式語言一致** | `tsc --noEmit` + lint | exploration 目錄 |
+| **D2 程式語言一致** | `run the product-specific typecheck:stories check only when package.json defines it`(比稿是 story 檔)+ `npm run build` + lint(根目錄 `tsc --noEmit` 一個檔都不檢查,不算) | exploration 目錄 |
 | **D3 元件效能** | `/performance-audit` | render / memo / bundle(per candidate) |
 | **D4 UX 行為** | `/ux-audit` | keyboard / focus / ARIA / animation |
 | **D5 視覺品質** | `/visual-audit` | Layer A mechanical + Layer B AI judgement |

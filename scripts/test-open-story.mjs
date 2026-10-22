@@ -3,7 +3,20 @@
  * @gate-contract
  *   保證: lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的「story 真的渲染完成」唯一實作)只在 Storybook 回報這則 story 渲染完成(含 play)、畫面健康、被等的元素出現、版面靜止之後才回傳;任何一項等不到或不成立都丟 StoryRenderInstrumentError,訊息點名 story id、附 Storybook 錯誤原文與 404 路徑,並聲明不是產品裁決 —— 絕不回成功、絕不靜默略過
  *   紅: 不存在的 story id、被擋的 story 檔(伺服器 404 / 請求被中斷)、永遠渲染不完、play 還沒跑完、渲染完是空畫面、頁面例外、等的元素不出現、版面永遠不靜止、卡在 afterEach 卻沒允許、允許 afterEach 時卡在 rendering、管理介面 iframe 裡是錯誤頁 / 404 / 找不到 iframe、iframe 裡完成的是別的 story —— 任一題若被 openStory / waitForStoryRender 判成成功(或錯誤種類 / 點名 / 404 清單不對)即 exit 1;寫錯選項(finishedPhases 給 play 之前的 phase、沒有 story id)必須丟 TypeError。把 helper 的副本逐項弄壞(拿掉 render phase 等待、拿掉錯誤頁判定、拿掉 404 清單、靜止判定不看 DOM 變動、改回固定睡眠、拿掉 render-health、忽略 waitFor、忽略 finishedPhases、previewFrame 不換量測對象、previewFrame 的靜止判定不看外層管理介面、不比對 story id)各自至少讓一題紅
- *   綠: 正常 story 必須成功;story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)
+ *   紅(圖片就緒,2026-10-14):圖片連不到 / 元件 onerror 自己拆掉 <img> / 永遠不回應 / CSS 背景圖連不到 → 必須 image-failed / image-timeout 並點名網址;
+ *       'network' 取法下示範圖主機連不到 → image-failed 點名網址;同一頁換取法、寫錯 demoImages / images → TypeError;
+ *       示範圖主機上**真站沒有的網址**(實測 404:/seed/inspector-16/9/800/600)在兩種取法下都必須是同一個判定 ——
+ *       確定性破圖、列進 deterministicFailures(本機取法就地回 404、不替它捏造一張圖;遠端取法真站回 404 也不得判成 image-failed);
+ *       互動後「先 new Image() 預載、載完才掛上」與「圖載完才縮放置中」兩種形狀,waitForImages 回傳時必須已經是載完 / 縮放後的畫面
+ *       (只判圖不等靜止的對照組量到還沒掛上 / 還是 100%);寫已提交基準圖的程式沒有明寫 demoImages → 紅。
+ *       把 lib 的副本逐項弄壞(不等圖、拿掉請求帳本、不看 CSS 背景圖、靜止最後一格不複查、失敗一律當確定性、
+ *       不做示範圖代換、替真站沒有的網址捏造圖、waitForImages 不等靜止)各自至少讓一題紅
+ *   紅(計時器帳本 / 截圖前的確定性,2026-10-14):滑過後 600ms 才掛上的提示、渲染排下 700ms 才出現的提示,帶 pendingTimers 卻在提示出現 / 淡入跑完前回傳;
+ *       已取消或超過門檻(2000ms)的計時器擋住靜止;輪詢式短計時器被當成「已經停了」;要求看帳本、文件裡沒有帳本卻沒丟 timer-ledger;
+ *       prepareStableScreenshot 之後轉圈相隔 350ms 的兩張不同、清快取後縮小顯示的圖畫成空白;圖片就緒又呼叫 decode() —— 任一成立即紅。
+ *       對照組:不帶 pendingTimers 的同一題 5 次內可達「提示還沒出現」、沒先準備的轉圈兩張不同、把 decode() 放回的副本被靜態查抓到
+ *   綠: 正常 story 必須成功;圖晚 2.5 秒到、CSS 背景圖晚 2 秒到、版面長完才掛上的晚到圖、互動後才掛上的圖都必須等到(關掉 images 的對照量到還沒載完);
+ *       RFC 保留名稱與同源 404 照拍(列在 deterministicFailures)、視窗外 lazy 圖不等;示範圖主機預設換成同尺寸本機合成圖(321×123);story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)。同檔另驗同一支 lib 的指標落點(2026-10-01):ownSurfacePosition 必須點在觸發欄位自己的表面(不在 Tag / 頭像 / 按鈕 / Radix 觸發點上)、整格被蓋住回 ok:false,parkPointer 必須停在沒有滑過反應的位置 —— 合成頁與真實建置(PeoplePicker「多人 × 欄位內搜尋」第 3 格正中央是頭像)兩面:舊點法(點正中央、指標留在原地)必須重現「名片卡蓋住下一格」,helper 必須讓下一格點得到
  *
  * 為什麼有這支(2026-09-25):四支閘各自長出一份「等 story 真的畫完」,收斂成 openStory 之後,
  * 原本散在各閘 selftest 裡驗「等待本身」的對照組(focus-geometry 的不存在 id / 刪 chunk、overflow 的晚到 +N /
@@ -12,12 +25,12 @@
  * Run: `node scripts/test-open-story.mjs [--static-dir <Storybook 建置>] [--require-storybook-build]`
  *   預設另驗 ./storybook-static(存在時);`--require-storybook-build`(CI 用)= 沒有建置就紅,不准只跑合成頁。
  */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, waitForDocsRender, waitForFocusStable, waitForStoryRender } from './lib/launch-browser.mjs'
+import { classifyImageFailure, demoImagePng, demoImageRoute, demoImageSize, describeDeterministicImageFailures, installPendingTimerLedger, launchBrowser, openStory, ownSurfacePosition, parkPointer, PENDING_TIMER_HORIZON_MS, prepareStableScreenshot, serveDemoImagesLocally, settleAfterInteraction, StoryRenderInstrumentError, trackImageRequests, waitForDocsRender, waitForFocusStable, waitForImages, waitForStoryRender } from './lib/launch-browser.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ARGV = process.argv.slice(2)
@@ -33,7 +46,7 @@ const REQUIRE_BUILD = ARGV.includes('--require-storybook-build')
 // 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走
 // loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render),
 // 而且跟真的一樣,畫出來就是 sb-show-main(renderToCanvas 呼叫 showMain),不等 finished。
-const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once']
+const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal']
 const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic preview</title></head>
 <body class="sb-show-preparing-story">
 <div id="storybook-root"></div>
@@ -140,6 +153,18 @@ export const afterEach = () => new Promise(() => {})`,
     return new Promise(() => setTimeout(() => location.reload(), 300))
   }
   root.innerHTML = '<p data-reloaded>Inbox synced</p>'
+}`,
+  // 渲染排下 700ms 的計時器才掛上提示、再淡入 150ms(TooltipProvider delayDuration 的形狀):計時器到點前 DOM 完全不動
+  'timer-reveal': `export default (root) => {
+  root.innerHTML = '<button type="button">Export CSV</button>'
+  window.setTimeout(() => {
+    const tip = document.createElement('div')
+    tip.setAttribute('role', 'tooltip'); tip.setAttribute('data-reveal', '')
+    tip.style.cssText = 'transition: opacity 150ms linear; opacity: 0'
+    tip.textContent = 'Exports the 248 filtered rows'
+    root.appendChild(tip)
+    requestAnimationFrame(() => requestAnimationFrame(() => { tip.style.opacity = '1' }))
+  }, 700)
 }`,
 }
 
@@ -435,6 +460,177 @@ try {
       + `一直變:${busySettle.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
   }
 
+  // ── 計時器帳本:排隊中的短計時器也算「還沒停」(2026-10-14,visual-audit 滑過後固定睡 250ms / 開完固定睡 1200ms 的替代)──────
+  // 靠計時器延後的反應(Tooltip 500ms 延遲開啟)在到點前 DOM 完全不動,只看影格的靜止判定看不到它。兩面都要成立(M32 第四題:與機器快慢無關):
+  //   (a) 真實指標滑過 → 600ms 計時器才掛上提示、再淡入 150ms:不帶 pendingTimers 的 settle 回來時還沒有提示(5 次內可達);
+  //       帶 pendingTimers 的 waitForImages 每次回來時提示都已在、淡入跑完(opacity 1),而且看得到它等過計時器(timerFrames > 0)
+  //   (b) 已取消的計時器(clearTimeout,含用 clearInterval 清 setTimeout 的 id)不擋;(c) 延遲超過門檻的計時器不擋、也不被提早觸發
+  //   (d) 輪詢式短計時器永遠在排隊 → settleAfterInteraction ok:false 並說出延遲;waitForImages 丟 dom-not-settled、點名 label 與延遲
+  //   (e) 要求看帳本、文件裡卻沒有帳本 → 不得當成「沒有計時器」:ok:false timerLedgerMissing / kind 'timer-ledger'
+  //   (f) openStory({ pendingTimers: true }):渲染排下的 700ms 延遲顯示等得到(關掉的同一則 5 次內可達「還沒出現」)
+  //   (g) 帳本不改計時器行為:回傳 id、額外參數照傳、clearTimeout 照樣取消;寫錯參數 → TypeError
+  {
+    const TIMER_HTML = `<!doctype html><html><head><style>
+      #tip { transition: opacity 150ms linear; opacity: 0 } #tip.on { opacity: 1 }
+    </style></head><body>
+      <button id="export" style="margin:80px">Export CSV</button><div id="out"></div>
+      <script>(() => {
+        let pendingTip = 0
+        const btn = document.getElementById('export')
+        btn.addEventListener('mouseenter', () => { pendingTip = setTimeout(() => {
+          const d = document.createElement('div'); d.id = 'tip'; d.setAttribute('role', 'tooltip'); d.textContent = 'Exports the 248 filtered rows'
+          document.body.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on')))
+        }, 600) })
+        btn.addEventListener('mouseleave', () => { clearTimeout(pendingTip); document.getElementById('tip')?.remove() })
+      })()</script></body></html>`
+    const tipState = () => page.evaluate(() => { const d = document.getElementById('tip'); return d ? Number(getComputedStyle(d).opacity) : null })
+    const freshTimerPage = async ({ ledger }) => {
+      await page.mouse.move(1, 1)
+      await page.goto('about:blank')
+      await page.setContent(TIMER_HTML)
+      if (ledger) await installPendingTimerLedger(page, { currentDocument: true })
+    }
+    // (e) 先做:installPendingTimerLedger 會在這個分頁掛 init script(之後每份文件都有帳本),沒有帳本的文件只能在那之前造
+    await freshTimerPage({ ledger: false })
+    const missingSettle = await settleAfterInteraction(page, { frames: 10, pendingTimers: true })
+    let missingError = null
+    try { await waitForImages(page, { pendingTimers: true, label: 'no-ledger' }) } catch (error) { missingError = error }
+    // (a) 對照組:不帶 pendingTimers(= 修正前的判定),5 次內有一次回來時還沒有提示就算可達
+    let bare = null
+    for (let i = 0; i < 5; i++) {
+      await freshTimerPage({ ledger: true })
+      await page.hover('#export')
+      const settled = await settleAfterInteraction(page, { frames: 10 })
+      bare = { settled, tip: await tipState() }
+      if (bare.tip === null) break
+    }
+    const withTimers = []
+    for (let i = 0; i < 2; i++) {
+      await freshTimerPage({ ledger: true })
+      await page.hover('#export')
+      const verdict = await waitForImages(page, { pendingTimers: true, label: 'export-tooltip' })
+      withTimers.push({ tip: await tipState(), timerFrames: verdict.settle?.timerFrames ?? 0 })
+    }
+    // (b)(c)(g)
+    await freshTimerPage({ ledger: true })
+    const transparency = await page.evaluate(() => new Promise((resolve) => {
+      const id = setTimeout((a, b) => { window.__sum = a + b }, 10, 2, 3)
+      const cancelled = setTimeout(() => { window.__cancelled = true }, 800); clearTimeout(cancelled)
+      const viaInterval = setTimeout(() => { window.__viaInterval = true }, 800); clearInterval(viaInterval)
+      setTimeout(() => { window.__long = true }, 5000)
+      resolve({ idOk: Number.isInteger(id) && id > 0 })
+    }))
+    const shortWait = await settleAfterInteraction(page, { frames: 10, pendingTimers: true })
+    const afterShort = await page.evaluate(() => ({ sum: window.__sum ?? null, cancelled: window.__cancelled ?? false, viaInterval: window.__viaInterval ?? false, long: window.__long ?? false }))
+    // (d)
+    await freshTimerPage({ ledger: true })
+    await page.evaluate(() => { const poll = () => setTimeout(poll, 100); poll() })
+    const pollingSettle = await settleAfterInteraction(page, { frames: 10, capMs: 1500, pendingTimers: true })
+    let pollingError = null
+    try { await waitForImages(page, { pendingTimers: true, settleTimeoutMs: 1500, label: 'polling-feed' }) } catch (error) { pollingError = error }
+    await page.goto('about:blank') // 收掉輪詢迴圈
+    // (f)
+    const revealOpacity = () => { const d = document.querySelector('[data-reveal]'); return d ? getComputedStyle(d).opacity : null }
+    let revealBare = null
+    for (let i = 0; i < 5; i++) {
+      revealBare = await attempt(page, url('timer-reveal'), { settleFrames: 10, probe: revealOpacity, notFound: server.notFound })
+      if (!revealBare.ok || revealBare.value.probe === null) break
+    }
+    const revealRuns = [
+      await attempt(page, url('timer-reveal'), { settleFrames: 10, pendingTimers: true, probe: revealOpacity, notFound: server.notFound }),
+      await attempt(page, url('timer-reveal'), { settleFrames: 10, pendingTimers: true, probe: revealOpacity, notFound: server.notFound }),
+    ]
+    // (g) 寫錯參數
+    const badOpen = await throwsTypeError(() => openStory(page, url('ok'), { settleFrames: 10, pendingTimers: 'yes' }))
+    const badOpenFrames = await throwsTypeError(() => openStory(page, url('ok'), { pendingTimers: true }))
+    const badWait = await throwsTypeError(() => waitForImages(page, { pendingTimers: true, settleFrames: 0 }))
+    const badSettle = await throwsTypeError(() => settleAfterInteraction(page, { pendingTimers: 1 }))
+    const badInstall = await throwsTypeError(() => installPendingTimerLedger(null))
+    check(`計時器帳本(門檻 ${PENDING_TIMER_HORIZON_MS}ms):滑過後 600ms 才掛上的提示 —— 只看影格的 settle 回來時還沒有(5 次內可達),帶 pendingTimers 的 waitForImages 兩次都等到提示在、淡入跑完`,
+      bare?.settled.ok && bare.tip === null && withTimers.every((r) => r.tip === 1 && r.timerFrames > 0),
+      `只看影格=${bare?.tip};帶計時器=${withTimers.map((r) => `${r.tip}(等計時器 ${r.timerFrames} 格)`).join(' / ')}`)
+    check('計時器帳本:已取消的計時器(clearTimeout / clearInterval 清 setTimeout 的 id)與超過門檻的 5 秒計時器都不擋;帳本不改計時器行為(id、額外參數、取消照舊)',
+      transparency.idOk && shortWait.ok && shortWait.framesWaited < 60 && afterShort.sum === 5 && !afterShort.cancelled && !afterShort.viaInterval && !afterShort.long,
+      `ok=${shortWait.ok} 等了 ${shortWait.framesWaited} 格;參數=${afterShort.sum} 取消=${afterShort.cancelled}/${afterShort.viaInterval} 5 秒那個=${afterShort.long}`)
+    check('計時器帳本:輪詢式 100ms 計時器永遠在排隊 → settleAfterInteraction ok:false 並說出 100ms;waitForImages 丟 dom-not-settled、點名 label 與延遲(儀器失效,不是「已經停了」)',
+      pollingSettle.ok === false && (pollingSettle.pendingTimers ?? []).includes(100)
+        && pollingError instanceof StoryRenderInstrumentError && pollingError.kind === 'dom-not-settled' && pollingError.message.includes('polling-feed') && pollingError.message.includes('100ms'),
+      `settle=${pollingSettle.ok ? 'ok(錯)' : `ok:false 排隊 ${JSON.stringify(pollingSettle.pendingTimers)}`};waitForImages=${pollingError ? `${pollingError.kind ?? ''} ${short(pollingError.message)}` : '成功(錯)'}`)
+    check("計時器帳本:要求看帳本、文件裡卻沒有 → ok:false timerLedgerMissing / waitForImages 丟 kind 'timer-ledger'(不當成沒有計時器)",
+      missingSettle.ok === false && missingSettle.timerLedgerMissing === true && missingError instanceof StoryRenderInstrumentError && missingError.kind === 'timer-ledger',
+      `settle=${JSON.stringify({ ok: missingSettle.ok, missing: missingSettle.timerLedgerMissing })};waitForImages=${missingError ? missingError.kind : '成功(錯)'}`)
+    check('openStory({ pendingTimers: true }):渲染排下 700ms 才掛上、再淡入的提示 —— 兩次都等到(opacity 1);不帶的同一則回來時還沒出現(5 次內可達);寫錯參數 → TypeError',
+      revealBare?.ok && revealBare.value.probe === null && revealRuns.every((r) => r.ok && r.value.probe === '1' && r.value.settle.timerFrames > 0)
+        && badOpen && badOpenFrames && badWait && badSettle && badInstall,
+      `不帶=${revealBare?.ok ? revealBare.value.probe : short(revealBare?.error.message)};帶=${revealRuns.map((r) => (r.ok ? `${r.value.probe}(等計時器 ${r.value.settle.timerFrames} 格)` : short(r.error.message))).join(' / ')};`
+        + `TypeError=${badOpen}/${badOpenFrames}/${badWait}/${badSettle}/${badInstall}`)
+  }
+
+  // ── 截圖前的確定性(2026-10-14):同一個最終畫面拍兩次逐位元組相同 ──────────────────────────────────────────
+  //   (a) 無限動畫(載入轉圈):相隔 350ms 各拍一次,沒先 prepareStableScreenshot 的兩張不同(轉到不同角度,5 次內可達);
+  //       每次拍前先 prepareStableScreenshot 的兩張逐位元組相同(停在第 0 毫秒),frozenAnimations ≥ 1
+  //   (b) 清快取之後圖不會變成空白:縮小顯示的圖,prepareStableScreenshot 之後截圖,圖的中心仍是圖的顏色(不是底色)
+  //   (c) 圖片就緒不再呼叫 decode()(它鎖住的原尺寸解碼讓光柵結果取決於時序,清快取也清不掉 —— 本機實測,見 lib 區塊):
+  //       靜態查 awaitFrameImages 的原始碼;把 decode() 放回的副本必須被抓到(對照組)
+  //   (d) 寫錯參數 → TypeError
+  {
+    const { createHash } = await import('node:crypto')
+    const digest = (buffer) => createHash('sha256').update(buffer).digest('hex')
+    const SPIN_HTML = `<!doctype html><html><head><style>
+      @keyframes spin { to { transform: rotate(360deg) } }
+      #spinner { width: 40px; height: 40px; margin: 40px; border: 6px solid #ddd; border-top-color: #0b5cff; border-radius: 50%; animation: spin 900ms linear infinite }
+    </style></head><body><div id="spinner" role="progressbar" aria-label="Syncing invoices"></div></body></html>`
+    // 元素截圖會等元素「穩定」(邊框盒不變),旋轉中的元素永遠不穩 → 改用頁面截圖裁出轉圈那一塊(轉圈本身不移動、只轉)
+    const spinnerShot = () => page.screenshot({ clip: { x: 30, y: 30, width: 90, height: 90 } })
+    let bareDiffer = false
+    for (let i = 0; i < 5 && !bareDiffer; i++) {
+      await page.goto('about:blank'); await page.setContent(SPIN_HTML)
+      const first = digest(await spinnerShot()); await page.waitForTimeout(350)
+      bareDiffer = first !== digest(await spinnerShot())
+    }
+    await page.goto('about:blank'); await page.setContent(SPIN_HTML)
+    const prepA = await prepareStableScreenshot(page, { label: 'spinner' })
+    const stableA = digest(await spinnerShot())
+    await page.goto('about:blank'); await page.setContent(SPIN_HTML)
+    await page.waitForTimeout(350)
+    const prepB = await prepareStableScreenshot(page, { label: 'spinner' })
+    const stableB = digest(await spinnerShot())
+    check('prepareStableScreenshot:轉圈相隔 350ms 各拍一次 —— 沒先準備的兩張不同(5 次內可達);先準備的兩張逐位元組相同(停在第 0 毫秒)',
+      bareDiffer && stableA === stableB && prepA.frozenAnimations >= 1 && prepB.frozenAnimations >= 1,
+      `沒準備:${bareDiffer ? '不同' : '相同(對照組失效)'};準備後:${stableA === stableB ? '相同' : '不同'}(停住 ${prepA.frozenAnimations} / ${prepB.frozenAnimations} 個無限動畫)`)
+    // (b) 縮小顯示的圖(1600×1000 → 320×200),清快取後截圖中心仍是圖(合成圖的棋盤格不是純白底)
+    const IMG = 'https://images.synthetic-cdn.dev/stable/1600/1000.png'
+    const imgRoute = (route) => route.fulfill({ status: 200, contentType: 'image/png', body: demoImagePng(IMG, { width: 1600, height: 1000 }) })
+    await page.route(IMG, imgRoute)
+    await page.goto('about:blank')
+    await page.setContent(`<body style="margin:0;background:#fff"><img id="hero" src="${IMG}" style="width:320px;height:200px" alt="Quarterly revenue chart"></body>`)
+    await page.waitForFunction(() => document.getElementById('hero').complete)
+    const beforePurge = digest(await page.locator('#hero').screenshot())
+    await prepareStableScreenshot(page, { label: 'hero' })
+    const afterPurge = await page.locator('#hero').screenshot()
+    const { PNG } = await import('pngjs')
+    const png = PNG.sync.read(afterPurge)
+    let nonWhite = 0
+    for (let i = 0; i < png.data.length; i += 4) if (png.data[i] < 250 || png.data[i + 1] < 250 || png.data[i + 2] < 250) nonWhite++
+    await page.unroute(IMG, imgRoute)
+    check('prepareStableScreenshot:清圖片快取後截圖,縮小顯示的圖照樣畫出來(不是空白底)',
+      nonWhite > png.width * png.height * 0.2,
+      `非白像素 ${nonWhite}/${png.width * png.height};與清之前${digest(afterPurge) === beforePurge ? '相同' : '不同'}(只供參考)`)
+    // (c)
+    const libSource = readFileSync(join(ROOT, 'scripts/lib/launch-browser.mjs'), 'utf8')
+    const frameImagesBody = (text) => { const start = text.indexOf('function awaitFrameImages('); return text.slice(start, text.indexOf('\nfunction ', start + 10)) }
+    const callsDecode = (text) => /\.decode\(\)/.test(frameImagesBody(text).replace(/\/\/[^\n]*/g, ''))
+    const mutant = libSource.replace("return { url, state: 'loaded' }\n  }\n  const settleBackground", "await img.decode()\n    return { url, state: 'loaded' }\n  }\n  const settleBackground")
+    check('圖片就緒不呼叫 decode()(靜態查 awaitFrameImages);把 decode() 放回的副本被抓到(對照組)',
+      frameImagesBody(libSource).length > 200 && !callsDecode(libSource) && mutant !== libSource && callsDecode(mutant),
+      `目前呼叫 decode()=${callsDecode(libSource)};放回的副本被抓到=${mutant !== libSource && callsDecode(mutant)}`)
+    // (d)
+    const badPage = await throwsTypeError(() => prepareStableScreenshot(null))
+    const badFrames = await throwsTypeError(() => prepareStableScreenshot(page, { frames: 0 }))
+    check('prepareStableScreenshot:寫錯參數 → TypeError', badPage && badFrames, `${badPage}/${badFrames}`)
+    await page.goto('about:blank')
+  }
+
   // ── waitForFocusStable:負向主張「焦點沒被搶回」的觀測窗(2026-09-27,M37)──────────────────────────────
   // 焦點搬家不改 DOM,settleAfterInteraction 看不到它;固定睡 N 毫秒又是「搶焦點那一步已經跑完」的代理。兩面都要成立:
   //   (a) 點了之後**8 個影格後**才把焦點搶回按鈕(模擬 Radix FocusScope 卸載後的 setTimeout 0 在慢機器上晚到):
@@ -478,6 +674,83 @@ try {
         && badTarget && badFrames,
       `晚到:睡=${lateBySleep} helper=${lateByHelper}(${lateStable.ok ? `ok,換 ${lateStable.changes} 次,等 ${lateStable.framesWaited} 格` : 'ok:false'});`
       + `沒反應:${noopStable.ok ? 'ok' : 'ok:false'} 換 ${noopStable.changes} 次 焦點=${noopActive};一直跳:${busyStable.ok ? 'ok(錯)' : 'ok:false'};TypeError=${badTarget}/${badFrames}`)
+  }
+
+  // ── ownSurfacePosition + parkPointer:點觸發欄位自己的表面、開關後指標停到中性位置(2026-10-01)──────────────
+  // 取代全掃閘「點正中央、點完指標留在原地」的代理(M37)。合成頁照真的形狀造:第一格觸發欄位的正中央是一顆 Tag 頭像,
+  // 滑過 / 聚焦頭像就開一張卡(同 Radix HoverCard 的觸發),卡片蓋住第二格。兩面都要成立:
+  //   (a) 舊寫法(handle.click() 點正中央、指標留在原地)→ 卡片打開、第二格的 trial click 失敗(= overlay-footer-gutter 在「多人 × 欄位內搜尋」紅的形狀);
+  //   (b) helper:ownSurfacePosition 找到的點不在 Tag / 頭像 / 按鈕 / Radix 觸發點上,按下去開的是欄位自己的選單、卡片沒開;
+  //       parkPointer 停的位置沒有滑過反應;之後第二格點得到。
+  //   (c) 整格被遮罩蓋住 → ok:false(呼叫端當「被蓋住」計數,不得退回正中央);(d) 右下角有會滑過反應的東西 → parkPointer 換下一個候選;
+  //   (e) 寫錯參數 → TypeError。
+  {
+    const pointerPage = page
+    const POINTER_HTML = `<!doctype html><html><body style="margin:0;font:14px sans-serif">
+      <div id="t1" role="combobox" tabindex="0" style="position:absolute;left:40px;top:40px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888">
+        <span data-tag-root data-state="closed" style="position:absolute;left:110px;top:3px;display:inline-flex;align-items:center;gap:4px;background:#eee;padding:0 4px;height:24px">
+          <span id="avatar" data-avatar-size="16" data-state="closed" tabindex="0" style="display:inline-block;width:80px;height:20px;background:#fa0"></span>Eric<button type="button" data-collection-remove>×</button>
+        </span>
+      </div>
+      <div id="t2" role="combobox" tabindex="0" style="position:absolute;left:40px;top:120px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888"></div>
+      <div id="t3" role="combobox" tabindex="0" style="position:absolute;left:40px;top:200px;width:320px;height:32px;box-sizing:border-box;border:1px solid #888"></div>
+      <div id="modal" style="position:absolute;left:0;top:190px;width:600px;height:60px;background:rgba(0,0,0,.3)"></div>
+      <script>
+      (() => {
+        document.addEventListener('mousemove', (e) => { window.__lastPointer = [e.clientX, e.clientY] }, true)
+        const avatar = document.getElementById('avatar')
+        const openCard = () => { if (document.getElementById('card')) return; const c = document.createElement('div'); c.id = 'card'; c.style.cssText = 'position:absolute;left:30px;top:80px;width:340px;height:100px;background:#333'; document.body.appendChild(c) }
+        avatar.addEventListener('pointerenter', openCard)
+        avatar.addEventListener('focus', openCard)
+        for (const id of ['t1', 't2']) document.getElementById(id).addEventListener('click', (e) => { if (e.target.closest('#avatar, button')) return; document.getElementById(id).dataset.opened = String(Number(document.getElementById(id).dataset.opened || 0) + 1) })
+      })()
+      </script></body></html>`
+    const reset = () => pointerPage.setContent(POINTER_HTML)
+    const cardOpen = () => pointerPage.evaluate(() => !!document.getElementById('card'))
+    // (a) 舊寫法
+    await reset()
+    const t1a = await pointerPage.$('#t1')
+    const centerHitsAvatar = await pointerPage.evaluate(() => { const r = document.getElementById('t1').getBoundingClientRect(); return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#avatar') })
+    await t1a.click()
+    await settleAfterInteraction(pointerPage, { frames: 5 })
+    const oldCard = await cardOpen()
+    const oldT1Opened = await pointerPage.evaluate(() => document.getElementById('t1').dataset.opened ?? null)
+    const oldT2Covered = await (await pointerPage.$('#t2')).click({ trial: true, timeout: 1_000 }).then(() => false, () => true)
+    // (b) helper(換內容不會移動指標:先把 (a) 停在頭像上的指標移開,兩面同一個起點)
+    await pointerPage.mouse.move(1, 1)
+    await reset()
+    const t1b = await pointerPage.$('#t1')
+    const at = await ownSurfacePosition(t1b)
+    const atHit = at.ok ? await pointerPage.evaluate(({ x, y }) => { const h = document.elementFromPoint(x, y); return h ? (h.closest('[data-tag-root], [data-avatar-size], button') ? 'tag/avatar/button' : h.id || h.tagName) : null }, at) : null
+    if (at.ok) await t1b.click({ position: at.position })
+    const parked = await parkPointer(pointerPage)
+    await settleAfterInteraction(pointerPage, { frames: 5 })
+    const parkedHit = await pointerPage.evaluate(({ x, y }) => { const h = document.elementFromPoint(x, y); return h === document.documentElement || h === document.body ? 'page' : h?.id || h?.tagName }, parked)
+    // 指標真的移過去了(不是只回報一個位置):頁面最後收到的 mousemove 就在那一點
+    const pointerAtPark = await pointerPage.evaluate(({ x, y }) => { const p = window.__lastPointer; return !!p && Math.abs(p[0] - x) <= 1 && Math.abs(p[1] - y) <= 1 }, parked)
+    const newCard = await cardOpen()
+    const newT1Opened = await pointerPage.evaluate(() => document.getElementById('t1').dataset.opened ?? null)
+    const newT2Covered = await (await pointerPage.$('#t2')).click({ trial: true, timeout: 1_000 }).then(() => false, () => true)
+    // (c) 被遮罩整格蓋住
+    const t3 = await ownSurfacePosition(await pointerPage.$('#t3'))
+    // (d) 右下角有會滑過反應的按鈕 → 換候選
+    await pointerPage.evaluate(() => { const b = document.createElement('button'); b.id = 'fab'; b.style.cssText = 'position:fixed;right:0;bottom:0;width:60px;height:60px'; document.body.appendChild(b) })
+    const parked2 = await parkPointer(pointerPage)
+    const parked2Hit = await pointerPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id || 'page', parked2)
+    // (e)
+    const badHandle = await throwsTypeError(() => ownSurfacePosition(null))
+    const badPrefer = await throwsTypeError(() => ownSurfacePosition(t1b, { prefer: 'middle' }))
+    const badPage = await throwsTypeError(() => parkPointer(null))
+    await pointerPage.goto('about:blank')
+    check('ownSurfacePosition + parkPointer:正中央是頭像時舊寫法開了卡片、蓋住下一格;helper 點在欄位自己的表面(不開卡片、欄位真的收到 click)、指標停在中性位置、下一格點得到;整格被蓋住 → ok:false;右下角有按鈕 → 換位置;寫錯參數 → TypeError',
+      centerHitsAvatar && oldCard && oldT2Covered
+        && at.ok && atHit !== 'tag/avatar/button' && !newCard && newT1Opened === '1' && parked.neutral && parkedHit === 'page' && pointerAtPark && !newT2Covered
+        && t3.ok === false
+        && parked2.neutral && parked2Hit !== 'fab'
+        && badHandle && badPrefer && badPage,
+      `舊:正中央是頭像=${centerHitsAvatar} 卡片=${oldCard} 欄位收到=${oldT1Opened} 下一格被蓋=${oldT2Covered};`
+      + `helper:${at.ok ? `點在 ${atHit}` : `ok:false(${at.why})`} 卡片=${newCard} 欄位收到=${newT1Opened} 停在 ${parkedHit}(neutral=${parked.neutral},指標真的在那=${pointerAtPark}) 下一格被蓋=${newT2Covered};`
+      + `遮罩下:${t3.ok ? 'ok(錯)' : 'ok:false'};有按鈕的角落:停在 ${parked2Hit};TypeError=${badHandle}/${badPrefer}/${badPage}`)
   }
 
   // ── waitForDocsRender:docs 頁真的渲染出來(2026-09-25,待辦總帳 C5;取代兩份私有判定)──────────────────
@@ -524,6 +797,217 @@ try {
       + `別一則=${other.ok ? '成功(錯)' : other.error.kind};TypeError=${badTarget}`)
   }
 
+  // ── 圖片就緒(2026-10-14,待辦總帳 R1e / R3)────────────────────────────────────────────────────────────
+  // 起因:PR 分支重拍 run 38502930713 的穩定性複拍,fileviewer-open-snapshot.png 差 68.7% —— 第二張拍到灰底舞台(picsum 的圖還沒到)。
+  // openStory 原本的「渲染完成 + DOM 連續靜止」看不到圖片下載(不改 DOM)。判定見 lib「圖片就緒」區塊。遠端圖一律用 page.route 造
+  // (延遲 / 中斷 / 永不回應),與這台機器連不連得到外網無關;兩面都要成立:
+  //   (a) 圖晚 2.5 秒才到 → openStory 等到(complete + naturalWidth;10-14 起不 decode());關掉 images 的同一則量到 naturalWidth 0(對照:延遲有效)
+  //   (b) 連不到的遠端圖 → image-failed,點名網址;(c) 元件 onerror 自己把 <img> 拆掉(Avatar 退回縮寫的形狀)→ 只有請求帳本看得到,
+  //       照樣 image-failed;同一頁只看 DOM(waitForImages 不給帳本)會放行 —— 證明帳本是必要的那一半
+  //   (d) 永遠不回應 → image-timeout,點名網址;(e) RFC 保留名稱 + 同源 404 = 確定性失敗 → 照拍、列在 deterministicFailures
+  //   (f) CSS 背景圖晚到 → 等到;背景圖連不到 → image-failed;(g) 視窗外 loading="lazy" 的圖永遠不回應 → 不在畫面範圍,不等、不紅
+  //   (h) 渲染完成後版面還要長 30 個影格、最後一格才掛上、再晚 1.5 秒到的圖 → 靜止判定最後一格看到它還在路上,回頭再等,probe 量到已載完
+  //       (靠計時器延後才掛上的圖不在保證裡 —— 同 settleAfterInteraction 的限制:計時器到點前 DOM 不動,那種要等元素本身)
+  //   (i) 示範圖主機(picsum)預設就地換成同尺寸的本機合成圖:自然尺寸 = 網址的 321×123、沒有任何請求離開這台機器;
+  //       demoImages='network'(另一個瀏覽器)連不到 → image-failed 點名 picsum 網址;同一頁換取法 / 寫錯值 → TypeError
+  //   (j) 互動之後才掛上的圖:waitForImages + trackImageRequests 等到;不等的話量到還沒載完
+  {
+    const CDN = 'https://images.synthetic-cdn.dev'
+    const imgStory = (id, html, extra = '') => writeFileSync(join(fixture, 'assets', `${id}.js`), `export default (root) => { root.innerHTML = ${JSON.stringify(html)}; ${extra} }`)
+    imgStory('img-late', `<img data-img src="${CDN}/late/320/200.png" alt="第三季營收圖">`)
+    imgStory('img-down', `<p>Invoice</p><img src="${CDN}/down/64/64.png" alt="客戶標誌">`)
+    imgStory('img-swap', `<span data-avatar><img src="${CDN}/down/40/40.png" alt="Alice Wang" onerror="this.replaceWith(Object.assign(document.createElement('b'), { textContent: 'AW' }))"></span>`)
+    imgStory('img-hang', `<img src="${CDN}/hang/48/48.png" alt="團隊頭像">`)
+    imgStory('img-reserved', `<p>Fallback</p><img src="https://avatar.invalid/x.jpg" alt="Bob"><img src="/assets/__open-story-missing__.png" alt="Carol">`)
+    imgStory('img-bg-late', `<div data-bg style="width:200px;height:120px;background-image:url('${CDN}/bg-late/200/120.png')">封面</div>`)
+    imgStory('img-bg-down', `<div style="width:200px;height:120px;background-image:url('${CDN}/down/200/120.png')">封面</div>`)
+    imgStory('img-lazy', `<p>Release notes</p><div style="height:8000px"></div><img loading="lazy" src="${CDN}/hang/10/10.png" alt="頁尾插圖">`)
+    // 渲染完成後版面還要長 30 個影格(每格改 DOM),最後一格才掛上圖 —— 8b 第一次看時圖還不存在,靜止判定的最後一格它還在路上
+    imgStory('img-late-mount', '<p data-grow>Activity</p>', `let hops = 30; const hop = () => requestAnimationFrame(() => { root.querySelector('[data-grow]').style.paddingLeft = hops + 'px'; if (--hops > 0) return hop(); const img = document.createElement('img'); img.setAttribute('data-img', ''); img.alt = '附件預覽'; img.src = '${CDN}/mount/90/60.png'; root.appendChild(img) }); hop()`)
+    imgStory('img-demo', `<img data-img src="https://picsum.photos/seed/open-story/321/123" alt="封面照片">`)
+    imgStory('img-click', `<button type="button" data-open>預覽附件</button>`, `root.querySelector('[data-open]').onclick = () => { const img = document.createElement('img'); img.setAttribute('data-img', ''); img.alt = '附件預覽'; img.src = '${CDN}/click/120/80.png'; root.appendChild(img) }`)
+    // 示範圖主機上真站沒有的網址(來源:aspect-ratio.anatomy inspector 曾把比例標籤「16/9」接進 seed,2026-10-14 curl 實測 404;
+    // 該 story 已同日改成路徑安全的 seed,這個網址形狀仍是真站 404 的實例,留作合成頁的對照)
+    imgStory('img-demo-missing', `<img data-img src="https://picsum.photos/seed/inspector-16/9/800/600" alt="比例示意">`)
+    // 互動後「先 new Image() 預載、載完才掛上」:預載完再過 6 個影格才掛上 <img>(影格計數,不靠計時器 —— 與機器快慢無關)
+    imgStory('img-preload', `<button type="button" data-open>顯示審核者</button><span data-slot>AW</span>`, `root.querySelector('[data-open]').onclick = () => { const pre = new Image(); pre.onload = () => { let hops = 6; const hop = () => requestAnimationFrame(() => { if (--hops > 0) return hop(); const img = document.createElement('img'); img.setAttribute('data-img', ''); img.alt = '審核者頭像'; img.src = pre.src; root.querySelector('[data-slot]').replaceChildren(img) }); hop() }; pre.src = '${CDN}/preload/48/48.png?run=' + Date.now() }`)
+    // 互動後「圖載完才縮放置中」(FileViewer 形狀):onload 之後再過 6 個影格才寫入縮放比例與 transform
+    imgStory('img-fit', `<button type="button" data-open>開啟附件</button><div data-stage style="width:400px;height:300px;overflow:hidden;background:#555"></div><span data-zoom>100%</span>`, `root.querySelector('[data-open]').onclick = () => { const img = document.createElement('img'); img.setAttribute('data-img', ''); img.alt = '合約掃描'; img.onload = () => { let hops = 6; const hop = () => requestAnimationFrame(() => { if (--hops > 0) return hop(); const scale = Math.min(400 / img.naturalWidth, 300 / img.naturalHeight); img.style.transformOrigin = '0 0'; img.style.transform = 'scale(' + scale + ')'; root.querySelector('[data-zoom]').textContent = Math.round(scale * 100) + '%' }); hop() }; img.src = '${CDN}/fit/1440/900.png?run=' + Date.now(); root.querySelector('[data-stage]').replaceChildren(img) }`)
+    for (const id of ['img-late', 'img-down', 'img-swap', 'img-hang', 'img-reserved', 'img-bg-late', 'img-bg-down', 'img-lazy', 'img-late-mount', 'img-demo', 'img-click', 'img-demo-missing', 'img-preload', 'img-fit']) KNOWN.push(id)
+    writeFileSync(join(fixture, 'iframe.html'), PREVIEW_HTML.replace(/const KNOWN = \[[^\]]*\]/, `const KNOWN = ${JSON.stringify(KNOWN)}`))
+    const delays = { late: 2500, 'bg-late': 2000, mount: 1500, click: 1200, preload: 1200, fit: 1200 }
+    const cdnRoute = async (route) => {
+      const path = new URL(route.request().url()).pathname
+      const [, kind, w, h] = path.match(/^\/([a-z-]+)\/(\d+)\/(\d+)\.png$/) ?? []
+      if (kind === 'down') return route.abort('namenotresolved')
+      if (kind === 'hang') return // 永不回應(請求一直掛著)
+      if (delays[kind]) await new Promise((resolve) => setTimeout(resolve, delays[kind]))
+      await route.fulfill({ status: 200, contentType: 'image/png', body: demoImagePng(route.request().url(), { width: Number(w), height: Number(h) }) }).catch(() => {})
+    }
+    await page.route(`${CDN}/**`, cdnRoute)
+    const naturalWidth = () => { const img = document.querySelector('[data-img]'); return img ? (img.complete ? img.naturalWidth : -1) : null }
+    const named = (r, kind, needle) => isInstrument(r, kind) && r.error.message.includes(needle)
+
+    // (a)
+    const late = await attempt(page, url('img-late'), { settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    const lateOff = await attempt(page, url('img-late'), { images: false, settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    // (b)(c)(d)
+    const down = await attempt(page, url('img-down'), { notFound: server.notFound })
+    const swap = await attempt(page, url('img-swap'), { notFound: server.notFound })
+    const swapDomOnly = await attempt(page, url('img-swap'), { images: false, notFound: server.notFound })
+    const swapDomVerdict = swapDomOnly.ok ? await waitForImages(page, { timeoutMs: 2000 }).then(() => 'pass', (e) => e.kind) : 'not-run'
+    const hang = await attempt(page, url('img-hang'), { imagesTimeoutMs: 1500, notFound: server.notFound })
+    // (e)
+    const reserved = await attempt(page, url('img-reserved'), { notFound: server.notFound })
+    const deterministic = reserved.ok ? (reserved.value.images?.deterministicFailures ?? []).map((f) => f.url).join(' ') : ''
+    // (f)
+    const bgLate = await attempt(page, url('img-bg-late'), { notFound: server.notFound })
+    const bgLateOff = await attempt(page, url('img-bg-late'), { images: false, notFound: server.notFound })
+    const bgDown = await attempt(page, url('img-bg-down'), { notFound: server.notFound })
+    // (g)
+    const lazy = await attempt(page, url('img-lazy'), { imagesTimeoutMs: 3000, notFound: server.notFound })
+    // (h)
+    const lateMount = await attempt(page, url('img-late-mount'), { settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    const lateMountOff = await attempt(page, url('img-late-mount'), { images: false, settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    // (i)
+    const demo = await attempt(page, url('img-demo'), { settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    const servedLocally = (await serveDemoImagesLocally(page)).served().some((u) => u.startsWith('https://picsum.photos/seed/open-story/321/123'))
+    // (k) 示範圖主機上真站沒有的網址:本機取法就地回 404(不捏造、不放行到網路)→ 確定性破圖,照拍
+    const INSPECTOR = 'https://picsum.photos/seed/inspector-16/9/800/600'
+    const demoMissing = await attempt(page, url('img-demo-missing'), { settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    const localDemo = await serveDemoImagesLocally(page)
+    const answered404Locally = localDemo.missing().includes(INSPECTOR) && !localDemo.served().includes(INSPECTOR)
+    const localDeterministic = demoMissing.ok ? (demoMissing.value.images?.deterministicFailures ?? []).map((f) => f.url) : []
+    const switchMode = await throwsTypeError(() => openStory(page, url('img-demo'), { demoImages: 'network' }))
+    const badMode = await throwsTypeError(() => openStory(page, url('ok'), { demoImages: 'offline' }))
+    const badImages = await throwsTypeError(() => openStory(page, url('ok'), { images: 'yes' }))
+    let networkDown = { ok: true }
+    let networkMissing = { ok: false, error: new Error('沒跑') }
+    const other = await launchBrowser()
+    try {
+      const networkPage = await other.newPage()
+      // 真站行為(2026-10-14 curl 實測):inspector 那種網址回 404 text/plain;其餘這裡模擬「連不到」
+      await networkPage.route('https://picsum.photos/**', (route) => (route.request().url() === INSPECTOR
+        ? route.fulfill({ status: 404, contentType: 'text/plain; charset=utf-8', body: 'Not Found' })
+        : route.abort('namenotresolved')))
+      networkDown = await attempt(networkPage, url('img-demo'), { demoImages: 'network', notFound: server.notFound })
+      networkMissing = await attempt(networkPage, url('img-demo-missing'), { demoImages: 'network', settleFrames: 5, probe: naturalWidth, notFound: server.notFound })
+    } finally { await other.close() }
+    // (j)
+    await openStory(page, url('img-click'), { notFound: server.notFound })
+    await page.click('[data-open]')
+    await settleAfterInteraction(page, { frames: 5 })
+    const clickNoWait = await page.evaluate(naturalWidth)
+    await openStory(page, url('img-click'), { notFound: server.notFound })
+    const ledger = trackImageRequests(page)
+    await page.click('[data-open]')
+    let clickVerdict
+    try { clickVerdict = await waitForImages(page, { ledger, timeoutMs: 10_000 }) } catch (error) { clickVerdict = error } finally { ledger.dispose() }
+    const clickWaited = await page.evaluate(naturalWidth)
+    // (j2) 互動後兩種「圖到了版面才變」的形狀:settleFrames 0 = 只判圖不等靜止(修正前 waitForImages 的行為,對照組)
+    const afterClick = async (id, settleFrames, read) => {
+      await openStory(page, url(id), { notFound: server.notFound })
+      const tracked = trackImageRequests(page)
+      await page.click('[data-open]')
+      try {
+        const verdict = await waitForImages(page, { ledger: tracked, timeoutMs: 10_000, ...(settleFrames === undefined ? {} : { settleFrames }) })
+        return { ok: true, read: await page.evaluate(read), verdict }
+      } catch (error) { return { ok: false, error } } finally { tracked.dispose() }
+    }
+    const zoomLabel = () => document.querySelector('[data-zoom]')?.textContent ?? null
+    // 對照組(只判圖不等靜止)量的是競態:回傳到讀值之間只隔一次 evaluate,版面變化在載完後第 6 格 —— 機器慢時偶爾讀到變化後。
+    // 它要證明的是「舊做法**會**提早回傳」(可達),所以最多試 5 次、有一次讀到變化前就成立(CPU ×4 降速實測單次可達 8/10);預設做法要證明的是「**每次**都等到」,
+    // 所以跑 2 次、兩次都要讀到變化後(與機器快慢無關:變化落在靜止觀測窗內,見 settleImagesAndFrames)
+    const reachable = async (id, read, early) => { let last; for (let i = 0; i < 5; i++) { last = await afterClick(id, 0, read); if (!last.ok || last.read === early) break } return last }
+    const everyTime = async (id, read) => { const runs = [await afterClick(id, undefined, read), await afterClick(id, undefined, read)]; return runs.find((r) => !r.ok || r.read !== runs[0].read) ?? runs[0] }
+    const preloadBare = await reachable('img-preload', naturalWidth, null)
+    const preloadWaited = await everyTime('img-preload', naturalWidth)
+    const fitBare = await reachable('img-fit', zoomLabel, '100%')
+    const fitWaited = await everyTime('img-fit', zoomLabel)
+    await page.unroute(`${CDN}/**`, cdnRoute)
+
+    check('圖片晚 2.5 秒到 → openStory 等到(complete + naturalWidth;10-14 起不 decode())才量;關掉 images 的同一則量到還沒載完(延遲有效)',
+      late.ok && late.value.probe === 320 && late.value.images?.loaded === 1 && lateOff.ok && lateOff.value.probe === -1,
+      `images 開=${late.ok ? `naturalWidth ${late.value.probe}(${late.value.ms}ms)` : short(late.error.message)};關=${lateOff.ok ? lateOff.value.probe : lateOff.error.kind}`)
+    check('連不到的遠端圖 → image-failed 點名網址;onerror 自己拆掉 <img> 的元件(Avatar 形狀)也紅 —— 只看 DOM 會放行(帳本是必要的那一半)',
+      named(down, 'image-failed', `${CDN}/down/64/64.png`) && named(swap, 'image-failed', `${CDN}/down/40/40.png`) && swapDomVerdict === 'pass',
+      `連不到=${down.ok ? '成功(錯)' : short(down.error.reason)};拆掉=${swap.ok ? '成功(錯)' : swap.error.kind};只看 DOM=${swapDomVerdict}`)
+    check('圖片永遠不回應 → image-timeout 點名網址(上限只是天花板)',
+      named(hang, 'image-timeout', `${CDN}/hang/48/48.png`), hang.ok ? '成功(錯)' : short(hang.error.reason))
+    check('RFC 保留名稱(.invalid)與同源 404 = 確定性失敗 → 照拍,列在 images.deterministicFailures',
+      reserved.ok && deterministic.includes('https://avatar.invalid/x.jpg') && deterministic.includes('/assets/__open-story-missing__.png'),
+      reserved.ok ? deterministic : short(reserved.error.message))
+    check('CSS 背景圖晚 2 秒到 → 等到(關掉 images 的同一則 2 秒內就回來);背景圖連不到 → image-failed 點名網址',
+      bgLate.ok && bgLate.value.ms >= 2000 && bgLate.value.images?.loaded === 1 && bgLateOff.ok && bgLateOff.value.ms < 2000 && named(bgDown, 'image-failed', `${CDN}/down/200/120.png`),
+      `晚到=${bgLate.ok ? `${bgLate.value.ms}ms` : short(bgLate.error.message)};關=${bgLateOff.ok ? `${bgLateOff.value.ms}ms` : bgLateOff.error.kind};連不到=${bgDown.ok ? '成功(錯)' : bgDown.error.kind}`)
+    check('視窗外 loading="lazy" 的圖永遠不回應 → 不在畫面範圍,不等、不紅', lazy.ok && lazy.value.images?.checked === 0,
+      lazy.ok ? `檢查 ${lazy.value.images?.checked} 張(${lazy.value.ms}ms)` : short(lazy.error.message))
+    check('渲染完成後版面長完才掛上、晚到的圖 → 靜止判定最後一格看到它還在路上,回頭再等;probe 量到已載完(關掉 images 的同一則量到還沒載完)',
+      lateMount.ok && lateMount.value.probe === 90 && lateMountOff.ok && lateMountOff.value.probe === -1,
+      `${lateMount.ok ? `naturalWidth ${lateMount.value.probe}(${lateMount.value.ms}ms)` : short(lateMount.error.message)};關=${lateMountOff.ok ? lateMountOff.value.probe : lateMountOff.error.kind}`)
+    check("示範圖主機預設就地換成同尺寸本機合成圖(321×123、沒有離開這台機器);'network' 連不到 → image-failed 點名 picsum;同一頁換取法 / 寫錯值 → TypeError",
+      demo.ok && demo.value.probe === 321 && servedLocally && named(networkDown, 'image-failed', 'https://picsum.photos/seed/open-story/321/123') && switchMode && badMode && badImages,
+      `本機=${demo.ok ? `naturalWidth ${demo.value.probe},代換紀錄有它=${servedLocally}` : short(demo.error.message)};network=${networkDown.ok ? '成功(錯)' : networkDown.error.kind};TypeError=${switchMode}/${badMode}/${badImages}`)
+    // 網址 → 真站行為(純函式)。每一題的期望值都是 2026-10-14 對真站 curl 的實測結果(image = 真站回這個尺寸的圖;
+    // missing = 真站回 404 / 400 / 不是圖;null = 不在模型裡,照常走網路):
+    const routeCases = [
+      ['https://picsum.photos/seed/jira-login-err/1440/900', '1440x900'], ['https://picsum.photos/seed/fixed-size/160', '160x160'],
+      ['https://picsum.photos/320/200', '320x200'], ['https://picsum.photos/seed/x/320/200.JPG', '320x200'], ['https://picsum.photos/seed/x/320.webp', '320x320'],
+      ['https://picsum.photos/g/200/300', '200x300'], ['https://picsum.photos/seed/x/200/300/', '200x300'], ['https://picsum.photos/seed/x/0200/300', '200x300'],
+      ['https://picsum.photos/seed/inspector-16/9/800/600', 'missing'], ['https://picsum.photos/seed/inspector-21/9/800/600', 'missing'],
+      ['https://picsum.photos/seed/no-size', 'missing'], ['https://picsum.photos/seed/a/b/200', 'missing'], ['https://picsum.photos/id/abc/200', 'missing'],
+      ['https://picsum.photos/seed/x/320/200.png', 'missing'], ['https://picsum.photos/seed/x/320/200.jpeg', 'missing'], ['https://picsum.photos/seed/x/5001/100', 'missing'],
+      ['https://picsum.photos/SEED/x/200/300', 'missing'], ['https://picsum.photos/v2/list', 'missing'],
+      ['https://picsum.photos/id/237/480', 'null'], ['https://picsum.photos/seed/x/0/100', 'null'], ['https://picsum.photos/seed/x/4500/100', 'null'],
+      ['https://fastly.picsum.photos/id/237/480/480.jpg?hmac=x', 'null'],
+      ['https://i.pravatar.cc/128?u=alice', '128x128'], ['https://i.pravatar.cc/48?img=12', '48x48'], ['https://i.pravatar.cc/2000', '1000x1000'], ['https://i.pravatar.cc/0', '1000x1000'],
+      ['https://i.pravatar.cc/abc', 'null'], ['https://images.unsplash.com/photo-1/320/200', 'null'],
+    ]
+    const routeOf = (u) => { const r = demoImageRoute(u); return r ? (r.kind === 'image' ? `${r.width}x${r.height}` : r.kind) : 'null' }
+    const routeMisses = routeCases.filter(([u, want]) => routeOf(u) !== want)
+    // demoImageSize 只給 image;missing 與 null 都沒有尺寸;missing 不論哪種失敗方式都是確定性,image 的失敗是環境性
+    const sizeAgrees = routeCases.every(([u, want]) => { const got = demoImageSize(u); return /^\d+x\d+$/.test(want) ? got && `${got.width}x${got.height}` === want : got === null })
+    const classMisses = routeCases.flatMap(([u, want]) => ['http', 'network', 'broken'].filter((how) => (classifyImageFailure(u, { how }) === 'deterministic') !== (want === 'missing')).map((how) => `${u}(${how})`))
+    check('示範圖網址 → 真站行為(全部是 2026-10-14 curl 實測):picsum 只認真站有的路由,其餘 missing;/id/<n>、尺寸 0、超過本機合成上限 → null;fastly 不代換;pravatar 超過 1000 收成 1000;missing 不論失敗方式都是確定性',
+      routeMisses.length === 0 && sizeAgrees && classMisses.length === 0,
+      [routeMisses.map(([u, want]) => `${u} 應為 ${want}、得 ${routeOf(u)}`).join(';'), sizeAgrees ? '' : 'demoImageSize 與模型不一致', classMisses.length ? `分類錯:${classMisses.join(', ')}` : ''].filter(Boolean).join(';') || `${routeCases.length} 題全對`)
+    check('示範圖主機上真站沒有的網址(inspector 16/9,實測 404):兩種取法同一個判定 —— 本機就地回 404、不捏造(naturalWidth 0)、遠端 404 也不是 image-failed,兩邊都列進 deterministicFailures,並印得出點名網址的一行',
+      demoMissing.ok && demoMissing.value.probe === 0 && answered404Locally && localDeterministic.includes(INSPECTOR)
+        && networkMissing.ok && networkMissing.value.probe === 0 && (networkMissing.value.images?.deterministicFailures ?? []).some((f) => f.url === INSPECTOR)
+        && (describeDeterministicImageFailures(demoMissing.ok ? demoMissing.value.images.deterministicFailures : []) ?? '').includes(INSPECTOR),
+      `本機=${demoMissing.ok ? `naturalWidth ${demoMissing.value.probe},就地 404=${answered404Locally},確定性=${localDeterministic.join(' ') || '(無)'}` : short(demoMissing.error.message)};`
+        + `遠端=${networkMissing.ok ? `naturalWidth ${networkMissing.value.probe},確定性=${(networkMissing.value.images?.deterministicFailures ?? []).map((f) => f.url).join(' ') || '(無)'}` : `${networkMissing.error.kind ?? ''} ${short(networkMissing.error.message)}`}`)
+    check('互動之後才掛上的圖:waitForImages + trackImageRequests 等到才量;只等版面靜止量到還沒載完',
+      clickNoWait === -1 && !(clickVerdict instanceof Error) && clickWaited === 120,
+      `只等靜止=${clickNoWait};waitForImages=${clickVerdict instanceof Error ? short(clickVerdict.message) : `檢查 ${clickVerdict.checked} 張`} → ${clickWaited}`)
+    const shown = (r) => (r.ok ? String(r.read) : `${r.error.kind ?? ''} ${short(r.error.message)}`)
+    check('互動後「先 new Image() 預載、載完才掛上」:waitForImages 兩次回傳時 <img> 都已掛上且載完;只判圖不等靜止(settleFrames 0)回傳時還沒掛上(5 次內可達)',
+      preloadBare.ok && preloadBare.read === null && preloadWaited.ok && preloadWaited.read === 48,
+      `不等靜止=${shown(preloadBare)};預設=${shown(preloadWaited)}`)
+    check('互動後「圖載完才縮放置中」(FileViewer 形狀):waitForImages 兩次回傳時都已是縮放後(28%);只判圖不等靜止回傳時還是 100%(5 次內可達)',
+      fitBare.ok && fitBare.read === '100%' && fitWaited.ok && fitWaited.read === '28%',
+      `不等靜止=${shown(fitBare)};預設=${shown(fitWaited)}`)
+  }
+
+  // ── 寫已提交基準圖的程式一律明寫示範圖取法(2026-10-14)──────────────────────────────────────────────────
+  // openStory 預設 demoImages='local'(棋盤格合成圖)只給不寫、不比基準的閘;寫基準的程式用預設 = 把棋盤格寫進已提交基準
+  // (peoplepicker-baseline 曾經如此)。靜態查:呼叫 prepareVisualBaselineFile 的程式,它的每個 openStory( 呼叫都要明寫 demoImages。
+  {
+    const SCRIPTS = join(ROOT, 'scripts')
+    const writers = readdirSync(SCRIPTS).filter((name) => name.endsWith('.mjs') && !name.startsWith('test-'))
+      .map((name) => [name, readFileSync(join(SCRIPTS, name), 'utf8')])
+      .filter(([, text]) => /prepareVisualBaselineFile\(/.test(text) && /\bopenStory\(/.test(text))
+    // 一個呼叫 = 從 `await openStory(` 到第一個「行尾的 })」(單行與多行選項物件都適用)
+    const callOptions = (text) => [...text.matchAll(/\bawait openStory\(/g)].map((match) => text.slice(match.index).split(/\}\)[ \t]*(?:\n|$)/)[0])
+    const implicit = writers.filter(([, text]) => callOptions(text).some((call) => !/demoImages\s*:/.test(call))).map(([name]) => name)
+    // 對照組:同一條規則套在拿掉 demoImages 的副本上必須紅(證明這條查得到)
+    const stripped = writers.map(([name, text]) => [name, text.replace(/demoImages\s*:\s*[^,}\n]+,?\s*/g, '')])
+    const controlCaught = stripped.every(([, text]) => callOptions(text).some((call) => !/demoImages\s*:/.test(call)))
+    check('寫已提交基準圖的程式(呼叫 prepareVisualBaselineFile)每個 openStory 都明寫 demoImages;拿掉之後的副本會被抓到(對照組)',
+      writers.length >= 2 && implicit.length === 0 && controlCaught,
+      `寫基準的程式:${writers.map(([name]) => name).join(', ') || '(無 —— 查法壞了)'};沒明寫:${implicit.join(', ') || '無'};對照組抓到=${controlCaught}`)
+  }
+
   // ── 真實 Storybook 建置:openStory 依賴的訊號(currentRender.phase / sb-show-errordisplay / #error-message)真的存在 ──
   const hasBuild = existsSync(join(STORYBOOK_BUILD, 'index.json')) && existsSync(join(STORYBOOK_BUILD, 'iframe.html'))
   console.log(`\n── 真實 Storybook 建置(${STORYBOOK_BUILD})──`)
@@ -559,6 +1043,58 @@ try {
         check('真實建置:story 檔被擋 → 儀器失效並列出失敗請求',
           hits > 0 && isInstrument(realBlocked, 'storybook-error') && realBlocked.error.failedRequests.some((f) => new RegExp(`/assets/${base}-`).test(f)),
           `攔到 ${hits} 次;${realBlocked.ok ? '被判成成功(錯)' : short(realBlocked.error.message)}`)
+      }
+      // ownSurfacePosition + parkPointer 的真實對照(2026-10-01):PeoplePicker「多人 × 欄位內搜尋」第 3 格的正中央是「Eric Tsai」Tag 的頭像 ——
+      // 全掃閘(overlay-footer-gutter / select-all-footer)舊的點法在這一則紅過。舊點法必須重現「名片卡打開、蓋住第 4 格」,helper 必須讓第 4 格點得到、開得起來。
+      // 前提(正中央真的落在頭像上)不成立 = 這組對照失去牙齒,照樣紅 —— 換一則正中央落在頭像上的觸發欄位,不准默默放行。
+      {
+        const id = 'design-system-components-peoplepicker-展示--multi-inline-search'
+        const covered = (h) => h.click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
+        const hoverCardShown = () => page.waitForFunction(() => [...document.querySelectorAll('[data-radix-popper-content-wrapper]')]
+          .some((w) => !w.querySelector('[cmdk-root]') && w.getBoundingClientRect().height > 60), null, { timeout: 5_000, polling: 'raf' }).then(() => true, () => false)
+        const openAndGrab = async () => {
+          // 導覽不會移動指標:上一次停在頭像上的指標,在新載入的同一則 story 上照樣停在頭像上 → 先停到中性位置再開始(兩面同一個起點)
+          await page.mouse.move(1, 1)
+          await openStory(page, `${real.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { settleFrames: 10, notFound: real.notFound })
+          await parkPointer(page)
+          await settleAfterInteraction(page, { frames: 10 })
+          const handles = await page.locator('[role="combobox"]:visible').elementHandles()
+          return { third: handles[2], fourth: handles[3] }
+        }
+        if (!index.entries[id]) {
+          check(`真實建置:指標落點對照組的 story ${id} 存在`, false, 'index.json 裡找不到 —— 這組對照失效,要換一則正中央落在頭像上的觸發欄位')
+        } else {
+          // 舊點法:點正中央、指標留在原地
+          const old = await openAndGrab()
+          const centerOnAvatar = await old.third.evaluate((el) => { el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('[data-avatar-size]') })
+          await old.third.click({ timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          await page.keyboard.press('Escape')
+          await settleAfterInteraction(page, { frames: 10 })
+          const oldCard = await hoverCardShown()
+          const oldCovered = await covered(old.fourth)
+          // helper:點自己的表面、開關之後把指標停到中性位置
+          const neu = await openAndGrab()
+          const at = await ownSurfacePosition(neu.third)
+          if (at.ok) await neu.third.click({ position: at.position, timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          const thirdOpened = await neu.third.getAttribute('aria-expanded')
+          await parkPointer(page)
+          await page.keyboard.press('Escape')
+          await settleAfterInteraction(page, { frames: 10 })
+          await parkPointer(page)
+          await settleAfterInteraction(page, { frames: 10 })
+          const newCovered = await covered(neu.fourth)
+          const at4 = await ownSurfacePosition(neu.fourth)
+          if (at4.ok && !newCovered) await neu.fourth.click({ position: at4.position, timeout: 10_000 })
+          await settleAfterInteraction(page, { frames: 10 })
+          const fourthOpened = await neu.fourth.getAttribute('aria-expanded')
+          await page.keyboard.press('Escape')
+          check('真實建置:正中央落在 Tag 頭像的觸發欄位 —— 舊點法開了名片卡、蓋住下一格;ownSurfacePosition + parkPointer 開的是選單、下一格點得到也開得起來',
+            centerOnAvatar && oldCard && oldCovered && at.ok && thirdOpened === 'true' && !newCovered && at4.ok && fourthOpened === 'true',
+            `前提(正中央是頭像)=${centerOnAvatar};舊:名片卡=${oldCard} 第 4 格被蓋=${oldCovered};`
+            + `helper:第 3 格${at.ok ? `點在 ${at.hit}、開了=${thirdOpened}` : `ok:false(${at.why})`} 第 4 格被蓋=${newCovered} 開了=${fourthOpened}`)
+        }
       }
     } finally { await real.stop() }
   }

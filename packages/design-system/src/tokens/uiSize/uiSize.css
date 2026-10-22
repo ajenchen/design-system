@@ -111,19 +111,18 @@
      對齊 docs:`components/Sidebar/sidebar.spec.md` L613-614 token table
      Why uiSize.css:layout primitive widths 是 ui sizing semantic 範疇(對齊 --field-height / --chrome-header)
      */
-  --sidebar-width: 15rem;          /* 240px expanded sidebar */
-  --sidebar-width-min: 240px;      /* 最小寬,同時是 AppShell Aside floor(ASIDE_WIDTH_MIN) */
-  --sidebar-width-mobile: 18rem;   /* 288px mobile sheet 抽屜 */
+  --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
+  --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(user 2026-05-21「aside應該也要一起參照」);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
+  /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(「版面規則」§7、§9) */
   --sidebar-menu-icon-size: 1rem;   /* 16px sm/md row(per ICON_SIZE.sm/md);size=lg 罕見 case 下方 override 1.25rem(20px) */
   --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
 
-  /* AgentPanel — 智慧代理右側面板寬(2026-09-02;agent-panel.spec.md token table SSOT)
-     稿「Task-Desktop」全六畫面 rightSider 實測 400;命名同 --sidebar-width L4 layout 前例 */
-  --agent-panel-width: 25rem;      /* 400px 預設 */
-  /* 拖拉上下限(360 / 640)**不設 token**:值只有 JS 的 clamp 邏輯會用,CSS 這邊沒有任何消費者。
+  /* AgentPanel 面板寬**不設 token**(2026-10-15 退役 --agent-panel-width 25rem):預設 360 / 400 / 640 只住
+     agent-panel.tsx 的 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX —— 那個 token 執行期從沒有讀取者,元件一直用 JS 常數 400(r1b 複驗 F8,M17)。
+     拖拉上下限(360 / 640)同理**不設 token**:值只有 JS 的 clamp 邏輯會用,CSS 這邊沒有任何消費者。
      2026-09-21 orphan-token 稽核抓到 —— 原本宣告了 --agent-panel-width-min / -max 卻沒人讀,
      而真正生效的是 agent-panel.tsx 的 PANEL_WIDTH_MIN / PANEL_WIDTH_MAX,同值兩個住所必然漂移(M17)。
-     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_MIN / MAX 也只住在 app-shell.tsx。 */
+     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_DEFAULT / MAX 也只住在 app-shell.tsx(Right panel 最小寬讀 --sidebar-width-min)。 */
 
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)

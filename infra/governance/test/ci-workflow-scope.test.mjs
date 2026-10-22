@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { load as loadYaml } from 'js-yaml'
 import { parseWorkflowSemantics } from '../lib/workflow-trust.mjs'
+import { REBAKE_REQUEST_PATH, parseRebakeRequest } from '../../../scripts/visual-rebake-request.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const readWorkflow = name => readFileSync(resolve(ROOT, `.github/workflows/${name}`), 'utf8')
@@ -28,14 +32,19 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-09-20:第九個跑東西的 job `verify-browser-field-edges`。select-all 一個 job 序列跑五支
   // 全 story 掃描,實測 1076 秒(17.9 分)—— 是關鍵路徑第二長的,而那五支彼此獨立、只共用同一份
   // storybook build。拆一半出來平行跑,各自約 9-10 分。user 原話:「你他媽發版到底是要發多久?」
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  // 2026-10-14(待辦總帳 G10):最近 15 次 CI 逐 job 對上限的 p90 有六個超過 80%(select-all 100% / field-edges 99% / searchable-fields 96% /
+  // agent 94% / perception 92% / interaction 90%;field-edges 與 select-all 各有一次撞上限被取消)。照主題各拆成兩個平行 job、不調高上限,
+  // 新 job 沿用原 job 的上限:verify-browser-control-groups(自 perception)、verify-browser-searchable-menu-focus(自 searchable-fields)、
+  // verify-browser-field-dialog-steps(自 interaction)、verify-browser-cursor(自 agent)、verify-browser-escape-focus-control(自 select-all)、
+  // verify-browser-footer-gutter(自 field-edges)。逐 job / 逐步驟的實測與拆法記在 ci.yml 各 job 檔頭。
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
   // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
   // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
   // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-field-edges', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -53,8 +62,14 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-overlay 同列(2026-09-27):2026-09-12 拆出來時兩邊各 7-9 分,之後閘又加了(form-gap-token 等),
   // 本分支 8 筆 CI 實測 11.9–14.6 分成功、15.1 / 15.1 / 15.2 分三次撞 15 分被取消(被砍前的判定全綠);
   // 同 interaction 的理由:逾時毀掉的是裁決,不是品質訊號。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
+  // verify-browser-searchable-fields 同列(2026-10-07):從 interaction 拆出的可搜尋欄位按鍵閘 + 從 datatable-handles 搬來的選單焦點閘,
+  // 建置 + 安裝約 4 分、兩支閘本機合計約 10 分(CI 約 1.2–1.4 倍)→ 估 15–18 分,15 分上限會被取消。
+  // 2026-10-14(待辦總帳 G10):從 25 分 job 拆出來的四個新 job 沿用原 job 的 25(不是調高 —— 原 job 本來就是 25):
+  // verify-browser-control-groups(自 perception)、verify-browser-searchable-menu-focus(自 searchable-fields)、
+  // verify-browser-field-dialog-steps(自 interaction)、verify-browser-escape-focus-control(自 select-all)。
+  // 從 15 分 job 拆出來的 verify-browser-cursor(自 agent)與 verify-browser-footer-gutter(自 field-edges)維持 15,不在此集合。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -150,8 +165,12 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // verify-browser-datatable-handles。原因是同日把該 job 裡對照組的逾時由寫死 120s 改成由子行程
   // 的 MAX_ATTEMPTS 推導(根因:子行程依設計最多重試 5 次、每次約 38 秒,父行程卻只給 120 秒),
   // 放寬後最壞情況會把原 job 推到 25 分鐘上限。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 13)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 11)
+  // 13 → 14 / 11 → 12(2026-10-07):新增 verify-browser-searchable-fields(從 interaction / datatable-handles 拆出,同樣自己 build storybook 與裝 chromium)。
+  // 14 → 15 / 12 → 13(2026-10-07):新增 verify-browser-tree-navigation(TreeView 步驟導覽閘 + 從 interaction 搬來的鍵盤路線閘)。
+  // 15 → 21 / 13 → 19(2026-10-14,待辦總帳 G10):六個貼著上限的瀏覽器 job 各拆成兩個平行 job(新 job 各自 build storybook 與裝 chromium,
+  // 準備步驟與原 job 逐字相同):control-groups / searchable-menu-focus / field-dialog-steps / cursor / escape-focus-control / footer-gutter。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 21)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 19)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
   // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
@@ -175,8 +194,32 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
         ? `${id} 裝了 Chromium 跑瀏覽器閘,必須在 job 層宣告 GOVERNANCE_BROWSER_REQUIRED: '1'(否則起不了瀏覽器會被印成 SKIPPED-ENV 當通過)`
         : `${id} 沒有裝 Chromium,不得宣告 GOVERNANCE_BROWSER_REQUIRED(那裡的判定表刻意在無瀏覽器環境跑)`)
   }
-  assert.equal(browserJobs.length, 11, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  // 11 → 12(2026-10-07):新增 verify-browser-searchable-fields。
+  // 12 → 13(2026-10-07):新增 verify-browser-tree-navigation。
+  // 13 → 19(2026-10-14,待辦總帳 G10):六個貼著上限的瀏覽器 job 各拆出一個平行 job。
+  assert.equal(browserJobs.length, 19, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
   assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
+  // 2026-10-14(待辦總帳 G10):拆出來的 job 準備步驟(簽出 / Node / 安裝 / build:lib / build-storybook)必須與原 job 逐字相同 ——
+  // 量到的時間才能互相比較,拆完也不會有一半在不同的環境跑。比的是 steps 從開頭到 build-storybook 那一步(含)的原始文字。
+  const setupSteps = (id) => {
+    const block = jobBlock(id)
+    const from = block.indexOf('    steps:\n')
+    const marker = '        run: npm run build-storybook\n'
+    const to = block.indexOf(marker, from)
+    assert.ok(from >= 0 && to > from, `${id} 找不到準備步驟`)
+    return block.slice(from, to + marker.length)
+  }
+  for (const [child, parent] of [
+    ['verify-browser-control-groups', 'verify-browser-datatable-perception'],
+    ['verify-browser-searchable-menu-focus', 'verify-browser-searchable-fields'],
+    ['verify-browser-field-dialog-steps', 'verify-browser-interaction'],
+    ['verify-browser-cursor', 'verify-browser-agent'],
+    ['verify-browser-escape-focus-control', 'verify-browser-select-all'],
+    ['verify-browser-footer-gutter', 'verify-browser-field-edges'],
+  ]) {
+    assert.equal(setupSteps(child), setupSteps(parent), `${child} 的準備步驟必須與拆出它的 ${parent} 逐字相同`)
+    assert.equal(workflow.jobs[child].timeoutMinutes, workflow.jobs[parent].timeoutMinutes, `${child} 的上限沿用 ${parent}(拆 job 不是調高上限的路)`)
+  }
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',
@@ -210,11 +253,17 @@ for (const name of [
     const workflow = parseWorkflowSemantics(source)
     // 2026-09-23:visual-regression 多聽一個 repository_dispatch —— 治理 token 沒有 Actions 寫入權限(按鈕 403)
     // 但能發 repository_dispatch(204);只監聽按鈕 = 把重拍綁在「user 親手登入按下去」這個代理上。事件型別封閉為一個。
-    const expectedTriggers = name === 'visual-regression.yml' ? ['repository_dispatch', 'schedule', 'workflow_dispatch'] : ['schedule', 'workflow_dispatch']
+    // 2026-10-14(R3):visual-regression 再多一個 push —— 只在非 main 分支、只在重拍請求檔變動時(下方專門那條測試逐項斷言);
+    // 它仍然不是 PR 閘:沒有 pull_request、job 名不像必過檢查、不進 ci.yml 的 fan-in。
+    const expectedTriggers = name === 'visual-regression.yml' ? ['push', 'repository_dispatch', 'schedule', 'workflow_dispatch'] : ['schedule', 'workflow_dispatch']
     assert.deepEqual(Object.keys(workflow.on).sort(), expectedTriggers)
-    if (name === 'visual-regression.yml') assert.match(source, /repository_dispatch:\n\s+types: \[visual-regression-run\]/)
+    if (name === 'visual-regression.yml') {
+      assert.match(source, /repository_dispatch:\n\s+types: \[visual-regression-run\]/)
+      assert.deepEqual(workflow.on.push, { 'branches-ignore': ['main'], paths: [REBAKE_REQUEST_PATH] }, 'push 只准「非 main 分支 + 只看重拍請求檔」這一種形狀')
+    }
     assert.ok(Object.values(workflow.jobs).every(job => job.continueOnError !== true))
-    assert.doesNotMatch(source, /^\s{2}(?:push|pull_request):/m)
+    assert.doesNotMatch(source, /^\s{2}pull_request(?:_target)?:/m)
+    if (name !== 'visual-regression.yml') assert.doesNotMatch(source, /^\s{2}push:/m)
     assert.doesNotMatch(source, /name:\s*(?:Verify\(|a11y\(|Bundle size budget|Visual Regression Diff|Composition Fidelity Diff|Packaging integrity\()/)
   })
 }
@@ -287,17 +336,138 @@ test('visual-regression 的渲染器釘死在與 lock 相同版本的 Playwright
   assert.match(attribute, /visual-baseline-diff-report\.mjs --selftest/, '歸因腳本要先跑自己的對照組')
   assert.match(attribute, /--old-dir "\$RUNNER_TEMP\/reference-baseline"/, '歸因必須比對「參考 commit 在同一個容器重拍」的圖')
   assert.match(attribute, /--since-ref "\$REFERENCE_REF"/, '歸因區間必須是 REFERENCE_REF..HEAD(引號包住的 shell 變數,不直接內插)')
-  assert.match(source, /baseline-diff\/\s*\n\s*if-no-files-found: error/, 'artifact 必須帶歸因報告')
+  // 2026-10-14(R3):artifact 的根目錄 = 審核包(新圖全部 + 相對已提交基準的 before / after / diff + 歸因報告原樣),
+  // 審核包由歸因的輸出建出 —— 沒有歸因就沒有審核包(版面與判定見 scripts/visual-baseline-review-package.mjs)。
+  assert.match(source, /--attribution \.git\/governance-runtime\/evidence\/visual\/baseline-diff \\\n\s+--out \.git\/governance-runtime\/evidence\/visual\/baseline-review/, '審核包必須由歸因輸出建出')
+  assert.match(source, /name: visual-baselines-recaptured\s*\n\s*path: \.git\/governance-runtime\/evidence\/visual\/baseline-review\/\s*\n\s*if-no-files-found: error/, 'artifact 必須就是審核包目錄(缺包 = 紅)')
   assert.doesNotMatch(source, /git (commit|push)/, '這個 job 不得自己 commit / push baseline')
   assert.match(source, /permissions:\s*\n\s*contents: read/, '維持 contents: read')
   // 2026-09-22 run #288:容器裡沒有 git-lfs,checkout 的 LFS 旗標讓 job 在 36 秒內死在簽出階段。LFS 從沒啟用 ——
   // 為不存在的未來預留的旗標,環境一換就是硬失敗。真要用 LFS 時,同一個 PR 必須同時裝 git-lfs 並改這條斷言。
   assert.doesNotMatch(source, /^\s*lfs:\s*true\b/m, '容器內的 checkout 不得要求 git-lfs(映像沒有它;LFS 也沒在用)')
-  // 2026-09-23 run #294:歸因報告跑 `git log <reference>..HEAD`,HEAD 的簽出必須帶完整歷史(第一個 checkout 的 fetch-depth: 0)
-  const firstCheckout = source.slice(source.indexOf('- uses: actions/checkout@'), source.indexOf('- uses: actions/setup-node@'))
+  // 2026-09-23 run #294:歸因報告跑 `git log <reference>..HEAD`,HEAD 的簽出必須帶完整歷史(重拍 job 第一個 checkout 的 fetch-depth: 0)
+  // 2026-10-14:檔案裡第一個 checkout 現在是 rebake-gate 的稀疏簽出(只要兩個檔),所以從重拍 job 起算
+  const recaptureJob = source.slice(source.indexOf('\n  visual-regression:\n'))
+  const firstCheckout = recaptureJob.slice(recaptureJob.indexOf('- uses: actions/checkout@'), recaptureJob.indexOf('- uses: actions/setup-node@'))
   assert.match(firstCheckout, /fetch-depth: 0/, 'HEAD 的簽出必須 fetch-depth: 0,否則 reference..HEAD 的歸因區間拿不到歷史')
   assert.match(firstCheckout, /ref: \$\{\{ env\.TARGET_REF \}\}/, 'HEAD 的簽出必須拍 TARGET_REF 那棵樹(否則 PR 分支永遠拍不到)')
   assert.equal((source.match(/\bTARGET_REF\b/g) ?? []).length, 3, 'TARGET_REF 只有三處:env 宣告、註解裡的說明、第一個 checkout 的 ref(不得散到別的步驟)')
+})
+
+// 2026-10-14(待辦總帳 SM7):Visual Regression 的「Resolve reference ref」09-30 進 main 後兩次週跑(09-30 job 109831972793、
+// 10-07 job 112744821910)都死在 `fatal: detected dubious ownership` —— 容器裡 root 讀 uid 1001 的簽出目錄,裸 git 拒讀;
+// `for tag in $(git tag …)` 的命令替換失敗不觸發 bash -e,迴圈 0 圈 → 被印成「找不到任何有已發布 release 的 v* tag」。
+// 這一條測兩件事:(1) PR 階段的容器 job 逐字跑同一步(上面那條只照搬了開頭幾步,所以 PR 抓不到);(2) 這一步本身的行為 ——
+// 用 git 自己的測試開關 GIT_TEST_ASSUME_DIFFERENT_OWNER 造出「執行者 ≠ 擁有者」(不需要 root),四面:
+//   A 對照組:裸 git 在這個條件下必拒(條件真的重現);B 簽出目錄 = 指名的 safe.directory → 解析出最新 release tag 的 40 碼;
+//   C 簽出目錄不在信任範圍 → 儀器失效、印出 git 原話(dubious ownership),不得印成「沒有 tag / 沒有 release」;
+//   D 明確輸入 reference_ref 時 git 讀不到 → 同樣是儀器失效 + git 原話,不得印成「解析不到 commit」;E 0 個 v* tag → 儀器失效。
+// Releases API 以假的 curl 回 200 / draft:false 代替(這條測的是 git 那一半;API 那一半的 404 / 非 200 分支照原文不動)。
+test('Visual Regression「Resolve reference ref」:git 讀不到簽出目錄 = 儀器失效並印 git 原話;PR 容器 job 逐字跑同一步', () => {
+  const STEP = /- name: Resolve reference ref\(留空 = origin\/main 上最近一次已發布的 release tag\)\n\s+env:\n\s+GITHUB_TOKEN: \$\{\{ github\.token \}\}\n\s+run: \|\n((?: {10}.*\n)+)/
+  const visualSource = readWorkflow('visual-regression.yml')
+  const ciSource = readWorkflow('ci.yml')
+  const containerSource = ciSource.slice(ciSource.indexOf('\n  container-closed-git:\n'))
+  const visualStep = visualSource.match(STEP)?.[1]
+  const containerStep = containerSource.match(STEP)?.[1]
+  assert.ok(visualStep, 'visual-regression.yml 找不到「Resolve reference ref」步驟')
+  assert.ok(containerStep, 'ci.yml container-closed-git 必須逐字跑 Visual Regression 的「Resolve reference ref」(PR 階段才抓得到容器裡的 git 問題)')
+  assert.equal(containerStep, visualStep, '兩邊的「Resolve reference ref」run 內容必須逐字相同')
+  assert.ok(containerSource.indexOf('Resolve reference ref') < containerSource.indexOf('npm run --silent setup:dependencies'), '容器 job 的順序要跟 Visual Regression 一樣:解析參考 commit 在安裝依賴之前')
+  const containerCheckout = containerSource.slice(containerSource.indexOf('- name: Checkout reviewed source'), containerSource.indexOf('- name: Setup Node'))
+  assert.match(containerCheckout, /fetch-depth: 0/, '容器 job 的簽出必須帶完整歷史與 tag(同 Visual Regression),否則預設路徑讀不到 origin/main 與 v* tag')
+  const body = visualStep.split('\n').map((line) => line.slice(10)).join('\n')
+  assert.doesNotMatch(body, /for tag in \$\(/, 'tag 清單不得寫在 for 的命令替換裡(失敗會被吞成 0 圈)')
+  // 只看命令位置(引號裡的訊息文字不算):剝掉雙引號字串後,行首或 ; | & ( $ 之後出現的 `git ` 才是一次呼叫
+  const bareGit = body.split('\n')
+    .filter((line) => !/^ws_git\(\) \{ git -c safe\.directory="\$GITHUB_WORKSPACE" "\$@"; \}$/.test(line))
+    .filter((line) => /(^|[\s;|&($])git\s/.test(line.replace(/"(?:[^"\\]|\\.)*"/g, '""')))
+  assert.deepEqual(bareGit, [], '這一步的每一次 git 呼叫都必須經 ws_git(只信任簽出目錄本身)')
+  // Releases API 的每一次 curl 都要帶重試與逾時:container-closed-git 在必過 Verify 裡,一次暫時性 5xx / 斷線就判儀器失效
+  // 會擋住合併,而 PAT 沒有 actions:write、不能重跑(#163 / 09d2eaa2 的前例)。404 不在 curl 的重試清單裡,行為不變。
+  const curlCalls = body.split('\n').filter((line) => /\bcurl\s/.test(line))
+  assert.ok(curlCalls.length > 0, '對照組失效:這一步找不到任何 curl 呼叫(步驟改寫了?這條斷言要跟著改,不能讓它空轉成綠)')
+  for (const line of curlCalls) {
+    assert.match(line, /\s--retry [1-9]\d*\s/, `Releases API 的 curl 必須帶 --retry:${line.trim()}`)
+    assert.match(line, /\s--max-time [1-9]\d*\s/, `Releases API 的 curl 必須帶 --max-time(重試要有每次的上限):${line.trim()}`)
+  }
+
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'resolve-reference-ref-')))
+  try {
+    const hermetic = { HOME: join(base, 'home'), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', LC_ALL: 'C' }
+    mkdirSync(hermetic.HOME)
+    const git = (cwd, args) => {
+      const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...hermetic, GIT_AUTHOR_NAME: 'f', GIT_AUTHOR_EMAIL: 'f@example.invalid', GIT_COMMITTER_NAME: 'f', GIT_COMMITTER_EMAIL: 'f@example.invalid' } })
+      assert.equal(r.status, 0, `fixture git ${args.join(' ')}:${r.stderr}`)
+      return r.stdout.trim()
+    }
+    const makeRepo = (name, tags) => {
+      const repo = join(base, name)
+      mkdirSync(repo)
+      git(repo, ['init', '-q'])
+      for (const [i, tag] of tags.entries()) {
+        writeFileSync(join(repo, 'f.txt'), `${i}\n`)
+        git(repo, ['add', 'f.txt'])
+        git(repo, ['commit', '-q', '-m', `c${i}`])
+        git(repo, ['tag', tag])
+      }
+      if (!tags.length) { writeFileSync(join(repo, 'f.txt'), 'x\n'); git(repo, ['add', 'f.txt']); git(repo, ['commit', '-q', '-m', 'c']) }
+      git(repo, ['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+      return repo
+    }
+    const tagged = makeRepo('tagged', ['v0.1.0-beta.1', 'v0.1.0-beta.2'])
+    const untagged = makeRepo('untagged', [])
+    const fakeBin = join(base, 'bin')
+    mkdirSync(fakeBin)
+    // 假 curl:把 {"draft":false} 寫到 -o 指定的檔、回 200(只代 Releases API;git 那一半全是真的)
+    writeFileSync(join(fakeBin, 'curl'), '#!/bin/sh\nout=""\nwhile [ $# -gt 0 ]; do [ "$1" = "-o" ] && { out="$2"; shift; }; shift; done\nprintf \'{"draft":false}\' > "$out"\nprintf 200\n')
+    chmodSync(join(fakeBin, 'curl'), 0o755)
+    const run = ({ cwd, workspace, reference = '' }) => {
+      const runnerTemp = mkdtempSync(join(base, 'runner-'))
+      const envFile = join(runnerTemp, 'github-env')
+      writeFileSync(envFile, '')
+      // 步驟原文寫成腳本檔再交給 bash 執行(不用 `bash -c <字串>`:harness 來源政策禁止 shell 字串求值,
+      // infra/governance/lib/harness-source-inventory.mjs「forbidden shell command evaluation」;`--` 之後只會是腳本路徑)
+      const stepFile = join(runnerTemp, 'step.sh')
+      writeFileSync(stepFile, body)
+      const r = spawnSync('bash', ['-eo', 'pipefail', '--', stepFile], {
+        cwd,
+        encoding: 'utf8',
+        env: { ...process.env, ...hermetic, PATH: `${fakeBin}:${process.env.PATH}`, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1', GITHUB_WORKSPACE: workspace, RUNNER_TEMP: runnerTemp, GITHUB_ENV: envFile, GITHUB_REPOSITORY: 'owner/repo', GITHUB_TOKEN: 'fixture', REFERENCE_REF: reference },
+      })
+      return { status: r.status, stderr: r.stderr ?? '', stdout: r.stdout ?? '', env: readFileSync(envFile, 'utf8') }
+    }
+    // A 對照組:條件真的重現 —— 裸 git 在「執行者 ≠ 擁有者」下必拒
+    const raw = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: tagged, encoding: 'utf8', env: { ...process.env, ...hermetic, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1' } })
+    assert.equal(raw.status, 128, `對照組失效:裸 git 在 GIT_TEST_ASSUME_DIFFERENT_OWNER=1 下沒有拒絕(git ${spawnSync('git', ['--version'], { encoding: 'utf8' }).stdout.trim()} 不認這個開關?)`)
+    assert.match(raw.stderr, /dubious ownership/)
+    // B 修法生效:簽出目錄就是指名的 safe.directory → 解析出最新那個 release tag 的 40 碼並寫進 GITHUB_ENV
+    const ok = run({ cwd: tagged, workspace: tagged })
+    assert.equal(ok.status, 0, `B 應解析成功:${ok.stderr}`)
+    assert.equal(ok.env.trim(), `REFERENCE_REF=${git(tagged, ['rev-parse', 'v0.1.0-beta.2^{commit}'])}`)
+    // C 簽出目錄不在信任範圍 → 儀器失效 + git 原話;不得被讀成「沒有 tag / 沒有 release」
+    const other = mkdtempSync(join(base, 'elsewhere-'))
+    const broken = run({ cwd: tagged, workspace: other })
+    assert.notEqual(broken.status, 0)
+    assert.match(broken.stderr, /INSTRUMENT-FAIL/)
+    assert.match(broken.stderr, /dubious ownership/, 'git 讀不到時必須印出 git 自己的原話')
+    assert.doesNotMatch(broken.stderr, /沒有一個有已發布的 release|0 個 v\* tag/, 'git 讀不到不得被印成「沒有 tag / 沒有 release」')
+    assert.equal(broken.env, '', '儀器失效時不得寫出參考 commit')
+    // D 明確輸入 reference_ref + git 讀不到 → 同樣是儀器失效 + git 原話,不得印成「解析不到 commit」
+    const explicit = run({ cwd: tagged, workspace: other, reference: 'v0.1.0-beta.1' })
+    assert.notEqual(explicit.status, 0)
+    assert.match(explicit.stderr, /dubious ownership/)
+    assert.doesNotMatch(explicit.stderr, /解析不到 commit/)
+    // 同一個明確輸入,git 讀得到時照常解析(對照)
+    const explicitOk = run({ cwd: tagged, workspace: tagged, reference: 'v0.1.0-beta.1' })
+    assert.equal(explicitOk.env.trim(), `REFERENCE_REF=${git(tagged, ['rev-parse', 'v0.1.0-beta.1^{commit}'])}`)
+    // E 讀得到、但 0 個 v* tag → 儀器失效(簽出沒帶 tag),不是「沒有 release」
+    const empty = run({ cwd: untagged, workspace: untagged })
+    assert.notEqual(empty.status, 0)
+    assert.match(empty.stderr, /INSTRUMENT-FAIL:git 讀得到 origin\/main,但上面 0 個 v\* tag/)
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
 })
 
 test('Pages deployment binds and reads back the exact Storybook source', () => {
@@ -323,4 +493,371 @@ test('Pages deployment binds and reads back the exact Storybook source', () => {
   const stepNames = build.steps.map(step => step.name).filter(Boolean)
   assert.ok(stepNames.indexOf('Rebuild exact Storybook') < stepNames.indexOf('Refuse a stale artifact before upload'))
   assert.ok(stepNames.indexOf('Refuse a stale artifact before upload') < stepNames.indexOf('Upload Pages artifact'))
+})
+
+// 2026-10-14(待辦總帳 R3):PR 分支用**自己的**這份 Visual Regression 重拍。repository_dispatch 永遠拿 main 的 workflow 檔跑,
+// 而 main 那份的「Resolve reference ref」在合併前是壞的(SM7)→ 合併前沒有任何路徑能重拍;R3 的圖組要在合併前給 user 逐張看。
+// push 事件跑的是被推上去那個 commit 自己的 workflow 檔,所以開一條**只在非 main、只看重拍請求檔**的 push 觸發;
+// 但「觸發了」不等於「是給這條分支的請求」(合併 / rebase main 帶進來的請求檔、GitHub 對 >1,000 commit 或差異逾時一律觸發),
+// 所以真正的判定在 job `rebake-gate`:請求檔的 branch 必須等於這次推送的分支。
+// 這一條測五件事:(1) 觸發形狀、權限與 concurrency(以運算式求值驗性質,不只比字串);(2) 閘的形狀;
+// (3) 兩支 workflow 照搬的步驟逐字相同(整個 step 區塊,不只 run);(4) env 優先序 —— 用 workflow 裡**真的那幾步**
+//     (閘 → job 的 if → 讀請求檔 → Resolve reference ref)在夾具裡依序跑,按 GitHub 的 GITHUB_OUTPUT / GITHUB_ENV 規則疊加;
+// (5) 審核包與上傳的條件。
+const MIRRORED_CONTAINER_STEPS = Object.freeze([
+  'Provide the closed tool profile interpreters the image lacks',
+  'Resolve reference ref(留空 = origin/main 上最近一次已發布的 release tag)',
+])
+function stepBlock(source, name) {
+  const lines = source.split('\n')
+  const start = lines.findIndex((line) => line === `      - name: ${name}`)
+  if (start < 0) return null
+  const out = [lines[start]]
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (line.trim() === '' || /^ {6}(?:- |#)/.test(line) || /^ {0,5}\S/.test(line)) break
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
+/**
+ * GitHub Actions 運算式的最小求值器(只收這支 workflow 用到的子集:字串字面、context 路徑、== / !=、&& / ||、!、括號、
+ * format()、cancelled())。&& / || 回傳運算元本身(GitHub 語意),不是布林。用來驗「運算式在各種事件下算出什麼」這個性質,
+ * 而不是只比字串 —— 2026-10-14 的教訓:字串照抄進測試,錯的性質(dispatch 全擠一組)也跟著被斷言成對的。
+ */
+function evaluateExpression(text, context) {
+  const trimmed = text.trim()
+  // 整段是一個 ${{ }} → 回傳運算值;字面文字夾著 ${{ }}(例 group: a-${{ x }}-b)→ 逐段代入成字串(GitHub 同樣支援這種寫法)
+  if (!/^\$\{\{[\s\S]*\}\}$/.test(trimmed) || /\}\}[\s\S]*\$\{\{/.test(trimmed)) {
+    return trimmed.replace(/\$\{\{([\s\S]*?)\}\}/g, (_, inner) => String(evaluateExpression(`\${{${inner}}}`, context)))
+  }
+  const body = trimmed.replace(/^\$\{\{\s*/, '').replace(/\s*\}\}$/, '')
+  const tokens = []
+  const lexer = /\s*(?:('(?:[^']|'')*')|(\|\||&&|==|!=|[(),!])|([A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*))/y
+  let at = 0
+  while (at < body.length) {
+    lexer.lastIndex = at
+    const match = lexer.exec(body)
+    if (!match) throw new Error(`運算式無法解析:${body.slice(at)}`)
+    at = lexer.lastIndex
+    if (match[1]) tokens.push({ type: 'str', value: match[1].slice(1, -1).replace(/''/g, "'") })
+    else if (match[2]) tokens.push({ type: 'op', value: match[2] })
+    else if (match[3]) tokens.push({ type: 'id', value: match[3] })
+    if (/^\s*$/.test(body.slice(at))) break
+  }
+  let index = 0
+  const peek = () => tokens[index]
+  const take = (value) => { const token = tokens[index]; if (value !== undefined && token?.value !== value) throw new Error(`預期 ${value},得到 ${token?.value}`); index += 1; return token }
+  const truthy = (value) => value !== '' && value !== false && value !== null && value !== undefined && value !== 0
+  const lookup = (path) => path.split('.').reduce((value, key) => (value == null ? undefined : value[key]), context)
+  const primary = () => {
+    const token = take()
+    if (token.type === 'str') return token.value
+    if (token.value === '!') return !truthy(primary())
+    if (token.value === '(') { const value = or(); take(')'); return value }
+    if (token.type === 'id' && peek()?.value === '(') {
+      take('(')
+      const args = []
+      if (peek()?.value !== ')') { args.push(or()); while (peek()?.value === ',') { take(','); args.push(or()) } }
+      take(')')
+      if (token.value === 'format') return args[0].replace(/\{(\d+)\}/g, (_, n) => String(args[Number(n) + 1] ?? ''))
+      if (token.value === 'cancelled') return Boolean(context.cancelled)
+      throw new Error(`未支援的函式 ${token.value}`)
+    }
+    if (token.type === 'id') return lookup(token.value) ?? ''
+    throw new Error(`非預期的 ${token.value}`)
+  }
+  const comparison = () => {
+    const left = primary()
+    if (peek()?.value === '==' || peek()?.value === '!=') {
+      const op = take().value
+      const equal = String(left).toLowerCase() === String(primary()).toLowerCase()
+      return op === '==' ? equal : !equal
+    }
+    return left
+  }
+  const and = () => { let value = comparison(); while (peek()?.value === '&&') { take(); const right = comparison(); value = truthy(value) ? right : value } return value }
+  const or = () => { let value = and(); while (peek()?.value === '||') { take(); const right = and(); value = truthy(value) ? value : right } return value }
+  const result = or()
+  if (index !== tokens.length) throw new Error(`運算式沒讀完:${tokens.slice(index).map((t) => t.value).join(' ')}`)
+  return result
+}
+
+test('Visual Regression 的 PR 分支重拍路徑:push 只在非 main + 只看請求檔、閘判分支、權限封閉、concurrency 只讓 push 互相取代、env 優先序實跑、照搬步驟逐字相同', () => {
+  const source = readWorkflow('visual-regression.yml')
+  const document = loadYaml(source)
+  const workflow = parseWorkflowSemantics(source)
+  // (1) 觸發形狀:非 main、只看請求檔;不准 branches / tags(會把 main 或 tag 推送放進來)、不准 pull_request(那是 PR 閘的事)
+  assert.deepEqual(workflow.on.push, { 'branches-ignore': ['main'], paths: [REBAKE_REQUEST_PATH] })
+  assert.equal(REBAKE_REQUEST_PATH, 'infra/governance/baseline/visual/rebake-request.json', '請求檔路徑的 SSOT 在 scripts/visual-rebake-request.mjs,workflow 的 paths 必須同一個字串')
+  assert.deepEqual(workflow.permissions, { contents: 'read' }, '只准 contents: read')
+  for (const job of Object.values(workflow.jobs)) assert.equal(job.permissions, null, 'job 不得自己加權限')
+  assert.doesNotMatch(source, /\bsecrets\./, '除了 github.token 之外不得讀任何 secret')
+  // concurrency:只有 push 互相取代(同一條分支),其他事件每個 run 自成一組。
+  // GitHub 在同一組裡會取消任何已在等待中的 run(不看 cancel-in-progress)—— repository_dispatch 的 github.ref 永遠是預設分支,
+  // 若 dispatch 共用一組,連發三個不同 target_ref 的 dispatch,第二個會被第三個砍掉。以下對運算式**求值**驗這個性質。
+  assert.deepEqual(workflow.concurrency, {
+    group: "${{ github.event_name == 'push' && format('visual-regression-push-{0}', github.ref) || format('visual-regression-{0}-{1}', github.event_name, github.run_id) }}",
+    'cancel-in-progress': "${{ github.event_name == 'push' }}",
+  })
+  const groupOf = (github) => evaluateExpression(workflow.concurrency.group, { github })
+  const cancels = (github) => evaluateExpression(workflow.concurrency['cancel-in-progress'], { github })
+  const dispatches = [101, 102, 103].map((run_id) => groupOf({ event_name: 'repository_dispatch', ref: 'refs/heads/main', run_id }))
+  assert.equal(new Set(dispatches).size, 3, `三個 dispatch(ref 都是預設分支)必須各自一組,否則等待中的那個會被取代:${dispatches.join(' / ')}`)
+  assert.notEqual(groupOf({ event_name: 'schedule', ref: 'refs/heads/main', run_id: 1 }), groupOf({ event_name: 'schedule', ref: 'refs/heads/main', run_id: 2 }), '排程每次各自一組')
+  assert.notEqual(groupOf({ event_name: 'workflow_dispatch', ref: 'refs/heads/main', run_id: 7 }), groupOf({ event_name: 'workflow_dispatch', ref: 'refs/heads/main', run_id: 8 }), '按鈕每次各自一組')
+  assert.equal(groupOf({ event_name: 'push', ref: 'refs/heads/fix/r3', run_id: 1 }), groupOf({ event_name: 'push', ref: 'refs/heads/fix/r3', run_id: 2 }), '同一條分支的兩次 push 必須同一組(後一次取代前一次)')
+  assert.notEqual(groupOf({ event_name: 'push', ref: 'refs/heads/fix/r3', run_id: 1 }), groupOf({ event_name: 'push', ref: 'refs/heads/fix/other', run_id: 1 }), '不同分支的 push 互不影響')
+  assert.ok(!dispatches.includes(groupOf({ event_name: 'push', ref: 'refs/heads/main', run_id: 101 })), 'push 的組與 dispatch 的組不得重疊')
+  assert.equal(cancels({ event_name: 'push' }), true)
+  for (const event_name of ['repository_dispatch', 'workflow_dispatch', 'schedule']) assert.equal(cancels({ event_name }), false, `${event_name} 不得取消執行中的 run`)
+
+  // (2) 閘:只在 push、不用容器、沒有自己的權限、只稀疏簽出請求檔與判定腳本、輸出 rebake;重拍 job needs 它並以它的輸出決定 push 時跑不跑
+  const visualJob = document.jobs['visual-regression']
+  const gateJob = document.jobs['rebake-gate']
+  assert.ok(gateJob, '必須有 rebake-gate job')
+  assert.deepEqual(Object.keys(document.jobs), ['rebake-gate', 'visual-regression'])
+  assert.equal(gateJob.if, "${{ github.event_name == 'push' }}", '閘只在 push 跑')
+  assert.equal(gateJob['runs-on'], 'ubuntu-24.04')
+  assert.equal(gateJob.container, undefined, '閘是輕量 job,不用容器')
+  assert.equal(gateJob.permissions, undefined, '閘不得自己加權限(沿用 contents: read)')
+  assert.ok(Number.isInteger(gateJob['timeout-minutes']) && gateJob['timeout-minutes'] <= 10, '閘要有短逾時')
+  assert.deepEqual(gateJob.outputs, { rebake: '${{ steps.gate.outputs.rebake }}' })
+  assert.equal(gateJob.steps.length, 3, '閘只有三步:簽出 / node / 判定')
+  const [gateCheckout, gateNode, gateStep] = gateJob.steps
+  assert.equal(gateCheckout.uses, visualJob.steps[0].uses, '閘的 checkout 與重拍 job 用同一個釘死的版本')
+  assert.deepEqual(gateCheckout.with, {
+    'persist-credentials': false,
+    'sparse-checkout': `${REBAKE_REQUEST_PATH}\nscripts/visual-rebake-request.mjs\n`,
+    'sparse-checkout-cone-mode': false,
+  }, '閘只稀疏簽出請求檔與判定腳本')
+  const visualNode = visualJob.steps.find((step) => String(step.uses).startsWith('actions/setup-node@'))
+  assert.equal(gateNode.uses, visualNode.uses, '閘的 setup-node 與重拍 job 用同一個釘死的版本')
+  assert.equal(gateNode.with['node-version'], visualNode.with['node-version'], '閘與重拍 job 用同一個 node 版本')
+  assert.equal(gateStep.id, 'gate')
+  assert.equal(gateStep.run, `node scripts/visual-rebake-request.mjs --gate --file ${REBAKE_REQUEST_PATH} --github-output "$GITHUB_OUTPUT"`)
+  assert.deepEqual(visualJob.needs, ['rebake-gate'])
+  assert.equal(visualJob.if, "${{ !cancelled() && (github.event_name != 'push' || needs.rebake-gate.outputs.rebake == 'true') }}")
+  const jobRuns = ({ event_name, rebake = '' }) => Boolean(evaluateExpression(visualJob.if, { github: { event_name }, needs: { 'rebake-gate': { outputs: { rebake } } }, cancelled: false }))
+  assert.equal(jobRuns({ event_name: 'push', rebake: 'true' }), true)
+  assert.equal(jobRuns({ event_name: 'push', rebake: 'false' }), false, '閘判略過 → 重拍 job 不跑')
+  assert.equal(jobRuns({ event_name: 'push', rebake: '' }), false, '閘紅了(沒有輸出)→ 重拍 job 不跑')
+  for (const event_name of ['schedule', 'workflow_dispatch', 'repository_dispatch']) assert.equal(jobRuns({ event_name }), true, `${event_name}:閘被略過,重拍 job 仍照常跑`)
+
+  // 讀請求檔的那一步:只在 push、排在簽出之後與 Resolve reference ref 之前、命令逐字固定
+  const steps = visualJob.steps
+  const names = steps.map((step) => step.name ?? step.uses)
+  const readIdx = names.indexOf('Read the rebake request(只在 push 事件)')
+  const resolveIdx = names.indexOf(MIRRORED_CONTAINER_STEPS[1])
+  const checkoutIdx = names.findIndex((name) => String(name).startsWith('actions/checkout@'))
+  assert.ok(checkoutIdx >= 0 && readIdx > checkoutIdx && readIdx < resolveIdx, '讀請求檔必須在簽出之後、Resolve reference ref 之前(那一步讀的 REFERENCE_REF 要是請求檔的值)')
+  const readStep = steps[readIdx]
+  assert.equal(readStep.if, "${{ github.event_name == 'push' }}", '只在 push 事件讀請求檔;其他事件的值已在 job env')
+  assert.equal(readStep.run, `node scripts/visual-rebake-request.mjs --file ${REBAKE_REQUEST_PATH} --github-env "$GITHUB_ENV"`)
+  // GitHub 的優先序:步驟層 env 會蓋過 GITHUB_ENV —— 任何步驟自己設這兩個名字,請求檔的值就被蓋回去
+  for (const step of steps) {
+    for (const name of ['UPDATE_BASELINE', 'REFERENCE_REF']) assert.ok(!step.env || !(name in step.env), `步驟「${step.name ?? step.uses}」不得在步驟層設 ${name}(會蓋過 GITHUB_ENV)`)
+  }
+  // job env 對 push 事件只會落到預設:兩個運算式只讀 inputs / client_payload(push 時兩者都空)
+  const jobEnv = visualJob.env
+  assert.match(jobEnv.UPDATE_BASELINE, /^\$\{\{ \(inputs\.update_baseline == true \|\| github\.event\.client_payload\.update_baseline == true \|\| github\.event\.client_payload\.update_baseline == 'true'\) && 'true' \|\| 'false' \}\}$/)
+  assert.equal(jobEnv.REFERENCE_REF, "${{ inputs.reference_ref || github.event.client_payload.reference_ref || '' }}")
+
+  // (3) 照搬的步驟:整個 step 區塊(name / env / run)逐字相同,不只 run 內容
+  const ciSource = readWorkflow('ci.yml')
+  const containerSource = ciSource.slice(ciSource.indexOf('\n  container-closed-git:\n'))
+  for (const name of MIRRORED_CONTAINER_STEPS) {
+    const visual = stepBlock(source, name)
+    const container = stepBlock(containerSource, name)
+    assert.ok(visual && container, `兩支 workflow 都必須有「${name}」`)
+    assert.equal(container, visual, `「${name}」兩邊的整個 step 區塊必須逐字相同`)
+  }
+  // PR 閘在同一個映像裡先跑這條路用到的三支對照組
+  for (const command of ['node scripts/visual-rebake-request.mjs --selftest', 'node scripts/visual-baseline-review-package.mjs --selftest', 'node scripts/test-apply-approved-baselines.mjs']) {
+    assert.ok(containerSource.includes(`          ${command}\n`), `ci.yml container-closed-git 必須跑:${command}`)
+  }
+
+  // (5) 審核包:歸因紅了也建包(user 才看得到要查哪幾張),重拍 / 穩定性紅了 → 歸因被略過 → 不建包;上傳只看建包成功
+  const packageStep = steps.find((step) => step.id === 'review-package')
+  assert.ok(packageStep, '必須有建審核包的步驟(id: review-package)')
+  assert.equal(packageStep.if, "${{ !cancelled() && env.UPDATE_BASELINE == 'true' && (steps.attribution.outcome == 'success' || steps.attribution.outcome == 'failure') }}")
+  assert.ok(steps.findIndex((step) => step.id === 'attribution') < steps.indexOf(packageStep), '審核包在歸因之後')
+  const upload = steps.find((step) => step.with?.name === 'visual-baselines-recaptured')
+  assert.equal(upload.if, "${{ !cancelled() && env.UPDATE_BASELINE == 'true' && steps.review-package.outcome == 'success' }}")
+  assert.equal(upload.with.path, '.git/governance-runtime/evidence/visual/baseline-review/')
+
+  // workflow 以路徑呼叫的三支 CLI 真的會跑:它們都有「被 import 時不跑」的守衛,守衛若判錯,CLI 會靜默 exit 0(假綠)
+  // 三次呼叫逐一寫成字面路徑(cwd = ROOT):harness 來源政策要求 node 的腳本運算元可靜態審查
+  //(infra/governance/lib/harness-source-inventory.mjs「unreviewable Node pre-script argv」),迴圈變數與 resolve() 都讀不出值
+  const selftests = [
+    ['scripts/visual-rebake-request.mjs', /✓ visual-rebake-request selftest/, spawnSync(process.execPath, ['scripts/visual-rebake-request.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+    ['scripts/visual-baseline-review-package.mjs', /✓ visual-baseline-review-package selftest/, spawnSync(process.execPath, ['scripts/visual-baseline-review-package.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+    ['scripts/visual-baseline-diff-report.mjs', /✓ visual-baseline-diff-report selftest/, spawnSync(process.execPath, ['scripts/visual-baseline-diff-report.mjs', '--selftest'], { cwd: ROOT, encoding: 'utf8' })],
+  ]
+  for (const [script, marker, r] of selftests) {
+    assert.equal(r.status, 0, `${script} --selftest:${r.stderr}`)
+    assert.match(r.stdout, marker, `${script} 以路徑呼叫時沒有真的執行(守衛判錯 = 靜默 exit 0)`)
+  }
+
+  // 已提交的請求檔(若有)必須能被同一支解析器讀懂 —— 壞的請求在 PR 閘就紅,不等到 push 觸發才紅
+  const committedRequest = resolve(ROOT, REBAKE_REQUEST_PATH)
+  try {
+    const text = readFileSync(committedRequest, 'utf8')
+    const parsed = parseRebakeRequest(text)
+    assert.ok(parsed.ok, `已提交的重拍請求檔不合格:${parsed.errors?.join(' / ')}`)
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+
+  // (4) 實跑:workflow 裡真的那幾步依序在夾具跑 —— 閘(在只有兩個檔的稀疏目錄,證明稀疏簽出就夠)→ 重拍 job 的 if(求值)
+  //     → 讀請求檔 → Resolve reference ref;GITHUB_OUTPUT / GITHUB_ENV 依 GitHub 規則疊加(後寫的蓋前面、蓋過 job env)
+  const resolveStep = steps[resolveIdx]
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'rebake-request-env-')))
+  try {
+    const hermetic = { HOME: join(base, 'home'), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', LC_ALL: 'C' }
+    mkdirSync(hermetic.HOME)
+    const gitEnv = { ...process.env, ...hermetic, GIT_AUTHOR_NAME: 'f', GIT_AUTHOR_EMAIL: 'f@example.invalid', GIT_COMMITTER_NAME: 'f', GIT_COMMITTER_EMAIL: 'f@example.invalid' }
+    const git = (cwd, args) => {
+      const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: gitEnv })
+      assert.equal(r.status, 0, `fixture git ${args.join(' ')}:${r.stderr}`)
+      return r.stdout.trim()
+    }
+    const repo = join(base, 'repo')
+    mkdirSync(join(repo, 'scripts'), { recursive: true })
+    git(repo, ['init', '-q'])
+    for (const [i, tag] of ['v0.1.0-beta.1', 'v0.1.0-beta.2'].entries()) {
+      writeFileSync(join(repo, 'f.txt'), `${i}\n`)
+      git(repo, ['add', 'f.txt'])
+      git(repo, ['commit', '-q', '-m', `c${i}`])
+      git(repo, ['tag', tag])
+    }
+    git(repo, ['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+    // 讀請求檔的 CLI 在夾具裡就是同一支(複製,不改一個位元組)
+    const cli = readFileSync(resolve(ROOT, 'scripts/visual-rebake-request.mjs'))
+    writeFileSync(join(repo, 'scripts/visual-rebake-request.mjs'), cli)
+    const fakeBin = join(base, 'bin')
+    mkdirSync(fakeBin)
+    writeFileSync(join(fakeBin, 'curl'), '#!/bin/sh\nout=""\nwhile [ $# -gt 0 ]; do [ "$1" = "-o" ] && { out="$2"; shift; }; shift; done\nprintf \'{"draft":false}\' > "$out"\nprintf 200\n')
+    chmodSync(join(fakeBin, 'curl'), 0o755)
+    const readKeyValues = (file) => {
+      const out = {}
+      for (const line of readFileSync(file, 'utf8').split('\n').filter(Boolean)) {
+        const eq = line.indexOf('=')
+        assert.ok(eq > 0, `GITHUB_ENV / GITHUB_OUTPUT 只准 NAME=value 形狀:${line}`)
+        out[line.slice(0, eq)] = line.slice(eq + 1)
+      }
+      return out
+    }
+    const runStep = (run, env, cwd = repo) => {
+      const runnerTemp = mkdtempSync(join(base, 'runner-'))
+      const githubEnv = join(runnerTemp, 'github-env')
+      const githubOutput = join(runnerTemp, 'github-output')
+      writeFileSync(githubEnv, '')
+      writeFileSync(githubOutput, '')
+      // 同上:步驟原文寫成腳本檔再執行,不用 `bash -c <字串>`(harness 來源政策)
+      const stepFile = join(runnerTemp, 'step.sh')
+      writeFileSync(stepFile, run)
+      const r = spawnSync('bash', ['-eo', 'pipefail', '--', stepFile], {
+        cwd,
+        encoding: 'utf8',
+        env: { ...process.env, ...hermetic, PATH: `${fakeBin}:${process.env.PATH}`, GITHUB_WORKSPACE: cwd, RUNNER_TEMP: runnerTemp, GITHUB_ENV: githubEnv, GITHUB_OUTPUT: githubOutput, GITHUB_REPOSITORY: 'owner/repo', GITHUB_TOKEN: 'fixture', ...env },
+      })
+      return { status: r.status, stderr: r.stderr ?? '', stdout: r.stdout ?? '', githubEnv, githubOutput }
+    }
+    const placeRequest = (root, request) => {
+      const requestPath = join(root, REBAKE_REQUEST_PATH)
+      rmSync(requestPath, { force: true })
+      if (request !== undefined) {
+        mkdirSync(dirname(requestPath), { recursive: true })
+        writeFileSync(requestPath, typeof request === 'string' ? request : JSON.stringify(request))
+      }
+    }
+    // 模擬一次 run:閘(只在 push)→ 重拍 job 的 if → job env(依事件)→ 讀請求檔(只在 push)→ Resolve reference ref
+    const simulate = ({ event, ref = 'refs/heads/fix/r3', request, payload = {} }) => {
+      const refName = ref.replace(/^refs\/(?:heads|tags)\//, '')
+      const pushEnv = { GITHUB_EVENT_NAME: event, GITHUB_REF: ref, GITHUB_REF_NAME: refName }
+      placeRequest(repo, request)
+      let rebake = ''
+      if (evaluateExpression(gateJob.if, { github: { event_name: event } })) {
+        // 稀疏簽出:只有請求檔(若在)與判定腳本 —— 腳本若多 import 任何東西,這裡就跑不起來
+        const sparse = mkdtempSync(join(base, 'sparse-'))
+        mkdirSync(join(sparse, 'scripts'))
+        writeFileSync(join(sparse, 'scripts/visual-rebake-request.mjs'), cli)
+        placeRequest(sparse, request)
+        const gate = runStep(gateStep.run, pushEnv, sparse)
+        if (gate.status !== 0) return { failedAt: 'gate', stderr: gate.stderr, githubOutput: readFileSync(gate.githubOutput, 'utf8') }
+        rebake = readKeyValues(gate.githubOutput).rebake ?? ''
+        assert.ok(['true', 'false'].includes(rebake), `閘必須輸出 rebake=true|false,得到 ${JSON.stringify(readFileSync(gate.githubOutput, 'utf8'))}`)
+      }
+      if (!jobRuns({ event_name: event, rebake })) return { skipped: true, rebake }
+      // job env:按鈕 / API 的值只在各自的事件出現(這裡照 workflow 的運算式語意代入);push 與排程兩者皆空 → 預設
+      const env = {
+        ...pushEnv,
+        UPDATE_BASELINE: event === 'repository_dispatch' && payload.update_baseline === true ? 'true' : 'false',
+        REFERENCE_REF: (event === 'repository_dispatch' && payload.reference_ref) || '',
+      }
+      if (evaluateExpression(readStep.if, { github: { event_name: event } })) {
+        const read = runStep(readStep.run, env)
+        if (read.status !== 0) return { failedAt: 'read-request', stderr: read.stderr, githubEnv: readFileSync(read.githubEnv, 'utf8') }
+        Object.assign(env, readKeyValues(read.githubEnv))
+      }
+      const resolved = runStep(resolveStep.run, env)
+      if (resolved.status !== 0) return { failedAt: 'resolve', stderr: resolved.stderr }
+      return Object.assign(env, readKeyValues(resolved.githubEnv))
+    }
+    const shaOf = (tag) => git(repo, ['rev-parse', `${tag}^{commit}`])
+    const good = { schemaVersion: 1, branch: 'fix/r3', update_baseline: true, reference_ref: 'v0.1.0-beta.1', reason: 'R3 圖組重拍,給 user 逐張看', requestedAt: '2026-10-14T21:30:00+08:00' }
+    // push + 給這條分支的請求 + 指定參考 → 後面的步驟看到 UPDATE_BASELINE=true、REFERENCE_REF=那個 tag 的 40 碼(不是最新 release)
+    const pinned = simulate({ event: 'push', request: good })
+    assert.equal(pinned.failedAt, undefined, pinned.stderr)
+    assert.equal(pinned.skipped, undefined, '給這條分支的請求必須重拍')
+    assert.equal(pinned.UPDATE_BASELINE, 'true')
+    assert.equal(pinned.REFERENCE_REF, shaOf('v0.1.0-beta.1'), '請求檔的 reference_ref 必須流到 Resolve reference ref 並被解析成 40 碼')
+    // push + 參考留空 → 走預設路徑(最近一次已發布的 release)
+    const latest = simulate({ event: 'push', request: { ...good, reference_ref: '' } })
+    assert.equal(latest.REFERENCE_REF, shaOf('v0.1.0-beta.2'))
+    // push + 只比對
+    assert.equal(simulate({ event: 'push', request: { ...good, update_baseline: false } }).UPDATE_BASELINE, 'false')
+    // 閘的「略過、不紅」兩面:別條分支留下的請求(合併 / rebase main 帶進來的)、請求檔已刪(合併前的最後一步)
+    for (const [why, args] of [
+      ['請求寫的是別條分支', { event: 'push', request: { ...good, branch: 'feat/other' } }],
+      ['請求檔已刪除', { event: 'push' }],
+    ]) {
+      const got = simulate(args)
+      assert.equal(got.failedAt, undefined, `${why}:閘不得紅(${got.stderr})`)
+      assert.deepEqual(got, { skipped: true, rebake: 'false' }, `${why}:閘必須輸出 rebake=false,重拍 job 略過`)
+    }
+    // 閘的「紅」:形狀不合格(不得因為分支不符就吞掉)/ 在 main → 閘就紅,GITHUB_OUTPUT 一行都沒寫,重拍 job 不跑
+    for (const [why, args, pattern] of [
+      ['字串布林', { event: 'push', request: { ...good, update_baseline: 'true' } }, /JSON 布林/],
+      ['短 SHA', { event: 'push', request: { ...good, reference_ref: shaOf('v0.1.0-beta.1').slice(0, 8) } }, /短 SHA/],
+      ['缺 branch(舊形狀)', { event: 'push', request: (({ branch: _b, ...rest }) => rest)(good) }, /缺欄位:branch/],
+      ['形狀不合格且分支不符', { event: 'push', request: { ...good, branch: 'feat/other', update_baseline: 'true' } }, /JSON 布林/],
+      ['main 分支', { event: 'push', ref: 'refs/heads/main', request: good }, /main 不收重拍請求/],
+    ]) {
+      const got = simulate(args)
+      assert.equal(got.failedAt, 'gate', `${why}:必須在閘那一步紅`)
+      assert.match(got.stderr, pattern, `${why}:錯誤沒指名`)
+      assert.equal(got.githubOutput, '', `${why}:GITHUB_OUTPUT 必須一行都沒寫`)
+    }
+    // 第二道:閘被改壞、重拍 job 照樣跑時,讀請求那一步自己也拒絕別條分支的請求與已刪的檔(GITHUB_ENV 一行都不寫)
+    for (const [why, request, pattern] of [
+      ['別條分支的請求', { ...good, branch: 'feat/other' }, /不屬於這次推送/],
+      ['請求檔已刪除', undefined, /請求檔不在/],
+    ]) {
+      placeRequest(repo, request)
+      const read = runStep(readStep.run, { GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/fix/r3', GITHUB_REF_NAME: 'fix/r3' })
+      assert.notEqual(read.status, 0, `讀請求那一步對「${why}」必須紅`)
+      assert.match(read.stderr, pattern, `讀請求那一步對「${why}」錯誤沒指名`)
+      assert.equal(readFileSync(read.githubEnv, 'utf8'), '', `讀請求那一步對「${why}」不得寫 GITHUB_ENV`)
+    }
+    // 其他事件不碰請求檔:repository_dispatch 時就算 repo 裡有一份「要重拍」的請求檔,也只看 payload
+    const dispatch = simulate({ event: 'repository_dispatch', request: good, payload: { update_baseline: false } })
+    assert.equal(dispatch.UPDATE_BASELINE, 'false', 'repository_dispatch 不得讀請求檔')
+    assert.equal(dispatch.REFERENCE_REF, shaOf('v0.1.0-beta.2'))
+    assert.equal(simulate({ event: 'schedule', request: good }).UPDATE_BASELINE, 'false', '排程不得讀請求檔')
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
 })

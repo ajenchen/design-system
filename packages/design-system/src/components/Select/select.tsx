@@ -2,23 +2,29 @@
 // code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helpers + 4-mode renderer + Field SSOT consumption,split-into-files 會破壞 file-local helper closure
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
+import { flushSync } from 'react-dom'
+import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { RemovalStatus, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 // Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX`),Combobox 共用;理由與公式見該處。
@@ -212,10 +218,16 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 function SelectClearButton({
   size,
   onClear,
+  focusOwner,
   stopPropagation = false,
 }: {
   size: 'sm' | 'md' | 'lg'
   onClear: () => void
+  /**
+   * 清空後按鈕隨之卸載 —— 焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)時交給誰:Custom = 觸發欄位、Native = 原生 `<select>`
+   * (field-wrapper.tsx `keepFieldFocusBeforeUnmount`;2026-09-30 前鍵盤按「清除選取」後焦點落在 body)。
+   */
+  focusOwner: (button: HTMLElement) => HTMLElement | null | undefined
   stopPropagation?: boolean
 }) {
   return (
@@ -225,7 +237,11 @@ function SelectClearButton({
         action={{
           icon: X,
           label: '清除選取', // i18n-allow: DS default inline-action label
-          onClick: stopPropagation ? (e) => { e?.stopPropagation(); onClear() } : () => onClear(),
+          onClick: (e) => {
+            if (stopPropagation) e?.stopPropagation()
+            if (e) keepFieldFocusBeforeUnmount(e.currentTarget, focusOwner(e.currentTarget))
+            onClear()
+          },
         }}
       />
     </span>
@@ -233,31 +249,7 @@ function SelectClearButton({
 }
 SelectClearButton.displayName = 'SelectClearButton'
 
-/**
- * Trigger content for CustomSelect — 三種顯示模式分支(searchable+open / text / tag)
- * 抽出降低 `CustomSelect` forwardRef body 長度;邏輯本質是純展示分流,無 hook / ref。
- */
-function CustomSelectTriggerContent({
-  searchable,
-  open,
-  isTextDisplay,
-  size,
-  value,
-  selectedLabel,
-  selectedOpt,
-  SelectedIcon,
-  StartIcon,
-  iconSize,
-  placeholder,
-  search,
-  setSearch,
-  inputRef,
-  activeDescendantId,
-  ariaLabel,
-  labelId,
-  selectedItemRenderer,
-  truncationRef,
-}: {
+type CustomSelectTriggerContentProps = {
   searchable: boolean
   open: boolean
   isTextDisplay: boolean
@@ -272,13 +264,37 @@ function CustomSelectTriggerContent({
   search: string
   setSearch: (v: string) => void
   inputRef: React.RefObject<HTMLInputElement | null>
-  activeDescendantId?: string
   ariaLabel?: string
   labelId?: string
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
   /** 截斷 tooltip 量測點(text display 的值 span;tooltip trigger 在外層 combobox host,見 CustomSelect triggerTruncationRef 註解)*/
   truncationRef?: React.Ref<HTMLSpanElement>
-}): React.ReactNode {
+}
+/**
+ * Trigger content for CustomSelect — 三種顯示模式分支(searchable+open / text / tag)
+ * 抽出降低 `CustomSelect` forwardRef body 長度;邏輯本質是純展示分流,無 hook / ref。
+ */
+function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): React.ReactNode {
+  const {
+    searchable,
+    open,
+    isTextDisplay,
+    size,
+    value,
+    selectedLabel,
+    selectedOpt,
+    SelectedIcon,
+    StartIcon,
+    iconSize,
+    placeholder,
+    search,
+    setSearch,
+    inputRef,
+    ariaLabel,
+    labelId,
+    selectedItemRenderer,
+    truncationRef,
+  } = props
   // Searchable + open: 顯示搜尋 input
   // 2026-05-15 Bug 2 fix(Claude+Codex Step 5 比稿 consensus,user verbatim「就 A」):
   // 撤掉 native `<input placeholder=selectedLabel>` 不可靠 ellipsis renderer(browser-specific
@@ -296,38 +312,56 @@ function CustomSelectTriggerContent({
   if (searchable && open) {
     const triggerEmptyPlaceholder = placeholder || '搜尋…' // i18n-allow: DS fallback
     const showSelectedOverlay = !search && selectedLabel
+    // 打開前後欄寬不變(2026-10-13,待辦 K7;field-controls.spec.md「寬度軸」user 定義:「hug 寬 = value 寬 + 其中各元素寬 + 彼此間距 + field 內部 padding」,
+    // 同節 K4 規則「hug 欄位打開前後、打的字沒超過那段值之前欄寬不變」):搜尋框所在的一格 = 一格 grid,裡面兩把看不見、高 0、讀屏略過的量尺 ——
+    // 關著時那一段值的樣子(值的圖示 / consumer renderer 例如 PeoplePicker 的頭像 + 名字 / Tag / 提示字),與打的字 + 插入點;
+    // 這一格的寬 = 兩者取大,輸入框填滿那一格、自己不帶寬(原生 input 的固有寬 —— size=20 約 150–200px —— 就是修前依內容寬的欄位一打開
+    // 從 151 撐到 204px 的原因)。與 Combobox 欄位內搜尋框同一招(combobox.tsx 欄位內搜尋框那一格、`yieldedTagText`)。填滿寬的欄位看不出差別。
+    // 關著時那一段值 = 關著的那一支本身(同一支函式、同一份 class,寬度逐像素相同);起始圖示在下面另外畫,量尺裡不再算一次
+    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, truncationRef: undefined })
+    // 起始圖示與搜尋框那一格直接當觸發欄位的子項(Fragment)—— 與關著時同一個結構,圖示與那一格之間就是欄位外框的 gap-2(fieldWrapperStyles)。
+    // 修前外面多包一層沒有間距的 span:有起始圖示時打開字往左跳 8px、依內容寬的欄位窄 8px,覆蓋的名字還壓在圖示上(K7 同一條:框線、互動、樣式不變)。
     return (
-      <span className="relative flex-1 min-w-0 inline-flex items-center">
+      <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        <input
-          ref={inputRef as React.RefObject<HTMLInputElement>}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          // a11y(2026-07-05 D4):cmdk active item id(useActiveDescendant)→ SR 播報方向鍵導覽中的 option
-          aria-activedescendant={activeDescendantId}
-          // accessible name:aria-labelledby(Field label)> consumer aria-label > DS default(accname 優先序)
-          aria-label={ariaLabel ?? '搜尋選項'} // i18n-allow: DS default(對齊 combobox.tsx searchAriaLabel canonical)
-          aria-labelledby={ariaLabel ? undefined : labelId}
-          // Native placeholder 限 trigger empty hint(無 selectedLabel 時);若已 selected,留空交給 overlay span
-          placeholder={showSelectedOverlay ? '' : triggerEmptyPlaceholder}
-          className={cn(bareInputStyles, 'cursor-text')}
-          autoFocus
-        />
-        {showSelectedOverlay && (
-          // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
-          // 「修了一百次還沒好」+ codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
-          // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
-          // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
-          // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。
-          // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center text-fg-muted"
-          >
-            <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
-          </span>
-        )}
-      </span>
+        <span className="relative flex-1 min-w-0 grid grid-cols-[minmax(0,100%)] items-center">
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            // aria-activedescendant / aria-controls 不寫在 JSX:由 useActiveDescendant(inputRef) 直接寫進這顆輸入框(反白 id 與清單 id 的唯一來源
+            // 在 Command 根,反白每移一格不重繪整個 Select;規則 select-menu.spec.md「A11y 預設」Focus 段)
+            // accessible name:aria-labelledby(Field label)> consumer aria-label > DS default(accname 優先序)
+            aria-label={ariaLabel ?? '搜尋選項'} // i18n-allow: DS default(對齊 combobox.tsx searchAriaLabel canonical)
+            aria-labelledby={ariaLabel ? undefined : labelId}
+            // 打字會過濾清單(與 Combobox 欄位內搜尋框、浮層內 [cmdk-input] 同宣告);aria-controls 同上,由 useActiveDescendant 寫
+            aria-autocomplete="list"
+            // Native placeholder 限 trigger empty hint(無 selectedLabel 時);若已 selected,留空交給 overlay span
+            placeholder={showSelectedOverlay ? '' : triggerEmptyPlaceholder}
+            className={cn(bareInputStyles, 'cursor-text col-start-1 row-start-1 w-0 min-w-full')}
+            autoFocus
+          />
+          {/* 兩把量尺排在輸入框後面:同一格疊放,先後不影響畫面,但欄位(inline-flex)的基線取自這一格的第一個項目 ——
+              量尺在前時基線變成高 0 的量尺底緣,行內排版的欄位整個往下掉 2px(2026-10-13 逐像素比對抓到),輸入框在前就與修前同一條基線 */}
+          <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 overflow-hidden whitespace-nowrap pointer-events-none inline-flex items-center gap-2">{closedValue}</span>
+          <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${search} `}</span>
+          {showSelectedOverlay && (
+            // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
+            // 「修了一百次還沒好」+ codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
+            // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
+            // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
+            // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。
+            // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
+            // 2026-10-13:疊在搜尋框那一格(不是整段):有起始圖示時名字從輸入處開始,不再壓在圖示上。
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center text-fg-muted"
+            >
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+            </span>
+          )}
+        </span>
+      </>
     )
   }
   // **selectedItemRenderer slot**(2026-05-07 v15.5):consumer 客製 selected display(e.g.
@@ -565,7 +599,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     )
 
     const clearEl = showClear ? (
-      <SelectClearButton size={size ?? 'md'} onClear={() => handleNativeChange('')} />
+      <SelectClearButton size={size ?? 'md'} onClear={() => handleNativeChange('')} focusOwner={() => selectRef.current} />
     ) : null
 
     const chevronEl = (
@@ -635,7 +669,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, onBlur: onBlurProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -661,10 +695,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const [open, setOpen] = React.useState(defaultOpen)
     const [search, setSearchState] = React.useState('')
-    // onSearchChange 走 ref(同 agent-panel.tsx onModeChangeRef 的寫法):setSearch 身分因此穩定,下方「關閉時清搜尋」
-    // 的 effect 才能把 setSearch 列進相依而不多跑。若改成 useCallback 隨 onSearchChange 換身分,消費端傳 inline 箭頭函式
-    // (select.stories.tsx RemoteSearchDemo 就是)時,關著的每次 render 都會重發 onSearchChange('') → 消費端 setOptions([])
-    // 換新陣列 → 再 render → 再重發,無限更新;ref 讀的永遠是最新一版回呼,也沒有過期閉包。
+    // onSearchChange 走 ref(同 agent-panel.tsx onModeChangeRef 的寫法):setSearch 身分因此穩定 —— 它以 `onSearchChange` 交給 SelectMenu,
+    // SelectMenu 的 setSearch 與依賴它的 effect(關閉時清空、欄位內多選挑選後清空)才不會隨消費端的 inline 箭頭函式(select.stories.tsx
+    // RemoteSearchDemo 就是)每次 render 換身分。2026-09-29 曾因此無限更新(當時關閉清空的 effect 住在本檔);ref 讀的永遠是最新一版回呼,沒有過期閉包。
     const onSearchChangeRef = React.useRef(onSearchChange)
     onSearchChangeRef.current = onSearchChange
     const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChangeRef.current?.(next) }, [])
@@ -672,12 +705,14 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
     // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
     const listboxId = React.useId()
-    // a11y(2026-07-05 D4):追蹤 cmdk active item id → searchable trigger input 綁 aria-activedescendant
-    // (機制詳 select-menu.tsx useActiveDescendant docblock;必在 early return 前呼叫 — React #310 hook 順序)。
-    const activeOptionId = useActiveDescendant(listboxId, open)
+    // a11y:搜尋框在觸發欄位內時,輸入框的 aria-activedescendant = 反白列 id(Command 根讀、SelectMenu 轉交,直接寫進 inputRef;
+    // 機制詳 select-menu-keyboard.ts useActiveDescendant;必在 early return 前呼叫 — React #310 hook 順序)。
+    const onActiveOptionChange = useActiveDescendant(inputRef)
+    // Backspace 清掉值時的讀屏播報(SelectMenu/select-menu-removal-status.tsx;必在 early return 前 —— React #310 hook 順序)。
+    // 值又變了 / 焦點離開欄位就退場(同檔 (a)(b);下方 onBlur 呼叫 clearRemoval)
+    const { said: removalSaid, announce: announceRemoval, clear: clearRemoval } = useRemovalAnnouncement(value ?? '')
 
-    // 關閉時清搜尋(setSearch 身分穩定 → 這個 effect 實際只在 open 變動時跑,與列相依前的次數相同)
-    React.useEffect(() => { if (!open) setSearch('') }, [open, setSearch])
+    // 關閉時清搜尋:由 SelectMenu 做(下方受控 `search` + `onSearchChange = setSearch`;全 DS 一份,select-menu.tsx「浮層關閉 → 清空」)
 
     // **React #310 fix(2026-05-04)**:所有 hooks 必在任何 early return 前 call,
     //   否則 disabled→edit 切換時 hook count 變動 → React 死亡。
@@ -706,13 +741,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       deps: [open, isTextDisplay && value ? selectedLabel : ''],
     })
     const triggerTooltipActive = isTextDisplay && !!value && triggerTruncated && !open
-    // ── 過濾選項 ──
-    // 2026-07-18:filter 用 trim 過的 search,對齊 SelectMenu creatable 的 `search.trim()` create-row 判定 —
-    //   否則尾隨空白(如 "Bug ")會讓 filter 漏掉完全同名選項、SelectMenu 卻誤判「無同名」提議重複建立。
-    const trimmedSearch = search.trim()
-    const filteredOptions = searchable && filterOption && trimmedSearch
-      ? options.filter(o => o.label.toLowerCase().includes(trimmedSearch.toLowerCase()))
-      : options
+    // 過濾選項:搜尋字在觸發欄位時由 SelectMenu 依受控 `search` 過濾(label 含關鍵字、去頭尾空白;2026-09-30 自本檔與 combobox.tsx
+    // 兩份收回 SelectMenu 一份,「不限」列同一條 —— select-menu.tsx labelMatchesSearch),這裡只轉換。
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──
     // Issue 4(2026-05-10):forward avatar / description / disabled SSOT(per SelectMenuOption schema)。
     // 同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
@@ -726,8 +756,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       group: opt.group,
     }), [isTextDisplay])
     const menuOptions: SelectMenuOption[] = React.useMemo(
-      () => filteredOptions.map(toMenuOption),
-      [filteredOptions, toMenuOption]
+      () => options.map(toMenuOption),
+      [options, toMenuOption]
     )
     const menuSuggestions: SelectMenuOption[] | undefined = React.useMemo(
       () => suggestions?.map(toMenuOption),
@@ -761,8 +791,12 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     }
 
     // 2026-05-21 D3 Phase B codex 抓:Custom clear 用 setValue 不直接 onChange,uncontrolled clear 才能真清 internal state。
+    // 一鍵清空連打到一半的關鍵字一起清(select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列,2026-09-30);
+    // 清單開著時反白回第一列(2026-10-07 待辦總帳 K2,select-menu-keyboard.ts moveHighlightToFirst)
+    const clearValue = () => { setValue(''); setSearch(''); if (open) moveHighlightToFirst(listboxId) }
     const clearEl = showClear ? (
-      <SelectClearButton size={size ?? 'md'} onClear={() => setValue('')} stopPropagation />
+      <SelectClearButton size={size ?? 'md'} onClear={clearValue} stopPropagation
+        focusOwner={(button) => button.closest<HTMLElement>('[role="combobox"]')} />
     ) : null
 
     const chevronEl = (
@@ -770,7 +804,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         {/* 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):跟 Input 的 endAction 槽同義 —— 這個值在讀取 / 驗證 / 儲存,
             與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu),觸發點不為它轉圈 */}
         {loading && <CircularProgress size={iconSize} className="shrink-0" />}
-        <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+        {/* 旋轉跟它打開的選單同一個時長與曲線(overlayIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」) */}
+        <ChevronDown size={iconSize} className={cn('text-fg-muted', overlayIndicatorMotion(open), open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )
 
@@ -788,7 +823,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     //   setter 寫回(對齊 MUI SelectInput handleChange 同款 guard),其餘輸入忽略
     // - aria-hidden + tabIndex={-1}:AT 與 Tab 序皆不見(semantics 由 role=combobox trigger
     //   own);form-validation 規則 8 focus-first-error 以 DOM name 定位 → 可聚焦 mirror →
-    //   trigger focus-within 顯示 focus 邊框(桌機 Select 脫離「非 native 控件略過」fallback)
+    //   trigger focus-within 顯示 focus 邊框(桌機 Select 因此定位得到,不落入 v1 邊界 (b)「沒有帶 name 的元素就不移焦點」那一支)
     // 世界級對照:MUI Select 非原生模式 opacity-0 hidden input 攜 name/required
     // (github.com/mui/material-ui .../Select/SelectInput.js;Select.test.js 官方測試涵蓋
     // required 阻止提交 + FormData 值)+ React Spectrum HiddenSelect(github.com/adobe/
@@ -828,7 +863,6 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         search={search}
         setSearch={setSearch}
         inputRef={inputRef}
-        activeDescendantId={activeOptionId}
         ariaLabel={ariaLabel}
         labelId={fieldCtx?.labelId}
         selectedItemRenderer={selectedItemRenderer}
@@ -836,7 +870,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       />
     )
 
-    // hooks(filteredOptions / menuOptions / renderLabel / handleValueChange)已全 hoist(React #310 fix v2)
+    // hooks(menuOptions / renderLabel / handleValueChange)已全 hoist(React #310 fix v2)
 
     const trigger = (
       <div
@@ -883,10 +917,27 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         style={styleProp || !isTextDisplay ? { ...styleProp, ...(!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined) } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
+        // 觸發欄位內的搜尋框握著焦點時,按欄位上的其他東西(清除 ×、選中值疊字、空白處、箭頭)焦點不離開搜尋框,click 照常動作
+        // (2026-09-30;判準共用 lib/pointer-press.ts,Combobox 觸發區同一支;規則 select-menu.spec.md「A11y 預設」Focus 段的焦點表)
+        onMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, searchable ? inputRef.current : null)}
+        // 觸發欄位 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;
+        // 可搜尋 → 欄位內的搜尋框,本來就在欄位裡)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次。
+        // 2026-10-01 前一開清單就 blur,必填錯誤在還沒選任何東西時就長出來(實測)
+        // 真的離開欄位(觸發欄位與浮層都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
+        onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, (event: React.FocusEvent<HTMLDivElement>) => {
+          clearRemoval()
+          // 轉型:SelectProps 的 onBlur 沿用 <select> 的事件型別(手機原生分支共用),桌機觸發欄位是 div;只在真的離開欄位時轉給 consumer(待辦總帳 N83;68d7860d 加,2026-10-14 複查)
+          ;(onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)?.(event)
+        })}
         onKeyDown={(e) => {
           // passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上
           // consumer handler 同樣最先收到);component 導覽邏輯照舊在後。
           onKeyDownProp?.(e as unknown as React.KeyboardEvent<HTMLSelectElement>)
+          // 焦點在欄位本身(不是搜尋框)時打字 = 打開清單、字進搜尋框(2026-10-07 待辦總帳 K3;判準 select-menu-keyboard.ts routeTypingToSearch)。
+          // 排在組字判斷之前:欄位本身不能打字,輸入法的第一鍵(keyCode 229)在這裡就是「開始打字」,不是選字
+          if (searchable && routeTypingToSearch(e, { open, openNow: () => flushSync(() => setOpen(true)), searchBox: () => inputRef.current })) return
+          // 輸入法組字中的 Enter / 空白 / 方向鍵 / Esc 是在選字,不開關選單、不轉送(判準 lib/ime-composition.ts,2026-09-30)
+          if (isImeComposing(e)) return
           // 2026-07-14 dim-10 修:內層清除按鈕(SelectClearButton → ItemInlineAction <button>)
           // 的 Enter/Space 會 bubble 到本 handler 被 preventDefault 吞掉 → 鍵盤無法清除。
           // 事件源自 descendant button 時不執行 trigger 鍵盤邏輯(保留原生 activation)。
@@ -896,6 +947,14 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(見 select-menu.tsx
           // forwardKeyToListbox docblock — 原「open 後不攔讓方向鍵導覽」在跨 DOM 子樹機制上不成立)
           if (open && forwardKeyToListbox(listboxId, e)) return
+          // 關鍵字空白時 Backspace = 按清除 ×(2026-10-07 待辦總帳 K1):只在 clearable —— 必須有值的欄位不開 clearable(select.spec.md「何時開 clearable」),
+          // Backspace 不能做出 × 做不到的事;焦點在欄位本身或搜尋框都算;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」
+          if (searchable && showClear && isRemoveLastValueKey(e, search)) {
+            e.preventDefault()
+            announceRemoval(selectedLabel, '')
+            clearValue()
+            return
+          }
           if (e.key === 'Enter' || e.key === ' ') {
             // 2026-06-11 P0 a11y(R2 deep-audit):原 guard `!searchable` 連「關閉時的鍵盤開啟」一起擋
             // → searchable Select / PeoplePicker single 鍵盤打不開(WCAG 2.1.1)。原意只是開啟後
@@ -911,6 +970,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         {clearEl}
         {chevronEl}
         {hiddenInputEl}
+        <RemovalStatus said={removalSaid} />
       </div>
     )
 
@@ -932,7 +992,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           createLabel={createLabel}
           search={searchable ? search : undefined}
           onSearchChange={searchable ? setSearch : undefined}
-          // 遠端搜尋三件套(2026-09-09):filterOption 讓 SelectMenu 知道清單是部分的(建議標題 / 抓資料中清舊清單 / 提示列)
+          // 遠端搜尋三件套(2026-09-09):filterOption 讓 SelectMenu 知道清單是部分的(建議標題 / 抓資料中清舊清單 / 提示列);
+          // 本機時 SelectMenu 依它與受控 search 過濾(2026-09-30 起過濾只住 SelectMenu)
           filterOption={filterOption}
           optionsLoading={optionsLoading}
           suggestions={menuSuggestions}
@@ -943,6 +1004,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           open={open}
           onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
           contentId={listboxId}
+          // 只有搜尋框在觸發欄位時才需要(不可打字時焦點在浮層裡,Command 自己寫好清單的 aria-activedescendant)
+          onActiveOptionChange={searchable ? onActiveOptionChange : undefined}
           renderLabel={renderLabel}
           onOpenAutoFocus={searchable ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
         >

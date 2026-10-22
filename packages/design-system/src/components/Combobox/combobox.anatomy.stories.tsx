@@ -196,7 +196,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）— edit 單行</H3>
-          <Desc>觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder。不分裝置只有這一條路徑 —— 觸控裝置看到的跟桌機完全一樣（2026-09-18 user 拍板，原本的隱藏原生 select 路徑已移除）。</Desc>
+          <Desc>觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 +（searchIn='trigger' 時）欄位內搜尋框 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder；searchIn='trigger' 時由欄位內搜尋框自己的 placeholder 顯示同一句，搜尋框恆在。不分裝置只有這一條路徑 —— 觸控裝置看到的跟桌機完全一樣（2026-09-18 user 拍板，原本的隱藏原生 select 路徑已移除）。</Desc>
         </div>
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
@@ -227,7 +227,7 @@ export const Overview = {
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">placeholder span（flex-1 min-w-0 truncate）</span>
+            <span className="text-[10px] text-fg-muted font-mono">placeholder span（flex-1 min-w-0 truncate）· searchIn='trigger'：欄位內搜尋框的 placeholder</span>
           </div>
         </div>
       </div>
@@ -307,7 +307,9 @@ export const Overview = {
                 ['loading', 'boolean', 'false', '這個值在讀取 / 驗證 / 儲存(Field 家族 SSOT):觸發點右側、箭頭左邊轉圈 + aria-busy;與選項有沒有載入無關'],
                 ['optionsLoading', 'boolean', 'false', '選項清單載入中(2026-09-09 改名自 loading):指示只在選單內的「載入選項中」訊息列;觸發點 / 搜尋列不轉圈'],
                 ['suggestions', 'ComboboxOption[]', '—', '遠端搜尋(filterOption=false)、關鍵字空時的建議清單;DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫);沒建議時提示列 searchHintText'],
-                ['placeholder', 'string', '—', '無值時的提示文字；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
+                ['searchable', 'boolean', 'false', '開啟搜尋；搜尋框位置由 searchIn 決定'],
+                ['searchIn', "'menu' | 'trigger'", "'menu'", 'menu = 浮層內搜尋框（勾選後關鍵字保留）；trigger = 欄位內搜尋框（恆在，空值也能直接打字；每勾一項清空關鍵字）'],
+                ['placeholder', 'string', '—', '無值時的提示文字（searchIn=\'trigger\' 時由欄位內搜尋框顯示）；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
                 ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -915,7 +917,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區,Tab 照頁面順序離開,宣告 listbox(待辦總帳 B11「行為不變、只改宣告」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區、宣告 listbox(待辦總帳 B11「行為不變、只改宣告」);Tab 照 DOM 順序走,觸發區已是頁面最後一格時會走進浮層。\n\n選完之後:滑鼠點選與 Enter 結果相同,焦點不離開開啟時的落點(浮層內搜尋框 / 欄位內搜尋框);欄位內搜尋框恆在,空值時也能直接打字;焦點所在的搜尋框帶 aria-activedescendant 指向反白的選項(規則住 select-menu.spec.md「A11y 預設」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
     </div>
   ),
 }

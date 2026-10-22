@@ -28,9 +28,9 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = React.useState('https://github.com')
     return (
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
         <div>
-          <p className="text-caption text-fg-muted mb-2">有值——藍色連結 + Pencil 編輯</p>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">有值——藍色連結 + Pencil 編輯</p>
           <LinkInput value={value} onChange={setValue} />
         </div>
         <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
@@ -45,7 +45,7 @@ export const Empty: Story = {
   render: () => {
     const [value, setValue] = React.useState('')
     return (
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
         <p className="text-caption text-fg-muted">空值直接顯示 input，不用先按 Pencil</p>
         <LinkInput value={value} onChange={setValue} />
         <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
@@ -60,7 +60,7 @@ export const Validation: Story = {
   render: () => {
     const [value, setValue] = React.useState('')
     return (
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
         <p className="text-caption text-fg-muted">輸入不合法的 URL 後按 Tab 離開，會出現 error 邊框。輸入合法 URL 後離開即自動切為藍色連結。</p>
         <LinkInput value={value} onChange={setValue} placeholder="輸入 URL（需含 https://）" />
         <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
@@ -78,9 +78,9 @@ export const SizeAlignment: Story = {
     const [lg, setLg] = React.useState('https://github.com')
     const states: Record<string, [string, (v: string) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
+          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
             <LinkInput size={size} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -95,25 +95,25 @@ export const SizeAlignment: Story = {
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
         <LinkInput value="https://github.com" onChange={() => {}} />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <LinkInput mode="view" value="https://github.com" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <LinkInput mode="readonly" value="https://github.com" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <LinkInput mode="disabled" value="https://github.com" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly (null)</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly (null)</h3>
         <LinkInput mode="readonly" value={null} />
       </div>
     </div>
@@ -124,7 +124,7 @@ export const Modes: Story = {
 export const View: Story = {
   name: '檢視樣式',
   render: () => (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <LinkInput mode="view" value="https://www.example.com/path/to/page" />
       <LinkInput mode="view" value="https://github.com/user/repo" label="GitHub Repo" />
       <LinkInput mode="view" value={null} />

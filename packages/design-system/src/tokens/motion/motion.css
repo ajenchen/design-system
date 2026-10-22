@@ -24,6 +24,11 @@
  *   - easing-exit  cubic-bezier(0.3,0,1,1):出場加速(Material standard-accelerate)。
  *   - enter-distance 0.5rem(8px):slide 位移,沿用現行 slide-*-2 = shadcn/Radix canonical。
  *   - enter-scale 0.95:zoom scale,沿用現行 zoom-95 = shadcn default。
+ *   - duration-disclosure 200ms:原地展開收合(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊的高度動畫;
+ *       共用 SSOT = disclosure-motion.ts)。值 = 三個消費者現況實際渲染的時長(tw-animate-css 1.4.0 的
+ *       collapsible / accordion 預設 `.2s`,node_modules/tw-animate-css/dist/tw-animate.css),也是 agent-panel.spec.md
+ *       「思考塊開合 200ms」與舊 base.css accordion 的宣告;舊 base.css collapsible 的 150ms 從 2026-07-14 起就被
+ *       tw-animate-css 同名工具類蓋掉、沒有生效過(待辦總帳 T8)。登記成 token 是把「實際值由外掛預設決定」收回 DS(M17)。
  *
  * (C) 循環動態(repeatCount infinite 的呼吸/微光 loop — AgentPanel 家族引入,2026-09-02)
  *   既有 easing-enter/exit 語意=單次進退場;循環動態的「起/收」是不同 measurement,故新增:
@@ -51,6 +56,7 @@
   --motion-easing-exit: cubic-bezier(0.3, 0, 1, 1);
   --motion-enter-distance: 0.5rem;
   --motion-enter-scale: 0.95;
+  --motion-duration-disclosure: 200ms;
 
   /* (C) 循環動態 */
   --motion-easing-swell: cubic-bezier(0.4, 0.14, 0.3, 1);

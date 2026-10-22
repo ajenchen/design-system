@@ -119,7 +119,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 全 fix 完成後**一次性**驗證:
 
 ```bash
-npx tsc -b                                    # type
+npm run build
 npm run governance:check
 use the active browser/Storybook screenshot workflow and preserve visual evidence
 ```

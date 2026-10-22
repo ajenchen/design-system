@@ -47,7 +47,7 @@ export const Overview: Story = {
               container: ratio={'{16/9}'}, width=100%, height=auto
             </div>
           </div>
-          <div className="text-caption text-fg-muted max-w-[320px] leading-relaxed">
+          <div className="text-caption text-fg-muted max-w-[320px]">
             <div className="mb-2"><span className="font-mono text-foreground">container</span> — 父層決定寬度(此處 320px),AspectRatio 依 ratio 自動算高(180px = 320 × 9/16)</div>
             <div><span className="font-mono text-foreground">children</span> — 放在內層容器(絕對定位 inset:0 的視覺盒)的正常流中,需自行加 w-full h-full(+ object-cover)才會填滿;通常是 img / video / illustration</div>
           </div>
@@ -74,12 +74,13 @@ export const Overview: Story = {
 
 // ── Inspector ─────────────────────────────────────────────────────────────────
 
+// seed 與下方 STD_RATIOS 同寫法(「16-9」):比例標籤含「/」,直接接進 picsum 網址會多一段路徑 → 真站 404,預覽框一直是破圖(2026-10-14 修)
 const RATIO_PRESETS = [
-  { label: '16/9', value: 16 / 9 },
-  { label: '4/3', value: 4 / 3 },
-  { label: '1/1', value: 1 },
-  { label: '3/4', value: 3 / 4 },
-  { label: '21/9', value: 21 / 9 },
+  { label: '16/9', value: 16 / 9, seed: 'inspector-16-9' },
+  { label: '4/3', value: 4 / 3, seed: 'inspector-4-3' },
+  { label: '1/1', value: 1, seed: 'inspector-1-1' },
+  { label: '3/4', value: 3 / 4, seed: 'inspector-3-4' },
+  { label: '21/9', value: 21 / 9, seed: 'inspector-21-9' },
 ]
 
 const InspectorDemo = () => {
@@ -104,7 +105,7 @@ const InspectorDemo = () => {
           <div className="w-[420px]">
             <AspectRatio ratio={current.value} className="bg-muted rounded-md overflow-hidden">
               <img
-                src={`https://picsum.photos/seed/inspector-${current.label}/800/600`}
+                src={`https://picsum.photos/seed/${current.seed}/800/600`}
                 alt=""
                 className="w-full h-full object-cover"
               />
@@ -125,7 +126,7 @@ const InspectorDemo = () => {
             <div><span className="text-fg-muted">bg</span> <span className="font-mono ml-2">bg-muted(consumer 套)</span></div>
             <div><span className="text-fg-muted">radius</span> <span className="font-mono ml-2">rounded-md(consumer 套)</span></div>
           </div>
-          <div className="text-footnote text-fg-muted leading-relaxed mt-2">
+          <div className="text-footnote text-fg-muted leading-normal mt-2">
             AspectRatio 本身無 token——bg / radius / overflow 全由 consumer 透過 className 決定。Radix 內部以 padding-bottom 技巧鎖比例(SSR-safe)。
           </div>
         </div>
@@ -182,7 +183,7 @@ export const StandardRatios: Story = {
                 />
               </AspectRatio>
             </div>
-            <div className="text-caption text-fg-muted leading-relaxed">{r.use}</div>
+            <div className="text-caption text-fg-muted">{r.use}</div>
           </div>
         ))}
       </div>

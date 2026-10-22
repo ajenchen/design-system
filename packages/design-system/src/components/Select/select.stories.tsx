@@ -40,25 +40,25 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState('in_stock')
     return (
-      <div className="flex flex-col gap-6 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
           <Select options={statusOptions} value={value} onChange={setValue} aria-label="狀態(edit mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
           <Select mode="view" options={statusOptions} value={value} aria-label="狀態(view 模式示範)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
           <Select mode="readonly" options={statusOptions} value={value} aria-label="狀態(readonly mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
           <Select mode="disabled" options={statusOptions} value={value} aria-label="狀態(disabled mode demo)" />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly (null)</h3>
+          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly (null)</h3>
           <Select mode="readonly" options={statusOptions} value={null} aria-label="狀態(readonly null demo)" />
         </div>
       </div>
@@ -139,9 +139,9 @@ export const SizeAlignment: Story = {
     const [lg, setLg] = React.useState('in_stock')
     const states: Record<string, [string, (v: string) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
+          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
             <Select size={size} options={statusOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
@@ -158,7 +158,7 @@ export const Clearable: Story = {
   render: () => {
     const [value, setValue] = React.useState<string>('in_stock')
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">有值時右側出現清除按鈕</p>
         <Select
           options={statusOptions}
@@ -185,7 +185,7 @@ export const Searchable: Story = {
       { value: 'au', label: '澳洲' }, { value: 'ca', label: '加拿大' },
     ]
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">searchable — 點擊後 field 變 input，打字即篩選</p>
         <Select
           options={manyOptions}
@@ -212,7 +212,7 @@ export const Creatable: Story = {
     ])
     const [value, setValue] = React.useState<string>('')
     return (
-      <div className="flex flex-col gap-4 max-w-xs">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">
           searchable + creatable — 搜尋不到既有標籤時,dropdown 底部出現「直接使用「…」」建立列,點擊即新增並選取
         </p>
@@ -378,7 +378,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           select 欄位預設純文字渲染（cell IS variant）——meta.options 提供 value → label 對應；需 Tag 視覺時在 column meta.display='tag' opt-in
         </p>
         <DataTable columns={columns} data={data} height="auto" />

@@ -3,7 +3,7 @@
 #
 # Per codex mega review Q-16 + Layer A own scope decision:
 #   Merges 5 stop hooks into 1 mega dispatcher with 5 internal functions:
-#     R1 tsc_sanity(原 lib/stop_tsc_sanity.sh) — tsc -b error count log
+#     R1 tsc_sanity(原 lib/stop_tsc_sanity.sh)— 2026-10-07 退役,原因見下方 R1 段
 #     R2 harvest_corrections(原 lib/stop_harvest_corrections.sh) — user 糾正 keyword 偵測
 #     R3 capture_metrics(原 lib/stop_capture_metrics.sh) — 24h dedup metric snapshot
 #     R4 governance_drift(原 lib/stop_governance_drift_check.sh) — gov file edit + size check
@@ -92,36 +92,16 @@ is_governance_change() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# R1 — tsc sanity(原 lib/stop_tsc_sanity.sh):若 turn 動 .ts/.tsx → tsc -b log
+# R1 — tsc sanity:2026-10-07 退役(G2 / tsc 型別證明同族全掃)
+# 原本:turn 動過 .ts/.tsx 就跑 `timeout 60 npx tsc -b --noEmit`,把錯誤數寫進 tsc-errors.jsonl。退役理由:
+#  (1) 量錯東西(M37):本 repo 根目錄 `tsc -b` 只看根目錄 src/,不檢查 DS 原始碼;根目錄 `--noEmit` 更是
+#      0 個檔(tsconfig `files: []`)。型別證明唯一住所 = `npm run build:lib`(self-verify.md Post-edit)。
+#  (2) 在 macOS 上從來沒跑過:系統沒有 `timeout` 指令,`timeout 60 …` 回「command not found」被 `|| true`
+#      吞掉,錯誤數恆為 0 —— 一個沒人看得到失效的假檢查。
+#  (3) tsc-errors.jsonl 沒有任何讀者(全庫 grep 只有寫入端)。
+#  (4) 正確的檢查在 Stop 每回合跑代價是分鐘級;「宣告完成卻沒跑真驗證(裸 tsc -b 不算)」已由
+#      stop_self_audit.sh Mechanism 1 擋下(test_stop_self_audit.sh Test 3b),型別本身由 CI 的 build:lib 把關。
 # ─────────────────────────────────────────────────────────────────────────────
-rule_tsc_sanity() {
-  [ -z "$TRANSCRIPT_PATH" ] && return 0
-  [ -f "$TRANSCRIPT_PATH" ] || return 0
-
-  local touched
-  touched=$(tail -200 "$TRANSCRIPT_PATH" 2>/dev/null \
-    | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | select(.name=="Edit" or .name=="Write" or .name=="MultiEdit") | .input.file_path // empty' 2>/dev/null \
-    | grep -E '\.(ts|tsx)$' \
-    | awk 'NR == 1 { first = $0 } END { if (first != "") print first }' || echo "")
-
-  [ -z "$touched" ] && return 0
-
-  local tsc_output error_lines error_count sample
-  tsc_output=$(timeout 60 npx tsc -b --noEmit --pretty false 2>&1 || true)
-  error_lines=$(echo "$tsc_output" | grep "error TS" || true)
-  error_count=$(echo "$error_lines" | grep -c "error TS" || true)
-  error_count=${error_count:-0}
-
-  if [ "$error_count" -gt 0 ]; then
-    local tsc_log
-    tsc_log="$(runtime_file tsc-errors.jsonl)" || return 0
-    sample=$(sed -n '1,3p' <<<"$error_lines")
-    printf '{"ts":"%s","tsc_errors":%s,"sample":%s}\n' \
-      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$error_count" \
-      "$(echo "$sample" | jq -Rs .)" \
-      >> "$tsc_log" 2>/dev/null || true
-  fi
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # R2 — harvest user corrections(原 lib/stop_harvest_corrections.sh)
@@ -317,14 +297,8 @@ rule_governance_drift() {
     fi
   done
 
-  if [ "$gov_edited" = "true" ]; then
-    local tsc_errors
-    tsc_errors=$(npx tsc -b --noEmit --pretty false 2>&1 | grep -c "error TS" 2>/dev/null | tr -d '[:space:]' || echo 0)
-    tsc_errors=${tsc_errors:-0}
-    if [ "$tsc_errors" -gt 0 ] 2>/dev/null; then
-      warnings="${warnings}\n  • tsc -b reports ${tsc_errors} errors(governance edit broke types)"
-    fi
-  fi
+  # 原本這裡在「治理檔有改」時跑根目錄 `npx tsc -b --noEmit` 記「governance edit broke types」——
+  # 2026-10-07 與 R1 一起退役(同一個錯的量具:不檢查 DS 原始碼;治理檔是 md / json,不會讓型別壞掉)。
 
   [ -z "$warnings" ] && return 0
 
@@ -387,7 +361,6 @@ rule_infra_best_practice_score() {
 }
 
 # ─── Run rules sequentially(all non-blocking,exit 0)──
-rule_tsc_sanity
 rule_harvest_corrections
 rule_capture_metrics
 rule_governance_drift

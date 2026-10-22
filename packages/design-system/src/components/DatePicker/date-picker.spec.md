@@ -128,7 +128,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Typed input(Issue 10,2026-05-10 opt-in)
 
-`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(Material X DatePicker / Ant DatePicker / Notion typed-date 雙 affordance 共識)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset;IME `compositionstart/end` guard 不誤觸發。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
+`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(兩種方式並存:記得日期的人直接打,要對照星期的人開日曆點)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset(**草稿 ≠ 顯示值或格式錯時,那一下 Esc 歸輸入框還原草稿、不關外層浮層**:放在 Dialog 裡第一下只還原草稿、第二下才輪到表單回復 / 關對話框;日曆開著時日曆才是最內層 —— 只關日曆、草稿不動,2026-10-01 前同一下又關日曆又還原;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」);接 `useFormValidation` 時 consumer 的 `onKeyDown` / `onBlur` 先跑再走元件的、`name` 掛在這個 `<input>`(規則 8 聚焦),輸入框 + 日曆浮層算同一個欄位(`../../lib/composite-field-focus.ts`:焦點搬進日曆不算離開,2026-10-01 待辦總帳 N83);IME 組字中不誤觸發(鍵盤 `Enter` / `Esc` / `↓` 走全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing` —— 2026-09-30 前這裡只看 `compositionstart/end` 記的旗標,Safari 注音按 `Enter` 選字時 `compositionend` 先到,那一下被當成提交;失焦不是鍵盤事件,仍靠那個旗標)。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
 ## 可輸入模式的開啟行為(2026-09-07,user 提問後查證重訂)
 
@@ -328,6 +328,8 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 - 只在 edit 模式顯示
 - 清除後 `onChange?.('')`（空字串 = 空值；view 態顯示半形 -,text-foreground）
+- **鍵盤清得掉**:焦點在清除鈕上按 `Enter` / 空白 = 清除(按鈕自己的行為),**不**打開日曆 —— 觸發欄位的 `onKeyDown` 對「事件來自欄位裡的按鈕」直接放行(Select / Combobox / TimePicker 2026-07-14 已修同一條,本元件 2026-09-30 補:修前這兩鍵被觸發欄位 `preventDefault` 吃掉、改成打開日曆,鍵盤永遠清不掉,實測)
+- **清除後焦點**:按鈕隨清除卸載,焦點在它身上時交回欄位(可打字 → 輸入框;否則觸發欄位;區間 → 起始日那顆鈕),不掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select / Combobox / TimePicker 同一支)
 - **Dual-state sync canonical**(2026-05-03 v10):X 點擊必同時 `onChange?.('')` + `setDraft(null)`(Range 同),否則 `needConfirm=true`(showTime 預設)且 popover 開著時 `displayValue=draft` 仍顯示舊值,trigger 看起來「沒清」。X 在 trigger 上是 standard clear affordance,不走 needConfirm「等確定」語義 — 立刻 commit + 同步 draft
 
 ---
@@ -357,7 +359,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx:650,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`
 - DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建);Range 模式下焦點移到哪一天就預覽哪一天(見「區間預覽」),鍵盤與滑鼠看到同一件事
-- Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由**自建 `onCloseAutoFocus`** 手動回焦 active 端 button(date-picker.tsx:1205,守 WCAG 2.4.3)
+- Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;**可打字時**外層觸發 div 不可聚焦(焦點站是內層 `<input>`),Radix 還給它 = 什麼都沒還 —— 鍵盤 `↓` 開日曆(焦點進日曆)再按 Esc 收起,焦點掉到 `body`(2026-10-01 實測:修改前的基準樹量到 BODY),改由 `onCloseAutoFocus` 經 `../../lib/overlay-focus-return.ts` `returnFocusToOpener`(沒有觸發點)還給輸入框:鍵盤收起 / 在日曆裡挑日期 → 回輸入框(指標挑的不畫鍵盤框),點外面收起不搶(AI 推導,同 Range 的既有做法;閘 `scripts/escape-and-focus-contract-invariant.mjs` F-date-return);Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由 `onCloseAutoFocus` 交給全 DS 一支 `../../lib/overlay-focus-return.ts` `returnFocusToOpener` 回焦 active 端 button(沒有觸發點 + 非 modal:點外面收起不搶;守 WCAG 2.4.3;2026-09-30 前本元件自己記 `hasInteractedOutside`,判斷相同)
 - Range 雙 trigger:`activeEnd` state 指向當前編輯端,`aria-expanded` 對應只當該 trigger active 時 true
 
 ---

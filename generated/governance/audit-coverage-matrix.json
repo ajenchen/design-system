@@ -9,11 +9,23 @@
     "UNKNOWN": 0,
     "CI-ENFORCED": 2
   },
+  "hook_enforcement_counts": {
+    "block": 23,
+    "block-and-warn": 3,
+    "warn": 13,
+    "prevents_landing": 12
+  },
   "gaps": [],
   "coverage_by_dim": {
     "1": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_story_compile_drift.sh(cva 三方漂移 — story-auto-compile-migrate + scripts/compile-stories.mjs --check chain)",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-001",
       "critical": true
     },
@@ -32,6 +44,12 @@
     "4": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_opacity_token_usage.sh 硬違規 → exit 2;micro-gap / fraction soft note 不屬本維度",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-004",
       "critical": true
     },
@@ -74,6 +92,13 @@
     "11": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_story_invariants.sh R1 anatomy(原 check_story_anatomy.sh)+ 3-layer file existence DS-wide grep",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)",
+      "hook_events": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-011",
       "critical": true
     },
@@ -86,6 +111,13 @@
     "13": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)",
+      "hook_events": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-013",
       "critical": true
     },
@@ -116,6 +148,12 @@
     "18": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(shadcn compat alias ban write-time;dispatcher 已 registered settings.json)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在,實際 active 路徑是 dispatcher source lib)",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-018",
       "critical": true
     },
@@ -134,6 +172,12 @@
     "21": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-021",
       "critical": true
     },
@@ -182,18 +226,37 @@
     "29": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:check_story_invariants.sh R3 category:[P0] trait 缺口 record_worst 2;其餘只印 R3 trait warn",
+      "hook_events": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-029",
       "critical": true
     },
     "30": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:check_canonical_propagation.sh E.1:[P0] 新檔擋;[P1] 既有檔只提醒",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-030",
       "critical": true
     },
     "31": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-031",
       "critical": true
     },
@@ -212,12 +275,24 @@
     "34": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)",
+      "enforcement": "warn",
+      "enforcement_source": "rule:check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-034",
       "critical": true
     },
     "35": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)",
+      "enforcement": "warn",
+      "enforcement_source": "rule:check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-035",
       "critical": true
     },
@@ -230,6 +305,12 @@
     "37": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_field_family_invariants.sh(focus-dominates border-primary state machine;2026-05-30 從誤分 PURE-JUDGMENT 修正)",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_field_family_invariants.sh A.3 Field state ring SSOT(P0,record_worst 2)",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-037",
       "critical": true
     },
@@ -242,6 +323,12 @@
     "39": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_pattern_invariants.sh C.4(row-slot handcraft,2026-05-30 fixed order-independent regex + 從誤分 PURE-JUDGMENT 修正)",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_pattern_invariants.sh C.4 row slot handcraft(P0,record_worst 2)",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-039",
       "critical": true
     },
@@ -290,6 +377,12 @@
     "47": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(utility-registry.json SSOT compliance write-time)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在)",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-047",
       "critical": true
     },
@@ -320,18 +413,37 @@
     "52": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "chrome_header_dispatcher.sh → lib/_tab_lg_chrome_header_equal.sh + lib/_header_with_tabs_border.sh + lib/_chrome_header_handcraft.sh BLOCKER(exit 2 傳播,2026-05-31 folded-hook-audit)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-052",
       "critical": true
     },
     "53": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-053",
       "critical": true
     },
     "54": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_story_invariants.sh R8 story_archetype_registry + packages/design-system/ds-canonical/references/story-baseline-registry.json",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:check_story_invariants.sh R8:registry severity=block → record_worst 2;severity=warn → governance context",
+      "hook_events": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-054",
       "critical": true
     },
@@ -344,36 +456,72 @@
     "56": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "chrome_header_dispatcher.sh → lib/_app_shell_primary_header_consistency.sh BLOCKER(exit 2 傳播,2026-05-31 修 stdin parsing + dispatcher propagate;escape @app-shell-primary-header-allow)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-056",
       "critical": true
     },
     "57": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_ds_anchor_preflight.sh write-time WARN(exit 0,inject context 讓 AI 自決,L130-132;M29 anchor)+ stop_self_audit Stop hook backstop。2026-05-31 誠實標 WARN(原寫「soft BLOCKER」是矛盾詞)",
+      "mechanism": "check_ds_anchor_preflight.sh write-time P0 BLOCKER(同 turn 沒先讀 DS canonical baseline 就改 production tsx → exit 2;2026-07-07 由 WARN 升級,escape GOVERNANCE_BYPASS_DS_ANCHOR=1 audit-logged;M29 anchor)+ stop_self_audit Stop hook backstop。2026-10-07 更正:本列原寫「write-time WARN(exit 0)」停在升級前",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_ds_anchor_preflight.sh M29 anchor:同 turn 未讀 DS canonical baseline → exit 2",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-057",
       "critical": true
     },
     "58": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_plugin_fork_health.sh SessionStart：r1 驗證 committed provider-neutral dispatcher + exact installed fork manifest；legacy plugin 僅相容性回饋、不能滿足治理健康契約",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "SessionStart"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-058",
       "critical": true
     },
     "59": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-059",
       "critical": true
     },
     "60": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_propose_without_benchmark.sh UserPromptSubmit(M26)",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "UserPromptSubmit"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-060",
       "critical": true
     },
     "61": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-061",
       "critical": true
     },
@@ -386,6 +534,12 @@
     "63": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "inject_deploy_url_after_push.sh PostToolUse + scripts/deploy-url.mjs",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-063",
       "critical": true
     },
@@ -398,6 +552,12 @@
     "65": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-065",
       "critical": true
     },
@@ -410,6 +570,12 @@
     "67": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-067",
       "critical": true
     },
@@ -422,18 +588,36 @@
     "69": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_consumer_app_invariants.sh r1_no_ds_catalog PostToolUse BLOCKER(原 check_consumer_no_ds_catalog.sh,2026-06-11 prune merge)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-069",
       "critical": true
     },
     "70": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_consumer_app_invariants.sh r2_story_baseline PostToolUse BLOCKER + ds-story-manifest.json(原 check_consumer_story_baseline.sh)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-070",
       "critical": true
     },
     "71": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_consumer_app_invariants.sh r3_ds_primitive_misuse BLOCKER(原 check_consumer_ds_primitive_misuse.sh)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-071",
       "critical": true
     },
@@ -446,24 +630,48 @@
     "73": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_full_story_visual_interaction_sweep.sh(length === manifest.totalStories,sample = reject)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-073",
       "critical": true
     },
     "74": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_overlay_open_focus_escape_probe.sh BLOCKER",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-074",
       "critical": true
     },
     "75": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)",
+      "enforcement": "warn",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "SessionStart"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-075",
       "critical": true
     },
     "76": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-076",
       "critical": true
     },
@@ -476,30 +684,60 @@
     "78": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_codex_brief_invariants.sh 4th invariant(禁列檔)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PreToolUse"
+      ],
+      "prevents_landing": true,
       "id": "DS-DIM-078",
       "critical": true
     },
     "79": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_tailwind_wildcard_in_docs.sh P0 BLOCKER",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-079",
       "critical": true
     },
     "80": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_storybook_addon_packaging.sh r1_addon_subdir_ship P0 BLOCKER(原 check_addon_subdir_ship.sh,2026-06-11 prune merge)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-080",
       "critical": true
     },
     "81": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_storybook_addon_packaging.sh r2_preset_cjs P0 BLOCKER(原 check_storybook_addon_preset_cjs.sh)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-081",
       "critical": true
     },
     "82": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_consumer_app_invariants.sh r4_app_story_title P0 BLOCKER(原 check_consumer_app_story_title.sh)",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-082",
       "critical": true
     },
@@ -542,6 +780,12 @@
     "89": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row",
+      "enforcement": "block",
+      "enforcement_source": "registrations.outputMode",
+      "hook_events": [
+        "PostToolUse"
+      ],
+      "prevents_landing": false,
       "id": "DS-DIM-089",
       "critical": true
     },

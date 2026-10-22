@@ -2,7 +2,7 @@
 /**
  * 不變式:**多選選單的「不限」列必須是「不設限」,不是「一個選項」**。
  *
- * owner:`packages/design-system/src/components/SelectMenu/select-menu.spec.md`「「不限」選項」段
+ * owner:`packages/design-system/src/components/SelectMenu/select-menu-unrestricted.spec.md`「「不限」選項」段(2026-09-30 自 select-menu.spec.md 抽出)
  *(2026-09-18 user 拍板:消費端自行開啟、預設關閉 —— 「消費端要自行判斷到底選單的內容是否要出現
  * 不限這個選項啊,我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」)。
  *

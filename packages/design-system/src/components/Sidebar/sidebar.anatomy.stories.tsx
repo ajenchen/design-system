@@ -153,7 +153,7 @@ export const Overview: Story = {
         </div>
         <div className="flex flex-col gap-2 max-w-md">
           <Label>結構樹</Label>
-          <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider leading-relaxed">{`SidebarProvider
+          <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider">{`SidebarProvider
   Sidebar
     SidebarHeader          ← h-[var(--chrome-header-height)]
     SidebarContent         ← flex-1 + ScrollArea 捲動
@@ -470,7 +470,7 @@ export const ColorMatrix: Story = {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. 狀態行為 — Collapse modes / Mobile offcanvas / Active restoration
+// 5. 狀態行為 — Collapse modes / 放不下時(AppShell 的 Menu)/ Active restoration
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Static visual frame showing Sidebar at specific collapsible state */
@@ -596,7 +596,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-1">
         <H3>狀態行為</H3>
         <Desc>
-          Sidebar 層級特有的狀態:collapse / expand 三種模式、mobile offcanvas、active item single-selection、open state cookie 持久化。
+          Sidebar 層級特有的狀態:collapse / expand 三種模式、放不下時(在 AppShell 裡由版面決定並排 / 暫藏 / 左側浮層)、active item single-selection、open state cookie 持久化。
           Item-level default / hover / active / selected / disabled 色彩由 `ColorMatrix` 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
         </Desc>
       </div>
@@ -605,7 +605,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 1:三種 collapsible 模式</span>
         <Desc>
-          `collapsible` prop 控制收合策略:`offcanvas`(預設)= 整條 sidebar 滑出視窗外 / `icon` = 收縮到 48px 只留 icon / `none` = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 `icon`(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 `offcanvas`(sidebar 只是啟動器)。
+          `collapsible` prop 控制收合策略:`offcanvas`(預設)= 整條 sidebar 滑出視窗外 / `icon` = 收縮到細列只留 icon(`--sidebar-width-icon`:標準密度 48 / 寬鬆密度 68) / `none` = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 `icon`(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 `offcanvas`(sidebar 只是啟動器)。
         </Desc>
         <div className="flex flex-wrap gap-6">
           <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
@@ -660,7 +660,7 @@ export const StateBehavior: Story = {
                   <span className="text-body-lg font-medium">Dashboard</span>
                 </ChromeHeader>
                 <div className="flex-1 px-4 py-3 text-caption text-fg-muted">
-                  點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到 48px(icon mode)。再按一次展開。
+                  點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68)。再按一次展開。
                 </div>
               </div>
             </div>
@@ -682,7 +682,7 @@ export const StateBehavior: Story = {
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
           <li>`collapsible="offcanvas"` 用於主內容為主的 app(sidebar 是啟動器,使用者常關);`collapsible="icon"` 用於深度導覽 app(sidebar 是常駐工作區)。</li>
           <li>open state 寫 cookie `sidebar_state`(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 `defaultOpen`(避免 SSR hydration flash)。</li>
-          <li>Mobile(&lt;768px)時 `offcanvas`(預設)/ `icon` 走 Sheet overlay,小螢幕不佔固定空間;`collapsible="none"` 例外——`none` 在 `isMobile` 判斷前提前 return,mobile 下仍是固定寬度側欄,不進 Sheet。</li>
+          <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。`collapsible="none"` 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
           <li>Icon mode 下 active item 的 `bg-neutral-selected` 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
           <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):`defaultPrevented`(app editor 已處理同鍵時不 double-fire)/ `isComposing`(IME 組字中不攔)/ 可編輯 target(`input` / `textarea` / `contentEditable` 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 `disableShortcut` opt-out。</li>
         </ul>
@@ -713,12 +713,12 @@ export const ChromeTokens: Story = {
             <tr>
               <Td><TkVal token="--sidebar-width" value="15rem (240px)" /></Td>
               <Td mono>15rem</Td>
-              <Td>展開寬度</Td>
+              <Td>產品沒設時 Menu 的初始寬(Menu 浮層與並排共用同一份寬度紀錄,沒有浮層專用寬)</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-width-min" value="240px" /></Td>
               <Td mono>240px</Td>
-              <Td>最小寬度限制(即使 consumer 覆寫也不可低於此值)</Td>
+              <Td>產品沒設時 Menu 與 Right panel 的最小寬(2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾)</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
@@ -729,11 +729,6 @@ export const ChromeTokens: Story = {
               <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
               <Td mono>1rem</Td>
               <Td>menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override</Td>
-            </tr>
-            <tr>
-              <Td><TkVal token="--sidebar-width-mobile" value="18rem (288px)" /></Td>
-              <Td mono>18rem</Td>
-              <Td>Mobile Sheet 寬度</Td>
             </tr>
           </tbody>
         </table>
@@ -770,7 +765,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發;任何焦點位置都能觸發,但有三道 guard(2026-07-05 D4):app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab(2026-09-25,待辦總帳 B9):每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   手機尺寸:768px 以下自動切換成從旁滑出的抽屜(Sheet),內建焦點鎖定、Esc 關閉;SidebarTrigger 直接登記自己為 opener,快捷鍵則記錄當下焦點,關閉後由 onCloseAutoFocus 還原仍 mounted 的 opener。"}</p>
+      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發,但有三道 guard(2026-07-05 D4):app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab(2026-09-25,待辦總帳 B9):每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   放不下時的左側浮層(2026-10-14 起沒有 768 斷點):放在 AppShell 裡且 Menu 放不下時,按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層的無障礙名稱是「選單」;焦點進浮層、Tab 只在浮層裡走,Esc 或點浮層外收回細列。SidebarTrigger 直接登記自己為開啟者,快捷鍵則記錄當下焦點,收回後由 onCloseAutoFocus 還給仍掛著的開啟者。展開的 Menu(並排或浮層)看得到字,選單項不掛提示,第一下 Esc 就收回;只有細列的圖示才有提示。單獨使用(不在 AppShell 裡)時一律並排,沒有浮層。"}</p>
     </div>
   ),
 }

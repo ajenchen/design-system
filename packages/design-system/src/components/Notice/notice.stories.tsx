@@ -170,7 +170,7 @@ export const InlineVariants: Story = {
       },
     ]
     return (
-      <div className="flex flex-col gap-3 max-w-2xl">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
         {items.map((item) => (
           <SubtleShell key={item.variant} variant={item.variant}>
             <Notice
@@ -198,37 +198,39 @@ export const InlineVariants: Story = {
 export const ToastLikeSolid: Story = {
   name: 'Toast 樣式',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
       <p className="text-caption text-fg-muted">
         浮動自動消失的 toast 通常不需要 dismiss 按鈕——關閉由計時器控制。
       </p>
-      <SolidShell variant="success">
-        <Notice
-          variant="success"
-          title="變更已儲存"
-          dismissible={false}
-        />
-      </SolidShell>
-      <SolidShell variant="info">
-        <Notice
-          variant="info"
-          title="已複製連結到剪貼簿"
-          dismissible={false}
-        />
-      </SolidShell>
-      <SolidShell variant="error">
-        <Notice
-          variant="error"
-          title="上傳失敗"
-          description="檔案超過 25 MB 上限。"
-          dismissible={false}
-          endContent={
-            <Button variant="tertiary" size="xs">
-              重試
-            </Button>
-          }
-        />
-      </SolidShell>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <SolidShell variant="success">
+          <Notice
+            variant="success"
+            title="變更已儲存"
+            dismissible={false}
+          />
+        </SolidShell>
+        <SolidShell variant="info">
+          <Notice
+            variant="info"
+            title="已複製連結到剪貼簿"
+            dismissible={false}
+          />
+        </SolidShell>
+        <SolidShell variant="error">
+          <Notice
+            variant="error"
+            title="上傳失敗"
+            description="檔案超過 25 MB 上限。"
+            dismissible={false}
+            endContent={
+              <Button variant="tertiary" size="xs">
+                重試
+              </Button>
+            }
+          />
+        </SolidShell>
+      </div>
     </div>
   ),
 }

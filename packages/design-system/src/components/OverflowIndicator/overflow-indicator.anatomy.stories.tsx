@@ -14,23 +14,10 @@ import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
-const personHover = (name: string, src?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle="Design｜D-0042｜EMP-1001"
-    avatar={{ src, alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday."
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, src?: string) => samplePersonCard({ name, avatarSrc: src })
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
 // 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
 const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
@@ -121,7 +108,7 @@ export const Overview: Story = {
               <tr>
                 <Td mono>HoverCardContent</Td>
                 <Td>展開容器(深色 tooltip 風格)</Td>
-                <Td mono>bg-tooltip · data-theme="dark" · rounded-lg</Td>
+                <Td mono>HOVER_CARD_TOOLTIP_SURFACE_CLASS(bg-tooltip · text-foreground · rounded-lg)· data-theme="dark"</Td>
               </tr>
               <tr>
                 <Td mono>ShrinkWrapList</Td>

@@ -271,6 +271,12 @@
       "status": "active",
       "executable": true,
       "reason": "Live backlog for the 2026-09-25 interaction-model and hover-pairing work: every pending user decision (with the research conclusion written inline, because the research lives in a session scratchpad), every decided-but-unimplemented item, and every engineering follow-up, each with its closing commit. Opened because the user asked that every unresolved issue be tracked to closure after the previous session lost its open questions."
+    },
+    {
+      "path": "governance/planning/2026-10-14-app-shell-layout-user-spec.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Verbatim record of the user's 2026-10-14 AppShell layout specification (first message, six sections) and second message, plus the AI-compiled list the user approved with 'just do as you suggest'; each line is tagged with its source line number (U:n / D:n) so app-shell.spec.md, layout-model.ts and the judgement-table test cite resolvable in-repo lines. Provenance only: the rules themselves live in app-shell.spec.md."
     }
   ]
 }

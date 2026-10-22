@@ -46,7 +46,7 @@ cva `defaultVariants` 異動 → 強制 grep 該元件所有檔案確認三方�
 
 走 **Ship section**(checklist 4 項 = 35 項總數的 Ship 份額;下列 5-7 為 checklist 外加掛的 mechanical gate,不計入 35):
 1. `npm run storybook` 本地渲染正常
-2. `npx tsc -b` 無錯(**禁用 `--noEmit`**,root tsconfig `files: []` silent pass)
+2. `npm run build:lib` 無錯(型別證明;設計系統本庫的 `tsc -b` 只看根目錄 `src/`、不檢查 DS 原始碼,不算)
 3. import 路徑 `@/design-system/...`
 4. 分類標註(Internal vs public)正確
 5. **Visual audit 過關**(2026-04-21,stakeholder-gate 強制)

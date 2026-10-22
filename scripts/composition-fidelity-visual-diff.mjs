@@ -9,6 +9,14 @@
  *
  * Mapping SSOT:consumer story file 的 `// @story-baseline: <DS-story-id>` marker
  *
+ * @gate-contract
+ *   保證: 產品樣板裡標了 @composition-fidelity-mode 的忠實複製 story,在 consumer 環境渲染出的像素與 DOM 結構
+ *         和它對照的 DS 正式 story 一致(像素差 ≤ 門檻、DOM 缺 / 多各 ≤ 5、樣式差 ≤ 20)
+ *   紅: DS story 改了版面而複製品沒跟上 → 指名那一組對照並 exit 1(2026-10-14 實例:903ef551 之後 DOM 缺 41 / 多 40);
+ *       --require-mappings 下一組可執行的對照都沒有 / 標記寫壞 → exit 2;story 開不起來或沒渲染完 → 儀器失效 exit 2,不拿錯誤頁去比
+ *   綠: 兩邊一致時 exit 0(實測 pixel 0%、DOM 缺 0 / 多 0);開 story 由共用 openStory 等渲染完成 + 字型載完 +
+ *       連續 10 影格靜止才量,與機器速度無關;同一份建置重跑結果相同
+ *
  * Usage:
  *   node scripts/composition-fidelity-visual-diff.mjs \
  *     --ds-static=packages/design-system/storybook-static \

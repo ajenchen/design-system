@@ -63,8 +63,8 @@ Storybook 是**公開文件**,受眾是任何打開的設計師 / 開發者 / PM
 ## 視覺與文案品質
 
 - **Toolbar 範例**統一使用 `ToolbarFrame`(滿版 + 短標題),不用裸 `ButtonGroup` 漂在半空
-- `ToolbarFrame` 標題模擬真實產品(2–4 字如「文件」「專案」),說明放在下方 `Label`,不塞進標題導致文字與按鈕碰撞
+- `ToolbarFrame` 標題模擬真實產品(2–4 字如「文件」「專案」),說明放在下方 `ExampleCaption`(2026-10-20 起各頁不再自抄 `Label`,共用 `stories-helpers/examples/example-captions.tsx`),不塞進標題導致文字與按鈕碰撞
 - 同一個 story 內的範例容器必須一致,不混用不同寬度
-- ❌/✅ 判斷放在 `Label`,不放在 ToolbarFrame 標題內
-- **排版層級清晰**:主標用 `h3`(深色、正常大小),副標用 `text-caption`(灰色、限寬 720px),Label 用 `text-footnote`(最小字、範例解說)。三層視覺上必須有明顯區隔
+- ❌/✅ 判斷放在 `ExampleCaption`(反例用 `warn`),不放在 ToolbarFrame 標題內
+- **排版層級清晰**:主標用 `h3`(深色、正常大小),副標用 `text-caption`(灰色、限寬 720px),範例說明 `ExampleCaption` 用 `text-footnote`(最小字、範例解說)。三層視覺上必須有明顯區隔
 - **icon-only 按鈕有 `aria-label`**;互動範例可用鍵盤操作

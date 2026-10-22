@@ -23,7 +23,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "79c21be4c19d148aa00982e207ec088f6c60f5617652875e8e6414943b64e055",
+      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -103,7 +103,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/SKILL.md",
-      "sha256": "ba5195dcb5cf884186e44cc02fcdaa53aaae96ec8a7016386d413b302c23861b",
+      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -151,7 +151,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/prototype/references/audit-checks.md",
-      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "sha256": "3bfef97c05619bcde0fee74b51bd78b5c72e4d9a32c69d17c72556925c7d79cd",
       "source": "providers/codex/skills/prototype",
       "classification": null,
       "destination": null
@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "cb7139970d88642f099474d9b02c46a53962a1e1264e2fb94d12a704d977d407",
+      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -263,7 +263,7 @@
     {
       "schemaVersion": 1,
       "file": "common/closed-tool-execution.mjs",
-      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
+      "sha256": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/lib/closed-tool-execution.mjs",
-      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
+      "sha256": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -327,7 +327,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
-      "sha256": "ed3af261d18a119e13089ce6eea0f571d8cfc0f7b438746c3c85a24de0439b22",
+      "sha256": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": "scripts/lib/closed-tool-execution.mjs"
@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "6a50540b801c0e561d9b416758685d2441027673b5b06ccc0e4cf25ae126e131",
+      "sha256": "f2918632c942c72f05c4fdbd80518e54cbc5a51a80edb355a39400befd6e27d5",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "b02ac574a00dedf75476a200261aa3145c87ebe8ce2bfd7b08024b241a760b05",
+      "sha256": "721ee1691c9a6df49dbbec6ef0ae6807d3f70793a83f04b9e541ebb3d380f020",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -479,7 +479,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "8537daddc2bc4ad7f5464407ec4ba5e9373b7461ac5a862a8f19cfaf625f4d54",
+      "sha256": "8675d4e89db9059624c77a56eb2357c4a489c9f73862365f27cac4393f37dc30",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -535,7 +535,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "db1eddbcb8b155891642fa695594120113af35140818d88c21cf88756f88ee19",
+      "sha256": "43b53a78c96088cb7e39617d14608887c9108b2ea25b2959ec9d3c9006b1f965",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -551,7 +551,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
-      "sha256": "a4392d893207c425a973f6dbfd1351568ee3e21a8205a7c5b550914ad775199b",
+      "sha256": "89e21d46327c33fda400c0d2f3344cf4e862327e198ae823d86e1c2a00d69e7e",
       "source": "scripts/sync-all.mjs",
       "classification": null,
       "destination": "scripts/sync-all.mjs"
@@ -615,7 +615,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "648b65cedabb5a21538487da857c0398621f2a8ce5da53da7bce534499def467",
+      "sha256": "8ff8e74774dbe04ed69cbb18ecf5abd3d8b60d24527e7af751d74f9341a1d076",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/_log-fire.sh",
-      "sha256": "4a7e19dc9877f2ee9b5d02922de4d0f792a244cd04f134d84b29e79d76360d4a",
+      "sha256": "87a54b77e35fe1ede49ef2d040ea22ae9ff6bf57101864670024b3fdd8c0459e",
       "source": "_log-fire.sh",
       "classification": "HELPER",
       "destination": null
@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "c3aa27661e55c8a2d0598262e596d3bce7e55ff7aabddd0f7e1fba31b9352d39",
+      "sha256": "23b0e3ca1993cb2f10f5d030f6de1063ed91ba5f3e98fa9208030cba809feb45",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -847,7 +847,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "254205258ab66cca758801d875fa0528b5ec9f5ecd25b9997308663db734199f",
+      "sha256": "6b52b3ced8d2bf4b249e5ce7dc644e03bc14be2e424eff6a336a298a5e497e1b",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -871,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/fork-governance-dispatcher.sh",
-      "sha256": "fc6d10f711ad8209ffbeb9af7b06938fd097166c3f0f8457e8689eb6cdd48885",
+      "sha256": "4491ca49af38f09c7d8bd1972aa114d0f4f9d33e88f3d8a850b1b7ee9264df27",
       "source": "packages/design-system/ds-canonical/templates/product-launchers/fork-governance-dispatcher.sh",
       "classification": null,
       "destination": null
@@ -927,7 +927,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "37272ecc81a195fec0f167675c65dad8471b5fc8d5d4d992971ca2c1a9d59922",
+      "sha256": "4b7f9e31276d628e14eeefcf8159bcc09577e7d1c91a589019611b9adebc2769",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "bd48c026e685ac734159c47ff36e80bb8d36cf265b7cdfb117309040f5935c1a",
+      "sha256": "897148c182a77d70e0f1d1ab5eee4a1d9f32bf184d894a2f5756d9fdc6e1da58",
       "source": null,
       "classification": null,
       "destination": null
@@ -967,7 +967,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "25d7e0182327eabd4e9d68aa4bcaab8f75c05a09a4d8cc58128f7e4b747e0fc6",
+      "sha256": "74d17a0fa117f81b55c9923aa9de260c6e332bed8cbb5c83cbea235382d4e8fd",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1047,7 +1047,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/SKILL.md",
-      "sha256": "2d887a7ee79780846c243beabc2f3436065500be9817dac2de6a7a8500617eca",
+      "sha256": "4f44e4a97e6c1c64af977daa9562b90ae8a26ddde3101041c9d6bb8099589c45",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1095,7 +1095,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/prototype/references/audit-checks.md",
-      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "sha256": "3bfef97c05619bcde0fee74b51bd78b5c72e4d9a32c69d17c72556925c7d79cd",
       "source": "skills/prototype/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1143,7 +1143,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "763a68cf1f992ceaa2c377d790b600daefb99b8f5bcd92c21d9893709898dadc",
+      "sha256": "7674c811b84f6b08af362f7642fb93e722649dbdf73a9f6ab5c37b2b9879a589",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1207,7 +1207,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "79c21be4c19d148aa00982e207ec088f6c60f5617652875e8e6414943b64e055",
+      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1287,7 +1287,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/SKILL.md",
-      "sha256": "ba5195dcb5cf884186e44cc02fcdaa53aaae96ec8a7016386d413b302c23861b",
+      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1335,7 +1335,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/prototype/references/audit-checks.md",
-      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "sha256": "3bfef97c05619bcde0fee74b51bd78b5c72e4d9a32c69d17c72556925c7d79cd",
       "source": "skills/prototype/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1383,7 +1383,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "cb7139970d88642f099474d9b02c46a53962a1e1264e2fb94d12a704d977d407",
+      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1439,7 +1439,7 @@
     {
       "schemaVersion": 1,
       "file": "references/story-baseline-registry.json",
-      "sha256": "cac3bbf5adff25302e78ac689c48204986c43ce41eb56161ccee1e14557ba56d",
+      "sha256": "f2e84184d26b19bfebae3d8724ac80c00e38db07b7e408179ec48a99d879abc5",
       "source": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
       "classification": null,
       "destination": null
@@ -1487,7 +1487,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "111fcc0e665ccf248252109e54c20468ac34b52a519b72a02b7d54e86735e1a9",
+      "sha256": "d971a3c08000791cdf891794ecee6675e4b9875435ec2802739b35c2332bc1e4",
       "source": null,
       "classification": null,
       "destination": null
@@ -1567,7 +1567,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "26c07c76bfe56a10bf26b95f826d9e3d8ef07a32f0806c2afde37aec0220d5a5",
+      "sha256": "65ab84c3d5eb4cb2f359174576736df07b4489f1b3194e8db65a34e66faa1752",
       "source": null,
       "classification": null,
       "destination": null
@@ -1615,7 +1615,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/prototype/references/audit-checks.md",
-      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "sha256": "3bfef97c05619bcde0fee74b51bd78b5c72e4d9a32c69d17c72556925c7d79cd",
       "source": null,
       "classification": null,
       "destination": null
@@ -1663,7 +1663,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "ed1f91c49a5e968ceffd3c8a851efdce1e6f50ae64b9ebc06014d3bf0542551d",
+      "sha256": "a7d2f40f000eedccd15d90e7d4dfa773e41bd24491f92d2871484a590602a58f",
       "source": null,
       "classification": null,
       "destination": null

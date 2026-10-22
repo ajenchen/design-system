@@ -115,16 +115,18 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 資料類型 | **人員**（含 Avatar） | 任意（純文字）| 任意（純文字）|
 | 單選 / 多選 | 兩者皆支援（value 類型決定）| 單選 | 多選 |
 | 視覺 prefix | Avatar（必備） | 可選 startIcon | 無 |
-| 底層實作 | Popover + Command + SelectMenu | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu，`select.tsx:816`）/ 觸控 native `<select>`(`select.tsx` NativeSelect) | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu + Tag overlay，`combobox.tsx:840`）/ 觸控 native `<select>`(`combobox.tsx` NativeCombobox) |
-| 搜尋 | 永遠啟用（人名本質）；single = inline-trigger（wrap `<Select searchable>`），multi 預設 panel-top（`searchIn='menu'`，`searchIn='trigger'` opt-in）— 對齊本 spec L91-92 SSOT 表 | 可選 `searchable`（單選短列表 → inline-trigger only）| 可選 `searchable` + `searchIn='menu' \| 'trigger'`（多選 → 兩種模式）|
+| 底層實作 | Popover + Command + SelectMenu | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu，`select.tsx` CustomSelect）/ 觸控 native `<select>`(`select.tsx` NativeSelect) | 自建 listbox（`role="combobox"` div + cmdk SelectMenu + Tag overlay，`combobox.tsx` CustomCombobox）,不分裝置同一條(2026-09-18 移除原生分支,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」) |
+| 搜尋 | 永遠啟用（人名本質）；single = inline-trigger（wrap `<Select searchable>`），multi 預設 panel-top（`searchIn='menu'`，`searchIn='trigger'` opt-in）— 對齊下方「搜尋型態 SSOT canonical」表 | 可選 `searchable`（單選短列表 → inline-trigger only）| 可選 `searchable` + `searchIn='menu' \| 'trigger'`（多選 → 兩種模式）|
 
 **搜尋型態 SSOT canonical**（A1-A5 spec,2026-05-11;2026-05-12 補 PeoplePicker multi `searchIn` opt-in）：
 
 | 型態 | 使用情境 | 元件 API |
 |---|---|---|
 | **none** | 短列表 (< 7 選項) / 自然語言 label 可用 native type-ahead | 不傳 `searchable` |
-| **inline-trigger** | 單選 + 需快速 type-and-pick;trigger 變 input | `<Select searchable />` / `<Combobox searchable searchIn='trigger' />` / `<PeoplePicker value={person} />`(single = value 非陣列)/ `<PeoplePicker value={[...]} searchIn='trigger' />`(multi opt-in;無 `multi` prop — 單/多選由 value 是否為陣列決定,見「單選 vs 多選」)|
-| **panel-top** | 多選 + 連續 type-and-select(關鍵字保留在 menu 不被 chip 切走) | `<Combobox searchable searchIn='menu' />` / `<PeoplePicker value={[...]} />`(multi default menu)|
+| **inline-trigger**(= 觸發欄位內的搜尋框,`searchIn='trigger'`) | 單選 + 需快速 type-and-pick(選完收起);多選 opt-in 時每選一位清空關鍵字、接著打下一位 | `<Select searchable />` / `<Combobox searchable searchIn='trigger' />` / `<PeoplePicker value={person} />`(single = value 非陣列)/ `<PeoplePicker value={[...]} searchIn='trigger' />`(multi opt-in;無 `multi` prop — 單/多選由 value 是否為陣列決定,見「單選 vs 多選」)|
+| **panel-top**(= 浮層內搜尋框,`searchIn='menu'`) | 多選 + 連續勾同一批結果(選完關鍵字保留、焦點留在搜尋框) | `<Combobox searchable searchIn='menu' />` / `<PeoplePicker value={[...]} />`(multi default menu)|
+
+關鍵字去留與選完焦點的單一住所 = `../SelectMenu/select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」與「A11y 預設」Focus 段;本表只標型態。多選 × inline-trigger 的兩種顯示(頭像堆疊 / 每人一顆標籤)× 已有人 / 還沒選,範例 = `people-picker.stories.tsx`「多人 × 欄位內搜尋」(瀏覽器閘 `scripts/searchable-menu-focus-invariant.mjs` 從 index 讀到它,量焦點、關鍵字、Tag ×、一鍵清空與空值)。
 
 ### Trigger display SSOT canonical table(2026-05-15 v3 user verbatim 整理)
 
@@ -150,16 +152,16 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 空、closed | placeholder「請選擇人員」+ 按空間 ellipsis |
 | 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:137-152`)|
 | open + inline-search、未選 | input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
-| open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx:286,301` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
+| open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
 | open + panel-search、選 1 人 | avatar + 人名 + ellipsis(搜尋框在 panel 內,trigger 視覺不變)|
 
 #### C. 多人 length=1 trigger SSOT(降階為單人視覺)
 
 | state | trigger 顯示 |
 |---|---|
-| closed | avatar + 人名 + ellipsis(= 單人 closed,共享 `PersonDisplay`)|
+| closed | avatar + 人名 + ellipsis(= 單人 closed,共享 `PersonDisplay`)。搜尋框在欄位內(`searchIn='trigger'`)時,同一列還有恆在的搜尋框那一格(Combobox `flex-auto`):名字那一格**只拿自己要的寬**、放不下才省略,剩下的給搜尋框(`people-picker-helpers.ts` `getPeoplePickerTagWrapperClass` 第二個參數)。2026-10-07 前那一格是 `flex-1`(基準寬 0),跟搜尋框那一格**平分**剩下的空間 —— 192px 寬的欄位名字只拿到 37px(要 69px)、被切成「Alice C…」,旁邊空著一大段,與單人 closed 不同(閘 `scripts/searchable-field-keys-invariant.mjs` K4-people-narrow,與同寬單人欄位比)|
 | open + panel-search | avatar + 人名 + ellipsis(panel 內搜尋,trigger 視覺不變)|
-| open + inline-search | avatar + **input cursor**(原本人名位置被輸入區取代;**因 avatar 仍可見,placeholder 永遠空,只剩 cursor** — 對齊 §E 「avatar 存在 → placeholder 空」rule,避免視覺重複造成混亂)|
+| open + inline-search | avatar + **input cursor**(原本人名位置被輸入區取代;**因 avatar 仍可見,placeholder 永遠空,只剩 cursor** — 對齊 §E 「avatar 存在 → placeholder 空」rule,避免視覺重複造成混亂)。實作:Combobox 以 `tagRenderer` 第三個參數 `ComboboxTagRenderState.searchActive`(欄位內搜尋框開著)告訴本元件,這時那一格只畫頭像、名字的位置空出來(`person-display.tsx` `PersonDisplay` 的 `nameYielded`:頭像到名字之間同一個 `gap-2` 留著,搜尋框剛好從原本名字那條線開始;外層不撐滿,`people-picker-helpers.ts` `getPeoplePickerTagWrapperClass` 第二個參數)。2026-10-07 前這一列有寫、程式沒做:打字時畫成「Alice Chen bo」(待辦總帳 K4,閘 `scripts/searchable-field-keys-invariant.mjs`)。**讓位不改欄寬**:名字原本的寬(連同後面那個插入點)併進搜尋框那一格(Combobox `yieldedTagText`,看不見的量尺)—— 依內容寬(`width="hug"`)的欄位打開、打的字沒超過名字之前欄寬都不變(同日驗證回報:沒有這一格時打開就縮 69px、× 與箭頭往左跳;與「不限」同一條,`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」)|
 
 #### D. 多人 length≥2 trigger SSOT(avatar stack 視覺)
 
@@ -167,7 +169,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 |---|---|
 | closed | **圓形 avatar stack(往左疊 2px、疊在一起處挖空,見 `../Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」)+ 圓形 +N 溢出 chip**(本來放人名的地方不放人名)|
 | open + inline-search、**未選**(length=0)| input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
-| open + inline-search、**已選**(length≥2)| **avatar stack + 圓形 +N + input cursor 在 +N 的右側**(stack 跟 +N 不動;cursor 接在 +N 後;empty search 不顯 placeholder,純 cursor。對齊 Combobox `trailing` slot placement)|
+| open + inline-search、**已選**(length≥2)| **avatar stack + 圓形 +N + input cursor 在 +N 的右側**(空的搜尋框只佔一個插入點寬,stack 跟 +N 不動;打的字放不下時頭像收進 +N 讓出打字的位置 —— 頭像數公式先扣搜尋框的量尺寬,`../Combobox/combobox.spec.md`「欄位內搜尋框的寬度」,2026-09-30;cursor 接在 +N 後;empty search 不顯 placeholder,純 cursor。Combobox 欄位內搜尋框恆為 Tag 區最後一格,見 `../Combobox/combobox.spec.md`「邊界案例」Empty)|
 | open + panel-search、已選 | avatar stack + 圓形 +N(searchbox 在 panel 內,trigger 視覺不變)|
 
 #### E. 共享 SSOT(單人 ↔ 多人 length=1 必對齊)
@@ -178,16 +180,16 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | Avatar+人名視覺 | `person-display.tsx:137-152` `PersonDisplay`(共享 renderer)|
 | 人名按空間 ellipsis | `person-display.tsx:150` `truncate flex-1 min-w-0` |
 | Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx:244` `bareInputStyles` 含 `truncate` |
-| Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx:286` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx:909` CustomCombobox inline input `items.length === 0 ? placeholder : ''`(2026-05-15 Drift A fix 對齊 PeoplePicker SSOT)|
+| Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx` CustomCombobox 欄位內搜尋框(空值也渲染,`placeholder` 屬性顯示 trigger empty placeholder;2026-09-30 修 —— 此前空值分支沒有輸入框,這一格自 2026-05-15 起引用的是走不到的程式碼)|
 
 **Avatar-presence → placeholder 規則(2026-05-15 user verbatim「只要有 avatar 存在,placeholder 都是空的,只會出現 cursor,這樣才不會造成混亂」)**:
 
 | 場景 | avatar 是否可見 | placeholder 行為 |
 |---|---|---|
-| 單人 inline-search、已選、open | ❌(input **取代** avatar/name,avatar 消失)| 該人名以 span overlay 顯示(memory aid)— `select.tsx:286,301`(2026-05-15 Bug 2 fix 改 span overlay)|
+| 單人 inline-search、已選、open | ❌(input **取代** avatar/name,avatar 消失)| 該人名以 span overlay 顯示(memory aid)— `select.tsx` `triggerEmptyPlaceholder` / `showSelectedOverlay`(2026-05-15 Bug 2 fix 改 span overlay)|
 | 單人 inline-search、未選、open | ❌(從來沒 avatar)| placeholder = **trigger empty placeholder「請選擇人員」** |
 | 多人 inline-search、length≥1、open | ✅(avatar/stack 仍在,input 在 trailing)| **placeholder = '' 純 cursor**(避免跟 avatar 重複)|
-| 多人 inline-search、length=0、open | ❌(empty)| placeholder = **trigger empty placeholder「請選擇人員」** — `combobox.tsx` CustomCombobox inline input(Drift A fix)|
+| 多人 inline-search、length=0、open | ❌(empty)| placeholder = **trigger empty placeholder「請選擇人員」** — `combobox.tsx` CustomCombobox 欄位內搜尋框(2026-09-30 起真的渲染,見上表 Empty-state 列)|
 
 **規則一句話**:`placeholder = (visible_avatar_exists) ? '' : (selectedLabel ?? triggerEmptyPlaceholder)`。
 
@@ -321,12 +323,12 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - 字母鍵 — type-ahead 搜尋
 - ↑/↓ — 導覽 people
 - Enter — 選擇 / 取消選擇
-- Tab / Shift+Tab(picker 開著)— **single**(包 `<Select searchable>`):選定反白那一位 → 收起 → 焦點走到觸發欄位的下一個 / 上一個可 Tab 元素;**multi**(包 `<Combobox>`):行為不變,預設 panel-top 搜尋時 Tab 在面板裡繞圈(搜尋框 → 清單 → 全選),`searchIn='trigger'` 時焦點在欄位內、Tab 照頁面順序離開。規則單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(W3C 出處在該處;來源 = 待辦總帳 B11)
-- →(選單清單裡的頭像名片)— 每一位的頭像(名片觸發點)**不在 Tab 路上**(09-25 前多選浮層 4 人 = 4 站);多選浮層內搜尋時,插入點在字尾按 `→` 進反白那一位的頭像(名片浮出),`←` 回搜尋框;頭像上 ↑↓ / Home / End 回搜尋框並移反白、Tab / Shift+Tab 一下離開清單、Enter / Space **不**選這一位。2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;按鍵表住 `../Command/command.spec.md`「A11y 預設」(鍵盤路由 Command 提供,本元件不另寫)。欄位裡已選人員的頭像 / 移除 ×(stack)照 Combobox Tag 移除契約(`../Combobox/combobox.spec.md`「Tag 操作」),不在此列
+- Tab / Shift+Tab(picker 開著)— **single**(包 `<Select searchable>`):選定反白那一位 → 收起 → 焦點走到觸發欄位的下一個 / 上一個可 Tab 元素;**multi**(包 `<Combobox>`):行為不變,預設 panel-top 搜尋時 Tab 在面板裡繞圈(搜尋框 → 清單 → 全選),`searchIn='trigger'` 時焦點在欄位內、Tab 照 DOM 順序走(觸發欄位已是頁面最後一格時會走進浮層,2026-09-30 實測)。規則單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(W3C 出處在該處;來源 = 待辦總帳 B11)
+- →(選單清單裡的頭像名片)— 每一位的頭像(名片觸發點)**不在 Tab 路上**(09-25 前多選浮層 4 人 = 4 站);多選浮層內搜尋時,插入點在字尾按 `→` 進反白那一位的頭像(名片浮出),`←` 回搜尋框;頭像上 ↑↓ / Home / End 回搜尋框並移反白、Tab / Shift+Tab 一下離開清單、Enter / Space **不**選這一位。2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;按鍵表住 `../Command/command.spec.md`「A11y 預設」(鍵盤路由 Command 提供,本元件不另寫)。欄位裡已選人員的頭像 / 移除 ×(stack)照 Combobox Tag 移除契約(`../Combobox/combobox.spec.md`「Tag 操作」),不在此列;「+N」浮出清單裡的人員 Tag × 也是同一條:本元件的 `renderHiddenTag` 用 Combobox 給的第二個參數 `onRemove` 移除(2026-09-30 前自己呼叫 `onChange`,跳過焦點接力 → 焦點掉到 body;搜尋框握著焦點時按它,焦點也被搬走,實測)
 
-**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 的 Combobox 基座焦點留在輸入框,本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
+**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
-移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
+移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`(實作全 DS 一支 `../../lib/collection-removal-focus.ts`,2026-10-01)。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -334,4 +336,6 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `combobox.spec.md`
+- `field-controls.spec.md`
 - `select-menu.spec.md`

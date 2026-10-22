@@ -5,11 +5,11 @@
 #   - 這是 auto-fix-up hook,不是 policy BLOCKER；成功/no-op exit 0。
 #   - generator/config/tool fault 則以 GOVENANCE_INTEGRITY + exit 70 fail closed。
 #   - "Fire"(positive)= 在 stdout emit JSON additionalContext(hookSpecificOutput),
-#     發生條件:file_path 在 packages/design-system/src/(components|patterns|hooks|lib)/
+#     發生條件:file_path 在 packages/design-system/src/(components|patterns|hooks|lib)/ 或 tokens/**/*.ts
 #     且非 stories/spec/test,且 gen-design-system-barrel.mjs 輸出含 'generated' / 'with N components'。
 #   - "Silent"(negative)= 無 stdout(exit 0),發生條件:
 #       (a) file_path 空
-#       (b) file_path 不在 scope(components|patterns|hooks|lib)
+#       (b) file_path 不在 scope(components|patterns|hooks|lib,或 tokens 的 .ts)
 #       (c) file_path 是 .stories/.spec/.test/.spec.md
 #       (d) barrel 腳本沒印 'generated' 關鍵字
 #
@@ -152,6 +152,10 @@ expect_fire "4. lib/cn.ts → FIRE"
 run_hook "packages/design-system/src/components/Badge/index.ts"
 expect_fire "5. components/Badge/index.ts → FIRE"
 
+# 6b. In-scope tokens/**/*.ts → fire(barrel 收 tokens JS mirror;@internal 標記決定 root 出不出口)
+run_hook "packages/design-system/src/tokens/motion/closed-end-state.ts"
+expect_fire "6b. tokens/motion/closed-end-state.ts → FIRE (barrel 收 tokens JS mirror)"
+
 # 6. NEAR-MISS guard against OVER-BROAD exclusion regex:
 #    'specimen.tsx' 含 'spec' substring 但 **不是** .spec 檔 → 必須 FIRE,不可被誤排除。
 #    (exclusion regex 是 \.(...spec...)\.(tsx?|md)$ anchored,specimen 不該命中)
@@ -170,10 +174,12 @@ expect_silent "7. empty file_path → silent"
 run_hook "apps/template/src/App.tsx"
 expect_silent "8. apps/template/src/App.tsx (out of scope) → silent"
 
-# 9. NEAR-MISS scope guard:design-system/src/tokens/ 不在 (components|patterns|hooks|lib) → silent
+# 9. NEAR-MISS scope guard:tokens 只收 .ts(barrel 只讀 tokens 的 JS mirror)—— tokens 的 .css 不在 scope → silent
 #    (guards against over-broad scope regex matching all of design-system/src)
-run_hook "packages/design-system/src/tokens/colors.ts"
-expect_silent "9. NEAR-MISS tokens/colors.ts (DS src but 非 barrel scope) → silent"
+#    2026-10-07 前本格寫的是「tokens/colors.ts 非 barrel scope → silent」:tokens JS mirror 2026-07-08 就進了 barrel,
+#    這格把過時的假設鎖成規格,tokens 改 @internal 後 barrel 不會自動重生。改成 .css 才是真的「DS src 但非 barrel 輸入」。
+run_hook "packages/design-system/src/tokens/motion/motion.css"
+expect_silent "9. NEAR-MISS tokens/motion/motion.css (DS src but 非 barrel 輸入) → silent"
 
 # 10. In-scope .stories.tsx → silent(line 34 exclusion)
 run_hook "packages/design-system/src/components/Badge/badge.stories.tsx"

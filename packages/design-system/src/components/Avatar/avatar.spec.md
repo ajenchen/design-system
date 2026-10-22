@@ -283,8 +283,8 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - **`alt` 必傳**:即使有 `src`,`alt` 是 image fallback / SR 訊號雙重來源。Person avatar `alt` 應含 name + presence(例 `"Alan Chen (online)"`),entity avatar 用品牌 / 專案名,純裝飾(極罕見)用空字串 `alt=""`(`aria-hidden`)。
 - **無 `alt` 時 fallback**:image 模式自動降級 initials / icon;一律不靜默渲染無 SR 標的元素。
 - **Status dot SR 處理**:status dot 內部 span `aria-hidden`(presence 訊號整合進 parent `alt`),避免 `role="status"` live region 在 member list 造成 SR 洪水(詳「Status dot a11y」段)。
-- **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N unread"` 提供計數語義(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
-- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
+- **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N 則未讀"` 提供計數語義(DS 預設文案 = 中文,consumer 經 `badgeAriaLabel` 換語言;2026-10-20 前是英文 `N unread`)(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
+- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N 則未讀'}`(沒給 `alt` 時名字是「查看個人資訊」),對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
 - **Image alt 語意**:meaningful image(person photo / brand logo)用實質 `alt`;decorative-only(極少)走 `alt=""`,但 Avatar 本質是身份識別,decorative 用法應改用 Icon 元件。
 
 ---

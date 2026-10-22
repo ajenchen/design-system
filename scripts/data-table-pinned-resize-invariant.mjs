@@ -13,8 +13,11 @@
  *     放開後回透明(idle 線由凍結邊界線畫)。舊 bug:面板邊界欄 `showLine=false` 連狀態色一起不畫,拖拉中沒有任何回饋。
  *   R3(2026-09-10,AD63)中央區非邊界欄的把手:欄界左 2px 與右 2px 用 elementFromPoint 都要命中把手 —— 7px 命中區
  *     外側 3px 不得被自己格的 overflow:hidden 裁掉、也不得被 DOM 順序在後的鄰格蓋住(main 上右半不可點)。
+ *   R5(2026-10-20,r1b 複核 D2)全表每一顆欄寬把手:名稱彼此分得出來(「調整 {欄標題} 欄寬」)、`aria-controls` 指向自己那一欄的
+ *     columnheader(WCAG 2.4.6 / APG Window Splitter)。舊 bug:每顆都叫「調整欄寬」、沒有 aria-controls,讀屏器分不出誰調哪一欄。
  * `--selftest`:注入 `[data-datatable-header-panel="left"]{width:140px!important}` 讓面板寬凍住 → R1 / R2 必須紅;R3 的兩種破法
  *   (`[role="columnheader"]{overflow:hidden}` / `[role="separator"]{z-index:auto}`)**分開各注入一次**,各自都必須讓右 2px 打不到把手。
+ *   R5:把每顆把手改回同名「調整欄寬」並拿掉 aria-controls(= 2026-10-20 前的寫法)→ R5 必須紅。
  * 開 story(2026-09-25 起):lib/launch-browser.mjs 的 openStory(全部瀏覽器閘共用的唯一實作)—— Storybook 回報渲染完成(含 play)
  *   + render-health + 表格列本身出現 + 版面連續 10 影格靜止(欄寬量測 → 重畫走完)才開始量,取代「load + 等列 + 固定睡 600ms」(M37)。
  *   story 開不起來(不存在的 id、story 檔 404、錯誤頁、空畫面、頁面例外、列一直不出現)= 儀器失效:點名 story、附同源 404、
@@ -109,6 +112,19 @@ try {
   }
   const finalOk = ok(s1) && Math.abs(s1.lastW - (s0.lastW + 80)) <= 2
   check('R2 放開後:欄寬 = 起始 + 80,面板寬與中央區左緣一致', SELFTEST ? !finalOk : finalOk, JSON.stringify({ lastW: s1.lastW, expected: s0.lastW + 80, hpW: s1.hpW, bpW: s1.bpW, sum: s1.sum, centerLeft: s1.centerBodyLeft, hpRight: s1.hpRight }))
+  // R5:全表(三區)每一顆欄寬把手。拖曳影像(DragOverlay 複製的 outerHTML)整層 aria-hidden,不算
+  // 對照組:把每顆改回 2026-10-20 前的寫法(同名「調整欄寬」、沒有 aria-controls)→ R5 必須紅
+  if (SELFTEST) await page.evaluate(() => document.querySelectorAll('[role="columnheader"] [role="separator"]').forEach((sep) => { sep.removeAttribute('aria-controls'); sep.setAttribute('aria-label', '調整欄寬') }))
+  const handles = await page.evaluate(() => [...document.querySelectorAll('[role="columnheader"] [role="separator"]')]
+    .filter((sep) => !sep.closest('[aria-hidden="true"]'))
+    .map((sep) => {
+      const own = sep.closest('[role="columnheader"]'); const id = sep.getAttribute('aria-controls'); const target = id ? document.getElementById(id) : null
+      return { col: own?.getAttribute('data-column-id') ?? null, name: sep.getAttribute('aria-label'), controls: id, targetsOwnHeader: !!target && target === own }
+    }))
+  const names = handles.map((h) => h.name)
+  const r5ok = handles.length >= 2 && new Set(names).size === names.length && handles.every((h) => !!h.controls && h.targetsOwnHeader)
+  check('R5 欄寬把手:每顆名稱分得出來、aria-controls 指向自己那一欄的欄頭(WCAG 2.4.6 / APG Window Splitter)', SELFTEST ? !r5ok : r5ok,
+    JSON.stringify({ count: handles.length, duplicateNames: names.length - new Set(names).size, bad: handles.filter((h) => !h.controls || !h.targetsOwnHeader).length, sample: handles.slice(0, 3) }))
 } catch (error) {
   if (!(error instanceof StoryRenderInstrumentError)) { printNotFound(); throw error }
   // 沒量到 ≠ 沒問題:儀器失效(exit 2),點名 story、列同源 404;不是產品裁決,任何模式下都不算通過
@@ -124,5 +140,5 @@ if (instrumentFail) {
   process.exit(2)
 }
 if (fail) printNotFound()
-console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:面板寬凍住 / 把手被裁 / 把手線凍成透明時 R1 / R2 / R3 / R4 如預期變紅(儀器有效)' : '釘選欄拖拉欄寬:面板寬即時跟動、放開後一致;把手兩側可點;邊界欄拖拉中把手線變主色,全通過'}`)
+console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:面板寬凍住 / 把手被裁 / 把手線凍成透明 / 把手改回同名無 aria-controls 時 R1 / R2 / R3 / R4 / R5 如預期變紅(儀器有效)' : '釘選欄拖拉欄寬:面板寬即時跟動、放開後一致;把手兩側可點;邊界欄拖拉中把手線變主色;每顆把手名稱分得出來、指向自己那一欄,全通過'}`)
 process.exit(fail ? 1 : 0)

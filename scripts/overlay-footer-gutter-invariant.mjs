@@ -51,7 +51,7 @@
  */
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, settleAfterInteraction, StoryRenderInstrumentError, requireStorybookBuild, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
+import { launchBrowser, openStory, ownSurfacePosition, parkPointer, settleAfterInteraction, StoryRenderInstrumentError, requireStorybookBuild, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -189,6 +189,7 @@ const survey = []
 let scanned = 0, footersChecked = 0, noRef = 0
 // 點開下拉的覆蓋率(2026-09-25):點開並等到靜止的次數、因停用 / 唯讀而不點的次數 —— 印出來,不再靜默縮水
 let triggersOpened = 0, triggersInert = 0, triggersGone = 0, triggersCovered = 0
+const coveredWhere = [] // 被蓋住的是哪幾格(2026-10-01:逐一點名,數字變了才看得出是哪一格)
 const crashed = []
 /** 儀器失效:沒量到的 story(不是產品判定)。 */
 const instrumentFailures = []
@@ -260,6 +261,10 @@ try {
         // 等不到靜止 = 儀器失效。點了沒開出東西(版面靜止、沒有新的 footer)是可靠的觀察,照舊不算違規。
         // 觸發點在一開始就取定(最多 6 個);前一個互動把後面的收掉是正常的(例:預設開啟的下拉被點關,裡面的搜尋框跟著卸載),
         // 那種記成「被前一個互動收掉」並印出次數,不當儀器失效、也不默默少算。
+        // 導覽不會移動指標:上一則最後停的位置,在這一則上可能正好是會滑過開卡片的東西 —— 先停到中性位置(lib/launch-browser.mjs parkPointer)
+        await parkPointer(page)
+        const parkedAtOpen = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+        if (!parkedAtOpen.ok) { instrumentFailures.push({ story: s.id, detail: '開 story 後把指標移開,版面沒有靜止' }); continue }
         const handles = (await page.locator('[role="combobox"]:visible').elementHandles()).slice(0, 6)
         for (let i = 0; i < handles.length; i += 1) {
           const trigger = handles[i]
@@ -273,19 +278,30 @@ try {
           // 2026-09-29:被 modal 遮罩蓋住的觸發點(例 AgentPanel「未存檔的修改」story 一開場就疊兩層對話框)看得見但點不到,
           // click 會等到逾時而把整支 story 記成儀器失效。先用 Playwright 自己的可操作性檢查(trial)試一次,過不了 = 被蓋住 →
           // 略過並計數(同 select-all-footer 閘;自己算 elementFromPoint 沒先捲進視窗會把視窗外的誤判成被蓋住)。
-          const covered = await trigger.click({ trial: true, timeout: 2_000 }).then(() => false, () => true)
-          if (covered) { triggersCovered += 1; continue }
-          try { await trigger.click({ timeout: 10_000 }) } catch (error) {
+          // 2026-10-01:點「觸發欄位自己的表面」、開關之後把指標停到中性位置(lib/launch-browser.mjs ownSurfacePosition / parkPointer;
+          // 同 select-all-footer 閘)。原本點正中央、指標停在原地:正中央落在 Tag 頭像 / 「+N」上時開的是名片卡 / 名單卡,
+          // 卡片蓋住下一格 —— PeoplePicker「多人 × 欄位內搜尋」第 4 格點不到(兩次全掃都紅在 Timeout)、「+N 浮出清單移除驗證」第 2 格被默默算成被蓋住。
+          // 找不到自己的表面照「被蓋住」計數並點名,不退回點正中央(那正是要取代的代理)。
+          const at = await ownSurfacePosition(trigger)
+          const covered = !at.ok || await trigger.click({ trial: true, timeout: 2_000, position: at.position }).then(() => false, () => true)
+          if (covered) { triggersCovered += 1; coveredWhere.push(`${s.id} 第 ${i + 1} 個觸發點${at.ok ? '' : `(${at.why})`}`); continue }
+          try { await trigger.click({ timeout: 10_000, position: at.position }) } catch (error) {
             instrumentFailures.push({ story: s.id, detail: `點第 ${i + 1} 個下拉失敗(看得見、沒停用):${String(error?.message || error).split('\n')[0]}` })
             break
           }
           const opened = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
           if (!opened.ok) { instrumentFailures.push({ story: s.id, detail: `點開第 ${i + 1} 個下拉後版面 ${opened.framesWaited} 格內沒有靜止(變動 ${opened.lateChanges} 次)` }); break }
+          await parkPointer(page)
+          const parked = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!parked.ok) { instrumentFailures.push({ story: s.id, detail: `點開第 ${i + 1} 個下拉、把指標移開後版面沒有靜止` }); break }
           triggersOpened += 1
           await collect(`點開第 ${i + 1} 個下拉`)
           await page.keyboard.press('Escape')
           const closed = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
           if (!closed.ok) { instrumentFailures.push({ story: s.id, detail: `關閉第 ${i + 1} 個下拉後版面沒有靜止` }); break }
+          await parkPointer(page)
+          const reParked = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+          if (!reParked.ok) { instrumentFailures.push({ story: s.id, detail: `關閉第 ${i + 1} 個下拉、把指標移開後版面沒有靜止` }); break }
         }
       } catch (error) {
         // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行、照樣 exit 0)
@@ -308,6 +324,7 @@ try {
 console.log(`\n掃描 ${scanned} 支 story(不抽樣),儀器失效(沒量到)${instrumentFailures.length} 支`)
 console.log(`量到可見的 footer:${footersChecked} 個(其中 ${noRef} 個上方沒有可對齊的東西,略過)`)
 console.log(`點開下拉並等到靜止:${triggersOpened} 次(停用 / 唯讀而不點:${triggersInert} 個;被前一個互動收掉:${triggersGone} 個;被遮罩蓋住而略過:${triggersCovered} 個)`)
+for (const c of coveredWhere) console.log(`  · 被蓋住:${c}`)
 console.log(`整則渲不出來的 story:${crashed.length} 支`)
 
 // --selftest-crash 的判定:兩面都必須成立,而且每一則都要證明注入真的生效(攔到了它的 chunk)。

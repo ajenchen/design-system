@@ -1,11 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @principles-rationale: Merged WhenToUse + WhenNotToUse into a single
-// `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親) per 2026-04-26
-// user mandate. Sidebar has no formal Vs*Rule(ContentTypeChoice 為 internal taxonomy
-// SidebarMenu vs TreeView,屬 component-specific principle 不歸 vs 近親);ContentTypeChoice /
+// @principles-rationale: 使用指引固定三段(何時用 / 何時不用 / 和相近元件怎麼選,2026-10-20 T4);
+// ContentTypeChoice(SidebarMenu vs TreeView 是元件內部的選擇,不屬「和相近元件怎麼選」)/
 // GroupHeaderRules / SettingsScenario / IconModeRules / ActiveState 全保留。
 import * as React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   LayoutDashboard, Inbox, Users, Settings, Bell, Folder, FileText, FileCode,
@@ -23,6 +20,7 @@ import {
 } from './sidebar'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計原則',
@@ -34,59 +32,9 @@ type Story = StoryObj
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-secondary max-w-[720px]">{children}</p>
-)
-const Label = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-footnote font-medium text-fg-muted">{children}</span>
-)
-
-const Section = ({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description?: React.ReactNode
-  children?: React.ReactNode
-}) => (
-  <section className="flex flex-col gap-4 pb-10 border-b border-divider last:border-b-0">
-    <div className="flex flex-col gap-1">
-      <H3>{title}</H3>
-      {description && <Desc>{description}</Desc>}
-    </div>
-    {children}
-  </section>
-)
-
-const DoDont = ({
-  type,
-  title,
-  children,
-}: {
-  type: 'do' | 'dont'
-  title: string
-  children: React.ReactNode
-}) => (
-  <div className="flex flex-col gap-2">
-    <div className="flex items-center gap-2">
-      <span
-        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold ${
-          type === 'do'
-            ? 'bg-success-subtle text-success-text'
-            : 'bg-error-subtle text-error-text'
-        }`}
-      >
-        {type === 'do' ? '✓' : '✕'}
-      </span>
-      <Label>{title}</Label>
-    </div>
-    {children}
-  </div>
-)
+// 規則外框(標題 / 說明 / 規則之間的間距)= 共用教學頁元件;Do / Don't 一律是一則規則,✅ / ❌ 寫在規則標題
+// (2026-10-20 T5:原本本頁自畫圓形 ✓ / ✕ 標記 + 小標的 DoDont 框與 Desc 說明元件,是第二套教學框)
+const TutorialRule = createTutorialRule()
 
 /** Mini sidebar demo (no full provider/layout) — 用 absolute inset 把 sidebar 塞在一個固定 demo box 內 */
 const MiniSidebar = ({
@@ -130,118 +78,117 @@ const renderMainNav = (_activeId?: string) => (
 
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ── WhenToUse — 何時使用 Sidebar ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse(2026-04-26 v3 canonical)
+// ── UsageGuidance — 何時用 / 何時不用 / 和相近元件怎麼選
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 Sidebar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="完整佈局"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Linear 式議題追蹤主導覽(完整佈局)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合內容"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">專案導覽混排群組、徽章與操作(混合內容)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="抽屜收合（離畫面外）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">側欄整條滑出畫面外的內容優先工作區（抽屜收合）</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合前綴"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">icon 導覽與 GitHub / Slack / Figma 整合並列對齊（混合前綴）</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照下方「何時不用 / 替代元件」清單;若情境不屬於垂直持久導覽,改用對應的近親元件。</p>
-    </div>
+    <TutorialPage>
+      <UsageSection kind="when">
+        <p>產品主結構的垂直、常駐導覽:左側列出主要區域,在頁面之間切換時導覽一直在。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/Sidebar/展示" name="完整佈局">Linear 式議題追蹤主導覽(完整佈局)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Sidebar/展示" name="混合內容">專案導覽混排群組、徽章與操作(混合內容)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Sidebar/展示" name="抽屜收合（離畫面外）">側欄整條滑出畫面外的內容優先工作區（抽屜收合）</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/Sidebar/展示" name="混合前綴">icon 導覽與 GitHub / Slack / Figma 整合並列對齊（混合前綴）</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div className="prose prose-sm max-w-prose space-y-4">
-      <p>Sidebar 是垂直持久導覽,以下情境改用其他元件:</p>
-      <ul className="list-disc list-inside space-y-1 text-fg-secondary">
-        <li><strong>頁面頂部水平導覽</strong> → 自訂 Nav / NavigationMenu。Netflix 的頂部導覽用自訂組件</li>
-        <li><strong>同層內容切換</strong> → Tabs。Slack 的 channel 內容切換用 Tabs，不用 Sidebar</li>
-        <li><strong>暫時性側面板</strong> → Sheet / Drawer。Notion 的 filter panel 用 Sheet</li>
-        <li><strong>跨頁搜尋 / 快速跳轉</strong> → Command palette。Figma 的快速搜尋用 Command</li>
-        <li><strong>少於 3 項導覽</strong> → 頂部 tab bar。Sidebar 視覺成本對小 app 過高</li>
-      </ul>
-    </div>
-    </div>
+      <UsageSection kind="whenNot">
+        <TutorialList>
+          <li><strong>頁面頂部的水平導覽</strong> → 自訂頂部導覽。Netflix 的頂部導覽用自訂組件</li>
+          <li><strong>同一層內容切換</strong> → Tabs。Slack 的頻道內容切換用 Tabs,不用 Sidebar</li>
+          <li><strong>暫時性的側面板</strong> → Sheet。Notion 的篩選面板用 Sheet</li>
+          <li><strong>跨頁搜尋 / 快速跳轉</strong> → 指令面板(Command)。Figma 的快速搜尋用 Command</li>
+          <li><strong>不到 3 項的導覽</strong> → 頂部分頁列。Sidebar 對小型產品視覺成本過高</li>
+        </TutorialList>
+      </UsageSection>
+
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>Tabs</strong> —— 同一頁裡切換平行內容;Sidebar 是跨頁面的常駐導覽</li>
+          <li><strong>TreeView</strong> —— 使用者自建、可巢狀的資料(專案、資料夾),可以放進 Sidebar 的群組裡;怎麼選見「<StoryLink kind="Design System/Components/Sidebar/設計原則" name="SidebarMenu vs TreeView 的選擇">SidebarMenu vs TreeView 的選擇</StoryLink>」</li>
+          <li><strong>AppShell</strong> —— 整頁的組合(側欄 + 主區 + 右側面板);Sidebar 是放進 AppShell 的導覽本身</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
   ),
 }
 
 export const ContentTypeChoice: Story = {
   name: 'SidebarMenu vs TreeView 的選擇',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="判斷規則"
-        description={
+        note={
           <>
             <strong>SidebarMenu</strong> 只接受「<strong>1 層 + designer 能在設計時列舉所有項目</strong>」。
             任何不符合的情況——深度 &gt; 1、數量不可列舉、使用者可 runtime 新增——一律用 <strong>TreeView</strong>。
           </>
         }
+      />
+
+      <TutorialRule
+        title="✅ 設計好的 app 主導覽 → SidebarMenu"
+        note="Dashboard / Inbox / Team / Settings——designer 定義好的固定項目,永遠是這 5 個,用 SidebarMenu。"
       >
-        <div className="flex gap-6 items-start flex-wrap">
-          <DoDont type="do" title="設計好的 app 主導覽 → SidebarMenu">
-            <MiniSidebar activeId="dashboard">
-              <SidebarHeader>
-                {/* Chrome header canonical:raw <Avatar size={24}> per header-canonical.spec.md:57-72 + text-body-lg per chrome typography */}
-                <div className="flex items-center gap-2">
-                  <Avatar size={24} shape="square" color="blue" solid alt="Acme" />
-                  <span className="text-body-lg font-medium">Acme Inc</span>
-                </div>
-              </SidebarHeader>
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </MiniSidebar>
-            <Desc>
-              Dashboard / Inbox / Team / Settings——designer 定義好的固定項目,永遠是這 5 個,用 SidebarMenu。
-            </Desc>
-          </DoDont>
+        <MiniSidebar activeId="dashboard">
+          <SidebarHeader>
+            {/* Chrome header canonical:raw <Avatar size={24}> per header-canonical.spec.md:57-72 + text-body-lg per chrome typography */}
+            {/* @layout-space-magic-ok: 頭像 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+            <div className="flex items-center gap-2">
+              <Avatar size={24} shape="square" color="blue" solid alt="Acme" />
+              <span className="text-body-lg font-medium">Acme Inc</span>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </MiniSidebar>
+      </TutorialRule>
 
-          <DoDont type="do" title="使用者自建資料 → TreeView">
-            <MiniSidebar>
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Projects</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <TreeView aria-label="Projects" defaultExpandedIds={['web']}>
-                      <TreeItem id="web" icon={Folder} label="Web App">
-                        <TreeItem id="fe" icon={Folder} label="frontend" />
-                        <TreeItem id="be" icon={Folder} label="backend" />
-                      </TreeItem>
-                      <TreeItem id="mobile" icon={Folder} label="Mobile App" />
-                      <TreeItem id="docs" icon={FileText} label="Docs" />
-                    </TreeView>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </MiniSidebar>
-            <Desc>
-              使用者自建的 projects——數量未知、可能有巢狀資料夾,用 TreeView。即使今天只有 3 個,未來會長。
-            </Desc>
-          </DoDont>
-        </div>
+      <TutorialRule
+        title="✅ 使用者自建資料 → TreeView"
+        note="使用者自建的 projects——數量未知、可能有巢狀資料夾,用 TreeView。即使今天只有 3 個,未來會長。"
+      >
+        <MiniSidebar>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Projects</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <TreeView aria-label="Projects" defaultExpandedIds={['web']}>
+                  <TreeItem id="web" icon={Folder} label="Web App">
+                    <TreeItem id="fe" icon={Folder} label="frontend" />
+                    <TreeItem id="be" icon={Folder} label="backend" />
+                  </TreeItem>
+                  <TreeItem id="mobile" icon={Folder} label="Mobile App" />
+                  <TreeItem id="docs" icon={FileText} label="Docs" />
+                </TreeView>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </MiniSidebar>
+      </TutorialRule>
 
-        <DoDont type="dont" title="不要把 user data 塞 SidebarMenu">
-          <Desc>
-            如果使用者可以自己新增 project,一律當 user data 處理用 TreeView。強塞 SidebarMenu 會在數量膨脹時爆版。
-          </Desc>
-        </DoDont>
-      </Section>
+      <TutorialRule
+        title="❌ 不要把使用者資料塞進 SidebarMenu"
+        note="如果使用者可以自己新增 project,一律當使用者資料處理用 TreeView。強塞 SidebarMenu 會在數量膨脹時爆版。"
+      />
 
-      <Section
+      <TutorialRule
         title="混用:SidebarMenu + TreeView"
-        description="Gmail / Linear 的標準版型——上方扁平主導覽(SidebarMenu),下方使用者資料(TreeView)。群組間自動分隔線(由 SidebarGroup 的 ::before 處理,不用手動放 separator)。"
+        note="Gmail / Linear 的標準版型——上方扁平主導覽(SidebarMenu),下方使用者資料(TreeView)。群組間自動分隔線(由 SidebarGroup 的 ::before 處理,不用手動放 separator)。"
       >
         <MiniSidebar activeId="inbox">
           <SidebarContent>
@@ -262,8 +209,8 @@ export const ContentTypeChoice: Story = {
             </SidebarGroup>
           </SidebarContent>
         </MiniSidebar>
-      </Section>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -272,79 +219,76 @@ export const ContentTypeChoice: Story = {
 export const GroupHeaderRules: Story = {
   name: '群組 / 標籤使用原則',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="Label 必須在 group 內,且共用 item-layout row height"
-        description={
+        note={
           <>
-            SidebarGroupLabel 和 SidebarMenuButton 用<strong>完全相同的 py 公式</strong>(`py-[calc((field-height-md-1lh)/2)]`),
+            SidebarGroupLabel 和 SidebarMenuButton 用<strong>完全相同的 py 公式</strong>(<code>py-[calc((field-height-md-1lh)/2)]</code>),
             差別只在 font-muted + pointer-events-none。Label 和 first item 以自然的 item-layout 間距相鄰,<strong>沒有額外 gap</strong>。
           </>
         }
-      >
-        <div className="flex gap-6 items-start flex-wrap">
-          <DoDont type="do" title="Label 和 items 緊貼,無額外 gap">
-            <MiniSidebar>
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Projects</SidebarGroupLabel>
-                  <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </MiniSidebar>
-          </DoDont>
+      />
 
-          <DoDont type="dont" title="別用 margin / padding 製造多餘空隙">
-            <Desc>
-              不要在 SidebarGroupContent 或 SidebarMenu 加 `mt-2` 等 margin,也不要在 SidebarGroup 加多餘 padding。
-              Group 已有 `py-2`、label 和 items 共用 item-layout row——這就是設計好的節奏,別破壞。
-            </Desc>
-          </DoDont>
-        </div>
-      </Section>
+      <TutorialRule title="✅ Label 和 items 緊貼,無額外 gap">
+        <MiniSidebar>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Projects</SidebarGroupLabel>
+              <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </MiniSidebar>
+      </TutorialRule>
 
-      <Section
-        title="群組之間的分隔線:由 SidebarGroup 自動處理"
-        description={
+      <TutorialRule
+        title="❌ 別用 margin / padding 製造多餘空隙"
+        note={
           <>
-            相鄰的 SidebarGroup 會透過 <code className="text-caption bg-neutral-hover px-1 rounded">::before</code> pseudo-element
-            自動產生loose token 內縮的分隔線。Consumer 不需要手動放 SidebarSeparator。
+            不要在 SidebarGroupContent 或 SidebarMenu 加 <code>mt-2</code> 等 margin,也不要在 SidebarGroup 加多餘 padding。
+            Group 已有 <code>py-2</code>、label 和 items 共用 item-layout row——這就是設計好的節奏,別破壞。
           </>
         }
-      >
-        <div className="flex gap-6 items-start flex-wrap">
-          <DoDont type="do" title="直接放兩個 SidebarGroup——分隔線自動出現">
-            <MiniSidebar>
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
-                </SidebarGroup>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Projects</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton id="web-app" startIcon={Folder}>Web App</SidebarMenuButton>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton id="mobile-app" startIcon={Folder}>Mobile App</SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </MiniSidebar>
-          </DoDont>
+      />
 
-          <DoDont type="dont" title="別手動放 SidebarSeparator 在群組之間">
-            <Desc>
-              手動放會導致雙重分隔線(group 自動 + 手動)。Group 之間的分隔是 group 自己的責任。
-              SidebarSeparator 只用於結構邊界(例如 header ↔ content,但那個已由 SidebarHeader 的 border-b 處理)。
-            </Desc>
-          </DoDont>
-        </div>
-      </Section>
-    </div>
+      <TutorialRule
+        title="群組之間的分隔線:由 SidebarGroup 自動處理"
+        note={
+          <>
+            相鄰的 SidebarGroup 會透過 <code>::before</code> pseudo-element
+            自動產生 loose token 內縮的分隔線。Consumer 不需要手動放 SidebarSeparator。
+          </>
+        }
+      />
+
+      <TutorialRule title="✅ 直接放兩個 SidebarGroup——分隔線自動出現">
+        <MiniSidebar>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Projects</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton id="web-app" startIcon={Folder}>Web App</SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton id="mobile-app" startIcon={Folder}>Mobile App</SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </MiniSidebar>
+      </TutorialRule>
+
+      <TutorialRule
+        title="❌ 別手動放 SidebarSeparator 在群組之間"
+        note="手動放會導致雙重分隔線(group 自動 + 手動)。Group 之間的分隔是 group 自己的責任。SidebarSeparator 只用於結構邊界(例如 header ↔ content,但那個已由 SidebarHeader 的 border-b 處理)。"
+      />
+    </TutorialPage>
   ),
 }
 
@@ -353,69 +297,67 @@ export const GroupHeaderRules: Story = {
 export const SettingsScenario: Story = {
   name: '設定類有子頁的頁面',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="三條正確路徑,全部不用 SidebarMenuSub"
-        description="Settings > General/Profile/Billing 是最常見的嘗試塞 2 層的誘惑。本 design system 不支援 SidebarMenuSub——強制 consumer 走以下三條路徑之一。"
+        note="Settings > General/Profile/Billing 是最常見的嘗試塞 2 層的誘惑。本 design system 不支援 SidebarMenuSub——強制 consumer 走以下三條路徑之一。"
+      />
+
+      <TutorialRule
+        title="A. 頁內第二層導覽(推薦,最世界級)"
+        note={
+          <>
+            Sidebar 只放一顆 Settings,點進去後在 Settings 頁面內部用 Tabs / 左側 rail 呈現子頁。
+            代表:Linear、Notion、GitHub。<strong>子頁屬於 Settings 頁面的內部狀態,不佔 sidebar 位置。</strong>
+          </>
+        }
+      />
+
+      <TutorialRule
+        title="B. SidebarGroup 扁平化"
+        note="若子頁等重要且需一鍵直達,用 SidebarGroupLabel 當純視覺分段標題,子項全部是獨立頂層 SidebarMenuItem。少見,只在子項確實高頻使用時才用。"
       >
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <Label>A. In-page secondary nav(推薦,最世界級)</Label>
-            <Desc>
-              Sidebar 只放一顆 `Settings`,點進去後在 Settings 頁面內部用 Tabs / 左側 rail 呈現子頁。
-              代表:Linear、Notion、GitHub。<strong>子頁屬於 Settings 頁面的內部狀態,不佔 sidebar 位置。</strong>
-            </Desc>
-          </div>
+        {/* 導覽項必帶穩定 id(sidebar.spec.md「禁止:SidebarMenuButton 不傳 id」)—
+            id 進 SidebarProvider 單一 activeId selection 模型,漏 id = 啞 item 無法 active。 */}
+        <MiniSidebar activeId="settings-general">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem><SidebarMenuButton id="inbox" startIcon={Inbox}>Inbox</SidebarMenuButton></SidebarMenuItem>
+                  <SidebarMenuItem><SidebarMenuButton id="projects" startIcon={Folder}>Projects</SidebarMenuButton></SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem><SidebarMenuButton id="settings-general" startIcon={Settings}>General</SidebarMenuButton></SidebarMenuItem>
+                  <SidebarMenuItem><SidebarMenuButton id="settings-team" startIcon={Users}>Team</SidebarMenuButton></SidebarMenuItem>
+                  <SidebarMenuItem><SidebarMenuButton id="settings-billing" startIcon={FileText}>Billing</SidebarMenuButton></SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </MiniSidebar>
+      </TutorialRule>
 
-          <div className="flex flex-col gap-2">
-            <Label>B. SidebarGroup 扁平化</Label>
-            <Desc>
-              若子頁等重要且需一鍵直達,用 SidebarGroupLabel 當純視覺分段標題,子項全部是獨立頂層 SidebarMenuItem。
-              少見,只在子項確實高頻使用時才用。
-            </Desc>
-            {/* 導覽項必帶穩定 id(sidebar.spec.md「禁止:SidebarMenuButton 不傳 id」)—
-                id 進 SidebarProvider 單一 activeId selection 模型,漏 id = 啞 item 無法 active。 */}
-            <MiniSidebar activeId="settings-general">
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem><SidebarMenuButton id="inbox" startIcon={Inbox}>Inbox</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton id="projects" startIcon={Folder}>Projects</SidebarMenuButton></SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Settings</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem><SidebarMenuButton id="settings-general" startIcon={Settings}>General</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton id="settings-team" startIcon={Users}>Team</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton id="settings-billing" startIcon={FileText}>Billing</SidebarMenuButton></SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </MiniSidebar>
-          </div>
+      <TutorialRule
+        title="C. 使用者選單開設定"
+        note={
+          <>
+            Settings 不在 sidebar,從 footer 的 user menu / avatar dropdown 觸發 modal 或快捷鍵(<code>Cmd+,</code>)。
+            適合低頻操作。代表:Linear、Slack、Discord。
+          </>
+        }
+      />
 
-          <div className="flex flex-col gap-2">
-            <Label>C. User menu modal</Label>
-            <Desc>
-              Settings 不在 sidebar,從 footer 的 user menu / avatar dropdown 觸發 modal 或快捷鍵(`Cmd+,`)。
-              適合低頻操作。代表:Linear、Slack、Discord。
-            </Desc>
-          </div>
-        </div>
-
-        <DoDont type="dont" title="不要用 SidebarMenuSub 做巢狀 menu">
-          <Desc>
-            本 design system 完全不 export SidebarMenuSub / SidebarMenuSubItem。
-            需要「父項 + 多個子項」結構 → 用 path A(in-page nav)或 TreeView。
-          </Desc>
-        </DoDont>
-      </Section>
-    </div>
+      <TutorialRule
+        title="❌ 不要用 SidebarMenuSub 做巢狀 menu"
+        note="本 design system 完全不 export SidebarMenuSub / SidebarMenuSubItem。需要「父項 + 多個子項」結構 → 用 A(頁內導覽)或 TreeView。"
+      />
+    </TutorialPage>
   ),
 }
 
@@ -424,15 +366,15 @@ export const SettingsScenario: Story = {
 export const IconModeRules: Story = {
   name: '圖示模式的 4 條鐵律',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="規則 1:icon rail 上的每顆 icon 必須可導覽"
-        description="絕對不可有「點了沒反應」或「點了只是展開選單」的 icon。icon 列是收合狀態下唯一的導覽介面。"
+        note="絕對不可有「點了沒反應」或「點了只是展開選單」的 icon。icon 列是收合狀態下唯一的導覽介面。"
       />
 
-      <Section
+      <TutorialRule
         title="規則 2:純分組 header 不可用 SidebarMenuItem"
-        description={
+        note={
           <>
             只是用來分組下方 children 的項目(沒有自己的頁面),<strong>必須用 SidebarGroup + SidebarGroupLabel</strong>。
             SidebarGroupLabel 在 icon 模式自動隱藏(display:none),子 items 照常顯示;SidebarMenuItem 則會變成死 icon。
@@ -440,14 +382,14 @@ export const IconModeRules: Story = {
         }
       />
 
-      <Section
+      <TutorialRule
         title="規則 3:TreeView 在 icon 模式整個隱藏"
-        description="不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon,Gmail / Linear / Notion 一致採「隱藏」策略。"
+        note="不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon,Gmail / Linear / Notion 一致採「隱藏」策略。"
       />
 
-      <Section
+      <TutorialRule
         title="規則 4:重新看階層資料的唯一路徑 = 展開 sidebar"
-        description={
+        note={
           <>
             Sidebar 收合時若使用者想瀏覽隱藏的 tree,<strong>唯一方法是重新展開 sidebar</strong>(點 Trigger 或按 ⌘B)。
             不提供「點 icon 順便展開」的隱式副作用——那會讓 icon rail 的行為不可預測。
@@ -456,16 +398,16 @@ export const IconModeRules: Story = {
         }
       />
 
-      <Section
+      <TutorialRule
         title="❌ 反模式:Hover 浮出 cascading menu"
-        description={
+        note={
           <>
             不要讓 icon hover 秀出完整的子項 flyout / popover menu——這是 2000 年代 cascading menu 的反模式,
             對 touch / 鍵盤 / accessibility 都失敗。NN/g 多年警告。
           </>
         }
       />
-    </div>
+    </TutorialPage>
   ),
 }
 
@@ -474,33 +416,32 @@ export const IconModeRules: Story = {
 export const ActiveState: Story = {
   name: '啟用狀態跨群組單一',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <Section
+    <TutorialPage>
+      <TutorialRule
         title="整個 sidebar 同時只有一個 active item"
-        description={
+        note={
           <>
             跨 SidebarMenu 和 TreeView 都是。選中 tree node 時 menu 的 active 要取消,反之亦然。
-            Consumer 用單一 `activeId` state 管理,不要各自維護。
+            Consumer 用單一 <code>activeId</code> state 管理,不要各自維護。
           </>
         }
-      >
-        <DoDont type="do" title="單一 activeId,跨群組互斥">
-          <Desc>
-            使用 `React.useState&lt;string&gt;()` 管理當前 active id,SidebarMenuButton 和 TreeView 都讀這個 state。
-          </Desc>
-        </DoDont>
-      </Section>
+      />
 
-      <Section
+      <TutorialRule
+        title="✅ 單一 activeId,跨群組互斥"
+        note={<>使用 <code>React.useState&lt;string&gt;()</code> 管理當前 active id,SidebarMenuButton 和 TreeView 都讀這個 state。</>}
+      />
+
+      <TutorialRule
         title="Active 視覺:bg-neutral-selected,字重不變"
-        description={
+        note={
           <>
-            Selected 只變 background(`bg-neutral-selected`)和文字色(`fg-secondary` → `foreground`),
+            Selected 只變 background(<code>bg-neutral-selected</code>)和文字色(<code>fg-secondary</code> → <code>foreground</code>),
             <strong>字重維持 font-medium(500)</strong>——不加重以避免選中時文字突然跳動。
           </>
         }
       />
-    </div>
+    </TutorialPage>
   ),
 }
 
