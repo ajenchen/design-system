@@ -20,12 +20,14 @@ type Story = StoryObj<typeof Textarea>
 export const Default: Story = {
   name: '基本用法',
   args: {
-    placeholder: '請輸入多行文字...',
+    placeholder: '例:需要法務審核的條款、預計的上線時程',
   },
+  // 真實情境 + 欄位名稱(稽核 L074)
   render: (args) => (
-    <div className="max-w-md">
+    <Field className="max-w-md">
+      <FieldLabel>補充說明</FieldLabel>
       <Textarea {...args} />
-    </div>
+    </Field>
   ),
 }
 
@@ -42,15 +44,16 @@ export const InField: Story = {
         <FieldDescription>會顯示在專案列表的摘要欄</FieldDescription>
       </Field>
 
+      {/* 錯誤的值與錯誤訊息對得上(稽核 L074):退件原因只寫了 4 個字,規則是至少 10 字 */}
       <Field invalid>
-        <FieldLabel>備註</FieldLabel>
-        <Textarea defaultValue="太短了" rows={3} />
-        <FieldError>備註至少 20 字</FieldError>
+        <FieldLabel>退件原因</FieldLabel>
+        <Textarea defaultValue="資料不全" rows={3} />
+        <FieldError>退件原因至少 10 字</FieldError>
       </Field>
 
       <Field orientation="horizontal" labelWidth="120px">
         <FieldLabel>補充說明</FieldLabel>
-        <Textarea placeholder="橫式 field 內的 textarea" rows={4} />
+        <Textarea placeholder="例:需要法務審核的條款" rows={4} />
       </Field>
     </FieldGroup>
   ),

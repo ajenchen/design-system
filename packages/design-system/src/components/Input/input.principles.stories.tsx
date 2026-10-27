@@ -31,7 +31,7 @@ export const UsageGuidance: Story = {
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <TutorialList>
             <li><StoryLink kind="Design System/Components/Input/展示" name="四模式">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</StoryLink></li>
-            <li><StoryLink kind="Design System/Components/Input/展示" name="三種尺寸">搜尋列 — 輸入框與按鈕並排等高</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Input/展示" name="三種尺寸">商品名稱欄位的三種尺寸</StoryLink></li>
             <li><StoryLink kind="Design System/Components/Input/展示" name="尾端操作">密碼顯示切換 / 搜尋清除等尾端操作</StoryLink></li>
             <li><StoryLink kind="Design System/Components/Input/展示" name="錯誤狀態">Email 格式錯誤的驗證回饋</StoryLink></li>
           </TutorialList>
@@ -98,10 +98,10 @@ export const ModeRule: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
-              <Input mode="disabled" defaultValue="僅付費方案可用" aria-label="付費方案欄位（停用）" />
+              <Input mode="disabled" defaultValue="acme.com" aria-label="自訂網域（停用）" />
             </div>
           </TooltipTrigger>
-          <TooltipContent>此欄位在免費方案中不可編輯</TooltipContent>
+          <TooltipContent>自訂網域需升級付費方案才能修改</TooltipContent>
         </Tooltip>
       </TutorialRule>
 
@@ -147,6 +147,7 @@ export const EndActionRule: Story = {
   render: () => {
     const [showPwd, setShowPwd] = React.useState(false)
     const [query, setQuery] = React.useState('Bluetooth')
+    const [orderQuery, setOrderQuery] = React.useState('')
     return (
       <TutorialPage>
         <TutorialRule
@@ -176,32 +177,15 @@ export const EndActionRule: Story = {
           title="清除按鈕只在有值時出現,消失後不佔位"
           note="條件渲染 endAction,input 寬度自然擴展。避免永遠保留一個看起來可按但沒作用的 icon"
         >
+          {/* 一個真的能打字的搜尋框(稽核 M060):打字後出現 ×,按 × 清空、× 跟著消失,輸入框寬度自然補回 */}
           <Input
             startIcon={Search}
-            value=""
-            placeholder="輸入後會出現清除按鈕"
-            aria-label="搜尋商品（空值）"
-            readOnly
+            value={orderQuery}
+            onChange={(e) => setOrderQuery(e.target.value)}
+            placeholder="輸入訂單編號,出現清除按鈕"
+            aria-label="搜尋訂單"
+            endAction={orderQuery ? { icon: X, label: '清除搜尋', onClick: () => setOrderQuery('') } : undefined}
           />
-          <Input
-            startIcon={Search}
-            defaultValue="Bluetooth"
-            aria-label="搜尋商品（有值）"
-            endAction={{ icon: X, label: '清除搜尋', onClick: () => {} }}
-          />
-        </TutorialRule>
-
-        <TutorialRule
-          title="❌ endAction 不放狀態 / error icon"
-          note="狀態資訊由邊框顏色 + Form help text 傳達。如果放 AlertCircle 在 endAction,使用者會以為可以點擊處理錯誤"
-        >
-          <Input
-            error
-            defaultValue="invalid-email@"
-            aria-label="Email（錯誤狀態圖示誤用）"
-            endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
-          />
-          <ExampleCaption warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -226,13 +210,7 @@ export const ErrorRule: Story = {
         title="❌ 不在 input 尾部放 ⚠️ / ✅ 狀態 icon"
         note="這個位置是 endAction(可點擊動作),放 icon 既無法點擊又稀釋了 action 槽的語意"
       >
-        <Input
-          error
-          defaultValue="invalid-email@"
-          aria-label="Email（錯誤狀態圖示誤用）"
-          endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
-        />
-        <ExampleCaption warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</ExampleCaption>
+        <ExampleCaption warn>❌ 邊框已紅,再在尾部放 ⚠️ = 雙重傳達 + 佔用 action 槽;那個位置放的東西看起來可以按,按了卻沒有任何事可做</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

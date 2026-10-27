@@ -259,7 +259,7 @@ function InlineEditImpl<T = string>(
   })
   const plainTruncationActive = singleLinePlainView && !isEmpty && isTruncated
 
-  // 委派 view(renderRead)同規則(tooltip.spec.md「截斷文字 → tooltip,截斷才顯」):委派控件
+  // 委派 view(renderRead)同規則(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」,截斷才顯):委派控件
   // 自帶的截斷 tooltip(Input <TruncatedText> / Tag)trigger 在內層,editable 時同樣被透明
   // Pressable 吞掉 hover → 永不開,故外層容器 Tooltip 一併服務委派路徑。量測 = use-truncated
   // options.measure 自訂策略(檔頭明載 Tag「observe root、量測內層」即同款開口):走訪 wrapper
@@ -373,7 +373,7 @@ function InlineEditImpl<T = string>(
     >
       {isEmpty || multiline
         ? (isEmpty ? placeholder : String(value))
-        // 單行 view 恆一行:溢出改 ellipsis(tooltip.spec.md「截斷文字 → tooltip」);
+        // 單行 view 恆一行:溢出改 ellipsis(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」);
         // tooltip 掛在外層 view 容器(見 truncationRef 註解——隱形 Pressable 吞 hover)。
         : <span ref={truncationRef} className="truncate min-w-0">{String(value)}</span>}
     </Tag>

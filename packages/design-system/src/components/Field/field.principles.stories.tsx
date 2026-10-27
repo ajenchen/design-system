@@ -1,18 +1,22 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Upload } from 'lucide-react'
 import { Field, FieldLabel, FieldDescription, FieldGroup } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { Select } from '@/design-system/components/Select/select'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/設計原則',
   parameters: { layout: 'padded' },
+  // 範例的送出 / 儲存成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -32,8 +36,8 @@ export const UsageGuidance: Story = {
           <TutorialList>
             <li><StoryLink kind="Design System/Components/Field/展示" name="垂直">註冊 / 建立專案表單 — 引導式逐欄輸入(垂直佈局)</StoryLink></li>
             <li><StoryLink kind="Design System/Components/Field/展示" name="水平">帳號設定 / 偏好設定頁 — 修改已知屬性(水平佈局)</StoryLink></li>
-            <li><StoryLink kind="Design System/Components/Field/展示" name="混合控制元件的高度對齊">同一表單混用 Input / Select / DatePicker 等控制元件</StoryLink></li>
-            <li><StoryLink kind="Design System/Components/Field/展示" name="SegmentedControl 作為 Field 控制元件">少量互斥選項(計費週期、版面密度)用 SegmentedControl 當控制元件</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Field/展示" name="表單驗證 — useFormValidation 可執行層">建立 / 更新表單 — 送出前驗證、錯誤訊息跟著欄位</StoryLink></li>
+            <li>同一表單混用 Input / Select / DatePicker 等控制元件;少量互斥選項(計費週期、版面密度)用 SegmentedControl 當控制元件</li>
           </TutorialList>
         </div>
       </UsageSection>
@@ -58,7 +62,7 @@ export const UsageGuidance: Story = {
               </Field>
               <Field>
                 <FieldLabel>操作</FieldLabel>
-                <Button variant="primary">送出表單</Button>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '表單已送出' })}>送出表單</Button>
               </Field>
             </FieldGroup>
           </div>
@@ -81,8 +85,7 @@ export const UsageGuidance: Story = {
                 <FieldLabel>時區</FieldLabel>
                 <Select
                   options={[{ value: 'tw', label: '台北 (UTC+8)' }]}
-                  value="tw"
-                  onChange={() => {}}
+                  defaultValue="tw"
                 />
               </Field>
             </FieldGroup>
@@ -127,7 +130,7 @@ export const UsageGuidance: Story = {
 // 無 LinkTo 引用此 story,退役零斷鏈。
 
 export const OrientationRule: Story = {
-  name: '方向 選擇',
+  name: '垂直還是水平',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -171,8 +174,7 @@ export const OrientationRule: Story = {
                   { value: 'tw', label: '台北 (UTC+8)' },
                   { value: 'jp', label: '東京 (UTC+9)' },
                 ]}
-                value="tw"
-                onChange={() => {}}
+                defaultValue="tw"
               />
             </Field>
           </FieldGroup>
@@ -191,8 +193,17 @@ export const OrientationRule: Story = {
 }
 
 export const NotForFormActionsRule: Story = {
-  name: '表單動作 不是 Field 控制元件',
-  render: () => (
+  name: '表單動作不是 Field 的控制元件',
+  render: () => <NotForFormActionsDemo />,
+}
+
+function NotForFormActionsDemo() {
+  // 儲存 = 寫回並跳 Toast;取消 = 還原到上次儲存的值(同 field.stories.tsx 更新表單的接法,只取最小結果)
+  const [saved, setSaved] = React.useState({ name: '', desc: '' })
+  const [draft, setDraft] = React.useState(saved)
+  // 頭像 = 產生 value 的控件:FileUpload 的按鈕樣式(file-upload.principles「表單內 inline field — 用 FileUpload variant="button"」),選了檔案列在按鈕下方、可移除
+  const [avatar, setAvatar] = React.useState<{ id: string; name: string; size?: number; status?: 'completed' }[]>([])
+  return (
     <TutorialPage>
       <TutorialRule
         title="Field 是資料輸入容器——不放 form submit / cancel"
@@ -202,18 +213,18 @@ export const NotForFormActionsRule: Story = {
           <FieldGroup>
             <Field required>
               <FieldLabel>專案名稱</FieldLabel>
-              <Input />
+              <Input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
             </Field>
             <Field>
               <FieldLabel>描述</FieldLabel>
-              <Input />
+              <Input value={draft.desc} onChange={(e) => setDraft((d) => ({ ...d, desc: e.target.value }))} />
             </Field>
           </FieldGroup>
-          {/* 最後一個欄位 → 跟在後面的動作鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46「Q2 我認為可以基於你的建議」、10-21 09:25「Q5可以基於你的建議」);鈕與鈕之間由 ButtonGroup 擁有。
+          {/* 最後一個欄位 → 跟在後面的動作鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46 回 Q2、10-21 09:25 回 Q5:可以基於 AI 的建議(同則訊息另問 Step 標題區間距與內容底部間距,不在這一格));鈕與鈕之間由 ButtonGroup 擁有。
               表單底這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md:109 / :121;2026-10-20 XF-01:原本 align="end" 靠右) */}
           <ButtonGroup className="mt-[var(--layout-space-loose)]">
-            <Button variant="primary">儲存</Button>
-            <Button variant="tertiary">取消</Button>
+            <Button variant="primary" onClick={() => { setSaved(draft); toast({ variant: 'success', title: '專案已儲存' }) }}>儲存</Button>
+            <Button variant="tertiary" onClick={() => setDraft(saved)}>取消</Button>
           </ButtonGroup>
         </div>
         <ExampleCaption>↑ 儲存 / 取消跟在欄位後面,不在 Field 內</ExampleCaption>
@@ -226,12 +237,21 @@ export const NotForFormActionsRule: Story = {
         <div className="max-w-sm">
           <Field>
             <FieldLabel>頭像</FieldLabel>
-            <Button variant="tertiary" startIcon={Upload}>上傳圖片</Button>
+            <FileUpload
+              variant="button"
+              buttonLabel="上傳圖片"
+              accept="image/jpeg,image/png"
+              maxSize={2_000_000}
+              files={avatar}
+              fileListMode="compact"
+              onRemove={() => setAvatar([])}
+              onUpload={(accepted) => setAvatar(accepted.slice(0, 1).map((f) => ({ id: `avatar-${f.name}`, name: f.name, size: f.size, status: 'completed' as const })))}
+            />
             <FieldDescription>支援 JPG / PNG,最大 2 MB</FieldDescription>
           </Field>
         </div>
         <ExampleCaption>↑ 上傳按鈕產生 avatar url value → 合法作為 Field control</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
-  ),
+  )
 }

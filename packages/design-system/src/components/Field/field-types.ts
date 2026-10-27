@@ -23,7 +23,7 @@ export type FieldMode = 'edit' | 'view' | 'readonly' | 'disabled'
 // ── Field Variant ────────────────────────────────────────────────────────────
 //
 // 視覺外殼(公開 1 + internal 1;2026-07-09 user 拍板退役 `bare`,2026-07-14 API 策展 E user 拍板
-// 「全部收窄」把 naked 從公開 union 拆出 — 見下方 note):
+// 全部收窄,把 naked 從公開 union 拆出 — 見下方 note):
 //   default — 含 border + bg(一般 form input,= Ant outlined / MUI outlined)。公開 FieldVariant 唯一值
 //   naked   — @internal(FieldVariantInternal)。cell-as-input(host cell substrate)。edit×naked 自畫
 //             border-based state machine(rest → hover → focus-within:border-primary → error 紅框);
@@ -51,7 +51,7 @@ export type FieldVariant = 'default'
 
 /**
  * @internal Substrate union — 公開 FieldVariant + `naked`(cell-as-input)。
- * 2026-07-14 API 策展 E(user 拍板「全部收窄」):naked 從公開 union 拆出,型別層防 consumer
+ * 2026-07-14 API 策展 E(user 拍板全部收窄):naked 從公開 union 拆出,型別層防 consumer
  * `<Input variant="naked">` 繞過 canonical chrome / focus。內部實作(field-wrapper cva、各控件
  * useResolvedFieldVariant 分支)吃本型別;唯一合法 naked 傳入點 = DataTable cell-registry
  * (field-controls.spec.md「軸二 variant」明文)。

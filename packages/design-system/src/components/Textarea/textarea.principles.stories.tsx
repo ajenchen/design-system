@@ -6,11 +6,14 @@ import { Input } from '@/design-system/components/Input/input'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Textarea/設計原則',
   parameters: { layout: 'padded' },
+  // 範例的送出成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -107,7 +110,7 @@ export const ResizeRule: Story = {
         note="寬度固定保證 form 佈局不被破壞——一個 Textarea 突然變寬會推擠旁邊的 field。高度使用者可自由控制(長內容拉高比較好看)"
       >
         <Textarea
-          defaultValue="拖拉右下角可以垂直 resize 這個 textarea。試試看 ↓"
+          defaultValue="這週的客訴大多集中在退款流程:使用者找不到退款入口、等候時間超過三天。下週先改退款入口的位置。"
           rows={3}
           aria-label="可垂直縮放的留言"
         />
@@ -136,7 +139,7 @@ export const ReadonlyRule: Story = {
       >
         <Textarea
           mode="readonly"
-          defaultValue={'這是已送出的留言,現在呈現在 readonly 狀態。\n\n多行內容需要明確的閱讀區域邊界,所以 readonly 時保留內距並填上 bg-readonly 底色,圈出一塊閱讀區。'}
+          defaultValue={'感謝客服協助,退款三天內就入帳了。\n\n建議把退款入口放在訂單頁最上方,第一次找了很久。'}
           rows={4}
           aria-label="已送出的留言（唯讀）"
         />
@@ -149,8 +152,7 @@ export const ReadonlyRule: Story = {
       >
         <Input
           mode="readonly"
-          value="已送出的單行 URL:https://github.com/user/repo"
-          onChange={() => {}}
+          defaultValue="已送出的單行 URL:https://github.com/user/repo"
           aria-label="已送出的網址（唯讀）"
         />
       </TutorialRule>
@@ -162,7 +164,12 @@ export const ReadonlyRule: Story = {
 
 export const NoIconRule: Story = {
   name: '框內不放圖示 / endAction',
-  render: () => (
+  render: () => <NoIconRuleDemo />,
+}
+
+function NoIconRuleDemo() {
+  const [comment, setComment] = React.useState('')
+  return (
     <TutorialPage>
       <TutorialRule
         title="Textarea 不支援 startIcon / endAction"
@@ -175,17 +182,17 @@ export const NoIconRule: Story = {
         title="需要 action button → 放 Field 外(Textarea 下方或旁邊)"
         note="例如 comment box 的「送出」按鈕放 Textarea 下方,不塞進框內"
       >
-        {/* 輸入框 → 跟在後面的送出鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46「Q2 我認為可以基於你的建議」、10-21 09:25「Q5可以基於你的建議」);
+        {/* 輸入框 → 跟在後面的送出鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46 回 Q2、10-21 09:25 回 Q5:可以基於 AI 的建議(同則訊息另問 Step 標題區間距與內容底部間距,不在這一格));
             按鈕用預設 md(action-bar.spec.md「三、Variant 與排序」Size 列:「form / dialog 用中尺寸配合表單元素的高度」) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)]">
-          <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" />
-          {/* 送出列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
+          <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" value={comment} onChange={(e) => setComment(e.target.value)} />
+          {/* 送出列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右);送出 = 跳 Toast、清空輸入框(稽核 L074 接上行為) */}
           <ButtonGroup>
-            <Button variant="primary">送出</Button>
+            <Button variant="primary" onClick={() => { toast({ variant: 'success', title: '評論已送出' }); setComment('') }}>送出</Button>
           </ButtonGroup>
         </div>
         <ExampleCaption>↑ 按鈕在 Textarea 下方,不塞進框內</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
-  ),
+  )
 }

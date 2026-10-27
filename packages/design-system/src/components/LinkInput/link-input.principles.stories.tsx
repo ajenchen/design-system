@@ -13,6 +13,13 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveLinkInput({ value: initial, ...rest }: React.ComponentProps<typeof LinkInput>) {
+  const [value, setValue] = React.useState(initial)
+  return <LinkInput {...rest} value={value} onChange={setValue} />
+}
+
+
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
@@ -38,7 +45,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Components/LinkInput/展示" name="失焦驗證">Blur 驗證</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="尺寸">尺寸</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/設計規格" name="尺寸對照表">尺寸</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/LinkInput/展示" name="四模式">四模式</StoryLink>
@@ -69,7 +76,7 @@ export const UsageGuidance: Story = {
           </ExampleGroup>
           <ExampleGroup>
             <ExampleCaption warn>❌ 錯用：把 slug 塞進 LinkInput</ExampleCaption>
-            <LinkInput value="my-design-system" onChange={() => {}} aria-label="專案 slug（LinkInput 誤用）" />
+            <LiveLinkInput value="my-design-system" aria-label="專案 slug（LinkInput 誤用）" />
             <ExampleCaption warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
@@ -103,7 +110,7 @@ export const DisplayStateRule: Story = {
         title="有合法 URL 且未編輯 → 藍色連結 + Pencil"
         note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil(或點欄位空白處)。對照 Notion 的 URL 屬性——點網址開啟、不進入編輯,編輯另有按鈕(https://www.notion.com/releases/2021-09-08)"
       >
-        <LinkInput value="https://react.dev/reference" onChange={() => {}} aria-label="參考連結" />
+        <LiveLinkInput value="https://react.dev/reference" aria-label="參考連結" />
         <ExampleCaption>↑ 點網址文字開啟;Pencil 或欄位裡文字以外的空白處進入編輯</ExampleCaption>
       </TutorialRule>
 
@@ -113,7 +120,7 @@ export const DisplayStateRule: Story = {
       >
         <ExampleGroup>
           <ExampleCaption>✅ 空值：直接顯示輸入框,不需要先按 Pencil</ExampleCaption>
-          <LinkInput value="" onChange={() => {}} aria-label="Website" />
+          <LiveLinkInput value="" aria-label="Website" />
         </ExampleGroup>
       </TutorialRule>
 
@@ -164,7 +171,7 @@ export const EmptyRule: Story = {
         title="edit 空值 → input 外觀（可直接輸入）"
         note="沒有連結可以開,沒必要先按 Pencil。直接 input + placeholder 提示格式"
       >
-        <LinkInput value="" onChange={() => {}} placeholder="https://" aria-label="Website" />
+        <LiveLinkInput value="" placeholder="https://" aria-label="Website" />
       </TutorialRule>
 
       <TutorialRule

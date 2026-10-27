@@ -31,7 +31,7 @@ export const UsageGuidance: Story = {
           <p>適合 NumberInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <TutorialList>
             <li><StoryLink kind="Design System/Components/NumberInput/展示" name="四模式">四模式</StoryLink></li>
-            <li><StoryLink kind="Design System/Components/NumberInput/展示" name="三種尺寸">尺寸與 Button 對齊</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/NumberInput/設計規格" name="尺寸對照表">三種尺寸與高度對照</StoryLink></li>
             <li><StoryLink kind="Design System/Components/NumberInput/展示" name="格式化選項">格式化選項</StoryLink></li>
             <li><StoryLink kind="Design System/Components/NumberInput/展示" name="DataTable 整合">DataTable 整合</StoryLink></li>
           </TutorialList>

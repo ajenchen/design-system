@@ -2,7 +2,8 @@ import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Select } from '@/design-system/components/Select/select'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { ExampleGroup, ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof InlineEdit> = {
   title: 'Design System/Components/InlineEdit/展示',
@@ -25,8 +26,11 @@ function StatefulInlineEdit({ value: initial, ...props }: StatefulProps) {
 /* ── 真實業務:工作項目詳情面板標題就地編輯 ── */
 export const TaskTitle: Story = {
   name: '任務標題就地編輯',
+  parameters: {
+    docs: { description: { story: '標題平常是純文字,滑鼠移入顯示灰底提示可編輯;點擊(或鍵盤 Tab + Enter)切成輸入框,Enter 儲存、Esc 取消。' } },
+  },
   render: () => {
-    const [title, setTitle] = React.useState('Fix flaky checkout e2e test on Safari')
+    const [title, setTitle] = React.useState('修正 Safari 上結帳 e2e 測試偶發失敗')
     return (
       <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
         {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:76 / :81 context dependency) */}
@@ -35,13 +39,10 @@ export const TaskTitle: Story = {
           as="h1"
           value={title}
           onCommit={setTitle}
-          label="task title"
+          label="任務標題"
           readClassName="text-h4 font-bold text-foreground"
-          placeholder="Add a title…"
+          placeholder="加上標題…"
         />
-        <p className="mt-[var(--layout-space-tight)] text-body text-fg-muted">
-          標題平常是純文字,滑鼠移入顯示灰底提示可編輯;點擊(或鍵盤 Tab + Enter)切成輸入框,Enter 儲存、Esc 取消。
-        </p>
       </div>
     )
   },
@@ -50,7 +51,7 @@ export const TaskTitle: Story = {
 /* ── 真實業務:詳情面板多個 metadata 欄位逐欄就地編輯 ── */
 function MetaRow({ label, value, placeholder }: { label: string; value: string; placeholder?: string }) {
   return (
-    <Field orientation="horizontal" labelWidth="128px">
+    <Field orientation="horizontal">
       <FieldLabel>{label}</FieldLabel>
       <StatefulInlineEdit value={value} label={label} placeholder={placeholder} size="sm" />
     </Field>
@@ -61,14 +62,15 @@ export const MetadataFields: Story = {
   name: '詳情欄位就地編輯',
   render: () => (
     <div className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-      {/* heading → fields = tight（functional labeling）;fields 彼此 = loose（parallel 獨立欄位,layoutSpace.spec.md 親疏 3 級） */}
-      <h2 className="mb-[var(--layout-space-tight)] text-h6 font-medium text-foreground">Details</h2>
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <MetaRow label="Summary" value="Q3 launch checklist owner handoff" />
-        <MetaRow label="Story points" value="5" />
-        <MetaRow label="External link" value="figma.com/file/checkout-flow" placeholder="Add a link…" />
-        <MetaRow label="Reviewer note" value="" placeholder="Add a note…" />
-      </div>
+      {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題(+ 說明)→ 它底下的並列內容」);
+          同一張表的水平欄位共用 FieldGroup 的 label 寬(field.spec.md「同一表單的多個 horizontal Field 必經 FieldGroup horizontalLabelWidth」) */}
+      <h2 className="mb-[var(--layout-space-loose)] text-h6 font-medium text-foreground">詳細資訊</h2>
+      <FieldGroup horizontalLabelWidth="128px">
+        <MetaRow label="摘要" value="Q3 上線檢查清單負責人交接" />
+        <MetaRow label="故事點數" value="5" />
+        <MetaRow label="外部連結" value="figma.com/file/checkout-flow" placeholder="加上連結…" />
+        <MetaRow label="審查備註" value="" placeholder="加上備註…" />
+      </FieldGroup>
     </div>
   ),
 }
@@ -79,18 +81,19 @@ function StateRow({
   children,
   ...rest
 }: { caption: string; children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
+  // 說明照一般文件的對齊方式(靠左、不內縮):狀態示範的說明字不是 DS 定義的東西(user 2026-10-21 C-S3)
   return (
-    <div {...rest}>
-      {/* standalone(無 Field)的 InlineEdit 不帶 -mx(w-full),view 值自帶 px-field-px 內距
-          (fieldViewGeometry);caption 同步 px-field-px 讓說明與值文字左緣對齊 */}
-      <p className="mb-[var(--layout-space-tight)] px-[var(--field-px)] text-caption text-fg-muted">{caption}</p>
+    <ExampleGroup {...rest}>
+      <ExampleCaption>{caption}</ExampleCaption>
       {children}
-    </div>
+    </ExampleGroup>
   )
 }
 
 export const States: Story = {
   name: '狀態:檢視/懸停/編輯',
+  // 截圖治具(play 標出懸停目標、點開編輯態,visual-audit 拍狀態基準圖):不是讀者看的情境 → test-only(story-rules.md「Technical probe visibility」)
+  tags: ['test-only'],
   render: () => (
     <div className="flex w-[440px] flex-col gap-[var(--layout-space-loose)]">
       <StateRow caption="view(靜止)—— 純值,透明邊框(預留、不可見)、無底色">
@@ -130,10 +133,10 @@ export const States: Story = {
    —— 「select 值 → Tag」的格式化 SSOT 住在 Select 的 view mode(= DataTable 格子消費的同一份)。
    view 與 edit 用同一個 Select、只切 mode,格式零分歧。 */
 const STATUS_OPTIONS = [
-  { value: 'todo', label: 'To Do', tagVariant: 'neutral' },
-  { value: 'in-progress', label: 'In Progress', tagVariant: 'blue' },
-  { value: 'in-review', label: 'In Review', tagVariant: 'yellow' },
-  { value: 'done', label: 'Done', tagVariant: 'green' },
+  { value: 'todo', label: '待處理', tagVariant: 'neutral' },
+  { value: 'in-progress', label: '進行中', tagVariant: 'blue' },
+  { value: 'in-review', label: '審查中', tagVariant: 'yellow' },
+  { value: 'done', label: '已完成', tagVariant: 'green' },
 ]
 
 // 架構理由(移出 story name,per story-rules.md name 必人話):view 態顯示為 Tag,SSOT = Select
@@ -148,11 +151,11 @@ export const SelectTagField: Story = {
         labelWidth="128px"
         className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
       >
-        <FieldLabel>Status</FieldLabel>
+        <FieldLabel>狀態</FieldLabel>
         <InlineEdit<string>
           value={status}
           onCommit={setStatus}
-          label="status"
+          label="狀態"
           size="sm"
           // view:Select 的 view mode 輸出 Tag(格式化 SSOT 住在 Select,InlineEdit 不自刻)。
           // Tag **盒子左緣**對齊同欄其他純文字值(horizontal Field:值落內容欄左緣 + field-px,
@@ -193,13 +196,13 @@ export const MultilineDescription: Story = {
     return (
       <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
         <Field orientation="vertical">
-          <FieldLabel>DESCRIPTION</FieldLabel>
+          <FieldLabel>描述</FieldLabel>
           <InlineEdit
             multiline
             value={desc}
             onCommit={setDesc}
-            label="description"
-            placeholder="Add a description…"
+            label="描述"
+            placeholder="加上描述…"
           />
         </Field>
       </div>
@@ -224,15 +227,15 @@ export const VerticalFieldForm: Story = {
         className="flex w-[420px] flex-col gap-[var(--layout-space-loose)] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
       >
         <Field orientation="vertical">
-          <FieldLabel>Assignee</FieldLabel>
-          <InlineEdit value={assignee} onCommit={setAssignee} label="assignee" />
+          <FieldLabel>負責人</FieldLabel>
+          <InlineEdit value={assignee} onCommit={setAssignee} label="負責人" />
         </Field>
         <Field orientation="vertical">
-          <FieldLabel>Status</FieldLabel>
+          <FieldLabel>狀態</FieldLabel>
           <InlineEdit<string>
             value={status}
             onCommit={setStatus}
-            label="status"
+            label="狀態"
             renderRead={(v) => (
               <Select mode="view" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
             )}
@@ -253,8 +256,8 @@ export const VerticalFieldForm: Story = {
           />
         </Field>
         <Field orientation="vertical">
-          <FieldLabel>Description</FieldLabel>
-          <InlineEdit multiline value={desc} onCommit={setDesc} label="description" />
+          <FieldLabel>描述</FieldLabel>
+          <InlineEdit multiline value={desc} onCommit={setDesc} label="描述" />
         </Field>
       </div>
     )

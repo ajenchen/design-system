@@ -3,6 +3,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { X } from 'lucide-react'
 import { FileUpload } from './file-upload'
+import { LiveFileUpload } from './_file-upload-demo'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
@@ -21,7 +22,6 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-lg' })
 
-const noop = () => {}
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ export const UsageGuidance: Story = {
   render: () => (
     <TutorialPage>
       <UsageSection kind="when">
-        <p>上傳檔案的入口:單檔(頭像、PDF 履歷)、批次(相簿、多個附件、批次匯入);圖片與檔案這類「拖進來」有價值的情境,滑鼠與觸控都能用。上傳後以 FileItem 清單列出。</p>
+        <p>上傳檔案的入口:單檔(頭像、PDF 履歷)、批次(相簿、多個附件、批次匯入);圖片與檔案這類「拖進來」有價值的情境。上傳後以 FileItem 清單列出。</p>
         <TutorialList>
           <li>
             <StoryLink kind="Design System/Components/FileUpload/展示" name="單檔上傳">履歷 / 大頭貼等單檔上傳</StoryLink>
@@ -78,12 +78,11 @@ export const UsageGuidance: Story = {
           title="✅ 獨立上傳頁 / 主要動作 — 用 FileUpload dropzone"
           note="拖放有價值(圖片、批次檔案、主要互動)且有足夠空間時才划算。對照:Figma 首頁 Import、Dropbox 上傳頁、Gmail compose 的附件區。"
         >
-          <FileUpload
+          <LiveFileUpload
             multiple
             accept="image/*"
             title="匯入設計檔案"
             description="拖曳或點擊選取"
-            onUpload={noop}
           />
         </TutorialRule>
 
@@ -100,7 +99,7 @@ export const UsageGuidance: Story = {
               <FieldLabel>申請人身分證</FieldLabel>
               <div className="flex items-center gap-[var(--layout-space-tight)]">
                 <Input className="flex-1" placeholder="A123456789" />
-                <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
+                <LiveFileUpload variant="button" buttonLabel="附上照片" accept="image/*" />
               </div>
             </Field>
           </FieldGroup>
@@ -129,10 +128,10 @@ export const DropzoneVisualRule: Story = {
         title="❌ 不加 scale / shadow 等裝飾性 drag-over 信號"
         note="drag-over 只用邊框顏色(border-primary-hover,底維持 surface 不變 bg)傳達狀態。加 scale 會讓區塊在拖放瞬間晃動、使用者滑鼠與 drop target 錯位;加 shadow 和元件 elevation 體系衝突。"
       >
+        {/* ✓ = 真的 FileUpload 停在拖進來的狀態(data-state="drag-over",同設計規格頁 MockDropzone 的做法);❌ 是刻意畫出來的錯誤長相(稽核 L040) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)]">
-          <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted">
-            ✅ 僅改邊框顏色(dashed primary-hover,底維持 surface)
-          </div>
+          <FileUpload data-state="drag-over" title="✅ 僅改邊框顏色" description="dashed primary-hover,底維持 surface" />
+          {/* @story-counter-example: 反例教的是 packages/design-system/src/components/FileUpload/file-upload.spec.md:131「不加 scale / shadow 等裝飾」 */}
           <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted scale-105 shadow-[var(--elevation-200)]">
             ❌ scale + shadow — 視覺噪音,與 elevation 系統衝突
           </div>
@@ -151,12 +150,12 @@ export const MultipleRule: Story = {
         title="單檔(預設)— 頭像 / 履歷 / 封面照"
         note="每個欄位只收一份檔案時用預設 multiple=false。世界級對照:LinkedIn 履歷上傳、Instagram 大頭貼、Notion page cover——使用者心智模型是「這個位置放一個檔案」。"
       >
-        <FileUpload
+        <LiveFileUpload
           accept="image/png,image/jpeg"
           maxSize={2_000_000}
+          limit="2 MB"
           title="上傳大頭貼"
           description="PNG / JPG,最大 2 MB"
-          onUpload={noop}
         />
         <ExampleCaption>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</ExampleCaption>
       </TutorialRule>
@@ -165,13 +164,13 @@ export const MultipleRule: Story = {
         title="multiple — 相簿 / 附件 / 批次匯入"
         note="一次要收多份檔案時才 opt-in。世界級對照:Google Photos 匯入、Slack message 附件、Figma import assets——使用者預期「一次拖一批進來」。"
       >
-        <FileUpload
+        <LiveFileUpload
           multiple
           accept="image/*"
           title="批次上傳照片"
           description="JPG / PNG / GIF,單檔最大 10 MB"
           maxSize={10_000_000}
-          onUpload={noop}
+          limit="10 MB"
         />
       </TutorialRule>
 
@@ -253,7 +252,7 @@ export const DivisionOfLaborRule: Story = {
 }
 
 export const ErrorFeedbackRule: Story = {
-  name: '檔案類型 + 最大尺寸 + 拒絕回呼 三配套',
+  name: '限制類型與大小時要接拒絕回呼',
   render: () => {
     const [errors, setErrors] = React.useState<string[]>([])
     return (

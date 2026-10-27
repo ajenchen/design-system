@@ -116,7 +116,7 @@ export const SizeMatrix: Story = {
 }
 
 export const ModeMatrix: Story = {
-  name: '模式 對照（編輯 / 展示 / 唯讀 / 停用）',
+  name: '模式對照（編輯 / 展示 / 唯讀 / 停用）',
   render: () => (
     <div className="flex flex-col gap-6 max-w-md">
       <div>
@@ -152,7 +152,7 @@ export const ModeMatrix: Story = {
         <Textarea
           mode="disabled"
           rows={3}
-          defaultValue="尚未開放編輯"
+          defaultValue="專案已結案:onboarding 引導流程已完成改版。"
           aria-label="專案意見（停用）"
         />
       </div>
@@ -161,8 +161,8 @@ export const ModeMatrix: Story = {
         <Textarea
           error
           rows={3}
-          defaultValue="留言內容不能為空"
-          aria-label="留言（錯誤狀態）"
+          defaultValue="資料不全"
+          aria-label="退件原因（錯誤狀態）"
         />
       </div>
     </div>
@@ -253,11 +253,11 @@ export const ColorMatrix: Story = {
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">disabled</div>
-            <Textarea mode="disabled" rows={2} defaultValue="尚未開放編輯" aria-label="意見（停用狀態）" />
+            <Textarea mode="disabled" rows={2} defaultValue="專案已結案:onboarding 引導流程已完成改版。" aria-label="意見（停用狀態）" />
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">error(invalid)</div>
-            <Textarea error rows={2} defaultValue="評論內容違反社群規範" aria-label="評論（錯誤狀態）" />
+            <Textarea error rows={2} defaultValue="資料不全" aria-label="退件原因（錯誤狀態）" />
           </div>
         </div>
       </div>
@@ -266,7 +266,7 @@ export const ColorMatrix: Story = {
 }
 
 export const RowsResizeMatrix: Story = {
-  name: 'Rows 與 縮放',
+  name: '行數與縮放',
   render: () => (
     <div className="flex flex-col gap-6 max-w-md">
       <div>
@@ -303,7 +303,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"ARIA / 語意:採用原生 <textarea> 元素,自帶完整無障礙語意;搭配 Field 使用時,標籤透過原生 <label for> 與欄位關聯,並補上 aria-invalid / aria-describedby 連到對應的錯誤與說明文字。\n\n鍵盤操作:\n\n- Tab — 聚焦進出欄位\n- 字母鍵 — 輸入文字\n- Enter — 換行(不送出表單,與 Input 不同)\n\n聚焦:聚焦時邊框換成主色,清楚標示目前作用中的欄位。\n\n對比要求:文字對背景對比至少 4.5:1,邊框等介面元素至少 3:1,確保弱視使用者也能辨識。整個欄位不靠滑鼠也能完整操作。"}</p>
     </div>
   ),

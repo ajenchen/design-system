@@ -1,13 +1,13 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Phone, Search } from 'lucide-react'
+import { Phone } from 'lucide-react'
 import { FieldControlGroup } from './field-control-group'
+import { ProductSearchDemo } from './_field-control-group-demo'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
-import { Button } from '@/design-system/components/Button/button'
 import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
 
 const meta: Meta<typeof FieldControlGroup> = {
@@ -108,23 +108,11 @@ export const CurrencyAmount: Story = {
 /* ── 搜尋 + 提交按鈕 ── */
 export const SearchSubmit: Story = {
   name: '搜尋與提交',
-  render: () => {
-    const [q, setQ] = React.useState('')
-    return (
-      <div className="w-[440px]">
-        <FieldControlGroup block>
-          <Input
-            className="!flex-1 !min-w-0"
-            startIcon={Search}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="搜尋商品或關鍵字"
-          />
-          <Button variant="primary">搜尋</Button>
-        </FieldControlGroup>
-      </div>
-    )
-  },
+  render: () => (
+    <div className="w-[440px]">
+      <ProductSearchDemo />
+    </div>
+  ),
 }
 
 /* ── DataTable Filter row(Field + Op + Value)── */

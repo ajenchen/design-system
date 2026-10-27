@@ -60,9 +60,9 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     },
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
-    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
-    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「overlay 開啟 → 同 host hover」;field.spec.md「Field state machine」表)。
+    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「互動狀態」表 overlay 開啟那一列:同 host hover;field.spec.md「Field state machine」表)。
     // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
     { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
@@ -267,7 +267,7 @@ export const bareInputStyles = [
   // 加 `truncate` — 原 bareInputStyles 含 `flex-1 min-w-0` 但無 `truncate / text-overflow` policy。
   // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx#CustomSelectTriggerContent),
   // bareInputStyles 套上,placeholder 無 ellipsis → narrow cell(<160px)硬裁無 `...`(user round 3
-  // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 「placeholder 直接被截掉沒有變...」
+  // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 指出的 placeholder 直接被截掉、
   // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
@@ -364,7 +364,7 @@ export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined,
 // Hook:`check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation.sh 已 folded,write-time BLOCKER)
 // Audit:design-system-audit Group N(periodic batch verify)
 /**
- * Field 內含 Tag 時的四邊內距(tag.spec.md「與 Field 的關係」:「Field 的 padding 改為 (field-height − 2px 邊框 − tag-height) / 2(sm 3 / md 3 / lg 5)」,確保 tag 四邊等距)。
+ * Field 內含 Tag 時的四邊內距(tag.spec.md「圓角與間距」:「Field 的 padding 改為 (field-height − 2px 邊框 − tag-height) / 2(sm 3 / md 3 / lg 5)」,確保 tag 四邊等距)。
  *
  * **公式必須扣掉 2px 邊框**(2026-09-15 像素實測修正):padding 在邊框內側量,而 Tag 垂直置中是在內高
  *(欄高 − 2px)裡置中 —— 舊寫法沒扣邊框,水平 4/4/6、垂直 3/3/5,四邊差 1px。
@@ -410,7 +410,7 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 //
 // **2026-05-09 v15.17 revert v15.16(user 未同意 ship)— 維持 v15.13 outline+offset:-1**
 //
-// User 2026-05-09 後續 message:「設計決策的東西你應該要先問過我讓我決策吧?為什麼就直接開跑」
+// User 2026-05-09 後續訊息:設計決策要先問過 user、讓 user 決策,不該直接開跑
 // 我 commit 698ff58 ship v15.16(box-shadow inset Spec 2 不蓋 grid)= 設計決策結論未 user 同意
 // 直接 ship = workflow 違反。Revert 回 v15.13 outline+offset:-1(原 user-accepted 路徑),
 // 等 user 拍板 4-邊覆蓋路徑才 ship。

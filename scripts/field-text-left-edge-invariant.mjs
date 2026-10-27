@@ -32,7 +32,7 @@
  * 欄位內距 0、cell 內距 12)。判準是「它住在 `[role=cell]` / `<td>` 裡」這個語意邊界。
  * ⚠️ **不可以用「邊框透明」當判準**:readonly / disabled / view 三個模式的邊框本來就是透明的,
  * readonly / disabled 照樣吃 `--field-px`(2026-09-18 第一版這樣寫,250 支 story 只量到 2 個欄位 = 幾乎空綠)。
- * **純顯示(view × default)應為 0**:2026-10-21 user C1 甲「我覺得視覺上全部對齊標籤是肯定的且必須的」——
+ * **純顯示(view × default)應為 0**:2026-10-21 user 在確認頁 C1 留言:視覺上全部對齊標籤是肯定且必須的〔UD-U1021-13〕——
  * `field-controls.spec.md`「軸一 view mode」:左內距與左邊框歸 0、值的第一個可見元素齊控件左緣 = 標籤左緣。
  *
  * 量的是像素(`--field-px` 丟量尺進去解析成真實 px —— `getPropertyValue` 回的是 token 原文

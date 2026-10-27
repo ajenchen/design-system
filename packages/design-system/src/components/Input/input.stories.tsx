@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Eye, EyeOff, X } from 'lucide-react'
 import { Input } from './input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
-import { Button } from '@/design-system/components/Button/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Input> = {
   title: 'Design System/Components/Input/展示',
@@ -23,24 +23,16 @@ export const Modes: Story = {
   name: '四模式',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Focus 時邊框變 primary</p>
+      <ExampleSection title="edit" description="Focus 時邊框變 primary">
         <Input defaultValue="Wireless Bluetooth Headphones" placeholder="輸入商品名稱" aria-label="商品名稱(edit mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">純展示（read-only 內容）— 無 input chrome / 無互動 affordance</p>
+      </ExampleSection>
+      <ExampleSection title="view" description="純展示（read-only 內容）— 無 input chrome / 無互動 affordance">
         <Input mode="view" value="Wireless Bluetooth Headphones" aria-label="商品名稱(view 模式示範)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">neutral-2 底色、無邊框、文字正常色</p>
+      </ExampleSection>
+      <ExampleSection title="readonly" description="neutral-2 底色、無邊框、文字正常色">
         <Input mode="readonly" defaultValue="Wireless Bluetooth Headphones" aria-label="商品名稱(readonly mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">停用原因用 Tooltip 或 Form help text 說明</p>
+      </ExampleSection>
+      <ExampleSection title="disabled" description="停用原因用 Tooltip 或 Form help text 說明">
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
@@ -49,27 +41,27 @@ export const Modes: Story = {
           </TooltipTrigger>
           <TooltipContent>此欄位在免費方案中不可用</TooltipContent>
         </Tooltip>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
 
 /* ── 尺寸與 Button 對齊 ── */
+const SIZE_NAME = { sm: '小', md: '標準', lg: '大' } as const
 export const SizeAlignment: Story = {
   name: '三種尺寸',
+  // 只留欄位本身(稽核 L101:拿掉三顆 primary 送出與程式碼標籤);尺寸說明放 docs
+  parameters: { docs: { description: { story: '由上到下是小、標準、大三種尺寸;同一個尺寸與按鈕、其他欄位等高。' } } },
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
-          <Input
-            size={size}
-            defaultValue="Wireless Bluetooth Headphones"
-            aria-label={`商品名稱（${size} 尺寸）`}
-            className="max-w-xs"
-          />
-          <Button variant="primary" size={size}>送出</Button>
-          <span className="text-caption text-fg-muted">size="{size}"</span>
-        </div>
+        <Input
+          key={size}
+          size={size}
+          defaultValue="Wireless Bluetooth Headphones"
+          aria-label={`商品名稱(${SIZE_NAME[size]}尺寸)`}
+          className="max-w-xs"
+        />
       ))}
     </div>
   ),

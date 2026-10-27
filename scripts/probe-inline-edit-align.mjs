@@ -3,7 +3,7 @@
 // 兩組:(一)InlineEdit view 態:委派控件(tag/plain/date)+ 純值 view 左緣都應落 label 左緣(Δ≈0)。
 //      (二)`<Field mode="view">` 純顯示 18 種 × 標籤在上 / 標籤在左(Field 展示 test-only「純顯示齊標籤驗證」):
 //          值的第一個可見元素左緣 = 控件欄左緣(標籤在上時 = 標籤左緣)、第一行中線 = 控件欄頂 + field-height / 2。
-//          規則:field-controls.spec.md「軸一 view mode」(user 2026-10-21 C1 甲「我覺得視覺上全部對齊標籤是肯定的且必須的」)。
+//          規則:field-controls.spec.md「軸一 view mode」(user 2026-10-21 在確認頁 C1 留言:視覺上全部對齊標籤是肯定且必須的〔UD-U1021-13〕)。
 //          每次都跑對照組:在同一頁注入「純顯示補回左內距 13px、RadioGroup 拿掉列幾何」的 CSS 再量一次,
 //          對照組沒紅 = 量具壞了(exit 2),不准讀成綠(M32「儀器要先有對照組」)。
 // 用法:node scripts/probe-inline-edit-align.mjs [--static=<storybook 建置目錄>](預設 ./storybook-static)
@@ -85,11 +85,11 @@ try {
 
   await probe('design-system-components-inlineedit-展示--vertical-field-form', 'VerticalFieldForm(圖三:plain+tag+多行)')
 
-  // ── blur exit 驗證:點 Status(Select)進 edit → 點別處 blur → 應回 display(無殘留 chrome)──
+  // ── blur exit 驗證:點「狀態」(Select)進 edit → 點別處 blur → 應回 display(無殘留 chrome)──
   async function probeBlurExit() {
     await open(page, 'design-system-components-inlineedit-展示--vertical-field-form')
-    // 進 edit:點 Status 欄的 view Pressable(第 2 個 field,Status)
-    const statusBtn = page.locator('label:has-text("Status")').locator('..').locator('[data-editing="false"] button')
+    // 進 edit:點「狀態」欄的 view Pressable(第 2 個 field;範例介面文字 2026-10-28 起是中文,A-L080)
+    const statusBtn = page.locator('label:has-text("狀態")').locator('..').locator('[data-editing="false"] button')
     await statusBtn.click()
     // 等進入編輯態的切換(掛上編輯控件、焦點移進去);按鈕早已在畫面上,等的是點擊之後的狀態轉換
     await page.waitForTimeout(400)
@@ -101,7 +101,7 @@ try {
     const editingCount2 = await page.locator('[data-editing]:not([data-editing="false"])').count()
     const enteredEdit = editingCount1 >= 1
     const exitedOnBlur = editingCount2 === 0
-    results.push(`  [blur-exit] 點 Status 進 edit(editing 元素=${editingCount1})→ ${enteredEdit ? '✅ 進 edit' : '❌ 沒進 edit'}`)
+    results.push(`  [blur-exit] 點「狀態」進 edit(editing 元素=${editingCount1})→ ${enteredEdit ? '✅ 進 edit' : '❌ 沒進 edit'}`)
     results.push(`  [blur-exit] blur 後 editing 元素=${editingCount2} → ${exitedOnBlur ? '✅ 回 display 無殘留' : '❌ chrome 殘留(bug 未修)'}`)
     if (!enteredEdit || !exitedOnBlur) fail++
   }

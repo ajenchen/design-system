@@ -1,11 +1,10 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import { Search } from 'lucide-react'
 import { FieldControlGroup } from './field-control-group'
-import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { ProductSearchDemo } from './_field-control-group-demo'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
-import { Button } from '@/design-system/components/Button/button'
 import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -42,20 +41,18 @@ export const UsageGuidance: Story = {
             <li>搜尋框 + 搜尋按鈕</li>
             <li>範圍輸入(起 + 迄 + 中間的符號)</li>
           </TutorialList>
-          <FieldControlGroup block>
-            <Input className="flex-1" startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
-            <Button variant="primary">搜尋</Button>
-          </FieldControlGroup>
+          <ProductSearchDemo placeholder="搜尋..." />
         </ExampleGroup>
       </UsageSection>
 
       <UsageSection kind="whenNot">
         <TutorialRule title="❌ 多個欄位上下排列:用 FieldGroup">
-          <FieldGroup>
-            <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
-            <Field><FieldLabel>Email</FieldLabel><Input /></Field>
-          </FieldGroup>
-          <ExampleCaption>↑ 多個欄位上下排列是 FieldGroup 的工作,不是 FieldControlGroup</ExampleCaption>
+          {/* 真的錯誤示範(稽核 M086):姓名與 Email 是兩個獨立欄位,硬接成一組 */}
+          <FieldControlGroup block>
+            <Input className="flex-1" placeholder="姓名" aria-label="姓名" />
+            <Input className="flex-1" placeholder="Email" aria-label="Email" />
+          </FieldControlGroup>
+          <ExampleCaption warn>↑ 姓名與 Email 各是一個欄位,接成一組看起來像同一個輸入 → 改用 FieldGroup 上下排列</ExampleCaption>
         </TutorialRule>
         <TutorialRule title="❌ 把不相關的控件硬接在一起" note="姓名 + 公司電話放同一組,語意混亂 —— 各自用獨立的 Field" />
       </UsageSection>
@@ -92,7 +89,7 @@ export const SizeRule: Story = {
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
           <FieldControlGroup block>
-            <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} aria-label="國碼" />
+            <Select className="!w-[88px]" options={CODES} defaultValue="+886" aria-label="國碼" />
             <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
           </FieldControlGroup>
         </Field>
@@ -101,9 +98,10 @@ export const SizeRule: Story = {
 
       <TutorialRule title="單獨使用時逐一設尺寸 — 篩選列">
         <FieldControlGroup block>
-          <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
-          <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />
-          <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
+          {/* 逐一設尺寸:每個控件明寫 size(稽核 L032) */}
+          <Select size="sm" className="!w-[140px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+          <Select size="sm" className="!w-[120px]" options={OPS} defaultValue="contains" aria-label="篩選運算子" />
+          <Input size="sm" className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </TutorialRule>
     </TutorialPage>

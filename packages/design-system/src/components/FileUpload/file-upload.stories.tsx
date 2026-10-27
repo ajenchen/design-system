@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { FileUpload } from './file-upload'
 import { Empty } from '@/design-system/components/Empty/empty'
+import { useDemoFiles, RejectedAlert } from './_file-upload-demo'
 
 const meta: Meta<typeof FileUpload> = {
   title: 'Design System/Components/FileUpload/展示',
@@ -20,20 +21,28 @@ export default meta
 const noop = () => {}
 
 // 單檔上傳:履歷(PDF / Word),5 MB 上限 — LinkedIn / 104 Job 慣例
+// 選檔後列出那一個檔(單檔:再選一次就換掉)、可移除;格式或大小不符時欄位下方出錯誤提示(稽核 L069)
 export const ResumeUpload = {
   name: '單檔上傳',
-  render: () => (
-    <div className="max-w-lg">
-      <FileUpload
-        accept=".pdf,.doc,.docx"
-        maxSize={5_000_000}
-        title="上傳你的履歷"
-        description="PDF / Word 格式,單檔最大 5 MB"
-        onUpload={noop}
-        onReject={noop}
-      />
-    </div>
-  ),
+  render: () => {
+    const resume = useDemoFiles({ single: true })
+    return (
+      <div className="max-w-lg flex flex-col gap-[var(--layout-space-tight)]">
+        <FileUpload
+          accept=".pdf,.doc,.docx"
+          maxSize={5_000_000}
+          title="上傳你的履歷"
+          description="PDF / Word 格式,單檔最大 5 MB"
+          files={resume.files}
+          fileListMode="compact"
+          onUpload={resume.onUpload}
+          onRemove={resume.onRemove}
+          onReject={resume.onReject}
+        />
+        <RejectedAlert rejected={resume.rejected} limit="5 MB" />
+      </div>
+    )
+  },
 }
 
 // 批次上傳:相簿匯入 — Figma / Google Photos / Instagram 慣例
@@ -192,13 +201,15 @@ export const RemoveHoverState = {
 // children 覆寫:Figma 匯入資產客製文案 / 品牌 logo
 export const CustomChildren = {
   name: '自訂內容',
-  render: () => (
+  render: () => {
+    const assets = useDemoFiles()
+    return (
     <div className="max-w-lg">
       {/* children 覆寫的正確用法:換 icon(FileUpload 無 icon prop)時仍**消費 Empty SSOT** —
           字級 / icon 48 / 間距全跟 Empty 不漂移。只改文字用 title/description prop 即可、不必 children;
           children 是給「換 icon」或「加 icon+title+desc 以外的元素(品牌 logo / 格式 chips)」用。
           ❌ 反 pattern:hand-build 自訂字級/icon尺寸/間距(= 偏離 Empty 設計語言)。 */}
-      <FileUpload accept="image/*,.svg,.fig" multiple onUpload={noop}>
+      <FileUpload accept="image/*,.svg,.fig" multiple files={assets.files} fileListMode="compact" onUpload={assets.onUpload} onRemove={assets.onRemove}>
         <Empty
           icon={ImageIcon}
           title="匯入你的設計資產"
@@ -206,7 +217,8 @@ export const CustomChildren = {
         />
       </FileUpload>
     </div>
-  ),
+    )
+  },
 }
 
 // variant="button":表單內緊湊上傳(*Excel file 欄位場景)— 大 dropzone 太重時用按鈕觸發,

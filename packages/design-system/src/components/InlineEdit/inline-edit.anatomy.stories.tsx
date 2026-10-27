@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Select } from '@/design-system/components/Select/select'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 // 就地編輯無 disabled 態的世界級對照(cite,per M22):
 //   MUI X isCellEditable/cellMode https://mui.com/x/react-data-grid/editing/
@@ -20,14 +21,6 @@ export default meta
 type Story = StoryObj<typeof InlineEdit>
 
 // ── shared UI ────────────────────────────────────────────────────────────────
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-8">
-      <h3 className="mb-3 border-b border-divider pb-2 text-body-lg font-semibold text-foreground">{title}</h3>
-      {children}
-    </section>
-  )
-}
 function PropRow({ name, type, def, desc }: { name: string; type: string; def: string; desc: string }) {
   return (
     <tr className="border-b border-divider align-top">
@@ -46,16 +39,16 @@ function Stateful({ value: initial, ...props }: Omit<React.ComponentProps<typeof
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
-    <div className="max-w-[720px]">
-      <Section title="定位">
+    <div className="max-w-[720px] flex flex-col gap-8">
+      <ExampleSection title="定位">
         <p className="text-body text-fg-secondary">
           就地編輯 primitive:值平常以 <b>view 態</b>(純內容)呈現,滑鼠移入顯示灰底提示、點擊(或鍵盤 Enter)切成
           <b> edit 態</b>(真正的 Field 控件)。與 DataTable cell 同一份就地編輯語義 —— 只有 <code>view ↔ edit</code> 兩態
           + <code>editable</code> 判準閘,<b>無 disabled 態</b>(世界級就地編輯共識,cite 見檔頭)。
         </p>
-      </Section>
-      <Section title="Model A —— view 幾何來源">
-        <p className="mb-2 text-body text-fg-secondary">
+      </ExampleSection>
+      <ExampleSection title="Model A —— view 幾何來源" paragraph>
+        <p className="text-body text-fg-secondary">
           InlineEdit <b>不自帶</b> geometry cva(消 M17 重複)。view 幾何來源分兩路,read↔edit 零跳因兩態同一顆控件、只差 chrome:
         </p>
         <ul className="ml-5 list-disc text-body text-fg-secondary">
@@ -64,7 +57,7 @@ export const Overview: Story = {
           <li><b>純值 / 標題</b>(<code>as="h1"</code>):套 <code>fieldViewGeometry(size, multiline)</code> helper
             (= view×default 幾何 SSOT:<code>px-field-px</code> + <code>min-h-field</code> + 多行 <code>py-2</code>)。</li>
         </ul>
-      </Section>
+      </ExampleSection>
     </div>
   ),
 }
