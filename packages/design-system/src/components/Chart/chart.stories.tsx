@@ -22,6 +22,7 @@ import {
   type ChartConfig,
 } from './chart'
 import { Desc, H3 } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { AREA_FILL_OPACITY, AREA_STROKE_WIDTH } from './_area-style'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/展示',
@@ -111,7 +112,7 @@ export const BarChartRevenue: Story = {
       <H3>六個月營收對比(Stripe dashboard 風格)</H3>
       <Desc>
         類別對比情境:每個月份是獨立的類別,以柱高呈現數值差異。單一數列不需要 legend,
-        tooltip 的 `indicator="dashed"` 搭配單色表示單一系列。
+        tooltip 的 <code>indicator="dashed"</code> 搭配單色表示單一系列。
       </Desc>
       <div className="max-w-2xl">
         <ChartContainer config={revenueConfig}>
@@ -211,7 +212,7 @@ export const DonutChartTrafficSource: Story = {
 }
 
 export const StackedAreaChartExpenses: Story = {
-  name: '堆疊 面積 — 部門支出',
+  name: '堆疊面積 — 部門支出',
   render: () => (
     <div>
       <H3>半年各部門支出堆疊(Notion workspace analytics 風格,單位:萬元)</H3>
@@ -236,24 +237,27 @@ export const StackedAreaChartExpenses: Story = {
               type="monotone"
               stackId="a"
               stroke="var(--color-engineering)"
+              strokeWidth={AREA_STROKE_WIDTH}
               fill="var(--color-engineering)"
-              fillOpacity={0.6}
+              fillOpacity={AREA_FILL_OPACITY}
             />
             <Area
               dataKey="marketing"
               type="monotone"
               stackId="a"
               stroke="var(--color-marketing)"
+              strokeWidth={AREA_STROKE_WIDTH}
               fill="var(--color-marketing)"
-              fillOpacity={0.6}
+              fillOpacity={AREA_FILL_OPACITY}
             />
             <Area
               dataKey="operations"
               type="monotone"
               stackId="a"
               stroke="var(--color-operations)"
+              strokeWidth={AREA_STROKE_WIDTH}
               fill="var(--color-operations)"
-              fillOpacity={0.6}
+              fillOpacity={AREA_FILL_OPACITY}
             />
           </AreaChart>
         </ChartContainer>

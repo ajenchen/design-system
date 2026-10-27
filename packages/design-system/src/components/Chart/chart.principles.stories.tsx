@@ -126,7 +126,7 @@ export const UsageGuidance: Story = {
           <li><StoryLink kind="Design System/Components/Chart/展示" name="長條 Chart — 月營收">長條 Chart — 月營收</StoryLink></li>
           <li><StoryLink kind="Design System/Components/Chart/展示" name="折線 Chart — 伺服器回應時間">折線 Chart — 伺服器回應時間</StoryLink></li>
           <li><StoryLink kind="Design System/Components/Chart/展示" name="環圈 Chart — 流量來源分布">環圈 Chart — 流量來源分布</StoryLink></li>
-          <li><StoryLink kind="Design System/Components/Chart/展示" name="堆疊 面積 — 部門支出">堆疊 面積 — 部門支出</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Chart/展示" name="堆疊面積 — 部門支出">堆疊面積 — 部門支出</StoryLink></li>
         </TutorialList>
       </UsageSection>
 
@@ -274,7 +274,7 @@ export const ChartTypeRule: Story = {
 }
 
 export const CategoryTokenRule: Story = {
-  name: 'ChartConfig + 類別色 設計變數',
+  name: 'ChartConfig + 類別色設計變數',
   render: () => (
     <TutorialPage>
       <TutorialRule

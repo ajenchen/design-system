@@ -124,6 +124,7 @@ const config = {
 | Cartesian grid line | `stroke-divider` |
 | Axis tick | `text-fg-muted`（填 `fill-fg-muted`） |
 | Dot fill | 依 series color |
+| 面積圖填色 / 外框線 | `fillOpacity` 0.3 / `strokeWidth` 2(user 2026-10-21 09:25 回覆:甲案符合設計規格就用甲;展示與設計規格兩層共用 `_area-style.ts`) |
 | 滑過指示帶(長條圖) | `fill-neutral-hover`(見下節) |
 | 滑過指示線(折線 / 面積 / 散佈 / 雷達) | `stroke-border`(見下節) |
 
