@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(SidebarProvider / Sidebar / SidebarMenu / SidebarGroup / SidebarMenuButton 等 10+ primitives 共享 context + 20+ sidebar-specific features;已是 foundational SSOT spec cap 800)
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { Slot } from "@radix-ui/react-slot"
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -865,8 +866,11 @@ SidebarContent.displayName = "SidebarContent"
 // 所在的 group 是否 collapsible,以自動切換渲染模式(label 尾端 chevron button 變
 // `Collapsible.Trigger`、content 變 `Collapsible.Content`;label 本身維持
 // `role="presentation"` div,不升格為 button)。沒有 context 就是舊行為(plain div)。
+// `actionSlot`:SidebarGroupLabel 列尾槽裡的掛載點,SidebarGroupAction 渲染進那裡(見 SidebarGroupAction)。
 type SidebarGroupContextValue = {
   collapsible: boolean
+  actionSlot: HTMLElement | null
+  setActionSlot: (el: HTMLElement | null) => void
 }
 const SidebarGroupContext = React.createContext<SidebarGroupContextValue | null>(null)
 
@@ -914,9 +918,10 @@ type SidebarGroupProps = React.ComponentProps<"div"> &
   )
 
 const SidebarGroup = React.forwardRef<HTMLDivElement, SidebarGroupProps>(({ className, collapsible = false, value, defaultOpen = true, open, onOpenChange, children, ...props }, ref) => {
+  const [actionSlot, setActionSlot] = React.useState<HTMLElement | null>(null)
   const contextValue = React.useMemo<SidebarGroupContextValue>(
-    () => ({ collapsible }),
-    [collapsible]
+    () => ({ collapsible, actionSlot, setActionSlot }),
+    [collapsible, actionSlot]
   )
   // 非受控的展開狀態:有 Provider 就住在 Provider(以 value 為鍵,兩份共用);沒有(不在 SidebarProvider 裡)才退回自己記
   const internals = React.useContext(SidebarInternalsContext)
@@ -1057,13 +1062,7 @@ const SidebarGroupLabel = React.forwardRef<
         ref={ref}
         data-sidebar="group-label"
         role="presentation"
-        className={cn(
-          sidebarGroupLabelVariants({ size }),
-          // Single-line group header:改用 items-center 讓 chevron button(16×16)跟 text 垂直精確置中。
-          // cva base 的 `items-start` 是 multi-line safety,單行 header 用不到,明確覆寫成 center。
-          "!items-center",
-          className
-        )}
+        className={cn(sidebarGroupLabelVariants({ size }), className)}
         {...props}
       >
         <span className="min-w-0 flex-1 truncate">{children}</span>
@@ -1073,25 +1072,34 @@ const SidebarGroupLabel = React.forwardRef<
             base = ChevronDown (`v`),open 時 rotate-180° → `^`。
             對齊 Radix Accordion / shadcn Collapsible / Material Expansion / Linear 的 section header。
             (Prefix 位置的 chevron 如 TreeView 才用 ChevronRight + rotate-90 的 tree disclosure 慣例) */}
-        <CollapsiblePrimitive.Trigger asChild>
-          <ItemInlineActionButton
-            icon={ChevronDown}
-            aria-label={toggleAriaLabel}
-            className="pointer-events-auto ml-auto"
-            // 旋轉的時長與曲線 = 原地展開那一檔(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。
-            // 角度看**自己這顆觸發鈕**的 data-state(圖示是 <button> 的直接子元素):2026-10-13 前寫 `[[data-state=open]_&]`(任一層祖先),
-            // 窄螢幕側欄住在 SheetContent(data-state="open")裡,收合的群組箭頭也被轉成朝上
-            iconClassName={cn(disclosureIndicatorMotion, "[[data-state=open]>&]:rotate-180")}
-          />
-        </CollapsiblePrimitive.Trigger>
+        <SidebarGroupLabelSuffix>
+          <CollapsiblePrimitive.Trigger asChild>
+            <ItemInlineActionButton
+              icon={ChevronDown}
+              aria-label={toggleAriaLabel}
+              className="pointer-events-auto"
+              // 旋轉的時長與曲線 = 原地展開那一檔(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。
+              // 角度看**自己這顆觸發鈕**的 data-state(圖示是 <button> 的直接子元素):2026-10-13 前寫 `[[data-state=open]_&]`(任一層祖先),
+              // 窄螢幕側欄住在 SheetContent(data-state="open")裡,收合的群組箭頭也被轉成朝上
+              iconClassName={cn(disclosureIndicatorMotion, "[[data-state=open]>&]:rotate-180")}
+            />
+          </CollapsiblePrimitive.Trigger>
+        </SidebarGroupLabelSuffix>
       </div>
     )
   }
 
-  // 非 collapsible:plain label(div,pointer-events-none)
-  const Comp = asChild ? Slot : "div"
+  // 非 collapsible:plain label(div,pointer-events-none)。asChild 時列尾槽沒有地方放(Slot 只收一個子元素),
+  // 該群組的 SidebarGroupAction 走退回定位(見 SidebarGroupAction)。
+  if (asChild) {
+    return (
+      <Slot ref={ref} data-sidebar="group-label" role="presentation" className={cn(sidebarGroupLabelVariants({ size }), className)} {...props}>
+        {children}
+      </Slot>
+    )
+  }
   return (
-    <Comp
+    <div
       ref={ref}
       data-sidebar="group-label"
       role="presentation"
@@ -1099,40 +1107,95 @@ const SidebarGroupLabel = React.forwardRef<
       {...props}
     >
       {children}
-    </Comp>
+      <SidebarGroupLabelSuffix />
+    </div>
   )
 })
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
-// ⚠️ 2026-09-24:這兩顆先前是 shadcn 原樣帶進來的**手刻品**(`b7b34721` 把 DS 搬進 npm workspace
-// 時一起進來,之後從未跟著本 DS 的行內動作 canonical 遷移)。它們自己寫死
-// `aspect-square w-5 ... [&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而
+// 標題列的列尾槽 = item-anatomy 的 suffix slot(`ItemSuffix`:`h-[1lh]` + `ml-auto` + 槽距 gap-2;
+// item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」)。收合箭頭與 SidebarGroupAction 都住這裡,
+// 所以兩者的垂直位置都由標題列自己的版面公式(ROW_PADDING_BY_SIZE 的 py + 1lh)決定,sm / md / lg、兩種密度都不需要任何常數。
+// `group-action-slot` 是 SidebarGroupAction 的掛載點(display: contents,不佔版位);沒有箭頭、也沒有群組動作時整個槽不顯示,
+// 標題列與從前逐像素相同。
+function SidebarGroupLabelSuffix({ children }: { children?: React.ReactNode }) {
+  const group = useSidebarGroup()
+  return (
+    <ItemSuffix
+      data-sidebar="group-label-suffix"
+      className={cn(!children && "has-[>[data-sidebar=group-action-slot]:empty]:hidden")}
+    >
+      <span ref={group?.setActionSlot} data-sidebar="group-action-slot" className="contents" />
+      {children}
+    </ItemSuffix>
+  )
+}
+
+// SidebarGroupAction —— 群組標題列列尾的行內動作(例:「所有專案」的「建立專案」)。
+//
+// ── 位置:住進標題列的列尾槽(2026-10-27,user 原話:「sidebar的展示“群組動作”為何群組標題'所有專案'右邊的那個‘+'偏上？？？看起來完全沒有遵循 item anatomy 的layout原則啊？」)──
+// 消費端寫法不變:仍然寫在 `<SidebarGroupLabel>` 之後、`<SidebarGroupContent>` 之前;元件經 SidebarGroupContext
+// 把按鈕渲染進 SidebarGroupLabelSuffix 的掛載點(React portal),所以它是標題列 flex 裡的列尾,跟同一列的收合箭頭同一套公式。
+// 在那之前它是標題列的**兄弟**,`absolute top-2` 掛在整個群組盒上:8px 只等於群組上留白,按鈕**上緣**貼齊標題列上緣、
+// 不是**中線**對齊標題文字;偏差 = −(列高 − 按鈕高) ÷ 2,實測 md 標準 −8 / 寬鬆 −10(sm −6 / −8、lg −8 / −10)。
+// 要置中所需的 top = 8 + (列高 − 按鈕高) ÷ 2,六種尺寸 × 密度要三個不同的值(14 / 16 / 18),任何常數都只會在某幾格剛好對;
+// 它也看不到標題列,長標題會跑到按鈕底下。
+// 沒有可掛的槽(群組外、標題用 asChild、或群組沒有標題)時:退回絕對定位,錨在群組上留白之下(`top-2` = SidebarGroup 的 `py-2`,
+// 也就是標題列上緣),外框套**標題列同一份列公式**(sidebarGroupLabelVariants:同 py、同字級、同 px)再放列尾槽 —— 單行標題時
+// 垂直仍對齊標題文字、水平貼齊標題列尾;不擠動下方清單。標題換行或群組根本沒有標題時,它對的是「第一列該在的位置」。
+// DS 與 work-management 目前沒有任何一處走這條路(2026-10-27 grep:沒有 `SidebarGroupLabel asChild`、沒有無標題的群組動作)。
+// 機械閘:`scripts/row-suffix-first-line-invariant.mjs`(量圖示中線 vs 第一行文字中線)。退回路徑沒有 story(沒有真實用法可示範),
+// 2026-10-27 以暫時的探針 story 實測過一次(sm / md / lg × 兩種密度 × 淺深):asChild 標題的「+」與走列尾槽的群組逐格相同
+//(圖示中線 − 標題行盒中線 ≤ 0.02px、右距相同),群組高與清單上緣也逐格相同;沒有標題時圖示中線 = 第一列中線(差 ≤ 0.01)。
+//
+// ── 來歷(2026-10-27 更正)──
+// 2026-04-14 `4e53ff99` 從 shadcn 改寫進來時把 shadcn 的 `right-3 top-3.5` 改成 `right-[loose] top-2`
+//(shadcn 的 3.5 = 8 + (32 − 20) ÷ 2,是置中;本 DS 一出生就偏上)。`b7b34721` 只是整個資料夾搬家(內容 100% 相同),
+// 不是來源 —— 2026-09-24 到 10-27 這裡與 sidebar.spec.md、hit-area-canonical.md 寫成「shadcn 原樣帶進來(b7b34721)」是錯的。
+//
+// ── 2026-09-24 改為委派 `ItemInlineActionButton`(本顆與下方 SidebarMenuAction)──
+// 先前它們自己寫死 `aspect-square w-5 ... [&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而
 // `patterns/element-anatomy/inline-action.spec.md` 的尺寸表只有兩種組合(16 圖示配 18 底色、
-// 20 圖示配 22 底色),**20 兩種都不是**。同一個檔案 :826 的收合箭頭早就在消費
+// 20 圖示配 22 底色),**20 兩種都不是**。同一個檔案的收合箭頭早就在消費
 // `ItemInlineActionButton`,於是同一個元件裡兩套幾何並存。
 // 依 M23(DS 既有 canonical 優先)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 // API 隨之從 children 改成 `icon` prop —— 這是 breaking change,刻意不留 children 後備:
 // M23(f)「『向後相容』不是把新裁示變成可選的理由」。
 //
 // 命中區 ≡ 懸停底色由 primitive 自己保證(hit-area-canonical「一-4 細則」:行內動作平時沒有可視邊界,
-// 判準是懸停回饋形狀,不是「可視形狀」;`item-anatomy.tsx:730` 那塊**刻意沒有**
+// 判準是懸停回饋形狀,不是「可視形狀」;`item-anatomy.tsx#ItemInlineActionButton` 那塊**刻意沒有**
 // `pointer-events-none` 的懸停底色 span)。先前這裡另有一圈 `after:-inset-2 after:md:hidden`,
 // 只在 <md 生效、每邊多 8px,實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕,已於同日移除。
 const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
   Omit<ItemInlineActionButtonProps, "size">
->(({ className, ...props }, ref) => (
-  <ItemInlineActionButton
-    ref={ref}
-    data-sidebar="group-action"
-    className={cn(
-      "absolute right-[var(--layout-space-loose)] top-2",
-      "group-data-[collapsible=icon]:hidden",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const slot = useSidebarGroup()?.actionSlot ?? null
+  // 不用 useSidebar():它在 Provider 外會丟例外,而這顆在 2026-10-27 前不需要 Provider
+  const size = React.useContext(SidebarContext)?.size ?? "md"
+  const button = (
+    <ItemInlineActionButton
+      ref={ref}
+      data-sidebar="group-action"
+      className={cn(
+        // 標題列是 pointer-events-none(header 語意),按鈕自己接指標 —— 同收合箭頭
+        "pointer-events-auto",
+        "group-data-[collapsible=icon]:hidden",
+        className
+      )}
+      {...props}
+    />
+  )
+  if (slot) return createPortal(button, slot)
+  return (
+    <span
+      data-sidebar="group-action-fallback"
+      className={cn(sidebarGroupLabelVariants({ size }), "absolute right-0 top-2 w-auto")}
+    >
+      <ItemSuffix>{button}</ItemSuffix>
+    </span>
+  )
+})
 SidebarGroupAction.displayName = "SidebarGroupAction"
 
 // ── Menu ───────────────────────────────────────────────────────────────────

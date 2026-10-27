@@ -5,6 +5,7 @@ import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw,
 import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta<typeof Button> = {
   title: 'Design System/Components/Button/展示',
@@ -328,12 +329,16 @@ export const DismissHoverState: Story = {
   name: '關閉按鈕懸停狀態',
   tags: ['test-only'],
   render: () => (
-    <div className="flex items-center gap-3 rounded-lg border border-divider bg-surface p-4">
+    // 關閉鈕住列尾槽 ItemSuffix(h-[1lh]),對齊標題第一行(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」;
+    // 同 Notice / Alert / Toast 的關閉鈕);容器設 text-body 讓 1lh = 標題行高。2026-10-27 前是 items-center,× 落在兩行字塊正中、比標題中線低約 8px
+    <div className="flex items-start gap-3 rounded-lg border border-divider bg-surface p-4 text-body">
       <div className="min-w-0 flex-1">
         <p className="text-body font-medium text-foreground">付款方式已更新</p>
         <p className="text-caption text-fg-secondary">此通知可直接關閉。</p>
       </div>
-      <Button dismiss size="sm" startIcon={X} aria-label="關閉付款通知" data-visual-hover-target />
+      <ItemSuffix>
+        <Button dismiss size="sm" startIcon={X} aria-label="關閉付款通知" data-visual-hover-target />
+      </ItemSuffix>
     </div>
   ),
 }

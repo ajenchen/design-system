@@ -1164,7 +1164,7 @@ jobs:
     # 2026-10-14 拆自 verify-browser-interaction(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
     # 原 job 最近 15 次 CI p90 22.6 分 / 上限 25(90%)。本 job = 原步驟後半:Field 內 Tag 內距、側欄鍵盤、openStory 兩面對照、view 字級、
     # Dialog 並存與捲動鎖、浮層快捷鍵作用域、虛擬捲動壓力、Devmode 幾何、Header Tabs 插槽、選單訊息列、Steps 兩支,與改到元件的視覺稽核;
-    # 逐支計時合計 528–666 秒,估約 13 分。
+    # 逐支計時合計 528–666 秒,估約 13 分。2026-10-27 加 row-suffix-first-line(主跑 + --selftest,本機實測約 50 秒;CI 未實測)。
     name: Verify browser(field, dialog and steps gates + changed-component visual audit)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1203,6 +1203,12 @@ jobs:
           # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
           # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
           npm run test:sidebar-menu-keyboard
+          # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
+          # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
+          # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,標準與寬鬆兩種密度。
+          # --selftest 把群組動作打回舊寫法(absolute top:8px)必指名 GroupAction 紅;每個被量的控件下推 3px 必全紅、且每處位移正好 3px
+          # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅)。
+          npm run test:row-suffix-first-line
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,

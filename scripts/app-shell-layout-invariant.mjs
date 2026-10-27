@@ -450,7 +450,8 @@ function retainedRightVisible() {
 /** 審查缺陷 6:Menu 浮層裡展開的群組,回到版面上那一份仍展開、內容看得到 */
 function retainedGroupShared() {
   const flow = document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
-  const toggle = flow?.querySelector('[data-sidebar="group-label"] button')
+  // 收合箭頭 = 標題列裡帶 aria-expanded 的那顆;2026-10-27 起群組動作也住標題列的列尾槽(排在箭頭前),「標題列裡第一顆 button」不再是箭頭
+  const toggle = flow?.querySelector('[data-sidebar="group-label"] button[aria-expanded]')
   const project = flow ? [...flow.querySelectorAll('[data-sidebar="menu-button"]')].find((b) => b.textContent.includes('Q4 結帳改版')) : null
   const box = project?.getBoundingClientRect()
   return { flowState: flow?.getAttribute('data-state') ?? null, expanded: toggle?.getAttribute('aria-expanded') ?? null, projectVisible: !!box && box.width > 0 && box.height > 0 }
@@ -662,7 +663,7 @@ async function perform(step, label) {
     await page.click('[data-app-shell] main button:has-text("結束 Sprint 42")', { timeout: ACTION_TIMEOUT })
     await page.waitForSelector('[role="dialog"][data-state="open"]', { timeout: ACTION_TIMEOUT })
   } else if (step.groupToggle) {
-    await page.click('[data-menu-overlay] [data-sidebar="group-label"] button', { timeout: ACTION_TIMEOUT })
+    await page.click('[data-menu-overlay] [data-sidebar="group-label"] button[aria-expanded]', { timeout: ACTION_TIMEOUT })
   } else if (step.agentLink) {
     await page.click('[data-app-shell-panel="agent"] [data-agent-link="insights"]', { timeout: ACTION_TIMEOUT })
   } else if (step.tabInto) {

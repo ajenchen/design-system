@@ -519,6 +519,7 @@
       "scripts/test-rating-field-size-invariant.mjs",
       "scripts/test-release-finalizer-mirror-handoff.mjs",
       "scripts/test-repository-hygiene-invariant.mjs",
+      "scripts/test-row-suffix-first-line-invariant.mjs",
       "scripts/test-rsync-checksum-invariant.mjs",
       "scripts/test-run-deterministic-deep-audit.mjs",
       "scripts/test-score-infra-best-practice.mjs",

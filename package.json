@@ -67,6 +67,7 @@
     "test:tag-field-inset": "node scripts/tag-field-vertical-inset.mjs && node scripts/tag-field-vertical-inset.mjs --selftest",
     "test:sidebar-menu-keyboard": "node scripts/sidebar-menu-keyboard-invariant.mjs && node scripts/sidebar-menu-keyboard-invariant.mjs --selftest && npm run --silent test:sidebar-standalone-collapse",
     "test:sidebar-standalone-collapse": "node scripts/sidebar-standalone-collapse-invariant.mjs && node scripts/sidebar-standalone-collapse-invariant.mjs --selftest",
+    "test:row-suffix-first-line": "node scripts/row-suffix-first-line-invariant.mjs && node scripts/row-suffix-first-line-invariant.mjs --selftest",
     "test:field-view-typography": "node scripts/field-view-typography-invariant.mjs && node scripts/field-view-typography-invariant.mjs --selftest",
     "test:action-bar-toolbar": "node scripts/action-bar-toolbar-invariant.mjs && node scripts/action-bar-toolbar-invariant.mjs --selftest",
     "test:overlay-detached-anchor": "node scripts/overlay-detached-anchor-invariant.mjs && node scripts/overlay-detached-anchor-invariant.mjs --selftest",

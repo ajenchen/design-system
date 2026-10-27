@@ -76,7 +76,7 @@ SidebarProvider              ← 全域 context（open 狀態、cookie、快捷�
     SidebarHeader            ← 頂部：logo、workspace switcher
     SidebarContent           ← 中間可捲動區
       SidebarGroup           ← 分組容器（可多個，純視覺分段）
-        SidebarGroupLabel    ← 分組標題（icon 模式自動隱藏）
+        SidebarGroupLabel    ← 分組標題（icon 模式自動隱藏;SidebarGroupAction 渲染進它的列尾槽,與收合箭頭同槽）
         SidebarGroupContent  ← 放以下其中一種：
           │
           ├─ SidebarMenu           扁平選單（1 層、有限可列舉）
@@ -609,7 +609,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ### 行內動作的命中區 = 懸停底色(2026-09-24 兩次修正;標題 2026-09-27 從「= 可視形狀」改正 —— 行內動作平時只看得到圖示,判準是懸停回饋形狀,`ds-canonical/references/hit-area-canonical.md`「為什麼不寫成『命中區 = 可視形狀』」)
 
-`SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),所以它們的幾何由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是`ds-canonical/references/hit-area-canonical.md`。
+`SidebarGroupAction` / `SidebarMenuAction` **委派 `ItemInlineActionButton`**(`patterns/element-anatomy/item-anatomy.tsx`),所以它們的尺寸(按鈕盒 / 懸停底色)由那顆 primitive 的常數決定,本檔不重述數值 —— owner 是`patterns/element-anatomy/inline-action.spec.md` 的尺寸表,跨元件規則是`ds-canonical/references/hit-area-canonical.md`;垂直位置不歸 primitive,由宿主那一列決定 —— `SidebarGroupAction` 住 `SidebarGroupLabel` 的列尾槽(`ItemSuffix`,`../../patterns/element-anatomy/item-anatomy.spec.md`「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」)。同一個群組同時可收合又有群組動作時,兩顆並排在這個槽裡:群組動作在左、收合箭頭在最右(每個可收合群組的箭頭維持同一欄),Tab 順序 = 畫面由左到右(2026-10-27 AI 推導;目前沒有消費端這樣組合,user 未裁示)。
 
 實測(1280×900,`展示 — 側邊欄動作懸停狀態`):按鈕盒 **16×16**、懸停底色 **18×18**、圖示 **16×16**;懸停底色邊緣**內** 1px 的四面探針全部打到 `menu-action` 自己,邊緣**外** 2px 的四面分別打到`menu-button` / `menu-label`(列鈕與列文字)。**命中區 = 懸停底色,外面沒有任何隱形帶。**
 
@@ -634,13 +634,13 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 #### 修正二:它們本來就不該是手刻的
 
-查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+查 git 才發現這兩顆是 **從 shadcn 改寫進來的手刻品**(2026-04-14 `4e53ff99`;`b7b34721` 只是搬進 npm workspace 的改名 —— 2026-10-27 更正原句「shadcn 原樣帶進來」),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
 
 依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 
 **API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `:813` 的作法從外面包 `Trigger asChild`)。**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
 
-**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px)、按下時多一層較深的底色(`item-anatomy.tsx:743`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
+**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px —— 2026-10-27 查明貼上緣本身就是錯位,修前 md 圖示中線比標題文字高 8px,已改住標題列列尾槽)、按下時多一層較深的底色(`item-anatomy.tsx:743`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
 
 **依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
 

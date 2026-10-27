@@ -148,27 +148,29 @@ export const PositionAsStateRule: Story = {
         title="對照 Switch:必須用 opacity(顏色是主要 state 載體)"
         note="Switch 的 on/off 主要靠顏色(track bg-primary vs bg-border)承載——thumb 位移與 checked 勾號只是輔助訊號,單獨一顆、無左右對照時不易讀。若灰階 swap,disabled 的 ON 和 OFF track 同灰、主通道消失,使用者難以分辨。必須 opacity 保留顏色"
       >
+        {/* 小標 w-24:w-16 裝不下「Disabled OFF」,小標折成兩行、開關落在兩行正中(比第一行中線低 7.8px,2026-10-27 全庫同族掃描);
+            單行時 items-center = 對齊小標那一行的中線 */}
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           {/* @layout-space-magic-ok: 狀態標籤 ↔ Switch 樣本(行內 micro)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-16">Rest ON</span>
+            <span className="text-caption text-fg-muted w-24">Rest ON</span>
             <Switch defaultChecked aria-label="啟用（開）" />
           </div>
           {/* @layout-space-magic-ok: 狀態標籤 ↔ Switch 樣本(行內)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-16">Rest OFF</span>
+            <span className="text-caption text-fg-muted w-24">Rest OFF</span>
             <Switch aria-label="啟用（關）" />
           </div>
         </div>
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           {/* @layout-space-magic-ok: 狀態標籤 ↔ Switch 樣本(行內 micro)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-16">Disabled ON</span>
+            <span className="text-caption text-fg-muted w-24">Disabled ON</span>
             <Switch defaultChecked disabled aria-label="啟用（停用、開）" />
           </div>
           {/* @layout-space-magic-ok: 狀態標籤 ↔ Switch 樣本(行內)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-16">Disabled OFF</span>
+            <span className="text-caption text-fg-muted w-24">Disabled OFF</span>
             <Switch disabled aria-label="啟用（停用、關）" />
           </div>
         </div>

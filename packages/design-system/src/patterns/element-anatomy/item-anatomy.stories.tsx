@@ -1469,17 +1469,21 @@ export const InlineActionHoverState = {
   name: '行內動作懸停狀態',
   tags: ['test-only'],
   render: () => (
-    <div className="flex w-[360px] items-center gap-3 rounded-md border border-divider bg-surface px-3 py-2">
+    // 列尾動作住 ItemSuffix(h-[1lh]),對齊標題第一行 —— 不是整塊「標題 + 說明」的中間(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」);
+    // 容器設 text-body 讓 1lh = 標題那一行的行高(2026-10-27 前這列是 items-center,⋮ 比標題中線低約 8px)
+    <div className="flex w-[360px] items-start gap-3 rounded-md border border-divider bg-surface px-3 py-2 text-body">
       <div className="min-w-0 flex-1">
         <p className="truncate text-body font-medium text-foreground">正式環境部署</p>
         <p className="truncate text-caption text-fg-secondary">版本 v2.4.0 · 5 分鐘前</p>
       </div>
-      <ItemInlineActionButton
-        icon={MoreVertical}
-        size="md"
-        aria-label="更多部署操作"
-        data-visual-hover-target
-      />
+      <ItemSuffix>
+        <ItemInlineActionButton
+          icon={MoreVertical}
+          size="md"
+          aria-label="更多部署操作"
+          data-visual-hover-target
+        />
+      </ItemSuffix>
     </div>
   ),
 }
@@ -1632,8 +1636,10 @@ export const IconActionPrimitiveDecision = {
               <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多" />
             </ItemSuffix>
           </div>
+          {/* 這一列的說明在 max-w-xl 裡折成兩行:列尾槽 ItemSuffix(h-[1lh])對齊第一行(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」),
+              容器 text-caption 讓 1lh = 說明那一行的行高。2026-10-27 前是 items-center,三顆落在兩行正中、比第一行中線低 7.8px;上下兩列單行,items-center 本來就 0,不動 */}
           {/* @layout-space-magic-ok: 模擬清單列的列幾何(列內距 + 標籤 ↔ 動作群)(layoutSpace.spec.md:168 元件自身微幾何) */}
-          <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-surface">
+          <div className="flex items-start gap-3 px-3 py-2 text-caption rounded-md border border-border bg-surface">
             <span className="flex-1 text-caption text-fg-secondary">✅ compact row:都用 Inline Action(icon 16,hover-bg 18,size="sm",同一個 ItemSuffix 槽)</span>
             <ItemSuffix>
               <ItemInlineActionButton icon={RotateCw} size="sm" aria-label="重試" />

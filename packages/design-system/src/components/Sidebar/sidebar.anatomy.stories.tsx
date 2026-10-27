@@ -8,7 +8,9 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -64,16 +66,19 @@ const Swatch = ({ value }: { value: string }) => (
   />
 )
 
-/** 縮小的 demo sidebar preview (inside padded story) */
+/** 縮小的 demo sidebar preview (inside padded story)。`withGroups`:多畫兩個帶標題的群組(列尾 + 與收合箭頭),尺寸對照表用 */
 const SidebarPreview = ({
   size = 'md',
   activeId = 'dashboard',
   width = 240,
+  withGroups = false,
 }: {
   size?: 'sm' | 'md' | 'lg'
   activeId?: string
   width?: number
+  withGroups?: boolean
 }) => {
+  const [projects, setProjects] = React.useState(['結帳流程改版', '對帳批次'])
   const MAIN_NAV = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inbox', label: 'Inbox', icon: Inbox },
@@ -110,6 +115,37 @@ const SidebarPreview = ({
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+            {withGroups && (
+              <>
+                <SidebarGroup>
+                  <SidebarGroupLabel>所有專案</SidebarGroupLabel>
+                  <SidebarGroupAction
+                    icon={Plus}
+                    aria-label="建立專案"
+                    onClick={() => setProjects((list) => (list.length < 3 ? [...list, '支付失敗通知'] : list))}
+                  />
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {projects.map((label) => (
+                        <SidebarMenuItem key={label}>
+                          <SidebarMenuButton id={`project-${label}`} startIcon={Folder}>{label}</SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarGroup collapsible value="favorites">
+                  <SidebarGroupLabel>收藏</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton id="weekly-notes" startIcon={Folder}>週會紀錄</SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </>
+            )}
           </SidebarContent>
           <SidebarFooter>
             <SidebarMenu>
@@ -159,6 +195,7 @@ export const Overview: Story = {
     SidebarContent         ← flex-1 + ScrollArea 捲動
       SidebarGroup         ← py-2 + ::before divider
         SidebarGroupLabel  ← item-layout row (header mode)
+        SidebarGroupAction ← 渲染進 Label 的列尾槽(ItemSuffix)
         SidebarGroupContent
           SidebarMenu        ← flex-col, no gap
             SidebarMenuItem
@@ -313,7 +350,8 @@ export const SizeMatrix: Story = {
       <div className="flex flex-col gap-2">
         <H3>Row size 變體</H3>
         <Desc>
-          SidebarMenuButton 和 SidebarGroupLabel 共用 item-layout 公式,sm/md/lg 三種尺寸跟 TreeView / MenuItem 完全對齊。
+          SidebarMenuButton 和 SidebarGroupLabel 共用 item-layout 公式,sm/md/lg 三種尺寸跟 TreeView / MenuItem 完全對齊;
+          標題列列尾的 + (SidebarGroupAction)與收合箭頭住同一個列尾槽(ItemSuffix,h-[1lh]),圖示中線對齊標題文字。
           `SidebarProvider` 的 size prop 會自動 propagate 到所有 row 元件,不用每個 button 各自傳。
         </Desc>
       </div>
@@ -322,7 +360,7 @@ export const SizeMatrix: Story = {
         {(['sm', 'md', 'lg'] as const).map((s) => (
           <div key={s} className="flex flex-col gap-2">
             <Label>size = &quot;{s}&quot;</Label>
-            <SidebarPreview size={s} />
+            <SidebarPreview size={s} withGroups />
           </div>
         ))}
       </div>

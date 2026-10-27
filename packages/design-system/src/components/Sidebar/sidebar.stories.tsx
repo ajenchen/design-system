@@ -244,7 +244,7 @@ export const ActionHoverState: Story = {
 // 群組標題列右端那顆行內動作鈕:清單型群組的「新增一筆」入口(work-management `AppSidebar.tsx` 的
 // All projects + Create project 同款,2026-09-29 補 story,待辦總帳 OE12)。`icon` 必填 —— 2026-09-24 起委派
 // `ItemInlineActionButton`,API 從 children 改成 icon prop,刻意不留 children 後備(sidebar.spec.md「API 破壞性變更」,M23(f));
-// 幾何(16 圖示 / 18 懸停底色、貼齊標題右緣 loose、上緣 top-2)由那顆 primitive 決定,icon 收合模式整顆隱藏。
+// 尺寸(16 圖示 / 18 懸停底色)由那顆 primitive 決定;位置 = 標題列自己的列尾槽(ItemSuffix,h-[1lh]),跟收合箭頭同一套公式,icon 收合模式整顆隱藏。
 // 專案名稱取自代理整頁示範同一個假資料世界(結帳流程改版 …),「建立專案」把待排程的下一個專案加進群組。
 const PROJECTS_SEED = [
   { id: 'checkout', label: '結帳流程改版' },
@@ -254,7 +254,7 @@ const PROJECTS_SEED = [
 const PROJECTS_BACKLOG = ['會員等級重算', '發票寄送']
 export const GroupAction: Story = {
   name: '群組動作',
-  parameters: { docs: { description: { story: '群組標題列右端的行內動作鈕(`SidebarGroupAction`,`icon` 必填,放在 `SidebarGroupLabel` 之後、`SidebarGroupContent` 之前,由群組的 relative 定位貼齊右緣):清單型群組的「新增一筆」入口,這裡是「所有專案」的「建立專案」。它委派 `ItemInlineActionButton`,懸停底色就是命中區;側欄收成 icon 模式時整顆隱藏(標題也不在了)。' } } },
+  parameters: { docs: { description: { story: '群組標題列右端的行內動作鈕(`SidebarGroupAction`,`icon` 必填,放在 `SidebarGroupLabel` 之後、`SidebarGroupContent` 之前,按鈕會住進標題列的列尾槽,圖示中線對齊標題文字):清單型群組的「新增一筆」入口,這裡是「所有專案」的「建立專案」。它委派 `ItemInlineActionButton`,懸停底色就是命中區;側欄收成 icon 模式時整顆隱藏(標題也不在了)。' } } },
   render: function GroupActionStory() {
     const [activeId, setActiveId] = React.useState<string>('checkout')
     const [projects, setProjects] = React.useState(PROJECTS_SEED)

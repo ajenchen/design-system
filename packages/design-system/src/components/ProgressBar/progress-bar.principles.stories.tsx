@@ -10,6 +10,7 @@ import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta = {
   title: 'Design System/Components/ProgressBar/設計原則',
@@ -124,9 +125,12 @@ export const UsageGuidance: Story = {
           <ExampleCaption>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</ExampleCaption>
 
           <Frame>
+            {/* 轉圈 24 ≤ 24 → 住前綴槽 ItemPrefix(h-[1lh])對齊標題第一行(item-anatomy.spec.md「24px 閾值對齊規則」);容器 text-body 建立 1lh */}
             {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
-            <div className="flex items-center gap-3">
-              <CircularProgress aria-label="驗證信用卡中" />
+            <div className="flex items-start gap-3 text-body">
+              <ItemPrefix>
+                <CircularProgress aria-label="驗證信用卡中" />
+              </ItemPrefix>
               <div className="flex flex-col">
                 <span className="text-body">驗證信用卡中...</span>
                 <span className="text-caption text-fg-muted">連線至金流服務商</span>
