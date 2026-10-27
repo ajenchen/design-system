@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-27T21:59:02.184Z"
+    "generatedAt": "2026-10-27T23:06:59.607Z"
   },
   "components": {
     "accordion": {
@@ -318,6 +318,7 @@
           "design-system-components-calendar-展示--team-calendar",
           "design-system-components-calendar-展示--launch-week",
           "design-system-components-calendar-展示--content-publishing-schedule",
+          "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
           "design-system-components-calendar-展示--empty-calendar",
           "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
         ],
@@ -416,7 +417,6 @@
       "tiers": {
         "展示": [
           "design-system-components-chip-展示--default",
-          "design-system-components-chip-展示--states",
           "design-system-components-chip-展示--with-badge",
           "design-system-components-chip-展示--single-selection",
           "design-system-components-chip-展示--assist-attachments"
@@ -1044,7 +1044,6 @@
           "design-system-components-linkinput-展示--default",
           "design-system-components-linkinput-展示--empty",
           "design-system-components-linkinput-展示--validation",
-          "design-system-components-linkinput-展示--size-alignment",
           "design-system-components-linkinput-展示--modes",
           "design-system-components-linkinput-展示--view"
         ],
@@ -1123,7 +1122,6 @@
         "展示": [
           "design-system-components-numberinput-展示--modes",
           "design-system-components-numberinput-展示--with-error",
-          "design-system-components-numberinput-展示--size-alignment",
           "design-system-components-numberinput-展示--format-options",
           "design-system-components-numberinput-展示--in-data-table"
         ],
@@ -1201,7 +1199,6 @@
           "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
           "design-system-components-peoplepicker-展示--overflow-remove-focus-contract",
           "design-system-components-peoplepicker-展示--clearable",
-          "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load",
           "design-system-components-peoplepicker-展示--loading-first-open",
           "design-system-components-peoplepicker-展示--value-loading",
@@ -1858,5 +1855,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1026
+  "totalStories": 1023
 }
