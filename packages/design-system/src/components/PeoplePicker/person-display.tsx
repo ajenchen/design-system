@@ -11,6 +11,8 @@ import { useTableIsScrolling } from '@/design-system/components/Field/field-cont
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import {
   getAvatarStackVisibleCount,
+  measureStackAvailablePx,
+  type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
   AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
@@ -263,6 +265,8 @@ function MultiPersonDisplay({
     // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
     // 沒有 field wrapper 的用法(people-picker.tsx:256 那個 `flex w-full min-w-0`)
     // 找不到 `[data-field-mode]`,自然落回原本的量父層。
+    // 2026-10-28:這段量法搬進 `avatar-stack-overflow.ts` `measureStackAvailablePx`,編輯態(people-picker.tsx)同一支
+    //(編輯態原本量自己那一格,依內容寬時同一個棘輪,r-F3 缺陷 K)。
     const wrapper = el.closest<HTMLElement>('[data-field-mode]')
     const containingBlock = wrapper?.parentElement ?? null
     // 觀察對象是**儲存格的父層**,所以欄寬重分配、捲軸出現消失、列重掛,都會讓畫面上
@@ -273,19 +277,13 @@ function MultiPersonDisplay({
     // 外框開銷(field 的 padding / border / 其他 slot)**不隨欄寬改變**,量一次就夠;
     // 真的變了(換密度、清除鈕出現)會重掛節點或讓下面的寬度判斷落到 <= 0,屆時自然重量。
     // 寬度沒變就直接返回,連 getAvatarStackVisibleCount 與 setState 都不必跑。
-    let chromePx: number | null = null
+    const chrome: StackChromeCache = { chromePx: null }
     let lastAvailable = -1
     const calc = () => {
-      // 先用一次便宜的讀取確認版面好了沒 —— 沒好就連外框開銷都不量,否則會把還沒排版的
-      // 垃圾值快取起來、之後再也不重算(story 切換過渡、display:none、圖未載入都會走到)。
-      const rawAvail = wrapper && containingBlock ? containingBlock.clientWidth : box.clientWidth
-      if (rawAvail <= 0) { chromePx = null; lastAvailable = -1; return }
-      if (wrapper && containingBlock && chromePx === null) {
-        chromePx = wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
-      }
-      const availablePx = rawAvail - (chromePx ?? 0)
-      // (story 切換過渡、display:none、圖未載入時會走到這裡;用 0 去算會鎖進收縮態且不再復原。)
-      if (availablePx <= 0) return
+      // 版面還沒好(story 切換過渡、display:none、圖未載入)→ 0:不量外框開銷、不快取垃圾值,下次回呼再量
+      const availablePx = measureStackAvailablePx(box, chrome)
+      // (用 0 去算會鎖進收縮態且不再復原。)
+      if (availablePx <= 0) { lastAvailable = -1; return }
       // 寬度沒變就不必再跑分配計算與 setState(觀察對象是儲存格父層,一次欄寬變動會同時
       // 喚醒畫面上每一格)。
       if (availablePx === lastAvailable) return

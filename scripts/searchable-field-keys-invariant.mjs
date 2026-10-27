@@ -21,6 +21,11 @@
  *     K1b(2026-10-13)浮層內搜尋(Combobox / PeoplePicker 多選的預設):清單關著、焦點在欄位本身按 Backspace = 刪最後一個值(與 K1 同規則、同播報);
  *        焦點在浮層裡的搜尋框按 Backspace 不刪值(對照列:(b) 不做)。
  *     K7(2026-10-13)單選(Select、PeoplePicker 單人)依內容寬:打開、打一個比值短的字、收起,欄寬都與關著相同(修前打開就撐成搜尋框的固有寬,151 → 204px)。
+ *     F3(2026-10-28,r-F3 研究查到的三個缺陷 + 一個老缺陷,FL-f3):
+ *       F3P 依內容寬 + 空值 × 欄位內搜尋:欄寬 = 不可搜尋的同一欄(提示字整句放得下;combobox.spec.md:191 / field-controls.spec.md:215;修前量尺只有插入點寬,53.8 vs 89.13 / 120px);
+ *       F3E 換行 × 每人一顆標籤撐滿一列 × 欄位內搜尋:關著的欄高 = 不可搜尋的同一欄(combobox.spec.md:146「空的時候不會自己佔一整列」;修前多一列,116 vs 88);
+ *       F3K 頭像堆疊 × 依內容寬 × 編輯欄位:有幾個人就畫幾個頭像、沒有 +N(field-controls.spec.md:215;修前 2 人只剩「+2」、6 人只畫 4 顆);
+ *       F3V 換行 × 空值:提示字中線與單行欄位同高(field.spec.md:147;修前偏上 1.5px)。
  *   紅: 任一列不符 → 逐列點名(哪一格、量到什麼、應為什麼)、exit 1。story 沒渲染 / 互動後版面不靜止 / 焦點一直在跳 = 儀器失效(INSTRUMENT-FAIL,exit 1),
  *        不得被讀成產品不符,也不得在 --selftest 裡被算成「弄壞後有抓到」。
  *   綠: 全部列符合。--selftest 兩部分:(1) 判定表 —— 每一列餵「正確形狀」必綠、「修前形狀」必紅、缺量測必判儀器失效;
@@ -96,7 +101,19 @@ export const FIELDS = Object.freeze({
   ppMultiDefault: { label: '專案協作者(edit multi demo)' },
   ppSingleHug: { label: '負責人(依內容寬,單人)' },
   selectHug: { label: '出貨國家(依內容寬,可搜尋)' },
+  // F3(2026-10-28)
+  cbEmptyHug: { label: '商品類別(依內容寬,空值,欄位內搜尋)' },
+  cbEmptyHugPlain: { label: '商品類別(依內容寬,空值,對照)' },
+  ppEmptyHug: { label: '出席者(依內容寬,空值,欄位內搜尋)' },
+  ppEmptyHugPlain: { label: '出席者(依內容寬,空值,對照)' },
+  pillWrap: { label: '出席者(換行窄欄位,欄位內搜尋)' },
+  pillWrapPlain: { label: '出席者(換行窄欄位,對照)' },
+  stackHug2: { label: '協作者(依內容寬,2 人)' },
+  stackHug6: { label: '協作者(依內容寬,6 人)' },
+  wrapEmpty: { label: '商品類別(換行,空值)' },
+  lineEmpty: { label: '商品類別(單行,空值)' },
 })
+const EMPTY_PLACEHOLDER = '選擇…'
 const UNRESTRICTED_LABEL = '不限'
 const LONG_UNRESTRICTED_LABEL = '不限(全部商品類別都可以)'
 const PERSON = 'Alice Chen'
@@ -250,6 +267,18 @@ export const ROWS = [
   { id: 'K7-select-hug', family: 'K7', name: 'Select 單選可搜尋 × 依內容寬:打開、打「b」、收起,欄寬都與關著相同',
     judge: (m) => check(near(m.opened, m.closed) && near(m.typed, m.closed) && near(m.after, m.closed) && m.typedKeyword === 'b',
       `關著 ${m.closed}px → 打開 ${m.opened}px → 打「${m.typedKeyword}」${m.typed}px → 收起 ${m.after}px`) },
+  // ── F3(2026-10-28)r-F3 研究查到的缺陷 ──
+  { id: 'F3P-combobox-hug-empty', family: 'F3P', name: 'Combobox 依內容寬 + 空值 × 欄位內搜尋:關著欄寬 = 不可搜尋的同一欄(提示字整句放得下)',
+    judge: (m) => check(near(m.inline, m.plain), `欄位內搜尋 ${m.inline}px / 不可搜尋 ${m.plain}px`) },
+  { id: 'F3P-people-hug-empty', family: 'F3P', name: 'PeoplePicker 多人 依內容寬 + 空值 × 欄位內搜尋:關著欄寬 = 不可搜尋的同一欄',
+    judge: (m) => check(near(m.inline, m.plain), `欄位內搜尋 ${m.inline}px / 不可搜尋 ${m.plain}px`) },
+  { id: 'F3E-pill-wrap', family: 'F3E', name: 'PeoplePicker 每人一顆標籤 × 換行 × 窄欄位 × 欄位內搜尋:關著欄高 = 不可搜尋的同一欄(空的搜尋框不自己佔一列)',
+    judge: (m) => check(near(m.inline, m.plain), `欄位內搜尋 ${m.inline}px / 不可搜尋 ${m.plain}px`) },
+  { id: 'F3K-stack-hug', family: 'F3K', name: 'PeoplePicker 頭像堆疊 × 依內容寬 × 編輯欄位:2 人 / 6 人都畫出全部頭像、沒有 +N',
+    judge: (m) => check(m.two.avatars === 2 && m.two.people === 2 && m.six.avatars === 6 && m.six.people === 6,
+      `2 人:頭像 ${m.two.avatars}(握著 ${m.two.people});6 人:頭像 ${m.six.avatars}(握著 ${m.six.people})`) },
+  { id: 'F3V-wrap-empty', family: 'F3V', name: 'Combobox 換行 × 空值:提示字中線與單行欄位同高(錨在 field-height / 2)',
+    judge: (m) => check(m.wrap != null && m.line != null && near(m.wrap, m.line), `換行 ${m.wrap} / 單行 ${m.line}(提示字中線距欄位頂)`) },
 ]
 const ROW_BY_ID = Object.fromEntries(ROWS.map((r) => [r.id, r]))
 
@@ -346,6 +375,12 @@ export const SAMPLES = {
     old: { before: st({ open: false, focus: 'field', people: 4 }), after: st({ open: false, focus: 'field', people: 4 }) } },
   'K7-people-hug': { good: { closed: 151.02, opened: 151.02, typed: 151.02, after: 151.02, typedKeyword: 'b' }, old: { closed: 151.02, opened: 204.4, typed: 204.4, after: 151.02, typedKeyword: 'b' } },
   'K7-select-hug': { good: { closed: 96, opened: 96, typed: 96, after: 96, typedKeyword: 'b' }, old: { closed: 96, opened: 204.4, typed: 204.4, after: 96, typedKeyword: 'b' } },
+  // F3:old = 52abc933 的建置放進同一批量測格實測(2026-10-28)
+  'F3P-combobox-hug-empty': { good: { inline: 89.13, plain: 89.13 }, old: { inline: 53.8, plain: 89.13 } },
+  'F3P-people-hug-empty': { good: { inline: 120, plain: 120 }, old: { inline: 53.8, plain: 120 } },
+  'F3E-pill-wrap': { good: { inline: 88, plain: 88 }, old: { inline: 116, plain: 88 } },
+  'F3K-stack-hug': { good: { two: { avatars: 2, people: 2 }, six: { avatars: 6, people: 6 } }, old: { two: { avatars: 0, people: 2 }, six: { avatars: 4, people: 6 } } },
+  'F3V-wrap-empty': { good: { wrap: 16, line: 16 }, old: { wrap: 14.5, line: 16 } },
 }
 
 export function judgeTableSelftest() {
@@ -406,7 +441,9 @@ function pageRead({ spec, valueText }) {
     const range = document.createRange()
     range.selectNodeContents(n)
     const textWidth = range.getBoundingClientRect().width
+    const tr = range.getBoundingClientRect()
     return { left: Math.round((r.left - box.left) * 100) / 100, top: Math.round((r.top - box.top) * 100) / 100, width: Math.round(r.width * 100) / 100,
+      center: Math.round(((tr.top + tr.bottom) / 2 - box.top) * 100) / 100,
       visibleTextWidth: Math.round(Math.min(r.width, textWidth) * 100) / 100,
       truncated: n.scrollWidth > n.clientWidth + 1, color: cs.color, fontSize: cs.fontSize, ariaHidden: !!n.closest('[aria-hidden="true"]') }
   }
@@ -568,6 +605,52 @@ function controlNameSplitsWithSearch() {
   }
   new MutationObserver(split).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-expanded'] })
 }
+// F3P:空值時欄位內搜尋框的量尺又只剩一個插入點寬(= 修前:依內容寬的欄位量不到提示字,提示字被切)
+function controlMirrorCaretOnly() {
+  const fix = () => {
+    for (const m of document.querySelectorAll('[role="combobox"] [data-inline-search-mirror]')) {
+      const input = m.parentElement?.querySelector('input:not([aria-hidden="true"])')
+      if (input && !input.value && m.textContent !== ' ') m.textContent = ' '
+    }
+  }
+  new MutationObserver(fix).observe(document, { subtree: true, childList: true, characterData: true })
+}
+// F3E:閒著的欄位內搜尋框又照量尺寬參與換列(= 修前 flex: 1 1 auto、沒有抵掉間距、Tag 換列判斷用 160px 上限)
+function controlIdleSearchJoinsWrap() {
+  const fix = () => {
+    for (const input of document.querySelectorAll('[role="combobox"] input:not([aria-hidden="true"])')) {
+      const cell = input.parentElement
+      const area = cell?.parentElement
+      if (!cell || !area || getComputedStyle(area).flexWrap !== 'wrap') continue
+      if (cell.style.flex !== '1 1 auto') cell.style.flex = '1 1 auto'
+      if (cell.style.marginLeft !== '0px') cell.style.marginLeft = '0px'
+      if (area.style.getPropertyValue('--combobox-tag-area-inline-size')) area.style.removeProperty('--combobox-tag-area-inline-size')
+    }
+  }
+  new MutationObserver(fix).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] })
+}
+// F3K:可用寬又變成「量自己那一格」(= 修前編輯態 tagArea.clientWidth:欄位依內容寬時,那一格的寬就是上一輪畫出來的頭像,
+// 再扣掉搜尋框那一格 → 每輪少一顆的棘輪)。做法:讓欄位外框所在容器回報的 clientWidth 等於欄位自己的寬。
+function controlStackMeasuresItself() {
+  const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth')
+  Object.defineProperty(Element.prototype, 'clientWidth', {
+    configurable: true,
+    get() {
+      const own = this.querySelector?.(':scope > [data-field-mode="edit"][role="combobox"][aria-label^="協作者(依內容寬"]')
+      return own ? Math.round(own.getBoundingClientRect().width) : desc.get.call(this)
+    },
+  })
+}
+// F3V:換行欄位空值時又套換行幾何(上對齊 + Tag 上下內距)(= 修前:提示字頂在上內距,比單行偏上 1.5px)
+function controlWrapGeometryWhenEmpty() {
+  const fix = () => {
+    for (const el of document.querySelectorAll('[role="combobox"]')) {
+      if (el.getAttribute('aria-label') !== '商品類別(換行,空值)') continue
+      if (el.style.alignItems !== 'flex-start') { el.style.alignItems = 'flex-start'; el.style.paddingTop = '3px'; el.style.paddingBottom = '3px'; el.style.height = 'auto' }
+    }
+  }
+  new MutationObserver(fix).observe(document, { subtree: true, childList: true })
+}
 export const CONTROLS = [
   { family: 'K1', title: 'Backspace 到不了元件(修前:關鍵字空白按 Backspace 沒有反應)', init: controlNoBackspace },
   { family: 'K1', title: '播報字清掉後又被放回去(修前:「已移除『X』」選了別的、離開欄位後仍掛著)', init: controlStaleAnnouncement, rows: ['K1-status-after-change', 'K1-status-after-blur'] },
@@ -581,6 +664,10 @@ export const CONTROLS = [
   { family: 'K4', title: '多人 1 位那一格又跟搜尋框平分空間(修前:窄欄位名字被切成「Alice C…」)', init: controlNameSplitsWithSearch, rows: ['K4-people-narrow', 'K4-people-hug', 'K4-people-open'] },
   // K7:Select 搜尋框那一格裡的兩把量尺(關著時值的樣子、打的字)被拿掉 —— 與 K4 那一組同一支(拿掉搜尋框那一格裡看不見的字),只重跑 K7 那一段
   { family: 'K7', title: '單選搜尋框那一格的量尺被拿掉(修前:依內容寬的欄位一打開就撐成搜尋框的固有寬)', init: controlNoYieldReserve, rows: ['K7-people-hug', 'K7-select-hug'] },
+  { family: 'F3P', title: '空值時量尺只剩一個插入點寬(修前:依內容寬的欄位提示字被切)', init: controlMirrorCaretOnly },
+  { family: 'F3E', title: '閒著的搜尋框照量尺寬參與換列(修前:每個 Tag 撐滿一列時多一列空白)', init: controlIdleSearchJoinsWrap },
+  { family: 'F3K', title: '可用寬又變成量自己那一格(修前:依內容寬的編輯欄位 2 人只剩 +2、6 人只畫 4 顆)', init: controlStackMeasuresItself },
+  { family: 'F3V', title: '換行欄位空值時套換行幾何(修前:提示字偏上 1.5px)', init: controlWrapGeometryWhenEmpty },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1024,6 +1111,20 @@ const SEGMENTS = [
       return out
     } },
 ]
+// F3(2026-10-28):四種缺陷各一格,都在關著的狀態量(不互動)
+SEGMENTS.push({ id: 'f3', story: STORIES.yieldWidth, rows: ['F3P-combobox-hug-empty', 'F3P-people-hug-empty', 'F3E-pill-wrap', 'F3K-stack-hug', 'F3V-wrap-empty'],
+  run: async (s) => {
+    const w = async (f) => (await s.read(f)).width
+    const h = async (f) => (await s.read(f)).height
+    const pick = (r) => ({ avatars: r.avatars, people: r.people })
+    return {
+      'F3P-combobox-hug-empty': { inline: await w(FIELDS.cbEmptyHug), plain: await w(FIELDS.cbEmptyHugPlain) },
+      'F3P-people-hug-empty': { inline: await w(FIELDS.ppEmptyHug), plain: await w(FIELDS.ppEmptyHugPlain) },
+      'F3E-pill-wrap': { inline: await h(FIELDS.pillWrap), plain: await h(FIELDS.pillWrapPlain) },
+      'F3K-stack-hug': { two: pick(await s.read(FIELDS.stackHug2)), six: pick(await s.read(FIELDS.stackHug6)) },
+      'F3V-wrap-empty': { wrap: (await s.read(FIELDS.wrapEmpty, EMPTY_PLACEHOLDER)).label?.center ?? null, line: (await s.read(FIELDS.lineEmpty, EMPTY_PLACEHOLDER)).label?.center ?? null },
+    }
+  } })
 // K1-unrestricted 由 unrestricted-backspace 段量(unrestricted 段在 × 之後值已清空)
 SEGMENTS.find((x) => x.id === 'unrestricted').rows = SEGMENTS.find((x) => x.id === 'unrestricted').rows.filter((r) => r !== 'K1-unrestricted')
 
@@ -1071,7 +1172,7 @@ async function main() {
     }
     if (!SELFTEST) {
       if (v.failures.length) { console.log(`\n✗ ${v.failures.length} 列不符(族:${[...new Set(v.failures.map((f) => f.family))].join(' / ')})`); return 1 }
-      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 / K1b Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬 / K7 單選依內容寬打開不變寬 / D 設計規格頁寫到 K1)`)
+      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 / K1b Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬 / K7 單選依內容寬打開不變寬 / D 設計規格頁寫到 K1 / F3 空值提示字放得下、換行不多一列、頭像堆疊依內容寬畫全、換行空值提示字同高)`)
       return 0
     }
     if (v.failures.length) { console.error(`❌ selftest FAIL:沒動頁面時就紅了(先修產品,對照組才有意義)`); return 1 }

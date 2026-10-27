@@ -101,3 +101,34 @@ export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
  * 不再另抄一份(2026-09-27 前是第三份同值)。堆疊契約「同尺寸」讓它與 AVATAR_STACK_AVATAR_PX 逐尺寸相等。
  */
 export const AVATAR_STACK_OVERFLOW_CHIP_PX = OVERFLOW_INDICATOR_CIRCLE_PX
+
+/** 外框開銷的快取:同一次量測生命週期(一個 effect)裡量一次就夠,外框的 padding / 邊框 / 同排的箭頭與清除鈕不隨欄寬變。 */
+export interface StackChromeCache { chromePx: number | null }
+
+/**
+ * 頭像堆疊「被分配到的寬」—— **不隨畫了幾顆變**(view 與 edit 兩條路徑共用這一支,2026-10-28 前 edit 另量自己那一格)。
+ *
+ * 依內容寬(`width="hug"`)的欄位外框是 `w-fit`,寬度由內容決定:量外框、或量外框裡那一格,都是在量自己的輸出 ——
+ * 少畫一顆 → 變窄 → 再少畫一顆,最後停在「1 顆 + +N」(2026-09-07 B1 在檢視態拆過;編輯態一直沒拆,r-F3 缺陷 K:
+ * 依內容寬的編輯欄位 2 人只剩「+2」、6 人只畫 4 顆)。拆法是找一個不隨內容變的量:
+ *     可用寬 = 外框所在容器的寬 − 外框開銷
+ *     外框開銷 = 外框現在的寬 − 這一格的內容寬
+ * 兩個減數在同一幀量,內容多寡同時影響兩者、相減抵消。填滿寬時與「量這一格的內容寬」逐像素相同(外框寬由容器決定);
+ * 沒有 Field 外框(找不到 `[data-field-mode]`)時就是這一格的內容寬(那時這一格的寬由外層決定)。
+ * 「這一格的內容寬」扣掉它自己的 padding(編輯態那一格帶焦點框的留位內距)。
+ * 回 0 = 版面還沒好(呼叫端不要拿 0 去算,會鎖進收縮態)。
+ */
+export function measureStackAvailablePx(slot: HTMLElement, cache: StackChromeCache): number {
+  const slotContentW = () => {
+    const cs = getComputedStyle(slot)
+    return slot.getBoundingClientRect().width - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
+  }
+  const wrapper = slot.closest<HTMLElement>('[data-field-mode]')
+  const containingBlock = wrapper?.parentElement ?? null
+  if (!wrapper || !containingBlock) return Math.max(0, slotContentW())
+  // 先用一次便宜的讀取確認版面好了沒;外框開銷快取後,之後每次只讀這一個整數(DataTable 一次欄寬變動會喚醒視窗內每一格,2026-09 CPU 剖析)
+  const rawAvail = containingBlock.clientWidth
+  if (rawAvail <= 0) { cache.chromePx = null; return 0 }
+  if (cache.chromePx === null) cache.chromePx = wrapper.getBoundingClientRect().width - slotContentW()
+  return rawAvail - cache.chromePx
+}

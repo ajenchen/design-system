@@ -17,6 +17,8 @@ import { Combobox as ComboboxPublic, findInlineSearchMirror } from '@/design-sys
 import { PersonDisplay, MultiPersonDisplay, PersonAvatarTag, buildPersonProfileCard, resolvePerson, type PersonValue } from './person-display'
 import {
   getAvatarStackVisibleCount,
+  measureStackAvailablePx,
+  type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
   AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
@@ -261,6 +263,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     // 掛載可能還沒渲染出來),下次回呼再查。
     let cachedTrigger: HTMLElement | null = null
     let cachedTagArea: HTMLElement | null = null
+    const chrome: StackChromeCache = { chromePx: null }
     const calc = () => {
       // 2026-08-05 native-parity fix(touch 實圖抓「多人只剩 +N」):NativeCombobox root 無
       // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
@@ -273,9 +276,15 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       const tagArea = cachedTagArea?.isConnected
         ? cachedTagArea
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
+      // 可用寬 = 頭像堆疊被分配到的寬,不隨畫了幾顆變(與檢視態 person-display.tsx 同一支 `measureStackAvailablePx`)——
+      // 修前量這一格自己的 clientWidth:依內容寬(`width="hug"`)時這一格跟著內容縮,少畫一顆 → 變窄 → 再少一顆,
+      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:215 依內容寬 = 值的寬 + 各元素寬)。
+      // 這一格的內容寬扣掉它自己的 padding(單行 Tag 列帶焦點框留位內距,combobox.tsx `tagRowFocusRoomClass`)。
       // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
       // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變
-      const available = (tagArea?.clientWidth ?? trigger?.clientWidth ?? 0) - (findInlineSearchMirror(tagArea)?.getBoundingClientRect().width ?? 0)
+      const slotW = tagArea ? measureStackAvailablePx(tagArea, chrome) : (trigger?.clientWidth ?? 0)
+      if (slotW <= 0) return
+      const available = slotW - (findInlineSearchMirror(tagArea)?.getBoundingClientRect().width ?? 0)
       const visible = getAvatarStackVisibleCount({
         availablePx: available,
         total: selectedNames.length,

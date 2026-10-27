@@ -230,7 +230,10 @@ function TagInner(
       {...props}
     >
       {Icon && <Icon size={16} aria-hidden />}
-      {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full">{avatar}</span>}
+      {/* 頭像焦點框往內(同下方 × 的理由,focus-canonical「問題二」實測表 Tag 的移除 × 列):Tag 是貼邊宿主 —— root `overflow-hidden` 是正當障礙,
+          16px 頭像上下淨空 sm 2px / md 4px 含邊框,往外畫的框被 Tag 與這一格裁掉(2026-10-21 r1b R1b-DT3:多人欄位內搜尋的頭像名片觸發點整圈看不到)。
+          往內由宿主 Tag 承擔,Avatar 本身維持預設往外(「同一個底層元件被另一個元件放進貼邊的位置」) */}
+      {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full [&_*:focus-visible]:focus-ring-inset">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
       {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? dismissLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
     </div>

@@ -34,6 +34,14 @@ const GAP = TAG_ROW_GAP_PX
 // (overlay / avatar ring 完整)。**不可**改 overflow-x-hidden:單軸 hidden 令另一軸 visible 計算成
 // auto → 生 scroll container,垂直反而可捲。
 const tagRowOverflowClass = 'overflow-x-clip'
+/**
+ * 單行 Tag 列的裁切邊往外推一個焦點框的寬(外描邊 = `--stack-gap` 2px 縫 + 2px 線):負外距撐大盒子、等量內距把內容推回原位,
+ * 內容框的位置與寬度不變(useOverflowCount / 頭像堆疊公式量的都是扣掉內距的內容寬),只有裁切邊外移 ——
+ * 第一顆人員標籤 / 頭像的左框、最後的「+N」右框不再被這一層 `overflow-x-clip` 裁掉(2026-10-21 r1b R1b-DT3:9 則 story)。
+ * `ds-canonical/references/focus-canonical.md`「正當障礙」:這一層裁切是為了擋 Tag 往右越界蓋到箭頭,框的那 4px 落在欄位自己的內距 /
+ * 與箭頭之間的 gap 裡 —— 不是正當障礙,修 wrapper、框照樣往外(view 與 edit 兩條單行路徑同一個常數)。
+ */
+const tagRowFocusRoomClass = '-mx-[calc(var(--stack-gap)_+_2px)] px-[calc(var(--stack-gap)_+_2px)]'
 
 // Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX` / `fieldTagInsetY`),Select 共用;理由與公式見該處。
 const tagPadding = fieldTagInsetX
@@ -118,7 +126,7 @@ function ComboboxTagStack({
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
   // TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、`isolate` = Tag 的疊放值只在這一列裡比(OverflowTagList 檔頭)
   return (
-    <div className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
+    <div className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))} style={{ gap: GAP }}>
       {content}
     </div>
   )
@@ -388,7 +396,7 @@ function ReadonlyMultiSelect({
             : <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
         {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md「多行(Combobox tag wrap)垂直對齊」) */}
-        <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
+        <ItemSuffix className={cn('pointer-events-none', wrap && hasTags && 'self-start')} style={wrap && hasTags ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
         </ItemSuffix>
       </div>
@@ -406,12 +414,13 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass,
+        // 換行幾何只在有 Tag 時成立(與上方 view 同一個判斷):空值 /「不限」沒有東西可換行,照單行欄位置中(field.spec.md:147 中線錨在 field-height/2)
+        wrap && hasTags ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass,
         // 停用:外框是 cursor-not-allowed(fieldWrapperStyles disabled compound),但裡面的 Tag 自帶 cursor-text,指到 tag 上就變回文字游標
         //(2026-09-29 全站掃出);停用的欄位整塊都是禁止符號(field-controls.spec.md「游標指引」disabled → cursor-not-allowed)
         resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed',
         className)}
-      style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
+      style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined} {...readonlyStop}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
@@ -423,7 +432,7 @@ function ReadonlyMultiSelect({
       )}
       {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開下拉) / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
       {(variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled') && (
-        <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
+        <ItemSuffix className={cn('pointer-events-none', wrap && hasTags && 'self-start')} style={wrap && hasTags ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className={cn('shrink-0', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
         </ItemSuffix>
       )}
@@ -606,6 +615,8 @@ function CustomCombobox({
 
   // 欄位上值的顯示狀態(2026-10-07 待辦總帳 K4,ComboboxTagRenderState):欄位內搜尋框開著時,值裡用文字畫的部分讓位給搜尋框
   const tagState: ComboboxTagRenderState = { searchActive: inlineSearch && open }
+  // 欄位內搜尋框閒著(換行 × 已有 Tag × 還沒打字;讓位留寬那兩種不算):不參與換列 —— 見下方搜尋框那一格的註解
+  const searchCellIdle = wrap && hasTags && !search && !(tagState.searchActive && yieldedTagText)
   // 搜尋框:欄位內(恆在)/ 浮層內(打開之後才在)—— 欄位本身收到打字時把焦點交給它(K3)
   const searchBox = () => (inlineSearch ? inputRef.current : document.getElementById(listboxId)?.querySelector<HTMLInputElement>('[cmdk-input]'))
 
@@ -653,11 +664,13 @@ function CustomCombobox({
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
       // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:66)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
-        wrap && cn('items-start', tagPaddingY[size]),
+        // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
+        // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md:147「control 第一行內容的中線都錨在 field-height/2」)
+        wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
-      style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }}
+      style={{ paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }}
       data-field-mode="edit" data-error={error ? '' : undefined}
       // 搜尋框握著焦點時按欄位上的零件,焦點不離開搜尋框(見上方 keepSearchFocus)
       onMouseDown={keepSearchFocus}
@@ -716,7 +729,12 @@ function CustomCombobox({
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。現況:native edit 2026-09-18 隨原生觸控路徑移除,剩三條共用檔頭 tagRowOverflowClass。 */}
       {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
           與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17;2026-10-14 四個 Tag 列容器收成同一個常數) */}
-      <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))}
+        // consumer 指定的左內距(PeoplePicker stack)照樣成立:單行時再加上焦點框那 4px,內容起點不變。
+        // 換行 × 欄位內搜尋:Tag 寬上限變數設成 100%(這一列的寬)—— Tag 本來就會縮到一列寬,但換列判斷用的是縮之前的寬(上限 160px),
+        // 一顆比一列寬的 Tag 會讓後面那個基準寬 0 的閒著搜尋框照樣被擠到下一列(r-F3 缺陷 E:每人一顆標籤撐滿一列的窄欄位)。版面結果不變,只有換列判斷看到真的寬
+        style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx != null && !wrap ? `calc(${tagAreaPaddingLeftPx}px + var(--stack-gap) + 2px)` : tagAreaPaddingLeftPx,
+          ...(wrap && inlineSearch ? { '--combobox-tag-area-inline-size': '100%' } as React.CSSProperties : undefined) }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (
@@ -772,9 +790,17 @@ function CustomCombobox({
             高 = 一列 Tag 高(與右側箭頭鎖第一行同一個值):與 Tag 同列、或打的字放不下換到下一列時,那一列也是一列 Tag 高
             (field-controls.spec.md「列數 × Tag 高 + (列數−1) × 4px」);單行 / 空值時欄位高固定、垂直置中,視覺不變。 */}
         {inlineSearch && (
-          <span className={cn('relative z-10 grid grid-cols-[minmax(0,100%)] flex-auto max-w-full', FIELD_TEXT_ENTRY_CURSOR)}>
-            {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它) */}
-            <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${search} `}</span>
+          // 閒著(換行 × 已有 Tag × 還沒打字):不參與換列 —— 基準寬 0(`flex: 1 1 0%` + `min-width: 0`),再用負外距抵掉前面那一道 Tag 間距,
+          // 所以最後一列剩不到一個插入點寬(甚至 0:每個 Tag 都撐滿一整列)時也不自己換到下一列;插入點的位置由輸入框的 text-indent 補回同一道間距,
+          // 有空間時看起來與修前相同(combobox.spec.md「欄位內搜尋框的寬度」wrap 那條「空的時候不會自己佔一整列」;修前多一列空白,r-F3 缺陷 E)。
+          // 一打字基準寬就回到量尺寬、外距歸零,放不下才換列(同一條規則的前半句)。讓位留寬(只選「不限」/ 多人 1 位打開)與單行(+N)不走這條。
+          <span className={cn('relative z-10 grid grid-cols-[minmax(0,100%)] max-w-full', FIELD_TEXT_ENTRY_CURSOR,
+            searchCellIdle ? 'flex-[1_1_0%] min-w-0' : 'flex-auto')}
+            style={searchCellIdle ? { marginLeft: -tagAreaGap } : undefined}>
+            {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它)。
+                空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md:215「寬度軸」;
+                combobox.spec.md:191「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
+            <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : (placeholder ?? emptyPlaceholder)}</span>
             {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
                 不和打的關鍵字並排(2026-10-01 起畫成「不限 fo」,同一個欄位裡值與關鍵字同字級同色、只隔 4px)。
                 關著 = 一般已填值的黑字(與不可搜尋的「不限」同一顆盒、同字級、同位置,逐像素相同);開著、還沒打字 = 同一個位置的灰色提示、讀屏略過
@@ -816,12 +842,12 @@ function CustomCombobox({
               // (只在清單開著時才有;textbox 不支援 aria-expanded,展開狀態由外層 role=combobox 宣告)
               aria-autocomplete="list"
               className={cn(bareInputStyles, 'col-start-1 row-start-1 w-0 min-w-full')}
-              style={{ height: tagHeight }} />
+              style={{ height: tagHeight, ...(searchCellIdle ? { textIndent: tagAreaGap } : undefined) }} />
           </span>
         )}
       </div>
-      <ItemSuffix className={cn('relative z-10 pointer-events-none', wrap && 'self-start')}
-        style={wrap ? { height: tagHeight } : undefined}>
+      <ItemSuffix className={cn('relative z-10 pointer-events-none', wrap && hasTags && 'self-start')}
+        style={wrap && hasTags ? { height: tagHeight } : undefined}>
         {showClear && (
           <span className="pointer-events-auto">
             <ItemInlineAction

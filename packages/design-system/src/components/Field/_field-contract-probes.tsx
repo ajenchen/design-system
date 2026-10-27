@@ -42,6 +42,11 @@ const shipCountries = [
   { value: 'us', label: '美國' },
   { value: 'tw', label: '台灣' },
 ]
+// r-F3(2026-10-27 研究)查到的三個缺陷,各放一格給閘量(2026-10-28 加,FL-f3):
+// P 依內容寬 + 空值:提示字整句放得下(欄寬 = 不可搜尋的同一欄)/ E 換行 × 每人一顆標籤佔一整列:空的搜尋框不自己多佔一列(欄高 = 不可搜尋的同一欄)/
+// K 頭像堆疊 × 依內容寬 × 編輯欄位:有幾個人就畫幾個頭像(修前 2 人只剩「+2」、6 人只畫 4 顆)/ V 換行欄位空值:提示字與單行欄位同高
+const f3People: PersonValue[] = [{ name: 'Alice Chen' }, { name: 'Bob Lin' }, { name: 'Charlie Wu' }, { name: 'Diana Huang' }, { name: 'Eric Tsai' }, { name: 'Fiona Lee' }]
+const f3LongPeople: PersonValue[] = [{ name: 'Alexandra Montgomery' }, { name: 'Benjamin Richardson' }, { name: 'Catherine Williamson' }]
 export function InlineSearchYieldWidthProbe() {
   const [hug, setHug] = React.useState<string[]>(['__unrestricted__'])
   const [hugPlain, setHugPlain] = React.useState<string[]>(['__unrestricted__'])
@@ -87,6 +92,7 @@ export function InlineSearchYieldWidthProbe() {
         <PeoplePicker width="hug" value={ownerHug} people={yieldReviewers} onChange={(v) => setOwnerHug(v[0] ?? null)} aria-label="負責人(依內容寬,單人)" />
         <Select width="hug" searchable options={shipCountries} value={country} onChange={(v) => setCountry(v || null)} aria-label="出貨國家(依內容寬,可搜尋)" />
       </div>
+      <F3Cells />
       <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
         <h3 className="text-h6 font-semibold text-foreground">多選文字標籤 · 依內容寬(放得下 / 容器放不下)</h3>
         <Combobox width="hug" options={yieldCategoryOptions} value={tagsHug} onChange={setTagsHug} aria-label="商品類別(依內容寬,多選三顆)" />
@@ -95,6 +101,47 @@ export function InlineSearchYieldWidthProbe() {
         </div>
       </div>
     </div>
+  )
+}
+
+function F3Cells() {
+  const [cbEmpty, setCbEmpty] = React.useState<string[]>([])
+  const [cbEmptyPlain, setCbEmptyPlain] = React.useState<string[]>([])
+  const [ppEmpty, setPpEmpty] = React.useState<PersonValue[]>([])
+  const [ppEmptyPlain, setPpEmptyPlain] = React.useState<PersonValue[]>([])
+  const [pills, setPills] = React.useState<PersonValue[]>(f3LongPeople)
+  const [pillsPlain, setPillsPlain] = React.useState<PersonValue[]>(f3LongPeople)
+  const [two, setTwo] = React.useState<PersonValue[]>(f3People.slice(0, 2))
+  const [six, setSix] = React.useState<PersonValue[]>(f3People)
+  const [wrapEmpty, setWrapEmpty] = React.useState<string[]>([])
+  const [lineEmpty, setLineEmpty] = React.useState<string[]>([])
+  return (
+    <>
+      <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">空值 · 依內容寬(欄位內搜尋 / 不可搜尋對照)</h3>
+        <Combobox width="hug" searchable searchIn="trigger" options={yieldCategoryOptions} value={cbEmpty} onChange={setCbEmpty} aria-label="商品類別(依內容寬,空值,欄位內搜尋)" />
+        <Combobox width="hug" options={yieldCategoryOptions} value={cbEmptyPlain} onChange={setCbEmptyPlain} aria-label="商品類別(依內容寬,空值,對照)" />
+        <PeoplePicker width="hug" searchIn="trigger" value={ppEmpty} people={yieldReviewers} onChange={setPpEmpty} aria-label="出席者(依內容寬,空值,欄位內搜尋)" />
+        <PeoplePicker width="hug" value={ppEmptyPlain} people={yieldReviewers} onChange={setPpEmptyPlain} aria-label="出席者(依內容寬,空值,對照)" />
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">每人一顆標籤 · 換行 · 窄欄位 · 可一鍵清空(欄位內搜尋 / 不可搜尋對照)</h3>
+        <div className="w-48 flex flex-col gap-[var(--layout-space-tight)]">
+          <PeoplePicker multiDisplay="pill" pillWrap clearable searchIn="trigger" value={pills} people={f3LongPeople} onChange={setPills} aria-label="出席者(換行窄欄位,欄位內搜尋)" />
+          <PeoplePicker multiDisplay="pill" pillWrap clearable value={pillsPlain} people={f3LongPeople} onChange={setPillsPlain} aria-label="出席者(換行窄欄位,對照)" />
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
+        <h3 className="text-h6 font-semibold text-foreground">頭像堆疊 · 依內容寬 · 編輯欄位(2 人 / 6 人)</h3>
+        <PeoplePicker width="hug" value={two} people={f3People} onChange={setTwo} aria-label="協作者(依內容寬,2 人)" />
+        <PeoplePicker width="hug" value={six} people={f3People} onChange={setSix} aria-label="協作者(依內容寬,6 人)" />
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)] w-60">
+        <h3 className="text-h6 font-semibold text-foreground">空值 · 換行 / 單行(提示字同高)</h3>
+        <Combobox wrap options={yieldCategoryOptions} value={wrapEmpty} onChange={setWrapEmpty} aria-label="商品類別(換行,空值)" />
+        <Combobox options={yieldCategoryOptions} value={lineEmpty} onChange={setLineEmpty} aria-label="商品類別(單行,空值)" />
+      </div>
+    </>
   )
 }
 
