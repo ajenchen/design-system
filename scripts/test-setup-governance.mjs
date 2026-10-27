@@ -849,6 +849,10 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-10-23T22:13Z / 22:14Z 上游再發兩則(2026-10-27 認列):moderate + high,range 隨之變 <=6.29.0
           { source: 1243079, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-4qv8-2p9j-2685', severity: 'moderate', range: '>=6.5.0 <6.29.1' },
           { source: 1243114, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-xjj6-f33q-929c', severity: 'high', range: '>=6.23.0 <6.29.1' },
+          // 2026-10-27T19:02Z 上游一次再發三則(2026-10-28 認列):high + high + moderate,range 不變
+          { source: 1243476, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-2m5v-pch6-74hx', severity: 'high', range: '>=4.0.0 <6.29.1' },
+          { source: 1243479, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-qrxm-fqhp-jwvm', severity: 'high', range: '>=4.2.1 <6.29.1' },
+          { source: 1243482, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-9fm3-97px-rjf6', severity: 'moderate', range: '>=5.15.0 <6.29.1' },
         ],
         effects: [],
         range: '<=6.29.0',
@@ -938,6 +942,13 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 6)
     stale.vulnerabilities.undici.range = '<=6.28.0'
     assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-30 的六則形狀必須被判成漂移')
+  }
+  {
+    // 2026-10-28 對照組:undici 10-27 認列的八則 / <=6.29.0(range 沒變,只差三則)現在也是漂移 ——
+    // 若 evaluator 只看 range 或只看前幾則,這一格會紅
+    const stale = structuredClone(report)
+    stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 8)
+    assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 10-27 的八則形狀必須被判成漂移')
   }
   {
     // postcss-selector-parser 10-06 的舊號 / 舊範圍(1241232、<7.1.6)

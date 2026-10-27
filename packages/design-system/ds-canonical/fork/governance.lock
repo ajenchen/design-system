@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "4253758220824c1d768bec8f6729c3f1138bd66a2d7e7d54891d0e0cdcd6a890",
+      "sha256": "4b4e253558de2235364de548f7b8b7716ddfa8b6f3adfaf9f23e218ffcfc82e7",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"

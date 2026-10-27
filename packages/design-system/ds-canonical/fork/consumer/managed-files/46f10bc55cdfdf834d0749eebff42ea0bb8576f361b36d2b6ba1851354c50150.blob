@@ -502,6 +502,13 @@ function assertRemediatedFinding(name, finding) {
     // 而我們的 npm 一律 ignore-scripts=true(.npmrc + 隔離 npmrc + NPM_CONFIG_IGNORE_SCRIPTS),node-gyp 不會被叫起。
     // (同日查:npm 11.21.1 / 12.2.1 內建的 http-cache-semantics 4.3.0、postcss-selector-parser 7.1.6、tar 7.5.22、
     //   brace-expansion 5.0.12 都已在修正版 —— 換 runtime 可一次清掉那四筆;undici / ip-address 兩筆仍要等上游 npm。)
+    // 2026-10-28:上游 2026-10-27T19:02Z 一次再發三則(GHSA-9fm3-97px-rjf6 moderate,WebSocket 客戶端自動回 PONG 不理背壓、
+    // 記憶體無上限,>=5.15.0 <6.29.1;GHSA-qrxm-fqhp-jwvm **high**,TLS 1.2 重新協商換成不符主機名的憑證時 assert 讓程序崩潰,
+    // >=4.2.1 <6.29.1;GHSA-2m5v-pch6-74hx **high**,Agent 用 JSON 深拷貝選項、丟掉 tls.checkServerIdentity 回呼,>=4.0.0 <6.29.1;
+    // 都修在 6.29.1),range 仍 <=6.29.0、via 從 8 則變 11 則、severity 仍 high —— PR #169 82490733 那一輪 CI 每個 job 都死在
+    // 「Install locked dependencies once」(7c9a2a88 那輪 08:49Z 還綠)。bundled 仍是 6.27.0;npm 內唯一 require('undici') 的仍只有
+    // node-gyp/lib/download.js,我們的 npm 一律 ignore-scripts=true,node-gyp 不會被叫起 —— 三則都要 undici 真的發出連線(Agent / TLS /
+    // WebSocket)才觸發,曝險與前幾則同類;照舊只認列新形狀,10-27 的八則形狀由對照組判漂移。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
@@ -517,6 +524,9 @@ function assertRemediatedFinding(name, finding) {
           { source: 1240042, range: '>=6.7.0 <6.28.1', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high' },
           { source: 1243079, range: '>=6.5.0 <6.29.1', url: 'https://github.com/advisories/GHSA-4qv8-2p9j-2685', severity: 'moderate' },
           { source: 1243114, range: '>=6.23.0 <6.29.1', url: 'https://github.com/advisories/GHSA-xjj6-f33q-929c', severity: 'high' },
+          { source: 1243476, range: '>=4.0.0 <6.29.1', url: 'https://github.com/advisories/GHSA-2m5v-pch6-74hx', severity: 'high' },
+          { source: 1243479, range: '>=4.2.1 <6.29.1', url: 'https://github.com/advisories/GHSA-qrxm-fqhp-jwvm', severity: 'high' },
+          { source: 1243482, range: '>=5.15.0 <6.29.1', url: 'https://github.com/advisories/GHSA-9fm3-97px-rjf6', severity: 'moderate' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
     )
