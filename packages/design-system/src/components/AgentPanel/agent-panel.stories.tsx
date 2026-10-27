@@ -3,24 +3,21 @@
 // @story-history: 家族展示層 = 真實業務場景 + OpenSnapshot 覆蓋(M15:defaultOpen/常駐可截圖);
 // 標誌/FAB 狀態矩陣屬本層(動態資產,anatomy 靜態矩陣載不動)。
 // 2026-09-02 review round:固定構件恆渲染(header +/×/標題觸發、輸入盒 +/Tag ×)後,每個 story
-// 都必須傳齊必填 callback;歷史浮層 OpenSnapshot、決策卡三題步進、拖拉寬度、FAB↔面板互斥補齊。
-// 2026-09-04:「拖拉寬度」一度在 6804d2ea 被刪成假宣稱,已補回 `ResizableWidth`(width /
-// onWidthChange / onWidthCommit / resizable 四個公開 prop 的唯一覆蓋)。
+// 都必須傳齊必填 callback;歷史浮層 OpenSnapshot、決策卡三題步進、FAB↔面板互斥補齊。
+// 2026-10-28:每一則的輸入盒、送出、加附件、工具列、標題列的歷史 / 改名 / 刪除 / +、決策卡都接上真的行為
+// (共用對話模型 stories-helpers/scene/agent-demo.tsx;稽核 H23、範例依據 E1)。「拖拉寬度」照 user 2026-09-02 指示
+// 從讀者版拿掉,寬度四個公開 prop 的覆蓋改住同名的 test-only 夾具(稽核 H09)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   AgentPanel,
   AgentPanelHeader,
-  AgentConversation,
-  AgentMessage,
   AgentThinking,
-  AgentToolbar,
   AgentPromptInput,
   AgentDecisionCard,
   AgentDecisionSummary,
-  type AgentConversationSummary,
+  type AgentDecisionQuestion,
   type AgentPanelMode,
-  type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
@@ -33,7 +30,6 @@ import { ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { PageHeader } from '@/design-system/components/AppShell/_demo-helpers'
-import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
@@ -42,6 +38,8 @@ import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
+import { useAgentDemo, decisionReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
+import { ORDER_ROWS, orderColumns } from '@/design-system/stories-helpers/data/order-table'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 const meta: Meta<typeof AgentPanel> = {
@@ -61,99 +59,119 @@ const meta: Meta<typeof AgentPanel> = {
 export default meta
 type Story = StoryObj<typeof AgentPanel>
 
-const noop = () => {}
-
 /**
  * 面板站右側全高(模擬 app 右欄環境)+ **面板 ↔ 入口鈕互斥外殼**:每個範例都能按 × 關閉,
  * 關閉後右下角出現入口鈕(標誌狀態跟著 `logoState` 走),點一下開回來。
  * 這裡的面板不在 AppShell 裡、「只算自己」(D:30 清單 N14):畫布放得下面板最小寬就並排。並排 / 浮層由 AppShell 排的整頁樣子見
  * AppShell 展示「四區版面」「任務助理放不下時 — 右側浮層」。
+ * 工具列的「複製 / 讚 / 倒讚」用 Toast 回饋,每則範例的根節點掛一個 Toaster(toast.spec.md:每個獨立 story root 一個)。
  */
 function PanelFrame({
   logoState = 'still',
-  aside,
   children,
 }: {
   logoState?: AgentLogoState
-  /** 左側空白區的旁註(例如即時寬度讀數)。有需要旁註的範例照樣共用這個外殼,不另起一套版面。 */
-  aside?: React.ReactNode
   children: (props: { close: () => void; logoState: AgentLogoState }) => React.ReactNode
 }) {
   return (
-    <div className="relative flex h-dvh justify-end bg-canvas">
-      {aside && (
-        // 旁註 = 一行讀數 + 一行說明(同一個文字塊)→ 兩行之間用 item 文字塊的 label ↔ description 間距(item-anatomy.spec.md「Label ↔ Desc 間距」)
-        <div className="flex flex-1 flex-col items-center justify-center gap-[var(--item-gap-label-desc-reading)] text-body text-fg-secondary">{aside}</div>
-      )}
-      {/* 顯式開啟:DS 預設依 v14 條 F 是「關閉」,而 M15 要求家族展示要能截到開啟態。
-          靠預設值截圖等於讓 story 綁在某個預設上,預設一改 story 就默默變空。 */}
-      <AgentPanelDock defaultOpen logoState={logoState}>{children}</AgentPanelDock>
-    </div>
+    <>
+      <div className="relative flex h-dvh justify-end bg-canvas">
+        {/* 顯式開啟:DS 預設依 v14 條 F 是「關閉」,而 M15 要求家族展示要能截到開啟態。
+            靠預設值截圖等於讓 story 綁在某個預設上,預設一改 story 就默默變空。 */}
+        <AgentPanelDock defaultOpen logoState={logoState}>{children}</AgentPanelDock>
+      </div>
+      {/* Toast 區放在版面外:面板量的是自己的父層(畫布 flex),不讓多出來的兄弟節點進那一層 */}
+      <Toaster />
+    </>
   )
 }
 
-const CONVERSATIONS: AgentConversationSummary[] = [
-  { id: 'c1', title: '衝刺待辦整理', group: '今天', thinking: true },
-  { id: 'c2', title: '發布公告草稿', group: '今天' },
-  { id: 'c3', title: 'Q3 客訴分類', group: '過去 7 天' },
-  { id: 'c4', title: '競品定價彙整', group: '過去 7 天' },
+/** 任務助理門面那一則的代理回覆(複製時放進剪貼簿的字) */
+const SPRINT_REPLY = '初步整理完成:P0 共 6 筆,其中「支付逾時重試」與「對帳批次」的排程互相衝突,建議錯開到不同夜間時段。'
+
+/**
+ * 範例共用的四段對話(歷史浮層列的就是它們;點了會切過去)。各則範例用 `demoSessions` 換掉「停在哪一段」與那一段的訊息。
+ * 「衝刺待辦整理」標 `thinking`:代理還在回覆,歷史列首換成進度圈。
+ */
+const BASE_SESSIONS: DemoSession[] = [
+  {
+    id: 'c1', title: '衝刺待辦整理', group: '今天', thinking: true, messages: [
+      { role: 'user', content: '把這份待辦按優先級重排,衝突的排程幫我標出來。' },
+      { role: 'agent', content: SPRINT_REPLY, copyText: SPRINT_REPLY },
+    ],
+  },
+  {
+    id: 'c2', title: '發布公告草稿', group: '今天', messages: [
+      { role: 'user', content: '幫我擬 Sprint 24 的發布公告。' },
+      { role: 'agent', content: '草稿已放到 Notion 公告頁,用的是正式版語氣;要改成輕鬆版再跟我說。', copyText: '草稿已放到 Notion 公告頁,用的是正式版語氣;要改成輕鬆版再跟我說。' },
+    ],
+  },
+  {
+    id: 'c3', title: 'Q3 客訴分類', group: '過去 7 天', messages: [
+      { role: 'user', content: '把 Q3 的客訴按原因分類。' },
+      { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。', copyText: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
+    ],
+  },
+  {
+    id: 'c4', title: '競品定價彙整', group: '過去 7 天', messages: [
+      { role: 'user', content: '把三家競品的方案價格整理成一張表。' },
+      { role: 'agent', content: '已整理入門 / 專業 / 企業三種方案,差最多的是企業方案的最低座位數。', copyText: '已整理入門 / 專業 / 企業三種方案,差最多的是企業方案的最低座位數。' },
+    ],
+  },
 ]
 
-/** 所有 story 共用的標題列接線(固定構件恆渲染;真實產品同樣必接)。 */
-const headerWiring = {
-  conversations: CONVERSATIONS,
-  onSelectConversation: noop,
-  onRenameConversation: noop,
-  onDeleteConversation: noop,
-  onNewConversation: noop,
+/** 停在 `activeId` 那一段;`messages` / `title` 有給就換掉那一段的內容 */
+function demoSessions(activeId: string, override?: { messages?: DemoMessage[]; title?: string }): DemoSession[] {
+  return BASE_SESSIONS.map((s) => (s.id === activeId ? { ...s, ...override } : s))
 }
 
-const promptWiring = { onSubmit: noop, onRemoveAttachment: noop, onAddAttachment: noop }
+/** 門面那一則的代理是否還在回覆(按停止 → 思考塊收起、標誌回靜止) */
+const BusyContext = React.createContext(true)
 
-/** 任務助理完整對話:附件氣泡 + 思考塊 + 工具列 + 輸入盒(真實 Jira 型場景)。 */
+/** 門面那一則的代理回覆:思考塊跟著「還在不在回覆」走 */
+function SprintReply() {
+  const busy = React.useContext(BusyContext)
+  return (
+    <>
+      <AgentThinking
+        thinking={busy}
+        steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
+        currentStep={<span>正在標記衝突項目…</span>}
+      />
+      {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
+      <p className="mt-2">{SPRINT_REPLY}</p>
+    </>
+  )
+}
+
 /**
  * 門面:一問一答 + 思考塊 + 常駐工具列 + 回覆中的停止鈕。附件與多則回覆各自另有樣張(「附件」「多則回覆」),
- * 讓門面只教主線。
+ * 讓門面只教主線。按停止 → 代理停止回覆(思考塊收起、標誌回靜止、送出鈕回來)。
  */
 export const TaskAssistant: Story = {
   name: '任務助理完整對話',
   render: function TaskAssistantStory() {
-    const [value, setValue] = React.useState('')
-    const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([])
+    const [busy, setBusy] = React.useState(true)
+    const demo = useAgentDemo({
+      sessions: demoSessions('c1', {
+        messages: [
+          { role: 'user', content: '把這份待辦按優先級重排,衝突的排程幫我標出來。' },
+          { role: 'agent', content: <SprintReply />, copyText: SPRINT_REPLY },
+        ],
+      }),
+    })
     return (
-      <PanelFrame logoState="think">
-        {({ close, logoState }) => (
-        <AgentPanel onClose={close}>
-          <AgentPanelHeader title="衝刺待辦整理" logoState={logoState} activeConversationId="c1" {...headerWiring} onClose={close} />
-          <AgentConversation>
-            <AgentMessage role="user">把這份待辦按優先級重排,衝突的排程幫我標出來。</AgentMessage>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-              <AgentThinking
-                thinking
-                steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
-                currentStep={<span>正在標記衝突項目…</span>}
-              />
-              {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距 */}
-              <p className="mt-2">
-                初步整理完成:P0 共 6 筆,其中「支付逾時重試」與「對帳批次」的排程互相衝突,建議錯開到不同夜間時段。
-              </p>
-            </AgentMessage>
-          </AgentConversation>
-          <AgentPromptInput
-            value={value}
-            onValueChange={setValue}
-            onSubmit={() => setValue('')}
-            busy
-            onStop={noop}
-            attachments={attachments}
-            onRemoveAttachment={(a) => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
-            onAddAttachment={() =>
-              setAttachments((prev) => [...prev, { id: `t${prev.length + 1}`, label: `附件-${prev.length + 1}.md` }])
-            }
-          />
-        </AgentPanel>
-        )}
-      </PanelFrame>
+      <BusyContext.Provider value={busy}>
+        <PanelFrame logoState={busy ? 'think' : 'still'}>
+          {({ close, logoState }) => (
+            <AgentPanel onClose={close}>
+              <AgentPanelHeader {...demo.header} logoState={logoState} onClose={close} />
+              <DemoConversation messages={demo.messages} />
+              <AgentPromptInput {...demo.prompt} busy={busy} onStop={() => { setBusy(false); demo.setThinking('c1', false) }} />
+            </AgentPanel>
+          )}
+        </PanelFrame>
+      </BusyContext.Provider>
     )
   },
 }
@@ -165,48 +183,47 @@ export const TaskAssistant: Story = {
 export const Attachments: Story = {
   name: '附件:氣泡內與輸入盒溢出',
   render: function AttachmentsStory() {
-    const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([
-      { id: 'a1', label: 'sprint-42-backlog.csv' },
-      { id: 'a2', label: '排程規則.md' },
-      { id: 'a3', label: 'oncall-規範.pdf' },
-      { id: 'a4', label: '客訴-2026Q3.xlsx' },
-      { id: 'a5', label: '值班表-9月.csv' },
-    ])
+    const demo = useAgentDemo({
+      sessions: demoSessions('c1', {
+        messages: [
+          {
+            role: 'user',
+            content: '先看這兩份,衝突的排程幫我標出來。',
+            attachments: [
+              { id: 'm1', label: 'sprint-42-backlog.csv' },
+              { id: 'm2', label: '排程規則.md' },
+            ],
+          },
+          {
+            role: 'agent',
+            content: '兩份都讀完了。要一起比對值班表的話,把檔案加進來我再跑一次。',
+            copyText: '兩份都讀完了。要一起比對值班表的話,把檔案加進來我再跑一次。',
+          },
+        ],
+      }),
+      attachments: [
+        { id: 'a1', label: 'sprint-42-backlog.csv' },
+        { id: 'a2', label: '排程規則.md' },
+        { id: 'a3', label: 'oncall-規範.pdf' },
+        { id: 'a4', label: '客訴-2026Q3.xlsx' },
+        { id: 'a5', label: '值班表-9月.csv' },
+      ],
+    })
     return (
       <PanelFrame>
         {({ close }) => (
-        <AgentPanel onClose={close}>
-          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
-          <AgentConversation>
-            <AgentMessage
-              role="user"
-              attachments={[
-                { id: 'm1', label: 'sprint-42-backlog.csv' },
-                { id: 'm2', label: '排程規則.md' },
-              ]}
-            >
-              先看這兩份,衝突的排程幫我標出來。
-            </AgentMessage>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-              兩份都讀完了。要一起比對值班表的話,把檔案加進來我再跑一次。
-            </AgentMessage>
-          </AgentConversation>
-          <AgentPromptInput
-            value=""
-            onValueChange={noop}
-            attachments={attachments}
-            onRemoveAttachment={(a) => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
-            onAddAttachment={() =>
-              setAttachments((prev) => [...prev, { id: `a${prev.length + 1}`, label: `附件-${prev.length + 1}.md` }])
-            }
-            onSubmit={noop}
-          />
-        </AgentPanel>
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
         )}
       </PanelFrame>
     )
   },
 }
+
+const COMPLAINT_SUMMARY = '摘要草稿:8 月 12–18 日北倉出貨延遲客訴 214 件,佔全季物流客訴 62%;建議颱風週啟動備援出貨與主動通知。'
 
 /**
  * 多則回覆:只有代理**最後一則**的工具列常駐,其餘回覆懸停(或鍵盤聚焦到工具列)才淡入,而且工具列
@@ -215,77 +232,80 @@ export const Attachments: Story = {
  */
 export const MultipleReplies: Story = {
   name: '多則回覆:工具列常駐與懸停',
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="user">把 Q3 的客訴按原因分類,各給我前三名。</AgentMessage>
-          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-            分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。
-          </AgentMessage>
-          <AgentMessage role="user">物流那一類再細分,看是哪個倉。</AgentMessage>
-          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-            物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。
-          </AgentMessage>
-          <AgentMessage role="user">好,幫我寫一段給北倉主管的摘要。</AgentMessage>
-          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
-            摘要草稿:8 月 12–18 日北倉出貨延遲客訴 214 件,佔全季物流客訴 62%;建議颱風週啟動備援出貨與主動通知。
-          </AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: function MultipleRepliesStory() {
+    const demo = useAgentDemo({
+      sessions: demoSessions('c3', {
+        messages: [
+          { role: 'user', content: '把 Q3 的客訴按原因分類,各給我前三名。' },
+          { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。', copyText: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
+          { role: 'user', content: '物流那一類再細分,看是哪個倉。' },
+          { role: 'agent', content: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。', copyText: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。' },
+          { role: 'user', content: '好,幫我寫一段給北倉主管的摘要。' },
+          { role: 'agent', content: COMPLAINT_SUMMARY, copyText: COMPLAINT_SUMMARY },
+        ],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
 }
 
-/** 歷史浮層開啟(OpenSnapshot):分組、搜尋、思考中列、目前對話高亮、懸停/鍵盤浮出改名與刪除。 */
+/** 歷史浮層一開始就開著:分組、搜尋、思考中列、目前對話高亮、滑鼠停留 / 鍵盤移到某一列時浮出改名與刪除。 */
 export const HistoryOpen: Story = {
   name: '歷史浮層開啟',
   // 預設開啟的浮層快照在 Autodocs 各自進 iframe(story-rules「預設開啟的模態浮層 story」):浮層 portal 到 body,
   // 與同一份 docs 文件裡其他 story 共用 body;2026-09-10 實測 Storybook docs 生命週期競態會把整頁 docs 留成殭屍,
   // 這個浮層就飄到別的 story 的左上角。隔離後它與錨點同屬一份 Document,殭屍也帶不走它(第二道防線;第一道在 storybook-config 的 docs.renderer)。
   parameters: { docs: { story: openOverlayDocsStory('560px') } },
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">從標題或箭頭點開歷史;滑鼠停在某一列、或用方向鍵移到某一列,會浮出改名與刪除,鍵盤按 → 進到按鈕。</AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: function HistoryOpenStory() {
+    const demo = useAgentDemo({
+      sessions: demoSessions('c1', {
+        messages: [{ role: 'agent', content: '從標題或箭頭點開歷史;滑鼠停在某一列、或用方向鍵移到某一列,會浮出改名與刪除,鍵盤按 → 進到按鈕。' }],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} defaultHistoryOpen onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
 }
 
-/** 新對話:尚未送出任何訊息 → 「+」停用(當前就是新的);空狀態問候用招喚態標誌。 */
+/** 新對話:尚未送出任何訊息 → 「+」停用(當前就是新的);空狀態問候用招喚態標誌。送出第一則之後才有標題、進歷史。 */
 export const NewConversation: Story = {
   name: '新對話(空狀態)',
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} onClose={close} />
-        <div className="flex min-h-0 flex-1 items-center justify-center">
-          <Empty
-            icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
-            title="開始第一個對話"
-            description="丟一個任務給代理,或把檔案拖進來。"
-          />
-        </div>
-        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: function NewConversationStory() {
+    const demo = useAgentDemo({ sessions: BASE_SESSIONS, startEmpty: true })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
 }
 
-const THREE_QUESTIONS = [
+const THREE_QUESTIONS: AgentDecisionQuestion[] = [
   {
     id: 'tone',
     label: '公告要用哪種語氣?',
@@ -315,133 +335,138 @@ const THREE_QUESTIONS = [
   },
 ]
 
-/** 決策卡(OpenSnapshot):三題步進——「1 / 3」小標、灰底選項卡、其他卡常駐輸入格、跳過/下一題。 */
-export const DecisionCardOpen: Story = {
-  name: '決策卡三題步進',
-  render: () => (
+/** 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
+function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
+  const demo = useAgentDemo({ sessions: demoSessions('c2', { messages: [{ role: 'agent', content: intro }] }) })
+  const [asking, setAsking] = React.useState(true)
+  const answer = (answers: Record<string, string>) => {
+    setAsking(false)
+    demo.addMessages([decisionReceipt(questions, answers)])
+  }
+  return (
     <PanelFrame>
       {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。</AgentMessage>
-        </AgentConversation>
-        <div className="relative">
-          <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-          <AgentDecisionCard questions={THREE_QUESTIONS} onSubmit={noop} onSkip={noop} />
-        </div>
-      </AgentPanel>
+        <AgentPanel onClose={close}>
+          <AgentPanelHeader {...demo.header} onClose={close} />
+          <DemoConversation messages={demo.messages} />
+          <div className="relative">
+            <AgentPromptInput {...demo.prompt} />
+            {asking && <AgentDecisionCard questions={questions} onSubmit={answer} onSkip={answer} />}
+          </div>
+        </AgentPanel>
       )}
     </PanelFrame>
-  ),
+  )
 }
 
-/** 長標題:標題單行截斷,只有實際被截斷時 hover 才顯示完整名稱的 tooltip(tooltip.spec.md:32;引擎 `<TruncatedText>`)。 */
+/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格、跳過 / 下一題;送出或跳過後卡片收起,答案記成決策回執。 */
+export const DecisionCardOpen: Story = {
+  name: '決策卡三題步進',
+  render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
+}
+
+const LONG_TITLE = '2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)'
+
+/** 長標題:標題單行截斷,只有實際被截斷時滑鼠移上去才顯示完整名稱的 tooltip。 */
+// tooltip 規則見 tooltip.spec.md「何時用」;引擎 `<TruncatedText>`
 export const TitleTruncated: Story = {
   name: '長標題截斷與 Tooltip',
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。</AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: function TitleTruncatedStory() {
+    const demo = useAgentDemo({
+      sessions: demoSessions('c3', {
+        title: LONG_TITLE,
+        messages: [{ role: 'agent', content: '標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。' }],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
 }
 
 /** 單題決策卡:只有一道題 → 不顯示「n / N」小標,主鈕直接是「送出」。 */
 export const DecisionCardSingle: Story = {
   name: '決策卡單題',
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">只剩語氣沒定,選一個就能繼續。</AgentMessage>
-        </AgentConversation>
-        <div className="relative">
-          <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-          <AgentDecisionCard questions={[THREE_QUESTIONS[0]]} onSubmit={noop} onSkip={noop} />
-        </div>
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: () => <DecisionCardScene questions={[THREE_QUESTIONS[0]]} intro="只剩語氣沒定,選一個就能繼續。" />,
 }
 
 /** 決策回執:拍板後在對話流中的靜態紀錄。 */
 export const DecisionSummaryInFlow: Story = {
   name: '決策回執',
-  render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">
-            已按你的選擇繼續:
-            <AgentDecisionSummary
-              // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距
-              className="mt-2"
-              entries={[
-                { question: '公告要用哪種語氣?', answer: '正式版' },
-                { question: '什麼時候發布?', answer: '今晚 20:00' },
-              ]}
-            />
-          </AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-      </AgentPanel>
-      )}
-    </PanelFrame>
-  ),
+  render: function DecisionSummaryInFlowStory() {
+    const demo = useAgentDemo({
+      sessions: demoSessions('c2', {
+        messages: [
+          {
+            role: 'agent',
+            content: (
+              <>
+                已按你的選擇繼續:
+                <AgentDecisionSummary
+                  // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
+                  className="mt-2"
+                  entries={[
+                    { question: '公告要用哪種語氣?', answer: '正式版' },
+                    { question: '什麼時候發布?', answer: '今晚 20:00' },
+                  ]}
+                />
+              </>
+            ),
+          },
+        ],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
 }
 
-/** 拖拉寬度:左緣把手 360–640(產品沒設時的預設範圍;在 AppShell 裡上限另受「全部拉滿時 Main 剛好剩最小寬」限制),鍵盤 ←/→ 每次 16;
- *  寬度紀錄由產品自存(`onWidthCommit` 只在一次調整結束時發:拖曳放開且有位移、鍵盤每按一下;只點一下把手不發)。
- *  2026-09-04 補回:這支在 6804d2ea「story 重整」時被刪掉,但 `width` / `onWidthChange` /
- *  `onWidthCommit` / `resizable` 四個公開 prop 因此在整個家族**零 story 覆蓋**(M15:拖寬、鍵盤
- *  ←/→、360–640 夾值都沒有可截圖的狀態),而本檔檔頭仍宣稱「拖拉寬度…補齊」= 假宣稱。 */
+// 拖拉寬度:user 2026-09-02 23:14「我覺得你可以把 AI agent 拖拉寬度的範例刪掉」→ 讀者版不放(稽核 H09;原本 2026-09-04 AI 以
+// 「四個公開 prop 零 story 覆蓋」自己補回,docs 還寫成「一度被刪成假宣稱」)。width / onWidthChange / onWidthCommit / resizable 的覆蓋
+// 改住這個 test-only 夾具(story-rules「Technical probe visibility」:不進側欄與 Autodocs,仍在 index / 直連 / 閘):
+// 左緣把手 360–640(產品沒設時的預設範圍),鍵盤 ←/→ 每次 16;`onWidthCommit` 只在一次調整結束時發(拖曳放開且有位移、鍵盤每按一下;只點一下把手不發)。
+// 輸入盒帶四個附件,是 scripts/tag-overflow-room-invariant.mjs 量「寬度改了,+N 跟著重算」的那一格。
 export const ResizableWidth: Story = {
   name: '拖拉寬度',
+  tags: ['test-only'],
   render: function ResizableStory() {
     const [width, setWidth] = React.useState(400)
     const [committed, setCommitted] = React.useState(400)
-    // 這一則原本自建版面且 `onClose={noop}` —— × 是本檔每個範例都保證可按的固定構件,
-    // 接空函式等於擺一顆按了沒反應的鈕,和檔頭寫的「每個範例都能按 × 關閉」自相矛盾。
-    // 改成共用 `PanelFrame`,寬度讀數放進它的 `aside`。
+    const demo = useAgentDemo({
+      sessions: demoSessions('c1', {
+        messages: [{ role: 'agent', content: '面板寬度 360 起跳、640 封頂;只點一下把手不算調整。' }],
+      }),
+      attachments: [
+        { id: 'a1', label: 'sprint-42-backlog.csv' },
+        { id: 'a2', label: '排程規則.md' },
+        { id: 'a3', label: 'oncall-規範.pdf' },
+        { id: 'a4', label: '客訴-2026Q3.xlsx' },
+      ],
+    })
     return (
-      <PanelFrame
-        aside={
-          <>
-            <span>目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)</span>
-            <span className="text-caption text-fg-muted">寬度紀錄:{committed}px —— 放開後(有拖動才算)產品拿這個值去存</span>
-          </>
-        }
-      >
+      <PanelFrame>
         {({ close }) => (
-          <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted} onClose={close}>
-            <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={close} {...headerWiring} />
-            <AgentConversation>
-              <AgentMessage role="agent">面板寬度 360 起跳、640 封頂;只點一下把手不算調整,寬度紀錄不變。</AgentMessage>
-            </AgentConversation>
-            <AgentPromptInput
-              value=""
-              onValueChange={noop}
-              attachments={[
-                { id: 'a1', label: 'sprint-42-backlog.csv' },
-                { id: 'a2', label: '排程規則.md' },
-                { id: 'a3', label: 'oncall-規範.pdf' },
-                { id: 'a4', label: '客訴-2026Q3.xlsx' },
-              ]}
-              {...promptWiring}
-            />
+          <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted} data-committed-width={committed} onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
           </AgentPanel>
         )}
       </PanelFrame>
@@ -453,21 +478,14 @@ export const ResizableWidth: Story = {
 // 960 門檻被 user 2026-10-14 規格取代(app-shell.spec.md「版面規則」;D:30 清單 #21):AI agent 何時變浮層由 AppShell 用各區最小寬現算。
 // 浮層、遮罩、點遮罩關閉的可截圖狀態改住 AppShell 展示「任務助理放不下時 — 右側浮層」(M15),機械閘 scripts/app-shell-layout-invariant.mjs。
 
-/** 入口鈕遮擋樣張的資料:滿版訂單表(DataTable 分頁 archetype 同 data-table.stories WithPagination)。 */
-type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
-const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
-  id: `order-${i + 1}`,
-  orderNo: `SO-2026-${String(1001 + i)}`,
-  customer: ['Acme Corp', 'Globex', 'Initech', 'Umbrella', 'Stark Industries', 'Wayne Enterprises'][i % 6],
-  amount: 1200 + ((i * 137) % 8800),
-  placedAt: `2026-0${(i % 6) + 1}-${String((i % 27) + 1).padStart(2, '0')}`,
-}))
-const orderColumns: ColumnDef<OrderRow>[] = [
-  { accessorKey: 'orderNo', header: '訂單編號' },
-  { accessorKey: 'customer', header: '客戶' },
-  { accessorKey: 'amount', header: '金額', meta: { type: 'currency', prefix: '$' } },
-  { accessorKey: 'placedAt', header: '成立日期' },
-]
+/** 入口鈕那一則的代理是否在思考(送出問題 → 思考;6 秒後轉招喚) */
+const FabThinkingContext = React.createContext(false)
+
+/** 入口鈕那一則的代理回覆:跟著「在不在思考」換字 */
+function FabReply() {
+  const thinking = React.useContext(FabThinkingContext)
+  return <>{thinking ? '正在比對上週訂單…' : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。拖我到右緣可以收成半圓。'}</>
+}
 
 /**
  * 入口鈕(唯一的入口鈕範例)。預設**面板是關的**、入口鈕在右下角**招呼**(邊框光圈)——
@@ -479,49 +497,48 @@ export const Fab: Story = {
   name: '入口鈕',
   render: function FabStory() {
     const [agentState, setAgentState] = React.useState<AgentLogoState>('attract')
-    const [draft, setDraft] = React.useState('這批訂單的金額為什麼對不上?')
     const timer = React.useRef<number | null>(null)
+    const demo = useAgentDemo({
+      sessions: demoSessions('c1', {
+        title: '訂單異常排查',
+        messages: [
+          { role: 'user', content: '幫我查上週哪幾張訂單金額異常' },
+          { role: 'agent', content: <FabReply /> },
+        ],
+      }),
+      draft: '這批訂單的金額為什麼對不上?',
+    })
     const askAgent = () => {
       if (timer.current) window.clearTimeout(timer.current)
-      setDraft('')
+      demo.prompt.onValueChange('')
       setAgentState('think')
       timer.current = window.setTimeout(() => setAgentState('attract'), 6000)
     }
     React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
     return (
-      <div className="relative flex h-dvh bg-canvas">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
-          <DataTable
-            columns={orderColumns}
-            data={ORDER_ROWS}
-            height="100%"
-            pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
-            getRowId={(row) => row.id}
-          />
+      <FabThinkingContext.Provider value={agentState === 'think'}>
+        <div className="relative flex h-dvh bg-canvas">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
+            <DataTable
+              columns={orderColumns}
+              data={ORDER_ROWS}
+              height="100%"
+              pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
+              getRowId={(row) => row.id}
+            />
+          </div>
+          <AgentPanelDock defaultOpen={false} logoState={agentState}>
+            {({ close, logoState }) => (
+              <AgentPanel onClose={close}>
+                <AgentPanelHeader {...demo.header} logoState={logoState} onClose={close} />
+                <DemoConversation messages={demo.messages} />
+                <AgentPromptInput {...demo.prompt} onSubmit={askAgent} />
+              </AgentPanel>
+            )}
+          </AgentPanelDock>
         </div>
-        <AgentPanelDock defaultOpen={false} logoState={agentState}>
-          {({ close, logoState }) => (
-            <AgentPanel onClose={close}>
-              <AgentPanelHeader
-                title="訂單異常排查"
-                activeConversationId="c1"
-                logoState={logoState}
-                {...headerWiring}
-                onClose={close}
-              />
-              <AgentConversation>
-                <AgentMessage role="user">幫我查上週哪幾張訂單金額異常</AgentMessage>
-                <AgentMessage role="agent">
-                  {logoState === 'think'
-                    ? '正在比對上週訂單…'
-                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。拖我到右緣可以收成半圓。'}
-                </AgentMessage>
-              </AgentConversation>
-              <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />
-            </AgentPanel>
-          )}
-        </AgentPanelDock>
-      </div>
+        <Toaster />
+      </FabThinkingContext.Provider>
     )
   },
 }
@@ -531,7 +548,7 @@ export const LogoStates: Story = {
   name: '標誌三態',
   render: () => (
     // 三個標誌並列 = loose(layoutSpace.spec.md 規則 3)
-    // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪(agent-panel-logo.spec.md:33 行程 560→830)(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+    // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪 —— 畫布留白,不是元素間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
     <div className="flex items-end gap-[var(--layout-space-loose)] p-12">
       {(
         [
@@ -549,7 +566,6 @@ export const LogoStates: Story = {
   ),
 }
 
-/** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
 /**
  * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步半圈時間加速到 0.5s/圈,負空間同時由橢圓圓化),3 秒後離開
  * 思考 → 從當下角度以 exit 鏡像曲線減速、負空間同步由圓回橢圓、色場基底跟著當下角度、落回正位 0°(0.50–1.21s)
@@ -568,17 +584,16 @@ export const LogoThinkStop: Story = {
     }
     React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
     return (
-      // 標誌 ↔ 驅動它的按鈕 ↔ 狀態讀數 = tight(控件 → 它驅動的畫面 / 讀數,layoutSpace.spec.md 規則 3)
-      // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪(agent-panel-logo.spec.md:33 行程 560→830)(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      // 標誌 ↔ 驅動它的按鈕 = tight(控件 → 它驅動的畫面,layoutSpace.spec.md 規則 3)。
+      // 原本按鈕旁還有一行「目前:思考中(等速)/ 靜止」讀數、標誌的讀屏名稱是程式值 still / think —— 讀者範例不放除錯讀數,名稱用人話(稽核 L030)
+      // @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚態外擴的漣漪 —— 畫布留白,不是元素間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
       <div className="flex items-center gap-[var(--layout-space-tight)] p-12">
-        <AgentLogo state={state} size={72} label={state} />
+        <AgentLogo state={state} size={72} label={state === 'think' ? '智慧代理(思考中)' : '智慧代理'} />
         <Button variant="tertiary" size="sm" onClick={start}>思考 3 秒</Button>
-        <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
       </div>
     )
   },
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    整頁情境(假資料)—— 專案任務頁(AppShell 主內容:page header + tabs)/ 任務對話框 / 確認框 / 代理欄
@@ -801,8 +816,9 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
         </DialogBody>
         <DialogFooter>
           <Button id="demo-task-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
-          {/* 標題空白時停用照舊(story-layer 漂移棘輪 (a) 已記這一筆;閘 agent-url-registry-demo S4 依賴),送出走 hook 的 handleSubmit(規則 7 / 8) */}
-          <Button id="demo-task-save" variant="primary" disabled={!form.values.title.trim()} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
+          {/* 停用照表單的送出狀態:新建永遠可按、更新要有改動才可按(form-validation.spec.md「Submit Button 狀態」);標題空白由送出時的驗證報在欄位上(FieldError)。
+              送出走 hook 的 handleSubmit(規則 7 / 8)。2026-10-07 起這裡寫成「標題空白就停用」並附一句「漂移棘輪已記這一筆」—— 棘輪其實沒有這一筆(稽核 H10) */}
+          <Button id="demo-task-save" variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -870,72 +886,23 @@ function ConfirmLeaveDialog({ task, onStay, onLeave, portalContainer }: {
   )
 }
 
-/* ── 代理 session(對話)模型:歷史浮層列多個 session、可切換;「+」開新 session,送出第一則後才有標題並進歷史 ── */
-type ChatMessage = { role: 'user' | 'agent'; content: React.ReactNode }
-type Session = { id: string; title: string; group: string; messages: ChatMessage[]; draft: string }
-const TITLE_MAX = 16
-function useSessions(initial: Session[]) {
-  const [state, setState] = React.useState<{ sessions: Session[]; activeId: string; seq: number }>({ sessions: initial, activeId: initial[0].id, seq: initial.length })
-  const active = state.sessions.find((s) => s.id === state.activeId) ?? state.sessions[0]
-  const update = (id: string, patch: (s: Session) => Session) =>
-    setState((st) => ({ ...st, sessions: st.sessions.map((s) => (s.id === id ? patch(s) : s)) }))
-  const newSession = (seq: number): Session => ({ id: `s${seq}`, title: '', group: '今天', messages: [], draft: '' })
-  return {
-    active,
-    /** 歷史浮層只列已送出過訊息的 session(新對話送出第一則之前不在歷史裡)。 */
-    history: state.sessions.filter((s) => s.messages.length > 0).map(({ id, title, group }): AgentConversationSummary => ({ id, title, group })),
-    select: (id: string) => setState((st) => ({ ...st, activeId: id })),
-    setDraft: (draft: string) => update(active.id, (s) => ({ ...s, draft })),
-    submit: () => {
-      const text = active.draft.trim()
-      if (!text) return
-      update(active.id, (s) => ({
-        ...s,
-        title: s.title || text.slice(0, TITLE_MAX),
-        draft: '',
-        messages: [...s.messages, { role: 'user', content: text }, { role: 'agent', content: `收到,我把「${text}」記到這個專案的討論串了,有進展會再告訴你。` }],
-      }))
-    },
-    create: () => setState((st) => {
-      const next = newSession(st.seq + 1)
-      return { sessions: [next, ...st.sessions], activeId: next.id, seq: st.seq + 1 }
-    }),
-    rename: (id: string, title: string) => update(id, (s) => ({ ...s, title })),
-    /** 刪的是目前對話 → 切到最近一則;全部刪光 → 開新的空對話(agent-panel.tsx `onDeleteConversation` 契約)。 */
-    remove: (id: string) => setState((st) => {
-      const sessions = st.sessions.filter((s) => s.id !== id)
-      if (st.activeId !== id) return { ...st, sessions }
-      const nextActive = sessions.find((s) => s.messages.length > 0) ?? sessions[0]
-      if (nextActive) return { ...st, sessions, activeId: nextActive.id }
-      const fresh = newSession(st.seq + 1)
-      return { sessions: [fresh], activeId: fresh.id, seq: st.seq + 1 }
-    }),
-    /** v14 條 F:重新整理 = 回到關閉的新對話(歷史是伺服器端的,留著;當前對話與草稿不保留)。 */
-    reset: () => setState((st) => {
-      const fresh = newSession(st.seq + 1)
-      return { sessions: [fresh, ...st.sessions.filter((s) => s.messages.length > 0)], activeId: fresh.id, seq: st.seq + 1 }
-    }),
-  }
-}
-
 /**
  * 示意舞台(AppShell 主內容的樣子)的最小寬(示意值;同 AppShell 展示的 Main 最小 600)。
  * 它不是任務表的寬:舞台比表窄時,表格在自己裡面水平捲(`../DataTable/data-table.spec.md`「Center 區:flex-1,水平 overflow 自行處理」)。
  */
 const DEMO_STAGE_MIN_WIDTH = 600
 
-function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, persistentElements }: {
+function AgentColumn({ hostRef, open, onOpenChange, onModeChange, demo, persistentElements }: {
   hostRef: React.Ref<HTMLDivElement>
   open: boolean
   onOpenChange: (open: boolean) => void
   /** 面板形態(並排 / 浮層)回報 —— 宿主用它決定「從代理導向舞台」時要不要收成入口鈕。 */
   onModeChange: (mode: AgentPanelMode) => void
-  sessions: ReturnType<typeof useSessions>
+  /** 代理的對話模型(stories-helpers/scene/agent-demo.tsx;所有代理範例同一支) */
+  demo: ReturnType<typeof useAgentDemo>
   /** 浮層態仍要可用的宿主外節點(瀏覽器工具列)。 */
   persistentElements: () => Element[]
 }) {
-  const { active } = sessions
-  const empty = active.messages.length === 0
   return (
     // 面板必須是畫布 flex 的**直接子節點**(它量的是自己的父層),所以殼用 display:contents;
     // 這則示意不在 AppShell 裡:面板「只算自己」,舞台(宿主那一側)最小寬 600 由 `hostMinWidth` 告訴它(D:30 清單 N14)
@@ -943,40 +910,10 @@ function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, pers
       <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
           <AgentPanel hostMinWidth={DEMO_STAGE_MIN_WIDTH} persistentElements={persistentElements} onModeChange={onModeChange} onClose={close}>
-            <AgentPanelHeader
-              title={empty ? '新對話' : active.title}
-              conversations={sessions.history}
-              activeConversationId={active.id}
-              conversationEmpty={empty}
-              onSelectConversation={sessions.select}
-              onRenameConversation={sessions.rename}
-              onDeleteConversation={sessions.remove}
-              onNewConversation={sessions.create}
-              onClose={close}
-            />
-            {empty ? (
-              // 新對話空狀態 = 「新對話(空狀態)」範例同一套:招喚態標誌 + Empty
-              <div className="flex min-h-0 flex-1 items-center justify-center">
-                <Empty
-                  icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
-                  title="開始第一個對話"
-                  description="丟一個任務給代理,或把檔案拖進來。"
-                />
-              </div>
-            ) : (
-              <AgentConversation>
-                {active.messages.map((m, i) => <AgentMessage key={i} role={m.role}>{m.content}</AgentMessage>)}
-              </AgentConversation>
-            )}
-            <AgentPromptInput
-              value={active.draft}
-              onValueChange={sessions.setDraft}
-              onSubmit={sessions.submit}
-              onRemoveAttachment={noop}
-              onAddAttachment={noop}
-              attachments={[]}
-              placeholder="問我或指派工作…"
-            />
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            {/* 新對話空狀態 = 「新對話(空狀態)」範例同一套:招喚態標誌 + Empty(DemoConversation) */}
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} placeholder="問我或指派工作…" />
           </AgentPanel>
         )}
       </AgentPanelDock>
@@ -1082,47 +1019,48 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
     if (dirtyRef.current) { setPendingNav({ navigate, target }); return }
     runFromAgent(navigate, target)
   }, [runFromAgent])
-  const initialSessions = React.useMemo<Session[]>(() => [
-    { id: 's1', title: '登入逾時追蹤', group: '今天', draft: '', messages: [
+  const initialSessions = React.useMemo<DemoSession[]>(() => [
+    { id: 's1', title: '登入逾時追蹤', group: '今天', messages: [
       { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
       { role: 'agent', content: (
         <>
           <p>跟你問的有關的有四處:</p>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距;清單項之間 4px 是同質清單列(layoutSpace.spec.md:165) */}
+          {/* @layout-space-magic-ok: 清單上方 8px = 同一則代理訊息的內文段距 —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值);清單項之間 4px 是 ul 裡的同質清單列(utility-registry canonical_micro_geometry 認得) */}
           <ul className="mt-2 flex flex-col gap-1">
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
             <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
             <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
-            {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px —— 同一個連結內部的行內間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距 */}
+          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
         </>
       ) },
     ] },
-    { id: 's2', title: '發布公告草稿', group: '今天', draft: '', messages: [
+    { id: 's2', title: '發布公告草稿', group: '今天', messages: [
       { role: 'user', content: '幫我擬 Sprint 24 的發布公告。' },
       { role: 'agent', content: '草稿已放到 Notion 公告頁,用的是正式版語氣;要改成輕鬆版再跟我說。' },
     ] },
-    { id: 's3', title: 'Q3 客訴分類', group: '過去 7 天', draft: '', messages: [
+    { id: 's3', title: 'Q3 客訴分類', group: '過去 7 天', messages: [
       { role: 'user', content: '把 Q3 的客訴按原因分類。' },
       { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
     ] },
   ], [go, openTask, fromAgent])
-  const sessions = useSessions(initialSessions)
+  // 送出後的代理回覆(原 useSessions 的同一句,收進共用模型後由 reply 帶進來)
+  const demo = useAgentDemo({ sessions: initialSessions, reply: (text) => `收到,我把「${text}」記到這個專案的討論串了,有進展會再告訴你。` })
   // v14 條 F:重新整理 = 宿主不變、代理回到初始關閉的新對話;瀏覽器同時丟掉記憶體裡的來源頁 →
   // 任務網址等於「直接進入」,疊在預設背景(所有任務)上。
   const reload = () => {
     setNav((n) => ({ ...n, entries: n.entries.map((e, i) => (i === n.index ? { url: e.url } : e)) }))
     setAgentOpen(false)
-    sessions.reset()
+    demo.reset()
   }
   // v14 條 F 最後半句「原分頁離開宿主後返回」:瀏覽器從 back/forward cache 還原舊畫面(`pageshow` 且 persisted)——
   // 宿主畫面原封不動(來源頁、對話框、tab 都還在),代理仍要回到關閉的新對話。「關閉」AgentPanelDock 自己做
   // (它是開關的 owner,會發 onOpenChange(false));「新對話」是宿主的,這裡只重設 session(同 reload 的後半)。
-  const resetSessionsRef = React.useRef(sessions.reset)
-  resetSessionsRef.current = sessions.reset
+  const resetSessionsRef = React.useRef(demo.reset)
+  resetSessionsRef.current = demo.reset
   React.useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) resetSessionsRef.current() }
     window.addEventListener('pageshow', onPageShow)
@@ -1164,7 +1102,8 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
             }
           >
             {TASK_TABS.map((t) => (
-              <TabsContent key={t.value} value={t.value} className="mt-0 flex min-h-0 flex-1 flex-col">
+              // 分頁內容撐滿舞台、四邊貼著捲動容器 → 焦點框往內(focus-canonical.md「框怎麼畫」:撐滿容器寬度的區塊;SH-clip 同族)
+              <TabsContent key={t.value} value={t.value} className="mt-0 flex min-h-0 flex-1 flex-col focus-visible:focus-ring-inset">
                 <TaskListView tab={t} tasks={tasks} onOpen={openTask} onCreate={openNewTask} />
               </TabsContent>
             ))}
@@ -1210,7 +1149,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
             )}
           </Stage>
         </Tabs>
-        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} onModeChange={setAgentMode} sessions={sessions} persistentElements={keepForPanel} />
+        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} onModeChange={setAgentMode} demo={demo} persistentElements={keepForPanel} />
       </SimulatedBrowser>
       {/* 任務存檔成功的 Toast:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個) */}
       <Toaster />
@@ -1218,10 +1157,8 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
   )
 }
 
-/**
- * 示意(假資料):v14 條 A–G 的互動一次演完。真正的註冊表(誰有 URL、由誰確認)在產品／導航層,
- * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
- */
+// 示意(假資料):v14 條 A–G 的互動一次演完。真正的註冊表(誰有 URL、由誰確認)在產品／導航層,
+// DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。(開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
 export const UrlRegistryDemo: Story = {
   name: '示意(假資料)— 網址註冊表:誰能與代理並存',
   parameters: {
@@ -1234,10 +1171,9 @@ export const UrlRegistryDemo: Story = {
   render: () => <UrlRegistryScene />,
 }
 
-/**
- * 同一個世界的第二則示意(2026-09-29,待辦總帳 OE11):任務對話框裡改了標題還沒儲存,代理回覆裡的「我的任務」被點下 ——
- * 導航停下來問(沒有網址的確認框,蓋住一切含代理),取消留在原地、確認才前往。一開場就停在這個當口(M15 OpenSnapshot)。
- */
+// 同一個世界的第二則示意(2026-09-29,待辦總帳 OE11):任務對話框裡改了標題還沒儲存,代理回覆裡的「我的任務」被點下 ——
+// 導航停下來問(沒有網址的確認框,蓋住一切含代理),取消留在原地、確認才前往。一開場就停在這個當口(M15 OpenSnapshot)。
+// (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
 export const UnsavedChangesGuard: Story = {
   name: '示意(假資料)— 未存檔的修改:離開前先確認',
   parameters: {

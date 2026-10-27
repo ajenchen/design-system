@@ -14,7 +14,9 @@
  *   S2 header 一行標題 + 垃圾桶 icon-only 在 actions slot;footer 只有取消 / 儲存,儲存 primary 且最右
  *   S3 四個 Field(標題 / 指派人 / 狀態 / 截止日)存檔 → 清單那一列更新(含截止日欄);存檔成功跳 Toast「任務已儲存」(2026-10-07,
  *      form-validation.spec.md「Submit 成功宣告」—— user 2026-10-01 逐字「…然後送出成功跳提示」,文案 AI 擬)
- *   S4 新增任務(toolbar primary、有 URL)→ 清單多一列;跳 Toast「任務已建立」
+ *   S4 新增任務(toolbar primary、有 URL)→ 儲存一開始就可按(form-validation.spec.md「Submit Button 狀態」新建永遠 enabled);
+ *      標題空白按儲存 → 對話框留著、標題欄出錯誤「標題必填」;填了再存 → 清單多一列;跳 Toast「任務已建立」
+ *      (2026-10-28 稽核 H10:原本斷言「標題空白時儲存停用」,等於用閘把違反 form-validation 的寫法鎖死)
  *   S5 刪除 → 沒有 URL 的確認框(primary danger)擋住代理、置中於整個模擬視窗;取消恢復並存;確認 → 清單少一列
  *   S6 tab 與背景位置模式:代理連結「我的任務」→ 切 tab、清單篩成自己的;再點任務 → modal 背景是「我的任務」;
  *      重新整理 = 直接以任務網址進入 → 背景是預設的「所有任務」;上一頁 / 下一頁維持
@@ -422,7 +424,15 @@ for (const width of [1440, 1180]) {
   // ── S4 新增任務(toolbar primary)→ 清單多一列 ──
   await h.click('#demo-new-task')
   const newShape = await page.evaluate(() => ({ title: document.querySelector('[role="dialog"] h2')?.textContent?.trim(), del: !!document.querySelector('#demo-task-delete'), saveDisabled: document.querySelector('#demo-task-save')?.disabled }))
-  check(`${W} S4 新增任務:網址 /tasks/new、header 一行「新增任務」、沒有垃圾桶、標題空白時儲存停用`, (await h.location()) === '/projects/8821/tasks/new' && newShape.title === '新增任務' && !newShape.del && newShape.saveDisabled === true, JSON.stringify(newShape))
+  check(`${W} S4 新增任務:網址 /tasks/new、header 一行「新增任務」、沒有垃圾桶、儲存一開始就可按(新建永遠 enabled)`, (await h.location()) === '/projects/8821/tasks/new' && newShape.title === '新增任務' && !newShape.del && newShape.saveDisabled === false, JSON.stringify(newShape))
+  // 標題空白直接按儲存:不建立、不關對話框,錯誤報在標題欄(送出時驗證,form-validation.spec.md)
+  await h.click('#demo-task-save')
+  const emptySave = await page.evaluate(() => ({
+    dialogs: document.querySelectorAll('[role="dialog"]').length,
+    invalid: document.querySelector('#demo-task-title')?.getAttribute('aria-invalid'),
+    error: Array.from(document.querySelectorAll('[role="dialog"] *')).some((el) => el.children.length === 0 && el.textContent?.trim() === '標題必填'),
+  }))
+  check(`${W} S4 標題空白按儲存:對話框留著、網址仍是 /tasks/new、標題欄出錯誤「標題必填」`, emptySave.dialogs === 1 && (await h.location()) === '/projects/8821/tasks/new' && emptySave.invalid === 'true' && emptySave.error, JSON.stringify(emptySave))
   await page.click('#demo-task-title'); await page.keyboard.type('補 QA 環境資訊')
   await h.click('#demo-task-save')
   const createdToast = await toastSeen('任務已建立')

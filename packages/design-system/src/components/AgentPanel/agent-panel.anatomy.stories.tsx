@@ -13,7 +13,10 @@ import {
 import { AGENT_BRAND, AgentLogo } from './agent-panel-logo'
 import { AgentFab, AgentPanelDock } from './agent-panel-fab'
 import { AgentThinking } from './agent-panel'
+import { Slider } from '@/design-system/components/Slider/slider'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { useAgentDemo, toolbarActions, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
 
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/設計規格',
@@ -23,49 +26,78 @@ const meta: Meta<typeof AgentPanel> = {
 export default meta
 type Story = StoryObj<typeof AgentPanel>
 
+const OVERVIEW_REPLY = '代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8;最後一則工具列常駐(AgentConversation 判定)、底距輸入盒 48。'
+
 /** Overview:三段 anatomy(Header / Conversation flex-1 / PromptInput)+ 左緣分隔線。 */
 export const Overview: Story = {
   name: '元件總覽',
-  render: () => (
-    <div className="flex h-dvh justify-end bg-canvas">
-      {/* 解剖圖是並排態(容器滿版),不會出現浮層遮罩 —— `onClose` 在這裡恆不觸發,
-          但它是必填的(M23(f):沒有內建行為的固定行為不得靠 callback 有無決定),同標題列的 × 寫法。 */}
-      <AgentPanel onClose={() => {}}>
-        <AgentPanelHeader title="智慧代理" onNewConversation={() => {}} onClose={() => {}} />
-        <AgentConversation>
-          <AgentMessage role="user">我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。</AgentMessage>
-          <AgentMessage
-            role="agent"
-            toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}
-          >
-            代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8;最後一則工具列常駐(AgentConversation 判定)、底距輸入盒 48。
-          </AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput
-          value=""
-          onValueChange={() => {}}
-          attachments={[{ id: 'a', label: '附件列 Tag md,間距 4' }]}
-          onSubmit={() => {}}
-          onRemoveAttachment={() => {}}
-          onAddAttachment={() => {}}
-        />
-      </AgentPanel>
-    </div>
-  ),
+  render: function OverviewStory() {
+    // 解剖圖上看得到的按鈕都能動(F-S2;範例依據 Q-specimen 判可推導):× 關面板、入口鈕開回來、+ 開新對話、輸入盒打得進字、
+    // 送出把訊息加進對話、加附件開檔案選擇器、附件 × 移除、工具列複製 / 讚 / 倒讚跳 Toast(共用對話模型 stories-helpers/scene/agent-demo.tsx)
+    const demo = useAgentDemo({
+      sessions: [
+        {
+          id: 'anatomy',
+          title: '智慧代理',
+          group: '今天',
+          messages: [
+            { role: 'user', content: '我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。' },
+            { role: 'agent', content: OVERVIEW_REPLY, copyText: OVERVIEW_REPLY },
+          ],
+        },
+      ],
+      attachments: [{ id: 'a', label: '附件列 Tag md,間距 4' }],
+    })
+    return (
+      <>
+        <div className="relative flex h-dvh justify-end bg-canvas">
+          <AgentPanelDock defaultOpen logoState="still">
+            {({ close }) => (
+              <AgentPanel onClose={close}>
+                <AgentPanelHeader {...demo.header} onClose={close} />
+                <DemoConversation messages={demo.messages} />
+                <AgentPromptInput {...demo.prompt} />
+              </AgentPanel>
+            )}
+          </AgentPanelDock>
+        </div>
+        <Toaster />
+      </>
+    )
+  },
 }
 
-/** 元件檢閱器:即時預覽 + 藍圖 + Inspect 面板(6-canonical 之一)。
- *  面板是三段式容器,所以檢閱器盯的是**三段的垂直分工**與**寬度契約**——這兩件事決定了
- *  consumer 把面板放進自家版面時會不會走鐘。互動的部分(拖寬、開合、標誌)在展示層。 */
+/** 元件檢閱器:即時預覽 + 藍圖 + Inspect 面板。
+ *  面板是三段式容器,所以檢閱器盯的是三段的垂直分工與寬度契約 —— 這兩件事決定了
+ *  把面板放進自家版面時會不會走鐘。互動的部分(拖寬、開合、標誌)在展示層。 */
+// (原本寫著「6-canonical 之一」這種內部代號,會被 Storybook 當成 docs 說明顯示 —— 範例依據 E1 internal-code)
 export const Inspector: Story = {
   name: '元件檢閱器',
   render: () => <InspectorView />,
 }
 
+const INSPECTOR_REPLY = '有 6 筆同時掛在兩個人身上,已列在下面。'
+
 const InspectorView = () => {
   const [width, setWidth] = React.useState(400)
   const clamped = Math.round(Math.min(Math.max(width, 360), 640))
+  const demo = useAgentDemo({
+    sessions: [
+      {
+        id: 'c1',
+        title: '衝刺待辦整理',
+        group: '今天',
+        messages: [
+          { role: 'user', content: '這週有哪幾筆待辦被重複指派?' },
+          { role: 'agent', content: INSPECTOR_REPLY, copyText: INSPECTOR_REPLY },
+        ],
+      },
+    ],
+  })
   return (
+    <>
+    {/* Toast 區放在版面外(它是 fixed 的播報區,不佔版面;放進 flex gap 容器會多吃一格 gap) */}
+    <Toaster />
     <div className="flex flex-col gap-6 p-8">
       <div className="grid grid-cols-[1fr_340px] gap-6">
         {/* 左:即時預覽 + 藍圖 */}
@@ -77,27 +109,27 @@ const InspectorView = () => {
               寬度是這種內容的最小 / 初始 / 最大(預設 360 / 400 / 640)加上使用者的寬度紀錄;放在 AppShell 裡時,可拉上限再受「所有並排面板拉滿時 Main 剛好剩最小寬」限制,放不下最小寬就變右側浮層 —— 沒有固定斷點(AppShell「版面規則」)。
             </Desc>
             <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
-              <div className="flex h-full justify-end bg-canvas">
-                <AgentPanel width={clamped} resizable={false} onClose={() => {}}>
-                  <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onNewConversation={() => {}} onClose={() => {}} />
-                  <AgentConversation>
-                    <AgentMessage role="user">這週有哪幾筆待辦被重複指派?</AgentMessage>
-                    <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-                      有 6 筆同時掛在兩個人身上,已列在下面。
-                    </AgentMessage>
-                  </AgentConversation>
-                  <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
-                </AgentPanel>
+              <div className="relative flex h-full justify-end bg-canvas">
+                {/* × 關面板 → 右下角入口鈕接手,點一下開回來(同展示頁);面板上的按鈕都接上真的行為(共用對話模型) */}
+                <AgentPanelDock defaultOpen logoState="still">
+                  {({ close }) => (
+                    <AgentPanel width={clamped} resizable={false} onClose={close}>
+                      <AgentPanelHeader {...demo.header} onClose={close} />
+                      <DemoConversation messages={demo.messages} />
+                      <AgentPromptInput {...demo.prompt} />
+                    </AgentPanel>
+                  )}
+                </AgentPanelDock>
               </div>
             </div>
-            <label className="mt-3 flex items-center gap-3 text-footnote text-fg-muted">
+            {/* 寬度滑桿 = DS Slider(原本是原生 <input type="range">;範例依據 native-control) */}
+            <div className="mt-3 flex items-center gap-3 text-footnote text-fg-muted">
               <span className="font-mono">width</span>
-              <input
-                type="range"
+              <Slider
                 min={320}
                 max={700}
-                value={width}
-                onChange={(e) => setWidth(Number(e.target.value))}
+                value={[width]}
+                onValueChange={(v) => setWidth(v[0])}
                 className="flex-1"
                 aria-label="面板寬度"
               />
@@ -105,13 +137,13 @@ const InspectorView = () => {
                 傳入 {width} → 實際 {clamped}
                 {width !== clamped ? '(已夾回範圍內)' : ''}
               </span>
-            </label>
+            </div>
           </div>
 
           <div>
             <H3>藍圖(Blueprint)</H3>
             <Desc>
-              三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(`flex-1`)。
+              三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(<code>flex-1</code>)。
               決策卡出現時絕對定位貼底覆蓋輸入區,不改變這個分工。
             </Desc>
             <div className="border border-divider rounded-lg p-4 bg-muted/40 max-w-[520px]">
@@ -183,6 +215,7 @@ const InspectorView = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
@@ -260,7 +293,28 @@ export const ColorMatrix: Story = {
 /** StateBehavior:思考塊進行中/完成、工具列常駐/懸停、送出↔停止——家族互動狀態一覽。 */
 export const StateBehavior: Story = {
   name: '狀態行為',
-  render: () => (
+  render: () => <StateBehaviorView />,
+}
+
+const EARLIER_REPLY = '已把 48 筆待辦按衝刺分組,其中 6 筆同時被指派給兩個人。'
+const LAST_REPLY = '已改派並標記為待確認。'
+
+/**
+ * 標本上看得到的按鈕都能動(F-S2;範例依據 Q-specimen 判可推導):工具列複製 / 讚 / 倒讚跳 Toast;
+ * 兩格輸入盒打得進字、送出 = 清空輸入盒(這兩格只示範輸入盒的樣子,沒有對話可接)、加附件開檔案選擇器;
+ * 「停止」那格按停止 = 代理停止回覆、換回送出鈕。
+ */
+/** 只示範輸入盒時的那一段對話(畫面上不顯示對話;送出 = 清空輸入盒) */
+const PROMPT_ONLY: Parameters<typeof useAgentDemo>[0]['sessions'] = [{ id: 'prompt', title: '', group: '今天', messages: [] }]
+
+function StateBehaviorView() {
+  // 兩格輸入盒各自一份共用對話模型:打得進字、送出清空、加附件開檔案選擇器、附件 × 移除(stories-helpers/scene/agent-demo.tsx)
+  const sendDemo = useAgentDemo({ sessions: PROMPT_ONLY, draft: '幫我整理' })
+  const busyDemo = useAgentDemo({ sessions: PROMPT_ONLY })
+  const [busy, setBusy] = React.useState(true)
+  return (
+    <>
+    <Toaster />
     <div className="flex flex-col gap-8 p-8 text-body">
       <div className="flex gap-12">
         <div className="w-72">
@@ -282,12 +336,12 @@ export const StateBehavior: Story = {
         </div>
         <div className="h-64 border border-divider rounded-md">
           <AgentConversation>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-              已把 48 筆待辦按衝刺分組,其中 6 筆同時被指派給兩個人。(較早的回覆:工具列懸停才淡入)
+            <AgentMessage role="agent" toolbar={<AgentToolbar {...toolbarActions(EARLIER_REPLY)} />}>
+              {EARLIER_REPLY}(較早的回覆:工具列懸停才淡入)
             </AgentMessage>
             <AgentMessage role="user">那 6 筆先都給我。</AgentMessage>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-              已改派並標記為待確認。(最後一則代理訊息:工具列常駐,在流內佔位)
+            <AgentMessage role="agent" toolbar={<AgentToolbar {...toolbarActions(LAST_REPLY)} />}>
+              {LAST_REPLY}(最後一則代理訊息:工具列常駐,在流內佔位)
             </AgentMessage>
           </AgentConversation>
         </div>
@@ -295,15 +349,16 @@ export const StateBehavior: Story = {
       <div className="flex gap-12">
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">送出(有內容可按)</div>
-          <AgentPromptInput value="幫我整理" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
+          <AgentPromptInput {...sendDemo.prompt} />
         </div>
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">停止(代理進行中同位換實心正方)</div>
-          <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} busy onStop={() => {}} />
+          <AgentPromptInput {...busyDemo.prompt} busy={busy} onStop={() => setBusy(false)} />
         </div>
       </div>
     </div>
-  ),
+    </>
+  )
 }
 
 /** 入口鈕的靜態對照表:兩個位置 × 三個標誌狀態。
@@ -345,7 +400,8 @@ export const FabPlacements: Story = {
   ),
 }
 
-/** Accessibility:家族 ARIA 角色與鍵盤約定一覽(規格 spec「Loading / 無障礙預設」節)。 */
+/** 家族 ARIA 角色與鍵盤約定一覽。 */
+// 規格出處:agent-panel.spec.md「Loading / 無障礙預設」(檔名指標不放進 docs 說明;讀者在 Storybook 打不開 spec)
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (

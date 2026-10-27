@@ -1271,7 +1271,12 @@ function PromptAttachmentRow({
   return (
     // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、
     // `isolate` = 附件 Tag 的疊放值只在這一列裡比(與 Combobox 的 Tag 列同一個常數;OverflowTagList 檔頭)。
-    <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-hidden px-1 pt-1')}>
+    // 只裁水平(`overflow-x-clip`,不裁垂直):單列放不下的 Tag 本來就交給 +N,要裁的只有左右;原本 `overflow-hidden` 連下緣也裁,
+    // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
+    // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
+    // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md「7. AgentPromptInput(複合輸入盒)」「相互間距 4、距內緣 4」
+    <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}
         size="md"
