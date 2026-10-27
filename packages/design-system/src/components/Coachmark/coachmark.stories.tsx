@@ -22,25 +22,23 @@ type Story = StoryObj
 
 export const FeatureDiscovery: Story = {
   name: '單步驟新功能介紹',
+  parameters: { docs: { description: { story: '單步驟只有一個完成鍵「知道了」,沒有略過鍵(單步驟的略過與關閉是同一件事)。按「AI 助理」可以再打開這張卡。' } } },
   render: () => {
     const [open, setOpen] = React.useState(true)
     return (
-      <div className="flex flex-col items-center gap-[var(--layout-space-tight)]">
-        <Coachmark
-          open={open}
-          onOpenChange={setOpen}
-          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
-          title="試試新的 AI 助理"
-          description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
-          onNext={() => setOpen(false)}
-          isLastStep  /* single-step → CTA = 「知道了」 */
-          side="bottom"
-          align="center"
-        >
-          <Button variant="primary" startIcon={Bot}>AI 助理</Button>
-        </Coachmark>
-        <p className="text-footnote text-fg-muted">↑ 單步驟只有 1 個 CTA「知道了」,無略過鍵(單步驟沒有略過的意義)</p>
-      </div>
+      <Coachmark
+        open={open}
+        onOpenChange={setOpen}
+        image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
+        title="試試新的 AI 助理"
+        description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
+        onNext={() => setOpen(false)}
+        isLastStep  /* single-step → CTA = 「知道了」 */
+        side="bottom"
+        align="center"
+      >
+        <Button variant="tertiary" startIcon={Bot}>AI 助理</Button>
+      </Coachmark>
     )
   },
 }
@@ -73,72 +71,63 @@ const tourSteps = [
   },
 ]
 
-export const MultiStepTour: Story = {
-  name: '多步 新手導覽',
-  render: () => {
-    const [step, setStep] = React.useState(0)
-    const [open, setOpen] = React.useState(true)
-    const isLast = step === tourSteps.length - 1
+/**
+ * 多步導覽的錨點列(新手導覽、多步提示共用)。
+ * canonical fix(AR5):只 render 目前 active step 的 Coachmark(其他 step 用 plain Button)。
+ * **原本 bug 根因**:所有 3 個 Coachmark 同時 mount,切 step 時 step-0 Coachmark 需淡出(prop
+ * `open=false`)→ Radix 內部動畫未結束前無法相信新 Coachmark 的 open=true;step-1 Coachmark
+ * Radix 狀態 race → 直接不開,使用者看到按了「下一步」卡片就不見。
+ * 修法:**只 active step render Coachmark wrapper**,Radix 每 step 視為 fresh mount,無 race。
+ * 對齊 Ant Tour / Shepherd.js / Joyride 世界級多步驟 tour pattern。
+ * 錨點:目前那一步的錨點是卡片的觸發點(點它開關卡片);其他錨點點下去 = 在那一步打開卡片(2026-10-28,錨點不再是點了沒反應的按鈕;
+ * 同設計原則頁「點錨點看卡片」)。導覽結束後不另做「重新開始」入口(user 08-07「讓使用者去找原本的觸發點不好嗎？」)。
+ */
+function StepTour({ steps, kind }: { steps: typeof tourSteps; kind: 'new-features' | 'tips' }) {
+  const [step, setStep] = React.useState(0)
+  const [open, setOpen] = React.useState(true)
+  return (
+    <ButtonGroup>
+      {steps.map((s, i) => {
+        const isCurrent = step === i
+        const trigger = (
+          // 錨點一律同一個 variant:「目前那一步」由浮出的卡指出,不換成 primary —— 啟用態 / 目前 / 選中不是 variant
+          // (action-bar.spec.md「業務操作」允許 variant;pagination.spec.md「vs Button secondary」),換了還會讓 primary 跑到列的中間或最右(同檔「全局排序」)
+          <Button variant="tertiary" size="sm" startIcon={s.icon} onClick={isCurrent ? undefined : () => { setStep(i); setOpen(true) }}>
+            {s.anchor}
+          </Button>
+        )
+        if (!isCurrent) {
+          return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
+        }
+        return (
+          <Coachmark
+            key={s.anchor}
+            open={open}
+            onOpenChange={setOpen}
+            kind={kind}
+            image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
+            title={s.title}
+            description={s.description}
+            step={{ current: i + 1, total: steps.length }}
+            onPrev={i > 0 ? () => setStep(i - 1) : undefined}
+            onSkip={() => setOpen(false)}
+            onNext={() => (i === steps.length - 1 ? setOpen(false) : setStep(i + 1))}
+            isLastStep={i === steps.length - 1}
+            side="bottom"
+            align="start"
+          >
+            {trigger}
+          </Coachmark>
+        )
+      })}
+    </ButtonGroup>
+  )
+}
 
-    // canonical fix(AR5):只 render 目前 active step 的 Coachmark(其他 step 用 plain Button)。
-    // **原本 bug 根因**:所有 3 個 Coachmark 同時 mount,切 step 時 step-0 Coachmark 需淡出(prop
-    // `open=false`)→ Radix 內部動畫未結束前無法相信新 Coachmark 的 open=true;step-1 Coachmark
-    // Radix 狀態 race → 直接不開,user 看到「next 之後 popover 消失」。
-    // 修法:**只 active step render Coachmark wrapper**,Radix 每 step 視為 fresh mount,無 race。
-    // 對齊 Ant Tour / Shepherd.js / Joyride 世界級多步驟 tour pattern。
-    return (
-      <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-[360px]">
-        <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-lg bg-surface">
-          <ButtonGroup>
-            {tourSteps.map((s, i) => {
-              const isCurrent = step === i
-              const trigger = (
-                // 錨點一律同一個 variant:「目前那一步」由浮出的卡指出,不換成 primary —— 啟用態 / 目前 / 選中不是 variant
-                // (action-bar.spec.md「業務操作」允許 variant;pagination.spec.md「vs Button secondary」),換了還會讓 primary 跑到列的中間或最右(同檔「全局排序」)
-                <Button variant="tertiary" size="sm" startIcon={s.icon}>
-                  {s.anchor}
-                </Button>
-              )
-              if (!isCurrent) {
-                return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
-              }
-              return (
-                <Coachmark
-                  key={s.anchor}
-                  open={open}
-                  onOpenChange={setOpen}
-                  kind="new-features"
-                  image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
-                  title={s.title}
-                  description={s.description}
-                  step={{ current: i + 1, total: tourSteps.length }}
-                  onPrev={i > 0 ? () => setStep(i - 1) : undefined}
-                  onSkip={() => setOpen(false)}
-                  onNext={() => (i === tourSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
-                  isLastStep={i === tourSteps.length - 1}
-                  side="bottom"
-                  align="start"
-                >
-                  {trigger}
-                </Coachmark>
-              )
-            })}
-          </ButtonGroup>
-        </div>
-        {/* 「重設 Tour」↔ 同列的進度文字 = tight:按鈕驅動這段文字顯示的步數(跨範疇 + 直接 functional 交互「value 驅動 display」,
-            layoutSpace.spec.md:76 / :81 規則 3);按鈕前面沒有要它收尾的內容,不是規則 4 的「內容 → action button」(:127) */}
-        <div className="flex gap-[var(--layout-space-tight)]">
-          <Button variant="tertiary" size="sm" onClick={() => { setStep(0); setOpen(true) }}>重設 Tour</Button>
-          <span className="text-footnote text-fg-muted self-center">
-            目前第 {step + 1} / {tourSteps.length} 步{isLast ? '(最後步 — 「下一步」變「完成」)' : ''}
-          </span>
-        </div>
-        <p className="text-footnote text-fg-muted">
-          ↑ 多步驟:`kind="new-features"` header 提示脈絡;第 1 步有「略過」,按「下一步」進 2+ 步後「略過」自動隱藏(設計準則)
-        </p>
-      </div>
-    )
-  },
+export const MultiStepTour: Story = {
+  name: '多步新手導覽',
+  parameters: { docs: { description: { story: '多步驟:`kind="new-features"` 在標題列提示脈絡;第 1 步有「略過」,按「下一步」進到第 2 步以後「略過」自動隱藏;最後一步推進鍵變「完成」。點任一個錨點會在那一步打開卡片。' } } },
+  render: () => <StepTour steps={tourSteps} kind="new-features" />,
 }
 
 // ── Multi-step Tips: 鍵盤快捷鍵教學(Linear / Figma 風格)───────────────────
@@ -169,59 +158,8 @@ const tipSteps = [
 
 export const TipsMultiStep: Story = {
   name: '多步提示',
-  render: () => {
-    const [step, setStep] = React.useState(0)
-    const [open, setOpen] = React.useState(true)
-
-    // 同 MultiStepTour:只 active step render Coachmark(避免多 Coachmark 共存時 Radix race bug)
-    return (
-      <div className="flex flex-col gap-[var(--layout-space-tight)] min-w-[360px]">
-        <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-lg bg-surface">
-          <ButtonGroup>
-            {tipSteps.map((s, i) => {
-              const isCurrent = step === i
-              const trigger = (
-                // 錨點一律同一個 variant:「目前那一步」由浮出的卡指出,不換成 primary —— 啟用態 / 目前 / 選中不是 variant
-                // (action-bar.spec.md「業務操作」允許 variant;pagination.spec.md「vs Button secondary」),換了還會讓 primary 跑到列的中間或最右(同檔「全局排序」)
-                <Button variant="tertiary" size="sm" startIcon={s.icon}>
-                  {s.anchor}
-                </Button>
-              )
-              if (!isCurrent) {
-                return <React.Fragment key={s.anchor}>{trigger}</React.Fragment>
-              }
-              return (
-                <Coachmark
-                  key={s.anchor}
-                  open={open}
-                  onOpenChange={setOpen}
-                  kind="tips"
-                  image={<MediaGradient from={s.media.from} to={s.media.to} icon={s.icon} label={s.media.label} />}
-                  title={s.title}
-                  description={s.description}
-                  step={{ current: i + 1, total: tipSteps.length }}
-                  onPrev={i > 0 ? () => setStep(i - 1) : undefined}
-                  onSkip={() => setOpen(false)}
-                  onNext={() => (i === tipSteps.length - 1 ? setOpen(false) : setStep(i + 1))}
-                  isLastStep={i === tipSteps.length - 1}
-                  side="bottom"
-                  align="start"
-                >
-                  {trigger}
-                </Coachmark>
-              )
-            })}
-          </ButtonGroup>
-        </div>
-        <div className="flex">
-          <Button variant="tertiary" size="sm" onClick={() => { setStep(0); setOpen(true) }}>重設 Tips</Button>
-        </div>
-        <p className="text-footnote text-fg-muted">
-          ↑ `kind="tips"` header 文字 = 「使用技巧」(vs `new-features` = 「新功能介紹」),兩者的標題都由元件內建對照表自動帶出,consumer 不需自己寫
-        </p>
-      </div>
-    )
-  },
+  parameters: { docs: { description: { story: '`kind="tips"` 的標題列文字是「使用技巧」(`new-features` 是「新功能介紹」),兩者都由元件內建對照表帶出,不必自己寫。' } } },
+  render: () => <StepTour steps={tipSteps} kind="tips" />,
 }
 
 // 備註(2026-04-21 決策):移除 `TextOnly` 與 `WithIllustration` 兩則範例。

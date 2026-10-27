@@ -4,6 +4,7 @@ import { Bot, Sparkles, Users } from 'lucide-react'
 import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import { Button } from '@/design-system/components/Button/button'
+import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -19,12 +20,34 @@ type Story = StoryObj
 // 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
 // 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
 // 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+// 檢閱器的開關用 DS Checkbox(2026-10-28,原生 <input type="checkbox"> 換掉 —— 範例只用 DS 元件,story-rules.md「禁止」)
 const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
-  <label className="flex items-center gap-2 text-caption">
-    <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-    <span className="font-mono">{label}</span>
-  </label>
+  <Checkbox size="sm" label={<span className="font-mono">{label}</span>} checked={value} onCheckedChange={(v) => onChange(v === true)} />
 )
+
+// 元件總覽的卡片接上元件本來的行為(2026-10-28;錨點是單獨的觸發鈕 → tertiary,story-rules.md「按鈕 variant:單獨的按鈕一律 tertiary」):上一步 / 下一步換步、最後一步按「完成」關閉,點「AI 助理」再打開
+const OverviewCoachmark = () => {
+  const [current, setCurrent] = React.useState(2)
+  const [open, setOpen] = React.useState(true)
+  return (
+    <Coachmark
+      open={open}
+      onOpenChange={setOpen}
+      image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
+      title="試試新的 AI 助理"
+      description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
+      step={{ current, total: 3 }}
+      onPrev={current > 1 ? () => setCurrent(current - 1) : undefined}
+      onSkip={current === 1 ? () => setOpen(false) : undefined}
+      onNext={() => (current === 3 ? setOpen(false) : setCurrent(current + 1))}
+      isLastStep={current === 3}
+      side="right"
+      align="start"
+    >
+      <Button variant="tertiary" startIcon={Bot}>AI 助理</Button>
+    </Coachmark>
+  )
+}
 
 export const Overview: Story = {
   name: '元件總覽',
@@ -36,19 +59,7 @@ export const Overview: Story = {
           Coachmark 是 Popover 的 composition pattern——消費 Popover 的浮層外殼 + overlay-surface Body/Footer padding,自己擁有的差異僅三點:(1) Header 可選(kind="tips"/"new-features"/ReactNode;single-step 常無、multi-step tour 建議帶),(2) 有 Media 區,(3) Footer 為 justify-between。改 Popover 視覺 Coachmark 自動跟進。
         </Desc>
         <div className="flex items-start gap-8">
-          <Coachmark
-            open
-            image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
-            title="試試新的 AI 助理"
-            description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
-            step={{ current: 2, total: 3 }}
-            onPrev={() => {}}
-            onNext={() => {}}
-            side="right"
-            align="start"
-          >
-            <Button variant="primary" startIcon={Bot}>AI 助理</Button>
-          </Coachmark>
+          <OverviewCoachmark />
           <div className="text-caption text-fg-secondary max-w-[280px]">
             <ul className="list-disc pl-4 space-y-1.5">
               <li><b>Media</b> — 可選,預設 16:9 比例,邊緣切齊靠外殼 p-0 overflow-hidden 裁切</li>
@@ -66,7 +77,7 @@ export const Overview: Story = {
             <thead><tr><Th>區塊</Th><Th>條件渲染</Th><Th>Padding</Th><Th>說明</Th></tr></thead>
             <tbody>
               <tr><Td>Media</Td><Td mono>image != null</Td><Td mono>無 inner padding</Td><Td>full-width bg-muted,overflow-hidden;比例由 mediaRatio 控制(預設 16:9)</Td></tr>
-              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose py-tight)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt `--item-gap-label-desc-reading-lg`(2px)</Td></tr>
+              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose py-tight)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt <code>--item-gap-label-desc-reading-lg</code>(2px)</Td></tr>
               <tr><Td>Footer</Td><Td mono>step || onSkip || onNext || onPrev</Td><Td mono>PopoverFooter(px-loose py-tight)</Td><Td>justify-between(不是 justify-end)</Td></tr>
             </tbody>
           </table>
@@ -116,7 +127,9 @@ export const Inspector: Story = {
     const [isLast, setIsLast] = React.useState(false)
     const [hasPrev, setHasPrev] = React.useState(true)
     const [hasSkip, setHasSkip] = React.useState(true)
-
+    // 卡片的按鈕接上元件本來的行為(2026-10-28):上一步 / 下一步換步,略過與「完成」關閉,點錨點再打開
+    const [current, setCurrent] = React.useState(2)
+    const [open, setOpen] = React.useState(true)
 
     return (
       <div className="grid grid-cols-2 gap-8">
@@ -131,19 +144,20 @@ export const Inspector: Story = {
               <Toggle label="isLastStep" value={isLast} onChange={setIsLast} />
             </div>
             <Coachmark
-              open
+              open={open}
+              onOpenChange={setOpen}
               image={hasImage ? <MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Sparkles} label="AI 續寫" /> : undefined}
               title="讓 AI 幫你續寫草稿"
               description="選取一段文字,AI 會依前後文續寫並保留你的語氣;不滿意可以一鍵重新產生。"
-              step={hasStep ? { current: 2, total: 3 } : undefined}
-              onPrev={hasPrev ? () => {} : undefined}
-              onSkip={hasSkip ? () => {} : undefined}
-              onNext={() => {}}
+              step={hasStep ? { current, total: 3 } : undefined}
+              onPrev={hasPrev ? () => setCurrent(Math.max(1, current - 1)) : undefined}
+              onSkip={hasSkip ? () => setOpen(false) : undefined}
+              onNext={() => (isLast ? setOpen(false) : setCurrent(Math.min(3, current + 1)))}
               isLastStep={isLast}
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm" startIcon={Sparkles}>AI 續寫</Button>
+              <Button variant="tertiary" size="sm" startIcon={Sparkles}>AI 續寫</Button>
             </Coachmark>
           </div>
         </div>
@@ -192,7 +206,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>區塊色彩對照</H3>
         <Desc>
-          Coachmark 外殼 token 完全繼承 Popover(`--surface-raised` / `--border` / `--elevation-200`);自己擁有的色彩決策僅 Media bg 和 Step 計數。改 Popover 外殼 token 連動,不在此 override。
+          Coachmark 外殼 token 完全繼承 Popover(<code>--surface-raised</code> / <code>--border</code> / <code>--elevation-200</code>);自己擁有的色彩決策僅 Media bg 和 Step 計數。改 Popover 外殼 token 連動,不在此 override。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -238,7 +252,7 @@ export const SizeMatrix: Story = {
       <div>
         <H3>Media 比例由 mediaRatio 控制(預設 16:9)</H3>
         <Desc>
-          Media 區高度由寬度 × (1 / mediaRatio) 決定;預設 16:9(w-80 → media 高約 180px),同一段 tour 各步驟維持一致比例,consumer 不需自己算高度。需要時 consumer 可傳 mediaRatio(4/3 產品截圖 / 1/1 方圖 / 3/4 直式)覆寫。若 media 內容比例與設定不符,`overflow-hidden` 會裁切超出部分。
+          Media 區高度由寬度 × (1 / mediaRatio) 決定;預設 16:9(w-80 → media 高約 180px),同一段 tour 各步驟維持一致比例,consumer 不需自己算高度。需要時 consumer 可傳 mediaRatio(4/3 產品截圖 / 1/1 方圖 / 3/4 直式)覆寫。若 media 內容比例與設定不符,<code>overflow-hidden</code> 會裁切超出部分。
         </Desc>
       </div>
 
@@ -259,6 +273,7 @@ export const StateBehavior: Story = {
   render: () => {
     const [singleOpen, setSingleOpen] = React.useState(true)
 
+    // 錨點本身就是卡片的觸發點(點它開關卡片),不另放「重新開啟 / 重設」(2026-10-28;登記簿 A19 / A12:範例不放測試用控制項)
     const [tourStep, setTourStep] = React.useState(0)
     const [tourOpen, setTourOpen] = React.useState(true)
     const tourTotal = 3
@@ -269,9 +284,9 @@ export const StateBehavior: Story = {
         <div>
           <H3>單步 Coachmark(無 step,僅完成 CTA「知道了」)</H3>
           <Desc>
-            最簡 Coachmark:單一完成 CTA(`doneLabel`,預設「知道了」),無 step 計數、無略過鍵(單步略過與關閉語義重複,對齊 spec.md「CTA 語義表」)。Esc 關閉。
+            最簡 Coachmark:單一完成 CTA(<code>doneLabel</code>,預設「知道了」),無 step 計數、無略過鍵(單步的略過與關閉是同一件事)。Esc 關閉;點「AI 助理」再打開。
           </Desc>
-          <div className="flex items-start gap-6">
+          <div className="flex items-start">
             <Coachmark
               open={singleOpen}
               onOpenChange={setSingleOpen}
@@ -283,18 +298,17 @@ export const StateBehavior: Story = {
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm" startIcon={Bot}>AI 助理</Button>
+              <Button variant="tertiary" size="sm" startIcon={Bot}>AI 助理</Button>
             </Coachmark>
-            <Button variant="tertiary" size="sm" onClick={() => setSingleOpen(true)}>重新開啟</Button>
           </div>
         </div>
 
         <div>
           <H3>多步 Tour(第 N 步,共 M 步;含上一步)</H3>
           <Desc>
-            Consumer 管理 `step` state;每步傳不同 `current`。第 2+ 步顯示「上一步」,最後步「下一步」變「完成」(isLastStep)。Footer 左側 step 計數使用 `tabular-nums` 讓數字等寬,切換步驟時不跳動。
+            Consumer 管理 <code>step</code> state;每步傳不同 <code>current</code>。第 2+ 步顯示「上一步」,最後步「下一步」變「完成」(<code>isLastStep</code>)。Footer 左側 step 計數使用 <code>tabular-nums</code> 讓數字等寬,切換步驟時不跳動。走完或略過後點錨點再打開。
           </Desc>
-          <div className="flex items-start gap-6">
+          <div className="flex items-start">
             <Coachmark
               open={tourOpen}
               onOpenChange={setTourOpen}
@@ -309,13 +323,8 @@ export const StateBehavior: Story = {
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm" startIcon={Users}>步驟 {tourStep + 1}</Button>
+              <Button variant="tertiary" size="sm" startIcon={Users}>步驟 {tourStep + 1}</Button>
             </Coachmark>
-            <div className="flex flex-col gap-2 text-caption">
-              <span>目前:step {tourStep + 1} / {tourTotal}</span>
-              <span className="text-fg-muted">{isLast ? 'isLastStep = true → 推進鍵是「完成」' : 'isLastStep = false → 推進鍵是「下一步」'}</span>
-              <Button className="self-start" variant="tertiary" size="sm" onClick={() => { setTourStep(0); setTourOpen(true) }}>重設</Button>
-            </div>
           </div>
         </div>
 
@@ -341,7 +350,7 @@ export const StateBehavior: Story = {
         <div>
           <H3>Focus / Esc / Click-outside(繼承 Popover)</H3>
           <Desc>
-            Coachmark 大部分互動行為繼承 Popover。開啟時焦點落在內容區、不會自動跳到按鈕,避免你還在讀內容時就誤觸推進——按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列會先到右上的關閉 X,多步則先經「上一步 / 略過」)。關閉後焦點回到觸發元素;按 Esc 關閉(效果等同退出,但不會觸發 onSkip);預設不鎖背景,你可以忽略它繼續原本的操作。技術細節(Radix API 名稱與修正紀錄)見 `coachmark.spec.md`「A11y 預設」段與 coachmark.tsx。
+            Coachmark 大部分互動行為繼承 Popover。開啟時焦點落在內容區、不會自動跳到按鈕,避免你還在讀內容時就誤觸推進——按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列會先到右上的關閉 X,多步則先經「上一步 / 略過」)。關閉後焦點回到觸發元素;按 Esc 關閉(效果等同退出,但不會觸發 <code>onSkip</code>);預設不鎖背景,你可以忽略它繼續原本的操作。
           </Desc>
         </div>
       </div>
@@ -355,8 +364,14 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `coachmark.spec.md` 「A11y 預設」段。摘要:\n\n-   焦點管理  :開啟時焦點落在內容區、不自動跳到按鈕,避免你還在讀內容時誤觸;按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列 / 多步會先到關閉 X / 上一步 / 略過);關閉後焦點回到觸發元素\n-   Esc 關閉  :預設啟用——user 按 Esc 透過 Radix onOpenChange 關閉浮層(效果等同退出),但不觸發 onSkip callback(Esc 是「關閉浮層」非「明確 skip」)\n-   ARIA  :trigger 自動  aria-expanded  /  aria-controls ,content  role=\"dialog\" (Radix 預設)\n-   Step 計數 tabular-nums  :螢幕閱讀器讀「第 2 步,共 3 步」語意清楚"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(反引號原樣顯示、開頭「詳 coachmark.spec.md」是內部代號)→ 改成真的清單 */}
+      <ul className="list-disc pl-5">
+        <li><b className="text-foreground">焦點管理</b>:開啟時焦點落在內容區、不自動跳到按鈕,避免你還在讀內容時誤觸;按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列 / 多步會先到關閉 X / 上一步 / 略過);關閉後焦點回到觸發元素</li>
+        <li><b className="text-foreground">Esc 關閉</b>:預設啟用 —— 按 Esc 關閉浮層(效果等同退出),但不觸發 <code>onSkip</code>(Esc 是「關閉浮層」,不是「明確略過」)</li>
+        <li><b className="text-foreground">ARIA</b>:觸發點自動帶 <code>aria-expanded</code> / <code>aria-controls</code>,內容是 <code>role=&quot;dialog&quot;</code></li>
+        <li><b className="text-foreground">步驟計數</b>:<code>tabular-nums</code>,螢幕閱讀器讀「第 2 步,共 3 步」</li>
+      </ul>
     </div>
   ),
 }

@@ -24,18 +24,22 @@ import {
   DialogTitle,
   DialogBody,
   DialogFooter,
+  DialogClose,
 } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { Alert } from '@/design-system/components/Alert/alert'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Coachmark/設計原則',
   parameters: { layout: 'padded' },
+  // 確認框的「永久刪除」做完跳 Toast(同 Dialog / Sheet 設計原則頁);Toaster 放 story 外層(同 toast.principles.stories.tsx)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -46,7 +50,7 @@ const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 // ── 範例卡一律受控、按鈕真的有作用(2026-10-20,獨立驗證 OV-08)────────────────────────────────
 // 2026-10-20 前本頁每張卡都是非受控 + 空的 callback:知道了 / 略過 / 下一步 / 上一步按了卡片都不動 ——
 // 連寫著「使用者可按略過退出 tour」的那張,略過也沒反應(範例反證自己的規則)。
-// 這裡照展示頁「多步 新手導覽」的寫法(coachmark.stories.tsx MultiStepTour):只有目前那一步的錨點包 Coachmark,
+// 這裡照展示頁「多步新手導覽」的寫法(coachmark.stories.tsx MultiStepTour):只有目前那一步的錨點包 Coachmark,
 // 知道了 / 略過 / 完成 → 關卡片;下一步 / 上一步 → 換到那一步的錨點。卡片預設不開(本檔 @overlay-open-skip)。
 
 /** 單步驟範例:按錨點打開,「知道了」關閉。 */
@@ -108,7 +112,8 @@ function TourExample({ startAt }: { startAt: number }) {
       {TOUR.map((s, i) => {
         const trigger = (
           // 錨點一律同一個 variant(同 coachmark.stories.tsx 展示頁):「目前那一步」由浮出的卡指出,不換成 primary(action-bar.spec.md「業務操作」)
-          <Button variant="tertiary" size="sm" startIcon={s.icon}>
+          // 不是目前那一步的錨點:點下去 = 在那一步打開卡片(2026-10-28,錨點不再是點了沒反應的按鈕;同展示頁 StepTour)
+          <Button variant="tertiary" size="sm" startIcon={s.icon} onClick={step === i ? undefined : () => { setStep(i); setOpen(true) }}>
             {s.anchor}
           </Button>
         )
@@ -148,7 +153,7 @@ export const UsageGuidance: Story = {
           <p>適合 Coachmark 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <TutorialList>
             <li><StoryLink kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹">首次推出 AI 助理時 anchor 到入口按鈕介紹(單步驟)</StoryLink></li>
-            <li><StoryLink kind="Design System/Components/Coachmark/展示" name="多步 新手導覽">新用戶首登的三步功能導覽(多步 Onboarding)</StoryLink></li>
+            <li><StoryLink kind="Design System/Components/Coachmark/展示" name="多步新手導覽">新用戶首登的三步功能導覽(多步 Onboarding)</StoryLink></li>
             <li><StoryLink kind="Design System/Components/Coachmark/展示" name="多步提示">進階快捷鍵的漸進式提示(多步 Tips)</StoryLink></li>
           </TutorialList>
         </div>
@@ -236,7 +241,7 @@ export const UsageGuidance: Story = {
             image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
             title="試試新的 AI 助理"
             description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
-            anchor={<Button variant="primary" startIcon={Bot}>AI 助理</Button>}
+            anchor={<Button variant="tertiary" startIcon={Bot}>AI 助理</Button>}
           />
           <ExampleCaption>↑ 點按鈕看卡片。實際產品裡由系統主動打開,使用者不需事先知道有這個功能</ExampleCaption>
         </TutorialRule>
@@ -247,18 +252,19 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
+              {/* secondary + danger:點下去還有一層確認(button.spec.md「danger prop — 語意意圖」);確認框裡的「永久刪除」才是 primary + danger */}
+              <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth="440px">
-              <DialogHeader><DialogTitle>確定要永久刪除此專案?</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>是否永久刪除專案</DialogTitle></DialogHeader>
               <DialogBody><p className="text-body">此動作無法復原,所有相關任務、評論、附件都會一併刪除。</p></DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary" danger>永久刪除</Button>
+                <DialogClose asChild><Button variant="tertiary">取消</Button></DialogClose>
+                <DialogClose asChild><Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '專案已永久刪除' })}>永久刪除</Button></DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <ExampleCaption>↑ 破壞性決策必須完整處理,不能讓使用者點旁邊跳過</ExampleCaption>
+          <ExampleCaption>↑ 要回到頁面得先處理這個框(點遮罩 / Esc 等於返回)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -312,7 +318,7 @@ export const MultiStepBestPracticesRule: Story = {
 
       <TutorialRule
         title="Footer 順序 — 上一步 / 略過 / 下一步"
-        note="對齊與順序都不是 Coachmark 自訂的:浮層頁腳一律靠右(overlay-surface.spec.md「底部區域:按鈕列 vs 列式」SurfaceFooter 排版:justify-end,左側有步驟計數時 justify-between —— 單步卡沒有計數也一樣靠右);靠右時照全 DS 的全局排序(action-bar.spec.md「全局排序」:primary > secondary > tertiary,靠右對齊 primary 在最右),所以推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。頁面裡沒有標題的步驟列是另一種情形:靠左、primary「下一步」在最左(action-bar.spec.md「對齊方向的決定」),不套這裡。此為各按鈕『出現時』的排列位置,非三鍵同時 render — 略過僅第一步顯示、上一步第 2+ 步顯示,兩者永不共存(見 CTA 語義表)"
+        note="對齊與順序都不是 Coachmark 自訂的:浮層頁腳一律靠右(左側有步驟計數時計數靠左、按鈕靠右;單步卡沒有計數也一樣靠右);靠右時照全 DS 的按鈕排序(primary > secondary > tertiary,primary 在最右),所以推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。頁面裡沒有標題的步驟列是另一種情形:靠左、primary「下一步」在最左,不套這裡。這是各按鈕出現時的排列位置,不是三顆同時出現 —— 略過只在第一步、上一步從第 2 步起,兩者不會同時出現"
       >
         <ExampleCaption>上一步 第 2+ 步才出現;第 1 步只有 略過 / 下一步</ExampleCaption>
       </TutorialRule>
@@ -340,7 +346,7 @@ export const MediaContentRule: Story = {
           image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 摘要" />}
           title="AI 摘要"
           description="選取任一段文字,AI 會整理成三個重點。"
-          anchor={<Button variant="primary" size="sm" startIcon={Bot}>AI 摘要</Button>}
+          anchor={<Button variant="tertiary" size="sm" startIcon={Bot}>AI 摘要</Button>}
         />
         <ExampleCaption>↑ 點按鈕看卡片:Illustration 適合抽象功能(AI / 協作 / 自動化)</ExampleCaption>
       </TutorialRule>
