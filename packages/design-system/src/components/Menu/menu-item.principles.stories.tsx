@@ -67,10 +67,10 @@ export const CompositionRules: Story = {
     // 段落 / 規則之間與規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
     <TutorialPage className="max-w-prose">
       <p>MenuItem 是選單選項列的共用排版元件,由以下兩類選單元件包起來使用,不會直接寫在產品頁面裡:</p>
-      <TutorialRule title="Pattern 1 — DropdownMenu + MenuItem(action menu)">
+      <TutorialRule title="動作選單 — DropdownMenu 內含 MenuItem">
         <p>使用者點擊觸發某個 action(複製 / 刪除 / 重新命名)→ <StoryLink kind="Design System/Components/DropdownMenu/展示" name="基本">DropdownMenu</StoryLink>(Radix 控制 open / close + keyboard nav,MenuItem 提供 row layout)。</p>
       </TutorialRule>
-      <TutorialRule title="Pattern 2 — SelectMenu(Popover + Command + MenuItem)— form value 選擇">
+      <TutorialRule title="表單選值 — SelectMenu 內含 MenuItem">
         <p>使用者選一個 / 多個值寫回 form → <StoryLink kind="Design System/Components/Select/展示" name="四模式">Select</StoryLink> / <StoryLink kind="Design System/Components/Combobox/展示" name="四模式">Combobox</StoryLink>(內部已組合 SelectMenu + cmdk + MenuItem)。</p>
       </TutorialRule>
       <p className="text-fg-muted">禁止:在產品頁面裡自己用 <code>&lt;div&gt;</code> 拼一列選單(像 <code>&lt;div className="flex px-2 py-1.5"&gt;</code>)— 一律透過上方的 MenuItem 系選單元件(DropdownMenu / SelectMenu 等,內部消費 MenuItem),才能確保所有選單列的對齊與間距一致。MenuItem 本身是 internal 排版元件,在產品頁面直接裸用會失去外層選單的無障礙 / 鍵盤 / 焦點管理。各區塊的對齊規則(左側圖示/頭像在 24px 內對齊、文字往下堆疊、右側標記可有可無)由選項列共用設計準則統一規範。</p>

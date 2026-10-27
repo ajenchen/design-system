@@ -21,7 +21,7 @@ benchmark:
 
 MenuItem 是所有 menu 類元件的**共用視覺佈局層**——處理 prefix 對齊、尺寸、狀態。SelectMenu、DropdownMenu、未來的 ContextMenu 等都消費它。它只負責 layout（padding、gap、prefix alignment、typography），互動行為由各 menu 的 Radix primitive 外層控制。
 
-**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Family 1: Menu item anatomy」章節的 scanning-mode 規格。
 
 ---
 
@@ -158,8 +158,8 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 | hover | `--neutral-hover` | foreground | 滑鼠 hover —— 只有點了會有反應的列(自己是選項、有 `onClick`,或巢在 DropdownMenu / cmdk 裡由外層畫);靜態預覽(`role="presentation"`、沒有 `onClick`)不變色、不出手指游標(稽核 M040;同 `../FileItem/file-item.spec.md`「滑過」) |
 | selected（單選） | `--neutral-selected` | foreground | bg 高亮（不用 ✓ 勾號，避免影響 prefix 對齊） |
 | **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)` |
-| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」;2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）|
-| **selected × 鍵盤焦點（疊加）** | `--neutral-selected` + **畫框**（框疊在選中底色上,`focus-ring-inset` 2px 內描邊） | foreground | 同上 owner。**2026-09-07 user 拍板「A5畫框」**:底色已被選中佔走,再深一階等於把兩個意義塞進同一個通道;原 `--neutral-selected-focus` 已退役。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
+| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09**「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11);2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）|
+| **selected × 鍵盤焦點（疊加）** | `--neutral-selected` + **畫框**（框疊在選中底色上,`focus-ring-inset` 2px 內描邊） | foreground | 同上 owner。**2026-09-07 user 在 A5 選了畫框**:底色已被選中佔走,再深一階等於把兩個意義塞進同一個通道;原 `--neutral-selected-focus` 已退役。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
 | selected（多選） | transparent | foreground | checkbox 勾選 |
 | disabled | transparent | `--fg-disabled` | disabled prop |
 
@@ -266,7 +266,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 |---|---|---|---|
 | 場景 | 浮層選單 row,掃視挑一個 | form 內 Checkbox / Radio 的 label 佈局 | 內容列表 row,閱讀 |
 | Clamp 預設 | label / desc 各 1 行 | `'none'` 完整閱讀(SSOT 對照表見 `../Checkbox/checkbox.spec.md`「為什麼不像 MenuItem 強制截斷?」) | 依元件(如 FileItem) |
-| SSOT | `item-anatomy.spec.md`「Menu item layout」 | `../SelectionControl/selection-item.spec.md` | `item-anatomy.spec.md`「List item layout」 |
+| SSOT | `item-anatomy.spec.md`「Family 1: Menu item anatomy」 | `../SelectionControl/selection-item.spec.md` | `item-anatomy.spec.md`「List item layout」 |
 
 ### 常見誤解
 

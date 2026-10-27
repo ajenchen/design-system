@@ -9,6 +9,9 @@ import { Mail, Bell, FileText } from 'lucide-react'
 import { MenuItem, MenuGroup } from './menu-item'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 // Avatar is now passed as AvatarData (data object), rendered internally by MenuItem
 
 const meta: Meta = {
@@ -86,40 +89,19 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI
 
-   NOTE: Kept local (not imported from `_anatomy/anatomy-utils`) because the
-   Button-family inspector layout diverges visually from the 通用 helpers:
-   H3 `text-h6 font-semibold` (not `text-body font-bold mb-2`), Desc has no
-   bottom margin, Th/Td use `p-2 border-b border-divider` row style, and
-   Swatch defaults to `size="md"` for inline token chips.
+   區段標題 / 說明走共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose 跟密度;2026-10-28 A4,
+   之前本檔自帶 H3 / Desc,標題 ↔ 說明 4px、標題區 → 內容寫死 12 / 16)。Th / Td 是本檔表格的列樣式,留在本檔。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
+// 本頁人員頭像都接名片(avatar.spec.md「Avatar HoverCard 原則」);名片頭像用觸發點同一張圖(或同樣沒有圖)
+const aliceCard = (avatarSrc?: string) => samplePersonCard({ ...SAMPLE_PEOPLE.alice, avatarSrc })
+const bobWangCard = (avatarSrc?: string) => samplePersonCard({ ...SAMPLE_PEOPLE.bobWang, avatarSrc })
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
 
 const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
   <div className="flex flex-col gap-0.5 mt-2">
@@ -144,7 +126,7 @@ const PropRow = ({ label, dot, children }: { label: string; dot?: string; childr
 )
 
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ── Blueprint zone colors ── */
@@ -162,7 +144,7 @@ const BpZoneH = ({ w, color, label, sub }: { w: number; color: { bg: string; bor
   <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
     style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
     <span className="text-[10px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
+    {sub && <span className="text-[9px] font-mono leading-none" style={{ color: color.text }}>{sub}</span>}
   </div>
 )
 
@@ -171,7 +153,7 @@ const BpZoneV = ({ h, color, label, sub }: { h: number; color: { bg: string; bor
   <div className="flex items-center justify-center gap-1.5"
     style={{ height: h, width: '100%', background: color.bg, borderTop: `1.5px dashed ${color.border}`, borderBottom: `1.5px dashed ${color.border}` }}>
     <span className="text-[10px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
+    {sub && <span className="text-[9px] font-mono leading-none" style={{ color: color.text }}>{sub}</span>}
   </div>
 )
 
@@ -195,11 +177,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>三個區域：prefix（checkbox + icon 或 avatar）、content（label + description）、suffix（tag）。prefix 內 checkbox 和 icon/avatar 由對齊容器統一管理。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description="三個區域：prefix（checkbox + icon 或 avatar）、content（label + description）、suffix（tag）。prefix 內 checkbox 和 icon/avatar 由對齊容器統一管理。">
         <div className="flex flex-col gap-4">
           {/* Full structure */}
           <div className="flex flex-col gap-2 items-start">
@@ -212,8 +190,11 @@ export const Overview = {
                 { name: 'description', color: 'magenta' },
                 { name: 'tag', color: 'warning' },
               ].map((s) => (
+                // magenta 沒有 --magenta / --magenta-subtle 語意 token(只有 hover / active),改讀 categorical 色階 —— 跟下方兩張圖的 description 同一組色
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={s.color === 'magenta'
+                    ? { borderColor: 'var(--color-magenta-6)', backgroundColor: 'var(--color-magenta-1)', color: 'var(--color-magenta-6)' }
+                    : { borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
             <span className="text-[10px] text-fg-muted">
@@ -253,11 +234,10 @@ export const Overview = {
             </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -283,7 +263,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -387,7 +367,7 @@ const InspectorInner = () => {
                 <MenuItem role="presentation"
                   size={size}
                   startIcon={hasIcon ? Mail : undefined}
-                  avatar={hasAvatar ? { alt: "Alice", color: "indigo" as const } : undefined}
+                  avatar={hasAvatar ? { alt: "Alice", color: "indigo" as const, hoverCard: aliceCard() } : undefined}
                   description={hasDesc ? '每日摘要信件到信箱' : undefined}
                   checkbox={isMulti}
                   checked={isMulti ? selected : undefined}
@@ -525,13 +505,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -542,11 +518,8 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
+    <ExampleSection title="State 色彩對照" description="單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時文字 / startIcon 用 fg-disabled、tag / endContent / startContent 用 opacity-disabled、checkbox 走自身 disabled、avatar 不變暗。色塊即時渲染，切 dark mode 自動更新。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>State 色彩對照</H3>
-        <Desc>單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時文字 / startIcon 用 fg-disabled、tag / endContent / startContent 用 opacity-disabled、checkbox 走自身 disabled、avatar 不變暗。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
 
       {/* Single-select */}
       <div className="flex flex-col gap-3">
@@ -642,6 +615,7 @@ export const ColorMatrix = {
         </div>
       </div>
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -653,11 +627,7 @@ export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。density 切換由系統自動處理 field-height 值。</Desc>
-      </div>
-
+      <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。density 切換由系統自動處理 field-height 值。">
       {/* Token comparison table */}
       <div className="overflow-x-auto">
         <table className="border-collapse text-caption">
@@ -697,13 +667,13 @@ export const SizeMatrix = {
           </tbody>
         </table>
       </div>
+      </ExampleSection>
 
       {/* Avatar sizing */}
-      <div className="flex flex-col gap-3">
-        <H3>Avatar 尺寸——24px 閾值</H3>
-        <Desc>
-          avatar 尺寸由 description 決定。無 description 時使用 inline 尺寸（對齊 Tag 高度，&le; 24px），有 description 時使用 block 尺寸（floor8(label行高 + 2px + desc行高)，&gt; 24px）。24px 是物理限制——16px icon 在 24px 圓內可辨識，更小則不行。
-        </Desc>
+      <ExampleSection
+        title="Avatar 尺寸——24px 閾值"
+        description={<>avatar 尺寸由 description 決定。無 description 時使用 inline 尺寸（對齊 Tag 高度，&le; 24px），有 description 時使用 block 尺寸（floor8(label行高 + 2px + desc行高)，&gt; 24px）。24px 是物理限制——16px icon 在 24px 圓內可辨識，更小則不行。</>}
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr>
@@ -725,7 +695,7 @@ export const SizeMatrix = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Visual preview per size */}
       <div className="flex flex-col gap-4">
@@ -739,10 +709,10 @@ export const SizeMatrix = {
                   <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日摘要信件">
                     電子郵件通知
                   </MenuItem>
-                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const }}>
+                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const, hoverCard: aliceCard("https://i.pravatar.cc/48?u=alice-chen") }}>
                     Alice Chen
                   </MenuItem>
-                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const }} description="工程部門">
+                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const, hoverCard: bobWangCard("https://i.pravatar.cc/48?u=bob-wang") }} description="工程部門">
                     Bob Wang
                   </MenuItem>
                   <MenuItem role="presentation" size={sz} checkbox checked={true} startIcon={Bell}>
@@ -767,8 +737,16 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。\n\n  語意 role  :直接使用時 MenuItem 預設渲染為 role=\"option\" 並帶 aria-selected / aria-disabled——但那要求外層真的是一個有方向鍵、有焦點管理的 listbox;本元件 stories 的預覽容器並不是(2026-09-24 起容器為 role=\"group\"、每個 MenuItem 傳 role=\"presentation\",不假裝是選單);巢狀在外層互動節點內時(SelectMenu / Combobox 的 cmdk option、DropdownMenu 的 Radix menuitem)外層會傳 role=\"presentation\",MenuItem 同步抑制 aria-selected / aria-disabled——ARIA 語意由外層節點單一持有,內層僅保留 data-* 樣式屬性。哪一項目前被聚焦與選取由外層選單決定。\n\n  焦點外觀  :聚焦時以 bg-neutral-hover 背景高亮標示被聚焦的選項(cva base 為 outline-none + focus-visible:bg-neutral-hover),對齊 menu/listbox option 的 active-highlight 慣例,而非畫 outline ring。\n\n  驗證  :Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(焦點外觀那段寫成「滑過底色、不畫框」,與 menu-item.spec.md「Focus」相反)→ 改成真的段落與清單;段落之間 tight(同一段文字流) */}
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。</p>
+        <ul className="list-disc pl-5">
+          <li>語意 role:直接使用時 MenuItem 預設渲染為 <code>role="option"</code> 並帶 <code>aria-selected</code> / <code>aria-disabled</code>——但那要求外層真的是一個有方向鍵、有焦點管理的 listbox;本元件 stories 的預覽容器並不是(容器為 <code>role="group"</code>、每個 MenuItem 傳 <code>role="presentation"</code>,不假裝是選單);巢狀在外層互動節點內時(SelectMenu / Combobox 的 cmdk option、DropdownMenu 的 Radix menuitem)外層會傳 <code>role="presentation"</code>,MenuItem 同步抑制 <code>aria-selected</code> / <code>aria-disabled</code>——ARIA 語意由外層節點單一持有,內層僅保留 <code>data-*</code> 樣式屬性。哪一項目前被聚焦與選取由外層選單決定。</li>
+          <li>焦點外觀:鍵盤游標一律畫框(<code>focus-ring-inset</code>,2px 內描邊)、不上底色;巢在 cmdk / Radix 內時,框由外層的 CommandItem / DropdownMenu 依反白來歷畫(滑鼠移過搬的反白 = 底色、鍵盤搬的 = 框)。</li>
+          <li>驗證:Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。</li>
+        </ul>
+      </div>
     </div>
   ),
 }

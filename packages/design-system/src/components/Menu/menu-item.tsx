@@ -119,10 +119,10 @@ export interface MenuItemProps
   /** 作為群組標題（不可選，font-medium，fg-muted） */
   header?: boolean
   /**
-   * 訊息列(2026-09-08 user 拍板):選單裡「不是選項」的提示 —— 沒有結果 / 沒有選項 / 載入中。
+   * 訊息列(2026-09-08 user 拍板):選單裡不是選項的提示 —— 沒有結果 / 沒有選項 / 載入中。
    * 與 `header` 同族:非互動(`role="presentation"`、`pointer-events-none`)、次要色、**與選項完全相同的列幾何**
    * (item-anatomy.spec.md「Row header」),差別是字重一般(medium 是群組標題的辨識訊號)、內容水平置中,
-   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state / Loading」。
+   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state」與「Loading」。
    */
   message?: boolean
   /**

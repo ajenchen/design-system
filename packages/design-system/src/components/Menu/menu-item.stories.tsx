@@ -2,7 +2,9 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Rocket } from 'lucide-react'
-import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
+import { MenuItem, MenuGroup } from './menu-item'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { Button } from '@/design-system/components/Button/button'
 import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -157,9 +159,10 @@ const MultiSelectDemo = () => {
         <MenuItem role="presentation" checkbox checked={selected.slack} startIcon={Settings} onClick={() => toggle('slack')}>Slack</MenuItem>
         <MenuItem role="presentation" checkbox checked={false} disabled startIcon={Star}>SMS（已停用）</MenuItem>
       </MenuGroup>
-      <MenuFooter>
-        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
-      </MenuFooter>
+      {/* 全選與 SelectMenu 同一份:SurfaceFooter + 兩態按鈕(全選 / 取消全選),左緣對齊列(menu-item.spec.md MenuFooter 段:2026-09-17 起不再用於全選) */}
+      <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+        <Button variant="tertiary" size="sm" onClick={toggleAll}>{allState === true ? '取消全選' : '全選'}</Button>
+      </SurfaceFooter>
     </>
   )
 }
@@ -239,13 +242,13 @@ const FullExampleDemo = () => {
     <MenuContainer>
       <MenuGroup>
         <MenuItem role="presentation" header>成員</MenuItem>
-        <MenuItem role="presentation" checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
-        <MenuItem role="presentation" checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
-        <MenuItem role="presentation" checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
+        <MenuItem role="presentation" checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
       </MenuGroup>
-      <MenuFooter>
-        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
-      </MenuFooter>
+      <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+        <Button variant="tertiary" size="sm" onClick={toggleAll}>{allState === true ? '取消全選' : '全選'}</Button>
+      </SurfaceFooter>
     </MenuContainer>
   )
 }
