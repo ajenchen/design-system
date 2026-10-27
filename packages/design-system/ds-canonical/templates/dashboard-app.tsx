@@ -174,8 +174,9 @@ function DashboardPage() {
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
       {/* 區段標題(+ 說明)→ 它底下的表格 = loose(DS `layoutSpace.spec.md` 規則 3:標題(+ 說明)→ 它底下的並列內容) */}
       <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div>
-          <h2 id={titleId} className="text-h5 mb-[var(--layout-space-tight)]">今日待處理訂單</h2>
+        {/* 標題 ↔ 自己的說明 = 2px(DS `item-anatomy.spec.md`「Label ↔ Desc 間距」的 token) */}
+        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
+          <h2 id={titleId} className="text-h5">今日待處理訂單</h2>
           <p className="text-body text-fg-secondary">已付款、還沒出貨的訂單,依下單時間排序。</p>
         </div>
         <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} height="auto" aria-labelledby={titleId} />
