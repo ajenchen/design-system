@@ -23,19 +23,19 @@ export const UsageGuidance: Story = {
           <p>適合 Notice 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <TutorialList>
             <li>
-              <StoryLink kind="Design System/Internal/Notice/展示" name="部署成功 橫幅">CI/CD 部署成功橫幅 — 附「查看部署紀錄」動作</StoryLink>
+              <StoryLink kind="Design System/Internal/Notice/展示" name="部署成功橫幅">CI/CD 部署成功橫幅</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Internal/Notice/展示" name="工作區付款失敗">工作區付款失敗 — 附「更新付款方式」補救動作</StoryLink>
+              <StoryLink kind="Design System/Internal/Notice/展示" name="工作區付款失敗">工作區付款失敗(實心外觀)</StoryLink>
             </li>
             <li>
               <StoryLink kind="Design System/Internal/Notice/展示" name="行內通知變體對照">方案限制 / 空間不足 / 連線失敗等行內提示(五種語意變體)</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Internal/Notice/展示" name="Toast 樣式">「變更已儲存」「已複製連結」Toast 短暫提示</StoryLink>
+              <StoryLink kind="Design System/Components/Toast/展示" name="有標題與描述">Toast 短暫提示(看 Toast 展示)</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Internal/Notice/展示" name="中性 純文字">成員邀請待加入提醒 — 中性純文字</StoryLink>
+              <StoryLink kind="Design System/Internal/Notice/展示" name="中性純文字">成員邀請待加入提醒 — 附「重發邀請」動作</StoryLink>
             </li>
           </TutorialList>
         </div>
@@ -73,7 +73,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     <TutorialPage>
-      <TutorialRule title="Pattern 1 — Alert(persistent inline announcement)">
+      <TutorialRule title="Alert:持續顯示直到使用者關閉(persistent inline announcement)">
         <div className="max-w-prose">
           <p>需要「持續顯示直到 user 主動 dismiss」→ <StoryLink kind="Design System/Components/Alert/展示" name="單行">Alert 單行</StoryLink>。Alert 內部消費 Notice + 加上 dismiss button + live region ARIA(error/warning → role="alert" assertive;info/success/neutral → role="status" polite)。</p>
           <TutorialList>
@@ -83,7 +83,7 @@ export const CompositionRules: Story = {
         </div>
       </TutorialRule>
 
-      <TutorialRule title="Pattern 2 — Toast(auto-dismiss floating announcement)">
+      <TutorialRule title="Toast:自動消失的浮動通知(auto-dismiss floating announcement)">
         <div className="max-w-prose">
           <p>需要「短暫提示,使用者不需 acknowledge」→ <StoryLink kind="Design System/Components/Toast/展示" name="有標題與描述">有 Title + Description</StoryLink>。Toast 基於 Sonner + 消費 Notice layout,自動 4 秒消失(可調)。</p>
           <TutorialList>
