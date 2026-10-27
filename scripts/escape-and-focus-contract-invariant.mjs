@@ -60,6 +60,10 @@
  *                      彈出層開著時點空白處 / 直接點下一格 / (兩種 Select)按 Tab 離開 → 那一欄的驗證跑一次(修前從彈出層直接離開時 consumer 收不到 blur)
  *   N-esc-tab          (2026-10-21 r1b fields N1)Esc 收起後、收起動畫還在播時按 Tab → 焦點走到觸發點的下一格(五種欄位 + 一般 Popover;
  *                      修前 Radix 等內容卸載才還焦點,Tab 被吃掉)。Tab 必須真的落在那段空窗裡(量 Tab 與內容卸載的時間),否則儀器失效
+ *   N-esc-tab-modal    (2026-10-27 待辦總帳 R1b-FN1b)Dialog / Sheet(DialogTrigger / SheetTrigger 開)Esc 收起後、收起動畫還在播時按 Tab → 焦點走到
+ *                      觸發鈕的下一格;同一段空窗裡觸發鈕到 <html> 的祖先鏈沒有 aria-hidden(Radix modal 的 hideOthers 卸載才撤 —— 修前焦點還進讀屏看不到的區域)、
+ *                      淡出中的內容 inert;另一格「對話框裡的儲存鈕非同步關閉(setTimeout 後 setOpen(false))」同樣要求(不是離散事件裡的更新)
+ *                     (修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕)。FileViewer 那一格由 data 家族 DA-esc-tab 加
  *   CTRL-leave(對照)  彈出層關著時 Tab 離開必填 Select → 驗證跑一次
  *   B-overflow         必填 Combobox(非搜尋型,窄欄位、四個 Tag)焦點在觸發區,用滑鼠按「+N」浮出清單裡的 ×(焦點搬進卡)→ consumer 的 onBlur 不跑;
  *                      焦點移到欄位外的按鈕 → 跑一次
@@ -75,7 +79,8 @@
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
  *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow / B-leave-* / N-esc-tab;彈出層關掉的那一下不補量 → B-leave-blank / -next / -tab;
- *   收起動畫期間不提早還焦點 → N-esc-tab;不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
+ *   收起動畫期間不提早還焦點 → N-esc-tab / N-esc-tab-modal;modal 收起時不撤這次開啟加上的 aria-hidden → N-esc-tab-modal;
+ *   不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
  *   FileViewer 自己記開啟者(不經 useTriggerlessFocusReturn,2026-10-20 前的寫法)→ F-menu-fileviewer;FileUpload 不以被點的 × 為基準 → F-remove
  *   結算 Enter 不 preventDefault → F-enter-commit;LinkInput Enter 一律 blur → F-link-enter-stay
  *   輸入盒外框不留焦點 → C-composer-mouse;輸入盒不接力 → C-composer-keyboard
@@ -339,10 +344,17 @@ const MUTANTS = [
   },
   {
     id: 'exit-start-focus-return-off',
-    what: '收起動畫期間不提早還焦點(等內容卸載才由 Radix 還;T11 之後 2026-10-21 r1b fields N1 前的形狀)',
+    what: '收起動畫期間不提早還焦點(等內容卸載才由 Radix 還;T11 之後 2026-10-21 r1b fields N1 前的形狀;Dialog / Sheet 到 2026-10-27 都是這樣)',
     file: 'lib/overlay-focus-return.ts',
-    expectRed: ['N-esc-tab'],
+    expectRed: ['N-esc-tab', 'N-esc-tab-modal'],
     apply: (src) => replaceOnce(src, /if \(closed && !handledRef\.current && node\.isConnected\) \{/, 'if (false) {'),
+  },
+  {
+    id: 'modal-exit-keeps-aria-hidden',
+    what: 'modal 收起那一刻不撤這次開啟加上的 aria-hidden(焦點提早還進一塊讀屏看不到的區域;2026-10-21 沒把這支套到 Dialog / Sheet 的原因)',
+    file: 'lib/overlay-focus-return.ts',
+    expectRed: ['N-esc-tab-modal'],
+    apply: (src) => replaceOnce(src, /for \(const el of revealed\) el\.removeAttribute\('aria-hidden'\)/, 'void revealed'),
   },
   {
     id: 'button-focusable-keeps-aria-disabled-look',
@@ -367,7 +379,8 @@ const HARNESS = `
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/design-system/components/Sheet/sheet'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { FileViewer } from '@/design-system/components/FileViewer/file-viewer'
@@ -667,7 +680,55 @@ function LeaveScene() {
     </div>
   )
 }
+// N-esc-tab-modal(2026-10-27):DialogTrigger / SheetTrigger 開的 modal,外加「儲存鈕非同步關閉」的對話框(非離散更新,焦點鎖在收起那一刻還掛著)
+function ModalExitScene() {
+  const [dlg, setDlg] = React.useState(false)
+  const [sheet, setSheet] = React.useState(false)
+  const [save, setSave] = React.useState(false)
+  window.__closeScene = () => { setDlg(false); setSheet(false); setSave(false) }
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: 16 }}>
+      <Dialog open={dlg} onOpenChange={setDlg}>
+        <DialogTrigger asChild><Button data-exit-trigger="dialog">新增成員</Button></DialogTrigger>
+        <DialogContent data-exit-probe="dialog" height="hug" maxWidth={440}>
+          <DialogHeader><DialogTitle>新增成員</DialogTitle></DialogHeader>
+          <DialogBody><label>Email<input defaultValue="ada@acme.com" /></label></DialogBody>
+        </DialogContent>
+      </Dialog>
+      <button type="button">之後一</button>
+      <Sheet open={sheet} onOpenChange={setSheet}>
+        <SheetTrigger asChild><Button data-exit-trigger="sheet">編輯成員</Button></SheetTrigger>
+        <SheetContent data-exit-probe="sheet">
+          <SheetHeader><SheetTitle>編輯成員</SheetTitle></SheetHeader>
+          <SheetBody><label>職稱<input defaultValue="設計師" /></label></SheetBody>
+        </SheetContent>
+      </Sheet>
+      <button type="button">之後二</button>
+      <Dialog open={save} onOpenChange={setSave}>
+        <DialogTrigger asChild><Button data-exit-trigger="save">重新命名</Button></DialogTrigger>
+        <DialogContent data-exit-probe="save" height="hug" maxWidth={440}>
+          <DialogHeader><DialogTitle>重新命名</DialogTitle></DialogHeader>
+          <DialogBody><Button data-exit-save onClick={() => setTimeout(() => setSave(false), 50)}>儲存</Button></DialogBody>
+        </DialogContent>
+      </Dialog>
+      <button type="button">之後三</button>
+    </div>
+  )
+}
+// 觸發鈕到 <html> 的祖先鏈上帶 aria-hidden="true" 的節點(收起動畫期間量;應為空)
+window.__hiddenPath = (sel) => {
+  const out = []
+  for (let n = document.querySelector(sel); n && n !== document.documentElement; n = n.parentElement) if (n.getAttribute('aria-hidden') === 'true') out.push(n.tagName.toLowerCase() + (n.id ? '#' + n.id : ''))
+  return out
+}
 // N-esc-tab:Tab 按下的時間 vs 收起動畫播完(浮層內容卸載)的時間 —— 只有 Tab 落在那段空窗裡,這一格才量得到東西
+window.__exitWatchFor = (sel) => {
+  window.__tabAt = null; window.__exitEndAt = null
+  const mo = new MutationObserver(() => {
+    if (window.__exitEndAt == null && !document.querySelector(sel)) { window.__exitEndAt = performance.now(); mo.disconnect() }
+  })
+  mo.observe(document.body, { childList: true, subtree: true })
+}
 window.__exitWatch = () => {
   window.__tabAt = null; window.__exitEndAt = null
   const mo = new MutationObserver(() => {
@@ -679,6 +740,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Tab' && window.__ta
 
 const SCENES = {
   leave: () => <LeaveScene />,
+  modalExit: () => <ModalExitScene />,
   link: () => <LinkScene initial="https://acme.com/docs" />,
   linkEmpty: () => <LinkScene initial="" />,
   inline: () => <InlineScene />,
@@ -1187,6 +1249,40 @@ async function runChecks(page) {
   await escTabRun('popover', async () => { await d.focus('[data-leave-pop]'); await d.press('Enter'); await waitSel('[aria-label="篩選面板"]', 'Popover 沒開') }, '[aria-label="篩選面板"]', 'BUTTON:之後')
   check('N-esc-tab', 'contract', 'Esc 收起後、收起動畫還在播時按 Tab(五種欄位 + 一般 Popover)→ 焦點走到觸發點的下一格(不停在原處、不掉到 body);欄位的驗證跑一次(修前 Tab 被吃掉:焦點停在原欄位,可搜尋 Select 掉到 body;T11 讓收起動畫真的會播之後才有)',
     LEAVE.every((c) => escTab[c.key].active === c.next && escTab[c.key].blur[c.key] === 1) && escTab.popover.active === 'BUTTON:之後', escTab)
+  // N-esc-tab-modal(2026-10-27,待辦總帳 R1b-FN1b):Dialog / Sheet 的收起動畫 250ms,同上放慢到 1200ms(理由同上 —— 被量的事與動畫多長無關)
+  const MODAL_EXIT = [
+    { key: 'dialog', next: 'BUTTON:之後一', close: async () => { await page.keyboard.press('Escape') } },
+    { key: 'sheet', next: 'BUTTON:之後二', close: async () => { await page.keyboard.press('Escape') } },
+    // 非同步關閉:鍵盤按「儲存」,50ms 後 setOpen(false) —— 不是離散事件裡的更新(存檔成功後關閉的常見寫法)
+    { key: 'save', next: 'BUTTON:之後三', close: async () => { await d.focus('[data-exit-save]'); await page.keyboard.press('Enter') } },
+  ]
+  const modalExit = {}
+  for (const c of MODAL_EXIT) {
+    const probe = `[data-exit-probe="${c.key}"]`
+    await scene('modalExit')
+    await d.focus(`[data-exit-trigger="${c.key}"]`); await d.press('Enter')
+    await waitSel(`${probe}[data-state="open"]`, `${c.key} 沒開`)
+    const slow = await page.addStyleTag({ content: `${probe}[data-state="closed"] { animation-duration: 1200ms !important; transition-duration: 1200ms !important }` })
+    try {
+      await page.evaluate((sel) => window.__exitWatchFor(sel), probe)
+      await c.close()
+      await page.waitForFunction((sel) => !!document.querySelector(`${sel}[data-state="closed"]`), probe, { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError(`${c.key}:關閉之後等不到收起動畫開始`) })
+      // 收起動畫期間(內容還在)量:觸發鈕的祖先鏈有沒有 aria-hidden、內容 inert 了沒
+      const during = await page.evaluate(({ sel, trig }) => ({ hidden: window.__hiddenPath(trig), inert: document.querySelector(sel)?.inert ?? null, present: !!document.querySelector(sel) }), { sel: probe, trig: `[data-exit-trigger="${c.key}"]` })
+      await page.keyboard.press('Tab')
+      await page.waitForFunction(() => window.__exitEndAt != null, null, { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError(`${c.key}:收起動畫播不完(內容一直沒卸載)`) })
+      await d.settle(); await d.focusStable()
+      const t = await page.evaluate(() => ({ tabAt: window.__tabAt, exitEndAt: window.__exitEndAt }))
+      needs(during.present && t.tabAt != null && t.exitEndAt != null && t.tabAt < t.exitEndAt, `${c.key}:Tab 沒落在收起動畫期間(量不到那段空窗)`, { during, ...t })
+      modalExit[c.key] = { ...(await snap()), during, next: c.next }
+    } finally {
+      await slow.evaluate((n) => n.remove()).catch(() => {})
+    }
+  }
+  check('N-esc-tab-modal', 'contract', 'Dialog / Sheet 由觸發鈕開:Esc 收起後、收起動畫還在播時按 Tab → 焦點走到觸發鈕的下一格;同一段空窗裡觸發鈕的祖先鏈沒有 aria-hidden、淡出中的內容 inert;對話框裡的「儲存」非同步關閉也一樣(修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕,期間觸發鈕在 aria-hidden 底下)',
+    MODAL_EXIT.every((c) => modalExit[c.key].active === c.next && modalExit[c.key].during.hidden.length === 0 && modalExit[c.key].during.inert === true), modalExit)
   // 對照:彈出層關著時 Tab 離開 —— 量具看得到 blur 與錯誤(全部突變都必須綠)
   await scene('leave')
   await d.focus(LEAVE[0].sel); await d.press('Tab')

@@ -14,7 +14,7 @@ import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncate
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
-import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 
 /**
@@ -158,11 +158,6 @@ const DialogContent = React.forwardRef<
   // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
   // state 一變 effect 就重跑,節點掛上的那一刻保留集合才完整。
   const [contentEl, setContentEl] = React.useState<HTMLDivElement | null>(null)
-  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
-    setContentEl(node)
-    if (typeof ref === 'function') ref(node)
-    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref])
   // 並存:保留集合 = 這個 Content + 呼叫端指定的常駐區域。
   // 沒傳 persistentElements 時 keep 是 undefined,hook 直接 no-op,預設路徑一個位元不變。
   const keep = React.useMemo(
@@ -273,6 +268,23 @@ const DialogContent = React.forwardRef<
     onCloseAutoFocus?.(e)
     focusReturn.onCloseAutoFocus(e)
   }
+  // 還焦點的時機 = 關閉的那一刻,不等 250ms 收起動畫(keyboard-model-canonical.md「關了之後焦點去哪」;待辦總帳 R1b-FN1b):
+  // 修前 Esc 之後在收起期間按 Tab,Tab 在淡出的對話框裡走掉、動畫一播完又被 Radix 拉回觸發點(Tab 被吃掉)。同一支 lib 也撤掉
+  // 這次開啟加上的 aria-hidden(觸發點不再落在讀屏看不到的區域)、淡出中的內容 inert(lib/overlay-focus-return.ts useExitStartFocusReturn)。
+  // 只接 Radix modal:並存(persistentElements,非 modal)的宿主 inert 綁在內容卸載(lib/overlay-coexistence.ts),提早還會還進 inert 的區域 → 照舊卸載時還。
+  // radixDefault = Radix modal 的預設(@radix-ui/react-dialog 1.1.15 dist/index.mjs DialogContentModal:`context.triggerRef.current?.focus()`)。
+  const exitFocus = useExitStartFocusReturn({
+    onCloseAutoFocus: handleCloseAutoFocus,
+    onOpenAutoFocus: handleOpenAutoFocus,
+    radixDefault: (e) => { radixTriggerOf(e.currentTarget instanceof Element ? e.currentTarget : null)?.focus() },
+    modal: true,
+  })
+  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+    setContentEl(node)
+    if (modal) exitFocus.ref(node)
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+  }, [ref, modal, exitFocus.ref])
 
   const content = (
     <DialogPrimitive.Content
@@ -285,7 +297,7 @@ const DialogContent = React.forwardRef<
       // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
       // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
       onOpenAutoFocus={handleOpenAutoFocus}
-      onCloseAutoFocus={handleCloseAutoFocus}
+      onCloseAutoFocus={exitFocus.onCloseAutoFocus}
       {...guardOutside}
       className={cn(
         // 並存面(有 persistentElements)降到 z-40:AI agent 浮層時常駐區(AgentPanel 浮層 z-[45])要蓋在

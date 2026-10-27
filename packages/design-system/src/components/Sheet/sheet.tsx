@@ -6,7 +6,7 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
-import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 import {
   SurfaceHeader,
@@ -141,30 +141,42 @@ const SheetContent = React.forwardRef<
 >(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
   // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
-  const focusReturn = useTriggerlessFocusReturn(React.useContext(SheetModalContext))
+  const modal = React.useContext(SheetModalContext)
+  const focusReturn = useTriggerlessFocusReturn(modal)
   // 沒有 SheetDescription 時不寫 aria-describedby —— Radix 預設指向一個不存在的 id(lib/overlay-description.ts;獨立驗證 OV-15)
   const descriptionPresence = useDescriptionPresence('aria-describedby' in props)
   // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
   const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const handleOpenAutoFocus = (e: Event) => {
+    focusReturn.onOpenAutoFocus(e)
+    onOpenAutoFocus?.(e)
+    if (!e.defaultPrevented) handleSheetOpenAutoFocus(e)
+  }
+  const handleCloseAutoFocus = (e: Event) => {
+    onCloseAutoFocus?.(e)
+    focusReturn.onCloseAutoFocus(e)
+  }
+  // 還焦點的時機 = 關閉的那一刻,不等收起動畫;同時撤掉這次開啟加上的 aria-hidden、淡出中的內容 inert(同 DialogContent,
+  // lib/overlay-focus-return.ts useExitStartFocusReturn;待辦總帳 R1b-FN1b)。只接 Radix modal;radixDefault = Radix modal 的預設(還給 SheetTrigger)。
+  const exitFocus = useExitStartFocusReturn({
+    onCloseAutoFocus: handleCloseAutoFocus,
+    onOpenAutoFocus: handleOpenAutoFocus,
+    radixDefault: (e) => { radixTriggerOf(e.currentTarget instanceof Element ? e.currentTarget : null)?.focus() },
+    modal: true,
+  })
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
     contentRef.current = node
+    if (modal) exitFocus.ref(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref])
+  }, [ref, modal, exitFocus.ref])
   return (
     <SheetPortal container={portalContainer ?? undefined}>
       <SheetOverlay />
       <SheetPrimitive.Content
         ref={composedRef}
-        onOpenAutoFocus={(e) => {
-          focusReturn.onOpenAutoFocus(e)
-          onOpenAutoFocus?.(e)
-          if (!e.defaultPrevented) handleSheetOpenAutoFocus(e)
-        }}
-        onCloseAutoFocus={(e) => {
-          onCloseAutoFocus?.(e)
-          focusReturn.onCloseAutoFocus(e)
-        }}
+        onOpenAutoFocus={handleOpenAutoFocus}
+        onCloseAutoFocus={exitFocus.onCloseAutoFocus}
         // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
         className={cn(sheetVariants({ side }), className)}
         {...descriptionPresence.descriptionPresenceProps}

@@ -95,8 +95,8 @@ export function useTriggerlessFocusReturn(modal: boolean): {
     // FocusScope 派發 onOpenAutoFocus 時焦點還沒搬進來 → 讀到的是開啟者;住在選單裡的開啟者改記選單的觸發鈕
     onOpenAutoFocus: () => { openerRef.current = persistentOpenerOf(captureFocusOrigin()) },
     onCloseAutoFocus: (event) => {
+      // 不在這裡清掉:modal 收起那一刻若沒還成,卸載時會再呼叫一次(useExitStartFocusReturn 的 (2));下一次開啟時 onOpenAutoFocus 會重記
       const opener = openerRef.current
-      openerRef.current = null
       const content = event.currentTarget instanceof Element ? event.currentTarget : null
       const trigger = radixTriggerOf(content)
       // 有觸發點:Radix 自己會還,這裡只接手指標造成的收起(不畫鍵盤框);沒有:一律還
@@ -167,15 +167,35 @@ export function returnFocusToOpener(event: Event, opener: HTMLElement | null | u
  * (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx#L950-L952)。
  *
  * 消費者:`components/Popover/popover.tsx` PopoverContent(SelectMenu → Select / Combobox / PeoplePicker、DatePicker、TimePicker、
- * DataTable 篩選 / 欄位顯示面板、AgentPanel 歷史浮層、Coachmark 全部經它)。
+ * DataTable 篩選 / 欄位顯示面板、AgentPanel 歷史浮層、Coachmark 全部經它);2026-10-27 起 DialogContent / SheetContent 的 modal 路徑
+ * (`modal: true`,下段;待辦總帳 R1b-FN1b)。
+ *
+ * **modal 浮層多兩件事**(`modal: true`;Dialog / Sheet 這種 Radix modal):Radix modal 在內容**掛上**時對旁邊整頁做 `hideOthers(content)`
+ * (`@radix-ui/react-dialog` 1.1.15 `dist/index.mjs` DialogContentModal 的 useEffect,`aria-hidden` 套件),**卸載**才撤 —— 收起動畫期間觸發點
+ * 還被標著 `aria-hidden`,焦點提早還過去 = 還進一塊讀屏看不到的區域(這就是 2026-10-21 這支沒有直接套到 Dialog / Sheet 的原因)。
+ * (1)掛上的那一刻(Radix 的 effect 還沒跑)先記下當時頁面上已經有 `aria-hidden` 的節點;收起那一刻把**這一次開啟才加上**的那些拿掉
+ *     (帶 `data-aria-hidden` 記號、開啟前沒有、不在內容裡),開啟前就有的(外層另一個 modal 蓋的、元件自己本來就 aria-hidden 的)不碰;
+ *     被重新打開時加回去。卸載時 `aria-hidden` 套件照它自己的計數撤 —— 已拿掉的屬性再拿一次什麼都不做,計數不受影響。
+ *     React Aria 同一件事的做法:`ariaHideOutside` 綁在 `state.isOpen`,關閉那一刻就撤(`useModalOverlay`,
+ *     https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/overlays/useModalOverlay.ts)。
+ * (2)關閉那一刻的歸還沒能落地(焦點還在正在收起的內容裡:開啟者被別的鎖蓋著,例如並存模式的宿主 inert)→ 卸載時照舊再還一次,
+ *     不擋 Radix 的預設(否則焦點會留在 body)。
+ * 指標**不**提早放:遮罩在收起動畫期間還看得到、還蓋著頁面,這段時間點下去沒有反應 = 看得到的範圍等於會觸發的範圍
+ * (React Aria 的 ModalOverlay 在收起期間同樣留著 underlay 擋點擊)。
+ * 先設 `inert` 再搬焦點:Radix modal 的 FocusScope 鎖(`trapped`)在 passive effect 的清理裡才拿掉(`@radix-ui/react-focus-scope` 1.1.7
+ * `dist/index.mjs` 的 focusout 監聽),React 把那一步排到同一個排程工作之後時,這支在 MutationObserver 裡跑的當下鎖還掛著,
+ * 會把焦點拉回內容裡最後一個聚焦過的元素;內容先 inert,拉回去的那一下落空(`inert` 不會同步改 activeElement;2026-10-27 Chromium 合成鎖對照:
+ * 不先 inert → 焦點被拉回,先 inert → 焦點留在開啟者)。
  */
-export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, radixDefault }: {
+export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, radixDefault, modal = false }: {
   /** 呼叫端組好的 onCloseAutoFocus(consumer 的那一支) */
   onCloseAutoFocus?: (event: Event) => void
   /** 收起動畫期間被重新打開時要重跑的開啟落點(呼叫端交給 Radix 的那一支) */
   onOpenAutoFocus?: (event: Event) => void
   /** consumer 沒擋時 Radix 自己會做的那一步(例:Popover 非 modal —— 沒互動過外面就還給觸發點) */
   radixDefault: (event: Event) => void
+  /** Radix modal(Dialog / Sheet):收起那一刻一併撤掉這次開啟加上的 `aria-hidden`、歸還沒落地時卸載再還一次(見上方說明) */
+  modal?: boolean
 }): {
   /** 掛在內容節點上(與 forwarded ref 合併) */
   ref: (node: HTMLElement | null) => void
@@ -183,14 +203,20 @@ export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, rad
   onCloseAutoFocus: (event: Event) => void
 } {
   const handledRef = React.useRef(false)
-  const latest = React.useRef({ onCloseAutoFocus, onOpenAutoFocus, radixDefault })
-  latest.current = { onCloseAutoFocus, onOpenAutoFocus, radixDefault }
+  /** modal:關閉那一刻的歸還沒落地(焦點還在正在收起的內容裡)→ 卸載時再還一次 */
+  const missedRef = React.useRef(false)
+  const latest = React.useRef({ onCloseAutoFocus, onOpenAutoFocus, radixDefault, modal })
+  latest.current = { onCloseAutoFocus, onOpenAutoFocus, radixDefault, modal }
   const observed = React.useRef<{ node: HTMLElement; observer: MutationObserver } | null>(null)
   React.useEffect(() => () => { observed.current?.observer.disconnect(); observed.current = null }, [])
   const ref = React.useCallback((node: HTMLElement | null) => {
     // Radix 每次重繪都換一支合併後的 ref(React 對同一個節點先給 null 再給節點):同一個節點不重掛,否則關閉那一下的變化會落在兩支觀察者之間、沒人看到
     if (!node || observed.current?.node === node) return
     observed.current?.observer.disconnect()
+    const doc = node.ownerDocument
+    // modal:掛上的這一刻 Radix 的 hideOthers 還沒跑(它在 passive effect 裡)→ 記下開啟前就帶 aria-hidden 的節點(見上方說明 (1))
+    const hiddenBefore = latest.current.modal ? new Set<Element>(doc.querySelectorAll('[aria-hidden]')) : null
+    let revealed: Element[] = []
     // 事件只派給這個節點、只有這裡聽:與 Radix 的 autoFocusOnUnmount 同形狀(cancelable、currentTarget = 內容),判斷式不用分兩套
     const run = (name: string, handle: (event: Event) => void) => {
       const event = new CustomEvent(name, { bubbles: false, cancelable: true })
@@ -201,14 +227,24 @@ export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, rad
       const closed = node.getAttribute('data-state') === 'closed'
       if (closed && !handledRef.current && node.isConnected) {
         handledRef.current = true
+        // 先 inert 再搬焦點(見上方說明:modal 的焦點鎖可能還掛著);inert 不會同步改 activeElement,下面的判斷照舊看得到焦點在內容裡
+        node.inert = true
+        if (hiddenBefore) {
+          revealed = Array.from(doc.querySelectorAll('[data-aria-hidden][aria-hidden="true"]'))
+            .filter((el) => !hiddenBefore.has(el) && !node.contains(el))
+          for (const el of revealed) el.removeAttribute('aria-hidden')
+        }
         run('ds.closeAutoFocusAtExitStart', (event) => {
           latest.current.onCloseAutoFocus?.(event)
           if (!event.defaultPrevented) latest.current.radixDefault(event)
         })
-        node.inert = true
+        missedRef.current = !!hiddenBefore && node.contains(doc.activeElement)
       } else if (!closed && handledRef.current) {
         handledRef.current = false
+        missedRef.current = false
         node.inert = false
+        for (const el of revealed) if (el.isConnected && el.hasAttribute('data-aria-hidden')) el.setAttribute('aria-hidden', 'true')
+        revealed = []
         run('ds.openAutoFocusDuringExit', (event) => {
           latest.current.onOpenAutoFocus?.(event)
           if (!event.defaultPrevented) node.focus({ preventScroll: true })
@@ -221,8 +257,16 @@ export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, rad
   const handleCloseAutoFocus = React.useCallback((event: Event) => {
     if (handledRef.current) {
       handledRef.current = false
-      event.preventDefault()
-      return
+      const missed = missedRef.current
+      missedRef.current = false
+      const doc = event.currentTarget instanceof Node ? event.currentTarget.ownerDocument : null
+      const active = doc?.activeElement
+      // 關閉那一刻沒還成、焦點也沒被使用者帶到別處(還在內容裡或掉到 body)→ 照原路再還一次(見上方說明 (2));其餘擋掉第二次
+      const lost = !active || active === doc?.body || (event.currentTarget instanceof Node && event.currentTarget.contains(active))
+      if (!(missed && lost)) {
+        event.preventDefault()
+        return
+      }
     }
     latest.current.onCloseAutoFocus?.(event)
   }, [])
