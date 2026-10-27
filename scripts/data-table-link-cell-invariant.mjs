@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: LinkInput 各模式與表格連結格的連結只有網址文字那麼寬;表格連結格點網址文字開連結、點其他地方照其他可編輯格的點格規則;試算表 Enter / F2 進到格裡的控件、F2 / Esc 回格導覽;一般模式編輯結束焦點回打開編輯的那個東西;每種格的編輯器名字 = 欄標題;鉛筆是 16px 無框行內按鈕;不合法網址存進去顯示成一般文字
- *   紅: --selftest 注入連結改回 block、攔下格的點擊、攔下根節點 Enter / F2、把焦點丟回 body、拿掉名字、鉛筆改 24px 有框、塞 javascript: 連結,各組必紅;7777b61c 的建置跑必紅(L1–L7)
- *   綠: 修好的建置全綠;挑不到點擊區、走不到目標格、沒選到字等量不到的情況以儀器失效紅,不當成通過
+ *   保證: LinkInput 各模式與表格連結格的連結只有網址文字那麼寬;表格連結格點網址文字開連結、點其他地方照其他可編輯格的點格規則;試算表 Enter / F2 進到格裡的控件、F2 / Esc 回格導覽;一般模式編輯結束焦點回打開編輯的那個東西;每種格的編輯器名字 = 欄標題(而且欄標題不是型別註記);鉛筆是 16px 無框行內按鈕;不合法網址存進去顯示成一般文字;
+ *        2026-10-21 起(r1b DT-01 / DT-02 / DT-03 / NEW-1 / DT-07):連結(表格兩種模式、LinkInput 唯讀 / 檢視)與可拖的欄頭,鍵盤焦點框四邊真的畫出來(截圖比對,L8);
+ *        試算表格裡的控件被鍵盤聚焦時只有一個指示(控件的框,格游標框收起)、在格裡按 Tab 格游標跟著焦點走(L9);就地編輯範例的連結欄各列顯示不同的網址(L1)
+ *   紅: --selftest 注入連結改回 block、攔下格的點擊、攔下根節點 Enter / F2、把焦點丟回 body、一般模式可編輯格拿掉 Tab 停靠 + 攔下格上的 Enter / F2(L4 鍵盤)、拿掉名字、鉛筆改 24px 有框、塞 javascript: 連結、
+ *       連結外面包回會裁切的 wrapper + 欄頭框改回往外(L8)、格游標框強制畫出 + 擋下格內控件的 focusin(L9),各組必紅;7777b61c 的建置跑必紅(L1–L7);
+ *       a6390356 的建置跑 L8 / L9 / L5 型別註記 / L1 網址各列不同必紅
+ *   綠: 修好的建置全綠;挑不到點擊區、走不到目標格、沒選到字、聚焦了卻沒有 :focus-visible 等量不到的情況以儀器失效紅,不當成通過
  * ─────
  * 網址欄的點擊範圍 / 表格連結格互動 / 格內鍵盤 / 編輯結束焦點 / 編輯器名字(2026-10-13,待辦總帳 Q3a–Q3f)。
  *
@@ -21,10 +25,18 @@
  *   L3 試算表格游標停在連結格 / 開關格:Enter、F2 焦點進到格裡的控件(連結 / 勾選框),Tab 到鉛筆,F2 / Esc 回格導覽、
  *      之後方向鍵從原格走(Q3c)
  *   L4 一般模式編輯結束後焦點回到打開編輯的那個東西:文字格 Enter / Esc → 那一格;選單格選值 → 那一格;連結格 Enter → 鉛筆;
- *      失焦結算(點頁面空白處)不把焦點搶回來(Q3d I)
+ *      失焦結算(點頁面空白處)不把焦點搶回來(Q3d I)。
+ *      2026-10-21 加(r1b NEW-2 複驗缺陷 4,data-table.spec.md「Keyboard 行為」一般模式 Enter / F2 那一條):一般模式可編輯的格本身是
+ *      Tab 停靠點(`data-table.tsx` 的 `cellIsTabStop`;唯讀格不是 —— 對照列),焦點在格上 Enter / F2 進編輯,Esc 後焦點回到那一格
  *   L5 每一種格的編輯器都有名字 = 欄標題(Q3d J)
  *   L6 表格的鉛筆 = 行內小按鈕(16×16、無框),與 LinkInput 欄位那顆同一種(Q3b)
  *   L7 存進不合法的網址(`javascript:` / 少了 https://)後,格裡顯示一般文字、沒有任何 `href` 是 `javascript:`(Q3e)
+ *   L8 焦點框四邊真的畫出來(2026-10-21,r1b DT-01 / DT-02):同一個元素截兩張圖 —— 有框、把框強制關掉 —— 逐邊比對框那一圈的像素,
+ *      四邊各至少一半有變才算畫出來(M32:不信 computed style,修前 computed outline 一切正常、畫出來只剩右邊一條 2px)。
+ *      量:一般模式 Tab 到連結、試算表 Enter 進連結、LinkInput 唯讀 / 檢視的連結、可拖欄頭(每一欄,含最後一欄);對照列:同一格的鉛筆
+ *   L9 試算表格內控件只有一個指示、格游標跟著焦點走(2026-10-21,r1b DT-03 / NEW-1):開關格 / 連結格 Enter 之後格游標框收起、控件框四邊在;
+ *      連結 → Tab 鉛筆 → Tab 下一個控件(下一列的勾選框)→ 格游標 = 焦點所在的那一格、框仍收起;Esc → 回格導覽,格游標框在那一格回來;
+ *      對照列:滑鼠點勾選框(控件不畫框)→ 格游標框照留(仍只有一個)
  * 對照組:`--build=<7777b61c 的建置>` 跑,L1(唯讀 / 檢視 / 表格)、L2 改變的那幾區、滑過淺框、L3、L4、L5、L6、L7 必紅。
  * `--selftest`:不改產品,在頁面注入破法(連結改回 block / 攔下格的點擊 / 攔下 Enter·F2 / 把焦點丟回 body / 拿掉名字 /
  *   鉛筆改回 24px 有框 / 塞一個 javascript: 連結),各組斷言必須紅(儀器先證明它會紅,M32)。
@@ -32,11 +44,13 @@
  *   node scripts/data-table-link-cell-invariant.mjs [--build=<storybook 建置目錄>] [--selftest]
  */
 import { dirname, isAbsolute, join } from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, waitForFocusStable, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
+const { PNG } = createRequire(join(REPO, 'package.json'))('pngjs')
 const SELFTEST = process.argv.includes('--selftest')
 const buildArg = process.argv.find((a) => a.startsWith('--build='))?.slice('--build='.length)
 const STATIC = buildArg ? (isAbsolute(buildArg) ? buildArg : join(process.cwd(), buildArg)) : join(REPO, 'storybook-static')
@@ -99,6 +113,10 @@ async function injectBreaks(kind) {
   // 滑過不出框:L2 的淺框兩列
   if (kind === 'L2') await page.addStyleTag({ content: '*{outline-style:none!important}' })
   if (kind === 'L6') await page.addStyleTag({ content: '[data-dt-cell-edit-entry] button, [data-cell-id] button[aria-label="編輯連結"]{width:24px!important;height:24px!important;border:1px solid red!important}' })
+  // L8:連結外面包回會裁切的 wrapper(= a6390356 的 `truncate` 外殼)、可拖欄頭的框改回往外(= 修前)
+  if (kind === 'L8') await page.addStyleTag({ content: 'span:has(> a[href]){overflow:hidden!important} [role="columnheader"][aria-roledescription]:focus-visible{outline-offset:var(--stack-gap,2px)!important}' })
+  // L9:格游標框強制畫出(= 修前兩個指示)
+  if (kind === 'L9') await page.addStyleTag({ content: '[data-selected-cell-id]{visibility:visible!important}' })
   await page.evaluate(([kind, linkCols]) => {
     if (kind === 'L2') {
       // 連結格上「不是連結、不是按鈕」的點擊攔下(= 修前的「url 排除點格」):內距那一區不進編輯、試算表第一下也不選格
@@ -117,6 +135,15 @@ async function injectBreaks(kind) {
         if ((e.key === 'Enter' || e.key === 'F2') && e.target instanceof Element && e.target.matches('[data-data-table-outer]')) e.stopPropagation()
       }, true)
     }
+    if (kind === 'L4k') {
+      // 一般模式可編輯的格拿掉 Tab 停靠、格上的 Enter / F2 攔下(= 2026-07-14 dim-10 修之前:鍵盤進不了一般模式的編輯)
+      const unstop = () => { for (const c of document.querySelectorAll('[data-cell-id][tabindex="0"]')) c.setAttribute('tabindex', '-1') }
+      unstop()
+      new MutationObserver(unstop).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] })
+      document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === 'F2') && e.target instanceof Element && e.target.matches('[data-cell-id]')) e.stopPropagation()
+      }, true)
+    }
     if (kind === 'L5') {
       // 拿掉格內編輯器的名字
       const strip = () => {
@@ -125,6 +152,14 @@ async function injectBreaks(kind) {
         }
       }
       new MutationObserver(strip).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-label'] })
+    }
+    if (kind === 'L9') {
+      // 擋下格內控件「鍵盤來的」focusin(= 修前格游標不跟著焦點走):document 的捕獲階段先停掉,React 根節點收不到。
+      // 只擋 :focus-visible 的那幾下 —— 滑鼠點勾選框那一下照常送到,對照列(滑鼠點)不受這個破法影響
+      document.addEventListener('focusin', (e) => {
+        const t = e.target
+        if (t instanceof Element && !t.matches('[data-data-table-outer]') && t.closest('[data-cell-id]') && t.matches(':focus-visible')) e.stopPropagation()
+      }, true)
     }
     if (kind === 'L7') {
       // 每一格連結格塞一個 javascript: 連結
@@ -217,6 +252,11 @@ for (const [label, url, waitFor] of [
   if (rows.length === 0) { instrument(`L1 ${label}`, '找不到任何連結'); continue }
   const bad = rows.filter((r) => r.anchorW > r.textW + 1)
   check('L1', `${label}:${rows.length} 個連結,可點範圍 ≤ 畫出來的文字寬 + 1px`, bad.length === 0, bad.length ? JSON.stringify(bad.slice(0, 4)) : '')
+  // 就地編輯範例:連結欄各列顯示的網址不同(2026-10-21 r1b DT-07:修前四列都顯示 shop.example.com —— 這一欄等於什麼都沒說)
+  if (url === TABLES.normal.url) {
+    const texts = rows.filter((r) => /:url$/.test(r.where)).map((r) => r.text)
+    check('L1', `${label}:連結欄各列顯示的網址不同(真實資料,不是同一個主機名)`, texts.length >= 2 && new Set(texts).size === texts.length, JSON.stringify(texts), { control: true })
+  }
 }
 
 // ── L2:四個點擊區 × 兩種模式 ─────────────────────────────────────────────────────────────────
@@ -472,6 +512,51 @@ for (const key of ['normal', 'roadmap']) {
   }
 }
 
+// ── L4 鍵盤:一般模式可編輯格是 Tab 停靠點、Enter / F2 進編輯(2026-10-21,r1b NEW-2 複驗缺陷 4)───────────────
+// 規格:data-table.spec.md「Keyboard 行為」Enter / F2(一般模式)那一條;實作 data-table.tsx 的 `cellIsTabStop` 與它的 onKeyDown。
+// 這條行為 2026-07-14 起就有(修前建置也綠),所以「會紅」由 --selftest 證明:拿掉停靠 + 攔下格上的 Enter / F2 → 前三列必紅,唯讀格那一列是對照列
+{
+  const label = '一般模式'
+  currentBreak = 'L4k'
+  if (await open(TABLES.normal.url, '[data-column-id="url"] a[href]')) {
+    const nameId = await cellIdAt(0, 'name')
+    const qtyId = await cellIdAt(0, 'qty')
+    const skuId = await cellIdAt(0, 'sku')
+    const active = () => page.evaluate(() => {
+      const a = document.activeElement
+      return { body: !a || a === document.body, cell: a?.getAttribute?.('data-cell-id') ?? null, inCell: a?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, inHost: !!a?.closest?.('[data-active-editor-host]'), tag: a?.tagName?.toLowerCase() ?? null }
+    })
+    /** 鍵盤模式下把焦點放到某一格(程式化 focus 前先按一下 Shift,:focus-visible 才成立;tabindex -1 的格也聚焦得到,所以破法不會讓這一步失效) */
+    const focusCell = async (id) => {
+      await page.keyboard.press('Shift')
+      const ok = await page.evaluate((id) => { const el = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`); if (!el || !el.hasAttribute('tabindex')) return false; el.scrollIntoView({ block: 'nearest', inline: 'center' }); el.focus(); return document.activeElement === el }, id)
+      await focusSettle(); await settle()
+      return ok
+    }
+    if (!nameId || !qtyId || !skuId) instrument(`L4 ${label} 鍵盤`, `找不到 Product / Qty / SKU 格(${nameId} / ${qtyId} / ${skuId})`)
+    else if (!(await focusCell(nameId))) instrument(`L4 ${label} 鍵盤`, `${nameId} 聚焦不到(沒有 tabindex)`)
+    else {
+      await page.keyboard.press('Tab'); await focusSettle(); await settle()
+      const t = await active()
+      check('L4', `${label} 可編輯格是 Tab 停靠點:Product → Tab → Qty 那一格本身`, t.cell === qtyId, JSON.stringify(t))
+      const skuStop = await page.evaluate((id) => document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)?.getAttribute('tabindex'), skuId)
+      check('L4', `${label} 唯讀格(SKU)不是停靠點`, skuStop == null, `tabindex=${skuStop}`, { control: true })
+      for (const key of ['Enter', 'F2']) {
+        if (!(await focusCell(qtyId))) { instrument(`L4 ${label} 鍵盤 ${key}`, `${qtyId} 聚焦不到`); continue }
+        await page.keyboard.press(key); await settle()
+        const opened = await editorCount()
+        const e = await active()
+        check('L4', `${label} 焦點在可編輯格上按 ${key} → 進編輯(焦點在那一格的編輯器裡)`, opened === 1 && !e.body && e.cell !== qtyId && (e.inCell === qtyId || e.inHost), `編輯器 ${opened} 個 / ${JSON.stringify(e)}`)
+        if (opened > 0) {
+          await page.keyboard.press('Escape'); await focusSettle(); await settle()
+          const f = await active()
+          check('L4', `${label} ${key} 進的編輯按 Esc 取消 → 焦點回到那一格`, f.cell === qtyId, JSON.stringify(f))
+        }
+      }
+    }
+  }
+}
+
 // ── L5:每一種格的編輯器都有名字 = 欄標題 ─────────────────────────────────────────────────────
 {
   const nameOf = (id) => page.evaluate((id) => {
@@ -484,10 +569,11 @@ for (const key of ['normal', 'roadmap']) {
     const name = ctl.getAttribute('aria-label') || (by ? by.split(/\s+/).map((x) => document.getElementById(x)?.textContent?.trim() ?? '').join(' ').trim() : '')
     return { found: true, name, tag: ctl.tagName.toLowerCase(), role: ctl.getAttribute('role') }
   }, id)
+  // 欄標題 = 業務名稱(2026-10-21 r1b DT-07:修前寫成「Product (string)」,讀屏把型別一起念出來;型別說明移到 story 的 docs 描述)
   const COLS = [
-    ['name', 'Product (string)'], ['qty', 'Qty (number)'], ['category', 'Category (select)'], ['stock', 'Stock (select)'],
-    ['tags', 'Tags (multiSelect)'], ['owner', 'Owner (person)'], ['reviewers', 'Reviewers (multiPerson)'], ['inStock', 'In (boolean)'],
-    ['url', 'URL'], ['price', 'Price (currency)'], ['releaseDate', 'Release (date)'], ['reminderTime', 'Reminder (time)'],
+    ['name', 'Product'], ['qty', 'Qty'], ['category', 'Category'], ['stock', 'Stock'],
+    ['tags', 'Tags'], ['owner', 'Owner'], ['reviewers', 'Reviewers'], ['inStock', 'Available'],
+    ['url', 'Supplier'], ['price', 'Price'], ['releaseDate', 'Release'], ['reminderTime', 'Reminder'],
   ]
   currentBreak = 'L5'
   if (await open(TABLES.normal.url, '[data-column-id="url"] a[href]')) {
@@ -517,6 +603,8 @@ for (const key of ['normal', 'roadmap']) {
     if (instrumentRows.length) instrument('L5 編輯器名字', JSON.stringify(instrumentRows))
     const bad = results.filter((r) => r.found && r.name !== r.header)
     check('L5', `就地編輯 ${results.length} 種格的編輯器名字 = 欄標題`, bad.length === 0, bad.length ? JSON.stringify(bad.map((r) => ({ col: r.colId, name: r.name, want: r.header }))) : '')
+    const typed = results.filter((r) => r.found && /\((?:string|number|boolean|currency|select|multiSelect|person|multiPerson|date|time|url)\)/.test(r.name))
+    check('L5', '編輯器名字(= 欄標題)不帶型別註記', typed.length === 0, typed.length ? JSON.stringify(typed.map((r) => r.name)) : '', { control: true })
   }
 }
 
@@ -564,6 +652,174 @@ for (const key of ['normal', 'roadmap']) {
   }
 }
 
+// ── L8:焦點框四邊真的畫出來(截圖比對)───────────────────────────────────────────────────────────
+/** 同一個元素截兩張圖(有框 / 把框強制關掉),逐邊量框那一圈有多少像素變了;四邊各 ≥ 50% 才算畫出來 */
+async function paintedRing(handle) {
+  const g = await handle.evaluate((el) => {
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    const cs = getComputedStyle(el); const r = el.getBoundingClientRect()
+    return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: parseFloat(cs.outlineWidth) || 0, off: parseFloat(cs.outlineOffset) || 0, style: cs.outlineStyle, fv: el.matches(':focus-visible'), tag: el.tagName.toLowerCase() }
+  })
+  if (!g.fv) return { instrument: `${g.tag} 沒有 :focus-visible(量不到鍵盤焦點框)` }
+  if (g.style === 'none' || g.w === 0) return { sides: 0, painted: {}, outline: 'none' }
+  await settle()
+  const out = g.off + g.w
+  const ring = { l: g.l - out, t: g.t - out, r: g.r + out, b: g.b + out }
+  const vp = page.viewportSize()
+  const clip = { x: Math.max(0, Math.floor(ring.l - 4)), y: Math.max(0, Math.floor(ring.t - 4)) }
+  clip.width = Math.min(vp.width, Math.ceil(ring.r + 4)) - clip.x; clip.height = Math.min(vp.height, Math.ceil(ring.b + 4)) - clip.y
+  const a = PNG.sync.read(await page.screenshot({ clip }))
+  await handle.evaluate((el) => { el.dataset.l8Prev = el.style.getPropertyValue('outline'); el.style.setProperty('outline', 'none', 'important') })
+  const b = PNG.sync.read(await page.screenshot({ clip }))
+  await handle.evaluate((el) => { el.style.removeProperty('outline'); if (el.dataset.l8Prev) el.style.setProperty('outline', el.dataset.l8Prev); delete el.dataset.l8Prev })
+  const W = a.width, H = a.height, w = Math.max(1, Math.round(g.w))
+  const L = Math.round(ring.l - clip.x), R = Math.round(ring.r - clip.x), T = Math.round(ring.t - clip.y), B = Math.round(ring.b - clip.y)
+  const changed = (x, y) => { const i = (y * W + x) * 4; return Math.abs(a.data[i] - b.data[i]) + Math.abs(a.data[i + 1] - b.data[i + 1]) + Math.abs(a.data[i + 2] - b.data[i + 2]) > 60 }
+  const strip = (x0, x1, y0, y1) => { let n = 0, c = 0; for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) { n++; if (changed(x, y)) c++ } return n ? c / n : 0 }
+  const painted = { top: strip(L + w, R - w, T, T + w), bottom: strip(L + w, R - w, B - w, B), left: strip(L, L + w, T + w, B - w), right: strip(R - w, R, T + w, B - w) }
+  const sides = Object.values(painted).filter((v) => v >= 0.5).length
+  return { sides, painted: Object.fromEntries(Object.entries(painted).map(([k, v]) => [k, +v.toFixed(2)])), outline: `${g.style} ${g.w}px offset ${g.off}px` }
+}
+const activeHandle = () => page.evaluateHandle(() => document.activeElement)
+/** 先送一個鍵盤事件再程式聚焦:瀏覽器把它當成鍵盤來的焦點(:focus-visible),跟使用者 Tab 過去一樣畫框 */
+const keyboardFocus = async (selector) => {
+  await page.keyboard.press('Shift')
+  return page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) return false; el.focus(); return document.activeElement === el }, selector)
+}
+async function ringCheck(group, label, { control = false } = {}) {
+  const r = await paintedRing(await activeHandle())
+  if (r.instrument) { instrument(`${group} ${label}`, r.instrument); return null }
+  check(group, `${label}:焦點框四邊都畫出來`, r.sides === 4, `${r.sides}/4 ${JSON.stringify(r.painted)} ${r.outline}`, { control })
+  return r
+}
+{
+  currentBreak = 'L8'
+  const focusDesc = () => page.evaluate(() => { const a = document.activeElement; return { tag: a?.tagName?.toLowerCase(), cell: a?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, aria: a?.getAttribute?.('aria-label') ?? null } })
+  // (a) 一般模式:從同一列的勾選框 Tab 到連結
+  if (await open(TABLES.normal.url, '[data-column-id="url"] a[href]')) {
+    const boolId = await cellIdAt(1, 'inStock'); const urlId = await cellIdAt(1, 'url')
+    await page.mouse.move(2, 2)
+    if (!(await keyboardFocus(`[data-cell-id="${boolId}"] [role="checkbox"]`))) instrument('L8 一般模式', `聚焦不到 ${boolId} 的勾選框`)
+    else {
+      await page.keyboard.press('Tab'); await focusSettle()
+      const d = await focusDesc()
+      if (d.tag !== 'a' || d.cell !== urlId) instrument('L8 一般模式', `Tab 沒走到 ${urlId} 的連結(落在 ${JSON.stringify(d)})`)
+      else {
+        await ringCheck('L8', '一般模式 Tab 到表格連結格的連結')
+        await page.keyboard.press('Tab'); await focusSettle()
+        const p = await focusDesc()
+        if (p.aria !== '編輯連結' || p.cell !== urlId) instrument('L8 一般模式', `再 Tab 沒走到同一格的鉛筆(落在 ${JSON.stringify(p)})`)
+        else await ringCheck('L8', '一般模式同一格的鉛筆(對照列)', { control: true })
+      }
+    }
+  }
+  // (b) 試算表:點連結格空白處選格 → Enter 進到連結
+  if (await open(TABLES.sheet.url, '[data-column-id="url"] a[href]')) {
+    const p = await prepTable('sheet')
+    if (p) {
+      await clickAt(p.pts.blank.x, p.pts.blank.y); await page.mouse.move(2, 2)
+      await page.keyboard.press('Enter'); await focusSettle()
+      const d = await focusDesc()
+      if (d.tag !== 'a' || d.cell !== p.id) instrument('L8 試算表', `Enter 之後焦點不在 ${p.id} 的連結(${JSON.stringify(d)})`)
+      else await ringCheck('L8', '試算表 Enter 進到連結格的連結')
+    }
+  }
+  // (c) LinkInput 唯讀 / 檢視的連結(展示「四模式」)
+  if (await open(LI('modes'), 'a[href]')) {
+    // 只量 story 畫出來的連結(Storybook 自己藏在頁面裡的說明連結寬 0,不算)
+    const targets = await page.evaluate(() => [...document.querySelectorAll('#storybook-root a[href]')].filter((a) => a.getBoundingClientRect().width > 0).map((a, i) => {
+      a.dataset.l8Target = String(i)
+      const host = a.closest('[data-field-mode]')?.getAttribute('data-field-mode') ?? 'bare-view'
+      return { i, host }
+    }).filter((t) => t.host !== 'edit'))
+    if (targets.length === 0) instrument('L8 LinkInput', '四模式裡找不到唯讀 / 檢視的連結')
+    for (const t of targets) {
+      await page.mouse.move(2, 2)
+      if (!(await keyboardFocus(`a[data-l8-target="${t.i}"]`))) { instrument('L8 LinkInput', `聚焦不到第 ${t.i} 個連結`); continue }
+      await focusSettle()
+      await ringCheck('L8', `LinkInput「四模式」第 ${t.i + 1} 個連結(${t.host})`)
+    }
+  }
+  // (d) 可拖的欄頭(展示「欄位拖曳重排」):每一欄都 Tab 過去
+  if (await open(DT('column-reorder'), '[role="columnheader"]')) {
+    await page.mouse.move(2, 2)
+    await page.evaluate(() => document.body.focus())
+    const seen = []
+    for (let i = 0; i < 60 && seen.length < 12; i++) {
+      await page.keyboard.press('Tab'); await focusSettle()
+      const info = await page.evaluate(() => { const a = document.activeElement; return { role: a?.getAttribute?.('role'), rd: a?.getAttribute?.('aria-roledescription'), col: a?.getAttribute?.('data-column-id'), inTable: !!a?.closest?.('[data-data-table-outer]') } })
+      if (!info.inTable && seen.length) break
+      if (info.role === 'columnheader' && info.col && !seen.includes(info.col)) {
+        seen.push(info.col)
+        await ringCheck('L8', `可拖欄頭「${info.col}」`)
+      }
+    }
+    if (seen.length < 2) instrument('L8 欄頭', `Tab 只走到 ${seen.length} 個可拖的欄頭`)
+  }
+}
+
+// ── L9:試算表格內控件只有一個指示、格游標跟著焦點走 ────────────────────────────────────────────────
+{
+  currentBreak = 'L9'
+  const frame = () => page.evaluate(() => {
+    const f = document.querySelector('[data-selected-cell-id]')
+    if (!f) return { id: null, visible: false }
+    const cs = getComputedStyle(f); const r = f.getBoundingClientRect()
+    return { id: f.getAttribute('data-selected-cell-id'), visible: cs.visibility !== 'hidden' && cs.display !== 'none' && r.width > 0 && cs.outlineStyle !== 'none' }
+  })
+  const focusCell = () => page.evaluate(() => { const a = document.activeElement; return { cell: a?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, root: a?.matches?.('[data-data-table-outer]') ?? false, role: a?.getAttribute?.('role'), tag: a?.tagName?.toLowerCase() } })
+  const cellPoint = (id, side) => page.evaluate(([id, side]) => { const el = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`); el.scrollIntoView({ block: 'nearest', inline: 'center' }); const b = el.getBoundingClientRect(); return { x: side === 'right' ? b.right - 6 : b.left + b.width / 2, y: b.top + b.height / 2 } }, [id, side])
+  if (await open(TABLES.sheet.url, '[data-column-id="url"] a[href]')) {
+    // (a) 開關格:點格的右側空白選格 → Enter → 焦點在勾選框
+    const boolId = await cellIdAt(1, 'inStock')
+    const bp = await cellPoint(boolId, 'right')
+    await page.mouse.click(bp.x, bp.y); await settle(); await page.mouse.move(2, 2)
+    await page.keyboard.press('Enter'); await focusSettle(); await settle()
+    const fa = await focusCell(); const fra = await frame()
+    if (fa.role !== 'checkbox' || fa.cell !== boolId) instrument('L9 開關格', `Enter 之後焦點不在 ${boolId} 的勾選框(${JSON.stringify(fa)})`)
+    else {
+      const ring = await paintedRing(await activeHandle())
+      if (ring.instrument) instrument('L9 開關格', ring.instrument)
+      else check('L9', '開關格 Enter → 只有勾選框的框(格游標框收起)', !fra.visible && ring.sides === 4, `格游標框 ${JSON.stringify(fra)};勾選框 ${ring.sides}/4`)
+    }
+  }
+  if (await open(TABLES.sheet.url, '[data-column-id="url"] a[href]')) {
+    // (b)(c) 連結格:Enter → 連結;Tab → 鉛筆;Tab → 下一個控件(下一列);Esc → 回格導覽
+    const p = await prepTable('sheet')
+    if (p) {
+      await clickAt(p.pts.blank.x, p.pts.blank.y); await page.mouse.move(2, 2)
+      await page.keyboard.press('Enter'); await focusSettle(); await settle()
+      const f1 = await focusCell(); const fr1 = await frame()
+      if (f1.tag !== 'a' || f1.cell !== p.id) instrument('L9 連結格', `Enter 之後焦點不在 ${p.id} 的連結(${JSON.stringify(f1)})`)
+      else {
+        check('L9', '連結格 Enter → 只有連結的框(格游標框收起)', !fr1.visible, `格游標框 ${JSON.stringify(fr1)}`)
+        await page.keyboard.press('Tab'); await focusSettle(); await settle()
+        const f2 = await focusCell(); const fr2 = await frame()
+        check('L9', '再 Tab 到同一格的鉛筆 → 格游標仍是這一格、框仍收起', f2.cell === p.id && fr2.id === p.id && !fr2.visible, `焦點 ${JSON.stringify(f2)} 格游標 ${JSON.stringify(fr2)}`)
+        await page.keyboard.press('Tab'); await focusSettle(); await settle()
+        const f3 = await focusCell(); const fr3 = await frame()
+        if (!f3.cell || f3.cell === p.id) instrument('L9 連結格', `再 Tab 沒有走到別一格的控件(${JSON.stringify(f3)})`)
+        else {
+          check('L9', 'Tab 走到別一格的控件 → 格游標跟過去(= 焦點所在的格)、框仍收起', fr3.id === f3.cell && !fr3.visible, `焦點在 ${f3.cell};格游標 ${JSON.stringify(fr3)}`)
+          await page.keyboard.press('Escape'); await focusSettle(); await settle()
+          const f4 = await focusCell(); const fr4 = await frame()
+          // 對照列:Esc 用的是焦點所在那一格(修前就是這樣,破法不碰它)
+          check('L9', '在那個控件上按 Esc → 回格導覽,格游標框在焦點剛剛所在的那一格回來', f4.root && fr4.id === f3.cell && fr4.visible, `焦點 ${JSON.stringify(f4)} 格游標 ${JSON.stringify(fr4)}`, { control: true })
+        }
+      }
+    }
+  }
+  if (await open(TABLES.sheet.url, '[data-column-id="url"] a[href]')) {
+    // (d) 對照列:滑鼠點勾選框 —— 控件不畫框(:focus-visible 不成立),格游標框照留,仍只有一個
+    const boolId = await cellIdAt(0, 'inStock')
+    const cp = await page.evaluate((id) => { const c = document.querySelector(`[data-cell-id="${CSS.escape(id)}"] [role="checkbox"]`); c.scrollIntoView({ block: 'nearest', inline: 'center' }); const b = c.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 } }, boolId)
+    await page.mouse.click(cp.x, cp.y); await settle(); await focusSettle()
+    const fd = await focusCell(); const frd = await frame()
+    const fv = await page.evaluate(() => document.activeElement?.matches?.(':focus-visible') ?? false)
+    check('L9', '滑鼠點勾選框 → 控件不畫框、格游標框照留(仍只有一個指示)', fd.cell === boolId && !fv && frd.visible && frd.id === boolId, `焦點 ${JSON.stringify(fd)} focus-visible=${fv} 格游標 ${JSON.stringify(frd)}`, { control: true })
+  }
+}
+
 await browser.close()
 if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
 await server.stop()
@@ -571,5 +827,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-link-cell:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L7 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示,全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L9 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示、焦點框四邊、格內只有一個指示,全通過'}`)
 process.exit(failCount ? 1 : 0)

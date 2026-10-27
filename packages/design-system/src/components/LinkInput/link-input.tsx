@@ -83,6 +83,17 @@ function renderLinkValue(value: string, label?: string) {
   return <TruncatedText display="block">{label || value}</TruncatedText>
 }
 
+/**
+ * 裝著連結的那一層外殼:**只給 `min-w-0`(在 flex 裡縮得下),不裁切**(2026-10-21,r1b DT-01)。
+ * 截斷由被截的那個葉節點自己做 —— 連結 = `renderLinkAnchor` 的 `inline-block max-w-full truncate`、不是連結的值 = `TruncatedText`、
+ * 空值與停用的純文字各自 `block truncate`。外殼若再 `truncate`(`overflow:hidden`),連結的焦點框(全域外描邊,往外 2px)
+ * 會被裁到只剩右邊一條 2px、看起來像文字游標 —— 2026-10-21 前鍵盤停在表格連結格與唯讀 / 檢視的連結上都是這樣。
+ * `ds-canonical/references/focus-canonical.md`「問題二」→「正當障礙」:截斷用的 wrapper 不是正當障礙,修 wrapper、框照樣往外
+ *(DataTable 開關格 2026-09-07 同一例);編輯模式連結狀態那一支本來就是 `flex-1 min-w-0 flex`,不裁。
+ * 閘:`scripts/data-table-link-cell-invariant.mjs` L8(焦點框四邊真的畫出來,截圖比對)。
+ */
+const LINK_HOST_CLASS = 'min-w-0'
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export interface LinkInputProps
@@ -214,17 +225,18 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // — 對齊跨 Field family view 視覺尺寸統一。原無 font-size class → 用 browser default
         // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
-        return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkValue(value, label)}</span>
+        // 外層不裁:截斷由裡面的連結 / TruncatedText 自己做(見 LINK_HOST_CLASS)
+        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS)}>{renderLinkValue(value, label)}</span>
       }
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), className)}
           data-field-mode="view"
         >
-          <span className="flex-1 min-w-0 truncate">
+          <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {value
               ? renderLinkValue(value, label)
-              : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
+              : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
         </div>
@@ -329,14 +341,14 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           // 否則 axe 把灰化連結文字當一般文字誤報 color-contrast(modes / 色彩對照 / 尺寸對照三則 story)
           aria-disabled={resolvedMode === 'disabled' || undefined}
         >
-          <span className="flex-1 min-w-0 truncate">
+          <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {resolvedMode === 'disabled'
               ? (displayText
-                  ? <span className="text-fg-disabled">{displayText}</span>
-                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
+                  ? <span className="block truncate text-fg-disabled">{displayText}</span>
+                  : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
               : (value
                   ? renderLinkValue(value, label)
-                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
+                  : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
             }
           </span>
         </div>

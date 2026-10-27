@@ -27,7 +27,7 @@
 // 尺寸 / 命中區的 owner:`ds-canonical/references/hit-area-canonical.md`(滑過底色的形狀 ≡ 命中區;TreeItem 列 18 / lg 22)。
 //
 // 為什麼需要(2026-09-24 → 09-27,待辦總帳 N22):TreeView 的展開箭頭 2026-09-26 之前是一顆手刻的 16×16 `<button>`
-// (tree-view.tsx:1315 註解),滑過底色與點擊範圍都只有 16,跟 primitive 的 18 差 2px —— 同一種鈕兩個長相。
+// (當時 tree-view.tsx `TreeItem` 箭頭的註解),滑過底色與點擊範圍都只有 16,跟 primitive 的 18 差 2px —— 同一種鈕兩個長相。
 // 09-24 AI 承諾「全 DS 掃手刻 + 新閘擋手刻」。掃完(2026-09-27)現況只剩兩顆有 spec 明文的例外(見 ALLOWLIST);
 // 這支閘讓下一顆手刻在寫下去的當天就紅,而不是等 user 在畫面上看到 2px 的差。
 //

@@ -97,7 +97,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
     <CarouselItem />
     ...
   </CarouselContent>
-  <CarouselPrevious />           ← 左箭頭(hover-only, focus-within 時強制顯示)
+  <CarouselPrevious />           ← 左箭頭(hover-only,鍵盤聚焦時強制顯示)
   <CarouselNext />               ← 右箭頭
   <CarouselDots />               ← 底部中央 dots(scrollSnaps > 1 才渲染)
 </Carousel>
@@ -112,7 +112,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 預設 arrow **opacity-0**,父容器 `group-hover/carousel:opacity-100` 才浮現。
 
 - **為什麼不永遠可見**:carousel 內容(大圖 / 產品照)是主視覺,常駐箭頭會干擾閱讀;Airbnb / Instagram / Netflix hero 皆採 hover-only
-- **a11y 例外**:wrapper `focus-within:opacity-100`——後代 arrow 取得 focus 時強制顯示,滿足**焦點可見原則**。鍵盤使用者不 hover,若仍 opacity-0 將無法得知元素位置
+- **a11y 例外**:wrapper `has-[:focus-visible]:opacity-100`——後代 arrow 以鍵盤取得焦點時強制顯示,滿足**焦點可見原則**。鍵盤使用者不 hover,若仍 opacity-0 將無法得知元素位置。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點箭頭也會讓它成立,指標移開後箭頭一直蓋在圖上(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc;閘 `scripts/test-hover-revealed-affordances.mjs`)
 - **邊界**:`canScrollPrev/Next === false` 時 `disabled + opacity-0 + pointer-events-none`——到邊界直接消失,不顯示 disabled 狀態,避免視覺噪音
 
 ### 箭頭覆蓋範圍(canonical)
@@ -133,7 +133,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 - 為什麼 tertiary:`bg-surface` + `border-border`,hover 僅改 text/border 為 `primary-hover`——無 bg-hover tint,視覺最輕,不搶 media 權重;secondary 有 neutral 邊框+hover 較重,primary 有底色更搶焦點,均不合適
 - 背景 / 邊框 / hover / focus-visible:全部繼承 Button tertiary variant 的 token,不自訂
 - 圖標:`startIcon={ChevronLeft}` / `startIcon={ChevronRight}`,尺寸由 Button 內部程式化決定
-- **絕對定位 wrapper**:Button 外層 `<div>` 負責 `absolute` 定位 + hover-only opacity(`group-hover/carousel:opacity-100` / `focus-within:opacity-100`);Button 本身不做任何定位或可見性邏輯(職責分離)
+- **絕對定位 wrapper**:Button 外層 `<div>` 負責 `absolute` 定位 + hover-only opacity(`group-hover/carousel:opacity-100` / `has-[:focus-visible]:opacity-100`);Button 本身不做任何定位或可見性邏輯(職責分離)
 
 ### Arrow Props(API 契約,2026-07-18 決策14)
 

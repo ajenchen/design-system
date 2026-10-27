@@ -9,7 +9,7 @@
 // 生命週期發的 —— **不知道我們的守衛已經 return、根本沒重排**,會播假的成功訊息。
 //
 // 這一份是四處共用的繁中播報 SSOT。措辭沿用 DS 既有的 reorder 播報 canonical
-// (`TreeView` 的 `DEFAULT_REORDER_ANNOUNCEMENTS`,tree-view.tsx:130 起)的句型,
+// (`TreeView` 的 `DEFAULT_REORDER_ANNOUNCEMENTS`,tree-view.tsx)的句型,
 // 不另創語氣。
 //
 // **誠實回報結果是本模組的核心契約**:`onDragEnd` 必須由呼叫端提供「有沒有真的

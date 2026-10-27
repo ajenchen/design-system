@@ -151,10 +151,10 @@ Toolbar 右側 `X` + InfoPanel header `X` **都走 `<Button iconOnly dismiss siz
 
 ### Prev/Next 檔案切換(idle-fade,對齊 Google Photos / Dropbox lightbox / Carousel)
 
-viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制,對齊 Google Photos lightbox 風格);另加 `focus-within:opacity-100`(a11y CSS fallback,鍵盤 focus 強制顯示)。理由:
+viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制,對齊 Google Photos lightbox 風格);另加 `has-[:focus-visible]:opacity-100`(a11y CSS fallback,鍵盤聚焦強制顯示)。理由:
 
 - **世界級對照**:Google Photos / Dropbox preview / PhotoSwipe / Instagram lightbox 皆 hover/idle-fade — 常駐箭頭干擾 media(檔案)閱讀。**用 JS idle-timer 而非純 CSS `group-hover`**:CSS hover 在滑鼠停留時箭頭恆顯,idle-timer 才能做到「停留也淡出」的世界級沉浸體驗
-- **a11y**:鍵盤 focus 時強制顯示(`focus-within:opacity-100`,不 hover 也知道有箭頭可用)
+- **a11y**:鍵盤聚焦時強制顯示(`has-[:focus-visible]:opacity-100` + `pointer-events-auto`,不 hover 也知道有箭頭可用)。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點過箭頭也會成立,箭頭就不再隨 2.5s idle 淡出(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)
 - **邊界**:第一/最後一張時直接不 render(非 disabled state,避免視覺噪音)
 - 對齊 `components/Carousel/carousel.spec.md`「Arrow 行為」canonical
 

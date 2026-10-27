@@ -356,7 +356,7 @@ export const Accessibility: Story = {
         <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;搜尋框 ↑↓ 走列,插入點在字尾時 → 進該列的改名 / 刪除、← 回;兩顆鈕不在 Tab 路上(B9)</Td></tr>
         <tr><Td>AgentConversation</Td><Td>role=log + aria-live=polite</Td><Td>—</Td></tr>
         <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>
-        <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;focus-within 常駐顯示</Td></tr>
+        <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;鍵盤焦點在工具列裡時顯示(滑鼠點過不常駐)</Td></tr>
         <tr><Td>AgentPromptInput</Td><Td>textarea aria-label=訊息;停止態 aria-label=停止生成</Td><Td>Enter 送出、Shift+Enter 換行</Td></tr>
         <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
         <tr><Td>AgentLogo / AgentFab</Td><Td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</Td><Td>減動作:常駐 loop 全停回靜止</Td></tr>

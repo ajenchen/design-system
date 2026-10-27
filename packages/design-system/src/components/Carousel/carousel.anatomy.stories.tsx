@@ -185,7 +185,7 @@ const InspectorInner = () => {
             </div>
           </div>
           <p className="text-[10px] text-fg-muted font-mono">
-            Arrow:size="md"(h-field-md,default/md 32px / lg 36px,iconOnly 方形)· left/right-3 · top-1/2 · opacity 0 → hover/focus-within 100%<br />
+            Arrow:size="md"(h-field-md,default/md 32px / lg 36px,iconOnly 方形)· left/right-3 · top-1/2 · opacity 0 → hover / 鍵盤聚焦 100%<br />
             Dots:bottom-3 · gap-1.5 · inactive 6px × 6px / active 24px × 6px
           </p>
         </div>
@@ -208,7 +208,7 @@ const InspectorInner = () => {
             <div className="flex justify-between items-center"><span className="text-fg-muted">Stroke</span><TokenCell token="--border" /></div>
             <div className="flex justify-between items-center"><span className="text-fg-muted">Hover</span><span>text/border → --primary-hover(Button tertiary)</span></div>
             <div className="flex justify-between"><span className="text-fg-muted">Icon</span><span>16px(Button 程式化)</span></div>
-            <div className="flex justify-between"><span className="text-fg-muted">Opacity</span><span>0 → 100(group-hover / focus-within)</span></div>
+            <div className="flex justify-between"><span className="text-fg-muted">Opacity</span><span>0 → 100(group-hover / has-[:focus-visible])</span></div>
           </div>
         </div>
 
@@ -426,7 +426,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Arrow hover-only 顯示</H3>
         <Desc>
-          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。focus-within 時強制顯示(鍵盤 focus 進 arrow,不需 hover)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
+          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。鍵盤聚焦時強制顯示(`has-[:focus-visible]`,不需 hover;滑鼠點過的不常駐)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
         </Desc>
         <div className="max-w-[560px]">
           <Carousel>

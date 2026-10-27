@@ -5,9 +5,12 @@
  *        點沒有自己頁面的大步驟的文字 → 到第一個子步驟並只展開、焦點跟過去(A2),在捲動框裡也捲到看得到;什麼都不會變 → 開合(D);
  *        同一列的雙擊 / 三擊 / 觸控快點 / 兩下都回報第 1 下的連點只開合一次或不開合、焦點與單擊相同(連點保護),隔得比時間窗久的兩下照實是兩個動作;
  *        收起的沒頁面大步驟替目前那一步代顯灰底與 aria-current="step"、有頁面的不代顯;列尾結果的圖示、顏色與讀屏說明照「步驟結果」表;
- *        鍵盤 Enter / 空白鍵只「到那一步」;沒開 expandOnSelect 的一般樹不受影響。規格:tree-view.spec.md「步驟導覽樹」「步驟結果」。
- *   紅: 任一條不符 → exit 1;`--selftest` 在真建置上注入 9 種改壞版(擋連點失效、舊的一律開合、代顯消失、舊的 Tab 停靠點、結果圖示與說明消失、
- *       鍵盤也開合、焦點不跟過去、連點後焦點留在點的那一列、展開動畫結束後不再捲),每一種都必須讓它指定的條目紅,少一條 = 量具沒在量它宣稱的東西 → exit 1;
+ *        鍵盤 Enter / 空白鍵只「到那一步」;沒開 expandOnSelect 的一般樹不受影響;停用的列步驟結果一律停用色(S4,2026-10-21);
+ *        展示層「步驟引導」:有紅叉的那一頁看得到錯誤(含範例一開始就有的那一格)、回到送出失敗的頁錯誤還在、頁面上的「下一步 / 上一步」
+ *        換頁後焦點在樹上目前那一步、不掉到 <body>(V2–V4,2026-10-21,r1b TV-01 / TV-02)。規格:tree-view.spec.md「步驟導覽樹」「步驟結果」。
+ *   紅: 任一條不符 → exit 1;`--selftest` 在真建置上注入 10 種改壞版(擋連點失效、舊的一律開合、代顯消失、舊的 Tab 停靠點、結果圖示與說明消失、
+ *       鍵盤也開合、焦點不跟過去、連點後焦點留在點的那一列、展開動畫結束後不再捲、停用列的結果改回語意色),每一種都必須讓它指定的條目紅,少一條 = 量具沒在量它宣稱的東西 → exit 1;
+ *       V2–V4 的對照組 = a6390356 的建置(`--build=`;修前預設紅叉那一頁 0 個錯誤、回訪錯誤消失、按鈕換頁後焦點在 <body>,三條必紅);
  *       story 開不起來、建置比原始碼舊、量具的點擊次數 / 觸控類型與預期不同 = 儀器失效(exit 2,不是產品裁決,也不算通過)。
  *   綠: 沒弄壞時全部綠;每一個手勢前用夾具把狀態重設成指定起點並等列真的出現在點擊點上(waitForFunction,不靠固定睡眠);
  *       手勢之後等樹裡的動畫跑完、狀態連兩個影格不變才讀;只有「兩下之間隔多久」本身是被驗的性質時才用固定等待(性質本身有時間窗)。
@@ -38,7 +41,11 @@
  *      從別處雙擊同一列也一樣(焦點在那個子步驟)
  *   L2 捲動框:最後一個大步驟按 → 展開、馬上 ↓ → 焦點那一列等展開動畫結束後完整在框內(焦點捲動是所有樹共用的機制)
  *   F1 一般樹:點資料夾文字只選取不展開、沒有 aria-current、沒有結果槽
- *   V1 展示層「步驟引導」:「1. 商家資料」收著時代顯紅叉「其中有錯誤」;點它 → 到「公司基本資料」、右邊換成那一頁
+ *   S4 停用的列(夾具「已送出的開通申請」):列尾的勾 / 叉一律 text-fg-disabled,靠形狀分辨(spec「步驟結果 → 停用的列」,M24)
+ *   V1 展示層「步驟引導」:「1. 商家資料」收著時代顯紅叉「其中有錯誤」;點它 → 到「公司基本資料」、右邊換成那一頁(讀「看得到的那一頁」的標題)
+ *   V2 範例一開始就有紅叉的「負責人身分驗證」:點開那一頁,頁上看得到錯誤(至少一欄 aria-invalid + 錯誤訊息)
+ *   V3 在「收款銀行帳戶」按下一步沒過 → 換到「撥款週期」再回來 → 錯誤與 aria-invalid 還在
+ *   V4 鍵盤在頁面上按「下一步」(過)與「上一步」→ 焦點落在樹上 aria-current="step" 那一列,不是 <body>
  *
  * Run: `node scripts/tree-view-step-navigation-invariant.mjs`(讀 `<cwd>/storybook-static`;`--selftest` 跑改壞版)
  */
@@ -148,6 +155,22 @@ const MUTANTS = {
         for (const r of document.querySelectorAll('[data-tree-row][aria-describedby]')) r.removeAttribute('aria-describedby')
       }
       new MutationObserver(apply).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-describedby'] })
+    },
+  },
+  // 停用列的結果改回語意色(= 沒照 M24):鎖住的步驟列尾又是綠勾 / 紅叉
+  'disabled-status-color': {
+    sections: ['S'],
+    mustFail: ['S4'],
+    script: () => {
+      const apply = () => {
+        const host = document.head || document.documentElement
+        if (host && !document.getElementById('__selftest_disabled_status')) {
+          const s = document.createElement('style'); s.id = '__selftest_disabled_status'
+          s.textContent = '[data-tree-row][aria-disabled="true"] [data-tree-status] svg{color:var(--success)!important}'
+          host.appendChild(s)
+        }
+      }
+      new MutationObserver(apply).observe(document, { subtree: true, childList: true })
     },
   },
   // 鍵盤也開合:列上按 Enter / 空白鍵後再按一下它的箭頭
@@ -458,7 +481,7 @@ const SECTIONS = {
     }
     const statusOf = (name) => page.evaluate((sel) => {
       const color = (cls) => { const p = document.createElement('span'); p.className = cls; document.body.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c }
-      const ok = color('text-success'); const err = color('text-error')
+      const ok = color('text-success'); const err = color('text-error'); const dis = color('text-fg-disabled')
       const out = {}
       for (const r of document.querySelectorAll(`${sel} [data-tree-row]`)) {
         const svg = r.querySelector('[data-tree-status] svg')
@@ -466,7 +489,7 @@ const SECTIONS = {
         const c = visible ? getComputedStyle(svg).color : ''
         const cls = visible ? svg.getAttribute('class') ?? '' : ''
         const icon = !visible ? '' : /circle-check/.test(cls) ? 'check' : /circle-x|x-circle/.test(cls) ? 'x' : `?${cls}`
-        out[r.dataset.treeRow] = visible ? `${icon}:${c === ok ? 'success' : c === err ? 'error' : c}` : ''
+        out[r.dataset.treeRow] = visible ? `${icon}:${c === ok ? 'success' : c === err ? 'error' : c === dis ? 'disabled' : c}` : ''
       }
       return out
     }, s.fx(name))
@@ -503,6 +526,15 @@ const SECTIONS = {
     await page.mouse.move(0, 0)
     ck(`S3${tag} 列尾結果與滑過才出現的按鈕並排(都看得到、不重疊、結果在按鈕左邊)`, !!side && !side.overlap && side.statusRight <= side.actionsLeft && side.statusW > 0,
       JSON.stringify(side))
+    // 停用 × 結果(2026-10-21,r1b TV-04):送出後鎖住的步驟,勾 / 叉都是停用色(M24 disabled > 其他),形狀照舊分得出來
+    // 夾具裡沒有這棵樹 = 沒有任何 story 畫出「停用 × 結果」這一格(修前就是這樣)—— 那是要紅的產品缺口,不是儀器失效
+    const hasLocked = await page.evaluate((sel) => !!document.querySelector(sel), s.fx('locked'))
+    if (!hasLocked) ck(`S4${tag} 停用的列:成功 / 失敗都是停用色、靠形狀分辨(勾 / 叉)`, false, '夾具沒有「已送出的開通申請」那棵樹:停用 × 步驟結果沒有任何 story 畫出來')
+    else {
+      await s.reset('locked', { selected: null, expanded: ['lk'] })
+      const lk = await statusOf('locked')
+      ck(`S4${tag} 停用的列:成功 / 失敗都是停用色、靠形狀分辨(勾 / 叉)`, lk.lk1 === 'check:disabled' && lk.lk2 === 'x:disabled', JSON.stringify(lk))
+    }
     await cdp.detach().catch(() => null)
   },
   async K(page, s, tag) {
@@ -656,12 +688,98 @@ async function runShowcase(theme) {
   })
   await page.mouse.click(pt.x, pt.y)
   const after = await page.waitForFunction(() => {
-    const heading = document.querySelector('section[aria-label="目前步驟"] h3')?.textContent
+    // 看得到的那一頁的標題(2026-10-21 起每一頁都一直掛著、只露出目前那一頁 —— 只取第一個 h3 會永遠讀到第一頁,M37)
+    const heading = [...document.querySelectorAll('section[aria-label="目前步驟"] h3')].find((h) => h.getClientRects().length > 0)?.textContent
     const sel = document.querySelector('[role="treegrid"][aria-label="收款帳戶開通步驟"] [aria-selected="true"]')?.dataset.treeRow
     return heading === '公司基本資料' && sel === 'company' ? { heading, sel } : null
   }, null, { timeout: 5_000, polling: 'raf' }).then((h) => h.jsonValue(), () => null)
   ck(`V1${tag} 展示層「步驟引導」:「1. 商家資料」收著代顯紅叉「其中有錯誤」;點它 → 到「公司基本資料」、右邊換成那一頁`,
     before.result === 'error' && before.desc === '其中有錯誤' && !!after, `前:${JSON.stringify(before)} 後:${JSON.stringify(after)}`)
+
+  // ── V2–V4(2026-10-21,r1b TV-01 / TV-02)──
+  /** 看得到的那一頁:標題、aria-invalid 幾欄、錯誤訊息 */
+  const pageNow = () => page.evaluate(() => {
+    const section = document.querySelector('section[aria-label="目前步驟"]')
+    const visible = (el) => el.getClientRects().length > 0
+    const form = [...section.querySelectorAll('form')].find(visible)
+    return {
+      heading: form?.querySelector('h3')?.textContent ?? null,
+      invalid: form ? [...form.querySelectorAll('[aria-invalid="true"]')].filter(visible).length : 0,
+      errors: form ? [...form.querySelectorAll('[role="alert"], [id$="-error"], [data-field-error]')].filter(visible).map((e) => e.textContent.trim()).filter(Boolean) : [],
+    }
+  })
+  const rowPoint = (id) => page.evaluate((id) => {
+    const row = document.querySelector(`[role="treegrid"][aria-label="收款帳戶開通步驟"] [data-tree-row="${id}"]`)
+    if (!row) return null
+    const b = document.getElementById(row.getAttribute('aria-labelledby')).getBoundingClientRect()
+    return { x: b.left + 16, y: b.top + b.height / 2 }
+  }, id)
+  const waitHeading = (want) => page.waitForFunction((want) => {
+    const h = [...document.querySelectorAll('section[aria-label="目前步驟"] form')].find((f) => f.getClientRects().length > 0)?.querySelector('h3')?.textContent
+    return h === want
+  }, want, { timeout: 5_000, polling: 'raf' }).then(() => true, () => false)
+  const clickRow = async (id, wantHeading) => {
+    // 等樹裡的展開 / 收合動畫跑完再取點(動畫中列還在移動,點下去可能落在別列)
+    await page.waitForFunction(() => !document.querySelector('[role="treegrid"][aria-label="收款帳戶開通步驟"]')?.getAnimations({ subtree: true }).some((a) => a.playState === 'running'), null, { timeout: 5_000, polling: 'raf' }).catch(() => null)
+    const p = await rowPoint(id)
+    if (!p) throw new InstrumentFailure(`${tag} 步驟引導找不到樹上的「${id}」那一列`)
+    await page.mouse.click(p.x, p.y)
+    if (!(await waitHeading(wantHeading))) throw new InstrumentFailure(`${tag} 步驟引導點「${id}」之後右邊沒有換成「${wantHeading}」`)
+    await page.mouse.move(0, 0)
+  }
+  // V2:「1. 商家資料」已展開、目前在「公司基本資料」(上一段 V1 點的)→ 點「負責人身分驗證」
+  await clickRow('owner', '負責人身分驗證')
+  const v2 = await pageNow()
+  ck(`V2${tag} 範例一開始就有紅叉的「負責人身分驗證」:點開那一頁,頁上看得到錯誤(aria-invalid + 錯誤訊息)`, v2.invalid >= 1 && v2.errors.length >= 1, JSON.stringify(v2))
+
+  // V3:在「收款銀行帳戶」按下一步(空白)→ 沒過;去「撥款週期」再回來 → 錯誤還在
+  await page.goto('about:blank').catch(() => null)
+  await openStory(page, url, { waitFor: '[role="treegrid"][aria-label="收款帳戶開通步驟"] [data-tree-row="merchant"]', settleFrames: 5, notFound: server.notFound })
+  const nextPoint = () => page.evaluate(() => {
+    const form = [...document.querySelectorAll('section[aria-label="目前步驟"] form')].find((f) => f.getClientRects().length > 0)
+    const btn = form && [...form.querySelectorAll('button')].find((b) => b.textContent.trim() === '下一步')
+    if (!btn) return null
+    const b = btn.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }
+  })
+  const np = await nextPoint()
+  if (!np) throw new InstrumentFailure(`${tag} 步驟引導「收款銀行帳戶」那一頁找不到「下一步」`)
+  await page.mouse.click(np.x, np.y)
+  const failed = await page.waitForFunction(() => document.querySelector('[data-tree-row="bank"] [data-tree-status]')?.dataset.treeStatus === 'error', null, { timeout: 5_000, polling: 'raf' }).then(() => true, () => false)
+  const v3a = await pageNow()
+  if (!failed || v3a.invalid === 0) throw new InstrumentFailure(`${tag} 步驟引導在「收款銀行帳戶」按下一步沒有失敗(量不到回訪)${JSON.stringify(v3a)}`)
+  await clickRow('payout', '撥款週期')
+  await clickRow('bank', '收款銀行帳戶')
+  const v3 = await pageNow()
+  ck(`V3${tag} 送出沒過的「收款銀行帳戶」:換到別頁再回來,錯誤與 aria-invalid 還在(${v3a.invalid} 欄)`, v3.invalid === v3a.invalid && v3.errors.length >= 1, `送出後 ${JSON.stringify(v3a)};回來 ${JSON.stringify(v3)}`)
+
+  // V4:鍵盤在頁面上按「下一步」(撥款週期沒有必填 → 過)與「上一步」→ 焦點在樹上目前那一步
+  await clickRow('payout', '撥款週期')
+  const focusButton = async (label) => {
+    await page.keyboard.press('Shift')
+    return page.evaluate((label) => {
+      const form = [...document.querySelectorAll('section[aria-label="目前步驟"] form')].find((f) => f.getClientRects().length > 0)
+      const btn = form && [...form.querySelectorAll('button')].find((b) => b.textContent.trim() === label)
+      btn?.focus()
+      return !!btn && document.activeElement === btn
+    }, label)
+  }
+  const focusNow = () => page.evaluate(() => {
+    const a = document.activeElement
+    return { body: !a || a === document.body, row: a?.getAttribute?.('data-tree-row') ?? null, current: a?.getAttribute?.('aria-current') ?? null }
+  })
+  if (!(await focusButton('下一步'))) throw new InstrumentFailure(`${tag} 步驟引導聚焦不到「撥款週期」的「下一步」`)
+  await page.keyboard.press('Enter')
+  const movedNext = await waitHeading('核對資料')
+  await page.waitForFunction(() => document.activeElement !== document.body || document.readyState === 'complete', null, { timeout: 2_000 }).catch(() => null)
+  const f1 = await focusNow()
+  if (!movedNext) throw new InstrumentFailure(`${tag} 步驟引導鍵盤按「下一步」之後沒有換到「核對資料」`)
+  if (!(await focusButton('上一步'))) throw new InstrumentFailure(`${tag} 步驟引導聚焦不到「核對資料」的「上一步」`)
+  await page.keyboard.press('Enter')
+  const movedBack = await waitHeading('撥款週期')
+  const f2 = await focusNow()
+  if (!movedBack) throw new InstrumentFailure(`${tag} 步驟引導鍵盤按「上一步」之後沒有回到「撥款週期」`)
+  ck(`V4${tag} 鍵盤按頁面上的「下一步」/「上一步」換頁 → 焦點在樹上目前那一步(aria-current="step"),不是 <body>`,
+    !f1.body && f1.current === 'step' && !f2.body && f2.current === 'step' && f2.row === 'payout', `下一步後 ${JSON.stringify(f1)};上一步後 ${JSON.stringify(f2)}`)
   await page.goto('about:blank').catch(() => null)
 }
 

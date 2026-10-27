@@ -19,7 +19,7 @@
 import * as React from 'react'
 import type { ComponentType } from 'react'
 import { Pencil } from 'lucide-react'
-import { lineClampClass } from '@/lib/utils'
+import { cn, lineClampClass } from '@/lib/utils'
 import type { ColumnType } from './column-types'
 import { Input as InputPublic } from '@/design-system/components/Input/input'
 import { Textarea as TextareaPublic } from '@/design-system/components/Textarea/textarea'
@@ -31,7 +31,7 @@ import { TimePicker as TimePickerPublic } from '@/design-system/components/TimeP
 import { PeoplePicker as PeoplePickerPublic } from '@/design-system/components/PeoplePicker/people-picker'
 import { LinkInput as LinkInputPublic } from '@/design-system/components/LinkInput/link-input'
 import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/checkbox'
-import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemInlineAction, itemSuffixHoverRevealClass } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
@@ -200,7 +200,7 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft, aria
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
   // React #310 fix:useState 必在 view early-return 前無條件呼叫。同一 memo'd cell instance
-  // 在 view↔edit 切換時被重用(render site 無 key={mode},data-table.tsx:1352),hook 數量不可變,
+  // 在 view↔edit 切換時被重用(render site = data-table.tsx `MemoCellSlot`,無 key={mode}),hook 數量不可變,
   // 否則 Rules of Hooks violation → React #310 crash。對齊 combobox/select hoist pattern。
   const initial = typeof value === 'number' ? value : null
   const [localValue, setLocalValue] = React.useState<number | null>(initial)
@@ -487,9 +487,11 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
         {/* 滑過格 / 鍵盤聚焦時才出現(data-table.spec.md 編輯表 url 列;focus 揭示為 a11y 必要條件,契約與 guard:
             scripts/test-hover-revealed-affordances.mjs);滑過 / 聚焦時瞬間出現,不淡入(tokens/motion/motion.spec.md「hover 回饋不做過渡」)。
             外層 span 接住 click 不再往上冒:鉛筆已經進編輯,不讓格的點擊規則再處理一次(試算表模式下第一下只選格的那條)。 */}
+        {/* 出現規則消費 item-anatomy 的同一份(`itemSuffixHoverRevealClass('cell')` = 滑過格 / 格裡有鍵盤焦點):用 `group-has-[:focus-visible]`
+            不用 `group-focus-within` —— 後者滑鼠點一下連結也成立,鉛筆會一直亮到焦點離開(2026-10-21 前這裡自抄一份就是這樣,r1b DT-06)。 */}
         <span
           {...{ [CELL_EDIT_ENTRY_ATTR]: '' }}
-          className="ml-1 flex shrink-0 opacity-0 group-hover/cell:opacity-100 group-focus-within/cell:opacity-100"
+          className={cn('ml-1 flex shrink-0', itemSuffixHoverRevealClass('cell'))}
           onClick={(e) => e.stopPropagation()}
         >
           <ItemInlineAction

@@ -243,6 +243,19 @@
   background-color: var(--neutral-hover);
 }
 
+/* **格裡的控件自己畫焦點框時,格游標框不畫**(2026-10-21,r1b DT-03)。試算表模式在連結格 / 開關格按 Enter / F2,焦點進到格裡的
+   連結 / 鉛筆 / 勾選框(data-table.spec.md「試算表模式」與鍵盤段);那個控件自己有 DS 焦點框,格游標框(interaction layer
+   的 `[data-selected-cell-id]`,`focus-ring-inset`)再畫一圈就是同一次互動兩個藍框(同心兩圈)。
+   依據:focus-canonical.md「一個項目只有一個指示器」、user 原話「一個藍色 focus ring 就已經夠顯眼了」(同檔「來源總帳」)、
+   scripts/focus-indicator-invariants.mjs F2「一次互動只能有一個指示器」(容器不得在裡面有自帶框的控件被聚焦時再畫)。
+   判準是 `:focus-visible` —— **瀏覽器真的替那個控件畫框的時候**:滑鼠點勾選框不畫控件框(`:focus-visible` 不成立),格游標框照留,
+   仍然只有一個。格游標跟著鍵盤焦點走到控件所在的那一格(data-table.tsx 根節點 onFocus),所以藏起來的框與控件在同一格;
+   焦點回到格導覽(F2 / Esc)時這條不再成立,格游標框立刻回來。用 CSS 的 :has() 讓它跟著瀏覽器的焦點狀態走,不另存一份狀態。
+   閘:scripts/data-table-link-cell-invariant.mjs L9。 */
+[data-data-table-outer]:has([role='gridcell'] :focus-visible) [data-selected-cell-id] {
+  visibility: hidden;
+}
+
 /* First-row / first-column variants:turn transparent top/left into real divider 若 outer container
    沒有自己 border 提供。當前 DataTable outer 有 rounded border 包整 table → first row top + first col
    left 視覺由 outer border 接,所以本 class 4 邊全 divider OK 不重複。 */

@@ -1170,9 +1170,10 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                     className={cn(
                       'absolute left-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 z-10',
                       'transition-opacity duration-150 motion-reduce:duration-0',
-                      // armVisible state 控制,或 focus-within 時 a11y 強制顯示
+                      // armVisible state 控制,或鍵盤聚焦時 a11y 強制顯示 —— 用 has-[:focus-visible] 不用 focus-within(2026-10-21,r1b DT-06 同族):
+                      // 滑鼠點箭頭 focus-within 就成立,2.5 秒沒動滑鼠也不淡出(file-viewer.spec.md「Prev/Next 檔案切換」;理由的住所 = item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)
                       armVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
-                      'focus-within:opacity-100 focus-within:pointer-events-auto',
+                      'has-[:focus-visible]:opacity-100 has-[:focus-visible]:pointer-events-auto',
                     )}
                   >
                     <Button
@@ -1205,7 +1206,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                       'absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 z-10',
                       'transition-opacity duration-150 motion-reduce:duration-0',
                       armVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
-                      'focus-within:opacity-100 focus-within:pointer-events-auto',
+                      'has-[:focus-visible]:opacity-100 has-[:focus-visible]:pointer-events-auto',
                     )}
                   >
                     <Button

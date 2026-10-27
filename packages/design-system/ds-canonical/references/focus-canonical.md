@@ -511,7 +511,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 但**到儲存格邊其實有 11.5 / 62 / 11.5 / 12 px 空白** —— 卡住它的是一個
 `truncate min-w-0`(padding 0、`overflow:hidden`)的**文字截斷** wrapper,
 而勾選框永遠不需要文字截斷。**那不是正當障礙,是 bug。**
-正解是修 wrapper(`data-table.tsx:2085` 的 `isKnownCompound` 補 `boolean`),
+正解是修 wrapper(`data-table.tsx` 的 `isKnownCompound` 補 `boolean`),
 不是讓焦點框改成內描邊去遷就它。
 
 **判斷「正當」的問句**:如果這個障礙消失,畫面會不會壞?

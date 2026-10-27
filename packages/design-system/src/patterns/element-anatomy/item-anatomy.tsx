@@ -815,9 +815,16 @@ const SUFFIX_HOVER_REVEAL_BY_GROUP = {
   "tree-item":
     "opacity-0 group-hover/tree-item:opacity-100 group-has-[:focus-visible]/tree-item:opacity-100",
   row: "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+  // DataTable 格(`group/cell`):連結格的鉛筆(`DataTable/cell-registry.tsx` UrlCell;2026-10-21 r1b DT-06 —— 之前那裡自抄一份、
+  // 用的是 group-focus-within,滑鼠點過連結之後鉛筆一直亮著)
+  cell: "opacity-0 group-hover/cell:opacity-100 group-has-[:focus-visible]/cell:opacity-100",
 } as const
 
 export type ItemSuffixHoverGroup = keyof typeof SUFFIX_HOVER_REVEAL_BY_GROUP
+
+/** @internal — 滑過 / 鍵盤聚焦才出現的那組 class(與 `<ItemSuffix hoverReveal hoverGroup>` 同一份)—— 給不是 ItemSuffix 版位、
+ *  但出現規則一樣的宿主用(DataTable 連結格的鉛筆:`ml-1` 貼著連結,不是列尾的 `ml-auto` 槽)。不要在宿主裡再抄一份字串。 */
+export const itemSuffixHoverRevealClass = (group: ItemSuffixHoverGroup): string => SUFFIX_HOVER_REVEAL_BY_GROUP[group]
 
 export interface ItemSuffixProps extends React.HTMLAttributes<HTMLSpanElement> {
   /**
@@ -831,7 +838,7 @@ export interface ItemSuffixProps extends React.HTMLAttributes<HTMLSpanElement> {
   /**
    * 父層 row 的 group selector(consumer 必加 `group/<name>` 到 row wrapper)。
    * 預設 `'menu-item'`(對齊 MenuItem / Sidebar)。其他 row primitive:
-   * `'tree-item'`(TreeView)/ `'row'`(DataTable / FileItem)。
+   * `'tree-item'`(TreeView)/ `'row'`(DataTable / FileItem)/ `'cell'`(DataTable 格)。
    *
    * 加新 row primitive(且需 hover-reveal)時:在 `SUFFIX_HOVER_REVEAL_BY_GROUP`
    * 加 entry,Tailwind JIT 才能 scan 到 static class。

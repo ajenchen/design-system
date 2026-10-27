@@ -116,7 +116,7 @@ export const UsageGuidance: Story = {
 }
 
 export const ColumnTypeRule: Story = {
-  name: '用 欄類型 自動渲染,不手寫 儲存格',
+  name: '用欄類型自動渲染,不手寫儲存格',
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [
@@ -177,10 +177,12 @@ export const VirtualScrollRule: Story = {
       available: c.index % 3 !== 0,
       launchDate: '2026-04-18',
     }))
+    // 門檻數字只有一個:data-table.tsx 的 VIRTUAL_THRESHOLD(30),規則住 data-table.spec.md「二、高度模式」的「虛擬捲動什麼時候啟用」。
+    // 2026-10-21 前本頁寫了四個門檻數字(兩組 50、兩組 100),彼此矛盾、也都不是程式的門檻(r1b DT-09;閘 scripts/data-table-tree-view-doc-invariant.mjs P2)。
     return (
       <TutorialPage>
         <TutorialRule
-          title="height='auto' — 少量資料(< 50 筆),全部渲染"
+          title="height='auto' — 少量資料(30 筆以內),全部渲染"
           note="資料量小,全渲染比 virtualizer 簡單。沒有固定高度,table 自然撐開,頁面捲動即可"
         >
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
@@ -188,18 +190,18 @@ export const VirtualScrollRule: Story = {
         </TutorialRule>
 
         <TutorialRule
-          title="固定 height 數字 — 大量資料(> 100 筆),啟用 virtualization"
-          note="傳固定高度時 TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
+          title="固定 height — 超過 30 筆時自動虛擬捲動"
+          note="傳固定高度、資料又超過 30 筆時,TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
         >
           <DataTable columns={columns} data={bigData} height="400px" />
           <ExampleCaption>↑ 500 筆資料,固定 400px 高度 → virtualizer 只渲染畫面中的 ~20 rows</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
-          title="❌ 100+ 筆資料用 height='auto'"
-          note="全部 DOM 渲染 → 初始 render 慢、滾動 janky、記憶體吃緊。當資料規模會大時用固定 height 啟用 virtualization"
+          title="❌ 會長大的資料用 height='auto'"
+          note="auto 永遠全部渲染(沒有虛擬捲動):資料越多,初始 render 越慢、捲動越卡、記憶體越吃緊。只有傳固定 height,資料超過 30 筆後才會自動虛擬化"
         >
-          <ExampleCaption warn>判斷法:資料筆數會穩定超過 50 就用固定 height</ExampleCaption>
+          <ExampleCaption warn>判斷法:資料會超過 30 筆、或筆數會隨使用者資料成長,就用固定 height</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -207,7 +209,7 @@ export const VirtualScrollRule: Story = {
 }
 
 export const EmptyStateRule: Story = {
-  name: '空 / 錯誤 / 載入中 的對應元件',
+  name: '空 / 錯誤 / 載入中的對應元件',
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [

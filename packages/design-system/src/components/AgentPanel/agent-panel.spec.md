@@ -229,7 +229,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 6. AgentToolbar(訊息工具列)
 
-- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」),
+- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停 / 鍵盤聚焦(`has-[:focus-visible]`,滑鼠點過不常駐)時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」),
   絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
 

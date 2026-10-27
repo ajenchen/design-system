@@ -149,7 +149,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 - Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(見「驗證」4:浮層裡第一下只取消、第二下才關浮層)
 - Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。「點外框空白處 = 按 Pencil」是滑鼠的捷徑,外框本身不是 tab stop,鍵盤走 Pencil
 
-**Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。
+**Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。連結(link / readonly / view 狀態,含 DataTable 連結格)與 Pencil 鍵盤聚焦時畫 DS 焦點框(全域外描邊,往外 2px),**四邊都要畫得出來**:包著連結的外殼不得用 `overflow` 裁切 —— 上方「單行 truncate」由連結自己(`inline-block max-w-full truncate` + `TruncatedText`)做,外殼只給 `min-w-0`(`link-input.tsx` `LINK_HOST_CLASS`;`../../../ds-canonical/references/focus-canonical.md`「問題二」→「正當障礙」:截斷 wrapper 不是正當障礙,修 wrapper、不改內描邊)。2026-10-21 前三處外殼寫 `truncate`,框只剩右邊一條 2px(r1b DT-01;閘 `scripts/data-table-link-cell-invariant.mjs` L8)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

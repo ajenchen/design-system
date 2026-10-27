@@ -119,6 +119,18 @@ const INITIAL_DRAFT: MerchantDraft = {
   payoutCycle: 'weekly', agreed: false,
 }
 const required = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
+/** 中華民國身分證字號:1 個大寫英文字母 + 9 個數字,而且檢查碼要對(字母換成兩位數代碼後加權總和 % 10 === 0)。
+ *  2026-10-21(r1b TV-01):原本只驗格式,範例預設的 A223456789 格式正確、頁上沒有任何錯誤,樹上卻掛著「上一次送出沒過」的紅叉;
+ *  這個號碼的檢查碼其實不對(加權總和 138),補上檢查碼這一關,紅叉才有頁上看得到的理由(tree-view.spec.md「步驟結果」判斷法)。 */
+const TW_ID_LETTERS = 'ABCDEFGHJKLMNPQRSTUVXYWZIO' // 索引 + 10 = 字母代碼(A=10 … H=17、J=18 … V=29、X=30、Y=31、W=32、Z=33、I=34、O=35)
+const validateTaiwanId = (v: unknown) => {
+  const id = String(v ?? '')
+  if (!/^[A-Z][12]\d{8}$/.test(id)) return '身分證字號格式是 1 個大寫英文字母加 9 個數字'
+  const code = TW_ID_LETTERS.indexOf(id[0]) + 10
+  const digits = [Math.floor(code / 10), code % 10, ...id.slice(1).split('').map(Number)]
+  const weights = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1]
+  return digits.reduce((sum, d, i) => sum + d * weights[i], 0) % 10 === 0 ? undefined : '身分證字號檢查碼不正確'
+}
 
 /** 一頁的版面:標題、說明、欄位、下一步 / 上一步。
  *  - 按鈕順序與對齊照 patterns/action-bar/action-bar.spec.md:109 / :121:這一列沒有標題 → 靠左;靠左時 primary 在最左,
@@ -154,11 +166,22 @@ interface OnboardingStepProps {
   /** 這一頁驗證沒過:列尾畫失敗、停在這一頁 */
   onFail: () => void
   onBack?: () => void
+  /** 範例開始前就已經送出過、沒過的那一頁(useOnboardingForm 的 failedBefore) */
+  failedBefore?: boolean
 }
-/** 送出一頁:useFormValidation 驗過才會呼叫 onSubmit;沒呼叫 = 沒過 */
-function useOnboardingForm<T extends Record<string, unknown>>(initialValues: T, validate: Partial<Record<keyof T, (v: T[keyof T]) => string | undefined>>, onPass: (v: T) => void, onFail: () => void) {
+/** 送出一頁:useFormValidation 驗過才會呼叫 onSubmit;沒呼叫 = 沒過。
+ *  `failedBefore`:這一頁在範例開始之前就送出過、沒過(樹上已經是紅叉)→ 掛上時把每一欄照「離開欄位」那一條驗一次,
+ *  錯誤與 aria-invalid 跟著出現 —— 點開這一步,頁上看得到它為什麼失敗(tree-view.spec.md「步驟結果」判斷法;r1b TV-01)。
+ *  範例開始之後的失敗不需要這一步:每一頁都一直掛著(見 MerchantOnboarding),上一次送出的值與錯誤原封不動留著。 */
+function useOnboardingForm<T extends Record<string, unknown>>(initialValues: T, validate: Partial<Record<keyof T, (v: T[keyof T]) => string | undefined>>, onPass: (v: T) => void, onFail: () => void, failedBefore = false) {
   const passed = React.useRef(false)
   const form = useFormValidation<T>({ initialValues, validate, onSubmit: (v) => { passed.current = true; onPass(v) } })
+  React.useEffect(() => {
+    if (!failedBefore) return
+    for (const name of Object.keys(validate)) form.getInputProps(name as keyof T & string).onBlur()
+    // 只在掛上時跑一次:之後的錯誤由使用者自己的離開欄位 / 送出決定
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
     passed.current = false
@@ -185,11 +208,11 @@ function CompanyStep({ draft, onPass, onFail }: OnboardingStepProps) {
   )
 }
 
-function OwnerStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
+function OwnerStep({ draft, onPass, onFail, onBack, failedBefore }: OnboardingStepProps) {
   const { form, submit } = useOnboardingForm(
     { ownerName: draft.ownerName, ownerIdNo: draft.ownerIdNo },
-    { ownerName: required('負責人姓名'), ownerIdNo: (v) => (/^[A-Z][12]\d{8}$/.test(String(v)) ? undefined : '身分證字號格式是 1 個大寫英文字母加 9 個數字') },
-    onPass, onFail,
+    { ownerName: required('負責人姓名'), ownerIdNo: validateTaiwanId },
+    onPass, onFail, failedBefore,
   )
   return (
     <OnboardingPage title="負責人身分驗證" description="依洗錢防制法需核對公司負責人身分,資料只用於這次審核。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
@@ -273,15 +296,27 @@ const ONBOARDING_PAGES: Record<OnboardingStepId, (p: OnboardingStepProps) => Rea
   company: CompanyStep, owner: OwnerStep, bank: BankStep, payout: PayoutStep, review: ReviewStep, agree: AgreeStep,
 }
 
+// 範例開始時的進度:「公司基本資料」已完成;「負責人身分驗證」上一次送出沒過(身分證字號檢查碼不對,頁上看得到)。
+// 「1. 商家資料」收著 → 替它代顯「其中有錯誤」
+const SEEDED_RESULTS: Partial<Record<OnboardingStepId, StepResult>> = { company: 'completed', owner: 'error' }
+
 function MerchantOnboarding() {
   const [current, setCurrent] = React.useState<OnboardingStepId>('bank')
-  // 「負責人身分驗證」上一次送出沒過(列尾紅叉);「1. 商家資料」收著 → 替它代顯「其中有錯誤」
-  const [results, setResults] = React.useState<Partial<Record<OnboardingStepId, StepResult>>>({ company: 'completed', owner: 'error' })
+  const [results, setResults] = React.useState<Partial<Record<OnboardingStepId, StepResult>>>(SEEDED_RESULTS)
   const [expanded, setExpanded] = React.useState(() => new Set(['settlement']))
   const [draft, setDraft] = React.useState(INITIAL_DRAFT)
-  const index = ONBOARDING_ORDER.findIndex((s) => s.id === current)
-  const Page = ONBOARDING_PAGES[current]
   const selectedIds = React.useMemo(() => new Set([current]), [current])
+  // 用頁面上的「下一步 / 上一步」換頁後,焦點交給樹上「你在哪」那一列(aria-current="step",收起時是代顯的大步驟)——
+  // 按下去的那顆按鈕跟著原頁一起藏起來,焦點不能掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
+  // 落點選樹上目前那一步:跟「在樹上按 Enter 換頁」時焦點停的位置相同,讀屏念得出現在到哪一步,下一個 Tab 進到這一頁的第一欄(r1b TV-02)。
+  const treeRef = React.useRef<HTMLDivElement>(null)
+  const focusTreeAfterNav = React.useRef(false)
+  const goTo = (id: OnboardingStepId) => { focusTreeAfterNav.current = true; setCurrent(id) }
+  React.useEffect(() => {
+    if (!focusTreeAfterNav.current) return
+    focusTreeAfterNav.current = false
+    treeRef.current?.querySelector<HTMLElement>('[aria-current="step"]')?.focus()
+  }, [current])
   return (
     <>
       <Toaster />
@@ -289,6 +324,7 @@ function MerchantOnboarding() {
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md:384 / :391 垂直 padding 歸屬)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <nav aria-label="開通進度" className="w-[240px] shrink-0 border-r border-divider py-2">
           <TreeView
+            ref={treeRef}
             aria-label="收款帳戶開通步驟"
             expandOnSelect
             selectedIds={selectedIds}
@@ -303,19 +339,28 @@ function MerchantOnboarding() {
             ))}
           </TreeView>
         </nav>
+        {/* 每一頁都一直掛著,只露出目前那一頁(2026-10-21,r1b TV-01):換頁不再卸載上一頁,頁上打的字、上一次送出的錯誤
+            回來時都還在 —— 修前以 key={current} 換頁,回到送出失敗的那一頁時頁上 0 個錯誤,樹上卻還是紅叉。 */}
         <section aria-label="目前步驟" className="flex-1 min-w-0 p-[var(--layout-space-loose)]">
-          <Page
-            key={current}
-            draft={draft}
-            onPass={(patch) => {
-              setDraft((d) => ({ ...d, ...patch }))
-              setResults((r) => ({ ...r, [current]: 'completed' }))
-              const next = ONBOARDING_ORDER[index + 1]
-              if (next) setCurrent(next.id)
-            }}
-            onFail={() => setResults((r) => ({ ...r, [current]: 'error' }))}
-            onBack={index > 0 ? () => setCurrent(ONBOARDING_ORDER[index - 1].id) : undefined}
-          />
+          {ONBOARDING_ORDER.map((step, index) => {
+            const Page = ONBOARDING_PAGES[step.id]
+            const next = ONBOARDING_ORDER[index + 1]
+            return (
+              <div key={step.id} hidden={step.id !== current}>
+                <Page
+                  draft={draft}
+                  failedBefore={SEEDED_RESULTS[step.id] === 'error'}
+                  onPass={(patch) => {
+                    setDraft((d) => ({ ...d, ...patch }))
+                    setResults((r) => ({ ...r, [step.id]: 'completed' }))
+                    if (next) goTo(next.id)
+                  }}
+                  onFail={() => setResults((r) => ({ ...r, [step.id]: 'error' }))}
+                  onBack={index > 0 ? () => goTo(ONBOARDING_ORDER[index - 1].id) : undefined}
+                />
+              </div>
+            )
+          })}
         </section>
       </div>
     </>
@@ -331,7 +376,8 @@ export const Stepper: Story = {
           '商家開通收款帳戶:左邊步驟樹、右邊是目前那一步的整頁內容。三個大步驟都沒有自己的頁面(`selectable={false}`),只把子步驟分組 —— ' +
           '點大步驟的文字會到它底下的第一個子步驟並展開;目前那一步已在裡面、而且看得到時,點它就是開 / 合(同一列的連點只算一下)。' +
           '灰底是「你在哪」;大步驟收起時,灰底與列尾結果一起移到它身上(例如「1. 商家資料」收著,替裡面的「負責人身分驗證」代顯紅叉)。' +
-          '按「下一步」先驗證這一頁:過了列尾畫綠勾並前往下一步,沒過畫紅叉並停在這一頁。鍵盤:Enter / 空白鍵 = 到那一步,原地開合用 → / ←。',
+          '按「下一步」先驗證這一頁:過了列尾畫綠勾並前往下一步,沒過畫紅叉並停在這一頁。換頁不會清掉頁上的東西:回到有紅叉的那一頁,錯誤還在。' +
+          '鍵盤:Enter / 空白鍵 = 到那一步,原地開合用 → / ←;用頁面上的「下一步 / 上一步」換頁後,焦點回到樹上目前那一步。',
       },
     },
   },
@@ -409,6 +455,15 @@ export const StepNavigationContract: Story = {
           <TreeItem id="h2a" label="上傳映像檔" status="completed" />
         </TreeItem>
         <TreeItem id="h3" label="通知" />
+      </StepFixtureTree>
+      {/* 停用 × 步驟結果(2026-10-21,r1b TV-04):送出後鎖住、不能再改的步驟 —— 列尾的勾 / 叉一律停用色,靠形狀分辨
+          (tree-view.spec.md「步驟結果 → 停用的列」,M24 disabled > 其他)。修前沒有任何 story 畫出這一格,閘量不到 */}
+      {/* 列名不與同頁其他夾具樹重複:閘用無障礙樹的列名對照說明(S1 / S2) */}
+      <StepFixtureTree name="locked" label="已送出的開通申請" initial={{ selected: null, expanded: ['lk'] }}>
+        <TreeItem id="lk" label="1. 申請資料(審核中)" selectable={false}>
+          <TreeItem id="lk1" label="營業登記資料" status="completed" disabled />
+          <TreeItem id="lk2" label="代表人證件(退件)" status="error" disabled />
+        </TreeItem>
       </StepFixtureTree>
       <StepFixtureTree name="plain" label="專案檔案" initial={{ selected: 'f2', expanded: [] }} expandOnSelect={false}>
         <TreeItem id="f1" icon={Folder} label="設計稿">
@@ -884,8 +939,10 @@ export const DragAndDrop: Story = {
         </ExampleGroup>
         <div className="w-[240px]">
           <p className="text-caption font-medium text-fg-muted mb-[var(--layout-space-tight)]">移動紀錄</p>
+          {/* 字級走 token(typography.spec.md 禁止事項「不要硬寫 font-size」):與上面「移動紀錄」標題同一級 text-caption(12px,「元件內次要說明」);
+              2026-10-21 前寫死 11px(r1b TV-05)。紀錄是節點 id,保留等寬字。 */}
           {/* @layout-space-magic-ok: 移動紀錄是一串同質的紀錄列,列距 4px(layoutSpace.spec.md:165 同質清單列) */}
-          <div className="flex flex-col gap-1 text-[11px] font-mono text-fg-secondary">
+          <div className="flex flex-col gap-1 text-caption font-mono text-fg-secondary">
             {log.length === 0 && <span className="text-fg-muted">拖曳 node 後這裡會顯示</span>}
             {log.map((l, i) => <span key={i}>{l}</span>)}
           </div>

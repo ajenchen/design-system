@@ -1196,9 +1196,11 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
         'mt-2 flex h-6 items-center gap-2',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
         // 出現/消失完全不推擠版面(輪距 40 ≥ 8+24+8)。
+        // 鍵盤那一條用 has-[:focus-visible] 不用 focus-within(2026-10-21,r1b DT-06 同族):滑鼠點「複製」focus-within 就成立,
+        // 指標移開後工具列一直亮到焦點離開(理由的住所 = item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc;閘 scripts/test-hover-revealed-affordances.mjs)。
         pinned
           ? 'relative opacity-100'
-          : 'absolute left-0 top-full opacity-0 group-hover/agent-message:opacity-100 focus-within:opacity-100',
+          : 'absolute left-0 top-full opacity-0 group-hover/agent-message:opacity-100 has-[:focus-visible]:opacity-100',
         className,
       )}
       {...props}

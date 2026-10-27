@@ -1694,7 +1694,9 @@ const SidebarMenuAction = React.forwardRef<
       "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2",
       "group-data-[collapsible=icon]:hidden",
       showOnHover &&
-        "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-foreground md:opacity-0",
+        "group-has-[:focus-visible]/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-foreground md:opacity-0",
+      // 鍵盤那一條用 has-[:focus-visible] 不用 focus-within(2026-10-21,r1b DT-06 同族):滑鼠點一下選單鈕 focus-within 就成立,
+      // 動作鈕會一直亮到焦點離開 —— 理由同 patterns/element-anatomy/item-anatomy.tsx SUFFIX_HOVER_REVEAL_BY_GROUP
       // 當前項旁的動作鈕:靜止已是 foreground(上一行),滑過 / 按下**釘住 foreground**,不讓 ItemInlineActionButton 的
       // `hover:/active:text-fg-secondary` (0,2,0) 把它降回一階(2026-09-25 合成情境量測:淺 #252525→#545454、深 #FFFFFF→#E1E1E1;目前 DS 內無 showOnHover 消費者)。
       // 依據:inline-action.spec.md「Icon 色彩」的階梯 root invariant `fg-muted → fg-secondary → foreground`,滑過只准往前一階;

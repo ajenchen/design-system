@@ -14,7 +14,7 @@
     "primary-submit-disabled": 0,
     "hardcoded-spacing": 0,
     "div-heading": 0,
-    "unknown-typography": 0,
+    "unknown-typography": 57,
     "story-counter-example": 5,
     "layout-space-magic-ok": 382
   },
@@ -604,8 +604,8 @@
       "layout-space-magic-ok": {
         "count": 2,
         "hits": [
-          "b2ead4a4f8a0",
-          "b2ead4a4f8a0"
+          "6508af65e97e",
+          "c919bf408adb"
         ]
       }
     },
@@ -649,15 +649,77 @@
           "b42b3b2dc497",
           "c251bdfcbab7",
           "c7c24caa9823",
+          "d5c3005265b3",
           "d84c2a50aa08",
           "d84c2a50aa08",
-          "dcba3037bf4d",
           "fdc25b59af8f",
           "fdc25b59af8f"
         ]
       }
     },
     "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx": {
+      "unknown-typography": {
+        "count": 57,
+        "hits": [
+          "00be71b94a5e",
+          "00be71b94a5e",
+          "05afa75e4163",
+          "0cde7c1dbca3",
+          "0f5329dd676a",
+          "0fb9b884f944",
+          "16615143c70b",
+          "16615143c70b",
+          "16e5550fe6e3",
+          "18e09243402a",
+          "19cab9749cfe",
+          "22605dc60b65",
+          "25ae1ee3a755",
+          "28184da9292d",
+          "310885250671",
+          "3ecfd22f93df",
+          "3ecfd22f93df",
+          "3f9f9e1eca83",
+          "47e7e2a7fa1d",
+          "52323028046c",
+          "530835f6a28d",
+          "530835f6a28d",
+          "59bc0f643ae8",
+          "5f0b6c4118d8",
+          "603e708c9306",
+          "6a91c015872c",
+          "6c7dec62b1c8",
+          "6ed0fb57fb8d",
+          "7b65363e91df",
+          "96badebd1652",
+          "9e1f57639580",
+          "a3bdecf222cc",
+          "a718f5a44179",
+          "acd2da7ff398",
+          "b196f4223679",
+          "b196f4223679",
+          "b69a6fa0c813",
+          "be1a7c3521ab",
+          "be1a7c3521ab",
+          "bec518091190",
+          "bec518091190",
+          "c2fd8135fb9b",
+          "c67b84728517",
+          "c9bfcba61e7d",
+          "c9bfcba61e7d",
+          "ce4004b032bf",
+          "ce4004b032bf",
+          "cedc10b9b5d4",
+          "daa0ae092c4e",
+          "dcbfaa91849b",
+          "dfe9a8cc5c99",
+          "e14604939034",
+          "ec175bffa4b8",
+          "ec175bffa4b8",
+          "ed7572519af6",
+          "f9b9660e47cf",
+          "f9e1fd07d54c"
+        ]
+      },
       "layout-space-magic-ok": {
         "count": 81,
         "hits": [

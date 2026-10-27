@@ -691,6 +691,7 @@ export type {
 //   - patterns/element-anatomy:RowSizeProvider
 //   - patterns/element-anatomy:TruncatedText
 //   - patterns/element-anatomy:TruncatedTextProps
+//   - patterns/element-anatomy:itemSuffixHoverRevealClass
 // 出口全部是 @internal 的 tokens / hooks / lib 模組整個不進 front-door(2026-10-07;檔頭標模組層 @internal,或每個出口都標):
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

@@ -36,10 +36,10 @@
  *
  * 為什麼會「左右有畫、中間白」(量測設計的依據):
  *   - 三個區各自是捲動容器,只有 center 真的捲(`data-table.tsx` 三區容器段,`overflow-y-auto` 的 [data-datatable-hscroll]);
- *     左右釘選面板 `overflow-hidden`,由 `onCenterBodyScroll` 在 scroll 事件裡寫 `scrollTop` 同步(data-table.tsx:1700-1706)。
+ *     左右釘選面板 `overflow-hidden`,由 `onCenterBodyScroll` 在 scroll 事件裡寫 `scrollTop` 同步(data-table.tsx `onCenterBodyScroll`)。
  *   - 滾輪捲 center 走瀏覽器原生路徑:合成執行緒先把 layer 位移,主執行緒下一幀才收到 scroll 事件;
  *     react-virtual 在 scroll 事件內 `flushSync` 重繪(node_modules/@tanstack/react-virtual/dist/esm/index.js:16),
- *     overscan 只預先掛 5 列(data-table.tsx:1084 `overscan = 5`、:1548)。
+ *     overscan 只預先掛 5 列(data-table.tsx `DataTableInner` 的 `overscan = 5` 預設值)。
  *   → 主執行緒一幀沒跟上,合成執行緒已經把視窗推到「還沒掛任何列」的區域 = 中間白;左右面板要等主執行緒
  *     才會動,所以停在舊位置、看起來「有畫」。這個機制在 DOM 層看不到(rAF 時 DOM 永遠是一致的),
  *     只能從「兩個主幀之間捲了多遠」對「上一幀已渲染的範圍」推算 —— 本儀器的「預估 paint 空白」就是這個。

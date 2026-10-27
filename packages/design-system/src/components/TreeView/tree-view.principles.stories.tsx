@@ -110,7 +110,7 @@ export const UsageGuidance: Story = {
 }
 
 export const ExpandSelectSeparationRule: Story = {
-  name: '展開 與 Select 語意分離',
+  name: '展開與 Select 語意分離',
   render: () => {
     const [selected, setSelected] = React.useState<Set<string>>(new Set(['resume']))
     return (

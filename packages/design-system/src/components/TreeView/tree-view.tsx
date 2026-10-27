@@ -261,7 +261,7 @@ interface TreeViewContextValue {
    * 由它決定這一下做什麼;再記下這一下與它把焦點留在哪(同一串連點被擋下的那幾下沿用第一下的落點)
    */
   clickRowText: (id: string, detail: number, resolve: (repeatOf: StepClick | null) => StepActivation) => StepActivation
-  /** 點了展開箭頭:箭頭每點一下就開合一次(:93),也讓下一次點文字不被當成連點 */
+  /** 點了展開箭頭:箭頭每點一下就開合一次(tree-view.spec.md「Chevron 的特殊性」),也讓下一次點文字不被當成連點 */
   noteChevronClick: () => void
   /** 列卸載時通知(它若是 Tab 停靠點或焦點所在,要重新選一站,否則整棵樹 Tab 不到) */
   onRowUnmount: (id: string) => void
@@ -1794,7 +1794,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               )}
 
               {/* indicator 取代 icon 的位置;h-[1lh] 對齊第一行
-                  indicator 是 escape hatch(stepper status dot 等客製內容),消費 `<ItemPrefix>` 鎖 chevron 槽寬;
+                  indicator = consumer 自訂的前方記號,消費 `<ItemPrefix>` 鎖 chevron 槽寬;步驟結果不走這裡(走 `status`、畫在列尾,tree-view.spec.md 禁止事項;2026-10-21 前這句還把 indicator 寫成畫步驟狀態的地方,r1b TV-03);
                   Icon 走 canonical `<ItemIcon>` helper——自動標 data-prefix-type="icon",
                   讓 SidebarProvider 的全域 :has() prefix-mix 偵測能命中。 */}
               {indicator ? (
@@ -1809,7 +1809,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                 {label}
               </span>
 
-              {/* 步驟結果(步驟導覽樹才有;tree-view.spec.md「步驟結果」):列尾常駐、不隨滑過隱藏,與滑過才出現的按鈕並排(:299)。
+              {/* 步驟結果(步驟導覽樹才有;tree-view.spec.md「步驟結果」):列尾常駐、不隨滑過隱藏,與滑過才出現的按鈕並排(同段「位置」)。
                   槽一律保留(寬 = 這一列的圖示尺寸,與列上行內按鈕同一個盒),步驟從「還沒有結果」變成完成 / 失敗時,標題的截斷位置不跳。
                   圖示與顏色 = FileItem 同一份(RESULT_STATUS_ICON);停用的列照 M24 一律停用色。讀屏文字掛在列的 aria-describedby。 */}
               {stepTree && (

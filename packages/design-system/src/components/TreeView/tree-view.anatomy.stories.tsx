@@ -36,7 +36,7 @@ export const Overview: Story = {
 
       <div>
         <H3>TreeItem 內部結構</H3>
-        <Desc>依序排列 chevron placeholder、多選模式的 checkbox、indicator 或 icon、label，以及可選的 hover inline action / badge suffix；整體遵循 item-layout pattern。Checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
+        <Desc>依序排列 chevron placeholder、多選模式的 checkbox、indicator 或 icon、label，以及可選的 hover inline action / badge suffix；整體遵循 item-layout pattern。Checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。步驟導覽樹(單選 + expandOnSelect)在 label 之後多一格列尾的步驟結果(成功綠勾 / 失敗紅叉,常駐、不隨滑過隱藏,與滑過才出現的按鈕並排;沒有結果也保留這一格,標題截斷位置不跳)—— 顏色與疊加見「色彩對照表」,規則見 spec「步驟結果」。</Desc>
       </div>
 
       <div>
@@ -280,6 +280,53 @@ export const ColorMatrix: Story = {
             selected 用 `--neutral-selected`(不是 primary 色)——tree 的選取是「當前導航位置」的標記,
             不是「重要強調項」。用 primary 會讓使用者誤以為是可互動操作。
           </p>
+        </div>
+
+        <div>
+          <H3>步驟結果 × 列狀態(步驟導覽樹)</H3>
+          <Desc>
+            列尾的步驟結果是「事實」,圖示顏色只看結果本身與這一列停不停用 —— 灰底(你在哪)、滑過、收起代顯都不改它的顏色;
+            停用的列一律停用色、靠形狀(勾 / 叉)分辨(disabled 勝過其他狀態)。規則見 spec「步驟結果」;畫出來的樣子見「展示 / 步驟引導」
+            (預設、灰底、代顯)與閘的夾具(停用 × 結果,scripts/tree-view-step-navigation-invariant.mjs S4)。
+          </Desc>
+          <div className="overflow-x-auto">
+            <table className="text-caption border-collapse">
+              <thead>
+                <tr>
+                  <Th>列的狀態</Th>
+                  <Th>成功(completed)</Th>
+                  <Th>失敗(error)</Th>
+                  <Th>讀屏說明</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <Td mono>default / hover</Td>
+                  <Td>CircleCheck <TokenCell token="--success" display="success" /></Td>
+                  <Td>XCircle <TokenCell token="--error" display="error" /></Td>
+                  <Td>已完成 / 錯誤</Td>
+                </tr>
+                <tr>
+                  <Td mono>selected(你在哪,灰底)</Td>
+                  <Td>同上(只有底色變 <TokenCell token="--neutral-selected" display="neutral-selected" />)</Td>
+                  <Td>同上</Td>
+                  <Td>已完成 / 錯誤(列另有 aria-current="step")</Td>
+                </tr>
+                <tr>
+                  <Td mono>disabled</Td>
+                  <Td>CircleCheck <TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
+                  <Td>XCircle <TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
+                  <Td>已完成 / 錯誤</Td>
+                </tr>
+                <tr>
+                  <Td mono>收起的大步驟(代顯)</Td>
+                  <Td>全部子步驟成功才畫 <TokenCell token="--success" display="success" /></Td>
+                  <Td>任一子步驟失敗就畫 <TokenCell token="--error" display="error" /></Td>
+                  <Td>全部已完成 / 其中有錯誤</Td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div>

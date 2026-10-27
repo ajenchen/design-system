@@ -30,7 +30,8 @@
  *             typography.spec.md:43「視覺標題 ≠ 語義標題(一律用 h1–h6)」;
  *         (d) DS 字級 token 裡沒有的 text-* 字級 class —— 允許集合從 typography.css 的 @utility 讀,Tailwind 預設字級從 tailwindcss/theme.css 讀;
  *             2026-10-20 起另收:設計原則層寫死的任意字級 text-[Npx|rem|em](typography.spec.md:13「font-size 由 text-{role} token 決定,
- *             不可繞過」;展示層 / 設計規格層的量測藍圖與 Inspector 表格另屬他題,不收)與 DS 顏色家族裡不存在的顏色 class(例 text-fg-primary:字幹是 DS 顏色家族、全名卻不是
+ *             不可繞過」;2026-10-21 起展示層也收(r1b TV-05:TreeView「拖曳重排」的移動紀錄寫死 11px,本條原本看不到);
+ *             設計規格層的量測藍圖與 Inspector 表格另屬他題,不收)與 DS 顏色家族裡不存在的顏色 class(例 text-fg-primary:字幹是 DS 顏色家族、全名卻不是
  *             任何 @theme --color-*,不產生 CSS,畫面靜默落回繼承色)—— 顏色集合從 tokens 的 @theme 讀,不寫死清單。
  *   紅細則: 任一檔任一規則的命中數高於基準、或新檔有命中 → 印出新增命中的 file:line 並 exit 1;基準本身比 merge-base 寬
  *       (用同一支儀器量 base 那棵樹,任一檔任一規則基準記的數字高於 base 實測:數字一致的手改加額度、替新檔預留)→ exit 1;
@@ -125,8 +126,10 @@
 //       字幹開頭(h<數字> / body / caption / footnote,從 @utility 名字推出來)或是 Tailwind 預設字級(tailwindcss/theme.css 的 --text-*)。
 //       顏色(text-fg-muted)、對齊(text-left)等不是字級,不會被誤判。
 //       2026-10-20 擴充(教學頁稽核 T8 / T14):(d) 另收兩種「不產生 DS 該有的 CSS」——
-//         · 任意字級 text-[13px] / text-[0.8rem](只收設計原則層 —— 教學頁的內文 / 說明 / 標籤;展示層與設計規格層裡的任意字級
-//           幾乎全是量測藍圖與 Inspector 表格的標註(item-anatomy 的區塊圖、各元件 Inspector),理由同 (b),另屬他題、不收);
+//         · 任意字級 text-[13px] / text-[0.8rem](設計原則層 —— 教學頁的內文 / 說明 / 標籤;**2026-10-21 起展示層也收**(r1b TV-05):
+//           那一層實測只有兩檔有任意字級(a6390356):TreeView「拖曳重排」的移動紀錄寫死 11px(真的漂移,改成 text-caption)與
+//           item-anatomy.stories.tsx 的區塊圖標註(量測藍圖,57 筆記進棘輪)—— 原本以「幾乎全是量測藍圖」整層不收,真的漂移就跟著看不到(M37);
+//           設計規格層的任意字級幾乎全是量測藍圖與 Inspector 表格的標註,理由同 (b),另屬他題、仍不收);
 //           text-[var(--x)] 這類任意顏色不算(那是顏色,不是字級);
 //         · DS 顏色家族裡不存在的顏色:text- / bg- / border- / ring- / outline- / fill- / stroke- / divide- 後面的名字,字幹(第一段)
 //           是 DS @theme --color-* 的字幹(fg / primary / error / surface …,從 tokens 的 css 讀),全名(去掉 /透明度)卻不是任何
@@ -862,8 +865,8 @@ function collect(rel, text, instruments) {
       spacingByLine.get(w.line).push(w.base)
     }
     if (w.base.startsWith('text-') && typography.isTypographyShaped(w.base) && !typography.allowed.has(w.base)) hit('unknown-typography', w.line, w.base)
-    // 2026-10-20:任意字級(只收設計原則層)與不存在的 DS 顏色
-    else if (layer === 'principles' && typography.isArbitraryFontSize(w.base)) hit('unknown-typography', w.line, w.base)
+    // 2026-10-20:任意字級(設計原則層;2026-10-21 起加展示層,r1b TV-05)與不存在的 DS 顏色
+    else if ((layer === 'principles' || layer === 'showcase') && typography.isArbitraryFontSize(w.base)) hit('unknown-typography', w.line, w.base)
     else if (typography.isUnknownColor(w.base)) hit('unknown-typography', w.line, w.base)
   }
   if (spacingInScope) {
@@ -1319,7 +1322,9 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   expect(dKeys(principlesRel) === wantPrinciples, `(d) 擴充:設計原則層應恰好 ${wantPrinciples},實得 ${dKeys(principlesRel)}`)
   const colorsOnly = 'unknown-typography@2:text-fg-primary / unknown-typography@4:border-border-muted'
   const anatomyRel = 'packages/design-system/src/components/SelftestDrift/selftest-drift.anatomy.stories.tsx'
-  expect(dKeys(SYNTHETIC_DRIFT) === colorsOnly && dKeys(anatomyRel) === colorsOnly, `(d) 擴充:展示層 / 設計規格層只收不存在的顏色、不收任意字級,實得 ${dKeys(SYNTHETIC_DRIFT)} | ${dKeys(anatomyRel)}`)
+  // 2026-10-21(r1b TV-05):展示層也收任意字級 —— 同一段 `text-[11px] font-mono` 移動紀錄,放在展示層必紅;設計規格層仍只收顏色
+  expect(dKeys(SYNTHETIC_DRIFT) === wantPrinciples, `(d) 擴充:展示層應恰好 ${wantPrinciples}(含任意字級 text-[11px]),實得 ${dKeys(SYNTHETIC_DRIFT)}`)
+  expect(dKeys(anatomyRel) === colorsOnly, `(d) 擴充:設計規格層只收不存在的顏色、不收任意字級,實得 ${dKeys(anatomyRel)}`)
   const tabsBefore = readFileSync(join(repo, TABS_BEFORE_FIXTURE))
   expect(gitBlobId(tabsBefore) === TABS_BEFORE_BLOB, `對照組 fixture 不是 be2f1324 的 tabs.principles(blob ${gitBlobId(tabsBefore)} ≠ ${TABS_BEFORE_BLOB})`)
   const tabsHits = analyzeSource(TABS_STORY, tabsBefore.toString('utf8'), instruments).hits.filter((h) => h.token === 'text-fg-primary').map((h) => h.line).join(',')
@@ -1666,7 +1671,7 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   log(`  · 原版 Rating(blob ${RATING_BEFORE_BLOB.slice(0, 8)}):(a) :78 / (b) :28 :35 :43 :61 :66 :77 / (c) :62 全紅,對基準比三條都是新增`)
   log(`  · 合成新檔四條各一筆:${SYNTHETIC_DRIFT_EXPECTED.join(' / ')}`)
   log('  · 乾淨合成檔 0 筆(含 chrome brand span、名稱 + 說明、截斷列標籤、批次操作鈕);不合法註記 4 筆全紅(同行逃生口照 hook 語意放行);整檔註記:檔頭合法放行、不合法仍紅、檔尾不算')
-  log('  · (d) 2026-10-20 擴充兩面:text-fg-primary / border-border-muted 三層都紅、text-[11px] 只在設計原則層紅;text-[var(--x)]、text-fg-muted、bg-primary/10、border-t 0 筆;be2f1324 tabs.principles 的 text-fg-primary 在 :62 :91 :92 :93 紅')
+  log('  · (d) 2026-10-20 擴充兩面:text-fg-primary / border-border-muted 三層都紅、text-[11px] 在設計原則層與展示層紅(2026-10-21 加展示層)、設計規格層不紅;text-[var(--x)]、text-fg-muted、bg-primary/10、border-t 0 筆;be2f1324 tabs.principles 的 text-fg-primary 在 :62 :91 :92 :93 紅')
   log('  · 兩面對照:(a) 批次操作鈕 0 筆 / 加 type=submit、包 <form>、讀控件 value 各 1 筆;(c) 名稱 + 說明、span、truncate 0 筆 / 後接元件、<section> 開頭各 1 筆;test-only 0 筆 / 拿掉標記、被給人看的 story 共用 各 4 筆')
   log('  · 棘輪:變少綠、手改基準拒收(含替設計規格層記 (b))、同檔多一筆只指出新的那行;空範圍 = 儀器失效;分層計數照檔名分')
   log('  · 分層兩面:同一段漂移在設計原則層四條紅、在設計規格層只紅 (a)(c)(d);對基準比各是 4 / 3 條新增')

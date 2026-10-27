@@ -202,7 +202,8 @@ export interface DataTableProps<TData>
    *   - Click empty area → clear selection
    * 視覺:格游標 = DS 焦點框(`focus-ring-inset`,2px `--ring` 往內;layer `CELL_RING_STYLES.selected`),
    *   有格游標時表格根節點不另畫外框(根節點與格游標框不同時出現,R21 第 5 題 (b)「只留一個焦點框」為 AI 建議、09-26 user 未另提 → AI 判讀照建議做;方向來自 user 原話「一個藍色focus ring 就已經夠顯眼了」);
-   *   焦點離開格線區(Tab 到表頭控件 / 表外)時格游標框收起、位置保留,回來原格重現;range 視覺
+   *   焦點離開格線區(Tab 到表頭控件 / 表外)時格游標框收起、位置保留,回來原格重現;格裡的控件被鍵盤聚焦、自己畫框時
+   *   格游標框也收起,格游標跟著鍵盤焦點走到那一格(2026-10-21 r1b DT-03 / NEW-1;`data-table.css` + 根節點 onFocus);range 視覺
    *   = cell-bg `--primary-subtle`(`[data-range-cell]` CSS),outer ring 已 2026-05-10 retire
    *   — per user「不要 dash 直接實的就好」+ codex Q2.2 token。
    */
@@ -937,7 +938,12 @@ function DraggableHeaderCell({
     // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導 user 以為「點 = 拖」;
     // **drag activation 後**(isDragging=true,過 8px activationConstraint)才顯 cursor-grabbing。
     // user 點 = sort / 長壓 = drag,兩語意分開不互踩。
-    className: cn(childProps.className, isDragging && dragActiveCursor, indicatorClass),
+    // 焦點框往內(2026-10-21,r1b DT-02):可拖的欄頭本身是 Tab 停靠點(dnd-kit attributes 帶 tabIndex=0,鍵盤 Space 提起重排),
+    // 它撐滿表頭列的高、左右貼著鄰欄 —— 四周淨空 0,外描邊被表頭面板裁到只剩左右兩邊(最後一欄只剩左邊)。
+    // focus-canonical.md「問題二」:被聚焦元素四邊最小淨空 < 4px 才往內,撐滿容器的列(tab / 選單項)屬此類 —— 這裡的障礙
+    //(鄰欄、表頭列上下緣)是設計上真的存在的,不是 bug 造出來的(對照 DT-01 連結格:截斷 wrapper 是 bug → 修 wrapper、往外)。
+    // 排序區(裡面那顆 role=button)上下左右有 7–12px,維持往外(見 headerCellEl 排序區 className 註解)。
+    className: cn(childProps.className, !disabled && 'focus-visible:focus-ring-inset', isDragging && dragActiveCursor, indicatorClass),
   })
 }
 
@@ -1314,7 +1320,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         //     其實整個設計就可以回歸 ssot」
         // 把手存在的唯一理由是**可發現性**(表格列看不出來能拖);拖曳一旦開始,那個理由就消失,
         // 此時回到 `lib/drag-visual.ts` 的 SSOT:來源半透明 + 落點線,畫面上沒有把手 ——
-        // 跟 TreeView(`tree-view.tsx:258`「整列可拖,無 grip handle」)完全一致。
+        // 跟 TreeView(`tree-view.tsx` `TreeViewProps.draggable` 的 JSDoc「整列可拖,無 grip handle」)完全一致。
         // 拖影本來就不含把手(它 clone `[role="row"]`,而把手是 portal 出去的 fixed 浮層),
         // 所以隱藏之後來源與拖影的視覺語彙才對稱;也少一個會隨自動捲動滑移的浮動物件。
         //
@@ -1813,6 +1819,7 @@ function DataTableInner<TData>(
   // 跨 frame transition,user 看到「table 從矮長高 + 資料慢慢露出」。≤ 30 rows
   // direct render 完全 bypass 此 race,且小資料下虛擬化沒效益(浪費 reflow)。
   // 對齊 AG Grid `suppressVirtualization` / TanStack Table virtualization-when-needed idiom。
+  // 規則與 consumer 什麼時候傳 height 的判斷住 data-table.spec.md「二、高度模式」;教學頁與範例說明引同一個數字(閘 data-table-tree-view-doc-invariant P2)。
   const VIRTUAL_THRESHOLD = 30
   // L5 分頁互斥:分頁後每頁 rows ≤ pageSize,虛擬化無效益(TanStack 官方:兩者為互斥替代策略)
   const useVirtual = !paginationEnabled && hasHeightConstraint && !isEmpty && rows.length > VIRTUAL_THRESHOLD
@@ -1897,7 +1904,7 @@ function DataTableInner<TData>(
    * `clientHeight` 由 `measureScrollbarGutters` 更新(掛載一次 + ResizeObserver,捲軸出現/消失會改內容盒 → 必 fire),
    * 它在一次手勢裡本來就不會變,快取不會失準。
    *
-   * 同檔 :1623 早就記過同一類病(「原本無依賴 → 每次 render 都讀 clientWidth/offsetHeight(強制 layout)」),
+   * 同檔 `measureScrollbarGutters` 那段早就記過同一類病(「原本無依賴 → 每次 render 都讀 clientWidth/offsetHeight(強制 layout)」),
    * 這裡是把剩下的四個讀取點一起收乾淨。世界級對照:AG Grid 33.3.2 `ag-grid-community.js:25758-25766`
    * 的 `onVScroll` 也是在捲動事件裡把 `scrollTop` 記進 `nextScrollTop`,畫列時讀那個記錄,不回頭問 DOM。
    */
@@ -2058,13 +2065,13 @@ function DataTableInner<TData>(
   // 因為判準只問「一個視窗」,而那 1.1 秒裡視窗移動了 165 列。門檻降回一倍之後 2× 會進入,
   // 最長連續空白 1086–1193ms → **183ms**,而 1×(27ms)仍然遠低於門檻、零骨架。
   const SHELL_ENGAGE_VIEWPORT_MS = 60
-  // **列殼機制已由骨架帶(:510)取代,故停用。**
+  // **列殼機制已由骨架帶(`unmountedSkeletonStyle`,「未掛載區的骨架底」那段)取代,故停用。**
   // 兩者解的是同一件事(捲動時不要看到空白),但成本落在不同執行緒:骨架帶在幾何上恆覆蓋
   // 未掛載區、由合成執行緒貼圖,不需要主執行緒趕上捲動;列殼相反 —— 它要主執行緒**先畫出殼**,
   // 在慢機器上就是一路輸。實測(dpr2 + CPU×6,同一台機器交錯三組):
   //   列殼開  空白 0/1/2 幀,同時 61-67 列灰殼,停捲後 518-681ms 才補完(有一次沒補完)
   //   列殼關  空白 0/0/1 幀,灰殼 0 列,補齊 0ms,長工最長還比 main 短
-  // 上排正是 user 回報的「非常卡頓」;元件自己在 :4437 也記過「在真實瀏覽器上大量誤啟動,
+  // 上排正是 user 回報的「非常卡頓」;元件自己在殼列決策的可觀測出口(`__DT_DEBUG_SHELL` 那段註解)也記過「在真實瀏覽器上大量誤啟動,
   // 但我在無頭環境永遠複現不出來」。骨架帶把它的職責接走之後,它只剩代價。
   // 保留程式碼一個版本供回退,下一輪連同 aheadRows / budgetRows / prevShells 一併清除。
   const SHELL_ENGAGE_DISABLED = true
@@ -3322,7 +3329,7 @@ function DataTableInner<TData>(
       return (
         <div
           key={cell.id}
-          // grid 的子代必須是 gridcell(role 跟著根節點走,見 :3303 附近說明)
+          // grid 的子代必須是 gridcell(role 跟著根節點走,見根節點 `role={spreadsheetMode ? 'grid' : 'table'}` 那段說明)
           role={spreadsheetMode ? 'gridcell' : 'cell'}
           // data-column-id 給 CSS scope:`[data-column-id="__select__"]` 在 data-table.css 加
           // border-right divider,視覺把 system selection col 跟 data col 切開(Notion / Airtable
@@ -3505,7 +3512,7 @@ function DataTableInner<TData>(
     // `fg-muted → fg-secondary` 一階色彩梯)。槽寬 `iconSize` + `mr-2`(8px)= 24/24/28,與
     // `--tree-indent-{sm,md,lg}` 逐尺寸相等,子列的箭頭因此永遠對齊父列的箭頭。
     // 圖示改 `ChevronRight` + `rotate-90`(展開時),對齊 TreeView 的 chevron 慣例
-    // (tree-view.tsx:1244-1266),不再用 `ChevronDown` 反轉 −90 度這種繞法。
+    // (`tree-view.tsx` `TreeItem` 的展開箭頭),不再用 `ChevronDown` 反轉 −90 度這種繞法。
     const nestedPrefix = showNestedPrefix ? (
       <span
         className="flex shrink-0"
@@ -3862,7 +3869,7 @@ function DataTableInner<TData>(
           // 格裡裝的是控件(連結格 = 連結 + 鉛筆、開關格 = 勾選框):Enter / F2 把焦點放到格裡第一個控件(2026-10-13,待辦總帳 Q3c;
           // APG "If the cell contains one or more widgets, places focus on the first widget.",owner keyboard-model-canonical.md
           // 「F2 恆為進到格裡的控件」)。之後 Tab 到鉛筆、F2 / Esc 回格導覽(上方「格內模式 → 格導覽」);Space 由控件自己處理
-          // (勾選框原生切換)—— 焦點在格上時 Space 沒有規定,不加。修前 :658 把這兩種格整個排除,按了沒反應。
+          // (勾選框原生切換)—— 焦點在格上時 Space 沒有規定,不加。修前這裡把這兩種格整個排除,按了沒反應。
           if (meta?.type === 'boolean' || meta?.type === 'url') {
             const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(selectedCellId)}"]`)
             const widget = cellEl?.querySelector<HTMLElement>(CELL_WIDGET_SELECTOR)
@@ -4026,8 +4033,8 @@ function DataTableInner<TData>(
           // any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent
           onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
           className={cn(
-            // 焦點框由下面 canSort 那行的 focus-ring-inset 負責;這裡不能留 outline-none ——
-            // 兩者特異性同階,誰贏要看 Tailwind 內部排序,那是靜默失效的溫床(H2a 同款)。
+            // 焦點框 = 全域 `:focus-visible` 外描邊(往外,理由見下方 `canSort && 'rounded-md'` 那段 2026-09-10 註解);這裡不能留 outline-none ——
+            // 那會把這個 tab stop 的框整個吃掉(H2a 同款)。2026-10-21 前這句寫「由 canSort 那行的 focus-ring-inset 負責」,與下方「改回往外」矛盾(r1b DT-02)。
             'flex items-center min-w-0 flex-1 gap-1',
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
@@ -4063,7 +4070,10 @@ function DataTableInner<TData>(
         {/* 右區:⌄ menu(hover/focus-within 才顯;**不顯示時不佔位**)
             **Layout canonical**(2026-05-06 v3 user explicit rule):`hidden` default →
             `group-hover:inline-flex` / `group-focus-within:inline-flex` / `has-[[data-state=open]]:inline-flex`
-            才出現 + 佔位。前 v2 用 `opacity-0 group-hover:opacity-100` 是「永遠佔位 hover 才顯影」—
+            才出現 + 佔位。鍵盤那一條**必須是 focus-within,不能照 item-anatomy 改成 has-[:focus-visible]**(2026-10-21 實測):
+            這裡的揭示是 display(不佔位),Tab 從排序區移到 ⌄ 的那一下,舊焦點先離開、群組裡一時沒有 :focus-visible → ⌄ 變 display:none →
+            剛拿到焦點的 ⌄ 不可聚焦,焦點掉到 <body>。用 opacity 揭示的(行內小按鈕)沒有這個問題,所以那邊用 has-[:focus-visible]。
+            代價照實記:滑鼠點過排序區後 ⌄ 會留到焦點離開(r1b DT-06 同族;待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT1)。前 v2 用 `opacity-0 group-hover:opacity-100` 是「永遠佔位 hover 才顯影」—
             user 報「不應永遠佔位,沒顯示時應讓 label 多空間」。新行為:
             - 不顯示 → display:none → 不佔位 → label 取得整個 header width
             - hover/focus/menu-open → display:inline-flex → 佔位(width 同前;label 自然 truncate 讓位)
@@ -4739,7 +4749,7 @@ function DataTableInner<TData>(
       else if (c.right > b.right) body.scrollLeft += (c.right - b.right) / kx
     }
   }, [spreadsheetMode, selectedCellId, cursorRowIndex, useVirtual, virtualizer])
-  // 焦點此刻在不在「格線區」:表格根節點本身、某一格裡(含格內控件,例:勾選框)、或浮層編輯器裡。
+  // 焦點此刻在不在「格線區」:表格根節點本身、某一格裡(含格內控件,例:勾選框;控件自己畫框時格游標框由 data-table.css 收起)、或浮層編輯器裡。
   // 表頭控件(排序區、⌄ 欄位選單)雖在根節點底下,但不算 —— 焦點到那裡時格游標框要收起(見根節點 onFocus / onBlur)。
   const isGridFocusTarget = (root: HTMLElement, el: EventTarget | null): boolean =>
     el instanceof Element && (el === root || (root.contains(el) && el.closest('[role="gridcell"], [data-active-editor-host]') != null))
@@ -4851,7 +4861,23 @@ function DataTableInner<TData>(
       // 區間底色不受影響:它是選取,不是焦點。
       onFocus={spreadsheetMode ? (e) => {
         setGridHasFocus(isGridFocusTarget(e.currentTarget, e.target))
-        if (e.target !== e.currentTarget) return
+        if (e.target !== e.currentTarget) {
+          // **格游標跟著鍵盤焦點走**(2026-10-21,r1b NEW-1):在格裡的控件上按 Tab,焦點會走到別一格的控件(連結 → 鉛筆 → 下一列的勾選框),
+          // 格游標若留在原格,畫面上就是兩格各一個藍色指示(原格的格游標框 + 新格控件的框),而且之後 Esc 回格導覽會跳到新格。
+          // W3C APG grid「Editing and Navigating Inside a Cell」:"Tab: moves focus to the next widget in the grid" —— 焦點可以走,
+          // 但 grid 的「目前格」要跟著它(同頁 "Only one of the focusable elements contained by the grid is included in the page tab sequence"
+          // 的單一 Tab 停靠點是 future tier,data-table.spec.md 鍵盤段)。只認鍵盤來的焦點(`:focus-visible`):滑鼠點格裡的控件由
+          // 格的點擊規則處理(Shift+點延伸區間要保住起點,不能在這裡重設)。編輯中不動(編輯器自己的焦點);勾選欄不是格游標走得到的欄,不動。
+          const target = e.target as HTMLElement
+          const ownerId = target.closest?.('[data-cell-id]')?.getAttribute('data-cell-id')
+          if (ownerId && ownerId !== selectedCellId && editingCellId == null && e.currentTarget.contains(target)
+            && ownerId.slice(ownerId.lastIndexOf(':') + 1) !== SELECT_COL_ID && target.matches(':focus-visible')) {
+            setSelectedCellId(ownerId)
+            setRangeAnchor(ownerId)
+            setRangeFocus(null)
+          }
+          return
+        }
         if (selectedCellId != null) return
         if (!e.currentTarget.matches(':focus-visible')) return
         const first = e.currentTarget.querySelector<HTMLElement>('[data-cell-id]')
@@ -4953,7 +4979,7 @@ function DataTableInner<TData>(
           // `--surface` 在 dark 是半透明白 8%。原本只有兩個釘選面板宣告 `bg-surface`、中間捲動區沒有,
           // 於是底部那條捲軸帶在左右是「底 + 8%(面板)+ 8%(軌道)」、中間是「底 + 8%(軌道)」,
           // 亮度差約 60%,接縫肉眼可見(user 2026-09-06 圖二)。
-          // **第一版把 `bg-surface` 搬到這一層是錯的** —— root 的 `dataTableVariants`(本檔 :68)
+          // **第一版把 `bg-surface` 搬到這一層是錯的** —— root 的 `dataTableVariants`(本檔 cva 宣告)
           // 本來就宣告了 `bg-surface`,再加一層等於 body 疊兩層、而 header 列群組只有 root 一層,
           // dark mode 下表身比表頭亮(實測 root 與 body 皆 oklch(1 0 0 / .08),header 為 transparent)。
           // 正解:**三區都不畫,讓 root 既有的那一層透上來** —— 三區與 header 因此完全同層,
