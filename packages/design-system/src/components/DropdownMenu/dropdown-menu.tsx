@@ -86,7 +86,7 @@ const radixItemClass = [
 /**
  * 反白(Radix `data-highlighted`)怎麼畫 —— 反白是這裡**唯一的游標**(Radix Menu:反白 = DOM 焦點,滑鼠移過
  * `onPointerMove → item.focus()` 搶走、方向鍵搶回 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx),
- * 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+ * 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11)):
  *   滑鼠搬的:反白 = hover → 底色、無框。
  *   鍵盤搬的:反白 = 游標 → 畫框(列撐滿選單寬 → 內描邊)、不上底色。
  * 兩種畫法永遠不同時出現;項目上**沒有 `hover:` 樣式**,鍵盤把反白搬走後滑鼠停留列的底色跟著消失(滑鼠停著不算搶;
@@ -107,7 +107,7 @@ const radixGrab = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') ma
 // 機械落地 = ./dropdown-menu-keyboard.ts(「從觸發點算下一站」與 SelectMenu 共用 lib/focus-after-trigger.ts)。
 
 // ── Root ──
-// **預設 non-modal(2026-09-10 user 拍板:「這個是 popover 類型的互動的東西不是 dialog 類型的互動的東西」)**。
+// **預設 non-modal(2026-09-10 user 指出:這是 popover 那一類的互動,不是 dialog 那一類)**。
 // Radix 的 modal menu 會在開啟時對外面整片下 `pointer-events: none`(DismissableLayer 的
 // `disableOutsidePointerEvents`),於是選單開著時在外面點任何東西,**第一次點擊只會被拿去關選單**,
 // 要再點第二次才會生效 —— user 2026-09-10 在分頁的 inlineAction 選單上抓到:「為何該選單打開後點擊其他 tab
@@ -384,7 +384,7 @@ const DropdownMenuItem = React.forwardRef<
         // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
         // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`。
         // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 釘住不變;
-        // 2026-09-07「A5畫框」:選中 × 鍵盤游標 = 畫框;2026-09-09:框由 radixCursorClass 統一畫在反白列上
+        // 2026-09-07 user 在 A5 選了畫框:選中 × 鍵盤游標 = 畫框;2026-09-09:框由 radixCursorClass 統一畫在反白列上
         //(不分選中與否),這裡只剩「選中底色釘住」—— 框直接疊在選中底色上。
         selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected',
         className,
@@ -639,7 +639,7 @@ export const dropdownMenuMeta = {
 
   },
   // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);選中項的鍵盤反白自 2026-09-07 起
-  // **畫框**而非深一階底色(user 拍板「A5畫框」;底色已被選中佔走,不能再擠第二個意義進同一通道)。
+  // **畫框**而非深一階底色(2026-09-07 user 在 A5 選了畫框;底色已被選中佔走,不能再擠第二個意義進同一通道)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface-raised', 'bg-transparent'],

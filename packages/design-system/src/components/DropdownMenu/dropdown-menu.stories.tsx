@@ -1,7 +1,8 @@
 // @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText, FolderInput, Link, Share2, UserPlus, Eye } from 'lucide-react'
+import { Trash2, Copy, Pencil, ExternalLink, ChevronDown, FileText, FileSpreadsheet, CalendarClock, MessageSquare, ListCollapse, Rows3, RotateCcw, FolderInput, Link, Share2, UserPlus, Eye } from 'lucide-react'
+import { fn } from '@storybook/test'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/展示',
@@ -48,29 +50,31 @@ export const Default: StoryObj = {
 }
 
 // ── 群組 + Label ──
+// 一般動作選單用 raw DropdownMenu(account-menu.spec.md「何時不用」:排序 / 匯出 / row actions);帳號選單由 AccountMenu 負責
 
 export const Groups: StoryObj = {
   name: '群組',
   render: () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="tertiary" endIcon={ChevronDown}>帳號</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>匯出</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {/* Group auto-separation canonical(spec):相鄰 Group 自動 border-divider 分隔,
             不手動加 Separator(手動 Separator 保留給群組內子分組 / 破壞性動作前的強調) */}
+        {/* 選了就做:下載與開設定在範例裡記到 Storybook「Actions」面板 */}
         <DropdownMenuGroup>
-          <DropdownMenuLabel>我的帳號</DropdownMenuLabel>
-          <DropdownMenuItem startIcon={User}>
-            個人資料
+          <DropdownMenuLabel>下載目前檢視</DropdownMenuLabel>
+          <DropdownMenuItem startIcon={FileText} onSelect={fn().mockName('下載 CSV')}>
+            CSV
           </DropdownMenuItem>
-          <DropdownMenuItem startIcon={Settings}>
-            設定
+          <DropdownMenuItem startIcon={FileSpreadsheet} onSelect={fn().mockName('下載 Excel')}>
+            Excel (.xlsx)
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuGroup>
-          <DropdownMenuItem startIcon={LogOut}>
-            登出
+          <DropdownMenuItem startIcon={CalendarClock} onSelect={fn().mockName('開啟排程匯出設定')}>
+            排程匯出…
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -85,14 +89,14 @@ export const WithSuffix: StoryObj = {
   render: () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="tertiary" endIcon={ChevronDown}>操作</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>檔案操作</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem startIcon={Mail} badge={<Badge count={12} />}>
-          收件匣
+        <DropdownMenuItem startIcon={MessageSquare} badge={<Badge count={3} />} onSelect={fn().mockName('開啟留言')}>
+          留言
         </DropdownMenuItem>
-        <DropdownMenuItem startIcon={FileText} endIcon={ExternalLink}>
-          說明文件
+        <DropdownMenuItem startIcon={FileText} endIcon={ExternalLink} onSelect={fn().mockName('前往 雲端硬碟')}>
+          在雲端硬碟開啟
         </DropdownMenuItem>
         {/* disabled state 由 anatomy StateBehavior / Inspector owns(檔頭 trait-rationale),不在後綴 story 重複 */}
       </DropdownMenuContent>
@@ -103,38 +107,37 @@ export const WithSuffix: StoryObj = {
 // ── 子選單 ──
 
 const SubMenuDemo = () => {
-  const [theme, setTheme] = useState('dark')
-  const themeLabels: Record<string, string> = { light: '淺色', dark: '深色', system: '跟隨系統' }
-  const themeIcons: Record<string, typeof Sun> = { light: Sun, dark: Moon, system: Monitor }
+  const [density, setDensity] = useState('standard')
+  const densityLabels: Record<string, string> = { compact: '精簡', standard: '標準', comfortable: '寬鬆' }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="tertiary" endIcon={ChevronDown}>設定</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>檢視</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem startIcon={User}>
-          個人資料
+        <DropdownMenuItem startIcon={ListCollapse} onSelect={fn().mockName('全部收合')}>
+          全部收合
         </DropdownMenuItem>
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger startIcon={Monitor} value={themeLabels[theme]}>
-            主題
+          <DropdownMenuSubTrigger startIcon={Rows3} value={densityLabels[density]}>
+            列密度
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {/* RadioGroup 內必用 RadioItem(spec 結構表):Radix 給 menuitemradio 語義 +
                 aria-checked,選中底色與「選後保持開啟」由元件內建,不用手動 selected / onSelect */}
-            <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
-              {(['light', 'dark', 'system'] as const).map((t) => (
-                <DropdownMenuRadioItem key={t} value={t} startIcon={themeIcons[t]}>
-                  {themeLabels[t]}
+            <DropdownMenuRadioGroup value={density} onValueChange={setDensity}>
+              {(['compact', 'standard', 'comfortable'] as const).map((d) => (
+                <DropdownMenuRadioItem key={d} value={d}>
+                  {densityLabels[d]}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem startIcon={LogOut}>
-          登出
+        <DropdownMenuItem startIcon={RotateCcw} onSelect={() => setDensity('standard')}>
+          重設檢視
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -156,15 +159,17 @@ const MOVE_TARGETS = [
   { project: '官網重構', columns: ['待辦', '設計審查', '完成'] },
 ] as const
 
+// 前後兩顆按鈕與每個選項都有結果:做完的事跳 Toast、開分享設定記到 Actions 面板
 const NestedSubMenuDemo = () => (
+  <>
   <ButtonGroup>
-    <Button variant="tertiary" startIcon={UserPlus}>指派給我</Button>
+    <Button variant="tertiary" startIcon={UserPlus} onClick={() => toast({ variant: 'success', title: '已指派給你' })}>指派給我</Button>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="tertiary" endIcon={ChevronDown}>更多動作</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem startIcon={Link}>複製連結</DropdownMenuItem>
+        <DropdownMenuItem startIcon={Link} onSelect={() => toast({ title: '已複製連結' })}>複製連結</DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger startIcon={FolderInput}>移動到</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
@@ -173,7 +178,7 @@ const NestedSubMenuDemo = () => (
                 <DropdownMenuSubTrigger>{project}</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {columns.map((column) => (
-                    <DropdownMenuItem key={column}>{column}</DropdownMenuItem>
+                    <DropdownMenuItem key={column} onSelect={() => toast({ variant: 'success', title: `已移到「${project}」的「${column}」` })}>{column}</DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
@@ -181,11 +186,13 @@ const NestedSubMenuDemo = () => (
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem startIcon={Trash2} className="text-error">刪除</DropdownMenuItem>
+        <DropdownMenuItem startIcon={Trash2} className="text-error" onSelect={() => toast({ variant: 'success', title: '工作項目已刪除', action: { label: '復原', onClick: () => toast({ title: '已復原工作項目' }) } })}>刪除</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    <Button variant="tertiary" startIcon={Share2}>分享</Button>
+    <Button variant="tertiary" startIcon={Share2} onClick={fn().mockName('開啟分享設定')}>分享</Button>
   </ButtonGroup>
+  <Toaster />
+  </>
 )
 
 export const NestedSubMenu: StoryObj = {

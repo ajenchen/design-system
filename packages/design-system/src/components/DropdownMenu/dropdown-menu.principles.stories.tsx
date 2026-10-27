@@ -48,13 +48,13 @@ export const UsageGuidance: Story = {
         <p>按鈕打開的動作選單,選了就執行、選單關閉:卡片右上角 ⋮ 的次要動作、工具列放不下的溢出動作、即時生效的設定切換(欄位顯示、排序方式、主題)、需要分組或子選單的動作清單。</p>
         <TutorialList>
           <li>
-            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="群組">群組 — 帳號選單(個人資料 / 設定 / 登出分組)</StoryLink>
+            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="群組">群組 — 匯出選單(下載目前檢視 / 排程匯出分組)</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="後綴">後綴 — 收件匣未讀數 badge、外開連結提示</StoryLink>
+            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="後綴">後綴 — 留言數 badge、外開連結提示</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="子選單">子選單 — 主題切換(淺色 / 深色 / 跟隨系統)</StoryLink>
+            <StoryLink kind="Design System/Components/DropdownMenu/展示" name="子選單">子選單 — 列密度(精簡 / 標準 / 寬鬆)</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/DropdownMenu/展示" name="勾選項">勾選項 — 表格顯示欄位切換</StoryLink>
@@ -105,6 +105,7 @@ export const UsageGuidance: Story = {
           <li>切換平行視圖 → Tabs / SegmentedControl:視圖切換要一直看得到,不是一次性動作</li>
           <li>少於 3 個動作 → 直接放 Button:兩個動作收進選單只是多一層</li>
           <li>複雜表單 / 多步驟流程 → Dialog / Sheet:選單項目是點一下的動作,不承載流程</li>
+          <li>目前登入者的帳號選單(個人資料 / 設定 / 登出)→ <StoryLink kind="Design System/Components/AccountMenu/展示" name="全域標頭帳號入口">AccountMenu</StoryLink>:帳號入口已有專用元件</li>
         </TutorialList>
       </UsageSection>
 
@@ -144,7 +145,8 @@ export const GroupVsSeparatorRule: Story = {
               <DropdownMenuItem>邀請成員</DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuGroup>
-              <DropdownMenuItem className="text-error">登出</DropdownMenuItem>
+              {/* 登出可逆,不是破壞性動作 → 不用 text-error(dropdown-menu.spec.md「破壞性動作」只管刪除等不可逆動作;同 AccountMenu 的登出) */}
+              <DropdownMenuItem>登出</DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -189,7 +191,7 @@ export const GroupVsSeparatorRule: Story = {
             <DropdownMenuItem>切換 workspace</DropdownMenuItem>
             <DropdownMenuItem>邀請成員</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-error">登出</DropdownMenuItem>
+            <DropdownMenuItem>登出</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <ExampleCaption warn>↑ 功能等價但每個分隔都要手寫 → 用 Group 更精確表達「語意分組」</ExampleCaption>
@@ -217,7 +219,7 @@ export const ItemTypeRule: Story = {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem startIcon={Copy} shortcut="⌘C">複製連結</DropdownMenuItem>
-              <DropdownMenuItem startIcon={Download} shortcut="⌘S">下載</DropdownMenuItem>
+              <DropdownMenuItem startIcon={Download}>下載</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem startIcon={Trash2} shortcut="⌫" className="text-error">刪除</DropdownMenuItem>
             </DropdownMenuContent>
