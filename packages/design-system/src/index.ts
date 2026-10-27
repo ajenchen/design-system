@@ -727,6 +727,7 @@ export * from './hooks/use-truncated'
 // ─── Lib utilities ────────────────────────────────────────────────────────
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
+export * from './lib/i18n/i18n-context'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
 export * from './lib/utils'

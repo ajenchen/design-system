@@ -3,10 +3,12 @@
  * @gate-contract
  *   保證: root barrel 產生器對 tokens / hooks / lib 這些 `export *` 來源同樣遵守 @internal —— 符號層 @internal 不進 root、
  *         檔頭模組層 @internal 的模組整個不進 root、貼著第一個 statement 的 JSDoc 只算那一個符號、`//` 行文與行中提到不算,
- *         components / patterns 具名區塊的既有排除不退步,產生後 `--check` 恆等、改壞即紅。
- *   紅: 九格判定表任一格不成立 → 指名那一格並 exit 1。對照組:`--generator <舊版產生器>` 跑 2026-10-07 之前的版本,
- *         符號層 / 模組層 / 每個出口都標 / 貼身 JSDoc 四格必紅(舊版對 `export *` 來源一律整包輸出)。
- *   綠: 現行產生器九格全過。純靜態合成夾具(暫存目錄),不讀真 repo 的元件,同一份產生器重複跑結果恆等。
+ *         components / patterns 具名區塊的既有排除不退步,lib 子目錄裡的模組(含 .tsx)跟 lib 頂層同一套規則進 root,
+ *         產生後 `--check` 恆等、改壞即紅。
+ *   紅: 十格判定表任一格不成立 → 指名那一格並 exit 1。對照組:`--generator <舊版產生器>` 跑 2026-10-07 之前的版本,
+ *         符號層 / 模組層 / 每個出口都標 / 貼身 JSDoc 四格必紅(舊版對 `export *` 來源一律整包輸出);跑 2026-10-27 之前的版本,
+ *         C10 必紅(舊版只讀 lib/ 底下一層的 .ts,lib/i18n/i18n-context.tsx 的 I18nProvider / useI18n 因此從沒進 root)。
+ *   綠: 現行產生器十格全過。純靜態合成夾具(暫存目錄),不讀真 repo 的元件,同一份產生器重複跑結果恆等。
  *
  * ── 為什麼有這支 ──
  * 2026-07-18 決策3「標 @internal 的符號不進 root front-door」只在 components / patterns 的具名區塊執行;tokens / hooks / lib
@@ -93,6 +95,21 @@ const FIXTURE = {
     '',
     'export const plainHeaderValue = 1',
   ].join('\n'),
+  // 子目錄 + .tsx(形狀同 lib/i18n/i18n-context.tsx:Provider + hook + 型別,沒有 @internal)
+  'lib/locale/locale-context.tsx': [
+    '/** 測試用:子目錄裡的公開 Provider */',
+    'export function LocaleProvider() { return null }',
+    'export function useLocale() { return 1 }',
+    'export interface LocaleLabels { [key: string]: string | undefined }',
+  ].join('\n'),
+  // 子目錄裡的模組層 @internal 照樣不進 root(與 lib 頂層同一套規則)
+  'lib/locale/locale-internal.ts': [
+    '/**',
+    ' * @internal — 只給同目錄的 Provider 用。',
+    ' */',
+    '',
+    'export const localeInternal = 1',
+  ].join('\n'),
 }
 
 const dir = mkdtempSync(join(tmpdir(), 'gen-barrel-selftest-'))
@@ -136,6 +153,9 @@ if (first.status !== 0) {
   ck('C7 沒有 @internal 的 tokens / hooks 模組照舊 `export *`', has("export * from './tokens/plain'") && has("export * from './hooks/use-thing'"))
   ck('C8 components 具名區塊的既有排除不退步(公開照出、@internal 排除)',
     has('  Widget,') && !exported('WidgetContext') && has('  WidgetProps,'))
+  ck('C10 lib 子目錄裡的模組(含 .tsx)跟 lib 頂層同一套規則進 root:公開的出口、模組層 @internal 的不出',
+    has("export * from './lib/locale/locale-context'") && !fromSpec('./lib/locale/locale-internal') && !exported('localeInternal'),
+    `locale-context 進 root=${has("export * from './lib/locale/locale-context'")} locale-internal 從 root 出去=${fromSpec('./lib/locale/locale-internal') || exported('localeInternal')}`)
   const check1 = gen('--check')
   appendFileSync(join(SRC, 'index.ts'), "export * from './lib/internal-module'\n")
   const check2 = gen('--check')

@@ -4,8 +4,9 @@
  *         `<camel>Meta`、標 @internal 的符號一律不進 root front-door;tokens / hooks / lib 這些 `export *` 來源同樣遵守 @internal
  *         (符號層排除該符號、檔頭模組層排除整個模組,2026-10-07 起)。
  *   紅: CI verify-static 重跑本產生器後 `git diff --exit-code` index.ts 不同 → 紅;規則本身由 scripts/test-gen-design-system-barrel.mjs
- *         的九格判定表守(對照組 `--generator` 跑 2026-10-07 之前的版本,符號層 / 模組層 / 每個出口都標 / 貼身 JSDoc 四格必紅)。
- *   綠: 來源與 index.ts 同步、九格全過時綠;純語法層解析,沒有時間或環境相依,同一份 worktree 重複跑結果恆等。
+ *         的十格判定表守(對照組 `--generator` 跑 2026-10-07 之前的版本,符號層 / 模組層 / 每個出口都標 / 貼身 JSDoc 四格必紅;
+ *         跑 2026-10-27 之前的版本,lib 子目錄那一格必紅)。
+ *   綠: 來源與 index.ts 同步、十格全過時綠;純語法層解析,沒有時間或環境相依,同一份 worktree 重複跑結果恆等。
  */
 import fs from 'fs'
 import path from 'path'
@@ -39,8 +40,18 @@ const tokenTs = collectTokenTs()
 const hooks = fs.readdirSync(path.join(ROOT, 'hooks'))
   .filter(f => f.endsWith('.ts'))
 
-const lib = fs.readdirSync(path.join(ROOT, 'lib'))
-  .filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+// lib 同 tokens 遞迴收,且收 .tsx(2026-10-27 GV-barrel-i18n):原本只讀 lib/ 底下一層的 .ts,住在子目錄的
+// lib/i18n/i18n-context.tsx(I18nProvider / useI18n,README 與 JSDoc 都寫成 consumer 的 API)因此從沒進 root ——
+// 2026-05-01 i18n 已遷到 lib/i18n/,2026-05-22 寫這道過濾時沒算到子目錄。@internal 照下方 emitStarSource 同一套排除。
+function collectLibSources(acc = [], rel = '') {
+  for (const e of fs.readdirSync(path.join(ROOT, 'lib', rel), { withFileTypes: true })) {
+    if (e.isDirectory()) collectLibSources(acc, path.join(rel, e.name))
+    else if (/\.tsx?$/.test(e.name) && !/\.(test|spec|d)\.tsx?$/.test(e.name))
+      acc.push(path.join(rel, e.name).replace(/\\/g, '/'))
+  }
+  return acc
+}
+const lib = collectLibSources()
 
 // Kebab-case component dir → matching .tsx file inside
 function pascalToKebab(name) {
@@ -447,7 +458,7 @@ const starModuleExcluded = [] // 整個模組 @internal → 不進 root
 const SUBPATH_KIND = { tokens: 'subpath 仍有', hooks: 'subpath 仍有', lib: 'lib 沒有 subpath,只供 DS 內部相對 import' }
 function emitStarSource(section, file, out) {
   const ownerLabel = `${section}/${file}`
-  const spec = `./${section}/${file.replace(/\.ts$/, '')}`
+  const spec = `./${section}/${file.replace(/\.tsx?$/, '')}`
   const abs = path.resolve(ROOT, section, file)
   const entries = [...collectModuleExports(abs)]
   const pub = entries.filter(([, e]) => !e.internal)
