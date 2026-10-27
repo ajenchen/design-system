@@ -3,8 +3,12 @@
 // consolidate decision-related stories. NeedsTooltipRule kept as separate principle.
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Save, Share2 } from 'lucide-react'
+import { fn } from '@storybook/test'
 import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
 import { Button } from '@/design-system/components/Button/button'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
+import { Tag } from '@/design-system/components/Tag/tag'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
@@ -49,14 +53,36 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TriggerRule
           title="❌ 不把關鍵資訊只放在 tooltip"
-          note="Tooltip 需要 hover 才能看到——觸控裝置(手機 / 平板)根本無法觸發。關鍵資訊(錯誤、必填標示、操作後果)如果只靠 tooltip,觸控使用者會完全看不到"
+          note="Tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西。關鍵資訊(錯誤、必填標示、操作後果)如果只靠 tooltip,沒滑過去的人就完全看不到"
         >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="primary" danger>刪除帳號</Button>
-            </TooltipTrigger>
-            <TooltipContent>此動作會永久刪除所有資料且無法復原</TooltipContent>
-          </Tooltip>
+          {/* 觸發鈕照 button.spec.md「danger prop」:後面還有一層確認 → secondary + danger;按了開確認框,警告寫在框裡(本則要教的正確位置) */}
+          <Dialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DialogTrigger asChild>
+                  <Button variant="secondary" danger>刪除帳號</Button>
+                </DialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>此動作會永久刪除所有資料且無法復原</TooltipContent>
+            </Tooltip>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>是否永久刪除帳號</DialogTitle>
+              </DialogHeader>
+              <DialogBody>
+                <p>此動作會永久刪除所有資料且無法復原。</p>
+              </DialogBody>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '帳號已刪除' })}>永久刪除</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Toaster />
           <ExampleCaption warn>↑「永久刪除無法復原」是必要警告 → 必須顯示在畫面上(例如 Dialog 確認時),不能只靠 tooltip hover 才看到</ExampleCaption>
         </TriggerRule>
 
@@ -97,13 +123,14 @@ export const UsageGuidance: Story = {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="tertiary" size="sm">Ada Chen</Button>
+              <Button variant="tertiary" size="sm" onClick={fn().mockName('前往 Ada Chen 的個人頁')}>Ada Chen</Button>
             </TooltipTrigger>
             <TooltipContent>
-              {/* @layout-space-magic-ok: 反例 tooltip 內 名稱 ↔ 連結(反例主題是 tooltip 放互動元素)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: 反例 tooltip 內 名稱 ↔ 按鈕 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex flex-col gap-1">
                 <span>Ada Chen</span>
-                <button className="text-primary">→ 查看 profile</button>
+                {/* 反例的主題就是「tooltip 裡放了可點的東西」—— 放的是 DS 按鈕,不手刻原生 button */}
+                <Button variant="tertiary" size="xs" onClick={fn().mockName('查看 Ada Chen 的個人資料')}>查看個人資料</Button>
               </div>
             </TooltipContent>
           </Tooltip>
@@ -114,7 +141,7 @@ export const UsageGuidance: Story = {
           title="判斷法:「使用者會想移到浮層上做事嗎?」"
           note="需要 → HoverCard(停留行為可互動);不需要,純看一句話 → Tooltip"
         >
-          <ExampleCaption>完整對照見 HoverCard 的「與 Tooltip 的分界」說明</ExampleCaption>
+          <ExampleCaption>完整對照見 <StoryLink kind="Design System/Internal/HoverCard/設計原則" name="使用指引">HoverCard 使用指引</StoryLink></ExampleCaption>
         </TutorialRule>
       </UsageSection>
     </TutorialPage>
@@ -136,11 +163,13 @@ export const NeedsTooltipRule: Story = {
         title="✅ Icon-only button 必有 tooltip(icon 沒 label)"
         note="純 icon 按鈕的視覺完全不傳達「做什麼」,hover 需要 tooltip 補 label。Button 的 iconOnly 模式內建自動 tooltip(aria-label 驅動),不需要手動包 Tooltip"
       >
+        {/* 工具列的真實動作:儲存跳 Toast,開設定 / 分享記到 Storybook「Actions」面板 */}
         <ButtonGroup>
-          <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-          <Button variant="tertiary" size="sm" iconOnly startIcon={Save} aria-label="儲存" />
-          <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" onClick={fn().mockName('開啟設定')} />
+          <Button variant="tertiary" size="sm" iconOnly startIcon={Save} aria-label="儲存" onClick={() => toast({ variant: 'success', title: '已儲存' })} />
+          <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={fn().mockName('開啟分享設定')} />
         </ButtonGroup>
+        <Toaster />
         <ExampleCaption>↑ hover 每顆會跳出 aria-label 對應的 tooltip(自動,不需手動包)</ExampleCaption>
       </TutorialRule>
 
@@ -150,7 +179,7 @@ export const NeedsTooltipRule: Story = {
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="primary">儲存</Button>
+            <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>儲存</Button>
           </TooltipTrigger>
           <TooltipContent>儲存</TooltipContent>
         </Tooltip>
@@ -161,17 +190,9 @@ export const NeedsTooltipRule: Story = {
         title="✅ 截斷文字用 tooltip 顯示完整內容(僅當實際被截斷時)"
         note="Tooltip 是資訊補救 — 文字被 truncate 時才顯示完整內容。沒被截斷就不該顯示 tooltip(避免過度互動)"
       >
-        <Tooltip defaultOpen>
-          <TooltipTrigger asChild>
-            {/* @layout-space-magic-ok: 截斷示意框自身內距(layoutSpace.spec.md:168 元件自身微幾何) */}
-            <div className="w-32 truncate px-3 py-1 border border-border rounded-md cursor-default">
-              2026 亞洲市場品牌改版與官網重構
-            </div>
-          </TooltipTrigger>
-          {/* 打開的提示放在截斷框右側(框右邊是空的):放預設的上方會蓋住本規則的標題與說明(待辦總帳 P7b) */}
-          <TooltipContent side="right">2026 亞洲市場品牌改版與官網重構</TooltipContent>
-        </Tooltip>
-        <ExampleCaption>↑ 模式示意（此靜態範例恆顯示；實務上應偵測文字真被截斷 <code>scrollWidth &gt; clientWidth</code> 時才掛 tooltip）</ExampleCaption>
+        {/* 用真的會截斷的 DS 元件:Tag 超過 160px 截斷,截斷時自己掛全文 tooltip、鍵盤也到得了(truncated-text.spec.md 單一 SSOT);不手刻框、不強制打開 */}
+        <Tag color="neutral">2026 亞洲市場品牌改版與官網重構專案</Tag>
+        <ExampleCaption>↑ 名稱超過 160px 被截斷,滑過或 Tab 到才浮出全文;沒被截斷的 Tag 不會掛 tooltip</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

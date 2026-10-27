@@ -12,10 +12,13 @@
 //     涵蓋,warm-up timing 由 Overview 段落涵蓋。
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
-import { Info, Settings } from 'lucide-react'
+import { Download, Settings } from 'lucide-react'
+import { fn } from '@storybook/test'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { Button } from '../Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection, SectionDescription } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Tooltip/設計規格',
@@ -26,51 +29,15 @@ export default meta
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI Components
 
-   NOTE: Kept local (not imported from `_anatomy/anatomy-utils`) because the
-   Button-family inspector layout diverges visually from the 通用 helpers:
-   H3 `text-h6 font-semibold` (not `text-body font-bold mb-2`), Desc has no
-   bottom margin, Th/Td use `p-2 border-b border-divider` row style, and
-   Swatch defaults to `size="md"` for inline token chips.
+   區段標題 / 說明走共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose 跟密度;2026-10-28 A4,
+   之前本檔自帶 H3 / Desc,標題 ↔ 說明 4px、標題區 → 內容寫死 12 / 16)。Th / Td 是本檔表格的列樣式,留在本檔。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
-)
-
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
 )
 
 /* Zone colors for blueprint */
@@ -86,7 +53,7 @@ const BpZone = ({ w, h, color, label, sub }: { w: number; h?: number; color: typ
   <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
     style={{ width: w, height: h ?? '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
     <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
+    {sub && <span className="text-[9px] font-mono leading-none" style={{ color: color.text }}>{sub}</span>}
   </div>
 )
 
@@ -99,11 +66,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>Tooltip 由三個部分組成：觸發器（Trigger）、浮動內容區（Content）、以及連接兩者的間距（sideOffset）。Content 內有 data-theme="dark" wrapper，子元素自動適配深色背景。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description={'Tooltip 由三個部分組成：觸發器（Trigger）、浮動內容區（Content）、以及連接兩者的間距（sideOffset）。Content 內有 data-theme="dark" wrapper，子元素自動適配深色背景。'}>
         <div className="flex gap-8 items-start">
           {/* Anatomy diagram */}
           <div className="flex flex-col items-center gap-0">
@@ -133,19 +96,19 @@ export const Overview = {
           {/* Live example */}
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">Live 範例</span>
+            {/* 觸發點是一個真的動作(按了記到 Actions 面板),Tooltip 補一句非必要的說明;只給資訊的 ⓘ 改用 FieldLabel info(tooltip.principles「Tooltip — 純文字」那則) */}
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
-                <Button variant="tertiary" startIcon={Info} size="sm">付款狀態</Button>
+                <Button variant="tertiary" startIcon={Download} size="sm" onClick={fn().mockName('下載對帳單')}>下載對帳單</Button>
               </TooltipTrigger>
-              <TooltipContent side="top">款項已於 2024/12/01 撥款至銀行帳戶</TooltipContent>
+              <TooltipContent side="top">PDF,含本月全部撥款紀錄</TooltipContent>
             </Tooltip>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Composition parts */}
-      <div className="flex flex-col gap-3">
-        <H3>組合零件</H3>
+      <ExampleSection title="組合零件">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>零件</Th><Th>元素</Th><Th>說明</Th></tr></thead>
@@ -161,11 +124,10 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props */}
-      <div className="flex flex-col gap-3">
-        <H3>Props（TooltipContent）</H3>
+      <ExampleSection title="Props（TooltipContent）">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -182,12 +144,10 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Warm-up pattern */}
-      <div className="flex flex-col gap-3">
-        <H3>Warm-up Pattern（暖機模式）</H3>
-        <Desc>全產品統一一組時間參數，不因 tooltip 類型或位置而異：首次 hover 需停留 500ms 才顯示（確認是刻意停留）；顯示後 300ms 內把游標移到下一個觸發器可即時切換、不用重新等待。</Desc>
+      <ExampleSection title="Warm-up Pattern（暖機模式）" description="全產品統一一組時間參數，不因 tooltip 類型或位置而異：首次 hover 需停留 500ms 才顯示（確認是刻意停留）；顯示後 300ms 內把游標移到下一個觸發器可即時切換、不用重新等待。">
         <div className="flex flex-col gap-1.5 text-caption max-w-[600px]">
           <div className="flex items-start gap-2 py-1.5 border-b border-divider">
             <span className="text-fg-muted w-5 shrink-0 font-mono">1.</span>
@@ -202,7 +162,7 @@ export const Overview = {
             <span>離開所有觸發器超過 300ms → 冷卻，下次 hover 重新等待 500ms</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -236,7 +196,7 @@ const InspectorInner = () => {
           <div className="px-16 py-16 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
-                <Button variant="tertiary" startIcon={Settings} size="sm">欄位設定</Button>
+                <Button variant="tertiary" startIcon={Settings} size="sm" onClick={fn().mockName('開啟欄位設定')}>欄位設定</Button>
               </TooltipTrigger>
               <TooltipContent side={side}>調整資料表的欄位顯示與排序</TooltipContent>
             </Tooltip>
@@ -280,7 +240,7 @@ const InspectorInner = () => {
           <div className="px-3 py-1">
             <PropRow label="bg" dot="var(--tooltip)">
               <span className="inline-flex items-center gap-2">
-                <Swatch value="--tooltip" />
+                <Swatch value="--tooltip" size="md" />
                 <span>--tooltip</span>
               </span>
               <div className="text-[10px] text-fg-muted mt-0.5">light: --color-neutral-9-opaque</div>
@@ -326,13 +286,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>切換方向查看 tooltip 的 placement。右側面板列出主要 design token 及其對應值。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="切換方向查看 tooltip 的 placement。右側面板列出主要 design token 及其對應值。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -352,11 +308,7 @@ export const PlacementReference = {
     }
     return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>四方向 Placement</H3>
-        <Desc>side 決定浮動方向，sideOffset 控制與觸發器的間距。Radix 自動處理碰撞偵測——空間不足時翻轉到對面。</Desc>
-      </div>
-
+      <ExampleSection title="四方向 Placement" description="side 決定浮動方向，sideOffset 控制與觸發器的間距。Radix 自動處理碰撞偵測——空間不足時翻轉到對面。">
       <div className="grid grid-cols-2 gap-6 max-w-[600px]">
         {(['top', 'right', 'bottom', 'left'] as const).map((s) => (
           <div key={s} className="flex flex-col gap-2 items-start">
@@ -364,7 +316,8 @@ export const PlacementReference = {
             <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center w-full">
               <Tooltip defaultOpen>
                 <TooltipTrigger asChild>
-                  <Button variant="tertiary" size="sm">{placementDemo[s].label}</Button>
+                  {/* 工具列的真實動作:按了記到 Storybook「Actions」面板 */}
+                  <Button variant="tertiary" size="sm" onClick={fn().mockName(placementDemo[s].label)}>{placementDemo[s].label}</Button>
                 </TooltipTrigger>
                 <TooltipContent side={s}>{placementDemo[s].tip}</TooltipContent>
               </Tooltip>
@@ -372,11 +325,12 @@ export const PlacementReference = {
           </div>
         ))}
       </div>
+      </ExampleSection>
 
       {/* Animation */}
-      <div className="flex flex-col gap-3">
-        <H3>動畫</H3>
-        <Desc>Content 使用 Tailwind animate utilities，根據 side 從對應方向滑入。</Desc>
+      <ExampleSection title="動畫" description="Content 使用 Tailwind animate utilities，根據 side 從對應方向滑入。">
+        {/* 表格與它下方那句說明是 labeling(說明級的字替緊鄰的表格補一句)→ tight(layoutSpace.spec.md「親疏 3 級」Functional 交互的 labeling) */}
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Side</Th><Th>進場動畫</Th><Th>出場動畫</Th></tr></thead>
@@ -393,8 +347,9 @@ export const PlacementReference = {
             </tbody>
           </table>
         </div>
-        <Desc>transform-origin 使用 --radix-tooltip-content-transform-origin，zoom 效果從觸發器方向展開。</Desc>
-      </div>
+        <SectionDescription>transform-origin 使用 --radix-tooltip-content-transform-origin，zoom 效果從觸發器方向展開。</SectionDescription>
+        </div>
+      </ExampleSection>
     </div>
     )
   },
@@ -406,8 +361,18 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility)。\n\n  鍵盤行為:\n\n- Tab — focus 到觸發器時顯示\n- Esc — 關閉\n\n  焦點:hover / focus 浮層,非 modal——focus 開啟浮層但不鎖住焦點,焦點仍留在觸發器,按 Esc 關閉。觸發器的 focus ring 由 asChild 包的可聚焦子元件提供(Tooltip 本身是透傳 Trigger、不加樣式)。\n\n  驗證:Storybook a11y addon 面板應 0 個 critical 違規;純鍵盤即可完整操作(無需滑鼠)。文字對比 ≥ 4.5:1、UI 元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(Markdown 連結語法原樣顯示)→ 改成真的段落、清單與連結;段落之間 tight(同一段文字流) */}
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽),細節見 <a className="text-primary hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
+        <p>鍵盤行為:</p>
+        <ul className="list-disc pl-5">
+          <li>Tab — focus 到觸發器時顯示</li>
+          <li>Esc — 關閉</li>
+        </ul>
+        <p>焦點:hover / focus 浮層,非 modal——focus 開啟浮層但不鎖住焦點,焦點仍留在觸發器,按 Esc 關閉。觸發器的 focus ring 由 asChild 包的可聚焦子元件提供(Tooltip 本身是透傳 Trigger、不加樣式)。</p>
+        <p>驗證:Storybook a11y addon 面板應 0 個 critical 違規;純鍵盤即可完整操作(無需滑鼠)。文字對比 ≥ 4.5:1、UI 元素對比 ≥ 3:1(WCAG AA)。</p>
+      </div>
     </div>
   ),
 }
