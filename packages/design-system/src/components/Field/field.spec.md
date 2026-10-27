@@ -117,7 +117,7 @@ Label 在左、control + description + error 在右欄垂直堆疊。Label 與 c
           [Error]
 ```
 
-適用：settings 面板、寬螢幕 form、iOS-style 欄位。
+適用：寬螢幕 form、設定頁裡跟其他欄位並列的控件(一列一個開關的設定列不用 Field,用自帶標題的 Switch,見 `../Switch/switch.spec.md`「設定列 vs 水平 Field」)。
 
 Horizontal 模式下 label 的欄寬由 `labelWidth` prop 控制（任何 CSS length 值），預設 `auto` 由 label 內容撐開。內部用 CSS variable `--field-label-width` 傳給 grid template column。
 
@@ -324,11 +324,9 @@ Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
 
 同一畫面 / 同一 FieldGroup 內多個 horizontal Field **必須共用 label 欄寬度**。若每個 Field 各自傳 `labelWidth`(或省略 → 內容撐開),label 寬度會參差不齊,Switch / Input 的左邊緣不對齊,視覺上每一行「歪七扭八」。
 
-Setting list 的 label 欄固定寬、control 欄右對齊，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
+表單的 label 欄固定寬，讓每列 control 從同一條線開始，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
 
 `FieldGroup horizontalLabelWidth` 透過 React Context cascade 到所有子 Field(含 `vertical` 模式的 Field 不受影響——vertical 無 label 欄概念)。單一 Field 仍可用自己的 `labelWidth` prop 覆寫 group 預設(罕見 — 通常 group 預設就是 canonical)。
-
-**搭配 Switch 自動齊右**:horizontal Field 內的 Switch 自動 `ml-auto` 推到右邊緣。配合 FieldGroup `horizontalLabelWidth` → 整排 toggles 的 switch 視覺完全對齊。
 
 ---
 
@@ -350,7 +348,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 
 | 是 | 否 |
 |---|---|
-| ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action,放到 form footer) |
+| ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action:跟在欄位後面,或放進浮層 / 面板的 footer) |
 | ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(可放到 endAction 或 description 旁,不是 control) |
 | ✅ Connect OAuth(產生 token value) | ❌ 頁面導覽、刪除整筆資料(page action) |
 
@@ -399,7 +397,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | 單一 Checkbox（勾選同意）without label 結構 | 直接 Checkbox + label prop | 單個 Checkbox 是 inline primitive，不需要 Field 佈局 |
 | DataTable cell 編輯（inline editable）| 直接放 Field Control | Field 是頁面表單佈局，table cell 空間受限 |
 | 把 Field 當輸入元件本身（常見誤解：「Field = form 輸入框」）| `Input` 等 Field Control | Field 只管佈局 + context，輸入行為住在 control（見「與 Field Controls 的職責切分」）|
-| 純 action 按鈕（submit / cancel / 頁面導覽）| 頁面 footer / toolbar | Field 是資料輸入容器，不放頁面級 action |
+| 純 action 按鈕（submit / cancel / 頁面導覽）| 跟在欄位後面的按鈕 / 浮層·面板的 footer / toolbar | Field 是資料輸入容器，不放頁面級 action |
 | 巢狀 Field | ❌ 不支援 | Field 不支援巢狀，多欄位用 FieldGroup |
 
 ---

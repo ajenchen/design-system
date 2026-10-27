@@ -63,7 +63,8 @@ export const UsageGuidance: Story = {
               checked={agreeTerms}
               onCheckedChange={(v) => setAgreeTerms(v === true)}
             />
-            <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+            {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+            <ButtonGroup className="mt-[var(--layout-space-loose)]">
               <Button variant="primary">送出</Button>
               <Button variant="tertiary">取消</Button>
             </ButtonGroup>

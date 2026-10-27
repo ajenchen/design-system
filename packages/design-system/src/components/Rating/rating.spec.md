@@ -110,7 +110,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 放入 Field 的可組合性
 
-Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分是新建,`intent: 'create'` → 送出鈕永遠可按(同該 spec「Submit Button 狀態」)。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
+Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分是新建,`intent: 'create'` → 送出鈕不看填了沒、填對沒,一律可按(同該 spec「Submit Button 狀態」)。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
 
 ```tsx
 const [submitted, setSubmitted] = useState(false) // 送出成功 → 切唯讀;<form>、送出鈕與 <Toaster /> 見展示「包在 Field 內」

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
-import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
+import { fieldRowPaddingY, fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
 import { BooleanValueIcon } from '@/design-system/components/SelectionControl/boolean-value'
 
 /**
@@ -29,8 +29,8 @@ import { BooleanValueIcon } from '@/design-system/components/SelectionControl/bo
  *   readOnly(Field 內): 渲染 readonly 灰框 + 勾/叉 icon(2026-06-12 拍板,= Input readonly 同視覺語言)
  *
  * ── label / description / readOnly ──
- * Switch 可以透過 `label` 和 `description` props 在元件內直接渲染緊鄰的文字，
- * 樣式全部 codify 在元件內（text-body、foreground/fg-secondary、disabled 色）。
+ * Switch 可以透過 `label` 和 `description` props 在元件內直接渲染一整列設定列(標題 + 說明在左、開關在列尾),
+ * 樣式全部 codify 在元件內（text-body、foreground/fg-secondary、disabled 色、列高 = 欄位高）。
  *
  * 單獨使用時：
  *   <Switch label="啟用通知" description="收到新訊息時提醒" />
@@ -148,6 +148,9 @@ export interface SwitchProps
   variant?: FieldVariant
 }
 
+/** 開發環境提醒只講一次(同一頁多顆誤用的 Switch 不洗版) */
+let warnedLabelInField = false
+
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   SwitchProps
@@ -190,13 +193,17 @@ const Switch = React.forwardRef<
     const effectiveLabel = insideField ? undefined : label
     const effectiveDescription = insideField ? undefined : description
 
-    // 在 horizontal Field 內自動齊右(iOS / macOS Settings canonical):
-    // horizontal Field 的 layout 是 label(固定寬)| control area(fill),Switch 作為
-    // trailing control 應靠右(對齊 horizontal DescriptionItem 的「label 左 / value 右」模式)。
-    // 世界級對照:iOS Settings / macOS System Settings / GitHub Settings / Figma prefs
-    // 一律 switch 齊右 — 視覺掃描快、對齊一致。
-    const alignRightInField =
-      insideField && fieldCtx?.orientation === 'horizontal' ? 'ml-auto' : ''
+    // 水平 Field 裡的開關跟其他控件同起點,不自動靠右(2026-10-21 S1 甲;switch.spec.md「設定列 vs 水平 Field」)。
+    // 一列一個開關的設定列改用自帶標題的 <Switch label description>(下方 label 分支:標題在左、開關在列尾)。
+    // Field 會忽略自帶的 label / description(field.spec.md「Primitive 的 Field-aware 行為」:誤傳時「開發環境可 warn」)。
+    if (process.env.NODE_ENV !== 'production' && insideField && (label != null || description != null) && !warnedLabelInField) {
+      warnedLabelInField = true
+      console.warn('[Switch] 在 <Field> 裡傳 label / description 會被忽略(由 FieldLabel / FieldDescription 接管);一列一個開關的設定列請改用不包 Field 的 <Switch label description>。')
+    }
+    // 自帶標題時讀屏名稱 = 標題、說明 = 描述(不把說明併進名稱);consumer 自己傳了名稱就不蓋掉
+    const ownTitleId = React.useId()
+    const ownDescId = React.useId()
+    const consumerNamed = (props as { 'aria-label'?: string })['aria-label'] != null || (props as { 'aria-labelledby'?: string })['aria-labelledby'] != null
 
     // Id 連結：優先使用 prop，再退到 Field context 的 id，最後用 useId 生成
     const generatedId = React.useId()
@@ -290,7 +297,7 @@ const Switch = React.forwardRef<
     const rootEl = (
       <SwitchPrimitives.Root
         id={inputId}
-        className={cn(switchVariants({ size }), alignRightInField, className)}
+        className={cn(switchVariants({ size }), className)}
         ref={setRef}
         disabled={effectiveDisabled}
         checked={resolvedChecked}
@@ -301,7 +308,8 @@ const Switch = React.forwardRef<
         aria-readonly={effectiveReadOnly || undefined}
         data-readonly={effectiveReadOnly || undefined}
         tabIndex={effectiveReadOnly ? -1 : undefined}
-        aria-describedby={fieldCtx?.descriptionId}
+        aria-labelledby={effectiveLabel != null && !consumerNamed ? ownTitleId : undefined}
+        aria-describedby={effectiveLabel != null && effectiveDescription != null ? ownDescId : fieldCtx?.descriptionId}
         {...props}
         // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
         // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍 toggle。
@@ -347,9 +355,12 @@ const Switch = React.forwardRef<
     // 無 label → 只渲染 switch 本體
     if (effectiveLabel == null) return rootEl
 
-    // 有 label → 包 <label> + codified 樣式
-    // Switch 慣例：label 在左、switch 在右（對齊 iOS / Polaris / Material 標準）
+    // 有 label → 包 <label> + codified 樣式 = 一列設定列(item anatomy:[content: 標題 + 說明] [suffix: 開關])
+    // Switch 慣例：label 在左、switch 在列尾（對齊 iOS / Polaris / Material 標準;2026-10-21 S1 甲)
     // label 行第一行對齊 switch 中線：容器用 items-start + switch 包 h-[1lh] flex-center
+    // 整列 `flex`(不是 inline-flex):撐滿父層 → 開關在列尾、點列上任何地方都切換(S1 甲「整列可點」),
+    // 父層若是 items-start 的 flex 欄,要讓這一列撐開(switch.spec.md「label / description 整合」)。
+    // 單行列高 = 欄位高(2026-10-27 Q6 甲):上下內距 = fieldRowPaddingY,與 SelectionItem(Checkbox / Radio 選項列)同一個公式。
     return (
       <label
         htmlFor={inputId}
@@ -359,7 +370,8 @@ const Switch = React.forwardRef<
           if (effectiveReadOnly) event.preventDefault()
         }}
         className={cn(
-          'inline-flex items-start gap-3 select-none',
+          'flex items-start gap-3 select-none',
+          fieldRowPaddingY[sizeKey],
           // 容器設跟標籤同一字級,下方 h-[1lh] 的 1lh 才是標籤那一行的行高(同 selection-item.tsx「容器設 text-body / text-body-lg 建立 1lh context」)。
           // 2026-10-27 前沒設,1lh 取的是外層字級:外層 16/24 時開關比標籤第一行中線低 1.5px(外層 14/21 時剛好 0 —— 對不對齊取決於別人家的字級)。
           sizeKey === 'lg' ? 'text-body-lg' : 'text-body',
@@ -377,6 +389,7 @@ const Switch = React.forwardRef<
           )}
         >
           <span
+            id={ownTitleId}
             className={cn(
               // Reading mode 字級:lg → text-body-lg (16px),sm/md → text-body (14px)
               sizeKey === 'lg' ? 'text-body-lg' : 'text-body',
@@ -387,6 +400,7 @@ const Switch = React.forwardRef<
           </span>
           {effectiveDescription != null && (
             <span
+              id={ownDescId}
               className={cn(
                 effectiveDisabled ? 'text-fg-disabled' : 'text-fg-secondary'
               )}

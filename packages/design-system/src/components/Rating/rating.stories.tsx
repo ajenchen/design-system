@@ -81,7 +81,7 @@ function ServiceRatingForm() {
   const [submitted, setSubmitted] = useState(false)
   const form = useFormValidation({
     initialValues: { rating: 0 },
-    intent: 'create', // 新建:送出鈕永遠可按,按了才驗證全部(form-validation.spec.md「Submit Button 狀態」)
+    intent: 'create', // 新建:送出鈕不看填了沒、填對沒,一律可按,按了才驗證全部(form-validation.spec.md「Submit Button 狀態」)
     validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
     onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
   })
@@ -92,7 +92,8 @@ function ServiceRatingForm() {
         <Rating {...form.getInputProps('rating')} />
         <FieldError>{form.errors.rating}</FieldError>
       </Field>
-      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+      <ButtonGroup className="mt-[var(--layout-space-loose)]">
         <Button type="submit" variant="primary">送出評分</Button>
       </ButtonGroup>
     </form>
@@ -105,7 +106,7 @@ export const InField: Story = {
     docs: {
       description: {
         story:
-          '訂單完成後幫這次服務評分。送出鈕永遠可按:沒給分就離開評分或按送出,欄位顯示「請至少給 1 星」;按送出時焦點同時移到評分。送出成功後跳出「評分已送出」提示(Toast),同一欄改成唯讀精簡版。',
+          '訂單完成後幫這次服務評分。送出鈕不看填了沒、填對沒,一律可按:沒給分就離開評分或按送出,欄位顯示「請至少給 1 星」;按送出時焦點同時移到評分。送出成功後跳出「評分已送出」提示(Toast),同一欄改成唯讀精簡版。',
       },
     },
   },

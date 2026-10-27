@@ -62,7 +62,7 @@ export const UsageGuidance: Story = {
               </Field>
             </FieldGroup>
           </div>
-          <ExampleCaption warn>↑ 「送出表單」不該是一個 Field,它是 form-level action,應該在 footer</ExampleCaption>
+          <ExampleCaption warn>↑ 「送出表單」不該是一個 Field,它是 form-level action,應該跟在欄位後面(或放進浮層 / 面板的 footer)</ExampleCaption>
         </TutorialRule>
       </UsageSection>
 
@@ -196,7 +196,7 @@ export const NotForFormActionsRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="Field 是資料輸入容器——不放 form submit / cancel"
-        note="「儲存」「取消」「頁面導覽」這類 form-level action 應該在 form 底部的 footer / action bar,不是包在 Field 內"
+        note="「儲存」「取消」「頁面導覽」這類 form-level action 應該跟在欄位後面(或放進浮層 / 面板的 footer),不是包在 Field 內"
       >
         <div className="max-w-sm">
           <FieldGroup>
@@ -209,14 +209,14 @@ export const NotForFormActionsRule: Story = {
               <Input />
             </Field>
           </FieldGroup>
-          {/* 規則 4:最後一個欄位 → 表單底的動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有。
+          {/* 最後一個欄位 → 跟在後面的動作鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46「Q2 我認為可以基於你的建議」、10-21 09:25「Q5可以基於你的建議」);鈕與鈕之間由 ButtonGroup 擁有。
               表單底這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md:109 / :121;2026-10-20 XF-01:原本 align="end" 靠右) */}
-          <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+          <ButtonGroup className="mt-[var(--layout-space-loose)]">
             <Button variant="primary">儲存</Button>
             <Button variant="tertiary">取消</Button>
           </ButtonGroup>
         </div>
-        <ExampleCaption>↑ 儲存 / 取消在 form footer,不在 Field 內</ExampleCaption>
+        <ExampleCaption>↑ 儲存 / 取消跟在欄位後面,不在 Field 內</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule

@@ -91,7 +91,8 @@ export const Inspector: InspectorStory = {
     label: { control: 'text', description: 'inline label(留空 → 只渲染 switch 本體)' },
     description: { control: 'text', description: 'inline description(需搭配 label)' },
   },
-  render: (args) => <Switch {...args} />,
+  // 自帶標題的開關是一整列(開關在列尾),限寬才不會被拉到畫布最右邊(同展示「搭配標籤」)
+  render: (args) => <div className="max-w-sm"><Switch {...args} /></div>,
 }
 
 export const SizeMatrix: Story = {
@@ -191,8 +192,8 @@ export const LabelIntegration: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Inline label / description</H3>
-        <Desc>Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字,不需 consumer 組合。</Desc>
-        <div className="flex flex-col gap-4 max-w-md border border-dashed border-divider rounded-md p-4">
+        <Desc>Switch 可透過 <code>label</code> / <code>description</code> props 渲染一整列設定列:標題 + 說明在左、開關在列尾、整列可點、列高 = 欄位高,不需 consumer 組合;列與列之間 loose(每列各管一件事)。</Desc>
+        <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md border border-dashed border-divider rounded-md p-4">
           <Switch label="啟用 Bluetooth" defaultChecked />
           <Switch
             label="啟用通知"

@@ -75,7 +75,7 @@ export const States: Story = {
 /* ── 搭配標籤 ── */
 // 2026-07-14 dim-68 修:原直用 internal <SelectionItem control={...}>(selection-item.spec.md
 // 明定僅 Checkbox / RadioGroup 消費路徑;Switch 不在其中)→ 改公開 `<Switch label description>`
-// (switch.spec.md「label / description 整合」canonical:label 左 / switch 右,自動 wire htmlFor)。
+// (switch.spec.md「label / description 整合」canonical:一整列設定列,標題左 / 開關在列尾,自動 wire htmlFor)。
 export const WithLabel: Story = {
   name: '搭配標籤',
   render: () => (
@@ -83,8 +83,9 @@ export const WithLabel: Story = {
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
           <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size="{size}"</p>
-          {/* @layout-space-magic-ok: 三列附標籤 Switch 的設定列距 gap 8px(同質設定列;layoutSpace.spec.md:165 同質清單列) */}
-          <div className="grid gap-2">
+          {/* 三列各管一件事的設定列:列與列之間 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;2026-10-27 Q6 甲),
+              列高 = 欄位高由元件自己給(switch.spec.md「label / description 整合」)。不是 :165「同質 list 的列間距」—— 沒有規格把一排獨立開關定成一組 */}
+          <div className="flex flex-col gap-[var(--layout-space-loose)]">
             <Switch size={size} defaultChecked label="啟用通知" description="接收電子郵件和推播通知" />
             <Switch size={size} label="自動更新" />
             <Switch size={size} disabled label="維護模式（管理員限定）" />

@@ -297,8 +297,8 @@ export const MixedControlAlignment: Story = {
           </Field>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>開啟通知</FieldLabel>
-            {/* 混合表單 = Form-edit → ml-0 靠左(switch.spec.md「兩種對齊慣例」) */}
-            <Switch className="ml-0" />
+            {/* 混合表單 = Form-edit → 開關跟其他控件同起點(switch.spec.md「設定列 vs 水平 Field」;2026-10-21 起是預設) */}
+            <Switch />
           </Field>
         </FieldGroup>
       </div>
@@ -377,9 +377,9 @@ export const SegmentedControlInField: Story = {
           </Field>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>訂閱通知</FieldLabel>
-            {/* 混合表單(Input/SegmentedControl 同列)= Form-edit 情境 → Switch 跟其他控件靠左
-                (switch.spec.md「兩種對齊慣例」判準;ml-0 覆寫 Field 內預設 ml-auto 齊右 —— 齊右屬純 settings list)*/}
-            <Switch className="ml-0" />
+            {/* 混合表單(Input/SegmentedControl 同列)= Form-edit 情境 → Switch 跟其他控件同起點
+                (switch.spec.md「設定列 vs 水平 Field」;2026-10-21 起是預設,不再需要 ml-0 覆寫)*/}
+            <Switch />
           </Field>
         </FieldGroup>
       </div>
@@ -719,8 +719,8 @@ function UpdateProjectSettingsForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 規則 4:內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
-      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+      <ButtonGroup className="mt-[var(--layout-space-loose)]">
         {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
         <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
       </ButtonGroup>
@@ -731,7 +731,7 @@ function UpdateProjectSettingsForm() {
 function CreateProjectForm() {
   const form = useFormValidation({
     initialValues: { name: '', ownerEmail: '' },
-    intent: 'create', // Create:永遠 enabled(不讓使用者猜「為什麼按不了」)
+    intent: 'create', // Create:不看填了沒、填對沒,一律 enabled(不讓使用者猜「為什麼按不了」)
     validate: {
       name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
       ownerEmail: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
@@ -752,7 +752,8 @@ function CreateProjectForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+      <ButtonGroup className="mt-[var(--layout-space-loose)]">
         <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
       </ButtonGroup>
     </form>
@@ -777,9 +778,9 @@ export const FormValidation: Story = {
         <UpdateProjectSettingsForm />
       </div>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold">建立:新專案(永遠 enabled)</h3>
+        <h3 className="text-h6 font-semibold">建立:新專案(不看填了沒、填對沒,一律 enabled)</h3>
         <p className="text-caption text-fg-muted max-w-80">
-          Create 按鈕永遠可按 —— 點了才驗證全部並 scroll 到第一個錯誤,
+          Create 按鈕不看填了沒、填對沒,一律可按 —— 點了才驗證全部並 scroll 到第一個錯誤,
           不讓使用者對著 disabled 按鈕猜原因。
         </p>
         <CreateProjectForm />

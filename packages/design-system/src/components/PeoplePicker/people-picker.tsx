@@ -309,7 +309,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 遺失 ref / className / DOM-safe rest props(違 spec「forwardRef + 單一 root」root props 契約,
       // 與 readonly/disabled 分支不對稱)。補穩定 forwarding root:`w-full min-w-0` 保留
       // PersonDisplay 既有 w-full truncate 寬度約束鏈(單人 fill + 多人 stack 左靠不變),
-      // 對齊 switch.tsx:209 view 分支轉發先例。
+      // 對齊 switch.tsx view 分支(`resolvedMode === 'view'`)轉發先例。
       // 2026-08-20 修 beta.100 迴歸(user 拍板):root 必須是 `flex` 彈性容器,不可為純 block ——
       // block 會把 MultiPersonDisplay 的 inline-flex root 放進文字基線行盒,字型下伸空間(~6.5px)
       // 把頭像串推向行盒頂 → DataTable cell 內視覺偏上 6.4px。flex 容器無行盒語意;

@@ -175,11 +175,13 @@ export const NoIconRule: Story = {
         title="需要 action button → 放 Field 外(Textarea 下方或旁邊)"
         note="例如 comment box 的「送出」按鈕放 Textarea 下方,不塞進框內"
       >
-        <div className="flex flex-col gap-[var(--layout-space-bottom)]">
+        {/* 輸入框 → 跟在後面的送出鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46「Q2 我認為可以基於你的建議」、10-21 09:25「Q5可以基於你的建議」);
+            按鈕用預設 md(action-bar.spec.md「三、Variant 與排序」Size 列:「form / dialog 用中尺寸配合表單元素的高度」) */}
+        <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" />
           {/* 送出列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
           <ButtonGroup>
-            <Button variant="primary" size="sm">送出</Button>
+            <Button variant="primary">送出</Button>
           </ButtonGroup>
         </div>
         <ExampleCaption>↑ 按鈕在 Textarea 下方,不塞進框內</ExampleCaption>

@@ -385,6 +385,18 @@ export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
   md: 'py-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
   lg: 'py-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
 }
+/**
+ * 表單控件列(控件 + 標題 + 說明)的上下內距:py = (field-height − 1lh) / 2 → 單行列高 = 同 size 的欄位高
+ *(`selection-item.spec.md`「padding 公式」;`item-anatomy.spec.md` SelectionItem「單行高度 = field-height」)。
+ * 1lh 取列自己的字級,所以套用處要同時設 text-body / text-body-lg。
+ * 消費者:SelectionItem(Checkbox / Radio 選項列)、Switch 自帶標題的設定列 —— 同一個公式只住這裡,
+ * Switch 不必為了這一行去 import 整支 selection-item(那支會連帶 Avatar)。
+ */
+export const fieldRowPaddingY: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'py-[calc((var(--field-height-sm)_-_1lh)_/_2)]',
+  md: 'py-[calc((var(--field-height-md)_-_1lh)_/_2)]',
+  lg: 'py-[calc((var(--field-height-lg)_-_1lh)_/_2)]',
+}
 
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
 

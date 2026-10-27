@@ -169,7 +169,7 @@ Uncontrolled form 的 `reset()` 會回復 `defaultChecked`；controlled 模式�
 
 ## label / description 整合
 
-Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字：
+Switch 可透過 `label` / `description` props 內部直接渲染一整列設定列(標題 + 說明在左、說明在標題下 2px、開關在列尾對齊標題第一行、整列可點、讀屏名稱只念標題;單行列高 = 欄位高,上下內距與 SelectionItem 同一個公式 `py = (field-height − 1lh) / 2`;這一列撐滿父層寬,放進 `items-start` 的 flex 欄時要讓它撐開,否則開關會貼在字旁)：
 
 ```tsx
 <Switch label="啟用通知" description="收到新訊息時提醒" />
@@ -177,13 +177,13 @@ Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字：
 
 在 `<Field>` context 內時 label / description prop 自動忽略（由 FieldLabel / FieldDescription 接管），避免雙層 label。
 
-### Horizontal Field 自動齊右(2026-04-20)
+### 設定列 vs 水平 Field(2026-04-20;2026-10-21 S1 甲改)
 
-在 `<Field orientation="horizontal">` 內 Switch 自動 `ml-auto`(control area 是 `flex items-center`,Switch 被推到最右邊),**不需要 consumer 傳 className**。Settings list 的 canonical 是 **toggle 齊右、label 左對齊、固定寬度**，讓列與列對齊並加快掃描。
+一列一個開關的設定列(有沒有說明都一樣)用上方自帶標題的 `<Switch label description>`,**toggle 在列尾、標題左對齊**，讓列與列對齊並加快掃描;列與列之間照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「跨範疇 + parallel」= `loose`(每列各管一件事)。`<Field orientation="horizontal">` 裡的 Switch 跟其他控件同起點,**不自動靠右,不需要 consumer 傳 className**。
 
-**⚠️ 自動齊右只適用「純 settings list」情境**(整排獨立 toggle)— 適用判準見下方「兩種對齊慣例」表。**混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 應與其他控件**左對齊**:consumer 傳 `className="ml-0"` 覆寫(cn 合併時 consumer className 在後,tailwind-merge 以 `ml-0` 蓋掉內部 `ml-auto`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 user 拍板修正)。
+**混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 與其他控件**左對齊**(預設即是,不用再傳 `className="ml-0"`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 user 拍板修正)。
 
-視覺上等同於 horizontal `<DescriptionItem>`(label 左 / value 右 `justify-between`)——同一個心智模型:**label 描述、trailing slot 呈現狀態**(value 或 toggle)。
+自帶標題的設定列視覺上等同於 horizontal `<DescriptionItem>`(label 左 / value 右 `justify-between`)——同一個心智模型:**label 描述、trailing slot 呈現狀態**(value 或 toggle)。
 
 **同一畫面多個 horizontal Switch Field → 必搭配 `FieldGroup horizontalLabelWidth={...}`**:否則每個 label 會被內容撐到不同寬度,Switch 左邊緣不對齊,整排參差不齊(世界級 UI 通病,Settings 類型畫面特別明顯)。見 `../Field/field.spec.md`「FieldGroup horizontalLabelWidth cascade」。
 
@@ -193,16 +193,14 @@ Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 
 | Context | 對齊 | 本 DS 判準 |
 |---------|------|-----------|
-| **Settings list**(獨立每項 row,一項一個偏好,即時生效,無 submit) | **齊右** | trailing value/control 對齊，方便逐列掃描 |
+| **Settings list**(獨立每項 row,一項一個偏好,即時生效,無 submit) | **列尾**(`<Switch label description>`) | trailing value/control 對齊，方便逐列掃描 |
 | **Form edit**(多欄位混合 control,使用者 submit 才生效) | **緊跟 label / 與其他 control 對齊** | 跟同表單其他 field control 共用起始線 |
 
 **判斷法**:這個頁面有 submit button 嗎?
-- **有** → form → Switch 本來就不是 canonical(該用 Checkbox,見上「與 Checkbox 的分界」)—— 若硬要用 Switch 代替 submit-flow Checkbox,需 consumer 明確不 ml-auto。
-- **無** → settings list → **auto ml-auto 齊右 canonical**(本元件 2026-04-20 行為)
+- **有** → form → Switch 本來就不是 canonical(該用 Checkbox 或 Radio,見上「與 Checkbox 的分界」)—— 若硬要用 Switch 代替 submit-flow Checkbox,它跟其他控件同起點(預設即是)。
+- **無** → settings list → **`<Switch label description>`,開關在列尾**
 
-本 DS 的 `auto ml-auto` 邏輯是**為 settings list 最佳化**。若 consumer 把 Switch 放 submit form 並想「緊跟 label」,需自行在 `<Switch className="ml-0">` 覆寫——但更推薦重新考慮是不是該用 Checkbox。
-
-> **記住**:在 form 內 + Switch 緊跟 label 的覆寫寫法是 **`<Switch className="ml-0" />`**。這是**目前唯一**需要 consumer 明示 override 的 Switch 行為(其他 layout 都 auto)。但 99% 情境使用者應該先問「是不是該用 Checkbox」——Switch 即時生效的心智模型跟 submit form 本來就衝突。
+> **記住**:99% 情境使用者應該先問「是不是該用 Checkbox」——Switch 即時生效的心智模型跟 submit form 本來就衝突。
 
 ---
 

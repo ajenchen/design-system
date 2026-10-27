@@ -6,7 +6,6 @@ import { Switch } from '@/design-system/components/Switch/switch'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
@@ -76,8 +75,11 @@ export const UsageGuidance: Story = {
             title="vs Switch — Checkbox 是表單內、隨 submit 才生效、可反悔"
             note="勾選不代表立刻生效——使用者按「儲存」前都可以反悔。心智模型是「選擇 / 同意」，視覺語言強調「尚未確定」"
           >
+            {/* 同意條款、訂閱行銷是兩件不相干的事,各是一個單一勾選框(checkbox.spec.md「單一同意」),不包成同一組;
+                兩個之間 = 規則 3 parallel = loose(layoutSpace.spec.md「跨範疇 + parallel」;2026-10-27 Q6 甲)。
+                勾選框 → 按鈕 = loose(按鈕跟在內容後,上方一律 loose)。 */}
             <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
-              <CheckboxGroup>
+              <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Checkbox
                   label="我同意服務條款與隱私政策"
                   checked={agree}
@@ -89,8 +91,8 @@ export const UsageGuidance: Story = {
                   checked={notif === 'checked'}
                   onCheckedChange={(v) => setNotif(v ? 'checked' : 'unchecked')}
                 />
-              </CheckboxGroup>
-              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+              </div>
+              <ButtonGroup className="mt-[var(--layout-space-loose)]">
                 <Button variant="primary">儲存</Button>
                 <Button variant="tertiary">取消</Button>
               </ButtonGroup>
@@ -102,20 +104,12 @@ export const UsageGuidance: Story = {
             title="Switch — 獨立 inline、切換即生效、無 submit 流程"
             note="使用者按下那刻 Bluetooth / Wi-Fi / 通知 就已經開 / 關。心智模型是物理開關（真實世界的 light switch），視覺語言強調「現在就是這樣」"
           >
-            {/* 純 settings list:horizontal Field + FieldGroup horizontalLabelWidth,toggle 自動齊右、label 統一寬度
-                (switch.spec.md「Horizontal Field 自動齊右」+「同一畫面多個 horizontal Switch Field → 必搭配 FieldGroup horizontalLabelWidth」)。
-                不放 FieldDescription:horizontal Field 的說明落在控件欄,開關齊右後說明會懸在列中間 */}
-            <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
-              <FieldGroup horizontalLabelWidth="120px">
-                <Field orientation="horizontal">
-                  <FieldLabel>Bluetooth</FieldLabel>
-                  <Switch checked={bluetooth} onCheckedChange={setBluetooth} />
-                </Field>
-                <Field orientation="horizontal">
-                  <FieldLabel>Wi-Fi</FieldLabel>
-                  <Switch checked={wifi} onCheckedChange={setWifi} />
-                </Field>
-              </FieldGroup>
+            {/* 設定列 = 自帶標題的 <Switch label description>(switch.spec.md「設定列 vs 水平 Field」;2026-10-21 S1 甲):
+                標題 + 說明在左、開關在列尾;Wi-Fi 的說明放回(已發布的內容,PR 為了遷就水平 Field 刪掉)。
+                列與列之間 = loose(每列各管一件事,規則 3 parallel;2026-10-27 Q6 甲),列高 = 欄位高由元件自己給 */}
+            <div className="border border-border rounded-lg p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-loose)]">
+              <Switch label="Bluetooth" checked={bluetooth} onCheckedChange={setBluetooth} />
+              <Switch label="Wi-Fi" description="2.4 GHz + 5 GHz" checked={wifi} onCheckedChange={setWifi} />
             </div>
             <ExampleCaption>↑ 系統設定類——獨立 inline control、旁邊沒有 submit 流程</ExampleCaption>
           </TutorialRule>
@@ -126,7 +120,7 @@ export const UsageGuidance: Story = {
           >
             <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
               <Switch label="我同意服務條款" />
-              <div className="mt-[var(--layout-space-bottom)]">
+              <div className="mt-[var(--layout-space-loose)]">
                 <Button variant="primary">送出</Button>
               </div>
             </div>

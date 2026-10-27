@@ -29,7 +29,7 @@
  * 7 Submit 驗證全部        → handleSubmit 對所有 validate keys 全跑(不依賴 blur 狀態)
  * 8 Anchor 到第一個錯誤    → focus + scrollIntoView({block:'center'});每次 submit 重算;只找這個 hook 實例自己的欄位
  * 9 Async / 跨欄位 defer 到 submit → onSubmit 回傳 field-keyed errors → 同 8 anchor
- * + Submit button:Create 永遠 enabled / Update disabled-until-dirty → `submitDisabled`
+ * + Submit button:Create 不看填了沒、填對沒,一律 enabled / Update disabled-until-dirty → `submitDisabled`
  * + 更新表單送出成功後,剛送出的值成為新的比對基準(2026-10-01,待辦總帳 N69 / 規格「Submit Button 狀態」):
  *   isDirty 回 false、送出鈕再度停用、Escape 回到已存的值 —— 不是存檔前的舊值;await 期間使用者又打的字逐格重算
  * + Double-submit 防護(2026-07-05 D4):await onSubmit 期間重入直接忽略;`isSubmitting`
@@ -458,7 +458,7 @@ export function useFormValidation<T extends FieldValues>(
     values,
     errors,
     isDirty,
-    // Submit Button 狀態 canonical:Create 永遠 enabled / Update disabled-until-dirty;
+    // Submit Button 狀態 canonical:Create 不看填了沒、填對沒,一律 enabled / Update disabled-until-dirty;
     // submit 進行中一律 disabled(double-submit 防護的 UI 面,2026-07-05 D4)
     submitDisabled: (intent === 'update' ? !isDirty : false) || isSubmitting,
     isSubmitting,

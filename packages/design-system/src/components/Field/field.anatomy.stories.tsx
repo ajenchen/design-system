@@ -243,9 +243,9 @@ export const OrientationMatrix: Story = {
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>訂閱電子報</FieldLabel>
-              {/* 混合表單(Input/Select 同列)= Form-edit 情境 → Switch 靠左對齊其他控件
-                  (switch.spec.md「兩種對齊慣例」判準;ml-0 覆寫 horizontal Field 預設 ml-auto) */}
-              <Switch defaultChecked className="ml-0" />
+              {/* 混合表單(Input/Select 同列)= Form-edit 情境 → Switch 跟其他控件同起點
+                  (switch.spec.md「設定列 vs 水平 Field」;2026-10-21 起是預設,不再需要 ml-0 覆寫) */}
+              <Switch defaultChecked />
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>允許搜尋引擎索引</FieldLabel>

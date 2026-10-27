@@ -12,10 +12,10 @@
 
 | 情境 | 按鈕預設 | 何時啟用 | 何時停用 |
 |---|---|---|---|
-| **新建**(Create) | **永遠 enabled** | — | — |
+| **新建**(Create) | **不看填了沒、填對沒,一律 enabled** | — | — |
 | **更新**(Update) | **disabled** | 使用者變更任何欄位(dirty) | 變更被還原回原值(pristine) |
 
-新建永遠 enabled——不讓使用者猜「為什麼按不了」。更新用 disabled 明確表達「沒改就不用存」,有變更才亮起來。
+新建不看填了沒、填對沒,一律 enabled——不讓使用者猜「為什麼按不了」。更新用 disabled 明確表達「沒改就不用存」,有變更才亮起來。
 
 **更新表單送出成功後也算「沒改」**(2026-10-01,AI 依本表「沒改就不用存」推導,待辦總帳 N69;本表「何時停用」那一格的延伸,表格原文是 story-layer 漂移閘 `@submit-intent` 例外的出處、不改字):剛送出的值成為新的比對基準 —— isDirty 回 false、送出鈕再度停用、Escape(規則 4)回到**已存的值**而不是存檔前的舊值;await 期間使用者又打的字逐格重算 dirty。新建表單不重設(建立後 consumer 常要 `reset()` 回空白繼續建下一筆)。對照 Polaris Contextual Save Bar "Become visible when a form on the page has unsaved changes"(<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/contextual-save-bar.mdx#L48-L51>)、Mantine `form.resetDirty(values)`(<https://github.com/mantinedev/mantine/blob/f38933cb4f1c534600f4ff59ee3ddbb4685a4bc4/apps/mantine.dev/src/pages/form/status.mdx#L106-L119>)、react-hook-form `reset` with values updates defaultValues(<https://github.com/react-hook-form/documentation/blob/3ac1fe0254947748d993cd4b1915fc5dea87ba8b/src/content/docs/useform/reset.mdx#L38>)。
 **送出鈕的焦點**:送出中(`isSubmitting` → Button `loading`)與存檔後(pristine → `disabled`)焦點都**留在送出鈕上**,不掉到 `<body>`:Button 在忙碌、或握著焦點時被停用,不轉成原生 `disabled`(`../Button/button.tsx` 可聚焦的停用;規則 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」)。2026-10-01 前 `submitDisabled` 接原生 disabled,送出那一下焦點掉到 body(N69 實測)。
