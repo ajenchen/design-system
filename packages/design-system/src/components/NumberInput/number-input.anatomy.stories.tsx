@@ -25,7 +25,7 @@ const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit: '表單可編輯欄位，有邊框、hover / focus 回饋',
-  view: '純展示值（非表單）— edit 幾何減 chrome（透明 bg/border、保留 px 內距與高度，Model A）。用在 cell / InlineEdit / 詳情',
+  view: '純展示值（非表單）— edit 幾何減 chrome 與左內距（透明 bg/border、保留高度與右側，值齊標籤）。用在 cell / InlineEdit / 詳情',
   readonly: '表單中不可編輯但可見，灰底、無邊框（input chrome 但鎖定）',
   disabled: '停用狀態，灰底、灰字、cursor-not-allowed',
 }

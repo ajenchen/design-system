@@ -228,9 +228,9 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // ── mode='view' ─────────────────────────────────────────────────────
     // 純展示:無 input chrome / 無 hover affordance / 無 Pencil edit 入口。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
-    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat;為 contract (d)
-    // Model A(view×default = edit 幾何減 chrome、留 px)之明文例外,見 link-input.spec.md
-    // 「View 模式幾何(Model A 明文例外)」。
+    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat;左側 0 與 contract (d)
+    // (view×default 左側歸 0、值齊標籤)結果相同,只少 h-field 高度,見 link-input.spec.md
+    // 「View 模式幾何(不包 wrapper)」。
     // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper 包覆 anchor,
     // 與 cell edit (`<Input naked>`) 同 DOM 結構消除像素偏移(無 ItemSuffix,因 edit 也無 endIcon)。
     if (resolvedMode === 'view') {

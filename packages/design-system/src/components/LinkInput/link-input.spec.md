@@ -69,9 +69,9 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - blur 時驗證格式，合法則自動切回 link 狀態
 - 格式不合法維持 input 狀態 + error 邊框，直到格式正確
 
-### View 模式幾何（Model A 明文例外）
+### View 模式幾何（不包 wrapper）
 
-`mode="view"` 預設（`showDisplayEndIcon=false`）渲染**裸 anchor / span**——不包 `fieldWrapperStyles`（無 px 內距、無 h-field 高度），是 `../Field/field-controls.spec.md` 共享 contract (d)「view×default = edit 幾何減 chrome（留 px）」的**明文例外**（backward compat；2026-07-16 VERIFY 拍板記錄為例外而非對齊 code）。需要與 cell edit 像素對齊時走 `showDisplayEndIcon=true` opt-in（Field naked wrapper 包覆 anchor）。typography 仍消費 contract (e)（`fieldDisplayTextClass`）。
+`mode="view"` 預設（`showDisplayEndIcon=false`）渲染**裸 anchor / span**——不包 `fieldWrapperStyles`（無 h-field 高度；左側 0 與 `../Field/field-controls.spec.md` 共享 contract (d)「view×default 左側歸 0、值齊標籤」結果相同,2026-10-21 起高度以外不再是例外）（backward compat；2026-07-16 VERIFY 記錄為例外而非對齊 code）。需要與 cell edit 像素對齊時走 `showDisplayEndIcon=true` opt-in（Field naked wrapper 包覆 anchor）。typography 仍消費 contract (e)（`fieldDisplayTextClass`）。
 
 ---
 

@@ -9,7 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -405,12 +405,16 @@ CustomSelectTriggerContent.displayName = 'CustomSelectTriggerContent'
 
 // ── Shared readonly/disabled/view render ─────────────────────────────────
 function ReadonlyDisplay({
-  mode, variant: variantProp, width, size, options, value, display, startIcon: StartIcon, className, placeholder, showDisplayEndIcon, selectedItemRenderer,
+  mode, variant: variantProp, width, size, options, value, display, startIcon: StartIcon, className, placeholder, showDisplayEndIcon, selectedItemRenderer, ariaLabel,
 }: Pick<SelectProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder' | 'showDisplayEndIcon' | 'selectedItemRenderer'> & {
   /** @internal 2026-07-14 API 策展 E:內部 render helper 吃 FieldVariantInternal(naked 由 cell-registry 通道傳入)*/
   variant?: FieldVariantInternal
+  /** consumer 的 aria-label(唯讀 tab stop 的名稱;沒傳時接 Field 標籤) */
+  ariaLabel?: string
 }) {
   const resolvedMode = mode ?? 'readonly'
+  // 唯讀 = 可 Tab、不可開(field-controls.spec.md「Focus 行為」readonly 那段);view / disabled 回空物件
+  const readonlyStop = readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel, labelledBy: useFieldContext()?.labelId })
   const emptyDisplay = useFieldEmptyDisplay()
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
@@ -499,7 +503,7 @@ function ReadonlyDisplay({
   // disabled 時 wrapper span 帶 text-fg-disabled 供未自帶色的文字繼承(M24 disabled > muted)。
   if (selectedItemRenderer && value && selectedOpt) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {selectedItemRenderer(selectedOpt)}
@@ -511,7 +515,7 @@ function ReadonlyDisplay({
 
   if (isTextDisplay) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
         {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
         <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
@@ -526,7 +530,7 @@ function ReadonlyDisplay({
 
   return (
     // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
@@ -571,7 +575,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }, [ref])
 
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
+      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} ariaLabel={(props as { 'aria-label'?: string })['aria-label']} />
     }
 
     const selectedOpt = options?.find(o => o.value === value)
@@ -786,7 +790,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     // Early return AFTER all hooks(disabled / readonly / view mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
+      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} ariaLabel={ariaLabel} />
     }
 
     // 2026-05-21 D3 Phase B codex 抓:Custom clear 用 setValue 不直接 onChange,uncontrolled clear 才能真清 internal state。

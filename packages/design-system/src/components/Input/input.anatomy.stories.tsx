@@ -59,7 +59,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
-  view:     '純展示值（非表單）— edit 幾何減 chrome（transparent bg/border，保留 px-field-px 內距與高度，Model A round16）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）。用在 cell / InlineEdit / 詳情',
+  view:     '純展示值（非表單）— edit 幾何減 chrome 與左內距（transparent bg/border，保留高度與右側、左側歸 0 = 值齊標籤）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）。用在 cell / InlineEdit / 詳情',
   readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
@@ -419,7 +419,7 @@ const InspectorInner = () => {
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <PropRow label="高度" dot={Z.dim.text}><TkVal token={s.heightToken} value={s.height} /></PropRow>
-            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px（view 保留 = edit 幾何減 chrome）`} /></PropRow>
+            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px（view 只留右側,左側 0）`} /></PropRow>
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={`${s.gap}px`} /></PropRow>
             {hasStartIcon && (
               <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>

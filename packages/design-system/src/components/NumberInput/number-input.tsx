@@ -3,7 +3,7 @@ import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import type { InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -144,6 +144,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
           // 否則 axe 把 fg-disabled 的格式化數字當一般文字誤報 color-contrast(4 則 story)。不是轉發 consumer 的 aria-*,是元件自己的狀態
           aria-disabled={resolvedMode === 'disabled' || undefined}
+          // 唯讀 = 可 Tab、不可編輯(field-controls.spec.md「Focus 行為」readonly 那段;角色同編輯態的原生 input = textbox)
+          {...readonlyTabStopProps(resolvedMode, 'textbox', { ariaLabel: (props as { 'aria-label'?: string })['aria-label'], labelledBy: fieldCtx?.labelId })}
         >
           <span
             className={cn(

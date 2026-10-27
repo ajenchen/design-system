@@ -15,7 +15,7 @@ benchmark:
 
 # InlineEdit 設計原則
 
-**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），其 layout / focus contract 由 Field 擁有，不新增 primitive。**view 態同樣委派 Family 4（Model A）**——值-格式化路徑委派 `<Control mode="view">`、純值/標題路徑委派 `fieldViewGeometry`（見「幾何典範」）；InlineEdit 本體只擁有可編輯提示、啟動與 focus 生命週期。
+**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），其 layout / focus contract 由 Field 擁有，不新增 primitive。**view 態同樣委派 Family 4（Model A）**——值-格式化路徑委派 `<Control mode="view">` 取格式化,兩條路徑的幾何都由 `fieldViewGeometry` 給（見「幾何典範」）；InlineEdit 本體只擁有可編輯提示、啟動與 focus 生命週期。
 
 ## 定位
 
@@ -49,7 +49,7 @@ benchmark:
 
 ## editable 閘（無 disabled 態）
 
-`editable?: boolean`(預設 true)。`editable=false` → view 態**無 hover 入口、不渲染隱形 Pressable、無藍框、不可進 edit,且不灰化**——就地編輯 host **無 disabled 態**,鎖定 = 純 view 無入口(detail-pane 權限鎖定語意)。與 DataTable cell 的 `editable:(row)=>boolean` 判準閘是**同一份語義**(`../Field/field-controls.spec.md`「軸二」);世界級就地編輯 grid 同模型:MUI X isCellEditable(https://mui.com/x/react-data-grid/editing/)/ AG Grid editable(https://www.ag-grid.com/react-data-grid/cell-editing/)。永久唯讀資料 → 用 `<Control mode="view">`;隨權限切換可編/不可編 → `editable`;**不用 disabled**(灰化是表單 disabled 語言,不是就地編輯語言)。
+`editable?: boolean`(預設 true)。`editable=false` → view 態**無 hover 入口、不渲染隱形 Pressable、無藍框、不可進 edit,且不灰化**——就地編輯 host **無 disabled 態**,鎖定 = 純 view 無入口(detail-pane 權限鎖定語意)。與 DataTable cell 的 `editable:(row)=>boolean` 判準閘是**同一份語義**(`../Field/field-controls.spec.md`「軸二」);世界級就地編輯 grid 同模型:MUI X isCellEditable(https://mui.com/x/react-data-grid/editing/)/ AG Grid editable(https://www.ag-grid.com/react-data-grid/cell-editing/)。永久唯讀、不同場可編欄位 → `<Control mode="view">`;同場或權限切換 → `editable`;**不用 disabled**(灰化是表單 disabled 語言,不是就地編輯語言)。
 
 ## 幾何典範（Model A 委派模型,2026-07-16 round16 user GO;推翻 2026-07-09「自帶外框幾何」版）
 
@@ -57,20 +57,20 @@ InlineEdit **不自帶 geometry cva**(M17 消重)——view 態幾何兩路來�
 
 | 路徑 | 幾何來源 | 說明 |
 |------|---------|------|
-| **值-格式化**(Select→Tag / 日期 / avatar) | 委派 `<Control mode="view">`(view×default = edit 幾何減 chrome) | 幾何 + 內部間距(多 tag gap / avatar↔label)皆由控件 view mode 提供——view 與 edit **同一顆控件、只差 chrome** → 天生一致、零偏移 |
-| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,view×default 幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[var(--field-height-{size})]`;單行 `items-center`、多行 `items-start py-2` |
+| **值-格式化**(Select→Tag / 日期 / avatar) | `fieldViewGeometry` 包住委派的 `<Control mode="view">`(委派控件 view 左側皆 0) | 格式化與內部間距(多 tag gap / avatar↔label)由控件 view mode 提供,左內距與高度由外包的 `fieldViewGeometry` 統一 → 天生一致、零偏移 |
+| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,InlineEdit view 態幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[var(--field-height-{size})]`;單行 `items-center`、多行 `items-start py-2` |
 
 InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 field-px + exit 保證 + hover bg + focus 藍框 + 隱形 Pressable**。
 
 **對齊盒(-mx orientation-aware,2026-07-17 移除 fieldCtx gate — root cause 修)**:
 - **對齊 root invariant**:固定 `-mx-[--field-px]` 要能把值/tag/avatar 左緣拉到 label x=0,**充要條件 = 委派控件 view 左 px 恆 = field-px**。故 InlineEdit **兩條 view 路徑都用同一個 `fieldViewGeometry`(field-px + min-h + py)**:純值/標題路徑直接套;**委派控件路徑(renderRead)也用 `fieldViewGeometry` 包住**(委派控件 bare view 皆 0px 左內距 → 包住後統一 field-px)。這樣 tag/avatar/date 全對齊 label(不碰任何控件的 tagPadding)。
-- **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0(= [Atlassian read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 固定負邊距對照)。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
+- **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
 - **horizontal** → `w-full min-w-0`,**不用 -mx**:值內縮 px = 對齊 sibling 控件
 - **edit 態完全繼承原 field**(Jira 式,user 2026-07-17 拍板):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(= Jira 式,可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
 
 **多行(multiline)**:view = `items-start py-2`,**= Textarea edit `py-2`**(textarea.tsx base)——`scripts/inline-edit-view-geometry-invariant.mjs` 機械鎖此契約(Textarea py 一改即紅)。
 
-**「底色範圍 = 輸入框範圍」不變量**:view 與 edit 兩態共用同一對齊盒(同寬、同 1px 邊框盒),幾何同源(view×default = edit 幾何減 chrome),故 hover 底色與 edit 輸入框逐 pixel 對齊、態切換零位移。(舊版 read 外框 `w-full`+`-mx` 疊加 → 右側短一截、整塊左偏,已修;2026-07-16 -mx 由恆定改條件化;2026-07-17 進一步移除 fieldCtx gate → 純 orientation-aware,委派 view 統一 fieldViewGeometry field-px,standalone 也對齊。)
+**「底色範圍 = 輸入框範圍」不變量**:view 與 edit 兩態共用同一對齊盒(同寬、同 1px 邊框盒),幾何同源(`fieldViewGeometry` = edit 幾何減 chrome),故 hover 底色與 edit 輸入框逐 pixel 對齊、態切換零位移。(舊版 read 外框 `w-full`+`-mx` 疊加 → 右側短一截、整塊左偏,已修;2026-07-16 -mx 由恆定改條件化;2026-07-17 進一步移除 fieldCtx gate → 純 orientation-aware,委派 view 統一 fieldViewGeometry field-px,standalone 也對齊。)
 
 **點得到的範圍 = 底色範圍**(2026-09-26,待辦總帳 N53⑤):隱形 Pressable 用 `-inset-px` 蓋滿外框的 border box(含那圈 1px 透明邊框),滑過底色亮到哪、點下去就進 edit 到哪。先前是 `inset-0`,只蓋到 padding box —— 外圈 1px 亮著卻點不進 edit(實測一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點),正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。修的是命中區、不是底色:底色與 edit 輸入框逐 pixel 對齊是本條不變量,不能縮。畫面不變,只有那 1px 的游標與點擊結果改變。世界級對照:Atlassian inline-edit 的讀取態把點擊與滑過底色掛在**同一個元素**上,兩者天生同一個盒([`read-view.js#L56`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js) `onClick: onReadViewClick`、同一個 div 的 `className`(#L62)帶滑過樣式)。
 
@@ -124,7 +124,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 
 - **表單欄位** → 直接用 `<Field>` + Field 控件(表單本來就是編輯情境,不需要 view 態偽裝成純文字)。
 - **DataTable 密集可編輯格** → 用 naked cell(host cell 自管 border + focus、hover outline affordance;見 `field-controls.spec.md`「Cell(naked variant)」),不是每格包一個 InlineEdit 狀態機。
-- **一律唯讀展示**(不可編) → 用 `<Input mode="view">` / 純文字,不需要 Pressable;**隨權限暫時鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
+- **一律唯讀展示**(整區不可編) → `<Input mode="view">` / 純文字,不需要 Pressable;**同場或權限鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
 - **多欄位一次編輯** → 用表單(進入一次編輯全部欄位),不是逐欄 inline edit。
 
 ## 近親分界

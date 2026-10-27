@@ -3,9 +3,9 @@
 // 4 模式 canonical(2026-05-05 expand;2026-07-16 round16 `display`→`view` 更名 + Model A 幾何):
 //   edit     — 一般可編輯 input(預設 variant:border + bg)
 //   view     — **純展示值(非表單)**;語意「要呈現給人看的值本體」(cell / InlineEdit / 詳情)。
-//              **Model A**:view = edit 幾何減 chrome(透明 bg/border,**保留 px 內距 + 高度**)→ read↔edit
-//              零跳(view 與 edit 同一顆控件、只差 chrome)。對齊 Atlassian inline-edit(read=edit 幾何)
-//              + Bootstrap `.form-control-plaintext`(留 padding)。詳 field-controls.spec.md「軸一 view mode」。
+//              view = edit 幾何減 chrome 與左內距(透明 bg/border,保留高度、上下內距與右側,**左側歸 0 → 值齊標籤**,
+//              C1 甲 2026-10-21);InlineEdit read↔edit 零跳由 fieldViewGeometry 外包補位。對齊 Bootstrap
+//              `.form-control-plaintext`(上下保留、左右 0)。詳 field-controls.spec.md「軸一 view mode」。
 //   readonly — input chrome + non-editable(bg-readonly + a11y ring「這是 input 但鎖了」);表單語境、值仍算數可選取
 //   disabled — input chrome + disabled state(灰底,不可互動,不送出,語意「目前不適用」);表單專屬
 //

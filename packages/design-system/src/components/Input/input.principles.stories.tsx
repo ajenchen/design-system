@@ -107,7 +107,7 @@ export const ModeRule: Story = {
 
       <TutorialRule
         title="❌ 不用 readonly 作為 DataTable cell"
-        note={<>readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 <code>&lt;Input mode='view'&gt;</code>(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)</>}
+        note={<>readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 <code>&lt;Input mode='view'&gt;</code>(edit 幾何減 chrome 與左內距 —— 保留高度與右側、值齊標籤;cell 內經 naked variant 由 host cell 供 padding)</>}
       >
         <Input mode="readonly" value="alice@example.com" aria-label="Email（資料表誤用示範）" />
         <ExampleCaption warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</ExampleCaption>

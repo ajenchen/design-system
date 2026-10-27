@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
 import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
-import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
+import { SelectionItem, selectionItemStyles } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { fieldWrapperStyles, fieldDisplayTextClass } from "@/design-system/components/Field/field-wrapper"
@@ -141,13 +141,17 @@ const RadioGroup = React.forwardRef<
     // 與 edit 選項 label 同字級。2026-09-15 前是裸 span → 吃到瀏覽器預設 16px(user 抓 view 字比選項大);
     // 閘 scripts/field-view-typography-invariant.mjs 量 view 與 edit 字級相等。
     const viewTextClass = fieldDisplayTextClass(resolvedBoxSize)
+    // 放進 Field 時,Field 依 RadioGroup 宣告的 fieldLayout='block' 走區塊佈局(不給 min-h,靠第一個選項列自帶的
+    // py = (field-height − 1lh) / 2 把第一行中線推到 field-height / 2,見 field.tsx「Control area」)。純顯示只剩一行字,
+    // 沿用同一個選項列幾何(selectionItemStyles),值的中線才會跟同排其他欄位的值同高(修前高 5.5 / lg 7.5px)。
+    const viewRowClass = fieldCtx?.hasFieldWrapper === true ? selectionItemStyles({ size: resolvedBoxSize }) : undefined
     if (!selectedValue) {
-      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
+      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewRowClass, viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(children, selectedValue)
     return (
       <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}>
-        <span className={cn(viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
+        <span className={cn(viewRowClass, viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
       </div>
     )
   }

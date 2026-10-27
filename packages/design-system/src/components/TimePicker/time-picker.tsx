@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import {
+  readonlyTabStopProps,
   fieldWrapperStyles,
   bareInputStyles,
   fieldDisplayTextClass,
@@ -317,6 +318,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
+          // 唯讀 = 可 Tab、不可開(field-controls.spec.md「Focus 行為」readonly 那段)
+          {...readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel: (props as { 'aria-label'?: string })['aria-label'], labelledBy: fieldCtx?.labelId })}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
           <span

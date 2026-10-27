@@ -10,7 +10,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -335,11 +335,16 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 function ReadonlyMultiSelect({
   mode, variant: variantProp, width, size, options, value, wrap, className, showDisplayEndIcon = false,
   unrestricted = false, unrestrictedLabel = '不限', unrestrictedValue = '__unrestricted__', // i18n-allow: DS default(與 SelectMenu 同源)
+  ariaLabel,
 }: Pick<ComboboxProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'wrap' | 'className' | 'showDisplayEndIcon' | 'unrestricted' | 'unrestrictedLabel' | 'unrestrictedValue'> & {
   /** @internal 2026-07-14 API 策展 E:內部 render helper 吃 FieldVariantInternal(naked 由 cell-registry 通道傳入)*/
   variant?: FieldVariantInternal
+  /** consumer 的 aria-label(唯讀 tab stop 的名稱;沒傳時接 Field 標籤) */
+  ariaLabel?: string
 }) {
   const resolvedMode = mode ?? 'readonly'
+  // 唯讀 = 可 Tab、不可開(field-controls.spec.md「Focus 行為」readonly 那段);view / disabled 回空物件
+  const readonlyStop = readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel, labelledBy: useFieldContext()?.labelId })
   const emptyDisplay = useFieldEmptyDisplay()
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
@@ -407,7 +412,7 @@ function ReadonlyMultiSelect({
         resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed',
         className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
-      aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
+      aria-disabled={resolvedMode === 'disabled' ? true : undefined} {...readonlyStop}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
           bare disabled={resolvedMode === 'disabled'} />
@@ -596,7 +601,7 @@ function CustomCombobox({
   )
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} unrestricted={unrestricted} unrestrictedLabel={unrestrictedLabel} unrestrictedValue={unrestrictedValue} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} unrestricted={unrestricted} unrestrictedLabel={unrestrictedLabel} unrestrictedValue={unrestrictedValue} ariaLabel={ariaLabel} />
   }
 
   // 欄位上值的顯示狀態(2026-10-07 待辦總帳 K4,ComboboxTagRenderState):欄位內搜尋框開著時,值裡用文字畫的部分讓位給搜尋框

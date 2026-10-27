@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 不變式:**Field control 的水平內距是標準 `--field-px`,除非欄位裡真的有 Tag**。
+ * 不變式:**Field control 的水平內距是標準 `--field-px`,除非欄位裡真的有 Tag;純顯示(view × default 外殼)左側是 0**。
  *
  * 依據(逐字):
  *   `components/Field/field-controls.spec.md`「Select 顯示模式」
@@ -31,7 +31,9 @@
  * padding)」—— 那種欄位 `!px-0 !py-0`、邊框透明,內距由 cell 自己給(實測 AgentPanel FAB 的表格:
  * 欄位內距 0、cell 內距 12)。判準是「它住在 `[role=cell]` / `<td>` 裡」這個語意邊界。
  * ⚠️ **不可以用「邊框透明」當判準**:readonly / disabled / view 三個模式的邊框本來就是透明的,
- * 但它們照樣吃 `--field-px`(2026-09-18 第一版這樣寫,250 支 story 只量到 2 個欄位 = 幾乎空綠)。
+ * readonly / disabled 照樣吃 `--field-px`(2026-09-18 第一版這樣寫,250 支 story 只量到 2 個欄位 = 幾乎空綠)。
+ * **純顯示(view × default)應為 0**:2026-10-21 user C1 甲「我覺得視覺上全部對齊標籤是肯定的且必須的」——
+ * `field-controls.spec.md`「軸一 view mode」:左內距與左邊框歸 0、值的第一個可見元素齊控件左緣 = 標籤左緣。
  *
  * 量的是像素(`--field-px` 丟量尺進去解析成真實 px —— `getPropertyValue` 回的是 token 原文
  * `0.75rem`,直接 parseFloat 會拿到 0.75,第一版就是這樣誤判了 21 個)。全 story 掃,不抽樣。
@@ -118,11 +120,13 @@ const PROBE = () => {
     const fieldPx = parseFloat(getComputedStyle(ruler).width)
     ruler.remove()
     const fb = el.getBoundingClientRect()
+    const mode = el.getAttribute('data-field-mode') || '?'
     out.push({
-      模式: el.getAttribute('data-field-mode') || '?',
+      模式: mode,
       文字: (first.nodeValue || '').trim().slice(0, 14),
       量到: +(tb.left - fb.left).toFixed(2),
-      應為: +(bl + fieldPx).toFixed(2),
+      // 純顯示(view × default;表格裡的 naked 已在上面排除)左側 0,其餘 = 邊框 + --field-px
+      應為: mode === 'view' ? 0 : +(bl + fieldPx).toFixed(2),
       標籤: el.getAttribute('aria-label') || '',
     })
   }

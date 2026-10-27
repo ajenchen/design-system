@@ -1,6 +1,6 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
@@ -10,13 +10,14 @@ import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 //
 // 4 種模式(2026-05-05 expand;2026-07-16 round16 `display`→`view` 更名 + Model A):
 //   edit     — bg-surface, border, hover/focus 回饋(可編輯 input)
-//   view     — 純展示值(非表單);**Model A = edit 幾何減 chrome**(透明 bg/border,**保留 px 內距 + 高度**),
-//              故 read↔edit 零跳。對齊 Atlassian inline-edit(read=edit 幾何)+ Bootstrap plaintext(留 padding)。
+//   view     — 純展示值(非表單);edit 幾何減 chrome 與左內距(透明 bg/border,保留高度、上下內距與右側,
+//              **左內距與左邊框歸 0 → 值齊標籤**,C1 甲 2026-10-21)。InlineEdit 的 read↔edit 零跳由它外包的
+//              fieldViewGeometry 補位。對齊 Bootstrap plaintext / Salesforce static(上下保留、左右 0)。
 //   readonly — bg-readonly(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定;token 獨立於 disabled)
 //   disabled — bg-disabled(neutral-2), 無邊框, 文字灰化
 //
 // 2 種視覺外殼(variant;2026-07-09 `bare` 退役後):
-//   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome(留 px/py)
+//   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome 與左內距(留 py 與右側)
 //   naked   — cell-as-input substrate(DataTable);**edit×naked 自畫 border-based state machine**
 //              (border-border → hover:border-border-hover → focus-within:border-primary → error 紅框);
 //              view×naked = bare(host TD 給 padding)。**view×default ≠ view×naked**(不 collapse)。
@@ -64,7 +65,9 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「overlay 開啟 → 同 host hover」;field.spec.md「Field state machine」表)。
     // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
     { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
-    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
+    // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
+    // 高度、上下內距與上下 1px 透明邊、右側(帶箭頭的純顯示的右邊距、截斷省略號、依內容寬)都不動。
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y border-r border-transparent !pl-0' },
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
@@ -235,7 +238,7 @@ export const fieldWrapperStyles = cva(
         //                  真實 anchor text at cell.top + padding。
         // Edit mode 不動(`!h-full` 保留 — border 必滿格對齊 cell border)。
         // 2026-07-16 round16:view×naked 保持 bare(cell substrate,host TD 給 padding)— 與 view×default
-        // (edit 幾何減 chrome、留 px/py)本質不同用途,**不 collapse**(round14 合併是錯的)。
+        // (edit 幾何減 chrome 與左內距、留 py 與右側)本質不同用途,**不 collapse**(round14 合併是錯的)。
         mode: 'view',
         variant: 'naked',
         className: [
@@ -441,6 +444,33 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 // State ring 唯一 const `nakedCellEditableDisplayHover` 仍留(下方 L332,見其自述「sole remaining ring const」)— 是 Field naked 專屬,MenuItem / TreeView 用 bg hover 不用 outline。
 // `nakedCellRowModeAlign`(wrapper 級)仍留 — 是 cell-context row-mode → wrapper alignment 適配,正交 slot 級。
 
+// ── Readonly tab stop ───────────────────────────────────────────────────────
+
+/**
+ * 唯讀觸發器 / 唯讀值框的 tab stop。規則住 field-controls.spec.md「Focus 行為」readonly 那段
+ *(「可聚焦但不可編輯的 input / textarea / 唯讀三兄弟 / 唯讀觸發器」);修前 Select / Combobox / DatePicker /
+ * TimePicker / NumberInput 的唯讀外框是沒有 tabIndex 的 div,按 Tab 停不到(PR 與 beta.147 實測相同)。
+ * 只在 mode === 'readonly' 回傳屬性:view 是純展示(不是表單欄位)、disabled 不可聚焦,兩者回空物件。
+ * 角色沿用該控件編輯態的角色 + aria-readonly(同 checkbox.tsx「mode='readonly' in Field」分支的先例);
+ * 焦點長相由 fieldWrapperStyles 的 readonly compound(focus-within:!border-primary)承擔,與編輯態同一種。
+ */
+export function readonlyTabStopProps(
+  mode: string | undefined,
+  role: 'combobox' | 'textbox',
+  name: { ariaLabel?: string; labelledBy?: string },
+): HTMLAttributes<HTMLElement> {
+  if (mode !== 'readonly') return {}
+  return {
+    tabIndex: 0,
+    role,
+    'aria-readonly': true,
+    ...(role === 'combobox' ? { 'aria-expanded': false } : {}),
+    'aria-label': name.ariaLabel,
+    // accname 優先序:consumer aria-label > Field 標籤(同 select.tsx CustomSelect trigger 的寫法)
+    'aria-labelledby': name.ariaLabel ? undefined : name.labelledBy,
+  }
+}
+
 // ── Empty Value Display ─────────────────────────────────────────────────────
 
 // 2026-07-08 user 拍板(verbatim「我從頭到尾哪裡有說要用全形的」):空值符號 = **半形 hyphen
@@ -461,19 +491,19 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
   size === 'lg' ? 'text-body-lg' : 'text-body'
 
 /**
- * 2026-07-16 round16 Model A(user GO):Field view mode 幾何 SSOT(= view×default compound 的
- * 幾何部分,抽成 class helper 供 **InlineEdit 純值/標題路徑** 消費,避免 InlineEdit 自帶重複的
- * geometry cva〔M17 消重〕)。
+ * 2026-07-16 round16 Model A:InlineEdit view 態的幾何 SSOT(抽成 class helper 供 **InlineEdit 純值/標題路徑
+ * 與值-格式化路徑** 消費,避免 InlineEdit 自帶重複的 geometry cva〔M17 消重〕)。2026-10-21 C1 甲之後
+ * `<Control mode="view">` 自己的 view×default 左側是 0(值齊標籤),本 helper 只給 InlineEdit 用。
  *
  * 回傳「edit 幾何減 chrome」的排版盒:
- *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落 edit 值位置)
+ *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落標籤左緣)
  *   - 單行:`min-h-[var(--field-height-N)]` N∈{sm,md,lg} + `items-center`(垂直置中於 field 高度,= edit 單行)
  *   - 多行:`items-start` + `py-2`(頂對齊 + 上下內距,**= Textarea edit `py-2`**,textarea.tsx base;
  *     read↔edit 零跳)。⚠️ py-2 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
  *     機械鎖(Textarea py 一改即紅)。
  *
- * 值-格式化路徑(Select→Tag / Date / avatar)**不用**此 helper —— 直接委派 `<Control mode="view">`,
- * 幾何 + 內部間距皆由控件 view×default 提供(read=edit 同一顆 → 天生一致)。
+ * 值-格式化路徑(Select→Tag / Date / avatar)同樣用此 helper **包住** `<Control mode="view">`(inline-edit.tsx
+ * 委派分支;委派控件 view 左側皆 0 → 包住後統一 field-px),內部間距仍由控件 view mode 提供。
  */
 export const fieldViewGeometry = (size: 'sm' | 'md' | 'lg', multiline?: boolean): string =>
   cn(

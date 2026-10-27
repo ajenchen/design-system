@@ -14,8 +14,8 @@
 //
 // ── Model A(2026-07-16 round16,user GO)──────────────────────────────────────
 // InlineEdit **不自帶 geometry cva**(消 M17 重複):
-//   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">`,幾何 + 內部間距
-//     皆由控件 view×default 提供(read=edit 同一顆 → 天生一致、多 tag/avatar 間距零偏移)。
+//   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">` 取格式化與內部間距,
+//     外包 `fieldViewGeometry`(委派控件 view 左側皆 0 → 統一 field-px;見下方委派分支)→ 多 tag/avatar 間距零偏移。
 //   - 純值 / 標題 `<Tag as="h1">` → 套 `fieldViewGeometry(size, multiline)` helper(= view×default 幾何 SSOT)。
 //   InlineEdit 本體只給:`-mx`(orientation-aware,拉到欄左緣,= 上方 read-view 負邊距對照)+ hover bg + focus 藍框 + 隱形 Pressable。
 //   read↔edit 零跳 = view 與 edit 同一顆控件、只差 chrome。
@@ -81,7 +81,7 @@ export interface InlineEditProps<T = string> {
   /**
    * 是否可編輯(預設 true)。false → view 態無 hover 入口、無藍框、不可點進 edit(對齊世界級就地編輯
    * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。
-   * 永久唯讀資料 → 用 `<Control mode="view">` 或此 prop false;不用 disabled。
+   * 永久唯讀值何時用此 prop 見 inline-edit.spec.md「editable 閘」;不用 disabled。
    */
   editable?: boolean
   /** 欄位人類可讀名稱 —— 組 view 按鈕 aria-label(「編輯 {label}」)+ 控件 aria-label */
@@ -279,7 +279,7 @@ function InlineEditImpl<T = string>(
 
   // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
   //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
-  //     view 委派控件在 `surface='inline-edit'` 下 px 統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
+  //     view 委派控件被 fieldViewGeometry 包住、左內距統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
   //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
   //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
   //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A

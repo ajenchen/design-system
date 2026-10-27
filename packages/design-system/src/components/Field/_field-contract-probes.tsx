@@ -4,10 +4,21 @@
 // 挑到只放 probe 的那一個時,整頁「Field/展示」文件只剩 probe、側欄也把它當 test-only 藏掉(2026-10-13 獨立驗證抓到)。
 // 慣例同 `AppShell/_demo-helpers.tsx`(`_` 前綴 = demo / private helper,naming-structure-invariant R2)。
 import * as React from 'react'
+import { CircleDot, Globe } from 'lucide-react'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
+import { Input } from '@/design-system/components/Input/input'
+import { NumberInput } from '@/design-system/components/NumberInput/number-input'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
+import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
+import { TimePicker } from '@/design-system/components/TimePicker/time-picker'
+import { LinkInput } from '@/design-system/components/LinkInput/link-input'
+import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { Switch } from '@/design-system/components/Switch/switch'
+import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
+import { Field, FieldLabel } from './field'
 
 // ── 欄位內搜尋讓位 × 欄寬(test-only 契約 probe,2026-10-07 待辦總帳 K4 驗證回報;2026-10-13 加 K6 / K7) ──────────────────────
 // 欄位上用文字畫的值(只選「不限」、PeoplePicker 多人只選 1 位的名字)打開時讓位給欄位內搜尋框;讓位**不改欄寬**——
@@ -82,6 +93,62 @@ export function InlineSearchYieldWidthProbe() {
         <div className="w-48">
           <Combobox width="hug" options={yieldCategoryOptions} value={tagsHugNarrow} onChange={setTagsHugNarrow} aria-label="商品類別(依內容寬,窄容器)" />
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── 純顯示齊標籤 × 兩種標籤位置(test-only 契約 probe,2026-10-27 C1 甲)──────────────────────────────────────────
+// 18 種 `<Field mode="view">` 純顯示 × 標籤在上 / 標籤在左:值的第一個可見元素左緣 = 控件欄左緣(標籤在上時 = 標籤左緣),
+// 值的第一行中線 = 控件欄頂 + field-height / 2(RadioGroup 修前高 5.5 / lg 7.5px)。規則住 field-controls.spec.md
+// 「軸一 view mode」(user 2026-10-21 C1 甲);閘 `scripts/probe-inline-edit-align.mjs` 逐格量(`data-view-case` 是量具找格子的錨)。
+// 長相與既有範例(Field 展示「欄位狀態連動」、各控件「四模式」)相同,沒有新畫面,所以 test-only(story-rules「Technical probe visibility」)。
+const viewPriority = [
+  { value: 'high', label: '高' },
+  { value: 'medium', label: '中' },
+]
+const viewStatus = [
+  { value: 'doing', label: '進行中', tagVariant: 'blue' },
+  { value: 'done', label: '已完成', tagVariant: 'green' },
+]
+const viewTopics = [
+  { value: 'design', label: '設計' },
+  { value: 'research', label: '研究' },
+  { value: 'ops', label: '營運' },
+]
+const viewPeople: PersonValue[] = [{ name: '王小明' }, { name: '林美華' }]
+const viewCases: { key: string; label: string; control: React.ReactNode }[] = [
+  { key: 'input', label: '專案名稱', control: <Input value="官網改版" onChange={() => {}} /> },
+  { key: 'input-icon', label: '網域', control: <Input startIcon={Globe} value="acme.com" onChange={() => {}} /> },
+  { key: 'input-empty', label: '備註', control: <Input value="" onChange={() => {}} /> },
+  { key: 'number', label: '數量', control: <NumberInput value={42} onChange={() => {}} /> },
+  { key: 'textarea', label: '需求說明', control: <Textarea value={'首頁改版與會員中心\n第二期加上多語系'} onChange={() => {}} /> },
+  { key: 'select', label: '優先級', control: <Select options={viewPriority} value="high" /> },
+  { key: 'select-tag', label: '狀態', control: <Select display="tag" options={viewStatus} value="doing" /> },
+  { key: 'select-renderer', label: '進度', control: <Select options={viewStatus} value="doing" selectedItemRenderer={(o) => <span className="inline-flex items-center gap-1"><CircleDot size={16} aria-hidden />{o.label}</span>} /> },
+  { key: 'combobox', label: '主題', control: <Combobox options={viewTopics} value={['design', 'research']} /> },
+  { key: 'date', label: '截止日', control: <DatePicker value="2026-06-20" onChange={() => {}} /> },
+  { key: 'date-range', label: '活動期間', control: <DatePicker.Range value={['2026-06-01', '2026-06-20']} onChange={() => {}} /> },
+  { key: 'time', label: '開始時間', control: <TimePicker value="09:30" onChange={() => {}} /> },
+  { key: 'link', label: '官網', control: <LinkInput value="https://acme.com" onChange={() => {}} /> },
+  { key: 'person', label: '負責人', control: <PeoplePicker value={viewPeople[0]} people={viewPeople} /> },
+  { key: 'people', label: '審核人', control: <PeoplePicker value={viewPeople} people={viewPeople} /> },
+  { key: 'checkbox', label: '同意條款', control: <Checkbox checked /> },
+  { key: 'switch', label: '已啟用', control: <Switch checked /> },
+  { key: 'radio', label: '付款方式', control: <RadioGroup value="card"><RadioGroupItem value="card" label="信用卡" /><RadioGroupItem value="cash" label="貨到付款" /></RadioGroup> },
+]
+export function ViewAlignmentProbe() {
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div className="grid grid-cols-3 gap-[var(--layout-space-loose)] max-w-3xl" data-view-orientation="vertical">
+        {viewCases.map((c) => (
+          <Field key={c.key} mode="view" data-view-case={c.key}><FieldLabel>{c.label}</FieldLabel>{c.control}</Field>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-3xl" data-view-orientation="horizontal">
+        {viewCases.map((c) => (
+          <Field key={c.key} mode="view" orientation="horizontal" labelWidth="88px" data-view-case={c.key}><FieldLabel>{c.label}</FieldLabel>{c.control}</Field>
+        ))}
       </div>
     </div>
   )

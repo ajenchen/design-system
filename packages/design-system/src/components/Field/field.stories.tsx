@@ -17,7 +17,7 @@ import { Select } from '@/design-system/components/Select/select'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Rating } from '@/design-system/components/Rating/rating'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { InlineSearchYieldWidthProbe } from './_field-contract-probes'
+import { InlineSearchYieldWidthProbe, ViewAlignmentProbe } from './_field-contract-probes'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/展示',
@@ -796,4 +796,11 @@ export const InlineSearchYieldWidthContract: Story = {
   name: '欄位內搜尋讓位 × 欄寬驗證',
   tags: ['test-only'],
   render: () => <InlineSearchYieldWidthProbe />,
+}
+
+// ── 純顯示齊標籤 × 兩種標籤位置(test-only 契約 probe,2026-10-27 C1 甲;說明與閘寫在 `_field-contract-probes.tsx`)──
+export const ViewAlignmentContract: Story = {
+  name: '純顯示齊標籤驗證',
+  tags: ['test-only'],
+  render: () => <ViewAlignmentProbe />,
 }

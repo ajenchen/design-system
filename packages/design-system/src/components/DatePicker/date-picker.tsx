@@ -6,7 +6,7 @@ import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
@@ -564,13 +564,14 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       )
     }
 
-    // readonly / disabled
+    // readonly / disabled(唯讀 = 可 Tab、不可開,field-controls.spec.md「Focus 行為」readonly 那段)
     if (!isEditable) {
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, width, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
+          {...readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel: accessibleName, labelledBy: ariaLabelledByProp ?? fieldCtx?.labelId })}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
           {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
@@ -1128,7 +1129,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       )
     }
 
-    // readonly / disabled view — plain wrapper,no popover
+    // readonly / disabled view — plain wrapper,no popover(唯讀 = 可 Tab、不可開,field-controls.spec.md「Focus 行為」readonly 那段)
     if (!isEditable) {
       return (
         <div
@@ -1136,6 +1137,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, width, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
+          {...readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel: (props as { 'aria-label'?: string })['aria-label'], labelledBy: fieldCtx?.labelId })}
           {...props}
         >
           {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}

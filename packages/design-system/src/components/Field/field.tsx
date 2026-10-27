@@ -361,6 +361,9 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
     const required = requiredProp ?? ctx?.required ?? false
     const disabled = ctx?.disabled ?? false
     const htmlFor = htmlForProp ?? ctx?.id
+    // 純顯示(`<Field mode="view">`)底下沒有輸入框可對:`<label for>` 指向不存在的控件 = a11y 錯(axe label 類規則),
+    // 改渲 span(同 id,控件的 aria-labelledby 照樣接得到;Salesforce 檢視模式同做法:label → span)。
+    const isViewMode = ctx?.mode === 'view'
     const isHorizontal = ctx?.orientation === 'horizontal'
     const controlLayout = ctx?.controlLayout ?? 'inline'
     const size: FieldSize = ctx?.size ?? 'md'
@@ -399,11 +402,12 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         ? { paddingTop: `calc((${FIELD_HEIGHT_VAR[size]} - 1lh) / 2)` }
         : undefined
 
+    const LabelTag = (isViewMode ? 'span' : 'label') as 'label'
     return (
-      <label
+      <LabelTag
         ref={ref}
         id={ctx?.labelId}
-        htmlFor={htmlFor}
+        htmlFor={isViewMode ? undefined : htmlFor}
         className={cn(
           FIELD_TEXT_CLASS,
           'font-normal select-none',
@@ -449,7 +453,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
             </Tooltip>
           )}
         </span>
-      </label>
+      </LabelTag>
     )
   }
 )
