@@ -154,7 +154,7 @@ export const LayoutRule: Story = {
               {options.map(o => <Chip key={o} value={o}>{labels[o]}</Chip>)}
             </ChipGroup>
           </div>
-          <ExampleCaption>↑ 新聞網站的分類 toolbar — 固定高度,滑動看更多</ExampleCaption>
+          <ExampleCaption>↑ 技術文章列表上方的框架篩選 toolbar — 固定高度,滑動看更多</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -166,7 +166,7 @@ export const LayoutRule: Story = {
               {options.map(o => <Chip key={o} value={o}>{labels[o]}</Chip>)}
             </ChipGroup>
           </div>
-          <ExampleCaption>↑ ListView 工具列 — 單行 + ⋯ 展開全部選項</ExampleCaption>
+          <ExampleCaption>↑ 技術文章列表工具列的框架篩選 — 單行 + ⋯ 展開全部選項</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -176,7 +176,7 @@ export const LayoutRule: Story = {
 // ── 選中視覺 ─────────────────────────────────────────────────────────────
 
 export const SelectedStyleRule: Story = {
-  name: '選中狀態：文字 + 邊框 同染，不用背景強調',
+  name: '選中狀態：文字與邊框同染，不用背景強調',
   render: () => (
     <TutorialPage>
       <TutorialRule

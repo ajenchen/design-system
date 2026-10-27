@@ -85,7 +85,7 @@ export interface TagProps
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
   /**
-   * 2026-05-15 Q3 真 SSOT fix(per user verbatim「同空間兩判斷點」+「不要冰山一角」):
+   * 2026-05-15 Q3 真 SSOT fix(per user 指出同空間兩判斷點、要求不要冰山一角):
    * Tag 寬度由 parent constrain,不套預設 max-w-40(160px)。用於 cell-as-input narrow cell
    * (< 160px)時 Tag fit cell 寬度 + truncate ellipsis,而非 160px 後被 cell `overflow-hidden`
    * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。Default false 保 backward compat
@@ -203,7 +203,7 @@ function TagInner(
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
       data-tag-root=""
-      // 截斷時條件性可 focus(2026-07-06 user 拍板「確認世界級有這樣做就做」——APG Tooltip
+      // 截斷時條件性可 focus(2026-07-06 user 拍板:確認世界級有這樣做就做 ——APG Tooltip
       // pattern 原文:tooltip 在元素「收到鍵盤焦點」或 hover 時顯示,trigger 可 focus 是
       // W3C 官方 pattern 前提;Radix Tooltip focus-open 自動生效 → 鍵盤 Tab 到即見全文。
       // 未截斷不入 tab 序(維持 tag.spec「靜態 Tag 不取得 focus」預設,不汙染 tab order)。
@@ -239,7 +239,7 @@ function TagInner(
     </div>
   )
 
-  // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md:49「永遠 wrap」+ :55「❌ 條件 wrap」canonical
+  // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md「`open` 控制而非條件 wrap(canonical)」與禁止事項的條件 wrap 那條
   // + useTruncated 家族;tooltip.principles.stories.tsx#NeedsTooltipRule「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
   // 未截斷 open={false} → tooltip 靜默(TooltipTrigger asChild 只把 handler/data-state 合併到 tag div,零多餘 DOM、
   // 視覺與裸 tag 等價,pixel-identical)。always-wrap 保 tag div 生命週期穩定 → isTruncated false→true 不 remount:

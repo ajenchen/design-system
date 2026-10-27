@@ -85,7 +85,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 `clearable`(2026-08-05 加)機械轉發 wrapped Select(single)/ Combobox(multi)——X 的渲染、位置與清空行為 SSOT 在基座與 family canonical,本元件不另定義:
 
-- **幾何**:有值時 clear X 在 ChevronDown 左(`../Field/field-controls.spec.md`「下拉箭頭與類型身份 indicator」段)
+- **幾何**:有值時 clear X 在 ChevronDown 左(`../Field/field-controls.spec.md`「下拉箭頭（Select / Combobox）與類型身份 indicator」段)
 - **單選**:清除後回 placeholder 態(`../Select/select.spec.md`「Clearable」);wrapper 把基座 clear 的空字串映射為 `onChange([])`,不進 people 回查(fallback 會產生空名假人員)
 - **多選**:clear all 一次清除所有已選人員(`../Combobox/combobox.spec.md`「全部清除」),與 per-chip 移除並存
 - **何時開**:繼承 select.spec.md「何時開 clearable」判準——「無選擇是有效狀態」(選填人員欄位如觀察者 / 可清的人員 filter)開;必須有人(assignee 必填)不開
@@ -245,7 +245,7 @@ interface PersonData {
 ```
 
 - **簡單用 string**：只有名字（fallback 顯示 initials）
-- **完整物件 `PersonData`**：name + avatar + presence 狀態 + 狀態訊息 + 員工 ID + 自訂欄位 + profile 跳轉（展示完整 ProfileCard，對齊 `avatar.spec.md`「person avatar hover → ProfileCard」DS-wide canonical；SSOT 型別見 `person-display.tsx` PersonData）
+- **完整物件 `PersonData`**：name + avatar + presence 狀態 + 狀態訊息 + 員工 ID + 自訂欄位 + profile 跳轉（展示完整 ProfileCard，對齊 `avatar.spec.md`「Avatar HoverCard 原則(DS-wide canonical,必遵守)」；SSOT 型別見 `person-display.tsx` PersonData）
 
 ---
 
@@ -326,7 +326,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - Tab / Shift+Tab(picker 開著)— **single**(包 `<Select searchable>`):選定反白那一位 → 收起 → 焦點走到觸發欄位的下一個 / 上一個可 Tab 元素;**multi**(包 `<Combobox>`):行為不變,預設 panel-top 搜尋時 Tab 在面板裡繞圈(搜尋框 → 清單 → 全選),`searchIn='trigger'` 時焦點在欄位內、Tab 照 DOM 順序走(觸發欄位已是頁面最後一格時會走進浮層,2026-09-30 實測)。規則單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(W3C 出處在該處;來源 = 待辦總帳 B11)
 - →(選單清單裡的頭像名片)— 每一位的頭像(名片觸發點)**不在 Tab 路上**(09-25 前多選浮層 4 人 = 4 站);多選浮層內搜尋時,插入點在字尾按 `→` 進反白那一位的頭像(名片浮出),`←` 回搜尋框;頭像上 ↑↓ / Home / End 回搜尋框並移反白、Tab / Shift+Tab 一下離開清單、Enter / Space **不**選這一位。2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;按鍵表住 `../Command/command.spec.md`「A11y 預設」(鍵盤路由 Command 提供,本元件不另寫)。欄位裡已選人員的頭像 / 移除 ×(stack)照 Combobox Tag 移除契約(`../Combobox/combobox.spec.md`「Tag 操作」),不在此列;「+N」浮出清單裡的人員 Tag × 也是同一條:本元件的 `renderHiddenTag` 用 Combobox 給的第二個參數 `onRemove` 移除(2026-09-30 前自己呼叫 `onChange`,跳過焦點接力 → 焦點掉到 body;搜尋框握著焦點時按它,焦點也被搬走,實測)
 
-**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
+**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框，按照畫框原則在此情境是要畫成外框的嗎？」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
 移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`(實作全 DS 一支 `../../lib/collection-removal-focus.ts`,2026-10-01)。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 

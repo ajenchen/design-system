@@ -251,7 +251,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     }
     const root = stackContainerRef.current
     if (!root) return
-    // 2026-05-15 ROOT CAUSE FIX(user 抓「之前說的問題都還是存在」):
+    // 2026-05-15 ROOT CAUSE FIX(user 指出之前說的問題都還是存在):
     // stackContainerRef 透過 mergedStackRef 接 Combobox forwarded ref → root **就是** [role=combobox]
     // div 自己。原 `root.querySelector('[role=combobox]')` 不找 self 永遠 null → trigger=null →
     // tagArea=null → available=0 → setStackVisibleCount(0) → 整 stack 全 overflow → fallback 到
@@ -513,7 +513,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // `avatar-stack-overflow` primitive deterministic formula(取代 Combobox DOM offsetWidth-based
   // useOverflowCount + 60px fallback 不 deterministic;60px 頂替 2026-10-13 已拆,useOverflowCount 改住 ../OverflowIndicator/overflow-tag-list.tsx),pass override 給 Combobox bypass internal
   // measurement。`MultiPersonDisplay`(view path)同 primitive,view + edit 結果一致。
-  // 對齊 user verbatim SSOT「同 cell width 同 overflow 判斷」+ codex Q3 consensus shared primitive。
+  // 對齊 user 要求的 SSOT:同 cell width 同 overflow 判斷 + codex Q3 consensus shared primitive。
   const handleMultiChange = (next: string[]) => {
     onChange?.(next.map(name => findPerson(directory, name)))
   }
@@ -618,7 +618,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       {...(rest as any)}
       tagRenderer={(item, onRemove, state) => {
         const p = resolvePerson(findPerson(directory, item.value))
-        // 2026-05-12 Q2 fix(user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」):
+        // 2026-05-12 Q2 fix(user 拍板:multi 只選 1 人時 trigger = avatar + name,跟 single mode 同):
         // selectedNames.length === 1 → PersonDisplay(avatar + name)代替 PersonAvatarTag(avatar only)。
         // SSOT 對齊 PeoplePicker single mode line 201 selectedItemRenderer。多選 1 人時視覺等同單選,
         // 只在 length > 1 才走 stack(各 avatar 純 chip)。

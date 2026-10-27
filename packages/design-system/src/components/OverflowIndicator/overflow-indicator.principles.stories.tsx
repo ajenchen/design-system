@@ -29,7 +29,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="Combobox 標籤溢出">Combobox 標籤溢出</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N">PR reviewer 頭像疊合 +N(只顯前 3 位)</StoryLink>
+            <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像疊合與 +N">PR reviewer 頭像疊合 +N(只顯前 3 位)</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位">DataTable 人員欄位</StoryLink>
@@ -62,15 +62,15 @@ export const CompositionRules: Story = {
     <TutorialPage className="max-w-prose">
       <p>OverflowIndicator 是顯示「還有 N 個沒列出來」的 <code>+N</code> 小標籤,由下列幾種元件在內部使用(顯示前幾項 + 把剩下的折成 <code>+N</code>),不直接放在頁面程式碼裡:</p>
 
-      <TutorialRule title="Pattern 1 — Combobox 標籤溢出(單行模式)">
+      <TutorialRule title="Combobox 標籤溢出(單行模式)">
         <p>多選標籤太多、單行放不下 → <StoryLink kind="Design System/Components/Combobox/展示" name="四模式">Combobox</StoryLink> 內部使用 OverflowIndicator;hover <code>+N</code> 展開完整清單。對齊 GitHub 多標籤 / Linear 多指派人的做法。</p>
       </TutorialRule>
 
-      <TutorialRule title="Pattern 2 — 人員頭像疊合 +N">
-        <p>一群人只顯示前幾位、其餘折成 <code>+M</code>。目前由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像);未來規劃中的 Avatar 群組元件會把這段組合收進去。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
+      <TutorialRule title="人員頭像疊合 +N">
+        <p>一群人只顯示前幾位、其餘折成 <code>+M</code>。由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像)。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
       </TutorialRule>
 
-      <TutorialRule title="Pattern 3 — PeoplePicker 人員選擇欄位 +N">
+      <TutorialRule title="PeoplePicker 人員選擇欄位 +N">
         <p>人員選擇欄位選了多位、單行放不下 → PeoplePicker(<code>PersonDisplay</code>)內部使用 OverflowIndicator(圓形對齊頭像),hover <code>+N</code> 展開完整名單。對齊 Linear 多指派人 / Jira watchers 的做法。</p>
       </TutorialRule>
 

@@ -272,7 +272,7 @@ export interface OverflowTagListProps {
   wrap: boolean
   renderTag: (item: { value: string; label: string }, index: number) => React.ReactNode
   /**
-   * 2026-05-14 I4 fix(per codex M31 verdict + user 抓「display overflow 有 avatar / edit 無」):
+   * 2026-05-14 I4 fix(per codex M31 verdict + user 抓到 display overflow 有 avatar、edit 沒有):
    * Optional renderer for hidden items in `+N` overflow popover。Default fallback = `<Tag>{label}</Tag>`
    * (純文字 chip,backward-compat)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
    * (對齊 view path MultiPersonDisplay overflow popover Tag avatar SSOT)。
@@ -334,7 +334,7 @@ export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag,
   const hiddenItems = items.slice(visibleCount)
 
   // `<span className="contents">`:列表本身不產生盒子(Tag 與「+N」直接是容器的 flex 子項);它的父元素就是量寬的容器(useOverflowCount)。
-  // **量測 wrapper 必須是 flex 容器,不能是區塊盒**(2026-09-15 user 抓「sm 的 tag 沒垂直置中」,像素實測):
+  // **量測 wrapper 必須是 flex 容器,不能是區塊盒**(2026-09-15 user 抓到 sm 的 tag 沒垂直置中,像素實測):
   // 區塊盒的高度由繼承的字型行高決定(欄位 text-body = 21px),sm 的 Tag 只有 20px(h-5),行內的 Tag 對齊
   // 行盒基線、沉到底部 → tag 區 21.8px、tag 上隙 3.9 / 下隙 2.1。md/lg 的 Tag 是 24px ≥ 21,盒子被撐滿才看不出來。
   // flex 容器沒有行盒:高度 = Tag 高度,wrapper `items-center` 直接對 Tag 的盒子置中(sm 3/3、md 3/3、lg 5/5)。
@@ -343,7 +343,7 @@ export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag,
   return (
     <span ref={listRef} className="contents">
       {items.map((item, i) => (
-        // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
+        // 2026-05-14 I5 fix(per codex M31 verdict + user 抓到 avatar stack 堆疊方向不一致):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
         // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話

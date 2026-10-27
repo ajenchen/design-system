@@ -11,10 +11,13 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計原則',
   parameters: { layout: 'padded' },
+  // 範例的儲存成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -52,7 +55,7 @@ export const UsageGuidance: Story = {
                 <StoryLink kind="Design System/Components/Select/展示" name="四模式">四模式</StoryLink>
               </li>
               <li>
-                <StoryLink kind="Design System/Components/Select/展示" name="三種尺寸">尺寸與 Button 對齊</StoryLink>
+                <StoryLink kind="Design System/Components/Select/展示" name="三種尺寸">三種尺寸</StoryLink>
               </li>
               <li>
                 <StoryLink kind="Design System/Components/Select/展示" name="建立新選項">建立新選項</StoryLink>
@@ -79,7 +82,7 @@ export const UsageGuidance: Story = {
             title="❌ 多選:用 Combobox"
             note="Select 永遠單選。需要多選(categories、tags、assignees)必須用 Combobox"
           >
-            <Select aria-label="商品分類" options={categoryOptions} value="electronics" onChange={() => {}} />
+            <Select aria-label="商品分類" options={categoryOptions} defaultValue="electronics" />
             <ExampleCaption warn>↑ 需要「同時選 Electronics + Furniture」就不能用 Select</ExampleCaption>
           </TutorialRule>
 
@@ -89,8 +92,7 @@ export const UsageGuidance: Story = {
           >
             <Select aria-label="通知開關"
               options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
-              value="on"
-              onChange={() => {}}
+              defaultValue="on"
             />
             <ExampleCaption warn>↑ On/Off 用 Select → 多餘的 dropdown 互動、不如 Switch 直觀</ExampleCaption>
           </TutorialRule>
@@ -107,8 +109,7 @@ export const UsageGuidance: Story = {
                 { value: 'bank', label: '銀行轉帳(無手續費,1-2 工作日)' },
                 { value: 'cash', label: '貨到付款(手續費 NT$30,到貨時付)' },
               ]}
-              value="credit"
-              onChange={() => {}}
+              defaultValue="credit"
             />
             <ExampleCaption warn>↑ 付款方式是決策節點 + 需要對比手續費 / 處理時間 → 用 RadioGroup 讓選項全露</ExampleCaption>
           </TutorialRule>
@@ -123,8 +124,7 @@ export const UsageGuidance: Story = {
                 { value: 'active', label: '進行中' },
                 { value: 'done', label: '已完成' },
               ]}
-              value="active"
-              onChange={() => {}}
+              defaultValue="active"
             />
             <ExampleCaption warn>↑ Toolbar filter 放 Select → 佔空間、視覺重量比旁邊 Button 重</ExampleCaption>
           </TutorialRule>
@@ -179,16 +179,19 @@ export const ImmediateVsSubmitRule: Story = {
   render: () => {
     const [immediate, setImmediate] = React.useState('in_stock')
     const [draft, setDraft] = React.useState('electronics')
+    // 儲存 = 寫回並跳 Toast;取消 = 還原到上次儲存的值(稽核 L048:讓兩種時機的差別真的看得出來)
+    const [savedCategory, setSavedCategory] = React.useState('electronics')
+    const [looseDraft, setLooseDraft] = React.useState('electronics')
     return (
       <TutorialPage>
         <TutorialRule
           title="即時套用 — onChange 直接觸發副作用"
           note="Jira status、Linear priority、filter、theme 切換。改了立刻寫 DB / 送 API / 改 URL。onChange 通常呼叫 mutation 或 setState 更新父層。沒有「取消」的概念"
         >
-          <div>
-            <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Task status(改了立刻寫 DB)</p>
-            <Select aria-label="庫存狀態" display="tag" options={statusOptions} value={immediate} onChange={setImmediate} />
-          </div>
+          <Field>
+            <FieldLabel>庫存狀態</FieldLabel>
+            <Select display="tag" options={statusOptions} value={immediate} onChange={setImmediate} />
+          </Field>
           <ExampleCaption>↑ 視覺上是獨立的 inline control,旁邊沒有 submit button</ExampleCaption>
         </TutorialRule>
 
@@ -196,25 +199,26 @@ export const ImmediateVsSubmitRule: Story = {
           title="隨 form 送出 — onChange 只更新 local state"
           note="建立/編輯表單、對話框設定。onChange 寫進 React state,直到 submit button 被按才送出。有「取消」可回復"
         >
-          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+          {/* 表單版面同 Field 展示「表單驗證」:Field + 跟在後面的按鈕列,不另畫外框(稽核 L048)。
+              內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+          <div>
             <Field>
-              <FieldLabel>Category</FieldLabel>
+              <FieldLabel>商品分類</FieldLabel>
               <Select options={categoryOptions} value={draft} onChange={setDraft} />
             </Field>
-            {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
             <ButtonGroup className="mt-[var(--layout-space-loose)]">
-              <Button variant="primary">儲存</Button>
-              <Button variant="tertiary">取消</Button>
+              <Button variant="primary" onClick={() => { setSavedCategory(draft); toast({ variant: 'success', title: '商品分類已儲存' }) }}>儲存</Button>
+              <Button variant="tertiary" onClick={() => setDraft(savedCategory)}>取消</Button>
             </ButtonGroup>
           </div>
-          <ExampleCaption>↑ 包在 Form 容器內 + submit / cancel button,使用者清楚儲存時機</ExampleCaption>
+          <ExampleCaption>↑ 欄位後面跟著儲存 / 取消,使用者清楚儲存時機;按取消回到上次儲存的分類</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 讓使用者搞不清楚是哪種"
           note="最常見的失敗:inline 放一個 Select 但 onChange 只改 local state,旁邊卻沒有 submit button。使用者以為改了就套用,離開頁面才發現沒存。這是 DS 最常見的信任破壞點"
         >
-          <Select aria-label="商品分類" options={categoryOptions} value={draft} onChange={setDraft} />
+          <Select aria-label="商品分類" options={categoryOptions} value={looseDraft} onChange={setLooseDraft} />
           <ExampleCaption warn>↑ 沒有 Form 容器、沒有 submit button、又是獨立的 inline control——使用者無法判斷是即時還是要送出</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
@@ -223,7 +227,7 @@ export const ImmediateVsSubmitRule: Story = {
 }
 
 export const SearchableRule: Story = {
-  name: '可搜尋 開啟判斷',
+  name: '何時開啟搜尋',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -237,28 +241,26 @@ export const SearchableRule: Story = {
             { value: 'sku-8210', label: 'SKU-8210' },
             { value: 'sku-9104', label: 'SKU-9104' },
           ]}
-          value="sku-4837"
-          onChange={() => {}}
+          defaultValue="sku-4837"
         />
         <ExampleCaption>↑ 即使只有 3 個選項,產品代碼 label 仍需要 searchable</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="❌ 流暢自然語言 label:不開 searchable"
-        note="Electronics / Furniture / Food 這類 label 短清單一眼可掃(手機原生 select 另有 type-to-jump 直達;桌機自建 combobox 無逐字定位,但掃視已夠快)。多加 searchable 等於多一層不必要的互動"
+        note="Electronics / Furniture / Food 這類 label 短清單一眼可掃,掃視已夠快。多加 searchable 等於多一層不必要的互動"
       >
         <Select aria-label="商品分類"
           searchable
           options={categoryOptions}
-          value="electronics"
-          onChange={() => {}}
+          defaultValue="electronics"
         />
         <ExampleCaption warn>↑ 3 個自然語言 label 加 searchable → 使用者必須打字或再點擊才能選</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="次要啟發:數量 > 50 幾乎必開(但仍看 label 性質)"
-        note="100 個依字母排序的國家名不需要搜尋(自然語言掃視快,手機原生 select 還有 type-to-jump 直達),5 個產品代碼(SKU-4837)反而需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
+        note="100 個依字母排序的國家名不需要搜尋(自然語言掃視快),5 個產品代碼(SKU-4837)反而需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
       >
         <ExampleCaption>判斷優先序:label 性質 → 數量次要啟發</ExampleCaption>
       </TutorialRule>
@@ -284,7 +286,7 @@ export const NativeSelectRule: Story = {
           title="tag 模式只是把選中值畫成 Tag,行為跟 plain 一樣"
           note="tag 與 plain 的差別只在「選中值怎麼呈現」——tag 用一顆有顏色的 Tag,plain 用純文字。底層的開選單、選值、鍵盤行為兩種模式完全相同,都走上面那套依裝置切換的路徑。"
         >
-          <Select aria-label="庫存狀態" display="tag" options={statusOptions} value="in_stock" onChange={() => {}} />
+          <Select aria-label="庫存狀態" display="tag" options={statusOptions} defaultValue="in_stock" />
           <ExampleCaption>↑ 點這顆 Tag 會打開選單;桌機是自建浮層,手機是系統原生 picker</ExampleCaption>
         </TutorialRule>
       </TutorialPage>

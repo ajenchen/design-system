@@ -2,6 +2,8 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { within } from '@storybook/test'
 import { Tag } from './tag'
+import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta<typeof Tag> = {
   title: 'Design System/Components/Tag/展示',
@@ -20,24 +22,23 @@ export default meta
 type Story = StoryObj<typeof Tag>
 
 /* ── Avatar ── */
+// 人員頭像一律帶名片(avatar.spec.md「ALL person avatars」;稽核 M072):照 PeoplePicker 的寫法傳 <Avatar size={16} hoverCard>,名片用 story 共用樣本
 export const WithAvatar: Story = {
   name: '頭像',
+  parameters: { docs: { description: { story: 'Tag 內的頭像統一 16px(跟圖示一樣大),消費端不用指定尺寸;滑過人員頭像會浮出名片。' } } },
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)]">
-      {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
-      <div className="flex flex-wrap gap-1">
-        <Tag color="neutral" avatar={
-          <img src="https://i.pravatar.cc/32?u=alice" alt="" className="rounded-full object-cover" />
-        }>
-          Alice Chen
-        </Tag>
-        <Tag color="neutral" avatar={
-          <img src="https://i.pravatar.cc/32?u=bob" alt="" className="rounded-full object-cover" />
-        }>
-          Bob Lin
-        </Tag>
-      </div>
-      <p className="text-caption text-fg-muted">Tag 內部統一 avatar 為 16px（跟 icon 一致），消費端不用指定尺寸</p>
+    // @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own)
+    <div className="flex flex-wrap gap-1">
+      <Tag color="neutral" avatar={
+        <Avatar size={16} src="https://i.pravatar.cc/32?u=alice" alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: 'https://i.pravatar.cc/96?u=alice' })} />
+      }>
+        Alice Chen
+      </Tag>
+      <Tag color="neutral" avatar={
+        <Avatar size={16} src="https://i.pravatar.cc/32?u=bob" alt="Bob Lin" hoverCard={samplePersonCard({ name: 'Bob Lin', avatarSrc: 'https://i.pravatar.cc/96?u=bob', employeeNumber: 'EMP-1002' })} />
+      }>
+        Bob Lin
+      </Tag>
     </div>
   ),
 }
@@ -55,7 +56,6 @@ export const Dismissable: Story = {
             <Tag key={t} color="neutral" onRemove={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
           ))}
         </div>
-        {tags.length === 0 && <p className="text-caption text-fg-muted">全部移除了，重新整理頁面可恢復</p>}
       </div>
     )
   },

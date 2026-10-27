@@ -253,7 +253,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   unrestrictedValue = '__unrestricted__',
   optionsLoading = false,
   suggestions,
-  suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
+  suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫Suggestion之類的」);consumer override via suggestionsLabel prop
   size = 'md',
   align = 'start',
   minWidth,
@@ -352,7 +352,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     console.warn(`[SelectMenu] unrestrictedValue「${unrestrictedValue}」跟某個選項的 value 撞名了,改傳一個不會撞的 unrestrictedValue。`)
   }
   // 開發模式警告:開了「不限」卻一個可選選項都沒有 = 這個選單根本不給選,設定本身沒有意義
-  //(user 原話:「那就表示這個東西根本不給選啊,怪設計」)
+  //(user 原話:「那就表示這個東西根本不給選啊，怪設計」)
   if (process.env.NODE_ENV !== 'production' && unrestricted && multiple && !isRemote && options.length === 0) {
     console.warn('[SelectMenu] 開了 unrestricted 但一個選項都沒有 —— 只有「不限」可選的選單沒有意義,請確認選項來源。')
   }
@@ -449,7 +449,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
       onValueChange?.(clearSelection())
     } else {
       // 先把「不限」濾掉再交給 `applySelectAll`(2026-09-18):那支共用工具的語意是
-      // 「保留既有 + 追加未選」(`multi-select-ordering.ts:48-52`,回傳 `[...existing, ...unselected]`),
+      // 既有選取保留原順序、未選的依來源順序接在後(`multi-select-ordering.ts`,回傳 `[...existing, ...unselected]`),
       // 不濾的話「不限」會跟全部一般選項並存 —— 同時違反互斥與「全選只看一般選項」兩條。
       // **不改那支工具**:它是通用排序規則(對齊 Ant Transfer 的既有決議),別的使用者也在吃。
       // 同上:關著時不過濾,這條路徑對既有行為完全零影響。
@@ -614,7 +614,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         >
           {searchable && (
             // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
-            // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
+            // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓到 Command 跟 SelectMenu 不同一套)。
             // 搜尋列不為「選項載入」轉圈(2026-09-09 user 拍板:選項載入的指示只在選單內;Polaris Autocomplete loading 時 TextField 不轉)
             <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           )}

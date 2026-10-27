@@ -49,7 +49,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 **設計規則**:
 
-- **型別 = allowlist,不 extends 全開(2026-07-14 API 策展 D,user 拍板「全部收窄」)**:`SelectProps` 只 `Pick<>` 兩路徑皆有實作出口的原生屬性(`id`/`className`/`style`/`name`/`form`/`required`/`disabled`/`onFocus`/`onBlur`/`onKeyDown`/`aria-label`/`aria-describedby`/`aria-errormessage` + mobile-only `autoFocus`/`autoComplete` + `data-*` passthrough);「型別承諾 ≠ 實作出口」者(`multiple`/`aria-labelledby`/`tabIndex` 等)不進型別,需要時先接線(兩路徑等效)再入表 — 完整盤點依據見 `select.tsx` SelectProps docblock
+- **型別 = allowlist,不 extends 全開(2026-07-14 API 策展 D,user 拍板全部收窄)**:`SelectProps` 只 `Pick<>` 兩路徑皆有實作出口的原生屬性(`id`/`className`/`style`/`name`/`form`/`required`/`disabled`/`onFocus`/`onBlur`/`onKeyDown`/`aria-label`/`aria-describedby`/`aria-errormessage` + mobile-only `autoFocus`/`autoComplete` + `data-*` passthrough);「型別承諾 ≠ 實作出口」者(`multiple`/`aria-labelledby`/`tabIndex` 等)不進型別,需要時先接線(兩路徑等效)再入表 — 完整盤點依據見 `select.tsx` SelectProps docblock
 - **單向 projection,非第二 SSOT(M17)**:mirror 的 value 恆來自既有 canonical state(`useControllable`);唯一寫回通道是瀏覽器 autofill,且僅在 match 既有非 disabled option 時經 canonical setter 生效(MUI SelectInput 同款 guard)
 - **空值 = `value=''`**:無選擇時送空字串,**不** default 第一項——採 MUI 式**單一 hidden input**而非 Radix BubbleSelect 完整 `<select>` option tree(後者無空 option 時 default 第一項,radix-ui/primitives issue #3521 documented footgun;2026-07-13 codex 辯論 verdict)
 - **原生 required 僅收顯式 `required` prop**(裸表單 opt-in):`<Field required>` 的 context required 續走 `aria-required` + `useFormValidation`(RHF)方法論(`form-validation.spec.md` 規則 1-9),不對既有 Field+RHF consumer 注入瀏覽器原生 bubble
@@ -80,7 +80,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 ### 歷史
 
-原刻意 controlled-only(「內部狀態複雜易 race」);**2026-05-21 D3 audit** per Dim 26 verify + user 拍板(「決策三照妳建議」)補 `defaultValue` + 互斥 signal — NativeSelect / CustomSelect 統一走既有 `useControllable` hook,`valueProp !== undefined` 為 controlled signal(M17 SSOT)。
+原刻意 controlled-only(「內部狀態複雜易 race」);**2026-05-21 D3 audit** per Dim 26 verify + user 拍板(決策三照 AI 建議)補 `defaultValue` + 互斥 signal — NativeSelect / CustomSelect 統一走既有 `useControllable` hook,`valueProp !== undefined` 為 controlled signal(M17 SSOT)。
 
 ### Open-pair 例外:open 軸維持 uncontrolled-only(2026-06-12 deep-audit R2 補)
 

@@ -79,6 +79,12 @@ function OverflowCount({ count, className }: { count: number; className: string 
 }
 
 /**
+ * tag 形「+N」字的左右內距:指示器與量尺共用這一個值,兩邊才逐像素同寬。值 = 已發布版(ec7466f5 的 `<span className="px-1">+{count}</span>`)原樣保留;
+ * 規格沒寫這個值,不另補規格(layoutSpace.spec.md 規則 6 / F-S8:既有畫面不改)。
+ */
+const TAG_COUNT_INSET_X = 'px-1'
+
+/**
  * @internal「+N」的量尺(2026-10-13):與 `OverflowIndicator` 的觸發點同一套外觀、同一個字,但不能互動 —— 不可聚焦、沒有浮出清單、讀屏略過。
  * 給「先量『+N』多寬、再決定收幾個」的呼叫端用(`./overflow-tag-list.tsx` `useOverflowCount`;Combobox 與 AgentPanel 輸入盒附件列經它):沒有東西要收的時候,它代替指示器留在 DOM 裡讓呼叫端量,
  * 由呼叫端把它藏起來(不佔位、看不見)。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;combobox.spec.md「單行溢出」)。
@@ -86,7 +92,7 @@ function OverflowCount({ count, className }: { count: number; className: string 
  */
 export function OverflowIndicatorMeasure({ count, shape = 'circle', size = 'md' }: { count: number; shape?: 'circle' | 'tag'; size?: 'sm' | 'md' | 'lg' }) {
   return shape === 'tag' ? (
-    <span aria-hidden className={triggerClassName('tag', size)}><OverflowCount className="px-1" count={count} /></span>
+    <span aria-hidden className={triggerClassName('tag', size)}><OverflowCount className={TAG_COUNT_INSET_X} count={count} /></span>
   ) : (
     <span aria-hidden className={triggerClassName('circle', size)} style={circleSizeStyle(size)}><OverflowCount className="relative" count={count} /></span>
   )
@@ -164,7 +170,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         style={style}
         {...props}
       >
-        <OverflowCount className="px-1" count={count} />
+        <OverflowCount className={TAG_COUNT_INSET_X} count={count} />
       </span>
     ) : (
       // circle = 頭像堆疊的尾端(avatar.spec.md「頭像堆疊(疊在一起時)」)。

@@ -29,7 +29,7 @@ const GAP = TAG_ROW_GAP_PX
 // 非-wrap tag 列 clip SSOT(3-path 共用:OverflowTagList base / readonly / custom edit;native edit 2026-09-18 隨原生觸控路徑移除):
 // 2026-05-18 F2 以 overflow-hidden 修「窄容器 tags 水平越界蓋 chevron / +N」,但雙軸 hidden 副作用
 // 是垂直同裁 — PeoplePicker stack hover 的 AvatarDismissOverlay(`-top-px` + 2px ring,
-// person-display.tsx v15.15,早於 F2)上緣被切(user 2026-08-05 抓「曾經沒有這問題」= F2 前確實沒有)。
+// person-display.tsx v15.15,早於 F2)上緣被切(user 2026-08-05 指出曾經沒有這問題 = F2 前確實沒有)。
 // 雙贏 = overflow-x-clip:水平維持 clip(F2 bug 不回歸;`clip` 不建 scroll container),垂直 visible
 // (overlay / avatar ring 完整)。**不可**改 overflow-x-hidden:單軸 hidden 令另一軸 visible 計算成
 // auto → 生 scroll container,垂直反而可捲。
@@ -65,12 +65,12 @@ export function findInlineSearchMirror(root: ParentNode | null | undefined): HTM
  * Combobox option schema(2026-05-10 post-Issue-4 audit unify):**explicit extends
  * SelectMenuOption(primitive SSOT)** — 避免重蹈先前 PeoplePicker 改壞的 wrapper schema drift。
  *
- * Why `extends SelectMenuOption`(per user 「全盤檢查避免下次又改壞或是偏移」要求):
+ * Why `extends SelectMenuOption`(per user 要求全盤檢查,避免下次又改壞或偏移):
  *   原 `interface ComboboxOption { value: string; label: string }` 是 weak schema,跟 Select 的
  *   `ComboboxOption`(同名)雙重宣告但欄位不同 → TypeScript 不抓(同名 interface 在不同 file
  *   各 export,consumer import 到哪個版本看 import path)→ schema drift。
  *   PeoplePicker multi-mode 走 Combobox 路徑,dropdown menu rows lose avatar / description —
- *   user 看到「single mode 有 avatar / multi mode 沒 avatar」inconsistency。
+ *   user 看到 single mode 有 avatar、multi mode 沒 avatar 的不一致。
  *
  * Fix(post-Issue-4 follow-up):extend SelectMenuOption → 全 primitive surface 自動繼承。
  * Wrapper-only field 都沒有 → empty body interface(future 加 wrapper-only field 加在此處)。
@@ -409,7 +409,7 @@ function ReadonlyMultiSelect({
         // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):TAG_ROW_CONTAINER_CLASS(`relative` =「+N」量尺的定位容器、
         // `isolate` = Tag 的疊放值只在這一列裡比;OverflowTagList 檔頭)。換行時不經 OverflowTagList 的單行路徑,沒有疊放值也沒有量尺
         hasTags && !wrap && TAG_ROW_CONTAINER_CLASS,
-        // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 451 行):
+        // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板決策 6 選 a + codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 451 行):
         // readonly/disabled path 對齊 L293 view wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
@@ -665,7 +665,7 @@ function CustomCombobox({
       // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:66)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
-        // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md:147「control 第一行內容的中線都錨在 field-height/2」)
+        // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)
         wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
@@ -724,7 +724,7 @@ function CustomCombobox({
         if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
         if (e.key === 'Escape') setOpen(false)
       }}>
-      {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
+      {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板決策 6 選 a + codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
           CustomCombobox edit non-wrap tagArea 對齊當時 view + readonly + native edit 已 ship 的 overflow-hidden fix(M10 當時四條一起對齊)。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。現況:native edit 2026-09-18 隨原生觸控路徑移除,剩三條共用檔頭 tagRowOverflowClass。 */}
       {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
@@ -764,7 +764,7 @@ function CustomCombobox({
         ) : inlineSearch ? null : (
           /* 2026-05-12 Stream C Issue 3 fix(codex Q3 Cluster C):placeholder span 必 flex-1 min-w-0
              truncate,narrow container 時單行省略(對齊 Combobox text-tag truncate canonical)。
-             原 hardcode wraps in narrow trigger → user 抓「placeholder 文字 wrap multi-line」。
+             原 hardcode wraps in narrow trigger → user 抓到 placeholder 文字換成多行。
              欄位內有搜尋框時,同一句提示由搜尋框自己的 placeholder 顯示(見下方),這顆不渲。 */
           <span className="flex-1 min-w-0 truncate text-fg-muted">{placeholder ?? emptyPlaceholder}</span>
         )}
@@ -798,7 +798,7 @@ function CustomCombobox({
             searchCellIdle ? 'flex-[1_1_0%] min-w-0' : 'flex-auto')}
             style={searchCellIdle ? { marginLeft: -tagAreaGap } : undefined}>
             {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它)。
-                空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md:215「寬度軸」;
+                空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md「寬度軸」;
                 combobox.spec.md:191「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
             <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : (placeholder ?? emptyPlaceholder)}</span>
             {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
@@ -912,7 +912,7 @@ function CustomCombobox({
       size={size}
       open={open}
       onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
-      // 2026-05-12 Q3 fix(user 抓「inline-searchable 開浮層應出現 cursor」)— 跟 Select line 550
+      // 2026-05-12 Q3 fix(user 抓到 inline-searchable 開浮層應出現 cursor)— 跟 Select line 550
       // 同 SSOT pattern:preventDefault Radix default focus + 顯式 focus inline input → 開時
       // cursor 直接 visible,user 知道可 inline search。
       onOpenAutoFocus={searchIn === 'trigger' ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}

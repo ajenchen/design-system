@@ -35,7 +35,7 @@ const tagPadding = fieldTagInsetX
  * Select 用的 option schema(2026-05-10 Issue 4 + post-prune unify):**explicit extends
  * SelectMenuOption(primitive SSOT)** — 任何 SelectMenuOption 加 field 都自動繼承,不會 drift。
  *
- * Why `extends SelectMenuOption`(per user 「全盤檢查避免下次又改壞或是偏移」要求):
+ * Why `extends SelectMenuOption`(per user 要求全盤檢查,避免下次又改壞或偏移):
  *   - **schema SSOT 機械強制**:TypeScript inheritance 跟著 primitive 走,wrapper consumer 永遠
  *     拿得到 primitive 所有 surface field
  *   - **Hook lint**(M30 `check_wrapper_primitive_schema_drift.sh`):grep `interface .*Option`
@@ -61,7 +61,7 @@ export interface SelectGroupConfig {
 // ── Types ───────────────────────────────────────────────────────────────────
 
 /**
- * 原生 `<select>` 屬性 allowlist(2026-07-14 API 策展 D,user 拍板「全部收窄」)。
+ * 原生 `<select>` 屬性 allowlist(2026-07-14 API 策展 D,user 拍板全部收窄)。
  *
  * 舊契約 `extends Omit<SelectHTMLAttributes, ...>` 型別承諾**全部**原生 select 屬性,但桌機
  * 自訂 combobox(div trigger + hidden input mirror)只有部分真生效 — 其餘 silent no-op /
@@ -119,7 +119,7 @@ export interface SelectProps
   groups?: SelectGroupConfig[]
   /** Controlled value(consumer 自管 state)。傳 `value` + `onChange` 表示 controlled mode。 */
   value?: string | null
-  /** Uncontrolled 初始值(2026-05-21 D3 audit add per user verbatim「決策三照妳建議」+「都給我做到好」)。
+  /** Uncontrolled 初始值(2026-05-21 D3 audit add per user 決策三照 AI 建議、並要求都做到好)。
    *  不傳 `value` 時 Select 自管 internal state,以 `defaultValue` 為初始值,選變更時 fire `onChange`
    *  callback 通知 consumer(但 state 仍歸 Select)。對齊 Radix Select(`defaultValue`)+ shadcn Input
    *  (`defaultValue`)+ React `<input>` dual-mode canonical。
@@ -165,7 +165,7 @@ export interface SelectProps
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
-   * Authority:`data-table.spec.md`「九之二、Cell action primitive 分類」+ `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
+   * Authority:`data-table.spec.md`「九之二、Cell action primitive 分類」+ `inline-action.spec.md`「Real case 表(所有 DS 用法一覽)」(DataTable body cell internal 列:自動繼承 Field family endAction)。
    * @default false
    */
   showDisplayEndIcon?: boolean
@@ -297,7 +297,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
   // Searchable + open: 顯示搜尋 input
   // 2026-05-15 Bug 2 fix(Claude+Codex Step 5 比稿 consensus,user verbatim「就 A」):
   // 撤掉 native `<input placeholder=selectedLabel>` 不可靠 ellipsis renderer(browser-specific
-  // placeholder painting,user 抓「placeholder 直接被截掉沒 ellipsis」)。改 span overlay:
+  // placeholder painting,user 抓到 placeholder 直接被截掉、沒有 ellipsis)。改 span overlay:
   // - input native placeholder 限「搜尋…」/「請選擇人員」trigger empty hint(無 selectedLabel)
   // - sibling `<span aria-hidden pointer-events-none absolute inset-0 truncate>` 在 search='' 且
   //   有 selectedLabel 時 overlay 顯該人名(memory aid,truncate-with-ellipsis 可控)
@@ -435,7 +435,7 @@ function ReadonlyDisplay({
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
-  //      Authority: data-table.spec.md「九之二、Cell action primitive 分類」+ inline-action.spec.md:157「Field family endAction」
+  //      Authority: data-table.spec.md「九之二、Cell action primitive 分類」+ inline-action.spec.md「Real case 表(所有 DS 用法一覽)」
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 必套
@@ -729,13 +729,13 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const optionsForDisplay = React.useMemo(() => (selectedOpt && !options?.some(o => o.value === selectedOpt.value) ? [...(options ?? []), selectedOpt] : options), [options, selectedOpt])
     // 2026-05-06 v9.1:value 不在 options 也要顯示原值(不沉默丟失)。原 fallback `''` 致
     // SelectCell 開 edit 時若 cell value 不在當前 options(e.g. 上游資料漂移 / options async
-    // 後到 / 跨 dataset),trigger 顯示空白 — user 報「value 不見」。對齊 ReadonlyDisplay 同
+    // 後到 / 跨 dataset),trigger 顯示空白 — user 回報 value 不見。對齊 ReadonlyDisplay 同
     // 級 fallback `?? value`。
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
-    // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「trigger 需自控」指定解;
+    // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
     // 範本 inline-edit.tsx:251。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
     // deps 含 open:searchable && open 切搜尋 input branch 時值 span 會 unmount,關閉重掛後
     // effect 需重跑重新 observe(Tag always-wrap 教訓:RO 卡在 detached node → isTruncated 凍結)。

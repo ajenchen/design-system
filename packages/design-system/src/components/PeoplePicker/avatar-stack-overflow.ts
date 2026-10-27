@@ -10,7 +10,7 @@
  *    `../OverflowIndicator/overflow-tag-list.tsx` 拆掉:「+N」恆渲染、量真的寬,也被觀察。頭像堆疊仍走本檔公式。
  *   3. `offsetWidth` 不減 overlap(當時 `-ml-0.5`) → measurement 偏保守
  *   4. **架構違反**:`MultiPersonDisplay` display path 用 canvas-based 算 / Combobox edit path 用 DOM offsetWidth
- *      → 同 cell width 兩 path 不同結果 → user verbatim「同寬 cell overflow 時間不一樣」SSOT 根本被違反
+ *      → 同 cell width 兩 path 不同結果 → user 指出同寬 cell overflow 時間不一樣,SSOT 根本被違反
  *
  * **Fix**(per codex Q3 consensus):抽 pure formula + React hook,view + edit 兩 path **共用**。
  *

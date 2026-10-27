@@ -5,18 +5,11 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
-import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import '@/design-system/components/DataTable/column-types'
-
-const categoryOptions = [
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'food', label: 'Food' },
-  { value: 'lifestyle', label: 'Lifestyle' },
-  { value: 'clothing', label: 'Clothing' },
-]
+import { CATEGORY_OPTIONS_WITH_CLOTHING as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Combobox> = {
   title: 'Design System/Components/Combobox/展示',
@@ -30,6 +23,13 @@ const meta: Meta<typeof Combobox> = {
 export default meta
 type Story = StoryObj<typeof Combobox>
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveCombobox({ value: initial, ...rest }: React.ComponentProps<typeof Combobox>) {
+  const [value, setValue] = React.useState(initial)
+  return <Combobox {...rest} value={value} onChange={setValue} />
+}
+
+
 /* ── 四模式 ── */
 // 純展示:四個模式各放同一組已選值。這裡不放任何 play(),也不放為了復原而生的「重設」假 UI ——
 // 破壞性互動(逐一移除到清空)屬測試,住下方 test-only 的 ModesRemoveFocusContract
@@ -41,26 +41,21 @@ export const Modes: Story = {
     const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
+        <ExampleSection title="edit">
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
+        </ExampleSection>
+        <ExampleSection title="view">
           <Combobox mode="view" options={categoryOptions} value={value} aria-label="類別(view 模式示範)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
+        </ExampleSection>
+        <ExampleSection title="readonly">
           <Combobox mode="readonly" options={categoryOptions} value={value} aria-label="類別(readonly mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
+        </ExampleSection>
+        <ExampleSection title="disabled">
           <Combobox mode="disabled" options={categoryOptions} value={value} aria-label="類別(disabled mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly (empty)</h3>
+        </ExampleSection>
+        <ExampleSection title="readonly(空值)">
           <Combobox mode="readonly" options={categoryOptions} value={[]} aria-label="類別(readonly empty demo)" />
-        </div>
+        </ExampleSection>
       </div>
     )
   },
@@ -118,8 +113,11 @@ export const WithError: Story = {
 }
 
 /* ── 尺寸與 Button 對齊 ── */
+const SIZE_NAME = { sm: '小', md: '標準', lg: '大' } as const
 export const SizeAlignment: Story = {
   name: '三種尺寸',
+  // 只留欄位本身(稽核 L101 / M100:拿掉三顆 primary 送出與程式碼標籤);尺寸說明放 docs
+  parameters: { docs: { description: { story: '由上到下是小、標準、大三種尺寸;同一個尺寸與按鈕、其他欄位等高。' } } },
   render: () => {
     const [sm, setSm] = React.useState(['electronics', 'food', 'lifestyle'])
     const [md, setMd] = React.useState(['electronics', 'food', 'lifestyle'])
@@ -128,11 +126,7 @@ export const SizeAlignment: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
-            <Combobox size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" aria-label={`商品分類(size=${size})`} />
-            <Button variant="primary" size={size}>送出</Button>
-            <span className="text-caption text-fg-muted">size="{size}"</span>
-          </div>
+          <Combobox key={size} size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" aria-label={`商品分類(${SIZE_NAME[size]}尺寸)`} />
         ))}
       </div>
     )
@@ -318,7 +312,7 @@ export const LoadingFirstOpen: Story = {
   parameters: { docs: { description: { story: 'Notion 頁面「連結資料庫」第一次展開,工作區的資料庫清單還沒回來:清單裡只有一列「載入選項中」訊息列;觸發點與搜尋列都不轉圈、搜尋列仍可打字(選項載入的指示只在選單內)。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={[]} value={[]} onChange={() => {}} searchable optionsLoading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
+      <LiveCombobox options={[]} value={[]} searchable optionsLoading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
     </div>
   ),
 }
@@ -328,7 +322,7 @@ export const ValueLoading: Story = {
   parameters: { docs: { description: { story: '剛把「CRM 客戶名單」連結進頁面,關聯正在寫回 Notion:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy,選單照常可開;跟選項有沒有載入無關。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={databaseOptions} value={['crm']} onChange={() => {}} searchable loading searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(儲存中)" />
+      <LiveCombobox options={databaseOptions} value={['crm']} searchable loading searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(儲存中)" />
     </div>
   ),
 }
@@ -382,7 +376,7 @@ export const RemoteSearchHint: Story = {
   parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端,但這個工作區還沒有「最近用過」可以當建議:展開只有一列「輸入關鍵字搜尋」提示 —— 不是「沒有選項」(那句只留給真的搜不到的時候)。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={[]} value={[]} onChange={() => {}} searchable filterOption={false} searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
+      <LiveCombobox options={[]} value={[]} searchable filterOption={false} searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
     </div>
   ),
 }
@@ -405,18 +399,17 @@ export const RemoteSearch: Story = {
 export const UnrestrictedOption: Story = {
   name: '不限',
   render: function UnrestrictedStory() {
-    const [region, setRegion] = React.useState<string[]>(['electronics'])
+    // 欄位名與選項對得上(稽核 M100:選項是商品類別,欄位就叫商品類別)
+    const [category, setCategory] = React.useState<string[]>(['electronics'])
     const [any, setAny] = React.useState<string[]>(['__unrestricted__'])
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">清單最上面多一列,下面自動有分隔線</h3>
-          <Combobox unrestricted options={categoryOptions} value={region} onChange={setRegion} aria-label="銷售地區" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」時,欄位是純文字不是 tag</h3>
-          <Combobox unrestricted options={categoryOptions} value={any} onChange={setAny} aria-label="銷售地區(不限)" />
-        </div>
+        <ExampleSection title="清單最上面多一列,下面自動有分隔線">
+          <Combobox unrestricted options={categoryOptions} value={category} onChange={setCategory} aria-label="商品類別" />
+        </ExampleSection>
+        <ExampleSection title="只選「不限」時,欄位是純文字不是 tag">
+          <Combobox unrestricted options={categoryOptions} value={any} onChange={setAny} aria-label="商品類別(不限)" />
+        </ExampleSection>
       </div>
     )
   },
@@ -430,26 +423,21 @@ export const UnrestrictedContract: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">關著(對照:一般選項渲 tag)</h3>
-        <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="類別(不限關閉)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」—— 欄位不渲 Tag</h3>
-        <Combobox unrestricted options={categoryOptions} value={['__unrestricted__']} onChange={() => {}} aria-label="銷售地區(只選不限)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 唯讀</h3>
+      <ExampleSection title="關著(對照:一般選項渲 tag)">
+        <LiveCombobox options={categoryOptions} value={['electronics']} aria-label="類別(不限關閉)" />
+      </ExampleSection>
+      <ExampleSection title="只選「不限」—— 欄位不渲 Tag">
+        <LiveCombobox unrestricted options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(只選不限)" />
+      </ExampleSection>
+      <ExampleSection title="只選「不限」· 唯讀">
         <Combobox unrestricted mode="readonly" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(唯讀)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 檢視</h3>
+      </ExampleSection>
+      <ExampleSection title="只選「不限」· 檢視">
         <Combobox unrestricted mode="view" options={categoryOptions} value={['__unrestricted__']} aria-label="銷售地區(檢視)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">自訂文字(對照:佔位字左緣)</h3>
-        <Combobox unrestricted unrestrictedLabel="全部地區" options={categoryOptions} value={[]} onChange={() => {}} aria-label="銷售地區(自訂不限文字)" />
-      </div>
+      </ExampleSection>
+      <ExampleSection title="自訂文字(對照:佔位字左緣)">
+        <LiveCombobox unrestricted unrestrictedLabel="全部地區" options={categoryOptions} value={[]} aria-label="銷售地區(自訂不限文字)" />
+      </ExampleSection>
     </div>
   ),
 }
@@ -499,14 +487,12 @@ export const UnrestrictedSearch: Story = {
     const [local, setLocal] = React.useState<string[]>([])
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">本機過濾 —— 打「不限」找得到,打別的字它消失</h3>
+        <ExampleSection title="本機過濾 —— 打「不限」找得到,打別的字它消失">
           <Combobox unrestricted searchable options={categoryOptions} value={local} onChange={setLocal} aria-label="類別(本機搜尋,不限開啟)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">遠端搜尋 —— 等結果回傳才跟一般選項一起出現</h3>
+        </ExampleSection>
+        <ExampleSection title="遠端搜尋 —— 等結果回傳才跟一般選項一起出現">
           <UnrestrictedRemoteSearchProbe />
-        </div>
+        </ExampleSection>
       </div>
     )
   },
@@ -525,27 +511,23 @@ function UnrestrictedInlineSearchProbe() {
   const [narrow, setNarrow] = React.useState<string[]>(['__unrestricted__'])
   return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 欄位內搜尋</h3>
+      <ExampleSection title="只選「不限」· 欄位內搜尋">
         <Combobox unrestricted searchable searchIn="trigger" clearable options={categoryOptions} value={inline} onChange={setInline}
           placeholder="選擇商品類別…" aria-label="商品類別(欄位內搜尋)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 不可搜尋(對照:關著的長相)</h3>
+      </ExampleSection>
+      <ExampleSection title="只選「不限」· 不可搜尋(對照:關著的長相)">
         <Combobox unrestricted clearable options={categoryOptions} value={plain} onChange={setPlain} aria-label="商品類別(對照)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">空值 · 欄位內搜尋(對照:提示字的灰)</h3>
+      </ExampleSection>
+      <ExampleSection title="空值 · 欄位內搜尋(對照:提示字的灰)">
         <Combobox unrestricted searchable searchIn="trigger" options={categoryOptions} value={empty} onChange={setEmpty}
           placeholder="選擇商品類別…" aria-label="商品類別(空值)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">只選「不限」· 欄位內搜尋 × 換行(窄欄位)</h3>
+      </ExampleSection>
+      <ExampleSection title="只選「不限」· 欄位內搜尋 × 換行(窄欄位)">
         <div className="w-44">
           <Combobox unrestricted searchable searchIn="trigger" wrap options={categoryOptions} value={narrow} onChange={setNarrow}
             aria-label="商品類別(窄欄位換行)" />
         </div>
-      </div>
+      </ExampleSection>
     </div>
   )
 }
@@ -562,14 +544,12 @@ export const UnrestrictedMessageStates: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">0 筆選項 —— 顯示「沒有選項」,不出現不限</h3>
-        <Combobox unrestricted options={[]} value={[]} onChange={() => {}} defaultOpen aria-label="空清單(不限開啟)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">載入中 —— 顯示載入列,不出現不限</h3>
-        <Combobox unrestricted optionsLoading options={[]} value={[]} onChange={() => {}} aria-label="載入中(不限開啟)" />
-      </div>
+      <ExampleSection title="0 筆選項 —— 顯示「沒有選項」,不出現不限">
+        <LiveCombobox unrestricted options={[]} value={[]} defaultOpen aria-label="空清單(不限開啟)" />
+      </ExampleSection>
+      <ExampleSection title="載入中 —— 顯示載入列,不出現不限">
+        <LiveCombobox unrestricted optionsLoading options={[]} value={[]} aria-label="載入中(不限開啟)" />
+      </ExampleSection>
     </div>
   ),
 }

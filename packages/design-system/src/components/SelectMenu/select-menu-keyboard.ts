@@ -170,7 +170,7 @@ export function routeTypingToSearch(e: React.KeyboardEvent, { open, openNow, sea
  * (2026-10-07,待辦總帳 K3 同批)。Radix 非 modal Popover 只要沒被擋,就把它記成「互動過外面」(@radix-ui/react-popover 1.1.15
  * dist/index.mjs:185-192;原始碼 https://github.com/radix-ui/primitives/blob/4a49a34316fa8068389ed0f8619383af1bfd734b/packages/react/popover/src/popover.tsx#L350-L372;它自己再擋關閉,但記號已設),之後用 Esc / Enter 收起時就不把焦點還給觸發欄位(同檔 :179)——
  * Select 的搜尋框隨收起卸載、浮層內搜尋框跟著浮層卸載,焦點掉到頁面上(違 select.spec.md「Clearable」清除後焦點、select-menu.spec.md
- * 「A11y 預設」Focus 段「選完 / Esc 關閉時焦點回觸發欄位」;2026-10-06 實測)。判準同 lib/overlay-focus-return.ts「按在開啟者上不算外面」。
+ * 「A11y 預設」Focus 段「選完 / Esc 關閉時焦點回觸發欄位」;2026-10-06 實測)。判準同 lib/overlay-focus-return.ts 非 modal 那條:只有「指標按在浮層與開啟者以外的地方」才算按在外面。
  * 只認指標:鍵盤 Tab 走到欄位上的 × 那種 focusin 維持原樣。欄位內搜尋框握著焦點時點欄位收起、焦點留在搜尋框(select-menu.spec.md
  * Focus 段「收起後焦點回觸發點的長相」括號那一格)由 overlay-focus-return 的 (a′) 守。
  */
@@ -179,7 +179,7 @@ export function isPointerOnTrigger(original: Event, trigger: HTMLElement | null)
   return original.type === 'pointerdown' && target instanceof Node && !!trigger?.contains(target)
 }
 
-/** 欄位上「值被移除」的讀屏播報句型(K1;句型同 lib/drag-announcements.ts「已移動…『X』」)。 */
+/** 欄位上「值被移除」的讀屏播報句型(K1;句型同 lib/drag-announcements.ts 的 `已移動${outcome.kind}『${outcome.label}』`)。 */
 export const removalAnnouncement = (label: string) => `已移除『${label}』` // i18n-allow: DS default 讀屏播報
 
 // ── 開著按 Tab / Shift+Tab(2026-09-25 待辦總帳 B11;SSOT = select-menu.spec.md「A11y 預設」)─────────────
@@ -257,8 +257,8 @@ function highlightedOptionValue(content: HTMLElement | null, resolve: (dataValue
  * - `triggerRef` → PopoverTrigger;`contentRef` → PopoverContent
  * - `onKeyDown`:掛在觸發欄位(可打字搜尋時焦點在欄位內的輸入框)與 cmdk 根(不可打字時焦點在浮層裡)兩處
  * - `onCloseAutoFocus` → PopoverContent:Tab 收起時擋掉 Radix「關閉後把焦點還給觸發欄位」——那一步在 FocusScope 卸載
- *   (關閉動畫結束後的 setTimeout 0)才跑,會把剛走到下一格的焦點搶回來(與 B11 點名的
- *   `agent-panel-fab.tsx:702-705`「關選單時硬搶焦點」同一類)
+ *   (關閉動畫結束後的 setTimeout 0)才跑,會把剛走到下一格的焦點搶回來(與待辦總帳 B11 點名、2026-09-25 修掉的
+ *   `agent-panel-fab.tsx` 右鍵選單關閉時把焦點搶回入口鈕同一類)
  */
 export function useSelectMenuPopupKeys(params: SelectMenuPopupKeysParams) {
   const triggerRef = React.useRef<HTMLButtonElement>(null)

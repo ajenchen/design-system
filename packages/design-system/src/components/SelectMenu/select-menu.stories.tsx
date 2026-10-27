@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import React, { useState } from 'react'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 
 const meta: Meta = {
   title: 'Design System/Internal/SelectMenu/展示',
@@ -58,15 +59,6 @@ export const Searchable: StoryObj = {
   name: '搜尋',
   render: () => <SearchableDemo />,
 }
-
-// ── 多選 ──
-
-const categoryOptions = [
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'food', label: 'Food' },
-  { value: 'lifestyle', label: 'Lifestyle' },
-]
 
 const MultiSelectDemo = () => {
   const [value, setValue] = useState<string[]>(['electronics'])

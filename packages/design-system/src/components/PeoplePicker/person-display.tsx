@@ -23,7 +23,7 @@ import {
 // 同一組 sections(name + subtitle + status + 2 default fields(id + employeeNumber,見下方
 // NAMECARD_DEFAULT_FIELD_KEYS 對齊註解)+ 自訂 fields + actions + View more)— 缺資料顯 placeholder;
 // **例外:status undefined 時整 status block 省略(collapse,= loading transient,見 status jsDoc)**。
-// 對齊 avatar.spec.md「person avatar hover → ProfileCard」DS-wide canonical。
+// 對齊 avatar.spec.md「Avatar HoverCard 原則(DS-wide canonical,必遵守)」。
 export interface PersonData {
   name: string
   avatarUrl?: string
@@ -122,8 +122,8 @@ function PersonAvatar({
   className?: string
   style?: React.CSSProperties
   /** disabled field context(2026-07-14 deep-audit 修):抑制 ProfileCard hoverCard(Avatar 收
-   *  undefined → 無 HoverCard wrapper / 無 tabIndex,真不可互動)+ avatar 自身 dim(host-controlled
-   *  opacity — avatar.spec.md「Avatar 在 disabled 元件內 host-controlled opacity」canonical;
+   *  undefined → 無 HoverCard wrapper / 無 tabIndex,真不可互動)+ avatar 自身 dim(由 host 補 opacity:
+   *  avatar.spec.md「Disabled」—— Avatar 只在 Field disabled context 內 self-dim;
    *  PeoplePicker disabled 分支無 fieldCtx,Avatar self-dim 搆不到,host 補)。
    *  對齊 people-picker.spec.md「disabled:灰化整個 field,不可互動」。 */
   disabled?: boolean
@@ -326,7 +326,7 @@ function MultiPersonDisplay({
       <ItemPrefix className="!justify-start"><span className={cn('inline-flex items-center min-w-0', AVATAR_STACK_CLASS)}>
       {visible.map((person, i) => {
         // **2026-05-07 v15.11 Bug D 升級 SSOT**:visible avatar 也支援 inline dismiss
-        // (對齊 user directive「avatar = tag」)。Dismiss overlay 走 `AvatarDismissOverlay`
+        // (對齊 user directive:avatar = tag)。Dismiss overlay 走 `AvatarDismissOverlay`
         // 共用 SSOT(下方 export),Combobox tagRenderer / 此處 / 任何 future avatar consumer
         // 都用同一視覺 — 紅圈 X 對齊 avatar 右上,hover/focus-visible 才顯。
         const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
@@ -445,7 +445,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
 // ── PersonAvatarTag(Combobox tagRenderer SSOT for stack mode)─────────────
 // PeoplePicker `multiDisplay='stack'` 模式 wraps Combobox,tagRenderer 不能用 Tag pill
 // (那是 pill mode),改 render 此元件 — Avatar overlap 視覺 + AvatarDismissOverlay。
-// 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.13)。
+// 對齊 user directive:avatar 與 tag 是同一個概念,差別只在視覺,SSOT 一致(2026-05-07 v15.13)。
 //
 // **架構**(v15.13 重構):本元件**不自包** `group/avatar` / `-ml-[var(--avatar-stack-overlap)]` overlap wrapper,
 // 因 Combobox `tagRenderer` 結果會被內部 `<div shrink-0>` 包成 measurement wrapper

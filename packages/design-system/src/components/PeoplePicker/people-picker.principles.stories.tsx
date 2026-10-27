@@ -15,12 +15,19 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LivePeoplePicker({ value: initial, ...rest }: React.ComponentProps<typeof PeoplePicker>) {
+  const [value, setValue] = React.useState(initial)
+  return <PeoplePicker {...rest} value={value} onChange={(next) => setValue(Array.isArray(initial) ? next : next[0] ?? null)} />
+}
+
+
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
 // 對齊 ProfileCard 預設呈現:name + subtitle + status + statusMessage + fields
 // avatar.spec.md DS-wide canonical:所有 person avatar hover 必出 ProfileCard,展示資訊不可精簡
-// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「defaultFieldValues 優於 fields 同名 label」;閘 overlay-story-contract S8)
+// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「文案(DS 預設 = 中文,全部可覆寫)」:預設欄位以生效的欄名去重,同名欄位走 `defaultFieldValues`;閘 overlay-story-contract S8)
 const team: PersonValue[] = [
   { name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/128?img=1', description: 'Design｜Taipei｜EMP-3001', status: 'online', statusMessage: '可線上 review。', id: 'AC001', employeeNumber: 'EMP-3001', fields: [{ label: '部門', value: 'Product Design' }, { label: '時區', value: 'TST (GMT+8)' }] },
   { name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/128?img=2', description: 'Engineering｜Tokyo｜EMP-3002', status: 'busy', statusMessage: '深度工作,2hr 後再回。', id: 'BL002', employeeNumber: 'EMP-3002', fields: [{ label: '部門', value: 'Frontend' }, { label: '時區', value: 'JST (GMT+9)' }] },
@@ -49,7 +56,7 @@ export const UsageGuidance: Story = {
               <StoryLink kind="Design System/Components/PeoplePicker/展示" name="多人">多人</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Components/PeoplePicker/展示" name="尺寸">尺寸</StoryLink>
+              <StoryLink kind="Design System/Components/PeoplePicker/設計規格" name="尺寸對照表">尺寸</StoryLink>
             </li>
           </TutorialList>
         </UsageSection>
@@ -175,7 +182,7 @@ export const EmptyStateRule: Story = {
         title="edit 模式 — 未選時顯示「請選擇人員」佔位提示"
         note="跟 Select / Combobox 的 placeholder 行為一致。不用半形連字號,因為 edit mode 是可操作的"
       >
-        <PeoplePicker value={null} onChange={() => {}} people={team} aria-label="指派人員(空值 placeholder demo)" />
+        <LivePeoplePicker value={null} people={team} aria-label="指派人員(空值 placeholder demo)" />
       </TutorialRule>
 
       <TutorialRule

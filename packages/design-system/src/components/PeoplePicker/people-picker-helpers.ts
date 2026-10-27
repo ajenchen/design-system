@@ -20,12 +20,12 @@ import { buildPersonProfileCard, resolvePerson, type PersonValue } from './perso
 // PersonAvatarTag stack overlap(per spec.md §D row 1)需要 negative margin overlap visual。
 // 一個 static wrapper class 涵蓋兩 contract 不可能 — Combobox `OverflowTagList` 把 result 包
 // `shrink-0`,如果 wrapper 還疊 `inline-flex` 就 intrinsic content-width → PersonDisplay
-// truncate 無效(Bug 1 user 抓「越界蓋 indicator」)。
+// truncate 無效(Bug 1 user 抓到越界蓋住 indicator)。
 //
 // **Why centralize**:M14 mechanical guard against future drift。任何人未來改 stack mode 邏輯,
 // 必經此 helper(hook `check_peoplepicker_ssot_drift.sh` 攔接 wrapper class literal in tsx)。
 //
-// **2026-05-15 SSOT alignment**(user verbatim「單選 people picker 沒壞,難道沒有 SSOT?」):
+// **2026-05-15 SSOT alignment**(user 問單選 people picker 沒壞,難道沒有 SSOT):
 // 單選 picker wrapper(`select.tsx#CustomSelectTriggerContent` selectedItemRenderer wrapper)= `flex-1 min-w-0 inline-flex items-center +
 // nakedCellRowModeAlign` — proven working,canonical SSOT。本 helper 對齊 single SSOT,
 // **不**自定一套(spec.md §C row 1 +「length=1 視覺 = 跟單人 closed 一致」+ §E「PersonDisplay
@@ -69,9 +69,9 @@ export function getPeoplePickerTagWrapperClass(selectedCount: number, besideInli
 // menu 時 dropdown row 只顯純文字 name(資訊弱)— 現透過 wrapper schema unify 直接帶 avatar /
 // description 給 SelectMenu primitive 渲。
 //
-// 2026-05-18 fix(per user directive「所有 avatar hover 都要 ProfileCard」+ avatar.spec.md
+// 2026-05-18 fix(per user directive:所有 avatar hover 都要 ProfileCard + avatar.spec.md
 // DS-wide canonical):dropdown menu items Avatar 必帶 hoverCard,跟 PersonDisplay / Tag
-// avatar 對齊。漏掉 = user 抓「PeoplePicker 選單內 avatar 沒有 namecard」。
+// avatar 對齊。漏掉 = user 抓到 PeoplePicker 選單內 avatar 沒有 namecard。
 export function personToSelectOption(person: PersonValue): SelectOption {
   const p = resolvePerson(person)
   return {

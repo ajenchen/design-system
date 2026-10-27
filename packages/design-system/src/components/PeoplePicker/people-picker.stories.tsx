@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
-import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
@@ -68,22 +68,18 @@ const SinglePicker = () => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動）</h3>
+      <ExampleSection title="edit（可互動）">
         <PeoplePicker value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} aria-label="負責人(edit mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
+      </ExampleSection>
+      <ExampleSection title="view">
         <PeoplePicker mode="view" value={samplePeople[0]} />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
+      </ExampleSection>
+      <ExampleSection title="readonly">
         <PeoplePicker mode="readonly" value={samplePeople[0]} />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
+      </ExampleSection>
+      <ExampleSection title="disabled">
         <PeoplePicker mode="disabled" value={samplePeople[0]} />
-      </div>
+      </ExampleSection>
     </div>
   )
 }
@@ -120,14 +116,12 @@ const MultiPicker = () => {
   const readonlyVal = samplePeople.slice(0, 4)
   return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit（可互動,多選）</h3>
+      <ExampleSection title="edit（可互動,多選）">
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
+      </ExampleSection>
+      <ExampleSection title="readonly">
         <PeoplePicker mode="readonly" value={readonlyVal} />
-      </div>
+      </ExampleSection>
     </div>
   )
 }
@@ -149,10 +143,9 @@ const InlineSearchAttendees = () => {
   const [notify, setNotify] = React.useState<PersonValue[]>(samplePeople.slice(3, 5))
   const [cc, setCc] = React.useState<PersonValue[]>([])
   return (
-    // 版面消費 field.stories.tsx FormValidation 同一組:區塊之間 layout-space-loose、標題 → 內容 layout-space-tight、多個欄位走 FieldGroup
+    // 版面:區塊之間 layout-space-loose;區段標題 → 內容 = loose(共用 ExampleSection,user 2026-10-21 A4 甲);多個欄位走 FieldGroup
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold text-foreground">頭像堆疊(預設)</h3>
+      <ExampleSection title="頭像堆疊(預設)">
         <FieldGroup>
           <Field>
             <FieldLabel>必要出席者</FieldLabel>
@@ -163,9 +156,8 @@ const InlineSearchAttendees = () => {
             <PeoplePicker searchIn="trigger" clearable value={optional} people={samplePeople} onChange={setOptional} />
           </Field>
         </FieldGroup>
-      </div>
-      <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold text-foreground">每人一顆標籤(multiDisplay=&quot;pill&quot;)</h3>
+      </ExampleSection>
+      <ExampleSection title={<>每人一顆標籤(multiDisplay=&quot;pill&quot;)</>}>
         <FieldGroup>
           <Field>
             <FieldLabel>會議記錄寄給</FieldLabel>
@@ -176,7 +168,7 @@ const InlineSearchAttendees = () => {
             <PeoplePicker searchIn="trigger" multiDisplay="pill" clearable value={cc} people={samplePeople} onChange={setCc} />
           </Field>
         </FieldGroup>
-      </div>
+      </ExampleSection>
     </div>
   )
 }
@@ -193,15 +185,14 @@ export const MultiInlineSearch: Story = {
    少畫一顆 → 欄位變窄 → 量到更窄 → 再少畫一顆,空間還回來也回不去。
    (2026-09-07 修:量測改成「容器內容寬 − 欄位外框開銷」,兩個減數同幀量、內容影響互相抵消。)
 
-   讀法:容器 720px 寬、六個人。hug 欄位應該長到放得下的長度,而不是縮成「1 顆 + +5」。 */
+   讀法:容器 720px 寬、六個人。hug 欄位應該長到放得下的長度,而不是縮成「1 顆 + +5」。
+   `width="hug"` 的欄位寬度由內容決定,頭像串可畫幾顆則由「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
+   驗證用(不是讀者看的情境)→ test-only(story-rules.md「Technical probe visibility」)。 */
 export const HugWidthMultiStack: Story = {
   name: '寬度貼合內容 × 多人',
+  tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)]" style={{ width: 720 }}>
-      <p className="text-caption text-fg-muted">
-        容器 720px。<code>width=&quot;hug&quot;</code> 的欄位寬度由內容決定,頭像串可畫幾顆則由
-        「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
-      </p>
+    <div style={{ width: 720 }}>
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <PeoplePicker
           width="hug"
@@ -222,7 +213,7 @@ export const HugWidthMultiStack: Story = {
 
 // Roving-focus 契約 probe:逐一移除 chip 時焦點依序落到下一個移除鈕,移除
 // 最後一人後回到 combobox。破壞性互動(清空全員)只屬測試,不得寄生在
-// reader-facing 展示 story(anchor:2026-08-05 user 抓「多人一打開就自己清空」;
+// reader-facing 展示 story(anchor:2026-08-05 user 抓到多人一打開就自己清空;
 // 前身還為此加過「重設協作者」假 UI,ccf83b24)。story-rules「Technical probe
 // visibility」canonical:標 test-only,自 sidebar/Autodocs 排除,test runner 照跑。
 export const MultiRemoveFocusContract: Story = {
@@ -246,7 +237,7 @@ export const MultiRemoveFocusContract: Story = {
 
 // Stack 移除鈕完整性 probe:AvatarDismissOverlay(`-top-px` + 2px ring,person-display.tsx)
 // 必須完整可見,不被 tag 列裁切(combobox.tsx tagRowOverflowClass 只裁水平;anchor:2026-08-05
-// user 抓「hover X 上緣被裁」— 2026-05-18 F2 雙軸 overflow-hidden 副作用)。screenshot lane
+// user 抓到 hover X 上緣被裁 — 2026-05-18 F2 雙軸 overflow-hidden 副作用)。screenshot lane
 // 無 hover 能力,以 keyboard focus 觸發 group-focus-within 顯示 overlay。
 export const StackRemoveOverlayProbe: Story = {
   name: '移除鈕完整性驗證',
@@ -290,14 +281,12 @@ const ClearablePicker = () => {
   const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
   return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">單人(代理人,選填)</h3>
+      <ExampleSection title="單人(代理人,選填)">
         <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">多人(觀察者,選填)</h3>
+      </ExampleSection>
+      <ExampleSection title="多人(觀察者,選填)">
         <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
-      </div>
+      </ExampleSection>
     </div>
   )
 }
@@ -305,29 +294,6 @@ const ClearablePicker = () => {
 export const Clearable: Story = {
   name: '一鍵清空(選填欄位)',
   render: () => <ClearablePicker />,
-}
-
-/* ── 尺寸與 Button 對齊 ── */
-const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
-  const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
-  return (
-    <div className="flex items-center gap-[var(--layout-space-tight)]">
-      <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" aria-label={`負責人(size=${size})`} />
-      <Button variant="primary" size={size}>送出</Button>
-      <span className="text-caption text-fg-muted">size="{size}"</span>
-    </div>
-  )
-}
-
-export const SizeAlignment: Story = {
-  name: '尺寸',
-  render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <SizePicker key={size} size={size} />
-      ))}
-    </div>
-  ),
 }
 
 /* ── 人員清單非同步載入（已選值先到、名錄後到;前 1.5 秒 optionsLoading） ── */

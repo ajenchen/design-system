@@ -15,6 +15,13 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveCombobox({ value: initial, ...rest }: React.ComponentProps<typeof Combobox>) {
+  const [value, setValue] = React.useState(initial)
+  return <Combobox {...rest} value={value} onChange={setValue} />
+}
+
+
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
@@ -61,7 +68,7 @@ export const UsageGuidance: Story = {
         <p>多選(可選 0 個或多個)、選項 6 個以上、空間有限(表格儲存格、工具列篩選、窄欄位表單)的場景;開搜尋後可處理 50 個以上的選項。</p>
         <TutorialList>
           <li><StoryLink kind="Design System/Components/Combobox/展示" name="四模式">四模式</StoryLink></li>
-          <li><StoryLink kind="Design System/Components/Combobox/展示" name="三種尺寸">尺寸與 Button 對齊</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Combobox/展示" name="三種尺寸">三種尺寸</StoryLink></li>
           <li><StoryLink kind="Design System/Components/Combobox/展示" name="搜尋">搜尋</StoryLink></li>
           <li><StoryLink kind="Design System/Components/Combobox/展示" name="DataTable 整合">DataTable 整合</StoryLink></li>
         </TutorialList>
@@ -78,7 +85,7 @@ export const UsageGuidance: Story = {
           title="❌ 單選:用 Select"
           note="Combobox 永遠多選——單選塞進來使用者每次要手動先移除舊 Tag 再選新的，多餘的互動"
         >
-          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="商品分類(單選反例——應改用 Select)" />
+          <LiveCombobox options={categoryOptions} value={['electronics']} aria-label="商品分類(單選反例——應改用 Select)" />
           <ExampleCaption warn>↑ 只選一個 electronics → 應該用 Select，一次點擊完成切換</ExampleCaption>
         </TutorialRule>
 
@@ -86,14 +93,13 @@ export const UsageGuidance: Story = {
           title="❌ 2-5 個選項且需要全可見 + description:用 Checkbox stack"
           note="權限授予、條款勾選、通知類型選擇——選項需要完整閱讀（含描述），決策後同意。Combobox 藏選項強迫多次點擊對比"
         >
-          <Combobox
+          <LiveCombobox
             options={[
               { value: 'terms', label: '服務條款' },
               { value: 'privacy', label: '隱私政策' },
               { value: 'marketing', label: '行銷訊息' },
             ]}
             value={['terms']}
-            onChange={() => {}}
             aria-label="同意項目"
           />
           <ExampleCaption warn>↑ 條款勾選是「完整閱讀後同意」→ 用 Checkbox stack 全露內容</ExampleCaption>
@@ -103,7 +109,7 @@ export const UsageGuidance: Story = {
           title="❌ 階層結構（父/子節點）:用 TreeView"
           note="Combobox 是平面選項。部門 / 權限 / 資料夾等樹狀結構需要 TreeView 的展開收合互動"
         >
-          <Combobox
+          <LiveCombobox
             options={[
               { value: 'eng', label: 'Engineering' },
               { value: 'eng-fe', label: '— Frontend' },
@@ -111,7 +117,6 @@ export const UsageGuidance: Story = {
               { value: 'design', label: 'Design' },
             ]}
             value={['eng-fe']}
-            onChange={() => {}}
             aria-label="部門"
           />
           <ExampleCaption warn>↑ 用縮排偽造階層 → 沒有展開收合、不能按父節點全選、破壞資料結構</ExampleCaption>
@@ -198,7 +203,7 @@ export const TagOperationRule: Story = {
           title="已選中的選項在下拉裡以打勾標示，再點一次即取消"
           note="不分裝置，同一個自建浮層選單：已選項保留在清單中並以打勾呈現，再點一次即移除——避免使用者跨越下拉與 field 才能對照已選狀態"
         >
-          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="商品分類(已選項打勾範例)" />
+          <LiveCombobox options={categoryOptions} value={['electronics']} aria-label="商品分類(已選項打勾範例)" />
           <ExampleCaption>↑ 打開 dropdown，Electronics 仍在清單裡並打勾，可再點一次取消</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
@@ -224,7 +229,7 @@ export const OverflowRule: Story = {
           title="❌ 不從零自刻下拉互動"
           note="與 Select 同理——下拉的開關、鍵盤導覽、聚焦管理、screen reader 支援很容易做不完整。Combobox 不分裝置走同一個共用的浮層選單元件（已內建搜尋與方向鍵導覽），不該繞過去從零自刻"
         >
-          <ExampleCaption>實作細節見 Design System / Components / Combobox / 設計規格</ExampleCaption>
+          <ExampleCaption>實作細節見 <StoryLink kind="Design System/Components/Combobox/設計規格" name="元件總覽">Combobox 設計規格</StoryLink></ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

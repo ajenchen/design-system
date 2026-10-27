@@ -4,22 +4,16 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Select } from './select'
-import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
+import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const statusOptions = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
   { value: 'low_stock', label: 'Low stock', tagVariant: 'yellow' },
   { value: 'out_of_stock', label: 'Out of stock', tagVariant: 'red' },
-]
-
-const categoryOptions = [
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'food', label: 'Food' },
-  { value: 'lifestyle', label: 'Lifestyle' },
 ]
 
 const meta: Meta<typeof Select> = {
@@ -41,26 +35,21 @@ export const Modes: Story = {
     const [value, setValue] = React.useState('in_stock')
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
-          <Select options={statusOptions} value={value} onChange={setValue} aria-label="狀態(edit mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
-          <Select mode="view" options={statusOptions} value={value} aria-label="狀態(view 模式示範)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
-          <Select mode="readonly" options={statusOptions} value={value} aria-label="狀態(readonly mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
-          <Select mode="disabled" options={statusOptions} value={value} aria-label="狀態(disabled mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly (null)</h3>
-          <Select mode="readonly" options={statusOptions} value={null} aria-label="狀態(readonly null demo)" />
-        </div>
+        <ExampleSection title="edit">
+          <Select options={statusOptions} value={value} onChange={setValue} aria-label="庫存狀態(編輯)" />
+        </ExampleSection>
+        <ExampleSection title="view">
+          <Select mode="view" options={statusOptions} value={value} aria-label="庫存狀態(純展示)" />
+        </ExampleSection>
+        <ExampleSection title="readonly">
+          <Select mode="readonly" options={statusOptions} value={value} aria-label="庫存狀態(唯讀)" />
+        </ExampleSection>
+        <ExampleSection title="disabled">
+          <Select mode="disabled" options={statusOptions} value={value} aria-label="庫存狀態(停用)" />
+        </ExampleSection>
+        <ExampleSection title="readonly(空值)">
+          <Select mode="readonly" options={statusOptions} value={null} aria-label="庫存狀態(唯讀,尚未填寫)" />
+        </ExampleSection>
       </div>
     )
   },
@@ -131,8 +120,11 @@ export const HugWidth: Story = {
 //   (earn-existence 2-test 雙 NO)→ retire。display 模式 canonical home = anatomy ColorMatrix + principles DisplayModeRule。
 
 /* ── 尺寸與 Button 對齊 ── */
+const SIZE_NAME = { sm: '小', md: '標準', lg: '大' } as const
 export const SizeAlignment: Story = {
   name: '三種尺寸',
+  // 只放 Select 本身(稽核 L073 / L101:拿掉三顆 primary 送出與程式碼標籤);尺寸說明放 docs
+  parameters: { docs: { description: { story: '由上到下是小、標準、大三種尺寸;同一個尺寸與按鈕、其他欄位等高。' } } },
   render: () => {
     const [sm, setSm] = React.useState('in_stock')
     const [md, setMd] = React.useState('in_stock')
@@ -141,11 +133,7 @@ export const SizeAlignment: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
-            <Select aria-label={`庫存狀態(size=${size})`} size={size} options={statusOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
-            <Button variant="primary" size={size}>送出</Button>
-            <span className="text-caption text-fg-muted">size="{size}"</span>
-          </div>
+          <Select key={size} aria-label={`庫存狀態(${SIZE_NAME[size]}尺寸)`} size={size} options={statusOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
         ))}
       </div>
     )
@@ -155,11 +143,11 @@ export const SizeAlignment: Story = {
 /* ── 可清除 ── */
 export const Clearable: Story = {
   name: '可清除',
+  parameters: { docs: { description: { story: '有值時右側出現清除按鈕,按一下清空。' } } },
   render: () => {
     const [value, setValue] = React.useState<string>('in_stock')
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
-        <p className="text-caption text-fg-muted">有值時右側出現清除按鈕</p>
         <Select aria-label="庫存狀態"
           options={statusOptions}
           value={value}
@@ -175,6 +163,7 @@ export const Clearable: Story = {
 /* ── 搜尋（Combobox 模式）── */
 export const Searchable: Story = {
   name: '搜尋',
+  parameters: { docs: { description: { story: '點開後欄位變成搜尋框,打字就篩選選項。' } } },
   render: () => {
     const [value, setValue] = React.useState<string>('')
     const manyOptions = [
@@ -186,7 +175,6 @@ export const Searchable: Story = {
     ]
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
-        <p className="text-caption text-fg-muted">searchable — 點擊後 field 變 input，打字即篩選</p>
         <Select aria-label="國家"
           options={manyOptions}
           value={value}
@@ -203,6 +191,7 @@ export const Searchable: Story = {
 /* ── Creatable(搜尋 + 建立新選項）── */
 export const Creatable: Story = {
   name: '建立新選項',
+  parameters: { docs: { description: { story: '搜尋不到既有標籤時,選單底部出現「直接使用「…」」那一列,點一下就新增並選取。' } } },
   render: () => {
     const [labels, setLabels] = React.useState([
       { value: 'bug', label: 'Bug' },
@@ -213,9 +202,6 @@ export const Creatable: Story = {
     const [value, setValue] = React.useState<string>('')
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
-        <p className="text-caption text-fg-muted">
-          searchable + creatable — 搜尋不到既有標籤時,dropdown 底部出現「直接使用「…」」建立列,點擊即新增並選取
-        </p>
         <Select aria-label="標籤"
           options={labels}
           value={value}
@@ -249,7 +235,7 @@ export const LoadingFirstOpen: Story = {
   parameters: { docs: { description: { story: 'Stripe 付款設定的「結算幣別」第一次展開,幣別清單還沒從後端回來:選單裡只有一列「載入選項中」訊息列,與一筆結果等高;觸發點不轉圈(選項載入的指示只在選單內,觸發點的轉圈留給「這個值正在處理」)。' } } },
   render: () => (
     <div className="max-w-xs">
-      <Select options={[]} value={null} onChange={() => {}} searchable optionsLoading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(首次載入)" />
+      <Select options={[]} defaultValue={null} searchable optionsLoading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(首次載入)" />
     </div>
   ),
 }
@@ -259,7 +245,7 @@ export const ValueLoading: Story = {
   parameters: { docs: { description: { story: '結算幣別改成 JPY 後正在寫回 Stripe:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy,選單照常可開可選;跟 Input 的 loading 同一個意思,跟選項有沒有載入無關。' } } },
   render: () => (
     <div className="max-w-xs">
-      <Select options={currencyOptions} value="jpy" onChange={() => {}} loading placeholder="選擇結算幣別…" aria-label="結算幣別(儲存中)" />
+      <Select options={currencyOptions} defaultValue="jpy" loading placeholder="選擇結算幣別…" aria-label="結算幣別(儲存中)" />
     </div>
   ),
 }
@@ -269,7 +255,7 @@ export const NoOptions: Story = {
   parameters: { docs: { description: { story: 'Jira 建立議題時的 Sprint 欄位,專案還沒建立任何 Sprint:打開就是一列「沒有選項」訊息列,與一筆結果等高;不放圖示、也不用整塊空狀態。' } } },
   render: () => (
     <div className="max-w-xs">
-      <Select options={[]} value={null} onChange={() => {}} defaultOpen placeholder="選擇 Sprint" aria-label="Sprint(沒有選項)" />
+      <Select options={[]} defaultValue={null} defaultOpen placeholder="選擇 Sprint" aria-label="Sprint(沒有選項)" />
     </div>
   ),
 }
@@ -289,8 +275,7 @@ export const GroupedSearch: Story = {
           { value: 'gbp', label: 'GBP 英鎊', group: 'west' },
         ]}
         groups={[{ key: 'asia', label: '亞洲' }, { key: 'west', label: '歐美' }]}
-        value="twd"
-        onChange={() => {}}
+        defaultValue="twd"
         searchable
         defaultOpen
         placeholder="選擇結算幣別…"
@@ -352,6 +337,7 @@ export const RemoteSearch: Story = {
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',
+  parameters: { docs: { description: { story: '表格裡的選項欄預設顯示選項的文字;需要彩色標籤時,在欄位設定裡改用標籤樣式。' } } },
   render: () => {
     interface Product {
       name: string
@@ -377,12 +363,7 @@ export const InDataTable: Story = {
     ]
 
     return (
-      <div>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-          select 欄位預設純文字渲染（cell IS variant）——meta.options 提供 value → label 對應；需 Tag 視覺時在 column meta.display='tag' opt-in
-        </p>
-        <DataTable columns={columns} data={data} height="auto" />
-      </div>
+      <DataTable columns={columns} data={data} height="auto" />
     )
   },
 }

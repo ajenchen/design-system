@@ -2,10 +2,11 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Tag as TagIcon } from 'lucide-react'
+import { Tag as TagIcon, Bell } from 'lucide-react'
 import { Tag } from './tag'
+import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Badge } from '@/design-system/components/Badge/badge'
-import { Button } from '@/design-system/components/Button/button'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
@@ -43,21 +44,14 @@ export const UsageGuidance: Story = {
           title="❌ 用 Tag 做 overlay 通知圓點"
           note="Tag 太大,放在角落會蓋住主元件;且 Tag 承載語意內容,用來單純計數太重 — 改用 Badge"
         >
+          {/* 疊加的主體換成不會被點的鈴鐺圖示:反例只示範「Tag 疊在角落」的長相,不放一顆按了沒反應的按鈕(F-S2) */}
           <div className="relative inline-flex">
-            <Button variant="tertiary">通知</Button>
-            <Tag color="red" className="absolute -top-2 -right-2">3</Tag>
+            <Bell size={24} className="text-fg-secondary" aria-hidden />
+            <Tag color="red" className="absolute -top-2 -right-3">3</Tag>
           </div>
-          <ExampleCaption warn>↑ Tag 太大,疊在 button 角落違和 → 用 Badge</ExampleCaption>
+          <ExampleCaption warn>↑ Tag 太大,疊在圖示角落違和 → 用 Badge</ExampleCaption>
         </TriggerRule>
 
-        <TriggerRule
-          title="❌ 用 Badge 做分類標籤"
-          note="Badge 不承載語意,單純數字/dot。「Electronics」這類分類必須用 Tag 才有 variant 色 + 可讀文字"
-        >
-          {/* @story-counter-example: ❌ 反例:強撐 Badge 放分類文字(!w-auto 與加寬內距正是本則要示範的誤用) */}
-          <Badge count={0} variant="high" className="!w-auto !px-2" />
-          <ExampleCaption warn>↑ Badge 不設計來放文字 label 做分類 → 用 Tag</ExampleCaption>
-        </TriggerRule>
       </UsageSection>
 
       <UsageSection kind="siblings">
@@ -92,7 +86,7 @@ export const UsageGuidance: Story = {
 }
 
 export const VariantNotSemanticRule: Story = {
-  name: '變體 色彩不自動承載語意',
+  name: '變體色彩不代表語意',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -101,13 +95,14 @@ export const VariantNotSemanticRule: Story = {
       >
         {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Tag color="red">紅色標籤</Tag>
-          <Tag color="green">綠色分類</Tag>
-          <Tag color="blue">藍色狀態</Tag>
-          <Tag color="turquoise">青色</Tag>
-          <Tag color="purple">紫色</Tag>
-          <Tag color="magenta">洋紅</Tag>
-          <Tag color="indigo">靛藍</Tag>
+          {/* 真實分類:部門標籤 —— 紅色是「行銷部」、綠色是「財務部」,跟狀態好壞無關(稽核 L063) */}
+          <Tag color="red">行銷部</Tag>
+          <Tag color="green">財務部</Tag>
+          <Tag color="blue">工程部</Tag>
+          <Tag color="turquoise">設計部</Tag>
+          <Tag color="purple">業務部</Tag>
+          <Tag color="magenta">法務部</Tag>
+          <Tag color="indigo">人資部</Tag>
         </div>
         <ExampleCaption>↑ 13 種 color variant(neutral + 12 categorical 色相,此處節選),色彩意義由 consumer 上下文決定</ExampleCaption>
       </TutorialRule>
@@ -129,7 +124,7 @@ export const VariantNotSemanticRule: Story = {
 }
 
 export const SubtleVsSolidRule: Story = {
-  name: '低調 vs 實心 選擇',
+  name: '低調還是實心',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -178,9 +173,16 @@ export const SubtleVsSolidRule: Story = {
 }
 
 export const DismissRule: Story = {
-  name: '取消 按鈕行為',
+  name: '移除按鈕的行為',
   render: () => {
     const [tags, setTags] = React.useState(['React', 'TypeScript', 'Design System'])
+    // 第二則的有色 Tag 一樣真的能移除(F-S2)
+    const [colored, setColored] = React.useState<{ label: string; color: 'blue' | 'green' | 'red' | 'neutral' }[]>([
+      { label: 'React', color: 'blue' },
+      { label: 'TypeScript', color: 'green' },
+      { label: 'Storybook', color: 'red' },
+      { label: 'Design System', color: 'neutral' },
+    ])
     return (
       <TutorialPage>
         <TutorialRule
@@ -204,10 +206,9 @@ export const DismissRule: Story = {
         >
           {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
           <div className="flex items-center gap-1 flex-wrap">
-            <Tag color="blue" onRemove={() => {}}>React</Tag>
-            <Tag color="green" onRemove={() => {}}>TypeScript</Tag>
-            <Tag color="red" onRemove={() => {}}>Storybook</Tag>
-            <Tag color="neutral" onRemove={() => {}}>Design System</Tag>
+            {colored.map((t) => (
+              <Tag key={t.label} color={t.color} onRemove={() => setColored((prev) => prev.filter((x) => x.label !== t.label))}>{t.label}</Tag>
+            ))}
           </div>
           <ExampleCaption>↑ X icon 跟 Tag 文字同色,融入 Tag 視覺</ExampleCaption>
         </TutorialRule>
@@ -244,11 +245,12 @@ export const IconRule: Story = {
       >
         {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=1" alt="" className="w-4 h-4 rounded-full" />}>
+          {/* 人員頭像帶名片(稽核 M073;同 PeoplePicker 的 <Avatar size={16} hoverCard> 寫法) */}
+          <Tag color="neutral" avatar={<Avatar size={16} src="https://i.pravatar.cc/40?img=1" alt="Ada Chen" hoverCard={samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?img=1', id: 'ADACHEN' })} />}>
             Ada Chen
           </Tag>
-          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=2" alt="" className="w-4 h-4 rounded-full" />}>
-            Alice
+          <Tag color="neutral" avatar={<Avatar size={16} src="https://i.pravatar.cc/40?img=2" alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: 'https://i.pravatar.cc/96?img=2', employeeNumber: 'EMP-1003' })} />}>
+            Alice Chen
           </Tag>
         </div>
       </TutorialRule>

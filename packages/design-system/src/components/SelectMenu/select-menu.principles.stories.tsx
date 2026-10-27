@@ -59,7 +59,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     <TutorialPage>
-      <TutorialSection title="Pattern 1 — Select(static 單選 dropdown)">
+      <TutorialSection title="Select:單選下拉">
         <div className="max-w-prose">
           <p>已知選項清單 + 單選回 form → <StoryLink kind="Design System/Components/Select/展示" name="四模式">Select</StoryLink>(內部 SelectMenu + cmdk + MenuItem)。對齊 Material <code>Select</code> / Ant <code>Select</code> idiom。</p>
           <TutorialList>
@@ -69,7 +69,7 @@ export const CompositionRules: Story = {
         </div>
       </TutorialSection>
 
-      <TutorialSection title="Pattern 2 — Combobox(多選 + 搜尋 + 可建立新值)">
+      <TutorialSection title="Combobox:多選 + 搜尋 + 可建立新值">
         <div className="max-w-prose">
           <p>多選 + 大量選項需搜尋 + 可創新 tag → <StoryLink kind="Design System/Components/Combobox/展示" name="四模式">Combobox</StoryLink>。對齊 GitHub Label picker / Linear Multi-assignee / Notion Multi-select idiom。</p>
           <TutorialList>
@@ -79,7 +79,7 @@ export const CompositionRules: Story = {
         </div>
       </TutorialSection>
 
-      <TutorialSection title="Pattern 3 — PeoplePicker(人員選擇 + Avatar 渲染)">
+      <TutorialSection title="PeoplePicker:選人員 + 頭像">
         <div className="max-w-prose">
           <p>選人員(單 / 多)+ 渲染 avatar + 名稱 + role → <StoryLink kind="Design System/Components/PeoplePicker/展示" name="單人">PeoplePicker</StoryLink>。對齊 Slack mention / Linear assignee / Asana people-search idiom。</p>
           <TutorialList>

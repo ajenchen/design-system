@@ -6,10 +6,11 @@
 //     面向是 4 個功能 flag 的組合(multiple / searchable / creatable / groups)
 //     × consumer 場景,由 ModeMatrix(3.)6 種模式對照涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
-import { useState } from 'react'
-import { Mail, Folder, Users, Settings } from 'lucide-react'
+import { useState, type ComponentProps } from 'react'
+import { Mail, MessageSquare, Smartphone } from 'lucide-react'
 import { SelectMenu, type SelectMenuOption, type SelectMenuGroupConfig } from './select-menu'
 import { Button } from '@/design-system/components/Button/button'
+import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -19,6 +20,13 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
+
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveSelectMenu({ value: initial, ...rest }: ComponentProps<typeof SelectMenu>) {
+  const [value, setValue] = useState(initial)
+  return <SelectMenu {...rest} value={value} onValueChange={setValue} />
+}
+
 
 type SizeKey = 'sm' | 'md' | 'lg'
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
@@ -264,6 +272,8 @@ function SelectMenuInspector() {
   const [searchable, setSearchable] = useState(true)
   const [creatable, setCreatable] = useState(false)
   const [value, setValue] = useState<string | string[]>('in_progress')
+  // creatable 建立的新選項真的加進清單並選取(同 Select 展示「建立新選項」);不再用瀏覽器 alert(原生對話框不是 DS 元件)
+  const [inspectOptions, setInspectOptions] = useState<SelectMenuOption[]>(statusOptions)
 
   // 切換 multiple 時重置 value
   const handleMultipleChange = (m: boolean) => {
@@ -278,21 +288,24 @@ function SelectMenuInspector() {
           <H3>即時預覽</H3>
           <div className="flex items-start gap-4">
             <SelectMenu
-              options={statusOptions}
+              options={inspectOptions}
               value={value}
               onValueChange={setValue}
               multiple={multiple}
               searchable={searchable}
               creatable={creatable}
               size={size}
-              onCreate={(v) => alert(`建立新選項:${v}`)}
+              onCreate={(v) => {
+                setInspectOptions((prev) => [...prev, { value: v, label: v }])
+                setValue((prev) => (multiple ? [...(Array.isArray(prev) ? prev : []), v] : v))
+              }}
             >
               <Button variant="tertiary" size={size}>
                 {multiple
                   ? Array.isArray(value) && value.length > 0
                     ? `已選 ${value.length} 項`
                     : '選擇狀態(多選)'
-                  : (statusOptions.find((o) => o.value === value)?.label ?? '選擇狀態')}
+                  : (inspectOptions.find((o) => o.value === value)?.label ?? '選擇狀態')}
               </Button>
             </SelectMenu>
             <span className="text-caption text-fg-muted">點擊打開</span>
@@ -358,30 +371,9 @@ function SelectMenuInspector() {
         <div>
           <H3>Mode</H3>
           <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={multiple}
-                onChange={(e) => handleMultipleChange(e.target.checked)}
-              />
-              <span className="font-mono">multiple</span>
-            </label>
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={searchable}
-                onChange={(e) => setSearchable(e.target.checked)}
-              />
-              <span className="font-mono">searchable</span>
-            </label>
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={creatable}
-                onChange={(e) => setCreatable(e.target.checked)}
-              />
-              <span className="font-mono">creatable</span>
-            </label>
+            <Checkbox size="sm" checked={multiple} onCheckedChange={(v) => handleMultipleChange(v === true)} label={<span className="font-mono">multiple</span>} />
+            <Checkbox size="sm" checked={searchable} onCheckedChange={(v) => setSearchable(v === true)} label={<span className="font-mono">searchable</span>} />
+            <Checkbox size="sm" checked={creatable} onCheckedChange={(v) => setCreatable(v === true)} label={<span className="font-mono">creatable</span>} />
           </div>
         </div>
 
@@ -720,6 +712,12 @@ export const StateBehavior: Story = {
   render: () => {
     const [empty, setEmpty] = useState<string[]>([])
     const [grouped, setGrouped] = useState<string[]>([])
+    const [channel, setChannel] = useState('email')
+    const channelOptions = [
+      { value: 'email', label: 'Email', icon: Mail, description: '寄到帳號信箱' },
+      { value: 'slack', label: 'Slack', icon: MessageSquare, description: '傳到 #ops-alerts 頻道' },
+      { value: 'sms', label: '簡訊', icon: Smartphone, description: '傳到綁定的手機號碼' },
+    ]
 
     return (
       <div className="flex flex-col gap-10">
@@ -730,18 +728,18 @@ export const StateBehavior: Story = {
             Creatable 模式會額外顯示「直接使用「林采潔」」option。
           </Desc>
           <div className="flex items-center gap-4">
-            <SelectMenu options={reviewerOptions} value="" onValueChange={() => {}} searchable>
+            <LiveSelectMenu options={reviewerOptions} value="" searchable>
               <Button variant="tertiary" size="md">
                 點擊後搜尋清單外的名字(如「林采潔」)
               </Button>
-            </SelectMenu>
+            </LiveSelectMenu>
           </div>
         </div>
 
         <div>
-          <H3>多選 footer「全部」三態</H3>
+          <H3>多選 footer:全選 / 取消全選兩態按鈕(SurfaceFooter 左側)</H3>
           <Desc>
-            多選時 footer 顯示全選 checkbox。狀態:全空(false)→ 部分(indeterminate)→ 全選(true)。
+            多選時 footer 左側是一顆按鈕:還沒全選時寫「全選」,全選後變成「取消全選」,點下去清空。
             有搜尋文字時 footer 隱藏(搜尋中「全選」沒意義)。
           </Desc>
           <div className="flex items-center gap-4">
@@ -755,7 +753,6 @@ export const StateBehavior: Story = {
                 優先度 ({empty.length})
               </Button>
             </SelectMenu>
-            <span className="text-caption text-fg-muted">→ 勾選時 footer 進 indeterminate / all</span>
           </div>
         </div>
 
@@ -787,7 +784,7 @@ export const StateBehavior: Story = {
             option.disabled=true 時進 disabled 狀態(MenuItem disabled 樣式),鍵盤導覽會跳過。
           </Desc>
           <div className="flex items-center gap-4">
-            <SelectMenu
+            <LiveSelectMenu
               options={[
                 { value: 'free', label: 'Free plan' },
                 { value: 'pro', label: 'Pro plan' },
@@ -795,32 +792,25 @@ export const StateBehavior: Story = {
                 { value: 'enterprise', label: 'Enterprise', disabled: true, description: '聯繫業務取得報價' },
               ]}
               value="free"
-              onValueChange={() => {}}
             >
               <Button variant="tertiary" size="md">
                 Free plan
               </Button>
-            </SelectMenu>
+            </LiveSelectMenu>
           </div>
         </div>
 
         <div>
-          <H3>Icon / Avatar / Settings option</H3>
-          <Desc>option 支援 icon(LucideIcon)或 avatar(AvatarData)prefix,由 MenuItem 統一渲染。</Desc>
+          <H3>Icon / Avatar option</H3>
+          <Desc>option 支援 icon(LucideIcon)或 avatar(AvatarData)prefix,由 MenuItem 統一渲染。下例選一個通知管道寫回表單,觸發鈕跟著換成選到的那一項(稽核 L078)。</Desc>
           <div className="flex items-center gap-4">
             <SelectMenu
-              options={[
-                { value: 'mail', label: 'Email 設定', icon: Mail, description: '通知 / 訂閱管理' },
-                { value: 'folder', label: '檔案權限', icon: Folder },
-                { value: 'users', label: '成員管理', icon: Users, description: 'Workspace 成員與角色' },
-                { value: 'settings', label: '一般設定', icon: Settings },
-              ]}
-              value="mail"
-              onValueChange={() => {}}
-              searchable
+              options={channelOptions}
+              value={channel}
+              onValueChange={(v) => setChannel(v as string)}
             >
-              <Button variant="tertiary" size="md">
-                設定項目
+              <Button variant="tertiary" size="md" startIcon={channelOptions.find((o) => o.value === channel)?.icon}>
+                {channelOptions.find((o) => o.value === channel)?.label}
               </Button>
             </SelectMenu>
           </div>
@@ -836,8 +826,26 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 "}<code>{"select-menu.spec.md"}</code>{" 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :基於  cmdk  library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — focus trigger\n- Enter / Space — 開啟 menu(trigger 由 consumer 經 PopoverTrigger asChild 提供:Select / Combobox 的 trigger 是 role=\"combobox\" 容器自綁 Enter / Space handler;若 consumer 用 DS Button 則由 native click 觸發)\n- ↑/↓ — 導覽 options(menu 開啟後)\n- Enter — 選擇\n- Space(menu 開啟 + 單選、不可打字)— 與 Enter 相同:選定反白那一項、收起、焦點回觸發欄位(待辦總帳 L7)\n- 字母鍵 — type-ahead 過濾(search 模式);焦點在觸發欄位本身時打字 = 打開 menu、字進搜尋框(待辦總帳 K3)\n- Backspace(關鍵字空白)— 等於按最後一個值的 ×:多選刪最後一個 Tag,Select 單選只在 clearable 時清值;讀屏念「已移除『X』」(待辦總帳 K1)\n- Tab / Shift+Tab(menu 開啟 + 單選)— 選定反白那一項、收起,焦點走到觸發欄位的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;頁面上已沒有下一格時留在觸發欄位;待辦總帳 B11)\n- Tab / Shift+Tab(menu 開啟 + 多選)— 行為不變:在面板裡繞圈(浮層內搜尋框 → 清單 → footer 的全選按鈕 → 回第一格);全選是真的 <button>,天生在 Tab 序裡(2026-09-17 起取代原本的 role=\"checkbox\" 全選列)。觸發欄位因此宣告 aria-haspopup=\"dialog\"(焦點會進到面板),單選宣告 listbox\n- Enter / Space(focus 在全選按鈕)— 切換全選 / 全清(瀏覽器原生按鈕行為)\n- Esc — 關閉、不選定\n\n  Focus  :menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(aria-activedescendant 高亮,非 DOM focus);searchable 時 DOM focus 給搜尋 input(浮層內或觸發欄位內);浮層開著時滑鼠點選項與 Enter 相同、焦點不離開它,它帶 aria-activedescendant 指向反白選項;非 searchable 時 DOM focus 移到 cmdk 的 [cmdk-root](Command 元素,見 handleNonSearchableAutoFocus),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效;option 無 tabIndex,DOM focus 不落在 option 上。選完 / Esc 關閉時 focus 回 trigger;單選按 Tab 收起時焦點直接走到下一格、不回 trigger。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p><b>ARIA / Pattern</b>:基於  cmdk  library a11y(combobox / listbox / option role + aria-activedescendant)。詳 <a href="https://cmdk.paco.me/#accessibility" target="_blank" rel="noopener noreferrer">cmdk a11y</a>。</p>
+        <p><b>Keyboard 行為</b>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — focus trigger</li>
+          <li>Enter / Space — 開啟 menu(trigger 由 consumer 經 PopoverTrigger asChild 提供:Select / Combobox 的 trigger 是 role="combobox" 容器自綁 Enter / Space handler;若 consumer 用 DS Button 則由 native click 觸發)</li>
+          <li>↑/↓ — 導覽 options(menu 開啟後)</li>
+          <li>Enter — 選擇</li>
+          <li>Space(menu 開啟 + 單選、不可打字)— 與 Enter 相同:選定反白那一項、收起、焦點回觸發欄位</li>
+          <li>字母鍵 — type-ahead 過濾(search 模式);焦點在觸發欄位本身時打字 = 打開 menu、字進搜尋框</li>
+          <li>Backspace(關鍵字空白)— 等於按最後一個值的 ×:多選刪最後一個 Tag,Select 單選只在 clearable 時清值;讀屏念「已移除『X』」</li>
+          <li>Tab / Shift+Tab(menu 開啟 + 單選)— 選定反白那一項、收起,焦點走到觸發欄位的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;頁面上已沒有下一格時留在觸發欄位)</li>
+          <li>Tab / Shift+Tab(menu 開啟 + 多選)— 行為不變:在面板裡繞圈(浮層內搜尋框 → 清單 → footer 的全選按鈕 → 回第一格);全選是真的 &lt;button&gt;,天生在 Tab 序裡(2026-09-17 起取代原本的 role="checkbox" 全選列)。觸發欄位因此宣告 aria-haspopup="dialog"(焦點會進到面板),單選宣告 listbox</li>
+          <li>Enter / Space(focus 在全選按鈕)— 切換全選 / 全清(瀏覽器原生按鈕行為)</li>
+          <li>Esc — 關閉、不選定</li>
+        </ul>
+        <p><b>Focus</b>:menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(aria-activedescendant 高亮,非 DOM focus);searchable 時 DOM focus 給搜尋 input(浮層內或觸發欄位內);浮層開著時滑鼠點選項與 Enter 相同、焦點不離開它,它帶 aria-activedescendant 指向反白選項;非 searchable 時 DOM focus 移到 cmdk 的 [cmdk-root](Command 元素),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效;option 無 tabIndex,DOM focus 不落在 option 上。選完 / Esc 關閉時 focus 回 trigger;單選按 Tab 收起時焦點直接走到下一格、不回 trigger。</p>
+        <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
+      </div>
     </div>
   ),
 }
