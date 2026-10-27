@@ -161,7 +161,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   瀏覽器閘 `scripts/app-shell-layout-invariant.mjs` 驗真頁面逐步等於模型,並守遮罩、層級(40 < 45 < 50)、把手外側命中與浮層時宿主不可操作(2026-10-14 取代已 retired 的 `agent-panel-breakpoint.mjs`)。
 
   **Toast 不為面板讓位**:並排或浮層,Toast 都以整個視窗為準、落在套件預設角落,可能疊在面板上 —— 刻意如此,不是 bug
-  (user 2026-10-13 決定;規則、原話與理由只住 `../Toast/toast.spec.md`「落點」)。面板不向 Toast 登記或提供任何幾何。
+  (user 2026-10-13 22:14 選甲:「確保符合世界級的設計和我們一致的設計語言就甲」;題目、規則與理由只住 `../Toast/toast.spec.md`「落點」)。面板不向 Toast 登記或提供任何幾何。
 
 ### 2. AgentPanelHeader(標題列)
 
@@ -198,8 +198,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距 16(--layout-space-loose);**輪距 40**(我方↔代理)=
   8+24(工具列 xs 高)+8,懸停工具列絕對定位於輪距內,出現不推擠。
-- **底部內距 = `--layout-space-bottom` 48**:最後內容(常駐工具列)→ 輸入盒的送出動作 = layoutSpace 規則 4
-  「內容 → action button = bottom」(`tokens/layoutSpace/layoutSpace.spec.md` L118;2026-09-02 user 抓工具列貼輸入盒)。
+- **底部內距 = `--layout-space-bottom` 48**:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
+  「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
   其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
 - **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(ChatGPT / Claude

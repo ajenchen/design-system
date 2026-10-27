@@ -211,7 +211,7 @@ export const Attachments: Story = {
 /**
  * 多則回覆:只有代理**最後一則**的工具列常駐,其餘回覆懸停(或鍵盤聚焦到工具列)才淡入,而且工具列
  * 絕對定位在 40px 輪距內,出現與消失都不推擠版面;判定由 AgentConversation 自動完成,consumer 不設 pinned。
- * 最後一則工具列到輸入盒 = --layout-space-bottom 48(內容 → 動作鈕)。
+ * 捲到最底時,最後一則工具列到輸入盒 = --layout-space-bottom 48(user 2026-09-02 23:14 原話,見 agent-panel.spec.md「3. AgentConversation」)。
  */
 export const MultipleReplies: Story = {
   name: '多則回覆:工具列常駐與懸停',
@@ -918,7 +918,10 @@ function useSessions(initial: Session[]) {
   }
 }
 
-/** 示意舞台(AppShell 主內容的樣子)的最小寬:任務表 4 欄的可讀下限(示意值;同 AppShell 展示的 Main 最小 600)。 */
+/**
+ * 示意舞台(AppShell 主內容的樣子)的最小寬(示意值;同 AppShell 展示的 Main 最小 600)。
+ * 它不是任務表的寬:舞台比表窄時,表格在自己裡面水平捲(`../DataTable/data-table.spec.md`「Center 區:flex-1,水平 overflow 自行處理」)。
+ */
 const DEMO_STAGE_MIN_WIDTH = 600
 
 function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, persistentElements }: {

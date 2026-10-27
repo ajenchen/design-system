@@ -1006,8 +1006,8 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
           aria-live="polite"
           className={cn(
             // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。
-            // 底部 = --layout-space-bottom 48:最後內容(常駐工具列)→ 輸入盒動作(送出)= layoutSpace 規則 4
-            // 「內容 → action button = bottom」(layoutSpace.spec.md L118;2026-09-02 user 抓工具列貼輸入盒)。
+            // 底部 = --layout-space-bottom 48:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
+            // 「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」;agent-panel.spec.md「3. AgentConversation」)。
             'flex flex-col gap-10 p-[var(--layout-space-loose)] pb-[var(--layout-space-bottom)]',
             className,
           )}

@@ -445,7 +445,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 ## Consumer 紀律
 
 - ❌ 禁:`<AppShell>` 內 wrap 第二個 `<AppShell>`(nested shell 違反「整頁框架」單例性)
-- ❌ 禁:`sidebar={<div>...</div>}`(應傳 `<Sidebar>` primitive,確保視覺 SSOT。raw-element slot 簽名(`sidebar={<div>}` / `header={<header>}` 等)由 `check_consumer_app_invariants.sh` Pattern 9 機械攔(P0,2026-06-12 加);TS 型別層仍收 ReactNode 不強制 — React 型別強制易被 wrapper 包一層繞過,世界級 shell 元件皆收 ReactNode;wrapper 包一層繞過的殘餘 case 靠 story 示範 + audit 把關。2026-06-10 user 拍板 2a:措辭「必」→「應」對齊 code 真實)
+- ❌ 禁:`sidebar={<div>...</div>}`(應傳 `<Sidebar>` primitive,確保視覺 SSOT。raw-element slot 簽名(`sidebar={<div>}` / `header={<header>}` 等)由 `check_consumer_app_invariants.sh` Pattern 9 機械攔(P0,2026-06-12 加);TS 型別層仍收 ReactNode 不強制 — React 型別強制易被 wrapper 包一層繞過,世界級 shell 元件皆收 ReactNode;wrapper 包一層繞過的殘餘 case 靠 story 示範 + audit 把關。2026-06-10 措辭「必」→「應」對齊 code 真實;原記為 user 拍板 2a,原話已查不到 —— 來源不明)
 - ❌ 禁:`header={<header>...</header>}`(應傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header;同上 — Pattern 9 同攔 header raw-element,TS 型別層不強制)
 - ❌ 禁:AppShell.Main 自加 padding(違反 layoutSpace 規則 1B)
 - ❌ 禁:AppShell 的 Menu 用 `collapsible="none"`(「版面規則」§12)

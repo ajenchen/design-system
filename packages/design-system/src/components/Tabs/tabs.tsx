@@ -707,7 +707,7 @@ const TabsContent = React.forwardRef<
     className={cn(
       // 與 TabsList 的間距 canonical(2026-06-12 user 拍板):--layout-space-tight(md 12px,
       // density 連動)。依 layoutSpace.spec「親疏 3 級」:Tabs↔Content 同 bundle(第一級,
-      // 元件 spec own),值取規則 3「直接功能依賴 = tight」精神(heading → labeled content 同類)。
+      // 元件 spec own),值取規則 3「直接功能依賴 = tight」精神(分頁列按了會換下面的內容 = 操作驅動)。
       // 收斂原 DS-wide 四種土法(無間距 / mt-4 / p-4 / pt-4 — M17 假 SSOT)。
       // full-height 佈局(AppShell pane)用 className="mt-0" 覆寫(tailwind-merge)。
       'mt-[var(--layout-space-tight)]',

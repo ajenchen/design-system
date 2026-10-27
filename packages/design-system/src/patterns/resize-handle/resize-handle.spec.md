@@ -106,8 +106,8 @@ benchmark:
 |---|---|---|
 | **Phase 1** | Ship primitive `<ResizeHandle>` + spec.md | ✅ 2026-05-21 |
 | Phase 2 | DataTable column resize 消費本 primitive(value-driven,`data-table.tsx` 欄寬把手 = 同一顆元件,不再經 TanStack `getResizeHandler`) | ✅ 2026-09-02 |
-| Phase 3 | AppShell Menu(Sidebar)拖寬,含 Menu 浮層(consume primitive) | 已拍板(2026-10-14),隨 AppShell「版面規則」落地 |
-| Phase 4 | AppShell Right panel 拖寬 + AI agent 浮層可拖(consume primitive) | 已拍板(2026-10-14),同上 |
+| Phase 3 | AppShell Menu(Sidebar)拖寬,含 Menu 浮層(consume primitive) | 已拍板(user 2026-10-14 規格 U:4),隨 AppShell「版面規則」落地 |
+| Phase 4 | AppShell Right panel 拖寬 + AI agent 浮層可拖(consume primitive) | 已拍板(user 2026-10-14 規格 U:4),同上 |
 
 Phase 3-4 原訂「需獨立 RFC + user 拍板」(2026-05-21 AI 提的施工順序,user 以「都照你建議做」整包採納,commit `197401cc`;同日 user 原話「讓drag resize有一個最小寬度」,commit `e58576a6`)。**拍板 = user 2026-10-14 規格 U:4「除 Main 外，皆為可開關、可拖曳調寬的面板」**;原句的「+ localStorage 持久化」不沿用 —— 寬度跨重新整理由產品自存、DS 不存(「版面規則」§7)。Phase 1-2 已 ship,本 spec 鎖住視覺 canonical 與 splitter 語意。
 

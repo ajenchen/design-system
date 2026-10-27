@@ -267,7 +267,7 @@ export const LongPathRule: Story = {
 
       <TutorialRule
         title="❌ 不折疊、讓長路徑橫向撐破版面"
-        note="Breadcrumb 單行不換行(flex-nowrap),窄容器或 mobile 上完整路徑會溢出邊界、被裁切或逼出橫向捲動,體驗比中段折疊還糟。折疊是主動的資訊階層處理"
+        note="Breadcrumb 單行不換行(flex-nowrap),窄容器上完整路徑會溢出邊界、被裁切或逼出橫向捲動,體驗比中段折疊還糟。折疊是主動的資訊階層處理"
       >
         {/* maxItems={99} 停用 auto-collapse:負例要示範「不折疊」時六層真的撐破窄容器。
             若用預設 maxItems=4,compositionalContent 會把中段折成 ⋯,反而變成正例 → demo 失效。 */}

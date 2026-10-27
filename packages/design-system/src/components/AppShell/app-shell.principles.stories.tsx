@@ -83,7 +83,7 @@ export const CompositionRules: Story = {
         note="AppShell 的面板都要能開關;不收合的側欄只用在 AppShell 以外。"
       />
       <TutorialRule
-        title="✅ 各區最小寬照版面規則的消費者指引設定"
+        title="✅ 應:各區最小寬照版面規則的消費者指引設定"
         note="Main 最小寬 + 細列寬 + 每一種詳情內容的最小寬,不超過產品要支援的最窄桌機版面寬,水平捲軸就幾乎不會出現。"
       />
       <TutorialRule
@@ -91,7 +91,7 @@ export const CompositionRules: Story = {
         note="標題列只放單行標題與關閉鈕,說明文字放在面板內容裡。"
       />
       <TutorialRule
-        title={<>✅ 版面模式(<code>layout</code>)在產品啟動時就固定,使用中不切換</>}
+        title={<>✅ 必:版面模式(<code>layout</code>)在產品啟動時就固定,使用中不切換</>}
         note="切換等於產品角色改變,應重新載入整個 app。"
       />
       <TutorialRule

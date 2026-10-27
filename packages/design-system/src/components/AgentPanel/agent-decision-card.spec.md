@@ -37,7 +37,7 @@
 - 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
 - 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 user 拍板);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
+  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
   「其他」選中而文字為空 → 下一題/送出 disabled。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
