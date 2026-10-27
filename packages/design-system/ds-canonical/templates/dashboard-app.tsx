@@ -18,7 +18,7 @@
 //   1. 替換 NAV array(新 product 的真實導覽項)
 //   2. 替換 WorkspaceBrand 內 workspace 名 / Avatar 顏色
 //   3. 替換 DashboardPage 為真實業務內容(用 DS 元件組:DataTable / Chart 等)與自己的資料來源
-//   4. 替換 PageHeader rightSlot 的 primary action(若有)
+//   4. 頁面有主要動作時,放進 PageHeader 的 rightSlot(只放在用得到的那一頁,按鈕要接上真實行為)
 //   5. 替換版面寬度設定(MAIN_MIN_WIDTH / MENU_WIDTH)為產品的值:AppShell 的 Main 最小寬必填、Menu 的最大寬產品必給
 //      (DS `app-shell.spec.md`「版面規則」§1;§8 消費者指引:Main 最小寬 + 細列寬 + 每種 Right 內容最小寬 ≤ 要支援的最窄 desktop 版面寬,
 //      水平捲軸就幾乎不會出現)
@@ -41,7 +41,6 @@ import {
   TooltipProvider,
   Avatar,
   ItemAvatar,
-  Button,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -53,12 +52,13 @@ import {
 } from '@qijenchen/design-system'
 import { LayoutDashboard, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
 
+// 範本整份畫面用同一種語言 —— 跟 DS 預設文案一致用中文(DS 元件內建的提示、讀屏名稱預設就是中文)
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'orders', label: 'Orders', icon: FileText },
-  { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'dashboard', label: '總覽', icon: LayoutDashboard },
+  { id: 'customers', label: '客戶', icon: Users },
+  { id: 'orders', label: '訂單', icon: FileText },
+  { id: 'reports', label: '報表', icon: BarChart3 },
+  { id: 'settings', label: '設定', icon: Settings },
 ] as const
 
 // ── 版面寬度設定(產品的值;DS `app-shell.spec.md`「版面規則」§1)──
@@ -103,16 +103,16 @@ function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton asChild tooltip="當前使用者">
+                <SidebarMenuButton asChild tooltip="林雅婷">
                   <button type="button" aria-label="帳號與設定">
-                    <ItemAvatar alt="Current user" color="blue" />
-                    <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">當前使用者</span>
+                    <ItemAvatar alt="林雅婷" color="blue" />
+                    <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">林雅婷</span>
                   </button>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" minWidth={280}>
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>當前使用者</DropdownMenuLabel>
+                  <DropdownMenuLabel>林雅婷</DropdownMenuLabel>
                   <DropdownMenuItem startIcon={User}>個人資料</DropdownMenuItem>
                   <DropdownMenuItem startIcon={Settings}>設定</DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -198,12 +198,7 @@ export default function App() {
           layout="primary-sidebar"
           mainMinWidth={MAIN_MIN_WIDTH}
           sidebar={<AppSidebar />}
-          header={
-            <PageHeader
-              title={current.label}
-              rightSlot={<Button variant="primary" size="md">New customer</Button>}
-            />
-          }
+          header={<PageHeader title={current.label} />}
         >
           <DashboardPage />
         </AppShell>

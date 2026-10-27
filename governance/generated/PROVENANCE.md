@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:1f45de140efdd8148acbe3ce52640bcfce4ccdb605ace064fc8ea51e1ca021c0` |
-| canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ee132c8a64c06bd6c284ad3ef02319427d8983aa29d9d07d5e4a39d42acfe207` |
+| canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:9e52317d105f7bb3caa6e98375035e268d013091da7e2cb484f8c5aeae48a772` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:81f96f4f316236beecabe30405c8b915a80a77954d40990b60d3cda4c9073ff8` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:9ce5329455609d321c2b666260913b69baba420975f32bb9ee1740d31034d9fe` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:6d01ea58fb60cdabbe5a0e1bf7b549fd9dd5f8766c9cbeec6867a18c60acdaa0` |
