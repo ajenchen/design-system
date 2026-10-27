@@ -132,6 +132,8 @@ export function useFileDemo(initial: readonly DemoFile[], { clickable = true }: 
 
 /** 全部成功後,面板自己收起前停留的時間(5 秒;file-item.spec.md upload-manager「全部成功」那一列〔UD-U1021-17〕) */
 export const UPLOAD_MANAGER_DISMISS_MS = 5000
+/** 收起倒數每隔多久看一次「有沒有人在看面板」 */
+const DISMISS_CHECK_MS = 200
 
 /**
  * 上傳管理器面板(file-item.spec.md「upload-manager 浮層面板 composition」)。
@@ -155,8 +157,7 @@ export function UploadManagerPanel({
   const demo = useFileDemo(initial)
   const [expanded, setExpanded] = React.useState(true)
   const [dismissed, setDismissed] = React.useState(false)
-  const [hovered, setHovered] = React.useState(false)
-  const [focusWithin, setFocusWithin] = React.useState(false)
+  const panelRef = React.useRef<HTMLDivElement>(null)
 
   const failed = demo.files.filter((f) => f.status === 'error').length
   const allDone = demo.files.length > 0 && demo.files.every((f) => f.status === 'completed')
@@ -168,23 +169,28 @@ export function UploadManagerPanel({
     prevFailed.current = failed
   }, [failed])
 
-  // 全部成功才倒數;滑過 / 聚焦期間不倒數,離開後重新從 5 秒算
+  // 全部成功才開始看:滑鼠停在面板上(:hover)或鍵盤焦點在面板裡(:focus-visible)就重新起算,連續 5 秒都不是才收起。
+  // 每一拍直接問 DOM,不靠 pointerleave / blur 事件記狀態 —— 被按的重試 / 刪除鈕自己消失時,瀏覽器既不送 blur、
+  // 滑鼠移開時也不對面板送 pointerleave(兩種都由探針實測過),記成狀態會以為一直有人在看、面板永遠不收。
+  // 還沒全部成功時不開任何計時器(靜止畫面截圖每次相同)。清單有變動也重新起算。
   React.useEffect(() => {
-    if (!allDone || hovered || focusWithin) return
-    const t = window.setTimeout(() => setDismissed(true), UPLOAD_MANAGER_DISMISS_MS)
-    return () => window.clearTimeout(t)
-  }, [allDone, hovered, focusWithin])
+    if (!allDone) return
+    let quietSince = Date.now()
+    const t = window.setInterval(() => {
+      const panel = panelRef.current
+      if (panel && (panel.matches(':hover') || panel.querySelector(':focus-visible'))) { quietSince = Date.now(); return }
+      if (Date.now() - quietSince >= UPLOAD_MANAGER_DISMISS_MS) setDismissed(true)
+    }, DISMISS_CHECK_MS)
+    return () => window.clearInterval(t)
+  }, [allDone, demo.files])
 
   if (dismissed || demo.files.length === 0) return demo.viewer
   return (
     <>
       <div
+        ref={panelRef}
         data-upload-manager
         className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]"
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-        onFocus={() => setFocusWithin(true)}
-        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false) }}
       >
         {/* header 消費 overlay-surface SurfaceHeader + PopoverTitle(輕量浮層 chrome SSOT,非手刻) */}
         <SurfaceHeader className={`justify-between ${COMPACT_HEADER_SLOT}`}>
