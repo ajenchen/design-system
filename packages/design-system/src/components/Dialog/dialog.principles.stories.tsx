@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogTrigger,
@@ -9,16 +9,21 @@ import {
   DialogTitle,
   DialogBody,
   DialogFooter,
+  DialogClose,
 } from './dialog'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/設計原則',
   parameters: { layout: 'padded' },
+  // 範例裡的按鈕都要能動(登記簿 A16):取消包 DialogClose、主要動作完成後跳 Toast 再關閉(同展示層寫法)。
+  // Toaster 是 app 層 Provider,放在 story 外層、不當教學頁裡的一塊(同 toast.principles.stories.tsx)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -58,7 +63,7 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary">建立新專案</Button>
+              <Button variant="tertiary">建立新專案</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth={480}>
               <DialogHeader>
@@ -78,8 +83,12 @@ export const UsageGuidance: Story = {
                 </FieldGroup>
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary">建立</Button>
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" onClick={() => toast({ variant: 'success', title: '專案已建立' })}>建立</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -91,18 +100,22 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
+              <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth={440}>
               <DialogHeader>
-                <DialogTitle>確定要永久刪除此專案？</DialogTitle>
+                <DialogTitle>是否永久刪除專案</DialogTitle>
               </DialogHeader>
               <DialogBody>
-                <p className="text-body">此動作無法復原，所有相關資料將一併刪除。</p>
+                <p className="text-body">「Q3 設計改版」的任務、評論與附件都會一併刪除,此動作無法復原。</p>
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary" danger>永久刪除</Button>
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '專案已永久刪除' })}>永久刪除</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -116,7 +129,7 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary">儲存變更</Button>
+              <Button variant="tertiary">儲存變更</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth={400}>
               <DialogHeader>
@@ -126,7 +139,9 @@ export const UsageGuidance: Story = {
                 <p className="text-body">您的變更已儲存至伺服器</p>
               </DialogBody>
               <DialogFooter>
-                <Button variant="primary">確定</Button>
+                <DialogClose asChild>
+                  <Button variant="primary">確定</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -139,7 +154,7 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary">前往首頁</Button>
+              <Button variant="tertiary">前往首頁</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth={420}>
               <DialogHeader>
@@ -157,7 +172,7 @@ export const UsageGuidance: Story = {
           title="❌ 側邊工作流程：用 Sheet"
           note="檢視某項目詳情、側邊 filter panel、編輯 inspector——這類與主頁面平行的工作，使用者仍需看到主頁 context。Sheet 從邊緣滑入、較輕，不完全阻斷視線"
         >
-          <ExampleCaption>例:任務詳情的側邊編輯 → 用 Sheet,不用 Dialog 把主清單整個擋住</ExampleCaption>
+          <ExampleCaption>例:任務詳情的側邊編輯 → 用 Sheet,不用 Dialog 把主清單整個擋住(看 <StoryLink kind="Design System/Components/Sheet/展示" name="編輯成員詳情（右側滑入）">Sheet 的編輯成員詳情</StoryLink>)</ExampleCaption>
         </TutorialRule>
         <TutorialList>
           <li>貼著按鈕的精簡選單 / 設定 → DropdownMenu 或 Popover:輕量浮層,不需要擋住整頁</li>
@@ -189,7 +204,7 @@ export const HeightBehaviorRule: Story = {
 
       <TutorialRule
         title='內容已知且穩定：使用 height="hug"'
-        note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。若未來會加入異步 section，應回到預設高度，不要為當前快照選 hug。（舊名 autoHeight 已停用，見 dialog.spec.md「高度軸」）"
+        note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。開啟期間內容會載入或展開的,用預設高度,不要只看當下的畫面選 hug。"
       >
         <ExampleCaption>「刪除專案？」這類單一決策適合 hug；會增減區塊的設定流程不適合。</ExampleCaption>
       </TutorialRule>
@@ -214,7 +229,7 @@ export const FooterActionRule: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="tertiary">標準配對</Button>
+            <Button variant="tertiary">儲存變更</Button>
           </DialogTrigger>
           <DialogContent height="hug" maxWidth={420}>
             <DialogHeader>
@@ -224,8 +239,12 @@ export const FooterActionRule: Story = {
               <p className="text-body">變更將儲存到雲端，其他協作者將看到更新。</p>
             </DialogBody>
             <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary">儲存</Button>
+              <DialogClose asChild>
+                <Button variant="tertiary">取消</Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '變更已儲存' })}>儲存</Button>
+              </DialogClose>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -237,18 +256,22 @@ export const FooterActionRule: Story = {
       >
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="tertiary" startIcon={AlertTriangle}>刪除動作確認</Button>
+            <Button variant="secondary" danger startIcon={Trash2}>刪除任務</Button>
           </DialogTrigger>
           <DialogContent height="hug" maxWidth={420}>
             <DialogHeader>
-              <DialogTitle>確定要刪除？</DialogTitle>
+              <DialogTitle>是否刪除任務</DialogTitle>
             </DialogHeader>
             <DialogBody>
-              <p className="text-body">此動作無法復原。</p>
+              <p className="text-body">「首頁改版驗收」與它的留言都會一併刪除,此動作無法復原。</p>
             </DialogBody>
             <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除</Button>
+              <DialogClose asChild>
+                <Button variant="tertiary">取消</Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button variant="primary" danger startIcon={Trash2} onClick={() => toast({ variant: 'success', title: '任務已刪除' })}>永久刪除</Button>
+              </DialogClose>
             </DialogFooter>
           </DialogContent>
         </Dialog>

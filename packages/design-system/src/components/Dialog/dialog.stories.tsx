@@ -17,9 +17,8 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
  * 通知設定 — flush 中 item(title + desc + right-side Switch)
@@ -42,7 +41,7 @@ function NotificationSettings() {
   const [slack, setSlack] = useState(true)
   const items = [
     { key: 'email', title: '電子郵件通知', desc: '接收每日摘要到信箱', checked: email, onChange: setEmail },
-    { key: 'push', title: '推播通知', desc: '即時推送到桌面與手機', checked: push, onChange: setPush },
+    { key: 'push', title: '推播通知', desc: '即時推送到桌面通知', checked: push, onChange: setPush },
     { key: 'slack', title: 'Slack 整合', desc: '提及時自動發送到 #notifications', checked: slack, onChange: setSlack },
   ]
   return (
@@ -55,7 +54,7 @@ function NotificationSettings() {
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div className="flex flex-col py-2">
             {items.map((n) => (
               // item-anatomy Family 2:[content: title + desc(--item-gap-label-desc-scanning gap)] [ItemSuffix: Switch]
@@ -63,7 +62,8 @@ function NotificationSettings() {
               // px-loose:content 對齊 header/footer 的 loose padding(body flush 無水平 padding)
               <div
                 key={n.key}
-                // @layout-space-magic-ok: 同質設定列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);內容 ↔ 後綴開關 12px 是列內部間距,沒有規格定義
+                // layoutSpace.spec.md:165 的「一串同類 rows」管不到彼此不相干的設定列,不拿它背書;設定列改用 Switch 帶標籤的列另案處理
+                // @layout-space-magic-ok: 設定列範例原值(與已發布版同值,F-S8):列上下 8px、內容 ↔ 後綴開關 12px —— 規格沒寫這兩個值(放行章 (d))
                 className="flex items-start gap-3 py-2 px-[var(--layout-space-loose)]"
               >
                 <div className="min-w-0 flex-1">
@@ -143,32 +143,30 @@ const MEMBER_PRESENCE = [
 function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
   const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
   const presence = MEMBER_PRESENCE[index % MEMBER_PRESENCE.length]
+  const avatarSrc = `https://i.pravatar.cc/80?u=${member.empNum}`
   return (
     // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用:成員名單這種展示列」走 Family 2 手組)
     <div
       role="listitem"
-      // @layout-space-magic-ok: 同質成員列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1031)
+      // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1031);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
       className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)]"
     >
+      {/* 名片走全 DS 同一支建構器(buildPersonProfileCard,經 stories-helpers/scene/person-card.tsx):副標 = 列上的「職稱｜ID｜員工編號」,
+          預設欄位 ID / 員工編號與副標同值;傳訊息 / 語音通話 / 查看更多接 demoPersonActions(2026-10-28 前接空函式,點了沒反應) */}
       <Avatar
         size={40}
-        src={`https://i.pravatar.cc/80?u=${member.empNum}`}
+        src={avatarSrc}
         alt={member.name}
-        hoverCard={
-          <ProfileCard
-            name={member.name}
-            avatar={{ src: `https://i.pravatar.cc/80?u=${member.empNum}`, alt: member.name }}
-            subtitle={`${role}｜${member.empId}`}
-            status={presence.status}
-            statusMessage={presence.message}
-            actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
-            // 預設欄位走 defaultFieldValues(ProfileCard 的正規入口;用 fields 傳同名欄位是舊寫法)。
-            // 2026-10-20 前用 fields 傳、兩個值還對調了:ID 欄顯示員工編號 EMP-1001、員工編號欄顯示 D-0042(獨立驗證 OV-V01)
-            defaultFieldValues={{ id: member.empId, employeeNumber: member.empNum }}
-            onViewMore={() => {}}
-          />
-        }
+        hoverCard={samplePersonCard({
+          name: member.name,
+          avatarSrc,
+          subtitle: `${role}｜${member.empId}｜${member.empNum}`,
+          id: member.empId,
+          employeeNumber: member.empNum,
+          status: presence.status,
+          statusMessage: presence.message,
+        })}
       />
       <div className="flex flex-col min-w-0 flex-1">
         <span className="text-body font-medium truncate">{member.name}</span>
@@ -192,29 +190,60 @@ const meta: Meta = {
 }
 export default meta
 
-export const Default = {
-  name: '基本',
-  render: () => (
-    <Dialog>
+// 邀請成員:說明寫「輸入 Email 即可邀請」就要真的有 Email 欄(2026-10-28 前只有一段字,「寄出邀請」點了沒反應;稽核 M096)。
+// 表單接 useFormValidation、送出成功 → Toast 再關閉、每次打開回到空白(同下方「表單」的寫法與理由)。
+function InviteMemberDialog() {
+  const [open, setOpen] = useState(false)
+  const form = useFormValidation({
+    initialValues: { email: '' },
+    validate: {
+      email: (v) => (!String(v).trim() ? 'Email 必填' : /^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
+    },
+    onSubmit: (values) => {
+      toast({ variant: 'success', title: '邀請已寄出', description: `已寄給 ${String(values.email).trim()}` })
+      setOpen(false)
+    },
+  })
+  const handleOpenChange = (next: boolean) => {
+    if (next) form.reset()
+    setOpen(next)
+  }
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>邀請成員加入專案</Button>
       </DialogTrigger>
-      {/* 邀請成員:一句說明的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      {/* 邀請成員:一個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
       <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>邀請成員到「Q3 設計改版」</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <p className="text-body">輸入 Email 即可邀請。被邀請者會收到通知信並自動加入專案。</p>
+          <Field required invalid={!!form.errors.email}>
+            <FieldLabel>Email</FieldLabel>
+            <Input type="email" placeholder="name@company.com" {...form.getInputProps('email')} />
+            <FieldDescription>被邀請者會收到通知信,接受後加入專案</FieldDescription>
+            <FieldError>{form.errors.email}</FieldError>
+          </Field>
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary">寄出邀請</Button>
+          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>寄出邀請</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export const Default = {
+  name: '基本',
+  render: () => (
+    <>
+      <Toaster />
+      <InviteMemberDialog />
+    </>
   ),
 }
 
@@ -287,10 +316,9 @@ export const WithForm = {
 
 export const LongContent = {
   name: '長內容',
-  // 預設開著(視覺稽核要截到捲動中的 body);docs 頁進 iframe 才不會跟其他開著的 story 疊在一起
-  parameters: openOverlayParameters('640px'),
+  // 按了才開(D2 甲:不要一進頁就開著);開著的畫面由 test-only「開啟狀態」那則給截圖與閘
   render: () => (
-    <Dialog defaultOpen>
+    <Dialog>
       <DialogTrigger asChild>
         <Button>開啟成員列表</Button>
       </DialogTrigger>
@@ -303,7 +331,7 @@ export const LongContent = {
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
             30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
@@ -320,53 +348,111 @@ export const LongContent = {
   ),
 }
 
+// 觸發鈕後面還有一層確認 → secondary + danger(button.spec.md「danger prop — 語意意圖」;登記簿 E14);
+// 標題一行寫出動作(登記簿 E17「header 只需要寫"是否刪除任務"之類的文案就好了吧?」)、內文寫出對象;確認後跳 Toast 再關閉
 export const Destructive = {
   name: '危險操作',
   render: () => (
-    <Dialog>
+    <>
+      <Toaster />
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="secondary" danger>刪除專案</Button>
+        </DialogTrigger>
+        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+        <DialogContent height="hug">
+          <DialogHeader>
+            <DialogTitle>是否刪除專案</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-body">確定要刪除「Q3 設計改版」?刪除後無法復原。</p>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="tertiary">取消</Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '專案已刪除' })}>刪除</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  ),
+}
+
+const TAG_OPTIONS = ['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'] as const
+
+// 選擇標籤:勾選只改暫存、按「套用」才寫回並關閉,觸發鈕顯示已套用的標籤(同 popover.stories.tsx 篩選面板的「暫存 → 套用」);
+// 2026-10-28 前只有「關閉」,列可以點卻選不了(稽核 M097)。footer 只有取消與套用:沒有全選 / 重設的需求就不放(選取類 footer 順序〔UD-H15〕)
+function TagPickerDialog() {
+  const [open, setOpen] = useState(false)
+  const [applied, setApplied] = useState<string[]>(['Bug'])
+  const [staged, setStaged] = useState<string[]>(applied)
+  const handleOpenChange = (next: boolean) => {
+    if (next) setStaged(applied)
+    setOpen(next)
+  }
+  const toggle = (tag: string) => setStaged((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="primary" danger>刪除</Button>
+        <Button variant="tertiary">{applied.length ? `標籤:${applied.join('、')}` : '選擇標籤'}</Button>
       </DialogTrigger>
-      {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
-      <DialogContent height="hug">
+      <DialogContent height="hug" maxWidth={360}>
         <DialogHeader>
-          <DialogTitle>確認刪除</DialogTitle>
+          <DialogTitle>選擇標籤</DialogTitle>
         </DialogHeader>
-        <DialogBody>
-          <p className="text-body">此操作無法復原。確定要刪除嗎？</p>
+        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+          {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
+              Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
+              容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
+              menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
+              `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
+              Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
+              列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
+              整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
+              CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
+              token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
+          <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+            <CommandList>
+              <CommandGroup>
+                {TAG_OPTIONS.map((t) => (
+                  <CommandItem key={t} value={t} checkbox checked={staged.includes(t)} onSelect={() => toggle(t)}>
+                    {t}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary" danger>刪除</Button>
+          <Button variant="primary" onClick={() => { setApplied(staged); setOpen(false) }}>套用</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  ),
+  )
 }
 
-/**
- * ListBody — body 放 list 的 canonical pattern(Material / Polaris / Atlassian / Linear /
- * GitHub Primer 共識:overlay body 裝 list 時 body 不加 vertical padding,節奏源 = item 自己的 py)。
- * 我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">`(@tabs-content-gap-ok: list-as-region 文件範例,非 tabs !pt-0 hack)+ list wrapper `py-2`
- * + item 自帶 `px-loose`(可點的列另帶 hover 底色 + `rounded-md`;成員列不可點,不帶)。不加 `flush` variant — 加 1 row(search / banner)就破功,
- * 保留 chrome padding 較穩。以下三個範例對應不同 list-item tier(item-anatomy Family 2 / MenuItem)。
- */
+// ListBody —— body 放清單(overlay-surface.spec.md「List-as-region in overlay body」):body 撤 chrome padding、
+// list wrapper 自帶 py-2、item 自帶 px-loose(可點的列另帶 hover 底色;成員列不可點,不帶)。三則對應三種清單密度(item-anatomy Family 2 / 選單列)。
+// (2026-10-28 前這段寫在 JSDoc,Autodocs 會把它當說明顯示給讀者;稽核 L136)
 export const ListBody = {
   name: '主體放清單',
-  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14)
+  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14);
+  // 三則都是按了才開(D2 甲:不要一進頁就開著)
   parameters: {
-    ...openOverlayParameters('560px'),
     docs: {
-      ...openOverlayParameters('560px').docs,
-      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列)。' },
+      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列,勾選後按「套用」)。' },
     },
   },
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
-      <Dialog defaultOpen>
+      <Dialog>
         <DialogTrigger asChild>
           <Button variant="tertiary">查看成員</Button>
         </DialogTrigger>
@@ -375,7 +461,7 @@ export const ListBody = {
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91 判定條件)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
             <div role="list" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
@@ -395,66 +481,31 @@ export const ListBody = {
           macOS System Preferences / Notion preferences 的 in-modal pattern */}
       <NotificationSettings />
 
-      {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集) */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="tertiary">選擇標籤</Button>
-        </DialogTrigger>
-        <DialogContent height="hug" maxWidth={360}>
-          <DialogHeader>
-            <DialogTitle>選擇標籤</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
-                Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
-                容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
-                menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
-                `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
-                Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
-                列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
-                整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
-                CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
-                token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
-            <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
-              <CommandList>
-                <CommandGroup>
-                  {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                    <CommandItem key={t} value={t}>
-                      {t}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="tertiary">關閉</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
+      <TagPickerDialog />
     </div>
   ),
 }
 
-/**
- * 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
- *
- * 真實場景:任務詳情 modal(Jira / Linear / Asana 任務檢視)— header 級 prev / next 導覽
- * + ⋮ 溢出選單,操作對象是「dialog 承載的這筆任務」本身(非欄位級、非 confirm/cancel)。
- *
- * - `<DialogHeader actions={…}>`:DS 自動在 actions 與內建 Close X 之間放 `<ButtonDivider>`
- *   (action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護:關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加;
- *   幾何 = mx-1 於 gap-2 cluster → 12px 對稱)。**Consumer 禁自刻 cluster + divider**。
- * - 按鈕 = `variant="text" iconOnly`(text 自動 data-unbounded,不撐高 48px chrome header;
- *   對齊 action-bar「溢出按鈕一律最低視覺重量」)。
- */
-export const HeaderActions = {
-  name: '標頭操作',
-  parameters: openOverlayParameters('480px'),
-  render: () => (
-    <Dialog defaultOpen>
+// 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
+// 真實場景:任務詳情 modal(Jira / Linear / Asana 任務檢視)— header 級 上一筆 / 下一筆 + ⋮ 更多操作,操作對象是「dialog 承載的這筆任務」本身。
+// - `<DialogHeader actions={…}>`:DS 自動在 actions 與內建 Close X 之間放 `<ButtonDivider>`(action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護);
+//   Consumer 禁自刻 cluster + divider。按鈕 = `variant="text" iconOnly`(不撐高 48px chrome header;action-bar「溢出按鈕一律最低視覺重量」)。
+// - 2026-10-28 前三顆都沒有行為(稽核 M097):上一筆 / 下一筆真的換任務(到頭到尾停用)、⋮ 打開 DropdownMenu;
+//   選單項目做完跳 Toast(複製連結 = neutral、不帶 action,toast.spec.md 變體表;封存 = 關閉對話框 + success)。
+// - 按了才開(D2 甲:不要一進頁就開著);這則的 Autodocs 說明 / JSDoc 改成一般註解(稽核 L136)
+const SAMPLE_TASKS = [
+  { key: 'WM-142', title: '結帳流程改版', desc: '重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升轉換率。', assignee: 'Alan Chen', status: '進行中', due: '2026-07-18' },
+  { key: 'WM-143', title: '發票資訊欄位驗證', desc: '統一編號與載具條碼在送出前先驗格式,錯誤訊息貼在欄位下方。', assignee: 'Betty Wu', status: '待處理', due: '2026-07-22' },
+  { key: 'WM-144', title: '付款失敗重試流程', desc: '付款被拒時保留購物車內容,提供換卡重試,不必重新填寫收件資料。', assignee: 'Charlie Lee', status: '待處理', due: '2026-07-29' },
+] as const
+
+function TaskDetailDialog() {
+  const [open, setOpen] = useState(false)
+  const [index, setIndex] = useState(0)
+  const task = SAMPLE_TASKS[index]
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="tertiary">開啟任務詳情</Button>
       </DialogTrigger>
@@ -462,24 +513,30 @@ export const HeaderActions = {
         <DialogHeader
           actions={
             <>
-              <Button variant="text" iconOnly size="sm" startIcon={ChevronUp} aria-label="上一筆任務" />
-              <Button variant="text" iconOnly size="sm" startIcon={ChevronDown} aria-label="下一筆任務" />
-              <Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />
+              <Button variant="text" iconOnly size="sm" startIcon={ChevronUp} aria-label="上一筆任務" disabled={index === 0} onClick={() => setIndex((i) => i - 1)} />
+              <Button variant="text" iconOnly size="sm" startIcon={ChevronDown} aria-label="下一筆任務" disabled={index === SAMPLE_TASKS.length - 1} onClick={() => setIndex((i) => i + 1)} />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => toast({ title: '已複製任務連結' })}>複製任務連結</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => { setOpen(false); toast({ variant: 'success', title: `${task.key} 已封存` }) }}>封存任務</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           }
         >
-          <DialogTitle>WM-142 結帳流程改版</DialogTitle>
+          <DialogTitle>{task.key} {task.title}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            <p className="text-body">
-              重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升行動端轉換率。
-            </p>
+            <p className="text-body">{task.desc}</p>
             {/* 2026-09-08:key / value 用 DescriptionList(owner:description-list.spec.md),不再手刻字級與欄寬 */}
             <DescriptionList orientation="horizontal">
-              <DescriptionItem label="指派人">Alan Chen</DescriptionItem>
-              <DescriptionItem label="狀態">進行中</DescriptionItem>
-              <DescriptionItem label="截止日">2026-07-18</DescriptionItem>
+              <DescriptionItem label="指派人">{task.assignee}</DescriptionItem>
+              <DescriptionItem label="狀態">{task.status}</DescriptionItem>
+              <DescriptionItem label="截止日">{task.due}</DescriptionItem>
             </DescriptionList>
           </div>
         </DialogBody>
@@ -490,109 +547,111 @@ export const HeaderActions = {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export const HeaderActions = {
+  name: '標頭操作',
+  render: () => (
+    <>
+      <Toaster />
+      <TaskDetailDialog />
+    </>
   ),
 }
 
-/**
- * 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來
- * per user「應該整合進去 dialog 吧?目前應該不需要獨立的 header canonical 資料夾來說明這些東西」)
- *
- * 對應 `header-canonical.spec.md` W1-W4:
- *   W1 Tabs 自畫 full-width border-divider 接管 chrome separator
- *   W2 TabsList 全 dialog 寬 + 內 px-loose padding 對齊 title left
- *   W4 header content row + tabs row flush stack(gap = 0)
- *
- * Anatomy(consumer 寫法):`<Tabs>` wrap 整 DialogContent → `<DialogHeader tabsSlot={<TabsList>}>` →
- *   `<DialogBody><TabsContent className="mt-0">...</TabsContent></DialogBody>`
- *
- * 注意:TabsContent 必放 DialogBody 內(scroll + chrome padding 由 DialogBody 自管),不要自加 padding。
- * ⚠️ 一軸單一 spacing owner(item-anatomy.spec.md「垂直 padding 歸屬 / 禁雙重 padding」):DialogBody
- *   內層已用 `pt-[var(--layout-space-tight)]` 擁有 header→content 的 chrome gap;而 TabsContent 預設
- *   帶 `mt-[var(--layout-space-tight)]`(tabs.tsx:489,為「緊接 tab bar 下方」而設)。tabsSlot 這條
- *   composition 把 tab bar 抬進 header,兩 owner 疊加 = 雙重 tight(md 24 / lg 32,user 2026-07-01 抓)。
- *   故 chrome body 內的 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 DialogBody(對齊
- *   AppShell 前例 app-shell.stories.tsx#PrimarySidebarWithTabs + tabs.spec.md「出現在 Dialog」段)。Hook
- *   `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
- */
+// 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來;user 當時要求整合進 Dialog、不另開 header canonical 資料夾)
+// 對應 `header-canonical.spec.md` W1-W4:W1 Tabs 自畫 full-width border-divider 接管 chrome separator;W2 TabsList 全 dialog 寬 + 內 px-loose padding 對齊 title left;
+//   W4 header content row + tabs row flush stack(gap = 0)。
+// Anatomy(consumer 寫法):`<Tabs>` wrap 整 DialogContent → `<DialogHeader tabsSlot={<TabsList>}>` → `<DialogBody><TabsContent className="mt-0">...</TabsContent></DialogBody>`。
+// TabsContent 必放 DialogBody 內(scroll + chrome padding 由 DialogBody 自管),不要自加 padding。一軸單一 spacing owner(item-anatomy.spec.md「垂直 padding 歸屬」):
+//   DialogBody 內層已用 `pt-[var(--layout-space-tight)]` 擁有 header→content 的 chrome gap;TabsContent 預設帶 `mt-[var(--layout-space-tight)]`(為「緊接 tab bar 下方」而設),
+//   tabsSlot 把 tab bar 抬進 header 後兩者疊加 = 雙重 tight(md 24 / lg 32,user 2026-07-01 抓)→ chrome body 內的 TabsContent 必 `className="mt-0"`
+//   (對齊 AppShell 前例 app-shell.stories.tsx#PrimarySidebarWithTabs + tabs.spec.md「出現在 Dialog」段;Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制)。
+// 2026-10-28:補 footer「取消 / 儲存」—— 分頁裡有可以改的欄位與開關,沒有存的地方 = 改了也帶不走(稽核 M097);儲存 → Toast 再關閉。
+// (2026-10-28 前這段寫在 JSDoc,Autodocs 會把它當說明顯示給讀者;稽核 L136)
 export const WithTabsInHeader = {
   name: '標頭內含分頁',
   render: () => (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="tertiary">專案設定</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <Tabs defaultValue="general">
-          <DialogHeader
-            tabsSlot={
-              <TabsList>
-                <TabsTrigger value="general">一般</TabsTrigger>
-                <TabsTrigger value="members">成員</TabsTrigger>
-                <TabsTrigger value="integrations">整合</TabsTrigger>
-              </TabsList>
-            }
-          >
-            <DialogTitle>專案設定</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            {/* mt-0:DialogBody pt-tight 已擁有 header→content gap,TabsContent 預設 mt-tight 會雙重(見上方 JSDoc)*/}
-            <TabsContent value="general" className="mt-0">
-              <div className="flex flex-col gap-[var(--layout-space-loose)]">
-                <Field>
-                  <FieldLabel>專案名稱</FieldLabel>
-                  <Input defaultValue="Q3 設計改版" />
-                </Field>
-                <Field>
-                  <FieldLabel>專案簡介</FieldLabel>
-                  <Input defaultValue="改善結帳流程體驗與轉換率" />
-                </Field>
-              </div>
-            </TabsContent>
-            <TabsContent value="members" className="mt-0">
-              <DescriptionList orientation="horizontal">
-                <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
-                <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
-                <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
-              </DescriptionList>
-            </TabsContent>
-            <TabsContent value="integrations" className="mt-0">
-              {/* 設定列 = item-anatomy Family 2 reading row([content] [ItemSuffix: Switch]),與本檔「通知設定」示範同一結構
-                  (2026-09-29 待辦總帳 OD5:先前手刻 flex justify-between,是同檔已有先例的平行實作;M23(d) 最相近同目的 canonical)。
-                  沒有 desc 的列 suffix 仍以 h-[1lh] 對齊 label 第一行;世界級對照同上方註解(macOS / iOS Settings、Gmail、Notion 皆 suffix control)。 */}
-              <div className="flex flex-col">
-                {[
-                  { key: 'slack', label: 'Slack 通知', on: true },
-                  { key: 'github', label: 'GitHub PR 同步', on: true },
-                  { key: 'linear', label: 'Linear issue 連動', on: false },
-                ].map((it) => (
-                  // @layout-space-magic-ok: 同質設定列,範例原值:列與列之間不加 gap,列距由每列上下 8px 內距撐出(layoutSpace.spec.md:165「同質 list 的列間距」);內容 ↔ 後綴開關 12px 是列內部間距,沒有規格定義
-                  <div key={it.key} className="flex items-start gap-3 py-2">
-                    <div className="min-w-0 flex-1 text-body">{it.label}</div>
-                    <ItemSuffix>
-                      <Switch defaultChecked={it.on} aria-label={it.label} />
-                    </ItemSuffix>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          </DialogBody>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Toaster />
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="tertiary">專案設定</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <Tabs defaultValue="general">
+            <DialogHeader
+              tabsSlot={
+                <TabsList>
+                  <TabsTrigger value="general">一般</TabsTrigger>
+                  <TabsTrigger value="members">成員</TabsTrigger>
+                  <TabsTrigger value="integrations">整合</TabsTrigger>
+                </TabsList>
+              }
+            >
+              <DialogTitle>專案設定</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              {/* mt-0:DialogBody pt-tight 已擁有 header→content gap,TabsContent 預設 mt-tight 會雙重(見上方 JSDoc)*/}
+              <TabsContent value="general" className="mt-0">
+                <div className="flex flex-col gap-[var(--layout-space-loose)]">
+                  <Field>
+                    <FieldLabel>專案名稱</FieldLabel>
+                    <Input defaultValue="Q3 設計改版" />
+                  </Field>
+                  <Field>
+                    <FieldLabel>專案簡介</FieldLabel>
+                    <Input defaultValue="改善結帳流程體驗與轉換率" />
+                  </Field>
+                </div>
+              </TabsContent>
+              <TabsContent value="members" className="mt-0">
+                <DescriptionList orientation="horizontal">
+                  <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
+                  <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
+                  <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
+                </DescriptionList>
+              </TabsContent>
+              <TabsContent value="integrations" className="mt-0">
+                {/* 設定列 = item-anatomy Family 2 reading row([content] [ItemSuffix: Switch]),與本檔「通知設定」示範同一結構
+                    (2026-09-29 待辦總帳 OD5:先前手刻 flex justify-between,是同檔已有先例的平行實作;M23(d) 最相近同目的 canonical)。
+                    沒有 desc 的列 suffix 仍以 h-[1lh] 對齊 label 第一行;世界級對照同上方註解(macOS / iOS Settings、Gmail、Notion 皆 suffix control)。 */}
+                <div className="flex flex-col">
+                  {[
+                    { key: 'slack', label: 'Slack 通知', on: true },
+                    { key: 'github', label: 'GitHub PR 同步', on: true },
+                    { key: 'linear', label: 'Linear issue 連動', on: false },
+                  ].map((it) => (
+                    // layoutSpace.spec.md:165 的「一串同類 rows」管不到彼此不相干的設定列,不拿它背書;設定列改用 Switch 帶標籤的列另案處理
+                    // @layout-space-magic-ok: 設定列範例原值(與已發布版同值,F-S8):列上下 8px、內容 ↔ 後綴開關 12px —— 規格沒寫這兩個值(放行章 (d))
+                    <div key={it.key} className="flex items-start gap-3 py-2">
+                      <div className="min-w-0 flex-1 text-body">{it.label}</div>
+                      <ItemSuffix>
+                        <Switch defaultChecked={it.on} aria-label={it.label} />
+                      </ItemSuffix>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </DialogBody>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="tertiary">取消</Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '專案設定已儲存' })}>儲存</Button>
+              </DialogClose>
+            </DialogFooter>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+    </>
   ),
 }
 
-/**
- * OpenSnapshot — visual-audit 專用 story(非 consumer-facing 教學範例)。
- *
- * 用 `defaultOpen` 讓 overlay 在 render 當下就開著,Playwright 截圖才抓得到
- * Dialog chrome(Header/Body/Footer)。不用 play() + userEvent,是因為
- * Radix `defaultOpen` 對 Portal 自動生效,不需額外互動觸發 — 世界級 DS
- * (Polaris / Atlassian)的 chromatic 稽核也走同 pattern。
- *
- * 情境選用「確認刪除專案」— Jira / Linear 常見的 destructive confirmation,
- * 涵蓋 title + description + footer 雙 action 的完整 chrome。
- */
+// 開啟狀態 —— 只給截圖 / 閘看(test-only,不進文件頁):defaultOpen 讓對話框一掛上就開著,截得到 Header / Body / Footer。
+// 讀者看的展示 story 一律按了才開(D2 甲),開著的畫面集中在這一則。情境「確認刪除專案」涵蓋 title + body + footer 雙 action。
 export const OpenSnapshot = {
   name: '開啟狀態',
   tags: ['test-only'],
@@ -689,18 +748,10 @@ export const FocusTrapControlNoDialog: Story = {
   ),
 }
 
-/**
- * 並存契約的**測試夾具**(不是展示範例)。
- *
- * 2026-09-11 user 逐字:「Dialog 的並存範例給我刪掉」——**側欄看得到的那支展示範例已移除**。
- * 但 `persistentElements` 這個能力本身沒有退役(`dialog.spec.md`「並存(persistentElements)」仍然有效),
- * 它的 8 條機械斷言(常駐區可聚焦可打字、其餘背景仍被抑制、對話框不與常駐區相交、遮罩 = 舞台、側欄中心可點)
- * 需要一個掛載目標。所以把場景縮到**剛好夠閘用**的最小 DOM,並標 `test-only` —— 側欄與 docs 都不會出現,
- * 跟 FileViewer 同一份契約的做法一致(`file-viewer.stories.tsx` 的 `CoexistenceContract` 也是 `test-only`)。
- *
- * 要連這個夾具也一起刪,就得同時退役 `scripts/dialog-coexistence-invariant.mjs` 的 (B) 與 (G) 兩段 ——
- * 那會讓 `persistentElements` 變成沒有任何機械保護的能力,不是我可以自己決定的取捨。
- */
+// 並存契約的測試夾具(不是展示範例;test-only,側欄與 docs 都看不到)。
+// 2026-09-11 user 要求刪掉 Dialog 的並存範例 —— 側欄看得到的那支展示範例已移除;`persistentElements` 能力本身沒有退役
+// (dialog.spec.md「並存(persistentElements)」),它的機械斷言需要一個掛載目標,所以場景縮到剛好夠閘用的最小 DOM。
+// 要連這個夾具也刪,就得把 scripts/dialog-coexistence-invariant.mjs 等閘改成自己掛夾具(稽核 H02,交整合步驟與治理家族一起做)。
 export const CoexistencePoc: Story = {
   name: '測試夾具 — 並存區域(persistentElements)',
   tags: ['test-only'],
@@ -737,7 +788,7 @@ export const CoexistencePoc: Story = {
               </Dialog>
             )}
           </div>
-          <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-2 border-l border-divider bg-surface p-4">
+          <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
             <Field id="coexist-aside-input">
               <FieldLabel>新增評論</FieldLabel>
               <Input value={aside} onChange={(e) => setAside(e.target.value)} />
