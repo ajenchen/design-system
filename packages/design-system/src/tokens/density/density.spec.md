@@ -29,7 +29,7 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 ```
 
 - **md**(預設):資訊密集的桌面 UI / form-heavy 頁面
-- **lg**:觸控裝置 / 需要更大點擊目標的情境
+- **lg**:元件高度與版面間距都放大一階(例:欄位高 md 32 → lg 36)
 
 `data-density` 內部等同同時設 `data-ui-size` + `data-layout-space` 相同 tier。CSS selectors 同時監聽 `[data-density="lg"], [data-ui-size="lg"]` 等(見 `uiSize.css` + `layoutSpace.css`)。
 

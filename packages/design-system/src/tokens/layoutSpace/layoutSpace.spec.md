@@ -94,7 +94,7 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
 任何內容左右 padding 最終 = `loose`(對齊 inline 元件邊緣);**寫哪看元件本質**,不是 either-or。
 
-Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome」(hover bg 0 gutter 貼邊 + content 由 item-px 推進)。
+Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overlay body」的「3 條 invariant」(hover bg 0 gutter 貼邊 + content 由 item-px 推進)。
 
 ### 規則 2:頂部(Header → 第一個元素)
 
@@ -114,7 +114,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | **跨範疇 + functional 交互** | `tight` |
 | **跨範疇 + parallel** | `loose` |
 
-**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只定義在教學頁,2026-10-14)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(:13 結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。
+**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只定義在教學頁,2026-10-14)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(:13 結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)。
 
 世界級對齊:Material 3 / Polaris / Apple HIG / Atlassian 都按「relationship not type」決定 spacing。 <!-- @benchmark-unverified -->
 
@@ -170,7 +170,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 > **2026-09-12 更正**:右欄原本舉的例子是「FieldGroup 三級固定 gap,不隨 density」——**那個例子跟左欄第一列自相矛盾**:
 > 左欄逐字說「並列獨立 區塊 / 卡片 / **表單欄位** 之間 → 規則 3 parallel = loose」,而 FieldGroup 管的正是表單欄位之間的間距。
 > 同一個概念同時出現在兩欄,是真矛盾不是細節。該例子來自 `31383ac4`(2026-07-02)的防漂移補強,
-> 當時的 user 原話是「怎麼確保以後都遵循 layout-space 沒偏移且有 SSOT」(問防漂移機制,不是定表單間距)。
+> 當時 user 問的是怎麼確保以後都遵循 layout-space、不偏移、有 SSOT(問防漂移機制,不是定表單間距;轉述 —— 那段對話紀錄已不存在、登記簿查無原話)。
 > 2026-09-12 user 拍板移除 FieldGroup 的三檔 gap、改消費 `--layout-space-loose`,此豁免例子同步撤除。
 
 **判準一句話**:是「並列/區塊/chrome/header→content/content→action 的 macro 結構間距、規則說該縮放」→ 用 token;是「list 列間距 / micro / 刻意固定 / 元件內部決定」→ magic number 合法,**不要 token 化**。
@@ -324,7 +324,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 
 - **不抽 universal LayoutBody / FormLayout primitive**:world-class(Material / Polaris / Atlassian / Carbon / Mantine)都「每元件 own variant + 共享 token」;規則 1-6 universal,角色 scope-relative 易誤封裝。獨特 chrome 已在 `overlay-surface.spec.md` + `action-bar.spec.md`
 - **List-as-region in overlay body**(2026-05-01 canonical):當 Dialog / Sheet / Popover body 內容 = unbounded list-as-region(menu / Cmd+K / nav)時,consumer 用 className override 撤掉 chrome padding(`<DialogBody className="!px-0 !pt-0 !pb-0">`)+ 自管 list outer wrapper(`<div className="py-2">`)+ item 自帶 `px-loose rounded-md`。**item 有沒有 hover 底色不是判定條件**(判定條件 owner 見 `overlay-surface.spec.md`「List-as-region in overlay body」)。**不做成 body variant**(`flush?: boolean`)— Material/Atlassian/Mantine/shadcn 都 consumer 自管,Polaris flush API scope 極窄;variant 不解決底層脆弱(加 1 row search/banner 就破功),反把 1 surface decision 拆兩 API。詳 `overlay-surface.spec.md`「List-as-region in overlay body」+ `dialog.tsx#DialogBody` JSDoc
-- **Tabs-in-chrome-body 單一 gap owner**(2026-07-01 canonical):`tabsSlot` 模式下 `TabsContent` 放進 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)時**必 `className="mt-0"`** — chrome body 已擁有 header→content gap(規則 2「element → tight」),TabsContent 內建 `mt-tight` 會雙重疊加(md 24 / lg 32)。同「一軸單一 spacing owner」原則(`item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」)。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`
+- **Tabs-in-chrome-body 單一 gap owner**(2026-07-01 canonical):`tabsSlot` 模式下 `TabsContent` 放進 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)時**必 `className="mt-0"`** — chrome body 已擁有 header→content gap(規則 2「element → tight」),TabsContent 內建 `mt-tight` 會雙重疊加(md 24 / lg 32)。同「一軸單一 spacing owner」原則(`item-anatomy.spec.md`「垂直 padding 歸屬:row 集合不加 py,由外層容器負責」)。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`
 - **v1 → v6**(2026-04-30):block-adjacent 機械 → 親疏判 + bundled-family 分權 + region 二分(bounded/unbounded)+ 多 region 限制。詳 git 歷史(原 memory `feedback_layout_v6_canonical.md` 已 prune)
 
 ---

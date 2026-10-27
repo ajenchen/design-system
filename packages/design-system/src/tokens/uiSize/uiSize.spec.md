@@ -73,7 +73,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 2. 三個欄位(現況 / Rationale / 世界級對照)**都要填**,缺一不可——特別是「世界級對照」不能省,mindset #1 要求對標
 3. 位置:必須在 spec 的「尺寸」主章節之下(不是埋在「何時不用」或「禁止事項」等其他章節)
 
-**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「size 只控 root 容器外高」段的散文,沒有用這個子標題(2026-09-27 核對)。
+**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「一種視覺,多種容器尺寸」段的散文,沒有用這個子標題(2026-09-27 核對)。
 **需補齊 rationale 段的元件**:(無 — Phase 2 已全部補齊)。未來新增偏離 field-height 的元件 → 必須按本格式寫(三欄格式為本 spec 約定,非機械 enforce;`/design-system-audit` 僅經 audit-prompts 通用 rationale-grep + Rule B density flag 間接把關)。
 
 **audit hook 未來擴展**:若 cva `defaultVariants.size` 不是 `md`,或 `size` variants 的數值不命中 `--field-height-*`,hook 可要求 spec.md 必有符合格式的 rationale 段,否則 block merge(列為 post-Phase-2 可考慮加上的 mechanical gate)。
@@ -223,7 +223,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 | md | md | 24px(`--tag-height-md`) | (field-height-md − 2px − tag-height-md) / 2 = 3px |
 | lg | lg | 24px(`--tag-height-lg`) | (field-height-lg − 2px − tag-height-lg) / 2 = 5px |
 
-公式扣 2px 邊框(2026-09-15 像素實測修正,詳 `components/Tag/tag.spec.md`「與 Field 的關係」):padding 量在邊框內側,不扣會四邊差 1px。
+公式扣 2px 邊框(2026-09-15 像素實測修正,詳 `components/Tag/tag.spec.md`「圓角與間距」):padding 量在邊框內側,不扣會四邊差 1px。
 
 ---
 

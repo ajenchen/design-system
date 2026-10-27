@@ -22,7 +22,7 @@
 - **Layout**(Material `md-comp-layout` 對應):跨層佈局常數(`--layout-space-loose` / `--sidebar-width` / `--chrome-header-height`)
 - **Internal**(Material `md-comp-*` 對應):單元件內部不對 consumer 公開(目前 0 個——所有跨元件都 promote 到 Family,單元件 hardcode in tsx)
 
-`tokens/README.md`「Public vs Internal token」表 cross-reference 本 spec 此段。
+`tokens/README.md`「Consumer scope:public vs internal token」表 cross-reference 本 spec 此段。
 
 ---
 
@@ -168,7 +168,7 @@
 - Public token → **必補 Storybook stories**(色票 / 字級 / 間距對照展示)
 - Internal token → spec.md codify family 即可,**免 stories**(consumer 不直接看)
 
-`tokens/README.md`「Public vs Internal token」表 cross-reference 本段。
+`tokens/README.md`「Consumer scope:public vs internal token」表 cross-reference 本段。
 
 ---
 

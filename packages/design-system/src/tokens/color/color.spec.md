@@ -255,7 +255,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <Progress className="bg-primary" value={60} />
 ```
 
-**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 user 拍板把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)。
+**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
 
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
@@ -320,7 +320,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 
 - **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
   > 2026-09-25 更正:原句寫「`-subtle` 不透明」,與下方「Dark mode subtle」段矛盾 —— 淺色的 step-1 是不透明色票,**深色的 step-1 是 alpha 公式**(`primitives.css` 深色區塊 `--color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`),本身就半透明。兩者的分工看的是「底是誰的」(元件自己的 vs 蓋在別人內容上),不是透不透明。
-  > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。修法(列被滑過時把區間格釘住)已備妥、**未套用**:屬「試算表模式」那組,user 2026-09-26 仍在提問(待辦總帳〇節「被質疑、先不做」、C12⑦)。
+  > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。修法(列被滑過時把區間格釘住)已備妥、**未套用**:屬「試算表模式」那組,user 2026-09-26 仍在提問(待辦總帳〇節把它列在『被質疑、先不做、研究中』那組、C12⑦)。
 - **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
   > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
 - **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
@@ -391,7 +391,7 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 **★ green documented exception**:green-6 白字實測對比 2.47(連 3:1 都不過),但 user 拍板維持白字(沿用世界級慣見的「綠底白字」按鈕觀感)→ 列為知情違反,待日後評估是否調整 green-6 本身。
 
-**`--warning-foreground` 2026-06-04 移除(改名 + 不留 alias,user「以乾淨為主」)**:原 `--warning-foreground`(= black-a85)被 categorical yellow/amber 借用 = 誤名(它跟 warning 無關,本質是「亮底深字」通用概念)→ 統一改名 `--on-emphasis-dark`,**不保留 warning 專屬 token**(grep 確認無任何元件消費 `text-warning-foreground`)。warning solid surface 若需黃底深字,一律消費通用 `--on-emphasis-dark`(與其他亮色 hue 同),不再有 warning 專屬前景。
+**`--warning-foreground` 2026-06-04 移除(改名 + 不留 alias;user 要求以乾淨為主 —— 轉述,那段對話紀錄已不存在、登記簿查無原話)**:原 `--warning-foreground`(= black-a85)被 categorical yellow/amber 借用 = 誤名(它跟 warning 無關,本質是「亮底深字」通用概念)→ 統一改名 `--on-emphasis-dark`,**不保留 warning 專屬 token**(grep 確認無任何元件消費 `text-warning-foreground`)。warning solid surface 若需黃底深字,一律消費通用 `--on-emphasis-dark`(與其他亮色 hue 同),不再有 warning 專屬前景。
 
 **為什麼獨立於 `--foreground`**:`--foreground` = neutral-9 文字色(淺色 neutral 底的主文字);on-emphasis 配對是「飽和 / 填色底」專用,跟 neutral 表面前景語義不同(數值巧合相同也不可合併:light mode `--foreground` 是深色,混用會 break 飽和底白字)。
 
@@ -749,7 +749,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 **已按下型態落在「底」上也是疊層**(2026-09-29,待辦總帳 N7):白底 `secondary` 切換鈕(`pressedTone="neutral"`)的靜止底是 `--surface`,已按下三階用 `bg-interaction-selected` / `-selected-hover` / `-selected-active`(= 把 `--neutral-selected` 階梯畫成 background-image)—— 第 2 列的「底不換、疊一層」延伸到已按下;換底的話深色 `--surface`(白 8%)與 `--neutral-selected`(neutral-2 = 白 8%)疊在頁面底上同為 `#1E1E1E`,已按下看不見。淺色疊層結果與換底相同(`#F5F5F5` → `#F0F0F0` → `#E8E8E8`),深色 `#303030` → `#373737` → `#3D3D3D`(頁面底上計算值)。透明底的 tertiary / text 仍換底(`--neutral-selected` 家族是它們自己的填色)。
 
-**巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在「滑到可點卡片內的按鈕上時」一題選「卡片保留、按鈕再亮一層 (Recommended)」(選項由 AI 提供);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
+**巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在『滑到可點卡片內的按鈕上時』一題選『卡片保留、按鈕再亮一層 (Recommended)』(題目與選項都是 AI 寫的);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
 
 - 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)= 格子改回透明,跟當月格同一對。
 - 錨例 2(2026-09-07,已按下的切換鈕):已按下的靜止底是 neutral-2,滑過值 `--neutral-selected-hover` 卻指到 neutral-1 —— 等於借了透明底 `--neutral-hover` 的值,按下與未按下在滑過時像素完全相同;改成 neutral-3(自己的下一階)才分得出來(下方階梯表)。
@@ -820,7 +820,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ## Static Subtle Background — `bg-muted` vs `bg-secondary` 使用原則(SSOT)
 
-> **2026-05-20 v3 consolidation**(per user directive「全盤查 spec 是否曾寫過具體舉一反三 + 是否有矛盾」):原 L647-678 重複 3 處場景列表 + 「status indicator drift」已移除,本段為**單一 SSOT**。
+> **2026-05-20 v3 consolidation**(user 要求全盤查 spec 是否曾寫過具體的舉一反三、是否有矛盾 —— 轉述;那段對話紀錄已不存在、登記簿查無原話):原 L647-678 重複 3 處場景列表 + 「status indicator drift」已移除,本段為**單一 SSOT**。
 
 兩者都是靜態中性背景,但傳達的**元素狀態**不同。**核心問句**:「這個元素是『還沒準備好 / 不可操作 / placeholder』嗎?」
 

@@ -12,7 +12,7 @@ benchmark:
 
 # Orphan Token 分類設計原則(retire vs structural-keep SSOT)
 
-> **Foundational context**(2026-05-21 codify per user verbatim「決策四你他媽仔細給我確認到底該retire的是否真的該retire還是應該結構性保留,請全盤檢查,然後確認之後請下次不要再煩我,尤其是Palette tier」+「都給我做到好」):**永久解決**「audit 每次抓 X 個 orphan tokens」噪音。本 spec 明文哪些 token 結構性保留 + 自動 audit script 識別,user 不需重複確認同一題。
+> **Foundational context**(2026-05-21 codify:user 要求把該退役的是否真的該退役、還是應該結構性保留全盤確認一次、做到好,之後不要再拿同一題回來問,尤其是 Palette tier —— 轉述;那段對話紀錄已不存在、登記簿查無原話):**永久解決**「audit 每次抓 X 個 orphan tokens」噪音。本 spec 明文哪些 token 結構性保留 + 自動 audit script 識別,user 不需重複確認同一題。
 
 ## Scope(何時用 / 何時不用)
 

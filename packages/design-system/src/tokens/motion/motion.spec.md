@@ -35,7 +35,7 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 ## 為何不用單一值 / 為何不沿用過去 200ms
 
-- **過去 200/300ms 偏快**(2026-05-18 ship,2026-05-20 user 抓「太快很容易干擾人」撤回):200ms plain 滑過列表 N 次觸發 Tooltip 視覺擾動;300ms rich 在含 fetch 的 HoverCard 場景列表掃視會打 N 次 server request waterfall。
+- **過去 200/300ms 偏快**(2026-05-18 ship,2026-05-20 user 指出太快很容易干擾人,撤回 —— 轉述;那段對話紀錄已不存在、登記簿查無原話):200ms plain 滑過列表 N 次觸發 Tooltip 視覺擾動;300ms rich 在含 fetch 的 HoverCard 場景列表掃視會打 N 次 server request waterfall。
 - **MUI/Ant 100ms 是 fast-tier 例外**:適合 form input help text 等「我就是要快」的 dense 場景,不適合通用 chrome tooltip。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - **單一值** 失去 plain / rich 語意區分:ProfileCard 含 fetch + image + actions 應比 Tooltip(純文字)delay 長,單一值會讓 ProfileCard 滑過列表時整列誤觸發 fetch waterfall。
 - **過短**(< 100ms):每滑必觸發 → 視覺擾動 + 不必要 server request。
@@ -109,7 +109,7 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 | `--motion-easing-exit` | `cubic-bezier(0.3,0,1,1)` | 出場(加速) | Material standard-accelerate |
 | `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2) |
 | `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95) |
-| `--motion-duration-disclosure` | `200ms` | 原地展開收合的高度動畫(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊;共用 SSOT `disclosure-motion.ts`) | 現況值,不是新選的:三個消費者 2026-07-14 起實際渲染的都是 tw-animate-css 1.4.0 collapsible / accordion 工具類的預設 `.2s`(`node_modules/tw-animate-css/dist/tw-animate.css`),也是 `components/AgentPanel/agent-panel.spec.md`「思考塊開合 200ms」與舊 base.css accordion 的宣告。2026-10-07 收成 token(待辦總帳 T8,見「開合動畫」段) |
+| `--motion-duration-disclosure` | `200ms` | 原地展開收合的高度動畫(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊;共用 SSOT `disclosure-motion.ts`) | 現況值,不是新選的:三個消費者 2026-07-14 起實際渲染的都是 tw-animate-css 1.4.0 collapsible / accordion 工具類的預設 `.2s`(`node_modules/tw-animate-css/dist/tw-animate.css`),也是 `components/AgentPanel/agent-panel.spec.md`「動畫總表」「思考塊開合」那一列(200ms)與舊 base.css accordion 的宣告。2026-10-07 收成 token(待辦總帳 T8,見「開合動畫」段) |
 
 **幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**何時播 / 時長 / 曲線 / 收尾 / 減少動態**(全 7 浮層 + 各自的遮罩,見下方「開合動畫」段),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
 

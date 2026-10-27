@@ -222,7 +222,7 @@
      ⚠️ green 例外:green-6 白字實測 2.47(連 3:1 都不過),但 user 拍板維持白字(沿用世界級慣見的
         「綠底白字」按鈕觀感)→ documented exception(知情違反),待日後評估是否調 green-6。
      2026-06-04 改名:原 --warning-foreground 被 categorical yellow/amber 借用 = 誤名(它跟 warning 無關,
-        本質是「亮底深字」通用概念)→ 改名 --on-emphasis-dark + 移除 warning 專屬 alias(user「以乾淨為主」)。 */
+        本質是「亮底深字」通用概念)→ 改名 --on-emphasis-dark + 移除 warning 專屬 alias(user 要求以乾淨為主 —— 轉述,那段對話紀錄已不存在、登記簿查無原話)。 */
   --on-emphasis:          var(--color-white);
   --on-emphasis-dark:     var(--black-a85);
 
