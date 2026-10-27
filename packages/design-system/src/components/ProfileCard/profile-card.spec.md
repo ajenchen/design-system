@@ -122,15 +122,15 @@ ProfileCard 的 default actions **是「傳訊息 + 語音通話」**(chat app �
 
 ## 文案(DS 預設 = 中文,全部可覆寫)
 
-DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 consumer prop → 3 DS 預設中文(第 2 層 `I18nProvider` 本元件**還沒接** —— 同 README「Migration status」,目前沒有任何元件讀它;經 PersonDisplay / PeoplePicker / DataTable 人員格浮出的名片因此還換不了字,見 `../PeoplePicker/person-display.tsx` `buildPersonProfileCard`):
+DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 consumer prop → 2 `I18nProvider` 的 `profile-card` 那一組 → 3 DS 預設中文(第 2 層 2026-10-27 接上:經 PersonDisplay / PeoplePicker / DataTable 人員格浮出的名片沒有 prop 可傳,`../PeoplePicker/person-display.tsx` `buildPersonProfileCard`,靠這一層換字;user F1「預設語言是中文」、WM 要能傳英文):
 
 | 位置 | DS 預設 | 覆寫 |
 |---|---|---|
-| 預設動作(`ProfileCardDefaultActions`) | 傳訊息 / 語音通話 | `ProfileCardDefaultActions` 的 `labels={{ chat, audioCall }}` |
-| 狀態標籤 | 線上 / 離開 / 忙碌 / 離線(與 `../Avatar/avatar.anatomy.stories.tsx`「Status presence dot」同一組字) | `labels={{ status: { online, away, busy, offline } }}`(可只給部分) |
-| 狀態訊息欄名 | 狀態訊息 | `labels={{ statusMessage }}` |
-| 兩個預設欄位 | ID / 員工編號(「ID」是通用縮寫,不翻;同上方「Info Fields」) | `labels={{ id, employeeNumber }}` |
-| 查看更多 | 查看更多 | `viewMoreLabel`(既有 prop) |
+| 預設動作(`ProfileCardDefaultActions`) | 傳訊息 / 語音通話 | `ProfileCardDefaultActions` 的 `labels={{ chat, audioCall }}`;`I18nProvider` 的 `profile-card.chat` / `.audioCall` |
+| 狀態標籤 | 線上 / 離開 / 忙碌 / 離線(與 `../Avatar/avatar.anatomy.stories.tsx`「Status presence dot」同一組字) | `labels={{ status: { online, away, busy, offline } }}`(可只給部分);`profile-card.statusOnline` / `.statusAway` / `.statusBusy` / `.statusOffline` |
+| 狀態訊息欄名 | 狀態訊息 | `labels={{ statusMessage }}`;`profile-card.statusMessage` |
+| 兩個預設欄位 | ID / 員工編號(「ID」是通用縮寫,不翻;同上方「Info Fields」) | `labels={{ id, employeeNumber }}`;`profile-card.id` / `.employeeNumber` |
+| 查看更多 | 查看更多 | `viewMoreLabel`(既有 prop);`profile-card.viewMore` |
 
 2026-10-20 前以上全是寫死的英文(Chat / Audio call / Online / Status message / Employee number / View more),而且除了 `viewMoreLabel` 都不能覆寫 —— 中文頁面裡的人員卡兩種語言並排(獨立驗證 OV-10)。預設欄位的去重以「目前生效的欄名」比對 consumer `fields` 的 label;舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`(dev 模式會警告舊寫法)。
 

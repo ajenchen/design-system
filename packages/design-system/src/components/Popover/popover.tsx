@@ -11,6 +11,7 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETAC
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { useI18n } from "@/design-system/lib/i18n/i18n-context"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -193,6 +194,16 @@ interface PopoverHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   hideClose?: boolean
 }
 
+// 關閉鈕的讀屏名稱:I18nProvider 的 `popover.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
+function PopoverCloseButton() {
+  const { t } = useI18n()
+  return (
+    <PopoverPrimitive.Close asChild>
+      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={t('popover', 'close', '關閉')} />{/* i18n-allow: DS 預設 */}
+    </PopoverPrimitive.Close>
+  )
+}
+
 const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
   ({ className, children, hideClose = false, ...props }, ref) => (
     // Popover lightweight chrome canonical(2026-05-04 重思 v2;2026-06-16 slot 改衍生 + 收斂 SSOT):
@@ -208,9 +219,7 @@ const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
       <div className="flex-1 min-w-0">{children}</div>
       {!hideClose && (
         // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位縮到 slot(21 = title line-box)
-        <PopoverPrimitive.Close asChild>
-          <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
-        </PopoverPrimitive.Close>
+        <PopoverCloseButton />
       )}
     </SurfaceHeader>
   ),

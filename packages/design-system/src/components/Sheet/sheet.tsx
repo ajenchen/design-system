@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
+import { useI18n } from "@/design-system/lib/i18n/i18n-context"
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -195,6 +196,16 @@ SheetContent.displayName = SheetPrimitive.Content.displayName
 // 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,withTabs / tabsSlot expose
 // 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約)。Spread 早 forward
 // 過去,只是 TS type 沒 expose 導致 consumer 不能 type-safe 用 `<SheetHeader withTabs>`。
+// 關閉鈕的讀屏名稱:I18nProvider 的 `sheet.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
+function SheetCloseButton() {
+  const { t } = useI18n()
+  return (
+    <SheetPrimitive.Close asChild>
+      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={t('sheet', 'close', '關閉')} />{/* i18n-allow: DS 預設 */}
+    </SheetPrimitive.Close>
+  )
+}
+
 const SheetHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
@@ -207,9 +218,7 @@ const SheetHeader = React.forwardRef<
   >
     <div className="flex-1 min-w-0">{children}</div>
     {/* Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height */}
-    <SheetPrimitive.Close asChild>
-      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
-    </SheetPrimitive.Close>
+    <SheetCloseButton />
   </SurfaceHeader>
 ))
 SheetHeader.displayName = "SheetHeader"

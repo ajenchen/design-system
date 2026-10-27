@@ -78,7 +78,7 @@ Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter`
 
 > **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
 
-永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`,不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
 
 **唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單,**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
 

@@ -150,7 +150,7 @@ Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整�
 
 > **跨家族 SSOT pointer**:DialogHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs(tabs 進 header 時 border auto-suppress)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Dialog 特有 close X size + chrome-unbounded rationale。
 
-永遠存在於 DialogHeader 右側。使用 `<Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`，不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 DialogHeader 右側。使用 `<Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `dialog.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
 
 **Size canonical(v5 chrome-unbounded)**:Button native size **sm**(隨 page density:28 md / 32 lg),命中區亦同(命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區 —— 本 DS 以滑鼠指標的精度為前提,尺寸不以觸控門檻推導)。SurfaceHeader 的 `[data-unbounded]` CSS rule 自動對 text variant / dismiss 套負 my → **layout 佔位 = title line-box**(slot 衍生自 `--font-body-lg-size`×1.5=24,見 `overlay-surface.spec.md` slot 段)。效果:
 - Header 只有 title + close X → max layout = 24 → header = 24 + 2×`py-tight`(隨 page:md 12 / lg 16)= **48 md / 56 lg**(= `--chrome-header-height` 同 tier 對齊)✓

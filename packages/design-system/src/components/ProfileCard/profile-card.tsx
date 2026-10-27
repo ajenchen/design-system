@@ -14,6 +14,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 /**
  * ProfileCardDefaultActions — canonical 預設 action 組合
@@ -59,7 +60,13 @@ export const ProfileCardDefaultActions = ({
   /** 文案覆寫(傳訊息 / 語音通話) */
   labels?: Partial<ProfileCardDefaultActionsLabels>
 }) => {
-  const labels = { ...DEFAULT_ACTION_LABELS, ...labelsOverride }
+  // 文案:prop(`labels`)→ I18nProvider 的 `profile-card` 那一組 → DS 預設中文(lib/i18n/README.md「Fallback chain」;
+  // 經 PersonDisplay / PeoplePicker / DataTable 人員格浮出的名片沒有 prop 可傳,靠第 2 層換字 —— user F1「預設語言是中文」、WM 要能傳英文)
+  const { t } = useI18n()
+  const labels: ProfileCardDefaultActionsLabels = {
+    chat: labelsOverride?.chat ?? t('profile-card', 'chat', DEFAULT_ACTION_LABELS.chat),
+    audioCall: labelsOverride?.audioCall ?? t('profile-card', 'audioCall', DEFAULT_ACTION_LABELS.audioCall),
+  }
   // Dev-mode warning(對齊本檔 defaultFieldValues dev-warn 先例):預設 actions 沒接 handler
   // = 按鈕點了永遠沒反應(2026-07-06 D4 finding);production 必傳 callback 或自組 actions。
   if (process.env.NODE_ENV !== 'production' && !onChat && !onCall) {
@@ -191,7 +198,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       fields,
       defaultFieldValues,
       onViewMore,
-      viewMoreLabel = '查看更多', // i18n-allow: DS default; consumer override via viewMoreLabel prop
+      viewMoreLabel: viewMoreLabelProp,
       labels: labelsOverride,
       className,
       ...props
@@ -208,11 +215,21 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
     // 不破壞既有 consumer。對齊 React `key` 唯一性 + Linear / Slack profile card 一 label
     // 一 row idiom。
-    const labels = {
-      ...DEFAULT_LABELS,
-      ...labelsOverride,
-      status: { ...DEFAULT_LABELS.status, ...labelsOverride?.status },
+    // 文案:prop → I18nProvider 的 `profile-card` 那一組 → DS 預設中文(同 ProfileCardDefaultActions;lib/i18n/README.md「Fallback chain」)
+    const { t } = useI18n()
+    const pick = (override: string | undefined, key: string, fallback: string) => override ?? t('profile-card', key, fallback)
+    const labels: ProfileCardLabels = {
+      statusMessage: pick(labelsOverride?.statusMessage, 'statusMessage', DEFAULT_LABELS.statusMessage),
+      id: pick(labelsOverride?.id, 'id', DEFAULT_LABELS.id),
+      employeeNumber: pick(labelsOverride?.employeeNumber, 'employeeNumber', DEFAULT_LABELS.employeeNumber),
+      status: {
+        online: pick(labelsOverride?.status?.online, 'statusOnline', DEFAULT_LABELS.status.online),
+        away: pick(labelsOverride?.status?.away, 'statusAway', DEFAULT_LABELS.status.away),
+        busy: pick(labelsOverride?.status?.busy, 'statusBusy', DEFAULT_LABELS.status.busy),
+        offline: pick(labelsOverride?.status?.offline, 'statusOffline', DEFAULT_LABELS.status.offline),
+      },
     }
+    const viewMoreLabel = viewMoreLabelProp ?? t('profile-card', 'viewMore', '查看更多') // i18n-allow: DS 預設(中文);prop / I18nProvider 可換
     const idLabel = labels.id
     const employeeNumberLabel = labels.employeeNumber
     const allFields = React.useMemo(() => {

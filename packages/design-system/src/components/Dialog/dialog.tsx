@@ -15,6 +15,7 @@ import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
+import { useI18n } from "@/design-system/lib/i18n/i18n-context"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 
 /**
@@ -387,9 +388,11 @@ const DialogHeader = React.forwardRef<
   // layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
   // header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
   // 詳 patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」(2026-09-27 自 overlay-surface.spec.md 拆出)
+  // 關閉鈕的讀屏名稱:I18nProvider 的 `dialog.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
+  const { t } = useI18n()
   const closeButton = (
     <DialogPrimitive.Close asChild>
-      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
+      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={t('dialog', 'close', '關閉')} />{/* i18n-allow: DS 預設 */}
     </DialogPrimitive.Close>
   )
   return (
