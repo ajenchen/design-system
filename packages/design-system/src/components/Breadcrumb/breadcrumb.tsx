@@ -70,7 +70,7 @@ const BREADCRUMB_TEXT_CLASS: Record<BreadcrumbSize, string> = {
 
 // Separator chevron + BreadcrumbLink/Item start icon 尺寸 — 對齊 uiSize.spec.md「Icon Size Tier」(field-height-sm/md→16,lg→20)。
 // 注意:BreadcrumbEllipsis 不消費此常數,固定 md(16px icon,見 BreadcrumbEllipsis 定義),size='lg' 時不隨 chevron 放大到 20
-// 2026-05-18 改 per user 拍板「A 先改 16/16/20」+「做完」approval:
+// 2026-05-18 改為 16/16/20(當時記為 user 選 A 方案並要求做完,原話已不可查):
 // 撤回 text-flow 例外設計,Breadcrumb chevron 跟其他 chrome icon 同 tier。
 // World-class 對齊:Atlassian Breadcrumb chevron 16 default / Material 3 / Ant Design 同。
 const BREADCRUMB_ICON_SIZE: Record<BreadcrumbSize, number> = {
@@ -102,7 +102,7 @@ export interface BreadcrumbItemSpec {
   href?: string
   asChild?: boolean
   /**
-   * 起始 icon(per `ui-development.md`「icon prop 命名 4 條」:slot 只接 icon → `startIcon`)。
+   * 起始 icon(per `ui-development.md`「元件 Props 命名」:slot 只接 icon → `startIcon`)。
    * 業界慣例:Breadcrumb 首項用 Home icon 強化視覺錨點(Material / Atlassian)。
    * 內部消費 `BREADCRUMB_ICON_SIZE[size]` SSOT(sm/md=16, lg=20,對齊 uiSize.spec.md Icon Size Tier)。
    * Consumer **不傳** size,DS 統一管。
@@ -352,7 +352,7 @@ interface BreadcrumbItemProps extends React.ComponentPropsWithoutRef<'li'> {
 
 const BreadcrumbItem = React.forwardRef<HTMLLIElement, BreadcrumbItemProps>(
   ({ className, role, style, ...props }, ref) => {
-    // 2026-05-20 fix v3(user 抓「專案 後方多 4px 間距 / 我的新專案 沒有」chevron 不對稱):
+    // 2026-05-20 fix v3(user 抓到『專案』後方多 4px 間距、『我的新專案』沒有 —— chevron 不對稱):
     //   v2 `minWidth: '2rem'`(32px)在寬容器強制 li ≥ 32px → 短 label「專案」(natural ~28px)
     //   被撐 4px,長 label「我的新專案」(natural ~70px)hug content → chevron 兩側不對稱。
     //
@@ -362,7 +362,7 @@ const BreadcrumbItem = React.forwardRef<HTMLLIElement, BreadcrumbItemProps>(
     //     - 寬容器:所有自然 label ≥ 24px → li hug content,chevron 緊貼,對稱(本 fix 主目的)
     //     - 窄容器 truncate:shrink 不過 24px → 「X…」仍可見 ellipsis 保險
     //     - 短英文「OK / ID」(natural ~20px)→ 多 ~4px(原 12px → 縮到 4px,顯著改善)
-    //   對齊 user verbatim「minWidth 再調小一點」+ ellipsis 數學最小值。
+    //   對齊 user 要求 minWidth 再調小 + ellipsis 數學最小值。
     const shrinkStyle: React.CSSProperties = role === 'root' ? { flexShrink: 3, minWidth: '1.5rem' }
       : role === 'middle' ? { flexShrink: 2, minWidth: '1.5rem' }
       : role === 'current' ? { flexShrink: 1, minWidth: '1.5rem' }
@@ -387,7 +387,7 @@ interface BreadcrumbLinkProps extends React.ComponentPropsWithoutRef<'a'> {
   /** 將樣式套用至子元件(e.g. React Router Link) */
   asChild?: boolean
   /**
-   * 起始 icon(per `ui-development.md`「icon prop 命名 4 條」:slot 只接 icon → `startIcon`)。
+   * 起始 icon(per `ui-development.md`「元件 Props 命名」:slot 只接 icon → `startIcon`)。
    * 內部消費 `BREADCRUMB_ICON_SIZE[size]` SSOT,DS 統一尺寸不允許 consumer override。
    * 對齊 uiSize.spec.md Icon Size Tier(2026-05-18 撤回 14 例外,統一 16/16/20)。
    */

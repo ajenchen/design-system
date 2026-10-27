@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * ResizeHandle — drag-to-resize **完整 window-splitter widget**(2026-05-21 v1 視覺 primitive;
- * 2026-09-02 v2 升級為 value-driven:user directive「若雙方使用全然一致,務必變成同一個元件確保 SSOT」)。
+ * 2026-09-02 v2 升級為 value-driven:user 2026-09-02 19:44「我認為你仔細研究看雙方的使用是否是全然一致，若是的話務必變成同一個元件才能確保SSOT避免未來偏移才對」)。
  *
  * ── 定位 ──
  * 統一 DataTable 欄寬 / AppShell 四區(Menu、Right panel、AI agent,含兩種浮層)的命中區、cursor、視覺 line、
@@ -53,7 +53,7 @@ export interface ResizeHandleProps
   /**
    * 是否由本元件畫 **idle** 的 1px line;`false` = consumer 已自己畫 idle 線(eg. DataTable 面板邊界欄的凍結邊界線)。
    * 只影響 idle:hover(`border-hover`)與拖拉中(`primary`)的狀態色**永遠**由本元件畫在同一個像素上
-   * —— 拖拉中 = primary 是規格,不因誰畫 idle 線而消失(2026-09-10 user 抓「釘選欄位 resize 時分隔線沒有變藍」:
+   * —— 拖拉中 = primary 是規格,不因誰畫 idle 線而消失(2026-09-10 user 抓到釘選欄位 resize 時分隔線沒有變藍:
    * 面板邊界欄 `showLine=false` 連狀態線一起不畫)。預設 true。
    */
   showLine?: boolean

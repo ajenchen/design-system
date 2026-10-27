@@ -143,7 +143,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 **規則**:TabsList **不設自己的左右 padding**,**繼承** parent header 的 `var(--layout-space-loose)` padding。視覺結果 = tabs 第一個 trigger 從 header 內邊起 = 跟 header content row 對齊。
 
-**實作機制(2026-05-18 v3 — `tabsSlot` prop,user verbatim「分隔線寬度應該要填滿整個 dialog」)**:
+**實作機制(2026-05-18 v3 — `tabsSlot` prop,user 要求分隔線寬度填滿整個 dialog)**:
 
 ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自動 **column mode**:
 - Row 1:children(title + close X / actions)— 跟 single-row 模式同 padding,但 border-b 撤掉
@@ -251,7 +251,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `components/Dialog/dialog.spec.md`
 - `components/Sheet/sheet.spec.md`
 - `components/Popover/popover.spec.md`
-- `tokens/uiSize/uiSize.spec.md`「消費 --chrome-header-height」段
+- `tokens/uiSize/uiSize.spec.md`「Chrome Header Height」段
 
 ### Layer 3 — Primitive consumption(已 land;下列為原 Phase 2 提案內容,現況見段末)
 

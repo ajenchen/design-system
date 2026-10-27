@@ -2,7 +2,7 @@
  * AgentFab — 智慧代理浮動開關鈕(AgentPanel 家族附屬資產)+ AgentFabDock(「家 ↔ 貼邊」兩態定位殼)。
  *
  * ── 消費的 SSOT ──
- * - 40 圓 = --field-height-lg 於 lg 密度(uiSize.spec.md「lg 密度」表);圓形 iconOnly。
+ * - 40 圓 = --field-height-lg 於 lg 密度(uiSize.spec.md「Field Height」表的 lg density 欄);圓形 iconOnly。
  * - 面 = bg-surface-raised + --elevation-200(elevation.spec.md 配對規則;不寫死白色)。
  * - 外框 = AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱;
  *   spec「FAB」節)。配色兩極 = AgentLogo AGENT_BRAND(= 自家色階 blue-4 / purple-4;
@@ -365,7 +365,7 @@ function useSnapDrag(opts: {
   React.useEffect(() => () => cleanupRef.current(), [])
   const swallowNextClick = () => {
     // 拖曳放開後瀏覽器會對同一顆鈕補發一個 click(pointer capture 讓它一定落在鈕上)→ 必須吞掉,否則「移動」變成「開面板」。
-    // 2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,但我明明就只是要移動它而已」。
+    // 2026-09-16 user:「然後為何現在拖拉 agent panel 的 fab」「很容易一不小心就開啟panel,但我明明就只是要移動它而已」。
     // 舊版(2026-09-02 第一版起)用 setTimeout(0) 清旗標 —— 假設 click 與 pointerup 落在同一個 task;本機 Chromium 確實如此
     // (實測 pointerup → click 0ms),但遠端隔離 / 輸入代理(user 的 Windows 機器把 *.netlify.app 送進 thin client,
     // 見 governance/memory/reference_perf_validation_same_host.md)或任何讓 click 晚一個 task 送達的環境,旗標已清、click 漏過去。
@@ -686,7 +686,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           data-dragging={dragging ? '' : undefined}
           data-snapped={drag?.placement ? '' : undefined}
           className={cn(
-            // **殼跟著鈕縮,不再固定 40 寬**(2026-09-04 user 回報「hover 出現 tooltip 的地方點不開」的根因之一):
+            // **殼跟著鈕縮,不再固定 40 寬**(2026-09-04 user 回報滑過出現 tooltip 的地方點了沒反應,根因之一):
             // 舊版把殼釘在 40,貼邊時鈕只有 28,左側就多出 12px 既不吃指標、又落在 tooltip 覆蓋範圍內的空白帶
             // (實測:hover 鈕中心 → tooltip 開;往左移 6px → 命中的是底下的表格、tooltip 仍開著;點下去面板不開)。
             // 殼是 `right` 錨定的,寬度縮到內容大小時右緣一樣不動,形態過渡(40→28)照樣不會凸出舞台,
@@ -860,7 +860,7 @@ export interface AgentPanelDockProps
 
 /**
  * 面板與入口鈕互斥的唯一住所:開 → 只有面板(× 關閉);關 → 只有入口鈕(點一下開回來),
- * 入口鈕位置與標誌狀態都留在這裡,產品端不必各自寫一份(2026-09-03 user:「所有範例的關閉按鈕都可以加上去了」)。
+ * 入口鈕位置與標誌狀態都留在這裡,產品端不必各自寫一份(2026-09-03 user:「然後所有範例的關閉agent 按鈕的功能都可以加上去了」)。
  * 外層容器需 `relative`(入口鈕以 absolute 定位在其中)。
  */
 const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(

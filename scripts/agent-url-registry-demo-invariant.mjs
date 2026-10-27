@@ -25,9 +25,9 @@
  *     清單連結則必須在 `inert` 底下(宿主仍被擋)。控件裡的播報區(例:欄位內常駐的「已移除」)跟著被擋住的控件一起 inert,不算靜音;
  *     「被蓋住的宿主不得留下可聚焦控件」由 S9 與 scripts/app-shell-layout-invariant.mjs(S10 宿主不可操作)守。
  *   S8 關 agent → 遮罩仍在(根因錨:入口鈕 Dock 的 pointer-events-none 全舞台圖層曾被當成洞,遮罩整張被挖空)
- *   S10 入口鈕拖去貼邊再拖回家 → 遮罩只有一個洞、洞心 = 鈕心(2026-09-09 user 抓「拖回原本的地方會在遮罩上挖出另一個圓形的洞」:
+ *   S10 入口鈕拖去貼邊再拖回家 → 遮罩只有一個洞、洞心 = 鈕心(2026-09-09 user 抓「當我把 fab推到邊緣去變成小fab之後又再拖回原本的地方,會在遮罩上挖出另一個圓形的洞？」:
  *       洞是飛回家的 250ms 過渡途中那一幀算的,過渡結束沒人重算 —— AD59)
- *   S11 遮罩在時右鍵入口鈕 → 選單留著、並存對話框不關、遮罩仍在(2026-09-09 user 抓「遮罩上的 fab 右鍵無反應」:portal 出去的右鍵選單
+ *   S11 遮罩在時右鍵入口鈕 → 選單留著、並存對話框不關、遮罩仍在(2026-09-09 user 抓「而且為何在遮罩上的fab不管大小被右鍵點擊都無法正常反應？？？」:portal 出去的右鍵選單
  *       被並存守衛當成 focus-outside → 對話框關、遮罩卸載、選單跟著卸載 —— AD59)
  *   S9 浮層態:工具列可點、宿主被抑制、浮層寬 = 寬度紀錄(沒調過 = 初始 400)、右貼齊、另一側至少留 48、上一頁 / 下一頁不收合 agent;
  *      **agent 點有 URL 的 modal → agent 收成入口鈕、
@@ -35,7 +35,7 @@
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
  * `--static=<dir>`:讀哪個 storybook build(預設 storybook-static;並行工作者用自己的 build 目錄)
  * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 浮層前 / 浮層收成入口鈕後)
- *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」:
+ *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「我在開啟dialog時,點擊 agent fab的右鍵再點擊展開後的選單選項,並無法執行選項,而是會直接關閉當前開啟的dialog」:
  *       守衛只認開著時的 aria-controls,選單關閉中 Radix 還焦點給選單容器那一次被當成框外;鍵盤 Enter 是對照)
  *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
  *   S14 條 F「原分頁離開宿主後返回」:合成 pageshow(persisted:true)→ 代理關回、宿主畫面不動、重開是新對話;persisted:false 必不動(2026-09-29)
@@ -498,7 +498,7 @@ for (const width of [1440, 1180]) {
   const ratioClosed = maskHoleRatio(maskClosed?.clip)
   check(`${W} S8 關 agent 後遮罩仍在:底色不透明、洞面積 ≤ ${MASK_HOLE_MAX_RATIO * 100}%(舊 bug:入口鈕 Dock 的全舞台圖層被當成洞,ratio=1)`, !!maskClosed && h.alpha(maskClosed.bg) > 0 && ratioClosed.ratio <= MASK_HOLE_MAX_RATIO, JSON.stringify({ open: maskOpen?.clip, closed: maskClosed?.clip, ratio: ratioClosed }))
   check(`${W} S8 關 agent 後 modal 仍開著、可操作(標題欄能聚焦)`, (await h.dialogs()) === 1 && (await page.evaluate(() => { const i = document.querySelector('#demo-task-title'); i?.focus(); return document.activeElement === i })))
-  // 2026-09-09 user:「dialog 遮罩不能在視覺上沿著 fab 的形狀?而是切出一個正方形放 fab?」—— 洞要 = 入口鈕的可視形狀(圓),
+  // 2026-09-09 user:「圖一為何dialog遮罩不能在視覺上沒有沿著fab的形狀？而是在視覺上切出一個正方形放fab?」—— 洞要 = 入口鈕的可視形狀(圓),
   // 不是外接方形。斷言用命中測試(clip-path 也裁命中區):方框四角命中的是遮罩(不是鈕)、圓心命中的是鈕;clip 路徑含弧線。
   const hole = await page.evaluate(() => {
     const btn = document.querySelector('button[aria-label="開啟智慧代理"]'); const mask = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])')
@@ -572,7 +572,7 @@ for (const width of [1440, 1180]) {
   const mineRows = await h.rows()
   const s6 = await h.shape()
   check(`${W} S6 代理連結「我的任務」→ 切 tab(aria-selected)、網址列 /tasks/mine、清單只剩指派給自己的(#4835)、表格 aria-label 跟著換、草稿還在(條 C / E;並排態代理維持開啟)`, (await h.location()) === MINE_URL && (await h.selectedTab()) === '我的任務' && mineRows.length === 1 && /#4835/.test(mineRows[0]) && s6.tableLabel === '我的任務' && s6.tabControlsPanel && (await h.panelInput())?.value === 'hello world!?' && (await h.panelOpen()), JSON.stringify({ loc: await h.location(), tab: await h.selectedTab(), mineRows, label: s6.tableLabel, tabControlsPanel: s6.tabControlsPanel, panel: await h.panelInput(), open: await h.panelOpen() }))
-  // 2026-09-09 user:「agent 給的任務要包括 #4830,這樣我才能驗證我在我的任務開啟它的時候,背景是否仍停留在我的任務」—— #4830 是 Alan 的,不在「我的任務」清單裡
+  // 2026-09-09 user:「此外 agent 給的任務要包括#4830吧?」(要驗證在我的任務分頁開啟它時,背景是否仍停在那一頁)—— #4830 是 Alan 的,不在「我的任務」清單裡
   await h.click('#demo-link-task-4830')
   const mineUnder4830 = await h.rows()
   check(`${W} S6 「我的任務」上點代理的「任務 #4830」(不在這個清單裡)→ modal 疊在**我的任務**上、網址 /tasks/4830、底下清單仍是自己的(沒有 #4830 列)`, (await h.dialogs()) === 1 && (await h.location()) === '/projects/8821/tasks/4830' && (await h.selectedTab()) === '我的任務' && !mineUnder4830.some((r) => /#4830/.test(r)), JSON.stringify({ loc: await h.location(), tab: await h.selectedTab(), rows: mineUnder4830 }))

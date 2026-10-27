@@ -15,7 +15,7 @@ benchmark:
 
 ## 定位
 
-**Drag-to-resize 完整 window-splitter widget**——統一 column resize / panel resize(AppShell 四區;未來 row)的命中區、cursor、視覺 line、pointer 拖拉、鍵盤(←/→ 或 ↑/↓、Home/End)與 ARIA `separator` 契約(2026-09-02 v2;user directive「若雙方使用全然一致,務必變成同一個元件確保 SSOT」)。
+**Drag-to-resize 完整 window-splitter widget**——統一 column resize / panel resize(AppShell 四區;未來 row)的命中區、cursor、視覺 line、pointer 拖拉、鍵盤(←/→ 或 ↑/↓、Home/End)與 ARIA `separator` 契約(2026-09-02 v2;user 2026-09-02 19:44「我認為你仔細研究看雙方的使用是否是全然一致，若是的話務必變成同一個元件才能確保SSOT避免未來偏移才對」)。
 
 **消費者**:
 - DataTable column resize(✅ 2026-09-02 migrate,原自畫 span 刪除)
@@ -29,7 +29,7 @@ benchmark:
 
 ## 為什麼需要 SSOT
 
-`DataTable column resize`(已 ship 2026-05-06)+ 未來 sidebar / aside drag-resize 若各自手刻命中區尺寸、cursor、line 視覺,跨元件視覺漂移 = 用戶感受不一致。對齊 mindset #2「優先消費既有」+ M17「同概念出現 3 處 = 必抽 primitive」+ user 2026-05-21 directive「style 難道不用跟 data table column resize 維持 ssot」。
+`DataTable column resize`(已 ship 2026-05-06)+ 未來 sidebar / aside drag-resize 若各自手刻命中區尺寸、cursor、line 視覺,跨元件視覺漂移 = 用戶感受不一致。對齊 mindset #2「優先消費既有」+ M17「同概念出現 3 處 = 必抽 primitive」+ user 2026-05-21 要求 style 跟 DataTable column resize 維持 SSOT。
 
 ## API
 
@@ -72,7 +72,7 @@ benchmark:
   - **disabled**:`bg-divider`(無 hover affordance)
   - **hover**:`bg-[var(--border-hover)]`(via `group/resize` selector)。**為什麼靜止 `--divider`(neutral-4)滑過跳到 `--border-hover`(neutral-6)而不是下一階**(2026-09-27 補寫;待辦總帳 A8,2026-09-25 R17 篩為「保留、規格補理由」,**AI 推導、未逐題經 user 拍板**):把手線是 `ds-canonical/references/hit-area-canonical.md`「唯一例外」那種**先天只有 1px 寬的線**,滑過只走一階(neutral-4 → 5)在 1px 上幾乎看不出來,回饋等於沒有;世界級同樣直接跳到強調色 —— MUI X 欄分隔線滑過與拖拉中都直接換成 `vars.colors.foreground.accent`(一手:[`GridRootStyles.ts`](https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/containers/GridRootStyles.ts) `columnSeparator` 的 `'&:hover': { color: vars.colors.foreground.accent }` 與 `columnSeparator--resizing` 同值,2026-09-27 讀 master;待辦總帳記的 `:482-485` 是較早版本的行號)、AG Grid 拖拉中 1px 主色(下方「世界級對照細節」表)。本 DS 的折衷:滑過跳到 `--border-hover`(消費 Field 邊框滑過那一階,不自創值)、拖拉中才用主色。`scripts/hover-own-pair-baseline.json` 兩筆 resize-handle 命中因此登記為 `documented`(理由住這一條),`scripts/data-table-pinned-resize-invariant.mjs` R4 量的懸停值 = `--border-hover` 維持不變。
   - **dragging**:`bg-primary`(拖拉中由元件自己判定 —— pointerdown 到 pointerup / cancel;沒有 `isResizing` prop,舊寫法已更正 2026-09-10)
-  - **idle 線的歸屬**(2026-09-10,user 抓「釘選欄位 resize 時分隔線沒有變藍」):`showLine=false` 只把 **idle** 線交給消費端(DataTable 面板邊界欄由凍結邊界線 `dtPanelBoundaryRight::after` 畫、表格外框欄由外框畫),**hover 與拖拉的狀態色仍由本元件畫**,畫在同一個像素上 —— 左釘選面板的邊界線在面板最後一個像素、與把手線同位,狀態色剛好蓋在它上面;右釘選面板的邊界線與外框在鄰面板 / 外框那一像素,把手線只能畫在自己面板內側相鄰的一像素(面板 `overflow` 裁切,越界不可見),拖拉中看起來是「主色線緊貼灰線」。舊行為:`showLine=false` 連狀態色一起不畫,面板邊界欄拖拉中沒有任何回饋 = 違反本表。閘:`scripts/data-table-pinned-resize-invariant.mjs` R4(釘選邊界欄拖拉中把手線 = primary、放開後回透明)。
+  - **idle 線的歸屬**(2026-09-10,user 抓到釘選欄位 resize 時分隔線沒有變藍):`showLine=false` 只把 **idle** 線交給消費端(DataTable 面板邊界欄由凍結邊界線 `dtPanelBoundaryRight::after` 畫、表格外框欄由外框畫),**hover 與拖拉的狀態色仍由本元件畫**,畫在同一個像素上 —— 左釘選面板的邊界線在面板最後一個像素、與把手線同位,狀態色剛好蓋在它上面;右釘選面板的邊界線與外框在鄰面板 / 外框那一像素,把手線只能畫在自己面板內側相鄰的一像素(面板 `overflow` 裁切,越界不可見),拖拉中看起來是「主色線緊貼灰線」。舊行為:`showLine=false` 連狀態色一起不畫,面板邊界欄拖拉中沒有任何回饋 = 違反本表。閘:`scripts/data-table-pinned-resize-invariant.mjs` R4(釘選邊界欄拖拉中把手線 = primary、放開後回透明)。
 - **Cursor**:`col-resize` / `row-resize`(`disabled` 時無)
 - **`select-none`**:防 drag 時 text select(`disabled` 時關閉)
 
@@ -109,7 +109,7 @@ benchmark:
 | Phase 3 | AppShell Menu(Sidebar)拖寬,含 Menu 浮層(consume primitive) | 已拍板(user 2026-10-14 規格 U:4),隨 AppShell「版面規則」落地 |
 | Phase 4 | AppShell Right panel 拖寬 + AI agent 浮層可拖(consume primitive) | 已拍板(user 2026-10-14 規格 U:4),同上 |
 
-Phase 3-4 原訂「需獨立 RFC + user 拍板」(2026-05-21 AI 提的施工順序,user 以「都照你建議做」整包採納,commit `197401cc`;同日 user 原話「讓drag resize有一個最小寬度」,commit `e58576a6`)。**拍板 = user 2026-10-14 規格 U:4「除 Main 外，皆為可開關、可拖曳調寬的面板」**;原句的「+ localStorage 持久化」不沿用 —— 寬度跨重新整理由產品自存、DS 不存(「版面規則」§7)。Phase 1-2 已 ship,本 spec 鎖住視覺 canonical 與 splitter 語意。
+Phase 3-4 原訂「需獨立 RFC + user 拍板」(2026-05-21 AI 提的施工順序,user 以「都照你建議做」整包採納,commit `197401cc`;同日 user 要求 drag resize 要有最小寬度,commit `e58576a6`)。**拍板 = user 2026-10-14 規格 U:4「除 Main 外，皆為可開關、可拖曳調寬的面板」**;原句的「+ localStorage 持久化」不沿用 —— 寬度跨重新整理由產品自存、DS 不存(「版面規則」§7)。Phase 1-2 已 ship,本 spec 鎖住視覺 canonical 與 splitter 語意。
 
 ## 世界級對照細節
 

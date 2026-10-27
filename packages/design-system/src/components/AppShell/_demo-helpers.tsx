@@ -297,9 +297,9 @@ export function GlobalHeader({ rightSlot }: { rightSlot?: React.ReactNode } = {}
 
 // ── PageHeader(top-level chrome header,消費 ChromeHeader primitive)──
 // 2026-05-20 migrate 消費 ChromeHeader,撤回自刻 `<header>` + 重複 className
-// (per header-canonical.spec.md「6. Background ownership」段「Top-level chrome
-// header 自畫 bg-surface」+「Element canonical」段「ChromeHeader 內部用 `<header>`」)。
-// global header aside toggle 已撤回(2026-05-20 user「圖二 global header 不該有」)— 由
+// (per header-canonical.spec.md「6. Background ownership」段 Top-level chrome header 那一列「自畫 `bg-surface`」
+// +「7. Element contract」段「ChromeHeader 內部用 `<header>` element」)。
+// global header aside toggle 已撤回(2026-05-20 user 指出 global header 不該有這顆)— 由
 // DataTable rowActions Info icon 主入口(row-driven)取代,page header 純 title。
 
 export function PageHeader({
@@ -314,7 +314,7 @@ export function PageHeader({
    */
   tabsSlot?: React.ReactNode
   /**
-   * 是否含 SidebarTrigger(2026-05-21 加 per user「primary-header mode 的 sidebar toggle 應該只放在 primary header 才對」)。
+   * 是否含 SidebarTrigger(2026-05-21 加;user 指示 primary-header mode 的 sidebar toggle 只放在 primary header)。
    * - `primary-sidebar` mode = true(預設):PageHeader 是 chrome 第一層,trigger 自然在這
    * - `primary-header` mode = false:SidebarTrigger 已在 GlobalHeader,PageHeader 不該重複
    */

@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * 後,原 `[&>[role=tablist]]` direct-child 結構選擇器全滅(px-loose 靜默消失,且 scroll/menu 深度
  * 本就 >1 從未命中)→ 改 data-slot attribute contract + descendant selector,免疫 DOM 深度重構。
  * SSOT 在此(header-canonical = 跨家族 W-rule owner);overlay-surface.tsx SurfaceHeader 消費同一 const,
- * 禁各自 hardcode(原兩處逐字重複,2026-06-08 收斂為單一 SSOT,per user「照你建議做到完美…不改A壞B」)。
+ * 禁各自 hardcode(原兩處逐字重複,2026-06-08 收斂為單一 SSOT;當時記為 user 核准照建議做、不改 A 壞 B,原話已不可查)。
  */
 export const HEADER_TABS_SLOT_WRAPPER_CLASS =
   '[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]'
@@ -108,7 +108,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
     // Column mode(tabsSlot 提供時)— per W2 + W4
     // 2026-05-20:`<div>` → `<header>`(HTML5 sectional content 允許 multiple `<header>`,
     // page-level / sectional 都 a11y safe;統一 element contract 消除「何時用 header / 何時用 div」
-    // 的 consumer drift)。 對應 header-canonical.spec.md 「Element canonical」段。
+    // 的 consumer drift)。 對應 header-canonical.spec.md「7. Element contract」段。
     if (tabsSlot != null) {
       return (
         <header

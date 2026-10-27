@@ -170,7 +170,7 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
    * 浮層態(面板蓋在宿主上)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
    * 同一支 primitive(`lib/overlay-coexistence.ts`)。v14 條 B 說的「宿主暫不可操作」只講**宿主**;
    * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,浮層時不得被抑制
-   * (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」)。
+   * (2026-09-09 user 抓到範例變成滿版時上方模擬的網址列完全點不了)。
    * 並排態不抑制任何東西,此 prop 無作用。面板自己永遠在保留集合裡,不必傳。
    */
   persistentElements?: () => Element[]
@@ -396,7 +396,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // `inertOutside([面板])`(lib/overlay-coexistence.ts)是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
     // 保留集合 = 面板自己 + 遮罩 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
     // 遮罩在保留集合裡:它必須**接住**留白處的指標(不被 inertOutside 設成 inert),否則點擊會穿過去
-    // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「點擊露出的遮罩會關閉 agent panel 底下的 modal」)。
+    // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「為何點擊露出的遮罩會關閉agent panel底下的modal??」)。
     const scrimRef = React.useRef<HTMLDivElement | null>(null)
     const keepPanel = React.useCallback(
       () => [rootRef.current as Element | null, scrimRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
@@ -429,7 +429,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     }, [visible, isOverlay])
 
     if (!open) return null
-    // 浮層態的遮罩(2026-09-16 user:「底下會有滿版的遮罩…單純只是用來讓使用者知道 agent panel 底下還有東西」;2026-09-17 改為點擊關閉):
+    // 浮層態的遮罩(2026-09-16 user:「且此時該agent panel底下會有滿版的遮罩，若點擊到該遮罩不會有任何反應故點擊遮罩不會關閉agent panel,其單純只是用來讓使用者知道agent panel底下還有東西」;2026-09-17 改為點擊關閉):
     // 重用 Dialog 並存時的同一支 `CoexistenceMask`(z-30、`--overlay`、替 persistentElements 挖洞),不手刻第二份遮罩(M17 / M23)。
     // - `absolute`:遮罩跟面板一樣以**定位祖先**為準(AppShell 裡 = AppShell 根節點,單獨使用 = 宿主;tailwind-merge 讓它覆掉預設的 `fixed`);
     // - 遮罩**接住**指標:點留白處 = 點到遮罩本身(→ `onClose`);它要在保留集合裡(不被設 inert),
@@ -1316,7 +1316,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           'm-[var(--layout-space-loose)] mt-0 shrink-0 rounded-md',
           // 外框互動 = Field 家族 default chrome SSOT(field-wrapper.tsx fieldChromeStyles:單行 wrapper /
           // Textarea / 複合輸入盒三宿主同一份 compounds):hover 一階 border-hover、focus-within 主色;
-          // 2026-09-02 user 抓「跟 Textarea 不一樣」→ 收斂為單一住所,禁自刻。
+          // 2026-09-02 user 問「此外為何 prompt input的互動跟 text area 不一樣？」→ 收斂為單一住所,禁自刻。
           fieldChromeStyles({ mode: 'edit', variant: 'default', error: false }),
           className,
         )}

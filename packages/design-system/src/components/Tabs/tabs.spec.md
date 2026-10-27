@@ -100,7 +100,7 @@ TabsContent ← 對應被選中的 trigger
 
   **可視 viewport 契約(2026-08-02 regression fix)**:實際 viewport = overlay 與 trigger 所有 overflow-clipping ancestors 的交集。trigger 完全不相交時不 render action；部分相交時僅在 canonical trailing action slot 完整可見才 render。**禁 clamp** action 到 viewport 內，否則會侵入 label/suffix 並破壞 canonical 8px content→action gap。consumer `style` 可合併其他 key，但不可覆寫該 padding reservation。
 
-  **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
+  **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在「D3-2a:滑鼠滑到可點卡片(如檔案卡)裡的按鈕上時,卡片本身的滑過狀態?」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
 
   **action 外層只有 action 本身接指標(2026-09-26,待辦總帳 N53②)**:portal 出去的外層 span 與 trigger 同高(垂直置中 action 用),但 action 只有 icon 高 —— 預設 sm(32px 高的 tab、16px 的 action)時 span 上下各多出 8px。先前那兩塊接指標:指到時分頁字變深(上一段的巢狀滑過標記),點下去卻不切分頁,正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。現在外層 span `pointer-events-none`、只有它的直接子元素(action)`pointer-events-auto`:上下兩塊落回底下的 trigger —— 那裡本來就是 trigger 右緣預留的 paddingRight 區(上方 `inlineAction` 條),點了切分頁、滑過由 trigger 自己的 `hover:` 變色,顏色與先前相同,只有游標與點擊結果改變。巢狀滑過不受影響:原生 `pointerenter` / `pointerleave` 依 DOM 樹送到祖先,指標進出 action 時外層 span 照樣收得到。
 
@@ -192,7 +192,7 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 **TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap。
 
-> ⚠️ **此預設只在 TabsContent 緊接 tab bar 當直接 sibling 時成立**(standalone 頁面 tabs、ChromeHeader-as-sibling)。當 `tabsSlot` composition 把 tab bar 抬進 chrome header、TabsContent 留在 `DialogBody`/`SheetBody`/`SurfaceBody`(chrome scroll body,已自帶 `pt-/py-[var(--layout-space-tight)]`)內時,body 已擁有 header→content gap,TabsContent 的預設 `mt-tight` 會**雙重疊加**(md 24 / lg 32)。此時 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 body — 詳見下方「出現在 Dialog」段。一軸單一 spacing owner,per `item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」。Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
+> ⚠️ **此預設只在 TabsContent 緊接 tab bar 當直接 sibling 時成立**(standalone 頁面 tabs、ChromeHeader-as-sibling)。當 `tabsSlot` composition 把 tab bar 抬進 chrome header、TabsContent 留在 `DialogBody`/`SheetBody`/`SurfaceBody`(chrome scroll body,已自帶 `pt-/py-[var(--layout-space-tight)]`)內時,body 已擁有 header→content gap,TabsContent 的預設 `mt-tight` 會**雙重疊加**(md 24 / lg 32)。此時 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 body — 詳見下方「出現在 Dialog」段。一軸單一 spacing owner,per `item-anatomy.spec.md`「垂直 padding 歸屬」段。Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
 
 ---
 
@@ -258,7 +258,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - ❌ 不得用 Tabs 做表單單選（選 view ≠ 選 value）——改用 SegmentedControl
 - ❌ 不得用 Tabs 做頁面層級導覽（切路由）——改用 navigation
 - ❌ Trigger `startIcon` 不得超過一個
-- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加 per user 抓「圖一 tabs 圖示混用」)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
+- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加;user 抓到截圖裡同一組 tabs 圖示混用)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
 - ❌ `endIcon` 不得放動詞性 icon（Download、Trash2）——tab 是視圖切換，不是觸發動作
 - ❌ Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線
 - ❌ 不得把 trigger 改成等分 / fullWidth——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl

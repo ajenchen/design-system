@@ -679,7 +679,7 @@ function Stage({ stageRef, mainRef, header, children }: {
  *   兩段 tight,layoutSpace 規則 2 / 3「toolbar → table 直接功能依賴」),table `mx-loose mb-loose`(規則 1B / 4)。
  * - 標題欄:DS url 欄位型別(`column-types.ts` `url` → `UrlCell` → `<LinkInput mode="view">`;view 態是裸 anchor,`naked` 只在 wrapper 路徑有意義)的同一支
  *   primitive 直接消費 —— `meta.linkLabel` 是欄位層級的固定字串,放不下每列不同的任務標題;naked view 零內距,
- *   文字左緣 = 表頭左緣(2026-09-09 user 抓到「網址前面有一塊空」= Button link 自帶水平內距,那是自創、不是 DS 定義)。
+ *   文字左緣 = 表頭左緣(2026-09-09 user 抓到網址前面有一塊空 = Button link 自帶水平內距,那是自創、不是 DS 定義)。
  *   內部連結由頁面路由攔截(`onClickCapture` + preventDefault,SPA router 的 link interception),不走 anchor 預設的新分頁。
  */
 function TaskListView({ tab, tasks, onOpen, onCreate }: {
@@ -818,7 +818,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
  * -translate-x-1/2 -translate-y-1/2`,以帶 transform 的 `portalContainer` 為準)。**消費端不算位置**。
  * 2026-09-09 第二次 user 抓到:「他應該在整個模擬視窗中水平垂直置中才對吧?」—— 前一版我把第三批的「為何會偏移」解讀成
  * 「要對齊後面的任務對話框」,加了 `centerIn` 用 getBoundingClientRect 手算 `left` 蓋掉 DS 置中、推到舞台中心;那是我的推導,
- * 不是 user 說的,而且違反「置中是 Dialog 的事」這條 SSOT。任務對話框置中於舞台是並存面的定義(只蓋舞台、代理仍可用),
+ * 不是 user 說的,而且違反『置中是 Dialog 的事』這條 SSOT。任務對話框置中於舞台是並存面的定義(只蓋舞台、代理仍可用),
  * 確認框擋住整個視窗就置中於整個視窗;兩者中心差半個代理寬是設計結果,不是 bug。閘 S5 量確認框中心 = 視窗中心。
  */
 function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {

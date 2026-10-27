@@ -71,7 +71,7 @@ const ISSUES: Issue[] = [
 // ── 版面寬度設定(示範產品的值;規則見 app-shell.spec.md「版面規則」§1:Main 最小寬必填、各區依內容類型給最小 / 初始 / 最大)──
 /**
  * Main 最小寬(示範值)= 600:user 規格兩個例子都用 600(U:13、U:35),下方 AgentOverlay / MenuOverlay 的算式照它算。
- * 它**不是**議題表的寬(六欄合計 840):Main 比表窄時,表格在自己裡面水平捲(`../DataTable/data-table.spec.md`「Center 區:水平 overflow 自行處理」),
+ * 它**不是**議題表的寬(六欄合計 840):Main 比表窄時,表格在自己裡面水平捲(`../DataTable/data-table.spec.md`「Center 區:flex-1,水平 overflow 自行處理」),
  * 不撐開 AppShell。2026-10-14 這裡寫「議題表 6 欄的可讀下限」是 AI 編的理由(與欄寬宣告矛盾;2026-10-15 r1b 複驗 F6,M36(a)),已改正。
  */
 const MAIN_MIN_WIDTH = 600
@@ -228,7 +228,7 @@ const PRIORITY_COLOR = {
  * Per codex Layer B D1+D2(2026-05-20):
  * - Entity identity(title + id 副標)→ ItemContent(item-anatomy Family 2 subtitle pattern,非 ProfileCard 因 scope 是 people only)
  * - Status / Priority marker → Tag color-coded(per tag.spec.md status use case)
- * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「detail panel 屬性列表」use case)
+ * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「Profile / detail panel 的屬性列表」use case)
  * - Actions → Button(已對齊)
  *
  * Layout per layoutSpace.spec 規則 2 + 規則 4(內容 → action button → bottom 48)。

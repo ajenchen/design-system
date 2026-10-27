@@ -413,9 +413,9 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 ## Future extension(目前不定義)
 
-**Multi-sidebar**(Notion / Linear 雙側欄派):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 composite(per user 2026-05-19「AppShell 不該 customize Sidebar」)。
+**Multi-sidebar**(Notion / Linear 雙側欄派):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 composite(user 2026-05-19 指示 AppShell 不客製 Sidebar)。
 
-**Footer**:不 expose slot(per user 2026-05-19「不用 footer」)。Web service 通常不用 footer,consumer 若需要自貼 Main 底。
+**Footer**:不 expose slot(user 2026-05-19 指示不用 footer)。Web service 通常不用 footer,consumer 若需要自貼 Main 底。
 
 **Banner / announcement bar**:不 expose slot,consumer 自貼 Main 頂(對齊 Notion / Linear banner consumer-managed convention)。
 

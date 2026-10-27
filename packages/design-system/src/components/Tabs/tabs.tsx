@@ -499,7 +499,7 @@ const tabsTriggerVariants = cva(
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',
-    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層 (Recommended)」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
     // 指標在這個 tab 的 inlineAction 上時,tab 保留上一行的 hover 字色,action 再亮自己那層。
     // action 依 ARIA required-children 被 portal 到 tablist 外(見 TabsTrigger 的 portal 註解),指標在它上面時 trigger 不算 :hover,
     // CSS 也寫不出「哪顆 action 對應哪個 trigger」→ 由 portal 外層 span 的 pointerenter/leave 在 trigger 上標 `data-action-hover`。
@@ -552,8 +552,8 @@ interface TabsTriggerProps
    */
   endIcon?: LucideIcon
   /**
-   * Inline action slot(2026-05-21 v3 加,per user「圖一 後綴應該是 inline action」+「點擊
-   * 該 tab 的 inline action 跟其他地方應該不同反應」directive):
+   * Inline action slot(2026-05-21 v3 加;user 指示截圖裡的後綴應該是 inline action,而且點它跟點
+   * tab 其他地方要有不同反應):
    * 提供 `<ItemInlineAction>` / `<DropdownMenuTrigger asChild><ItemInlineAction ... /></DropdownMenuTrigger>`
    * 等獨立 click target。**DOM 上是 trigger 的 sibling(絕對定位),非巢狀 button**
    * (2026-07-05 D4 修:Radix TabsTrigger 是原生 `<button>`,巢 button = HTML 不合法 +
@@ -596,7 +596,7 @@ const TabsTrigger = React.forwardRef<
   )
   const [actionPos, setActionPos] = React.useState<{ left: number; top: number; height: number } | null>(null)
 
-  // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+  // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層 (Recommended)」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
   // 指標在 portal 出去的 action 上時,在 trigger 標 `data-action-hover`,cva 的 `data-[action-hover]:text-foreground` 讀它。
   // - 用**原生** pointerenter/leave,不用 React 的 onPointerEnter/Leave:React 依元件樹算進出,而 inlineAction 裡的
   //   DropdownMenuContent 是這個 span 的元件樹後代(DOM 卻在 body)—— 指標移進選單時 React 不發 leave,選單關掉時節點卸載

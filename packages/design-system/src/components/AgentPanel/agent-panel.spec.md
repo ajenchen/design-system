@@ -69,7 +69,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 寬 = 這種內容類型的寬度設定(預設初始 400,`AGENT_PANEL_WIDTH_DEFAULT`)、全高;面=`bg-surface`;左緣分隔線**只有一個 owner**:可拖時由
   ResizeHandle 的 1px line 擁有(idle divider / hover border-hover / 拖曳中 primary;DataTable 欄間同款),
   `resizable=false` 才由容器畫 `border-l border-divider`(app-shell aside 前例)。兩者並存 = 2px 粗線
-  (2026-09-02 user 抓到「比 aside 粗」;第二輪雙層 -3px 偏移已由單一元件收斂)。
+  (2026-09-02 user 抓到「ai agent的為何特別粗」;第二輪雙層 -3px 偏移已由單一元件收斂)。
 - Anatomy:`[AgentPanelHeader][AgentConversation flex-1][AgentPromptInput]`;
   AgentDecisionCard 出現時絕對定位貼底覆蓋輸入區。
 - 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
@@ -92,12 +92,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | **並排** | flex 兄弟,佔版面、自然把 Main 推窄;可拖,上限 = AppShell 給的可拉上限;不抑制任何東西 |
   | **浮層** | `absolute` 貼右、上下貼齊;寬 = 寬度紀錄夾在「版面規則」§9 的範圍(最小 ~ min(最大, 版面寬 − 48)),**左側至少留 `--layout-space-viewport-inset`(48px)**;底色 `--surface-raised` + 陰影 `--elevation-200`(遮蓋型浮層必不透明,與 Sheet 同一組);底下鋪並存遮罩(`CoexistenceMask`,z-30、`--overlay`,**點擊關閉面板**;2026-09-17 裁示,取代 2026-09-16 的「點了不關」);**渲染拖曳把手**(2026-10-14 前「寬 = 容器 − 48、不渲染把手」已退場) |
 
-  2026-10-14 前的「容器 ≥ 960 才並排、上限 `min(640, ⌊容器 × 3/8⌋)`、面板 ≤ 舞台 3/5、≤ 視窗 50%」整套被 user 2026-10-14 規格取代(「版面規則」§12);當時的原話留在 v14 來源總帳:2026-09-07「50% 基準由視窗改舞台」、2026-09-09「我覺得 960px 作為 agent 蓋板的斷點應該可以」。匯出常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 隨之退場。
+  2026-10-14 前的「容器 ≥ 960 才並排、上限 `min(640, ⌊容器 × 3/8⌋)`、面板 ≤ 舞台 3/5、≤ 視窗 50%」整套被 user 2026-10-14 規格取代(`../AppShell/app-shell.spec.md`「版面規則」§12);當時的原話留在 v14 來源總帳:2026-09-07「50% 基準由視窗改舞台」、2026-09-09「我覺得 960px 作為 agent 蓋板的斷點應該可以」。匯出常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 隨之退場。
   **不在 AppShell 裡單獨使用時**:AgentPanel 只算自己 —— 用同一支 `../AppShell/layout-model.ts`(`computeStandaloneAgentLayout`)、只排 AI agent 這一區(放得下就並排、放不下變浮層,沒有固定門檻);AI 建議,在 user 以 D:10 核准的 D:30 清單(新增項 N14)。宿主那一側的最小寬由 `hostMinWidth` 傳入(省略 = 0 = 只要放得下面板自己的最小寬就並排;工程決定);在 AppShell 裡不用這個 prop。
 
   浮層時抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `inertOutside`:保留節點以外設 `inert`、頁面上不屬於任何控件的播報區 `[aria-live]`(Toast 區、DS 播報)照常保留,body portal 的浮層也被抑制;2026-10-07 前用 `aria-hidden` 套件的 `suppressOthers`,與 Radix 共用一份計數而在兩個對話框同時關閉時留下 `inert`,見該檔說明);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
-  (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」—— 模擬瀏覽器的工具列不是宿主)。並排態不抑制任何東西。
+  (2026-09-09 user 抓到範例變成滿版時上方模擬的網址列完全點不了 —— 模擬瀏覽器的工具列不是宿主)。並排態不抑制任何東西。
   **疊在浮層上面的不是宿主**(AI 推導,2026-10-14 審查抓到):變成浮層那一刻**已經開著**、層級比面板高的層(一般確認框、AppShell 的 Menu 浮層 —— `../../tokens/elevation/elevation.spec.md`「疊放順序」第 6 列 `z-50` > 第 5 列 `z-[45]`)也留在保留集合裡,照樣可點、可聚焦;
   並存 modal(第 4 列 `z-40`)照舊在面板底下、被抑制。判定 = `agent-panel.tsx` `openLayersAbove`(開著的 `role="dialog"` / `alertdialog`、不在面板裡、在整頁疊放脈絡的層級高於面板);
   遮罩挖洞仍只看面板 + 遮罩 + `persistentElements`(上面那些層本來就畫在遮罩上方)。之後才開的層(例:面板裡開的改名對話框)本來就不在抑制範圍裡(`inertOutside` 只盤點開始那一刻)。
@@ -135,7 +135,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   形態以 `data-agent-panel-mode` 標在根節點,並由 `onModeChange` 回報給消費端。
 
   **浮層時從代理導向 Main → 代理收成入口鈕(2026-09-09 user 推翻 AI 推導;2026-10-14 保留)**:浮層時「內容與 agent 同時運作」
-  (v14 原文)不可能成立;user 原話「開啟 agent 點內部連結當然要有優先呈現該連結內容啊,怎麼可能讓 agent 還霸道佔位?」。
+  (v14 原文)不可能成立;user 原話「開啟agent點內部連結當然要有優先呈現該連結內容啊，怎麼可能讓agent還霸道佔位？」。
   所以代理內任何導向 Main 的動作 —— 內部連結、有網址的 modal、沒有網址的確認框按「確認前往」—— 都讓代理收成入口鈕、
   Main 顯示目標;對話、草稿、閱讀位置全部保留(下方「關閉不等於卸載」);並排態不變,代理維持開啟。
   點入口鈕重開 → 浮層再蓋回 Main,Main 上並存中的 modal 在它後方暫不可操作、按 × 又顯露。
@@ -167,10 +167,10 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - chrome header 家族:消費 `<ChromeHeader>`(固定高 `--chrome-header-height`:md 48 / lg 56 隨 density);
   標題=chrome typography `text-body-lg font-medium`(16;`header-canonical.spec.md`「Title typography」)。
-  **標題群 ↔ 動作群間距 = `--layout-space-loose`**(2026-09-02 user 拍板「chevron 至少與其右方按鈕距離 loose」):
+  **標題群 ↔ 動作群間距 = `--layout-space-loose`**(2026-09-02 user 拍板「我覺得聊天標題的右邊chevron 至少與其右方按鈕距離loose space token」):
   ChromeHeader 根層預設 `gap-2` 在長標題截斷時會讓 chevron 貼到 28px 圖示鈕(8px)、被讀成同一群;本面板以
   className 覆寫根層 gap 為 loose,其餘 ChromeHeader 消費者(Dialog / AppShell)不受影響。
-  **不取 14**(2026-09-02 user 問「可否客製選 14」→ 判定維持 16):14 是 non-modal 浮層(Popover / Coachmark /
+  **不取 14**(2026-09-02 user 問「我覺得 ai agent 的 overlay header 的字體大小可以客製化選用14px那個，你看到底要用哪一個比較好」→ 判定維持 16):14 是 non-modal 浮層(Popover / Coachmark /
   Tooltip)的專屬檔(`popover.spec.md` Modal / Non-modal 字級表),AgentPanel 是與 AppShell aside 同級的常駐面板,
   改 14 = 與相鄰 aside 標題不同級,且標誌 24 / 箭頭 20 是照 16 字配的 tier(縮字後箭頭偏大);垂直置中不受影響。
 - Anatomy:`[AgentLogo 24][gap-2][標題+chevron 複合觸發]…[新對話 +][ButtonDivider][關閉 ×]`。
@@ -238,7 +238,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - Anatomy:`[附件列?][值(多行)][工具列:+ … 送出/停止]`;外框 = **Textarea edit×default 同一組字串**
   (`components/Field/field-wrapper.tsx` 的 `fieldChromeStyles({ mode: 'edit', variant: 'default' })`:border-border、
   hover 一階 border-hover、focus-within 主色;radius 4 —— 單行欄位 / Textarea / 本輸入盒三種宿主同一份)。
-  2026-09-02 user 抓「跟 Textarea 互動不同」→ 收斂為單一住所,禁自刻。
+  2026-09-02 user 問「此外為何 prompt input的互動跟 text area 不一樣？」→ 收斂為單一住所,禁自刻。
 - 內距=欄位家族:上 `--field-control-py-md`、左右 `--field-px`、text-body;
   單行=32 等高鐵律。總高驗算:1+28(附件列)+32+40(工具列)+1=102=稿。
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
@@ -269,7 +269,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 附:歷史浮層(消費現成,不新增公開元件)
 
-- **寬度 = Popover canonical `w-72`(288)**,不另訂(2026-09-02 user 問「寬度訂多少」:實測 ChatGPT 側欄 260、
+- **寬度 = Popover canonical `w-72`(288)**,不另訂(2026-09-02 user 問「此外 session list 的寬度要訂多少比較合理？」:實測 ChatGPT 側欄 260、
   Claude 側欄 290,DS 既有 rich-popover 288 落在其間;面板最窄 360 時自標題左緣起仍有 312 可容)。
 - **與觸發點距 = `OVERLAY_SIDE_OFFSET` 8**(`tokens/elevation/overlay-geometry.ts`;實測 popper wrapper
   translateY = 觸發鈕底 + 8;量測時分頁必在前景,背景分頁會凍在 slide-in 起點量到 0.5)。

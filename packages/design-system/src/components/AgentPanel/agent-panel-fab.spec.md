@@ -17,7 +17,7 @@
   commit 掛載故同相;光圈漸層=環同兩極同方位);懸停=陰影升一級+微放大;點擊=開面板。
 - 減動作:光圈屬位移 loop → 全停(標誌內部自回靜止)。
 - **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 `AgentPanelHeader.logoState` 同名 —— 產品端同一個變數餵兩邊;
-  2026-09-03 user 拍板「若開啟的 session 是思考中,FAB 的 logo 也應該是思考中」):入口鈕 = 那個對話**收起來的樣子**,
+  2026-09-03 落地;依據是 user 在 artifact 的留言,原話未留存 —— 開啟的對話在思考中時,入口鈕的標誌也在思考中):入口鈕 = 那個對話**收起來的樣子**,
   不是另一個獨立的東西 —— 代理在回覆時即使面板關著,入口鈕標誌照樣轉(`think`);有新訊 = 招喚(`attract`,標誌蓄勢
   + 邊框光圈);閒置 = 靜止(`still`)。兩種形態(40 圓 / 28 貼邊)都跟,尺寸變、狀態不變。光圈只給招喚態:思考態的
   訊號是標誌自己在轉,再加光圈會變成兩個 loop 互相打架。對照:[Android Bubbles 收合後仍以圖示承載該對話的動態](https://developer.android.com/develop/ui/views/notifications/bubbles)。
@@ -36,8 +36,8 @@
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
-  - **命中區 = 可視形狀本身**(2026-09-04 user 拍板原話:「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」;
-    「當我點擊按鈕的任何地方包括左側靠近邊邊的地方,只要還在按鈕範圍內就應該觸發事件」)。
+  - **命中區 = 可視形狀本身**(2026-09-04 user 拍板原話:「按鈕的視覺=觸發事件的範圍=會觸發tooltip的範圍」;
+    「所以當我點擊按鈕的任何地方包括左側靠近邊邊的地方，只要還在按鈕範圍內就應該觸發事件」)。
     三者**恆等**,沒有例外可以解釋:看得到的每一點都點得到、點得到的每一點都看得到、會出 tooltip 的範圍就是這一塊。
     作法:語意 `<button>` 的尺寸與圓角**都等於可視形狀**(貼邊 28 + `rounded-l-full`、在家 40 + `rounded-full`);
     漸層環是這一層自己的 2px padding,內層 span 只負責面色,所以按鈕的 border box 邊緣就是使用者看到的邊緣。
@@ -91,7 +91,7 @@
       owner `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」):本 DS 以滑鼠指標的精度為前提。這裡先前列的
       [Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
       [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
-      是**觸控尺寸建議、AI 自己找來的對照**,不是 user 要求,也從來不是「命中要大於視覺」的依據 —— 要把可點範圍做大,做大的是**可視形狀**,不是加隱形邊。
+      是**觸控尺寸建議、AI 自己找來的對照**,不是 user 要求,也從來不是『命中要大於視覺』的依據 —— 要把可點範圍做大,做大的是**可視形狀**,不是加隱形邊。
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;

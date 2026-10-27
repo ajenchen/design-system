@@ -6,7 +6,7 @@
  *   agent-panel-logo.spec.md「AgentLogo」節)。漸層停駐色=**自家色階逐階取值**(primitives.css light
  *   段 blue-2..7 / indigo-5 / purple-3..8;品牌色不隨主題,color.spec.md「品牌」段);每個常數行尾
  *   `// = --color-xxx-N` 是 scripts/agent-logo-brand-scale-invariant.mjs 的機械綁定,禁刪
- *   (2026-09-02 user:「所有顏色都要根據我們的設計語言調整」→ 由自訂 oklch 改為自家色階)。
+ *   (2026-09-02 user 要求所有顏色都照本 DS 的設計語言 → 由自訂 oklch 改為自家色階)。
  * - 狀態動畫:agent-panel-logo.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
  *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
  *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
@@ -20,7 +20,7 @@
  *   改 token 必同步此處。
  * - 狀態切換:新狀態 0.15s 淡入(--motion-duration-overlay;agent-panel.css `.agent-logo-enter`)。
  * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停 → 一律回靜止
- *   (agent-panel-logo.spec.md「轉場與減動作」)。
+ *   (agent-panel-logo.spec.md「AgentLogo(標誌;附屬資產)」節的轉場、減動作兩條)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
@@ -217,7 +217,7 @@ export function useBeginAnimationsOnMount(ref: React.RefObject<SVGSVGElement | n
     const root = ref.current
     if (!root) return
     // 只起跑「還沒起跑過」的動畫元素:狀態切換(think → think-exit)時同一顆呼吸疊層若被重新 beginElement,
-    // 亮度會從當下值跳回 0 = 斷層(2026-09-02 user 抓「圓回橢圓時有斷層」根因之一);新掛的元素(keyed)照常起跑。
+    // 亮度會從當下值跳回 0 = 斷層(2026-09-02 user 抓到圓回橢圓時有斷層,根因之一);新掛的元素(keyed)照常起跑。
     root.querySelectorAll<SVGAnimateElement>('[data-begin-on-mount]').forEach((el) => {
       if (el.dataset.begun === '1') return
       if (typeof el.beginElement === 'function') {
@@ -372,7 +372,7 @@ function LogoBody({ ids, morph }: BodyProps) {
   const purpleMorph = morph ? <HoleMorph rest={D_PURPLE} round={D_PURPLE_ROUND} spec={morph} /> : null
   const blueMorph = morph ? <HoleMorph rest={D_BLUE} round={D_BLUE_ROUND} spec={morph} /> : null
   // 基底 d = 該段起點形:spindown 段基底必為正圓,否則新掛的 animate 起跑前那一影格會先畫定稿橢圓再跳回正圓
-  // (一影格斷層;2026-09-02 user 抓「圓回橢圓不連貫」根因之二)。
+  // (一影格斷層;2026-09-02 user 抓到圓回橢圓不連貫,根因之二)。
   const dPurple = morph?.phase === 'spindown' ? D_PURPLE_ROUND : D_PURPLE
   const dBlue = morph?.phase === 'spindown' ? D_BLUE_ROUND : D_BLUE
   return (
@@ -539,7 +539,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     // 就是 user 看到的「圓回橢圓斷層」);已起跑的呼吸疊層由 data-begun 守衛不重啟。
     useBeginAnimationsOnMount(innerRef, `${visualKey}:${ripple}:${isExit ? 'exit' : 'run'}`)
     // 有始有終:still ↔ think 的交接瞬間兩邊長得一模一樣(定稿形、0°、無疊層),直接換、不淡入;
-    // 淡入只留給形態真的不同的交接(招喚 ↔ 其他)。2026-09-02 user 抓「最後沒有流暢回到起點」:
+    // 淡入只留給形態真的不同的交接(招喚 ↔ 其他)。2026-09-02 user 抓到最後沒有流暢回到起點:
     // 減速停定後再淡入 0.15s = 停定那一刻整顆先變透明再回來,就是那個斷層。
     // 只在 key 真的換的那一次決定要不要淡入;同 key 的後續 render(think → think-exit)沿用同一決定,
     // 否則 className 被重新加上會讓 CSS animation 重跑 = 減速起點閃一下。
@@ -569,7 +569,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const defs = (
       <defs>
         {/* 減速段基底 gradientTransform 必等於當下角度:SpinPair 卸載、SpinDecel 起跑前那一影格若基底是 0°,
-            色場會先跳回 0° 再接減速 = 色彩斷層(2026-09-03 user 抓「色彩沒有流暢回復」根因)。 */}
+            色場會先跳回 0° 再接減速 = 色彩斷層(2026-09-03 user 抓到色彩沒有流暢回復,這是根因)。 */}
         <linearGradient
           id={ids.blue}
           gradientUnits="userSpaceOnUse"
