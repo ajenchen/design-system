@@ -22,9 +22,32 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true })
 
+// 範例外層只給寬度(窄 / 中 / 寬容器的差別靠 max-w 呈現),不再畫手刻的卡片外框 —— DS 沒有 Card 元件,
+// 有元件就用元件、不手刻外殼(user 2026-04-18「不應該亂造新的元件,建立任何新的元件都要盤查過」);同一種手刻卡片外框在 ProgressBar 範例也已拿掉。
 const Frame = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`border border-border rounded-lg p-[var(--layout-space-loose)] ${className ?? ''}`}>{children}</div>
+  <div className={className}>{children}</div>
 )
+
+// 反例:dd 裡放「編輯」鈕。按下真的換成輸入框、Enter 或離開欄位存回(user 2026-09-08「一堆按鈕都無法正常反應」:畫面上看得到的按鈕都要能動;
+// 這則教的是「dd 放互動元件會讓讀屏分不清是屬性還是動作」,不是「這顆鈕沒作用」)。
+function EditInDdCounterExample() {
+  const [editing, setEditing] = React.useState(false)
+  const [email, setEmail] = React.useState('ada.chen@example.com')
+  if (editing) {
+    return (
+      <Input autoFocus aria-label="Email" defaultValue={email}
+        onBlur={(e) => { setEmail(e.currentTarget.value); setEditing(false) }}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} />
+    )
+  }
+  return (
+    // @layout-space-magic-ok: 值 ↔ 行內編輯鈕 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」)
+    <div className="flex items-center gap-2">
+      <span>{email}</span>
+      <Button variant="text" size="xs" onClick={() => setEditing(true)}>編輯</Button>
+    </div>
+  )
+}
 
 // ── DataTable 範例資料(「多個使用者的同結構屬性」)───────────────────────────
 type Member = { name: string; email: string; team: string }
@@ -132,8 +155,8 @@ export const LayoutRule: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="cols=1(vertical stack)— 長清單、窄容器、mobile-friendly"
-        note="label 在上、value 在下的垂直堆疊 → 適合 sidebar、ProfileCard、mobile detail view。Value 可以佔滿整行寬,長文字不壓迫"
+        title="cols=1(vertical stack)— 長清單、窄容器"
+        note="label 在上、value 在下的垂直堆疊 → 適合 sidebar、ProfileCard、窄的詳情面板。Value 可以佔滿整行寬,長文字不壓迫"
       >
         <Frame className="max-w-xs">
           <DescriptionList cols={1}>
@@ -180,7 +203,7 @@ export const LayoutRule: Story = {
 }
 
 export const LabelAlignmentRule: Story = {
-  name: '標籤 對齊 — 一律左對齊（堆疊）',
+  name: '標籤對齊 — 一律左對齊（堆疊）',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -213,7 +236,7 @@ export const LabelAlignmentRule: Story = {
 
       <TutorialRule
         title="❌ 不要自己用 flex 改 horizontal layout"
-        note={<>手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 <code>orientation=&quot;horizontal&quot;</code> prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout</>}
+        note={<>手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 <code>orientation=&quot;horizontal&quot;</code> prop(dl/dt/dd 語意完整保留,見展示頁<StoryLink kind="Design System/Components/DescriptionList/展示" name="水平佈局">水平佈局</StoryLink>),不要自組 layout</>}
       >
         <Frame className="max-w-md">
           {/* @story-counter-example: ❌ 反例:手刻 flex 模擬 label / value 列(本則教的正是「不要自己用 flex 排」,py 4px 是反例本身) */}
@@ -249,7 +272,8 @@ export const NoInteractionRule: Story = {
               <Tag>已出貨</Tag>
             </DescriptionItem>
             <DescriptionItem label="物流追蹤">
-              <a href="#" className="text-primary hover:text-primary-hover underline">
+              {/* 連結照 color.spec.md 連結規範:text-primary、滑過換 primary-hover、不加底線;點了真的開物流查詢(新分頁) */}
+              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover">
                 FedEx #1234567890
               </a>
             </DescriptionItem>
@@ -282,11 +306,7 @@ export const NoInteractionRule: Story = {
         <Frame className="max-w-md">
           <DescriptionList cols={1}>
             <DescriptionItem label="Email">
-              {/* @layout-space-magic-ok: 反例 dd 內 值 ↔ 編輯鈕(反例主題是 dd 放互動元件,間距是行內 micro)(layoutSpace.spec.md:166 micro) */}
-              <div className="flex items-center gap-2">
-                <span>ada.chen@example.com</span>
-                <Button variant="text" size="xs">編輯</Button>
-              </div>
+              <EditInDdCounterExample />
             </DescriptionItem>
           </DescriptionList>
         </Frame>

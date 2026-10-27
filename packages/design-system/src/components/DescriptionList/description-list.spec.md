@@ -141,7 +141,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
-**Heading typography 建議**:`text-h6 font-medium text-foreground`(語義標題用 h3 + text-h6 —— 14px,與 item label 同大,字重是唯一的強調;typography.spec.md 標題字級),不放大 / 換色。
+**Heading typography 建議**:`text-h6 font-medium text-foreground`(語義標題用 h3 + text-h6 —— 14px,與 item label 同大,字重是唯一的強調;typography.spec.md 標題字級),不放大 / 換色〔UD-U1021-29〕。
 
 **常見誤解**:(1)「DL label 視覺像 FieldLabel 就拿來排表單」— `dl` 無 `<label for>` 對 input 的綁定,編輯場景一律 Field(見禁止事項第 1 條);(2)「section heading 是 DL 內建 prop」— heading 是 consumer pattern(DL 無 heading prop),需要分組時 consumer 自包並遵守上方 gap 規則。
 
@@ -172,7 +172,7 @@ Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個�
 
 - **語意 HTML**:外層 `<dl>`,每組內 `<dt>` 為 term、`<dd>` 為 description——screen reader 會讀成「term X, description Y」對話,明確表達屬性-值關係
 - **DT / DD 配對**:每個 `<dt>` 必須有對應的 `<dd>`(不可孤立),否則 SR 敘事會中斷;元件內建一組 `DescriptionItem` 強制配對,不分開暴露 `<dt>` / `<dd>` primitive
-- **空值呈現**:value 空時由 **consumer 自行傳入** `<span className="text-foreground">-</span>` 占位(半形 hyphen `-`,對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板「空值都用"-"⋯我從頭到尾哪裡有說要用全形的」;元件不自動 normalize——`<dd>` 直接 render `children`),`text-foreground`(同 value 色——「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
+- **空值呈現**:value 空時由 **consumer 自行傳入** `<span className="text-foreground">-</span>` 占位(半形 hyphen `-`,對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板(轉述:空值都用半形 -,從沒說過要用全形);元件不自動 normalize——`<dd>` 直接 render `children`),`text-foreground`(同 value 色——「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
 - **多欄 `cols > 1`**:視覺為 grid 欄位,但 DOM 順序為 item 順序——SR 仍依 DOM 敘事(term1 → desc1 → term2 → desc2),不依視覺欄位;設計時確保 DOM 順序符合語意分組
 - **長值換行**:horizontal 模式的 value(`<dd>`)以 `break-all min-w-0` 處理,讓 URL / ID 等無空白長字串能斷行,避免撐破單列;vertical 模式 value 佔滿整欄寬,自然流文字依字詞換行(不強制單行 truncate,長內容保留可讀完整性)。若 vertical 模式需展示無空白長字串(連續英數 token),由 consumer 自行於該 value 加 `break-all`
 - **列表識別**:預設 `<dl>` 有部分瀏覽器 SR 不視為 list,若需明確 list 語意,DL 根容器可搭配 `role="list"` + `<div role="listitem">`(目前預設不加,保留標準 `<dl>` 語意,consumer 可自行加 role 覆蓋)
