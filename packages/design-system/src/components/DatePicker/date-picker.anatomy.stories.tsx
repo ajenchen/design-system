@@ -1,16 +1,24 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta } from '@storybook/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ComponentProps } from 'react'
 import { DatePicker } from './date-picker'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
-import { DateGrid as DSDateGrid } from '@/design-system/components/DateGrid/date-grid'
+import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation, INPUT_ZONES as Z } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/DatePicker/設計規格',
   parameters: { layout: 'padded' },
 }
 export default meta
+
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveDatePicker({ value: initial, ...rest }: ComponentProps<typeof DatePicker>) {
+  const [value, setValue] = useState(initial)
+  return <DatePicker {...rest} value={value} onChange={setValue} />
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Types & Data
@@ -72,12 +80,6 @@ const MODE_DESC: Record<ModeKey, string> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -85,68 +87,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
-
-const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
-  <div className="flex flex-col gap-0.5 mt-2">
-    {([['bg', 'bg'], ['text', 'text'], ['border', 'bdr'], ['icon', 'icon']] as const).map(([key, label]) => (
-      <span key={key} className="inline-flex items-center gap-1 text-[10px]">
-        <Swatch value={colors[key]} size="sm" />
-        <span className="text-fg-muted w-5 shrink-0">{label}</span>
-        <span className="font-mono text-fg-secondary">{colors[key]}</span>
-      </span>
-    ))}
-  </div>
-)
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
-)
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Blueprint zone colors
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const Z = {
-  pad:   { bg: 'rgba(194,225,154,0.6)', border: 'rgba(139,179,91,0.9)', text: '#5a7a2e' },
-  icon:  { bg: 'rgba(166,208,245,0.6)', border: 'rgba(80,145,210,0.9)', text: '#2d6a9f' },
-  gap:   { bg: 'rgba(253,218,158,0.6)', border: 'rgba(218,165,60,0.9)', text: '#8a6010' },
-  input: { bg: 'rgba(199,178,230,0.6)', border: 'rgba(138,103,190,0.9)', text: '#6035a8' },
-  action:{ bg: 'rgba(245,180,180,0.6)', border: 'rgba(210,100,100,0.9)', text: '#9f2d2d' },
-  dim:   { text: '#d04040' },
-}
-
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -158,11 +100,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly 模式：純格式化文字，無 Calendar icon、無 X。disabled 模式：格式化文字 + Calendar icon（類型身份 indicator，切 fg-disabled），無 X。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description="edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly 模式：純格式化文字，無 Calendar icon、無 X。disabled 模式：格式化文字 + Calendar icon（類型身份 indicator，切 fg-disabled），無 X。">
         <div className="flex gap-8">
           {/* Edit layout */}
           <div className="flex flex-col gap-2 items-start">
@@ -203,35 +141,35 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">Intl.DateTimeFormat · null 顯示 - (hyphen)</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Mode catalog */}
-      <div className="flex flex-col gap-3">
-        <H3>FieldMode 一覽</H3>
-        <div className="flex flex-col gap-2">
-          {MODES.map((m) => (
-            <div key={m} className="flex items-center gap-4">
-              <div className="w-64 shrink-0">
-                <DatePicker mode={m} value="2026-04-02" onChange={() => {}} />
+      <ExampleSection title="FieldMode 一覽">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            {MODES.map((m) => (
+              <div key={m} className="flex items-center gap-4">
+                <div className="w-64 shrink-0">
+                  <LiveDatePicker mode={m} value="2026-04-02" />
+                </div>
+                <span className="text-caption text-fg-secondary">{MODE_DESC[m]}</span>
               </div>
-              <span className="text-caption text-fg-secondary">{MODE_DESC[m]}</span>
+            ))}
+          </div>
+          <div className="border-t border-divider pt-2 mt-1 flex flex-col gap-2">
+            <span className="text-[11px] text-fg-muted font-medium">+ error prop（僅 edit 模式生效）</span>
+            <div className="flex items-center gap-4">
+              <div className="w-64 shrink-0">
+                <LiveDatePicker error value="2026-04-02" />
+              </div>
+              <span className="text-caption text-fg-secondary">border-error — 錯誤訊息由 Form help text 提供</span>
             </div>
-          ))}
-        </div>
-        <div className="border-t border-divider pt-2 mt-1 flex flex-col gap-2">
-          <span className="text-[11px] text-fg-muted font-medium">+ error prop（僅 edit 模式生效）</span>
-          <div className="flex items-center gap-4">
-            <div className="w-64 shrink-0">
-              <DatePicker error value="2026-04-02" onChange={() => {}} />
-            </div>
-            <span className="text-caption text-fg-secondary">border-error — 錯誤訊息由 Form help text 提供</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props table */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div tabIndex={0} aria-label="DatePicker 屬性表" className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -251,7 +189,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -458,13 +396,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意 mode / size / clearable 組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意 mode / size / clearable 組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -475,92 +409,89 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Mode × State 色彩對照</H3>
-        <Desc>edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 和 disabled 各只有一種視覺狀態。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
+    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 和 disabled 各只有一種視覺狀態。色塊即時渲染，切 dark mode 自動更新。">
+      <div className="flex flex-col gap-8">
 
-      {/* Edit mode states */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">edit 模式 — 狀態變化</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>State</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
-            <tbody>
-              {EDIT_STATES.map((st) => {
-                const colors = st === 'disabled' ? COLOR_MAP.edit.disabled! : COLOR_MAP.edit[st]!
-                return (
-                  <tr key={st}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{st}</td>
+        {/* Edit mode states */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">edit 模式 — 狀態變化</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr><Th>State</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
+              <tbody>
+                {EDIT_STATES.map((st) => {
+                  const colors = st === 'disabled' ? COLOR_MAP.edit.disabled! : COLOR_MAP.edit[st]!
+                  return (
+                    <tr key={st}>
+                      <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{st}</td>
+                      <td className="p-3 border-b border-divider align-top min-w-[240px]">
+                        <LiveDatePicker
+                          mode={st === 'disabled' ? 'disabled' : 'edit'}
+                          error={st === 'error'}
+                          value="2026-04-02"
+                        />
+                      </td>
+                      <td className="p-3 border-b border-divider align-top">
+                        <TokenAnnotation colors={colors} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* readonly & disabled */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">readonly / disabled — 單一視覺狀態</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr><Th>Mode</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
+              <tbody>
+                {(['readonly', 'disabled'] as const).map((m) => (
+                  <tr key={m}>
+                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{m}</td>
                     <td className="p-3 border-b border-divider align-top min-w-[240px]">
-                      <DatePicker
-                        mode={st === 'disabled' ? 'disabled' : 'edit'}
-                        error={st === 'error'}
-                        value="2026-04-02"
-                        onChange={() => {}}
-                      />
+                      <DatePicker mode={m} value="2026-04-02" />
                     </td>
                     <td className="p-3 border-b border-divider align-top">
-                      <TokenAnnotation colors={colors} />
+                      <TokenAnnotation colors={COLOR_MAP[m].default!} />
                     </td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* readonly & disabled */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">readonly / disabled — 單一視覺狀態</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>Mode</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
-            <tbody>
-              {(['readonly', 'disabled'] as const).map((m) => (
-                <tr key={m}>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{m}</td>
-                  <td className="p-3 border-b border-divider align-top min-w-[240px]">
-                    <DatePicker mode={m} value="2026-04-02" />
-                  </td>
-                  <td className="p-3 border-b border-divider align-top">
-                    <TokenAnnotation colors={COLOR_MAP[m].default!} />
-                  </td>
+        {/* Icon color rules */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">Icon 色彩規則</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr><Th>元素</Th><Th>角色</Th><Th>default</Th><Th>hover</Th><Th>disabled</Th></tr></thead>
+              <tbody>
+                <tr>
+                  <Td mono>Calendar</Td>
+                  <Td>指示用途（開啟 picker）</Td>
+                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
+                  <Td><span className="text-fg-muted">不變</span></Td>
+                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-disabled" size="sm" /><span className="font-mono">--fg-disabled</span></span></Td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                <tr>
+                  <Td mono>X clear</Td>
+                  <Td>清除已選日期</Td>
+                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
+                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
+                  <Td><span className="text-fg-muted">不渲染</span></Td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
-      {/* Icon color rules */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Icon 色彩規則</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr><Th>元素</Th><Th>角色</Th><Th>default</Th><Th>hover</Th><Th>disabled</Th></tr></thead>
-            <tbody>
-              <tr>
-                <Td mono>Calendar</Td>
-                <Td>指示用途（開啟 picker）</Td>
-                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                <Td><span className="text-fg-muted">不變</span></Td>
-                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-disabled" size="sm" /><span className="font-mono">--fg-disabled</span></span></Td>
-              </tr>
-              <tr>
-                <Td mono>X clear</Td>
-                <Td>清除已選日期</Td>
-                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
-                <Td><span className="text-fg-muted">不渲染</span></Td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -571,76 +502,74 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。lg 是 icon 尺寸切換點（16px → 20px）。高度與 Button 共用 field-height token，同 size 並排時對齊。</Desc>
-      </div>
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。lg 是 icon 尺寸切換點（16px → 20px）。高度與 Button 共用 field-height token，同 size 並排時對齊。">
+      <div className="flex flex-col gap-8">
 
-      {/* Token comparison table */}
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
-          <thead><tr>
-            <Th>屬性</Th>
-            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-          </tr></thead>
-          <tbody>
-            {([
-              { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
-              { label: '左右內距', key: 'pxToken' as const, subFn: (sp: SizeSpec) => `${sp.px}px` },
-              { label: '元素間距', key: 'gapToken' as const, subFn: (sp: SizeSpec) => `${sp.gap}px` },
-              { label: '字體', key: 'fontToken' as const, subFn: (sp: SizeSpec) => sp.font },
-              { label: 'Icon 尺寸（Calendar / X）', subFn: (sp: SizeSpec) => `${sp.icon}px` },
-              { label: 'Clear hover 背景', subFn: (sp: SizeSpec) => `${sp.clearHover}px (icon+2)` },
-            ] as const).map((row) => (
-              <tr key={row.label}>
-                <Td>{row.label}</Td>
-                {SIZES.map((sz) => {
-                  const spec = SIZE_SPECS[sz]
-                  const token = 'key' in row && row.key ? spec[row.key] as string : undefined
-                  const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row ? row.subFn?.(spec) : undefined
-                  return (
-                    <Td key={sz} mono>
-                      {token && <div className="text-fg-secondary">{token}</div>}
-                      {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
-                    </Td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Visual preview — all sizes × all modes */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽 — Size × Mode</span>
+        {/* Token comparison table */}
         <div className="overflow-x-auto">
-          <table className="border-collapse">
+          <table className="border-collapse text-caption">
             <thead><tr>
-              <Th>Size</Th>
-              {MODES.map((m) => <Th key={m}>{m}</Th>)}
-              <Th>edit + clearable</Th>
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
             </tr></thead>
             <tbody>
-              {SIZES.map((sz) => (
-                <tr key={sz}>
-                  <Td mono>{sz}</Td>
-                  {MODES.map((m) => (
-                    <td key={m} className="p-2 border-b border-divider">
-                      <DatePicker mode={m} size={sz} value="2026-04-02" onChange={() => {}} className="w-48" />
-                    </td>
-                  ))}
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker size={sz} value="2026-04-02" onChange={() => {}} clearable className="w-48" />
-                  </td>
+              {([
+                { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
+                { label: '左右內距', key: 'pxToken' as const, subFn: (sp: SizeSpec) => `${sp.px}px` },
+                { label: '元素間距', key: 'gapToken' as const, subFn: (sp: SizeSpec) => `${sp.gap}px` },
+                { label: '字體', key: 'fontToken' as const, subFn: (sp: SizeSpec) => sp.font },
+                { label: 'Icon 尺寸（Calendar / X）', subFn: (sp: SizeSpec) => `${sp.icon}px` },
+                { label: 'Clear hover 背景', subFn: (sp: SizeSpec) => `${sp.clearHover}px (icon+2)` },
+              ] as const).map((row) => (
+                <tr key={row.label}>
+                  <Td>{row.label}</Td>
+                  {SIZES.map((sz) => {
+                    const spec = SIZE_SPECS[sz]
+                    const token = 'key' in row && row.key ? spec[row.key] as string : undefined
+                    const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row ? row.subFn?.(spec) : undefined
+                    return (
+                      <Td key={sz} mono>
+                        {token && <div className="text-fg-secondary">{token}</div>}
+                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                      </Td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Visual preview — all sizes × all modes */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽 — Size × Mode</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr>
+                <Th>Size</Th>
+                {MODES.map((m) => <Th key={m}>{m}</Th>)}
+                <Th>edit + clearable</Th>
+              </tr></thead>
+              <tbody>
+                {SIZES.map((sz) => (
+                  <tr key={sz}>
+                    <Td mono>{sz}</Td>
+                    {MODES.map((m) => (
+                      <td key={m} className="p-2 border-b border-divider">
+                        <LiveDatePicker mode={m} size={sz} value="2026-04-02" className="w-48" />
+                      </td>
+                    ))}
+                    <td className="p-2 border-b border-divider">
+                      <LiveDatePicker size={sz} value="2026-04-02" clearable className="w-48" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -654,110 +583,108 @@ export const StateBehavior = {
     const [clearVal, setClearVal] = useState('2026-05-15')
 
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <H3>狀態行為</H3>
-          <Desc>Clearable、格式化選項、空值顯示的視覺變化與互動規則。</Desc>
-        </div>
+      <ExampleSection title="狀態行為" description="Clearable、格式化選項、空值顯示的視覺變化與互動規則。">
+        <div className="flex flex-col gap-8">
 
-        {/* Clearable behavior */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">Clearable — 有值時顯示 X，清除後消失</span>
-          <div className="flex flex-col gap-3 max-w-sm">
-            <span className="text-[11px] text-fg-muted">點擊 X 清除日期。清除後 X 消失，Calendar icon 靠右。重新選日期後 X 恢復。</span>
-            <DatePicker value={clearVal} onChange={setClearVal} clearable />
-            <span className="text-[11px] text-fg-muted font-mono">value: {clearVal ? `"${clearVal}"` : 'empty'}</span>
-          </div>
-        </div>
-
-        {/* Clearable only in edit */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">Clearable — 僅 edit 模式渲染</span>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <DatePicker value="2026-04-02" onChange={() => {}} clearable className="w-56" />
-              <span className="text-fg-muted text-caption">→</span>
-              <DatePicker mode="readonly" value="2026-04-02" className="w-56" />
-              <span className="text-fg-muted text-caption">→</span>
-              <DatePicker mode="disabled" value="2026-04-02" className="w-56" />
+          {/* Clearable behavior */}
+          <div className="flex flex-col gap-4">
+            <span className="text-caption font-medium text-fg-secondary">Clearable — 有值時顯示 X，清除後消失</span>
+            <div className="flex flex-col gap-3 max-w-sm">
+              <span className="text-[11px] text-fg-muted">點擊 X 清除日期。清除後 X 消失，Calendar icon 靠右。重新選日期後 X 恢復。</span>
+              <DatePicker value={clearVal} onChange={setClearVal} clearable />
+              <span className="text-[11px] text-fg-muted font-mono">value: {clearVal ? `"${clearVal}"` : 'empty'}</span>
             </div>
-            <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X、無 Calendar，純文字）→ 右：disabled（無 X，保留 Calendar，與文字切 fg-disabled）</span>
           </div>
-        </div>
 
-        {/* Trigger opens Calendar Popover */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">觸發列 — 點任意位置展開日期面板</span>
-          <div className="flex flex-col gap-2 max-w-sm">
-            <span className="text-[11px] text-fg-muted">觸發列是一個可點擊的 combobox 控件(外觀同 Input),日曆圖示固定在右側。點觸發列任意位置(含文字區與圖示)都會展開本 DS 自建的日期面板。</span>
-            <DatePicker value="2026-05-15" onChange={() => {}} />
-          </div>
-        </div>
-
-        {/* Format options */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">格式化 — 預設 YYYY/MM/DD 直接組；傳 formatOptions / locale 走 Intl.DateTimeFormat</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse text-caption">
-              <thead><tr><Th>設定</Th><Th>readonly 預覽</Th><Th>view 預覽</Th></tr></thead>
-              <tbody>
-                <tr>
-                  <Td>預設（YYYY/MM/DD）</Td>
-                  <td className="p-2 border-b border-divider"><DatePicker mode="readonly" value="2026-04-02" /></td>
-                  <td className="p-2 border-b border-divider"><DatePicker mode="view" value="2026-04-02" /></td>
-                </tr>
-                <tr>
-                  <Td mono>month: 'short'</Td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
-                  </td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
-                  </td>
-                </tr>
-                <tr>
-                  <Td mono>month: 'long'</Td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-                  </td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-                  </td>
-                </tr>
-                <tr>
-                  <Td mono>locale: 'zh-TW'</Td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="readonly" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-                  </td>
-                  <td className="p-2 border-b border-divider">
-                    <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <span className="text-[11px] text-fg-muted">edit trigger 顯示文字與 view 都用 Intl.DateTimeFormat 格式化（formatOptions / locale prop 對兩者皆生效,跨模式一致）。</span>
-        </div>
-
-        {/* Empty value display */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">空值 — 統一半形 hyphen（-）+ foreground</span>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-fg-muted w-20 shrink-0">readonly</span>
-              <DatePicker mode="readonly" value={null} className="w-48" />
+          {/* Clearable only in edit */}
+          <div className="flex flex-col gap-4">
+            <span className="text-caption font-medium text-fg-secondary">Clearable — 僅 edit 模式渲染</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <LiveDatePicker value="2026-04-02" clearable className="w-56" />
+                <span className="text-fg-muted text-caption">→</span>
+                <DatePicker mode="readonly" value="2026-04-02" className="w-56" />
+                <span className="text-fg-muted text-caption">→</span>
+                <DatePicker mode="disabled" value="2026-04-02" className="w-56" />
+              </div>
+              <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X、無 Calendar，純文字）→ 右：disabled（無 X，保留 Calendar，與文字切 fg-disabled）</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-fg-muted w-20 shrink-0">disabled</span>
-              <DatePicker mode="disabled" value={null} className="w-48" />
+          </div>
+
+          {/* Trigger opens Calendar Popover */}
+          <div className="flex flex-col gap-4">
+            <span className="text-caption font-medium text-fg-secondary">觸發列 — 點任意位置展開日期面板</span>
+            <div className="flex flex-col gap-2 max-w-sm">
+              <span className="text-[11px] text-fg-muted">觸發列是一個可點擊的 combobox 控件(外觀同 Input),日曆圖示固定在右側。點觸發列任意位置(含文字區與圖示)都會展開本 DS 自建的日期面板。</span>
+              <LiveDatePicker value="2026-05-15" />
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-fg-muted w-20 shrink-0">view</span>
-              <DatePicker mode="view" value={null} />
+          </div>
+
+          {/* Format options */}
+          <div className="flex flex-col gap-4">
+            <span className="text-caption font-medium text-fg-secondary">格式化 — 預設 YYYY/MM/DD 直接組；傳 formatOptions / locale 走 Intl.DateTimeFormat</span>
+            <div className="overflow-x-auto">
+              <table className="border-collapse text-caption">
+                <thead><tr><Th>設定</Th><Th>readonly 預覽</Th><Th>view 預覽</Th></tr></thead>
+                <tbody>
+                  <tr>
+                    <Td>預設（YYYY/MM/DD）</Td>
+                    <td className="p-2 border-b border-divider"><DatePicker mode="readonly" value="2026-04-02" /></td>
+                    <td className="p-2 border-b border-divider"><DatePicker mode="view" value="2026-04-02" /></td>
+                  </tr>
+                  <tr>
+                    <Td mono>month: 'short'</Td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    </td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    </td>
+                  </tr>
+                  <tr>
+                    <Td mono>month: 'long'</Td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    </td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    </td>
+                  </tr>
+                  <tr>
+                    <Td mono>locale: 'zh-TW'</Td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="readonly" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    </td>
+                    <td className="p-2 border-b border-divider">
+                      <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <span className="text-[11px] text-fg-muted">edit trigger 顯示文字與 view 都用 Intl.DateTimeFormat 格式化（formatOptions / locale prop 對兩者皆生效,跨模式一致）。</span>
+          </div>
+
+          {/* Empty value display */}
+          <div className="flex flex-col gap-4">
+            <span className="text-caption font-medium text-fg-secondary">空值 — 統一半形 hyphen（-）+ foreground</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-fg-muted w-20 shrink-0">readonly</span>
+                <DatePicker mode="readonly" value={null} className="w-48" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-fg-muted w-20 shrink-0">disabled</span>
+                <DatePicker mode="disabled" value={null} className="w-48" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-fg-muted w-20 shrink-0">view</span>
+                <DatePicker mode="view" value={null} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
     )
   },
 }
@@ -769,152 +696,148 @@ export const StateBehavior = {
 export const CalendarTokens = {
   name: 'Calendar 內部設計變數',
   render: () => {
-    const [selected, setSelected] = useState<Date | undefined>(new Date(2026, 4, 15)) // 2026-05-15 專案截止日
+    const [deadline, setDeadline] = useState<string>('2026-05-15') // 專案截止日
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <H3>Calendar Popup — 本 DS 自建</H3>
-          <Desc>
-            DatePicker 展開的 DateGrid 使用 react-day-picker v9 + 本 DS token 覆寫預設視覺(見 ../DateGrid/date-grid.tsx)。
-            所有視覺 token 由 semantic token 驅動,切 dark mode 自動聯動,不需元件內重寫。
-          </Desc>
-        </div>
+      <ExampleSection title="Calendar Popup — 本 DS 自建" description={<>DatePicker 展開的 DateGrid 使用 react-day-picker v9 + 本 DS token 覆寫預設視覺。
+所有視覺 token 由 semantic token 驅動,切 dark mode 自動聯動,不需元件內重寫。</>}>
+        <div className="flex flex-col gap-8">
 
-        {/* Live preview */}
-        <div className="flex gap-8 items-start">
-          <div className="flex flex-col gap-2">
-            <span className="text-caption font-medium text-fg-secondary">實際渲染</span>
-            <div className="border border-divider rounded-md bg-surface-raised shadow-[var(--elevation-200)] inline-block">
-              <DSDateGrid
-                mode="single"
-                selected={selected}
-                onSelect={setSelected}
-                defaultMonth={new Date(2026, 4, 1)}
-              />
+          {/* Live preview */}
+          <div className="flex gap-8 items-start">
+            {/* 真的 DatePicker 浮層(play 點開,同展示頁「浮層展開狀態」那幾則),不手刻浮層外殼(稽核 L058;overlay-surface 外殼屬 Popover);
+                下方留出浮層落點的畫布空間 */}
+            {/* @layout-space-magic-ok: 展開快照在欄位下方保留 360px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準) */}
+            <div className="flex flex-col gap-2 w-[300px] pb-[360px]">
+              <span className="text-caption font-medium text-fg-secondary">實際渲染</span>
+              <DatePicker value={deadline} onChange={setDeadline} aria-label="專案截止日" />
             </div>
-            <span className="text-[11px] text-fg-muted font-mono">selected: {selected ? selected.toISOString().slice(0, 10) : 'none'}</span>
+
+            {/* Token table */}
+            <div className="flex-1 min-w-[420px]">
+              <span className="text-caption font-medium text-fg-secondary block mb-2">Cell state token(5 種 標準)</span>
+              <div tabIndex={0} aria-label="日期格狀態設計變數表" className="overflow-x-auto">
+                <table className="border-collapse text-caption w-full">
+                  <thead><tr><Th>State</Th><Th>視覺</Th><Th>Token / Class</Th><Th>備註</Th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <Td>正常(未 hover)</Td>
+                      <Td>黑字透明底</Td>
+                      <Td mono>text-foreground</Td>
+                      <Td>base state</Td>
+                    </tr>
+                    <tr>
+                      <Td>today</Td>
+                      <Td>文字下方藍色底線</Td>
+                      <Td mono>[&gt;button]:after:bg-primary · after:h-[1.5px] · after:w-[40%] · after:rounded-full · after:bottom-[5px]</Td>
+                      <Td>after 偽元素 bar(非 text-decoration underline、非 ring circle),避免與 hover 混淆,對齊 Ant / Google Calendar / macOS Calendar</Td>
+                    </tr>
+                    <tr>
+                      <Td>disabled</Td>
+                      <Td>灰底圓圈 + 淺灰字</Td>
+                      <Td mono>bg-disabled · rounded-full · text-fg-disabled</Td>
+                      <Td>與 outside month 視覺略有區隔</Td>
+                    </tr>
+                    <tr>
+                      <Td>selected(single / range 端點)</Td>
+                      <Td>藍底白字圓</Td>
+                      <Td mono>bg-primary · text-on-emphasis · rounded-full</Td>
+                      <Td>range_start / range_end 共用此視覺</Td>
+                    </tr>
+                    <tr>
+                      <Td>range track(中間日期)</Td>
+                      <Td>灰底矩形橫條</Td>
+                      <Td mono>before:bg-neutral-selected(day 容器層 before 偽元素 track)</Td>
+                      <Td>與端點圓接縫形成連續 bar</Td>
+                    </tr>
+                    <tr>
+                      <Td>hover(未選中)</Td>
+                      <Td>藍圈 outline 無 fill</Td>
+                      <Td mono>hover:ring-[1.5px] · hover:ring-primary-hover · hover:bg-transparent</Td>
+                      <Td>非 filled 避免跟 selected 混淆(2026-07-07 起 ring 色為 hover 階)</Td>
+                    </tr>
+                    <tr>
+                      <Td>range 預覽框(停留 / 焦點,只在 DatePicker.Range)</Td>
+                      <Td>藍色細框框出「點下去會變成」的區間,停留日是框的半圓端點</Td>
+                      <Td mono>端點 / 單格 after:ring-inset · after:ring-[1.5px] · after:ring-primary-hover + rounded-l/r-full(端點朝區間那側用 clip-path 裁掉直邊);中段 after:shadow-[inset 上下各 1.5px](day 容器層 after 偽元素;class 住 DateGrid RANGE_PREVIEW_CLASSNAMES;不用 border,1.5px 會被取整)</Td>
+                      <Td>與單日 hover 圈同色同粗;停留日不再畫單格圈(2026-09-23 user 拍板)</Td>
+                    </tr>
+                    <tr>
+                      <Td>focus-visible(鍵盤焦點)</Td>
+                      <Td>非藍底格:往內 2px 藍線;藍底格(選中日 / 端點):1px 白線退 3px,外圈留藍</Td>
+                      <Td mono>day button focus-visible:focus-ring-inset;藍底 modifier 另掛 [&gt;button]:focus-visible:focus-ring-inset-emphasis(幾何住 styles/base.css;DateGrid EMPHASIS_FOCUS_RING_CLASSNAME)</Td>
+                      <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,對照 Carbon 選中日)</Td>
+                    </tr>
+                    <tr>
+                      <Td>outside month</Td>
+                      <Td>弱化字色</Td>
+                      <Td mono>text-fg-muted</Td>
+                      <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)。一條原則:只在同一天不會被畫兩次時顯示 —— 一張月曆淡字(選中日落在鄰月位置仍是藍底白字)、兩張以上並排不渲染(DateGrid numberOfMonths &gt; 1 強制)</Td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <span className="text-caption font-medium text-fg-secondary block mb-2 mt-6">其他區塊 token</span>
+              <div tabIndex={0} aria-label="日期面板區塊設計變數表" className="overflow-x-auto">
+                <table className="border-collapse text-caption w-full">
+                  <thead><tr><Th>區塊</Th><Th>Token / Class</Th><Th>說明</Th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <Td>月份 caption</Td>
+                      <Td mono>text-body · font-medium</Td>
+                      <Td>如「May 2026」,視覺上與 SelectMenu 標題同一層級</Td>
+                    </tr>
+                    <tr>
+                      <Td>Nav 按鈕(prev / next)</Td>
+                      <Td mono>Button variant=&quot;text&quot; size=&quot;xs&quot; iconOnly · absolute top-0 left/right-0</Td>
+                      <Td>消費 Button(variant=&quot;text&quot;)— 尺寸由 size=&quot;xs&quot; 決定,色彩走 Button 預設 text-foreground(neutral-9),不另開 fg-muted tier;absolute 貼齊 caption 兩側</Td>
+                    </tr>
+                    <tr>
+                      <Td>星期標頭</Td>
+                      <Td mono>h-7 · text-body · text-foreground · font-medium · align-middle · text-center</Td>
+                      <Td>Mon / Tue...與 caption「May 2026」同視覺權重(都屬 calendar header 區),不弱化</Td>
+                    </tr>
+                    <tr>
+                      <Td>日格</Td>
+                      <Td mono>h-field-sm · w-[var(--field-height-sm)]</Td>
+                      <Td>28×28 @ md / 32×32 @ lg,容納點擊區 + 視覺指示</Td>
+                    </tr>
+                    <tr>
+                      <Td>Popover padding</Td>
+                      <Td mono>p-3(12px 四邊對稱)</Td>
+                      <Td>chevron 到 popover 邊距 = 最邊欄 day cell 到 popover 邊距</Td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-footnote text-fg-muted mt-4">
+                <strong>State stacking</strong>:today + selected → selected 勝出(藍底白字圓);today + range-middle → track 灰底 + underline 仍可見。
+              </p>
+              <p className="text-footnote text-fg-muted mt-2">
+                <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
+              </p>
+            </div>
           </div>
 
-          {/* Token table */}
-          <div className="flex-1 min-w-[420px]">
-            <span className="text-caption font-medium text-fg-secondary block mb-2">Cell state token(5 種 標準)</span>
-            <div tabIndex={0} aria-label="日期格狀態設計變數表" className="overflow-x-auto">
-              <table className="border-collapse text-caption w-full">
-                <thead><tr><Th>State</Th><Th>視覺</Th><Th>Token / Class</Th><Th>備註</Th></tr></thead>
-                <tbody>
-                  <tr>
-                    <Td>正常(未 hover)</Td>
-                    <Td>黑字透明底</Td>
-                    <Td mono>text-foreground</Td>
-                    <Td>base state</Td>
-                  </tr>
-                  <tr>
-                    <Td>today</Td>
-                    <Td>文字下方藍色底線</Td>
-                    <Td mono>[&gt;button]:after:bg-primary · after:h-[1.5px] · after:w-[40%] · after:rounded-full · after:bottom-[5px]</Td>
-                    <Td>after 偽元素 bar(非 text-decoration underline、非 ring circle),避免與 hover 混淆,對齊 Ant / Google Calendar / macOS Calendar</Td>
-                  </tr>
-                  <tr>
-                    <Td>disabled</Td>
-                    <Td>灰底圓圈 + 淺灰字</Td>
-                    <Td mono>bg-disabled · rounded-full · text-fg-disabled</Td>
-                    <Td>與 outside month 視覺略有區隔</Td>
-                  </tr>
-                  <tr>
-                    <Td>selected(single / range 端點)</Td>
-                    <Td>藍底白字圓</Td>
-                    <Td mono>bg-primary · text-on-emphasis · rounded-full</Td>
-                    <Td>range_start / range_end 共用此視覺</Td>
-                  </tr>
-                  <tr>
-                    <Td>range track(中間日期)</Td>
-                    <Td>灰底矩形橫條</Td>
-                    <Td mono>before:bg-neutral-selected(day 容器層 before 偽元素 track)</Td>
-                    <Td>與端點圓接縫形成連續 bar</Td>
-                  </tr>
-                  <tr>
-                    <Td>hover(未選中)</Td>
-                    <Td>藍圈 outline 無 fill</Td>
-                    <Td mono>hover:ring-[1.5px] · hover:ring-primary-hover · hover:bg-transparent</Td>
-                    <Td>非 filled 避免跟 selected 混淆(2026-07-07 起 ring 色為 hover 階)</Td>
-                  </tr>
-                  <tr>
-                    <Td>range 預覽框(停留 / 焦點,只在 DatePicker.Range)</Td>
-                    <Td>藍色細框框出「點下去會變成」的區間,停留日是框的半圓端點</Td>
-                    <Td mono>端點 / 單格 after:ring-inset · after:ring-[1.5px] · after:ring-primary-hover + rounded-l/r-full(端點朝區間那側用 clip-path 裁掉直邊);中段 after:shadow-[inset 上下各 1.5px](day 容器層 after 偽元素;class 住 DateGrid RANGE_PREVIEW_CLASSNAMES;不用 border,1.5px 會被取整)</Td>
-                    <Td>與單日 hover 圈同色同粗;停留日不再畫單格圈(2026-09-23 user 拍板)</Td>
-                  </tr>
-                  <tr>
-                    <Td>focus-visible(鍵盤焦點)</Td>
-                    <Td>非藍底格:往內 2px 藍線;藍底格(選中日 / 端點):1px 白線退 3px,外圈留藍</Td>
-                    <Td mono>day button focus-visible:focus-ring-inset;藍底 modifier 另掛 [&gt;button]:focus-visible:focus-ring-inset-emphasis(幾何住 styles/base.css;DateGrid EMPHASIS_FOCUS_RING_CLASSNAME)</Td>
-                    <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,對照 Carbon 選中日)</Td>
-                  </tr>
-                  <tr>
-                    <Td>outside month</Td>
-                    <Td>弱化字色</Td>
-                    <Td mono>text-fg-muted</Td>
-                    <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)。一條原則:只在同一天不會被畫兩次時顯示 —— 一張月曆淡字(選中日落在鄰月位置仍是藍底白字)、兩張以上並排不渲染(DateGrid numberOfMonths &gt; 1 強制;2026-09-23 / 09-24 user 拍板,八家對照見 date-grid.spec.md「鄰月日子:一條原則」)</Td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <span className="text-caption font-medium text-fg-secondary block mb-2 mt-6">其他區塊 token</span>
-            <div tabIndex={0} aria-label="日期面板區塊設計變數表" className="overflow-x-auto">
-              <table className="border-collapse text-caption w-full">
-                <thead><tr><Th>區塊</Th><Th>Token / Class</Th><Th>說明</Th></tr></thead>
-                <tbody>
-                  <tr>
-                    <Td>月份 caption</Td>
-                    <Td mono>text-body · font-medium</Td>
-                    <Td>如「May 2026」,視覺上與 SelectMenu 標題同一層級</Td>
-                  </tr>
-                  <tr>
-                    <Td>Nav 按鈕(prev / next)</Td>
-                    <Td mono>Button variant=&quot;text&quot; size=&quot;xs&quot; iconOnly · absolute top-0 left/right-0</Td>
-                    <Td>消費 Button(variant=&quot;text&quot;)— 尺寸由 size=&quot;xs&quot; 決定,色彩走 Button 預設 text-foreground(neutral-9),不另開 fg-muted tier;absolute 貼齊 caption 兩側</Td>
-                  </tr>
-                  <tr>
-                    <Td>星期標頭</Td>
-                    <Td mono>h-7 · text-body · text-foreground · font-medium · align-middle · text-center</Td>
-                    <Td>Mon / Tue...與 caption「May 2026」同視覺權重(都屬 calendar header 區),不弱化</Td>
-                  </tr>
-                  <tr>
-                    <Td>日格</Td>
-                    <Td mono>h-field-sm · w-[var(--field-height-sm)]</Td>
-                    <Td>28×28 @ md / 32×32 @ lg,容納點擊區 + 視覺指示</Td>
-                  </tr>
-                  <tr>
-                    <Td>Popover padding</Td>
-                    <Td mono>p-3(12px 四邊對稱)</Td>
-                    <Td>chevron 到 popover 邊距 = 最邊欄 day cell 到 popover 邊距</Td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-footnote text-fg-muted mt-4">
-              <strong>State stacking</strong>:today + selected → selected 勝出(藍底白字圓);today + range-middle → track 灰底 + underline 仍可見。
-            </p>
-            <p className="text-footnote text-fg-muted mt-2">
-              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
-            </p>
+          {/* Architecture */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">架構</span>
+            <ol className="list-decimal pl-5 space-y-2 text-caption text-fg-secondary">
+              <li><code>&lt;div role=&quot;combobox&quot; tabIndex=&#123;0&#125;&gt;</code> 提供 Input wrapper 外觀；使用 div + role 而非 button，避免巢狀互動元素。</li>
+              <li>Wrapper 內依序放格式化日期文字、可選的 <code>ItemInlineAction</code> 清除鈕，以及固定在右側的 calendar icon。</li>
+              <li>滑鼠點擊或按 Enter / Space 後開啟 <code>&lt;Popover align=&quot;start&quot;&gt;</code>。</li>
+              <li>Popover 內容渲染 <code>&lt;DateGrid /&gt;</code>，由 react-day-picker 處理日期邏輯並消費本 DS token。</li>
+            </ol>
           </div>
         </div>
-
-        {/* Architecture */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">架構</span>
-          <ol className="list-decimal pl-5 space-y-2 text-caption bg-neutral-hover rounded-md p-4 text-fg-secondary">
-            <li><code>&lt;div role=&quot;combobox&quot; tabIndex=&#123;0&#125;&gt;</code> 提供 Input wrapper 外觀；使用 div + role 而非 button，避免巢狀互動元素。</li>
-            <li>Wrapper 內依序放格式化日期文字、可選的 <code>ItemInlineAction</code> 清除鈕，以及固定在右側的 calendar icon。</li>
-            <li>滑鼠點擊或按 Enter / Space 後開啟 <code>&lt;Popover align=&quot;start&quot;&gt;</code>。</li>
-            <li>Popover 內容渲染 <code>&lt;DateGrid /&gt;</code>，由 react-day-picker 處理日期邏輯並消費本 DS token。</li>
-          </ol>
-        </div>
-      </div>
+      </ExampleSection>
     )
+  },
+  // 打開真的浮層給讀者看實際渲染(同展示頁 OpenSnapshot 的做法)
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    canvasElement.querySelector<HTMLElement>('[role="combobox"]')?.click()
+    await new Promise((r) => setTimeout(r, 200))
   },
 }
 
@@ -926,24 +849,22 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="flex flex-col gap-6 max-w-3xl text-body">
-      <section>
-        <h3 className="text-body font-bold mb-2">ARIA roles</h3>
+      <ExampleSection title="ARIA roles" paragraph>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<code>{`<div role="combobox" tabIndex={0}>`}</code> + <code>aria-haspopup="dialog"</code> + <code>aria-expanded={`{open}`}</code></li>
           <li>Trigger 必含 accessible name(<code>aria-label</code> / 外層 <code>{`<label>`}</code> / fieldCtx label)</li>
           <li>Popover content:<code>role="dialog"</code>;單一日期 popover 使用 <code>aria-label="日期選擇"</code>，Range popover 使用 <code>aria-label="日期區間選擇"</code></li>
           <li>Range 雙 trigger:<code>aria-expanded</code> 對應只當該 trigger active 時 true</li>
         </ul>
-      </section>
-      <section>
-        <h3 className="text-body font-bold mb-2">鍵盤</h3>
+      </ExampleSection>
+      <ExampleSection title="鍵盤" paragraph>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger 開 popover(<kbd>Space</kbd> / <kbd>Enter</kbd>):單一 DatePicker 的 <code>{`<div role="combobox">`}</code> 無 native Enter/Space→click,由元件<strong>自建 <code>onKeyDown</code></strong> 補開(date-picker.tsx#DatePicker;Radix PopoverTrigger 只 compose onClick)。Range 雙 trigger 為 native <code>{`<button>`}</code> onClick 開啟(同非 Radix Popover 內建)</li>
           <li>Popover 開啟 <kbd>Esc</kbd> 關閉 + 回焦:單一 DatePicker 用 PopoverTrigger → Radix <strong>內建</strong> <code>triggerRef.focus()</code> 回焦;Range 只有 PopoverAnchor(triggerRef 恆 null,內建回焦為 no-op),改由元件<strong>自建 <code>onCloseAutoFocus</code></strong> 手動回焦 active 端 button(date-picker.tsx#DatePickerRange,守 WCAG 2.4.3)</li>
           <li>DateGrid(react-day-picker v9 內建):<kbd>←</kbd> <kbd>→</kbd> 切日 / <kbd>PgUp</kbd> <kbd>PgDn</kbd> 切月 / <kbd>Home</kbd> <kbd>End</kbd> 行首尾</li>
           <li>showTime:<kbd>Tab</kbd> 從 calendar 跳到右側 time panel,各 column <kbd>↑</kbd> <kbd>↓</kbd> 切 option</li>
         </ul>
-      </section>
+      </ExampleSection>
     </div>
   ),
 }

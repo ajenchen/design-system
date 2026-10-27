@@ -158,7 +158,7 @@ function isGapOrCorner(node: EventTarget | null, grid: Element | null): boolean 
 }
 
 // 縫或角裡「點下去會確認」時掛在格陣上的屬性,只用來把游標變成跟日期一樣的手形
-//(日期是 button,手形來自 styles/base.css「button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer }」)。
+//(日期是 button,手形來自 styles/base.css 的 `button:not(:disabled)` / `[role="button"]:not(:disabled)` → `cursor: pointer`)。
 // 下方 month_grid 的 `data-[gap-confirms]:cursor-pointer` 讀的就是它 —— 兩處字串必須一致。
 // 用屬性而不是 React state:它跟著指標每一步變,不該讓整張格陣重畫(同 tabs.tsx 的 data-action-hover、data-table.tsx 的 data-hovered)。
 const GAP_CONFIRMS_ATTR = 'data-gap-confirms'
@@ -220,7 +220,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
   // react-day-picker 只把 mouseenter / mouseleave 掛在 day button 上,而格與格之間的 4px
   // (`border-spacing-1`)屬於 `<table>`、不屬於任何一天;圓外的四個角屬於 `<td>`、也不屬於那顆圓。
   // 指標經過這些地方時瀏覽器必然先送一次 leave、再送 enter,消費端(DatePicker 的 previewAnchor)因此把整條區間
-  // 預覽框卸掉再補回 —— user 2026-09-23 的原話是「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」。
+  // 預覽框卸掉再補回 —— user 2026-09-23 回報從某日水平移動到隔日時,藍色區間框線會閃動一下。
   //
   // 先前的解法是給 button 一條 `before:-inset-[2px]` 的隱形帶,讓縫裡也有人收 enter。
   // 那是**表層**解:它改的是命中幾何,而閃動的根因是「停留日被清掉」。而且它讓命中區(32)大於
@@ -602,7 +602,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 月曆格陣的錨點(module 層 AnchoredMonthGrid,不可寫成 inline —— 見該處註解)
         MonthGrid: AnchoredMonthGrid,
         // ── Prev/Next nav(canonical 2026-05-03 v9,DS 一致設計語言)──
-        // User 2026-05-03 audit:「icon-only Button icon 都用 neutral-9,只有 dismiss 用 45%」
+        // User 2026-05-03 audit:icon-only Button 的 icon 都用 neutral-9,只有 dismiss 用 45%
         // → chevron 不是 dismiss,**走 Button 預設 text-foreground**(neutral-9 85%),
         // 不開新 tier 自打嘴(撤銷 v6-v8 用 fg-muted override 的 mistake)。
         // RDP v9 `PreviousMonthButton / NextMonthButton` override(node_modules/react-day-picker/dist/esm/components/Nav.js)

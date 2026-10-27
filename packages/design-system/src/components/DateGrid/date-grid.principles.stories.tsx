@@ -145,7 +145,7 @@ export const UsageGuidance: Story = {
 }
 
 export const ModeRule: Story = {
-  name: '模式 選擇',
+  name: '模式選擇',
   render: () => {
     const ModeDemo = () => {
       const [single, setSingle] = useState<Date | undefined>(
@@ -229,7 +229,7 @@ export const ModeRule: Story = {
 }
 
 export const VisualTokenRule: Story = {
-  name: '視覺設計變數 統一',
+  name: '統一的視覺設計變數',
   render: () => (
     <TutorialPage>
       <TutorialRule

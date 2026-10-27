@@ -481,7 +481,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 指標開啟 → 焦點留在輸入框(使用者正在用滑鼠,可能還想打字;日曆用點的即可)
     // 鍵盤開啟 → 焦點進日曆(否則鍵盤使用者 navigate 不了日期格,那是 W3C APG
     //            date-picker combobox 明文要求「focus moves into the dialog」的理由)
-    // 兩條路各自成立,不是二選一 —— 這也是 user 2026-09-07 問「同時出現不是更好用嗎」的正解:
+    // 兩條路各自成立,不是二選一 —— 這也是 user 2026-09-07 問同時出現是不是更好用的正解:
     // 好用的是**滑鼠那條**,鍵盤那條不能為了它犧牲可操作性。
     const openedByPointerRef = React.useRef(false)
     const typedInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -521,7 +521,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
     // (interactive host,hover 直達)、量測內層值 span — useTruncated 自組 pattern
-    // (truncated-text.spec.md「trigger 需自控」指定解;範本 inline-edit.tsx:251)。
+    // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:251)。
     // typeable 走 <input>(可捲動編輯,無截斷補救需求);popover 開啟時靜默(open 是 hover 之外的 reveal 路徑)。
     // ⚠️ hook 必在下方 view / readonly early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
     const { ref: triggerTruncationRef, isTruncated: triggerTruncated } = useTruncated<HTMLSpanElement>({
@@ -723,7 +723,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     }}
                     // 失焦提交草稿;consumer 的 onBlur 由外層欄位的 PopoverTrigger 轉(輸入框 + 日曆浮層 = 同一個欄位,見上方 fieldFocus),排在提交之後
                     onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
-                    // 2026-09-07(user 抓「點下去為何不是直接開日曆同時可以打字」):
+                    // 2026-09-07(user 問點下去為何不是直接開日曆同時可以打字):
                     // 原本這裡 `stopPropagation` 把點擊吞掉,所以只有點到圖示那一小塊才會開。
                     // Ant Design 官方文件逐字:「By clicking the input box, you can select a date
                     // from a popup calendar」,而且 `inputReadOnly` 預設 false(可同時打字)——
@@ -782,7 +782,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               accessible name 收斂到外層 PopoverContent aria-label(單一 dialog 層)。
               2026-05-06 v9.1:`flex flex-col flex-1 min-h-0` 完成 M25 chain — viewport
               壓縮時 dialog 縮 + 內 calendar/footer 排序;原無 chain 致 calendar 末行被
-              overflow-hidden 切掉、footer 推出 popover(user 報「位置改變就壞掉」根因)。 */}
+              overflow-hidden 切掉、footer 推出 popover(user 回報位置改變就壞掉的根因)。 */}
           <div className="flex flex-col flex-1 min-h-0">
             {/* Calendar 區包 ScrollArea(2026-08-12 自 raw overflow-y-auto 遷移,跨 OS 一致 overlay 捲軸;M25 chain 由 flex-1 min-h-0 照傳):viewport 壓縮時 calendar 內滾(Material / Carbon
                 date picker idiom)。footer 永遠 in-view(SurfaceFooter shrink-0)。 */}
@@ -1323,7 +1323,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   }}
                   // showTime Range:不渲 range track(對齊 Ant — 整個 popup 等同 single
                   // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示。
-                  // 停留預覽框不分 showTime(user 2026-09-23 Q7:「同一套規則」)。
+                  // 停留預覽框不分 showTime(user 2026-09-23 答 Q7:用同一套規則)。
                   modifiers={{ ...(showTime ? {} : rangeModifiers), ...previewModifiers }}
                   modifiersClassNames={{
                     // ── Range visual canonical(2026-05-03 v8 stadium pattern)──
@@ -1337,7 +1337,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     // popover white 顯露(乾淨 breathing)
                     rangeStart: cn(
                       // 2026-08-11 修偏移:!bg-primary 連 hover 也壓死 → 端點 hover 零回饋,違反
-                      // date-grid.spec.md:121「選中日 hover 升階 primary→primary-hover」(端點可再點
+                      // date-grid.spec.md「選中日 hover 底色升階」(端點可再點
                       // 重選範圍 = 可取消家族,依 user 原則該有回饋)。補顯式 hover 升階(同 !important,
                       // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:120)。
                       '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',

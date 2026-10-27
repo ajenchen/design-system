@@ -474,7 +474,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               // 會撐破 parent h-[216px]。flex-1 + min-h-0 讓 TimeColumns 取 parent 剩餘空間
               // (216 − footer ≈53px ≈ 163px)→ ScrollArea h-full 才能正確收斂 →
               // listbox scrollIntoView 找對 nearest scrollable ancestor(內部 viewport),
-              // 不會走到 document body 把 popover 內容推出畫面(user 報「hours 欄空白」根因)。
+              // 不會走到 document body 把 popover 內容推出畫面(user 回報 hours 欄空白的根因)。
               className="flex-1 min-h-0"
             />
             {/* Footer:消費 SurfaceFooter SSOT(border-t + py-tight + gap-2 + shrink-0 + justify-end)。

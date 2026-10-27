@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/展示',
@@ -31,17 +32,14 @@ const Card = ({
   desc?: string
   children: React.ReactNode
 }) => (
-  <div className="flex flex-col gap-[var(--layout-space-tight)] mb-[var(--layout-space-loose)]">
-    <div className="flex flex-col gap-[var(--layout-space-tight)]">
-      <h3 className="text-h6 font-semibold text-foreground">{title}</h3>
-      {desc && <p className="text-caption text-fg-muted max-w-[640px]">{desc}</p>}
-    </div>
+  // 區段標題 + 說明 = 共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose;A4 甲)
+  <ExampleSection title={title} description={desc}>
     {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner;
         讀數列同樣用 --item-px 內縮,不再另加間距 */}
     <div className="inline-flex bg-surface-raised border border-border rounded-lg w-fit">
       {children}
     </div>
-  </div>
+  </ExampleSection>
 )
 
 const formatDate = (d: Date) =>
@@ -77,7 +75,6 @@ export const Single: Story = {
               defaultMonth={date}
               today={STORY_TODAY}
               locale={zhTW}
-              autoFocus
             />
             <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
               已選生日:<span className="font-medium text-foreground">{date ? formatDate(date) : '尚未選擇'}</span>
@@ -172,6 +169,7 @@ export const Range: Story = {
  */
 export const Inline: Story = {
   name: '行內 — 儀表板小卡',
+  parameters: { docs: { description: { story: '月曆外面那圈框只是示範用的卡片框,DateGrid 本身不帶外框;實際放進儀表板時由所在的卡片或面板提供外框。' } } },
   render: () => {
     const [deadline, setDeadline] = useState<Date | undefined>(
       INLINE_DEADLINE,
@@ -184,7 +182,7 @@ export const Inline: Story = {
         >
           <div className="flex flex-col w-fit">
             <div className="flex items-center justify-between px-[var(--item-px,var(--field-px))] pt-[var(--item-px,var(--field-px))]">
-              <span className="text-caption text-fg-muted">Project deadline</span>
+              <span className="text-caption text-fg-muted">專案截止日</span>
               <span className="text-caption font-medium text-foreground">
                 {deadline ? formatDate(deadline) : '未設定'}
               </span>

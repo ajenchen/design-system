@@ -108,7 +108,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
 | **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
-| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table、圓外的四個角屬於 td,指標經過這些地方會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,停在縫裡或可點日子圓外的角裡都算「還在上一天」(不論移得多快多慢、走不走中線;慢慢從縫裡走出去的那條路 2026-09-26 補上 = D1,圓外的角 2026-09-26 補上 = D2),見下方「日期格的命中區 = 可視形狀」的「現行機制」;框亮著時在縫或角裡點下去 = 點停留日,見同節「縫與角裡的點擊」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table、圓外的四個角屬於 td,指標經過這些地方會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到水平移動到隔日時框會閃一下)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,停在縫裡或可點日子圓外的角裡都算「還在上一天」(不論移得多快多慢、走不走中線;慢慢從縫裡走出去的那條路 2026-09-26 補上 = D1,圓外的角 2026-09-26 補上 = D2),見下方「日期格的命中區 = 可視形狀」的「現行機制」;框亮著時在縫或角裡點下去 = 點停留日,見同節「縫與角裡的點擊」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ### 鄰月日子:一條原則(2026-09-24 user 拍板)
@@ -135,7 +135,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 - today + selected → selected 勝出的**底色**(藍底白字圓);bar 跟著切 on-emphasis(白)保持可見
 - range-start / range-end → selected 規則(cell 半圓 track + button 圓)
 - range-middle → track 規則(cell 灰底矩形 + button 透明)
-- today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬「藍底白字圓」的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
+- today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬藍底白字圓的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
 - hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);RDP `mode="range"` 的 range-middle 因同樣掛 selected modifier,button hover ring 一併被壓制(2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)。**`DatePicker.Range` 的中段不掛 selected,停留時由「區間預覽框」接手:停留日不畫單格圈,改畫框的半圓端點**(2026-09-23 user 拍板;此前這一句被當成「中段 hover 不該有圈」的規則,其實它只是描述套件行為,從未有人拍板 —— 來源總帳見 `../DatePicker/date-picker.spec.md`「區間預覽」)
 - **選中日 hover 底色升階**:ring 壓制之外,選中日 hover 時 `bg-primary → bg-primary-hover`(2026-07-06 補明文——「選中之上 hover = 同色相升 hover 階」家族,Checkbox / Switch checked hover 同款;code 已有此行為,本句消 spec-code 落差)
 - focus-visible + range-middle(RDP `mode="range"`)→ 中段同掛 selected 會吃到填色格的白線,但中段底是淺灰、白線看不見,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般往內 2px 藍線(同權重靠順序不可靠);`DatePicker.Range` 的中段不掛 selected,直接走 day button 的內描邊
@@ -153,7 +153,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | 終點 | 鏡射起點 |
 | 單格(起訖同一天) | 完整一圈(左右側邊 + 全圓角),位置與大小 = 單日 hover 圈 |
 | 列首 / 列尾(換列處) | 不畫側邊,框是開口的;外擴歸零不溢出面板留白 —— 與 track 在換列處的處理同款 |
-| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所 hover 的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
+| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所hover的日期的藍框不會是完整的圓形，而會是一個半圓，至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
 | 已選端點落在框裡 | 藍圓在 button 層(z 在框之上),框的線從圓的上下切點進出,視覺連續;不另外處理 |
 
 **層次**:track = td `::before`、預覽框 = td `::after`、today bar = button 的 `::after`,三者互不衝突;button 在最上層。
@@ -183,7 +183,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ### 那條帶原本在解什麼 —— 以及為什麼那是表層解
 
-它解的是 user 2026-09-23 抓到的「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」:
+它解的是 user 2026-09-23 抓到的問題(從某日水平移動到隔日,藍色區間框線會閃動一下):
 停留日掛在 button 的 `mouseenter` / `mouseleave`(react-day-picker 只給這一層),
 而格與格之間的 4px(`border-spacing-1`)屬於 `<table>`、不屬於任何一天 ——
 指標經過縫時先 leave(整條框卸掉)再 enter(補回)。
@@ -207,7 +207,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
    - 若整張 DateGrid 被放進別的表格的格子裡,`closest('td,th')` 會找到外面那一格;判斷一律以「那一格在不在本格陣裡」為準,不會把縫誤判成離開。
 3. `handleGridMouseOver`:補掉「穿過縫或角之後停在**不可點**的日子、空白補位格或星期列」那條路徑 ——
    disabled 的 button 收不到滑鼠事件、不會再有任何 day enter/leave,沒有這一段的話上一天的預覽框會留著
-   (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。停在縫或角裡不動作(與第 2 條同一支判斷)。
+   (`datepicker-range-preview.mjs`「順序不合(5/3 在開始日之前)不預覽」與「順序不合(5/13 在結束日之後)不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。停在縫或角裡不動作(與第 2 條同一支判斷)。
 4. `handleGridMouseLeave`(2026-09-26 補,D1,待辦總帳 N54):補掉「**從縫或角直接離開格陣**」那條路徑 ——
    指標離開最外圈那一天時落在縫或角裡,那次 leave 依第 2 條被吞(欠著);接著指標走出 `<table>`,已經沒有任何一天會再收到 leave、
    也沒有 `td` / `th` 會收到 mouseover,預覽框就卡在上一天。實測(2026-09-26 前):從 6/13 每步 1px 往右,經過縫、月曆內距、浮層邊,

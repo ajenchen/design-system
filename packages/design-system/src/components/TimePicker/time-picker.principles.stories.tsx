@@ -22,6 +22,13 @@ export default meta
 
 type Story = StoryObj<typeof TimePicker>
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveTimePicker({ value: initial, ...rest }: React.ComponentProps<typeof TimePicker>) {
+  const [value, setValue] = React.useState(initial)
+  return <TimePicker {...rest} value={value} onChange={setValue} />
+}
+
+
 // 規則外框 = 共用教學頁元件;並排比較的範例同寬(w-60),說明 = ExampleCaption 貼在範例下方
 // (2026-10-20 N1 / T5:原本兩則規則沒有規則標題,✅ / ❌ 是手寫的 12px h3,並排的兩個欄位寬度跟著小標長度變成 106 / 219px)
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
@@ -54,7 +61,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="siblings">
         <TutorialList>
           <li><strong>DatePicker</strong> —— 選日期;要日期加時間就用它的 showTime,TimePicker 只管時間</li>
-          <li><strong>兩個 TimePicker 並排</strong> —— 時間範圍(起 – 迄)用兩個並列,TimePicker 本身不做範圍。Google Calendar 的活動時間就是兩個選擇器(見展示「店家營業時間」)</li>
+          <li><strong>兩個 TimePicker 並排</strong> —— 時間範圍(起 – 迄)用兩個並列,TimePicker 本身不做範圍。Google Calendar 的活動時間就是兩個選擇器(<StoryLink kind="Design System/Components/TimePicker/展示" name="店家營業時間">展示「店家營業時間」</StoryLink>)</li>
         </TutorialList>
       </UsageSection>
     </TutorialPage>
@@ -76,12 +83,12 @@ export const RuleMinuteStepForMeetings: Story = {
       >
         <Field className="w-60">
           <FieldLabel>專案週會時間</FieldLabel>
-          <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
+          <LiveTimePicker value="09:15" minuteStep={15} />
         </Field>
         <ExampleCaption>↑ ✅ minuteStep=15</ExampleCaption>
         <Field className="w-60">
           <FieldLabel>專案週會時間</FieldLabel>
-          <TimePicker value="09:07" onChange={() => {}} />
+          <LiveTimePicker value="09:07" />
         </Field>
         <ExampleCaption warn>↑ ❌ 預設 minuteStep=1(會議排程無意義)</ExampleCaption>
       </TutorialRule>

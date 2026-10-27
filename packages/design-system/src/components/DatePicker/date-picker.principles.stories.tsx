@@ -13,6 +13,13 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveDatePicker({ value: initial, ...rest }: React.ComponentProps<typeof DatePicker>) {
+  const [value, setValue] = React.useState(initial)
+  return <DatePicker {...rest} value={value} onChange={setValue} />
+}
+
+
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-xs' })
 
@@ -47,14 +54,14 @@ export const UsageGuidance: Story = {
           title="❌ 不用其他 calendar library 平行實作"
           note="DatePicker.Range 與 showTime 已共用同一套日曆格線與互動。日曆類功能應延伸這個共用基礎，不要在同一產品另引入第二套視覺與操作邏輯"
         >
-          <ExampleCaption>實作細節見 Design System / Components / DatePicker / 設計規格</ExampleCaption>
+          <ExampleCaption>實作細節見 <StoryLink kind="Design System/Components/DatePicker/設計規格" name="Calendar 內部設計變數">DatePicker 設計規格「Calendar 內部設計變數」</StoryLink></ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不覆寫 Calendar token 為非 DS 色"
           note="Calendar 視覺 token(bg-primary / ring-primary / neutral-hover 等)必須來自 semantic token。硬寫 #xxx / bg-blue-500 會破壞 dark mode 聯動、跟其他浮層語言分岔"
         >
-          <ExampleCaption>token 表見設計規格 → Calendar 內部 token</ExampleCaption>
+          <ExampleCaption>token 表見 <StoryLink kind="Design System/Components/DatePicker/設計規格" name="Calendar 內部設計變數">DatePicker 設計規格「Calendar 內部設計變數」</StoryLink></ExampleCaption>
         </TutorialRule>
       </UsageSection>
 
@@ -101,7 +108,7 @@ export const CalendarRule: Story = {
 
         <TutorialRule
           title="Calendar 內部 token 全由 DS 控制"
-          note="Calendar 的月份 caption / nav 按鈕 / 星期標頭 / 日格 / hover / selected / today 全部由 DS token 驅動:hover 用 ring-primary 透明底圈、selected 用 primary 藍底白字圓、today 用 primary 底部 bar(after 偽元素)。切 dark mode 自動聯動,不需元件內重寫"
+          note="Calendar 的月份 caption / nav 按鈕 / 星期標頭 / 日格 / hover / selected / today 全部由 DS token 驅動:hover 用 ring-primary-hover 透明底圈、selected 用 primary 藍底白字圓、today 用 primary 底部 bar(after 偽元素)。切 dark mode 自動聯動,不需元件內重寫"
         >
           <DatePicker value={releaseDate} onChange={setReleaseDate} />
           <ExampleCaption>↑ 發佈日:Calendar 所有視覺 token 來自 semantic.css</ExampleCaption>
@@ -137,9 +144,8 @@ export const FormattingRule: Story = {
         title="Edit trigger 文字也受 formatOptions / locale 控制"
         note={'原本原生 <input type="date"> 的 trigger 格式受瀏覽器 locale 控制無法干預;改自建後,edit trigger 顯示的已選日期也走 Intl.DateTimeFormat——跟 view 模式完全一致'}
       >
-        <DatePicker
+        <LiveDatePicker
           value="2026-05-15"
-          onChange={() => {}}
           locale="zh-TW"
           formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }}
         />
@@ -157,7 +163,7 @@ export const FormattingRule: Story = {
 }
 
 export const ClearableRule: Story = {
-  name: '可清空 使用',
+  name: '何時可清空',
   render: () => {
     const [value, setValue] = React.useState<string | null>('2026-05-15')
     return (

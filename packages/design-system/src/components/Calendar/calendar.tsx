@@ -112,7 +112,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
 
   /**
    * 右上角「新事件」CTA 的回調 —— 全域新增入口,恆渲染;日期能不能新增由新增流程自己擋,不由這顆鈕的有無表達
-   *(user 2026-09-29:「右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊」)。
+   *(user 2026-09-29:「右上角那是全域新增，表示點了之後要先選了日期才能新增啊，那肯定會擋住不能新增的日期啊」)。
    * 元件沒有內建的「新增」行為,所以必填:meta-patterns M23(f)—— 固定元素不以 callback 有無當渲染閘、
    * 無內建 fallback 的 callback 必填。唯讀月曆(`readOnlyDates` / `readOnlyEvents`)一樣要傳。
    */
@@ -185,7 +185,7 @@ function dayKey(date: Date): string {
 // 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
 // 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
 // (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
-// pattern(truncated-text.spec.md「trigger 需自控」指定解;範本 inline-edit.tsx:251 + tag.tsx)。
+// pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:251 + tag.tsx)。
 function MonthEventTile({
   event,
   colorClass,
@@ -201,7 +201,7 @@ function MonthEventTile({
   const tileBase = 'rounded-md px-1.5 py-0.5 text-caption truncate'
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
-    // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → tooltip」不分可不可點)。
+    // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
         {!readOnlyEvents ? (
@@ -559,7 +559,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         </nav>
 
         <h2 className="text-body-lg font-medium text-foreground flex-1 min-w-0 truncate ml-2">
-          {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+          {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」,僅實際截斷時顯示)——
               窄 toolbar 下標題被裁掉沒有補救路徑。display="block":h2 是 block container。 */}
           <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
@@ -576,9 +576,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         {weekdayNames.map((name, i) => (
           <div
             key={i}
-            // 2026-09-07 修(user 抓「為何星期標題要用那麼淺的顏色?」):
+            // 2026-09-07 修(user 問星期標題為何用那麼淺的顏色):
             // 原本是 `text-caption text-fg-muted font-normal`(12px / 45% 灰 / 細體)。
-            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md:151`「Weekday header canonical」
+            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md`「Weekday header canonical」
             //(2026-05-03 user audit):`text-foreground text-body font-medium`,理由是
             // 「weekday 列標跟 caption 同視覺權重,都屬 calendar header 區,**不弱化**」,
             // 而且明文「**撤銷 v3 用 `fg-secondary font-normal` 的 mistake(M23)**」。

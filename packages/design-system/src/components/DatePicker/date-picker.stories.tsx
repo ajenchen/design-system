@@ -3,7 +3,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DatePicker } from './date-picker'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
-import { Button } from '@/design-system/components/Button/button'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof DatePicker> = {
   title: 'Design System/Components/DatePicker/展示',
@@ -21,6 +21,17 @@ const meta: Meta<typeof DatePicker> = {
 export default meta
 type Story = StoryObj<typeof DatePicker>
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveDatePicker({ value: initial, ...rest }: React.ComponentProps<typeof DatePicker>) {
+  const [value, setValue] = React.useState(initial)
+  return <DatePicker {...rest} value={value} onChange={setValue} />
+}
+function LiveDatePickerRange({ value: initial, ...rest }: React.ComponentProps<typeof DatePicker.Range>) {
+  const [value, setValue] = React.useState(initial)
+  return <DatePicker.Range {...rest} value={value} onChange={setValue} />
+}
+
+
 /* ── 基本用法 ── */
 export const Default: Story = {
   name: '基本用法',
@@ -29,18 +40,15 @@ export const Default: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <DatePicker value={value} onChange={setValue} />
-        <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
       </div>
     )
   },
 }
 
-/**
- * typeable(2026-05-10 Issue 10):trigger 內渲染真正的文字輸入框接使用者自由輸入,
- * Enter / Blur 解析 commit、Esc reset;不合法輸入標 aria-invalid。Calendar icon 仍開 popover。
- */
+// typeable(2026-05-10 Issue 10):trigger 內渲染真正的文字輸入框接使用者自由輸入,Enter / Blur 解析 commit、Esc reset;不合法輸入標 aria-invalid。Calendar icon 仍開 popover。
 export const TypedInput: Story = {
   name: '可直接輸入日期',
+  parameters: { docs: { description: { story: '欄位可以直接打日期:按 Enter 或離開欄位時解析,打錯的格式會標成錯誤;旁邊的月曆圖示照樣能打開月曆選。' } } },
   render: () => {
     const [value, setValue] = React.useState('2026-04-02')
     const [showTimeValue, setShowTimeValue] = React.useState('2026-04-02T14:30:00')
@@ -52,14 +60,12 @@ export const TypedInput: Story = {
             不合法輸入標 <code>aria-invalid</code>。
           </p>
           <DatePicker typeable value={value} onChange={setValue} />
-          <p className="text-caption text-fg-secondary mt-[var(--layout-space-tight)]">目前值:<code>{value || '(空)'}</code></p>
         </div>
         <div>
           <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
             日期 + 時間(showTime):支援 <code>2026-04-02 14:30</code> 這類輸入,月曆與時間欄仍可用。
           </p>
           <DatePicker typeable showTime value={showTimeValue} onChange={setShowTimeValue} />
-          <p className="text-caption text-fg-secondary mt-[var(--layout-space-tight)]">目前值:<code>{showTimeValue || '(空)'}</code></p>
         </div>
       </div>
     )
@@ -88,22 +94,18 @@ export const Modes: Story = {
   name: '四模式',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
-        <DatePicker value="2026-04-02" onChange={() => {}} />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
+      <ExampleSection title="edit">
+        <LiveDatePicker value="2026-04-02" />
+      </ExampleSection>
+      <ExampleSection title="view">
         <DatePicker mode="view" value="2026-04-02" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
+      </ExampleSection>
+      <ExampleSection title="readonly">
         <DatePicker mode="readonly" value="2026-04-02" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
+      </ExampleSection>
+      <ExampleSection title="disabled">
         <DatePicker mode="disabled" value="2026-04-02" />
-      </div>
+      </ExampleSection>
       {/* 空值(null)與完整 state 矩陣由 anatomy 的 StateBehavior / ColorMatrix 擁有,不在此重複 */}
     </div>
   ),
@@ -124,8 +126,11 @@ export const Clearable: Story = {
 }
 
 /* ── 尺寸與 Button 對齊 ── */
+const SIZE_NAME = { sm: '小', md: '標準', lg: '大' } as const
 export const SizeAlignment: Story = {
   name: '尺寸',
+  // 只留欄位本身、補上欄位名稱(稽核 L101:拿掉三顆 primary 送出與程式碼標籤);尺寸說明放 docs
+  parameters: { docs: { description: { story: '由上到下是小、標準、大三種尺寸;同一個尺寸與按鈕、其他欄位等高。' } } },
   render: () => {
     const [sm, setSm] = React.useState('2026-04-02')
     const [md, setMd] = React.useState('2026-04-02')
@@ -134,11 +139,7 @@ export const SizeAlignment: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
-            <DatePicker size={size} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
-            <Button variant="primary" size={size}>送出</Button>
-            <span className="text-caption text-fg-muted">size="{size}"</span>
-          </div>
+          <DatePicker key={size} size={size} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" aria-label={`到期日(${SIZE_NAME[size]}尺寸)`} />
         ))}
       </div>
     )
@@ -157,15 +158,11 @@ export const RangePicker: Story = {
             兩個輸入框加中間箭頭:點開始欄開月曆選起日,選完自動跳到結束欄選迄日;有值時右側出現清除鈕。
           </p>
           <DatePicker.Range value={range} onChange={setRange} clearable />
-          <p className="text-caption text-fg-muted">
-            目前值:from={range[0] ?? '(空)'} / to={range[1] ?? '(空)'}
-          </p>
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
-          <DatePicker.Range
+          <LiveDatePickerRange
             value={[null, null]}
-            onChange={() => {}}
             placeholder={['入住日期', '退房日期']}
             clearable
           />
@@ -184,9 +181,9 @@ export const WithError: Story = {
         <p className="text-caption text-fg-muted">
           驗證失敗時外框轉紅色,滑過或聚焦時同步用較深的紅。
         </p>
-        <DatePicker error value="2026-04-02" onChange={() => {}} />
+        <LiveDatePicker error value="2026-04-02" />
       </div>
-      <DatePicker error value={null} onChange={() => {}} placeholder="必填日期" />
+      <LiveDatePicker error value={null} placeholder="必填日期" />
     </div>
   ),
 }
@@ -203,7 +200,6 @@ export const ShowTime: Story = {
             showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。
           </p>
           <DatePicker showTime value={single} onChange={setSingle} clearable />
-          <p className="text-caption text-fg-muted">目前值:{single || '(空)'}</p>
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">會議常用 minuteStep=15:</p>
@@ -308,13 +304,13 @@ const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ 
     if (!target) throw new Error('預覽目標日期不存在')
   })
   // 放掉浮層開啟時程式搬過去的焦點:合成點擊不是瀏覽器眼中的真指標,之後的 autoFocus 會被判成 :focus-visible,
-  // 示範一開就帶著鍵盤焦點框(user 2026-09-23:「為何範例要直接呈現鍵盤焦點?」)。真人用滑鼠點開不會這樣。
+  // 示範一開就帶著鍵盤焦點框(user 2026-09-23:「為何範例要直接呈現鍵盤焦點？」)。真人用滑鼠點開不會這樣。
   ;(document.activeElement as HTMLElement | null)?.blur?.()
   // 只標記 deterministic target；真實 CSS :hover(button 的圈)由 visual-audit 的 Playwright 在截圖前建立。
   target!.setAttribute('data-visual-hover-target', '')
   // 讓示範自己就看得到框:userEvent.hover 派發 mouseover → React onMouseEnter → 停留日狀態 → 框。
   // 沒有這一行,三則故事在瀏覽器裡長得一模一樣,差別只存在於截圖儀器的 hover 裡
-  //(user 2026-09-23:「為何往前縮短和往後延長的範例看起來是一樣的?」)。
+  //(user 2026-09-23:「為何往前縮短和往後延長的範例看起來是一樣的？」)。
   await userEvent.hover(target!)
 }
 
@@ -370,9 +366,6 @@ export const ShowTimeRange: Story = {
           placeholder={['活動開始', '活動結束']}
           clearable
         />
-        <p className="text-caption text-fg-muted">
-          start={range[0] ?? '(空)'} / end={range[1] ?? '(空)'}
-        </p>
       </div>
     )
   },
@@ -384,16 +377,16 @@ export const View: Story = {
   render: () => (
     // 「標籤 → 唯讀值」一列一組 = DescriptionList(story-rules.md:84「key/value 用 DescriptionList」);列距與標籤 ↔ 值的距離都由它擁有
     <DescriptionList orientation="horizontal" className="max-w-sm">
-      <DescriptionItem label="預設">
+      <DescriptionItem label="預設格式">
         <DatePicker mode="view" value="2026-04-02" />
       </DescriptionItem>
-      <DescriptionItem label="完整月份">
+      <DescriptionItem label="完整日期">
         <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </DescriptionItem>
-      <DescriptionItem label="zh-TW">
+      <DescriptionItem label="中文日期">
         <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </DescriptionItem>
-      <DescriptionItem label="null">
+      <DescriptionItem label="尚未填寫">
         <DatePicker mode="view" value={null} />
       </DescriptionItem>
     </DescriptionList>

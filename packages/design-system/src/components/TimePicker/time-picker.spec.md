@@ -267,7 +267,7 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 - ❌ 不要把 value 改存 Date object——對齊家族 ISO string 策略
 - ❌ minuteStep 不要設 7 / 11 / 13 等非整除值——會出現 00 / 07 / 14 / 21 / 28 / 35... 不符時間習慣
 - ❌ 不要自刻 `<input type="time">`——瀏覽器原生 UI 跨 OS 不一致,違反 DS「跨 OS 視覺一致」原則
-- ❌ Clear button 用帶文字 label 的 Button(違反 dismiss canonical,見 `patterns/element-anatomy/item-anatomy.spec.md`「Dismiss 按鈕 canonical」)
+- ❌ Clear button 用帶文字 label 的 Button(clear X 是 icon-only 的 Inline Action,見 `patterns/element-anatomy/inline-action.spec.md`「Real case 表(所有 DS 用法一覽)」的 clear X 列)
 
 ---
 
@@ -288,4 +288,4 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 - `../Input/input.spec.md` — Field control 基礎
 - `../Field/field-controls.spec.md` — Mode / size / error 共用規則
 - `../Field/form-validation.spec.md` — 驗證時機
-- `../../patterns/element-anatomy/item-anatomy.spec.md`「Dismiss 按鈕 canonical」 — clear button 規則
+- `../../patterns/element-anatomy/inline-action.spec.md`「Real case 表(所有 DS 用法一覽)」 — clear button 規則(clear X = Inline Action)
