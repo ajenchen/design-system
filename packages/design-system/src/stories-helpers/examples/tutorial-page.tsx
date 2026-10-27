@@ -15,7 +15,12 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * - **規則 ↔ 規則 = 段落 ↔ 段落 = `calc(var(--layout-space-loose) * 2)`**:從 loose 推出,所以永遠是「範例之間」的兩倍、跟著密度走;
  *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:內容到 action buttons」(layoutSpace.spec.md:13),
  *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只定義在教學頁(layoutSpace.spec.md 規則 3 的指標)。
- * - 段落標題 → 段落內第一塊、規則標題 → 說明 → 範例區 = `--layout-space-tight`(規則 3:標題 / 說明在替後面那塊命名)。
+ * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
+ *   「Label ↔ Desc 間距」scanning 那一型);規則標題區(標題 + 說明)→ 範例區 = `--layout-space-loose`(user 2026-10-21 A4 甲:
+ *   標題 + 說明是整組內容的標題、不是第一則內容的小標,內容之間是 loose,它到內容也是 loose;layoutSpace.spec.md 規則 3
+ *   「標題(+ 說明)→ 它底下的並列內容」)。規則內容是一段文字 / 清單(段落)時,標題區 → 文字與文字之間都是 tight(內容之間本來就是 tight)。
+ *   兩種用法與值只寫在 `ExampleSection`(下方),規則、展示頁的範例區段、設計規格頁的 `H3` / `Desc` 都從它來。
+ * - 段落標題 → 段落內第一則規則 = `--layout-space-tight`(值待 user 決定,這次不動)。
  * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
  * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白(Carbon:元件不帶 margin,定位交給外層)。
  *
@@ -38,8 +43,9 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *       <TutorialRule title="❌ …" note="…">{範例}<ExampleCaption warn>↑ …</ExampleCaption></TutorialRule>
  *     </UsageSection>
  *   </TutorialPage>
- * 規則的內容是範例 → `examples: true`(範例區走 CaptionedExamples,說明 = ExampleCaption 自動併組);
- * 是一段文字 / 清單 → 不給,子節點照順序以 tight 排。
+ * 規則的內容是範例 → `examples: true`(範例區走 CaptionedExamples,說明 = ExampleCaption 自動併組;標題區 → 範例區 loose);
+ * 是一段文字 / 清單 → 不給,標題區 → 文字、文字之間都以 tight 排(= `ExampleSection paragraph`);
+ * 沒走範例區、內容卻是示範區塊的規則 → 該則寫 `paragraph={false}`(標題區 → 內容 loose,內容之間仍 tight)。
  *
  * 機械:`scripts/tutorial-page-invariant.mjs`(教學頁沒用本支、自抄 Section / Rule、手寫段落 / 規則間距 → 紅)。
  */
@@ -131,6 +137,50 @@ export function StoryLink({ kind, name, children }: StoryLinkProps) {
   )
 }
 
+/**
+ * 範例區段的標題(2026-10-27 A4):`text-h6` 半粗體。規則標題、展示頁的範例區段標題、設計規格頁的 `H3` 都是這一個
+ * (category-templates.md「教學框的間距與標題」;字重 600 是本 PR 的現況,typography.spec.md 字重刻度那句記著待 user 決定)。
+ */
+export function SectionTitle({ className, ...rest }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return <h3 className={cn('text-h6 font-semibold text-foreground', className)} {...rest} />
+}
+
+/** 範例區段的說明:`text-caption` + `text-fg-muted`(color.spec.md「文字 / Icon 層級」caption 列),最寬 720px。 */
+export function SectionDescription({ className, ...rest }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn('text-caption max-w-[720px] text-fg-muted', className)} {...rest} />
+}
+
+export interface ExampleSectionProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: React.ReactNode
+  description?: React.ReactNode
+  /**
+   * 底下是一段純文字 / 清單(段落)→ `true`:標題區 → 內容、內容之間都是 tight(內容之間本來就是 tight,標題跟著內容走)。
+   * 不給 = 區塊:底下是並列的範例 / 表格 / 圖 / 欄位 → 標題區 → 內容、內容之間都是 loose。
+   */
+  paragraph?: boolean
+}
+
+/**
+ * 範例區段(2026-10-27,user 2026-10-21 A4):標題 ↔ 說明 2px、(標題 + 說明)→ 內容 = 內容之間的距離(區塊 loose / 段落 tight),跟著密度走。
+ * 展示頁 / 原則頁 / 設計規格頁裡「一個小標 + 說明 + 一塊範例」一律用這支,不再手寫 `<h3 className="text-h6 font-semibold …">`;
+ * `TutorialRule` 就是它加上範例區。間距由外層 gap 給,各塊不留自己的下方 margin。
+ */
+export function ExampleSection({ title, description, paragraph, className, children, ...rest }: ExampleSectionProps) {
+  return (
+    <div
+      data-example-section=""
+      className={cn('flex flex-col', paragraph ? 'gap-[var(--layout-space-tight)]' : 'gap-[var(--layout-space-loose)]', className)}
+      {...rest}
+    >
+      <div className="flex flex-col gap-[var(--item-gap-label-desc-scanning)]">
+        <SectionTitle>{title}</SectionTitle>
+        {description && <SectionDescription>{description}</SectionDescription>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export interface TutorialRuleOptions {
   /**
    * 規則的內容是範例區 → `true`:走 `CaptionedExamples`,範例的說明一律是 `ExampleCaption`(自動與它說的範例併組);
@@ -148,6 +198,12 @@ export interface TutorialRuleOptions {
 export interface TutorialRuleProps {
   title: React.ReactNode
   note?: React.ReactNode
+  /**
+   * 規則內容是一段文字 / 清單(段落)→ 標題區 → 內容 tight;是並列的範例 / 示範區塊 → loose(同 `ExampleSection`)。
+   * 預設跟著 `examples`:有範例區 = 區塊、沒有 = 段落。沒走範例區、內容卻是示範區塊的規則寫 `paragraph={false}`
+   * (內容之間仍照順序以 tight 排,只有標題區 → 內容改 loose)。
+   */
+  paragraph?: boolean
   children?: React.ReactNode
 }
 
@@ -158,24 +214,23 @@ export function createTutorialRule({
   naturalWidth,
   examplesClassName,
 }: TutorialRuleOptions = {}) {
-  function TutorialRule({ title, note, children }: TutorialRuleProps) {
+  function TutorialRule({ title, note, paragraph = !examples, children }: TutorialRuleProps) {
     // 真的會畫出來的子節點(null / false / undefined 不算):React.Children.count 把空節點也算進去
     // (react.dev Children.count「Empty nodes (null, undefined, and Booleans) … count as individual nodes」),
-    // 只靠它判斷「有沒有範例」會在沒有範例時多畫一段空的範例區、規則之間多出一段 tight 空白(2026-10-20 T13)
+    // 只靠它判斷「有沒有範例」會在沒有範例時多畫一段空的範例區、規則之間多出一段空白(2026-10-20 T13)
     const items = React.Children.toArray(children)
     return (
-      <div data-tutorial-rule="" className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h3 className="text-h6 font-semibold text-foreground">{title}</h3>
-        {note && <p className="text-caption max-w-[720px] text-fg-muted">{note}</p>}
-        {/* 只有標題 + 說明的規則不畫空的範例區(否則多一段 tight 空白,規則之間就不再是 loose × 2) */}
-        {examples && items.length > 0 ? (
+      <ExampleSection data-tutorial-rule="" title={title} description={note} paragraph={paragraph}>
+        {/* 只有標題 + 說明的規則不畫空的範例區(否則多一段空白,規則之間就不再是 loose × 2) */}
+        {items.length === 0 ? null : examples ? (
           <CaptionedExamples layout={layout} naturalWidth={naturalWidth} className={examplesClassName}>
             {items}
           </CaptionedExamples>
         ) : (
-          items
+          // 文字 / 清單(或沒走範例區的示範塊):彼此照順序以 tight 排;標題區 → 這一疊的距離由 paragraph 決定
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">{items}</div>
         )}
-      </div>
+      </ExampleSection>
     )
   }
   return TutorialRule

@@ -948,6 +948,7 @@ export const Inspector = {
   render: () => (
     <TutorialPage>
       <TutorialRule
+        paragraph={false}
         title="Item Layout 檢閱器"
         note="Item Layout 是抽象對齊系統，不是固定元件。每個消費元件提供自己的間距（padding、gap）， 但共用相同的三區域結構和對齊規則。切換 Consumer 可看到不同元件的預設值。"
       >
@@ -966,6 +967,7 @@ export const AlignmentThreshold = {
   render: () => (
     <TutorialPage>
       <TutorialRule
+        paragraph={false}
         title="對齊規則 — Prefix 與 Suffix 各自獨立"
         note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的—— 業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。</>}
       >
@@ -1084,6 +1086,7 @@ export const AlignmentThreshold = {
       </TutorialRule>
       {/* Rules table */}
       <TutorialRule
+        paragraph={false}
         title="對齊規則總覽"
       >
         <div className="overflow-x-auto">
@@ -1137,6 +1140,7 @@ export const ReadingModes = {
   render: () => (
     <TutorialPage>
       <TutorialRule
+        paragraph={false}
         title="掃描模式 vs 閱讀模式"
         note="同一套佈局結構，typography 策略依閱讀場景調整。掃描模式用於浮層（一掃而過）， 閱讀模式用於頁面/表單（仔細閱讀）。差異在行高和 description 字體。"
       >
@@ -1198,6 +1202,7 @@ export const ReadingModes = {
       </TutorialRule>
       {/* Token comparison table */}
       <TutorialRule
+        paragraph={false}
         title="Typography Token 對照表"
       >
         <div className="overflow-x-auto">
@@ -1249,6 +1254,7 @@ export const IconColorsAndPresets = {
       />
       {/* Color rule table */}
       <TutorialRule
+        paragraph={false}
         title="色彩判斷規則"
       >
         <div className="overflow-x-auto">
@@ -1311,6 +1317,7 @@ export const IconColorsAndPresets = {
       </TutorialRule>
       {/* Visual reference — live examples */}
       <TutorialRule
+        paragraph={false}
         title="視覺參考"
       >
         <div className="flex gap-[var(--layout-space-loose)] items-start">
@@ -1368,6 +1375,7 @@ export const IconColorsAndPresets = {
       </TutorialRule>
       {/* Consumer preset comparison */}
       <TutorialRule
+        paragraph={false}
         title="消費元件預設比較"
         note="每個元件自訂間距，但結構和對齊規則不變"
       >
@@ -1404,6 +1412,7 @@ export const IconColorsAndPresets = {
       </TutorialRule>
       {/* Live consumer examples */}
       <TutorialRule
+        paragraph={false}
         title="消費元件即時範例（md size）"
       >
         <div className="flex gap-[var(--layout-space-loose)] items-start">
@@ -1498,6 +1507,7 @@ export const IconActionPrimitiveDecision = {
       />
       {/* Decision tree visual */}
       <TutorialRule
+        paragraph={false}
         title="決策樹"
       >
         <div className="overflow-x-auto">
@@ -1546,6 +1556,7 @@ export const IconActionPrimitiveDecision = {
       </TutorialRule>
       {/* Real case table */}
       <TutorialRule
+        paragraph={false}
         title="實戰情境對照"
       >
         <div className="overflow-x-auto">
@@ -1575,6 +1586,7 @@ export const IconActionPrimitiveDecision = {
       </TutorialRule>
       {/* Dismiss X canonical */}
       <TutorialRule
+        paragraph={false}
         title="Dismiss 嚴格定義 — X close only"
         note={<><code className="font-mono">dismiss</code> prop 僅屬 <strong>X(close)</strong>icon—— 「關閉 surface / 忽略訊息」的語意。Trash / Delete / Clear / Remove 都<strong>不算 dismiss</strong>, 即使視覺上也是 icon-only button,callback 用 <code className="font-mono">onDelete</code> / <code className="font-mono">onRemove</code> / <code className="font-mono">onClear</code>。 世界級對照:Material IconButton close / Polaris Banner.onDismiss / Apple HIG window close — 全部 icon = X。</>}
       >
@@ -1599,6 +1611,7 @@ export const IconActionPrimitiveDecision = {
       </TutorialRule>
       {/* Live case: Alert chrome corner action group */}
       <TutorialRule
+        paragraph={false}
         title="Live case — Alert chrome corner action group 佈局"
         note={<>Chrome corner close 屬 <strong>action group region</strong>——實務上 close 左側可加 refresh / share 等 輔助動作(ButtonDivider 分群,由 Alert 自動放),所以必須用 Button iconOnly(與群內其他 action 同 primitive),不可用 Inline Action。</>}
       >
@@ -1622,6 +1635,7 @@ export const IconActionPrimitiveDecision = {
       </TutorialRule>
       {/* Same-row consistency */}
       <TutorialRule
+        paragraph={false}
         title="Same-row consistency — 同 row 所有 icon action 必同一類"
         note={<>同一 action row(suffix slot / chrome corner)<strong>所有 icon action 必用相同 primitive</strong>—— 不混 Inline Action + Button iconOnly。混用會造成 box 尺寸不一致,gap token 視覺被吃掉(同一個 flex 列裡的互動槽位幾何必須一致)。</>}
       >

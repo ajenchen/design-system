@@ -169,6 +169,7 @@ export const DelayFeel: Story = {
     // 規則外框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 + 說明段落的教學框)
     <TutorialPage className="max-w-2xl">
       <TutorialRule
+        paragraph={false}
         title="plain(500ms)— 工具列 icon 按鈕的文字提示"
         note="hover 下方按鈕停留 500ms 才出現 tooltip;快速滑過不觸發。移開後 tooltip 立即依全域 Provider 收合節奏消失。"
       >

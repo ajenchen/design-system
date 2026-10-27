@@ -431,7 +431,7 @@ export const FunctionalHighlight: Story = {
   render: () => (
     // 規則外框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 教學框)
     <TutorialPage className="max-w-xl">
-      <TutorialRule title="文字反白(::selection)">
+      <TutorialRule paragraph={false} title="文字反白(::selection)">
         <p data-selection-demo className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           第三季營收報告已於 10 月 14 日送交財務委員會審閱,附件包含分區銷售明細與年度預測修正。
         </p>
@@ -439,7 +439,7 @@ export const FunctionalHighlight: Story = {
           此段由 play 自動反白 — 底色 <code>--text-selection</code>(blue-5 @ 30% 半透明,字色不變)
         </span>
       </TutorialRule>
-      <TutorialRule title="頁內搜尋配對(Ctrl+F)">
+      <TutorialRule paragraph={false} title="頁內搜尋配對(Ctrl+F)">
         <p className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
           已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
