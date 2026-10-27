@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-27T19:14:10.859Z"
+    "generatedAt": "2026-10-27T19:50:28.461Z"
   },
   "components": {
     "accordion": {
@@ -241,7 +241,6 @@
           "design-system-components-breadcrumb-設計規格--color-matrix",
           "design-system-components-breadcrumb-設計規格--size-matrix",
           "design-system-components-breadcrumb-設計規格--state-behavior",
-          "design-system-components-breadcrumb-設計規格--usage-examples",
           "design-system-components-breadcrumb-設計規格--collapse-matrix",
           "design-system-components-breadcrumb-設計規格--accessibility"
         ],
@@ -1859,5 +1858,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1027
+  "totalStories": 1026
 }
