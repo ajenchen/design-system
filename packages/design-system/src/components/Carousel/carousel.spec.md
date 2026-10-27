@@ -113,7 +113,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 
 - **為什麼不永遠可見**:carousel 內容(大圖 / 產品照)是主視覺,常駐箭頭會干擾閱讀;Airbnb / Instagram / Netflix hero 皆採 hover-only
 - **a11y 例外**:wrapper `has-[:focus-visible]:opacity-100`——後代 arrow 以鍵盤取得焦點時強制顯示,滿足**焦點可見原則**。鍵盤使用者不 hover,若仍 opacity-0 將無法得知元素位置。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點箭頭也會讓它成立,指標移開後箭頭一直蓋在圖上(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc;閘 `scripts/test-hover-revealed-affordances.mjs`)
-- **邊界**:`canScrollPrev/Next === false` 時 `disabled + opacity-0 + pointer-events-none`——到邊界直接消失,不顯示 disabled 狀態,避免視覺噪音。**例外:用鍵盤按到端點的那顆箭頭留著**(2026-10-01 起,程式 `carousel.tsx` `arrowWrapperClass`):握著焦點時被停用的按鈕不轉原生 `disabled`、改「可聚焦的停用」(`aria-disabled` + `data-disabled-focusable`,`../Button/button.tsx`),箭頭在 `:focus-visible` 期間維持顯示,焦點框看得見(WCAG 2.4.7),焦點離開才轉回原生 `disabled` 並收起;滑鼠按到端點的照舊當場收起(沒有鍵盤框要看)。規則住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」,本段只記 Carousel 的長相
+- **邊界**:`canScrollPrev/Next === false` 時 `disabled + opacity-0 + pointer-events-none`——到邊界直接消失,不顯示 disabled 狀態,避免視覺噪音。**例外:用鍵盤按到端點的那顆箭頭留著**(2026-10-01 起,程式 `carousel.tsx` `arrowWrapperClass`):握著焦點時被停用的按鈕不轉原生 `disabled`、改「可聚焦的停用」(`aria-disabled` + `data-disabled-focusable`,`../Button/button.tsx`),箭頭在 `:focus-visible` 期間維持顯示,焦點框看得見(WCAG 2.4.7),焦點離開才轉回原生 `disabled` 並收起;滑鼠按到端點的照舊當場收起(沒有鍵盤框要看)。規則住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」〔UD-U1021-28〕,本段只記 Carousel 的長相
 
 ### 箭頭覆蓋範圍(canonical)
 

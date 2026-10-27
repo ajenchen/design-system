@@ -36,11 +36,11 @@ const slides = [
 
 const SampleSlide = ({ label, image, height = 240 }: { label: string; image: string; height?: number }) => (
   <div
-    className="rounded-lg overflow-hidden flex items-end p-6 text-white bg-cover bg-center"
+    className="rounded-lg overflow-hidden flex items-end p-6 text-on-emphasis bg-cover bg-center"
     style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${image})`, height }}
   >
     <div className="relative z-10">
-      <div className="text-caption opacity-90">推薦目的地</div>
+      <div className="text-caption">推薦目的地</div>
       <div className="text-h3 font-bold">{label}</div>
     </div>
   </div>
@@ -101,7 +101,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['orientation', "'horizontal'|'vertical'", "'horizontal'", '99% 用 horizontal;vertical 供 story feed 等少見場景'],
-                ['opts', 'EmblaOptionsType', '—', 'Embla options(`loop`、`align`、`dragFree` 等)'],
+                ['opts', 'EmblaOptionsType', '—', <>Embla options(<code>loop</code>、<code>align</code>、<code>dragFree</code> 等)</>],
                 ['plugins', 'EmblaPluginType[]', '—', 'Embla plugins(consumer 可自行引入 Autoplay,但必須提供暫停機制)'],
                 ['setApi', '(api: CarouselApi) => void', '—', '向外部暴露 api 實例(自訂控制 / 外部指示器)'],
               ].map(([p, t, d, desc]) => (
@@ -263,7 +263,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Arrow(浮層按鈕)</H3>
-        <Desc>Arrow 為 `&lt;Button variant="tertiary"&gt;`——`bg-surface` + `border-border`,無 elevation shadow,rounded-full 圓形,疊在照片或內容上仍清晰可見。</Desc>
+        <Desc>Arrow 為 <code>&lt;Button variant="tertiary"&gt;</code>——<code>bg-surface</code> + <code>border-border</code>,無 elevation shadow,rounded-full 圓形,疊在照片或內容上仍清晰可見。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>Fill</Th><Th>Stroke</Th><Th>Shadow</Th><Th>Opacity</Th></tr></thead>
@@ -390,7 +390,8 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td mono>Dot inactive</Td>
                 <Td mono>6 × 6 px</Td>
-                <Td>小到不搶主視覺。6px 的點先天無法用指標瞄準,屬命中區規則的「線與點」例外:垂直擴到 24、水平各 ±3(dot 6 + gap 6 = 中心距 12,±3 恰相切零重疊,再寬必互搶點擊;carousel.tsx#CarouselDots)。依據不是觸控最小尺寸——原文「符合 minimum touch target」已於 2026-09-24 撤回,本 DS 以滑鼠指標的精度為前提(ds-canonical/references/hit-area-canonical.md)</Td>
+                {/* 命中區實作 = carousel.tsx#CarouselDots;規則 = ds-canonical/references/hit-area-canonical.md「線與點」(原文「符合 minimum touch target」已於 2026-09-24 撤回) */}
+                <Td>小到不搶主視覺。6px 的點先天無法用指標瞄準,屬命中區規則的「線與點」例外:垂直擴到 24、水平各 ±3(dot 6 + gap 6 = 中心距 12,±3 恰相切零重疊,再寬必互搶點擊)。本 DS 以滑鼠指標的精度為前提</Td>
               </tr>
               <tr>
                 <Td mono>Dot active</Td>
@@ -426,7 +427,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Arrow hover-only 顯示</H3>
         <Desc>
-          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。鍵盤聚焦時強制顯示(<code>has-[:focus-visible]</code>,不需 hover;滑鼠點過的不常駐)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
+          預設 opacity-0,父容器 <code>group-hover/carousel</code> 時顯示。鍵盤聚焦時強制顯示(<code>has-[:focus-visible]</code>,不需 hover;滑鼠點過的不常駐)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
         </Desc>
         <div className="max-w-[560px]">
           <Carousel>
@@ -484,7 +485,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>單一項目不渲染 dots</H3>
-        <Desc>`scrollSnaps.length &lt;= 1` 時 `CarouselDots` 自動 return null——consumer 不必手動判斷。</Desc>
+        <Desc><code>scrollSnaps.length &lt;= 1</code> 時 <code>CarouselDots</code> 自動 return null——consumer 不必手動判斷。</Desc>
         <div className="max-w-[560px]">
           <Carousel>
             <CarouselContent>
@@ -509,8 +510,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible 走全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class);dot focus-visible 同走全域外描邊(原生 `<button>`,不寫任何 class)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
+      {/* 標題 → 一段文字 = tight(內容之間本來就是 tight;A4 甲,寫死 mb-2 改 token、跟著密度)。出處(不給讀者看):carousel.spec.md「A11y 預設」 */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"  ARIA  :\n\n- 根容器 "}<code>{"role=\"region\""}</code>{" + "}<code>{"aria-roledescription=\"carousel\""}</code>{" + "}<code>{"aria-label=\"輪播\""}</code>{"(consumer 可覆寫)\n- 每個 "}<code>{"CarouselItem"}</code>{" "}<code>{"role=\"group\""}</code>{" + "}<code>{"aria-roledescription=\"slide\""}</code>{"\n- Arrow 為 DS Button,"}<code>{"aria-label"}</code>{" 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native "}<code>{"disabled"}</code>{",wrapper 同時 "}<code>{"opacity-0"}</code>{" + "}<code>{"pointer-events-none"}</code>{"——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 "}<code>{"role=\"group\""}</code>{" + "}<code>{"aria-label=\"輪播指示器\""}</code>{";每個 dot 為原生 "}<code>{"<button>"}</code>{" + "}<code>{"aria-label=\"跳至第 N 張\""}</code>{",目前這張的 dot "}<code>{"aria-current=\"true\""}</code>{"(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 "}<code>{"onKeyDownCapture"}</code>{" + "}<code>{"preventDefault"}</code>{" 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 "}<code>{"<button>"}</code>{",各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 "}<code>{"<button>"}</code>{" 預設行為)\n\n  Focus  :arrow wrapper 預設 "}<code>{"opacity-0"}</code>{",後代 arrow 有鍵盤焦點("}<code>{":focus-visible"}</code>{")時強制顯示(不需 hover,焦點必可見;滑鼠點過的不常駐),Button 自身 focus-visible 走全域 "}<code>{":focus-visible"}</code>{" 外描邊("}<code>{"outline: 2px solid var(--ring)"}</code>{",往外 2px;元件不寫任何 class);dot focus-visible 同走全域外描邊(原生 "}<code>{"<button>"}</code>{",不寫任何 class)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
     </div>
   ),
 }

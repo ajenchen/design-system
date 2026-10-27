@@ -12,6 +12,7 @@ import {
 } from './carousel'
 import { Button } from '@/design-system/components/Button/button'
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/Carousel/展示',
@@ -35,6 +36,7 @@ const heroBanners = [
   { city: '峇里島', tagline: '熱帶度假村 · 含機加酒', image: 'https://picsum.photos/seed/bali/960/360' },
 ]
 
+// label = 這張是哪個角度;給讀屏的圖片名稱用(畫面上不再疊手刻的角度標籤膠囊,張數由底下的指示點表達)
 const productImages = [
   { label: '正面', image: 'https://picsum.photos/seed/headphones-front/480/480' },
   { label: '側面', image: 'https://picsum.photos/seed/headphones-side/480/480' },
@@ -45,13 +47,14 @@ const productImages = [
 
 // ── Stories ─────────────────────────────────────────────────────────────────
 
+// 兩則的情境說明放 docs(之前印在畫布上方);圖上的字用 on-emphasis(壓在照片 + 深色漸層上的白字),不用 text-white / opacity-*
 export const HomepageHeroBanner = {
   name: '首頁主視覺橫幅',
+  parameters: {
+    docs: { description: { story: 'Airbnb / Booking 這類首頁的主視覺:4 張城市主題大圖,滑鼠移上去才出現左右箭頭,底部的指示點表示目前是第幾張。' } },
+  },
   render: () => (
     <div className="max-w-[960px]">
-      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-        Airbnb / Booking 首頁風格 · 4 張城市主題大圖 · hover 顯示箭頭 · 底部白點指示
-      </p>
       <Carousel opts={{ loop: true }}>
         <CarouselContent>
           {heroBanners.map((b) => (
@@ -62,10 +65,10 @@ export const HomepageHeroBanner = {
                 style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${b.image})` }}
               >
                 {/* @layout-space-magic-ok: 大字級主視覺的構圖節奏:小字 eyebrow ↔ text-h2 城市名 ↔ 標語各 4px,是圖上大字排版的視覺平衡,不是卡片「標題 ↔ 說明」(那一種用 --item-gap-label-desc-*)(layoutSpace.spec.md:167 視覺平衡) */}
-                <div className="text-white relative z-10 flex flex-col gap-1">
-                  <div className="text-caption font-medium opacity-90">推薦目的地</div>
+                <div className="text-on-emphasis relative z-10 flex flex-col gap-1">
+                  <div className="text-caption font-medium">推薦目的地</div>
                   <div className="text-h2 font-bold">{b.city}</div>
-                  <div className="text-body-lg opacity-95">{b.tagline}</div>
+                  <div className="text-body-lg">{b.tagline}</div>
                 </div>
               </div>
             </CarouselItem>
@@ -81,23 +84,23 @@ export const HomepageHeroBanner = {
 
 export const ProductImageGallery = {
   name: '商品圖片輪播',
+  parameters: {
+    docs: { description: { story: '單一商品的 4 張角度照,底下的指示點表示共有幾張。適合電商或行銷網站的商品頁;按「加入購物車」會跳一則通知。' } },
+  },
   render: () => (
     <div className="max-w-[480px]">
-      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-        單一商品 4 張角度照 · dots 顯示共有幾張 · 適合電商 / B2B SaaS marketing site
-      </p>
+      <Toaster />
       <Carousel>
         <CarouselContent>
           {productImages.map((img) => (
             <CarouselItem key={img.label}>
               <AspectRatio
                 ratio={1}
+                role="img"
+                aria-label={`無線降噪耳機 Pro ${img.label}`}
                 className="relative rounded-lg overflow-hidden bg-cover bg-center"
                 style={{ backgroundImage: `url(${img.image})` }}
-              >
-                {/* @layout-space-magic-ok: 圖上角度標籤膠囊的內距(膠囊自身微幾何)(layoutSpace.spec.md:168 元件自身微幾何) */}
-                <div className="absolute bottom-2 right-2 text-caption text-white px-2 py-0.5 rounded bg-black/40">{img.label}</div>
-              </AspectRatio>
+              />
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -110,7 +113,8 @@ export const ProductImageGallery = {
           <div className="text-body font-medium">無線降噪耳機 Pro</div>
           <div className="text-caption text-fg-muted">NT$ 8,990</div>
         </div>
-        <Button variant="primary" size="sm">加入購物車</Button>
+        {/* 頁面上的主要動作用預設 md(之前 sm 且按了沒反應);按下跳通知 */}
+        <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已加入購物車', description: '無線降噪耳機 Pro × 1' })}>加入購物車</Button>
       </div>
     </div>
   ),
