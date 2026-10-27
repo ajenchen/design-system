@@ -2,12 +2,13 @@
 // @story-history: hasVariants/hasInteractiveStates 的 canonical core stories(AllVariants / States)
 //   集中在 anatomy.stories.tsx 的 ColorMatrix + StateBehavior(Inspector 互動);本 showcase
 //   提供真實業務 scenario(部署 / 系統警示)而非 trait grid 重複展示。
+import { useState } from 'react'
 import type { Meta } from '@storybook/react'
 import { RefreshCw, Share2 } from 'lucide-react'
 import { Alert } from './alert'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
-import type { NoticeVariant } from '@/design-system/components/Notice/notice'
 
 const meta: Meta = {
   title: 'Design System/Components/Alert/展示',
@@ -19,126 +20,72 @@ const meta: Meta = {
 }
 export default meta
 
-const ALL: NoticeVariant[] = ['neutral', 'info', 'warning', 'error', 'success']
-// 真實情境的 title(「人」test:遮 variant 標籤也看得懂)
-const L: Record<string, string> = {
-  neutral: '已切換至離線模式',
-  info: 'v2.4 已發佈',
-  warning: '免費額度剩 3 天',
-  error: '付款失敗',
-  success: '部署完成',
-}
-// description 用簡潔的輔助資訊(非 variant 名稱)
-const D: Record<string, string> = {
-  neutral: '變更會在重新連線後同步',
-  info: '查看更新日誌了解新功能',
-  warning: '升級方案以避免服務中斷',
-  error: '請檢查卡號或改用其他付款方式',
-  success: 'v2.4.1 已上線到 production',
-}
-
-const actionBtn = <Button variant="tertiary" size="xs">查看詳情</Button>
-
-// 2026-07-14 audit Dim 28(story 拆分原則):原 Subtle/Solid × SingleLine/WithDescription
-// 四 story 依 appearance variant 拆細 = 「≥2 variants 拆細」反 pattern(該合對照 grid);
-// 合併為單行 / 含說明兩 story,各以 subtle vs solid 並排對照(appearance trait grid 本體
-// 由 anatomy ColorMatrix owns)。
+// 2026-10-28(稽核 M103 / M025):展示層每則只放一個真實情境 —— 原本「單行」「含說明文字」「固定顯示」都是 5 種 variant × 低調 / 實心直疊
+// (一頁 10 條 Alert、5 條 solid),違反 alert.spec.md「❌ Alert 不疊 Alert」「一個頁面最多一個 solid Alert」;
+// variant × 低調 / 實心的對照由設計規格頁「色彩對照表」擁有。每條都掛著的「查看詳情」沒有規格說要去哪 → 不放(不做假動作)。
 export const SingleLine = {
-  name: '單行（低調 vs 實心對照）',
+  name: '單行',
   render: () => (
-    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-5xl">
-      {(['subtle', 'solid'] as const).map((appearance) => (
-        <div key={appearance} className="flex flex-col gap-[var(--layout-space-tight)]">
-          <span className="text-caption text-fg-muted font-medium">
-            {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
-          </span>
-          <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} endContent={actionBtn} />)}
-          </div>
-        </div>
-      ))}
+    <div className="max-w-xl">
+      <Alert variant="warning" title="免費額度剩 3 天,到期後專案會轉為唯讀" />
     </div>
   ),
 }
 
 export const WithDescription = {
-  name: '含說明文字（低調 vs 實心對照）',
+  name: '含說明文字',
   render: () => (
-    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-5xl">
-      {(['subtle', 'solid'] as const).map((appearance) => (
-        <div key={appearance} className="flex flex-col gap-[var(--layout-space-tight)]">
-          <span className="text-caption text-fg-muted font-medium">
-            {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
-          </span>
-          <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} description={D[v]} endContent={actionBtn} />)}
-          </div>
-        </div>
-      ))}
+    <div className="max-w-xl">
+      <Alert variant="error" title="付款失敗" description="這個月的訂閱扣款沒有成功,請檢查卡號或改用其他付款方式。" />
     </div>
   ),
+}
+
+// 右上角操作群組:關閉鈕左邊有其他操作時,分隔線由 DS 自動放(誤觸保護);使用端只要傳 endContent。
+// 2026-10-28 前三顆都沒有作用(× 接空函式、重新整理 / 分享沒有 onClick)→ × 真的移除這條、重新整理 = 同步完成後移除並跳 Toast、
+// 分享 = 複製連結跳 Toast(複製類 neutral、不帶 action,toast.spec.md 變體表)。原本畫在展示頁的 ✅ / ❌ 對照搬到設計原則頁(稽核 L113)。
+function DeployCommitAlert() {
+  const [shown, setShown] = useState(true)
+  if (!shown) return null
+  return (
+    <Alert
+      variant="warning"
+      appearance="subtle"
+      title="部署管線偵測到新的 commit"
+      description="點「重新整理」同步最新狀態,或忽略此訊息繼續目前作業。"
+      onDismiss={() => setShown(false)}
+      endContent={
+        <>
+          <Button iconOnly size="xs" variant="text" startIcon={RefreshCw} aria-label="重新整理" onClick={() => { setShown(false); toast({ title: '已同步到最新的部署狀態' }) }} />
+          <Button iconOnly size="xs" variant="text" startIcon={Share2} aria-label="分享連結" onClick={() => toast({ title: '已複製連結' })} />
+        </>
+      }
+    />
+  )
 }
 
 export const CornerActionGroup = {
   name: '右上角操作群組',
+  parameters: { docs: { description: { story: 'Alert 右上角是操作按鈕群組:關閉鈕左側可以並排重新整理、分享等按鈕,全部用同一種最小尺寸的純圖示按鈕;關閉鈕左邊有其他操作時,分隔線由 DS 自動放。' } } },
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-lg">
-      <span className="text-caption text-fg-muted">
-        Alert 右上角是操作按鈕群組。關閉鈕左側可以並排重新整理、分享等額外按鈕,全部用同一種最小尺寸的純圖示按鈕。
-        關閉鈕左邊有其他操作時,分隔線由 DS 自動放(誤觸保護,見 action-bar.spec.md 第五節),使用端只要傳 endContent。
-      </span>
-
-      <Alert
-        variant="warning"
-        appearance="subtle"
-        title="部署管線偵測到新的 commit"
-        description="點「重新整理」同步最新狀態,或忽略此訊息繼續目前作業。"
-        onDismiss={() => {}}
-        endContent={
-          <>
-            <Button iconOnly size="xs" variant="text" startIcon={RefreshCw} aria-label="重新整理" />
-            <Button iconOnly size="xs" variant="text" startIcon={Share2} aria-label="分享連結" />
-          </>
-        }
-      />
-
-      <span className="text-caption text-fg-muted">
-        ✅ 右上角這排(重新整理、分享、關閉)全用同一種最小尺寸的純圖示按鈕,並用分隔線分成兩群,保持同一列視覺一致。
-        ❌ 不要一群用純圖示按鈕、另一群用列內動作,會不整齊。
-      </span>
+    <div className="max-w-lg">
+      <Toaster />
+      <DeployCommitAlert />
     </div>
   ),
 }
 
+// 固定顯示:頁首底下只放一條真實的全域警告(同設計原則頁「系統維護中」);原本 5 條 subtle + 5 條 solid 疊在頁首下(稽核 M103)
 export const Fixed = {
   name: '固定顯示',
+  parameters: { docs: { description: { story: '固定在頁首底下,無圓角、滿版寬度,用於全站層級的公告。' } } },
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)]">
-      <span className="text-caption text-fg-muted">固定在 header 底下,無圓角,full-width。</span>
-
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <span className="text-caption text-fg-muted font-medium">Subtle Fixed</span>
-          <div className="border border-divider rounded-lg overflow-hidden">
-            <ChromeHeader className="bg-surface">
-              <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
-            </ChromeHeader>
-            {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" placement="fixed" title={L[v]} />)}
-            <div className="p-[var(--layout-space-loose)] text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <span className="text-caption text-fg-muted font-medium">Solid Fixed</span>
-          <div className="border border-divider rounded-lg overflow-hidden">
-            <ChromeHeader className="bg-surface">
-              <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
-            </ChromeHeader>
-            {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" placement="fixed" title={L[v]} />)}
-            <div className="p-[var(--layout-space-loose)] text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
-          </div>
-        </div>
-      </div>
+    <div className="border border-divider rounded-lg overflow-hidden">
+      <ChromeHeader className="bg-surface">
+        <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
+      </ChromeHeader>
+      <Alert variant="info" placement="fixed" title="系統維護中" description="2026-04-20 02:00-04:00 進行系統升級,部分功能暫停" />
+      <div className="p-[var(--layout-space-loose)] text-fg-muted text-caption">調整此專案的權限與通知偏好。變更會立刻套用到所有成員。</div>
     </div>
   ),
 }

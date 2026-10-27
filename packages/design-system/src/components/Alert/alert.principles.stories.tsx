@@ -26,10 +26,17 @@ export const UsageGuidance: Story = {
       <UsageSection kind="when">
         <p>頁面裡需要持續存在、直到使用者處理才消失的狀態通知:方案即將到期、帳號未驗證、系統維護、複雜動作前的警告。</p>
         <TutorialList>
-          <li><StoryLink kind="Design System/Components/Alert/展示" name="單行（低調 vs 實心對照）">單行(低調 vs 實心對照)</StoryLink></li>
-          <li><StoryLink kind="Design System/Components/Alert/展示" name="含說明文字（低調 vs 實心對照）">含說明文字(低調 vs 實心對照)</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Alert/展示" name="單行">單行</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Alert/展示" name="含說明文字">含說明文字</StoryLink></li>
           <li><StoryLink kind="Design System/Components/Alert/展示" name="右上角操作群組">右上角操作群組</StoryLink></li>
         </TutorialList>
+        {/* 2026-10-28 從展示頁「右上角操作群組」搬來:✅ / ❌ 對照只住設計原則層(category-templates.md「禁止:do/don't 對照放 showcase」;稽核 L113) */}
+        <TutorialRule
+          title="右上角操作群組 — 全用同一種最小尺寸的純圖示按鈕"
+          note="關閉鈕左側可以並排重新整理、分享等操作,全部用同一種最小尺寸的純圖示按鈕;DS 自動在它們和關閉鈕之間放分隔線分成兩群,同一列視覺一致。不要一群用純圖示按鈕、另一群用列內動作,會不整齊"
+        >
+          <ExampleCaption>實際長相見 <StoryLink kind="Design System/Components/Alert/展示" name="右上角操作群組">右上角操作群組</StoryLink></ExampleCaption>
+        </TutorialRule>
       </UsageSection>
 
       <UsageSection kind="whenNot">
@@ -37,11 +44,8 @@ export const UsageGuidance: Story = {
           title="❌ 操作結果短暫回饋：用 Toast"
           note="「儲存成功」「已複製」這類一閃即可的訊息不該嵌入頁面 persistent 存在。Toast 自動消失,非阻斷"
         >
-          <Alert
-            variant="success"
-            title="儲存成功"
-            description="您的變更已儲存"
-          />
+          {/* @story-counter-example: 反例 —— 儲存成功的回饋該跳 Toast、不放進頁面(UD-B26「然後送出成功跳提示」) */}
+          <Alert variant="success" title="儲存成功" description="您的變更已儲存" />
           <ExampleCaption warn>↑ 儲存成功放 Alert → 頁面永遠留這條「儲存成功」,使用者看下一次儲存時還在,困惑。用 Toast 閃一下即可</ExampleCaption>
         </TutorialRule>
 
@@ -83,7 +87,7 @@ export const UsageGuidance: Story = {
 }
 
 export const VariantRule: Story = {
-  name: '變體 選擇',
+  name: '變體選擇',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -154,7 +158,7 @@ export const PlacementRule: Story = {
 }
 
 export const AppearanceRule: Story = {
-  name: '低調 vs 實心 選擇',
+  name: '低調 vs 實心的選擇',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -184,7 +188,7 @@ export const AppearanceRule: Story = {
         title="❌ 所有 Alert 都用 solid"
         note="視覺重量過高,使用者無法分辨哪個真重要。Solid 保留給最緊急的訊息"
       >
-        <Alert variant="success" appearance="solid" title="已儲存" />
+        <Alert variant="success" appearance="solid" title="部署完成" />
         <Alert variant="info" appearance="solid" title="提示" />
         <Alert variant="warning" appearance="solid" title="注意" />
         <ExampleCaption warn>↑ 全 solid → 訊號稀釋,使用者麻木</ExampleCaption>

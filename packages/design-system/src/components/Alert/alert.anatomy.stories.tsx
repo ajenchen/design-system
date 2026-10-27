@@ -3,6 +3,7 @@
 //   SizeMatrix N/A — Alert 固定 md tier(由消費的 Notice primitive 決定),
 //     不隨 density 縮放(僅 placement="fixed" 的水平 px 走 --layout-space-loose,density-aware)。Placement(inline / fixed)取代 size 作為佈局決策,
 //     已由 PlacementMatrix 涵蓋。
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Alert, type AlertProps } from './alert'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -15,6 +16,15 @@ export default meta
 type Story = StoryObj
 type InspectorStory = StoryObj<AlertProps>
 
+/**
+ * 按 × 真的把這條 Alert 移除(Alert 不自己管顯示狀態,由使用端從畫面拿掉 —— 下方「狀態行為」那段的寫法)。
+ * 2026-10-28 前範例接的是空函式,× 點了沒反應(登記簿 A16「一堆按鈕都無法正常反應」;alert.spec.md「無 handler 的 X 是死按鈕」)。
+ */
+function DismissibleAlert(props: Omit<AlertProps, 'onDismiss'>) {
+  const [shown, setShown] = useState(true)
+  return shown ? <Alert {...props} onDismiss={() => setShown(false)} /> : null
+}
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
@@ -22,11 +32,11 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Alert 跟 Toast 共用同一套排版、圖示與主題策略。結構:圖示 + 標題 + 說明文字 + 右側操作區(endContent)+ 右上角關閉鈕(需傳 onDismiss 才渲染)。</Desc>
-        <Alert
+        {/* 展示含右上角 × 的完整結構(× 只在傳 onDismiss 時渲染) */}
+        <DismissibleAlert
           variant="warning"
           title="方案即將到期"
           description="您的 Pro 方案將在 3 天後到期,請及時續訂以維持服務"
-          onDismiss={() => {}} // anatomy 展示含 dismiss X slot(2026-07-05 D4:X 僅在傳 onDismiss 時渲染)
         />
       </div>
 
@@ -72,7 +82,6 @@ export const Inspector: InspectorStory = {
     title: '方案即將到期',
     description: '您的 Pro 方案將在 3 天後到期,請及時續訂以維持服務',
     dismissible: true,
-    onDismiss: () => {}, // 2026-07-05 D4:X 僅在傳 onDismiss 時渲染,Inspector 切 dismissible 才看得到 X
   },
   argTypes: {
     variant: {
@@ -94,7 +103,8 @@ export const Inspector: InspectorStory = {
     description: { control: 'text', description: '補充說明' },
     dismissible: { control: 'boolean', description: '是否顯示關閉按鈕(需同時傳 onDismiss 才渲染 X)' },
   },
-  render: (args) => <Alert {...args} />,
+  // × 只在傳 onDismiss 時渲染;這裡由 DismissibleAlert 接上「按下就移除」,切任何 control 會重新掛上(key)
+  render: (args) => <DismissibleAlert key={[args.variant, args.appearance, args.placement, args.title, args.description, String(args.dismissible)].join('|')} {...args} />,
 }
 
 export const ColorMatrix: Story = {
@@ -148,7 +158,7 @@ export const PlacementMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Inline(預設) — 嵌入頁面內容</H3>
-        <Desc>`rounded-md`(4px)圓角 + 邊框,像一張 card 嵌在內容區塊裡。Settings 頁的方案提示、表單內的注意事項。</Desc>
+        <Desc><code>rounded-md</code>(4px)圓角 + 邊框,像一張 card 嵌在內容區塊裡。Settings 頁的方案提示、表單內的注意事項。</Desc>
         <Alert
           variant="warning"
           title="即將到期"
@@ -178,7 +188,7 @@ export const PlacementMatrix: Story = {
             </tbody>
           </table>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">Alert 是 inline 容器(不是浮層),用 `rounded-md`(4px)。Toast 是浮層用 `rounded-lg`(8px)。</p>
+        <p className="text-footnote text-fg-muted mt-3">Alert 是 inline 容器(不是浮層),用 <code>rounded-md</code>(4px)。Toast 是浮層用 <code>rounded-lg</code>(8px)。</p>
       </div>
     </div>
   ),
@@ -191,10 +201,10 @@ export const StateBehavior: Story = {
       <div>
         <H3>Dismissible(右側 close icon)</H3>
         <Desc>
-          Alert 預設 `dismissible=true`,傳入 `onDismiss` 時右上角顯示 close button(未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕;2026-07-05 D4)。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
+          Alert 預設 <code>dismissible=true</code>,傳入 <code>onDismiss</code> 時右上角顯示 close button(未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕)。按 close 觸發 <code>onDismiss</code> 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
         </Desc>
         <div className="flex flex-col gap-3 max-w-xl">
-          <Alert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss" onDismiss={() => {}} />
+          <DismissibleAlert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss(這裡接上「從畫面移除」)" />
           <Alert variant="warning" title="不可關閉" description="永久性警告,設 dismissible={false} 隱藏 close icon" dismissible={false} />
           <Alert variant="neutral" title="靜態通知" description="沒傳 onDismiss 時同樣不渲染 close icon(避免按了沒反應的假 affordance)" />
         </div>
@@ -203,15 +213,15 @@ export const StateBehavior: Story = {
       <div>
         <H3>Close button 互動狀態</H3>
         <Desc>
-          Chrome corner close 用 Button iconOnly `dismiss` size="xs"(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 ButtonDivider 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
+          Chrome corner close 用 Button iconOnly <code>dismiss</code> size="xs"(通知橫幅家族的準則)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 <code>xs</code>;overlay surface(Dialog / Sheet / Popover)另走 <code>sm</code> + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 ButtonDivider 分群),必須統一 Button primitive + 同 family 全 xs。<code>dismiss</code> prop 自動套 <code>variant="text"</code> + icon <code>fg-muted</code> 弱化,hover 時恢復 foreground。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>視覺</Th><Th>Token</Th></tr></thead>
             <tbody>
-              <tr><Td>default</Td><Td>Button xs iconOnly(24×24),X icon 16,fg-muted</Td><Td mono>text-fg-muted(`dismiss` override)</Td></tr>
+              <tr><Td>default</Td><Td>Button xs iconOnly(24×24),X icon 16,fg-muted</Td><Td mono>text-fg-muted(<code>dismiss</code> override)</Td></tr>
               <tr><Td>hover</Td><Td>Button bg 套 neutral-hover,icon 升 foreground</Td><Td mono>bg-neutral-hover / text-foreground</Td></tr>
-              <tr><Td>focus</Td><Td>2px 外描邊(鍵盤導航;全域 `:focus-visible` 規則,Button 不寫任何 class)</Td><Td mono>outline: 2px solid var(--ring) / outline-offset: 2px(全域規則,無 class)</Td></tr>
+              <tr><Td>focus</Td><Td>2px 外描邊(鍵盤導航;全域 <code>:focus-visible</code> 規則,Button 不寫任何 class)</Td><Td mono>outline: 2px solid var(--ring) / outline-offset: 2px(全域規則,無 class)</Td></tr>
               <tr><Td>solid appearance</Td><Td>icon 隨 variant 的 data-theme:info / success / error(dark theme)白字,warning(light theme)深字</Td><Td mono>text-fg-muted → hover text-foreground(隨 data-theme 翻轉)</Td></tr>
             </tbody>
           </table>
@@ -234,7 +244,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"無障礙朗讀行為依 variant 自動切換：\n\n-   一般提示（neutral / info / success）  ： role=\"status\"  +  aria-live=\"polite\" ——螢幕報讀器在使用者空閒時才讀出內容，不打斷目前動作\n-   緊急提示（warning / error）  ： role=\"alert\"  +  aria-live=\"assertive\" ——立即中斷目前朗讀讀出內容，因為使用者必須馬上知道\n-   關閉按鈕  ：必須有  aria-label （如「關閉通知」）\n-   行動按鈕  ：放在 Alert 內的操作按鈕用最小尺寸、低調樣式，文字直接描述動作（「前往設定」「立即更新」）"}</p>
     </div>
   ),
