@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import type { Meta } from '@storybook/react'
-import { Notice, type NoticeVariant } from '@/design-system/components/Notice/notice'
+import { fn } from '@storybook/test'
+import type { NoticeVariant } from '@/design-system/components/Notice/notice'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { Toaster, toast } from './toast'
+import { Toaster, toast, ToastSurface } from './toast'
 
 const meta: Meta = {
   title: 'Design System/Components/Toast/展示',
@@ -17,8 +19,8 @@ export default meta
 
 // 2026-07-04 audit:補 'info'(NoticeVariant 5 值,原漏 → 靜態雙 theme 對照未涵蓋全 variant)
 // 2026-07-14 Dim 68 修:原 warning =「訂閱 7 天後停用 + 續訂 CTA」= 持久帳務狀態 + 強制 CTA,
-// 違反 toast.spec.md「持久性系統狀態(方案過期)→ Alert」+「❌ 不把需要 user action 的內容
-// 放 Toast(action 僅限復原類非必要後手)」。改為短暫操作回饋(匯入部分完成)+ 非必要「查看」後手。
+// 違反 toast.spec.md「持久性系統狀態(方案過期)→ Alert」+「❌ 不把需要 user action 的內容放 Toast」。改為短暫操作回饋(匯入部分完成)+ 非必要「查看」後手。
+// 2026-10-28(D10 乙 / toast.spec.md 禁止事項第 4 條改寫):動作鈕只放非必要後手 —— 復原、重試、查看;複製類一律 neutral、不帶動作(複製到剪貼簿沒有東西可以復原)。
 const VARIANTS: NoticeVariant[] = ['neutral', 'info', 'success', 'warning', 'error']
 const LABELS: Record<string, string> = {
   neutral: '檔案已複製到剪貼簿',
@@ -27,8 +29,8 @@ const LABELS: Record<string, string> = {
   warning: '匯入部分完成',
   error: '無法連線伺服器',
 }
-const ACTIONS: Record<string, string> = {
-  neutral: '復原',
+const ACTIONS: Record<string, string | undefined> = {
+  neutral: undefined,
   info: '查看更新',
   success: '查看',
   warning: '查看',
@@ -43,44 +45,26 @@ const DESCRIPTIONS: Record<string, string> = {
 }
 
 /**
- * 靜態 Toast 展示——完全複製 Toast.tsx 的三層結構:
- * 1. Shadow wrapper: rounded-lg + elevation-200
- * 2. Bg layer: bg-{color}
- * 3. Theme layer: data-theme + text-foreground
- *
- * pageTheme 模擬頁面 theme,用來計算 inverse。
+ * 靜態 Toast 對照 —— 直接用 toast() 同一份視覺殼(ToastSurface,toast.tsx),不再手抄三層結構
+ * (2026-10-28 前手抄一份,少畫了右上 ×;稽核 M081)。pageTheme 決定 neutral / success 的反轉主題(模擬淺 / 深色頁)。
+ * × 與動作鈕都有作用:按了就收起這一則;「查看 / 查看更新 / 重試」在範例裡沒有去處,記到 Storybook Actions 面板。
  */
 function StaticToast({ variant, title, description, pageTheme }: {
   variant: NoticeVariant; title: string; description?: string; pageTheme: 'light' | 'dark'
 }) {
-  const inverse = pageTheme === 'light' ? 'dark' : 'light'
-  const isInverse = variant === 'neutral' || variant === 'success'
-  const actionBtn = <Button variant="tertiary" size="xs">{ACTIONS[variant]}</Button>
-
-  // ── inverse: bg + theme 同層 ──
-  if (isInverse) {
-    return (
-      <div className="rounded-lg overflow-hidden w-[360px]" style={{ boxShadow: 'var(--elevation-200)' }}>
-        <div data-theme={inverse} className="bg-surface-raised text-foreground">
-          <Notice variant={variant} title={title} description={description}
-            iconClassName={variant === 'success' ? 'text-success' : undefined}
-            endContent={actionBtn} />
-        </div>
-      </div>
-    )
-  }
-
-  // ── 有色相: bg outer + theme inner ──
-  const bg = variant === 'warning' ? 'bg-warning' : variant === 'error' ? 'bg-error' : 'bg-info'
-  const theme = variant === 'warning' ? 'light' : 'dark'
-
+  const [shown, setShown] = useState(true)
+  if (!shown) return null
+  const label = ACTIONS[variant]
   return (
-    <div className="rounded-lg overflow-hidden w-[360px]" style={{ boxShadow: 'var(--elevation-200)' }}>
-      <div className={bg}>
-        <div data-theme={theme} className="text-foreground">
-          <Notice variant={variant} title={title} description={description} endContent={actionBtn} />
-        </div>
-      </div>
+    <div className="w-[360px]">
+      <ToastSurface
+        variant={variant}
+        title={title}
+        description={description}
+        action={label ? { label, onClick: fn().mockName(`${title}:${label}`) } : undefined}
+        onDismiss={() => setShown(false)}
+        inverseTheme={pageTheme === 'light' ? 'dark' : 'light'}
+      />
     </div>
   )
 }
@@ -103,7 +87,7 @@ export const WithDescription = {
     <div className="flex gap-[var(--layout-space-loose)]">
       <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">light mode</span>
-        {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
+        {/* @layout-space-magic-ok: 示範框內距 32px 是範例原值(與已發布版同值,F-S8),給樣本 Toast 的陰影留白(elevation-200 模糊半徑 32px,primitives.css);規格沒寫這個值(放行章 (d)) */}
         <div data-theme="light" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
@@ -115,7 +99,7 @@ export const WithDescription = {
       </ExampleGroup>
       <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">dark mode</span>
-        {/* @layout-space-magic-ok: 示範框內距 32px,範例原值:等於樣本 Toast 陰影 elevation-200 的模糊半徑(primitives.css:248「0 16px 32px」),給陰影的留白不跟密度縮放(AI 判讀;layoutSpace.spec.md:176 判準「刻意固定」) */}
+        {/* @layout-space-magic-ok: 示範框內距 32px 是範例原值(與已發布版同值,F-S8),給樣本 Toast 的陰影留白(elevation-200 模糊半徑 32px,primitives.css);規格沒寫這個值(放行章 (d)) */}
         <div data-theme="dark" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
@@ -129,27 +113,26 @@ export const WithDescription = {
   ),
 }
 
+// 每顆觸發鈕寫使用者真的會按的動作;Toast 的動作鈕都有反應:「查看」在範例裡沒有去處 → 記到 Storybook Actions 面板,
+// 「重試」= 再連一次、成功跳 Toast(2026-10-28 前四個動作都接空函式,觸發鈕還叫「斷線示範」;複製那則拿掉「復原」—— D10 乙)
 export const Interactive = {
   name: '點擊觸發通知',
   render: () => (
     <ExampleGroup>
       <span className="text-caption text-fg-muted">點按鈕觸發 Toast</span>
       <ButtonGroup>
-        <Button variant="tertiary" onClick={() => toast({ title: '檔案已複製到剪貼簿', action: { label: '復原', onClick: () => {} } })}>複製檔案</Button>
-        <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '專案已儲存', description: '變更已同步到所有成員', action: { label: '查看', onClick: () => {} } })}>儲存專案</Button>
-        <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '匯入部分完成', description: '120 筆已匯入,3 筆格式錯誤被略過', action: { label: '查看', onClick: () => {} } })}>匯入資料</Button>
-        <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '無法連線伺服器', description: '請檢查網路後再試一次', action: { label: '重試', onClick: () => {} } })}>斷線示範</Button>
+        <Button variant="tertiary" onClick={() => toast({ title: '檔案已複製到剪貼簿' })}>複製檔案</Button>
+        <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '專案已儲存', description: '變更已同步到所有成員', action: { label: '查看', onClick: fn().mockName('查看專案') } })}>儲存專案</Button>
+        <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '匯入部分完成', description: '120 筆已匯入,3 筆格式錯誤被略過', action: { label: '查看', onClick: fn().mockName('查看匯入結果') } })}>匯入資料</Button>
+        <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '無法連線伺服器', description: '請檢查網路後再試一次', action: { label: '重試', onClick: () => toast({ variant: 'success', title: '已重新連線' }) } })}>同步資料</Button>
       </ButtonGroup>
       <Toaster />
     </ExampleGroup>
   ),
 }
 
-/**
- * Deterministic regression contract for Sonner's fixed polite viewport and the DS-owned sibling
- * announcers. Kept test-only because the reader-facing accessibility explanation lives in the
- * anatomy story; this story mechanically proves the DOM and repeated-message behavior.
- */
+// 朗讀區域互動 —— 只給閘看(test-only):Sonner 寫死的 polite 視覺區塊與 DS 自己的兩個朗讀區,連續相同訊息也要每次播報。
+// 讀者看的無障礙說明在設計規格頁「無障礙與鍵盤」。
 export const LiveRegionContract = {
   name: '朗讀區域互動',
   tags: ['test-only'],

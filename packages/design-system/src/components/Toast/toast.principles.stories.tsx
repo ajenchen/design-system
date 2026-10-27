@@ -44,7 +44,7 @@ export const UsageGuidance: Story = {
             <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存', description: '變更已同步至雲端' })}>
               觸發成功 Toast
             </Button>
-            <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結', description: '已複製到剪貼簿' })}>
+            <Button variant="tertiary" onClick={() => toast({ variant: 'neutral', title: '已複製連結', description: '已複製到剪貼簿' })}>
               觸發複製 Toast
             </Button>
           </ButtonGroup>
@@ -79,7 +79,7 @@ export const UsageGuidance: Story = {
             onClick={() => toast({
               variant: 'warning',
               title: '是否刪除專案？',
-              action: { label: '刪除', onClick: () => {} },
+              action: { label: '刪除', onClick: () => toast({ variant: 'success', title: '專案已刪除' }) },
             })}
           >
             刪除專案
@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
 }
 
 export const ActionRule: Story = {
-  name: '動作 使用場景(復原 模式)',
+  name: '動作使用場景(復原模式)',
   render: () => (
     <TutorialPage>
       <TriggerRule
@@ -116,7 +116,7 @@ export const ActionRule: Story = {
           onClick={() => toast({
             variant: 'success',
             title: '已刪除訊息',
-            description: '訊息已移至封存',
+            description: '10 秒內按「復原」可以救回',
             action: { label: '復原', onClick: () => toast({ variant: 'info', title: '已復原' }) },
           })}
         >
@@ -143,7 +143,7 @@ export const ActionRule: Story = {
 }
 
 export const VariantRule: Story = {
-  name: '變體 選擇',
+  name: '變體選擇',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -155,7 +155,8 @@ export const VariantRule: Story = {
           {/* 觸發鈕寫使用者真的會按的動作(story-rules「範例必真實業務場景」);各自觸發的 Toast 就是該 variant 的樣子。
               2026-10-20 前四顆鈕直接寫 success / info / warning / error(獨立驗證 OV-14) */}
           <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>儲存變更</Button>
-          <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '已複製連結' })}>複製連結</Button>
+          {/* info = 資訊性提示(toast.spec.md 變體表「新版本可用」「同步完成」);複製類是 neutral,不放在 info 這格(稽核 M104) */}
+          <Button variant="tertiary" onClick={() => toast({ variant: 'info', title: '同步完成' })}>同步資料</Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'warning', title: '空間即將用完' })}>上傳大型檔案</Button>
           <Button variant="tertiary" onClick={() => toast({ variant: 'error', title: '上傳失敗' })}>上傳檔案</Button>
         </ButtonGroup>
@@ -172,7 +173,7 @@ export const VariantRule: Story = {
 }
 
 export const DurationRule: Story = {
-  name: '持續時間 選擇',
+  name: '持續時間選擇',
   render: () => (
     <TutorialPage>
       <TriggerRule
@@ -194,7 +195,7 @@ export const DurationRule: Story = {
             variant: 'success',
             title: '已刪除 3 個項目',
             description: '已移至回收桶,可以在 7 天內復原',
-            action: { label: '復原', onClick: () => {} },
+            action: { label: '復原', onClick: () => toast({ variant: 'info', title: '已復原' }) },
           })}
         >
           較長 duration(有 description + action,預設 10000ms)

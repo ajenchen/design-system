@@ -22,7 +22,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Toast 基於 sonner(浮動管理) + 消費 Notice primitive(layout + icon + theme 策略,與 Alert 共用)。透過 `toast()` 函式觸發,不是 JSX 元件。</Desc>
+        <Desc>Toast 基於 sonner(浮動管理) + 消費 Notice primitive(layout + icon + theme 策略,與 Alert 共用)。透過 <code>toast()</code> 函式觸發,不是 JSX 元件。</Desc>
         <div className="flex gap-3 flex-wrap">
           <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存', description: '變更已同步至雲端' })}>
             觸發 success toast
@@ -137,7 +137,7 @@ export const Inspector: Story = {
 }
 
 export const ContainerArchitecture: Story = {
-  name: '容器 三層架構',
+  name: '容器三層架構',
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
@@ -145,7 +145,7 @@ export const ContainerArchitecture: Story = {
         <Desc>
           Toast 的 container 結構是刻意三層——解決陰影 token 在 light / dark
           mode 不同強度的問題(dark 25% black,light 4% black)。若陰影跟
-          `data-theme="dark"` 在同一層,light 頁面上的 dark toast 會有過重陰影。
+          <code>data-theme="dark"</code> 在同一層,light 頁面上的 dark toast 會有過重陰影。
         </Desc>
       </div>
 
@@ -184,7 +184,7 @@ export const ColorMatrix: Story = {
             </tbody>
           </table>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">neutral/success 的 bg + data-theme 在同一層,因為 `bg-surface-raised` 需要跟 data-theme 一起翻轉。</p>
+        <p className="text-footnote text-fg-muted mt-3">neutral/success 的 bg + data-theme 在同一層,因為 <code>bg-surface-raised</code> 需要跟 data-theme 一起翻轉。</p>
       </div>
 
       <div>
@@ -215,14 +215,14 @@ export const StateBehavior: Story = {
       <div>
         <H3>生命週期四階段</H3>
         <Desc>
-          {'Toast 的行為由 sonner 管理,具體數值來自 Provider 層 `Sonner` 設定(詳見 `main.tsx` 的 `<Toaster />` props)。'}
+          Toast 的行為由 sonner 管理,具體數值來自 app 根層 <code>{'<Toaster />'}</code> 的設定。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>階段</Th><Th>觸發</Th><Th>行為</Th><Th>Token / 數值</Th></tr></thead>
             <tbody>
               <tr><Td mono>進場</Td><Td mono>toast()</Td><Td>從右下滑入 + fade-in + stacking shift</Td><Td mono>~400ms(sonner 內建)</Td></tr>
-              <tr><Td mono>自動關閉</Td><Td>`duration` 到期</Td><Td>fade-out + 向右滑出</Td><Td mono>duration ?? (action ? 10000 : 4000) ms</Td></tr>
+              <tr><Td mono>自動關閉</Td><Td><code>duration</code> 到期</Td><Td>fade-out + 向右滑出</Td><Td mono>duration ?? (action ? 10000 : 4000) ms</Td></tr>
               <tr><Td mono>手動 dismiss</Td><Td>X button / 向右滑動</Td><Td>立即 fade-out + 滑出</Td><Td mono>滑動 ≥ 45px 或速度夠快(velocity {'>'} 0.11)</Td></tr>
               <tr><Td mono>Pause on hover</Td><Td>Hover 任一 toast</Td><Td>倒數暫停;離開後 resume</Td><Td mono>sonner 預設開啟</Td></tr>
             </tbody>
@@ -240,38 +240,40 @@ export const StateBehavior: Story = {
           <Button
             variant="tertiary"
             onClick={() => {
-              toast({ variant: 'info', title: '開始同步工作區', description: '剛剛觸發,最上層' })
-              setTimeout(() => toast({ variant: 'success', title: '設計稿已上傳', description: '1 秒後,推下前一則' }), 1000)
-              setTimeout(() => toast({ variant: 'warning', title: '網路速度偏慢', description: '2 秒後,繼續往下堆疊' }), 2000)
-              setTimeout(() => toast({ variant: 'error', title: '部分檔案上傳逾時', description: '3 秒後,最底層' }), 3000)
+              // 通知內容寫真實的同步情境;「第幾則、什麼時候進來」的說明放在下方說明文字,不寫進通知本身(稽核 L085)
+              toast({ variant: 'info', title: '開始同步工作區', description: '正在下載 128 個檔案的最新版本' })
+              setTimeout(() => toast({ variant: 'success', title: '設計稿已上傳', description: '「首頁改版 v3.fig」已加入專案' }), 1000)
+              setTimeout(() => toast({ variant: 'warning', title: '網路速度偏慢', description: '上傳可能需要較長時間' }), 2000)
+              setTimeout(() => toast({ variant: 'error', title: '部分檔案上傳逾時', description: '2 個檔案沒有上傳成功' }), 3000)
             }}
           >
             連續觸發 4 個 toast(觀察堆疊)
           </Button>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          觸發後在 viewport 右下角觀察:新 toast 推下舊 toast。Hover 任一 toast → 全部展開。
+          每隔 1 秒進來一則,共 4 則;在 viewport 右下角觀察:新 toast 推下舊 toast。Hover 任一 toast → 全部展開。
         </p>
       </div>
 
       <div>
-        <H3>Swipe to dismiss — 觸控 / 滑鼠拖曳關閉</H3>
+        <H3>Swipe to dismiss — 拖曳關閉</H3>
         <Desc>
-          Toast 支援向右滑動關閉(mobile 友善)。拖曳超過 45px(或滑動速度夠快)→ 鬆開觸發關閉;
+          Toast 可以用滑鼠向右拖曳關閉。拖曳超過 45px(或拖得夠快)→ 鬆開觸發關閉;
           未達門檻 → 彈回原位。
         </Desc>
         <Button
           variant="tertiary"
-          onClick={() => toast({ variant: 'info', title: '試著向右拖我', description: '向右拖超過 45px 會被關掉' })}
+          onClick={() => toast({ variant: 'neutral', title: '報表已匯出', description: '「Q3 營收報表.csv」已下載' })}
         >
-          觸發可滑動關閉的 toast
+          匯出報表
         </Button>
+        <p className="text-footnote text-fg-muted mt-3">按下後,把右下角那則通知向右拖超過 45px 就會關掉。</p>
       </div>
 
       <div>
         <H3>Action toast(Undo pattern)</H3>
         <Desc>
-          提供 `action` prop 時 toast 含 undo CTA。點 action button 執行 callback + 關閉 toast。
+          提供 <code>action</code> prop 時 toast 含 undo CTA。點 action button 執行 callback + 關閉 toast。
           搭配「樂觀 UI」pattern:操作立即完成,給使用者短窗口反悔,避免 modal 確認的摩擦。
         </Desc>
         <Button
@@ -289,7 +291,7 @@ export const StateBehavior: Story = {
           觸發含 Undo action 的 toast
         </Button>
         <p className="text-footnote text-fg-muted mt-3">
-          含 action 的 toast DS 預設 `duration` 自動加長至 10000ms(無 action 4000ms;2026-07-05 D4)——給使用者(含鍵盤 Tab 路徑)足夠時間反悔,無需手動指定。
+          含 action 的 toast DS 預設 <code>duration</code> 自動加長至 10000ms(無 action 4000ms)——給使用者(含鍵盤 Tab 路徑)足夠時間反悔,無需手動指定。
         </p>
       </div>
 
@@ -321,8 +323,16 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `toast.spec.md` 「A11y 預設」段。摘要:\n\n-   success / info / neutral  → Toaster sibling role=\"status\" + aria-live=\"polite\"\n-   warning / error  → Toaster sibling role=\"alert\" + aria-live=\"assertive\"\n-   Sonner 視覺 section 寫死 aria-live=\"polite\"；可見 toast root 設 role=\"group\" + aria-live=\"off\"，不巢狀 active live region、也不用 aria-hidden 隱藏 action / dismiss\n-   連續相同訊息會 replace announcer text node，每次都有可觀察 mutation\n-   consumer 只在 app root 掛一個 <Toaster />，不另建 live region；多個 Toaster 會重複視覺與播報，不受支援\n-   X 關閉鈕由 Notice 渲染，自帶 aria-label='關閉通知'"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(開頭「詳 toast.spec.md」是內部代號、清單是 markdown 字)→ 改成真的清單(稽核 L010) */}
+      <ul className="list-disc pl-5">
+        <li>success / info / neutral → Toaster 旁的朗讀區 <code>role="status"</code> + <code>aria-live="polite"</code></li>
+        <li>warning / error → Toaster 旁的朗讀區 <code>role="alert"</code> + <code>aria-live="assertive"</code></li>
+        <li>Sonner 的視覺區塊寫死 <code>aria-live="polite"</code>;看得到的 toast 設 <code>role="group"</code> + <code>aria-live="off"</code>,不巢狀即時朗讀區,也不用 <code>aria-hidden</code> 藏起動作鈕與 ×</li>
+        <li>連續出現相同訊息時會換掉朗讀區的文字節點,每次都會被讀出</li>
+        <li>使用端只在 app 根層掛一個 <code>{'<Toaster />'}</code>,不另建朗讀區;掛多個會重複畫面與朗讀,不支援</li>
+        <li>× 關閉鈕由 Notice 畫出,自帶讀屏名稱「關閉通知」</li>
+      </ul>
     </div>
   ),
 }

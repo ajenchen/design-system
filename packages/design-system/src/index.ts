@@ -684,6 +684,8 @@ export type {
 //   - components/FileItem:FILE_ITEM_RING_LAYER_CLASS
 //   - components/FileItem:fileItemRingCutoutStyle
 //   - components/Sheet:handleSheetOpenAutoFocus
+//   - components/Toast:ToastSurface
+//   - components/Toast:ToastSurfaceProps
 //   - hooks/use-input-modality.ts:dispatchRelayedKey(subpath 仍有)
 //   - hooks/use-input-modality.ts:getLastUserInput(subpath 仍有)
 //   - patterns/element-anatomy:ItemInlineAction

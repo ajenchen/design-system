@@ -97,21 +97,34 @@ function ToastLiveRegions() {
   )
 }
 
-function ToastInner({
-  id,
+/** @internal ToastSurface 的 props(同 ToastSurface,不進 root front door) */
+export interface ToastSurfaceProps extends Omit<ToastOptions, 'duration'> {
+  /** 關閉(右上 ×,與按下 action 之後)—— toast() 接 sonner 的 dismiss;靜態對照接自己的狀態 */
+  onDismiss?: () => void
+  /** 反轉主題(neutral / success 用);省略 = 依頁面主題自動反轉。Toast 展示頁「淺 / 深色頁」兩欄靜態對照用它固定欄位主題 */
+  inverseTheme?: 'dark' | 'light'
+}
+
+/**
+ * @internal Toast 的視覺殼(陰影層 + 底色層 + 主題層 + Notice,含右上 × 與 action 鈕)—— `toast()` 與 Toast 展示頁的靜態對照共用同一份,
+ * 不進 root front door。2026-10-28 前展示頁手抄一份,少畫了 ×(toast.spec.md「畫面上可見的 X 關閉鈕由 Notice 渲染」;稽核 M081)。
+ */
+export function ToastSurface({
   variant = 'neutral',
   action,
+  onDismiss,
+  inverseTheme: inverseOverride,
   ...rest
-}: ToastOptions & { id: string | number }) {
-  const inverseTheme = useInverseTheme()
+}: ToastSurfaceProps) {
+  const pageInverse = useInverseTheme()
+  const inverseTheme = inverseOverride ?? pageInverse
   const isInverse = variant === 'neutral' || variant === 'success'
-  const dismiss = () => sonnerToast.dismiss(id)
 
   // action 執行後自動 dismiss:關閉「復原/重試」的重複觸發窗口(double-undo / double-retry),
   // 對齊 Polaris Toast action / Material Snackbar action 按後即收慣例;
   // toast.anatomy.stories.tsx「點 action button 執行 callback + 關閉 toast」宣稱自此為真。
   const actionButton = action ? (
-    <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); dismiss() }}>{action.label}</Button>
+    <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); onDismiss?.() }}>{action.label}</Button>
   ) : undefined
 
   // Sonner 2.0.7 owns a fixed aria-live="polite" section around every visual toast and does not
@@ -133,7 +146,7 @@ function ToastInner({
       <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
         <div data-theme={inverseTheme} className="bg-surface-raised text-foreground">
           <Notice variant={variant} iconClassName={variant === 'success' ? 'text-success' : undefined}
-            endContent={actionButton} onDismiss={dismiss} {...rest} />
+            endContent={actionButton} onDismiss={onDismiss} {...rest} />
         </div>
       </div>
     )
@@ -146,11 +159,15 @@ function ToastInner({
     <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
       <div className={bg}>
         <div data-theme={theme} className="text-foreground">
-          <Notice variant={variant} endContent={actionButton} onDismiss={dismiss} {...rest} />
+          <Notice variant={variant} endContent={actionButton} onDismiss={onDismiss} {...rest} />
         </div>
       </div>
     </div>
   )
+}
+
+function ToastInner({ id, ...options }: ToastOptions & { id: string | number }) {
+  return <ToastSurface {...options} onDismiss={() => sonnerToast.dismiss(id)} />
 }
 
 export function toast(options: ToastOptions) {

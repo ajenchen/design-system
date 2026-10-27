@@ -71,7 +71,7 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 - ❌ **不用 Toast 做 critical confirmation**：Toast 會自動消失，使用者可能沒看到就消失——關鍵訊息改用 Alert 或 Dialog
 - ❌ **不用 Toast 取代 error validation**：欄位錯誤訊息要貼近發生位置（FieldError），Toast 定位遠離錯誤欄位,使用者難對應到錯誤來源
 - ❌ **不同時彈 > 3 個 Toast**：同時多則 Toast 視覺雜訊重且無法閱讀，sonner 預設只顯示最近 3 則（`visibleToasts=3`），超出的仍在 DOM 內但以 `data-visible=false` 隱藏堆疊（非 queue 到 DOM 外或延後建立）；應用層若批量觸發 toast,整理成單一 Toast with list 或改用 Alert
-- ❌ **不把需要 user action 的內容放 Toast**：action 按鈕僅限「復原 / Undo」這類非必要後手——強制 CTA（付款、確認刪除）用 Dialog
+- ❌ **不把需要 user action 的內容放 Toast**：action 按鈕只放非必要後手(不按也不影響流程、Toast 消失後頁面上找得到同一條路):復原、重試、查看;字要短、一個動詞——強制 CTA（付款、確認刪除）用 Dialog
 
 ---
 
