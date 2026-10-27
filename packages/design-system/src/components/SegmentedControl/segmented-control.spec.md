@@ -138,7 +138,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 - **不配對 Field**（Field 家族用 sm/md/lg）
 - 有 label 的 compact SegmentedControl 建議直接用 `sm`（28px）
 
-詳見 `button.spec.md`「Pill Layout → xs 的專屬用途」（兩者共用 Family 3 action trigger 規格）。
+詳見 `button.spec.md`「xs 的專屬用途：icon-only toolbar utility」（兩者共用 Family 3 action trigger 規格）。
 
 ---
 

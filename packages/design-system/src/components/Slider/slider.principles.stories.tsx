@@ -16,6 +16,13 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveNumberInput({ value: initial, ...rest }: React.ComponentProps<typeof NumberInput>) {
+  const [value, setValue] = React.useState(initial)
+  return <NumberInput {...rest} value={value} onChange={setValue} />
+}
+
+
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
@@ -27,6 +34,8 @@ export const UsageGuidance: Story = {
   render: () => {
     const [volume, setVolume] = React.useState([70])
     const [price, setPrice] = React.useState([500, 3500])
+    // 「目前:X」讀這支 Slider 自己的值(稽核 M053:讀數要跟著拖動變,不是寫死)
+    const [sizeStep, setSizeStep] = React.useState([50])
     return (
     <TutorialPage>
       <UsageSection kind="when">
@@ -76,8 +85,8 @@ export const UsageGuidance: Story = {
           <ExampleGroup>
             <Field>
               <FieldLabel>大小</FieldLabel>
-              <Slider defaultValue={[50]} step={50} min={0} max={100} />
-              <FieldDescription>目前:中</FieldDescription>
+              <Slider value={sizeStep} onValueChange={setSizeStep} step={50} min={0} max={100} />
+              <FieldDescription>目前:{sizeStep[0] === 0 ? '小' : sizeStep[0] === 100 ? '大' : '中'}</FieldDescription>
             </Field>
             <ExampleCaption warn>↑ 強制拖到 0 / 50 / 100 的 Slider = 反模式。改 SegmentedControl:</ExampleCaption>
             <SegmentedControl defaultValue="md">
@@ -94,7 +103,7 @@ export const UsageGuidance: Story = {
         >
           <Field>
             <FieldLabel>商品價格</FieldLabel>
-            <NumberInput value={2490} prefix="$" onChange={() => {}} />
+            <LiveNumberInput value={2490} prefix="$" />
           </Field>
           <ExampleCaption>↑ 金額不用 Slider,直接 NumberInput 輸入</ExampleCaption>
         </TutorialRule>
@@ -186,7 +195,7 @@ export const PositionAsStateRule: Story = {
 }
 
 export const HoverUsesShadowRule: Story = {
-  name: '滑鼠移過 / 啟用 用陰影不用色變',
+  name: '滑鼠移過與按住時用陰影,不變色',
   render: () => (
     <TutorialPage>
       <TutorialRule

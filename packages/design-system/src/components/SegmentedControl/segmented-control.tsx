@@ -239,7 +239,7 @@ const SegmentedControlItem = React.forwardRef<
   SegmentedControlItemProps
 >(({ className, startIcon: StartIcon, badge, children, 'aria-label': ariaLabel, ...restProps }, ref) => {
   const { size, fullWidth, iconOnly: groupIconOnly } = React.useContext(SegmentedControlContext)
-  // 2026-05-18 改 per user 拍板「沒機械化導致偏移」+「做完」approval(對齊 Button xs / uiSize Icon Tier):
+  // 2026-05-18 改 per user 指出沒機械化導致偏移、並要求做完(對齊 Button xs / uiSize Icon Tier):
   // 原 xs=14 跟 Button xs=16 不一致,xs/sm/md 統一 16 對齊 uiSize.spec.md(xs/sm/md→16, lg→20)。
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   // 2026-05-31 #14:ICON_SIZE 只有 sm/md/lg key,size='xs' 會落 undefined → 對齊上方註解「xs/sm/md 統一 16」讓 xs 取 sm(16px)。

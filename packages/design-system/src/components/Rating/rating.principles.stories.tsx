@@ -1,9 +1,9 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Heart, ThumbsUp, Star } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
-import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Slider } from '@/design-system/components/Slider/slider'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
@@ -27,6 +27,12 @@ const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 //   · 不需要名字的範例(standalone 唯讀、誤用示範)自帶 aria-label,說明寫在 ExampleCaption(範例說明的唯一住所 =
 //     stories-helpers/examples/example-captions.tsx;2026-10-20 前本頁自抄一份 Label,已拿掉)。
 // 範例 ↔ 它的說明 = tight,由共用的 ExampleGroup 擁有(category-templates.md「教學框的間距與標題」),ExampleCaption 自己不帶 margin。
+// 收藏鈕真的會切換(稽核 L123:pressed 加 state,按了會變)
+function LikeButton() {
+  const [liked, setLiked] = React.useState(false)
+  return <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" pressed={liked} onClick={() => setLiked((v) => !v)} />
+}
+
 const Example = ({ children }: { children: React.ReactNode }) => (
   <ExampleGroup align="start" className="w-80">{children}</ExampleGroup>
 )
@@ -60,8 +66,8 @@ export const UsageGuidance: Story = {
           note="愛心是 binary（喜歡 / 不喜歡），不是 graded 1–5。使用者對「五顆愛心」的期待是『有 5 顆愛心那麼喜歡』= 量化——但 like 本身就是二元，語意衝突。"
         >
           <Example>
-            <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
-            <ExampleCaption>✅ binary like → Button + pressed</ExampleCaption>
+            <LikeButton />
+            <ExampleCaption>✅ binary like → Button + pressed(按一下切換收藏)</ExampleCaption>
           </Example>
           <Example>
             <Rating defaultValue={3} max={5} icon={Heart} aria-label="誤用 Heart" />
@@ -138,18 +144,6 @@ export const UsageGuidance: Story = {
           </Example>
         </TutorialRule>
 
-        <TutorialRule
-          title="Like / ThumbsUp — 二元喜歡（非 graded）"
-          note="愛心 / 豎拇指是 binary（喜歡 / 不喜歡），不是 1–5 分。用 Button iconOnly + pressed，不用 Rating 換 icon。"
-        >
-          <Example>
-            <ButtonGroup>
-              <Button variant="text" iconOnly startIcon={Heart} aria-label="收藏" />
-              <Button variant="text" iconOnly startIcon={ThumbsUp} aria-label="喜歡" />
-            </ButtonGroup>
-            <ExampleCaption>收藏 / 喜歡是二元切換 → Button + pressed，不是 Rating 換 Heart icon</ExampleCaption>
-          </Example>
-        </TutorialRule>
       </UsageSection>
     </TutorialPage>
   ),
@@ -201,16 +195,12 @@ export const InteractiveVsReadOnlyRule: Story = {
       </TutorialRule>
 
       <TutorialRule
-        title="❌ standalone readOnly 不給可存取名稱"
+        title="standalone readOnly 要給可存取名稱"
         note="唯讀精簡版畫面上的「4.5」對螢幕閱讀器是隱藏的,它只讀可存取名稱。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
       >
         <Example>
           <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
           <ExampleCaption>✅ <code>aria-label=&quot;平均評分 4.5 星，共 5 星&quot;</code></ExampleCaption>
-        </Example>
-        <Example>
-          <Rating value={4.5} readOnly aria-label="平均評分 4.5 星，共 5 星" />
-          <ExampleCaption warn>❌ 若省略 aria-label，螢幕閱讀器會讀不出分數；此可執行示範仍保留名稱，避免 demo 本身成為違規來源</ExampleCaption>
         </Example>
       </TutorialRule>
     </TutorialPage>
@@ -295,7 +285,7 @@ export const YellowStarConvention: Story = {
     <TutorialPage>
       <TutorialRule
         title="黃星 = 世界級 convention，破壞 = 破壞使用者直覺"
-        note="黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）"
+        note={<>黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug —— 所以 Rating 的星色跟狀態色共用 <code>--warning</code> 色相、但語境不同,是規格明文的例外,元件也把星色綁死在 <code>--warning</code>,不會跟著外層文字色變。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）</>}
       >
         {/* 兩個範例並排、共用一句說明(比的是同一件事:兩種呈現的星色)—— 直接放進 Rule:CaptionedExamples 把兩則範例併成一段
             (範例之間 loose),說明貼在整段下方(tight) */}
@@ -327,17 +317,6 @@ export const YellowStarConvention: Story = {
         </Example>
       </TutorialRule>
 
-      <TutorialRule
-        title="❌ 不要換成品牌 primary 色"
-        note={<>Rating 是 evaluation convention color，跟 status color 共用 <code>--warning</code> 色相但語境不同——這是規格明文的例外。不要為了『跟品牌一致』把 Rating 改藍 / 改綠，使用者不會認得。</>}
-      >
-        <Example>
-          <div style={{ color: 'var(--primary)' }} className="inline-flex">
-            <Rating defaultValue={4} aria-label="誤用範例" icon={Star} />
-          </div>
-          <ExampleCaption warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例是可以點的評分，外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來；唯讀精簡版那一顆星同樣硬綁）</ExampleCaption>
-        </Example>
-      </TutorialRule>
     </TutorialPage>
   ),
 }

@@ -5,12 +5,16 @@ import { Switch } from './switch'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldError } from '@/design-system/components/Field/field'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Switch/設計原則',
   parameters: { layout: 'padded' },
+  // 範例的送出成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -28,6 +32,8 @@ export const UsageGuidance: Story = {
   render: () => {
     const [bluetooth, setBluetooth] = React.useState(true)
     const [agreeTerms, setAgreeTerms] = React.useState(false)
+    // 送出:沒勾就在欄位下方出錯誤、勾了就跳 Toast;取消:把勾選還原(稽核 M061)
+    const [termsError, setTermsError] = React.useState(false)
     return (
     <TutorialPage>
       <UsageSection kind="when">
@@ -58,15 +64,18 @@ export const UsageGuidance: Story = {
           note="「我同意服務條款」是「勾選 → 送出 → 法律成立」的書面行為。Switch 的物理開關隱喻暗示「我打開了接受條款這個功能」——心智錯位且違反約定俗成(全球沒有 form 用 Switch 同意條款)"
         >
           <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
-            <Checkbox
-              label="我同意服務條款與隱私政策"
-              checked={agreeTerms}
-              onCheckedChange={(v) => setAgreeTerms(v === true)}
-            />
+            <Field invalid={termsError}>
+              <Checkbox
+                label="我同意服務條款與隱私政策"
+                checked={agreeTerms}
+                onCheckedChange={(v) => { setAgreeTerms(v === true); setTermsError(false) }}
+              />
+              {termsError && <FieldError>勾選同意後才能送出</FieldError>}
+            </Field>
             {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
             <ButtonGroup className="mt-[var(--layout-space-loose)]">
-              <Button variant="primary">送出</Button>
-              <Button variant="tertiary">取消</Button>
+              <Button variant="primary" onClick={() => { if (!agreeTerms) { setTermsError(true); return } toast({ variant: 'success', title: '已送出' }) }}>送出</Button>
+              <Button variant="tertiary" onClick={() => { setAgreeTerms(false); setTermsError(false) }}>取消</Button>
             </ButtonGroup>
           </div>
           <ExampleCaption>↑ Form 內同意條款用 Checkbox,隨 submit 才成立</ExampleCaption>
@@ -83,7 +92,7 @@ export const UsageGuidance: Story = {
           title="判斷法:旁邊有「送出 / 取消」按鈕嗎?"
           note="有 → Checkbox(form 流程、值隨 submit 送出);沒有,是獨立 inline control → Switch(切換即生效)"
         >
-          <ExampleCaption>三個判斷角度(套用時機、心智模型、是否可反悔)的完整對照,以 Checkbox 為主要說明對象</ExampleCaption>
+          <ExampleCaption>三個判斷角度(套用時機、心智模型、是否可反悔)的完整對照見 <StoryLink kind="Design System/Components/Checkbox/設計原則" name="使用指引">Checkbox 設計原則「使用指引」</StoryLink></ExampleCaption>
         </TutorialRule>
       </UsageSection>
     </TutorialPage>
@@ -127,7 +136,7 @@ export const DisabledOpacityRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="Switch disabled 用 opacity,不用灰階 swap"
-        note="Switch 的 on/off 最強視覺載體是顏色(track bg-primary vs bg-border);thumb 位移與 checked 小 check icon 是輔助線索。若灰階 swap(primary → border),disabled 的 ON/OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態"
+        note="Switch 的 on/off 最強視覺載體是顏色(track bg-primary vs bg-border);thumb 位移與 checked 小 check icon 是輔助線索。若灰階 swap(primary → border),disabled 的 ON/OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態——所以設計上禁止改用灰階 swap,disabled 必須保留顏色"
       >
         <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
           <div className="border border-dashed border-divider rounded-md p-[var(--layout-space-loose)]">
@@ -157,12 +166,6 @@ export const DisabledOpacityRule: Story = {
         <ExampleCaption>判準:「什麼視覺載體承載 state?」位置/形狀 → 灰階 swap;純顏色 → opacity(Switch 特例)</ExampleCaption>
       </TutorialRule>
 
-      <TutorialRule
-        title="❌ 若 Switch 改用灰階 swap"
-        note="disabled ON 和 disabled OFF 都會退成「灰 track + 灰 thumb」——殘餘線索只剩 thumb 位置與 thumb 內小 check icon,在灰階低對比下辨識度大幅下降,使用者難以一眼判斷被停用的開關當前是開還是關"
-      >
-        <ExampleCaption warn>設計上禁止——Switch 的 on/off 最強視覺載體是顏色(thumb 位置 / check icon 只是輔助線索),disabled 必須保留顏色</ExampleCaption>
-      </TutorialRule>
     </TutorialPage>
   ),
 }

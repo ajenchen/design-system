@@ -18,11 +18,24 @@ export default meta
 
 type Story = StoryObj<typeof Slider>
 
+
 // @story-history: Default / Range retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx Overview(含 Anatomy + Range mode 子段)已 cover baseline + range showcase。
 //   展示層保留 typical 情境(SizeAlignment / MinMaxStep / Disabled 等),避免跟 anatomy 重複。
 
 // ── Sizes(容器對齊)───────────────────────────────────────────────────
+
+// Slider 與 NumberInput 綁同一個值(稽核 M053):拖 Slider 數字跟著變,改數字 Slider 跟著動
+function SyncedVolume({ size }: { size: 'sm' | 'md' | 'lg' }) {
+  const [volume, setVolume] = React.useState(40)
+  return (
+    // @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5)
+    <div className="flex flex-1 min-w-0 items-center gap-2">
+      <Slider size={size} value={[volume]} onValueChange={(v) => setVolume(v[0] ?? 0)} className="flex-1" />
+      <NumberInput size={size} value={volume} onChange={(n) => setVolume(Math.min(100, Math.max(0, n ?? 0)))} aria-label="音量數值" className="w-20 shrink-0" />
+    </div>
+  )
+}
 
 export const SizeAlignment: Story = {
   name: '容器尺寸對齊',
@@ -30,7 +43,7 @@ export const SizeAlignment: Story = {
     <div className="w-[420px] flex flex-col gap-[var(--layout-space-tight)]">
       <p className="text-caption text-fg-secondary max-w-[480px]">
         三個 size 下 track 厚度與 thumb 直徑一致——只有容器外高跟著
-        `--field-height-*` 變。這讓 Slider 能在同一列跟 NumberInput 等 field
+        <code>--field-height-*</code> 變。這讓 Slider 能在同一列跟 NumberInput 等 field
         控件並排、field-height 完美對齊,同時保持自己的視覺身分不變。
       </p>
       {/* 三個尺寸示範並列 = loose;說明 → 示範群 = tight */}
@@ -41,11 +54,7 @@ export const SizeAlignment: Story = {
             {/* 標籤 ↔ 控件 消費 Field 水平模式(slider.spec.md「跟 Field 整合」:Field 內每個控件傳同一個 size)。 */}
             <Field orientation="horizontal" size={size}>
               <FieldLabel>音量</FieldLabel>
-              {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5) */}
-              <div className="flex flex-1 min-w-0 items-center gap-2">
-                <Slider size={size} defaultValue={[40]} className="flex-1" />
-                <NumberInput size={size} value={40} onChange={() => {}} aria-label="音量數值" className="w-20 shrink-0" />
-              </div>
+              <SyncedVolume size={size} />
             </Field>
           </div>
         ))}

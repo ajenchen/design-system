@@ -1,6 +1,8 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix / 狀態(States)story 的 md/lg 對照 owns size showcase;Default scenario 由 四模式(Modes) / 狀態(States) / 搭配標籤(WithLabel)等真實業務情境 story 覆蓋,不另開抽象 Default/AllSizes。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Switch } from './switch'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof Switch> = {
   title: 'Design System/Components/Switch/展示',
@@ -18,23 +20,21 @@ export const Modes: Story = {
   name: '四模式',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
+      <ExampleSection title="edit">
         <Switch defaultChecked aria-label="啟用通知(edit mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
-        <Switch mode="view" checked />
-        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">純視覺 勾/叉 icon；語意由 context（如 DataTable 表頭 + 行標籤）提供，view 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
+      </ExampleSection>
+      <ExampleSection title="view">
+        <ExampleGroup>
+          <Switch mode="view" checked />
+          <p className="text-caption text-fg-muted">純視覺 勾/叉 icon；語意由 context（如 DataTable 表頭 + 行標籤）提供，view 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
+        </ExampleGroup>
+      </ExampleSection>
+      <ExampleSection title="readonly">
         <Switch readOnly checked aria-label="啟用通知(readonly demo)" />
-      </div>
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
+      </ExampleSection>
+      <ExampleSection title="disabled">
         <Switch disabled checked aria-label="啟用通知(disabled demo)" />
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -42,32 +42,20 @@ export const Modes: Story = {
 /* ── 狀態 ── */
 export const States: Story = {
   name: '狀態',
+  // 狀態名放 docs、讀屏名稱用真實設定名(稽核 L091)
+  parameters: {
+    docs: { description: { story: '上排是標準尺寸、下排是大尺寸。由左到右:關閉、開啟、停用(關)、停用(開)。' } },
+  },
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      <div>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">md（預設）</p>
-        <div className="flex items-center gap-[var(--layout-space-loose)]">
-          <Switch aria-label="off" />
-          <Switch defaultChecked aria-label="on" />
-          <Switch disabled aria-label="disabled off" />
-          <Switch disabled defaultChecked aria-label="disabled on" />
+      {(['md', 'lg'] as const).map((size) => (
+        <div key={size} className="flex items-center gap-[var(--layout-space-loose)]">
+          <Switch size={size} aria-label="Email 通知" />
+          <Switch size={size} defaultChecked aria-label="推播通知" />
+          <Switch size={size} disabled aria-label="簡訊通知(方案未開放)" />
+          <Switch size={size} disabled defaultChecked aria-label="安全性通知(必要,不可關閉)" />
         </div>
-        <div className="flex items-center gap-[var(--layout-space-loose)] mt-[var(--layout-space-tight)] text-footnote text-fg-muted">
-          <span className="w-10 text-center">off</span>
-          <span className="w-10 text-center">on</span>
-          <span className="w-10 text-center">off+dis</span>
-          <span className="w-10 text-center">on+dis</span>
-        </div>
-      </div>
-      <div>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">lg</p>
-        <div className="flex items-center gap-[var(--layout-space-loose)]">
-          <Switch size="lg" aria-label="off" />
-          <Switch size="lg" defaultChecked aria-label="on" />
-          <Switch size="lg" disabled aria-label="disabled off" />
-          <Switch size="lg" disabled defaultChecked aria-label="disabled on" />
-        </div>
-      </div>
+      ))}
     </div>
   ),
 }

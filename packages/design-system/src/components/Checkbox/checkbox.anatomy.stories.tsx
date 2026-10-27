@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { PropRow, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計規格',
@@ -64,9 +66,6 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
 const Desc = ({ children }: { children: React.ReactNode }) => (
   <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
 )
@@ -75,13 +74,6 @@ const Th = ({ children }: { children: React.ReactNode }) => (
 )
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
-)
-
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
 )
 
 const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
@@ -105,16 +97,6 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
   </div>
 )
 
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
   <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
 )
@@ -135,7 +117,7 @@ const BpZone = ({ w, h, color, label, sub }: { w: number; h?: number; color: typ
   <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
     style={{ width: w, height: h ?? '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
     <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
+    {sub && <span className="text-[9px] font-mono leading-none text-fg-muted">{sub}</span>}
   </div>
 )
 
@@ -148,11 +130,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>Checkbox 由兩層組成：indicator（方框 + check icon）和 label（`label` prop 提供，內部自動透過 SelectionItem 組合）。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description={<>Checkbox 由兩層組成：indicator（方框 + check icon）和 label（<code>label</code> prop 提供，內部自動透過 SelectionItem 組合）。</>}>
         <div className="flex gap-8">
           {/* Standalone checkbox */}
           <div className="flex flex-col gap-2 items-start">
@@ -177,12 +155,10 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">內部 SelectionItem 處理 label 對齊與 padding</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Size catalog */}
-      <div className="flex flex-col gap-3">
-        <H3>尺寸一覽</H3>
-        <Desc>三種尺寸（sm/md = 16px，lg = 20px）。sm 和 md 視覺相同，純粹是命名 mapping 讓消費者直接傳同一個 size prop。</Desc>
+      <ExampleSection title="尺寸一覽" description="三種尺寸（sm/md = 16px，lg = 20px）。sm 和 md 視覺相同，純粹是命名 mapping 讓消費者直接傳同一個 size prop。">
         <div className="flex flex-col gap-3">
           {SIZES.map((sz) => (
             <div key={sz} className="flex items-center gap-4">
@@ -193,11 +169,10 @@ export const Overview = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props table */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -217,7 +192,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -381,13 +356,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -398,11 +369,7 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Checked State x Interaction State 色彩對照</H3>
-        <Desc>橫向看同一選取狀態的互動變化，縱向比較 unchecked / checked 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
+    <ExampleSection title="Checked State x Interaction State 色彩對照" description="橫向看同一選取狀態的互動變化，縱向比較 unchecked / checked 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。">
       <div className="overflow-x-auto">
         <table className="border-collapse">
           <thead><tr><Th>State</Th>{INTERACTION_STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
@@ -426,7 +393,7 @@ export const ColorMatrix = {
           </tbody>
         </table>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -437,69 +404,67 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。sm 和 md 視覺完全相同（16px），純粹是命名 mapping。</Desc>
-      </div>
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。sm 和 md 視覺完全相同（16px），純粹是命名 mapping。">
+      <div className="flex flex-col gap-8">
 
-      {/* Token comparison table */}
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
-          <thead><tr>
-            <Th>屬性</Th>
-            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-          </tr></thead>
-          <tbody>
-            {[
-              { label: '控件尺寸', key: 'controlSize' as const, sub: (s: SizeSpec) => `${s.controlPx}px` },
-              { label: 'Check Icon', key: undefined, sub: (s: SizeSpec) => `${s.iconPx}px` },
-            ].map((row) => (
-              <tr key={row.label}>
-                <Td>{row.label}</Td>
-                {SIZES.map((sz) => {
-                  const s = SIZE_SPECS[sz]
-                  return (
-                    <Td key={sz} mono>
-                      {row.key && <div className="text-fg-secondary">{s[row.key]}</div>}
-                      <div className="text-fg-muted text-[10px]">{row.sub(s)}</div>
-                    </Td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Visual preview: unchecked + checked per size */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
+        {/* Token comparison table */}
         <div className="overflow-x-auto">
-          <table className="border-collapse">
+          <table className="border-collapse text-caption">
             <thead><tr>
-              <Th>Size</Th>
-              <Th>Unchecked</Th>
-              <Th>Checked</Th>
-              <Th>label prop</Th>
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
             </tr></thead>
             <tbody>
-              {SIZES.map((sz) => (
-                <tr key={sz}>
-                  <Td mono>{sz}</Td>
-                  <Td><Checkbox size={sz} aria-label={`${sz} 尺寸未勾選 Checkbox`} /></Td>
-                  <Td><Checkbox size={sz} defaultChecked aria-label={`${sz} 尺寸已勾選 Checkbox`} /></Td>
-                  <Td>
-                    {/* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
-                    <Checkbox size={sz} defaultChecked label="接收通知" />
-                  </Td>
+              {[
+                { label: '控件尺寸', key: 'controlSize' as const, sub: (s: SizeSpec) => `${s.controlPx}px` },
+                { label: 'Check Icon', key: undefined, sub: (s: SizeSpec) => `${s.iconPx}px` },
+              ].map((row) => (
+                <tr key={row.label}>
+                  <Td>{row.label}</Td>
+                  {SIZES.map((sz) => {
+                    const s = SIZE_SPECS[sz]
+                    return (
+                      <Td key={sz} mono>
+                        {row.key && <div className="text-fg-secondary">{s[row.key]}</div>}
+                        <div className="text-fg-muted text-[10px]">{row.sub(s)}</div>
+                      </Td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Visual preview: unchecked + checked per size */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr>
+                <Th>Size</Th>
+                <Th>Unchecked</Th>
+                <Th>Checked</Th>
+                <Th>label prop</Th>
+              </tr></thead>
+              <tbody>
+                {SIZES.map((sz) => (
+                  <tr key={sz}>
+                    <Td mono>{sz}</Td>
+                    <Td><Checkbox size={sz} aria-label={`${sz} 尺寸未勾選 Checkbox`} /></Td>
+                    <Td><Checkbox size={sz} defaultChecked aria-label={`${sz} 尺寸已勾選 Checkbox`} /></Td>
+                    <Td>
+                      {/* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
+                      <Checkbox size={sz} defaultChecked label="接收通知" />
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -510,87 +475,85 @@ export const SizeMatrix = {
 export const StateBehavior = {
   name: '狀態行為',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>狀態行為</H3>
-        <Desc>Disabled、group 佈局、label 對齊的視覺變化與行為規則。</Desc>
-      </div>
+    <ExampleSection title="狀態行為" description="Disabled、group 佈局、label 對齊的視覺變化與行為規則。">
+      <div className="flex flex-col gap-8">
 
-      {/* Disabled */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Disabled — 品牌色移除，統一 neutral</span>
-        <div className="flex flex-wrap gap-6">
-          {[
-            { label: 'unchecked', checked: false },
-            { label: 'checked', checked: true },
-          ].map(({ label, checked }) => (
-            <div key={label} className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-center gap-1">
-                  <Checkbox
-                    disabled
-                    checked={checked}
-                    aria-label={`停用的${checked ? '已勾選' : '未勾選'} Checkbox`}
-                  />
-                  <span className="text-[10px] text-fg-muted">disabled</span>
+        {/* Disabled */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">Disabled — 品牌色移除，統一 neutral</span>
+          <div className="flex flex-wrap gap-6">
+            {[
+              { label: 'unchecked', checked: false },
+              { label: 'checked', checked: true },
+            ].map(({ label, checked }) => (
+              <div key={label} className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <Checkbox
+                      disabled
+                      checked={checked}
+                      aria-label={`停用的${checked ? '已勾選' : '未勾選'} Checkbox`}
+                    />
+                    <span className="text-[10px] text-fg-muted">disabled</span>
+                  </div>
+                  <span className="text-fg-muted text-caption">vs</span>
+                  <div className="flex flex-col items-center gap-1">
+                    <Checkbox
+                      checked={checked}
+                      aria-label={`可用的${checked ? '已勾選' : '未勾選'} Checkbox`}
+                    />
+                    <span className="text-[10px] text-fg-muted">enabled</span>
+                  </div>
                 </div>
-                <span className="text-fg-muted text-caption">vs</span>
-                <div className="flex flex-col items-center gap-1">
-                  <Checkbox
-                    checked={checked}
-                    aria-label={`可用的${checked ? '已勾選' : '未勾選'} Checkbox`}
-                  />
-                  <span className="text-[10px] text-fg-muted">enabled</span>
-                </div>
+                <span className="text-[11px] text-fg-muted">{label}</span>
               </div>
-              <span className="text-[11px] text-fg-muted">{label}</span>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        {/* Vertical Group */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">垂直排列 — Item 間距由 padding 處理，不加 gap</span>
+          <Desc>每個 item（內部 SelectionItem）的 py = (field-height − 一行文字高度) / 2，單行高度剛好等於同 size 的 Input，多行時 padding 不變自然撐高。</Desc>
+          <div className="flex gap-8">
+            {(['md', 'lg'] as const).map((sz) => (
+              <div key={sz} className="flex flex-col gap-1">
+                <span className="text-[11px] text-fg-muted font-medium">size="{sz}"</span>
+                <CheckboxGroup className="border border-dashed border-divider rounded-md p-2">
+                  <Checkbox size={sz} label="Email 通知" />
+                  <Checkbox size={sz} label="SMS 通知" description="每則訊息可能有費用" />
+                  <Checkbox size={sz} label="Push 通知" />
+                </CheckboxGroup>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Horizontal Group */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">水平排列 — Item 之間 gap-4（16px）</span>
+          <div className="flex gap-4 border border-dashed border-divider rounded-md p-2">
+            <Checkbox label="Email" />
+            <Checkbox label="SMS" />
+            <Checkbox label="Push" />
+          </div>
+        </div>
+
+        {/* Multiline alignment */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">多行對齊 — 控件對齊第一行文字中心</span>
+          <Desc>控件包在一行文字高度的容器內，外層 flex items-start 確保多行時控件對齊第一行。字體改變時高度自動重算。</Desc>
+          <CheckboxGroup className="max-w-sm border border-dashed border-divider rounded-md">
+            <Checkbox label="短標籤" />
+            <Checkbox label="這是一個比較長的標籤文字，會自動換行到第二行，控件始終對齊第一行的垂直中心" />
+            <Checkbox
+              label="附帶說明"
+              description="說明文字用 fg-secondary 色彩，排在 label 下方"
+            />
+          </CheckboxGroup>
         </div>
       </div>
-
-      {/* Vertical Group */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">垂直排列 — Item 間距由 padding 處理，不加 gap</span>
-        <Desc>每個 item（內部 SelectionItem）的 py = (field-height − 一行文字高度) / 2，單行高度剛好等於同 size 的 Input，多行時 padding 不變自然撐高。</Desc>
-        <div className="flex gap-8">
-          {(['md', 'lg'] as const).map((sz) => (
-            <div key={sz} className="flex flex-col gap-1">
-              <span className="text-[11px] text-fg-muted font-medium">size="{sz}"</span>
-              <CheckboxGroup className="border border-dashed border-divider rounded-md p-2">
-                <Checkbox size={sz} label="Email 通知" />
-                <Checkbox size={sz} label="SMS 通知" description="每則訊息可能有費用" />
-                <Checkbox size={sz} label="Push 通知" />
-              </CheckboxGroup>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Horizontal Group */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">水平排列 — Item 之間 gap-4（16px）</span>
-        <div className="flex gap-4 border border-dashed border-divider rounded-md p-2">
-          <Checkbox label="Email" />
-          <Checkbox label="SMS" />
-          <Checkbox label="Push" />
-        </div>
-      </div>
-
-      {/* Multiline alignment */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">多行對齊 — 控件對齊第一行文字中心</span>
-        <Desc>控件包在一行文字高度的容器內，外層 flex items-start 確保多行時控件對齊第一行。字體改變時高度自動重算。</Desc>
-        <CheckboxGroup className="max-w-sm border border-dashed border-divider rounded-md">
-          <Checkbox label="短標籤" />
-          <Checkbox label="這是一個比較長的標籤文字，會自動換行到第二行，控件始終對齊第一行的垂直中心" />
-          <Checkbox
-            label="附帶說明"
-            description="說明文字用 fg-secondary 色彩，排在 label 下方"
-          />
-        </CheckboxGroup>
-      </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -600,7 +563,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"角色與鍵盤:Checkbox 本身就是一個 checkbox 角色的可勾選控件,螢幕報讀器會唸出「核取方塊 / 已勾選 / 未勾選」。鍵盤上用 Tab 移動焦點、用空白鍵切換勾選狀態。\n\n焦點:用鍵盤移到 Checkbox 上時,會出現一圈藍色焦點外框(focus ring)讓使用者知道焦點在這裡。Checkbox 是單一控件,不像對話框那種會把焦點關在裡面;焦點外框只是視覺提示。\n\n驗證:Storybook 的 a11y 檢查面板應該沒有任何嚴重(critical)問題;不用滑鼠、只用鍵盤也能完整操作。文字對比度至少 4.5:1、控件對比度至少 3:1(WCAG AA)。"}</p>
     </div>
   ),

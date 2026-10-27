@@ -175,7 +175,7 @@ function ContentSlot({ htmlFor, disabled, label, description, sizeKey, labelClam
     <div className="min-w-0 flex-1">
       <label
         htmlFor={htmlFor}
-        // 2026-06-10 a11y:styled-disabled label 明告 inactive(WCAG 1.4.3 豁免可機判;對齊 FieldLabel 同修;a11y 補強不動 SSOT = AUTO 分權,user verbatim「確保所有的任務你都有做到完美做到完整」)
+        // 2026-06-10 a11y:styled-disabled label 明告 inactive(WCAG 1.4.3 豁免可機判;對齊 FieldLabel 同修;a11y 補強不動 SSOT = AUTO 分權,user 要求所有任務都做到完美完整)
         aria-disabled={disabled || undefined}
         className={cn(
           'cursor-pointer block break-words',

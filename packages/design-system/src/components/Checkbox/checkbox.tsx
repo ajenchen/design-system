@@ -228,7 +228,7 @@ const Checkbox = React.forwardRef<
     } = props
 
     // ── Resolved checked SSOT(controlled / uncontrolled dual-mode,2026-07-17 d26i0)──────────
-    // 對齊 Input / Textarea 既有 canonical(field-controls.spec.md「有值判定」:useControllable 內部
+    // 對齊 Input / Textarea 既有做法(useControllable 內部
     // resolved value + form.reset bridge)。修 view / readonly 分支原各自讀 raw prop 導致「uncontrolled
     // 切 mode 丟失目前值」的 dual-mode 缺口。controlled(傳 checked)時 useControllable 純 passthrough,
     // edit 行為 Δ=0。

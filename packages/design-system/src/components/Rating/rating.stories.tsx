@@ -77,7 +77,7 @@ export const ReadOnlyProductRating: Story = {
 
 function ServiceRatingForm() {
   // 送出成功 → Toast(user 2026-10-01 逐字:「以上噎一律處理到完美，然後送出成功跳提示」;form-validation.spec.md「A11y 預設 › Submit 成功宣告」),
-  // 讀屏由 Toaster 的 polite 朗讀區宣讀;送出後同一欄切唯讀(rating.spec.md「送出前 = interactive,送出後 = readOnly」)
+  // 讀屏由 Toaster 的 polite 朗讀區宣讀;送出後同一欄切唯讀(rating.spec.md「Interactive vs ReadOnly」:送出前 = interactive,送出後 = readOnly)
   const [submitted, setSubmitted] = useState(false)
   const form = useFormValidation({
     initialValues: { rating: 0 },

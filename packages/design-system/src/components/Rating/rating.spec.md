@@ -89,7 +89,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 ### 為什麼不完全對齊 `--field-height-*`
 
 - **現況**:可以點的評分根高 = 星 sm 20 / md 24 / lg 24;唯讀精簡版 21 / 21 / 24(星與行高較大者);都不等於 `--field-height-sm/md/lg` 28 / 32 / 36。
-- **Rationale**:評分是「嵌在一列中的小控件」,跟裸 Switch(track 20 / 24)、裸 Checkbox(16 / 20)同一個模型 —— 元件本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、表格格子、列)。吃固定容器會把 Field 外的列撐高(2026-09-27 實量:商品卡裡 24 容器實佔 26px、caption 列 16 → 24),而容器對命中零幫助(命中盒 = 星)。Slider 不同:它的根就是拖曳的命中面,高度即命中區,故仍吃 `h-field-*`(`../Slider/slider.spec.md`「size 只控 root 容器外高」段)。
+- **Rationale**:評分是「嵌在一列中的小控件」,跟裸 Switch(track 20 / 24)、裸 Checkbox(16 / 20)同一個模型 —— 元件本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、表格格子、列)。吃固定容器會把 Field 外的列撐高(2026-09-27 實量:商品卡裡 24 容器實佔 26px、caption 列 16 → 24),而容器對命中零幫助(命中盒 = 星)。Slider 不同:它的根就是拖曳的命中面,高度即命中區,故仍吃 `h-field-*`(`../Slider/slider.spec.md`「一種視覺,多種容器尺寸」:size「只控 root 容器外高」)。
 - **世界級對照**(2026-09-27 讀原始碼):多數 hug 星、表單對齊交給表單列 —— MUI Rating 根 `inline-flex` 無高度、字級 24 / 18 / 30([Rating.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Rating/Rating.js));Ant Design Rate 根 `display: inline-block; fontSize: starSize; lineHeight: 1`,對齊由 Form.Item 的 `minHeight: controlHeight` + `alignItems: center` 負責([rate/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/rate/style/index.ts)、[form/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/form/style/index.ts));Fluent 2 Rating 根只有 `display: 'flex', flexWrap: 'wrap'`([useRatingStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/Rating/useRatingStyles.styles.ts)),星 12 / 16 / 20 / 28([useRatingItemStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingItem/useRatingItemStyles.styles.ts));Mantine Rating 根 `display: flex; width: max-content`([Rating.module.css](https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Rating/Rating.module.css));Chakra v3 根 `display: "inline-flex"`([rating-group.ts](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/rating-group.ts));PrimeReact `.p-rating { display: flex; align-items: center; }`([RatingBase.js](https://github.com/primefaces/primereact/blob/master/components/lib/rating/RatingBase.js))—— 都沒有高度。少數把容器綁到控件高:Element Plus `el-rate` 根 `height: 32px`(large 40 / small 24,[rate.scss](https://github.com/element-plus/element-plus/blob/dev/packages/theme-chalk/src/rate.scss))、Arco `.arco-rate-inner { min-height: @rate-min-height }` 且 `@rate-min-height: @size-default`(它的預設控件高;[index.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/index.less)、[token.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/token.less))—— 本 DS 不跟,列高由 Field 槽供給已是 Switch / Checkbox 的既有模型。
 
 **xs 退役(2026-09-27)**:可以點的 xs(2026-04-21 `6d9d48f2` AI 加、無 user 原話、無出處;容器 24 / 星 20)與 sm 只差容器,容器拿掉後兩者相同;唯讀 xs(16 星 + 12px 字)是 2026-09-26 `1e0d4545` 做精簡版時 AI 自訂的配對,從沒給 user 看過,產品 0 處、只有 3 個 story 用。user 原話:「這個xs是你這一兩天生的吧？而且這個設計也沒經過我同意吧？如果上述兩個問題都為真，那就應該直接整個移掉吧？然後應該是整個rating xs都移掉吧？」—— 兩題皆真,整個移掉。閘 `scripts/rating-field-size-invariant.mjs`(尺寸解析序、無容器 class、執行期 'xs' 映 sm 並 dev-warn;meta test `scripts/test-rating-field-size-invariant.mjs`)。
@@ -283,11 +283,11 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 ## 相關
 
-- **`Slider`** — 連續數值選擇（0–100、音量、亮度、價格區間）。Rating vs Slider 分界：離散 tier = Rating，連續值 = Slider;高度模型不同:Slider 根是拖曳命中面故吃 `h-field-*`(`slider.spec.md`「size 只控 root 容器外高」),Rating 只有內容高(見「為什麼不完全對齊 `--field-height-*`」)
+- **`Slider`** — 連續數值選擇（0–100、音量、亮度、價格區間）。Rating vs Slider 分界：離散 tier = Rating，連續值 = Slider;高度模型不同:Slider 根是拖曳命中面故吃 `h-field-*`(`slider.spec.md`「一種視覺,多種容器尺寸」:size「只控 root 容器外高」),Rating 只有內容高(見「為什麼不完全對齊 `--field-height-*`」)
 - **`Tag`** — 靜態文字分類標記（「熱門」「Beta」「NEW」）。Rating 是量化,Tag 是文字分類(Badge 僅 count/dot,不承載文字)
 - **`Switch`** — 二元 on/off。Rating 是 graded，Switch 是 binary
 - **`Button iconOnly + pressed={liked}`** — 愛心 / like 的正確實作
-- **Color token 例外** — `color.spec.md`「共用 `--warning` 色相但語境不同」段落
+- **Color token 例外** — 星色與 warning 狀態共用 `--warning` 色相、語境不同(理由見上方「為什麼用 `--warning`（黃色）而不用 `--primary`」)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

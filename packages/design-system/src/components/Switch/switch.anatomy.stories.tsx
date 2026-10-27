@@ -8,6 +8,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Switch, type SwitchProps } from './switch'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Switch/設計規格',
@@ -136,7 +137,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>視覺狀態對照</H3>
-        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,見下「Disabled 策略」)。readonly:standalone 視覺正常鎖互動;Field 內灰框 + 勾/叉 icon。</Desc>
+        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,理由見<StoryLink kind="Design System/Components/Switch/設計原則" name="停用用半透明保留顏色">設計原則「停用用半透明保留顏色」</StoryLink>)。readonly:standalone 視覺正常鎖互動;Field 內灰框 + 勾/叉 icon。</Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>Track</Th><Th>Thumb</Th><Th>Check icon</Th></tr></thead>
@@ -177,17 +178,12 @@ export const StateBehavior: Story = {
         </div>
       </div>
 
-      <div>
-        <H3>Disabled 策略:opacity 而非灰階 swap</H3>
-        <Desc>Switch 的 on/off 視覺差異最強載體是顏色(track bg-primary vs bg-border)——thumb 位移與 check icon 只是弱輔助線索。若用灰階 swap(把 primary 換成 border),disabled 的 ON 和 OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態。必須保留顏色。</Desc>
-        <p className="text-footnote text-fg-muted">對照 Checkbox / Slider 用灰階弱化(它們的形狀或位置本身就承載開 / 關狀態,不靠顏色),所以灰掉也看得出狀態;Switch 的主載體是顏色,只能降透明度保留顏色。</p>
-      </div>
     </div>
   ),
 }
 
 export const LabelIntegration: Story = {
-  name: '標籤 / 說明 整合',
+  name: '內建標籤與說明',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -209,7 +205,7 @@ export const LabelIntegration: Story = {
 
       <div>
         <H3>在 Field context 內</H3>
-        <Desc>Switch 在 `&lt;Field&gt;` context 內時 label / description prop 會被自動忽略(由 FieldLabel / FieldDescription 接管),避免雙層 label。</Desc>
+        <Desc>Switch 在 <code>&lt;Field&gt;</code> context 內時 label / description prop 會被自動忽略(由 FieldLabel / FieldDescription 接管),避免雙層 label。</Desc>
       </div>
     </div>
   ),
@@ -221,8 +217,17 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  ARIA  :Switch 本體是一顆原生切換按鈕(role=\"switch\" + aria-checked),角色與狀態都由瀏覽器和 Radix 自動提供。可參考 [Radix 無障礙說明](https://www.radix-ui.com/primitives/docs/components/switch#accessibility)。\n\n  鍵盤操作  :\n\n- Tab — 把焦點移到開關上\n- Space / Enter — 切換開 / 關\n\n  焦點外觀  :開關本身就能被 Tab 聚焦(它是一顆按鈕);聚焦時會顯示一圈藍色 focus ring(由設計系統的 focus-visible 樣式提供,2px ring 用 --ring 色)。它是單一控件,沒有「焦點鎖定 / 還原」這種彈窗才有的行為。\n\n  驗證  :Storybook a11y 面板應為 0 critical violation;只用鍵盤即可完整操作(不需滑鼠)。文字對比 WCAG AA ≥ 4.5:1、UI 元素 ≥ 3:1。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p><b>ARIA</b>:Switch 本體是一顆原生切換按鈕(role="switch" + aria-checked),角色與狀態都由瀏覽器和 Radix 自動提供。可參考 <a href="https://www.radix-ui.com/primitives/docs/components/switch#accessibility" target="_blank" rel="noopener noreferrer">Radix 無障礙說明</a>。</p>
+        <p><b>鍵盤操作</b>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — 把焦點移到開關上</li>
+          <li>Space / Enter — 切換開 / 關</li>
+        </ul>
+        <p><b>焦點外觀</b>:開關本身就能被 Tab 聚焦(它是一顆按鈕);聚焦時會顯示一圈藍色 focus ring(由設計系統的 focus-visible 樣式提供,2px ring 用 --ring 色)。它是單一控件,沒有「焦點鎖定 / 還原」這種彈窗才有的行為。</p>
+        <p><b>驗證</b>:Storybook a11y 面板應為 0 critical violation;只用鍵盤即可完整操作(不需滑鼠)。文字對比 WCAG AA ≥ 4.5:1、UI 元素 ≥ 3:1。</p>
+      </div>
     </div>
   ),
 }

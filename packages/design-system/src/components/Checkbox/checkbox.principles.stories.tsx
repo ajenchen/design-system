@@ -2,16 +2,20 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
+import { SelectionItem } from '@/design-system/components/SelectionControl/selection-item'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計原則',
   parameters: { layout: 'padded' },
+  // 範例的儲存 / 送出成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -28,6 +32,8 @@ export const UsageGuidance: Story = {
   render: () => {
     const [agree, setAgree] = React.useState(false)
     const [notif, setNotif] = React.useState<'checked' | 'unchecked'>('unchecked')
+    // 儲存 = 記下目前勾選並跳 Toast;取消 = 還原到上次儲存的勾選
+    const [savedConsent, setSavedConsent] = React.useState({ agree: false, notif: 'unchecked' as 'checked' | 'unchecked' })
     const [bluetooth, setBluetooth] = React.useState(true)
     const [wifi, setWifi] = React.useState(true)
     const [selected, setSelected] = React.useState('credit')
@@ -93,8 +99,8 @@ export const UsageGuidance: Story = {
                 />
               </div>
               <ButtonGroup className="mt-[var(--layout-space-loose)]">
-                <Button variant="primary">儲存</Button>
-                <Button variant="tertiary">取消</Button>
+                <Button variant="primary" onClick={() => { setSavedConsent({ agree, notif }); toast({ variant: 'success', title: '設定已儲存' }) }}>儲存</Button>
+                <Button variant="tertiary" onClick={() => { setAgree(savedConsent.agree); setNotif(savedConsent.notif) }}>取消</Button>
               </ButtonGroup>
             </div>
             <ExampleCaption>↑ 同意條款、訂閱選擇——form 內、有 submit / cancel button</ExampleCaption>
@@ -121,7 +127,7 @@ export const UsageGuidance: Story = {
             <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
               <Switch label="我同意服務條款" />
               <div className="mt-[var(--layout-space-loose)]">
-                <Button variant="primary">送出</Button>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已送出' })}>送出</Button>
               </div>
             </div>
             <ExampleCaption warn>↑ 同意條款用 Switch → 心智模型錯誤 + 與產業共識背離（全球沒有 form 用 Switch 同意條款）</ExampleCaption>
@@ -179,7 +185,7 @@ export const UsageGuidance: Story = {
 }
 
 export const ClampPolicyRule: Story = {
-  name: '夾值 政策',
+  name: '標籤與說明不截斷',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -197,9 +203,14 @@ export const ClampPolicyRule: Story = {
         title="❌ 絕不預設截斷 agreement 類 Label"
         note="若 consumer 有合理理由（如 settings 頁掃視節奏）想截斷過長文字，需直接改用 SelectionItem 包裝 Checkbox 並傳 labelMaxLines / descMaxLines 覆寫——Checkbox 本身的 label / description prop 不提供截斷控制。截斷應該是例外，不是預設"
       >
-        <Checkbox
-          label="我同意非常長的服務條款與隱私政策以及所有使用規範這段文字被截斷了你看不到剩下的部分"
-        />
+        {/* 反例畫成真的截斷長相:consumer 改用 SelectionItem 並傳 labelMaxLines={1}(note 講的那條路),真實條款文字被切成一行 */}
+        <div className="max-w-xs">
+          <SelectionItem
+            control={<Checkbox aria-label="我同意 Acme 服務條款" />}
+            label="我同意 Acme 服務條款,包含資料保存期間、第三方分享範圍,以及帳號終止後的資料刪除方式"
+            labelMaxLines={1}
+          />
+        </div>
         <ExampleCaption warn>↑ 截斷同意條款 → 使用者可能同意了看不到的內容</ExampleCaption>
       </TutorialRule>
 

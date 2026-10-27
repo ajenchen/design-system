@@ -136,7 +136,7 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     // 世界級:Fluent 2 把唯讀拆成 RatingDisplay,`compact`「Renders a single filled star, with the value
     // written next to it」、`count`「formatted with a thousands separator … displayed next to the value」
     // (github.com/microsoft/fluentui react-rating `RatingDisplay.types.ts`,2026-09-26 讀 master)。
-    // 本 DS 不另拆元件:唯讀一律走這條,互動才畫五顆星(user 2026-09-26 選的是「唯讀一律精簡版」)。
+    // 本 DS 不另拆元件:唯讀一律走這條,互動才畫五顆星(user 2026-09-26 選的是唯讀一律精簡版那個選項)。
     // 星走 icon tier(16 / 16 / 20);星 ↔ 數值的縫三個尺寸都是 gap-1 4px —— Rating 內只有一種縫(可以點的星與星之間也是 4px),
     // user 2026-09-27 拍板(原話「我覺得星號與文字gap應該跟這個一樣都是4px吧？」→「照你建議」);Fluent 2 RatingDisplay 16px 星 + 12px 字
     // 亦是 4px、Tag 資料指示器圖示 ↔ 文字 4px。出處、實量與世界級對照見 rating.spec.md「唯讀精簡版」。

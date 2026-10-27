@@ -8,6 +8,7 @@ import {
 import { SegmentedControl, SegmentedControlItem } from './segmented-control'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { ButtonDivider, ButtonGroup } from '@/design-system/components/Button/button-group'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
@@ -26,6 +27,43 @@ const TutorialRule = createTutorialRule({ examples: true })
 const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true })
 
 // ── UsageGuidance — 何時用 / 何時不用 / vs 近親元件 ─────────────────────────
+
+const REVENUE_SUMMARY: Record<string, string> = {
+  day: '今日營收 NT$ 18,240 · 較昨日 +3%',
+  week: '本週營收 NT$ 128,400 · 較上週 +8%',
+  month: '本月營收 NT$ 512,900 · 較上月 −2%',
+}
+
+// fullWidth 的小容器情境:真的 Dialog,裡面的分段控制撐滿寬
+function ReportPeriodDialog() {
+  const [open, setOpen] = useState(false)
+  const [range, setRange] = useState('day')
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button variant="tertiary">設定報表週期</Button></DialogTrigger>
+      <DialogContent height="hug">
+        <DialogHeader><DialogTitle>報表週期</DialogTitle></DialogHeader>
+        <DialogBody>
+          <SegmentedControl value={range} onValueChange={(v) => v && setRange(v)} fullWidth aria-label="報表週期">
+            <SegmentedControlItem value="day">日</SegmentedControlItem>
+            <SegmentedControlItem value="week">週</SegmentedControlItem>
+            <SegmentedControlItem value="month">月</SegmentedControlItem>
+          </SegmentedControl>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="tertiary">取消</Button></DialogClose>
+          <DialogClose asChild><Button variant="primary">套用</Button></DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// 二元開關的正確做法本身也要能按:按一下在「釘選 / 已釘選」之間切換(F-S2「畫面上看得到的按鈕都要能動」)
+function PinButton() {
+  const [pinned, setPinned] = useState(true)
+  return <Button variant="text" pressed={pinned} onClick={() => setPinned((v) => !v)}>{pinned ? '已釘選' : '釘選'}</Button>
+}
 
 export const UsageGuidance: Story = {
   name: '使用指引',
@@ -55,7 +93,9 @@ export const UsageGuidance: Story = {
                 <SegmentedControlItem value="week">週</SegmentedControlItem>
                 <SegmentedControlItem value="month">月</SegmentedControlItem>
               </SegmentedControl>
-              <ExampleCaption>↑ 切換會重載下方 chart 資料，但 chart 還是同一個 chart，不是換一整個 view</ExampleCaption>
+              {/* 下方內容真的跟著變(稽核 M075:不放 chart 就放真的會變的內容) */}
+              <p className="text-body text-foreground">{REVENUE_SUMMARY[period]}</p>
+              <ExampleCaption>↑ 切換會重算下方的營收摘要，但還是同一塊內容，不是換一整個 view</ExampleCaption>
             </ExampleGroup>
           </TutorialRule>
         </UsageSection>
@@ -65,7 +105,7 @@ export const UsageGuidance: Story = {
             title="❌ 只有一個開 / 關:用可切換的按鈕"
             note="1 個 item 的 SegmentedControl 沒有選擇語意。二元狀態用 Button pressed"
           >
-            <Button variant="text" pressed>已釘選</Button>
+            <PinButton />
           </TriggerRule>
 
           <TutorialRule
@@ -224,7 +264,12 @@ export const IconOnlyRule: Story = {
 
 export const FullWidthRule: Story = {
   name: 'fullWidth 的適用情境',
-  render: () => (
+  render: () => <FullWidthRuleDemo />,
+}
+
+function FullWidthRuleDemo() {
+  const [toolbarRange, setToolbarRange] = useState('week')
+  return (
     <TutorialPage>
       <TutorialRule
         title="fullWidth 的判準：跟著容器尺度走，不是跟著 label 長度"
@@ -232,14 +277,8 @@ export const FullWidthRule: Story = {
       >
         <ExampleGroup>
           <ExampleCaption>✅ 小容器（Dialog / Sheet / 窄 sidebar / Field row）→ fullWidth</ExampleCaption>
-          <div className="w-[360px] p-[var(--layout-space-loose)] border border-border rounded-md">
-            <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Dialog 內（360px 容器）</div>
-            <SegmentedControl defaultValue="day" fullWidth>
-              <SegmentedControlItem value="day">日</SegmentedControlItem>
-              <SegmentedControlItem value="week">週</SegmentedControlItem>
-              <SegmentedControlItem value="month">月</SegmentedControlItem>
-            </SegmentedControl>
-          </div>
+          {/* 真的 Dialog(稽核 M075:Dialog 情境放真的 Dialog,不手畫一個像 Dialog 的框) */}
+          <ReportPeriodDialog />
         </ExampleGroup>
 
         <ExampleGroup>
@@ -249,13 +288,14 @@ export const FullWidthRule: Story = {
           <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-md">
             <ButtonGroup>
               <span className="text-caption text-fg-muted">Toolbar：</span>
-              <SegmentedControl defaultValue="day" size="sm">
+              <SegmentedControl value={toolbarRange} onValueChange={(v) => v && setToolbarRange(v)} size="sm">
                 <SegmentedControlItem value="day">日</SegmentedControlItem>
                 <SegmentedControlItem value="week">週</SegmentedControlItem>
                 <SegmentedControlItem value="month">月</SegmentedControlItem>
               </SegmentedControl>
               <ButtonDivider />
-              <span className="text-body text-fg-muted">其他工具列元素…</span>
+              {/* 真實的工具列按鈕(稽核 M075):「今天」把檢視切回日 */}
+              <Button variant="tertiary" size="sm" onClick={() => setToolbarRange('day')}>今天</Button>
             </ButtonGroup>
           </div>
           <ExampleCaption>↑ 這裡若 fullWidth 會搶走同行其他元素的空間</ExampleCaption>
@@ -278,6 +318,6 @@ export const FullWidthRule: Story = {
         </ExampleGroup>
       </TutorialRule>
     </TutorialPage>
-  ),
+  )
 }
 
