@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-27T20:50:49.165Z"
+    "generatedAt": "2026-10-27T21:59:02.184Z"
   },
   "components": {
     "accordion": {
@@ -725,8 +725,6 @@
         ],
         "設計規格": [
           "design-system-components-dialog-設計規格--overview",
-          "design-system-components-dialog-設計規格--inspector",
-          "design-system-components-dialog-設計規格--height-behavior",
           "design-system-components-dialog-設計規格--size-matrix",
           "design-system-components-dialog-設計規格--state-behavior",
           "design-system-components-dialog-設計規格--color-matrix",
@@ -1102,7 +1100,6 @@
           "design-system-internal-notice-展示--deployment-success",
           "design-system-internal-notice-展示--billing-failed",
           "design-system-internal-notice-展示--inline-variants",
-          "design-system-internal-notice-展示--toast-like-solid",
           "design-system-internal-notice-展示--neutral-title-only"
         ],
         "設計規格": [
@@ -1860,5 +1857,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1028
+  "totalStories": 1025
 }

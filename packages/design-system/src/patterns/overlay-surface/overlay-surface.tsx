@@ -126,7 +126,7 @@ export const SurfaceHeader = React.forwardRef<
           className={cn(
             'flex items-center gap-2',
             'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-            CHROME_UNBOUNDED_SLOT,
+            CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
           )}
         >
           {children}
@@ -165,7 +165,7 @@ export const SurfaceHeader = React.forwardRef<
         'flex items-center gap-2 shrink-0',
         !hasTabs && 'border-b border-divider',
         'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-        CHROME_UNBOUNDED_SLOT,
+        CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
         className,
       )}
       {...props}
@@ -214,3 +214,14 @@ export const SurfaceFooter = React.forwardRef<
   />
 ))
 SurfaceFooter.displayName = 'SurfaceFooter'
+
+// (本檔尾:別處以行號引用本檔前段,新增的常數放這裡不讓行號位移;module 層 const 在 render 時已初始化)
+// 關閉 × 對齊標題第一行(2026-10-27,OV-ga02):標題區有說明(DialogDescription,dialog.spec.md「Header 可成長」)時,`items-center` 把 ×
+// 放在「標題 + 說明」兩行塊的正中(實測比標題第一行低 11.5px)。× 經 CHROME_UNBOUNDED_SLOT 的縮位佔位 = 標題行高(slot),所以只要它靠上,
+// 就落在第一行;單行標題時兩者等高,位置不變。規則照列尾的同一條:item-anatomy.spec.md「24px 閾值對齊規則(Prefix)與 Suffix inline 對齊」
+//(Suffix 一律對齊第一行 label)。世界級(2026-10-28 讀原始碼):shadcn(Radix)Dialog 關閉鈕 `absolute top-4 right-4`
+//(https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx)、Carbon modal `.cds--modal-close-button`
+// `inset-block-start: 0`(https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/modal/_modal.scss)、
+// Primer Dialog `.HeaderInner { display: flex }` 不置中、關閉鈕是固定高度 → 靠上(https://github.com/primer/react/blob/main/packages/react/src/Dialog/Dialog.module.css)。
+// 只管直接放在標題區的 ×;DialogHeader 的 actions 群組在 dialog.tsx 同樣靠上。
+const DISMISS_FIRST_LINE = '[&>[data-dismiss]]:self-start'

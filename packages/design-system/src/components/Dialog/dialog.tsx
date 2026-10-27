@@ -410,7 +410,9 @@ const DialogHeader = React.forwardRef<
         // actions 提供 → 右側一體 cluster:{actions} + ButtonDivider + Close。
         // 分隔線 = 關閉保護 canonical(action-bar.spec.md「五、分隔線規則」),由 DS 放,consumer 零自刻。
         // gap-2 + ButtonDivider mx-1 = 兩側 12px 對稱(action-bar.spec.md「分隔線幾何」)。
-        <div className="flex items-center gap-2 shrink-0">
+        // self-start:同 × 自己,群組靠上對齊標題第一行(overlay-surface.tsx DISMISS_FIRST_LINE;單行標題時位置不變)
+        // @layout-space-magic-ok: gap-2 = packages/design-system/src/patterns/action-bar/action-bar.spec.md:292「自身兩端各 4px 於 `gap-2` 容器」(分隔線兩側 12px 對稱)
+        <div className="flex items-center gap-2 shrink-0 self-start">
           {actions}
           <ButtonDivider />
           {closeButton}
