@@ -157,11 +157,13 @@ export const AVATAR_STACK_GAP_PX = STACK_GAP_PX
 export const AVATAR_DISMISS_OVERLAY_PX = { top: -1, right: -4, size: 12 } as const
 /**
  * @internal 自己的挖空(狀態圓點 / 徽章 / 移除 ×)的 class。移除 × 的洞平常半徑為 0(看不出來),
- * 標籤被滑過或焦點在標籤內時(`group/avatar`,與 × 本身顯示的條件相同)才打開 —— 洞的半徑經
+ * 標籤被滑過或鍵盤焦點在標籤內時(`group/avatar`,與 × 本身顯示的條件相同)才打開 —— 洞的半徑經
  * `--avatar-dismiss-on`(0 / 1)乘進去,半徑本身寫在 style(`--avatar-dismiss-r`),class 裡不寫數字。
+ * 鍵盤那一條用 `group-has-[:focus-visible]`,不用 focus-within:滑鼠點過頭像也會讓 focus-within 成立,洞會一直開著直到焦點離開
+ * (與 PeoplePicker `person-display.tsx` AvatarDismissOverlay 的 × 成對;規則同 item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP`)。
  */
 export const AVATAR_OWN_CUTOUT_CLASS =
-  '[mask-image:var(--avatar-own-cutout)] [mask-composite:var(--avatar-own-composite)] [--avatar-dismiss-on:0] group-hover/avatar:[--avatar-dismiss-on:1] group-focus-within/avatar:[--avatar-dismiss-on:1]'
+  '[mask-image:var(--avatar-own-cutout)] [mask-composite:var(--avatar-own-composite)] [--avatar-dismiss-on:0] group-hover/avatar:[--avatar-dismiss-on:1] group-has-[:focus-visible]/avatar:[--avatar-dismiss-on:1]'
 /** @internal 堆疊 + 自己的挖空(結構選擇器同 `AVATAR_STACK_CUTOUT_CLASS`)。 */
 export const AVATAR_STACK_OWN_CUTOUT_CLASS =
   '[:has(>[data-avatar-stack]):not([hidden])~*>[data-avatar-stack]>&]:[mask-image:var(--avatar-stack-cutout),var(--avatar-own-cutout)] [:has(>[data-avatar-stack]):not([hidden])~*>[data-avatar-stack]>&]:[mask-composite:intersect,var(--avatar-own-composite)]'
