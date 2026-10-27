@@ -82,7 +82,7 @@ declare module '@tanstack/react-table' {
      * resize feature(`enableColumnResize=true` 拖拉 + columnSizing state)正常運作。
      *
      * - **No resize mode**(default): `width` = column 寬度 reserve(cell ≥ width,
-     *   flex 可 grow,**不可 shrink** 低於 width)。對齊 user 預期「我設多寬就多寬」。
+     *   flex 可 grow,**不可 shrink** 低於 width)。對齊 user 預期(轉述:設多寬就多寬)。
      * - **Resize mode**(`enableColumnResize=true`):`width` = 初始寬度,user 可拖拉
      *   到 `minWidth` 為止。
      */
@@ -100,7 +100,7 @@ declare module '@tanstack/react-table' {
      * Column 是否可被 user 拖拉 resize(opt-out per col)。Default `true`(when `enableColumnResize` 也 true)。
      *
      * Set `false` 表「此 col 寬度由內容決定不允許 resize」(2026-05-10 加,per user
-     * 「操作列這種內容決定寬度的欄位應該不允許 resize」)。對齊 AG Grid `colDef.resizable` /
+     * 轉述:操作列這種內容決定寬度的欄位不允許 resize)。對齊 AG Grid `colDef.resizable` /
      * Material X-DataGrid 同 API。
      *
      * System cols(__select__ / __drag__ / __actions__)自動 false(內部 hard-code,

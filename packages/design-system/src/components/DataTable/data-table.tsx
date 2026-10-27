@@ -39,7 +39,7 @@ import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import { TableScrollProvider } from '@/design-system/components/Field/field-context'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
-// **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
+// **v15.0 Path B**(對齊 user:source 留原位 / indicator 為 drop preview / 不 auto-shift(轉述)directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
@@ -194,7 +194,7 @@ export interface DataTableProps<TData>
    * Default false opt-in(per codex「DataTable is not a spreadsheet」既有原則 +
    * data-table.principles.stories.tsx「不是試算表」principle story)。
    * Enable 後 cell click 行為(**每一格都一樣**,含唯讀格、開關格與連結格的空白處;user 2026-09-26
-   * 「點任何格,藍框都跟過去」):
+   * 點任何格,藍框都跟過去(轉述)):
    *   - Plain click → setSelectedCellId(格游標移到這一格),**不**進 edit mode
    *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean 沒有可進的編輯,不動;url 點網址文字開連結、點格的其他地方進編輯)
    *   - Shift+click → extend range from anchor
@@ -205,7 +205,7 @@ export interface DataTableProps<TData>
    *   焦點離開格線區(Tab 到表頭控件 / 表外)時格游標框收起、位置保留,回來原格重現;格裡的控件被鍵盤聚焦、自己畫框時
    *   格游標框也收起,格游標跟著鍵盤焦點走到那一格(2026-10-21 r1b DT-03 / NEW-1;`data-table.css` + 根節點 onFocus);range 視覺
    *   = cell-bg `--primary-subtle`(`[data-range-cell]` CSS),outer ring 已 2026-05-10 retire
-   *   — per user「不要 dash 直接實的就好」+ codex Q2.2 token。
+   *   — per user:不要 dash 直接實的就好(轉述)+ codex Q2.2 token。
    */
   spreadsheetMode?: boolean
 
@@ -267,7 +267,7 @@ export interface DataTableProps<TData>
    * - 3-panel mirror sync:primary region 呼叫 `useDraggable` + `useDroppable`;mirror region 只 `useDroppable`(v15.4 split),isDragging 由 `useDndContext` active.id 同步 → 三 region 視覺一致
    * - Cross-parent drop:nested 全 row 各自 `useDroppable`,自訂 collisionDetection 過濾出「同 parent siblings」;cross-parent over → 不觸發,handle cursor `not-allowed`
    *
-   * 詳 `data-table.spec.md`「L4 Row drag」段。
+   * 詳 `data-table.spec.md`「Row drag(Jira canonical,v3 已 ship)」段。
    */
   enableRowDrag?: boolean
   /**
@@ -369,7 +369,7 @@ const columnHeaderDomId = (base: string, columnId: string): string => `${base}co
  * 格裡自己能操作的東西(試算表模式 Enter / F2 把焦點放進格裡時,落在第一個;2026-10-13 待辦總帳 Q3c):
  * 連結格 = 網址連結 → 鉛筆;開關格 = 勾選框。W3C APG grid "Editing and Navigating Inside a Cell":
  * Enter / F2 "If the cell contains one or more widgets, places focus on the first widget."
- * (owner `ds-canonical/references/keyboard-model-canonical.md`「F2 恆為進到格裡的控件,再按一次回到格導覽」)。
+ * (owner `ds-canonical/references/keyboard-model-canonical.md`「`F2` 為什麼一定要有」那一節:F2 恆為進到格裡的控件,再按一次回到格導覽)。
  */
 const CELL_WIDGET_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), [role="checkbox"]:not([aria-disabled="true"])'
 
@@ -518,7 +518,7 @@ function columnSizeStyle(
   // **flex-basis: baseSize(2026-05-06 v14.2)**:把 baseSize 當 explicit basis(不是 `0%`)。
   // 為什麼:flex item base = basis + padding(box-sizing: border-box content-box 行為)。前 `0%`
   // basis → cell padding 變 base 一部分。view(padding 12)vs edit(padding 0,Field 接管)
-  // 兩態 base 不同 → flex 重分配 → user 報「Price cell 進 edit 寬度縮 12px」
+  // 兩態 base 不同 → flex 重分配 → user 報:Price cell 進 edit 寬度縮 12px(轉述)
   // (量測:Price view 130.5 → edit 118.5 = -12px)。
   // explicit basis = baseSize 讓 padding 不參與 base 計算 → view↔edit 寬度穩定。
   return { flex: `1 1 ${baseSize}px`, minWidth: baseSize, maxWidth: maxSize }
@@ -582,7 +582,7 @@ function measureNaturalWidth(els: HTMLElement[], host: HTMLElement, cap: number)
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
 const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 
-// ── 未掛載區的骨架底(2026-09-12;user 拍板「確認,改 data-table.tsx」)──────────────
+// ── 未掛載區的骨架底(2026-09-12;user 拍板:確認,改 data-table.tsx(轉述))──────────────
 // **這是「永不空白」的地板,不是加速器。** 它跟列殼(`renderShellRow`)解決的不是同一件事:
 // 列殼要主執行緒有機會跑才畫得出來;這一層在 commit 當下就畫完,之後純由合成器搬運。
 //
@@ -647,7 +647,7 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 // 「本來會是全白」的地方。
 
 /**
- * 2026-09-15 結案:user 回報「分支 hover 33ms、main 17ms」**不是程式碼造成的**。
+ * 2026-09-15 結案:user 回報:分支 hover 33ms、main 17ms(轉述)**不是程式碼造成的**。
  * 用 Long Animation Frames API 在他的機器上歸因(https://developer.chrome.com/docs/web-platform/long-animation-frames):
  *   分支(netlify.app)   20 秒 82 個長幀,script 5315ms,其中 5301ms 在 `FrameRequestCallback @thin-client-min.js`
  *   main(netlify.app)   同樣:7333ms 在 `thin-client-min.js`
@@ -820,7 +820,7 @@ function MirrorRowProvider({
   // 但不參與 drag source(避免 multi-instance same-id 衝突)。
   // RowDragHandle Button 只在 primary region 渲染(per `showDragHandle = ... && isPrimaryRegion`),
   // mirror ctx 不需要 handle listeners / activator,相關 field 為 undefined。
-  // **v15.8 Bug 3 fix**(對齊 user 「source 沒一整條都有 disabled opacity」):
+  // **v15.8 Bug 3 fix**(對齊 user:source 沒一整條都有 disabled opacity(轉述)):
   //   mirror region drag 期間需跟 primary 同步顯 opacity-disabled,讓 source row 跨三 region
   //   視覺一致(SKU 釘選欄 + center + Updated 釘選欄整列半透明)。透過 useDndContext active
   //   判斷:any drag activated with active.id === own row id → mirror 也 isDragging。
@@ -935,7 +935,7 @@ function DraggableHeaderCell({
     'data-column-locked': isLocked || undefined,
     ...(disabled ? {} : { ...forwardDragActivatorAttributes(draggableAttrs), ...(guardedListeners ?? {}) }),
     // 2026-05-06 v14.9 cursor canonical(對齊 Notion / Jira):
-    // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導 user 以為「點 = 拖」;
+    // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導使用者以為點下去就是拖曳;
     // **drag activation 後**(isDragging=true,過 8px activationConstraint)才顯 cursor-grabbing。
     // user 點 = sort / 長壓 = drag,兩語意分開不互踩。
     // 焦點框往內(2026-10-21,r1b DT-02):可拖的欄頭本身是 Tab 停靠點(dnd-kit attributes 帶 tabIndex=0,鍵盤 Space 提起重排),
@@ -1263,7 +1263,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
 
   const canDrag = !disabled
   // Visibility canonical v15.3(對齊 Linear / Jira 世界級 + user directive
-  // 「source 的 drag button 反倒是可以留在原本的位置維持被壓住的狀態」):
+  // source 的 drag button 反倒是可以留在原本的位置維持被壓住的狀態(轉述)):
   //   - idle:rowHovered || buttonHovered → 顯示
   //   - drag 進行中:**source row 強制顯示 + active 視覺**(讓 user 知道哪個被壓住)
   //                  其他 row 的 button 隱藏(由 anyDragActive guard)
@@ -1283,7 +1283,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   // 而本 DS 的 Button 把 `aria-pressed` 當成 **toggle 按下**(button.tsx:194 起
   // `aria-pressed:bg-primary-subtle / text-primary / border-transparent`,2026-05-21 e58576a6
   // 為 Radix overlay trigger 加的 fallback)。**拖曳把手不是 toggle**,語意與視覺都不該套那組。
-  // 用 CSS 反壓會連 `:active` 一起蓋掉(違反 user「其餘不變、壓著時就是 active」),
+  // 用 CSS 反壓會連 `:active` 一起蓋掉(違反 user 2026-09-06「其餘不變,然後壓著那顆鈕的時候狀態應該是active吧？」),
   // 所以在來源就把這個屬性擋掉,讓 Button 完全照它平常的 initial / hover / active 走。
   const handle = (
     <Button
@@ -1309,7 +1309,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         transitionDuration: latched ? '0s' : undefined,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
-        // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
+        // 2026-05-12 fix v2(user 抓:drag column sort 啟用時 button 不是 disable 視覺(轉述)):
         // 前 Round 4.5 加 `aria-disabled:opacity-[var(--opacity-disabled)]` 在 Button cva
         // 沒生效 — 因為 inline style `opacity` 永遠 win over Tailwind class。Fix:把 disabled
         // state opacity 也 compute 進 inline style。
@@ -1337,7 +1337,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         pointerEvents: visible ? 'auto' : 'none',
       }}
       className={cn(
-        // 2026-05-12 debug fix(user 抓「hover 還是透明」)— Round 4.5 我未授權加
+        // 2026-05-12 debug fix(user 抓:hover 還是透明(轉述))— Round 4.5 我未授權加
         // `border / shadow / hover:bg-neutral-hover` = over-design + hover override 讓
         // drag button hover bg 變 neutral-hover 跟 row hover bg 同色 → 視覺融入 row = 透明。
         // 撤回:**只保 bg-surface-raised(idle + hover + 所有 state 都同 bg)**,
@@ -1355,7 +1355,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         //       TreeView 與欄位重排兩個消費者也都沒有,DataTable 是唯一把「不能放」畫在把手上的 → M23 違反。
         //       「不能放」的訊號本來就在目標(不出落點線),不該畫在起點。
         //   (2) `cursor-grabbing` —— 違反 `drag-visual.ts` 的 `dragHandleCursorClass`
-        //       (2026-05-07 v15.7 user directive「只 cursor-grab,不變 grabbing」)。
+        //       (2026-05-07 v15.7 user directive:只 cursor-grab,不變 grabbing(轉述))。
         'bg-surface-raised hover:bg-surface-raised aria-disabled:bg-surface-raised',
         'transition-opacity duration-150 ease-in-out motion-reduce:duration-0',
         canDrag && dragHandleCursorClass,
@@ -1526,7 +1526,7 @@ function DataTableInner<TData>(
   const [gridHasFocus, setGridHasFocus] = React.useState(false)
   // tableRef declared below (line 967) — click-outside effect 在 tableRef ready 後 wire,
   // 為避免 ordering 問題用 forwarded ref query via DOM `[data-data-table-outer]`。
-  // 2026-05-12 click-outside canonical(user 抓「選完 range 後點任何地方該清掉 / 選 cell 後點別處該取消」):
+  // 2026-05-12 click-outside canonical(user 抓:選完 range 後點任何地方該清掉 / 選 cell 後點別處該取消(轉述)):
   // 對齊 Excel / Google Sheets / Notion / Airtable cell-selection canonical — pointerdown 落在
   // table outer 外 → clear selection + range。內 cell click 由 onClick 自處理(不衝突)。
   React.useEffect(() => {
@@ -1648,7 +1648,7 @@ function DataTableInner<TData>(
   // 順序:[__select__?, ...consumer columns]
   // **Column resizable canonical**(2026-05-05 user E rule):per-column `enableResizing` flag
   //   決定 width 行為(getCanResize=true → fixed / false → flex 1 1 0%)。**無 auto-default**
-  //   "last column !resizable" — consumer 顯式設(對齊 user 拒絕「autoFillLastColumn」決策)。
+  //   "last column !resizable" — consumer 顯式設(對齊 user 拒絕 `autoFillLastColumn` 的決策,轉述)。
   //
   // **2026-05-06 v14.3 DS canonical width API**:consumer 寫 `meta.width` / `meta.minWidth` /
   //   `meta.maxWidth`(DS-internal naming,避開跟 `size: 'sm'|'md'|'lg'` density 命名衝突)。
@@ -1762,7 +1762,7 @@ function DataTableInner<TData>(
     getRowId: getRowId,
     // 2026-05-06 v14 column resize:`onChange` mode → drag 中 column 即時跟動 cursor(world-class
     // canonical:TanStack docs / AG Grid / Excel / Google Sheets 全部 live resize)。前 v13.2
-    // 用 `onEnd` 拖完才 jump,user 報「感覺超頓像 bug」。tanstack 內部管 columnSizing state
+    // 用 `onEnd` 拖完才 jump,user 報:感覺超頓像 bug(轉述)。tanstack 內部管 columnSizing state
     // (uncontrolled);`columnSizingState` 變動透過 useEffect 觀測 + 呼 callback。
     //
     // 前 v11 用 `onColumnSizingChange` 接管 updater 但忘了 setColumnSizing,導致 state 永遠不變動 →
@@ -1816,7 +1816,7 @@ function DataTableInner<TData>(
   // **Virtualization threshold(2026-05-07 v15.9 Bug G fix)**:小資料集 skip 虛擬化。
   // Root cause:虛擬化器(TanStack Virtual)`getVirtualItems()` 在 scrollElement
   // 還沒 mount(first render,centerBodyRef = null)時會返回空陣列 →「0 row → N row」
-  // 跨 frame transition,user 看到「table 從矮長高 + 資料慢慢露出」。≤ 30 rows
+  // 跨 frame transition,user 看到:table 從矮長高 + 資料慢慢露出(轉述)。≤ 30 rows
   // direct render 完全 bypass 此 race,且小資料下虛擬化沒效益(浪費 reflow)。
   // 對齊 AG Grid `suppressVirtualization` / TanStack Table virtualization-when-needed idiom。
   // 規則與 consumer 什麼時候傳 height 的判斷住 data-table.spec.md「二、高度模式」;教學頁與範例說明引同一個數字(閘 data-table-tree-view-doc-invariant P2)。
@@ -2571,10 +2571,10 @@ function DataTableInner<TData>(
     let stableTimer: ReturnType<typeof setTimeout> | null = null
     let lastValue: number | null = null
     let pendingValue: number | null = null
-    // 2026-05-21 v4 真根因 fix(per user「請你仔細查查,務必仔細查」+「確保這個問題不再出現」):
+    // 2026-05-21 v4 真根因 fix(per user:請你仔細查查,務必仔細查(轉述)+ 確保這個問題不再出現(轉述)):
     // 即使 v3(observe parent + rAF + diff guard < 4px),Tabs / Storybook iframe / nested
     // AppShell flex chain 仍可能 100ms+ settle period 內每 frame growth > 4px → setState
-    // 多次 fire → user 視覺「stepping growth」。
+    // 多次 fire → user 看到高度一階一階長(轉述)。
     //
     // **v4 加 stability window**:layout 連續 100ms 無變動才 setState。意味:
     // - 初始 mount:bodyMaxHeight=null → body 不受 maxHeight 限制 → 顯全內容(intrinsic 高度)
@@ -2593,7 +2593,7 @@ function DataTableInner<TData>(
       // outer 帶 `border`(預設上下各 1px;`bordered={false}` 時 computed 為 0,不會多扣);header +
       // body 住在 outer 的 content box 裡,不扣的話三個區塊比可用高度多 2px,底部被外框
       // `overflow:hidden` 裁掉 —— 裁在水平捲軸上(實測 roadmap story 區塊 692 / 父層 690;公式自
-      // 29c5221a 2026-04-30 起就沒扣過)。**這只解釋底部 2px**,不構成 user 回報的 Windows「兩軸各半」
+      // 29c5221a 2026-04-30 起就沒扣過)。**這只解釋底部 2px**,不構成 user 回報的 Windows 兩軸捲軸各溢出一半(轉述)
       // 的完整歸因(該症狀在 Mac 模擬 Windows 幾何重現不了,待實機截圖;Codex R4 2026-09-08 同判)。
       const outerCs = getComputedStyle(tableRef.current)
       const borderY = (parseFloat(outerCs.borderTopWidth) || 0) + (parseFloat(outerCs.borderBottomWidth) || 0)
@@ -2828,7 +2828,7 @@ function DataTableInner<TData>(
   // 2026-05-06 v13.1:Center region SSOT width — header inner wrapper + body inner wrapper 共用
   // 同一個 minWidth 算法,確保 header / body cell 寬度永遠對齊(前 v8 用 `w-max min-w-full`
   // 在 header(content max-content 小)vs body(content max-content 大)會 diverge 76+ px,
-  // user 報「header / row 對不起來」)。
+  // user 報:header / row 對不起來(轉述))。
   const centerColsWidth = centerCols.reduce((a, c) => a + c.getSize(), 0)
 
   /**
@@ -3107,7 +3107,7 @@ function DataTableInner<TData>(
   // 新:表格層 single onMouseOver / onMouseOut,透過 event.target.closest 找 data-row-index
   const enterLeaveHandlers = React.useMemo(() => {
     if (!enableHover) return { onMouseOver: undefined, onMouseOut: undefined }
-    // **判 `Element` 不判 `HTMLElement`**(2026-09-04 user 回報「hover inline action 後整列底色消失」
+    // **判 `Element` 不判 `HTMLElement`**(2026-09-04 user 回報「hover chevron 後table row的hover底色消失是bug吧？」
     // 的根因):lucide 圖示渲染出來的是 `<svg>`/`<path>`,屬於 `SVGElement`,`instanceof HTMLElement`
     // 恆為 false。指標移到 inline action 的圖示上時,`onMouseOut` 的 `relatedTarget` 判不出「還在同一列」
     // 就把 `data-hovered` 刪了,接著 `onMouseOver` 又在這裡提早 return、沒把它補回來 —— 底色因此消失。
@@ -3170,7 +3170,7 @@ function DataTableInner<TData>(
     // 2026-05-09 D-path:date / time 加入(showDisplayEndIcon → Field naked-view 需 full width 才能
     //   右對齊 ItemSuffix。TruncatedText 的 `<span truncate min-w-0>` block-display 會 collapse Field
     //   to content size,讓 Calendar / Clock icon 緊貼 value text 而非右邊緣)。
-    // 2026-09-07 補 'boolean'(user 追問「四周視覺明明是空的,為何要往內描邊」查出的根因):
+    // 2026-09-07 補 'boolean'(user 追問「若該元素四周的視覺就是空蕩蕩的,到底為何要往內描邊?」查出的根因):
     // boolean 欄渲染的是 <Checkbox>(cell-registry.tsx#BooleanCell)—— 一個互動元素,
     // 但它不在本清單裡,於是掉進下方的 <TruncatedText>,被一個 `truncate min-w-0`
     // (padding 0、overflow hidden、四邊剛好貼死 16px 勾選框)的**文字截斷** span 包住。
@@ -3438,7 +3438,7 @@ function DataTableInner<TData>(
         //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
         //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)
         //   Plain click → select(no edit)+ reset range to single cell
-        // 2026-05-12 fix(user 抓「世界級設計藍邊框留在第一個選的 cell」):前 v1 setSelectedCellId
+        // 2026-05-12 fix(user 抓:世界級設計藍邊框留在第一個選的 cell(轉述)):前 v1 setSelectedCellId
         // 到 focus(終點)→ 藍框跑去終點。Fix:selectedCellId 維持 anchor(起點)— 對齊
         // Excel / Google Sheets / Notion / Airtable shift-extend canonical(anchor 永遠 own
         // active-cell border,range 用 fill 視覺)。
@@ -3568,9 +3568,9 @@ function DataTableInner<TData>(
           //   - **editing cell**: padding=0 + 無 right divider → Field naked(`!h-full !px-[cell-px]
           //     !py-[cell-py]`)邊框與 table divider 無縫接軌,seamlessly replace cell border。
           //     Adjacent cell padding+divider 仍在,只 editing cell 自己改觀。對齊 user reminder
-          //     「框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌」(2026-05-05)。
+          //     框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌(轉述)(2026-05-05)。
           //   - **沒有** cell 自己 box-shadow ring — focus / hover / open ring 由 Field naked 自帶
-          //     state machine 提供(對齊 user「狀態樣式取決於原輸入框」reminder)
+          //     state machine 提供(對齊 user:狀態樣式取決於原輸入框(轉述)reminder)
           // 字級隨 size:sm/md text-body / lg text-body-lg(fieldDisplayTextClass),對齊 Field family
           // size→font SSOT。此為非-Field content(consumer 自訂 cell / TruncatedText 純文字)的 fallback 字級;
           // typed cell 各自的 Field 控件已自帶 size→font(cell-registry 傳 size)。
@@ -3586,12 +3586,12 @@ function DataTableInner<TData>(
           align === 'center' && 'justify-center text-center',
           // Phase 9 Issue 8 fix(2026-05-10 user 撞 + codex 重比稿 verdict ADOPT):
           // 之前 `border-r border-divider` 只 right edge → hover overlay outline:-1px 只 right
-          // 邊壓 cell border,上左下 sub-pixel 不一致(user 抓「右 1px / 上左下 2px」bug)。
-          // 改 `dtCellGrid`(data-table.css「dtCellGrid v2/v3」段)box-shadow inset **只保右邊**
+          // 邊壓 cell border,上左下 sub-pixel 不一致(user 抓:右 1px / 上左下 2px(轉述)bug)。
+          // 改 `dtCellGrid`(data-table.css 的 `.dtCellGrid`)box-shadow inset **只保右邊**
           // `inset -1px 0 0 var(--divider)`(bottom 由 row border-b 接管、本區最後一欄以
           // `[data-dt-last-col]` 設 none 防 2px;2026-07-04 對齊 css 現況 — 原「4 邊 inset」敘述已被
           // v2/v3 取代;2026-09-04 陰影再改 1px 偽元素,見 data-table.css),不佔 layout
-          // (per user verbatim「在 cell 內容起始位置不變」前提)→ 視覺 4 邊 grid line 由
+          // (per user 轉述:在 cell 內容起始位置不變前提)→ 視覺 4 邊 grid line 由
           // row border + 相鄰 cell 合成 → overlay outline:-1px 壓 cell border line。
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
@@ -3808,7 +3808,7 @@ function DataTableInner<TData>(
       }
       // 格內模式 → 格導覽(2026-10-13,待辦總帳 Q3c):焦點在某一格裡的控件上(連結 / 鉛筆 / 勾選框)時,
       // F2 或 Esc 把焦點收回表格根節點、格游標停在那一格。W3C APG grid:"A subsequent press of F2 restores grid navigation
-      // functions." / "Escape: restores grid navigation."(owner keyboard-model-canonical.md「出格一律 Escape,F2 亦可」)。
+      // functions." / "Escape: restores grid navigation."(owner keyboard-model-canonical.md「`F2` 為什麼一定要有」那一節:出格一律 Escape,F2 亦可)。
       // 在編輯器裡(editingCellId)的 F2 / Esc 屬於編輯器(結算 / 取消),不走這裡。
       if (spreadsheetMode && targetIsEmbeddedControl && editingCellId == null && (e.key === 'F2' || e.key === 'Escape')) {
         const cellEl = spreadsheetKbTarget?.closest<HTMLElement>('[data-cell-id]')
@@ -4003,8 +4003,9 @@ function DataTableInner<TData>(
         // 2026-09-04 稽核抓到我先前在這裡重複寫了一次(值相同、行為零差異,但屬多餘),已移除。
         aria-sort={sortDir === 'asc' ? 'ascending' : sortDir === 'desc' ? 'descending' : 'none'}
         className={cn(
-          // **Inline action canonical**(2026-05-05 v2):header 用 `flex items-center gap-2`
-          // (= 8px,inline-action.spec.md SSOT),more action 為 inline shrink-0 sibling 而非
+          // **Inline action canonical**(2026-05-05 v2):header 用 `flex items-center`,排序區 ↔ ⌄ 的 8px
+          // (inline-action.spec.md SSOT `gap-2`)由 ⌄ 外層揭示時自己帶(`ml-2`,見下方 ⌄ 註解;2026-10-28 前寫在這一層的 `gap-2`),
+          // more action 為 inline shrink-0 sibling 而非
           // absolute → hover 顯時佔位 → label 自動讓出空間給 sort + more,**不再重疊**(對齊
           // user 圖示質疑 + Notion / Airtable header layout 共識)。
           // cell padding 12px 由外層 cellPadding style 提供 → more 距 cell 右邊 = 12px。
@@ -4014,7 +4015,7 @@ function DataTableInner<TData>(
           // (main 也如此,resize-handle.spec.md 寫的是「跨 boundary 抓得到」)。缺陷 E 的「hover ⌄ 選單撐大釘選面板 max-content」
           // 修正靠的是 columnSizeStyle 給的 inline width / minWidth / maxWidth 固定寬,不是裁切;下面的 `min-w-0` 只是保險
           // (inline minWidth 一定蓋過它)。label 截斷由 TruncatedText 自管。閘:pinned-resize R3。
-          'group relative flex items-center gap-2 text-fg-secondary font-normal shrink-0 min-w-0 select-none',
+          'group relative flex items-center text-fg-secondary font-normal shrink-0 min-w-0 select-none',
           fieldDisplayTextClass(size),
           // **表頭一律靠左,不跟著欄位的 align 走**(2026-09-04 user 拍板:「header 的規格就是要一致,
           // 只有內容會置右」)。表頭是結構標籤,一整列標題對齊同一條左緣才掃得順;數值右對齊的目的是
@@ -4057,30 +4058,35 @@ function DataTableInner<TData>(
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncatedText>
           {canSort && sortDir && !isMultiSort && (
-            // 2026-05-18 改 per user 拍板「DataTable sort 跟 row size 變」+「做完」approval:
+            // 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:
             // 原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size]
             // 隨 DataTable size prop 變。
-            // 顏色不釘死(2026-08-18 user 拍板「與 label 同色連動」):繼承點擊區文字色 —
+            // 顏色不釘死(2026-08-18 user 拍板:與 label 同色連動(轉述)):繼承點擊區文字色 —
             // 靜止 fg-secondary、hover 隨父層 hover:text-foreground 與 label 同升。禁 fg-muted
             //(muted 家 = 永遠在場的裝飾/affordance 標記;排序箭頭 = 套用後才出現的狀態資訊)、
             // 禁 primary。SSOT → data-table.spec.md「Header cell internal」表 sort arrow 顏色列。
             <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0" />
           )}
         </div>
-        {/* 右區:⌄ menu(hover/focus-within 才顯;**不顯示時不佔位**)
-            **Layout canonical**(2026-05-06 v3 user explicit rule):`hidden` default →
-            `group-hover:inline-flex` / `group-focus-within:inline-flex` / `has-[[data-state=open]]:inline-flex`
-            才出現 + 佔位。鍵盤那一條**必須是 focus-within,不能照 item-anatomy 改成 has-[:focus-visible]**(2026-10-21 實測):
-            這裡的揭示是 display(不佔位),Tab 從排序區移到 ⌄ 的那一下,舊焦點先離開、群組裡一時沒有 :focus-visible → ⌄ 變 display:none →
-            剛拿到焦點的 ⌄ 不可聚焦,焦點掉到 <body>。用 opacity 揭示的(行內小按鈕)沒有這個問題,所以那邊用 has-[:focus-visible]。
-            代價照實記:滑鼠點過排序區後 ⌄ 會留到焦點離開(r1b DT-06 同族;待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT1)。前 v2 用 `opacity-0 group-hover:opacity-100` 是「永遠佔位 hover 才顯影」—
-            user 報「不應永遠佔位,沒顯示時應讓 label 多空間」。新行為:
-            - 不顯示 → display:none → 不佔位 → label 取得整個 header width
-            - hover/focus/menu-open → display:inline-flex → 佔位(width 同前;label 自然 truncate 讓位)
-            對齊 Notion(hover-row reveal action,inline action 不佔靜態 layout)/ Linear / Airtable。
+        {/* 右區:⌄ menu(滑過整格 / 格裡有鍵盤焦點 / 選單開著才顯;**不顯示時不佔位**)
+            **Layout canonical**(2026-05-06 v3 user explicit rule):不顯示時不佔位,label 取得整個 header width;
+            顯示時佔位(寬同前;label 自然 truncate 讓位)。對齊 Notion(hover-row reveal action,inline action 不佔靜態 layout)/ Linear / Airtable。
+            **收起 = 寬 0 + 透明 + 裁掉,不是 display:none**(2026-10-28,待辦總帳 R1b-DT1):
+            - 鍵盤那一條用 `:focus-visible`(`group-has-[:focus-visible]`),不用 focus-within —— 滑鼠點過排序區後 focus-within 會一直成立,
+              ⌄ 留到焦點離開(r1b DT-06 同族;理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)。
+            - 2026-10-21 實測:display 揭示 + `:focus-visible`,Tab 從排序區移到 ⌄ 的那一下群組裡一時沒有 :focus-visible → ⌄ 變 display:none →
+              焦點掉到 <body>。收起改成「寬 0」:節點一直在版面裡、一直可聚焦,Tab 到它的那一刻群組就有 :focus-visible、立刻展開。
+            - 排序區 ↔ ⌄ 的 8px(inline-action.spec.md `gap-2`)只在展開時由這一層帶(`ml-2`),收起時 0 —— 同一段距離只由一層給,
+              不在外層留 gap(寬 0 的節點仍會吃到 flex gap)。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
         {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。 */}
-        <div data-col-menu className="shrink-0 hidden group-hover:inline-flex group-focus-within:inline-flex has-[[data-state=open]]:inline-flex">
+        {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
+        <div data-col-menu className={cn(
+          'shrink-0 inline-flex w-0 overflow-hidden opacity-0',
+          'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
+          'group-has-[:focus-visible]:w-auto group-has-[:focus-visible]:ml-2 group-has-[:focus-visible]:overflow-visible group-has-[:focus-visible]:opacity-100',
+          'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
+        )}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <ItemInlineActionButton
@@ -4154,7 +4160,7 @@ function DataTableInner<TData>(
           </DropdownMenu>
         </div>
         {/* Header divider + resize handle(2026-05-06 v11,**2026-05-10 H2+H3 重構**):
-            - **2026-05-10 split**(per user 抓「pinned 欄位右邊分隔線無法 resize」):
+            - **2026-05-10 split**(per user 抓:pinned 欄位右邊分隔線無法 resize(轉述)):
               `showDivider` 只 gate **idle 的 1px line**(panel boundary col 的 idle 線由凍結邊界線
               `dtPanelBoundaryRight/Left::after` 接,不重複;hover / 拖拉的狀態色仍由 ResizeHandle 畫在同一像素,
               2026-09-10 修「釘選欄 resize 分隔線不變藍」);**resize hot zone** 改 gate by `isResizable` 獨立,
@@ -4504,7 +4510,7 @@ function DataTableInner<TData>(
       // mirror region 重複 render。
       const showDragHandle = enableRowDrag && (row.depth ?? 0) === 0 && isPrimaryRegion
       // v15.2 SSOT 對齊 TreeView:drag 期間 suppress 全表 hover state
-      // (user directive「drag 時 row 不應 hover / drag button 不應出現」)
+      // (user directive:drag 時 row 不應 hover / drag button 不應出現(轉述))
       const anyDragActive = activeDragId != null
       // code-quality-allow: long-function — baseRowDiv 含 row drag listeners / sticky panel / hover delegation / cell render loop / divider drawing 多 closure;拆 sub-fn 會破壞 dnd-kit hooks + row.id stable binding
       const baseRowDiv = (extra?: { ref?: (el: HTMLElement | null) => void; style?: React.CSSProperties; isDragging?: boolean; listeners?: Record<string, unknown>; attributes?: Record<string, unknown> }) => (
@@ -4771,7 +4777,7 @@ function DataTableInner<TData>(
       data-table-size={size}
       data-data-table-outer  // anchor for RowDragHandle Portal getBoundingClientRect (M25 invariant: outer 一定存在)
       data-active-editor-controller={experimentalActiveEditorController ? 'enabled' : undefined}  // Slice D Step 3.2 scaffold marker
-      // 2026-05-12 fix(user 抓「為什麼按 shift 那麼容易會在 table 外圈出現一層藍色邊框」):
+      // 2026-05-12 fix(user 抓:為什麼按 shift 那麼容易會在 table 外圈出現一層藍色邊框(轉述)):
       // table outer tabIndex=0(spreadsheet keyboard nav needs)→ click 取得 focus →
       // browser default `:focus-visible` 來自 globals.css L63「outline: 2px solid var(--ring)」
       // → 整 table 藍框。Fix:`outline-none` 抑制 outer focus visual,cell selection rect
@@ -4780,7 +4786,7 @@ function DataTableInner<TData>(
       // table 容器無 focus ring)。
       // 2026-09-07:**改成內描邊,不再抑制**。
       //
-      // 2026-05-12 抑制它的理由是 user 抓到「按 shift 那麼容易會在 table **外圈**出現一層藍色邊框」。
+      // 2026-05-12 抑制它的理由是 user 抓到:按 shift 那麼容易會在 table **外圈**出現一層藍色邊框(轉述)。
       // 今天實測那個觸發條件**已經不存在**:一般點擊與 Shift+點擊都讓焦點落在列的核取方塊上,
       // 表格根節點根本不命中 `:focus-visible`;只有**鍵盤 Tab** 會(三種情境都量過)。
       // 而抑制的代價是:Tab 落在這裡時**什麼都不畫**,根節點與表內都沒有任何線索(WCAG 2.4.7)。
@@ -5111,7 +5117,7 @@ function DataTableInner<TData>(
           Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
           Step 1C-fix(2026-05-10):wire Contract 15 cellClickEntersEdit predicate 過濾 readonly /
-          boolean cells(per RFC + user 拍板 USER #15「checkbox/url no-hover」;url 那一半 2026-10-13 由 user 拍板乙推翻,
+          boolean cells(per RFC + user 拍板 USER #15:checkbox / url 格不上滑過底色(轉述);url 那一半 2026-10-13 由 user 拍板乙推翻,
           連結格滑過出淺框、點格進編輯,只有網址文字開連結 —— 待辦總帳 Q3f)。
           Step 4(2026-05-10):wire spreadsheetMode select / range cells。 */}
       <DataTableInteractionLayer
@@ -5271,7 +5277,7 @@ function DataTableInner<TData>(
   // ── L4 Row drag DnD wrapper ───────────────────────────────────────────────
   // Sensors:Pointer(8px activation distance,避免 cell click 誤觸 drag)+ Keyboard(a11y)
   // v15.0 Path B:無 SortableContext — 每 row 各自 useDraggable / useDroppable;
-  // 同 parent level 限制由自訂 collisionDetection 過濾 cross-parent target 成立(cross-parent over → 不畫落點線;不另設 invalid 視覺,見 data-table.spec.md「把手不表示『不能放』」)。
+  // 同 parent level 限制由自訂 collisionDetection 過濾 cross-parent target 成立(cross-parent over → 不畫落點線;不另設 invalid 視覺,見 data-table.spec.md「Row drag(Jira canonical,v3 已 ship)」段把手不表示不能放那一條)。
   // DragEnd:active.id / over.id → 算 position(active vs over 視覺位置),呼叫 onRowReorder。
   // hooks 必呼叫(rules-of-hooks)— 即使 enableRowDrag=false 也走 useSensors;wrap 才條件化。
   // **codex P1 fix(2026-05-07 v15.13)**:KeyboardSensor 不傳 `coordinateGetter`,用
@@ -5313,7 +5319,7 @@ function DataTableInner<TData>(
   // **2026-05-06 v14.8 collision detection canonical(對齊 dnd-kit official best practice)**:
   // 從 closestCenter 換 `pointerWithin + rectIntersection` composite。
   // **Why**:closestCenter 永遠返回最近 droppable → over 永遠非 null → 釋放任何位置都觸發
-  // onRowReorder 強制 reorder(user 報「拉動就強制 reorder 不能 snap back」)。
+  // onRowReorder 強制 reorder(user 報:拉動就強制 reorder 不能 snap back(轉述))。
   // pointerWithin 要求 pointer 真在 droppable rect 內才返回 → release 在 gap 自然 over=null →
   // 不觸發 reorder → snap back 自然成立(對齊 Notion / TreeView 行為)。
   // rectIntersection fallback 給 keyboard sensor(無 pointer)。
@@ -5324,12 +5330,12 @@ function DataTableInner<TData>(
       const pointer = pointerWithin(args)
       return pointer.length > 0 ? pointer : rectIntersection(args)
     }
-    // **v15.8 Bug 2 fix**(對齊 user「PRD-004 拉起儘管同位置放開後一定 reorder」):
+    // **v15.8 Bug 2 fix**(對齊 user:PRD-004 拉起儘管同位置放開後一定 reorder(轉述)):
     // 預設 dnd-kit `pointerWithin` 排除 active 自身,fallback `rectIntersection` 找最近
     // next row → cursor 仍在 source row 內 但 over=next row → reorder 觸發。
     // Fix:cursor 仍在 source row vertical range 內 → return [](no over → no indicator
     // → onDragEnd over=null → noop)。User 必須 cursor 真正離開 source row vertical 範圍
-    // 才視為「想 reorder」,對齊 user 的「沒動就不該 reorder」直覺。
+    // 才視為「想 reorder」,對齊 user 的直覺(轉述:沒動就不該 reorder)。
     const activeRect = args.active?.rect.current.initial
     const cursor = args.pointerCoordinates
     if (cursor && activeRect && cursor.y >= activeRect.top && cursor.y <= activeRect.bottom) {
@@ -5434,7 +5440,7 @@ function DataTableInner<TData>(
       setActiveDragId(id)
       // **v15.4 SSOT**:reconstructFullRowGhost 跨 pinned 區域(left/center/right)
       // 重組完整 row ghost,確保 cursor 在 ghost 內部維持與 mousedown 時相對位置一致
-      // (對齊 user directive「ghost 跟 cursor 維持固定相對位置」+ Linear / Notion / Jira)
+      // (對齊 user directive:ghost 跟 cursor 維持固定相對位置(轉述)+ Linear / Notion / Jira)
       const ghost = reconstructFullRowGhost(id, tableRef.current)
       if (ghost) {
         setDragOverlayHtml(ghost.html)
@@ -5491,7 +5497,7 @@ function DataTableInner<TData>(
   // Reorderable column ids(non-locked,non-system) — 用 TanStack runtime visible order
   // **v14.10 fix**:之前用 columnsWithSelection 的 declaration order,user 控的 columnOrder
   // state(tableOptions.state.columnOrder)被忽略 → side('before'/'after')算錯 → drop 落
-  // 在錯誤位置(user 報「Stock 移不到 Category/Price 之間」root cause)。
+  // 在錯誤位置(user 報:Stock 移不到 Category/Price 之間(轉述)root cause)。
   // 改用 `table.getVisibleLeafColumns()` 拿 live visual order(已套 columnPinning + columnOrder)。
   const reorderableColumnIds = React.useMemo(() => {
     return table.getVisibleLeafColumns()
@@ -5532,7 +5538,7 @@ function DataTableInner<TData>(
       const position: 'before' | 'after' = oldIdx < newIdx ? 'after' : 'before'
       // **v15.3 noop guard SSOT**(共用 isReorderNoop helper)
       if (isReorderNoop(oldIdx, newIdx, position)) return
-      // 2026-05-12 Q1 fix(user 抓「column 一拉起來就一定要換位置」)— Material X / AG Grid
+      // 2026-05-12 Q1 fix(user 抓:column 一拉起來就一定要換位置(轉述))— Material X / AG Grid
       // column reorder canonical:cursor 必須過 next column **50% midpoint** 才換,沒過 → snap back。
       // dnd-kit 預設 over=column-under-pointer 一拉到鄰格就 reorder。加 midpoint threshold 對齊
       // 世界級 column reorder UX。對齊 row drag noop SSOT(`isReorderNoop`)+ Material X
@@ -5568,7 +5574,7 @@ function DataTableInner<TData>(
   // 2026-05-06 v11:column reorder collision detection — drag column 時 droppable filter
   // 只保留 column id(避免 over 觸發 row);drag row 走 sameParent canonical。
   // v14.8:換 pointerWithin + rectIntersection composite(對齊 dnd-kit official canonical)
-  // 解 user 報「ghost 出來但 indicator 沒 / 不能 reorder」snap-back 同類問題。
+  // 解 user 報:ghost 出來但 indicator 沒 / 不能 reorder(轉述)snap-back 同類問題。
   const dndCollisionDetection: CollisionDetection = React.useCallback((args) => {
     const activeData = args.active?.data?.current as { type?: 'row' | 'column' } | undefined
     if (activeData?.type === 'column') {
@@ -5641,7 +5647,7 @@ function DataTableInner<TData>(
         //   live row rects(忽略 active.rect)**,modifier 偏移 transform 不再影響
         //   collision detection,可安全再用。
         // - 三 drag scenario(row / column / TreeView)現在都 ghost-跟-cursor 對齊,
-        //   user directive「ghost-cursor SSOT」一致。
+        //   user directive:ghost-cursor SSOT(轉述)一致。
         modifiers={[snapToCursorModifier]}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}

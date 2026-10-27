@@ -118,7 +118,7 @@
 /* ────────────────────────────────────────────────────────────
    Cell grid geometry(Phase 9 Issue 8 fix,2026-05-10)
    ────────────────────────────────────────────────────────────
-   Per codex Layer B 重比稿 verdict + user 「保全 field border 在 cell 內也能完美 SSOT」
+   Per codex Layer B 重比稿 verdict + user:保全 field border 在 cell 內也能完美 SSOT(轉述)
    approval keyword「就接受」:
 
    **Architecture**:
@@ -127,10 +127,10 @@
    - DataTable layer owns hover / selection / range overlay paint(measured rect,4-edge consistent)
 
    **Implementation**(歷史:2026-05-10 用 `box-shadow: inset` 畫;2026-09-04 起改為 1px 偽元素,
-   見下方 `.dtCellGrid::after`)—— 不佔 layout space、**不影響 content 起始位置**(per user verbatim
-   「在 cell 內容起始位置不變的前提下」原則):
+   見下方 `.dtCellGrid::after`)—— 不佔 layout space、**不影響 content 起始位置**(per user 轉述:
+  在 cell 內容起始位置不變的前提下 原則):
    - 之前 cell 用 `border-r border-divider` 只右邊 → hover overlay outline:-1px 只右邊壓
-     cell border,上左下 sub-pixel 不一致(user 抓到「右 1px / 上左下 2px」bug)
+     cell border,上左下 sub-pixel 不一致(user 抓到:右 1px / 上左下 2px(轉述)bug)
    - 改為 paint-only 的線(先陰影、後偽元素)→ 視覺 4 邊 grid line 由 row border + 相鄰 cell
      合成 → overlay outline -1px 在 4 邊都剛好壓 line in-place → 4 邊 SSOT 視覺一致
 
@@ -141,7 +141,7 @@
    ──────────────────────────────────────────────────────────── */
 /* inlineEdit 模式的 body 欄間線。
    2026-05-10 fix v2:只畫右邊,bottom 由 row.border-b 接管。
-   2026-05-12 fix v3(user 抓「pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?」):
+   2026-05-12 fix v3(user 抓:pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?(轉述)):
    每個 panel(left/center/right)最右 cell 不該畫線,因為:
      - Left panel 最右 cell 旁:凍結邊界線
      - Center / Right panel 最右 cell 旁:outer container border(rounded-md)
@@ -262,7 +262,7 @@
 
 /* ────────────────────────────────────────────────────────────
    `__select__` ad-hoc cell-shadow rule retire(2026-05-12 Round 5,user Q5 拍板)+
-   Panel boundary divider canonical(Round 5.2 re-apply per user「你們都同意就做」):
+   Panel boundary divider canonical(Round 5.2 re-apply per user:你們都同意就做(轉述)):
    ────────────────────────────────────────────────────────────
    原 `[data-column-id="__select__"]:not(:last-child)` retire — 走 inlineEdit canonical。
    **2026-09-24 補完這句話**:退役當下說好「走 inlineEdit canonical」,但 tsx 裡選取欄的
@@ -294,7 +294,7 @@
       恆等於 scrollLeft。掛在不捲動的外層才不會被帶走。
    2. 一個元素只有一個 `::after`。左/右 header panel 同時掛凍結邊界線,兩條規則會合併成
       `left:0 right:0 top:0 bottom:0 width:1px height:1px`,在角落變成 1×1 的點、兩條線同時消失
-      (2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失」的直接原因)。分屬不同元素就不會撞。
+      (2026-09-04 user 回報「為何pin住的欄位header最右邊的分隔線消失了？」的直接原因)。分屬不同元素就不會撞。
    一條線橫貫整表,也天生涵蓋讓給垂直捲軸的那條 strip,不會有分段接縫。 */
 .dtHeaderRowGroup {
   position: relative;

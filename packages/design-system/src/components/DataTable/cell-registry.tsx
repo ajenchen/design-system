@@ -37,7 +37,7 @@ import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditablePro
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 
-// ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板「全部收窄」)──────────────
+// ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板:全部收窄(轉述))──────────────
 // `naked` 已從公開 FieldVariant 拆出(field-types.ts `FieldVariantInternal`);本檔是唯一合法
 // naked 消費者(field-controls.spec.md「軸二 variant」明文)。以 `WithFieldVariantInternal`
 // 型別層 widen 各 Field control 的 `variant` prop — 純型別、零 runtime;元件內部 cva / resolver
@@ -154,7 +154,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
       : <Input variant="naked" mode="view" value={v} size={size} aria-label={ariaLabel} />
   }
   if (autoRowHeight) {
-    // 2026-05-14 I8 fix(per codex verdict + user 抓「edit cell shrink」):
+    // 2026-05-14 I8 fix(per codex verdict + user 抓:edit cell shrink(轉述)):
     // 原 `wrapRows = value.length / 40` 字元估算不準(對應實際 column width 不同
     // → cell 進 edit shrink)。改 CSS `field-sizing: content`(Chrome 123+ / FF 122+ /
     // Safari 17+)讓 textarea 自動 grow to content,匹配 view wrap 真實高度。

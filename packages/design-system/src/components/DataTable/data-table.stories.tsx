@@ -4,7 +4,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
-import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown } from 'lucide-react'
+import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
 import { DataTable, type DataTableSelection } from './data-table'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
@@ -24,7 +24,12 @@ import { Input } from '@/design-system/components/Input/input'
 import { BulkActionBar } from '@/design-system/components/BulkActionBar/bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 // Issue 3 cleanup(2026-05-10):ScrollArea / ButtonDivider / ItemPrefix / ItemLabel /
 // ItemInlineActionButton / ROW_PADDING_BY_SIZE / cn / DnD / dragSourceStyle imports retired —
 // 全 column visibility row state machine 移到 <DataTableColumnVisibilityPanel> primitive。
@@ -35,9 +40,10 @@ import './column-types' // ColumnMeta declaration merging
 // ── Person sample data canonical ──
 // 對齊 ProfileCard.stories「Default」預設呈現:name + subtitle + status + statusMessage + fields
 // avatar.spec.md DS-wide:所有 person avatar hover 必出現 ProfileCard,展示資訊一致(不可精簡)
-// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「defaultFieldValues 優於 fields 同名 label」;閘 overlay-story-contract S8)
+// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`」;閘 overlay-story-contract S8)
 import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
 import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
+import { orderColumns, ORDER_ROWS } from '@/design-system/stories-helpers/data/order-table'
 
 const SELLERS: PersonData[] = [
   { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
@@ -90,26 +96,159 @@ function generateLargeData(count: number): Product[] {
   }))
 }
 
-// ── 範例區段(標題 + 說明 + 範例):本檔唯一一份 ──────────────────────────────────────────────
-// 2026-10-21(r1b NEW-3):原本本檔同一段標題 markup 手抄 14 份(另有 6 份在篩選面板夾具),旁邊這個 Section 只被用了 5 次;
-// 前一次把標題從 text-body font-bold 改成 text-h6 font-semibold 就得逐份改。現在全部經這裡,值一個字都沒變:
-//   標題 = text-h6 font-semibold text-foreground、標題 → 說明 / 範例 = mb-[--layout-space-tight]、說明 = text-caption text-fg-muted + mb-tight。
-//   (這兩段間距是照抄前的原值。「標題 ↔ 說明」該是多少,`tokens/layoutSpace/layoutSpace.spec.md` 沒有明文:規則 3 表「跨範疇 + 直接 functional 交互」
-//   那一列(a6390356 時 :76,「heading → labeled content」)與「內容區裡用 typography 打的小標題」那一段(:101)只講標題 → 被它標示的內容,
-//   沒講標題 ↔ 它自己的說明 —— 規範缺口,待 user 拍板,登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT7;拍板前不改。)
+// ── 範例區段(標題 + 說明 + 範例)──────────────────────────────────────────────────────────────────
+// 2026-10-28 起改用共用的 `ExampleSection`(stories-helpers/examples/tutorial-page.tsx):標題 ↔ 說明 2px、標題區 → 範例 loose,
+// 跟著密度走(user 2026-10-21 A4「我認為標題+說明 -> 內容之間的距離應該 loose」;之前本檔自己的 Section 寫死 tight)。
+// 一頁多則有標題的範例上下疊時,範例之間用下面這個常數(現值 loose,同改之前每段各寫一次的值)。
+// 10-27 已定要放大成 loose × 2,但這個值依 tutorial-page 閘 R7 只准寫在 stories-helpers/examples/tutorial-page.tsx,
+// 要等那支檔開出給展示 / 設計規格頁用的範例堆疊出口(basic 家族)再改,不在這裡自己寫一份。
 // 寬度不是區段的事:篩選面板那幾段要 680px 上限(面板的閱讀寬),由呼叫端傳 className(FILTER_SECTION_WIDTH)。
-// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
-// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
-// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
-// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
-const Section = ({ title, note, className, children, ...rest }: { title: string; note?: React.ReactNode; className?: string; children: React.ReactNode } & Omit<React.HTMLAttributes<HTMLElement>, 'title'>) => (
-  <section className={className} {...rest}>
-    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
-    {note ? <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">{note}</p> : null}
-    {children}
-  </section>
-)
+const EXAMPLE_STACK = 'flex flex-col gap-[var(--layout-space-loose)]'
 const FILTER_SECTION_WIDTH = 'w-full max-w-[680px]'
+
+// ── 範例裡的按鈕都接上真的反應(2026-10-28)────────────────────────────────────────────────────────
+// 之前本檔的新增 / 編輯 / 刪除 / 更多 / 下載 / 匯出全沒有 onClick(user 2026-09-08「一堆按鈕都無法正常反應」)。
+// 做法照 DS 既有範例:表單對話框 = dialog.stories.tsx「表單」(useFormValidation、送出跳 Toast);
+// 刪除先確認:對話框裡最後那一下才是 primary + danger(button.spec.md 強調等級表);「⋯」= 真的打開選單、列出收進去的動作;
+// 匯出 / 下載 = 跳通知。用到通知的 story 自己掛 <Toaster />(toast.spec.md:每個獨立 story root 一個)。
+function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitLabel, initialValue = '', onSubmit }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  label: string
+  placeholder?: string
+  submitLabel: string
+  initialValue?: string
+  onSubmit: (value: string) => void
+}) {
+  const form = useFormValidation({
+    initialValues: { value: initialValue },
+    validate: { value: (v) => (String(v).trim() ? undefined : `${label}必填`) },
+    onSubmit: (values) => {
+      onSubmit(String(values.value).trim())
+      onOpenChange(false)
+    },
+  })
+  const handleOpenChange = (next: boolean) => {
+    if (next) form.reset()
+    onOpenChange(next)
+  }
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent height="hug">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Field required invalid={!!form.errors.value}>
+            <FieldLabel>{label}</FieldLabel>
+            <Input placeholder={placeholder} {...form.getInputProps('value')} />
+            <FieldError>{form.errors.value}</FieldError>
+          </Field>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">取消</Button>
+          </DialogClose>
+          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>{submitLabel}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ConfirmDeleteDialog({ open, onOpenChange, title, confirmLabel = '刪除', onConfirm }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  confirmLabel?: string
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent height="hug">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p className="text-body">刪除後無法復原。</p>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">取消</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button variant="primary" danger onClick={onConfirm}>{confirmLabel}</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** 商品列的「編輯 / 刪除 / ⋯」:編輯開表單改名稱、刪除先確認、⋯ 列出收進去的動作(複製 SKU、刪除)。回傳的 dialogs 放在 story 裡任何位置 */
+function useProductRowActions(initial: Product[]) {
+  const [rows, setRows] = React.useState(initial)
+  const [editing, setEditing] = React.useState<Product | null>(null)
+  const [deleting, setDeleting] = React.useState<Product | null>(null)
+  const editButton = (row: Product) => <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" onClick={() => setEditing(row)} />
+  const deleteButton = (row: Product) => <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" onClick={() => setDeleting(row)} />
+  const moreMenu = (row: Product) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem startIcon={Copy} onClick={() => { void navigator.clipboard?.writeText(row.sku).catch(() => {}); toast({ title: `已複製 SKU ${row.sku}` }) }}>複製 SKU</DropdownMenuItem>
+        <DropdownMenuItem startIcon={Trash2} onClick={() => setDeleting(row)}>刪除</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+  const dialogs = (
+    <>
+      {/* key = 正在編輯的那一列:換一列就重新帶入它的名稱(useFormValidation 的初始值只在掛上時讀一次) */}
+      <NameFormDialog
+        key={editing?.sku ?? 'none'}
+        open={editing !== null}
+        onOpenChange={(o) => { if (!o) setEditing(null) }}
+        title="編輯商品"
+        label="商品名稱"
+        submitLabel="儲存"
+        initialValue={editing?.name ?? ''}
+        onSubmit={(name) => {
+          const sku = editing?.sku
+          setRows((rs) => rs.map((r) => (r.sku === sku ? { ...r, name } : r)))
+          toast({ variant: 'success', title: '已儲存變更' })
+        }}
+      />
+      <ConfirmDeleteDialog
+        open={deleting !== null}
+        onOpenChange={(o) => { if (!o) setDeleting(null) }}
+        title={`刪除「${deleting?.name ?? ''}」?`}
+        onConfirm={() => {
+          const sku = deleting?.sku
+          setRows((rs) => rs.filter((r) => r.sku !== sku))
+          toast({ variant: 'success', title: '已刪除 1 個商品' })
+        }}
+      />
+    </>
+  )
+  return { rows, editButton, deleteButton, moreMenu, dialogs }
+}
+
+/** 工具列「⋯ 更多」:真的打開選單(匯出 CSV → 跳通知) */
+function ToolbarMoreMenu({ exportCount }: { exportCount: number }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem startIcon={Download} onClick={() => toast({ title: `已開始匯出 ${exportCount} 筆資料(CSV)` })}>匯出 CSV</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 // ── Column Definitions ───────────────────────────────────────────────────────
 
@@ -172,37 +311,31 @@ type Story = StoryObj
 /* ── Column resize(2026-05-06 v11):table 層級開關 + handle hover 變色 ── */
 export const ColumnResize: Story = {
   name: '欄寬調整',
+  // 之前兩則說明底下各印一行「目前各欄寬度:{JSON}」—— 驗回呼用的讀數不放讀者看的範例(沒有讀數之後也不必接 onColumnResize:
+  // 欄寬由 DataTable 自己的狀態管)
   render: () => {
-    const [widths, setWidths] = React.useState<Record<string, number>>({})
-    const [pinnedWidths, setPinnedWidths] = React.useState<Record<string, number>>({})
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-5xl">
-        <Section title="基本 — 全 data column 可拖" note={<>
+      <div className={`${EXAMPLE_STACK} max-w-5xl`}>
+        <ExampleSection title="基本 — 全 data column 可拖" description={<>
             拖 header 右側分隔線可調整欄寬。滑到分隔線上會變色提示,拖動時會跟著游標即時調整。
             勾選欄等系統欄位寬度固定,不可調整。
-            <br />目前各欄寬度:{JSON.stringify(widths)}
           </>}>
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
             height="auto"
             enableColumnResize
-            onColumnResize={(id, w) => setWidths(prev => ({ ...prev, [id]: w }))}
           />
-        </Section>
-        <Section title="欄位釘選與欄寬調整並存" note={<>
-            把 SKU 跟產品名稱固定在左側,依然可以拖動分隔線調整這兩欄的寬度。
-            <br />目前各欄寬度:{JSON.stringify(pinnedWidths)}
-          </>}>
+        </ExampleSection>
+        <ExampleSection title="欄位釘選與欄寬調整並存" description="把 SKU 跟產品名稱固定在左側,依然可以拖動分隔線調整這兩欄的寬度。">
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
             height="auto"
             pinnedLeftColumns={['sku', 'name']}
             enableColumnResize
-            onColumnResize={(id, w) => setPinnedWidths(prev => ({ ...prev, [id]: w }))}
           />
-        </Section>
+        </ExampleSection>
       </div>
     )
   },
@@ -247,8 +380,6 @@ export const ColumnReorder: Story = {
           (對照 Notion 的主欄固定做法)
           <br />
           - System columns(__select__)永遠鎖
-          <br />
-          目前 order:{columnOrder.join(' → ')}
         </p>
         <DataTable
           columns={lockedCols}
@@ -266,6 +397,9 @@ export const ColumnReorder: Story = {
 /* ── 行高模式 — autoRowHeight prop(每 row 內容驅動高度) ── */
 export const RowAutoHeightInlineEdit: Story = {
   name: '自動行高 × 就地編輯',
+  parameters: {
+    docs: { description: { story: '開了自動行高,備註欄的長文字會把那一列撐高,同一列其他單行的格子靠上對齊。點任一格進編輯時,文字位置不跳動,編輯框填滿整格。' } },
+  },
   render: () => {
     // 2026-05-14 I7 fix(per codex verdict):note 初始化進 state 一次,commit 寫同一 state。
     // 原 `dataWithNotes = list.map(...)` 每 render derive 覆蓋 commit value → user 看似不能編。
@@ -291,11 +425,6 @@ export const RowAutoHeightInlineEdit: Story = {
     ]
     return (
       <div className="max-w-5xl">
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-          autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應頂對齊。
-          Click 任一 cell 進 edit:文字位置 view↔edit 不偏移(仍頂對齊),
-          frame 填 cell,Field 自帶 state ring(focus-within → primary)。
-        </p>
         <DataTable
           columns={cols} data={list} height="auto" autoRowHeight inlineEdit
           onCellCommit={(rowId, col, val) => {
@@ -308,8 +437,27 @@ export const RowAutoHeightInlineEdit: Story = {
   },
 }
 
-export const RowAutoHeight: Story = {
+// 讀者看的「自動行高」只留固定行高 vs 自動行高兩格;「× 釘選欄 × Row Actions」「× 虛擬捲動」兩格是給閘量三區等高的夾具,
+// 搬到下面的 test-only(之前四格都在讀者頁;story-rules.md「Technical probe visibility」:只服務 automation 的標 test-only)。
+export const RowAutoHeightModes: Story = {
   name: '自動行高',
+  render: () => (
+    <div className={EXAMPLE_STACK}>
+      <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
+        <DataTable columns={baseColumns} data={sampleData} height="auto" />
+      </ExampleSection>
+      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
+        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
+      </ExampleSection>
+    </div>
+  ),
+}
+
+// 三區等高夾具(test-only;story id 沿用 row-auto-height:data-table-invariants I15、data-table-header-scroll-sync、
+// data-table-scrollbar-visibility 都開這一支量釘選左區的自動行高列;四格內容原封不動)
+export const RowAutoHeight: Story = {
+  name: '自動行高 — 三區等高夾具',
+  tags: ['test-only'],
   render: function RowAutoHeightStory() {
     // 虛擬捲動 pane 的資料:50 筆(> VIRTUAL_THRESHOLD 30)+ 長短交錯的備註,讓被撐高的列
     // 隨捲動進出視窗 —— 缺陷 F 在虛擬模式下更嚴重(`vr.start` 全由 center 的量測推出)。
@@ -322,17 +470,17 @@ export const RowAutoHeight: Story = {
           : 'Standard delivery.',
     })), [])
     return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      <Section title="固定行高（預設）" note="所有內容垂直置中，文字截斷">
+    <div className={EXAMPLE_STACK}>
+      <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
-      </Section>
-      <Section title="自動行高（autoRowHeight）" note="內容頂部對齊，wrap 欄位可撐高 row">
+      </ExampleSection>
+      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
-      </Section>
+      </ExampleSection>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
           (M15:沒有 story 覆蓋的狀態等於沒被截圖驗過)。三區同一列必須等高，機械閘 I15 逐列比對。 */}
-      <Section title="自動行高 × 釘選欄 × Row Actions" note={<>
+      <ExampleSection title="自動行高 × 釘選欄 × Row Actions" description={<>
           撐高的欄位在中段，釘選欄與 actions 在左右兩個獨立容器；同一列三區必須等高
         </>}>
         <DataTable
@@ -348,10 +496,10 @@ export const RowAutoHeight: Story = {
             </>
           )}
         />
-      </Section>
+      </ExampleSection>
       {/* 同一個缺陷在虛擬模式下的版本:列的位移 `vr.start` 只由 center 的量測推出,pinned 區
           比 center 高的列會直接壓到下一列的位置。共用列高之後 center 量到的就是共用值,三區同解。 */}
-      <Section title="自動行高 × 釘選欄 × Row Actions × 虛擬捲動" note={<>
+      <ExampleSection title="自動行高 × 釘選欄 × Row Actions × 虛擬捲動" description={<>
           50 筆(超過虛擬門檻 30);捲動時被撐高的列進出視窗，三區仍須逐列等高
         </>}>
         <DataTable
@@ -367,7 +515,7 @@ export const RowAutoHeight: Story = {
             </>
           )}
         />
-      </Section>
+      </ExampleSection>
     </div>
     )
   },
@@ -377,22 +525,47 @@ export const RowAutoHeight: Story = {
 // 「預設空狀態」pane = 「自訂空狀態」的對照基線;Empty primitive 消費教學 canonical → anatomy.EmptyState,此處不重複教學
 export const EmptyState: Story = {
   name: '空狀態',
-  render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      <Section title="預設空狀態">
-        <DataTable columns={baseColumns} data={[]} />
-      </Section>
-      <Section title="自訂空狀態">
-        <DataTable
-          columns={baseColumns}
-          data={[]}
-          emptyState={
-            <Empty title="尚無商品" description="點擊上方「新增」開始建立" />
-          }
+  render: function EmptyStateStory() {
+    // 自訂空狀態的「下一步」放在 Empty 自己的 action 槽(empty.spec.md「Action」),按了真的開新增表單、送出後列就出現
+    //(之前說明寫「點擊上方『新增』」,畫面上根本沒有那顆鈕)
+    const [rows, setRows] = React.useState<Product[]>([])
+    const [creating, setCreating] = React.useState(false)
+    return (
+      <>
+        <Toaster />
+        <div className={EXAMPLE_STACK}>
+          <ExampleSection title="預設空狀態">
+            <DataTable columns={baseColumns} data={[]} />
+          </ExampleSection>
+          <ExampleSection title="自訂空狀態">
+            <DataTable
+              columns={baseColumns}
+              data={rows}
+              emptyState={
+                <Empty
+                  title="尚無商品"
+                  description="新增第一個商品,開始管理庫存。"
+                  action={<Button variant="primary" startIcon={Plus} onClick={() => setCreating(true)}>新增商品</Button>}
+                />
+              }
+            />
+          </ExampleSection>
+        </div>
+        <NameFormDialog
+          open={creating}
+          onOpenChange={setCreating}
+          title="新增商品"
+          label="商品名稱"
+          placeholder="例:無線藍牙耳機"
+          submitLabel="新增"
+          onSubmit={(name) => {
+            setRows((rs) => [...rs, { ...sampleData[0], sku: `PRD-${String(rs.length + 101).padStart(3, '0')}`, name }])
+            toast({ variant: 'success', title: '已新增商品' })
+          }}
         />
-      </Section>
-    </div>
-  ),
+      </>
+    )
+  },
 }
 
 /* ── Container 高度模式 — height prop(table 容器約束) ── */
@@ -402,12 +575,12 @@ export const ContainerHeight: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <Section title="無約束" note={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
+      <div className={EXAMPLE_STACK}>
+        <ExampleSection title="無約束" description={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
           <DataTable columns={baseColumns} data={sampleData} height="auto" />
-        </Section>
+        </ExampleSection>
 
-        <Section title="有約束" note={<>height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
+        <ExampleSection title="有約束" description={<>height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
           <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
             <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
@@ -418,7 +591,7 @@ export const ContainerHeight: Story = {
               <DataTable columns={baseColumns} data={manyRows} height="300px" />
             </div>
           </div>
-        </Section>
+        </ExampleSection>
       </div>
     )
   },
@@ -427,78 +600,78 @@ export const ContainerHeight: Story = {
 /* ── Row Actions ── */
 export const RowActions: Story = {
   name: '列操作',
-  render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      <Section title="Row Actions（常駐）" note="actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。">
-        <DataTable
-          columns={baseColumns}
-          data={sampleData}
-          height="auto"
-          rowActions={() => (
-            <>
-              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
-            </>
-          )}
-        />
-      </Section>
-      <Section title="3+ actions：MoreVertical 收納" note="前 1-2 個高頻 action inline + MoreVertical dropdown">
-        <DataTable
-          columns={baseColumns}
-          data={sampleData.slice(0, 3)}
-          height="auto"
-          rowActions={() => (
-            <>
-              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
-            </>
-          )}
-        />
-      </Section>
-    </div>
-  ),
+  render: function RowActionsStory() {
+    // 每顆鈕都有真的反應:編輯開表單、刪除先確認、⋯ 打開選單(useProductRowActions,見檔頭「範例裡的按鈕都接上真的反應」)
+    const inline = useProductRowActions(sampleData)
+    const more = useProductRowActions(sampleData.slice(0, 3))
+    return (
+      <>
+        <Toaster />
+        <div className={EXAMPLE_STACK}>
+          <ExampleSection title="Row Actions（常駐）" description="actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。">
+            <DataTable
+              columns={baseColumns}
+              data={inline.rows}
+              height="auto"
+              getRowId={(row) => row.sku}
+              rowActions={(row) => <>{inline.editButton(row)}{inline.deleteButton(row)}</>}
+            />
+          </ExampleSection>
+          <ExampleSection title="3+ actions：MoreVertical 收納" description="前 1-2 個高頻 action inline + MoreVertical dropdown">
+            <DataTable
+              columns={baseColumns}
+              data={more.rows}
+              height="auto"
+              getRowId={(row) => row.sku}
+              rowActions={(row) => <>{more.editButton(row)}{more.moreMenu(row)}</>}
+            />
+          </ExampleSection>
+        </div>
+        {inline.dialogs}
+        {more.dialogs}
+      </>
+    )
+  },
 }
 
 /* ── Pinned Columns ── */
 export const PinnedColumns: Story = {
   name: '欄位釘選',
-  render: () => {
+  render: function PinnedColumnsStory() {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
+    // 編輯開表單、⋯ 打開選單(複製 SKU / 刪除,刪除先確認)—— 之前兩顆鈕都沒有 onClick
+    const few = useProductRowActions(sampleData)
+    const many = useProductRowActions(manyRows)
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <Section title="Left pinned + Row Actions（水平捲動）" note="SKU 固定左側，actions 固定右側，中間水平捲動。">
-          <div style={{ maxWidth: 700 }}>
-            <DataTable
-              columns={columnsWithPrice}
-              data={sampleData}
-              height="auto"
-              pinnedLeftColumns={['sku']}
-              rowActions={() => (
-                <>
-                  <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-                  <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
-                </>
-              )}
-            />
-          </div>
-        </Section>
-        <Section title="垂直捲動 + Pinned + Row Actions" note="header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。">
-          <div style={{ maxWidth: 700 }}>
-            <DataTable
-              columns={columnsWithPrice}
-              data={manyRows}
-              height="300px"
-              pinnedLeftColumns={['sku']}
-              rowActions={() => (
-                <>
-                  <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-                  <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
-                </>
-              )}
-            />
-          </div>
-        </Section>
-      </div>
+      <>
+        <Toaster />
+        <div className={EXAMPLE_STACK}>
+          <ExampleSection title="Left pinned + Row Actions（水平捲動）" description="SKU 固定左側，actions 固定右側，中間水平捲動。">
+            <div style={{ maxWidth: 700 }}>
+              <DataTable
+                columns={columnsWithPrice}
+                data={few.rows}
+                height="auto"
+                pinnedLeftColumns={['sku']}
+                rowActions={(row) => <>{few.editButton(row)}{few.moreMenu(row)}</>}
+              />
+            </div>
+          </ExampleSection>
+          <ExampleSection title="垂直捲動 + Pinned + Row Actions" description="header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。">
+            <div style={{ maxWidth: 700 }}>
+              <DataTable
+                columns={columnsWithPrice}
+                data={many.rows}
+                height="300px"
+                pinnedLeftColumns={['sku']}
+                rowActions={(row) => <>{many.editButton(row)}{many.moreMenu(row)}</>}
+              />
+            </div>
+          </ExampleSection>
+        </div>
+        {few.dialogs}
+        {many.dialogs}
+      </>
     )
   },
 }
@@ -671,31 +844,30 @@ export const InlineEdit: Story = {
   },
 }
 
-/**
- * Slice D spreadsheet semantics + overlay 整合 demo(2026-05-10 Issue 7 移過來)。
- *
- * 啟 4 條 spreadsheet flag:
- *   1. `inlineEdit` — base inline edit
- *   2. `experimentalSpreadsheetOverlay` — hover/selected/range overlay layer(Contract 8 「one
- *      geometry owner, two paint owners」)
- *   3. `spreadsheetMode` — Excel-like cell selection: click 1=select / click 2=edit /
- *      Shift+click=range / ArrowKeys=nav
- *   4. `experimentalActiveEditorController` — portal Field active editor(Slice D Step 5 D.3,
- *      cell 永遠 mode="view" SSOT preserved + portal host renders mode="edit")
- *
- * 驗證點:
- *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
- *   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
- *     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
- *   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
- *     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
- *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
- *     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
- *   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
- *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
- *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
- *   - Issue 6 viewport clip:H scroll cell out → overlay 被 panel ClipMask 裁切不溢出
- */
+// (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
+// Slice D spreadsheet semantics + overlay 整合 demo(2026-05-10 Issue 7 移過來)。
+//
+// 啟 4 條 spreadsheet flag:
+//   1. `inlineEdit` — base inline edit
+//   2. `experimentalSpreadsheetOverlay` — hover/selected/range overlay layer(Contract 8 「one
+//      geometry owner, two paint owners」)
+//   3. `spreadsheetMode` — Excel-like cell selection: click 1=select / click 2=edit /
+//      Shift+click=range / ArrowKeys=nav
+//   4. `experimentalActiveEditorController` — portal Field active editor(Slice D Step 5 D.3,
+//      cell 永遠 mode="view" SSOT preserved + portal host renders mode="edit")
+//
+// 驗證點:
+//   - hover editable cell → 1px overlay 邊框 var(--border-hover)
+//   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
+//     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
+//   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
+//     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
+//   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
+//     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
+//   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
+//   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
+//     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
+//   - Issue 6 viewport clip:H scroll cell out → overlay 被 panel ClipMask 裁切不溢出
 export const InlineEditWithSpreadsheetOverlay: Story = {
   name: '就地編輯 + 試算表浮層',
   render: () => {
@@ -740,13 +912,11 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
   },
 }
 
-/**
- * 試算表游標契約(test-only,2026-09-26):給 `scripts/data-table-invariants.mjs` I32 步驟 4、5 量兩件事 ——
- *   1. 游標所在的列被篩掉(篩選 / 換頁 / 刪除)→ 游標清掉,不留懸空的 id;Tab 進表時從第一列重新起算,
- *      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
- *   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
- * 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
- */
+// 試算表游標契約(test-only,2026-09-26):給 `scripts/data-table-invariants.mjs` I32 步驟 4、5 量兩件事 ——
+//   1. 游標所在的列被篩掉(篩選 / 換頁 / 刪除)→ 游標清掉,不留懸空的 id;Tab 進表時從第一列重新起算,
+//      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
+//   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
+// 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
 export const SpreadsheetCursorContract: Story = {
   name: '試算表游標契約',
   tags: ['test-only'],
@@ -786,18 +956,23 @@ export const SpreadsheetCursorContract: Story = {
   },
 }
 
-/**
- * Issue 9 cell error system(2026-05-10):consumer-supplied `cellErrors` map shows error message
- * 14px text-error 在 view content 下方,gap-1 spacing。Edit cell 自動 clear visual error。
- * Multi-error 用 array → ul li 分行。aria-describedby + aria-invalid for AT。
- *
- * 對齊 AG Grid `cellClassRules='ag-cell-error'` + Material X-DataGrid `errorMessage` cell prop +
- * Airtable record validation idiom。
- */
+// (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
+// Issue 9 cell error system(2026-05-10):consumer-supplied `cellErrors` map shows error message
+// 14px text-error 在 view content 下方,gap-1 spacing。Edit cell 自動 clear visual error。
+// Multi-error 用 array → ul li 分行。aria-describedby + aria-invalid for AT。
+//
+// 對齊 AG Grid `cellClassRules='ag-cell-error'` + Material X-DataGrid `errorMessage` cell prop +
+// Airtable record validation idiom。
+// 錯誤訊息要跟那一格的資料對得上(之前 PRD-001 名稱明明有值卻報「不可為空白」、PRD-002 數量 112 卻報「必須 ≥ 0 / 目前小數」):
+// 這兩則用的資料把對應的格子改成真的會出錯的值 —— PRD-001 名稱空白、PRD-002 數量 -2.5
+const CELL_ERROR_SAMPLE: EditableProduct[] = editableSampleData.map((p) =>
+  p.sku === 'PRD-001' ? { ...p, name: '' } : p.sku === 'PRD-002' ? { ...p, qty: -2.5 } : p,
+)
+
 export const CellErrors: Story = {
   name: '欄位錯誤訊息',
   render: () => {
-    const [data, setData] = React.useState(editableSampleData)
+    const [data, setData] = React.useState(CELL_ERROR_SAMPLE)
     const editCol = createColumnHelper<EditableProduct>()
     const editableColumns = React.useMemo(
       () => [
@@ -810,9 +985,9 @@ export const CellErrors: Story = {
     )
     // Demo cellErrors map(consumer 自管 state;edit commit 後可清 / 加 error)
     const [cellErrors, setCellErrors] = React.useState<Record<string, string | string[]>>({
-      'PRD-001:name': '必填欄位:Product 名稱不可為空白',
-      'PRD-002:qty': ['必須 ≥ 0', '必須是整數(目前小數)'],
-      'PRD-003:category': '選擇的分類已不在 active catalog,請改選有效項目',
+      'PRD-001:name': '商品名稱必填',
+      'PRD-002:qty': ['數量不可小於 0', '數量必須是整數'],
+      'PRD-003:category': '這個分類已停用,請改選其他分類',
     })
     const handleCommit = (rowId: string, colId: string, value: unknown) => {
       setData((prev) => prev.map((row) => row.sku === rowId ? { ...row, [colId]: value } : row))
@@ -827,7 +1002,7 @@ export const CellErrors: Story = {
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           欄位驗證錯誤直接顯示在內容下方,不蓋住資料。一格多個錯誤分行條列。點進該格編輯時暫時隱藏錯誤,
-          交給使用者修正;commit 後由 app 端決定是否還要顯示。
+          交給使用者修正;改完確認後由 app 端決定是否還要顯示。
         </p>
         {/* 2026-05-10 fix(user 第二次糾正):restore `autoRowHeight` — 原本 story 用全表
             auto-row 是正確 baseline,error row 自然撐高 + 其他 row 仍 auto(內容驅動)。 */}
@@ -847,16 +1022,16 @@ export const CellErrors: Story = {
   },
 }
 
-/**
- * 固定行高表格遇到欄位錯誤時的特殊行為(2026-05-10 per user 確認 ask):
- * 整個 table 預設 fixed 行高,但**任一格出現錯誤訊息的那一 row 會自動撐高**(改成 auto)讓
- * 訊息完整顯示。其他沒錯誤的 row 維持 fixed 高度不受影響。錯誤被修掉之後該 row 自動回 fixed。
- * 這是 per-row 行為,不是整表切換 mode。
- */
+// (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
+// 固定行高表格遇到欄位錯誤時的特殊行為(2026-05-10 per user 確認 ask):
+// 整個 table 預設 fixed 行高,但**任一格出現錯誤訊息的那一 row 會自動撐高**(改成 auto)讓
+// 訊息完整顯示。其他沒錯誤的 row 維持 fixed 高度不受影響。錯誤被修掉之後該 row 自動回 fixed。
+// 這是 per-row 行為,不是整表切換 mode。
 export const CellErrorsFixedRowOverride: Story = {
   name: '欄位錯誤訊息（固定行高 + 逐列撐高）',
   render: () => {
-    const [data, setData] = React.useState(editableSampleData)
+    // 這一則只有 PRD-001 / PRD-003 報錯:只把 PRD-001 的名稱改成空白(PRD-002 維持原數量,不報錯也不該錯)
+    const [data, setData] = React.useState(() => editableSampleData.map((p) => (p.sku === 'PRD-001' ? { ...p, name: '' } : p)))
     const editCol = createColumnHelper<EditableProduct>()
     const editableColumns = React.useMemo(
       () => [
@@ -868,8 +1043,8 @@ export const CellErrorsFixedRowOverride: Story = {
       []
     )
     const [cellErrors, setCellErrors] = React.useState<Record<string, string | string[]>>({
-      'PRD-001:name': '必填欄位:Product 名稱不可為空白',
-      'PRD-003:category': '選擇的分類已不在 active catalog,請改選有效項目',
+      'PRD-001:name': '商品名稱必填',
+      'PRD-003:category': '這個分類已停用,請改選其他分類',
     })
     const handleCommit = (rowId: string, colId: string, value: unknown) => {
       setData((prev) => prev.map((row) => row.sku === rowId ? { ...row, [colId]: value } : row))
@@ -1029,6 +1204,9 @@ export const NestedRowsExpanderHoverState: Story = {
    - **Drop indicator**:水平 2px primary line(top/bottom)— 主檔對齊 TreeView */
 export const NestedRowsWithDrag: Story = {
   name: '巢狀列 × 拖曳重排',
+  parameters: {
+    docs: { description: { story: '只有最上層的列能拖(滑過列時左緣浮出把手),子任務沒有把手、不能拖,也不能拖到別的父任務底下;放下的位置用一條 2px 的主色線標出,跟 TreeView 同一種。' } },
+  },
   render: () => {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'task-1': true })
     const [list, setList] = React.useState<TaskRow[]>(NESTED_DATA)
@@ -1047,12 +1225,7 @@ export const NestedRowsWithDrag: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
-        <p className="text-caption text-fg-muted">
-          Tree-table drag 設計準則:top-level rows 可拖(handle 浮在 row 左緣),
-          sub-rows 無 handle 不可拖(對齊 Notion 保守)。Cross-parent drop 過濾,
-          顯 invalid signal。Drop indicator 水平 2px primary line — 主檔對齊 TreeView。
-        </p>
+      <div className="max-w-3xl">
         <DataTable
           columns={NESTED_COLUMNS}
           data={list}
@@ -1117,10 +1290,14 @@ export const WithBulkActions: Story = {
     const [filterPrefilledId, setFilterPrefilledId] = React.useState<string | undefined>(undefined)
     const [filterOpen, setFilterOpen] = React.useState(false)
     const [sortOpen, setSortOpen] = React.useState(false)
+    // 「新增商品」「移除」真的會改資料(之前這幾顆鈕都沒有 onClick)
+    const [products, setProducts] = React.useState<Product[]>(sampleData)
+    const [creating, setCreating] = React.useState(false)
+    const [removing, setRemoving] = React.useState(false)
     const TOTAL = 5370
     const filteredData = React.useMemo(
-      () => search ? sampleData.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())) : sampleData,
-      [search]
+      () => search ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())) : products,
+      [search, products]
     )
     const VISIBLE = filteredData.length
     // 反向選取(inverted)showcase:include 全可見已選且 dataset 更大 → offer「選取全部 M」;
@@ -1209,8 +1386,8 @@ export const WithBulkActions: Story = {
               />
             </PopoverContent>
           </Popover>
-          <Button variant="primary" size="sm" startIcon={Plus}>新增商品</Button>
-          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+          <Button variant="primary" size="sm" startIcon={Plus} onClick={() => setCreating(true)}>新增商品</Button>
+          <ToolbarMoreMenu exportCount={filteredData.length} />
         </DataToolbar>
 
         {/* DataTable — bordered=true(height 約束 = 垂直滾動 trigger,per spec line 150)
@@ -1251,36 +1428,21 @@ export const WithBulkActions: Story = {
         {(showHint || selectedCount > 0) && (
           <div className="flex flex-col">
             {showHint && (
+              // 提示列的動作放 Alert 自己的 endContent,用 Button variant="link"(button.tsx「內文連結」那一型)——
+              // 之前是句子裡的原生 <button>,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
               <Alert
                 variant="neutral"
                 placement="fixed"
                 dismissible={false}
                 title={
-                  isAll ? (
-                    <>
-                      已選取全部 {TOTAL} 個項目{selection.excluded.length > 0 ? `(排除 ${selection.excluded.length} 個)` : ''}。{' '}
-                      {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 2026-09-16 標記,另案評估 */}
-                      <button
-                        type="button"
-                        onClick={() => setSelection({ mode: 'include', ids: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
-                      >
-                        清除選取項目
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      已選取本頁全部 {selectedCount} 個。{' '}
-                      {/* @anatomy-exempt-next: 同上,Gmail 式句中文字連結;2026-09-16 標記,另案評估 */}
-                      <button
-                        type="button"
-                        onClick={() => setSelection({ mode: 'all', excluded: [] })}
-                        className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
-                      >
-                        點此選取全部 {TOTAL} 個項目
-                      </button>
-                    </>
-                  )
+                  isAll
+                    ? `已選取全部 ${TOTAL} 個項目${selection.excluded.length > 0 ? `(排除 ${selection.excluded.length} 個)` : ''}。`
+                    : `已選取本頁全部 ${selectedCount} 個。`
+                }
+                endContent={
+                  isAll
+                    ? <Button variant="link" onClick={() => setSelection({ mode: 'include', ids: [] })}>清除選取項目</Button>
+                    : <Button variant="link" onClick={() => setSelection({ mode: 'all', excluded: [] })}>點此選取全部 {TOTAL} 個項目</Button>
                 }
               />
             )}
@@ -1291,14 +1453,44 @@ export const WithBulkActions: Story = {
                 onClearSelection={() => setSelection({ mode: 'include', ids: [] })}
                 actions={
                   <>
-                    <Button variant="tertiary" size="md" startIcon={Download}>下載</Button>
-                    <Button variant="tertiary" size="md" startIcon={Trash2}>移除</Button>
+                    {/* BulkActionBar 本身與這兩顆鈕的長相不動(user 2026-10-21「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」);只接上反應:
+                        下載 = 跳通知並清除選取;移除 = 先確認,確認後拿掉那幾列、清除選取 */}
+                    <Button variant="tertiary" size="md" startIcon={Download} onClick={() => {
+                      toast({ title: `已開始下載 ${selectedCount} 個商品的資料` })
+                      setSelection({ mode: 'include', ids: [] })
+                    }}>下載</Button>
+                    <Button variant="tertiary" size="md" startIcon={Trash2} onClick={() => setRemoving(true)}>移除</Button>
                   </>
                 }
               />
             )}
           </div>
         )}
+        <Toaster />
+        <NameFormDialog
+          open={creating}
+          onOpenChange={setCreating}
+          title="新增商品"
+          label="商品名稱"
+          placeholder="例:無線藍牙耳機"
+          submitLabel="新增"
+          onSubmit={(name) => {
+            setProducts((ps) => [...ps, { ...sampleData[0], sku: `PRD-${String(ps.length + 101).padStart(3, '0')}`, name }])
+            toast({ variant: 'success', title: '已新增商品' })
+          }}
+        />
+        <ConfirmDeleteDialog
+          open={removing}
+          onOpenChange={setRemoving}
+          title={`移除 ${visibleSelectedIds.length} 個商品?`}
+          confirmLabel="移除"
+          onConfirm={() => {
+            const ids = new Set(visibleSelectedIds)
+            setProducts((ps) => ps.filter((p) => !ids.has(p.sku)))
+            setSelection({ mode: 'include', ids: [] })
+            toast({ variant: 'success', title: `已移除 ${ids.size} 個商品` })
+          }}
+        />
       </div>
     )
   },
@@ -1317,7 +1509,6 @@ export const SelectionKeyboardAndShift: Story = {
           整 table 點任意 row 後按 <kbd>Cmd/Ctrl+A</kbd> 全選 · 按 <kbd>Esc</kbd> 清除 ·
           checkbox focus 時按 <kbd>Space</kbd> 帶 <kbd>Shift</kbd> 也能擴選。
         </p>
-        <div className="text-caption font-mono text-fg-muted">selection: {JSON.stringify(selection)}</div>
         <DataTable
           columns={baseColumns}
           data={data}
@@ -1344,7 +1535,6 @@ export const SelectionSingleMode: Story = {
           視覺用 <strong>Radio</strong>(對齊 Material DataGrid / Polaris IndexTable 共識),
           header checkbox 抑制(single 沒「全選」概念)。
         </p>
-        <div className="text-caption font-mono text-fg-muted">selected: {selection[0] ?? '(none)'}</div>
         <DataTable
           columns={baseColumns}
           data={sampleData}
@@ -1621,31 +1811,31 @@ export const FilterPanelStates: Story = {
     }))
 
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <Section title="已填條件" className={FILTER_SECTION_WIDTH}>
+      <div className={EXAMPLE_STACK}>
+        <ExampleSection title="已填條件" className={FILTER_SECTION_WIDTH}>
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
-        </Section>
+        </ExampleSection>
 
-        <Section title="巢狀群組" className={FILTER_SECTION_WIDTH}>
+        <ExampleSection title="巢狀群組" className={FILTER_SECTION_WIDTH}>
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
-        </Section>
+        </ExampleSection>
 
-        <Section title="相對時間" className={FILTER_SECTION_WIDTH} note="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
+        <ExampleSection title="相對時間" className={FILTER_SECTION_WIDTH} description="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
-        </Section>
+        </ExampleSection>
 
-        <Section title="已改動" className={FILTER_SECTION_WIDTH} note="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
+        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
           <DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
             defaultValue={modifiedInitial}
             onChange={setModified}
           />
-        </Section>
+        </ExampleSection>
 
-        <Section title="長標籤溢出" className={FILTER_SECTION_WIDTH} note="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
+        <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
           <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
-        </Section>
+        </ExampleSection>
       </div>
     )
   },
@@ -1697,8 +1887,8 @@ const FilterPanelLabelsAndLimitHarness = () => {
   const [prefillConsumed, setPrefillConsumed] = React.useState(false)
 
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)]">
-      <Section data-testid="filter-label-child-pickers" title="English child-picker labels">
+    <div className={EXAMPLE_STACK}>
+      <ExampleSection data-testid="filter-label-child-pickers" title="English child-picker labels">
         <DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
@@ -1706,9 +1896,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
 
-      <Section data-testid="filter-limit-flat" title="English labels + flat cap">
+      <ExampleSection data-testid="filter-limit-flat" title="English labels + flat cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
@@ -1716,9 +1906,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
 
-      <Section data-testid="filter-limit-nested-condition" title="Nested condition cap">
+      <ExampleSection data-testid="filter-limit-nested-condition" title="Nested condition cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
@@ -1726,9 +1916,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
 
-      <Section data-testid="filter-limit-nested-group" title="Nested group cap">
+      <ExampleSection data-testid="filter-limit-nested-group" title="Nested group cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
@@ -1736,9 +1926,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
 
-      <Section data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
+      <ExampleSection data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
@@ -1746,9 +1936,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={0}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
 
-      <Section data-testid="filter-limit-prefill" title="Prefill at capacity">
+      <ExampleSection data-testid="filter-limit-prefill" title="Prefill at capacity">
         <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
@@ -1764,7 +1954,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={1}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </Section>
+      </ExampleSection>
     </div>
   )
 }
@@ -1960,7 +2150,7 @@ interface RoadmapItem {
   progress: number
   spec: string
   hours: number
-  /** Standup time(per user 2026-05-10 「補一個會出現 timepicker 的欄位」)。HH:MM 格式 */
+  /** Standup time(per user 2026-05-10:補一個會出現 timepicker 的欄位(轉述))。HH:MM 格式 */
   standup: string
   /** Nested sub-tasks(per Issue 7 nested rows requirement, 2026-05-10)*/
   children?: RoadmapItem[]
@@ -2031,29 +2221,28 @@ function useRoadmapColumns() {
   )
 }
 
-/**
- * **單一整合 demo**(2026-05-10 user 拍板「全部合起來放在同一個範例方便我檢查」+ codex Layer B
- * 比稿 confirm「one primary integrated demo」):取代 6 個分散 stories(原 RoadmapInteractive +
- * 5 stress stories: Pinned / AllSizes / SpreadsheetOverlay / Selection / BigData)。
- *
- * 整合所有 DataTable 主功能,模擬真實 product UI(無 inner title / 無 demo description,
- * 對齊 user 圖4 reference「整個範例看起來是真實的」+ codex Q4.2 confirm):
- *   - Search(consumer-side filter via Input)
- *   - Filter panel(DataTableFilterPanel + evaluateTree)
- *   - Sort manager(DataTableSortManager 多欄條件)
- *   - Column visibility(Popover + checkbox per column)
- *   - Selection + bulk actions(BulkActionBar)
- *   - Pinned columns(left=id,right=shipped)
- *   - Spreadsheet overlay(experimentalSpreadsheetOverlay + Contract 8/15)
- *   - 500 rows + virtualization(per fold-in BigData)
- *   - Inline edit(per Contract 12)
- *
- * Play function assertion(virtualization invariant per codex Q-3):500 rows + 固定高 →
- * rendered rows ≤ 30(VIRTUAL_THRESHOLD + overscan;非全 500)。從原 RoadmapBigData fold 進。
- *
- * Layer C dissent vs codex Layer B:codex 建議 retain BigData 獨立,Layer A own DISAGREE
- * 採 user explicit「全部合起來」— play assertion fold 進整合 demo 不另留 separate story。
- */
+// (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
+// **單一整合 demo**(2026-05-10 user 拍板:全部合起來放在同一個範例方便我檢查(轉述)+ codex Layer B
+// 比稿 confirm「one primary integrated demo」):取代 6 個分散 stories(原 RoadmapInteractive +
+// 5 stress stories: Pinned / AllSizes / SpreadsheetOverlay / Selection / BigData)。
+//
+// 整合所有 DataTable 主功能,模擬真實 product UI(無 inner title / 無 demo description,
+// 對齊 user 圖4 reference:整個範例要看起來是真實的(轉述)+ codex Q4.2 confirm):
+//   - Search(consumer-side filter via Input)
+//   - Filter panel(DataTableFilterPanel + evaluateTree)
+//   - Sort manager(DataTableSortManager 多欄條件)
+//   - Column visibility(Popover + checkbox per column)
+//   - Selection + bulk actions(BulkActionBar)
+//   - Pinned columns(left=id,right=shipped)
+//   - Spreadsheet overlay(experimentalSpreadsheetOverlay + Contract 8/15)
+//   - 500 rows + virtualization(per fold-in BigData)
+//   - Inline edit(per Contract 12)
+//
+// Play function assertion(virtualization invariant per codex Q-3):500 rows + 固定高 →
+// rendered rows ≤ 30(VIRTUAL_THRESHOLD + overscan;非全 500)。從原 RoadmapBigData fold 進。
+//
+// Layer C dissent vs codex Layer B:codex 建議 retain BigData 獨立,Layer A own DISAGREE
+// 採 user explicit:全部合起來(轉述)— play assertion fold 進整合 demo 不另留 separate story。
 export const RoadmapAllInOne: Story = {
   name: '專案排程全功能整合',
   parameters: { layout: 'fullscreen' },
@@ -2095,6 +2284,15 @@ export const RoadmapAllInOne: Story = {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'RDM-100': true, 'RDM-101': true })
     // Issue 7:column order(enableColumnReorder 用 controlled state,DnD 後 setColumnOrder)
     const [columnOrder, setColumnOrder] = React.useState<string[]>([])
+    // 新增 / 刪除 / 匯出都真的有反應(之前工具列的「新增」「更多」、列尾 ⋯、批次「匯出」「移除」都沒有 onClick)
+    const [creating, setCreating] = React.useState(false)
+    const [deleting, setDeleting] = React.useState<{ ids: string[]; verb: '刪除' | '移除' } | null>(null)
+    const removeRows = (ids: string[]) => {
+      const drop = new Set(ids)
+      const prune = (rows: RoadmapItem[]): RoadmapItem[] =>
+        rows.filter((r) => !drop.has(r.id)).map((r) => (r.children ? { ...r, children: prune(r.children) } : r))
+      setData((prev) => prune(prev))
+    }
 
     // Search consumer-side filter(per codex Q4.3「Search not a DataTable prop;
     // story implements consumer-side filtering」)。Filter / sort 走 TanStack state。
@@ -2195,7 +2393,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverContent align="end" className="w-72 p-0">
               {/* Issue 3(2026-05-10)+ F1 fix(2026-05-10):primitive
                   `<DataTableColumnVisibilityPanel>` + columnOrder/onColumnOrderChange wired
-                  →  panel 內啟 drag handle(per user 抓「為什麼還會有偏移?為什麼沒 drag?」)。
+                  →  panel 內啟 drag handle(per user 抓:為什麼還會有偏移?為什麼沒 drag?(轉述))。
                   Roadmap 跟 WithBulkActions(L1050+ 設計準則)現在對齊 — panel 內 drag 是
                   primary reorder UX,DataTable header drag handle 是 secondary parallel
                   affordance。 */}
@@ -2213,8 +2411,8 @@ export const RoadmapAllInOne: Story = {
               />
             </PopoverContent>
           </Popover>
-          <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+          <Button variant="primary" size="sm" startIcon={Plus} onClick={() => setCreating(true)}>新增</Button>
+          <ToolbarMoreMenu exportCount={filteredData.length} />
         </DataToolbar>
 
         {/* DataTable container — flex-1 min-h-0(撐滿 toolbar 跟 footer 之間 space) */}
@@ -2231,7 +2429,7 @@ export const RoadmapAllInOne: Story = {
             onColumnVisibilityChange={setColumnVisibility}
             pinnedLeftColumns={['id']}
             // 2026-05-10:retire pinnedRightColumns(原 shipped boolean,user 拿掉「已出」欄位)
-            // 2026-05-10 B4:啟 enableColumnResize(per user「Roadmap demo 應該要有欄寬調整」)。
+            // 2026-05-10 B4:啟 enableColumnResize(per user:Roadmap demo 應該要有欄寬調整(轉述))。
             // H2 fix:pinned 欄位右邊也可 resize(panel boundary col hot zone 可拖)。
             // H3:system cols + meta.resizable=false col 自動 lock 不允許拖。
             enableColumnResize
@@ -2239,9 +2437,17 @@ export const RoadmapAllInOne: Story = {
             onRowReorder={handleRowReorder}
             enableColumnReorder
             onColumnReorder={handleColumnReorder}
-            // 2026-05-10(per user「操作列只要 ⋯ 一個 action」):3 buttons → 1 MoreVertical
-            rowActions={() => (
-              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            // 2026-05-10(per user:操作列只要 ⋯ 一個 action(轉述)):3 buttons → 1 MoreVertical;⋯ 真的打開選單(複製連結 / 刪除)
+            rowActions={(row) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem startIcon={Copy} onClick={() => { void navigator.clipboard?.writeText(row.spec).catch(() => {}); toast({ title: `已複製 ${row.id} 的規格連結` }) }}>複製規格連結</DropdownMenuItem>
+                  <DropdownMenuItem startIcon={Trash2} onClick={() => setDeleting({ ids: [row.id], verb: '刪除' })}>刪除</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             getRowId={(row) => row.id}
             onCellCommit={handleCommit}
@@ -2273,12 +2479,42 @@ export const RoadmapAllInOne: Story = {
             onClearSelection={() => setSelection([])}
             actions={
               <>
-                <Button variant="tertiary" size="md" startIcon={Download}>匯出</Button>
-                <Button variant="tertiary" size="md" startIcon={Trash2}>移除</Button>
+                {/* BulkActionBar 與兩顆鈕的長相不動,只接上反應:匯出 = 跳通知並清除選取;移除 = 先確認,確認後拿掉那幾列 */}
+                <Button variant="tertiary" size="md" startIcon={Download} onClick={() => {
+                  toast({ title: `已開始匯出 ${selection.length} 個項目(CSV)` })
+                  setSelection([])
+                }}>匯出</Button>
+                <Button variant="tertiary" size="md" startIcon={Trash2} onClick={() => setDeleting({ ids: selection, verb: '移除' })}>移除</Button>
               </>
             }
           />
         )}
+        <Toaster />
+        <NameFormDialog
+          open={creating}
+          onOpenChange={setCreating}
+          title="新增項目"
+          label="標題"
+          placeholder="例:結帳流程改版 v3"
+          submitLabel="新增"
+          onSubmit={(title) => {
+            setData((prev) => [{ ...ROADMAP_DATA[0], id: `RDM-${String(prev.length + 100).padStart(3, '0')}`, title, status: 'not-started', progress: 0, hours: 0, children: undefined }, ...prev])
+            toast({ variant: 'success', title: '已新增項目' })
+          }}
+        />
+        <ConfirmDeleteDialog
+          open={deleting !== null}
+          onOpenChange={(o) => { if (!o) setDeleting(null) }}
+          title={deleting && deleting.ids.length > 1 ? `${deleting.verb} ${deleting.ids.length} 個項目?` : `${deleting?.verb ?? '刪除'}這個項目?`}
+          confirmLabel={deleting?.verb ?? '刪除'}
+          onConfirm={() => {
+            const ids = deleting?.ids ?? []
+            const verb = deleting?.verb ?? '刪除'
+            removeRows(ids)
+            setSelection((sel) => sel.filter((id) => !ids.includes(id)))
+            toast({ variant: 'success', title: `已${verb} ${ids.length} 個項目` })
+          }}
+        />
       </div>
     )
   },
@@ -2343,49 +2579,25 @@ export const RoadmapPerfBudget: Story = {
   },
 }
 
-// ── L5 分頁(2026-07-06)─────────────────────────────────────────────────────
-
-type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
-
-// 128 筆訂單(電商後台真實規模;deterministic 生成,無 Math.random)
-const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
-  id: `order-${i + 1}`,
-  orderNo: `SO-2026-${String(1001 + i)}`,
-  customer: ['Acme Corp', 'Globex', 'Initech', 'Umbrella', 'Stark Industries', 'Wayne Enterprises'][i % 6],
-  amount: 1200 + (i * 137) % 8800,
-  placedAt: `2026-0${(i % 6) + 1}-${String((i % 27) + 1).padStart(2, '0')}`,
-}))
-
-const orderColumns: ColumnDef<OrderRow>[] = [
-  { accessorKey: 'orderNo', header: '訂單編號' },
-  { accessorKey: 'customer', header: '客戶' },
-  { accessorKey: 'amount', header: '金額', meta: { type: 'currency', prefix: '$' } },
-  { accessorKey: 'placedAt', header: '成立日期' },
-]
-
 export const WithPagination: Story = {
   name: '分頁',
+  parameters: {
+    // 參數說明放 docs、用人話寫(之前兩段 prop 名稱與實作術語印在畫布上)
+    docs: { description: { story: '上面是預設形態:128 筆訂單、每頁 20 筆共 7 頁,頁碼列靠右。下面是完整形態:左邊顯示「第幾筆到第幾筆、共幾筆」,右邊可以換每頁筆數;換每頁筆數會回到第 1 頁。分頁時不會同時開虛擬捲動。' } },
+  },
   render: () => (
-    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-loose)]">
-      <div>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-          預設形態:`pagination` 傳 true — 128 筆 / 每頁 20 = 7 頁,分頁列間距 tight、頁碼靠右
-          (spec「L5:分頁」canonical);與虛擬滾動互斥(分頁時 useVirtual 關閉)。
-        </p>
+    <div className={`mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] ${EXAMPLE_STACK}`}>
+      <ExampleSection title="預設形態">
         <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
-      </div>
-      <div>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-          完整形態:「共 N 筆」opt-in(showTotal)+ 每頁筆數 Select(pageSizeOptions)——
-          左資訊右頁碼 justify-between;換每頁筆數自動回第 1 頁;filter 縮小自動 clamp 當前頁。
-        </p>
+      </ExampleSection>
+      <ExampleSection title="完整形態" description="顯示總筆數,並可切換每頁筆數">
         <DataTable
           columns={orderColumns}
           data={ORDER_ROWS}
           pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
           getRowId={(row) => row.id}
         />
-      </div>
+      </ExampleSection>
     </div>
   ),
 }

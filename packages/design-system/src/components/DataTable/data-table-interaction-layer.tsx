@@ -55,11 +55,11 @@ interface DataTableInteractionLayerProps {
   /**
    * Slice D Step 4(spreadsheet semantics,2026-05-10 user 圖1 ask + RFC Contract 5):
    * Excel-like 選取 cell ID。Click 1 select / Click 2 enter edit。
-   * Layer renders solid border SelectionRect(per user「不要 dash 直接實的就好」)。
+   * Layer renders solid border SelectionRect(per user:不要 dash 直接實的就好(轉述))。
    */
   selectedCellId?: CellId | null
   /**
-   * Slice D Step 5(D.3 portal Field,2026-05-10 user 拍板「在乎完美乾淨」+ codex Q6.1
+   * Slice D Step 5(D.3 portal Field,2026-05-10 user 拍板:在乎完美乾淨(轉述)+ codex Q6.1
    * 撤回 defer):active editor render callback。當 activeEditorEnabled + activeEditorCellId
    * truthy → layer call this 拿 React node(已 bind value/onCommit/onCancel from controller),
    * 在 ActiveEditorHost portal(z 3,float rect)render 之。
@@ -151,7 +151,7 @@ function getCellGeometry(containerEl: HTMLElement | null, cellId: CellId): CellG
 
 /**
  * Reactive rect sync hook — 確保 overlay rect 跨 RWD / scroll / resize 永遠對齊 cell(2026-05-10
- * user 拍板「所有 overlay 在各種 RWD 和捲動時都能處在正確位置上」)。
+ * user 拍板:所有 overlay 在各種 RWD 和捲動時都能處在正確位置上(轉述))。
  *
  * 監聽 3 source(rAF coalesce 避 frame storm):
  *   1. window scroll(capture mode 抓 nested table body scroll + page scroll)
@@ -246,7 +246,7 @@ export function DataTableInteractionLayer({
   selectedCellId = null,
 }: DataTableInteractionLayerProps) {
   const hoveredCellId = useHoveredCell(containerRef, enabled)
-  // 2026-05-10 RWD/scroll sync(per user mandate「所有 overlay 在各種 RWD 和捲動時都處在正確位置」):
+  // 2026-05-10 RWD/scroll sync(per user mandate:所有 overlay 在各種 RWD 和捲動時都處在正確位置(轉述)):
   // window scroll(capture)+ resize + ResizeObserver(container)→ rAF coalesced re-render → rect 重算
   useReactiveRect(containerRef, enabled)
 

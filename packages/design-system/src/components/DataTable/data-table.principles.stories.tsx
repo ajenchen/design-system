@@ -6,7 +6,7 @@ import { Empty } from '@/design-system/components/Empty/empty'
 import './column-types'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
-import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
+import { productCatalog, type ProductRow as Product } from '@/design-system/stories-helpers/data/product-catalog'
 
 const meta: Meta = {
   title: 'Design System/Components/DataTable/設計原則',
@@ -17,15 +17,6 @@ type Story = StoryObj
 
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-4xl' })
-
-interface Product {
-  name: string
-  category: string
-  stock: string
-  price: number
-  available: boolean
-  launchDate: string
-}
 
 const SAMPLE_DATA: Product[] = [
   { name: 'Wireless Headphones', category: 'electronics', stock: 'in_stock', price: 2490, available: true, launchDate: '2026-01-15' },
@@ -226,7 +217,7 @@ export const EmptyStateRule: Story = {
             columns={columns}
             data={[]}
             height="auto"
-            emptyState={<Empty title="尚無商品" description="點擊上方「新增商品」開始建立第一筆" />}
+            emptyState={<Empty title="尚無商品" description="還沒有任何商品,新增的商品會列在這裡。" />}
           />
           <ExampleCaption>↑ 傳 <code>emptyState</code> 消費 Empty primitive,並以業務語言描述缺什麼資料</ExampleCaption>
         </TutorialRule>
@@ -253,18 +244,13 @@ export const NotSpreadsheetRule: Story = {
   name: '不是試算表',
   render: () => (
     <TutorialPage>
+      {/* 2026-10-28:只留「不做公式 / 樞紐 / 跨欄運算」;原本的「預設不做跨 cell 選取」與「❌ 強行加試算表功能 / 視覺刻意不像 spreadsheet」
+          跟同頁「使用指引」(跨 cell 選取 / 編輯用 spreadsheetMode)和 spreadsheetMode 本身相反,拿掉 */}
       <TutorialRule
-        title="DataTable 預設不做公式計算、不做跨 cell 選取"
-        note={<>DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。逃生門:確需 Excel-like 編輯可 opt-in <code>spreadsheetMode</code> prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。</>}
+        title="DataTable 不做公式 / 樞紐 / 跨欄運算"
+        note={<>DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。不做:Excel 的公式、pivot、跨欄運算。需要格子選取、方向鍵導覽與格內編輯時開 <code>spreadsheetMode</code>(見展示頁<StoryLink kind="Design System/Components/DataTable/展示" name="就地編輯 + 試算表浮層">就地編輯 + 試算表浮層</StoryLink>),一樣不做公式計算。</>}
       >
         <ExampleCaption>需要試算表能力 → 用專門 library(AG Grid Enterprise / Handsontable / Luckysheet),不往 DataTable 塞</ExampleCaption>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 強行在 DataTable 加試算表功能"
-        note="使用者看到 table UI 會建立「這是 spreadsheet」的預期,結果發現不能 Ctrl+click 多選、沒有 formula bar——預期落空,體驗差。DataTable 視覺刻意不像 spreadsheet(圓角、捨棄格線),避免這個誤解"
-      >
-        <ExampleCaption warn>邊界清楚比功能多重要——DataTable 做資料展示做到 100 分,試算表交給其他 library</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
