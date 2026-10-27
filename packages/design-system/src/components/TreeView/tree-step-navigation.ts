@@ -18,7 +18,7 @@
  * 500 = Windows 預設的雙擊時間(MicrosoftDocs/sdk-api@c12073e4 nf-winuser-setdoubleclicktime.md:62「the default double-click
  * time of 500 milliseconds」)= Chromium 判斷連點的時間(chromium@147.0.7727.15 ui/events/event_constants.h:115
  * `kDoubleClickTimeMs = 500`)。VS Code 活動列同一顆圖示用 300(microsoft/vscode@3dabe9b5 paneCompositeBar.ts:767);
- * 理由與差異見 tree-view.spec.md「步驟導覽樹 → 連點保護」。
+ * 理由與差異見 tree-view.spec.md「步驟導覽樹」的「連點保護(D 才需要)」。
  */
 export const STEP_REPEAT_CLICK_WINDOW_MS = 500
 
@@ -87,7 +87,7 @@ export interface StepActivationInput {
   /** pointer = 滑鼠 / 手指點列的文字(不含展開箭頭、不含列上的按鈕);keyboard = 焦點在列上按 Enter / 空白鍵 */
   source: 'pointer' | 'keyboard'
   selectionMode: 'single' | 'multiple' | 'none'
-  /** TreeView `expandOnSelect`(步驟導覽樹 = 單選 + expandOnSelect) */
+  /** TreeView 實際生效的 `expandOnSelect`(步驟導覽樹 `stepNavigation` 一定包含它) */
   expandOnSelect: boolean
   id: string
   hasChildren: boolean
@@ -230,7 +230,7 @@ export function pagelessStepContext(rowId: string, children: readonly StepNode[]
 }
 
 /**
- * 代顯的算法(user 2026-10-01 提的 AND,再加上「還沒有結果」):任一失敗 → 失敗;每一個都明確成功 → 成功;
+ * 代顯的算法(user 2026-10-01 提的 AND,再加上『還沒有結果』這一種):任一失敗 → 失敗;每一個都明確成功 → 成功;
  * 其他(含還沒有結果、沒有任何子孫有頁面)→ 不畫。還沒有結果的永遠不會被算成成功。
  */
 export function summarizeStepResults(results: readonly (StepResult | undefined)[]): StepResult | undefined {

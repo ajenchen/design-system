@@ -45,8 +45,9 @@ const H_TREE = [
 const F_TREE = [{ id: 'f1', children: [{ id: 'f1a' }] }, { id: 'f2' }]
 const node = (n) => ({ id: n.id, selectable: n.selectable !== false, disabled: !!n.disabled, status: n.status, children: (n.children ?? []).map(node) })
 const TREES = {
-  P: { nodes: P_TREE.map(node), selectionMode: 'single', expandOnSelect: true },
-  H: { nodes: H_TREE.map(node), selectionMode: 'single', expandOnSelect: true },
+  // 步驟導覽樹由明確的 stepNavigation 打開(2026-10-27,NJ-12);它包含 expandOnSelect(tree-view.tsx:expandOnSelect = prop || stepTree)
+  P: { nodes: P_TREE.map(node), selectionMode: 'single', expandOnSelect: true, stepNavigation: true },
+  H: { nodes: H_TREE.map(node), selectionMode: 'single', expandOnSelect: true, stepNavigation: true },
   F: { nodes: F_TREE.map(node), selectionMode: 'single', expandOnSelect: false },
   N: { nodes: F_TREE.map(node), selectionMode: 'none', expandOnSelect: true },
   M: { nodes: F_TREE.map(node), selectionMode: 'multiple', expandOnSelect: true },
@@ -103,7 +104,7 @@ function simulate(impl, treeKey, start, events) {
   // 灰底與列尾(步驟導覽樹才算)
   const markers = {}
   const results = {}
-  if (tree.expandOnSelect && tree.selectionMode === 'single') {
+  if (tree.stepNavigation && tree.selectionMode === 'single') {
     for (const [id, { node: n }] of info) {
       if (!branchOpen(id)) continue
       const hasChildren = n.children.length > 0
@@ -241,6 +242,8 @@ const consumption = [
   ['C3', '連點走 isRepeatClick,每一下的紀錄含焦點落點(clickRowText)', /isRepeatClick\(previous, id, at, detail\) \? previous : null/.test(tsx) && /lastRowClickRef\.current = \{ rowId: id, at, focus: action\.focus \}/.test(tsx) && /clickRowText\(id, e\.detail,/.test(tsx)],
   ['C4', '列尾 / 灰底 / 沒頁面大步驟的輸入走 stepRowResult / stepMarker / pagelessStepContext', /stepRowResult\(\{/.test(tsx) && /stepMarker\(\{/.test(tsx) && /pagelessStepContext\(id,/.test(tsx)],
   ['C5', '舊的「expandOnSelect 一律開合」不在了', !/if \(expandOnSelect && hasChildren\) \{\s*toggleExpand\(id\)/.test(tsx)],
+  // NJ-12(2026-10-27):步驟導覽樹由明確的 stepNavigation 打開,不再由「單選 + expandOnSelect」這個組合自動成立(一般的樹不被連帶改)
+  ['C6', '步驟導覽樹 = stepNavigation && 單選(不是 expandOnSelect && 單選)', /const stepTree = stepNavigation && selectionMode === 'single'/.test(tsx) && !/const stepTree = expandOnSelect && selectionMode === 'single'/.test(tsx)],
 ]
 for (const [code, name, ok] of consumption) results.push({ code, name, ok, detail: ok ? '' : '原始碼沒有這個呼叫' })
 

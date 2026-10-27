@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
-  MoreVertical, Plus, Trash2,
+  MoreVertical, Plus, Trash2, Link2, Copy,
   type LucideIcon,
 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
@@ -21,6 +21,9 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { ItemInlineAction, ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/展示',
@@ -79,7 +82,7 @@ export const ActionHoverState: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    // 展開箭頭 2026-09-29 起保留名字(aria-label 展開 / 收合)、不再 aria-hidden(tree-view.spec.md「展開 / 收合 chevron」;待辦總帳 N46)
+    // 展開箭頭 2026-09-29 起保留名字(aria-label 展開 / 收合)、不再 aria-hidden(tree-view.spec.md「Chevron 的特殊性」;待辦總帳 N46)
     const action = canvasElement.querySelector<HTMLElement>(
       '[data-tree-row="product-roadmap"] button[aria-label="展開"]',
     )
@@ -137,12 +140,13 @@ const validateTaiwanId = (v: unknown) => {
  *  user 2026-10-20「Q1照建議」= 採 AI 建議甲「右半邊置底 footer」(連同當時附的逐段值表;r1b OTH-03 的結論):
  *  - footer = SurfaceFooter(overlay-surface.spec.md「底部區域:按鈕列 vs 列式」的按鈕列;justify-end 靠右、按鈕間 8、上分隔線、上下 tight、左右 loose)。
  *    靠右 → 全局排序 primary 在最右:[上一步 tertiary][下一步 primary](action-bar.spec.md「全局排序」);第一步不渲染上一步。
- *    footer 只在右半邊,左邊的樹全高(overlay-surface.spec.md「欄底 footer 釘在所屬欄內」);「下一步」每一步都在同一個位置。
+ *    footer 只在右半邊,左邊的樹全高(overlay-surface.spec.md「欄底 footer(如 comment composer)釘在所屬欄內」);「下一步」每一步都在同一個位置。
  *  - 內容區 = 沒有標題列的 Surface body:上 tight(overlay-surface.spec.md 的 SurfaceBody `py-tight`)、左右 loose、
  *    下 bottom(body 自己的下內距,同 dialog.tsx DialogBody `pb-[var(--layout-space-bottom)]`);長內容在內容區裡捲(ScrollArea,
  *    overlay-surface.spec.md「Body overflow canonical」)。
  *  - 標題 ↔ 說明 = `--item-gap-label-desc-reading-lg`(2px,同 DialogTitle / DialogDescription,dialog.spec.md「Header 可成長」;
- *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = tight(layoutSpace.spec.md 規則 3「heading → labeled content」)
+ *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = loose(標題 + 說明是這一頁整組欄位的標題,
+ *    不是第一個欄位的小標:user 2026-10-21 A4 甲;layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose)
  *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`) */
 function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting }: {
   title: string; description: string; children: React.ReactNode; onSubmit: (e?: React.FormEvent) => void
@@ -154,7 +158,7 @@ function OnboardingPage({ title, description, children, onSubmit, onBack, submit
         <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
           <h3 className="text-body-lg font-medium text-foreground">{title}</h3>
           <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
-          <div className="mt-[var(--layout-space-tight)]">{children}</div>
+          <div className="mt-[var(--layout-space-loose)]">{children}</div>
         </div>
       </ScrollArea>
       <SurfaceFooter>
@@ -333,7 +337,7 @@ function MerchantOnboarding() {
           <TreeView
             ref={treeRef}
             aria-label="收款帳戶開通步驟"
-            expandOnSelect
+            stepNavigation
             selectedIds={selectedIds}
             onSelectedChange={(ids) => { const id = [...ids][0] as OnboardingStepId | undefined; if (id) setCurrent(id) }}
             expandedIds={expanded}
@@ -393,11 +397,11 @@ export const Stepper: Story = {
 
 // ── 步驟導覽樹契約夾具(test-only;scripts/tree-view-step-navigation-invariant.mjs 量的就是這三棵樹)──────────
 // 不給讀者看(test-only 不進側欄與文件頁):有自己頁面的大步驟依 user 2026-10-07 不做範例,它的規則只由這個夾具與閘守住。
-// 三棵樹:沒有自己頁面的大步驟(含巢狀)/ 有自己頁面的大步驟 / 沒開 expandOnSelect 的一般樹(對照:行為不得改變)。
+// 夾具:沒有自己頁面的大步驟(含巢狀)/ 有自己頁面的大步驟 / 停用的列 / 沒開 stepNavigation 的一般樹兩棵(沒開 expandOnSelect、開了 expandOnSelect;對照:不得變成步驟導覽)。
 // 每棵樹的選取與展開由這裡持有(受控),外層 data-selected / data-expanded 給閘讀;window.__treeStepFixture[name] 讓閘把狀態重設成指定的起點。
 interface StepFixtureState { selected: string | null; expanded: string[] }
-function StepFixtureTree({ name, label, initial, expandOnSelect = true, children }: {
-  name: string; label: string; initial: StepFixtureState; expandOnSelect?: boolean; children: React.ReactNode
+function StepFixtureTree({ name, label, initial, stepNavigation = true, expandOnSelect = false, children }: {
+  name: string; label: string; initial: StepFixtureState; stepNavigation?: boolean; expandOnSelect?: boolean; children: React.ReactNode
 }) {
   const [selected, setSelected] = React.useState(initial.selected)
   const [expanded, setExpanded] = React.useState(() => new Set(initial.expanded))
@@ -417,6 +421,7 @@ function StepFixtureTree({ name, label, initial, expandOnSelect = true, children
     >
       <TreeView
         aria-label={label}
+        stepNavigation={stepNavigation}
         expandOnSelect={expandOnSelect}
         selectedIds={selectedIds}
         onSelectedChange={(ids) => setSelected([...ids][0] ?? null)}
@@ -464,7 +469,7 @@ export const StepNavigationContract: Story = {
         <TreeItem id="h3" label="通知" />
       </StepFixtureTree>
       {/* 停用 × 步驟結果(2026-10-21,r1b TV-04):送出後鎖住、不能再改的步驟 —— 列尾的勾 / 叉一律停用色,靠形狀分辨
-          (tree-view.spec.md「步驟結果 → 停用的列」,M24 disabled > 其他)。修前沒有任何 story 畫出這一格,閘量不到 */}
+          (tree-view.spec.md「步驟結果」的「停用的列」,M24 disabled > 其他)。修前沒有任何 story 畫出這一格,閘量不到 */}
       {/* 列名不與同頁其他夾具樹重複:閘用無障礙樹的列名對照說明(S1 / S2) */}
       <StepFixtureTree name="locked" label="已送出的開通申請" initial={{ selected: null, expanded: ['lk'] }}>
         <TreeItem id="lk" label="1. 申請資料(審核中)" selectable={false}>
@@ -472,11 +477,19 @@ export const StepNavigationContract: Story = {
           <TreeItem id="lk2" label="代表人證件(退件)" status="error" disabled />
         </TreeItem>
       </StepFixtureTree>
-      <StepFixtureTree name="plain" label="專案檔案" initial={{ selected: 'f2', expanded: [] }} expandOnSelect={false}>
+      <StepFixtureTree name="plain" label="專案檔案" initial={{ selected: 'f2', expanded: [] }} stepNavigation={false}>
         <TreeItem id="f1" icon={Folder} label="設計稿">
           <TreeItem id="f1a" icon={FileText} label="首頁.fig" />
         </TreeItem>
         <TreeItem id="f2" icon={FileText} label="需求.md" />
+      </StepFixtureTree>
+      {/* 單選 + expandOnSelect 的一般樹(2026-10-27,NJ-12):步驟導覽改成明確的 stepNavigation 之後,這種樹不再被連帶改成步驟導覽 ——
+          點資料夾文字選取並展開,但沒有 aria-current="step"、沒有列尾結果槽(閘 F2) */}
+      <StepFixtureTree name="plainExpand" label="團隊資料夾" initial={{ selected: 'e2', expanded: [] }} stepNavigation={false} expandOnSelect>
+        <TreeItem id="e1" icon={Folder} label="行銷素材">
+          <TreeItem id="e1a" icon={FileText} label="春季活動企劃.docx" />
+        </TreeItem>
+        <TreeItem id="e2" icon={FileText} label="年度預算.xlsx" />
       </StepFixtureTree>
     </div>
   ),
@@ -574,7 +587,14 @@ const CheckboxTree = () => {
 
 export const WithCheckbox: Story = {
   name: '多選',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  render: () => <CheckboxTree />,
+}
+
+// 多選的鍵盤路線(test-only,只給閘與 play 量;讀者看的「多選」不帶 play、不留鍵盤焦點 —— 稽核 M033)
+export const WithCheckboxKeyboardContract: Story = {
+  name: '多選 — 鍵盤路線',
+  tags: ['test-only'],
+  // play 造出的鍵盤焦點就是本則要驗的東西(story-rules「示範 = 滑鼠使用者」:留著焦點的 story 必須標 keep)
   parameters: { demoFocus: 'keep' },
   render: () => <CheckboxTree />,
   play: async ({ canvasElement }) => {
@@ -615,7 +635,8 @@ export const WithCheckbox: Story = {
 // 列上的「更多動作」「新增頁面」:平常隱藏、滑過或鍵盤焦點在這一列時出現;
 // 鍵盤走法 = ↑↓ 換列、→ 進這一列的按鈕、← 回列、Tab 一下離開整棵樹(SSOT:tree-view.spec.md「鍵盤導覽」)。
 
-const RowActionsTree = () => {
+/** 鍵盤路線夾具用的樹:按鈕執行後把動作寫在下方讀數,play 用它驗證「Enter 執行按鈕自己的動作、焦點留在按鈕」。只在 test-only 那一則用 */
+const RowActionsContractTree = () => {
   const [lastAction, setLastAction] = React.useState<string | null>(null)
   // 資料夾:⋯ + ＋;檔案:⋯(tree-view.spec.md「Uniform 規則」:⋯ 全部都有、＋ 同類型統一)
   const more = (name: string) => ({ icon: MoreVertical, label: '更多動作', onClick: () => setLastAction(`更多動作 —「${name}」`) })
@@ -645,8 +666,10 @@ const RowActionsTree = () => {
   )
 }
 
-export const RowActions: Story = {
-  name: '列上的動作',
+// 列上動作的鍵盤路線(test-only;讀者看的「列上的動作」不帶 play、不留鍵盤焦點,「更多動作」是真的選單 —— 稽核 M033)
+export const RowActionsKeyboardContract: Story = {
+  name: '列上的動作 — 鍵盤路線',
+  tags: ['test-only'],
   parameters: {
     // play 用鍵盤走完整條路線(story-rules「示範 = 滑鼠使用者」:示範焦點的 story 必須標 keep)
     demoFocus: 'keep',
@@ -659,7 +682,7 @@ export const RowActions: Story = {
       },
     },
   },
-  render: () => <RowActionsTree />,
+  render: () => <RowActionsContractTree />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const before = canvas.getByRole('button', { name: '樹狀清單之前' })
@@ -732,6 +755,108 @@ export const RowActions: Story = {
   },
 }
 
+// ── 列上的動作(讀者看的版本)────────────────────────────────────────────
+// 知識庫的文件樹:每一列的「更多動作」打開選單(複製連結 / 建立副本),資料夾的「新增頁面」在底下加一頁並展開。
+// 平常隱藏、滑過或鍵盤焦點在這一列時出現;鍵盤路線見 docs 說明,自動驗證在 test-only「列上的動作 — 鍵盤路線」。
+// 「更多動作」是選單觸發鈕:走 inlineActionsSlot(inline-action.spec.md「Escape hatch slot」;觸發鈕 = ItemInlineActionButton + overlayTrigger,
+// 同 Breadcrumb 折疊 ⋯ / DataTable 欄位選單),圖示、尺寸、滑過底色與 inlineActions 那顆同一個 primitive。
+interface DocNode { id: string; label: string; children?: DocNode[] }
+const DOC_TREE_SEED: DocNode[] = [
+  { id: 'requirements', label: '產品需求', children: [
+    { id: 'roadmap', label: '2026 Q4 路線圖' },
+    { id: 'checkout-prd', label: '付款流程改版 PRD' },
+  ] },
+  { id: 'design', label: '設計交付', children: [{ id: 'component-spec', label: '元件規格' }] },
+  { id: 'meeting-notes', label: '週會紀錄' },
+]
+const insertAfter = (nodes: DocNode[], id: string, node: DocNode): DocNode[] =>
+  nodes.flatMap((n) => [n.children ? { ...n, children: insertAfter(n.children, id, node) } : n, ...(n.id === id ? [node] : [])])
+const appendChild = (nodes: DocNode[], id: string, node: DocNode): DocNode[] =>
+  nodes.map((n) => (n.id === id ? { ...n, children: [...(n.children ?? []), node] } : n.children ? { ...n, children: appendChild(n.children, id, node) } : n))
+
+function DocRowActions({ node, onDuplicate, onAddPage }: { node: DocNode; onDuplicate: () => void; onAddPage?: () => void }) {
+  const copyLink = async () => {
+    const url = `https://wiki.example.com/docs/${node.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast({ variant: 'success', title: '連結已複製' })
+    } catch {
+      toast({ variant: 'error', title: '無法存取剪貼簿,請改用瀏覽器網址列複製' })
+    }
+  }
+  return (
+    <>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <ItemInlineActionButton icon={MoreVertical} aria-label="更多動作" overlayTrigger />
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>更多動作</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem startIcon={Link2} onClick={copyLink}>複製連結</DropdownMenuItem>
+          <DropdownMenuItem startIcon={Copy} onClick={onDuplicate}>建立副本</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {onAddPage && <ItemInlineAction action={{ icon: Plus, label: '新增頁面', onClick: onAddPage }} />}
+    </>
+  )
+}
+
+const RowActionsTree = () => {
+  const [nodes, setNodes] = React.useState(DOC_TREE_SEED)
+  const [expanded, setExpanded] = React.useState(() => new Set(['requirements']))
+  const counter = React.useRef(0)
+  const duplicate = (node: DocNode) => {
+    counter.current += 1
+    setNodes((prev) => insertAfter(prev, node.id, { id: `${node.id}-copy-${counter.current}`, label: `${node.label}(副本)` }))
+  }
+  const addPage = (folder: DocNode) => {
+    counter.current += 1
+    setNodes((prev) => appendChild(prev, folder.id, { id: `${folder.id}-page-${counter.current}`, label: '未命名頁面' }))
+    setExpanded((prev) => new Set(prev).add(folder.id))
+  }
+  const renderDocs = (list: DocNode[]): React.ReactNode => list.map((n) => (
+    <TreeItem
+      key={n.id}
+      id={n.id}
+      icon={n.children ? Folder : FileText}
+      label={n.label}
+      inlineActionsSlot={<DocRowActions node={n} onDuplicate={() => duplicate(n)} onAddPage={n.children ? () => addPage(n) : undefined} />}
+    >
+      {n.children ? renderDocs(n.children) : undefined}
+    </TreeItem>
+  ))
+  return (
+    <>
+      <Toaster />
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+        <TreeView aria-label="產品文件" expandedIds={expanded} onExpandedChange={setExpanded} defaultSelectedIds={['checkout-prd']}>
+          {renderDocs(nodes)}
+        </TreeView>
+      </div>
+    </>
+  )
+}
+
+export const RowActions: Story = {
+  name: '列上的動作',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '每一列的「更多動作」打開選單(複製連結 / 建立副本),資料夾的「新增頁面」在底下加一頁。兩顆平常隱藏,滑過列、或鍵盤焦點在這一列(列本身或列上的按鈕)時出現。' +
+          '鍵盤:Tab 進到樹(落在選中的那一列)→ ↑↓ 換列 → → 進這一列的按鈕,→ / ← 在按鈕之間走,第一顆再按 ← 回到列;' +
+          '收著的資料夾按 → 先展開,已展開的資料夾再按 → 才進按鈕。不論停在列上或按鈕上,Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上。',
+      },
+    },
+  },
+  render: () => <RowActionsTree />,
+}
+
 // ── 刪除節點後焦點接力(2026-09-29 待辦總帳 N46「刪除 / 消失後焦點去下一項」)──────────
 // 真實情境:知識庫的頁面樹,列上的「刪除」把節點從資料裡拿掉。焦點在被刪的那一列(或它的按鈕)上時,
 // 接力到畫面順序的**下一個可見列**(可能是下一個頂層節點);沒有下一列 → **上一個可見列**(可能就是父節點);禁止掉到 body。
@@ -767,8 +892,10 @@ const DeleteHandoffTree = () => {
   )
 }
 
+// 只服務 play 與閘的量測(稽核 H18;story-rules.md「Technical probe visibility」:只給自動化看的 story 標 test-only)
 export const DeleteHandoff: Story = {
   name: '刪除後焦點接力',
+  tags: ['test-only'],
   parameters: {
     demoFocus: 'keep',
     docs: {
@@ -817,36 +944,25 @@ export const DeleteHandoff: Story = {
   },
 }
 
-// ── Long label (wrap test) ──────────────────────────────────────────────
+// ── 長標籤 ───────────────────────────────────────────────────────────────
+// 名稱放不下就單行截斷;只有真的被截斷時,滑鼠停在名稱上出現完整名稱(tree-view.tsx 標籤消費 TruncatedText;
+// 依據:user 2026-09-02「所有溢出的地方若hover無其他顯詳情的交互都必須要有tooltip顯示完整溢出內容」)。
+// 2026-10-27 前右半邊示範「移除 truncate 讓 label 換行」—— 那不是 TreeView 的模式(稽核 M062),拿掉。
 
 export const LongLabel: Story = {
   name: '長標籤',
+  parameters: {
+    docs: { description: { story: '名稱放不下時單行截斷;只有真的被截斷的那一列,滑鼠停在名稱上才出現完整名稱。' } },
+  },
   render: () => (
-    <div className="flex gap-[var(--layout-space-loose)] items-start">
-      <ExampleGroup>
-        <span className="text-caption font-medium text-fg-muted">預設 truncate</span>
-        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
-        <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-          <TreeView aria-label="產品設計檔案樹（截斷）" defaultExpandedIds={['proj']}>
-            <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
-              <TreeItem id="f1" icon={FileText} label="首頁主視覺設計稿-桌面版-v3.fig" />
-              <TreeItem id="f2" icon={FileText} label="logo.svg" />
-            </TreeItem>
-          </TreeView>
-        </div>
-      </ExampleGroup>
-      <ExampleGroup>
-        <span className="text-caption font-medium text-fg-muted">label 換行（移除 truncate）</span>
-        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
-        <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-          <TreeView aria-label="產品設計檔案樹（換行）" defaultExpandedIds={['proj2']}>
-            <TreeItem id="proj2" icon={Folder} label={<span className="break-words whitespace-normal">2026 產品品牌識別設計提案完整版</span>}>
-              <TreeItem id="f3" icon={FileText} label={<span className="break-words whitespace-normal">首頁主視覺設計稿-桌面版與行動版對照-v3-最終定稿.fig</span>} />
-              <TreeItem id="f4" icon={FileText} label="logo.svg" />
-            </TreeItem>
-          </TreeView>
-        </div>
-      </ExampleGroup>
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
+    <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+      <TreeView aria-label="產品設計檔案樹" defaultExpandedIds={['proj']}>
+        <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
+          <TreeItem id="f1" icon={FileText} label="首頁主視覺設計稿-桌面版-v3.fig" />
+          <TreeItem id="f2" icon={FileText} label="logo.svg" />
+        </TreeItem>
+      </TreeView>
     </div>
   ),
 }
@@ -911,50 +1027,32 @@ export const DragAndDrop: Story = {
   name: '拖曳重排',
   render: () => {
     const [tree, setTree] = React.useState(INITIAL_TREE)
-    const [log, setLog] = React.useState<string[]>([])
-
     return (
-      // 示範欄 ↔ 紀錄欄並列 = loose;說明 → 樹 → 重設鈕 = tight(說明在替樹命名、重設鈕直接作用在這棵樹,layoutSpace.spec.md 規則 3)
-      <div className="flex gap-[var(--layout-space-loose)] items-start">
-        <ExampleGroup>
-          <p className="text-caption text-fg-muted max-w-xs">
-            Figma 風格:整列拖曳,items 真的會移動。拖到其他 node 上方(before) / 下方(after) / 中間(inside 成為子項)。
-            鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
-          </p>
-          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
-          <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-            <TreeView
-              aria-label="拖曳排序"
-              draggable
-              defaultExpandedIds={['pages', 'docs']}
-              onDragEnd={(e) => {
-                setTree(prev => {
-                  const [without, node] = removeNode(prev, e.sourceId)
-                  if (!node) return prev
-                  return insertNode(without, e.targetId, node, e.position)
-                })
-                setLog(prev => [`${e.sourceId} → ${e.targetId} (${e.position})`, ...prev].slice(0, 10))
-              }}
-            >
-              {renderNodes(tree)}
-            </TreeView>
-          </div>
-          {/* 2026-09-25:原本是手刻的原生按鈕元素(展示層禁原生控件,story-rules「禁止」);單獨的輔助動作一律 tertiary(button.spec.md Variant 表) */}
-          <Button variant="tertiary" size="sm" className="self-start" onClick={() => setTree(INITIAL_TREE)}>
-            重設
-          </Button>
-        </ExampleGroup>
-        <div className="w-[240px]">
-          <p className="text-caption font-medium text-fg-muted mb-[var(--layout-space-tight)]">移動紀錄</p>
-          {/* 字級走 token(typography.spec.md 禁止事項「不要硬寫 font-size」):與上面「移動紀錄」標題同一級 text-caption(12px,「元件內次要說明」);
-              2026-10-21 前寫死 11px(r1b TV-05)。紀錄是節點 id,保留等寬字。 */}
-          {/* @layout-space-magic-ok: 移動紀錄是一串同質的紀錄列,列距 4px(layoutSpace.spec.md:165 同質清單列) */}
-          <div className="flex flex-col gap-1 text-caption font-mono text-fg-secondary">
-            {log.length === 0 && <span className="text-fg-muted">拖曳 node 後這裡會顯示</span>}
-            {log.map((l, i) => <span key={i}>{l}</span>)}
-          </div>
+      // 說明 → 樹 = tight(說明在替樹命名,layoutSpace.spec.md 規則 3)。
+      // 2026-10-27 前旁邊還有「重設」鈕與「移動紀錄」欄(稽核 H20):拖曳的結果就是樹的順序變了,不需要讀數;鍵盤重排的播報由元件的 live region 負責
+      <ExampleGroup>
+        <p className="text-caption text-fg-muted max-w-xs">
+          Figma 風格:整列拖曳,項目真的會移動。拖到其他項目上方 / 下方 / 中間(成為它的子項)。
+          鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
+        </p>
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+          <TreeView
+            aria-label="拖曳排序"
+            draggable
+            defaultExpandedIds={['pages', 'docs']}
+            onDragEnd={(e) => {
+              setTree(prev => {
+                const [without, node] = removeNode(prev, e.sourceId)
+                if (!node) return prev
+                return insertNode(without, e.targetId, node, e.position)
+              })
+            }}
+          >
+            {renderNodes(tree)}
+          </TreeView>
         </div>
-      </div>
+      </ExampleGroup>
     )
   },
 }

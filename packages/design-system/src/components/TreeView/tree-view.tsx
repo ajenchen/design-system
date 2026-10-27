@@ -22,7 +22,7 @@ import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag
 import { cn } from '@/lib/utils'
 import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
-// 步驟結果的圖示與顏色和 FileItem 同一份(user 2026-10-06 第 4 點「圖示與顏色沿用 FileItem」;tree-view.spec.md「步驟結果」)
+// 步驟結果的圖示與顏色和 FileItem 同一份(user 2026-10-06 第 4 點照 AI 建議採用,原話全文見待辦總帳 T4;tree-view.spec.md「步驟結果」)
 import { RESULT_STATUS_ICON } from '@/design-system/components/FileItem/file-item-status'
 import { STEP_STATUS_TEXT } from '@/design-system/components/Steps/step-status-text'
 // 步驟導覽樹的判定(點大步驟的文字、Enter / 空白鍵、連點保護、列尾結果、灰底)—— 純函式,判定表 scripts/test-tree-step-navigation.mjs
@@ -49,6 +49,7 @@ import {
   resolveRovingKey,
   type RovingReorderKey,
 } from '@/design-system/lib/roving-list-keyboard'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 // Row primitive 共用常數——單一 source of truth
 import {
   ICON_SIZE,
@@ -72,10 +73,10 @@ import {
  *   1. 遞迴渲染 + indent
  *   2. 展開/收合狀態管理
  *   3. 鍵盤導覽 + ARIA 樹狀表格(treegrid;2026-09-25 由 tree 改,總帳 B9)
- *   4. 步驟導覽樹(單選 + expandOnSelect)的點擊判斷與步驟結果的畫法(2026-10-07;./tree-step-navigation.ts)
+ *   4. 步驟導覽樹(`stepNavigation`)的點擊判斷與步驟結果的畫法(2026-10-07;./tree-step-navigation.ts)
  *
  * 它不管 node 裡面長什麼樣——icon、badge 等由 consumer 透過 props / slots 決定。
- * 例外是步驟導覽樹(單選 + expandOnSelect)的「步驟結果」:consumer 只給每一頁的結果(`status`),
+ * 例外是步驟導覽樹(`stepNavigation`)的「步驟結果」:consumer 只給每一頁的結果(`status`),
  * 列尾圖示、收起的大步驟替子步驟代顯什麼由本元件決定(與 FileItem「consumer 給 status、元件畫圖示」同一種分工)。
  *
  * 詳見 tree-view.spec.md。
@@ -235,7 +236,7 @@ interface TreeViewContextValue {
   context: TreeContext
   selectionMode: SelectionMode
   expandOnSelect: boolean
-  /** 步驟導覽樹 = 單選 + expandOnSelect(tree-view.spec.md「步驟導覽樹」):灰底代顯、列尾結果、aria-current="step" 只在這種樹 */
+  /** 步驟導覽樹 = 單選 + `stepNavigation`(tree-view.spec.md「步驟導覽樹」):灰底代顯、列尾結果、aria-current="step" 只在這種樹 */
   stepTree: boolean
   draggable: boolean
   expandedIds: Set<string>
@@ -339,11 +340,16 @@ export interface TreeViewProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   selectionMode?: SelectionMode
   /**
    * 點擊 label 時是否同時展開 children。預設 false(chevron 是展開的唯一控件)。
-   * 單選 + `expandOnSelect` = **步驟導覽樹**(tree-view.spec.md「步驟導覽樹」):點大步驟的文字會換位置 → 去那裡並只展開
-   * (永不收合);什麼都不會變 → 開 ↔ 合,同一列的連點只算一下;鍵盤 Enter / 空白鍵只「到那一步」。
-   * 另外打開灰底代顯、列尾結果(`TreeItem` 的 `selectable` / `status`)與 `aria-current="step"`。
+   * 開了之後:點會換選取的列 → 選它並只展開(永不收合);點了什麼都不會變的列 → 開 ↔ 合,同一列的連點只算一下。
    */
   expandOnSelect?: boolean
+  /**
+   * **步驟導覽樹**(tree-view.spec.md「步驟導覽樹」;只用在單選):樹當成多步驟流程的導覽 —— 包含 `expandOnSelect` 的點文字展開,
+   * 另外打開沒有自己頁面的大步驟(`TreeItem selectable={false}`:點了去第一個子步驟)、灰底代顯、列尾結果(`TreeItem status`)
+   * 與 `aria-current="step"`;鍵盤 Enter / 空白鍵只「到那一步」。預設 false:一般的樹(檔案樹、側欄樹)開了 `expandOnSelect` 也不會變成步驟導覽。
+   * @default false
+   */
+  stepNavigation?: boolean
   /** 受控:展開的 node id 集合 */
   expandedIds?: Set<string>
   /** 受控:展開狀態變更 callback */
@@ -382,7 +388,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       size = 'md',
       context = 'sidebar',
       selectionMode = 'single',
-      expandOnSelect = false,
+      expandOnSelect: expandOnSelectProp = false,
+      stepNavigation = false,
       draggable = false,
       onDragEnd: onDragEndProp,
       reorderAnnouncements: reorderAnnouncementsProp,
@@ -496,16 +503,16 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         canHoldFocus: () => true,
         isNavigable: isRowEnabled,
         // 步驟導覽樹:目前那一步藏在收起的、沒有自己頁面的大步驟裡時,代顯的那一列(aria-current="step")就是「選中的列」
-        //(W3C「落在選中項」的那一項;tree-view.spec.md「步驟結果 → 灰底代顯」)。其他樹沒有 aria-current,行為不變。
+        //(W3C「落在選中項」的那一項;tree-view.spec.md「步驟結果」的「灰底(「你在哪」)與代顯」)。其他樹沒有 aria-current,行為不變。
         isCurrent: (row) => row.getAttribute('aria-selected') === 'true' || row.getAttribute('aria-current') === 'step',
       })
       const next = stop?.dataset.treeRow ?? null
       if (next !== tabStopId) setTabStopId(next)
       // 相依 = 會改變「哪些列存在 / 在開著的分支裡 / aria-selected / aria-current / aria-disabled」的 render 輸入,加上 remembered(focusedId)與比對用的 tabStopId:
-      // children(節點增刪 / disabled)、expandedIds(子樹掛載與開合)、selectedIds + selectionMode + expandOnSelect(aria-selected / aria-current)、rowRepairTick(列卸載通知)。
+      // children(節點增刪 / disabled)、expandedIds(子樹掛載與開合)、selectedIds + selectionMode + stepNavigation(aria-selected / aria-current)、rowRepairTick(列卸載通知)。
       // 2026-09-29 前沒有相依清單(每次 render 都跑);列 DOM 只會因這幾個輸入而變,其餘 render(拖曳落點 / 播報文字 / 無關 prop)重算結果必相同,
       // 跳過不改行為。日後新增會影響列 DOM 的輸入時要一併列進來。
-    }, [children, expandedIds, selectedIds, selectionMode, expandOnSelect, focusedId, tabStopId, rowRepairTick])
+    }, [children, expandedIds, selectedIds, selectionMode, stepNavigation, focusedId, tabStopId, rowRepairTick])
     // 列被卸載(例:consumer 收合了焦點所在列的上一層,關閉動畫結束後子樹才卸載 —— 那一刻 TreeView 本身不會 re-render)
     // → 若它是停靠點或焦點所在,觸發一次重算,否則整棵樹會從 Tab 路上消失。
     const onRowUnmount = React.useCallback((id: string) => {
@@ -720,7 +727,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     toggleExpandRef.current = toggleExpand
 
     // ── 步驟導覽樹(tree-view.spec.md「步驟導覽樹」;判定 = ./tree-step-navigation.ts)──
-    const stepTree = expandOnSelect && selectionMode === 'single'
+    // 由明確的 `stepNavigation` 打開(2026-10-27 前是「單選 + expandOnSelect」這個組合自動成立 —— 一般的樹開了 expandOnSelect 就被連帶改成步驟導覽,
+    // 拿組合當「這是步驟樹」的代理,M37;NJ-12)。步驟導覽樹包含 expandOnSelect 的點文字展開。
+    const stepTree = stepNavigation && selectionMode === 'single'
+    const expandOnSelect = expandOnSelectProp || stepTree
+    if (process.env.NODE_ENV !== 'production' && stepNavigation && selectionMode !== 'single') {
+      warnStepOnce(`step-mode:${ariaLabel ?? ariaLabelledby ?? ''}`, '[DS] TreeView:stepNavigation 只用在單選的樹(selectionMode="single";tree-view.spec.md「步驟導覽樹」),其他選取模式不會變成步驟導覽。')
+    }
     // 只展開、永不收合:點大步驟的文字「會換位置」時用(2026-10-07 前這裡一律 toggleExpand —— 從別處點已展開的大步驟會選它又把它收起,總帳 T5)
     const expandIds = React.useCallback(
       (ids: readonly string[]) => {
@@ -1414,9 +1427,9 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     const statusTextId = React.useId()
     if (process.env.NODE_ENV !== 'production') {
       if (!selectable && !hasChildren) warnStepOnce(`inert:${id}`, `[DS] TreeItem「${id}」:selectable={false} 用在沒有子步驟的列 —— 沒有自己頁面、底下也沒有步驟可去,點了不會有任何反應(tree-view.spec.md「步驟導覽樹」)。`)
-      if (!selectable && !stepTree) warnStepOnce(`scope:${id}`, `[DS] TreeItem「${id}」:selectable={false} 只用在步驟導覽樹(單選 + expandOnSelect;tree-view.spec.md「步驟導覽樹」)。`)
+      if (!selectable && !stepTree) warnStepOnce(`scope:${id}`, `[DS] TreeItem「${id}」:selectable={false} 只用在步驟導覽樹(TreeView stepNavigation;tree-view.spec.md「步驟導覽樹」)。`)
       if (pageless && status !== undefined) warnStepOnce(`pageless-status:${id}`, `[DS] TreeItem「${id}」:沒有自己頁面的大步驟沒有自己的結果,status 被忽略 —— 它收起時由 TreeView 替子步驟代顯(tree-view.spec.md「步驟結果」)。`)
-      if (status !== undefined && !stepTree) warnStepOnce(`status-scope:${id}`, `[DS] TreeItem「${id}」:status 只在步驟導覽樹(單選 + expandOnSelect)畫出來(tree-view.spec.md「步驟結果」)。`)
+      if (status !== undefined && !stepTree) warnStepOnce(`status-scope:${id}`, `[DS] TreeItem「${id}」:status 只在步驟導覽樹(TreeView stepNavigation)畫出來(tree-view.spec.md「步驟結果」)。`)
     }
 
     // 點列的文字 / 按 Enter / 空白鍵:一支判斷(resolveStepActivation),指標與鍵盤只差 source
@@ -1636,7 +1649,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     // ── Chevron(永遠存在:expandable = 旋轉箭頭;leaf = placeholder 佔位) ──
     // 消費 `<ItemPrefix>` SSOT — 永遠 h-[1lh] 對齊 label 第一行中線(item-anatomy 對應)。
     // forced width 透過 style 鎖 chevron 槽寬,讓 sibling label 起點水平對齊(無 chevron leaf 佔位同寬;縮排不變)。
-    // 箭頭本身 = 共用行內小按鈕 `ItemInlineActionButton`(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」;
+    // 箭頭本身 = 共用行內小按鈕 `ItemInlineActionButton`(2026-09-26,待辦總帳 L5:user 問箭頭是不是該改成行內小按鈕;
     // 依據 inline-action.spec.md「尺寸對照」TreeItem 列 + hit-area-canonical.md:滑過底色 18(lg 22)= 點得到的範圍,
     // 盒與排版佔位仍是圖示尺寸 16 / 20,多出的 1px 靠溢出;按下多一階 neutral-active)。與 DataTable 巢狀列的展開箭頭同一顆
     //(data-table.tsx nestedPrefix)。2026-09-26 之前這裡手刻一顆 16×16 的 <button>,滑過底色與點擊範圍都只有 16。
@@ -1706,7 +1719,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             aria-expanded={hasChildren ? isExpanded : undefined}
             // 沒有自己頁面的大步驟不能選 → 不帶 aria-selected(W3C:不能選的列不給這個屬性,否則念成「未選取」)
             aria-selected={selectionMode !== 'none' && selectable ? isSelected : undefined}
-            // 步驟導覽樹:灰底那一列(目前那一步,或收起時替它代顯的大步驟)= aria-current="step"(tree-view.spec.md「步驟結果 → 灰底」)
+            // 步驟導覽樹:灰底那一列(目前那一步,或收起時替它代顯的大步驟)= aria-current="step"(tree-view.spec.md「步驟結果」的「灰底(「你在哪」)與代顯」)
             aria-current={marker !== null ? 'step' : undefined}
             aria-disabled={disabled || undefined}
             // 列的名稱只取 label —— 不讓動作按鈕的 aria-label 併進列名(否則念成「Alice 重新命名 刪除」)
@@ -1722,7 +1735,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             className={cn(
               'group/tree-item',
               treeItemVariants({ size }),
-              // 2026-05-26 SSOT lock(user explicit「multi 已有 checkbox 強信號,text 不該再變色」):
+              // 2026-05-26 SSOT lock(user 指出多選已有勾選框這個強信號,文字不該再變色;原話不在決定登記簿,這裡是轉述):
               // ── Single mode ──
               //   - default text 預設 fg-secondary muted(hierarchy navigation 慣例,跟 Sidebar 一致)
               //   - selected → text-foreground emphasis + bg-neutral-selected(無 checkbox,需 text+bg 雙信號)
@@ -1778,7 +1791,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               {chevronSlot}
 
               {/* Checkbox 在 icon 前——消費 `<ItemPrefix>` 對齊第一行
-                * 2026-05-26 SSOT lock(user explicit「多選的方式應該也是要跟 menu 一樣是出現 checkbox」):
+                * 2026-05-26 SSOT lock(user 要多選跟選單一樣出現勾選框;原話不在決定登記簿,這裡是轉述):
                 *   - selectionMode='multiple' + 無 consumer checkbox prop → auto-render `<Checkbox>` reflect selectedIds
                 *     (對齊 SelectMenu multi pattern;consumer 不用手寫 checkbox)
                 *   - selectionMode='multiple' + consumer 傳 checkbox → 用 consumer 的(parent-child cascade 等 advanced)
@@ -1806,8 +1819,11 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                 <ItemIcon icon={Icon} className={disabled ? 'text-fg-disabled' : undefined} />
               ) : null}
 
-              <span id={labelId} className={cn('flex-1 min-w-0 truncate', disabled && 'text-fg-disabled')}>
-                {label}
+              {/* 標籤放不下 → 單行截斷,只有真的被截斷時滑過出完整名稱(TruncatedText;user 2026-09-02「所有溢出的地方若hover無其他顯詳情的交互都必須要有tooltip顯示完整溢出內容」,
+                  item-anatomy.spec.md 單行截斷必配「僅實際截斷時顯示」的 tooltip;稽核 M062)。外層 span 留著給列的 aria-labelledby 指(名稱 = 完整文字),
+                  截斷與量測在內層。2026-10-27 前只有 truncate、沒有 tooltip,截掉的字看不到。 */}
+              <span id={labelId} className={cn('flex-1 min-w-0', disabled && 'text-fg-disabled')}>
+                <TruncatedText display="block">{label}</TruncatedText>
               </span>
 
               {/* 步驟結果(步驟導覽樹才有;tree-view.spec.md「步驟結果」):列尾常駐、不隨滑過隱藏,與滑過才出現的按鈕並排(同段「位置」)。

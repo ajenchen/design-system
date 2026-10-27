@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm: { when: "緊湊清單(與 md 同視覺,保留供密度語意)" }
   md: { when: "default 一般導覽樹" }   # ★ default
-  lg: { when: "touch / 大字級" }
+  lg: { when: "大字級" }
 traits:
   - hasInteractiveStates
   - isStructural
@@ -32,7 +32,7 @@ TreeView 本身負責四件事:
 1. **遞迴渲染** + indent
 2. **展開/收合**狀態管理
 3. **鍵盤導覽** + ARIA 樹狀表格(`treegrid`)
-4. **步驟導覽樹**(單選 + `expandOnSelect`)的點擊判斷與步驟結果的畫法(2026-10-07 起;見「步驟導覽樹」「步驟結果」)
+4. **步驟導覽樹**(`stepNavigation`)的點擊判斷與步驟結果的畫法(2026-10-07 起;見「步驟導覽樹」「步驟結果」)
 
 它不管 node 裡面長什麼樣——icon、badge、inline action 等視覺都由 consumer 透過 props / slots 決定。**例外是第 4 件的步驟結果**:consumer 只給事實(每一頁的結果 `status`),列尾圖示、收起的大步驟替子步驟代顯什麼由本元件畫 —— 與 `../FileItem/file-item.tsx`(consumer 給 `status`、元件畫圖示)同一種分工。不同使用情境(sidebar nav、file browser、stepper)是同一個 TreeView 的不同消費方式,不是不同元件。
 
@@ -93,7 +93,7 @@ TreeView 本身負責四件事:
 
 Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover 時 `fg-secondary`,只前進一階)/ 位置在 indent 之後 icon 之前 / 點擊只 toggle expand 不觸發 selection / `rotate-90`,旋轉時長與曲線跟子項同一份(見「動畫」)。
 
-**消費共用行內小按鈕**(2026-09-26,待辦總帳 L5,user:「是改成inline action對吧？」):箭頭本身就是 `ItemInlineActionButton`(`../../patterns/element-anatomy/item-anatomy.tsx`),尺寸照 `../../patterns/element-anatomy/inline-action.spec.md`「尺寸對照」TreeItem 列 —— 圖示與排版佔位 16(lg 20)、**滑過底色 18(lg 22)= 點得到的範圍**(`../../../ds-canonical/references/hit-area-canonical.md`)、按下多一階 `neutral-active`。與 DataTable 巢狀列的展開箭頭同一顆(`../DataTable/data-table.tsx` nestedPrefix)。縮排不變:箭頭仍住 `ItemPrefix` 鎖寬的槽,多出的 1px 靠溢出不吃版位。2026-09-26 之前這裡手刻一顆 16×16 的按鈕,滑過底色與點擊範圍都只有 16、也沒有按下態。箭頭 `tabIndex=-1`(不佔 Tab 停靠點;展開 / 收合的鍵盤在列上:`→` / `←`),**但保留名字與角色、不 `aria-hidden`**(2026-09-29 更正,待辦總帳 N46):`aria-label` 展開 / 收合 + `aria-expanded`,語音控制使用者喊「展開」才按得到、讀屏在列裡也叫得到它;與 DataTable 巢狀列的展開箭頭同一種寫法(`../DataTable/data-table.tsx` nestedPrefix)。2026-09-29 前寫 `aria-hidden`,一顆能聚焦(`tabIndex=-1` 仍可被程式與滑鼠聚焦)的按鈕對讀屏隱藏是 axe `aria-hidden-focus` 那一族。
+**消費共用行內小按鈕**(2026-09-26,待辦總帳 L5:user 問箭頭是不是該改成行內小按鈕):箭頭本身就是 `ItemInlineActionButton`(`../../patterns/element-anatomy/item-anatomy.tsx`),尺寸照 `../../patterns/element-anatomy/inline-action.spec.md`「尺寸對照」TreeItem 列 —— 圖示與排版佔位 16(lg 20)、**滑過底色 18(lg 22)= 點得到的範圍**(`../../../ds-canonical/references/hit-area-canonical.md`)、按下多一階 `neutral-active`。與 DataTable 巢狀列的展開箭頭同一顆(`../DataTable/data-table.tsx` nestedPrefix)。縮排不變:箭頭仍住 `ItemPrefix` 鎖寬的槽,多出的 1px 靠溢出不吃版位。2026-09-26 之前這裡手刻一顆 16×16 的按鈕,滑過底色與點擊範圍都只有 16、也沒有按下態。箭頭 `tabIndex=-1`(不佔 Tab 停靠點;展開 / 收合的鍵盤在列上:`→` / `←`),**但保留名字與角色、不 `aria-hidden`**(2026-09-29 更正,待辦總帳 N46):`aria-label` 展開 / 收合 + `aria-expanded`,語音控制使用者喊「展開」才按得到、讀屏在列裡也叫得到它;與 DataTable 巢狀列的展開箭頭同一種寫法(`../DataTable/data-table.tsx` nestedPrefix)。2026-09-29 前寫 `aria-hidden`,一顆能聚焦(`tabIndex=-1` 仍可被程式與滑鼠聚焦)的按鈕對讀屏隱藏是 axe `aria-hidden-focus` 那一族。
 
 ### 佔位規則(chevron + icon)
 
@@ -120,7 +120,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 **行為**:點整行(label / icon / 空白)→ select(預設所有 node 可選;`selectable={false}` 的列除外,見「步驟導覽樹」);點 chevron → toggle expand,不 select;鍵盤 `→`(收合 expandable)→ expand;`←`(展開 expandable)→ collapse;`←`(leaf / 收合 node)→ 焦點到 parent。(點列上的按鈕目前**也會**選取該列 —— 既有行為,本次未改,焦點則留在按鈕上;2026-10-07 起不再觸發 `expandOnSelect` 的展開 / 開合。)
 
-**預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 讓點整行時**會改變選取就選取並只展開(永不收合),不會改變選取才開合**(適合 stepper;單選 + `expandOnSelect` = 「步驟導覽樹」,完整規則見該段)——**連帶的展開與開合僅限指標點擊列的文字(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只做「選取」(步驟導覽樹的沒有自己頁面的大步驟另見該段),原地展開 / 收合一律走 `→` / `←`。W3C 樹的 `Enter`:「activates a node, i.e., performs its default action. For parent nodes, one possible default action is to open or close the node. In single-select trees where selection does not follow focus (see note below), the default action is typically to select the focused node.」([treeview-pattern.html#L112-L114](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/treeview/treeview-pattern.html#L112-L114);2026-10-07 前這裡引的是樹狀表格 `#L60-L80`,那一句的前提是「If cell-only focus is enabled」,本元件是列拿焦點,不適用,改引此句)。2026-10-07 前程式在 `expandOnSelect` 下一律開合(`toggleExpand`),從別處點已展開的大步驟會選它又把它收起 —— 與本段「select + expand」不符,已修(待辦總帳 T5)。
+**預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 讓點整行時**會改變選取就選取並只展開(永不收合),不會改變選取才開合**(步驟導覽樹用 `stepNavigation` 打開,它包含這一條;完整規則見「步驟導覽樹」)——**連帶的展開與開合僅限指標點擊列的文字(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只做「選取」(步驟導覽樹的沒有自己頁面的大步驟另見該段),原地展開 / 收合一律走 `→` / `←`。W3C 樹的 `Enter`:「activates a node, i.e., performs its default action. For parent nodes, one possible default action is to open or close the node. In single-select trees where selection does not follow focus (see note below), the default action is typically to select the focused node.」([treeview-pattern.html#L112-L114](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/treeview/treeview-pattern.html#L112-L114);2026-10-07 前這裡引的是樹狀表格 `#L60-L80`,那一句的前提是「If cell-only focus is enabled」,本元件是列拿焦點,不適用,改引此句)。2026-10-07 前程式在 `expandOnSelect` 下一律開合(`toggleExpand`),從別處點已展開的大步驟會選它又把它收起 —— 與本段「select + expand」不符,已修(待辦總帳 T5)。
 
 **動畫**:children 用 Radix `Collapsible` height animation(0 → auto),消費共用的 `disclosureMotion`(`tokens/motion/disclosure-motion.ts`:`--motion-duration-disclosure` 200ms、收起後保持高度 0 直到卸載、減少動態不播;owner = `tokens/motion/motion.spec.md`「開合動畫:何時播、怎麼收尾」);chevron 圖示(2026-09-26 起掛在 `ItemInlineActionButton` 的 `iconClassName`)`rotate-0 → rotate-90`,旋轉消費 `disclosureIndicatorMotion`(`tokens/motion/disclosure-motion.ts`)—— 與子項高度動畫同一個 `--motion-duration-disclosure` 200ms、同一個 `ease-out`,兩者一起開始、一起停;減少動態下直接換角度不轉(2026-10-13 起;原本 150ms、Tailwind 預設曲線,owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)。展開 / 收合是狀態切換的動畫,不是滑過回饋,保留(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
 
@@ -162,9 +162,9 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ---
 
-## 步驟導覽樹(單選 + `expandOnSelect`)
+## 步驟導覽樹(`stepNavigation`)
 
-**是什麼**:左邊一棵步驟樹、右邊是目前那一步的內容 —— user 2026-10-01 原話見上方「選取」(「…這個巢狀步驟的元件用途通常是作為左側菜單來被使用，點擊左側菜單選項右側body就會有對應內容」);巢狀步驟交給 TreeView 是 user 2026-10-01 的決定(`../Steps/steps.spec.md`「何時不用」)。開法:`selectionMode="single"`(預設)+ `expandOnSelect`。灰底 = 你在哪(目前那一步);列尾 = 步驟結果(見「步驟結果」)。**只有這種樹**有本段與「步驟結果」的行為(灰底代顯、列尾結果、`aria-current="step"`、點大步驟的文字開合);沒開 `expandOnSelect` 的檔案樹、側欄樹一個像素、一個行為都不變。**右半邊的「上一步 / 下一步」放右半邊置底的 footer**(只在右半邊,左邊的樹全高;內容長就在內容區裡捲,「下一步」每一步同一個位置):用 `SurfaceFooter` 的按鈕列(`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」),靠右、`[上一步][下一步]`、第一步不放上一步;內容區是沒有標題列的 body(上 tight、左右 loose、下 bottom)。來源:user 2026-10-20「Q1照建議」,採 AI 建議甲「右半邊置底 footer」;範例 = 展示「步驟引導」。
+**是什麼**:左邊一棵步驟樹、右邊是目前那一步的內容 —— user 2026-10-01 原話見上方「選取」(「…這個巢狀步驟的元件用途通常是作為左側菜單來被使用，點擊左側菜單選項右側body就會有對應內容」);巢狀步驟交給 TreeView 是 user 2026-10-01 的決定(`../Steps/steps.spec.md`「何時不用」)。開法:`stepNavigation`(只用在單選 `selectionMode="single"`,預設就是單選;包含 `expandOnSelect` 的點文字展開)。灰底 = 你在哪(目前那一步);列尾 = 步驟結果(見「步驟結果」)。**只有這種樹**有本段與「步驟結果」的行為(灰底代顯、列尾結果、`aria-current="step"`、點大步驟的文字開合);沒開 `stepNavigation` 的樹(檔案樹、側欄樹;只開 `expandOnSelect` 也不算)一個像素、一個行為都不變。**右半邊的「上一步 / 下一步」放右半邊置底的 footer**(只在右半邊,左邊的樹全高;內容長就在內容區裡捲,「下一步」每一步同一個位置):用 `SurfaceFooter` 的按鈕列(`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」),靠右、`[上一步][下一步]`、第一步不放上一步;內容區是沒有標題列的 body(上 tight、左右 loose、下 bottom)。來源:user 2026-10-20「Q1照建議」,採 AI 建議甲「右半邊置底 footer」;範例 = 展示「步驟引導」。
 
 ### 兩種大步驟(有子步驟的列)
 
@@ -197,7 +197,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ### 連點保護(D 才需要)
 
-**為什麼要**:D 讓同一列的第二下意思跟第一下不同 —— 從別處雙擊沒有自己頁面的大步驟,第一下「到第一個子步驟並展開」、第二下就變成「已在裡面 → 收起」(右邊已換頁,樹上卻收著);在原地雙擊會「收起又打開」,閃一下。user 的條件是「若世界級設計有擋就擋」,世界級有擋:
+**為什麼要**:D 讓同一列的第二下意思跟第一下不同 —— 從別處雙擊沒有自己頁面的大步驟,第一下「到第一個子步驟並展開」、第二下就變成「已在裡面 → 收起」(右邊已換頁,樹上卻收著);在原地雙擊會「收起又打開」,閃一下。user 2026-10-07 的條件是「若世界級設計有擋就擋」,世界級有擋(下兩條);2026-10-21 確認頁 F5 問 TreeView 步驟樹「同一列 500ms 內連點只算一下」要不要留,user 回「好，照你建議」= 甲(留):
 - 微軟 VS Code 活動列(就是「沒開就打開、開著就收起」的 D):同一顆圖示 300 毫秒內的第二下不理,原始碼註解「prevent accident trigger on a doubleclick (to help nervous people)」([paneCompositeBar.ts#L767](https://github.com/microsoft/vscode/blob/3dabe9b5512f025eb64934ce456f4867ec6a11c9/src/vs/workbench/browser/parts/paneCompositeBar.ts#L767)、[#L801-L806](https://github.com/microsoft/vscode/blob/3dabe9b5512f025eb64934ce456f4867ec6a11c9/src/vs/workbench/browser/parts/paneCompositeBar.ts#L801-L806))。
 - 微軟 Windows 設計指引:「If an object doesn't support double clicks but users are likely to assume it does, interpret a "double click" as one single click.」並且「Use the system double-click speed to distinguish between single and double clicks.」([inter-mouse.md#L242-L246](https://github.com/MicrosoftDocs/win32/blob/e103fa4e8810bd8d42c4777e17081e24dbe62dbd/desktop-src/uxguide/inter-mouse.md#L242-L246))。微軟 Raymond Chen:「Because many users double-click everything.」;XP 開始鈕「ignores the second click. Otherwise, when people double-click the Start button, the first click would open the Start menu and the second click would dismiss it!」([The Old New Thing, 2004-10-15](https://devblogs.microsoft.com/oldnewthing/20041015-00/?p=37553))。
 
@@ -526,7 +526,7 @@ TreeItem props slots(consumer 決定 node 視覺):
 
 ## Anatomy story 涵蓋
 
-TreeView 是**階層樹元件**,關鍵決策維度是 selection × expanded × indent × size × context(`'sidebar'` / `'menu'`——`tree-view.tsx` `TreeContext` 僅此兩值)。`Inspector` 提供互動式 Controls(size / context / selectionMode / expandOnSelect)即時切換,搭配 `SizeMatrix` / `ColorMatrix` / 元件特有 `IndentMatrix`(縮排規則) / `StateBehavior`(selected vs expanded 語意分離) / `KeyboardMatrix` / `Accessibility` 完整覆蓋。
+TreeView 是**階層樹元件**,關鍵決策維度是 selection × expanded × indent × size × context(`'sidebar'` / `'menu'`——`tree-view.tsx` `TreeContext` 僅此兩值)。`Inspector` 提供互動式 Controls(size / context / selectionMode / expandOnSelect / stepNavigation)即時切換,搭配 `SizeMatrix` / `ColorMatrix` / 元件特有 `IndentMatrix`(縮排規則) / `StateBehavior`(selected vs expanded 語意分離) / `KeyboardMatrix` / `Accessibility` 完整覆蓋。
 
 TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體現樹形設計),故 `Inspector` 以真實的 Engineering 團隊檔案樹為 render 對象;`IndentMatrix`(縮排與 guide line 規則)、`StateBehavior`(selected + expanded 正交語意)這類需要完整樹形視覺才能傳達的設計則另以靜態矩陣呈現。
 

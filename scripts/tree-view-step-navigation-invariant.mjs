@@ -5,7 +5,7 @@
  *        點沒有自己頁面的大步驟的文字 → 到第一個子步驟並只展開、焦點跟過去(A2),在捲動框裡也捲到看得到;什麼都不會變 → 開合(D);
  *        同一列的雙擊 / 三擊 / 觸控快點 / 兩下都回報第 1 下的連點只開合一次或不開合、焦點與單擊相同(連點保護),隔得比時間窗久的兩下照實是兩個動作;
  *        收起的沒頁面大步驟替目前那一步代顯灰底與 aria-current="step"、有頁面的不代顯;列尾結果的圖示、顏色與讀屏說明照「步驟結果」表;
- *        鍵盤 Enter / 空白鍵只「到那一步」;沒開 expandOnSelect 的一般樹不受影響;停用的列步驟結果一律停用色(S4,2026-10-21);
+ *        鍵盤 Enter / 空白鍵只「到那一步」;沒開 stepNavigation 的一般樹(含單選 + expandOnSelect)不受影響;停用的列步驟結果一律停用色(S4,2026-10-21);
  *        展示層「步驟引導」:有紅叉的那一頁看得到錯誤(含範例一開始就有的那一格)、回到送出失敗的頁錯誤還在、頁面上的「下一步 / 上一步」
  *        換頁後焦點在樹上目前那一步、不掉到 <body>(V2–V4,2026-10-21,r1b TV-01 / TV-02)。規格:tree-view.spec.md「步驟導覽樹」「步驟結果」。
  *   紅: 任一條不符 → exit 1;`--selftest` 在真建置上注入 10 種改壞版(擋連點失效、舊的一律開合、代顯消失、舊的 Tab 停靠點、結果圖示與說明消失、
@@ -41,6 +41,8 @@
  *      從別處雙擊同一列也一樣(焦點在那個子步驟)
  *   L2 捲動框:最後一個大步驟按 → 展開、馬上 ↓ → 焦點那一列等展開動畫結束後完整在框內(焦點捲動是所有樹共用的機制)
  *   F1 一般樹:點資料夾文字只選取不展開、沒有 aria-current、沒有結果槽
+ *   F2 單選 + expandOnSelect、沒開 stepNavigation 的一般樹(「團隊資料夾」):點資料夾文字選取並展開,沒有 aria-current、沒有結果槽
+ *      (2026-10-27 前步驟導覽由「單選 + expandOnSelect」自動成立,這一格紅;NJ-12 改成明確的 stepNavigation)
  *   S4 停用的列(夾具「已送出的開通申請」):列尾的勾 / 叉一律 text-fg-disabled,靠形狀分辨(spec「步驟結果 → 停用的列」,M24)
  *   V1 展示層「步驟引導」:「1. 商家資料」收著時代顯紅叉「其中有錯誤」;點它 → 到「公司基本資料」、右邊換成那一頁(讀「看得到的那一頁」的標題)
  *   V2 範例一開始就有紅叉的「負責人身分驗證」:點開那一頁,頁上看得到錯誤(至少一欄 aria-invalid + 錯誤訊息)
@@ -639,6 +641,18 @@ const SECTIONS = {
     }), s.fx('plain'))
     ck(`F1${tag} 一般樹(沒開 expandOnSelect):點資料夾文字只選取不展開、沒有 aria-current、沒有結果槽`,
       st.selected === 'f1' && st.expanded === '' && dom.current === 0 && dom.slots === 0 && dom.described === 0, `${JSON.stringify(st)} ${JSON.stringify(dom)}`)
+    // F2(2026-10-27,NJ-12):單選 + expandOnSelect、沒開 stepNavigation 的一般樹 → 點資料夾文字選取並展開,但不是步驟導覽
+    //(2026-10-27 前「單選 + expandOnSelect」自動成立步驟導覽樹,這一格會冒出 aria-current="step" 與列尾結果槽)
+    await s.reset('plainExpand', { selected: 'e2', expanded: [] })
+    await s.gesture('plainExpand', 'e1', async () => { const p = await s.textPoint('plainExpand', 'e1'); await page.mouse.click(p.x, p.y) })
+    const st2 = await s.state('plainExpand')
+    const dom2 = await page.evaluate((sel) => ({
+      current: document.querySelectorAll(`${sel} [aria-current]`).length,
+      slots: document.querySelectorAll(`${sel} [data-tree-status]`).length,
+      described: document.querySelectorAll(`${sel} [data-tree-row][aria-describedby]`).length,
+    }), s.fx('plainExpand'))
+    ck(`F2${tag} 一般樹(單選 + expandOnSelect、沒開 stepNavigation):點資料夾文字選取並展開,沒有 aria-current、沒有結果槽`,
+      st2.selected === 'e1' && st2.expanded === 'e1' && dom2.current === 0 && dom2.slots === 0 && dom2.described === 0, `${JSON.stringify(st2)} ${JSON.stringify(dom2)}`)
   },
 }
 

@@ -100,7 +100,7 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 純視覺分段(設計時可列舉的固定選單):用 SidebarGroup 不用 TreeView"
-          note="Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 Sidebar 設計原則「SidebarMenu vs TreeView 的選擇」)"
+          note={<>Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 Sidebar 設計原則「<StoryLink kind="Design System/Components/Sidebar/設計原則" name="SidebarMenu vs TreeView 的選擇">SidebarMenu vs TreeView 的選擇</StoryLink>」)</>}
         >
           <ExampleCaption warn>固定分段用 SidebarGroup 就夠,不需要 TreeView 的遞迴 overhead;user data 樹則一律 TreeView</ExampleCaption>
         </TutorialRule>
