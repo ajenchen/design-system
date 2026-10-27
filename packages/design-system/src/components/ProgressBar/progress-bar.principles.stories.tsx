@@ -2,8 +2,9 @@
 // @principles-rationale: Merged WhenToUse + WhenNotToUse + VsCircularProgressRule
 // + FileItemBoundaryRule into a single `UsageGuidance` story (3 sections — 何時用 /
 // 何時不用 + 替代 / vs 近親) per 2026-04-26 user mandate. StatusRule + AffixRule kept.
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Paperclip, X, FileText, Table as TableIcon } from 'lucide-react'
+import { Paperclip, X } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
@@ -11,10 +12,13 @@ import { Button } from '@/design-system/components/Button/button'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/ProgressBar/設計原則',
   parameters: { layout: 'padded' },
+  // Toaster 是 app 層 Provider(toast.spec.md:consumer 在 app root 放一次)—— 放在 story 外層,不當成教學頁裡的一塊(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -22,12 +26,33 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true, naturalWidth: true })
 
-// 情境展示容器——讓例子有真實產品感
-const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: number }) => (
-  <div className="border border-border rounded-md bg-surface px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]" style={{ width }}>
+// 範例欄寬(只限寬、不畫框):2026-10-27 前這裡是手刻的卡片(邊框 + 底色 + 內距)—— DS 沒有這個元件,每一則都包同一種假卡片
+//(稽核 L051 / D14「不應該亂造新的元件」、F-S3;批次匯入真正的樣子見「展示 / 批次任務進度」:對話框裡的進度)。
+const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: number }) => <div style={{ width }}>{children}</div>
+
+/** 一列進度:名稱 → 進度條 = tight(名稱替這條進度命名 = labeling,layoutSpace.spec.md「親疏 3 級」functional 交互) */
+const LabeledProgress = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex flex-col gap-[var(--layout-space-tight)]">
+    <span className="text-body">{label}</span>
     {children}
   </div>
 )
+
+/** AffixRule 的取消鈕:真的取消(稽核 Q-specimen:看得到的按鈕都要能動,user 2026-09-08 F-S2) */
+function CancellableExport() {
+  const [cancelled, setCancelled] = React.useState(false)
+  if (cancelled) return <p className="text-body text-fg-secondary">已取消匯出 2026 年訂單</p>
+  return (
+    <LabeledProgress label="匯出 2026 年訂單 CSV">
+      <ProgressBar
+        value={42}
+        status="inProgress"
+        aria-label="匯出 2026 年訂單進度"
+        affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消匯出" onClick={() => setCancelled(true)} />}
+      />
+    </LabeledProgress>
+  )
+}
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -70,14 +95,8 @@ export const UsageGuidance: Story = {
           title="❌ < 1 秒的短暫操作不要用 ProgressBar"
           note="ProgressBar fill 有 300ms transition,在極短操作反而閃爍不自然。< 1 秒的非同步通常不需要任何 loading 視覺(結果直接呈現即可)。"
         >
-          <Frame>
-            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
-            <div className="flex items-center gap-2">
-              <span className="text-body">已儲存</span>
-              <span className="text-footnote text-fg-muted">· 剛才</span>
-            </div>
-          </Frame>
-          <ExampleCaption>✅ 極短操作完成後直接顯示結果,不插入進度視覺</ExampleCaption>
+          <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '設定已儲存' })}>儲存設定</Button>
+          <ExampleCaption>✅ 極短操作:完成後跳 Toast,畫面上不插入任何進度視覺(送出成功一律 Toast,keyboard-model-canonical.md)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -114,13 +133,9 @@ export const UsageGuidance: Story = {
           note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
         >
           <Frame>
-            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-              <TableIcon size={16} className="text-fg-muted" />
-              <span className="text-body flex-1">匯出客戶名單 CSV</span>
-              <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
-            </div>
-            <ProgressBar value={65} status="inProgress" aria-label="匯出客戶名單進度" />
+            <LabeledProgress label="匯出客戶名單 CSV">
+              <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯出客戶名單進度" />
+            </LabeledProgress>
           </Frame>
           <ExampleCaption>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</ExampleCaption>
 
@@ -140,12 +155,9 @@ export const UsageGuidance: Story = {
           <ExampleCaption>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</ExampleCaption>
 
           <Frame>
-            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-              <FileText size={16} className="text-fg-muted" />
-              <span className="text-body flex-1">產生季度報表中...</span>
-            </div>
-            <ProgressBar value={0} status="inProgress" aria-label="無法量化的報表產生進度（誤用）" />
+            <LabeledProgress label="產生季度報表中...">
+              <ProgressBar value={0} status="inProgress" aria-label="無法量化的報表產生進度（誤用）" />
+            </LabeledProgress>
           </Frame>
           <ExampleCaption warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</ExampleCaption>
         </TutorialRule>
@@ -165,17 +177,17 @@ export const UsageGuidance: Story = {
           </Frame>
           <ExampleCaption warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</ExampleCaption>
 
-          <Frame width={440}>
-            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-            <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-              <FileText size={18} className="text-primary" />
-              <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
-              <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
-            </div>
-            <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
-            <p className="text-footnote text-fg-muted mt-[var(--layout-space-tight)]">處理中,預計剩餘 28 秒</p>
+          <Frame>
+            <FileItem mode="compact" name="附件_會議記錄.docx" status="uploading" progress={58} />
           </Frame>
-          <ExampleCaption>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</ExampleCaption>
+          <ExampleCaption>✅ 上傳列表用 FileItem(檔名、進度、狀態一條龍,內部自己消費 ProgressBar)</ExampleCaption>
+
+          <Frame>
+            <LabeledProgress label="匯入客戶名單">
+              <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
+            </LabeledProgress>
+          </Frame>
+          <ExampleCaption>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用;完整流程見「展示 / 批次任務進度」)</ExampleCaption>
         </TutorialRule>
       </UsageSection>
     </TutorialPage>
@@ -191,35 +203,25 @@ export const StatusRule: Story = {
         note="三種 status 是進度的完整生命週期:在途(inProgress,fill 用 --info)→ 終態二選一(success / error)。不要用 status 表達「警示」或「接近上限」等中間語意——那是 Notice / Alert 的職責。"
       >
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">Q1_財報.xlsx</span>
-          </div>
-          <ProgressBar value={42} status="inProgress" affix="value" aria-label="Q1 財報上傳進度" />
+          <LabeledProgress label="匯出客戶名單 CSV">
+            <ProgressBar value={42} status="inProgress" affix="value" aria-label="匯出客戶名單進度" />
+          </LabeledProgress>
         </Frame>
-        <ExampleCaption>✅ 上傳中用 inProgress,affix 顯示進度百分比</ExampleCaption>
+        <ExampleCaption>✅ 進行中用 inProgress,affix 顯示進度百分比</ExampleCaption>
 
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">簡報_final.pptx</span>
-          </div>
-          <ProgressBar value={100} status="success" affix="status-icon" aria-label="簡報上傳完成" />
+          <LabeledProgress label="產生第三季營收報表">
+            <ProgressBar value={100} status="success" affix="status-icon" aria-label="第三季營收報表產生完成" />
+          </LabeledProgress>
         </Frame>
         <ExampleCaption>✅ 完成用 success + 勾 icon(終態指示)</ExampleCaption>
 
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">影片素材.mp4</span>
-            <span className="text-caption text-error">檔案過大</span>
-          </div>
-          <ProgressBar value={68} status="error" affix="status-icon" aria-label="影片素材上傳失敗" />
+          <LabeledProgress label="同步門市訂單(連線逾時,停在 68%)">
+            <ProgressBar value={68} status="error" affix="status-icon" aria-label="同步門市訂單失敗" />
+          </LabeledProgress>
         </Frame>
-        <ExampleCaption>✅ 失敗用 error + 叉 icon,旁邊可補上具體錯誤說明</ExampleCaption>
+        <ExampleCaption>✅ 失敗用 error + 叉 icon,名稱旁補上具體原因</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -227,12 +229,9 @@ export const StatusRule: Story = {
         note="ProgressBar 語意是進度三態(進行中 / 完成 / 失敗)。配額超標屬業務規則,由 consumer 決定在多少 % 切換到 error,不要在 ProgressBar 加中間色。上方若要提示,用 Notice / Alert。"
       >
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <span className="text-body flex-1">儲存空間</span>
-            <span className="text-caption text-error tabular-nums">95% 使用</span>
-          </div>
-          <ProgressBar value={95} status="error" aria-label="儲存空間使用率" />
+          <LabeledProgress label="儲存空間">
+            <ProgressBar value={95} status="error" affix="value" aria-label="儲存空間使用率" />
+          </LabeledProgress>
         </Frame>
         <ExampleCaption>✅ 配額快滿:consumer 判斷「95% 以上顯示警示」後自行把 status 切成 error</ExampleCaption>
       </TutorialRule>
@@ -249,55 +248,38 @@ export const AffixRule: Story = {
         note="value 讓使用者讀到確切數字,適合配額、完成比例等需要精確資訊的情境。status-icon 只在完成或失敗時呈現,讓終態一眼可辨。"
       >
         <Frame>
-          <div className="flex items-center mb-[var(--layout-space-tight)]">
-            <span className="text-body flex-1">儲存空間</span>
-          </div>
-          <ProgressBar value={78} status="inProgress" affix="value" aria-label="儲存空間使用率" />
+          <LabeledProgress label="儲存空間">
+            <ProgressBar value={78} status="inProgress" affix="value" aria-label="儲存空間使用率" />
+          </LabeledProgress>
         </Frame>
         <ExampleCaption>✅ 配額顯示:affix=value,使用者要知道確切百分比</ExampleCaption>
 
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">提案書_終版.pdf</span>
-          </div>
-          <ProgressBar value={100} status="success" affix="status-icon" aria-label="提案書上傳完成" />
+          <LabeledProgress label="產生年度稅務報表">
+            <ProgressBar value={100} status="success" affix="status-icon" aria-label="年度稅務報表產生完成" />
+          </LabeledProgress>
         </Frame>
-        <ExampleCaption>✅ 上傳完成:affix=status-icon,終態不需要再看百分比</ExampleCaption>
+        <ExampleCaption>✅ 已完成:affix=status-icon,終態不需要再看百分比</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
-        title="ReactNode affix — 上傳中提供取消,或顯示 bytes 進度"
-        note="Enum 涵蓋不了的客製需求用 ReactNode。例如上傳中提供「取消」按鈕,或顯示 2.3 / 5.0 MB 等具體 bytes(Dropbox / Google Drive 做法)。"
+        title="ReactNode affix — 進行中提供取消,或顯示 bytes 進度"
+        note="Enum 涵蓋不了的客製需求用 ReactNode。例如匯出中提供「取消」按鈕,或下載時顯示 2.3 / 5.0 MB 等具體 bytes。"
       >
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">設計規範_v2.pdf</span>
-          </div>
-          <ProgressBar
-            value={42}
-            status="inProgress"
-            aria-label="設計規範上傳進度"
-            affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
-          />
+          <CancellableExport />
         </Frame>
-        <ExampleCaption>✅ 上傳中附取消按鈕,使用者可中斷</ExampleCaption>
+        <ExampleCaption>✅ 進行中附取消按鈕,使用者可中斷</ExampleCaption>
 
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">影片素材.mp4</span>
-          </div>
-          <ProgressBar
-            value={66}
-            status="inProgress"
-            aria-label="影片素材上傳進度"
-            affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
-          />
+          <LabeledProgress label="下載第三季報表備份">
+            <ProgressBar
+              value={66}
+              status="inProgress"
+              aria-label="第三季報表備份下載進度"
+              affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
+            />
+          </LabeledProgress>
         </Frame>
         <ExampleCaption>✅ 顯示實際 bytes 進度,讓使用者判斷速度</ExampleCaption>
       </TutorialRule>
@@ -307,15 +289,9 @@ export const AffixRule: Story = {
         note="FileItem compact mode 檔名那行已經提供足夠情境,bar 本身不需再重複百分比,此時不傳 affix(純 bar)。"
       >
         <Frame>
-          {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">附件.zip</span>
-            <span className="text-caption text-fg-muted tabular-nums">55%</span>
-          </div>
-          <ProgressBar value={55} status="inProgress" aria-label="附件上傳進度" />
+          <FileItem mode="compact" name="附件.zip" status="uploading" progress={55} />
         </Frame>
-        <ExampleCaption>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</ExampleCaption>
+        <ExampleCaption>✅ FileItem compact:檔名那行已有情境 → 內部的 bar 不加 affix,避免重複</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

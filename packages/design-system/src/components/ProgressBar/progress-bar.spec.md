@@ -35,7 +35,7 @@ ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答�
 
 ## 何時用
 
-- **批次任務進度**：CSV 匯入、批量同步、報表生成（Linear batch action / Jira bulk edit / Airtable import）
+- **批次任務進度**：CSV 匯入、批量同步、報表生成(範例:展示「批次任務進度」—— 按鈕打開對話框,只顯示百分比,跑完關閉並跳 Toast)
 - **下載 / 匯出進度**（非檔案上傳列表情境）:單檔下載進度、匯出 zip、報表生成
 - **多步驟流程的整體進度**：表單 wizard「步驟 3/5 = 60%」（但**步驟結構本身**用 `Steps` 元件,ProgressBar 只表達整體完成比例）
 - **Table cell / row 內的 inline 進度**：DataTable 裡「配額使用率 45%」、「完成度 78%」等單列靜態指標
