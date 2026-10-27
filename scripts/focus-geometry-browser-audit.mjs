@@ -163,6 +163,38 @@ function instrumentSelfCheck() {
 const TAB_SETTLE_QUIET_FRAMES = 2
 const SETTLE_CAP_MS = 3000
 
+// ── 承擔者證明量哪些樣式(走訪中的「第一次抵達」與走訪後的退路共用這一份)────────────
+const CARRIER_PROPS = ['outlineStyle','outlineWidth','outlineColor','borderColor','borderWidth','backgroundColor','boxShadow','textDecorationLine','textDecorationColor']
+// 2026-09-26:也看 `::before` 的外框 —— 框可以畫在自己的 `::before`「框圖層」上(focus-canonical「框怎麼畫」框圖層列:
+// FileItem / FileUpload 列底貼著進度條時,框改畫在 ::before 才能在進度條那段挖空)。原本只取元素本身的計算樣式,
+// 畫在 ::before 上的框對這支儀器是隱形的,會把「真的有畫」誤報成「承擔者零差異」(M37:沒觀察到 ≠ 沒發生)。
+// 只收外框三項:框圖層只畫外框;其餘屬性照舊看元素本身。
+const CARRIER_PSEUDO = ['outlineStyle','outlineWidth','outlineColor']
+// 聚焦前 / 後兩份快照 → 有可見差異的鄰域元素清單。值是 null = 那個元素量的時候已經不在文件裡,不比(脫離的節點
+// 計算樣式全是空字串,拿來比會把「被換掉」誤當「有畫」)。
+// 「可見」濾掉:outline-style 兩邊都是 none 時的 color / width 變化(畫不出來)。過渡中間值由取樣前的等待處理。
+function carrierDiff(before, after, names) {
+  const changed = []
+  for (let k = 0; k < before.length; k++) {
+    if (!before[k] || !after[k]) continue
+    const diff = []
+    for (let q = 0; q < CARRIER_PROPS.length; q++) {
+      if (before[k][q] === after[k][q]) continue
+      if ((CARRIER_PROPS[q] === 'outlineColor' || CARRIER_PROPS[q] === 'outlineWidth') && before[k][0] === 'none' && after[k][0] === 'none') continue
+      diff.push(CARRIER_PROPS[q])
+    }
+    // ::before 的外框(同一個「outline-style 為 none 時顏色/寬度變化畫不出來」過濾)
+    const P0 = CARRIER_PROPS.length
+    for (let q = 0; q < CARRIER_PSEUDO.length; q++) {
+      if (before[k][P0 + q] === after[k][P0 + q]) continue
+      if (q > 0 && before[k][P0] === 'none' && after[k][P0] === 'none') continue
+      diff.push('::before ' + CARRIER_PSEUDO[q])
+    }
+    if (diff.length) changed.push(names[k] + '(' + diff.join(',') + ')')
+  }
+  return changed
+}
+
 // 焦點站的名字(元素描述 + 尺寸)只有這一份寫法:DETECT 用它當列的身分,QUICK_KEY 用它在量之前判斷「這站已經量過」
 const DESC_EXPR = "el.tagName.toLowerCase() + (el.getAttribute('role')?'['+el.getAttribute('role')+']':'') + '.' + String(el.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.')"
 const SIZE_EXPR = "r.width.toFixed(0)+'x'+r.height.toFixed(0)"
@@ -352,6 +384,15 @@ try {
         if (SELFTEST) {
           // `*::before{outline:none}`(2026-09-26):承擔者證明也看 ::before 框圖層了,對照組要連它一起釘死,否則這一段的紅燈是假的
           await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible,*::before{outline:none!important}` })
+          // 上面那張樣式表**釘不住 Tailwind v4 的 `!` utility**(2026-10-27 實測):它們在 `@layer utilities` 裡,
+          // 而 !important 比的時候「層裡的贏過沒層的」,與選擇器權重無關 —— `focus-within:!border-primary` 照樣把欄位外框
+          // 轉主色,欄位家族的承擔者在對照組裡仍量得到變化(AgentPanel 的 textarea 就這樣沒被點名),這半邊等於沒有對照組。
+          // 元素上的行內 !important 在層之前比較(cascade:元素附著樣式 > 層),才蓋得過;所以再對每個元素釘一次。
+          await pg.evaluate(() => {
+            for (const e of document.querySelectorAll('*')) {
+              for (const [k, v] of [['transition', 'none'], ['border-color', '#f00'], ['background-color', 'transparent'], ['text-decoration-color', '#f00'], ['box-shadow', 'none']]) e.style.setProperty(k, v, 'important')
+            }
+          })
         }
         if (SELFTEST_INSET) {
           await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
@@ -359,6 +400,31 @@ try {
         // 這 400ms **不再是**「已渲染」的代理(渲染完成已由 loadStory → 共用的 openStory 直接等到);留下的用途只剩
         // 切主題 / 注入樣式之後讓顏色過渡跑完(沿用原值)。
         await pg.waitForTimeout(400)
+        // 承擔者證明的「聚焦前」= **走訪碰到任何東西之前**的樣式(2026-10-27):每個可聚焦元素的鄰域此刻先拍一份,
+        // 第一次 Tab 抵達時再拍「聚焦後」。不能等走訪完再 blur → focus 重拍:走訪 / blur 會改變被量的東西本身 ——
+        // Steps 註冊精靈(r1b OTH-04)的必填欄位被 Tab 離開就照 form-validation.spec.md 規則 2 驗證成錯誤態,
+        // 而錯誤態聚焦依 field.spec.md「Error × focus 疊加 canonical」本來就視覺不變(文字框靠游標),
+        // 於是量到的是儀器自己造出來的狀態、報成「承擔者沒在畫」(M37)。先等過渡停(切主題 / 注入樣式後的顏色過渡)。
+        await settleAfterInteraction(pg, { frames: TAB_SETTLE_QUIET_FRAMES, capMs: SETTLE_CAP_MS })
+        await pg.evaluate(([props, pseudo]) => {
+          const TABBABLE = 'a[href],button,input,select,textarea,summary,iframe,[tabindex],[contenteditable]:not([contenteditable="false"])'
+          window.__chainOf = (e) => {
+            const ch = []; let m = e
+            for (let k = 0; k < 5 && m; k++) { ch.push(m); m = m.parentElement }
+            let c = 0; for (const d of e.querySelectorAll('*')) { if (c++ >= 30) break; ch.push(d) }
+            return ch
+          }
+          window.__snapOne = (e) => {
+            if (!e.isConnected) return null
+            const c = getComputedStyle(e), b = getComputedStyle(e, '::before')
+            return [...props.map((k) => c[k]), ...pseudo.map((k) => b[k])]
+          }
+          window.__pre = new Map()
+          for (const e of document.querySelectorAll(TABBABLE)) { const ch = window.__chainOf(e); window.__pre.set(e, { chain: ch, vals: ch.map(window.__snapOne) }) }
+          // 「第一次抵達」要真的是第一次:被聚焦過(繞回來、或等不到穩態第二次才量)的站不用這份快照,退回走訪後的量法
+          window.__focusCount = new Map()
+          document.addEventListener('focusin', (ev) => { window.__focusCount.set(ev.target, (window.__focusCount.get(ev.target) || 0) + 1) }, true)
+        }, [CARRIER_PROPS, CARRIER_PSEUDO])
         const seen=new Set(), rows=[]
         // 等不到穩態的站(名字 → 原因);之後繞回來同一站量到靜止就撤銷,只剩始終等不到的才算數
         const unsettled=new Map(), settleTries=new Map()
@@ -382,6 +448,22 @@ try {
           }
           unsettled.delete(k)
           seen.add(k); rows.push(m)
+          // 無框站的承擔者證明:第一次抵達就量(聚焦前 = 上面走訪前的快照)。等 700ms 讓邊框轉色的過渡跑完再取樣
+          //(2026-09-08 坑:blur / focus 後立刻取樣量到過渡中間值,NumberInput 被誤判零差異)。
+          // 抓不到聚焦前快照(元素是走訪途中才長出來的)或不是第一次被聚焦 → 留 'pending',走訪後用 blur → focus 退路量。
+          if (m.carrier === 'pending') {
+            await pg.waitForTimeout(700)
+            const fa = await pg.evaluate((idx) => {
+              const e = document.activeElement
+              if (!e || e.getAttribute('data-fl-idx') !== String(idx)) return null
+              const p = window.__pre?.get(e)
+              if (!p || window.__focusCount?.get(e) !== 1) return null
+              const names = p.chain.map((x) => (x === e ? '自己' : e.contains(x) ? '後代' : '祖先') + ':' +
+                x.tagName.toLowerCase() + '.' + String(x.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.'))
+              return { before: p.vals, after: p.chain.map(window.__snapOne), names, hasAD: e.hasAttribute('aria-activedescendant') }
+            }, m.flIdx)
+            if (fa) { m.carrier = fa.hasAD ? ['(虛擬游標,另由 H1f 驗)'] : carrierDiff(fa.before, fa.after, fa.names); m.carrierProof = 'first-arrival' }
+          }
           if (rows.length>=14) break
         }
         // 等不到穩態的站:量到的是過渡中的畫面,不能當證據(也不能默默略過)→ 儀器失效,點名該站
@@ -389,30 +471,21 @@ try {
         // ── 承擔者證明(非同步,等 transition 穩態)────────────────────────
         // 無框元素在原始碼裡宣告了「承擔者是誰」,但宣告是人寫的。這裡去現場證明:
         // 聚焦前後,自己或鄰域(往上 5 層 + 往下 30 個後代)的**可見**樣式差異必須非空。
-        // 「可見」要濾掉兩種假差異:(a) outline-style 是 none 時的 color/width 變化畫不出來;
+        // 主路徑在走訪裡(第一次抵達,見上);這裡只補走訪中沒證明到的站(元素走訪途中才長出來、或第一次抵達沒量到),
+        // 用 blur → focus 重拍。「可見」要濾掉兩種假差異:(a) outline-style 是 none 時的 color/width 變化畫不出來;
         // (b) 過渡進行中的同色不同序列化(oklch ↔ oklab)。所以每次取樣前都等 700ms。
         const flCount = await pg.evaluate(() => window.__fl || 0)
         for (let n = 1; n <= flCount; n++) {
+          if (rows.find((x) => x.flIdx === n)?.carrier !== 'pending') continue
           const sel = `[data-fl-idx="${n}"]`
           const exists = await pg.$(sel)
           if (!exists) continue
           await pg.evaluate((q) => {
             const e = document.querySelector(q); if (!e) return
-            window.__chain = []; let m = e
-            for (let k = 0; k < 5 && m; k++) { window.__chain.push(m); m = m.parentElement }
-            let c = 0; for (const d of e.querySelectorAll('*')) { if (c++ >= 30) break; window.__chain.push(d) }
+            window.__chain = window.__chainOf(e)
             window.__target = e
           }, sel)
-          const PROPS = ['outlineStyle','outlineWidth','outlineColor','borderColor','borderWidth','backgroundColor','boxShadow','textDecorationLine','textDecorationColor']
-          // 2026-09-26:也看 `::before` 的外框 —— 框可以畫在自己的 `::before`「框圖層」上(focus-canonical「框怎麼畫」框圖層列:
-          // FileItem / FileUpload 列底貼著進度條時,框改畫在 ::before 才能在進度條那段挖空)。原本只取元素本身的計算樣式,
-          // 畫在 ::before 上的框對這支儀器是隱形的,會把「真的有畫」誤報成「承擔者零差異」(M37:沒觀察到 ≠ 沒發生)。
-          // 只收外框三項:框圖層只畫外框;其餘屬性照舊看元素本身。
-          const PSEUDO = ['outlineStyle','outlineWidth','outlineColor']
-          const snap = () => pg.evaluate(([props, pseudo]) => window.__chain.map((e) => {
-            const c = getComputedStyle(e), b = getComputedStyle(e, '::before')
-            return [...props.map((k) => c[k]), ...pseudo.map((k) => b[k])]
-          }), [PROPS, PSEUDO])
+          const snap = () => pg.evaluate(() => window.__chain.map(window.__snapOne))
           await pg.evaluate(() => window.__target.blur()); await pg.waitForTimeout(700)
           const before = await snap()
           await pg.evaluate(() => window.__target.focus()); await pg.waitForTimeout(700)
@@ -420,23 +493,7 @@ try {
           const names = await pg.evaluate(() => window.__chain.map((e) =>
             (e === window.__target ? '自己' : window.__target.contains(e) ? '後代' : '祖先') + ':' +
             e.tagName.toLowerCase() + '.' + String(e.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.')))
-          const changed = []
-          for (let k = 0; k < before.length; k++) {
-            const diff = []
-            for (let q = 0; q < PROPS.length; q++) {
-              if (before[k][q] === after[k][q]) continue
-              if ((PROPS[q] === 'outlineColor' || PROPS[q] === 'outlineWidth') && before[k][0] === 'none' && after[k][0] === 'none') continue
-              diff.push(PROPS[q])
-            }
-            // ::before 的外框(同一個「outline-style 為 none 時顏色/寬度變化畫不出來」過濾)
-            const P0 = PROPS.length
-            for (let q = 0; q < PSEUDO.length; q++) {
-              if (before[k][P0 + q] === after[k][P0 + q]) continue
-              if (q > 0 && before[k][P0] === 'none' && after[k][P0] === 'none') continue
-              diff.push('::before ' + PSEUDO[q])
-            }
-            if (diff.length) changed.push(names[k] + '(' + diff.join(',') + ')')
-          }
+          const changed = carrierDiff(before, after, names)
           const hasAD = await pg.evaluate((q) => !!document.querySelector(q)?.hasAttribute('aria-activedescendant'), sel)
           // **用編號配對,不用順序** —— 走訪會去重(seen),順序對不上就會把甲的承擔者
           // 安到乙頭上(2026-09-08 第一版就這樣把選單鈕的承擔者安給了 AppShell 的 input)。
