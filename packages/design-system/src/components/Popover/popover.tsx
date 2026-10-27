@@ -278,7 +278,7 @@ const PopoverTitle = React.forwardRef<
       className={cn("text-body font-medium truncate", className)}
       {...props}
     >
-      {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+      {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」)——
           同 DialogTitle 同型修;id/aria-labelledby 留在 h2 本體不受影響。 */}
       <TruncatedText display="block">{children}</TruncatedText>
     </h2>

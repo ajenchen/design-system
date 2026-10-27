@@ -152,7 +152,7 @@ AI 查證後建議甲(「Toast 一律以整個視窗為準,不做任何避讓」
 **理由**:
 
 1. **Toast 本來就讓得開**:可關、會自己消失、滑過暫停(上面三點)。被蓋住的東西只會被擋一下(4 / 10 秒),使用者也隨時能按 × 移開它。
-2. **要避讓的東西列不完**:畫面上可能被蓋住的重要元素沒有上限(user:「難道每個情況都要定義？」)。只讓開其中幾個,其餘照樣被蓋,還多出一套要跟著每個元件維護的幾何。
+2. **要避讓的東西列不完**:畫面上可能被蓋住的重要元素沒有上限(user 在上面那段問:難道每個情況都要定義)。只讓開其中幾個,其餘照樣被蓋,還多出一套要跟著每個元件維護的幾何。
 3. **世界級的做法就是不避讓**(2026-10-13 查證):
    - VS Code:Toast 以整個工作台為準(`.monaco-workbench > .notifications-toasts { position: absolute; right: 3px; bottom: 25px }`,https://github.com/microsoft/vscode/blob/7e092ca6c3cdaccb5e6bcabd0def62a8a84b6b37/src/vs/workbench/browser/parts/notifications/media/notificationsToasts.css#L6-L10),計算空間只扣狀態列與標題列(`notificationsToasts.ts#L645`、`#L649`),不扣側欄 —— Chat 在右側欄時,Toast 疊在 Chat 上。
    - Atlassian Flag:「Flags appear at the bottom left of the screen and overlay any content.」(https://atlassian.design/components/flag/usage)

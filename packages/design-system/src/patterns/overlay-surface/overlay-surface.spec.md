@@ -306,7 +306,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 - `flex items-center justify-end gap-2 shrink-0`(右對齊按鈕列,不被壓縮)
 - **Footer px = 浮層內容左邊界**(判準與完整對照表在上方「要對齊誰」,本處不重述):預設 `layout-space-loose` 對齊 SurfaceHeader title / SurfaceBody 內容左緣;內容左邊界由**列**定義時(選單 / list-as-region)覆寫成列在用的同一行 `px-[var(--item-px,var(--field-px))]`;兩者皆無時(欄位置中的挑選面板)才由面板自訂,必須用既有 layout token。
   **注**:**不要直接寫 `--field-px`** —— 那是 form-field 的 gutter(uiSize 家族),overlay chrome 不該伸手進去拿。要寫就寫 `--item-px`(owner:`../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」),它**是列的 gutter token**,只是預設值回退到 `var(--field-px)`;照抄 `components/Menu/menu-item.tsx` 那一行,footer 與列從此吃同一個來源。
-  *(2026-09-18 更正:本條原本寫成「`--field-px` **不**用於 overlay footer」,與上方 2026-09-17 立的「選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`」在同一份檔案裡互相矛盾 —— user 問「這是其 SSOT 嗎」時抓到的正是這一點。真正的界線不是「哪個 token 家族」,是「footer 要不要跟列吃同一個來源」。)*
+  *(2026-09-18 更正:本條原本寫成「`--field-px` **不**用於 overlay footer」,與上方 2026-09-17 立的「選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`」在同一份檔案裡互相矛盾 —— user 問這是不是它的 SSOT 時抓到的正是這一點。真正的界線不是「哪個 token 家族」,是「footer 要不要跟列吃同一個來源」。)*
 
 ---
 

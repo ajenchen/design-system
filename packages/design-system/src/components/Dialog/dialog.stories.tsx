@@ -146,7 +146,7 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
   const avatarSrc = `https://i.pravatar.cc/80?u=${member.empNum}`
   return (
     // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
-    // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用:成員名單這種展示列」走 Family 2 手組)
+    // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用」那條:成員名單這種展示列,走 Family 2 手組)
     <div
       role="listitem"
       // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1031);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))

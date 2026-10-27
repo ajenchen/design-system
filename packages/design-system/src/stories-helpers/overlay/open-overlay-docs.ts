@@ -1,7 +1,7 @@
 /**
  * 預設就開著的模態浮層 story,在 Storybook Autodocs 頁必須各自進 iframe。
  *
- * 為什麼(2026-09-09 user:「你有發現嗎」):Autodocs 把同一檔的所有 story 渲染在**同一份文件**裡;
+ * 為什麼(2026-09-09 user 問有沒有發現這個問題):Autodocs 把同一檔的所有 story 渲染在**同一份文件**裡;
  * Dialog / Sheet / FileViewer 這類 `position: fixed` + Portal 到 body 的模態浮層,只要有 N 個 story
  * 是 `defaultOpen` / `open` 初始 true,docs 頁就會同時疊 N 個遮罩 + N 個對話框(Dialog docs 實測 4 個)。
  * M15 又要求 stakeholder flow 必須有「開著」的快照 story 給視覺稽核截圖,不能把 defaultOpen 拿掉。

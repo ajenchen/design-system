@@ -313,7 +313,7 @@ const DialogContent = React.forwardRef<
         "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
         // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;何時播 / 時長 / 曲線 / 收尾 / reduced-motion 由
         // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit,這裡只寫幾何)。
-        // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
+        // 2026-09-09 user 抓到 dialog 從左上角飛到中間:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
         // 是為了在 keyframe 的 `transform` 裡重寫置中位移(v3 的 -translate-x-1/2 也走 transform,會被 keyframe 蓋掉);
         // Tailwind v4 的 -translate-x-1/2 改寫進獨立的 `translate` 屬性,不再被 keyframe 蓋掉,兩者相加 = 第一幀
         // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
@@ -341,7 +341,7 @@ const DialogContent = React.forwardRef<
 
   return (
     <DialogPortal container={portalContainer ?? undefined}>
-      {/* 並存(modal={false})時 Radix 不畫 Overlay;user 2026-09-08:「為何 modal 沒有遮罩」—— 它仍是 modal,
+      {/* 並存(modal={false})時 Radix 不畫 Overlay;user 2026-09-08 問為何 modal 沒有遮罩 —— 它仍是 modal,
           宿主要被遮,只有保留節點挖洞。一般 modal 走 Radix 自己的 Overlay(z-50)。 */}
       {/* 洞只挖給常駐節點;Content 本來就在遮罩上層(z-40 > z-30),挖給它反而會留下開場動畫縮放中量到的錯位白框 */}
       {persistentElements ? <CoexistenceMask keep={persistentElements} /> : <DialogOverlay />}
@@ -480,7 +480,7 @@ const DialogTitle = React.forwardRef<
     className={cn("text-body-lg font-medium truncate", className)}
     {...props}
   >
-    {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+    {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」)——
         title 單行 truncate 被裁掉後沒有 hover 補救路徑。display="block":h2 是 block container,
         inline span 量測不到 clientWidth(對照 breadcrumb.tsx 同型消費)。 */}
     <TruncatedText display="block">{children}</TruncatedText>

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
  * - **有 URL 的 modal 傳送到「舞台」**(story 自己建的左欄,帶 transform):modal 與遮罩只佔宿主面積,代理面板在舞台外、
  *   完全不被蓋(v14 條 B「並列可操作」;並排時舞台 = 畫布扣掉並排的代理面板,誰並排由 app-shell.spec.md「版面規則」決定);
  *   **沒有 URL 的確認框傳送到畫布**(`canvasRef`),蓋住整個 app 含代理(v14 條 A)。
- * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡;**整頁示範不放備註**(2026-09-09 user:「拿掉下方備註」),
+ * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡;**整頁示範不放備註**(2026-09-09 user:「我認為示意那個模擬瀏覽器下方的備注可以拿掉」,登記簿 A35),
  *   說明寫在 `docs.description`,畫布用 `height="fill"` 撐滿 story(與 story 邊界四周留 `--layout-space-loose`,由外層 wrapper 給)。
  */
 export interface SimulatedBrowserProps {
@@ -55,7 +55,7 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
         <Button iconOnly size="sm" variant="tertiary" startIcon={ChevronLeft} aria-label="上一頁" onClick={onBack} disabled={!canBack} />
         <Button iconOnly size="sm" variant="tertiary" startIcon={ChevronRight} aria-label="下一頁" onClick={onForward} disabled={!canForward} />
         <Button iconOnly size="sm" variant="tertiary" startIcon={RotateCw} aria-label="重新整理" onClick={onReload} disabled={!onReload} />
-        <Input readOnly value={url} aria-label="模擬網址列" id={locationId} className="flex-1" />
+        <Input readOnly size="sm" value={url} aria-label="模擬網址列" id={locationId} className="flex-1" />
       </div>
       <div
         ref={canvasRef}

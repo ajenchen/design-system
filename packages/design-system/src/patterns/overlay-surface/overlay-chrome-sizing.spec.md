@@ -40,7 +40,7 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 **禁止**:consumer 自刻 `<h2 className="text-body-lg">` 繞 `PopoverTitle` — 若需要大 title 代表該用 Dialog 而非 Popover(選錯元件)。
 
 **SSOT**:
-- `components/Popover/popover.spec.md`「Title typography canonical(non-modal 特化)」(Popover 專用細節)
+- `components/Popover/popover.spec.md`「Title typography canonical」(Popover 專用細節)
 - `components/Dialog/dialog.spec.md`「Title」(Modal 專用細節)
 
 ---

@@ -19,7 +19,7 @@ export default meta
 
 // 2026-07-04 audit:補 'info'(NoticeVariant 5 值,原漏 → 靜態雙 theme 對照未涵蓋全 variant)
 // 2026-07-14 Dim 68 修:原 warning =「訂閱 7 天後停用 + 續訂 CTA」= 持久帳務狀態 + 強制 CTA,
-// 違反 toast.spec.md「持久性系統狀態(方案過期)→ Alert」+「❌ 不把需要 user action 的內容放 Toast」。改為短暫操作回饋(匯入部分完成)+ 非必要「查看」後手。
+// 違反 toast.spec.md「持久性系統狀態（方案過期、帳戶未驗證）」那一列(→ Alert)+「❌ 不把需要 user action 的內容放 Toast」。改為短暫操作回饋(匯入部分完成)+ 非必要「查看」後手。
 // 2026-10-28(D10 乙 / toast.spec.md 禁止事項第 4 條改寫):動作鈕只放非必要後手 —— 復原、重試、查看;複製類一律 neutral、不帶動作(複製到剪貼簿沒有東西可以復原)。
 const VARIANTS: NoticeVariant[] = ['neutral', 'info', 'success', 'warning', 'error']
 const LABELS: Record<string, string> = {

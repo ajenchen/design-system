@@ -39,7 +39,7 @@ export const HOVER_CARD_SURFACE_CLASS = 'bg-surface-raised text-foreground borde
  */
 export const HOVER_CARD_TOOLTIP_SURFACE_CLASS = 'bg-tooltip text-foreground rounded-lg'
 
-// 2026-06-11 user 拍板 A 案(「確保所有 hover 延遲都有按照設計原則」):Root 預設接 motion token SSOT
+// 2026-06-11 user 拍板 A 案(要確保所有 hover 延遲都照設計原則):Root 預設接 motion token SSOT
 // (rich 700ms open / close 200ms)— 對齊 tooltip.tsx 同 pattern(2026-05-18 拍板 #3A)。
 // 原裸用 Radix 預設 open 700 / close 300:open 巧合同值、close 300 ≠ canonical 200(drift)。
 // Consumer 仍可 per-instance override(Avatar 同值傳入、OverflowIndicator 傳 plain)。

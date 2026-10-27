@@ -169,7 +169,7 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 
 ## Title
 
-`text-body-lg font-medium truncate`——單行截斷，不換行；截斷時 hover 顯 tooltip 補完整標題（僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → tooltip」；實作消費 `patterns/element-anatomy/truncated-text.spec.md` `<TruncatedText>`）。
+`text-body-lg font-medium truncate`——單行截斷，不換行；截斷時 hover 顯 tooltip 補完整標題（僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容」；實作消費 `patterns/element-anatomy/truncated-text.spec.md` `<TruncatedText>`）。
 
 **Header 可成長**:Dialog 提供 `<DialogDescription>` primitive 作副標/補充說明(`mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary` — title body-lg 16 + desc body 14 → reading-lg token)。Consumer 傳 title + description 時 header 自然長高(這也是為何 Dialog / Sheet / Popover 的 SurfaceHeader 刻意 **padding-based 而非 fixed-h** — 宣告 chrome 可成長)。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」節(含「2 種 pattern 對照」)。
 
@@ -188,7 +188,7 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 
 ## 動畫
 
-**Canonical = 從中心淡入 + 輕微縮放,不位移**(2026-09-09 定;anchor:user 抓到「dialog 從左上角飛到中間」)。
+**Canonical = 從中心淡入 + 輕微縮放,不位移**(2026-09-09 定;anchor:user 抓到 dialog 從左上角飛到中間)。
 
 | 階段 | 幾何 | 時長 / 曲線(全部消費 `tokens/motion/motion.spec.md`「進出場動畫 token」,經 `overlay-motion.ts` 的 `surfaceMotion`) |
 |---|---|---|
@@ -243,8 +243,8 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 - **Esc 與外部互動**:焦點在常駐區域內時的 Esc / pointer / focus 不算「框外」(`onPointerDownOutside` / `onFocusOutside` / `onInteractOutside` 對常駐節點 preventDefault),否則把焦點移進代理面板就會把對話框關掉。
 - **捲動**(2026-09-29 定,待辦總帳 OE13;user 原話「第二題照你建議」—— 建議由 AI 提出、user 採納):並存時**舞台鎖捲動**(它對宿主其餘部分仍然是 modal),**常駐區自己的捲動照常**。機制 = Radix 同款 `RemoveScroll shards`:Content 是鎖的根(`as={Slot}`,不多一層 DOM)、常駐節點是 shards(鎖外但准捲,只擋它捲到底之後的溢出),其餘一切的 wheel / touchmove 被擋;疊上一般 modal 時由它的鎖(lockStack 最上層)接手。`react-remove-scroll` 因此列為 DS 直接相依(exact `2.7.2`,與 Radix 相依同版)。為什麼先前可捲:Radix 只在 modal 分支掛它 —— `radix-ui/primitives` `packages/react/dialog/src/dialog.tsx` `DialogOverlayImpl` 逐字 `<RemoveScroll as={Slot} allowPinchZoom shards={…contentRef…}>`,而 `DialogOverlay` 在 `context.modal` 為 false 時回 `null`(https://github.com/radix-ui/primitives/blob/main/packages/react/dialog/src/dialog.tsx);並存走 `modal={false}`,非模態分支沒有任何捲動處理。一手預設(四家都鎖):Radix Dialog.Root `modal` — Type `boolean`、Default `true`(https://www.radix-ui.com/primitives/docs/components/dialog);MUI Modal `disableScrollLock` — Type `bool`、Default `false`、「Disable the scroll lock behavior.」(https://mui.com/material-ui/api/modal/);Ant Design Modal `scrollLock` — 「Whether to lock body scroll when modal opens」、`boolean`、Default `true`、6.5.0(https://ant.design/components/modal);Chakra UI v2 Modal `blockScrollOnMount` — 「If `true`, scrolling will be disabled on the `body` when the modal opens.」、`boolean`、Default `true`(https://v2.chakra-ui.com/docs/components/modal/props)。`removeScrollBar` 保留預設 true,與一般 modal 同款(body 有捲軸才拿掉並補寬防跳版;並排佈局 body 沒捲軸 → 開關對話框常駐側欄 0px 位移,閘量)。**限制**:常駐區自己 portal 到 body 的非模態浮層不在 shards 裡,滾輪會被擋 —— 與已裝版本 Radix 在一般 modal 裡開 Popover 同款限制。閘:`scripts/dialog-coexist-scroll-lock-invariant.mjs`(舞台空白處合成滾輪 scrollTop 不變、常駐區清單會動、一般 modal 照舊鎖、開關無跳版;`--selftest` 在頁面上把鎖拆掉必紅)。
 - **`portalContainer`**:Content 預設傳送到 body;story 的「模擬瀏覽器畫布」或產品的嵌入式畫布可傳一個帶 transform 的容器,`fixed` 定位以它為準,modal 與遮罩不會跑出畫布。
-- **遮罩的洞只挖給「點得到或畫得出來」的盒子**(2026-09-09 根因修正):常駐節點底下 `display:contents` 的殼與 `pointer-events:none` 的定位圖層都沒有資格自己當洞,往下找子節點;`<svg>` / `<img>` / `<canvas>` / `<video>` 即使 pointer-events:none 也算。錨:user 2026-09-09「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」—— 代理關閉後常駐殼裡換成入口鈕 Dock,它外層是與舞台等大的 `pointer-events-none absolute inset-0` 裁切圖層,舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框、遮罩整張被挖空。
-- **背景位置模式(Background location)**(user 2026-09-09 原話:「若有來源頁面,則保留該頁面作為 Modal 的背景;若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」):有 URL 的 modal 由宿主路由承載 —— 從某一頁點開時,該頁留在 modal 底下作背景(路由記 `backgroundLocation`);直接以 modal 網址進入(重新整理、上一頁回到該網址、分享連結)沒有來源頁,宿主把 modal 疊在**預先定義的預設背景頁**上。上一頁 / 下一頁 / 重新整理都維持這個模型。這是宿主路由層的責任,Dialog 只提供 `persistentElements` + `portalContainer`,不讀 URL;示範 → `AgentPanel/展示/UrlRegistryDemo`(v14 推導表「有來源頁」「直接進入 modal 網址」兩列)。
+- **遮罩的洞只挖給「點得到或畫得出來」的盒子**(2026-09-09 根因修正):常駐節點底下 `display:contents` 的殼與 `pointer-events:none` 的定位圖層都沒有資格自己當洞,往下找子節點;`<svg>` / `<img>` / `<canvas>` / `<video>` 即使 pointer-events:none 也算。錨:user 2026-09-09 問為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了—— 代理關閉後常駐殼裡換成入口鈕 Dock,它外層是與舞台等大的 `pointer-events-none absolute inset-0` 裁切圖層,舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框、遮罩整張被挖空。
+- **背景位置模式(Background location)**(user 2026-09-09 說:有來源頁面就保留該頁面當 Modal 的背景;沒有來源頁面就把 Modal 顯示在預先定義的預設背景頁面上):有 URL 的 modal 由宿主路由承載 —— 從某一頁點開時,該頁留在 modal 底下作背景(路由記 `backgroundLocation`);直接以 modal 網址進入(重新整理、上一頁回到該網址、分享連結)沒有來源頁,宿主把 modal 疊在**預先定義的預設背景頁**上。上一頁 / 下一頁 / 重新整理都維持這個模型。這是宿主路由層的責任,Dialog 只提供 `persistentElements` + `portalContainer`,不讀 URL;示範 → `AgentPanel/展示/UrlRegistryDemo`(v14 推導表「有來源頁」「直接進入 modal 網址」兩列)。
 - **閘**:`scripts/dialog-coexistence-invariant.mjs`(常駐區可聚焦可打字、其餘背景被抑制、預設路徑照舊隔離)、`scripts/dialog-coexist-scroll-lock-invariant.mjs`(並存捲動鎖:舞台不捲、常駐區可捲、一般 modal 照舊、開關無跳版)、`scripts/agent-url-registry-demo-invariant.mjs`(S1–S9:幾何、header / footer 變體、存檔、新增、刪除確認、背景位置、session、關 agent 遮罩仍在、AI agent 浮層態工具列可點 + Esc 分區;2026-09-09 併入原 `agent-modal-coexistence-invariant.mjs`)。
 
 ---

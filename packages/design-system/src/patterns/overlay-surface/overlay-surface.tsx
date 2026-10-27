@@ -136,7 +136,7 @@ export const SurfaceHeader = React.forwardRef<
             語言和 SSOT...就這樣做」):
             - v1: wrapper border + TabsList border = 雙線(W1 違反)
             - v2: wrapper px-loose + TabsList w-full inside = border 只跨 dialog - 2×px-loose
-                 (不到 dialog 邊 user 抓「分隔線寬度應該要填滿整個 dialog」)
+                 (不到 dialog 邊;user 指出分隔線寬度應該要填滿整個 dialog)
             - v3:wrapper 不 inset,TabsList 自己 px-loose 內 padding inset triggers
                   → TabsList border-b 延展全 dialog 寬,triggers 對齊 header content
             - v4(2026-07-30):選取機制改 `data-slot="tabs-list"` attribute contract
