@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Plus, Trash2, Settings, RefreshCw, MoreVertical,
@@ -9,9 +9,18 @@ import {
 } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
+import { Alert } from '@/design-system/components/Alert/alert'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem,
+} from '@/design-system/components/DropdownMenu/dropdown-menu'
+import {
+  Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverBody,
+} from '@/design-system/components/Popover/popover'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { done, DemoToggle as Toggle, DemoMenu, ConfirmDelete } from '@/design-system/stories-helpers/examples/demo-actions'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Action Bar',
@@ -20,6 +29,9 @@ const meta: Meta = {
     layout: 'padded',
     docs: { description: { component: '多個頁面操作的編排指南，依業務重要性、工具性與編輯情境決定按鈕分組和視覺重量。需要在 toolbar 或 editor chrome 排列一組操作時使用。' } },
   },
+  // Toaster 是 app 層 Provider(toast.spec.md:consumer 在 app root 放一次)—— 放在 story 外層,不當成教學頁裡的一塊
+  //(同 toast.principles.stories.tsx;放在 TutorialPage 裡會佔一格塊距,頁尾多出 loose × 2 的空白)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -27,19 +39,69 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true })
 
-/* 操作列示範框 = ChromeHeader(2026-10-20 T9;header-canonical.spec.md 決策表「固定在版面上的工具列 → ChromeHeader」):
-   高度 --chrome-header-height(md 48 / lg 56)與左右 px-loose 由 ChromeHeader 擁有;標題 text-body-lg font-medium
-   (header-canonical.spec.md「Title typography」)。外層圓角邊框只是示範框(把工具列放在一塊面上看),工具列下方沒有內容,
-   所以不畫 ChromeHeader 自己的下框線(外框的下緣就是邊界)。沒有標題 = 靠左對齊的操作列(action-bar.spec.md:109)。
-   原本手寫 min-h-[52px] + text-body font-bold:兩種密度都是 52px,不等於 chrome header 的 48 / 56;標題是 14px 粗體。 */
-const ToolbarFrame = ({ title, children }: { title?: string; children: React.ReactNode }) => (
-  <div className="w-full overflow-hidden rounded-lg border border-border bg-surface">
-    <ChromeHeader className="justify-between border-b-0">
-      {title && <span className="shrink-0 mr-[var(--layout-space-loose)] text-body-lg font-medium text-foreground">{title}</span>}
-      {children}
-    </ChromeHeader>
-  </div>
-)
+/* 操作列示範 = ChromeHeader 標頭列本身(D9 甲:Action Bar 範例自做外框 → 用 ChromeHeader 標頭列;2026-10-20 T9 已換成
+   ChromeHeader,這次再拿掉它外面那層自做的圓角邊框卡片 —— 不另外包容器)。高度 --chrome-header-height(md 48 / lg 56)、
+   左右 px-loose、下框線都由 ChromeHeader 擁有;標題 text-body-lg font-medium(header-canonical.spec.md「Title typography」)。
+   沒有標題 = 靠左對齊的操作列(action-bar.spec.md:109)。
+
+   示範列上的按鈕都要有反應(F-S2:畫面上看得到的按鈕都要能動),各自接上按鈕本來的行為,不另造演出
+   (一次性動作 / 開關 / 溢出選單 / 刪除確認 = stories-helpers/examples/demo-actions.tsx,Button / Badge 頁同一份):
+   - 有開關狀態的(篩選 / 排序 / 分組 / 全螢幕 / 粗體 / 斜體 / 底線)= `pressed` 切換(Button 本來的 toggle);
+   - 溢出(···、更多格式、更多插入)與設定 = 打開它收的選單;說明 = 打開說明浮層;
+   - 刪除(text + danger)= 先開確認框再刪(button.spec.md「danger prop」表:text + danger「工具列刪除 icon(有後續確認)」);
+   - 關閉 ✕ = 收起這條操作列,原位留「重新開啟」(同 header-canonical 總覽的 Closable);
+   - 其餘一次性動作(匯出 / 新增 / 儲存 / 發佈 / 上傳 / 插入…)= 做完跳 Toast(UD-B26「然後送出成功跳提示」)。 */
+const CloseToolbarContext = createContext<() => void>(() => undefined)
+
+const ToolbarFrame = ({ title, children }: { title?: string; children: ReactNode }) => {
+  const [open, setOpen] = useState(true)
+  if (!open) return <Button variant="tertiary" size="sm" className="self-start" onClick={() => setOpen(true)}>重新開啟</Button>
+  return (
+    <CloseToolbarContext.Provider value={() => setOpen(false)}>
+      <ChromeHeader className="justify-between">
+        {title && <span className="shrink-0 mr-[var(--layout-space-loose)] text-body-lg font-medium text-foreground">{title}</span>}
+        {children}
+      </ChromeHeader>
+    </CloseToolbarContext.Provider>
+  )
+}
+
+/** 設定:打開檢視設定選單(勾選項就是設定本身) */
+function SettingsMenuTrigger({ children }: { children: ReactNode }) {
+  const [archived, setArchived] = useState(false)
+  const [compact, setCompact] = useState(false)
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuCheckboxItem checked={archived} onCheckedChange={setArchived}>顯示已封存</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem checked={compact} onCheckedChange={setCompact}>緊湊列高</DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+/** 說明:打開這個頁面的說明浮層 */
+function HelpPopoverTrigger({ children }: { children: ReactNode }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent align="end">
+        <PopoverHeader>
+          <PopoverTitle>文件管理</PopoverTitle>
+        </PopoverHeader>
+        <PopoverBody>
+          <p className="text-body">勾選文件後可以匯出或刪除;用篩選依擁有者與更新日期縮小範圍。</p>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** 關閉 ✕:收起所在的操作列 */
+function CloseToolbar({ children }: { children: (close: () => void) => ReactNode }) {
+  return <>{children(useContext(CloseToolbarContext))}</>
+}
 
 function ConfigurableDemo() {
   const [filterActive, setFilterActive] = useState(false)
@@ -79,10 +141,10 @@ export const RoleIdentification: Story = {
       >
         <ToolbarFrame title="文件管理">
           <ButtonGroup>
-            <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
-            <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-            <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
+            <ConfirmDelete noun="文件" target="選取的 3 份文件">{(open) => <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+            <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
+            <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名文件」')}>新增</Button>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>移除任一個，使用者就無法完成任務</ExampleCaption>
@@ -94,10 +156,10 @@ export const RoleIdentification: Story = {
       >
         <ToolbarFrame title="文件管理">
           <ButtonGroup>
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-            <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
-            <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            <Button variant="text" size="sm" iconOnly startIcon={HelpCircle} aria-label="說明" />
+            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入文件清單')} />
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" pressed={on} onClick={flip} />}</Toggle>
+            <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
+            <HelpPopoverTrigger><Button variant="text" size="sm" iconOnly startIcon={HelpCircle} aria-label="說明" /></HelpPopoverTrigger>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>與當前任務無關，一律 text icon-only，永遠在業務層右側末端</ExampleCaption>
@@ -114,15 +176,15 @@ export const RoleIdentification: Story = {
         <ExampleCaption>↑ 點擊切換配置狀態</ExampleCaption>
         <ToolbarFrame title="客戶">
           <ButtonGroup>
-            <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-            <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>↑ text — 預設，適合密集表格 toolbar</ExampleCaption>
         <ToolbarFrame title="商品">
           <ButtonGroup>
-            <Button variant="tertiary" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-            <Button variant="tertiary" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+            <Toggle>{(on, flip) => <Button variant="tertiary" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+            <Toggle>{(on, flip) => <Button variant="tertiary" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>↑ tertiary — 有框，可操作感更強，適合較空曠的場景</ExampleCaption>
@@ -141,10 +203,10 @@ export const Structure: Story = {
       >
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
-              <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <ConfirmDelete noun="文件" target="選取的 3 份文件">{(open) => <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
+              <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名文件」')}>新增</Button>
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>靠右對齊 → primary 在業務層最右；刪除（低強調）在業務操作最左端，遠離主按鈕降低誤觸風險；工具操作收尾</ExampleCaption>
@@ -156,10 +218,10 @@ export const Structure: Story = {
       >
         <ToolbarFrame title="專案列表">
           <ButtonGroup>
-            <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-            <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+            <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出專案列表')}>匯出</Button>
+            <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
+            <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>業務操作由右至左排列，primary 在最右 → 直接接工具操作，不加分隔線</ExampleCaption>
@@ -171,9 +233,9 @@ export const Structure: Story = {
       >
         <ToolbarFrame title="文件">
           <ButtonGroup>
-            <Button variant="tertiary" size="sm" startIcon={Save}>儲存草稿</Button>
-            <Button variant="primary" size="sm">發佈</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            <Button variant="tertiary" size="sm" startIcon={Save} onClick={done('已儲存草稿')}>儲存草稿</Button>
+            <Button variant="primary" size="sm" onClick={done('已發佈文件')}>發佈</Button>
+            <DemoMenu items={['複製連結', '移動到資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</ExampleCaption>
@@ -192,18 +254,18 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="檔案操作">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-              <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出檔案')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 同類別操作 — 間距即可，不加分隔線</ExampleCaption>
           <ToolbarFrame title="檔案操作">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-              <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出檔案')} />
               <ButtonDivider />
-              <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+              <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 不同類別（一般 vs 危險）— 分隔線標記邊界</ExampleCaption>
@@ -215,10 +277,10 @@ export const Dividers: Story = {
       >
         <ToolbarFrame title="面板">
           <ButtonGroup>
-            <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+            <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
             <ButtonDivider />
-            <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
+            <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>關閉排最末，左側必加分隔線</ExampleCaption>
@@ -230,20 +292,20 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-              <Button variant="text" size="sm" iconOnly startIcon={Save} aria-label="儲存" />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Save} aria-label="儲存" onClick={done('已儲存文件')} />
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+              <DemoMenu items={['邀請成員', '匯出 PDF']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>編輯操作 vs 協作操作，功能域不同，分隔線可選</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
               <ButtonDivider />
-              <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+              <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>danger 是普通按鈕，功能域差距夠大時可選加分隔線</ExampleCaption>
@@ -251,13 +313,13 @@ export const Dividers: Story = {
 
       <TutorialRule
         title="不觸發 — 有框 ↔ 無框接壤"
-        note="有框接無框時邊界本來就看得見，「邊界看不見」這條理由不成立；若另有功能域切換等理由仍可加（見第五節）"
+        note="有框接無框時邊界本來就看得見，「邊界看不見」這條理由不成立；若另有功能域切換等理由仍可加（見本頁「同視覺類型功能分群（可選）」那則）"
       >
         <ToolbarFrame title="專案列表">
           <ButtonGroup>
-            <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
+            <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出專案列表')}>匯出</Button>
+            <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>有框按鈕（primary）直接接無框按鈕（text）— 無對應理由，預設不加</ExampleCaption>
@@ -269,11 +331,11 @@ export const Dividers: Story = {
       >
         <ToolbarFrame title="資料管理">
           <ButtonGroup>
-            <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多上傳操作" />
+            <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+            <DemoMenu items={['從雲端硬碟匯入', '上傳整個資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多上傳操作" /></DemoMenu>
             <ButtonDivider />
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-            <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料')} />
+            <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>···（群組溢出）右側必加分隔線，即使右側是同為無框的工具層</ExampleCaption>
@@ -283,25 +345,17 @@ export const Dividers: Story = {
         title="角色邊界 — 角色接壤：無群組溢出時，業務層以什麼結尾？"
         note="業務層直接以真實按鈕結尾（沒有群組溢出）時：有框結尾 → 預設不加（邊界看得見）；無框 text 結尾 → 必加（理由 2 邊界看不見）"
       >
-          <ToolbarFrame title="專案">
-            <ButtonGroup>
-              <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            </ButtonGroup>
-          </ToolbarFrame>
-          <ExampleCaption>有框結尾 → 無對應理由，預設不加</ExampleCaption>
+          {/* 有框結尾那一面 = 上方「不觸發 — 有框 ↔ 無框接壤」那則的同一條操作列,這裡不再畫一次(稽核 L132:同一條操作列不重複出現) */}
           <ToolbarFrame title="資料表">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料表')} />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
-          <ExampleCaption>無框結尾 → 邊界不可見，必加分隔線</ExampleCaption>
+          <ExampleCaption>無框結尾 → 邊界不可見，必加分隔線(有框結尾 → 預設不加,見上方「不觸發」那則)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -310,21 +364,21 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="專案列表">
             <ButtonGroup>
-              <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出專案列表')}>匯出</Button>
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>靠右對齊 — 有框業務操作接無框工具操作，無對應理由，預設不加</ExampleCaption>
           <ToolbarFrame>
             <ButtonGroup>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+              <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出專案列表')}>匯出</Button>
             </ButtonGroup>
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>靠左對齊 — 工具層固定在操作列右端，空間本身已標記邊界</ExampleCaption>
@@ -336,21 +390,21 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="資料表">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料表')} />
+              <DemoMenu items={['匯出 CSV', '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>有固定工具 → 業務操作（無框）接工具操作（無框），邊界不可見 → 在第一個工具按鈕 ↺ 左側加分隔線</ExampleCaption>
           <ToolbarFrame title="篩選列">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
+              <DemoMenu items={['儲存這組篩選', '清除全部條件']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
               <ButtonDivider />
-              <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
+              <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>無固定工具 → ··· 是業務層末端；✕ 的關閉保護是唯一一條分隔線</ExampleCaption>
@@ -362,22 +416,22 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="篩選列">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+              <DemoMenu items={['儲存這組篩選', '清除全部條件']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
               <ButtonDivider />
-              <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
+              <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ ··· 左側的分隔線沒有語意（沒有工具層），移除它</ExampleCaption>
           <ToolbarFrame title="篩選列">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
+              <DemoMenu items={['儲存這組篩選', '清除全部條件']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
               <ButtonDivider />
-              <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={() => {}} />
+              <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ ··· 是業務層末端，只有關閉保護這一條分隔線</ExampleCaption>
@@ -396,21 +450,21 @@ export const Overflow: Story = {
       >
           <ToolbarFrame title="專案">
             <ButtonGroup>
-              <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
+              <Button variant="tertiary" size="sm" startIcon={Download} onClick={done('已匯出專案列表')}>匯出</Button>
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
+              <DemoMenu items={['封存專案', '複製專案範本']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>有框結尾 → 無分隔 → 工具 ↺ ⚙ ···</ExampleCaption>
           <ToolbarFrame title="資料表">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-              <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={on} onClick={flip} />}</Toggle>
+              <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料表')} />
+              <DemoMenu items={['匯出 CSV', '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>無框結尾 → 分隔線（業務接工具，同為無框）→ 固定工具 ↺ ···</ExampleCaption>
@@ -423,22 +477,22 @@ export const Overflow: Story = {
         <ToolbarFrame>
           <ButtonGroup>
             {/* 群組 A：文字格式 + 溢出 */}
-            <Button variant="text" size="sm" iconOnly startIcon={Bold} aria-label="粗體" />
-            <Button variant="text" size="sm" iconOnly startIcon={Italic} aria-label="斜體" />
-            <Button variant="text" size="sm" iconOnly startIcon={Underline} aria-label="底線" />
-            <Button variant="text" size="sm" iconOnly startIcon={ChevronDown} aria-label="更多格式" />
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Bold} aria-label="粗體" pressed={on} onClick={flip} />}</Toggle>
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Italic} aria-label="斜體" pressed={on} onClick={flip} />}</Toggle>
+            <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Underline} aria-label="底線" pressed={on} onClick={flip} />}</Toggle>
+            <DemoMenu items={['套用刪除線', '套用程式碼格式']}><Button variant="text" size="sm" iconOnly startIcon={ChevronDown} aria-label="更多格式" /></DemoMenu>
             <ButtonDivider />
             {/* 群組 B：插入元素（無溢出，全部攤開） */}
-            <Button variant="text" size="sm" iconOnly startIcon={CheckSquare} aria-label="核取方塊" />
-            <Button variant="text" size="sm" iconOnly startIcon={ImageIcon} aria-label="圖片" />
-            <Button variant="text" size="sm" iconOnly startIcon={AtSign} aria-label="提及" />
-            <Button variant="text" size="sm" iconOnly startIcon={Smile} aria-label="表情" />
-            <Button variant="text" size="sm" iconOnly startIcon={Link2} aria-label="連結" />
-            <Button variant="text" size="sm" iconOnly startIcon={Plus} aria-label="更多插入" />
+            <Button variant="text" size="sm" iconOnly startIcon={CheckSquare} aria-label="核取方塊" onClick={done('已插入核取方塊')} />
+            <Button variant="text" size="sm" iconOnly startIcon={ImageIcon} aria-label="圖片" onClick={done('已插入圖片')} />
+            <Button variant="text" size="sm" iconOnly startIcon={AtSign} aria-label="提及" onClick={done('已插入提及')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Smile} aria-label="表情" onClick={done('已插入表情')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Link2} aria-label="連結" onClick={done('已插入連結')} />
+            <DemoMenu items={['插入表格', '插入分隔線']}><Button variant="text" size="sm" iconOnly startIcon={Plus} aria-label="更多插入" /></DemoMenu>
             <ButtonDivider />
             {/* 群組 C：歷史操作（無溢出） */}
-            <Button variant="text" size="sm" iconOnly startIcon={Undo2} aria-label="復原" />
-            <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" />
+            <Button variant="text" size="sm" iconOnly startIcon={Undo2} aria-label="復原" onClick={done('已復原上一步')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" onClick={done('已重做上一步')} />
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</ExampleCaption>
@@ -458,21 +512,21 @@ export const CommonMistakes: Story = {
           <ToolbarFrame title="文件">
             <ButtonGroup>
               {/* ↺ 是工具操作，放在業務層是錯的 */}
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入文件清單')} />
+              <ConfirmDelete noun="文件" target="選取的 3 份文件">{(open) => <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ ↺（工具）與 🗑（業務）混在業務層，角色邊界失效</ExampleCaption>
           <ToolbarFrame title="文件">
             <ButtonGroup>
               {/* 業務層：危險操作在 text 群組末尾 */}
-              <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
+              <ConfirmDelete noun="文件" target="選取的 3 份文件">{(open) => <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
               <ButtonDivider />
               {/* 工具層：↺ 在業務層右側末端 */}
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入文件清單')} />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 業務層放刪除；工具層放重新載入與設定，角色清楚分離</ExampleCaption>
@@ -484,15 +538,15 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="專案">
             <ButtonGroup>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="primary" size="sm" startIcon={Settings}>設定</Button>
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+              <SettingsMenuTrigger><Button variant="primary" size="sm" startIcon={Settings}>設定</Button></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 設定是工具操作，不應搶 primary 視覺重量</ExampleCaption>
           <ToolbarFrame title="專案">
             <ButtonGroup>
-              <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 有框→無框，無對應理由，預設不加</ExampleCaption>
@@ -504,20 +558,20 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="任務">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Plus}>新增</Button>
+              <Button variant="text" size="sm" startIcon={Plus} onClick={done('已新增「未命名任務」')}>新增</Button>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+              <DemoMenu items={['匯出任務', '封存已完成']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ ⚙ 兩側都有分隔線，被孤立</ExampleCaption>
           <ToolbarFrame title="任務">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Plus}>新增</Button>
+              <Button variant="text" size="sm" startIcon={Plus} onClick={done('已新增「未命名任務」')}>新增</Button>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+              <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
+              <DemoMenu items={['匯出任務', '封存已完成']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 一條分隔線標記角色邊界，工具層內不再加</ExampleCaption>
@@ -529,18 +583,18 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
-              <Button variant="text" size="sm" startIcon={Download}>匯出</Button>
+              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 份文件')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+              <DemoMenu items={['移動到資料夾', '複製連結']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 無角色邊界，分隔線無意義</ExampleCaption>
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
-              <Button variant="text" size="sm" startIcon={Download}>匯出</Button>
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 份文件')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
+              <DemoMenu items={['移動到資料夾', '複製連結']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 無工具層，溢出直接接在末端</ExampleCaption>
@@ -552,15 +606,15 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
-              <Button variant="text" size="sm">匯出</Button>
+              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+              <Button variant="text" size="sm" onClick={done('已匯出檔案')}>匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 同優先等級，一個有 icon 一個沒有</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
-              <Button variant="text" size="sm" startIcon={Download}>匯出</Button>
+              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出檔案')}>匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 同優先等級，icon 處理一致</ExampleCaption>
@@ -569,18 +623,31 @@ export const CommonMistakes: Story = {
   ),
 }
 
+/** 關閉之後原位留「重新顯示」把它叫回來(同 ToolbarFrame 的「重新開啟」) */
+function DismissibleAlert() {
+  const [open, setOpen] = useState(true)
+  if (!open) return <Button variant="tertiary" size="sm" className="self-start" onClick={() => setOpen(true)}>重新顯示通知</Button>
+  return (
+    <Alert
+      variant="info"
+      title="系統將於今晚 23:00 維護"
+      description="維護期間約 30 分鐘無法存檔,請先儲存進行中的文件。"
+      onDismiss={() => setOpen(false)}
+    />
+  )
+}
+
 export const DismissVsDanger: Story = {
-  name: '取消 vs 危險動作 語意區分',
+  name: '取消與危險動作的語意區分',
   render: () => (
     <TutorialPage>
       <TutorialRule
         title="Dismiss(關閉 / 忽略) — 弱化 X close icon"
         note={<><code>&lt;Button iconOnly dismiss /&gt;</code> 表達「關閉此浮層 / 忽略此訊息」語意(對應 onClose / onDismiss callback)。視覺走 dismiss 弱化 treatment(fg-muted icon,低存在感),不搶走 body 主要內容焦點。Dialog / Sheet / Popover / Alert / Toast 的 corner close X 屬此類</>}
       >
-          <ToolbarFrame title="通知訊息">
-            <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉通知" />
-          </ToolbarFrame>
-          <ExampleCaption>✅ dismiss prop 弱化 X，語意是「關閉此訊息」</ExampleCaption>
+          {/* 稽核 L098 / B07:關閉通知直接用 DS 的 Alert(它的 ✕ 就是 Button iconOnly dismiss),不另刻一條假的通知列 */}
+          <DismissibleAlert />
+          <ExampleCaption>✅ dismiss prop 弱化 X,語意是「關閉此訊息」(按 ✕ 會真的關掉這則通知)</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -588,7 +655,7 @@ export const DismissVsDanger: Story = {
         note="Button iconOnly variant text + danger prop + Trash2 icon 表達「刪除資料 / 移除項目」語意(對應 onRemove / onDelete callback)。視覺走 danger treatment(error 色系),警示使用者此動作會破壞資料。Row actions / 批次刪除 / 永久移除按鈕屬此類"
       >
           <ToolbarFrame title="專案 ACME-1234">
-            <Button iconOnly variant="text" danger size="sm" startIcon={Trash2} aria-label="刪除專案" />
+            <ConfirmDelete noun="專案" target="專案 ACME-1234">{(open) => <Button iconOnly variant="text" danger size="sm" startIcon={Trash2} aria-label="刪除專案" onClick={open} />}</ConfirmDelete>
           </ToolbarFrame>
           <ExampleCaption>✅ danger prop 紅色警示，語意是「破壞性動作」</ExampleCaption>
       </TutorialRule>
@@ -598,13 +665,13 @@ export const DismissVsDanger: Story = {
         note="兩者語意互斥:dismiss 是「關掉 surface」(資料不變),destructive 是「移除資料」(不可逆)。視覺也完全不同:dismiss 弱化、destructive 紅色警示。混用會讓 user 誤判點擊後果 — 原本以為只是關閉,結果刪了資料;或原本以為是刪除警示,結果只是關閉浮層"
       >
           <ToolbarFrame title="專案 ACME-1234">
-            <Button iconOnly dismiss size="sm" startIcon={Trash2} aria-label="刪除" />
+            <ConfirmDelete noun="專案" target="專案 ACME-1234">{(open) => <Button iconOnly dismiss size="sm" startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
           </ToolbarFrame>
-          <ExampleCaption warn>❌ 錯用 1:刪除按鈕套 dismiss —— Trash2 是破壞性動作，不可用 dismiss 弱化(應 variant="text" danger)</ExampleCaption>
-          <ToolbarFrame title="通知訊息">
-            <Button iconOnly variant="text" danger size="sm" startIcon={XIcon} aria-label="關閉" />
+          <ExampleCaption warn>❌ 刪除按鈕套 dismiss —— Trash2 是破壞性動作，不可用 dismiss 弱化(應 variant="text" danger)</ExampleCaption>
+          <ToolbarFrame title="匯入結果">
+            <CloseToolbar>{(close) => <Button iconOnly variant="text" danger size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
           </ToolbarFrame>
-          <ExampleCaption warn>❌ 錯用 2:關閉 X 套 danger —— X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</ExampleCaption>
+          <ExampleCaption warn>❌ 關閉 X 套 danger —— X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
