@@ -30,7 +30,7 @@ Avatar 是視覺身份標識——代表一個人、一個實體（專案、組�
 - **人員識別**：留言者頭像、指派者、作者、團隊成員列表
 - **組織 / 專案識別**：workspace logo、專案 icon、app 身份
 - **列表項目的主視覺 prefix**：通訊錄、成員管理、chat room 列表
-- **hover 顯示完整人員卡**：與 HoverCard 搭配呈現 ProfileCard content
+- **滑過顯示人員名片**：人員頭像一律觸發(見下方「Avatar HoverCard 原則」);帶連結的文字人名也可觸發,一般文章內的純文字人名不加(user 2026-10-21 D11)
 
 ## 何時不用
 
@@ -51,18 +51,18 @@ Avatar 是視覺身份標識——代表一個人、一個實體（專案、組�
 ```tsx
 <Avatar
   size={40}
-  src={person.photoUrl}
+  src={person.avatarUrl}
   alt={person.name}
-  hoverCard={
-    <ProfileCard
-      name={person.name}
-      avatar={{ src: person.photoUrl, alt: person.name }}
-      subtitle={`${person.role}｜${person.employeeId}`}
-      actions={<ProfileCardDefaultActions />}
-      // ↓ hover context 必含 View more:hover 只顯示精簡資料,user 需要 escape hatch 到完整 profile 頁
-      onViewMore={() => navigate(`/people/${person.id}`)}
-    />
-  }
+  // buildPersonProfileCard(PeoplePicker/person-display.tsx)= 全 DS 人員名片的唯一建構器,
+  // PeoplePicker / DataTable 人員格同一支;名片內含 ProfileCardDefaultActions(onChat / onCall)
+  // 與預設欄位(id / employeeNumber)
+  hoverCard={buildPersonProfileCard({
+    ...person, // name / avatarUrl / description(部門｜ID｜員工編號)/ status / id / employeeNumber
+    onChat: () => openChat(person.id),
+    onCall: () => startCall(person.id),
+    // ↓ hover context 必含 View more:hover 只顯示精簡資料,user 需要 escape hatch 到完整 profile 頁
+    onViewProfile: () => navigate(`/people/${person.id}`),
+  })}
 />
 ```
 

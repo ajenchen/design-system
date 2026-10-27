@@ -30,7 +30,7 @@ benchmark:
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 點擊進入人員 profile 頁 | `<a>` 或 Link | Navigation 不需 hover card 的浮層 |
+| 點擊進入人員 profile 頁 | `<a>` 或 Link | 點擊是導覽;帶連結的文字人名滑過仍可觸發名片(誰可以觸發見 `../Avatar/avatar.spec.md`「何時用」) |
 | 人員清單 row（不需要 hover 展開詳情）| `Avatar` + inline text | ProfileCard 是 hover content，list row 不需要 |
 | 單純顯示一個名字 | `Avatar` + `Text` | ProfileCard 是完整資訊卡，單名字用更輕量元件 |
 | 複雜人員表單（編輯角色 / 權限）| `Dialog` 或專用頁面 | ProfileCard 是快速預覽，不承載複雜互動 |

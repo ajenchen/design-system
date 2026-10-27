@@ -1,4 +1,5 @@
-import { buildPersonProfileCard } from '@/design-system/components/PeoplePicker/person-display'
+import { fn } from '@storybook/test'
+import { buildPersonProfileCard, type PersonData } from '@/design-system/components/PeoplePicker/person-display'
 
 export interface SamplePerson {
   name: string
@@ -10,6 +11,23 @@ export interface SamplePerson {
   id?: string
   /** 員工編號(預設欄位);副標裡若也寫了員工編號,兩邊必須是同一個值 */
   employeeNumber?: string
+  /** 在線狀態與狀態訊息(成對:線上不寫休假);省略 = 「離開」配休假訊息 */
+  status?: PersonData['status']
+  statusMessage?: string
+}
+
+/**
+ * 名片三顆預設動作(傳訊息 / 語音通話 / 查看更多)在範例裡的反應:Storybook「Actions」面板記一筆
+ * (`fn().mockName()` 的呼叫由 addon-actions 自動記錄;稽核 M102「展示層可以接 Storybook action」)。
+ * 真實產品由 consumer 接到聊天、通話與個人頁(`../../components/Avatar/avatar.spec.md`「Avatar HoverCard 原則」消費者寫法)。
+ * 2026-10-28 前接的是空函式 —— 點了沒有任何反應(登記簿 A16「一堆按鈕都無法正常反應」)。
+ */
+export function demoPersonActions(name: string) {
+  return {
+    onChat: fn().mockName(`傳訊息給 ${name}`),
+    onCall: fn().mockName(`語音通話給 ${name}`),
+    onViewProfile: fn().mockName(`查看 ${name} 的完整資料`),
+  }
 }
 
 /**
@@ -22,19 +40,20 @@ export interface SamplePerson {
  * - 用 `fields` 傳兩個預設欄位(ProfileCard 的舊寫法,dev 會警告;預設欄名改成中文「員工編號」後會變成兩列重複);
  * - 副標寫員工編號 EMP-1001、欄位卻是 1234567(同一張卡兩個員工編號);
  * - 狀態「線上」配狀態訊息「Out of Office: Back on Monday!」(自相矛盾;獨立驗證 OV-V01 同族)。
- * 這裡定一次:狀態「離開」配休假訊息、預設欄位走 PersonData 的 id / employeeNumber、預設動作接上空 handler(不在 console 留 dev 警告)。
+ * 這裡定一次:狀態「離開」配休假訊息(可傳別的狀態,狀態與訊息要成對)、預設欄位走 PersonData 的 id / employeeNumber、預設動作接 demoPersonActions。
  */
-export function samplePersonCard({ name, avatarSrc, subtitle, id = 'YHANAX', employeeNumber = 'EMP-1001' }: SamplePerson) {
+export function samplePersonCard({
+  name, avatarSrc, subtitle, id = 'YHANAX', employeeNumber = 'EMP-1001',
+  status = 'away', statusMessage = '休假中,週一回來。急事請找 @Wei-Lun Cheng。',
+}: SamplePerson) {
   return buildPersonProfileCard({
     name,
     avatarUrl: avatarSrc,
     description: subtitle ?? `Design｜D-0042｜${employeeNumber}`,
-    status: 'away',
-    statusMessage: '休假中,週一回來。急事請找 @Wei-Lun Cheng。',
+    status,
+    statusMessage,
     id,
     employeeNumber,
-    onChat: () => {},
-    onCall: () => {},
-    onViewProfile: () => {},
+    ...demoPersonActions(name),
   })
 }
