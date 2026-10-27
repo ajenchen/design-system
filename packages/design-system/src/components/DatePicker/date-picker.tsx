@@ -2,7 +2,7 @@
 // code-quality-allow: file-size — foundational composite(DatePicker single + Range + showTime + format/ISO helpers + TimePickerSidePanel sub-components),拆 sub-file 會 (a) 增 cross-file context binding 複雜度 (b) M21 過度抽象(每 helper 1 consumer)。等 inline filter UI 真接入第 2 consumer 再拆。
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
-import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -528,6 +528,13 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       deps: [!typeable && displayValue ? displayLive : ''],
     })
     const triggerTooltipActive = !typeable && !!displayValue && triggerTruncated && !open
+    // 觸發欄位(可打字時 = 包著輸入框的那一圈欄位)+ 它的日曆浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):
+    // 焦點搬進日曆不算離開;從欄位離開、從日曆直接離開(開著點空白處 / 點下一格)都算,consumer 的 onBlur 只跑一次(2026-10-21 r1b fields F1:
+    // 修前只掛在觸發欄位,從日曆直接離開時收不到 blur)。兩邊都掛:觸發欄位經 PopoverTrigger、日曆經 PopoverContent。hook 必在下方 early return 之前
+    const fieldTriggerRef = React.useRef<HTMLButtonElement>(null) // 型別跟 PopoverTrigger(Radix Trigger 的 ref 型別);asChild 時拿到的是欄位的 div(同 select-menu-keyboard.ts triggerRef)
+    const fieldFocus = useCompositeFieldBlur<React.FocusEvent<HTMLDivElement>>({
+      onBlur: onBlurProp, popupId, triggerRef: fieldTriggerRef,
+    })
 
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon — backward compat 裸 span。
@@ -605,7 +612,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以 triggerProps 後 spread
             勝出;反序會被 tooltip 的 data-state 蓋掉。 */}
         <Tooltip open={triggerTooltipActive ? undefined : false}>
-          <PopoverTrigger asChild type={undefined}>
+          <PopoverTrigger asChild type={undefined} ref={fieldTriggerRef} {...fieldFocus.trigger}>
             <TooltipTrigger asChild>
               <div
                 ref={ref}
@@ -656,9 +663,6 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true) }
                   if (e.key === 'Escape') setOpen(false)
                 }}
-                // 觸發欄位 + 它的日曆浮層 = 同一個欄位:焦點搬進日曆不算離開(lib/composite-field-focus.ts,待辦總帳 N83;
-                // 2026-10-01 前一開日曆就 blur,必填錯誤在還沒選日期時就長出來)。可打字時 blur 掛在內層 input
-                onBlur={typeable ? undefined : (e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId }, onBlurProp)}
               >
                 {typeable ? (
                   // Issue 10 typed input(2026-05-10):real `<input>` 接 user 鍵盤打字。
@@ -716,11 +720,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                       if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
                       if (e.key === 'ArrowDown' && !open) { e.preventDefault(); openedByPointerRef.current = false; setOpen(true) }
                     }}
-                    // 輸入框 + 它的日曆浮層 = 同一個欄位(lib/composite-field-focus.ts):焦點搬進日曆不算離開,consumer 的 onBlur 只在真的離開時跑
-                    onBlur={(e) => {
-                      if (!composingRef.current) handleInputCommit(inputDraft)
-                      compositeFieldBlur(e, { trigger: e.currentTarget.closest('[data-field-mode]') ?? e.currentTarget, popupId }, onBlurProp)
-                    }}
+                    // 失焦提交草稿;consumer 的 onBlur 由外層欄位的 PopoverTrigger 轉(輸入框 + 日曆浮層 = 同一個欄位,見上方 fieldFocus),排在提交之後
+                    onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
                     // 2026-09-07(user 抓「點下去為何不是直接開日曆同時可以打字」):
                     // 原本這裡 `stopPropagation` 把點擊吞掉,所以只有點到圖示那一小塊才會開。
                     // Ant Design 官方文件逐字:「By clicking the input box, you can select a date
@@ -765,13 +766,15 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         </Tooltip>
         <PopoverContent
           id={popupId}
+          {...fieldFocus.popup}
           className="w-auto p-0"
           align="start"
           aria-label="日期選擇" // i18n-allow: DS default dialog label
           // 可打字時觸發點(外層 div)不可聚焦,Radix 關閉時還給它 = 什麼都沒還 → 鍵盤開日曆(焦點進日曆)再按 Esc 收起,焦點掉到 body
           //(2026-10-01 實測;Range 同型早已自接,見下方 RangeDatePicker)。改還給輸入框 —— 全 DS 一支 lib/overlay-focus-return.ts:
           // 鍵盤收起 / 在日曆裡挑日期 → 回輸入框(指標挑的不畫鍵盤框);點外面收起不搶;焦點已被別處接走不搶。不可打字時觸發欄位本身可聚焦,照 Radix 原樣
-          onCloseAutoFocus={typeable ? (e) => returnFocusToOpener(e, typedInputRef.current, { noTrigger: true }) : undefined}
+          // 關掉的那一下補量欄位的 blur(fieldFocus.popupClosed):排在還焦點之後
+          onCloseAutoFocus={(e) => { if (typeable) returnFocusToOpener(e, typedInputRef.current, { noTrigger: true }); fieldFocus.popupClosed() }}
         >
           {/* a11y(2026-07-14 dim-10 修):Radix PopoverContent 自帶 role="dialog"(popover.tsx#PopoverContent)
               — 內層 div 原本重複 role="dialog" 形成雙層 nested unnamed dialog,改為純 layout div,

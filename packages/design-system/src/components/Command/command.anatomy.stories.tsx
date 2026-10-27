@@ -32,7 +32,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態與載入中消費 MenuItem 訊息列(CommandEmpty / CommandLoading)、搜尋列與 SelectMenu 共用(見 command.spec.md 定位)。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與訊息列都經 MenuItem 取得同一種列幾何,Command 自己不寫第二份樣式。</Desc>
         <div className="rounded-lg border border-border max-w-md overflow-hidden">
-          <Command>
+          <Command label="搜尋指令">
             <CommandInput placeholder="輸入指令或搜尋..." />
             <CommandEmpty>找不到結果</CommandEmpty>
             <CommandList>
@@ -87,7 +87,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `command.spec.md` 「A11y 預設」段。摘要:\n\ncmdk 自動處理：\n\n-   List 語意  ： role=\"listbox\" \n-   aria-activedescendant  :搜尋框與清單上都 = 反白那一列的 id,由 Command 根讀  [cmdk-item][data-selected]  寫上(cmdk 自己的值開啟時是空的);觸發欄位內的搜尋框經  onActiveOptionChange  拿同一個 id\n-   指標  :握著焦點的是控制這份清單的 combobox(搜尋框)時,滑鼠按在清單上不搬走它的焦點 —— 點選項與按 Enter 結果相同\n-   搜尋框  ： role=\"combobox\"  +  aria-expanded  /  aria-controls  指向 list\n-   鍵盤導覽  ：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 CommandDialog（Cmd+K）模式由 Radix Dialog 的 DismissableLayer 提供；inline <Command> 模式按 Esc 無反應\n-   空狀態  ： <CommandEmpty>  自動帶  role=\"presentation\" ,不干擾 screen reader 的 list 朗讀\n\nConsumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用  <CommandInput>  /  <CommandList>  /  <CommandItem>  即可。"}</p>
+      <p className="whitespace-pre-line">{"詳 "}<code>{"command.spec.md"}</code>{" 「A11y 預設」段。摘要:\n\ncmdk 自動處理：\n\n-   List 語意  ： role=\"listbox\" \n-   aria-activedescendant  :搜尋框與清單上都 = 反白那一列的 id,由 Command 根讀  [cmdk-item][data-selected]  寫上(cmdk 自己的值開啟時是空的);觸發欄位內的搜尋框經  onActiveOptionChange  拿同一個 id\n-   指標  :握著焦點的是控制這份清單的 combobox(搜尋框)時,滑鼠按在清單上不搬走它的焦點 —— 點選項與按 Enter 結果相同\n-   搜尋框  ： role=\"combobox\"  +  aria-expanded  /  aria-controls  指向 list\n-   鍵盤導覽  ：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 CommandDialog（Cmd+K）模式由 Radix Dialog 的 DismissableLayer 提供；inline <Command> 模式按 Esc 無反應\n-   空狀態  ： <CommandEmpty>  自動帶  role=\"presentation\" ,不干擾 screen reader 的 list 朗讀\n\nConsumer 只需替 inline <Command> 傳  label (搜尋框的讀屏名稱;CommandDialog 預設「搜尋指令」),其餘保留 cmdk 原結構 + 使用  <CommandInput>  /  <CommandList>  /  <CommandItem>  即可。"}</p>
     </div>
   ),
 }

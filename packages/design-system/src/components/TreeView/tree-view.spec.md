@@ -460,7 +460,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 - **disabled**:disabled node 不可移動,也不可當 target 錨點——相鄰 sibling disabled 時錨到最近 enabled sibling 表達同一插槽(可達位置與 pointer 一致;pointer 的 `useDroppable` 同樣 disable disabled node)。
 - **視覺**:每按即 commit,節點真實移動即回饋——**不用** dropIndicator / DragOverlay(那是「預覽中」的視覺語言,用在已 commit 的操作上會說謊);保留 keyboard focus ring 跟隨 —— 移動後焦點還給被移動的那一列(React 搬動或重掛該列時瀏覽器會把焦點丟到 body,`tree-view.tsx` 在下一個影格把焦點放回去;2026-09-25 前靠 `aria-activedescendant` 自動跟上)+ 移動後 `scrollIntoView`。
 - **互斥**:pointer 拖曳進行中忽略鍵盤重排;`draggable` 未啟用時整組鍵位 no-op(不落入導覽)。
-- **SR 播報**:TreeView 自有 sr-only `role="status"` polite live region(消費 `select-menu.tsx` `SelectMenuLiveStatus` 先例;單一節點覆寫式更新,快速連按只播最新)。文案 zh-TW 預設(「已將『X』移到『Y』之後,第 n 項,共 m 項」/「已將『X』移入『Y』」/「已在最上方」等),`reorderAnnouncements` prop per-key 覆寫(i18n 覆寫點),含 `instructions` sr-only 操作說明(tree 容器 `aria-describedby` 指向,僅 `draggable` 渲染)。播報為 optimistic(事件發出即播,假設 consumer 依約 reorder);移入原本收合的 folder 時序數不可知,播報省略序數。
+- **SR 播報**:TreeView 自有 sr-only `role="status"` polite live region(消費 `../Command/command.tsx` `CommandEmptyStatus` 先例 —— SelectMenu 原本那一份已收進 Command 根,2026-10-21 更正指標;單一節點覆寫式更新,快速連按只播最新)。文案 zh-TW 預設(「已將『X』移到『Y』之後,第 n 項,共 m 項」/「已將『X』移入『Y』」/「已在最上方」等),`reorderAnnouncements` prop per-key 覆寫(i18n 覆寫點),含 `instructions` sr-only 操作說明(tree 容器 `aria-describedby` 指向,僅 `draggable` 渲染)。播報為 optimistic(事件發出即播,假設 consumer 依約 reorder);移入原本收合的 folder 時序數不可知,播報省略序數。
 
 ---
 

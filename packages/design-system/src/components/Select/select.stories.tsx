@@ -142,7 +142,7 @@ export const SizeAlignment: Story = {
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         {(['sm', 'md', 'lg'] as const).map(size => (
           <div key={size} className="flex items-center gap-[var(--layout-space-tight)]">
-            <Select size={size} options={statusOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
+            <Select aria-label={`庫存狀態(size=${size})`} size={size} options={statusOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
           </div>
@@ -160,7 +160,7 @@ export const Clearable: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">有值時右側出現清除按鈕</p>
-        <Select
+        <Select aria-label="庫存狀態"
           options={statusOptions}
           value={value}
           onChange={setValue}
@@ -187,7 +187,7 @@ export const Searchable: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
         <p className="text-caption text-fg-muted">searchable — 點擊後 field 變 input，打字即篩選</p>
-        <Select
+        <Select aria-label="國家"
           options={manyOptions}
           value={value}
           onChange={setValue}
@@ -216,7 +216,7 @@ export const Creatable: Story = {
         <p className="text-caption text-fg-muted">
           searchable + creatable — 搜尋不到既有標籤時,dropdown 底部出現「直接使用「…」」建立列,點擊即新增並選取
         </p>
-        <Select
+        <Select aria-label="標籤"
           options={labels}
           value={value}
           onChange={setValue}

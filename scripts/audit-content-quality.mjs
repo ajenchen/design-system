@@ -12,8 +12,9 @@
 //   3. Auto-generated stub patterns(`<X> 場景` CamelCase split without real content)
 //   4. Missing `name:` zh-CN on stories(showcase / principles)
 //   5. Storybook technical-probe visibility drift(`test-only` semantics)
-//   6. Literal Markdown in JSX canvas: **emphasis** everywhere; `code` backticks on teaching pages
-//      (principles + Tokens / Patterns doc pages; 2026-10-20 teaching audit T12 —— the canvas shows the backticks as-is)
+//   6. Literal Markdown in JSX canvas: **emphasis** everywhere; `code` backticks on every story page
+//      (teaching pages = principles + Tokens / Patterns doc pages: always 0, 2026-10-20 teaching audit T12;
+//       design-spec / showcase pages since 2026-10-21 r1b fields F8, ratcheted by scripts/content-quality-backtick-baseline.json —— the canvas shows the backticks as-is)
 //
 // Usage from Stop hook: `node scripts/audit-content-quality.mjs --check` (silent if OK, warn if drift).
 
@@ -40,6 +41,11 @@ const markdownEmphasisPattern = /\*\*[^*\s](?:(?!\*\*)[\s\S])*?\*\*/g;
 // 與 CI 的 scripts/tutorial-page-invariant.mjs R10 同一個範圍;規格頁 / 展示頁的同類字樣另由各自的稽核處理(見 report)。
 const markdownCodePattern = /`[^`\n]+`/g;
 const isTeachingPage = file => /\.principles\.stories\.tsx$/.test(file) || /\/src\/(?:tokens|patterns)\//.test(file);
+// 非教學頁的反引號棘輪(2026-10-21 r1b fields F8):範圍擴到全 DS 時既有的檔與字樣數;只准往下(新檔 / 數字變大 = 紅)
+const BACKTICK_BASELINE_FILE = 'scripts/content-quality-backtick-baseline.json';
+const updateBacktickBaseline = process.argv.includes('--update-backtick-baseline');
+const backtickBaseline = JSON.parse(readFileSync(BACKTICK_BASELINE_FILE, 'utf8')).files ?? {};
+const backtickCounts = {};
 
 function propertyName(node) {
   if (!node.name) return null;
@@ -108,8 +114,11 @@ function findLiteralMarkdownEmphasis(file, content, pattern = markdownEmphasisPa
 }
 
 /**
- * 教學頁畫面上的 Markdown 反引號(T12):只看「會顯示的文字」—— JSX 文字、JSX 屬性與 {字串} 子節點的字串內容;
- * 樣板字串的分隔符本身是程式碼(不算),<code> / <pre> 裡的反引號是程式碼字樣(不算),docs description 走 Markdown(不算)。
+ * 畫面上的 Markdown 反引號(T12 / F8):看「會顯示的文字」—— JSX 文字,加上**所有字串**(引號字串、樣板字串的文字段)。
+ * 字串不管是直接寫在 JSX 裡、當屬性,還是先放進資料陣列 / 物件再 map 出來,都會原樣到畫面上(2026-10-21 r1b fields 複驗 D1:
+ * Field 設計規格 Props 表的說明欄是陣列字串,經 `<Td>{desc}</Td>` 顯示,舊版只看 JSX 子節點與屬性,看不到)。
+ * 只排除讀者看不到原字、或會被渲染成程式碼的位置:docs description 與 argTypes description(Storybook 以 Markdown 渲染,反引號變成 code)、
+ * docs.source(以程式碼區塊顯示)、<code> / <pre> 裡、className / style / data-* 屬性。樣板字串的分隔符本身是程式碼(不算)。
  */
 function findLiteralMarkdownCode(file, content) {
   const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -120,14 +129,30 @@ function findLiteralMarkdownCode(file, content) {
     }
     return false;
   };
+  // 字串所屬的 JSX 屬性名(字串在子節點裡 = null)
+  const owningJsxAttribute = node => {
+    for (let p = node.parent; p; p = p.parent) {
+      if (ts.isJsxAttribute(p)) return p.name.getText(sourceFile);
+      if (ts.isJsxElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxFragment(p)) return null;
+    }
+    return null;
+  };
+  const renderedAsMarkdownOrCode = node => {
+    const ancestors = [];
+    for (let p = node.parent; p; p = p.parent) if (ts.isPropertyAssignment(p)) ancestors.push(propertyName(p));
+    const isArgTypesDescription = ancestors[0] === 'description' && ancestors.includes('argTypes');
+    const isDocsSource = ancestors.includes('source') && ancestors.includes('docs');
+    return isDocsDescriptionMarkdown(node) || isArgTypesDescription || isDocsSource;
+  };
   const add = (node, value) => {
-    if (isDocsDescriptionMarkdown(node) || inCode(node)) return;
+    if (renderedAsMarkdownOrCode(node) || inCode(node)) return;
+    if (/^(?:className|class|style|data-.*)$/.test(owningJsxAttribute(node) ?? '')) return;
     for (const match of value.matchAll(markdownCodePattern)) samples.add(match[0].slice(0, 100));
   };
   const visit = node => {
     if (ts.isJsxText(node)) add(node, node.text);
-    else if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer) && !/^(?:className|class|style|data-.*)$/.test(node.name.getText(sourceFile))) add(node, node.initializer.text);
-    else if (ts.isJsxExpression(node) && node.expression && (ts.isStringLiteral(node.expression) || ts.isNoSubstitutionTemplateLiteral(node.expression)) && (ts.isJsxElement(node.parent) || ts.isJsxAttribute(node.parent))) add(node, node.expression.text);
+    else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) add(node, node.text);
+    else if (ts.isTemplateExpression(node)) add(node, [node.head.text, ...node.templateSpans.map(span => span.literal.text)].join('\n'));
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
@@ -379,11 +404,14 @@ for (const file of walk(STORIES_DIR)) {
       samples: markdownEmphasisSamples.slice(0, 3),
     });
   }
-  // === Check 4f: 教學頁 JSX canvas 中的 literal Markdown 反引號(T12)===
-  if (isTeachingPage(file)) {
+  // === Check 4f: JSX canvas 中的 literal Markdown 反引號 ===
+  // 教學頁(T12)一律 0;設計規格 / 展示頁(2026-10-21 r1b fields F8:欄位家族的規格頁畫面上出現 `--field-height-*` 這種字)照棘輪,只准往下
+  {
     const markdownCodeSamples = findLiteralMarkdownCode(file, content);
-    if (markdownCodeSamples.length > 0) {
-      violations.literalMarkdownCode.push({ file: basename(file), count: markdownCodeSamples.length, samples: markdownCodeSamples.slice(0, 3) });
+    const allowed = isTeachingPage(file) ? 0 : (backtickBaseline[file] ?? 0);
+    if (markdownCodeSamples.length > 0 && !isTeachingPage(file)) backtickCounts[file] = markdownCodeSamples.length;
+    if (markdownCodeSamples.length > allowed) {
+      violations.literalMarkdownCode.push({ file: basename(file), count: markdownCodeSamples.length, allowed, samples: markdownCodeSamples.slice(0, 3) });
     }
   }
 
@@ -731,10 +759,24 @@ if (violations.literalMarkdownEmphasis.length > 0) {
 }
 
 if (violations.literalMarkdownCode.length > 0) {
-  console.log(`\n[P1] Literal Markdown backticks visible on teaching pages(use <code>): ${violations.literalMarkdownCode.length} files`);
+  console.log(`\n[P1] Literal Markdown backticks visible on the story canvas(use <code>): ${violations.literalMarkdownCode.length} files(教學頁一律 0;其他頁超過 ${BACKTICK_BASELINE_FILE} 的數字)`);
   violations.literalMarkdownCode.slice(0, 10).forEach(v =>
-    console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
+    console.log(`  • ${v.file}: ${v.count}×(允許 ${v.allowed})${v.samples.map(s => `"${s}"`).join(', ')}`)
   );
+}
+{
+  // 棘輪只准往下:修掉之後提示收緊;--update-backtick-baseline 重記(只會變小 —— 變大的檔上面已經紅)
+  const shrunk = Object.entries(backtickBaseline).filter(([f, n]) => (backtickCounts[f] ?? 0) < n);
+  if (shrunk.length && !updateBacktickBaseline) console.log(`\nⓘ 反引號棘輪可收緊 ${shrunk.length} 檔(跑 --update-backtick-baseline):${shrunk.slice(0, 5).map(([f]) => basename(f)).join(', ')}`);
+  if (updateBacktickBaseline) {
+    const doc = JSON.parse(readFileSync(BACKTICK_BASELINE_FILE, 'utf8'));
+    const files = Object.fromEntries(Object.entries(backtickCounts).filter(([f, n]) => n <= (backtickBaseline[f] ?? 0)).sort(([a], [b]) => (a < b ? -1 : 1)));
+    doc.files = files;
+    doc._meta.files = Object.keys(files).length;
+    doc._meta.samples = Object.values(files).reduce((a, n) => a + n, 0);
+    writeFileSync(BACKTICK_BASELINE_FILE, JSON.stringify(doc, null, 2) + '\n');
+    console.log(`\n✅ 反引號棘輪已重記:${doc._meta.files} 檔 / ${doc._meta.samples} 個字樣`);
+  }
 }
 
 if (violations.storyVisibility.length > 0) {

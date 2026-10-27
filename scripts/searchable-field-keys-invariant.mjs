@@ -9,7 +9,7 @@
  *     K2 清單開著按一鍵清空 × → 反白回到第一個可選列(同打開一個空欄位;只選「不限」時第一列就是「不限」本身,照實量)。
  *     K3 焦點在欄位本身(觸發欄位,不是搜尋框)、清單關著時打一個字 = 打開清單、這個字進搜尋框(欄位內 / 浮層內兩種搜尋框);
  *        輸入法的第一鍵(keyCode 229 / 'Process')同樣把焦點交給搜尋框,接著的組字落在搜尋框裡(CDP Input.imeSetComposition 真的組字)。
- *        空白鍵維持「打開」、不打進關鍵字。
+ *        空白鍵維持「打開」、不打進關鍵字。D(2026-10-21)四頁設計規格的鍵盤段都寫到 K1 的 Backspace。
  *     F1 清單開著按過觸發欄位上的東西(× / Tag × / 搜尋框本身)再用 Esc 收起 → 焦點回觸發欄位,不掉到頁面上(select.spec.md「Clearable」清除後焦點、
  *        select-menu.spec.md「A11y 預設」Focus 段 :386);**範圍守住 :384**:欄位內搜尋框握著焦點時點欄位收起,焦點留在搜尋框(對照列,修前修後都綠)。
  *     K4 只選「不限」× 欄位內搜尋:關著是一般已填值的黑字(與不可搜尋的「不限」逐格同位置、同色)、打開還沒打字變灰色提示且讀屏略過、
@@ -34,6 +34,11 @@
  *   `packages/design-system/src/components/SelectMenu/select-menu.spec.md`「A11y 預設」(Keyboard Backspace / 打字列、Focus 段)與「搜尋關鍵字何時保留、何時清空」;
  *   `packages/design-system/src/components/SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」;
  *   `packages/design-system/src/components/PeoplePicker/people-picker.spec.md` §C;`packages/design-system/src/components/Select/select.spec.md`「Clearable」。
+ * 2026-10-21(r1b fields F3 / N2):K1 補「不可搜尋 + clearable 的 Select」那一格(K1-select-plain;修前只認可搜尋的 Select);
+ *   K3 補「打字把焦點搬進欄位內搜尋框之後,讀屏名稱仍是欄位名」(K3-inline-name / K3-people-name,CDP 算好的 AX 名稱;修前「搜尋選項 / 搜尋人員」),
+ *   對照組「欄位內搜尋框的名字又變回『搜尋選項』」。
+ *   D-K1-doc(r1b fields F7):Combobox / Select / SelectMenu / PeoplePicker 設計規格頁「無障礙與鍵盤」都寫到 K1 的 Backspace
+ *   (讀者在頁面上看得到的字;修前四頁都沒有,K1 2026-10-07 上線後教學頁沒跟上),對照組「鍵盤段的 Backspace 那一列被拿掉」。
  * 用法:node scripts/searchable-field-keys-invariant.mjs [--build=storybook-static] [--selftest]
  */
 import { join, dirname, resolve } from 'node:path'
@@ -53,16 +58,26 @@ const EDGE_TOLERANCE_PX = 1
 
 export const STORIES = Object.freeze({
   select: 'design-system-components-select-展示--searchable',
+  selectClearable: 'design-system-components-select-展示--clearable',
   ppSingle: 'design-system-components-peoplepicker-展示--single',
   keys: 'design-system-components-combobox-展示--field-keys-contract',
   unr: 'design-system-components-combobox-展示--unrestricted-inline-search',
   ppMulti: 'design-system-components-peoplepicker-展示--multi-inline-search',
   ppMultiDefault: 'design-system-components-peoplepicker-展示--multi',
   yieldWidth: 'design-system-components-field-展示--inline-search-yield-width-contract',
+  // 設計規格頁「無障礙與鍵盤」(D-K1-doc;2026-10-21 r1b fields F7)
+  docCombobox: 'design-system-components-combobox-設計規格--accessibility',
+  docSelect: 'design-system-components-select-設計規格--accessibility',
+  docSelectMenu: 'design-system-internal-selectmenu-設計規格--accessibility',
+  docPeople: 'design-system-components-peoplepicker-設計規格--accessibility',
 })
+const DOC_STORIES = ['docCombobox', 'docSelect', 'docSelectMenu', 'docPeople']
 // 欄位的身分:aria-label、Field 標籤(aria-labelledby 指到的字)或該 story 裡第幾個觸發欄位(Select「搜尋」範例只有一個、沒有標籤)
 export const FIELDS = Object.freeze({
   select: { index: 0 },
+  // 不可搜尋 + 可清除的 Select(展示「可清除」,開場 In stock;2026-10-21 r1b fields F3)。用位置不用名字:
+  // 那則範例的 aria-label 是同一批 N3 才補的,修前建置沒有 —— 以名字找,天然對照組會變成「找不到欄位」的儀器失效、量不到 F3 本身
+  selectClearable: { index: 0 },
   ppSingle: { label: '負責人(edit mode demo)' },
   inline: { label: '商品分類(欄位內搜尋,可清空)' },
   popover: { label: '商品分類(浮層內搜尋,可清空)' },
@@ -125,6 +140,9 @@ export const ROWS = [
   { id: 'K1-status-after-blur', family: 'K1', name: '播報字不過期:欄位內搜尋 × 多選用 Backspace 刪掉「Food」後點頁面空白處(焦點離開欄位)→ 播報區清空',
     judge: (m) => check((m.removed.status || '').includes(removedSay('Food')) && m.after.focus === 'body' && m.after.status === '',
       `刪掉後播報=「${m.removed.status ?? '(沒有播報區)'}」 點外面後焦點=${m.after.focus} 播報=「${m.after.status ?? '(沒有播報區)'}」`) },
+  { id: 'K1-select-plain', family: 'K1', name: '不可搜尋 + clearable 的 Select:清單關著、焦點在欄位本身按 Backspace → 清掉值、念「已移除『In stock』」,焦點留在欄位(2026-10-21 r1b fields F3:修前只認可搜尋的 Select)',
+    judge: (m) => check(m.before.mirror === 'in_stock' && m.after.mirror === '' && m.after.focus === 'field' && (m.after.status || '').includes(removedSay('In stock')),
+      `值「${m.before.mirror}」→「${m.after.mirror}」 焦點=${m.after.focus} 播報=「${m.after.status ?? '(沒有播報區)'}」`) },
   { id: 'K1-select-required', family: 'GUARD', name: 'Select 單選沒開 clearable(必須有值):Backspace 不清值(開著、關著都一樣)',
     judge: (m) => check(m.open.mirror === PERSON && m.closed.mirror === PERSON, `開著按後=「${m.open.mirror}」 關著按後=「${m.closed.mirror}」`) },
   // ── K2 一鍵清空後反白 ──
@@ -156,6 +174,15 @@ export const ROWS = [
     judge: (m) => check(m.after.open && m.after.focus === 'input' && m.after.keyword === '我', `開著=${m.after.open} 焦點=${m.after.focus} 關鍵字=「${m.after.keyword}」`) },
   { id: 'K3-ime-popover', family: 'K3', name: '浮層內搜尋:焦點在欄位本身,輸入法第一鍵 → 組字落在浮層裡的搜尋框',
     judge: (m) => check(m.after.open && m.after.focus === 'popover-input' && m.after.keyword === '我', `開著=${m.after.open} 焦點=${m.after.focus} 關鍵字=「${m.after.keyword}」`) },
+  // 打字把焦點搬進欄位內搜尋框之後,讀屏念的名字仍是這個欄位(2026-10-21 r1b fields N2;瀏覽器算好的 AX 名稱,CDP,不是屬性代理)
+  { id: 'K3-inline-name', family: 'K3', name: '欄位內搜尋(欄位用 aria-label 命名):焦點在欄位本身打字、焦點搬進欄位內搜尋框 → 搜尋框的讀屏名稱 = 欄位名(修前「搜尋選項」)',
+    judge: (m) => check(m.after.focus === 'input' && !!m.fieldName && m.focusName === m.fieldName, `焦點=${m.after.focus} 欄位名=「${m.fieldName}」 搜尋框名=「${m.focusName}」`) },
+  { id: 'K3-people-name', family: 'K3', name: 'PeoplePicker 多人 × 欄位內搜尋(欄位用 Field label 命名):打字之後搜尋框的讀屏名稱 = 欄位名(修前「搜尋人員」)',
+    judge: (m) => check(m.after.focus === 'input' && !!m.fieldName && m.focusName === m.fieldName, `焦點=${m.after.focus} 欄位名=「${m.fieldName}」 搜尋框名=「${m.focusName}」`) },
+  // ── D 設計規格頁寫到 K1(讀者看得到的字;2026-10-21 r1b fields F7)──
+  { id: 'D-K1-doc', family: 'D', name: '設計規格頁「無障礙與鍵盤」:Combobox / Select / SelectMenu / PeoplePicker 四頁都寫到 Backspace(K1;修前四頁都沒有)',
+    judge: (m) => check(m.pages.length === DOC_STORIES.length && m.pages.every((p) => p.backspace),
+      m.pages.map((p) => `${p.story}:${p.backspace ? '有' : '沒有'} Backspace`).join(' / ')) },
   { id: 'K3-space', family: 'GUARD', name: '空白鍵在欄位本身仍是「打開清單」、不打進關鍵字',
     judge: (m) => check(m.after.open && m.after.keyword === '', `開著=${m.after.open} 關鍵字=「${m.after.keyword}」`) },
   // ── F1 按過觸發欄位上的東西再收起,焦點去哪 ──
@@ -167,7 +194,7 @@ export const ROWS = [
     judge: (m) => check(m.afterClick.focus === 'popover-input' && !m.after.open && m.after.focus === 'field', `按 × 後焦點=${m.afterClick.focus} Esc 後開著=${m.after.open} 焦點=${m.after.focus}`) },
   { id: 'F1-inline-tagx-esc', family: 'F1', name: '欄位內搜尋:清單開著按 Tag ×、再按 Esc → 焦點落點與直接按 Esc 相同(觸發欄位)',
     judge: (m) => check(m.plain.focus === 'field' && m.after.focus === m.plain.focus && !m.after.open, `直接 Esc=${m.plain.focus} 按 × 再 Esc=${m.after.focus}`) },
-  { id: 'F1-inline-click-close', family: 'GUARD', name: '守 select-menu.spec.md:384:欄位內搜尋框握著焦點時點欄位收起,焦點留在搜尋框',
+  { id: 'F1-inline-click-close', family: 'GUARD', name: '守 select-menu.spec.md「收起後焦點回觸發點的長相」:欄位內搜尋框握著焦點時點欄位收起,焦點留在搜尋框',
     judge: (m) => check(!m.after.open && m.after.focus === 'input', `收起=${!m.after.open} 焦點=${m.after.focus}`) },
   { id: 'F1-outside', family: 'GUARD', name: '點頁面空白處收起:焦點不被搶回觸發欄位',
     judge: (m) => check(!m.after.open && m.after.focus === 'body', `收起=${!m.after.open} 焦點=${m.after.focus}`) },
@@ -267,6 +294,10 @@ export const SAMPLES = {
     old: { removed: st({ status: '已移除『日本』' }), after: st({ mirror: 'us', status: '已移除『日本』' }) } },
   'K1-status-after-blur': { good: { removed: st({ status: '已移除『Food』' }), after: st({ focus: 'body', status: '' }) },
     old: { removed: st({ status: '已移除『Food』' }), after: st({ focus: 'body', status: '已移除『Food』' }) } },
+  'K1-select-plain': { good: { before: st({ open: false, focus: 'field', mirror: 'in_stock' }), after: st({ open: false, focus: 'field', mirror: '', status: '已移除『In stock』' }) },
+    old: { before: st({ open: false, focus: 'field', mirror: 'in_stock' }), after: st({ open: false, focus: 'field', mirror: 'in_stock', status: null }) } },
+  'K3-inline-name': { good: { after: st({ focus: 'input' }), fieldName: '商品分類', focusName: '商品分類' }, old: { after: st({ focus: 'input' }), fieldName: '商品分類', focusName: '搜尋選項' } },
+  'K3-people-name': { good: { after: st({ focus: 'input' }), fieldName: '選擇性出席者', focusName: '選擇性出席者' }, old: { after: st({ focus: 'input' }), fieldName: '選擇性出席者', focusName: '搜尋人員' } },
   'K1-select-required': { good: { open: st({ mirror: PERSON }), closed: st({ mirror: PERSON }) }, old: { open: st({ mirror: '' }), closed: st({ mirror: PERSON }) } },
   'K2-select': { good: { before: st({ highlight: '日本', highlightIsFirst: false }), after: st({ highlight: '台灣', highlightIsFirst: true }) },
     old: { before: st({ highlight: '日本', highlightIsFirst: false }), after: st({ highlight: '日本', highlightIsFirst: false }) } },
@@ -280,6 +311,8 @@ export const SAMPLES = {
   'K3-ime-inline': { good: { after: st({ keyword: '我' }) }, old: { after: st({ open: false, focus: 'field', keyword: '' }) } },
   'K3-ime-popover': { good: { after: st({ focus: 'popover-input', keyword: '我' }) }, old: { after: st({ open: false, focus: 'field', keyword: '' }) } },
   'K3-space': { good: { after: st({ keyword: '' }) }, old: { after: st({ keyword: ' ' }) } },
+  'D-K1-doc': { good: { pages: ['docCombobox', 'docSelect', 'docSelectMenu', 'docPeople'].map((story) => ({ story, backspace: true })) },
+    old: { pages: ['docCombobox', 'docSelect', 'docSelectMenu', 'docPeople'].map((story) => ({ story, backspace: false })) } },
   'F1-select-x-esc': { good: { afterClear: st({}), after: st({ open: false, focus: 'field' }) }, old: { afterClear: st({}), after: st({ open: false, focus: 'body' }) } },
   'F1-select-input-click': { good: { after: st({ open: false, focus: 'field' }) }, old: { after: st({ open: false, focus: 'body' }) } },
   'F1-popover-tagx-esc': { good: { afterClick: st({ focus: 'popover-input' }), after: st({ open: false, focus: 'field' }) },
@@ -334,6 +367,13 @@ export function judgeTableSelftest() {
 // ═══════════════════════════════════════════════════════════════════════════
 // 頁面端量測(以 page.evaluate 序列化傳入,不得引用外部變數)
 // ═══════════════════════════════════════════════════════════════════════════
+/** 頁面端:依 spec 找觸發欄位(與 pageRead 同一個判法;axNames 用它取欄位的 AX 名稱) */
+function pageFieldOf(spec) {
+  const fields = [...document.querySelectorAll('[role="combobox"]')].filter((el) => !el.closest('[data-radix-popper-content-wrapper]'))
+  const nameOf = (el) => el.getAttribute('aria-label') || (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean)
+    .map((id) => (document.getElementById(id)?.textContent || '').trim()).join(' ').trim()
+  return (spec.index != null ? fields[spec.index] : fields.find((f) => (spec.label ? f.getAttribute('aria-label') === spec.label : nameOf(f) === spec.labelledBy))) ?? null
+}
 function pageRead({ spec, valueText }) {
   const fields = [...document.querySelectorAll('[role="combobox"]')].filter((el) => !el.closest('[data-radix-popper-content-wrapper]'))
   const nameOf = (el) => el.getAttribute('aria-label') || (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean)
@@ -420,6 +460,27 @@ function controlNoTypeRoute() {
     if (!(t instanceof Element) || t.getAttribute('role') !== 'combobox' || t.closest('[data-radix-popper-content-wrapper]')) return
     if ((e.key.length === 1 && e.key !== ' ') || e.keyCode === 229 || e.key === 'Process') e.stopPropagation()
   }, true)
+}
+// K3(N2):欄位內搜尋框的名字又變回通用的「搜尋選項」(修前 combobox.tsx 只寫 aria-label={searchAriaLabel})
+function controlGenericSearchName() {
+  const strip = () => {
+    for (const el of document.querySelectorAll('[role="combobox"] input:not([aria-hidden="true"])')) {
+      if (el.closest('[data-radix-popper-content-wrapper]')) continue
+      if (el.hasAttribute('aria-labelledby')) el.removeAttribute('aria-labelledby')
+      if (el.getAttribute('aria-label') !== '搜尋選項') el.setAttribute('aria-label', '搜尋選項')
+    }
+  }
+  new MutationObserver(strip).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-label', 'aria-labelledby'] })
+}
+// D:設計規格頁鍵盤段的 Backspace 那一列被拿掉(= 修前四頁的樣子)
+function controlDropBackspaceDoc() {
+  const strip = () => {
+    const root = document.getElementById('storybook-root')
+    if (!root) return
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.includes('Backspace')) n.nodeValue = n.nodeValue.replaceAll('Backspace', '')
+  }
+  new MutationObserver(strip).observe(document, { subtree: true, childList: true, characterData: true })
 }
 // K2:清空之後「反白放回第一列」那一下(代發給清單根的 Home)被擋
 function controlNoClearHighlight() {
@@ -512,6 +573,8 @@ export const CONTROLS = [
   { family: 'K1', title: '播報字清掉後又被放回去(修前:「已移除『X』」選了別的、離開欄位後仍掛著)', init: controlStaleAnnouncement, rows: ['K1-status-after-change', 'K1-status-after-blur'] },
   { family: 'K2', title: '清空之後的反白搬移被擋(修前:反白停在剛被清掉的那一列)', init: controlNoClearHighlight },
   { family: 'K3', title: '欄位本身的字到不了元件(修前:焦點在欄位本身打字沒有反應)', init: controlNoTypeRoute },
+  { family: 'K3', title: '欄位內搜尋框的名字又變回「搜尋選項」(修前:打字之後讀屏聽不出是哪個欄位)', init: controlGenericSearchName, rows: ['K3-inline-name', 'K3-people-name'] },
+  { family: 'D', title: '設計規格頁鍵盤段的 Backspace 那一列被拿掉(修前:四頁都沒寫 K1)', init: controlDropBackspaceDoc, rows: ['D-K1-doc'] },
   { family: 'F1', title: '按在觸發欄位上被記成「按在外面」(修前:按 × 再 Esc 焦點掉到頁面上)', init: controlTriggerCountsAsOutside },
   { family: 'K4', title: '值的文字打開後不讓位(修前:「不限 fo」/「Alice Chen bo」)', init: controlValueStaysBesideKeyword },
   { family: 'K4', title: '讓位後留下寬的量尺被拿掉(修前:依內容寬的欄位一打開 / 一打字就縮)', init: controlNoYieldReserve, rows: ['K4-hug-unrestricted', 'K4-people-hug'] },
@@ -596,11 +659,26 @@ function makeSession(page, server) {
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Process', code: 'KeyJ', windowsVirtualKeyCode: 229, nativeVirtualKeyCode: 229 })
     await settle(what)
   }
+  /** 瀏覽器算好的讀屏名稱(CDP Accessibility,與讀屏拿到的同一份):目前焦點、與這個欄位的觸發欄位 */
+  const axNames = async (spec) => {
+    cdp ??= await page.context().newCDPSession(page)
+    await cdp.send('Accessibility.enable')
+    const nameOf = async (expression) => {
+      const { result } = await cdp.send('Runtime.evaluate', { expression })
+      if (!result.objectId) return null
+      const { nodes } = await cdp.send('Accessibility.getPartialAXTree', { objectId: result.objectId, fetchRelatives: false })
+      return nodes[0]?.name?.value ?? null
+    }
+    const field = `(${pageFieldOf.toString()})(${JSON.stringify(spec)})`
+    return { focusName: await nameOf('document.activeElement'), fieldName: await nameOf(field) }
+  }
   const clickBlank = async (what) => {
     await page.mouse.click(1200, 1050)
     await settle(what)
   }
-  return { read, open, clickField, clickIn, clickOption, focusField, press, type, synth, imeCompose, clickBlank }
+  /** 讀者在 story 畫面上看得到的字(D 族:設計規格頁寫了什麼) */
+  const pageText = () => page.evaluate(() => document.getElementById('storybook-root')?.innerText ?? '')
+  return { read, open, clickField, clickIn, clickOption, focusField, press, type, synth, imeCompose, clickBlank, axNames, pageText }
 }
 
 // 每一段:開一則 story、做一串動作、回 { rowId: 量測 }。一段失敗(儀器)只讓那一段的列判成儀器失效,不吞掉其他段。
@@ -760,6 +838,39 @@ const SEGMENTS = [
       await s.clickBlank('點頁面空白處')
       out['F1-outside'] = { after: await s.read(f) }
       return out
+    } },
+  { id: 'inline-name', story: STORIES.keys, rows: ['K3-inline-name'],
+    run: async (s) => {
+      const f = FIELDS.inline
+      await s.focusField(f, '焦點放在欄位本身')
+      await s.type('f', '欄位本身打 f')
+      return { 'K3-inline-name': { after: await s.read(f), ...(await s.axNames(f)) } }
+    } },
+  { id: 'people-name', story: STORIES.ppMulti, rows: ['K3-people-name'],
+    run: async (s) => {
+      const f = FIELDS.ppOptional
+      await s.focusField(f, '焦點放在欄位本身')
+      await s.type('a', '欄位本身打 a')
+      return { 'K3-people-name': { after: await s.read(f), ...(await s.axNames(f)) } }
+    } },
+  { id: 'docs', story: STORIES.docCombobox, waitFor: 'p', rows: ['D-K1-doc'],
+    run: async (s) => {
+      const pages = []
+      for (const key of DOC_STORIES) {
+        if (key !== 'docCombobox') await s.open(STORIES[key], 'p')
+        const text = await s.pageText()
+        if (!/鍵盤|Keyboard/.test(text)) throw new ProbeError(`${key}:頁面上找不到鍵盤段(不是設計規格的無障礙頁?)`)
+        pages.push({ story: key, backspace: text.includes('Backspace') })
+      }
+      return { 'D-K1-doc': { pages } }
+    } },
+  { id: 'select-plain', story: STORIES.selectClearable, rows: ['K1-select-plain'],
+    run: async (s) => {
+      const f = FIELDS.selectClearable
+      await s.focusField(f, '焦點放在欄位本身(清單關著)')
+      const before = await s.read(f)
+      await s.press('Backspace', '欄位本身按 Backspace')
+      return { 'K1-select-plain': { before, after: await s.read(f) } }
     } },
   { id: 'select-ime', story: STORIES.select, rows: ['K3-ime-select'],
     run: async (s) => {
@@ -927,7 +1038,7 @@ async function measureAll(server, { segments = SEGMENTS, initScript = null } = {
   try {
     for (const seg of segments) {
       try {
-        await s.open(seg.story)
+        await s.open(seg.story, seg.waitFor) // 段沒寫 waitFor = 等觸發欄位(open 的預設);設計規格的文字頁等段落
         Object.assign(report, await seg.run(s))
       } catch (error) {
         if (!(error instanceof StoryRenderInstrumentError) && !(error instanceof ProbeError) && !/Timeout/i.test(error?.name ?? '')) throw error
@@ -960,7 +1071,7 @@ async function main() {
     }
     if (!SELFTEST) {
       if (v.failures.length) { console.log(`\n✗ ${v.failures.length} 列不符(族:${[...new Set(v.failures.map((f) => f.family))].join(' / ')})`); return 1 }
-      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 / K1b Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬 / K7 單選依內容寬打開不變寬)`)
+      console.log(`\n✓ 可搜尋欄位的按鍵與值顯示:${ROWS.length} 列全符合(K1 / K1b Backspace 與播報 / K2 清空後反白 / K3 欄位本身打字 / F1 收起後焦點 / K4 值讓位給關鍵字、讓位不改欄寬 / K7 單選依內容寬打開不變寬 / D 設計規格頁寫到 K1)`)
       return 0
     }
     if (v.failures.length) { console.error(`❌ selftest FAIL:沒動頁面時就紅了(先修產品,對照組才有意義)`); return 1 }

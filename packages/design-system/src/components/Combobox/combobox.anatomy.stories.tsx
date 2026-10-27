@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Combobox } from './combobox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { CAT_SUBTLE_TOKENS } from '@/design-system/tokens/categorical-color'
 
 const meta: Meta = {
   title: 'Design System/Components/Combobox/設計規格',
@@ -207,12 +208,20 @@ export const Overview = {
                 { name: 'Tag', color: 'error' },
                 { name: 'Tag', color: 'error' },
                 { name: '+N', color: 'warning' },
+                // 欄位內搜尋框:上方 Desc 已寫它在 Tag 區的最後一格(searchIn='trigger' 時恆在),圖上補上這一格(2026-10-21 r1b fields F7)。
+                // 色塊用 categorical 色相(tokens/categorical-color.ts):語意色 primary 與 info 是同一個藍(semantic.css --primary / --info 都 = --color-blue-6),
+                // 用 primary 會與 chevron 同色(複驗 D2);分類標記本來就該用 categorical 色(ui-development.md「不混語義與色名」),選這一列沒有的色相
+                { name: "搜尋框(searchIn='trigger')", hue: 'purple' as const },
                 { name: 'clear', color: 'magenta' },
                 { name: 'chevron', color: 'info' },
-              ].map((s, i) => (
-                <span key={`${s.name}-${i}`} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
-              ))}
+              ].map((s, i) => {
+                const fg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].text : `var(--${s.color})`
+                const bg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].bg : `var(--${s.color}-subtle)`
+                return (
+                  <span key={`${s.name}-${i}`} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                    style={{ borderColor: fg, backgroundColor: bg, color: fg }}>{s.name}</span>
+                )
+              })}
             </div>
             <span className="text-[10px] text-fg-muted font-mono">role=combobox 觸發容器 · 點擊開浮層選單 · +N = OverflowIndicator</span>
           </div>
@@ -785,10 +794,11 @@ export const StateBehavior = {
             />
           </div>
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>1. useOverflowCount hook 量測 container 寬度與每個 tag 的自然寬度</span>
-            <span>2. ResizeObserver 持續監聽容器變化</span>
-            <span>3. 量測在 useEffect 內首次 paint 後執行（確保 nested 場景所有 ref 已 attach），double-rAF 保證 layout 完成才量測；代價是可能 1-2 frame 閃爍，由 value-equal setState guard 收斂</span>
-            <span>4. 超出的 tag 以 DOM hidden attribute 隱藏（UA 樣式即 display:none；節點保留在 DOM，量測時先全部解除隱藏再計算）</span>
+            {/* 現行做法 = ../OverflowIndicator/overflow-tag-list.tsx useOverflowCount 檔頭(2026-10-13 重寫;2026-10-21 r1b fields F4 前這裡仍描述舊的 useEffect + double-rAF 做法) */}
+            <span>1. 全部攤開量:先把 Tag 全部顯示、+N 當量尺，再量容器可用寬與每個 Tag 的寬（小數 px）</span>
+            <span>2. 每個候選數量用它自己會顯示的那個 +N 的寬（+1、+2、+10 字寬不同）</span>
+            <span>3. 畫面更新前定案：在 layout effect 裡決定，超出的 Tag 以 DOM hidden attribute 隱藏，+N 的數字同一格更新，不閃爍</span>
+            <span>4. ResizeObserver 看容器、Tag、+N、搜尋框量尺與欄位外框的父層；量到的輸入沒變就不重算</span>
           </div>
         </div>
 
@@ -917,7 +927,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區、宣告 listbox(待辦總帳 B11「行為不變、只改宣告」);Tab 照 DOM 順序走,觸發區已是頁面最後一格時會走進浮層。\n\n選完之後:滑鼠點選與 Enter 結果相同,焦點不離開開啟時的落點(浮層內搜尋框 / 欄位內搜尋框);欄位內搜尋框恆在,空值時也能直接打字;焦點所在的搜尋框帶 aria-activedescendant 指向反白的選項(規則住 select-menu.spec.md「A11y 預設」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區、宣告 listbox(待辦總帳 B11「行為不變、只改宣告」);Tab 照 DOM 順序走,觸發區已是頁面最後一格時會走進浮層。\n\n選完之後:滑鼠點選與 Enter 結果相同,焦點不離開開啟時的落點(浮層內搜尋框 / 欄位內搜尋框);欄位內搜尋框恆在,空值時也能直接打字;焦點所在的搜尋框帶 aria-activedescendant 指向反白的選項(規則住 select-menu.spec.md「A11y 預設」)。\n\n欄位上的按鍵(規則住 select-menu.spec.md「A11y 預設」Keyboard 段):關鍵字空白時按 Backspace = 按最後一個值的 ×,讀屏念「已移除『X』」;searchIn='trigger' 時焦點在欄位內搜尋框或觸發區本身都算,其餘(浮層內搜尋、不可搜尋)要清單關著、焦點在觸發區。焦點在觸發區上直接打字 = 打開清單、字進搜尋框(欄位內或浮層內),欄位內搜尋框的讀屏名稱與欄位相同。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
     </div>
   ),
 }

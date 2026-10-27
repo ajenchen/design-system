@@ -144,3 +144,87 @@ export function returnFocusToOpener(event: Event, opener: HTMLElement | null | u
   // focusVisible 還不在本 repo 的 TypeScript DOM 型別裡(HTML 標準已有,見檔頭出處)
   target.focus({ preventScroll: byPointer, ...(byPointer ? { focusVisible: false } : null) } as FocusOptions)
 }
+
+/**
+ * @internal —— 只給 DS 的 PopoverContent 用,不是公開 API;不進 root barrel(lib/README「公開與否」)。
+ *
+ * **收起動畫不延後焦點歸還**(2026-10-21,r1b fields N1;待辦總帳 T11 的鍵盤面)。
+ *
+ * Radix 的「關閉後還焦點」掛在 FocusScope **卸載**的那一刻(`@radix-ui/react-focus-scope` 1.1.7 `dist/index.mjs` 卸載清理裡的 `setTimeout`):
+ * 浮層有收起動畫時要等動畫播完才卸載(Popover 150ms,`tokens/motion/overlay-motion.ts`)。這段期間焦點還留在正在淡出的浮層裡 ——
+ * Esc 收起後立刻按 Tab,Tab 在淡出的浮層裡走掉、動畫一結束又被拉回觸發點(看起來像 Tab 被吃掉);握著焦點的節點先卸載的
+ * (可搜尋 Select 的欄位內搜尋框)焦點則掉到 body。T11(2026-10-13)讓 Popover 的收起動畫真的會播之後才出現(修前關閉當下整個卸載,沒有這段空窗)。
+ *
+ * 這支把「還焦點」搬到**關閉的那一刻**(內容的 `data-state` 變成 `closed`):同一串判斷 —— consumer 的 `onCloseAutoFocus`,
+ * 沒被擋就走 Radix 自己的預設(`radixDefault`,由呼叫端照它包的 Radix 元件寫)—— 提早跑一次;淡出中的內容設 `inert`
+ * (Tab、點擊都進不去);真正卸載時不再搬第二次(使用者在淡出期間已經把焦點帶走 → 不搶回,同本檔 (a))。
+ * 收起動畫還沒播完又被打開(Radix Presence 沿用同一個節點,不會重跑開啟時的落點)→ 撤掉 `inert`、重跑開啟時的落點(`onOpenAutoFocus`)。
+ * 沒有收起動畫(使用者要求減少動態 → Presence 當下卸載)時節點在這一步已經不在畫面上,照 Radix 原樣在卸載時還。
+ *
+ * 世界級對照(兩個相關的做法,不是同一段程式):React Aria 的浮層在收起動畫期間「focus is allowed to move outside」
+ * (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/overlays/Overlay.tsx#L38-L41、#L75),
+ * FocusScope 卸載還焦點時「Only restore focus if we've lost focus to the body, the alternative is that focus has been purposefully moved elsewhere」
+ * (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx#L950-L952)。
+ *
+ * 消費者:`components/Popover/popover.tsx` PopoverContent(SelectMenu → Select / Combobox / PeoplePicker、DatePicker、TimePicker、
+ * DataTable 篩選 / 欄位顯示面板、AgentPanel 歷史浮層、Coachmark 全部經它)。
+ */
+export function useExitStartFocusReturn({ onCloseAutoFocus, onOpenAutoFocus, radixDefault }: {
+  /** 呼叫端組好的 onCloseAutoFocus(consumer 的那一支) */
+  onCloseAutoFocus?: (event: Event) => void
+  /** 收起動畫期間被重新打開時要重跑的開啟落點(呼叫端交給 Radix 的那一支) */
+  onOpenAutoFocus?: (event: Event) => void
+  /** consumer 沒擋時 Radix 自己會做的那一步(例:Popover 非 modal —— 沒互動過外面就還給觸發點) */
+  radixDefault: (event: Event) => void
+}): {
+  /** 掛在內容節點上(與 forwarded ref 合併) */
+  ref: (node: HTMLElement | null) => void
+  /** 交給 Radix 的 onCloseAutoFocus:已在關閉那一刻處理過 → 擋掉卸載時的第二次 */
+  onCloseAutoFocus: (event: Event) => void
+} {
+  const handledRef = React.useRef(false)
+  const latest = React.useRef({ onCloseAutoFocus, onOpenAutoFocus, radixDefault })
+  latest.current = { onCloseAutoFocus, onOpenAutoFocus, radixDefault }
+  const observed = React.useRef<{ node: HTMLElement; observer: MutationObserver } | null>(null)
+  React.useEffect(() => () => { observed.current?.observer.disconnect(); observed.current = null }, [])
+  const ref = React.useCallback((node: HTMLElement | null) => {
+    // Radix 每次重繪都換一支合併後的 ref(React 對同一個節點先給 null 再給節點):同一個節點不重掛,否則關閉那一下的變化會落在兩支觀察者之間、沒人看到
+    if (!node || observed.current?.node === node) return
+    observed.current?.observer.disconnect()
+    // 事件只派給這個節點、只有這裡聽:與 Radix 的 autoFocusOnUnmount 同形狀(cancelable、currentTarget = 內容),判斷式不用分兩套
+    const run = (name: string, handle: (event: Event) => void) => {
+      const event = new CustomEvent(name, { bubbles: false, cancelable: true })
+      node.addEventListener(name, handle, { once: true })
+      node.dispatchEvent(event)
+    }
+    const observer = new MutationObserver(() => {
+      const closed = node.getAttribute('data-state') === 'closed'
+      if (closed && !handledRef.current && node.isConnected) {
+        handledRef.current = true
+        run('ds.closeAutoFocusAtExitStart', (event) => {
+          latest.current.onCloseAutoFocus?.(event)
+          if (!event.defaultPrevented) latest.current.radixDefault(event)
+        })
+        node.inert = true
+      } else if (!closed && handledRef.current) {
+        handledRef.current = false
+        node.inert = false
+        run('ds.openAutoFocusDuringExit', (event) => {
+          latest.current.onOpenAutoFocus?.(event)
+          if (!event.defaultPrevented) node.focus({ preventScroll: true })
+        })
+      }
+    })
+    observer.observe(node, { attributes: true, attributeFilter: ['data-state'] })
+    observed.current = { node, observer }
+  }, [])
+  const handleCloseAutoFocus = React.useCallback((event: Event) => {
+    if (handledRef.current) {
+      handledRef.current = false
+      event.preventDefault()
+      return
+    }
+    latest.current.onCloseAutoFocus?.(event)
+  }, [])
+  return { ref, onCloseAutoFocus: handleCloseAutoFocus }
+}

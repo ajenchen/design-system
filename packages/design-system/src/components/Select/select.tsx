@@ -3,7 +3,6 @@
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
-import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
@@ -920,15 +919,6 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // 觸發欄位內的搜尋框握著焦點時,按欄位上的其他東西(清除 ×、選中值疊字、空白處、箭頭)焦點不離開搜尋框,click 照常動作
         // (2026-09-30;判準共用 lib/pointer-press.ts,Combobox 觸發區同一支;規則 select-menu.spec.md「A11y 預設」Focus 段的焦點表)
         onMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, searchable ? inputRef.current : null)}
-        // 觸發欄位 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;
-        // 可搜尋 → 欄位內的搜尋框,本來就在欄位裡)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次。
-        // 2026-10-01 前一開清單就 blur,必填錯誤在還沒選任何東西時就長出來(實測)
-        // 真的離開欄位(觸發欄位與浮層都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
-        onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId }, (event: React.FocusEvent<HTMLDivElement>) => {
-          clearRemoval()
-          // 轉型:SelectProps 的 onBlur 沿用 <select> 的事件型別(手機原生分支共用),桌機觸發欄位是 div;只在真的離開欄位時轉給 consumer(待辦總帳 N83;68d7860d 加,2026-10-14 複查)
-          ;(onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)?.(event)
-        })}
         onKeyDown={(e) => {
           // passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上
           // consumer handler 同樣最先收到);component 導覽邏輯照舊在後。
@@ -948,8 +938,10 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           // forwardKeyToListbox docblock — 原「open 後不攔讓方向鍵導覽」在跨 DOM 子樹機制上不成立)
           if (open && forwardKeyToListbox(listboxId, e)) return
           // 關鍵字空白時 Backspace = 按清除 ×(2026-10-07 待辦總帳 K1):只在 clearable —— 必須有值的欄位不開 clearable(select.spec.md「何時開 clearable」),
-          // Backspace 不能做出 × 做不到的事;焦點在欄位本身或搜尋框都算;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」
-          if (searchable && showClear && isRemoveLastValueKey(e, search)) {
+          // Backspace 不能做出 × 做不到的事;焦點在欄位本身或搜尋框都算;連發 / 組字中不算(select-menu-keyboard.ts isRemoveLastValueKey);念「已移除『X』」。
+          // 可搜尋與否都一樣(K1「Select 單選只在可清除時清值」沒有可搜尋的條件;不可搜尋時清單開著焦點在浮層裡、鍵盤事件不經過這裡 = 清單關著、焦點在欄位本身,
+          // 與不可搜尋的 Combobox 同一格 K1b (a))。2026-10-21 前多了 `searchable &&`,不可搜尋 + 可清除的 Select 按 Backspace 不清(r1b fields F3)
+          if (showClear && isRemoveLastValueKey(e, search)) {
             e.preventDefault()
             announceRemoval(selectedLabel, '')
             clearValue()
@@ -1004,6 +996,15 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           open={open}
           onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
           contentId={listboxId}
+          // 觸發欄位 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83;判準由握著兩邊的 SelectMenu 掛):
+          // 開啟時焦點搬進浮層(不可搜尋 → cmdk 殼;可搜尋 → 欄位內的搜尋框)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次 ——
+          // 從觸發欄位離開、從浮層直接離開(開著點空白處 / 點下一格 / 按 Tab)、握著焦點的搜尋框隨收起卸載,都算(2026-10-21 r1b fields F1)。
+          // 2026-10-01 前一開清單就 blur,必填錯誤在還沒選任何東西時就長出來(實測)。離開時也讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
+          onFieldBlur={(event) => {
+            clearRemoval()
+            // 轉型:SelectProps 的 onBlur 沿用 <select> 的事件型別(手機原生分支共用),桌機觸發欄位是 div(68d7860d 加,2026-10-14 複查)
+            ;(onBlurProp as unknown as ((event: React.FocusEvent<HTMLDivElement>) => void) | undefined)?.(event)
+          }}
           // 只有搜尋框在觸發欄位時才需要(不可打字時焦點在浮層裡,Command 自己寫好清單的 aria-activedescendant)
           onActiveOptionChange={searchable ? onActiveOptionChange : undefined}
           renderLabel={renderLabel}

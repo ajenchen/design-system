@@ -2,8 +2,9 @@
 /**
  * @gate-contract
  *   保證: LinkInput 的 view / readonly / disabled / edit 與 DataTable 連結格,只有合法 http(s) 網址(與檢視時的站內路徑)畫成連結,其他值是一般文字,所有 href 只能是 http(s) 或同一個網站
- *   紅: 判定表對「不合法的值畫成連結」「javascript: href」「合法網址沒畫成連結」「//host 畫成連結」「站內路徑沒畫成連結」各一個合成輸出必紅;7777b61c 的原始碼跑紅 140 格
- *   綠: 修好的原始碼 7 種模式 × 14 種值全綠;真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅
+ *   紅: 判定表對「不合法的值畫成連結」「javascript: href」「合法網址沒畫成連結」「//host 畫成連結」「站內路徑沒畫成連結」「停用時字與唯讀不同」各一個合成輸出必紅;
+ *       7777b61c 的原始碼跑紅 140 格;a6390356 的原始碼紅停用 7 格(javascript: 三種寫法 / data: / mailto: / tel: 被畫成「-」,ftp: 只剩主機名,2026-10-21 r1b fields F2)
+ *   綠: 修好的原始碼每一種模式 × 每一種值全綠(MODES × VALID / SAME_SITE / INVALID,數量以本檔為準);真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅
  * ─────
  * 網址值的顯示:只有合法的 http(s) 網址畫成連結,其他一律一般文字(2026-10-13,待辦總帳 Q3e)。
  *
@@ -34,7 +35,7 @@ const ESBUILD = path.join(ROOT, 'node_modules', '.bin', 'esbuild')
 export const VALID = ['https://github.com/acme/web', 'http://intranet.example.com/wiki']
 /** 站內路徑:檢視 / 唯讀 / 表格格畫成連結(修前就是,AgentPanel 網址登記示範靠它);編輯模式不收(驗證只收 http(s)) */
 export const SAME_SITE = ['/projects/8821/tasks/4821']
-export const INVALID = ['www.example.com/pricing', 'javascript:alert(1)', 'JAVASCRIPT:alert(1)', ' javascript:alert(1)', 'data:text/html,<b>x</b>', 'mailto:ops@example.com', 'ftp://files.example.com/a', 'shop example',
+export const INVALID = ['www.example.com/pricing', 'javascript:alert(1)', 'JAVASCRIPT:alert(1)', ' javascript:alert(1)', 'data:text/html,<b>x</b>', 'mailto:ops@example.com', 'tel:+886223456789', 'ftp://files.example.com/a', 'shop example',
   // 以 / 開頭、卻會被瀏覽器正規化成別的網站的寫法 —— 不是站內路徑
   '//evil.example/x', '/\\evil.example', '/\t/evil.example']
 const ALL = [...VALID, ...SAME_SITE, ...INVALID]
@@ -56,8 +57,14 @@ export function judge(results) {
       const r = results[key]
       if (!r) { failures.push(`${key}: 沒量到`); continue }
       for (const a of r.anchors) if (!allowedProtocol(a.href)) failures.push(`${key}: href「${a.href}」不是 http(s)`)
-      // disabled 一律純文字(不可點,規則見 spec「readonly / disabled」),不論合不合法
-      if (mode === 'disabled') { if (r.anchors.length) failures.push(`${key}: disabled 不該有連結`); continue }
+      // disabled 一律純文字(不可點,規則見 spec「readonly / disabled」),不論合不合法;顯示的字與 readonly 同一份(停用只換顏色,
+      // 有值不能顯示成空值 —— M24;2026-10-21 r1b fields F2:修前 mailto: / tel: / javascript: / data: 在停用時畫成「-」)
+      if (mode === 'disabled') {
+        if (r.anchors.length) failures.push(`${key}: disabled 不該有連結`)
+        const ro = results[`readonly|${value}`]
+        if (ro && norm(r.text) !== norm(ro.text)) failures.push(`${key}: disabled 顯示「${norm(r.text).slice(0, 40)}」,readonly 顯示「${norm(ro.text).slice(0, 40)}」—— 停用只換顏色,字應相同`)
+        continue
+      }
       const linkable = VALID.includes(value) || (SAME_SITE.includes(value) && mode !== 'edit')
       if (linkable && r.anchors.length !== 1) failures.push(`${key}: 應畫成 1 個連結,實際 ${r.anchors.length}`)
       if (!linkable && mode !== 'edit' && r.anchors.length !== 0) failures.push(`${key}: 不合法的值應是一般文字,實際 ${r.anchors.length} 個連結`)
@@ -132,6 +139,8 @@ function selftest() {
   if (!judge(bad4).some((f) => /不是 http\(s\)|不合法的值應是一般文字/.test(f))) { console.error('✗ selftest:會被正規化成別的網站的 //host 畫成連結應紅'); ok = false }
   const bad5 = { ...good, 'readonly|/projects/8821/tasks/4821': { anchors: [], text: '/projects/8821/tasks/4821' } }
   if (!judge(bad5).some((f) => /應畫成 1 個連結/.test(f))) { console.error('✗ selftest:站內路徑沒畫成連結應紅'); ok = false }
+  const bad6 = { ...good, 'disabled|mailto:ops@example.com': { anchors: [], text: ' - ' } }
+  if (!judge(bad6).some((f) => /停用只換顏色/.test(f))) { console.error('✗ selftest:停用時把有值的格畫成「-」應紅'); ok = false }
   if (judge({}).length < MODES.length) { console.error('✗ selftest:空結果應每格都紅'); ok = false }
   // 儀器有眼睛:真的渲染一次,合法網址在 view / readonly / 表格格都讀得到連結
   const out = measure()

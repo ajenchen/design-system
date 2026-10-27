@@ -68,7 +68,7 @@ PeoplePicker 是**人員選擇器**——專為「從人員清單中選一個或
 
 Multi mode 公開 `multiDisplay` / `pillShowAvatar` / `pillWrap` 三個顯示 props(jsDoc SSOT 見 `people-picker.tsx` `PeoplePickerProps`;single mode 忽略):`multiDisplay='stack'`(default)= Avatar 疊合 + 圓形 `+N` overflow、不可 wrap;`'pill'` opt-in = 每人矩形 Tag pill、可 wrap(對齊 GitHub Reviewers / Combobox tag-input idiom)。`pillShowAvatar`(default `true`)控 pill 內 avatar prefix,`false` → 純文字 pill(對齊 Tag 元件 `avatar` prop SSOT);`pillWrap`(default `true`)控 pill 換行(對齊 Combobox `wrap` prop)。
 
-Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別轉送 wrapped Combobox 的可見 placeholder 與搜尋 input accessible name；`emptyText` 只負責 filtered-menu 空態，三者不互相代用。Single mode 的 inline search accessible name 沿用 PeoplePicker `aria-label` / Field label，因底層 Select 不公開獨立 `searchAriaLabel`。
+Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別轉送 wrapped Combobox 的可見 placeholder 與搜尋 input accessible name；`emptyText` 只負責 filtered-menu 空態，三者不互相代用。Single mode 的 inline search accessible name 沿用 PeoplePicker `aria-label` / Field label，因底層 Select 不公開獨立 `searchAriaLabel`。**Multi `searchIn='trigger'`(欄位內搜尋框)與 Single 同一條**:有欄位名稱(`aria-label` / Field label)時用欄位名稱,`searchAriaLabel` 只在兩者都沒有時當退路(2026-10-21,r1b fields N2;規則住 `../Combobox/combobox.tsx` `searchAriaLabel` 與 `../Select/select.spec.md`「ARIA / Pattern」)—— 修前打字把焦點搬進欄位內搜尋框後,讀屏從「必要出席者」變成「搜尋人員」;浮層內搜尋框(`searchIn='menu'`,預設)仍用 `searchAriaLabel`。
 
 ---
 
@@ -216,13 +216,13 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 ## 觸控裝置(native 分支)
 
-觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上 wrapped Select / Combobox 切至 native 分支(下拉 = 原生 `<select>` picker)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
+觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上**單人**(wrapped Select)切至 native 分支(下拉 = 原生 `<select>` picker);**多人**(wrapped Combobox)不分裝置只有自建浮層一條路(2026-09-18 起,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」;2026-10-21 更正本句原寫「Select / Combobox 切至 native 分支」)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
 - **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:184` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
 - **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套 — pill 上的 X 照常可點(移除成員)。**2026-09-18 更正**:原文說 pill 本體 tap 會「穿透喚起原生 picker」,那是舊觸控路徑的機制;Combobox 已無原生路徑(見 `combobox.spec.md`「單一路徑(不分裝置)」),新增成員改為點欄位開同一套自訂浮層
-- **選單**:觸控走原生 `<select>` picker(Combobox 觸控 SSOT,平台 a11y 最佳);原生選項無法渲 avatar 屬平台限制,桌機選單維持 PeoplePicker avatar + description 選項不變
-- 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
+- **選單**:單人觸控走原生 `<select>` picker(Select 的觸控路徑,`../Select/select.spec.md`「實作:裝置自適應雙路徑」);原生選項無法渲 avatar 屬平台限制。多人(Combobox)觸控開的是與桌機同一套自建浮層,avatar + description 選項照常(2026-10-21 更正:原句寫「Combobox 觸控 SSOT」走原生 picker,該路徑 2026-09-18 已移除)
+- 一鍵清空 X(`clearable`):單人由基座 native 分支(NativeSelect)自行渲染;多人與桌機同一個 Combobox 觸發區,觸控同樣可用
 
 ---
 

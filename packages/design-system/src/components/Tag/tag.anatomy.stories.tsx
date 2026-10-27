@@ -218,7 +218,7 @@ export const Overview = {
       {/* Variant catalog */}
       <div className="flex flex-col gap-3">
         <H3>Variant 一覽</H3>
-        <Desc>以色名命名（色名即色相），語義由消費端內容與上下文決定。13 色（neutral + 12 categorical 色相）皆直接消費 primitive token（{'`--color-{hue}-*`'}），不對應語義 token。</Desc>
+        <Desc>以色名命名（色名即色相），語義由消費端內容與上下文決定。13 色（neutral + 12 categorical 色相）皆直接消費 primitive token（<code>{"--color-{hue}-*"}</code>），不對應語義 token。</Desc>
         <div className="flex flex-col gap-2">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">

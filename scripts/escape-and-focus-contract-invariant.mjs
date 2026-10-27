@@ -12,7 +12,7 @@
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
  *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
  *        Combobox「+N」浮出清單也算同一個欄位;可聚焦的停用(忙碌 / 握著焦點時被停用)滑過、按住都與原生停用同色(2026-10-07,後三列用同一棵樹編出的 DS 樣式)。
- *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(二十七個,見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
+ *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(清單與個數見 MUTANTS),每個突變都必須**剛好**紅它負責的那幾列
  *        (多紅少紅都算量具不可信),契約列每一條都要被某個突變弄紅過。`--root=<修改前的整棵原始碼>` 跑 = 天然對照組(修改前 2026-10-01 基準樹:
  *        除 F-remove / E-combobox-popup / E-unchained 外契約列全紅,兩條對照列綠。這三列守的是修好之後才可能出現的回歸,基準樹本來就綠:F-remove = 本批工作中途
  *        把三份接力收成一支時引入、獨立驗證抓到的那一版;E-combobox-popup = Combobox 接上表單之後「清單開著按 Esc 又關清單又回復」—— 基準樹的
@@ -56,6 +56,11 @@
  *                      (2026-10-13 待辦總帳 Q3c;獨立驗證抓到這一層沒有登記、也沒有閘。7777b61c 基準樹:Enter 按了沒反應、兩下就關,只有這一列紅)
  *   E-unchained        Dialog 裡 consumer 展開 getInputProps 後自己蓋掉 onKeyDown、沒轉呼叫(輸入框 + 可打字 DatePicker),欄位改過 → 第一下 Esc 就關
  *                      (沒有回復,但不困住;lib/overlay-escape.ts「宣告 ≠ 處理」)
+ *   B-leave-blank / B-leave-next / B-leave-tab(2026-10-21 r1b fields F1)必填的 Select / 可搜尋 Select / Combobox / DatePicker / TimePicker:
+ *                      彈出層開著時點空白處 / 直接點下一格 / (兩種 Select)按 Tab 離開 → 那一欄的驗證跑一次(修前從彈出層直接離開時 consumer 收不到 blur)
+ *   N-esc-tab          (2026-10-21 r1b fields N1)Esc 收起後、收起動畫還在播時按 Tab → 焦點走到觸發點的下一格(五種欄位 + 一般 Popover;
+ *                      修前 Radix 等內容卸載才還焦點,Tab 被吃掉)。Tab 必須真的落在那段空窗裡(量 Tab 與內容卸載的時間),否則儀器失效
+ *   CTRL-leave(對照)  彈出層關著時 Tab 離開必填 Select → 驗證跑一次
  *   B-overflow         必填 Combobox(非搜尋型,窄欄位、四個 Tag)焦點在觸發區,用滑鼠按「+N」浮出清單裡的 ×(焦點搬進卡)→ consumer 的 onBlur 不跑;
  *                      焦點移到欄位外的按鈕 → 跑一次
  *   F-look             可聚焦的停用(忙碌鈕 8 種 variant / danger;存檔後握著焦點的送出鈕)與原生停用逐項同色:靜止 / 滑過 / 按住 × 淺深兩色,
@@ -69,7 +74,8 @@
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
- *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow;不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
+ *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow / B-leave-* / N-esc-tab;彈出層關掉的那一下不補量 → B-leave-blank / -next / -tab;
+ *   收起動畫期間不提早還焦點 → N-esc-tab;不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
  *   FileViewer 自己記開啟者(不經 useTriggerlessFocusReturn,2026-10-20 前的寫法)→ F-menu-fileviewer;FileUpload 不以被點的 × 為基準 → F-remove
  *   結算 Enter 不 preventDefault → F-enter-commit;LinkInput Enter 一律 blur → F-link-enter-stay
  *   輸入盒外框不留焦點 → C-composer-mouse;輸入盒不接力 → C-composer-keyboard
@@ -80,7 +86,8 @@
  *
  * 用法:
  *   node scripts/escape-and-focus-contract-invariant.mjs                  判定(現行原始碼)
- *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(二十七個單一根因突變)
+ *   node scripts/escape-and-focus-contract-invariant.mjs --selftest       對照組(全部單一根因突變,個數見 MUTANTS)
+ *   node scripts/escape-and-focus-contract-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;覆蓋率靜態驗)
  *   node scripts/escape-and-focus-contract-invariant.mjs --root=<dir>     改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import {
@@ -104,14 +111,29 @@ const SELFTEST = process.argv.includes('--selftest')
 const SOURCE_ROOT = resolveSourceRoot()
 /**
  * selftest 同時跑幾個突變(每條 lane 一個瀏覽器、一個分頁 —— 同 story-demo-focus:焦點與鍵盤事件不跨 lane 共用)。
- * 單一突變要把 26 列整趟走完(約 60 秒,大多是等版面 / 焦點靜止,CPU 約 20%),26 個變體循序要 26 分鐘;
+ * 單一突變要把全部列整趟走完(大多是等版面 / 焦點靜止,CPU 約 20%;2026-10-21 加 B-leave / N-esc-tab 之後每趟多約 33 秒),全部變體循序跑要半小時以上;
  * 判定(非 selftest)只跑一趟,不受影響。`--lanes=1` = 循序(除錯用)。
  */
 const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes='))?.slice('--lanes='.length) ?? 4) || 4)
 /** 除錯用:`--only=<突變 id>[,<id>…]` 只跑這幾個突變(不檢查覆蓋率 —— 這一趟不算 selftest 通過,結尾會明說) */
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null
+/**
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑)。CI 把對照組拆成 n 片平行跑(ci.yml
+ * verify-browser-escape-focus-control 的 matrix;2026-10-21 加 B-leave / N-esc-tab 之後整趟估 1.3–1.5 倍,單一 job 會貼到 25 分上限):
+ * 各片各自驗「每個突變剛好紅它的 expectRed」;覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed(各片都證明了自己的突變
+ * 剛好紅 expectRed,所有片合起來 = 動態覆蓋)。不給 = 一片跑全部(本機 `npm run test:escape-and-focus-contract`、meta-test)。
+ */
+const SHARD = (() => {
+  const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
+  if (raw == null) return null
+  const m = /^(\d+)\/(\d+)$/.exec(raw)
+  const k = m ? Number(m[1]) : NaN
+  const n = m ? Number(m[2]) : NaN
+  if (!m || !(n >= 1) || !(k >= 0 && k < n)) { console.error(`✗ --shard=${raw} 寫法不對(要 <k>/<n>,0 ≤ k < n)`); process.exit(2) }
+  return { k, n }
+})()
 
-// ─── 二十七個單一根因突變(--selftest;file 相對 packages/design-system/src)──────────────────────
+// ─── 單一根因突變(--selftest;file 相對 packages/design-system/src;個數不抄進註解)──────────────────────
 const MUTANTS = [
   {
     id: 'link-input-consumer-first-raw',
@@ -204,8 +226,8 @@ const MUTANTS = [
     id: 'composite-blur-forwards-always',
     what: '複合欄位的 blur 一律轉呼叫(焦點搬進彈出層也算離開)',
     file: 'lib/composite-field-focus.ts',
-    // 「+N」卡是同一支判準的零件,一律轉呼叫時它也算離開(B-overflow 連帶紅)
-    expectRed: ['B-overflow', 'B-popup'],
+    // 「+N」卡是同一支判準的零件,一律轉呼叫時它也算離開(B-overflow 連帶紅);B-leave-* / N-esc-tab 要求「打開那一刻沒有驗證」,同一個根因連帶紅
+    expectRed: ['B-overflow', 'B-popup', 'B-leave-blank', 'B-leave-next', 'B-leave-tab', 'N-esc-tab'],
     apply: (src) => replaceOnce(src, /if \(!isWithinCompositeField\(event\.relatedTarget, parts\)\) forward\(\)/, 'forward()'),
   },
   {
@@ -253,7 +275,7 @@ const MUTANTS = [
     what: '可打字的 DatePicker 收起日曆時不把焦點還給輸入框(Radix 還給不可聚焦的外層 div = 掉到 body)',
     file: 'components/DatePicker/date-picker.tsx',
     expectRed: ['F-date-return'],
-    apply: (src) => replaceOnce(src, /\n          onCloseAutoFocus=\{typeable \? \(e\) => returnFocusToOpener\(e, typedInputRef\.current, \{ noTrigger: true \}\) : undefined\}/, ''),
+    apply: (src) => replaceOnce(src, /if \(typeable\) returnFocusToOpener\(e, typedInputRef\.current, \{ noTrigger: true \}\); /, ''),
   },
   {
     id: 'button-held-focus-native-disabled',
@@ -304,7 +326,23 @@ const MUTANTS = [
     what: 'Combobox 不把「+N」浮出清單算進欄位(按卡裡的 × 焦點搬進卡 = 離開欄位、跑 consumer 的 onBlur)',
     file: 'components/Combobox/combobox.tsx',
     expectRed: ['B-overflow'],
-    apply: (src) => replaceOnce(src, /, extra: \(\) => \[document\.getElementById\(overflowCardId\)\] \}/, ' }'),
+    // 2026-10-21:「+N」卡改經 SelectMenu 的 fieldParts 交給 useCompositeFieldBlur(r1b fields F1)—— 錨點跟著搬,拆掉的仍是同一件事
+    apply: (src) => replaceOnce(src, /fieldParts=\{\(\) => \[document\.getElementById\(overflowCardId\)\]\}/, 'fieldParts={() => []}'),
+  },
+  {
+    id: 'composite-blur-no-close-check',
+    what: '彈出層關掉的那一下不補量(握著焦點的節點隨收起卸載、或焦點從彈出層直接離開,都沒有人轉 blur;2026-10-21 r1b fields F1 前的形狀)',
+    file: 'lib/composite-field-focus.ts',
+    // N-esc-tab 不在內:Esc 之後焦點先回觸發欄位,Tab 是從觸發欄位離開(觸發欄位那一邊的 blur 照常轉)
+    expectRed: ['B-leave-blank', 'B-leave-next', 'B-leave-tab'],
+    apply: (src) => replaceOnce(src, /if \(!insideRef\.current \|\| !latest\.current\.onBlur\) return/, 'return'),
+  },
+  {
+    id: 'exit-start-focus-return-off',
+    what: '收起動畫期間不提早還焦點(等內容卸載才由 Radix 還;T11 之後 2026-10-21 r1b fields N1 前的形狀)',
+    file: 'lib/overlay-focus-return.ts',
+    expectRed: ['N-esc-tab'],
+    apply: (src) => replaceOnce(src, /if \(closed && !handledRef\.current && node\.isConnected\) \{/, 'if (false) {'),
   },
   {
     id: 'button-focusable-keeps-aria-disabled-look',
@@ -595,7 +633,52 @@ function LookScene() {
   )
 }
 
+// B-leave / N-esc-tab(2026-10-21 r1b fields F1 / N1):必填的五種彈出型欄位 + 一個一般 Popover;consumer 的 onBlur 逐欄計次
+const LEAVE_BANKS = [{ value: '004', label: '004 臺灣銀行' }, { value: '812', label: '812 台新銀行' }, { value: '822', label: '822 中國信託' }]
+function LeaveScene() {
+  const form = useFormValidation({
+    initialValues: { bank: '', branch: '', tags: [], due: '', at: '' },
+    validate: {
+      bank: (v) => (v ? undefined : '收款銀行必填'), branch: (v) => (v ? undefined : '分行必填'), tags: (v) => (v.length ? undefined : '標籤必填'),
+      due: (v) => (v ? undefined : '截止日必填'), at: (v) => (v ? undefined : '時間必填'),
+    },
+    onSubmit: () => {},
+  })
+  const p = (k) => { const props = form.getInputProps(k); return { ...props, onBlur: (e) => { count('blur:' + k); props.onBlur(e) } } }
+  const err = (k) => (form.errors[k] ? <p role="alert" data-error-for={k}>{form.errors[k]}</p> : null)
+  return (
+    <div style={{ display: 'flex', gap: 40 }}>
+      <form aria-label="離開表單" style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 280 }}>
+        <Select aria-label="收款銀行" options={LEAVE_BANKS} {...p('bank')} />{err('bank')}
+        <Select aria-label="分行" searchable options={LEAVE_BANKS} {...p('branch')} />{err('branch')}
+        <Combobox aria-label="標籤" options={TAGS} {...p('tags')} />{err('tags')}
+        <DatePicker aria-label="截止日" {...p('due')} value={form.values.due || null} />{err('due')}
+        <TimePicker aria-label="時間" {...p('at')} />{err('at')}
+      </form>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 280 }}>
+        <input aria-label="備註" data-leave-next />
+        <div data-leave-blank style={{ height: 240 }} />
+        <Popover>
+          <PopoverTrigger asChild><Button data-leave-pop>篩選</Button></PopoverTrigger>
+          <PopoverContent aria-label="篩選面板"><div style={{ padding: 16 }}><Button>套用</Button></div></PopoverContent>
+        </Popover>
+        <button type="button" data-leave-after>之後</button>
+      </div>
+    </div>
+  )
+}
+// N-esc-tab:Tab 按下的時間 vs 收起動畫播完(浮層內容卸載)的時間 —— 只有 Tab 落在那段空窗裡,這一格才量得到東西
+window.__exitWatch = () => {
+  window.__tabAt = null; window.__exitEndAt = null
+  const mo = new MutationObserver(() => {
+    if (window.__exitEndAt == null && !document.querySelector('[data-radix-popper-content-wrapper] [role="dialog"]')) { window.__exitEndAt = performance.now(); mo.disconnect() }
+  })
+  mo.observe(document.body, { childList: true, subtree: true })
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Tab' && window.__tabAt === null) window.__tabAt = performance.now() }, true)
+
 const SCENES = {
+  leave: () => <LeaveScene />,
   link: () => <LinkScene initial="https://acme.com/docs" />,
   linkEmpty: () => <LinkScene initial="" />,
   inline: () => <InlineScene />,
@@ -647,6 +730,10 @@ window.__extra = {
   },
   page: () => ({ current: q('[aria-current="page"]')?.textContent?.trim() ?? null, nextAriaDisabled: q('button[aria-label="下一頁"]')?.getAttribute('aria-disabled') === 'true', nextNativeDisabled: q('button[aria-label="下一頁"]')?.disabled ?? null }),
   unchained: () => ({ values: q('[data-unchained]')?.textContent ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), keys: { title: window.__calls['title-key'] ?? 0, due: window.__calls['due-key'] ?? 0 } }),
+  leave: () => ({
+    errors: Array.from(document.querySelectorAll('[data-error-for]')).map((e) => e.getAttribute('data-error-for')).sort(),
+    blur: Object.fromEntries(Object.entries(window.__calls).filter(([k]) => k.startsWith('blur:')).map(([k, v]) => [k.slice(5), v])),
+  }),
   overflow: () => {
     const trigger = q('form[aria-label="標籤表單"] [role="combobox"]')
     return {
@@ -1020,6 +1107,92 @@ async function runChecks(page) {
   check('B-overflow', 'contract', '必填 Combobox(非搜尋型,窄欄位四個 Tag)焦點在觸發區,用滑鼠按「+N」浮出清單裡的 × → 那一項移除、consumer 的 onBlur 不跑(焦點搬進卡不算離開);焦點移到欄位外的按鈕 → 跑一次',
     afterCard.tags?.split(',').length === 3 && afterCard.blur === 0 && afterLeave.blur === 1, { before, afterCard, afterLeave })
 
+  // ── B-leave / N-esc-tab(2026-10-21 r1b fields F1 / N1;用到版面與收起動畫,放在注入樣式之後)──
+  // 彈出層開著時離開欄位(點空白處 / 直接點下一格 / 不可搜尋與可搜尋的 Select 按 Tab),必填驗證跑一次;Esc 收起後馬上按 Tab 走到下一格
+  const LF = 'form[aria-label="離開表單"] [role="combobox"]'
+  const LEAVE = [
+    { key: 'bank', sel: `${LF}[aria-label="收款銀行"]`, popup: '[cmdk-root]', kbd: 'ArrowDown', next: 'DIV:分行' },
+    { key: 'branch', sel: `${LF}[aria-label="分行"]`, popup: '[cmdk-item]', kbd: 'ArrowDown', next: 'DIV:標籤' },
+    { key: 'tags', sel: `${LF}[aria-label="標籤"]`, popup: '[cmdk-item]', kbd: 'ArrowDown', next: 'DIV:截止日' },
+    { key: 'due', sel: `${LF}[aria-label="截止日"]`, popup: '[role="dialog"][aria-label="日期選擇"]', kbd: 'Enter', next: 'DIV:時間' },
+    { key: 'at', sel: `${LF}[aria-label="時間"]`, popup: '[role="dialog"][aria-label="選擇時間"]', kbd: 'Enter', next: 'INPUT:備註' },
+  ]
+  const leaveRun = async (c, how) => {
+    await scene('leave')
+    if (how === 'kbd') { await d.focus(c.sel); await d.press(c.kbd) } else await d.click(c.sel)
+    await waitSel(c.popup, `${c.key} 的彈出層沒開`)
+    // 打開那一刻就驗證了 = 焦點搬進彈出層被當成離開(N83 / B-popup 那一條);這幾列連帶紅,不當成儀器失效
+    const open = await snap('leave')
+    return open.errors.length === 0 && !open.blur[c.key]
+  }
+  const leaveOk = (s, key) => s.openClean && s.errors.includes(key) && s.blur[key] === 1
+  const blank = {}
+  for (const c of LEAVE) {
+    const openClean = await leaveRun(c, 'click')
+    const b = await page.locator('[data-leave-blank]').boundingBox()
+    needs(b, '量不到空白處', null)
+    await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); await d.settle(); await d.focusStable()
+    blank[c.key] = { ...(await snap('leave')), openClean }
+  }
+  check('B-leave-blank', 'contract', '必填的 Select / 可搜尋的 Select / Combobox / DatePicker / TimePicker 經 getInputProps 接線:彈出層開著時點空白處 → 那一欄的驗證跑一次、錯誤出現(修前五種都不跑,要等送出)',
+    LEAVE.every((c) => leaveOk(blank[c.key], c.key)), blank)
+  const nextField = {}
+  for (const c of LEAVE) {
+    const openClean = await leaveRun(c, 'click')
+    await d.click('[data-leave-next]')
+    nextField[c.key] = { ...(await snap('leave')), openClean }
+  }
+  check('B-leave-next', 'contract', '同上五種:彈出層開著時直接點下一格(一般輸入框)→ 焦點在那一格、那一欄的驗證跑一次、錯誤出現(最常見的走法;修前五種都不跑)',
+    LEAVE.every((c) => leaveOk(nextField[c.key], c.key) && nextField[c.key].active === 'INPUT:備註'), nextField)
+  const tabbed = {}
+  for (const c of LEAVE.slice(0, 2)) {
+    const openClean = await leaveRun(c, 'kbd')
+    await d.press('Tab')
+    tabbed[c.key] = { ...(await snap('leave')), openClean }
+  }
+  check('B-leave-tab', 'contract', '不可搜尋與可搜尋的 Select 清單開著按 Tab → 選定反白那一項、焦點走到下一格、那一欄的驗證跑一次(修前不跑;Combobox / DatePicker / TimePicker 開著按 Tab 照規格在面板裡繞圈,不算離開)',
+    LEAVE.slice(0, 2).every((c) => tabbed[c.key].openClean && tabbed[c.key].blur[c.key] === 1 && tabbed[c.key].active === c.next), tabbed)
+  const escTab = {}
+  // 量這一列時把收起動畫放慢到 1200ms(同 select-tab-leave 的注入):Esc → 確認收起已開始 → Tab 三步都經 CDP 來回,
+  // 產品的 150ms 空窗在慢的 runner 上會被整段跨過 —— 2026-10-21 selftest 四條 lane 並行時實測 Tab 晚到 8ms、或連「收起已開始」都沒看到
+  // 就已卸載,兩次都成了儀器失效(M32 第四題:機器慢的時候還會綠嗎)。放慢不改變被量的事:修前焦點要等內容卸載才還(Tab 落在
+  // 空窗裡照樣被吃掉),修後在收起開始那一刻就還,與動畫多長無關。
+  const EXIT_SLOW_CSS = '[data-radix-popper-content-wrapper] [data-state="closed"] { animation-duration: 1200ms !important; transition-duration: 1200ms !important }'
+  const escTabRun = async (key, open, contentSel, next) => {
+    await scene('leave')
+    await open()
+    const slow = await page.addStyleTag({ content: EXIT_SLOW_CSS })
+    try {
+      await page.evaluate(() => window.__exitWatch())
+      await page.keyboard.press('Escape')
+      // 收起動畫已經開始、內容還在(Radix 等內容卸載才還焦點的那段空窗)才按 Tab
+      await page.waitForFunction((sel) => !!document.querySelector(`${sel}[data-state="closed"]`), contentSel, { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError(`${key}:Esc 之後等不到收起動畫開始(${contentSel})`) })
+      await page.keyboard.press('Tab')
+      // 等內容真的卸載(修前的焦點歸還發生在這一刻)再讀焦點,不靠「版面靜止」剛好等得夠久
+      await page.waitForFunction(() => window.__exitEndAt != null, null, { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError(`${key}:收起動畫播不完(浮層內容一直沒卸載)`) })
+      await d.settle(); await d.focusStable()
+      const t = await page.evaluate(() => ({ tabAt: window.__tabAt, exitEndAt: window.__exitEndAt }))
+      needs(t.tabAt != null && t.exitEndAt != null && t.tabAt < t.exitEndAt, `${key}:Tab 沒落在收起動畫期間(量不到那段空窗)`, t)
+      escTab[key] = { ...(await snap('leave')), next }
+    } finally {
+      await slow.evaluate((n) => n.remove()).catch(() => {})
+    }
+  }
+  for (const c of LEAVE) {
+    const content = c.popup.startsWith('[role="dialog"]') ? c.popup : '[data-radix-popper-content-wrapper] [role="dialog"]'
+    await escTabRun(c.key, async () => { await d.focus(c.sel); await d.press(c.kbd); await waitSel(c.popup, `${c.key} 的彈出層沒開`) }, content, c.next)
+  }
+  await escTabRun('popover', async () => { await d.focus('[data-leave-pop]'); await d.press('Enter'); await waitSel('[aria-label="篩選面板"]', 'Popover 沒開') }, '[aria-label="篩選面板"]', 'BUTTON:之後')
+  check('N-esc-tab', 'contract', 'Esc 收起後、收起動畫還在播時按 Tab(五種欄位 + 一般 Popover)→ 焦點走到觸發點的下一格(不停在原處、不掉到 body);欄位的驗證跑一次(修前 Tab 被吃掉:焦點停在原欄位,可搜尋 Select 掉到 body;T11 讓收起動畫真的會播之後才有)',
+    LEAVE.every((c) => escTab[c.key].active === c.next && escTab[c.key].blur[c.key] === 1) && escTab.popover.active === 'BUTTON:之後', escTab)
+  // 對照:彈出層關著時 Tab 離開 —— 量具看得到 blur 與錯誤(全部突變都必須綠)
+  await scene('leave')
+  await d.focus(LEAVE[0].sel); await d.press('Tab')
+  const closedLeave = await snap('leave')
+  check('CTRL-leave', 'control', '彈出層關著時 Tab 離開必填 Select → 驗證跑一次、錯誤出現(量具看得到 blur 與錯誤)', closedLeave.errors.includes('bank') && closedLeave.blur.bank === 1 && closedLeave.active === 'DIV:分行', closedLeave)
+
   // ── F-look(可聚焦的停用與原生停用逐項同色:靜止 / 滑過 / 按住 × 淺深兩色)──
   await scene('look')
   const lookOf = (selector) => page.$eval(selector, (el) => {
@@ -1154,7 +1327,7 @@ try {
       console.log(`\n✗ escape-and-focus 契約:${red.length} 條不符(${red.join(' / ')})—— SSOT keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」「按了之後自己變停用」「關了之後焦點去哪」`)
       process.exitCode = 1
     } else {
-      console.log(`\n✓ escape-and-focus 契約:${result.checks.length} 條全綠(含 2 條對照)`)
+      console.log(`\n✓ escape-and-focus 契約:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', null)
@@ -1164,7 +1337,9 @@ try {
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
     // 突變彼此獨立:分 LANES 條 lane 並行跑(第一條 lane 沿用上面那個分頁),結果依 MUTANTS 的順序回報
-    const RUN = ONLY ? MUTANTS.filter((m) => ONLY.includes(m.id)) : MUTANTS
+    const RUN = (ONLY ? MUTANTS.filter((m) => ONLY.includes(m.id)) : MUTANTS)
+      .filter((m) => !SHARD || MUTANTS.indexOf(m) % SHARD.n === SHARD.k)
+    if (!RUN.length) throw new InstrumentError(`這一片沒有任何突變可跑(--shard=${SHARD ? `${SHARD.k}/${SHARD.n}` : '—'}${ONLY ? ` --only=${ONLY.join(',')}` : ''})—— 不得讀成通過`)
     if (ONLY && RUN.length !== ONLY.length) throw new InstrumentError(`--only 指名的突變不存在:${ONLY.filter((id) => !MUTANTS.some((m) => m.id === id)).join(', ')}`)
     const results = new Array(RUN.length)
     const lanePages = [page]
@@ -1182,6 +1357,8 @@ try {
         try {
           results[i] = await runVariant(lanePage, `突變 ${m.id}:${m.what}`, mutantFor(SOURCE_ROOT, m.file, m.apply))
         } catch (error) {
+          // 儀器失效要說出是哪一個突變那一趟(lane 並行,結尾只印第一個失效;沒有 id 就無從判斷是突變弄壞了場景還是機器慢)
+          if (error instanceof InstrumentError) error.message = `突變 ${m.id}:${error.message}`
           laneFailure ??= error
           throw error
         }
@@ -1200,14 +1377,20 @@ try {
       for (const id of red) covered.add(id)
     }
     const uncovered = contractIds.filter((id) => !covered.has(id))
+    // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
+    const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+    const unclaimed = contractIds.filter((id) => !claimed.has(id))
+    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
     if (ONLY) problems.push(`只跑了 --only 指名的 ${RUN.length} 個突變(除錯用):這一趟不算 selftest 通過`)
-    else if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    else if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
-      console.log(`\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
+      console.log(SHARD
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }
 } catch (error) {

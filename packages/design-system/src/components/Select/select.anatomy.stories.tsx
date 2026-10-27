@@ -282,7 +282,7 @@ export const Overview = {
           ]).map(({ display, desc }) => (
             <div key={display} className="flex items-center gap-4">
               <div className="w-52 shrink-0">
-                <Select display={display} options={statusOptions} value="active" size="md" />
+                <Select aria-label={`狀態(display=${display})`} display={display} options={statusOptions} value="active" size="md" />
               </div>
               <span className="text-caption text-fg-secondary">
                 <span className="font-mono font-medium">display="{display}"</span> — {desc}
@@ -414,7 +414,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[340px]">
           <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
-            <Select
+            <Select aria-label="狀態(元件檢閱器)"
               mode={mode}
               display={display}
               size={size}
@@ -605,7 +605,7 @@ export const ColorMatrix = {
                   const resolvedMode = m === 'disabled' ? 'disabled' : m
                   return (
                     <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Select
+                      <Select aria-label={`狀態(${resolvedMode} · ${st})`}
                         mode={resolvedMode}
                         options={statusOptions}
                         value="active"
@@ -633,7 +633,7 @@ export const ColorMatrix = {
                 <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">edit + error</td>
                 {(['default', 'hover', 'focus'] as const).map((st) => (
                   <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                    <Select options={statusOptions} value="active" size="sm" error />
+                    <Select aria-label={`狀態(edit + error · ${st})`} options={statusOptions} value="active" size="sm" error />
                     <TokenAnnotation colors={ERROR_TOKENS[st]} />
                   </td>
                 ))}
@@ -655,10 +655,10 @@ export const ColorMatrix = {
                 <tr key={m}>
                   <Td mono>{m}</Td>
                   <Td>
-                    <Select mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                    <Select aria-label={`狀態(${m} · text 模式)`} mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
                   </Td>
                   <Td>
-                    <Select mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                    <Select aria-label={`狀態(${m} · tag 模式)`} mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
                   </Td>
                   <Td>
                     {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
@@ -781,7 +781,7 @@ export const SizeMatrix = {
                   <Td mono>{m}</Td>
                   {SIZES.map((sz) => (
                     <Td key={sz}>
-                      <Select mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+                      <Select aria-label={`狀態(${m} · ${sz} · text 模式)`} mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
                     </Td>
                   ))}
                 </tr>
@@ -806,7 +806,7 @@ export const SizeMatrix = {
                   <Td mono>{m}</Td>
                   {SIZES.map((sz) => (
                     <Td key={sz}>
-                      <Select mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+                      <Select aria-label={`狀態(${m} · ${sz} · tag 模式)`} mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
                     </Td>
                   ))}
                 </tr>
@@ -826,7 +826,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙行為依裝置分兩條路徑:\n\n  ARIA / Pattern  :桌機(非觸控)觸發點是一個容器,標記  role=\"combobox\"  +  aria-expanded  /  aria-haspopup=\"listbox\" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  <input> (開啟時焦點在它身上,帶  aria-activedescendant  指向反白的選項;滑鼠點選項與 Enter 相同,收起前焦點不離開它)。手機(觸控)改用瀏覽器原生的  <select>  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  <select>  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發點\n- Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)\n- ↑ / ↓ — 選單展開後在選項間移動\n- 字母鍵 — searchable 模式為打字篩選;手機原生 <select> 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)\n- Enter — 選定目前 highlight 的選項並關閉\n- Tab / Shift+Tab(選單展開時)— 同樣選定目前 highlight 的選項並關閉,焦點走到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;待辦總帳 B11,規則住 select-menu.spec.md「A11y 預設」)\n- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc)\n\n  Focus  :DS focus 藍框( focus-within:!border-primary )由 Field wrapper 提供;手機原生  <select>  另有系統 focus ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <p className="whitespace-pre-line">{"無障礙行為依裝置分兩條路徑:\n\n  ARIA / Pattern  :桌機(非觸控)觸發點是一個容器,標記  role=\"combobox\"  +  aria-expanded  /  aria-haspopup=\"listbox\" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  <input> (開啟時焦點在它身上,帶  aria-activedescendant  指向反白的選項;滑鼠點選項與 Enter 相同,收起前焦點不離開它)。手機(觸控)改用瀏覽器原生的  <select>  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  <select>  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發點\n- Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)\n- ↑ / ↓ — 選單展開後在選項間移動\n- 字母鍵 — searchable 模式為打字篩選(焦點在觸發點本身時打字 = 展開選單、字進搜尋框);手機原生 <select> 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)\n- Backspace(clearable、關鍵字空白;不可搜尋時選單關著)— 清掉值,同按右側 clear 按鈕,讀屏念「已移除『X』」(規則住 select-menu.spec.md「A11y 預設」)\n- Enter — 選定目前 highlight 的選項並關閉\n- Tab / Shift+Tab(選單展開時)— 同樣選定目前 highlight 的選項並關閉,焦點走到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;待辦總帳 B11,規則住 select-menu.spec.md「A11y 預設」)\n- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕或 Backspace,非 Esc)\n\n  Focus  :DS focus 藍框( focus-within:!border-primary )由 Field wrapper 提供;手機原生  <select>  另有系統 focus ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
     </div>
   ),
 }

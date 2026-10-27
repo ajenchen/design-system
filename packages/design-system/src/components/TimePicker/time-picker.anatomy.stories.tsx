@@ -123,7 +123,7 @@ export const ColorMatrix: Story = {
             選項的 hover / 選中 / 停用配色,與下拉選單(Select / 選單項目)的選取狀態共用同一套規則。
           </div>
           <div className="text-caption text-fg-secondary mb-3 max-w-[720px]">
-            <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 `--primary` 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
+            <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 <code>--primary</code> 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
           </div>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse min-w-[640px]">
@@ -159,7 +159,7 @@ export const ColorMatrix: Story = {
             </table>
           </div>
           <div className="text-caption text-fg-muted mt-3">
-            對照 DatePicker `ColorMatrix` 的 date cell selected 用 `--primary` — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
+            對照 DatePicker <code>ColorMatrix</code> 的 date cell selected 用 <code>--primary</code> — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
           </div>
         </div>
       </div>

@@ -58,6 +58,48 @@ try {
   writeFileSync(teachingTarget, teachingOrig)
 }
 
+// 3c) 設計規格 / 展示頁也一樣(2026-10-21 r1b fields F8):不在棘輪表上的檔一出現反引號就 FAIL;
+//     棘輪表上的檔數字變大也 FAIL;docs.description(Autodocs 走 Markdown,反引號會變成 code)不算。
+const specTarget = join(repoRoot, 'packages/design-system/src/components/Select/select.anatomy.stories.tsx')
+const specOrig = readFileSync(specTarget, 'utf8')
+try {
+  writeFileSync(specTarget, specOrig + `\nexport const InjectedSpecBacktick = {\n  name: '注入規格頁反引號',\n  render: () => <p>欄位高度跟 \`--field-height-md\` 走</p>,\n};\n`)
+  const code = run()
+  if (code === 0) { console.error('✗ 規格頁(不在棘輪表)注入 literal 反引號後 gate 未 FAIL'); ok = false }
+  else console.log('✓ 規格頁 literal 反引號被抓(exit ' + code + ')')
+  writeFileSync(specTarget, specOrig + `\nexport const InjectedDocsDescriptionBacktick = {\n  name: '文件導讀的反引號不算',\n  parameters: { docs: { description: { story: '欄位高度跟 \`--field-height-md\` 走' } } },\n  render: () => <p>欄位高度示範</p>,\n};\n`)
+  const docsCode = run()
+  if (docsCode !== 0) { console.error('✗ docs.description 裡的反引號被誤判(那裡是 Markdown,會正確變成 code)'); ok = false }
+  else console.log('✓ docs.description 裡的反引號不算(exit 0)')
+  // 複驗 D1(2026-10-21):字串先放進資料陣列再 map 出來(Props 表的說明欄),畫面上一樣原樣顯示 —— 必抓
+  writeFileSync(specTarget, specOrig + `\nconst injectedPropRows = [['variant', '2026-07-09 \`bare\` 退役']];\nexport const InjectedArrayBacktick = {\n  name: '注入陣列字串反引號',\n  render: () => <table><tbody>{injectedPropRows.map(([p, d]) => <tr key={p}><td>{p}</td><td>{d}</td></tr>)}</tbody></table>,\n};\n`)
+  const arrayCode = run()
+  if (arrayCode === 0) { console.error('✗ 資料陣列裡的字串帶反引號(經 map 顯示在畫面上)gate 未 FAIL'); ok = false }
+  else console.log('✓ 資料陣列裡的字串反引號被抓(exit ' + arrayCode + ')')
+  // argTypes description 與 docs.source 由 Storybook 以 Markdown / 程式碼區塊渲染,反引號不會原樣顯示 —— 不算
+  writeFileSync(specTarget, specOrig + `\nexport const InjectedMarkdownRenderedBacktick = {\n  name: 'Markdown 與程式碼區塊的反引號不算',\n  argTypes: { size: { description: '尺寸 \`sm\` / \`md\`' } },\n  parameters: { docs: { source: { code: 'const label = \`已移除\`' } } },\n  render: () => <p>尺寸示範</p>,\n};\n`)
+  const renderedCode = run()
+  if (renderedCode !== 0) { console.error('✗ argTypes description / docs.source 裡的反引號被誤判(那裡會被渲染成 code)'); ok = false }
+  else console.log('✓ argTypes description / docs.source 裡的反引號不算(exit 0)')
+} finally {
+  writeFileSync(specTarget, specOrig)
+}
+const ratchetBaseline = JSON.parse(readFileSync(join(repoRoot, 'scripts/content-quality-backtick-baseline.json'), 'utf8')).files
+const ratchetFile = Object.keys(ratchetBaseline)[0]
+if (!ratchetFile) { console.error('✗ 反引號棘輪表是空的 —— 下面的「數字變大」對照組沒有東西可測'); ok = false }
+else {
+  const ratchetTarget = join(repoRoot, ratchetFile)
+  const ratchetOrig = readFileSync(ratchetTarget, 'utf8')
+  try {
+    writeFileSync(ratchetTarget, ratchetOrig + `\nexport const InjectedRatchetBacktick = {\n  name: '棘輪表上的檔多一個反引號',\n  render: () => <p>多了一個 \`zz-ratchet-probe\` 字樣</p>,\n};\n`)
+    const code = run()
+    if (code === 0) { console.error(`✗ 棘輪表上的檔(${ratchetFile})反引號字樣變多後 gate 未 FAIL`); ok = false }
+    else console.log('✓ 棘輪表上的檔字樣變多被抓(exit ' + code + ')')
+  } finally {
+    writeFileSync(ratchetTarget, ratchetOrig)
+  }
+}
+
 // 4) Reader-facing Autodocs 缺 component 導讀時必 FAIL。
 const docsDescriptionBlock = /\n  parameters: \{\n    docs: \{\n      description: \{\n        component: [^\n]+\n      \},\n    \},\n  \},/
 if (!docsDescriptionBlock.test(orig)) {

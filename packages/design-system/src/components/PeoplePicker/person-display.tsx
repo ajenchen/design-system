@@ -226,7 +226,7 @@ function MultiPersonDisplay({
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
   // primitive。原 inline canvas-based formula 是 dual-implementation 違反 user SSOT「同 cell width 同
   // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / view path 用 inline
-  // canvas)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
+  // canvas;以上是 2026-05-15 當時 —— useOverflowCount 2026-10-13 起住 ../OverflowIndicator/overflow-tag-list.tsx、量 getBoundingClientRect)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
   // SSOT in `./avatar-stack-overflow.ts`,M14 mechanical guard 防 future drift。
   const containerRef = React.useRef<HTMLSpanElement>(null)
   const [measuredCount, setMeasuredCount] = React.useState<number | null>(null)

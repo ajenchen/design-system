@@ -237,8 +237,8 @@ export const InlineSearchFocusContract: Story = {
     const canvas = within(canvasElement)
     const doc = canvasElement.ownerDocument
     const page = within(doc.body) // 浮層 portal 到 body
-    // 空值也有搜尋框,提示字是欄位 placeholder
-    const input = await canvas.findByRole('textbox', { name: '搜尋選項' })
+    // 空值也有搜尋框,提示字是欄位 placeholder;讀屏名稱 = 欄位名(2026-10-21 r1b fields N2,修前是通用的「搜尋選項」)
+    const input = await canvas.findByRole('textbox', { name: '商品分類(欄位內搜尋 probe)' })
     await expect(input).toHaveAttribute('placeholder', '選擇商品分類…')
     // 點它 → 開啟、焦點在它身上
     await userEvent.click(input)
@@ -252,7 +252,7 @@ export const InlineSearchFocusContract: Story = {
     // 在清單裡取消最後一項(有值 → 空):輸入框不卸載、焦點不掉、提示字回來
     await userEvent.click(await page.findByRole('option', { name: /Furniture/ }))
     await waitFor(() => expect(canvas.queryByRole('button', { name: '移除 Furniture' })).toBeNull())
-    await expect(canvas.getByRole('textbox', { name: '搜尋選項' })).toBe(input)
+    await expect(canvas.getByRole('textbox', { name: '商品分類(欄位內搜尋 probe)' })).toBe(input)
     await expect(input).toHaveFocus()
     // 鍵盤挑選同一條:打字 → 反白回第一個符合項 → Enter
     await userEvent.type(input, 'fo{Enter}')

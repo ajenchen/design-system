@@ -1,6 +1,6 @@
 # SelectMenu「不限」選項設計原則(多選清單最上面那一列;獨立 SSOT)
 
-> **本 spec 是 SelectMenu「不限」選項的獨立 SSOT**(2026-09-30 從 `select-menu.spec.md` 抽出「「不限」選項」整段,避免單一 spec 過長(544 行 > 500 硬上限,同待辦總帳 N19 的處理);內容零改動,只加本檔頭與一處回指 `select-menu.spec.md` 的路徑)。定位 / 架構 / 搜尋關鍵字 / Creatable / 分組 / 遠端搜尋 / Suggestions / Empty / Loading / A11y 仍住 `./select-menu.spec.md`。程式碼對應 `select-menu.tsx`(`showUnrestricted` / `handleSelect` 互斥 / 全選分母)。
+> **本 spec 是 SelectMenu「不限」選項的獨立 SSOT**(2026-09-30 從 `select-menu.spec.md` 抽出「「不限」選項」整段,避免單一 spec 過長(544 行 > 500 硬上限,同待辦總帳 N19 的處理);抽出當下內容零改動,只加本檔頭與一處回指 `select-menu.spec.md` 的路徑;之後的增修見各段日期 —— 2026-10-07 `Backspace` 互斥第 3 條、「欄位顯示」段(待辦總帳 K1 / K4),2026-10-14 閘表的 CI job 名)。定位 / 架構 / 搜尋關鍵字 / Creatable / 分組 / 遠端搜尋 / Suggestions / Empty / Loading / A11y 仍住 `./select-menu.spec.md`。程式碼對應 `select-menu.tsx`(`showUnrestricted` / `handleSelect` 互斥 / 全選分母)。
 >
 > **Layout Family**:同 `select-menu.spec.md`(composite / multi-section);本檔不另立 family。
 
@@ -118,7 +118,7 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
   根因就是 readonly 路徑看 `hasTags`、可編輯路徑看 `value.length > 0`,新增「值非空但不渲 Tag」
   這第三種狀態時只改到渲染那一側。閘 `scripts/field-text-left-edge-invariant.mjs` 全庫機械強制
   (把判斷式改回舊寫法,它會指名這一格說「量到 4px,應為 13px」)。
-- 四條路徑都要一致:可編輯 / 原生 / 唯讀 / 檢視
+- 三條路徑都要一致:可編輯 / 唯讀 / 檢視(Combobox 的原生觸控路徑 2026-09-18 已移除,`../Combobox/combobox.spec.md`「單一路徑(不分裝置)」;2026-10-21 更正原寫的「四條路徑 … 原生」)
 - 欄位上的文字與選單那一列**同一個來源**(`unrestrictedLabel`),不會兩邊各寫各的
 - 有一鍵清空的欄位,只選「不限」時照常有;清單開著按它,反白回第一列 —— 第一列就是「不限」本身,接著按 `Enter` 會選回「不限」
   (跟打開一個空欄位一致,照實記錄;要跳過它是一條新的產品規則,不在這裡訂。`./select-menu.spec.md`「搜尋關鍵字何時保留、何時清空」)
@@ -153,7 +153,7 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 
 | 閘 | 驗什麼 | 對照組 |
 |---|---|---|
-| `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位四條路徑都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
+| `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位三條路徑(編輯 / 唯讀 / 檢視)都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
 | `scripts/select-all-footer-invariant.mjs` | 全選按鈕的字與勾選狀態綁死時,分母已排除「不限」列 | `--selftest-unrestricted` 拔掉 `data-unrestricted` 記號,必須紅 |
 | `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
 | `scripts/searchable-field-keys-invariant.mjs` | 只選「不限」× 欄位內搜尋框:關著與不可搜尋的「不限」同位置同色(窄欄位長標籤截斷寬、依內容寬的欄寬也相同)、打開變灰色提示且讀屏略過、打字讓位、字刪光回來、換行模式欄高不變、依內容寬時打開與打字欄寬不變;Backspace 刪掉「不限」;一鍵清空後反白落在「不限」那一列(story `combobox.stories.tsx`「不限 × 欄位內搜尋」;依內容寬與窄欄位長標籤兩對在 `../Field/field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」;都是 test-only) | 在頁面上讓「不限」打開後仍是黑字、打字時仍並排,或拿掉讓位後留下寬的量尺,K4 那幾列必須紅(對修前建置實跑同樣紅) |

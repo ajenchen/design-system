@@ -12,6 +12,7 @@ import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
 import { defaultFilter } from 'cmdk'
@@ -204,6 +205,10 @@ export interface SelectMenuProps {
    * AT 經此容器可定位到內部 cmdk listbox(cmdk List 自帶 auto-generated `role="listbox"` id)。
    */
   contentId?: string
+  /** 觸發欄位 + 清單浮層(+ `fieldParts`)整組真的離開時呼叫一次(`lib/composite-field-focus.ts` `useCompositeFieldBlur`;浮層以 `contentId` 認得) */
+  onFieldBlur?: (event: React.FocusEvent<HTMLDivElement>) => void
+  /** 也算同一個欄位、掛在另一個 portal 的節點(Combobox「+N」浮出清單) */
+  fieldParts?: () => Array<Element | null | undefined>
 
   /**
    * 浮層 accessible name(2026-07-17 Dim 10 a11y 修)。Radix Popover 的 content 為
@@ -259,6 +264,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   onOpenAutoFocus,
   onActiveOptionChange,
   contentId,
+  onFieldBlur,
+  fieldParts,
   'aria-label': ariaLabel = '選項清單', // i18n-allow: DS default; consumer override via aria-label prop
   className,
 }, _ref) {
@@ -516,6 +523,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     resolveOptionValue: (dataValue) => visibleOptions.find((o) => !o.disabled && o.value.trim() === dataValue)?.value,
   })
 
+  // 觸發欄位 + 清單浮層 = 同一個欄位:兩邊掛同一組 focus / blur、關的那一下補量(lib/composite-field-focus.ts;Select / Combobox 的 onBlur 經這裡)
+  const fieldFocus = useCompositeFieldBlur<React.FocusEvent<HTMLDivElement>>({ onBlur: onFieldBlur, popupId: contentId, extra: fieldParts, triggerRef: popupKeys.triggerRef })
+
   // ── 觸發欄位的開關只認「按在觸發欄位 DOM 裡」的 click(2026-10-01;規則 spec「A11y 預設」Focus 段「觸發欄位的開關」)──
   // React 合成事件會穿過 portal 沿元件樹冒泡(同 TreeView handleKeyDownCapture 的判斷):觸發欄位裡的頭像名片、「+N」浮出清單
   // 是掛在 body 的另一層,按在上面的 click 也會冒到這裡的開關 —— 開著時把選單關掉(關鍵字跟著清),關著時把選單打開。
@@ -538,13 +548,14 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   return (
     <Popover open={open} onOpenChange={handlePopoverOpenChange}>
       {/* B11:可打字搜尋時焦點在觸發欄位內的輸入框,Tab 規則要掛在這裡(不可打字時掛在下方 Command) */}
-      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown} onClick={handleTriggerClick}>{children}</PopoverTrigger>
+      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown} onClick={handleTriggerClick} {...fieldFocus.trigger}>{children}</PopoverTrigger>
       <RowSizeProvider value={size}>
       <PopoverContent
         ref={popupKeys.contentRef}
         id={contentId}
-        // B11:Tab 收起時不讓 Radix 在關閉動畫後把焦點搶回觸發欄位(焦點已走到下一格);指標挑選收起 → 還焦點不畫鍵盤框(Command 同一支)
-        onCloseAutoFocus={(e) => { popupKeys.onCloseAutoFocus(e); returnFocusToOpener(e, popupKeys.triggerRef.current) }}
+        {...fieldFocus.popup}
+        // B11:Tab 收起時不讓 Radix 在關閉動畫後把焦點搶回觸發欄位(焦點已走到下一格);指標挑選收起 → 還焦點不畫鍵盤框(Command 同一支);最後補量欄位的 blur
+        onCloseAutoFocus={(e) => { popupKeys.onCloseAutoFocus(e); returnFocusToOpener(e, popupKeys.triggerRef.current); fieldFocus.popupClosed() }}
         // 2026-07-17 Dim 10 a11y 修:role="dialog" 浮層 accessible name(Radix Popover 無自動命名)
         aria-label={ariaLabel}
         // w-auto override PopoverContent default w-72(rich-popover canonical)— SelectMenu 走「跟 trigger 同寬」

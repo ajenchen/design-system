@@ -306,7 +306,7 @@ Select 支援兩種顯示模式（`display` prop）：
 
 `selectedItemRenderer` 設定時優先於 plain / tag 預設呈現,且 **4 mode(edit/view/readonly/disabled)共享**(共享 contract (a),見下方)— view 態渲染 renderer 輸出(值內容),無 chrome 無 chevron。
 
-`tag` 模式的 edit 用 hidden select overlay(跟 Combobox 同模式),Tag 用 `pointer-events-none`,點擊穿透到 select。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
+`tag` 模式在觸控裝置(`NativeSelect`)的 edit 用 hidden select overlay,Tag 用 `pointer-events-none`,點擊穿透到 select(`../Select/select.spec.md`「tag 模式」;桌機由自建觸發欄位開 SelectMenu。Combobox 不分裝置只有自建浮層、沒有這層 overlay,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」)。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
 
 tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding，確保文字與邊框有足夠間距。
 

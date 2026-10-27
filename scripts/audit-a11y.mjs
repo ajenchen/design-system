@@ -10,6 +10,9 @@
  *   2. For each story → render `iframe.html?id=<id>` headlessly via playwright chromium
  *   3. Inject @axe-core/playwright AxeBuilder
  *   4. Run WCAG 2 A + AA rules (configurable)
+ *   4b. 同一則 story 讀瀏覽器算好的無障礙樹(CDP Accessibility.getFullAXTree):表單控件(combobox / textbox / searchbox / listbox / spinbutton)
+ *       名稱空白 → `ds-unnamed-form-control`(serious,進基線指紋)。axe 不報 `div[role=combobox]` 這類自建控件的空名稱,
+ *       修前 21 則 story / 47 個控件 axe 全掃 0 筆(2026-10-21 r1b fields N3;判準 lib/a11y-gate.mjs findUnnamedFormControls)
  *   5. Aggregate violations + exit code(0 = clean, 1 = WCAG AA violations)
  *
  * Output:
@@ -42,11 +45,13 @@ import path from 'node:path'
 import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
+  UNNAMED_CONTROL_RULE,
   createA11yFingerprintMap,
   createA11yStoryCorpus,
   evaluateA11yRegressionGate,
   evaluateA11yScanIntegrity,
   evaluateA11ySeverityGate,
+  findUnnamedFormControls,
   parseA11yAuditArgs,
 } from './lib/a11y-gate.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
@@ -119,6 +124,10 @@ const browser = await launchBrowser()
 // 「Please use browser.newContext()」(2026-09-25 實測:改成 browser.newPage() 後每一則都成了 audit-error)。
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 const page = await ctx.newPage()
+// 表單控件的讀屏名稱(lib/a11y-gate.mjs findUnnamedFormControls;axe 不報自建 combobox,2026-10-21 r1b fields N3):
+// 同一個 page 的 CDP session,換 story(導覽)後照樣有效
+const cdp = await ctx.newCDPSession(page)
+await cdp.send('Accessibility.enable')
 
 const results = { ts: new Date().toISOString(), total: stories.length, violationsByStory: {}, summary: { totalViolations: 0, byRule: {}, bySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 } } }
 const completedStoryIds = []
@@ -132,6 +141,16 @@ for (let i = 0; i < stories.length; i++) {
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze()
+    const { nodes: axNodes } = await cdp.send('Accessibility.getFullAXTree')
+    const unnamedControls = findUnnamedFormControls(axNodes)
+    if (unnamedControls.length > 0) {
+      result.violations.push({
+        id: UNNAMED_CONTROL_RULE,
+        impact: 'serious',
+        help: `表單控件沒有讀屏名稱(${[...new Set(unnamedControls.map((n) => n.role.value))].join(' / ')};WCAG 4.1.2 —— 加 FieldLabel 或 aria-label)`,
+        nodes: unnamedControls,
+      })
+    }
     if (result.violations.length > 0) {
       results.violationsByStory[s.id] = result.violations.map(v => ({
         id: v.id,

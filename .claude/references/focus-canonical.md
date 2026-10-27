@@ -358,7 +358,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:658` / `time-picker.tsx:372`)/ 祖先畫(`inline-edit.tsx:398`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:650` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:398`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -385,7 +385,7 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:658` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:650` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -405,7 +405,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:658`、`time-picker.tsx:372` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:650`、`time-picker.tsx:379` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。

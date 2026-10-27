@@ -88,7 +88,7 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    *  (Select 無 searchPlaceholder prop);multi `searchIn='trigger'` inline 搜尋同理走
    *  placeholder 規則(spec「Trigger display SSOT canonical table」)。 */
   searchPlaceholder?: string
-  /** Multi 模式搜尋框 accessible name。僅轉送 wrapped Combobox。 */
+  /** Multi 模式搜尋框 accessible name 的退路。僅轉送 wrapped Combobox(浮層內搜尋框用它;欄位內搜尋框有欄位名稱時用欄位名稱,見 Combobox `searchAriaLabel`)。 */
   searchAriaLabel?: string
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
@@ -266,6 +266,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
       // overflow。雙分支通用:查無 combobox role 時 root 自身就是 trigger(native __triggerRef
       // 即 field wrapper root),tagArea(flex-1 min-w-0)兩分支同構。
+      // (NativeCombobox 2026-09-18 已移除,Combobox 只剩一條路、root 恆是 role=combobox;這條退路是當時的歷史,留著不影響結果)
       const trigger = cachedTrigger?.isConnected
         ? cachedTrigger
         : (cachedTrigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root))
@@ -501,7 +502,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   //
   // **2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus)**:visible count 走 shared
   // `avatar-stack-overflow` primitive deterministic formula(取代 Combobox DOM offsetWidth-based
-  // useOverflowCount + 60px fallback 不 deterministic),pass override 給 Combobox bypass internal
+  // useOverflowCount + 60px fallback 不 deterministic;60px 頂替 2026-10-13 已拆,useOverflowCount 改住 ../OverflowIndicator/overflow-tag-list.tsx),pass override 給 Combobox bypass internal
   // measurement。`MultiPersonDisplay`(view path)同 primitive,view + edit 結果一致。
   // 對齊 user verbatim SSOT「同 cell width 同 overflow 判斷」+ codex Q3 consensus shared primitive。
   const handleMultiChange = (next: string[]) => {

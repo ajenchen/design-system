@@ -4,7 +4,6 @@
 import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
-import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -27,7 +26,7 @@ import { isImeComposing } from '@/design-system/lib/ime-composition'
 // Tag 列間距:與單行 Tag 列(overflow-tag-list.tsx)同一個值
 const GAP = TAG_ROW_GAP_PX
 
-// 非-wrap tag 列 clip SSOT(4-path 共用:OverflowTagList base / readonly / native edit / custom edit):
+// 非-wrap tag 列 clip SSOT(3-path 共用:OverflowTagList base / readonly / custom edit;native edit 2026-09-18 隨原生觸控路徑移除):
 // 2026-05-18 F2 以 overflow-hidden 修「窄容器 tags 水平越界蓋 chevron / +N」,但雙軸 hidden 副作用
 // 是垂直同裁 — PeoplePicker stack hover 的 AvatarDismissOverlay(`-top-px` + 2px ring,
 // person-display.tsx v15.15,早於 F2)上緣被切(user 2026-08-05 抓「曾經沒有這問題」= F2 前確實沒有)。
@@ -43,7 +42,7 @@ const tagPaddingY = fieldTagInsetY
 /**
  * 欄位內搜尋框(`searchIn='trigger'`)的寬度量尺:一顆看不見的 span,內容 = 打的字 + 一個空白(插入點的位置),
  * 撐出搜尋框的最小寬(規則 combobox.spec.md「欄位內搜尋框的寬度」)。單行(+N)模式的兩條算法都讀它,給搜尋框留位:
- * DOM 量測(本檔 `useOverflowCount`)與 PeoplePicker 頭像堆疊的公式(people-picker.tsx)—— 同一個屬性、同一支找法(`findInlineSearchMirror`)。
+ * DOM 量測(`../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount`,2026-10-13 起住那裡)與 PeoplePicker 頭像堆疊的公式(people-picker.tsx)—— 同一個屬性、同一支找法(`findInlineSearchMirror`)。
  */
 const INLINE_SEARCH_MIRROR_ATTR = 'data-inline-search-mirror'
 /**
@@ -200,7 +199,8 @@ export interface ComboboxProps {
   searchHintText?: string
   /** 搜尋框 placeholder（未有選項時顯示)。Default: 「搜尋…」 */
   searchPlaceholder?: string
-  /** 搜尋框 ARIA label。Default: 「搜尋選項」 */
+  /** 搜尋框 accessible name 的退路(Default:「搜尋選項」)。浮層內搜尋框(`searchIn='menu'`)用它;欄位內搜尋框(`searchIn='trigger'`)
+   *  有欄位名稱(Field label / `aria-label`)時用欄位名稱(同 Select 欄位內搜尋框),兩者都沒有才用它(2026-10-21) */
   searchAriaLabel?: string
   /** Empty-selection placeholder text。Default: 「選擇…」 */
   emptyPlaceholder?: string
@@ -223,7 +223,7 @@ export interface ComboboxProps {
   unrestrictedValue?: string
   /** 可建立新選項(creatable tag,2026-07-18 user 拍板 forward)—— 搜尋非空且無完全同名既有選項時,
    *  dropdown 顯 create row(Plus + `createLabel`);forward 給底層 SelectMenu(邏輯/顯示/互動 SSOT 住在 SelectMenu)。
-   *  僅 searchable 桌機路徑生效(需打字);native mobile 路徑不支援。對齊 Ant tags / react-select Creatable。 */
+   *  需可搜尋(要打字);不分裝置同一條路徑。對齊 Ant tags / react-select Creatable。 */
   creatable?: boolean
   /** 建立新選項 callback(forward SelectMenu `onCreate`)。 */
   onCreate?: (value: string) => void
@@ -280,8 +280,9 @@ export interface ComboboxProps {
    * Tag area gap in px (2026-05-07 v15.13)。預設 4(pill mode 標準 spacing)。
    * Stack avatar 模式傳 0,讓 `tagWrapperClassName` 的 `-ml-[var(--avatar-stack-overlap)]` negative margin 生效
    * (CSS `gap` 套在 flex container 上會強制 sibling spacing,蓋過 negative margin)。
-   * **Q2 known tradeoff**:0 後 useOverflowCount 仍按 wrapper.offsetWidth 累加(不含 overlap
-   * 補償)→ +N 偏保守。當前接受;若需精準可 future 加 `overlapPx` 補償邏輯。
+   * **Q2 known tradeoff**:0 後 `useOverflowCount`(`../OverflowIndicator/overflow-tag-list.tsx`)仍按每顆 Tag 的寬(`[data-tag-root]`
+   * getBoundingClientRect)累加、不含 overlap 補償 → +N 偏保守。當前接受;若需精準可 future 加 `overlapPx` 補償邏輯。
+   * (PeoplePicker 頭像堆疊實際走 `visibleCountOverride` 公式,不經這條量測。)
    *
    * @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer hook)。
    */
@@ -289,8 +290,8 @@ export interface ComboboxProps {
   /**
    * tagAreaRef container 左 paddingLeft(px,2026-05-12 加,for PeoplePicker Avatar inset)。
    * Default undefined = no extra padding(Field wrapper `tagPadding[size]` calc 公式自然 inset)。
-   * 設值時 tagAreaRef 增 `style.paddingLeft`,**useOverflowCount 的 `available = clientWidth -
-   * paddingLeft - paddingRight` 自動 include**(`parseFloat(cs.paddingLeft)` 從 container CSS 抓)
+   * 設值時 tagAreaRef 增 `style.paddingLeft`,**`useOverflowCount`(`../OverflowIndicator/overflow-tag-list.tsx`)的可用寬 = 容器寬
+   * (getBoundingClientRect,小數 px)− 左右 padding − 左右 border,自動 include**(`parseFloat(cs.paddingLeft)` 從 container CSS 抓)
    * → width calc 不漂移,無 side-effect。
    *
    * @internal PeoplePicker stack wrapper 內部協議 — 目前無 active consumer(PeoplePicker 傳 undefined),保留供未來精準 padding;新 consumer 請先評估。
@@ -424,8 +425,6 @@ function ReadonlyMultiSelect({
     </div>
   )
 }
-
-// ── Native Combobox (mobile) ────────────────────────────────────────
 
 // 2026-05-16 Bug A root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
 // 「圖二/圖三 同 180px 不同 length 不同 visible — 跟 user 一開始抓的問題一模一樣」):
@@ -640,14 +639,7 @@ function CustomCombobox({
       aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
       aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
       onFocus={onFocus}
-      // 觸發區 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):焦點搬進浮層(浮層內搜尋框 / cmdk 殼)不算離開,
-      // consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次
-      // 「+N」浮出清單在另一個 portal,按卡裡的 Tag × 焦點搬進卡,也不算離開(extra;2026-10-07 前漏了這張卡,非搜尋型 Combobox 按卡裡的 × 就驗證)
-      // 真的離開欄位(觸發欄位、浮層、「+N」浮出清單都不在了)才算 blur:轉給 consumer,並讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
-      onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId: listboxId, extra: () => [document.getElementById(overflowCardId)] }, (event) => {
-        clearRemoval()
-        onBlurProp?.(event)
-      })}
+      // consumer 的 onBlur 由 SelectMenu 的 onFieldBlur 轉(觸發區 + 清單浮層 + 「+N」浮出清單 = 同一個欄位,見下方 <SelectMenu>)
       // 2026-09-07:本元件是 Field 家族的「單一狀態控制項」——依 focus-canonical 規則二第三列,
       // 滑鼠與鍵盤**共用同一套 focus 樣式**,而 Field 的那一套就是邊框轉 primary
       // (field-wrapper.tsx `focus-within:!border-primary`)。所以這裡要抑制全域外描邊,
@@ -715,8 +707,8 @@ function CustomCombobox({
         if (e.key === 'Escape') setOpen(false)
       }}>
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
-          CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
-          原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
+          CustomCombobox edit non-wrap tagArea 對齊當時 view + readonly + native edit 已 ship 的 overflow-hidden fix(M10 當時四條一起對齊)。
+          原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。現況:native edit 2026-09-18 隨原生觸控路徑移除,剩三條共用檔頭 tagRowOverflowClass。 */}
       {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
           與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17;2026-10-14 四個 Tag 列容器收成同一個常數) */}
       <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
@@ -810,7 +802,11 @@ function CustomCombobox({
               placeholder={hasTags || isUnrestrictedOnly ? '' : (placeholder ?? emptyPlaceholder)}
               onClick={(e) => { e.stopPropagation(); setOpen(true) }}
               tabIndex={-1}
-              aria-label={searchAriaLabel}
+              // accessible name = 這個欄位的名字(同 select.tsx 欄位內搜尋框、select.spec.md「ARIA / Pattern」):Field label(aria-labelledby)勝過 aria-label,
+              // consumer 的 aria-label 優先時不接 label;兩者都沒有才用 searchAriaLabel(「搜尋選項」)。焦點會因打字(K3)搬進這顆輸入框,
+              // 2026-10-21 前只寫 searchAriaLabel → 讀屏從「文章標籤」變成「搜尋選項」、聽不出是哪個欄位(r1b fields N2;WCAG 2.4.6 / 4.1.2)
+              aria-label={ariaLabel ?? searchAriaLabel}
+              aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
               // 打字會過濾清單(與浮層內搜尋框 [cmdk-input] 同宣告);aria-activedescendant / aria-controls 由 useActiveDescendant 直接寫
               // (只在清單開著時才有;textbox 不支援 aria-expanded,展開狀態由外層 role=combobox 宣告)
               aria-autocomplete="list"
@@ -890,6 +886,15 @@ function CustomCombobox({
       // cursor 直接 visible,user 知道可 inline search。
       onOpenAutoFocus={searchIn === 'trigger' ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
       contentId={listboxId}
+      // 觸發區 + 它的清單浮層 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83;判準由握著兩邊的 SelectMenu 掛):焦點搬進浮層
+      // (浮層內搜尋框 / cmdk 殼)不算離開,consumer 的 onBlur(規則 2 的驗證)只在真的離開時跑一次 —— 從浮層直接離開(開著點空白處 / 點下一格)
+      // 也算(2026-10-21 r1b fields F1)。「+N」浮出清單在另一個 portal,按卡裡的 Tag × 焦點搬進卡,也不算離開(fieldParts;
+      // 2026-10-07 前漏了這張卡,非搜尋型 Combobox 按卡裡的 × 就驗證)。離開時也讓「已移除『X』」退場(select-menu-removal-status.tsx (b))
+      fieldParts={() => [document.getElementById(overflowCardId)]}
+      onFieldBlur={(event) => {
+        clearRemoval()
+        onBlurProp?.(event)
+      }}
     >
       {trigger}
     </SelectMenu>

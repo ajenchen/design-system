@@ -196,7 +196,7 @@ export const TagOperationRule: Story = {
 
         <TutorialRule
           title="已選中的選項在下拉裡以打勾標示，再點一次即取消"
-          note="桌機（預設）走自建浮層選單：已選項保留在清單中並以打勾呈現，再點一次即移除——避免使用者跨越下拉與 field 才能對照已選狀態。手機 / 觸控裝置改走原生 select，已選項則不重複出現在原生下拉"
+          note="不分裝置，同一個自建浮層選單：已選項保留在清單中並以打勾呈現，再點一次即移除——避免使用者跨越下拉與 field 才能對照已選狀態"
         >
           <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="商品分類(已選項打勾範例)" />
           <ExampleCaption>↑ 打開 dropdown，Electronics 仍在清單裡並打勾，可再點一次取消</ExampleCaption>
@@ -222,7 +222,7 @@ export const OverflowRule: Story = {
 
         <TutorialRule
           title="❌ 不從零自刻下拉互動"
-          note="與 Select 同理——下拉的開關、鍵盤導覽、聚焦管理、screen reader 支援很容易做不完整。Combobox 桌機走共用的浮層選單元件（已內建搜尋與方向鍵導覽），手機則走原生 picker，兩者都不該繞過去從零自刻"
+          note="與 Select 同理——下拉的開關、鍵盤導覽、聚焦管理、screen reader 支援很容易做不完整。Combobox 不分裝置走同一個共用的浮層選單元件（已內建搜尋與方向鍵導覽），不該繞過去從零自刻"
         >
           <ExampleCaption>實作細節見 Design System / Components / Combobox / 設計規格</ExampleCaption>
         </TutorialRule>

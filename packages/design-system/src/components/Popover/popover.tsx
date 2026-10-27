@@ -10,6 +10,7 @@ import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
+import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -30,8 +31,34 @@ import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
  * 不加 X(click-outside / Esc 即可)。
  */
 
-const Popover = PopoverPrimitive.Root
-const PopoverTrigger = PopoverPrimitive.Trigger
+// 觸發點節點(2026-10-21,r1b fields N1):PopoverContent 在關閉的那一刻就要做 Radix 卸載時才做的「還給觸發點」
+// (lib/overlay-focus-return.ts useExitStartFocusReturn),Radix 的 context 不外露 → Root 開一個 ref、Trigger 把節點登記進來。
+// 只多記一個節點,Root / Trigger 的 props 與行為原樣轉給 Radix。
+const PopoverTriggerNodeContext = React.createContext<React.MutableRefObject<HTMLElement | null> | null>(null)
+
+const Popover = ({ children, ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) => {
+  const triggerNodeRef = React.useRef<HTMLElement | null>(null)
+  return (
+    <PopoverPrimitive.Root {...props}>
+      <PopoverTriggerNodeContext.Provider value={triggerNodeRef}>{children}</PopoverTriggerNodeContext.Provider>
+    </PopoverPrimitive.Root>
+  )
+}
+Popover.displayName = "Popover"
+
+const PopoverTrigger = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
+>((props, ref) => {
+  const triggerNodeRef = React.useContext(PopoverTriggerNodeContext)
+  const composedRef = React.useCallback((node: HTMLButtonElement | null) => {
+    if (triggerNodeRef) triggerNodeRef.current = node
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
+  }, [ref, triggerNodeRef])
+  return <PopoverPrimitive.Trigger ref={composedRef} {...props} />
+})
+PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 const PopoverAnchor = PopoverPrimitive.Anchor
 const PopoverClose = PopoverPrimitive.Close
 
@@ -75,7 +102,7 @@ const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -84,11 +111,27 @@ const PopoverContent = React.forwardRef<
   )
   // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
   const contentRef = React.useRef<HTMLDivElement | null>(null)
+  // 收起動畫不延後焦點歸還(lib/overlay-focus-return.ts useExitStartFocusReturn;2026-10-21 r1b fields N1):
+  // 關閉的那一刻就跑 consumer 的 onCloseAutoFocus,沒被擋再走 Radix 非 modal 的預設 —— 沒互動過外面就還給觸發點
+  // (@radix-ui/react-popover 1.1.15 dist/index.mjs PopoverContentNonModal 的 onCloseAutoFocus / onInteractOutside,這裡照抄同一個判斷)。
+  const triggerNodeRef = React.useContext(PopoverTriggerNodeContext)
+  const interactedOutsideRef = React.useRef(false)
+  const resolvedOpenAutoFocus = onOpenAutoFocus ?? handlePopoverOpenAutoFocus
+  const exitFocus = useExitStartFocusReturn({
+    onCloseAutoFocus,
+    onOpenAutoFocus: resolvedOpenAutoFocus,
+    radixDefault: () => {
+      if (!interactedOutsideRef.current) triggerNodeRef?.current?.focus()
+      interactedOutsideRef.current = false
+    },
+  })
+  const attachExitFocus = exitFocus.ref
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
     contentRef.current = node
+    attachExitFocus(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref])
+  }, [ref, attachExitFocus])
   // Provider 必須包在 Portal **外面**(2026-10-13,待辦總帳 T11):Radix PopoverPortal 自己有一層 Presence
   // (@radix-ui/react-popover dist/index.mjs:110),它經 Slot 把 ref 交給 Portal 的**直接子元素**、靠那個 DOM 節點讀
   // animation-name 決定「等收起動畫播完才卸載」。eff41482(2026-07-07)把 Provider 夾在 Portal 與 Content 之間,
@@ -109,7 +152,10 @@ const PopoverContent = React.forwardRef<
           // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
           // [data-layout-space="md"] 有 reset selector(layoutSpace.css L31)→ lg page 上正確 reset 回 md。
           data-layout-space="md"
-          onOpenAutoFocus={onOpenAutoFocus ?? handlePopoverOpenAutoFocus}
+          onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; resolvedOpenAutoFocus(e) }}
+          onCloseAutoFocus={(e) => { exitFocus.onCloseAutoFocus(e); interactedOutsideRef.current = false }}
+          // 與 Radix 同一個判準記「互動過外面」:consumer 沒擋 = 記(Radix 自己的那一份不外露)
+          onInteractOutside={(e) => { onInteractOutside?.(e); if (!e.defaultPrevented) interactedOutsideRef.current = true }}
           aria-label={ariaLabel}
           // accessible name 自動接線:consumer 自傳優先;無 aria-label 且有 PopoverTitle 註冊才掛 titleId
           aria-labelledby={ariaLabelledBy ?? (ariaLabel == null && hasTitle ? titleId : undefined)}

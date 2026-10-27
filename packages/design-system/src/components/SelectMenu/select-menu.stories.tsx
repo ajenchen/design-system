@@ -49,7 +49,7 @@ const SearchableDemo = () => {
   return (
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs">
       <p className="text-caption text-fg-muted">searchable — 觸發點變 input，打字即篩選</p>
-      <Select options={countries} value={value} onChange={setValue} searchable clearable placeholder="選擇國家…" />
+      <Select aria-label="國家" options={countries} value={value} onChange={setValue} searchable clearable placeholder="選擇國家…" />
     </div>
   )
 }

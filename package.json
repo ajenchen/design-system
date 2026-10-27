@@ -85,6 +85,8 @@
     "test:consumer-pr-merge-evidence": "node scripts/test-consumer-pr-merge-evidence.mjs",
     "test:gate-reachability": "node scripts/gate-reachability-invariant.mjs && node scripts/gate-reachability-invariant.mjs --selftest",
     "test:hook-citation-liveness": "node scripts/hook-citation-liveness-invariant.mjs && node scripts/hook-citation-liveness-invariant.mjs --selftest",
+    "test:code-pointer-liveness": "node scripts/code-pointer-liveness-invariant.mjs && node scripts/code-pointer-liveness-invariant.mjs --selftest",
+    "test:anatomy-chip-palette": "node scripts/anatomy-chip-palette-invariant.mjs && node scripts/anatomy-chip-palette-invariant.mjs --selftest",
     "test:gate-control-group": "node scripts/gate-control-group-invariant.mjs && node scripts/gate-control-group-invariant.mjs --selftest",
     "test:provider-view-group-reachability": "node scripts/provider-view-group-reachability-invariant.mjs && node scripts/provider-view-group-reachability-invariant.mjs --selftest",
     "test:composite-role-keyboard": "node scripts/composite-role-keyboard-invariant.mjs && node scripts/composite-role-keyboard-invariant.mjs --selftest",

@@ -1,6 +1,6 @@
 # AgentFab / AgentFabDock 設計原則(AgentPanel 家族附屬資產;獨立 SSOT)
 
-> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註))。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
+> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);抽出當下內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註);之後的增修見各段日期 —— 2026-10-13 / 10-14 入口鈕與 Toast 的「Toast 不為入口鈕讓位」「層級」兩段)。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
 >
 > **Layout Family**:同 `agent-panel.spec.md`(self-contained 容器家族);入口鈕是圓形 iconOnly 按鈕,本檔不另立 family。
 

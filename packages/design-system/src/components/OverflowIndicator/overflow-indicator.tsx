@@ -52,7 +52,7 @@ export interface OverflowIndicatorProps
   onContentMouseDown?: React.MouseEventHandler<HTMLDivElement>
   /**
    * 浮出清單(HoverCard 內容,portal)的 id(2026-10-07)。消費者用它把這張卡算成自己的零件 —— 卡在另一個 portal,不是觸發點的 DOM 子孫。
-   * 唯一用途:Combobox 的「觸發區 + 它的彈出層 = 同一個欄位」判準(`lib/composite-field-focus.ts` `extra`):按卡裡的 Tag × 時焦點搬進卡,
+   * 唯一用途:Combobox 的「觸發區 + 它的彈出層 = 同一個欄位」判準(`lib/composite-field-focus.ts` `useCompositeFieldBlur` 的 `extra`,經 SelectMenu `fieldParts`):按卡裡的 Tag × 時焦點搬進卡,
    * 不算離開欄位(規則 `Field/form-validation.spec.md` v1 邊界 (a);修前非搜尋型 Combobox 按卡裡的 × 就觸發 consumer 的 onBlur 驗證)。
    */
   contentId?: string
@@ -80,7 +80,7 @@ function OverflowCount({ count, className }: { count: number; className: string 
 
 /**
  * @internal「+N」的量尺(2026-10-13):與 `OverflowIndicator` 的觸發點同一套外觀、同一個字,但不能互動 —— 不可聚焦、沒有浮出清單、讀屏略過。
- * 給「先量『+N』多寬、再決定收幾個」的呼叫端用(Combobox `useOverflowCount`):沒有東西要收的時候,它代替指示器留在 DOM 裡讓呼叫端量,
+ * 給「先量『+N』多寬、再決定收幾個」的呼叫端用(`./overflow-tag-list.tsx` `useOverflowCount`;Combobox 與 AgentPanel 輸入盒附件列經它):沒有東西要收的時候,它代替指示器留在 DOM 裡讓呼叫端量,
  * 由呼叫端把它藏起來(不佔位、看不見)。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;combobox.spec.md「單行溢出」)。
  * 不帶 `data-overflow-indicator`(那是「畫面上有一顆『+N』」的標記,閘與測試以它找指示器)。
  */

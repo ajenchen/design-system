@@ -489,7 +489,7 @@ export const ButtonAsControl: Story = {
         <h3 className="text-h6 font-semibold mb-[var(--layout-space-tight)]">Upload Button 作為附件欄位的 control</h3>
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-xl">
           Button 是「承載 file value 的輸入介面」——點擊開檔案選擇器,結果寫回 field。
-          Button 高度與 `field-height` 共用同一組 token,放進 inline control area 自然對齊
+          Button 高度與 <code>field-height</code> 共用同一組 token,放進 inline control area 自然對齊
           Input 中線,horizontal label 公式也直接套用,不需要任何特例。
         </p>
         <FieldGroup>
@@ -612,7 +612,7 @@ export const SliderAlignsWithOtherFields: Story = {
     <ExampleGroup>
       <p className="text-caption text-fg-secondary max-w-[560px]">
         把 Slider、Input、NumberInput 並排在同一個 Field 行裡,會看到三者的高度
-        完全對齊(`h-field-*`)——Slider 的 track/thumb 視覺身分不變,只有容器
+        完全對齊(<code>h-field-*</code>)——Slider 的 track/thumb 視覺身分不變,只有容器
         外高跟著 Field size 變。
       </p>
       <div className="flex flex-col gap-[var(--layout-space-loose)]">

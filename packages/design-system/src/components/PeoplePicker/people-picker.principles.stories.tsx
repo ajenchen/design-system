@@ -61,7 +61,7 @@ export const UsageGuidance: Story = {
           >
             <ExampleGroup>
               <ExampleCaption>✅ 選產品分類用 Select（沒有 avatar 概念）</ExampleCaption>
-              <Select
+              <Select aria-label="產品分類"
                 options={[
                   { value: 'design', label: '設計' },
                   { value: 'engineering', label: '工程' },

@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
-import { compositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -215,6 +215,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const showClear = clearable && !!value && isEditable
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
+    // 觸發欄位 + 它的面板 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):焦點搬進面板不算離開;從欄位離開、從面板直接離開
+    // (開著點空白處 / 點下一格)都算,consumer 的 onBlur 只跑一次(2026-10-21 r1b fields F1:修前只掛在觸發欄位,從面板直接離開時收不到 blur)。
+    // 兩邊都掛:觸發欄位經 PopoverTrigger、面板經 PopoverContent。hook 必在下方 early return 之前
+    const fieldTriggerRef = React.useRef<HTMLButtonElement>(null) // 型別跟 PopoverTrigger(Radix Trigger 的 ref 型別);asChild 時拿到的是欄位的 div(同 select-menu-keyboard.ts triggerRef)
+    const fieldFocus = useCompositeFieldBlur<React.FocusEvent<HTMLDivElement>>({
+      onBlur: onBlurProp, popupId, triggerRef: fieldTriggerRef,
+    })
 
     const currentParts = React.useMemo(() => isoToTimeParts(value), [value])
     // draft = panel 開啟期間的暫存:供 eager commit(每次欄選 commitDraft 即 commit)+ disabledTime 重算;OK 按鈕只 setOpen(false) 關 Panel,不做 commit
@@ -351,7 +358,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             靠瀏覽器在 Enter/Space 自動派發 click 才能開;但本 trigger 是 <div role=combobox>,
             div 不會自動派發 click → 鍵盤使用者打不開 panel。故顯式加 onKeyDown
             (對齊 select.tsx#CustomSelect 的 onKeyDown 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
-        <PopoverTrigger asChild>
+        <PopoverTrigger asChild ref={fieldTriggerRef} {...fieldFocus.trigger}>
           <div
             ref={ref}
             id={idProp ?? fieldCtx?.id}
@@ -398,9 +405,6 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               // Escape → 關(Radix Content 已自帶,trigger 補位對齊 select.tsx#CustomSelect 的 onKeyDown)
               if (e.key === 'Escape') setOpen(false)
             }}
-            // 觸發欄位 + 它的面板 = 同一個欄位:焦點搬進面板不算離開(lib/composite-field-focus.ts,待辦總帳 N83;
-            // 2026-10-01 前一開面板就 blur,必填錯誤在還沒選時間時就長出來)
-            onBlur={(e) => compositeFieldBlur(e, { trigger: e.currentTarget, popupId }, onBlurProp)}
           >
             {/* 截斷必附 tooltip(tooltip.spec.md:32)— trigger div 自身是 hover 目標、無疊層,
                 值 span 直接消費 TruncatedText(對照 date-picker Range edit trigger 同型) */}
@@ -433,6 +437,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx#DatePickerRange「日期區間選擇」同款 DS default。 */}
         <PopoverContent
           id={popupId}
+          {...fieldFocus.popup}
+          // 關掉的那一下補量欄位的 blur(fieldFocus.popupClosed,lib/composite-field-focus.ts)
+          onCloseAutoFocus={fieldFocus.popupClosed}
           className="w-auto p-0"
           align="start"
           aria-label="選擇時間" /* i18n-allow: DS default dialog label */

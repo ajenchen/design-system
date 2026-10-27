@@ -898,7 +898,7 @@ export const CalendarTokens = {
               <strong>State stacking</strong>:today + selected → selected 勝出(藍底白字圓);today + range-middle → track 灰底 + underline 仍可見。
             </p>
             <p className="text-footnote text-fg-muted mt-2">
-              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 `bg-neutral-selected`(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
+              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
             </p>
           </div>
         </div>

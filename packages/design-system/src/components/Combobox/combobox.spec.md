@@ -144,7 +144,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 **規則**:欄位內搜尋框的最小寬 = **打的字的寬 + 插入點**,空的時候只剩插入點;它仍吃掉這一列剩下的空間(點那裡照樣是點輸入處),最寬到整列(字比整列還長時停在整列寬、在框裡捲動,同一般文字欄位)。「使用者永遠看得到自己打的字」這個理由不變,由下面兩條保證:
 
 - `wrap`:打的字放不下這一列剩下的寬時,搜尋框整個換到下一列;空的時候不會自己佔一整列 —— **關著的欄位不會多出一列空白**。換到下一列時字從那一列的起點開始,與 Tag 盒的左緣同一條線(Tag 內距公式 `../Field/field-wrapper.tsx` `fieldTagInsetX` 那條邊;見下方「世界級」最後一條)。
-- 單行(+N):搜尋框要的寬算進「看得見幾個 Tag」—— 放不下時把最後幾個 Tag 收進 +N,讓出打字的位置。Combobox 的 DOM 量測(`combobox.tsx` `useOverflowCount`)與 PeoplePicker 頭像堆疊的公式(`../PeoplePicker/people-picker.tsx`)讀同一支量尺(`combobox.tsx` `findInlineSearchMirror`),打字變寬就重算。
+- 單行(+N):搜尋框要的寬算進「看得見幾個 Tag」—— 放不下時把最後幾個 Tag 收進 +N,讓出打字的位置。Combobox 的 DOM 量測(`../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount`)與 PeoplePicker 頭像堆疊的公式(`../PeoplePicker/people-picker.tsx`)讀同一支量尺(`combobox.tsx` `findInlineSearchMirror`),打字變寬就重算。
 
 **作法**:外層一格 grid,裡面一顆看不見的量尺(內容 = 打的字 + 一個空白)與輸入框疊在同一格;量尺撐出這一格要的寬、輸入框填滿這一格;外層 `flex: 1 1 auto` —— 基準寬 = 量尺寬(決定放不放得下這一列),再吃掉這一列剩下的空間。**那一格的欄寬上限是整列**(`grid-template-columns: minmax(0, 100%)`):字比整列還長時框停在整列寬、輸入框自己捲動。輸入框自己不帶寬(`width: 0`、`min-width: 100%`):原生輸入框就算 `size=1` 也有約 14px 的固有寬,會被算進 flex 基準寬 —— 三顆 Tag 排滿、這一列只剩 11px 時空的輸入框就自己擠到下一列(2026-10-01 實測);不帶寬之後基準寬只剩量尺,排版時再撐滿那一格(`combobox.tsx`)。不用 JS 量字寬、不訂任何 px 常數。2026-09-30 第三輪只寫了外層 `max-w-full`:它只管得到外框,管不到隱含的 auto 欄 —— 欄寬跟著量尺(不換行)長,輸入框就跟著字長出欄位、插入點被切在欄位外(2026-10-01 實測 67 字時超出欄位 135–218px、單行全選收進 +N 之後仍超出 110px;main 上沒有這個問題);`scripts/searchable-menu-focus-invariant.mjs` `[typed-visible]` 另量一串比整列還長的字(框的右緣不超出欄位、框真的捲過去)。輸入框其餘樣式消費 `../Field/field-wrapper.tsx` `bareInputStyles`(字級與行高繼承欄位:sm/md `text-body`、lg `text-body-lg`;placeholder `text-fg-muted`;截斷省略;停用色;焦點抑制宣告),與 Select 觸發欄位內的搜尋框同一份;本元件只另加文字游標(`FIELD_TEXT_ENTRY_CURSOR`)與一列 Tag 高(`TAG_HEIGHT_PX`:與 Tag 同列、或換到下一列時,那一列都照「列數 × Tag 高」公式,`../Field/field-controls.spec.md`「Tag 自己的 y」)。
 
@@ -206,14 +206,14 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 `<Combobox {...form.getInputProps('tags')} />` 真的接得上(`../Field/form-validation.spec.md` v1 邊界 (a);待辦總帳 N82 —— 2026-10-01 前規格宣稱支援、實作卻在解構時把 `name` / `onBlur` / `onKeyDown` / `data-*` 全丟掉,規則 2 / 4 / 8 一條都到不了)。接線照 Select 的 allowlist 做法(`combobox.tsx` ComboboxProps 檔頭):
 
-- `name` 掛在**可聚焦的觸發區**(規則 8「焦點移到第一個錯誤欄位」以 `name` 定位並聚焦;隱藏的原生 `<select>` 不是焦點站)
-- `onBlur`:**觸發區 + 它的清單浮層 + 「+N」浮出清單 = 同一個欄位**(`../../lib/composite-field-focus.ts`,待辦總帳 N83)—— 開啟時焦點搬進浮層(浮層內搜尋框 / cmdk 殼)、或按「+N」卡裡的 Tag ×(卡在另一個 portal,以 `../OverflowIndicator/overflow-indicator.tsx` `contentId` 認得,2026-10-07 補)都不算離開,規則 2 的驗證只在真的離開時跑一次;修前一開清單必填錯誤就長出來
+- `name` 掛在**可聚焦的觸發區**(規則 8「焦點移到第一個錯誤欄位」以 `name` 定位並聚焦;Combobox 沒有任何隱藏的原生控件,觸發區就是唯一的焦點站 —— 「單一路徑(不分裝置)」)
+- `onBlur`:**觸發區 + 它的清單浮層 + 「+N」浮出清單 = 同一個欄位**(`../../lib/composite-field-focus.ts`,待辦總帳 N83)—— 開啟時焦點搬進浮層(浮層內搜尋框 / cmdk 殼)、或按「+N」卡裡的 Tag ×(卡在另一個 portal,以 `../OverflowIndicator/overflow-indicator.tsx` `contentId` 認得,2026-10-07 補)都不算離開,規則 2 的驗證只在真的離開時跑一次;修前一開清單必填錯誤就長出來。從觸發欄位離開、從彈出層直接離開(開著點空白處 / 直接點下一格 / 不可搜尋的 Select 開著按 Tab)、握著焦點的節點隨收起卸載,都算離開一次(2026-10-21 r1b fields F1:修前判準只掛在觸發欄位,從彈出層直接離開時 consumer 收不到 blur;`useCompositeFieldBlur` 兩邊都聽、關的那一下補量);判準由 SelectMenu 掛(`onFieldBlur` / `fieldParts`)
 - `onKeyDown`:consumer 先跑、擋了預設就不走元件導覽;規則 4 的 Esc 回復只在那一下**歸欄位**時動作(`../../lib/overlay-escape.ts`):清單開著按 Esc 只關清單、值不動;清單關著、值改過 → 回復值(放在 Dialog 裡第一下回復、第二下才關;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)
 - `data-*`(`data-form-validation` 歸屬標記、`data-escape-layer` Esc 層宣告)轉到觸發區
 
 ## Ref 契約(cross-mode 例外,2026-07-17 user 拍板)
 
-Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染**本質不同的 subtree**(edit = trigger + hidden select;view/readonly = `ReadonlyMultiSelect`)。**`ref` 只保證在 edit mode 指向 trigger root(`__triggerRef`)**;view / readonly / disabled mode **不保證穩定 root**(對齊 React「avoid over-exposing DOM nodes in higher-level components」)。需在任意 mode 取穩定 DOM root 的 consumer 應在外層自包一層容器,不依賴 Combobox `ref` 跨 mode 一致。與 T1 RadioGroup / Switch 的跨 mode 缺口採同一哲學(記錄例外,不硬造統一 host)。
+Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染**本質不同的 subtree**(edit = 觸發區 + 自建浮層選單,沒有隱藏的原生控件;view/readonly = `ReadonlyMultiSelect`)。**`ref` 只保證在 edit mode 指向 trigger root(`__triggerRef`)**;view / readonly / disabled mode **不保證穩定 root**(對齊 React「avoid over-exposing DOM nodes in higher-level components」)。需在任意 mode 取穩定 DOM root 的 consumer 應在外層自包一層容器,不依賴 Combobox `ref` 跨 mode 一致。與 T1 RadioGroup / Switch 的跨 mode 缺口採同一哲學(記錄例外,不硬造統一 host)。
 
 ---
 
@@ -253,6 +253,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 觸發區宣告 `aria-haspopup="dialog"`;`searchIn='trigger'` 時焦點留在觸發區(可搜尋時在欄位內的搜尋框;它恆在,空值也一樣)、清單靠該輸入框上的 `aria-activedescendant`,
 宣告 `aria-haspopup="listbox"`;Tab 照 DOM 順序走 —— 頁面上觸發區後面還有可 Tab 的元素就走到那裡、浮層隨之收起,觸發區已是頁面最後一格時會走進掛在 body 最後的浮層(清單捲動區、全選鈕)並在裡面繞圈(2026-09-30 實測;完整說明與已登記的結構工作見 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 多選 Tab 列)。宣告與 `onOpenAutoFocus` 用同一個條件(`combobox.tsx`)。
 滑鼠點選與 `Enter` 選完,焦點都不離開開啟時的落點(兩種 `searchIn` 皆同)。
+**欄位內搜尋框的名字 = 欄位的名字**(2026-10-21,r1b fields N2):有 Field label 時 `aria-labelledby` 指向它、consumer `aria-label` 優先,兩者都沒有才用 `searchAriaLabel`(預設「搜尋選項」)—— 與 Select 欄位內搜尋框同一條(`../Select/select.spec.md`「ARIA / Pattern」)。焦點在觸發區上打字會把焦點搬進這顆輸入框(K3),名字不同就聽不出還在哪個欄位(修前:「文章標籤」→「搜尋選項」;WCAG 2.4.6 / 4.1.2)。浮層內搜尋框(`searchIn='menu'`)在浮層那一層裡,仍用 `searchAriaLabel`。
 輸入法組字中的 `Enter` / 空白 / 方向鍵 / `Esc` 是在選字:觸發區 `onKeyDown` 開頭先問 `../../lib/ime-composition.ts` `isImeComposing`,不開關選單、不轉送給清單;`Esc` 另有 Radix 在 document 捕獲階段那一條(只看 `event.key`,<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/use-escape-keydown/src/use-escape-keydown.tsx#L14-L19>),由浮層 `PopoverContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape` 擋掉(組字判斷是它的第一步;2026-10-01 前組字中按 `Esc` 仍會把選單連同關鍵字一起關掉,實測)。
 以上規則與 W3C 出處的單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(Focus 段)。
 
@@ -285,7 +286,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 且其 workflow 自述非 required check)。
 
 
-**為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（桌機的 combobox 容器 / 手機的原生 select）的 tab focus，反而破壞鍵盤體驗。「單一鍵盤聚焦點 + 多個滑鼠點擊區」是混合型控制項的世界級 canonical pattern（Material / Atlassian / GitHub issue filter 共識）。
+**為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（combobox 容器;不分裝置只有這一個,見「單一路徑（不分裝置）」）的 tab focus，反而破壞鍵盤體驗。「單一鍵盤聚焦點 + 多個滑鼠點擊區」是混合型控制項的世界級 canonical pattern（Material / Atlassian / GitHub issue filter 共識）。
 
 **結論**: Combobox 多處 `onClick` 在非 button 元素上**是經過評估的 acceptable a11y 模式**,不是需要修復的 bug。
 

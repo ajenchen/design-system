@@ -216,7 +216,7 @@ function TagInner(
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
-      // 用 CSS var `--combobox-tag-area-inline-size`(由 Combobox useOverflowCount JS-injected)取代
+      // 用 CSS var `--combobox-tag-area-inline-size`(由 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount` 寫在容器上)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing
       // block 退化為 initial value → Round 4 的 100% 沒 enforce。改 explicit px 值(JS measured)避此 trap。
       // unbounded=true:cap = inject 寬(回 cell-as-input narrow cell 原 behavior)

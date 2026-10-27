@@ -370,7 +370,7 @@ export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined,
  *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
  *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
  * Tag 高度消費同一個 token `--tag-height-*`(tokens/uiSize/uiSize.css),沒有第二份字面值。
- * 消費者:Combobox(四條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
+ * 消費者:Combobox(三條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',

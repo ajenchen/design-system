@@ -42,7 +42,7 @@ function formatHostname(url: string): string {
 // 改成 flex 修掉,唯讀 / 檢視模式與表格連結格(用檢視模式)仍是整行連結。改這一處,全部模式一起好。
 // 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
 function renderLinkAnchor(value: string, label?: string) {
-  const displayText = label || formatHostname(value)
+  const displayText = linkDisplayText(value, label)
   return (
     <a
       href={value}
@@ -78,9 +78,24 @@ function isSameSitePath(value: string): boolean {
  * 打字少了 https://、`javascript:` / `data:` 開頭、中間有空白的字,一律不會成為 `href`。編輯模式的驗證不變(只收 http(s))。
  */
 function renderLinkValue(value: string, label?: string) {
-  if (isValidUrl(value) || isSameSitePath(value)) return renderLinkAnchor(value, label)
-  // 顯示原字串,不走 formatHostname:`javascript:alert(1)` 之類 URL 解析得動、hostname 卻是空的,會整格空白(2026-10-13 探針實測)
-  return <TruncatedText display="block">{label || value}</TruncatedText>
+  if (isLinkable(value)) return renderLinkAnchor(value, label)
+  return <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
+}
+
+/** 能安全點的值(合法 http(s) 網址或站內路徑;見上方 renderLinkValue) */
+function isLinkable(value: string): boolean {
+  return isValidUrl(value) || isSameSitePath(value)
+}
+
+/**
+ * 一個網址值在畫面上顯示的字 —— 連結、一般文字、停用的灰字**同一份**(2026-10-21,r1b fields F2 收成一支):
+ * 有 `label` 用 label;能點的顯示主機名(`formatHostname`);其他顯示原字串 —— 不走 formatHostname:`mailto:` / `tel:` / `javascript:` / `data:`
+ * 解析得動、hostname 卻是空的,會整格空白(2026-10-13 探針實測)。2026-10-21 前停用那一支另寫 `label || formatHostname(value)`,
+ * 這幾種值在停用時被畫成「-」(看起來像沒填;唯讀 / 檢視顯示原字串,link-input.spec.md「readonly / disabled」)。
+ */
+function linkDisplayText(value: string, label?: string): string {
+  if (label) return label
+  return isLinkable(value) ? formatHostname(value) : value
 }
 
 /**
@@ -332,7 +347,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // readonly — 顯示藍色連結（可點擊);值不是合法 http(s) 網址時畫成一般文字(renderLinkValue)
     // disabled — 顯示純文字 fg-disabled（不可點擊）
     if (!isEditable) {
-      const displayText = value ? (label || formatHostname(value)) : null
+      const displayText = value ? linkDisplayText(value, label) : null
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}

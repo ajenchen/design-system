@@ -20,7 +20,7 @@
  * 前置:storybook-static/ 已建(npm run build-storybook)。
  * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900] [--touch] [--static-dir=<Storybook 建置>]
  *   --touch:行動裝置模擬(hasTouch + isMobile → Chromium `(pointer: coarse)` match),
- *   驗證 useIsTouchDevice native 分支(Select/Combobox 觸控路徑)的實際渲染。
+ *   驗證觸控下的實際渲染(Select 的 useIsTouchDevice native 分支;Combobox 2026-09-18 起不分裝置,觸控下與桌機同一條路)。
  */
 import { mkdirSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'

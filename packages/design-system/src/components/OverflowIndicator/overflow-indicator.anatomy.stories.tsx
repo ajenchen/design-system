@@ -163,6 +163,19 @@ export const Overview: Story = {
                 <Td mono>undefined</Td>
                 <Td>額外套到 trigger pill 上(頭像堆疊不需要:疊合幾何由 Avatar 的堆疊 SSOT 負責)</Td>
               </tr>
+              {/* 2026-10-21 r1b fields F7:以下兩個 prop 2026-09-30 / 10-07 加進 overflow-indicator.tsx,速查表沒跟上 */}
+              <tr>
+                <Td mono>onContentMouseDown</Td>
+                <Td mono>MouseEventHandler</Td>
+                <Td mono>undefined</Td>
+                <Td>按在浮出清單上的 mousedown:讓使用端把「按在自己的零件上焦點不動」延伸到這張卡(Combobox 搜尋框、AgentPanel 輸入盒握著焦點時按卡裡的 ×)</Td>
+              </tr>
+              <tr>
+                <Td mono>contentId</Td>
+                <Td mono>string</Td>
+                <Td mono>undefined</Td>
+                <Td>浮出清單的 id:讓使用端把這張卡算成同一個欄位的零件(Combobox 按卡裡的 × 不算離開欄位)</Td>
+              </tr>
             </tbody>
           </table>
         </div>

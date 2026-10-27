@@ -426,7 +426,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Arrow hover-only 顯示</H3>
         <Desc>
-          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。鍵盤聚焦時強制顯示(`has-[:focus-visible]`,不需 hover;滑鼠點過的不常駐)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
+          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。鍵盤聚焦時強制顯示(<code>has-[:focus-visible]</code>,不需 hover;滑鼠點過的不常駐)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
         </Desc>
         <div className="max-w-[560px]">
           <Carousel>

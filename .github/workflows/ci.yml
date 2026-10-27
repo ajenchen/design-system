@@ -176,6 +176,9 @@ jobs:
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
           # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
           npm run test:owner-claims
+          # 結構圖色塊(2026-10-21,r1b fields 複驗 D2):同一列裡不同色名必須畫成不同顏色 —— Combobox 結構圖的搜尋框用 primary,
+          # 與 chevron 的 info 同是 --color-blue-6,畫出來一模一樣。照 semantic.css / primitives.css 展開到底,淺色深色都比。純靜態,約 1 秒。
+          npm run test:anatomy-chip-palette
 
       - name: Registered test scripts nothing was running
         run: |
@@ -198,6 +201,9 @@ jobs:
           # 2026-09-19 錨例 —— hook home 自己的 README 在 Stop 區列 5 支 hook,其中 3 支早在 2026-05-13
           # 就折進 stop_passive_logging.sh、檔名已不存在,而「折進去」這件事就寫在同一張表的上一列。
           npm run test:hook-citation-liveness
+          # 同一種病的程式符號版:文件裡「`檔名` `符號`」的指標,符號必須真的定義在那支檔裡(2026-10-21 r1b fields F4:
+          # useOverflowCount 搬到 overflow-tag-list.tsx 後,combobox.spec.md 仍指 combobox.tsx;TreeView 規格仍指早已收進 Command 根的 SelectMenuLiveStatus)。
+          npm run test:code-pointer-liveness
           # 同族第三面,也是最根本的一面:閘**宣告不出自己保證什麼**,就不會發現自己用的是代理。
           # 2026-09-20 盤點:進 required CI 的閘裡只有個位數有雙向對照組,其餘不是只有「壞了會紅」
           # 就是兩邊都沒有 —— 而「沒壞要綠」那一半正是同一天三次效能誤報的所在(同一份建置
@@ -825,7 +831,9 @@ jobs:
           # 可搜尋欄位上的按鍵與值的讓位(2026-10-07 待辦總帳 K1–K4):關鍵字空白的 Backspace 刪最後一個值 / 一鍵清空後反白回第一列 /
           # 焦點在欄位本身時打字 = 打開清單、字進搜尋框(含輸入法第一鍵,CDP 真組字)/ 按過 × 再 Esc 焦點回欄位 /「不限」與多人 1 位的名字打開後讓位。
           # 播報字值變了 / 離開欄位就清空;「不限」與多人 1 位的名字讓位不改欄寬、窄欄位名字放得下就完整。
-          # 只跑 --selftest:它先對沒動過的頁面跑完整 46 列(紅就停),再九組在頁面上拆掉修法各自必紅(2026-10-13 加 K1b 浮層內搜尋 Backspace、K7 單選依內容寬打開不變寬) —— 判定那一輪不必再跑第二次。
+          # 只跑 --selftest:它先對沒動過的頁面跑完整判定(全部列,紅就停),再 CONTROLS 每一組在頁面上拆掉修法各自必紅(列數與組數以腳本為準,這裡不抄數字;
+          # 2026-10-13 加 K1b 浮層內搜尋 Backspace、K7 單選依內容寬打開不變寬;2026-10-21 加不可搜尋 + 可清除的 Select Backspace、欄位內搜尋框的讀屏名稱、
+          # 四頁設計規格的鍵盤段寫到 Backspace) —— 判定那一輪不必再跑第二次。
           # 本機(同時另有多支瀏覽器閘在跑)3 分 36 秒。2026-10-07 更正:原本放在 verify-browser-interaction,當時註解引的「本 job CI 實測 10.8–13.0 分」是 09-21 的舊數字,
           # 該 job 實際已 20.9–22.8 分(02f12767 / b5757ee6 / 40b432da),疊上去 0464ba54 跑到 25.4 分被取消 —— 搬到本 job。
           npm run test:searchable-field-keys
@@ -1046,7 +1054,7 @@ jobs:
           # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式);
           # 2026-10-13 加試算表 DataTable 連結格 / 開關格的格內模式(Enter 進格裡的控件,Esc 先回格導覽、再清游標、才關)。
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
-          # 對照組(--selftest,二十六個突變)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
+          # 對照組(--selftest,突變清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
           node scripts/escape-and-focus-contract-invariant.mjs
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
@@ -1498,6 +1506,14 @@ jobs:
     name: Verify browser(escape and focus contract control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # 2026-10-21(r1b fields F1 / N1):契約加了 B-leave-blank / -next / -tab / N-esc-tab(五種彈出型欄位 + 一般 Popover,每個突變都要走一遍),
+    # 本機同負載成對量測整趟 1059 → 1467 秒(且後段單跑、低估),照比例 CI 這一步 835 秒(a6390356)→ 約 1170–1250 秒,加準備 ~125 秒 = 上限的 86–92%。
+    # 照 G10 的做法拆平行、不調高上限:同一個 job 開兩格 matrix,各跑一半突變(--shard,腳本檔頭);覆蓋率改由腳本靜態驗(每條契約列都在某個突變的 expectRed)。
+    # 兩格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['0/2', '1/2']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
@@ -1527,14 +1543,17 @@ jobs:
       - name: Escape and focus contract — control group (browser)
         run: |
           npx --no-install playwright install chromium
-          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):二十六個單一根因突變
+          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)
           # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
           # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
           # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
-          # 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層)
+          # 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層 / 2026-10-21:複合欄位從彈出層離開不補量 / 收起動畫開始時不還焦點)
           # 各自必須剛好紅它負責的列,對照列全程綠。四條 lane 並行(每條一個瀏覽器),本機約 11.5 分(2026-10-13 實測 690 秒、同時另有建置在跑;循序約 26 分);不需要 storybook。
           # CI 實測 p50 739 / p90 776 秒 —— 原本按預算放在 verify-browser-select-all,那個 job 因此貼到 25 分上限,2026-10-14 拆成自己的 job。
-          node scripts/escape-and-focus-contract-invariant.mjs --selftest
+          # 2026-10-21 起分兩格 matrix(見 job 檔頭),每格跑一半突變。
+          node scripts/escape-and-focus-contract-invariant.mjs --selftest --shard="$SHARD"
+        env:
+          SHARD: ${{ matrix.shard }}
 
   verify-browser-field-edges:
     # 2026-09-20 從 select-all job 拆出來的第九個 job。理由是**牆鐘**,不是逾時:
