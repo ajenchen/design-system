@@ -80,7 +80,7 @@ Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter`
 
 永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`,不可移除——使用者永遠需要明確的關閉手段。
 
-**唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單、沒有標題列,**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
+**唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單,**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
 
 **Canonical 來源**:Sheet 是 overlay chrome,corner close X 屬 action group region,必用 Button(非 Inline Action / 非自刻 button)。詳見 `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」+ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
 

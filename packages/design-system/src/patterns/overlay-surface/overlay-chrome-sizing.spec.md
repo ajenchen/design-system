@@ -129,9 +129,8 @@ const CHROME_UNBOUNDED_SLOT =
 - 所有無視覺邊界的 button,不限 dismiss
 
 **為什麼用負 margin 而非 fixed wrapper / size="xs"**:
-- `size="xs"` 會縮小 button 本身,**命中區也跟著縮到 24**,與 overlay chrome 的比例不協調(chrome 的 dismiss 是 `sm` = 28),也違反此處記載的意圖「touch 仍 sm」(**AI 推導、引不出 user 原話**;2026-09-27 依待辦總帳 N23 拿掉「user 意圖」的歸屬,引號內原字不動,來源說明見下一行)。**問題在比例,不在 a11y** —— 24 正好等於 `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值,沒有低於任何我們採用的門檻;先前這裡寫的「違反 a11y 最小 24+ hit target」既與「元件高度地板」自相矛盾、也查無出處,2026-09-24 更正(同 `uiSize.spec.md`「選錯的後果(驗證 decision tree 的重要性)」)
-  - ⚠️ **引號內為本檔既有記載,本輪查無對話出處,依 M36(a) 標為來源不明,不得再當成 user 拍板引用。** 2026-09-24 這一行一度被改寫成「按鈕本身仍 sm」並直接覆蓋掉原字 —— 兩句語意不同(一句講命中/觸控,一句講按鈕盒),而改寫沒有任何揭露。已還原為原字。要動引號內的字,只能拿得出對話原文才動
-- `min-h-chrome-header-height` fixed wrapper 會鎖死高度,**bounded button 失去自然長高能力**(違反上一條的意圖 —— 同樣是 AI 推導,引不出 user 原話)
+- `size="xs"` 會縮小 button 本身,**命中區也跟著縮到 24**,與 overlay chrome 的比例不協調(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於 `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值,沒有低於任何我們採用的門檻;先前這裡寫的「違反 a11y 最小 24+ hit target」既與「元件高度地板」自相矛盾、也查無出處,2026-09-24 更正(同 `uiSize.spec.md`「選錯的後果(驗證 decision tree 的重要性)」)
+- `min-h-chrome-header-height` fixed wrapper 會鎖死高度,**bounded button 失去自然長高能力**(違反上一條的意圖 —— AI 推導,引不出 user 原話)
 - 負 margin:button render / 命中區不變,僅影響 parent flex layout 計算 → 剛好是這裡要的「layout 24,視覺 / 命中 28」(AI 推導的設計目標,引不出 user 原話)
 
 **Consumer 使用方式**:
@@ -164,7 +163,7 @@ const CHROME_UNBOUNDED_SLOT =
 - ❌ v1「chrome dismiss 全 xs(DS-wide 統一)」→ 錯:過度簡化 rationale
 - ❌ v2「三家族 modal sm / non-modal xs / banner xs」→ 錯:overlay 內部不必分化
 - ❌ v3「overlay 統一 sm + min-h chrome-header-height 強鎖 48/56」→ 錯:強鎖會讓 bounded button 被鎖死 slot
-- ❌ v4「padding-based + unbounded=xs / bounded=natural」→ 錯:xs 縮小 button 連命中區也縮到 24,與 chrome 的 28 失衡(違反上方「touch 仍 sm」那條 AI 推導的意圖、不是 user 原話 —— 2026-09-27 依 N23 註明;**不是 a11y 問題**,見上方「為什麼用負 margin 而非 fixed wrapper / size="xs"」)
+- ❌ v4「padding-based + unbounded=xs / bounded=natural」→ 錯:xs 縮小 button 連命中區也縮到 24,與 chrome 的 28 失衡(**不是 a11y 問題**,見上方「為什麼用負 margin 而非 fixed wrapper / size="xs"」)
 - ✅ v5「padding-based + unbounded `data-unbounded` 套負 my(native size sm 不變)/ bounded natural」→ 對:button native size 與命中區保 sm,僅 layout 佔位縮回 24,48/56 chrome-header-height 自然達成
 
 **SSOT 關聯**:

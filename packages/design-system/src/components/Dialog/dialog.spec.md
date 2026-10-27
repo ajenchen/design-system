@@ -36,10 +36,10 @@ Modal 對話框，基於 Radix Dialog。用於**需要使用者注意力、阻�
 |------|------|------|
 | 短暫的操作回饋（成功 / 失敗訊息）| `Toast` | Dialog 會阻斷流程，Toast 非阻斷 |
 | 持久的頁面內通知 | `Alert` | Alert 是 inline 嵌入，不浮起 |
+| 手機全屏編輯 | `Sheet` (bottom / fullscreen) | Dialog 預設 viewport inset,行動裝置用 Sheet 更自然 |
 | 側邊操作面板（不需完全阻斷）| `Sheet` | Sheet 從側邊滑入，視覺更輕、常搭配列表 detail |
 | 浮動的精簡選單 | `DropdownMenu` / `Popover` | Dialog 是 modal,DropdownMenu/Popover 是輕量浮層 |
 | Hover 才出現的輔助資訊 | `Tooltip` / `HoverCard` | Dialog 需要明確觸發,hover 不該是 modal 觸發 |
-| 手機全屏編輯 | `Sheet` (bottom / fullscreen) | Dialog 預設 viewport inset,行動裝置用 Sheet 更自然 |
 
 ---
 
@@ -78,7 +78,7 @@ Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 pa
 ## Viewport Inset
 
 Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間距。**這顆 token 是 2026-09-11 從
-`--layout-space-bottom` 拆出來的**:後者的語意是「結論留白:內容到 action buttons」(`layoutSpace.spec.md` Token 表),
+`--layout-space-bottom` 拆出來的**:後者的語意是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(`layoutSpace.spec.md` Token 表),
 跟「浮層外殼到視窗邊」是兩個概念,值剛好都是 48 而已。耦合著會讓任何人調結論留白時,意外改掉全站 Dialog 的高度**與最大寬度**。
 
 寬與高都吃同一個 inset:`min(maxWidth, 100vw - inset*2)` / `min(100svh - inset*2, maxHeight)`。

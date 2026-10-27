@@ -132,7 +132,7 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 ### Multi corner action 場景
 
-目前 Alert API 只透過 `dismissible` + `onDismiss` 渲染單一 close X(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」)。多 corner action 場景目前不支援;若未來 consumer 有需求,走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
+多顆角落動作走上一節:其他動作放 `endContent`,close X 由 `dismissible` + `onDismiss` 渲染(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」),兩者之間的分隔線由 Notice 基座自動放。
 
 ---
 
@@ -140,7 +140,7 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 ### Subtle(預設)
 
-淺底色 + 四邊 1px border(邊框採 `--{hue}-text` = icon 同色,2026-06-15 user 拍板;原借 `-hover` 狀態 token 是語意 smell 已改)。99% 場景用 subtle——視覺重量適中,使用者注意但可繼續主要任務。不設 `data-theme`,元素跟隨頁面 theme。
+淺底色 + 四邊 1px border(邊框採 `--{hue}-text` = icon 同色,2026-06-15 user 拍板〔UD-J16〕;原借 `-hover` 狀態 token 是語意 smell 已改)。99% 場景用 subtle——視覺重量適中,使用者注意但可繼續主要任務。不設 `data-theme`,元素跟隨頁面 theme。
 
 ### Solid
 

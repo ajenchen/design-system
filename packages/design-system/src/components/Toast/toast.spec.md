@@ -139,7 +139,7 @@ toast({
 - `<Toaster />` 不傳 `offset` / `mobileOffset` / `style`,DS 也不量任何元件的位置來推 Toast。代理面板並排或浮層、入口鈕在家或貼邊、頁面捲動,Toast 都在同一個位置,可能疊在它們上面 —— 刻意如此,不是 bug(`../AgentPanel/agent-panel.spec.md`、`../AgentPanel/agent-panel-fab.spec.md` 各有一行指回本節)。
 - 疊在東西上面時,讓開的方法是 Toast 自己:(1) 畫面上可見的 × 隨時關掉(見「A11y 預設」關閉按鈕);(2) 自動消失,無 `action` 4 秒、有 `action` 10 秒(見「API」`duration`);(3) 滑鼠移上去暫停倒數,鍵盤 ⌥T 跳進 Toast 也暫停(見「A11y 預設」自動關閉計時器)。
 
-**由來 —— user 2026-10-13 決定(甲)**。user 先問:
+**由來 —— user 2026-10-13 決定(甲)〔UD-H31〕**。user 先問:
 
 > 我想知道世界級的設計有沒有做甲的？因為就算這樣客製化了這些冰山一角還是有千千萬萬個情況可能會蓋到重要的東西啊，難道每個情況都要定義？而且又不是關不掉toast,仔細研究一下
 

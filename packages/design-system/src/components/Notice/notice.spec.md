@@ -38,7 +38,7 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 
 ## Typography
 
-**Family 2 reading-md consumer（2026-06-15 user 拍板,off-grid 偏移收斂）**，md tier 固定不隨 density 變：
+**Family 2 reading-md consumer（2026-06-15,off-grid 偏移收斂;登記簿查無這一條 user 原話,來源不明）**，md tier 固定不隨 density 變：
 - title: `text-body`（14px）**default leading 1.5** — 有 description 時加 `font-medium`
 - description: `text-body`（14px）**default leading 1.5** + `text-fg-secondary`（neutral-8）
 - label↔desc gap: `--item-gap-label-desc-reading`（ItemContent 預設 mode=`reading` size=`md` 自動選）

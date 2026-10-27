@@ -144,14 +144,14 @@ chrome 邊 ─ hover bg 左邊 ─────── [ loose breathing ] ──�
 
 ### When list 上方有 search / banner(multi-row)
 
-list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了反而 search row 沒呼吸)。直接用預設 `<DialogBody>`(chrome padded),list 自管 outer wrapper。
+search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不加;body 撤 chrome padding,list 照舊 `py-2`:它的 8 + 列內距就是 search → list 的間距,也是 list 底。
 
 ```tsx
-<DialogBody>  {/* 預設 chrome padding */}
-  <Input search />                              {/* search row */}
-  <div className="mt-[var(--layout-space-tight)] py-2 -mx-[var(--layout-space-loose)]">  {/* list outer:撤 body 水平 padding 讓 item flush chrome */}
-    {items.map(...)}
-  </div>
+<div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">  {/* search 列:body 外、不捲 */}
+  <Input search />
+</div>
+<DialogBody className="!px-0 !pt-0 !pb-0">  {/* body 撤 chrome padding */}
+  <div className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
 </DialogBody>
 ```
 
@@ -237,7 +237,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 | 排版 | `flex items-center justify-end gap-2`(單側時用 `justify-between`,先例 `components/Coachmark/coachmark.tsx`)| 直排全寬 |
 | 實作 | 本檔 `SurfaceFooter`(Dialog / Sheet / Popover footer 全是純轉發)| `components/Sidebar/sidebar.tsx` 的 `SidebarFooter`、`components/Menu/menu-item.tsx` 的 `MenuFooter` |
 
-**選取類浮層的 footer 內容順序**(2026-09-17 user 拍板):左側依序放**操作選取**的按鈕(全選 / 取消全選、重設),
+**選取類浮層的 footer 內容順序**(2026-09-17 AI 提的方案 A、user 選定〔UD-H15〕):左側依序放**操作選取**的按鈕(全選 / 取消全選、重設),
 右側放**提交**類(套用);有哪個功能才渲哪顆,沒有就不渲。canonical 實作見
 `components/SelectMenu/select-menu.tsx` 的多選 footer。
 
@@ -338,9 +338,9 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ---
 
-## Control + List 視覺對稱原則 → SSOT 規則 3 補充
+## Control + List 視覺對稱 → 見本檔「When list 上方有 search / banner」
 
-→ `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap」+ `## Notes` 節「List-as-region in overlay body」(本原則本質是 inline → block 對稱在 list 場景的特殊化,SSOT 移上游避免重複 — Rule-of-3)。
+→ 由 `tokens/layoutSpace/layoutSpace.spec.md` 規則 2 / 規則 4 表裡 unbounded region 那一列(無框清單靠自帶 py 撐、外面給 0)舉一反三到 search → list,不另立條文。
 
 ---
 

@@ -85,7 +85,7 @@ hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的�
 - `tabIndex=0`(可 Tab 到;focus 時 Radix hover-card 自動開卡)
 - `role="img"` + `aria-label`(取 `alt`)——2026-07-07 CI axe 補修:aria-label 掛在無 role 的 generic `<div>` 是 ARIA 禁用組合(axe `aria-prohibited-attr`,serious);Avatar 語義本質 = 身份圖像,`role="img"` 讓命名合法、子孫自動 presentational、不對 AT 承諾任何互動行為
 - 全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 focus class,wrapper 只依 `shape` 帶 `rounded-full` / `rounded-md` 讓外描邊圓角跟隨形狀)(keyboard focus 視覺 indicator)
-- **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 user 拍板拆除):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA)
+- **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;登記簿查無這一條 user 原話,來源不明):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA)
 - 若無 `hoverCard` → 純展示 `<div>` 不 focusable(避免 tabTrap 噪音)
 
 Rationale:Radix `HoverCardTrigger asChild` 不自動加 tabIndex 給 non-focusable child。若 Avatar wrapper 是 `<div>` 沒 tabIndex,keyboard user 無法 reach ProfileCard content,違反 WCAG 2.1.1(Keyboard)。此 canonical 確保 DS-wide「person avatar → ProfileCard」keyboard 可達,且 ARIA 只宣告真的有的行為。

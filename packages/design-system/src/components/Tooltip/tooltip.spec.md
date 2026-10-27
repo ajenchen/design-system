@@ -48,7 +48,7 @@ Tooltip 的判斷標準是：**畫面上的資訊是否已經足夠讓使用者�
 | 內容需要互動（按鈕 / 連結 / 輸入框）| `HoverCard` | Tooltip 不可點擊，HoverCard 才支援互動元素 |
 | 需要長篇說明（多段文字 / 圖片）| `HoverCard` / 側邊 help panel | Tooltip 是一句話補充 |
 | 欄位驗證錯誤 | inline error message | Tooltip 需要 hover 才能看到，錯誤必須 persistent |
-| 必要資訊的唯一載體 | 直接顯示在畫面上 | Tooltip 觸控裝置無法觸發，關鍵資訊不能只靠 hover |
+| 必要資訊的唯一載體 | 直接顯示在畫面上 | Tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西,關鍵資訊不能只靠 hover |
 | 按鈕已有完整文字 label | 不要加 tooltip | 重複同樣的文字沒有價值 |
 
 ## 與 Button icon-only 的關係
@@ -85,7 +85,7 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 
 ## 邊界狀態
 
-- **觸控裝置**:無 hover,tooltip 無法觸發——必要資訊不可只靠 tooltip 承載(見「何時不用」「禁止事項」)
+- **看不出藏著資訊**:tooltip 要滑過停 0.5 秒(`--motion-delay-plain`)才出現、滑開就收,使用者不知道那裡藏著東西——必要資訊不可只靠 tooltip 承載(見「何時不用」「禁止事項」)
 - **長文字**:超過 max-width 280px 自動換行、完整呈現不截斷(見「最大寬度」「內容完整性」)
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地
@@ -100,7 +100,7 @@ Radix idiom passthrough:`open`(受控)/ `defaultOpen`(非受控初始開啟)/ `o
 
 - ❌ 不要在已有完整 label 的按鈕上加 tooltip 重複同樣的文字
 - ❌ 不要在 tooltip 裡放互動元素——改用 HoverCard
-- ❌ 不要把 tooltip 當作必要資訊的唯一載體——tooltip 需要 hover 才能看到，觸控裝置無法觸發
+- ❌ 不要把 tooltip 當作必要資訊的唯一載體——tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西
 - ❌ 不要為個別 tooltip 設定不同的延遲時間——全產品統一一組參數
 - ❌ 不要在 tooltip 內截斷資訊——tooltip 是資訊終點，內容必須完整
 - ❌ 不要對 `TooltipContent` 傳空內容——空 tooltip 是無意義的視覺雜訊(空值時元件不掛浮層,見「邊界狀態」)
