@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @overlay-open-skip: 本檔為 usage-guidance(設計原則)story——每個 Rule 卡片以「關閉的 trigger 按鈕」並排比較 Popover / Dialog / DropdownMenu / Tooltip 何時用;全部 defaultOpen 會讓多個 portal 疊在一起、視覺全毀。overlay 開啟狀態的視覺覆蓋由 popover.stories.tsx(展示)+ popover.anatomy.stories.tsx(Inspector defaultOpen)負責。
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Filter, Copy, Edit, Trash2, ChevronDown } from 'lucide-react'
 import {
@@ -19,6 +20,7 @@ import {
   DialogTitle,
   DialogBody,
   DialogFooter,
+  DialogClose,
 } from '@/design-system/components/Dialog/dialog'
 import {
   DropdownMenu,
@@ -30,19 +32,108 @@ import { FieldLabel } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
-import { Separator } from '@/design-system/components/Separator/separator'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/設計原則',
   parameters: { layout: 'padded' },
+  // 範例按鈕都要能動(登記簿 A16);確認框的「永久刪除」做完跳 Toast。Toaster 放 story 外層(同 toast.principles.stories.tsx)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
 
 
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
+
+/** 進階篩選:清除 = 全部取消勾選、套用 = 收起(2026-10-28 前兩顆都沒有作用、還多一行規格沒有的「最多 3 個條件」;稽核 L065) */
+function AdvancedFilterPopover() {
+  const [open, setOpen] = useState(false)
+  const [checked, setChecked] = useState<string[]>(['我指派的'])
+  const toggle = (v: string) => setChecked((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="tertiary" endIcon={ChevronDown}>進階篩選</Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80">
+        <PopoverHeader><PopoverTitle>進階篩選</PopoverTitle></PopoverHeader>
+        <PopoverBody>
+          <CheckboxGroup>
+            {['我指派的', '我建立的', '我追蹤的'].map((v) => (
+              <Checkbox key={v} label={v} checked={checked.includes(v)} onCheckedChange={() => toggle(v)} />
+            ))}
+          </CheckboxGroup>
+        </PopoverBody>
+        <PopoverFooter>
+          <Button variant="tertiary" size="sm" className="flex-1" onClick={() => setChecked([])}>清除</Button>
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => setOpen(false)}>套用</Button>
+        </PopoverFooter>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+const COLUMN_OPTIONS = ['狀態', '負責人', '到期日'] as const
+const COLUMN_DEFAULTS: string[] = ['狀態', '負責人']
+
+/** 「欄位顯示」同一份內容分別放進 Popover / Dialog:重設 = 回到預設欄位、套用 = 收起(2026-10-28 前兩顆都沒有作用) */
+function ColumnVisibilityFields({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  return (
+    <CheckboxGroup>
+      {COLUMN_OPTIONS.map((c) => (
+        <Checkbox key={c} label={c} checked={value.includes(c)} onCheckedChange={() => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c])} />
+      ))}
+    </CheckboxGroup>
+  )
+}
+
+function ColumnVisibilityPopover() {
+  const [open, setOpen] = useState(false)
+  const [columns, setColumns] = useState<string[]>(COLUMN_DEFAULTS)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="tertiary">欄位顯示</Button>
+      </PopoverTrigger>
+      <PopoverContent align="start">
+        <PopoverHeader><PopoverTitle>欄位顯示</PopoverTitle></PopoverHeader>
+        <PopoverBody>
+          <ColumnVisibilityFields value={columns} onChange={setColumns} />
+        </PopoverBody>
+        <PopoverFooter>
+          <Button variant="tertiary" size="sm" onClick={() => setColumns(COLUMN_DEFAULTS)}>重設</Button>
+          <Button variant="primary" size="sm" onClick={() => setOpen(false)}>套用</Button>
+        </PopoverFooter>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function ColumnVisibilityDialog() {
+  const [columns, setColumns] = useState<string[]>(COLUMN_DEFAULTS)
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">欄位顯示</Button>
+      </DialogTrigger>
+      <DialogContent height="hug" maxWidth="360px">
+        <DialogHeader><DialogTitle>欄位顯示</DialogTitle></DialogHeader>
+        <DialogBody>
+          <ColumnVisibilityFields value={columns} onChange={setColumns} />
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="tertiary" onClick={() => setColumns(COLUMN_DEFAULTS)}>重設</Button>
+          <DialogClose asChild>
+            <Button variant="primary">套用</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -110,22 +201,26 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
+              <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth="440px">
               <DialogHeader>
-                <DialogTitle>確定要永久刪除此專案?</DialogTitle>
+                <DialogTitle>是否永久刪除專案</DialogTitle>
               </DialogHeader>
               <DialogBody>
                 <p className="text-body">此動作無法復原,所有相關任務、評論、附件都會一併刪除。</p>
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary" danger>永久刪除</Button>
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '專案已永久刪除' })}>永久刪除</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <ExampleCaption>↑ 破壞性動作必須完整決策,不能讓使用者點旁邊就跳過</ExampleCaption>
+          <ExampleCaption>↑ 要回到頁面得先處理這個框(點遮罩 / Esc 等於返回)</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -157,29 +252,8 @@ export const UsageGuidance: Story = {
           title="Popover — 自由組合的 UI 面板(多欄、輸入、圖表皆可)"
           note="語意是「這裡給我一塊可組自訂內容的浮層」。內容完全由 consumer 決定,可放輸入框、多個 section、圖表。典型案例:Jira advanced filter、Notion 屬性編輯、Linear date range picker"
         >
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="tertiary">進階篩選</Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-80">
-              <PopoverHeader><PopoverTitle>進階篩選</PopoverTitle></PopoverHeader>
-              <PopoverBody>
-                <CheckboxGroup>
-                  <Checkbox defaultChecked label="我指派的" />
-                  <Checkbox label="我建立的" />
-                  <Checkbox label="我追蹤的" />
-                </CheckboxGroup>
-                {/* consumer 自己放的分隔線用 Separator(separator.spec.md「Consumer 手動放 → Separator 元件」);條件群 → 註腳 = functional → 上下 tight */}
-                <Separator className="my-[var(--layout-space-tight)]" />
-                <p className="text-caption text-fg-muted">最多 3 個條件</p>
-              </PopoverBody>
-              <PopoverFooter>
-                <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
-                <Button variant="primary" size="sm" className="flex-1">套用</Button>
-              </PopoverFooter>
-            </PopoverContent>
-          </Popover>
-          <ExampleCaption>↑ 多種控制元件並存(checkbox + 說明 + 按鈕列)→ Popover</ExampleCaption>
+          <AdvancedFilterPopover />
+          <ExampleCaption>↑ 多種控制元件並存(勾選群組 + 按鈕列)→ Popover</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -196,7 +270,7 @@ export const UsageGuidance: Story = {
         >
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="tertiary" size="sm" startIcon={Filter}>篩選</Button>
+              <Button variant="tertiary" startIcon={Filter}>篩選</Button>
             </PopoverTrigger>
             {/* naked popover(無 PopoverTitle)→ 自傳 aria-label 讓 role="dialog" 有 accessible name(popover.spec.md A11y) */}
             <PopoverContent align="start" aria-label="篩選任務">
@@ -232,47 +306,11 @@ export const VisualAlignmentRule: Story = {
       >
         {/* @overlay-open-skip:視覺語言比較卡片——同一「欄位顯示」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見檔頭 escape),開啟態覆蓋於展示 / anatomy */}
         <ExampleGroup align="start">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="tertiary">欄位顯示</Button>
-            </PopoverTrigger>
-            <PopoverContent align="start">
-              <PopoverHeader><PopoverTitle>欄位顯示</PopoverTitle></PopoverHeader>
-              <PopoverBody>
-                <CheckboxGroup>
-                  <Checkbox defaultChecked label="狀態" />
-                  <Checkbox defaultChecked label="負責人" />
-                  <Checkbox label="到期日" />
-                </CheckboxGroup>
-              </PopoverBody>
-              <PopoverFooter>
-                <Button variant="tertiary" size="sm">重設</Button>
-                <Button variant="primary" size="sm">套用</Button>
-              </PopoverFooter>
-            </PopoverContent>
-          </Popover>
+          <ColumnVisibilityPopover />
           <ExampleCaption>↑ 同一內容以 Popover 呈現(non-modal 輕量浮層)</ExampleCaption>
         </ExampleGroup>
         <ExampleGroup align="start">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="tertiary">欄位顯示</Button>
-            </DialogTrigger>
-            <DialogContent height="hug" maxWidth="360px">
-              <DialogHeader><DialogTitle>欄位顯示</DialogTitle></DialogHeader>
-              <DialogBody>
-                <CheckboxGroup>
-                  <Checkbox defaultChecked label="狀態" />
-                  <Checkbox defaultChecked label="負責人" />
-                  <Checkbox label="到期日" />
-                </CheckboxGroup>
-              </DialogBody>
-              <DialogFooter>
-                <Button variant="tertiary">重設</Button>
-                <Button variant="primary">套用</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ColumnVisibilityDialog />
           <ExampleCaption>↑ 同一內容以 Dialog 呈現(modal 阻斷背景)</ExampleCaption>
         </ExampleGroup>
         <ExampleCaption>↑ 容器不同、chrome 視覺語言完全一致,consumer 切換不會產生視覺斷層</ExampleCaption>
