@@ -9,10 +9,10 @@ import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { Button } from '@/design-system/components/Button/button'
 import { FieldLabel } from '@/design-system/components/Field/field'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { demoNavigate } from '@/design-system/stories-helpers/scene/demo-actions'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -51,31 +51,25 @@ export const UsageGuidance: Story = {
               <StoryLink kind="Design System/Internal/HoverCard/展示" name="儲存庫資訊卡">Repository 資訊卡</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Internal/HoverCard/展示" name="觸發點類型與延遲">Trigger 類型與 delay</StoryLink>
+              <StoryLink kind="Design System/Internal/HoverCard/展示" name="觸發延遲">觸發延遲</StoryLink>
             </li>
           </TutorialList>
         </div>
       </UsageSection>
 
       <UsageSection kind="whenNot">
-        <TriggerRule
-          title="❌ 關鍵資訊不放 HoverCard(觸控裝置無法 hover)"
-          note="手機 / 平板沒有 hover 事件,HoverCard 根本不會觸發。關鍵資訊(錯誤警告、必要操作說明、付款條款)如果只靠 HoverCard,觸控使用者會完全錯過"
+        {/* 理由換成桌機事實(F8 甲:不拿觸控當理由,登記簿 C27 / C28);原本的反例(primary danger 觸發鈕 + 手刻紅框卡)拿掉,
+            只留規則與說明(稽核 M019:反例鈕是 DS 沒有的寫法、紅框卡不是 DS 元件) */}
+        <TutorialRule
+          title="❌ 關鍵資訊不放 HoverCard"
+          note="HoverCard 要滑過停一下才出現、滑開就收,鍵盤使用者也進不了卡內;關鍵資訊(錯誤警告、必要操作說明、付款條款)只靠 HoverCard,使用者很容易錯過 —— 直接顯示在畫面上,要確認的動作用 Dialog"
         >
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="primary" danger>刪除帳號</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'border-error p-[var(--layout-space-loose)]')}>
-              <ItemContent className="w-64" label="永久刪除警告" description="此動作會永久刪除所有資料" mode="scanning" labelClassName="text-body font-medium text-error" />
-            </HoverCardContent>
-          </HoverCard>
-          <ExampleCaption warn>↑ 刪除警告只靠 hover → 手機使用者點按鈕前根本沒看到 → 改用 Dialog 確認</ExampleCaption>
-        </TriggerRule>
+          <ExampleCaption warn>刪除警告只放在滑過才出現的卡裡 → 沒停下來看的人點按鈕前根本沒看到 → 改用 Dialog 確認</ExampleCaption>
+        </TutorialRule>
 
         <TutorialRule
           title="✅ 補充資訊 / 預覽 / 人員卡適合 HoverCard"
-          note="看到更好、看不到也不影響主流程的場景。即便觸控裝置沒 hover,使用者透過點擊人員 / 連結仍能取得完整資訊(HoverCard 只是桌機的快捷預覽)"
+          note="看到更好、看不到也不影響主流程的場景:沒停下來看預覽的人,點進連結或人員頁一樣拿得到完整資訊(HoverCard 只是快捷預覽)"
         >
           <HoverCard>
             <HoverCardTrigger asChild>
@@ -83,7 +77,7 @@ export const UsageGuidance: Story = {
                 href="https://help.acme.com/user-manual"
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary underline cursor-pointer inline-flex items-center gap-1"
+                className="text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
                 使用者手冊 <ExternalLink size={12} />
               </a>
@@ -105,19 +99,13 @@ export const UsageGuidance: Story = {
             <HoverCardTrigger asChild>
               {/* 觸發點要能用 Tab 抵達(hover-card.spec.md A11y「Tab — 進入 trigger」「Trigger 的可聚焦性需 consumer 自補」):
                   @mention 是連結 —— 2026-10-20 前是不可聚焦的 <span>,鍵盤使用者打不開這張卡(獨立驗證 OV-V02) */}
-              <a href="#member-ada-chen" onClick={(e) => e.preventDefault()} className="text-primary underline underline-offset-2 cursor-pointer">@Ada Chen</a>
+              {/* 連結照連結規範(藍字、滑過換色、不加底線);帶連結的文字人名可以觸發名片(avatar.spec.md「何時用」,D11) */}
+              <a href="#member-ada-chen" onClick={demoNavigate('Ada Chen 的個人頁')} className="text-primary hover:text-primary-hover">@Ada Chen</a>
             </HoverCardTrigger>
             {/* 人員內容一律 ProfileCard(內容與 chrome 的 owner)。外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS(與 Avatar hoverCard 內建同一份):
                 不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定(profile-card.spec.md「寬度(元件級常數)」),外殼另給寬度會把卡片右側裁掉 */}
             <HoverCardContent className={HOVER_CARD_SURFACE_CLASS}>
-              <ProfileCard
-                name="Ada Chen"
-                avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
-                subtitle="Design Engineer"
-                actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
-                defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
-                onViewMore={() => {}}
-              />
+              {samplePersonCard(SAMPLE_PEOPLE.ada)}
             </HoverCardContent>
           </HoverCard>
           <ExampleCaption>↑ hover @mention 彈出 ProfileCard,滑鼠可移到浮層點「傳訊息」</ExampleCaption>
@@ -137,10 +125,10 @@ export const UsageGuidance: Story = {
           <div className="flex items-end gap-[var(--layout-space-loose)]">
             <ExampleGroup align="start">
               <Avatar
-                src="https://i.pravatar.cc/64?u=ada-chen"
-                alt="Ada Chen"
+                src={SAMPLE_PEOPLE.ada.avatarSrc}
+                alt={SAMPLE_PEOPLE.ada.name}
                 size={32}
-                hoverCard={<ProfileCard name="Ada Chen" avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }} subtitle="Design Engineer" actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />} defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }} onViewMore={() => {}} />}
+                hoverCard={samplePersonCard(SAMPLE_PEOPLE.ada)}
               />
               <ExampleCaption>HoverCard(可點按鈕)</ExampleCaption>
             </ExampleGroup>
@@ -165,25 +153,16 @@ export const PureBehaviorPrimitiveRule: Story = {
         title="HoverCard 只擁有觸發、定位與開關行為"
         note="背景、邊框、陰影、圓角與內距必須由真正的內容 owner 決定：ProfileCard 是明色人員資訊卡，OverflowIndicator 可是緊湊清單。若 HoverCard 自帶一套 chrome，兩個 consumer 都必須 override，結果反而會產生漂移。"
       >
-        <ExampleCaption>完整的亮色／深色渲染對照請看「設計規格 / 視覺變體」；這裡保留的是 ownership 判斷。</ExampleCaption>
+        <ExampleCaption>完整的亮色／深色渲染對照請看 <StoryLink kind="Design System/Internal/HoverCard/設計規格" name="使用方的兩種常見視覺">設計規格「使用方的兩種常見視覺」</StoryLink>；這裡保留的是 ownership 判斷。</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="人員 Avatar 由 Avatar / ProfileCard 組合擁有視覺"
         note={<>人員場景使用 Avatar 的 <code>hoverCard</code> prop 連接互動，content 依 ProfileCard 規格撰寫；consumer 不重複手組 HoverCardTrigger，也不讓底層 primitive 擁有人員卡片樣式。</>}
       >
-        {/* @layout-space-magic-ok: 頭像 ↔ 姓名(同一列 label / value)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 頭像 ↔ 姓名 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
         <div className="flex items-center gap-3">
-          <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} hoverCard={
-            <ProfileCard
-              name="Ada Chen"
-              avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
-              subtitle="Design Engineer · 台北"
-              actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
-              defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
-              onViewMore={() => {}}
-            />
-          } />
+          <Avatar src={SAMPLE_PEOPLE.ada.avatarSrc} alt={SAMPLE_PEOPLE.ada.name} size={40} hoverCard={samplePersonCard(SAMPLE_PEOPLE.ada)} />
           <span className="text-body">Ada Chen</span>
         </div>
         <ExampleCaption>Avatar 負責 trigger 整合，ProfileCard 負責內容與 chrome，HoverCard 只負責行為。</ExampleCaption>

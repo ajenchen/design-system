@@ -17,6 +17,24 @@ export interface SamplePerson {
 }
 
 /**
+ * 範例人員名錄 —— 同一個人在全 DS 範例裡用同一組資料(2026-10-28 收成一份;之前 Ada Chen 在 HoverCard 頁是 ADACHEN / 1048217、
+ * 在 ProfileCard 設計規格是 EMP-2101,同一個人兩套編號)。副標 = {部門}｜{ID}｜{員工編號}(user 2026-04-22 10:27 定的格式),
+ * ID / 員工編號與名片的預設欄位同值;狀態與狀態訊息成對(線上不寫休假)。用 `samplePersonCard(SAMPLE_PEOPLE.ada)` 取名片,
+ * 要直接畫 ProfileCard 的頁面(ProfileCard 自己的展示 / 規格)讀同一筆資料。
+ */
+export const SAMPLE_PEOPLE = {
+  ada: {
+    name: 'Ada Chen',
+    avatarSrc: 'https://i.pravatar.cc/80?u=ada-chen',
+    subtitle: 'Design｜ADACHEN｜1048217',
+    id: 'ADACHEN',
+    employeeNumber: '1048217',
+    status: 'online',
+    statusMessage: '正在處理 login 頁重構',
+  },
+} satisfies Record<string, SamplePerson>
+
+/**
  * 名片三顆預設動作(傳訊息 / 語音通話 / 查看更多)在範例裡的反應:Storybook「Actions」面板記一筆
  * (`fn().mockName()` 的呼叫由 addon-actions 自動記錄;稽核 M102「展示層可以接 Storybook action」)。
  * 真實產品由 consumer 接到聊天、通話與個人頁(`../../components/Avatar/avatar.spec.md`「Avatar HoverCard 原則」消費者寫法)。

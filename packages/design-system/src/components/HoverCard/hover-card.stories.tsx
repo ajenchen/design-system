@@ -6,17 +6,16 @@
 //   各有自己的 Default 範例)。
 // @story-trait-allow: missing-default missing-opensnapshot
 import type { Meta, StoryObj } from '@storybook/react'
-import { ExternalLink, Github, Calendar, MapPin } from 'lucide-react'
+import { ExternalLink, Github, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
-import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
-import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { demoNavigate } from '@/design-system/stories-helpers/scene/demo-actions'
 
 const meta: Meta = {
   title: 'Design System/Internal/HoverCard/展示',
@@ -45,30 +44,18 @@ export const PersonProfileCard: Story = {
       <p className="text-caption text-fg-muted">
         GitHub PR reviewer hover 看人員卡 — 可點「傳訊息」或「查看個人頁」。
       </p>
-      {/* @layout-space-magic-ok: 行內「Reviewer:」標籤 ↔ 頭像值(同一組 label / value)(layoutSpace.spec.md:166 micro) */}
+      {/* @layout-space-magic-ok: 行內「Reviewer:」標籤 ↔ 頭像值 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted">Reviewer:</span>
-        {/* 人員頭像一律走 Avatar 的 hoverCard(avatar.spec.md「Avatar HoverCard 原則」;外殼 / 可聚焦 / 主題由 Avatar 內建,
-            外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS)。卡片帶預設動作(傳訊息 / 語音通話)與查看更多 —— 說明寫「可點『傳訊息』」,
-            2026-10-20 前卡上卻沒有動作列(獨立驗證 OV-06 同族) */}
+        {/* 人員頭像一律走 Avatar 的 hoverCard(avatar.spec.md「Avatar HoverCard 原則」;外殼 / 可聚焦 / 主題由 Avatar 內建)。
+            名片走全 DS 同一支建構器與同一份人員名錄(stories-helpers/scene/person-card.tsx;稽核 M041 / 登記簿 B22「所有地方的namecard預設都是秀一樣的資訊的」)——
+            2026-10-28 前這裡自己組一張、多一欄「時區」、三顆動作接空函式 */}
         <Avatar
-          src="https://i.pravatar.cc/56?u=ada-chen"
-          alt="Ada Chen"
+          src={SAMPLE_PEOPLE.ada.avatarSrc}
+          alt={SAMPLE_PEOPLE.ada.name}
           color="indigo"
           size={28}
-          hoverCard={
-            <ProfileCard
-              name="Ada Chen"
-              avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
-              subtitle="Design Engineer · Frontend"
-              status="online"
-              statusMessage="正在處理 login 頁重構"
-              actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
-              defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
-              fields={[{ label: '時區', value: 'UTC+8 台北' }]}
-              onViewMore={() => {}}
-            />
-          }
+          hoverCard={samplePersonCard(SAMPLE_PEOPLE.ada)}
         />
       </div>
     </div>
@@ -90,11 +77,13 @@ export const LinkPreview: Story = {
         本次 sprint 的重點是
         <HoverCard>
           <HoverCardTrigger asChild>
+            {/* 連結照連結規範:藍字、滑過換色、不加底線(color.spec.md「連結 hover = 換色(text-primary-hover),不用底線」;PE6);
+                點下去 = 前往文件(範例裡記到 Actions 面板,demoNavigate) */}
             <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              // @layout-space-magic-ok: 句子裡的行內連結左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro)
-              className="text-primary underline underline-offset-2 mx-1 cursor-pointer"
+              href="#q2-okr-roadmap"
+              onClick={demoNavigate('Q2 OKR roadmap')}
+              // @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+              className="text-primary hover:text-primary-hover mx-1"
             >
               Q2 OKR roadmap
             </a>
@@ -106,7 +95,7 @@ export const LinkPreview: Story = {
             {/* 預覽卡三段(來源 / 標題 + 摘要 / meta)之間 = tight(layoutSpace 規則 3:來源與 meta 都在說明同一則標題);
                 標題 ↔ 摘要是同一個文字塊 = --item-gap-label-desc-scanning(item-anatomy.spec.md「Label ↔ Desc 間距」;body 14 + caption 12 = scanning) */}
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
-              {/* @layout-space-magic-ok: 圖示 ↔ 來源文字(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: 圖示 ↔ 來源文字 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex items-center gap-2 text-footnote text-fg-muted">
                 <ExternalLink size={12} />
                 <span>notion.so / platform-team</span>
@@ -117,7 +106,7 @@ export const LinkPreview: Story = {
                   本季三個 objective:多工作區、SSO、audit log。每項由各 squad 認領,預計 6 月底前完成。
                 </p>
               </div>
-              {/* @layout-space-magic-ok: meta 行內兩段(更新時間 · 閱讀時間)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: meta 行內兩段(更新時間 · 閱讀時間)12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex items-center gap-3 text-footnote text-fg-muted">
                 <span className="inline-flex items-center gap-1">
                   <Calendar size={12} /> 更新於 2 天前
@@ -150,19 +139,18 @@ export const OverflowList: Story = {
     ]
     const visible = people.slice(0, 3)
     const hidden = people.slice(3)
-    // 人員頭像一律 hover 出 ProfileCard(avatar.spec.md「Avatar HoverCard 原則」,無例外)
-    const personCard = (p: (typeof people)[number]) => (
-      <ProfileCard
-        name={p.name}
-        subtitle={p.role}
-        avatar={{ src: p.avatarUrl, alt: p.name, color: p.color }}
-        status="online"
-        statusMessage="本週在台北辦公室"
-        actions={<ProfileCardDefaultActions />}
-        defaultFieldValues={{ id: p.account, employeeNumber: p.employeeNumber }}
-        onViewMore={() => {}}
-      />
-    )
+    // 人員頭像一律 hover 出 ProfileCard(avatar.spec.md「Avatar HoverCard 原則」,無例外);名片走全 DS 同一支建構器(person-card.tsx),
+    // 副標 = {部門}｜{ID}｜{員工編號}、三顆預設動作有反應(2026-10-28 前「傳訊息 / 語音通話」沒接線、「查看更多」接空函式)
+    const personCard = (p: (typeof people)[number]) =>
+      samplePersonCard({
+        name: p.name,
+        avatarSrc: p.avatarUrl,
+        subtitle: `${p.role}｜${p.account}｜${p.employeeNumber}`,
+        id: p.account,
+        employeeNumber: p.employeeNumber,
+        status: 'online',
+        statusMessage: '本週在台北辦公室',
+      })
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
         <p className="text-caption text-fg-muted">
@@ -178,10 +166,10 @@ export const OverflowList: Story = {
           ))}
           <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, visible.length + 1)}>
             <OverflowIndicator count={hidden.length} shape="circle" size="md">
-              {/* @layout-space-magic-ok: +N 浮層內的同質人員列(layoutSpace.spec.md:165 同質清單列) */}
+              {/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex flex-col gap-1 min-w-[160px] text-caption">
                 {hidden.map((p) => (
-                  // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名(layoutSpace.spec.md:166 micro)
+                  // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
                   <div key={p.name} className="flex items-center gap-2">
                     <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personCard(p)} />
                     <span>{p.name}</span>
@@ -200,10 +188,13 @@ export const OverflowList: Story = {
    Story 4:倉庫卡(亮色 + 多 action)
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// 儲存庫資訊卡:卡內只留在原地做得完的動作 —— 「複製 clone 網址」跳 Toast(複製類 neutral);「Open in IDE」在範例裡沒有去處,拿掉
+// (稽核 L050:2026-10-28 前兩顆都是 xs、點了沒反應;按鈕回到預設尺寸,登記簿 A27「沒有特殊具體理由都應該先用預設尺寸」)
 export const RepoCard: Story = {
   name: '儲存庫資訊卡',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
+      <Toaster />
       <p className="text-caption text-fg-muted">
         GitHub-like repo hover card — hover 倉庫連結看 star 數、分支資訊、快速動作。
       </p>
@@ -212,10 +203,10 @@ export const RepoCard: Story = {
         <HoverCard>
           <HoverCardTrigger asChild>
             <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              // @layout-space-magic-ok: 句子裡的行內連結左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro)
-              className="text-primary underline underline-offset-2 mx-1 font-mono cursor-pointer"
+              href="#platform-monitoring"
+              onClick={demoNavigate('platform/monitoring 儲存庫')}
+              // @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+              className="text-primary hover:text-primary-hover mx-1 font-mono"
             >
               platform/monitoring
             </a>
@@ -243,20 +234,17 @@ export const RepoCard: Story = {
                   style={{ minHeight: 40 }}
                 />
               </div>
-              {/* @layout-space-magic-ok: meta 行內三段(語言 · stars · contributors)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: meta 行內三段(語言 · stars · contributors)16px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex items-center gap-4 text-footnote text-fg-muted">
                 <span>TypeScript</span>
                 <span>· 42 stars</span>
                 <span>· 8 contributors</span>
               </div>
-              <ButtonGroup>
-                <Button variant="tertiary" size="xs">
-                  Clone
+              <div>
+                <Button variant="tertiary" onClick={() => toast({ title: '已複製 clone 網址' })}>
+                  複製 clone 網址
                 </Button>
-                <Button variant="tertiary" size="xs">
-                  Open in IDE
-                </Button>
-              </ButtonGroup>
+              </div>
             </div>
           </HoverCardContent>
         </HoverCard>
@@ -267,85 +255,29 @@ export const RepoCard: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Story 5:多 trigger 展示 + delay 對照
+   Story 5:開啟 / 關閉延遲
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// 2026-10-28(稽核 M017):原本三格(頭像 / 按鈕「查看位置」/ 連結「PR #1,234」)—— 後兩格的內容沒有 DS 元件或規格依據,拿掉,只留頭像與延遲說明;
+// 頭像那格走同一份名錄與建構器。延遲數值的出處:tokens/motion/motion.ts 的 MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS。
 export const TriggerShowcase: Story = {
-  name: '觸發點類型與延遲',
+  name: '觸發延遲',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
       <p className="text-caption text-fg-muted">
-        HoverCard 接受任何 trigger(透過 asChild)——Avatar / Button / text link / icon 皆可。openDelay /
-        closeDelay 控制 hover 節奏。
+        滑過頭像停 0.7 秒才開名片、滑開 0.2 秒才收;延遲已內建在 Avatar 的 hoverCard 裡,一般不需要自己設。
       </p>
-
-      {/* 三組「說明在上、觸發點在下」並排:靠上對齊,三則說明才在同一條線上(DS 範例並排的 canonical = example-captions.tsx
-          containerClass 的 items-start;2026-10-20 前 items-center → 三則說明高度差 2–8px,獨立驗證 OV-13) */}
-      <div className="flex items-start gap-[var(--layout-space-loose)] flex-wrap">
-        <ExampleGroup align="start">
-          <span className="text-footnote text-fg-muted font-mono">trigger: Avatar</span>
-          {/* 人員頭像一律 ProfileCard(avatar.spec.md「Avatar HoverCard 原則」)—— 走 Avatar 的 hoverCard,延遲即 Avatar 內建的 rich / close;
-              2026-10-20 前這裡是手包按鈕 + 一行純文字卡(獨立驗證 OV-06) */}
-          <Avatar
-            src="https://i.pravatar.cc/64?u=ada-chen"
-            alt="Ada Chen"
-            color="indigo"
-            size={32}
-            hoverCard={
-              <ProfileCard
-                name="Ada Chen"
-                avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
-                subtitle="Design Engineer"
-                status="online"
-                statusMessage="本週在台北辦公室"
-                actions={<ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />}
-                defaultFieldValues={{ id: 'ADACHEN', employeeNumber: '1048217' }}
-                onViewMore={() => {}}
-              />
-            }
-          />
-        </ExampleGroup>
-
-        <ExampleGroup align="start">
-          <span className="text-footnote text-fg-muted font-mono">trigger: Button</span>
-          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
-            <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">
-                查看位置
-              </Button>
-            </HoverCardTrigger>
-            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}>
-              {/* @layout-space-magic-ok: 位置提示卡內 圖示 ↔ 地址文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
-              <div className="flex items-center gap-2 text-caption">
-                <MapPin size={14} className="text-fg-muted" />
-                <span>台北市信義區松仁路 100 號</span>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
-        </ExampleGroup>
-
-        <ExampleGroup align="start">
-          <span className="text-footnote text-fg-muted font-mono">trigger: text link</span>
-          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
-            <HoverCardTrigger asChild>
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="text-primary underline underline-offset-2 cursor-pointer text-caption"
-              >
-                PR #1,234
-              </a>
-            </HoverCardTrigger>
-            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}>
-              <div className="text-caption">feat: 支援多工作區切換</div>
-            </HoverCardContent>
-          </HoverCard>
-        </ExampleGroup>
+      <div>
+        <Avatar
+          src={SAMPLE_PEOPLE.ada.avatarSrc}
+          alt={SAMPLE_PEOPLE.ada.name}
+          color="indigo"
+          size={32}
+          hoverCard={samplePersonCard(SAMPLE_PEOPLE.ada)}
+        />
       </div>
-
       <div className="text-footnote text-fg-muted">
-        預設 delay 已內建(<code /* @layout-space-magic-ok: 句子裡的行內 code 左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */ className="font-mono mx-1">MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS</code> SSOT),特殊 tier 才需 override
-        (motion.spec.md,當前 700ms / 200ms)——避免 hover 過路誤觸發 fetch waterfall;close 延遲讓 user 誤滑出可回來。
+        開啟延遲避免滑鼠路過就觸發載入;關閉延遲讓不小心滑出去的人來得及回來。特殊情況才用 HoverCard 的 openDelay / closeDelay 覆寫。
       </div>
     </div>
   ),
