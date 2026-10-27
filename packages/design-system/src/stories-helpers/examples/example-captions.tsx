@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
  * 一格裡有兩個以上的子節點、或說明要跟著範例一起換行時,一律用 `ExampleGroup`(避免各頁各寫一種外框)。
  *
  * SSOT:`tokens/layoutSpace/layoutSpace.spec.md` 規則 3(元素間 gap 只看親疏)+「親疏 3 級」的 functional 交互定義
- * (:81「labeling(命名 / 描述 group identity)」):
+ * (「親疏 3 級」節 Functional 交互的「labeling(說明級的字替緊鄰的那一個東西命名:範例 ↔ 它的 ExampleCaption、圖例 ↔ 它的圖)」):
  * - **說明 ↔ 它說的那個範例** = 跨範疇 + functional 交互(說明在替範例命名 / 描述)→ `--layout-space-tight`;
  * - **範例組 ↔ 下一個範例組** = 跨範疇 + parallel → `--layout-space-loose`。
  *

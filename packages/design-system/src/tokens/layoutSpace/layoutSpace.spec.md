@@ -73,12 +73,12 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 | 級別 | 條件 | layout rule? |
 |------|------|------------|
 | **同範疇 / bundled component family** | 元件 spec 寫成 bundle 並定 inter-component spacing(FileUpload+FileList、Pagination 內部、Toolbar+ButtonGroup) | 元件 spec own,layout rule **跳過** |
-| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / heading → labeled content / toolbar → table / form section heading → fields | 規則 3 = **tight** |
-| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups | 規則 3 = **loose** |
+| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / toolbar → table | 規則 3 = **tight** |
+| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups / 標題(+ 說明)→ 它底下的並列內容 | 規則 3 = **loose** |
 
 「**Bundled component family**」客觀判斷:**有沒有 spec 文件把這些 components 寫成 bundle 並定義它們之間 spacing**(不是「同種類 component instance 多個」)。
 
-「**Functional 交互 / 依賴**」具體:操作後在畫面上有交互(value 驅動 display)/ labeling(命名 / 描述 group identity)/ context dependency。
+「**Functional 交互 / 依賴**」具體:操作後在畫面上有交互(value 驅動 display)/ labeling(說明級的字替緊鄰的那一個東西命名:範例 ↔ 它的 ExampleCaption、圖例 ↔ 它的圖)/ context dependency。
 
 ---
 
@@ -98,7 +98,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 ### 規則 2:頂部(Header → 第一個元素)
 
-**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3 的「跨範疇 + 直接 functional 交互 = tight」(2026-09-09 代理示範把 h1 + 表格當 parallel 兄弟用了 loose,是錯的;規則沒變,補這句是為了下次不要再誤讀)。
+**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3。
 
 | 第一個元素 | Header → 該元素 |
 |-----------|--------------|
@@ -162,7 +162,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 | 該用 layout-space token(density-scaling) | 刻意固定值 OK(magic number 合法) |
 |---|---|
-| 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,規則 3「同範疇 spec-own」)|
+| 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,**且有規格定了列距**,規則 3「同範疇 spec-own」;判準見上方「親疏 3 級」的 Bundled component family 客觀判斷)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
 | **body 收尾**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
@@ -196,7 +196,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
    - **是 → 同範疇 / bundled** → 跳 layout rule,套元件 spec own
    - 否 → 跨範疇,進下一題
 2. 兩元素有直接 functional 交互 / 依賴(操作驅動 / labeling / context dependency)嗎?
-   - **是 → 相關**(search→list / heading→content / toolbar→table)→ tight
+   - **是 → 相關**(search→list / toolbar→table)→ tight
    - **否 → 不相關**(parallel / independent)→ loose
 
 ### Step 3 — 套規則(下節決策表 + walkthrough 範例)
