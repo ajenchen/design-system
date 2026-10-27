@@ -2,13 +2,12 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import type { Meta, StoryObj } from '@storybook/react'
-import { Search, Upload } from 'lucide-react'
+import { Search } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CircularProgress } from './circular-progress'
 import { Input } from '@/design-system/components/Input/input'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
-import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
  * CircularProgress 展示——整個設計系統 circular 形式進度的 SSOT。
@@ -16,8 +15,7 @@ import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/el
  * - 無 value → indeterminate 旋轉(取代舊 Spinner 用法)
  * - 有 value → determinate arc + track(可量化進度,如 inline 上傳 %)
  *
- * 範例均對標世界級產品的真實使用場景(GitHub 儲存庫搜尋、檔案上傳佇列、
- * 雲端同步狀態表格、workspace 切換載入)。
+ * 範例均對標世界級產品的真實使用場景(GitHub 儲存庫搜尋、雲端同步狀態表格、workspace 切換載入)。
  * 設計規則詳見 `circular-progress.spec.md`。
  */
 
@@ -51,54 +49,22 @@ export const Default: Story = {
 // 跟 button.stories.tsx「載入中」重複且較弱(那邊有 原始→loading 對照 + iconOnly + startIcon 替換)。
 // Button loading 消費 CircularProgress 的關係由 spec「何時用」+ Size canonical 段記載,story home 在 Button。
 
+// 欄位內載入:搜尋欄位一邊打一邊查,欄位自己帶轉圈(Input loading)。
+// 2026-10-27 前這一則還有一段「上傳佇列」(檔名列尾放圓形進度):上傳的範例住在 FileItem / FileUpload,它們用 ProgressBar,
+// 這裡再示範一次是另一套不存在的上傳列(稽核 H15);名稱也從「行內操作」改掉,不跟 inline action 撞名。
 export const InlineAction: Story = {
-  name: '行內操作',
-  render: () => {
-    // 多檔上傳列(Google Drive / Dropbox 慣例):上傳中的檔案 determinate(value + affix
-    // 顯示 %),尚在準備(壓縮 / 掃描)的檔案 indeterminate + label——兩態在同一真實佇列
-    // 中對照。容器 text-body(14px)→ CircularProgress label 天然 inherit,無須
-    // hand-craft label span。
-    const uploads = [
-      { file: 'Q3-revenue-report.xlsx', value: 28 },
-      { file: 'product-roadmap.pdf', value: 64 },
-      { file: 'presentation.pdf', value: undefined },
-    ]
-    return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
-        <Input
-          startIcon={Search}
-          loading
-          defaultValue="react-"
-          placeholder="搜尋 GitHub repositories..."
-          aria-label="搜尋 GitHub repositories"
-        />
-
-        {/* 上傳佇列 = 一串同質列(語意清單 ul / li;列距 8px 由 micro 分類器認得的清單結構擁有)。
-            這裡示範的是 CircularProgress 放進列尾,不是 FileItem:FileItem 上傳中畫的是進度條(file-item.spec.md),不是圓形進度 */}
-        <ul aria-label="上傳佇列" className="flex flex-col gap-2">
-          {uploads.map((u) => (
-            <li
-              key={u.file}
-              // @layout-space-magic-ok: 上傳列外框內距 12 / 8px 是這張示範列自己的固定幾何(layoutSpace.spec.md:168);列內 圖示 ↔ 檔名 ↔ 進度 8px 是 micro(layoutSpace.spec.md:166),圖示依 item-anatomy.spec.md:285 包進 ItemPrefix
-              className="flex items-start gap-2 border border-border rounded-md px-3 py-2 text-body"
-            >
-              <ItemPrefix>
-                <Upload size={16} className="text-fg-muted" />
-              </ItemPrefix>
-              <ItemContent label={u.file} />
-              <ItemSuffix>
-                {u.value != null ? (
-                  <CircularProgress size={16} value={u.value} affix="value" aria-label={`${u.file} 上傳 ${u.value}%`} />
-                ) : (
-                  <CircularProgress size={16} label="準備中" />
-                )}
-              </ItemSuffix>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  },
+  name: '欄位內載入',
+  render: () => (
+    <div className="max-w-sm">
+      <Input
+        startIcon={Search}
+        loading
+        defaultValue="react-"
+        placeholder="搜尋 GitHub repositories..."
+        aria-label="搜尋 GitHub repositories"
+      />
+    </div>
+  ),
 }
 
 type SyncRow = { file: string; modified: string; sync: 'syncing' | 'synced' }

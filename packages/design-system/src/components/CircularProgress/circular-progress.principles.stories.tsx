@@ -3,14 +3,14 @@
 // mandate. IndeterminateVsDeterminateRule / ConsumptionScenarioRule / SizeMatchContextRule
 // kept as separate principles.
 import type { Meta, StoryObj } from '@storybook/react'
-import { Search, Check } from 'lucide-react'
+import { Mail, Check } from 'lucide-react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
-import { TutorialPage, UsageSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, UsageSection, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ItemContent, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta = {
@@ -32,7 +32,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="when">
         <p className="text-caption text-fg-muted max-w-[720px]">
           CircularProgress 用於「使用者觸發 async 動作後的即時回饋」與「全頁 / 浮層的 loading 訊號」。
-          詳細情境 → 「常見消費場景」story(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
+          詳細情境見{' '}<StoryLink kind="Design System/Components/CircularProgress/設計原則" name="常見消費場景（內嵌於 Button / Input / Empty）">常見消費場景</StoryLink>(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
         </p>
       </UsageSection>
 
@@ -195,10 +195,10 @@ export const ConsumptionScenarioRule: Story = {
         note="輸入後等待伺服器驗證或搜尋結果時,Input 的 loading prop 內部自動在 endAction 塞 16px CircularProgress。視覺干擾最小,使用者可繼續輸入"
       >
         <Input
-          startIcon={Search}
+          startIcon={Mail}
           loading
-          defaultValue="cq@"
-          placeholder="驗證 email 唯一性..."
+          defaultValue="lin.yating@acme.com"
+          placeholder="name@company.com"
           aria-label="Email"
           className="w-72"
         />
@@ -209,12 +209,14 @@ export const ConsumptionScenarioRule: Story = {
         title="✅ 延遲加載浮層 / 全頁 overlay — 用 Empty compose"
         note="切換 workspace / 載入 dashboard 等需要阻擋互動的場景,走 Empty compose:<Empty icon={<CircularProgress size={48} />} title=... description=... />。不要自己手刻 absolute overlay"
       >
-        {/* 2026-07-04 audit:改消費 <Empty> compose(原手刻垂直堆疊與本則自教規則+spec Do 矛盾) */}
-        <div className="border border-border rounded-lg w-96 h-40 flex items-center justify-center bg-muted/40">
+        {/* 2026-07-04 audit:改消費 <Empty> compose(原手刻垂直堆疊與本則自教規則+spec Do 矛盾)。
+            2026-10-27:拿掉外面那層手刻的灰底框(bg-muted/40 不是 DS token,opacity.spec.md 只有 opacity-disabled;稽核 L056),
+            說明改成使用者真的會看到的話 */}
+        <div className="w-96">
           <Empty
-            icon={<CircularProgress size={48} aria-label="載入 dashboard" />}
-            title="載入 dashboard 中"
-            description="Notion workspace 切換、Stripe dashboard 初載"
+            icon={<CircularProgress size={48} aria-label="切換工作區中" />}
+            title="正在切換工作區"
+            description="正在切換到 Acme 工作區,請稍候"
           />
         </div>
       </TutorialRule>
@@ -233,8 +235,8 @@ export const SizeMatchContextRule: Story = {
         <Button variant="tertiary" loading>送出</Button>
         <Input
           loading
-          defaultValue="驗證中..."
-          placeholder="驗證 email..."
+          defaultValue="lin.yating@acme.com"
+          placeholder="name@company.com"
           aria-label="Email"
           className="w-60"
         />

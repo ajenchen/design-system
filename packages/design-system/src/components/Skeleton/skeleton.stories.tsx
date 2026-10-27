@@ -44,20 +44,28 @@ export const UserProfileCard: Story = {
   ),
 }
 
+/* ── 任務列表載入 ──
+   任務列表本身就是一張 DataTable(編號 / 標題 / 狀態 / 負責人),載入時照下面「表格列載入」同一種做法:表頭可見、
+   每一格放形狀相同的 Skeleton(data-table.spec.md「狀態處理職責邊界」:無資料載入由 consumer 渲 Skeleton placeholder rows)。
+   2026-10-27 前這裡是手畫的外框 + 分隔線 + 自訂列內距(稽核 L049:不是 DS 清單或 DataTable 的形狀)。 */
+interface TaskLoadingRow {
+  id: string
+}
+
+const TASK_LOADING_ROWS: TaskLoadingRow[] = Array.from({ length: 5 }, (_, i) => ({ id: `task-loading-${i + 1}` }))
+
+const taskLoadingColumns: ColumnDef<TaskLoadingRow>[] = [
+  { id: 'key', header: '編號', meta: { width: 110 }, cell: () => <Skeleton className="h-4 w-16" /> },
+  { id: 'title', header: '標題', meta: { width: 280 }, cell: () => <Skeleton className="h-4 w-56" /> },
+  { id: 'status', header: '狀態', meta: { width: 120 }, cell: () => <Skeleton className="h-6 w-16 rounded-full" /> },
+  { id: 'assignee', header: '負責人', meta: { width: 100 }, cell: () => <Skeleton className="h-6 w-6 rounded-full" /> },
+]
+
 export const TaskListLoading: Story = {
   name: '任務列表載入',
   render: () => (
-    <div className="flex flex-col max-w-2xl border border-border rounded-lg divide-y divide-border">
-      {Array.from({ length: 5 }).map((_, i) => (
-        // @layout-space-magic-ok: 同質任務列的列內距與槽距 = 頁面列表列幾何 px 16px / py 12px / 槽距 12px(item-anatomy.spec.md:1029-1031)(layoutSpace.spec.md:165 同質清單列)
-        <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 flex-1" />
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-6 rounded-full" />
-        </div>
-      ))}
+    <div aria-busy="true" className="max-w-2xl">
+      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
     </div>
   ),
 }
@@ -103,26 +111,28 @@ export const TableRowLoading: Story = {
 export const DocumentLoading: Story = {
   name: '文件載入',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-2xl">
-      <Skeleton className="h-8 w-1/2" />
-      {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字(layoutSpace.spec.md:166 micro) */}
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-5 w-5 rounded-full" />
-        <Skeleton className="h-3 w-32" />
+    // 標題區(標題 + 作者列)→ 內文 = loose:標題是整份文件的標題,不是第一段的小標(user 2026-10-21 A4 甲;
+    // layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose);段與段並列 = loose。
+    // 標題 → 作者列 = tight(同一個標題區,沿用)。2026-10-27 前整個標題區 → 內文也是 tight(註解寫「functional 鏈」)。
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <Skeleton className="h-8 w-1/2" />
+        {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字(layoutSpace.spec.md:166 micro) */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded-full" />
+          <Skeleton className="h-3 w-32" />
+        </div>
       </div>
-      {/* 段與段並列 = loose;標題 → 作者列 → 內文 = 同一份文件的 functional 鏈 = tight */}
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-4/5" />
-        </div>
-        {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
+      {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+      </div>
+      {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
       </div>
     </div>
   ),

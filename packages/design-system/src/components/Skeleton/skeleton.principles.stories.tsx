@@ -3,6 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Skeleton } from './skeleton'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Button } from '@/design-system/components/Button/button'
+import { Empty } from '@/design-system/components/Empty/empty'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -67,7 +70,9 @@ export const UsageGuidance: Story = {
         >
           {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
-            <Avatar alt="陳小明" size={40} color="blue" />
+            {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」:ALL person avatars,無例外;稽核 M010)——
+                反例示範的是「半載入」,已經載入的頭像行為仍跟正式產品一樣 */}
+            <Avatar alt="陳小明" size={40} color="blue" hoverCard={samplePersonCard({ name: '陳小明' })} />
             <div className="flex flex-col gap-[var(--item-gap-label-desc-reading)] flex-1">
               <span className="text-body">陳小明</span>
               <Skeleton className="h-3 w-24" />
@@ -107,11 +112,9 @@ export const UsageGuidance: Story = {
           title="CircularProgress — 不可預期時長 / 不知佈局的操作"
           note="Button loading、form submitting、小區塊 inline 等待——當「會出現什麼」不確定,或根本不是內容佔位而是行為回饋時,用 CircularProgress(indeterminate)"
         >
-          {/* @layout-space-magic-ok: 進度圖示 ↔ 狀態文字(同一列 micro)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2 border border-border rounded-md px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] w-72">
-            <CircularProgress />
-            <span className="text-body text-fg-muted">正在送出訂單...</span>
-          </div>
+          {/* 送出中 = 按鈕自己的 loading(button.spec.md「loading」:內建 CircularProgress + aria-busy);
+              2026-10-27 前是手刻的有框小列塞一個轉圈(稽核 L049),規則文字自己寫的正是 Button loading / form submitting */}
+          <Button variant="primary" loading>送出訂單</Button>
           <ExampleCaption>Stripe 結帳送出中:沒有「佈局」可佔位,只是行為回饋</ExampleCaption>
         </TutorialRule>
 
@@ -151,7 +154,8 @@ export const ShapeMatchRule: Story = {
         <ExampleGroup>
           {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
-            <Avatar alt="林雅婷" size={40} color="blue" className="shrink-0" />
+            {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」;稽核 M010) */}
+            <Avatar alt="林雅婷" size={40} color="blue" className="shrink-0" hoverCard={samplePersonCard({ name: '林雅婷' })} />
             <div className="flex flex-col gap-[var(--item-gap-label-desc-reading)] flex-1 min-w-0">
               <span className="text-body font-medium">林雅婷</span>
               <span className="text-caption text-fg-secondary truncate">已傳送設計稿連結,請查收</span>
@@ -213,10 +217,10 @@ export const DurationRule: Story = {
         title="❌ 長時間(&gt; 10s)一直 Skeleton——使用者懷疑卡住"
         note="長時間靜態 skeleton 會讓使用者以為網路斷線或系統卡住。此時改用 CircularProgress + 進度文案(「處理中,大約 10 秒」),或 ProgressBar"
       >
-        {/* @layout-space-magic-ok: 進度圖示 ↔ 狀態文字(同一列 micro)(layoutSpace.spec.md:166 micro) */}
-        <div className="flex items-center gap-2 border border-border rounded-md px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] w-72">
-          <CircularProgress />
-          <span className="text-body text-fg-muted">分析中,這可能需要一分鐘...</span>
+        {/* 長時間工作 = 轉圈 + 說明文字,用 Empty 組(skeleton.spec.md「A11y 預設」的「替代文字」:長時間 loading fallback 為
+            <Empty icon={<CircularProgress/>} description=… />);2026-10-27 前是手刻的有框小列(稽核 L049) */}
+        <div className="w-72">
+          <Empty icon={<CircularProgress size={48} aria-label="分析中" />} description="分析中,這可能需要一分鐘" />
         </div>
         <ExampleCaption>&gt; 10s 的長工作 → 改用 CircularProgress + 進度文字,告知使用者仍在處理</ExampleCaption>
       </TutorialRule>
