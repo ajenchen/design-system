@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { fn } from '@storybook/test'
 import {
   Search,
   FileText,
@@ -8,13 +9,13 @@ import {
   User,
   LogOut,
   Plus,
-  MoonStar,
-  Sun,
   Inbox,
   Star,
   Archive,
   GitBranch,
   Terminal,
+  Hash,
+  Link,
 } from 'lucide-react'
 import {
   Command,
@@ -28,6 +29,7 @@ import {
   CommandDialog,
 } from './command'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Internal/Command/展示',
@@ -44,6 +46,15 @@ const meta: Meta = {
 
 export default meta
 type Story = StoryObj
+
+// 嵌在頁面裡(不在浮層內)的 Command 外框:規格只要求自己包一層「rounded + border」(command.spec.md「禁止事項」Inline 那條,
+// 對齊 shadcn 同款),跟設計規格頁「元件總覽」同一個樣子 —— 不加浮層的底色與陰影(它不是浮層)。下面四則共用這一份。
+function InlineFrame({ children }: { children: ReactNode }) {
+  return <div className="max-w-md rounded-lg border border-border overflow-hidden">{children}</div>
+}
+
+// 範例裡「選了就跳到那一頁」:讀者不會真的離開 Storybook,改在 Actions 面板記一筆要去哪
+const openPage = fn().mockName('前往')
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Story 1:全域指令面板(Cmd+K)— Linear / Notion / Figma 風格
@@ -101,67 +112,69 @@ export const CommandPalette: Story = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Story 2:嵌在頁面裡的清單(不在 Dialog 內)—— 次要用法,必須自帶邊框容器(spec「禁止事項」)
    ═══════════════════════════════════════════════════════════════════════════ */
+// 選項要多到需要打字找(command.spec.md「與 DropdownMenu 的分界」:超過 10 項或需要搜尋過濾才用 Command)
+const CHANNELS: { name: string; members: number }[] = [
+  { name: 'general', members: 248 }, { name: 'announcements', members: 248 }, { name: 'design-system', members: 42 },
+  { name: 'frontend', members: 37 }, { name: 'backend', members: 29 }, { name: 'mobile-app', members: 18 },
+  { name: 'data-platform', members: 15 }, { name: 'infra-oncall', members: 12 }, { name: 'release-train', members: 54 },
+  { name: 'qa', members: 21 }, { name: 'product-feedback', members: 63 }, { name: 'customer-success', members: 33 },
+  { name: 'sales-apac', members: 26 }, { name: 'marketing', members: 31 }, { name: 'hiring', members: 14 },
+  { name: 'security', members: 9 }, { name: 'finance', members: 11 }, { name: 'legal', members: 6 },
+  { name: 'random', members: 197 }, { name: 'office-taipei', members: 88 }, { name: 'office-tokyo', members: 41 },
+  { name: 'book-club', members: 23 }, { name: 'lunch', members: 76 }, { name: 'help-it', members: 152 },
+]
+
 export const InlineCommand: Story = {
   name: '行內搜尋清單',
-  parameters: { docs: { description: { story: 'Gmail 式左側資料夾清單直接嵌在頁面上,沒有 Dialog 外殼;依規格必須自帶邊框容器。' } } },
+  parameters: { docs: { description: { story: 'Slack「瀏覽頻道」頁:24 個頻道直接列在頁面上,打字過濾,選了就進那個頻道。沒有 Dialog 外殼,依規格自帶邊框容器。' } } },
   render: () => (
-    <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-      <Command label="搜尋信件或資料夾">
-        <CommandInput placeholder="搜尋信件或資料夾…" />
-        <CommandEmpty>沒有結果</CommandEmpty>
+    <InlineFrame>
+      <Command label="搜尋頻道">
+        <CommandInput placeholder="搜尋頻道…" />
+        <CommandEmpty>沒有符合的頻道</CommandEmpty>
         <CommandList>
-          <CommandGroup heading="資料夾">
-            <CommandItem startIcon={Inbox} endContent={<span className="text-caption text-fg-muted tabular-nums">124</span>}>收件匣</CommandItem>
-            <CommandItem startIcon={Star} endContent={<span className="text-caption text-fg-muted tabular-nums">8</span>}>已加星號</CommandItem>
-            <CommandItem startIcon={Archive} endContent={<span className="text-caption text-fg-muted tabular-nums">2,340</span>}>封存</CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="動作">
-            <CommandItem startIcon={Plus} shortcut="C">撰寫新信</CommandItem>
+          <CommandGroup heading="所有頻道">
+            {CHANNELS.map((c) => (
+              <CommandItem key={c.name} startIcon={Hash} description={`${c.members} 位成員`} onSelect={() => openPage(`#${c.name}`)}>{c.name}</CommandItem>
+            ))}
           </CommandGroup>
         </CommandList>
       </Command>
-    </div>
+    </InlineFrame>
   ),
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Story 3:純動作指令(選中立即執行,不保留 form value)
    ═══════════════════════════════════════════════════════════════════════════ */
-const ActionCommandDemo = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [lastAction, setLastAction] = useState<string | null>(null)
-
-  return (
-    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
-      <div className="rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-        <Command label="指令">
-          <CommandInput placeholder="輸入指令…" />
-          <CommandEmpty>沒有結果</CommandEmpty>
-          <CommandList>
-            <CommandGroup heading="外觀">
-              <CommandItem startIcon={Sun} selected={theme === 'light'} onSelect={() => { setTheme('light'); setLastAction('切換淺色模式') }}>淺色模式</CommandItem>
-              <CommandItem startIcon={MoonStar} selected={theme === 'dark'} onSelect={() => { setTheme('dark'); setLastAction('切換深色模式') }}>深色模式</CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="快速動作">
-              <CommandItem startIcon={Plus} shortcut="⌘N" onSelect={() => setLastAction('建立新文件')}>建立新文件</CommandItem>
-              <CommandItem startIcon={Inbox} onSelect={() => setLastAction('開啟收件匣')}>開啟收件匣</CommandItem>
-              <CommandItem startIcon={Star} onSelect={() => setLastAction('加入我的最愛')}>加入我的最愛</CommandItem>
-              <CommandItem startIcon={Archive} onSelect={() => setLastAction('封存目前頁面')}>封存目前頁面</CommandItem>
-              <CommandItem startIcon={Settings} shortcut="⌘," onSelect={() => setLastAction('開啟設定')}>開啟設定</CommandItem>
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </div>
-      {lastAction && <p className="text-caption text-fg-muted">已執行:{lastAction}</p>}
-    </div>
-  )
-}
+// 每一項選了都有看得到的結果:做完的事跳 Toast、要換頁的記到 Actions 面板;不在畫面上另寫「已執行」字樣
+const ActionCommandDemo = () => (
+  <>
+    <InlineFrame>
+      <Command label="指令">
+        <CommandInput placeholder="輸入指令…" />
+        <CommandEmpty>沒有結果</CommandEmpty>
+        <CommandList>
+          <CommandGroup heading="目前頁面">
+            <CommandItem startIcon={Star} onSelect={() => toast({ variant: 'success', title: '已加入我的最愛' })}>加入我的最愛</CommandItem>
+            <CommandItem startIcon={Link} onSelect={() => toast({ title: '已複製頁面連結' })}>複製頁面連結</CommandItem>
+            <CommandItem startIcon={Archive} onSelect={() => toast({ variant: 'success', title: '頁面已封存', action: { label: '復原', onClick: () => toast({ title: '已復原頁面' }) } })}>封存目前頁面</CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="快速動作">
+            <CommandItem startIcon={Plus} shortcut="⌘N" onSelect={() => openPage('新文件')}>建立新文件</CommandItem>
+            <CommandItem startIcon={Inbox} onSelect={() => openPage('收件匣')}>開啟收件匣</CommandItem>
+            <CommandItem startIcon={Settings} shortcut="⌘," onSelect={() => openPage('設定')}>開啟設定</CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </InlineFrame>
+    <Toaster />
+  </>
+)
 
 export const ActionCommand: Story = {
   name: '純動作指令',
-  parameters: { docs: { description: { story: '選中立即執行(切換外觀、觸發動作),不保留表單值。少於 6 項的短選單用 DropdownMenu(spec「與 DropdownMenu 的分界」)。' } } },
+  parameters: { docs: { description: { story: '選中立即執行(收藏、複製連結、封存目前頁面,或前往某一頁),不保留表單值;做完的事跳 Toast 告知。少於 6 項的短選單用 DropdownMenu(spec「與 DropdownMenu 的分界」)。' } } },
   render: () => <ActionCommandDemo />,
 }
 
@@ -170,28 +183,30 @@ export const ActionCommand: Story = {
    ═══════════════════════════════════════════════════════════════════════════ */
 // @story-history: EmptyState(要 user 自己輸入「zzz」才看得到空狀態)retired 2026-09-08 → NoResults
 //   (M15:stakeholder 看得到的狀態必須有不用點擊就看得到的 story;搜尋字預設就命中 0 筆)。
+const PROJECTS = ['設計系統', '行動 App', '資料平台', '客服中心', '計費系統', '搜尋改版', '新手引導', '權限管理', '報表中心', '開放 API', '桌面版', '國際化']
+
 const NoResultsDemo = () => {
   const [search, setSearch] = useState('行銷活動')
   return (
-    <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
+    <InlineFrame>
       <Command label="搜尋專案">
         <CommandInput placeholder="搜尋專案…" value={search} onValueChange={setSearch} />
         <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
           <CommandGroup heading="專案">
-            <CommandItem startIcon={Folder}>設計系統</CommandItem>
-            <CommandItem startIcon={Folder}>行動 App</CommandItem>
-            <CommandItem startIcon={Folder}>資料平台</CommandItem>
+            {PROJECTS.map((name) => (
+              <CommandItem key={name} startIcon={Folder} onSelect={() => openPage(`專案「${name}」`)}>{name}</CommandItem>
+            ))}
           </CommandGroup>
         </CommandList>
       </Command>
-    </div>
+    </InlineFrame>
   )
 }
 
 export const NoResults: Story = {
   name: '無結果狀態',
-  parameters: { docs: { description: { story: 'Linear 專案切換清單搜尋「行銷活動」,但工作區沒有這個專案:清單只剩一列「沒有結果」訊息列(與一筆結果等高、次要色、置中);清掉關鍵字就回到三個專案。' } } },
+  parameters: { docs: { description: { story: 'Linear 專案切換清單搜尋「行銷活動」,但工作區沒有這個專案:清單只剩一列「沒有結果」訊息列(與一筆結果等高、次要色、置中);清掉關鍵字就回到全部 12 個專案。' } } },
   render: () => <NoResultsDemo />,
 }
 
@@ -202,13 +217,13 @@ export const LoadingFirstOpen: Story = {
   name: '載入中(首次開啟)',
   parameters: { docs: { description: { story: 'Linear 專案切換清單剛打開,專案還沒從 API 回來:清單裡只有一列「載入專案中」訊息列——與一筆結果等高,不用大轉圈撐高;搜尋列照常可打字、不另外轉圈(載入指示只在清單內)。' } } },
   render: () => (
-    <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
+    <InlineFrame>
       <Command label="搜尋專案">
         <CommandInput placeholder="搜尋專案…" />
         <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         <CommandList>
         </CommandList>
       </Command>
-    </div>
+    </InlineFrame>
   ),
 }

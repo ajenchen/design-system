@@ -16,6 +16,7 @@ import {
   CommandSeparator,
 } from './command'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/Command/設計規格',
@@ -30,7 +31,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態與載入中消費 MenuItem 訊息列(CommandEmpty / CommandLoading)、搜尋列與 SelectMenu 共用(見 command.spec.md 定位)。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與訊息列都經 MenuItem 取得同一種列幾何,Command 自己不寫第二份樣式。</Desc>
+        <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態與載入中消費 MenuItem 訊息列(CommandEmpty / CommandLoading)、搜尋列與 SelectMenu 共用。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與訊息列都經 MenuItem 取得同一種列幾何,Command 自己不寫第二份樣式。</Desc>
         <div className="rounded-lg border border-border max-w-md overflow-hidden">
           <Command label="搜尋指令">
             <CommandInput placeholder="輸入指令或搜尋..." />
@@ -73,7 +74,7 @@ export const Overview: Story = {
         <H3>消費場景</H3>
         <Desc>Command 本身不單獨使用,透過 SelectMenu 外層元件消費:
           <br />• <code className="font-mono text-footnote">SelectMenu</code> — Select / Combobox / PeoplePicker 的 searchable 浮層
-          <br />• <code className="font-mono text-footnote">Command Palette</code>(Cmd+K)— 全局跨頁搜尋入口(消費本檔 export 的 CommandDialog 包裝,cmdk + Radix Dialog;見展示層「CommandPalette」)
+          <br />• 全域指令面板(⌘K)— 跨頁搜尋入口,用 <code className="font-mono text-footnote">CommandDialog</code>(Command 外面套 Dialog 殼;見 <StoryLink kind="Design System/Internal/Command/展示" name="全域指令面板">展示「全域指令面板」</StoryLink>)
         </Desc>
       </div>
     </div>
@@ -86,8 +87,20 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 "}<code>{"command.spec.md"}</code>{" 「A11y 預設」段。摘要:\n\ncmdk 自動處理：\n\n-   List 語意  ： role=\"listbox\" \n-   aria-activedescendant  :搜尋框與清單上都 = 反白那一列的 id,由 Command 根讀  [cmdk-item][data-selected]  寫上(cmdk 自己的值開啟時是空的);觸發欄位內的搜尋框經  onActiveOptionChange  拿同一個 id\n-   指標  :握著焦點的是控制這份清單的 combobox(搜尋框)時,滑鼠按在清單上不搬走它的焦點 —— 點選項與按 Enter 結果相同\n-   搜尋框  ： role=\"combobox\"  +  aria-expanded  /  aria-controls  指向 list\n-   鍵盤導覽  ：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 CommandDialog（Cmd+K）模式由 Radix Dialog 的 DismissableLayer 提供；inline <Command> 模式按 Esc 無反應\n-   空狀態  ： <CommandEmpty>  自動帶  role=\"presentation\" ,不干擾 screen reader 的 list 朗讀\n\nConsumer 只需替 inline <Command> 傳  label (搜尋框的讀屏名稱;CommandDialog 預設「搜尋指令」),其餘保留 cmdk 原結構 + 使用  <CommandInput>  /  <CommandList>  /  <CommandItem>  即可。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(開頭「詳 command.spec.md」是內部代號、清單是假的)→ 改成真的段落與清單;段落之間 tight(同一段文字流) */}
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>cmdk 自動處理:</p>
+        <ul className="list-disc pl-5">
+          <li>清單語意:<code>role="listbox"</code></li>
+          <li>反白那一列:搜尋框與清單的 <code>aria-activedescendant</code> 都是反白那一列的 id(cmdk 自己的值剛打開時是空的,由 Command 補上);觸發欄位內的搜尋框經 <code>onActiveOptionChange</code> 拿到同一個 id</li>
+          <li>滑鼠:握著焦點的是控制這份清單的搜尋框時,滑鼠按在清單上不搬走它的焦點 —— 點選項與按 Enter 結果相同</li>
+          <li>搜尋框:<code>role="combobox"</code> + <code>aria-expanded</code> / <code>aria-controls</code> 指向清單</li>
+          <li>鍵盤:↑ / ↓ 移動反白、Enter 選取(另支援 Ctrl+n / p / j / k、Home / End)。Esc 只在指令面板(<code>CommandDialog</code>)裡關閉面板;嵌在頁面裡的 Command 按 Esc 沒有反應</li>
+          <li>空狀態:<code>&lt;CommandEmpty&gt;</code> 自動帶 <code>role="presentation"</code>,不打斷讀屏器朗讀清單</li>
+        </ul>
+        <p>嵌在頁面裡的 <code>&lt;Command&gt;</code> 要傳 <code>label</code>(搜尋框的讀屏名稱;指令面板預設「搜尋指令」),其餘保留 cmdk 原結構,用 <code>&lt;CommandInput&gt;</code> / <code>&lt;CommandList&gt;</code> / <code>&lt;CommandItem&gt;</code> 即可。</p>
+      </div>
     </div>
   ),
 }

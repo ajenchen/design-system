@@ -26,7 +26,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Internal/Command/展示" name="全域指令面板">全域指令面板(⌘K)— Linear / VS Code 式跨頁搜尋與快速動作</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Internal/Command/展示" name="行內搜尋清單">行內搜尋清單 — Gmail 式 sidebar 信件資料夾過濾</StoryLink>
+            <StoryLink kind="Design System/Internal/Command/展示" name="行內搜尋清單">行內搜尋清單 — Slack 式「瀏覽頻道」頁,幾十個頻道打字過濾</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Internal/Command/展示" name="純動作指令">純動作指令 — 選中立即執行的快速動作清單</StoryLink>
@@ -65,7 +65,7 @@ export const CompositionRules: Story = {
     <TutorialPage className="max-w-prose">
       <p>Command 是 internal primitive,由消費者組合使用,不直接放在 app code。以下兩種 world-class 慣例(對齊 Linear / Raycast / VS Code Cmd-K idiom):</p>
 
-      <TutorialRule title="Pattern 1 — SelectMenu 內嵌 Command(searchable form input)">
+      <TutorialRule title="表單選值 — SelectMenu 內嵌 Command">
         <p>需要「搜尋 + 選值寫回 form」→ 用 <code>SelectMenu</code>(內部已組合 <code>Popover + Command</code>),<strong>不要</strong>自己組合:</p>
         <TutorialList>
           <li><StoryLink kind="Design System/Components/Combobox/展示" name="四模式">Combobox</StoryLink>——可搜尋多選(如商品類別多選標籤)</li>
@@ -74,7 +74,7 @@ export const CompositionRules: Story = {
         </TutorialList>
       </TutorialRule>
 
-      <TutorialRule title="Pattern 2 — CommandDialog 組成 Command Palette(Cmd+K)">
+      <TutorialRule title="全域指令面板 — CommandDialog">
         <p>需要「全域 keyboard 觸發 + 跨頁搜尋 / 動作」→ 用本 DS export 的 <code>CommandDialog</code>(cmdk + Radix Dialog 包裝,內部已包 Command),不自行組合浮層(對齊 Linear ⌘K / Raycast / VS Code Quick Pick):</p>
         <pre className="text-caption"><code>{`<CommandDialog open={cmdkOpen} onOpenChange={setCmdkOpen}>
   <CommandInput placeholder="輸入指令..." />

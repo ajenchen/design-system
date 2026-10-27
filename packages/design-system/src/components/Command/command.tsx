@@ -314,7 +314,7 @@ const Command = React.forwardRef<
   // 列上可聚焦東西的 Tab 停靠(B9)+ 游標弄丟時放回第一項 + 反白列 id(見 useCommandRootObserver)
   useCommandRootObserver(rootRef, onActiveOptionChange)
   const inherited = useRowSize('md')
-  // 0 筆結果的讀屏播報住在根(2026-09-09 user 核准「第二項如果確保是SSOT且不違背世界級的設計就照你建議做」):
+  // 0 筆結果的讀屏播報住在根(2026-09-09 user 有條件核准這一項:要確保是 SSOT、且不違背世界級的設計):
   // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
   // status message 都由根元件常駐渲),文字由 CommandEmpty 的字串 children 登記進來。之前只有 SelectMenu 自己另放一份
   // CommandEmptyStatus,CommandDialog / inline Command 沒有(command.spec.md 卻寫「都渲一份」);現在三種形態都由根
@@ -356,12 +356,12 @@ Command.displayName = CommandPrimitive.displayName
  * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
  * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
  * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
- * 它們就是 user 抓到的「Command 每一支 story 都跟 SelectMenu 不同一套」的來源:同一個 primitive
+ * 它們就是 user 指出 Command 每一支 story 都跟 SelectMenu 不同一套的來源:同一個 primitive
  * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
  * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
  */
 const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
-  // 關閉後焦點還給**開啟當下握著焦點的元素**(2026-09-30;dialog.spec.md「Focus return:關閉時焦點返回 trigger 元素」)。
+  // 關閉後焦點還給**開啟當下握著焦點的元素**(2026-09-30;dialog.spec.md「Focus return」)。
   // 指令面板多半由快捷鍵或普通按鈕的 onClick 開啟,沒有 DialogTrigger;Radix Dialog 只還給 DialogTrigger,沒有就不還 → 焦點掉到 body
   // (2026-09-30 實測本檔「全域指令面板」:點項目收起後 activeElement = BODY)。
   // 2026-10-01 起這是 DialogContent 的**預設**(待辦總帳 OE29;dialog.tsx useTriggerlessFocusReturn:掛上時記開啟者、沒有 Radix 觸發點就經
@@ -384,7 +384,7 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
 /**
  * CommandInput —— 浮層/面板內的搜尋列。**唯一實作**:SelectMenu(Select / Combobox / PeoplePicker 的 searchable
  * 模式)、CommandDialog、inline Command 三種形態都用它(2026-09-08 之前 SelectMenu 自己另寫一份 raw cmdk input,
- * 這裡又一份 h-11 的,兩份漂移 —— user:「搜尋框為何不是我們的 input 的樣式?儘管是不同元件也要是相同樣式的 SSOT」)。
+ * 這裡又一份 h-11 的,兩份漂移 —— user 2026-09-08:「儘管是不同元件也要是相同樣式的ssot吧?他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18))。
  * 尺寸/字級/placeholder/disabled 全部吃 Field 輸入控件的 token(`--field-height-*` + 8px 內距、text-body(-lg)、
  * placeholder:text-fg-muted、disabled 依 M24 切 fg-disabled);**沒有外框**(它是浮層內的一列,底部用分隔線收邊),
  * 這是跟 `Input` 唯一的差別 —— 對齊 Linear / Raycast / Spotlight 的指令面板搜尋列。
@@ -463,7 +463,7 @@ const CommandList = React.forwardRef<
 CommandList.displayName = CommandPrimitive.List.displayName
 
 /**
- * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡「不是選項的列」一律走 MenuItem 的列幾何)。
+ * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡不是選項的列一律走 MenuItem 的列幾何)。
  * 字串 children 自動包 `<MenuItem message>`(非互動、次要色、字級同選項、置中),外層是 `MenuGroup`(一個 group 的 py-2 上下留白),
  * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
  * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
@@ -521,7 +521,7 @@ function CommandLoading({ label, size: sizeProp }: { label: string; size?: Comma
 // combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
 // 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;
 // loading 由可見的 CommandLoading `role="status"` + `aria-label` 直接宣告,避免同一狀態重複播報。
-// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
+// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態變空」(consumer 容器加 aria-live="polite")。
 export function CommandEmptyStatus({ loading = false, text }: { loading?: boolean; text: string }) {
   const filteredCount = useCommandState((state) => state.filtered.count)
   return (
@@ -535,7 +535,7 @@ export function CommandEmptyStatus({ loading = false, text }: { loading?: boolea
 /**
  * 分組標題**消費 `MenuItem header`,不自己寫樣式**。
  *
- * 2026-09-07 修(user 抓「Command 群組標題漂移了,照理說應該跟 SelectMenu 同一種設計語言」):
+ * 2026-09-07 修(user 指出 Command 群組標題跟 SelectMenu 不是同一種設計語言):
  * 這裡原本手寫 `px-3 py-1.5 text-caption font-medium text-fg-muted` ——
  * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:188`「Row header(分組標題)」)寫的是
  * 「用 `MenuItem header={true}` 模式,`font-medium text-fg-muted` + 與 items **完全相同**的
@@ -601,7 +601,7 @@ export type CommandItemProps = React.ComponentPropsWithoutRef<typeof CommandPrim
 /**
  * CommandItem —— 外層 cmdk Item 只負責 cmdk 的反白/停用訊號,**視覺 anatomy 一律由內層 `MenuItem` 承擔**
  * (icon 槽 / label / description / 尾端 tag、endContent、shortcut;owner = item-anatomy.spec.md + menu-item.spec.md)。
- * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx「CommandItem > MenuItem role=presentation」),
+ * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx 的選項同樣是 CommandItem 包一層 role="presentation" 的 MenuItem),
  * 所以指令面板、inline 清單、下拉選單三種形態的每一列都長一樣。
  * 相容:SelectMenu 自己傳 `<MenuItem>` 當 children(它要管 checkbox/selected/renderLabel),這時不再包第二層。
  */
@@ -626,11 +626,11 @@ const CommandItem = React.forwardRef<
         "p-0 rounded-none",
         // cmdk 的反白(data-selected)是這裡**唯一的游標**:滑鼠移過就搶走(cmdk Item 的 onPointerMove → select(),
         // https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx),鍵盤方向鍵再搶回;
-        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11)):
         //   滑鼠搬的:反白 = hover → 底色、無框。
         //   鍵盤搬的:反白 = 游標 → 框(列撐滿 → 內描邊)、不上底色。
         // **本節點沒有任何 `hover:` 樣式**:滑鼠停著不算搶,鍵盤把反白搬走後,滑鼠停留列的底色要跟著消失
-        //(user 2026-09-09:「搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現」;
+        //(user 2026-09-09 下午提出:鍵盤搶回反白之後,滑鼠停留那一列的底色要消失,直到滑鼠再搶回來才出現;
         // shadcn CommandItem 同樣只畫 data-[selected=true],沒有 hover: —— https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx)。
         // 2026-09-08 之前「已選 + 游標」的框沒有模態條件,滑鼠一點開就畫(user 抓到);
         // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回);
