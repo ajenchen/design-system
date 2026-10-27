@@ -90,7 +90,7 @@ function PanelFrame({
 const SPRINT_REPLY = '初步整理完成:P0 共 6 筆,其中「支付逾時重試」與「對帳批次」的排程互相衝突,建議錯開到不同夜間時段。'
 
 /**
- * 範例共用的四段對話(歷史浮層列的就是它們;點了會切過去)。各則範例用 `demoSessions` 換掉「停在哪一段」與那一段的訊息。
+ * 範例共用的四段對話(歷史浮層列的就是它們;點了會切過去)。各則範例用 `demoScene` 換掉「停在哪一段」與那一段的訊息。
  * 「衝刺待辦整理」標 `thinking`:代理還在回覆,歷史列首換成進度圈。
  */
 const BASE_SESSIONS: DemoSession[] = [
@@ -120,9 +120,9 @@ const BASE_SESSIONS: DemoSession[] = [
   },
 ]
 
-/** 停在 `activeId` 那一段;`messages` / `title` 有給就換掉那一段的內容 */
-function demoSessions(activeId: string, override?: { messages?: DemoMessage[]; title?: string }): DemoSession[] {
-  return BASE_SESSIONS.map((s) => (s.id === activeId ? { ...s, ...override } : s))
+/** 停在 `activeId` 那一段;`messages` / `title` 有給就換掉那一段的內容。回傳值直接展開進 `useAgentDemo`(四段都留在歷史裡,一開始停在 `activeId`) */
+function demoScene(activeId: string, override?: { messages?: DemoMessage[]; title?: string }): { sessions: DemoSession[]; activeId: string } {
+  return { sessions: BASE_SESSIONS.map((s) => (s.id === activeId ? { ...s, ...override } : s)), activeId }
 }
 
 /** 門面那一則的代理是否還在回覆(按停止 → 思考塊收起、標誌回靜止) */
@@ -153,7 +153,7 @@ export const TaskAssistant: Story = {
   render: function TaskAssistantStory() {
     const [busy, setBusy] = React.useState(true)
     const demo = useAgentDemo({
-      sessions: demoSessions('c1', {
+      ...demoScene('c1', {
         messages: [
           { role: 'user', content: '把這份待辦按優先級重排,衝突的排程幫我標出來。' },
           { role: 'agent', content: <SprintReply />, copyText: SPRINT_REPLY },
@@ -184,7 +184,7 @@ export const Attachments: Story = {
   name: '附件:氣泡內與輸入盒溢出',
   render: function AttachmentsStory() {
     const demo = useAgentDemo({
-      sessions: demoSessions('c1', {
+      ...demoScene('c1', {
         messages: [
           {
             role: 'user',
@@ -234,7 +234,7 @@ export const MultipleReplies: Story = {
   name: '多則回覆:工具列常駐與懸停',
   render: function MultipleRepliesStory() {
     const demo = useAgentDemo({
-      sessions: demoSessions('c3', {
+      ...demoScene('c3', {
         messages: [
           { role: 'user', content: '把 Q3 的客訴按原因分類,各給我前三名。' },
           { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。', copyText: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
@@ -268,7 +268,7 @@ export const HistoryOpen: Story = {
   parameters: { docs: { story: openOverlayDocsStory('560px') } },
   render: function HistoryOpenStory() {
     const demo = useAgentDemo({
-      sessions: demoSessions('c1', {
+      ...demoScene('c1', {
         messages: [{ role: 'agent', content: '從標題或箭頭點開歷史;滑鼠停在某一列、或用方向鍵移到某一列,會浮出改名與刪除,鍵盤按 → 進到按鈕。' }],
       }),
     })
@@ -337,7 +337,7 @@ const THREE_QUESTIONS: AgentDecisionQuestion[] = [
 
 /** 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
 function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
-  const demo = useAgentDemo({ sessions: demoSessions('c2', { messages: [{ role: 'agent', content: intro }] }) })
+  const demo = useAgentDemo({ ...demoScene('c2', { messages: [{ role: 'agent', content: intro }] }) })
   const [asking, setAsking] = React.useState(true)
   const answer = (answers: Record<string, string>) => {
     setAsking(false)
@@ -373,7 +373,7 @@ export const TitleTruncated: Story = {
   name: '長標題截斷與 Tooltip',
   render: function TitleTruncatedStory() {
     const demo = useAgentDemo({
-      sessions: demoSessions('c3', {
+      ...demoScene('c3', {
         title: LONG_TITLE,
         messages: [{ role: 'agent', content: '標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。' }],
       }),
@@ -403,7 +403,7 @@ export const DecisionSummaryInFlow: Story = {
   name: '決策回執',
   render: function DecisionSummaryInFlowStory() {
     const demo = useAgentDemo({
-      sessions: demoSessions('c2', {
+      ...demoScene('c2', {
         messages: [
           {
             role: 'agent',
@@ -450,7 +450,7 @@ export const ResizableWidth: Story = {
     const [width, setWidth] = React.useState(400)
     const [committed, setCommitted] = React.useState(400)
     const demo = useAgentDemo({
-      sessions: demoSessions('c1', {
+      ...demoScene('c1', {
         messages: [{ role: 'agent', content: '面板寬度 360 起跳、640 封頂;只點一下把手不算調整。' }],
       }),
       attachments: [
@@ -499,7 +499,7 @@ export const Fab: Story = {
     const [agentState, setAgentState] = React.useState<AgentLogoState>('attract')
     const timer = React.useRef<number | null>(null)
     const demo = useAgentDemo({
-      sessions: demoSessions('c1', {
+      ...demoScene('c1', {
         title: '訂單異常排查',
         messages: [
           { role: 'user', content: '幫我查上週哪幾張訂單金額異常' },

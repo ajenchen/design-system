@@ -98,34 +98,34 @@ export const LayoutModeDiagram: Story = {
       <section className="flex flex-col gap-[var(--layout-space-loose)]">
         <h3 className="text-h5">primary-sidebar(Linear / Notion / Figma 派)</h3>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
-          <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>頂天立地</div>
-          <div className="flex-1 flex flex-col">
-            <div className="bg-surface-strong px-2 py-1">Header(在 main col 內,當前頁 toolbar)</div>
-            <div className="bg-canvas flex-1 px-2 py-6 text-fg-muted">Main content</div>
+          <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
+            <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>頂天立地</div>
+            <div className="flex-1 flex flex-col">
+              <div className="bg-surface-strong px-2 py-1">Header(在 main col 內,當前頁 toolbar)</div>
+              <div className="bg-canvas flex-1 px-2 py-6 text-fg-muted">Main content</div>
+            </div>
+            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel<br/>頂天</div>
+            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent<br/>頂天</div>
           </div>
-          <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel<br/>頂天</div>
-          <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent<br/>頂天</div>
-        </div>
-        <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
+          <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
         </div>
       </section>
       <section className="flex flex-col gap-[var(--layout-space-loose)]">
         <h3 className="text-h5">primary-header(GitHub / Slack / Gmail 派)</h3>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
-          <div className="bg-surface-strong px-2 py-1 text-center">Header(global bar,橫跨整 viewport)</div>
-          <div className="flex">
-            <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>(在 header 下)</div>
-            <div className="flex-1 bg-canvas px-2 py-6 text-fg-muted">Main content</div>
-            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel</div>
-            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent</div>
+          <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
+            <div className="bg-surface-strong px-2 py-1 text-center">Header(global bar,橫跨整 viewport)</div>
+            <div className="flex">
+              <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>(在 header 下)</div>
+              <div className="flex-1 bg-canvas px-2 py-6 text-fg-muted">Main content</div>
+              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel</div>
+              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent</div>
+            </div>
           </div>
-        </div>
-        <p className="text-fg-muted">
-          Header scope = <strong>global bar</strong>(account / workspace switcher / notifications / 跨頁導覽)。
-          Workspace 多寡無關 — GitHub / Gmail multi account 也用此 layout,真正的 distinguisher 是 header 是「local 還是 global」。
-        </p>
+          <p className="text-fg-muted">
+            Header scope = <strong>global bar</strong>(account / workspace switcher / notifications / 跨頁導覽)。
+            Workspace 多寡無關 — GitHub / Gmail multi account 也用此 layout,真正的 distinguisher 是 header 是「local 還是 global」。
+          </p>
         </div>
       </section>
     </div>
