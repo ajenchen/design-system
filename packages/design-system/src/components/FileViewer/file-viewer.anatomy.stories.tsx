@@ -1,8 +1,9 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { FileViewer, registerFileRenderer, type FileInfo } from './file-viewer'
+import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { FolderOpen } from 'lucide-react'
 
@@ -76,23 +77,22 @@ const OpenViewer: React.FC<{
 
 // ─── 1. Overview ─────────────────────────────────────────────────────────────
 
-// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
-// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
-// 這支的實際後果:每按一次 checkbox,input 就重掛一次,焦點跟著掉。
-// 抓到這類寫法的是 `scripts/select-all-footer-invariant.mjs` 那天的全 DS 掃描,同一天五處一起搬出來。
-const Toggle = ({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: boolean
-  onChange: (v: boolean) => void
-}) => (
-  <label className="flex items-center gap-2 text-caption">
-    <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-    <span className="font-mono">{label}</span>
-  </label>
+// 檢閱器的開關一律用 DS 的 SegmentedControl(之前是瀏覽器原生 checkbox / <select>,長相跟 DS 不同,
+// 滑鼠開原生選單還會吃到全域焦點框;同批 DropdownMenu / Select 規格頁檢閱器都用 SegmentedControl)。
+// 定義在模組層:元件函式定義在 render() 裡會每次 setState 都換身分、整棵樹卸載重掛(2026-09-17 全 DS 掃描抓到的同一類)。
+const InspectorControl = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex items-center gap-2">
+    <span className="font-mono text-caption text-fg-muted w-28 shrink-0">{label}</span>
+    {children}
+  </div>
+)
+const OnOff = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
+  <InspectorControl label={label}>
+    <SegmentedControl size="sm" aria-label={label} value={value ? 'on' : 'off'} onValueChange={(v) => onChange(v === 'on')}>
+      <SegmentedControlItem value="off">off</SegmentedControlItem>
+      <SegmentedControlItem value="on">on</SegmentedControlItem>
+    </SegmentedControl>
+  </InspectorControl>
 )
 
 export const Overview: Story = {
@@ -118,23 +118,23 @@ export const Overview: Story = {
             <div className="h-full w-full flex flex-col">
               {/* Toolbar */}
               <div className="h-14 shrink-0 flex items-center justify-between bg-surface-raised border-b border-divider px-6">
-                <span className="text-body-lg text-foreground">① Toolbar — 檔名 + zoom/info/download/close</span>
+                <span className="text-body-lg text-foreground">工具列 — 檔名 + 縮放 / 資訊 / 下載 / 關閉</span>
                 <span className="text-caption text-fg-muted">--chrome-header-height(lg=56）</span>
               </div>
               {/* Viewport + InfoPanel */}
               <div className="flex-1 min-h-0 flex">
                 <div className="flex-1 bg-overlay flex items-center justify-center relative">
-                  <span className="text-body-lg text-fg-secondary">② Viewport — renderer 渲染區(flex-1)</span>
+                  <span className="text-body-lg text-fg-secondary">檢視區 — renderer 渲染區(flex-1)</span>
                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-caption text-fg-muted">← prev</span>
                   <span className="absolute right-6 top-1/2 -translate-y-1/2 text-caption text-fg-muted">next →</span>
                 </div>
                 <aside className="w-80 shrink-0 bg-surface-raised border-l border-divider flex items-center justify-center">
-                  <span className="text-body text-fg-secondary">③ InfoPanel — w-80(320px)</span>
+                  <span className="text-body text-fg-secondary">資訊面板 — w-80(320px)</span>
                 </aside>
               </div>
               {/* Filmstrip */}
               <div className="h-24 shrink-0 bg-surface-raised border-t border-divider flex items-center px-6 gap-1">
-                <span className="text-caption text-fg-muted mr-3">④ Filmstrip</span>
+                <span className="text-caption text-fg-muted mr-3">縮圖列</span>
                 {[0, 1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
@@ -326,23 +326,17 @@ export const Inspector: Story = {
             驗證組合影響(例:filmstrip 在 files.length &lt; 2 時自動隱藏)。
           </Desc>
           <div className="flex flex-wrap gap-4 p-3 bg-muted rounded-md text-caption mb-3">
-            <Toggle label="showFilmstrip" value={showFilmstrip} onChange={setShowFilmstrip} />
-            <Toggle label="readOnly" value={readOnly} onChange={setReadOnly} />
-            <Toggle label="allowDownload" value={allowDownload} onChange={setAllowDownload} />
-            <label className="flex items-center gap-2 text-caption">
-              <span className="font-mono">filesCount</span>
-              <select
-                value={filesCount}
-                onChange={(e) => setFilesCount(Number(e.target.value))}
-                className="text-caption font-mono border border-border rounded-md px-2 py-0.5"
-              >
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
-            </label>
+            <OnOff label="showFilmstrip" value={showFilmstrip} onChange={setShowFilmstrip} />
+            <OnOff label="readOnly" value={readOnly} onChange={setReadOnly} />
+            <OnOff label="allowDownload" value={allowDownload} onChange={setAllowDownload} />
+            <InspectorControl label="filesCount">
+              <SegmentedControl size="sm" aria-label="filesCount" value={String(filesCount)} onValueChange={(v) => setFilesCount(Number(v))}>
+                {['1', '2', '3'].map((n) => <SegmentedControlItem key={n} value={n}>{n}</SegmentedControlItem>)}
+              </SegmentedControl>
+            </InspectorControl>
           </div>
-          <Button variant="primary" onClick={() => setOpen(true)}>
+          {/* 單獨的觸發鈕一律 tertiary(story-rules.md「單獨的觸發鈕 / 取消 / 一般輔助動作一律 tertiary」;之前是 primary) */}
+          <Button variant="tertiary" onClick={() => setOpen(true)}>
             開啟 Viewer
           </Button>
           <FileViewer
@@ -354,8 +348,8 @@ export const Inspector: Story = {
             allowDownload={allowDownload}
           />
           <p className="text-footnote text-fg-muted mt-2 leading-normal">
-            提醒:filmstrip 需 `showFilmstrip && files.length &gt; 1` 才顯示;
-            prev/next arrow 需 `files.length &gt; 1`;切換 files 時 shell 不重設 zoom,由 renderer onLoad 重新 fit-page。
+            提醒:filmstrip 需 <code>showFilmstrip &amp;&amp; files.length &gt; 1</code> 才顯示;
+            prev/next arrow 需 <code>files.length &gt; 1</code>;切換 files 時 shell 不重設 zoom,由 renderer onLoad 重新 fit-page。
           </p>
         </div>
 
@@ -830,7 +824,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td>連續 / 任意值</Td>
                 <Td mono>滾輪(step 0.03)/ ZoomInput 打字</Td>
-                <Td>連續縮放,任意 %(非 preset;react-zoom-pan-pinch wheel = `scale + delta×step` 加法線性,非 multiplicative;spec「Wheel step canonical」);ZoomInput preset menu 才跳 preset</Td>
+                <Td>連續縮放,任意 %(非 preset;react-zoom-pan-pinch wheel = <code>scale + delta×step</code> 加法線性,非 multiplicative;spec「Wheel step canonical」);ZoomInput preset menu 才跳 preset</Td>
               </tr>
               <tr>
                 <Td>Reset 100%</Td>
@@ -1000,7 +994,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td>Error(renderer crash)</Td>
                 <Td>MVP 由 renderer 自理</Td>
-                <Td>未來可加 error boundary</Td>
+                <Td>Shell 不另外攔截</Td>
               </tr>
               <tr>
                 <Td>Unknown file type</Td>
@@ -1024,8 +1018,8 @@ export const RendererRegistry: Story = {
       <div>
         <H3>為什麼是 registry 而非 switch(file.mimeType)</H3>
         <Desc>
-          Shell 只懂 `FileRenderer` interface,不硬寫 image / pdf / video 邏輯。新檔案類型
-          透過 `registerFileRenderer` 加入,不動 shell 一行 code。Consumer 可把
+          Shell 只懂 <code>FileRenderer</code> interface,不硬寫 image / pdf / video 邏輯。新檔案類型
+          透過 <code>registerFileRenderer</code> 加入,不動 shell 一行 code。Consumer 可把
           專屬 renderer(PDFRenderer / VideoRenderer / CodeRenderer)獨立套件化,
           按需載入、team 平行開發。
         </Desc>
@@ -1072,16 +1066,16 @@ import { PDFRenderer } from './pdf-renderer'
 registerFileRenderer({
   id: 'pdf',
   canRender: (f) => f.mimeType === 'application/pdf',
-  component: PDFRenderer, // 消費 react-pdf,emit pageNumber capability
+  component: PDFRenderer, // 消費 react-pdf
 })`}</code>
         </pre>
         <p className="text-footnote text-fg-muted mt-2 leading-normal">
-          {'Renderer 透過 `onCapabilitiesChange({ zoom, rotate, pageNumber })` 告訴 shell 當前支援什麼 affordance。Shell 據此動態顯示 toolbar 內容。'}
+          Renderer 透過 <code>{'onCapabilitiesChange({ zoom })'}</code> 告訴 shell 當前支援什麼 affordance。Shell 據此動態顯示 toolbar 內容。
         </p>
       </div>
 
       <div>
-        <H3>Capability 維度(MVP + 預留)</H3>
+        <H3>Capability 維度</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead>
@@ -1097,25 +1091,9 @@ registerFileRenderer({
                 <Td>MVP</Td>
                 <Td>顯示 ZoomInput + +/−/0/F 鍵啟用</Td>
               </tr>
-              <tr>
-                <Td mono>rotate</Td>
-                <Td>預留 interface</Td>
-                <Td>未來顯示 rotate 按鈕</Td>
-              </tr>
-              <tr>
-                <Td mono>pageNumber</Td>
-                <Td>預留 interface</Td>
-                <Td>未來顯示 page navigator(n/total)</Td>
-              </tr>
             </tbody>
           </table>
         </div>
-        <p className="text-footnote text-fg-muted mt-2">
-          範例:{' '}
-          <code className="font-mono">registerFileRenderer</code>{' '}
-          由此處引入可(避免 eslint no-unused-import);此 story 不實際註冊新 renderer,僅作 code 示範。
-        </p>
-        <div className="hidden">{typeof registerFileRenderer}</div>
       </div>
     </div>
   ),
@@ -1127,8 +1105,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-viewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\" （Radix 1.1.x 不輸出 aria-modal 屬性;modal 隔離靠 focus trap + hideOthers 對背景兄弟樹加 aria-hidden,非 aria-modal）\n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:開啟時 Content 本身取得焦點並立即鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer,document capture-phase 監聽 → 即使焦點在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔案詳細資訊\">  語意標記\n- Content 固定 tabIndex=-1;onOpenAutoFocus 在 consumer 未取消時聚焦 fullscreen shell,不把焦點留在 aria-hidden 背景或誤觸第一個 toolbar tooltip"}</p>
+      {/* 標題 → 一段文字 = tight(內容之間本來就是 tight;A4 甲,寫死 mb-2 改 token、跟著密度)。出處(不給讀者看):file-viewer.spec.md「A11y 預設」 */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"Radix DialogPrimitive 自動處理:\n-  role=\"dialog\" （Radix 1.1.x 不輸出 aria-modal 屬性;modal 隔離靠 focus trap + hideOthers 對背景兄弟樹加 aria-hidden,非 aria-modal）\n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:開啟時 Content 本身取得焦點並立即鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer,document capture-phase 監聽 → 即使焦點在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔案詳細資訊\">  語意標記\n- Content 固定 tabIndex=-1;onOpenAutoFocus 在 consumer 未取消時聚焦 fullscreen shell,不把焦點留在 aria-hidden 背景或誤觸第一個 toolbar tooltip"}</p>
     </div>
   ),
 }

@@ -131,7 +131,7 @@ FileViewer Toolbar 消費 `patterns/action-bar/action-bar.spec.md` 的**左中�
 
 這個順序是三份 DS canonical 交叉驗證的結果:
 
-1. **`patterns/action-bar/action-bar.spec.md`「全局排序:primary 在業務層最右」**——影響力遞增(低→高)
+1. **`patterns/action-bar/action-bar.spec.md`「三、Variant 與排序」全局排序那一列(primary 在業務層最右)**——影響力遞增(低→高)
 2. **`components/Notice/notice.spec.md` dismiss X 永遠在最右**——關閉動作 always rightmost
 3. **`components/Dialog/dialog.spec.md` close 靠右是跨平台慣例**——macOS / Windows / Web 一致
 
@@ -255,8 +255,8 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 - 直接輸入數字 + Enter 套用;輸入非法值 blur 時還原為上一個有效值
 - 範圍 **10–400**(對齊 `ImageRenderer.MIN_SCALE = 0.1` / `MAX_SCALE = 4.0`);± 按鈕在邊界 disabled
-- ± 按鈕跳到下一個 preset(`10 / 25 / 50 / 75 / 100 / 125 / 150 / 200 / 400`),不是固定 step;讀屏名稱走 `labels.zoomOut` / `labels.zoomIn`(DS 預設「縮小」「放大」—— 2026-10-20 前寫死在元件裡、是工具列唯一兩顆不能經 `labels` 覆寫的鈕)
-- ⌄ DropdownMenu 內容分兩組:**符合選項在上**(符合寬度 / 符合頁面;文字走 `labels.fitWidth` / `labels.fitPage`,DS 預設中文 —— 2026-10-20 前寫死英文 Fit to width / Fit to page、不能覆寫)/ **preset 百分比在下**,`<DropdownMenuSeparator />` 分組
+- ± 按鈕跳到下一個 preset(`10 / 25 / 50 / 75 / 100 / 125 / 150 / 200 / 400`),不是固定 step;讀屏名稱走 `labels.zoomOut` / `labels.zoomIn`(DS 預設「縮小」「放大」—— 2026-10-20 前寫死在元件裡、是工具列唯一兩顆不能經 `labels` 覆寫的鈕)〔UD-U1021-20〕
+- ⌄ DropdownMenu 內容分兩組:**符合選項在上**(符合寬度 / 符合頁面;文字走 `labels.fitWidth` / `labels.fitPage`,DS 預設中文 —— 2026-10-20 前寫死英文 Fit to width / Fit to page、不能覆寫〔UD-U1021-20〕)/ **preset 百分比在下**,`<DropdownMenuSeparator />` 分組
 - 當前 zoom 在 preset 中的那項視覺標示 `bg-neutral-selected`
 
 ### 同 flex 列幾何鐵律(`packages/design-system/ds-canonical/references/ui-dev-rules.md` canonical)
@@ -299,13 +299,13 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 | 鍵 | 行為 | 生效條件 |
 |---|------|---------|
-| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字);**焦點所在的控件宣告了自己還有一層時那一下歸控件**(全 DS 一條,`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)—— 兩條都由 `../../lib/overlay-escape.ts` `withOverlayEscape` 掛在本元件的 `DialogPrimitive.Content`(2026-10-01;同日上午的 `withImeSafeEscape` 併入) | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
+| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字);**焦點所在的控件宣告了自己還有一層時那一下歸控件**(全 DS 一條,`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)—— 兩條都由 `../../lib/overlay-escape.ts` `withOverlayEscape` 掛在本元件的 `DialogPrimitive.Content`(2026-10-01;同日上午的 `withImeSafeEscape` 併入)〔UD-U1021-28〕 | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
 | `ArrowLeft` | 上一個檔案 | `files.length > 1` |
 | `ArrowRight` | 下一個檔案 | `files.length > 1` |
 | `+` / `=` | zoom in(下一個 preset) | `capabilities.zoom === true` |
 | `-` | zoom out(上一個 preset) | `capabilities.zoom === true` |
 | `0` | 重設 zoom 到 100% | `capabilities.zoom === true` |
-| `F` | 符合頁面(fit-page) | `capabilities.zoom === true` |
+| `F` | 符合頁面(fit-page)〔UD-U1021-20〕 | `capabilities.zoom === true` |
 | `I` | 切換 InfoPanel | 永遠 |
 
 **焦點在 input / textarea / contentEditable 時不觸發**——避免 user 打字時被快捷鍵劫持(寫入 description 打到 `-` 不應 zoom out)。此排除**僅適用 FileViewer 自管的快捷鍵**(← → / +・−・0 / F / I)。**例外 `Esc`**:由 Radix DismissableLayer 以 document capture-phase 監聽,不受此排除影響 —— 在 InfoPanel description textarea 內按 Esc 仍會關閉整個 viewer(未 blur 的 draft 不觸發持久化)。

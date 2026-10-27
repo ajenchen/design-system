@@ -4,6 +4,7 @@ import { Trash2, FolderOpen, Info, Keyboard } from 'lucide-react'
 import { FileViewer, type FileInfo } from './file-viewer'
 import {
   Dialog,
+  DialogClose,
   DialogTrigger,
   DialogContent,
   DialogHeader,
@@ -12,6 +13,7 @@ import {
   DialogFooter,
 } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
@@ -32,7 +34,6 @@ type Story = StoryObj
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 // 快捷鍵 ↔ 對應 button 對照表(「快捷鍵總覽」Rule 的資料;資料驅動讓每一欄的儲存格幾何只寫一次)
-const SHORTCUT_TABLE_HEADERS = ['鍵', '行為', '對應 button'] as const
 const SHORTCUT_TABLE_ROWS: ReadonlyArray<readonly [key: string, action: string, button: string]> = [
   // 動作欄寫使用者看得懂的中文、按鈕欄寫畫面上那顆鈕的名字(與元件的 aria-label / 選單文字同一組字;2026-10-20 前中英混寫,獨立驗證 OV-10 同族)
   ['Esc', '關閉檢視器', '工具列「關閉檢視器」'],
@@ -89,7 +90,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Components/FileViewer/展示" name="Jira — 附件多圖檢視">Jira — 附件多圖檢視</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖相簿">Notion — 頁面配圖相簿瀏覽</StoryLink>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖">Notion — 頁面配圖瀏覽</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/FileViewer/展示" name="Figma — 單檔縮放聚焦">Figma — 設計稿單檔縮放聚焦檢視</StoryLink>
@@ -125,7 +126,8 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary" danger startIcon={Trash2}>
+              {/* 點下去還會再跳一層確認 → secondary + danger(button.spec.md 強調等級表:「有警示意圖，但點下去**還可以反悔**——後面還有一層確認」) */}
+              <Button variant="secondary" danger startIcon={Trash2}>
                 永久刪除專案
               </Button>
             </DialogTrigger>
@@ -137,10 +139,15 @@ export const UsageGuidance: Story = {
                 <p className="text-body">此動作無法復原,所有任務、評論、附件都將一併刪除。</p>
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary" danger>
-                  永久刪除
-                </Button>
+                {/* 兩顆都真的關掉對話框(之前點了沒反應) */}
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" danger>
+                    永久刪除
+                  </Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -237,7 +244,7 @@ const closeOrderFiles: FileInfo[] = [
 ]
 
 export const CloseButtonPositionRule: Story = {
-  name: '工具列 按鈕順序（關閉 永遠最右）',
+  name: '工具列按鈕順序（關閉永遠最右）',
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
@@ -447,7 +454,7 @@ const splitFiles: FileInfo[] = [
 ]
 
 export const NoNestedOverlayRule: Story = {
-  name: '禁止 巢狀 浮層',
+  name: '禁止巢狀浮層',
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
@@ -534,14 +541,14 @@ const kbFiles: FileInfo[] = Array.from({ length: 3 }, (_, i) => ({
 }))
 
 export const KeyboardShortcutRule: Story = {
-  name: '鍵盤捷徑 是 進階使用者 入口',
+  name: '鍵盤捷徑是進階使用者的入口',
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
       <TutorialPage>
         <TutorialRule
           title="✅ Shortcut 加速 power user,不替代 button"
-          note="所有 keyboard 動作都有 toolbar button / viewport arrow 對應 — ← → 對應 prev/next arrow,I 對應 Info button,+/-/0/F 對應 ZoomInput dropdown,Esc 對應 close X。Power user 按鍵快;一般 user / tablet / touch 用 button。少一組 → a11y 斷裂 / mobile 不可用"
+          note="所有 keyboard 動作都有 toolbar button / viewport arrow 對應 — ← → 對應 prev/next arrow,I 對應 Info button,+/-/0/F 對應 ZoomInput dropdown,Esc 對應 close X。Power user 按鍵快;不記快捷鍵的人用 button。少一組 → 只用滑鼠或只用鍵盤的人就少了一條路(a11y 斷裂)"
         >
           <Button variant="tertiary" startIcon={Keyboard} onClick={() => setOpen(true)}>
             開啟 3 版設計迭代(試 ← → 切換)
@@ -560,30 +567,12 @@ export const KeyboardShortcutRule: Story = {
           title="快捷鍵總覽(每個都有對應 button)"
           note="設計時 keyboard ↔ button 對應表要寫進規格。這個對應關係不是實作細節,是 a11y 的結構承諾 — 任何新增 shortcut 都必須同步新增對應 button"
         >
-          <div className="w-full max-w-[640px] rounded-md border border-border p-[var(--layout-space-loose)]">
-            <table className="w-full text-caption">
-              <thead className="text-fg-muted">
-                <tr>
-                  {SHORTCUT_TABLE_HEADERS.map((header) => (
-                    // @layout-space-magic-ok: 說明表格表頭儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列)
-                    <th key={header} className="text-left font-normal pb-1">{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="text-foreground">
-                {SHORTCUT_TABLE_ROWS.map(([shortcut, action, button]) => (
-                  <tr key={shortcut}>
-                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
-                    <td className="font-mono py-0.5">{shortcut}</td>
-                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
-                    <td className="py-0.5">{action}</td>
-                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
-                    <td className="py-0.5">{button}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* 鍵 → 行為的對照用 DescriptionList(之前是手刻圓角框 + 原生 <table>) */}
+          <DescriptionList orientation="horizontal" className="w-full max-w-[640px]">
+            {SHORTCUT_TABLE_ROWS.map(([shortcut, action, button]) => (
+              <DescriptionItem key={shortcut} label={shortcut}>{action}(對應:{button})</DescriptionItem>
+            ))}
+          </DescriptionList>
         </TutorialRule>
 
         <TutorialRule

@@ -64,7 +64,7 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
 
   // file.url 切換 → reset state,等 onLoad 重 fit。
   // 原本 bug:cache 命中時 onLoad 不 fire → handleImageLoad 不跑 → zoom 卡上一張的值
-  // (或 shell 設的 100%)→ user 看到「同一張圖每次切過來尺寸不一致」。
+  // (或 shell 設的 100%)→ user 2026-04-30 看到「明明都是切到同一張圖片但每次預設的尺寸都不一樣和起始位置都不一樣,這是bug吧？」。
   React.useEffect(() => {
     setLoaded(false)
     lastFitModeRef.current = 'fit-page'
@@ -96,7 +96,7 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
     const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
     // Floor 而非 round:fit-to-page / fit-to-width 時 scale 是 float(e.g. 0.8356)。
     // round(0.8356 * 100) = 84 → 實際 scale 0.84 → image 比 canvas 大 4px,垂直溢出破壞
-    // 對稱置中(user 抓:「上下邊距不對稱」)。Floor → 0.83 → image 比 canvas 小,永遠
+    // 對稱置中(user 抓:上下邊距不對稱(轉述))。Floor → 0.83 → image 比 canvas 小,永遠
     // 完整可見 + 視覺 symmetric padding。代價是最多 ~1% 的空間餘量,視覺幾乎看不出。
     return Math.floor(clamped * 100)
   }, [])
@@ -135,7 +135,7 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
         const newW = container.clientWidth
         const newH = container.clientHeight
         if (mode === 'manual') {
-          // 2026-07-08 Q2 補洞(user「畫布在各種情況都能完美適應」):manual zoom 下容器 resize
+          // 2026-07-08 Q2 補洞(user:畫布在各種情況都能完美適應(轉述)):manual zoom 下容器 resize
           //(InfoPanel 開合 / Filmstrip 增減 / 視窗 RWD / 裝置旋轉 — 同一咽喉點全涵蓋)
           // = **scale 不變、視覺中心點保持**(Figma / Photoshop canonical;原本 early-return
           // 什麼都不做 → transform 座標絕對值,容器變窄內容偏移)。

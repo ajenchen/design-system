@@ -27,6 +27,7 @@ import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import {
   DropdownMenu,
@@ -237,9 +238,9 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           — Input body 可自由打字(chevron 是 Input 內部 element,body 區域 click 不觸發 menu)
           — Chevron 是 inline action,同時是 DropdownMenuTrigger → menu 精確 anchor 在 chevron 下方
           — 靠 Radix asChild + ItemInlineActionButton:視覺是 Input + endAction,行為是 chevron-as-trigger
-          — 完全對齊 user AR:「只有 inline action 能觸發選單,menu 對齊 inline action」 */}
+          — 完全對齊 user 2026-04-21「應該只有inline aciton 可以觸發選單才對,然後選單要按原則對齊inline action」 */}
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        {/* maxLength 限縮(2026-07-09 user 要求「找合理最大值避免無限輸入」):autoWidth 下輸入框寬度隨字數長,
+        {/* maxLength 限縮(2026-07-09 user 要求:找合理最大值避免無限輸入(轉述)):autoWidth 下輸入框寬度隨字數長,
             無上限則可無限打字撐爆 toolbar。max 合法值「400%」= 4 字(對齊 ZOOM_PRESETS / ImageRenderer MAX_SCALE 400;
             commitDraft 另 clamp 10–400),留 1 字編輯緩衝 → maxLength={5}。 */}
         <Input
@@ -372,15 +373,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
       )}
     >
       {/* 檔名(左,佔據可用寬度,ellipsis)—— file-type icon 代表檔名的意象(這是什麼檔),
-          對齊 CLAUDE.md「icon 代表 label 意象時與 label 同色」原則:icon 走 text-foreground
+          對齊 item-anatomy.spec.md「Icon 色彩原則」(icon 代表內容 = 與 label 同色):icon 走 text-foreground
           不走 text-fg-muted(後者是裝飾性 / 輔助 icon 的色階) */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <FileIcon size={16} className="text-foreground shrink-0" aria-hidden />
-        <span
-          className="text-body-lg text-foreground truncate"
-          title={file.name}
-        >
-          {file.name}
+        {/* 檔名截斷才出 DS Tooltip 補全(同 DialogTitle;truncated-text.spec.md 單一 SSOT)。
+            2026-10-28 前用瀏覽器原生 title 屬性:灰色系統小框、樣式不是 DS Tooltip。
+            display="block":外層是 flex 項目,inline span 量不到 clientWidth(同 dialog.tsx DialogTitle 的理由) */}
+        <span className="text-body-lg text-foreground min-w-0">
+          <TruncatedText display="block">{file.name}</TruncatedText>
         </span>
       </div>
 
@@ -660,7 +661,7 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
                 'focus-visible:focus-ring-inset',
                 // 不寫 transition-shadow:滑過外框(ring-border → ring-border-hover)一律瞬間(motion.spec.md「hover 回饋不做過渡」,
                 // 2026-09-26 L9 延伸,user:「確定這樣才是一致設計語言就做」)。同一條 ring 也畫選中框,所以選中切換跟著瞬間 ——
-                // 同 Chip / SegmentedControl 的選中色(motion.spec.md「同一組屬性若也被選中改變,一併瞬間」)。
+                // 同 Chip / SegmentedControl 的選中色(motion.spec.md「同一組屬性若也被選中 / 聚焦 / 按壓改變」那一句)。
                 active
                   ? 'ring-2 ring-primary'
                   : 'ring-1 ring-border hover:ring-border-hover',
