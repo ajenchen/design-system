@@ -86,7 +86,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 **不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
 
-URL 格式要求：必須包含 `http://` 或 `https://` protocol。
+URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但看起來就是網址的字自動補 `https://`**(主機名 = 「標籤.標籤…頂級網域」,可帶埠號與路徑,例:`www.acme.com`、`acme.com/pricing`;2026-10-21 確認頁 F2 乙)。其他協定(`javascript:` / `data:` / `mailto:` / `ftp:` …)、信箱、中間有空白的字一律不合法。判斷只有一支 `link-input.tsx` `toWebUrl`:編輯模式的驗證與提交(提交的值是補好 `https://` 的完整網址)、唯讀 / 檢視 / 表格連結格的顯示都經它。
 
 ---
 
@@ -108,7 +108,7 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 
 與其他 Field 一致：
 - readonly：顯示藍色連結（可點擊），無 Pencil action
-- **值不是合法網址時(readonly / view,含 DataTable 連結格)畫成一般文字、不給連結**(2026-10-13,待辦總帳 Q3e):判準與編輯模式「只有合法才顯示成連結」同一支 `isValidUrl`(本檔「驗證」:必須包含 `http://` 或 `https://`),`javascript:`、`data:`、少了 `https://` 的字永遠不會變成 `href`。**唯一另外放行的是站內路徑**(以 `/` 開頭、解析後仍在同一個網站,例:`/projects/8821/tasks/4821`):它解析後就是本站的 http(s),修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;`//host`、`/\host` 這類會被瀏覽器正規化成別的網站的寫法不算。編輯模式的驗證不變(只收 http(s);上方「不適用場景」站內路由請用 Input)。DataTable 存檔時的驗證仍由 consumer 做(`../DataTable/data-table.spec.md` cellErrors),表格不另加
+- **值不是網址時(readonly / view,含 DataTable 連結格)畫成一般文字、不給連結**(2026-10-13,待辦總帳 Q3e;2026-10-21 F2 乙):判準與編輯模式同一支 `toWebUrl`(本檔「驗證」:http(s) 開頭,或看起來像網址就補 `https://` —— 例:`www.acme.com` 畫成連結、`href` = `https://www.acme.com`),`javascript:`、`data:`、`mailto:` 等別的協定與信箱永遠不會變成 `href`。**唯一另外放行的是站內路徑**(以 `/` 開頭、解析後仍在同一個網站,例:`/projects/8821/tasks/4821`):它解析後就是本站的 http(s),修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;`//host`、`/\host` 這類會被瀏覽器正規化成別的網站的寫法不算。編輯模式不收站內路徑(只收網頁網址;上方「不適用場景」站內路由請用 Input)。DataTable 存檔時的驗證仍由 consumer 做(`../DataTable/data-table.spec.md` cellErrors),表格不另加
 - disabled：連結灰化，不可點擊。**顯示的字與 readonly 同一份**(合法網址顯示主機名、其他值顯示原字串;停用只換顏色,有值不能畫成「-」—— M24):`link-input.tsx` `linkDisplayText` 一支給連結、一般文字、停用三處用(2026-10-21,r1b fields F2:修前停用另寫一份,`mailto:` / `tel:` / `javascript:` / `data:` 在停用時畫成「-」、`ftp:` 只剩主機名;閘 `scripts/link-input-url-display-invariant.mjs`「停用與唯讀同字」)
 
 ---
@@ -119,7 +119,7 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 - ❌ 不讓連結撐滿整行——文字右邊看起來空白的地方點下去卻開網頁
 - ❌ 不讓 link 狀態外框裡的空白處滑過變色、點下去卻沒有反應——空白處 = Pencil
 - ❌ 不在打字過程中即時驗證格式——等 blur
-- ❌ 不省略 protocol（http/https）驗證——裸 domain 不是合法 URL
+- ❌ 不放行別的協定(`javascript:` / `data:` / `mailto:` …)——只有網頁網址(含補上 `https://` 的網址樣字)才是合法值
 
 ---
 

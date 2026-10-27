@@ -399,8 +399,7 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //     v15.15 user-confirmed asymmetric canonical,rationale 見下方 className 內註解)
 //
 // **a11y**(codex P1 fix):`opacity-0` 而非 `display:none` — element 在 DOM/tab-order,
-// keyboard tab 可達,觸控 focus-within 也顯。Hover / focus-within / focus-visible
-// 三條件之一觸發 `opacity-100`。
+// keyboard tab 可達。滑過頭像,或鍵盤焦點在頭像群組裡(`:focus-visible`)時 `opacity-100`(條件只寫在下方 className 一處)。
 //
 // **Why centralize**:Combobox tagRenderer (PeoplePicker stack mode) + MultiPersonDisplay
 // dismiss 共用 SSOT,改 1 處全 sync(M17 propagation)。
@@ -428,15 +427,15 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // step-7 dark 公式自動 lighter → engaged 跨 mode 對稱)
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
-        // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
+        // keyboard 可達。滑過頭像,或鍵盤焦點在頭像群組裡(`:focus-visible`)時出現 ——
+        // 用 has-[:focus-visible] 不用 focus-within:滑鼠點過頭像(打開名片)也會讓 focus-within 成立,
+        // × 會一直亮到焦點離開(規則同 item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP`;與 avatar.tsx `AVATAR_OWN_CUTOUT_CLASS` 的挖洞成對)。
         // **此行是移除鈕可見性的唯一 gating,刪掉 = 全部恆顯**(2026-08-05 anchor:撤 A 案時
         // 連同本行一起刪除,造成桌機 stack 所有 avatar 的 X 無條件顯示;mechanical guard
         // 見 scripts/test-hover-revealed-affordances.mjs)。
-        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100',
-        // **不加 touch 恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
-        // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
-        // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
-        // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
+        'opacity-0 group-hover/avatar:opacity-100 group-has-[:focus-visible]/avatar:opacity-100',
+        // **不恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
+        // 的 X 都秀出來,這樣看起來超亂」)。
         // 瞬間出現,不寫 transition-opacity(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))。
       ].join(' ')}
     >

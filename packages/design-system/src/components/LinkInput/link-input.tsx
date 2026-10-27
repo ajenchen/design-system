@@ -12,14 +12,31 @@ import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
-function isValidUrl(value: string): boolean {
-  if (!value) return true
+function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value)
     return url.protocol === 'http:' || url.protocol === 'https:'
   } catch {
     return false
   }
+}
+
+/** 沒寫協定、但看起來就是網址:主機名由「標籤.標籤…頂級網域(2 個字母以上)」組成,可帶 :埠號與路徑 / 查詢 / 錨點;不含空白與 @(信箱不算網址) */
+const LOOKS_LIKE_WEB_ADDRESS = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}(?::\d{1,5})?(?:[/?#]\S*)?$/i
+
+/**
+ * 網址值 → 可以安全點的網頁網址(link-input.spec.md「驗證」;F2 乙,2026-10-21 確認頁):
+ * 已經是 http(s) 網址 → 原樣;沒寫協定、看起來像網址(`www.acme.com`、`acme.com/pricing`)→ 補 `https://`;
+ * 其他(`javascript:` / `data:` / `mailto:` / `ftp:` 等別的協定、信箱、中間有空白的字)→ null,永遠不會變成 href。
+ * 顯示(唯讀 / 檢視 / 表格連結格)與編輯模式的驗證、提交都經這一支。
+ */
+function toWebUrl(value: string): string | null {
+  const v = value.trim()
+  if (!v || /\s/.test(v)) return null
+  if (isHttpUrl(v)) return v
+  if (!LOOKS_LIKE_WEB_ADDRESS.test(v)) return null
+  const candidate = `https://${v}`
+  return isHttpUrl(candidate) ? candidate : null
 }
 
 function formatHostname(url: string): string {
@@ -45,7 +62,8 @@ function renderLinkAnchor(value: string, label?: string) {
   const displayText = linkDisplayText(value, label)
   return (
     <a
-      href={value}
+      // 看起來像網址的值補上 https://(toWebUrl);站內路徑原樣
+      href={toWebUrl(value) ?? value}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
@@ -71,20 +89,20 @@ function isSameSitePath(value: string): boolean {
 
 /**
  * 顯示一個網址值:能安全點的才畫成連結,其他一律畫成一般文字(2026-10-13,待辦總帳 Q3e)。
- * 能點 = 合法的 http(s) 網址(與編輯模式「只有合法才顯示成連結」同一支 `isValidUrl`,link-input.spec.md「驗證」)
+ * 能點 = 網頁網址(http(s) 開頭,或看起來像網址而補上 https://;與編輯模式的驗證同一支 `toWebUrl`,link-input.spec.md「驗證」)
  * **或站內路徑**(`/projects/8821/tasks/4821` 這種同一個網站裡的位址 —— 修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;
  * 它解析後一定是本站的 http(s),不是「不合法的字」,不在這次要修的範圍)。
  * 唯讀 / 檢視模式與表格連結格(`DataTable/cell-registry.tsx` UrlCell 用檢視模式)都經這裡 ——
- * 打字少了 https://、`javascript:` / `data:` 開頭、中間有空白的字,一律不會成為 `href`。編輯模式的驗證不變(只收 http(s))。
+ * `javascript:` / `data:` / `mailto:` 等別的協定、信箱、中間有空白的字,一律不會成為 `href`。編輯模式不收站內路徑(只收網頁網址)。
  */
 function renderLinkValue(value: string, label?: string) {
   if (isLinkable(value)) return renderLinkAnchor(value, label)
   return <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
 }
 
-/** 能安全點的值(合法 http(s) 網址或站內路徑;見上方 renderLinkValue) */
+/** 能安全點的值(網頁網址或站內路徑;見上方 renderLinkValue) */
 function isLinkable(value: string): boolean {
-  return isValidUrl(value) || isSameSitePath(value)
+  return toWebUrl(value) != null || isSameSitePath(value)
 }
 
 /**
@@ -95,7 +113,7 @@ function isLinkable(value: string): boolean {
  */
 function linkDisplayText(value: string, label?: string): string {
   if (label) return label
-  return isLinkable(value) ? formatHostname(value) : value
+  return isLinkable(value) ? formatHostname(toWebUrl(value) ?? value) : value
 }
 
 /**
@@ -258,7 +276,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       )
     }
 
-    const hasValidValue = !!value && isValidUrl(value)
+    const hasValidValue = !!value && toWebUrl(value) != null
     const showLink = isEditable && hasValidValue && !editing && !localError
     const error = fieldInvalid || localError
 
@@ -299,10 +317,12 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         onChange?.('')
         return true
       }
-      if (isValidUrl(trimmed)) {
+      // 看起來像網址的字提交時補上 https://(toWebUrl;與顯示同一支判斷,F2 乙)
+      const webUrl = toWebUrl(trimmed)
+      if (webUrl) {
         setLocalError(false)
         setEditing(false)
-        onChange?.(trimmed)
+        onChange?.(webUrl)
         return true
       }
       setLocalError(true)

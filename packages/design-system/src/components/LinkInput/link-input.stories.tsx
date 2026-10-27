@@ -61,8 +61,8 @@ export const Validation: Story = {
     const [value, setValue] = React.useState('')
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
-        <p className="text-caption text-fg-muted">輸入不合法的 URL 後按 Tab 離開，會出現 error 邊框。輸入合法 URL 後離開即自動切為藍色連結。</p>
-        <LinkInput value={value} onChange={setValue} placeholder="輸入 URL（需含 https://）" />
+        <p className="text-caption text-fg-muted">輸入不是網址的字(信箱、中間有空白)後按 Tab 離開，會出現 error 邊框。輸入網址後離開即自動切為藍色連結(github.com 這種沒寫 https:// 的會自動補上)。</p>
+        <LinkInput value={value} onChange={setValue} placeholder="輸入網址" />
         <p className="text-caption text-fg-muted">目前值：{value || '(empty)'}</p>
       </div>
     )

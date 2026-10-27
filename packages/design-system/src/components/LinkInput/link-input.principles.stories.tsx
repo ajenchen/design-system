@@ -61,7 +61,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 用 LinkInput 存非 URL 的字串"
-          note="slug / 代號 / email / 內部 route 路徑沒有 protocol(http/https),LinkInput 的 blur 驗證會 false reject。用 Input 搭配適合的驗證"
+          note="slug / 代號 / email / 內部 route 路徑不是網頁網址,LinkInput 的 blur 驗證會判成不合法。用 Input 搭配適合的驗證"
         >
           <ExampleGroup>
             <ExampleCaption>✅ 專案 slug 用 Input（純字串,不是 URL）</ExampleCaption>
@@ -139,8 +139,8 @@ export const ValidationRule: Story = {
           title="blur 時驗證，不在打字過程中"
           note="使用者還在輸入時就抱怨「格式錯」= 打擾體驗。blur(離開欄位 / 按 Enter)才檢查。開始打字時清除 error,讓使用者無壓力重試。對齊 Field 系統的共用驗證規則"
         >
-          <LinkInput value={url} onChange={setUrl} placeholder="輸入 URL（需含 https://）" aria-label="Website" />
-          <ExampleCaption>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。開始打字自動清除 error</ExampleCaption>
+          <LinkInput value={url} onChange={setUrl} placeholder="輸入網址" aria-label="Website" />
+          <ExampleCaption>↑ 試試輸入「ops@github.com」(信箱不是網址),按 Tab 離開會出現 error;輸入「github.com」會自動補成 https://github.com。開始打字自動清除 error</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
