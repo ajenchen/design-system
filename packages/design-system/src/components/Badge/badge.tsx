@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 const badgeVariants = cva(
   // 2026-05-23 Path B revert:icon-as-text / numeric-in-circle 用 leading-none canonical(對齊 Material Avatar `line-height: 1` / Polaris Badge / Carbon Tag 共識)。
   // 視覺等效驗證:Badge container 顯式 `h-4 (16px)` + `flex items-center` 主導,text 被 items-center 置中,line-height 1.0 vs 1.3 視覺零差別。
-  // user 2026-05-23「或是其實根本不用分?」+「照你建議」path B:統一 leading-none,不分。
+  // user 2026-05-23 反問要不要乾脆不分、並同意 AI 建議的 path B(原話已不可考,此為轉述):統一 leading-none,不分。
   // 廢除 2026-05-21 F1 fix 的 leading-compact migration(那次 anchor「不影響高度的話就改」core constraint 是高度不變,Path B 同樣滿足且更簡單)。
   'inline-flex items-center justify-center rounded-full leading-none',
   {

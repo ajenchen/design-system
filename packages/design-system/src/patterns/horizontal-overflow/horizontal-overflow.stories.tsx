@@ -1,4 +1,4 @@
-// @story-baseline: components/Tabs/tabs.stories.tsx#OverflowScroll + #OverflowMenu — scroll / menu 兩模式的正式 consumer 視覺基準;本頁組裝結構抄 horizontal-overflow.spec.md「典型 scroll / menu 模式組裝」
+// @story-baseline: components/Tabs/tabs.stories.tsx#OverflowScroll + #OverflowMenu — scroll / menu 兩模式的正式 consumer 視覺基準;本頁組裝結構抄 horizontal-overflow.spec.md「典型 scroll 模式組裝」與「典型 menu 模式組裝」
 //
 // Internal Pattern 參照 story。本 module 是「樂高」utility primitives(非組裝好的 UI 元件):
 // Tabs / ChipGroup / FileViewer filmstrip 等 consumer 自組 outer wrapper,

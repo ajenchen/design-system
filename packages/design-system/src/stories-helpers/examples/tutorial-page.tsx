@@ -13,7 +13,7 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *
  * 間距(只在這裡寫一次):
  * - **規則 ↔ 規則 = 段落 ↔ 段落 = `calc(var(--layout-space-loose) * 2)`**:從 loose 推出,所以永遠是「範例之間」的兩倍、跟著密度走;
- *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:內容到 action buttons」(layoutSpace.spec.md:13),
+ *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(layoutSpace.spec.md:13),
  *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只定義在教學頁(layoutSpace.spec.md 規則 3 的指標)。
  * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
  *   「Label ↔ Desc 間距」scanning 那一型);規則標題區(標題 + 說明)→ 範例區 = `--layout-space-loose`(user 2026-10-21 A4 甲:
@@ -29,8 +29,8 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * 規則說明 = `text-caption` + `text-fg-muted`(字級同一段規範;字色 = color.spec.md「文字 / Icon 層級」caption 列 ——
  * 2026-10-20 前各頁可選 `noteTone`,7 頁選了 fg-secondary,同一層說明兩種字色,已收成一種)。
  *
- * 內文(2026-10-20):頁根擁有字級 `text-body`(typography.spec.md:13「font-size 由 text-{role} token 決定,不可繞過」、
- * :39 text-body「主要內文基準」)—— 之前頁裡沒寫字級的段落 / 清單一律落到瀏覽器預設 16px,比 14px 的規則標題還大。
+ * 內文(2026-10-20):頁根擁有字級 `text-body`(typography.spec.md:13 font-size 那一列「token 決定，不可繞過」、
+ * typography.spec.md:39 text-body「主要內文基準」)—— 之前頁裡沒寫字級的段落 / 清單一律落到瀏覽器預設 16px,比 14px 的規則標題還大。
  * 頁裡的說明元件、清單、連結也只住在這裡 / example-captions.tsx(`ExampleCaption` / `TutorialList` / `StoryLink`),各頁不再自抄。
  *
  * 「使用指引」(UsageGuidance)固定三段(2026-10-20 user「你提的問題可以都照你建議」核准 T4 甲):

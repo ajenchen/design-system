@@ -249,7 +249,7 @@ export const itemPrefixAlignVariants = cva(
 // 引擎 SSOT:patterns/element-anatomy/truncated-text.spec.md)。不消費 `<TruncatedText>`——
 // trigger 需自控(ItemLabel 要 forwardRef + data-sidebar attr + props spread;ItemContent 要保留
 // labelTruncate / clamp className 原樣)→ 走 spec 指定解:public `useTruncated` 自組
-// (同 components/InlineEdit/inline-edit.tsx「單行純值 view 截斷 tooltip」段與 components/Tag 的用法)。
+// (同 components/InlineEdit/inline-edit.tsx「單行純值 view 的截斷 tooltip」那段註解與 components/Tag 的用法)。
 // 兩種「單行截斷」機制都要偵測(MenuItem 的 clamp 走 className escape,量 DOM 才能全蓋):
 // - `truncate`(nowrap)→ scrollWidth 溢出(useTruncated 預設量法)
 // - `line-clamp-1`(MenuItem labelMaxLines/descMaxLines=1、descriptionClamp=1;文字先 wrap
@@ -730,8 +730,8 @@ export const ItemInlineActionButton = React.forwardRef<
           // ⚠️ 這裡**刻意沒有** `pointer-events-none`,日後不得以「它只是裝飾層」為由加回去。
           // 這塊底色比按鈕盒每邊大 1px(16→18,lg 20→22)。它是 <button> 的子節點,只要不擋指標,
           // 溢出的那 1px 會自己接住點擊並冒泡到 button —— 命中區於是恰好等於使用者看得到的那塊底色。
-          // 依據:user 2026-09-24 裁示「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧?
-          // 都是 18*18」,並於同日對本檔本行確認「對,就這樣改」。跨元件 owner =
+          // 依據:user 2026-09-24 提問「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧？都是18*18」(問句),
+          // 並於同日對本檔本行的改法選了「對,就這樣改」那個選項。跨元件 owner =
           // ds-canonical/references/hit-area-canonical.md(規則:懸停回饋的形狀 ≡ 命中區;圖示是內容,可比命中區小)。
           // 本 DS 以滑鼠精度為前提,不以觸控尺寸建議當依據把命中區撐大到超過懸停回饋(同日 user 裁示)。
           // 歷史:原本那行 `pointer-events-none` 沒有任何理由 —— 2026-04-01 7dd65fbf 隨首版誕生、

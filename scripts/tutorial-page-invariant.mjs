@@ -45,7 +45,7 @@
  *        範例裡的產品標題(卡片標題等)在規則裡面,不受影響。
  *   (R5) TutorialPage 的 className / style 不得帶間距(gap / space / m* / p*,含前綴;margin / padding / gap 的 style 鍵)—— 間距由共用元件擁有;
  *        也不得帶字級 / 字色(text-*)—— 內文字級 text-body 由共用元件擁有(2026-10-20 T2)。
- *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「小元件定義在 module 層」)。
+ *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
  *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則間距。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
  *        段落標題 <h2> = text-h3 + font-semibold + border-divider、規則標題 <h3> = text-h6 + font-semibold;
@@ -561,7 +561,7 @@ export function checkTutorialFile(file, text) {
     if (ts.isCallExpression(n) && n.expression.getText(sf) === 'createTutorialRule') {
       const decl = n.parent
       const atModule = ts.isVariableDeclaration(decl) && decl.initializer === n && ts.isVariableDeclarationList(decl.parent) && ts.isVariableStatement(decl.parent.parent) && ts.isSourceFile(decl.parent.parent.parent)
-      if (!atModule) hits.push(hit('R6', file, sf, n, 'createTutorialRule(…) 不在 module 層 —— 寫在 render / 函式裡每次都會產生新元件(story-rules.md「小元件定義在 module 層」)'))
+      if (!atModule) hits.push(hit('R6', file, sf, n, 'createTutorialRule(…) 不在 module 層 —— 寫在 render / 函式裡每次都會產生新元件(story-rules.md「元件一律定義在 module 層」)'))
       // (R10) 各頁自帶說明元件 / 說明字色的舊選項(2026-10-20 T6 收掉:caption → examples: true + ExampleCaption;noteTone → 一律 fg-muted)
       const opts = unwrap(n.arguments[0])
       if (opts && ts.isObjectLiteralExpression(opts)) for (const pr of opts.properties) {
@@ -757,7 +757,7 @@ export function checkHelper(text) {
   walk(sf)
   const code = strings.join('\n')
   if (!/gap-\[calc\(var\(--layout-space-loose\)\*2\)\]/.test(code)) out.push({ rule: 'R8', file: HELPER, line: 1, message: '共用元件的塊距不是 gap-[calc(var(--layout-space-loose)*2)](② = 規則之間 = 段落之間 = loose × 2,user 2026-10-07)' })
-  if (/--layout-space-bottom/.test(code)) out.push({ rule: 'R8', file: HELPER, line: 1, message: '共用元件用到 --layout-space-bottom —— 那是「結論留白:內容到 action buttons」(layoutSpace.spec.md:13),段落之間不借它' })
+  if (/--layout-space-bottom/.test(code)) out.push({ rule: 'R8', file: HELPER, line: 1, message: '共用元件用到 --layout-space-bottom —— 那是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(layoutSpace.spec.md:13),段落之間不借它' })
   const headingClass = (tag) => {
     let found = null
     const v = (n) => { if (isJsx(n) && tagName(sf, n) === tag) found = classNameOf(n); if (!found) ts.forEachChild(n, v) }

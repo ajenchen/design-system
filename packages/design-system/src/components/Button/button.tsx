@@ -91,7 +91,7 @@ const buttonVariants = cva(
           'bg-primary text-on-emphasis',
           'hover:bg-primary-hover',
           'active:bg-primary-active',
-          // 開啟中 = 自己的 hover(inline-action.spec.md:26「overlay 開啟 → 同 host hover」)。2026-09-29 待辦總帳 C13:
+          // 開啟中 = 自己的 hover(inline-action.spec.md「互動狀態」表 overlay 開啟列:同 host hover)。2026-09-29 待辦總帳 C13:
           // 七家一手裡沒有任何一家「給部分 variant、獨獨豁免 primary」(Atlassian / Fluent 每個 appearance 含 primary 都給;
           // Radix / shadcn / MUI / Ant / Carbon 全都不給);DS 早選了「給」,primary / link 缺的只是同一條規則的落地。
           'data-[state=open]:bg-primary-hover',
@@ -156,7 +156,7 @@ const buttonVariants = cva(
         true: '', // 實際樣式由 compoundVariants 提供
       },
       /**
-       * 2026-05-21 v12 — pressed visual tone(per user「我認同這一個方向,然後預設emphasis」):
+       * 2026-05-21 v12 — pressed visual tone(user 當日同意 AI 提的方向、預設 emphasis;原話已不可考,此為轉述):
        * emphasis = 淡藍底(toolbar functional toggle / 篩選啟用 / 面板開關 — Figma toolbar /
        *            Linear toolbar / Material ToggleButton 共識)
        * neutral  = 灰底(**可取消**的切換鈕、要比藍底低一級時;不用於導覽 / 目前頁 —— 那是選中列,
@@ -198,7 +198,7 @@ const buttonVariants = cva(
           'bg-surface text-error border-error',
           'hover:text-error-hover hover:border-error-hover',
           'active:text-error-active active:border-error-active',
-          // 開啟中 = 自己的 hover(error-hover),不是 secondary 的 primary-hover(inline-action.spec.md「overlay 開啟 → 同 host hover」;
+          // 開啟中 = 自己的 hover(error-hover),不是 secondary 的 primary-hover(inline-action.spec.md「互動狀態」表 overlay 開啟列;
           // button.spec.md「狀態疊加」表開啟中列)。靠 cn()/twMerge 去掉 variant 那組同前綴 class,同本檔 danger 覆寫慣例
           'data-[state=open]:text-error-hover data-[state=open]:border-error-hover',
           'aria-disabled:not-aria-pressed:hover:text-error aria-disabled:not-aria-pressed:hover:border-error',
@@ -239,11 +239,11 @@ const buttonVariants = cva(
           'aria-pressed:hover:bg-primary-subtle aria-pressed:hover:border-transparent aria-pressed:hover:text-primary-hover',
           // 2026-07-07 補齊第三階:fallback 分支與 data-[state=on] 分支同拼寫(選中之上按壓 = active 階)
           'aria-pressed:active:bg-primary-subtle aria-pressed:active:border-transparent aria-pressed:active:text-primary-active',
-          // pressed + disabled:disabled 視覺優先(button.spec.md「狀態 → disabled」pressed + disabled 條);fallback 分支原本缺這條,鏡像 data-[state=on]:disabled
+          // pressed + disabled:disabled 視覺優先(button.spec.md「狀態 › disabled」pressed + disabled 條);fallback 分支原本缺這條,鏡像 data-[state=on]:disabled
           'aria-pressed:disabled:bg-disabled aria-pressed:disabled:text-fg-disabled aria-pressed:disabled:border-transparent',
           'aria-pressed:disabled:hover:bg-disabled aria-pressed:disabled:hover:text-fg-disabled aria-pressed:disabled:hover:border-transparent aria-pressed:disabled:active:bg-disabled aria-pressed:disabled:active:text-fg-disabled aria-pressed:disabled:active:border-transparent',
           // 按下的觸發鈕開啟中 = 按下自己的 hover(底色與邊框不動、字 primary-hover),不是 variant 的開啟樣式
-          //(inline-action.spec.md「overlay 開啟 → 同 host hover」;button.spec.md「狀態疊加」表開啟中列)。
+          //(inline-action.spec.md「互動狀態」表 overlay 開啟列;button.spec.md「狀態疊加」表開啟中列)。
           // Radix 會把 data-state 改寫成 open,所以只走 aria-pressed;(0,3,0) > variant 的 data-[state=open] (0,2,0)
           'aria-pressed:data-[state=open]:bg-primary-subtle aria-pressed:data-[state=open]:border-transparent aria-pressed:data-[state=open]:text-primary-hover',
           // 按下 + aria-disabled:hover / active 釘在按下的靜止字色(底色與邊框已由上方釘住)
@@ -421,7 +421,7 @@ export interface ButtonProps
 // 結果:0 magic number,0 公式,0 border-deduction,任何 size / icon size 都自然正方形。
 // World-class 對照:Polaris + Atlassian iconOnly 走 padding-free 派(Material/Ant 走
 // padding-based)。我們選 padding-free 因 SSOT 性更強(SegmentedControl / Tag dismiss
-// 等 host 全可共用同 utility class,無需各自抄公式)。詳 button.spec.md「iconOnly 鐵律」。
+// 等 host 全可共用同 utility class,無需各自抄公式)。詳 button.spec.md「iconOnly 的邊界」。
 const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 // ── 可聚焦的停用(2026-10-01;規則 ds-canonical/references/keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」)──
@@ -515,8 +515,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // 2026-05-23 deep-audit Phase A.4 Decision 1(user verbatim「決策ㄧ照你建議做」):dev-warn `iconOnly + (endIcon|badge)` 並用。
-    // Spec SSOT:button.spec.md「iconOnly 嚴格定義為『只有一個 icon,正方形』,不可與 endIcon 或 badge 並用」。
+    // 2026-05-23 deep-audit Phase A.4 Decision 1(user 當日同意照 AI 建議做;原話已不可考,此為轉述):dev-warn `iconOnly + (endIcon|badge)` 並用。
+    // Spec SSOT:button.spec.md「iconOnly 的邊界」(只有一個 icon、正方形,不可與 endIcon 或 badge 並用)。
     // 例外:overlayBadge 跟 iconOnly 並用 canonical(上方 overlayBadge 反向 warn 已 cover;相對指法,免行號漂移)。
     // 不擋 image canonical「icon + 下拉指示 = 不加 iconOnly + startIcon + endIcon + aria-label」(那 case iconOnly=false 不 trigger)。
     if (process.env.NODE_ENV !== 'production' && iconOnly && (EndIcon !== undefined || badge != null)) {
@@ -530,7 +530,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。
     // 2026-06-06 預設 emphasis 改低(對齊世界級:MUI 預設 text / Ant 預設 default / Polaris 低 emphasis —
     // 預設 primary CTA 是 outlier)。labeled 無 variant → `tertiary`(中性外框,清楚可點性,再按重要程度升 primary);
-    // iconOnly 無 variant → `text`(toolbar ghost,對齊 action-bar.spec.md「純動作工具/低重量輔助 → text」+
+    // iconOnly 無 variant → `text`(toolbar ghost,對齊 action-bar.spec.md「Variant 選擇 narrow scope」表「純動作工具(無 state)/ 低重量輔助」列 → `text` +
     // Material 3「icon-only = no fill」)。**CTA 必 explicit `variant="primary"`**(不靠預設)。dismiss 仍強制 text。
     const resolvedVariant: InternalVariant =
       dismiss ? 'text' :

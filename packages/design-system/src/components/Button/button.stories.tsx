@@ -74,7 +74,7 @@ type Story = StoryObj<typeof Button>
 
 // 間距(layoutSpace.spec.md 規則 3;category-templates.md「教學框的間距與標題」):本檔是變體樣本的對照列 ——
 // 並列的樣本之間 loose、說明 ↔ 它標的那一列樣本 tight(ExampleGroup)、一組一組的對照之間 loose。
-// 2026-05-18 加(per user 抓「為何開頭是按下狀態」):Default story 放最頂,
+// 2026-05-18 加(user 指出頁面開頭就是按下狀態;原話已不可考,此為轉述):Default story 放最頂,
 // 入口顯預設 variant 五連發(primary / secondary / tertiary / text / link),
 // 讓 user 第一眼看到按鈕長什麼樣 — 而非 transient state demo。
 export const Default: Story = {

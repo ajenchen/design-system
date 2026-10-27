@@ -19,7 +19,7 @@ import { isTextEntryElement } from "@/design-system/lib/roving-list-keyboard"
  *    所以這裡**滑鼠移過項目要算**(那就是搶),但**滑鼠停著不算**(只有移動才會觸發 pointermove)——
  *    這一點與瀏覽器的 `:focus-visible` 啟發式相反(那個只看按下,不看移動)。項目在 `onPointerMoveCapture` 呼叫 `markPointerGrab`,
  *    keydown 統一在 window 捕獲階段記成鍵盤 ——
- *    **但在文字輸入框裡打字不算搬游標**(2026-09-10 user:「滑鼠點擊輸入框然後輸入 a,再點 backspace,選單上會出現鍵盤焦點的藍色邊框」):
+ *    **但在文字輸入框裡打字不算搬游標**(2026-09-10 user:「我滑鼠點擊輸入框然後輸入a,在點擊鍵盤上的backspace按鈕，之後選單上會出現鍵盤焦點的藍色邊框？這是合理的嗎？」):
  *    字元 / Backspace / Delete / 空白 是在編輯文字,反白跳到第一個符合項是函式庫的自動落點(cmdk `search` 一變就
  *    `schedule(1, selectFirstItem)`),沒有人「搬」它;只有方向鍵 / Home / End / PageUp / PageDown / Tab / Esc 才算鍵盤搬游標。
  *    世界級同判:React Aria `useFocusVisible` 對文字輸入框只認 Tab / Escape 為會顯示焦點的鍵(`FOCUS_VISIBLE_INPUT_KEYS`);

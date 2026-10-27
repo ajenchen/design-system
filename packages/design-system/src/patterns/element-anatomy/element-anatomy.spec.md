@@ -195,8 +195,8 @@ Consumer 自建 chrome-like div 帶 bg/border/shadow 時,參考上表或就近�
 - 機械檢查走 audit dim 22「視覺容器 inner breathing」(design-system-audit SKILL)batch sweep:「consumer 自建 chrome 是否有 inner padding」
 
 **與既有規則的關係**:
-- `overlay-surface.spec.md` 「M11 state walk hover 檢查(三 invariant 必同時 ✓)」第 3 條(content 在 hover bg 內 breathing)= 本規則的**應用層 instance**(hover bg 也算「permanent」在該 state 內),非獨立規則
-- `.claude/rules/ui-development.md`「Padding source 分層規則」定 **padding 來源**(token / Tailwind / calc);本規則定 **padding 是否存在**(是 invariant)
+- `overlay-surface.spec.md` 「M11 state walk hover 檢查」第 3 條(content 在 hover bg 內 breathing)= 本規則的**應用層 instance**(hover bg 也算「permanent」在該 state 內),非獨立規則
+- `ds-canonical/references/ui-dev-rules.md`「Padding source 分層規則」定 **padding 來源**(token / Tailwind / calc);本規則定 **padding 是否存在**(是 invariant)
 
 ---
 

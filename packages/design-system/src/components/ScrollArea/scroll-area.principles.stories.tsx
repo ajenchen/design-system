@@ -26,7 +26,7 @@ const NOTION_PAGES = [
   'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs',
 ]
 
-// Stripe 寬欄位商品表 — 消費真 DataTable(per data-table.spec.md「簡單展示場景也用 DataTable」,
+// Stripe 寬欄位商品表 — 消費真 DataTable(per data-table.spec.md「簡單展示也用 DataTable」,
 // 對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:DataTable 無高度約束、
 // 不啟內部捲軸,捲動完全由外層 ScrollArea / native overflow 容器 own。
 type StripeProduct = {

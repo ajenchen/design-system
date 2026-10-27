@@ -1,6 +1,6 @@
 /* @qijenchen/design-system/styles/base — consumer runtime CSS SSOT
  *
- * Why(2026-05-29 fix:ds-product-template storybook 字體 drift,user「請你追根究底去解決」授權):
+ * Why(2026-05-29 fix:ds-product-template storybook 字體 drift,user 授權追根究底解決;原話已不可考,此為轉述):
  *   `styles/tokens` is the single consumer import. It must include the runtime CSS
  *   needed by shipped DS components: base element styles plus custom utilities
  *   backed by DS-owned keyframes.
@@ -119,8 +119,8 @@
  *
  * SSOT:`ds-canonical/references/focus-canonical.md`「問題二」→「填色元素上的內描邊」(2026-09-23 user 拍板)。
  *   往內 2px 的藍線畫在藍底上同色、看不見;白線又不能貼在最外圈 —— 那只是把藍圓削小一圈,選中狀態
- *   看起來像「比較小的藍底」(user 原話)。所以白線要退進藍圓裡、外圈留藍:1px 白線退 3px,線外保留 3px 藍。
- *   1px 而不是 2px:2px 退 4px 的版本內圈只剩 16px,兩位數的數字直接貼到線(user:「c 的白線幾乎要切到文字了」)。
+ *   看起來會像 user 說的「否則整個選中狀態只會看起來是比較小的藍底？」。所以白線要退進藍圓裡、外圈留藍:1px 白線退 3px,線外保留 3px 藍。
+ *   1px 而不是 2px:2px 退 4px 的版本內圈只剩 16px,兩位數的數字直接貼到線(user:「我會想要選D,因為 c的白線幾乎要切到文字了，你覺得呢？」)。
  *   對照 IBM Carbon 選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }`
  *  (packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571;`.today.selected` 走 focus-outline mixin,不是這條)。
  * 顏色走 `--on-emphasis`(主色底上的前景,兩個主題都是白),不寫死 white。

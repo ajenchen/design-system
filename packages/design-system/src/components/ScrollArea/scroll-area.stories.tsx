@@ -72,7 +72,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 // ── DataTable columns ─────────────────────────────────────────────────────────
-// 消費真 <DataTable>(per data-table.spec.md「簡單展示場景也用 DataTable,不另外維護靜態 Table」)。
+// 消費真 <DataTable>(per data-table.spec.md「簡單展示也用 DataTable」:不維護第二個靜態 Table 元件)。
 // ScrollArea 包 height="auto" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
 // 捲動完全由 ScrollArea own(DataTable 無高度約束 + min-w-max 不啟內部捲軸)。
 

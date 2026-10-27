@@ -27,7 +27,7 @@
 | focus-visible | `outline: 2px solid var(--ring)`,**往外**(offset +2px,吃 `styles/base.css` 全域規則,元件不寫任何 class) | focus-canonical「問題二」:2026-09-10 逐站點實測 —— 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側分隔符,canonical「4.00 算放得下」),DPR2 逐像素數框帶零裁切。**列不裁它**:截斷是 label 自己的 `truncate`(兄弟節點),不是祖先。先前寫「往內、上下各被裁 1px」是把 **Tag 宿主**的量測(h-6 + 1px 邊框 + `overflow-hidden` → 淨空 3px、sm 1px)套到整個元件種類;依 canonical「往內由外層元件承擔」,那一處的 `focus-ring-inset` 在 `tag.tsx` TagDismiss。對照 SidebarMenuAction 同樣往外 |
 | 宿主 disabled | 不渲染 inline action | — |
 
-**Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(Button spec「loading」段:CircularProgress + 可聚焦的停用 —— `aria-busy` / `aria-disabled`、擋掉觸發、焦點留在鈕上),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
+**Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(行為見 `components/Button/button.spec.md`「loading」段),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
 
 **Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改 / 2026-05-05 prop 化):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip / HoverCard trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。對齊**狀態極簡派**(shadcn / Radix Themes / Material — 不另開 4th token);避免 state 增生 + 跨 host(neutral / colored)規則同步。
 
@@ -45,7 +45,7 @@
 
 Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。共同精神:inline action 視覺融入 host — neutral host 的融入方式是「退到 muted」,colored host 的融入方式是「接收 host 色」。
 
-**預設（neutral host）**:預設 `fg-muted`,hover / active 時變 `fg-secondary`(**往前一階,不跳階**;2026-07-30 user 拍板)
+**預設（neutral host）**:預設 `fg-muted`,hover / active 時變 `fg-secondary`(**往前一階,不跳階**;2026-07-30 user 拍板〔UD-J08〕)
 - **階梯 root invariant**:`fg-muted`(neutral-7)→ `fg-secondary`(neutral-8)→ `foreground`(neutral-9)。弱化 icon 只走一階;rest 已是 `fg-secondary` 的整列 / 文字 hover(如 `chip.tsx` / TreeItem row)→ `foreground` 同樣是一階,合規
 - **世界級對照**:Fluent 2 `packages/tokens/src/alias/lightColor.ts`——`neutralForeground3Hover` 就等於 `neutralForeground2` 的值(grey[26]),`neutralForeground2Hover` = grey[14](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/alias/lightColor.ts);MUI `Chip.js` deleteIcon `alpha(text.primary, .26)` → hover `.4`(不到底,https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Chip/Chip.js)。Ant Design Tag close(`colorIcon` .45 → `colorTextHeading` .88)是唯一全跳,其 rest 值遠淡於本 DS `fg-muted`,travel 空間不對等,不採
 - **token 層 rule owner**:`tokens/color/semantic.css:53`「弱化 icon hover 後變 `fg-secondary`(neutral-8)」——本段與該行為同一 invariant 的兩個 home,禁互相漂移(機械強制:`check_pattern_invariants.sh` C.5)
@@ -79,7 +79,7 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 | TreeItem lg | 20px | 22px | rounded-md | 22px | 20px |
 | Panel list row(visibility / sort / filter panels)| 16px | 18px | rounded-md | 18px | 16px |
 
-**「可點範圍」欄恆等於「Hover 背景」欄**(user 2026-09-24 逐字:「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧?都是 18*18」)——
+**「可點範圍」欄恆等於「Hover 背景」欄**(user 2026-09-24 逐字:「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧？都是18*18」)——
 那塊底色就是使用者看得到的形狀,看得到的每一點都要點得到。跨元件規則與唯一例外的 owner = `ds-canonical/references/hit-area-canonical.md`;
 本表只放本元件的值,不重述規則。**排版佔位不變,仍是 icon 尺寸**(16 / 20):多出來的 2px 靠溢出(absolute / negative margin)承擔,不吃版位 —— 見上方「視覺規則」3 與下方 Consumer wrapping rule。
 
@@ -162,7 +162,7 @@ Q3. Row 多大?
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
-| **Accordion 標題列 ChevronDown**(`accordion.tsx#AccordionTrigger`,`aria-hidden`)| 整條標題列就是開合按鈕(Radix `AccordionPrimitive.Trigger`)| **Decorative**(不是 action)| 決策樹 Q1「icon 點了要做事嗎?」否(`:133-134`):點 chevron 等於點標題列,host 是 click target(`:126`);對照 SidebarGroup header chevron —— 那顆自己是可點的 toggle,所以是 Inline Action(2026-10-01 補列,待辦總帳 N81)|
+| **Accordion 標題列 ChevronDown**(`accordion.tsx#AccordionTrigger`,`aria-hidden`)| 整條標題列就是開合按鈕(Radix `AccordionPrimitive.Trigger`)| **Decorative**(不是 action)| 決策樹 Q1「icon 點了要做事嗎?」否(本節「決策樹(3 步)」Q1):點 chevron 等於點標題列,host 是 click target(「三種 icon primitive 的身份」表 Decorative indicator 列);對照 SidebarGroup header chevron —— 那顆自己是可點的 toggle,所以是 Inline Action(2026-10-01 補列,待辦總帳 N81)|
 | Select ChevronDown / DatePicker Calendar / Combobox ChevronDown | Field chrome(裝飾)| **Decorative**(不是 action)| Click falls through;host 是 trigger |
 | **FileItem compact**(row 24)| Row slot | Button xs iconOnly(`var(--field-height-xs)` 容器 + data-unbounded 收斂到 1lh)| 2026-04-23 user 統一 rich + compact 同 primitive,不撐高 row(見 file-item.tsx 註解)|
 | **FileItem rich**(row 56 sm/md rich)| Row slot | Button xs iconOnly(24 固定)| ≤ 24 cap,不放大 |

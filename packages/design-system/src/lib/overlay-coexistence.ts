@@ -171,14 +171,14 @@ function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
       // 洞 = 常駐節點底下**點得到或畫得出來**的盒子。兩種節點沒有資格自己當洞、要往下找子節點:
       //   - `display:contents` 的殼沒有自己的盒子(rect 全 0);
       //   - `pointer-events:none` 的定位圖層(rect 是全舞台、卻既不吃指標也不畫東西)。
-      //     根因錨(2026-09-09 user:「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」):
+      //     根因錨(2026-09-09 user:「到底為何關閉agent之後,原本dialog該有的遮罩就消失了？？？」):
       //     agent 關閉後,常駐殼裡換成入口鈕的 Dock,它外層是一個與舞台等大的
       //     `pointer-events-none absolute inset-0 overflow-clip` 裁切圖層(agent-panel-fab.tsx);
       //     舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框 → 遮罩整張被挖空。
       //   例外:`<svg>` / `<img>` / `<canvas>` / `<video>` 這類自己會畫的元素即使 pointer-events:none
       //   也算(入口鈕的招喚光圈就是 pointer-events-none 的 svg,洞要把它露出來)。
       const PAINTS = new Set(['svg', 'img', 'canvas', 'video'])
-      // 洞 = 元素的**可視形狀**,不是外接矩形(2026-09-09 user:「dialog 遮罩不能在視覺上沿著 fab 的形狀?而是切出一個正方形放 fab?」):
+      // 洞 = 元素的**可視形狀**,不是外接矩形(2026-09-09 user:「圖一為何dialog遮罩不能在視覺上沒有沿著fab的形狀？而是在視覺上切出一個正方形放fab?」):
       // 圓形入口鈕原本挖 40×40 的方洞,四個角露出沒被遮的底色 = 那個「白方塊」。四個角各讀實際 border-radius(px / %;
       // `rounded-full` 的 9999px 依 CSS 規則夾到邊長一半,相鄰兩角相加超過邊長時等比縮),用弧線畫子路徑;直角元素路徑與舊版相同。
       type Hole = { r: DOMRect; radii: [number, number, number, number] }
@@ -224,7 +224,7 @@ function CoexistenceMask({ keep, className, ...rest }, forwardedRef) {
       }).join('')
       setClipPath(`path(evenodd, '${outer}${holes}')`)
       // 保留元素正在動畫 / 過渡(入口鈕拖放後 250ms 飛回家、貼邊形態過渡)時,洞要每幀跟著算到動畫結束;
-      // 否則洞停在算的那一刻的位置(2026-09-09 user:「fab 推到邊緣再拖回原本的地方,會在遮罩上挖出另一個圓形的洞」:
+      // 否則洞停在算的那一刻的位置(2026-09-09 user:「當我把 fab推到邊緣去變成小fab之後又再拖回原本的地方,會在遮罩上挖出另一個圓形的洞？」:
       // 實測洞心停在飛行途中 1364,766、鈕心已到 1387,847)。ResizeObserver / MutationObserver 都看不到位置過渡。
       const animating = keep().some((el) => !!el && el.isConnected && typeof el.getAnimations === 'function'
         && el.getAnimations({ subtree: true }).some((a) => a.playState === 'running'))
@@ -278,7 +278,7 @@ CoexistenceMask.displayName = 'CoexistenceMask'
  *   (1) 目標在保留節點子樹裡;
  *   (2) 目標在保留區**自己開出來的浮層**裡 —— 入口鈕的右鍵選單、面板裡的 Select / Popover 都 portal 到 body,
  *       不在保留區子樹;用觸發器的 `aria-controls` / `aria-owns` 找回開它的元素(Radix menu / popover / select 都會寫),
- *       觸發器在保留區 → 這個浮層算保留區(2026-09-09 user:「遮罩上的 fab 右鍵點擊都無法正常反應」)。
+ *       觸發器在保留區 → 這個浮層算保留區(2026-09-09 user:「為何在遮罩上的fab不管大小被右鍵點擊都無法正常反應？？？」)。
  *       **關閉中也算**:Radix 只在開著時寫 `aria-controls`;滑鼠點選單項 → 選單進入關閉態、屬性已拿掉、
  *       Radix 把焦點還給選單容器 → 那一次 focus-outside 認不出來,並存框當場關掉(2026-09-10 user:
  *       「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」;鍵盤 Enter 不會,因為指標不在選單上、沒有那次還焦點)。

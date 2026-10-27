@@ -164,16 +164,16 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 - **水平 padding**: `px-[var(--layout-space-loose)]`(sidebar context) / `px-3`(menu context),由 consumer 脈絡決定
 - **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
-- **字重**: `font-medium`(500),**不隨 selected 變**
-- **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
-- **Hover**: `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
+- **字重**(SidebarMenuButton、TreeItem): `font-medium`(500),**不隨 selected 變**
+- **預設文字色**(SidebarMenuButton、TreeItem): `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
+- **Hover**(有列底色的列;沒有列底色的設定列 / 勾選框列不適用): `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
-- **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
+- **選中 × 互動疊加（2026-08-11 user 拍板:對 AI 列的清單(第一項「滑鼠 hover 選中項釘住不變」)回「可以，做到完整完美並自行驗證到完美無誤沒有任何偏移」;鍵盤兩列以下表各列日期為準；本格是全家族唯一 owner，消費者禁自行發明）**：
 
   | 疊加 | 指示 | 理由 |
   |---|---|---|
   | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住） |
-  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
+  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**〔UD-D11〕「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
   | 選中列 × 鍵盤焦點／反白 | **畫框**（`focus-ring-inset`，2px 內描邊） | **2026-09-07 user 拍板**，原話「A5畫框」。底色已經被「選中」佔走，不能再把「游標在這裡」這第二個意義擠進同一個通道——**同一個元素上不得有兩種焦點指示**。原本的 `bg-neutral-selected-focus`（深一階）已隨此格退役。**框疊在選中底色上**。虛擬焦點選單（cmdk／Radix 反白）**另加鍵盤模態條件**（`hooks/use-input-modality.ts`；滑鼠點開時已選項不畫框,2026-09-08）；滑鼠停在游標列上時底色釘住、框照畫（2026-09-09 起不再用 `not-hover:` 分流）；真焦點元件用 `focus-visible:` |
   | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
 
@@ -186,8 +186,8 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致
 - **Icon 尺寸控制**: 用 `ICON_SIZE` 常數 `{ sm: 16, md: 16, lg: 20 }` 對齊 `--field-height-*`,並**透過 `size` prop 直接傳給 Lucide icon**(不要用 CSS selector 如 `[&>svg]:size-4`——當 icon 被包在 `h-[1lh]` wrapper 裡時,`>` 直接子選擇器失效,Lucide 會 fallback 到 24px 預設)。MenuItem / TreeView / SidebarMenuButton 都這樣做,新元件照抄
 - **Row header(分組標題)**: 用 `MenuItem header={true}` 模式,`font-medium text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry(同 px / 同 py / 同 text size)
-- **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」— 6 家世界級無一家括號串接:Primer CounterLabel / Ant Badge / Atlassian Badge 皆結構化 slot);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「badge 傳達計數」),不適用本條。
-- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row(訊息列)」
+- **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」— 6 家世界級無一家括號串接:Primer CounterLabel / Ant Badge / Atlassian Badge 皆結構化 slot);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「`badge` 傳達該 tab 底下的待處理計數」),不適用本條。
+- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row」
 - **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
@@ -200,7 +200,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### ⛔ 2026-09-24 重寫:先前這一節是從實作切入的
 
-原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因,我他媽今天講了一百次了」(commit `c8821266` 訊息第 3 行;2026-09-27 補回先前被截掉的後半句)。把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
+原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些，而不是導果為因，我他媽今天講了一百次了」(commit `c8821266` 訊息第 3 行;2026-09-27 補回先前被截掉的後半句)。把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
 
 ---
 
@@ -252,9 +252,9 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### 走一遍:當初引發這一連串問題的兩個元件
 
-user 2026-09-24 原始提問:「所有可以被點擊且其中提供按鈕的 list item 都會有一樣問題?」
-「就結果是一樣的,但為何設計方式是不一樣的?是否是合理的?未來遇到這種有多 action 且自身可以點擊的
-list item 元件都是要用類似的處理方式?」
+user 2026-09-24 原始提問:「所以所有可以被點擊且其中提供按鈕的 list item 都會有一樣問題？」
+「就結果是一樣的，但為何設計方式是不一樣的？是否是合理的？
+未來遇到這種有多action且自身可以點擊的list item元件都是要用類似的處理方式？」
 
 | | `SidebarMenuButton` | `FileItem` | `TreeItem` |
 |---|---|---|---|
@@ -565,7 +565,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 | 情境 | 用 | 原因 |
 |------|---|------|
 | **Menu / Dropdown 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `MenuItem` + suffix Switch | 已在 overlay 容器,menu 整列 row 就是 click target,Switch 是狀態視覺 |
-| **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「settings list canonical」 |
+| **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。
 
@@ -914,7 +914,7 @@ Block 模式時 checkbox 不在 label 第一行——它跟 avatar 在同一高�
 | | 掃描模式 | 閱讀模式 |
 |---|---|---|
 | **判斷標準** | 使用者快速掃描選擇 | 使用者停留閱讀 |
-| **場景** | 浮層 / overlay（一掃而過） | 頁面 / 表單（仔細閱讀） |
+| **場景** | 選單類浮層(下拉、指令面板,一掃而過) | 頁面 / 表單 / 對話框裡的展示列(仔細閱讀) |
 | **Label 行高** | `leading-compact` (1.3) | 預設 (1.5) |
 | **Description 字體** | 降一級（14→12px, 16→14px） | 最小 14px（14→14px, 16→14px） |
 | **Description 顏色** | `fg-secondary` | `fg-secondary` |
@@ -980,7 +980,7 @@ World-class benchmark(6 家 DS):
 - Hook `check_item_content_primitive.sh`(2026-04-23 加)已 retired(→ `.claude/hooks/retired/`,無現役 write-time 機械閘);硬寫 `mt-0.5` / `gap-0.5` 現靠 audit-time 掃描 + mindset #2(優先消費既有 token / primitive)把關
 - Consumer 刻意 hard-code 加 `// @item-gap-exempt: <reason>` 豁免 + rationale 在 spec(marker 現無 hook 消費者,保留作 review 註記)
 
-**兩種模式的唯一差異是行高。** Description 在所有模式都降一級字體——label 是要辨識的目標，description 是補充，尺寸差有助快速區分。
+**兩種模式差在行高與說明字級(見上表)。** 掃描模式的 Description 降一級字體——label 是要辨識的目標，description 是補充，尺寸差有助快速區分。
 
 ---
 
