@@ -10,18 +10,18 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 |-------|----|----|------|
 | `--layout-space-loose` | 16px | 24px | 主間距:容器水平 padding、parallel 元素 gap、bounded region 呼吸空間 |
 | `--layout-space-tight` | 12px | 16px | 緊湊間距:Header → element、functional 交互的元素之間 |
-| `--layout-space-bottom` | 48px | 48px | 結論留白:內容到 action buttons(commitment 前視覺暫停)|
+| `--layout-space-bottom` | 48px | 48px | 結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底 |
 | `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AppShell 的 AI agent 浮層左側、Menu 浮層右側「至少留」也吃它 —— user 2026-10-14 規格「另一側至少保留 48px」,`../../components/AppShell/app-shell.spec.md`「版面規則」§9)|
 
 **Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
 
 **為什麼 viewport-inset 要跟 bottom 分開**(2026-09-11):兩者值都是 48px,但語意不同 ——
-`bottom` 是「內容 → action buttons 的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。
+`bottom` 是「body 收尾的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。
 Dialog 原本借用 `bottom` 當 inset,後果可驗證:任何人依本表語意去調結論留白,會同時改掉全站 Dialog 的
 **高度上限與最大寬度**(M17「同值不同義」)。它同樣不隨 density 變(理由同下)。
 owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
-**為什麼 bottom 不隨 density 變**:48px 是「結論前的留白」— content 到 action buttons 的視覺暫停。跟 density 無關(不論 compact 或 comfortable,使用者都需要「commitment 前」的節奏)。
+**為什麼 bottom 不隨 density 變**:48px 是「結論留白」— body 收尾的視覺暫停。跟 density 無關(不論 compact 或 comfortable,使用者都需要這一拍)。
 
 ---
 
@@ -120,16 +120,16 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 ### 規則 4:底部 — 拆兩個 distinct 概念
 
-**核心**:**「內容 → action button 前留白」跟「元件 → 容器底邊」是兩個不同 spacing 概念**,不可混為一談。
+**核心**:**「內容 → 按鈕」(規則 3)跟「最後一個東西 → 容器底邊」(本表)是兩個不同 spacing 概念**,不可混為一談;容器底邊這一段跟規則 2 的頂部一樣,同一段距離只由一層給:容器給內距,元件不再加外距去推容器。
 
-| 情境 | gap | 概念 |
+| 情境(後面有沒有 footer 都一樣)| gap | 概念 |
 |------|-----|------|
-| **任何最後內容 → action button**(inline / in SurfaceFooter / in chrome footer 內)| `bottom`(48)| **A. Commitment 前留白** — user 跨到決策 moment |
-| **bounded region → 容器底**(後無 action buttons) | `loose` | **B. Spatial 邊界** |
-| **unbounded region → 容器底**(後無 action buttons) | **0**(list 自帶 py 撐)| **B. Spatial 邊界** |
-| **element → 容器底**(後無 action buttons) | `tight` | **B. Spatial 邊界** |
+| **element(欄位 / 文字 / 按鈕)→ Dialog / Sheet body 底** | `bottom`(48)| **結論留白** |
+| **bounded region → 容器底** | `loose` | **Spatial 邊界** |
+| **unbounded region → 容器底** | **0**(list 自帶 py 撐)| **Spatial 邊界** |
+| **element → 其他容器底**(Dialog / Sheet 以外:AppShell 右欄、整頁、Popover 家族、卡片…)| 【待拍板】| **Spatial 邊界** |
 
-**Note**:Dialog body `pb-bottom 48` 是 line 1 的實作(預期後接 SurfaceFooter buttons,universal 套 48,**不是元件特例**)。「**底部 chrome band**」(Alert / BulkActionBar / Status bar / Footer)內含 action → 套 48;不含 → 套 loose(line 2)。
+**Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。
 
 ### 規則 5:橫排 Input Gap(固定不隨 density)
 
@@ -165,7 +165,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,規則 3「同範疇 spec-own」)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
-| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
+| **body 收尾**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
 
 > **2026-09-12 更正**:右欄原本舉的例子是「FieldGroup 三級固定 gap,不隨 density」——**那個例子跟左欄第一列自相矛盾**:
 > 左欄逐字說「並列獨立 區塊 / 卡片 / **表單欄位** 之間 → 規則 3 parallel = loose」,而 FieldGroup 管的正是表單欄位之間的間距。
@@ -212,7 +212,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | 容器水平左右 padding | **規則 1** | 元件有無視覺邊界? | 有 → A 元件自帶 `px-loose` / 無 → B 父層管 / list-with-hover-row → C item 自帶 |
 | Header → 第一個元素 gap | **規則 2** | 第一個元素 role | bounded region → `loose` / unbounded region → **0**(list 自帶 py 撐)/ element → `tight` |
 | 兩元素之間 gap | **規則 3** | 親疏 | 同範疇 → 元件 spec own(跳)/ 跨範疇相關 → `tight` / 跨範疇 parallel → `loose` |
-| 最後內容 → 容器底 | **規則 4** | (a) 後接 action button?(b) 元件 role | 後接 action → `bottom`(48,概念 A commitment 前留白)/ 否則看 role:bounded → `loose` / unbounded → **0** / element → `tight`(概念 B spatial 邊界)|
+| 最後內容 → 容器底 | **規則 4** | 元件 role(element 再看哪種容器)| element → Dialog / Sheet body 底 `bottom`(48)、其他容器【待拍板】/ bounded → `loose` / unbounded → **0** |
 | 橫排並列 input 之間 gap | **規則 5** | 內容語意緊密度 | 同組值起迄 → `gap-2`(8) / 不同組並列 → `gap-4`(16) |
 | Chrome 表面水平 padding | **規則 6** | (永遠) | `loose` |
 
@@ -245,14 +245,14 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 ### 範例 4:Cmd+K menu list 最後 row → menu 容器底
 
 - **走規則**:規則 4
-- **判**:後接 action button?**否** → 看 role:menu list = unbounded region(主導 + 自帶 py 撐)
-- **答**:**0**(概念 B spatial 邊界,list 自帶 py 撐)
+- **判**:看 role:menu list = unbounded region(主導 + 自帶 py 撐)
+- **答**:**0**(spatial 邊界,list 自帶 py 撐)
 
 ### 範例 5:Dialog body 最後 field → body 底
 
 - **走規則**:規則 4
-- **判**:後接 action button(在 SurfaceFooter 內)?**是** → 套 `bottom 48`
-- **答**:48(概念 A commitment 前留白)。`dialog.tsx` DialogBody 預設 `pb-bottom` 是此規則的實作(預期 body 後接 SurfaceFooter buttons),非 Dialog 例外
+- **判**:最後一個是 element(欄位)→ 套 `bottom 48`
+- **答**:48(結論留白)。`dialog.tsx` DialogBody 預設 `pb-bottom` 是此規則的實作,非 Dialog 例外
 
 ### 範例 6:SurfaceFooter 內 [Cancel] ↔ [Save] gap
 
@@ -279,7 +279,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 │  ← loose → [Description]  ← loose →│
 │← loose ─────────────────────────→ │
 │  ← loose → [Other field]  ← loose →│
-│← bottom 48 ────────────────────→  │  ← 最後內容 → action buttons (規則 4 line 1, 概念 A)
+│← bottom 48 ────────────────────→  │  ← 最後 element → body 底 (規則 4 第 1 列)
 ├────────────────────────────────────┤  ← SurfaceFooter border-t
 │  ← loose → [Cancel] [Save] ← loose →│  ← Footer (chrome, py-tight)
 └────────────────────────────────────┘
