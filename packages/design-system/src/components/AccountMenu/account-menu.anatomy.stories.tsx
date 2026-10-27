@@ -32,7 +32,8 @@ export const Overview: Story = {
           DropdownMenu Content 先顯示 identity Label，再放個人資料、設定與獨立分區的登出動作。
           元件只負責這個同構組合；放在 global header 或 Menu 左側浮層的頂排，由 AppShell placement SSOT 決定。
         </Desc>
-        <div className="mt-4 inline-flex items-center gap-4 rounded-md border border-dashed border-divider p-4">
+        {/* 說明 → 示意 = Desc 自己的下方距離(loose);原本再加 mt-4,兩層疊成 32 / 40(A-S1:同一段距離只由一層給) */}
+        <div className="inline-flex items-center gap-4 rounded-md border border-dashed border-divider p-4">
           <AccountMenu
             user={DEMO_USER}
             onViewProfile={noop}
@@ -89,7 +90,8 @@ export const Inspector: Story = {
 export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
-    <div className="max-w-3xl space-y-4 text-body">
+    // 標題 → 清單 = tight(純文字 / 清單的內容之間是 tight,A4;原本寫死 space-y-4 = 16、不跟密度)
+    <div className="max-w-3xl space-y-[var(--layout-space-tight)] text-body">
       <h3 className="text-h5">狀態由 Radix DropdownMenu 管理</h3>
       <ul className="list-disc space-y-2 pl-5 text-fg-secondary">
         <li>關閉：trigger 留在 tab sequence，Enter、Space 或 ArrowDown 開啟。</li>
@@ -104,7 +106,8 @@ export const StateBehavior: Story = {
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="max-w-3xl space-y-4 text-body text-fg-secondary">
+    // 標題 → 清單 = tight(同上)
+    <div className="max-w-3xl space-y-[var(--layout-space-tight)] text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground">A11y contract</h3>
       <ul className="list-disc space-y-2 pl-5">
         <li>Trigger 是 <code>type="button"</code>，並以 <code>triggerAriaLabel</code> 提供可讀名稱。</li>
