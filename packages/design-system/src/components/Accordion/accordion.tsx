@@ -79,22 +79,66 @@ const AccordionTrigger = React.forwardRef<
 ))
 AccordionTrigger.displayName = 'AccordionTrigger'
 
+/**
+ * 內容打開而且高度動畫跑完了沒有(= 不再需要裁切)。
+ * disclosureMotion 的 `overflow-hidden` 是高度動畫的前提(收合途中內容不能溢出),但打開、停下來之後它就只剩一個副作用:
+ * 內容裡貼著左 / 上緣的按鈕、欄位,往外畫的焦點框被它裁掉(r1b 全 DS 掃描:「規則」頁「永久刪除工作區」左、上兩邊被裁;
+ * 待辦總帳 R1b-DT3)。focus-canonical.md「正當障礙」問句:動畫跑完這層裁切消失,畫面不會壞 → 不是正當障礙,修外殼、框照樣往外。
+ * 做法:只有「打開 + 沒有動畫在跑」時不裁(MUI Collapse 同款:entered 狀態 `overflow: 'visible'`,
+ * https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Collapse/Collapse.js);
+ * 一開始就打開(Radix 擋掉掛載動畫)、要求減少動態(沒有動畫)時一打開就不裁;收合時一律裁。
+ */
+function useOpenAndSettled(ref: React.RefObject<HTMLDivElement | null>) {
+  const [settled, setSettled] = React.useState(false)
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      if (el.getAttribute('data-state') !== 'open') { setSettled(false); return }
+      // getAnimations 不存在的環境(舊瀏覽器 / 測試 DOM)當作沒有動畫在跑(同 overlay-coexistence.ts、tree-view.tsx 的守法)
+      setSettled(typeof el.getAnimations !== 'function' || !el.getAnimations().some((a) => a.playState === 'running'))
+    }
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(el, { attributes: true, attributeFilter: ['data-state'] })
+    const onEnd = (e: AnimationEvent) => { if (e.target === el) update() }
+    el.addEventListener('animationend', onEnd)
+    el.addEventListener('animationcancel', onEnd)
+    return () => {
+      observer.disconnect()
+      el.removeEventListener('animationend', onEnd)
+      el.removeEventListener('animationcancel', onEnd)
+    }
+  }, [ref])
+  return settled
+}
+
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   // asChild 不對外開放:Content 固定以內層 <div className="pb-4"> 包住 children,傳 asChild
   // 只會讓 Slot clone 該內層 div,consumer 元素無法成為 Content host(等同無效 API)。
   Omit<React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>, 'asChild'>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Content
-    ref={ref}
-    // 高度動畫 / 收尾 / 減少動態 = disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView、AgentPanel 思考塊同一份 ——
-    // Accordion.Content 內部就是 Collapsible.Content,同一節點也有 --radix-collapsible-content-height,共用 collapsible keyframe)
-    className={cn(disclosureMotion, 'text-body text-fg-secondary')}
-    {...props}
-  >
-    <div className={cn('pb-4', className)}>{children}</div>
-  </AccordionPrimitive.Content>
-))
+>(({ className, children, ...props }, forwardedRef) => {
+  const innerRef = React.useRef<HTMLDivElement | null>(null)
+  const settled = useOpenAndSettled(innerRef)
+  return (
+    <AccordionPrimitive.Content
+      ref={(el) => {
+        innerRef.current = el
+        if (typeof forwardedRef === 'function') forwardedRef(el)
+        else if (forwardedRef) forwardedRef.current = el
+      }}
+      data-disclosure-settled={settled ? '' : undefined}
+      // 高度動畫 / 收尾 / 減少動態 = disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView、AgentPanel 思考塊同一份 ——
+      // Accordion.Content 內部就是 Collapsible.Content,同一節點也有 --radix-collapsible-content-height,共用 collapsible keyframe)。
+      // 打開而且動畫跑完 → 不裁(useOpenAndSettled)
+      className={cn(disclosureMotion, 'data-[disclosure-settled]:overflow-visible text-body text-fg-secondary')}
+      {...props}
+    >
+      <div className={cn('pb-4', className)}>{children}</div>
+    </AccordionPrimitive.Content>
+  )
+})
 AccordionContent.displayName = 'AccordionContent'
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

@@ -9,6 +9,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Input } from '@/design-system/components/Input/input'
+import { Select } from '@/design-system/components/Select/select'
 
 const meta: Meta<typeof Accordion> = {
   title: 'Design System/Components/Accordion/展示',
@@ -149,6 +150,17 @@ export const SettingsSections: Story = {
 
 // ── 進階選項可隱藏 ───────────────────────────────────────────────
 
+const VIEW_MODE_OPTIONS = [
+  { value: 'list', label: '清單' },
+  { value: 'board', label: '看板' },
+  { value: 'calendar', label: '行事曆' },
+]
+const NOTIFY_OPTIONS = [
+  { value: 'assignee', label: '只通知負責人' },
+  { value: 'members', label: '專案成員' },
+  { value: 'members-watchers', label: '專案成員 + 關注者' },
+]
+
 export const AdvancedOptions: Story = {
   name: '進階選項可隱藏',
   render: () => (
@@ -175,7 +187,8 @@ export const AdvancedOptions: Story = {
               </Field>
               <Field>
                 <FieldLabel>預設檢視模式</FieldLabel>
-                <Input defaultValue="看板" />
+                {/* 固定三選一 → Select(稽核 M101:原本用文字欄位讓人自己打「看板」) */}
+                <Select aria-label="預設檢視模式" options={VIEW_MODE_OPTIONS} defaultValue="board" />
               </Field>
             </FieldGroup>
           </AccordionContent>
@@ -185,7 +198,7 @@ export const AdvancedOptions: Story = {
           <AccordionContent>
             <Field>
               <FieldLabel>狀態變更通知對象</FieldLabel>
-              <Input placeholder="例:專案成員 + 關注者" />
+              <Select aria-label="狀態變更通知對象" options={NOTIFY_OPTIONS} defaultValue="members-watchers" />
             </Field>
           </AccordionContent>
         </AccordionItem>

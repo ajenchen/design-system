@@ -1,3 +1,4 @@
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Accordion,
@@ -11,10 +12,42 @@ import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/
 import { Input } from '@/design-system/components/Input/input'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose } from '@/design-system/components/Dialog/dialog'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { Folder, FileText } from 'lucide-react'
+
+/** 反例裡那顆刪除鈕:照真的產品一樣打開確認框(後面還有一層確認 → secondary + danger,button.spec.md Variant 表);確認後跳 Toast。 */
+function DeleteWorkspaceButton() {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant='secondary' danger>永久刪除工作區</Button>
+      </DialogTrigger>
+      <DialogContent height='hug'>
+        <DialogHeader>
+          <DialogTitle>永久刪除工作區?</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p className='text-body'>工作區裡的專案、文件與成員權限會一起刪除,無法復原。</p>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant='tertiary'>取消</Button>
+          </DialogClose>
+          <Button variant='primary' danger onClick={() => { setOpen(false); toast({ variant: 'success', title: '工作區已刪除' }) }}>刪除</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計原則',
   parameters: { layout: 'padded' },
+  // Toaster 是 app 層 Provider(toast.spec.md:consumer 在 app root 放一次)—— 放在 story 外層,不當成教學頁裡的一塊(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -41,7 +74,7 @@ export const UsageGuidance: Story = {
 
       <UsageSection kind="whenNot">
         <TutorialList>
-          <li>只有一個區塊要收合 → 改用原生 <code>&lt;details&gt;</code> 或自組開合按鈕(見「<StoryLink kind="Design System/Components/Accordion/設計原則" name="單一 項目 不用 Accordion">單一項目不用 Accordion</StoryLink>」)</li>
+          <li>只有一個區塊要收合 → 改用原生 <code>&lt;details&gt;</code> 或自組開合按鈕(見「<StoryLink kind="Design System/Components/Accordion/設計原則" name="單一項目不用 Accordion">單一項目不用 Accordion</StoryLink>」)</li>
           <li>同一塊空間切換平行視圖(三選一)→ 改用 Tabs:Tabs 是互斥切換,Accordion 是各段獨立收合</li>
           <li>多層的導覽 / 檔案樹 → 改用 TreeView 或 Sidebar:Accordion 沒有巢狀層級</li>
           <li>收合整個浮層或側欄 → 改用 Dialog / Sheet / Popover:那是浮層開關,不是內文收合</li>
@@ -55,24 +88,22 @@ export const UsageGuidance: Story = {
           title="vs Tabs — Tabs 是互斥平行視圖(看 A 就不看 B)"
           note='三個 tab 是「同一層級的平行視角」,使用者每次只需一個。切換等於「換視角」,兩個視角不會同時需要。'
         >
-          <div className='border border-border rounded-lg p-[var(--layout-space-loose)]'>
-            <Tabs defaultValue='overview'>
-              <TabsList>
-                <TabsTrigger value='overview'>總覽</TabsTrigger>
-                <TabsTrigger value='members'>成員</TabsTrigger>
-                <TabsTrigger value='settings'>設定</TabsTrigger>
-              </TabsList>
-              <TabsContent value='overview'>
-                <p className='text-body text-fg-secondary'>專案總覽資訊</p>
-              </TabsContent>
-              <TabsContent value='members'>
-                <p className='text-body text-fg-secondary'>成員列表</p>
-              </TabsContent>
-              <TabsContent value='settings'>
-                <p className='text-body text-fg-secondary'>專案設定</p>
-              </TabsContent>
-            </Tabs>
-          </div>
+          <Tabs defaultValue='overview'>
+            <TabsList>
+              <TabsTrigger value='overview'>總覽</TabsTrigger>
+              <TabsTrigger value='members'>成員</TabsTrigger>
+              <TabsTrigger value='settings'>設定</TabsTrigger>
+            </TabsList>
+            <TabsContent value='overview'>
+              <p className='text-body text-fg-secondary'>結帳流程改版:進度 68%,預計 11 月 30 日上線。</p>
+            </TabsContent>
+            <TabsContent value='members'>
+              <p className='text-body text-fg-secondary'>林雅婷(產品經理)、陳志明(前端)、王佩珊(設計)。</p>
+            </TabsContent>
+            <TabsContent value='settings'>
+              <p className='text-body text-fg-secondary'>公開範圍:只有團隊成員看得到。</p>
+            </TabsContent>
+          </Tabs>
           <ExampleCaption>✅ Tabs:視角切換,使用者「不會想同時看總覽和成員」</ExampleCaption>
         </TutorialRule>
 
@@ -104,11 +135,11 @@ export const UsageGuidance: Story = {
           <Accordion type='single' collapsible defaultValue='overview'>
             <AccordionItem value='overview'>
               <AccordionTrigger>總覽</AccordionTrigger>
-              <AccordionContent>專案總覽資訊</AccordionContent>
+              <AccordionContent>結帳流程改版:進度 68%,預計 11 月 30 日上線。</AccordionContent>
             </AccordionItem>
             <AccordionItem value='members'>
               <AccordionTrigger>成員</AccordionTrigger>
-              <AccordionContent>成員列表</AccordionContent>
+              <AccordionContent>林雅婷(產品經理)、陳志明(前端)、王佩珊(設計)。</AccordionContent>
             </AccordionItem>
           </Accordion>
           <ExampleCaption warn>
@@ -227,8 +258,16 @@ export const NoNestingRule: Story = {
         title='✅ 真的有層級需求 — 改用 TreeView'
         note='TreeView 提供明確的縮排與展開 icon,使用者從視覺就能判斷自己在第幾層。'
       >
+        <TreeView aria-label='產品文件' defaultExpandedIds={['settings']}>
+          <TreeItem id='settings' icon={Folder} label='一般設定'>
+            <TreeItem id='display' icon={FileText} label='顯示偏好' />
+            <TreeItem id='keyboard' icon={FileText} label='鍵盤快捷鍵' />
+          </TreeItem>
+          <TreeItem id='security' icon={Folder} label='安全與登入' />
+        </TreeView>
         <ExampleCaption>
-          檔案樹、Notion 式工作區側欄、深層分類頁面 → 改用 TreeView
+          檔案樹、工作區側欄、深層分類頁面 → 改用 TreeView(更多樣子見{' '}
+          <StoryLink kind='Design System/Components/TreeView/展示' name='檔案瀏覽'>TreeView 展示</StoryLink>)
         </ExampleCaption>
       </TutorialRule>
     </TutorialPage>
@@ -279,9 +318,7 @@ export const ContentRule: Story = {
           <AccordionItem value='danger'>
             <AccordionTrigger>危險操作區</AccordionTrigger>
             <AccordionContent>
-              <Button variant='primary' danger>
-                永久刪除工作區
-              </Button>
+              <DeleteWorkspaceButton />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -302,7 +339,7 @@ export const ContentRule: Story = {
 }
 
 export const SingleItemRule: Story = {
-  name: '單一 項目 不用 Accordion',
+  name: '單一項目不用 Accordion',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -323,7 +360,8 @@ export const SingleItemRule: Story = {
         note={<>原生 <code>&lt;details&gt;</code> 是單區塊展開的 HTML 原語;若需要自訂視覺可做一個「顯示更多 ↓」按鈕。</>}
       >
         {/* 原生 details 不抄 Accordion 的整條分隔線 / 列內距(accordion.tsx 的 AccordionTrigger 上下 16px、AccordionContent 底部 16px)——
-            那正是上一則說的「過重」;摘要 ↔ 展開內容 = 標題 → 它標示的內容(layoutSpace.spec.md 規則 3 functional = tight) */}
+            那正是上一則說的「過重」;摘要 ↔ 展開內容 = tight:`<details>` 的摘要點了才展開下面這段,操作後在畫面上有交互
+            (layoutSpace.spec.md「親疏 3 級」的 functional 交互;同 tabs.spec.md「TabsContent 與 TabsList 間距」的 tight) */}
         <details>
           <summary className='text-body font-medium text-foreground cursor-pointer'>
             顯示更多資訊
