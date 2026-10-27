@@ -22,7 +22,7 @@ import {
   type ChartConfig,
 } from './chart'
 import { Desc, H3 } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { AREA_FILL_OPACITY, AREA_STROKE_WIDTH } from './_area-style'
+import { AREA_FILL_OPACITY, AREA_STROKE_WIDTH, PIE_ANIMATION_BEGIN } from './_chart-style'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/展示',
@@ -197,6 +197,7 @@ export const DonutChartTrafficSource: Story = {
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="source" />} />
             <Pie
+              animationBegin={PIE_ANIMATION_BEGIN}
               data={trafficSourceData}
               dataKey="visitors"
               nameKey="source"

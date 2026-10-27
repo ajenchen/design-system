@@ -30,7 +30,7 @@ import {
 } from './chart'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { AREA_FILL_OPACITY, AREA_STROKE_WIDTH } from './_area-style'
+import { AREA_FILL_OPACITY, AREA_STROKE_WIDTH, PIE_ANIMATION_BEGIN } from './_chart-style'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/設計規格',
@@ -124,6 +124,7 @@ export const Overview: Story = {
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
               <Pie
+                animationBegin={PIE_ANIMATION_BEGIN}
                 data={subscriptionData}
                 dataKey="users"
                 nameKey="tier"
@@ -218,7 +219,7 @@ export const Inspector: Story = {
           ) : (
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel indicator={tooltipIndicator} />} />
-              <Pie data={subscriptionData} dataKey="users" nameKey="tier" innerRadius={40} strokeWidth={2} />
+              <Pie animationBegin={PIE_ANIMATION_BEGIN} data={subscriptionData} dataKey="users" nameKey="tier" innerRadius={40} strokeWidth={2} />
               {showLegend && <ChartLegend content={<ChartLegendContent nameKey="tier" />} />}
             </PieChart>
           )}

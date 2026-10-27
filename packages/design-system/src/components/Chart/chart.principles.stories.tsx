@@ -21,6 +21,7 @@ import {
 } from './chart'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { PIE_ANIMATION_BEGIN } from './_chart-style'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/設計原則',
@@ -250,6 +251,7 @@ export const ChartTypeRule: Story = {
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="os" />} />
               <Pie
+                animationBegin={PIE_ANIMATION_BEGIN}
                 data={osShareData}
                 dataKey="share"
                 nameKey="os"
@@ -319,6 +321,7 @@ export const FiveCategoryLimitRule: Story = {
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="team" />} />
               <Pie
+                animationBegin={PIE_ANIMATION_BEGIN}
                 data={tooManyCategoriesData}
                 dataKey="count"
                 nameKey="team"
@@ -341,6 +344,7 @@ export const FiveCategoryLimitRule: Story = {
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="team" />} />
               <Pie
+                animationBegin={PIE_ANIMATION_BEGIN}
                 data={groupedCategoriesData}
                 dataKey="count"
                 nameKey="team"
