@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-27T19:50:28.461Z"
+    "generatedAt": "2026-10-27T20:50:49.165Z"
   },
   "components": {
     "accordion": {
@@ -560,6 +560,7 @@
           "design-system-components-datatable-展示--column-resize",
           "design-system-components-datatable-展示--column-reorder",
           "design-system-components-datatable-展示--row-auto-height-inline-edit",
+          "design-system-components-datatable-展示--row-auto-height-modes",
           "design-system-components-datatable-展示--row-auto-height",
           "design-system-components-datatable-展示--empty-state",
           "design-system-components-datatable-展示--container-height",
@@ -865,6 +866,7 @@
       "tiers": {
         "展示": [
           "design-system-components-fileitem-展示--rich",
+          "design-system-components-fileitem-展示--rich-row-keyboard-contract",
           "design-system-components-fileitem-展示--compact",
           "design-system-components-fileitem-展示--hover-swap",
           "design-system-components-fileitem-展示--clickable",
@@ -1858,5 +1860,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1026
+  "totalStories": 1028
 }

@@ -510,7 +510,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 | **boolean** | direct toggle | `<Checkbox>` 無 mode 切換 |
 | **url** | **click cell(網址文字以外)**;或滑過格 / 鍵盤聚焦時出現的 Pencil(`ItemInlineAction`,同 LinkInput)| `<Input>` —— 不是 LinkInput:LinkInput 進編輯時預設先顯示成連結,格子需要直接打字(第 4 條的 documented 例外)。點網址文字開連結;格的其他地方照點格規則 — 屬下方「navigate-valued cell 通用類別」|
 
-### Navigate-valued cell 通用類別(2026-07-08 user 拍板 codify — 原 url 專屬條文升級;2026-10-13 第 1–3 條改寫)
+### Navigate-valued cell 通用類別(2026-07-08 記為 user 拍板 codify,來源不明:登記簿查無原話 —— 原 url 專屬條文升級;2026-10-13 第 1–3 條改寫)
 
 **定義**:凡「值裡有導航 / 開啟目標」的型別(url;未來 parent / email / file / relation 同類),一律繼承四條 — 新型別只在上表登記一行,其餘全繼承,禁逐型別重刻:
 
