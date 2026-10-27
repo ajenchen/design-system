@@ -20,6 +20,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal Patterns/Horizontal Overflow',
@@ -33,8 +34,6 @@ const meta: Meta = {
 **Canonical 規則**:所有 overflow affordance 一律 \`<Button variant="text" size="sm" iconOnly>\`——overflow trigger 是「工具層」,不用 item 自身的視覺語言(chip 形狀 / tab 底線),不跟內容爭視覺重量。
 
 end-user 不直接 import——由 Tabs(\`overflow\` prop)/ Chip(\`layout\` prop)/ FileViewer filmstrip 消費;本頁是 DS contributor 的組裝參照。
-
-完整規則:\`packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md\`
         `,
       },
     },
@@ -71,12 +70,12 @@ function FilmstripScrollDemo() {
         className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
-        {/* @layout-space-magic-ok: 膠片列上下 4px 給縮圖焦點框空間(micro)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 膠片列上下 4px(給縮圖焦點框空間)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
         <div className="flex w-fit gap-[var(--layout-space-tight)] py-1">
           {SLIDE_TITLES.map((title, i) => (
             <div
               key={title}
-              // @layout-space-magic-ok: 單張投影片縮圖內距(縮圖自身微幾何)(layoutSpace.spec.md:168 元件自身微幾何)
+              // @layout-space-magic-ok: 投影片縮圖內距 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
               className="flex h-16 w-24 shrink-0 flex-col justify-between rounded-md border border-border bg-surface p-2"
             >
               <span className="truncate text-caption text-foreground">{title}</span>
@@ -135,7 +134,9 @@ export const MenuMode: Story = {
         專案設定頁籤塞不下時的 ⌄ 導覽選單(對標 Tabs overflow=&quot;menu&quot;)。trigger 是
         forwardRef Button,Radix DropdownMenuTrigger asChild 接管 aria-expanded / data-state;
         aria-label 必填且帶語境,hover 會自動冒出同名 tooltip。此處 defaultOpen 讓選單內容
-        直接可見(視覺快照覆蓋);正式 consumer 組裝見檔頭 baseline 兩個 story。
+        直接可見(視覺快照覆蓋);正式 consumer 組裝見{' '}
+        <StoryLink kind="Design System/Components/Tabs/展示" name="溢出處理 — 水平捲動">Tabs → 溢出處理 — 水平捲動</StoryLink>、
+        <StoryLink kind="Design System/Components/Tabs/展示" name="溢出處理 — ⌄ 導覽選單">Tabs → 溢出處理 — ⌄ 導覽選單</StoryLink>。
       </p>
     </div>
   ),
@@ -150,6 +151,7 @@ export const MenuMode: Story = {
 export const ArrowUnmountHandsOffFocus: Story = {
   name: '到底時焦點交給另一側箭頭',
   tags: ['test-only'],
+  // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
   parameters: { demoFocus: 'keep' },
   render: () => <FilmstripScrollDemo />,
   play: async ({ canvasElement }) => {
