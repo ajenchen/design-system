@@ -198,7 +198,7 @@ Avatar 包在 disabled Field wrapper context 內時，會經 `useResolvedFieldDi
 
 ## Overlay:Status dot + Count badge(可並存,不同角)
 
-Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 count),**可同時並存** — 兩者是不同角、不同語義的 slot,對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。
+Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 count),**可同時並存** — 兩者是不同角、不同語義的 slot,對齊 `badge.spec.md`「**Avatar 可以疊兩個 badge**(status + count)」canonical + Slack / Teams / iMessage / LINE 標配。
 
 > **2026-06-01 修正**:原「擇一不並存」(AR22)決策與 `badge.spec.md`(明文「Avatar 可疊兩個 badge」)+ `avatar.tsx`(兩個 prop 各自獨立 render,從未 type-level 互斥)三方衝突。經 M26 source-verified benchmark(Slack / MS Teams / iMessage 標配 presence dot + count badge 並存)+ user 拍板,統一為「**可並存(視覺照舊,code 不變)**」。
 
