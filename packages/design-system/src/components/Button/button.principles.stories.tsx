@@ -8,12 +8,17 @@ import {
 import { Button } from './button'
 import { ButtonGroup } from './button-group'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { Tag } from '@/design-system/components/Tag/tag'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { done, DemoToggle, DemoMenu, ConfirmAction, ConfirmDelete } from '@/design-system/stories-helpers/examples/demo-actions'
 
 const meta: Meta = {
   title: 'Design System/Components/Button/設計原則',
   parameters: { layout: 'padded' },
+  // Toaster 是 app 層 Provider(toast.spec.md:consumer 在 app root 放一次)—— 放在 story 外層
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -21,6 +26,18 @@ type Story = StoryObj
 
 // 並列的獨立範例之間 loose、說明貼著它說的範例 tight(CaptionedExamples);同一組動作的鈕用 ButtonGroup(鈕距由群組擁有); items-center 維持本頁原本的垂直置中(不同尺寸的鈕並排時對齊中線)
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap', examplesClassName: 'items-center' })
+
+// 2026-10-28 BA-specimen:範例裡的按鈕都要能按(F-S2),各自接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):
+// 一次性動作跳 Toast、開關切 pressed、帶下拉 / 溢出的打開選單、後面還有確認的危險動作先開確認框(button.spec.md「danger prop — 語意意圖」表)。
+const NOTIFICATIONS = [
+  { label: '張雅婷在「Q3 行銷預算」提到你', description: '10 分鐘前' },
+  { label: '「官網改版」的截止日改為 11/15', description: '1 小時前' },
+  { label: '李建宏把「首頁輪播圖更新」指派給你', description: '昨天' },
+]
+const SETTINGS_MENU = ['通知設定', '帳號設定']
+
+/** secondary + danger「放棄變更」= 後面還有一層確認(button.spec.md「danger prop — 語意意圖」表);按鈕本身寫在原位(變體閘看得到配對) */
+const DISCARD = { title: '是否放棄變更', body: '這份文件還有沒儲存的變更,放棄後無法復原。', confirmLabel: '放棄', doneTitle: '已放棄沒儲存的變更' }
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -35,26 +52,29 @@ export const UsageGuidance: Story = {
     <TutorialPage>
       <UsageSection kind="when">
         <p>觸發一個會改變狀態的動作:送出表單、儲存、發佈、確認對話框;流程裡的下一步 / 上一步;工具列裡的格式化或工具切換(小尺寸圖示鈕)。</p>
+        {/* 稽核 M109:原本連到兩則 test-only 探針(story-rules.md「Technical probe visibility」:探針不當讀者的範例),改連讀者看得到的展示 */}
         <TutorialList>
-          <li><StoryLink kind="Design System/Components/Button/展示" name="危險 語意">Danger 語意</StoryLink></li>
-          <li><StoryLink kind="Design System/Components/Button/展示" name="滑鼠移過 / 鍵盤聚焦">滑鼠移過 / 鍵盤聚焦</StoryLink></li>
-          <li><StoryLink kind="Design System/Components/Button/展示" name="純圖示加 Tooltip">純圖示加 Tooltip</StoryLink></li>
+          <li><StoryLink kind="Design System/Components/Button/展示" name="預設">預設</StoryLink> —— 申請表單底部的送出、儲存草稿、取消,一眼看出主次</li>
+          <li><StoryLink kind="Design System/Components/Button/展示" name="純圖示">純圖示</StoryLink> —— 表格工具列的新增、下載、設定,空間不夠放字時用圖示 + 提示</li>
+          <li><StoryLink kind="Design System/Components/Button/展示" name="載入中">載入中</StoryLink> —— 按下「匯出報表」後等檔案產生,按鈕留在原位顯示進度</li>
+          <li><StoryLink kind="Design System/Components/Button/展示" name="停用">停用</StoryLink> —— 必填欄位還沒填完、或沒有權限時,動作暫時不能做</li>
         </TutorialList>
       </UsageSection>
 
       <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 Button 做標籤或指示器"
-          note="Button 語義是「可點擊動作」。如果只是顯示狀態、不需使用者互動，用 Badge 或 Tag 代替。Jira 的「已解決」標籤、Stripe 的「active」指示不會設計成按鈕"
+          note="Button 語義是「可點擊動作」。如果只是顯示狀態、不需使用者互動，狀態用 Tag、計數用 Badge。Jira 的「已解決」標籤、Stripe 的「active」指示不會設計成按鈕"
         >
           {/* 樣本 ↔ 它右邊的說明 = tight(說明在替樣本命名,layoutSpace.spec.md 規則 3);兩組並列由 Rule 的範例區給 loose */}
           <div className="flex items-center gap-[var(--layout-space-tight)]">
             <Button variant="primary" size="sm">Active</Button>
             <ExampleCaption warn>❌ 當標籤用 → 下方才對</ExampleCaption>
           </div>
+          {/* 稽核 M028:✅ 改成 Tag —— 狀態 / 分類標記 = Tag、計數才用 Badge(登記簿 G01;rating.principles.stories.tsx 同一句) */}
           <div className="flex items-center gap-[var(--layout-space-tight)]">
-            <Badge count={1} />
-            <ExampleCaption>✅ Badge 表達計數 / 狀態</ExampleCaption>
+            <Tag color="green">進行中</Tag>
+            <ExampleCaption>✅ 狀態用 Tag;計數才用 Badge</ExampleCaption>
           </div>
         </TutorialRule>
         <TutorialList>
@@ -76,14 +96,14 @@ export const UsageGuidance: Story = {
 }
 
 export const VariantRule: Story = {
-  name: '變體 選擇',
+  name: '變體選擇',
   render: () => (
     <TutorialPage>
       <TutorialRule
         title="primary — 最高視覺重量，每個操作區最多一個"
-        note="這個畫面或操作區最重要的單一主要動作，超過一個主要動作時改用 secondary"
+        note="這個畫面或操作區最重要的單一主要動作，其餘動作降為 tertiary"
       >
-        <Button variant="primary" startIcon={Plus}>新增</Button>
+        <Button variant="primary" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
       </TutorialRule>
 
       <TutorialRule
@@ -91,8 +111,8 @@ export const VariantRule: Story = {
         note="兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary"
       >
         <ButtonGroup>
-          <Button variant="secondary">儲存草稿</Button>
-          <Button variant="secondary" danger>放棄變更</Button>
+          <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
+          <ConfirmAction {...DISCARD}>{(open) => <Button variant="secondary" danger onClick={open}>放棄變更</Button>}</ConfirmAction>
         </ButtonGroup>
       </TutorialRule>
 
@@ -100,29 +120,30 @@ export const VariantRule: Story = {
         title="tertiary — 最常用的非主要按鈕（日常預設選擇）"
         note="確認/取消配對的取消方、輔助操作、卡片 CTA 幾乎都用 tertiary"
       >
-        <Button variant="tertiary">取消</Button>
-        <Button variant="tertiary" startIcon={Save}>另存草稿</Button>
-        <Button variant="tertiary" startIcon={Download}>匯出</Button>
+        <Button variant="tertiary" onClick={done('已取消,變更沒有儲存')}>取消</Button>
+        <Button variant="tertiary" startIcon={Save} onClick={done('已另存一份草稿')}>另存草稿</Button>
+        <Button variant="tertiary" startIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
       </TutorialRule>
 
       <TutorialRule
         title="text — 低視覺重量輔助動作"
         note="不需特別強調的操作；工具列 icon-only 按鈕常用 text"
       >
-        <Button variant="text" startIcon={RefreshCw}>重新整理</Button>
-        <Button variant="text">查看更多</Button>
-        <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+        <Button variant="text" startIcon={RefreshCw} onClick={done('已重新整理')}>重新整理</Button>
+        <Button variant="text" onClick={done('已載入下一頁的 20 筆')}>查看更多</Button>
+        <DemoMenu open items={SETTINGS_MENU}><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></DemoMenu>
       </TutorialRule>
 
       <TutorialRule
         title="pressed prop — 單一功能目前啟用中（binary toggle）"
         note="設定 pressed 時 Button 自動寫入 aria-pressed + data-state，由 variant 的 data-[state=on] 分支套用樣式。僅 secondary/tertiary/text 支援 toggle 視覺，primary/link 傳入無效果。描述「這個按鈕自己的功能是否開啟」，不表達多選一"
       >
-        {/* @layout-space-magic-ok: 同一列的 樣本 ↔ 箭頭說明 ↔ 樣本(行內 micro)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 樣本 ↔ 箭頭說明 ↔ 樣本 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
         <div className="flex items-center gap-2">
-          <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（關閉）" />
+          {/* 兩顆都是同一種開關,初始一關一開;按下切換 pressed */}
+          <DemoToggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Maximize2} pressed={on} onClick={flip} aria-label={on ? '全螢幕（開啟中）' : '全螢幕（關閉）'} />}</DemoToggle>
           <span className="text-footnote text-fg-muted">→ 啟用後 →</span>
-          <Button variant="text" pressed size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
+          <DemoToggle defaultOn>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={Maximize2} pressed={on} onClick={flip} aria-label={on ? '全螢幕（開啟中）' : '全螢幕（關閉）'} />}</DemoToggle>
         </div>
         <ExampleCaption warn>❌ 多選一（視圖切換）不用 pressed → 用 Segmented Control</ExampleCaption>
       </TutorialRule>
@@ -131,7 +152,7 @@ export const VariantRule: Story = {
         title="link — 帶使用者前往其他頁面的按鈕"
         note="視覺上像連結但需要 button 行為（React Router、事件處理）。放在內容區，不用於操作列，不嵌入段落文字（段落內用 HTML <a> 代替）"
       >
-        <Button variant="link">前往設定</Button>
+        <Button variant="link" onClick={done('已開啟設定頁')}>前往設定</Button>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -143,15 +164,15 @@ export const PrimaryRule: Story = {
     <TutorialPage>
       <TutorialRule title="✅ 正確 — 唯一的 primary" note="單一最強視覺入口讓使用者立即辨識主要路徑;其餘動作降為 tertiary,避免同一操作區出現競爭焦點。">
         <ButtonGroup>
-          <Button variant="primary">確認</Button>
-          <Button variant="tertiary">取消</Button>
+          <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
+          <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
         </ButtonGroup>
       </TutorialRule>
 
       <TutorialRule title="❌ 錯誤 — 兩個 primary 同時出現，使用者無法判斷優先順序" note="兩個相同最高視覺重量的動作互相競爭,使用者必須先讀文案才能判斷主路徑,因此同一操作區最多保留一個 primary。">
         <ButtonGroup>
-          <Button variant="primary">儲存</Button>
-          <Button variant="primary">另存新檔</Button>
+          <Button variant="primary" onClick={done('已儲存')}>儲存</Button>
+          <Button variant="primary" onClick={done('已另存新檔')}>另存新檔</Button>
         </ButtonGroup>
         <ExampleCaption warn>視覺重量相同 → 無法分辨主次</ExampleCaption>
       </TutorialRule>
@@ -162,10 +183,11 @@ export const PrimaryRule: Story = {
       >
         {['官網改版', '行動裝置 App', '設計系統'].map(name => (
           // 有框卡片列:左右 loose、上下 tight(同 chrome band 的內距組合,layoutSpace.spec.md 規則 1 / 規則 6)
-          // @layout-space-magic-ok: 卡片列內 名稱 ↔ 行內按鈕 12px,範例原值:名稱 flex-1 撐滿、按鈕貼右,只在名稱很長時才當最小間隔;沒有規格定義這個值(AI 判讀:同一列內部的間距,不是 layoutSpace.spec.md:165–168 左欄的 macro 結構間距)
+          // 稽核 L055:有字的按鈕不用 xs(button.spec.md「xs 的專屬用途」:有 label 的 compact button 直接用 sm)
+          // @layout-space-magic-ok: 卡片列內 名稱 ↔ 行內按鈕 12px(名稱 flex-1 撐滿、按鈕貼右,只在名稱很長時才當最小間隔)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
           <div key={name} className="border border-border rounded-lg px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex items-center gap-3 min-w-40">
             <span className="text-body flex-1">{name}</span>
-            <Button variant="tertiary" size="xs">開啟</Button>
+            <Button variant="tertiary" size="sm" onClick={done(`已開啟「${name}」`)}>開啟</Button>
           </div>
         ))}
       </TutorialRule>
@@ -174,7 +196,7 @@ export const PrimaryRule: Story = {
 }
 
 export const DangerRule: Story = {
-  name: '危險 時機',
+  name: '危險時機',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -182,8 +204,8 @@ export const DangerRule: Story = {
         note="必須是最後一道關卡，沒有後續確認"
       >
         <ButtonGroup>
-          <Button variant="primary" danger startIcon={Trash2}>永久刪除</Button>
-          <Button variant="tertiary">取消</Button>
+          <Button variant="primary" danger startIcon={Trash2} onClick={done('已永久刪除「舊版官網素材」')}>永久刪除</Button>
+          <Button variant="tertiary" onClick={done('已取消,檔案沒有刪除')}>取消</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -192,8 +214,8 @@ export const DangerRule: Story = {
         note="通常後面還有一層確認提示"
       >
         <ButtonGroup>
-          <Button variant="secondary">儲存草稿</Button>
-          <Button variant="secondary" danger>放棄變更</Button>
+          <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
+          <ConfirmAction {...DISCARD}>{(open) => <Button variant="secondary" danger onClick={open}>放棄變更</Button>}</ConfirmAction>
         </ButtonGroup>
       </TutorialRule>
 
@@ -201,12 +223,12 @@ export const DangerRule: Story = {
         title="text + danger — 低強調的危險操作"
         note="工具列刪除等有後續確認的場景；視覺干擾最小"
       >
-        <Button variant="text" danger startIcon={Trash2}>刪除</Button>
-        <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+        <ConfirmDelete noun="檔案" target="「舊版官網素材」">{(open) => <Button variant="text" danger startIcon={Trash2} onClick={open}>刪除</Button>}</ConfirmDelete>
+        <ConfirmDelete noun="檔案" target="「舊版官網素材」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
       </TutorialRule>
 
       <TutorialRule title="❌ 錯誤 — 在有後續確認的流程中使用 primary danger" note="primary danger 承諾『點下即完成不可逆動作』;若後面還有確認或可復原,提前使用最高危險強度會誤報操作後果。">
-        <Button variant="primary" danger>移至垃圾桶</Button>
+        <Button variant="primary" danger onClick={done('已移到垃圾桶')}>移至垃圾桶</Button>
         <ExampleCaption warn>移至垃圾桶還可以復原 → 不應用 primary danger</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
@@ -221,32 +243,32 @@ export const IconRule: Story = {
         title="startIcon — 描述這個按鈕做什麼（動詞圖示）"
         note="icon 是 label 的圖示說明，與文字傳達同一個動作"
       >
-        <Button variant="primary" startIcon={Plus}>新增</Button>
-        <Button variant="tertiary" startIcon={Download}>匯出</Button>
-        <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
+        <Button variant="primary" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
+        <Button variant="tertiary" startIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
+        <Button variant="tertiary" startIcon={RefreshCw} onClick={done('已重新整理')}>重新整理</Button>
       </TutorialRule>
 
       <TutorialRule
         title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
         note="告訴使用者「點這裡還有更多」，不描述動作本身"
       >
-        <Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button>
-        <Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
+        <DemoMenu align="start" items={['只看我負責的', '只看未完成']}><Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button></DemoMenu>
+        <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button></DemoMenu>
       </TutorialRule>
 
       <TutorialRule
         title="❌ endIcon 不應使用動詞性圖示"
         note="endIcon 的位置傳達「這裡可以展開」，放動詞圖示會讓使用者以為有第二個獨立操作"
       >
-        <Button variant="tertiary" endIcon={Download}>匯出</Button>
+        <Button variant="tertiary" endIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
         <ExampleCaption warn>↑ 右側 Download 讓人以為可以直接下載，與展開選單的意圖衝突</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
         title="icon + 下拉指示 — 無文字 dropdown trigger"
-        note="不加 iconOnly（保留 endIcon 展開指示）；必須設定 aria-label"
+        note="不加 iconOnly（保留 endIcon 展開指示）；必須設定 aria-label —— 畫面上沒有字,Button 自動用它顯示 tooltip(同 icon-only)"
       >
-        <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" />
+        <DemoMenu open align="start" items={SETTINGS_MENU}><Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" /></DemoMenu>
         <ExampleCaption>↑ startIcon 描述功能，endIcon 指示展開，兩者並存</ExampleCaption>
       </TutorialRule>
 
@@ -254,14 +276,16 @@ export const IconRule: Story = {
         title="icon + overlay 角標 — 通知類按鈕"
         note={<>用 <code>overlayBadge</code> prop 傳入 Badge,Button 內部自動把 badge 中心對齊 icon top-right corner(Material BadgedBox 設計準則)——不手刻 <code>relative + absolute -top-1 -right-1</code> 讓 badge 飄到按鈕 chrome 邊緣</>}
       >
-        <Button
-          variant="tertiary"
-          size="sm"
-          iconOnly
-          startIcon={Bell}
-          aria-label="通知 (3)"
-          overlayBadge={<Badge count={3} variant="critical" />}
-        />
+        <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}>
+          <Button
+            variant="tertiary"
+            size="sm"
+            iconOnly
+            startIcon={Bell}
+            aria-label="通知 (3)"
+            overlayBadge={<Badge count={3} variant="critical" />}
+          />
+        </DemoMenu>
         <ExampleCaption>↑ overlayBadge prop 自動定位,Button 保持正方形,badge 貼 icon 不飄 chrome 角</ExampleCaption>
       </TutorialRule>
 
@@ -270,9 +294,9 @@ export const IconRule: Story = {
         note={<>溢出按鈕是群組的一部分，不是獨立操作層。末端溢出與群組溢出的判斷規則見 <StoryLink kind="Design System/Patterns/Action Bar" name="溢出機制">Patterns / Action Bar(操作列)→ 溢出機制</StoryLink></>}
       >
         <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+          <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出「Q3 訂單.csv」')} />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+          <DemoMenu items={['移動到資料夾', '複製一份']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
         </ButtonGroup>
         <ExampleCaption>↑ MoreVertical 在群組末端，左側不加分隔線</ExampleCaption>
       </TutorialRule>
@@ -289,11 +313,11 @@ export const OrderRule: Story = {
         note="按視覺重量由高至低排列，最強吸引力的動作放在「起點」位置。danger 是顏色疊加，不影響排序位置；同 variant 內 danger 排在非 danger 之後（遠離主要焦點）"
       >
         <ButtonGroup>
-          <Button variant="primary">發布</Button>
-          <Button variant="secondary">儲存草稿</Button>
-          <Button variant="secondary" danger>放棄變更</Button>
-          <Button variant="tertiary">預覽</Button>
-          <Button variant="text">查看歷史</Button>
+          <Button variant="primary" onClick={done('已發布文件')}>發布</Button>
+          <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
+          <ConfirmAction {...DISCARD}>{(open) => <Button variant="secondary" danger onClick={open}>放棄變更</Button>}</ConfirmAction>
+          <Button variant="tertiary" onClick={done('已開啟預覽')}>預覽</Button>
+          <Button variant="text" onClick={done('已開啟版本紀錄')}>查看歷史</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -307,16 +331,16 @@ export const OrderRule: Story = {
         <div className="flex flex-col gap-[var(--layout-space-loose)] w-full">
           <div className="flex items-center gap-[var(--layout-space-tight)]">
             <ButtonGroup align="start">
-              <Button variant="primary">確認</Button>
-              <Button variant="tertiary">取消</Button>
+              <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
+              <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
             </ButtonGroup>
             <ExampleCaption>沒有標題 → 靠左，primary 最左（表單頁底、頁面步驟列）</ExampleCaption>
           </div>
           <div className="flex items-center justify-between w-full">
             <ExampleCaption>有標題（標題在左）或浮層頁腳 → 靠右，primary 最右</ExampleCaption>
             <ButtonGroup align="end">
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary">確認</Button>
+              <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
+              <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
             </ButtonGroup>
           </div>
         </div>
@@ -328,8 +352,8 @@ export const OrderRule: Story = {
       >
         <div className="w-[200px]">
           <ButtonGroup orientation="vertical">
-            <Button variant="primary">確認送出</Button>
-            <Button variant="tertiary">取消</Button>
+            <Button variant="primary" onClick={done('已確認送出')}>確認送出</Button>
+            <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
           </ButtonGroup>
         </div>
       </TutorialRule>

@@ -6,11 +6,15 @@ import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Toaster } from '@/design-system/components/Toast/toast'
+import { done, DemoToggle, DemoMenu, ConfirmAction, ConfirmDelete } from '@/design-system/stories-helpers/examples/demo-actions'
 
 const meta: Meta<typeof Button> = {
   title: 'Design System/Components/Button/展示',
   component: Button,
   tags: ['autodocs'],
+  // Toaster 是 app 層 Provider(toast.spec.md:consumer 在 app root 放一次)—— 放在 story 外層
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
   parameters: {
     docs: {
       description: {
@@ -77,15 +81,18 @@ type Story = StoryObj<typeof Button>
 // 2026-05-18 加(user 指出頁面開頭就是按下狀態;原話已不可考,此為轉述):Default story 放最頂,
 // 入口顯預設 variant 五連發(primary / secondary / tertiary / text / link),
 // 讓 user 第一眼看到按鈕長什麼樣 — 而非 transient state demo。
+// 2026-10-28 BA-specimen:畫面上的按鈕都要能按(F-S2),各自接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):
+// 一次性動作跳 Toast、開關切 pressed、帶下拉的打開選單、後面還有確認的危險動作先開確認框(button.spec.md「danger prop — 語意意圖」表)。
 export const Default: Story = {
   name: '預設',
   render: () => (
     <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-      <Button variant="primary">送出申請</Button>
-      <Button variant="secondary">儲存草稿</Button>
-      <Button variant="tertiary">取消</Button>
-      <Button variant="text">重設表單</Button>
-      <Button variant="link">查看填寫說明</Button>
+      <Button variant="primary" onClick={done('已送出請假申請')}>送出申請</Button>
+      <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
+      <Button variant="tertiary" onClick={done('已取消,申請內容沒有送出')}>取消</Button>
+      {/* 「重設表單」= 讀者看不懂要做什麼的重設鈕(登記簿 A19),換成表單裡常見的低強調動作 */}
+      <Button variant="text" onClick={done('已儲存進度,稍後可以繼續填寫')}>稍後再填</Button>
+      <Button variant="link" onClick={done('已開啟填寫說明')}>查看填寫說明</Button>
     </div>
   ),
 }
@@ -97,43 +104,65 @@ export const Pressed: Story = {
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">secondary</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button variant="secondary">顯示側欄</Button>
-          <Button variant="secondary" pressed>已顯示側欄</Button>
+          {/* 兩顆都是同一種開關,初始一關一開;按下切換 pressed,字跟著狀態走 */}
+          <DemoToggle>{(on, flip) => <Button variant="secondary" pressed={on} onClick={flip}>{on ? '已顯示側欄' : '顯示側欄'}</Button>}</DemoToggle>
+          <DemoToggle defaultOn>{(on, flip) => <Button variant="secondary" pressed={on} onClick={flip}>{on ? '已顯示側欄' : '顯示側欄'}</Button>}</DemoToggle>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">tertiary</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button variant="tertiary">自動儲存</Button>
-          <Button variant="tertiary" pressed>自動儲存中</Button>
+          <DemoToggle>{(on, flip) => <Button variant="tertiary" pressed={on} onClick={flip}>{on ? '自動儲存中' : '自動儲存'}</Button>}</DemoToggle>
+          <DemoToggle defaultOn>{(on, flip) => <Button variant="tertiary" pressed={on} onClick={flip}>{on ? '自動儲存中' : '自動儲存'}</Button>}</DemoToggle>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
         <span className="text-caption text-fg-muted w-24">text</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button variant="text">靜音</Button>
-          <Button variant="text" pressed>已靜音</Button>
+          <DemoToggle>{(on, flip) => <Button variant="text" pressed={on} onClick={flip}>{on ? '已靜音' : '靜音'}</Button>}</DemoToggle>
+          <DemoToggle defaultOn>{(on, flip) => <Button variant="text" pressed={on} onClick={flip}>{on ? '已靜音' : '靜音'}</Button>}</DemoToggle>
         </div>
       </div>
     </div>
   ),
 }
 
+// 帶計數 / 下拉的按鈕打開的那一串(DemoMenu)
+const NOTIFICATIONS = [
+  { label: '張雅婷在「Q3 行銷預算」提到你', description: '10 分鐘前' },
+  { label: '「官網改版」的截止日改為 11/15', description: '1 小時前' },
+  { label: '李建宏把「首頁輪播圖更新」指派給你', description: '昨天' },
+]
+const MESSAGES = [
+  { label: '林佳穎', description: '週五的設計評審改到下午 3 點,會議室不變' },
+  { label: '陳志明', description: 'Q3 預算表我更新了第二頁,麻煩再看一次' },
+]
+const TODOS = [
+  { label: '審核「官網改版」設計稿', description: '今天到期' },
+  { label: '回覆客戶報價單', description: '明天到期' },
+]
+const SETTINGS_MENU = ['通知設定', '帳號設定']
+
 // ── danger prop ─────────────────────────────────────────────────
 
 export const Danger: Story = {
-  name: '危險 語意',
+  name: '危險語意',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
-        <Button variant="primary" danger>刪除專案</Button>
-        <Button variant="secondary" danger>移除成員</Button>
-        <Button variant="text" danger>撤銷授權</Button>
+        {/* primary + danger = 點下去就發生(它本身就是確認框裡的最後一步);secondary / text + danger = 後面還有一層確認 */}
+        <Button variant="primary" danger onClick={done('已刪除專案「官網改版」')}>刪除專案</Button>
+        <ConfirmAction title="是否移除成員" body="確定要把陳志明移出「官網改版」嗎?移除後他就看不到這個專案。" confirmLabel="移除" doneTitle="已移除陳志明">
+          {(open) => <Button variant="secondary" danger onClick={open}>移除成員</Button>}
+        </ConfirmAction>
+        <ConfirmAction title="是否撤銷授權" body="撤銷後「Slack 整合」就不能再讀取這個專案的資料。" confirmLabel="撤銷" doneTitle="已撤銷 Slack 整合的授權">
+          {(open) => <Button variant="text" danger onClick={open}>撤銷授權</Button>}
+        </ConfirmAction>
       </div>
       <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
-        <Button variant="primary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
-        <Button variant="secondary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
-        <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+        <Button variant="primary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={done('已刪除「2026 Q3 營收報告.pdf」')} />
+        <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="secondary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
+        <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
       </div>
     </div>
   ),
@@ -156,15 +185,15 @@ export const WithBadge: Story = {
       <ExampleGroup>
         <p className="text-caption text-fg-muted">badge — inline 計數</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button>
-          <Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button>
+          <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button></DemoMenu>
+          <DemoMenu open align="start" title="訊息 · 12 則未讀" items={MESSAGES}><Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button></DemoMenu>
         </div>
       </ExampleGroup>
       <ExampleGroup>
         <p className="text-caption text-fg-muted">badge + endIcon compound</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button>
-          <Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button>
+          <DemoMenu open align="start" title="通知 · 5 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button></DemoMenu>
+          <DemoMenu open align="start" title="待辦 · 2 件" items={TODOS}><Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button></DemoMenu>
         </div>
       </ExampleGroup>
     </div>
@@ -180,28 +209,28 @@ export const IconOnly: Story = {
       <ExampleGroup>
         <p className="text-caption text-fg-muted">variants — size="sm"</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" />
-          <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" />
-          <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" />
-          <Button size="sm" iconOnly variant="text"      startIcon={Settings}  aria-label="設定" />
-          <Button size="sm" iconOnly variant="text" pressed startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
+          <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" onClick={done('已新增「未命名文件」')} />
+          <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
+          <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" onClick={done('已開啟搜尋')} />
+          <DemoMenu open items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定" /></DemoMenu>
+          <DemoToggle defaultOn>{(on, flip) => <Button size="sm" iconOnly variant="text" pressed={on} onClick={flip} startIcon={Maximize2} aria-label={on ? '全螢幕（開啟中）' : '全螢幕'} />}</DemoToggle>
         </div>
       </ExampleGroup>
       <ExampleGroup>
         <p className="text-caption text-fg-muted">danger — size="sm"</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" />
-          <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" />
-          <Button size="sm" iconOnly variant="text"      danger startIcon={Trash2} aria-label="刪除" />
+          <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" onClick={done('已永久刪除「2026 Q3 營收報告.pdf」')} />
+          <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" onClick={open} />}</ConfirmDelete>
+          <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button size="sm" iconOnly variant="text" danger startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
         </div>
       </ExampleGroup>
       <ExampleGroup>
         <p className="text-caption text-fg-muted">sizes — variant="text"</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" />
-          <Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" />
-          <Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" />
-          <Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" />
+          <DemoMenu open items={SETTINGS_MENU}><Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" /></DemoMenu>
+          <DemoMenu open items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" /></DemoMenu>
+          <DemoMenu open items={SETTINGS_MENU}><Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" /></DemoMenu>
+          <DemoMenu open items={SETTINGS_MENU}><Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" /></DemoMenu>
         </div>
       </ExampleGroup>
     </div>
@@ -263,18 +292,18 @@ export const Loading: Story = {
       {/* 行為對照 */}
       <ExampleGroup>
         <p className="text-caption text-fg-muted">行為對照：操作前與載入中</p>
-        {/* @layout-space-magic-ok: 行為對照表(欄標 + 三列同質對照列),範例原值:列距 12px = 同質列的列間距(layoutSpace.spec.md:165「同質 list 的列間距」);欄距 24px 是同一列裡格與格的距離,沒有規格定義(AI 判讀:表格內部幾何,不是並列區塊) */}
+        {/* @layout-space-magic-ok: 行為對照表欄距 24px、列距 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
         <div className="grid grid-cols-[auto_auto_1fr] items-center gap-x-6 gap-y-3">
           <span className="text-caption text-fg-muted">操作前</span>
           <span className="text-caption text-fg-muted">載入中</span>
           <span />
-          <Button variant="primary" startIcon={Download}>匯出</Button>
+          <Button variant="primary" startIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
           <Button variant="primary" startIcon={Download} loading>匯出中</Button>
           <span className="text-caption text-fg-muted">startIcon 被 spinner 替換，位置不變</span>
-          <Button variant="primary">儲存</Button>
+          <Button variant="primary" onClick={done('已儲存變更')}>儲存</Button>
           <Button variant="primary" loading>儲存中</Button>
           <span className="text-caption text-fg-muted">spinner 出現在文字左側，按鈕略寬</span>
-          <Button size="sm" iconOnly startIcon={Download} aria-label="下載" />
+          <Button size="sm" iconOnly startIcon={Download} aria-label="下載" onClick={done('已下載「Q3 訂單.csv」')} />
           <Button size="sm" iconOnly startIcon={Download} loading aria-label="下載中" />
           <span className="text-caption text-fg-muted">icon-only：spinner 替換 icon</span>
         </div>
@@ -313,9 +342,9 @@ export const FullWidth: Story = {
   name: '全寬',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <Button variant="primary" fullWidth>確認送出</Button>
-      <Button variant="tertiary" fullWidth>取消</Button>
-      <Button variant="primary" danger fullWidth startIcon={Trash2}>永久刪除</Button>
+      <Button variant="primary" fullWidth onClick={done('已送出訂單')}>確認送出</Button>
+      <Button variant="tertiary" fullWidth onClick={done('已取消,訂單沒有送出')}>取消</Button>
+      <Button variant="primary" danger fullWidth startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
     </div>
   ),
 }
@@ -346,6 +375,7 @@ export const DismissHoverState: Story = {
 export const HoverFocusState: Story = {
   name: '滑鼠移過 / 鍵盤聚焦',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
@@ -368,6 +398,7 @@ export const HoverFocusState: Story = {
 export const TooltipVisible: Story = {
   name: '純圖示加 Tooltip',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (

@@ -295,13 +295,13 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 完整 rationale(包含 2026-04-25 從 padding-formula 派切換的 bug origin)+ 4 家世界級對照 → **SSOT 在 `tokens/uiSize/uiSize.spec.md`「Icon-only 元件的 padding canonical」節**。本 spec 不重複,只 pointer。
 
-**icon-only 按鈕內建自動 tooltip：** 當 `iconOnly` 為 true 且非 `asChild` 時，Button 自動以 `aria-label` 的值渲染 tooltip（`asChild` 因 Radix Slot 單 child 限制不包 Tooltip，consumer 需自包）。開發者不需要額外包 `<Tooltip>`——tooltip 是元件保證的行為，不是開發者「記得要加」的外部組合。
+**icon-only 按鈕內建自動 tooltip：** 當 `iconOnly` 為 true(或下方「icon + 下拉指示」這種畫面上沒有字的按鈕)且非 `asChild` 時，Button 自動以 `aria-label` 的值渲染 tooltip（`asChild` 因 Radix Slot 單 child 限制不包 Tooltip，consumer 需自包）。開發者不需要額外包 `<Tooltip>`——tooltip 是元件保證的行為，不是開發者「記得要加」的外部組合。
 
 `aria-label` 是給螢幕閱讀器的，tooltip 是給所有人看的，兩者語意相同，由同一個值驅動。
 
 需要附加元素時有兩種明確 pattern：
 
-**icon + 下拉指示**——不加 `iconOnly`（保留 endIcon 展開指示），必須設定 `aria-label`。
+**icon + 下拉指示**——不加 `iconOnly`（保留 endIcon 展開指示），必須設定 `aria-label`(同樣自動以它渲染 tooltip)。
 
 **icon + overlay 角標**——**只適用 `iconOnly` Button**。canonical 走 `<Button iconOnly overlayBadge={<Badge .../>} />` prop,內部把 badge 相對於 icon 視覺重心定位(不是 button chrome padding)。**禁止** consumer 手刻 `<div relative><Button/><Badge absolute/></div>`——padding 差距會讓 badge 飄到 chrome 角,離 icon 太遠失去語義連結(曾發生「badge 位置錯得離譜」的 bug)。
 

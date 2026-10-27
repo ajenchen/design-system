@@ -88,7 +88,7 @@ Source(AI 讀此看官方範例): src/components/Button/
 - **xs**: row-embedded inline(FileItem rich action / DataTable row action)
 - **sm**: form field-height 28 / compact chrome
 - **md**: default general UI
-- **lg**: touch / prominent CTA / stakeholder-facing surface
+- **lg**: prominent CTA / stakeholder-facing surface
 
 ### 禁止事項(when NOT / anti-pattern)
 - iconOnly 必傳 aria-label — a11y 硬性要求 — 無 label 盲人讀不到

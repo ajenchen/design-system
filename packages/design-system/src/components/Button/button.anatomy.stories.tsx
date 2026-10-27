@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react'
 import { Plus, ChevronDown, Download, Trash2, Settings, Grid3x3, ListFilter, ArrowUpDown, UserMinus, ShieldOff } from 'lucide-react'
 import { Button } from './button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { CAT_SUBTLE_TOKENS } from '@/design-system/tokens/categorical-color'
 
 const meta: Meta = {
   title: 'Design System/Components/Button/設計規格',
@@ -123,22 +126,11 @@ const DANGER_LABEL: Record<VariantKey, string> = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI Components
 
-   NOTE: This file keeps local H3 / Desc / Th / Td / Swatch because its visual
-   style diverges from the 通用設計準則 in `@/design-system/stories-helpers/anatomy/anatomy-utils`:
-   - H3 has no bottom margin (shared: `text-h6 font-semibold … mb-2`)
-   - Desc has no bottom margin (shared: `mb-4`)
-   - Th/Td use `p-2 border-b border-divider` row style (shared: boxed cells)
-   - Swatch defaults to `size="md"` and is consumed without explicit size in
-     `TokenValue` below — changing default to `sm` would shrink inspector swatches
-   Group A anatomy files (Slider-style) use the shared helpers.
+   小標 + 說明 + 內容 = 共用 `ExampleSection`(tutorial-page.tsx;A4:標題 ↔ 說明 2px、標題區 → 內容 loose);
+   TkVal / Swatch / TokenAnnotation / PropRow / BpZone = anatomy-utils 共用版(原本逐字抄一份;Swatch 共用版預設 sm,
+   本頁檢閱器的色塊照舊傳 md)。Th / Td 留在本頁:列樣式 `p-2 border-b border-divider` 跟共用版(四邊框 + 底色表頭)不同。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -146,47 +138,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: value === 'white' ? '#fff' : `var(${value})` }} />
-}
-
-const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
-  <div className="flex flex-col gap-0.5 mt-2">
-    {([['bg', 'bg'], ['text', 'text'], ['border', 'bdr']] as const).map(([key, label]) => (
-      <span key={key} className="inline-flex items-center gap-1 text-[10px]">
-        <Swatch value={colors[key]} size="sm" />
-        <span className="text-fg-muted w-5 shrink-0">{label}</span>
-        <span className="font-mono text-fg-secondary">{colors[key]}</span>
-      </span>
-    ))}
-  </div>
-)
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -197,20 +150,28 @@ export const Overview = {
   name: '元件總覽',
   render: () => (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>四個可選 slot。icon-only 模式只保留 startIcon，變正方形並自動 tooltip。</Desc>
-        </div>
+      {/* A4:標題 ↔ 說明 2px、標題區 → 內容 loose(ExampleSection);三段之間維持原本的 32 */}
+      <ExampleSection title="結構（Anatomy）" description="四個可選 slot。icon-only 模式只保留 startIcon，變正方形並自動 tooltip。">
         <div className="flex gap-8">
           {/* Standard layout */}
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">標準</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'startIcon', color: 'info' }, { name: 'label', color: 'success' }, { name: 'badge', color: 'warning' }, { name: 'endIcon', color: 'magenta' }].map((s) => (
-                <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
-              ))}
+              {/* endIcon 色塊:語意色沒有 magenta(--magenta / --magenta-subtle 不存在,畫出來是透明底 + 繼承字色)→ 用 categorical 色相
+                  (tokens/categorical-color.ts,同 combobox.anatomy 結構圖「搜尋框」那一格的做法) */}
+              {[
+                { name: 'startIcon', color: 'info' },
+                { name: 'label', color: 'success' },
+                { name: 'badge', color: 'warning' },
+                { name: 'endIcon', hue: 'magenta' as const },
+              ].map((s) => {
+                const fg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].text : `var(--${s.color})`
+                const bg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].bg : `var(--${s.color}-subtle)`
+                return (
+                  <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                    style={{ borderColor: fg, backgroundColor: bg, color: fg }}>{s.name}</span>
+                )
+              })}
             </div>
           </div>
           {/* Icon-only layout */}
@@ -223,10 +184,9 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">p-0 + aspect-square · 自然正方形 · 自動 tooltip</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
-      <div className="flex flex-col gap-3">
-        <H3>Variant 一覽</H3>
+      <ExampleSection title="Variant 一覽">
         <div className="flex flex-col gap-2">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
@@ -248,10 +208,9 @@ export const Overview = {
             ))}
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -267,7 +226,7 @@ export const Overview = {
                 ['badge', 'ReactNode', '—', '右側 badge（通知計數）'],
                 ['overlayBadge', 'ReactNode', '—', '角標疊於 icon 右上（僅 iconOnly=true；對齊 Material BadgedBox）'],
                 ['iconOnly', 'boolean', 'false', '正方形模式，需搭配 aria-label'],
-                ['loading', 'boolean', 'false', 'CircularProgress(indeterminate)+ 可聚焦的停用(aria-busy + aria-disabled,擋掉觸發、焦點留著;button.spec.md「loading」)'],
+                ['loading', 'boolean', 'false', 'CircularProgress(indeterminate)+ 可聚焦的停用(aria-busy + aria-disabled,擋掉觸發、焦點留著)'],
                 ['fullWidth', 'boolean', 'false', '撐滿父容器'],
                 ['dismiss', 'boolean', 'false', 'X close 視覺弱化（強制 variant=text + iconOnly=true）'],
                 ['asChild', 'boolean', 'false', '透過 Radix Slot 套用至子元件'],
@@ -277,7 +236,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -293,14 +252,6 @@ const Z = {
   label: { bg: 'rgba(199,178,230,0.6)', border: 'rgba(138,103,190,0.9)', text: '#6035a8' },
   dim:   { text: '#d04040' },
 }
-
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
 
 const InspectorInner = () => {
   const [variant, setVariant] = useState<VariantKey>('primary')
@@ -408,7 +359,8 @@ const InspectorInner = () => {
                   style={{ width: 52, height: 52, background: Z.icon.bg, border: `2px solid ${Z.dim.text}22`, borderLeft: `1.5px dashed ${Z.icon.border}`, borderRight: `1.5px dashed ${Z.icon.border}` }}>
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-[11px] font-mono font-bold" style={{ color: Z.icon.text }}>{s.icon}px</span>
-                    <span className="text-[9px] font-mono opacity-70" style={{ color: Z.icon.text }}>icon</span>
+                    {/* 淡化的次要標註 = 色彩 token(不用數字透明度;opacity.spec.md 只有 disabled 一個 role) */}
+                    <span className="text-[9px] font-mono text-fg-muted">icon</span>
                   </div>
                 </div>
                 <div className="ml-3 flex flex-col gap-0.5">
@@ -482,13 +434,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -499,11 +447,9 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
+    // 標題區 → 兩張表 = loose(A4);兩張表之間維持原本的 32
+    <ExampleSection title="Variant × State 色彩對照" description="橫向看同 variant 的 state 變化，縱向比較不同 variant 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Variant × State 色彩對照</H3>
-        <Desc>橫向看同 variant 的 state 變化，縱向比較不同 variant 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
       <div className="overflow-x-auto">
         <table className="border-collapse">
           <thead><tr><Th>Variant</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
@@ -544,6 +490,7 @@ export const ColorMatrix = {
         </div>
       </div>
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -556,12 +503,9 @@ const SIZES: SizeKey[] = ['xs', 'sm', 'md', 'lg']
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
+    // 標題區 → 兩塊對照 = loose(A4);兩塊之間維持原本的 32
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。開發只需設 token，density 切換由系統自動處理。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。開發只需設 token，density 切換由系統自動處理。</Desc>
-      </div>
-
       {/* Token comparison table */}
       <div className="overflow-x-auto">
         <table className="border-collapse text-caption">
@@ -634,6 +578,7 @@ export const SizeMatrix = {
         </div>
       </div>
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -644,12 +589,9 @@ export const SizeMatrix = {
 export const StateBehavior = {
   name: '狀態行為',
   render: () => (
+    // 標題區 → 各段 = loose(A4);各段之間維持原本的 32
+    <ExampleSection title="狀態行為" description="Loading、disabled、pressed toggle 的視覺變化與行為規則。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>狀態行為</H3>
-        <Desc>Loading、disabled、pressed toggle 的視覺變化與行為規則。</Desc>
-      </div>
-
       <div className="flex flex-col gap-4">
         <span className="text-caption font-medium text-fg-secondary">Loading — CircularProgress 替換規則</span>
         {[
@@ -707,6 +649,7 @@ export const StateBehavior = {
       <NeutralToggleLadder />
       <StateStackingSnapshot />
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -841,7 +784,7 @@ const STACKING_ROWS: { label: string; note: string; render: () => React.ReactNod
 function StateStackingSnapshot() {
   return (
     <div className="flex flex-col gap-3">
-      <span className="text-caption font-medium text-fg-secondary">狀態疊加 — 開啟中 / 已按下 / aria-disabled(button.spec.md「狀態疊加」)</span>
+      <span className="text-caption font-medium text-fg-secondary">狀態疊加 — 開啟中 / 已按下 / aria-disabled</span>
       <div className="flex flex-col gap-2">
         {STACKING_ROWS.map(({ label, note, render }) => (
           <div key={label} className="flex flex-col gap-1">
@@ -863,8 +806,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時品牌 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 不是原生停用:可聚焦的停用(aria-disabled + data-disabled-focusable)+ aria-busy 告知處理中,焦點留在鈕上(button.spec.md「loading」)。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時品牌 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 不是原生停用:可聚焦的停用(aria-disabled + data-disabled-focusable)+ aria-busy 告知處理中,焦點留在鈕上。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

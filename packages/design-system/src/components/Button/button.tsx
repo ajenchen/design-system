@@ -693,10 +693,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       </Comp>
     )
 
-    // icon-only + aria-label → 自動包 Tooltip（tooltip 是元件保證的行為）
+    // 沒有文字的按鈕 + aria-label → 自動包 Tooltip（tooltip 是元件保證的行為）:icon-only,以及「圖示 + 下拉指示」
+    // (不加 iconOnly、保留 endIcon,button.spec.md「icon + 下拉指示」)—— 兩者畫面上都沒有字,名字只在 aria-label
+    // (登記簿 B31「所有 icon only button 都應該要有 tooltip 來顯示其本身無法呈現出來的文字 label嗎？如果沒有,應該要有才對」;
+    // 2026-10-28 前只看 iconOnly,圖示 + 下拉指示沒有 tooltip,稽核 L118)。
     // 不建立獨立 TooltipProvider——依賴全域 Provider，
     // 這樣所有 tooltip 共享同一組 delay 參數和 warm-up 機制
-    if (resolvedIconOnly && typeof ariaLabel === 'string' && !asChild) {
+    const hasVisibleLabel = children != null && children !== false && children !== ''
+    if ((resolvedIconOnly || !hasVisibleLabel) && typeof ariaLabel === 'string' && !asChild) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>
