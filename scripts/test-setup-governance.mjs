@@ -825,9 +825,11 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-09-29T23:46Z 上游再發兩則(2026-09-30 認列):range 隨之變 <=10.7.0
           { source: 1240097, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate', range: '<=10.7.0' },
           { source: 1240098, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate', range: '<=10.7.0' },
+          // 2026-10-22T16:19Z 上游再發一則(2026-10-27 認列):range 隨之變 <=10.7.3
+          { source: 1242883, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-rxp7-6hxx-x8q5', severity: 'moderate', range: '<=10.7.3' },
         ],
         effects: [],
-        range: '<=10.7.0',
+        range: '<=10.7.3',
         nodes: ['node_modules/npm/node_modules/ip-address'],
       },
       undici: {
@@ -844,9 +846,12 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
           // 2026-09-29T18:21Z 上游再發兩則(2026-09-30 認列):low + high,range 不變
           { source: 1240039, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-r53p-7pc4-xj5r', severity: 'low', range: '<6.28.1' },
           { source: 1240042, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high', range: '>=6.7.0 <6.28.1' },
+          // 2026-10-23T22:13Z / 22:14Z 上游再發兩則(2026-10-27 認列):moderate + high,range 隨之變 <=6.29.0
+          { source: 1243079, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-4qv8-2p9j-2685', severity: 'moderate', range: '>=6.5.0 <6.29.1' },
+          { source: 1243114, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-xjj6-f33q-929c', severity: 'high', range: '>=6.23.0 <6.29.1' },
         ],
         effects: [],
-        range: '<=6.28.0',
+        range: '<=6.29.0',
         nodes: ['node_modules/npm/node_modules/undici'],
       },
       // 2026-10-06 認列(PR #169 849d8667 全紅那一輪的真實 npm audit 形狀):npm 內建、修補層無 slot、npm 最新版也沒帶修正版
@@ -866,10 +871,11 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
         severity: 'moderate',
         isDirect: false,
         via: [
-          { source: 1241232, name: 'postcss-selector-parser', dependency: 'postcss-selector-parser', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate', range: '<7.1.6' },
+          // 2026-10-26T14:07Z 上游改版同一則通報(加列 6.x 線):換號 1241232 → 1243380、範圍改寫(2026-10-27 認列)
+          { source: 1243380, name: 'postcss-selector-parser', dependency: 'postcss-selector-parser', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate', range: '>=7.0.0 <7.1.6' },
         ],
         effects: [],
-        range: '<7.1.6',
+        range: '7.0.0 - 7.1.5',
         nodes: ['node_modules/npm/node_modules/postcss-selector-parser'],
       },
     },
@@ -916,6 +922,69 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 4)
     stale.vulnerabilities.undici.severity = 'moderate'
     assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-29 的四則 moderate 形狀必須被判成漂移')
+  }
+  // 2026-10-27 對照組(M32):10-22 / 10-23 / 10-26 上游新發或改版之前、本檔上一版認列的三個形狀,現在都必須判漂移 ——
+  // 夾具改成新形狀後,若 evaluator 仍接受舊形狀(例如只比名字),這三格會紅。
+  {
+    // ip-address 09-30 的七則 / <=10.7.0
+    const stale = structuredClone(report)
+    stale.vulnerabilities['ip-address'].via = stale.vulnerabilities['ip-address'].via.slice(0, 7)
+    stale.vulnerabilities['ip-address'].range = '<=10.7.0'
+    assert.throws(() => evaluate(stale), /ip-address finding differs from the acknowledged bundled preimage/, 'ip-address 09-30 的七則形狀必須被判成漂移')
+  }
+  {
+    // undici 09-30 的六則 / <=6.28.0
+    const stale = structuredClone(report)
+    stale.vulnerabilities.undici.via = stale.vulnerabilities.undici.via.slice(0, 6)
+    stale.vulnerabilities.undici.range = '<=6.28.0'
+    assert.throws(() => evaluate(stale), /undici finding differs from the acknowledged bundled preimage/, 'undici 09-30 的六則形狀必須被判成漂移')
+  }
+  {
+    // postcss-selector-parser 10-06 的舊號 / 舊範圍(1241232、<7.1.6)
+    const stale = structuredClone(report)
+    stale.vulnerabilities['postcss-selector-parser'].via[0].source = 1241232
+    stale.vulnerabilities['postcss-selector-parser'].via[0].range = '<7.1.6'
+    stale.vulnerabilities['postcss-selector-parser'].range = '<7.1.6'
+    assert.throws(() => evaluate(stale), /postcss-selector-parser finding differs from the acknowledged bundled preimage/, 'postcss-selector-parser 10-06 的舊形狀必須被判成漂移')
+  }
+  // 2026-10-27 對照組:專案自己的相依(不在 npm 內建樹)沒有認列這條路 —— 只能真的升版。下面三筆是 10-27 本機以
+  // 治理版 npm 11.19.0 對 a6390356 的鎖檔跑出的真實形狀(storybook / @storybook/core critical、zod high、fast-uri moderate);
+  // 加進任一筆,判定必紅且指名套件。這是「升版才是修法」的機械證明,不是名單。
+  {
+    const projectFindings = {
+      storybook: {
+        name: 'storybook', severity: 'critical', isDirect: true,
+        via: ['@storybook/core',
+          { source: 1242755, name: 'storybook', dependency: 'storybook', url: 'https://github.com/advisories/GHSA-f2ph-cmg5-wxc8', severity: 'critical', range: '>=8.0.0 <8.6.19' },
+          { source: 1242876, name: 'storybook', dependency: 'storybook', url: 'https://github.com/advisories/GHSA-px85-f4q5-jh77', severity: 'high', range: '>=8.0.0 <8.6.19' }],
+        effects: [], range: '8.0.0 - 8.6.18', nodes: ['node_modules/storybook'],
+      },
+      zod: {
+        name: 'zod', severity: 'high', isDirect: false,
+        via: [{ source: 1243066, name: 'zod', dependency: 'zod', url: 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5', severity: 'high', range: '<4.6.6' }],
+        effects: [], range: '<4.6.6', nodes: ['node_modules/zod'],
+      },
+      'fast-uri': {
+        name: 'fast-uri', severity: 'moderate', isDirect: false,
+        via: [
+          { source: 1243098, name: 'fast-uri', dependency: 'fast-uri', url: 'https://github.com/advisories/GHSA-w74x-v6f9-j3xg', severity: 'moderate', range: '>=3.0.0 <3.1.9' },
+          { source: 1243101, name: 'fast-uri', dependency: 'fast-uri', url: 'https://github.com/advisories/GHSA-xhq7-xmqj-769h', severity: 'low', range: '>=3.0.0 <3.1.9' },
+          { source: 1243104, name: 'fast-uri', dependency: 'fast-uri', url: 'https://github.com/advisories/GHSA-wjr9-j795-jxcr', severity: 'moderate', range: '>=3.1.3 <3.1.9' },
+          { source: 1243107, name: 'fast-uri', dependency: 'fast-uri', url: 'https://github.com/advisories/GHSA-333x-w4r6-6crp', severity: 'low', range: '>=3.0.0 <3.1.9' },
+        ],
+        effects: [], range: '3.0.0 - 3.1.8', nodes: ['node_modules/fast-uri'],
+      },
+    }
+    for (const [name, projectFinding] of Object.entries(projectFindings)) {
+      const withProject = structuredClone(report)
+      withProject.vulnerabilities[name] = structuredClone(projectFinding)
+      withProject.metadata.vulnerabilities[projectFinding.severity] += 1
+      withProject.metadata.vulnerabilities.total += 1
+      const expected = projectFinding.severity === 'critical'
+        ? new RegExp(`unremediated critical finding:${name}$`)
+        : new RegExp(`unremediated high/moderate finding:${name}\\(`)
+      assert.throws(() => evaluate(withProject), expected, `${name}:專案相依的通報不可被認列,必紅並指名`)
+    }
   }
   // 2026-10-06 對照組(M32):http-cache-semantics / postcss-selector-parser 的認列是 exact shape,不是名字白名單。
   // (a) 認列之前的判定 = 這兩筆一律是未處理 finding:把 evaluator 換回「沒有這兩段」等價於把它們改名 —— 必紅且指名。

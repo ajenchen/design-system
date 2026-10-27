@@ -126,7 +126,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-governance-common-library | `infra/governance/lib/common.mjs` | `sha256:6bac480e46e1060acefb7324753f0074eda7e47146584025b71141fdee14fc36` |
 | exact-governance-common-module | `packages/governance/src/common.mjs` | `sha256:9e60e0c4fc1d8f0ee0bd0f6da2172a154c268c3aae2ac1b366bf21de826fcbe0` |
 | exact-governance-contract-module | `packages/governance/src/contract.mjs` | `sha256:eb7f507ee0ff9c8a76726b59438cd012035f3ca1fc29b68c1b72693b43991ffa` |
-| exact-governance-dependency-bootstrap-library | `scripts/lib/governance-dependency-bootstrap.mjs` | `sha256:f2918632c942c72f05c4fdbd80518e54cbc5a51a80edb355a39400befd6e27d5` |
+| exact-governance-dependency-bootstrap-library | `scripts/lib/governance-dependency-bootstrap.mjs` | `sha256:4253758220824c1d768bec8f6729c3f1138bd66a2d7e7d54891d0e0cdcd6a890` |
 | exact-governance-hook-api-module | `packages/governance/src/hook-api.mjs` | `sha256:3b2a790788eb6f46d7f4a567b978d14c82f0d638117ff6c992a85ef6f440d37e` |
 | exact-governance-metadata-generator | `scripts/generate-governance-metadata.mjs` | `sha256:d52ee1cf1aa1c6e3dfa2d04da2479bf767fd9e55d5e865faf6c509f9bceae465` |
 | exact-governance-package-entrypoint | `packages/governance/bin/governance.mjs` | `sha256:b42f7d158159e4e6c52f149ae24bb4080b362f281b6dbe333353157d738e9769` |
@@ -235,7 +235,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
 | governance-precommit-entrypoint | `.husky/pre-commit` | `sha256:1f30cc0a2adbe919ed785e2fcb0f5c2adbf4d86fdffbde081ea67a3978b579cc` |
-| governance-root-script-registry | `package.json` | `sha256:6974ee5a62f0a8a5368b050bb2a83a362fc23de7ef7a074df6939d7210ebfecb` |
+| governance-root-script-registry | `package.json` | `sha256:e10a592351b07288e9b145b767def0ff21a475b632b7d00193a530866134aa44` |
 | governance-runtime-dependency-closure-library | `scripts/lib/runtime-dependency-closure.mjs` | `sha256:7b62005925db6916b43bfb7238e1cec3721848332e641ff0614f75176f621ca6` |
 | governance-runtime-ignore-policy | `infra/governance/runtime/.gitignore` | `sha256:240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d` |
 | governance-trust-registry-corpus | `infra/governance/trust/` | `sha256:7ca35caafa680838f9aac85754f08d5ac6f87192cb84157cbbfe9040e3b5ad0c` |
@@ -280,7 +280,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | product-template-documentation | `template/ds-product-template/docs` | `sha256:16c2f892a9e5e47aac784a3c5f8970fc7890147d44befe3f6ae0fbed1203721a` |
 | product-template-npm-policy | `template/ds-product-template/.npmrc` | `sha256:79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63` |
 | product-template-onboarding-banner | `template/ds-product-template/.devcontainer/onboard-banner.sh` | `sha256:fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75` |
-| product-template-package-contract | `template/ds-product-template/package.json` | `sha256:f239f1481656b05a87c08486c0852a1edb8dcb58700479e1392790defcf6f1ff` |
+| product-template-package-contract | `template/ds-product-template/package.json` | `sha256:a76d6ca6abd91375e3404f955ec60b53fb7bcde4e2bb601ea93dfd313e41f220` |
 | product-template-post-create | `template/ds-product-template/.devcontainer/post-create.mjs` | `sha256:6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b` |
 | product-template-readme | `template/ds-product-template/README.md` | `sha256:f37e8f76616cd438206023d162dff08a98b20194c0680760d556dcae64037004` |
 | protected-root-classification-inventory | `infra/governance/protected-root-classification.json` | `sha256:d1f5bd6b2fdc114c9f58c95c0d5e0228b428eff3cd98f53ac230c322e327d0b8` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:3ff8c9e855c150b5d3845e1122418a796900ef8ecd5459d95b9afe399a3997df` |
+| repository-automation-corpus | `scripts` | `sha256:84663e3e8e4c50ea09e668874755b5de2a964f5062e9df5fb8e7833ea89bcbb6` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
@@ -359,14 +359,14 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:2401269947c74f83d7a9e5563852877476f6bc82b0256c1772c6dcb8b54827c1` |
 | standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:d8b1b4383306ece3c9ccb55e762fa5bd07e32cf4440abd6852178c4bc9ba6b70` |
 | standard-release-workflow-tests | `infra/governance/test/release-workflow.test.mjs` | `sha256:e9a61e625c1549d2567707e3a4c4172dbff71cc11b9a2606304d0ff8d7089f24` |
-| storybook-package-contract | `packages/storybook-config/package.json` | `sha256:22dd5132e6db58ead484436ee353ee13c2afde4d11b29f87815ff444109e9580` |
+| storybook-package-contract | `packages/storybook-config/package.json` | `sha256:60b22d02bb54d6567e1923401cdf5e751dcb6df57aede65d570cc351d663aa68` |
 | visual-baseline-review-policy | `infra/governance/visual-baseline-review-policy.json` | `sha256:339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334` |
 | visual-baseline-review-policy-schema | `infra/governance/schemas/visual-baseline-review-policy.schema.json` | `sha256:29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45` |
 | workflow-identity-adversarial-tests | `infra/governance/test/workflow-identity-sync.test.mjs` | `sha256:8b66eb02e14c86f15bcc38e0657ff0868be1bf7a7b381e4ad91fabd9a46baf97` |
 | workflow-identity-manager | `infra/governance/bin/sync-workflow-identities.mjs` | `sha256:8b8ffc42c6d8946981605d66d72295f3ecd702087453f1236a69bcf4c24b7a30` |
 | workflow-identity-proposal-schema | `infra/governance/schemas/workflow-identity-proposal.schema.json` | `sha256:b661ebc3db93c72357f0e73e25b63da827a5e7b1ef6c5163e8cbe12e470c2a84` |
 | workflow-static-validation-helper | `scripts/workflow-static-validation.mjs` | `sha256:8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305` |
-| workspace-lockfile | `package-lock.json` | `sha256:b5d34aaeb69dde21f8fea5c390697b017d1de788521eaa22fef81e0cda34922c` |
+| workspace-lockfile | `package-lock.json` | `sha256:cd2ee8d34ccc413804d79096c0fff5bc24c049d4c2352a93a995f404c970a51d` |
 
 ## Provider skill parity
 

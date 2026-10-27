@@ -457,12 +457,17 @@ function assertRemediatedFinding(name, finding) {
     // GHSA-h3mg-xc3c-68pw Address6 解析診斷字串無長度上限;都修在 10.7.1),range 從 <=10.5.0 變 <=10.7.0、
     // via 從 5 則變 7 則。bundled 仍是 10.2.0、npm 11.x 仍無帶修正版的 release、修補層沒有這個 slot,
     // 曝險同類(dev-only CLI 內部的位址解析),照同一套只認列新形狀;舊的 5 則形狀由對照組判漂移。
+    // 2026-10-27:上游 2026-10-22T16:19Z 再發 GHSA-rxp7-6hxx-x8q5(moderate,Address6 比對 zone identifier 是平方時間,
+    // <=10.7.3,修在 10.7.4),range 從 <=10.7.0 變 <=10.7.3、via 從 7 則變 8 則 —— PR #169 的 CI(10-22 之後每一輪)會死在
+    // 「Install locked dependencies once」。bundled 仍是 10.2.0;npm 最新的 11.21.1 / 12.2.1 內建 10.7.2,仍在範圍。
+    // npm 內唯一用到 ip-address 的是 socks(@npmcli/agent 的 proxy.js 只在設定 socks 代理時才走到);本檔的 npm 執行
+    // 不帶任何代理設定(createIsolatedGovernanceNpmEnvironment 剝除所有 proxy 變數、user/global npmrc 只寫 registry 等四行)。照舊只認列新形狀。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.7.0'
+        && finding.range === '<=10.7.3'
         && matchesExactAdvisorySet(finding, 'ip-address', [
           { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
           { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
@@ -471,6 +476,7 @@ function assertRemediatedFinding(name, finding) {
           { source: 1239949, range: '>=10.2.0 <=10.5.0', url: 'https://github.com/advisories/GHSA-2vr4-cq9g-pvrc', severity: 'moderate' },
           { source: 1240097, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-j6r3-76f7-8jcv', severity: 'moderate' },
           { source: 1240098, range: '<=10.7.0', url: 'https://github.com/advisories/GHSA-h3mg-xc3c-68pw', severity: 'moderate' },
+          { source: 1242883, range: '<=10.7.3', url: 'https://github.com/advisories/GHSA-rxp7-6hxx-x8q5', severity: 'moderate' },
         ]),
       `npm audit ip-address finding differs from the acknowledged bundled preimage(${shape})`,
     )
@@ -489,12 +495,19 @@ function assertRemediatedFinding(name, finding) {
     // 曝險不變:bundled 6.27.0 只被 npm CLI 內部用、不進產品;仍只認列 exact shape,下一則再發照樣紅。
     // 根治(換到帶 undici ≥6.28.1 / ip-address ≥10.5.1 的 npm runtime,或給 overlay 加第三、四個 slot)在 cloud-compat baton。
     // 2026-10-06 同類再加兩筆(http-cache-semantics、postcss-selector-parser,見下方兩段),處置同 OE15:認列即緩解。
+    // 2026-10-27:上游 2026-10-23T22:13Z / 22:14Z 再發兩則(GHSA-4qv8-2p9j-2685 moderate,EventSource 解析器記憶體無上限,
+    // >=6.5.0 <6.29.1;GHSA-xjj6-f33q-929c **high**,過多 content-encoding 觸發未處理錯誤,>=6.23.0 <6.29.1;都修在 6.29.1),
+    // range 從 <=6.28.0 變 <=6.29.0、via 從 6 則變 8 則,severity 仍 high。bundled 仍是 6.27.0;npm 最新的 11.21.1 / 12.2.1
+    // 內建 6.29.0,仍在範圍。npm 內唯一 require('undici') 的是 node-gyp/lib/download.js(編原生模組時下載 Node 標頭檔),
+    // 而我們的 npm 一律 ignore-scripts=true(.npmrc + 隔離 npmrc + NPM_CONFIG_IGNORE_SCRIPTS),node-gyp 不會被叫起。
+    // (同日查:npm 11.21.1 / 12.2.1 內建的 http-cache-semantics 4.3.0、postcss-selector-parser 7.1.6、tar 7.5.22、
+    //   brace-expansion 5.0.12 都已在修正版 —— 換 runtime 可一次清掉那四筆;undici / ip-address 兩筆仍要等上游 npm。)
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/undici'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=6.28.0'
+        && finding.range === '<=6.29.0'
         && matchesExactAdvisorySet(finding, 'undici', [
           { source: 1130716, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate' },
           { source: 1130727, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate' },
@@ -502,6 +515,8 @@ function assertRemediatedFinding(name, finding) {
           { source: 1239934, range: '>=6.25.0 <6.28.1', url: 'https://github.com/advisories/GHSA-3wwx-pv8p-q78v', severity: 'moderate' },
           { source: 1240039, range: '<6.28.1', url: 'https://github.com/advisories/GHSA-r53p-7pc4-xj5r', severity: 'low' },
           { source: 1240042, range: '>=6.7.0 <6.28.1', url: 'https://github.com/advisories/GHSA-rfgv-xxqx-mfg5', severity: 'high' },
+          { source: 1243079, range: '>=6.5.0 <6.29.1', url: 'https://github.com/advisories/GHSA-4qv8-2p9j-2685', severity: 'moderate' },
+          { source: 1243114, range: '>=6.23.0 <6.29.1', url: 'https://github.com/advisories/GHSA-xjj6-f33q-929c', severity: 'high' },
         ]),
       `npm audit undici finding differs from the acknowledged bundled preimage(${shape})`,
     )
@@ -536,14 +551,17 @@ function assertRemediatedFinding(name, finding) {
     // 選擇器由 npm 依我們自己的 workspace 名稱在內部組出(npm/lib/commands/sbom.js #buildSelector),沒有外部輸入。
     // 通報原文明說「Ordinary build-time use on trusted sources is not affected」。dev-only CLI 內部,不進產品。
     // 只認列 exact shape;再多一則、換節點、換範圍、嚴重度改變都 fail closed。
+    // 2026-10-27:上游 2026-10-26T14:07Z 改版同一則通報(加列 6.x 線 <6.1.5),registry 隨之換號 1241232 → 1243380、
+    // 這一則對 7.x 的範圍改寫成 >=7.0.0 <7.1.6、finding.range 從 <7.1.6 變 7.0.0 - 7.1.5;內容與曝險不變(bundled 仍是 7.1.4)。
+    // 舊形狀由對照組判漂移。
     invariant(
       finding.severity === 'moderate'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/postcss-selector-parser'])
         && exactArray(finding.effects, [])
-        && finding.range === '<7.1.6'
+        && finding.range === '7.0.0 - 7.1.5'
         && matchesExactAdvisorySet(finding, 'postcss-selector-parser', [
-          { source: 1241232, range: '<7.1.6', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate' },
+          { source: 1243380, range: '>=7.0.0 <7.1.6', url: 'https://github.com/advisories/GHSA-rj75-hqrm-r3gf', severity: 'moderate' },
         ]),
       `npm audit postcss-selector-parser finding differs from the acknowledged bundled preimage(${shape})`,
     )
