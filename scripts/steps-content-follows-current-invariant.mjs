@@ -7,23 +7,17 @@
  *              對照組才量得到);
  *         (2) 步驟的 header(`li[data-state]` 的第一個子元素,含其子樹、不含內容區)沒有 `aria-expanded` / `aria-controls`——
  *             header 是「跳到那一步」,不是開合鈕(2026-09-30 退役「可同時打開多步」模式;2026-07-05 `7e69aad7` 加的 ARIA 一併拿掉)。
- *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(md 16 / lg 24;user 2026-10-21 A4 甲:標題 + 說明是整組內容的標題,
- *             layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose):量盒邊到盒邊(header 底 → 內容區頂,
- *             getBoundingClientRect),跟內容區上解析出來的 token 值比;每則 story 載入後在 md 與 lg 各量一次(lg 由 html `data-density="lg"` 切換)
- *             —— 已發布版寫死 `mt-3`(md、lg 都 12),PR 前一版寫成 tight(md 12 / lg 16),兩者都紅。
- *         (4) 展開內容的那一步 → 下一步 = `--layout-space-bottom`(md、lg 都 48;user 2026-10-21 A3「照你建議」= 甲:這一步的內容是一塊 body 的收尾,
- *             最後一步不給、交給外層容器):量內容區底 → 下一步 header 頂;是最後一步時量內容區底 → 這一步 li 底 = 0。
- *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose`(ssot A-S4:user 2026-10-20「Q2 我認為可以基於你的建議」):
- *             從內容區往下走到第一個有兩個以上子元素的盒,最後一個子元素含 <button>、前一個不含 → 量前一個底 → 最後一個頂。
- *         (6) 長成按鈕的 header 點了就換到那一步(F7 甲,user 2026-10-21「好，照你建議」):`role="button"` 的 header 點下去,
- *             那一條的目前那一步必須移到被點的那一步 —— 只給 `value`、沒接 `onValueChange` 的步驟條該用 `readOnly`(純追蹤)。
+ *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(A4 甲;layoutSpace.spec.md「親疏 3 級」「標題(+ 說明)→ 它底下的並列內容」);
+ *         (4) 展開內容的那一步 → 下一步 = `--layout-space-bottom`,最後一步 = 0(A3 甲);
+ *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose`(ssot A-S4);
+ *         (6) 長成按鈕(`role="button"`)的 header 點了,目前那一步必須移過去(F7 甲:純追蹤的步驟條用 `readOnly`)。
+ *         (3)–(5) 量盒邊到盒邊(getBoundingClientRect)跟內容區上解析出來的 token 比,md 與 lg 各量一次(量法細節見檔內 measureInPage)。
  *         載入後先量一次;第一輪依序點每個當下可點的 header(`role="button"`,點之前現場再確認一次);按一次目前那一步內容區裡的
  *         第一顆按鈕(精靈的「下一步」);按過之後再跑第二輪 header(例:預設精靈剛完成的那一步此時才可點 —— 點回去,內容必須跟著回來)。
  *         每次互動等版面靜止後重量重判。
  *   紅: 任一步在不是目前那一步時仍畫出內容(content-not-current)/ 目前那一步沒畫內容而別步有(current-without-content)/
- *       任一 header 帶 aria-expanded 或 aria-controls / 標題區 → 內容不等於 loose(header-content-gap)/
- *       展開那一步 → 下一步不等於 bottom、最後一步內容區底到 li 底不是 0(step-gap)/ 按鈕列上方不等於 loose(button-gap)/
- *       點了 role="button" 的 header 目前那一步沒移過去(dead-header)→ 指名 story、步驟條、第幾步、哪一種並 exit 1。
+ *       header 帶 aria-expanded 或 aria-controls / (3) header-content-gap / (4) step-gap / (5) button-gap / (6) dead-header
+ *       → 指名 story、步驟條、第幾步、哪一種並 exit 1。
  *       退役前的建置(多重展開模式 story 全部展開、預設精靈已完成那一步帶 aria-expanded="false")四種都紅 —— `--selftest --control-static=<舊建置>` 證明。
  *       零則 story / 零條步驟條 / 零次點擊 / 零次「目前那一步移動」/ 零處內容 / 零次「點 header 讓有內容區的步驟條換了目前那一步」
  *       = 儀器失效(INSTRUMENT-FAIL,exit 1),不當綠燈 —— 最後一項沒發生過,「點 header → 內容跟著走」這條就從沒被量到。

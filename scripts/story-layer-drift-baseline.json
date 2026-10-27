@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 57,
     "story-counter-example": 5,
-    "layout-space-magic-ok": 382
+    "layout-space-magic-ok": 354
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -161,16 +161,6 @@
         ]
       }
     },
-    "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 3,
-        "hits": [
-          "0acc3418ee69",
-          "2f8807848111",
-          "4c787159eaf1"
-        ]
-      }
-    },
     "packages/design-system/src/components/DateGrid/date-grid.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
@@ -224,19 +214,16 @@
     },
     "packages/design-system/src/components/Empty/empty.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "087d8635074b",
-          "39456e13412a"
+          "087d8635074b"
         ]
       }
     },
     "packages/design-system/src/components/Empty/empty.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 1,
         "hits": [
-          "3b182c8a94fc",
-          "3b182c8a94fc",
           "3b182c8a94fc"
         ]
       }
@@ -365,32 +352,19 @@
     },
     "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 16,
+        "count": 4,
         "hits": [
           "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "147ea1c2c406",
-          "7257f09b0745",
           "7257f09b0745",
           "8a0296678df5",
-          "ed0d4093a9b6"
+          "f8358395a924"
         ]
       }
     },
     "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "ed0d4093a9b6",
           "ed0d4093a9b6"
         ]
       }
@@ -491,14 +465,12 @@
         ]
       },
       "layout-space-magic-ok": {
-        "count": 12,
+        "count": 10,
         "hits": [
           "2eb690f8e049",
           "2eb690f8e049",
           "49967b1d49a0",
           "49967b1d49a0",
-          "4f0b45c8fb28",
-          "4f0b45c8fb28",
           "7257f09b0745",
           "9027e2e5ea66",
           "9027e2e5ea66",
@@ -510,14 +482,11 @@
     },
     "packages/design-system/src/components/Skeleton/skeleton.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 9,
+        "count": 6,
         "hits": [
           "1f549f550f4c",
           "1f549f550f4c",
           "2eb690f8e049",
-          "2ebb76ab40fe",
-          "572a0baf7805",
-          "77a3fd7ad36c",
           "e28ccd117f22",
           "ed0d4093a9b6",
           "ed0d4093a9b6"
@@ -541,14 +510,6 @@
         "hits": [
           "6f862e2ec1fc",
           "9bce3cb8571d"
-        ]
-      }
-    },
-    "packages/design-system/src/components/Steps/steps.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "7257f09b0745"
         ]
       }
     },
@@ -643,16 +604,13 @@
     },
     "packages/design-system/src/components/TreeView/tree-view.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 9,
+        "count": 6,
         "hits": [
           "b42b3b2dc497",
           "b42b3b2dc497",
           "c251bdfcbab7",
           "c7c24caa9823",
-          "d5c3005265b3",
           "d84c2a50aa08",
-          "d84c2a50aa08",
-          "fdc25b59af8f",
           "fdc25b59af8f"
         ]
       }
