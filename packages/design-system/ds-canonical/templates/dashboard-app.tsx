@@ -17,13 +17,13 @@
 // Fork user 替換步驟:
 //   1. 替換 NAV array(新 product 的真實導覽項)
 //   2. 替換 WorkspaceBrand 內 workspace 名 / Avatar 顏色
-//   3. 替換 DashboardPage 為真實業務 widgets(DataTable / Chart / Card 等 DS 元件)
+//   3. 替換 DashboardPage 為真實業務內容(用 DS 元件組:DataTable / Chart 等)與自己的資料來源
 //   4. 替換 PageHeader rightSlot 的 primary action(若有)
 //   5. 替換版面寬度設定(MAIN_MIN_WIDTH / MENU_WIDTH)為產品的值:AppShell 的 Main 最小寬必填、Menu 的最大寬產品必給
 //      (DS `app-shell.spec.md`「版面規則」§1;§8 消費者指引:Main 最小寬 + 細列寬 + 每種 Right 內容最小寬 ≤ 要支援的最窄 desktop 版面寬,
 //      水平捲軸就幾乎不會出現)
 
-import { useState, type ReactElement } from 'react'
+import { useId, useState, type ReactElement } from 'react'
 import {
   AppShell,
   SidebarProvider,
@@ -48,6 +48,8 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuGroup,
+  DataTable,
+  type DataTableProps,
 } from '@qijenchen/design-system'
 import { LayoutDashboard, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
 
@@ -147,24 +149,36 @@ function PageHeader({ title, rightSlot }: { title: string; rightSlot?: ReactElem
   )
 }
 
+// ── 今日待處理訂單(範例資料:已付款、還沒出貨;fork 後換成產品自己的資料來源)──
+// 主內容一律用 DS 元件組(清單用 DataTable,`packages/design-system/ds-canonical/rules/story-rules.md`「整頁情境」),不手刻卡片。
+type PendingOrder = { orderNo: string; customer: string; itemCount: number; amount: number; placedAt: string }
+const PENDING_ORDERS: PendingOrder[] = [
+  { orderNo: 'SO-20261027-0412', customer: '晨光文具行', itemCount: 12, amount: 8640, placedAt: '08:42' },
+  { orderNo: 'SO-20261027-0415', customer: '大和精品咖啡', itemCount: 3, amount: 2350, placedAt: '09:05' },
+  { orderNo: 'SO-20261027-0421', customer: '森林系選物店', itemCount: 7, amount: 5180, placedAt: '09:37' },
+  { orderNo: 'SO-20261027-0428', customer: '北辰科技', itemCount: 25, amount: 31200, placedAt: '10:14' },
+  { orderNo: 'SO-20261027-0433', customer: '好日子烘焙坊', itemCount: 4, amount: 1960, placedAt: '10:52' },
+  { orderNo: 'SO-20261027-0440', customer: '藍海貿易', itemCount: 9, amount: 12480, placedAt: '11:20' },
+]
+const PENDING_ORDER_COLUMNS: DataTableProps<PendingOrder>['columns'] = [
+  { accessorKey: 'orderNo', header: '訂單編號', meta: { type: 'string', width: 180 } },
+  { accessorKey: 'customer', header: '客戶', meta: { type: 'string', width: 200 } },
+  { accessorKey: 'itemCount', header: '件數', meta: { type: 'number', width: 100 } },
+  { accessorKey: 'amount', header: '金額', meta: { type: 'currency', prefix: 'NT$', width: 140 } },
+  { accessorKey: 'placedAt', header: '下單時間', meta: { type: 'time', width: 120 } },
+]
+
 function DashboardPage() {
+  const titleId = useId()
   return (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-[var(--layout-space-loose)]">
-      <section>
-        <h2 className="text-h5 mb-[var(--layout-space-tight)]">Today</h2>
-        <p className="text-body text-fg-secondary">
-          替換為真實業務 — 訂單 / 收入 / 待處理任務等 dashboard widgets。Consume DS components
-          (DataTable / Chart / Card / Stat 等),never modify DS source。
-        </p>
-      </section>
-      <section className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
-        {['Revenue', 'Active customers', 'Pending orders'].map((label) => (
-          <div key={label} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
-            <div className="text-caption text-fg-secondary">{label}</div>
-            {/* @layout-space-magic-ok: Sidebar#IconCollapse PageContent metric-card baseline owns fixed 4px label-to-value micro spacing; not macro layout */}
-            <div className="text-h3 mt-1">—</div>
-          </div>
-        ))}
+    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+      {/* 區段標題(+ 說明)→ 它底下的表格 = loose(DS `layoutSpace.spec.md` 規則 3:標題(+ 說明)→ 它底下的並列內容) */}
+      <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div>
+          <h2 id={titleId} className="text-h5 mb-[var(--layout-space-tight)]">今日待處理訂單</h2>
+          <p className="text-body text-fg-secondary">已付款、還沒出貨的訂單,依下單時間排序。</p>
+        </div>
+        <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} height="auto" aria-labelledby={titleId} />
       </section>
     </div>
   )
