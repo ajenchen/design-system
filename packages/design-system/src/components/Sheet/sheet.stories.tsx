@@ -54,7 +54,8 @@ function CreateProjectSheet() {
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="primary">建立新專案</Button>
+        {/* 單獨的觸發鈕一律 tertiary(story-rules.md「按鈕 variant:單獨的按鈕一律 tertiary」;主要動作在側板 footer) */}
+        <Button variant="tertiary">建立新專案</Button>
       </SheetTrigger>
       <SheetContent side="right" className="flex flex-col sm:max-w-lg">
         <SheetHeader>
@@ -117,8 +118,16 @@ function EditUserSheet() {
   const [open, setOpen] = useState(false)
   // 標題 = 存下的顯示名稱(2026-10-20 前寫死「Ada Chen」:改名存檔後再打開,欄位是新名字、標題還是舊名字;獨立驗證 OV-V04)
   const [savedName, setSavedName] = useState('Ada Chen')
+  // 進階權限也是表單值(勾選改過也算改過,才能存):Checkbox 走 setFieldValue 自接(checkbox.spec.md「表單驗證接線」)
   const form = useFormValidation({
-    initialValues: { displayName: 'Ada Chen', title: 'Design Engineer', email: 'ada.chen@example.com' },
+    initialValues: {
+      displayName: 'Ada Chen',
+      title: 'Design Engineer',
+      email: 'ada.chen@example.com',
+      manageMembers: true,
+      editWorkspace: true,
+      deleteProjects: false,
+    },
     intent: 'update',
     validate: {
       displayName: (v) => (String(v).trim() ? undefined : '顯示名稱必填'),
@@ -167,9 +176,9 @@ function EditUserSheet() {
             <FieldLabel>進階權限</FieldLabel>
             <FieldDescription>可勾選多項</FieldDescription>
             <CheckboxGroup>
-              <Checkbox defaultChecked label="管理其他成員帳號" />
-              <Checkbox defaultChecked label="編輯工作區設定" />
-              <Checkbox label="刪除專案與資料" />
+              <Checkbox label="管理其他成員帳號" checked={form.values.manageMembers} onCheckedChange={(c) => form.setFieldValue('manageMembers', c === true)} />
+              <Checkbox label="編輯工作區設定" checked={form.values.editWorkspace} onCheckedChange={(c) => form.setFieldValue('editWorkspace', c === true)} />
+              <Checkbox label="刪除專案與資料" checked={form.values.deleteProjects} onCheckedChange={(c) => form.setFieldValue('deleteProjects', c === true)} />
             </CheckboxGroup>
           </Field>
         </SheetBody>
@@ -198,11 +207,7 @@ export const EditUserRight: Story = {
 // 左側 / 頂部 / 底部為 DS 內部基建用(如 AppShell 的 Menu 浮層:Sidebar 放不下並排時從 left 滑入),
 // 需 user 明示授權。本 stories 檔不提供未授權用法示範。
 
-/**
- * OpenSnapshot — visual-audit 專用 story(對齊 Dialog OpenSnapshot canonical)。
- * `defaultOpen` 讓 Sheet render 即開著,Playwright 截圖抓得到 chrome(Header / Body / Footer)。
- * 世界級 Polaris / Atlassian chromatic 稽核共通 pattern。
- */
+// 開啟狀態 —— 只給截圖 / 閘看(test-only,不進文件頁):defaultOpen 讓 Sheet 一掛上就開著,截得到 Header / Body / Footer。
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
   tags: ['test-only'],

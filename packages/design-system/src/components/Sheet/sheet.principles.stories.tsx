@@ -1,15 +1,13 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @overlay-open-skip: 本檔為 usage-guidance(設計原則)story——每個 Rule 卡片以「關閉的 trigger 按鈕」並排比較 Sheet / Dialog / Popover 何時用;全部 defaultOpen 會讓多個 portal 疊在一起、視覺全毀。overlay 開啟狀態的視覺覆蓋由 sheet.stories.tsx(展示)+ sheet.anatomy.stories.tsx(Inspector defaultOpen)負責。
-import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Trash2, Filter, Menu } from 'lucide-react'
+import { Trash2, Filter } from 'lucide-react'
 import {
   Sheet,
   SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
   SheetBody,
   SheetFooter,
   SheetClose,
@@ -22,6 +20,7 @@ import {
   DialogTitle,
   DialogBody,
   DialogFooter,
+  DialogClose,
 } from '@/design-system/components/Dialog/dialog'
 import {
   Popover,
@@ -34,14 +33,16 @@ import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
-import { SidebarProvider, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
-import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/設計原則',
   parameters: { layout: 'padded' },
+  // 範例裡的「儲存」「建立」「永久刪除」= 完成後跳 Toast 再關閉(同 sheet.stories.tsx 展示層);Toaster 是 app 層 Provider,
+  // 放在 story 外層、不當教學頁裡的一塊(同 toast.principles.stories.tsx 的寫法,放進 TutorialPage 會多佔一格塊距)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -81,7 +82,6 @@ export const UsageGuidance: Story = {
             <SheetContent side="right" className="flex flex-col sm:max-w-lg">
               <SheetHeader>
                 <SheetTitle>專案設定</SheetTitle>
-                <SheetDescription>修改此專案的基本資訊與通知偏好</SheetDescription>
               </SheetHeader>
               {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT px-loose/pt-tight/pb-bottom);
                   自組 ScrollArea + py-4 = 水平 0 padding 歷史 bug,詳 sheet.tsx SheetBody comment。 */}
@@ -106,7 +106,9 @@ export const UsageGuidance: Story = {
                 <SheetClose asChild>
                   <Button variant="tertiary">取消</Button>
                 </SheetClose>
-                <Button variant="primary">儲存</Button>
+                <SheetClose asChild>
+                  <Button variant="primary" onClick={() => toast({ variant: 'success', title: '專案設定已儲存' })}>儲存</Button>
+                </SheetClose>
               </SheetFooter>
             </SheetContent>
           </Sheet>
@@ -144,13 +146,6 @@ export const UsageGuidance: Story = {
         </TutorialRule>
 
         <TutorialRule
-          title="❌ 手機上的大量內容 / 沉浸式編輯:用全螢幕 Dialog 或專屬頁面"
-          note="Sheet 在 mobile 預設占 75% 寬,若內容複雜需全螢幕,改用 fullscreen Dialog 或導航到獨立頁面。Mobile 上硬塞大量欄位到 right Sheet 會變得難滑、難看"
-        >
-          <ExampleCaption>↑ 手機上大量欄位 + 複雜表單 → 獨立頁面或 fullscreen Dialog</ExampleCaption>
-        </TutorialRule>
-
-        <TutorialRule
           title="❌ 短暫回饋(成功 / 失敗):用 Toast"
           note="「已儲存」「刪除失敗」這類短暫非阻斷的回饋,用 Toast 自動消失。Sheet 需要使用者明確關閉,給短訊息用 Sheet 是過度阻斷"
         >
@@ -165,7 +160,7 @@ export const UsageGuidance: Story = {
         >
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除專案</Button>
+              <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
             <DialogContent height="hug" maxWidth="440px">
               <DialogHeader>
@@ -175,8 +170,12 @@ export const UsageGuidance: Story = {
                 <p className="text-body">此動作無法復原。所有任務、評論、附件都將一併刪除。</p>
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary" danger>永久刪除</Button>
+                <DialogClose asChild>
+                  <Button variant="tertiary">取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" danger onClick={() => toast({ variant: 'success', title: '專案已永久刪除' })}>永久刪除</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -201,7 +200,7 @@ export const SidePropRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="right（消費者唯一合法 side，預設）— detail / 編輯 / 建立"
-        note="消費者 Sheet API 只能用 side=&quot;right&quot;。世界級 SaaS 一致的 convention:Jira issue drawer、Linear issue detail、GitHub PR file diff drawer、Stripe customer drawer、Notion database row expand 都在右側。理由是:使用者視線「從左(清單)看到右(詳情)」,右側 Sheet 符合自然閱讀動線"
+        note="消費者 Sheet API 只用 side=&quot;right&quot;;left / top / bottom 是 DS 內部基建,消費者不傳。世界級 SaaS 一致的 convention:Jira issue drawer、Linear issue detail、GitHub PR file diff drawer、Stripe customer drawer、Notion database row expand 都在右側。理由是:使用者視線「從左(清單)看到右(詳情)」,右側 Sheet 符合自然閱讀動線"
       >
         <Sheet>
           <SheetTrigger asChild>
@@ -210,7 +209,6 @@ export const SidePropRule: Story = {
           <SheetContent side="right">
             <SheetHeader>
               <SheetTitle>任務詳情</SheetTitle>
-              <SheetDescription>#PROJ-234 · 指派給Ada Chen</SheetDescription>
             </SheetHeader>
             <SheetBody className="text-body text-fg-secondary">
               登入頁在連續輸入錯誤密碼 3 次後未顯示鎖定提示,使用者反覆嘗試仍無回饋。建議補上鎖定倒數與重設連結。
@@ -219,98 +217,17 @@ export const SidePropRule: Story = {
         </Sheet>
         <ExampleCaption>↑ 列表點 row → 右側滑入詳情,左側列表仍可見</ExampleCaption>
       </TutorialRule>
-
-      <TutorialRule
-        title="left（DS 內部基建，非消費者 API）— AppShell 的 Menu 左側浮層"
-        note="left 保留 DS 內部基建用（例:AppShell 的 Menu 放不下時從 left 滑入的左側浮層）,消費者 code 禁止傳 side=&quot;left&quot;,需 user 授權。世界級 mobile nav convention(Slack / Gmail hamburger / Material navigation drawer 在左)是此變體的設計來源,但本 DS 的 mobile navigation 應走專屬 navigation 元件,不混在消費者 Sheet。以下為內部能力示範。"
-      >
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="tertiary" startIcon={Menu}>目錄</Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <SheetHeader>
-              <SheetTitle>目錄</SheetTitle>
-            </SheetHeader>
-            {/* 目錄 = 側欄導覽列 → 消費 SidebarMenuButton,不手刻 <button>(ui-development.md「既有 primitive 優先消費」;
-                M23(e):說得出「它是 Sidebar」就照 sidebar.spec.md —— left 側滑本身就是 AppShell Menu 左側浮層的內部基建)。
-                hover = neutral-hover + 字升 foreground、當前項 neutral-selected 且滑過釘住、鍵盤焦點畫內描邊,全由元件負責。
-                SidebarProvider minHeight:auto 取消 min-h-svh(先例 sidebar.stories.tsx ActionHoverState)。
-                列集合上下的呼吸由 SidebarGroup 擁有(item-anatomy.spec.md「垂直 padding 歸屬」:SidebarMenu 的外層容器 = SidebarGroup),不在外殼手寫 */}
-            <SidebarProvider className="flex-1" style={{ minHeight: 'auto' }}>
-              <SidebarGroup>
-                <SidebarMenu>
-                  {['總覽', '任務', '成員', '設定'].map(name => (
-                    <SidebarMenuItem key={name}>
-                      <SidebarMenuButton id={name}>{name}</SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroup>
-            </SidebarProvider>
-          </SheetContent>
-        </Sheet>
-        <ExampleCaption>↑ 主導覽 / 目錄 → 左側(mobile hamburger 展開)</ExampleCaption>
-      </TutorialRule>
-
-      <TutorialRule
-        title="bottom（DS 內部基建，非消費者 API）"
-        note="bottom 保留 DS 內部基建用,消費者 code 禁止傳 side=&quot;bottom&quot;。iOS / Material Bottom Sheet convention(手機拇指操作區在螢幕下半)是此變體來源,但本 DS 若需 mobile bottom sheet 應走專屬 BottomSheet 元件,不混在消費者 Sheet 的 side prop。以下為內部能力示範。"
-      >
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="tertiary">分享</Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="max-w-full">
-            <SheetHeader>
-              <SheetTitle>分享</SheetTitle>
-            </SheetHeader>
-            {/* 單擊即生效的短文字選項 → 選單列,不手刻 <button>(overlay-surface.spec.md「Menu 移植到 Dialog body」+
-                「預設:浮層的 body 是一份可選清單 → 走選單列」);裸用 MenuItem 被 menu-item.spec.md 禁止 → 用 Command 包
-                (自帶方向鍵與 listbox,先例 dialog.stories.tsx「主體放清單」、popover.stories.tsx StatusFilterPanel)。
-                List-as-region:body 撤 chrome padding、列內距在 Command 根設一次 --item-px(item-anatomy.spec.md「Token: --item-px」) */}
-            <SheetBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、CommandGroup py-2 own;非 tabs !pt-0 hack)*/}
-              <Command label="分享方式" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
-                <CommandList>
-                  <CommandGroup>
-                    {['複製連結', '傳送到 Email', '加入我的最愛', '匯出 PDF'].map(name => (
-                      <CommandItem key={name} value={name}>
-                        {name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
-        <ExampleCaption>↑ 手機拇指操作區 → bottom Sheet</ExampleCaption>
-      </TutorialRule>
-
-      <TutorialRule
-        title="top（DS 內部基建，非消費者 API）"
-        note="top 保留 DS 內部基建用,消費者 code 禁止傳 side=&quot;top&quot;。一般產品極少用(視線從頭頂滑入不自然),僅系統層級的內部情境保留。"
-      >
-        <ExampleCaption>↑ 消費者不用 top;為 DS 內部保留變體</ExampleCaption>
-      </TutorialRule>
-
-      <TutorialRule
-        title="❌ 消費者傳 side=&quot;left&quot; / &quot;bottom&quot; / &quot;top&quot;"
-        note="消費者 Sheet API 只能用 right。傳其他方向 = 越權使用 DS 內部基建變體(需 user 授權)。需 mobile navigation / bottom sheet 請用專屬元件,不要借 Sheet 的內部 side。"
-      >
-        <ExampleCaption warn>↑ 消費者只用 side=&quot;right&quot;;left / bottom / top 是內部基建,不可直接傳</ExampleCaption>
-      </TutorialRule>
     </TutorialPage>
   ),
 }
 
 export const HeaderFooterStructureRule: Story = {
-  name: '頁首 / 頁尾 結構',
+  name: '頁首、內容與頁尾',
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="標準結構 — Header(標題 + 描述) + 主內容 + Footer(按鈕列)"
-        note="與 Dialog 共用 overlay-surface 視覺語言(bg-surface-raised / elevation-200;容器邊框用較淡的 border-divider,Dialog 用 border-border)。Header 放 SheetTitle + SheetDescription,Footer 放按鈕列;主內容區用 SheetBody(內建 ScrollArea 跨 OS 一致捲軸 + 浮層 padding SSOT)吃長內容"
+        title="標準結構 — Header(標題)+ Body + Footer"
+        note="與 Dialog 共用 overlay-surface 視覺語言(bg-surface-raised / elevation-200;容器邊框用較淡的 border-divider,Dialog 用 border-border)。Header 放 SheetTitle,Footer 放按鈕列;主內容區用 SheetBody(內建 ScrollArea 跨 OS 一致捲軸 + 浮層 padding SSOT)吃長內容"
       >
         <Sheet>
           <SheetTrigger asChild>
@@ -319,7 +236,6 @@ export const HeaderFooterStructureRule: Story = {
           <SheetContent side="right" className="flex flex-col sm:max-w-lg">
             <SheetHeader>
               <SheetTitle>建立新客戶</SheetTitle>
-              <SheetDescription>填寫基本資料後可進行付款設定</SheetDescription>
             </SheetHeader>
             {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT) */}
             <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
@@ -336,7 +252,9 @@ export const HeaderFooterStructureRule: Story = {
               <SheetClose asChild>
                 <Button variant="tertiary">取消</Button>
               </SheetClose>
-              <Button variant="primary">建立</Button>
+              <SheetClose asChild>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '客戶已建立' })}>建立</Button>
+              </SheetClose>
             </SheetFooter>
           </SheetContent>
         </Sheet>

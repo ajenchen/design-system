@@ -64,7 +64,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     // 遮罩與面板同一組 何時播 / 時長 / 曲線 / 收尾 / 減少動態 = surfaceMotion(與 DialogOverlay、FileViewer 遮罩同一份;
-    // dialog.spec.md「動畫」表「Overlay:同上」、motion.spec.md「模態面板 Dialog/Sheet/FileViewer → --motion-duration-surface」)。
+    // dialog.spec.md「動畫」表 Overlay 列、motion.spec.md「進出場動畫 token」表 `--motion-duration-surface` 那列:「模態面板(Dialog/Sheet/FileViewer,面積大位移遠→慢一階)」)。
     // 2026-10-07 前這裡自己寫 animate-in/out + motion-reduce:animate-none:時長吃 tw-animate 預設 150ms/ease(沒接 token),
     // 減少動態守衛又輸給 data-[state=…] 的權重、從沒生效(待辦總帳 T7 / T8)。這裡只寫幾何。
     className={cn(

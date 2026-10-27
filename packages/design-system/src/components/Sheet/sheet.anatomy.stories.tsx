@@ -6,19 +6,56 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
   SheetBody,
   SheetFooter,
+  SheetClose,
 } from './sheet'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/設計規格',
   parameters: { layout: 'padded' },
+  // 範例裡的「標記為已解決」「送交複核」= 完成後跳 Toast 再關閉(同 sheet.stories.tsx 展示層);Toaster 是 app 層 Provider,放在 story 外層
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
+
+/**
+ * 元件總覽與元件檢閱器共用的任務詳情側板(同一份內容,不抄兩次)。
+ * 內容唯讀 → footer 不放「儲存」;「標記為已解決」按下 = 跳 Toast 再關閉,「關閉」= SheetClose。
+ * 畫面上不放副標(SheetDescription 還沒定義,sheet.spec.md「A11y 預設」)。
+ */
+function TaskDetailSheet({ widthClass, showFooter = true }: { widthClass?: string; showFooter?: boolean }) {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="tertiary">開啟任務詳情</Button>
+      </SheetTrigger>
+      <SheetContent side="right" className={widthClass}>
+        <SheetHeader>
+          <SheetTitle>修復付款流程 bug</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="text-body">
+          <p className="mb-3 text-fg-secondary">使用者於結帳最後一步點選「完成付款」後,頁面卡在轉圈動畫超過 30 秒,最終回到購物車且訂單未成立。重現率約 1/5,僅出現在 Safari 17。</p>
+          <p className="text-caption text-fg-muted">優先級 P1 · 影響 230 筆訂單 · 截止 2026-04-25</p>
+        </SheetBody>
+        {showFooter && (
+          <SheetFooter>
+            <SheetClose asChild>
+              <Button variant="tertiary">關閉</Button>
+            </SheetClose>
+            <SheetClose asChild>
+              <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已標記為已解決' })}>標記為已解決</Button>
+            </SheetClose>
+          </SheetFooter>
+        )}
+      </SheetContent>
+    </Sheet>
+  )
+}
 
 export const Overview: Story = {
   name: '元件總覽',
@@ -26,27 +63,9 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Sheet 基於 Radix Dialog 的 side variant——從畫面邊緣滑入的浮層面板。結構跟 Dialog 同（Header + Content + Footer），差異在位置與動畫。消費者 API 僅 side=&quot;right&quot;（detail panel、filter drawer）；top / bottom / left 為 DS 內部基建變體（見下方 Side 方向表）。</Desc>
+        <Desc>Sheet 基於 Radix Dialog 的 side variant——從畫面邊緣滑入的浮層面板。結構跟 Dialog 同（Header + Content + Footer），差異在位置與動畫。消費者 API 僅 side=&quot;right&quot;（detail panel、filter drawer）；top / bottom / left 為 DS 內部基建變體（見「Side 方向」）。</Desc>
         <div className="flex items-center gap-3 flex-wrap">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="tertiary">開啟任務詳情</Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>修復付款流程 bug</SheetTitle>
-                <SheetDescription>#PROJ-1234 · 指派給陳大明</SheetDescription>
-              </SheetHeader>
-              <SheetBody className="text-body">
-                <p className="mb-3 text-fg-secondary">使用者於結帳最後一步點選「完成付款」後,頁面卡在轉圈動畫超過 30 秒,最終回到購物車且訂單未成立。重現率約 1/5,僅出現在 Safari 17。</p>
-                <p className="text-caption text-fg-muted">優先級 P1 · 影響 230 筆訂單 · 截止 2026-04-25</p>
-              </SheetBody>
-              <SheetFooter>
-                <Button variant="tertiary">標記為已解決</Button>
-                <Button variant="primary">儲存變更</Button>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
+          <TaskDetailSheet />
         </div>
       </div>
 
@@ -57,7 +76,7 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop (SheetContent)</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
-              <tr><Td mono>side</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'right'</Td><Td>滑入方向,決定浮層位置 + 動畫</Td></tr>
+              <tr><Td mono>side</Td><Td mono>'right'</Td><Td mono>'right'</Td><Td>滑入方向,決定浮層位置 + 動畫(消費者只用 right;其他方向是 DS 內部基建)</Td></tr>
               <tr><Td mono>open / onOpenChange</Td><Td mono>boolean / (o) =&gt; void</Td><Td mono>—</Td><Td>controlled 開關(選用)——掛在 root <code>Sheet</code> 非 SheetContent</Td></tr>
               <tr><Td mono>onEscapeKeyDown</Td><Td mono>(e) =&gt; void</Td><Td mono>—</Td><Td>Esc 鍵 callback,preventDefault 阻止關閉</Td></tr>
               <tr><Td mono>onPointerDownOutside</Td><Td mono>(e) =&gt; void</Td><Td mono>—</Td><Td>點擊外部 callback,preventDefault 阻止關閉</Td></tr>
@@ -72,7 +91,6 @@ export const Overview: Story = {
 // ── Inspector ─────────────────────────────────────────────────────────────
 
 interface InspectorArgs {
-  side: 'top' | 'right' | 'bottom' | 'left'
   width: 'default' | 'sm' | 'lg'
   showFooter: boolean
 }
@@ -83,76 +101,37 @@ export const Inspector: Story = {
     docs: {
       description: {
         story:
-          '右側 Controls 切 SheetContent props 即時 render,取代 Figma inspect。切 `side` 看四個方向的滑入動畫 + 位置;切 `width` 看自訂寬度覆寫。點 trigger 觸發 Sheet,Esc 或點遮罩關閉。',
+          '右側 Controls 切 SheetContent props 即時 render,取代 Figma inspect。切 `width` 看自訂寬度覆寫;切 `showFooter` 看有沒有底部按鈕列(消費者只用 `side="right"`,不在這裡切方向)。點 trigger 觸發 Sheet,Esc 或點遮罩關閉。',
       },
     },
   },
   args: {
-    side: 'right',
     width: 'default',
     showFooter: true,
   },
   argTypes: {
-    side: {
-      control: 'radio',
-      options: ['top', 'right', 'bottom', 'left'],
-      description: 'right★default(detail drawer)/ left(mobile nav)/ top(notification)/ bottom(action sheet)',
-    },
     width: {
       control: 'radio',
       options: ['default', 'sm', 'lg'],
       description: 'default=w-3/4 + sm:max-w-md / sm=max-w-sm / lg=max-w-lg',
     },
-    showFooter: { control: 'boolean', description: '顯示 SheetFooter(含「取消 / 儲存」CTA)' },
+    showFooter: { control: 'boolean', description: '顯示 SheetFooter(含「關閉 / 標記為已解決」)' },
   },
   render: (args) => {
-    const { side, width, showFooter } = args as InspectorArgs
+    const { width, showFooter } = args as InspectorArgs
     const widthClass =
       width === 'sm' ? 'sm:max-w-sm' : width === 'lg' ? 'sm:max-w-lg' : ''
-    return (
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="tertiary">開啟任務詳情</Button>
-        </SheetTrigger>
-        <SheetContent side={side} className={widthClass}>
-          <SheetHeader>
-            <SheetTitle>修復付款流程 bug</SheetTitle>
-            <SheetDescription>#PROJ-1234 · 指派給陳大明</SheetDescription>
-          </SheetHeader>
-          <SheetBody className="text-body">
-            <p className="mb-3 text-fg-secondary">使用者於結帳最後一步點選「完成付款」後,頁面卡在轉圈動畫超過 30 秒,最終回到購物車且訂單未成立。重現率約 1/5,僅出現在 Safari 17。</p>
-            <p className="text-caption text-fg-muted">優先級 P1 · 影響 230 筆訂單 · 截止 2026-04-25</p>
-          </SheetBody>
-          {showFooter && (
-            <SheetFooter>
-              <Button variant="tertiary">標記為已解決</Button>
-              <Button variant="primary">儲存變更</Button>
-            </SheetFooter>
-          )}
-        </SheetContent>
-      </Sheet>
-    )
+    return <TaskDetailSheet widthClass={widthClass} showFooter={showFooter} />
   },
 }
 
 export const SideMatrix: Story = {
-  name: 'Side 方向 × 用途',
+  name: 'Side 方向',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <H3>Side 方向（消費者 API = right；其餘為 DS 內部基建）</H3>
-        <Desc>消費者 code 只能用 side=&quot;right&quot;。top / bottom / left 變體保留 DS 內部基建用（例：AppShell 的 Menu 放不下時的左側浮層），消費者禁止直接傳、需授權（canonical 見 sheet.tsx 檔頭「其他 side」段 + showcase AR35）。下表後三列為內部能力 + 世界級對照，供 DS contributor 參考。</Desc>
-        <div className="overflow-x-auto">
-          <table className="text-caption border-collapse">
-            <thead><tr><Th>Side</Th><Th>滑入方向</Th><Th>典型用途</Th><Th>世界級對照</Th></tr></thead>
-            <tbody>
-              <tr><Td mono>right ★消費者 default</Td><Td>從右邊</Td><Td>消費者 API：Detail panel（Jira task drawer、Linear issue detail、GitHub PR file diff drawer）、filter panel</Td><Td>Jira / Linear / Notion side panel</Td></tr>
-              <tr><Td mono>left（內部）</Td><Td>從左邊</Td><Td>DS 內部基建：AppShell 的 Menu 左側浮層（放不下時;非消費者 API）</Td><Td>Material mobile drawer、Slack mobile nav</Td></tr>
-              <tr><Td mono>top（內部）</Td><Td>從上方</Td><Td>DS 內部基建保留（非消費者 API，notification center 類）</Td><Td>iOS Control Center top pull-down</Td></tr>
-              <tr><Td mono>bottom（內部）</Td><Td>從下方</Td><Td>DS 內部基建保留（非消費者 API；mobile bottom sheet 另用專屬元件）</Td><Td>iOS Bottom Sheet、Material Bottom Sheet</Td></tr>
-            </tbody>
-          </table>
-        </div>
+        <H3>Side 方向</H3>
+        <Desc>消費者只用 side=&quot;right&quot;(detail panel、filter panel;Jira / Linear / Notion 的側邊面板都在右側)。top / bottom / left 是 DS 內部基建(例:AppShell 的 Menu 放不下時從左側滑入的浮層),消費者不傳。</Desc>
       </div>
 
       <div>
@@ -165,13 +144,14 @@ export const SideMatrix: Story = {
           <SheetContent side="right">
             <SheetHeader>
               <SheetTitle>Q1 財報</SheetTitle>
-              <SheetDescription>最後編輯：2026-04-18 17:32</SheetDescription>
             </SheetHeader>
             <SheetBody>
               <p className="text-body text-fg-secondary">本季營收 NT$4,820 萬,較上季成長 12%;毛利率 38.5%。下方附完整損益表與部門別明細,可直接在此面板註記後送交財務複核。</p>
             </SheetBody>
             <SheetFooter>
-              <Button variant="primary">儲存</Button>
+              <SheetClose asChild>
+                <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已送交財務複核' })}>送交複核</Button>
+              </SheetClose>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -186,7 +166,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Sheet 視覺 token（與 Dialog 共用基底）</H3>
-        <Desc>Sheet 和 Dialog 共用 `bg-surface-raised` + elevation-200——改其中一個必須連動另一個,不讓 modal 家族視覺漂移。容器邊框各自不同:Sheet 用較淡的 `border-divider`,Dialog 用 `border-border`。</Desc>
+        <Desc>Sheet 和 Dialog 共用 <code>bg-surface-raised</code> + elevation-200——改其中一個必須連動另一個,不讓 modal 家族視覺漂移。容器邊框各自不同:Sheet 用較淡的 <code>border-divider</code>,Dialog 用 <code>border-border</code>。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>層</Th><Th>Token</Th><Th>說明</Th></tr></thead>
@@ -212,12 +192,12 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>預設尺寸</H3>
-        <Desc>Sheet 大小依 `side` 變化：左/右 sheet 有預設寬度（響應式限制 max-w），上/下 sheet 有預設高度。consumer 可透過 className 自訂。</Desc>
+        <Desc>Sheet 大小依 <code>side</code> 變化：左/右 sheet 有預設寬度（響應式限制 max-w），上/下 sheet 有預設高度。consumer 可透過 className 自訂。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Side</Th><Th>預設尺寸</Th><Th>響應式</Th></tr></thead>
             <tbody>
-              <tr><Td mono>right / left</Td><Td mono>w-3/4（手機佔 75% 寬）</Td><Td>sm:max-w-md（桌機 448px）</Td></tr>
+              <tr><Td mono>right / left</Td><Td mono>w-3/4（視窗窄於 640px 時佔 75% 寬）</Td><Td>sm:max-w-md（640px 以上最寬 448px）</Td></tr>
               <tr><Td mono>top / bottom</Td><Td>auto（依內容）</Td><Td>—</Td></tr>
             </tbody>
           </table>
@@ -226,7 +206,7 @@ export const SizeMatrix: Story = {
 
       <div>
         <H3>覆寫寬度 / 高度</H3>
-        <Desc>{'consumer 透過 className 覆寫。例:`<SheetContent className="w-full sm:max-w-lg">` 桌機用更寬。'}</Desc>
+        <Desc>consumer 透過 className 覆寫。例:<code>{'<SheetContent className="w-full sm:max-w-lg">'}</code> 用更寬的側板。</Desc>
       </div>
     </div>
   ),
@@ -237,10 +217,10 @@ export const StateBehavior: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <H3>開啟 / 關閉</H3>
+        <H3 paragraph>開啟 / 關閉</H3>
         <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動進離場動畫（panel slide-in-from-側邊、overlay fade，兩者都 consume surfaceMotion / --motion-duration-surface 250ms，與 Dialog 遮罩同一份；sheet.tsx sheetVariants），離場鏡像；系統設定「減少動態」時不播。Modal 狀態鎖 body scroll。</Desc>
         <ul className="text-caption text-fg-muted list-disc pl-5 space-y-1">
-          <li>點擊 trigger → 開啟（slide-in from `side`）</li>
+          <li>點擊 trigger → 開啟（slide-in from <code>side</code>）</li>
           <li>點擊 overlay → 關閉（default；可用 onPointerDownOutside preventDefault 阻止）</li>
           <li>按 Esc → 關閉（default；可用 onEscapeKeyDown preventDefault 阻止）</li>
           <li>點擊 X close button → 關閉</li>
@@ -250,7 +230,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Disabled / loading / empty / error 的職責邊界</H3>
-        <Desc>Sheet 是容器,無整體狀態——內容層負責。trigger 的 disabled 由 trigger 自己管;內容的 loading / empty / error 由 consumer 在 `SheetContent` 內渲染對應 primitive（Skeleton / Empty / Alert）。</Desc>
+        <Desc>Sheet 是容器,無整體狀態——內容層負責。trigger 的 disabled 由 trigger 自己管;內容的 loading / empty / error 由 consumer 在 <code>SheetContent</code> 內渲染對應 primitive（Skeleton / Empty / Alert）。</Desc>
       </div>
     </div>
   ),
@@ -262,7 +242,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"Sheet 沿用 Radix 對話框的無障礙預設,開啟後會自動標記為對話框、把標題念給螢幕報讀器聽,並把鍵盤焦點鎖在面板內。\n\n鍵盤操作:\n\n- Tab — 焦點只在面板內循環,不會跑到背景頁面\n- Shift + Tab — 反向循環焦點\n- Esc — 關閉面板\n\n焦點:開啟時自動把焦點移進面板,關閉後還回原本的觸發按鈕;鍵盤聚焦的元素會顯示清楚的外框。\n\n驗證標準:Storybook 無障礙檢查面板不應出現嚴重問題,且全程僅用鍵盤即可操作,不需滑鼠。文字對比至少 4.5:1、介面元素對比至少 3:1(WCAG AA)。"}</p>
     </div>
   ),
