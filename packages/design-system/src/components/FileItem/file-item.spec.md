@@ -267,7 +267,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 |------|----------------|-----------|
 | **Rich + `surface=form`**(border card)| `gap-2`(8px) | card 邊框不相黏(standalone card invariant) |
 | **`surface=upload-manager`**(rich + compact,無邊框浮層面板)| `gap-0` | 縮圖↔縮圖、bar↔下一列文字仍是 tight(12px):**2026-06-03 圖五 user 校準的 12px**(rich 初版誤設 4px 後校正)不變,只是從「列間 gap」改由兩列各自的上下 `tight/2` 相加得出 —— 可點的列滑過底色上下相接,不在兩列之間留一條沒上色的縫(B12,AI 推導) |
-| **Compact + `surface=form`** | `gap-1`(4px) | 統一 — 有 status only / 無 status only / mixed 都 gap-1(2026-04-23 user 指示簡化(轉述):原條件式(全上傳中 → 0 gap)是 consumer 心智負擔 + state 轉換時 fragile,故捨棄 0-gap)|
+| **Compact + `surface=form`** | `gap-1`(4px) | 統一 — 有 status only / 無 status only / mixed 都 gap-1(2026-04-23 user 指示簡化:原條件式「全上傳中 → 0 gap」是 consumer 心智負擔 + state 轉換時 fragile,故捨棄 0-gap)|
 
 **control→list gap(FileUpload 內建 list 消費)**:dropzone / button 控制項 ↔ 第一個 FileItem 的間距 = **同上 form gap 同值**(rich card 8px / compact bg-pill 4px),由 `file-upload.tsx` 依 `fileListMode` 套用。**FileUpload 內建 list 一律 `surface=form`**(dropzone 是表單上傳框,非獨立浮層 upload manager),故不套用下方 upload-manager 的 12px / 面板 padding。
 
