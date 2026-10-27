@@ -11,8 +11,6 @@ const meta: Meta = {
         component: `
 版面間距 token 系統。定義 pattern 層級的「鬆 / 緊 / 底」間距,跟 \`--field-height\` 等元件 token 分層。
 
-完整規則:\`packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md\`
-
 **何時用 token vs Tailwind 數字 utility?**
 - pattern 結構間距(toolbar / surface header / row inside)→ token
 - 局部 fine-tune(icon 跟 label 距離,單 component 內)→ Tailwind \`gap-N\` OK
@@ -33,7 +31,7 @@ function SpaceRow({ utility, mdValue, lgValue, usage }: {
   usage: string
 }) {
   return (
-    // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
+    // @layout-space-magic-ok: token 表同質列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
     <div className="grid items-center gap-x-6 gap-y-1 border-b border-border py-4 last:border-0"
       style={{ gridTemplateColumns: '220px 80px 80px 1fr 100px' }}>
       <div>
@@ -62,7 +60,7 @@ export const Overview: Story = {
 
           <SpaceRow utility="--layout-space-tight" mdValue="12px" lgValue="16px" usage="header / footer 上下 padding;緊密 inline gap" />
           <SpaceRow utility="--layout-space-loose" mdValue="16px" lgValue="24px" usage="surface 左右 padding;tabs trigger gap;form field 間距" />
-          <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="最後內容 → action buttons 的結論留白(Dialog / Sheet body 底部;固定,不隨 density)" />
+          <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="body 收尾的結論留白(Dialog / Sheet body 底部;固定,不隨 density)" />
           <SpaceRow utility="--layout-space-viewport-inset" mdValue="48px" lgValue="48px" usage="浮層外殼 → 視窗邊的安全距離(Dialog 高度上限與最大寬度;AppShell 的 AI agent 浮層左側、Menu 浮層右側至少留這麼多;固定,不隨 density)" />
         </div>
       </TutorialSection>
@@ -74,10 +72,6 @@ export const Overview: Story = {
             <li>跨範疇 + parallel → <code>loose</code>(16/24)</li>
             <li>最後內容 → action buttons → <code>bottom</code>(48 固定);後面沒有 action 的容器底依角色走 <code>loose</code> / <code>tight</code> / 0</li>
           </TutorialList>
-
-          <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">
-            實際 CSS 值見 <code>packages/design-system/src/tokens/layoutSpace/layoutSpace.css</code>;規則 6 條(親疏判)詳 spec.md。
-          </p>
         </div>
       </TutorialSection>
     </TutorialPage>

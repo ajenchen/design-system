@@ -9,8 +9,6 @@ const meta: Meta = {
       description: {
         component: `
 字體 token 系統。token 只定義 \`font-size\` 與 \`line-height\`，\`font-weight\` 由使用端疊加。
-
-完整規則：\`packages/design-system/src/tokens/typography/typography.spec.md\`
         `,
       },
     },
@@ -25,7 +23,7 @@ type Story = StoryObj
 
 function TypeRow({ utility, meta, sample }: { utility: string; meta: string; sample: string }) {
   return (
-    // @layout-space-magic-ok: 字級表同質列(layoutSpace.spec.md:165 同質清單列)
+    // @layout-space-magic-ok: 字級表同質列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
     <div className="grid items-baseline gap-x-6 gap-y-1 border-b border-border py-4 last:border-0"
       style={{ gridTemplateColumns: '180px 1fr' }}>
       <div>
@@ -78,18 +76,18 @@ export const FontWeight: Story = {
     },
   },
   render: () => (
-    // @layout-space-magic-ok: 字重表同質列距(layoutSpace.spec.md:165 同質清單列)
+    // @layout-space-magic-ok: 字重表同質列距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
     <div className="max-w-lg space-y-1">
       {[
         { label: '（預設）font-normal', cls: 'font-normal', weight: '400' },
         { label: 'font-medium',         cls: 'font-medium', weight: '500' },
         { label: 'font-bold',           cls: 'font-bold',   weight: '700' },
       ].map(({ label, cls, weight }) => (
-        // @layout-space-magic-ok: 字重表列內(樣字 ↔ 名稱)/ 列內距(layoutSpace.spec.md:165 同質清單列)
+        // @layout-space-magic-ok: 字重表列內(樣字 ↔ 名稱)/ 列內距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
         <div key={weight} className="flex items-baseline gap-6 border-b border-border py-3 last:border-0">
           <div className="w-44 shrink-0">
             <code className="text-caption font-medium text-fg-secondary">{label}</code>
-            {/* @layout-space-magic-ok: 樣字 ↔ 字重名行內 8px(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 樣字 ↔ 字重名行內 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
             <span className="ml-2 text-caption text-fg-muted">{weight}</span>
           </div>
           <p className={`text-body ${cls}`}>

@@ -11,8 +11,6 @@ const meta: Meta = {
         component: `
 陰影系統。兩個層級對應兩種「浮起高度」，用 CSS 變數 \`box-shadow\` 實現。Light / dark mode 自動切換。
 
-完整規則：\`packages/design-system/src/tokens/elevation/elevation.spec.md\`
-
 **⚠️ \`--elevation-200\` 的容器必須搭配 \`bg-surface-raised\`（不透明）。**
         `,
       },
@@ -34,7 +32,7 @@ export const Overview: Story = {
     <TutorialPage>
       <TutorialSection title="elevation-100 — Card">
         {/* 樣本卡寬 224px:卡內距吃 loose(lg 24px)後,最長的 token 名「--elevation-200-hover」仍放得下一行(寬 192px 時 lg 會在「-hover」前斷行) */}
-        {/* @layout-space-magic-ok: 並列陰影樣本卡之間 32px = elevation-200 模糊半徑(primitives.css:248)的留白(layoutSpace.spec.md:167 視覺平衡) */}
+        {/* @layout-space-magic-ok: 並列陰影樣本卡之間 32px = elevation-200 模糊半徑(primitives.css:248)的留白 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <div className="flex flex-wrap gap-8">
           <div
             className="flex h-24 w-56 flex-col items-start justify-end rounded-md border border-border bg-surface p-[var(--layout-space-loose)]"
@@ -54,7 +52,7 @@ export const Overview: Story = {
       </TutorialSection>
 
       <TutorialSection title="elevation-200 — Modal / Popover / Dropdown">
-        {/* @layout-space-magic-ok: 並列陰影樣本卡之間 32px = elevation-200 模糊半徑(primitives.css:248)的留白(layoutSpace.spec.md:167 視覺平衡) */}
+        {/* @layout-space-magic-ok: 並列陰影樣本卡之間 32px = elevation-200 模糊半徑(primitives.css:248)的留白 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <div className="flex flex-wrap gap-8">
           <div
             className="flex h-24 w-56 flex-col items-start justify-end rounded-lg border border-border bg-surface-raised p-[var(--layout-space-loose)]"
