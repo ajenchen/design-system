@@ -525,47 +525,23 @@ export const RowAutoHeight: Story = {
 // 「預設空狀態」pane = 「自訂空狀態」的對照基線;Empty primitive 消費教學 canonical → anatomy.EmptyState,此處不重複教學
 export const EmptyState: Story = {
   name: '空狀態',
-  render: function EmptyStateStory() {
-    // 自訂空狀態的「下一步」放在 Empty 自己的 action 槽(empty.spec.md「Action」),按了真的開新增表單、送出後列就出現
-    //(之前說明寫「點擊上方『新增』」,畫面上根本沒有那顆鈕)
-    const [rows, setRows] = React.useState<Product[]>([])
-    const [creating, setCreating] = React.useState(false)
-    return (
-      <>
-        <Toaster />
-        <div className={EXAMPLE_STACK}>
-          <ExampleSection title="預設空狀態">
-            <DataTable columns={baseColumns} data={[]} />
-          </ExampleSection>
-          <ExampleSection title="自訂空狀態">
-            <DataTable
-              columns={baseColumns}
-              data={rows}
-              emptyState={
-                <Empty
-                  title="尚無商品"
-                  description="新增第一個商品,開始管理庫存。"
-                  action={<Button variant="primary" startIcon={Plus} onClick={() => setCreating(true)}>新增商品</Button>}
-                />
-              }
-            />
-          </ExampleSection>
-        </div>
-        <NameFormDialog
-          open={creating}
-          onOpenChange={setCreating}
-          title="新增商品"
-          label="商品名稱"
-          placeholder="例:無線藍牙耳機"
-          submitLabel="新增"
-          onSubmit={(name) => {
-            setRows((rs) => [...rs, { ...sampleData[0], sku: `PRD-${String(rs.length + 101).padStart(3, '0')}`, name }])
-            toast({ variant: 'success', title: '已新增商品' })
-          }}
+  render: () => (
+    // 自訂空狀態只換標題與說明,說明不指向畫面上不存在的動作(之前寫「點擊上方『新增』」,畫面上根本沒有那顆鈕)。
+    // 不在 emptyState 裡放按鈕:空狀態畫在 role="table" 裡面、不在任何列 / 格之內,放可互動元素 axe 判
+    // aria-required-children(critical,2026-10-28 實測)—— 要放「新增」得先把空狀態移出表格語意,那是元件的事,記在 report。
+    <div className={EXAMPLE_STACK}>
+      <ExampleSection title="預設空狀態">
+        <DataTable columns={baseColumns} data={[]} />
+      </ExampleSection>
+      <ExampleSection title="自訂空狀態">
+        <DataTable
+          columns={baseColumns}
+          data={[]}
+          emptyState={<Empty title="尚無商品" description="還沒有任何商品,新增的商品會列在這裡。" />}
         />
-      </>
-    )
-  },
+      </ExampleSection>
+    </div>
+  ),
 }
 
 /* ── Container 高度模式 — height prop(table 容器約束) ── */

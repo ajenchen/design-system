@@ -82,7 +82,7 @@ const OpenViewer: React.FC<{
 // 定義在模組層:元件函式定義在 render() 裡會每次 setState 都換身分、整棵樹卸載重掛(2026-09-17 全 DS 掃描抓到的同一類)。
 const InspectorControl = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex items-center gap-2">
-    <span className="font-mono text-caption text-fg-muted w-28 shrink-0">{label}</span>
+    <span className="font-mono text-caption w-28 shrink-0">{label}</span>
     {children}
   </div>
 )
