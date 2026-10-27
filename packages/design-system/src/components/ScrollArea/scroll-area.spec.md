@@ -75,7 +75,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 |------|-------|----|
 | Scrollbar 寬度 | 固定 10px(`w-2.5` / `h-2.5`;ScrollArea 自繪的 Radix 拇指) | 跨 size 不變——scrollbar 是功能性元件,不隨內容尺寸變化。**不含 DataTable**(原生捲軸,見下段) |
 | Thumb 邊緣 inset | 1px(實作細節見 `.tsx`) | thumb 與容器邊緣保留 1px 視覺 inset,不貼死邊界 |
-| Track | 透明(無 bg) | overlay 浮層,不搶視覺 |
+| Track | 透明(無 bg),不接指標 | overlay 浮層,不搶視覺,也不搶點擊:軌道蓋到的內容照常點得到、滑過照常變(見「A11y 預設」的「Pointer 支援」) |
 | Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias,與 DataTable **原生**捲軸的 `scrollbar-color` 共享同一組顏色 token(DataTable 沒有自繪 / fake scrollbar —— 原句「fake scrollbar」2026-09-05 更正),避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
 | Thumb radius | `rounded-full` | 圓形 thumb 在垂直／水平方向都保持同一端點幾何 |
 | 過渡 | `transition-colors` | 色彩變化平滑,不做尺寸動畫 |
@@ -103,7 +103,7 @@ Radix primitive + 本 DS a11y 橋接:
 - **鍵盤捲動**:本 DS 在 Viewport 加 `tabIndex={0}`(預設)使其可被鍵盤聚焦(Radix 不自動把 scroll container 標 focusable,Safari 尤其需要;此即 axe `scrollable-region-focusable` fix)。聚焦後 `ArrowUp/Down/Left/Right` / `PageUp/Down` / `Home/End` 捲動為瀏覽器原生行為,非 Radix 提供。**`viewportTabIndex={-1}` opt-out(2026-07-14)**:內容已有自帶 focusable + 鍵盤處理的元素(如 TimePicker `role="listbox"` `tabIndex={0}`)時傳 `-1`,消除「Viewport+內容雙 tab stop、焦點落 Viewport 時方向鍵觸發原生捲動非元件行為」;axe 由內部 focusable 內容滿足。**`viewportTabIndex={null}` composite opt-out(2026-07-31)**:ScrollArea 被 `role="menu"` 等 ARIA composite 當純結構 wrapper、鍵盤與 focus 由其 item family own 時,完全省略 viewport `tabindex`;`-1` 仍會留下 `div[tabindex]`,不能滿足 composite 的 required-children 結構
 - **Focus 可見**:聚焦的 Viewport 顯示 DS 焦點框(`focus-visible:focus-ring-inset`,往內 2px),非瀏覽器原生 focus ring(2026-09-24 訂正,原 `focus-visible:outline-ring` 是已退役的手寫 outline 寫法,`scroll-area.tsx:69` 實為 `focus-ring-inset`)
 - **Scrollbar 非 tab stop**:scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)
-- **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)
+- **Pointer 支援**:thumb 可拖曳;滾輪在整個捲動區(含軌道上)都捲。**軌道與 Corner 不接指標**(`pointer-events: none`,只有 thumb 接),所以不提供 Radix 預設的「點軌道,thumb 中心跳到點的位置」:軌道是透明的,接點擊等於在內容上蓋一條看不見、沒有回饋的帶子,底下的列鈕點不到、滑過不變、不開 Tooltip —— 違反 `ds-canonical/references/hit-area-canonical.md`「一-4 細則」(控件的懸停回饋形狀 ≡ 命中區;捲軸的懸停回饋只有 thumb)。2026-10-28 由 Sidebar 細列捲軸實測發現(細列列鈕右側約 10px 被軌道接走),全 DS ScrollArea 同一處改
 
 本元件已內建 `tabIndex`(預設 0;`viewportTabIndex={-1}` / `{null}` 依上述兩種 owner 情境 opt-out)+ focus ring(滿足 axe `scrollable-region-focusable`)。但 Viewport 預設**無 `role` / accessible name**——**若 scroll 區域有具體語意(如「留言列表」「程式碼區塊」),consumer 應提供 `aria-label`**,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。(2026-05-31 #31:修正原「consumer 無需額外處理 a11y」過度宣稱)
 
