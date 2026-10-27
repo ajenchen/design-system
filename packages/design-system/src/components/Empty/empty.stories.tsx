@@ -1,9 +1,10 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { SearchX, Lock, Inbox, Search } from 'lucide-react'
+import { SearchX, Lock, Inbox, Search, X } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldError, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
@@ -28,7 +29,10 @@ export default meta
 type Story = StoryObj<typeof Empty>
 
 // 每一則的按鈕都做它說的那件事(稽核 L020:清除篩選 → 清單恢復、建立 → 開 Dialog;user 2026-09-08 F-S2 看得到的按鈕都要能動)。
-// 前兩則放在 Empty 真正的住處 —— DataTable 的空狀態(empty.spec.md「現有消費者」DataTable 列,emptyState 收完整的 Empty)。
+// 前兩則放在 Empty 真正的住處 —— DataTable 的空狀態(empty.spec.md「現有消費者」DataTable 列)。
+// 動作放在表格上方(搜尋框的清除鈕、工具列的「建立任務」),空狀態只寫說明 —— 同 DataTable 設計原則「空 / 錯誤 / 載入中的對應元件」
+//(emptyState = Empty + 「點擊上方「新增商品」開始建立第一筆」)。DataTable 空表時 Empty 是表格角色的直接子代,裡面放按鈕會被 axe
+// aria-required-children 判成不合法的子代(data-table.spec.md「空表例外:Empty 塊非 row」)。
 
 /* ── 搜尋無結果:訂單表搜客戶,清除搜尋 → 清單回來 ─────────────────────────── */
 function OrderSearch() {
@@ -38,7 +42,16 @@ function OrderSearch() {
     // 搜尋框 → 表格 = tight(搜尋的值驅動下面的清單 = functional 交互,layoutSpace.spec.md「具體推導 walkthrough」範例 2)
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
       <div className="max-w-xs">
-        <Input size="sm" aria-label="搜尋客戶" placeholder="搜尋客戶" startIcon={Search} value={query} onChange={(e) => setQuery(e.target.value)} />
+        {/* 清除鈕 = Input 的 endAction(input.spec.md「清除內容(有值時才顯示)」) */}
+        <Input
+          size="sm"
+          aria-label="搜尋客戶"
+          placeholder="搜尋客戶"
+          startIcon={Search}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
+        />
       </div>
       <DataTable
         columns={orderColumns}
@@ -49,8 +62,7 @@ function OrderSearch() {
           <Empty
             icon={SearchX}
             title="找不到相符的訂單"
-            description="試試其他客戶名稱,或清除搜尋看全部訂單"
-            action={<Button variant="tertiary" onClick={() => setQuery('')}>清除搜尋</Button>}
+            description="試試其他客戶名稱,或清除搜尋框看全部訂單"
           />
         }
       />
@@ -87,19 +99,13 @@ function SprintBacklog() {
     if (next) form.reset()
     setOpen(next)
   }
-  // 建立第一筆之後,開對話框的那顆鈕跟著空狀態一起消失 —— 焦點改交給表格的捲動區(有資料時它是 Tab 停靠點),不掉到 <body>
-  //(keyboard-model-canonical.md:焦點不可因 DOM 卸載掉到 body)。空狀態還在時照 DialogContent 預設還給那顆鈕。
-  const tableRef = React.useRef<HTMLDivElement>(null)
-  const ctaRef = React.useRef<HTMLButtonElement>(null)
-  const focusTableIfCtaGone = (e: Event) => {
-    if (ctaRef.current?.isConnected) return
-    const region = tableRef.current?.querySelector<HTMLElement>('[tabindex="0"]')
-    if (!region) return
-    e.preventDefault()
-    region.focus()
-  }
   return (
-    <div ref={tableRef} className="max-w-xl">
+    // 工具列 → 表格 = tight(工具列的動作直接作用在這張表 = functional 交互,layoutSpace.spec.md「具體推導 walkthrough」toolbar → table)
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
+      {/* 這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md「對齊方向的決定」) */}
+      <ButtonGroup>
+        <Button variant="primary" onClick={() => handleOpenChange(true)}>建立任務</Button>
+      </ButtonGroup>
       <DataTable
         columns={TASK_COLUMNS}
         data={tasks}
@@ -109,13 +115,12 @@ function SprintBacklog() {
           <Empty
             icon={Inbox}
             title="這個 Sprint 還沒有任務"
-            description="從 backlog 拖拉任務進來,或直接建立新任務"
-            action={<Button ref={ctaRef} variant="primary" onClick={() => handleOpenChange(true)}>建立任務</Button>}
+            description="從 backlog 拖拉任務進來,或點上方「建立任務」"
           />
         }
       />
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent height="hug" onCloseAutoFocus={focusTableIfCtaGone}>
+        <DialogContent height="hug">
           <DialogHeader>
             <DialogTitle>建立任務</DialogTitle>
           </DialogHeader>
