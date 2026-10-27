@@ -171,7 +171,9 @@ const PENDING_ORDER_COLUMNS: DataTableProps<PendingOrder>['columns'] = [
 function DashboardPage() {
   const titleId = useId()
   return (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+    // 頂:chrome header → 第一個元素(區段標題)= tight;底:最後是有框的 DataTable = loose
+    //(DS `layoutSpace.spec.md` 規則 2 / 規則 4「bounded region → 容器底」)
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
       {/* 區段標題(+ 說明)→ 它底下的表格 = loose(DS `layoutSpace.spec.md` 規則 3:標題(+ 說明)→ 它底下的並列內容) */}
       <section className="flex flex-col gap-[var(--layout-space-loose)]">
         {/* 標題 ↔ 自己的說明 = 2px(DS `item-anatomy.spec.md`「Label ↔ Desc 間距」的 token) */}

@@ -144,7 +144,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 11,
-      "hash": "sha256:7bd5d7860569425e6e830868f7948f2a1db7af306eb36d0be734067fbb27f0d1",
+      "hash": "sha256:ee132c8a64c06bd6c284ad3ef02319427d8983aa29d9d07d5e4a39d42acfe207",
       "id": "canonical-product-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
