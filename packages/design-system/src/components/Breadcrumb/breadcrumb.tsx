@@ -6,6 +6,7 @@ import { ChevronRight, MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -81,12 +82,15 @@ const BREADCRUMB_ICON_SIZE: Record<BreadcrumbSize, number> = {
 
 // ── Breadcrumb (nav root) ────────────────────────────────────────────────────
 
+// 讀屏名稱:consumer 的 aria-label → I18nProvider 的 `breadcrumb.navigation` → DS 預設「麵包屑」
+// (lib/i18n/README.md「Fallback chain」;user F1 預設語言是中文、WM 要能換英文。原本寫死英文 "Breadcrumb")
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<'nav'>
->(({ ...props }, ref) => (
-  <nav ref={ref} aria-label="Breadcrumb" {...props} />
-))
+>(({ 'aria-label': ariaLabel, ...props }, ref) => {
+  const { t } = useI18n()
+  return <nav ref={ref} aria-label={ariaLabel ?? t('breadcrumb', 'navigation', '麵包屑') /* i18n-allow: DS 預設 */} {...props} />
+})
 Breadcrumb.displayName = 'Breadcrumb'
 
 // ── BreadcrumbList (ol) ──────────────────────────────────────────────────────
@@ -526,13 +530,15 @@ BreadcrumbSeparator.displayName = 'BreadcrumbSeparator'
 type BreadcrumbEllipsisProps = Omit<React.ComponentPropsWithoutRef<typeof ItemInlineActionButton>, 'icon' | 'size'>
 
 const BreadcrumbEllipsis = React.forwardRef<HTMLButtonElement, BreadcrumbEllipsisProps>(
-  ({ 'aria-label': ariaLabel = '顯示折疊路徑' /* i18n-allow: DS default; consumer override via aria-label prop */, ...props }, ref) => {
+  ({ 'aria-label': ariaLabel, ...props }, ref) => {
+    // 讀屏名稱同上:aria-label → I18nProvider `breadcrumb.showCollapsed` → DS 預設「顯示折疊路徑」
+    const { t } = useI18n()
     return (
       <ItemInlineActionButton
         ref={ref}
         icon={MoreHorizontal}
         size="md"  // Breadcrumb 不在 RowSizeProvider 樹內,固定 md(16px icon + 18px hover bg,對齊 inline-action.spec.md 尺寸表)
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? t('breadcrumb', 'showCollapsed', '顯示折疊路徑') /* i18n-allow: DS 預設 */}
         overlayTrigger
         {...props}
       />

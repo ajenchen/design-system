@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import { Home } from 'lucide-react'
+import { Home, Search } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -17,8 +17,7 @@ import {
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
-import { Button } from '@/design-system/components/Button/button'
-import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Input } from '@/design-system/components/Input/input'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -193,7 +192,7 @@ export const LastItemRule: Story = {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>元件庫（目前頁）</BreadcrumbPage>
+              <BreadcrumbPage>元件庫</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -211,7 +210,7 @@ export const LastItemRule: Story = {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="#">元件庫（錯：目前頁卻做成 link）</BreadcrumbLink>
+              <BreadcrumbLink href="#">元件庫</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -333,13 +332,11 @@ export const ScopeRule: Story = {
               <BreadcrumbItem><BreadcrumbPage>Design System</BreadcrumbPage></BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          {/* 反例要教的只有「按鈕塞進麵包屑」這一件事;按鈕本身照 action-bar.spec.md:121 排(靠左 → primary 最左,2026-10-20 XF-01) */}
-          <ButtonGroup>
-            <Button variant="primary" size="sm">新增元件</Button>
-            <Button variant="tertiary" size="sm">邀請成員</Button>
-          </ButtonGroup>
+          {/* 反例要教的只有「功能塞進麵包屑那一列」這一件事。原本塞兩顆按了沒反應的按鈕(「新增元件」「邀請成員」);
+              換成本身就能用的搜尋框(打得進字),反例照樣成立、畫面上不留死按鈕(F-S2;範例依據 Q-specimen 判可推導) */}
+          <Input size="sm" placeholder="搜尋元件" aria-label="搜尋元件" startIcon={Search} className="w-48" />
         </div>
-        <ExampleCaption warn>↑ 按鈕應該放 page header / action bar,不塞進 breadcrumb</ExampleCaption>
+        <ExampleCaption warn>↑ 搜尋與按鈕應該放 page header / action bar,不塞進 breadcrumb</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

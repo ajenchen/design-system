@@ -27,6 +27,7 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { cn } from '@/lib/utils'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import {
   PANEL_PLACEMENT_ORDER,
   deriveLayout,
@@ -183,8 +184,11 @@ const TOKEN_GUESS: TokenWidths = { rail: 48, edgeGap: 48, sidebarMin: 240, sideb
 // ── Skip-to-main link(a11y WCAG 2.4.1)───────────────────────────────────────
 
 function SkipToMain() {
+  // 讀屏名稱與連結字:I18nProvider 的 `app-shell.skipLinks` / `app-shell.skipToMain` → DS 預設中文
+  // (lib/i18n/README.md「Fallback chain」;user F1 預設語言是中文、WM 要能換英文。原本寫死英文 "Skip links" / "Skip to main content")
+  const { t } = useI18n()
   return (
-    <nav aria-label="Skip links">
+    <nav aria-label={t('app-shell', 'skipLinks', '跳過連結') /* i18n-allow: DS 預設 */}>
       <a
         href="#app-shell-main"
         className={cn(
@@ -196,7 +200,7 @@ function SkipToMain() {
           // 原本的 ring-primary 與 --ring 同值(semantic.css:337 `--ring: var(--primary)`),遷移零視覺差。
         )}
       >
-        Skip to main content
+        {t('app-shell', 'skipToMain', '跳到主要內容') /* i18n-allow: DS 預設 */}
       </a>
     </nav>
   )
@@ -779,6 +783,8 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
     const panel = useAppShellPanel('right', { contentType, widthRange: range, defaultWidth }, { onWidthCommit })
     // 把手以 aria-controls 指向自己調整的這一欄(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`;Menu 的把手早已如此)
     const asideId = React.useId()
+    // × 的讀屏名稱:I18nProvider 的 `app-shell.closePanel` → DS 預設「關閉」(同 Dialog / Sheet / Popover 標題列 ×,lib/i18n/README.md「Fallback chain」)
+    const { t } = useI18n()
     if (!panel || panel.display !== 'side-by-side' || panel.width === undefined || !panel.range) return null
 
     return (
@@ -821,7 +827,7 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
             dismiss
             size="sm"
             startIcon={XIcon}
-            aria-label="關閉"
+            aria-label={t('app-shell', 'closePanel', '關閉') /* i18n-allow: DS 預設 */}
             onClick={() => setAsideOpen(false)}
           />
         </ChromeHeader>
