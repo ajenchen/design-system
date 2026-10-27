@@ -37,6 +37,7 @@ import {
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 // 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
 // 供 header AccountMenu demo wrapper 與 footer UserFooter 共用(M17 單一 SSOT)。
 import {
@@ -325,5 +326,22 @@ export function PageHeader({
       {includeSidebarTrigger && <SidebarTrigger />}
       <h1 className="text-body-lg font-medium flex-1 truncate">{title}</h1>
     </ChromeHeader>
+  )
+}
+
+/**
+ * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
+ * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
+ */
+export function InsightsView() {
+  return (
+    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+      <DescriptionList orientation="horizontal" divided>
+        <DescriptionItem label="Sprint">Sprint 42(5/18 – 5/29)</DescriptionItem>
+        <DescriptionItem label="已完成">12 / 18 筆議題</DescriptionItem>
+        <DescriptionItem label="燃盡進度">67%,比計畫慢 1 天</DescriptionItem>
+        <DescriptionItem label="P0 未處理">ENG-1042、ENG-1041</DescriptionItem>
+      </DescriptionList>
+    </div>
   )
 }

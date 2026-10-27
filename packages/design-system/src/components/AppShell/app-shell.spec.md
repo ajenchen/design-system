@@ -72,7 +72,7 @@ benchmark:
 Sub-component:`<AppShellAside title={...} contentType={...} widthRange={{ min, initial, max }} defaultWidth? onWidthCommit?>` —— 寬度 = 這種內容類型的最小 / 初始 / 最大(「版面規則」§1;同一 `contentType` 的不同資料共用設定與寬度紀錄)。**title prop required**(= `<aside aria-label>`)。2026-10-14 前的 `width: number | { md, xl }` 依視窗挑寬與 240 / 640 硬夾隨「版面規則」退場(破壞性)。Menu(`<Sidebar widthRange contentType>`)與 AI agent(`<AgentPanel widthRange contentType>`)的寬度設定同一形狀、同一個名字 `widthRange`(不叫 `width`:AgentPanel 的 `width` 早已是「受控寬度紀錄」);`defaultWidth` / `onWidthCommit` = 產品自存紀錄的還原與接收(§7)。`mainMinWidth`、`contentType`、`widthRange`、`agent` slot、`requestAside`、`navigateFromAgent` 是 2026-10-14 為落地「版面規則」新增的 API(AI 建議的形狀,工程決定)。
 `portalContainer`(2026-10-15,工程決定;r1b 複驗 F10):AppShell 的正常用法是撐滿視窗,這時省略、Menu 浮層照 Sheet 預設傳送到 body;AppShell 放在比視窗小、帶 transform 的容器裡(story 的模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,Menu 浮層與遮罩以它為準、不跑出容器 —— AI agent 浮層本來就以 AppShell 根節點定位(§9)。與 `DialogContent` / `SheetContent` 的 `portalContainer` 同名同義(`../Dialog/dialog.spec.md`)。
 
-**Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose py-tight` 的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`(範例 `app-shell.stories.tsx` 即如此)。
+**Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose pt-tight pb-bottom`(`../Dialog/dialog.tsx` DialogBody、`../Sheet/sheet.tsx` SheetBody)的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`(範例 `app-shell.stories.tsx` 即如此)。
 
 **Aside 開關控制(刻意單向,2026-07-17 user 拍板)**:`asideOpen` / `onAsideOpenChange` 提供完整 **controlled** 路徑;uncontrolled fallback 初值**刻意固定關閉**(`useState(false)`),**不提供 `defaultAsideOpen`**。理由:側邊詳情面板實務上幾乎一定由 app 的 route / 選取狀態驅動,初值固定關閉是合理預設,額外加 `defaultAsideOpen` 偏 YAGNI。對齊 Dim 26 dual-mode canonical 的「刻意單一模式 → 補 rationale」例外機制。未來真有 uncontrolled 初值需求再加(additive,不破壞)。
 
@@ -399,7 +399,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | `sidebar` | **無自帶 landmark** — `<Sidebar>` 渲染 `<div>`(三 collapsible 分支皆然,per `sidebar.spec.md`「A11y 預設」)| consumer 需自行用 `<nav aria-label="Main">` 包住 `<Sidebar>` 才有 navigation landmark;AppShell / Sidebar 皆**不**自帶 `<nav>` / `role="navigation"` |
 | `aside` | `<aside aria-label={title}>` | title required |
 | `children`(main) | `<main>` | `role="main"`(implicit)+ skip-to-main 跳轉 anchor |
-| skip link | `<nav aria-label="Skip links">` 包 skip-to-main `<a>`(2026-07-30 WM patch 收編:裸 `<a>` 落在所有 landmark 之外 → axe region violation)| `role="navigation"`(implicit;WebAIM skip-navigation idiom)|
+| skip link | `<nav aria-label="跳過連結">` 包 skip-to-main `<a>`(連結字「跳到主要內容」;兩者可經 I18nProvider `app-shell.skipLinks` / `app-shell.skipToMain` 換字)(2026-07-30 WM patch 收編:裸 `<a>` 落在所有 landmark 之外 → axe region violation)| `role="navigation"`(implicit;WebAIM skip-navigation idiom)|
 
 **W3C ARIA in HTML banner rule(精準 quote)**:`<header>` element 在 `<body>` direct context = `role="banner"` implicit;若 `<header>` 是 `<main>` / `<nav>` / `<article>` / `<section>` / `<aside>` descendant,則 **NOT** banner role(W3C HTML AAM spec)。
 
