@@ -575,45 +575,10 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
   return (
     <div className="flex h-dvh flex-col p-[var(--layout-space-loose)]">
       {/* 畫布左右各 1px 邊框:外框寬 = frameWidth + 2,畫布(= 這個瀏覽器視窗)剛好 frameWidth */}
-      <FitToWidth width={frameWidth + 2}>
+      <div className="flex min-h-0 flex-1 flex-col" style={{ width: frameWidth + 2 }}>
         <SimulatedBrowser url={`/${activeId}`} height="fill" canvasRef={setCanvas} toolbarRef={toolbarRef}>
           {shell}
         </SimulatedBrowser>
-      </FitToWidth>
-    </div>
-  )
-}
-
-/**
- * 固定寬的模擬瀏覽器放不下時,整個外框等比縮小到剛好放得下(只會縮、不會放大)—— 文件頁的故事區只有約 1000px,
- * 「任務助理放不下時」(1100)「Menu 放不下時」(1000)兩則原本要往右捲 120 / 20px 才看得到右緣(ssot「只知會」① / B-24 丙:
- * 文件頁也進小框、縮小顯示;示範的寬度與算式不變)。放得下時(單則 story 頁)不套任何 transform,畫面與原本相同。
- * 縮放用 transform,版面量的是縮放前的寬(AppShell 照 frameWidth 排版),所以示範的「視窗只有這麼寬」不受影響。
- */
-function FitToWidth({ width, children }: { width: number; children: React.ReactNode }) {
-  const hostRef = React.useRef<HTMLDivElement>(null)
-  const [box, setBox] = React.useState<{ w: number; h: number } | null>(null)
-  React.useLayoutEffect(() => {
-    const host = hostRef.current
-    if (!host) return
-    const measure = () => setBox({ w: host.clientWidth, h: host.clientHeight })
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(host)
-    return () => ro.disconnect()
-  }, [])
-  const scale = box && box.w < width ? box.w / width : 1
-  return (
-    <div ref={hostRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div
-        className="flex min-h-0 flex-col"
-        style={
-          scale < 1 && box
-            ? { width, height: box.h / scale, transform: `scale(${scale})`, transformOrigin: 'top left' }
-            : { width, flex: '1 1 0%' }
-        }
-      >
-        {children}
       </div>
     </div>
   )
@@ -651,7 +616,7 @@ export const AgentOverlay: Story = {
   parameters: {
     docs: {
       story: openOverlayDocsStory('720px'),
-      description: { story: '模擬瀏覽器的視窗寬 1100px:Main 最小 600 + 細列 48 + 詳情最小 320 之後只剩 132px,放不下任務助理的最小寬 360,任務助理改成蓋在右側的浮層(寬度照紀錄、左側至少留 48px、底下鋪遮罩),點遮罩、按 × 或在面板裡按 Esc 都會收起。點回覆裡的「Insights」,Main 換到 Insights 頁、浮層自己收起。文件頁比 1100 窄,這一則等比縮小顯示。' },
+      description: { story: '模擬瀏覽器的視窗寬 1100px:Main 最小 600 + 細列 48 + 詳情最小 320 之後只剩 132px,放不下任務助理的最小寬 360,任務助理改成蓋在右側的浮層(寬度照紀錄、左側至少留 48px、底下鋪遮罩),點遮罩、按 × 或在面板裡按 Esc 都會收起。點回覆裡的「Insights」,Main 換到 Insights 頁、浮層自己收起。' },
     },
   },
   render: () => <FourRegionShell frameWidth={1100} agent={(navigate, keep) => <IssueAssistant onOpenInsights={() => navigate('insights')} persistentElements={keep} />} />,
@@ -666,7 +631,7 @@ export const AgentOverlay: Story = {
 export const MenuOverlay: Story = {
   name: 'Menu 放不下時 — 按開關出左側浮層',
   parameters: {
-    docs: { description: { story: '模擬瀏覽器的視窗寬 1000px、詳情開著:Main 600 + 詳情 320 之後剩 80px,Menu(最小 240)放不下,收成細列。按開關(或 ⌘B)叫出左側浮層:蓋住細列、寬度照紀錄、可拖寬、右側至少留 48px;再按開關、按 Esc 或點浮層外就收回細列。文件頁比 1000 窄,這一則等比縮小顯示。' } },
+    docs: { description: { story: '模擬瀏覽器的視窗寬 1000px、詳情開著:Main 600 + 詳情 320 之後剩 80px,Menu(最小 240)放不下,收成細列。按開關(或 ⌘B)叫出左側浮層:蓋住細列、寬度照紀錄、可拖寬、右側至少留 48px;再按開關、按 Esc 或點浮層外就收回細列。' } },
   },
   render: () => <FourRegionShell frameWidth={1000} />,
   play: async ({ canvasElement }) => {
