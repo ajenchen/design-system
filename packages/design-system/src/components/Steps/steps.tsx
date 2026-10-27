@@ -95,6 +95,7 @@ interface StepsContextValue {
   errorValues: Set<string>
   reachableValues: Set<string>
   linear: boolean
+  readOnly: boolean
   size: StepsSize
   orientation: StepsOrientation
   setValue: (value: string) => void
@@ -212,6 +213,13 @@ export interface StepsProps
   completedValues?: string[]
   errorValues?: string[]
   linear?: boolean
+  /**
+   * 純追蹤:只顯示進度,使用者不能點步驟換到那一步(物流追蹤、文件裡的進度示意)。
+   * 開啟時每一步的 header 都不是按鈕 —— 不進 Tab 序、一般箭頭游標、不呼叫 `onValueChange`;狀態視覺不變(仍照 linear / completedValues 推導)。
+   * 「沒傳 `onValueChange`」不代表純追蹤,要明說(steps.spec.md「Linear vs Non-linear」;user 2026-10-21 F7「好，照你建議」)。
+   * @default false
+   */
+  readOnly?: boolean
   size?: StepsSize
   orientation?: StepsOrientation
 }
@@ -226,6 +234,7 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       completedValues = [],
       errorValues = [],
       linear = true,
+      readOnly = false,
       size = 'md',
       orientation = 'vertical',
       className,
@@ -275,12 +284,13 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
         errorValues: new Set(errorValues),
         reachableValues,
         linear,
+        readOnly,
         size,
         orientation,
         setValue,
         total: stepCount,
       }),
-      [value, completedValues, errorValues, reachableValues, linear, size, orientation, setValue, stepCount],
+      [value, completedValues, errorValues, reachableValues, linear, readOnly, size, orientation, setValue, stepCount],
     )
 
     // Interleave horizontal connectors between items
@@ -375,8 +385,9 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
       stateOverride,
     )
     const focused = value === steps.value
-    const locked = isLocked(state, steps.linear, disabled)
-    const clickable = isClickable(state, steps.linear, disabled, focused)
+    // 純追蹤(readOnly):每一步都不可點、也都不是「鎖住」—— 沒有任何一步是使用者可以去的,禁止游標無從談起
+    const locked = !steps.readOnly && isLocked(state, steps.linear, disabled)
+    const clickable = !steps.readOnly && isClickable(state, steps.linear, disabled, focused)
 
     const activate = React.useCallback(() => {
       if (!clickable) return
@@ -396,6 +407,10 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
     }), [value, state, focused, disabled, clickable, locked, __isLast, activate])
 
     const isVertical = steps.orientation === 'vertical'
+    // 這一步底下現在有沒有畫出內容區(垂直 + 目前那一步 + 寫了 <StepContent>;同 VerticalLayout 的 showContent)
+    const showsContent = isVertical && focused && React.Children.toArray(children).some(
+      (child) => React.isValidElement(child) && child.type === StepContent,
+    )
 
     return (
       <StepItemContext.Provider value={itemCtx}>
@@ -409,7 +424,10 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
           aria-disabled={disabled || undefined}
           className={cn(
             stepItemVariants({ orientation: steps.orientation, size: steps.size }),
-            isVertical && !__isLast && 'pb-6',
+            // 這一步 → 下一步(非末項):平常 24(pb-6,同連接線地板 CONNECTOR_MIN_PX);展開內容的那一步 = bottom 48 ——
+            // 這一步的內容就是一塊 body 的收尾(layoutSpace.spec.md token 表 `--layout-space-bottom`「結論留白」;user 2026-10-21 A3「照你建議」= 甲)。
+            // 最後一步不給,交給外層容器(否則放在 Dialog 裡會跟 body 底的 48 疊成 96)。閘 steps-content-follows-current (4)
+            isVertical && !__isLast && (showsContent ? 'pb-[var(--layout-space-bottom)]' : 'pb-6'),
             // 禁止游標只給「鎖住」的步;目前那一步不可點但不是鎖住(isClickable 註解),而且它的內容區就在這個 li 裡,
             // 若用 !clickable 判,表單欄位上方會出現禁止符號(待辦總帳 N44)
             locked && 'cursor-not-allowed',
@@ -462,8 +480,8 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
   const item = useStepItemContext()
   const steps = useStepsContext()
   const index = React.useContext(StepIndexContext)
-  // 「你就在這裡」= 不可點但不是鎖住(目前那一步;見 isClickable)
-  const isHere = !item.clickable && !item.locked
+  // 「你就在這裡」= 不可點但不是鎖住(目前那一步;見 isClickable)。純追蹤(readOnly)沒有「跳過來」這件事,不需要持有焦點
+  const isHere = !steps.readOnly && !item.clickable && !item.locked
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!item.clickable) return
     if (e.key === 'Enter' || e.key === ' ') {
@@ -502,6 +520,9 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'
+          // 純追蹤(readOnly):不可聚焦、一般箭頭游標,沒有任何焦點框要畫
+          : steps.readOnly
+            ? undefined
           : isHere
             // 目前那一步:一般箭頭游標 —— 它不是被禁止,只是「你就在這裡」
             //(待辦總帳 N44;Carbon 目前那一步同為 `cursor: default`,出處在 steps.spec.md「目前那一步可不可以點」)。
@@ -553,10 +574,10 @@ function VerticalLayout({
         </div>
       </StepItemHeader>
       {showContent && (
-        // 步驟標題區 → 內容 = tight(md 12 / lg 16):layoutSpace.spec.md 規則 3「heading → labeled content」= 跨範疇 + functional 交互,
-        // 規則 2 的註:內容區裡的標題 → 被它標示的內容走規則 3 的 tight;Steps 規格沒寫這一段刻意固定,所以回到 token。
-        // 2026-10-21 前寫死 mt-3(md、lg 都 12),lg 少 4px(主線 2026-10-21 定案「標題區 → 內容 = tight」;閘 steps-content-follows-current (3))
-        <div className="flex items-start gap-3 mt-[var(--layout-space-tight)]">
+        // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標
+        //(user 2026-10-21 A4 甲;layoutSpace.spec.md「親疏 3 級」跨範疇 parallel 那一列的「標題(+ 說明)→ 它底下的並列內容」→ 規則 3 loose)。
+        // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)
+        <div className="flex items-start gap-3 mt-[var(--layout-space-loose)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>
         </div>

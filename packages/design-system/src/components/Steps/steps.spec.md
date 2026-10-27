@@ -28,7 +28,7 @@ benchmark:
 
 **流程進度指示器**:把多步驟任務的「現在走到哪、完成了哪些、還剩哪些」視覺化為一條有序的 indicator + label 序列。
 
-**「目前那一步」的定義**(2026-09-30):一條流程裡使用者**現在所在的位置**,只由導覽(點已完成 / 可到達的步)或系統進度(parent 推進 `value`)設定 —— 它不是「讀者自己開合、正在讀哪一段」。非 linear 模式點某一步把 `value` 移過去,仍是導覽(`steps-state-visuals.spec.md`「為什麼非 linear 的 current 不渲染 filled 藍」所說的「使用者在看哪一步」就是這個位置,只是不渲染 filled 藍)。一份讓讀者自己開合、沒有進度的編號說明沒有這個位置,就不是 Steps(見「何時不用」第二張表)。
+**「目前那一步」的定義**(2026-09-30):一條流程裡使用者**現在所在的位置**,只由導覽(點已完成 / 可到達的步)或系統進度(parent 推進 `value`)設定 —— 它不是「讀者自己開合、正在讀哪一段」。非 linear 模式點某一步把 `value` 移過去,仍是導覽(`steps-state-visuals.spec.md`「為什麼非 linear 的 current 不渲染 filled 藍」所說的「你在哪」就是這個位置,只是不渲染 filled 藍)。一份讓讀者自己開合、沒有進度的編號說明沒有這個位置,就不是 Steps(見「何時不用」第二張表)。
 
 **實作基礎**：本 DS 自建的組合元件——Icon / number indicator + Text 有序序列，由 parent 統一推導進度與 focus state。
 
@@ -59,14 +59,13 @@ Steps 只解決「有順序、有進度、步數有限且明確」的場景。�
 | 時間軸歷史事件 | `Timeline`(未來獨立元件)| Steps 表達「任務進度」,Timeline 表達「時序紀錄」,語意不同 |
 | 分段表單佈局(不需進度感)| Form layout pattern + heading | 純分段不等於有進度順序 |
 | 無限 / 動態步數 | ProgressBar + 步驟計數文字 | Steps 需步數有限且已知 |
-| 使用者可自由跳步（非線性流程）| Tabs | Steps 強調線性順序,跳步破壞 mental model |
 | 巢狀步驟(步驟底下還有子步驟)| `TreeView` 步驟導覽樹(user 2026-10-01 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」;用法見 `../TreeView/tree-view.spec.md`「步驟導覽樹」「步驟結果」)| Steps 沒有巢狀 API;巢狀步驟一樣有「目前那一步」,所以列在這張表、不在下一張。點大步驟會發生什麼、收起時灰底與結果怎麼代顯,user 2026-10-06 → 10-07 已給契約(待辦總帳 T1–T5),寫在 TreeView 規格那兩段 |
 
 ### 有編號,但沒有「目前那一步」(2026-09-30;來源見「內容跟著目前那一步」的「來源」)
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 說明 / 教學類的編號步驟(安裝指南、長篇旅程指南這類讀者自己讀、自己開合的內容)| `Accordion`(`../Accordion/accordion.spec.md:30` 何時用已列「使用教學」;要不要收合、單開或多開看它自己的定位 `:20` 與 type 判斷法 `:55`;編號寫進 trigger 文字,anatomy 固定見 `:123`)| 讀者自己決定看哪一段,沒有進度、也不會有「目前那一步」;Accordion 沒有進度語意,正好 |
+| 說明 / 教學類的編號步驟(安裝指南、長篇旅程指南這類讀者自己讀、自己開合的內容)| `Accordion`(`../Accordion/accordion.spec.md`「何時用」已列「使用教學」;要不要收合、單開或多開看它自己的「定位」與「type：single vs multiple」的判斷法;編號寫進 trigger 文字,anatomy 固定見「邊界狀態」的「固定 anatomy」)| 讀者自己決定看哪一段,沒有進度、也不會有「目前那一步」;Accordion 沒有進度語意,正好 |
 | 設定清單(帳號開通、工作區初始化的待辦:每一項獨立、可以跳著做、每項帶一顆動作鈕;沒有巢狀)| 清單列(閱讀式)部件自己組:DS 還沒有單一的清單列元件,照 `../../patterns/element-anatomy/item-anatomy.spec.md:94-110` 判斷流程「閱讀式(頁面上…)」那一支,用它列的部件(`ItemIcon` / `ItemLabel` / `ItemSuffix` 等)照 Family 2 組 | 不是一條有順序的流程,Steps 的 linear / 目前那一步都套不上。本列只指出用哪一組部件,狀態放哪、圖示、按鈕大小這些畫面規則**不先訂**,等第一個真的要做這個畫面的產品出現再照正常流程定(待辦總帳 T9;user 2026-10-07「4.確保符合我們一致的設計語言且不違背世界級的設計就照你建議」—— 照的是 AI 第八輪的建議「只寫『用清單列(閱讀式)部件自己組』,不另外訂狀態、圖示、按鈕的畫面規則」)|
 
 ---
@@ -214,11 +213,12 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 | Mode | 點擊規則 |
 |---|---|
 | `linear=true`(預設) | 可點:`completed` / `current` / `error` / `reachable`(下一個未完成)。**不可點**:`upcoming`(尚未解鎖)。 |
-| `linear=false` | 所有非 `disabled` 的 step 都可點。適合 setting wizard、教學目錄等「步驟之間無強依賴」的場景。 |
+| `linear=false` | 所有非 `disabled` 的 step 都可點。適合有先後順序、有「目前那一步」,但每一步可以各自儲存、跳著填的流程(例:建立廣告活動)。 |
+| `readOnly`(純追蹤,跟上面兩種並用)| 每一步都不可點,只顯示進度(物流追蹤、文件裡的進度示意);狀態視覺照上兩列推導,不變。沒傳 `onValueChange` 不等於純追蹤,要用這個開關明說(user 2026-10-21 F7「好，照你建議」)。 |
 
 兩種模式共同的例外:**`value` 指到的那一步不可點** —— 見下方「內容跟著目前那一步」的「目前那一步可不可以點」。
 
-不可點分兩種,游標不同(`steps.tsx` `isLocked` / `isClickable`):**鎖住**(`disabled`、linear 的 `upcoming`)= 禁止游標 `cursor-not-allowed`;**你就在這裡**(上述目前那一步)= 一般箭頭,它沒有被禁止,只是點了不會發生任何事。兩種都沒有 `role="button"`、不進 Tab 序;差別在焦點框:鎖住的步不可聚焦(`outline-none`),目前那一步保留 `tabIndex=-1`、焦點框照畫(理由見「內容跟著目前那一步」的「目前那一步可不可以點」)。
+不可點分兩種,游標不同(`steps.tsx` `isLocked` / `isClickable`;`readOnly` 整條都不可點,一律一般箭頭、都不可聚焦):**鎖住**(`disabled`、linear 的 `upcoming`)= 禁止游標 `cursor-not-allowed`;**你就在這裡**(上述目前那一步)= 一般箭頭,它沒有被禁止,只是點了不會發生任何事。兩種都沒有 `role="button"`、不進 Tab 序;差別在焦點框:鎖住的步不可聚焦(`outline-none`),目前那一步保留 `tabIndex=-1`、焦點框照畫(理由見「內容跟著目前那一步」的「目前那一步可不可以點」)。
 
 ### 點擊 completed step 的行為
 
@@ -303,6 +303,7 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
   completedValues={string[]}                   // 已完成(✓ + 藍底 + 藍 connector)
   errorValues={string[]}                       // 錯誤(✕ + 紅底)
   linear={boolean}                             // 預設 true
+  readOnly={boolean}                           // 預設 false;純追蹤,每一步都不可點
   size="sm" | "md" | "lg"                      // 預設 md ★ cva default
   orientation="vertical" | "horizontal"        // 預設 vertical
 >
@@ -339,7 +340,7 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 - 水平模式用在步驟 ≤ 5、不需要 per-step content 的場景
 
 ❌ **Don't**
-- 用 Steps 做 navigation(用 Tabs / Breadcrumb)
+- 用 Steps 切換沒有進度的頁面或分頁(用 Tabs / Breadcrumb)
 - 用 Steps 做 selection(用 Radio / SegmentedControl / SelectMenu)
 - 水平模式塞 `<StepContent>`(會被忽略)
 - 每個 StepItem 手動傳 state 管理狀態(用 parent `completedValues` / `errorValues`)

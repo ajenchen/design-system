@@ -39,11 +39,7 @@ linear && step 在 reachable(completed ∪ 首個未完成)→ reachable
 
 ### 為什麼非 linear 的 current 不渲染 filled 藍
 
-非 linear 模式讓使用者跳著點 step(例如設定頁、教學目錄),value 的語意是「使用者在看哪一步」,**不是**「使用者在做哪一步」。如果非 linear 也渲染 filled 藍,會造成:
-
-- 使用者點 upcoming step 想預覽 → step 立刻變 filled 藍,像是「標記為正在做」
-- 跟 mental model「我只是在看,這步還沒做」衝突
-- completedValues 沒有變化,前一個 filled 藍 step 突然不見
+非 linear 跟 TreeView 步驟導覽樹同一種用法:每一步都能點,點哪一步就換成那一步的內容;「你在哪」看有沒有外環,「狀態」看圓本身(`../TreeView/tree-view.spec.md`「選取」;user 2026-10-21T09:40Z 以問句提出,AI 逐項實測對得上)。停在哪一步不代表做到哪一步,所以不塗 filled 藍。
 
 正確做法:focus 視覺跟「進度視覺」完全解耦——focus 透過 outline 外環表達,filled 藍由 linear / completedValues 決定。filled「正在做」視覺是 linear 的概念。
 
@@ -98,12 +94,12 @@ sm 的 8px dot 用同一套 `getOuterRingStyle` outline 外環在 dot 外圍繞�
 
 ### Non-linear 被選中 ≠ filled 藍(關鍵規則)
 
-非 linear 模式使用者點 upcoming step 瀏覽時,step 的 content state 變為 `current`(`computeState` 對 value 命中者一律回 current),但渲染**刻意中性**。視覺上會是(md/lg):
+非 linear 模式使用者點 upcoming step 跳過去時,step 的 content state 變為 `current`(`computeState` 對 value 命中者一律回 current),但渲染**刻意中性**。視覺上會是(md/lg):
 - 底色:`bg-secondary`(**刻意不同於 linear upcoming 的 `bg-muted`**——non-linear 所有 step 都可點,不該像 linear upcoming 那樣呈現「鎖住/還到不了」的 muted 灰;secondary 傳達「可導覽但非當前」)
 - 數字:`foreground`(可讀,非 disabled 弱字——呼應 step 可達)
-- 外環:`--border-hover` outline 外環(focus marker,表達「你在看這一步」;`resolveRingColor` 對 non-linear current)
+- 外環:`--border-hover` outline 外環(focus marker,表達「你在這一步」;`resolveRingColor` 對 non-linear current)
 
-**不會**出現 linear current 的 filled 藍——這對齊使用者 mental model「我只是在看,這步還沒做」。non-linear current 與 upcoming 同為 `bg-secondary` 底,被選中(focused)的 step 以 `--border-hover` 外環標示。sm 尺寸的 dot 在 non-linear current 仍用 `fg-disabled` 灰點(8px dot 最小化呈現)。
+**不會**出現 linear current 的 filled 藍。non-linear current 與 upcoming 同為 `bg-secondary` 底,被選中(focused)的 step 以 `--border-hover` 外環標示。sm 尺寸的 dot 在 non-linear current 仍用 `fg-disabled` 灰點(8px dot 最小化呈現)。
 
 **Ring 不是 selection marker**。Steps 不是 SelectMenu / DropdownMenu 這類 selection control;ring 是 focus marker 單一語意。`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」規則 B 指出的 `bg-neutral-selected`、radio 圓圈等 selection 視覺**都不適用 Steps**——Steps 用 outline 外環表達「you are here」,不是「你選中了這個」。
 
@@ -119,7 +115,7 @@ disabled > error > focused > default
 
 - `disabled` → `text-fg-disabled`(最優先,覆蓋所有其他狀態)
 - `error` → **`text-error-text`**(error state 時 label 變紅,跟 indicator 的紅 ✕ 協調表達「這步出錯」)
-- `focused`(非 disabled 非 error)→ `text-foreground`(使用者當前在看這步,加強)
+- `focused`(非 disabled 非 error)→ `text-foreground`(使用者目前在這一步,加強)
 - `default` → `text-fg-secondary`(一般狀態)
 
 ### 為什麼 error label 要跟 indicator 同色

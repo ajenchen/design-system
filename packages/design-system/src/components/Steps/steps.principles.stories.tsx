@@ -14,7 +14,7 @@ export default meta
 
 type Story = StoryObj<typeof Steps>
 
-// ── 規則外框 = 共用教學頁元件(標題 → 說明 → 範例 = tight;規則之間 loose × 2)──
+// ── 規則外框 = 共用教學頁元件(標題 ↔ 說明 2px、標題區 → 範例 loose;規則之間 loose × 2)──
 // 範例並排 = 範例區的 wrap 版面(CaptionedExamples,範例之間 loose);範例 ↔ 它的說明 = tight(ExampleGroup + ExampleCaption)。
 // 2026-10-20 T6:原本本頁自抄 ExamplePair(並排外框)與 fg-secondary 的說明段落,改用共用元件。
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
@@ -42,13 +42,13 @@ export const UsageGuidance: Story = {
   render: () => (
     <TutorialPage>
       <UsageSection kind="when">
-        <p>有先後順序、要標出「目前在第幾步」的流程進度:註冊申請精靈、結帳流程、工作區設定導覽。</p>
+        <p>有先後順序、要標出「目前在第幾步」的流程進度:註冊申請精靈、結帳流程、可以跳著填的建立廣告活動。</p>
         <TutorialList>
           <li>
             <StoryLink kind="Design System/Components/Steps/展示" name="預設">註冊申請精靈(預設)</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/Steps/展示" name="非線性">工作區設定導覽(非線性)</StoryLink>
+            <StoryLink kind="Design System/Components/Steps/展示" name="非線性">建立廣告活動(非線性)</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/Steps/展示" name="水平">結帳流程進度(水平)</StoryLink>
@@ -59,7 +59,6 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialList>
           <li><strong>選擇器(選一個值)</strong> → Select / RadioGroup / SegmentedControl。Steps 只顯示進度</li>
-          <li><strong>時間軸或歷史紀錄</strong> → 時間軸(未來)。時序事件和進度語義不同</li>
           <li><strong>超過 7 步的流程</strong> → ProgressBar + 計數。Steps 會視覺過長</li>
           <li><strong>巢狀步驟(步驟底下還有子步驟)</strong> → TreeView。Steps 沒有巢狀結構</li>
         </TutorialList>
@@ -67,7 +66,7 @@ export const UsageGuidance: Story = {
 
       <UsageSection kind="siblings">
         <TutorialList>
-          <li><strong>Tabs / SegmentedControl</strong> —— 平行視圖切換、使用者可自由跳著看;Steps 暗示線性順序。Asana 的檢視模式用 SegmentedControl</li>
+          <li><strong>Tabs / SegmentedControl</strong> —— 平行視圖切換、使用者可自由跳著看;Steps 有先後順序和完成狀態。Asana 的檢視模式用 SegmentedControl</li>
           <li><strong>Accordion</strong> —— 說明 / 教學類的編號步驟:讀者自己開合、沒有「目前那一步」,編號寫進每段標題</li>
           <li><strong>Pagination</strong> —— 大量資料的頁碼是位置導覽,可以任意跳;流程有順序依賴,上一步 / 下一步用 Steps + Button</li>
         </TutorialList>
@@ -89,6 +88,7 @@ export const ParentControlled: Story = {
         <Example label="✅ 對:狀態集中在 Steps root">
           <Steps
             aria-label="申請流程進度"
+            readOnly
             value="payment"
             completedValues={['info', 'review']}
             errorValues={['payment']}
@@ -124,7 +124,7 @@ export const RingIsFocusMarker: Story = {
         note="Ring 不是 selection marker——Steps 不是 SelectMenu / DropdownMenu。不要把 bg-neutral-selected、radio 圓圈等 selection 語義用到 Steps 上,ring 是唯一的 focus 表達。"
       >
         <Example label="Value 指向 completed step → 藍底 ✓ + 藍 ring(可同時成立)">
-          <Steps aria-label="結帳進度" value="a" completedValues={['a']} linear={false}>
+          <Steps aria-label="結帳進度" readOnly value="a" completedValues={['a']} linear={false}>
             <StepItem value="a">
               <StepLabel>送貨地址</StepLabel>
             </StepItem>
@@ -134,7 +134,7 @@ export const RingIsFocusMarker: Story = {
           </Steps>
         </Example>
         <Example label="Value 指向 error step → 紅底 ✕ + 紅 ring">
-          <Steps aria-label="結帳進度" value="a" errorValues={['a']} linear={false}>
+          <Steps aria-label="結帳進度" readOnly value="a" errorValues={['a']} linear={false}>
             <StepItem value="a">
               <StepLabel>付款</StepLabel>
             </StepItem>
@@ -161,6 +161,7 @@ export const BlueConnectorLogic: Story = {
         <Example label="✅ 對:value 在「確認送出」,但只有「基本資料」是 completed → 只有它底下的 connector 藍">
           <Steps
             aria-label="註冊流程進度"
+            readOnly
             value="step-4"
             completedValues={['step-1']}
             linear={false}
@@ -243,8 +244,7 @@ export const LinearBackClickDoesNotMutate: Story = {
         >
           <ExampleGroup className="w-[360px]">
             <ExampleCaption>
-              點 Step 1 或 Step 2(completed)看看——value 會跳回去,但 ✓ 完成標記
-              維持不變。
+              點「基本資料」或「帳號設定」(已完成)看看 —— 目前那一步會跳回去,但 ✓ 完成標記維持不變。
             </ExampleCaption>
             <Steps
               aria-label="註冊流程進度"
@@ -265,9 +265,6 @@ export const LinearBackClickDoesNotMutate: Story = {
                 <StepLabel>完成</StepLabel>
               </StepItem>
             </Steps>
-            <ExampleCaption>
-              Current value: <code>{value}</code>
-            </ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
       </TutorialPage>

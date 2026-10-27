@@ -145,13 +145,6 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
   action={<Button>建立專案</Button>}
 />
 
-// 自訂色彩(success result)
-<Empty
-  icon={<Avatar icon={CheckCircle} size={48} color="green" />}
-  title="已成功送出"
-  description="我們會盡快處理"
-/>
-
 // 自訂圖片
 <Empty
   icon={<img src="/empty-illustration.svg" className="w-12 h-12" alt="" />}

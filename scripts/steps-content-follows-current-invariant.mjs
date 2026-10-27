@@ -7,14 +7,23 @@
  *              對照組才量得到);
  *         (2) 步驟的 header(`li[data-state]` 的第一個子元素,含其子樹、不含內容區)沒有 `aria-expanded` / `aria-controls`——
  *             header 是「跳到那一步」,不是開合鈕(2026-09-30 退役「可同時打開多步」模式;2026-07-05 `7e69aad7` 加的 ARIA 一併拿掉)。
- *         (3) 步驟標題區 → 內容 = `--layout-space-tight`(md 12 / lg 16;layoutSpace.spec.md 規則 3「heading → labeled content」,
- *             主線 2026-10-21 定案):量盒邊到盒邊(header 底 → 內容區頂,getBoundingClientRect),跟內容區上解析出來的 token 值比;
- *             每則 story 載入後在 md 與 lg 各量一次(lg 由 html `data-density="lg"` 切換)—— 2026-10-21 前寫死 `mt-3`,md 剛好等於 12、lg 少 4px。
+ *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(md 16 / lg 24;user 2026-10-21 A4 甲:標題 + 說明是整組內容的標題,
+ *             layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose):量盒邊到盒邊(header 底 → 內容區頂,
+ *             getBoundingClientRect),跟內容區上解析出來的 token 值比;每則 story 載入後在 md 與 lg 各量一次(lg 由 html `data-density="lg"` 切換)
+ *             —— 已發布版寫死 `mt-3`(md、lg 都 12),PR 前一版寫成 tight(md 12 / lg 16),兩者都紅。
+ *         (4) 展開內容的那一步 → 下一步 = `--layout-space-bottom`(md、lg 都 48;user 2026-10-21 A3「照你建議」= 甲:這一步的內容是一塊 body 的收尾,
+ *             最後一步不給、交給外層容器):量內容區底 → 下一步 header 頂;是最後一步時量內容區底 → 這一步 li 底 = 0。
+ *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose`(ssot A-S4:user 2026-10-20「Q2 我認為可以基於你的建議」):
+ *             從內容區往下走到第一個有兩個以上子元素的盒,最後一個子元素含 <button>、前一個不含 → 量前一個底 → 最後一個頂。
+ *         (6) 長成按鈕的 header 點了就換到那一步(F7 甲,user 2026-10-21「好，照你建議」):`role="button"` 的 header 點下去,
+ *             那一條的目前那一步必須移到被點的那一步 —— 只給 `value`、沒接 `onValueChange` 的步驟條該用 `readOnly`(純追蹤)。
  *         載入後先量一次;第一輪依序點每個當下可點的 header(`role="button"`,點之前現場再確認一次);按一次目前那一步內容區裡的
  *         第一顆按鈕(精靈的「下一步」);按過之後再跑第二輪 header(例:預設精靈剛完成的那一步此時才可點 —— 點回去,內容必須跟著回來)。
  *         每次互動等版面靜止後重量重判。
  *   紅: 任一步在不是目前那一步時仍畫出內容(content-not-current)/ 目前那一步沒畫內容而別步有(current-without-content)/
- *       任一 header 帶 aria-expanded 或 aria-controls / 標題區 → 內容不等於 tight(header-content-gap)→ 指名 story、步驟條、第幾步、哪一種並 exit 1。
+ *       任一 header 帶 aria-expanded 或 aria-controls / 標題區 → 內容不等於 loose(header-content-gap)/
+ *       展開那一步 → 下一步不等於 bottom、最後一步內容區底到 li 底不是 0(step-gap)/ 按鈕列上方不等於 loose(button-gap)/
+ *       點了 role="button" 的 header 目前那一步沒移過去(dead-header)→ 指名 story、步驟條、第幾步、哪一種並 exit 1。
  *       退役前的建置(多重展開模式 story 全部展開、預設精靈已完成那一步帶 aria-expanded="false")四種都紅 —— `--selftest --control-static=<舊建置>` 證明。
  *       零則 story / 零條步驟條 / 零次點擊 / 零次「目前那一步移動」/ 零處內容 / 零次「點 header 讓有內容區的步驟條換了目前那一步」
  *       = 儀器失效(INSTRUMENT-FAIL,exit 1),不當綠燈 —— 最後一項沒發生過,「點 header → 內容跟著走」這條就從沒被量到。
@@ -72,13 +81,32 @@ export function judge(snapshot, label = '') {
       if (it.current && anyContent && !it.hasContent) violations.push({ kind: 'current-without-content', where, text: `${where}:是目前那一步卻沒有內容區(同一條別的步有)` })
       if (it.headerExpanded) violations.push({ kind: 'aria-expanded', where, text: `${where}:header 帶 aria-expanded(header 不是開合鈕)` })
       if (it.headerControls) violations.push({ kind: 'aria-controls', where, text: `${where}:header 帶 aria-controls(header 不是開合鈕)` })
+      if (it.hasContent && it.stepGap !== null && it.stepGap !== undefined) {
+        const want = it.isLast ? 0 : it.bottom
+        if (want === null || want === undefined) violations.push({ kind: 'step-gap', where, text: `${where}:內容區上讀不到 --layout-space-bottom(量具讀不到 token)` })
+        else if (Math.abs(it.stepGap - want) > 0.6) violations.push({ kind: 'step-gap', where, text: it.isLast
+          ? `${where}:最後一步的內容區底 → li 底 ${it.stepGap}px ≠ 0(最後一步不給,交給外層容器;user 2026-10-21 A3 甲)`
+          : `${where}:展開那一步 → 下一步 ${it.stepGap}px ≠ bottom ${want}px(user 2026-10-21 A3 甲)` })
+      }
+      if (it.hasContent && it.buttonGap !== null && it.buttonGap !== undefined) {
+        if (it.loose === null || it.loose === undefined) violations.push({ kind: 'button-gap', where, text: `${where}:內容區上讀不到 --layout-space-loose(量具讀不到 token)` })
+        else if (Math.abs(it.buttonGap - it.loose) > 0.6) violations.push({ kind: 'button-gap', where, text: `${where}:按鈕列上方 ${it.buttonGap}px ≠ loose ${it.loose}px(ssot A-S4:按鈕跟在內容後面時上方 = loose)` })
+      }
       if (it.hasContent && it.headerToContent !== null && it.headerToContent !== undefined) {
-        if (it.tight === null || it.tight === undefined) violations.push({ kind: 'header-content-gap', where, text: `${where}:內容區上讀不到 --layout-space-tight(量具讀不到 token)` })
-        else if (Math.abs(it.headerToContent - it.tight) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ tight ${it.tight}px(layoutSpace.spec.md 規則 3「heading → labeled content」)` })
+        if (it.loose === null || it.loose === undefined) violations.push({ kind: 'header-content-gap', where, text: `${where}:內容區上讀不到 --layout-space-loose(量具讀不到 token)` })
+        else if (Math.abs(it.headerToContent - it.loose) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ loose ${it.loose}px(layoutSpace.spec.md「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose)` })
       }
     })
   })
   return violations
+}
+
+// ── 純函式:點了第 li 條第 ii 步的按鈕 header 之後的量測 → 目前那一步沒移過去就是 dead-header(F7 甲)──────────────
+export function deadHeader(snapshot, li, ii, label = '') {
+  const item = snapshot.lists[li]?.items[ii]
+  if (!item || item.current) return null
+  const where = `${label}步驟條 ${li + 1} 第 ${ii + 1} 步`
+  return { kind: 'dead-header', where, text: `${where}:header 是按鈕(role="button"、手形游標、進 Tab 序),點了目前那一步卻沒移過去 —— 只顯示進度的步驟條用 readOnly(steps.spec.md「Linear vs Non-linear」;F7 甲)` }
 }
 
 // ── 頁面端量測(以原始碼序列化傳進頁面:不得引用外部變數)─────────────────────
@@ -93,12 +121,30 @@ const measureInPage = () => {
         // 內容區 = header 之後、不是連接線的直接子元素(VerticalLayout 的 fragment:header / content? / connector?)
         const extras = [...li.children].slice(1).filter((el) => !el.hasAttribute('data-steps-connector'))
         const content = extras[0]
-        const tight = content ? parseFloat(getComputedStyle(content).getPropertyValue('--layout-space-tight')) : NaN
+        const loose = content ? parseFloat(getComputedStyle(content).getPropertyValue('--layout-space-loose')) : NaN
+        const bottom = content ? parseFloat(getComputedStyle(content).getPropertyValue('--layout-space-bottom')) : NaN
+        const round = (n) => Math.round(n * 10) / 10
+        // (4) 展開那一步 → 下一步:內容區底 → 下一步 header 頂;最後一步:內容區底 → 自己的 li 底
+        const nextHeader = li.nextElementSibling?.matches('li[data-state]') ? li.nextElementSibling.firstElementChild : null
+        const stepGap = content ? round((nextHeader ? nextHeader.getBoundingClientRect().top : li.getBoundingClientRect().bottom) - content.getBoundingClientRect().bottom) : null
+        // (5) 按鈕列上方:從內容區往下走到第一個有兩個以上子元素的盒;最後一個子元素含按鈕、前一個不含 → 量兩者之間
+        let box = content ? content.lastElementChild : null
+        while (box && box.children.length === 1) box = box.firstElementChild
+        let buttonGap = null
+        if (box && box.children.length >= 2) {
+          const last = box.lastElementChild
+          const prev = last.previousElementSibling
+          if (last.querySelector('button') && !prev.querySelector('button')) buttonGap = round(last.getBoundingClientRect().top - prev.getBoundingClientRect().bottom)
+        }
         return {
           current: li.getAttribute('aria-current') === 'step',
           hasContent: extras.length > 0,
           headerToContent: content && header ? Math.round((content.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10 : null,
-          tight: Number.isFinite(tight) ? tight : null,
+          loose: Number.isFinite(loose) ? loose : null,
+          bottom: Number.isFinite(bottom) ? bottom : null,
+          isLast: !(li.nextElementSibling && li.nextElementSibling.matches('li[data-state]')),
+          stepGap,
+          buttonGap,
           clickable: !!header && header.getAttribute('role') === 'button',
           headerExpanded: inHeader.some((el) => el.hasAttribute('aria-expanded')),
           headerControls: inHeader.some((el) => el.hasAttribute('aria-controls')),
@@ -228,6 +274,9 @@ async function scanBuild(staticDir, { fresh = true, log = console.log, inject = 
             const what = `${pass}點步驟條 ${li + 1} 第 ${ii + 1} 步的 header`
             try { await header.click({ timeout: 5000 }) } catch (cause) { throw clickFailedError(story.id, what, cause) }
             await afterInteraction(what, true)
+            // (6) 長成按鈕的 header 點了,目前那一步必須移到它(判定抽成純函式 deadHeader)
+            const dead = deadHeader(snap, li, ii, `${story.id} `)
+            if (dead) violations.push(dead)
           }
         }
       }
@@ -293,8 +342,17 @@ async function selftest() {
   check(kinds(judge({ lists: [{ items: [item({ headerExpanded: true }), item({ current: true, hasContent: true })] }] })) === 'aria-expanded', '判定表:已完成那一步 header 帶 aria-expanded="false"(退役前預設精靈)→ aria-expanded')
   check(kinds(judge({ lists: [{ items: [item({ headerExpanded: true, headerControls: true, hasContent: true }), item({ current: true })] }] })) === 'aria-controls,aria-expanded,content-not-current,current-without-content', '判定表:已完成那一步展開中、header 帶 aria-expanded + aria-controls、目前那一步收合 → 四種一起紅')
   check(judge({ lists: [{ items: [item({ current: true, hasContent: true })] }, { items: [item(), item({ current: true })] }] }).length === 0, '判定表:同一頁兩條步驟條各自乾淨 → 綠')
-  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 16, tight: 16 })] }] }).length === 0, '判定表:lg 標題區 → 內容 16 = tight 16 → 綠')
-  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 12, tight: 16 })] }] })) === 'header-content-gap', '判定表:lg 標題區 → 內容 12 ≠ tight 16(2026-10-21 前寫死 mt-3)→ header-content-gap')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 24, loose: 24 })] }] }).length === 0, '判定表:lg 標題區 → 內容 24 = loose 24 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 12, loose: 24 })] }] })) === 'header-content-gap', '判定表:lg 標題區 → 內容 12 ≠ loose 24(已發布版寫死 mt-3)→ header-content-gap')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 16, loose: 24 })] }] })) === 'header-content-gap', '判定表:lg 標題區 → 內容 16 ≠ loose 24(PR 前一版寫成 tight)→ header-content-gap')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 48, bottom: 48, isLast: false })] }] }).length === 0, '判定表:展開那一步 → 下一步 48 = bottom 48 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 24, bottom: 48, isLast: false })] }] })) === 'step-gap', '判定表:展開那一步 → 下一步 24(已發布版 pb-6)≠ bottom 48 → step-gap')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 0, bottom: 48, isLast: true })] }] }).length === 0, '判定表:最後一步內容區底 → li 底 0 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 48, bottom: 48, isLast: true })] }] })) === 'step-gap', '判定表:最後一步也給 48(放進 Dialog 會疊成 96)→ step-gap')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 24, loose: 24 })] }] }).length === 0, '判定表:lg 按鈕列上方 24 = loose 24 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 48, loose: 16 })] }] })) === 'button-gap', '判定表:按鈕列上方 48(PR 前一版 mt-bottom)≠ loose 16 → button-gap')
+  check(deadHeader({ lists: [{ items: [item({ current: true }), item()] }] }, 0, 0) === null, 'dead-header:點了之後被點的那一步是目前那一步 → 綠')
+  check(deadHeader({ lists: [{ items: [item({ current: true }), item()] }] }, 0, 1)?.kind === 'dead-header', 'dead-header:點了第 2 步,目前那一步還在第 1 步(只給 value、沒接 onValueChange)→ dead-header')
   // importsSteps 兩面
   check(importsSteps("import { Steps, StepItem } from './steps'\n"), 'importsSteps:元件自己的 story(./steps)→ 是')
   check(importsSteps("import { Steps } from '@/design-system/components/Steps/steps'\n"), 'importsSteps:完整路徑 → 是')
@@ -327,7 +385,7 @@ async function selftest() {
   const contentStories = []
   try {
     const page = await browser.newPage({ viewport: VIEWPORT })
-    let listStories = 0, injected1 = 0, caught1 = 0, moved2 = 0, caught2 = 0, injected4 = 0, caught4 = 0, dirty = []
+    let listStories = 0, injected1 = 0, caught1 = 0, moved2 = 0, caught2 = 0, injected4 = 0, caught4 = 0, injected5 = 0, caught5 = 0, injected6 = 0, caught6 = 0, dirty = []
     for (const story of picked) {
       await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`, { settleFrames: 10, notFound: server.notFound })
       const shape = await page.evaluate(measureInPage)
@@ -367,6 +425,32 @@ async function selftest() {
       })
       injected4 += n4
       caught4 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'header-content-gap').length
+      // 注入 (5):展開那一步的 li 下內距寫回 24px(已發布版 pb-6)、最後一步寫成 48 → 必須抓到 step-gap
+      const n5 = await page.evaluate(() => {
+        let n = 0
+        for (const li of document.querySelectorAll('ol[data-orientation][data-size] > li[data-state][aria-current="step"]')) {
+          if (![...li.children].slice(1).some((el) => !el.hasAttribute('data-steps-connector'))) continue
+          li.style.paddingBottom = li.nextElementSibling ? '24px' : '48px'; n += 1
+        }
+        return n
+      })
+      injected5 += n5
+      caught5 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'step-gap').length
+      // 注入 (6):內容區的按鈕列上外距寫成 48px(PR 前一版 mt-bottom)→ 有按鈕列的必須抓到 button-gap
+      const n6 = await page.evaluate(() => {
+        let n = 0
+        for (const content of document.querySelectorAll('ol[data-orientation][data-size] > li[data-state][aria-current="step"] > :nth-child(2):not([data-steps-connector])')) {
+          let box = content.lastElementChild
+          while (box && box.children.length === 1) box = box.firstElementChild
+          if (!box || box.children.length < 2) continue
+          const last = box.lastElementChild
+          if (!last.querySelector('button') || last.previousElementSibling.querySelector('button')) continue
+          last.style.marginTop = '48px'; n += 1
+        }
+        return n
+      })
+      injected6 += n6
+      caught6 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'button-gap').length
       await page.evaluate(() => document.documentElement.setAttribute('data-density', 'md'))
     }
     check(dirty.length === 0, `注入前:${listStories} 則有步驟條的 story 全部乾淨${dirty.length ? `(髒:${dirty.join(', ')})` : ''}`)
@@ -374,6 +458,8 @@ async function selftest() {
     check(injected1 > 0 && caught1 === injected1, `注入 aria-expanded(${listStories} 則有步驟條的 story 全部):${injected1} 處注入、${caught1} 處抓到`)
     check(moved2 > 0 && caught2 === moved2, `注入內容放錯步(${contentStories.length} 則有內容區的 story 全部):${moved2} 處注入、${caught2} 處抓到`)
     check(injected4 > 0 && caught4 >= injected4, `注入 lg 標題區 → 內容寫死 12px(${contentStories.length} 則有內容區的 story 全部):${injected4} 處注入、${caught4} 處抓到`)
+    check(injected5 > 0 && caught5 >= injected5, `注入展開那一步 → 下一步 24px / 最後一步 48px(${contentStories.length} 則有內容區的 story 全部):${injected5} 處注入、${caught5} 處抓到`)
+    check(injected6 > 0 && caught6 >= injected6, `注入按鈕列上方 48px(有按鈕列的內容區):${injected6} 處注入、${caught6} 處抓到`)
   } finally { await browser.close(); await server.stop() }
   // 注入 (3):點 header 之後 aria-current 移走、舊內容留在原本那一步(「內容沒跟著目前那一步走」的回歸)—— 跑一次完整掃描,
   // 只掃有內容區的 story。這一種只有「點 header 讓有內容區的步驟條換步」時才會發作,所以它同時證明掃描真的走到了那條路
@@ -414,8 +500,8 @@ if (isMain) {
     }
     const t = result.totals
     console.log(`✅ steps-content-follows-current PASS(${t.stories} 則 story、${t.lists} 條步驟條、點 ${t.clicks} 下、目前那一步移動 ${t.moves} 次,其中點 header 讓有內容區的步驟條換步 ${t.headerContentMoves} 次;內容區只跟著 aria-current="step",header 無 aria-expanded / aria-controls)`)
-    // 不判紅、只列出:header 長得可點、點了目前那一步卻不動(受控 value 沒接 onValueChange)—— 待辦總帳 N75
-    if (result.stillStories.length) console.log(`  ℹ 點了 header、目前那一步一次都沒移動的 story ${result.stillStories.length} 則(待辦總帳 N75,不在本閘判定範圍):${result.stillStories.join(', ')}`)
+    // 點了 header、目前那一步不動的已由 (6) dead-header 判紅(待辦總帳 N75 → F7 甲 readOnly);這裡只剩「按內容區按鈕也沒移動」的資訊
+    if (result.stillStories.length) console.log(`  ℹ 互動了、目前那一步一次都沒移動的 story ${result.stillStories.length} 則:${result.stillStories.join(', ')}`)
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${error.message}`); process.exit(1) }
     throw error
