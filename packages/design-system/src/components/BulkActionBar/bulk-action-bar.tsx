@@ -9,7 +9,7 @@ import { ButtonDivider } from '@/design-system/components/Button/button-group'
 // - DataTable/data-table.spec.md「L2 選取」(整合方式)
 // - button.spec.md + button-group.tsx(action variant=tertiary,size=md,
 //   gap-2 + ButtonDivider 自帶 mx-1 = 12px 視覺距離)
-// - inline-action.spec.md「same-row consistency rule」(close X 同尺寸 md)
+// - inline-action.spec.md「Same-row consistency rule(防混用)」(close X 同尺寸 md)
 // - tokens/layoutSpace/layoutSpace.spec.md(footer 用 px-loose py-tight)
 // - patterns/overlay-surface/overlay-surface.spec.md SurfaceFooter canonical
 // - Alert(banner)用 title ReactNode 帶 inline link CTA

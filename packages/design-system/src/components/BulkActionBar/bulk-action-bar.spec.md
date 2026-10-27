@@ -80,7 +80,7 @@ benchmark:
 
 ### Slot
 
-- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」+ button.spec.md「Inline destructive 不用高強調」)
+- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」+ button.spec.md「danger prop — 語意意圖」)
 - **count 區**:`已選 {N} 項`(內建)+ inline filter hidden status `· {M} 個被 filter 隱藏`(`hiddenByFilter` prop 傳入時)
 - **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClearSelection`)
 
