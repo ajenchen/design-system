@@ -1,15 +1,18 @@
 // @principles-rationale: Merged WhenToUse + WhenNotToUse + TabsVsSegmentedControl
 // into a single `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親)
 // per 2026-04-26 user mandate. SizeSelection + TriggerSlots kept as separate principles.
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Users, Settings, Bell } from 'lucide-react'
+import { Users, Settings, Bell, Search, Filter } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'
-import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
+import { Button } from '@/design-system/components/Button/button'
+import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 
 const meta: Meta = {
   title: 'Design System/Components/Tabs/設計原則',
@@ -20,6 +23,30 @@ type Story = StoryObj
 
 
 const TutorialRule = createTutorialRule({ examples: true })
+
+/**
+ * 任務清單頁的工具列(真實工具列,取代原本手刻外框 + 佔位字「工具列其他控制項…」;稽核 M107):
+ * 左邊搜尋、右邊「只看未完成」切換鈕(button.spec.md「pressed(toggle)」那一例)與清單 / 看板切換。
+ * 幾何消費 DataToolbar(action-bar 的「左搜尋 / 右操作」);action-bar.spec.md「❌ 操作列被包上邊框」→ 不加外框。
+ * 這裡是單獨一則範例、下面沒有表格,工具列自帶的 chrome 內距(用來對齊表格左右緣)用不到 → p-0,左緣對齊上方說明字。
+ */
+function TaskListToolbar() {
+  const [onlyOpen, setOnlyOpen] = React.useState(false)
+  return (
+    <DataToolbar
+      className="w-[560px] p-0"
+      search={<Input size="sm" placeholder="搜尋任務" aria-label="搜尋任務" startIcon={Search} />}
+    >
+      <Button variant="tertiary" size="sm" startIcon={Filter} pressed={onlyOpen} onClick={() => setOnlyOpen((v) => !v)}>
+        只看未完成
+      </Button>
+      <SegmentedControl defaultValue="list" size="sm" aria-label="檢視方式">
+        <SegmentedControlItem value="list">清單</SegmentedControlItem>
+        <SegmentedControlItem value="board">看板</SegmentedControlItem>
+      </SegmentedControl>
+    </DataToolbar>
+  )
+}
 
 // ── UsageGuidance ────────────────────────────────────────────────────────────
 
@@ -129,17 +156,7 @@ export const UsageGuidance: Story = {
         >
           <ExampleGroup>
             <ExampleCaption>✅ SegmentedControl 在 toolbar 裡跟 Button / Input 並排</ExampleCaption>
-            {/* 工具列外框(chrome 內距)+ 控件 / 分隔線之間交給 ButtonGroup(action region 8px 槽距的主人,action-bar.spec.md:288-292),不手刻槽距 */}
-            <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border border-border rounded-md w-fit">
-              <ButtonGroup>
-                <SegmentedControl defaultValue="list" size="sm">
-                  <SegmentedControlItem value="list">清單</SegmentedControlItem>
-                  <SegmentedControlItem value="board">看板</SegmentedControlItem>
-                </SegmentedControl>
-                <ButtonDivider />
-                <span className="text-body text-fg-muted">工具列其他控制項…</span>
-              </ButtonGroup>
-            </div>
+            <TaskListToolbar />
             <ExampleCaption>↑ 同 toolbar 尺度,跟其他 control 並排。換成 Tabs 在這個位置會違和</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
@@ -203,36 +220,19 @@ export const SizeSelection: Story = {
             <TabsTrigger value="b">進階</TabsTrigger>
           </TabsList>
           <TabsContent value="a" className="text-body text-fg-secondary">名稱、描述與可見範圍等一般設定</TabsContent>
+          <TabsContent value="b" className="text-body text-fg-secondary">權限繼承、封存與刪除等進階設定</TabsContent>
         </Tabs>
       </TutorialRule>
 
       <TutorialRule
         title="md — future tier(目前無 recommended use case)"
         note="h-tab-md(40/48)。中間階梯保留 token,新 consumer 必先諮詢 DS owner(多家世界級 DS 只有 1 個 default size,無中間階梯)"
-      >
-        <Tabs defaultValue="a">
-          <TabsList size="md">
-            {/* 2026-07-04:同組 icon 全有或全無(spec 禁止事項)— 原 成員 單獨帶 icon 已移除 */}
-            <TabsTrigger value="a">總覽</TabsTrigger>
-            <TabsTrigger value="b">成員</TabsTrigger>
-            <TabsTrigger value="c" badge={<Badge count={3} />}>通知</TabsTrigger>
-          </TabsList>
-          <TabsContent value="a" className="text-body text-fg-secondary">專案的總覽資訊（KPI、最近活動）</TabsContent>
-        </Tabs>
-      </TutorialRule>
+      />
 
       <TutorialRule
         title="lg — 獨立 tabs 取代 chrome header(罕見 page-level hero)"
         note="h-tab-lg(48/56)= --chrome-header-height 像素相等。整個頁面的主結構切換,tabs 本身取代 chrome header 位置(對齊 Ant verbatim「Large size tabs are usually used in page header」)"
-      >
-        <Tabs defaultValue="a">
-          <TabsList size="lg">
-            <TabsTrigger value="a">產品</TabsTrigger>
-            <TabsTrigger value="b">服務</TabsTrigger>
-          </TabsList>
-          <TabsContent value="a" className="text-body text-fg-secondary">產品功能、方案與定價總覽</TabsContent>
-        </Tabs>
-      </TutorialRule>
+      />
     </TutorialPage>
   ),
 }
@@ -254,6 +254,8 @@ export const TriggerSlots: Story = {
             <TabsTrigger value="c" startIcon={Bell}>通知</TabsTrigger>
           </TabsList>
           <TabsContent value="a" className="text-body text-fg-secondary">成員名單與角色權限管理</TabsContent>
+          <TabsContent value="b" className="text-body text-fg-secondary">專案設定（一般、權限、整合）</TabsContent>
+          <TabsContent value="c" className="text-body text-fg-secondary">通知偏好與訂閱範圍</TabsContent>
         </Tabs>
       </TutorialRule>
 
@@ -268,6 +270,8 @@ export const TriggerSlots: Story = {
             <TabsTrigger value="starred" badge={<Badge count={3} />}>星標</TabsTrigger>
           </TabsList>
           <TabsContent value="inbox" className="text-body text-fg-secondary">收件匣的所有訊息（依時間排序）</TabsContent>
+          <TabsContent value="unread" className="text-body text-fg-secondary">12 則未讀訊息</TabsContent>
+          <TabsContent value="starred" className="text-body text-fg-secondary">3 則星標訊息</TabsContent>
         </Tabs>
       </TutorialRule>
     </TutorialPage>

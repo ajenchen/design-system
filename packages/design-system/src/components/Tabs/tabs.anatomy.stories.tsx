@@ -1,8 +1,10 @@
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Users, Settings, Bell, FileText, CreditCard, Plug, Shield, KeyRound } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { StoryLink, TutorialList } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Tabs/設計規格',
@@ -55,6 +57,9 @@ export const Overview: Story = {
               <TabsTrigger value="settings" startIcon={Settings}>設定</TabsTrigger>
             </TabsList>
             <TabsContent value="files" className="text-body text-fg-secondary">專案文件與附件清單</TabsContent>
+            <TabsContent value="members" className="text-body text-fg-secondary">專案成員列表(3 人待邀請)</TabsContent>
+            <TabsContent value="notifications" className="text-body text-fg-secondary">12 則未讀通知(提及、指派、留言回覆)</TabsContent>
+            <TabsContent value="settings" className="text-body text-fg-secondary">專案設定(一般、權限、整合)</TabsContent>
           </Tabs>
         </div>
       </div>
@@ -135,12 +140,15 @@ export const Inspector: Story = {
     withIcons: { control: 'boolean', description: 'startIcon(對應專案 / 成員 / 設定 icon)' },
     withBadges: { control: 'boolean', description: '成員 tab 顯示 3、設定顯示 12(Badge suffix)' },
   },
-  render: (args) => {
-    const { size, overflow, value, withIcons, withBadges } = args as InspectorArgs
+  render: function TabsInspector(args) {
+    const { size, overflow, value: argValue, withIcons, withBadges } = args as InspectorArgs
+    // 點分頁要真的切換(原本 onValueChange 是空函式,點了不動);右側 Controls 改 value 時跟著切回去
+    const [value, setValue] = React.useState<string>(argValue)
+    React.useEffect(() => setValue(argValue), [argValue])
     const containerClass = overflow === 'scroll' || overflow === 'menu' ? 'max-w-sm' : 'max-w-2xl'
     return (
       <div className={`border border-border rounded-lg p-4 ${containerClass}`}>
-        <Tabs value={value} onValueChange={() => {}}>
+        <Tabs value={value} onValueChange={setValue}>
           <TabsList size={size} overflow={overflow}>
             <TabsTrigger value="overview" startIcon={withIcons ? FileText : undefined}>
               總覽
@@ -180,6 +188,11 @@ export const Inspector: Story = {
           <TabsContent value="settings" className=" text-body text-fg-secondary">
             專案設定(12 個通知待閱讀)
           </TabsContent>
+          {/* overflow 多出來的四個分頁也各有內容,點過去不是空白 */}
+          <TabsContent value="billing" className="text-body text-fg-secondary">訂閱方案與付款方式</TabsContent>
+          <TabsContent value="integrations" className="text-body text-fg-secondary">已連接的第三方服務(Slack、Zoom、Google 日曆)</TabsContent>
+          <TabsContent value="security" className="text-body text-fg-secondary">雙重驗證與登入裝置管理</TabsContent>
+          <TabsContent value="api" className="text-body text-fg-secondary">API 金鑰與 Webhook 設定</TabsContent>
         </Tabs>
       </div>
     )
@@ -191,8 +204,8 @@ export const SizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>三種 Size — 對應 `--tab-height-*` token</H3>
-        <Desc>Tabs 有自己的高度 tier(不直接複用 field-height)——tab 需要較高視覺重量,`--tab-height-*` 比 `--field-height-*` 略高。何時選哪個 size 的完整判斷與世界級引用,詳「設計原則 → 尺寸選擇」。</Desc>
+        <H3>三種 Size — 對應 <code>--tab-height-*</code> token</H3>
+        <Desc>Tabs 有自己的高度 tier(不直接複用 field-height)——tab 需要較高視覺重量,<code>--tab-height-*</code> 比 <code>--field-height-*</code> 略高。何時選哪個 size 的完整判斷與世界級引用,詳「設計原則 → 尺寸選擇」。</Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Size</Th><Th>Token</Th><Th>字體</Th><Th>使用場景</Th></tr></thead>
@@ -215,6 +228,8 @@ export const SizeMatrix: Story = {
                     <TabsTrigger value="c">設定</TabsTrigger>
                   </TabsList>
                   <TabsContent value="a" className="text-body text-fg-secondary mt-2">專案的總覽資訊（KPI、最近活動）</TabsContent>
+                  <TabsContent value="b" className="text-body text-fg-secondary mt-2">專案成員列表(3 人待邀請)</TabsContent>
+                  <TabsContent value="c" className="text-body text-fg-secondary mt-2">專案設定(一般、權限、整合)</TabsContent>
                 </Tabs>
               </div>
             </div>
@@ -275,8 +290,8 @@ export const ColorMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          TabsList 底部有 1px gray border(`border-b border-divider`)。Selected underline 用
-          `::after bottom: -1px height: 2px` 蓋住 gray border,形成單一視覺線條
+          TabsList 底部有 1px gray border(<code>border-b border-divider</code>)。Selected underline 用
+          <code>::after bottom: -1px height: 2px</code> 蓋住 gray border,形成單一視覺線條
           ——看起來像 2px primary line 停在 selected 下方,其餘 tabs 下方是 1px 淡線。
         </p>
       </div>
@@ -299,7 +314,10 @@ export const ColorMatrix: Story = {
               </TabsTrigger>
               <TabsTrigger value="settings" startIcon={Settings}>設定</TabsTrigger>
             </TabsList>
+            <TabsContent value="files" className="text-body text-fg-secondary mt-2">專案文件與附件清單</TabsContent>
             <TabsContent value="members" className="text-body text-fg-secondary mt-2">成員名單（3 人待邀請）</TabsContent>
+            <TabsContent value="notifications" className="text-body text-fg-secondary mt-2">12 則未讀通知(提及、指派、留言回覆)</TabsContent>
+            <TabsContent value="settings" className="text-body text-fg-secondary mt-2">專案設定(一般、權限、整合)</TabsContent>
           </Tabs>
         </div>
       </div>
@@ -323,14 +341,38 @@ export const StateBehavior: Story = {
               <TabsTrigger value="settings" disabled>設定</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="text-body text-fg-secondary mt-2">專案的總覽資訊（KPI、最近活動）</TabsContent>
+            <TabsContent value="members" className="text-body text-fg-secondary mt-2">專案成員列表(3 人待邀請)</TabsContent>
+            <TabsContent value="notifications" className="text-body text-fg-secondary mt-2">12 則未讀通知(提及、指派、留言回覆)</TabsContent>
           </Tabs>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Selected underline:`::after bottom: -1px height: 2px bg: primary`——蓋住 TabsList 的 1px gray border
+          Selected underline:<code>::after bottom: -1px height: 2px bg: primary</code>——蓋住 TabsList 的 1px gray border
         </p>
       </div>
     </div>
   ),
+}
+
+/** 溢出對照的八個分頁內容(每個分頁點過去都有內容,不是空白;字同展示頁「溢出處理」的工作區設定頁)。 */
+const WORKSPACE_TAB_CONTENT = [
+  ['a', '工作區總覽（成員、方案、近期活動）'],
+  ['b', '成員名單與角色權限管理'],
+  ['c', '專案預設值與範本'],
+  ['d', '通知偏好與訂閱範圍'],
+  ['e', '已連接的第三方服務（Slack、Zoom、Google 日曆）'],
+  ['f', 'API 金鑰與 Webhook 設定'],
+  ['g', '訂閱方案與付款方式'],
+  ['h', '雙重驗證與登入裝置管理'],
+] as const
+
+function WorkspaceTabContents() {
+  return (
+    <>
+      {WORKSPACE_TAB_CONTENT.map(([value, text]) => (
+        <TabsContent key={value} value={value} className="text-body text-fg-secondary mt-2">{text}</TabsContent>
+      ))}
+    </>
+  )
 }
 
 export const OverflowMatrix: Story = {
@@ -339,7 +381,7 @@ export const OverflowMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>overflow="scroll" — 水平捲動 + fade mask</H3>
-        <Desc>Tabs 超出容器寬度時,左右兩端出現 scroll arrow + 漸變遮罩(fade mask)提示可捲動。使用 `useScrollEdges` + `OverflowScrollArrow` 共用 hook。</Desc>
+        <Desc>Tabs 超出容器寬度時,左右兩端出現 scroll arrow + 漸變遮罩(fade mask)提示可捲動。使用 <code>useScrollEdges</code> + <code>OverflowScrollArrow</code> 共用 hook。</Desc>
         {/* 2026-05-18 fix(user 抓 overflow demo 沒秀真實溢出):max-w-md (448px) 太寬
             8 個短 Chinese tab 加總 < 448 不觸發 overflow。改 280px 強制觸發 + 視覺可見。*/}
         <div className="border border-border rounded-lg p-4 max-w-[280px]">
@@ -354,7 +396,7 @@ export const OverflowMatrix: Story = {
               <TabsTrigger value="g">計費</TabsTrigger>
               <TabsTrigger value="h">安全性</TabsTrigger>
             </TabsList>
-            <TabsContent value="a" className="text-body text-fg-secondary mt-2">工作區總覽（成員、方案、近期活動）</TabsContent>
+            <WorkspaceTabContents />
           </Tabs>
         </div>
       </div>
@@ -376,14 +418,14 @@ export const OverflowMatrix: Story = {
               <TabsTrigger value="g">計費</TabsTrigger>
               <TabsTrigger value="h">安全性</TabsTrigger>
             </TabsList>
-            <TabsContent value="a" className="text-body text-fg-secondary mt-2">工作區總覽（成員、方案、近期活動）</TabsContent>
+            <WorkspaceTabContents />
           </Tabs>
         </div>
       </div>
 
       <div>
         <H3>Overflow 機制來源</H3>
-        <Desc>共用 `patterns/horizontal-overflow/horizontal-overflow.spec.md` 的 hooks 和 primitives:useScrollEdges(偵測左右邊界)、OverflowScrollArrow(捲動箭頭)、OverflowMenuTriggerButton(menu 觸發)。Chip 也消費同一套——Tabs 和 Chip 的溢出行為視覺 / 機制保持一致。</Desc>
+        <Desc>共用<StoryLink kind="Design System/Internal Patterns/Horizontal Overflow" name="捲動模式">水平溢出 pattern</StoryLink>的 hooks 和 primitives:useScrollEdges(偵測左右邊界)、OverflowScrollArrow(捲動箭頭)、OverflowMenuTriggerButton(menu 觸發)。Chip 也消費同一套——Tabs 和 Chip 的溢出行為視覺 / 機制保持一致。</Desc>
       </div>
     </div>
   ),
@@ -395,17 +437,17 @@ export const SpacingTokens: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Triggers 之間 gap</H3>
-        <Desc>gap = `--layout-space-loose`(16px md / 24px lg density)——density-aware,跟著系統密度切換。</Desc>
+        <Desc>gap = <code>--layout-space-loose</code>(16px md / 24px lg density)——density-aware,跟著系統密度切換。</Desc>
       </div>
 
       <div>
         <H3>Trigger 內部 slot gap</H3>
-        <Desc>[startIcon] → [label] → [suffix]:slot 之間 `gap-2`(8px)。suffix 內 badge 和 endIcon 之間 `gap-1`(4px)。</Desc>
+        <Desc>[startIcon] → [label] → [suffix]:slot 之間 <code>gap-2</code>(8px)。suffix 內 badge 和 endIcon 之間 <code>gap-1</code>(4px)。</Desc>
       </div>
 
       <div>
         <H3>Trigger 無水平 padding</H3>
-        <Desc>Trigger 不加任何水平 padding——寬度 = 內容寬度(hug content)。selected underline(`::after left-0 right-0`)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 `gap-[var(--layout-space-loose)]`,不是 padding。</Desc>
+        <Desc>Trigger 不加任何水平 padding——寬度 = 內容寬度(hug content)。selected underline(<code>::after left-0 right-0</code>)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 <code>gap-[var(--layout-space-loose)]</code>,不是 padding。</Desc>
       </div>
     </div>
   ),
@@ -417,8 +459,29 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `tabs.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :繼承 Radix  tabs  primitive a11y 預設(role / aria-  / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/tabs#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入 TabList(整組 tabs 是單一 tab stop)\n- ←/→ — 在 tab 之間移動(roving tabindex,焦點不被困在 tab 列內)\n- Home/End — 第一 / 最後 tab\n- Enter / Space — activate\n\n  Focus  :Tabs 是內嵌導覽,不會把焦點困住(無 focus trap);用 roving tabindex 管理 tab 之間的移動。選中的 tab 與內容面板各自有 focus-visible 焦點框(focus-ring-inset(內描邊,tab 高 = 分頁列高;focus-canonical「框怎麼畫」),per design-system focus-visible 設計準則)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 段落之間 = tight(純文字 / 清單的內容之間,tutorial-page.tsx createTutorialRule 不給 examples 那一種) */}
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>
+          <strong>ARIA / 模式</strong>:繼承 Radix Tabs 的無障礙預設(role、aria-* 與鍵盤導覽),見{' '}
+          <a href="https://www.radix-ui.com/primitives/docs/components/tabs#accessibility" target="_blank" rel="noopener noreferrer">Radix Tabs 的 Accessibility 說明</a>。
+        </p>
+        <div>
+          <p><strong>鍵盤</strong>:</p>
+          <TutorialList>
+            <li>Tab — 進入 TabList(整組 tabs 是單一 tab stop)</li>
+            <li>←/→ — 在 tab 之間移動(roving tabindex,焦點不被困在 tab 列內)</li>
+            <li>Home/End — 第一 / 最後 tab</li>
+            <li>Enter / Space — activate</li>
+          </TutorialList>
+        </div>
+        <p>
+          <strong>焦點</strong>:Tabs 是內嵌導覽,不會把焦點困住(無 focus trap);用 roving tabindex 管理 tab 之間的移動。選中的 tab 與內容面板各自有 focus-visible 焦點框(tab 是內描邊,框高 = 分頁列高)。
+        </p>
+        <p>
+          <strong>驗證</strong>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。
+        </p>
+      </div>
     </div>
   ),
 }
