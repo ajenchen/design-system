@@ -55,11 +55,11 @@ try {
   // P5 本身就是「收斂不抖」的斷言,先等到靜止才量會讓 P5 恆真,還會把「量測 → setState 來回跳」的產品 bug
   // 誤標成儀器失效。階梯在掛載時由 layout effect 同步收斂(見檔頭),渲染完成當下就該是終態。
   await openStory(page, `${BASE}/iframe.html?id=${encodeURIComponent(STORY_ID)}&viewMode=story`, {
-    waitFor: 'nav[aria-label="Pagination"]', notFound: server.notFound,
+    waitFor: 'nav[aria-label="分頁"]', notFound: server.notFound,
   })
 
   const snap = () => page.evaluate(() => {
-    const navs = [...document.querySelectorAll('nav[aria-label="Pagination"]')]
+    const navs = [...document.querySelectorAll('nav[aria-label="分頁"]')]
     return navs.map((nav) => {
       const span = nav.querySelector('span')
       const ul = nav.querySelector('ul')
@@ -86,7 +86,7 @@ try {
   if (SELFTEST) {
     // 對照組:把資訊文字的寬度壓到必然換行。P1 量的是 rect.height / lineHeight,
     // 所以這一注入正是它該抓到的形狀 —— 抓不到就代表這支閘的綠燈是零證據。
-    await page.addStyleTag({ content: 'nav[aria-label="Pagination"] > span { display:inline-block; width:24px; white-space:normal !important; }' })
+    await page.addStyleTag({ content: 'nav[aria-label="分頁"] > span { display:inline-block; width:24px; white-space:normal !important; }' })
     // 元素早已在畫面上;等兩個影格讓注入的樣式套上版面再量
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
   }

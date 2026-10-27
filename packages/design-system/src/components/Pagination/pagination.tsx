@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
 import { Select } from '@/design-system/components/Select/select'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 // MUI usePagination 預設同款(boundaryCount/siblingCount = 1/1)。內部常數不開 props(M21
 // 最小 API);未來若開放,命名必沿用 MUI siblingCount / boundaryCount。
@@ -174,13 +175,18 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
       onPageSizeChange,
       showTotal = false,
       pageSizeOptions,
-      prevAriaLabel = '上一頁', // i18n-allow: DS default; consumer override via prop(precedent calendar.tsx)
-      nextAriaLabel = '下一頁', // i18n-allow: DS default; consumer override via prop
+      prevAriaLabel: prevAriaLabelProp,
+      nextAriaLabel: nextAriaLabelProp,
       className,
       ...props
     },
     ref,
   ) => {
+    // 讀屏名稱的換字管道:prop → I18nProvider(`pagination.*`)→ DS 預設中文(lib/i18n/README.md「Fallback chain」;
+    // user 2026-10-21 F1「預設語言是中文」,WM 要能一次換成英文)
+    const { t } = useI18n()
+    const prevAriaLabel = prevAriaLabelProp ?? t('pagination', 'previous', '上一頁') // i18n-allow: DS 預設
+    const nextAriaLabel = nextAriaLabelProp ?? t('pagination', 'next', '下一頁') // i18n-allow: DS 預設
     // Hooks 必在 early return 之前(React #310 canonical,select.tsx#CustomSelect 同慣例)
     const [pageSize, setPageSize] = useControllable<number>({
       value: pageSizeProp,
@@ -228,7 +234,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
     //   user 第一問「我們的 pagination 完全不會有可以捲動的情況吧?」→ 會,但很窄才會:
     //     視窗 200px(nav 168px)起 scrollWidth 220–244 > clientWidth;280px 以上一路到 1440px 都不捲。
     //
-    //   user 第二問「原則的重點是判斷元件**視覺上**四周是否有足夠空間吧?」→ 對,而且這一題我上一版答錯了。
+    //   user 第二問(轉述:原則的重點是判斷元件視覺上四周是否有足夠空間)→ 對,而且這一題我上一版答錯了。
     //     我當時把「鈕高 28 = nav 內高 → 上下淨空 0」當理由,但那個 0 是 `overflow-x-auto` 的**副作用**:
     //     CSS 規範讓另一軸從 visible 算成 auto,於是縱向也裁。可是這一列縱向**永遠不會捲**,拿掉那道裁切
     //     畫面一點都不會壞(實測:給 nav 上下各 4px 內距 + 等量負外距 → 版面高度不變、按鈕座標不變 43.6,
@@ -299,7 +305,8 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
     return (
       <nav
         ref={setNavRef}
-        aria-label="Pagination"
+        // landmark 名稱預設中文「分頁」(2026-10-28 前寫死英文 "Pagination");consumer 傳 aria-label 一樣蓋過(下方 {...props})
+        aria-label={t('pagination', 'label', '分頁')} // i18n-allow: DS 預設
         className={cn(
           // **2026-09-10 拿掉 `overflow-x-auto`**(user:「我覺得可以砍頭砍尾」+ 16 家原始碼查證)。
           // 原本它是「砍無可砍時整條橫向可捲」的最後一道,由 2026-09-04 的 commit 0eff9ab6 依我們自己的
@@ -331,7 +338,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
           {hasSizeChanger && (
             <Select
               size="sm"
-              aria-label="每頁筆數" // i18n-allow: DS default
+              aria-label={t('pagination', 'pageSize', '每頁筆數')} // i18n-allow: DS default
               className="w-28"
               value={String(safePageSize)}
               onChange={(v) => {

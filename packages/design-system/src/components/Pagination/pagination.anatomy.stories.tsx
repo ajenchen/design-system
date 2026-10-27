@@ -19,6 +19,12 @@ export default meta
 type Story = StoryObj
 type InspectorStory = StoryObj<InspectorArgs>
 
+/** 點了會真的換頁的分頁列(檢閱器 / 色彩對照 / 無障礙示範共用) */
+function LivePagination({ initialPage, total }: { initialPage: number; total: number }) {
+  const [page, setPage] = React.useState(initialPage)
+  return <Pagination total={total} page={page} onPageChange={setPage} />
+}
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => {
@@ -28,9 +34,9 @@ export const Overview: Story = {
         <div>
           <H3>Anatomy</H3>
           <Desc>
-            {'nav[aria-label="Pagination"] > ul > li(shadcn 骨架);上下頁 = Button text sm iconOnly,'}
+            {'nav[aria-label="分頁"] > ul > li(shadcn 骨架);上下頁 = Button text sm iconOnly,'}
             {'未選數字 = Button text sm、當前頁 = Button secondary(等寬 min-w = field-height-sm,方形節奏對齊 Ant);'}
-            {'當前頁 aria-current="page" + 選中 canonical(主色描邊+染字、不染底,semantic.css SSOT);'}
+            {'當前頁 aria-current="page" + 選中樣式(主色描邊+染字、不染底,與 Chip / SegmentedControl 選中同一套);'}
             {'… = MoreHorizontal 純指示(aria-hidden,不可點)。格位恆 ≤ 7(boundary 1;sibling 1,窄容器階 2 起降為 0 → 5 格)。'}
           </Desc>
           <Pagination total={240} page={page} onPageChange={setPage} />
@@ -50,7 +56,8 @@ export const Inspector: InspectorStory = {
   render: (args) => (
     <div className="flex flex-col gap-3">
       <Desc>調 page / total 觀察摺疊行為(總頁數 = ceil(total / 20)):≤ 7 頁不摺疊;超過後依當前頁位置單側或雙側摺疊。</Desc>
-      <Pagination total={args.total} page={args.page} onPageChange={() => {}} />
+      {/* 改 Controls 的 page 就從那一頁重新開始;之後點數字 / 箭頭照常換頁 */}
+      <LivePagination key={args.page} initialPage={args.page} total={args.total} />
     </div>
   ),
 }
@@ -62,8 +69,9 @@ export const ColorMatrix: Story = {
       <Desc>
         數字鈕四態的 token 對照。default / hover / disabled 全數繼承 Button text variant;
         selected(當前頁)消費 DS「持續選中」canonical —— 主色 base 同時染邊框與文字、底色維持
-        surface 不染(semantic.css「選中狀態」段 SSOT;與 Chip / SegmentedControl 選中同族)。
+        surface 不染(與 Chip / SegmentedControl 選中同一套)。
       </Desc>
+      {/* 選中樣式的出處:semantic.css「選中狀態」段 */}
       <table className="text-body">
         <thead>
           <tr><Th>State</Th><Th>text</Th><Th>border</Th><Th>bg</Th></tr>
@@ -97,7 +105,7 @@ export const ColorMatrix: Story = {
       </table>
       <div className="flex flex-col gap-2">
         <p className="text-caption text-fg-muted">實例對照(第 1 頁:上一頁 disabled + 當前頁選中):</p>
-        <Pagination total={100} page={1} onPageChange={() => {}} />
+        <LivePagination initialPage={1} total={100} />
       </div>
     </div>
   ),
@@ -114,9 +122,9 @@ export const StateBehavior: Story = {
           active 深一階);當前頁 = secondary variant(hover 升 primary-hover 階、按壓 primary-active,
           無灰底 —— 選中之上的互動 = 同色相升降階)。當前頁是位置指示非 toggle —— 點擊當前頁
           fire onPageChange(同頁),不會「取消選中」。第一頁 / 最後一頁時對應箭頭 disabled;
-          用鍵盤按到底的那一下,焦點留在那顆箭頭上、不掉到頁面(Button 的「握著焦點時被停用」規則,
-          keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」)。
+          用鍵盤按到底的那一下,焦點留在那顆箭頭上、不掉到頁面(Button 的「握著焦點時被停用」規則)。
         </Desc>
+        {/* 規則出處:keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」 */}
         <Pagination total={100} page={page} onPageChange={setPage} />
         <p className="text-caption text-fg-muted">目前在第 {page} 頁 —— 點數字 / 箭頭觀察 controlled 行為。</p>
       </div>
@@ -127,11 +135,12 @@ export const StateBehavior: Story = {
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-[720px]">
-      <H3>A11y 預設</H3>
-      <p className="text-body whitespace-pre-line">
+    <div className="max-w-[720px]">
+      {/* 標題底下是一段文字 → paragraph(tight);文字 → 示範 = 說明 → 內容(loose),只由這一層給 */}
+      <H3 paragraph>A11y 預設</H3>
+      <p className="text-body whitespace-pre-line mb-[var(--layout-space-loose)]">
         {'ARIA:WAI-ARIA 無專門 pagination pattern,公認做法(shadcn / MUI / Atlassian 一致)=\n' +
-          '- root <nav aria-label="Pagination">(landmark;英文 pattern 名,follow Breadcrumb 慣例)\n' +
+          '- root <nav aria-label="分頁">(landmark;預設中文,可經 I18nProvider 或 aria-label 覆寫)\n' +
           '- 當前頁 aria-current="page"(不用 aria-pressed —— pressed 是可取消 toggle,當前頁不可取消)\n' +
           '- ellipsis aria-hidden(純視覺指示)\n' +
           '- 上下頁 iconOnly 帶 aria-label(預設「上一頁」/「下一頁」,props 可覆寫)\n\n' +
@@ -139,7 +148,7 @@ export const Accessibility: Story = {
           '不做 roving tabindex(nav landmark 內獨立按鈕群,非 composite widget)。\n\n' +
           '驗證:Storybook a11y 面板 0 critical violation;純鍵盤可完成翻頁與跳頁。'}
       </p>
-      <Pagination total={180} page={3} onPageChange={() => {}} />
+      <LivePagination initialPage={3} total={180} />
     </div>
   ),
 }

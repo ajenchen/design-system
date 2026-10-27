@@ -24,11 +24,11 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 
 基於 shadcn/ui Pagination 的 DOM 骨架(`nav >(操作群 div)> ul > li` + 當前頁 `aria-current="page"`),但**按鈕消費 DS `Button`、事件驅動、資料模型 = `total`(總筆數)+ `pageSize`(Ant Pagination 同款,總頁數內部推導),非 shadcn 原生的 `<a href>` 連結型**——本 DS 服務 app 產品場景;需要 URL 同步時由 consumer 在 `onPageChange` 接 router,不是把按鈕換成連結。`page` / `pageSize` 皆 dual-mode(傳值 = controlled,不傳 = uncontrolled)。
 
-**本元件是分頁的完整功能 SSOT**(2026-07-06 user 拍板):頁碼、總筆數資訊(`showTotal`)、每頁筆數選單(`pageSizeOptions`)全部 own 在此——Ant(showTotal / showSizeChanger 內建於 Pagination)/ Carbon(page-size select 內建)/ MUI TablePagination(rows-per-page + range 內建)同派。DataTable 等 consumer **轉發 config 消費本元件**,不自拼分頁列。
+**本元件是分頁的完整功能 SSOT**(2026-07-06 user 拍板〔UD-J18〕):頁碼、總筆數資訊(`showTotal`)、每頁筆數選單(`pageSizeOptions`)全部 own 在此——Ant(showTotal / showSizeChanger 內建於 Pagination)/ Carbon(page-size select 內建)/ MUI TablePagination(rows-per-page + range 內建)同派。DataTable 等 consumer **轉發 config 消費本元件**,不自拼分頁列。
 
 **Layout Family**:非 4-family — self-contained composite(nav 橫排 control row);個別按鈕消費 Family 3(Button Pill)。
 
-**樣式派系**(2026-07-05 user 拍板):本系統採數字頁碼列(上下頁箭頭 + 數字 + ellipsis 摺疊)，使用者可同時看見目前位置、鄰近頁與頭尾邊界。純上下頁或 page Select 是不同導覽模式，不在此元件內並存。
+**樣式派系**(2026-07-05 user 拍板〔UD-J17〕):本系統採數字頁碼列(上下頁箭頭 + 數字 + ellipsis 摺疊)，使用者可同時看見目前位置、鄰近頁與頭尾邊界。純上下頁或 page Select 是不同導覽模式，不在此元件內並存。
 
 ---
 
@@ -129,7 +129,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
     240px(`../../tokens/uiSize/uiSize.css#--sidebar-width-min`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
   - **連帶修掉的副作用**:`overflow-x-auto` 常掛時,CSS 規範讓另一軸也算成 auto,於是**每一個寬度**都在裁上下 ——
     焦點框(實測往外的框上下像素 0 / 0)、陰影、浮層一起被切。拿掉之後這三件同時解決,分頁按鈕的焦點框
-    因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:485`「≥ 4px 往外」)。
+    因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:501`「≥ 4px → 往外」)。
   - **原本那條捲動的來歷(據實留檔)**:commit `0eff9ab6`(2026-09-04)依我們自己的 `tabs.spec.md`「極長 label」條(當時第 235 行)類推而來,
     **沒有任何 user 原話核准**;查證時另發現連 Radix Tabs 原始碼也零 overflow,那條 Tabs 規範同樣是我們自己寫的。
   - **不消費 `<ScrollArea orientation="horizontal">`**:理由不變(它的 affordance 是 ChevronLeft/Right,跟分頁自己的
@@ -155,7 +155,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 | `page` 越界(< 1 或 > 總頁數) | 防禦性 clamp 後渲染(顯示層不炸);糾正責任在 consumer / DataTable(接資料變動時同步 clamp) |
 | `pageSize <= 0`(consumer contract violation) | 防禦 clamp 至 1(不渲染垃圾格位、totalPages 不會變 Infinity/NaN) |
 | 極大總頁數(500+) | 摺疊規則不變(恆 ≤ 7 格);數字鈕寬度容納 3-4 位數自然撐開 |
-| 邊界頁 disabled 時 focus 落點 | 按到頭的那一下,箭頭在握著焦點時變停用 → Button 不轉原生 `disabled`、焦點留在原鈕(`aria-disabled` 可聚焦停用,焦點離開後才回原生 disabled)。不做 focus 轉移。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」(2026-10-01;本列原寫「接受 focus 掉落(對齊 Ant / MUI)」,查無 user 原話、與全 DS「焦點不掉到 body」相反,AI 推導改寫) |
+| 邊界頁 disabled 時 focus 落點 | 按到頭的那一下,箭頭在握著焦點時變停用 → Button 不轉原生 `disabled`、焦點留在原鈕(`aria-disabled` 可聚焦停用,焦點離開後才回原生 disabled)。不做 focus 轉移。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」〔UD-U1021-28〕(2026-10-01;本列原寫「接受 focus 掉落(對齊 Ant / MUI)」,查無 user 原話、與全 DS「焦點不掉到 body」相反,AI 推導改寫) |
 
 ## Loading / 空值
 
@@ -180,10 +180,10 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 
 **ARIA / Pattern**:WAI-ARIA 無專門 pagination pattern,公認做法(shadcn / MUI / Atlassian 一致)= landmark + current 標記:
 
-- root `<nav aria-label="Pagination">`(landmark;label 用英文 pattern 名,follow Breadcrumb `aria-label="Breadcrumb"` 慣例;consumer 可覆寫)
+- root `<nav aria-label="分頁">`(landmark;預設中文 —— user 2026-10-21 17:24「預設語言是中文」〔UD-U1021-20〕;經 I18nProvider `pagination.label` 或 consumer 傳 `aria-label` 覆寫,同 `lib/i18n/README.md`「Fallback chain」)
 - 當前頁按鈕 `aria-current="page"`(**不用** `aria-pressed`——pressed 是可取消的 toggle 語意,當前頁不可「取消」)
 - ellipsis `aria-hidden`(純視覺指示)
-- 上下頁 iconOnly 按鈕帶 `aria-label`(預設「上一頁」/「下一頁」,`prevAriaLabel` / `nextAriaLabel` props 可覆寫)
+- 上下頁 iconOnly 按鈕帶 `aria-label`(預設「上一頁」/「下一頁」,`prevAriaLabel` / `nextAriaLabel` props 或 I18nProvider `pagination.previous` / `pagination.next` 可覆寫)
 
 **鍵盤**:Tab 逐鈕聚焦(原生 button 序)、Enter / Space 觸發——全部繼承 Button 原生語意,無自訂 key handler;不做 roving tabindex(頁碼是 nav landmark 內的獨立按鈕群,非 composite widget,對齊 shadcn / Ant / MUI)。
 

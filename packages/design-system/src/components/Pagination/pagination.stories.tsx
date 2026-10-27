@@ -123,7 +123,7 @@ export const States: Story = {
             單頁(total ≤ pageSize)— 照常渲染保持版面穩定(Ant hideOnSinglePage=false + MUI 同);
             total=0 則整個不渲染
           </p>
-          <Pagination total={15} page={1} onPageChange={() => {}} />
+          <Pagination total={15} defaultPage={1} />
         </div>
       </div>
     )

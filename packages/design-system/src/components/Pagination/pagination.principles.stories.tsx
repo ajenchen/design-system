@@ -17,6 +17,31 @@ type Story = StoryObj
 // 範例維持自然寬度(naturalWidth):「載入更多」按鈕不被拉滿,不再逐顆寫 self-start(T15)
 const TutorialRule = createTutorialRule({ examples: true, naturalWidth: true })
 
+// 「載入更多」示範:按一次在清單尾端多接三則,接完就沒有按鈕(讀流的心智模型 = 往下接,不是換頁)
+const NOTIFICATIONS = [
+  '王小明在「Q3 行銷企劃」留言',
+  '林佳穎把「官網改版」指派給你',
+  '陳志豪完成了「年度預算審核」',
+  '張雅婷上傳了 2 個檔案到「品牌素材」',
+  '李俊傑把「客服工單 #2041」改成已解決',
+  '黃美玲邀請你加入「產品週會」',
+] as const
+const FEED_STEP = 3
+
+function NotificationFeed() {
+  const [shown, setShown] = React.useState(FEED_STEP)
+  return (
+    <div className="flex flex-col items-start gap-[var(--layout-space-tight)]">
+      <ul className="flex flex-col gap-[var(--layout-space-tight)] text-body text-foreground">
+        {NOTIFICATIONS.slice(0, shown).map((n) => <li key={n}>{n}</li>)}
+      </ul>
+      {shown < NOTIFICATIONS.length && (
+        <Button variant="tertiary" onClick={() => setShown((v) => v + FEED_STEP)}>載入更多通知</Button>
+      )}
+    </div>
+  )
+}
+
 // ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(v3 canonical,Polaris/Material/Ant 共識)──
 
 export const UsageGuidance: Story = {
@@ -41,7 +66,7 @@ export const UsageGuidance: Story = {
             title="❌ 無盡瀏覽的動態:用「載入更多」或虛擬捲動"
             note="activity stream、通知列表這類「往下讀」的流,頁碼是錯的心智模型 —— 使用者不在乎第幾頁,只在乎更多內容。與虛擬滾動互斥:兩者是互斥的大資料策略(TanStack 官方定位),同一份資料不可同時用。"
           >
-            <Button variant="tertiary">載入更多通知</Button>
+            <NotificationFeed />
             <ExampleCaption>✅ feed 尾端用 load-more;超大資料集在 DataTable 內建虛擬滾動</ExampleCaption>
             <ExampleCaption warn>❌ 給 activity feed 加頁碼 —— 讀流被切斷,回頭找內容也記不住頁碼</ExampleCaption>
           </TutorialRule>
