@@ -55,3 +55,22 @@ export function productCatalog(count: number, { categories = PRODUCT_CATEGORIES 
     }
   })
 }
+
+/**
+ * 商品類別的下拉選項(Select / SelectMenu / Combobox 範例;2026-10-27 收成一份 —— 原本四個 story 檔各抄一份,
+ * scripts/story-helper-duplication-baseline.json 的兩組 categoryOptions)。值小寫、標籤與 PRODUCT_CATEGORIES 同一份。
+ */
+export const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c.toLowerCase(), label: c }))
+
+/** 多一類 Clothing(Combobox 展示 / 設計規格頁那兩份抄本就是 5 類;要 5 個以上選項才示範得出標籤溢出等情境)。 */
+export const CATEGORY_OPTIONS_WITH_CLOTHING = [...CATEGORY_OPTIONS, { value: 'clothing', label: 'Clothing' }]
+
+/** DataTable 設計原則頁 / 設計規格頁小表格的一列(原本兩檔各宣告一份逐字相同的 `Product`)。 */
+export interface ProductRow {
+  name: string
+  category: string
+  stock: string
+  price: number
+  available: boolean
+  launchDate: string
+}
