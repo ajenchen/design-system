@@ -31,7 +31,7 @@ benchmark:
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 點擊進入人員 profile 頁 | `<a>` 或 Link | 點擊是導覽;帶連結的文字人名滑過仍可觸發名片(誰可以觸發見 `../Avatar/avatar.spec.md`「何時用」) |
-| 人員清單 row（不需要 hover 展開詳情）| `Avatar` + inline text | ProfileCard 是 hover content，list row 不需要 |
+| 人員清單 row | `Avatar`(照樣帶名片,見 `../Avatar/avatar.spec.md`「Avatar HoverCard 原則」)+ inline text | ProfileCard 是滑過才展開的內容，不是 list row 樣式 |
 | 單純顯示一個名字 | `Avatar` + `Text` | ProfileCard 是完整資訊卡，單名字用更輕量元件 |
 | 複雜人員表單（編輯角色 / 權限）| `Dialog` 或專用頁面 | ProfileCard 是快速預覽，不承載複雜互動 |
 
@@ -180,7 +180,7 @@ DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 con
 
 - **無 SizeMatrix**:ProfileCard 固定 **320px 寬**(元件級常數,見本 spec「寬度」段),跨 consumer / variant 不變——人員資訊卡的 canonical width 屬於元件自身,不抽為 token。Section 高度由內容撐開,無 size tier。
 
-對應 anatomy story:保留 `Overview` + `Inspector`(section 開關 Controls,單組合互動檢閱)+ `SectionMatrix`(side-by-side 組合矩陣)+ `ColorMatrix`(Status 色)+ 元件特有 `HoverCardIntegration`(canonical usage pattern)+ `StateBehavior`(空值 / 過長文字邊界)+ `Accessibility`。
+對應 anatomy story:保留 `Overview` + `Inspector`(section 開關 Controls,單組合互動檢閱)+ `SectionMatrix`(唯一那一種完整結構)+ `ColorMatrix`(Status 色)+ 元件特有 `HoverCardIntegration`(canonical usage pattern)+ `StateBehavior`(空值 / 過長文字邊界)+ `Accessibility`。
 
 ---
 

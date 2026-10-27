@@ -1,9 +1,10 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { PersonDisplay } from '@/design-system/components/PeoplePicker/person-display'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
+import { SAMPLE_PEOPLE, samplePersonCard, samplePersonData } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Components/ProfileCard/設計原則',
@@ -15,11 +16,9 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true })
 
-const AVATAR_URL = 'https://i.pravatar.cc/128?u=alice-designsys'
-
-// 預設動作一律消費 ProfileCardDefaultActions(profile-card.spec.md「Consumer 跨 story / 跨 consumer 必須用同一組 canonical actions」);
-// 2026-10-20 前這裡手刻「Chat / Call」—— 名字還跟元件預設的「Audio call」不一樣(獨立驗證 OV-10 同族)
-const sampleActions = <ProfileCardDefaultActions onChat={() => {}} onCall={() => {}} />
+// 範例人員讀共用名錄、名片走全 DS 同一支建構器(stories-helpers/scene/person-card.tsx;同一個人在全 DS 同一組資料,
+// 預設動作接 Storybook action)。2026-10-28 前本檔自帶一份 ProfileCard + 接空函式的預設動作(點了沒反應,登記簿 A16)。
+const alice = SAMPLE_PEOPLE.alice
 
 // Canonical path(avatar.spec.md DS-wide rule;抄 profile-card.stories.tsx ProfileCardHover baseline):
 // 透過 <Avatar hoverCard={...}> — Avatar 內部處理 HoverCardTrigger / Content / keyboard focus /
@@ -27,22 +26,7 @@ const sampleActions = <ProfileCardDefaultActions onChat={() => {}} onCall={() =>
 function InlineHoverExample() {
   return (
     <span className="inline-flex items-center gap-2">
-      <Avatar
-        src={AVATAR_URL}
-        alt="Alice"
-        size={32}
-        hoverCard={
-          <ProfileCard
-            name="Alice Chen"
-            avatar={{ src: AVATAR_URL, alt: 'Alice' }}
-            subtitle="Product Designer｜D-0042"
-            status="online"
-            actions={sampleActions}
-            defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
-            onViewMore={() => {}}
-          />
-        }
-      />
+      <Avatar src={alice.avatarSrc} alt={alice.name} size={32} hoverCard={samplePersonCard(alice)} />
       <span className="text-body">@Alice Chen</span>
       <span className="text-body text-fg-muted">留言：「這版 spacing 看起來好多了！」</span>
     </span>
@@ -77,16 +61,14 @@ export const UsageGuidance: Story = {
       </UsageSection>
 
       <UsageSection kind="whenNot">
+        {/* 2026-10-28 前這條寫成「列表只顯示名字 + 頭像時用 Avatar + Text 就好」,範例的頭像也沒接名片(稽核 H07):
+            人員頭像一律帶名片(avatar.spec.md「Avatar HoverCard 原則」;登記簿 B21「我說所有」),過重的是把名片攤成列樣式 */}
         <TutorialRule
-          title="❌ 單純顯示名字用 ProfileCard → 過重"
-          note="列表項目只顯示名字 + 頭像時,用 Avatar + Text 就好。ProfileCard 是 hover 才展開的詳情卡,不是 list item 樣式"
+          title="❌ 把 ProfileCard 攤開當列表的列 → 過重"
+          note="ProfileCard 是滑過才展開的詳情卡,不是 list item 樣式。列表的每一列放頭像 + 名字就好,頭像照樣帶名片"
         >
-          {/* @layout-space-magic-ok: 頭像 ↔ 姓名(反例主題不是間距)(layoutSpace.spec.md:166 micro) */}
-          <div className="flex items-center gap-2">
-            <Avatar src={AVATAR_URL} alt="Alice" size={24} />
-            <span className="text-body">Alice Chen</span>
-          </div>
-          <ExampleCaption>↑ 評論列表 / 成員 row 這種場景,純 Avatar + Text 就夠</ExampleCaption>
+          <PersonDisplay value={samplePersonData(alice)} />
+          <ExampleCaption>↑ 列表的列:頭像 + 名字;滑過頭像才展開名片</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
@@ -117,8 +99,8 @@ export const TriggerContextRule: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="✅ 唯一觸發點 — avatar hover 顯示 HoverCard 內容"
-        note="留言列表、@mention、PR reviewer list、Sidebar 使用者列等場景:主要內容是留言 / PR / commit,hover avatar 才浮出人員詳情,不佔版面。ProfileCard 的觸發點只有 avatar,沒有別的。"
+        title="✅ 觸發點 — 滑過人員頭像浮出名片"
+        note="留言列表、@提及、審核者清單、側欄的使用者列等場景:主要內容是留言或審核本身,滑過頭像才浮出人員詳情,不佔版面。人員頭像一律觸發;帶連結的文字人名也可觸發,一般文章內的純文字人名不加。"
       >
         <InlineHoverExample />
       </TutorialRule>
@@ -127,14 +109,9 @@ export const TriggerContextRule: Story = {
         title="❌ 不要當 standalone 頁面區塊嵌入"
         note="ProfileCard 是 avatar hover 觸發的 HoverCard 內容模板,不是獨立 Card primitive——缺浮層外殼(radius / border / shadow)與定位邏輯。需要頁面內人員卡佈局時,請用 avatar hoverCard,或自組 Surface / 專屬元件。"
       >
-        <div className="border border-dashed border-error rounded-lg opacity-60">
-          <ProfileCard
-            name="Alice Chen"
-            avatar={{ src: AVATAR_URL, alt: 'Alice' }}
-            subtitle="Product Designer｜D-0042"
-            status="online"
-            defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
-          />
+        {/* 反例框只留紅虛線:2026-10-28 前另加 opacity-60(稽核 M077;DS 沒有定義數字透明度 token,登記簿 B10) */}
+        <div className="border border-dashed border-error rounded-lg">
+          {samplePersonCard(alice)}
         </div>
         <ExampleCaption warn>↑ 反例:直接嵌頁面缺浮層外殼 + 繞過 avatar 觸發語意</ExampleCaption>
       </TutorialRule>
@@ -152,23 +129,13 @@ export const FixedWidthRule: Story = {
         title="ProfileCard 永遠 320px，不隨內容伸縮"
         note="HoverCard 浮層寬度由 ProfileCard 決定。若寬度隨內容變化,使用者在不同人員的卡之間切換時,浮層會左右跳動,體驗破碎。固定寬度保證穩定預測。對照 Material Snackbar 固定 344px,世界級 DS 一致採「單一元件 設計準則 寬度固定」策略"
       >
-        <div className="flex flex-col gap-[var(--layout-space-loose)]">
-          <div className="border border-border rounded-lg">
-            <ProfileCard name="Bob" avatar={{ src: AVATAR_URL, alt: 'Bob' }} subtitle="Engineering" status="online" />
-          </div>
-          <div className="border border-border rounded-lg">
-            <ProfileCard
-              name="Alice Chen"
-              avatar={{ src: AVATAR_URL, alt: 'Alice' }}
-              subtitle="Product Designer｜Design Systems Lead"
-              status="busy"
-              statusMessage="In back-to-back meetings until 4pm. Please DM for urgent matters."
-              defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
-              onViewMore={() => {}}
-            />
-          </div>
+        {/* 2026-10-28 前這裡把兩張 ProfileCard 直接畫在頁面上、外面手刻邊框當浮層(稽核 M077;本檔自己的規則:不當頁面區塊嵌入)。
+            改成真的從頭像滑出:兩個人的狀態訊息一短一長 */}
+        <div className="flex items-center gap-[var(--layout-space-loose)]">
+          <Avatar src={SAMPLE_PEOPLE.bob.avatarSrc} alt={SAMPLE_PEOPLE.bob.name} size={32} hoverCard={samplePersonCard(SAMPLE_PEOPLE.bob)} />
+          <Avatar src={alice.avatarSrc} alt={alice.name} size={32} hoverCard={samplePersonCard(alice)} />
         </div>
-        <ExampleCaption>↑ 內容多寡不同,卡寬都是 320px,避免 hover 切換時浮層左右跳動</ExampleCaption>
+        <ExampleCaption>↑ 先後滑過兩個頭像:內容多寡不同,卡寬都是 320px,切換時浮層不會左右跳動</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -184,28 +151,17 @@ export const FixedWidthRule: Story = {
 // ── 結構選擇 ────────────────────────────────────────────────────────────
 
 export const SectionRule: Story = {
-  name: '區段各自獨立（選擇性出現）',
+  name: '區段的出現規則',
   render: () => (
     <TutorialPage>
+      {/* 2026-10-28 前這條示範「左:極簡(無狀態 / 動作)、右:含狀態 + 動作」並寫「不強制全部塞滿」(稽核 H06):
+          規格已取消精簡版、人員資料預設展示一致(profile-card.spec.md「取消「精簡版」變體」;登記簿 B22「所有地方的namecard預設都是秀一樣的資訊的」) */}
       <TutorialRule
         title="每個 section 各有渲染規則"
-        note="Profile header + Info fields 永遠顯示（fields 為 always-render：缺值顯「-」佔位，固定結構防漂移）;status / actions / viewMore 則各自按有無資料決定渲染。不強制全部塞滿——不同情境（basic contact / full profile）自然長出不同形狀"
+        note="頭像與姓名、資訊欄位永遠顯示(資訊欄位缺值顯「-」佔位,固定結構防漂移);狀態沒有值只代表資料還在載入,這段時間整個狀態區先不畫;人員名片一律帶預設動作(傳訊息 + 語音通話)與查看更多"
       >
-        <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
-          <div className="border border-border rounded-lg">
-            <ProfileCard name="Alice Chen" avatar={{ src: AVATAR_URL, alt: 'Alice' }} subtitle="Designer" />
-          </div>
-          <div className="border border-border rounded-lg">
-            <ProfileCard
-              name="Alice Chen"
-              avatar={{ src: AVATAR_URL, alt: 'Alice' }}
-              subtitle="Designer"
-              status="online"
-              actions={sampleActions}
-            />
-          </div>
-        </div>
-        <ExampleCaption>↑ 左：極簡（無 status / actions）｜右：含 status + actions</ExampleCaption>
+        <Avatar src={SAMPLE_PEOPLE.ada.avatarSrc} alt={SAMPLE_PEOPLE.ada.name} size={32} hoverCard={samplePersonCard(SAMPLE_PEOPLE.ada)} />
+        <ExampleCaption>↑ 滑過頭像:五個區段都在</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

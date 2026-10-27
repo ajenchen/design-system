@@ -16,12 +16,10 @@ export interface SamplePerson {
   statusMessage?: string
 }
 
-/**
- * 範例人員名錄 —— 同一個人在全 DS 範例裡用同一組資料(2026-10-28 收成一份;之前 Ada Chen 在 HoverCard 頁是 ADACHEN / 1048217、
- * 在 ProfileCard 設計規格是 EMP-2101,同一個人兩套編號)。副標 = {部門}｜{ID}｜{員工編號}(user 2026-04-22 10:27 定的格式),
- * ID / 員工編號與名片的預設欄位同值;狀態與狀態訊息成對(線上不寫休假)。用 `samplePersonCard(SAMPLE_PEOPLE.ada)` 取名片,
- * 要直接畫 ProfileCard 的頁面(ProfileCard 自己的展示 / 規格)讀同一筆資料。
- */
+// 範例人員名錄 —— 同一個人在全 DS 範例裡用同一組資料(2026-10-28 收成一份;之前 Ada Chen 在 HoverCard 頁是 ADACHEN / 1048217、
+// 在 ProfileCard 設計規格是 EMP-2101,同一個人兩套編號)。副標 = {部門}｜{ID}｜{員工編號}(user 2026-04-22 10:27 定的格式),
+// ID / 員工編號與名片的預設欄位同值;狀態與狀態訊息成對(線上不寫休假)。用 `samplePersonCard(SAMPLE_PEOPLE.ada)` 取名片,
+// 本身會帶名片的 DS 元件(PersonDisplay 等)用 `samplePersonData(...)` 取同一筆資料。
 export const SAMPLE_PEOPLE = {
   ada: {
     name: 'Ada Chen',
@@ -31,6 +29,24 @@ export const SAMPLE_PEOPLE = {
     employeeNumber: '1048217',
     status: 'online',
     statusMessage: '正在處理 login 頁重構',
+  },
+  alice: {
+    name: 'Alice Chen',
+    avatarSrc: 'https://i.pravatar.cc/128?u=alice',
+    subtitle: 'Design｜ALICEC｜1031406',
+    id: 'ALICEC',
+    employeeNumber: '1031406',
+    status: 'away',
+    statusMessage: '休假中,週一回來。急事請找 @Wei-Lun Cheng。',
+  },
+  bob: {
+    name: 'Bob Lin',
+    avatarSrc: 'https://i.pravatar.cc/128?u=bob',
+    subtitle: 'Engineering｜BOBLIN｜1027734',
+    id: 'BOBLIN',
+    employeeNumber: '1027734',
+    status: 'busy',
+    statusMessage: '會議中,15:00 後回覆',
   },
 } satisfies Record<string, SamplePerson>
 
@@ -49,7 +65,7 @@ export function demoPersonActions(name: string) {
 }
 
 /**
- * story 共用的人員名片樣本 —— 滑過人員頭像 / 選單列頭像時浮出的那一張(avatar.spec.md「person avatar hover → ProfileCard」)。
+ * story 共用的人員名片樣本 —— 滑過人員頭像 / 選單列頭像時浮出的那一張(avatar.spec.md「Avatar HoverCard 原則」)。
  * 名片本身交給 DS 既有的建構器 `buildPersonProfileCard`(PeoplePicker/person-display.tsx;PersonAvatar / PeoplePicker / DataTable 人員格同一支),
  * 這裡只放樣本資料,不另組一份 ProfileCard(M17 / M23(d))。
  *
@@ -60,11 +76,19 @@ export function demoPersonActions(name: string) {
  * - 狀態「線上」配狀態訊息「Out of Office: Back on Monday!」(自相矛盾;獨立驗證 OV-V01 同族)。
  * 這裡定一次:狀態「離開」配休假訊息(可傳別的狀態,狀態與訊息要成對)、預設欄位走 PersonData 的 id / employeeNumber、預設動作接 demoPersonActions。
  */
-export function samplePersonCard({
+export function samplePersonCard(person: SamplePerson) {
+  return buildPersonProfileCard(samplePersonData(person))
+}
+
+/**
+ * 同一筆樣本轉成 DS 的人員資料(PersonData)—— 給本身就會帶名片的 DS 元件(PersonDisplay 等)直接吃;
+ * 名片的建構仍在元件內走 buildPersonProfileCard,這裡不另組。預設值同 samplePersonCard。
+ */
+export function samplePersonData({
   name, avatarSrc, subtitle, id = 'YHANAX', employeeNumber = 'EMP-1001',
   status = 'away', statusMessage = '休假中,週一回來。急事請找 @Wei-Lun Cheng。',
-}: SamplePerson) {
-  return buildPersonProfileCard({
+}: SamplePerson): PersonData {
+  return {
     name,
     avatarUrl: avatarSrc,
     description: subtitle ?? `Design｜D-0042｜${employeeNumber}`,
@@ -73,5 +97,5 @@ export function samplePersonCard({
     id,
     employeeNumber,
     ...demoPersonActions(name),
-  })
+  }
 }
