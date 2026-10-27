@@ -60,8 +60,8 @@ const NAV = [
 ] as const
 
 // ── 版面寬度設定(產品的值;DS `app-shell.spec.md`「版面規則」§1)──
-// Main 最小寬:AppShell 必填,DS 不替產品挑預設。600 = 範本起點(示範值,產品依自己最寬的主內容調整)。
-const MAIN_MIN_WIDTH = 600
+// Main 最小寬:AppShell 必填,DS 不替產品挑預設。480 = 範本起點(示範值,產品依自己最寬的主內容調整)。
+const MAIN_MIN_WIDTH = 480
 // Menu 最小 / 初始 / 最大:最小與初始 240 = DS 預設(`--sidebar-width-min` / `--sidebar-width`);最大 DS 沒有既有值,產品必給(範本示範 320)。
 const MENU_WIDTH = { min: 240, initial: 240, max: 320 }
 
