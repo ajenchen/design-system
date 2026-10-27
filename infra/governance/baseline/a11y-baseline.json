@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-10-21T08:30:59.334Z",
+    "generatedAt": "2026-10-27T08:23:38.434Z",
     "stories": 1074,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1187,7 +1187,7 @@
     "design-system-components-bulkactionbar-設計規格--overview|color-contrast": 16,
     "design-system-components-button-展示--disabled|color-contrast": 4,
     "design-system-components-button-展示--icon-only|color-contrast": 3,
-    "design-system-components-button-展示--loading|color-contrast": 9,
+    "design-system-components-button-展示--loading|color-contrast": 8,
     "design-system-components-button-展示--pressed|color-contrast": 3,
     "design-system-components-button-展示--with-badge|color-contrast": 3,
     "design-system-components-button-設計原則--danger-rule|color-contrast": 4,
@@ -1223,7 +1223,7 @@
     "design-system-components-carousel-設計規格--inspector|color-contrast": 26,
     "design-system-components-carousel-設計規格--overview|color-contrast": 2,
     "design-system-components-carousel-設計規格--size-matrix|color-contrast": 1,
-    "design-system-components-carousel-設計規格--state-behavior|color-contrast": 6,
+    "design-system-components-carousel-設計規格--state-behavior|color-contrast": 7,
     "design-system-components-chart-展示--bar-chart-revenue|color-contrast": 1,
     "design-system-components-chart-展示--donut-chart-traffic-source|color-contrast": 1,
     "design-system-components-chart-展示--line-chart-response-time|color-contrast": 1,
