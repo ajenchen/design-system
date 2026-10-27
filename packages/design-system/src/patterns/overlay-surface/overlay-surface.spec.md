@@ -61,7 +61,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 **Rationale**:
 - Native scrollbar 跨 OS 不一致(macOS overlay / Windows 永遠吃 ~17px 寬度)——Dialog / Sheet 內容會因 OS 不同跑版
-- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,捲動時浮現
+- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,指標在捲動區上時浮現(只用鍵盤捲動時不浮現)
 - SSOT 見 `components/ScrollArea/scroll-area.spec.md`「何時用」已列明「Sheet / Dialog body 太長」
 
 **實作模板**:

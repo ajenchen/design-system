@@ -31,7 +31,7 @@ Native scrollbar 跨 OS 不一致:
 
 **結果**:同一個 DataTable 橫向捲動、Sheet / Dialog 內容垂直捲動在 macOS 視覺對齊,在 Windows 右側被 scrollbar 吃 17px 跑版。「Left pinned + Row Actions」的 DataTable 截圖即是此類已觀察的跨 OS bug。
 
-ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、捲動時浮出(hover / scroll 自動顯示)**。
+ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、指標在捲動區上時浮出**(含用滾輪捲動;只用鍵盤捲動時不浮出,內容照樣捲動 —— 預設 `type="hover"` 只聽 pointerenter / pointerleave,見 `@radix-ui/react-scroll-area` 的 `ScrollAreaScrollbarHover`)。
 
 ---
 

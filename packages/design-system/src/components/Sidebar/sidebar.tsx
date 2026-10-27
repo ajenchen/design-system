@@ -497,11 +497,12 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       ? (inShell ? panel?.width : "var(--sidebar-width)")
       : railCollapsed ? "var(--sidebar-width-icon)" : 0
     // 內容的版面寬,與上方外框寬讀同一個 railCollapsed(sidebar.spec.md「Collapsible」的「收起後的寬」):
-    //   - 收成細列(含收合過渡)= 外框此刻的寬 —— 看得到多寬,版面就多寬。Tooltip / 從列鈕打開的選單錨在**列鈕自己的版面矩形**
+    //   - 收成細列(含收合過渡)= 外框此刻的寬,捲動區的內容層也鎖在這個寬(SidebarContent 的 ScrollArea 開 `fillX`)、
+    //     列鈕右內距歸零(sidebarMenuButtonVariants 的 `!pr-0`)—— 細列裡放什麼,列鈕的版面都不比看得到的寬。Tooltip / 從列鈕打開的選單錨在**列鈕自己的版面矩形**
     //     (Radix Popper 量觸發元素的 getBoundingClientRect,不扣祖先裁掉的部分;elevation.spec.md「浮層間距」),焦點框與選中底色也畫在那個矩形上。
     //     2026-05-21 起(`1100022c` 提出、`b4934ed0` 內層給展開寬、`5e2b7db4` 外框補 overflow-x-hidden)到 2026-10-27,細列也保持展開寬、
     //     只靠外框裁(修前實測:列鈕版面 240、看得到 47),Tooltip 錨在被裁掉的右緣、離細列 201px,鍵盤焦點框缺右邊
-    //     (2026-10-21 user:「我發現 sidebar 變成 icon only的時候，每個sidbar menu item 的tooltip距離 sidebar好遠」)。
+    //     (2026-10-21 user:「我發現 sidebar 變成 icon only的時候，每個sidbar menu item 的tooltip距離 sidebar好遠，你確保你知道我在講的問題是什麼，並查證root cause」)。
     //     收合過渡中內容跟著外框一起縮:圖示由左側固定的 pl 公式定位、中心不跳,字在收起的第一格就 sr-only,不會跑省略號。
     //   - 展開(含展開過渡)與 offcanvas 收掉 = 展開寬,由外框 overflow-x 裁出:字從右側被揭開 / 裁掉,不重排、不跑省略號。
     const innerWidth = railCollapsed
@@ -855,8 +856,13 @@ const SidebarContent = React.forwardRef<
       // SidebarContent 用 ScrollArea 處理長列表 scroll——跨 OS 一致不吃寬度(macOS
       // overlay vs Windows/Linux always-visible 差異見 scroll-area.tsx 註解)。
       // 呼吸空間和分隔線由 SidebarGroup 自己處理(對齊 MenuGroup 的 py-2 + [&+&]:border-t)。
-      // 收成細列時捲動區寬 = 細列寬(見 Sidebar 的 innerWidth):內容比視窗高時,滑過 / 捲動照 ScrollArea 通則浮出直捲軸(`../ScrollArea/scroll-area.spec.md`
-      // 「為什麼需要 ScrollArea」的 hover / scroll 自動顯示),捲軸貼細列右緣、不蓋到圖示與頭像(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
+      // `fillX`:SidebarContent 只會垂直捲,內容層照 ScrollArea 垂直捲動的做法鎖在捲動區寬(`../ScrollArea/scroll-area.spec.md`
+      // 「Radix Viewport `display:table` 陷阱 + `fillX`」)。不開時 Radix 的內容層是 `display: table`,細列裡任何比細列寬的子元素
+      // (例:`SidebarMenuSkeleton` 最小寬 = 兩側 loose + 圖示 + gap,標準密度 56;`SidebarInput` 裡原生 input 的最小寬)都會把它撐開,
+      // 所有列鈕跟著變寬 → Tooltip 離細列不是 8px、焦點框右邊被裁。列鈕自己的內距由 sidebarMenuButtonVariants 的 `!pr-0` 管。
+      // 收成細列時捲動區寬 = 細列寬(見 Sidebar 的 innerWidth):內容比視窗高時,指標在細列上(含用滾輪捲動)照 ScrollArea 通則浮出直捲軸,
+      // 只用鍵盤捲動時不出捲軸、聚焦項自己捲進視野(Radix `type="hover"` 只聽 pointerenter / pointerleave;`../ScrollArea/scroll-area.spec.md`
+      // 「為什麼需要 ScrollArea」);捲軸貼細列右緣、不蓋到圖示與頭像(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
       // 2026-04-22(`76ef90ee`)這裡寫的是相反的「icon-collapsed 時不會露出 scroll chrome」;2026-05-21 起內層保持展開寬,捲軸其實一直在、只是畫在被裁掉的右緣。
       // 2026-10-21 user 回 E3(確認頁備註,UTC 09:23):「ds規定本來就應該盡量讓使用者在各種情況下都能看完完整內容吧？如果不出現捲軸要如何看完完整內容？？？」→ 細列也出捲軸。
       // 捲動區本身不當 Tab 停靠點(viewportTabIndex={-1};待辦總帳 B9,依 `../ScrollArea/scroll-area.spec.md:103`「內容已有自帶 focusable + 鍵盤處理的元素」時傳 -1):內容是一串串自帶方向鍵的 SidebarMenu,焦點落進任何一項都會把它捲進視野;先前 Tab 第一站是這個捲動區(「混合內容」實測第 1 站),停在上面按 ↓ 焦點不動。
@@ -866,7 +872,7 @@ const SidebarContent = React.forwardRef<
       )}
       {...props}
     >
-      <ScrollArea className="flex-1" viewportTabIndex={-1}>
+      <ScrollArea fillX className="flex-1" viewportTabIndex={-1}>
         <div className="flex flex-col">{children}</div>
       </ScrollArea>
     </div>
@@ -1417,8 +1423,8 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
  *   - hover:      bg-neutral-hover
  *   - selected:   bg-neutral-selected(data-active=true)
  *
- * Icon 模式:button 保持 w-full = 細列寬(Sidebar 的 innerWidth 細列時 = 外框;sidebar.spec.md「Collapsible」),
- * **無 height lock / 無 justify-center**(2026-05-21 v4 C* 撤回 `!h-[...]`——row height 永遠 stable);
+ * Icon 模式:button 保持 w-full = 細列寬(Sidebar 的 innerWidth 細列時 = 外框、SidebarContent 的 ScrollArea 開 fillX;
+ * sidebar.spec.md「Collapsible」),**無 height lock / 無 justify-center**(2026-05-21 v4 C* 撤回 `!h-[...]`——row height 永遠 stable);
  * prefix(icon / avatar)靠 `!pl-[calc((rail - prefix-width)/2)]` 公式置中對齊 rail、右內距歸零,
  * label span 以 sr-only 視覺隱藏(a11y tree 保留,2026-07-05 D4——SR 仍讀得到 accessible name)。
  */
@@ -1437,7 +1443,8 @@ const sidebarMenuButtonVariants = cva(
     //   寬度過渡中會讓圖示瞬間跳位;row geometry 永遠 stable = px-loose + items-start + gap-2 + height auto)。
     //   label 走 sr-only(SR 讀到、供 accessible name,見下方 v5/D4 註解);badge / action / inline-actions display:none
     //   (視覺 + SR 一併隱藏 —— collapsed 供名責任在 label,badge 計數屬補充資訊);prefix 走下方 pl 公式、右內距歸零。
-    //   列鈕寬 = 細列寬(Sidebar 的 innerWidth)—— Tooltip(僅提示、不供名)、焦點框、選中底色都畫在列鈕自己的矩形上。
+    //   列鈕寬 = 細列寬(Sidebar 的 innerWidth + SidebarContent 的 ScrollArea `fillX` 管容器,下方 `!pr-0` 管列鈕自己的內距)——
+    //   Tooltip(僅提示、不供名)、焦點框、選中底色都畫在列鈕自己的矩形上。
     //   出處更正(2026-10-27):這裡原寫「對齊 MUI MiniDrawer + shadcn canonical(width morph + overflow clip + row geometry 不變)」,
     //   兩家實際都是**內容跟著外框一起縮**,不是內層保持展開寬、外框裁:
     //   shadcn 內層 `w-full`、列鈕細列時 `size-8!`,Tooltip `side="right" align="center"`
@@ -1487,9 +1494,11 @@ const sidebarMenuButtonVariants = cva(
     // display:none(icon 置中公式不變)。
     "group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:sr-only",
     // 細列時右內距歸零(同 SidebarHeader 的 `group-data-[collapsible=icon]:!pr-0`):右側已沒有任何東西(字 sr-only、動作 / 徽章 display:none)。
-    // 留著 loose 會讓列鈕最小寬 = pl + 圖示 + pr = 細列寬(md 16 + 16 + 16 = 48),大過細列看得到的寬(48 − 右緣分隔線 1px = 47);
-    // SidebarContent 的 ScrollArea 內容層是 `display: table`(Radix),會被這個最小寬撐開 → 列鈕又比看得到的寬 1px,焦點框右邊被裁掉。
-    // `!` 蓋過有動作時的 inline paddingRight 與 `group-has-[…menu-action]:pr-8`(兩者在細列都沒有東西要讓位)。
+    // 內容層由 SidebarContent 的 `fillX` 鎖在細列寬,這一行管的是列鈕**自己**:有列尾動作的列,右內距是預留給動作的
+    // (上方 inline paddingRight = loose + 動作寬 + gap-2,或 `group-has-[…menu-action]:pr-8`),細列時動作收掉了、預留還在;
+    // border-box 的寬不會小於左右內距之和,左側置中公式的 pl 加上它比細列寬(標準密度 16 + 40 = 56 > 看得到的 47、寬鬆 74 > 67)
+    // → 列鈕被撐寬,Tooltip 離細列不是 8px、焦點框右邊被裁(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
+    // `!` 蓋過 inline paddingRight 與 `group-has-[…menu-action]:pr-8`。
     "group-data-[collapsible=icon]:!pr-0",
     // 2026-05-22 Approach 9 — 收合時所有 prefix center 鎖回 rail center
     // (--sidebar-width-icon/2 = GlobalHeader toggle geometry SSOT)。
