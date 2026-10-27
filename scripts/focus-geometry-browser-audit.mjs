@@ -345,7 +345,7 @@ try {
         continue
       }
       try {
-        // DS 的主題是 <html data-theme>,不是 prefers-color-scheme(semantic.css:424 / primitives.css:259)
+        // DS 的主題是 <html data-theme>,不是 prefers-color-scheme(semantic.css / primitives.css 的 `[data-theme="dark"]` 區塊)
         await pg.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
         // 對照組(--selftest):把所有焦點視覺全部釘死,承擔者證明就該全部變「零差異」。
         // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。

@@ -138,8 +138,8 @@ export function baselineOf({ groups }) {
 // --selftest
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** 2026-10-20 教學頁修正第一版(fix.patch,複核前)兩個檔裡逐字相同的那一段 —— data-table.principles.stories.tsx:162-187 與
- *  data-table.anatomy.stories.tsx:293-318 的原文,一字不改(兩段 cmp 相同) */
+/** 2026-10-20 教學頁修正第一版(fix.patch,複核前)兩個檔裡逐字相同的那一段 —— data-table.principles.stories.tsx 當時第 162–187 行與
+ *  data-table.anatomy.stories.tsx 當時第 293–318 行的原文,一字不改(兩段 cmp 相同) */
 export const R1_CATALOG_COPY = `const CATALOG_BASE: { name: string; category: string; price: number }[] = [
   { name: 'Wireless Headphones', category: 'electronics', price: 2490 },
   { name: 'Office Chair', category: 'furniture', price: 8900 },

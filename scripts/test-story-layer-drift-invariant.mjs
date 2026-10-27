@@ -260,7 +260,7 @@ check('story 標記引用的每一個 `*.spec.md:N` 都指得到(檔在、行號
   assert.ok(cites >= 300, `標記引用太少(${cites}),掃描可能壞了`)
   assert.deepEqual(dangling, [])
   // 對照組:一個指到檔尾之外的引用必須被抓到
-  const fake = '{/* @layout-space-magic-ok: 夾具(layoutSpace.spec.md:99999) */}'
+  const fake = '{/* @layout-space-magic-ok: 夾具(layoutSpace.spec.md:99999) */}' // @cite-fixture:故意指到檔尾之外的對照組
   const m = [...fake.matchAll(/([A-Za-z][\w-]*\.spec\.md):(\d+)/g)][0]
   assert.ok(!(specs.get(m[1]) ?? []).some((f) => readFileSync(join(REPO, f), 'utf8').split('\n').length >= Number(m[2])), '對照組(:99999)應被判為超出檔尾')
 })

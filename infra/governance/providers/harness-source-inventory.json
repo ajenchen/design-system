@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "6b52b3ced8d2bf4b249e5ce7dc644e03bc14be2e424eff6a336a298a5e497e1b",
+        "sha256": "171c76753691af7bbe9eeef01261ba6cd9afb5ce332baa2d170352d63604d896",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
@@ -508,6 +508,7 @@
       "scripts/test-overlay-list-as-region-invariant.mjs",
       "scripts/test-overlay-shortcut-scope-invariant.mjs",
       "scripts/test-overlay-story-contract-invariant.mjs",
+      "scripts/test-owner-claims-invariant.mjs",
       "scripts/test-pagination-narrow-ladder-invariant.mjs",
       "scripts/test-produce-hook-enforced-evidence.mjs",
       "scripts/test-product-template-scaffold-lock.mjs",

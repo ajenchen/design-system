@@ -204,8 +204,8 @@ rule_anatomy() {
   #     doc-table、canonical footer 示範皆屬 convention(實測 61 個 anatomy/principles 檔用 raw <table>,
   #     45 個無 @anatomy-exempt marker → full-file Write 必被 A.2 誤擋 = corpus 級系統衝突)。
   #   Hook regex:R1 A.1-C 原不分層,anatomy/principles 同樣 BLOCK。
-  #   Gap(spec narrow vs hook broad):誤擋 dropdown-menu.anatomy.stories.tsx:490,508(1lh icon 對齊
-  #     static preview,A.1 誤命中)+ popover.principles.stories.tsx:264,277(PopoverFooter canonical
+  #   Gap(spec narrow vs hook broad):誤擋 `9935caf9:packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:490,508`(1lh icon 對齊
+  #     static preview,A.1 誤命中)+ `9935caf9:packages/design-system/src/components/Popover/popover.principles.stories.tsx:264,277`(PopoverFooter canonical
   #     取消鍵 = footer 確認/取消對,非 dismiss-X 違規,B 誤命中)。
   #   展示層 *.stories.tsx 全部檢查不變(真保護不削弱);anatomy/principles 仍有 R5/R8/R9 看守。
   case "$FILE_PATH" in *anatomy.stories.tsx|*principles.stories.tsx) return 0 ;; esac

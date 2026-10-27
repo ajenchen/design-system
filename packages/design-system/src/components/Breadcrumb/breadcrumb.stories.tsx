@@ -111,7 +111,7 @@ export const InteractiveEllipsis: Story = {
 //
 // @story-history: 此 story 展示 Phase B declarative `items` API + auto-collapse
 // (maxItems=4)+ flex-shrink hierarchy + truncate-on-overflow + tooltip canonical(per
-// `tooltip.principles.stories.tsx:190`)。Disabled / States 仍由 BreadcrumbLink 內部 :hover /
+// `tooltip.principles.stories.tsx#NeedsTooltipRule`)。Disabled / States 仍由 BreadcrumbLink 內部 :hover /
 // :focus-visible / :active 處理(spec.md 互動狀態 > Disabled 段,無 element-level disabled)。
 
 export const DeclarativeAutoCollapse: Story = {

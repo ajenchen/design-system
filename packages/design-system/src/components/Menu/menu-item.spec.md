@@ -210,7 +210,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 - **樣式,與 header 的差異**:同樣 `text-fg-muted`、非互動(`role="presentation"` + `pointer-events-none`)、與一般 item **完全相同的列幾何**(`ROW_PADDING_BY_SIZE`,列高 = `--field-height-{size}`);差別是**一般字重**(medium 是群組標題的辨識訊號)、內容**水平置中**(`items-center justify-center`)、可帶**前綴槽**(`startContent` / `startIcon`,節點尺寸 `ICON_SIZE[size]`,例如載入列的 `CircularProgress`)
 - **必住 `MenuGroup`**:訊息列不自帶邊界留白,由群組的 `py-2` 提供(`item-anatomy.spec.md`「Group auto-separation」)——md 一列訊息 = 8 + 32 + 8 = 48px,與 1 筆選項等高;沒有任何最小高度
 - **非互動**:不可選、不可 hover、不進 cmdk / Radix 導覽;SR 播報由外層 live region 或載入列自帶的 `role="status"` 負責(`../Command/command.spec.md`「邊界案例」Loading / Empty)
-- **消費者**:`CommandEmpty`(字串 children 自動包成訊息列)/ `CommandLoading`(前綴轉圈 + label,`role="status"`),`../Command/command.tsx:155-188`;SelectMenu / Select / Combobox / PeoplePicker / AgentPanel 歷史清單 / CommandDialog 經 Command 消費
+- **消費者**:`CommandEmpty`(字串 children 自動包成訊息列)/ `CommandLoading`(前綴轉圈 + label,`role="status"`),`../Command/command.tsx#CommandEmpty`、`../Command/command.tsx#CommandLoading`;SelectMenu / Select / Combobox / PeoplePicker / AgentPanel 歷史清單 / CommandDialog 經 Command 消費
 - **禁**:不放裝飾圖示(前綴槽只放狀態指示,如轉圈)、不用 `Empty` 元件(Empty 是頁面 / 區塊層級空狀態)、不手刻 `items-center justify-center` / 最小高度(hook `check_pattern_invariants.sh` C.7)
 
 ---

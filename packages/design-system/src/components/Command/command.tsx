@@ -451,7 +451,7 @@ const CommandList = React.forwardRef<
       conflicting code(修前): 本 ScrollArea 固定 max-h-300 無 flex-1 → 在夾住的 SelectMenu PopoverContent
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
-        `flex h-full flex-col`(command.tsx:23)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
+        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
   <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
@@ -542,7 +542,7 @@ export function CommandEmptyStatus({ loading = false, text }: { loading?: boolea
  * row geometry(同 px / 同 py / **同 text size**)」。
  * 差在字級:手寫的是 `text-caption`(12px),canonical 要求與項目同級(14px)。
  *
- * SelectMenu(`select-menu.tsx:465`)一直是照 SSOT 做的 —— 它傳
+ * SelectMenu(`select-menu.tsx#SelectMenu`)一直是照 SSOT 做的 —— 它傳
  * `heading={<MenuItem size={size} header>…}` 並用 `[&_[cmdk-group-heading]]:p-0` 中和 cmdk 的內距。
  * 所以這不是「兩種設計語言」,是 Command **沒有消費 SSOT**、自己抄了一份走樣的值。
  *

@@ -3,7 +3,7 @@
  * 不變式:**Field control 的水平內距是標準 `--field-px`,除非欄位裡真的有 Tag**。
  *
  * 依據(逐字):
- *   `components/Field/field-controls.spec.md:298`
+ *   `components/Field/field-controls.spec.md`「Select 顯示模式」
  *     「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準
  *       `--field-px`(`px-[var(--field-px)]`)padding,確保文字與邊框有足夠間距。」
  *   同檔 `:21` —— field 的水平內距走 `--field-px`,與選單列的 `--item-px: var(--field-px)` 連續一致

@@ -88,6 +88,7 @@ export const ParentControlled: Story = {
       >
         <Example label="✅ 對:狀態集中在 Steps root">
           <Steps
+            aria-label="申請流程進度"
             value="payment"
             completedValues={['info', 'review']}
             errorValues={['payment']}
@@ -123,7 +124,7 @@ export const RingIsFocusMarker: Story = {
         note="Ring 不是 selection marker——Steps 不是 SelectMenu / DropdownMenu。不要把 bg-neutral-selected、radio 圓圈等 selection 語義用到 Steps 上,ring 是唯一的 focus 表達。"
       >
         <Example label="Value 指向 completed step → 藍底 ✓ + 藍 ring(可同時成立)">
-          <Steps value="a" completedValues={['a']} linear={false}>
+          <Steps aria-label="結帳進度" value="a" completedValues={['a']} linear={false}>
             <StepItem value="a">
               <StepLabel>送貨地址</StepLabel>
             </StepItem>
@@ -133,7 +134,7 @@ export const RingIsFocusMarker: Story = {
           </Steps>
         </Example>
         <Example label="Value 指向 error step → 紅底 ✕ + 紅 ring">
-          <Steps value="a" errorValues={['a']} linear={false}>
+          <Steps aria-label="結帳進度" value="a" errorValues={['a']} linear={false}>
             <StepItem value="a">
               <StepLabel>付款</StepLabel>
             </StepItem>
@@ -159,6 +160,7 @@ export const BlueConnectorLogic: Story = {
       >
         <Example label="✅ 對:value 在「確認送出」,但只有「基本資料」是 completed → 只有它底下的 connector 藍">
           <Steps
+            aria-label="註冊流程進度"
             value="step-4"
             completedValues={['step-1']}
             linear={false}
@@ -198,6 +200,7 @@ export const ColumnRhythm: Story = {
       >
         <Example label="✅ 對:lg size,混用有/無 description,indicator 全部對齊第一行中線,column 垂直節奏一致">
           <Steps
+            aria-label="訂購流程進度"
             defaultValue="step-3"
             completedValues={['step-1', 'step-2']}
             size="lg"
@@ -244,6 +247,7 @@ export const LinearBackClickDoesNotMutate: Story = {
               維持不變。
             </ExampleCaption>
             <Steps
+              aria-label="註冊流程進度"
               value={value}
               onValueChange={setValue}
               completedValues={completed}

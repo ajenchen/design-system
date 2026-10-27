@@ -80,7 +80,11 @@ function setMover(next: InputModality) {
 // 測試 / 自動化工具派送的鍵同樣 isTrusted=false,卻代表使用者在按(M37)。
 const relayedKeyEvents = new WeakSet<Event>()
 
-/** 代發一顆 keydown 給 `target`(冒泡、可取消),並標記為「不是使用者按的」;回傳該事件(呼叫端可看 defaultPrevented)。 */
+/**
+ * @internal — 只給 DS 自己的鍵盤橋接用(SelectMenu `forwardKeyToListbox`、Command `moveCursorToFirstOption`):代發一顆 keydown 給 `target`
+ * (冒泡、可取消),並標記為「不是使用者按的」;回傳該事件(呼叫端可看 defaultPrevented)。不進 root 出口 —— 公開它等於讓任何程式
+ * 送出 DS 當成「不是使用者按的」鍵(r1b OTH-07)。
+ */
 export function dispatchRelayedKey(target: EventTarget, key: string): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
   relayedKeyEvents.add(event)
@@ -95,7 +99,10 @@ export function dispatchRelayedKey(target: EventTarget, key: string): KeyboardEv
 // DS 代發的鍵(dispatchRelayedKey)同樣不算,理由同上。
 type LastUserInput = { readonly kind: InputModality | null; readonly target: EventTarget | null }
 let lastUserInput: LastUserInput = { kind: null, target: null }
-/** 最近一次使用者輸入(keydown / pointerdown,都在 window capture 階段、模組載入即掛的監聽裡記 —— 早於任何 DS 監聽;還沒有任何輸入 → kind null)。 */
+/**
+ * @internal — 只給 DS 判斷「這次收起是不是指標造成的」用(`lib/overlay-focus-return.ts` `returnFocusToOpener`、AgentPanel 入口鈕):
+ * 最近一次使用者輸入(keydown / pointerdown,都在 window capture 階段、模組載入即掛的監聽裡記 —— 早於任何 DS 監聽;還沒有任何輸入 → kind null)。
+ */
 export function getLastUserInput(): LastUserInput {
   return lastUserInput
 }

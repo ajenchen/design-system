@@ -166,7 +166,7 @@ export interface SelectProps
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
-   * Authority:`data-table.spec.md:204` + `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
+   * Authority:`data-table.spec.md`「九之二、Cell action primitive 分類」+ `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
    * @default false
    */
   showDisplayEndIcon?: boolean
@@ -432,7 +432,7 @@ function ReadonlyDisplay({
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
-  //      Authority: data-table.spec.md:204 + inline-action.spec.md:157「Field family endAction」
+  //      Authority: data-table.spec.md「九之二、Cell action primitive 分類」+ inline-action.spec.md:157「Field family endAction」
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 必套
@@ -461,7 +461,7 @@ function ReadonlyDisplay({
     return (
       <div
         className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
-        // tag 容器必 re-assert 右緣 = --field-px(field-controls.spec.md:279):tagPadding 的對稱 px 會把 chevron 右隙
+        // tag 容器必 re-assert 右緣 = --field-px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」右側元素右緣條):tagPadding 的對稱 px 會把 chevron 右隙
         // 吃成 3/3/5,readonly(:495)與 edit 早已 re-assert,view D-path 漏掉(2026-09-15 補;閘 I6)。
         style={value && !isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined}
         data-field-mode="view"
@@ -472,7 +472,7 @@ function ReadonlyDisplay({
             {selectedItemRenderer(selectedOpt)}
           </span>
         ) : isTextDisplay ? (
-          // 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation)
+          // 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
             {value ? label : emptyText}
           </TruncatedText>
@@ -703,7 +703,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChangeRef.current?.(next) }, [])
     const inputRef = React.useRef<HTMLInputElement>(null)
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
-    // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
+    // (對齊姊妹元件 combobox.tsx#listboxId 既有 canonical;React.useId SSR/CSR 穩定)。
     const listboxId = React.useId()
     // a11y:搜尋框在觸發欄位內時,輸入框的 aria-activedescendant = 反白列 id(Command 根讀、SelectMenu 轉交,直接寫進 inputRef;
     // 機制詳 select-menu-keyboard.ts useActiveDescendant;必在 early return 前呼叫 — React #310 hook 順序)。

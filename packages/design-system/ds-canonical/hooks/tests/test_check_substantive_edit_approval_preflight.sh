@@ -1162,7 +1162,7 @@ expect_pass_silent "15w. 「確保所有相關問題都有一併被修正 / 該 
 
 # 15x-15z. 全域工程指示的**對稱性**:純工程版不得比混了 UI 字眼的版本更嚴(2026-09-16 量到的反向缺口)。
 #   修補前:「確保效能有最佳化過,不要改壞原本好的東西」被擋,同句加上「hover 底色維持原樣」反而放行。
-#   AGENTS.md:129 明列 perf → AUTO,純工程版風險更低,擋它等於方向相反。
+#   AGENTS.md「# 自主執行 canonical」明列 perf → AUTO,純工程版風險更低,擋它等於方向相反。
 TX_PERF_PURE="$TMP_DIR/tx_perf_pure.jsonl"
 build_transcript "$TX_PERF_PURE" "1. 要確保效能有最佳化過吧？但不要改壞原本好的東西"
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_PERF_PURE" "const markedRef = React.useRef([])"

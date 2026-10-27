@@ -203,9 +203,9 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 | Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20(`starSize = controlHeight × 0.625`)/ MUI 24(medium),出處在 owner 段 |
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
-| FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
+| FileViewer thumb | `components/FileViewer/file-viewer.tsx#Filmstrip`(`THUMB_SIZE` 與 `FileText size={20}`) | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
 | CircularProgress | `components/CircularProgress/circular-progress.tsx:86` | `strokeWidth = max(2, round(size/10))` stroke ring 厚度非 icon | Geometric scaling |
-| Steps indicator icon | `components/Steps/steps.tsx:25` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
+| Steps indicator icon | `components/Steps/steps.tsx#INDICATOR_ICON_SIZE` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
 | Slider thumb/track | `components/Slider/slider.spec.md:86` | thumb 16 / track 4px 固定不隨 size 變(視覺 single tier)| Material 3 / iOS / Ant / Radix 固定 thumb | <!-- @benchmark-unverified -->
 | Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 

@@ -7,7 +7,7 @@
    ───────────────────────────────────────────────────────── */
 
 :root {
-  --table-cell-px: var(--field-px);  /* 預設取自 --field-px(form/cell 同 12px content gutter SSOT);仍是 DataTable-scoped named token、可獨立 override(spec field-controls.spec.md:330 scoped 決策不變) */
+  --table-cell-px: var(--field-px);  /* 預設取自 --field-px(form/cell 同 12px content gutter SSOT);仍是 DataTable-scoped named token、可獨立 override(spec field-controls.spec.md「共享 contract」(c) Cell surface metrics,scoped 決策不變) */
 }
 
 /* **`- 1px` 不是微調,是把公式的前提補回來**(2026-09-04):
@@ -73,7 +73,7 @@
 
    **跟 ScrollArea 的關係**:機制上不可能共用 —— ScrollArea 是 Radix 自繪的 DOM 拇指(不吃版面寬),
    這裡是瀏覽器原生捲軸(吃版面寬),沒有共同的樣式表面。**能共用的顏色早就已經是 SSOT**:
-   兩邊都吃 `--scrollbar-thumb` / `--scrollbar-track`(semantic.css:383-385,2026-05-09 抽出)。
+   兩邊都吃 `--scrollbar-thumb` / `--scrollbar-track`(semantic.css#--scrollbar-thumb、semantic.css#--scrollbar-track,2026-05-09 抽出)。
 
    實際寬度**不寫死在任何地方**:`measureScrollbarGutters` 每次量,所以 15 → 11 的變化
    由量測自動流過去,補償邏輯不需要改。

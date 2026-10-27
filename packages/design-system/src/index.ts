@@ -684,6 +684,8 @@ export type {
 //   - components/FileItem:FILE_ITEM_RING_LAYER_CLASS
 //   - components/FileItem:fileItemRingCutoutStyle
 //   - components/Sheet:handleSheetOpenAutoFocus
+//   - hooks/use-input-modality.ts:dispatchRelayedKey(subpath 仍有)
+//   - hooks/use-input-modality.ts:getLastUserInput(subpath 仍有)
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton
 //   - patterns/element-anatomy:ItemInlineActionButtonProps
@@ -693,8 +695,14 @@ export type {
 //   - patterns/element-anatomy:TruncatedTextProps
 //   - patterns/element-anatomy:itemSuffixHoverRevealClass
 // 出口全部是 @internal 的 tokens / hooks / lib 模組整個不進 front-door(2026-10-07;檔頭標模組層 @internal,或每個出口都標):
+//   - lib/collection-removal-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/composite-field-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/ime-composition.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/overlay-escape.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/overlay-focus-return.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/pointer-press.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/roving-list-keyboard.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - tokens/motion/closed-end-state.ts(每個出口都標 @internal;subpath 仍有)
 
@@ -709,21 +717,16 @@ export * from './tokens/uiSize/stack-gap'
 
 // ─── Hooks ────────────────────────────────────────────────────────────────
 export * from './hooks/use-controllable'
-export * from './hooks/use-input-modality'
+export { markPointerGrab, useCursorMover } from './hooks/use-input-modality'
+export type { InputModality } from './hooks/use-input-modality'
 export * from './hooks/use-is-touch-device'
 export * from './hooks/use-known-options'
 export * from './hooks/use-overflow-items'
 export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
-export * from './lib/collection-removal-focus'
-export * from './lib/composite-field-focus'
 export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
-export * from './lib/ime-composition'
 export * from './lib/multi-select-ordering'
 export * from './lib/overlay-coexistence'
-export * from './lib/overlay-escape'
-export * from './lib/overlay-focus-return'
-export * from './lib/pointer-press'
 export * from './lib/utils'

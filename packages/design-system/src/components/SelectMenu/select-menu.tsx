@@ -633,12 +633,12 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             {/* 「不限」(2026-09-18 user 拍板)——**清單的第一組**。
                 一組只有一列,靠 `CommandGroup` 自己的 `py-2`(上下 8px)與「跟在另一個可見群組後面就畫上邊線」
                 的規則,自動跟下面那組一般選項用分隔線隔開 —— 分隔線畫在**後面那組的頂端**
-                (`Command/command.tsx:263-268`,判準 owner `patterns/element-anatomy/item-anatomy.spec.md`
+                (`Command/command.tsx#CommandGroup`,判準 owner `patterns/element-anatomy/item-anatomy.spec.md`
                 「Group auto-separation」),所以這裡不插 Separator、不寫新 CSS。
                 結構先例是同一支檔案下方的可建立列:同樣是無標題、單獨一列、自成一組,只是它在最下面。
 
                 **為什麼用 `CommandGroup` 不是 `MenuGroup`**:這一列**是選項**,要點得到、鍵盤上下鍵走得到。
-                `MenuGroup` 的列不經 cmdk 註冊(那正是訊息列選它的理由,見 `command.tsx:187-189`),
+                `MenuGroup` 的列不經 cmdk 註冊(那正是訊息列選它的理由,見 `command.tsx#CommandEmpty`),
                 放這裡會變成鍵盤走不到的孤兒,而且它的相鄰線用 `[&+&]`(同 class 相鄰)也對不上 `CommandGroup`。
 
                 出現條件見上方 `showUnrestricted`。 */}

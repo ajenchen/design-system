@@ -655,7 +655,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
   要求拖曳功能須有「單指標、不需拖曳」的替代路徑,規範自身舉的例子即清單重排的「上移／下移」控制項;
   DataTable 與 TreeView 目前皆無此路徑。落地形式已定(該列 `rowActions` overflow 選單多兩個項目,
   樣式沿用既有 menu,無新 token),僅 API 歸屬(DS 於 `enableRowDrag` 時自動注入 vs consumer 自加)待定。
-  (b) 是否採用 TreeView 的 `Cmd/Ctrl+Shift+方向鍵`(`tree-view.spec.md:452-455`)作為加速器,研究中。
+  (b) 是否採用 TreeView 的 `Cmd/Ctrl+Shift+方向鍵`(`tree-view.spec.md:453-456`)作為加速器,研究中。
 - **拖曳播報(已有,不是待補)**:列與欄位拖曳的螢幕閱讀器播報走全 DS 共用的 `../../lib/drag-announcements.ts` `useDragAccessibility`
   (繁中、`role="status"` + `aria-live="polite"` 的 sr-only 區域;`data-table.tsx` 渲染 `drag.liveRegion`,TreeView 同一支,
   句型沿用 TreeView 的 `DEFAULT_REORDER_ANNOUNCEMENTS`),dnd-kit 自己那份英文 assertive 區域永遠是空字串。

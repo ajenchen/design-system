@@ -48,9 +48,10 @@ const meta: Meta<typeof Button> = {
       control: 'boolean',
       description: '移除水平 padding，讓按鈕變為正方形。必須同時設定 `aria-label`。',
     },
+    // 說明不在這裡另寫:Controls / 文件頁的 args 表直接讀 button.tsx ButtonProps.loading 的 JSDoc(react-docgen-typescript)。
+    // 2026-10-01 loading 改成可聚焦的停用之後,這裡手寫的舊說明(說它會變成原生停用)沒跟著改,兩份說明互相矛盾(r1b NEW-03)
     loading: {
       control: 'boolean',
-      description: '載入中狀態：左側顯示 spinner，自動設為 `disabled`，同時設定 `aria-busy`。',
     },
     disabled: {
       control: 'boolean',
@@ -213,10 +214,11 @@ export const Disabled: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">全 variants(form footer 情境)</p>
+        {/* 2026-10-21 前標「form footer 情境」卻連「取消」也停用 —— 真的表單底部取消永遠可按(r1b OTH-12);這一列是 variant 對照,不冒充情境 */}
+        <p className="text-caption text-fg-muted">全 variants</p>
         <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" disabled>儲存</Button>
-          <Button variant="secondary" disabled>取消</Button>
+          <Button variant="secondary" disabled>匯出</Button>
           <Button variant="tertiary" disabled>預覽</Button>
           <Button variant="text" disabled>查看版本紀錄</Button>
           <Button variant="text" pressed disabled>已啟用自動儲存</Button>
@@ -277,29 +279,17 @@ export const Loading: Story = {
         </div>
       </ExampleGroup>
 
-      {/* 全 variants — with startIcon */}
+      {/* 全 variants:載入中 spinner 佔住 startIcon 的位置(上方對照第一列),有沒有 startIcon 長相相同 —— 2026-10-21 前分成「with / without
+          startIcon」兩列,畫出來一模一樣,還有一顆載入中的「取消」(取消不會載入)(r1b OTH-12) */}
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">全 variants — with startIcon(匯出 / 同步情境)</p>
+        <p className="text-caption text-fg-muted">全 variants(匯出 / 同步情境)</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" startIcon={Download} loading>匯出報表</Button>
-          <Button variant="secondary" startIcon={Download} loading>同步 Stripe</Button>
-          <Button variant="tertiary" startIcon={Download} loading>重新整理</Button>
-          <Button variant="text" startIcon={Download} loading>取消</Button>
-          <Button variant="text" pressed startIcon={Download} loading>下載中</Button>
-          <Button variant="primary" danger startIcon={Trash2} loading>刪除專案</Button>
-        </div>
-      </ExampleGroup>
-
-      {/* 全 variants — without startIcon */}
-      <ExampleGroup>
-        <p className="text-caption text-fg-muted">全 variants — without startIcon(匯出 / 同步情境)</p>
-        <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <Button variant="primary" loading>匯出報表</Button>
-          <Button variant="secondary" loading>同步 Stripe</Button>
-          <Button variant="tertiary" loading>重新整理</Button>
-          <Button variant="text" loading>取消</Button>
+          <Button variant="secondary" startIcon={RefreshCw} loading>同步 Stripe</Button>
+          <Button variant="tertiary" startIcon={RefreshCw} loading>重新整理</Button>
+          <Button variant="text" loading>載入更多</Button>
           <Button variant="text" pressed loading>處理中</Button>
-          <Button variant="primary" danger loading>刪除專案</Button>
+          <Button variant="primary" danger startIcon={Trash2} loading>刪除專案</Button>
         </div>
       </ExampleGroup>
 

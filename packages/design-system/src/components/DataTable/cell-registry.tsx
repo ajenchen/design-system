@@ -147,7 +147,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
   const v = value != null ? String(value) : ''
   if (mode === 'view') {
     // size 必傳:DataTable cell 字級隨 size 變(sm/md text-body / lg text-body-lg),
-    // 對齊 Field family size→font SSOT(field-wrapper.tsx:60-64)。漏傳 → fallback md → lg 表格
+    // 對齊 Field family size→font SSOT(field-wrapper.tsx#fieldWrapperStyles)。漏傳 → fallback md → lg 表格
     // 字卡 14px 跟 Select/Date 等有傳 size 的 cell 不一致(2026-06-08 user 抓 frozen string 欄字偏小)。
     return autoRowHeight
       ? <Textarea variant="naked" mode="view" value={v} size={size} className={clampClass} aria-label={ariaLabel} />

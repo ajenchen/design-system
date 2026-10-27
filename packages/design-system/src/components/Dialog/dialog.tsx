@@ -354,7 +354,7 @@ export interface DialogHeaderProps extends SurfaceHeaderProps {
    * Header 級操作 cluster(2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)。
    *
    * 提供時 render 在 Close X 左側,DS 自動在 actions 與 Close 之間放 `<ButtonDivider>`
-   * (action-bar.spec.md:281「最右側為關閉/解除按鈕 → 分隔線必須(誤觸保護)」;
+   * (action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護:關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加;
    * 幾何 = ButtonDivider mx-1 於 gap-2 cluster → 12px 對稱,同 spec「分隔線幾何」段)。
    *
    * 用例:任務詳情 prev/next 導覽、header 級溢出選單(⋮)。
@@ -393,7 +393,7 @@ const DialogHeader = React.forwardRef<
       <div className="flex-1 min-w-0">{children}</div>
       {actions != null ? (
         // actions 提供 → 右側一體 cluster:{actions} + ButtonDivider + Close。
-        // 分隔線 = 關閉保護 canonical(action-bar.spec.md:281),由 DS 放,consumer 零自刻。
+        // 分隔線 = 關閉保護 canonical(action-bar.spec.md「五、分隔線規則」),由 DS 放,consumer 零自刻。
         // gap-2 + ButtonDivider mx-1 = 兩側 12px 對稱(action-bar.spec.md「分隔線幾何」)。
         <div className="flex items-center gap-2 shrink-0">
           {actions}

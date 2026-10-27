@@ -1,5 +1,5 @@
 /**
- * 「這一下 keydown 是輸入法(IME)組字的一部分」的唯一判準(2026-09-30)。
+ * @internal — 「這一下 keydown 是輸入法(IME)組字的一部分」的唯一判準(2026-09-30)。
  *
  * 中文 / 日文輸入法選字時按的 Enter / 空白 / 方向鍵 / Esc 是在操作候選字,不是對元件下的指令(提交、開選單、選選項、送出訊息)。
  * `isComposing` 為主;`keyCode === 229` 補「最後一顆」:`compositionend` 可能先於那一下 keydown 發生(注音在 Safari 按 Enter 選字),

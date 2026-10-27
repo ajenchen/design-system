@@ -69,6 +69,11 @@ const REGISTRY = [
     file: 'packages/design-system/src/components/Carousel/carousel.tsx',
     anchor: 'const arrowWrapperClass',
     scope: 'carousel',
+    // 到端點的箭頭:滑鼠按到底照舊收起,鍵盤按到底的留著讓焦點框看得見(keyboard-model-canonical.md「按了之後自己變停用」);
+    // 收起條件必須排除 :focus-visible,而且 owner 規格要寫出同一個例外 —— 2026-10-01 程式改了、carousel.spec.md「邊界」
+    // 仍寫「到邊界直接消失」,兩份說法不同(r1b OTH-08)。
+    mustInclude: [{ re: /\[&:has\(button\[data-disabled-focusable\]:not\(:focus-visible\)\)\]:opacity-0/, why: '到端點的收起條件沒有排除鍵盤焦點 → 鍵盤按到底的箭頭連同焦點框一起消失' }],
+    specMentions: { file: 'packages/design-system/src/components/Carousel/carousel.spec.md', heading: '- **邊界**', re: /可聚焦的停用/, why: 'carousel.spec.md「邊界」沒寫鍵盤按到端點的例外(規格說直接消失,程式卻留著)' },
   },
   // 2026-10-21(r1b DT-06 同族,複驗缺陷 1)補登記:這兩處的鍵盤那一條剛從 focus-within 改成 has-[:focus-visible],
   // 登記後「鍵盤路徑還在」有人量(只靠全 DS 那一條,鍵盤揭示整條被刪掉也會綠)
@@ -190,6 +195,12 @@ for (const entry of REGISTRY) {
     problems.push(new RegExp(FOCUS_WITHIN_REVEAL.source).test(block)
       ? '鍵盤揭示寫成 focus-within(滑鼠點一下也成立 → 指標移開後一直亮著)→ 改 has-[:focus-visible] / group-has-[:focus-visible]'
       : '缺 focus 類揭示條件(keyboard 不可達)')
+  }
+  for (const m of entry.mustInclude ?? []) if (!m.re.test(block)) problems.push(m.why)
+  if (entry.specMentions) {
+    const spec = readFileSync(join(ROOT, entry.specMentions.file), 'utf8').split('\n').find((l) => l.startsWith(entry.specMentions.heading))
+    if (spec === undefined) problems.push(`${entry.specMentions.file} 找不到「${entry.specMentions.heading}」那一列(儀器讀不到規格)`)
+    else if (!entry.specMentions.re.test(spec)) problems.push(entry.specMentions.why)
   }
   if (problems.length) {
     console.error(`✗ ${entry.label} (${entry.file}):\n    - ${problems.join('\n    - ')}`)

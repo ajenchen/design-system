@@ -549,11 +549,11 @@ if grep -qE '(flex-1[^>]*/>|ml-auto)[^<]{0,80}<(DS\.)?Input[^>]{0,200}placeholde
   VIOLATIONS="${VIOLATIONS}  - 業務 search(過濾當前檢視)被 spacer 推到最右 → 歸業務層與其他操作同區(action-bar.spec.md:69/76;無標題 toolbar 業務層靠左 :109)。工具型跨頁 search 置最右合法 → @search-right-ok: <rationale>\n"
 fi
 # C11 dialog chrome 雙 X:DialogHeader 之後 250 字窗內手放 startIcon={X} 且窗內無 actions=
-# (DialogHeader 自帶 Close;header 操作走 actions slot — action-bar.spec.md:281)。
+# (DialogHeader 自帶 Close;header 操作走 actions slot — action-bar.spec.md「五、分隔線規則」誤觸保護)。
 DH_WIN=$(echo "$CONTENT" | grep -oE '<(DS\.)?DialogHeader.{0,250}' || true)  # BSD grep bound 上限 255
 if [ -n "$DH_WIN" ] && grep -qE 'startIcon=\{X\}' <<<"$DH_WIN" && ! grep -q 'actions=' <<<"$DH_WIN" && \
    ! grep -q '@dialog-chrome-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - DialogHeader 內手放 X 關閉鈕(DialogHeader 已自帶 Close = 雙 X)→ header 操作走 actions slot(自動 ButtonDivider 分隔,action-bar.spec.md:281)。特例 → @dialog-chrome-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - DialogHeader 內手放 X 關閉鈕(DialogHeader 已自帶 Close = 雙 X)→ header 操作走 actions slot(自動 ButtonDivider 分隔,action-bar.spec.md「五、分隔線規則」誤觸保護)。特例 → @dialog-chrome-ok: <rationale>\n"
 fi
 # C7 SelectMenu internal 直用(select-menu.spec.md:53 明文禁 consumer 直用 — 它是 Select/
 # Combobox 的內部選單面,consumer 用 <Select>/<Combobox>;此為「internal 且 spec 明文禁直用」

@@ -283,7 +283,7 @@ function InlineEditImpl<T = string>(
   //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
   //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
   //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
-  //     (field-controls.spec.md:71「orientation-aware -mx / vertical 貼 label」)只依 orientation、不依 fieldCtx。
+  //     (field-controls.spec.md「Field 框架地圖」InlineEdit 段:「orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)」)只依 orientation、不依 fieldCtx。
   //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
   //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
   const alignBleed =
@@ -413,7 +413,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :397 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :398 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

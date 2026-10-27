@@ -267,7 +267,7 @@ export const Overview = {
                 ['badge', 'ReactNode', '—', '右側 badge（通知計數）'],
                 ['overlayBadge', 'ReactNode', '—', '角標疊於 icon 右上（僅 iconOnly=true；對齊 Material BadgedBox）'],
                 ['iconOnly', 'boolean', 'false', '正方形模式，需搭配 aria-label'],
-                ['loading', 'boolean', 'false', 'CircularProgress(indeterminate)+ 自動 disabled + aria-busy'],
+                ['loading', 'boolean', 'false', 'CircularProgress(indeterminate)+ 可聚焦的停用(aria-busy + aria-disabled,擋掉觸發、焦點留著;button.spec.md「loading」)'],
                 ['fullWidth', 'boolean', 'false', '撐滿父容器'],
                 ['dismiss', 'boolean', 'false', 'X close 視覺弱化（強制 variant=text + iconOnly=true）'],
                 ['asChild', 'boolean', 'false', '透過 Radix Slot 套用至子元件'],
@@ -864,7 +864,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時品牌 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 中額外帶 aria-busy 告知處理中。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時品牌 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 不是原生停用:可聚焦的停用(aria-disabled + data-disabled-focusable)+ aria-busy 告知處理中,焦點留在鈕上(button.spec.md「loading」)。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

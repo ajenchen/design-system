@@ -133,7 +133,7 @@ export const TaskAssistant: Story = {
                 steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
                 currentStep={<span>正在標記衝突項目…</span>}
               />
-              {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距 */}
+              {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距 */}
               <p className="mt-2">
                 初步整理完成:P0 共 6 筆,其中「支付逾時重試」與「對帳批次」的排程互相衝突,建議錯開到不同夜間時段。
               </p>
@@ -387,7 +387,7 @@ export const DecisionSummaryInFlow: Story = {
           <AgentMessage role="agent">
             已按你的選擇繼續:
             <AgentDecisionSummary
-              // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距
+              // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距
               className="mt-2"
               entries={[
                 { question: '公告要用哪種語氣?', answer: '正式版' },
@@ -1085,7 +1085,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
       { role: 'agent', content: (
         <>
           <p>跟你問的有關的有四處:</p>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距;清單項之間 4px 是同質清單列(layoutSpace.spec.md:165) */}
+          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距;清單項之間 4px 是同質清單列(layoutSpace.spec.md:165) */}
           <ul className="mt-2 flex flex-col gap-1">
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
             <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
@@ -1093,7 +1093,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
             {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px(行內 micro)(layoutSpace.spec.md:166 micro) */}
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md:198–205)沒有定義代理訊息的段距 */}
+          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),範例原值:屬 micro 間距(layoutSpace.spec.md:166「micro / icon / 控件內部 間距(gap-1/2、icon padding)」),不是並列區塊;AgentMessage 規格(agent-panel.spec.md「4. AgentMessage(訊息)」)沒有定義代理訊息的段距 */}
           <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
         </>
       ) },

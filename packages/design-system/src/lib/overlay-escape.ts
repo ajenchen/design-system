@@ -1,5 +1,5 @@
 /**
- * 「這一下 `Esc` 由誰處理」的唯一判定(2026-10-01)。
+ * @internal — 「這一下 `Esc` 由誰處理」的唯一判定(2026-10-01)。
  *
  * 規則(`ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」+「焦點所在的控件自己那一層也算一層」):
  * 一次 `Esc` 只少一層,而「最內層」**包含焦點所在控件自己的暫時狀態** —— 改過還沒存的欄位值、就地編輯中的草稿、
@@ -42,6 +42,7 @@
  *     兩種都不跨區碰 Main 的 modal;`agent-panel.spec.md`「Esc 與關閉語意」,2026-10-14 依形態分開)。2026-10-01 從 agent-panel.tsx 的
  *     window 捕獲監聽搬來 —— 全 DS 只准有一個「這一下 Esc 該不該關浮層」的判定點。
  */
+
 import * as React from 'react'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 

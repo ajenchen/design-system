@@ -9,7 +9,7 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 // 2026-05-18 ship per user 拍板 #3A:Tooltip Provider 預設 delayDuration 對齊 motion token SSOT。
 // Radix 預設 700ms 過保守(被 Material 150-200 / MUI 100 / Atlassian 300 集體驗證),DS 統一用
 // `--motion-delay-plain` (500ms,JS mirror `MOTION_DELAY_PLAIN_MS`)。Consumer 仍可 per-instance override。
-// 2026-05-21 D5 Phase B codex 抓 comment 200 vs token 500 drift → 註解 500ms 對齊 motion.css:27 SSOT。
+// 2026-05-21 D5 Phase B codex 抓 comment 200 vs token 500 drift → 註解 500ms 對齊 motion.css#--motion-delay-plain SSOT。
 const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
   <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
 )

@@ -111,7 +111,7 @@ function runtimeSourceDiffers(ref) {
   // ref 要先解析得到才有意義。**CI 上沒有本機 `main` 分支**(PR checkout 只拿 head/merge ref),
   // 只有 `origin/main` —— 這一行寫死 `main` 的話,git 會失敗、走保守 fallback,於是「零改動就跳過」
   // 在**唯一需要它的環境裡一次都不會生效**。2026-09-20 實測:本機跳過、CI 照跑照紅。
-  // CI 自己準備參考建置時用的也是 `git rev-parse origin/main`(ci.yml:215),對齊它。
+  // CI 自己準備參考建置時用的也是 `git rev-parse origin/main`(ci.yml `verify-browser-datatable` 的「Build the reference (main) Storybook the blank ratio compares against」),對齊它。
   const resolved = [`origin/${ref}`, ref].find((candidate) => (
     spawnSync('git', ['rev-parse', '--verify', '--quiet', `${candidate}^{commit}`], { encoding: 'utf8' }).status === 0
   ))

@@ -11,7 +11,7 @@
 # violation + silently breaks alignment / close X 一致性。
 #
 # 對齊 patterns/overlay-surface/overlay-surface.spec.md「Consumer rule」+
-# components/Popover/popover.tsx:72「所有 PopoverHeader 一律附右上 X」canonical。
+# components/Popover/popover.tsx#PopoverHeader(檔頭:「所有 PopoverHeader 一律附右上 X 按鈕」)canonical。
 #
 # Escape hatch:add `// overlay-handcraft-allow: <reason>` on prev/same line for intentional cases
 # (e.g. non-overlay panel that just borrows the layout-space token).

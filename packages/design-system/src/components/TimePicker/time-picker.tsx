@@ -287,7 +287,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
           </TruncatedText>
@@ -350,7 +350,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             (@radix-ui/react-popover index.js:145),不 inject 任何 onKeyDown。原生 <button>
             靠瀏覽器在 Enter/Space 自動派發 click 才能開;但本 trigger 是 <div role=combobox>,
             div 不會自動派發 click → 鍵盤使用者打不開 panel。故顯式加 onKeyDown
-            (對齊 select.tsx:609-619 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
+            (對齊 select.tsx#CustomSelect 的 onKeyDown 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
         <PopoverTrigger asChild>
           <div
             ref={ref}
@@ -395,7 +395,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
                 e.preventDefault()
                 setOpen(true)
               }
-              // Escape → 關(Radix Content 已自帶,trigger 補位對齊 select.tsx:597)
+              // Escape → 關(Radix Content 已自帶,trigger 補位對齊 select.tsx#CustomSelect 的 onKeyDown)
               if (e.key === 'Escape') setOpen(false)
             }}
             // 觸發欄位 + 它的面板 = 同一個欄位:焦點搬進面板不算離開(lib/composite-field-focus.ts,待辦總帳 N83;
@@ -430,7 +430,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           </div>
         </PopoverTrigger>
         {/* a11y(2026-07-14 dim-10):Radix PopoverContent 輸出 role="dialog",無 title 需
-            accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx:1040「日期區間選擇」同款 DS default。 */}
+            accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx#DatePickerRange「日期區間選擇」同款 DS default。 */}
         <PopoverContent
           id={popupId}
           className="w-auto p-0"

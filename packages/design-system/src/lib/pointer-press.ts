@@ -1,5 +1,5 @@
 /**
- * 「按下指標時,焦點該不該動」的共用判準(2026-09-30)。
+ * @internal — 「按下指標時,焦點該不該動」的共用判準(2026-09-30)。
  *
  * 同一件事的宿主:容器上掛 mousedown / click,按在容器裡「沒有自己行為的地方」時由容器接手 ——
  *   - Field 家族可打字欄位的外框(`components/Field/field-wrapper.tsx` `focusFieldInputFromChrome`):點外框 = 點輸入處

@@ -115,6 +115,7 @@
     "test:tutorial-page": "node scripts/tutorial-page-invariant.mjs && node scripts/tutorial-page-invariant.mjs --selftest",
     "test:action-row-order": "node scripts/action-row-order-invariant.mjs && node scripts/action-row-order-invariant.mjs --selftest",
     "test:story-determinism": "node scripts/story-determinism-invariant.mjs && node scripts/story-determinism-invariant.mjs --selftest",
+    "test:owner-claims": "node scripts/owner-claims-invariant.mjs && node scripts/owner-claims-invariant.mjs --selftest",
     "test:story-helper-duplication": "node scripts/story-helper-duplication-invariant.mjs && node scripts/story-helper-duplication-invariant.mjs --selftest",
     "test:focus-suppression": "node scripts/focus-suppression-registry.mjs && node scripts/focus-suppression-registry.mjs --selftest",
     "test:focus-geometry": "node scripts/focus-geometry-invariant.mjs && node scripts/focus-geometry-invariant.mjs --selftest && node scripts/focus-geometry-browser-audit.mjs",

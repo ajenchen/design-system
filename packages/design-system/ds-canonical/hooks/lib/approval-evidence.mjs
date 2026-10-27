@@ -627,7 +627,7 @@ const DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS = [
 
 const ENGINEERING_INTENT_PATTERNS = [
   /\b(?:bug|bugfix|fix|repair|correct|refactor|test|testing|governance|infra|infrastructure|remediation|regression|root\s+cause|type\s+error|typescript|compile|build|ci|hook|parser|schema|drift|ssot|source-level|a11y|accessibility|wcag|conformance|alignment|mechanical|synchroni[sz]e|restore|parity)\b/iu,
-  // 效能是 AGENTS.md:129「Bug fix / clean / refactor / 命名一致 / **perf** / a11y / test / audit / verify | **AUTO**」
+  // 效能是 AGENTS.md「# 自主執行 canonical」表「Bug fix / clean / refactor / 命名一致 / **perf** / a11y / test / audit / verify | **AUTO**」
   // 明列的自主類別,但詞彙表漏了它(2026-09-16 錨:user「要確保效能有最佳化過吧?但不要改壞原本好的東西」被判 UI 取捨擋下)。
   /(?:效能|最佳化|優化|加速|變慢|卡頓|延遲|記憶體|洩漏)/u,
   /\b(?:perf(?:ormance)?|optimi[sz](?:e|ation)|latency|throughput|memory\s+leak)\b/iu,
@@ -867,7 +867,7 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  // 「確保效能有最佳化過」這種沒點名 target 的工程指示 = 全域 remediation scope(AGENTS.md:129 perf = AUTO);
+  // 「確保效能有最佳化過」這種沒點名 target 的工程指示 = 全域 remediation scope(AGENTS.md「# 自主執行 canonical」perf = AUTO);
   // 2026-09-16 錨:它原本連 scope 都綁不到,被判 EXACT_UI_UX_TARGET_BINDING_MISSING。
   /(?:(?:效能|perf(?:ormance)?)\s*(?:有|要|已)?\s*(?:被)?\s*(?:最佳化|優化|optimi[sz]ed?)|(?:最佳化|優化)\s*(?:一下)?\s*(?:效能|perf(?:ormance)?)|(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
@@ -1203,7 +1203,7 @@ function engineeringScopeDecision(message, target) {
   //   「要確保效能有最佳化過,但不要改壞原本好的東西」            → 擋(UNKNOWN)
   //   「要確保效能有最佳化過,但不要改壞原本好的東西。hover 底色維持原樣」 → 放行
   // 加上 UI 字眼反而變鬆,方向與 fail-closed 相反。純工程的全域指示風險**低於**混了 UI 的版本,
-  // 依 AGENTS.md:129(Bug fix / refactor / perf / a11y / test → AUTO)本來就該是 AUTO。
+  // 依 AGENTS.md「# 自主執行 canonical」(Bug fix / refactor / perf / a11y / test → AUTO)本來就該是 AUTO。
   // 這裡只補上缺的那一半:子句本身要有工程語彙、要落在全域修復範圍,且**該子句不得帶任何 UI 取捨語彙或選擇問句**
   // (帶了就走既有的 UI 路徑照舊 fail closed),不放寬 (d)(e) 既有行為。
   for (const clause of messageClauses(normalized)) {

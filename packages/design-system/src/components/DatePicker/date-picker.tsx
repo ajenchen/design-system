@@ -546,7 +546,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size }), className)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? displayCommitted : emptyDisplay}
           </TruncatedText>
@@ -773,7 +773,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           // 鍵盤收起 / 在日曆裡挑日期 → 回輸入框(指標挑的不畫鍵盤框);點外面收起不搶;焦點已被別處接走不搶。不可打字時觸發欄位本身可聚焦,照 Radix 原樣
           onCloseAutoFocus={typeable ? (e) => returnFocusToOpener(e, typedInputRef.current, { noTrigger: true }) : undefined}
         >
-          {/* a11y(2026-07-14 dim-10 修):Radix PopoverContent 自帶 role="dialog"(popover.tsx:58)
+          {/* a11y(2026-07-14 dim-10 修):Radix PopoverContent 自帶 role="dialog"(popover.tsx#PopoverContent)
               — 內層 div 原本重複 role="dialog" 形成雙層 nested unnamed dialog,改為純 layout div,
               accessible name 收斂到外層 PopoverContent aria-label(單一 dialog 層)。
               2026-05-06 v9.1:`flex flex-col flex-1 min-h-0` 完成 M25 chain — viewport
@@ -1207,7 +1207,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:66);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
@@ -1236,7 +1236,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:66);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab

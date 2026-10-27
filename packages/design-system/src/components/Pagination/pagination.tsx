@@ -181,7 +181,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
     },
     ref,
   ) => {
-    // Hooks 必在 early return 之前(React #310 canonical,select.tsx:503 同慣例)
+    // Hooks 必在 early return 之前(React #310 canonical,select.tsx#CustomSelect 同慣例)
     const [pageSize, setPageSize] = useControllable<number>({
       value: pageSizeProp,
       defaultValue: defaultPageSize,

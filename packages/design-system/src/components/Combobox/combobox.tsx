@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
+// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx#PeoplePicker)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 CustomCombobox / ReadonlyMultiSelect / ComboboxTagStack + 共用 helpers(單行 Tag 列的量測 2026-10-13 已抽到 ../OverflowIndicator/overflow-tag-list.tsx);CustomCombobox 的觸發欄位、鍵盤與搜尋框共用同一組 state / ref,拆檔要把十幾個 ref 與 handler 跨檔傳遞。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
@@ -100,8 +100,8 @@ function ComboboxTagStack({
       // 2026-05-18 7B' fix(per user 拍板「執行」+ Codex Round 3 共識)— 移除 `unbounded`,Tag 回預設
       // `max-w-40` cap(160px)+ 內建 `[data-tag-text] truncate min-w-0` 自帶 ellipsis。原 unbounded 是
       // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:85-90`),但 generic Combobox tag display
-      // 應走 Tag canonical cap-with-ellipsis(per `data-table.spec.md:235`「Tag 文字內部 truncate;
-      // multiSelect 動態 +N」+ `data-table.spec.md:467`「Tag 不可被外層 overflow-hidden 裁掉邊框」)。
+      // 應走 Tag canonical cap-with-ellipsis(per `data-table.spec.md`「十一、Cell 單行截斷原則」「Tag 文字內部 truncate;
+      // multiSelect 動態 +N」+ `data-table.spec.md`「禁止事項」「Tag 不可被外層 overflow-hidden 裁掉邊框」)。
       // Trade-off:長 tag 觸發 +N 提前(160 + gap + overflowW > available 較 quick)— acceptable per user。
       // Round 2 dynamic slot maxWidth 提案經 user + codex 共識撤回(3 chicken-and-egg fatal,KISS 勝)。
       renderTag={(item) => <Tag size={tagSize} className={cn('shrink-0', disabledClass)}>{item.label}</Tag>} />
@@ -115,7 +115,7 @@ function ComboboxTagStack({
   // 2026-05-15 F1 Q3 fix(per user round 3 verbatim「單人選取時 Tag 越界蓋 indicator」):
   // `overflow-visible` → `overflow-hidden` 讓 narrow cell width 強制 clip(Tag 內建 truncate
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
-  // `data-table.spec.md:233`「禁硬裁無 ellipsis」+ MUI X / Ant Table column.ellipsis 共識。
+  // `data-table.spec.md`「十一、Cell 單行截斷原則」(空間不足一律 ellipsis,不硬裁)+ MUI X / Ant Table column.ellipsis 共識。
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
   // TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、`isolate` = Tag 的疊放值只在這一列裡比(OverflowTagList 檔頭)
   return (
@@ -381,7 +381,7 @@ function ReadonlyMultiSelect({
             ? <span className={cn('flex-1 min-w-0', fieldDisplayTextClass(sz))}>{unrestrictedLabel}</span>
             : <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
-        {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md:280) */}
+        {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md「多行(Combobox tag wrap)垂直對齊」) */}
         <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
         </ItemSuffix>
@@ -395,7 +395,7 @@ function ReadonlyMultiSelect({
         // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):TAG_ROW_CONTAINER_CLASS(`relative` =「+N」量尺的定位容器、
         // `isolate` = Tag 的疊放值只在這一列裡比;OverflowTagList 檔頭)。換行時不經 OverflowTagList 的單行路徑,沒有疊放值也沒有量尺
         hasTags && !wrap && TAG_ROW_CONTAINER_CLASS,
-        // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
+        // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 451 行):
         // readonly/disabled path 對齊 L293 view wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
@@ -560,7 +560,7 @@ function CustomCombobox({
   const isUnrestrictedOnly = unrestricted && value.length === 1 && value[0] === unrestrictedValue
   // **「有沒有 Tag」只准有這一個判斷式**(2026-09-18 user 抓到的漂移根因)。
   //
-  // 依據逐字在 `../Field/field-controls.spec.md:298`:
+  // 依據逐字在 `../Field/field-controls.spec.md`「Select 顯示模式」:
   //   「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準
   //     `--field-px`(`px-[var(--field-px)]`)padding,確保文字與邊框有足夠間距。」
   // `tagPadding`(= `fieldTagInsetX`,`(欄高 − 2px 邊框 − Tag 高) / 2`)的理由是**讓 Tag 四邊等距**
@@ -631,7 +631,7 @@ function CustomCombobox({
       aria-haspopup={searchIn === 'trigger' ? 'listbox' : 'dialog'}
       aria-label={ariaLabel}
       // a11y(2026-07-14 dim-10):div-based role=combobox 的 <label for> 無效,接 FieldLabel labelId
-      // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。
+      // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx#CustomSelectTriggerContent 同款 guard。
       aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
       aria-invalid={error || undefined}
       // 值處理中(Field 家族 loading):跟 Input wrapper 同樣標 aria-busy(field-controls.spec.md「Loading state」)
@@ -654,7 +654,7 @@ function CustomCombobox({
       // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
-      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:57)
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:66)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         wrap && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
@@ -664,7 +664,7 @@ function CustomCombobox({
       data-field-mode="edit" data-error={error ? '' : undefined}
       // 搜尋框握著焦點時按欄位上的零件,焦點不離開搜尋框(見上方 keepSearchFocus)
       onMouseDown={keepSearchFocus}
-      // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx:593-598)。
+      // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx#CustomSelect 的 onKeyDown)。
       // <div role=combobox> 不像 native <button> 自動 synthesize Enter/Space click,故顯式補:
       //   Enter/Space → 開(searchable 時不攔,讓 inline search input 自行處理打字);
       //   Escape → 關;ArrowDown → 開(APG required combobox 展開鍵,僅在 closed 時攔,
@@ -714,7 +714,7 @@ function CustomCombobox({
         if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
         if (e.key === 'Escape') setOpen(false)
       }}>
-      {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
+      {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
       {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——

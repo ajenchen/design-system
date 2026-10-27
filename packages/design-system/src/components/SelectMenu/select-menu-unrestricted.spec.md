@@ -34,11 +34,11 @@
 ### 位置與結構
 
 - `CommandGroup` 包成**清單的第一組**;分隔線由 `CommandGroup` 自己的規則畫在**下一組的頂端**
-  (`../Command/command.tsx:263-268`;判準 owner `../../patterns/element-anatomy/item-anatomy.spec.md`
+  (`../Command/command.tsx#CommandGroup`;判準 owner `../../patterns/element-anatomy/item-anatomy.spec.md`
   「Group auto-separation」)。**不插 Separator、不寫新 CSS。**
 - 結構先例是同檔下方的**可建立列**:同樣無標題、單獨一列、自成一組,只是它在最下面。
 - ❌ **不得用 `MenuGroup`**:這一列**是選項**,要點得到、鍵盤上下鍵走得到;`MenuGroup` 的列不經 cmdk 註冊
-  (那正是訊息列選它的理由,見 `../Command/command.tsx:187-189`),放這裡會變成鍵盤走不到的孤兒,
+  (那正是訊息列選它的理由,見 `../Command/command.tsx#CommandEmpty`),放這裡會變成鍵盤走不到的孤兒,
   而且它的相鄰線用 `[&+&]`(同 class 相鄰)也對不上 `CommandGroup`。
 
 ### 出現條件
@@ -107,10 +107,10 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
   —— 與單選欄位的寫法完全相同(`../Select/select.tsx` `CustomSelectTriggerContent` 純文字那一支 `!value && 'text-fg-muted'`;
   2026-10-07 前這裡引的 `:352-353` 早已漂到別的程式,改指符號名)
 - **欄位的左內距必須是標準的 `--field-px`,不是 tagPadding**。依據逐字在
-  `../Field/field-controls.spec.md:298`:「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態
+  `../Field/field-controls.spec.md`「Select 顯示模式」:「tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態
   使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding」。
   tagPadding(`fieldTagInsetX`)的理由是**讓 Tag 四邊等距**(`../Tag/tag.spec.md`「圓角與間距」
-  + `field-controls.spec.md:279`),跟文字無關 —— 欄位裡沒有 Tag 時本來就不該套。
+  + `field-controls.spec.md`「下拉箭頭（Select / Combobox）與類型身份 indicator」),跟文字無關 —— 欄位裡沒有 Tag 時本來就不該套。
   「只選『不限』」正是這條規則涵蓋的情形:值非空、但不渲 Tag。
   做法:「要不要縮內距」與「要不要渲 Tag」**每條路徑只准有一個判斷式**(`hasTags`),
   內距與渲染都吃它。

@@ -57,7 +57,7 @@ export const Overview: Story = {
                 ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變(舊名 autoHeight 已停用)"],
                 ['maxHeight', 'string | number', '—', '只能選更矮的上限:min(視窗可用高度, 此值)'],
                 ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
-                ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作 cluster(prev/next/⋮);DS 自動在 actions 與 Close X 間放 ButtonDivider(關閉誤觸保護,action-bar.spec.md:281)'],
+                ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作 cluster(prev/next/⋮);DS 自動在 actions 與 Close X 間放 ButtonDivider(關閉誤觸保護,action-bar.spec.md「五、分隔線規則」)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

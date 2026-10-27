@@ -26,7 +26,7 @@ import { buildPersonProfileCard, resolvePerson, type PersonValue } from './perso
 // 必經此 helper(hook `check_peoplepicker_ssot_drift.sh` 攔接 wrapper class literal in tsx)。
 //
 // **2026-05-15 SSOT alignment**(user verbatim「單選 people picker 沒壞,難道沒有 SSOT?」):
-// 單選 picker wrapper(`select.tsx:244` selectedItemRenderer wrapper)= `flex-1 min-w-0 inline-flex items-center +
+// 單選 picker wrapper(`select.tsx#CustomSelectTriggerContent` selectedItemRenderer wrapper)= `flex-1 min-w-0 inline-flex items-center +
 // nakedCellRowModeAlign` — proven working,canonical SSOT。本 helper 對齊 single SSOT,
 // **不**自定一套(spec.md §C row 1 +「length=1 視覺 = 跟單人 closed 一致」+ §E「PersonDisplay
 // 共享 renderer」)。
@@ -54,7 +54,7 @@ export function getPeoplePickerTagWrapperClass(selectedCount: number, besideInli
   // 多人只選 1 位、搜尋框在欄位內(`searchIn='trigger'`)→ 名字那一格只拿自己要的寬(spec.md §C closed / open + inline-search 列,2026-10-07 待辦總帳 K4)
   if (selectedCount === 1 && besideInlineSearch) return PEOPLE_PICKER_LENGTH1_BESIDE_SEARCH_WRAPPER_CLASS
   return selectedCount === 1
-    ? PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS  // SSOT aligned to single picker wrapper(select.tsx:244 selectedItemRenderer wrapper)
+    ? PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS  // SSOT aligned to single picker wrapper(select.tsx#CustomSelectTriggerContent selectedItemRenderer wrapper)
     // length>=2 stack 視覺(spec.md §D row 1):圓形 avatar overlap + group/avatar selector for dismiss overlay。
     // 疊的量走 token `--avatar-stack-overlap`(tokens/uiSize/uiSize.css;JS 雙生 avatar.tsx `AVATAR_STACK_OVERLAP_PX`),
     // 這裡不再寫字面值(2026-09-26 前是 `-ml-0.5`,與常數各寫一份、註解要求「兩處同改」= 假 SSOT)。

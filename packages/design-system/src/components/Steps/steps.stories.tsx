@@ -13,6 +13,9 @@ import {
 } from './steps'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldError, FieldGroup, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
@@ -29,23 +32,94 @@ type Story = StoryObj<typeof Steps>
 
 // ── 典型 wizard ──────────────────────────────────────────────────────────
 
+// 註冊精靈:每一步是一張真的表單(結構同 field.stories.tsx「表單驗證」的 CreateProjectForm:FieldGroup + useFormValidation);
+// 按「下一步」先驗證這一頁 —— 過了把這一步記成已完成、前往下一步,沒過停在這一頁、焦點到第一個錯的欄位(form-validation.spec.md 規則 8)。
+// 2026-10-21 前這三步只有一句「請輸入你的姓名、電子郵件與電話」、沒有任何欄位(r1b OTH-04)。
+// 按鈕只放「下一步」,最後一步是「送出」;回頭 = 點正上方已完成的步驟(user 2026-10-20「照你建議」= A1 甲;steps.spec.md「目前那一步底下的按鈕」)。
+interface SignUpDraft { name: string; email: string; phone: string; username: string; password: string }
+const EMPTY_SIGN_UP: SignUpDraft = { name: '', email: '', phone: '', username: '', password: '' }
+const requiredText = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
+
+/** 一步的表單:欄位 + 往前那一顆鈕。間距:欄位之間由 FieldGroup 擁有(loose);最後的欄位 → 按鈕照 layoutSpace.spec.md 規則 4 第 1 列(bottom)。 */
+function SignUpStepForm({ label, submitLabel, onSubmit, children }: { label: string; submitLabel: string; onSubmit: (e?: React.FormEvent) => void; children: React.ReactNode }) {
+  return (
+    <form onSubmit={onSubmit} aria-label={label}>
+      {children}
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+        <Button type="submit" variant="primary">{submitLabel}</Button>
+      </ButtonGroup>
+    </form>
+  )
+}
+
+function ContactStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { name: draft.name, email: draft.email, phone: draft.phone },
+    validate: {
+      name: requiredText('姓名'),
+      email: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : '電子郵件格式不正確'),
+      phone: (v) => (/^0\d{8,9}$/.test(String(v).replace(/[\s-]/g, '')) ? undefined : '電話是 0 開頭的 9 到 10 位數字'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <SignUpStepForm label="基本資料" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.name}><FieldLabel>姓名</FieldLabel><Input autoComplete="name" {...form.getInputProps('name')} /><FieldError>{form.errors.name}</FieldError></Field>
+        <Field required invalid={!!form.errors.email}><FieldLabel>電子郵件</FieldLabel><Input inputMode="email" autoComplete="email" {...form.getInputProps('email')} /><FieldError>{form.errors.email}</FieldError></Field>
+        <Field required invalid={!!form.errors.phone}><FieldLabel>電話</FieldLabel><Input inputMode="tel" autoComplete="tel" {...form.getInputProps('phone')} /><FieldError>{form.errors.phone}</FieldError></Field>
+      </FieldGroup>
+    </SignUpStepForm>
+  )
+}
+
+function AccountStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { username: draft.username, password: draft.password },
+    validate: {
+      username: (v) => (String(v ?? '').trim().length >= 3 ? undefined : '使用者名稱至少 3 個字元'),
+      password: (v) => (String(v ?? '').length >= 8 ? undefined : '密碼至少 8 個字元'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <SignUpStepForm label="帳號設定" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.username}><FieldLabel>使用者名稱</FieldLabel><Input autoComplete="username" {...form.getInputProps('username')} /><FieldError>{form.errors.username}</FieldError></Field>
+        <Field required invalid={!!form.errors.password}><FieldLabel>密碼</FieldLabel><Input type="password" autoComplete="new-password" {...form.getInputProps('password')} /><FieldError>{form.errors.password}</FieldError></Field>
+      </FieldGroup>
+    </SignUpStepForm>
+  )
+}
+
+/** 最後一步:核對剛填的資料(唯讀資訊展示 → DescriptionList,field.spec.md「Field vs DescriptionList」),送出。 */
+function ReviewStep({ draft, onSubmit }: { draft: SignUpDraft; onSubmit: () => void }) {
+  return (
+    <SignUpStepForm label="確認並送出" submitLabel="送出" onSubmit={(e) => { e?.preventDefault(); onSubmit() }}>
+      <DescriptionList cols={1}>
+        <DescriptionItem label="姓名">{draft.name}</DescriptionItem>
+        <DescriptionItem label="電子郵件">{draft.email}</DescriptionItem>
+        <DescriptionItem label="電話">{draft.phone}</DescriptionItem>
+        <DescriptionItem label="使用者名稱">{draft.username}</DescriptionItem>
+      </DescriptionList>
+    </SignUpStepForm>
+  )
+}
+
 export const Default: Story = {
   name: '預設',
   render: () => {
     const [value, setValue] = React.useState('info')
     const [completed, setCompleted] = React.useState<string[]>([])
     const [submitted, setSubmitted] = React.useState(false)
+    const [draft, setDraft] = React.useState<SignUpDraft>(EMPTY_SIGN_UP)
 
-    const advance = () => {
+    const advance = (patch: Partial<SignUpDraft>) => {
       const nextMap: Record<string, string> = { info: 'account', account: 'review' }
+      setDraft((d) => ({ ...d, ...patch }))
       setCompleted(prev => Array.from(new Set([...prev, value])))
       const next = nextMap[value]
       if (next) setValue(next)
-    }
-    const back = () => {
-      const prevMap: Record<string, string> = { account: 'info', review: 'account' }
-      const prev = prevMap[value]
-      if (prev) setValue(prev)
     }
     const submit = () => {
       setCompleted(prev => Array.from(new Set([...prev, 'review'])))
@@ -55,6 +129,7 @@ export const Default: Story = {
       setValue('info')
       setCompleted([])
       setSubmitted(false)
+      setDraft(EMPTY_SIGN_UP)
     }
 
     // ── Pattern A:submit 在最後一步,送出後整個 wizard 替換成 success banner ──
@@ -91,6 +166,7 @@ export const Default: Story = {
     return (
       <div className="w-[480px]">
         <Steps
+          aria-label="註冊流程進度"
           value={value}
           onValueChange={setValue}
           completedValues={completed}
@@ -99,13 +175,7 @@ export const Default: Story = {
             <StepLabel>基本資料</StepLabel>
             <StepDescription>填寫姓名與聯絡方式</StepDescription>
             <StepContent>
-              {/* 規則 4:步驟說明(最後的內容)→ 動作鈕 = --layout-space-bottom(layoutSpace.spec.md:127);鈕與鈕之間由 ButtonGroup 擁有 */}
-              <p className="text-body text-fg-secondary">
-                請輸入你的姓名、電子郵件與電話。
-              </p>
-              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
-                <Button variant="primary" onClick={advance}>下一步</Button>
-              </ButtonGroup>
+              <ContactStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -113,15 +183,7 @@ export const Default: Story = {
             <StepLabel>帳號設定</StepLabel>
             <StepDescription>選擇使用者名稱與密碼</StepDescription>
             <StepContent>
-              <p className="text-body text-fg-secondary">
-                設定登入帳號。使用者名稱至少 3 個字元。
-              </p>
-              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
-                <Button variant="primary" onClick={advance}>下一步</Button>
-                <Button variant="tertiary" onClick={back}>
-                  上一步
-                </Button>
-              </ButtonGroup>
+              <AccountStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -129,15 +191,7 @@ export const Default: Story = {
             <StepLabel>確認並送出</StepLabel>
             <StepDescription>送出前最後檢查</StepDescription>
             <StepContent>
-              <p className="text-body text-fg-secondary">
-                請確認所有欄位正確,按下送出後系統會建立您的帳號。
-              </p>
-              <ButtonGroup className="mt-[var(--layout-space-bottom)]">
-                <Button variant="primary" onClick={submit}>送出</Button>
-                <Button variant="tertiary" onClick={back}>
-                  上一步
-                </Button>
-              </ButtonGroup>
+              <ReviewStep draft={draft} onSubmit={submit} />
             </StepContent>
           </StepItem>
         </Steps>
@@ -163,6 +217,7 @@ export const NonLinear: Story = {
     return (
       <div className="w-[360px]">
         <Steps
+          aria-label="工作區設定進度"
           value={value}
           onValueChange={setValue}
           completedValues={['overview']}
@@ -199,6 +254,7 @@ export const Horizontal: Story = {
     return (
       <div className="w-full max-w-3xl">
         <Steps
+          aria-label="結帳進度"
           value={value}
           onValueChange={setValue}
           completedValues={['cart', 'address']}

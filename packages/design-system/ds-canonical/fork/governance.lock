@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sha256": "e7b98b05f947fa12ff01baa201ca388d71e55aa735bd3307285840ccb8fb2efd",
+      "sha256": "3bafd4ffb0b7d7d9306de464f10fa485687c5fb0d366c8deb8ae7a8c3e6174ac",
       "source": "check_chrome_header_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -687,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "e3c5f3ab5a2c2ea879e7a3336341d77c11c05cad9c402ecd4c4f0bbc5c17768f",
+      "sha256": "4ac5207cb6c80bc1395e51b0d9574d5048df491855563bd3b324ab2282aedb61",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -727,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "ab57140b97f6e3d23967e0986c262e8f81a3cb70e655341d1047fd98256b9ea0",
+      "sha256": "087e4078f0fab1fb9415ae5a2bead03c91e4375429f798436609372c7a5f20ca",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -751,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "7a3d47170344945f6b07e331413b13d868f0655c82375f15bc6f1fde0b9a5a1e",
+      "sha256": "17b4e9ae2fbef78c64545237f2266bac5b0bdb19385ff1be1da506049e854e5e",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -775,7 +775,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sha256": "0f435cfb643dd872c4019045b4351df05cdd62222df2bee9a70a69c6a8cdcbe8",
+      "sha256": "5ebadb0745bdc4ea29533e532c414fe8c9d35f85349c05b1a394268385b00bf7",
       "source": "check_sidebar_menu_button_implicit_wrap.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -799,7 +799,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
-      "sha256": "30535b4023fc9a3837bfe3023cfe94df5b49bb367b4d9ffd0443e51ef5c56f86",
+      "sha256": "931ef010f92e773fcac9ef26440f3d7fbd42d6933d6ab4f305f1743a7462b939",
       "source": "check_tabs_content_chrome_body_double_gap.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -847,7 +847,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "6b52b3ced8d2bf4b249e5ce7dc644e03bc14be2e424eff6a336a298a5e497e1b",
+      "sha256": "171c76753691af7bbe9eeef01261ba6cd9afb5ce332baa2d170352d63604d896",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null

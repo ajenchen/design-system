@@ -24,6 +24,7 @@ import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tok
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // 步驟結果的圖示與顏色和 FileItem 同一份(user 2026-10-06 第 4 點「圖示與顏色沿用 FileItem」;tree-view.spec.md「步驟結果」)
 import { RESULT_STATUS_ICON } from '@/design-system/components/FileItem/file-item-status'
+import { STEP_STATUS_TEXT } from '@/design-system/components/Steps/step-status-text'
 // 步驟導覽樹的判定(點大步驟的文字、Enter / 空白鍵、連點保護、列尾結果、灰底)—— 純函式,判定表 scripts/test-tree-step-navigation.mjs
 import {
   isRepeatClick,
@@ -218,10 +219,10 @@ const warnStepOnce = (key: string, message: string) => {
 }
 
 // 步驟結果的讀屏文字(列的 aria-describedby 指過去;tree-view.spec.md「步驟結果」)。
-// 自己的結果與 Steps 同一組字(`../Steps/steps.tsx` STEP_STATUS_TEXT 的「已完成」「錯誤」);代顯的兩句是 AI 推導。
+// 自己的結果直接讀 Steps 那一份(`../Steps/step-status-text.ts`,兩處同一組字);代顯的兩句是 AI 推導,只有 TreeView 有。
 // i18n-allow-block: DS default SR-only 文案(同本檔 DEFAULT_REORDER_ANNOUNCEMENTS 先例)
 const STEP_RESULT_TEXT: Record<'own' | 'proxy', Record<StepResult, string>> = {
-  own: { completed: '已完成', error: '錯誤' },
+  own: { completed: STEP_STATUS_TEXT.completed, error: STEP_STATUS_TEXT.error },
   proxy: { completed: '全部已完成', error: '其中有錯誤' },
 }
 
@@ -1782,7 +1783,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                 *     (對齊 SelectMenu multi pattern;consumer 不用手寫 checkbox)
                 *   - selectionMode='multiple' + consumer 傳 checkbox → 用 consumer 的(parent-child cascade 等 advanced)
                 *   - selectionMode='single' / 'none' → 不 render checkbox(text-foreground + bg 雙信號表 selected)
-                * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx:352-354(SelectMenu multi=checkbox) */}
+                * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx#SelectMenu(multi = `checkbox={multiple}`) */}
               {(checkbox || selectionMode === 'multiple') && (
                 <ItemPrefix className="pointer-events-none">
                   {/* 2026-07-05 D4 修:auto-render Checkbox 補 tabIndex={-1} — 勾選框的 root 是原生 button

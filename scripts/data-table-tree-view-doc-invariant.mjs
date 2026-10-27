@@ -53,7 +53,7 @@ const FILES = {
 }
 
 // ── P1:行號指標 ─────────────────────────────────────────────────────────────────────────────
-/** 指向這兩支檔的「檔名:行號」。`data-table.tsx#Symbol` / 「data-table.tsx 的 `Symbol`」是對的寫法,不算 */
+/** 指向這兩支檔的「檔名:行號」。`data-table.tsx#Symbol` / 「data-table.tsx 的 `Symbol`」是對的寫法,不算(@cite-fixture:`Symbol` 是示意名,不是真的宣告) */
 const LINE_POINTER = /\b(data-table|tree-view)\.tsx:\d+/g
 export function linePointerHits(path, text) {
   const hits = []
@@ -234,7 +234,7 @@ export function analyze(files, read) {
 function selftest() {
   const problems = []
   const expect = (cond, msg) => { if (!cond) problems.push(msg) }
-  // P1
+  // P1(@cite-fixture:下面兩句是 a6390356 修前逐字原文,舊行號故意保留 —— 它們就是要被 P1 抓到的對照組,不可被 --fix-moved-cites 改號)
   expect(linePointerHits('x', '正解是修 wrapper(`data-table.tsx:2085` 的 `isKnownCompound` 補 `boolean`),').length === 1, 'P1 修前 focus-canonical.md:514 應紅')
   expect(linePointerHits('x', '    // (tree-view.tsx:1244-1266),不再用 `ChevronDown` 反轉').length === 1, 'P1 修前 data-table.tsx 的 tree-view 範圍指標應紅')
   expect(linePointerHits('x', '正解是修 wrapper(`data-table.tsx` 的 `isKnownCompound` 補 `boolean`),').length === 0, 'P1 符號指法應 0 筆')
@@ -255,7 +255,7 @@ function selftest() {
     `        title="❌ 不用 DataTable 做超過 3 層的巢狀分組"`,
   ].join('\n')
   expect(thresholdHits('x', after, 30).length === 0, `P2 修後寫法(含資料筆數、與虛擬捲動無關的「超過 3 層」)應 0 筆,實得 ${JSON.stringify(thresholdHits('x', after, 30))}`)
-  // P3
+  // P3(@cite-fixture:specBefore 是 a6390356 修前逐字原文,舊行號故意保留)
   const specBefore = '  (c) 列拖曳無客製 live region,落回 dnd-kit 英文預設字串(TreeView 有自己的,`tree-view.tsx:374-378`)。'
   expect(liveRegionClaimHits('x', specBefore, '{drag.liveRegion}').length === 1, 'P3 修前規格句應紅')
   expect(liveRegionClaimHits('x', specBefore, 'no live region here').length === 0, 'P3 程式真的沒渲染播報時,規格寫缺口是對的,應 0 筆')

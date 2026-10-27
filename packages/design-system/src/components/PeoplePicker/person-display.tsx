@@ -211,7 +211,7 @@ function MultiPersonDisplay({
   /**
    * 2026-05-15 codex Round 5 C+ SSOT fix:`measured=true` 啟動 container-width 量測(取代 hardcode `max ?? 3`)
    * → view + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 view 用固定 3 vs edit
-   * 用 useOverflowCount。對齊 field-controls.spec.md:286 「4-mode 共享 renderer」contract + user round 3
+   * 用 useOverflowCount。對齊 field-controls.spec.md「共享 contract」(a) 4-mode 共享 renderer contract + user round 3
    * verbatim「同空間兩判斷點」SSOT directive。Default false 保 backward compat(non-cell context 仍 max ?? 3)。
    */
   measured?: boolean
@@ -249,7 +249,7 @@ function MultiPersonDisplay({
     const box = el.parentElement ?? el
     // **2026-09-07(B1)修:`width='hug'` 下量父層還是會自我回饋。**
     //
-    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx:134)—— 它的寬度
+    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx#fieldWrapperStyles)—— 它的寬度
     // **就是內容決定的**,所以裡面那層 `flex-1 min-w-0` 也跟著內容縮:少畫一顆 →
     // 父層變窄 → 再少畫一顆,棘輪只是往上搬了一層,沒有被拆掉。
     //

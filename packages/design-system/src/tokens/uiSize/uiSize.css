@@ -48,7 +48,7 @@
      min 不是新常數,它就是本公式在最小控件階的取值(--field-height-xs 24px − inset 8px = 16px),
      所以地板永遠不覆寫公式,只在「容器宣稱的高度比它自己的內容還矮」時把結果修回誠實值。
      --field-height-xs 明文不隨 density 縮放,故 min 在任何密度都成立;16px 同時等於 Button 的
-     圖示尺寸(button.tsx:416),與 VS Code 工具列分隔線同值(actionbar.css height:16px,同檔
+     圖示尺寸(button.tsx#iconSize),與 VS Code 工具列分隔線同值(actionbar.css height:16px,同檔
      .codicon 亦 16px)。
      消費者:ButtonDivider(唯一實作點)。由 scripts/test-action-divider-placement.mjs 機械鎖。 */
   --action-divider-inset: 0.5rem; /* 8px — 兩端各 4px */
@@ -108,7 +108,7 @@
      原本 declared in DS repo `src/globals.css`,沒進 npm-published tokens aggregator
      → consumer install DS + import `@qijenchen/design-system/styles/tokens` 拿不到
      → AppShell + Sidebar gap div 用 `var(--sidebar-width)` undefined → 解析 0px → flex 跑版
-     對齊 docs:`components/Sidebar/sidebar.spec.md` L613-614 token table
+     對齊 docs:`components/Sidebar/sidebar.spec.md`「尺寸規範」token table(段名不用行號:原本的 L613-614 已過期,r1b OTH-02)
      Why uiSize.css:layout primitive widths 是 ui sizing semantic 範疇(對齊 --field-height / --chrome-header)
      */
   --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */

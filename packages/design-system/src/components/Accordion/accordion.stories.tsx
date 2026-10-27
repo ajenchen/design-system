@@ -136,7 +136,8 @@ export const SettingsSections: Story = {
           <AccordionContent>
             <DescriptionList orientation="horizontal">
               <DescriptionItem label="目前方案">Team(月付 NT$480 / 每位使用者)</DescriptionItem>
-              <DescriptionItem label="下次扣款">2026/05/19</DescriptionItem>
+              {/* 週期寫法不會過期(同一則的「最近登入」也是相對時間);寫死下一次的日期,日曆一翻過去就成了過期資料(r1b NEW-05) */}
+              <DescriptionItem label="扣款日">每月 19 日</DescriptionItem>
               <DescriptionItem label="付款方式">Visa **** 4242</DescriptionItem>
             </DescriptionList>
           </AccordionContent>

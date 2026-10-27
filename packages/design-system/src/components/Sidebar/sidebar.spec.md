@@ -630,11 +630,11 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 | 第二列列鈕上緣 +2px 那一點打到誰 | `menu-button`(第二列的,正確) | **第二列 `menu-action` 的帶** |
 | 帶相對宿主 `<li>`(高 32,鈕置中) | — | 上、下各**越出 2px** |
 
-那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel-fab.spec.md`「遮擋與貼邊」段的「不外推」條(:42-43;2026-09-27 拆檔前為 `agent-panel.spec.md:463-464`,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
+那圈帶同時踩了兩條:**越出宿主**、**蓋住別的可點目標** —— 它蓋掉的正是自己那一列的列鈕,以及緊貼在下方那一列的列鈕。同一個形狀在 `../AgentPanel/agent-panel-fab.spec.md`「遮擋與貼邊」段的「不外推」條(:42-43;2026-09-27 拆檔前為 `166e6614:packages/design-system/src/components/AgentPanel/agent-panel.spec.md:463-464`,「外推會生出隱形帶,搶走底下內容的點擊」)記過。拿掉之後兩個斷點的命中區才一致,不再「同一顆鈕在窄視窗偷偷變大」。
 
 #### 修正二:它們本來就不該是手刻的
 
-查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx:826` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+查 git 才發現這兩顆是 **shadcn 原樣帶進來的手刻品**(`b7b34721` 把 DS 搬進 npm workspace 時一起進來),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
 
 依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 
@@ -644,7 +644,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 **依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
 
-**為什麼可以小於 24**:`../../tokens/uiSize/uiSize.spec.md:169`「元件高度地板」的 24px 只管**可獨立存在**的互動元件,同一段明文把「元件內部的 Inline Action」交給宿主元件的 spec 定義 —— 現在那份定義是`patterns/element-anatomy/inline-action.spec.md`的尺寸表。
+**為什麼可以小於 24**:`../../tokens/uiSize/uiSize.spec.md`「元件高度地板」的 24px 只管**可獨立存在**的互動元件,同一段明文把「元件內部的 Inline Action」交給宿主元件的 spec 定義 —— 現在那份定義是`patterns/element-anatomy/inline-action.spec.md`的尺寸表。
 
 **之後要改這裡的判準**:想放大命中區,就把**可視形狀**一起放大(讓底色真的變大),不要再長一圈看不見的帶。
 

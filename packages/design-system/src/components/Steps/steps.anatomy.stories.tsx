@@ -9,9 +9,10 @@ import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 
-// DKIM 公開金鑰的 TXT 記錄值(Google Workspace / Postmark 這類「自訂網域寄件」設定精靈會原樣給使用者複製;2048-bit RSA 的 p= 約 400 字元)
+// DKIM 公開金鑰的 TXT 記錄值(Google Workspace / Postmark 這類「自訂網域寄件」設定精靈會原樣給使用者複製;2048-bit RSA 的 p= 約 400 字元)。
+// p= 是真的 2048-bit RSA 公鑰(openssl 產生、私鑰當場丟棄),2026-10-21 前是手打的字母序列(…fGhJ5kMnO7PqRsTuVwXyZ0a1B2c3D4…),一眼看得出是假的(r1b OTH-12)
 const DKIM_TXT_RECORD =
-  'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx7WqF0dJq2vN8kLm3Zs1pYt6RcHbE4uV9wXaD2fGhJ5kMnO7PqRsTuVwXyZ0a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2w3X4y5Z6a7B8c9D0e1F2g3H4i5J6k7L8m9N0o1P2q3R4s5T6u7V8w9X0y1Z2a3B4c5D6e7F8g9H0i1J2k3L4m5N6o7P8q9R0s1T2u3V4w5X6y7Z8a9B0c1D2e3F4g5H6i7J8k9L0m1N2o3P4q5R6s7T8u9V0w1X2y3Z4a5B6c7D8e9F0g1H2i3J4k5L6m7N8o9P0q1R2s3T4u5V6w7X8y9Z0QIDAQAB'
+  'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzLo2z5wSGqHlkrDJeSZsz5HIx2FAGc3840Pg16k1Mkv2fgeX5kY9m9FuR1QKvhnuFUgJTbqL4f3VLPStnLgZSIWdtiPViSq4/f4Rb0PS+ZDClgoGLsiKhUHomcz6ucUA0LZ2QG0Q0q1ny09247NutuBaJFf+sqxH4YGNtvo0XQfJF9FqZ3ZPNXWQ9ZZyZWZHo7y+d8dVoCpza0mnRjhEg5A0t4USn5gEvyj4X8DQOotPHNrxY8EabDme+t4K9rymLLm74v8U5YAm06QKRVRmhLkGLKJtHnbg4DKM0Z7bmWR/rhERHVrYJS2ZvgjtUVrvT0abJGZlA+SWTBczDGS5uQIDAQAB'
 
 const meta: Meta = {
   title: 'Design System/Components/Steps/設計規格',
@@ -28,7 +29,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Steps 是有序步驟序列——Indicator(圓形)+ Label + 可選 Description + Connector(連接線)。每個 StepItem 有四種狀態:completed / current / upcoming / error(reachable 為 linear 模式內部推導的解鎖態,不在介紹層暴露)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps value="shipping" completedValues={['cart', 'payment']}>
+          <Steps aria-label="結帳進度" value="shipping" completedValues={['cart', 'payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款資訊</StepLabel></StepItem>
             <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>當前步驟</StepDescription></StepItem>
@@ -121,7 +122,7 @@ export const Inspector: Story = {
   },
   render: (args) => (
     <div className="border border-border rounded-lg p-4 max-w-2xl">
-      <Steps {...args}>
+      <Steps aria-label="結帳進度" {...args}>
         <StepItem value="cart"><StepLabel>購物車</StepLabel><StepDescription>3 件商品,合計 NT$ 2,490</StepDescription></StepItem>
         <StepItem value="payment"><StepLabel>付款資訊</StepLabel><StepDescription>信用卡 / ATM / LINE Pay</StepDescription></StepItem>
         <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>宅配 2-3 個工作天</StepDescription></StepItem>
@@ -140,7 +141,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal</H3>
         <Desc>步驟水平排列,常見於結帳流程 / wizard 頂部。Indicator 之間有橫向 connector。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps orientation="horizontal" value="payment" completedValues={['cart']}>
+          <Steps aria-label="結帳進度" orientation="horizontal" value="payment" completedValues={['cart']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款</StepLabel></StepItem>
             <StepItem value="shipping"><StepLabel>配送</StepLabel></StepItem>
@@ -166,7 +167,8 @@ export const OrientationMatrix: Story = {
                   </Field>
                   <Field mode="readonly">
                     <FieldLabel>TXT 記錄值</FieldLabel>
-                    <Textarea value={DKIM_TXT_RECORD} />
+                    {/* autoSize:記錄值全文看得到,不在 3 行高的框裡捲(user 2026-10-21「Q4 照你建議」= 乙:唯讀欄位 + autoSize) */}
+                    <Textarea autoSize value={DKIM_TXT_RECORD} />
                   </Field>
                 </FieldGroup>
               </StepContent>
@@ -248,7 +250,7 @@ export const ColorMatrix: Story = {
         <H3>完整四態實際渲染</H3>
         <Desc>包含 error state 的結帳流程(例如付款失敗)。error 取代原本的 completed 指示。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps value="shipping" completedValues={['cart']} errorValues={['payment']}>
+          <Steps aria-label="結帳進度" value="shipping" completedValues={['cart']} errorValues={['payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款失敗</StepLabel><StepDescription>信用卡驗證未通過</StepDescription></StepItem>
             <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>當前步驟</StepDescription></StepItem>
@@ -271,7 +273,7 @@ export const SizeMatrix: Story = {
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
               <div className="text-caption text-fg-muted mb-2 font-mono">size="{size}"</div>
-              <Steps size={size} value="b" completedValues={['a']}>
+              <Steps aria-label="訂單流程進度" size={size} value="b" completedValues={['a']}>
                 <StepItem value="a"><StepLabel>填寫資料</StepLabel></StepItem>
                 <StepItem value="b"><StepLabel>確認訂單</StepLabel></StepItem>
                 <StepItem value="c"><StepLabel>完成付款</StepLabel></StepItem>
@@ -303,7 +305,7 @@ const ProgressFlow = () => {
   return (
     <div className="flex flex-col gap-3 min-w-[340px]">
       <div className="border border-border rounded-lg p-4">
-        <Steps value={current} completedValues={completed} orientation="horizontal">
+        <Steps aria-label="結帳進度" value={current} completedValues={completed} orientation="horizontal">
           {CHECKOUT_STEPS.map((s) => (
             <StepItem key={s.value} value={s.value}>
               <StepLabel>{s.label}</StepLabel>
@@ -332,7 +334,7 @@ const LinearVsNonlinear = () => {
       <div className="flex flex-col gap-2 min-w-[240px]">
         <span className="text-[11px] text-fg-muted font-mono">linear(預設)</span>
         <div className="border border-border rounded-lg p-4">
-          <Steps value="shipping" completedValues={['cart']} orientation="vertical">
+          <Steps aria-label="結帳進度" value="shipping" completedValues={['cart']} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
                 <StepLabel>{s.label}</StepLabel>
@@ -345,7 +347,7 @@ const LinearVsNonlinear = () => {
       <div className="flex flex-col gap-2 min-w-[240px]">
         <span className="text-[11px] text-fg-muted font-mono">linear={'{false}'}(自由跳轉)</span>
         <div className="border border-border rounded-lg p-4">
-          <Steps value="shipping" completedValues={['cart']} linear={false} orientation="vertical">
+          <Steps aria-label="結帳進度" value="shipping" completedValues={['cart']} linear={false} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
                 <StepLabel>{s.label}</StepLabel>
@@ -363,7 +365,7 @@ const ErrorInterrupt = () => {
   return (
     <div className="flex flex-col gap-2 min-w-[300px]">
       <div className="border border-border rounded-lg p-4">
-        <Steps value="payment" completedValues={['cart', 'shipping']} errorValues={['payment']} orientation="horizontal">
+        <Steps aria-label="結帳進度" value="payment" completedValues={['cart', 'shipping']} errorValues={['payment']} orientation="horizontal">
           {CHECKOUT_STEPS.slice(0, 4).map((s) => (
             <StepItem key={s.value} value={s.value}>
               <StepLabel>{s.label}</StepLabel>
@@ -444,7 +446,7 @@ export const IndentAlignment: Story = {
         <H3>Indicator 永遠 inline 對齊 label 第一行</H3>
         <Desc>刻意打破 item-layout 的 24px 閾值規則——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <Steps orientation="vertical" value="b" completedValues={['a']}>
+          <Steps aria-label="商家開通進度" orientation="vertical" value="b" completedValues={['a']}>
             <StepItem value="a"><StepLabel>驗證電子信箱</StepLabel></StepItem>
             <StepItem value="b">
               <StepLabel>完善公司資料</StepLabel>

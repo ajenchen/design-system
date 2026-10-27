@@ -129,7 +129,7 @@ if [ -n "$BENCH_DIR" ] && [ -x "$BENCH_FETCHER" ]; then
     SHOULD_AUTO_FETCH=1
     FETCH_REASON="never fetched"
   else
-    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:181.
+    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:161.
     # Without the GNU form this silently returned 0 on Linux, which made every staleness window
     # look infinitely old on containerized hosts.
     LAST_TS=$(stat -c '%Y' "$LAST_FETCH_FILE" 2>/dev/null || stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")

@@ -164,7 +164,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ## 步驟導覽樹(單選 + `expandOnSelect`)
 
-**是什麼**:左邊一棵步驟樹、右邊是目前那一步的內容 —— user 2026-10-01 原話見上方「選取」(「…這個巢狀步驟的元件用途通常是作為左側菜單來被使用，點擊左側菜單選項右側body就會有對應內容」);巢狀步驟交給 TreeView 是 user 2026-10-01 的決定(`../Steps/steps.spec.md`「何時不用」)。開法:`selectionMode="single"`(預設)+ `expandOnSelect`。灰底 = 你在哪(目前那一步);列尾 = 步驟結果(見「步驟結果」)。**只有這種樹**有本段與「步驟結果」的行為(灰底代顯、列尾結果、`aria-current="step"`、點大步驟的文字開合);沒開 `expandOnSelect` 的檔案樹、側欄樹一個像素、一個行為都不變。
+**是什麼**:左邊一棵步驟樹、右邊是目前那一步的內容 —— user 2026-10-01 原話見上方「選取」(「…這個巢狀步驟的元件用途通常是作為左側菜單來被使用，點擊左側菜單選項右側body就會有對應內容」);巢狀步驟交給 TreeView 是 user 2026-10-01 的決定(`../Steps/steps.spec.md`「何時不用」)。開法:`selectionMode="single"`(預設)+ `expandOnSelect`。灰底 = 你在哪(目前那一步);列尾 = 步驟結果(見「步驟結果」)。**只有這種樹**有本段與「步驟結果」的行為(灰底代顯、列尾結果、`aria-current="step"`、點大步驟的文字開合);沒開 `expandOnSelect` 的檔案樹、側欄樹一個像素、一個行為都不變。**右半邊的「上一步 / 下一步」放右半邊置底的 footer**(只在右半邊,左邊的樹全高;內容長就在內容區裡捲,「下一步」每一步同一個位置):用 `SurfaceFooter` 的按鈕列(`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」),靠右、`[上一步][下一步]`、第一步不放上一步;內容區是沒有標題列的 body(上 tight、左右 loose、下 bottom)。來源:user 2026-10-20「Q1照建議」,採 AI 建議甲「右半邊置底 footer」;範例 = 展示「步驟引導」。
 
 ### 兩種大步驟(有子步驟的列)
 
@@ -254,7 +254,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 - **圖示與顏色**:成功 `CircleCheck` + `text-success`、失敗 `XCircle` + `text-error`,與 FileItem 是同一份(`../FileItem/file-item-status.ts`,owner = FileItem);尺寸跟這一列的圖示一樣(sm / md 16、lg 20)。樹的步驟結果**不**沿用 Steps 的藍色完成點:用綠勾是 user 第 4 點「沿用 FileItem」的決定(待辦總帳 N72 ④)。
 - **位置**:列尾、常駐(不隨滑過隱藏;「顯示當前 state 不是 action」,見「Hover-only Inline Actions」狀態 toggle 那條),跟滑過才出現的按鈕**並排**(結果在主格最後、按鈕在動作格,間距 = 列的 `gap-2`)。步驟導覽樹每一列都保留這一格(寬 = 這一列的圖示尺寸,與行內按鈕同一個盒,`ui-dev-rules.md`「同 flex 列的互動 slot 幾何鐵律」),步驟從「還沒有結果」變成完成 / 失敗時,標題的截斷位置不跳(AI 推導)。
 - **停用的列**:圖示一律 `text-fg-disabled`(M24「disabled > 其他」),靠形狀(勾 / 叉)分辨。
-- **讀屏**:列名只有標題(`aria-labelledby`),結果掛在列的 `aria-describedby`:自己的結果念「已完成」/「錯誤」(與 `../Steps/steps.tsx` 的讀屏字相同);代顯念「全部已完成」/「其中有錯誤」(文案 AI 推導)。
+- **讀屏**:列名只有標題(`aria-labelledby`),結果掛在列的 `aria-describedby`:自己的結果念「已完成」/「錯誤」(與 Steps 同一份字:`../Steps/step-status-text.ts`,兩個元件 import 同一個常數);代顯念「全部已完成」/「其中有錯誤」(文案 AI 推導)。
 
 ### 灰底(「你在哪」)與代顯
 
@@ -576,3 +576,4 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 - `combobox.spec.md`
 - `data-table.spec.md`
 - `sidebar.spec.md`
+- `steps.spec.md`

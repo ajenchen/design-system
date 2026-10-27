@@ -172,6 +172,10 @@ jobs:
           # 設計原則頁與設計規格頁兩個檔。跨檔逐字相同的頂層宣告(6 行以上)鎖在 scripts/story-helper-duplication-baseline.json,
           # 只准減少;要共用就放進 stories-helpers/。對照組 = 那次的真實抄本 + 合成正反例。純靜態,約 1 秒。
           npm run test:story-helper-duplication
+          # owner 文件說的與程式一致(2026-10-21,r1b others 家族):color.spec 的 bg-muted / bg-secondary 消費者登記簿(以 檔案#宣告 登記、
+          # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
+          # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
+          npm run test:owner-claims
 
       - name: Registered test scripts nothing was running
         run: |

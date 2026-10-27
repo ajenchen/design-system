@@ -115,8 +115,8 @@ export const fieldWrapperStyles = cva(
     // truncate-with-ellipsis(`Alexander Hamilton Zhang` 直接被 cell overflow-hidden 硬裁無 `...`
     // 甚至蓋住相鄰 cell `—` indicator,圖二 user round 2 直接抓 trigger 越界證據)。
     // 修一處全 Field family 跟動(Input/Select/Combobox/DatePicker/TimePicker/LinkInput/
-    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md:233
-    // 「禁硬裁無 ellipsis」DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
+    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md「十一、Cell 單行截斷原則」
+    // (空間不足一律 ellipsis,不硬裁)DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
     // 2026-07-08 width 軸:`w-full` 從 base 移入 `width` variant(fill = 原行為 default,
     // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
     'inline-flex items-center min-w-0 rounded-md',
@@ -197,7 +197,7 @@ export const fieldWrapperStyles = cva(
       //   Codex verdict:「naked 把 chrome stripping 跟 slot anatomy stripping 混在一起。
       //   chrome stripping 合理(去 padding / border / rounded);slot anatomy stripping 不合理
       //   (prefix / content / suffix gap 仍是 item anatomy slot canonical `gap-2`)」
-      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx:50)透出來。
+      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx#fieldWrapperStyles)透出來。
       //   Cite:item-anatomy.spec.md L46-50 / L113-122 partial consumer canonical;
       //   field-controls.spec.md L22 Field Controls 視覺對齊 Family 1 Menu item layout。
       //   特殊 stack / multi-pill 場景若需 zero-gap,該 component spec 明文例外,不全域 strip。
@@ -262,10 +262,10 @@ export const fieldWrapperStyles = cva(
 export const bareInputStyles = [
   // 2026-05-15 Q1 真 root cause fix(per codex Round 4 cite-based verdict):
   // 加 `truncate` — 原 bareInputStyles 含 `flex-1 min-w-0` 但無 `truncate / text-overflow` policy。
-  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx:178),
+  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx#CustomSelectTriggerContent),
   // bareInputStyles 套上,placeholder 無 ellipsis → narrow cell(<160px)硬裁無 `...`(user round 3
   // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 「placeholder 直接被截掉沒有變...」
-  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md:233「禁硬裁無 ellipsis」+ field-controls.spec.md:286
+  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
   // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary

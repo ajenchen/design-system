@@ -113,7 +113,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 
 - **為什麼不永遠可見**:carousel 內容(大圖 / 產品照)是主視覺,常駐箭頭會干擾閱讀;Airbnb / Instagram / Netflix hero 皆採 hover-only
 - **a11y 例外**:wrapper `has-[:focus-visible]:opacity-100`——後代 arrow 以鍵盤取得焦點時強制顯示,滿足**焦點可見原則**。鍵盤使用者不 hover,若仍 opacity-0 將無法得知元素位置。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點箭頭也會讓它成立,指標移開後箭頭一直蓋在圖上(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc;閘 `scripts/test-hover-revealed-affordances.mjs`)
-- **邊界**:`canScrollPrev/Next === false` 時 `disabled + opacity-0 + pointer-events-none`——到邊界直接消失,不顯示 disabled 狀態,避免視覺噪音
+- **邊界**:`canScrollPrev/Next === false` 時 `disabled + opacity-0 + pointer-events-none`——到邊界直接消失,不顯示 disabled 狀態,避免視覺噪音。**例外:用鍵盤按到端點的那顆箭頭留著**(2026-10-01 起,程式 `carousel.tsx` `arrowWrapperClass`):握著焦點時被停用的按鈕不轉原生 `disabled`、改「可聚焦的停用」(`aria-disabled` + `data-disabled-focusable`,`../Button/button.tsx`),箭頭在 `:focus-visible` 期間維持顯示,焦點框看得見(WCAG 2.4.7),焦點離開才轉回原生 `disabled` 並收起;滑鼠按到端點的照舊當場收起(沒有鍵盤框要看)。規則住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」,本段只記 Carousel 的長相
 
 ### 箭頭覆蓋範圍(canonical)
 
@@ -171,11 +171,11 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 本 DS 的預設是**命中區恆等於懸停回饋的形狀**,唯一的例外是「可視形狀先天當不了目標的線與點」——
 跨元件契約與那條例外的四個條件在 `../../ds-canonical/references/hit-area-canonical.md`,本節不重述條文,只逐案交代這一顆點。
 
-**為什麼吃得到例外**:指示點的可視形狀是 **6×6 的圓**(`carousel.tsx:408` `h-1.5` + 未選中 `w-1.5`)。
+**為什麼吃得到例外**:指示點的可視形狀是 **6×6 的圓**(`carousel.tsx#CarouselDots` `h-1.5` + 未選中 `w-1.5`)。
 6px 不是「有點難點」,是幾乎不可能瞄準;堅持相等等於宣告它不可用。這正是例外要接的那一類。
 (現張的點加寬成 24×6,`w-6` —— 寬的那一軸已經夠瞄,所以水平外擴量兩種狀態相同,見下表。)
 
-**外擴量**(`carousel.tsx:409-411`,`before:-inset-y-[9px] -inset-x-[3px]`):
+**外擴量**(`carousel.tsx#CarouselDots`,`before:-inset-y-[9px] -inset-x-[3px]`):
 
 | 軸 | 可視 | 外擴 | 命中 |
 |---|---|---|---|
@@ -186,7 +186,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 這是 hit-area-canonical「外擴不得蓋住別的可點目標」那條的上限算法,不是隨手取的數。
 
 **垂直為什麼是 9(命中 24)**:垂直方向沒有鄰居可搶,上限只剩「不得越出宿主」。
-dots 條貼在 `bottom-3`(12px)`carousel.tsx:378`,所以往下 9 仍在 carousel 根之內(實測留 3px),往上是媒體本身、沒有任何可點目標。
+dots 條貼在 `bottom-3`(12px,`carousel.tsx#CarouselDots`),所以往下 9 仍在 carousel 根之內(實測留 3px),往上是媒體本身、沒有任何可點目標。
 24 這個數字**不是**從觸控尺寸建議推出來的 —— 本 DS 明確不以「手指要多大才點得到」當命中區的依據
 (hit-area-canonical「本 DS 不採納觸控尺寸建議」);這裡它只是「上下各補滿一個點的高度、又不越界」之後剩下的值。
 

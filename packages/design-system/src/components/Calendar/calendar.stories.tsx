@@ -127,7 +127,7 @@ export const ContentPublishingSchedule: Story = {
           events={events}
           defaultReferenceDate={now}
           today={now}
-          // @layout-space-magic-ok: 自訂事件方塊照抄元件內建 tileBase 'rounded-md px 6px py 2px'(calendar.tsx:200;layoutSpace.spec.md:168 元件自身微幾何)
+          // @layout-space-magic-ok: 自訂事件方塊照抄元件內建 tileBase 'rounded-md px 6px py 2px'(calendar.tsx#tileBase;layoutSpace.spec.md:168 元件自身微幾何)
           renderEventTile={(event) => <span className="block truncate rounded-md bg-secondary px-1.5 py-0.5 text-caption text-foreground">{event.title}</span>}
           onEventClick={customTileActivated}
           readOnlyDates

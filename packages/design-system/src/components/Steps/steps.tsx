@@ -6,6 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
+import { STEP_STATUS_TEXT } from './step-status-text'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -454,15 +455,8 @@ function StepItemLayout({ children }: { children: React.ReactNode }) {
 
 // ── Clickable header ─────────────────────────────────────────────────────
 
-// SR-only 狀態文字 map(2026-06-01 #25 a11y:indicator 是 aria-hidden 純視覺,故「第 N 步/共 M 步/狀態」
-// 需經 sr-only span 給螢幕報讀器。對齊 Carbon ProgressIndicator `--assistive-text`(已完成/進行中/未開始)慣例)
-const STEP_STATUS_TEXT: Record<StepContentState, string> = {
-  completed: '已完成',
-  current: '進行中',
-  error: '錯誤',
-  reachable: '未開始',
-  upcoming: '未開始',
-}
+// SR-only 狀態文字(2026-06-01 #25 a11y:indicator 是 aria-hidden 純視覺,故「第 N 步/共 M 步/狀態」
+// 需經 sr-only span 給螢幕報讀器)住 ./step-status-text.ts,與 TreeView 步驟結果共用一份
 
 function StepItemHeader({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const item = useStepItemContext()
@@ -559,7 +553,10 @@ function VerticalLayout({
         </div>
       </StepItemHeader>
       {showContent && (
-        <div className="flex items-start gap-3 mt-3">
+        // 步驟標題區 → 內容 = tight(md 12 / lg 16):layoutSpace.spec.md 規則 3「heading → labeled content」= 跨範疇 + functional 交互,
+        // 規則 2 的註:內容區裡的標題 → 被它標示的內容走規則 3 的 tight;Steps 規格沒寫這一段刻意固定,所以回到 token。
+        // 2026-10-21 前寫死 mt-3(md、lg 都 12),lg 少 4px(主線 2026-10-21 定案「標題區 → 內容 = tight」;閘 steps-content-follows-current (3))
+        <div className="flex items-start gap-3 mt-[var(--layout-space-tight)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>
         </div>

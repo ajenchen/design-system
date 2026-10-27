@@ -181,7 +181,7 @@ for (const [colIdx, expected] of Object.entries(expectedMinWidths)) {
 // **覆蓋範圍 2026-09-04 從 4 種型別擴到 13 種**(缺陷 T)。原本只跑 RowAutoHeightInlineEdit 的
 // string / select / textarea / currency 四種;date / time / person / multiPerson / boolean / url /
 // multiSelect / number / tag 的 0-delta **只有推導、沒有斷言過**。`InlineEdit` story 本來就把 13 種
-// 型別全部放進可編輯欄(data-table.stories.tsx:625-637),缺的只是把閘指過去 —— 不必新增 story。
+// 型別全部放進可編輯欄(data-table.stories.tsx#InlineEdit),缺的只是把閘指過去 —— 不必新增 story。
 const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[role="row"][data-row-index]') => {
   await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, waitSelector)
   for (const t of cellTypes) {
@@ -275,7 +275,7 @@ await checkDisplayEditStability('design-system-components-datatable-展示--row-
   { row: 2, col: 3, label: 'Note PRD-0003 long-wrap' },
 ])
 
-// (b) 固定行高 + inline edit:補齊其餘九種型別(缺陷 T)。欄序見 data-table.stories.tsx:625-637。
+// (b) 固定行高 + inline edit:補齊其餘九種型別(缺陷 T)。欄序見 data-table.stories.tsx#InlineEdit。
 await checkDisplayEditStability('design-system-components-datatable-展示--inline-edit', [
   { row: 0, col: 0, label: 'SKU(string readonly)', skipEdit: true },
   { row: 0, col: 1, label: 'Product(string)' },
@@ -1867,7 +1867,7 @@ if (!nestedGeom.d0?.btn || !nestedGeom.d1?.btn || !nestedGeom.d1leaf || !nestedG
  * 根 invariant:事件委派的 target 守衛必以 `Element` 判定(lucide 圖示是 `SVGElement`,`instanceof
  * HTMLElement` 恆 false → onMouseOut 誤判「離開列」刪掉 data-hovered、onMouseOver 又 early return)。
  * AG Grid v33 走 per-row mouseenter/mouseleave(rowCtrl.ts#L1486-L1522),沒有這個坑;本 DS 三區同步
- * hover 是已記載的模型差異,所以要自己守。spec:整列 hover = neutral-hover(data-table.spec.md:276)。
+ * hover 是已記載的模型差異,所以要自己守。spec:整列 hover = neutral-hover(data-table.spec.md「八、Row 狀態」「hover 用 neutral-hover」)。
  * 用 Playwright 真實 `page.mouse.move` 依序停在 (a) center cell 文字 (b) rowActions 的 Pencil svg
  * (c) 左釘選 cell,每步斷言該列在三區都有 data-hovered **而且** computed 背景 === --neutral-hover 的解析值
  * (probe 同 scope 解析,不是看屬性有沒有);移出表格後底色回到透明。

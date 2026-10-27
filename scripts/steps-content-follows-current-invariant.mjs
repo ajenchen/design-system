@@ -7,11 +7,14 @@
  *              對照組才量得到);
  *         (2) 步驟的 header(`li[data-state]` 的第一個子元素,含其子樹、不含內容區)沒有 `aria-expanded` / `aria-controls`——
  *             header 是「跳到那一步」,不是開合鈕(2026-09-30 退役「可同時打開多步」模式;2026-07-05 `7e69aad7` 加的 ARIA 一併拿掉)。
+ *         (3) 步驟標題區 → 內容 = `--layout-space-tight`(md 12 / lg 16;layoutSpace.spec.md 規則 3「heading → labeled content」,
+ *             主線 2026-10-21 定案):量盒邊到盒邊(header 底 → 內容區頂,getBoundingClientRect),跟內容區上解析出來的 token 值比;
+ *             每則 story 載入後在 md 與 lg 各量一次(lg 由 html `data-density="lg"` 切換)—— 2026-10-21 前寫死 `mt-3`,md 剛好等於 12、lg 少 4px。
  *         載入後先量一次;第一輪依序點每個當下可點的 header(`role="button"`,點之前現場再確認一次);按一次目前那一步內容區裡的
  *         第一顆按鈕(精靈的「下一步」);按過之後再跑第二輪 header(例:預設精靈剛完成的那一步此時才可點 —— 點回去,內容必須跟著回來)。
  *         每次互動等版面靜止後重量重判。
  *   紅: 任一步在不是目前那一步時仍畫出內容(content-not-current)/ 目前那一步沒畫內容而別步有(current-without-content)/
- *       任一 header 帶 aria-expanded 或 aria-controls → 指名 story、步驟條、第幾步、哪一種並 exit 1。
+ *       任一 header 帶 aria-expanded 或 aria-controls / 標題區 → 內容不等於 tight(header-content-gap)→ 指名 story、步驟條、第幾步、哪一種並 exit 1。
  *       退役前的建置(多重展開模式 story 全部展開、預設精靈已完成那一步帶 aria-expanded="false")四種都紅 —— `--selftest --control-static=<舊建置>` 證明。
  *       零則 story / 零條步驟條 / 零次點擊 / 零次「目前那一步移動」/ 零處內容 / 零次「點 header 讓有內容區的步驟條換了目前那一步」
  *       = 儀器失效(INSTRUMENT-FAIL,exit 1),不當綠燈 —— 最後一項沒發生過,「點 header → 內容跟著走」這條就從沒被量到。
@@ -69,6 +72,10 @@ export function judge(snapshot, label = '') {
       if (it.current && anyContent && !it.hasContent) violations.push({ kind: 'current-without-content', where, text: `${where}:是目前那一步卻沒有內容區(同一條別的步有)` })
       if (it.headerExpanded) violations.push({ kind: 'aria-expanded', where, text: `${where}:header 帶 aria-expanded(header 不是開合鈕)` })
       if (it.headerControls) violations.push({ kind: 'aria-controls', where, text: `${where}:header 帶 aria-controls(header 不是開合鈕)` })
+      if (it.hasContent && it.headerToContent !== null && it.headerToContent !== undefined) {
+        if (it.tight === null || it.tight === undefined) violations.push({ kind: 'header-content-gap', where, text: `${where}:內容區上讀不到 --layout-space-tight(量具讀不到 token)` })
+        else if (Math.abs(it.headerToContent - it.tight) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ tight ${it.tight}px(layoutSpace.spec.md 規則 3「heading → labeled content」)` })
+      }
     })
   })
   return violations
@@ -85,9 +92,13 @@ const measureInPage = () => {
         const inHeader = header ? [header, ...header.querySelectorAll('*')] : []
         // 內容區 = header 之後、不是連接線的直接子元素(VerticalLayout 的 fragment:header / content? / connector?)
         const extras = [...li.children].slice(1).filter((el) => !el.hasAttribute('data-steps-connector'))
+        const content = extras[0]
+        const tight = content ? parseFloat(getComputedStyle(content).getPropertyValue('--layout-space-tight')) : NaN
         return {
           current: li.getAttribute('aria-current') === 'step',
           hasContent: extras.length > 0,
+          headerToContent: content && header ? Math.round((content.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10 : null,
+          tight: Number.isFinite(tight) ? tight : null,
           clickable: !!header && header.getAttribute('role') === 'button',
           headerExpanded: inHeader.some((el) => el.hasAttribute('aria-expanded')),
           headerControls: inHeader.some((el) => el.hasAttribute('aria-controls')),
@@ -95,6 +106,17 @@ const measureInPage = () => {
       }),
     })),
   }
+}
+
+// ── 填欄位:依欄位自己宣告的輸入種類給一個合法值(頁面端執行;以原始碼序列化傳進頁面,不得引用外部變數)──────────
+// 認 type / inputMode / autocomplete(使用者瀏覽器自動填入也是看這三個);都沒有 → 一般文字。
+const fillValueFor = (el) => {
+  const hint = `${el.getAttribute('type') ?? ''} ${el.getAttribute('inputmode') ?? ''} ${el.getAttribute('autocomplete') ?? ''}`
+  if (/email/.test(hint)) return 'lin.yating@example.com'
+  if (/tel/.test(hint)) return '0912345678'
+  if (/password/.test(hint)) return 'Sunrise-2026-pass'
+  if (/numeric|decimal/.test(hint)) return '24536806'
+  return 'yating.lin'
 }
 
 // ── selftest 注入:點 header 之後,若目前那一步真的換了,就把舊內容的複本留在原本那一步 ───────────
@@ -210,10 +232,25 @@ async function scanBuild(staticDir, { fresh = true, log = console.log, inject = 
         }
       }
       record(snap)
+      // (3) 的 lg 那一半:切 html data-density=lg 量一次再切回(CSS 變數,不需重繪 React;沒有內容區的 story 量了也是 0 筆)
+      await page.evaluate(() => document.documentElement.setAttribute('data-density', 'lg'))
+      await settle('切到 lg 密度')
+      violations.push(...judge(await page.evaluate(measureInPage), `${story.id} [lg] `))
+      await page.evaluate(() => document.documentElement.setAttribute('data-density', 'md'))
+      await settle('切回 md 密度')
       await headerPass('第一輪')
       // 目前那一步內容區裡的第一顆按鈕(精靈的「下一步」):按一次,看目前那一步有沒有跟著走;按過就再跑一輪 header
-      const contentButton = page.locator('ol[data-orientation][data-size] > li[data-state][aria-current="step"] > :nth-child(n+2):not([data-steps-connector]) button').first()
+      const contentArea = 'ol[data-orientation][data-size] > li[data-state][aria-current="step"] > :nth-child(n+2):not([data-steps-connector])'
+      const contentButton = page.locator(`${contentArea} button`).first()
       if (await contentButton.count() > 0 && await contentButton.isEnabled()) {
+        // 精靈的那一步是一張要驗證的表單(2026-10-21 起預設精靈有真的欄位,r1b OTH-04):像使用者一樣先把空的欄位填好再按「下一步」,
+        // 否則驗證沒過、目前那一步不會走,第二輪 header 永遠量不到「點回已完成那一步」(instrumentProblems 最後一項)
+        const fields = page.locator(`${contentArea} input:not([readonly]):not([disabled]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), ${contentArea} textarea:not([readonly]):not([disabled])`)
+        for (let i = 0; i < await fields.count(); i += 1) {
+          const f = fields.nth(i)
+          if (await f.inputValue()) continue
+          await f.fill(await f.evaluate(fillValueFor))
+        }
         try { await contentButton.click({ timeout: 5000 }) } catch (cause) { throw clickFailedError(story.id, '目前那一步內容區裡的第一顆按鈕', cause) }
         await afterInteraction('按內容區裡的第一顆按鈕', false)
         await headerPass('第二輪')
@@ -256,6 +293,8 @@ async function selftest() {
   check(kinds(judge({ lists: [{ items: [item({ headerExpanded: true }), item({ current: true, hasContent: true })] }] })) === 'aria-expanded', '判定表:已完成那一步 header 帶 aria-expanded="false"(退役前預設精靈)→ aria-expanded')
   check(kinds(judge({ lists: [{ items: [item({ headerExpanded: true, headerControls: true, hasContent: true }), item({ current: true })] }] })) === 'aria-controls,aria-expanded,content-not-current,current-without-content', '判定表:已完成那一步展開中、header 帶 aria-expanded + aria-controls、目前那一步收合 → 四種一起紅')
   check(judge({ lists: [{ items: [item({ current: true, hasContent: true })] }, { items: [item(), item({ current: true })] }] }).length === 0, '判定表:同一頁兩條步驟條各自乾淨 → 綠')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 16, tight: 16 })] }] }).length === 0, '判定表:lg 標題區 → 內容 16 = tight 16 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, headerToContent: 12, tight: 16 })] }] })) === 'header-content-gap', '判定表:lg 標題區 → 內容 12 ≠ tight 16(2026-10-21 前寫死 mt-3)→ header-content-gap')
   // importsSteps 兩面
   check(importsSteps("import { Steps, StepItem } from './steps'\n"), 'importsSteps:元件自己的 story(./steps)→ 是')
   check(importsSteps("import { Steps } from '@/design-system/components/Steps/steps'\n"), 'importsSteps:完整路徑 → 是')
@@ -288,7 +327,7 @@ async function selftest() {
   const contentStories = []
   try {
     const page = await browser.newPage({ viewport: VIEWPORT })
-    let listStories = 0, injected1 = 0, caught1 = 0, moved2 = 0, caught2 = 0, dirty = []
+    let listStories = 0, injected1 = 0, caught1 = 0, moved2 = 0, caught2 = 0, injected4 = 0, caught4 = 0, dirty = []
     for (const story of picked) {
       await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`, { settleFrames: 10, notFound: server.notFound })
       const shape = await page.evaluate(measureInPage)
@@ -319,11 +358,22 @@ async function selftest() {
       })
       moved2 += n2
       caught2 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'content-not-current').length
+      // 注入 (4):lg 下把內容區的上外距寫死回 12px(修前 mt-3 的樣子)→ 必須抓到 header-content-gap
+      const n4 = await page.evaluate(() => {
+        document.documentElement.setAttribute('data-density', 'lg')
+        let n = 0
+        for (const el of document.querySelectorAll('ol[data-orientation][data-size] > li[data-state][aria-current="step"] > :nth-child(2):not([data-steps-connector])')) { el.style.marginTop = '12px'; n += 1 }
+        return n
+      })
+      injected4 += n4
+      caught4 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'header-content-gap').length
+      await page.evaluate(() => document.documentElement.setAttribute('data-density', 'md'))
     }
     check(dirty.length === 0, `注入前:${listStories} 則有步驟條的 story 全部乾淨${dirty.length ? `(髒:${dirty.join(', ')})` : ''}`)
     check(contentStories.length > 0, `注入前:有內容區的 story ${contentStories.length} 則(${contentStories.join(', ')})—— 注入才有東西可量`)
     check(injected1 > 0 && caught1 === injected1, `注入 aria-expanded(${listStories} 則有步驟條的 story 全部):${injected1} 處注入、${caught1} 處抓到`)
     check(moved2 > 0 && caught2 === moved2, `注入內容放錯步(${contentStories.length} 則有內容區的 story 全部):${moved2} 處注入、${caught2} 處抓到`)
+    check(injected4 > 0 && caught4 >= injected4, `注入 lg 標題區 → 內容寫死 12px(${contentStories.length} 則有內容區的 story 全部):${injected4} 處注入、${caught4} 處抓到`)
   } finally { await browser.close(); await server.stop() }
   // 注入 (3):點 header 之後 aria-current 移走、舊內容留在原本那一步(「內容沒跟著目前那一步走」的回歸)—— 跑一次完整掃描,
   // 只掃有內容區的 story。這一種只有「點 header 讓有內容區的步驟條換步」時才會發作,所以它同時證明掃描真的走到了那條路

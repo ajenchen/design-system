@@ -176,10 +176,10 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | 共享項 | SSOT owner |
 |---|---|
-| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx:463` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
+| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx#PeoplePicker` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
 | Avatar+人名視覺 | `person-display.tsx:137-152` `PersonDisplay`(共享 renderer)|
 | 人名按空間 ellipsis | `person-display.tsx:150` `truncate flex-1 min-w-0` |
-| Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx:244` `bareInputStyles` 含 `truncate` |
+| Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx#bareInputStyles` 含 `truncate` |
 | Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx` CustomCombobox 欄位內搜尋框(空值也渲染,`placeholder` 屬性顯示 trigger empty placeholder;2026-09-30 修 —— 此前空值分支沒有輸入框,這一格自 2026-05-15 起引用的是走不到的程式碼)|
 
 **Avatar-presence → placeholder 規則(2026-05-15 user verbatim「只要有 avatar 存在,placeholder 都是空的,只會出現 cursor,這樣才不會造成混亂」)**:
@@ -219,7 +219,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上 wrapped Select / Combobox 切至 native 分支(下拉 = 原生 `<select>` picker)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
-- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:184` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx:533` `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
+- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:184` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
 - **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套 — pill 上的 X 照常可點(移除成員)。**2026-09-18 更正**:原文說 pill 本體 tap 會「穿透喚起原生 picker」,那是舊觸控路徑的機制;Combobox 已無原生路徑(見 `combobox.spec.md`「單一路徑(不分裝置)」),新增成員改為點欄位開同一套自訂浮層
 - **選單**:觸控走原生 `<select>` picker(Combobox 觸控 SSOT,平台 a11y 最佳);原生選項無法渲 avatar 屬平台限制,桌機選單維持 PeoplePicker avatar + description 選項不變
 - 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
@@ -296,7 +296,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - **Loading(async people fetch)**:`optionsLoading`(2026-09-08 補轉發、09-09 改名,見「Loading」段):選單內僅空清單時載入列、觸發點不轉圈。**禁**再用 `people=[]` 假裝 loading(會顯示「沒有人員」,語意錯);`loading` 是值處理中(觸發點轉圈),不是名錄載入。
 - **Empty(no search results)**:`emptyText` 預設「沒有人員」(見「搜尋」段;渲成一列 `MenuItem message`,不用 `Empty`);只在真的沒有任何可選時 —— 遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」;無 creatable mode(人員不可建立)。
 - **Empty(no value selected)**:single mode → trigger 顯 placeholder「請選擇人員」;multi mode `value=[]` → trigger 同 placeholder(無 avatar stack 渲);詳「Trigger display SSOT canonical table」B-D 段。
-- **`people` 清單變動(async fetch 後更新)**:已選 value 顯示不依賴 `people` 查找 — display 路徑直接渲染 value 自帶資料;edit 路徑以人名回查 `people`,查不到降級為純名字 string(initials fallback),不報錯(`people-picker-helpers.ts:74-75`)。選單選項即時跟隨 props 重渲。
+- **`people` 清單變動(async fetch 後更新)**:已選 value 顯示不依賴 `people` 查找 — display 路徑直接渲染 value 自帶資料;edit 路徑以人名回查 `people`,查不到降級為純名字 string(initials fallback),不報錯(`people-picker-helpers.ts#findPerson`)。選單選項即時跟隨 props 重渲。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。avatar overlap / inset 不在本檔另立支援決策。
 - **Dark mode / density**:Avatar 12px inset 固定不隨 density 漂移(PeoplePicker own,見「Trigger display SSOT canonical table」§E + Avatar 左 inset SSOT 段);其他走 Field + SelectMenu SSOT。
 

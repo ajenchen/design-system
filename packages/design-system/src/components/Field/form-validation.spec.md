@@ -179,5 +179,6 @@ Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification +
 - `field.spec.md`
 - `link-input.spec.md`
 - `select.spec.md`
+- `steps.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

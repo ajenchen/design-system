@@ -1320,7 +1320,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         //     其實整個設計就可以回歸 ssot」
         // 把手存在的唯一理由是**可發現性**(表格列看不出來能拖);拖曳一旦開始,那個理由就消失,
         // 此時回到 `lib/drag-visual.ts` 的 SSOT:來源半透明 + 落點線,畫面上沒有把手 ——
-        // 跟 TreeView(`tree-view.tsx` `TreeViewProps.draggable` 的 JSDoc「整列可拖,無 grip handle」)完全一致。
+        // 跟 TreeView(`tree-view.tsx#TreeViewProps` 的 `draggable`:「啟用後整列可拖(Figma 風格,無 grip handle;靠 distance:5 區分 click vs drag)」)完全一致。
         // 拖影本來就不含把手(它 clone `[role="row"]`,而把手是 portal 出去的 fixed 浮層),
         // 所以隱藏之後來源與拖影的視覺語彙才對稱;也少一個會隨自動捲動滑移的浮動物件。
         //
@@ -1968,7 +1968,7 @@ function DataTableInner<TData>(
   // Q7 fix(2026-05-04):前用 hardcode 36 跟真高 40 差 4px,N rows 累積誤差呈現「table 慢慢長高」假象。
   // ResizeObserver+measureElement 的修正過程被 user 看見 = mount-time growth bug 的真因。
   //
-  // **2026-09-10 修密度落差**:這張表寫死的是 **md 密度**的值,但 `tokens/uiSize/uiSize.css:131-133`
+  // **2026-09-10 修密度落差**:這張表寫死的是 **md 密度**的值,但 `tokens/uiSize/uiSize.css`
   // 在 **lg 密度**下 `--table-row-{sm,md,lg}` 是 40 / 48 / 56 —— 每一列都跟估計值差 8px。
   // 差一點的代價不是「差一點」:TanStack Virtual 3.13.23 的 `resizeItem` 只要 delta !== 0 就換掉
   // `itemSizeCache` 的身分,而 `getMeasurements` 的記憶化就掛在那個身分上 → 每一列進場都觸發
@@ -3171,7 +3171,7 @@ function DataTableInner<TData>(
     //   右對齊 ItemSuffix。TruncatedText 的 `<span truncate min-w-0>` block-display 會 collapse Field
     //   to content size,讓 Calendar / Clock icon 緊貼 value text 而非右邊緣)。
     // 2026-09-07 補 'boolean'(user 追問「四周視覺明明是空的,為何要往內描邊」查出的根因):
-    // boolean 欄渲染的是 <Checkbox>(cell-registry.tsx:432/435)—— 一個互動元素,
+    // boolean 欄渲染的是 <Checkbox>(cell-registry.tsx#BooleanCell)—— 一個互動元素,
     // 但它不在本清單裡,於是掉進下方的 <TruncatedText>,被一個 `truncate min-w-0`
     // (padding 0、overflow hidden、四邊剛好貼死 16px 勾選框)的**文字截斷** span 包住。
     // 實測:勾選框到該 wrapper 四邊都是 0px,但到儲存格邊其實有 11.5 / 12 / 62px 空白。
@@ -4809,7 +4809,7 @@ function DataTableInner<TData>(
       className={cn(
         dataTableVariants({ bordered }), isFillHeight && 'flex flex-col',
         hasCellCursor
-          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:379
+          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:380
           ? 'focus-visible:outline-none'
           : 'focus-visible:focus-ring-inset',
         className,

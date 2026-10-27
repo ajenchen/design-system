@@ -156,7 +156,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           // family canonical,patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」)。
           <ItemSuffix>
             {endContent}
-            {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx:184-193)。
+            {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx#DialogHeader)。
                 語意 SSOT → action-bar.spec.md 第五節「誤觸保護」:關閉鈕左邊緊鄰其他操作按鈕時必加;
                 只有關閉鈕(無 endContent)時不加 —— 沒有東西需要被隔開。
                 Alert 與 Toast 共用本基座,因此兩者行為由結構保證一致(2026-08-06 codify:

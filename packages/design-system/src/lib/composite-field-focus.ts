@@ -1,5 +1,5 @@
 /**
- * 「觸發欄位 + 它的彈出層 = 同一個欄位」的唯一判準(2026-10-01,待辦總帳 N83)。
+ * @internal — 「觸發欄位 + 它的彈出層 = 同一個欄位」的唯一判準(2026-10-01,待辦總帳 N83)。
  *
  * 問題:Select / 可搜尋的 Select / Combobox / DatePicker / TimePicker 的觸發欄位接了 `useFormValidation` 的 `onBlur`
  * (規則 2「離開欄位才驗」),可是**打開彈出層**那一刻焦點從觸發欄位搬進浮層(Radix FocusScope / 本 DS 的 onOpenAutoFocus),

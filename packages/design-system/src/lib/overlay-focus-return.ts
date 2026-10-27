@@ -1,5 +1,5 @@
 /**
- * 「浮層關閉後,焦點還給開啟它的東西」的唯一實作(2026-09-30 由五份收成一支)。
+ * @internal — 「浮層關閉後,焦點還給開啟它的東西」的唯一實作(2026-09-30 由五份收成一支)。
  *
  * 規則(`ds-canonical/references/keyboard-model-canonical.md`「彈出框開著時的 Tab 與 Esc」、`components/Dialog/dialog.spec.md`
  * 「Focus return:關閉時焦點返回 trigger 元素」):浮層關閉 → 焦點回到開啟它的那個元素,不掉到 `<body>`。
@@ -38,6 +38,7 @@
  * W3C 對 dialog 關閉後焦點的要求是回到「打開它的那個元素,或在它消失時合理的替代」(https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L96-L101),
  * React Aria FocusScope 還焦點時同樣沿著「已不在 DOM 的節點 → 它的替代」走(https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx#L1060-L1071)。
  */
+
 import * as React from 'react'
 import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
 

@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     px: 8
-    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx:19-29)"
+    when: "Sidebar / 緊湊 onboarding;indicator 8px dot(外面 24px 是排版盒,不是命中區),無內部 icon。對齊 INDICATOR_SIZE.sm + INDICATOR_ICON_SIZE.sm=0(steps.tsx#INDICATOR_SIZE、steps.tsx#INDICATOR_ICON_SIZE)"
     world-class: ["Ant Design Steps small", "MUI Stepper compact"]
   md:
     px: 24
@@ -160,7 +160,7 @@ indicator 圓形 flex items-center 居中
 **`sm`(小點)**
 - ✅ 用在 sidebar 內 nested 流程、緊湊空間、次要進度指示
 - ❌ 步驟需要 icon 或要使用者明確數到「第幾步」時不用(sm 沒有數字/icon,辨識度不足)
-- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),`steps.tsx:42` 常數名即 `INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 在 `:40`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
+- sm 的圓點視覺是 8px,外面那個 24×24 是**排版盒**(sm 的 indicator 欄因此與 md 同為 24px;lg 為 32px),常數名即 `steps.tsx#INDICATOR_BOX_WIDTH`(`SM_INDICATOR_BOX` 是 `steps.tsx#SM_INDICATOR_BOX`)。它掛在 `aria-hidden` 的裝飾 span 上,**不是任何東西的命中區** —— 可點的是整列 header,所以這裡沒有「視覺小、命中大」這回事,也不需要拿最小尺寸規則來背書(見本檔「指示點不是命中目標」)
 
 **`md`(預設)**
 - ✅ 絕大多數場景:checkout、註冊、設定精靈
@@ -182,8 +182,8 @@ indicator 圓形 flex items-center 居中
 
 ### 指示點不是命中目標 —— 命中區 = 整列 header(2026-09-24 逐案裁定)
 
-**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx:714-717`),
-真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx:467-489`)。
+**可點的是整列 header,不是那顆點。** 圓點掛在 `aria-hidden` 的裝飾 `<span>` 上(`steps.tsx#SmIndicator`),
+真正帶 `role="button"` / `tabIndex` / `onClick` / `onKeyDown` 的是 `StepItemHeader`(`steps.tsx#StepItemHeader`)。
 指標落在圓點上時,收到事件的一樣是那一列 —— 圓點只是列裡的一個子元素。
 
 **所以這裡沒有任何外擴**,跨元件契約(`../../ds-canonical/references/hit-area-canonical.md`
@@ -192,7 +192,7 @@ indicator 圓形 flex items-center 居中
 header 沒有懸停底色,所以依同一份契約的退化條款,判準回到**可視形狀本身**(那一列的內容),兩者同一個盒。
 
 **sm 的 8px 圓點外面那個 24×24 的盒是排版欄寬,不是命中區。** 它讓 sm 的 indicator 欄與 md 同為 24px(lg 為 32px)、同一列表內各步的
-label 起點對齊(`INDICATOR_BOX_WIDTH`,`steps.tsx:42-46`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
+label 起點對齊(`steps.tsx#INDICATOR_BOX_WIDTH`)。這個常數 2026-09-24 之前叫 `SM_HIT_AREA`,
 已正名為 `SM_INDICATOR_BOX` —— 舊名字會讓人以為「視覺 8 / 命中 24」是一條刻意的外擴,於是跑去
 hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
@@ -238,7 +238,12 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 世界級同向(內容跟著 active step,使用者不另外開合):[MUI `StepContent.js#L90-L118`](https://github.com/mui/material-ui/blob/daaa525c3af0bd99329da1f1ab0d2bd64648ea79/packages/mui-material/src/StepContent/StepContent.js#L90-L118)(`in: active || expanded`:內容隨 `active` 顯示;MUI 另留一個 app 層的 `expanded` 讓應用程式把非 active 的步撐開,本 DS 不提供這一層)、[Carbon `ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348)(步是一顆 `<button>`,沒有任何展開狀態)、[Cloudscape `wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144)(目前那一步是 `aria-current="step"` 的 `<span>`,全檔 0 個 `aria-expanded`)。
 
-內容區放「要使用者照抄的值」時,消費 Field 的唯讀模式,不手刻灰底方塊:設計規格「方向」的 DKIM 設定精靈在目前那一步底下用 `FieldGroup` + `<Field mode="readonly">` 的 `Input`(主機名稱)/ `Textarea`(TXT 記錄值)—— 唯讀有值仍是原生 input / textarea,保留選取 / 複製語意(`../Field/field-controls.spec.md:357`「readonly native input 兩派統一」);唯讀要設在 Field 的 `mode` 上,控件自己的原生 `readOnly` 在 Field 裡排在 context mode 之後(`../Field/field-controls.spec.md:148-150`「原生屬性與 mode」)。
+內容區放「要使用者照抄的值」時,消費 Field 的唯讀模式,不手刻灰底方塊:設計規格「方向」的 DKIM 設定精靈在目前那一步底下用 `FieldGroup` + `<Field mode="readonly">` 的 `Input`(主機名稱)/ `Textarea autoSize`(TXT 記錄值)—— 唯讀有值仍是原生 input / textarea,保留選取 / 複製語意(`../Field/field-controls.spec.md`「null / undefined 值」段的「readonly native input 兩派統一」);唯讀要設在 Field 的 `mode` 上,控件自己的原生 `readOnly` 在 Field 裡排在 context mode 之後(`../Field/field-controls.spec.md`「原生屬性與 mode」)。長的記錄值給 `autoSize`,全文看得到、不在三行高的框裡捲:來源 user 2026-10-21「Q4 照你建議」,採的是 AI 同輪建議乙(唯讀欄位 + autoSize;甲 DescriptionList 沒採)。指標用段名不用行號(2026-10-21 前寫 `:357`,那一行已是空行 —— r1b OTH-02)。
+
+### 目前那一步底下的按鈕(2026-10-20)
+
+內容展開在目前那一步底下時,按鈕列**只放往前那一顆**:「下一步」;最後一步用具體動詞(例:「送出」)。**不放「上一步」** —— 回頭的路就是正上方已完成的步驟(已完成的步可點,見「Linear vs Non-linear」)。按鈕列沒有標題,照 `../../patterns/action-bar/action-bar.spec.md`「對齊方向的決定」靠左。有欄位的步驟是一張表單:按「下一步」先驗證這一頁,過了才把這一步記成已完成、前往下一步(展示「預設」;驗證時機與焦點照 `../Field/form-validation.spec.md`)。
+來源:user 2026-10-20「照你建議」,採 AI 建議 A1 甲(建議原文,逐字:只放「下一步」;最後一步「送出」。回頭 = 點正上方已完成的步驟(`steps.spec.md:216` 已支援))。一頁一步、換一步整頁換掉的流程(左邊常駐步驟樹)不在本段:那種保留上一步、放右半邊置底 footer,見 `../TreeView/tree-view.spec.md`「步驟導覽樹」。
 
 ### 目前那一步可不可以點(2026-09-26,待辦總帳 N44;2026-09-30 隨「可同時打開多步」模式退役簡化成一列)
 
@@ -261,7 +266,7 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 - **為什麼退役**:GOV.UK 自己把 step-by-step navigation 定位成「[this pattern is for use in your prototype only](https://design-system.service.gov.uk/patterns/step-by-step-navigation/)」、「step by step navigation is not for use within transactional services」—— 它是內容頁的導覽(每一步是一段可開合的連結清單,還有「show all」),不是交易流程的進度;而 Steps 是進度指示器,「目前那一步」只由導覽或系統進度設定。兩個模型綁在同一個元件上,就會出現 2026-09-25 user 問的那幾題(待辦總帳 N44:「哪裡有展開收合的範例？同時展開多步又是什麼？」)。
 - **巢狀步驟 —— user 的決定(2026-10-01)**:user 原話:「巢狀清單一律由tree view，因為treeview才支援巢狀」。落在「何時不用」第一張表(巢狀步驟有「目前那一步」,不屬於第二張表)。這句話決定的是 owner;TreeView 端的巢狀步驟契約(點父步會發生什麼、父步收起時灰底與結果怎麼代顯)user 已在 2026-10-06 → 10-07 給定(待辦總帳 T1–T5;2026-10-07 前這裡寫「仍待 user 裁示(待辦總帳 N72),裁示前不改 TreeView」),寫在 `../TreeView/tree-view.spec.md`「步驟導覽樹」「步驟結果」兩段,TreeView 已照它實作。
 - **一起退役的舊記錄**:2026-07-18 `5481e00b` 補上的 controlled `expanded` / `onExpandedChange`(該 commit 與本檔舊版都記為「user 拍板」,未留 user 原話)隨整個模式一起退役。
-- **根因**:2026-04-16 `cbbcc0b0` 首版的 `steps.spec.md:289` 寫的是 multiple 模式「點 step header 切換該 step 的展開(不切換 `value`)」,同日 `a6101d15` 把程式改成點 header 也更新 `value`(該 commit 在 `steps.tsx` 加的註解原文:「永遠更新 focus(value),multiple 模式額外 toggle 展開」)—— 從那天起 header 同時背著「導覽」與「開合」兩個語意;2026-07-05 `7e69aad7` 再給它 `aria-expanded`,讀屏從此把導覽念成開合(見「A11y 預設」)。
+- **根因**:2026-04-16 首版的 `cbbcc0b0:src/design-system/components/Steps/steps.spec.md:289` 寫的是 multiple 模式「點 step header 切換該 step 的展開(不切換 `value`)」,同日 `a6101d15` 把程式改成點 header 也更新 `value`(該 commit 在 `steps.tsx` 加的註解原文:「永遠更新 focus(value),multiple 模式額外 toggle 展開」)—— 從那天起 header 同時背著「導覽」與「開合」兩個語意;2026-07-05 `7e69aad7` 再給它 `aria-expanded`,讀屏從此把導覽念成開合(見「A11y 預設」)。
 
 ---
 
@@ -384,7 +389,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 **ARIA / Pattern**:[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/) **無**正式 stepper pattern(2026-06-01 M26 source-verified:APG 31 patterns 無 stepper / wizard / progress)。本元件採 **Carbon ProgressIndicator 模型**([`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348),釘在 2026-09-23 的 commit)— root `<ol>` + clickable step `role="button"` + focused step `aria-current="step"`(Cloudscape Wizard 同款:[`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144))+ indicator `aria-hidden`(純視覺)。
 
 - **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
-- **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
+- **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。字住 `step-status-text.ts`,TreeView 步驟結果的「已完成」「錯誤」讀同一份。
 - **沒有 `aria-expanded` / `aria-controls`**(2026-09-30 拿掉;2026-07-05 `7e69aad7` 加的):header 點了是「跳到那一步」,不是切換一塊內容的顯示,WAI-ARIA disclosure trigger 的語意套上去會讓讀屏把導覽念成開合。目前那一步只由 `li` 的 `aria-current="step"` 說出來。對照:Carbon [`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348)—— 步是一顆 `<button>`,a11y 屬性只有 `disabled` / `aria-disabled` / `tabIndex`(其餘是 `type` / `className` / `onClick` / `onKeyDown` / `title` / `...rest`),全檔 0 個 `aria-expanded`;Cloudscape [`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144)—— 目前那一步是 `aria-current="step"` 的 `<span>`,全檔 0 個 `aria-expanded`。
 - **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS 內描邊焦點框(`focus-visible:focus-ring-inset`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。鍵盤到不到得了這類區域由 a11y 閘的 axe 規則 `scrollable-region-focusable`(wcag2a;`scripts/audit-a11y.mjs:133` 的 tag 集合)看守;2026-09-30 起 DS 內沒有任何 story 示範這條(原本示範它的「多重展開模式」已退役),規則文字保留為 consumer 指引。
 

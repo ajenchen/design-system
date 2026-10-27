@@ -63,7 +63,7 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   },
 }
 
-// Error state tokens (edit only) — traced from select.tsx:431/444/598(NativeSelect 兩處 + CustomSelect trigger)
+// Error state tokens (edit only) — traced from select.tsx#NativeSelect(兩處)+ select.tsx#CustomSelect(trigger)
 // border-error hover:border-error-hover, focus-within:border-error
 const ERROR_TOKENS: Record<StateKey, ColorSpec> = {
   default:  { bg: '--surface', text: '--foreground', border: '--error',       icon: '--fg-muted' },

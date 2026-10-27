@@ -408,7 +408,7 @@ export const ListBody = {
             {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
                 Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
                 容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
-                menu-item.spec.md:246 禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
+                menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
                 `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
                 Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
                 列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
@@ -445,7 +445,7 @@ export const ListBody = {
  * + ⋮ 溢出選單,操作對象是「dialog 承載的這筆任務」本身(非欄位級、非 confirm/cancel)。
  *
  * - `<DialogHeader actions={…}>`:DS 自動在 actions 與內建 Close X 之間放 `<ButtonDivider>`
- *   (action-bar.spec.md:281「最右側為關閉/解除按鈕 → 分隔線必須(誤觸保護)」;
+ *   (action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護:關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加;
  *   幾何 = mx-1 於 gap-2 cluster → 12px 對稱)。**Consumer 禁自刻 cluster + divider**。
  * - 按鈕 = `variant="text" iconOnly`(text 自動 data-unbounded,不撐高 48px chrome header;
  *   對齊 action-bar「溢出按鈕一律最低視覺重量」)。
@@ -511,7 +511,7 @@ export const HeaderActions = {
  *   帶 `mt-[var(--layout-space-tight)]`(tabs.tsx:489,為「緊接 tab bar 下方」而設)。tabsSlot 這條
  *   composition 把 tab bar 抬進 header,兩 owner 疊加 = 雙重 tight(md 24 / lg 32,user 2026-07-01 抓)。
  *   故 chrome body 內的 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 DialogBody(對齊
- *   AppShell 前例 app-shell.stories.tsx:337 + tabs.spec.md「出現在 Dialog」段)。Hook
+ *   AppShell 前例 app-shell.stories.tsx#PrimarySidebarWithTabs + tabs.spec.md「出現在 Dialog」段)。Hook
  *   `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
  */
 export const WithTabsInHeader = {

@@ -130,7 +130,7 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 | 情況 | 指示器 | 依據 |
 |---|---|---|
 | **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
-| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:57`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
+| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx#fieldDefaultChromeCompounds`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
 | **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
 
 | **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**,與可編輯的同一個欄位完全一樣 | **2026-09-10 兩次修正後定案**(user 原話:「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?對吧?」)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。歷程:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**(WCAG 2.4.7);同日上午先補成全域外描邊,下午依 user 指正改為與編輯態同一種。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` 完全不改焦點樣式;Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣與可編輯態相同。落地:`field-wrapper.tsx` readonly compound(`focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)|
@@ -357,8 +357,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
-| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:658` / `time-picker.tsx:372`)/ 祖先畫(`inline-edit.tsx:398`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -379,13 +379,13 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 不是「它屬不屬於某個元件族」(要認得出來)。user 2026-09-09 追問「『單一狀態控制項』這個又是如何具體判別?」——
 答案就是這三個標籤／屬性,而且 `scripts/focus-suppression-registry.mjs` 的 B 類證據檢查(`:112-114`)就是照這個判的。
 
-Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx:49`),那是加成不是必要條件。
+Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#fieldDefaultChromeCompounds`),那是加成不是必要條件。
 **`type="checkbox"` / `"radio"` / `"range"` 的 `<input>` 不是插入點控件**——沒有 caret,照規則二畫框(DS 的 Checkbox / Radio / Slider 都畫)。
 
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:857` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:658` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -405,7 +405,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:857`、`time-picker.tsx:379` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:658`、`time-picker.tsx:372` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
@@ -456,7 +456,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 | 它說了 | 它**沒**說 |
 |---|---|
-| 文字輸入的滑鼠與鍵盤共用**同一套** focus 樣式 | 那一套**是什麼**(我們的答案是「整個欄位的邊框轉 primary」,寫在 `field-wrapper.tsx:49`,但規則裡沒提) |
+| 文字輸入的滑鼠與鍵盤共用**同一套** focus 樣式 | 那一套**是什麼**(我們的答案是「整個欄位的邊框轉 primary」,寫在 `field-wrapper.tsx#fieldDefaultChromeCompounds`,但規則裡沒提) |
 | | 所以**輸入框自己不畫框** |
 
 也就是說,「文字編輯器不用特別畫框」**從來沒有被寫下來過** ——
@@ -467,7 +467,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
   成為 Field 家族裡唯一的例外 —— 而且沒有人發現,因為規則裡本來就沒有一句話可以拿來對照它。
 - 每次遇到新的輸入類控件,都要重走那三步推論一次。
 
-現在 B 類把三步全部寫出來了:**誰承擔(`field-wrapper.tsx:49`)、憑什麼合法(實測 5.19:1 / 5.35:1 過 AA)、
+現在 B 類把三步全部寫出來了:**誰承擔(`field-wrapper.tsx#fieldDefaultChromeCompounds`)、憑什麼合法(實測 5.19:1 / 5.35:1 過 AA)、
 以及「所以輸入框自己不畫」**,而且 `scripts/focus-suppression-registry.mjs` 要求每一處都在現場寫明承擔者。
 
 ### B 類為什麼合法 —— 有量過,不是宣稱

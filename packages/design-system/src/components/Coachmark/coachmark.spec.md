@@ -167,7 +167,7 @@ const steps = [
 **對齊與順序的 owner 都不在本檔**(三份,依序):
 1. **對齊 = 浮層頁腳一律靠右**:`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」表的「排版」列 —— `SurfaceFooter` 是 `justify-end`,單側有內容(本檔左側的步驟計數)時用 `justify-between`,先例就是 Coachmark;`PopoverFooter` 是它的純轉發。所以**單步卡(沒有計數)也靠右** —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」(primary 不放左側)。
 2. **順序 = 全局排序**:`../../patterns/action-bar/action-bar.spec.md`「全局排序」(`primary > secondary > tertiary > text`;**靠右對齊時 primary 在最右**、靠左對齊時 primary 在最左)。本 footer 靠右 → 推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。
-3. **頁面裡的步驟列不套本段**:頁面裡沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左)。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
+3. **頁面裡的步驟列不套本段**:頁面裡跟著內容、沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左);放在頁面置底 footer 的(TreeView 步驟導覽右半邊,2026-10-20 user「Q1照建議」)照 `SurfaceFooter` 靠右、primary 在最右 —— 那是第 1 點同一個 owner,不是引本段。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
 
 下面三點只說明本 footer 各鍵的語意:
 

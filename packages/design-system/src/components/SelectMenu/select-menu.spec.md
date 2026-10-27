@@ -31,7 +31,7 @@ SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提�
 
 ## Controlled-only rationale(Dim 26)
 
-本元件刻意採 **controlled-only** 模式——**scope 限 value 軸**:value 軸走 `value` + `onValueChange`(型別宣告 optional、無 runtime 強制,但 internal 消費者 Select / Combobox / PeoplePicker 一律傳入),不支援 `defaultValue` uncontrolled fallback。open 軸自 2026-06-11 R2 起走 `useControllable` dual-mode(`open` + `defaultOpen` + `onOpenChange`,`select-menu.tsx:187-191`),不在 controlled-only 範圍。
+本元件刻意採 **controlled-only** 模式——**scope 限 value 軸**:value 軸走 `value` + `onValueChange`(型別宣告 optional、無 runtime 強制,但 internal 消費者 Select / Combobox / PeoplePicker 一律傳入),不支援 `defaultValue` uncontrolled fallback。open 軸自 2026-06-11 R2 起走 `useControllable` dual-mode(`open` + `defaultOpen` + `onOpenChange`,`select-menu.tsx#SelectMenuProps`),不在 controlled-only 範圍。
 
 **為什麼**:
 - 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
@@ -126,7 +126,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ## Creatable（建立新選項）
 
-透過 `creatable` + `onCreate` 啟用。search 非空且**無 label 完全相同(忽略大小寫)的既有選項**時,顯示 create row(`Plus` icon + `createLabel(query)`,預設「直接使用「xxx」」,`select-menu.tsx:164`;顯示/隱藏判斷 `:261-266`,render `:471-495`)——完全同名時自動隱藏,防重複建立。
+透過 `creatable` + `onCreate` 啟用。search 非空且**無 label 完全相同(忽略大小寫)的既有選項**時,顯示 create row(`Plus` icon + `createLabel(query)`,預設「直接使用「xxx」」,`select-menu.tsx#SelectMenuProps` 的 `createLabel`;顯示/隱藏判斷 `select-menu.tsx#showCreate`,render 是同檔 `{showCreate && (` 那一段)——完全同名時自動隱藏,防重複建立。
 
 **何時啟用**：
 - Tag input 允許使用者建立新 tag
@@ -204,7 +204,7 @@ GitHub 指派人「Suggestions」標題 / Jira「Recently assigned」/ Linear �
 
 ## Empty state
 
-**2026-09-08 user 拍板**:選單裡「不是選項的列」一律走 MenuItem 的列幾何。搜尋無結果 / 打開就沒選項 → 一列 **`<MenuItem message>`**,由 `CommandEmpty` own(`command.tsx:155-172`:字串 children 自動包成 `MenuGroup` + `MenuItem message`),consumer 只傳文案;SelectMenu / AgentPanel 歷史清單 / CommandDialog / inline Command 全部同一份。
+**2026-09-08 user 拍板**:選單裡「不是選項的列」一律走 MenuItem 的列幾何。搜尋無結果 / 打開就沒選項 → 一列 **`<MenuItem message>`**,由 `CommandEmpty` own(`command.tsx#CommandEmpty`:字串 children 自動包成 `MenuGroup` + `MenuItem message`),consumer 只傳文案;SelectMenu / AgentPanel 歷史清單 / CommandDialog / inline Command 全部同一份。
 
 **訊息列規格**(`menu-item.tsx:200-219`;樣式 owner `../Menu/menu-item.spec.md`「Message row(訊息列)」):
 - 非互動:`role="presentation"` + `pointer-events-none`;次要色 `text-fg-muted`;一般字重(medium 是群組標題的辨識訊號,訊息列不用);內容水平 + 垂直置中
@@ -220,11 +220,11 @@ GitHub 指派人「Suggestions」標題 / Jira「Recently assigned」/ Linear �
 
 user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態,這也是之所以為何我們可以統一預設文案叫 No option 吧?」世界級對照:Polaris Autocomplete `emptyState` 只在 `options.length < 1 && !loading` 渲([Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));MUI `noOptionsText`「Text to display when there are no options.」([API](https://mui.com/material-ui/api/autocomplete/))。三列都是同一種 `MenuItem message`(「沒有選項」「輸入關鍵字搜尋」`role="presentation"`;載入列 `role="status"`),幾何同上。
 
-**歷史**(同一題四次換皮,錨在 `command.tsx:152`):2026-04-08 一行小字 → 04-10 撐 3 列 `minRows`(`field-types.ts:89`,當時只寫「視覺一致」)→ 04-16 改用 `Empty` 元件 → **09-08 訊息列**(本段)。世界級對照(2026-09-08 逐行實查原始碼):MUI Autocomplete 的 `noOptions` / `loading` 都是一個 `padding: '14px 16px'` + `text.secondary` 的單列文字([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteNoOptions` / `AutocompleteLoading`);react-select 的 `NoOptionsMessage` / `LoadingMessage` 共用 `noticeCSS`:`textAlign: 'center'`、`neutral40`、`padding: 8px 12px`(`baseUnit` = 4,[Menu.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/components/Menu.tsx) + [theme.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/theme.ts));Ant Design 的 `-item-empty` 直接 spread 選項列的 `genItemStyle`(`minHeight: optionHeight` = `controlHeight`),只把色換成 `colorTextDisabled`([dropdown.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/dropdown.ts) + [token.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/token.ts))。三家都是「一行字 + 自家一列的留白」,**沒有任何一家撐 3 列**;本 DS 取 Ant 的做法——0 筆 = 一列選項的幾何。
+**歷史**(同一題四次換皮,錨在 `command.tsx#CommandEmpty`):2026-04-08 一行小字 → 04-10 撐 3 列 `minRows`(`field-types.ts:89`,當時只寫「視覺一致」)→ 04-16 改用 `Empty` 元件 → **09-08 訊息列**(本段)。世界級對照(2026-09-08 逐行實查原始碼):MUI Autocomplete 的 `noOptions` / `loading` 都是一個 `padding: '14px 16px'` + `text.secondary` 的單列文字([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteNoOptions` / `AutocompleteLoading`);react-select 的 `NoOptionsMessage` / `LoadingMessage` 共用 `noticeCSS`:`textAlign: 'center'`、`neutral40`、`padding: 8px 12px`(`baseUnit` = 4,[Menu.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/components/Menu.tsx) + [theme.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/theme.ts));Ant Design 的 `-item-empty` 直接 spread 選項列的 `genItemStyle`(`minHeight: optionHeight` = `controlHeight`),只把色換成 `colorTextDisabled`([dropdown.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/dropdown.ts) + [token.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/token.ts))。三家都是「一行字 + 自家一列的留白」,**沒有任何一家撐 3 列**;本 DS 取 Ant 的做法——0 筆 = 一列選項的幾何。
 
 - **Creatable 時**:即使搜尋無結果,仍顯示 create row 讓使用者補建選項(顯示條件見「Creatable」段)
 - **非 creatable**:顯示 emptyText 提示使用者修改搜尋詞
-- **SR 播報**(2026-07-05 D4;2026-09-08 搬進 Command):0 筆經 `CommandEmptyStatus`(visually-hidden `role="status"` + `aria-live="polite"`,`command.tsx:197-203`)播報 emptyText——訊息列本身與 cmdk CommandEmpty 都是 `role="presentation"`,SR 原本聽不到 0 結果;loading 則由可見的 `CommandLoading` 訊息列自帶 `role="status"` 播報文字,`CommandEmptyStatus` 在 loading 時不重複播(`command.tsx:201`)。SSOT 在 Command 一處,SelectMenu / Select / Combobox / PeoplePicker 全體受益。
+- **SR 播報**(2026-07-05 D4;2026-09-08 搬進 Command):0 筆經 `CommandEmptyStatus`(visually-hidden `role="status"` + `aria-live="polite"`,`command.tsx#CommandEmptyStatus`)播報 emptyText——訊息列本身與 cmdk CommandEmpty 都是 `role="presentation"`,SR 原本聽不到 0 結果;loading 則由可見的 `CommandLoading` 訊息列自帶 `role="status"` 播報文字,`CommandEmptyStatus` 在 loading 時不重複播(`command.tsx#CommandEmptyStatus` 的 `loading` 分支)。SSOT 在 Command 一處,SelectMenu / Select / Combobox / PeoplePicker 全體受益。
 
 ---
 
@@ -269,7 +269,7 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 - **遠端搜尋、關鍵字空**:有 `suggestions` → 建議群組(必有標題;此時即使 `optionsLoading` 也照列建議,不顯示載入列 —— 建議是明確的部分清單);沒有 `suggestions` 但有 `options` 且沒在抓 → 列 options 並加「建議」標題(也是部分清單;在抓時只剩載入列,不列舊 options);兩者都沒有且沒在抓 → 提示列「輸入關鍵字搜尋」,不是「沒有選項」;都沒有且在抓 → 載入列(見「Suggestions」與「遠端搜尋」狀態表)。
 - **遠端搜尋、抓資料中、creatable**:不顯示建立列 —— 結果還沒回來,不能判斷要不要建立;同名防重複連 `suggestions` 一起查(建議也是真實選項)。
 - **遠端搜尋、多選**:footer 全選按鈕不渲(部分清單)。
-- **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
+- **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx#showCreate`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
 - **大量選項(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(對齊 Ant Select / MUI Autocomplete 慣例);本元件無虛擬化。
@@ -280,9 +280,9 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 
 SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic token、不新增 token;但 2026-07-05 D4 後互動色的 **owner 分層**如下(修正舊述「視覺完全繼承內層 primitive」):
 
-- **surface / border / elevation**:`PopoverContent` 自設 `bg-surface-raised` + `border-border` + `--elevation-200`(`select-menu.tsx:308-320`)。
+- **surface / border / elevation**:`PopoverContent` 自設 `bg-surface-raised` + `border-border` + `--elevation-200`(`select-menu.tsx#SelectMenu` 的 `PopoverContent`)。
 - **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 反白依**反白來歷**分流(滑鼠移過搬的 `data-[selected=true]:bg-neutral-hover` = hover;鍵盤搬的 `data-[selected=true]:focus-ring-inset` = 游標畫框、不上底色,滑鼠停留列的底色一起消失、項目無 `hover:`;`hooks/use-input-modality.ts` `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板 + 下午三問)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤游標的框疊在選中底色上(2026-09-07 起,鏡射 DropdownMenu 同格)。
-- **內層 `MenuItem`**:強制 `!bg-transparent` 純視覺排版(`select-menu.tsx:460` 選項列 / `:489` create 列),不 own 互動 bg。
+- **內層 `MenuItem`**:強制 `!bg-transparent` 純視覺排版(`../Command/command.tsx#CommandItem`;選項列與 create 列都走它),不 own 互動 bg。
 
 **無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected`,與 DropdownMenu / MenuItem 同組;鍵盤游標(選中與否)一律走框不走底色),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。
 
@@ -292,7 +292,7 @@ SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic t
 
 ## shadcn passthrough 例外說明
 
-SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem list + 浮動 surface),純 declarative API。**套 `forwardRef` 簽名但 ref 不附著、無 `...props` spread**(shadcn forwardRef + displayName 統一;`select-menu.tsx:151-154` rationale):
+SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem list + 浮動 surface),純 declarative API。**套 `forwardRef` 簽名但 ref 不附著、無 `...props` spread**(shadcn forwardRef + displayName 統一;`select-menu.tsx#SelectMenu` 上方的 rationale):
 
 - **沒有單一 DOM root 可 ref**:trigger / search input / list / content portal 各自 DOM tree 離散
 - **`...props` spread 目標不明**:composite 的 root wrapper 只是 control 容器,spread 到那裡 consumer 無從預期作用
