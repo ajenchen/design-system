@@ -44,7 +44,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 所有從觸發元件彈出的浮層（Tooltip、Popover、SelectMenu、DropdownMenu、HoverCard、Coachmark）與觸發元件的間距統一 **8px**（`sideOffset={8}`）。
 
-不因浮層類型或位置而異——一致的間距讓使用者建立穩定的空間預期。
+不因浮層類型或位置而異——一致的間距讓使用者建立穩定的空間預期。這 8px 量的是使用者**看得到的**觸發元件:Radix Popper 拿觸發元件自己的版面矩形(`getBoundingClientRect()`)當錨點,不扣祖先 `overflow` 裁掉的部分(`@radix-ui/react-popper` 的 `elements.reference = context.anchor`;`TooltipTrigger` 本身就是 `PopperAnchor`),所以觸發元件**靜止時**版面矩形必須等於看得到的範圍,否則 8px 會量在看不到的那一邊(唯一出過的實例:Sidebar 細列,2026-10-27 修,見 `../../components/Sidebar/sidebar.spec.md`「Collapsible」)。捲動造成的暫時裁切(清單捲到一半、表格最後一列被切)不在此列:捲一下就恢復,整個捲出視野時由 `hideWhenDetached` 不畫(`overlay-geometry.ts`)。
 
 **SSOT** → `tokens/elevation/overlay-geometry.ts` exports `OVERLAY_SIDE_OFFSET = 8` / `OVERLAY_COLLISION_PADDING = 8`。所有 primitive `default` 必 import 該 const(M17 SSOT 必可傳播);Radix `sideOffset` 接 number 不接 CSS var,因此用 JS const 共用,改值只動一處全部聯動。
 
