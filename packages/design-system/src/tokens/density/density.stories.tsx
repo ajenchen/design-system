@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -13,11 +14,9 @@ const meta: Meta = {
 \`data-density\` 統一控制 **UI Size**（元件高度 / 內距）與 **Layout Space**（版面間距）。
 
 - **md**（預設）：緊湊，適合資訊密集的桌面 UI
-- **lg**：寬鬆，適合觸控或更大點擊目標
+- **lg**：元件高度與版面間距都放大一階（例：欄位高 md 32 → lg 36）
 
 底層仍可用 \`data-ui-size\` / \`data-layout-space\` 單獨控制（逃生艙）。
-
-CSS 定義：\`uiSize/uiSize.css\` · \`layoutSpace/layoutSpace.css\`
         `,
       },
     },
@@ -32,7 +31,7 @@ type Story = StoryObj
 
 function ColHeader({ cols = '180px 1fr 80px 1fr 80px' }: { cols?: string }) {
   return (
-    // @layout-space-magic-ok: token 表表頭列幾何(layoutSpace.spec.md:165 同質清單列)
+    // @layout-space-magic-ok: token 表表頭列幾何 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
     <div className="grid gap-x-4 pb-2 border-b border-border mb-1" style={{ gridTemplateColumns: cols }}>
       <span />
       <span className="text-caption text-fg-muted">md（預設）</span>
@@ -50,7 +49,7 @@ function TokenRow({
   attr: string; isSolid?: boolean; cols?: string
 }) {
   return (
-    // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
+    // @layout-space-magic-ok: token 表同質列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
     <div className="grid items-center gap-x-4 border-b border-border py-3 last:border-0"
       style={{ gridTemplateColumns: cols }}>
       <div>
@@ -60,7 +59,7 @@ function TokenRow({
       {/* md */}
       <div {...{ [attr]: 'md' }}>
         <div
-          className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-primary-subtle'}`}
+          className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-primary-subtle'}`}
           style={isSolid
             ? { height: `var(${token})`, width: '100%' }
             : { height: '20px', width: `var(${token})` }
@@ -101,7 +100,7 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
       </span>
     </div>
     <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
-      {/* @layout-space-magic-ok: 密度示意頁內三條同質佔位列(layoutSpace.spec.md:165 同質清單列) */}
+      {/* @layout-space-magic-ok: 密度示意頁內三條同質佔位列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
       <div className="space-y-2">
         {[1, 2, 3].map(i => (
           <div key={i} className="h-8 rounded-md bg-neutral-hover" />
@@ -120,7 +119,7 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
       className="flex"
       style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
     >
-      <Button variant="primary">儲存變更</Button>
+      <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已儲存變更' })}>儲存變更</Button>
     </div>
   </div>
 )
@@ -137,13 +136,13 @@ export const Overview: Story = {
   render: () => {
     function Row({ label, token, isSolid }: { label: string; token: string; isSolid: boolean }) {
       return (
-        // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
+        // @layout-space-magic-ok: token 表同質列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
         <div className="grid items-center gap-x-4 border-b border-border py-2.5 last:border-0"
           style={{ gridTemplateColumns: '200px 1fr 1fr' }}>
           <code className="text-caption font-medium text-fg-secondary">{label}</code>
           <div data-density="md">
             <div
-              className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-primary-subtle'}`}
+              className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-primary-subtle'}`}
               style={{ height: isSolid ? `var(${token})` : '16px', width: isSolid ? '100%' : `var(${token})` }}
             />
           </div>
@@ -158,24 +157,24 @@ export const Overview: Story = {
     }
     return (
       <div className="max-w-2xl">
-        {/* @layout-space-magic-ok: token 表表頭列幾何(layoutSpace.spec.md:165 同質清單列) */}
+        {/* @layout-space-magic-ok: token 表表頭列幾何 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <div className="grid gap-x-4 pb-2 border-b border-border mb-1"
           style={{ gridTemplateColumns: '200px 1fr 1fr' }}>
           <span />
           <span className="text-caption text-fg-muted">md（預設）</span>
           <span className="text-caption text-fg-muted">lg</span>
         </div>
-        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Field Height</p>
         <Row label="--field-height-lg" token="--field-height-lg" isSolid />
         <Row label="--field-height-md" token="--field-height-md" isSolid />
         <Row label="--field-height-sm" token="--field-height-sm" isSolid />
-        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Table Row</p>
         <Row label="--table-row-lg" token="--table-row-lg" isSolid />
         <Row label="--table-row-md" token="--table-row-md" isSolid />
         <Row label="--table-row-sm" token="--table-row-sm" isSolid />
-        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Layout Space — 版面間距</p>
         <Row label="--layout-space-loose" token="--layout-space-loose" isSolid={false} />
         <Row label="--layout-space-tight" token="--layout-space-tight" isSolid={false} />
@@ -230,7 +229,7 @@ export const LayoutSpace: Story = {
   parameters: {
     docs: {
       description: {
-        story: '版面間距 token。用於頁面側邊、header 內距、內容到 action buttons 的結論留白。',
+        story: '版面間距 token。用於頁面側邊、header 內距、body 收尾的結論留白。',
       },
     },
   },
@@ -240,9 +239,8 @@ export const LayoutSpace: Story = {
       <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-loose"  md="16px" lg="24px" desc="頁面側邊、內容區外層" isSolid={false} />
       <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-tight"  md="12px" lg="16px" desc="Header 上下內距" isSolid={false} />
       {/* 2026-07-14 audit Dim 68:bottom ≠ 通用「頁面底部留白」— layoutSpace.spec.md 定義為
-          「結論留白:內容到 action buttons(commitment 前視覺暫停)」;無 action 的容器底依
-          bounded / unbounded / element 用 loose / 0 / tight(spec 規則 4)*/}
-      <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-bottom" md="48px" lg="48px" desc="內容 → action buttons 結論留白" isSolid={false} />
+          「結論留白」(body 收尾);容器底看最後一個東西(spec 規則 4)*/}
+      <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-bottom" md="48px" lg="48px" desc="body 收尾的結論留白" isSolid={false} />
     </div>
   ),
 }
@@ -263,10 +261,14 @@ export const PageLayout: Story = {
   render: () => {
 
     return (
-      <div className="flex min-h-64">
-        <Page mode="md" />
-        <Page mode="lg" />
-      </div>
+      <>
+        <div className="flex min-h-64">
+          <Page mode="md" />
+          <Page mode="lg" />
+        </div>
+        {/* 「儲存變更」的回饋 Toast(toast.spec.md:每個獨立 story root 一個 Toaster) */}
+        <Toaster />
+      </>
     )
   },
 }
